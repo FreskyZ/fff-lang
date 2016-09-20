@@ -1,0 +1,24 @@
+
+<Program> = <StatementSequence>
+<StatementSequence> = <StatementSequence>`;`<Statement> | <Statement>
+
+<Statement> = <IfStatement> | <RepeatStatement> | <AssignStatement> | <ReadStatement> | <WriteStatement>
+<IfStatement> = `if` <Expresssion> `then` <StatementSequence> `end` | `if` <Expression> `then` <StatementSequence> `else` <StatementSequence> `end`
+<RepeatStatement> = `repeat` <StatementSequence> `until` <Expression>
+<AssignStatement> = <Identifier> `:=` <Expression>
+<ReadStatement> = `read` <Identifier>
+<WriteStatement> = `write` <Expression>
+
+<Expression> = <SimpleExpression> <ComparisonOperator> <SimpleExpression> | <SimpleExpression>
+<ComparisonOperator> = `=>` | `<` | `>=` | `<=` | `==` | `!=`
+
+<SimpleExpression> = <SimpleExpression> <AddMinusOperator> <Term> | <Term>
+<AddMinusOperator> = `+` | `-`
+<Term> = <Term> <MultiDivideOperator> <Factor> | <Factor>
+<MultiDivideOperator> = `*` | `/`
+<Factor> = `(` <Expression> `)` | <Number> | <Identifier>
+
+<Number> = <Digit> | <Number> <Digit>
+<Identifier> = <Letter> | <Identifier> <Letter> | <Identifier> <Digit>
+<Digit> = `0` | `1` | `2` | `3` | `4` | `5` | `6` | `7` | `8` | `9`
+<Letter> = [a-zA-Z]

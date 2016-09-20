@@ -1,0 +1,18 @@
+Explainer?
+Must according to that specification?
+
+`Read` get string not convertable to integer, how to error
+
+Extensions:
+    Line comments: line end is \n\r or \n ?
+    can delete odd and ++?
+    Case to match?
+    what's exit?
+    Type system design? stop bool to int?
+    const to mut?
+    struct, method?
+    pointer type? with struct, native call?
+    stdlib?
+
+Compile to native code, 
+    if register is hard to use, just use a stack
