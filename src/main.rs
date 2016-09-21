@@ -3,10 +3,12 @@
 #[macro_use]
 extern crate fsz_common;
 
+mod position;
 mod config;
 mod driver;
 mod lexical;
 mod syntax;
+mod interpret;
 
 const USAGE_STRING: &'static str = r"
 Usage: 
