@@ -9,6 +9,10 @@ mod driver;
 mod lexical;
 mod syntax;
 mod interpret;
+// mod vmcodegen;
+// mod vm;
+// mod codegen;
+// mod emit;
 
 const USAGE_STRING: &'static str = r"
 Usage: 
