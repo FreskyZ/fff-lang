@@ -20,6 +20,12 @@ pub enum Message {
         unrecogonize_pos: Position,
         unrecogonize_escape: char,
     },
+
+    UnexpectedIdentifierCharInNumericLiteral {
+        literal_start: Position,
+        unexpected_pos: Position,
+        unexpected_char: char,
+    }
 }
 
 use std::fmt;
@@ -35,17 +41,20 @@ impl fmt::Debug for Message {
                 write!(f, "Cannot read input file `{}`: {}", file_name, e)
             }
             UnexpectedEndofFileInBlockComment { ref block_start, ref eof_pos } => {
-                write!(f, "Unexpected end of file at ({}) in block comment starts from ({})", eof_pos, block_start)
+                write!(f, "Unexpected end of file at {} in block comment starts from {}", eof_pos, block_start)
             }
             UnexpectedEndofFileInStringLiteral { ref literal_start, ref eof_pos, ref hint_escaped_quote_pos } => {
-                try!(write!(f, "Unexpected end of file at ({}) in string literal starts from ({})", eof_pos, literal_start));
+                try!(write!(f, "Unexpected end of file at {} in string literal starts from {}", eof_pos, literal_start));
                 match hint_escaped_quote_pos {
                     &None => Ok(()),
-                    &Some(ref hint) => write!(f, ", did you accidentally escape the quotation mark at ({})?", hint),
+                    &Some(ref hint) => write!(f, ", did you accidentally escape the quotation mark at {}?", hint),
                 }
             }
             UnrecogonizedEscapeCharInStringLiteral { ref literal_start, ref unrecogonize_pos, ref unrecogonize_escape } => {
                 write!(f, "Unrecogonized escape char {:?} at {} in string literal starts from {}", unrecogonize_escape, unrecogonize_pos, literal_start)
+            }
+            UnexpectedIdentifierCharInNumericLiteral { ref literal_start, ref unexpected_pos, ref unexpected_char } => {
+                write!(f, "Unexpected character {:?} at {} in numeric litral starts from {}", unexpected_char, unexpected_pos, literal_start)
             }
         }
     }
