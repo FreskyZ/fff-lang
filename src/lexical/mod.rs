@@ -1,6 +1,7 @@
 
 mod v0;
 mod v1;
+mod v2;
 mod message;
 
 use lexical::v1::V1Lexer;
