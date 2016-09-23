@@ -1,8 +1,10 @@
 
+mod types;
+mod message;
 mod v0;
 mod v1;
 mod v2;
-mod message;
+mod v3;
 
 use lexical::v1::V1Lexer;
 pub struct Lexer {

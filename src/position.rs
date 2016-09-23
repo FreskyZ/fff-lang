@@ -28,3 +28,23 @@ impl Position {
         Position { row: self.row + 1, col: 1 }
     } 
 }
+
+pub struct StringPosition {
+    pub start_pos: Position,
+    pub end_pos: Position,
+}
+
+impl StringPosition {
+    
+    pub fn new() -> StringPosition {
+        StringPosition { start_pos: Position::new(), end_pos: Position::new() }
+    }
+}
+
+impl fmt::Debug for StringPosition {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}-{:?}", self.start_pos, self.end_pos)
+    }
+}
+
+impl_display_by_debug!(StringPosition);

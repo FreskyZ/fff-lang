@@ -168,13 +168,38 @@ impl V2Lexer {
 mod tests {
 
     #[test]
-    fn v2_test1() {
+    fn v2_test_pure() {
         use std::fs::File;
         use std::io::Read;
         use super::V2Lexer;
         use lexical::message::MessageEmitter;
 
-        let file_name = "tests/lexical/2.sm";
+        let file_name = "tests/lexical/3.sm";
+        let mut file: File = File::open(file_name).expect("Open file failed");
+
+        let mut content = String::new();
+        let _read_size = file.read_to_string(&mut content).expect("Read file failed");
+        let mut v2lexer = V2Lexer::from(content);
+
+        let mut messages = MessageEmitter::new();
+        loop {
+            match v2lexer.next(&mut messages) {
+                Some(v2) => perrorln!("{:?}", v2),
+                None => break, 
+            }
+        }
+        
+        perrorln!("messages: \n{:?}", messages);
+    }
+
+    #[test]
+    fn v2_test_preview() {
+        use std::fs::File;
+        use std::io::Read;
+        use super::V2Lexer;
+        use lexical::message::MessageEmitter;
+
+        let file_name = "tests/lexical/3.sm";
         let mut file: File = File::open(file_name).expect("Open file failed");
 
         let mut content = String::new();
