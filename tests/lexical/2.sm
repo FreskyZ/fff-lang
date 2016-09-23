@@ -1,10 +1,10 @@
 // Escape comment and string literal and numeric literal
 
 ident221+023numeric1;-345,*_startwithunderscore, after comma // comments
-i2 /* block "inside block" */ outside block "sl outside" // com2
+i2 1+1=2=3=4+5 /* block "inside block" */ outside block "sl outside" // com2
 some line_common
 many 123 long block after: /* aaaaa
 aaaaaaa
 aaaa " // asdbue as" // aaaa ***\*** "
 as */ after long block
-escaped string: "as\sdf\\erf\\f\r\n\qaqqt\"\tcdew\t\a\a" " 
+escaped string: "as\usdf\\erf\f\r\n\qaqqt\"\tcdew\t\a\a" " \"

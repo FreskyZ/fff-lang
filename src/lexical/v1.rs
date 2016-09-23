@@ -126,6 +126,13 @@ impl V1Lexer {
                                     state = State::InStringLiteral { raw: raw, 
                                         start_pos: start_pos, end_pos: end_pos, last_escape_quote_pos: last_escape_quote_pos };
                                     self.v0.skip1();
+                                } 
+                                Some('u') => { // Leave \u{} forward
+                                    raw.push('\\');
+                                    raw.push('u'); 
+                                    state = State::InStringLiteral { raw: raw, 
+                                        start_pos: start_pos, end_pos: end_pos, last_escape_quote_pos: last_escape_quote_pos };
+                                    self.v0.skip1();
                                 }
                                 Some(other) => {
                                     messages.push(Message::UnrecogonizedEscapeCharInStringLiteral {

@@ -9,7 +9,7 @@ use position::Position;
 pub enum V2Token {
     StringLiteral { value: String, start_pos: Position, end_pos: Position },
     NumericLiteral { raw: String, start_pos: Position, end_pos: Position },
-    Identifier { raw: String, start_pos: Position, end_pos: Position },  // Any thing of [_a-zA-Z][_a-zA-Z0-9]*
+    Identifier { name: String, start_pos: Position, end_pos: Position },  // Any thing of [_a-zA-Z][_a-zA-Z0-9]*
     OtherChar { raw: char, pos: Position }, // space, parenthenes, comma, etc.
 }
 
@@ -26,9 +26,43 @@ impl From<String> for V2Lexer {
     }
 }
 
+trait IdentifierChar {
+
+    fn is_identifier_start(&self) -> bool;
+    fn is_identifier(&self) -> bool;
+
+    fn is_numeric_literal_start(&self) -> bool;
+    fn is_numeric_literal(&self) -> bool;
+
+    fn is_seperator(&self) -> bool;
+}
+impl IdentifierChar for char {
+
+    // Include chinese alphabetical char
+    fn is_identifier_start(&self) -> bool {
+        *self == '_' || self.is_alphabetic()
+    }
+    // Include digit
+    fn is_identifier(&self) -> bool {
+        *self == '_' || self.is_alphabetic() || self.is_digit(10)  
+    }
+
+    // Only digit
+    fn is_numeric_literal_start(&self) -> bool {
+        self.is_digit(10)  
+    }
+    // Only digit or ASCII letters or underscore
+    fn is_numeric_literal(&self) -> bool {
+        *self == '_' || self.is_digit(36)
+    }
+
+    fn is_seperator(&self) -> bool {
+        !self.is_identifier()
+    }
+}
+
 use lexical::v0::V0Token;
 use lexical::v1::V1Token;
-use lexical::message::Message;
 use lexical::message::MessageEmitter;
 impl V2Lexer { 
     
@@ -37,81 +71,91 @@ impl V2Lexer {
     // input stringliteral or otherchar without comment, output identifier and numeric literal
     pub fn next(&mut self, messages: &mut MessageEmitter) -> Option<V2Token> {
 
-        // means v0.5, leave other char include block comment as space here, other just pass through
-        macro_rules! get_vhalf {
-            ($this: expr, $messages: expr) => (
-                match $this.v1.next(messages) {
-                    Some(V1Token::SkippedBlockComment { start_pos, next_ch, next_pos }) => 
-                        V0Token { ch: ' ', pos: start_pos, next_ch: next_ch, next_pos: next_pos }, // Pretend to be a simple '\u{20}'
-                    Some(V1Token::OtherChar { raw, pos, next_ch, next_pos }) => 
-                        V0Token { ch: raw, pos: pos, next_ch: next_ch, next_pos: next_pos }, 
-                    Some(V1Token::StringLiteral { value, start_pos, end_pos }) => 
-                        return Some(V2Token::StringLiteral { value: value, start_pos: start_pos, end_pos: end_pos }),
-                    None => return None,
-                }
-            )
-        }
-
-        // not identifier is all seperator
-        macro_rules! is_identifier_start_char {
-            ($ch: expr) => ($ch == '_' || ($ch >= 'a' && $ch <= 'z') || ($ch >= 'A' && $ch <= 'Z'))
-        }
-        macro_rules! is_identifier_char {
-            ($ch: expr) => ($ch == '_' || ($ch >= 'a' && $ch <= 'z') || ($ch >= 'A' && $ch <= 'Z') || ($ch >= '0' && $ch <= '9'))
-        }
-        macro_rules! is_numeric_start_char {
-            ($ch: expr) => ($ch >= '0' && $ch <= '9')
-        }
-        macro_rules! is_numeric_char {
-            ($ch: expr) => ($ch >= '0' && $ch <= '9')
-        }
-
         enum State {
             Nothing,
             InIdentifier { value: String, start_pos: Position, end_pos: Position },
-            InNumericLiteral { value: String, start_pos: Position, end_pos: Position }, // TODO: has_failed: bool
+            InNumericLiteral { value: String, start_pos: Position, end_pos: Position },
         }
 
         // TODO: using preview char to fix the bug: seperator exactly after identifier is missing
         let mut state = State::Nothing;
         loop {
-            let vhalf = get_vhalf!(self, messages);
+            // Pass string literal and None, make block comment to space and process with other char
+            let vhalf = match self.v1.next(messages) {
+                Some(V1Token::SkippedBlockComment { start_pos, next_ch, next_pos }) => 
+                    V0Token { ch: ' ', pos: start_pos, next_ch: next_ch, next_pos: next_pos }, // Pretend to be a simple '\u{20}'
+                Some(V1Token::OtherChar { raw, pos, next_ch, next_pos }) => 
+                    V0Token { ch: raw, pos: pos, next_ch: next_ch, next_pos: next_pos }, 
+                Some(V1Token::StringLiteral { value, start_pos, end_pos }) => 
+                    return Some(V2Token::StringLiteral { value: value, start_pos: start_pos, end_pos: end_pos }),
+                None => return None,
+            };
+
             match state {
                 State::Nothing => {
-                    if !is_identifier_start_char!(vhalf.ch) && !is_numeric_start_char!(vhalf.ch) {
-                        // Nothing happened
-                        return Some(V2Token::OtherChar { raw: vhalf.ch, pos: vhalf.pos });
-                    } else if is_identifier_start_char!(vhalf.ch) {
-                        let mut value = String::new();
+                    match (vhalf.ch.is_identifier_start(), vhalf.ch.is_numeric_literal_start(), vhalf.pos, vhalf.next_ch) {
+                        (false, false, pos, _next_ch) => {
+                            // Nothing happened
+                            return Some(V2Token::OtherChar { raw: vhalf.ch, pos: pos });
+                        }
+                        (true, false, pos, next_ch) => {
+                            // Identifier try start
+                            let mut value = String::new();
+                            value.push(vhalf.ch);
+                            match next_ch {
+                                Some(ch) if ch.is_seperator() => { // Direct return identifier is next preview is a sperator
+                                    return Some(V2Token::Identifier { name: value, start_pos: pos, end_pos: pos });
+                                }
+                                Some(_) => { // else normal goto InIdentifier state
+                                    state = State::InIdentifier { value: value, start_pos: pos, end_pos: pos };
+                                }
+                                None => { // If next preview is none, just return here
+                                    return Some(V2Token::Identifier { name: value, start_pos: pos, end_pos: pos });
+                                }
+                            }
+                        }
+                        (false, true, pos, next_ch) => {
+                            let mut value = String::new();
+                            value.push(vhalf.ch);
+                            match next_ch {
+                                Some(ch) if ch.is_seperator() => { // Direct return numeric literal is next preview is a sperator
+                                    return Some(V2Token::NumericLiteral { raw: value, start_pos: pos, end_pos: pos });
+                                }
+                                Some(_) => { // else normal goto InIdentifier state
+                                    state = State::InNumericLiteral { value: value, start_pos: pos, end_pos: pos };
+                                }
+                                None => { // If next preview is none, just return here
+                                    return Some(V2Token::NumericLiteral { raw: value, start_pos: pos, end_pos: pos });
+                                }
+                            }
+                        }
+                        _ => unreachable!()
+                    }
+                }
+                State::InIdentifier { mut value, start_pos, end_pos: _1 } => {
+                    if vhalf.ch.is_identifier() {
                         value.push(vhalf.ch);
-                        state = State::InIdentifier { value: value, start_pos: vhalf.pos, end_pos: vhalf.pos };
-                    } else if is_numeric_start_char!(vhalf.ch) {
-                        let mut value = String::new();
-                        value.push(vhalf.ch);
-                        state = State::InNumericLiteral { value: value, start_pos: vhalf.pos, end_pos: vhalf.pos };
+                        if vhalf.next_ch.is_none() || vhalf.next_ch.unwrap().is_seperator() {
+                            // To be finished, return here
+                            return Some(V2Token::Identifier { name: value, start_pos: start_pos, end_pos: vhalf.pos });
+                        } else {
+                            state = State::InIdentifier { value: value, start_pos: start_pos, end_pos: vhalf.pos };
+                        }
                     } else {
                         unreachable!()
                     }
                 }
-                State::InIdentifier { mut value, start_pos, end_pos } => {
-                    if is_identifier_char!(vhalf.ch) {
-                        value.push(vhalf.ch);
-                        state = State::InIdentifier { value: value, start_pos: start_pos, end_pos: vhalf.pos };
+                State::InNumericLiteral { mut value, start_pos, end_pos: _1 } => {
+                    if vhalf.ch.is_numeric_literal() {
+                        value.push(vhalf.ch);                        
+                        if vhalf.next_ch.is_none() || vhalf.next_ch.unwrap().is_seperator() {
+                            // To be finished, return here
+                            return Some(V2Token::NumericLiteral { raw: value, start_pos: start_pos, end_pos: vhalf.pos });
+                        } else {
+                            state = State::InNumericLiteral { value: value, start_pos: start_pos, end_pos: vhalf.pos };
+                        }
                     } else {
-                        return Some(V2Token::Identifier { raw: value, start_pos: start_pos, end_pos: end_pos });
-                    }
-                }
-                State::InNumericLiteral { mut value, start_pos, end_pos } => {
-                    if is_numeric_char!(vhalf.ch) {
-                        value.push(vhalf.ch);
-                        state = State::InNumericLiteral { value: value, start_pos: start_pos, end_pos: vhalf.pos };
-                    } else if is_identifier_char!(vhalf.ch) {
-                        messages.push(Message::UnexpectedIdentifierCharInNumericLiteral { 
-                            literal_start: start_pos, unexpected_pos: vhalf.pos, unexpected_char: vhalf.ch });
-                        value.push(vhalf.ch);  
-                        state = State::InNumericLiteral { value: value, start_pos: start_pos, end_pos: vhalf.pos };
-                    } else {
-                        return Some(V2Token::NumericLiteral { raw: value, start_pos: start_pos, end_pos: end_pos });
+                        unreachable!()
                     }
                 }
             }
@@ -145,6 +189,6 @@ mod tests {
             }
         }
         
-        perrorln!("messages: {:?}", messages);
+        perrorln!("messages: \n{:?}", messages);
     }
 }
