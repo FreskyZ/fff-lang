@@ -13,14 +13,14 @@ use position::StringPosition;
 #[derive(Clone, Eq, PartialEq)]
 pub enum V1Token {
     SkippedBlockComment { pos: Position },
-    StringLiteral { value: String, pos: StringPosition },
+    StringLiteral { value: String, pos: StringPosition, is_raw: bool },
     OtherChar { raw: char, pos: Position },
 }
 #[cfg(not(test))]
 #[derive(Clone)]
 pub enum V1Token {
     SkippedBlockComment { pos: Position },
-    StringLiteral { value: String, pos: StringPosition },
+    StringLiteral { value: String, pos: StringPosition, is_raw: bool },
     OtherChar { raw: char, pos: Position },
 }
 
@@ -34,8 +34,8 @@ impl fmt::Debug for V1Token {
             SkippedBlockComment { ref pos } => {
                 write!(f, "Block comment at {:?}", pos)
             }
-            StringLiteral { ref value, ref pos } => {
-                write!(f, "String literal {:?} at {:?}", value, pos)
+            StringLiteral { ref value, ref pos, ref is_raw } => {
+                write!(f, "String literal {:?} at {:?}, is_raw: {}", value, pos, is_raw)
             }
             OtherChar { ref raw, ref pos } => {
                 write!(f, "Char {:?} at {:?}", raw, pos)
@@ -156,8 +156,8 @@ impl ILexer<V1Token> for V1Lexer {
                                     };
                                     self.v0.skip1(messages);
                                 }
-                                next_ch @ 'n' | next_ch @ '\\' | next_ch @ 't' | next_ch @ 'r'  => {
-                                    raw.push(match next_ch {'n' => '\n', 'r' => '\r', 't' => '\t', '\\' => '\\', ch => ch}); 
+                                next_ch @ 'n' | next_ch @ '\\' | next_ch @ 't' | next_ch @ 'r' | next_ch @ '0'  => {
+                                    raw.push(match next_ch {'n' => '\n', 'r' => '\r', 't' => '\t', '\\' => '\\', '0' => '\0', ch => ch}); 
                                     state = State::InStringLiteral {                           // State conversion 14: in string, meet \\nrt, escape
                                         raw: raw, 
                                         start_pos: start_pos,
@@ -191,7 +191,7 @@ impl ILexer<V1Token> for V1Lexer {
                         }
                         Some(BufV0Token{ token: V0Token { ch: '"', pos }, next: _1 }) => {      // State conversion 18: in string, meet ", finish, return
                             // String finished
-                            return Some(V1Token::StringLiteral { value: raw, pos: StringPosition{ start_pos: start_pos, end_pos: pos } });
+                            return Some(V1Token::StringLiteral { value: raw, pos: StringPosition{ start_pos: start_pos, end_pos: pos }, is_raw: false });
                         }
                         Some(BufV0Token{ token: V0Token { ch, pos: _1 }, next: _2 }) => {
                             // Normal in string
@@ -210,7 +210,7 @@ impl ILexer<V1Token> for V1Lexer {
                 State::InRawStringLiteral { mut raw, start_pos } => {
                     match bufv0 {
                         Some(BufV0Token{ token: V0Token { ch: '"', pos }, next: _2 }) => {      // State conversion 21: in raw string, meet ", finish, return
-                            return Some(V1Token::StringLiteral { value: raw, pos: StringPosition { start_pos: start_pos, end_pos: pos } });
+                            return Some(V1Token::StringLiteral { value: raw, pos: StringPosition { start_pos: start_pos, end_pos: pos }, is_raw: true });
                         }
                         Some(BufV0Token{ token: V0Token { ch, pos: _1 }, next: _2 }) => {       // State conversion 22: in raw string, meet other, continue
                             raw.push(ch);
@@ -306,11 +306,12 @@ mod tests {
             ($ch: expr, $row: expr, $col: expr) => (OtherChar{ raw: $ch, pos: Position { row: $row, col: $col } })
         }
         macro_rules! tstring {
-            ($val: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr) => 
+            ($val: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr, $is_raw: expr) => 
                 (StringLiteral { value: $val.to_owned(), 
                     pos: StringPosition { 
                         start_pos: Position { row: $row1, col: $col1 },
-                        end_pos: Position { row: $row2, col: $col2 } } })
+                        end_pos: Position { row: $row2, col: $col2 } },
+                    is_raw: $is_raw })
         }
         macro_rules! tcomment {
             ($row: expr, $col: expr) => (SkippedBlockComment { pos: Position { row: $row, col: $col } })
@@ -321,14 +322,14 @@ mod tests {
             tch!('a', 1, 1),
             tch!('b', 1, 2),
             tch!('c', 1, 3),
-            tstring!("def", 1, 4, 1, 8),
+            tstring!("def", 1, 4, 1, 8, false),
             tch!('g', 1, 9),
             tch!('h', 1, 10), 
             tch!('i', 1, 11),
             tcomment!(1, 12),
             tch!('\n', 1, 19),
             tch!('m', 2, 1),
-            tstring!("\\u\\n\\r\\a\\bc\\", 2, 2, 2, 16),
+            tstring!("\\u\\n\\r\\a\\bc\\", 2, 2, 2, 16, true),
             tch!('m', 2, 17),
             tch!('n', 2, 18),
             tch!('o', 2, 19),
@@ -337,13 +338,13 @@ mod tests {
             tch!('t', 3, 2),
             tch!('u', 3, 3),
             tch!('v', 3, 4),
-            tstring!("", 3, 5, 3, 6),
+            tstring!("", 3, 5, 3, 6, false),
             tch!('w', 3, 7), 
             tch!('x', 3, 8),
             tcomment!(3, 9), 
             tch!('y', 3, 13),
             tch!('\n', 3, 16),
-            tstring!("\t\n\r\\\\u///**///\n//", 4, 1, 5, 3),
+            tstring!("\t\n\r\\\\u///**///\n//", 4, 1, 5, 3, false),
             tcomment!(5, 4),
         );
 
@@ -380,7 +381,7 @@ mod tests {
             tch!('a', 1, 1),
             tch!('b', 1, 2),
             tch!('c', 1, 3),
-            tstring!("123\\", 1, 4, 1, 10),   // Returned but UnexpectedEndofFileInStringLiteral, r2
+            tstring!("123\\", 1, 4, 1, 10, true),   // Returned but UnexpectedEndofFileInStringLiteral, r2
             tch!('4', 1, 11),
             tch!('5', 1, 12), 
             tch!('6', 1, 13),
