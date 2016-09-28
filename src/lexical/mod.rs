@@ -1,17 +1,24 @@
 
 mod types;
 mod message;
+mod buf_lexer;
 mod v0;
 mod v1;
 mod v2;
 mod v3;
+
+pub use lexical::message::Message;
+pub use lexical::message::MessageEmitter;
+
+pub trait ILexer<TToken> {
+    fn next(&mut self, emitter: &mut MessageEmitter) -> Option<TToken>;
+}
 
 use lexical::v1::V1Lexer;
 pub struct Lexer {
     v1: V1Lexer
 }
 
-pub use lexical::message::Message;
 impl Lexer {
     
     pub fn from(file_name: &str) -> Result<Lexer, Message> {

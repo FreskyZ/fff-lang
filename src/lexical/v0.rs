@@ -2,32 +2,32 @@
 // Level0 parser, input file, output exact every char, record line and column
 
 use position::Position;
+use lexical::buf_lexer::BufToken;
+use lexical::buf_lexer::BufLexer;
+use lexical::ILexer;
+use lexical::message::MessageEmitter;
 
 // V0 token is next char and postion
 #[cfg(test)]
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct V0Token {
     pub ch: char,
     pub pos: Position,
-    pub next_ch: Option<char>,
-    pub next_pos: Position,
 }
 #[cfg(not(test))]
+#[derive(Clone, Copy)]
 pub struct V0Token {
     pub ch: char,
     pub pos: Position,
-    pub next_ch: char,
-    pub next_pos: Position,
 }
 
 // pos, column and row and next char's
 pub struct V0Lexer {
     buf: String,
     buf_index: usize, 
-    text_pos: Position, 
+    text_pos: Position,
 
-    previous_ch: Option<char>,
-    previous_pos: Option<Position>,
+    previous_is_new_line: bool,
 }
 
 impl From<String> for V0Lexer {
@@ -35,9 +35,8 @@ impl From<String> for V0Lexer {
         V0Lexer {
             buf: content,
             buf_index: 0,
-            text_pos: Position::new(),
-            previous_ch: None,
-            previous_pos: None,
+            text_pos: Position{ row: 1, col: 0 },
+            previous_is_new_line: false,
         }
     }
 }
@@ -110,68 +109,49 @@ impl V0Lexer {
         Some(ret_val)
     }
 
+    /// Skip a next char, if top level judged to skip after reading next hint
+    pub fn skip1(&mut self, emitter: &mut MessageEmitter) {
+        let _ = self.next(emitter);
+    }
+}
+
+impl ILexer<V0Token> for V0Lexer {
+
     // Exact next char, LF and CRLF are acceptable line end
     // So CR is always ignored and LF is returned and position fields are updated
     // Because need next preview, so actually is getting next next char
-    pub fn next_char(&mut self) -> Option<V0Token> {
-
-        if self.buf_index_at_end() {
-            let previous_pos = match self.previous_pos {
-                Some(pos) => pos,
-                None => Position::new(),
-            };
-            match self.previous_ch {
-                Some(ch) => {
-                    self.previous_ch = None;
-                    return Some(V0Token { ch: ch, pos: previous_pos, next_ch: None, next_pos: Position::new() });
-                }
-                None => return None,
-            }
-        }
-
-        // next not CR, return None if next is None and iteration will finished
-        let mut next_not_cr = self.next_not_carriage_return();
-
-        if self.previous_ch.is_none() {
-            match next_not_cr {
-                None => {
-                    // Next not CR is none and previous is none, this is just empty
-                    return None;
-                }
-                Some(next_not_cr_unwrap) => {
-                    self.previous_ch = Some(next_not_cr_unwrap);
-                    self.previous_pos = Some(Position { col: 1, row: 1 });
-                    self.text_pos = self.text_pos.next_col();
-                    next_not_cr = self.next_not_carriage_return();
-                }
-            }
-        }
-
-        self.previous_ch.map(|ch| {
-            if ch == '\n' {
-                // new line
-                self.text_pos = self.text_pos.next_row();
-            }
-            ch
-        });
-
-        let ret_ch = self.previous_ch.unwrap();
-        let ret_pos = self.previous_pos.unwrap();
-        let ret_next_pos = self.text_pos;
-        self.previous_pos = Some(ret_next_pos);
-        self.text_pos = self.text_pos.next_col();
-
-        let ret_next_ch = match next_not_cr {
-            Some(ch) => { self.previous_ch = Some(ch); Some(ch) },
-            None => None,
-        };
+    fn next(&mut self, _emitter: &mut MessageEmitter) -> Option<V0Token> {
         
-        Some(V0Token { ch: ret_ch, pos: ret_pos, next_ch: ret_next_ch, next_pos: ret_next_pos })
-    }
+        // next not cr will return None if buf index at end
+        self.next_not_carriage_return().map(|ch|{
+            if self.previous_is_new_line {
+                self.text_pos = self.text_pos.next_row();
+            } else {
+                self.text_pos = self.text_pos.next_col();
+            }
 
-    // Skip a next char, if top level judged to skip after reading next hint
-    pub fn skip1(&mut self) {
-        let _ = self.next_char();
+            self.previous_is_new_line = ch == '\n';
+            V0Token{ ch: ch, pos: self.text_pos }
+        })
+    }
+}
+
+pub type BufV0Token = BufToken<V0Token>;
+pub type BufV0Lexer = BufLexer<V0Lexer, V0Token>;
+
+#[cfg(test)]
+use std::fmt;
+#[cfg(test)]
+impl fmt::Debug for BufV0Token {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            BufV0Token { token: V0Token { ref ch, ref pos }, next: None } => {
+                write!(f, "ch: {:?}, pos: {}, next: None", ch, pos)
+            },
+            BufV0Token { token: V0Token { ref ch, ref pos }, next: Some(V0Token { ch: ref next_ch, pos: ref next_pos }) } => {
+                write!(f, "ch: {:?}, pos: {}, next_ch: {:?}, next_pos: {}", ch, pos, next_ch, next_pos)
+            },
+        }
     }
 }
 
@@ -219,23 +199,117 @@ mod tests {
     }
 
     #[test]
+    #[allow(unused_mut)]
     fn v0_test2() {
         use super::V0Lexer;
         use super::V0Token;
+        use position::Position;
+        use lexical::ILexer;
+        use lexical::message::MessageEmitter;
 
-        let mut v0lexer = V0Lexer::from("\r\rabc\ndef\r\r\nasdwe\r\r\rq1da\nawsedq\r\r\r".to_owned());
+        macro_rules! test_case {
+            ($input: expr, $($ch: expr, $row: expr, $col: expr, )*) => (
+                let mut v0lexer = V0Lexer::from($input.to_owned());
+                let mut v0s = Vec::new();
+                let mut dummy = MessageEmitter::new();
+                loop {
+                    match v0lexer.next(&mut dummy) {
+                        Some(v0) => v0s.push(v0),
+                        None => break,
+                    }
+                }
 
-        loop {
-            match v0lexer.next_char() {
-                None => { perrorln!("Finished"); break; }
-                Some(V0Token { ch, pos, next_ch, next_pos }) => { perrorln!("Char {:?} at pos ({}), next is {:?} at pos ({})", ch, pos, next_ch, next_pos); }
-            }
+                let mut expects = Vec::new();
+                $(
+                    expects.push(V0Token { ch: $ch, pos: Position { row: $row, col: $col } });
+                )*
+                
+                assert_eq!(v0s, expects);
+            )
         }
 
-        let mut v0lexer =  V0Lexer::from("".to_owned());
-        match v0lexer.next_char() {
-            None => (),
-            Some(t) => panic!("Unexpected v0token: {:?}", t),
+        test_case!("\r\rabc\ndef\r\r\nasdwe\r\r\rq1da\nawsedq\r\r\r",
+            'a', 1, 1,
+            'b', 1, 2,
+            'c', 1, 3,
+            '\n', 1, 4,
+            'd', 2, 1,
+            'e', 2, 2,
+            'f', 2, 3,
+            '\n', 2, 4,
+            'a', 3, 1,
+            's', 3, 2,
+            'd', 3, 3,
+            'w', 3, 4,
+            'e', 3, 5,
+            'q', 3, 6,
+            '1', 3, 7,
+            'd', 3, 8,
+            'a', 3, 9,
+            '\n', 3, 10,
+            'a', 4, 1,
+            'w', 4, 2,
+            's', 4, 3,
+            'e', 4, 4,
+            'd', 4, 5,
+            'q', 4, 6,
+        );
+
+        test_case!("abc\ndef\r\r\n\nasd\nwe\rq1da\nawsedq\n",
+            'a', 1, 1,
+            'b', 1, 2,
+            'c', 1, 3,
+            '\n', 1, 4,
+            'd', 2, 1,
+            'e', 2, 2,
+            'f', 2, 3,
+            '\n', 2, 4,
+            '\n', 3, 1,
+            'a', 4, 1,
+            's', 4, 2,
+            'd', 4, 3,
+            '\n', 4, 4,
+            'w', 5, 1,
+            'e', 5, 2,
+            'q', 5, 3,
+            '1', 5, 4,
+            'd', 5, 5,
+            'a', 5, 6,
+            '\n', 5, 7,
+            'a', 6, 1,
+            'w', 6, 2,
+            's', 6, 3,
+            'e', 6, 4,
+            'd', 6, 5,
+            'q', 6, 6,
+            '\n', 6, 7,
+        );
+
+        test_case!("", );
+    }
+
+    #[test]
+    fn v0_buf() {
+        use super::BufV0Lexer;
+        use super::V0Lexer;
+        use lexical::message::MessageEmitter;
+        
+        let mut bufv0 = BufV0Lexer::from(V0Lexer::from("\r\rabc\ndef\r\r\nasdwe\r\r\rq1da\nawsedq\r\r\r".to_owned()));
+        let mut dummy = MessageEmitter::new();
+        loop {
+            match bufv0.next(&mut dummy) {
+                Some(bufv0) => perrorln!("{:?}", bufv0),    
+                None => break,
+            }
+        }
+        
+        let mut bufv0 = BufV0Lexer::from(V0Lexer::from("abc\ndef\r\r\n\nasd\nwe\rq1da\nawsedq\n".to_owned()));
+        let mut dummy = MessageEmitter::new();
+        loop {
+            match bufv0.next(&mut dummy) {
+                Some(bufv0) => perrorln!("{:?}", bufv0),    
+                None => break,
+            }
         }
     }
 }

@@ -29,6 +29,7 @@ impl Position {
     } 
 }
 
+#[derive(Eq, PartialEq, Clone, Copy)]
 pub struct StringPosition {
     pub start_pos: Position,
     pub end_pos: Position,
