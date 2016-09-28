@@ -11,6 +11,8 @@ pub enum Keyword {
     Break,
     Continue,
     Struct,
+    For,
+    Return,
 }
 
 impl Keyword {
@@ -24,6 +26,8 @@ impl Keyword {
             "break" => Some(Keyword::Break),
             "continue" => Some(Keyword::Continue),
             "struct" => Some(Keyword::Struct),
+            "for" => Some(Keyword::For),
+            "return" => Some(Keyword::Return),
             _ => None,
         }
     }
@@ -57,6 +61,8 @@ pub enum Operator {
     LogicalAnd,
     LogicalOr,
 
+    Assign,
+
     Less,
     Equal,
     Great,
@@ -73,6 +79,7 @@ impl Operator {
     
     pub fn from1(ch: char) -> Option<Operator> {
         match ch {
+            '=' => Some(Operator::Assign),
             '+' => Some(Operator::Add),
             '-' => Some(Operator::Sub),
             '*' => Some(Operator::Mul),
@@ -90,6 +97,7 @@ impl Operator {
 
     pub fn from2(ch1: char, ch2: char) -> Option<Operator> {
         match (ch1, ch2) {
+            ('=', '=') => Some(Operator::Equal),
             ('+', '=') => Some(Operator::AddAssign),
             ('-', '=') => Some(Operator::SubAssign),
             ('*', '=') => Some(Operator::MulAssign),
@@ -121,6 +129,7 @@ pub enum Seperator {
     Comma,
     Colon,
     SemiColon,
+    Dot,
 }
 
 impl Seperator {
@@ -136,6 +145,7 @@ impl Seperator {
             ',' => Some(Seperator::Comma),
             ':' => Some(Seperator::Colon),
             ';' => Some(Seperator::SemiColon),
+            '.' => Some(Seperator::Dot),
             ' ' | '\t' | '\n' => Some(Seperator::WhiteSpace),
             _ => None,
         }
