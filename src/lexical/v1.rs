@@ -13,14 +13,14 @@ use position::StringPosition;
 #[derive(Clone, Eq, PartialEq)]
 pub enum V1Token {
     SkippedBlockComment { pos: Position },
-    StringLiteral { value: String, pos: StringPosition, is_raw: bool },
+    StringLiteral { value: String, pos: StringPosition, is_raw: bool, has_failed: bool }, // currently has_failed means \other
     OtherChar { raw: char, pos: Position },
 }
 #[cfg(not(test))]
 #[derive(Clone)]
 pub enum V1Token {
     SkippedBlockComment { pos: Position },
-    StringLiteral { value: String, pos: StringPosition, is_raw: bool },
+    StringLiteral { value: String, pos: StringPosition, is_raw: bool, has_failed: bool },
     OtherChar { raw: char, pos: Position },
 }
 
@@ -34,8 +34,8 @@ impl fmt::Debug for V1Token {
             SkippedBlockComment { ref pos } => {
                 write!(f, "Block comment at {:?}", pos)
             }
-            StringLiteral { ref value, ref pos, ref is_raw } => {
-                write!(f, "String literal {:?} at {:?}, is_raw: {}", value, pos, is_raw)
+            StringLiteral { ref value, ref pos, ref is_raw, ref has_failed } => {
+                write!(f, "{}tring literal {:?} at {:?}{}", if *is_raw { "Raw s" } else { "S" }, value, pos, if *has_failed { ", has failed" } else { "" })
             }
             OtherChar { ref raw, ref pos } => {
                 write!(f, "Char {:?} at {:?}", raw, pos)
@@ -77,7 +77,7 @@ impl ILexer<V1Token> for V1Lexer {
         #[derive(Debug)]
         enum State {
             Nothing,
-            InStringLiteral { raw: String, start_pos: Position, last_escape_quote_pos: Option<Position> },
+            InStringLiteral { raw: String, start_pos: Position, last_escape_quote_pos: Option<Position>, has_failed: bool },
             InRawStringLiteral { raw: String, start_pos: Position },
             InLineComment,
             InBlockComment { start_pos: Position },
@@ -100,7 +100,8 @@ impl ILexer<V1Token> for V1Lexer {
                             state = State::InStringLiteral {                                   // State conversion 3: in nothing, meet "
                                 raw: String::new(), 
                                 start_pos: pos,
-                                last_escape_quote_pos: None 
+                                last_escape_quote_pos: None, 
+                                has_failed: false
                             };
                         }
                         Some(BufV0Token { token: V0Token { ch: 'r', pos }, next: Some(V0Token { ch: '"', pos: _1 }) })
@@ -142,7 +143,7 @@ impl ILexer<V1Token> for V1Lexer {
                         }
                     }
                 }
-                State::InStringLiteral { mut raw, start_pos, last_escape_quote_pos } => {
+                State::InStringLiteral { mut raw, start_pos, last_escape_quote_pos, has_failed } => {
                     match bufv0 {
                         Some(BufV0Token{ token: V0Token { ch: '\\', pos: slash_pos }, next: Some(V0Token{ ch: next_ch, pos: _1 }) }) => {
                             match next_ch {
@@ -152,7 +153,8 @@ impl ILexer<V1Token> for V1Lexer {
                                     state = State::InStringLiteral {                           // State conversion 13: in string, meet \", store it 
                                         raw: raw, 
                                         start_pos: start_pos, 
-                                        last_escape_quote_pos: Some(slash_pos) 
+                                        last_escape_quote_pos: Some(slash_pos), 
+                                        has_failed: has_failed,
                                     };
                                     self.v0.skip1(messages);
                                 }
@@ -161,7 +163,8 @@ impl ILexer<V1Token> for V1Lexer {
                                     state = State::InStringLiteral {                           // State conversion 14: in string, meet \\nrt, escape
                                         raw: raw, 
                                         start_pos: start_pos,
-                                        last_escape_quote_pos: last_escape_quote_pos 
+                                        last_escape_quote_pos: last_escape_quote_pos,
+                                        has_failed: has_failed,
                                     };
                                     self.v0.skip1(messages);
                                 }
@@ -172,7 +175,8 @@ impl ILexer<V1Token> for V1Lexer {
                                     state = State::InStringLiteral {                            // State conversion 15: in string, meet \u, leave forward 
                                         raw: raw, 
                                         start_pos: start_pos,
-                                        last_escape_quote_pos: last_escape_quote_pos 
+                                        last_escape_quote_pos: last_escape_quote_pos, 
+                                        has_failed: has_failed,
                                     };
                                     self.v0.skip1(messages);
                                 }
@@ -182,21 +186,24 @@ impl ILexer<V1Token> for V1Lexer {
                                         unrecogonize_pos: slash_pos, 
                                         unrecogonize_escape: other });
                                     // here actually is meaning less                            // State conversion 16: in string, meet \other, emit error, continue
-                                    state = State::InStringLiteral { raw: raw, start_pos: start_pos, last_escape_quote_pos: last_escape_quote_pos };
+                                    state = State::InStringLiteral { 
+                                        raw: raw, start_pos: start_pos, 
+                                        last_escape_quote_pos: last_escape_quote_pos, has_failed: true };
+                                    self.v0.skip1(messages);
                                 }
                             }
                         }
                         Some(BufV0Token{ token: V0Token { ch: '\\', pos }, next: None }) => {   // State conversion 17: in string, meet \EOF, continue
-                            state = State::InStringLiteral { raw: raw, start_pos: pos, last_escape_quote_pos: last_escape_quote_pos };
+                            state = State::InStringLiteral { raw: raw, start_pos: pos, last_escape_quote_pos: last_escape_quote_pos, has_failed: true };
                         }
                         Some(BufV0Token{ token: V0Token { ch: '"', pos }, next: _1 }) => {      // State conversion 18: in string, meet ", finish, return
                             // String finished
-                            return Some(V1Token::StringLiteral { value: raw, pos: StringPosition{ start_pos: start_pos, end_pos: pos }, is_raw: false });
+                            return Some(V1Token::StringLiteral { value: raw, pos: StringPosition{ start_pos: start_pos, end_pos: pos }, is_raw: false, has_failed: has_failed });
                         }
                         Some(BufV0Token{ token: V0Token { ch, pos: _1 }, next: _2 }) => {
                             // Normal in string
                             raw.push(ch);                                                       // State conversion 19: in string, meet other, push, continue
-                            state = State::InStringLiteral { raw: raw, start_pos: start_pos, last_escape_quote_pos: last_escape_quote_pos };
+                            state = State::InStringLiteral { raw: raw, start_pos: start_pos, last_escape_quote_pos: last_escape_quote_pos, has_failed: has_failed };
                         }
                         None => {
                             messages.push(Message::UnexpectedEndofFileInStringLiteral {         // State conversion 20: in string, meet EOF, emit error, return 
@@ -210,7 +217,7 @@ impl ILexer<V1Token> for V1Lexer {
                 State::InRawStringLiteral { mut raw, start_pos } => {
                     match bufv0 {
                         Some(BufV0Token{ token: V0Token { ch: '"', pos }, next: _2 }) => {      // State conversion 21: in raw string, meet ", finish, return
-                            return Some(V1Token::StringLiteral { value: raw, pos: StringPosition { start_pos: start_pos, end_pos: pos }, is_raw: true });
+                            return Some(V1Token::StringLiteral { value: raw, pos: StringPosition { start_pos: start_pos, end_pos: pos }, is_raw: true, has_failed: false });
                         }
                         Some(BufV0Token{ token: V0Token { ch, pos: _1 }, next: _2 }) => {       // State conversion 22: in raw string, meet other, continue
                             raw.push(ch);
@@ -278,6 +285,7 @@ mod tests {
     const program7: &'static str = "abcR\"123\\\"456";         // C13, C23r2
     const program8: &'static str = "abc\"def\\a\\b\\c";        // C16
     const program9: &'static str = "abc\"\\";                  // C17
+    const programa: &'static str = "abc\"123\\a\"";
 
     #[test]
     fn v1_test1() {
@@ -306,12 +314,13 @@ mod tests {
             ($ch: expr, $row: expr, $col: expr) => (OtherChar{ raw: $ch, pos: Position { row: $row, col: $col } })
         }
         macro_rules! tstring {
-            ($val: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr, $is_raw: expr) => 
+            ($val: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr, $is_raw: expr, $has_fail: expr) => 
                 (StringLiteral { value: $val.to_owned(), 
                     pos: StringPosition { 
                         start_pos: Position { row: $row1, col: $col1 },
                         end_pos: Position { row: $row2, col: $col2 } },
-                    is_raw: $is_raw })
+                    is_raw: $is_raw,
+                    has_failed: $has_fail })
         }
         macro_rules! tcomment {
             ($row: expr, $col: expr) => (SkippedBlockComment { pos: Position { row: $row, col: $col } })
@@ -322,14 +331,14 @@ mod tests {
             tch!('a', 1, 1),
             tch!('b', 1, 2),
             tch!('c', 1, 3),
-            tstring!("def", 1, 4, 1, 8, false),
+            tstring!("def", 1, 4, 1, 8, false, false),
             tch!('g', 1, 9),
             tch!('h', 1, 10), 
             tch!('i', 1, 11),
             tcomment!(1, 12),
             tch!('\n', 1, 19),
             tch!('m', 2, 1),
-            tstring!("\\u\\n\\r\\a\\bc\\", 2, 2, 2, 16, true),
+            tstring!("\\u\\n\\r\\a\\bc\\", 2, 2, 2, 16, true, false),
             tch!('m', 2, 17),
             tch!('n', 2, 18),
             tch!('o', 2, 19),
@@ -338,13 +347,13 @@ mod tests {
             tch!('t', 3, 2),
             tch!('u', 3, 3),
             tch!('v', 3, 4),
-            tstring!("", 3, 5, 3, 6, false),
+            tstring!("", 3, 5, 3, 6, false, false),
             tch!('w', 3, 7), 
             tch!('x', 3, 8),
             tcomment!(3, 9), 
             tch!('y', 3, 13),
             tch!('\n', 3, 16),
-            tstring!("\t\n\r\\\\u///**///\n//", 4, 1, 5, 3, false),
+            tstring!("\t\n\r\\\\u///**///\n//", 4, 1, 5, 3, false, false),
             tcomment!(5, 4),
         );
 
@@ -381,7 +390,7 @@ mod tests {
             tch!('a', 1, 1),
             tch!('b', 1, 2),
             tch!('c', 1, 3),
-            tstring!("123\\", 1, 4, 1, 10, true),   // Returned but UnexpectedEndofFileInStringLiteral, r2
+            tstring!("123\\", 1, 4, 1, 10, true, false),   // Returned but UnexpectedEndofFileInStringLiteral, r2
             tch!('4', 1, 11),
             tch!('5', 1, 12), 
             tch!('6', 1, 13),
@@ -397,6 +406,12 @@ mod tests {
             tch!('b', 1, 2),
             tch!('c', 1, 3),
             // No more return
+        );
+        test_case!(programa,
+            tch!('a', 1, 1),
+            tch!('b', 1, 2),
+            tch!('c', 1, 3),
+            tstring!("123", 1, 4, 1, 10, false, true),
         );
     }
 

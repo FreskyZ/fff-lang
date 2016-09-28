@@ -1,5 +1,8 @@
 
-#[derive(Debug)]
+// Common public type defs
+// May move string literal, numeric literal and identifier def here
+
+#[derive(Debug, Clone)]
 pub enum Keyword {
     FnDef,
     If,
@@ -26,7 +29,7 @@ impl Keyword {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Operator {
     Add,
     Sub,
@@ -66,7 +69,7 @@ pub enum Operator {
     Index, 
 }
 
-impl  Operator {
+impl Operator {
     
     pub fn from1(ch: char) -> Option<Operator> {
         match ch {
@@ -104,13 +107,9 @@ impl  Operator {
             _ => None,
         }
     }
-
-    // fn from3(ch1: char, ch2: char, ch3: char) -> Option<Operator> {
-    //     None
-    // }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Seperator {
     WhiteSpace,
     LeftParenthenes,

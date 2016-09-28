@@ -9,7 +9,7 @@ use position::StringPosition;
 #[cfg(test)]
 #[derive(Eq, PartialEq, Clone)]
 pub enum V2Token {
-    StringLiteral { value: String, pos: StringPosition, is_raw: bool },
+    StringLiteral { value: String, pos: StringPosition, is_raw: bool, has_failed: bool },
     NumericLiteral { raw: String, pos: StringPosition },
     Identifier { name: String, pos: StringPosition },  // Any thing of [_a-zA-Z][_a-zA-Z0-9]*
     OtherChar { ch: char, pos: Position }, // space, parenthenes, comma, etc.
@@ -30,8 +30,8 @@ impl fmt::Debug for V2Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::V2Token::*;
         match *self {
-            StringLiteral { ref value, ref pos, ref is_raw } => {
-                write!(f, "{}tring literal {:?} at {:?}", if *is_raw { "Raw s" } else { "S" }, value, pos )
+            StringLiteral { ref value, ref pos, ref is_raw, ref has_failed } => {
+                write!(f, "{}tring literal {:?} at {:?}{}", if *is_raw { "Raw s" } else { "S" }, value, pos, if *has_failed { ", has failed" } else { "" })
             }
             NumericLiteral { ref raw, ref pos } => {
                 write!(f, "NumericLiteral {:?} at {:?}", raw, pos)
@@ -124,8 +124,8 @@ impl ILexer<V2Token> for V2Lexer {
                 Some(BufV1Token{ token: V1Token::SkippedBlockComment { pos }, next: _1 }) => {
                     return Some(V2Token::OtherChar { ch: ' ', pos: pos });
                 }
-                Some(BufV1Token{ token: V1Token::StringLiteral { value, pos, is_raw }, next: _1 }) => { 
-                    return Some(V2Token::StringLiteral { value: value, pos: pos, is_raw: is_raw });
+                Some(BufV1Token{ token: V1Token::StringLiteral { value, pos, is_raw, has_failed }, next: _1 }) => { 
+                    return Some(V2Token::StringLiteral { value: value, pos: pos, is_raw: is_raw, has_failed: has_failed });
                 }
                 None => {
                     return None;
@@ -251,8 +251,12 @@ mod tests {
     }
 
     macro_rules! tstring {
-        ($val: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr, $is_raw: expr) => (
-            V2Token::StringLiteral{ value: $val.to_owned(), pos: StringPosition { start_pos: Position { row: $row1, col: $col1 }, end_pos: Position { row: $row2, col: $col2 } }, is_raw: $is_raw  }
+        ($val: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr, $is_raw: expr, $has_fail: expr) => (
+            V2Token::StringLiteral{ 
+                value: $val.to_owned(), 
+                pos: StringPosition { start_pos: Position { row: $row1, col: $col1 }, end_pos: Position { row: $row2, col: $col2 } }, 
+                is_raw: $is_raw,
+                has_failed: $has_fail }
         )
     }
     macro_rules! tnumber {
@@ -288,7 +292,7 @@ mod tests {
             tident!("abc", 1, 1, 1, 3),
             tchar!(' ', 1, 4),
             tident!("def", 1, 8, 1, 10),
-            tstring!("", 1, 11, 1, 12, false),
+            tstring!("", 1, 11, 1, 12, false, false),
             tident!("ght", 1, 13, 1, 15),    
         );
         test_case!(PROGRAM3,
@@ -303,7 +307,7 @@ mod tests {
             tident!("qw", 1, 15, 1, 16),
             tchar!('+', 1, 17),
             tchar!('\n', 1, 18),
-            tstring!("123+456", 2, 1, 2, 10, true),
+            tstring!("123+456", 2, 1, 2, 10, true, false),
             tchar!('.', 2, 11),
             tident!("to_owned", 2, 12, 2, 19),
             tchar!('(', 2, 20),

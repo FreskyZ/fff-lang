@@ -42,6 +42,13 @@ impl StringPosition {
     }
 }
 
+impl From<(Position, Position)> for StringPosition {
+
+    fn from(pos: (Position, Position)) -> StringPosition {
+        StringPosition{ start_pos: pos.0, end_pos: pos.1 }
+    }
+}
+
 impl fmt::Debug for StringPosition {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}-{:?}", self.start_pos, self.end_pos)

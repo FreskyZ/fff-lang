@@ -23,9 +23,14 @@ pub enum Message {
 
     UnexpectedIdentifierCharInNumericLiteral {
         literal_start: Position,
-        unexpected_pos: Position,
         unexpected_char: char,
-    }
+    },
+    NumericLiteralTooLong {
+        literal_start: Position,
+    },
+    NumericLiteralTooLarge {
+        literal_start: Position,
+    },
 }
 
 use std::fmt;
@@ -53,8 +58,14 @@ impl fmt::Debug for Message {
             UnrecogonizedEscapeCharInStringLiteral { ref literal_start, ref unrecogonize_pos, ref unrecogonize_escape } => {
                 write!(f, "Unrecogonized escape char {:?} at {} in string literal starts from {}", unrecogonize_escape, unrecogonize_pos, literal_start)
             }
-            UnexpectedIdentifierCharInNumericLiteral { ref literal_start, ref unexpected_pos, ref unexpected_char } => {
-                write!(f, "Unexpected character {:?} at {} in numeric litral starts from {}", unexpected_char, unexpected_pos, literal_start)
+            UnexpectedIdentifierCharInNumericLiteral { ref literal_start, ref unexpected_char } => {
+                write!(f, "Unexpected character {:?} in numeric litral starts from {}", unexpected_char, literal_start)
+            }
+            NumericLiteralTooLong { ref literal_start } => {
+                write!(f, "Numeric literal at {:?} too long", literal_start)
+            }
+            NumericLiteralTooLarge { ref literal_start } => {
+                write!(f, "Numeric literal at {:?} too large", literal_start)
             }
         }
     }
