@@ -45,3 +45,19 @@ impl fmt::Debug for CharLiteral {
             }) 
     }
 }
+
+pub struct EscapeCharParser {
+    temp: String,
+}
+
+impl EscapeCharParser {
+
+    fn new() -> EscapeCharParser {
+        EscapeCharParser { temp: String::new() }
+    }
+
+}
+
+pub struct CharLiteralParser {
+
+}

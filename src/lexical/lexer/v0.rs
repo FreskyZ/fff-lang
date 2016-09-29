@@ -115,11 +115,6 @@ impl V0Lexer {
         // perrorln!("8: next not carriage return result is {:?}", ret_val);
         Some(ret_val)
     }
-
-    /// Skip a next char, if top level judged to skip after reading next hint
-    pub fn skip1(&mut self, emitter: &mut MessageEmitter) {
-        let _ = self.next(emitter);
-    }
 }
 
 impl ILexer<V0Token> for V0Lexer {

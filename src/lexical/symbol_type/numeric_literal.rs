@@ -8,18 +8,124 @@ use lexical::message::MessageEmitter;
 #[cfg(test)]
 #[derive(PartialEq, Clone)]
 pub enum NumericLiteralValue {
-    Integral(u64),
-    Floating(f64),
+    U64(u64),
+    U32(u32),
+    I32(i32),
+    U8(u8),
+    F64(f64),
 }
 #[cfg(not(test))]
 #[derive(Clone)]
 pub enum NumericLiteralValue {
-    Integral(u64),
-    Floating(f64),
+    U64(u64),
+    U32(u32),
+    I32(i32),
+    U8(u8),
+    F64(f64),
 }
 #[cfg(test)]
 impl Eq for NumericLiteralValue {
+}
 
+#[cfg(test)]
+#[derive(Debug, Eq, PartialEq)]
+pub enum NumericLiteralValueParseError {
+    Empty,
+    InvalidChar(char),
+    TooLong, 
+}
+#[cfg(not(test))]
+pub enum NumericLiteralValueParseError {
+    Empty,
+    InvalidChar(char),
+    TooLong,
+}
+
+impl NumericLiteralValue {
+
+    pub fn from_hex_to_u8(hex: &str) -> Result<u8, NumericLiteralValueParseError> {
+
+        match hex.len() {
+            0 => Err(NumericLiteralValueParseError::Empty),
+            1 => {
+                let char1 = hex.chars().next().unwrap();
+                match char1.to_digit(16) {
+                    Some(digit) => Ok(digit as u8),
+                    None => Err(NumericLiteralValueParseError::InvalidChar(char1))
+                }
+            }
+            2 => { 
+                let mut chars = hex.chars();
+                let char1 = chars.next().unwrap();
+                let char2 = chars.next().unwrap();
+                match char1.to_digit(16) {
+                    None => Err(NumericLiteralValueParseError::InvalidChar(char1)),
+                    Some(digit1) => match char2.to_digit(16) {
+                        None => Err(NumericLiteralValueParseError::InvalidChar(char2)),
+                        Some(digit2) => Ok((digit1 * 16 + digit2) as u8),
+                    }
+                }
+            }
+            _ => Err(NumericLiteralValueParseError::TooLong),
+        }
+    }
+
+    pub fn from_hex_to_u32(hex: &str) -> Result<u32, NumericLiteralValueParseError> {
+        const F_POWERED: [u32; 8] = 
+            [1_u32, 0x10_u32, 0x100_u32, 0x1000_u32, 0x1000_0_u32, 0x1000_00_u32, 0x1000_000_u32, 0x1000_0000_u32];
+
+        match hex.len() {
+            0 => Err(NumericLiteralValueParseError::Empty),
+            mut n @ 1...8 => {
+                let mut ret_val = 0_u32;
+                for ch in hex.chars() {
+                    match ch.to_digit(16) {
+                        None => return Err(NumericLiteralValueParseError::InvalidChar(ch)),
+                        Some(digit) => ret_val += digit * F_POWERED[n - 1], 
+                    }
+                    n -= 1;
+                }
+                return Ok(ret_val);
+            }
+            _ => Err(NumericLiteralValueParseError::TooLong),
+        }
+    } 
+
+    /// Attention that 0x8000+ will be negative value
+    pub fn from_hex_to_i32(hex: &str) -> Result<i32, NumericLiteralValueParseError> {
+        
+        NumericLiteralValue::from_hex_to_u32(hex)
+            .map(|u| match u {
+                    0x8000_0000_u32 => i32::min_value(),
+                    u @ 0x8000_0000_u32...0xFFFF_FFFF_u32 => -((0xFFFF_FFFFu32 - u + 1) as i32 ),
+                    u => u as i32
+                }
+            )
+    }
+
+    pub fn from_hex_to_u64(hex: &str) -> Result<u64, NumericLiteralValueParseError> {
+        const F_POWERED: [u64; 16] = 
+            [0x1_u64, 0x10_u64, 0x100_u64, 0x1000_u64, 
+             0x1000_0_u64, 0x1000_00_u64, 0x1000_000_u64, 0x1000_0000_u64,  
+             0x1000_0000_0_u64, 0x1000_0000_00_u64, 0x1000_0000_000_u64, 0x1000_0000_0000_u64,
+             0x1000_0000_0000_0_u64, 0x1000_0000_0000_00_u64, 0x1000_0000_0000_000_u64, 0x1000_0000_0000_0000_u64];
+
+        match hex.len() {
+            0 => Err(NumericLiteralValueParseError::Empty),
+            mut n @ 1...16 => {
+                let mut ret_val = 0_u64;
+                for ch in hex.chars() {
+                    match ch.to_digit(16) {
+                        None => return Err(NumericLiteralValueParseError::InvalidChar(ch)),
+                        Some(digit) => ret_val += digit as u64 * F_POWERED[n - 1], 
+                    }
+                    n -= 1;
+                }
+                return Ok(ret_val);
+            }
+            _ => Err(NumericLiteralValueParseError::TooLong),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -46,7 +152,7 @@ impl NumericLiteral {
             raw: raw.to_owned(),
             pos: pos, 
             has_failed: false,
-            value: NumericLiteralValue::Integral(0),
+            value: NumericLiteralValue::I32(0),
          }
     }
 }
@@ -61,8 +167,11 @@ impl fmt::Debug for NumericLiteral {
                 ", has failed".to_owned()
             } else {
                 match self.value {
-                    NumericLiteralValue::Integral(ref value) => format!(", with value {:?}", value),
-                    NumericLiteralValue::Floating(ref value) =>     format!(", with value {:?}", value),  
+                    NumericLiteralValue::U64(ref value) => format!(", with value {:?}", value),
+                    NumericLiteralValue::U32(ref value) => format!(", with value {:?}", value),
+                    NumericLiteralValue::I32(ref value) => format!(", with value {:?}", value),
+                    NumericLiteralValue::U8(ref value) => format!(", with value {:?}", value),
+                    NumericLiteralValue::F64(ref value) => format!(", with value {:?}", value),
                 }
             })
     }
@@ -141,6 +250,165 @@ pub fn pub_numeric_literal(raw: &str, messages: &mut MessageEmitter) -> (i32, bo
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn num_lit_value_hex_to_u8() {
+        use super::NumericLiteralValue;
+        use super::NumericLiteralValueParseError::*;
+
+        macro_rules! test_case {
+            ($input: expr, ok: $result: expr) => (
+                match NumericLiteralValue::from_hex_to_u8($input) {
+                    Ok(result) => assert_eq!(result, $result),
+                    Err(e) => panic!("Unexpected error: {:?}", e),
+                }
+            );
+            ($input: expr, err: $error: expr) => (
+                match NumericLiteralValue::from_hex_to_u8($input) {
+                    Ok(result) => panic!("Unexpected ok: {}", result),
+                    Err(e) => assert_eq!(e, $error),
+                }
+            )
+        }
+
+        test_case!("", err: Empty);
+        test_case!("A", ok: 0xAu8);
+        test_case!("AC", ok: 0xACu8);
+        test_case!("BFF", err: TooLong);
+        test_case!("Z", err: InvalidChar('Z'));
+        test_case!("BZ", err: InvalidChar('Z'));
+        test_case!("GB", err: InvalidChar('G'));
+        test_case!("a", ok: 0xAu8);
+        test_case!("ac", ok: 0xACu8);
+        test_case!("bff", err: TooLong);
+        test_case!("z", err: InvalidChar('z'));
+        test_case!("bz", err: InvalidChar('z'));
+        test_case!("gb", err: InvalidChar('g'));
+    }
+
+    #[test]
+    fn num_lit_value_hex_to_u32() {
+        use super::NumericLiteralValue;
+        use super::NumericLiteralValueParseError::*;
+
+        macro_rules! test_case {
+            ($input: expr, ok: $result: expr) => (
+                match NumericLiteralValue::from_hex_to_u32($input) {
+                    Ok(result) => assert_eq!(result, $result),
+                    Err(e) => panic!("Unexpected error: {:?}", e),
+                }
+            );
+            ($input: expr, err: $error: expr) => (
+                match NumericLiteralValue::from_hex_to_u32($input) {
+                    Ok(result) => panic!("Unexpected ok: {}", result),
+                    Err(e) => assert_eq!(e, $error),
+                }
+            )
+        }
+        
+        test_case!("", err: Empty);
+        test_case!("A", ok: 0xAu32);
+        test_case!("AC", ok: 0xACu32);
+        test_case!("BFF", ok: 0xBFFu32);
+        test_case!("Z", err: InvalidChar('Z'));
+        test_case!("BZ", err: InvalidChar('Z'));
+        test_case!("GB", err: InvalidChar('G'));
+        test_case!("a", ok: 0xAu32);
+        test_case!("ac", ok: 0xACu32);
+        test_case!("bff", ok: 0xBFFu32);
+        test_case!("z", err: InvalidChar('z'));
+        test_case!("bz", err: InvalidChar('z'));
+        test_case!("gb", err: InvalidChar('g'));
+        test_case!("AAAA0000", ok: 0xAAAA0000u32);
+        test_case!("FFFFFFFF", ok: 0xFFFFFFFFu32);
+        test_case!("80000000", ok: 0x80000000u32);
+        test_case!("7FFFFFFF", ok: 0x7FFFFFFFu32);
+        test_case!("AAAAAAAAA", err: TooLong);
+        test_case!("efgh", err: InvalidChar('g'));
+        test_case!("0000", ok: 0x0000u32);
+    }
+
+    #[test]
+    fn num_lit_value_hex_to_i32() {
+        use super::NumericLiteralValue;
+        use super::NumericLiteralValueParseError::*;
+
+        macro_rules! test_case {
+            ($input: expr, ok: $result: expr) => (
+                match NumericLiteralValue::from_hex_to_i32($input) {
+                    Ok(result) => assert_eq!(result, $result),
+                    Err(e) => panic!("Unexpected error: {:?}", e),
+                }
+            );
+            ($input: expr, err: $error: expr) => (
+                match NumericLiteralValue::from_hex_to_i32($input) {
+                    Ok(result) => panic!("Unexpected ok: {}", result),
+                    Err(e) => assert_eq!(e, $error),
+                }
+            )
+        }
+        
+        test_case!("", err: Empty);
+        test_case!("A", ok: 0xAi32);
+        test_case!("AC", ok: 0xACi32);
+        test_case!("BFF", ok: 0xBFFi32);
+        test_case!("Z", err: InvalidChar('Z'));
+        test_case!("BZ", err: InvalidChar('Z'));
+        test_case!("GB", err: InvalidChar('G'));
+        test_case!("a", ok: 0xAi32);
+        test_case!("ac", ok: 0xACi32);
+        test_case!("bff", ok: 0xBFFi32);
+        test_case!("z", err: InvalidChar('z'));
+        test_case!("bz", err: InvalidChar('z'));
+        test_case!("gb", err: InvalidChar('g'));
+        test_case!("AAAA0000", ok: -1431699456i32);
+        test_case!("FFFFFFFF", ok: -132);
+        test_case!("80000000", ok: i32::min_value());
+        test_case!("7FFFFFFF", ok: 0x7FFFFFFFi32);
+        test_case!("AAAAAAAAA", err: TooLong);
+        test_case!("efgh", err: InvalidChar('g'));
+        test_case!("0000", ok: 0x0000i32);
+    }
+
+    #[test]
+    fn num_lit_value_hex_to_u64() {
+        use super::NumericLiteralValue;
+        use super::NumericLiteralValueParseError::*;
+
+        macro_rules! test_case {
+            ($input: expr, ok: $result: expr) => (
+                match NumericLiteralValue::from_hex_to_u64($input) {
+                    Ok(result) => assert_eq!(result, $result),
+                    Err(e) => panic!("Unexpected error: {:?}", e),
+                }
+            );
+            ($input: expr, err: $error: expr) => (
+                match NumericLiteralValue::from_hex_to_u64($input) {
+                    Ok(result) => panic!("Unexpected ok: {}", result),
+                    Err(e) => assert_eq!(e, $error),
+                }
+            )
+        }
+        
+        test_case!("", err: Empty);
+        test_case!("A", ok: 0xAu64);
+        test_case!("AC", ok: 0xACu64);
+        test_case!("BFF", ok: 0xBFFu64);
+        test_case!("Z", err: InvalidChar('Z'));
+        test_case!("BZ", err: InvalidChar('Z'));
+        test_case!("GB", err: InvalidChar('G'));
+        test_case!("AAAA0000", ok: 0xAAAA0000u64);
+        test_case!("FFFFFFFF", ok: 0xFFFFFFFFu64);
+        test_case!("80000000", ok: 0x80000000u64);
+        test_case!("7FFFFFFF", ok: 0x7FFFFFFFu64);
+        test_case!("AAAAAAAAA", ok: 0xAAAAAAAAAu64);
+        test_case!("efgh", err: InvalidChar('g'));
+        test_case!("0000", ok: 0x0000u64);
+        test_case!("1234567890ABCDEFG", err: TooLong);
+        test_case!("1234567890ABCDEF", ok: 0x1234567890ABCDEFu64);
+        test_case!("1234567890ABCDEG", err: InvalidChar('G'));
+        test_case!("1234567890abcdeg", err: InvalidChar('g'))
+    }
 
     #[test]
     fn v3_numeric_literal() {

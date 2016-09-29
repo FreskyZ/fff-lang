@@ -1,16 +1,17 @@
 
-// Level1 parser
-// input v0
-// remove line comment
-// report block comment as OtherChar ' '
-// find string literal with only '"' escaped
-// string literal is allowed to cross line, line end is regarded as \n
-// raw string literal supported, `r'C:\\abc'` or `R"C:\\abc"`
+///! Level1 parser
+///! input v0
+///! remove line comment
+///! report block comment as OtherChar ' '
+///! find string literal with only '"' escaped
+///! string literal is allowed to cross line, line end is regarded as \n
+///! raw string literal supported, `r'C:\\abc'` or `R"C:\\abc"`
 
 use common::Position;
 use common::StringPosition;
 use lexical::symbol_type::string_literal::StringLiteral;
 use lexical::symbol_type::char_literal::CharLiteral;
+
 #[cfg(test)]
 #[derive(Clone, Eq, PartialEq)]
 pub enum V1Token {
@@ -68,6 +69,7 @@ impl V1Lexer {
     pub fn position(&self) -> Position { self.v0.inner().position() }
 }
 
+use lexical::symbol_type::string_literal::StringLiteralParser;
 impl ILexer<V1Token> for V1Lexer {
 
     // input v0, output stringliteral or otherchar without comment
@@ -78,20 +80,10 @@ impl ILexer<V1Token> for V1Lexer {
         #[derive(Debug)]
         enum State {
             Nothing,
-            InStringLiteral { 
-                raw: String, 
-                start_pos: Position, 
-                last_escape_quote_pos: Option<Position>, 
-                has_failed: bool 
-            },
-            InRawStringLiteral { 
-                raw: String, 
-                start_pos: Position 
-            },
+            InStringLiteral { parser: StringLiteralParser },
+            InRawStringLiteral { parser: StringLiteralParser },
             InLineComment,
-            InBlockComment { 
-                start_pos: Position 
-            },
+            InBlockComment { start_pos: Position },
             InCharLiteral { 
                 raw: String, 
                 start_pos: Position 
@@ -106,150 +98,88 @@ impl ILexer<V1Token> for V1Lexer {
                     match bufv0 {
                         Some(BufV0Token{ token: V0Token{ ch: '/', pos: _1 }, next: Some(V0Token{ ch: '/', pos: _2 }) }) => {
                             self.v0.skip1(messages);
-                            state = State::InLineComment;                                      // State conversion 1: in nothing, meet //
+                            state = State::InLineComment;                                      // C1: in nothing, meet //
                         }
                         Some(BufV0Token{ token: V0Token{ ch: '/', pos }, next: Some(V0Token{ ch: '*', pos: _1 }) }) => {
-                            state = State::InBlockComment { start_pos: pos };                  // State conversion 2: in nothing, meet /*
+                            state = State::InBlockComment { start_pos: pos };                  // C2: in nothing, meet /*
                         }
-                        Some(BufV0Token{ token: V0Token{ ch: '"', pos }, next: _1 }) => {
-                            state = State::InStringLiteral {                                   // State conversion 3: in nothing, meet "
-                                raw: String::new(), 
-                                start_pos: pos,
-                                last_escape_quote_pos: None, 
-                                has_failed: false
-                            };
+                        Some(BufV0Token{ token: V0Token{ ch: '"', pos }, next: _1 }) => {      // C3: in nothing, meet "
+                            state = State::InStringLiteral { parser: StringLiteralParser::new(pos) };
                         }
-                        Some(BufV0Token{ token: V0Token{ ch: '\'', pos }, next: _1 }) => {     // C24: in nothing, meet '
+                        Some(BufV0Token { token: V0Token { ch: 'r', pos }, next: Some(V0Token { ch: '"', pos: _1 }) })
+                            | Some(BufV0Token { token: V0Token { ch: 'R', pos }, next: Some(V0Token { ch: '"', pos: _1 }) }) => {
+                            self.v0.skip1(messages);                                           // C4: in nothing, meet r" or R"
+                            state = State::InRawStringLiteral { parser: StringLiteralParser::new(pos) };
+                        }
+                        Some(BufV0Token{ token: V0Token{ ch: '\'', pos }, next: _1 }) => {     // C5: in nothing, meet '
                             state = State::InCharLiteral {
                                 raw: String::new(),
                                 start_pos: pos,
                             }
                         }
-                        Some(BufV0Token { token: V0Token { ch: 'r', pos }, next: Some(V0Token { ch: '"', pos: _1 }) })
-                            | Some(BufV0Token { token: V0Token { ch: 'R', pos }, next: Some(V0Token { ch: '"', pos: _1 }) }) => {
-                            self.v0.skip1(messages);                                           // State conversion 4: in nothing, meet r" or R"
-                            state = State::InRawStringLiteral { raw: String::new(), start_pos: pos };
-                        }
                         Some(BufV0Token{ token: V0Token{ ch, pos }, next: _1 }) => {
-                            return Some(V1Token::OtherChar{ raw: ch, pos: pos });              // State conversion 5: in nothing, meet other, return
+                            return Some(V1Token::OtherChar{ raw: ch, pos: pos });              // C6: in nothing, meet other, return
                         }
-                        None => { return None; }                                               // State conversion 6: in nothing, meet EOF, return 
+                        None => { return None; }                                               // C7: in nothing, meet EOF, return 
                     }
                 }
                 State::InBlockComment { start_pos } => {
                     match bufv0 {
                         Some(BufV0Token{ token: V0Token { ch: '*', pos: _1 }, next: Some(V0Token{ ch: '/', pos: _2 }) }) => {
                             self.v0.skip1(messages);
-                            return Some(V1Token::OtherChar{ raw: ' ', pos: start_pos });      // State conversion 7: in block, meet */, return
+                            return Some(V1Token::OtherChar{ raw: ' ', pos: start_pos });      // C8: in block, meet */, return
                         }
                         Some(_) => {
-                            state = State::InBlockComment{ start_pos: start_pos };             // State conversion 8: in block, continue block
+                            state = State::InBlockComment{ start_pos: start_pos };             // C9: in block, continue block
                         }
                         None => {
                             messages.push(Message::UnexpectedEndofFileInBlockComment { block_start: start_pos, eof_pos: self.v0.inner().position() });
-                            return None;                                                       // State conversion 9: in block, meet EOF, emit error, return
+                            return None;                                                       // C10: in block, meet EOF, emit error, return
                         }
                     }
                 }
                 State::InLineComment => {
                     match bufv0 {
                         Some(BufV0Token{ token: V0Token { ch: '\n', pos }, next: _1 }) => {
-                            return Some(V1Token::OtherChar { raw: '\n', pos: pos });           // State conversion 10: in line, meet \n, return
+                            return Some(V1Token::OtherChar { raw: '\n', pos: pos });           // C11: in line, meet \n, return
                         }
                         Some(_) => {
-                            state = State::InLineComment;                                      // State conversion 11: in line, continue line
+                            state = State::InLineComment;                                      // C12: in line, continue line
                         }
                         None => {
-                            return None;                                                       // State conversion 12: in line, meet EOF, return
+                            return None;                                                       // C13: in line, meet EOF, return
                         }
                     }
                 }
-                State::InStringLiteral { mut raw, start_pos, last_escape_quote_pos, has_failed } => {
+                State::InStringLiteral { ref mut parser } => {
+                    let (maybe_string_literal, need_skip1) = match bufv0 {
+                        Some(BufV0Token{ token: V0Token{ ch, pos }, next: Some(V0Token{ ch: next_ch, pos: _1 }) }) => {
+                            parser.try_get_string_literal(Some(ch), pos, Some(next_ch), messages)
+                        }
+                        Some(BufV0Token{ token: V0Token { ch, pos }, next: None }) => {        // Cx: anything inside quotation is none about this module
+                            parser.try_get_string_literal(Some(ch), pos, None, messages)
+                        }
+                        None => {
+                            parser.try_get_string_literal(None, self.position(), None, messages);
+                            return None;  // Special occassion, EOFed, just emit error and quick return
+                        }
+                    };
+                    if need_skip1 { self.v0.skip1(messages); }
+                    match maybe_string_literal {
+                        Some(literal) => return Some(V1Token::StringLiteral{ inner: literal }),
+                        None => (),
+                    }
+                }
+                State::InRawStringLiteral { ref mut parser } => {
                     match bufv0 {
-                        Some(BufV0Token{ token: V0Token { ch: '\\', pos: slash_pos }, next: Some(V0Token{ ch: next_ch, pos: _1 }) }) => {
-                            match next_ch {
-                                '"' => {
-                                    // record escaped \" here to be error hint
-                                    raw.push('"');
-                                    state = State::InStringLiteral {                           // State conversion 13: in string, meet \", store it 
-                                        raw: raw, 
-                                        start_pos: start_pos, 
-                                        last_escape_quote_pos: Some(slash_pos), 
-                                        has_failed: has_failed,
-                                    };
-                                    self.v0.skip1(messages);
-                                }
-                                next_ch @ 'n' | next_ch @ '\\' | next_ch @ 't' | next_ch @ 'r' | next_ch @ '0'  => {
-                                    raw.push(match next_ch {'n' => '\n', 'r' => '\r', 't' => '\t', '\\' => '\\', '0' => '\0', ch => ch}); 
-                                    state = State::InStringLiteral {                           // State conversion 14: in string, meet \\nrt, escape
-                                        raw: raw, 
-                                        start_pos: start_pos,
-                                        last_escape_quote_pos: last_escape_quote_pos,
-                                        has_failed: has_failed,
-                                    };
-                                    self.v0.skip1(messages);
-                                }
-                                'u' => { 
-                                    // Leave \u{} forward
-                                    raw.push('\\');
-                                    raw.push('u'); 
-                                    state = State::InStringLiteral {                            // State conversion 15: in string, meet \u, leave forward 
-                                        raw: raw, 
-                                        start_pos: start_pos,
-                                        last_escape_quote_pos: last_escape_quote_pos, 
-                                        has_failed: has_failed,
-                                    };
-                                    self.v0.skip1(messages);
-                                }
-                                other => {
-                                    messages.push(Message::UnrecogonizedEscapeCharInStringLiteral {
-                                        literal_start: start_pos, 
-                                        unrecogonize_pos: slash_pos, 
-                                        unrecogonize_escape: other });
-                                    // here actually is meaning less                            // State conversion 16: in string, meet \other, emit error, continue
-                                    state = State::InStringLiteral { 
-                                        raw: raw, start_pos: start_pos, 
-                                        last_escape_quote_pos: last_escape_quote_pos, has_failed: true };
-                                    self.v0.skip1(messages);
-                                }
+                        Some(BufV0Token{ token: V0Token { ch, pos }, next: _2 }) => {          // Cx, anything inside r"" is none about this module
+                            match parser.try_get_raw_string_literal(Some(ch), pos, messages) {
+                                Some(literal) => return Some(V1Token::StringLiteral{ inner: literal }),
+                                None => (),
                             }
                         }
-                        Some(BufV0Token{ token: V0Token { ch: '\\', pos }, next: None }) => {   // State conversion 17: in string, meet \EOF, continue
-                            state = State::InStringLiteral { raw: raw, start_pos: pos, last_escape_quote_pos: last_escape_quote_pos, has_failed: true };
-                        }
-                        Some(BufV0Token{ token: V0Token { ch: '"', pos }, next: _1 }) => {      // State conversion 18: in string, meet ", finish, return
-                            // String finished
-                            return Some(V1Token::StringLiteral { inner: StringLiteral::new(raw, StringPosition{ start_pos: start_pos, end_pos: pos }, false, has_failed) });
-                        }
-                        Some(BufV0Token{ token: V0Token { ch, pos: _1 }, next: _2 }) => {
-                            // Normal in string
-                            raw.push(ch);                                                       // State conversion 19: in string, meet other, push, continue
-                            state = State::InStringLiteral { raw: raw, start_pos: start_pos, last_escape_quote_pos: last_escape_quote_pos, has_failed: has_failed };
-                        }
                         None => {
-                            messages.push(Message::UnexpectedEndofFileInStringLiteral {         // State conversion 20: in string, meet EOF, emit error, return 
-                                literal_start: start_pos, 
-                                eof_pos: self.position(), 
-                                hint_escaped_quote_pos: last_escape_quote_pos });
-                            return None;
-                        }
-                    }
-                }
-                State::InRawStringLiteral { mut raw, start_pos } => {
-                    match bufv0 {
-                        Some(BufV0Token{ token: V0Token { ch: '"', pos }, next: _2 }) => {      // State conversion 21: in raw string, meet ", finish, return
-                            return Some(V1Token::StringLiteral { inner: StringLiteral::new(raw, StringPosition { start_pos: start_pos, end_pos: pos }, true, false) });
-                        }
-                        Some(BufV0Token{ token: V0Token { ch, pos: _1 }, next: _2 }) => {       // State conversion 22: in raw string, meet other, continue
-                            raw.push(ch);
-                            state = State::InRawStringLiteral{ raw: raw, start_pos: start_pos  };
-                        }
-                        None => {
-                            messages.push(Message::UnexpectedEndofFileInStringLiteral {         // State conversion 23: in raw string, meet EOF, emit error, return  
-                                literal_start: start_pos, 
-                                eof_pos: self.position(),
-                                hint_escaped_quote_pos: None
-                            });
+                            parser.try_get_raw_string_literal(None, self.position(), messages);
                             return None;
                         }
                     }
@@ -257,11 +187,11 @@ impl ILexer<V1Token> for V1Lexer {
                 State::InCharLiteral { mut raw, start_pos } => {
                     match bufv0 {
                         Some(BufV0Token{ token: V0Token{ ch: '\\', pos: _1 }, next: Some(V0Token{ ch: '\'', pos: _2 }) }) => {
-                            raw.push('\'');                                                     // C25: in char literal, meet \', continue
+                            raw.push('\'');                                                     // Cx: anythin inside '' is none about this module
                             state = State::InCharLiteral{ raw: raw, start_pos: start_pos };
                             self.v0.skip1(messages);
                         }
-                        Some(BufV0Token{ token: V0Token{ ch: '\'', pos }, next: _1 }) => {      // C26: in cahr literal, meet ', return
+                        Some(BufV0Token{ token: V0Token{ ch: '\'', pos }, next: _1 }) => {      // C26: in char literal, meet ', return
                             return Some(V1Token::CharLiteral{ inner: CharLiteral::from(raw, StringPosition::from((start_pos, pos))) });
                         }
                         Some(BufV0Token{ token: V0Token{ ch, pos: _2 }, next: _1 }) => {        // C27, in char literal, meet other
