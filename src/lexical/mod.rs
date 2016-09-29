@@ -1,31 +1,25 @@
 
-mod keyword_kind;
-mod seperator_kind;
-mod string_literal;
 mod message;
-mod buf_lexer;
-mod v0;
-mod v1;
-mod v2;
-mod v3;
+mod symbol_type;
+mod lexer;
 
 pub use lexical::message::Message;
 pub use lexical::message::MessageEmitter;
-pub use lexical::keyword_kind::KeywordKind;
-pub use lexical::seperator_kind::SeperatorKind;
+pub use lexical::symbol_type::keyword_kind::KeywordKind;
+pub use lexical::symbol_type::seperator_kind::SeperatorKind;
 
 pub trait ILexer<TToken> {
     fn next(&mut self, emitter: &mut MessageEmitter) -> Option<TToken>;
 }
 
-use self::v3::V3Lexer;
-use self::v3::BufV3Lexer;
+use self::lexer::v3::V3Lexer;
+use self::lexer::v3::BufV3Lexer;
 pub struct Lexer {
     v3: BufV3Lexer,
 }
 
-pub type Token = self::v3::V3Token;
-pub type BufToken = self::v3::BufV3Token;
+pub type Token = self::lexer::v3::V3Token;
+pub type BufToken = self::lexer::v3::BufV3Token;
 impl Lexer {
     
     pub fn from(file_name: &str, messages: &mut MessageEmitter) -> Option<Lexer> {

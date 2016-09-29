@@ -4,7 +4,6 @@
 extern crate fsz_common;
 
 mod common;
-mod position;
 mod config;
 mod driver;
 mod lexical;

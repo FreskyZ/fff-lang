@@ -2,7 +2,7 @@
 // String literal type
 // string literal storage, escape and display
 
-use position::StringPosition;
+use common::StringPosition;
 
 #[cfg(test)]
 #[derive(Eq, PartialEq, Clone)]

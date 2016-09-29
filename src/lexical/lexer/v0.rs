@@ -1,9 +1,7 @@
 
 // Level0 parser, input file, output exact every char, record line and column
 
-use position::Position;
-use lexical::buf_lexer::BufToken;
-use lexical::buf_lexer::BufLexer;
+use common::Position;
 use lexical::ILexer;
 use lexical::message::MessageEmitter;
 
@@ -145,6 +143,8 @@ impl ILexer<V0Token> for V0Lexer {
     }
 }
 
+use lexical::lexer::buf_lexer::BufToken;
+use lexical::lexer::buf_lexer::BufLexer;
 pub type BufV0Token = BufToken<V0Token>;
 pub type BufV0Lexer = BufLexer<V0Lexer, V0Token>;
 
@@ -196,7 +196,7 @@ mod tests {
     fn v0_test2() {
         use super::V0Lexer;
         use super::V0Token;
-        use position::Position;
+        use common::Position;
         use lexical::ILexer;
         use lexical::message::MessageEmitter;
 

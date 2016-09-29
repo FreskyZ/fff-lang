@@ -10,18 +10,22 @@
 //      seperators, [, ], {, }, (, ), ;, ,
 // May be final layer
 
-use position::Position;
-use position::StringPosition;
-use lexical::string_literal::StringLiteral;
-use lexical::keyword_kind::KeywordKind;
-use lexical::seperator_kind::SeperatorKind;
+use common::Position;
+use common::StringPosition;
+use lexical::symbol_type::string_literal::StringLiteral;
+use lexical::symbol_type::numeric_literal::NumericLiteral;
+use lexical::symbol_type::char_literal::CharLiteral;
+use lexical::symbol_type::keyword_kind::KeywordKind;
+use lexical::symbol_type::seperator_kind::SeperatorKind;
 
 #[derive(Clone)]
 pub enum V3Token {
     StringLiteral { inner: StringLiteral },
-    NumericLiteral { raw: String, value: i32, pos: StringPosition, has_failed: bool },
+    NumericLiteral { inner: NumericLiteral },
+    CharLiteral { inner: CharLiteral },
     Identifier { name: String, pos: StringPosition },
     Keyword { kind: KeywordKind, pos: StringPosition },
+    BooleanLiteral { value: bool },
     Seperator { kind: SeperatorKind, pos: StringPosition },
 }
 
@@ -30,29 +34,34 @@ use std::fmt;
 #[cfg(test)]
 impl fmt::Debug for V3Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::V3Token::*;
         match *self {
-            StringLiteral{ ref inner } => {
+            V3Token::StringLiteral{ ref inner } => {
                 write!(f, "{:?}", inner)
             }
-            NumericLiteral{ ref raw, ref value, ref pos, ref has_failed } => {
-                write!(f, "Numeric literal {:?} at {:?} with value {}{}", raw, pos, value, if *has_failed { ", has failed" } else { "" })
+            V3Token::NumericLiteral{ ref inner } => {
+                write!(f, "{:?}", inner)
             }
-            Identifier { ref name, ref pos } => {
+            V3Token::CharLiteral { ref inner } => {
+                write!(f, "{:?}", inner)
+            }
+            V3Token::BooleanLiteral{ ref value } => {
+                write!(f, "Boolean literal: {:?}", value)
+            }
+            V3Token::Identifier { ref name, ref pos } => {
                 write!(f, "Identifier {:?} at {:?}", name, pos)
             }
-            Keyword { ref kind, ref pos } => {
+            V3Token::Keyword { ref kind, ref pos } => {
                 write!(f, "Keyword {:?} at pos {:?}", kind, pos)
             }
-            Seperator { ref kind, ref pos } => {
+            V3Token::Seperator { ref kind, ref pos } => {
                 write!(f, "Seperator {:?} at pos {:?}", kind, pos)
             }
         }
     }
 }
 
-use lexical::v2::V2Lexer;
-use lexical::v2::BufV2Lexer;
+use lexical::lexer::v2::V2Lexer;
+use lexical::lexer::v2::BufV2Lexer;
 pub struct V3Lexer {
     v2: BufV2Lexer,
 }
@@ -63,88 +72,16 @@ impl From<String> for V3Lexer {
     }
 }
 
-use lexical::message::Message;
-use lexical::message::MessageEmitter;
-
-// ignore _ and ignore i32 postfix
-fn numeric_literal_to_value(raw: &str, pos: StringPosition, messages: &mut MessageEmitter) -> (i32, bool) { // value, has_failed
-    
-    let no_postfix = if raw.len() > 3 && &raw[(raw.len() - 3)..] == "i32" {
-        &raw[..(raw.len() - 3)]
-    } else {
-        raw
-    };
-
-    let mut digits = Vec::new();
-    for ch in no_postfix.chars() {
-        if ch == '_' {
-            continue;
-        } else if ch.is_digit(10) {
-            digits.push(ch);
-        } else {
-            messages.push(Message::UnexpectedIdentifierCharInNumericLiteral { 
-                literal_start: pos.start_pos,
-                unexpected_char: ch
-            });
-            return (0, true);
-        }
-    }
-
-    // digits will not be empty because first character must be [0-9]
-    if digits.len() > 10 {
-        messages.push(Message::NumericLiteralTooLong { literal_start: pos.start_pos });
-        return (0, true);
-    }
-    
-    const TENS: [i32; 10] = [
-        1, 
-        10, 
-        100, 
-        1000, 
-        10000,
-        100000, 
-        1000000,
-        10000000, 
-        100000000, 
-        1000000000
-    ];
-
-    let mut value = 0_i32;
-    let length = digits.len();
-    for i in 0..length {
-        value = match (digits[i].to_digit(10).unwrap() as i32).checked_mul(TENS[length - i - 1]) {
-            None => {
-                messages.push(Message::NumericLiteralTooLarge { literal_start: pos.start_pos });
-                return (0, true);
-            }
-            Some(middle) => {
-                match value.checked_add(middle) {
-                    Some(value) => value, 
-                    None => {
-                        messages.push(Message::NumericLiteralTooLarge { literal_start: pos.start_pos });
-                        return (0, true);
-                    }
-                }
-            }
-        };
-    }
-
-    (value, false)
-}
-
-#[cfg(test)]
-pub fn pub_numeric_literal(raw: &str, messages: &mut MessageEmitter) -> (i32, bool) {
-    numeric_literal_to_value(raw, StringPosition::new(), messages)
-}
 
 impl V3Lexer {
     pub fn position(&self) -> Position { self.v2.inner().position() }
 }
 
-use lexical::ILexer;
-use lexical::v2::V2Token;
-use lexical::v2::BufV2Token;
 use common::TryFrom;
+use lexical::ILexer;
+use lexical::lexer::v2::V2Token;
+use lexical::lexer::v2::BufV2Token;
+use lexical::message::MessageEmitter;
 impl ILexer<V3Token> for V3Lexer {
 
     fn next(&mut self, messages: &mut MessageEmitter) -> Option<V3Token> {
@@ -155,13 +92,17 @@ impl ILexer<V3Token> for V3Lexer {
                     // Dispatch string literal to escape
                     return Some(V3Token::StringLiteral{ inner: inner });
                 }
-                Some(BufV2Token{ token: V2Token::NumericLiteral{ raw, pos }, next: _1 }) => {
+                Some(BufV2Token{ token: V2Token::NumericLiteral{ inner }, next: _1 }) => {
                     // Dispatch numeric literal to get value
-                    let result = numeric_literal_to_value(&raw, pos, messages);
-                    return Some(V3Token::NumericLiteral{ raw: raw, value: result.0, pos: pos, has_failed: result.1 });
+                    return Some(V3Token::NumericLiteral{ inner: inner });
+                }
+                Some(BufV2Token{ token: V2Token::CharLiteral{ inner }, next: _1 }) => {
+                    // Dispatch numeric literal to get value
+                    return Some(V3Token::CharLiteral{ inner: inner });
                 }
                 Some(BufV2Token{ token: V2Token::Identifier{ name, pos }, next: _1 }) => {
                     // Dispatch identifier to identifier or keyword
+                    // TODO!TODO! `true`, `false` become bool literal here
                     match KeywordKind::try_from(&name) {
                         Some(keyword) => return Some(V3Token::Keyword{ kind: keyword, pos: pos }),
                         None => return Some(V3Token::Identifier { name: name, pos: pos })
@@ -199,29 +140,14 @@ impl ILexer<V3Token> for V3Lexer {
     }
 }
 
-use lexical::buf_lexer::BufToken;
-use lexical::buf_lexer::BufLexer;
+use lexical::lexer::buf_lexer::BufToken;
+use lexical::lexer::buf_lexer::BufLexer;
 pub type BufV3Token = BufToken<V3Token>;
 pub type BufV3Lexer = BufLexer<V3Lexer, V3Token>;
 
 #[cfg(test)]
 mod tests {
     use lexical::ILexer;
-
-    #[test]
-    fn v3_numeric_literal() {
-        use super::pub_numeric_literal;
-        use lexical::message::MessageEmitter;
-
-        let messages = &mut MessageEmitter::new();
-        perrorln!("{:?}", pub_numeric_literal("123", messages));
-        perrorln!("{:?}", pub_numeric_literal("123_i32", messages));
-        perrorln!("{:?}", pub_numeric_literal("1_2_3i32", messages));
-        perrorln!("{:?}", pub_numeric_literal("123_456_789_012", messages));
-        perrorln!("{:?}", pub_numeric_literal("999_999_999_9_i32", messages));
-
-        perrorln!("Messages: {:?}", messages);
-    }
 
     #[test]
     fn v3_test1() {

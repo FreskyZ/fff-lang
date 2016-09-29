@@ -1,6 +1,6 @@
 
 use std::io;
-use position::Position;
+use common::Position;
 pub enum Message {
 
     CannotOpenFile { file_name: String, e: io::Error },
@@ -14,6 +14,10 @@ pub enum Message {
         literal_start: Position, 
         eof_pos: Position, 
         hint_escaped_quote_pos: Option<Position> 
+    },
+    UnexpectedEndofFileInCharLiteral {
+        literal_start: Position,
+        eof_pos: Position,
     },
     UnrecogonizedEscapeCharInStringLiteral {
         literal_start: Position,
@@ -54,6 +58,9 @@ impl fmt::Debug for Message {
                     &None => Ok(()),
                     &Some(ref hint) => write!(f, ", did you accidentally escape the quotation mark at {}?", hint),
                 }
+            }
+            UnexpectedEndofFileInCharLiteral { ref literal_start, ref eof_pos } => {
+                write!(f, "Unexpected end of file at {} in char literal starts from {}", eof_pos, literal_start)
             }
             UnrecogonizedEscapeCharInStringLiteral { ref literal_start, ref unrecogonize_pos, ref unrecogonize_escape } => {
                 write!(f, "Unrecogonized escape char {:?} at {} in string literal starts from {}", unrecogonize_escape, unrecogonize_pos, literal_start)

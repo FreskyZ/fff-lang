@@ -7,21 +7,23 @@
 // string literal is allowed to cross line, line end is regarded as \n
 // raw string literal supported, `r'C:\\abc'` or `R"C:\\abc"`
 
-use position::Position;
-use position::StringPosition;
-use lexical::string_literal::StringLiteral;
+use common::Position;
+use common::StringPosition;
+use lexical::symbol_type::string_literal::StringLiteral;
+use lexical::symbol_type::char_literal::CharLiteral;
 #[cfg(test)]
 #[derive(Clone, Eq, PartialEq)]
 pub enum V1Token {
     StringLiteral { inner: StringLiteral },
+    CharLiteral { inner: CharLiteral },
     OtherChar { raw: char, pos: Position },
 }
 #[cfg(not(test))]
 #[derive(Clone)]
 pub enum V1Token {
     StringLiteral { inner: StringLiteral },
+    CharLiteral { inner: CharLiteral },
     OtherChar { raw: char, pos: Position },
-    // TODO: CharLiteral { inner: CharLiteral } // CharLiteral { raw: String, pos: StringPosition } // raw is String also because unicode escape
 }
 
 #[cfg(test)]
@@ -29,20 +31,22 @@ use std::fmt;
 #[cfg(test)]
 impl fmt::Debug for V1Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::V1Token::*;
         match *self {
-            StringLiteral { ref inner} => {
+            V1Token::StringLiteral { ref inner} => {
                 write!(f, "{:?}", inner)
             }
-            OtherChar { ref raw, ref pos } => {
+            V1Token::CharLiteral{ ref inner } => {
+                write!(f, "{:?}", inner)
+            }
+            V1Token::OtherChar { ref raw, ref pos } => {
                 write!(f, "Char {:?} at {:?}", raw, pos)
             }
         }
     }
 }
 
-use lexical::v0::V0Lexer;
-use lexical::v0::BufV0Lexer;
+use lexical::lexer::v0::V0Lexer;
+use lexical::lexer::v0::BufV0Lexer;
 pub struct V1Lexer {
     v0: BufV0Lexer,
 }
@@ -56,8 +60,8 @@ impl From<String> for V1Lexer {
 }
 
 use lexical::ILexer;
-use lexical::v0::V0Token;
-use lexical::v0::BufV0Token;
+use lexical::lexer::v0::V0Token;
+use lexical::lexer::v0::BufV0Token;
 use lexical::message::Message;
 use lexical::message::MessageEmitter;
 impl V1Lexer {
@@ -88,7 +92,10 @@ impl ILexer<V1Token> for V1Lexer {
             InBlockComment { 
                 start_pos: Position 
             },
-            // InCharLiteral { raw: String, start_pos: Position },
+            InCharLiteral { 
+                raw: String, 
+                start_pos: Position 
+            },
         }
 
         let mut state = State::Nothing;
@@ -111,6 +118,12 @@ impl ILexer<V1Token> for V1Lexer {
                                 last_escape_quote_pos: None, 
                                 has_failed: false
                             };
+                        }
+                        Some(BufV0Token{ token: V0Token{ ch: '\'', pos }, next: _1 }) => {     // C24: in nothing, meet '
+                            state = State::InCharLiteral {
+                                raw: String::new(),
+                                start_pos: pos,
+                            }
                         }
                         Some(BufV0Token { token: V0Token { ch: 'r', pos }, next: Some(V0Token { ch: '"', pos: _1 }) })
                             | Some(BufV0Token { token: V0Token { ch: 'R', pos }, next: Some(V0Token { ch: '"', pos: _1 }) }) => {
@@ -241,13 +254,36 @@ impl ILexer<V1Token> for V1Lexer {
                         }
                     }
                 }
+                State::InCharLiteral { mut raw, start_pos } => {
+                    match bufv0 {
+                        Some(BufV0Token{ token: V0Token{ ch: '\\', pos: _1 }, next: Some(V0Token{ ch: '\'', pos: _2 }) }) => {
+                            raw.push('\'');                                                     // C25: in char literal, meet \', continue
+                            state = State::InCharLiteral{ raw: raw, start_pos: start_pos };
+                            self.v0.skip1(messages);
+                        }
+                        Some(BufV0Token{ token: V0Token{ ch: '\'', pos }, next: _1 }) => {      // C26: in cahr literal, meet ', return
+                            return Some(V1Token::CharLiteral{ inner: CharLiteral::from(raw, StringPosition::from((start_pos, pos))) });
+                        }
+                        Some(BufV0Token{ token: V0Token{ ch, pos: _2 }, next: _1 }) => {        // C27, in char literal, meet other
+                            raw.push(ch);
+                            state = State::InCharLiteral{ raw: raw, start_pos: start_pos };
+                        }
+                        None => {
+                            messages.push(Message::UnexpectedEndofFileInCharLiteral {           // C28, in char literal, meet EOF, emit error, return
+                                literal_start: start_pos, 
+                                eof_pos: self.position(),
+                            });
+                            return None;
+                        }
+                    }
+                }
             }
         }
     }
 }
 
-use lexical::buf_lexer::BufToken;
-use lexical::buf_lexer::BufLexer;
+use lexical::lexer::buf_lexer::BufToken;
+use lexical::lexer::buf_lexer::BufLexer;
 pub type BufV1Token = BufToken<V1Token>;
 pub type BufV1Lexer = BufLexer<V1Lexer, V1Token>;
 
@@ -256,11 +292,11 @@ mod tests {
     #![allow(non_upper_case_globals)]
 
     use super::V1Lexer;
-    use position::Position;
-    use position::StringPosition;   
+    use common::Position;
+    use common::StringPosition;   
     use lexical::ILexer;
     use lexical::message::MessageEmitter;
-    use lexical::string_literal::StringLiteral;
+    use lexical::symbol_type::string_literal::StringLiteral;
     
     // C[\d]+[r]{0-1}, nth state conversion, have 'r' means return, s means skipped
     // C20r1, C20r2, C23r1, C23r2, r1 means with escape quote hint, r2 without, ATTENTION: no C23r2
