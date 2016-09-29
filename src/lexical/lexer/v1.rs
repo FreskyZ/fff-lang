@@ -227,6 +227,8 @@ mod tests {
     use lexical::ILexer;
     use lexical::message::MessageEmitter;
     use lexical::symbol_type::string_literal::StringLiteral;
+
+    // Now you can ignore things inside string here!!!
     
     // C[\d]+[r]{0-1}, nth state conversion, have 'r' means return, s means skipped
     // C20r1, C20r2, C23r1, C23r2, r1 means with escape quote hint, r2 without, ATTENTION: no C23r2

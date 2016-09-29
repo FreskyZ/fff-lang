@@ -48,6 +48,9 @@ impl fmt::Debug for StringLiteral {
 
 impl_display_by_debug!(StringLiteral);
 
+use lexical::symbol_type::char_literal::EscapeCharParser;
+use lexical::symbol_type::char_literal::EscapeCharSimpleCheckResult;
+use lexical::symbol_type::char_literal::EscapeCharParserInputResult;
 #[cfg(test)]
 #[derive(Debug)]
 pub struct StringLiteralParser {
@@ -55,6 +58,8 @@ pub struct StringLiteralParser {
     start_pos: Position,
     last_escape_quote_pos: Option<Position>,
     has_failed: bool,
+    escape_parser: Option<EscapeCharParser>, // Not none means is parsing escape
+    escape_start_pos: Position,
 }
 #[cfg(not(test))]
 pub struct StringLiteralParser {
@@ -62,15 +67,27 @@ pub struct StringLiteralParser {
     start_pos: Position,
     last_escape_quote_pos: Option<Position>,
     has_failed: bool,
+    escape_parser: Option<EscapeCharParser>,
+    escape_start_pos: Position,
 }
 
 #[cfg(test)]
-pub fn str_lit_parser_visitor(parser: &StringLiteralParser) -> (&str, &Position, &Option<Position>, &bool) {
-    (&parser.raw, &parser.start_pos, &parser.last_escape_quote_pos, &parser.has_failed)
+pub fn str_lit_parser_visitor(parser: &StringLiteralParser) -> (&str, &Position, &Option<Position>, &bool, &Option<EscapeCharParser>) {
+    (&parser.raw, &parser.start_pos, &parser.last_escape_quote_pos, &parser.has_failed, &parser.escape_parser)
 }
 
 use lexical::message::Message;
 use lexical::message::MessageEmitter;
+
+// Escape issues about string literal and char literal
+// all escapes: \t, \n, \r, \0, \\, \", \', \uxxxx, \Uxxxxxxxx, are all supported in char and string literal
+// when meet \, start parsing escape char literal
+// if meet EOF, string report unexpected EOF in string, char report unexpected EOF in char
+// if meet end of literal, e.g.  '\uAA' or "123\U45678", report incorrect unicode escape error
+// specially  
+//     '\', char parser will find next is not ' and report too long error
+//     "\", string parser will record this escape position and this will most probably cause unexpected EOF in string and string parser will report it
+
 impl StringLiteralParser {
 
     /// new with start position
@@ -80,6 +97,8 @@ impl StringLiteralParser {
             start_pos: start_pos, 
             last_escape_quote_pos: None, 
             has_failed: false,
+            escape_parser: None,
+            escape_start_pos: Position::new(),
         }
     }
 
@@ -95,47 +114,78 @@ impl StringLiteralParser {
 
         match (ch, pos, next_ch) {
             (Some('\\'), slash_pos, Some(next_ch)) => {
-                match next_ch {
-                    '"' => {
-                        // record escaped \" here to be error hint
-                        self.raw.push('"');                                      // C1: meet \", record it
-                        self.last_escape_quote_pos = Some(slash_pos);
+                match EscapeCharParser::simple_check(next_ch) {
+                    EscapeCharSimpleCheckResult::Normal(ch) => {                    // C1, normal escape
+                        self.raw.push(ch);
+                        if ch == '"' {
+                            self.last_escape_quote_pos = Some(slash_pos);
+                        }
                         return (None, true);
                     }
-                    next_ch @ 'n' | next_ch @ '\\' | next_ch @ 't' | next_ch @ 'r' | next_ch @ '0'  => {
-                        self.raw.push(match next_ch {'n' => '\n', 'r' => '\r', 't' => '\t', '\\' => '\\', '0' => '\0', ch => ch});
-                        return (None, true);                                    // C2: in string, meet \\nrt0, escape
-                    }
-                    'u' => {                                                    // C3: in string, meet \u{}
-                        self.raw.push('\\');
-                        self.raw.push('u'); 
-                        return (None, true);
-                    }
-                    other => {
+                    EscapeCharSimpleCheckResult::Invalid(ch) => {
                         messages.push(Message::UnrecogonizedEscapeCharInStringLiteral {
-                            literal_start: self.start_pos, 
+                            literal_start: self.start_pos,                          // C2, error normal escape, emit error and continue
                             unrecogonize_pos: slash_pos, 
-                            unrecogonize_escape: other });                      // C4: in string, meet \other, emit error, continue
+                            unrecogonize_escape: ch });
                         self.has_failed = true;
                         return (None, true);
                     }
+                    EscapeCharSimpleCheckResult::Unicode(parser) => {               // C3, start unicode escape
+                        self.escape_start_pos = slash_pos;
+                        self.escape_parser = Some(parser);
+                        return (None, false);
+                    }
                 }
             }
-            (Some('\\'), _1, None) => {                                        // C5: in string, meet \EOF, continue
-                self.has_failed = true;
+            (Some('\\'), pos, None) => {                                            // C4, \EOF, ignore
+                // Do nothing here, `"abc\udef$` reports EOF in string error, not end of string or EOF in escape error
                 return (None, false);
             }
-            (Some('"'), pos, _1) => {      // State conversion 18: in string, meet ", finish, return
-                // String finished
-                return (Some(StringLiteral::new(self.raw.clone(), StringPosition::from((self.start_pos, pos)), false, self.has_failed)), false);
+            (Some('"'), pos, _1) => {
+                // String finished, check if is parsing escape
+                match self.escape_parser {
+                    Some(ref parser) => {                                           // C5, \uxxx\EOL, emit error and return
+                        // If still parsing, it is absolutely failed
+                        // Report not finished unicode escape here
+                        // messages.push(Message::)
+                        return (Some(StringLiteral::new(self.raw.clone(), StringPosition::from((self.start_pos, pos)), false, true)), false);
+                    }
+                    None => {                                                       // C7, normal EOL, return
+                        return (Some(StringLiteral::new(self.raw.clone(), StringPosition::from((self.start_pos, pos)), false, self.has_failed)), false);
+                    }
+                }
             }
             (Some(ch), _1, _2) => {
                 // Normal in string
-                self.raw.push(ch);                                              // C6: in string, meet other, push, continue
+                let mut need_reset_escape_parser = false;
+                match self.escape_parser {
+                    Some(ref mut parser) => {
+                        match parser.input(ch, (self.start_pos, self.escape_start_pos), messages) {
+                            EscapeCharParserInputResult::WantMore => (),            // C8, in unicode escape, more
+                            EscapeCharParserInputResult::FailedAndWantMore => (),   // C9, in unicode escape, fail but more
+                            EscapeCharParserInputResult::FailedAndFinish => {
+                                need_reset_escape_parser = true;                    // C10, in unicode escape, failed and finish
+                            }
+                            EscapeCharParserInputResult::FailedAtLast => {
+                                need_reset_escape_parser = true;                    // C11, in unicode escape, not unicode codepoint value, finish
+                            }
+                            EscapeCharParserInputResult::Success(ch) => {           // C12, in unicode escape, success, finish
+                                need_reset_escape_parser = true;
+                                self.raw.push(ch);
+                            }
+                        }
+                    }
+                    None => {
+                        self.raw.push(ch);                                          // C13, most plain
+                    }
+                }
+                if need_reset_escape_parser {  
+                    self.escape_parser = None;
+                }
                 return (None, false);
             }
-            (None, pos, _2) => {  // ATTENTION: when None, current pos is required here
-                messages.push(Message::UnexpectedEndofFileInStringLiteral {     // C7: in string, meet EOF, emit error, return 
+            (None, pos, _2) => {
+                messages.push(Message::UnexpectedEndofFileInStringLiteral {         // C14: in string, meet EOF, emit error, return 
                     literal_start: self.start_pos,
                     eof_pos: pos,
                     hint_escaped_quote_pos: self.last_escape_quote_pos 
