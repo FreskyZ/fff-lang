@@ -9,16 +9,25 @@ use lexical::message::MessageEmitter;
 
 // V0 token is next char and postion
 #[cfg(test)]
-#[derive(Debug, Eq, PartialEq, Clone)]
+#[derive(Eq, PartialEq, Clone)]
 pub struct V0Token {
     pub ch: char,
     pub pos: Position,
 }
 #[cfg(not(test))]
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct V0Token {
     pub ch: char,
     pub pos: Position,
+}
+
+#[cfg(test)]
+use std::fmt;
+#[cfg(test)]
+impl fmt::Debug for V0Token {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Char {:?} at {:?}", self.ch, self.pos)
+    }
 }
 
 // pos, column and row and next char's
@@ -138,22 +147,6 @@ impl ILexer<V0Token> for V0Lexer {
 
 pub type BufV0Token = BufToken<V0Token>;
 pub type BufV0Lexer = BufLexer<V0Lexer, V0Token>;
-
-#[cfg(test)]
-use std::fmt;
-#[cfg(test)]
-impl fmt::Debug for BufV0Token {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            BufV0Token { token: V0Token { ref ch, ref pos }, next: None } => {
-                write!(f, "ch: {:?}, pos: {}, next: None", ch, pos)
-            },
-            BufV0Token { token: V0Token { ref ch, ref pos }, next: Some(V0Token { ch: ref next_ch, pos: ref next_pos }) } => {
-                write!(f, "ch: {:?}, pos: {}, next_ch: {:?}, next_pos: {}", ch, pos, next_ch, next_pos)
-            },
-        }
-    }
-}
 
 // Visitors for test
 #[cfg(test)]

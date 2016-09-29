@@ -2,26 +2,26 @@
 // Level1 parser
 // input v0
 // remove line comment
-// report block comment because it is a sperator
+// report block comment as OtherChar ' '
 // find string literal with only '"' escaped
 // string literal is allowed to cross line, line end is regarded as \n
 // raw string literal supported, `r'C:\\abc'` or `R"C:\\abc"`
 
 use position::Position;
 use position::StringPosition;
+use lexical::string_literal::StringLiteral;
 #[cfg(test)]
 #[derive(Clone, Eq, PartialEq)]
 pub enum V1Token {
-    SkippedBlockComment { pos: Position },
-    StringLiteral { value: String, pos: StringPosition, is_raw: bool, has_failed: bool }, // currently has_failed means \other
+    StringLiteral { inner: StringLiteral },
     OtherChar { raw: char, pos: Position },
 }
 #[cfg(not(test))]
 #[derive(Clone)]
 pub enum V1Token {
-    SkippedBlockComment { pos: Position },
-    StringLiteral { value: String, pos: StringPosition, is_raw: bool, has_failed: bool },
+    StringLiteral { inner: StringLiteral },
     OtherChar { raw: char, pos: Position },
+    // TODO: CharLiteral { inner: CharLiteral } // CharLiteral { raw: String, pos: StringPosition } // raw is String also because unicode escape
 }
 
 #[cfg(test)]
@@ -31,11 +31,8 @@ impl fmt::Debug for V1Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::V1Token::*;
         match *self {
-            SkippedBlockComment { ref pos } => {
-                write!(f, "Block comment at {:?}", pos)
-            }
-            StringLiteral { ref value, ref pos, ref is_raw, ref has_failed } => {
-                write!(f, "{}tring literal {:?} at {:?}{}", if *is_raw { "Raw s" } else { "S" }, value, pos, if *has_failed { ", has failed" } else { "" })
+            StringLiteral { ref inner} => {
+                write!(f, "{:?}", inner)
             }
             OtherChar { ref raw, ref pos } => {
                 write!(f, "Char {:?} at {:?}", raw, pos)
@@ -77,10 +74,21 @@ impl ILexer<V1Token> for V1Lexer {
         #[derive(Debug)]
         enum State {
             Nothing,
-            InStringLiteral { raw: String, start_pos: Position, last_escape_quote_pos: Option<Position>, has_failed: bool },
-            InRawStringLiteral { raw: String, start_pos: Position },
+            InStringLiteral { 
+                raw: String, 
+                start_pos: Position, 
+                last_escape_quote_pos: Option<Position>, 
+                has_failed: bool 
+            },
+            InRawStringLiteral { 
+                raw: String, 
+                start_pos: Position 
+            },
             InLineComment,
-            InBlockComment { start_pos: Position },
+            InBlockComment { 
+                start_pos: Position 
+            },
+            // InCharLiteral { raw: String, start_pos: Position },
         }
 
         let mut state = State::Nothing;
@@ -119,7 +127,7 @@ impl ILexer<V1Token> for V1Lexer {
                     match bufv0 {
                         Some(BufV0Token{ token: V0Token { ch: '*', pos: _1 }, next: Some(V0Token{ ch: '/', pos: _2 }) }) => {
                             self.v0.skip1(messages);
-                            return Some(V1Token::SkippedBlockComment { pos: start_pos });      // State conversion 7: in block, meet */, return
+                            return Some(V1Token::OtherChar{ raw: ' ', pos: start_pos });      // State conversion 7: in block, meet */, return
                         }
                         Some(_) => {
                             state = State::InBlockComment{ start_pos: start_pos };             // State conversion 8: in block, continue block
@@ -198,7 +206,7 @@ impl ILexer<V1Token> for V1Lexer {
                         }
                         Some(BufV0Token{ token: V0Token { ch: '"', pos }, next: _1 }) => {      // State conversion 18: in string, meet ", finish, return
                             // String finished
-                            return Some(V1Token::StringLiteral { value: raw, pos: StringPosition{ start_pos: start_pos, end_pos: pos }, is_raw: false, has_failed: has_failed });
+                            return Some(V1Token::StringLiteral { inner: StringLiteral::new(raw, StringPosition{ start_pos: start_pos, end_pos: pos }, false, has_failed) });
                         }
                         Some(BufV0Token{ token: V0Token { ch, pos: _1 }, next: _2 }) => {
                             // Normal in string
@@ -217,7 +225,7 @@ impl ILexer<V1Token> for V1Lexer {
                 State::InRawStringLiteral { mut raw, start_pos } => {
                     match bufv0 {
                         Some(BufV0Token{ token: V0Token { ch: '"', pos }, next: _2 }) => {      // State conversion 21: in raw string, meet ", finish, return
-                            return Some(V1Token::StringLiteral { value: raw, pos: StringPosition { start_pos: start_pos, end_pos: pos }, is_raw: true, has_failed: false });
+                            return Some(V1Token::StringLiteral { inner: StringLiteral::new(raw, StringPosition { start_pos: start_pos, end_pos: pos }, true, false) });
                         }
                         Some(BufV0Token{ token: V0Token { ch, pos: _1 }, next: _2 }) => {       // State conversion 22: in raw string, meet other, continue
                             raw.push(ch);
@@ -244,20 +252,6 @@ pub type BufV1Token = BufToken<V1Token>;
 pub type BufV1Lexer = BufLexer<V1Lexer, V1Token>;
 
 #[cfg(test)]
-impl fmt::Debug for BufV1Token {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            BufV1Token { ref token, next: Some(ref next) } => {
-                write!(f, "{:?}, next: {:?}", token, next)
-            }
-            BufV1Token { ref token, next: None } => {
-                write!(f, "{:?}, next: None", token)
-            }
-        }
-    }
-}
-
-#[cfg(test)]
 mod tests {
     #![allow(non_upper_case_globals)]
 
@@ -266,6 +260,7 @@ mod tests {
     use position::StringPosition;   
     use lexical::ILexer;
     use lexical::message::MessageEmitter;
+    use lexical::string_literal::StringLiteral;
     
     // C[\d]+[r]{0-1}, nth state conversion, have 'r' means return, s means skipped
     // C20r1, C20r2, C23r1, C23r2, r1 means with escape quote hint, r2 without, ATTENTION: no C23r2
@@ -289,7 +284,7 @@ mod tests {
 
     #[test]
     fn v1_test1() {
-        use super::V1Token::*;
+        use super::V1Token;
 
         macro_rules! test_case {
             ($program: expr, $($expect: expr, )*) => (
@@ -311,19 +306,16 @@ mod tests {
             )
         }
         macro_rules! tch {
-            ($ch: expr, $row: expr, $col: expr) => (OtherChar{ raw: $ch, pos: Position { row: $row, col: $col } })
+            ($ch: expr, $row: expr, $col: expr) => (V1Token::OtherChar{ raw: $ch, pos: Position { row: $row, col: $col } })
         }
         macro_rules! tstring {
             ($val: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr, $is_raw: expr, $has_fail: expr) => 
-                (StringLiteral { value: $val.to_owned(), 
-                    pos: StringPosition { 
+                (V1Token::StringLiteral { inner: StringLiteral::new($val.to_owned(), 
+                    StringPosition { 
                         start_pos: Position { row: $row1, col: $col1 },
                         end_pos: Position { row: $row2, col: $col2 } },
-                    is_raw: $is_raw,
-                    has_failed: $has_fail })
-        }
-        macro_rules! tcomment {
-            ($row: expr, $col: expr) => (SkippedBlockComment { pos: Position { row: $row, col: $col } })
+                    $is_raw,
+                    $has_fail) })
         }
 
         // Start cases
@@ -335,7 +327,7 @@ mod tests {
             tch!('g', 1, 9),
             tch!('h', 1, 10), 
             tch!('i', 1, 11),
-            tcomment!(1, 12),
+            tch!(' ', 1, 12),
             tch!('\n', 1, 19),
             tch!('m', 2, 1),
             tstring!("\\u\\n\\r\\a\\bc\\", 2, 2, 2, 16, true, false),
@@ -350,11 +342,11 @@ mod tests {
             tstring!("", 3, 5, 3, 6, false, false),
             tch!('w', 3, 7), 
             tch!('x', 3, 8),
-            tcomment!(3, 9), 
+            tch!(' ', 3, 9), 
             tch!('y', 3, 13),
             tch!('\n', 3, 16),
             tstring!("\t\n\r\\\\u///**///\n//", 4, 1, 5, 3, false, false),
-            tcomment!(5, 4),
+            tch!(' ', 5, 4),
         );
 
         test_case!(program2, 

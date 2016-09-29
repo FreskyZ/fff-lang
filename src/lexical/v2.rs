@@ -2,14 +2,14 @@
 // Level2 parser
 // input v1
 // output string or numeric literal, identifier or other char
-// block comments become simple space here
 
 use position::Position;
 use position::StringPosition;
+use lexical::string_literal::StringLiteral;
 #[cfg(test)]
 #[derive(Eq, PartialEq, Clone)]
 pub enum V2Token {
-    StringLiteral { value: String, pos: StringPosition, is_raw: bool, has_failed: bool },
+    StringLiteral { inner: StringLiteral },
     NumericLiteral { raw: String, pos: StringPosition },
     Identifier { name: String, pos: StringPosition },  // Any thing of [_a-zA-Z][_a-zA-Z0-9]*
     OtherChar { ch: char, pos: Position }, // space, parenthenes, comma, etc.
@@ -30,8 +30,8 @@ impl fmt::Debug for V2Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::V2Token::*;
         match *self {
-            StringLiteral { ref value, ref pos, ref is_raw, ref has_failed } => {
-                write!(f, "{}tring literal {:?} at {:?}{}", if *is_raw { "Raw s" } else { "S" }, value, pos, if *has_failed { ", has failed" } else { "" })
+            StringLiteral { ref inner } => {
+                write!(f, "{:?}", inner)
             }
             NumericLiteral { ref raw, ref pos } => {
                 write!(f, "NumericLiteral {:?} at {:?}", raw, pos)
@@ -119,19 +119,15 @@ impl ILexer<V2Token> for V2Lexer {
         // TODO: using preview char to fix the bug: seperator exactly after identifier is missing
         let mut state = State::Nothing;
         loop {
-            // Pass string literal and None, make block comment to space and process with other char
+            // Pass string literal and None and process with other char
             let vhalf = match self.v1.next(messages) {
-                Some(BufV1Token{ token: V1Token::SkippedBlockComment { pos }, next: _1 }) => {
-                    return Some(V2Token::OtherChar { ch: ' ', pos: pos });
-                }
-                Some(BufV1Token{ token: V1Token::StringLiteral { value, pos, is_raw, has_failed }, next: _1 }) => { 
-                    return Some(V2Token::StringLiteral { value: value, pos: pos, is_raw: is_raw, has_failed: has_failed });
+                Some(BufV1Token{ token: V1Token::StringLiteral { inner }, next: _1 }) => { 
+                    return Some(V2Token::StringLiteral { inner: inner });
                 }
                 None => {
                     return None;
                 }
-                Some(BufV1Token{ token: V1Token::OtherChar{ raw, pos }, next: Some(V1Token::SkippedBlockComment { .. }) }) 
-                    | Some(BufV1Token{ token: V1Token::OtherChar{ raw, pos }, next: Some(V1Token::StringLiteral{ .. }) }) 
+                Some(BufV1Token{ token: V1Token::OtherChar{ raw, pos }, next: Some(V1Token::StringLiteral{ .. }) }) 
                     | Some(BufV1Token{ token: V1Token::OtherChar{ raw, pos }, next: None }) => { 
                     VHalf{ ch: raw, pos: pos, next_is_sep: true } 
                 }
@@ -207,20 +203,6 @@ pub type BufV2Token = BufToken<V2Token>;
 pub type BufV2Lexer = BufLexer<V2Lexer, V2Token>;
 
 #[cfg(test)]
-impl fmt::Debug for BufV2Token {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            BufV2Token { ref token, next: Some(ref next_token) } => {
-                write!(f, "{:?}, next: {:?}", token, next_token)
-            }
-            BufV2Token { ref token, next: None } => {
-                write!(f, "{:?}, next: None", token)
-            }
-        }
-    }
-}
-
-#[cfg(test)]
 mod tests {
 
     use super::V2Token;
@@ -228,6 +210,7 @@ mod tests {
     use lexical::ILexer;
     use position::Position;
     use position::StringPosition;
+    use lexical::string_literal::StringLiteral;
     use lexical::message::MessageEmitter;
     
     macro_rules! test_case {
@@ -252,11 +235,11 @@ mod tests {
 
     macro_rules! tstring {
         ($val: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr, $is_raw: expr, $has_fail: expr) => (
-            V2Token::StringLiteral{ 
+            V2Token::StringLiteral{ inner: StringLiteral {
                 value: $val.to_owned(), 
                 pos: StringPosition { start_pos: Position { row: $row1, col: $col1 }, end_pos: Position { row: $row2, col: $col2 } }, 
                 is_raw: $is_raw,
-                has_failed: $has_fail }
+                has_failed: $has_fail } }
         )
     }
     macro_rules! tnumber {

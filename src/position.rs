@@ -29,6 +29,13 @@ impl Position {
     } 
 }
 
+impl From<(usize, usize)> for Position {
+
+    fn from(pos: (usize, usize)) -> Position {
+        Position{ row: pos.0, col: pos.1 }
+    } 
+}
+
 #[derive(Eq, PartialEq, Clone, Copy)]
 pub struct StringPosition {
     pub start_pos: Position,
@@ -39,6 +46,13 @@ impl StringPosition {
     
     pub fn new() -> StringPosition {
         StringPosition { start_pos: Position::new(), end_pos: Position::new() }
+    }
+}
+
+impl From<(usize, usize, usize, usize)> for StringPosition {
+
+    fn from(pos: (usize, usize, usize, usize)) -> StringPosition {
+        StringPosition{ start_pos: Position{ row: pos.0, col: pos.1 }, end_pos: Position{ row: pos.2, col: pos.3 } }
     }
 }
 

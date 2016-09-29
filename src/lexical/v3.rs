@@ -12,18 +12,17 @@
 
 use position::Position;
 use position::StringPosition;
-use lexical::types::Keyword;
-use lexical::types::Operator;
-use lexical::types::Seperator;
+use lexical::string_literal::StringLiteral;
+use lexical::keyword_kind::KeywordKind;
+use lexical::seperator_kind::SeperatorKind;
 
 #[derive(Clone)]
 pub enum V3Token {
-    StringLiteral { value: String, pos: StringPosition, has_failed: bool },
+    StringLiteral { inner: StringLiteral },
     NumericLiteral { raw: String, value: i32, pos: StringPosition, has_failed: bool },
     Identifier { name: String, pos: StringPosition },
-    Keyword { kind: Keyword, pos: StringPosition },
-    Operator { kind: Operator, pos: StringPosition },
-    Seperator { kind: Seperator, pos: StringPosition, }
+    Keyword { kind: KeywordKind, pos: StringPosition },
+    Seperator { kind: SeperatorKind, pos: StringPosition },
 }
 
 #[cfg(test)]
@@ -33,8 +32,8 @@ impl fmt::Debug for V3Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::V3Token::*;
         match *self {
-            StringLiteral{ ref value, ref pos, ref has_failed } => {
-                write!(f, "String literal {:?} at {:?}{}", value, pos, if *has_failed { ", has failed" } else { "" })
+            StringLiteral{ ref inner } => {
+                write!(f, "{:?}", inner)
             }
             NumericLiteral{ ref raw, ref value, ref pos, ref has_failed } => {
                 write!(f, "Numeric literal {:?} at {:?} with value {}{}", raw, pos, value, if *has_failed { ", has failed" } else { "" })
@@ -44,9 +43,6 @@ impl fmt::Debug for V3Token {
             }
             Keyword { ref kind, ref pos } => {
                 write!(f, "Keyword {:?} at pos {:?}", kind, pos)
-            }
-            Operator { ref kind, ref pos } => {
-                write!(f, "Operator {:?} at pos {:?}", kind, pos)
             }
             Seperator { ref kind, ref pos } => {
                 write!(f, "Seperator {:?} at pos {:?}", kind, pos)
@@ -70,15 +66,6 @@ impl From<String> for V3Lexer {
 use lexical::message::Message;
 use lexical::message::MessageEmitter;
 
-// escape \u{ABCD}
-fn escape_string_literal(raw: String, is_raw: bool, has_failed: bool, messages: &mut MessageEmitter) -> String {
-    // Currently not implemented
-
-    let _is_raw = is_raw;
-    let _has_failed = has_failed;
-    let _messages = messages;
-    raw
-}
 // ignore _ and ignore i32 postfix
 fn numeric_literal_to_value(raw: &str, pos: StringPosition, messages: &mut MessageEmitter) -> (i32, bool) { // value, has_failed
     
@@ -146,10 +133,6 @@ fn numeric_literal_to_value(raw: &str, pos: StringPosition, messages: &mut Messa
 }
 
 #[cfg(test)]
-pub fn pub_escape_string(raw: String, is_raw: bool, has_failed: bool, messages: &mut MessageEmitter) -> String {
-    escape_string_literal(raw, is_raw, has_failed, messages)
-}
-#[cfg(test)]
 pub fn pub_numeric_literal(raw: &str, messages: &mut MessageEmitter) -> (i32, bool) {
     numeric_literal_to_value(raw, StringPosition::new(), messages)
 }
@@ -161,15 +144,16 @@ impl V3Lexer {
 use lexical::ILexer;
 use lexical::v2::V2Token;
 use lexical::v2::BufV2Token;
+use common::TryFrom;
 impl ILexer<V3Token> for V3Lexer {
 
     fn next(&mut self, messages: &mut MessageEmitter) -> Option<V3Token> {
 
         loop { // Loop for ignore char
             match self.v2.next(messages) {
-                Some(BufV2Token{ token: V2Token::StringLiteral{ value, pos, is_raw, has_failed }, next: _1 }) => {
+                Some(BufV2Token{ token: V2Token::StringLiteral{ inner }, next: _1 }) => {
                     // Dispatch string literal to escape
-                    return Some(V3Token::StringLiteral{ value: escape_string_literal(value, is_raw, has_failed, messages), pos: pos, has_failed: has_failed });
+                    return Some(V3Token::StringLiteral{ inner: inner });
                 }
                 Some(BufV2Token{ token: V2Token::NumericLiteral{ raw, pos }, next: _1 }) => {
                     // Dispatch numeric literal to get value
@@ -178,52 +162,31 @@ impl ILexer<V3Token> for V3Lexer {
                 }
                 Some(BufV2Token{ token: V2Token::Identifier{ name, pos }, next: _1 }) => {
                     // Dispatch identifier to identifier or keyword
-                    match Keyword::from(&name) {
+                    match KeywordKind::try_from(&name) {
                         Some(keyword) => return Some(V3Token::Keyword{ kind: keyword, pos: pos }),
                         None => return Some(V3Token::Identifier { name: name, pos: pos })
                     }
                 }
                 Some(BufV2Token{ token: V2Token::OtherChar{ ch, pos }, next: Some(V2Token::OtherChar{ ch: next_ch, pos: next_pos }) }) => {
-                    // Dispatch otherchar, otherchar to seperator or operators
-                    match Seperator::from(ch)
-                        .map(|sep|{
-                            V3Token::Seperator{ kind: sep, pos: StringPosition::from((pos, pos)) }        // Got seperator
-                        })
-                        .or_else(||{
-                            Operator::from2(ch, next_ch)
-                                .map(|op|{
-                                    self.v2.skip1(messages);
-                                    V3Token::Operator{ kind: op, pos: StringPosition::from((pos, next_pos)) }      // Get operator, length 2, so skip1
-                                })
-                                .or_else(||{
-                                    Operator::from1(ch)
-                                        .map(|op|{
-                                            V3Token::Operator{ kind: op, pos: StringPosition::from((pos, pos)) }  // Get operator, length 1
-                                        })
-                                })
-                        }) {
-                        Some(v3) => match v3 {
-                            V3Token::Seperator { kind: Seperator::WhiteSpace, .. } => continue,
-                            v3 @ _ => return Some(v3),
+                    // Dispatch otherchar to seperator
+                    match SeperatorKind::try_from((ch ,next_ch)) {
+                        Some(sep) => match sep.len() { 
+                            1 => return Some(V3Token::Seperator{ kind: sep, pos: StringPosition::from((pos, pos)) }),
+                            2 => {
+                                self.v2.skip1(messages);
+                                return Some(V3Token::Seperator{ kind: sep, pos: StringPosition::from((pos, next_pos)) });
+                            }
+                            _ => unreachable!(),
                         },
                         None => continue,
                     }
                 }
                 Some(BufV2Token{ token: V2Token::OtherChar{ ch, pos }, next: _other }) => {
                     // Dispatch otherchar, seperator to seperator or operators
-                    match Seperator::from(ch)
-                        .map(|sep|{
-                            V3Token::Seperator{ kind: sep, pos: StringPosition::from((pos, pos)) }        // Got seperator
-                        })
-                        .or_else(||{
-                            Operator::from1(ch)
-                                .map(|op| {
-                                    V3Token::Operator{ kind: op, pos: StringPosition::from((pos, pos)) }
-                                })
-                        }) {
-                        Some(v3) => match v3 {
-                            V3Token::Seperator { kind: Seperator::WhiteSpace, .. } => continue,
-                            v3 @ _ => return Some(v3),
+                    match SeperatorKind::try_from(ch) {
+                        Some(sep) => match sep.len() { 
+                            1 => return Some(V3Token::Seperator{ kind: sep, pos: StringPosition::from((pos, pos)) }),
+                            _ => unreachable!(),
                         },
                         None => continue,
                     }
@@ -242,27 +205,8 @@ pub type BufV3Token = BufToken<V3Token>;
 pub type BufV3Lexer = BufLexer<V3Lexer, V3Token>;
 
 #[cfg(test)]
-impl fmt::Debug for BufV3Token {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            BufV3Token { ref token, next: Some(ref next_token) } => {
-                write!(f, "{:?}, next: {:?}", token, next_token)
-            }
-            BufV3Token { ref token, next: None } => {
-                write!(f, "{:?}, next: None", token)
-            }
-        }
-    }
-}
-
-#[cfg(test)]
 mod tests {
     use lexical::ILexer;
-
-    #[test]
-    fn v3_string_literal() {
-        let _ = 1;
-    }   
 
     #[test]
     fn v3_numeric_literal() {

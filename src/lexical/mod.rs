@@ -1,5 +1,7 @@
 
-mod types;
+mod keyword_kind;
+mod seperator_kind;
+mod string_literal;
 mod message;
 mod buf_lexer;
 mod v0;
@@ -9,9 +11,8 @@ mod v3;
 
 pub use lexical::message::Message;
 pub use lexical::message::MessageEmitter;
-pub use lexical::types::Keyword;
-pub use lexical::types::Operator;
-pub use lexical::types::Seperator;
+pub use lexical::keyword_kind::KeywordKind;
+pub use lexical::seperator_kind::SeperatorKind;
 
 pub trait ILexer<TToken> {
     fn next(&mut self, emitter: &mut MessageEmitter) -> Option<TToken>;
@@ -31,7 +32,6 @@ impl Lexer {
         use std::fs::File;
         use std::io::Read;
 
-        
         let mut file = match File::open(file_name) {
             Ok(file) => file,
             Err(e) => {

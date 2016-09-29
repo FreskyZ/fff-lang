@@ -85,3 +85,18 @@ impl<TLexer, TToken> BufLexer<TLexer, TToken>
         let _ = self.next(emitter);
     }
 }
+
+#[cfg(test)]
+use std::fmt;
+#[cfg(test)]
+impl<T> fmt::Debug for BufToken<T> 
+    where T : fmt::Debug + Clone {
+
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        try!(writeln!(f, "{:?}", self.token));
+        match self.next {
+            Some(ref next) => write!(f, "    Next: {:?}", next),
+            None => write!(f, "    Next: None"),
+        }
+    }
+}
