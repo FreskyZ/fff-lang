@@ -1,10 +1,7 @@
 
-use std::io;
 use common::Position;
-pub enum Message {
 
-    CannotOpenFile { file_name: String, e: io::Error },
-    CannotReadFile { file_name: String, e: io::Error },
+pub enum Message {
 
     UnexpectedEndofFileInBlockComment { 
         block_start: Position, 
@@ -35,6 +32,15 @@ pub enum Message {
     NumericLiteralTooLarge {
         literal_start: Position,
     },
+    UnexpectedCharInUnicodeCharEscape {
+        escape_start: Position,
+        unexpected_char_pos: Position,
+        unexpected_char: char,        
+    },
+    IncorrectUnicodeCharEscapeValue {
+        escape_start: Position,
+        raw_value: String, 
+    },
 }
 
 use std::fmt;
@@ -43,12 +49,6 @@ impl fmt::Debug for Message {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::Message::*;
         match *self {
-            CannotOpenFile { ref file_name, ref e } => {
-                write!(f, "Cannot open input file `{}`: {}", file_name, e)
-            }
-            CannotReadFile { ref file_name, ref e } => {
-                write!(f, "Cannot read input file `{}`: {}", file_name, e)
-            }
             UnexpectedEndofFileInBlockComment { ref block_start, ref eof_pos } => {
                 write!(f, "Unexpected end of file at {} in block comment starts from {}", eof_pos, block_start)
             }
@@ -73,6 +73,13 @@ impl fmt::Debug for Message {
             }
             NumericLiteralTooLarge { ref literal_start } => {
                 write!(f, "Numeric literal at {:?} too large", literal_start)
+            }
+            UnexpectedCharInUnicodeCharEscape { ref escape_start, ref unexpected_char_pos, ref unexpected_char } => {
+                write!(f, "Unexpected char {:?} at {:?} in unicode char escape start from {:?}, unicode char escape is like \\uxxxx or \\Uxxxxxxxx", 
+                    unexpected_char, unexpected_char_pos, escape_start)
+            }
+            IncorrectUnicodeCharEscapeValue { ref escape_start, ref raw_value } => {
+                write!(f, "Incorrect unicode char escape value starts from {:?}, 0x{} is not a valid unicode code point", escape_start, raw_value)
             }
         }
     }

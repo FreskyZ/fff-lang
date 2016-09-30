@@ -2,8 +2,8 @@
 // Numeric Literal
 
 use common::StringPosition;
-use lexical::message::Message;
-use lexical::message::MessageEmitter;
+use message::Message;
+use message::MessageEmitter;
 
 #[cfg(test)]
 #[derive(PartialEq, Clone)]
@@ -413,7 +413,7 @@ mod tests {
     #[test]
     fn v3_numeric_literal() {
         use super::pub_numeric_literal;
-        use lexical::message::MessageEmitter;
+        use message::MessageEmitter;
 
         let messages = &mut MessageEmitter::new();
         perrorln!("{:?}", pub_numeric_literal("123", messages));

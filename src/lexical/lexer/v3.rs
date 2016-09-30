@@ -81,7 +81,7 @@ use common::TryFrom;
 use lexical::ILexer;
 use lexical::lexer::v2::V2Token;
 use lexical::lexer::v2::BufV2Token;
-use lexical::message::MessageEmitter;
+use message::MessageEmitter;
 impl ILexer<V3Token> for V3Lexer {
 
     fn next(&mut self, messages: &mut MessageEmitter) -> Option<V3Token> {
@@ -154,7 +154,7 @@ mod tests {
         use std::fs::File;
         use std::io::Read;
         use super::V3Lexer;
-        use lexical::message::MessageEmitter;
+        use message::MessageEmitter;
 
         let file_name = "tests/lexical/2.sm";
         let mut file: File = File::open(file_name).expect("Open file failed");

@@ -68,8 +68,8 @@ pub enum EscapeCharParserInputResult {
     Success(char),          // Succeed and result
 }
 
-use lexical::message::Message;
-use lexical::message::MessageEmitter;
+use message::Message;
+use message::MessageEmitter;
 
 // 16(F plus 1) powered
 const FP1_POWERED: [u32; 8] = 
@@ -83,7 +83,7 @@ impl EscapeCharParser {
             expect_size: expect_size, 
             temp: String::new(),
             value: 0, 
-            has_failed: false 
+            has_failed: false,
         }
     }
 
@@ -103,7 +103,7 @@ impl EscapeCharParser {
         }
     }
 
-    // pos for message: (literal_start_pos, escape_start_pos)
+    // pos for message: (escape_start_pos, current_pos)
     /// ATTENTION: if returned finished but continue input, may cause algorithm overflow panic
     pub fn input(&mut self, ch: char, pos_for_message: (Position, Position), messages: &mut MessageEmitter) -> EscapeCharParserInputResult {
         
@@ -124,8 +124,11 @@ impl EscapeCharParser {
                     match char::from_u32(self.value) {
                         Some(ch) => EscapeCharParserInputResult::Success(ch),               // C3
                         None => {
-                            // messages.push(Message::)
-                            EscapeCharParserInputResult::FailedAtLast,                      // C4
+                            messages.push(Message::IncorrectUnicodeCharEscapeValue {
+                                escape_start: pos_for_message.0,
+                                raw_value: self.temp.clone(), 
+                            });
+                            EscapeCharParserInputResult::FailedAtLast                       // C4
                         }
                     }
                 } else {
@@ -133,7 +136,11 @@ impl EscapeCharParser {
                 }
             }
             None => {
-                // messages.push(Message::)
+                messages.push(Message::UnexpectedCharInUnicodeCharEscape {
+                    escape_start: pos_for_message.0,
+                    unexpected_char_pos: pos_for_message.1,
+                    unexpected_char: ch,        
+                });
                 self.has_failed = true;
                 if self.temp.len() < self.expect_size {
                     EscapeCharParserInputResult::FailedAndWantMore                          // C6
@@ -153,7 +160,7 @@ pub struct CharLiteralParser {
 mod tests {
 
     #[test]
-    fn escape_char_input() {
+    fn escape_char_lit() {
 
     }
 }

@@ -4,7 +4,9 @@
 extern crate fsz_common;
 
 mod common;
+mod message;
 mod config;
+mod input_reader;
 mod driver;
 mod lexical;
 mod syntax;
@@ -42,7 +44,7 @@ fn returnable_main() {
             perrorln!("Error: {}", e);
         },
         Ok(Config::CompileFile(CompileFileConfig { file_name })) => {
-            driver::compile_file(file_name);
+            driver::compile_input(file_name);
         }
     }
 }

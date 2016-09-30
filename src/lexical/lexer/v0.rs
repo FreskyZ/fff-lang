@@ -3,7 +3,7 @@
 
 use common::Position;
 use lexical::ILexer;
-use lexical::message::MessageEmitter;
+use message::MessageEmitter;
 
 // V0 token is next char and postion
 #[cfg(test)]
@@ -193,7 +193,7 @@ mod tests {
         use super::V0Token;
         use common::Position;
         use lexical::ILexer;
-        use lexical::message::MessageEmitter;
+        use message::MessageEmitter;
 
         macro_rules! test_case {
             ($input: expr, $($ch: expr, $row: expr, $col: expr, )*) => (
@@ -280,7 +280,7 @@ mod tests {
     fn v0_buf() {
         use super::BufV0Lexer;
         use super::V0Lexer;
-        use lexical::message::MessageEmitter;
+        use message::MessageEmitter;
         
         let mut bufv0 = BufV0Lexer::from(V0Lexer::from("\r\rabc\ndef\r\r\nasdwe\r\r\rq1da\nawsedq\r\r\r".to_owned()));
         let mut dummy = MessageEmitter::new();

@@ -76,8 +76,8 @@ pub fn str_lit_parser_visitor(parser: &StringLiteralParser) -> (&str, &Position,
     (&parser.raw, &parser.start_pos, &parser.last_escape_quote_pos, &parser.has_failed, &parser.escape_parser)
 }
 
-use lexical::message::Message;
-use lexical::message::MessageEmitter;
+use message::Message;
+use message::MessageEmitter;
 
 // Escape issues about string literal and char literal
 // all escapes: \t, \n, \r, \0, \\, \", \', \uxxxx, \Uxxxxxxxx, are all supported in char and string literal
@@ -110,7 +110,7 @@ impl StringLiteralParser {
         pos: Position, 
         next_ch: Option<char>, 
         messages: &mut MessageEmitter) 
-        -> (Option<StringLiteral>, bool) { // ret_val, require_skip1
+        -> (Option<StringLiteral>, bool){ // ret_val, require_skip1
 
         match (ch, pos, next_ch) {
             (Some('\\'), slash_pos, Some(next_ch)) => {
@@ -137,14 +137,14 @@ impl StringLiteralParser {
                     }
                 }
             }
-            (Some('\\'), pos, None) => {                                            // C4, \EOF, ignore
+            (Some('\\'), _pos, None) => {                                            // C4, \EOF, ignore
                 // Do nothing here, `"abc\udef$` reports EOF in string error, not end of string or EOF in escape error
                 return (None, false);
             }
             (Some('"'), pos, _1) => {
                 // String finished, check if is parsing escape
                 match self.escape_parser {
-                    Some(ref parser) => {                                           // C5, \uxxx\EOL, emit error and return
+                    Some(ref _parser) => {                                           // C5, \uxxx\EOL, emit error and return
                         // If still parsing, it is absolutely failed
                         // Report not finished unicode escape here
                         // messages.push(Message::)
@@ -155,12 +155,12 @@ impl StringLiteralParser {
                     }
                 }
             }
-            (Some(ch), _1, _2) => {
+            (Some(ch), pos, _2) => {
                 // Normal in string
                 let mut need_reset_escape_parser = false;
                 match self.escape_parser {
                     Some(ref mut parser) => {
-                        match parser.input(ch, (self.start_pos, self.escape_start_pos), messages) {
+                        match parser.input(ch, (self.escape_start_pos, pos), messages) {
                             EscapeCharParserInputResult::WantMore => (),            // C8, in unicode escape, more
                             EscapeCharParserInputResult::FailedAndWantMore => (),   // C9, in unicode escape, fail but more
                             EscapeCharParserInputResult::FailedAndFinish => {
@@ -219,7 +219,35 @@ impl StringLiteralParser {
 
 #[cfg(test)]
 mod tests {
-    use super::StringLiteralParser;
+    // use super::StringLiteralParser;
+
+    fn use_skipper<T>(skipper: T)
+        where T: FnOnce() -> () {
+
+        skipper();
+    }
+
+    fn str_lit_feasibility_fnonce_as_param() {
+        use lexical::lexer::v0::V0Lexer;
+        use lexical::lexer::v0::BufV0Lexer;
+        use message::MessageEmitter;
+
+        let pos1 = {
+            let mut bufv0 = BufV0Lexer::from(V0Lexer::from("123234345".to_owned()));
+            let messages = &mut MessageEmitter::new();
+            bufv0.skip1(messages);
+            bufv0.inner().position()
+        };
+        
+        let pos2 = {
+            let mut bufv0 = BufV0Lexer::from(V0Lexer::from("123234345".to_owned()));
+            let messages = &mut MessageEmitter::new();
+            use_skipper(|| bufv0.skip1(messages));
+            bufv0.inner().position()
+        };
+
+        assert_eq!(pos1, pos2);
+    }
 
     #[test]
     fn str_lit_not_raw() {

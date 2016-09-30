@@ -104,7 +104,7 @@ impl IdentifierChar for char {
 use lexical::ILexer;
 use lexical::lexer::v1::V1Token;
 use lexical::lexer::v1::BufV1Token;
-use lexical::message::MessageEmitter;
+use message::MessageEmitter;
 impl V2Lexer {    
     pub fn position(&self) -> Position { self.v1.inner().position() }
 }
@@ -220,7 +220,7 @@ mod tests {
     use lexical::ILexer;
     use common::Position;
     use common::StringPosition;
-    use lexical::message::MessageEmitter;
+    use message::MessageEmitter;
     use lexical::symbol_type::string_literal::StringLiteral;
     use lexical::symbol_type::numeric_literal::NumericLiteral;
     

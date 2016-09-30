@@ -4,7 +4,7 @@
 //     and TLexer: ILexer<TToken>
 
 use lexical::ILexer;
-use lexical::message::MessageEmitter;
+use message::MessageEmitter;
 
 #[cfg(test)]
 #[derive(Eq, PartialEq)]

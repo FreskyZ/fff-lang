@@ -63,8 +63,8 @@ impl From<String> for V1Lexer {
 use lexical::ILexer;
 use lexical::lexer::v0::V0Token;
 use lexical::lexer::v0::BufV0Token;
-use lexical::message::Message;
-use lexical::message::MessageEmitter;
+use message::Message;
+use message::MessageEmitter;
 impl V1Lexer {
     pub fn position(&self) -> Position { self.v0.inner().position() }
 }
@@ -225,7 +225,7 @@ mod tests {
     use common::Position;
     use common::StringPosition;   
     use lexical::ILexer;
-    use lexical::message::MessageEmitter;
+    use message::MessageEmitter;
     use lexical::symbol_type::string_literal::StringLiteral;
 
     // Now you can ignore things inside string here!!!
