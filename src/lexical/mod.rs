@@ -55,3 +55,9 @@ mod tests {
         // perrorln!("Messages: {:?}", messages);
     }
 }
+
+// TODOs
+// string return something even if meet unexpected EOF
+// v1 new test
+// numeric literal parser
+// try pass these source files

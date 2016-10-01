@@ -29,13 +29,13 @@ pub enum EscapeCharSimpleCheckResult {
 
 #[cfg(test)]
 #[derive(Debug, Eq, PartialEq)]
-pub enum EscapeCharParserInputResult {
+pub enum EscapeCharParserResult {
     WantMore,               // Sucess and want more or unexpected char but keep until got 4 or 8 char
     Failed,                 // Unexpected char fail, or, u32 value is not char fail, finished, error emitted
     Success(char),          // Succeed and result
 }
 #[cfg(not(test))]
-pub enum EscapeCharParserInputResult {
+pub enum EscapeCharParserResult {
     WantMore,               // Sucess and want more or unexpected char but keep until got 4 or 8 char
     Failed,                 // Unexpected char fail, or, u32 value is not char fail, finished, error emitted
     Success(char),          // Succeed and result
@@ -75,14 +75,14 @@ impl EscapeCharParser {
 
     // pos for message: (escape_start_pos, current_pos)
     /// ATTENTION: if returned finished but continue input, may cause algorithm overflow panic
-    pub fn input(&mut self, ch: char, pos_for_message: (Position, Position), messages: &mut MessageEmitter) -> EscapeCharParserInputResult {
+    pub fn input(&mut self, ch: char, pos_for_message: (Position, Position), messages: &mut MessageEmitter) -> EscapeCharParserResult {
         
         self.temp.push(ch);   // because expect size check rely on temp length, so push regardless will happen
         if self.has_failed {
             if self.temp.len() < self.expect_size {
-                return EscapeCharParserInputResult::WantMore;                               // C1
+                return EscapeCharParserResult::WantMore;                               // C1
             } else {
-                return EscapeCharParserInputResult::Failed;                                 // C2
+                return EscapeCharParserResult::Failed;                                 // C2
             }
         }
 
@@ -92,17 +92,17 @@ impl EscapeCharParser {
                 
                 if self.temp.len() == self.expect_size {
                     match char::from_u32(self.value) {
-                        Some(ch) => EscapeCharParserInputResult::Success(ch),               // C3
+                        Some(ch) => EscapeCharParserResult::Success(ch),               // C3
                         None => {
                             messages.push(Message::IncorrectUnicodeCharEscapeValue {
                                 escape_start: pos_for_message.0,
                                 raw_value: self.temp.clone(), 
                             });
-                            EscapeCharParserInputResult::Failed                             // C4
+                            EscapeCharParserResult::Failed                             // C4
                         }
                     }
                 } else {
-                    EscapeCharParserInputResult::WantMore                                   // C5
+                    EscapeCharParserResult::WantMore                                   // C5
                 }
             }
             None => {
@@ -113,9 +113,9 @@ impl EscapeCharParser {
                 });
                 self.has_failed = true;
                 if self.temp.len() < self.expect_size {
-                    EscapeCharParserInputResult::WantMore                                   // C6
+                    EscapeCharParserResult::WantMore                                   // C6
                 } else {
-                    EscapeCharParserInputResult::Failed                                     // C7
+                    EscapeCharParserResult::Failed                                     // C7
                 }
             }
         }
@@ -133,7 +133,7 @@ mod tests {
     #[test]
     fn escape_char() {
         use super::escape_char_parser_new;
-        use super::EscapeCharParserInputResult::*;
+        use super::EscapeCharParserResult::*;
         use common::Position;
         use message::Message;
         use message::MessageEmitter;

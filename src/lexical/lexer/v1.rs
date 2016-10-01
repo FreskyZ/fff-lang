@@ -18,9 +18,11 @@ use lexical::lexer::v0::V0Lexer;
 use lexical::lexer::v0::BufV0Lexer;
 use lexical::symbol_type::string_literal::StringLiteral;
 use lexical::symbol_type::string_literal::StringLiteralParser;
+use lexical::symbol_type::string_literal::StringLiteralParserResult;
 use lexical::symbol_type::char_literal::CharLiteral;
 use lexical::symbol_type::char_literal::CharLiteralParser;
 use lexical::symbol_type::char_literal::CoverageRecorder;
+use lexical::symbol_type::char_literal::CharLiteralParserResult;
 use lexical::lexer::buf_lexer::BufToken;
 use lexical::lexer::buf_lexer::BufLexer;
 
@@ -152,7 +154,7 @@ impl ILexer<V1Token> for V1Lexer {
                     }
                 }
                 State::InStringLiteral { ref mut parser } => {
-                    let (maybe_string_literal, need_skip1) = match bufv0 {
+                    match match bufv0 {
                         Some(BufV0Token{ token: V0Token{ ch, pos }, next: Some(V0Token{ ch: next_ch, pos: _1 }) }) => {
                             parser.try_get_string_literal(Some(ch), pos, Some(next_ch), messages)
                         }
@@ -163,11 +165,14 @@ impl ILexer<V1Token> for V1Lexer {
                             parser.try_get_string_literal(None, self.position(), None, messages);
                             return None;  // Special occassion, EOFed, just emit error and quick return
                         }
-                    };
-                    if need_skip1 { self.v0.skip1(messages); }
-                    match maybe_string_literal {
-                        Some(literal) => return Some(V1Token::StringLiteral{ inner: literal }),
-                        None => (),
+                    } {
+                        StringLiteralParserResult::WantMore => (), // continue
+                        StringLiteralParserResult::WantMoreWithSkip1 => {
+                            self.v0.skip1(messages);
+                        }
+                        StringLiteralParserResult::Finished(literal) => {
+                            return Some(V1Token::StringLiteral{ inner: literal });
+                        }
                     }
                 }
                 State::InRawStringLiteral { ref mut parser } => {
@@ -185,7 +190,7 @@ impl ILexer<V1Token> for V1Lexer {
                     }
                 }
                 State::InCharLiteral { ref mut parser } => {
-                    let (maybe_char_literal, need_skip1) = match bufv0 {
+                    match match bufv0 {
                         Some(BufV0Token{ token: V0Token{ ch, pos }, next: Some(V0Token{ ch: next_ch, pos: _1 }) }) => {
                             parser.input(Some(ch), pos, Some(next_ch), messages, dummy_coverage_recorder)
                         }
@@ -196,36 +201,15 @@ impl ILexer<V1Token> for V1Lexer {
                             parser.input(None, self.position(), None, messages, dummy_coverage_recorder);
                             return None;  // Special occassion, EOFed, just emit error and quick return
                         }
-                    };
-                    if need_skip1 {
-                        self.v0.skip1(messages);
+                    } {
+                        CharLiteralParserResult::WantMore => (), // continue
+                        CharLiteralParserResult::WantMoreWithSkip1 => {
+                            self.v0.skip1(messages);
+                        }
+                        CharLiteralParserResult::Finished(literal) => {
+                            return Some(V1Token::CharLiteral{ inner: literal });
+                        }
                     }
-                    match maybe_char_literal {
-                        Some(literal) => return Some(V1Token::CharLiteral{ inner: literal }),
-                        None => (),
-                    }
-
-                    // match bufv0 {
-                    //     Some(BufV0Token{ token: V0Token{ ch: '\\', pos: _1 }, next: Some(V0Token{ ch: '\'', pos: _2 }) }) => {
-                    //         raw.push('\'');                                                     // Cx: anythin inside '' is none about this module
-                    //         state = State::InCharLiteral{ raw: raw, start_pos: start_pos };
-                    //         self.v0.skip1(messages);
-                    //     }
-                    //     Some(BufV0Token{ token: V0Token{ ch: '\'', pos }, next: _1 }) => {      // C26: in char literal, meet ', return
-                    //         return Some(V1Token::CharLiteral{ inner: CharLiteral::from(raw, StringPosition::from((start_pos, pos))) });
-                    //     }
-                    //     Some(BufV0Token{ token: V0Token{ ch, pos: _2 }, next: _1 }) => {        // C27, in char literal, meet other
-                    //         raw.push(ch);
-                    //         state = State::InCharLiteral{ raw: raw, start_pos: start_pos };
-                    //     }
-                    //     None => {
-                    //         messages.push(Message::UnexpectedEndofFileInCharLiteral {           // C28, in char literal, meet EOF, emit error, return
-                    //             literal_start: start_pos, 
-                    //             eof_pos: self.position(),
-                    //         });
-                    //         return None;
-                    //     }
-                    // }
                 }
             }
         }
@@ -300,8 +284,7 @@ mod tests {
                     StringPosition { 
                         start_pos: Position { row: $row1, col: $col1 },
                         end_pos: Position { row: $row2, col: $col2 } },
-                    $is_raw,
-                    $has_fail) })
+                    $is_raw) })
         }
 
         // Start cases

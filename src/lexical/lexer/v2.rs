@@ -246,11 +246,7 @@ mod tests {
 
     macro_rules! tstring {
         ($val: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr, $is_raw: expr, $has_fail: expr) => (
-            V2Token::StringLiteral{ inner: StringLiteral {
-                value: $val.to_owned(), 
-                pos: StringPosition::from(($row1, $col1, $row2, $col2)), 
-                is_raw: $is_raw,
-                has_failed: $has_fail } }
+            V2Token::StringLiteral{ inner: StringLiteral::new($val.to_owned(), StringPosition::from(($row1, $col1, $row2, $col2)), $is_raw) } 
         )
     }
     macro_rules! tnumber {
