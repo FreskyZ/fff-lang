@@ -105,7 +105,13 @@ impl ILexer<V3Token> for V3Lexer {
                     // TODO!TODO! `true`, `false` become bool literal here
                     match KeywordKind::try_from(&name) {
                         Some(keyword) => return Some(V3Token::Keyword{ kind: keyword, pos: pos }),
-                        None => return Some(V3Token::Identifier { name: name, pos: pos })
+                        None => {
+                            match &*name {
+                                "true" => return Some(V3Token::BooleanLiteral{ value: true }),
+                                "false" => return Some(V3Token::BooleanLiteral{ value: false }),
+                                _ => return Some(V3Token::Identifier { name: name, pos: pos }),
+                            }
+                        }
                     }
                 }
                 Some(BufV2Token{ token: V2Token::OtherChar{ ch, pos }, next: Some(V2Token::OtherChar{ ch: next_ch, pos: next_pos }) }) => {

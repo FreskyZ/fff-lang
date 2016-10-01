@@ -8,9 +8,21 @@
 ///! raw string literal supported, `r'C:\\abc'` or `R"C:\\abc"`
 
 use common::Position;
-use common::StringPosition;
+//use common::StringPosition;
+use message::Message;
+use message::MessageEmitter;
+use lexical::ILexer;
+use lexical::lexer::v0::V0Token;
+use lexical::lexer::v0::BufV0Token;
+use lexical::lexer::v0::V0Lexer;
+use lexical::lexer::v0::BufV0Lexer;
 use lexical::symbol_type::string_literal::StringLiteral;
+use lexical::symbol_type::string_literal::StringLiteralParser;
 use lexical::symbol_type::char_literal::CharLiteral;
+use lexical::symbol_type::char_literal::CharLiteralParser;
+use lexical::symbol_type::char_literal::CoverageRecorder;
+use lexical::lexer::buf_lexer::BufToken;
+use lexical::lexer::buf_lexer::BufLexer;
 
 #[cfg(test)]
 #[derive(Clone, Eq, PartialEq)]
@@ -46,8 +58,6 @@ impl fmt::Debug for V1Token {
     }
 }
 
-use lexical::lexer::v0::V0Lexer;
-use lexical::lexer::v0::BufV0Lexer;
 pub struct V1Lexer {
     v0: BufV0Lexer,
 }
@@ -60,34 +70,27 @@ impl From<String> for V1Lexer {
     }
 }
 
-use lexical::ILexer;
-use lexical::lexer::v0::V0Token;
-use lexical::lexer::v0::BufV0Token;
-use message::Message;
-use message::MessageEmitter;
 impl V1Lexer {
     pub fn position(&self) -> Position { self.v0.inner().position() }
 }
 
-use lexical::symbol_type::string_literal::StringLiteralParser;
+
 impl ILexer<V1Token> for V1Lexer {
 
     // input v0, output stringliteral or otherchar without comment
     fn next(&mut self, messages: &mut MessageEmitter) -> Option<V1Token> {
         // First there is quote, and anything inside is regarded as string literal, include `\n` as real `\n`
         // and then outside of quote pair there is comments, anything inside comment, // and /n, or /* and */ is regarded as comment
+        
+        let dummy_coverage_recorder = &mut CoverageRecorder::new();
 
-        #[derive(Debug)]
         enum State {
             Nothing,
             InStringLiteral { parser: StringLiteralParser },
             InRawStringLiteral { parser: StringLiteralParser },
             InLineComment,
             InBlockComment { start_pos: Position },
-            InCharLiteral { 
-                raw: String, 
-                start_pos: Position 
-            },
+            InCharLiteral { parser: CharLiteralParser },
         }
 
         let mut state = State::Nothing;
@@ -112,10 +115,7 @@ impl ILexer<V1Token> for V1Lexer {
                             state = State::InRawStringLiteral { parser: StringLiteralParser::new(pos) };
                         }
                         Some(BufV0Token{ token: V0Token{ ch: '\'', pos }, next: _1 }) => {     // C5: in nothing, meet '
-                            state = State::InCharLiteral {
-                                raw: String::new(),
-                                start_pos: pos,
-                            }
+                            state = State::InCharLiteral{ parser: CharLiteralParser::new(pos) };
                         }
                         Some(BufV0Token{ token: V0Token{ ch, pos }, next: _1 }) => {
                             return Some(V1Token::OtherChar{ raw: ch, pos: pos });              // C6: in nothing, meet other, return
@@ -184,36 +184,54 @@ impl ILexer<V1Token> for V1Lexer {
                         }
                     }
                 }
-                State::InCharLiteral { mut raw, start_pos } => {
-                    match bufv0 {
-                        Some(BufV0Token{ token: V0Token{ ch: '\\', pos: _1 }, next: Some(V0Token{ ch: '\'', pos: _2 }) }) => {
-                            raw.push('\'');                                                     // Cx: anythin inside '' is none about this module
-                            state = State::InCharLiteral{ raw: raw, start_pos: start_pos };
-                            self.v0.skip1(messages);
+                State::InCharLiteral { ref mut parser } => {
+                    let (maybe_char_literal, need_skip1) = match bufv0 {
+                        Some(BufV0Token{ token: V0Token{ ch, pos }, next: Some(V0Token{ ch: next_ch, pos: _1 }) }) => {
+                            parser.input(Some(ch), pos, Some(next_ch), messages, dummy_coverage_recorder)
                         }
-                        Some(BufV0Token{ token: V0Token{ ch: '\'', pos }, next: _1 }) => {      // C26: in char literal, meet ', return
-                            return Some(V1Token::CharLiteral{ inner: CharLiteral::from(raw, StringPosition::from((start_pos, pos))) });
-                        }
-                        Some(BufV0Token{ token: V0Token{ ch, pos: _2 }, next: _1 }) => {        // C27, in char literal, meet other
-                            raw.push(ch);
-                            state = State::InCharLiteral{ raw: raw, start_pos: start_pos };
+                        Some(BufV0Token{ token: V0Token { ch, pos }, next: None }) => {        // Cx: anything inside quotation is none about this module
+                            parser.input(Some(ch), pos, None, messages, dummy_coverage_recorder)
                         }
                         None => {
-                            messages.push(Message::UnexpectedEndofFileInCharLiteral {           // C28, in char literal, meet EOF, emit error, return
-                                literal_start: start_pos, 
-                                eof_pos: self.position(),
-                            });
-                            return None;
+                            parser.input(None, self.position(), None, messages, dummy_coverage_recorder);
+                            return None;  // Special occassion, EOFed, just emit error and quick return
                         }
+                    };
+                    if need_skip1 {
+                        self.v0.skip1(messages);
                     }
+                    match maybe_char_literal {
+                        Some(literal) => return Some(V1Token::CharLiteral{ inner: literal }),
+                        None => (),
+                    }
+
+                    // match bufv0 {
+                    //     Some(BufV0Token{ token: V0Token{ ch: '\\', pos: _1 }, next: Some(V0Token{ ch: '\'', pos: _2 }) }) => {
+                    //         raw.push('\'');                                                     // Cx: anythin inside '' is none about this module
+                    //         state = State::InCharLiteral{ raw: raw, start_pos: start_pos };
+                    //         self.v0.skip1(messages);
+                    //     }
+                    //     Some(BufV0Token{ token: V0Token{ ch: '\'', pos }, next: _1 }) => {      // C26: in char literal, meet ', return
+                    //         return Some(V1Token::CharLiteral{ inner: CharLiteral::from(raw, StringPosition::from((start_pos, pos))) });
+                    //     }
+                    //     Some(BufV0Token{ token: V0Token{ ch, pos: _2 }, next: _1 }) => {        // C27, in char literal, meet other
+                    //         raw.push(ch);
+                    //         state = State::InCharLiteral{ raw: raw, start_pos: start_pos };
+                    //     }
+                    //     None => {
+                    //         messages.push(Message::UnexpectedEndofFileInCharLiteral {           // C28, in char literal, meet EOF, emit error, return
+                    //             literal_start: start_pos, 
+                    //             eof_pos: self.position(),
+                    //         });
+                    //         return None;
+                    //     }
+                    // }
                 }
             }
         }
     }
 }
 
-use lexical::lexer::buf_lexer::BufToken;
-use lexical::lexer::buf_lexer::BufLexer;
 pub type BufV1Token = BufToken<V1Token>;
 pub type BufV1Lexer = BufLexer<V1Lexer, V1Token>;
 
