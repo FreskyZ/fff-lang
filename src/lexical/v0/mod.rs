@@ -2,8 +2,10 @@
 // Level0 parser, input file, output exact every char, record line and column
 
 use common::Position;
-use lexical::ILexer;
 use message::MessageEmitter;
+use lexical::buf_lexer::ILexer;
+use lexical::buf_lexer::BufToken;
+use lexical::buf_lexer::BufLexer;
 
 // V0 token is next char and postion
 #[cfg(test)]
@@ -143,8 +145,6 @@ impl ILexer<V0Token> for V0Lexer {
     }
 }
 
-use lexical::lexer::buf_lexer::BufToken;
-use lexical::lexer::buf_lexer::BufLexer;
 pub type BufV0Token = BufToken<V0Token>;
 pub type BufV0Lexer = BufLexer<V0Lexer, V0Token>;
 
@@ -197,7 +197,7 @@ mod tests {
         use super::V0Lexer;
         use super::V0Token;
         use common::Position;
-        use lexical::ILexer;
+        use lexical::buf_lexer::ILexer;
         use message::MessageEmitter;
 
         macro_rules! test_case {

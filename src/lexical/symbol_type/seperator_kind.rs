@@ -52,6 +52,8 @@ pub enum SeperatorKind {
     NarrowRightArrow,   // ->
     WideRightArrow,     // =>
     NamespaceSeperator, // ::
+
+    AttributeSign,  // #
 }
 
 use common::TryFrom;
@@ -82,6 +84,7 @@ impl TryFrom<char> for SeperatorKind {
             ':' => Some(SeperatorKind::Colon),
             ';' => Some(SeperatorKind::SemiColon),
             '.' => Some(SeperatorKind::Dot),
+            '#' => Some(SeperatorKind::AttributeSign),
             _ => None,
         }
     }
@@ -168,6 +171,8 @@ impl SeperatorKind {
             NarrowRightArrow => 2,   // ->
             WideRightArrow => 2,     // =>
             NamespaceSeperator => 2, // ::
+
+            AttributeSign => 1, // #
         }
     }
 }

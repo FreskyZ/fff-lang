@@ -1,8 +1,10 @@
 
 // Compiler core driver 
 
-use input_reader::InputReader;
+use file_map::InputReader;
+use message::MessageEmitter;
 use lexical::Lexer;
+use syntax::get_ast;
 
 // Handle and print error here
 pub fn compile_input(file_name: String) {
@@ -17,5 +19,18 @@ pub fn compile_input(file_name: String) {
         }
     };
 
-    let _lexer = Lexer::from(content);
+    let mut lexer = Lexer::from(content);
+    let mut messages = MessageEmitter::new();
+    let _ast = get_ast(&mut lexer, &mut messages);  
+}
+
+#[cfg(test)]
+mod tests {
+
+    #[test]
+    fn ast_general() {
+        use super::compile_input;
+
+        compile_input("tests/lexical/1.sm".to_owned());
+    }
 }

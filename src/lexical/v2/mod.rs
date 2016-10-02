@@ -7,14 +7,17 @@ use common::From2;
 use common::Position;
 use common::StringPosition;
 use message::MessageEmitter;
-use lexical::ILexer;
-use lexical::lexer::v1::V1Lexer;
-use lexical::lexer::v1::BufV1Lexer;
-use lexical::lexer::buf_lexer::BufToken;
-use lexical::lexer::buf_lexer::BufLexer;
-use lexical::symbol_type::string_literal::StringLiteral;
-use lexical::symbol_type::numeric_literal::NumericLiteral;
-use lexical::symbol_type::char_literal::CharLiteral;
+use lexical::v1::V1Token;
+use lexical::v1::V1Lexer;
+use lexical::v1::BufV1Token;
+use lexical::v1::BufV1Lexer;
+use lexical::buf_lexer::ILexer;
+use lexical::buf_lexer::BufToken;
+use lexical::buf_lexer::BufLexer;
+use lexical::symbol_type::StringLiteral;
+use lexical::symbol_type::NumericLiteral;
+use lexical::symbol_type::CharLiteral;
+
 #[cfg(test)]
 #[derive(Eq, PartialEq, Clone)]
 pub enum V2Token {
@@ -150,26 +153,23 @@ impl ILexer<V2Token> for V2Lexer {
             match state {
                 State::Nothing => {
                     match (vhalf.ch.is_identifier_start(), vhalf.ch.is_numeric_literal_start(), vhalf.pos, vhalf.next_is_sep) {
-                        (false, false, pos, _next_is_sep) => {
-                            // Nothing happened
+                        (false, false, pos, _next_is_sep) => {  // Nothing 
                             return Some(V2Token::Other { ch: vhalf.ch, pos: pos });
                         }
-                        (true, false, pos, next_is_sep) => {
-                            // Identifier try start
+                        (true, false, pos, next_is_sep) => { // Identifier try start
                             let mut value = String::new();
                             value.push(vhalf.ch);
                             if next_is_sep {  // Direct return identifier is next preview is a sperator
-                                return Some(V2Token::Identifier { name: value, pos: StringPosition { start_pos: pos, end_pos: pos } });
+                                return Some(V2Token::Identifier { name: value, pos: StringPosition::from2(pos, pos) });
                             } else {          // Else normal goto InIdentifier state
                                 state = State::InIdentifier { value: value, start_pos: pos };
                             }
                         }
-                        (false, true, pos, next_is_sep) => {
-                            // Numeric try start
+                        (false, true, pos, next_is_sep) => { // Numeric try start
                             let mut value = String::new();
                             value.push(vhalf.ch);
                             if next_is_sep {    // Direct return numeric literal is next preview is a sperator
-                                return Some(V2Token::NumericLiteral { inner: NumericLiteral::from(&value, StringPosition::from((pos, pos))) });
+                                return Some(V2Token::NumericLiteral { inner: NumericLiteral::new(&value, StringPosition::from2(pos, pos), messages) });
                             } else {            // else normal goto InIdentifier state
                                 state = State::InNumericLiteral { value: value, start_pos: pos };
                             }
@@ -180,8 +180,7 @@ impl ILexer<V2Token> for V2Lexer {
                 State::InIdentifier { mut value, start_pos } => {
                     if vhalf.ch.is_identifier() {
                         value.push(vhalf.ch);
-                        if vhalf.next_is_sep {
-                            // To be finished, return here
+                        if vhalf.next_is_sep { // To be finished, return here
                             return Some(V2Token::Identifier { name: value, pos: StringPosition::from2(start_pos, vhalf.pos) });
                         } else {
                             state = State::InIdentifier { value: value, start_pos: start_pos };
@@ -193,9 +192,8 @@ impl ILexer<V2Token> for V2Lexer {
                 State::InNumericLiteral { mut value, start_pos } => {
                     if vhalf.ch.is_numeric_literal() {
                         value.push(vhalf.ch);                        
-                        if vhalf.next_is_sep {
-                            // To be finished, return here
-                            return Some(V2Token::NumericLiteral { inner: NumericLiteral::from(&value, StringPosition::from((start_pos, vhalf.pos))) } );
+                        if vhalf.next_is_sep { // To be finished, return here
+                            return Some(V2Token::NumericLiteral { inner: NumericLiteral::new(&value, StringPosition::from((start_pos, vhalf.pos)), messages) } );
                         } else {
                             state = State::InNumericLiteral { value: value, start_pos: start_pos };
                         }
@@ -215,12 +213,12 @@ pub type BufV2Lexer = BufLexer<V2Lexer, V2Token>;
 mod tests {
     use super::V2Token;
     use super::V2Lexer;
-    use lexical::ILexer;
+    use lexical::buf_lexer::ILexer;
     use common::Position;
     use common::StringPosition;
     use message::MessageEmitter;
-    use lexical::symbol_type::string_literal::StringLiteral;
-    use lexical::symbol_type::numeric_literal::NumericLiteral;
+    use lexical::symbol_type::StringLiteral;
+    use lexical::symbol_type::NumericLiteral;
     
     macro_rules! test_case {
         ($program: expr, $($expect: expr, )*) => ({
@@ -249,7 +247,7 @@ mod tests {
     }
     macro_rules! tnumber {
         ($val: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr) => (
-            V2Token::NumericLiteral{ inner: NumericLiteral::from($val, StringPosition::from(($row1, $col1, $row2, $col2))) }
+            V2Token::NumericLiteral{ inner: NumericLiteral::new($val, StringPosition::from(($row1, $col1, $row2, $col2)), &mut MessageEmitter::new()) }
         )
     }
     macro_rules! tident {

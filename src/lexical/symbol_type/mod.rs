@@ -1,7 +1,15 @@
 
-pub mod numeric_literal;
-pub mod string_literal;
-pub mod keyword_kind;
-pub mod seperator_kind;
-pub mod char_literal;
-pub mod char_escape;
+// Symbol type
+
+mod numeric_literal;
+mod string_literal;
+mod keyword_kind;
+mod seperator_kind;
+mod char_literal;
+
+pub use self::numeric_literal::NumericLiteralValue;
+pub use self::numeric_literal::NumericLiteral;
+pub use self::string_literal::StringLiteral;
+pub use self::char_literal::CharLiteral;
+pub use self::seperator_kind::SeperatorKind;
+pub use self::keyword_kind::KeywordKind;

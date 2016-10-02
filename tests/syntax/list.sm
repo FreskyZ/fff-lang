@@ -1,0 +1,27 @@
+
+struct ListNode {
+    value: i32;
+    next: *ListNode;
+}
+
+// linked list of i32
+struct List{
+    dummy_head: ListNode;
+
+    fn new() -> List{
+        return List{ dummy_head: ListNode::new() };
+    }
+
+    fn insert(self) {
+
+    }
+
+    fn remove_at(index: u32) -> bool {
+
+    }
+
+}
+
+fn main() {
+
+}

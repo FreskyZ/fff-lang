@@ -131,7 +131,7 @@ pub fn escape_char_parser_new(expect_size: usize) -> EscapeCharParser {
 mod tests {
     
     #[test]
-    fn escape_char() {
+    fn escape_char_parser_test() {
         use super::escape_char_parser_new;
         use super::EscapeCharParserResult::*;
         use common::Position;

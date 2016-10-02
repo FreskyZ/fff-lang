@@ -10,13 +10,22 @@
 //      seperators, [, ], {, }, (, ), ;, ,
 // May be final layer
 
+use common::TryFrom;
 use common::Position;
 use common::StringPosition;
-use lexical::symbol_type::string_literal::StringLiteral;
-use lexical::symbol_type::numeric_literal::NumericLiteral;
-use lexical::symbol_type::char_literal::CharLiteral;
-use lexical::symbol_type::keyword_kind::KeywordKind;
-use lexical::symbol_type::seperator_kind::SeperatorKind;
+use message::MessageEmitter;
+use lexical::v2::V2Token;
+use lexical::v2::V2Lexer;
+use lexical::v2::BufV2Token;
+use lexical::v2::BufV2Lexer;
+use lexical::buf_lexer::BufToken;
+use lexical::buf_lexer::BufLexer;
+use lexical::buf_lexer::ILexer;
+use lexical::symbol_type::StringLiteral;
+use lexical::symbol_type::NumericLiteral;
+use lexical::symbol_type::CharLiteral;
+use lexical::symbol_type::KeywordKind;
+use lexical::symbol_type::SeperatorKind;
 
 #[derive(Clone)]
 pub enum V3Token {
@@ -60,8 +69,6 @@ impl fmt::Debug for V3Token {
     }
 }
 
-use lexical::lexer::v2::V2Lexer;
-use lexical::lexer::v2::BufV2Lexer;
 pub struct V3Lexer {
     v2: BufV2Lexer,
 }
@@ -77,11 +84,6 @@ impl V3Lexer {
     pub fn position(&self) -> Position { self.v2.inner().position() }
 }
 
-use common::TryFrom;
-use lexical::ILexer;
-use lexical::lexer::v2::V2Token;
-use lexical::lexer::v2::BufV2Token;
-use message::MessageEmitter;
 impl ILexer<V3Token> for V3Lexer {
 
     fn next(&mut self, messages: &mut MessageEmitter) -> Option<V3Token> {
@@ -145,14 +147,12 @@ impl ILexer<V3Token> for V3Lexer {
     }
 }
 
-use lexical::lexer::buf_lexer::BufToken;
-use lexical::lexer::buf_lexer::BufLexer;
 pub type BufV3Token = BufToken<V3Token>;
 pub type BufV3Lexer = BufLexer<V3Lexer, V3Token>;
 
 #[cfg(test)]
 mod tests {
-    use lexical::ILexer;
+    use lexical::buf_lexer::ILexer;
 
     #[test]
     fn v3_test1() {

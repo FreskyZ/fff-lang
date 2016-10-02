@@ -1,6 +1,0 @@
-// 1.sm, helloworld
-
-fn main() {
-    // write to console
-    write("helloworld");
-}

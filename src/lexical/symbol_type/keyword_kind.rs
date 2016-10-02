@@ -12,6 +12,7 @@ pub enum KeywordKind {
     Struct,
     For,
     Return,
+    Namespace,
 }
 
 use common::TryFrom;
@@ -28,6 +29,7 @@ impl<'a> TryFrom<&'a str> for KeywordKind {
             "struct" => Some(KeywordKind::Struct),
             "for" => Some(KeywordKind::For),
             "return" => Some(KeywordKind::Return),
+            "namespace" => Some(KeywordKind::Namespace),
             _ => None,
         }
     }

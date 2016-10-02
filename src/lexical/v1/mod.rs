@@ -7,26 +7,30 @@
 ///! string literal is allowed to cross line, line end is regarded as \n
 ///! raw string literal supported, `r'C:\\abc'` or `R"C:\\abc"`
 
+mod escape_char_parser;
+mod char_lit_parser;
+mod string_lit_parser;
+mod raw_string_lit_parser;
+
 use common::Position;
-//use common::StringPosition;
 use message::Message;
 use message::MessageEmitter;
-use lexical::ILexer;
-use lexical::lexer::v0::V0Token;
-use lexical::lexer::v0::BufV0Token;
-use lexical::lexer::v0::V0Lexer;
-use lexical::lexer::v0::BufV0Lexer;
-use lexical::symbol_type::string_literal::StringLiteral;
-use lexical::symbol_type::string_literal::StringLiteralParser;
-use lexical::symbol_type::string_literal::StringLiteralParserResult;
-use lexical::symbol_type::string_literal::RawStringLiteralParser;
-use lexical::symbol_type::string_literal::RawStringLiteralParserResult;
-use lexical::symbol_type::char_literal::CharLiteral;
-use lexical::symbol_type::char_literal::CharLiteralParser;
-use lexical::symbol_type::char_literal::CoverageRecorder;
-use lexical::symbol_type::char_literal::CharLiteralParserResult;
-use lexical::lexer::buf_lexer::BufToken;
-use lexical::lexer::buf_lexer::BufLexer;
+use lexical::v0::V0Token;
+use lexical::v0::BufV0Token;
+use lexical::v0::V0Lexer;
+use lexical::v0::BufV0Lexer;
+use lexical::buf_lexer::ILexer;
+use lexical::buf_lexer::BufToken;
+use lexical::buf_lexer::BufLexer;
+use lexical::symbol_type::StringLiteral;
+use lexical::v1::string_lit_parser::StringLiteralParser;
+use lexical::v1::string_lit_parser::StringLiteralParserResult;
+use lexical::v1::raw_string_lit_parser::RawStringLiteralParser;
+use lexical::v1::raw_string_lit_parser::RawStringLiteralParserResult;
+use lexical::symbol_type::CharLiteral;
+use lexical::v1::char_lit_parser::CharLiteralParser;
+use lexical::v1::char_lit_parser::CoverageRecorder;
+use lexical::v1::char_lit_parser::CharLiteralParserResult;
 
 #[cfg(test)]
 #[derive(Clone, Eq, PartialEq)]
@@ -229,9 +233,9 @@ mod tests {
     use common::StringPosition;
     use message::Message;
     use message::MessageEmitter;
-    use lexical::ILexer;
-    use lexical::symbol_type::string_literal::StringLiteral;
-    use lexical::symbol_type::char_literal::CharLiteral;
+    use lexical::buf_lexer::ILexer;
+    use lexical::symbol_type::StringLiteral;
+    use lexical::symbol_type::CharLiteral;
 
     #[test]
     fn v1_base() {

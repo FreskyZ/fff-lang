@@ -3,8 +3,11 @@
 //     with TToken: Copy
 //     and TLexer: ILexer<TToken>
 
-use lexical::ILexer;
 use message::MessageEmitter;
+
+pub trait ILexer<TToken> {
+    fn next(&mut self, emitter: &mut MessageEmitter) -> Option<TToken>;
+}
 
 #[cfg(test)]
 #[derive(Eq, PartialEq)]

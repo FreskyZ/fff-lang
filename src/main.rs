@@ -6,15 +6,13 @@ extern crate fsz_common;
 mod common;
 mod message;
 mod config;
-mod input_reader;
-mod driver;
+mod file_map;
 mod lexical;
 mod syntax;
-mod interpret;
-// mod vmcodegen;
-// mod vm;
-// mod codegen;
-// mod emit;
+mod vmcodegen;
+mod vm;
+mod codegen;
+mod driver;
 
 const USAGE_STRING: &'static str = r"
 Usage: 

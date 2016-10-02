@@ -46,7 +46,7 @@ impl InputReader {
             .map_err(|e| InputReaderError::CannotReadFile { file_name: file_name.to_owned(), e: e }));
 
         Ok(content)
-    } 
+    }
 
     pub fn add_input_file(&mut self, file_name: &str) {
         self.result = self.input(file_name);
@@ -83,6 +83,5 @@ mod tests {
 
         test_case!("tests\\reader\\not_exist.sm", InputReaderError::CannotOpenFile);
         test_case!("tests\\reader\\cannot_open.sm", InputReaderError::CannotOpenFile);
-        // test_case!("tests\\reader\\cannot_read.sm", InputReaderError::CannotReadFile); // Failed to create write only file
     }
 }

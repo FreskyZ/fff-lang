@@ -1,18 +1,16 @@
 
 mod symbol_type;
-mod lexer;
+mod buf_lexer;
+mod v0;
+mod v1;
+mod v2;
+mod v3;
 
 use message::MessageEmitter;
-pub use lexical::symbol_type::keyword_kind::KeywordKind;
-pub use lexical::symbol_type::seperator_kind::SeperatorKind;
-use lexical::lexer::v3::V3Lexer;
-use lexical::lexer::v3::BufV3Lexer;
-pub type Token = self::lexer::v3::V3Token;
-pub type BufToken = self::lexer::v3::BufV3Token;
-
-pub trait ILexer<TToken> {
-    fn next(&mut self, emitter: &mut MessageEmitter) -> Option<TToken>;
-}
+use lexical::v3::V3Lexer;
+use lexical::v3::BufV3Lexer;
+pub type Token = self::v3::V3Token;
+pub type BufToken = self::v3::BufV3Token;
 
 pub struct Lexer {
     v3: BufV3Lexer,
@@ -26,33 +24,6 @@ impl Lexer {
 
     pub fn next(&mut self, messages: &mut MessageEmitter) -> Option<BufToken> {
         self.v3.next(messages)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-
-    #[test]
-    fn lexer_new() {
-        // use super::Lexer;
-        // use message::MessageEmitter;
-
-        // let messages = &mut MessageEmitter::new();
-        // let lexer = Lexer::from("tests\\lexical\\3.sm", messages);
-        // if lexer.is_none() {
-        //     perrorln!("Messages: {:?}", messages);
-        //     return;
-        // }
-
-        // let mut lexer = lexer.unwrap();
-        
-        // loop {
-        //     match lexer.next(messages) {
-        //         Some(bufv) => perrorln!("{:?}", bufv),
-        //         None => break,
-        //     }
-        // }
-        // perrorln!("Messages: {:?}", messages);
     }
 }
 
