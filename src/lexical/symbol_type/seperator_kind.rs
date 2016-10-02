@@ -51,6 +51,7 @@ pub enum SeperatorKind {
 
     NarrowRightArrow,   // ->
     WideRightArrow,     // =>
+    NamespaceSeperator, // ::
 }
 
 use common::TryFrom;
@@ -107,6 +108,7 @@ impl TryFrom<(char, char)> for SeperatorKind {
             ('!', '=') => Some(SeperatorKind::NotEqual),
             ('-', '>') => Some(SeperatorKind::NarrowRightArrow),
             ('=', '>') => Some(SeperatorKind::WideRightArrow),
+            (':', ':') => Some(SeperatorKind::NamespaceSeperator),
             (ch ,  _ ) => SeperatorKind::try_from(ch),
         }
     }
@@ -165,6 +167,7 @@ impl SeperatorKind {
 
             NarrowRightArrow => 2,   // ->
             WideRightArrow => 2,     // =>
+            NamespaceSeperator => 2, // ::
         }
     }
 }

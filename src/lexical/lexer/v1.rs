@@ -33,14 +33,14 @@ use lexical::lexer::buf_lexer::BufLexer;
 pub enum V1Token {
     StringLiteral { inner: StringLiteral },
     CharLiteral { inner: CharLiteral },
-    OtherChar { raw: char, pos: Position },
+    Other { ch: char, pos: Position },
 }
 #[cfg(not(test))]
 #[derive(Clone)]
 pub enum V1Token {
     StringLiteral { inner: StringLiteral },
     CharLiteral { inner: CharLiteral },
-    OtherChar { raw: char, pos: Position },
+    Other { ch: char, pos: Position },
 }
 
 #[cfg(test)]
@@ -55,8 +55,8 @@ impl fmt::Debug for V1Token {
             V1Token::CharLiteral{ ref inner } => {
                 write!(f, "{:?}", inner)
             }
-            V1Token::OtherChar { ref raw, ref pos } => {
-                write!(f, "Char {:?} at {:?}", raw, pos)
+            V1Token::Other { ref ch, ref pos } => {
+                write!(f, "Other {:?} at {:?}", ch, pos)
             }
         }
     }
@@ -105,53 +105,53 @@ impl ILexer<V1Token> for V1Lexer {
                     match bufv0 {
                         Some(BufV0Token{ token: V0Token{ ch: '/', pos: _1 }, next: Some(V0Token{ ch: '/', pos: _2 }) }) => {
                             self.v0.skip1(messages);
-                            state = State::InLineComment;                                      // C1: in nothing, meet //
+                            state = State::InLineComment;                                       // C1: in nothing, meet //
                         }
                         Some(BufV0Token{ token: V0Token{ ch: '/', pos }, next: Some(V0Token{ ch: '*', pos: _1 }) }) => {
-                            state = State::InBlockComment { start_pos: pos };                  // C2: in nothing, meet /*
+                            state = State::InBlockComment { start_pos: pos };                   // C2: in nothing, meet /*
                         }
-                        Some(BufV0Token{ token: V0Token{ ch: '"', pos }, next: _1 }) => {      // C3: in nothing, meet "
+                        Some(BufV0Token{ token: V0Token{ ch: '"', pos }, next: _1 }) => {       // C3: in nothing, meet "
                             state = State::InStringLiteral { parser: StringLiteralParser::new(pos) };
                         }
                         Some(BufV0Token { token: V0Token { ch: 'r', pos }, next: Some(V0Token { ch: '"', pos: _1 }) })
                             | Some(BufV0Token { token: V0Token { ch: 'R', pos }, next: Some(V0Token { ch: '"', pos: _1 }) }) => {
-                            self.v0.skip1(messages);                                           // C4: in nothing, meet r" or R"
+                            self.v0.skip1(messages);                                            // C4: in nothing, meet r" or R"
                             state = State::InRawStringLiteral { parser: RawStringLiteralParser::new(pos) };
                         }
-                        Some(BufV0Token{ token: V0Token{ ch: '\'', pos }, next: _1 }) => {     // C5: in nothing, meet '
+                        Some(BufV0Token{ token: V0Token{ ch: '\'', pos }, next: _1 }) => {      // C5: in nothing, meet '
                             state = State::InCharLiteral{ parser: CharLiteralParser::new(pos) };
                         }
                         Some(BufV0Token{ token: V0Token{ ch, pos }, next: _1 }) => {
-                            return Some(V1Token::OtherChar{ raw: ch, pos: pos });              // C6: in nothing, meet other, return
+                            return Some(V1Token::Other{ ch: ch, pos: pos });                    // C6: in nothing, meet other, return
                         }
-                        None => { return None; }                                               // C7: in nothing, meet EOF, return 
+                        None => { return None; }                                                // C7: in nothing, meet EOF, return 
                     }
                 }
-                State::InBlockComment { start_pos } => {
+                State::InBlockComment { ref start_pos } => {
                     match bufv0 {
                         Some(BufV0Token{ token: V0Token { ch: '*', pos: _1 }, next: Some(V0Token{ ch: '/', pos: _2 }) }) => {
                             self.v0.skip1(messages);
-                            return Some(V1Token::OtherChar{ raw: ' ', pos: start_pos });      // C8: in block, meet */, return
+                            return Some(V1Token::Other{ ch: ' ', pos: *start_pos });            // C8: in block, meet */, return
                         }
                         Some(_) => {
-                            state = State::InBlockComment{ start_pos: start_pos };             // C9: in block, continue block
+                            // state = State::InBlockComment{ start_pos: start_pos };           // C9: in block, continue block
                         }
                         None => {
-                            messages.push(Message::UnexpectedEndofFileInBlockComment { block_start: start_pos, eof_pos: self.v0.inner().position() });
-                            return None;                                                       // C10: in block, meet EOF, emit error, return
+                            messages.push(Message::UnexpectedEndofFileInBlockComment { block_start: *start_pos, eof_pos: self.position() });
+                            return None;                                                        // C10: in block, meet EOF, emit error, return
                         }
                     }
                 }
                 State::InLineComment => {
                     match bufv0 {
                         Some(BufV0Token{ token: V0Token { ch: '\n', pos }, next: _1 }) => {
-                            return Some(V1Token::OtherChar { raw: '\n', pos: pos });           // C11: in line, meet \n, return
+                            return Some(V1Token::Other { ch: '\n', pos: pos });                 // C11: in line, meet \n, return
                         }
                         Some(_) => {
-                            state = State::InLineComment;                                      // C12: in line, continue line
+                            // state = State::InLineComment;                                    // C12: in line, continue line
                         }
                         None => {
-                            return None;                                                       // C13: in line, meet EOF, return
+                            return None;                                                        // C13: in line, meet EOF, return
                         }
                     }
                 }
@@ -160,12 +160,11 @@ impl ILexer<V1Token> for V1Lexer {
                         Some(BufV0Token{ token: V0Token{ ch, pos }, next: Some(V0Token{ ch: next_ch, pos: _1 }) }) => {
                             parser.input(Some(ch), pos, Some(next_ch), messages)
                         }
-                        Some(BufV0Token{ token: V0Token { ch, pos }, next: None }) => {        // Cx: anything inside quotation is none about this module
+                        Some(BufV0Token{ token: V0Token { ch, pos }, next: None }) => {        // Cx: anything inside "" is none about this module
                             parser.input(Some(ch), pos, None, messages)
                         }
                         None => {
-                            parser.input(None, self.position(), None, messages);
-                            return None;  // Special occassion, EOFed, just emit error and quick return
+                            parser.input(None, self.position(), None, messages)
                         }
                     } {
                         StringLiteralParserResult::WantMore => (), // continue
@@ -178,16 +177,17 @@ impl ILexer<V1Token> for V1Lexer {
                     }
                 }
                 State::InRawStringLiteral { ref mut parser } => {
-                    match bufv0 {
+                    match match bufv0 {
                         Some(BufV0Token{ token: V0Token { ch, pos }, next: _2 }) => {          // Cx, anything inside r"" is none about this module
-                            match parser.input(Some(ch), pos, messages) {
-                                RawStringLiteralParserResult::Finished(literal) => return Some(V1Token::StringLiteral{ inner: literal }),
-                                RawStringLiteralParserResult::WantMore => (),
-                            }
+                            parser.input(Some(ch), pos, messages)
                         }
                         None => {
-                            parser.input(None, self.position(), messages);
-                            return None;
+                            parser.input(None, self.position(), messages)
+                        }
+                    } {
+                        RawStringLiteralParserResult::WantMore => (),
+                        RawStringLiteralParserResult::Finished(literal) => {
+                            return Some(V1Token::StringLiteral{ inner: literal });
                         }
                     }
                 }
@@ -196,12 +196,11 @@ impl ILexer<V1Token> for V1Lexer {
                         Some(BufV0Token{ token: V0Token{ ch, pos }, next: Some(V0Token{ ch: next_ch, pos: _1 }) }) => {
                             parser.input(Some(ch), pos, Some(next_ch), messages, dummy_coverage_recorder)
                         }
-                        Some(BufV0Token{ token: V0Token { ch, pos }, next: None }) => {        // Cx: anything inside quotation is none about this module
+                        Some(BufV0Token{ token: V0Token { ch, pos }, next: None }) => {        // Cx: anything inside '' is none about this module
                             parser.input(Some(ch), pos, None, messages, dummy_coverage_recorder)
                         }
                         None => {
-                            parser.input(None, self.position(), None, messages, dummy_coverage_recorder);
-                            return None;  // Special occassion, EOFed, just emit error and quick return
+                            parser.input(None, self.position(), None, messages, dummy_coverage_recorder)
                         }
                     } {
                         CharLiteralParserResult::WantMore => (), // continue
@@ -223,180 +222,334 @@ pub type BufV1Lexer = BufLexer<V1Lexer, V1Token>;
 
 #[cfg(test)]
 mod tests {
-    #![allow(non_upper_case_globals)]
-
+    use super::V1Token;
     use super::V1Lexer;
+    use common::From2;
     use common::Position;
-    use common::StringPosition;   
-    use lexical::ILexer;
+    use common::StringPosition;
+    use message::Message;
     use message::MessageEmitter;
+    use lexical::ILexer;
     use lexical::symbol_type::string_literal::StringLiteral;
-
-    // Now you can ignore things inside string here!!!
-    
-    // C[\d]+[r]{0-1}, nth state conversion, have 'r' means return, s means skipped
-    // C20r1, C20r2, C23r1, C23r2, r1 means with escape quote hint, r2 without, ATTENTION: no C23r2
-    // 5, 3, 19, 18, 2; 8, 7, 4, 22, 21; 11, 10, 14, 15, 9; 12, 20, 23, 1, 6; 13, 16, 17
-
-    const program1: &'static str = concat!(
-        "abc\"def\"ghi/*jkl*/\n",              // C5r, C5r, C5r, C3, C19, C19, C19, C18r, C5r, C5r, C5r, C2, s, C8, C8, C8, C7r, s, C5r,
-        "mr\"\\u\\n\\r\\a\\bc\\\"mno//pqr\n",  // C5r, C4, s, C22, C22, C22, C22, C22, C22, C22, C22, C22, C22, C22, C22, C21r, C5r, C5r, C5r, C1, s, C11, C11, C11, C10r, 
-        "stuv\"\"wx/**/y//\n",                 // C5r, C5r, C5r, C5r, C3, C18r, C5r, C5r, C2, s, C7r, s, C5r, C1, s, C10r,
-        "\"\\t\\n\\r\\\\\\u///**///\n",        // C3, C14, s, C14, s, C14, s, C14, s, C14, s, C15, s, C19, C19, C19, C19, C19, C19, C19, C19, C18r, C5r,
-        "//\"/**/\"");                         // C1, s, C11, C11, C11, C11, C11, C11, C10r, C6
-    const program2: &'static str = "abc//def";                 // C12
-    const program3: &'static str = "abc/*def";                 // C9
-    const program4: &'static str = "abc\"123";                 // C20r1
-    const program5: &'static str = "abc\"123\\\"456";          // C13, C20r2
-    const program6: &'static str = "abcr\"123";                // C23r1
-    const program7: &'static str = "abcR\"123\\\"456";         // C13, C23r2
-    const program8: &'static str = "abc\"def\\a\\b\\c";        // C16
-    const program9: &'static str = "abc\"\\";                  // C17
-    const programa: &'static str = "abc\"123\\a\"";
+    use lexical::symbol_type::char_literal::CharLiteral;
 
     #[test]
-    fn v1_test1() {
-        use super::V1Token;
+    fn v1_base() {
 
         macro_rules! test_case {
-            ($program: expr, $($expect: expr, )*) => (
+            ($program: expr, [$($expect: expr)*] [$($expect_msg: expr)*]) => ({
                 let mut v1lexer = V1Lexer::from($program.to_owned());
-                let mut messages = MessageEmitter::new();
-                let mut v1s = Vec::new();
-                loop {
-                    match v1lexer.next(&mut messages) {
-                        Some(v1) => v1s.push(v1),
-                        None => break,
+                let messages = &mut MessageEmitter::new();
+                $(
+                    match v1lexer.next(messages) {
+                        Some(v1) => assert_eq!(v1, $expect),
+                        None => panic!("Unexpect end of iteration"),
                     }
+                )*
+                match v1lexer.next(messages) {
+                    Some(v1) => panic!("Unexpected more symbol after expect: {:?}", v1),
+                    None => (),
                 }
-
-                assert_eq!(v1s, vec![$($expect, )*]);
-                if !messages.is_empty() {
-                    perrorln!("Messages for {}:", stringify!($program));
-                    perror!("{:?}", messages);
-                }
+                
+                let expect_messages = &mut MessageEmitter::new();
+                $(
+                    expect_messages.push($expect_msg);
+                )*
+                assert_eq!(messages, expect_messages);
+            });
+            ($program: expr, [$($expect: expr)*]) => ({
+                test_case!($program, [$($expect)*] [])
+            });
+        }
+        macro_rules! is_o {
+            ($ch: expr, $row: expr, $col: expr) => (V1Token::Other{ ch: $ch, pos: Position::from2($row, $col) })
+        }
+        macro_rules! is_char {
+            ($ch: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr) => (
+                V1Token::CharLiteral{ inner: CharLiteral{ value: Some($ch), pos: StringPosition::from(($row1, $col1, $row2, $col2)) } }
+            );
+            ($row1: expr, $col1: expr, $row2: expr, $col2: expr) => (
+                V1Token::CharLiteral{ inner: CharLiteral{ value: None, pos: StringPosition::from(($row1, $col1, $row2, $col2)) } }
             )
         }
-        macro_rules! tch {
-            ($ch: expr, $row: expr, $col: expr) => (V1Token::OtherChar{ raw: $ch, pos: Position { row: $row, col: $col } })
-        }
-        macro_rules! tstring {
-            ($val: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr, $is_raw: expr, $has_fail: expr) => 
-                (V1Token::StringLiteral { inner: StringLiteral::new($val.to_owned(), 
-                    StringPosition { 
-                        start_pos: Position { row: $row1, col: $col1 },
-                        end_pos: Position { row: $row2, col: $col2 } },
-                    $is_raw) })
+        macro_rules! is_string {
+            ($row1: expr, $col1: expr, $row2: expr, $col2: expr, $is_raw: expr) => 
+                (V1Token::StringLiteral { inner: StringLiteral::new(None, StringPosition::from(($row1, $col1, $row2, $col2)), $is_raw) });
+            ($val: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr, $is_raw: expr) => 
+                (V1Token::StringLiteral { inner: StringLiteral::new2($val, StringPosition::from(($row1, $col1, $row2, $col2)), $is_raw) })
         }
 
-        // Start cases
-        test_case!(program1,
-            tch!('a', 1, 1),
-            tch!('b', 1, 2),
-            tch!('c', 1, 3),
-            tstring!("def", 1, 4, 1, 8, false, false),
-            tch!('g', 1, 9),
-            tch!('h', 1, 10), 
-            tch!('i', 1, 11),
-            tch!(' ', 1, 12),
-            tch!('\n', 1, 19),
-            tch!('m', 2, 1),
-            tstring!("\\u\\n\\r\\a\\bc\\", 2, 2, 2, 16, true, false),
-            tch!('m', 2, 17),
-            tch!('n', 2, 18),
-            tch!('o', 2, 19),
-            tch!('\n', 2, 25),
-            tch!('s', 3, 1),
-            tch!('t', 3, 2),
-            tch!('u', 3, 3),
-            tch!('v', 3, 4),
-            tstring!("", 3, 5, 3, 6, false, false),
-            tch!('w', 3, 7), 
-            tch!('x', 3, 8),
-            tch!(' ', 3, 9), 
-            tch!('y', 3, 13),
-            tch!('\n', 3, 16),
-            tstring!("\t\n\r\\\\u///**///\n//", 4, 1, 5, 3, false, false),
-            tch!(' ', 5, 4),
-        );
+        // Line comment as \n
+        test_case!{ "ABC//DEF\n",           // C6, C1, C12, C11, C7
+            [
+                is_o!('A', 1, 1)
+                is_o!('B', 1, 2)
+                is_o!('C', 1, 3)
+                is_o!('\n', 1, 9)
+            ]
+        }
+        // Line comment EOF is not error
+        test_case!{ "ABC//DEF",             // C6, C1, C12, C13
+            [
+                is_o!('A', 1, 1)
+                is_o!('B', 1, 2)
+                is_o!('C', 1, 3)
+            ]
+        }
 
-        test_case!(program2, 
-            tch!('a', 1, 1),
-            tch!('b', 1, 2),
-            tch!('c', 1, 3),
-        );
-        test_case!(program3,
-            tch!('a', 1, 1),
-            tch!('b', 1, 2),
-            tch!('c', 1, 3),
-            // tcomment!(1, 4), // Not returned but UnexpectedEndofFileInBlockComment
-        );
-        test_case!(program4,
-            tch!('a', 1, 1),
-            tch!('b', 1, 2),
-            tch!('c', 1, 3),
-            // tstring!(),  // Not returned but UnexpectedEndofFileInStringLiteral, r2
-        );
-        test_case!(program5,
-            tch!('a', 1, 1),
-            tch!('b', 1, 2),
-            tch!('c', 1, 3),
-            // tstring!(),   // Not returned but UnexpectedEndofFileInStringLiteral, r2
-        );
-        test_case!(program6,
-            tch!('a', 1, 1),
-            tch!('b', 1, 2),
-            tch!('c', 1, 3),
-            // tstring!(),  // Not returned but UnexpectedEndofFileInStringLiteral, r2
-        );
-        test_case!(program7,
-            tch!('a', 1, 1),
-            tch!('b', 1, 2),
-            tch!('c', 1, 3),
-            tstring!("123\\", 1, 4, 1, 10, true, false),   // Returned but UnexpectedEndofFileInStringLiteral, r2
-            tch!('4', 1, 11),
-            tch!('5', 1, 12), 
-            tch!('6', 1, 13),
-        );
-        test_case!(program8,
-            tch!('a', 1, 1),
-            tch!('b', 1, 2),
-            tch!('c', 1, 3),
-            // No more return
-        );
-        test_case!(program9,
-            tch!('a', 1, 1),
-            tch!('b', 1, 2),
-            tch!('c', 1, 3),
-            // No more return
-        );
-        test_case!(programa,
-            tch!('a', 1, 1),
-            tch!('b', 1, 2),
-            tch!('c', 1, 3),
-            tstring!("123", 1, 4, 1, 10, false, true),
-        );
-    }
-
-    #[test]
-    fn v1_buf() {
-        use super::BufV1Lexer;
-
-        macro_rules! test_case {
-            ($program: expr) => (
-
-                let mut bufv1 = BufV1Lexer::from(V1Lexer::from($program.to_owned()));
-                let mut messages = MessageEmitter::new();
-                loop {
-                    match bufv1.next(&mut messages) {
-                        Some(v1) => perrorln!("{:?}", v1),
-                        None => break,
-                    }
+        // Block comment is ' '
+        test_case!{ "A/*D\nEF*/GH",         // C6, C2, C9, C8
+            [
+                is_o!('A', 1, 1)
+                is_o!(' ', 1, 2)
+                is_o!('G', 2, 5)
+                is_o!('H', 2, 6)
+            ]
+        }
+        // EOF in block comment is error
+        test_case!{ "A/*BC",                // C6, C2, C9, C10
+            [
+                is_o!('A', 1, 1)
+            ]
+            [
+                Message::UnexpectedEndofFileInBlockComment{
+                    block_start: Position::from2(1, 2),
+                    eof_pos: Position::from2(1, 6),
                 }
-                perror!("{:?}", messages);
-            )
+            ]
         }
 
-        test_case!(program1);
+        // String literal test cases
+        test_case!{ r#""Hello, world!""#,
+            [
+                is_string!("Hello, world!", 1, 1, 1, 15, false)
+            ]
+        }
+        test_case!{ r#""He"#,
+            [
+                is_string!(1, 1, 1, 4, false)
+            ]
+            [
+                Message::UnexpectedEndofFileInStringLiteral{ 
+                    literal_start: Position::from2(1, 1), 
+                    eof_pos: Position::from2(1, 4), 
+                    hint_escaped_quote_pos: None,
+                }
+            ]
+        }
+        test_case!{ r#""He\"l\"lo"#,
+            [
+                is_string!(1, 1, 1, 11, false)
+            ]
+            [
+                Message::UnexpectedEndofFileInStringLiteral{
+                    literal_start: Position::from2(1, 1), 
+                    eof_pos: Position::from2(1, 11), 
+                    hint_escaped_quote_pos: Some(Position::from2(1, 7)),
+                }
+            ]
+        }
+        test_case!{ r#""H\t\n\0\'\"llo""#,
+            [
+                is_string!("H\t\n\0'\"llo", 1, 1, 1, 16, false)
+            ]
+        }
+        test_case!{ r#""h\a\d\e\n\f""#,
+            [
+                is_string!(1, 1, 1, 13, false)
+            ]
+            [
+                Message::UnrecognizedEscapeCharInStringLiteral{ 
+                    literal_start: Position::from2(1, 1), unrecogonize_pos: Position::from2(1, 3), unrecogonize_escape: 'a' }
+                Message::UnrecognizedEscapeCharInStringLiteral{ 
+                    literal_start: Position::from2(1, 1), unrecogonize_pos: Position::from2(1, 5), unrecogonize_escape: 'd' }
+                Message::UnrecognizedEscapeCharInStringLiteral{ 
+                    literal_start: Position::from2(1, 1), unrecogonize_pos: Position::from2(1, 7), unrecogonize_escape: 'e' }
+                Message::UnrecognizedEscapeCharInStringLiteral{ 
+                    literal_start: Position::from2(1, 1), unrecogonize_pos: Position::from2(1, 11), unrecogonize_escape: 'f' }
+            ]
+        }
+        test_case!{ r#""H\uABCDel""#,
+            [
+                is_string!("H\u{ABCD}el", 1, 1, 1, 11, false)
+            ]
+        }
+        test_case!{ r#""H\uABCHel\uABCg""#,
+            [
+                is_string!(1, 1, 1, 17, false)
+            ]
+            [
+                Message::UnexpectedCharInUnicodeCharEscape{ 
+                    escape_start: Position::from2(1, 3), unexpected_char_pos: Position::from2(1, 8), unexpected_char: 'H' }
+                Message::UnexpectedCharInUnicodeCharEscape{ 
+                    escape_start: Position::from2(1, 11), unexpected_char_pos: Position::from2(1, 16), unexpected_char: 'g' }
+            ]
+        }
+        test_case!{ r#""H\U0011ABCD""#,
+            [is_string!(1, 1, 1, 13, false)]
+            [
+                Message::IncorrectUnicodeCharEscapeValue{ 
+                    escape_start: Position::from2(1, 3), 
+                    raw_value: "0011ABCD".to_owned() 
+                }
+            ]
+        }
+        test_case!{ r#""H\u""#,
+            [is_string!(1, 1, 1, 5, false)]
+            [
+                Message::UnexpectedStringLiteralEndInUnicodeCharEscape{
+                    literal_start: Position::from2(1, 1), 
+                    escape_start: Position::from2(1, 3), 
+                    unexpected_end_pos: Position::from2(1, 5),
+                }
+            ]
+        }
+        test_case!{ r#""h\U123"#,
+            [is_string!(1, 1, 1, 8, false)]
+            [
+                Message::UnexpectedEndofFileInStringLiteral{ 
+                    literal_start: Position::from2(1, 1), 
+                    eof_pos: Position::from2(1, 8), 
+                    hint_escaped_quote_pos: None,
+                }
+            ]
+        }
+        test_case!{ r#""he\"#,
+            [is_string!(1, 1, 1, 5, false)]
+            [
+                Message::UnexpectedEndofFileInStringLiteral{ 
+                    literal_start: Position::from2(1, 1), 
+                    eof_pos: Position::from2(1, 5), 
+                    hint_escaped_quote_pos: None,
+                }
+            ]
+        }
+
+        // Raw string literal test cases
+        test_case!{ r#"r"hell\u\no""#,
+            [is_string!(r"hell\u\no", 1, 1, 1, 12, true)]
+        }
+        test_case!{ r#"R"he"#,
+            [is_string!(1, 1, 1, 5, true)]
+            [
+                Message::UnexpectedEndofFileInStringLiteral{ 
+                    literal_start: Position::from2(1, 1), 
+                    eof_pos: Position::from2(1, 5), 
+                    hint_escaped_quote_pos: None,
+                }
+            ]
+        }
+
+        // Char literal test cases
+        test_case!{ "'A'",
+            [is_char!('A', 1, 1, 1, 3)]
+        }
+        test_case!{ r"'\t'", 
+            [is_char!('\t', 1, 1, 1, 4)]
+        }
+        test_case!{ r"'\uABCD'",
+            [is_char!('\u{ABCD}', 1, 1, 1, 8)]
+        }
+        test_case!{ "''",
+            [is_char!(1, 1, 1, 2)]
+            [Message::EmptyCharLiteral{ pos: Position::from2(1, 1) }]
+        }
+        test_case!{ "'ABC'",
+            [is_char!(1, 1, 1, 5)]
+            [Message::CharLiteralTooLong{ start_pos: Position::from2(1, 1) }]
+        }
+        test_case!{ r"'\a'",
+            [is_char!(1, 1, 1, 4)]
+            [
+                Message::UnrecognizedEscapeCharInCharLiteral{
+                    literal_start: Position::from2(1, 1),
+                    unrecogonize_pos: Position::from2(1, 2),
+                    unrecogonize_escape: 'a',
+                }
+            ]
+        }
+        test_case!{ r"'\uBG'",
+            [is_char!(1, 1, 1, 6)]
+            [
+                Message::UnexpectedCharInUnicodeCharEscape{ 
+                    escape_start: Position::from2(1, 2),
+                    unexpected_char_pos: Position::from2(1, 5),
+                    unexpected_char: 'G' }
+                Message::UnexpectedCharLiteralEndInUnicodeCharEscape {
+                    literal_start: Position::from2(1, 1),
+                    escape_start: Position::from2(1, 2),
+                    unexpected_end_pos: Position::from2(1, 6) }
+            ]
+        }
+        test_case!{ r"'\U0011ABCD'",
+            [is_char!(1, 1, 1, 12)]
+            [
+                Message::IncorrectUnicodeCharEscapeValue{
+                    escape_start: Position::from2(1, 2),
+                    raw_value: "0011ABCD".to_owned()
+                }
+            ]
+        }
+        test_case!{ r"'\na'",
+            [is_char!(1, 1, 1, 5)]
+            [Message::CharLiteralTooLong{ start_pos: Position::from2(1, 1) }]
+        }
+        test_case!{ r"'\uABCDA'",
+            [is_char!(1, 1, 1, 9)]
+            [Message::CharLiteralTooLong{ start_pos: Position::from2(1, 1) }] 
+        }
+        test_case!{ "'",
+            [is_char!(1, 1, 1, 2)]
+            [
+                Message::UnexpectedEndofFileInCharLiteral{ 
+                    literal_start: Position::from2(1, 1), 
+                    eof_pos: Position::from2(1, 2), 
+                }
+            ]
+        }
+        test_case!{ r"'\",
+            [is_char!(1, 1, 1, 3)]
+            [
+                Message::UnexpectedEndofFileInCharLiteral{ 
+                    literal_start: Position::from2(1, 1), 
+                    eof_pos: Position::from2(1, 3), 
+                }
+            ]
+        }
+        test_case!{ r"'\u",
+            [is_char!(1, 1, 1, 4)]
+            [
+                Message::UnexpectedEndofFileInCharLiteral{ 
+                    literal_start: Position::from2(1, 1), 
+                    eof_pos: Position::from2(1, 4), 
+                }
+            ]
+        }
+        test_case! { r"'A",
+            [is_char!(1, 1, 1, 3)]
+            [
+                Message::UnexpectedEndofFileInCharLiteral{ 
+                    literal_start: Position::from2(1, 1), 
+                    eof_pos: Position::from2(1, 3), 
+                }
+            ]
+        }
+        test_case! { "'ABC",
+            [is_char!(1, 1, 1, 5)]
+            [
+                Message::UnexpectedEndofFileInCharLiteral{ 
+                    literal_start: Position::from2(1, 1), 
+                    eof_pos: Position::from2(1, 5) 
+                }
+            ]
+        }
+        test_case!{ r"'\'AB",
+            [
+                is_char!(1, 1, 1, 3)
+                is_o!('A', 1, 4)
+                is_o!('B', 1, 5)
+            ]
+            [Message::InvalidEscapeInCharLiteral{ start_pos: Position::from2(1, 1) }]
+        }
     }
 }

@@ -3,8 +3,15 @@
 // input v1
 // output string or numeric literal, identifier or other char
 
+use common::From2;
 use common::Position;
 use common::StringPosition;
+use message::MessageEmitter;
+use lexical::ILexer;
+use lexical::lexer::v1::V1Lexer;
+use lexical::lexer::v1::BufV1Lexer;
+use lexical::lexer::buf_lexer::BufToken;
+use lexical::lexer::buf_lexer::BufLexer;
 use lexical::symbol_type::string_literal::StringLiteral;
 use lexical::symbol_type::numeric_literal::NumericLiteral;
 use lexical::symbol_type::char_literal::CharLiteral;
@@ -13,9 +20,9 @@ use lexical::symbol_type::char_literal::CharLiteral;
 pub enum V2Token {
     StringLiteral { inner: StringLiteral },
     CharLiteral { inner: CharLiteral },
-    NumericLiteral { inner: NumericLiteral },
-    Identifier { name: String, pos: StringPosition },  // Any thing of [_a-zA-Z][_a-zA-Z0-9]*
-    OtherChar { ch: char, pos: Position }, // space, parenthenes, comma, etc.
+    NumericLiteral { inner: NumericLiteral },           // Anything of [0-9][_a-zA-Z0-9]*
+    Identifier { name: String, pos: StringPosition },   // Anything of [_a-zA-Z][_a-zA-Z0-9]*
+    Other { ch: char, pos: Position },
 }
 #[cfg(not(test))]
 #[derive(Clone)]
@@ -24,7 +31,7 @@ pub enum V2Token {
     CharLiteral { inner: CharLiteral },
     NumericLiteral { inner: NumericLiteral },
     Identifier { name: String, pos: StringPosition },
-    OtherChar { ch: char, pos: Position },
+    Other { ch: char, pos: Position },
 }
 
 #[cfg(test)]
@@ -45,15 +52,13 @@ impl fmt::Debug for V2Token {
             V2Token::Identifier{ ref name, ref pos } => {
                 write!(f, "Identifier {:?} at {:?}", name, pos)
             }
-            V2Token::OtherChar{ ch, pos } => {
-                write!(f, "Char {:?} at {:?}", ch, pos)
+            V2Token::Other{ ch, pos } => {
+                write!(f, "Other {:?} at {:?}", ch, pos)
             }
         }
     }
 }
 
-use lexical::lexer::v1::V1Lexer;
-use lexical::lexer::v1::BufV1Lexer;
 pub struct V2Lexer {
     v1: BufV1Lexer,
 }
@@ -101,10 +106,6 @@ impl IdentifierChar for char {
     }
 }
 
-use lexical::ILexer;
-use lexical::lexer::v1::V1Token;
-use lexical::lexer::v1::BufV1Token;
-use message::MessageEmitter;
 impl V2Lexer {    
     pub fn position(&self) -> Position { self.v1.inner().position() }
 }
@@ -136,13 +137,13 @@ impl ILexer<V2Token> for V2Lexer {
                 None => {
                     return None;
                 }
-                Some(BufV1Token{ token: V1Token::OtherChar{ raw, pos }, next: Some(V1Token::StringLiteral{ .. }) }) 
-                    | Some(BufV1Token{ token: V1Token::OtherChar{ raw, pos }, next: Some(V1Token::CharLiteral{ .. }) }) 
-                    | Some(BufV1Token{ token: V1Token::OtherChar{ raw, pos }, next: None }) => { 
-                    VHalf{ ch: raw, pos: pos, next_is_sep: true } 
+                Some(BufV1Token{ token: V1Token::Other{ ch, pos }, next: Some(V1Token::StringLiteral{ .. }) }) 
+                    | Some(BufV1Token{ token: V1Token::Other{ ch, pos }, next: Some(V1Token::CharLiteral{ .. }) }) 
+                    | Some(BufV1Token{ token: V1Token::Other{ ch, pos }, next: None }) => { 
+                    VHalf{ ch: ch, pos: pos, next_is_sep: true } 
                 }
-                Some(BufV1Token{ token: V1Token::OtherChar{ raw, pos }, next: Some(V1Token::OtherChar{ raw: next_ch, pos: _1 }) }) => {
-                    VHalf{ ch: raw, pos: pos, next_is_sep: next_ch.is_seperator() }
+                Some(BufV1Token{ token: V1Token::Other{ ch, pos }, next: Some(V1Token::Other{ ch: next_ch, pos: _1 }) }) => {
+                    VHalf{ ch: ch, pos: pos, next_is_sep: next_ch.is_seperator() }
                 }
             };
 
@@ -151,7 +152,7 @@ impl ILexer<V2Token> for V2Lexer {
                     match (vhalf.ch.is_identifier_start(), vhalf.ch.is_numeric_literal_start(), vhalf.pos, vhalf.next_is_sep) {
                         (false, false, pos, _next_is_sep) => {
                             // Nothing happened
-                            return Some(V2Token::OtherChar { ch: vhalf.ch, pos: pos });
+                            return Some(V2Token::Other { ch: vhalf.ch, pos: pos });
                         }
                         (true, false, pos, next_is_sep) => {
                             // Identifier try start
@@ -181,7 +182,7 @@ impl ILexer<V2Token> for V2Lexer {
                         value.push(vhalf.ch);
                         if vhalf.next_is_sep {
                             // To be finished, return here
-                            return Some(V2Token::Identifier { name: value, pos: StringPosition{ start_pos: start_pos, end_pos: vhalf.pos } });
+                            return Some(V2Token::Identifier { name: value, pos: StringPosition::from2(start_pos, vhalf.pos) });
                         } else {
                             state = State::InIdentifier { value: value, start_pos: start_pos };
                         }
@@ -207,14 +208,11 @@ impl ILexer<V2Token> for V2Lexer {
     }
 }
 
-use lexical::lexer::buf_lexer::BufToken;
-use lexical::lexer::buf_lexer::BufLexer;
 pub type BufV2Token = BufToken<V2Token>;
 pub type BufV2Lexer = BufLexer<V2Lexer, V2Token>;
 
 #[cfg(test)]
 mod tests {
-
     use super::V2Token;
     use super::V2Lexer;
     use lexical::ILexer;
@@ -261,7 +259,7 @@ mod tests {
     }
     macro_rules! tchar {
         ($ch: expr, $row: expr, $col: expr) => (
-            V2Token::OtherChar{ ch: $ch, pos: Position{ row: $row, col: $col } }
+            V2Token::Other{ ch: $ch, pos: Position{ row: $row, col: $col } }
         )
     }
 
@@ -272,7 +270,7 @@ mod tests {
     // SOLVE IN FUTURE
 
     #[test]
-    fn v2_anyother_is_seperator() {
+    fn v2_base() {
         test_case!(PROGRAM1,
             tnumber!("123", 1, 1, 1, 3),
             tchar!(' ', 1, 4),

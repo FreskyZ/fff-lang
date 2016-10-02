@@ -128,6 +128,7 @@ impl NumericLiteralValue {
     }
 }
 
+// TODO, change to Option<Value> and pos, is_failed by none and raw by v0
 #[cfg(test)]
 #[derive(Eq, PartialEq, Clone)]
 pub struct NumericLiteral {
@@ -362,7 +363,7 @@ mod tests {
         test_case!("bz", err: InvalidChar('z'));
         test_case!("gb", err: InvalidChar('g'));
         test_case!("AAAA0000", ok: -1431699456i32);
-        test_case!("FFFFFFFF", ok: -132);
+        test_case!("FFFFFFFF", ok: -1i32);
         test_case!("80000000", ok: i32::min_value());
         test_case!("7FFFFFFF", ok: 0x7FFFFFFFi32);
         test_case!("AAAAAAAAA", err: TooLong);

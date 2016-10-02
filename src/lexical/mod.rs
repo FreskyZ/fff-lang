@@ -57,7 +57,9 @@ mod tests {
 }
 
 // TODOs
-// v1 new test
 // numeric literal parser
-// try pass these source files
 // char parser optimize
+// v0 and its raw accessor to lexical::v0
+// v1 and its 3 parsers to lexical::v1
+// v2 and its numeric parser to lexical::v2
+// v3 and its seperator and keyword parser to lexical::v3

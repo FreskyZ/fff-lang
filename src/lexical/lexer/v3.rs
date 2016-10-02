@@ -102,7 +102,6 @@ impl ILexer<V3Token> for V3Lexer {
                 }
                 Some(BufV2Token{ token: V2Token::Identifier{ name, pos }, next: _1 }) => {
                     // Dispatch identifier to identifier or keyword
-                    // TODO!TODO! `true`, `false` become bool literal here
                     match KeywordKind::try_from(&name) {
                         Some(keyword) => return Some(V3Token::Keyword{ kind: keyword, pos: pos }),
                         None => {
@@ -114,7 +113,7 @@ impl ILexer<V3Token> for V3Lexer {
                         }
                     }
                 }
-                Some(BufV2Token{ token: V2Token::OtherChar{ ch, pos }, next: Some(V2Token::OtherChar{ ch: next_ch, pos: next_pos }) }) => {
+                Some(BufV2Token{ token: V2Token::Other{ ch, pos }, next: Some(V2Token::Other{ ch: next_ch, pos: next_pos }) }) => {
                     // Dispatch otherchar to seperator
                     match SeperatorKind::try_from((ch ,next_ch)) {
                         Some(sep) => match sep.len() { 
@@ -128,7 +127,7 @@ impl ILexer<V3Token> for V3Lexer {
                         None => continue,
                     }
                 }
-                Some(BufV2Token{ token: V2Token::OtherChar{ ch, pos }, next: _other }) => {
+                Some(BufV2Token{ token: V2Token::Other{ ch, pos }, next: _other }) => {
                     // Dispatch otherchar, seperator to seperator or operators
                     match SeperatorKind::try_from(ch) {
                         Some(sep) => match sep.len() { 
@@ -163,6 +162,31 @@ mod tests {
         use message::MessageEmitter;
 
         let file_name = "tests/lexical/2.sm";
+        let mut file: File = File::open(file_name).expect("Open file failed");
+
+        let mut content = String::new();
+        let _read_size = file.read_to_string(&mut content).expect("Read file failed");
+        let mut v3lexer = V3Lexer::from(content);
+
+        let mut messages = MessageEmitter::new();
+        loop {
+            match v3lexer.next(&mut messages) {
+                Some(v3) => perrorln!("{:?}", v3),
+                None => break, 
+            }
+        }
+        
+        perrorln!("messages: \n{:?}", messages);
+    }
+
+    #[test]
+    fn v3_on_lexical_symbol_type_numeic_literal() {
+         use std::fs::File;
+        use std::io::Read;
+        use super::V3Lexer;
+        use message::MessageEmitter;
+
+        let file_name = "src/lexical/symbol_type/numeric_literal.rs";
         let mut file: File = File::open(file_name).expect("Open file failed");
 
         let mut content = String::new();

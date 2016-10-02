@@ -83,11 +83,6 @@ pub struct StringLiteralParser {
     escape_start_pos: Position,
 }
 
-#[cfg(test)]
-pub fn str_lit_parser_visitor(parser: &StringLiteralParser) -> (&str, &Position, &Option<Position>, &bool, &Option<EscapeCharParser>) {
-    (&parser.raw, &parser.start_pos, &parser.last_escape_quote_pos, &parser.has_failed, &parser.escape_parser)
-}
-
 // Escape issues about string literal and char literal
 // all escapes: \t, \n, \r, \0, \\, \", \', \uxxxx, \Uxxxxxxxx, are all supported in char and string literal
 // when meet \, start parsing escape char literal
@@ -291,6 +286,12 @@ mod tests {
 
         assert_eq!(pos1, pos2);
     }
+    #[test]
+    #[ignore]
+    fn dummy(){
+        use_skipper(|| {});
+        str_lit_feasibility_fnonce_as_param();
+    }
 
     #[test]
     fn str_lit_not_raw() {
@@ -382,7 +383,7 @@ mod tests {
             assert_eq!(messages, expect_messages);
         }
 
-        {   // "h\a\d\e\u\f", error normal escape                               C11, C3, C2
+        {   // "h\a\d\e\n\f", error normal escape                               C11, C3, C2
             let mut parser = StringLiteralParser::new(spec_pos1);
             let messages = &mut MessageEmitter::new();
             let expect_messages = &mut MessageEmitter::new();
@@ -403,6 +404,24 @@ mod tests {
                 literal_start: spec_pos1, unrecogonize_pos: spec_pos2, unrecogonize_escape: 'e' });
             expect_messages.push(Message::UnrecognizedEscapeCharInStringLiteral{ 
                 literal_start: spec_pos1, unrecogonize_pos: spec_pos3, unrecogonize_escape: 'f' });
+            assert_eq!(messages, expect_messages);
+        }
+
+        {   // "H\uABCDel", unicode escape                                      C11, C3, C8, C10, C7
+            let mut parser = StringLiteralParser::new(spec_pos1);
+            let messages = &mut MessageEmitter::new();
+            let expect_messages = &mut MessageEmitter::new();
+            assert_eq!(parser.input(Some('H'), dummy_pos, Some('\\'), messages), WantMore);
+            assert_eq!(parser.input(Some('\\'), spec_pos2, Some('u'), messages), WantMoreWithSkip1);
+            assert_eq!(parser.input(Some('A'), dummy_pos, Some('B'), messages), WantMore);
+            assert_eq!(parser.input(Some('B'), dummy_pos, Some('C'), messages), WantMore);
+            assert_eq!(parser.input(Some('C'), dummy_pos, Some('D'), messages), WantMore);
+            assert_eq!(parser.input(Some('D'), dummy_pos, Some('e'), messages), WantMore);
+            assert_eq!(parser.input(Some('e'), dummy_pos, Some('l'), messages), WantMore);
+            assert_eq!(parser.input(Some('l'), dummy_pos, Some('"'), messages), WantMore);
+            assert_eq!(parser.input(Some('"'), spec_pos3, Some('$'), messages), 
+                Finished(StringLiteral::new(Some("H\u{ABCD}el".to_owned()), StringPosition::from((spec_pos1, spec_pos3)), false)));
+            
             assert_eq!(messages, expect_messages);
         }
 
@@ -451,24 +470,6 @@ mod tests {
                 Finished(StringLiteral::new(None, StringPosition::from((spec_pos1, spec_pos3)), false)));
             
             expect_messages.push(Message::IncorrectUnicodeCharEscapeValue{ escape_start: spec_pos2, raw_value: "0011ABCD".to_owned() });
-            assert_eq!(messages, expect_messages);
-        }
-
-        {   // "H\uABCDel", unicode escape                                      C11, C3, C8, C10, C7
-            let mut parser = StringLiteralParser::new(spec_pos1);
-            let messages = &mut MessageEmitter::new();
-            let expect_messages = &mut MessageEmitter::new();
-            assert_eq!(parser.input(Some('H'), dummy_pos, Some('\\'), messages), WantMore);
-            assert_eq!(parser.input(Some('\\'), spec_pos2, Some('u'), messages), WantMoreWithSkip1);
-            assert_eq!(parser.input(Some('A'), dummy_pos, Some('B'), messages), WantMore);
-            assert_eq!(parser.input(Some('B'), dummy_pos, Some('C'), messages), WantMore);
-            assert_eq!(parser.input(Some('C'), dummy_pos, Some('D'), messages), WantMore);
-            assert_eq!(parser.input(Some('D'), dummy_pos, Some('e'), messages), WantMore);
-            assert_eq!(parser.input(Some('e'), dummy_pos, Some('l'), messages), WantMore);
-            assert_eq!(parser.input(Some('l'), dummy_pos, Some('"'), messages), WantMore);
-            assert_eq!(parser.input(Some('"'), spec_pos3, Some('$'), messages), 
-                Finished(StringLiteral::new(Some("H\u{ABCD}el".to_owned()), StringPosition::from((spec_pos1, spec_pos3)), false)));
-            
             assert_eq!(messages, expect_messages);
         }
 

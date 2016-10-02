@@ -42,7 +42,7 @@ impl fmt::Debug for CharLiteral {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.value {
             Some(value) => write!(f, "Char literal {:?} at {:?}", value, self.pos),
-            None => write!(f, "Invalid char literal at {:?}", self.pos)
+            None => write!(f, "Char literal at {:?}, invalid", self.pos)
         }
     }
 }
@@ -177,7 +177,7 @@ impl CharLiteralParser {
                                                 return CharLiteralParserResult::WantMoreWithSkip1;
                                             }
                                             EscapeCharSimpleCheckResult::Invalid(ch) => {
-                                                messages.push(Message::UnrecognizedEscapeCharInStringLiteral {
+                                                messages.push(Message::UnrecognizedEscapeCharInCharLiteral {
                                                     literal_start: self.start_pos, 
                                                     unrecogonize_pos: slash_pos, 
                                                     unrecogonize_escape: ch });
@@ -195,9 +195,9 @@ impl CharLiteralParser {
                                         }
                                     }
                                     ('\\', pos, None) => { 
-                                        messages.push(Message::UnexpectedEndofFileInCharLiteral{ literal_start: self.start_pos, eof_pos: pos });
+                                        messages.push(Message::UnexpectedEndofFileInCharLiteral{ literal_start: self.start_pos, eof_pos: pos.next_col() });
                                         coverage_recorder.insert(10);               // C10, '\$
-                                        return CharLiteralParserResult::Finished(CharLiteral{ value: None, pos: StringPosition::from2(self.start_pos, pos) });
+                                        return CharLiteralParserResult::Finished(CharLiteral{ value: None, pos: StringPosition::from2(self.start_pos, pos.next_col()) });
                                     }
                                     (ch, _pos, _1) => {
                                         self.buf = Some(ch);   
@@ -378,7 +378,7 @@ mod tests {
             assert_eq!(parser.input(Some('\''), spec_pos4, Some('$'), messages, current_counter), 
                 Finished(CharLiteral{ value: None, pos: StringPosition::from2(spec_pos1, spec_pos4) }));
             
-            messages_expect!(messages, [Message::UnrecognizedEscapeCharInStringLiteral{ 
+            messages_expect!(messages, [Message::UnrecognizedEscapeCharInCharLiteral{ 
                                                     literal_start: spec_pos1, 
                                                     unrecogonize_pos: spec_pos3, 
                                                     unrecogonize_escape: 'a' }]);
@@ -484,9 +484,9 @@ mod tests {
             let current_counter = &mut HashSet::<i32>::new();
 
             assert_eq!(parser.input(Some('\\'), spec_pos3, None, messages, current_counter), 
-                Finished(CharLiteral{ value: None, pos: StringPosition::from2(spec_pos1, spec_pos3) }));
+                Finished(CharLiteral{ value: None, pos: StringPosition::from2(spec_pos1, spec_pos3.next_col()) }));
             
-            messages_expect!(messages, [Message::UnexpectedEndofFileInCharLiteral{ literal_start: spec_pos1, eof_pos: spec_pos3 }]);
+            messages_expect!(messages, [Message::UnexpectedEndofFileInCharLiteral{ literal_start: spec_pos1, eof_pos: spec_pos3.next_col() }]);
             counter_expect!(current_counter, all_counter, [10]);
         }
 

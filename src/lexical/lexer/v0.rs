@@ -50,7 +50,6 @@ impl From<String> for V0Lexer {
 
 impl V0Lexer {
     
-    // Text position
     pub fn position(&self) -> Position { self.text_pos }
 
     fn buf_index_at_end(&self) -> bool { self.buf.len() <= self.buf_index }
@@ -121,7 +120,10 @@ impl ILexer<V0Token> for V0Lexer {
 
     // Exact next char, LF and CRLF are acceptable line end
     // So CR is always ignored and LF is returned and position fields are updated
+    //
     // Because need next preview, so actually is getting next next char
+    //
+    // Provide None|EOF a special virtual pos 
     fn next(&mut self, _emitter: &mut MessageEmitter) -> Option<V0Token> {
         
         // next not cr will return None if buf index at end
@@ -134,6 +136,9 @@ impl ILexer<V0Token> for V0Lexer {
 
             self.previous_is_new_line = ch == '\n';
             V0Token{ ch: ch, pos: self.text_pos }
+        }).or_else(||{
+            self.text_pos = self.text_pos.next_col();
+            None
         })
     }
 }
