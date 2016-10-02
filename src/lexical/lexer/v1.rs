@@ -19,6 +19,8 @@ use lexical::lexer::v0::BufV0Lexer;
 use lexical::symbol_type::string_literal::StringLiteral;
 use lexical::symbol_type::string_literal::StringLiteralParser;
 use lexical::symbol_type::string_literal::StringLiteralParserResult;
+use lexical::symbol_type::string_literal::RawStringLiteralParser;
+use lexical::symbol_type::string_literal::RawStringLiteralParserResult;
 use lexical::symbol_type::char_literal::CharLiteral;
 use lexical::symbol_type::char_literal::CharLiteralParser;
 use lexical::symbol_type::char_literal::CoverageRecorder;
@@ -89,7 +91,7 @@ impl ILexer<V1Token> for V1Lexer {
         enum State {
             Nothing,
             InStringLiteral { parser: StringLiteralParser },
-            InRawStringLiteral { parser: StringLiteralParser },
+            InRawStringLiteral { parser: RawStringLiteralParser },
             InLineComment,
             InBlockComment { start_pos: Position },
             InCharLiteral { parser: CharLiteralParser },
@@ -114,7 +116,7 @@ impl ILexer<V1Token> for V1Lexer {
                         Some(BufV0Token { token: V0Token { ch: 'r', pos }, next: Some(V0Token { ch: '"', pos: _1 }) })
                             | Some(BufV0Token { token: V0Token { ch: 'R', pos }, next: Some(V0Token { ch: '"', pos: _1 }) }) => {
                             self.v0.skip1(messages);                                           // C4: in nothing, meet r" or R"
-                            state = State::InRawStringLiteral { parser: StringLiteralParser::new(pos) };
+                            state = State::InRawStringLiteral { parser: RawStringLiteralParser::new(pos) };
                         }
                         Some(BufV0Token{ token: V0Token{ ch: '\'', pos }, next: _1 }) => {     // C5: in nothing, meet '
                             state = State::InCharLiteral{ parser: CharLiteralParser::new(pos) };
@@ -156,13 +158,13 @@ impl ILexer<V1Token> for V1Lexer {
                 State::InStringLiteral { ref mut parser } => {
                     match match bufv0 {
                         Some(BufV0Token{ token: V0Token{ ch, pos }, next: Some(V0Token{ ch: next_ch, pos: _1 }) }) => {
-                            parser.try_get_string_literal(Some(ch), pos, Some(next_ch), messages)
+                            parser.input(Some(ch), pos, Some(next_ch), messages)
                         }
                         Some(BufV0Token{ token: V0Token { ch, pos }, next: None }) => {        // Cx: anything inside quotation is none about this module
-                            parser.try_get_string_literal(Some(ch), pos, None, messages)
+                            parser.input(Some(ch), pos, None, messages)
                         }
                         None => {
-                            parser.try_get_string_literal(None, self.position(), None, messages);
+                            parser.input(None, self.position(), None, messages);
                             return None;  // Special occassion, EOFed, just emit error and quick return
                         }
                     } {
@@ -178,13 +180,13 @@ impl ILexer<V1Token> for V1Lexer {
                 State::InRawStringLiteral { ref mut parser } => {
                     match bufv0 {
                         Some(BufV0Token{ token: V0Token { ch, pos }, next: _2 }) => {          // Cx, anything inside r"" is none about this module
-                            match parser.try_get_raw_string_literal(Some(ch), pos, messages) {
-                                Some(literal) => return Some(V1Token::StringLiteral{ inner: literal }),
-                                None => (),
+                            match parser.input(Some(ch), pos, messages) {
+                                RawStringLiteralParserResult::Finished(literal) => return Some(V1Token::StringLiteral{ inner: literal }),
+                                RawStringLiteralParserResult::WantMore => (),
                             }
                         }
                         None => {
-                            parser.try_get_raw_string_literal(None, self.position(), messages);
+                            parser.input(None, self.position(), messages);
                             return None;
                         }
                     }

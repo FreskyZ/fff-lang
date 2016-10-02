@@ -544,7 +544,6 @@ mod tests {
             counter_expect!(current_counter, all_counter, []); 
         }
 
-        // counter_expect!(all_counter, all_counter, [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17]);
         let mut sorted_all_counter = all_counter.into_iter().collect::<Vec<i32>>();
         sorted_all_counter.sort();
         // perrorln!("All counter is {:?}", sorted_all_counter);

@@ -3,6 +3,7 @@
 // string literal storage, escape and display
 
 use std::fmt;
+use common::From2;
 use common::Position;
 use common::StringPosition;
 use message::Message;
@@ -36,6 +37,15 @@ impl StringLiteral {
             is_raw: is_raw,
         }
     }
+
+    #[cfg(test)]
+    pub fn new2(value: &str, pos: StringPosition, is_raw: bool) -> StringLiteral {
+        StringLiteral {
+            value: Some(value.to_owned()),
+            pos: pos,
+            is_raw: is_raw,
+        }
+    }
 }
 
 impl fmt::Debug for StringLiteral {
@@ -53,7 +63,6 @@ impl fmt::Debug for StringLiteral {
 impl_display_by_debug!(StringLiteral);
 
 // String literal parser, raw or not raw
-// TODO: return dummy string literal for unexpected EOFs
 #[cfg(test)]
 #[derive(Debug)]
 pub struct StringLiteralParser {
@@ -85,7 +94,7 @@ pub fn str_lit_parser_visitor(parser: &StringLiteralParser) -> (&str, &Position,
 // if meet EOF, string report unexpected EOF in string, char report unexpected EOF in char
 // if meet end of literal, e.g.  '\uAA' or "123\U45678", report incorrect unicode escape error
 // specially  
-//     '\', char parser will find next is not ' and report too long error
+//     '\', char parser will find next is not ' and immediately stop char parser and report a special error for this
 //     "\", string parser will record this escape position and this will most probably cause unexpected EOF in string and string parser will report it
 
 #[cfg(test)]
@@ -116,14 +125,9 @@ impl StringLiteralParser {
         }
     }
 
-    /// Try get string literal, use in state machine of v1, return Some for successfully processed, None for want more
+    /// Try get string literal, use in state machine of v1, 
     /// ch is none means get none, next_ch is none means next is none
-    pub fn try_get_string_literal(
-        &mut self, 
-        ch: Option<char>, 
-        pos: Position, 
-        next_ch: Option<char>, 
-        messages: &mut MessageEmitter) -> StringLiteralParserResult {
+    pub fn input(&mut self, ch: Option<char>, pos: Position, next_ch: Option<char>, messages: &mut MessageEmitter) -> StringLiteralParserResult {
 
         match (ch, pos, next_ch) {
             (Some('\\'), slash_pos, Some(next_ch)) => {
@@ -164,7 +168,7 @@ impl StringLiteralParser {
                             escape_start: self.escape_start_pos,
                             unexpected_end_pos: pos,
                         });
-                        return StringLiteralParserResult::Finished(StringLiteral::new(Some(self.raw.clone()), StringPosition::from((self.start_pos, pos)), false));
+                        return StringLiteralParserResult::Finished(StringLiteral::new(None, StringPosition::from((self.start_pos, pos)), false));
                     }
                     None => {                                                       // C7, normal EOL, return
                         return StringLiteralParserResult::Finished(StringLiteral::new(
@@ -204,20 +208,47 @@ impl StringLiteralParser {
                     eof_pos: pos,
                     hint_escaped_quote_pos: self.last_escape_quote_pos 
                 });
-                return StringLiteralParserResult::WantMore;
+                return StringLiteralParserResult::Finished(StringLiteral::new(None, StringPosition::from2(self.start_pos, pos), false));
             }
         }
     }
+}
 
-    /// Try get raw string literal, use in state machine of v1, return Some for successfully processed, None for want more
-    pub fn try_get_raw_string_literal(&mut self, ch: Option<char>, pos: Position, messages: &mut MessageEmitter) -> Option<StringLiteral> {
+// Raw string literal parser
+pub struct RawStringLiteralParser {
+    raw: String,
+    start_pos: Position,
+}
+
+#[cfg(test)]
+#[derive(Debug, Eq, PartialEq)]
+pub enum RawStringLiteralParserResult { 
+    WantMore, 
+    Finished(StringLiteral),
+}
+#[cfg(not(test))]
+pub enum RawStringLiteralParserResult { 
+    WantMore, 
+    Finished(StringLiteral),
+}
+
+impl RawStringLiteralParser {
+
+    pub fn new(start_pos: Position) -> RawStringLiteralParser {
+        RawStringLiteralParser {
+            raw: String::new(),
+            start_pos: start_pos,
+        }
+    }
+
+    pub fn input(&mut self, ch: Option<char>, pos: Position, messages: &mut MessageEmitter) -> RawStringLiteralParserResult {
         match (ch, pos) {
             (Some('"'), pos) => {                                               // C1: in raw string, meet ", finish, return
-                return Some(StringLiteral::new(self.raw.clone(), StringPosition::from((self.start_pos, pos)), true));
+                return RawStringLiteralParserResult::Finished(StringLiteral::new(self.raw.clone(), StringPosition::from((self.start_pos, pos)), true));
             }
             (Some(ch), _1) => {                                                 // C2: in raw string, meet other, continue
                 self.raw.push(ch);
-                return None;
+                return RawStringLiteralParserResult::WantMore;
             }
             (None, pos) => {
                 messages.push(Message::UnexpectedEndofFileInStringLiteral {     // C3: in raw string, meet EOF, emit error, return  
@@ -225,7 +256,7 @@ impl StringLiteralParser {
                     eof_pos: pos,
                     hint_escaped_quote_pos: None
                 });
-                return None;
+                return RawStringLiteralParserResult::Finished(StringLiteral::new(None, StringPosition::from2(self.start_pos, pos), true));
             }
         }
     }
@@ -263,6 +294,7 @@ mod tests {
 
     #[test]
     fn str_lit_not_raw() {
+        use common::From2;
         use common::Position;
         use common::StringPosition;
         use message::Message;
@@ -280,21 +312,21 @@ mod tests {
         {   // "Hello, world!", most normal,                                    C11, C5, C7
             let mut parser = StringLiteralParser::new(Position::from((12, 34)));
             let messages = &mut MessageEmitter::new(); 
-            assert_eq!(parser.try_get_string_literal(Some('H'), dummy_pos, Some('e'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('e'), dummy_pos, Some('l'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('l'), dummy_pos, Some('l'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('l'), dummy_pos, Some('o'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('o'), dummy_pos, Some('o'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some(','), dummy_pos, Some(','), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some(' '), dummy_pos, Some(' '), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('w'), dummy_pos, Some('w'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('o'), dummy_pos, Some('o'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('r'), dummy_pos, Some('r'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('l'), dummy_pos, Some('l'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('d'), dummy_pos, Some('d'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('!'), dummy_pos, None, messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('"'), Position::from((56, 78)), None, messages), 
-                Finished(StringLiteral::new(Some("Hello, world!".to_owned()), StringPosition::from((12, 34, 56, 78)), false)));
+            assert_eq!(parser.input(Some('H'), dummy_pos, Some('e'), messages), WantMore);
+            assert_eq!(parser.input(Some('e'), dummy_pos, Some('l'), messages), WantMore);
+            assert_eq!(parser.input(Some('l'), dummy_pos, Some('l'), messages), WantMore);
+            assert_eq!(parser.input(Some('l'), dummy_pos, Some('o'), messages), WantMore);
+            assert_eq!(parser.input(Some('o'), dummy_pos, Some('o'), messages), WantMore);
+            assert_eq!(parser.input(Some(','), dummy_pos, Some(','), messages), WantMore);
+            assert_eq!(parser.input(Some(' '), dummy_pos, Some(' '), messages), WantMore);
+            assert_eq!(parser.input(Some('w'), dummy_pos, Some('w'), messages), WantMore);
+            assert_eq!(parser.input(Some('o'), dummy_pos, Some('o'), messages), WantMore);
+            assert_eq!(parser.input(Some('r'), dummy_pos, Some('r'), messages), WantMore);
+            assert_eq!(parser.input(Some('l'), dummy_pos, Some('l'), messages), WantMore);
+            assert_eq!(parser.input(Some('d'), dummy_pos, Some('d'), messages), WantMore);
+            assert_eq!(parser.input(Some('!'), dummy_pos, None, messages), WantMore);
+            assert_eq!(parser.input(Some('"'), Position::from((56, 78)), None, messages), 
+                Finished(StringLiteral::new2("Hello, world!", StringPosition::from((12, 34, 56, 78)), false)));
 
             assert_eq!(messages, &MessageEmitter::new());
         }
@@ -303,9 +335,10 @@ mod tests {
             let mut parser = StringLiteralParser::new(spec_pos1);
             let messages = &mut MessageEmitter::new();
             let expect_messages = &mut MessageEmitter::new();  
-            assert_eq!(parser.try_get_string_literal(Some('H'), dummy_pos, Some('e'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('e'), dummy_pos, Some('l'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(None, spec_pos2, None, messages), WantMore);
+            assert_eq!(parser.input(Some('H'), dummy_pos, Some('e'), messages), WantMore);
+            assert_eq!(parser.input(Some('e'), dummy_pos, Some('l'), messages), WantMore);
+            assert_eq!(parser.input(None, spec_pos2, None, messages), 
+                Finished(StringLiteral::new(None, StringPosition::from2(spec_pos1, spec_pos2), false)));
 
             expect_messages.push(Message::UnexpectedEndofFileInStringLiteral { literal_start: spec_pos1, eof_pos: spec_pos2, hint_escaped_quote_pos: None });
             assert_eq!(messages, expect_messages);
@@ -315,14 +348,15 @@ mod tests {
             let mut parser = StringLiteralParser::new(spec_pos1);
             let messages = &mut MessageEmitter::new();
             let expect_messages = &mut MessageEmitter::new();
-            assert_eq!(parser.try_get_string_literal(Some('H'), dummy_pos, Some('e'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('e'), dummy_pos, Some('\\'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('\\'), spec_pos2, Some('"'), messages), WantMoreWithSkip1);
-            assert_eq!(parser.try_get_string_literal(Some('l'), dummy_pos, Some('\\'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('\\'), spec_pos3, Some('"'), messages), WantMoreWithSkip1);
-            assert_eq!(parser.try_get_string_literal(Some('l'), dummy_pos, Some('o'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('o'), dummy_pos, None, messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(None, spec_pos4, None, messages), WantMore);
+            assert_eq!(parser.input(Some('H'), dummy_pos, Some('e'), messages), WantMore);
+            assert_eq!(parser.input(Some('e'), dummy_pos, Some('\\'), messages), WantMore);
+            assert_eq!(parser.input(Some('\\'), spec_pos2, Some('"'), messages), WantMoreWithSkip1);
+            assert_eq!(parser.input(Some('l'), dummy_pos, Some('\\'), messages), WantMore);
+            assert_eq!(parser.input(Some('\\'), spec_pos3, Some('"'), messages), WantMoreWithSkip1);
+            assert_eq!(parser.input(Some('l'), dummy_pos, Some('o'), messages), WantMore);
+            assert_eq!(parser.input(Some('o'), dummy_pos, None, messages), WantMore);
+            assert_eq!(parser.input(None, spec_pos4, None, messages), 
+                Finished(StringLiteral::new(None, StringPosition::from2(spec_pos1, spec_pos4), false)));
 
             expect_messages.push(Message::UnexpectedEndofFileInStringLiteral { 
                 literal_start: spec_pos1, eof_pos: spec_pos4, hint_escaped_quote_pos: Some(spec_pos3) });
@@ -333,17 +367,17 @@ mod tests {
             let mut parser = StringLiteralParser::new(spec_pos1);
             let messages = &mut MessageEmitter::new();
             let expect_messages = &mut MessageEmitter::new();
-            assert_eq!(parser.try_get_string_literal(Some('H'), dummy_pos, Some('\\'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('\\'), dummy_pos, Some('t'), messages), WantMoreWithSkip1);
-            assert_eq!(parser.try_get_string_literal(Some('\\'), dummy_pos, Some('n'), messages), WantMoreWithSkip1);
-            assert_eq!(parser.try_get_string_literal(Some('\\'), dummy_pos, Some('0'), messages), WantMoreWithSkip1);
-            assert_eq!(parser.try_get_string_literal(Some('\\'), dummy_pos, Some('\''), messages), WantMoreWithSkip1);
-            assert_eq!(parser.try_get_string_literal(Some('\\'), dummy_pos, Some('"'), messages), WantMoreWithSkip1);
-            assert_eq!(parser.try_get_string_literal(Some('l'), dummy_pos, Some('l'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('l'), dummy_pos, Some('o'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('o'), dummy_pos, Some('"'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('"'), spec_pos4, Some('$'), messages), 
-                Finished(StringLiteral::new(Some("H\t\n\0\'\"llo".to_owned()), StringPosition::from((spec_pos1, spec_pos4)), false)));
+            assert_eq!(parser.input(Some('H'), dummy_pos, Some('\\'), messages), WantMore);
+            assert_eq!(parser.input(Some('\\'), dummy_pos, Some('t'), messages), WantMoreWithSkip1);
+            assert_eq!(parser.input(Some('\\'), dummy_pos, Some('n'), messages), WantMoreWithSkip1);
+            assert_eq!(parser.input(Some('\\'), dummy_pos, Some('0'), messages), WantMoreWithSkip1);
+            assert_eq!(parser.input(Some('\\'), dummy_pos, Some('\''), messages), WantMoreWithSkip1);
+            assert_eq!(parser.input(Some('\\'), dummy_pos, Some('"'), messages), WantMoreWithSkip1);
+            assert_eq!(parser.input(Some('l'), dummy_pos, Some('l'), messages), WantMore);
+            assert_eq!(parser.input(Some('l'), dummy_pos, Some('o'), messages), WantMore);
+            assert_eq!(parser.input(Some('o'), dummy_pos, Some('"'), messages), WantMore);
+            assert_eq!(parser.input(Some('"'), spec_pos4, Some('$'), messages), 
+                Finished(StringLiteral::new2("H\t\n\0\'\"llo", StringPosition::from((spec_pos1, spec_pos4)), false)));
 
             assert_eq!(messages, expect_messages);
         }
@@ -352,13 +386,13 @@ mod tests {
             let mut parser = StringLiteralParser::new(spec_pos1);
             let messages = &mut MessageEmitter::new();
             let expect_messages = &mut MessageEmitter::new();
-            assert_eq!(parser.try_get_string_literal(Some('H'), dummy_pos, Some('\\'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('\\'), spec_pos2, Some('a'), messages), WantMoreWithSkip1);
-            assert_eq!(parser.try_get_string_literal(Some('\\'), spec_pos3, Some('d'), messages), WantMoreWithSkip1);
-            assert_eq!(parser.try_get_string_literal(Some('\\'), spec_pos2, Some('e'), messages), WantMoreWithSkip1);
-            assert_eq!(parser.try_get_string_literal(Some('\\'), dummy_pos, Some('n'), messages), WantMoreWithSkip1);
-            assert_eq!(parser.try_get_string_literal(Some('\\'), spec_pos3, Some('f'), messages), WantMoreWithSkip1);
-            assert_eq!(parser.try_get_string_literal(Some('"'), spec_pos4, Some('$'), messages),
+            assert_eq!(parser.input(Some('H'), dummy_pos, Some('\\'), messages), WantMore);
+            assert_eq!(parser.input(Some('\\'), spec_pos2, Some('a'), messages), WantMoreWithSkip1);
+            assert_eq!(parser.input(Some('\\'), spec_pos3, Some('d'), messages), WantMoreWithSkip1);
+            assert_eq!(parser.input(Some('\\'), spec_pos2, Some('e'), messages), WantMoreWithSkip1);
+            assert_eq!(parser.input(Some('\\'), dummy_pos, Some('n'), messages), WantMoreWithSkip1);
+            assert_eq!(parser.input(Some('\\'), spec_pos3, Some('f'), messages), WantMoreWithSkip1);
+            assert_eq!(parser.input(Some('"'), spec_pos4, Some('$'), messages),
                 Finished(StringLiteral::new(None, StringPosition::from((spec_pos1, spec_pos4)), false)));
             
             expect_messages.push(Message::UnrecognizedEscapeCharInStringLiteral{ 
@@ -376,20 +410,20 @@ mod tests {
             let mut parser = StringLiteralParser::new(spec_pos1);
             let messages = &mut MessageEmitter::new();
             let expect_messages = &mut MessageEmitter::new();
-            assert_eq!(parser.try_get_string_literal(Some('H'), dummy_pos, Some('\\'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('\\'), spec_pos2, Some('u'), messages), WantMoreWithSkip1);
-            assert_eq!(parser.try_get_string_literal(Some('A'), dummy_pos, Some('B'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('B'), dummy_pos, Some('C'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('C'), dummy_pos, Some('H'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('H'), spec_pos3, Some('e'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('e'), dummy_pos, Some('l'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('l'), dummy_pos, Some('\\'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('\\'), spec_pos3, Some('u'), messages), WantMoreWithSkip1);
-            assert_eq!(parser.try_get_string_literal(Some('A'), dummy_pos, Some('B'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('B'), dummy_pos, Some('C'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('C'), dummy_pos, Some('g'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('g'), spec_pos4, Some('"'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('"'), spec_pos4, Some('$'), messages), 
+            assert_eq!(parser.input(Some('H'), dummy_pos, Some('\\'), messages), WantMore);
+            assert_eq!(parser.input(Some('\\'), spec_pos2, Some('u'), messages), WantMoreWithSkip1);
+            assert_eq!(parser.input(Some('A'), dummy_pos, Some('B'), messages), WantMore);
+            assert_eq!(parser.input(Some('B'), dummy_pos, Some('C'), messages), WantMore);
+            assert_eq!(parser.input(Some('C'), dummy_pos, Some('H'), messages), WantMore);
+            assert_eq!(parser.input(Some('H'), spec_pos3, Some('e'), messages), WantMore);
+            assert_eq!(parser.input(Some('e'), dummy_pos, Some('l'), messages), WantMore);
+            assert_eq!(parser.input(Some('l'), dummy_pos, Some('\\'), messages), WantMore);
+            assert_eq!(parser.input(Some('\\'), spec_pos3, Some('u'), messages), WantMoreWithSkip1);
+            assert_eq!(parser.input(Some('A'), dummy_pos, Some('B'), messages), WantMore);
+            assert_eq!(parser.input(Some('B'), dummy_pos, Some('C'), messages), WantMore);
+            assert_eq!(parser.input(Some('C'), dummy_pos, Some('g'), messages), WantMore);
+            assert_eq!(parser.input(Some('g'), spec_pos4, Some('"'), messages), WantMore);
+            assert_eq!(parser.input(Some('"'), spec_pos4, Some('$'), messages), 
                 Finished(StringLiteral::new(None, StringPosition::from((spec_pos1, spec_pos4)), false)));
             
             expect_messages.push(Message::UnexpectedCharInUnicodeCharEscape{ 
@@ -403,17 +437,17 @@ mod tests {
             let mut parser = StringLiteralParser::new(spec_pos1);
             let messages = &mut MessageEmitter::new();
             let expect_messages = &mut MessageEmitter::new();
-            assert_eq!(parser.try_get_string_literal(Some('H'), dummy_pos, Some('\\'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('\\'), spec_pos2, Some('U'), messages), WantMoreWithSkip1);
-            assert_eq!(parser.try_get_string_literal(Some('0'), dummy_pos, Some('0'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('0'), dummy_pos, Some('1'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('1'), dummy_pos, Some('1'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('1'), dummy_pos, Some('A'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('A'), dummy_pos, Some('B'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('B'), dummy_pos, Some('C'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('C'), dummy_pos, Some('D'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('D'), dummy_pos, Some('"'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('"'), spec_pos3, Some('$'), messages),
+            assert_eq!(parser.input(Some('H'), dummy_pos, Some('\\'), messages), WantMore);
+            assert_eq!(parser.input(Some('\\'), spec_pos2, Some('U'), messages), WantMoreWithSkip1);
+            assert_eq!(parser.input(Some('0'), dummy_pos, Some('0'), messages), WantMore);
+            assert_eq!(parser.input(Some('0'), dummy_pos, Some('1'), messages), WantMore);
+            assert_eq!(parser.input(Some('1'), dummy_pos, Some('1'), messages), WantMore);
+            assert_eq!(parser.input(Some('1'), dummy_pos, Some('A'), messages), WantMore);
+            assert_eq!(parser.input(Some('A'), dummy_pos, Some('B'), messages), WantMore);
+            assert_eq!(parser.input(Some('B'), dummy_pos, Some('C'), messages), WantMore);
+            assert_eq!(parser.input(Some('C'), dummy_pos, Some('D'), messages), WantMore);
+            assert_eq!(parser.input(Some('D'), dummy_pos, Some('"'), messages), WantMore);
+            assert_eq!(parser.input(Some('"'), spec_pos3, Some('$'), messages),
                 Finished(StringLiteral::new(None, StringPosition::from((spec_pos1, spec_pos3)), false)));
             
             expect_messages.push(Message::IncorrectUnicodeCharEscapeValue{ escape_start: spec_pos2, raw_value: "0011ABCD".to_owned() });
@@ -424,15 +458,15 @@ mod tests {
             let mut parser = StringLiteralParser::new(spec_pos1);
             let messages = &mut MessageEmitter::new();
             let expect_messages = &mut MessageEmitter::new();
-            assert_eq!(parser.try_get_string_literal(Some('H'), dummy_pos, Some('\\'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('\\'), spec_pos2, Some('u'), messages), WantMoreWithSkip1);
-            assert_eq!(parser.try_get_string_literal(Some('A'), dummy_pos, Some('B'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('B'), dummy_pos, Some('C'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('C'), dummy_pos, Some('D'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('D'), dummy_pos, Some('e'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('e'), dummy_pos, Some('l'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('l'), dummy_pos, Some('"'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('"'), spec_pos3, Some('$'), messages), 
+            assert_eq!(parser.input(Some('H'), dummy_pos, Some('\\'), messages), WantMore);
+            assert_eq!(parser.input(Some('\\'), spec_pos2, Some('u'), messages), WantMoreWithSkip1);
+            assert_eq!(parser.input(Some('A'), dummy_pos, Some('B'), messages), WantMore);
+            assert_eq!(parser.input(Some('B'), dummy_pos, Some('C'), messages), WantMore);
+            assert_eq!(parser.input(Some('C'), dummy_pos, Some('D'), messages), WantMore);
+            assert_eq!(parser.input(Some('D'), dummy_pos, Some('e'), messages), WantMore);
+            assert_eq!(parser.input(Some('e'), dummy_pos, Some('l'), messages), WantMore);
+            assert_eq!(parser.input(Some('l'), dummy_pos, Some('"'), messages), WantMore);
+            assert_eq!(parser.input(Some('"'), spec_pos3, Some('$'), messages), 
                 Finished(StringLiteral::new(Some("H\u{ABCD}el".to_owned()), StringPosition::from((spec_pos1, spec_pos3)), false)));
             
             assert_eq!(messages, expect_messages);
@@ -442,9 +476,9 @@ mod tests {
             let mut parser = StringLiteralParser::new(spec_pos1);
             let messages = &mut MessageEmitter::new();
             let expect_messages = &mut MessageEmitter::new();
-            assert_eq!(parser.try_get_string_literal(Some('H'), dummy_pos, Some('\\'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('\\'), spec_pos2, Some('u'), messages), WantMoreWithSkip1);
-            assert_eq!(parser.try_get_string_literal(Some('"'), spec_pos3, Some('$'), messages), 
+            assert_eq!(parser.input(Some('H'), dummy_pos, Some('\\'), messages), WantMore);
+            assert_eq!(parser.input(Some('\\'), spec_pos2, Some('u'), messages), WantMoreWithSkip1);
+            assert_eq!(parser.input(Some('"'), spec_pos3, Some('$'), messages), 
                 Finished(StringLiteral::new(None, StringPosition::from((spec_pos1, spec_pos3)), false)));
             
             expect_messages.push(Message::UnexpectedStringLiteralEndInUnicodeCharEscape{
@@ -456,12 +490,13 @@ mod tests {
             let mut parser = StringLiteralParser::new(spec_pos1);
             let messages = &mut MessageEmitter::new();
             let expect_messages = &mut MessageEmitter::new();
-            assert_eq!(parser.try_get_string_literal(Some('h'), dummy_pos, Some('\\'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('\\'), spec_pos2, Some('U'), messages), WantMoreWithSkip1);
-            assert_eq!(parser.try_get_string_literal(Some('1'), dummy_pos, Some('2'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('2'), dummy_pos, Some('3'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('3'), dummy_pos, None, messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(None, spec_pos3, None, messages), WantMore);
+            assert_eq!(parser.input(Some('h'), dummy_pos, Some('\\'), messages), WantMore);
+            assert_eq!(parser.input(Some('\\'), spec_pos2, Some('U'), messages), WantMoreWithSkip1);
+            assert_eq!(parser.input(Some('1'), dummy_pos, Some('2'), messages), WantMore);
+            assert_eq!(parser.input(Some('2'), dummy_pos, Some('3'), messages), WantMore);
+            assert_eq!(parser.input(Some('3'), dummy_pos, None, messages), WantMore);
+            assert_eq!(parser.input(None, spec_pos3, None, messages), 
+                Finished(StringLiteral::new(None, StringPosition::from2(spec_pos1, spec_pos3), false)));
             
             expect_messages.push(Message::UnexpectedEndofFileInStringLiteral { 
                 literal_start: spec_pos1, eof_pos: spec_pos3, hint_escaped_quote_pos: None });
@@ -472,10 +507,11 @@ mod tests {
             let mut parser = StringLiteralParser::new(spec_pos1);
             let messages = &mut MessageEmitter::new();
             let expect_messages = &mut MessageEmitter::new();
-            assert_eq!(parser.try_get_string_literal(Some('h'), dummy_pos, Some('e'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('e'), dummy_pos, Some('\\'), messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(Some('\\'), spec_pos2, None, messages), WantMore);
-            assert_eq!(parser.try_get_string_literal(None, spec_pos3, None, messages), WantMore);
+            assert_eq!(parser.input(Some('h'), dummy_pos, Some('e'), messages), WantMore);
+            assert_eq!(parser.input(Some('e'), dummy_pos, Some('\\'), messages), WantMore);
+            assert_eq!(parser.input(Some('\\'), spec_pos2, None, messages), WantMore);
+            assert_eq!(parser.input(None, spec_pos3, None, messages), 
+                Finished(StringLiteral::new(None, StringPosition::from2(spec_pos1, spec_pos3), false)));
             
             expect_messages.push(Message::UnexpectedEndofFileInStringLiteral { 
                 literal_start: spec_pos1, eof_pos: spec_pos3, hint_escaped_quote_pos: None });
@@ -485,45 +521,47 @@ mod tests {
 
     #[test]
     fn str_lit_raw() {
+        use common::From2;
         use common::Position;
         use common::StringPosition;
         use message::Message;
         use message::MessageEmitter;
         use super::StringLiteral;
-        use super::StringLiteralParser;
+        use super::RawStringLiteralParser;
+        use super::RawStringLiteralParserResult::*;
 
         let dummy_pos = Position::new();
         let spec_pos1 = Position::from((12, 34));
         let spec_pos2 = Position::from((56, 78));
-        // let spec_pos3 = Position::from((910, 1112));
         let spec_pos4 = Position::from((1314, 1516));
 
         {   // r"hell\u\no", normal, C1, C2
-            let mut parser = StringLiteralParser::new(spec_pos1);
+            let mut parser = RawStringLiteralParser::new(spec_pos1);
             let messages = &mut MessageEmitter::new(); 
             let expect_messages = &mut MessageEmitter::new();
-            assert_eq!(parser.try_get_raw_string_literal(Some('h'), dummy_pos, messages), None);
-            assert_eq!(parser.try_get_raw_string_literal(Some('e'), dummy_pos, messages), None);
-            assert_eq!(parser.try_get_raw_string_literal(Some('l'), dummy_pos, messages), None);
-            assert_eq!(parser.try_get_raw_string_literal(Some('l'), dummy_pos, messages), None);
-            assert_eq!(parser.try_get_raw_string_literal(Some('\\'), dummy_pos, messages), None);
-            assert_eq!(parser.try_get_raw_string_literal(Some('u'), dummy_pos, messages), None);
-            assert_eq!(parser.try_get_raw_string_literal(Some('\\'), dummy_pos, messages), None);
-            assert_eq!(parser.try_get_raw_string_literal(Some('n'), dummy_pos, messages), None);
-            assert_eq!(parser.try_get_raw_string_literal(Some('o'), dummy_pos, messages), None);
-            assert_eq!(parser.try_get_raw_string_literal(Some('"'), spec_pos4, messages), 
-                Some(StringLiteral::new(r"hell\u\no".to_owned(), StringPosition::from((spec_pos1, spec_pos4)), true)));
+            assert_eq!(parser.input(Some('h'), dummy_pos, messages), WantMore);
+            assert_eq!(parser.input(Some('e'), dummy_pos, messages), WantMore);
+            assert_eq!(parser.input(Some('l'), dummy_pos, messages), WantMore);
+            assert_eq!(parser.input(Some('l'), dummy_pos, messages), WantMore);
+            assert_eq!(parser.input(Some('\\'), dummy_pos, messages), WantMore);
+            assert_eq!(parser.input(Some('u'), dummy_pos, messages), WantMore);
+            assert_eq!(parser.input(Some('\\'), dummy_pos, messages), WantMore);
+            assert_eq!(parser.input(Some('n'), dummy_pos, messages), WantMore);
+            assert_eq!(parser.input(Some('o'), dummy_pos, messages), WantMore);
+            assert_eq!(parser.input(Some('"'), spec_pos4, messages), 
+                Finished(StringLiteral::new(r"hell\u\no".to_owned(), StringPosition::from((spec_pos1, spec_pos4)), true)));
 
             assert_eq!(messages, expect_messages);
         }
 
         {   // R"he$, normal, C2, C3
-            let mut parser = StringLiteralParser::new(spec_pos1);
+            let mut parser = RawStringLiteralParser::new(spec_pos1);
             let messages = &mut MessageEmitter::new(); 
             let expect_messages = &mut MessageEmitter::new();
-            assert_eq!(parser.try_get_raw_string_literal(Some('h'), dummy_pos, messages), None);
-            assert_eq!(parser.try_get_raw_string_literal(Some('e'), dummy_pos, messages), None);
-            assert_eq!(parser.try_get_raw_string_literal(None, spec_pos2, messages), None);
+            assert_eq!(parser.input(Some('h'), dummy_pos, messages), WantMore);
+            assert_eq!(parser.input(Some('e'), dummy_pos, messages), WantMore);
+            assert_eq!(parser.input(None, spec_pos2, messages), 
+                Finished(StringLiteral::new(None, StringPosition::from2(spec_pos1, spec_pos2), true)));
 
             expect_messages.push(Message::UnexpectedEndofFileInStringLiteral{ 
                 literal_start: spec_pos1, eof_pos: spec_pos2,  hint_escaped_quote_pos: None});
