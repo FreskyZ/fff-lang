@@ -1,22 +1,20 @@
-use std::range;
-use std::io::print;
-use std::io::println;
 
-fn is_prime(num: i32) -> bool {
+// Get primes
 
-    for i in range(2, num / 2) {
-        if num % i == 0 {
-            return false;
+fn get_primes(u32 high_bound) -> [u32] {
+    
+    var [bool] is_prime = [true; high_bound]; 
+    for (u32 i in range(1, high_bound / 2 + 1)) {
+        for (u32 j in range(2, high_bound)) {
+            if (i * j < high_bound) {
+                is_prime[i * j] = false;
+            }
         }
     }
-    return true;
-}
 
-fn get_primes(high_bound: i32) -> vector<i32> {
-    
-    let ret_val = vector<i32>::new();
-    for i in range(3, high_bound) {
-        if is_prime(i) {
+    var [u32] ret_val = [];
+    for (u32 i in range(1, high_bound)) {
+        if (is_prime[i]) {
             ret_val.push_back(i);
         }
     }
@@ -25,9 +23,9 @@ fn get_primes(high_bound: i32) -> vector<i32> {
 
 fn main() {
 
-    print("Primes before 100: ");
-    for prime in get_primes(100) {
-        println(prime);
-    }
-    std::process::exit(0);
+    println(get_primes(18) == [2, 3, 5, 7, 11, 13, 15, 17]);
+    println(get_primes(10) == [2, 3, 5, 7]);
+
+    const i32 high_bound = read_i32();
+    println(get_primes(high_bound));
 }

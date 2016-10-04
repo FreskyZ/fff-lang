@@ -1,27 +1,18 @@
 
-struct ListNode {
-    value: i32;
-    next: *ListNode;
-}
-
-// linked list of i32
-struct List{
-    dummy_head: ListNode;
-
-    fn new() -> List{
-        return List{ dummy_head: ListNode::new() };
-    }
-
-    fn insert(self) {
-
-    }
-
-    fn remove_at(index: u32) -> bool {
-
-    }
-
-}
+// language supported list
 
 fn main() {
 
+    var [i32] list = [1, 5, 3, 2, 4];
+    list.sort();
+    println(list);  // [1, 2, 3, 4, 5]
+    list.push_back(8);
+    list.push_back(6);
+    list.remove_at(3); // [1, 2, 4, 5, 8, 6]
+    for (i32 i in range(0, list.length)) {
+        list[i] *= 2;
+    }
+    list.sort();
+    list.reverse();
+    println(list);  // [16, 12, 10, 8, 4, 2]
 }

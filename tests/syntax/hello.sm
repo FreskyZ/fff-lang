@@ -1,17 +1,7 @@
-// 1.sm, helloworld
 
-namespace std {
-    namespace io {
-        struct File {
-            fn writeln(self, text: string);
-        }
+// helloworld
 
-        File stdout;
-    }
-}
-
-use std::io::stdout;
 fn main() {
-    // write to console
-    stdout.writeln("helloworld");
+
+    println("helloworld");
 }

@@ -11,7 +11,6 @@ mod lexical;
 mod syntax;
 mod vmcodegen;
 mod vm;
-mod codegen;
 mod driver;
 
 const USAGE_STRING: &'static str = r"
