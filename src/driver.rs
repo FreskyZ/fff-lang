@@ -28,9 +28,10 @@ pub fn compile_input(file_name: String) {
 mod tests {
 
     #[test]
-    fn ast_general() {
+    #[ignore]
+    fn xxxxxxxxxxxxxxxxxxx() {
         use super::compile_input;
 
-        compile_input("tests/lexical/1.sm".to_owned());
+        compile_input("tests/syntax/hello.sm".to_owned());
     }
 }

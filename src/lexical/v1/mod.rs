@@ -17,7 +17,6 @@ use message::Message;
 use message::MessageEmitter;
 use lexical::v0::V0Token;
 use lexical::v0::BufV0Token;
-use lexical::v0::V0Lexer;
 use lexical::v0::BufV0Lexer;
 use lexical::buf_lexer::ILexer;
 use lexical::buf_lexer::BufToken;
@@ -73,7 +72,7 @@ impl From<String> for V1Lexer {
 
     fn from(content: String) -> V1Lexer {
         V1Lexer { 
-            v0: BufV0Lexer::from(V0Lexer::from(content)),
+            v0: BufV0Lexer::from(content),
         }
     }
 }

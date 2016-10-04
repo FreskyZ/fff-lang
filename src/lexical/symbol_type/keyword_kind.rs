@@ -13,6 +13,8 @@ pub enum KeywordKind {
     For,
     Return,
     Namespace,
+    Var,
+    Const,
 }
 
 use common::TryFrom;
@@ -30,7 +32,11 @@ impl<'a> TryFrom<&'a str> for KeywordKind {
             "for" => Some(KeywordKind::For),
             "return" => Some(KeywordKind::Return),
             "namespace" => Some(KeywordKind::Namespace),
+            "var" => Some(KeywordKind::Var),
+            "const" => Some(KeywordKind::Const),
             _ => None,
         }
     }
 }
+
+// TODO: implement by simple and more maintainable macros

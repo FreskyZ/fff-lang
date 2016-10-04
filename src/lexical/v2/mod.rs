@@ -8,7 +8,6 @@ use common::Position;
 use common::StringPosition;
 use message::MessageEmitter;
 use lexical::v1::V1Token;
-use lexical::v1::V1Lexer;
 use lexical::v1::BufV1Token;
 use lexical::v1::BufV1Lexer;
 use lexical::buf_lexer::ILexer;
@@ -69,7 +68,7 @@ impl From<String> for V2Lexer {
 
     fn from(content: String) -> V2Lexer {
         V2Lexer { 
-            v1: BufV1Lexer::from(V1Lexer::from(content)),
+            v1: BufV1Lexer::from(content),
         }
     }
 }
@@ -322,7 +321,7 @@ mod tests {
 
         macro_rules! test_case_buf {
             ($program: expr) => ({
-                let mut bufv2 = BufV2Lexer::from(V2Lexer::from($program.to_owned()));
+                let mut bufv2 = BufV2Lexer::from($program.to_owned());
                 let mut messages = MessageEmitter::new();
                 loop {
                     match bufv2.next(&mut messages) {

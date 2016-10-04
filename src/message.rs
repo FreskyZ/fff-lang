@@ -67,7 +67,10 @@ pub enum Message {
     },
     InvalidEscapeInCharLiteral {    // Special for '\'
         start_pos: Position,
-    }
+    },
+
+    // Syntax!
+    ExpectType { pos: Position }
 }
 
 use std::fmt;
@@ -130,6 +133,8 @@ impl fmt::Debug for Message {
             InvalidEscapeInCharLiteral{ ref start_pos } => {
                 write!(f, "Invalid escape in char literal at {:?}, did you mean `'\\''` or `'\\\\'`?", start_pos)
             }
+
+            _ => Ok(())
         }
     }
 }

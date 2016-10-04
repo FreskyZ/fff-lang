@@ -284,10 +284,9 @@ mod tests {
     #[test]
     fn v0_buf() {
         use super::BufV0Lexer;
-        use super::V0Lexer;
         use message::MessageEmitter;
         
-        let mut bufv0 = BufV0Lexer::from(V0Lexer::from("\r\rabc\ndef\r\r\nasdwe\r\r\rq1da\nawsedq\r\r\r".to_owned()));
+        let mut bufv0 = BufV0Lexer::from("\r\rabc\ndef\r\r\nasdwe\r\r\rq1da\nawsedq\r\r\r".to_owned());
         let mut dummy = MessageEmitter::new();
         loop {
             match bufv0.next(&mut dummy) {
@@ -296,7 +295,7 @@ mod tests {
             }
         }
         
-        let mut bufv0 = BufV0Lexer::from(V0Lexer::from("abc\ndef\r\r\n\nasd\nwe\rq1da\nawsedq\n".to_owned()));
+        let mut bufv0 = BufV0Lexer::from("abc\ndef\r\r\n\nasd\nwe\rq1da\nawsedq\n".to_owned());
         let mut dummy = MessageEmitter::new();
         loop {
             match bufv0.next(&mut dummy) {

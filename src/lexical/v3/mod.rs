@@ -15,7 +15,6 @@ use common::Position;
 use common::StringPosition;
 use message::MessageEmitter;
 use lexical::v2::V2Token;
-use lexical::v2::V2Lexer;
 use lexical::v2::BufV2Token;
 use lexical::v2::BufV2Lexer;
 use lexical::buf_lexer::BufToken;
@@ -34,8 +33,23 @@ pub enum V3Token {
     CharLiteral { inner: CharLiteral },
     Identifier { name: String, pos: StringPosition },
     Keyword { kind: KeywordKind, pos: StringPosition },
-    BooleanLiteral { value: bool },
+    BooleanLiteral { value: bool, pos: StringPosition },
     Seperator { kind: SeperatorKind, pos: StringPosition },
+}
+
+impl V3Token {
+
+    pub fn position(&self) -> StringPosition {
+        match *self {
+            V3Token::StringLiteral{ inner: StringLiteral{ value: ref _1, ref pos, is_raw: ref _2 } } => *pos,
+            V3Token::NumericLiteral{ inner: NumericLiteral{ value: ref _1, ref pos } } => *pos,
+            V3Token::CharLiteral{ inner: CharLiteral{ value: ref _1, ref pos } } => *pos,
+            V3Token::Identifier{ name: ref _1, ref pos } => *pos,
+            V3Token::Keyword{ kind: ref _1, ref pos } => *pos,
+            V3Token::BooleanLiteral{ value: ref _1, ref pos } => *pos,
+            V3Token::Seperator{ kind: ref _1, ref pos } => *pos,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -53,8 +67,8 @@ impl fmt::Debug for V3Token {
             V3Token::CharLiteral { ref inner } => {
                 write!(f, "{:?}", inner)
             }
-            V3Token::BooleanLiteral{ ref value } => {
-                write!(f, "Boolean literal: {:?}", value)
+            V3Token::BooleanLiteral{ ref value, ref pos } => {
+                write!(f, "Boolean literal: {:?} at {:?}", value, pos)
             }
             V3Token::Identifier { ref name, ref pos } => {
                 write!(f, "Identifier {:?} at {:?}", name, pos)
@@ -75,7 +89,7 @@ pub struct V3Lexer {
 
 impl From<String> for V3Lexer {
     fn from(content: String) -> V3Lexer {
-        V3Lexer { v2: BufV2Lexer::from(V2Lexer::from(content)) }
+        V3Lexer { v2: BufV2Lexer::from(content) }
     }
 }
 
@@ -108,8 +122,8 @@ impl ILexer<V3Token> for V3Lexer {
                         Some(keyword) => return Some(V3Token::Keyword{ kind: keyword, pos: pos }),
                         None => {
                             match &*name {
-                                "true" => return Some(V3Token::BooleanLiteral{ value: true }),
-                                "false" => return Some(V3Token::BooleanLiteral{ value: false }),
+                                "true" => return Some(V3Token::BooleanLiteral{ value: true, pos: pos }),
+                                "false" => return Some(V3Token::BooleanLiteral{ value: false, pos: pos }),
                                 _ => return Some(V3Token::Identifier { name: name, pos: pos }),
                             }
                         }

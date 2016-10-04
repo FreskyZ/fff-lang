@@ -6,6 +6,7 @@
 use message::MessageEmitter;
 
 pub trait ILexer<TToken> {
+
     fn next(&mut self, emitter: &mut MessageEmitter) -> Option<TToken>;
 }
 
@@ -45,12 +46,12 @@ pub struct BufLexer<TLexer, TToken> {
     next_to_return: Option<TToken>,
 }
 
-impl<TLexer, TToken> From<TLexer> for BufLexer<TLexer, TToken>
-    where TLexer: ILexer<TToken>, TToken: Clone {
+impl<TLexer, TToken> From<String> for BufLexer<TLexer, TToken>
+    where TLexer: ILexer<TToken> + From<String>, TToken: Clone {
 
-    fn from(lexer: TLexer) -> BufLexer<TLexer, TToken> {
+    fn from(content: String) -> BufLexer<TLexer, TToken> {
         BufLexer { 
-            lexer: lexer,
+            lexer: TLexer::from(content),
             is_first: true,
             next_to_return: None,
         }
@@ -58,7 +59,7 @@ impl<TLexer, TToken> From<TLexer> for BufLexer<TLexer, TToken>
 }
 
 impl<TLexer, TToken> BufLexer<TLexer, TToken>
-    where TLexer: ILexer<TToken>, TToken: Clone {
+    where TLexer: ILexer<TToken> + From<String>, TToken: Clone {
 
     pub fn inner(&self) -> &TLexer { &self.lexer }
     pub fn inner_mut(&mut self) -> &mut TLexer { &mut self.lexer }

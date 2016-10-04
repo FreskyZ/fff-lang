@@ -1,7 +1,7 @@
 
 // Seperator kind
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum SeperatorKind {
     Add,            // +
     Sub,            // -
@@ -176,3 +176,5 @@ impl SeperatorKind {
         }
     }
 }
+
+// TODO: implement by simple and more maintainable macros
