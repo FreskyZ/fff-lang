@@ -2,7 +2,7 @@
 // Variable -> Var Type Identifier [ = Expression ] | Const Type Identifier [ = Expression ]
 
 use message::MessageEmitter;
-use lexical::Lexer;
+use lexical::BufLexer as Lexer;
 use syntax::ast_item::ASTParser;
 use syntax::Type;
 use syntax::scope::VariableScope;

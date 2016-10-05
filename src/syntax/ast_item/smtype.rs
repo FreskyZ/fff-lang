@@ -1,11 +1,13 @@
 
 // Type -> PrimitiveType | LeftBracket PrimitiveType RightBracket 
 
+use common::Position;
 use message::Message;
 use message::MessageEmitter;
-use lexical::Lexer;
+use lexical::BufLexer as Lexer;
 use lexical::BufToken;
 use lexical::Token;
+use lexical::KeywordKind;
 use lexical::SeperatorKind;
 use syntax::ast_item::ASTParser;
 
@@ -28,17 +30,18 @@ pub enum Type {
     Array(PrimitiveType),       // currently only one level supported
 }
 
-fn check_primitive_type(name: &str) -> Option<PrimitiveType> {
+fn check_primitive_type(keyword: &KeywordKind) -> Option<PrimitiveType> {
     use self::PrimitiveType::*;
-    match name {
-        "u8" => Some(U8),
-        "i32" => Some(I32),
-        "u32" => Some(U32),
-        "u64" => Some(U64),
-        "f32" => Some(F32),
-        "f64" => Some(F64),
-        "char" => Some(Char),
-        "string" => Some(SMString),
+    use lexical::KeywordKind::*;
+    match *keyword {
+        PrimTypeU8 => Some(U8),
+        PrimTypeI32 => Some(I32),
+        PrimTypeU32 => Some(U32),
+        PrimTypeU64 => Some(U64),
+        PrimTypeF32 => Some(F32),
+        PrimTypeF64 => Some(F64),
+        PrimTypeChar => Some(Char),
+        PrimTypeString => Some(SMString),
         _ => None
     }
 }
@@ -53,75 +56,75 @@ impl ASTParser for Type {
             ExpectRightBracket(PrimitiveType), // array base
         }
 
+        enum Interest {
+            Keyword(KeywordKind, Position),
+            Seperator(SeperatorKind, Position),
+            Other(Position),
+        }
+
         let mut state = State::ExpectPrimTypeOrLeftBracket;
         loop {
-            let bufv3 = lexer.next(messages);
+            let interest = match lexer.next(messages) {
+                Some(BufToken{ token: Token::Keyword{ kind, pos }, next: _1 }) => Interest::Keyword(kind, pos.start_pos),
+                Some(BufToken{ token: Token::Seperator{ kind, pos }, next: _1 }) => Interest::Seperator(kind, pos.start_pos),
+                Some(BufToken{ token, next: _1 }) => Interest::Other(token.position().start_pos),
+                None => Interest::Other(lexer.inner().position()),
+            };
+            
             match state {
                 State::ExpectPrimTypeOrLeftBracket => {
-                    match bufv3 {
-                        Some(BufToken{ token: Token::Identifier{ name, pos }, next: _1 }) => {
-                            match check_primitive_type(&name) {
+                    match interest {
+                        Interest::Keyword(kind, pos) => {
+                            match check_primitive_type(&kind) {
                                 Some(prim) => return Some(Type::Primitive(prim)),
                                 None => {
-                                    messages.push(Message::ExpectType{ pos: pos.start_pos });
+                                    messages.push(Message::ExpectType{ pos: pos });
                                     return None;
                                 }
                             }
                         }
-                        Some(BufToken{ token: Token::Seperator{ kind, pos }, next: _1 }) => {
+                        Interest::Seperator(kind, pos) => {
                             if kind == SeperatorKind::LeftBracket {
                                 state = State::ExpectPrimType;
                             } else {
-                                messages.push(Message::ExpectType{ pos: pos.start_pos });
+                                messages.push(Message::ExpectType{ pos: pos });
                                 return None;
                             }
                         }
-                        Some(BufToken{ token, next: _1 }) => {
-                            messages.push(Message::ExpectType{ pos: token.position().start_pos });
-                            return None;
-                        }
-                        None => {
-                            messages.push(Message::ExpectType{ pos: lexer.inner().position() });
+                        Interest::Other(pos) => {
+                            messages.push(Message::ExpectType{ pos: pos });
                             return None;
                         }
                     }
                 }
                 State::ExpectPrimType => {
-                    match bufv3 {
-                        Some(BufToken{ token: Token::Identifier{ name, pos }, next:  _1 }) => {
-                            match check_primitive_type(&name) {
+                    match interest {
+                        Interest::Keyword(kind, pos) => {
+                            match check_primitive_type(&kind) {
                                 Some(prim) => state = State::ExpectRightBracket(prim),
                                 None => {
-                                    messages.push(Message::ExpectType{ pos: pos.start_pos });
+                                    messages.push(Message::ExpectType{ pos: pos });
                                     return None;
                                 }
                             }
                         }
-                        Some(BufToken{ token, next: _1 }) => {
-                            messages.push(Message::ExpectType{ pos: token.position().start_pos });
-                            return None;
-                        }
-                        None => {
-                            messages.push(Message::ExpectType{ pos: lexer.inner().position() });
+                        Interest::Seperator(_, pos) | Interest::Other(pos) => {
+                            messages.push(Message::ExpectType{ pos: pos });
                             return None;
                         }
                     }
                 }
                 State::ExpectRightBracket(prim) => {
-                    match bufv3 {
-                        Some(BufToken{ token: Token::Seperator{ kind, pos }, next: _1 }) => {
+                    match interest {
+                        Interest::Seperator(kind, pos) => {
                             if kind == SeperatorKind::RightBracket {
                                 return Some(Type::Array(prim));
                             }
-                            messages.push(Message::ExpectType{ pos: pos.start_pos });
+                            messages.push(Message::ExpectType{ pos: pos });
                             return None;
                         }
-                        Some(BufToken{ token, next: _1 }) => {
-                            messages.push(Message::ExpectType{ pos: token.position().start_pos });
-                            return None;
-                        }
-                        None => {
-                            messages.push(Message::ExpectType{ pos: lexer.inner().position() });
+                        Interest::Keyword(_, pos) | Interest::Other(pos) => {
+                            messages.push(Message::ExpectType{ pos: pos });
                             return None;
                         }
                     }
@@ -137,7 +140,7 @@ mod tests {
     #[test]
     fn ast_smtype_parse() {
         use message::MessageEmitter;
-        use lexical::Lexer;
+        use lexical::BufLexer as Lexer;
         use syntax::ast_item::ASTParser;
         use super::PrimitiveType;
         use super::Type;

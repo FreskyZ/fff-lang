@@ -1,5 +1,6 @@
 
 // Char literal parser
+// TODO: optimize
 
 use common::From2;
 use common::Position;
@@ -25,8 +26,8 @@ impl CoverageRecorder {
 
 pub struct CharLiteralParser {
     start_pos: Position,
-    raw: String,
-    buf: Option<char>,    // has some means has processed one char, error or not error
+    buf: char,    // has some means has processed one char, error or not error
+    expect_first: bool,     // true, expect first, false, processed first expect end quotation
     has_failed: bool,
     has_too_longed: bool,
     escape_parser: Option<EscapeCharParser>,
@@ -34,18 +35,14 @@ pub struct CharLiteralParser {
     is_very_special_that_previous_is_single_quote_escape_and_not_require_skipped: bool,
 }
 
-#[cfg(test)]
-#[derive(Eq, PartialEq, Debug)]
-pub enum CharLiteralParserResult {
-    WantMore,
-    WantMoreWithSkip1,
-    Finished(CharLiteral),
-}
-#[cfg(not(test))]
-pub enum CharLiteralParserResult {
-    WantMore,
-    WantMoreWithSkip1,
-    Finished(CharLiteral),
+test_only_attr!{
+    [derive(Eq, PartialEq, Debug)]
+    ![]
+    pub enum CharLiteralParserResult {
+        WantMore,
+        WantMoreWithSkip1,
+        Finished(CharLiteral),
+    }
 }
 
 const INVALID_CHAR: char = '\u{FFFE}'; // for parser presenting failed value
@@ -55,8 +52,8 @@ impl CharLiteralParser {
     pub fn new(start_pos: Position) -> CharLiteralParser {
         CharLiteralParser{ 
             start_pos: start_pos, 
-            raw: String::new(),
-            buf: None,
+            buf: '\0',
+            expect_first: true,
             has_failed: false,
             has_too_longed: false,
             escape_parser: None, 
@@ -85,8 +82,8 @@ impl CharLiteralParser {
             }
         }
 
-        match self.buf {
-            None => {       // Waiting for first char
+        match self.expect_first {
+            true => {       // Waiting for first char
                 let mut need_reset_parser = false;
                 match self.escape_parser {
                     Some(ref mut parser) => {  // parsing unicode escape buf meet 
@@ -105,21 +102,22 @@ impl CharLiteralParser {
                                     EscapeCharParserResult::WantMore => {      // continue,
                                         coverage_recorder.insert(1);                // C1, in first char as unicode escape, continue
                                     },    
-                                    EscapeCharParserResult::Failed => {        // Invalid unicode escape, message already emitted, return INVALID_CHAR
-                                        self.buf = Some(INVALID_CHAR);              // start waiting for '
+                                    EscapeCharParserResult::Failed => {        // Invalid unicode escape, message already emitted, return INVALID_CHAR    
+                                        self.expect_first = false;
                                         self.has_failed = true;
                                         need_reset_parser = true;
                                         coverage_recorder.insert(2);                // C2, in first char as unicode escape, 
                                     }
                                     EscapeCharParserResult::Success(ch) => {
-                                        self.buf = Some(ch);                        // Success, waiting for '
+                                        self.buf = ch;
+                                        self.expect_first = false;   // Success, waiting for '
                                         need_reset_parser = true;
                                         coverage_recorder.insert(3);                // C3, in first char as unicode escape, success
                                     }
                                 }
                                 // WantMore  // wait to reset until out of match self.escape_parser
                             }
-                            None => {   // another '$
+                            None => {   // another 'u123$
                                 messages.push(Message::UnexpectedEndofFileInCharLiteral{ literal_start: self.start_pos, eof_pos: pos });
                                 coverage_recorder.insert(4);                        // C4, first char is EOF
                                 return CharLiteralParserResult::Finished(CharLiteral{ value: None, pos: StringPosition::from2(self.start_pos, pos) });
@@ -143,7 +141,8 @@ impl CharLiteralParser {
                                     ('\\', slash_pos, Some(next_ch)) => {   // if is escape, try escape
                                         match EscapeCharParser::simple_check(next_ch) {
                                             EscapeCharSimpleCheckResult::Normal(ch) => {
-                                                self.buf = Some(ch);
+                                                self.buf = ch;
+                                                self.expect_first = false;
                                                 if ch == '\'' {
                                                     self.is_very_special_that_previous_is_single_quote_escape_and_not_require_skipped = true;
                                                     return CharLiteralParserResult::WantMore;
@@ -156,7 +155,7 @@ impl CharLiteralParser {
                                                     literal_start: self.start_pos, 
                                                     unrecogonize_pos: slash_pos, 
                                                     unrecogonize_escape: ch });
-                                                self.buf = Some(INVALID_CHAR);
+                                                self.expect_first = false;
                                                 self.has_failed = true;
                                                 coverage_recorder.insert(8);        // C8, invalid simple escape
                                                 return CharLiteralParserResult::WantMoreWithSkip1;
@@ -175,7 +174,8 @@ impl CharLiteralParser {
                                         return CharLiteralParserResult::Finished(CharLiteral{ value: None, pos: StringPosition::from2(self.start_pos, pos.next_col()) });
                                     }
                                     (ch, _pos, _1) => {
-                                        self.buf = Some(ch);   
+                                        self.buf = ch;
+                                        self.expect_first = false;
                                         coverage_recorder.insert(11);               // C11, most normal a char
                                         return CharLiteralParserResult::WantMore;
                                     }
@@ -191,8 +191,8 @@ impl CharLiteralParser {
                 coverage_recorder.insert(13);                                       // C13, only and must with C1, C2, C3
                 return CharLiteralParserResult::WantMore;
             }
-            Some(buf) => {  // Already processed first char
-                // No possibility for a unicode parser here, just wait for a ', if not, report too long, too long, too long
+            false => {  // Already processed first char
+                // No possibility for a unicode parser here, just wait for a ', if not, report too long
                 match ch {
                     None => {
                         if self.has_too_longed {
@@ -200,13 +200,13 @@ impl CharLiteralParser {
                         }
                         messages.push(Message::UnexpectedEndofFileInCharLiteral{ literal_start: self.start_pos, eof_pos: pos });
                         coverage_recorder.insert(14);                               // C14, 'ABCD$
-                                        return CharLiteralParserResult::Finished(CharLiteral{ value: None, pos: StringPosition::from2(self.start_pos, pos) });
+                        return CharLiteralParserResult::Finished(CharLiteral{ value: None, pos: StringPosition::from2(self.start_pos, pos) });
                     }
                     Some(ch) => {
                         if ch == '\'' { // Normally successed
                             coverage_recorder.insert(15);                           // C15, most normal finish
                             return CharLiteralParserResult::Finished(CharLiteral{ 
-                                value: if !self.has_failed && !self.has_too_longed { Some(buf) } else { None }, 
+                                value: if !self.has_failed && !self.has_too_longed { Some(self.buf) } else { None }, 
                                 pos: StringPosition::from2(self.start_pos, pos)   // any one of them is failed 
                             });
                         } else {
@@ -214,7 +214,7 @@ impl CharLiteralParser {
                                 coverage_recorder.insert(16);                       // C16, too long and report
                                 messages.push(Message::CharLiteralTooLong{ start_pos: self.start_pos });
                                 self.has_too_longed = true;
-                                self.buf = Some(INVALID_CHAR); // if too longed, devalidate the buffer
+                                self.has_failed = true;     // if too longed, devalidate the buffer
                             }
                             coverage_recorder.insert(17);                           // C17, too long and return
                             return CharLiteralParserResult::WantMore;
@@ -519,6 +519,7 @@ mod tests {
             messages_expect!(messages, [Message::InvalidEscapeInCharLiteral{ start_pos: spec_pos1 }]);
             counter_expect!(current_counter, all_counter, []); 
         }
+
 
         let mut sorted_all_counter = all_counter.into_iter().collect::<Vec<i32>>();
         sorted_all_counter.sort();

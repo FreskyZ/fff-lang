@@ -61,6 +61,11 @@ impl<TLexer, TToken> From<String> for BufLexer<TLexer, TToken>
 impl<TLexer, TToken> BufLexer<TLexer, TToken>
     where TLexer: ILexer<TToken> + From<String>, TToken: Clone {
 
+    #[cfg(test)]
+    pub fn from_test(content: &str) ->  BufLexer<TLexer, TToken> {
+        BufLexer::from(content.to_owned())
+    }
+
     pub fn inner(&self) -> &TLexer { &self.lexer }
     pub fn inner_mut(&mut self) -> &mut TLexer { &mut self.lexer }
 

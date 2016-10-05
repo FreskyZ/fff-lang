@@ -3,7 +3,7 @@
 
 use file_map::InputReader;
 use message::MessageEmitter;
-use lexical::Lexer;
+use lexical::BufLexer as Lexer;
 use syntax::get_ast;
 
 // Handle and print error here

@@ -1,42 +1,66 @@
 
 // Keyword kind
 
-#[derive(Debug, Clone)]
-pub enum KeywordKind {
-    FnDef,
-    If,
-    Else,
-    While,
-    Break,
-    Continue,
-    Struct,
-    For,
-    Return,
-    Namespace,
-    Var,
-    Const,
+macro_rules! define_keyword {
+    ($enum_name: ident, $($value: expr => $var_name: ident)*) => (
+
+        test_only_attr!{
+            test: [derive(Debug, Clone, Eq, PartialEq)]
+            not_test: [derive(Debug, Clone)]
+            pub enum $enum_name {
+                $(
+                    $var_name,
+                )*
+            }
+        }
+
+        use common::TryFrom;
+        impl <'a> TryFrom<&'a str> for $enum_name {
+            
+            fn try_from(name: &'a str) -> Option<$enum_name> {
+                use self::$enum_name::*;
+                match name {
+                    $(
+                        $value => Some($var_name),
+                    )*
+                    _ => None,
+                }
+            }
+        }
+    )
 }
 
-use common::TryFrom;
-impl<'a> TryFrom<&'a str> for KeywordKind {
+define_keyword!{ KeywordKind,
+    "fn" => FnDef
+    "if" => If
+    "else" => Else
+    "while" => While
+    "break" => Break
+    "continue" => Continue
+    "struct" => Struct
+    "for" => For
+    "return" => Return
+    "namespace" => Namespace
+    "var" => Var
+    "const" => Const
+    "u8" => PrimTypeU8
+    "i32" => PrimTypeI32
+    "u32" => PrimTypeU32
+    "u64" => PrimTypeU64
+    "f32" => PrimTypeF32
+    "f64" => PrimTypeF64
+    "char" => PrimTypeChar
+    "string" => PrimTypeString
+}
 
-    fn try_from(name: &'a str) -> Option<KeywordKind> {
-        match name {
-            "fn" => Some(KeywordKind::FnDef),
-            "if" => Some(KeywordKind::If),
-            "else" => Some(KeywordKind::Else),
-            "while" => Some(KeywordKind::While),
-            "break" => Some(KeywordKind::Break),
-            "continue" => Some(KeywordKind::Continue),
-            "struct" => Some(KeywordKind::Struct),
-            "for" => Some(KeywordKind::For),
-            "return" => Some(KeywordKind::Return),
-            "namespace" => Some(KeywordKind::Namespace),
-            "var" => Some(KeywordKind::Var),
-            "const" => Some(KeywordKind::Const),
-            _ => None,
+impl KeywordKind {
+
+    pub fn is_prim_type(&self) -> bool {
+        use self::KeywordKind::*;
+        match *self {
+            PrimTypeChar | PrimTypeF32 | PrimTypeF64 | PrimTypeI32 
+                | PrimTypeString | PrimTypeU32 | PrimTypeU64 | PrimTypeU8 => true,
+            _ => false,
         }
     }
 }
-
-// TODO: implement by simple and more maintainable macros

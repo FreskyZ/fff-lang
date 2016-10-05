@@ -8,8 +8,8 @@ pub mod function_call;
 pub mod variable;
 pub mod expression;
 
-use lexical::Lexer;
 use message::MessageEmitter;
+use lexical::BufLexer as Lexer;
 
 pub trait ASTParser {
     // some for valid ones, none for invalid and can not recover

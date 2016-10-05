@@ -3,6 +3,8 @@
 // input v1
 // output string or numeric literal, identifier or other char
 
+mod numeric_lit_parser;
+
 use common::From2;
 use common::Position;
 use common::StringPosition;
@@ -22,7 +24,7 @@ use lexical::symbol_type::CharLiteral;
 pub enum V2Token {
     StringLiteral { inner: StringLiteral },
     CharLiteral { inner: CharLiteral },
-    NumericLiteral { inner: NumericLiteral },           // Anything of [0-9][_a-zA-Z0-9]*
+    NumericLiteral { inner: NumericLiteral },           // TODO! ATTENTION! postfix char include `.`!!! Anything of [0-9][._a-zA-Z0-9]*
     Identifier { name: String, pos: StringPosition },   // Anything of [_a-zA-Z][_a-zA-Z0-9]*
     Other { ch: char, pos: Position },
 }
@@ -125,7 +127,6 @@ impl ILexer<V2Token> for V2Lexer {
             InNumericLiteral { value: String, start_pos: Position },
         }
 
-        // TODO: using preview char to fix the bug: seperator exactly after identifier is missing
         let mut state = State::Nothing;
         loop {
             // Pass string literal and None and process with other char

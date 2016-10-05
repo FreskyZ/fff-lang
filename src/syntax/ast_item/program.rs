@@ -2,7 +2,7 @@
 // <Program> -> <FunctionDef>*
 
 use message::MessageEmitter;
-use lexical::Lexer;
+use lexical::BufLexer as Lexer;
 use syntax::ast_item::ASTParser;
 use syntax::FunctionDef;
 use syntax::PrimitiveType;

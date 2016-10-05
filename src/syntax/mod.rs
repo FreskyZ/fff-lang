@@ -5,7 +5,7 @@ mod ast_item;
 mod scope;
 
 use message::MessageEmitter;
-use lexical::Lexer;
+use lexical::BufLexer as Lexer;
 
 use syntax::ast_item::ASTParser;
 pub use syntax::ast_item::argument::Argument;
@@ -45,8 +45,7 @@ mod tests {
     #[test]
     fn ast_hello_world() {
         use message::MessageEmitter;
-        use lexical::Lexer;
-        use super::Program;
+        use lexical::BufLexer as Lexer;
         use super::get_ast;
 
         let messages = &mut MessageEmitter::new();

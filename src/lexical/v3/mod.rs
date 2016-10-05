@@ -17,8 +17,6 @@ use message::MessageEmitter;
 use lexical::v2::V2Token;
 use lexical::v2::BufV2Token;
 use lexical::v2::BufV2Lexer;
-use lexical::buf_lexer::BufToken;
-use lexical::buf_lexer::BufLexer;
 use lexical::buf_lexer::ILexer;
 use lexical::symbol_type::StringLiteral;
 use lexical::symbol_type::NumericLiteral;
@@ -26,15 +24,18 @@ use lexical::symbol_type::CharLiteral;
 use lexical::symbol_type::KeywordKind;
 use lexical::symbol_type::SeperatorKind;
 
-#[derive(Clone)]
-pub enum V3Token {
-    StringLiteral { inner: StringLiteral },
-    NumericLiteral { inner: NumericLiteral },
-    CharLiteral { inner: CharLiteral },
-    Identifier { name: String, pos: StringPosition },
-    Keyword { kind: KeywordKind, pos: StringPosition },
-    BooleanLiteral { value: bool, pos: StringPosition },
-    Seperator { kind: SeperatorKind, pos: StringPosition },
+test_only_attr!{
+    test: [derive(Clone, Eq, PartialEq)]
+    not_test: [derive(Clone)]
+    pub enum V3Token {
+        StringLiteral { inner: StringLiteral },
+        NumericLiteral { inner: NumericLiteral },
+        CharLiteral { inner: CharLiteral },
+        Identifier { name: String, pos: StringPosition },
+        Keyword { kind: KeywordKind, pos: StringPosition },
+        BooleanLiteral { value: bool, pos: StringPosition },
+        Seperator { kind: SeperatorKind, pos: StringPosition },
+    }
 }
 
 impl V3Token {
@@ -160,9 +161,6 @@ impl ILexer<V3Token> for V3Lexer {
         }
     }
 }
-
-pub type BufV3Token = BufToken<V3Token>;
-pub type BufV3Lexer = BufLexer<V3Lexer, V3Token>;
 
 #[cfg(test)]
 mod tests {

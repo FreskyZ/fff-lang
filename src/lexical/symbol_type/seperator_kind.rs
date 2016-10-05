@@ -44,8 +44,8 @@ pub enum SeperatorKind {
     RightBracket,       // ]
     LeftBrace,          // {
     RightBrace,         // }
-    Comma,              // :
-    Colon,              // ,
+    Comma,              // ,
+    Colon,              // :
     SemiColon,          // ;
     Dot,                // .
 

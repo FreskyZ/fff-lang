@@ -5,20 +5,15 @@ use common::Position;
 use message::Message;
 use message::MessageEmitter;
 
-#[cfg(test)]
-#[derive(Debug, Eq, PartialEq)]
-pub struct EscapeCharParser {
-    expect_size: usize, // \u expect 4 hex, \U expect 8 hex
-    temp: String,
-    value: u32,
-    has_failed: bool
-}
-#[cfg(not(test))]
-pub struct EscapeCharParser {
-    expect_size: usize, // \u expect 4 hex, \U expect 8 hex
-    temp: String,
-    value: u32,
-    has_failed: bool
+test_only_attr!{
+    [derive(Debug, Eq, PartialEq)]
+    ![]
+    pub struct EscapeCharParser {
+        expect_size: usize, // \u expect 4 hex, \U expect 8 hex
+        temp: String,
+        value: u32,
+        has_failed: bool
+    }
 }
 
 pub enum EscapeCharSimpleCheckResult {
@@ -27,18 +22,14 @@ pub enum EscapeCharSimpleCheckResult {
     Unicode(EscapeCharParser),
 }
 
-#[cfg(test)]
-#[derive(Debug, Eq, PartialEq)]
-pub enum EscapeCharParserResult {
-    WantMore,               // Sucess and want more or unexpected char but keep until got 4 or 8 char
-    Failed,                 // Unexpected char fail, or, u32 value is not char fail, finished, error emitted
-    Success(char),          // Succeed and result
-}
-#[cfg(not(test))]
-pub enum EscapeCharParserResult {
-    WantMore,               // Sucess and want more or unexpected char but keep until got 4 or 8 char
-    Failed,                 // Unexpected char fail, or, u32 value is not char fail, finished, error emitted
-    Success(char),          // Succeed and result
+test_only_attr!{
+    [derive(Debug, Eq, PartialEq)]
+    ![]
+    pub enum EscapeCharParserResult {
+        WantMore,               // Sucess and want more or unexpected char but keep until got 4 or 8 char
+        Failed,                 // Unexpected char fail, or, u32 value is not char fail, finished, error emitted
+        Success(char),          // Succeed and result
+    }
 }
 
 // 16(F plus 1) powered

@@ -2,7 +2,7 @@
 // Expression -> Identifier LeftParen [ Expression [Comma Expression]* ] RightParen
 
 use message::MessageEmitter;
-use lexical::Lexer;
+use lexical::BufLexer as Lexer;
 use syntax::ast_item::ASTParser;
 use syntax::FunctionCall;
 use syntax::Variable;
