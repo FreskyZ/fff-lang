@@ -1,5 +1,6 @@
 
 use common::Position;
+use common::StringPosition;
 
 #[derive(Eq, PartialEq)]
 pub enum Message {
@@ -57,6 +58,18 @@ pub enum Message {
         literal_start: Position, 
         escape_start: Position, 
         unexpected_end_pos: Position,
+    },
+
+    UnexpectedCharInNumericLiteral {
+        literal_pos: StringPosition,
+        char_pos: Position,
+    },
+    UnexpectedDecimalPointInIntegralLiteral {
+        literal_pos: StringPosition,
+        decimal_dot_pos: Position,
+    },
+    PrefixNotSupportedForFloatingPointLiteral {
+        literal_pos: StringPosition,
     },
 
     EmptyCharLiteral {

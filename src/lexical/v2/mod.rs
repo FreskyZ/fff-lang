@@ -24,7 +24,7 @@ use lexical::symbol_type::CharLiteral;
 pub enum V2Token {
     StringLiteral { inner: StringLiteral },
     CharLiteral { inner: CharLiteral },
-    NumericLiteral { inner: NumericLiteral },           // TODO! ATTENTION! postfix char include `.`!!! Anything of [0-9][._a-zA-Z0-9]*
+    NumericLiteral { inner: NumericLiteral },           // Anything of [0-9][._a-zA-Z0-9]*
     Identifier { name: String, pos: StringPosition },   // Anything of [_a-zA-Z][_a-zA-Z0-9]*
     Other { ch: char, pos: Position },
 }
@@ -96,13 +96,13 @@ impl IdentifierChar for char {
         *self == '_' || self.is_alphabetic() || self.is_digit(10)  
     }
 
-    // Only digit
+    // Only digit, '.' start is not supported
     fn is_numeric_literal_start(&self) -> bool {
-        self.is_digit(10)  
+        self.is_digit(10)
     }
     // Only digit or ASCII letters or underscore
     fn is_numeric_literal(&self) -> bool {
-        *self == '_' || self.is_digit(36)
+        *self == '_' || self.is_digit(36) || *self == '.'
     }
 
     fn is_seperator(&self) -> bool {
@@ -119,7 +119,7 @@ impl ILexer<V2Token> for V2Lexer {
     // input stringliteral or otherchar without comment, output identifier and numeric literal
     fn next(&mut self, messages: &mut MessageEmitter) -> Option<V2Token> {
         
-        struct VHalf{ ch: char, pos: Position, next_is_sep: bool }
+        struct VHalf{ ch: char, pos: Position, next_is_sep: bool, next_is_dot: bool }
 
         enum State {
             Nothing,
@@ -143,20 +143,20 @@ impl ILexer<V2Token> for V2Lexer {
                 Some(BufV1Token{ token: V1Token::Other{ ch, pos }, next: Some(V1Token::StringLiteral{ .. }) }) 
                     | Some(BufV1Token{ token: V1Token::Other{ ch, pos }, next: Some(V1Token::CharLiteral{ .. }) }) 
                     | Some(BufV1Token{ token: V1Token::Other{ ch, pos }, next: None }) => { 
-                    VHalf{ ch: ch, pos: pos, next_is_sep: true } 
+                    VHalf{ ch: ch, pos: pos, next_is_sep: true, next_is_dot: false } 
                 }
                 Some(BufV1Token{ token: V1Token::Other{ ch, pos }, next: Some(V1Token::Other{ ch: next_ch, pos: _1 }) }) => {
-                    VHalf{ ch: ch, pos: pos, next_is_sep: next_ch.is_seperator() }
+                    VHalf{ ch: ch, pos: pos, next_is_sep: next_ch.is_seperator(), next_is_dot: next_ch == '.' }
                 }
             };
 
             match state {
                 State::Nothing => {
-                    match (vhalf.ch.is_identifier_start(), vhalf.ch.is_numeric_literal_start(), vhalf.pos, vhalf.next_is_sep) {
-                        (false, false, pos, _next_is_sep) => {  // Nothing 
+                    match (vhalf.ch.is_identifier_start(), vhalf.ch.is_numeric_literal_start(), vhalf.pos, vhalf.next_is_sep, vhalf.next_is_dot) {
+                        (false, false, pos, _next_is_sep, _next_is_dot) => {  // Nothing 
                             return Some(V2Token::Other { ch: vhalf.ch, pos: pos });
                         }
-                        (true, false, pos, next_is_sep) => { // Identifier try start
+                        (true, false, pos, next_is_sep, _next_is_dot) => { // Identifier try start
                             let mut value = String::new();
                             value.push(vhalf.ch);
                             if next_is_sep {  // Direct return identifier is next preview is a sperator
@@ -165,7 +165,7 @@ impl ILexer<V2Token> for V2Lexer {
                                 state = State::InIdentifier { value: value, start_pos: pos };
                             }
                         }
-                        (false, true, pos, next_is_sep) => { // Numeric try start
+                        (false, true, pos, next_is_sep, _next_is_dot) => { // Numeric try start
                             let mut value = String::new();
                             value.push(vhalf.ch);
                             if next_is_sep {    // Direct return numeric literal is next preview is a sperator
@@ -192,7 +192,7 @@ impl ILexer<V2Token> for V2Lexer {
                 State::InNumericLiteral { mut value, start_pos } => {
                     if vhalf.ch.is_numeric_literal() {
                         value.push(vhalf.ch);                        
-                        if vhalf.next_is_sep { // To be finished, return here
+                        if vhalf.next_is_sep && !vhalf.next_is_dot { // To be finished, return here
                             return Some(V2Token::NumericLiteral { inner: NumericLiteral::new(&value, StringPosition::from((start_pos, vhalf.pos)), messages) } );
                         } else {
                             state = State::InNumericLiteral { value: value, start_pos: start_pos };
@@ -261,9 +261,9 @@ mod tests {
         )
     }
 
-    const PROGRAM1: &'static str = "123 456";    // Space char as seperator 
+    const PROGRAM1: &'static str = "123 456.1";    // Space char as seperator 
     const PROGRAM2: &'static str = "abc/**/def\"\"ght"; // Comment and string literal as seperator 
-    const PROGRAM3: &'static str = "123a/ qw1.ad -qw+\nR\"123+456\".to_owned()kekekee\n"; // Otherchar as seperator
+    const PROGRAM3: &'static str = "123a/ qw1.ad -qw+\nR\"1.23+456\".to_owned()kekekee\n"; // Otherchar as seperator
     // const PROGRAM5: &'static str = r"123, abc，你好world_a，123世界";   // Chinese identifier
     // SOLVE IN FUTURE
 
@@ -272,7 +272,7 @@ mod tests {
         test_case!(PROGRAM1,
             tnumber!("123", 1, 1, 1, 3),
             tchar!(' ', 1, 4),
-            tnumber!("456", 1, 5, 1, 7), 
+            tnumber!("456.1", 1, 5, 1, 9), 
         );
         test_case!(PROGRAM2,
             tident!("abc", 1, 1, 1, 3),
@@ -293,13 +293,13 @@ mod tests {
             tident!("qw", 1, 15, 1, 16),
             tchar!('+', 1, 17),
             tchar!('\n', 1, 18),
-            tstring!("123+456", 2, 1, 2, 10, true, false),
-            tchar!('.', 2, 11),
-            tident!("to_owned", 2, 12, 2, 19),
-            tchar!('(', 2, 20),
-            tchar!(')', 2, 21),
-            tident!("kekekee", 2, 22, 2, 28),
-            tchar!('\n', 2, 29), 
+            tstring!("1.23+456", 2, 1, 2, 11, true, false),
+            tchar!('.', 2, 12),
+            tident!("to_owned", 2, 13, 2, 20),
+            tchar!('(', 2, 21),
+            tchar!(')', 2, 22),
+            tident!("kekekee", 2, 23, 2, 29),
+            tchar!('\n', 2, 30), 
         );
         // test_case!(PROGRAM5, 
         //     tnumber!("123", 1, 1, 1, 3),
