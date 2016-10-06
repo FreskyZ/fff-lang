@@ -5,7 +5,7 @@ mod ast_item;
 mod scope;
 
 use message::MessageEmitter;
-use lexical::BufLexer as Lexer;
+use lexical::Lexer;
 
 use syntax::ast_item::ASTParser;
 pub use syntax::ast_item::argument::Argument;
@@ -45,11 +45,11 @@ mod tests {
     #[test]
     fn ast_hello_world() {
         use message::MessageEmitter;
-        use lexical::BufLexer as Lexer;
+        use lexical::Lexer;
         use super::get_ast;
 
         let messages = &mut MessageEmitter::new();
-        let lexer = &mut Lexer::from(r#"fn main() { println("helloworld"); }"#.to_owned());
+        let lexer = &mut Lexer::from_test(r#"fn main() { println("helloworld"); }"#, messages);
         let program = get_ast(lexer, messages);
 
         perrorln!("{:?}", program);

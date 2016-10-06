@@ -223,7 +223,7 @@ fn half_parse(raw: &str, pos: StringPosition, messages: &mut MessageEmitter) -> 
 
 /// NumericLiteral => [0b|0o|0d|0x|][\._0-9]*[u8|u32|i32|u64|f32|f64|]
 /// because \n is a seperator for numeric literal, you can rely on next_col for char's position
-pub fn get_numeric_literal(raw: &str, pos: StringPosition, messages: &mut MessageEmitter) -> NumericLiteral {
+pub fn parse_numeric_literal(raw: &str, pos: StringPosition, messages: &mut MessageEmitter) -> NumericLiteral {
     NumericLiteral{ value: None, pos: pos }
 }
 

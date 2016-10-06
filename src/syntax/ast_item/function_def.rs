@@ -3,7 +3,7 @@
 //     FnDef Identifier LeftParen [Argument [, Argument]*] RightParen [ NarrowRightArrow Type]{0, 1} Statement
 
 use message::MessageEmitter;
-use lexical::BufLexer as Lexer;
+use lexical::Lexer;
 use syntax::ast_item::ASTParser;
 use syntax::Argument;
 use syntax::Type;

@@ -8,15 +8,17 @@ mod v3;
 
 use self::v3::V3Lexer;
 pub use self::v3::V3Token as Token;
-pub type BufToken = self::buf_lexer::BufToken<Token>;
-pub type BufLexer = self::buf_lexer::BufLexer<V3Lexer, Token>;
 
+pub use self::symbol_type::Seperator;
 pub use self::symbol_type::SeperatorKind;
+pub use self::symbol_type::Keyword;
 pub use self::symbol_type::KeywordKind;
 pub use self::symbol_type::CharLiteral;
 pub use self::symbol_type::StringLiteral;
 pub use self::symbol_type::NumericLiteral;
 pub use self::symbol_type::NumericLiteralValue;
+pub use self::symbol_type::BooleanLiteral;
+pub use self::symbol_type::Identifier;
 
 use common::From2;
 use common::StringPosition;
@@ -100,6 +102,7 @@ mod tests {
         use super::NumericLiteralValue;
         use super::SeperatorKind;
         use super::CharLiteral;
+        use super::Seperator;
 
         // numeric, 123, 1:1-1:3
         // identifier, abc, 1:5-1:7
@@ -111,20 +114,20 @@ mod tests {
         let messages = &mut MessageEmitter::new();
         let mut lexer = Lexer::from_test("123 abc 'd', [1]", messages);
 
-        assert_eq!(lexer.nth(0), Some(&Token::NumericLiteral{ inner: NumericLiteral{ value: Some(NumericLiteralValue::I32(0)), pos: StringPosition::from((1, 1, 1, 3)) } }));
-        assert_eq!(lexer.nth(2), Some(&Token::CharLiteral{ inner: CharLiteral{ value: Some('d'), pos: StringPosition::from((1, 9, 1, 11)) } }));
-        assert_eq!(lexer.nth(6), Some(&Token::Seperator{ kind: SeperatorKind::RightBracket, pos: StringPosition::from((1, 16, 1, 16)) }));
+        assert_eq!(lexer.nth(0), Some(&Token::NumericLiteral(NumericLiteral{ value: Some(NumericLiteralValue::I32(0)), pos: StringPosition::from((1, 1, 1, 3)) } )));
+        assert_eq!(lexer.nth(2), Some(&Token::CharLiteral(CharLiteral{ value: Some('d'), pos: StringPosition::from((1, 9, 1, 11)) })));
+        assert_eq!(lexer.nth(6), Some(&Token::Seperator(Seperator{ kind: SeperatorKind::RightBracket, pos: StringPosition::from((1, 16, 1, 16)) })));
         assert_eq!(lexer.nth(7), None);
         let snapshot = lexer.take_snapshot();
         lexer.forward(3);
-        assert_eq!(lexer.nth(1), Some(&Token::Seperator{ kind: SeperatorKind::LeftBracket, pos: StringPosition::from((1, 14, 1, 14)) }));
-        assert_eq!(lexer.nth(0), Some(&Token::Seperator{ kind: SeperatorKind::Comma, pos: StringPosition::from((1, 12, 1, 12)) }));
-        assert_eq!(lexer.nth(3), Some(&Token::Seperator{ kind: SeperatorKind::RightBracket, pos: StringPosition::from((1, 16, 1, 16)) }));
+        assert_eq!(lexer.nth(1), Some(&Token::Seperator(Seperator{ kind: SeperatorKind::LeftBracket, pos: StringPosition::from((1, 14, 1, 14)) })));
+        assert_eq!(lexer.nth(0), Some(&Token::Seperator(Seperator{ kind: SeperatorKind::Comma, pos: StringPosition::from((1, 12, 1, 12)) })));
+        assert_eq!(lexer.nth(3), Some(&Token::Seperator(Seperator{ kind: SeperatorKind::RightBracket, pos: StringPosition::from((1, 16, 1, 16)) })));
         assert_eq!(lexer.nth(4), None);
         lexer.recover_snapshot(snapshot);
-        assert_eq!(lexer.nth(0), Some(&Token::NumericLiteral{ inner: NumericLiteral{ value: Some(NumericLiteralValue::I32(0)), pos: StringPosition::from((1, 1, 1, 3)) } }));
-        assert_eq!(lexer.nth(2), Some(&Token::CharLiteral{ inner: CharLiteral{ value: Some('d'), pos: StringPosition::from((1, 9, 1, 11)) } }));
-        assert_eq!(lexer.nth(6), Some(&Token::Seperator{ kind: SeperatorKind::RightBracket, pos: StringPosition::from((1, 16, 1, 16)) }));
+        assert_eq!(lexer.nth(0), Some(&Token::NumericLiteral(NumericLiteral{ value: Some(NumericLiteralValue::I32(0)), pos: StringPosition::from((1, 1, 1, 3)) })));
+        assert_eq!(lexer.nth(2), Some(&Token::CharLiteral(CharLiteral{ value: Some('d'), pos: StringPosition::from((1, 9, 1, 11)) })));
+        assert_eq!(lexer.nth(6), Some(&Token::Seperator(Seperator{ kind: SeperatorKind::RightBracket, pos: StringPosition::from((1, 16, 1, 16)) })));
         assert_eq!(lexer.nth(7), None);
         lexer.forward(7);
         assert_eq!(lexer.nth(0), None);

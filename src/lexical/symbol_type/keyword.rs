@@ -1,5 +1,7 @@
 
 // Keyword kind
+use std::fmt;
+use common::StringPosition;
 
 macro_rules! define_keyword {
     ($enum_name: ident, $($value: expr => $var_name: ident)*) => (
@@ -62,5 +64,20 @@ impl KeywordKind {
                 | PrimTypeString | PrimTypeU32 | PrimTypeU64 | PrimTypeU8 => true,
             _ => false,
         }
+    }
+}
+
+test_only_attr!{
+    [derive(Clone, Eq, PartialEq)]
+    ![derive(Clone)]
+    pub struct Keyword {
+        pub kind: KeywordKind,
+        pub pos: StringPosition,
+    }
+}
+
+impl fmt::Debug for Keyword {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Keyword {:?} at {:?}", self.kind, self.pos)
     }
 }

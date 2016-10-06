@@ -3,7 +3,6 @@
 
 use std::fmt;
 use common::StringPosition;
-use message::MessageEmitter;
 
 #[cfg(test)]
 #[derive(PartialEq, Clone)]
@@ -27,6 +26,26 @@ pub enum NumericLiteralValue {
 }
 #[cfg(test)]
 impl Eq for NumericLiteralValue {
+}
+
+macro_rules! from_for_num_lit_value {
+    ($($ty: ty => $pa: path)*) => (
+        $(
+            impl From<$ty> for NumericLiteralValue {
+                fn from(value: $ty) -> NumericLiteralValue {
+                    $pa(value)
+                }
+            }
+        )*
+    )
+}
+from_for_num_lit_value!{
+    u8 => NumericLiteralValue::U8
+    i32 => NumericLiteralValue::I32
+    u32 => NumericLiteralValue::U32
+    u64 => NumericLiteralValue::U64
+    f32 => NumericLiteralValue::F32
+    f64 => NumericLiteralValue::F64
 }
 
 #[cfg(test)]
@@ -61,12 +80,4 @@ impl fmt::Debug for NumericLiteral {
 }
 
 impl NumericLiteral {
-
-    #[cfg(test)]
-    pub fn new(_raw: &str, pos: StringPosition, _messages: &mut MessageEmitter) -> NumericLiteral {
-        NumericLiteral{
-            value: Some(NumericLiteralValue::I32(0)),
-            pos: pos
-        }
-    }
 }

@@ -2,7 +2,7 @@
 // FunctionCall -> Identifier LeftParen [ Expression [, Expression]* ] RightParen
 
 use message::MessageEmitter;
-use lexical::BufLexer as Lexer;
+use lexical::Lexer;
 use syntax::ast_item::ASTParser;
 use syntax::FunctionDef;
 use syntax::Expression;

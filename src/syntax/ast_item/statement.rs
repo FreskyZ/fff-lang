@@ -2,7 +2,7 @@
 // Statement -> LeftBrace [Expression]* RightBrace
  
 use message::MessageEmitter;
-use lexical::BufLexer as Lexer;
+use lexical::Lexer;
 use syntax::ast_item::ASTParser;
 use syntax::Expression;
 

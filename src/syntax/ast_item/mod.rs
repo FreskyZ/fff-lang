@@ -9,7 +9,7 @@ pub mod variable;
 pub mod expression;
 
 use message::MessageEmitter;
-use lexical::BufLexer as Lexer;
+use lexical::Lexer;
 
 pub trait ASTParser {
     // some for valid ones, none for invalid and can not recover

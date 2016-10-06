@@ -4,10 +4,11 @@
 use common::Position;
 use message::Message;
 use message::MessageEmitter;
-use lexical::BufLexer as Lexer;
-use lexical::BufToken;
+use lexical::Lexer;
 use lexical::Token;
+use lexical::Keyword;
 use lexical::KeywordKind;
+use lexical::Seperator;
 use lexical::SeperatorKind;
 use syntax::ast_item::ASTParser;
 
@@ -64,11 +65,11 @@ impl ASTParser for Type {
 
         let mut state = State::ExpectPrimTypeOrLeftBracket;
         loop {
-            let interest = match lexer.next(messages) {
-                Some(BufToken{ token: Token::Keyword{ kind, pos }, next: _1 }) => Interest::Keyword(kind, pos.start_pos),
-                Some(BufToken{ token: Token::Seperator{ kind, pos }, next: _1 }) => Interest::Seperator(kind, pos.start_pos),
-                Some(BufToken{ token, next: _1 }) => Interest::Other(token.position().start_pos),
-                None => Interest::Other(lexer.inner().position()),
+            let interest = match lexer.nth(0) {
+                Some(&Token::Keyword( Keyword{ ref kind, ref pos })) => Interest::Keyword(kind.clone(), pos.start_pos),
+                Some(&Token::Seperator( Seperator{ ref kind, ref pos })) => Interest::Seperator(kind.clone(), pos.start_pos),
+                Some(token) => Interest::Other(token.position().start_pos),
+                None => Interest::Other(lexer.position().start_pos),
             };
             
             match state {
@@ -140,7 +141,7 @@ mod tests {
     #[test]
     fn ast_smtype_parse() {
         use message::MessageEmitter;
-        use lexical::BufLexer as Lexer;
+        use lexical::Lexer;
         use syntax::ast_item::ASTParser;
         use super::PrimitiveType;
         use super::Type;
@@ -149,13 +150,13 @@ mod tests {
             ($program_slice: expr, $expect: expr) => ({
 
                 let messages = &mut MessageEmitter::new();
-                let lexer = &mut Lexer::from($program_slice.to_owned());
+                let lexer = &mut Lexer::from($program_slice.to_owned(), messages);
                 assert_eq!(Type::parse(lexer, messages), Some($expect));
             });
             ($program_slice: expr) => ({
 
                 let messages = &mut MessageEmitter::new();
-                let lexer = &mut Lexer::from($program_slice.to_owned());
+                let lexer = &mut Lexer::from($program_slice.to_owned(), messages);
                 assert_eq!(Type::parse(lexer, messages), None);
             })
         }

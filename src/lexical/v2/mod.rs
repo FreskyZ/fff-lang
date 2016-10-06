@@ -18,6 +18,7 @@ use lexical::buf_lexer::BufLexer;
 use lexical::symbol_type::StringLiteral;
 use lexical::symbol_type::NumericLiteral;
 use lexical::symbol_type::CharLiteral;
+use self::numeric_lit_parser::parse_numeric_literal;
 
 #[cfg(test)]
 #[derive(Eq, PartialEq, Clone)]
@@ -169,7 +170,7 @@ impl ILexer<V2Token> for V2Lexer {
                             let mut value = String::new();
                             value.push(vhalf.ch);
                             if next_is_sep {    // Direct return numeric literal is next preview is a sperator
-                                return Some(V2Token::NumericLiteral { inner: NumericLiteral::new(&value, StringPosition::from2(pos, pos), messages) });
+                                return Some(V2Token::NumericLiteral { inner: parse_numeric_literal(&value, StringPosition::from2(pos, pos), messages) });
                             } else {            // else normal goto InIdentifier state
                                 state = State::InNumericLiteral { value: value, start_pos: pos };
                             }
@@ -193,7 +194,7 @@ impl ILexer<V2Token> for V2Lexer {
                     if vhalf.ch.is_numeric_literal() {
                         value.push(vhalf.ch);                        
                         if vhalf.next_is_sep && !vhalf.next_is_dot { // To be finished, return here
-                            return Some(V2Token::NumericLiteral { inner: NumericLiteral::new(&value, StringPosition::from((start_pos, vhalf.pos)), messages) } );
+                            return Some(V2Token::NumericLiteral { inner: parse_numeric_literal(&value, StringPosition::from((start_pos, vhalf.pos)), messages) } );
                         } else {
                             state = State::InNumericLiteral { value: value, start_pos: start_pos };
                         }
@@ -219,6 +220,7 @@ mod tests {
     use message::MessageEmitter;
     use lexical::symbol_type::StringLiteral;
     use lexical::symbol_type::NumericLiteral;
+    use lexical::NumericLiteralValue;
     
     macro_rules! test_case {
         ($program: expr, $($expect: expr, )*) => ({
@@ -247,7 +249,20 @@ mod tests {
     }
     macro_rules! tnumber {
         ($val: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr) => (
-            V2Token::NumericLiteral{ inner: NumericLiteral::new($val, StringPosition::from(($row1, $col1, $row2, $col2)), &mut MessageEmitter::new()) }
+            V2Token::NumericLiteral{ 
+                inner: NumericLiteral{ 
+                    value: Some(NumericLiteralValue::from($val)), 
+                    pos: StringPosition::from(($row1, $col1, $row2, $col2))
+                }
+            }
+        );        
+        ($row1: expr, $col1: expr, $row2: expr, $col2: expr) => (
+            V2Token::NumericLiteral{ 
+                inner: NumericLiteral{ 
+                    value: None, 
+                    pos: StringPosition::from(($row1, $col1, $row2, $col2))
+                }
+            }
         )
     }
     macro_rules! tident {
@@ -270,9 +285,9 @@ mod tests {
     #[test]
     fn v2_base() {
         test_case!(PROGRAM1,
-            tnumber!("123", 1, 1, 1, 3),
+            tnumber!(123, 1, 1, 1, 3),
             tchar!(' ', 1, 4),
-            tnumber!("456.1", 1, 5, 1, 9), 
+            tnumber!(456.1, 1, 5, 1, 9), 
         );
         test_case!(PROGRAM2,
             tident!("abc", 1, 1, 1, 3),
@@ -282,7 +297,7 @@ mod tests {
             tident!("ght", 1, 13, 1, 15),    
         );
         test_case!(PROGRAM3,
-            tnumber!("123a", 1, 1, 1, 4),
+            tnumber!(1, 1, 1, 4),
             tchar!('/', 1, 5), 
             tchar!(' ', 1, 6),
             tident!("qw1", 1, 7, 1, 9),

@@ -3,7 +3,7 @@
 
 use file_map::InputReader;
 use message::MessageEmitter;
-use lexical::BufLexer as Lexer;
+use lexical::Lexer;
 use syntax::get_ast;
 
 // Handle and print error here
@@ -19,8 +19,8 @@ pub fn compile_input(file_name: String) {
         }
     };
 
-    let mut lexer = Lexer::from(content);
     let mut messages = MessageEmitter::new();
+    let mut lexer = Lexer::from(content, &mut messages);
     let _ast = get_ast(&mut lexer, &mut messages);  
 }
 

@@ -2,7 +2,7 @@
 // Argument -> Type Identifier
 
 use message::MessageEmitter;
-use lexical::BufLexer as Lexer;
+use lexical::Lexer;
 use syntax::ast_item::ASTParser;
 use syntax::Type;
 
@@ -39,7 +39,7 @@ mod tests {
     #[test]
     fn ast_argument_parse() {
         use message::MessageEmitter;
-        use lexical::BufLexer as Lexer;
+        use lexical::Lexer;
         use syntax::ast_item::ASTParser;
         use syntax::Type;
         use syntax::PrimitiveType;
@@ -49,13 +49,13 @@ mod tests {
             ($program_slice: expr, $expect_type: expr, $expect_name: expr) => ({
 
                 let messages = &mut MessageEmitter::new();
-                let lexer = &mut Lexer::from_test($program_slice);
+                let lexer = &mut Lexer::from_test($program_slice, messages);
                 assert_eq!(Argument::parse(lexer, messages), Some(Argument{ arg_type: $expect_type, name: $expect_name.to_owned() }));
             });
             ($program_slice: expr) => ({
 
                 let messages = &mut MessageEmitter::new();
-                let lexer = &mut Lexer::from_test($program_slice);
+                let lexer = &mut Lexer::from_test($program_slice, messages);
                 assert_eq!(Argument::parse(lexer, messages), None);
             })
         }
