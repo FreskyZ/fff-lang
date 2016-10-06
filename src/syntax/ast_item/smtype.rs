@@ -10,6 +10,7 @@ use lexical::Keyword;
 use lexical::KeywordKind;
 use lexical::Seperator;
 use lexical::SeperatorKind;
+use syntax::ast_item::ASTItem;
 use syntax::ast_item::ASTParser;
 
 #[derive(Debug, Eq, PartialEq)]
@@ -47,89 +48,46 @@ fn check_primitive_type(keyword: &KeywordKind) -> Option<PrimitiveType> {
     }
 }
 
+impl ASTItem for Type {
+
+    fn symbol_len(&self) -> usize {
+        match *self {
+            Type::Primitive(_) => 1,
+            Type::Array(_) => 3,
+        }
+    }
+}
+
 impl ASTParser for Type {
     
     fn parse(lexer: &mut Lexer, messages: &mut MessageEmitter) -> Option<Type> {
 
-        enum State {
-            ExpectPrimTypeOrLeftBracket,
-            ExpectPrimType,
-            ExpectRightBracket(PrimitiveType), // array base
-        }
-
-        enum Interest {
-            Keyword(KeywordKind, Position),
-            Seperator(SeperatorKind, Position),
-            Other(Position),
-        }
-
-        let mut state = State::ExpectPrimTypeOrLeftBracket;
-        loop {
-            let interest = match lexer.nth(0) {
-                Some(&Token::Keyword( Keyword{ ref kind, ref pos })) => Interest::Keyword(kind.clone(), pos.start_pos),
-                Some(&Token::Seperator( Seperator{ ref kind, ref pos })) => Interest::Seperator(kind.clone(), pos.start_pos),
-                Some(token) => Interest::Other(token.position().start_pos),
-                None => Interest::Other(lexer.position().start_pos),
-            };
-            
-            match state {
-                State::ExpectPrimTypeOrLeftBracket => {
-                    match interest {
-                        Interest::Keyword(kind, pos) => {
-                            match check_primitive_type(&kind) {
-                                Some(prim) => return Some(Type::Primitive(prim)),
-                                None => {
-                                    messages.push(Message::ExpectType{ pos: pos });
-                                    return None;
-                                }
-                            }
-                        }
-                        Interest::Seperator(kind, pos) => {
-                            if kind == SeperatorKind::LeftBracket {
-                                state = State::ExpectPrimType;
-                            } else {
-                                messages.push(Message::ExpectType{ pos: pos });
-                                return None;
-                            }
-                        }
-                        Interest::Other(pos) => {
-                            messages.push(Message::ExpectType{ pos: pos });
-                            return None;
-                        }
+        match (lexer.nth(0), lexer.nth(1), lexer.nth(2)) {
+            (Some(&Token::Keyword( Keyword{ ref kind, ref pos })), _, _) => {
+                match check_primitive_type(kind) {
+                    Some(prim) => Some(Type::Primitive(prim)),
+                    None => {
+                        messages.push(Message::ExpectType{ pos: pos.start_pos });
+                        return None;
                     }
                 }
-                State::ExpectPrimType => {
-                    match interest {
-                        Interest::Keyword(kind, pos) => {
-                            match check_primitive_type(&kind) {
-                                Some(prim) => state = State::ExpectRightBracket(prim),
-                                None => {
-                                    messages.push(Message::ExpectType{ pos: pos });
-                                    return None;
-                                }
-                            }
-                        }
-                        Interest::Seperator(_, pos) | Interest::Other(pos) => {
-                            messages.push(Message::ExpectType{ pos: pos });
-                            return None;
-                        }
+            }
+            (
+                Some(&Token::Seperator( Seperator{ kind: SeperatorKind::LeftBracket, pos: ref pos1 })),
+                Some(&Token::Keyword( Keyword{ ref kind, pos: ref pos2 })), 
+                Some(&Token::Seperator( Seperator{ kind: SeperatorKind::RightBracket, pos: ref pos3 } ))
+            ) => {
+                match check_primitive_type(kind) {
+                    Some(prim) => Some(Type::Array(prim)),
+                    None => {
+                        messages.push(Message::ExpectType{ pos: pos1.start_pos });
+                        return None;
                     }
                 }
-                State::ExpectRightBracket(prim) => {
-                    match interest {
-                        Interest::Seperator(kind, pos) => {
-                            if kind == SeperatorKind::RightBracket {
-                                return Some(Type::Array(prim));
-                            }
-                            messages.push(Message::ExpectType{ pos: pos });
-                            return None;
-                        }
-                        Interest::Keyword(_, pos) | Interest::Other(pos) => {
-                            messages.push(Message::ExpectType{ pos: pos });
-                            return None;
-                        }
-                    }
-                }
+            }
+            _ => {
+                messages.push(Message::ExpectType{ pos: lexer.position().start_pos });
+                return None;
             }
         }
     }

@@ -46,7 +46,7 @@ values_to_integral!{ values_to_u64, u64, NumericLiteralValue::U64 }
 macro_rules! values_to_float {
     ($fn_name: ident, $ty: ty, $result_path: path) => (
 
-        fn $fn_name(radix: u32, content1: Vec<u32>, content2: Vec<u32>, pos: StringPosition) -> Result<NumericLiteralValue, Message> {
+        fn $fn_name(radix: u32, content1: Vec<u32>, content2: Vec<u32>, _pos: StringPosition) -> Result<NumericLiteralValue, Message> {
 
             let mut ret_val: $ty = 0 as $ty;
             let mut digit_weight: $ty = 1 as $ty;

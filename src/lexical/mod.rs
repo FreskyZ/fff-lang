@@ -135,6 +135,3 @@ mod tests {
         assert_eq!(lexer.nth(100), None);
     }
 }
-
-// TODOs
-// numeric literal parser

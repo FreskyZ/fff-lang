@@ -155,6 +155,8 @@ impl ILexer<V3Token> for V3Lexer {
 mod tests {
     use lexical::buf_lexer::ILexer;
 
+    // TODO: ~Extend: Unicode seperator error recover
+
     #[test]
     fn v3_test1() {
         use std::fs::File;

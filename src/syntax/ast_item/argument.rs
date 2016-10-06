@@ -4,6 +4,7 @@
 use message::MessageEmitter;
 use lexical::Lexer;
 use syntax::ast_item::ASTParser;
+use syntax::ast_item::ASTItem;
 use syntax::Type;
 
 #[derive(Debug, Eq, PartialEq)]
@@ -12,23 +13,16 @@ pub struct Argument {
     pub name: String,
 }
 
+impl ASTItem for Argument {
+    fn symbol_len(&self) -> usize {
+        self.arg_type.symbol_len() + 1
+    }
+}
+
 impl ASTParser for Argument {
     
     fn parse(lexer: &mut Lexer, messages: &mut MessageEmitter) -> Option<Argument> {
         
-        // enum State {
-        //     ExpectType,
-        //     ExpectIdentifier(Type),
-        // }
-
-        // loop {
-        //     let bufv3 = lexer.next(messages);
-        //     match State {
-        //         State::ExpectType => {
-                    
-        //         }
-        //     }
-        // }
         None
     }
 }
