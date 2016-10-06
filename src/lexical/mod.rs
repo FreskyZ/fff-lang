@@ -114,7 +114,7 @@ mod tests {
         let messages = &mut MessageEmitter::new();
         let mut lexer = Lexer::from_test("123 abc 'd', [1]", messages);
 
-        assert_eq!(lexer.nth(0), Some(&Token::NumericLiteral(NumericLiteral{ value: Some(NumericLiteralValue::I32(0)), pos: StringPosition::from((1, 1, 1, 3)) } )));
+        assert_eq!(lexer.nth(0), Some(&Token::NumericLiteral(NumericLiteral{ value: Some(NumericLiteralValue::I32(123)), pos: StringPosition::from((1, 1, 1, 3)) } )));
         assert_eq!(lexer.nth(2), Some(&Token::CharLiteral(CharLiteral{ value: Some('d'), pos: StringPosition::from((1, 9, 1, 11)) })));
         assert_eq!(lexer.nth(6), Some(&Token::Seperator(Seperator{ kind: SeperatorKind::RightBracket, pos: StringPosition::from((1, 16, 1, 16)) })));
         assert_eq!(lexer.nth(7), None);
@@ -125,7 +125,7 @@ mod tests {
         assert_eq!(lexer.nth(3), Some(&Token::Seperator(Seperator{ kind: SeperatorKind::RightBracket, pos: StringPosition::from((1, 16, 1, 16)) })));
         assert_eq!(lexer.nth(4), None);
         lexer.recover_snapshot(snapshot);
-        assert_eq!(lexer.nth(0), Some(&Token::NumericLiteral(NumericLiteral{ value: Some(NumericLiteralValue::I32(0)), pos: StringPosition::from((1, 1, 1, 3)) })));
+        assert_eq!(lexer.nth(0), Some(&Token::NumericLiteral(NumericLiteral{ value: Some(NumericLiteralValue::I32(123)), pos: StringPosition::from((1, 1, 1, 3)) })));
         assert_eq!(lexer.nth(2), Some(&Token::CharLiteral(CharLiteral{ value: Some('d'), pos: StringPosition::from((1, 9, 1, 11)) })));
         assert_eq!(lexer.nth(6), Some(&Token::Seperator(Seperator{ kind: SeperatorKind::RightBracket, pos: StringPosition::from((1, 16, 1, 16)) })));
         assert_eq!(lexer.nth(7), None);

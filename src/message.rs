@@ -33,12 +33,6 @@ pub enum Message {
         literal_start: Position,
         unexpected_char: char,
     },
-    NumericLiteralTooLong {
-        literal_start: Position,
-    },
-    NumericLiteralTooLarge {
-        literal_start: Position,
-    },
     UnexpectedCharInUnicodeCharEscape {
         escape_start: Position,
         unexpected_char_pos: Position,
@@ -60,15 +54,27 @@ pub enum Message {
         unexpected_end_pos: Position,
     },
 
+    // Numeric literal
+    InvalidPrefixInNumericLiteral {
+        literal_pos: StringPosition,
+        prefix: char
+    },
+    EmptyNumericLiteral {
+        literal_pos: StringPosition,
+    },
     UnexpectedCharInNumericLiteral {
         literal_pos: StringPosition,
-        char_pos: Position,
     },
     UnexpectedDecimalPointInIntegralLiteral {
         literal_pos: StringPosition,
-        decimal_dot_pos: Position,
     },
-    PrefixNotSupportedForFloatingPointLiteral {
+    UnexpectedMultiDecimalPointInFloatLiteral {
+        literal_pos: StringPosition,
+    },
+    PrefixNotSupportedForFloatLiteral {
+        literal_pos: StringPosition,
+    },
+    NumericLiteralTooLarge {
         literal_pos: StringPosition,
     },
 
@@ -114,12 +120,6 @@ impl fmt::Debug for Message {
             UnexpectedIdentifierCharInNumericLiteral { ref literal_start, ref unexpected_char } => {
                 write!(f, "Unexpected character {:?} in numeric litral starts from {}", unexpected_char, literal_start)
             }
-            NumericLiteralTooLong { ref literal_start } => {
-                write!(f, "Numeric literal at {:?} too long", literal_start)
-            }
-            NumericLiteralTooLarge { ref literal_start } => {
-                write!(f, "Numeric literal at {:?} too large", literal_start)
-            }
             UnexpectedCharInUnicodeCharEscape { ref escape_start, ref unexpected_char_pos, ref unexpected_char } => {
                 write!(f, "Unexpected char {:?} at {:?} in unicode char escape start from {:?}, unicode char escape is like \\uxxxx or \\Uxxxxxxxx", 
                     unexpected_char, unexpected_char_pos, escape_start)
@@ -147,7 +147,31 @@ impl fmt::Debug for Message {
                 write!(f, "Invalid escape in char literal at {:?}, did you mean `'\\''` or `'\\\\'`?", start_pos)
             }
 
-            _ => Ok(())
+            InvalidPrefixInNumericLiteral { ref literal_pos, ref prefix } => {
+                write!(f, "Invalid prefix '0{}' in numeric literal at {:?}", prefix, literal_pos)
+            },
+            EmptyNumericLiteral { ref literal_pos } => {
+                write!(f, "Empty numeric literal at {:?}", literal_pos)
+            }
+            UnexpectedCharInNumericLiteral { ref literal_pos } => {
+                write!(f, "Unexpected char in numeric literal at {:?}", literal_pos)
+            }
+            UnexpectedDecimalPointInIntegralLiteral { ref literal_pos } => {
+                write!(f, "Unexpected decimal point in integral literal at {:?}", literal_pos)
+            }
+            UnexpectedMultiDecimalPointInFloatLiteral { ref literal_pos } => {
+                write!(f, "Unexpected multi decimal point in float literal at {:?}", literal_pos)
+            }
+            PrefixNotSupportedForFloatLiteral { ref literal_pos } => {
+                write!(f, "Prefix not supported for float literal at {:?}", literal_pos)
+            }
+            NumericLiteralTooLarge { ref literal_pos } => {
+                write!(f, "Numeric literal too large at {:?}", literal_pos)
+            }
+
+            ExpectType{ pos } => {
+                write!(f, "Expect type at {:?}", pos)
+            }
         }
     }
 }

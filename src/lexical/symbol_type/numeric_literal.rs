@@ -5,7 +5,7 @@ use std::fmt;
 use common::StringPosition;
 
 #[cfg(test)]
-#[derive(PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum NumericLiteralValue {
     U64(u64),
     U32(u32),

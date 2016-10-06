@@ -170,7 +170,7 @@ impl ILexer<V2Token> for V2Lexer {
                             let mut value = String::new();
                             value.push(vhalf.ch);
                             if next_is_sep {    // Direct return numeric literal is next preview is a sperator
-                                return Some(V2Token::NumericLiteral { inner: parse_numeric_literal(&value, StringPosition::from2(pos, pos), messages) });
+                                return Some(V2Token::NumericLiteral { inner: parse_numeric_literal(value, StringPosition::from2(pos, pos), messages) });
                             } else {            // else normal goto InIdentifier state
                                 state = State::InNumericLiteral { value: value, start_pos: pos };
                             }
@@ -191,10 +191,10 @@ impl ILexer<V2Token> for V2Lexer {
                     }
                 }
                 State::InNumericLiteral { mut value, start_pos } => {
-                    if vhalf.ch.is_numeric_literal() {
+                    if vhalf.ch.is_numeric_literal() {  
                         value.push(vhalf.ch);                        
                         if vhalf.next_is_sep && !vhalf.next_is_dot { // To be finished, return here
-                            return Some(V2Token::NumericLiteral { inner: parse_numeric_literal(&value, StringPosition::from((start_pos, vhalf.pos)), messages) } );
+                            return Some(V2Token::NumericLiteral { inner: parse_numeric_literal(value, StringPosition::from((start_pos, vhalf.pos)), messages) } );
                         } else {
                             state = State::InNumericLiteral { value: value, start_pos: start_pos };
                         }
@@ -280,7 +280,6 @@ mod tests {
     const PROGRAM2: &'static str = "abc/**/def\"\"ght"; // Comment and string literal as seperator 
     const PROGRAM3: &'static str = "123a/ qw1.ad -qw+\nR\"1.23+456\".to_owned()kekekee\n"; // Otherchar as seperator
     // const PROGRAM5: &'static str = r"123, abc，你好world_a，123世界";   // Chinese identifier
-    // SOLVE IN FUTURE
 
     #[test]
     fn v2_base() {
