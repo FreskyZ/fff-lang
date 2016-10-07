@@ -1,9 +1,8 @@
 
 // <Program> -> <FunctionDef>*
 
-use message::MessageEmitter;
 use lexical::Lexer;
-use syntax::ast_item::ASTParser;
+use syntax::ast_item::IASTItem;
 use syntax::FunctionDef;
 use syntax::PrimitiveType;
 use syntax::Type;
@@ -26,9 +25,13 @@ impl Program {
     } 
 }
 
-impl ASTParser for Program {
+impl IASTItem for Program {
 
-    fn parse(lexer: &mut Lexer, messages: &mut MessageEmitter) -> Option<Program> {
+    fn symbol_len(&self) -> usize {
+        self.functions.iter().fold(0, |counter, ref func| counter + func.symbol_len())
+    }
+
+    fn parse(lexer: &mut Lexer, index: usize) -> Option<Program> {
         None
     }
 }

@@ -1,10 +1,10 @@
 
 // Argument -> Type Identifier
 
-use message::MessageEmitter;
+use message::Message;
 use lexical::Lexer;
-use syntax::ast_item::ASTParser;
-use syntax::ast_item::ASTItem;
+use lexical::IToken;
+use syntax::ast_item::IASTItem;
 use syntax::Type;
 
 #[derive(Debug, Eq, PartialEq)]
@@ -13,17 +13,26 @@ pub struct Argument {
     pub name: String,
 }
 
-impl ASTItem for Argument {
+impl IASTItem for Argument {
+
     fn symbol_len(&self) -> usize {
         self.arg_type.symbol_len() + 1
     }
-}
-
-impl ASTParser for Argument {
     
-    fn parse(lexer: &mut Lexer, messages: &mut MessageEmitter) -> Option<Argument> {
+    fn parse(lexer: &mut Lexer, index: usize) -> Option<Argument> {
         
-        None
+        match Type::parse(lexer, index) {
+            Some(smtype) => {
+                match lexer.nth(index + smtype.symbol_len()).get_identifier() {
+                    Some(name) => Some(Argument{ arg_type: smtype, name: name.clone(), }),
+                    None => {
+                        let pos = lexer.sym_pos(index + smtype.symbol_len()).start_pos;
+                        lexer.push_ret_none(Message::ExpectSymbol{ desc: "identifier".to_owned(), pos: pos })
+                    }
+                }
+            }
+            None => None, // message emitted
+        }
     }
 }
 
@@ -34,7 +43,7 @@ mod tests {
     fn ast_argument_parse() {
         use message::MessageEmitter;
         use lexical::Lexer;
-        use syntax::ast_item::ASTParser;
+        use syntax::ast_item::IASTItem;
         use syntax::Type;
         use syntax::PrimitiveType;
         use super::Argument;
@@ -42,15 +51,15 @@ mod tests {
         macro_rules! test_case {
             ($program_slice: expr, $expect_type: expr, $expect_name: expr) => ({
 
-                let messages = &mut MessageEmitter::new();
+                let messages = MessageEmitter::new();
                 let lexer = &mut Lexer::from_test($program_slice, messages);
-                assert_eq!(Argument::parse(lexer, messages), Some(Argument{ arg_type: $expect_type, name: $expect_name.to_owned() }));
+                assert_eq!(Argument::parse(lexer, 0), Some(Argument{ arg_type: $expect_type, name: $expect_name.to_owned() }));
             });
             ($program_slice: expr) => ({
 
-                let messages = &mut MessageEmitter::new();
+                let messages = MessageEmitter::new();
                 let lexer = &mut Lexer::from_test($program_slice, messages);
-                assert_eq!(Argument::parse(lexer, messages), None);
+                assert_eq!(Argument::parse(lexer, 0), None);
             })
         }
 

@@ -4,10 +4,9 @@
 mod ast_item;
 mod scope;
 
-use message::MessageEmitter;
 use lexical::Lexer;
 
-use syntax::ast_item::ASTParser;
+use syntax::ast_item::IASTItem;
 pub use syntax::ast_item::argument::Argument;
 pub use syntax::ast_item::program::Program;
 pub use syntax::ast_item::function_def::FunctionDef;
@@ -16,11 +15,11 @@ pub use syntax::ast_item::expression::Expression;
 pub use syntax::ast_item::statement::Statement;
 pub use syntax::ast_item::smtype::PrimitiveType;
 pub use syntax::ast_item::smtype::Type;
-pub use syntax::ast_item::variable::Variable;
+pub use syntax::ast_item::variable_def::VariableDef;
 
-pub fn get_ast(lexer: &mut Lexer, messages: &mut MessageEmitter) -> Option<Program> {
+pub fn get_ast(lexer: &mut Lexer) -> Option<Program> {
 
-    Program::parse(lexer, messages)
+    Program::parse(lexer, 0)
 }
 
 #[cfg(test)]
@@ -48,9 +47,9 @@ mod tests {
         use lexical::Lexer;
         use super::get_ast;
 
-        let messages = &mut MessageEmitter::new();
+        let messages = MessageEmitter::new();
         let lexer = &mut Lexer::from_test(r#"fn main() { println("helloworld"); }"#, messages);
-        let program = get_ast(lexer, messages);
+        let program = get_ast(lexer);
 
         perrorln!("{:?}", program);
     }

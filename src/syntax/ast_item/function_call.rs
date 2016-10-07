@@ -1,9 +1,8 @@
 
 // FunctionCall -> Identifier LeftParen [ Expression [, Expression]* ] RightParen
 
-use message::MessageEmitter;
 use lexical::Lexer;
-use syntax::ast_item::ASTParser;
+use syntax::ast_item::IASTItem;
 use syntax::FunctionDef;
 use syntax::Expression;
 
@@ -14,9 +13,13 @@ pub struct FunctionCall {
     pub parameter: Vec<Expression>,
 }
 
-impl ASTParser for FunctionCall {
+impl IASTItem for FunctionCall {
+
+    fn symbol_len(&self) -> usize {
+        0
+    }
     
-    fn parse(lexer: &mut Lexer, messages: &mut MessageEmitter) -> Option<FunctionCall> {
+    fn parse(lexer: &mut Lexer, index: usize) -> Option<FunctionCall> {
         None
     }
 }

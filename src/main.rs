@@ -1,6 +1,5 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
-#![allow(unused_imports)]
 
 #[macro_use]
 extern crate fsz_common;
@@ -11,7 +10,7 @@ mod config;
 mod file_map;
 mod lexical;
 mod syntax;
-mod vmcodegen;
+mod codegen;
 mod vm;
 mod driver;
 

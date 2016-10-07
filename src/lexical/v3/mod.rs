@@ -55,6 +55,49 @@ impl V3Token {
             V3Token::Seperator(ref seperator) => seperator.pos,
         }
     }
+
+    pub fn is_keyword(&self, kind: KeywordKind) -> bool {
+        match *self {
+            V3Token::Keyword(Keyword{ kind: ref self_kind, ref pos }) => *self_kind == kind,
+            _ => false,
+        }
+    }
+    pub fn is_seperator(&self, kind: SeperatorKind) -> bool {
+        match *self {
+            V3Token::Seperator(Seperator{ kind: ref self_kind, ref pos }) => *self_kind == kind,
+            _ => false,
+        }
+    }
+    pub fn is_identifier(&self, name: &str) -> bool {
+        match *self {
+            V3Token::Identifier(Identifier{ name: ref self_name, ref pos }) => self_name == name,
+            _ => false,
+        }
+    }
+    pub fn is_str_lit(&self) -> bool {
+        match *self {
+            V3Token::StringLiteral(_) => true,
+            _ => false,
+        }
+    }
+    pub fn is_num_lit(&self) -> bool {
+        match *self {
+            V3Token::NumericLiteral(_) => true,
+            _ => false,
+        }
+    }
+    pub fn is_char_lit(&self) -> bool {
+        match *self {
+            V3Token::CharLiteral(_) => true,
+            _ => false,
+        }
+    }
+    pub fn is_bool_lit(&self) -> bool {
+        match *self {
+            V3Token::BooleanLiteral(_) => true,
+            _ => false,
+        }
+    }
 }
 
 #[cfg(test)]

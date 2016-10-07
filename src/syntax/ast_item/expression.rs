@@ -1,21 +1,24 @@
 
 // Expression -> Identifier LeftParen [ Expression [Comma Expression]* ] RightParen
 
-use message::MessageEmitter;
 use lexical::Lexer;
-use syntax::ast_item::ASTParser;
+use lexical::Identifier;
+use syntax::ast_item::IASTItem;
 use syntax::FunctionCall;
-use syntax::Variable;
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum Expression {
     FunctionCall(FunctionCall),
-    Variable(Variable),
+    Identifier(Identifier),
 }
 
-impl ASTParser for Expression {
+impl IASTItem for Expression {
+
+    fn symbol_len(&self) -> usize {
+        0
+    }
     
-    fn parse(lexer: &mut Lexer, messages: &mut MessageEmitter) -> Option<Expression> {
+    fn parse(lexer: &mut Lexer, index: usize) -> Option<Expression> {
         None
     }
 }

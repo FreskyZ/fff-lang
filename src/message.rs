@@ -89,7 +89,11 @@ pub enum Message {
     },
 
     // Syntax!
-    ExpectType { pos: Position }
+    ExpectSymbol{ desc: String, pos: Position },
+}
+
+impl Message {
+    
 }
 
 use std::fmt;
@@ -169,8 +173,8 @@ impl fmt::Debug for Message {
                 write!(f, "Numeric literal too large at {:?}", literal_pos)
             }
 
-            ExpectType{ pos } => {
-                write!(f, "Expect type at {:?}", pos)
+            ExpectSymbol{ ref desc, ref pos } => {
+                write!(f, "Expect {} at {:?}", desc, pos)
             }
         }
     }

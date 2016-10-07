@@ -5,17 +5,17 @@ pub mod argument;
 pub mod smtype;
 pub mod statement;
 pub mod function_call;
-pub mod variable;
+pub mod variable_def;
 pub mod expression;
 
-use message::MessageEmitter;
 use lexical::Lexer;
 
-pub trait ASTItem {
-    fn symbol_len(&self) -> usize;
-}
+pub trait IASTItem {
 
-pub trait ASTParser {
+    // cusomed symbol length
+    fn symbol_len(&self) -> usize;
+
     // some for valid ones, none for invalid and can not recover
-    fn parse(lexer: &mut Lexer, messages: &mut MessageEmitter) -> Option<Self> where Self: Sized;
+    // if try, not emit error
+    fn parse(lexer: &mut Lexer, index: usize) -> Option<Self> where Self: Sized;
 }

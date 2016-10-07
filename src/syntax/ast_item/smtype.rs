@@ -1,17 +1,14 @@
 
 // Type -> PrimitiveType | LeftBracket PrimitiveType RightBracket 
 
-use common::Position;
 use message::Message;
-use message::MessageEmitter;
+
 use lexical::Lexer;
-use lexical::Token;
-use lexical::Keyword;
+use lexical::IToken;
 use lexical::KeywordKind;
-use lexical::Seperator;
 use lexical::SeperatorKind;
-use syntax::ast_item::ASTItem;
-use syntax::ast_item::ASTParser;
+
+use syntax::ast_item::IASTItem;
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum PrimitiveType {
@@ -48,48 +45,44 @@ fn check_primitive_type(keyword: &KeywordKind) -> Option<PrimitiveType> {
     }
 }
 
-impl ASTItem for Type {
+impl Type {
+
+    pub fn unit_type() -> Type {
+        Type::Primitive(PrimitiveType::Unit)
+    }
+}
+
+impl IASTItem for Type {
 
     fn symbol_len(&self) -> usize {
-        match *self {
+        match *self {   
             Type::Primitive(_) => 1,
             Type::Array(_) => 3,
         }
     }
-}
-
-impl ASTParser for Type {
     
-    fn parse(lexer: &mut Lexer, messages: &mut MessageEmitter) -> Option<Type> {
+    fn parse(lexer: &mut Lexer, index: usize) -> Option<Type> {
 
-        match (lexer.nth(0), lexer.nth(1), lexer.nth(2)) {
-            (Some(&Token::Keyword( Keyword{ ref kind, ref pos })), _, _) => {
-                match check_primitive_type(kind) {
-                    Some(prim) => Some(Type::Primitive(prim)),
-                    None => {
-                        messages.push(Message::ExpectType{ pos: pos.start_pos });
-                        return None;
-                    }
-                }
-            }
-            (
-                Some(&Token::Seperator( Seperator{ kind: SeperatorKind::LeftBracket, pos: ref pos1 })),
-                Some(&Token::Keyword( Keyword{ ref kind, pos: ref pos2 })), 
-                Some(&Token::Seperator( Seperator{ kind: SeperatorKind::RightBracket, pos: ref pos3 } ))
-            ) => {
-                match check_primitive_type(kind) {
-                    Some(prim) => Some(Type::Array(prim)),
-                    None => {
-                        messages.push(Message::ExpectType{ pos: pos1.start_pos });
-                        return None;
-                    }
-                }
-            }
-            _ => {
-                messages.push(Message::ExpectType{ pos: lexer.position().start_pos });
-                return None;
+        if let (Some(kind), pos) = (lexer.nth(index).get_keyword(), lexer.sym_pos(index)) { 
+            match check_primitive_type(kind) {
+                Some(prim) => return Some(Type::Primitive(prim)),
+                None => return lexer.push_ret_none(Message::ExpectSymbol{ desc: "primitive type keyword".to_owned(), pos: pos.start_pos }),
             }
         }
+
+        if let (true, Some(kind), true, pos) = (
+                lexer.nth(index).is_seperator(SeperatorKind::LeftBracket), 
+                lexer.nth(index + 1).get_keyword(), 
+                lexer.nth(index + 2).is_seperator(SeperatorKind::RightBracket),
+                lexer.sym_pos(index + 1)) {
+            match check_primitive_type(kind) {
+                Some(prim) => return Some(Type::Array(prim)),
+                None => return lexer.push_ret_none(Message::ExpectSymbol{ desc: "primitive type keyword between brackets".to_owned(), pos: pos.start_pos })
+            }
+        }
+
+        let pos = lexer.sym_pos(index).start_pos;
+        return lexer.push_ret_none(Message::ExpectSymbol{ desc: "typedef".to_owned(), pos: pos });
     }
 }
 
@@ -100,22 +93,22 @@ mod tests {
     fn ast_smtype_parse() {
         use message::MessageEmitter;
         use lexical::Lexer;
-        use syntax::ast_item::ASTParser;
+        use syntax::ast_item::IASTItem;
         use super::PrimitiveType;
         use super::Type;
 
         macro_rules! test_case {
             ($program_slice: expr, $expect: expr) => ({
 
-                let messages = &mut MessageEmitter::new();
+                let messages = MessageEmitter::new();
                 let lexer = &mut Lexer::from($program_slice.to_owned(), messages);
-                assert_eq!(Type::parse(lexer, messages), Some($expect));
+                assert_eq!(Type::parse(lexer, 0), Some($expect));
             });
             ($program_slice: expr) => ({
 
-                let messages = &mut MessageEmitter::new();
+                let messages = MessageEmitter::new();
                 let lexer = &mut Lexer::from($program_slice.to_owned(), messages);
-                assert_eq!(Type::parse(lexer, messages), None);
+                assert_eq!(Type::parse(lexer, 0), None);
             })
         }
 

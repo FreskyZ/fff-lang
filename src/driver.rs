@@ -19,9 +19,9 @@ pub fn compile_input(file_name: String) {
         }
     };
 
-    let mut messages = MessageEmitter::new();
-    let mut lexer = Lexer::from(content, &mut messages);
-    let _ast = get_ast(&mut lexer, &mut messages);  
+    let messages = MessageEmitter::new();
+    let lexer = &mut Lexer::from(content, messages);
+    let _ast = get_ast(lexer);
 }
 
 #[cfg(test)]
