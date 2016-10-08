@@ -1,8 +1,6 @@
 
 // Type -> PrimitiveType | LeftBracket PrimitiveType RightBracket 
 
-use message::Message;
-
 use lexical::Lexer;
 use lexical::IToken;
 use lexical::KeywordKind;
@@ -63,26 +61,24 @@ impl IASTItem for Type {
     
     fn parse(lexer: &mut Lexer, index: usize) -> Option<Type> {
 
-        if let (Some(kind), pos) = (lexer.nth(index).get_keyword(), lexer.sym_pos(index)) { 
+        if let Some(kind) = lexer.nth(index).get_keyword() { 
             match check_primitive_type(kind) {
                 Some(prim) => return Some(Type::Primitive(prim)),
-                None => return lexer.push_ret_none(Message::ExpectSymbol{ desc: "primitive type keyword".to_owned(), pos: pos.start_pos }),
+                None => return lexer.push_expect_symbol("primitive type keyword", index),
             }
         }
 
-        if let (true, Some(kind), true, pos) = (
+        if let (true, Some(kind), true) = (
                 lexer.nth(index).is_seperator(SeperatorKind::LeftBracket), 
                 lexer.nth(index + 1).get_keyword(), 
-                lexer.nth(index + 2).is_seperator(SeperatorKind::RightBracket),
-                lexer.sym_pos(index + 1)) {
+                lexer.nth(index + 2).is_seperator(SeperatorKind::RightBracket)) {
             match check_primitive_type(kind) {
                 Some(prim) => return Some(Type::Array(prim)),
-                None => return lexer.push_ret_none(Message::ExpectSymbol{ desc: "primitive type keyword between brackets".to_owned(), pos: pos.start_pos })
+                None => return lexer.push_expect_symbol("primitive type keyword between brackets", index + 1)
             }
         }
 
-        let pos = lexer.sym_pos(index).start_pos;
-        return lexer.push_ret_none(Message::ExpectSymbol{ desc: "typedef".to_owned(), pos: pos });
+        return lexer.push_expect_symbol("typedef", index);
     }
 }
 
@@ -101,13 +97,13 @@ mod tests {
             ($program_slice: expr, $expect: expr) => ({
 
                 let messages = MessageEmitter::new();
-                let lexer = &mut Lexer::from($program_slice.to_owned(), messages);
+                let lexer = &mut Lexer::new_test($program_slice, messages);
                 assert_eq!(Type::parse(lexer, 0), Some($expect));
             });
             ($program_slice: expr) => ({
 
                 let messages = MessageEmitter::new();
-                let lexer = &mut Lexer::from($program_slice.to_owned(), messages);
+                let lexer = &mut Lexer::new_test($program_slice, messages);
                 assert_eq!(Type::parse(lexer, 0), None);
             })
         }

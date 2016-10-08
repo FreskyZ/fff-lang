@@ -3,8 +3,9 @@
 use common::StringPosition;
 use message::Message;
 use message::MessageEmitter;
-use lexical::NumericLiteralValue;
-use lexical::NumericLiteral;
+
+use lexical::symbol_type::NumericLiteral;
+use lexical::symbol_type::NumericLiteralValue;
 
 // Final to value, check too large
 macro_rules! values_to_integral {

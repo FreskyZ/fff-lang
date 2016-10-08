@@ -1,8 +1,5 @@
 
 // Seperator kind
-use std::fmt;
-use common::StringPosition;
-
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum SeperatorKind {
     Add,            // +
@@ -180,18 +177,3 @@ impl SeperatorKind {
 }
 
 // TODO: implement by simple and more maintainable macros
-
-test_only_attr!{
-    [derive(Clone, Eq, PartialEq)]
-    ![derive(Clone)]
-    pub struct Seperator {
-        pub kind: SeperatorKind,
-        pub pos: StringPosition,
-    }
-}
-
-impl fmt::Debug for Seperator {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Seperator {:?} at {:?}", self.kind, self.pos)
-    }
-}

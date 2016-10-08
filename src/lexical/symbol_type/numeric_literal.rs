@@ -5,7 +5,7 @@ use std::fmt;
 use common::StringPosition;
 
 #[cfg(test)]
-#[derive(Debug, PartialEq, Clone)]
+#[derive(PartialEq, Clone)]
 pub enum NumericLiteralValue {
     U64(u64),
     U32(u32),
@@ -26,6 +26,19 @@ pub enum NumericLiteralValue {
 }
 #[cfg(test)]
 impl Eq for NumericLiteralValue {
+}
+
+impl fmt::Debug for NumericLiteralValue {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            NumericLiteralValue::U64(ref value) => write!(f, "(u64){:?}", value),
+            NumericLiteralValue::U32(ref value) => write!(f, "(u32){:?}", value),
+            NumericLiteralValue::I32(ref value) => write!(f, "(i32){:?}", value),
+            NumericLiteralValue::U8(ref value) => write!(f, "(u8){:?}", value),
+            NumericLiteralValue::F32(ref value) => write!(f, "(f32){:?}", value),
+            NumericLiteralValue::F64(ref value) => write!(f, "(f64){:?}", value),
+        }
+    }
 }
 
 macro_rules! from_for_num_lit_value {
@@ -67,12 +80,7 @@ impl fmt::Debug for NumericLiteral {
         write!(f, "NumericLiteral at {:?}{}",
             self.pos,
             match self.value {
-                Some(NumericLiteralValue::U64(ref value)) => format!(", with value (u64){:?}", value),
-                Some(NumericLiteralValue::U32(ref value)) => format!(", with value (u32){:?}", value),
-                Some(NumericLiteralValue::I32(ref value)) => format!(", with value (i32){:?}", value),
-                Some(NumericLiteralValue::U8(ref value)) => format!(", with value (u8){:?}", value),
-                Some(NumericLiteralValue::F32(ref value)) => format!(", with value (f32){:?}", value),
-                Some(NumericLiteralValue::F64(ref value)) => format!(", with value (f64){:?}", value),
+                Some(ref value) => format!(", with value {:?}", value),
                 None => ", invalid".to_owned(),
             }
         )

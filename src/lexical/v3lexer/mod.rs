@@ -8,8 +8,9 @@
 //      identifier or keyword
 //      operators, +, -, *, /, %, +=, -=, *=, /=, %=, .
 //      seperators, [, ], {, }, (, ), ;, ,
-// May be final layer
+// May be final layer, --- not, 17/10/8
 
+use common::From2;
 use common::TryFrom;
 use common::Position;
 use common::StringPosition;
@@ -21,15 +22,11 @@ use lexical::v2lexer::BufV2Lexer;
 
 use lexical::buf_lexer::ILexer;
 
-use lexical::StringLiteral;
-use lexical::NumericLiteral;
-use lexical::CharLiteral;
-use lexical::KeywordKind;
-use lexical::SeperatorKind;
-use lexical::Seperator;
-use lexical::Keyword;
-use lexical::Identifier;
-use lexical::BooleanLiteral;
+use lexical::symbol_type::StringLiteral;
+use lexical::symbol_type::NumericLiteral;
+use lexical::symbol_type::CharLiteral;
+use lexical::symbol_type::KeywordKind;
+use lexical::symbol_type::SeperatorKind;
 
 test_only_attr!{
     test: [derive(Clone, Eq, PartialEq)]
@@ -38,68 +35,10 @@ test_only_attr!{
         StringLiteral(StringLiteral),
         NumericLiteral(NumericLiteral),
         CharLiteral(CharLiteral),
-        Identifier(Identifier),
-        Keyword(Keyword),
-        BooleanLiteral(BooleanLiteral),
-        Seperator(Seperator),
-    }
-}
-
-impl V3Token {
-
-    pub fn position(&self) -> StringPosition {
-        match *self {
-            V3Token::StringLiteral(ref literal) => literal.pos,
-            V3Token::NumericLiteral(ref literal) => literal.pos,
-            V3Token::CharLiteral(ref literal) => literal.pos,
-            V3Token::Identifier(ref ident) => ident.pos,
-            V3Token::Keyword(ref keyword) => keyword.pos,
-            V3Token::BooleanLiteral(ref literal) => literal.pos,
-            V3Token::Seperator(ref seperator) => seperator.pos,
-        }
-    }
-
-    pub fn is_keyword(&self, kind: KeywordKind) -> bool {
-        match *self {
-            V3Token::Keyword(Keyword{ kind: ref self_kind, ref pos }) => *self_kind == kind,
-            _ => false,
-        }
-    }
-    pub fn is_seperator(&self, kind: SeperatorKind) -> bool {
-        match *self {
-            V3Token::Seperator(Seperator{ kind: ref self_kind, ref pos }) => *self_kind == kind,
-            _ => false,
-        }
-    }
-    pub fn is_identifier(&self, name: &str) -> bool {
-        match *self {
-            V3Token::Identifier(Identifier{ name: ref self_name, ref pos }) => self_name == name,
-            _ => false,
-        }
-    }
-    pub fn is_str_lit(&self) -> bool {
-        match *self {
-            V3Token::StringLiteral(_) => true,
-            _ => false,
-        }
-    }
-    pub fn is_num_lit(&self) -> bool {
-        match *self {
-            V3Token::NumericLiteral(_) => true,
-            _ => false,
-        }
-    }
-    pub fn is_char_lit(&self) -> bool {
-        match *self {
-            V3Token::CharLiteral(_) => true,
-            _ => false,
-        }
-    }
-    pub fn is_bool_lit(&self) -> bool {
-        match *self {
-            V3Token::BooleanLiteral(_) => true,
-            _ => false,
-        }
+        Identifier(String, StringPosition),
+        Keyword(KeywordKind, StringPosition),
+        BooleanLiteral(bool, StringPosition),
+        Seperator(SeperatorKind, StringPosition),
     }
 }
 
@@ -112,10 +51,10 @@ impl fmt::Debug for V3Token {
             V3Token::StringLiteral(ref literal) => write!(f, "{:?}", literal),
             V3Token::NumericLiteral(ref literal) => write!(f, "{:?}", literal),
             V3Token::CharLiteral(ref literal) => write!(f, "{:?}", literal),
-            V3Token::BooleanLiteral(ref literal) => write!(f, "{:?}", literal),
-            V3Token::Identifier(ref identifier) => write!(f, "{:?}", identifier),
-            V3Token::Keyword(ref keyword) => write!(f, "{:?}", keyword),
-            V3Token::Seperator(ref seperator) => write!(f, "{:?}", seperator),
+            V3Token::BooleanLiteral(ref literal, ref pos) => write!(f, "Boolean literal {} at {:?}", literal, pos),
+            V3Token::Identifier(ref identifier, ref pos) => write!(f, "Identifier `{}` at {:?}", identifier, pos),
+            V3Token::Keyword(ref keyword, ref pos) => write!(f, "Keyword {:?} at {:?}", keyword, pos),
+            V3Token::Seperator(ref seperator, ref pos) => write!(f, "Seperator {:?} at {:?}", seperator, pos),
         }
     }
 }
@@ -155,12 +94,12 @@ impl ILexer<V3Token> for V3Lexer {
                 Some(BufV2Token{ token: V2Token::Identifier{ name, pos }, next: _1 }) => {
                     // Dispatch identifier to identifier or keyword
                     match KeywordKind::try_from(&name) {
-                        Some(keyword) => return Some(V3Token::Keyword( Keyword{ kind: keyword, pos: pos })),
+                        Some(keyword) => return Some(V3Token::Keyword(keyword, pos)),
                         None => {
                             match &*name {
-                                "true" => return Some(V3Token::BooleanLiteral( BooleanLiteral{ value: true, pos: pos })),
-                                "false" => return Some(V3Token::BooleanLiteral( BooleanLiteral{ value: false, pos: pos })),
-                                _ => return Some(V3Token::Identifier( Identifier{ name: name, pos: pos })),
+                                "true" => return Some(V3Token::BooleanLiteral(true, pos)),
+                                "false" => return Some(V3Token::BooleanLiteral(false, pos)),
+                                _ => return Some(V3Token::Identifier(name, pos)),
                             }
                         }
                     }
@@ -169,10 +108,10 @@ impl ILexer<V3Token> for V3Lexer {
                     // Dispatch otherchar to seperator
                     match SeperatorKind::try_from((ch ,next_ch)) {
                         Some(sep) => match sep.len() { 
-                            1 => return Some(V3Token::Seperator( Seperator{ kind: sep, pos: StringPosition::from((pos, pos)) })),
+                            1 => return Some(V3Token::Seperator(sep, StringPosition::from2(pos, pos))),
                             2 => {
                                 self.v2.skip1(messages);
-                                return Some(V3Token::Seperator( Seperator{ kind: sep, pos: StringPosition::from((pos, next_pos)) }));
+                                return Some(V3Token::Seperator(sep, StringPosition::from2(pos, next_pos)));
                             }
                             _ => unreachable!(),
                         },
@@ -183,7 +122,7 @@ impl ILexer<V3Token> for V3Lexer {
                     // Dispatch otherchar, seperator to seperator or operators
                     match SeperatorKind::try_from(ch) {
                         Some(sep) => match sep.len() { 
-                            1 => return Some(V3Token::Seperator( Seperator{ kind: sep, pos: StringPosition::from((pos, pos)) })),
+                            1 => return Some(V3Token::Seperator(sep, StringPosition::from2(pos, pos))),
                             _ => unreachable!(),
                         },
                         None => continue,

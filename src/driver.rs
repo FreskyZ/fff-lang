@@ -20,15 +20,14 @@ pub fn compile_input(file_name: String) {
     };
 
     let messages = MessageEmitter::new();
-    let lexer = &mut Lexer::from(content, messages);
+    let lexer = &mut Lexer::new(content, messages);
     let _ast = get_ast(lexer);
 }
 
 #[cfg(test)]
 mod tests {
 
-    #[test]
-    #[ignore]
+    #[allow(dead_code)]
     fn xxxxxxxxxxxxxxxxxxx() {
         use super::compile_input;
 

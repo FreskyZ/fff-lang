@@ -48,7 +48,7 @@ mod tests {
         use super::get_ast;
 
         let messages = MessageEmitter::new();
-        let lexer = &mut Lexer::from_test(r#"fn main() { println("helloworld"); }"#, messages);
+        let lexer = &mut Lexer::new_test(r#"fn main() { println("helloworld"); }"#, messages);
         let program = get_ast(lexer);
 
         perrorln!("program: {:?}", program);

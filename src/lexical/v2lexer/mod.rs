@@ -18,9 +18,9 @@ use lexical::buf_lexer::ILexer;
 use lexical::buf_lexer::BufToken;
 use lexical::buf_lexer::BufLexer;
 
-use lexical::StringLiteral;
-use lexical::NumericLiteral;
-use lexical::CharLiteral;
+use lexical::symbol_type::StringLiteral;
+use lexical::symbol_type::NumericLiteral;
+use lexical::symbol_type::CharLiteral;
 
 use lexical::v2lexer::numeric_lit_parser::parse_numeric_literal;
 

@@ -1,7 +1,6 @@
 
 // Argument -> Type Identifier
 
-use message::Message;
 use lexical::Lexer;
 use lexical::IToken;
 use syntax::ast_item::IASTItem;
@@ -25,10 +24,7 @@ impl IASTItem for Argument {
             Some(smtype) => {
                 match lexer.nth(index + smtype.symbol_len()).get_identifier() {
                     Some(name) => Some(Argument{ arg_type: smtype, name: name.clone(), }),
-                    None => {
-                        let pos = lexer.sym_pos(index + smtype.symbol_len()).start_pos;
-                        lexer.push_ret_none(Message::ExpectSymbol{ desc: "identifier".to_owned(), pos: pos })
-                    }
+                    None => lexer.push_expect_symbol("identifier", index + smtype.symbol_len()),
                 }
             }
             None => None, // message emitted
@@ -52,13 +48,13 @@ mod tests {
             ($program_slice: expr, $expect_type: expr, $expect_name: expr) => ({
 
                 let messages = MessageEmitter::new();
-                let lexer = &mut Lexer::from_test($program_slice, messages);
+                let lexer = &mut Lexer::new_test($program_slice, messages);
                 assert_eq!(Argument::parse(lexer, 0), Some(Argument{ arg_type: $expect_type, name: $expect_name.to_owned() }));
             });
             ($program_slice: expr) => ({
 
                 let messages = MessageEmitter::new();
-                let lexer = &mut Lexer::from_test($program_slice, messages);
+                let lexer = &mut Lexer::new_test($program_slice, messages);
                 assert_eq!(Argument::parse(lexer, 0), None);
             })
         }

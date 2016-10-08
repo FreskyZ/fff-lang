@@ -2,8 +2,6 @@
 // FunctionDef -> 
 //     FnDef Identifier LeftParen [Argument [, Argument]*] RightParen [NarrowRightArrow Type] Statement
 
-use message::Message;
-
 use lexical::Lexer;
 use lexical::IToken;
 use lexical::KeywordKind;
@@ -38,9 +36,9 @@ impl IASTItem for FunctionDef {
             return lexer.push_expect_symbol("keyword `fn`", index);
         }
 
-        let fn_name = match (lexer.nth(index + 1).get_identifier(), lexer.sym_pos(index + 1).start_pos) {
-            (Some(name), _pos) => name.clone(),
-            (None, pos) => return lexer.push_ret_none(Message::ExpectSymbol{ desc: "identifier".to_owned(), pos: pos }),
+        let fn_name = match lexer.nth(index + 1).get_identifier() {
+            Some(name) => name.clone(),
+            None => return lexer.push_expect_symbol("identifier", index + 1),
         };
 
         if !lexer.nth(index + 2).is_seperator(SeperatorKind::LeftParenthenes) {
@@ -115,7 +113,7 @@ mod tests {
 
         perrorln!("Case 1:");
         let messages = MessageEmitter::new();
-        let lexer = &mut Lexer::from_test("fn main() {}", messages);
+        let lexer = &mut Lexer::new_test("fn main() {}", messages);
 
         let result = FunctionDef::parse(lexer, 0);
         perrorln!("messages: {:?}", lexer.emitter());
@@ -131,7 +129,7 @@ mod tests {
 
         perrorln!("Case 2:");
         let messages = MessageEmitter::new();
-        let lexer = &mut Lexer::from_test("fn main(i32 abc) {}", messages);
+        let lexer = &mut Lexer::new_test("fn main(i32 abc) {}", messages);
 
         let result = FunctionDef::parse(lexer, 0);
         perrorln!("messages: {:?}", lexer.emitter());
@@ -147,7 +145,7 @@ mod tests {
 
         perrorln!("Case 3:");
         let messages = MessageEmitter::new();
-        let lexer = &mut Lexer::from_test("fn main([string] argv, i32 argc, char some_other) {}", messages);
+        let lexer = &mut Lexer::new_test("fn main([string] argv, i32 argc, char some_other) {}", messages);
 
         let result = FunctionDef::parse(lexer, 0);
         perrorln!("messages: {:?}", lexer.emitter());
@@ -167,7 +165,7 @@ mod tests {
         
         perrorln!("Case 4:");
         let messages = MessageEmitter::new();
-        let lexer = &mut Lexer::from_test("fn main() -> i32 {}", messages);
+        let lexer = &mut Lexer::new_test("fn main() -> i32 {}", messages);
 
         let result = FunctionDef::parse(lexer, 0);
         perrorln!("messages: {:?}", lexer.emitter());
@@ -183,7 +181,7 @@ mod tests {
         
         perrorln!("Case 5:");
         let messages = MessageEmitter::new();
-        let lexer = &mut Lexer::from_test("fn main([string] argv, i32 argc, char some_other) -> [string] {}", messages);
+        let lexer = &mut Lexer::new_test("fn main([string] argv, i32 argc, char some_other) -> [string] {}", messages);
 
         let result = FunctionDef::parse(lexer, 0);
         perrorln!("messages: {:?}", lexer.emitter());
