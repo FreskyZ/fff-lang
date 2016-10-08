@@ -1,24 +1,30 @@
 
-<Program> = <StatementSequence>
-<StatementSequence> = <StatementSequence>`;`<Statement> | <Statement>
+Program = [FunctionDef]* fEOF
+FunctionDef = fFn fIdentifier fLeftParen [Argument [, Argument]*] fRightParen [fNarrowRightArrow Type] Block
+Type = PrimitiveType | fLeftBracket PrimitiveType fRightBracket
+Argument = Type Identifier 
+Block = fLeftBrace [Statement] fRightBrace
+Statement = ConstDecl | VarDecl | IfStatement | WhileStatement | ForStatement | AssignStatement | ContinueStatement | BreakStatement
 
-<Statement> = <IfStatement> | <RepeatStatement> | <AssignStatement> | <ReadStatement> | <WriteStatement>
-<IfStatement> = `if` <Expresssion> `then` <StatementSequence> `end` | `if` <Expression> `then` <StatementSequence> `else` <StatementSequence> `end`
-<RepeatStatement> = `repeat` <StatementSequence> `until` <Expression>
-<AssignStatement> = <Identifier> `:=` <Expression>
-<ReadStatement> = `read` <Identifier>
-<WriteStatement> = `write` <Expression>
+ConstDecl = fConst Type Identifier fAssign Expression fColon
+VarDecl = fVar Type Identifier fAssign Expression fColon
+IfStatement = fIf fLeftParen Expression fRightParen Block [ fElse [ fIf fLeftParen Expression fRightParen ] Block ]
+WhileStatement = fWhile fLeftParen Expression fRightParen Block
+ContinueStatement = fContinue fColon
+BreakStatement = fBreak fColon
+ForStatement = fFor fLeftParen Identifier fIn Identifier fRange Identifier fRightParen Block  // for i in 1..5
+AssignStatement = Identifier fAssign Expression fColon
 
-<Expression> = <SimpleExpression> <ComparisonOperator> <SimpleExpression> | <SimpleExpression>
-<ComparisonOperator> = `=>` | `<` | `>=` | `<=` | `==` | `!=`
+BooleanBinaryOps = fLogicalAnd | fLogicalOr
+BooleanUnaryOps = fLogicalNot
+CompareOps = fEqual | fGreat | fLess | fGreatEqual | fLessEqual | fNotEqual 
+ArithOps1 = fAdd | fMul 
+ArithOps2 = fMul | fDiv | fRem
+ArithOps3 = fBitNot
 
-<SimpleExpression> = <SimpleExpression> <AddMinusOperator> <Term> | <Term>
-<AddMinusOperator> = `+` | `-`
-<Term> = <Term> <MultiDivideOperator> <Factor> | <Factor>
-<MultiDivideOperator> = `*` | `/`
-<Factor> = `(` <Expression> `)` | <Number> | <Identifier>
-
-<Number> = <Digit> | <Number> <Digit>
-<Identifier> = <Letter> | <Identifier> <Letter> | <Identifier> <Digit>
-<Digit> = `0` | `1` | `2` | `3` | `4` | `5` | `6` | `7` | `8` | `9`
-<Letter> = [a-zA-Z]
+Expression = Expression1 [BooleanBinaryOps Expression1]*
+Expression1 = Expression2 [CompareOps Expression2]*
+Expression2 = Expression3 [ArithOps1 Expression3]*
+Expression3 = Expression4 [ArithOps2 Expression4]*
+Expression4 = [ArithOps3 | BooleanUnaryOps] Expression4 
+Expression5 = LeftParen Expression RightParen | fIdentifier | fLiteral

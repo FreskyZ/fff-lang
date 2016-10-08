@@ -1,5 +1,8 @@
 
 // numeric literal parser
+
+// Known issue: test_lit_f32's case2, 0f32 is denied at get_prefix
+
 use common::StringPosition;
 use message::Message;
 use message::MessageEmitter;

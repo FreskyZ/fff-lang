@@ -168,13 +168,13 @@ mod tests {
     }
 
     #[test]
-    fn v3_on_lexical_symbol_type_numeic_literal() {
+    fn v3_on_lexical_v2_num_lit_parser() {
          use std::fs::File;
         use std::io::Read;
         use super::V3Lexer;
         use message::MessageEmitter;
 
-        let file_name = "src/lexical/symbol_type/numeric_literal.rs";
+        let file_name = "src/lexical/v2lexer/numeric_lit_parser.rs";
         let mut file: File = File::open(file_name).expect("Open file failed");
 
         let mut content = String::new();
