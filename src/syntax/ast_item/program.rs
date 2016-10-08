@@ -32,6 +32,19 @@ impl IASTItem for Program {
     }
 
     fn parse(lexer: &mut Lexer, index: usize) -> Option<Program> {
-        None
+        
+        let mut funcs = Vec::new();
+        let mut funcs_sym_len = 0_usize;
+        loop {
+            match FunctionDef::parse(lexer, index + funcs_sym_len) {
+                Some(func) => {
+                    funcs_sym_len += func.symbol_len();
+                    funcs.push(func);
+                }
+                None => break,
+            }
+        }
+
+        Some(Program{ functions: funcs })
     }
 }

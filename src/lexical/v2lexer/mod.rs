@@ -9,16 +9,20 @@ use common::From2;
 use common::Position;
 use common::StringPosition;
 use message::MessageEmitter;
-use lexical::v1::V1Token;
-use lexical::v1::BufV1Token;
-use lexical::v1::BufV1Lexer;
+
+use lexical::v1lexer::V1Token;
+use lexical::v1lexer::BufV1Token;
+use lexical::v1lexer::BufV1Lexer;
+
 use lexical::buf_lexer::ILexer;
 use lexical::buf_lexer::BufToken;
 use lexical::buf_lexer::BufLexer;
-use lexical::symbol_type::StringLiteral;
-use lexical::symbol_type::NumericLiteral;
-use lexical::symbol_type::CharLiteral;
-use self::numeric_lit_parser::parse_numeric_literal;
+
+use lexical::StringLiteral;
+use lexical::NumericLiteral;
+use lexical::CharLiteral;
+
+use lexical::v2lexer::numeric_lit_parser::parse_numeric_literal;
 
 #[cfg(test)]
 #[derive(Eq, PartialEq, Clone)]

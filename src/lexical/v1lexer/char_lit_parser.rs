@@ -8,9 +8,9 @@ use common::StringPosition;
 use message::Message;
 use message::MessageEmitter;
 use lexical::symbol_type::CharLiteral;
-use lexical::v1::escape_char_parser::EscapeCharParser;
-use lexical::v1::escape_char_parser::EscapeCharSimpleCheckResult;
-use lexical::v1::escape_char_parser::EscapeCharParserResult;
+use lexical::v1lexer::escape_char_parser::EscapeCharParser;
+use lexical::v1lexer::escape_char_parser::EscapeCharSimpleCheckResult;
+use lexical::v1lexer::escape_char_parser::EscapeCharParserResult;
 
 #[cfg(test)]
 use std::collections::HashSet;

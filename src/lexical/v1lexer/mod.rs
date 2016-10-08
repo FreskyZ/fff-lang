@@ -15,21 +15,25 @@ mod raw_string_lit_parser;
 use common::Position;
 use message::Message;
 use message::MessageEmitter;
-use lexical::v0::V0Token;
-use lexical::v0::BufV0Token;
-use lexical::v0::BufV0Lexer;
+
+use lexical::v0lexer::V0Token;
+use lexical::v0lexer::BufV0Token;
+use lexical::v0lexer::BufV0Lexer;
+
 use lexical::buf_lexer::ILexer;
 use lexical::buf_lexer::BufToken;
 use lexical::buf_lexer::BufLexer;
-use lexical::symbol_type::StringLiteral;
-use lexical::v1::string_lit_parser::StringLiteralParser;
-use lexical::v1::string_lit_parser::StringLiteralParserResult;
-use lexical::v1::raw_string_lit_parser::RawStringLiteralParser;
-use lexical::v1::raw_string_lit_parser::RawStringLiteralParserResult;
+
 use lexical::symbol_type::CharLiteral;
-use lexical::v1::char_lit_parser::CharLiteralParser;
-use lexical::v1::char_lit_parser::CoverageRecorder;
-use lexical::v1::char_lit_parser::CharLiteralParserResult;
+use lexical::symbol_type::StringLiteral;
+
+use lexical::v1lexer::string_lit_parser::StringLiteralParser;
+use lexical::v1lexer::string_lit_parser::StringLiteralParserResult;
+use lexical::v1lexer::raw_string_lit_parser::RawStringLiteralParser;
+use lexical::v1lexer::raw_string_lit_parser::RawStringLiteralParserResult;
+use lexical::v1lexer::char_lit_parser::CharLiteralParser;
+use lexical::v1lexer::char_lit_parser::CoverageRecorder;
+use lexical::v1lexer::char_lit_parser::CharLiteralParserResult;
 
 #[cfg(test)]
 #[derive(Clone, Eq, PartialEq)]

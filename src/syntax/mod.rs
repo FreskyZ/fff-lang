@@ -51,6 +51,7 @@ mod tests {
         let lexer = &mut Lexer::from_test(r#"fn main() { println("helloworld"); }"#, messages);
         let program = get_ast(lexer);
 
-        perrorln!("{:?}", program);
+        perrorln!("program: {:?}", program);
+        perrorln!("messages: {:?}", lexer.emitter())
     }
 }

@@ -14,10 +14,13 @@ use common::TryFrom;
 use common::Position;
 use common::StringPosition;
 use message::MessageEmitter;
-use lexical::v2::V2Token;
-use lexical::v2::BufV2Token;
-use lexical::v2::BufV2Lexer;
+
+use lexical::v2lexer::V2Token;
+use lexical::v2lexer::BufV2Token;
+use lexical::v2lexer::BufV2Lexer;
+
 use lexical::buf_lexer::ILexer;
+
 use lexical::StringLiteral;
 use lexical::NumericLiteral;
 use lexical::CharLiteral;

@@ -2,13 +2,14 @@
 // Lexer public interface
 mod symbol_type;
 mod buf_lexer;
-mod v0;
-mod v1;
-mod v2;
-mod v3;
+mod v0lexer;
+mod v1lexer;
+mod v2lexer;
+mod v3lexer;
+mod v4lexer;
 
-use self::v3::V3Lexer;
-pub use self::v3::V3Token as Token;
+use self::v3lexer::V3Lexer;
+pub use self::v3lexer::V3Token as Token;
 
 pub use self::symbol_type::Seperator;
 pub use self::symbol_type::SeperatorKind;
