@@ -1,30 +1,74 @@
 
 Program = [FunctionDef]* fEOF
-FunctionDef = fFn fIdentifier fLeftParen [Argument [, Argument]*] fRightParen [fNarrowRightArrow Type] Block
+FunctionDef = fFn fIdentifier fLeftParen [Argument [fComma Argument]*] fRightParen [fNarrowRightArrow Type] Block
 Type = PrimitiveType | fLeftBracket PrimitiveType fRightBracket
 Argument = Type Identifier 
-Block = fLeftBrace [Statement] fRightBrace
-Statement = ConstDecl | VarDecl | IfStatement | WhileStatement | ForStatement | AssignStatement | ContinueStatement | BreakStatement
+Block = fLeftBrace [Statement]* fRightBrace
 
-ConstDecl = fConst Type Identifier fAssign Expression fColon
-VarDecl = fVar Type Identifier fAssign Expression fColon
-IfStatement = fIf fLeftParen Expression fRightParen Block [ fElse [ fIf fLeftParen Expression fRightParen ] Block ]
-WhileStatement = fWhile fLeftParen Expression fRightParen Block
-ContinueStatement = fContinue fColon
-BreakStatement = fBreak fColon
-ForStatement = fFor fLeftParen Identifier fIn Identifier fRange Identifier fRightParen Block  // for i in 1..5
-AssignStatement = Identifier fAssign Expression fColon
+// Statement
+Statement = 
+    ConstDecl | VarDecl 
+    | IfStatement | WhileStatement | ForStatement 
+    | AssignStatement | OpAssignStatement
+    | ContinueStatement | BreakStatement | ReturnStatement
 
-BooleanBinaryOps = fLogicalAnd | fLogicalOr
-BooleanUnaryOps = fLogicalNot
-CompareOps = fEqual | fGreat | fLess | fGreatEqual | fLessEqual | fNotEqual 
-ArithOps1 = fAdd | fMul 
-ArithOps2 = fMul | fDiv | fRem
-ArithOps3 = fBitNot
+ConstDecl = fConst Type Identifier fAssign Expression fSemiColon                                                                // const ...;
+VarDecl = fVar Type Identifier fAssign Expression fSemiColon                                                                    // var ...;
+IfStatement = fIf fLeftParen Expression fRightParen Block [fElse fIf fLeftParen Expression fRightParen Block]* [ fElse Block ]  // if ...}   
+WhileStatement = fWhile fLeftParen Expression fRightParen Block                                                                 // while ...}
+ContinueStatement = fContinue fSemiColon                                                                                        // continue;
+BreakStatement = fBreak fSemiColon                                                                                              // break;
+ForStatement = fFor fLeftParen Identifier fIn Identifier fRange Identifier fRightParen Block  // for i in 1..5                  // for ...}
+AssignStatement = Identifier AssignOperator Expression fSemiColon                                                               // ... = ...;
+ReturnStatement = fReturn [Expression] fSemiColon                                                                               // return ...;
 
-Expression = Expression1 [BooleanBinaryOps Expression1]*
-Expression1 = Expression2 [CompareOps Expression2]*
-Expression2 = Expression3 [ArithOps1 Expression3]*
-Expression3 = Expression4 [ArithOps2 Expression4]*
-Expression4 = [ArithOps3 | BooleanUnaryOps] Expression4 
-Expression5 = LeftParen Expression RightParen | fIdentifier | fLiteral
+// Expression
+PrimaryExpression = 
+    fLeftParen Expression fRightParen 
+    | fIdentifier | fLiteral 
+    | fLeftBracket ExpressionList fRightBracket     // var array = [1, 2, 3, a, b, c]
+    | fLeftBracket Expression fSemiColon Expression fRightBracket // var array = [false; 100]
+PostfixExpression = 
+    PrimaryExpression 
+    | PostfixExpression fLeftBracket Expression fRightBracket
+    | PostfixExpression fLeftParen ExpressionList fRightParen
+    | PostfixExpression fDot fIdentifier
+    | PostfixExpression fAs Type
+UnaryExpression = PostfixExpression | UnaryOperator UnaryExpression
+MultiplicativeExpression = UnaryExpression | MultiplicativeExpression MultiplicativeOperator UnaryExpression
+AdditiveExpression = MultiplicativeExpression | AdditiveExpression AdditiveOperator MultiplicativeExpression
+ShiftExpression = AdditiveExpression | ShiftExpression ShiftOperator AdditiveExpression
+RelationalExpression = ShiftExpression | RelationalExpression RelationalOperator ShiftExpression
+BitAndExpression = RelationalExpression | BitAndExpression BitAndOperator RelationalExpression
+BitXorExpression = BitAndExpression | BitXorExpression BitXorOperator BitAndExpression
+BitOrExpression = BitXorExpression | BitOrExpression BitOrOperator BitXorExpression
+EqualityExpression = BitOrExpression | EqualityExpression EqualityOperator BitOrExpression  // `==` and `!=` lower than `|` for `if (enum_var & enum_mem1 == enum_mem1)` 
+LogicalAndExpression = EqualityExpression | LogicalAndExpression LogicalAndOperator EqualityExpression 
+LogicalOrExpression = LogicalAndExpression | LogicalOrExpression LogicalOrOperator LogicalAndExpression
+Expression = LogicalOrExpression
+ExpressionList = Expression [fComma Expression]*
+
+// Operator
+AssignOperator = fAssign | fAddAssign | fSubAssign | fMulAssign | fDivAssign | fRemAssign | fBitAndAssign | fBitOrAssign | fBitXorAssign 
+UnaryOperator = fIncrease | fDecrease | fSub | fLogicalNot | fBitNot  // `+` is not unary because it's meaningless
+MultiplicativeOperator = fMul | fDiv | fRem
+AdditiveOperator = fAdd | fSub
+ShiftOperator = fShiftLeft | fShiftRight
+RelationalOperator = fGreate | fLess | fGreatEqual | fLessEqual
+BitAndOperator = fBitAnd
+BitXorOperator = fBitXor
+BitOrOperator = fBitOr
+EuqalityOperator = fEqual | fNotEqual
+LogicalAndOperator = fLogicalAnd
+LogicalOrOperator = fLogicalOr
+
+// Summary
+// Keyword: const, var, if, else, break, continue, return, while, for, as
+// Primitive type keyword: u8, i32, u32, u64, f32, f64, char, string
+// Reserved keyword: type, i8, u16, i16, i64, struct, await, async, yield, 
+//     public, private, module, mod, use, using, namespace, extern, default, 
+//     new, delete, let, mut, def, impl, tuple, trait, concept, interface, class, 
+//     template, mutable, function, lambda, closure, array
+// Seperator: `=`, `+=`, `-=`, `*=`, `/=`, `%=`, `&=`, `^=`, `|=`, `++`, `--`,
+//     `-`, `!`, `~`, `*`, `\`, `%`, `+`, `-`, `<<`, `>>`, `<`, `>`, `<=`, `>=`, 
+//     `&`, `|`, `^`, `!=`, `==`, `&&`, `||`, `->`, `.`

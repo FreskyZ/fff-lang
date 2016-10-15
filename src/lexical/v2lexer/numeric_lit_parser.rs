@@ -1,8 +1,6 @@
 
 // numeric literal parser
 
-// Known issue: test_lit_f32's case2, 0f32 is denied at get_prefix
-
 use common::StringPosition;
 use message::Message;
 use message::MessageEmitter;
@@ -176,6 +174,20 @@ fn get_prefix(raw: &str, pos: StringPosition) -> Result<Prefix, Message> {
             'o' => Ok(Prefix::Octal),
             'b' => Ok(Prefix::Binary),
             // unexpected char after first char '0' and length >= 2
+            maybe_start_of_postfix @ 'i' 
+            | maybe_start_of_postfix @ 'u' 
+            | maybe_start_of_postfix @ 'f' => {
+                // directly special check `0f32` cases
+                match (maybe_start_of_postfix, chars.next(), chars.next(), chars.next()) {
+                    ('u', Some('8'), None, None)
+                    | ('i', Some('3'), Some('2'), None)
+                    | ('u', Some('3'), Some('2'), None)
+                    | ('u', Some('6'), Some('4'), None)
+                    | ('f', Some('3'), Some('2'), None)
+                    | ('f', Some('6'), Some('4'), None) => Ok(Prefix::NotSet),
+                    _other_cases => Err(Message::InvalidPrefixInNumericLiteral{ literal_pos: pos, prefix: maybe_start_of_postfix }),
+                }
+            }
             other => Err(Message::InvalidPrefixInNumericLiteral{ literal_pos: pos, prefix: other }),
         },
         _ => Ok(Prefix::NotSet),
@@ -318,6 +330,10 @@ fn num_lit_prefix() {
     test_case!{ ["0d1", 1, 1, 1, 3] [Ok(Prefix::Decimal)] };
     test_case!{ ["1234567", 1, 1, 1, 7] [Ok(Prefix::NotSet)] };
     test_case!{ ["12", 1, 1, 1, 2] [Ok(Prefix::NotSet)] };
+    test_case!{ ["1234567", 1, 1, 1, 7] [Ok(Prefix::NotSet)] };
+    test_case!{ ["12", 1, 1, 1, 2] [Ok(Prefix::NotSet)] };
+    test_case!{ ["0f32", 1, 1, 1, 2] [Ok(Prefix::NotSet)] };
+    test_case!{ ["0u78", 1, 1, 1, 2] [Err(Message::InvalidPrefixInNumericLiteral{ literal_pos: StringPosition::from((1, 1, 1, 2)), prefix: 'u' })] };
     test_case!{ ["0x", 1, 1, 1, 2] [Err(Message::EmptyNumericLiteral{ literal_pos: StringPosition::from((1, 1, 1, 2)) })] };
     test_case!{ ["001", 1, 1, 1, 3] [Err(Message::InvalidPrefixInNumericLiteral{ literal_pos: StringPosition::from((1, 1, 1, 3)), prefix: '0' })] };
     test_case!{ ["0X1", 1, 1, 1, 450] [Err(Message::InvalidPrefixInNumericLiteral{ literal_pos: StringPosition::from((1, 1, 1, 450)), prefix: 'X' })] };
@@ -478,4 +494,13 @@ fn num_lit_inter() {
     test_case!{ "0x123", pos, ok: NumericLiteralValue::I32(0x123) };
     test_case!{ "0o123u64", pos, ok: NumericLiteralValue::U64(0o123) };
     test_case!{ "0b1010", pos, ok: NumericLiteralValue::I32(0b1010) };
+    test_case!{ "0f32", pos, ok: NumericLiteralValue::F32(0f32) };
+    test_case!{ "0u32", pos, ok: NumericLiteralValue::U32(0u32) };
+    test_case!{ "___123", pos, ok: NumericLiteralValue::I32(123) };
+    test_case!{ "01_23", pos, err: Message::InvalidPrefixInNumericLiteral{ literal_pos: pos, prefix: '1' } };
+    test_case!{ "123_____.", pos, ok: NumericLiteralValue::F64(123f64) };
+    test_case!{ "0x1_2_3", pos, ok: NumericLiteralValue::I32(0x123) };
+    test_case!{ "0o12_3u64", pos, ok: NumericLiteralValue::U64(0o123) };
+    test_case!{ "0b101_0", pos, ok: NumericLiteralValue::I32(0b1010) };
+    test_case!{ "0f3_2", pos, err: Message::InvalidPrefixInNumericLiteral{ literal_pos: pos, prefix: 'f' } };
 }
