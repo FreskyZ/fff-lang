@@ -35,6 +35,10 @@ pub trait IToken {
     fn get_keyword(&self) -> Option<&KeywordKind>;
     fn get_seperator(&self) -> Option<&SeperatorKind>;
     fn get_identifier(&self) -> Option<&String>;
+    fn get_str_lit_val(&self) -> Option<&Option<String>>;
+    fn get_num_lit_val(&self) -> Option<&Option<NumericLiteralValue>>;
+    fn get_char_lit_val(&self) -> Option<&Option<char>>;
+    fn get_bool_lit_val(&self) -> Option<bool>;
 
     fn get_position(&self) -> StringPosition;
 }

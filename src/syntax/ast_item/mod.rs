@@ -1,11 +1,9 @@
 
 pub mod program;
 pub mod function_def;
-pub mod argument;
 pub mod smtype;
 pub mod statement;
-pub mod function_call;
-pub mod variable_def;
+pub mod block;
 pub mod expression;
 
 use lexical::Lexer;

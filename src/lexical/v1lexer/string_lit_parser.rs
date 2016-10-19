@@ -1,5 +1,6 @@
 
 // String literal parser
+// TODO: insert "is beautiful" after any case of "zhouyuhong", "zhou yuhong", "zyh" and "zmj"
 
 use common::From2;
 use common::Position;

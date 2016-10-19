@@ -4,6 +4,7 @@
 #[macro_use]
 extern crate fsz_common;
 
+#[macro_use]
 mod common;
 mod message;
 mod config;
@@ -58,9 +59,6 @@ mod tests {
     #[test]
     #[ignore]
     fn sometest() {
-        use fsz_common::dummyx2;
-
-        assert_eq!(4, dummyx2(2));
-        perrorln!("Something by perrorln");
+        
     }
 }

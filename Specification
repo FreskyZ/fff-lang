@@ -1,8 +1,7 @@
 
 Program = [FunctionDef]* fEOF
-FunctionDef = fFn fIdentifier fLeftParen [Argument [fComma Argument]*] fRightParen [fNarrowRightArrow Type] Block
-Type = PrimitiveType | fLeftBracket PrimitiveType fRightBracket
-Argument = Type Identifier 
+FunctionDef = fFn fIdentifier fLeftParen [Type fIdentifier [fComma Type fIdentifier]*] fRightParen [fNarrowRightArrow Type] Block
+Type = fPrimitiveType | fLeftBracket fPrimitiveType fRightBracket
 Block = fLeftBrace [Statement]* fRightBrace
 
 // Statement
@@ -19,7 +18,7 @@ WhileStatement = fWhile fLeftParen Expression fRightParen Block                 
 ContinueStatement = fContinue fSemiColon                                                                                        // continue;
 BreakStatement = fBreak fSemiColon                                                                                              // break;
 ForStatement = fFor fLeftParen Identifier fIn Identifier fRange Identifier fRightParen Block  // for i in 1..5                  // for ...}
-AssignStatement = Identifier AssignOperator Expression fSemiColon                                                               // ... = ...;
+AssignStatement = fIdentifier AssignOperator Expression fSemiColon                                                               // ... = ...;
 ReturnStatement = fReturn [Expression] fSemiColon                                                                               // return ...;
 
 // Expression
@@ -27,7 +26,7 @@ PrimaryExpression =
     fLeftParen Expression fRightParen 
     | fIdentifier | fLiteral 
     | fLeftBracket ExpressionList fRightBracket     // var array = [1, 2, 3, a, b, c]
-    | fLeftBracket Expression fSemiColon Expression fRightBracket // var array = [false; 100]
+    | fLeftBracket Expression fSemiColon Expression fRightBracket // var array = [false; 100] 
 PostfixExpression = 
     PrimaryExpression 
     | PostfixExpression fLeftBracket Expression fRightBracket

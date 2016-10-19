@@ -1,11 +1,10 @@
 
-// <Program> -> <FunctionDef>*
+// Program = [FunctionDef]*
 
 use lexical::Lexer;
 use syntax::ast_item::IASTItem;
 use syntax::FunctionDef;
-use syntax::PrimitiveType;
-use syntax::Type;
+use syntax::SMType;
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct Program {
@@ -17,7 +16,7 @@ impl Program {
     pub fn get_main(&self) -> Option<&FunctionDef> {
 
         for func in &self.functions {
-            if func.name == "main" && func.return_type == Type::Primitive(PrimitiveType::Unit) {
+            if func.name == "main" && func.return_type == SMType::Unit {
                 return Some(&func);
             }
         }

@@ -7,15 +7,12 @@ mod scope;
 use lexical::Lexer;
 
 use syntax::ast_item::IASTItem;
-pub use syntax::ast_item::argument::Argument;
 pub use syntax::ast_item::program::Program;
 pub use syntax::ast_item::function_def::FunctionDef;
-pub use syntax::ast_item::function_call::FunctionCall;
 pub use syntax::ast_item::expression::Expression;
 pub use syntax::ast_item::statement::Statement;
-pub use syntax::ast_item::smtype::PrimitiveType;
-pub use syntax::ast_item::smtype::Type;
-pub use syntax::ast_item::variable_def::VariableDef;
+pub use syntax::ast_item::smtype::SMType;
+pub use syntax::ast_item::block::Block;
 
 pub fn get_ast(lexer: &mut Lexer) -> Option<Program> {
 
@@ -55,3 +52,25 @@ mod tests {
         perrorln!("messages: {:?}", lexer.emitter())
     }
 }
+
+// Designment
+// First there is syntax definition, then there is syntax diagram and confirm there is no collision, then
+// syntax diagram has init nodes and end nodes, in practice, end nodes are always EOF
+// 3 basic structures of syntax diagram
+// Normal:   A ---->----- B    , where A and B is lexical token
+// Branch:   A ------>--- B  
+//                \___>__ C
+//                 \__>__ D
+// Revert/Recursion:   /------<-----\
+//                     A ----->----- B
+// Then new a state machine, 
+// init state expecting the start node of the syntax diagram
+// for normal syntax diagram edges, just expecting next token, if not, error, unrecoverable error
+// for branch syntax diagram edges, the first tokens of B, C, D is not same, expecting them, if not expected, error, unrecoverable error
+// for recursion, it is normal
+
+// In this implementation, the syntax diagram is devide into sub diagrams
+// and previous tokens may be non final tokens
+// if meet first token of the subtype, just go into the subtype, if unexpected in the subtype, then it is unrecoverable error
+
+// recoverable, recoverable is actually another syntax rule with emitting messages

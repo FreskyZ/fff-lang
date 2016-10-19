@@ -165,6 +165,32 @@ impl IToken for V4Token {
             _ => None
         }
     }
+    fn get_str_lit_val(&self) -> Option<&Option<String>> {
+        match self.value {
+            TokenValue::StringLiteral(ref val) => Some(val),
+            TokenValue::RawStringLiteral(ref val) => Some(val),
+            _ => None,
+        }
+    }
+    fn get_char_lit_val(&self) -> Option<&Option<char>> {
+        match self.value {
+            TokenValue::CharLiteral(ref val) => Some(val),
+            _ => None,
+        }
+    }
+    fn get_num_lit_val(&self) -> Option<&Option<NumericLiteralValue>> {
+        match self.value {
+            TokenValue::NumericLiteral(ref val) => Some(val),
+            _ => None,
+        }
+    }
+    fn get_bool_lit_val(&self) -> Option<bool> {
+        match self.value {
+            TokenValue::BooleanLiteral(val) => Some(val),
+            _ => None
+        }
+    }
+
     fn get_position(&self) -> StringPosition {
         self.pos
     }
