@@ -104,6 +104,7 @@ define_seperator!{ SeperatorKind,
     [
     //  ch  => var,                 category,
         '=' => Assign,              SeperatorCategray::Assign,
+        '+' => Add,                 SeperatorCategray::Additive,
         '-' => Sub,                 SeperatorCategray::Additive,
         '*' => Mul,                 SeperatorCategray::Multiplicative,
         '/' => Div,                 SeperatorCategray::Multiplicative,

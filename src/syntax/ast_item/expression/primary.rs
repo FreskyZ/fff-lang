@@ -25,6 +25,16 @@ pub enum PrimaryExpression {
     ArrayDupDef(Box<Expression>, Box<Expression>),
 }
 
+impl PrimaryExpression {
+
+    pub fn make_paren(expr: Expression) -> PrimaryExpression {
+        PrimaryExpression::ParenExpression(Box::new(expr))
+    }
+    pub fn make_array_dup_def(expr1: Expression, expr2: Expression) -> PrimaryExpression {
+        PrimaryExpression::ArrayDupDef(Box::new(expr1), Box::new(expr2))
+    }
+}
+
 impl IASTItem for PrimaryExpression {
 
     fn symbol_len(&self) -> usize {
@@ -128,6 +138,18 @@ impl IASTItem for PrimaryExpression {
     }
 } 
 
+macro_rules! expr_to_primary {
+    ($inner: expr) => (Expression::Postfix(PostfixExpression{ prim: $inner, postfixs: Vec::new() }));
+}
+macro_rules! expr_ident { ($name: expr) => (expr_to_primary!(PrimaryExpression::Identifier($name.to_owned()))) }
+macro_rules! expr_str_lit { ($val: expr) => (expr_to_primary!(PrimaryExpression::StringLiteral($val.to_owned()))) }
+macro_rules! expr_char_lit { ($val: expr) => (expr_to_primary!(PrimaryExpression::CharLiteral($val))) }
+macro_rules! expr_num_lit { ($val: expr) => (expr_to_primary!(PrimaryExpression::NumericLiteral($val))) }
+macro_rules! expr_bool_lit { ($val: expr) => (expr_to_primary!(PrimaryExpression::BooleanLiteral($val))) }
+macro_rules! expr_paren_expr { ($expr: expr) => (expr_to_primary!(PrimaryExpression::make_paren($expr))) }
+macro_rules! expr_array_def { ($($exprs: expr, )*) => (expr_to_primary!(PrimaryExpression::ArrayDef(vec![$($exprs, )*]))) }
+macro_rules! expr_array_dup_def { ($expr1: expr, $expr2: expr) => (expr_to_primary!(PrimaryExpression::make_array_dup_def($expr1, $expr2))); }
+
 #[cfg(test)]
 mod tests {
 
@@ -139,46 +161,44 @@ mod tests {
         use lexical::Lexer;
         use syntax::Expression;
         use lexical::NumericLiteralValue;
+        use syntax::ast_item::expression::postfix::Postfix;
+        use syntax::ast_item::expression::postfix::PostfixExpression;
+
+        macro_rules! parse {
+            ($program: expr) => (PrimaryExpression::parse(&mut Lexer::new_test($program, MessageEmitter::new()), 0))
+        }
 
         // Case 1
         assert_eq!(
-            PrimaryExpression::parse(&mut Lexer::new_test("[1, 2, 3f128, 0u64]", MessageEmitter::new()), 0), 
-            Some(PrimaryExpression::ArrayDef(vec![
-                Expression::Primary(PrimaryExpression::NumericLiteral(NumericLiteralValue::I32(1))),
-                Expression::Primary(PrimaryExpression::NumericLiteral(NumericLiteralValue::I32(2))), 
-                Expression::Primary(PrimaryExpression::NumericLiteral(NumericLiteralValue::I32(0))),
-                Expression::Primary(PrimaryExpression::NumericLiteral(NumericLiteralValue::U64(0)))
-            ]))
+            expr_to_primary!(parse!("[1, 2, 3f128, 0u64]").unwrap()), 
+            expr_array_def!{
+                expr_num_lit!(NumericLiteralValue::I32(1)),
+                expr_num_lit!(NumericLiteralValue::I32(2)), 
+                expr_num_lit!(NumericLiteralValue::I32(0)),
+                expr_num_lit!(NumericLiteralValue::U64(0)),
+            }
         );
 
         // Case 2
-                                                              // 0123456 78  9 ABCDE FGH I    JKLMN
-        let res = PrimaryExpression::parse(&mut Lexer::new_test("[[(1)], [abc, (3)], [4, defg, [6]]]", MessageEmitter::new()), 0);
+                       // 0123456 78  9 ABCDE FGH I    JKLMN
+        let res = parse!("[[(1)], [abc, (3)], [4, defg, [6]]]");
         match res.unwrap() {
             PrimaryExpression::ArrayDef(exprs) => {
-                assert_eq!(exprs[0], 
-                    Expression::Primary(PrimaryExpression::ArrayDef(vec![
-                        Expression::Primary(PrimaryExpression::ParenExpression(Box::new(
-                            Expression::Primary(PrimaryExpression::NumericLiteral(NumericLiteralValue::I32(1)))
-                        )))
-                    ]))
-                );
+                assert_eq!(exprs[0], expr_array_def!{ expr_paren_expr!(expr_num_lit!(NumericLiteralValue::I32(1))), });
                 assert_eq!(exprs[1], 
-                    Expression::Primary(PrimaryExpression::ArrayDef(vec![
-                        Expression::Primary(PrimaryExpression::Identifier("abc".to_owned())),
-                        Expression::Primary(PrimaryExpression::ParenExpression(Box::new(
-                            Expression::Primary(PrimaryExpression::NumericLiteral(NumericLiteralValue::I32(3)))
-                        )))
-                    ]))
+                    expr_array_def!{
+                        expr_ident!("abc"),
+                        expr_paren_expr!(expr_num_lit!(NumericLiteralValue::I32(3))),
+                    }
                 );
                 assert_eq!(exprs[2], 
-                    Expression::Primary(PrimaryExpression::ArrayDef(vec![
-                        Expression::Primary(PrimaryExpression::NumericLiteral(NumericLiteralValue::I32(4))),
-                        Expression::Primary(PrimaryExpression::Identifier("defg".to_owned())),
-                        Expression::Primary(PrimaryExpression::ArrayDef(vec![
-                            Expression::Primary(PrimaryExpression::NumericLiteral(NumericLiteralValue::I32(6)))
-                        ])),
-                    ]))
+                    expr_array_def!{
+                        expr_num_lit!(NumericLiteralValue::I32(4)),
+                        expr_ident!("defg"),
+                        expr_array_def!{
+                            expr_num_lit!(NumericLiteralValue::I32(6)),
+                        },
+                    }
                 );
             }
             other => panic!("Not expected, but {:?}", other),
@@ -186,32 +206,28 @@ mod tests {
 
         // Case 3
         assert_eq!(
-            PrimaryExpression::parse(&mut Lexer::new_test("[abc, 123, \"456\", '\\u0065', false, (a)]", MessageEmitter::new()), 0),
-            Some(PrimaryExpression::ArrayDef(vec![
-                Expression::Primary(PrimaryExpression::Identifier("abc".to_owned())),
-                Expression::Primary(PrimaryExpression::NumericLiteral(NumericLiteralValue::I32(123))),
-                Expression::Primary(PrimaryExpression::StringLiteral("456".to_owned())),
-                Expression::Primary(PrimaryExpression::CharLiteral('\u{0065}')),
-                Expression::Primary(PrimaryExpression::BooleanLiteral(false)),
-                Expression::Primary(PrimaryExpression::ParenExpression(Box::new(
-                    Expression::Primary(PrimaryExpression::Identifier("a".to_owned()))
-                ))),
-            ]))
+            expr_to_primary!(parse!("[abc, 123, \"456\", '\\u0065', false, (a)]").unwrap()),
+            expr_array_def!{
+                expr_ident!("abc"),
+                expr_num_lit!(NumericLiteralValue::I32(123)),
+                expr_str_lit!("456"),
+                expr_char_lit!('\u{0065}'),
+                expr_bool_lit!(false),
+                expr_paren_expr!(expr_ident!("a")),
+            }
         );        
         
         // Case 4
         assert_eq!(
-            PrimaryExpression::parse(&mut Lexer::new_test("[abc, 123f, \"456\\u\", '\\u00', false, (a)]", MessageEmitter::new()), 0),
-            Some(PrimaryExpression::ArrayDef(vec![
-                Expression::Primary(PrimaryExpression::Identifier("abc".to_owned())),
-                Expression::Primary(PrimaryExpression::NumericLiteral(NumericLiteralValue::I32(0))),
-                Expression::Primary(PrimaryExpression::StringLiteral("<invalid>".to_owned())),
-                Expression::Primary(PrimaryExpression::CharLiteral('\u{FFFE}')),
-                Expression::Primary(PrimaryExpression::BooleanLiteral(false)),
-                Expression::Primary(PrimaryExpression::ParenExpression(Box::new(
-                    Expression::Primary(PrimaryExpression::Identifier("a".to_owned()))
-                ))),
-            ]))
+            expr_to_primary!(parse!("[abc, 123f, \"456\\u\", '\\u00', false, (a)]").unwrap()),
+            expr_array_def!{
+                expr_ident!("abc"),
+                expr_num_lit!(NumericLiteralValue::I32(0)),
+                expr_str_lit!("<invalid>"),
+                expr_char_lit!('\u{FFFE}'),
+                expr_bool_lit!(false),
+                expr_paren_expr!(expr_ident!("a")),
+            }
         );
     }
 }

@@ -18,27 +18,27 @@ use syntax::ast_item::IASTItem;
 
 mod primary;
 mod postfix;
-use self::primary::PrimaryExpression;
+use self::postfix::PostfixExpression;
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum Expression {
-    Primary(PrimaryExpression),
+    Postfix(PostfixExpression),
 }
 
 impl IASTItem for Expression {
 
     fn symbol_len(&self) -> usize {
         match *self {
-            Expression::Primary(ref primary) => primary.symbol_len(),
+            Expression::Postfix(ref postfix) => postfix.symbol_len(),
         }
     }
     
     fn parse(lexer: &mut Lexer, index: usize) -> Option<Expression> {
         perrorln!("Parsing expression at index {}", index);
 
-        match PrimaryExpression::parse(lexer, index) {
-            Some(prim) => test_perrorln_and_val!("get prim expr in expr parse"; Some(Expression::Primary(prim))),
-            None => test_perrorln_and_val!("not get prim expr in expr parse"; lexer.push_expect_symbol("Some expression", index)),
+        match PostfixExpression::parse(lexer, index) {
+            Some(post) => test_perrorln_and_val!("get post expr in expr parse"; Some(Expression::Postfix(post))),
+            None => test_perrorln_and_val!("not get post expr in expr parse"; lexer.push_expect_symbol("Some expression", index)),
         }
     }
 }

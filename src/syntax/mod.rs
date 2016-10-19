@@ -1,5 +1,8 @@
 
 // Syntax, form abstract syntax tree
+// TODO far: Add error recovery, which need new structure of message emitter and symbol length
+// TODO far: Add support for semantic error, which need postition information in ast items
+// TODO: to support name resolve, statements in block should have i32 id, because same statement at different position is not same
 
 mod ast_item;
 mod scope;

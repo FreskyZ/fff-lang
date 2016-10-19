@@ -90,6 +90,8 @@ pub enum Message {
 
     // Syntax!
     ExpectSymbol{ desc: String, pos: Position },
+    // First recoverable of syntax!!!
+    EmptySubscription{ pos: Position },
 }
 
 impl Message {
@@ -175,6 +177,9 @@ impl fmt::Debug for Message {
 
             ExpectSymbol{ ref desc, ref pos } => {
                 write!(f, "Expect {} at {:?}", desc, pos)
+            }
+            EmptySubscription{ ref pos } => {
+                write!(f, "Empty subscription at {:?}", pos)
             }
         }
     }

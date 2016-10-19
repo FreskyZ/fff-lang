@@ -98,7 +98,6 @@ impl fmt::Debug for StringPosition {
 
 impl_display_by_debug!(StringPosition);
 
-// #[macro_export]
 #[cfg(test)]
 macro_rules! test_perrorln_and_val {
     ($format: expr, $($args: expr, )* ; $val: expr) => ({
@@ -112,10 +111,12 @@ macro_rules! test_perrorln_and_val {
 }
 #[cfg(not(test))]
 macro_rules! test_perrorln_and_val {
-    ($format: expr, $($args: expr, )* ; $val: expr) => ({
-        $val
-    });
-    ($format: expr ; $val: expr) => ({
-        $val
-    })
+    ($format: expr, $($args: expr, )* ; $val: expr) => ($val);
+    ($format: expr ; $val: expr) => ($val)
+}
+
+#[cfg(test)]
+macro_rules! test_perrorln {
+    ($format: expr, $($args: expr, )+) => (perrorln!($format, $($args)+));
+    ($format: expr) => (perrorln!($format));
 }
