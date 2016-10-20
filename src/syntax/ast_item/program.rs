@@ -1,10 +1,14 @@
 
 // Program = [FunctionDef]*
 
+use common::StringPosition;
+
 use lexical::Lexer;
+
 use syntax::ast_item::IASTItem;
 use syntax::FunctionDef;
 use syntax::SMType;
+use syntax::SMTypeBase;
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct Program {
@@ -16,7 +20,7 @@ impl Program {
     pub fn get_main(&self) -> Option<&FunctionDef> {
 
         for func in &self.functions {
-            if func.name == "main" && func.return_type == SMType::Unit {
+            if func.name == "main" && func.ret_type.0 == SMTypeBase::Unit {
                 return Some(&func);
             }
         }
@@ -26,24 +30,21 @@ impl Program {
 
 impl IASTItem for Program {
 
-    fn symbol_len(&self) -> usize {
-        self.functions.iter().fold(0, |counter, ref func| counter + func.symbol_len())
-    }
-
-    fn parse(lexer: &mut Lexer, index: usize) -> Option<Program> {
+    fn parse(lexer: &mut Lexer, index: usize) -> (Option<Program>, usize) {
         
         let mut funcs = Vec::new();
-        let mut funcs_sym_len = 0_usize;
+        let mut funcs_len = 0_usize;
         loop {
-            match FunctionDef::parse(lexer, index + funcs_sym_len) {
-                Some(func) => {
-                    funcs_sym_len += func.symbol_len();
+            match FunctionDef::parse(lexer, index + funcs_len) {
+                (Some(func), length) => {
+                    funcs_len += length;
                     funcs.push(func);
                 }
-                None => break,
+                (None, _) => break,
             }
         }
+        // recover none function by find next paired '}' and expecting `fn` again
 
-        Some(Program{ functions: funcs })
+        (Some(Program{ functions: funcs }), funcs_len)
     }
 }

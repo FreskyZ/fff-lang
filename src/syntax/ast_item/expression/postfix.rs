@@ -8,7 +8,9 @@
 //             | fAs Type
 //         ]*
 
+use common::From2;
 use common::Position;
+use common::StringPosition;
 use message::Message;
 
 use lexical::Lexer;
@@ -26,7 +28,7 @@ use super::primary::PrimaryExpression;
 pub enum Postfix {
     Subscription(Vec<Expression>),
     FunctionCall(Vec<Expression>),
-    MemberAccess(String),
+    MemberAccess(String, StringPosition),
     TypeCast(SMType),
 }
 
@@ -38,32 +40,27 @@ pub struct PostfixExpression {
 
 impl PostfixExpression {
 
+    pub fn pos_prim(&self) -> StringPosition { self.prim.pos_all() }
+    pub fn pos_all(&self) -> StringPosition { 
+        StringPosition::from2(
+            self.prim.pos_all().start_pos, 
+            self.prim.pos_all().end_pos,    // TODO: finish it
+        )
+    }
 }
 
 impl IASTItem for PostfixExpression {
 
-    fn symbol_len(&self) -> usize {
-        self.prim.symbol_len() + self.postfixs.iter().fold(0, |counter, ref postfix| {
-            counter + match postfix {
-                //                                    1 for '[', ']' or '(', ')', and over added ','
-                &&Postfix::Subscription(ref indexers) => indexers.iter().fold(0, |counter, ref indexer| counter + indexer.symbol_len() + 1) + 1,
-                &&Postfix::FunctionCall(ref params) => params.iter().fold(0, |counter, ref param| counter + param.symbol_len() + 1) + 1, 
-                &&Postfix::MemberAccess(ref ident) => 2,
-                &&Postfix::TypeCast(ref ty) => 1 + ty.symbol_len(),
-            }
-        }) 
-    }
+    fn parse(lexer: &mut Lexer, index: usize) -> (Option<PostfixExpression>, usize) {
 
-    fn parse(lexer: &mut Lexer, index: usize) -> Option<PostfixExpression> {
-
-        let primary = match PrimaryExpression::parse(lexer, index) {
-            Some(prim) => prim,
-            None => return lexer.push_expect_symbol("primary expression", index),
+        let (primary, primary_len) = match PrimaryExpression::parse(lexer, index) {
+            (Some(prim), prim_len) => (prim, prim_len),
+            (None, prim_len) => return (None, prim_len), // no recover
         };
         test_perrorln!("parsing postfix, primary is {:?}", primary, );
 
         let mut postfixs = Vec::new();
-        let mut current_len = primary.symbol_len();
+        let mut current_len = primary_len;
         'postfix: loop {
             // function call and subscription both accept expression list, merge the processor and it is the end seperator
             let mut expect_end_sep = SeperatorKind::Add;
@@ -71,19 +68,19 @@ impl IASTItem for PostfixExpression {
                 match lexer.nth(index + current_len + 1).get_identifier() {
                     Some(ident) => {
                         current_len += 2;
-                        postfixs.push(Postfix::MemberAccess(ident.clone()));
+                        postfixs.push(Postfix::MemberAccess(ident.clone(), lexer.pos(index + current_len + 1)));
                         continue 'postfix;
                     }
-                    None => return lexer.push_expect_symbol("member identifier", index + current_len + 1),
+                    None => return lexer.push_expect("member identifier", index + current_len + 1, current_len + 1),
                 }
             } else if lexer.nth(index + current_len).is_keyword(KeywordKind::As) {
                 match SMType::parse(lexer, index + current_len + 1) {
-                    Some(ty) => {
-                        current_len += ty.symbol_len() + 1;
+                    (Some(ty), ty_len) => {
+                        current_len += ty_len + 1;
                         postfixs.push(Postfix::TypeCast(ty));
                         continue 'postfix;
                     }
-                    None => return lexer.push_expect_symbol("typedef", index + current_len + 1),
+                    (None, length) => return lexer.push_expect("typedef", index + current_len + 1, current_len + 1 + length),
                 }
             } else if lexer.nth(index + current_len).is_seperator(SeperatorKind::LeftParenthenes) {
                 if lexer.nth(index + current_len + 1).is_seperator(SeperatorKind::RightParenthenes) {
@@ -99,9 +96,9 @@ impl IASTItem for PostfixExpression {
             // Get the expression list
             current_len += 1; 
             match Expression::parse(lexer,  index + current_len) {
-                None => return lexer.push_expect_symbol("some expression", index + current_len),
-                Some(expr1) => {
-                    let mut exprs_len = expr1.symbol_len();
+                (None, length) => return lexer.push_expect("some expression", index + current_len, current_len + length),
+                (Some(expr1), expr1_len) => {
+                    let mut exprs_len = expr1_len;
                     let mut exprs = vec![expr1];
                     'expr: loop { 
                         match expect_end_sep {
@@ -124,11 +121,11 @@ impl IASTItem for PostfixExpression {
                         }
                         if lexer.nth(index + current_len + exprs_len).is_seperator(SeperatorKind::Comma) {
                             match Expression::parse(lexer, index + current_len + exprs_len) {
-                                Some(expr) => {
-                                    exprs_len += expr.symbol_len() + 1;
+                                (Some(expr), expr_len) => {
+                                    exprs_len += expr_len + 1;
                                     exprs.push(expr);
                                 }
-                                None => return lexer.push_expect_symbol("some expr", index + current_len + exprs_len),
+                                (None, length) => return lexer.push_expect("some expr", index + current_len + exprs_len, current_len + exprs_len + length),
                             }
                         }
                     }
@@ -136,13 +133,15 @@ impl IASTItem for PostfixExpression {
             }
         }
 
-        Some(PostfixExpression{ prim: primary, postfixs: postfixs })
+        (Some(PostfixExpression{ prim: primary, postfixs: postfixs }), current_len)
     }
 }
 
 macro_rules! expr_to_postfix {
-    ($prim: expr) => (Expression::Postfix(PostfixExpression{ prim: $prim, postfixs: Vec::new() }));
-    ($prim: expr, $($posts: expr)*) => (Expression::Postfix(PostfixExpression{ prim: $prim, postfixs: vec![$($posts, )*] }))
+    ($prim: expr) => (Expression(PostfixExpression{ prim: $prim, postfixs: Vec::new() }));
+    ($prim: expr, $($posts: expr)*) => (
+        Expression::Postfix(PostfixExpression{ prim: $prim, postfixs: vec![$($posts, )*]})
+    )
 }
 macro_rules! expr_post_call { ($($exprs: expr, )*) => (Postfix::FunctionCall(vec![$($exprs, )*])) }
 macro_rules! expr_post_sub { ($($exprs: expr, )*) => (Postfix::Subscription(vec![$($exprs, )*])) }
@@ -174,6 +173,6 @@ mod tests {
         let lexer = &mut Lexer::new_test("abc.defg[hij(klm, 123)](opq, 456)() as [i32].rst[uvw, xyz, ABC]", MessageEmitter::new());
         let result = PostfixExpression::parse(lexer, 0);
         perrorln!("{:?}", PostfixExpression::parse(lexer, 0));
-        perrorln!("Messages: {:?}", lexer.emitter());
+        perrorln!("Messages: {:?}", lexer.messages());
     }
 }

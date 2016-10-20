@@ -120,3 +120,7 @@ macro_rules! test_perrorln {
     ($format: expr, $($args: expr, )+) => (perrorln!($format, $($args)+));
     ($format: expr) => (perrorln!($format));
 }
+
+macro_rules! make_str_pos {
+    ($row1: expr, $col1: expr, $row2: expr, $col2: expr) => (StringPosition::from(($row1, $col1, $row2, $col2)))
+}

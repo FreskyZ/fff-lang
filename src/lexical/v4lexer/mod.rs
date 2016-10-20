@@ -205,9 +205,10 @@ pub struct V4Lexer {
 
 impl V4Lexer {
     
-    pub fn new(content: String, mut messages: MessageEmitter) -> V4Lexer {
+    pub fn new(content: String) -> V4Lexer {
         use lexical::buf_lexer::ILexer;
 
+        let mut messages = MessageEmitter::new();
         let mut v3lexer = V3Lexer::from(content);
         let mut buf = Vec::new();
         loop {
@@ -223,11 +224,16 @@ impl V4Lexer {
             eof_token: V4Token{ value: TokenValue::EndofFile, pos: StringPosition::from2(v3lexer.position(), v3lexer.position()) },
         }
     }
-    #[cfg(test)]
+    #[cfg(test)] // for test, receive string literal, provide new messages for checking
     pub fn new_test(content: &str, messages: MessageEmitter) -> V4Lexer {
-        V4Lexer::new(content.to_owned(), messages)
+        let mut lexer = V4Lexer::new(content.to_owned());
+        lexer.messages = messages;
+        lexer
     }
 
+    pub fn len(&self) -> usize {
+        self.buf.len()
+    }
     pub fn pos(&self, idx: usize) -> StringPosition { 
         if idx >= self.buf.len() { 
             self.eof_token.get_position()
@@ -235,7 +241,6 @@ impl V4Lexer {
             self.buf[idx].get_position()
         }
     }
-
     pub fn nth(&self, idx: usize) -> V4Token {
         if idx >= self.buf.len() { 
             self.eof_token.clone() 
@@ -248,19 +253,31 @@ impl V4Lexer {
     pub fn push(&mut self, message: Message) {
         self.messages.push(message);
     }
-    pub fn push_expect_symbol<T>(&mut self, desc: &str, sym_pos_index: usize) -> Option<T> {
-        self.messages.push(Message::ExpectSymbol{ 
-            desc: desc.to_owned(), 
-            pos: if sym_pos_index >= self.buf.len() { self.eof_token.get_position().start_pos } else { self.buf[sym_pos_index].get_position().start_pos },
-        });
-        return None;
+    pub fn push_expect<T>(&mut self, final_token: &str, index: usize, sym_size: usize) -> (Option<T>, usize) {
+        self.push_expects(vec![final_token], index, sym_size)
     }
-    pub fn emitter(&self) -> &MessageEmitter {
+    pub fn push_expects<T>(&mut self, final_tokens: Vec<&str>, index: usize, sym_size: usize) -> (Option<T>, usize) {
+
+        let mut desc = final_tokens.into_iter().fold(String::new(), |mut buf, token| {
+            buf.push_str(token);
+            buf.push_str(", ");
+            buf
+        });
+        if desc.len() > 2 {
+            let target_len = desc.len() - 2; 
+            desc.truncate(target_len); 
+        }
+
+        self.messages.push(Message::ExpectSymbol{ 
+            expect: desc,
+            actual: format!("{:?}", self.buf[index]), 
+            pos: if index >= self.buf.len() { self.eof_token.get_position().start_pos } else { self.buf[index].get_position().start_pos },
+        });
+        return (None, sym_size);
+    }
+    pub fn messages(&self) -> &MessageEmitter {
         &self.messages
     }
-
-    // only IASTItem::parse 's caller knows whether this is try, so that is, 
-    // push_temp_message, pop_temp_message, apply_temp_message(to current level, maybe higher level's temp messages)
 }
 
 #[cfg(test)]
@@ -323,5 +340,15 @@ mod tests {
         assert_eq!(lexer.nth(8), V4Token{ value: TokenValue::EndofFile, pos: StringPosition::from((1, 17, 1, 17)) });
         assert_eq!(lexer.pos(8), StringPosition::from((1, 17, 1, 17)));
         assert_eq!(lexer.nth(8).is_eof(), true);
+    }
+
+    #[test]
+    fn v4_push() {
+        use super::V4Lexer as Lexer;
+
+        let lexer = &mut Lexer::new("abcdef".to_owned());
+        let _ = lexer.push_expect::<i32>("123", 0, 0);
+        let _ = lexer.push_expects::<i32>(vec!["456", "789"], 0, 0);
+        perrorln!("Messages: {:?}", lexer.messages());
     }
 }

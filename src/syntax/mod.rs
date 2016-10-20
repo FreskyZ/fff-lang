@@ -14,12 +14,13 @@ pub use syntax::ast_item::program::Program;
 pub use syntax::ast_item::function_def::FunctionDef;
 pub use syntax::ast_item::expression::Expression;
 pub use syntax::ast_item::statement::Statement;
+pub use syntax::ast_item::smtype::SMTypeBase;
 pub use syntax::ast_item::smtype::SMType;
 pub use syntax::ast_item::block::Block;
 
 pub fn get_ast(lexer: &mut Lexer) -> Option<Program> {
 
-    Program::parse(lexer, 0)
+    Program::parse(lexer, 0).0
 }
 
 #[cfg(test)]
@@ -52,7 +53,7 @@ mod tests {
         let program = get_ast(lexer);
 
         perrorln!("program: {:?}", program);
-        perrorln!("messages: {:?}", lexer.emitter())
+        perrorln!("messages: {:?}", lexer.messages())
     }
 }
 

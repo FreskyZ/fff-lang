@@ -13,6 +13,13 @@
 // LogicalOrExpression = LogicalAndExpression | LogicalOrExpression LogicalOrOperator LogicalAndExpression
 // Expression = LogicalOrExpression
 
+// TODO
+// IASTItem to position() -> &[StringPosition] 
+// and parser(...) -> (Option<Self>, usize), usize for parsed length because incorrect syntax item may not be standard
+// Postion is actually an array, different syntax item have different amount of special position to record for error reporting
+// for messages, only when None is created then a message is emitted, receiving None do not emit same message, but recovery can emit different message
+// message divided into lexical message and syntax message, having any message after syntax parse stops the compilation process
+
 use lexical::Lexer;
 use syntax::ast_item::IASTItem;
 
@@ -21,24 +28,21 @@ mod postfix;
 use self::postfix::PostfixExpression;
 
 #[derive(Debug, Eq, PartialEq)]
-pub enum Expression {
-    Postfix(PostfixExpression),
-}
+pub struct Expression(PostfixExpression);
 
 impl IASTItem for Expression {
-
-    fn symbol_len(&self) -> usize {
-        match *self {
-            Expression::Postfix(ref postfix) => postfix.symbol_len(),
-        }
-    }
     
-    fn parse(lexer: &mut Lexer, index: usize) -> Option<Expression> {
+    fn parse(lexer: &mut Lexer, index: usize) -> (Option<Expression>, usize) {
         perrorln!("Parsing expression at index {}", index);
 
         match PostfixExpression::parse(lexer, index) {
-            Some(post) => test_perrorln_and_val!("get post expr in expr parse"; Some(Expression::Postfix(post))),
-            None => test_perrorln_and_val!("not get post expr in expr parse"; lexer.push_expect_symbol("Some expression", index)),
+            (Some(post), length) => test_perrorln_and_val!("get post expr in expr parse"; (Some(Expression(post)), length)),
+            (None, length) => test_perrorln_and_val!("not get post expr in expr parse"; (None, length)), // no recoverable here, pass through
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+
 }

@@ -89,9 +89,10 @@ pub enum Message {
     },
 
     // Syntax!
-    ExpectSymbol{ desc: String, pos: Position },
+    ExpectSymbol{ expect: String, actual: String, pos: Position },
     // First recoverable of syntax!!!
     EmptySubscription{ pos: Position },
+    SingleCommaInNonArgumentFunctionDef{ fn_pos: Position, comma_pos: Position },
 }
 
 impl Message {
@@ -175,11 +176,14 @@ impl fmt::Debug for Message {
                 write!(f, "Numeric literal too large at {:?}", literal_pos)
             }
 
-            ExpectSymbol{ ref desc, ref pos } => {
-                write!(f, "Expect {} at {:?}", desc, pos)
+            ExpectSymbol{ ref expect, ref actual, ref pos } => {
+                write!(f, "Expect {} at {:?} but actually is {:?}", expect, pos, actual)
             }
             EmptySubscription{ ref pos } => {
                 write!(f, "Empty subscription at {:?}", pos)
+            }
+            SingleCommaInNonArgumentFunctionDef{ ref fn_pos, ref comma_pos } => {
+                write!(f, "Single comma at {:?} in no argument function def at {:?}", comma_pos, fn_pos)
             }
         }
     }
