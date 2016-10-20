@@ -124,4 +124,5 @@ define_keyword!{ KeywordKind,
     "lambda" =>     Lambda,         false,          true,
     "closure" =>    Closure,        false,          true,
     "array" =>      Array,          false,          true,
+    "unit" =>       PrimTypeUnit,   true,           true,
 }

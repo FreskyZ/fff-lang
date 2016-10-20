@@ -4,7 +4,6 @@
 use std::fmt;
 use common::StringPosition;
 
-#[cfg(test)]
 #[derive(PartialEq, Clone)]
 pub enum NumericLiteralValue {
     U64(u64),
@@ -14,17 +13,6 @@ pub enum NumericLiteralValue {
     F32(f32),
     F64(f64),
 }
-#[cfg(not(test))]
-#[derive(Clone)]
-pub enum NumericLiteralValue {
-    U64(u64),
-    U32(u32),
-    I32(i32),
-    U8(u8),
-    F32(f32),
-    F64(f64),
-}
-#[cfg(test)]
 impl Eq for NumericLiteralValue {
 }
 

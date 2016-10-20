@@ -19,10 +19,11 @@ pub struct Block {
 
 impl Block {
 
-    pub fn pos_all(&self) -> StringPosition { self.pos }
 }
 
 impl IASTItem for Block {
+    
+    fn pos_all(&self) -> StringPosition { self.pos }
 
     fn parse(lexer: &mut Lexer, index: usize) -> (Option<Block>, usize) {
 

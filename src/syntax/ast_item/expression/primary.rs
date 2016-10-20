@@ -5,6 +5,8 @@
 //     | fLeftBracket [Expression [fComma Expression]*] fRightBracket     // var array = [1, 2, 3, a, b, c]
 //     | fLeftBracket Expression fSemiColon Expression fRightBracket // var array = [false; 100]
 
+use std::fmt;
+
 use common::From2;
 use common::StringPosition;
 
@@ -29,7 +31,7 @@ pub enum PrimaryExpressionBase {
 }
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct PrimaryExpression(PrimaryExpressionBase, StringPosition);
+pub struct PrimaryExpression(pub PrimaryExpressionBase, pub StringPosition);
 
 impl PrimaryExpression {
 
@@ -58,14 +60,14 @@ impl PrimaryExpression {
     pub fn make_array_dup_def(expr1: Expression, expr2: Expression, pos: StringPosition) -> PrimaryExpression {
         PrimaryExpression(PrimaryExpressionBase::ArrayDupDef(Box::new(expr1), Box::new(expr2)), pos)
     }
-
-    pub fn pos_all(&self) -> StringPosition {
-        self.1
-    }
 }
 
 impl IASTItem for PrimaryExpression {
     
+    fn pos_all(&self) -> StringPosition {
+        self.1
+    }
+
     fn parse(lexer: &mut Lexer, index: usize) -> (Option<PrimaryExpression>, usize) {
 
         match lexer.nth(index).get_str_lit_val() {
@@ -167,115 +169,3 @@ impl IASTItem for PrimaryExpression {
         return lexer.push_expect("identifier or literal or array def", index, 0);
     }
 } 
-
-macro_rules! expr_to_primary {
-    ($inner: expr) => (Expression(PostfixExpression{ prim: $inner, postfixs: Vec::new() }));
-}
-macro_rules! expr_ident { 
-    ($name: expr) => (expr_to_primary!(PrimaryExpression::make_ident($name.to_owned(), StringPosition::new()))) 
-}
-macro_rules! expr_str_lit { 
-    ($val: expr) => (expr_to_primary!(PrimaryExpression::make_str_lit($val.to_owned(), StringPosition::new()))) 
-}
-macro_rules! expr_char_lit { 
-    ($val: expr) => (expr_to_primary!(PrimaryExpression::make_char_lit($val, StringPosition::new()))) 
-}
-macro_rules! expr_num_lit { 
-    ($val: expr) => (expr_to_primary!(PrimaryExpression::make_num_lit($val, StringPosition::new()))) 
-}
-macro_rules! expr_bool_lit { 
-    ($val: expr) => (expr_to_primary!(PrimaryExpression::make_bool_lit($val, StringPosition::new()))) 
-}
-macro_rules! expr_paren_expr { 
-    ($expr: expr) => (expr_to_primary!(PrimaryExpression::make_paren($expr, StringPosition::new()))) 
-}
-macro_rules! expr_array_def { 
-    ($($exprs: expr, )*) => (expr_to_primary!(PrimaryExpression::make_array_def(vec![$($exprs, )*], StringPosition::new()))) 
-}
-macro_rules! expr_array_dup_def { 
-    ($expr1: expr, $expr2: expr) => (expr_to_primary!(PrimaryExpression::make_array_dup_def($expr1, $expr2, StringPosition::new()))); 
-}
-
-#[cfg(test)]
-mod tests {
-
-    #[test]
-    fn ast_expr_prim_parse() {
-        use super::PrimaryExpression;
-        use super::PrimaryExpressionBase;
-        use syntax::ast_item::IASTItem;
-        use common::StringPosition;
-        use message::MessageEmitter;
-        use lexical::Lexer;
-        use syntax::Expression;
-        use lexical::NumericLiteralValue;
-        use syntax::ast_item::expression::postfix::Postfix;
-        use syntax::ast_item::expression::postfix::PostfixExpression;
-
-        macro_rules! parse {
-            ($program: expr) => (PrimaryExpression::parse(&mut Lexer::new_test($program, MessageEmitter::new()), 0))
-        }
-
-        // Case 1
-        assert_eq!(
-            expr_to_primary!(parse!("[1, 2, 3f128, 0u64]").0.unwrap()), 
-            expr_array_def!{
-                expr_num_lit!(NumericLiteralValue::I32(1)),
-                expr_num_lit!(NumericLiteralValue::I32(2)), 
-                expr_num_lit!(NumericLiteralValue::I32(0)),
-                expr_num_lit!(NumericLiteralValue::U64(0)),
-            }
-        );
-
-        // Case 2
-                       // 0123456 78  9 ABCDE FGH I    JKLMN
-        let res = parse!("[[(1)], [abc, (3)], [4, defg, [6]]]");
-        match res.0.unwrap() {
-            PrimaryExpression(PrimaryExpressionBase::ArrayDef(exprs), _pos) => {
-                assert_eq!(exprs[0], expr_array_def!{ expr_paren_expr!(expr_num_lit!(NumericLiteralValue::I32(1))), });
-                assert_eq!(exprs[1], 
-                    expr_array_def!{
-                        expr_ident!("abc"),
-                        expr_paren_expr!(expr_num_lit!(NumericLiteralValue::I32(3))),
-                    }
-                );
-                assert_eq!(exprs[2], 
-                    expr_array_def!{
-                        expr_num_lit!(NumericLiteralValue::I32(4)),
-                        expr_ident!("defg"),
-                        expr_array_def!{
-                            expr_num_lit!(NumericLiteralValue::I32(6)),
-                        },
-                    }
-                );
-            }
-            other => panic!("Not expected, but {:?}", other),
-        }
-
-        // Case 3
-        assert_eq!(
-            expr_to_primary!(parse!("[abc, 123, \"456\", '\\u0065', false, (a)]").0.unwrap()),
-            expr_array_def!{
-                expr_ident!("abc"),
-                expr_num_lit!(NumericLiteralValue::I32(123)),
-                expr_str_lit!("456"),
-                expr_char_lit!('\u{0065}'),
-                expr_bool_lit!(false),
-                expr_paren_expr!(expr_ident!("a")),
-            }
-        );        
-        
-        // Case 4
-        assert_eq!(
-            expr_to_primary!(parse!("[abc, 123f, \"456\\u\", '\\u00', false, (a)]").0.unwrap()),
-            expr_array_def!{
-                expr_ident!("abc"),
-                expr_num_lit!(NumericLiteralValue::I32(0)),
-                expr_str_lit!("<invalid>"),
-                expr_char_lit!('\u{FFFE}'),
-                expr_bool_lit!(false),
-                expr_paren_expr!(expr_ident!("a")),
-            }
-        );
-    }
-}

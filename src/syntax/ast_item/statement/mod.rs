@@ -1,6 +1,8 @@
 
 // Statement -> LeftBrace [Expression]* RightBrace
 
+use common::StringPosition;
+
 use lexical::Lexer;
 // use lexical::IToken;
 // use lexical::SeperatorKind;
@@ -14,6 +16,10 @@ pub struct Statement {
 }
 
 impl IASTItem for Statement {
+
+    fn pos_all(&self) -> StringPosition {  
+        StringPosition::new()
+    }
     
     fn parse(lexer: &mut Lexer, index: usize) -> (Option<Statement>, usize) {
 

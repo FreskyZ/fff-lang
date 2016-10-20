@@ -8,6 +8,8 @@
 //             | fAs Type
 //         ]*
 
+use std::fmt;
+
 use common::From2;
 use common::Position;
 use common::StringPosition;
@@ -24,32 +26,90 @@ use syntax::SMType;
 
 use super::primary::PrimaryExpression;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Eq, PartialEq)]
 pub enum Postfix {
     Subscription(Vec<Expression>),
     FunctionCall(Vec<Expression>),
     MemberAccess(String, StringPosition),
     TypeCast(SMType),
 }
+impl fmt::Debug for Postfix {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", match *self {
+            Postfix::Subscription(ref exprs) => {
+                let mut buf = exprs.iter().fold(".operator()(".to_owned(), 
+                    |mut buf, expr| { buf.push_str(&format!("{:?}, ", expr)); buf });
+                buf.push_str(")");
+                buf 
+            }
+            Postfix::FunctionCall(ref exprs) => {
+                let mut buf = exprs.iter().fold(".operator()(".to_owned(), 
+                    |mut buf, expr| { buf.push_str(&format!("{:?}, ", expr)); buf });
+                buf.push_str(")");
+                buf 
+            }
+            Postfix::MemberAccess(ref name, ref pos) => format!("operator->({:?} @ {:?})", name, pos),
+            Postfix::TypeCast(ref ty) => format!("operator as({:?})", ty),
+        })
+    }
+}
+impl fmt::Display for Postfix {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", match *self {
+            Postfix::Subscription(ref exprs) => { 
+                let mut buf = exprs.iter().fold(".operator()(".to_owned(), 
+                    |mut buf, expr| { buf.push_str(&format!("{:?}, ", expr)); buf });
+                buf.push_str(")");
+                buf
+            },
+            Postfix::FunctionCall(ref exprs) => {
+                let mut buf = exprs.iter().fold(".operator[](".to_owned(), 
+                    |mut buf, expr| { buf.push_str(&format!("{:?}, ", expr)); buf });
+                buf.push_str(")");
+                buf
+            }
+            Postfix::MemberAccess(ref name, ref pos) => format!("operator->({:?})", name),
+            Postfix::TypeCast(ref ty) => format!("operator as({})", ty),
+        })
+    }
+}
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Eq, PartialEq)]
 pub struct PostfixExpression {
     pub prim: PrimaryExpression,
     pub postfixs: Vec<Postfix>,
 }
 
+impl fmt::Debug for PostfixExpression {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}{:?}", 
+            self.prim,
+            self.postfixs.iter().fold(String::new(), |mut buf, postfix| { buf.push_str(&format!("{:?}", postfix)); buf })
+        )
+    }
+}
+impl fmt::Display for PostfixExpression {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}{}", 
+            self.prim,
+            self.postfixs.iter().fold(String::new(), |mut buf, postfix| { buf.push_str(&format!("{}", postfix)); buf })
+        )
+    }
+}
+
 impl PostfixExpression {
 
     pub fn pos_prim(&self) -> StringPosition { self.prim.pos_all() }
-    pub fn pos_all(&self) -> StringPosition { 
+}
+
+impl IASTItem for PostfixExpression {
+    
+    fn pos_all(&self) -> StringPosition { 
         StringPosition::from2(
             self.prim.pos_all().start_pos, 
             self.prim.pos_all().end_pos,    // TODO: finish it
         )
     }
-}
-
-impl IASTItem for PostfixExpression {
 
     fn parse(lexer: &mut Lexer, index: usize) -> (Option<PostfixExpression>, usize) {
 

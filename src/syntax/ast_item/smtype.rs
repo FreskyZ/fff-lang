@@ -1,9 +1,11 @@
 
 // Type = PrimitiveType | LeftBracket PrimitiveType RightBracket 
 
+use std::fmt;
+
 use common::From2;
 use common::StringPosition;
-use message::Message;
+// use message::Message;
 
 use lexical::Lexer;
 use lexical::IToken;
@@ -12,7 +14,7 @@ use lexical::SeperatorKind;
 
 use syntax::ast_item::IASTItem;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Eq, PartialEq)]
 pub enum SMTypeBase {
     Dummy, // None for syntax parser, means some error happened
     Unit,
@@ -27,8 +29,57 @@ pub enum SMTypeBase {
     Array(Box<SMType>),
 }
 
-#[derive(Debug, Eq, PartialEq)]
-pub struct SMType(pub SMTypeBase, pub StringPosition);
+impl fmt::Debug for SMTypeBase {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            SMTypeBase::Dummy => write!(f, "Dummy"),
+            SMTypeBase::Unit => write!(f, "unit"),
+            SMTypeBase::U8 => write!(f, "u8"),
+            SMTypeBase::I32 => write!(f, "i32"),
+            SMTypeBase::U32 => write!(f, "u32"),
+            SMTypeBase::U64 => write!(f, "u64"),
+            SMTypeBase::F32 => write!(f, "f32"),
+            SMTypeBase::F64 => write!(f, "f64"),
+            SMTypeBase::Char => write!(f, "char"),
+            SMTypeBase::SMString => write!(f, "string"),
+            SMTypeBase::Array(ref inner) => write!(f, "[{:?}]", inner.as_ref()),
+        }
+    }
+}
+
+#[derive(Eq, PartialEq)]
+pub struct SMType {
+    ty: SMTypeBase,
+    pos: StringPosition, // private, new by make, get by pos_all 
+}
+
+impl SMType {
+
+    pub fn make_dummy() -> SMType {
+        SMType::make_base(SMTypeBase::Dummy, StringPosition::new())
+    }
+    pub fn make_base(ty: SMTypeBase, pos: StringPosition) -> SMType {
+        SMType{ ty: ty, pos: pos }
+    }
+    pub fn make_array(ty: SMType, pos: StringPosition) -> SMType {
+        SMType{ ty: SMTypeBase::Array(Box::new(ty)), pos: pos }
+    }
+
+    pub fn inner(&self) -> &SMTypeBase {
+        &self.ty
+    }
+}
+
+impl fmt::Debug for SMType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?} @ {:?}", self.ty, self.pos)
+    }
+}
+impl fmt::Display for SMType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self.ty)
+    }
+}
 
 fn check_primitive_type(keyword: &KeywordKind) -> Option<SMTypeBase> {
     use self::SMTypeBase::*;
@@ -45,50 +96,39 @@ fn check_primitive_type(keyword: &KeywordKind) -> Option<SMTypeBase> {
     }
 }
 
-impl Default for SMType {
-    
-    fn default() -> SMType {
-        SMType(SMTypeBase::Dummy, StringPosition::new())
-    }
-}
-
-impl SMType {
-
-    pub fn make_array(ty: SMType, pos: StringPosition) -> SMType {
-        SMType(SMTypeBase::Array(Box::new(ty)), pos)
-    }
-
-    pub fn pos_all(&self) -> StringPosition { self.1 }
-}
-
 impl IASTItem for SMType {
 
-    
+    fn pos_all(&self) -> StringPosition { self.pos }
+
     fn parse(lexer: &mut Lexer, index: usize) -> (Option<SMType>, usize) {
 
+        let mut current_len = 0;
         if let Some(kind) = lexer.nth(index).get_keyword() { 
             match check_primitive_type(kind) {
-                Some(prim) => return (Some(SMType(prim, lexer.pos(index))), 1),
+                Some(prim) => return (Some(SMType::make_base(prim, lexer.pos(index))), 1),
                 None => return lexer.push_expect("primitive type keyword", index, 0),
             }
         }
 
         if lexer.nth(index).is_seperator(SeperatorKind::LeftBracket) {
-            match SMType::parse(lexer, index + 1) {
+            current_len = 1;
+            match SMType::parse(lexer, index + current_len) {
                 (None, length) => { // TODO: recover by find paired right bracket
-                    return lexer.push_expect("some typedef", index + length, length);
+                    return (None, current_len + length);
                 }  
                 (Some(inner), inner_length) => {
-                    if lexer.nth(index + 1 + inner_length).is_seperator(SeperatorKind::RightBracket) {
+                    current_len += inner_length;
+                    if lexer.nth(index + current_len).is_seperator(SeperatorKind::RightBracket) {
+                        current_len += 1;
                         return (
                             Some(SMType::make_array(
                                 inner, 
-                                StringPosition::from2(lexer.pos(index).start_pos, lexer.pos(index + 1 +inner_length).end_pos)
+                                StringPosition::from2(lexer.pos(index).start_pos, lexer.pos(index + current_len - 1).end_pos)
                             )), 
                             inner_length + 2
                         );
                     } else {
-                        return lexer.push_expect("right bracket", index + 1 + inner_length, inner_length + 1);
+                        return lexer.push_expect("right bracket", index + current_len, current_len);
                     }
                 } 
             }
@@ -128,27 +168,30 @@ mod tests {
         }
 
         test_case!("", 0);
-        test_case!("u8", SMType(SMTypeBase::U8, make_str_pos!(1, 1, 1, 2)), 1);
-        test_case!("u32", SMType(SMTypeBase::U32, make_str_pos!(1, 1, 1, 3)), 1);
-        test_case!("[string]", SMType::make_array(SMType(SMTypeBase::SMString, make_str_pos!(1, 2, 1, 7)), make_str_pos!(1, 1, 1, 8)), 3);
-        test_case!("[f32]", SMType::make_array(SMType(SMTypeBase::F32, make_str_pos!(1, 2, 1, 4)), make_str_pos!(1, 1, 1, 5)), 3);
-        test_case!("[[f64]]", SMType::make_array(SMType::make_array(SMType(SMTypeBase::F64, make_str_pos!(1, 3, 1, 5)), make_str_pos!(1, 2, 1, 6)), make_str_pos!(1, 1, 1, 7)), 5);
+        test_case!("u8", SMType::make_base(SMTypeBase::U8, make_str_pos!(1, 1, 1, 2)), 1);
+        test_case!("u32", SMType::make_base(SMTypeBase::U32, make_str_pos!(1, 1, 1, 3)), 1);
+        test_case!("[string]", SMType::make_array(SMType::make_base(SMTypeBase::SMString, make_str_pos!(1, 2, 1, 7)), make_str_pos!(1, 1, 1, 8)), 3);
+        test_case!("[f32]", SMType::make_array(SMType::make_base(SMTypeBase::F32, make_str_pos!(1, 2, 1, 4)), make_str_pos!(1, 1, 1, 5)), 3);
+        test_case!("[[f64]]", SMType::make_array(SMType::make_array(SMType::make_base(SMTypeBase::F64, make_str_pos!(1, 3, 1, 5)), make_str_pos!(1, 2, 1, 6)), make_str_pos!(1, 1, 1, 7)), 5);
         test_case!(
-            "[[[string]]]", 
+            "[[[string]]  ]", 
             SMType::make_array(
                 SMType::make_array(
                     SMType::make_array(
-                        SMType(SMTypeBase::SMString, make_str_pos!(1, 4, 1, 9)),
+                        SMType::make_base(
+                            SMTypeBase::SMString, 
+                            make_str_pos!(1, 4, 1, 9)
+                        ),
                         make_str_pos!(1, 3, 1, 10)
                     ),
                     make_str_pos!(1, 2, 1, 11)
                 ),
-                make_str_pos!(1, 1, 1, 12)
+                make_str_pos!(1, 1, 1, 14)
             ),
             7
         );
-        test_case!("char", SMType(SMTypeBase::Char, make_str_pos!(1, 1, 1, 4)), 1);
-        test_case!("helloworld", 0);
+        test_case!("char", SMType::make_base(SMTypeBase::Char, make_str_pos!(1, 1, 1, 4)), 1);
+        test_case!("helloworld", 0); 
         test_case!("[asd]", 1);
         test_case!("\"helloworld\"", 0);
     }

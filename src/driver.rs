@@ -2,7 +2,6 @@
 // Compiler core driver 
 
 use file_map::InputReader;
-use message::MessageEmitter;
 use lexical::Lexer;
 use syntax::get_ast;
 

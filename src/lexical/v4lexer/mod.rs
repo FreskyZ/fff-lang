@@ -230,6 +230,10 @@ impl V4Lexer {
         lexer.messages = messages;
         lexer
     }
+    #[cfg(test)]
+    pub fn new_test2(content: &str) -> V4Lexer {
+        V4Lexer::new(content.to_owned())
+    }
 
     pub fn len(&self) -> usize {
         self.buf.len()
@@ -268,10 +272,16 @@ impl V4Lexer {
             desc.truncate(target_len); 
         }
 
+        let actual_token = if index >= self.buf.len() { 
+            &self.eof_token 
+        } else { 
+            &self.buf[index]
+        };
+
         self.messages.push(Message::ExpectSymbol{ 
             expect: desc,
-            actual: format!("{:?}", self.buf[index]), 
-            pos: if index >= self.buf.len() { self.eof_token.get_position().start_pos } else { self.buf[index].get_position().start_pos },
+            actual: format!("{:?}", actual_token), 
+            pos: actual_token.get_position().start_pos,
         });
         return (None, sym_size);
     }
