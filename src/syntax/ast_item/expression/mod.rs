@@ -204,8 +204,8 @@ impl Expression {
     }
 
     #[cfg(test)]
-    pub fn new_test(base: ExpressionBase, base_pos: StringPosition, ops: Vec<ExpressionOperator>, pos: StringPosition) -> Expression {
-        Expression{ base: Box::new(base), base_pos: base_pos, ops: ops, all_pos: pos }
+    pub fn new_test(base: ExpressionBase, base_pos: StringPosition, ops: Vec<ExpressionOperator>, all_pos: StringPosition) -> Expression {
+        Expression{ base: Box::new(base), base_pos: base_pos, ops: ops, all_pos: all_pos }
     }
 
     pub fn pos_base(&self) -> StringPosition {
@@ -256,12 +256,8 @@ fn d3_expr_to_expr(d3: D3Expression) -> Expression {
         });
     }
 
-    let mut is_first_prefix = true;
     for prefix in unary_ops.into_iter().rev() { // they are applied reversely
-        if is_first_prefix {
-            pos_start = prefix.pos.start_pos;
-            is_first_prefix = false;
-        }
+        pos_start = prefix.pos.start_pos;
         ops.push(ExpressionOperator::Unary(prefix.op, prefix.pos));
     }
 
@@ -312,7 +308,7 @@ mod tests {
     use syntax::ast_item::IASTItem;
 
     #[test]
-    // #[ignore] // strange interactive test
+    #[ignore] // strange interactive test
     fn ast_expr_flatten() {
         use std::io::stdin;
 
