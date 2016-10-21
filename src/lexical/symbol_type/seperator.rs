@@ -26,6 +26,9 @@ macro_rules! define_seperator {
         [
             $($ch1: expr, $ch2: expr => $name2: ident, $category2: expr,)*
         ]
+        [
+            $($ch3: expr => $name3: ident, $category31: expr, $category32: expr, )*   // for multiple category...
+        ]
     ) => (
         #[derive(Clone, Eq, PartialEq)]
         pub enum $enum_name {
@@ -34,6 +37,9 @@ macro_rules! define_seperator {
             )*
             $(
                 $name2,
+            )*
+            $(
+                $name3,
             )*
         }
 
@@ -47,6 +53,9 @@ macro_rules! define_seperator {
                     $(
                         $enum_name::$name2 => write!(f, "`{}{}`({})", $ch1, $ch2, stringify!($name2)),
                     )*
+                    $(
+                        $enum_name::$name3 => write!(f, "`{}`({})", $ch3, stringify!($name3)),
+                    )*
                 }
             }
         }
@@ -57,6 +66,9 @@ macro_rules! define_seperator {
                 match ch {
                     $(
                         $ch => Some($enum_name::$name1),
+                    )*
+                    $(
+                        $ch3 => Some($enum_name::$name3),
                     )*
                     _ => None,
                 }
@@ -83,16 +95,8 @@ macro_rules! define_seperator {
                     $(
                         $enum_name::$name2 => 2,
                     )*
-                }
-            }
-
-            pub fn category(&self) -> SeperatorCategory {
-                match *self {
                     $(
-                        $enum_name::$name1 => $category1,
-                    )*
-                    $(
-                        $enum_name::$name2 => $category2,
+                        $enum_name::$name3 => 1,
                     )*
                 }
             }
@@ -105,6 +109,9 @@ macro_rules! define_seperator {
                     $(
                         $enum_name::$name2 => $category2 == expect,
                     )*
+                    $(
+                        $enum_name::$name3 => $category31 == expect || $category32 == expect, 
+                    )*
                 }
             }
         }
@@ -116,7 +123,6 @@ define_seperator!{ SeperatorKind,
     //  ch  => var,                 category,
         '=' => Assign,              SeperatorCategory::Assign,
         '+' => Add,                 SeperatorCategory::Additive,
-        '-' => Sub,                 SeperatorCategory::Additive,
         '*' => Mul,                 SeperatorCategory::Multiplicative,
         '/' => Div,                 SeperatorCategory::Multiplicative,
         '%' => Rem,                 SeperatorCategory::Multiplicative,
@@ -163,5 +169,9 @@ define_seperator!{ SeperatorKind,
         '.', '.' => Range,                  SeperatorCategory::Seperator,
         '+', '+' => Increase,               SeperatorCategory::Unary,
         '-', '-' => Decrease,               SeperatorCategory::Unary,
+    ]
+    [
+    //  ch,    var,                 category1,                      category2
+        '-' => Sub,                 SeperatorCategory::Additive,    SeperatorCategory::Unary, 
     ]
 }

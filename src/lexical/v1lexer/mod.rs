@@ -361,19 +361,19 @@ mod tests {
                 is_string!("H\t\n\0'\"llo", 1, 1, 1, 16, false)
             ]
         }
-        test_case!{ r#""h\a\d\e\n\f""#,
+        test_case!{ r#""h\c\d\e\n\g""#,
             [
                 is_string!(1, 1, 1, 13, false)
             ]
             [
                 Message::UnrecognizedEscapeCharInStringLiteral{ 
-                    literal_start: Position::from2(1, 1), unrecogonize_pos: Position::from2(1, 3), unrecogonize_escape: 'a' }
+                    literal_start: Position::from2(1, 1), unrecogonize_pos: Position::from2(1, 3), unrecogonize_escape: 'c' }
                 Message::UnrecognizedEscapeCharInStringLiteral{ 
                     literal_start: Position::from2(1, 1), unrecogonize_pos: Position::from2(1, 5), unrecogonize_escape: 'd' }
                 Message::UnrecognizedEscapeCharInStringLiteral{ 
                     literal_start: Position::from2(1, 1), unrecogonize_pos: Position::from2(1, 7), unrecogonize_escape: 'e' }
                 Message::UnrecognizedEscapeCharInStringLiteral{ 
-                    literal_start: Position::from2(1, 1), unrecogonize_pos: Position::from2(1, 11), unrecogonize_escape: 'f' }
+                    literal_start: Position::from2(1, 1), unrecogonize_pos: Position::from2(1, 11), unrecogonize_escape: 'g' }
             ]
         }
         test_case!{ r#""H\uABCDel""#,
@@ -465,13 +465,13 @@ mod tests {
             [is_char!(1, 1, 1, 5)]
             [Message::CharLiteralTooLong{ start_pos: Position::from2(1, 1) }]
         }
-        test_case!{ r"'\a'",
+        test_case!{ r"'\c'",
             [is_char!(1, 1, 1, 4)]
             [
                 Message::UnrecognizedEscapeCharInCharLiteral{
                     literal_start: Position::from2(1, 1),
                     unrecogonize_pos: Position::from2(1, 2),
-                    unrecogonize_escape: 'a',
+                    unrecogonize_escape: 'c',
                 }
             ]
         }

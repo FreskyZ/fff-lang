@@ -94,7 +94,7 @@ impl fmt::Debug for SMType {
 }
 impl fmt::Display for SMType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self.ty)
+        write!(f, "{}", self.ty)
     }
 }
 

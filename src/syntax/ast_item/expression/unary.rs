@@ -44,6 +44,7 @@ impl fmt::Debug for UnaryExpression {
                         SeperatorKind::LogicalNot => buf.push_str(&format!(".operator!() @ {}", unary.pos)),
                         SeperatorKind::Increase => buf.push_str(&format!(".operator++() @ {}", unary.pos)),
                         SeperatorKind::Decrease => buf.push_str(&format!(".operator--() @ {}", unary.pos)),
+                        SeperatorKind::Sub => buf.push_str(&format!(".operator-() @ {}", unary.pos)),
                         _ => unreachable!(),
                     }
                     buf
@@ -64,6 +65,7 @@ impl fmt::Display for UnaryExpression {
                         SeperatorKind::LogicalNot => buf.push_str(".operator!()"),
                         SeperatorKind::Increase => buf.push_str(".operator++()"),
                         SeperatorKind::Decrease => buf.push_str(".operator--()"),
+                        SeperatorKind::Sub => buf.push_str(".operator-()"),
                         _ => unreachable!(),
                     }
                     buf
@@ -88,7 +90,7 @@ impl IASTItem for UnaryExpression {
         let mut unaries = Vec::new();
         loop {
             match lexer.nth(index + current_len).get_seperator() {
-                Some(sep) if sep.category() == SeperatorCategory::Unary => {
+                Some(sep) if sep.is_category(SeperatorCategory::Unary) => {
                     unaries.push(UnaryOperator::new(sep.clone(), lexer.pos(index + current_len)));
                     current_len += 1;
                 }

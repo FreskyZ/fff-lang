@@ -345,19 +345,19 @@ mod tests {
             counter_expect!(current_counter, all_counter, [11 15 16 17]);
         }
 
-        {   // '\a', other simple escape
+        {   // '\c', other simple escape
             let mut parser = CharLiteralParser::new(spec_pos1);
             let messages = &mut MessageEmitter::new();
             let current_counter = &mut HashSet::<i32>::new();
 
-            assert_eq!(parser.input(Some('\\'), spec_pos3, Some('a'), messages, current_counter), WantMoreWithSkip1);
+            assert_eq!(parser.input(Some('\\'), spec_pos3, Some('c'), messages, current_counter), WantMoreWithSkip1);
             assert_eq!(parser.input(Some('\''), spec_pos4, Some('$'), messages, current_counter), 
                 Finished(CharLiteral{ value: None, pos: StringPosition::from2(spec_pos1, spec_pos4) }));
             
             messages_expect!(messages, [Message::UnrecognizedEscapeCharInCharLiteral{ 
                                                     literal_start: spec_pos1, 
                                                     unrecogonize_pos: spec_pos3, 
-                                                    unrecogonize_escape: 'a' }]);
+                                                    unrecogonize_escape: 'c' }]);
             counter_expect!(current_counter, all_counter, [8 15]);
         }
 
@@ -519,7 +519,6 @@ mod tests {
             messages_expect!(messages, [Message::InvalidEscapeInCharLiteral{ start_pos: spec_pos1 }]);
             counter_expect!(current_counter, all_counter, []); 
         }
-
 
         let mut sorted_all_counter = all_counter.into_iter().collect::<Vec<i32>>();
         sorted_all_counter.sort();

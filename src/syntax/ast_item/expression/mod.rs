@@ -119,6 +119,7 @@ impl fmt::Debug for ExpressionOperator {
             ExpressionOperator::Unary(SeperatorKind::LogicalNot, ref pos) => format!(".operator!() @ {}", pos),
             ExpressionOperator::Unary(SeperatorKind::Increase, ref pos) => format!(".operator++() @ {}", pos),
             ExpressionOperator::Unary(SeperatorKind::Decrease, ref pos) => format!(".operator--() @ {}", pos),
+            ExpressionOperator::Unary(SeperatorKind::Sub, ref pos) => format!(".operator-() @ {}", pos),
             ExpressionOperator::Binary(SeperatorKind::Mul, ref pos, ref operand) => format!(".operator*({:?}) @ {:?}", operand, pos),
             ExpressionOperator::Binary(SeperatorKind::Div, ref pos, ref operand) => format!(".operator/({:?}) @ {:?}", operand, pos),
             ExpressionOperator::Binary(SeperatorKind::Rem, ref pos, ref operand) => format!(".operator%({:?}) @ {:?}", operand, pos),
@@ -153,6 +154,7 @@ impl fmt::Display for ExpressionOperator {
             ExpressionOperator::Unary(SeperatorKind::LogicalNot, ref _pos) => format!(".operator!()"),
             ExpressionOperator::Unary(SeperatorKind::Increase, ref _pos) => format!(".operator++()"),
             ExpressionOperator::Unary(SeperatorKind::Decrease, ref _pos) => format!(".operator--()"),
+            ExpressionOperator::Unary(SeperatorKind::Sub, ref _pos) => format!(".operator-()"),
             ExpressionOperator::Binary(SeperatorKind::Mul, ref _pos, ref operand) => format!(".operator*({})", operand),
             ExpressionOperator::Binary(SeperatorKind::Div, ref _pos, ref operand) => format!(".operator/({})", operand),
             ExpressionOperator::Binary(SeperatorKind::Rem, ref _pos, ref operand) => format!(".operator%({})", operand),
@@ -255,7 +257,7 @@ fn d3_expr_to_expr(d3: D3Expression) -> Expression {
     }
 
     let mut is_first_prefix = true;
-    for prefix in unary_ops {
+    for prefix in unary_ops.into_iter().rev() { // they are applied reversely
         if is_first_prefix {
             pos_start = prefix.pos.start_pos;
             is_first_prefix = false;
@@ -286,6 +288,20 @@ impl IASTItem for Expression {
     } 
 }
 
+// for statement
+impl Expression {
+
+    /// Last one is function call or increase or Decrease
+    pub fn is_statement_expression(&self) -> bool {
+        match self.ops.iter().last() {
+            Some(&ExpressionOperator::FunctionCall(_, _)) => true,
+            Some(&ExpressionOperator::Unary(SeperatorKind::Increase, _)) => true,
+            Some(&ExpressionOperator::Unary(SeperatorKind::Decrease, _)) => true,
+            _ => false,  
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::Expression;
@@ -296,7 +312,7 @@ mod tests {
     use syntax::ast_item::IASTItem;
 
     #[test]
-    #[ignore] // strange interactive test
+    // #[ignore] // strange interactive test
     fn ast_expr_flatten() {
         use std::io::stdin;
 
@@ -307,12 +323,12 @@ mod tests {
                 Err(_) => break,
             }
 
-            if buf != "break" {
+            if buf != "break\n" {
                 let lexer = &mut Lexer::new(buf);
                 let (result, length) = Expression::parse(lexer, 0);
                 perrorln!("Debug: ({:?}, {})", result, length);
                 match result {
-                    Some(result) => perrorln!("Display: {}", result),
+                    Some(result) => perrorln!("Display: {}\nIs statement-expression: {}", result, result.is_statement_expression()),
                     None => perrorln!("messages: {:?}", lexer.messages()),
                 }
             } else {

@@ -252,27 +252,27 @@ mod tests {
             assert_eq!(messages, expect_messages);
         }
 
-        {   // "h\a\d\e\n\f", error normal escape                               C11, C3, C2
+        {   // "h\c\d\e\n\g", error normal escape                               C11, C3, C2
             let mut parser = StringLiteralParser::new(spec_pos1);
             let messages = &mut MessageEmitter::new();
             let expect_messages = &mut MessageEmitter::new();
             assert_eq!(parser.input(Some('H'), dummy_pos, Some('\\'), messages), WantMore);
-            assert_eq!(parser.input(Some('\\'), spec_pos2, Some('a'), messages), WantMoreWithSkip1);
+            assert_eq!(parser.input(Some('\\'), spec_pos2, Some('c'), messages), WantMoreWithSkip1);
             assert_eq!(parser.input(Some('\\'), spec_pos3, Some('d'), messages), WantMoreWithSkip1);
             assert_eq!(parser.input(Some('\\'), spec_pos2, Some('e'), messages), WantMoreWithSkip1);
             assert_eq!(parser.input(Some('\\'), dummy_pos, Some('n'), messages), WantMoreWithSkip1);
-            assert_eq!(parser.input(Some('\\'), spec_pos3, Some('f'), messages), WantMoreWithSkip1);
+            assert_eq!(parser.input(Some('\\'), spec_pos3, Some('g'), messages), WantMoreWithSkip1);
             assert_eq!(parser.input(Some('"'), spec_pos4, Some('$'), messages),
                 Finished(StringLiteral::new(None, StringPosition::from((spec_pos1, spec_pos4)), false)));
             
             expect_messages.push(Message::UnrecognizedEscapeCharInStringLiteral{ 
-                literal_start: spec_pos1, unrecogonize_pos: spec_pos2, unrecogonize_escape: 'a' });
+                literal_start: spec_pos1, unrecogonize_pos: spec_pos2, unrecogonize_escape: 'c' });
             expect_messages.push(Message::UnrecognizedEscapeCharInStringLiteral{ 
                 literal_start: spec_pos1, unrecogonize_pos: spec_pos3, unrecogonize_escape: 'd' });
             expect_messages.push(Message::UnrecognizedEscapeCharInStringLiteral{ 
                 literal_start: spec_pos1, unrecogonize_pos: spec_pos2, unrecogonize_escape: 'e' });
             expect_messages.push(Message::UnrecognizedEscapeCharInStringLiteral{ 
-                literal_start: spec_pos1, unrecogonize_pos: spec_pos3, unrecogonize_escape: 'f' });
+                literal_start: spec_pos1, unrecogonize_pos: spec_pos3, unrecogonize_escape: 'g' });
             assert_eq!(messages, expect_messages);
         }
 
