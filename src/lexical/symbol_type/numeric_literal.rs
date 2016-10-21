@@ -28,6 +28,7 @@ impl fmt::Debug for NumericLiteralValue {
         }
     }
 }
+impl_display_by_debug!{ NumericLiteralValue }
 
 macro_rules! from_for_num_lit_value {
     ($($ty: ty => $pa: path)*) => (

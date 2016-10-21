@@ -18,7 +18,7 @@ use lexical::SeperatorKind;
 use syntax::ast_item::IASTItem;
 use syntax::Expression;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Eq, PartialEq)]
 pub enum PrimaryExpressionBase {
     Identifier(String),
     StringLiteral(String),
@@ -30,8 +30,52 @@ pub enum PrimaryExpressionBase {
     ArrayDupDef(Box<Expression>, Box<Expression>),
 }
 
-#[derive(Debug, Eq, PartialEq)]
+impl fmt::Debug for PrimaryExpressionBase {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            PrimaryExpressionBase::Identifier(ref name) => write!(f, "{}", name),
+            PrimaryExpressionBase::StringLiteral(ref val) => write!(f, "{:?}", val),
+            PrimaryExpressionBase::CharLiteral(ref val) => write!(f, "{:?}", val),
+            PrimaryExpressionBase::NumericLiteral(ref val) => write!(f, "{:?}", val),
+            PrimaryExpressionBase::BooleanLiteral(ref val) => write!(f, "{}", val),
+            PrimaryExpressionBase::ParenExpression(ref expr) => write!(f, "({:?})", expr),
+            PrimaryExpressionBase::ArrayDupDef(ref expr1, ref expr2) => 
+                write!(f, "[{:?}; {:?}]", expr1, expr2),
+            PrimaryExpressionBase::ArrayDef(ref exprs) => 
+                write!(f, "[{}]", exprs.iter().fold(String::new(), |mut buf, expr| { buf.push_str(&format!("{:?}, ", expr)); buf })),
+        }
+    }
+}
+impl fmt::Display for PrimaryExpressionBase {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            PrimaryExpressionBase::Identifier(ref name) => write!(f, "{}", name),
+            PrimaryExpressionBase::StringLiteral(ref val) => write!(f, "{:?}", val),
+            PrimaryExpressionBase::CharLiteral(ref val) => write!(f, "{:?}", val),
+            PrimaryExpressionBase::NumericLiteral(ref val) => write!(f, "{}", val),
+            PrimaryExpressionBase::BooleanLiteral(ref val) => write!(f, "{}", val),
+            PrimaryExpressionBase::ParenExpression(ref expr) => write!(f, "({})", expr),
+            PrimaryExpressionBase::ArrayDupDef(ref expr1, ref expr2) => 
+                write!(f, "[{}; {}]", expr1, expr2),
+            PrimaryExpressionBase::ArrayDef(ref exprs) => 
+                write!(f, "[{}]", exprs.iter().fold(String::new(), |mut buf, expr| { buf.push_str(&format!("{}, ", expr)); buf })),
+        }
+    }
+}
+
+#[derive(Eq, PartialEq)]
 pub struct PrimaryExpression(pub PrimaryExpressionBase, pub StringPosition);
+
+impl fmt::Debug for PrimaryExpression {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?} @ {:?}", self.0, self.1)
+    }
+}
+impl fmt::Display for PrimaryExpression {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
 
 impl PrimaryExpression {
 
@@ -69,6 +113,7 @@ impl IASTItem for PrimaryExpression {
     }
 
     fn parse(lexer: &mut Lexer, index: usize) -> (Option<PrimaryExpression>, usize) {
+        let log_enable = false;
 
         match lexer.nth(index).get_str_lit_val() {
             Some(&Some(ref val)) => return (Some(PrimaryExpression::make_str_lit(val.clone(), lexer.pos(index))), 1),
@@ -94,25 +139,26 @@ impl IASTItem for PrimaryExpression {
             None => (),
         }
 
-        perrorln!("parsing prim expr at index {} with token {:?} not literal or identifier", index, lexer.nth(index));
+        test_condition_perrorln!{ log_enable, "parsing primary not literal or identifier" }
         if lexer.nth(index).is_seperator(SeperatorKind::LeftParenthenes) {
             match Expression::parse(lexer, index + 1) {
-                (None, length) => return test_perrorln_and_val!("Paren expr failed, expect expr"; 
-                    lexer.push_expect("Some expression", index + 1, 1 + length)),
+                (None, length) => {
+                    test_condition_perrorln!{ log_enable, "parsing paren expression get expression failed" }
+                    return (None, 1 + length);
+                }
                 (Some(expr), expr_len) => {
                     if lexer.nth(index + 1 + expr_len).is_seperator(SeperatorKind::RightParenthenes) {
-                        return test_perrorln_and_val!("Paren expr successed"; 
-                            (
-                                Some(PrimaryExpression::make_paren(
-                                    expr, 
-                                    StringPosition::from2(lexer.pos(index).start_pos, lexer.pos(index + 1 + expr_len).end_pos)
-                                )),
-                                1 + expr_len 
-                            )
+                        test_condition_perrorln!{ log_enable, "parsing paren successed, paren inner is {}", expr, } 
+                        return (
+                            Some(PrimaryExpression::make_paren(
+                                expr, 
+                                StringPosition::from2(lexer.pos(index).start_pos, lexer.pos(index + 1 + expr_len).end_pos)
+                            )),
+                            1 + expr_len + 1
                         );
                     } else {
-                        return test_perrorln_and_val!("Paren expr failed, expect right paren"; 
-                            lexer.push_expect("Right paren", index + 1 + expr_len, 1 + expr_len));
+                        test_condition_perrorln!{ log_enable, "parsing paren failed, next is not right paren" }
+                        return lexer.push_expect("Right paren", index + 1 + expr_len, 1 + expr_len);
                     }
                 }
             }
@@ -120,44 +166,71 @@ impl IASTItem for PrimaryExpression {
 
         if lexer.nth(index).is_seperator(SeperatorKind::LeftBracket) {
             match Expression::parse(lexer, index + 1) {
-                (None, length) => return (None, length),  // recover by find paired right bracket
+                (None, length) => {
+                    test_condition_perrorln!{ log_enable, "parsing array (dup) def failed, parse expr1 return none" }
+                    return (None, length);  // recover by find paired right bracket
+                }
                 (Some(expr1), expr1_len) => {
+                    test_condition_perrorln!{ log_enable, "parsing array (dup) def get expr1: {} with length {} and next is {:?}", expr1, expr1_len, lexer.nth(index + 1 + expr1_len), }
                     if lexer.nth(index + 1 + expr1_len).is_seperator(SeperatorKind::SemiColon) {
                         match Expression::parse(lexer, index + 2 + expr1_len) {
-                            (None, length) => return (None, expr1_len + 2 + length),
+                            (None, length) => {
+                                test_condition_perrorln!{ log_enable, "parsing array dup def failed, parse expr2 failed" }
+                                return (None, expr1_len + 2 + length);
+                            } 
                             (Some(expr2), expr2_len) => {
                                 if lexer.nth(index + 2 + expr1_len + expr2_len).is_seperator(SeperatorKind::RightBracket) {
-                                    return test_perrorln_and_val!("Success in array dup def"; 
-                                        (
-                                            Some(PrimaryExpression::make_array_dup_def(expr1, expr2, 
-                                                StringPosition::from2(lexer.pos(index).start_pos, lexer.pos(index + expr1_len + expr2_len + 2).end_pos))),
-                                            expr1_len + expr2_len + 3
-                                        )
+                                    test_condition_perrorln!{ log_enable, "parsing array dup def succeed, expr1: {}, expr2: {}", expr1, expr2, } 
+                                    return (
+                                        Some(PrimaryExpression::make_array_dup_def(expr1, expr2, 
+                                            StringPosition::from2(lexer.pos(index).start_pos, lexer.pos(index + expr1_len + expr2_len + 2).end_pos))),
+                                        expr1_len + expr2_len + 3
                                     );
                                 } else {
-                                    return test_perrorln_and_val!("expect expr after semicolon in array dup def";
-                                        lexer.push_expect("Right bracket after array dup def", index + 3 + expr1_len + expr2_len, expr1_len + expr2_len + 1));
+                                    test_condition_perrorln!{ log_enable, "parsing array dup def failed, not followed right bracket" }
+                                    return lexer.push_expect("Right bracket after array dup def", index + 3 + expr1_len + expr2_len, expr1_len + expr2_len + 1);
                                 }
                             }
                         }
                     }
 
-                    let mut current_len = expr1_len;
+                    test_condition_perrorln!{ log_enable, "parsing array def, before loop" }
+                    let mut current_len = 1 + expr1_len; // 1 for left bracket
                     let mut exprs = vec![expr1];
                     loop {
-                        if lexer.nth(index + 1 + current_len).is_seperator(SeperatorKind::RightBracket) {
-                            return test_perrorln_and_val!("Success in array def"; 
-                                (Some(PrimaryExpression::make_array_def(exprs, lexer.pos(index + 1 + current_len))), current_len + 1));
+                        if lexer.nth(index + current_len).is_seperator(SeperatorKind::RightBracket) {
+                            test_condition_perrorln!{ log_enable, "parsing array def succeed, exprs: {:?}", exprs, }
+                            return (
+                                Some(PrimaryExpression::make_array_def(
+                                    exprs, 
+                                    StringPosition::from2(lexer.pos(index).start_pos, lexer.pos(index + current_len).end_pos)
+                                )), 
+                                current_len + 1
+                            );
                         }
-                        if lexer.nth(index + 1 + current_len).is_seperator(SeperatorKind::Comma) {
+                        if lexer.nth(index + current_len).is_seperator(SeperatorKind::Comma)  // Accept [1, 2, 3, abc, ] 
+                            && lexer.nth(index + current_len + 1).is_seperator(SeperatorKind::RightBracket) {
+                            test_condition_perrorln!{ log_enable, "parsing array def succeed, exprs: {:?}", exprs, }
+                            return (
+                                Some(PrimaryExpression::make_array_def(
+                                    exprs, 
+                                    StringPosition::from2(lexer.pos(index).start_pos, lexer.pos(index + 1 + current_len).end_pos)
+                                )), 
+                                current_len + 2
+                            );
+                        }
+                        if lexer.nth(index + current_len).is_seperator(SeperatorKind::Comma) {
                             current_len += 1;
-                            match Expression::parse(lexer, index + 1 + current_len) {
+                            match Expression::parse(lexer, index + current_len) {
                                 (Some(exprn), exprn_len) => {
+                                    test_condition_perrorln!{ log_enable, "parsing array def, get expression n {}", exprn, }
                                     current_len += exprn_len;
                                     exprs.push(exprn);
                                 }
-                                (None, length) => test_perrorln_and_val!("Fail in array def, expect some expr after comma";
-                                    return lexer.push_expect("Some expression", index + 1 + current_len + length, current_len + 1 + length)),
+                                (None, length) => {
+                                    test_condition_perrorln!{ log_enable, "parsing array def failed, parse expression return none" }
+                                    return (None, current_len + length);
+                                }
                             }
                         }
                     }
@@ -165,7 +238,7 @@ impl IASTItem for PrimaryExpression {
             }
         }
 
-        perrorln!("Failed in prim expr parse, not start with left paren or left bracket");
+        test_condition_perrorln!{ log_enable, "Failed in prim expr parse, not start with left paren or left bracket" }
         return lexer.push_expect("identifier or literal or array def", index, 0);
     }
 } 

@@ -37,7 +37,7 @@ impl fmt::Debug for Postfix {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", match *self {
             Postfix::Subscription(ref exprs) => {
-                let mut buf = exprs.iter().fold(".operator()(".to_owned(), 
+                let mut buf = exprs.iter().fold(".operator[](".to_owned(), 
                     |mut buf, expr| { buf.push_str(&format!("{:?}, ", expr)); buf });
                 buf.push_str(")");
                 buf 
@@ -48,8 +48,8 @@ impl fmt::Debug for Postfix {
                 buf.push_str(")");
                 buf 
             }
-            Postfix::MemberAccess(ref name, ref pos) => format!("operator->({:?} @ {:?})", name, pos),
-            Postfix::TypeCast(ref ty) => format!("operator as({:?})", ty),
+            Postfix::MemberAccess(ref name, ref pos) => format!(".operator->({:?} @ {:?})", name, pos),
+            Postfix::TypeCast(ref ty) => format!(".operator as({:?})", ty),
         })
     }
 }
@@ -57,19 +57,19 @@ impl fmt::Display for Postfix {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", match *self {
             Postfix::Subscription(ref exprs) => { 
-                let mut buf = exprs.iter().fold(".operator()(".to_owned(), 
-                    |mut buf, expr| { buf.push_str(&format!("{:?}, ", expr)); buf });
+                let mut buf = exprs.iter().fold(".operator[](".to_owned(), 
+                    |mut buf, expr| { buf.push_str(&format!("{}, ", expr)); buf });
                 buf.push_str(")");
                 buf
             },
             Postfix::FunctionCall(ref exprs) => {
-                let mut buf = exprs.iter().fold(".operator[](".to_owned(), 
-                    |mut buf, expr| { buf.push_str(&format!("{:?}, ", expr)); buf });
+                let mut buf = exprs.iter().fold(".operator()(".to_owned(), 
+                    |mut buf, expr| { buf.push_str(&format!("{}, ", expr)); buf });
                 buf.push_str(")");
                 buf
             }
-            Postfix::MemberAccess(ref name, ref pos) => format!("operator->({:?})", name),
-            Postfix::TypeCast(ref ty) => format!("operator as({})", ty),
+            Postfix::MemberAccess(ref name, ref pos) => format!(".operator->({})", name),
+            Postfix::TypeCast(ref ty) => format!(".operator as({})", ty),
         })
     }
 }
@@ -82,7 +82,7 @@ pub struct PostfixExpression {
 
 impl fmt::Debug for PostfixExpression {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}{:?}", 
+        write!(f, "{:?}{}", 
             self.prim,
             self.postfixs.iter().fold(String::new(), |mut buf, postfix| { buf.push_str(&format!("{:?}", postfix)); buf })
         )
@@ -90,7 +90,7 @@ impl fmt::Debug for PostfixExpression {
 }
 impl fmt::Display for PostfixExpression {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}{}", 
+        write!(f, "{}{}", 
             self.prim,
             self.postfixs.iter().fold(String::new(), |mut buf, postfix| { buf.push_str(&format!("{}", postfix)); buf })
         )
@@ -112,12 +112,13 @@ impl IASTItem for PostfixExpression {
     }
 
     fn parse(lexer: &mut Lexer, index: usize) -> (Option<PostfixExpression>, usize) {
+        let log_enable = false;
 
         let (primary, primary_len) = match PrimaryExpression::parse(lexer, index) {
             (Some(prim), prim_len) => (prim, prim_len),
             (None, prim_len) => return (None, prim_len), // no recover
         };
-        test_perrorln!("parsing postfix, primary is {:?}", primary, );
+        test_condition_perrorln!{ log_enable, "parsing postfix, primary is {}", primary, }
 
         let mut postfixs = Vec::new();
         let mut current_len = primary_len;
@@ -127,23 +128,40 @@ impl IASTItem for PostfixExpression {
             if lexer.nth(index + current_len).is_seperator(SeperatorKind::Dot) {
                 match lexer.nth(index + current_len + 1).get_identifier() {
                     Some(ident) => {
+                        test_condition_perrorln!{ log_enable, "get one postfix, member access {:?}", ident, }
+                        postfixs.push(Postfix::MemberAccess(
+                            ident.clone(), 
+                            StringPosition::from2(
+                                lexer.pos(index + current_len).start_pos,
+                                lexer.pos(index + current_len + 1).end_pos
+                            )
+                        ));
                         current_len += 2;
-                        postfixs.push(Postfix::MemberAccess(ident.clone(), lexer.pos(index + current_len + 1)));
                         continue 'postfix;
                     }
-                    None => return lexer.push_expect("member identifier", index + current_len + 1, current_len + 1),
+                    None => {
+                        test_condition_perrorln!{ log_enable, "get postfix failed, member access not followed ident" }
+                        return lexer.push_expect("member identifier", index + current_len + 1, current_len + 1);
+                    }
                 }
             } else if lexer.nth(index + current_len).is_keyword(KeywordKind::As) {
                 match SMType::parse(lexer, index + current_len + 1) {
                     (Some(ty), ty_len) => {
+                        test_condition_perrorln!{ log_enable, "get one postfix, type cast as {:?}", ty, }
                         current_len += ty_len + 1;
                         postfixs.push(Postfix::TypeCast(ty));
                         continue 'postfix;
                     }
-                    (None, length) => return lexer.push_expect("typedef", index + current_len + 1, current_len + 1 + length),
+                    (None, length) => {
+                        test_condition_perrorln!{ log_enable, "get postfix failed, type cast not followed typedef" }
+                        return (None, current_len + 1 + length);  
+                    } 
                 }
             } else if lexer.nth(index + current_len).is_seperator(SeperatorKind::LeftParenthenes) {
                 if lexer.nth(index + current_len + 1).is_seperator(SeperatorKind::RightParenthenes) {
+                    test_condition_perrorln!{ log_enable, "get one postfix, none parameter function call" }
+                    current_len += 2;
+                    postfixs.push(Postfix::FunctionCall(Vec::new()));
                     continue 'postfix; // no param function call
                 }
                 expect_end_sep = SeperatorKind::RightParenthenes;
@@ -154,21 +172,34 @@ impl IASTItem for PostfixExpression {
             }
 
             // Get the expression list
+            test_condition_perrorln!{ log_enable, "parsing postfix, start processing expression list of {}", 
+                if expect_end_sep == SeperatorKind::RightParenthenes { "function call".to_owned() } else { "subscription".to_owned() }, }
             current_len += 1; 
             match Expression::parse(lexer,  index + current_len) {
-                (None, length) => return lexer.push_expect("some expression", index + current_len, current_len + length),
+                (None, length) => { 
+                    test_condition_perrorln!{ log_enable, "parsing postfix's expression list, expression parse failed" }
+                    return (None, current_len + length);
+                }
                 (Some(expr1), expr1_len) => {
                     let mut exprs_len = expr1_len;
                     let mut exprs = vec![expr1];
                     'expr: loop { 
                         match expect_end_sep {
-                            SeperatorKind::RightParenthenes if lexer.nth(index + current_len + exprs_len).is_seperator(SeperatorKind::RightParenthenes) => {
-                                current_len += exprs_len + 1;
+                            SeperatorKind::RightParenthenes 
+                                if lexer.nth(index + current_len + exprs_len).is_seperator(SeperatorKind::RightParenthenes) 
+                                    || (lexer.nth(index + current_len + exprs_len).is_seperator(SeperatorKind::Comma)
+                                        && lexer.nth(index + current_len + exprs_len + 1).is_seperator(SeperatorKind::RightParenthenes))  => {
+                                test_condition_perrorln!{ log_enable, "parsing postfix function call's expression list finished" }
+                                current_len += exprs_len + if lexer.nth(index + current_len + exprs_len).is_seperator(SeperatorKind::Comma) { 2 } else { 1 };
                                 postfixs.push(Postfix::FunctionCall(exprs));
                                 continue 'postfix;
                             }
-                            SeperatorKind::RightBracket if lexer.nth(index + current_len + exprs_len).is_seperator(SeperatorKind::RightBracket)  => {
-                                current_len += exprs_len + 1;
+                            SeperatorKind::RightBracket 
+                                if lexer.nth(index + current_len + exprs_len).is_seperator(SeperatorKind::RightBracket)
+                                    || (lexer.nth(index + current_len + exprs_len).is_seperator(SeperatorKind::Comma)
+                                        && lexer.nth(index + current_len + exprs_len + 1).is_seperator(SeperatorKind::RightBracket)) => {
+                                test_condition_perrorln!{ log_enable, "parsing postfix subscription's expression list finished" }
+                                current_len += exprs_len + if lexer.nth(index + current_len + exprs_len).is_seperator(SeperatorKind::Comma) { 2 } else { 1 };
                                 // first recoverable error here!!!
                                 if exprs.is_empty() {
                                     lexer.push(Message::EmptySubscription{ pos: Position::new() }); // TODO: Position infrastructure for syntax
@@ -180,12 +211,17 @@ impl IASTItem for PostfixExpression {
                             _ => unreachable!()
                         }
                         if lexer.nth(index + current_len + exprs_len).is_seperator(SeperatorKind::Comma) {
+                            exprs_len += 1;
                             match Expression::parse(lexer, index + current_len + exprs_len) {
                                 (Some(expr), expr_len) => {
-                                    exprs_len += expr_len + 1;
+                                    test_condition_perrorln!{ log_enable, "parsing postfix's expression list, get expression: {}", expr, }
+                                    exprs_len += expr_len;
                                     exprs.push(expr);
                                 }
-                                (None, length) => return lexer.push_expect("some expr", index + current_len + exprs_len, current_len + exprs_len + length),
+                                (None, length) => {
+                                    test_condition_perrorln!{ log_enable, "parsing postfix's expression list failed, get none expression" }
+                                    return (None, current_len + exprs_len + length);
+                                }
                             }
                         }
                     }
@@ -193,46 +229,7 @@ impl IASTItem for PostfixExpression {
             }
         }
 
+        test_condition_perrorln!{ log_enable, "parsing postfixs finished, get postfixes: {:?}", postfixs, }
         (Some(PostfixExpression{ prim: primary, postfixs: postfixs }), current_len)
-    }
-}
-
-macro_rules! expr_to_postfix {
-    ($prim: expr) => (Expression(PostfixExpression{ prim: $prim, postfixs: Vec::new() }));
-    ($prim: expr, $($posts: expr)*) => (
-        Expression::Postfix(PostfixExpression{ prim: $prim, postfixs: vec![$($posts, )*]})
-    )
-}
-macro_rules! expr_post_call { ($($exprs: expr, )*) => (Postfix::FunctionCall(vec![$($exprs, )*])) }
-macro_rules! expr_post_sub { ($($exprs: expr, )*) => (Postfix::Subscription(vec![$($exprs, )*])) }
-macro_rules! expr_post_member { ($name: expr) => (Postfix::MemberAccess($name.to_owned())) }
-macro_rules! expr_post_cast { ($ty: expr) => (Postfix::TypeCast($ty)) }
-
-#[cfg(test)]
-mod tests {
-
-    #[test]
-    fn ast_expr_postfix_parse() {
-        use super::PostfixExpression;
-        use message::MessageEmitter;
-        use lexical::Lexer;
-        //use syntax::Expression;
-        use syntax::ast_item::IASTItem;
-        //use syntax::ast_item::expression::primary::PrimaryExpression;
-
-        // should be
-        // temp1 = function call, hij, klm, 123,
-        // member access, abc, defg,
-        // subscription, top, temp1 
-        // function call, top, opq, 456
-        // function call, top, empty
-        // type cast, top as [i32]
-        // member access, top, rst
-        // subscription, top, uvw, xyz, ABC
-        //                                1  23   45  67  8 9  ABCD  E F  GHI J  KL  MNO  PQ  R S  T U  V
-        let lexer = &mut Lexer::new_test("abc.defg[hij(klm, 123)](opq, 456)() as [i32].rst[uvw, xyz, ABC]", MessageEmitter::new());
-        let result = PostfixExpression::parse(lexer, 0);
-        perrorln!("{:?}", PostfixExpression::parse(lexer, 0));
-        perrorln!("Messages: {:?}", lexer.messages());
     }
 }

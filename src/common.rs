@@ -126,6 +126,17 @@ macro_rules! test_perrorln {
     ($format: expr) => ();
 }
 
+#[cfg(test)]
+macro_rules! test_condition_perrorln {
+    ($cond: expr, $format: expr, $($args: expr, )+) => (if $cond { perrorln!($format, $($args, )+); });
+    ($cond: expr, $format: expr) => (if $cond { perrorln!($format); });
+}
+#[cfg(not(test))]
+macro_rules! test_condition_perrorln {
+    ($cond: expr, $format: expr, $($args: expr, )+) => ();
+    ($cond: expr, $format: expr) => ();
+}
+
 macro_rules! make_str_pos {
     ($row1: expr, $col1: expr, $row2: expr, $col2: expr) => (StringPosition::from(($row1, $col1, $row2, $col2)))
 }
