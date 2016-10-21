@@ -1,7 +1,7 @@
 
 // Seperator kind
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
-pub enum SeperatorCategray {
+pub enum SeperatorCategory {
     Assign,     // =, +=, -=, *=, /=, %=, &=, ^=, |=
     Unary,      // ++, --, -, !, ~
     Multiplicative,  // *, /, %
@@ -86,13 +86,24 @@ macro_rules! define_seperator {
                 }
             }
 
-            pub fn categray(&self) -> SeperatorCategray {
+            pub fn category(&self) -> SeperatorCategory {
                 match *self {
                     $(
                         $enum_name::$name1 => $category1,
                     )*
                     $(
                         $enum_name::$name2 => $category2,
+                    )*
+                }
+            }
+
+            pub fn is_category(&self, expect: SeperatorCategory) -> bool {
+                match *self {
+                    $(
+                        $enum_name::$name1 => $category1 == expect,
+                    )*
+                    $(
+                        $enum_name::$name2 => $category2 == expect,
                     )*
                 }
             }
@@ -103,54 +114,54 @@ macro_rules! define_seperator {
 define_seperator!{ SeperatorKind,
     [
     //  ch  => var,                 category,
-        '=' => Assign,              SeperatorCategray::Assign,
-        '+' => Add,                 SeperatorCategray::Additive,
-        '-' => Sub,                 SeperatorCategray::Additive,
-        '*' => Mul,                 SeperatorCategray::Multiplicative,
-        '/' => Div,                 SeperatorCategray::Multiplicative,
-        '%' => Rem,                 SeperatorCategray::Multiplicative,
-        '~' => BitNot,              SeperatorCategray::Unary,
-        '&' => BitAnd,              SeperatorCategray::BitAnd,
-        '|' => BitOr,               SeperatorCategray::BitOr,
-        '^' => BitXor,              SeperatorCategray::BitXor,
-        '!' => LogicalNot,          SeperatorCategray::Unary,
-        '<' => Less,                SeperatorCategray::Relational,
-        '>' => Great,               SeperatorCategray::Relational,
-        '(' => LeftParenthenes,     SeperatorCategray::Seperator,
-        ')' => RightParenthenes,    SeperatorCategray::Seperator,
-        '[' => LeftBracket,         SeperatorCategray::Seperator,
-        ']' => RightBracket,        SeperatorCategray::Seperator,
-        '{' => LeftBrace,           SeperatorCategray::Seperator,
-        '}' => RightBrace,          SeperatorCategray::Seperator,
-        ',' => Comma,               SeperatorCategray::Seperator,
-        // ':' => Colon,            SeperatorCategray::Seperator,           
-        ';' => SemiColon,           SeperatorCategray::Seperator,
-        '.' => Dot,                 SeperatorCategray::Seperator,
-        // '#' => AttributeSign,    SeperatorCategray::Seperator,
+        '=' => Assign,              SeperatorCategory::Assign,
+        '+' => Add,                 SeperatorCategory::Additive,
+        '-' => Sub,                 SeperatorCategory::Additive,
+        '*' => Mul,                 SeperatorCategory::Multiplicative,
+        '/' => Div,                 SeperatorCategory::Multiplicative,
+        '%' => Rem,                 SeperatorCategory::Multiplicative,
+        '~' => BitNot,              SeperatorCategory::Unary,
+        '&' => BitAnd,              SeperatorCategory::BitAnd,
+        '|' => BitOr,               SeperatorCategory::BitOr,
+        '^' => BitXor,              SeperatorCategory::BitXor,
+        '!' => LogicalNot,          SeperatorCategory::Unary,
+        '<' => Less,                SeperatorCategory::Relational,
+        '>' => Great,               SeperatorCategory::Relational,
+        '(' => LeftParenthenes,     SeperatorCategory::Seperator,
+        ')' => RightParenthenes,    SeperatorCategory::Seperator,
+        '[' => LeftBracket,         SeperatorCategory::Seperator,
+        ']' => RightBracket,        SeperatorCategory::Seperator,
+        '{' => LeftBrace,           SeperatorCategory::Seperator,
+        '}' => RightBrace,          SeperatorCategory::Seperator,
+        ',' => Comma,               SeperatorCategory::Seperator,
+        // ':' => Colon,            SeperatorCategory::Seperator,           
+        ';' => SemiColon,           SeperatorCategory::Seperator,
+        '.' => Dot,                 SeperatorCategory::Seperator,
+        // '#' => AttributeSign,    SeperatorCategory::Seperator,
     ]
     [
     //  ch1, ch2 => var,                    categray,
-        '=', '=' => Equal,                  SeperatorCategray::Equality,
-        '+', '=' => AddAssign,              SeperatorCategray::Assign,
-        '-', '=' => SubAssign,              SeperatorCategray::Assign,
-        '*', '=' => MulAssign,              SeperatorCategray::Assign,
-        '/', '=' => DivAssign,              SeperatorCategray::Assign,
-        '%', '=' => RemAssign,              SeperatorCategray::Assign,
-        '&', '=' => BitAndAssign,           SeperatorCategray::Assign,
-        '|', '=' => BitOrAssign,            SeperatorCategray::Assign,
-        '^', '=' => BitXorAssign,           SeperatorCategray::Assign,
-        '>', '>' => ShiftLeft,              SeperatorCategray::Shift,
-        '<', '<' => ShiftRight,             SeperatorCategray::Shift,
-        '&', '&' => LogicalAnd,             SeperatorCategray::LogicalAnd,
-        '|', '|' => LogicalOr,              SeperatorCategray::LogicalOr,
-        '<', '=' => LessEqual,              SeperatorCategray::Relational,
-        '>', '=' => GreatEqual,             SeperatorCategray::Relational,
-        '!', '=' => NotEqual,               SeperatorCategray::Equality,
-        '-', '>' => NarrowRightArrow,       SeperatorCategray::Seperator,
-        // '=', '>' => WideRightArrow,      SeperatorCategray::Seperator,
-        // ':', ':' => NamespaceSeperator,  SeperatorCategray::Seperator,
-        '.', '.' => Range,                  SeperatorCategray::Seperator,
-        '+', '+' => Increase,               SeperatorCategray::Unary,
-        '-', '-' => Decrease,               SeperatorCategray::Unary,
+        '=', '=' => Equal,                  SeperatorCategory::Equality,
+        '+', '=' => AddAssign,              SeperatorCategory::Assign,
+        '-', '=' => SubAssign,              SeperatorCategory::Assign,
+        '*', '=' => MulAssign,              SeperatorCategory::Assign,
+        '/', '=' => DivAssign,              SeperatorCategory::Assign,
+        '%', '=' => RemAssign,              SeperatorCategory::Assign,
+        '&', '=' => BitAndAssign,           SeperatorCategory::Assign,
+        '|', '=' => BitOrAssign,            SeperatorCategory::Assign,
+        '^', '=' => BitXorAssign,           SeperatorCategory::Assign,
+        '>', '>' => ShiftRight,             SeperatorCategory::Shift,
+        '<', '<' => ShiftLeft,              SeperatorCategory::Shift,
+        '&', '&' => LogicalAnd,             SeperatorCategory::LogicalAnd,
+        '|', '|' => LogicalOr,              SeperatorCategory::LogicalOr,
+        '<', '=' => LessEqual,              SeperatorCategory::Relational,
+        '>', '=' => GreatEqual,             SeperatorCategory::Relational,
+        '!', '=' => NotEqual,               SeperatorCategory::Equality,
+        '-', '>' => NarrowRightArrow,       SeperatorCategory::Seperator,
+        // '=', '>' => WideRightArrow,      SeperatorCategory::Seperator,
+        // ':', ':' => NamespaceSeperator,  SeperatorCategory::Seperator,
+        '.', '.' => Range,                  SeperatorCategory::Seperator,
+        '+', '+' => Increase,               SeperatorCategory::Unary,
+        '-', '-' => Decrease,               SeperatorCategory::Unary,
     ]
 }

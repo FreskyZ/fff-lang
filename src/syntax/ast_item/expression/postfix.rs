@@ -21,15 +21,15 @@ use lexical::SeperatorKind;
 use lexical::KeywordKind;
 
 use syntax::ast_item::IASTItem;
-use syntax::Expression;
+use syntax::ast_item::expression::d3::D3Expression;
 use syntax::SMType;
 
 use super::primary::PrimaryExpression;
 
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Clone)]
 pub enum Postfix {
-    Subscription(Vec<Expression>),
-    FunctionCall(Vec<Expression>),
+    Subscription(Vec<D3Expression>),
+    FunctionCall(Vec<D3Expression>),
     MemberAccess(String, StringPosition),
     TypeCast(SMType),
 }
@@ -49,7 +49,7 @@ impl fmt::Debug for Postfix {
                 buf 
             }
             Postfix::MemberAccess(ref name, ref pos) => format!(".operator->({:?} @ {:?})", name, pos),
-            Postfix::TypeCast(ref ty) => format!(".operator as({:?})", ty),
+            Postfix::TypeCast(ref ty) => format!(".operator {:?}()", ty),
         })
     }
 }
@@ -69,12 +69,12 @@ impl fmt::Display for Postfix {
                 buf
             }
             Postfix::MemberAccess(ref name, ref pos) => format!(".operator->({})", name),
-            Postfix::TypeCast(ref ty) => format!(".operator as({})", ty),
+            Postfix::TypeCast(ref ty) => format!(".operator {}()", ty),
         })
     }
 }
 
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Clone)]
 pub struct PostfixExpression {
     pub prim: PrimaryExpression,
     pub postfixs: Vec<Postfix>,
@@ -175,7 +175,7 @@ impl IASTItem for PostfixExpression {
             test_condition_perrorln!{ log_enable, "parsing postfix, start processing expression list of {}", 
                 if expect_end_sep == SeperatorKind::RightParenthenes { "function call".to_owned() } else { "subscription".to_owned() }, }
             current_len += 1; 
-            match Expression::parse(lexer,  index + current_len) {
+            match D3Expression::parse(lexer,  index + current_len) {
                 (None, length) => { 
                     test_condition_perrorln!{ log_enable, "parsing postfix's expression list, expression parse failed" }
                     return (None, current_len + length);
@@ -212,7 +212,7 @@ impl IASTItem for PostfixExpression {
                         }
                         if lexer.nth(index + current_len + exprs_len).is_seperator(SeperatorKind::Comma) {
                             exprs_len += 1;
-                            match Expression::parse(lexer, index + current_len + exprs_len) {
+                            match D3Expression::parse(lexer, index + current_len + exprs_len) {
                                 (Some(expr), expr_len) => {
                                     test_condition_perrorln!{ log_enable, "parsing postfix's expression list, get expression: {}", expr, }
                                     exprs_len += expr_len;

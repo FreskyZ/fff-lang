@@ -11,6 +11,7 @@ mod v4lexer;
 use common::StringPosition;
 
 pub use lexical::symbol_type::SeperatorKind;
+pub use lexical::symbol_type::SeperatorCategory;
 pub use lexical::symbol_type::KeywordKind;
 pub use lexical::symbol_type::NumericLiteralValue;
 

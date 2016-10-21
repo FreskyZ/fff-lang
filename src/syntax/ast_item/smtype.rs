@@ -14,7 +14,7 @@ use lexical::SeperatorKind;
 
 use syntax::ast_item::IASTItem;
 
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Clone)]
 pub enum SMTypeBase {
     Dummy, // None for syntax parser, means some error happened
     Unit,
@@ -46,8 +46,25 @@ impl fmt::Debug for SMTypeBase {
         }
     }
 }
+impl fmt::Display for SMTypeBase {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            SMTypeBase::Dummy => write!(f, "Dummy"),
+            SMTypeBase::Unit => write!(f, "unit"),
+            SMTypeBase::U8 => write!(f, "u8"),
+            SMTypeBase::I32 => write!(f, "i32"),
+            SMTypeBase::U32 => write!(f, "u32"),
+            SMTypeBase::U64 => write!(f, "u64"),
+            SMTypeBase::F32 => write!(f, "f32"),
+            SMTypeBase::F64 => write!(f, "f64"),
+            SMTypeBase::Char => write!(f, "char"),
+            SMTypeBase::SMString => write!(f, "string"),
+            SMTypeBase::Array(ref inner) => write!(f, "[{}]", inner.as_ref()),
+        }
+    }
+}
 
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Clone)]
 pub struct SMType {
     ty: SMTypeBase,
     pos: StringPosition, // private, new by make, get by pos_all 

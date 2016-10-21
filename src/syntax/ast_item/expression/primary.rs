@@ -16,18 +16,18 @@ use lexical::NumericLiteralValue;
 use lexical::SeperatorKind;
 
 use syntax::ast_item::IASTItem;
-use syntax::Expression;
+use syntax::ast_item::expression::d3::D3Expression;
 
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Clone)]
 pub enum PrimaryExpressionBase {
     Identifier(String),
     StringLiteral(String),
     CharLiteral(char),
     NumericLiteral(NumericLiteralValue),
     BooleanLiteral(bool),
-    ParenExpression(Box<Expression>),
-    ArrayDef(Vec<Expression>),
-    ArrayDupDef(Box<Expression>, Box<Expression>),
+    ParenExpression(Box<D3Expression>),
+    ArrayDef(Vec<D3Expression>),
+    ArrayDupDef(Box<D3Expression>, Box<D3Expression>),
 }
 
 impl fmt::Debug for PrimaryExpressionBase {
@@ -63,7 +63,7 @@ impl fmt::Display for PrimaryExpressionBase {
     }
 }
 
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Clone)]
 pub struct PrimaryExpression(pub PrimaryExpressionBase, pub StringPosition);
 
 impl fmt::Debug for PrimaryExpression {
@@ -95,13 +95,13 @@ impl PrimaryExpression {
         PrimaryExpression(PrimaryExpressionBase::BooleanLiteral(val), pos)
     }
 
-    pub fn make_paren(expr: Expression, pos: StringPosition) -> PrimaryExpression {
+    pub fn make_paren(expr: D3Expression, pos: StringPosition) -> PrimaryExpression {
         PrimaryExpression(PrimaryExpressionBase::ParenExpression(Box::new(expr)), pos)
     }
-    pub fn make_array_def(exprs: Vec<Expression>, pos: StringPosition) -> PrimaryExpression {
+    pub fn make_array_def(exprs: Vec<D3Expression>, pos: StringPosition) -> PrimaryExpression {
         PrimaryExpression(PrimaryExpressionBase::ArrayDef(exprs), pos)
     }
-    pub fn make_array_dup_def(expr1: Expression, expr2: Expression, pos: StringPosition) -> PrimaryExpression {
+    pub fn make_array_dup_def(expr1: D3Expression, expr2: D3Expression, pos: StringPosition) -> PrimaryExpression {
         PrimaryExpression(PrimaryExpressionBase::ArrayDupDef(Box::new(expr1), Box::new(expr2)), pos)
     }
 }
@@ -141,7 +141,7 @@ impl IASTItem for PrimaryExpression {
 
         test_condition_perrorln!{ log_enable, "parsing primary not literal or identifier" }
         if lexer.nth(index).is_seperator(SeperatorKind::LeftParenthenes) {
-            match Expression::parse(lexer, index + 1) {
+            match D3Expression::parse(lexer, index + 1) {
                 (None, length) => {
                     test_condition_perrorln!{ log_enable, "parsing paren expression get expression failed" }
                     return (None, 1 + length);
@@ -165,7 +165,7 @@ impl IASTItem for PrimaryExpression {
         }
 
         if lexer.nth(index).is_seperator(SeperatorKind::LeftBracket) {
-            match Expression::parse(lexer, index + 1) {
+            match D3Expression::parse(lexer, index + 1) {
                 (None, length) => {
                     test_condition_perrorln!{ log_enable, "parsing array (dup) def failed, parse expr1 return none" }
                     return (None, length);  // recover by find paired right bracket
@@ -173,7 +173,7 @@ impl IASTItem for PrimaryExpression {
                 (Some(expr1), expr1_len) => {
                     test_condition_perrorln!{ log_enable, "parsing array (dup) def get expr1: {} with length {} and next is {:?}", expr1, expr1_len, lexer.nth(index + 1 + expr1_len), }
                     if lexer.nth(index + 1 + expr1_len).is_seperator(SeperatorKind::SemiColon) {
-                        match Expression::parse(lexer, index + 2 + expr1_len) {
+                        match D3Expression::parse(lexer, index + 2 + expr1_len) {
                             (None, length) => {
                                 test_condition_perrorln!{ log_enable, "parsing array dup def failed, parse expr2 failed" }
                                 return (None, expr1_len + 2 + length);
@@ -221,7 +221,7 @@ impl IASTItem for PrimaryExpression {
                         }
                         if lexer.nth(index + current_len).is_seperator(SeperatorKind::Comma) {
                             current_len += 1;
-                            match Expression::parse(lexer, index + current_len) {
+                            match D3Expression::parse(lexer, index + current_len) {
                                 (Some(exprn), exprn_len) => {
                                     test_condition_perrorln!{ log_enable, "parsing array def, get expression n {}", exprn, }
                                     current_len += exprn_len;

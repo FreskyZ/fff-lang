@@ -1,257 +1,323 @@
 
-// MultiplicativeExpression = UnaryExpression | MultiplicativeExpression MultiplicativeOperator UnaryExpression
-// AdditiveExpression = MultiplicativeExpression | AdditiveExpression AdditiveOperator MultiplicativeExpression
-// ShiftExpression = AdditiveExpression | ShiftExpression ShiftOperator AdditiveExpression
-// RelationalExpression = ShiftExpression | RelationalExpression RelationalOperator ShiftExpression
-// BitAndExpression = RelationalExpression | BitAndExpression BitAndOperator RelationalExpression
-// BitXorExpression = BitAndExpression | BitXorExpression BitXorOperator BitAndExpression
-// BitOrExpression = BitXorExpression | BitOrExpression BitOrOperator BitXorExpression
-// EqualityExpression = BitOrExpression | EqualityExpression EqualityOperator BitOrExpression  // `==` and `!=` lower than `|` for `if (enum_var & enum_mem1 == enum_mem1)` 
-// LogicalAndExpression = EqualityExpression | LogicalAndExpression LogicalAndOperator EqualityExpression 
-// LogicalOrExpression = LogicalAndExpression | LogicalOrExpression LogicalOrOperator LogicalAndExpression
-// Expression = LogicalOrExpression
-
-// TODO
-// for messages, only when None is created then a message is emitted, receiving None do not emit same message, but recovery can emit different message
-// message divided into lexical message and syntax message, having any message after syntax parse stops the compilation process
-// precise display and debug formats for expressions for convenience debug
-// pass tests
+// Expression interface
+// to make 3d expression like Expression{ Expression, some other }, that is, flattened 3DExpression
 
 use std::fmt;
 
+use common::From2;
+use common::Position;
 use common::StringPosition;
 
 use lexical::Lexer;
+use lexical::NumericLiteralValue;
+use lexical::SeperatorKind;
+
+use syntax::SMType;
 use syntax::ast_item::IASTItem;
 
 mod primary;
 mod postfix;
 mod unary;
+mod binary;
+mod d3;
+
+use self::d3::D3Expression;
+// use self::binary::BinaryOperator;
+use self::binary::BinaryExpression;
+// use self::unary::UnaryOperator;
+use self::unary::UnaryExpression;
+use self::postfix::Postfix;
 use self::postfix::PostfixExpression;
+use self::primary::PrimaryExpressionBase;
+use self::primary::PrimaryExpression;
 
 #[derive(Eq, PartialEq)]
-pub struct Expression(PostfixExpression);
+pub enum ExpressionBase {
+    StringLiteral(String),
+    CharLiteral(char),
+    NumericLiteral(NumericLiteralValue),
+    BooleanLiteral(bool),
+    Identifier(String),
+    Paren(Expression),
+    ArrayDef(Vec<Expression>),
+    ArrayDupDef(Expression, Expression, Position), // '[',  ';', ']''s position, TODO: this position is for semicolon, not implemented
+}
 
+fn format_vector_display<T: fmt::Display>(items: &Vec<T>, sep: &str) -> String {
+    let length = items.len();
+    let mut buf = String::new();
+    for (index, item) in items.iter().enumerate() {
+        buf.push_str(&format!("{}", item));
+        if index != length - 1 {
+            buf.push_str(sep);
+        }
+    }
+    buf
+}
+fn format_vector_debug<T: fmt::Debug>(items: &Vec<T>, sep: &str) -> String {
+    let length = items.len();
+    let mut buf = String::new();
+    for (index, item) in items.iter().enumerate() {
+        buf.push_str(&format!("{:?}", item));
+        if index != length - 1 {
+            buf.push_str(sep);
+        }
+    }
+    buf
+}
+
+impl fmt::Debug for ExpressionBase {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            ExpressionBase::Identifier(ref name) => write!(f, "{}", name),
+            ExpressionBase::StringLiteral(ref val) => write!(f, "{:?}", val),
+            ExpressionBase::CharLiteral(ref val) => write!(f, "{:?}", val),
+            ExpressionBase::NumericLiteral(ref val) => write!(f, "{:?}", val),
+            ExpressionBase::BooleanLiteral(ref val) => write!(f, "{}", val),
+            ExpressionBase::Paren(ref expr) => write!(f, "({:?})", expr),
+            ExpressionBase::ArrayDupDef(ref expr1, ref expr2, ref pos) => 
+                write!(f, "[{:?}; @ {:?} {:?}]", expr1, pos, expr2),
+            ExpressionBase::ArrayDef(ref exprs) => 
+                write!(f, "[{}]", format_vector_debug(exprs, ", ")),
+        }
+    }
+}
+impl fmt::Display for ExpressionBase {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            ExpressionBase::Identifier(ref name) => write!(f, "{}", name),
+            ExpressionBase::StringLiteral(ref val) => write!(f, "{:?}", val),
+            ExpressionBase::CharLiteral(ref val) => write!(f, "{:?}", val),
+            ExpressionBase::NumericLiteral(ref val) => write!(f, "{}", val),
+            ExpressionBase::BooleanLiteral(ref val) => write!(f, "{}", val),
+            ExpressionBase::Paren(ref expr) => write!(f, "({})", expr),
+            ExpressionBase::ArrayDupDef(ref expr1, ref expr2, ref _pos) => 
+                write!(f, "[{}; {}]", expr1, expr2),
+            ExpressionBase::ArrayDef(ref exprs) => 
+                write!(f, "[{}]", format_vector_display(exprs, ", ")),
+        }
+    }
+}
+
+#[derive(Eq, PartialEq)]
+pub enum ExpressionOperator {
+    MemberAccess(String, StringPosition), // `.xxxx`'s position 
+    FunctionCall(Vec<Expression>, StringPosition), // '(', ')''s position, TODO: implement the position
+    Subscription(Vec<Expression>, StringPosition), // '[', ']''s position, TODO: implement it
+    TypeCast(SMType, StringPosition), // `as`'s position TODO: implement it 
+    Unary(SeperatorKind, StringPosition),
+    Binary(SeperatorKind, StringPosition, Expression), // operator, pos, operand
+}
+impl fmt::Debug for ExpressionOperator {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", match *self {
+            ExpressionOperator::Subscription(ref exprs, ref pos) => format!(".operator[]({}) @ {:?}", format_vector_debug(exprs, ", "), pos),
+            ExpressionOperator::FunctionCall(ref exprs, ref pos) => format!(".operator()({}) @ {:?}", format_vector_debug(exprs, ", "), pos),
+            ExpressionOperator::MemberAccess(ref name, ref pos) => format!(".operator->({:?} @ {:?})", name, pos),
+            ExpressionOperator::TypeCast(ref ty, ref pos) => format!(".operator {:?}() @ {:?}", ty, pos),
+            ExpressionOperator::Unary(SeperatorKind::BitNot, ref pos) => format!(".operator~() @ {}", pos),
+            ExpressionOperator::Unary(SeperatorKind::LogicalNot, ref pos) => format!(".operator!() @ {}", pos),
+            ExpressionOperator::Unary(SeperatorKind::Increase, ref pos) => format!(".operator++() @ {}", pos),
+            ExpressionOperator::Unary(SeperatorKind::Decrease, ref pos) => format!(".operator--() @ {}", pos),
+            ExpressionOperator::Binary(SeperatorKind::Mul, ref pos, ref operand) => format!(".operator*({:?}) @ {:?}", operand, pos),
+            ExpressionOperator::Binary(SeperatorKind::Div, ref pos, ref operand) => format!(".operator/({:?}) @ {:?}", operand, pos),
+            ExpressionOperator::Binary(SeperatorKind::Rem, ref pos, ref operand) => format!(".operator%({:?}) @ {:?}", operand, pos),
+            ExpressionOperator::Binary(SeperatorKind::Add, ref pos, ref operand) => format!(".operator+({:?}) @ {:?}", operand, pos),
+            ExpressionOperator::Binary(SeperatorKind::Sub, ref pos, ref operand) => format!(".operator-({:?}) @ {:?}", operand, pos),
+            ExpressionOperator::Binary(SeperatorKind::ShiftLeft, ref pos, ref operand) => format!(".operator<<({:?}) @ {:?}", operand, pos),
+            ExpressionOperator::Binary(SeperatorKind::ShiftRight, ref pos, ref operand) => format!(".operator>>({:?}) @ {:?}", operand, pos),
+            ExpressionOperator::Binary(SeperatorKind::Equal, ref pos, ref operand) => format!(".operator==({:?}) @ {:?}", operand, pos),
+            ExpressionOperator::Binary(SeperatorKind::NotEqual, ref pos, ref operand) => format!(".operator!=({:?}) @ {:?}", operand, pos),
+            ExpressionOperator::Binary(SeperatorKind::Great, ref pos, ref operand) => format!(".operator>({:?}) @ {:?}", operand, pos),
+            ExpressionOperator::Binary(SeperatorKind::Less, ref pos, ref operand) => format!(".operator<({:?}) @ {:?}", operand, pos),
+            ExpressionOperator::Binary(SeperatorKind::GreatEqual, ref pos, ref operand) => format!(".operator>=({:?}) @ {:?}", operand, pos),
+            ExpressionOperator::Binary(SeperatorKind::LessEqual, ref pos, ref operand) => format!(".operator<=({:?}) @ {:?}", operand, pos),
+            ExpressionOperator::Binary(SeperatorKind::BitAnd, ref pos, ref operand) => format!(".operator&({:?}) @ {:?}", operand, pos),
+            ExpressionOperator::Binary(SeperatorKind::BitOr, ref pos, ref operand) => format!(".operator|({:?}) @ {:?}", operand, pos),
+            ExpressionOperator::Binary(SeperatorKind::BitXor, ref pos, ref operand) => format!(".operator^({:?}) @ {:?}", operand, pos),
+            ExpressionOperator::Binary(SeperatorKind::LogicalAnd, ref pos, ref operand) => format!(".operator&&({:?}) @ {:?}", operand, pos),
+            ExpressionOperator::Binary(SeperatorKind::LogicalOr, ref pos, ref operand) => format!(".operator||({:?}) @ {:?}", operand, pos),
+            ExpressionOperator::Unary(_, _) => unreachable!(),
+            ExpressionOperator::Binary(_, _, _) => unreachable!(),
+        })
+    }
+}
+impl fmt::Display for ExpressionOperator {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", match *self {
+            ExpressionOperator::Subscription(ref exprs, ref _pos) => format!(".operator[]({})", format_vector_display(exprs, ", ")),
+            ExpressionOperator::FunctionCall(ref exprs, ref _pos) => format!(".operator()({})", format_vector_display(exprs, ", ")),
+            ExpressionOperator::MemberAccess(ref name, ref _pos) => format!(".operator->({})", name),
+            ExpressionOperator::TypeCast(ref ty, ref _pos) => format!(".operator {}()", ty),
+            ExpressionOperator::Unary(SeperatorKind::BitNot, ref _pos) => format!(".operator~()"),
+            ExpressionOperator::Unary(SeperatorKind::LogicalNot, ref _pos) => format!(".operator!()"),
+            ExpressionOperator::Unary(SeperatorKind::Increase, ref _pos) => format!(".operator++()"),
+            ExpressionOperator::Unary(SeperatorKind::Decrease, ref _pos) => format!(".operator--()"),
+            ExpressionOperator::Binary(SeperatorKind::Mul, ref _pos, ref operand) => format!(".operator*({})", operand),
+            ExpressionOperator::Binary(SeperatorKind::Div, ref _pos, ref operand) => format!(".operator/({})", operand),
+            ExpressionOperator::Binary(SeperatorKind::Rem, ref _pos, ref operand) => format!(".operator%({})", operand),
+            ExpressionOperator::Binary(SeperatorKind::Add, ref _pos, ref operand) => format!(".operator+({})", operand),
+            ExpressionOperator::Binary(SeperatorKind::Sub, ref _pos, ref operand) => format!(".operator-({})", operand),
+            ExpressionOperator::Binary(SeperatorKind::ShiftLeft, ref _pos, ref operand) => format!(".operator<<({})", operand),
+            ExpressionOperator::Binary(SeperatorKind::ShiftRight, ref _pos, ref operand) => format!(".operator>>({})", operand),
+            ExpressionOperator::Binary(SeperatorKind::Equal, ref _pos, ref operand) => format!(".operator==({})", operand),
+            ExpressionOperator::Binary(SeperatorKind::NotEqual, ref _pos, ref operand) => format!(".operator!=({})", operand),
+            ExpressionOperator::Binary(SeperatorKind::Great, ref _pos, ref operand) => format!(".operator>({})", operand),
+            ExpressionOperator::Binary(SeperatorKind::Less, ref _pos, ref operand) => format!(".operator<({})", operand),
+            ExpressionOperator::Binary(SeperatorKind::GreatEqual, ref _pos, ref operand) => format!(".operator>=({})", operand),
+            ExpressionOperator::Binary(SeperatorKind::LessEqual, ref _pos, ref operand) => format!(".operator<=({})", operand),
+            ExpressionOperator::Binary(SeperatorKind::BitAnd, ref _pos, ref operand) => format!(".operator&({})", operand),
+            ExpressionOperator::Binary(SeperatorKind::BitOr, ref _pos, ref operand) => format!(".operator|({})", operand),
+            ExpressionOperator::Binary(SeperatorKind::BitXor, ref _pos, ref operand) => format!(".operator^({})", operand),
+            ExpressionOperator::Binary(SeperatorKind::LogicalAnd, ref _pos, ref operand) => format!(".operator&&({})", operand),
+            ExpressionOperator::Binary(SeperatorKind::LogicalOr, ref _pos, ref operand) => format!(".operator||({})", operand),
+            ExpressionOperator::Unary(_, _) => unreachable!(),
+            ExpressionOperator::Binary(_, _, _) => unreachable!(),
+        })
+    }
+}
+
+#[derive(Eq, PartialEq)]
+pub struct Expression {
+    pub base: Box<ExpressionBase>,
+    pub ops: Vec<ExpressionOperator>,
+    base_pos: StringPosition,
+    all_pos: StringPosition,
+}
 impl fmt::Debug for Expression {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self.0)
+        write!(f, "{:?} @ {:?}{} @ {:?}", self.base, self.base_pos, format_vector_debug(&self.ops, ""), self.all_pos)
     }
 }
 impl fmt::Display for Expression {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.0)
+        write!(f, "{}{}", self.base, format_vector_display(&self.ops, ""))
     }
+}
+
+impl Expression {
+
+    fn new(base: ExpressionBase, base_pos: StringPosition, ops: Vec<ExpressionOperator>, pos: StringPosition) -> Expression {
+        Expression{ base: Box::new(base), base_pos: base_pos, ops: ops, all_pos: pos }
+    }
+
+    #[cfg(test)]
+    pub fn new_test(base: ExpressionBase, base_pos: StringPosition, ops: Vec<ExpressionOperator>, pos: StringPosition) -> Expression {
+        Expression{ base: Box::new(base), base_pos: base_pos, ops: ops, all_pos: pos }
+    }
+
+    pub fn pos_base(&self) -> StringPosition {
+        self.base_pos
+    }
+}
+
+fn d3_expr_to_expr(d3: D3Expression) -> Expression {
+
+    let D3Expression(BinaryExpression{ 
+        ops: bin_ops,
+        unary: UnaryExpression{
+            unaries: unary_ops,
+            post: PostfixExpression{
+                postfixs: postfix_ops,
+                prim: PrimaryExpression(
+                    primary_base, 
+                    primary_pos), 
+            },
+        }, 
+    }) = d3;
+
+    let mut pos_start = primary_pos.start_pos;
+    let mut pos_end = primary_pos.end_pos;
+    let base_pos = primary_pos;
+    let expr_base = match primary_base {
+        PrimaryExpressionBase::ArrayDef(d3_exprs) => 
+            ExpressionBase::ArrayDef(d3_exprs.into_iter().map(d3_expr_to_expr).collect()),
+        PrimaryExpressionBase::ArrayDupDef(d3_expr1, d3_expr2) =>
+            ExpressionBase::ArrayDupDef(d3_expr_to_expr(d3_expr1.as_ref().clone()), d3_expr_to_expr(d3_expr2.as_ref().clone()), Position::new()),
+
+        PrimaryExpressionBase::BooleanLiteral(val) => ExpressionBase::BooleanLiteral(val),
+        PrimaryExpressionBase::CharLiteral(val) => ExpressionBase::CharLiteral(val),
+        PrimaryExpressionBase::StringLiteral(val) => ExpressionBase::StringLiteral(val),
+        PrimaryExpressionBase::NumericLiteral(val) => ExpressionBase::NumericLiteral(val),
+        PrimaryExpressionBase::Identifier(name) => ExpressionBase::Identifier(name),
+        PrimaryExpressionBase::ParenExpression(d3_expr) => ExpressionBase::Paren(d3_expr_to_expr(d3_expr.as_ref().clone())),
+    };
+
+    let mut ops = Vec::new();
+    for postfix in postfix_ops {
+        // pos_end = ... // Wait for their pos
+        ops.push(match postfix {
+            Postfix::FunctionCall(d3_exprs) => ExpressionOperator::FunctionCall(d3_exprs.into_iter().map(d3_expr_to_expr).collect(), StringPosition::new()),
+            Postfix::Subscription(d3_exprs) => ExpressionOperator::Subscription(d3_exprs.into_iter().map(d3_expr_to_expr).collect(), StringPosition::new()),
+            Postfix::MemberAccess(ident, pos) => ExpressionOperator::MemberAccess(ident, pos),
+            Postfix::TypeCast(ty) => ExpressionOperator::TypeCast(ty, StringPosition::new()),
+        });
+    }
+
+    let mut is_first_prefix = true;
+    for prefix in unary_ops {
+        if is_first_prefix {
+            pos_start = prefix.pos.start_pos;
+            is_first_prefix = false;
+        }
+        ops.push(ExpressionOperator::Unary(prefix.op, prefix.pos));
+    }
+
+    for binary in bin_ops {
+        pos_end = binary.pos.end_pos;
+        ops.push(ExpressionOperator::Binary(binary.operator, binary.pos, d3_expr_to_expr(binary.oprand)));
+    }
+
+    Expression::new(expr_base, base_pos, ops, StringPosition::from2(pos_start, pos_end))
 }
 
 impl IASTItem for Expression {
-    
-    fn pos_all(&self) -> StringPosition { self.0.pos_all() }
+
+    fn pos_all(&self) -> StringPosition { self.all_pos }
 
     fn parse(lexer: &mut Lexer, index: usize) -> (Option<Expression>, usize) {
+        
+        let (d3, d3_length) = match D3Expression::parse(lexer, index) {
+            (Some(d3), d3_length) => (d3, d3_length),
+            (None, length) => return (None, length),
+        };
 
-        match PostfixExpression::parse(lexer, index) {
-            (Some(post), length) => (Some(Expression(post)), length),
-            (None, length) => (None, length), // no recoverable here, pass through
-        }
-    }
+        (Some(d3_expr_to_expr(d3)), d3_length)
+    } 
 }
-
-// Helper macros
-// primary expression
-macro_rules! expr_to_primary {
-    ($inner: expr) => (Expression(PostfixExpression{ prim: $inner, postfixs: Vec::new() }));
-}
-macro_rules! expr_ident { 
-    ($name: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::make_ident($name.to_owned(), $pos))) 
-}
-macro_rules! expr_str_lit { 
-    ($val: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::make_str_lit($val.to_owned(), $pos))) 
-}
-macro_rules! expr_char_lit { 
-    ($val: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::make_char_lit($val, $pos))) 
-}
-macro_rules! expr_num_lit { 
-    ($val: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::make_num_lit($val, $pos))) 
-}
-macro_rules! expr_bool_lit { 
-    ($val: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::make_bool_lit($val, $pos))) 
-}
-macro_rules! expr_paren_expr { 
-    ($expr: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::make_paren($expr, $pos))) 
-}
-macro_rules! expr_array_def { 
-    ([$($exprs: expr, )*] $pos: expr) => (expr_to_primary!(PrimaryExpression::make_array_def(vec![$($exprs, )*], $pos))) 
-}
-macro_rules! expr_array_dup_def { 
-    ($expr1: expr, $expr2: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::make_array_dup_def($expr1, $expr2, $pos))); 
-}
-
-// postfix expression
-macro_rules! expr_to_postfix {
-    ($prim: expr) => (Expression(PostfixExpression{ prim: $prim, postfixs: Vec::new() }));
-    ($prim: expr, $($posts: expr)*) => (
-        Expression(PostfixExpression{ prim: $prim, postfixs: vec![$($posts, )*]})
-    )
-}
-macro_rules! expr_post_call { ($($exprs: expr, )*) => (Postfix::FunctionCall(vec![$($exprs, )*])) }
-macro_rules! expr_post_sub { ($($exprs: expr, )*) => (Postfix::Subscription(vec![$($exprs, )*])) }
-macro_rules! expr_post_member { ($name: expr, $pos: expr) => (Postfix::MemberAccess($name.to_owned(), $pos)) }
-macro_rules! expr_post_cast { ($ty: expr) => (Postfix::TypeCast($ty)) }
 
 #[cfg(test)]
 mod tests {
+    use super::Expression;
+    // use super::ExpressionBase;
+    // use super::ExpressionOperator;
+
+    use lexical::Lexer;
+    use syntax::ast_item::IASTItem;
 
     #[test]
-    fn ast_expr_prim_parse() {
-        use syntax::ast_item::IASTItem;
-        use common::StringPosition;
-        use message::MessageEmitter;
-        use lexical::Lexer;
-        use syntax::Expression;
-        use lexical::NumericLiteralValue;
-        use syntax::ast_item::expression::postfix::PostfixExpression;
-        use syntax::ast_item::expression::primary::PrimaryExpression;
-        // use syntax::ast_item::expression::primary::PrimaryExpressionBase;
+    #[ignore] // strange interactive test
+    fn ast_expr_flatten() {
+        use std::io::stdin;
 
-        macro_rules! parse {
-            ($program: expr) => (PrimaryExpression::parse(&mut Lexer::new_test($program, MessageEmitter::new()), 0))
-        }
-
-        // Case 1
-        assert_eq!( //               12345678901234567890
-            expr_to_primary!(parse!("[1, 2, 3f128, 0u64]").0.unwrap()), 
-            expr_array_def!{[
-                expr_num_lit!(NumericLiteralValue::I32(1), make_str_pos!(1, 2, 1, 2)),
-                expr_num_lit!(NumericLiteralValue::I32(2), make_str_pos!(1, 5, 1, 5)), 
-                expr_num_lit!(NumericLiteralValue::I32(0), make_str_pos!(1, 8, 1, 12)),
-                expr_num_lit!(NumericLiteralValue::U64(0), make_str_pos!(1, 15, 1, 18)),]
-                make_str_pos!(1, 1, 1, 19)
+        loop {
+            let mut buf = String::new();
+            match stdin().read_line(&mut buf) {
+                Ok(_) => (),
+                Err(_) => break,
             }
-        );
 
-        // Case 2         0        1         2         3
-        //                12345678901234567890123456789012345
-        let res = parse!("[[(1)], [abc, (3)], [4, defg, [6]]]");
-        assert_eq!(expr_to_primary!(res.0.unwrap()),
-            expr_array_def!{[
-                expr_array_def!{[
-                    expr_paren_expr!(expr_num_lit!(NumericLiteralValue::I32(1), make_str_pos!(1, 4, 1, 4)), make_str_pos!(1, 3, 1, 5)),]
-                    make_str_pos!(1, 2, 1, 6) 
-                },
-                expr_array_def!{[
-                    expr_ident!("abc", make_str_pos!(1, 10, 1, 12)),
-                    expr_paren_expr!(expr_num_lit!(NumericLiteralValue::I32(3), make_str_pos!(1, 16, 1, 16)), make_str_pos!(1, 15, 1, 17)),]
-                    make_str_pos!(1, 9, 1, 18)
-                },
-                expr_array_def!{[
-                    expr_num_lit!(NumericLiteralValue::I32(4), make_str_pos!(1, 22, 1, 22)),
-                    expr_ident!("defg", make_str_pos!(1, 25, 1, 28)),
-                    expr_array_def!{[
-                        expr_num_lit!(NumericLiteralValue::I32(6), make_str_pos!(1, 32, 1, 32)),]
-                        make_str_pos!(1, 31, 1, 33)
-                    },]
-                    make_str_pos!(1, 21, 1, 34)
-                },]
-                make_str_pos!(1, 1, 1, 35)
-            }
-        );
-
-        // Case 3                    0        1           2          3         4
-        assert_eq!(  //              12345678901234 5678 9012 34567890123456789012
-            expr_to_primary!(parse!("[abc, 123u32, \"456\", '\\u0065', false, (a)]").0.unwrap()),
-            expr_array_def!{[
-                expr_ident!("abc", make_str_pos!(1, 2, 1, 4)),
-                expr_num_lit!(NumericLiteralValue::U32(123), make_str_pos!(1, 7, 1, 12)),
-                expr_str_lit!("456", make_str_pos!(1, 15, 1, 19)),
-                expr_char_lit!('\u{0065}', make_str_pos!(1, 22, 1, 29)),
-                expr_bool_lit!(false, make_str_pos!(1, 32, 1, 36)),
-                expr_paren_expr!(expr_ident!("a", make_str_pos!(1, 40, 1, 40)), make_str_pos!(1, 39, 1, 41)),]
-                make_str_pos!(1, 1, 1, 42)
-            }
-        );        
-        
-        // Case 4                    0        1            2          3         4
-        assert_eq!(  //              123456789012 3456 78 9012 345678901234567890
-            expr_to_primary!(parse!("[abc, 123f, \"456\\u\", '\\u00', false, (a)]").0.unwrap()),
-            expr_array_def!{[
-                expr_ident!("abc", make_str_pos!(1, 2, 1, 4)),
-                expr_num_lit!(NumericLiteralValue::I32(0), make_str_pos!(1, 7, 1, 10)),
-                expr_str_lit!("<invalid>", make_str_pos!(1, 13, 1, 19)),
-                expr_char_lit!('\u{FFFE}', make_str_pos!(1, 22, 1, 27)),
-                expr_bool_lit!(false, make_str_pos!(1, 30, 1, 34)),
-                expr_paren_expr!(expr_ident!("a", make_str_pos!(1, 38, 1, 38)), make_str_pos!(1, 37, 1, 39)),]
-                make_str_pos!(1, 1, 1, 40)
-            }
-        );
-    }
-    
-    #[test]
-    fn ast_expr_post_parse() {
-        use common::StringPosition;
-        use message::MessageEmitter;
-        use lexical::Lexer;
-        use lexical::NumericLiteralValue;
-        use syntax::Expression;
-        use syntax::SMType;
-        use syntax::SMTypeBase;
-        use syntax::ast_item::IASTItem;
-        use syntax::ast_item::expression::postfix::Postfix;
-        use syntax::ast_item::expression::postfix::PostfixExpression;
-        use syntax::ast_item::expression::primary::PrimaryExpression;
-
-        //                                0        1         2         3         4         5         6         7         8     
-        //                                1234567890123456789012345678901234567890123456789012345678901234567890123456789
-        let lexer = &mut Lexer::new_test("abc.defg[[1](klm, [123, 456,], )](opq, 456.)() as [i32].rst[uvw, xyz, ABC]", MessageEmitter::new());
-        let result = Expression::parse(lexer, 0);
-        let left = Expression::parse(lexer, 0).0.unwrap();
-        let right = expr_to_postfix!{
-            PrimaryExpression::make_ident("abc".to_owned(), make_str_pos!(1, 1, 1, 3)),
-            expr_post_member!("defg", make_str_pos!(1, 4, 1, 8))
-            expr_post_sub!(
-                expr_to_postfix!(
-                    PrimaryExpression::make_array_def(
-                        vec![expr_num_lit!(NumericLiteralValue::I32(1), make_str_pos!(1, 11, 1, 11))],
-                        make_str_pos!(1, 10, 1, 12)
-                    ), 
-                    expr_post_call!(
-                        expr_ident!("klm", make_str_pos!(1, 14, 1, 16)),
-                        expr_array_def!([
-                            expr_num_lit!(NumericLiteralValue::I32(123), make_str_pos!(1, 20, 1, 22)),
-                            expr_num_lit!(NumericLiteralValue::I32(456), make_str_pos!(1, 25, 1, 27)),]
-                            make_str_pos!(1, 19, 1, 29)
-                        ),
-                    )
-                ), 
-            )
-            expr_post_call!(
-                expr_ident!("opq", make_str_pos!(1, 35, 1, 37)),
-                expr_num_lit!(NumericLiteralValue::F64(456f64), make_str_pos!(1, 40, 1, 43)), 
-            )
-            expr_post_call!()
-            expr_post_cast!(
-                SMType::make_array(SMType::make_base(SMTypeBase::I32, make_str_pos!(1, 52, 1, 54)), make_str_pos!(1, 51, 1, 55))
-            )
-            expr_post_member!("rst", make_str_pos!(1, 56, 1, 59))
-            expr_post_sub!(
-                expr_ident!("uvw", make_str_pos!(1, 61, 1, 63)),
-                expr_ident!("xyz", make_str_pos!(1, 66, 1, 68)),
-                expr_ident!("ABC", make_str_pos!(1, 71, 1, 73)),
-            )
-        };
-
-        let left_desc = &format!("{:?}", left);
-        let right_desc = &format!("{:?}", right);
-        for (index, (ch1, ch2)) in left_desc.chars().into_iter().zip(right_desc.chars().into_iter()).enumerate() {
-            if ch1 != ch2 {
-                panic!("ch pair diff at {}: {}, {}", index, ch1, ch2);
-          
+            if buf != "break" {
+                let lexer = &mut Lexer::new(buf);
+                let (result, length) = Expression::parse(lexer, 0);
+                perrorln!("Debug: ({:?}, {})", result, length);
+                match result {
+                    Some(result) => perrorln!("Display: {}", result),
+                    None => perrorln!("messages: {:?}", lexer.messages()),
+                }
+            } else {
+                break;
             }
         }
-        perrorln!("Messages: {:?}", lexer.messages());
-    }
-
-    #[test]
-    fn ast_expr_unary_parse() {
-        
     }
 }

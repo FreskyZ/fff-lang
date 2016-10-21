@@ -1,4 +1,7 @@
 
+// TODO
+// message divided into lexical message and syntax message, having any message after syntax parse stops the compilation process
+
 use common::Position;
 use common::StringPosition;
 
