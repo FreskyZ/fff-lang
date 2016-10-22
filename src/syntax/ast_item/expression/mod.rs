@@ -7,6 +7,8 @@ use std::fmt;
 use common::From2;
 use common::Position;
 use common::StringPosition;
+use common::format_vector_display;
+use common::format_vector_debug;
 
 use lexical::Lexer;
 use lexical::NumericLiteralValue;
@@ -41,29 +43,6 @@ pub enum ExpressionBase {
     Paren(Expression),
     ArrayDef(Vec<Expression>),
     ArrayDupDef(Expression, Expression, Position), // '[',  ';', ']''s position, TODO: this position is for semicolon, not implemented
-}
-
-fn format_vector_display<T: fmt::Display>(items: &Vec<T>, sep: &str) -> String {
-    let length = items.len();
-    let mut buf = String::new();
-    for (index, item) in items.iter().enumerate() {
-        buf.push_str(&format!("{}", item));
-        if index != length - 1 {
-            buf.push_str(sep);
-        }
-    }
-    buf
-}
-fn format_vector_debug<T: fmt::Debug>(items: &Vec<T>, sep: &str) -> String {
-    let length = items.len();
-    let mut buf = String::new();
-    for (index, item) in items.iter().enumerate() {
-        buf.push_str(&format!("{:?}", item));
-        if index != length - 1 {
-            buf.push_str(sep);
-        }
-    }
-    buf
 }
 
 impl fmt::Debug for ExpressionBase {
@@ -113,7 +92,7 @@ impl fmt::Debug for ExpressionOperator {
         write!(f, "{}", match *self {
             ExpressionOperator::Subscription(ref exprs, ref pos) => format!(".operator[]({}) @ {:?}", format_vector_debug(exprs, ", "), pos),
             ExpressionOperator::FunctionCall(ref exprs, ref pos) => format!(".operator()({}) @ {:?}", format_vector_debug(exprs, ", "), pos),
-            ExpressionOperator::MemberAccess(ref name, ref pos) => format!(".operator->({:?} @ {:?})", name, pos),
+            ExpressionOperator::MemberAccess(ref name, ref pos) => format!(".{:?} @ {:?}", name, pos),
             ExpressionOperator::TypeCast(ref ty, ref pos) => format!(".operator {:?}() @ {:?}", ty, pos),
             ExpressionOperator::Unary(SeperatorKind::BitNot, ref pos) => format!(".operator~() @ {}", pos),
             ExpressionOperator::Unary(SeperatorKind::LogicalNot, ref pos) => format!(".operator!() @ {}", pos),
@@ -148,7 +127,7 @@ impl fmt::Display for ExpressionOperator {
         write!(f, "{}", match *self {
             ExpressionOperator::Subscription(ref exprs, ref _pos) => format!(".operator[]({})", format_vector_display(exprs, ", ")),
             ExpressionOperator::FunctionCall(ref exprs, ref _pos) => format!(".operator()({})", format_vector_display(exprs, ", ")),
-            ExpressionOperator::MemberAccess(ref name, ref _pos) => format!(".operator->({})", name),
+            ExpressionOperator::MemberAccess(ref name, ref _pos) => format!(".{}", name),
             ExpressionOperator::TypeCast(ref ty, ref _pos) => format!(".operator {}()", ty),
             ExpressionOperator::Unary(SeperatorKind::BitNot, ref _pos) => format!(".operator~()"),
             ExpressionOperator::Unary(SeperatorKind::LogicalNot, ref _pos) => format!(".operator!()"),
@@ -262,7 +241,7 @@ fn d3_expr_to_expr(d3: D3Expression) -> Expression {
     }
 
     for binary in bin_ops {
-        pos_end = binary.pos.end_pos;
+        pos_end = binary.oprand.pos_all().end_pos;
         ops.push(ExpressionOperator::Binary(binary.operator, binary.pos, d3_expr_to_expr(binary.oprand)));
     }
 
@@ -296,16 +275,49 @@ impl Expression {
             _ => false,  
         }
     }
+
 }
 
 #[cfg(test)]
 mod tests {
     use super::Expression;
-    // use super::ExpressionBase;
-    // use super::ExpressionOperator;
+    use super::ExpressionBase;
+    use super::ExpressionOperator;
 
+    use common::StringPosition;
     use lexical::Lexer;
+    use lexical::NumericLiteralValue;
+    use lexical::SeperatorKind;
     use syntax::ast_item::IASTItem;
+
+    #[test]
+    fn ast_expr_temp() {
+        //                                 0   12  3 4   5 6 7 89
+        //                                 12345678901234567890123
+        let lexer = &mut Lexer::new_test2("var [i32] abc = 1 + 1;");
+        let (result, length) = Expression::parse(lexer, 6);
+        assert_eq!(
+            result, 
+            Some(Expression::new_test(
+                ExpressionBase::NumericLiteral(NumericLiteralValue::I32(1)), 
+                make_str_pos!(1, 17, 1, 17),
+                vec![
+                    ExpressionOperator::Binary(
+                        SeperatorKind::Add,
+                        make_str_pos!(1, 19, 1, 19),
+                        Expression::new_test(
+                            ExpressionBase::NumericLiteral(NumericLiteralValue::I32(1)),
+                            make_str_pos!(1, 21, 1, 21),
+                            Vec::new(),
+                            make_str_pos!(1, 21, 1, 21),
+                        ),
+                    ),
+                ],
+                make_str_pos!(1, 17, 1, 21)
+            ))
+        );
+        assert_eq!(length, 3);
+    }
 
     #[test]
     #[ignore] // strange interactive test

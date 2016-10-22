@@ -68,7 +68,7 @@ impl fmt::Display for Postfix {
                 buf.push_str(")");
                 buf
             }
-            Postfix::MemberAccess(ref name, ref pos) => format!(".operator->({})", name),
+            Postfix::MemberAccess(ref name, ref _pos) => format!(".operator->({})", name),
             Postfix::TypeCast(ref ty) => format!(".operator {}()", ty),
         })
     }

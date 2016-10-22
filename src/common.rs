@@ -140,3 +140,26 @@ macro_rules! test_condition_perrorln {
 macro_rules! make_str_pos {
     ($row1: expr, $col1: expr, $row2: expr, $col2: expr) => (StringPosition::from(($row1, $col1, $row2, $col2)))
 }
+
+pub fn format_vector_display<T: fmt::Display>(items: &Vec<T>, sep: &str) -> String {
+    let length = items.len();
+    let mut buf = String::new();
+    for (index, item) in items.iter().enumerate() {
+        buf.push_str(&format!("{}", item));
+        if index != length - 1 {
+            buf.push_str(sep);
+        }
+    }
+    buf
+}
+pub fn format_vector_debug<T: fmt::Debug>(items: &Vec<T>, sep: &str) -> String {
+    let length = items.len();
+    let mut buf = String::new();
+    for (index, item) in items.iter().enumerate() {
+        buf.push_str(&format!("{:?}", item));
+        if index != length - 1 {
+            buf.push_str(sep);
+        }
+    }
+    buf
+}

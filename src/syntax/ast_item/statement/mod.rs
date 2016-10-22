@@ -1,102 +1,152 @@
 
 // Statement = 
 //     ConstDecl | VarDecl 
-//     | IfStatement | WhileStatement | ForStatement 
-//     | AssignStatement | OpAssignStatement
-//     | ContinueStatement | BreakStatement | ReturnStatement
+//     | IfStatement | WhileStatement | ForStatement | LoopStatement 
+//     | AssignStatement
+//     | JumpStatement
+ 
 
-// IfStatement = fIf Expression Block [fElse fIf Expression Block]* [ fElse Block ]  // if ...}   
-// WhileStatement = fWhile Expression Block                                                                 // while ...}
-// // furthuer on this: `continue 0;` for current block, `continue 1;` and `continue 2;` and more for outter level, include break
-// ContinueStatement = fContinue fSemiColon                                                                                        // continue;
-// BreakStatement = fBreak fSemiColon                                                                                              // break;
-// ForStatement = fFor fIdentifier fIn Expression fRange Expression Block  // for i in 1..5                  // for ...}
-// AssignStatement = Expression AssignOperator Expression fSemiColon                                                               // ... = ...;
-// ReturnStatement = fReturn [Expression] fSemiColon                                                                               // return ...;
+use std::fmt;
 
 use common::StringPosition;
 
 use lexical::Lexer;
-// use lexical::IToken;
-// use lexical::SeperatorKind;
+use lexical::IToken;
+use lexical::KeywordKind;
 
 use syntax::ast_item::IASTItem;
-use syntax::Expression;
-use syntax::Block;
 
 mod var_decl;
-mod assign_stmt;
+mod expr_stmt;
 mod if_stmt;
 mod for_stmt;
 mod jump_stmt;
 mod while_stmt;
-use self::var_decl::VarDeclStatement;
+mod loop_stmt;
 
-#[derive(Debug, Eq, PartialEq)]
-pub struct ElseIfBranch {
-    pub cond_expr: Expression,
-    pub body: Block,
-    pub pos: [StringPosition; 2],   // position for if and else
-}
+pub use self::var_decl::VarDeclStatement;
+pub use self::jump_stmt::JumpStatementType;
+pub use self::jump_stmt::JumpStatement;
+pub use self::expr_stmt::ExpressionStatement;
+pub use self::loop_stmt::LoopStatement;
+pub use self::while_stmt::WhileStatement;
+pub use self::for_stmt::ForStatement;
+pub use self::if_stmt::ElseIfBranch;
+pub use self::if_stmt::IfStatement;
 
-#[derive(Debug, Eq, PartialEq)]
-pub struct IfStatement {
-    pub id: usize,
-    pub if_expr: Expression,
-    pub if_pos: StringPosition,
-    pub if_body: Block,
-    pub elseifs: Vec<ElseIfBranch>,
-    pub else_body: Block,
-    pub else_pos: StringPosition,
-}
-
-#[derive(Debug, Eq, PartialEq)]
-pub struct WhileStatement {
-    pub id: usize,
-    pub cond_expr: Expression,
-    pub body: Block,
-    pub while_pos: StringPosition,
-}
-
-#[derive(Debug, Eq, PartialEq)]
-pub struct ForStatement {
-    pub id: usize,
-    pub iter_name: String, 
-    pub expr_low: Expression,
-    pub expr_high: Expression,
-    pub body: Block,
-    pub pos: [StringPosition; 4]  // position for 'for', iter_name, 'in', range operator, 
-}
-
-#[derive(Debug, Eq, PartialEq)]
-pub struct AssignmentStatement {
-    pub id: usize,
-    pub left_expr: Expression,
-    pub right_expr: Expression,
-    pub pos: [StringPosition; 2],    // position for '=' and ';'
-}
-
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Eq, PartialEq)]
 pub enum Statement {
-    VarDecl(VarDeclStatement),
-    If(IfStatement), 
-    While(WhileStatement),
-    For(ForStatement),
-    Return(StringPosition, usize),
-    Break(StringPosition, usize),
-    Continue(StringPosition, usize),
-    Assignment(AssignmentStatement),
+    VarDecl(VarDeclStatement),        // const, var
+    Jump(JumpStatement),              // break, continue, return
+    Expression(ExpressionStatement),  // _, (unary seperator, literal, identifier, left paren, left bracket)
+    If(IfStatement),                  // if
+    While(WhileStatement),            // while
+    For(ForStatement),                // for
+    Loop(LoopStatement),              // loop
+}
+impl fmt::Debug for Statement {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Statement::VarDecl(ref inner) => write!(f, "{:?}", inner),
+            Statement::Jump(ref inner) => write!(f, "{:?}", inner),
+            Statement::Expression(ref inner) => write!(f, "{:?}", inner),
+            Statement::If(ref inner) => write!(f, "{:?}", inner),
+            Statement::While(ref inner) => write!(f, "{:?}", inner),
+            Statement::For(ref inner) => write!(f, "{:?}", inner),
+            Statement::Loop(ref inner) => write!(f, "{:?}", inner),
+        }
+    }
+}
+impl fmt::Display for Statement {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Statement::VarDecl(ref inner) => write!(f, "{}", inner),
+            Statement::Jump(ref inner) => write!(f, "{}", inner),
+            Statement::Expression(ref inner) => write!(f, "{}", inner),
+            Statement::If(ref inner) => write!(f, "{}", inner),
+            Statement::While(ref inner) => write!(f, "{}", inner),
+            Statement::For(ref inner) => write!(f, "{}", inner),
+            Statement::Loop(ref inner) => write!(f, "{}", inner),
+        }
+    }
+}
+
+impl Statement {
+
+    pub fn get_id(&self) -> usize {
+        match *self {
+            Statement::VarDecl(ref inner) => inner.id,
+            Statement::Jump(ref inner) => inner.id,
+            Statement::Expression(ref inner) => inner.id,
+            Statement::If(ref inner) => inner.id,
+            Statement::While(ref inner) => inner.id,
+            Statement::For(ref inner) => inner.id,
+            Statement::Loop(ref inner) => inner.id,
+        }
+    }
+
+    pub fn set_id(&mut self, id: usize) {
+        match *self {
+            Statement::VarDecl(ref mut inner) => inner.id = id,
+            Statement::Jump(ref mut inner) => inner.id = id,
+            Statement::Expression(ref mut inner) => inner.id = id,
+            Statement::If(ref mut inner) => inner.id = id,
+            Statement::While(ref mut inner) => inner.id = id,
+            Statement::For(ref mut inner) => inner.id = id,
+            Statement::Loop(ref mut inner) => inner.id = id,
+        }
+    }
 }
 
 impl IASTItem for Statement {
 
-    fn pos_all(&self) -> StringPosition {  
-        StringPosition::new()
+    fn pos_all(&self) -> StringPosition {
+        match *self {  
+            Statement::VarDecl(ref inner) => inner.pos_all(),
+            Statement::Jump(ref inner) => inner.pos_all(),
+            Statement::Expression(ref inner) => inner.pos_all(),
+            Statement::If(ref inner) => inner.pos_all(),
+            Statement::While(ref inner) => inner.pos_all(),
+            Statement::For(ref inner) => inner.pos_all(),
+            Statement::Loop(ref inner) => inner.pos_all(),
+        }
     }
     
     fn parse(lexer: &mut Lexer, index: usize) -> (Option<Statement>, usize) {
 
-        (None, 0)
+        match lexer.nth(index).get_keyword() {
+            Some(&KeywordKind::Const) 
+            | Some(&KeywordKind::Var) => match VarDeclStatement::parse(lexer, index) {
+                (Some(var_decl), var_decl_len) => (Some(Statement::VarDecl(var_decl)), var_decl_len),
+                (None, length) => (None, length),
+            },
+            Some(&KeywordKind::Break) 
+            | Some(&KeywordKind::Continue) 
+            | Some(&KeywordKind::Return) => match JumpStatement::parse(lexer, index) {
+                (Some(jump_stmt), jump_stmt_len) => (Some(Statement::Jump(jump_stmt)), jump_stmt_len),
+                (None, length) => (None, length), 
+            },
+            Some(&KeywordKind::Loop) => match LoopStatement::parse(lexer, index) {
+                (Some(loop_stmt), loop_stmt_len) => (Some(Statement::Loop(loop_stmt)), loop_stmt_len),
+                (None, length) => (None, length),
+            },
+            Some(&KeywordKind::While) => match WhileStatement::parse(lexer, index) {
+                (Some(while_stmt), while_stmt_len) => (Some(Statement::While(while_stmt)), while_stmt_len),
+                (None, length) => (None, length),
+            },
+            Some(&KeywordKind::For) => match ForStatement::parse(lexer, index) {
+                (Some(for_stmt), for_stmt_len) => (Some(Statement::For(for_stmt)), for_stmt_len),
+                (None, length) => (None, length),
+            },
+            Some(&KeywordKind::If) => match IfStatement::parse(lexer, index) {
+                (Some(if_stmt), if_stmt_len) => (Some(Statement::If(if_stmt)), if_stmt_len),
+                (None, length) => (None, length),
+            },
+            _ => match ExpressionStatement::parse(lexer, index) {
+                (Some(expr_stmt), expr_stmt_len) => (Some(Statement::Expression(expr_stmt)), expr_stmt_len),
+                (None, length) => (None, length),
+            }
+        }
     }
 }
 
@@ -104,7 +154,7 @@ impl IASTItem for Statement {
 mod tests {
 
     #[test]
-    fn ast_stmt_() {
+    fn ast_stmt_all() {
 
     }
 }

@@ -212,7 +212,6 @@ mod tests {
         //                                0        1         2         3         4         5         6         7         8     
         //                                1234567890123456789012345678901234567890123456789012345678901234567890123456789
         let lexer = &mut Lexer::new_test("abc.defg[[1](klm, [123, 456,], )](opq, 456.)() as [i32].rst[uvw, xyz, ABC]", MessageEmitter::new());
-        let result = D3Expression::parse(lexer, 0);
         let left = D3Expression::parse(lexer, 0).0.unwrap();
         let right = expr_to_postfix!{
             PrimaryExpression::make_ident("abc".to_owned(), make_str_pos!(1, 1, 1, 3)),
@@ -273,6 +272,7 @@ mod tests {
         let lexer = &mut Lexer::new("++!~[!1; ~--2]".to_owned());
         let (result, length) = D3Expression::parse(lexer, 0);
 
+        assert_eq!(length, 11);
         assert_eq!(
             result.unwrap(),
             expr_to_unary!(

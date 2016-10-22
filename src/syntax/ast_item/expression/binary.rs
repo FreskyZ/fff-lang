@@ -131,7 +131,7 @@ macro_rules! impl_binary_parser {
                         match $previous_parser(lexer, index + current_len) {
                             (None, length) => return (None, current_len + length),
                             (Some(oprand), oprand_len) => {
-                                left.ops.push(BinaryOperator{ operator: sep.clone(), pos: lexer.pos(current_len - 1), oprand: D3Expression(oprand) });
+                                left.ops.push(BinaryOperator{ operator: sep.clone(), pos: lexer.pos(index + current_len - 1), oprand: D3Expression(oprand) });
                                 current_len += oprand_len;
                             }
                         }
@@ -163,7 +163,7 @@ impl IASTItem for BinaryExpression {
 
     fn pos_all(&self) -> StringPosition {
         match self.ops.iter().last() {
-            Some(op) => StringPosition::from2(self.unary.pos_all().start_pos, op.pos.end_pos),
+            Some(op) => StringPosition::from2(self.unary.pos_all().start_pos, op.oprand.pos_all().end_pos),
             None => self.unary.pos_all()
         }
     }

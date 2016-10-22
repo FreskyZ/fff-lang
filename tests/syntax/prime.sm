@@ -4,17 +4,17 @@
 fn get_primes(u32 high_bound) -> [u32] {
     
     var [bool] is_prime = [true; high_bound]; 
-    for (u32 i in range(1, high_bound / 2 + 1)) {
-        for (u32 j in range(2, high_bound)) {
-            if (i * j < high_bound) {
+    for u32 i in 1..(high_bound / 2 + 1)) {
+        for u32 j in 2..high_bound)) {
+            if i * j < high_bound {
                 is_prime[i * j] = false;
             }
         }
     }
 
-    var [u32] ret_val = [];
-    for (u32 i in range(1, high_bound)) {
-        if (is_prime[i]) {
+    var [u32] ret_val = [0u32; 0]; // because no type infer, should provide type for empty array def
+    for u32 i in 1..high_bound) {
+        if is_prime[i] {
             ret_val.push_back(i);
         }
     }
