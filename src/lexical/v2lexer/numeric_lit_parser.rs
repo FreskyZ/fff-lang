@@ -40,9 +40,13 @@ macro_rules! values_to_integral {
         }
     )
 }
-values_to_integral!{ values_to_u32, u32, NumericLiteralValue::U32 }
+values_to_integral!{ values_to_i8, i8, NumericLiteralValue::I8 }
 values_to_integral!{ values_to_u8, u8, NumericLiteralValue::U8 }
+values_to_integral!{ values_to_i16, i16, NumericLiteralValue::I16 }
+values_to_integral!{ values_to_u16, u16, NumericLiteralValue::U16 }
 values_to_integral!{ values_to_i32, i32, NumericLiteralValue::I32 }
+values_to_integral!{ values_to_u32, u32, NumericLiteralValue::U32 }
+values_to_integral!{ values_to_i64, i64, NumericLiteralValue::I64 }
 values_to_integral!{ values_to_u64, u64, NumericLiteralValue::U64 }
 
 macro_rules! values_to_float {
@@ -112,9 +116,13 @@ test_only_attr!{
     [derive(Debug, Eq, PartialEq)]
     ![derive(Eq, PartialEq)]
     enum Postfix {
-        U8, 
+        I8,
+        U8,
+        I16,
+        U16, 
         I32,
         U32,
+        I64,
         U64,
         F32,
         F64,
@@ -125,6 +133,7 @@ impl Postfix {
     fn len(&self) -> usize {
         match *self {
             Postfix::NotSet => 0,
+            Postfix::I8 => 2,
             Postfix::U8 => 2,
             _ => 3,
         }
@@ -143,7 +152,10 @@ impl Postfix {
     }
     fn is_integral(&self) -> bool {
         match *self {
-            Postfix::U8 | Postfix::I32 | Postfix::U32 | Postfix::U64 => true, 
+            Postfix::I8 | Postfix::U8
+            | Postfix::I16 | Postfix::U16 
+            | Postfix::I32 | Postfix::U32 
+            | Postfix::I64| Postfix::U64 => true, 
             _ => false,  
         }
     }
@@ -180,8 +192,12 @@ fn get_prefix(raw: &str, pos: StringPosition) -> Result<Prefix, Message> {
                 // directly special check `0f32` cases
                 match (maybe_start_of_postfix, chars.next(), chars.next(), chars.next()) {
                     ('u', Some('8'), None, None)
+                    | ('i', Some('8'), None, None)
+                    | ('i', Some('1'), Some('6'), None)
+                    | ('u', Some('1'), Some('6'), None)
                     | ('i', Some('3'), Some('2'), None)
                     | ('u', Some('3'), Some('2'), None)
+                    | ('i', Some('6'), Some('4'), None)
                     | ('u', Some('6'), Some('4'), None)
                     | ('f', Some('3'), Some('2'), None)
                     | ('f', Some('6'), Some('4'), None) => Ok(Prefix::NotSet),
@@ -205,15 +221,23 @@ fn get_prefix(raw: &str, pos: StringPosition) -> Result<Prefix, Message> {
 fn get_postfix(raw: &str, pos: StringPosition, has_prefix: bool) -> Result<Postfix, Message> {
 
     match raw {                                  // find nothing after removing postfix, which is like "0xu8"
-        "u8" | "u32" | "i32" | "u64" | "f32" | "f64" => return Err(Message::EmptyNumericLiteral{ literal_pos: pos }),
+        "i8" | "u8"
+        | "i16" | "u16" 
+        | "u32" | "i32" 
+        | "i64" | "u64" 
+        | "f32" | "f64" => return Err(Message::EmptyNumericLiteral{ literal_pos: pos }),
         _ => (),
     }
 
     let mut revchars = raw.chars().rev();
     match (revchars.next(), revchars.next(), revchars.next()) {
+        (Some('8'), Some('i'), _) => Ok(Postfix::I8),
         (Some('8'), Some('u'), _) => Ok(Postfix::U8),
-        (Some('2'), Some('3'), Some('u')) => Ok(Postfix::U32),
+        (Some('6'), Some('1'), Some('i')) => Ok(Postfix::I16),
+        (Some('6'), Some('1'), Some('u')) => Ok(Postfix::U16),
         (Some('2'), Some('3'), Some('i')) => Ok(Postfix::I32),
+        (Some('2'), Some('3'), Some('u')) => Ok(Postfix::U32),
+        (Some('4'), Some('6'), Some('i')) => Ok(Postfix::I64),
         (Some('4'), Some('6'), Some('u')) => Ok(Postfix::U64),
 
         (Some('2'), Some('3'), Some('f')) | (Some('4'), Some('6'), Some('f')) if has_prefix => 
@@ -293,6 +317,10 @@ fn delegate(raw: String, pos: StringPosition) -> Result<NumericLiteralValue, Mes
         Ok((Content::Integral(content), Postfix::U32)) => values_to_u32(prefix.radix(), content, pos),
         Ok((Content::Integral(content), Postfix::I32)) => values_to_i32(prefix.radix(), content, pos),
         Ok((Content::Integral(content), Postfix::U64)) => values_to_u64(prefix.radix(), content, pos),
+        Ok((Content::Integral(content), Postfix::I8)) => values_to_i8(prefix.radix(), content, pos),
+        Ok((Content::Integral(content), Postfix::U16)) => values_to_u16(prefix.radix(), content, pos),
+        Ok((Content::Integral(content), Postfix::I16)) => values_to_i16(prefix.radix(), content, pos),
+        Ok((Content::Integral(content), Postfix::I64)) => values_to_i64(prefix.radix(), content, pos),
         Ok((Content::Float(content1, content2), Postfix::F32)) => values_to_f32(prefix.radix(), content1, content2, pos),
         Ok((Content::Float(content1, content2), Postfix::F64)) => values_to_f64(prefix.radix(), content1, content2, pos),
         _ => unreachable!()

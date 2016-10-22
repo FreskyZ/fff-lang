@@ -46,17 +46,16 @@ mod tests {
 
     #[test]
     fn ast_hello_world() {
-        use message::MessageEmitter;
         use lexical::Lexer;
         use super::get_ast;
 
-        let messages = MessageEmitter::new();
-        let lexer = &mut Lexer::new_test(r#"fn main() { println("helloworld"); }"#, messages);
+        let lexer = &mut Lexer::new_test2(r#"fn main() { println("helloworld"); }"#);
         let program = get_ast(lexer);
 
         perrorln!("program: {:?}", program);
         perrorln!("messages: {:?}", lexer.messages())
     }
+
 }
 
 // Designment

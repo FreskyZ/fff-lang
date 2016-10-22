@@ -152,8 +152,9 @@ impl IASTItem for Statement {
 
 #[cfg(test)]
 mod tests {
-
+    
     #[test]
+    #[ignore]
     fn ast_stmt_all() {
 
     }

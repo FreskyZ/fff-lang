@@ -5,6 +5,8 @@ use std::fmt;
 
 use common::From2;
 use common::StringPosition;
+use common::format_vector_debug;
+use common::format_vector_display;
 use message::Message;
 
 use lexical::Lexer;
@@ -69,7 +71,7 @@ impl fmt::Debug for FunctionDef {
         write!(f, "fn @ {:?} {:?} @ {:?} ({:?}) -> {:?} {:?}",
             self.pos2[0], 
             self.name, self.pos2[1],
-            self.args.iter().fold(String::new(), |mut buf, arg| { buf.push_str(&format!("{:?}, ", arg)); buf }),
+            format_vector_debug(&self.args, ", "),
             self.ret_type,
             self.body,
         )
@@ -77,9 +79,9 @@ impl fmt::Debug for FunctionDef {
 }
 impl fmt::Display for FunctionDef {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "fn {} ({}) -> {} {:?}",
+        write!(f, "fn {} ({}) -> {} {}",
             self.name, 
-            self.args.iter().fold(String::new(), |mut buf, arg| { buf.push_str(&format!("{}, ", arg)); buf }),
+            format_vector_display(&self.args, ", "),
             self.ret_type,
             self.body,
         )

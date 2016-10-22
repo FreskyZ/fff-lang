@@ -18,6 +18,10 @@ use syntax::ast_item::IASTItem;
 pub enum SMTypeBase {
     Dummy, // None for syntax parser, means some error happened
     Unit,
+    I8,
+    I16,
+    U16,
+    I64,
     U8,
     I32,
     U32,
@@ -26,6 +30,7 @@ pub enum SMTypeBase {
     F64,
     Char,
     SMString,
+    Boolean,
     Array(Box<SMType>),
 }
 
@@ -35,12 +40,17 @@ impl fmt::Debug for SMTypeBase {
             SMTypeBase::Dummy => write!(f, "Dummy"),
             SMTypeBase::Unit => write!(f, "unit"),
             SMTypeBase::U8 => write!(f, "u8"),
+            SMTypeBase::I8 => write!(f, "i8"),
+            SMTypeBase::I16 => write!(f, "i16"),
+            SMTypeBase::U16 => write!(f, "u16"),
+            SMTypeBase::I64 => write!(f, "i64"),
             SMTypeBase::I32 => write!(f, "i32"),
             SMTypeBase::U32 => write!(f, "u32"),
             SMTypeBase::U64 => write!(f, "u64"),
             SMTypeBase::F32 => write!(f, "f32"),
             SMTypeBase::F64 => write!(f, "f64"),
             SMTypeBase::Char => write!(f, "char"),
+            SMTypeBase::Boolean => write!(f, "bool"),
             SMTypeBase::SMString => write!(f, "string"),
             SMTypeBase::Array(ref inner) => write!(f, "[{:?}]", inner.as_ref()),
         }
@@ -52,12 +62,17 @@ impl fmt::Display for SMTypeBase {
             SMTypeBase::Dummy => write!(f, "Dummy"),
             SMTypeBase::Unit => write!(f, "unit"),
             SMTypeBase::U8 => write!(f, "u8"),
+            SMTypeBase::I8 => write!(f, "i8"),
+            SMTypeBase::I16 => write!(f, "i16"),
+            SMTypeBase::U16 => write!(f, "u16"),
+            SMTypeBase::I64 => write!(f, "i64"),
             SMTypeBase::I32 => write!(f, "i32"),
             SMTypeBase::U32 => write!(f, "u32"),
             SMTypeBase::U64 => write!(f, "u64"),
             SMTypeBase::F32 => write!(f, "f32"),
             SMTypeBase::F64 => write!(f, "f64"),
             SMTypeBase::Char => write!(f, "char"),
+            SMTypeBase::Boolean => write!(f, "bool"),
             SMTypeBase::SMString => write!(f, "string"),
             SMTypeBase::Array(ref inner) => write!(f, "[{}]", inner.as_ref()),
         }
@@ -102,13 +117,18 @@ fn check_primitive_type(keyword: &KeywordKind) -> Option<SMTypeBase> {
     use self::SMTypeBase::*;
     match *keyword {
         KeywordKind::PrimTypeU8 => Some(U8),
+        KeywordKind::PrimTypeI8 => Some(I8),
+        KeywordKind::PrimTypeI16 => Some(I16),
+        KeywordKind::PrimTypeU16 => Some(U16),
         KeywordKind::PrimTypeI32 => Some(I32),
         KeywordKind::PrimTypeU32 => Some(U32),
+        KeywordKind::PrimTypeI64 => Some(I64),
         KeywordKind::PrimTypeU64 => Some(U64),
         KeywordKind::PrimTypeF32 => Some(F32),
         KeywordKind::PrimTypeF64 => Some(F64),
         KeywordKind::PrimTypeChar => Some(Char),
         KeywordKind::PrimTypeString => Some(SMString),
+        KeywordKind::PrimTypeBool => Some(Boolean),
         _ => None
     }
 }
