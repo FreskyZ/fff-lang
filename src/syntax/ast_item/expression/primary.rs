@@ -243,6 +243,7 @@ impl IASTItem for PrimaryExpression {
         }
 
         test_condition_perrorln!{ log_enable, "Failed in prim expr parse, not start with left paren or left bracket" }
+        let _dummy = log_enable;
         return lexer.push_expect("identifier or literal or array def", index, 0);
     }
 } 

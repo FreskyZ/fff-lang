@@ -168,6 +168,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn v3_on_lexical_v2_num_lit_parser() {
          use std::fs::File;
         use std::io::Read;

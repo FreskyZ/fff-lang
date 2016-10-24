@@ -111,4 +111,32 @@ mod tests {
         // test_case!("tests/syntax/prime.sm");
         // test_case!("tests/syntax/string.sm");
     }
+
+    #[test]
+    #[ignore]
+    fn ast_interactive() {
+        use std::io::stdin;
+
+        loop {
+            let mut buf = String::new();
+
+            perrorln!("Input:");
+            match stdin().read_line(&mut buf) {
+                Ok(_) => (),
+                Err(_) => break,
+            }
+
+            if buf != "break\r\n" {
+                let lexer = &mut Lexer::new(buf);
+                let (result, length) = Program::parse(lexer, 0);
+                perrorln!("Debug: ({:?}, {})", result, length);
+                match result {
+                    Some(result) => perrorln!("Display: {}", result),
+                    None => perrorln!("messages: {:?}", lexer.messages()),
+                }
+            } else {
+                break;
+            }
+        }
+    }
 }

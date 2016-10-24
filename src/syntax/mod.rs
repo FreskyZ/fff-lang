@@ -2,25 +2,31 @@
 // Syntax, form abstract syntax tree
 // TODO far: Add error recovery, which need new structure of message emitter and symbol length
 // TODO far: Add support for semantic error, which need postition information in ast items
-// TODO: to support name resolve, statements in block should have i32 id, because same statement at different position is not same
 
 mod ast_item;
-mod scope;
 
-use lexical::Lexer;
-
-use syntax::ast_item::IASTItem;
 pub use syntax::ast_item::program::Program;
 pub use syntax::ast_item::function_def::FunctionDef;
 pub use syntax::ast_item::expression::Expression;
 pub use syntax::ast_item::expression::ExpressionBase;
 pub use syntax::ast_item::expression::ExpressionOperator;
 pub use syntax::ast_item::statement::Statement;
+pub use syntax::ast_item::statement::VarDeclStatement;
+pub use syntax::ast_item::statement::JumpStatementType;
+pub use syntax::ast_item::statement::JumpStatement;
+pub use syntax::ast_item::statement::ExpressionStatement;
+pub use syntax::ast_item::statement::LoopStatement;
+pub use syntax::ast_item::statement::WhileStatement;
+pub use syntax::ast_item::statement::ForStatement;
+pub use syntax::ast_item::statement::ElseIfBranch;
+pub use syntax::ast_item::statement::IfStatement;
 pub use syntax::ast_item::smtype::SMTypeBase;
 pub use syntax::ast_item::smtype::SMType;
 pub use syntax::ast_item::block::Block;
 
-pub fn get_ast(lexer: &mut Lexer) -> Option<Program> {
+use lexical::Lexer;
+pub fn parse(lexer: &mut Lexer) -> Option<Program> {
+    use syntax::ast_item::IASTItem;
 
     Program::parse(lexer, 0).0
 }
@@ -47,10 +53,10 @@ mod tests {
     #[test]
     fn ast_hello_world() {
         use lexical::Lexer;
-        use super::get_ast;
+        use super::parse;
 
         let lexer = &mut Lexer::new_test2(r#"fn main() { println("helloworld"); }"#);
-        let program = get_ast(lexer);
+        let program = parse(lexer);
 
         perrorln!("program: {:?}", program);
         perrorln!("messages: {:?}", lexer.messages())

@@ -230,6 +230,7 @@ impl IASTItem for PostfixExpression {
         }
 
         test_condition_perrorln!{ log_enable, "parsing postfixs finished, get postfixes: {:?}", postfixs, }
+        let _dummy = log_enable;
         (Some(PostfixExpression{ prim: primary, postfixs: postfixs }), current_len)
     }
 }

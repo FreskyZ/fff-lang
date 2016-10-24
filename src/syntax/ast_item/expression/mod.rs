@@ -82,6 +82,7 @@ impl fmt::Display for ExpressionBase {
 pub enum ExpressionOperator {
     MemberAccess(String, StringPosition), // `.xxxx`'s position 
     FunctionCall(Vec<Expression>, StringPosition), // '(', ')''s position, TODO: implement the position
+    MemberFunctionCall(String, Vec<Expression>, [StringPosition; 2]),  // .xxx and () 's position  
     Subscription(Vec<Expression>, StringPosition), // '[', ']''s position, TODO: implement it
     TypeCast(SMType, StringPosition), // `as`'s position TODO: implement it 
     Unary(SeperatorKind, StringPosition),
@@ -94,6 +95,7 @@ impl fmt::Debug for ExpressionOperator {
             ExpressionOperator::FunctionCall(ref exprs, ref pos) => format!(".operator()({}) @ {:?}", format_vector_debug(exprs, ", "), pos),
             ExpressionOperator::MemberAccess(ref name, ref pos) => format!(".{:?} @ {:?}", name, pos),
             ExpressionOperator::TypeCast(ref ty, ref pos) => format!(".operator {:?}() @ {:?}", ty, pos),
+            ExpressionOperator::MemberFunctionCall(ref name, ref exprs, ref pos) => format!(".{:?} @ {:?}({}) @ {:?}", name, pos[0], format_vector_debug(exprs, ", "), pos[1]),
             ExpressionOperator::Unary(SeperatorKind::BitNot, ref pos) => format!(".operator~() @ {}", pos),
             ExpressionOperator::Unary(SeperatorKind::LogicalNot, ref pos) => format!(".operator!() @ {}", pos),
             ExpressionOperator::Unary(SeperatorKind::Increase, ref pos) => format!(".operator++() @ {}", pos),
@@ -129,6 +131,7 @@ impl fmt::Display for ExpressionOperator {
             ExpressionOperator::FunctionCall(ref exprs, ref _pos) => format!(".operator()({})", format_vector_display(exprs, ", ")),
             ExpressionOperator::MemberAccess(ref name, ref _pos) => format!(".{}", name),
             ExpressionOperator::TypeCast(ref ty, ref _pos) => format!(".operator {}()", ty),
+            ExpressionOperator::MemberFunctionCall(ref name, ref exprs, ref _pos) => format!(".{}({})", name, format_vector_display(exprs, ", ")),
             ExpressionOperator::Unary(SeperatorKind::BitNot, ref _pos) => format!(".operator~()"),
             ExpressionOperator::Unary(SeperatorKind::LogicalNot, ref _pos) => format!(".operator!()"),
             ExpressionOperator::Unary(SeperatorKind::Increase, ref _pos) => format!(".operator++()"),
@@ -224,15 +227,35 @@ fn d3_expr_to_expr(d3: D3Expression) -> Expression {
         PrimaryExpressionBase::ParenExpression(d3_expr) => ExpressionBase::Paren(d3_expr_to_expr(d3_expr.as_ref().clone())),
     };
 
-    let mut ops = Vec::new();
-    for postfix in postfix_ops {
-        // pos_end = ... // Wait for their pos
-        ops.push(match postfix {
+    fn postfix_to_operator(postfix: Postfix) -> ExpressionOperator {
+        match postfix {
             Postfix::FunctionCall(d3_exprs) => ExpressionOperator::FunctionCall(d3_exprs.into_iter().map(d3_expr_to_expr).collect(), StringPosition::new()),
             Postfix::Subscription(d3_exprs) => ExpressionOperator::Subscription(d3_exprs.into_iter().map(d3_expr_to_expr).collect(), StringPosition::new()),
             Postfix::MemberAccess(ident, pos) => ExpressionOperator::MemberAccess(ident, pos),
             Postfix::TypeCast(ty) => ExpressionOperator::TypeCast(ty, StringPosition::new()),
-        });
+        }
+    }
+    let mut ops = Vec::new();
+    let mut postfix_ops_iter = postfix_ops.into_iter();
+    loop {
+        match (postfix_ops_iter.next(), postfix_ops_iter.next()) {
+            (Some(Postfix::MemberAccess(ident1, pos1)), Some(Postfix::FunctionCall(params))) => {
+                ops.push(ExpressionOperator::MemberFunctionCall(
+                    ident1, 
+                    params.into_iter().map(d3_expr_to_expr).collect(), 
+                    [pos1, StringPosition::new()]
+                ));
+            }
+            (Some(other_postfix1), Some(other_postfix2)) => {
+                ops.push(postfix_to_operator(other_postfix1));
+                ops.push(postfix_to_operator(other_postfix2));
+            }
+            (Some(other_postfix), None) => { 
+                ops.push(postfix_to_operator(other_postfix));
+                break;
+            }
+            (None, _) => break,
+        }
     }
 
     for prefix in unary_ops.into_iter().rev() { // they are applied reversely
@@ -254,12 +277,10 @@ impl IASTItem for Expression {
 
     fn parse(lexer: &mut Lexer, index: usize) -> (Option<Expression>, usize) {
         
-        let (d3, d3_length) = match D3Expression::parse(lexer, index) {
-            (Some(d3), d3_length) => (d3, d3_length),
-            (None, length) => return (None, length),
-        };
-
-        (Some(d3_expr_to_expr(d3)), d3_length)
+        match D3Expression::parse(lexer, index) {
+            (Some(d3), d3_length) => (Some(d3_expr_to_expr(d3)), d3_length),
+            (None, length) => (None, length),
+        }
     } 
 }
 
@@ -321,17 +342,19 @@ mod tests {
 
     #[test]
     #[ignore] // strange interactive test
-    fn ast_expr_flatten() {
+    fn ast_expr_interactive() {
         use std::io::stdin;
 
         loop {
             let mut buf = String::new();
+
+            perrorln!("Input:");
             match stdin().read_line(&mut buf) {
                 Ok(_) => (),
                 Err(_) => break,
             }
 
-            if buf != "break\n" {
+            if buf != "break\r\n" {
                 let lexer = &mut Lexer::new(buf);
                 let (result, length) = Expression::parse(lexer, 0);
                 perrorln!("Debug: ({:?}, {})", result, length);

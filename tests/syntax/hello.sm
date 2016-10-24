@@ -3,7 +3,12 @@
 
 fn main() {
 
-    println("helloworld");
+    println("helloworld");      // loadstr "helloworld"  // push "helloworld"
+                                // call println          // implemented internal
+
+    // emitted, normally is a ret 
+    // for main it is
+    // exit(0)                  // exit                  // quit vm
 
     var i32 a = 1i32;
     var u32 a = 1u32;

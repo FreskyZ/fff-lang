@@ -3,7 +3,7 @@
 
 use file_map::InputReader;
 use lexical::Lexer;
-use syntax::get_ast;
+use syntax::parse;
 
 // Handle and print error here
 pub fn compile_input(file_name: String) {
@@ -21,7 +21,7 @@ pub fn compile_input(file_name: String) {
     };
 
     let lexer = &mut Lexer::new(content);
-    let _ast = get_ast(lexer);
+    let _ast = parse(lexer);
 }
 
 #[cfg(test)]
