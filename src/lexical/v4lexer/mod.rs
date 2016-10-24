@@ -7,12 +7,13 @@ use common::StringPosition;
 use message::Message;
 use message::MessageEmitter;
 
-use lexical::symbol_type::StringLiteral;
-use lexical::symbol_type::CharLiteral;
-use lexical::symbol_type::KeywordKind;
-use lexical::symbol_type::SeperatorKind;
-use lexical::symbol_type::NumericLiteral;
-use lexical::symbol_type::NumericLiteralValue;
+use lexical::symbol_type::string_literal::StringLiteral;
+use lexical::symbol_type::char_literal::CharLiteral;
+use lexical::symbol_type::numeric_literal::NumericLiteral;
+use lexical::KeywordKind;
+use lexical::SeperatorKind;
+use lexical::NumLitValue;
+use lexical::LexicalLiteral;
 
 use lexical::v3lexer::V3Lexer;
 use lexical::v3lexer::V3Token;
@@ -24,11 +25,7 @@ test_only_attr!{
     [derive(Clone, Eq, PartialEq)]
     ![derive(Clone)]
     pub enum TokenValue {
-        StringLiteral(Option<String>),
-        RawStringLiteral(Option<String>),
-        NumericLiteral(Option<NumericLiteralValue>),
-        CharLiteral(Option<char>),
-        BooleanLiteral(bool),
+        Literal(LexicalLiteral),
         Identifier(String),
         Keyword(KeywordKind),
         Seperator(SeperatorKind),
@@ -50,11 +47,14 @@ impl From<V3Token> for V4Token {
     // map None to EOF
     fn from(v3: V3Token) -> V4Token {
         match v3 {
-            V3Token::StringLiteral(StringLiteral{ value, pos, is_raw: true }) => V4Token{ value: TokenValue::RawStringLiteral(value), pos: pos },
-            V3Token::StringLiteral(StringLiteral{ value, pos, is_raw: false }) => V4Token{ value: TokenValue::StringLiteral(value), pos: pos },
-            V3Token::NumericLiteral(NumericLiteral{ value, pos }) => V4Token{ value: TokenValue::NumericLiteral(value), pos: pos },
-            V3Token::CharLiteral(CharLiteral{ value, pos }) => V4Token{ value: TokenValue::CharLiteral(value), pos: pos },
-            V3Token::BooleanLiteral(value, pos) => V4Token{ value: TokenValue::BooleanLiteral(value), pos: pos },
+            V3Token::StringLiteral(StringLiteral{ value, pos, is_raw: _is_raw }) => 
+                V4Token{ value: TokenValue::Literal(LexicalLiteral::Str(value)), pos: pos },
+            V3Token::NumericLiteral(NumericLiteral{ value, pos }) => 
+                V4Token{ value: TokenValue::Literal(LexicalLiteral::Num(value)), pos: pos },
+            V3Token::CharLiteral(CharLiteral{ value, pos }) => 
+                V4Token{ value: TokenValue::Literal(LexicalLiteral::Char(value)), pos: pos },
+            V3Token::BooleanLiteral(value, pos) => 
+                V4Token{ value: TokenValue::Literal(LexicalLiteral::Bool(value)), pos: pos },
             V3Token::Identifier(name, pos) => V4Token{ value: TokenValue::Identifier(name), pos: pos },
             V3Token::Keyword(kind, pos) => V4Token{ value: TokenValue::Keyword(kind), pos: pos },
             V3Token::Seperator(kind, pos) => V4Token{ value: TokenValue::Seperator(kind), pos: pos },
@@ -63,18 +63,9 @@ impl From<V3Token> for V4Token {
 }
 
 impl fmt::Debug for V4Token {
-
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         try!(match self.value {
-            TokenValue::StringLiteral(Some(ref value)) => write!(f, "String literal {:?} at ", value),
-            TokenValue::StringLiteral(None) => write!(f, "String literal <invalid> at "),
-            TokenValue::RawStringLiteral(Some(ref value)) => write!(f, "Raw string literal {:?} at ", value),
-            TokenValue::RawStringLiteral(None) => write!(f, "Raw string literal <invalid> at "),
-            TokenValue::CharLiteral(Some(ref value)) => write!(f, "Char literal {:?} at ", value),
-            TokenValue::CharLiteral(None) => write!(f, "Char literal <invalid> at "),
-            TokenValue::NumericLiteral(Some(ref value)) => write!(f, "Numeric literal {:?} at ", value),
-            TokenValue::NumericLiteral(None) => write!(f, "Numeric literal <invalid> at "),
-            TokenValue::BooleanLiteral(ref value) => write!(f, "Boolean literal {} at ", value),
+            TokenValue::Literal(ref lit) => write!(f, "{:?} at ", lit),
             TokenValue::Identifier(ref name) => write!(f, "Identifier `{}` at ", name),
             TokenValue::Keyword(ref kind) => write!(f, "Keyword {:?} at ", kind),
             TokenValue::Seperator(ref kind) => write!(f, "Seperator {:?} at ", kind),
@@ -104,42 +95,6 @@ impl IToken for V4Token {
             _ => false,
         }
     }
-    fn is_str_lit(&self) -> bool {
-        match self.value {
-            TokenValue::StringLiteral(_) => true,
-            _ => false,
-        }
-    }
-    fn is_raw_str_lit(&self) -> bool {
-        match self.value {
-            TokenValue::RawStringLiteral(_) => true,
-            _ => false,
-        }
-    }
-    fn is_any_str_lit(&self) -> bool {
-        match self.value {
-            TokenValue::StringLiteral(_) | TokenValue::RawStringLiteral(_) => true,
-            _ => false,
-        }
-    }
-    fn is_num_lit(&self) -> bool {
-        match self.value {
-            TokenValue::NumericLiteral(_) => true,
-            _ => false,
-        }
-    }
-    fn is_char_lit(&self) -> bool {
-        match self.value {
-            TokenValue::CharLiteral(_) => true,
-            _ => false,
-        }
-    }
-    fn is_bool_lit(&self) -> bool {
-        match self.value {
-            TokenValue::BooleanLiteral(_) => true,
-            _ => false,
-        }
-    }
     fn is_eof(&self) -> bool {
         match self.value {
             TokenValue::EndofFile => true, 
@@ -147,46 +102,58 @@ impl IToken for V4Token {
         }
     }
 
-    fn get_keyword(&self) -> Option<&KeywordKind> {
+    fn is_lit(&self) -> bool {
         match self.value {
-            TokenValue::Keyword(ref kind) => Some(kind),
+            TokenValue::Literal(_) => true,
+            _ => false,
+        }
+    }
+    fn is_str_lit(&self) -> bool {
+        match self.value {
+            TokenValue::Literal(LexicalLiteral::Str(_)) => true,
+            _ => false,
+        }
+    }
+    fn is_num_lit(&self) -> bool {
+        match self.value {
+            TokenValue::Literal(LexicalLiteral::Num(_)) => true,
+            _ => false,
+        }
+    }
+    fn is_char_lit(&self) -> bool {
+        match self.value {
+            TokenValue::Literal(LexicalLiteral::Char(_)) => true,
+            _ => false,
+        }
+    }
+    fn is_bool_lit(&self) -> bool {
+        match self.value {
+            TokenValue::Literal(LexicalLiteral::Bool(_)) => true,
+            _ => false,
+        }
+    }
+
+    fn get_keyword(&self) -> Option<KeywordKind> {
+        match self.value {
+            TokenValue::Keyword(ref kind) => Some(kind.clone()),
             _ => None
         }
     }
-    fn get_seperator(&self) -> Option<&SeperatorKind> {
+    fn get_seperator(&self) -> Option<SeperatorKind> {
         match self.value {
-            TokenValue::Seperator(ref kind) => Some(kind),
+            TokenValue::Seperator(ref kind) => Some(kind.clone()),
             _ => None
         }
     }
-    fn get_identifier(&self) -> Option<&String> {
+    fn get_identifier(&self) -> Option<String> {
         match self.value {
-            TokenValue::Identifier(ref name) => Some(name),
+            TokenValue::Identifier(ref name) => Some(name.clone()),
             _ => None
         }
     }
-    fn get_str_lit_val(&self) -> Option<&Option<String>> {
+    fn get_lit_val(&self) -> Option<LexicalLiteral> {
         match self.value {
-            TokenValue::StringLiteral(ref val) => Some(val),
-            TokenValue::RawStringLiteral(ref val) => Some(val),
-            _ => None,
-        }
-    }
-    fn get_char_lit_val(&self) -> Option<&Option<char>> {
-        match self.value {
-            TokenValue::CharLiteral(ref val) => Some(val),
-            _ => None,
-        }
-    }
-    fn get_num_lit_val(&self) -> Option<&Option<NumericLiteralValue>> {
-        match self.value {
-            TokenValue::NumericLiteral(ref val) => Some(val),
-            _ => None,
-        }
-    }
-    fn get_bool_lit_val(&self) -> Option<bool> {
-        match self.value {
-            TokenValue::BooleanLiteral(val) => Some(val),
+            TokenValue::Literal(ref val) => Some(val.clone()),
             _ => None
         }
     }
@@ -235,6 +202,7 @@ impl V4Lexer {
         V4Lexer::new(content.to_owned())
     }
 
+    // But after syntax, this method is not used.... no one cares about length, they only knows it is eof and report unexpected error
     pub fn len(&self) -> usize {
         self.buf.len()
     }
@@ -245,11 +213,11 @@ impl V4Lexer {
             self.buf[idx].get_position()
         }
     }
-    pub fn nth(&self, idx: usize) -> V4Token {
+    pub fn nth(&self, idx: usize) -> &IToken {
         if idx >= self.buf.len() { 
-            self.eof_token.clone() 
+            &self.eof_token
         } else { 
-            self.buf[idx].clone()
+            &self.buf[idx]
         }
     }
 
@@ -288,6 +256,9 @@ impl V4Lexer {
     pub fn messages(&self) -> &MessageEmitter {
         &self.messages
     }
+    pub fn into_messages(self) -> MessageEmitter {
+        self.messages
+    }
 }
 
 #[cfg(test)]
@@ -301,8 +272,9 @@ mod tests {
         use super::V4Lexer;
         use super::V4Token;
         use lexical::IToken;
-        use lexical::symbol_type::NumericLiteralValue;
-        use lexical::symbol_type::SeperatorKind;
+        use lexical::NumLitValue;
+        use lexical::SeperatorKind;
+        use lexical::LexicalLiteral;
 
         // numeric, 123, 1:1-1:3
         // identifier, abc, 1:5-1:7
@@ -314,42 +286,51 @@ mod tests {
         let messages = MessageEmitter::new();
         let lexer = V4Lexer::new_test("123 abc 'd', [1]", messages);
 
-        assert_eq!(lexer.nth(0), V4Token{ value: TokenValue::NumericLiteral(Some(NumericLiteralValue::I32(123))), pos: StringPosition::from((1, 1, 1, 3)) });
-        assert_eq!(lexer.pos(0), StringPosition::from((1, 1, 1, 3)));
         assert_eq!(lexer.nth(0).is_num_lit(), true);
+        assert_eq!(lexer.nth(0).get_lit_val().unwrap().get_num_lit().unwrap(), &Some(NumLitValue::I32(123)));
+        assert_eq!(lexer.nth(0).get_position(), make_str_pos!(1, 1, 1, 3));
+        assert_eq!(lexer.pos(0), make_str_pos!(1, 1, 1, 3));
 
-        assert_eq!(lexer.nth(1), V4Token{ value: TokenValue::Identifier("abc".to_owned()), pos: StringPosition::from((1, 5, 1, 7)) });
-        assert_eq!(lexer.pos(1), StringPosition::from((1, 5, 1, 7)));
         assert_eq!(lexer.nth(1).is_identifier("abc"), true);
-        assert_eq!(lexer.nth(1).get_identifier(), Some(&("abc".to_owned())));
+        assert_eq!(lexer.nth(1).get_identifier().unwrap(), format!("abc"));
+        assert_eq!(lexer.nth(1).get_position(), make_str_pos!(1, 5, 1, 7));
+        assert_eq!(lexer.pos(1), make_str_pos!(1, 5, 1, 7));
 
-        assert_eq!(lexer.nth(2), V4Token{ value: TokenValue::CharLiteral(Some('d')), pos: StringPosition::from((1, 9, 1, 11)) });
-        assert_eq!(lexer.pos(2), StringPosition::from((1, 9, 1, 11)));
         assert_eq!(lexer.nth(2).is_char_lit(), true);
+        assert_eq!(lexer.nth(2).get_lit_val().unwrap().get_char_lit().unwrap(), &Some('d'));
+        assert_eq!(lexer.nth(2).get_position(), make_str_pos!(1, 9, 1, 11));
+        assert_eq!(lexer.pos(2), make_str_pos!(1, 9, 1, 11));
 
-        assert_eq!(lexer.nth(3), V4Token{ value: TokenValue::Seperator(SeperatorKind::Comma), pos: StringPosition::from((1, 12, 1, 12)) });
-        assert_eq!(lexer.pos(3), StringPosition::from((1, 12, 1, 12)));
         assert_eq!(lexer.nth(3).is_seperator(SeperatorKind::Comma), true);
+        assert_eq!(lexer.nth(3).get_seperator().unwrap(), SeperatorKind::Comma);
+        assert_eq!(lexer.nth(3).get_position(), lexer.pos(3));
+        assert_eq!(lexer.pos(3), make_str_pos!(1, 12, 1, 12));
 
-        assert_eq!(lexer.nth(4), V4Token{ value: TokenValue::Seperator(SeperatorKind::LeftBracket), pos: StringPosition::from((1, 14, 1, 14)) });
-        assert_eq!(lexer.pos(4), StringPosition::from((1, 14, 1, 14)));
         assert_eq!(lexer.nth(4).is_seperator(SeperatorKind::LeftBracket), true);
+        assert_eq!(lexer.nth(4).get_seperator().unwrap(), SeperatorKind::LeftBracket);
+        assert_eq!(lexer.nth(4).get_position(), lexer.pos(4));
+        assert_eq!(lexer.pos(4), make_str_pos!(1, 14, 1, 14));
 
-        assert_eq!(lexer.nth(5), V4Token{ value: TokenValue::NumericLiteral(Some(NumericLiteralValue::I32(1))), pos: StringPosition::from((1, 15, 1, 15)) });
-        assert_eq!(lexer.pos(5), StringPosition::from((1, 15, 1, 15)));
         assert_eq!(lexer.nth(5).is_num_lit(), true);
+        assert_eq!(lexer.nth(5).get_lit_val().unwrap().get_num_lit().unwrap(), &Some(NumLitValue::I32(1)));
+        assert_eq!(lexer.nth(5).get_position(), lexer.pos(5));
+        assert_eq!(lexer.pos(5), make_str_pos!(1, 15, 1, 15));
 
-        assert_eq!(lexer.nth(6), V4Token{ value: TokenValue::Seperator(SeperatorKind::RightBracket), pos: StringPosition::from((1, 16, 1, 16)) });
-        assert_eq!(lexer.pos(6), StringPosition::from((1, 16, 1, 16)));
         assert_eq!(lexer.nth(6).is_seperator(SeperatorKind::RightBracket), true);
+        assert_eq!(lexer.nth(6).get_seperator().unwrap(), SeperatorKind::RightBracket);
+        assert_eq!(lexer.nth(6).get_position(), lexer.pos(6));
+        assert_eq!(lexer.pos(6), make_str_pos!(1, 16, 1, 16));
 
-        assert_eq!(lexer.nth(7), V4Token{ value: TokenValue::EndofFile, pos: StringPosition::from((1, 17, 1, 17)) });
-        assert_eq!(lexer.pos(7), StringPosition::from((1, 17, 1, 17)));
         assert_eq!(lexer.nth(7).is_eof(), true);
+        assert_eq!(lexer.pos(7), make_str_pos!(1, 17, 1, 17));
 
-        assert_eq!(lexer.nth(8), V4Token{ value: TokenValue::EndofFile, pos: StringPosition::from((1, 17, 1, 17)) });
-        assert_eq!(lexer.pos(8), StringPosition::from((1, 17, 1, 17)));
         assert_eq!(lexer.nth(8).is_eof(), true);
+        assert_eq!(lexer.nth(8).get_position(), lexer.pos(8));
+        assert_eq!(lexer.pos(8), make_str_pos!(1, 17, 1, 17));
+
+        assert_eq!(lexer.nth(42).is_eof(), true);
+        assert_eq!(lexer.nth(42).get_position(), lexer.pos(8));  // this 8 here is not forgetten
+        assert_eq!(lexer.pos(42), make_str_pos!(1, 17, 1, 17));
     }
 
     #[test]

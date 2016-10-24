@@ -113,9 +113,9 @@ impl fmt::Display for SMType {
     }
 }
 
-fn check_primitive_type(keyword: &KeywordKind) -> Option<SMTypeBase> {
+fn check_primitive_type(keyword: KeywordKind) -> Option<SMTypeBase> {
     use self::SMTypeBase::*;
-    match *keyword {
+    match keyword {
         KeywordKind::PrimTypeU8 => Some(U8),
         KeywordKind::PrimTypeI8 => Some(I8),
         KeywordKind::PrimTypeI16 => Some(I16),

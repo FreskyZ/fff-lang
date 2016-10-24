@@ -24,8 +24,8 @@ use lexical::buf_lexer::ILexer;
 use lexical::buf_lexer::BufToken;
 use lexical::buf_lexer::BufLexer;
 
-use lexical::symbol_type::CharLiteral;
-use lexical::symbol_type::StringLiteral;
+use lexical::symbol_type::char_literal::CharLiteral;
+use lexical::symbol_type::string_literal::StringLiteral;
 
 use lexical::v1lexer::string_lit_parser::StringLiteralParser;
 use lexical::v1lexer::string_lit_parser::StringLiteralParserResult;
@@ -237,8 +237,8 @@ mod tests {
     use message::Message;
     use message::MessageEmitter;
     use lexical::buf_lexer::ILexer;
-    use lexical::symbol_type::StringLiteral;
-    use lexical::symbol_type::CharLiteral;
+    use lexical::symbol_type::string_literal::StringLiteral;
+    use lexical::symbol_type::char_literal::CharLiteral;
 
     #[test]
     fn v1_base() {

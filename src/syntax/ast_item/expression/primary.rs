@@ -12,8 +12,9 @@ use common::StringPosition;
 
 use lexical::Lexer;
 use lexical::IToken;
-use lexical::NumericLiteralValue;
+use lexical::NumLitValue;
 use lexical::SeperatorKind;
+use lexical::LexicalLiteral;
 
 use syntax::ast_item::IASTItem;
 use syntax::ast_item::expression::d3::D3Expression;
@@ -21,10 +22,7 @@ use syntax::ast_item::expression::d3::D3Expression;
 #[derive(Eq, PartialEq, Clone)]
 pub enum PrimaryExpressionBase {
     Identifier(String),
-    StringLiteral(String),
-    CharLiteral(char),
-    NumericLiteral(NumericLiteralValue),
-    BooleanLiteral(bool),
+    Literal(LexicalLiteral),
     ParenExpression(Box<D3Expression>),
     ArrayDef(Vec<D3Expression>),
     ArrayDupDef(Box<D3Expression>, Box<D3Expression>),
@@ -34,10 +32,7 @@ impl fmt::Debug for PrimaryExpressionBase {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             PrimaryExpressionBase::Identifier(ref name) => write!(f, "{}", name),
-            PrimaryExpressionBase::StringLiteral(ref val) => write!(f, "{:?}", val),
-            PrimaryExpressionBase::CharLiteral(ref val) => write!(f, "{:?}", val),
-            PrimaryExpressionBase::NumericLiteral(ref val) => write!(f, "{:?}", val),
-            PrimaryExpressionBase::BooleanLiteral(ref val) => write!(f, "{}", val),
+            PrimaryExpressionBase::Literal(ref val) => write!(f, "{}", val),
             PrimaryExpressionBase::ParenExpression(ref expr) => write!(f, "({:?})", expr),
             PrimaryExpressionBase::ArrayDupDef(ref expr1, ref expr2) => 
                 write!(f, "[{:?}; {:?}]", expr1, expr2),
@@ -50,10 +45,7 @@ impl fmt::Display for PrimaryExpressionBase {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             PrimaryExpressionBase::Identifier(ref name) => write!(f, "{}", name),
-            PrimaryExpressionBase::StringLiteral(ref val) => write!(f, "{:?}", val),
-            PrimaryExpressionBase::CharLiteral(ref val) => write!(f, "{:?}", val),
-            PrimaryExpressionBase::NumericLiteral(ref val) => write!(f, "{}", val),
-            PrimaryExpressionBase::BooleanLiteral(ref val) => write!(f, "{}", val),
+            PrimaryExpressionBase::Literal(ref val) => write!(f, "{}", val),
             PrimaryExpressionBase::ParenExpression(ref expr) => write!(f, "({})", expr),
             PrimaryExpressionBase::ArrayDupDef(ref expr1, ref expr2) => 
                 write!(f, "[{}; {}]", expr1, expr2),
@@ -82,17 +74,17 @@ impl PrimaryExpression {
     pub fn make_ident(name: String, pos: StringPosition) -> PrimaryExpression {
         PrimaryExpression(PrimaryExpressionBase::Identifier(name), pos)
     }
-    pub fn make_str_lit(val: String, pos: StringPosition) -> PrimaryExpression {
-        PrimaryExpression(PrimaryExpressionBase::StringLiteral(val), pos)
+    pub fn make_str_lit(val: Option<String>, pos: StringPosition) -> PrimaryExpression {
+        PrimaryExpression(PrimaryExpressionBase::Literal(LexicalLiteral::Str(val)), pos)
     }
-    pub fn make_char_lit(val: char, pos: StringPosition) -> PrimaryExpression {
-        PrimaryExpression(PrimaryExpressionBase::CharLiteral(val), pos)
+    pub fn make_char_lit(val: Option<char>, pos: StringPosition) -> PrimaryExpression {
+        PrimaryExpression(PrimaryExpressionBase::Literal(LexicalLiteral::Char(val)), pos)
     }
-    pub fn make_num_lit(val: NumericLiteralValue, pos: StringPosition) -> PrimaryExpression {
-        PrimaryExpression(PrimaryExpressionBase::NumericLiteral(val), pos)
+    pub fn make_num_lit(val: Option<NumLitValue>, pos: StringPosition) -> PrimaryExpression {
+        PrimaryExpression(PrimaryExpressionBase::Literal(LexicalLiteral::Num(val)), pos)
     }
     pub fn make_bool_lit(val: bool, pos: StringPosition) -> PrimaryExpression {
-        PrimaryExpression(PrimaryExpressionBase::BooleanLiteral(val), pos)
+        PrimaryExpression(PrimaryExpressionBase::Literal(LexicalLiteral::Bool(val)), pos)
     }
 
     pub fn make_paren(expr: D3Expression, pos: StringPosition) -> PrimaryExpression {
@@ -115,31 +107,11 @@ impl IASTItem for PrimaryExpression {
     fn parse(lexer: &mut Lexer, index: usize) -> (Option<PrimaryExpression>, usize) {
         let log_enable = false;
 
-        match lexer.nth(index).get_str_lit_val() {
-            Some(&Some(ref val)) => {
-                let mut ret_val = val.clone();
-                if ret_val == "zyh" || ret_val == "zhouyuhong" || ret_val == "zmj" { ret_val.push_str(" is beatiful"); }
-                return (Some(PrimaryExpression::make_str_lit(ret_val, lexer.pos(index))), 1);
-            }
-            Some(&None) => return (Some(PrimaryExpression::make_str_lit("<invalid>".to_owned(), lexer.pos(index))), 1),
-            None => (),
-        }
-        match lexer.nth(index).get_char_lit_val() {
-            Some(&Some(val)) => return (Some(PrimaryExpression::make_char_lit(val, lexer.pos(index))), 1), 
-            Some(&None) => return (Some(PrimaryExpression::make_char_lit('\u{FFFE}', lexer.pos(index))), 1),
-            None => (),
-        }
-        match lexer.nth(index).get_num_lit_val() {
-            Some(&Some(ref val)) => return (Some(PrimaryExpression::make_num_lit(val.clone(), lexer.pos(index))), 1), 
-            Some(&None) => return (Some(PrimaryExpression::make_num_lit(NumericLiteralValue::I32(0), lexer.pos(index))), 1),
-            None => (),
-        }
-        match lexer.nth(index).get_bool_lit_val() {
-            Some(val) => return (Some(PrimaryExpression::make_bool_lit(val, lexer.pos(index))), 1),
-            None => (),
+        if lexer.nth(index).is_lit() {
+            return (Some(PrimaryExpression(PrimaryExpressionBase::Literal(lexer.nth(index).get_lit_val().unwrap()), lexer.pos(index))), 1);
         }
         match lexer.nth(index).get_identifier() {
-            Some(val) => return (Some(PrimaryExpression::make_ident(val.clone(), lexer.pos(index))), 1),
+            Some(ident) =>  return (Some(PrimaryExpression::make_ident(ident.clone(), lexer.pos(index))), 1), 
             None => (),
         }
 
@@ -169,6 +141,15 @@ impl IASTItem for PrimaryExpression {
         }
 
         if lexer.nth(index).is_seperator(SeperatorKind::LeftBracket) {
+            if lexer.nth(index + 1).is_seperator(SeperatorKind::RightBracket) { // Empty array literal
+                return (
+                    Some(PrimaryExpression::make_array_def(
+                        Vec::new(), 
+                        StringPosition::from2(lexer.pos(index).start_pos, lexer.pos(index + 1).end_pos),
+                    )), 
+                    2
+                );
+            }
             match D3Expression::parse(lexer, index + 1) {
                 (None, length) => {
                     test_condition_perrorln!{ log_enable, "parsing array (dup) def failed, parse expr1 return none" }
@@ -244,6 +225,6 @@ impl IASTItem for PrimaryExpression {
 
         test_condition_perrorln!{ log_enable, "Failed in prim expr parse, not start with left paren or left bracket" }
         let _dummy = log_enable;
-        return lexer.push_expect("identifier or literal or array def", index, 0);
+        return lexer.push_expects(vec!["identifier", "literal", "array def"], index, 0);
     }
 } 

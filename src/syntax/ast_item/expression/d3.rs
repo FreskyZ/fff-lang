@@ -46,19 +46,22 @@ macro_rules! expr_to_primary {
     ($inner: expr) => (D3Expression(BinaryExpression{ unary: UnaryExpression{ post: PostfixExpression{ prim: $inner, postfixs: Vec::new() }, unaries: Vec::new() }, ops: Vec::new() }));
 }
 macro_rules! expr_ident { 
-    ($name: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::make_ident($name.to_owned(), $pos))) 
+    ($name: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::make_ident($name.to_owned(), $pos)))
 }
 macro_rules! expr_str_lit { 
-    ($val: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::make_str_lit($val.to_owned(), $pos))) 
+    ($pos: expr) => (expr_to_primary!(PrimaryExpression::make_str_lit(None, $pos)));
+    ($val: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::make_str_lit(Some($val.to_owned()), $pos)))
 }
 macro_rules! expr_char_lit { 
-    ($val: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::make_char_lit($val, $pos))) 
+    ($pos: expr) => (expr_to_primary!(PrimaryExpression::make_char_lit(None, $pos)));
+    ($val: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::make_char_lit(Some($val), $pos)))
 }
 macro_rules! expr_num_lit { 
-    ($val: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::make_num_lit($val, $pos))) 
+    ($pos: expr) => (expr_to_primary!(PrimaryExpression::make_num_lit(None, $pos)));
+    ($val: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::make_num_lit(Some($val), $pos)))
 }
 macro_rules! expr_bool_lit { 
-    ($val: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::make_bool_lit($val, $pos))) 
+    ($val: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::make_bool_lit($val, $pos)))
 }
 macro_rules! expr_paren_expr { 
     ($expr: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::make_paren($expr, $pos))) 
@@ -97,7 +100,7 @@ mod tests {
 
     use lexical::Lexer;
     use lexical::SeperatorKind;
-    use lexical::NumericLiteralValue;
+    use lexical::NumLitValue;
 
     use syntax::SMType;
     use syntax::SMTypeBase;
@@ -127,10 +130,10 @@ mod tests {
         assert_eq!(//12345678901234567890
             parse!( "[1, 2, 3f128, 0u64]").0.unwrap(), 
             expr_array_def!{[
-                expr_num_lit!(NumericLiteralValue::I32(1), make_str_pos!(1, 2, 1, 2)),
-                expr_num_lit!(NumericLiteralValue::I32(2), make_str_pos!(1, 5, 1, 5)), 
-                expr_num_lit!(NumericLiteralValue::I32(0), make_str_pos!(1, 8, 1, 12)),
-                expr_num_lit!(NumericLiteralValue::U64(0), make_str_pos!(1, 15, 1, 18)),]
+                expr_num_lit!(NumLitValue::I32(1), make_str_pos!(1, 2, 1, 2)),
+                expr_num_lit!(NumLitValue::I32(2), make_str_pos!(1, 5, 1, 5)), 
+                expr_num_lit!(make_str_pos!(1, 8, 1, 12)),
+                expr_num_lit!(NumLitValue::U64(0), make_str_pos!(1, 15, 1, 18)),]
                 make_str_pos!(1, 1, 1, 19)
             }
         );
@@ -141,19 +144,19 @@ mod tests {
         assert_eq!(res.0.unwrap(),
             expr_array_def!{[
                 expr_array_def!{[
-                    expr_paren_expr!(expr_num_lit!(NumericLiteralValue::I32(1), make_str_pos!(1, 4, 1, 4)), make_str_pos!(1, 3, 1, 5)),]
+                    expr_paren_expr!(expr_num_lit!(NumLitValue::I32(1), make_str_pos!(1, 4, 1, 4)), make_str_pos!(1, 3, 1, 5)),]
                     make_str_pos!(1, 2, 1, 6) 
                 },
                 expr_array_def!{[
                     expr_ident!("abc", make_str_pos!(1, 10, 1, 12)),
-                    expr_paren_expr!(expr_num_lit!(NumericLiteralValue::I32(3), make_str_pos!(1, 16, 1, 16)), make_str_pos!(1, 15, 1, 17)),]
+                    expr_paren_expr!(expr_num_lit!(NumLitValue::I32(3), make_str_pos!(1, 16, 1, 16)), make_str_pos!(1, 15, 1, 17)),]
                     make_str_pos!(1, 9, 1, 18)
                 },
                 expr_array_def!{[
-                    expr_num_lit!(NumericLiteralValue::I32(4), make_str_pos!(1, 22, 1, 22)),
+                    expr_num_lit!(NumLitValue::I32(4), make_str_pos!(1, 22, 1, 22)),
                     expr_ident!("defg", make_str_pos!(1, 25, 1, 28)),
                     expr_array_def!{[
-                        expr_num_lit!(NumericLiteralValue::I32(6), make_str_pos!(1, 32, 1, 32)),]
+                        expr_num_lit!(NumLitValue::I32(6), make_str_pos!(1, 32, 1, 32)),]
                         make_str_pos!(1, 31, 1, 33)
                     },]
                     make_str_pos!(1, 21, 1, 34)
@@ -162,12 +165,21 @@ mod tests {
             }
         );
 
+        // Case 6, empty array literal
+        assert_eq!(
+            parse!("[]"),
+            (Some(expr_array_def!{
+                []
+                make_str_pos!(1, 1, 1, 2)
+            }), 2)
+        );
+
         // Case 3    0        1           2          3         4
         assert_eq!(//12345678901234 5678 9012 34567890123456789012
             parse!( "[abc, 123u32, \"456\", '\\u0065', false, (a)]").0.unwrap(),
             expr_array_def!{[
                 expr_ident!("abc", make_str_pos!(1, 2, 1, 4)),
-                expr_num_lit!(NumericLiteralValue::U32(123), make_str_pos!(1, 7, 1, 12)),
+                expr_num_lit!(NumLitValue::U32(123), make_str_pos!(1, 7, 1, 12)),
                 expr_str_lit!("456", make_str_pos!(1, 15, 1, 19)),
                 expr_char_lit!('\u{0065}', make_str_pos!(1, 22, 1, 29)),
                 expr_bool_lit!(false, make_str_pos!(1, 32, 1, 36)),
@@ -181,9 +193,9 @@ mod tests {
             parse!( "[abc, 123f, \"456\\u\", '\\u00', false, (a)]").0.unwrap(),
             expr_array_def!{[
                 expr_ident!("abc", make_str_pos!(1, 2, 1, 4)),
-                expr_num_lit!(NumericLiteralValue::I32(0), make_str_pos!(1, 7, 1, 10)),
-                expr_str_lit!("<invalid>", make_str_pos!(1, 13, 1, 19)),
-                expr_char_lit!('\u{FFFE}', make_str_pos!(1, 22, 1, 27)),
+                expr_num_lit!(make_str_pos!(1, 7, 1, 10)),
+                expr_str_lit!(make_str_pos!(1, 13, 1, 19)),
+                expr_char_lit!( make_str_pos!(1, 22, 1, 27)),
                 expr_bool_lit!(false, make_str_pos!(1, 30, 1, 34)),
                 expr_paren_expr!(expr_ident!("a", make_str_pos!(1, 38, 1, 38)), make_str_pos!(1, 37, 1, 39)),]
                 make_str_pos!(1, 1, 1, 40)
@@ -196,11 +208,11 @@ mod tests {
             parse!( "[[123u32, abc]; 4567]").0.unwrap(),
             expr_array_dup_def!{
                 expr_array_def!{[
-                    expr_num_lit!(NumericLiteralValue::U32(123), make_str_pos!(1, 3, 1, 8)),
+                    expr_num_lit!(NumLitValue::U32(123), make_str_pos!(1, 3, 1, 8)),
                     expr_ident!("abc", make_str_pos!(1, 11, 1, 13)),]
                     make_str_pos!(1, 2, 1, 14)
                 },
-                expr_num_lit!(NumericLiteralValue::I32(4567), make_str_pos!(1, 17, 1, 20)),
+                expr_num_lit!(NumLitValue::I32(4567), make_str_pos!(1, 17, 1, 20)),
                 make_str_pos!(1, 1, 1, 21)
             }
         );   
@@ -219,14 +231,14 @@ mod tests {
             expr_post_sub!(
                 expr_to_postfix!(
                     PrimaryExpression::make_array_def(
-                        vec![expr_num_lit!(NumericLiteralValue::I32(1), make_str_pos!(1, 11, 1, 11))],
+                        vec![expr_num_lit!(NumLitValue::I32(1), make_str_pos!(1, 11, 1, 11))],
                         make_str_pos!(1, 10, 1, 12)
                     ), 
                     expr_post_call!(
                         expr_ident!("klm", make_str_pos!(1, 14, 1, 16)),
                         expr_array_def!([
-                            expr_num_lit!(NumericLiteralValue::I32(123), make_str_pos!(1, 20, 1, 22)),
-                            expr_num_lit!(NumericLiteralValue::I32(456), make_str_pos!(1, 25, 1, 27)),]
+                            expr_num_lit!(NumLitValue::I32(123), make_str_pos!(1, 20, 1, 22)),
+                            expr_num_lit!(NumLitValue::I32(456), make_str_pos!(1, 25, 1, 27)),]
                             make_str_pos!(1, 19, 1, 29)
                         ),
                     )
@@ -234,7 +246,7 @@ mod tests {
             )
             expr_post_call!(
                 expr_ident!("opq", make_str_pos!(1, 35, 1, 37)),
-                expr_num_lit!(NumericLiteralValue::F64(456f64), make_str_pos!(1, 40, 1, 43)), 
+                expr_num_lit!(NumLitValue::F64(456f64), make_str_pos!(1, 40, 1, 43)), 
             )
             expr_post_call!()
             expr_post_cast!(
@@ -280,14 +292,14 @@ mod tests {
                     prim: PrimaryExpression::make_array_dup_def(
                         expr_to_unary!(
                             PostfixExpression{ 
-                                prim: PrimaryExpression::make_num_lit(NumericLiteralValue::I32(1), make_str_pos!(1, 7, 1, 7)),
+                                prim: PrimaryExpression::make_num_lit(Some(NumLitValue::I32(1)), make_str_pos!(1, 7, 1, 7)),
                                 postfixs: Vec::new()
                             },
                             UnaryOperator::new(SeperatorKind::LogicalNot, make_str_pos!(1, 6, 1, 6))
                         ), 
                         expr_to_unary!(
                             PostfixExpression{ 
-                                prim: PrimaryExpression::make_num_lit(NumericLiteralValue::I32(2), make_str_pos!(1, 13, 1, 13)),
+                                prim: PrimaryExpression::make_num_lit(Some(NumLitValue::I32(2)), make_str_pos!(1, 13, 1, 13)),
                                 postfixs: Vec::new()
                             },
                             UnaryOperator::new(SeperatorKind::BitNot, make_str_pos!(1, 10, 1, 10))

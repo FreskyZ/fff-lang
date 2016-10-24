@@ -60,8 +60,8 @@ impl IASTItem for VarDeclStatement {
     fn parse(lexer: &mut Lexer, index: usize) -> (Option<VarDeclStatement>, usize) {
 
         let is_const = match lexer.nth(index).get_keyword() {
-            Some(&KeywordKind::Const) => true, 
-            Some(&KeywordKind::Var) => false,
+            Some(KeywordKind::Const) => true, 
+            Some(KeywordKind::Var) => false,
             _ => unreachable!(), 
         };
         let mut current_len = 1;
@@ -86,7 +86,7 @@ impl IASTItem for VarDeclStatement {
         poss[1] = name_pos;
 
         match lexer.nth(index + current_len).get_seperator() {
-            Some(&SeperatorKind::SemiColon) => {
+            Some(SeperatorKind::SemiColon) => {
                 poss[3] = lexer.pos(index + current_len);
                 current_len += 1;
                 return (Some(VarDeclStatement{ 
@@ -98,7 +98,7 @@ impl IASTItem for VarDeclStatement {
                     pos: poss,
                 }), current_len);
             },
-            Some(&SeperatorKind::Assign) => {
+            Some(SeperatorKind::Assign) => {
                 poss[2] = lexer.pos(index + current_len);
                 current_len += 1;
                 match Expression::parse(lexer, index + current_len) {
@@ -138,8 +138,9 @@ mod tests {
     use syntax::ExpressionBase;
     use syntax::ExpressionOperator;
     use common::StringPosition;
-    use lexical::NumericLiteralValue;
+    use lexical::NumLitValue;
     use lexical::SeperatorKind;
+    use lexical::LexicalLiteral;
 
     #[test]
     fn ast_stmt_var_decl() {
@@ -154,7 +155,7 @@ mod tests {
                 ty: SMType::make_base(SMTypeBase::I32, make_str_pos!(1, 7, 1, 9)),
                 name: "abc".to_owned(),
                 init_expr: Some(Expression::new_test(
-                    ExpressionBase::NumericLiteral(NumericLiteralValue::I32(0)), 
+                    ExpressionBase::Literal(LexicalLiteral::Num(Some(NumLitValue::I32(0)))), 
                     make_str_pos!(1, 17, 1, 17),
                     Vec::new(),
                     make_str_pos!(1, 17, 1, 17)
@@ -178,14 +179,14 @@ mod tests {
                 ty: SMType::make_array(SMType::make_base(SMTypeBase::I32, make_str_pos!(1, 6, 1, 8)), make_str_pos!(1, 5, 1, 9)),
                 name: "abc".to_owned(),
                 init_expr: Some(Expression::new_test(
-                    ExpressionBase::NumericLiteral(NumericLiteralValue::I32(1)), 
+                    ExpressionBase::Literal(LexicalLiteral::Num(Some(NumLitValue::I32(1)))), 
                     make_str_pos!(1, 17, 1, 17),
                     vec![
                         ExpressionOperator::Binary(
                             SeperatorKind::Add,
                             make_str_pos!(1, 19, 1, 19),
                             Expression::new_test(
-                                ExpressionBase::NumericLiteral(NumericLiteralValue::I32(1)),
+                                ExpressionBase::Literal(LexicalLiteral::Num(Some(NumLitValue::I32(1)))),
                                 make_str_pos!(1, 21, 1, 21),
                                 Vec::new(),
                                 make_str_pos!(1, 21, 1, 21),

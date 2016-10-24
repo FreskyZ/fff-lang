@@ -5,14 +5,14 @@ use common::StringPosition;
 use message::Message;
 use message::MessageEmitter;
 
-use lexical::symbol_type::NumericLiteral;
-use lexical::symbol_type::NumericLiteralValue;
+use lexical::symbol_type::numeric_literal::NumericLiteral;
+use lexical::NumLitValue;
 
 // Final to value, check too large
 macro_rules! values_to_integral {
     ($fn_name: ident, $ty: ty, $result_path: path) => (
 
-        fn $fn_name(radix: u32, content: Vec<u32>, pos: StringPosition) -> Result<NumericLiteralValue, Message> {
+        fn $fn_name(radix: u32, content: Vec<u32>, pos: StringPosition) -> Result<NumLitValue, Message> {
             let mut ret_val: $ty = 0;
             let mut digit_weight: $ty = 1;
             let len = content.len();
@@ -40,19 +40,19 @@ macro_rules! values_to_integral {
         }
     )
 }
-values_to_integral!{ values_to_i8, i8, NumericLiteralValue::I8 }
-values_to_integral!{ values_to_u8, u8, NumericLiteralValue::U8 }
-values_to_integral!{ values_to_i16, i16, NumericLiteralValue::I16 }
-values_to_integral!{ values_to_u16, u16, NumericLiteralValue::U16 }
-values_to_integral!{ values_to_i32, i32, NumericLiteralValue::I32 }
-values_to_integral!{ values_to_u32, u32, NumericLiteralValue::U32 }
-values_to_integral!{ values_to_i64, i64, NumericLiteralValue::I64 }
-values_to_integral!{ values_to_u64, u64, NumericLiteralValue::U64 }
+values_to_integral!{ values_to_i8, i8, NumLitValue::I8 }
+values_to_integral!{ values_to_u8, u8, NumLitValue::U8 }
+values_to_integral!{ values_to_i16, i16, NumLitValue::I16 }
+values_to_integral!{ values_to_u16, u16, NumLitValue::U16 }
+values_to_integral!{ values_to_i32, i32, NumLitValue::I32 }
+values_to_integral!{ values_to_u32, u32, NumLitValue::U32 }
+values_to_integral!{ values_to_i64, i64, NumLitValue::I64 }
+values_to_integral!{ values_to_u64, u64, NumLitValue::U64 }
 
 macro_rules! values_to_float {
     ($fn_name: ident, $ty: ty, $result_path: path) => (
 
-        fn $fn_name(radix: u32, content1: Vec<u32>, content2: Vec<u32>, _pos: StringPosition) -> Result<NumericLiteralValue, Message> {
+        fn $fn_name(radix: u32, content1: Vec<u32>, content2: Vec<u32>, _pos: StringPosition) -> Result<NumLitValue, Message> {
 
             let mut ret_val: $ty = 0 as $ty;
             let mut digit_weight: $ty = 1 as $ty;
@@ -79,8 +79,8 @@ macro_rules! values_to_float {
         }
     )
 }
-values_to_float!{ values_to_f32, f32, NumericLiteralValue::F32 }
-values_to_float!{ values_to_f64, f64, NumericLiteralValue::F64 }
+values_to_float!{ values_to_f32, f32, NumLitValue::F32 }
+values_to_float!{ values_to_f64, f64, NumLitValue::F64 }
 
 test_only_attr!{
     [derive(Debug, Eq, PartialEq)]
@@ -304,7 +304,7 @@ fn get_content(raw: &str, pos: StringPosition, radix: u32, mut postfix: Postfix)
     }
 }
 
-fn delegate(raw: String, pos: StringPosition) -> Result<NumericLiteralValue, Message> {
+fn delegate(raw: String, pos: StringPosition) -> Result<NumLitValue, Message> {
 
     let prefix = try!(get_prefix(&*raw, pos));
 
@@ -476,16 +476,16 @@ fn num_lit_content() {
 fn num_lit_u32() {
     let pos = StringPosition::from((1, 2, 3, 4));
 
-    assert_eq!(values_to_u32(2, vec![1, 0, 1, 0], pos), Ok(NumericLiteralValue::U32(0b1010)));
-    assert_eq!(values_to_u32(8, vec![1, 2, 3], pos), Ok(NumericLiteralValue::U32(0o123)));
-    assert_eq!(values_to_u32(10, vec![1, 2, 3], pos), Ok(NumericLiteralValue::U32(123)));
-    assert_eq!(values_to_u32(16, vec![1, 2, 3], pos), Ok(NumericLiteralValue::U32(0x123)));
+    assert_eq!(values_to_u32(2, vec![1, 0, 1, 0], pos), Ok(NumLitValue::U32(0b1010)));
+    assert_eq!(values_to_u32(8, vec![1, 2, 3], pos), Ok(NumLitValue::U32(0o123)));
+    assert_eq!(values_to_u32(10, vec![1, 2, 3], pos), Ok(NumLitValue::U32(123)));
+    assert_eq!(values_to_u32(16, vec![1, 2, 3], pos), Ok(NumLitValue::U32(0x123)));
 
     // Not too long max and too long mins
-    assert_eq!(values_to_u32(2, vec![1; 32], pos), Ok(NumericLiteralValue::U32(0xFFFFFFFF)));
-    assert_eq!(values_to_u32(8, vec![3, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7], pos), Ok(NumericLiteralValue::U32(0xFFFFFFFF)));
-    assert_eq!(values_to_u32(10, vec![4, 2, 9, 4, 9, 6, 7, 2, 9, 5], pos), Ok(NumericLiteralValue::U32(0xFFFFFFFF)));
-    assert_eq!(values_to_u32(16, vec![15; 8], pos), Ok(NumericLiteralValue::U32(0xFFFFFFFF)));
+    assert_eq!(values_to_u32(2, vec![1; 32], pos), Ok(NumLitValue::U32(0xFFFFFFFF)));
+    assert_eq!(values_to_u32(8, vec![3, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7], pos), Ok(NumLitValue::U32(0xFFFFFFFF)));
+    assert_eq!(values_to_u32(10, vec![4, 2, 9, 4, 9, 6, 7, 2, 9, 5], pos), Ok(NumLitValue::U32(0xFFFFFFFF)));
+    assert_eq!(values_to_u32(16, vec![15; 8], pos), Ok(NumLitValue::U32(0xFFFFFFFF)));
 
     assert_eq!(values_to_u32(2, vec![1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], pos), Err(Message::NumericLiteralTooLarge{ literal_pos: pos }));
     assert_eq!(values_to_u32(8, vec![4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], pos), Err(Message::NumericLiteralTooLarge{ literal_pos: pos }));
@@ -498,9 +498,9 @@ fn num_lit_u32() {
 fn num_lit_f32() {
     let pos = StringPosition::from((1, 2, 3, 4));
 
-    assert_eq!(values_to_f32(10, vec![1, 2, 3], vec![4, 5, 6], pos), Ok(NumericLiteralValue::F32(123.456f32)));
-    assert_eq!(values_to_f32(10, vec![0], vec![], pos), Ok(NumericLiteralValue::F32(0f32)));
-    assert_eq!(values_to_f32(10, vec![0], vec![1, 2, 3], pos), Ok(NumericLiteralValue::F32(0.123f32)));
+    assert_eq!(values_to_f32(10, vec![1, 2, 3], vec![4, 5, 6], pos), Ok(NumLitValue::F32(123.456f32)));
+    assert_eq!(values_to_f32(10, vec![0], vec![], pos), Ok(NumLitValue::F32(0f32)));
+    assert_eq!(values_to_f32(10, vec![0], vec![1, 2, 3], pos), Ok(NumLitValue::F32(0.123f32)));
 }
 
 #[cfg(test)]
@@ -509,26 +509,26 @@ fn num_lit_inter() {
     let pos = StringPosition::from((1, 2, 3, 4));
     macro_rules! test_case {
         ($input: expr, $pos: expr, ok: $expect: expr) => (
-            assert_eq!(delegate($input.to_owned(), $pos), Ok(NumericLiteralValue::from($expect)));
+            assert_eq!(delegate($input.to_owned(), $pos), Ok(NumLitValue::from($expect)));
         );
         ($input: expr, $pos: expr, err: $expect: expr) => (
             assert_eq!(delegate($input.to_owned(), $pos), Err($expect));
         )
     }
 
-    test_case!{ "123", pos, ok: NumericLiteralValue::I32(123) };
+    test_case!{ "123", pos, ok: NumLitValue::I32(123) };
     test_case!{ "0123", pos, err: Message::InvalidPrefixInNumericLiteral{ literal_pos: pos, prefix: '1' } };
-    test_case!{ "123.", pos, ok: NumericLiteralValue::F64(123f64) };
-    test_case!{ "0x123", pos, ok: NumericLiteralValue::I32(0x123) };
-    test_case!{ "0o123u64", pos, ok: NumericLiteralValue::U64(0o123) };
-    test_case!{ "0b1010", pos, ok: NumericLiteralValue::I32(0b1010) };
-    test_case!{ "0f32", pos, ok: NumericLiteralValue::F32(0f32) };
-    test_case!{ "0u32", pos, ok: NumericLiteralValue::U32(0u32) };
-    test_case!{ "___123", pos, ok: NumericLiteralValue::I32(123) };
+    test_case!{ "123.", pos, ok: NumLitValue::F64(123f64) };
+    test_case!{ "0x123", pos, ok: NumLitValue::I32(0x123) };
+    test_case!{ "0o123u64", pos, ok: NumLitValue::U64(0o123) };
+    test_case!{ "0b1010", pos, ok: NumLitValue::I32(0b1010) };
+    test_case!{ "0f32", pos, ok: NumLitValue::F32(0f32) };
+    test_case!{ "0u32", pos, ok: NumLitValue::U32(0u32) };
+    test_case!{ "___123", pos, ok: NumLitValue::I32(123) };
     test_case!{ "01_23", pos, err: Message::InvalidPrefixInNumericLiteral{ literal_pos: pos, prefix: '1' } };
-    test_case!{ "123_____.", pos, ok: NumericLiteralValue::F64(123f64) };
-    test_case!{ "0x1_2_3", pos, ok: NumericLiteralValue::I32(0x123) };
-    test_case!{ "0o12_3u64", pos, ok: NumericLiteralValue::U64(0o123) };
-    test_case!{ "0b101_0", pos, ok: NumericLiteralValue::I32(0b1010) };
+    test_case!{ "123_____.", pos, ok: NumLitValue::F64(123f64) };
+    test_case!{ "0x1_2_3", pos, ok: NumLitValue::I32(0x123) };
+    test_case!{ "0o12_3u64", pos, ok: NumLitValue::U64(0o123) };
+    test_case!{ "0b101_0", pos, ok: NumLitValue::I32(0b1010) };
     test_case!{ "0f3_2", pos, err: Message::InvalidPrefixInNumericLiteral{ literal_pos: pos, prefix: 'f' } };
 }

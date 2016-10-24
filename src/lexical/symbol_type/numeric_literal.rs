@@ -1,11 +1,12 @@
 
 // Numeric Literal
+// TODO imm: Rename NumLitValue to NumLitVal!!!
 
 use std::fmt;
 use common::StringPosition;
 
 #[derive(PartialEq, Clone)]
-pub enum NumericLiteralValue {
+pub enum NumLitValue {
     I8(i8),
     U8(u8),
     I16(i16),
@@ -17,32 +18,32 @@ pub enum NumericLiteralValue {
     F32(f32),
     F64(f64),
 }
-impl Eq for NumericLiteralValue {
+impl Eq for NumLitValue {
 }
 
-impl fmt::Debug for NumericLiteralValue {
+impl fmt::Debug for NumLitValue {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            NumericLiteralValue::I8(ref value) => write!(f, "(i8){:?}", value),
-            NumericLiteralValue::U8(ref value) => write!(f, "(u8){:?}", value),
-            NumericLiteralValue::I16(ref value) => write!(f, "(i16){:?}", value),
-            NumericLiteralValue::U16(ref value) => write!(f, "(u16){:?}", value),
-            NumericLiteralValue::I32(ref value) => write!(f, "(i32){:?}", value),
-            NumericLiteralValue::U32(ref value) => write!(f, "(u32){:?}", value),
-            NumericLiteralValue::I64(ref value) => write!(f, "(i64){:?}", value),
-            NumericLiteralValue::U64(ref value) => write!(f, "(u64){:?}", value),
-            NumericLiteralValue::F32(ref value) => write!(f, "(f32){:?}", value),
-            NumericLiteralValue::F64(ref value) => write!(f, "(f64){:?}", value),
+            NumLitValue::I8(ref value) => write!(f, "(i8){:?}", value),
+            NumLitValue::U8(ref value) => write!(f, "(u8){:?}", value),
+            NumLitValue::I16(ref value) => write!(f, "(i16){:?}", value),
+            NumLitValue::U16(ref value) => write!(f, "(u16){:?}", value),
+            NumLitValue::I32(ref value) => write!(f, "(i32){:?}", value),
+            NumLitValue::U32(ref value) => write!(f, "(u32){:?}", value),
+            NumLitValue::I64(ref value) => write!(f, "(i64){:?}", value),
+            NumLitValue::U64(ref value) => write!(f, "(u64){:?}", value),
+            NumLitValue::F32(ref value) => write!(f, "(f32){:?}", value),
+            NumLitValue::F64(ref value) => write!(f, "(f64){:?}", value),
         }
     }
 }
-impl_display_by_debug!{ NumericLiteralValue }
+impl_display_by_debug!{ NumLitValue }
 
 macro_rules! from_for_num_lit_value {
     ($($ty: ty => $pa: path)*) => (
         $(
-            impl From<$ty> for NumericLiteralValue {
-                fn from(value: $ty) -> NumericLiteralValue {
+            impl From<$ty> for NumLitValue {
+                fn from(value: $ty) -> NumLitValue {
                     $pa(value)
                 }
             }
@@ -50,28 +51,28 @@ macro_rules! from_for_num_lit_value {
     )
 }
 from_for_num_lit_value!{
-    i8 => NumericLiteralValue::I8
-    u8 => NumericLiteralValue::U8
-    i16 => NumericLiteralValue::I16
-    u16 => NumericLiteralValue::U16
-    i32 => NumericLiteralValue::I32
-    u32 => NumericLiteralValue::U32
-    i64 => NumericLiteralValue::I64
-    u64 => NumericLiteralValue::U64
-    f32 => NumericLiteralValue::F32
-    f64 => NumericLiteralValue::F64
+    i8 => NumLitValue::I8
+    u8 => NumLitValue::U8
+    i16 => NumLitValue::I16
+    u16 => NumLitValue::U16
+    i32 => NumLitValue::I32
+    u32 => NumLitValue::U32
+    i64 => NumLitValue::I64
+    u64 => NumLitValue::U64
+    f32 => NumLitValue::F32
+    f64 => NumLitValue::F64
 }
 
 #[cfg(test)]
 #[derive(Eq, PartialEq, Clone)]
 pub struct NumericLiteral {
-    pub value: Option<NumericLiteralValue>,
+    pub value: Option<NumLitValue>,
     pub pos: StringPosition,
 }
 #[cfg(not(test))]
 #[derive(Clone)]
 pub struct NumericLiteral {
-    pub value: Option<NumericLiteralValue>,
+    pub value: Option<NumLitValue>,
     pub pos: StringPosition,
 }
 

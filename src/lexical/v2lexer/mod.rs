@@ -18,9 +18,9 @@ use lexical::buf_lexer::ILexer;
 use lexical::buf_lexer::BufToken;
 use lexical::buf_lexer::BufLexer;
 
-use lexical::symbol_type::StringLiteral;
-use lexical::symbol_type::NumericLiteral;
-use lexical::symbol_type::CharLiteral;
+use lexical::symbol_type::string_literal::StringLiteral;
+use lexical::symbol_type::numeric_literal::NumericLiteral;
+use lexical::symbol_type::char_literal::CharLiteral;
 
 use lexical::v2lexer::numeric_lit_parser::parse_numeric_literal;
 
@@ -222,9 +222,9 @@ mod tests {
     use common::Position;
     use common::StringPosition;
     use message::MessageEmitter;
-    use lexical::symbol_type::StringLiteral;
-    use lexical::symbol_type::NumericLiteral;
-    use lexical::NumericLiteralValue;
+    use lexical::symbol_type::string_literal::StringLiteral;
+    use lexical::symbol_type::numeric_literal::NumericLiteral;
+    use lexical::NumLitValue;
     
     macro_rules! test_case {
         ($program: expr, $($expect: expr, )*) => ({
@@ -255,7 +255,7 @@ mod tests {
         ($val: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr) => (
             V2Token::NumericLiteral{ 
                 inner: NumericLiteral{ 
-                    value: Some(NumericLiteralValue::from($val)), 
+                    value: Some(NumLitValue::from($val)), 
                     pos: StringPosition::from(($row1, $col1, $row2, $col2))
                 }
             }

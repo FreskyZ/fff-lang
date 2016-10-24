@@ -22,7 +22,7 @@ pub enum RuntimeValue {
 
 // execution state in a function
 pub struct ExecutionState {
-    insts: &Vec<VMCode>,
+    insts: Vec<VMCode>,
     rip: usize,
     local_vars: Vec<RuntimeValue>,
     eval_stack: Vec<RuntimeValue>,
@@ -38,16 +38,13 @@ impl VirtualMachine {
     fn new() -> VirtualMachine { 
         VirtualMachine{ 
             funcs: Vec::new(),
-            current_func: None,
-            rip: 0,
-            local_vars: Vec::new(),
-            eval_stack: Vec::new(),
+            states: Vec::new(),
         } 
     }
 
-    fn load_program(&mut self, program: Program) {
+    fn load_program(&mut self, mut program: Program) {
 
-        self.funcs.append(program.0);
+        self.funcs.append(&mut program.0);
     }
 
     fn execute_step(&mut self) {

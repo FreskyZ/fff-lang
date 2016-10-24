@@ -6,6 +6,7 @@
 mod ast_item;
 
 pub use syntax::ast_item::program::Program;
+pub use syntax::ast_item::function_def::Argument;
 pub use syntax::ast_item::function_def::FunctionDef;
 pub use syntax::ast_item::expression::Expression;
 pub use syntax::ast_item::expression::ExpressionBase;

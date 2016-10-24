@@ -115,30 +115,30 @@ impl IASTItem for Statement {
     fn parse(lexer: &mut Lexer, index: usize) -> (Option<Statement>, usize) {
 
         match lexer.nth(index).get_keyword() {
-            Some(&KeywordKind::Const) 
-            | Some(&KeywordKind::Var) => match VarDeclStatement::parse(lexer, index) {
+            Some(KeywordKind::Const) 
+            | Some(KeywordKind::Var) => match VarDeclStatement::parse(lexer, index) {
                 (Some(var_decl), var_decl_len) => (Some(Statement::VarDecl(var_decl)), var_decl_len),
                 (None, length) => (None, length),
             },
-            Some(&KeywordKind::Break) 
-            | Some(&KeywordKind::Continue) 
-            | Some(&KeywordKind::Return) => match JumpStatement::parse(lexer, index) {
+            Some(KeywordKind::Break) 
+            | Some(KeywordKind::Continue) 
+            | Some(KeywordKind::Return) => match JumpStatement::parse(lexer, index) {
                 (Some(jump_stmt), jump_stmt_len) => (Some(Statement::Jump(jump_stmt)), jump_stmt_len),
                 (None, length) => (None, length), 
             },
-            Some(&KeywordKind::Loop) => match LoopStatement::parse(lexer, index) {
+            Some(KeywordKind::Loop) => match LoopStatement::parse(lexer, index) {
                 (Some(loop_stmt), loop_stmt_len) => (Some(Statement::Loop(loop_stmt)), loop_stmt_len),
                 (None, length) => (None, length),
             },
-            Some(&KeywordKind::While) => match WhileStatement::parse(lexer, index) {
+            Some(KeywordKind::While) => match WhileStatement::parse(lexer, index) {
                 (Some(while_stmt), while_stmt_len) => (Some(Statement::While(while_stmt)), while_stmt_len),
                 (None, length) => (None, length),
             },
-            Some(&KeywordKind::For) => match ForStatement::parse(lexer, index) {
+            Some(KeywordKind::For) => match ForStatement::parse(lexer, index) {
                 (Some(for_stmt), for_stmt_len) => (Some(Statement::For(for_stmt)), for_stmt_len),
                 (None, length) => (None, length),
             },
-            Some(&KeywordKind::If) => match IfStatement::parse(lexer, index) {
+            Some(KeywordKind::If) => match IfStatement::parse(lexer, index) {
                 (Some(if_stmt), if_stmt_len) => (Some(Statement::If(if_stmt)), if_stmt_len),
                 (None, length) => (None, length),
             },

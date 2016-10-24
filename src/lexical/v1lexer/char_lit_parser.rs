@@ -7,7 +7,7 @@ use common::Position;
 use common::StringPosition;
 use message::Message;
 use message::MessageEmitter;
-use lexical::symbol_type::CharLiteral;
+use lexical::symbol_type::char_literal::CharLiteral;
 use lexical::v1lexer::escape_char_parser::EscapeCharParser;
 use lexical::v1lexer::escape_char_parser::EscapeCharSimpleCheckResult;
 use lexical::v1lexer::escape_char_parser::EscapeCharParserResult;
@@ -238,7 +238,7 @@ mod tests {
         use common::StringPosition;
         use message::Message;
         use message::MessageEmitter;
-        use lexical::symbol_type::CharLiteral;
+        use lexical::symbol_type::char_literal::CharLiteral;
         use super::CharLiteralParser;
         use super::CharLiteralParserResult::*;
 

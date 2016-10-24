@@ -3,7 +3,8 @@
 
 use file_map::InputReader;
 use lexical::Lexer;
-use syntax::parse;
+use syntax::parse as syntax_parse;
+use codegen::generate;
 
 // Handle and print error here
 pub fn compile_input(file_name: String) {
@@ -21,7 +22,8 @@ pub fn compile_input(file_name: String) {
     };
 
     let lexer = &mut Lexer::new(content);
-    let _ast = parse(lexer);
+    let ast_program = syntax_parse(lexer);
+    let _codes = generate(ast_program.unwrap());
 }
 
 #[cfg(test)]

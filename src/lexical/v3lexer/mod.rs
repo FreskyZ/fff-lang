@@ -22,11 +22,11 @@ use lexical::v2lexer::BufV2Lexer;
 
 use lexical::buf_lexer::ILexer;
 
-use lexical::symbol_type::StringLiteral;
-use lexical::symbol_type::NumericLiteral;
-use lexical::symbol_type::CharLiteral;
-use lexical::symbol_type::KeywordKind;
-use lexical::symbol_type::SeperatorKind;
+use lexical::symbol_type::string_literal::StringLiteral;
+use lexical::symbol_type::numeric_literal::NumericLiteral;
+use lexical::symbol_type::char_literal::CharLiteral;
+use lexical::KeywordKind;
+use lexical::SeperatorKind;
 
 test_only_attr!{
     test: [derive(Clone, Eq, PartialEq)]
@@ -80,19 +80,15 @@ impl ILexer<V3Token> for V3Lexer {
         loop { // Loop for ignore char
             match self.v2.next(messages) {
                 Some(BufV2Token{ token: V2Token::StringLiteral{ inner }, next: _1 }) => {
-                    // Dispatch string literal to escape
                     return Some(V3Token::StringLiteral(inner));
                 }
                 Some(BufV2Token{ token: V2Token::NumericLiteral{ inner }, next: _1 }) => {
-                    // Dispatch numeric literal to get value
                     return Some(V3Token::NumericLiteral(inner));
                 }
                 Some(BufV2Token{ token: V2Token::CharLiteral{ inner }, next: _1 }) => {
-                    // Dispatch numeric literal to get value
                     return Some(V3Token::CharLiteral(inner));
                 }
                 Some(BufV2Token{ token: V2Token::Identifier{ name, pos }, next: _1 }) => {
-                    // Dispatch identifier to identifier or keyword
                     match KeywordKind::try_from(&name) {
                         Some(keyword) => return Some(V3Token::Keyword(keyword, pos)),
                         None => {

@@ -1,13 +1,12 @@
 
 // String literal parser
-// TODO: insert "is beautiful" after any case of "zhouyuhong", "zhou yuhong", "zyh" and "zmj"
 
 use common::From2;
 use common::Position;
 use common::StringPosition;
 use message::Message;
 use message::MessageEmitter;
-use lexical::symbol_type::StringLiteral;
+use lexical::symbol_type::string_literal::StringLiteral;
 use lexical::v1lexer::escape_char_parser::EscapeCharParser;
 use lexical::v1lexer::escape_char_parser::EscapeCharSimpleCheckResult;
 use lexical::v1lexer::escape_char_parser::EscapeCharParserResult;
@@ -169,7 +168,7 @@ mod tests {
         use common::StringPosition;
         use message::Message;
         use message::MessageEmitter;
-        use lexical::symbol_type::StringLiteral;
+        use lexical::symbol_type::string_literal::StringLiteral;
         use super::StringLiteralParser;
         use super::StringLiteralParserResult::*;
 

@@ -11,8 +11,9 @@ use common::format_vector_display;
 use common::format_vector_debug;
 
 use lexical::Lexer;
-use lexical::NumericLiteralValue;
+use lexical::NumLitValue;
 use lexical::SeperatorKind;
+use lexical::LexicalLiteral;
 
 use syntax::SMType;
 use syntax::ast_item::IASTItem;
@@ -35,10 +36,7 @@ use self::primary::PrimaryExpression;
 
 #[derive(Eq, PartialEq)]
 pub enum ExpressionBase {
-    StringLiteral(String),
-    CharLiteral(char),
-    NumericLiteral(NumericLiteralValue),
-    BooleanLiteral(bool),
+    Literal(LexicalLiteral),
     Identifier(String),
     Paren(Expression),
     ArrayDef(Vec<Expression>),
@@ -49,10 +47,7 @@ impl fmt::Debug for ExpressionBase {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             ExpressionBase::Identifier(ref name) => write!(f, "{}", name),
-            ExpressionBase::StringLiteral(ref val) => write!(f, "{:?}", val),
-            ExpressionBase::CharLiteral(ref val) => write!(f, "{:?}", val),
-            ExpressionBase::NumericLiteral(ref val) => write!(f, "{:?}", val),
-            ExpressionBase::BooleanLiteral(ref val) => write!(f, "{}", val),
+            ExpressionBase::Literal(ref val) => write!(f, "{}", val),
             ExpressionBase::Paren(ref expr) => write!(f, "({:?})", expr),
             ExpressionBase::ArrayDupDef(ref expr1, ref expr2, ref pos) => 
                 write!(f, "[{:?}; @ {:?} {:?}]", expr1, pos, expr2),
@@ -65,10 +60,7 @@ impl fmt::Display for ExpressionBase {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             ExpressionBase::Identifier(ref name) => write!(f, "{}", name),
-            ExpressionBase::StringLiteral(ref val) => write!(f, "{:?}", val),
-            ExpressionBase::CharLiteral(ref val) => write!(f, "{:?}", val),
-            ExpressionBase::NumericLiteral(ref val) => write!(f, "{}", val),
-            ExpressionBase::BooleanLiteral(ref val) => write!(f, "{}", val),
+            ExpressionBase::Literal(ref val) => write!(f, "{}", val),
             ExpressionBase::Paren(ref expr) => write!(f, "({})", expr),
             ExpressionBase::ArrayDupDef(ref expr1, ref expr2, ref _pos) => 
                 write!(f, "[{}; {}]", expr1, expr2),
@@ -219,10 +211,7 @@ fn d3_expr_to_expr(d3: D3Expression) -> Expression {
         PrimaryExpressionBase::ArrayDupDef(d3_expr1, d3_expr2) =>
             ExpressionBase::ArrayDupDef(d3_expr_to_expr(d3_expr1.as_ref().clone()), d3_expr_to_expr(d3_expr2.as_ref().clone()), Position::new()),
 
-        PrimaryExpressionBase::BooleanLiteral(val) => ExpressionBase::BooleanLiteral(val),
-        PrimaryExpressionBase::CharLiteral(val) => ExpressionBase::CharLiteral(val),
-        PrimaryExpressionBase::StringLiteral(val) => ExpressionBase::StringLiteral(val),
-        PrimaryExpressionBase::NumericLiteral(val) => ExpressionBase::NumericLiteral(val),
+        PrimaryExpressionBase::Literal(val) => ExpressionBase::Literal(val),
         PrimaryExpressionBase::Identifier(name) => ExpressionBase::Identifier(name),
         PrimaryExpressionBase::ParenExpression(d3_expr) => ExpressionBase::Paren(d3_expr_to_expr(d3_expr.as_ref().clone())),
     };
@@ -284,21 +273,6 @@ impl IASTItem for Expression {
     } 
 }
 
-// for statement
-impl Expression {
-
-    /// Last one is function call or increase or Decrease
-    pub fn is_statement_expression(&self) -> bool {
-        match self.ops.iter().last() {
-            Some(&ExpressionOperator::FunctionCall(_, _)) => true,
-            Some(&ExpressionOperator::Unary(SeperatorKind::Increase, _)) => true,
-            Some(&ExpressionOperator::Unary(SeperatorKind::Decrease, _)) => true,
-            _ => false,  
-        }
-    }
-
-}
-
 #[cfg(test)]
 mod tests {
     use super::Expression;
@@ -307,8 +281,9 @@ mod tests {
 
     use common::StringPosition;
     use lexical::Lexer;
-    use lexical::NumericLiteralValue;
+    use lexical::NumLitValue;
     use lexical::SeperatorKind;
+    use lexical::LexicalLiteral;
     use syntax::ast_item::IASTItem;
 
     #[test]
@@ -320,14 +295,14 @@ mod tests {
         assert_eq!(
             result, 
             Some(Expression::new_test(
-                ExpressionBase::NumericLiteral(NumericLiteralValue::I32(1)), 
+                ExpressionBase::Literal(LexicalLiteral::Num(Some(NumLitValue::I32(1)))), 
                 make_str_pos!(1, 17, 1, 17),
                 vec![
                     ExpressionOperator::Binary(
                         SeperatorKind::Add,
                         make_str_pos!(1, 19, 1, 19),
                         Expression::new_test(
-                            ExpressionBase::NumericLiteral(NumericLiteralValue::I32(1)),
+                            ExpressionBase::Literal(LexicalLiteral::Num(Some(NumLitValue::I32(1)))),
                             make_str_pos!(1, 21, 1, 21),
                             Vec::new(),
                             make_str_pos!(1, 21, 1, 21),
@@ -359,7 +334,7 @@ mod tests {
                 let (result, length) = Expression::parse(lexer, 0);
                 perrorln!("Debug: ({:?}, {})", result, length);
                 match result {
-                    Some(result) => perrorln!("Display: {}\nIs statement-expression: {}", result, result.is_statement_expression()),
+                    Some(result) => perrorln!("Display: {}", result),
                     None => perrorln!("messages: {:?}", lexer.messages()),
                 }
             } else {

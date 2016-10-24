@@ -90,7 +90,7 @@ impl IASTItem for UnaryExpression {
         let mut unaries = Vec::new();
         loop {
             match lexer.nth(index + current_len).get_seperator() {
-                Some(sep) if sep.is_category(SeperatorCategory::Unary) => {
+                Some(ref sep) if sep.is_category(SeperatorCategory::Unary) => {
                     unaries.push(UnaryOperator::new(sep.clone(), lexer.pos(index + current_len)));
                     current_len += 1;
                 }

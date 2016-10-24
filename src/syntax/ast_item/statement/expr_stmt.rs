@@ -85,7 +85,7 @@ impl IASTItem for ExpressionStatement {
         }
 
         let (assign_op, assign_op_pos) = match lexer.nth(index + current_len).get_seperator() {
-            Some(assign_op) if assign_op.is_category(SeperatorCategory::Assign) => {
+            Some(ref assign_op) if assign_op.is_category(SeperatorCategory::Assign) => {
                 current_len += 1;
                 (assign_op.clone(), lexer.pos(index + current_len - 1))
             },

@@ -20,35 +20,36 @@
 // that is, move the operators and expr base to another statement and store the result in a generated local, and replace
 //     previous expression by this temp local
 
-use lexical::NumericLiteralValue;
+// First optimization!
+// Remove pair of LoadLocal and StoreLocal which have same name
+
+use lexical::NumLitValue;
 use syntax::ExpressionOperator;
 use syntax::SMType;
-// use syntax as ast;
+use syntax::Program as SyntaxProgram;
 
-pub enum LiteralValue {
-    StringLiteral(String),
-    CharLiteral(char),
-    BooleanLiteral(bool),
-    NumericLiteral(NumericLiteralValue),
-}
+mod vm_code;
+mod gen_ctrl_flow;
+mod gen_expr_stmt;
+mod validate;
 
-pub enum VMCode {
-    ScopeEnter, 
-    RegisterLocal(String, SMType),
-    ScopeLeave,
-
-    LoadLiteral(LiteralValue),  // load literal to rax,
-    LoadLocal(String),           // read rbp[n] to rax, 
-    StoreLocal(String),          // store rax to rbp[n],
-
-    PerformOperator(ExpressionOperator),
-
-    Goto(usize),
-    GotoIf(bool, usize),
-}
+pub use self::vm_code::VMCode;
 
 pub struct FunctionDef {
     pub codes: Vec<VMCode>, 
 }
 
-pub struct Program(FunctionDef);
+pub struct Program(pub Vec<FunctionDef>);
+
+pub struct CodeGenerater {
+
+}
+
+impl CodeGenerater {
+
+}
+
+pub fn generate(program: SyntaxProgram) -> Program {
+
+    Program(Vec::new())
+}

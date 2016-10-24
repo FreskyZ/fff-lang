@@ -49,7 +49,7 @@ impl IASTItem for Argument {
         };
 
         let name = match lexer.nth(index + ty_len).get_identifier() {
-            Some(ident) => ident.clone(),
+            Some(ident) => ident,
             None => return lexer.push_expect("identifier", index + ty_len, ty_len),
         };
 

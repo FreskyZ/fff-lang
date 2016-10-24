@@ -6,7 +6,7 @@ use common::Position;
 use common::StringPosition;
 use message::Message;
 use message::MessageEmitter;
-use lexical::symbol_type::StringLiteral;
+use lexical::symbol_type::string_literal::StringLiteral;
 
 pub struct RawStringLiteralParser {
     raw: String,
@@ -65,7 +65,7 @@ mod tests {
         use common::StringPosition;
         use message::Message;
         use message::MessageEmitter;
-        use lexical::symbol_type::StringLiteral;
+        use lexical::symbol_type::string_literal::StringLiteral;
         use super::RawStringLiteralParser;
         use super::RawStringLiteralParserResult::*;
 

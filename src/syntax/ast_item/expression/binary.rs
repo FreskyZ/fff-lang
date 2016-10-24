@@ -93,7 +93,7 @@ fn parse_multiplicative(lexer: &mut Lexer, index: usize) -> (Option<BinaryExpres
     let mut ops = Vec::new();
     loop {
         match lexer.nth(index + current_len).get_seperator() {
-            Some(sep) if sep.is_category(SeperatorCategory::Multiplicative) => {
+            Some(ref sep) if sep.is_category(SeperatorCategory::Multiplicative) => {
                 current_len += 1;
                 match UnaryExpression::parse(lexer, index + current_len) {
                     (None, length) => return (None, current_len + length),
@@ -126,7 +126,7 @@ macro_rules! impl_binary_parser {
 
             loop {
                 match lexer.nth(index + current_len).get_seperator() {
-                    Some(sep) if sep.is_category($op_category) => {
+                    Some(ref sep) if sep.is_category($op_category) => {
                         current_len += 1;
                         match $previous_parser(lexer, index + current_len) {
                             (None, length) => return (None, current_len + length),

@@ -68,9 +68,9 @@ impl IASTItem for JumpStatement {
     fn parse(lexer: &mut Lexer, index: usize) -> (Option<JumpStatement>, usize) {
 
         let ty = match lexer.nth(index).get_keyword() {
-            Some(&KeywordKind::Return) => JumpStatementType::Return,
-            Some(&KeywordKind::Continue) => JumpStatementType::Continue,
-            Some(&KeywordKind::Break) => JumpStatementType::Break,
+            Some(KeywordKind::Return) => JumpStatementType::Return,
+            Some(KeywordKind::Continue) => JumpStatementType::Continue,
+            Some(KeywordKind::Break) => JumpStatementType::Break,
             _ => return (None, 0), 
         };
 
@@ -111,7 +111,8 @@ mod tests {
     use syntax::ExpressionBase;
     use syntax::ExpressionOperator;
     use lexical::SeperatorKind;
-    use lexical::NumericLiteralValue;
+    use lexical::NumLitValue;
+    use lexical::LexicalLiteral;
 
     #[test]
     fn ast_stmt_jump() {
@@ -156,7 +157,7 @@ mod tests {
                 id: 0, 
                 ty: JumpStatementType::Continue, 
                 expr: Some(Expression::new_test(
-                    ExpressionBase::StringLiteral("inner".to_owned()), 
+                    ExpressionBase::Literal(LexicalLiteral::Str(Some("inner".to_owned()))), 
                     make_str_pos!(1, 10, 1, 16),
                     Vec::new(),
                     make_str_pos!(1, 10, 1, 16),
@@ -170,7 +171,7 @@ mod tests {
                 id: 0, 
                 ty: JumpStatementType::Break, 
                 expr: Some(Expression::new_test(
-                    ExpressionBase::StringLiteral("outter".to_owned()), 
+                    ExpressionBase::Literal(LexicalLiteral::Str(Some("outter".to_owned()))), 
                     make_str_pos!(1, 7, 1, 14),
                     Vec::new(),
                     make_str_pos!(1, 7, 1, 14),
@@ -184,14 +185,14 @@ mod tests {
                 id: 0, 
                 ty: JumpStatementType::Return, 
                 expr: Some(Expression::new_test(
-                    ExpressionBase::NumericLiteral(NumericLiteralValue::I32(1)), 
+                    ExpressionBase::Literal(LexicalLiteral::Num(Some(NumLitValue::I32(1)))), 
                     make_str_pos!(1, 8, 1, 8),
                     vec![
                         ExpressionOperator::Binary(
                             SeperatorKind::Add,
                             make_str_pos!(1, 10, 1, 10),
                             Expression::new_test(
-                                ExpressionBase::NumericLiteral(NumericLiteralValue::I32(1)),
+                                ExpressionBase::Literal(LexicalLiteral::Num(Some(NumLitValue::I32(1)))),
                                 make_str_pos!(1, 12, 1, 12),
                                 Vec::new(),
                                 make_str_pos!(1, 12, 1, 12),
