@@ -1,12 +1,13 @@
 
-// TODO
-// message divided into lexical message and syntax message, having any message after syntax parse stops the compilation process
+// Process messages
 
+use std::fmt;
 use common::Position;
 use common::StringPosition;
 
+// Lexical
 #[derive(Eq, PartialEq)]
-pub enum Message {
+pub enum LexicalMessage {
 
     UnexpectedEndofFileInBlockComment { 
         block_start: Position, 
@@ -90,23 +91,11 @@ pub enum Message {
     InvalidEscapeInCharLiteral {    // Special for '\'
         start_pos: Position,
     },
-
-    // Syntax!
-    ExpectSymbol{ expect: String, actual: String, pos: Position },
-    // First recoverable of syntax!!!
-    EmptySubscription{ pos: Position },
-    SingleCommaInNonArgumentFunctionDef{ fn_pos: Position, comma_pos: Position },
 }
 
-impl Message {
-    
-}
-
-use std::fmt;
-impl fmt::Debug for Message {
-
+impl fmt::Debug for LexicalMessage {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::Message::*;
+        use self::LexicalMessage::*;
         match *self {
             UnexpectedEndofFileInBlockComment { ref block_start, ref eof_pos } => {
                 write!(f, "Unexpected end of file at {} in block comment starts from {}", eof_pos, block_start)
@@ -178,7 +167,26 @@ impl fmt::Debug for Message {
             NumericLiteralTooLarge { ref literal_pos } => {
                 write!(f, "Numeric literal too large at {:?}", literal_pos)
             }
+        }
+    }
+}
+impl_display_by_debug!{ LexicalMessage }
 
+#[derive(Eq, PartialEq)]
+pub enum SyntaxMessage {
+
+    // Syntax!
+    ExpectSymbol{ expect: String, actual: String, pos: Position },
+
+    // First recoverable of syntax!!!
+    EmptySubscription{ pos: Position },
+    SingleCommaInNonArgumentFunctionDef{ fn_pos: Position, comma_pos: Position },
+}
+
+impl fmt::Debug for SyntaxMessage {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::SyntaxMessage::*;
+        match *self {
             ExpectSymbol{ ref expect, ref actual, ref pos } => {
                 write!(f, "Expect {} at {:?} but actually is {:?}", expect, pos, actual)
             }
@@ -191,8 +199,56 @@ impl fmt::Debug for Message {
         }
     }
 }
+impl_display_by_debug!{ SyntaxMessage }
 
-impl_display_by_debug!(Message);
+impl SyntaxMessage {
+    pub fn is_recoverable(&self) -> bool {
+        match *self {
+            SyntaxMessage::ExpectSymbol{ .. } => false,
+            SyntaxMessage::EmptySubscription{ .. } => true,
+            SyntaxMessage::SingleCommaInNonArgumentFunctionDef{ .. } => true,
+        }
+    }
+}
+
+#[derive(Eq, PartialEq)]
+pub enum CodegenMessage {
+
+}
+impl fmt::Debug for CodegenMessage {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{{}}") // currently nothing
+    }
+}
+impl_display_by_debug!{ CodegenMessage }
+
+#[derive(Eq, PartialEq)]
+pub enum Message {
+    Lexical(LexicalMessage),
+    Syntax(SyntaxMessage),
+    Codegen(CodegenMessage),
+}
+
+impl From<LexicalMessage> for Message {
+    fn from(msg: LexicalMessage) -> Message { Message::Lexical(msg) }   
+}
+impl From<SyntaxMessage> for Message {
+    fn from(msg: SyntaxMessage) -> Message { Message::Syntax(msg) }   
+}
+impl From<CodegenMessage> for Message {
+    fn from(msg: CodegenMessage) -> Message { Message::Codegen(msg) }   
+}
+
+impl fmt::Debug for Message {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Message::Lexical(ref msg) => write!(f, "{:?}", msg),
+            Message::Syntax(ref msg) => write!(f, "{:?}", msg),
+            Message::Codegen(ref msg) => write!(f, "{:?}", msg),
+        }
+    }
+}
+impl_display_by_debug!{ Message }
 
 #[cfg(test)]
 #[derive(Eq, PartialEq)]
@@ -212,8 +268,8 @@ impl MessageEmitter {
 
     pub fn is_empty(&self) -> bool { self.messages.is_empty() }
 
-    pub fn push(&mut self, message: Message) {
-        self.messages.push(message);
+    pub fn push<T: Into<Message>>(&mut self, message: T) {
+        self.messages.push(message.into());
     }
 
     pub fn pop(&mut self) { // Pop top

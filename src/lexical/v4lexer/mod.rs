@@ -4,6 +4,7 @@
 use std::fmt;
 use common::From2;
 use common::StringPosition;
+use message::SyntaxMessage;
 use message::Message;
 use message::MessageEmitter;
 
@@ -222,7 +223,7 @@ impl V4Lexer {
     }
 
     // MessageEmitter
-    pub fn push(&mut self, message: Message) {
+    pub fn push<T: Into<Message>>(&mut self, message: T) {
         self.messages.push(message);
     }
     pub fn push_expect<T>(&mut self, final_token: &str, index: usize, sym_size: usize) -> (Option<T>, usize) {
@@ -246,7 +247,7 @@ impl V4Lexer {
             &self.buf[index]
         };
 
-        self.messages.push(Message::ExpectSymbol{ 
+        self.messages.push(SyntaxMessage::ExpectSymbol{ 
             expect: desc,
             actual: format!("{:?}", actual_token), 
             pos: actual_token.get_position().start_pos,

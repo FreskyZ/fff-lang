@@ -2,7 +2,7 @@
 // Escape char parser
 
 use common::Position;
-use message::Message;
+use message::LexicalMessage as Message;
 use message::MessageEmitter;
 
 test_only_attr!{
@@ -130,7 +130,7 @@ mod tests {
         use super::escape_char_parser_new;
         use super::EscapeCharParserResult::*;
         use common::Position;
-        use message::Message;
+        use message::LexicalMessage as Message;
         use message::MessageEmitter;
 
         {   // \u2764      => '\u{2764}' | '❤'                          C3, C5, 4

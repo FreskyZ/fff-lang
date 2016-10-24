@@ -13,7 +13,7 @@ mod string_lit_parser;
 mod raw_string_lit_parser;
 
 use common::Position;
-use message::Message;
+use message::LexicalMessage as Message;
 use message::MessageEmitter;
 
 use lexical::v0lexer::V0Token;
@@ -234,7 +234,7 @@ mod tests {
     use common::From2;
     use common::Position;
     use common::StringPosition;
-    use message::Message;
+    use message::LexicalMessage as Message;
     use message::MessageEmitter;
     use lexical::buf_lexer::ILexer;
     use lexical::symbol_type::string_literal::StringLiteral;

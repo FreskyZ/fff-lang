@@ -2,7 +2,7 @@
 // numeric literal parser
 
 use common::StringPosition;
-use message::Message;
+use message::LexicalMessage as Message;
 use message::MessageEmitter;
 
 use lexical::symbol_type::numeric_literal::NumericLiteral;

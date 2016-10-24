@@ -13,7 +13,7 @@ use std::fmt;
 use common::From2;
 use common::Position;
 use common::StringPosition;
-use message::Message;
+use message::SyntaxMessage as Message;
 
 use lexical::Lexer;
 use lexical::IToken;

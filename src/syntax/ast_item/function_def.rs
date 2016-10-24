@@ -7,7 +7,7 @@ use common::From2;
 use common::StringPosition;
 use common::format_vector_debug;
 use common::format_vector_display;
-use message::Message;
+use message::SyntaxMessage as Message;
 
 use lexical::Lexer;
 use lexical::IToken;

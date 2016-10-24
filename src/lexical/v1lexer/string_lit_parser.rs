@@ -4,7 +4,7 @@
 use common::From2;
 use common::Position;
 use common::StringPosition;
-use message::Message;
+use message::LexicalMessage as Message;
 use message::MessageEmitter;
 use lexical::symbol_type::string_literal::StringLiteral;
 use lexical::v1lexer::escape_char_parser::EscapeCharParser;
@@ -166,7 +166,7 @@ mod tests {
         use common::From2;
         use common::Position;
         use common::StringPosition;
-        use message::Message;
+        use message::LexicalMessage as Message;
         use message::MessageEmitter;
         use lexical::symbol_type::string_literal::StringLiteral;
         use super::StringLiteralParser;

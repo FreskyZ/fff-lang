@@ -75,7 +75,7 @@ pub enum ExpressionOperator {
     MemberAccess(String, StringPosition), // `.xxxx`'s position 
     FunctionCall(Vec<Expression>, StringPosition), // '(', ')''s position, TODO: implement the position
     MemberFunctionCall(String, Vec<Expression>, [StringPosition; 2]),  // .xxx and () 's position  
-    Subscription(Vec<Expression>, StringPosition), // '[', ']''s position, TODO: implement it
+    GetIndex(Vec<Expression>, StringPosition), // from seperated subscription  // '[', ']''s position, TODO: implement it
     TypeCast(SMType, StringPosition), // `as`'s position TODO: implement it 
     Unary(SeperatorKind, StringPosition),
     Binary(SeperatorKind, StringPosition, Expression), // operator, pos, operand
@@ -83,7 +83,7 @@ pub enum ExpressionOperator {
 impl fmt::Debug for ExpressionOperator {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", match *self {
-            ExpressionOperator::Subscription(ref exprs, ref pos) => format!(".operator[]({}) @ {:?}", format_vector_debug(exprs, ", "), pos),
+            ExpressionOperator::GetIndex(ref exprs, ref pos) => format!(".operator[]({}) @ {:?}", format_vector_debug(exprs, ", "), pos),
             ExpressionOperator::FunctionCall(ref exprs, ref pos) => format!(".operator()({}) @ {:?}", format_vector_debug(exprs, ", "), pos),
             ExpressionOperator::MemberAccess(ref name, ref pos) => format!(".{:?} @ {:?}", name, pos),
             ExpressionOperator::TypeCast(ref ty, ref pos) => format!(".operator {:?}() @ {:?}", ty, pos),
@@ -119,7 +119,7 @@ impl fmt::Debug for ExpressionOperator {
 impl fmt::Display for ExpressionOperator {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", match *self {
-            ExpressionOperator::Subscription(ref exprs, ref _pos) => format!(".operator[]({})", format_vector_display(exprs, ", ")),
+            ExpressionOperator::GetIndex(ref exprs, ref _pos) => format!(".operator[]({})", format_vector_display(exprs, ", ")),
             ExpressionOperator::FunctionCall(ref exprs, ref _pos) => format!(".operator()({})", format_vector_display(exprs, ", ")),
             ExpressionOperator::MemberAccess(ref name, ref _pos) => format!(".{}", name),
             ExpressionOperator::TypeCast(ref ty, ref _pos) => format!(".operator {}()", ty),
@@ -219,7 +219,7 @@ fn d3_expr_to_expr(d3: D3Expression) -> Expression {
     fn postfix_to_operator(postfix: Postfix) -> ExpressionOperator {
         match postfix {
             Postfix::FunctionCall(d3_exprs) => ExpressionOperator::FunctionCall(d3_exprs.into_iter().map(d3_expr_to_expr).collect(), StringPosition::new()),
-            Postfix::Subscription(d3_exprs) => ExpressionOperator::Subscription(d3_exprs.into_iter().map(d3_expr_to_expr).collect(), StringPosition::new()),
+            Postfix::Subscription(d3_exprs) => ExpressionOperator::GetIndex(d3_exprs.into_iter().map(d3_expr_to_expr).collect(), StringPosition::new()),
             Postfix::MemberAccess(ident, pos) => ExpressionOperator::MemberAccess(ident, pos),
             Postfix::TypeCast(ty) => ExpressionOperator::TypeCast(ty, StringPosition::new()),
         }
