@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 #![allow(unused_assignments)]
+#![allow(unused_imports)]
+#![allow(unused_variables)]
 
 #[macro_use]
 extern crate fsz_common;

@@ -13,6 +13,8 @@ use std::fmt;
 use common::From2;
 use common::Position;
 use common::StringPosition;
+use common::format_vector_display;
+use common::format_vector_debug;
 use message::SyntaxMessage as Message;
 
 use lexical::Lexer;
@@ -28,49 +30,39 @@ use super::primary::PrimaryExpression;
 
 #[derive(Eq, PartialEq, Clone)]
 pub enum Postfix {
-    Subscription(Vec<D3Expression>),
-    FunctionCall(Vec<D3Expression>),
-    MemberAccess(String, StringPosition),
-    TypeCast(SMType),
+    Subscription(Vec<D3Expression>, StringPosition),  // '[', ']' position
+    FunctionCall(Vec<D3Expression>, StringPosition),  // '(', ')' position
+    MemberAccess(String, StringPosition),             // '.xxx' position
+    TypeCast(SMType, StringPosition),                 // 'as' position
 }
 impl fmt::Debug for Postfix {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", match *self {
-            Postfix::Subscription(ref exprs) => {
-                let mut buf = exprs.iter().fold(".operator[](".to_owned(), 
-                    |mut buf, expr| { buf.push_str(&format!("{:?}, ", expr)); buf });
-                buf.push_str(")");
-                buf 
-            }
-            Postfix::FunctionCall(ref exprs) => {
-                let mut buf = exprs.iter().fold(".operator()(".to_owned(), 
-                    |mut buf, expr| { buf.push_str(&format!("{:?}, ", expr)); buf });
-                buf.push_str(")");
-                buf 
-            }
-            Postfix::MemberAccess(ref name, ref pos) => format!(".operator->({:?} @ {:?})", name, pos),
-            Postfix::TypeCast(ref ty) => format!(".operator {:?}()", ty),
-        })
+        match *self {
+            Postfix::Subscription(ref exprs, ref pos) => write!(f, ".operator[] @ {:?} ({})", pos, format_vector_debug(exprs, ", ")),
+            Postfix::FunctionCall(ref exprs, ref pos) => write!(f, ".operator() @ {:?} ({})", pos, format_vector_debug(exprs, ", ")),
+            Postfix::MemberAccess(ref name, ref pos) => write!(f, ".{} @ {:?}", name, pos),
+            Postfix::TypeCast(ref ty, ref pos) => write!(f, ".operator {:?}() @ {:?}", ty, pos),
+        }
     }
 }
 impl fmt::Display for Postfix {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", match *self {
-            Postfix::Subscription(ref exprs) => { 
-                let mut buf = exprs.iter().fold(".operator[](".to_owned(), 
-                    |mut buf, expr| { buf.push_str(&format!("{}, ", expr)); buf });
-                buf.push_str(")");
-                buf
-            },
-            Postfix::FunctionCall(ref exprs) => {
-                let mut buf = exprs.iter().fold(".operator()(".to_owned(), 
-                    |mut buf, expr| { buf.push_str(&format!("{}, ", expr)); buf });
-                buf.push_str(")");
-                buf
-            }
-            Postfix::MemberAccess(ref name, ref _pos) => format!(".operator->({})", name),
-            Postfix::TypeCast(ref ty) => format!(".operator {}()", ty),
-        })
+        match *self {
+            Postfix::Subscription(ref exprs, ref _pos) => write!(f, ".operator[]({})", format_vector_display(exprs, ", ")),
+            Postfix::FunctionCall(ref exprs, ref _pos) => write!(f, ".operator()({})", format_vector_display(exprs, ", ")),
+            Postfix::MemberAccess(ref name, ref _pos) => write!(f, ".{}", name),
+            Postfix::TypeCast(ref ty, ref _pos) => write!(f, ".operator {}()", ty),
+        }
+    }
+}
+impl Postfix {
+    pub fn pos(&self) -> StringPosition {
+        match *self {
+            Postfix::Subscription(ref _exprs, ref pos) => *pos,
+            Postfix::FunctionCall(ref _exprs, ref pos) => *pos,
+            Postfix::MemberAccess(ref _name, ref pos) => *pos,
+            Postfix::TypeCast(ref _ty, ref pos) => *pos,
+        }
     }
 }
 
@@ -82,18 +74,12 @@ pub struct PostfixExpression {
 
 impl fmt::Debug for PostfixExpression {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}{}", 
-            self.prim,
-            self.postfixs.iter().fold(String::new(), |mut buf, postfix| { buf.push_str(&format!("{:?}", postfix)); buf })
-        )
+        write!(f, "Post{{ {:?}{} }}", self.prim, format_vector_debug(&self.postfixs, ""))
     }
 }
 impl fmt::Display for PostfixExpression {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}{}", 
-            self.prim,
-            self.postfixs.iter().fold(String::new(), |mut buf, postfix| { buf.push_str(&format!("{}", postfix)); buf })
-        )
+        write!(f, "{}{}", self.prim, format_vector_display(&self.postfixs, ""))
     }
 }
 
@@ -107,7 +93,12 @@ impl IASTItem for PostfixExpression {
     fn pos_all(&self) -> StringPosition { 
         StringPosition::from2(
             self.prim.pos_all().start_pos, 
-            self.prim.pos_all().end_pos,    // TODO: finish it
+            match self.postfixs.iter().last() {
+                Some(&Postfix::Subscription(ref _exprs, ref pos)) | Some(&Postfix::FunctionCall(ref _exprs, ref pos)) => pos.end_pos,
+                Some(&Postfix::MemberAccess(ref _name, ref pos)) => pos.end_pos,
+                Some(&Postfix::TypeCast(ref ty, ref _pos)) => ty.pos_all().end_pos,
+                None => self.prim.pos_all().end_pos,
+            }
         )
     }
 
@@ -148,8 +139,8 @@ impl IASTItem for PostfixExpression {
                 match SMType::parse(lexer, index + current_len + 1) {
                     (Some(ty), ty_len) => {
                         test_condition_perrorln!{ log_enable, "get one postfix, type cast as {:?}", ty, }
+                        postfixs.push(Postfix::TypeCast(ty, lexer.pos(index + current_len)));
                         current_len += ty_len + 1;
-                        postfixs.push(Postfix::TypeCast(ty));
                         continue 'postfix;
                     }
                     (None, length) => {
@@ -160,12 +151,26 @@ impl IASTItem for PostfixExpression {
             } else if lexer.nth(index + current_len).is_seperator(SeperatorKind::LeftParenthenes) {
                 if lexer.nth(index + current_len + 1).is_seperator(SeperatorKind::RightParenthenes) {
                     test_condition_perrorln!{ log_enable, "get one postfix, none parameter function call" }
+                    postfixs.push(Postfix::FunctionCall(
+                        Vec::new(), 
+                        StringPosition::from2(lexer.pos(index + current_len).start_pos, lexer.pos(index + current_len + 1).end_pos)
+                    ));
                     current_len += 2;
-                    postfixs.push(Postfix::FunctionCall(Vec::new()));
                     continue 'postfix; // no param function call
                 }
                 expect_end_sep = SeperatorKind::RightParenthenes;
             } else if lexer.nth(index + current_len).is_seperator(SeperatorKind::LeftBracket) {
+                if lexer.nth(index + current_len + 1).is_seperator(SeperatorKind::RightBracket) {
+                    // first recoverable error here!!!, it is recoverable because later with type infer it can be used
+                    let pos = lexer.pos(index + current_len);
+                    lexer.push(Message::EmptySubscription{ pos: pos });
+                    postfixs.push(Postfix::Subscription(
+                        Vec::new(),
+                        StringPosition::from2(lexer.pos(index + current_len).start_pos, lexer.pos(index + current_len + 1).end_pos),
+                    ));
+                    current_len += 2;
+                    continue 'postfix;
+                }
                 expect_end_sep = SeperatorKind::RightBracket;
             } else {
                 break; // other final token, break
@@ -190,8 +195,13 @@ impl IASTItem for PostfixExpression {
                                     || (lexer.nth(index + current_len + exprs_len).is_seperator(SeperatorKind::Comma)
                                         && lexer.nth(index + current_len + exprs_len + 1).is_seperator(SeperatorKind::RightParenthenes))  => {
                                 test_condition_perrorln!{ log_enable, "parsing postfix function call's expression list finished" }
+                                let pos_left_paren = lexer.pos(index + current_len - 1);
                                 current_len += exprs_len + if lexer.nth(index + current_len + exprs_len).is_seperator(SeperatorKind::Comma) { 2 } else { 1 };
-                                postfixs.push(Postfix::FunctionCall(exprs));
+                                let pos_right_paren = lexer.pos(index + current_len - 1);
+                                postfixs.push(Postfix::FunctionCall(
+                                    exprs,
+                                    StringPosition::from2(pos_left_paren.start_pos, pos_right_paren.end_pos)
+                                ));
                                 continue 'postfix;
                             }
                             SeperatorKind::RightBracket 
@@ -199,12 +209,13 @@ impl IASTItem for PostfixExpression {
                                     || (lexer.nth(index + current_len + exprs_len).is_seperator(SeperatorKind::Comma)
                                         && lexer.nth(index + current_len + exprs_len + 1).is_seperator(SeperatorKind::RightBracket)) => {
                                 test_condition_perrorln!{ log_enable, "parsing postfix subscription's expression list finished" }
+                                let pos_left_bracket = lexer.pos(index + current_len - 1);
                                 current_len += exprs_len + if lexer.nth(index + current_len + exprs_len).is_seperator(SeperatorKind::Comma) { 2 } else { 1 };
-                                // first recoverable error here!!!
-                                if exprs.is_empty() {
-                                    lexer.push(Message::EmptySubscription{ pos: Position::new() }); // TODO: Position infrastructure for syntax
-                                }
-                                postfixs.push(Postfix::Subscription(exprs));
+                                let pos_right_bracket = lexer.pos(index + current_len - 1);
+                                postfixs.push(Postfix::Subscription(
+                                    exprs,
+                                    StringPosition::from2(pos_left_bracket.start_pos, pos_right_bracket.end_pos)
+                                ));
                                 continue 'postfix;
                             }
                             SeperatorKind::RightParenthenes | SeperatorKind::RightBracket => (),

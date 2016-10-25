@@ -156,12 +156,7 @@ mod tests {
             JumpStatement{ 
                 id: 0, 
                 ty: JumpStatementType::Continue, 
-                expr: Some(Expression::new_test(
-                    ExpressionBase::Literal(LexicalLiteral::Str(Some("inner".to_owned()))), 
-                    make_str_pos!(1, 10, 1, 16),
-                    Vec::new(),
-                    make_str_pos!(1, 10, 1, 16),
-                )), 
+                expr: Some(Expression::from_str("continue \"inner\";", 1)), 
                 pos: [make_str_pos!(1, 1, 1, 8), make_str_pos!(1, 17, 1, 17)] 
             }
         }
@@ -170,12 +165,7 @@ mod tests {
             JumpStatement{ 
                 id: 0, 
                 ty: JumpStatementType::Break, 
-                expr: Some(Expression::new_test(
-                    ExpressionBase::Literal(LexicalLiteral::Str(Some("outter".to_owned()))), 
-                    make_str_pos!(1, 7, 1, 14),
-                    Vec::new(),
-                    make_str_pos!(1, 7, 1, 14),
-                )), 
+                expr: Some(Expression::from_str("break \"outter\";", 1)), 
                 pos: [make_str_pos!(1, 1, 1, 5), make_str_pos!(1, 15, 1, 15)] 
             }
         }
@@ -184,23 +174,7 @@ mod tests {
             JumpStatement{ 
                 id: 0, 
                 ty: JumpStatementType::Return, 
-                expr: Some(Expression::new_test(
-                    ExpressionBase::Literal(LexicalLiteral::Num(Some(NumLitValue::I32(1)))), 
-                    make_str_pos!(1, 8, 1, 8),
-                    vec![
-                        ExpressionOperator::Binary(
-                            SeperatorKind::Add,
-                            make_str_pos!(1, 10, 1, 10),
-                            Expression::new_test(
-                                ExpressionBase::Literal(LexicalLiteral::Num(Some(NumLitValue::I32(1)))),
-                                make_str_pos!(1, 12, 1, 12),
-                                Vec::new(),
-                                make_str_pos!(1, 12, 1, 12),
-                            ),
-                        ),
-                    ],
-                    make_str_pos!(1, 8, 1, 12)
-                )),
+                expr: Some(Expression::from_str("return 1 + 1", 1)),
                 pos: [make_str_pos!(1, 1, 1, 6), make_str_pos!(1, 13, 1, 13)] 
             }
         }

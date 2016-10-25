@@ -154,12 +154,7 @@ mod tests {
                 is_const: true,
                 ty: SMType::make_base(SMTypeBase::I32, make_str_pos!(1, 7, 1, 9)),
                 name: "abc".to_owned(),
-                init_expr: Some(Expression::new_test(
-                    ExpressionBase::Literal(LexicalLiteral::Num(Some(NumLitValue::I32(0)))), 
-                    make_str_pos!(1, 17, 1, 17),
-                    Vec::new(),
-                    make_str_pos!(1, 17, 1, 17)
-                )),
+                init_expr: Some(Expression::from_str("const i32 abc = 0;", 4)),
                 pos: [
                     make_str_pos!(1, 1, 1, 5),
                     make_str_pos!(1, 11, 1, 13),
@@ -168,9 +163,9 @@ mod tests {
                 ],
             }), 6)
         );
-        //                           0        1         2
-        //                           1234567890123456789012
-        let lexer = &mut Lexer::new("var [i32] abc = 1 + 1;".to_owned());
+        //                                 0        1         2
+        //                                 1234567890123456789012
+        let lexer = &mut Lexer::new_test2("var [i32] abc = 1 + 1;");
         assert_eq!(
             VarDeclStatement::parse(lexer, 0),
             (Some(VarDeclStatement {
@@ -178,23 +173,7 @@ mod tests {
                 is_const: false,
                 ty: SMType::make_array(SMType::make_base(SMTypeBase::I32, make_str_pos!(1, 6, 1, 8)), make_str_pos!(1, 5, 1, 9)),
                 name: "abc".to_owned(),
-                init_expr: Some(Expression::new_test(
-                    ExpressionBase::Literal(LexicalLiteral::Num(Some(NumLitValue::I32(1)))), 
-                    make_str_pos!(1, 17, 1, 17),
-                    vec![
-                        ExpressionOperator::Binary(
-                            SeperatorKind::Add,
-                            make_str_pos!(1, 19, 1, 19),
-                            Expression::new_test(
-                                ExpressionBase::Literal(LexicalLiteral::Num(Some(NumLitValue::I32(1)))),
-                                make_str_pos!(1, 21, 1, 21),
-                                Vec::new(),
-                                make_str_pos!(1, 21, 1, 21),
-                            ),
-                        ),
-                    ],
-                    make_str_pos!(1, 17, 1, 21)
-                )),
+                init_expr: Some(Expression::from_str("var [i32] abc = 1 + 1", 6)),
                 pos: [
                     make_str_pos!(1, 1, 1, 3),
                     make_str_pos!(1, 11, 1, 13),

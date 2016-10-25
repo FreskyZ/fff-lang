@@ -179,7 +179,7 @@ pub enum SyntaxMessage {
     ExpectSymbol{ expect: String, actual: String, pos: Position },
 
     // First recoverable of syntax!!!
-    EmptySubscription{ pos: Position },
+    EmptySubscription{ pos: StringPosition },
     SingleCommaInNonArgumentFunctionDef{ fn_pos: Position, comma_pos: Position },
 }
 
