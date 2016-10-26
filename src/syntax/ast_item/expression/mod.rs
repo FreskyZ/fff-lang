@@ -314,6 +314,8 @@ mod tests {
     use lexical::SeperatorKind;
     use lexical::LexicalLiteral;
     use syntax::ast_item::IASTItem;
+    use syntax::SMType;
+    use syntax::SMTypeBase;
 
     #[test]
     fn ast_expr_all() {
@@ -326,7 +328,7 @@ mod tests {
                     assert_eq!(len, $len);
                     assert_eq!(expr.pos_all(), $pos_all);
                 } else {
-                    panic!("expr is not some")
+                    panic!("expr is not some, messages: {:?}", lexer.messages())
                 }
             });
             ($program: expr, $len: expr, $pos_all: expr, $expr: expr, [$($msg: expr)*]) => ({
@@ -642,62 +644,556 @@ mod tests {
                 ],
                 make_str_pos!(1, 1, 1, 6),
             )
+        }        //  1234567890123
+        test_case!{ "degg(a, b, )", 7, make_str_pos!(1, 1, 1, 12),
+            Expression::new_test(
+                ExpressionBase::Ident("degg".to_owned(), make_str_pos!(1, 1, 1, 4)),
+                vec![
+                    ExpressionOperator::FunctionCall(
+                        vec![
+                            Expression::new_test(
+                                ExpressionBase::Ident("a".to_owned(), make_str_pos!(1, 6, 1, 6)),
+                                Vec::new(),
+                                make_str_pos!(1, 6, 1, 6)
+                            ),
+                            Expression::new_test(
+                                ExpressionBase::Ident("b".to_owned(), make_str_pos!(1, 9, 1, 9)),
+                                Vec::new(),
+                                make_str_pos!(1, 9, 1, 9),
+                            )
+                        ],
+                        make_str_pos!(1, 5, 1, 12),
+                    )
+                ],
+                make_str_pos!(1, 1, 1, 12),
+            )
+        }        //  123456
+        test_case!{ "de(, )", 4, make_str_pos!(1, 1, 1, 6),
+            Expression::new_test(
+                ExpressionBase::Ident("de".to_owned(), make_str_pos!(1, 1, 1, 2)),
+                vec![
+                    ExpressionOperator::FunctionCall(
+                        Vec::new(),
+                        make_str_pos!(1, 3, 1, 6)
+                    )
+                ],
+                make_str_pos!(1, 1, 1, 6),
+            ),
+            [
+                SyntaxMessage::SingleCommaInFunctionCall{ call_pos: make_str_pos!(1, 3, 1, 6), comma_pos: make_str_pos!(1, 4, 1, 4).start_pos }
+            ]
         }
-        // test_case!{ "degg(a, b, )", 7,
 
-        // }
-        // test_case!{ "de(, )", 4,
+        // member function call
+        //           1234567890
+        test_case!{ "abc.defg()", 5, make_str_pos!(1, 1, 1, 10),
+            Expression::new_test(
+                ExpressionBase::Ident("abc".to_owned(), make_str_pos!(1, 1, 1, 3)),
+                vec![
+                    ExpressionOperator::MemberFunctionCall(
+                        "defg".to_owned(),
+                        Vec::new(),
+                        [
+                            make_str_pos!(1, 4, 1, 8),
+                            make_str_pos!(1, 9, 1, 10),
+                        ]
+                    )
+                ],
+                make_str_pos!(1, 1, 1, 10),
+            )
+        }        //  1234567890
+        test_case!{ "abc.deg(a)", 6, make_str_pos!(1, 1, 1, 10),
+            Expression::new_test(
+                ExpressionBase::Ident("abc".to_owned(), make_str_pos!(1, 1, 1, 3)),
+                vec![
+                    ExpressionOperator::MemberFunctionCall(
+                        "deg".to_owned(),
+                        vec![
+                            Expression::new_test(
+                                ExpressionBase::Ident("a".to_owned(), make_str_pos!(1, 9, 1, 9)),
+                                Vec::new(),
+                                make_str_pos!(1, 9, 1, 9)
+                            )
+                        ],
+                        [
+                            make_str_pos!(1, 4, 1, 7),
+                            make_str_pos!(1, 8, 1, 10),
+                        ]
+                    )
+                ],
+                make_str_pos!(1, 1, 1, 10)
+            )
+        }        //  12345678901234
+        test_case!{ "1.degg(a, b, )", 9, make_str_pos!(1, 1, 1, 14),
+            Expression::new_test(
+                ExpressionBase::Lit(LexicalLiteral::from(1), make_str_pos!(1, 1, 1, 1)),
+                vec![
+                    ExpressionOperator::MemberFunctionCall(
+                        "degg".to_owned(),
+                        vec![
+                            Expression::new_test(
+                                ExpressionBase::Ident("a".to_owned(), make_str_pos!(1, 8, 1, 8)),
+                                Vec::new(),
+                                make_str_pos!(1, 8, 1, 8),
+                            ),
+                            Expression::new_test(
+                                ExpressionBase::Ident("b".to_owned(), make_str_pos!(1, 11, 1, 11)),
+                                Vec::new(),
+                                make_str_pos!(1, 11, 1, 11),
+                            )
+                        ],
+                        [
+                            make_str_pos!(1, 2, 1, 6),
+                            make_str_pos!(1, 7, 1, 14),
+                        ]
+                    )
+                ],
+                make_str_pos!(1, 1, 1, 14)
+            )
+        }        //   1 23456789
+        test_case!{ "\"\".de(, )", 6, make_str_pos!(1, 1, 1, 9),
+            Expression::new_test(
+                ExpressionBase::Lit(LexicalLiteral::from(""), make_str_pos!(1, 1, 1, 2)),
+                vec![
+                    ExpressionOperator::MemberFunctionCall(
+                        "de".to_owned(),
+                        Vec::new(),
+                        [
+                            make_str_pos!(1, 3, 1, 5),
+                            make_str_pos!(1, 6, 1, 9),
+                        ]
+                    )
+                ],
+                make_str_pos!(1, 1, 1, 9)
+            ),
+            [
+                SyntaxMessage::SingleCommaInFunctionCall{ call_pos: make_str_pos!(1, 6, 1, 9), comma_pos: make_str_pos!(1, 7, 1, 7).start_pos }
+            ]
+        }
 
-        // }
+        // get index
+        test_case!{ "defg[]", 3, make_str_pos!(1, 1, 1, 6),
+            Expression::new_test(
+                ExpressionBase::Ident("defg".to_owned(), make_str_pos!(1, 1, 1, 4)),
+                vec![
+                    ExpressionOperator::GetIndex(Vec::new(), make_str_pos!(1, 5, 1, 6)),
+                ],
+                make_str_pos!(1, 1, 1, 6),
+            )
+        }        //  123456
+        test_case!{ "deg[a]", 4, make_str_pos!(1, 1, 1, 6),
+            Expression::new_test(
+                ExpressionBase::Ident("deg".to_owned(), make_str_pos!(1, 1, 1, 3)),
+                vec![
+                    ExpressionOperator::GetIndex(
+                        vec![
+                            Expression::new_test(
+                                ExpressionBase::Ident("a".to_owned(), make_str_pos!(1, 5, 1, 5)),
+                                Vec::new(),
+                                make_str_pos!(1, 5, 1, 5)
+                            ),
+                        ],
+                        make_str_pos!(1, 4, 1, 6),
+                    )
+                ],
+                make_str_pos!(1, 1, 1, 6),
+            )
+        }        //  123456789012
+        test_case!{ "degg[a, b, ]", 7, make_str_pos!(1, 1, 1, 12),
+            Expression::new_test(
+                ExpressionBase::Ident("degg".to_owned(), make_str_pos!(1, 1, 1, 4)),
+                vec![
+                    ExpressionOperator::GetIndex(
+                        vec![
+                            Expression::new_test(
+                                ExpressionBase::Ident("a".to_owned(), make_str_pos!(1, 6, 1, 6)),
+                                Vec::new(),
+                                make_str_pos!(1, 6, 1, 6)
+                            ),
+                            Expression::new_test(
+                                ExpressionBase::Ident("b".to_owned(), make_str_pos!(1, 9, 1, 9)),
+                                Vec::new(),
+                                make_str_pos!(1, 9, 1, 9),
+                            )
+                        ],
+                        make_str_pos!(1, 5, 1, 12),
+                    )
+                ],
+                make_str_pos!(1, 1, 1, 12),
+            )
+        }        //  123456
+        test_case!{ "de[, ]", 4, make_str_pos!(1, 1, 1, 6),
+            Expression::new_test(
+                ExpressionBase::Ident("de".to_owned(), make_str_pos!(1, 1, 1, 2)),
+                vec![
+                    ExpressionOperator::GetIndex(
+                        Vec::new(),
+                        make_str_pos!(1, 3, 1, 6)
+                    )
+                ],
+                make_str_pos!(1, 1, 1, 6),
+            ),
+            [
+                SyntaxMessage::SingleCommaInSubscription{ sub_pos: make_str_pos!(1, 3, 1, 6), comma_pos: make_str_pos!(1, 4, 1, 4).start_pos }
+            ]
+        }
 
-        // // member function call
-        // //           1234567
-        // test_case!{ "abc.defg()", 3,  
-
-        // }
-        // test_case!{ "abc.deg(a)", 4,
-
-        // }
-        // test_case!{ "1.degg(a, b, )", 7,
-
-        // }
-        // test_case!{ "\"\".de(, )", 4,
-
-        // }
-
-        // // get index
-        // test_case!{ "defg[]", 3,  
-
-        // }
-        // test_case!{ "deg[a]", 4,
-
-        // }
-        // test_case!{ "degg[a, b, ]", 7,
-
-        // }
-        // test_case!{ "de[, ]", 4,
-
-        // }
-
-        // // member get index
-        // //           1234567
-        // test_case!{ "abc.defg[]", 3,  
-
-        // }
-        // test_case!{ "abc.deg[a]", 4,
-
-        // }
-        // test_case!{ "1.degg[a, b, ]", 7,
-
-        // }
-        // test_case!{ "\"\".de[, ]", 4,
-
-        // }
+        // member get index
+        //           1234567890
+        test_case!{ "abc.defg[]", 5, make_str_pos!(1, 1, 1, 10),
+            Expression::new_test(
+                ExpressionBase::Ident("abc".to_owned(), make_str_pos!(1, 1, 1, 3)),
+                vec![
+                    ExpressionOperator::MemberGetIndex(
+                        "defg".to_owned(),
+                        Vec::new(),
+                        [
+                            make_str_pos!(1, 4, 1, 8),
+                            make_str_pos!(1, 9, 1, 10),
+                        ]
+                    )
+                ],
+                make_str_pos!(1, 1, 1, 10),
+            )
+        }        //  1234567890
+        test_case!{ "abc.deg[a]", 6, make_str_pos!(1, 1, 1, 10),
+            Expression::new_test(
+                ExpressionBase::Ident("abc".to_owned(), make_str_pos!(1, 1, 1, 3)),
+                vec![
+                    ExpressionOperator::MemberGetIndex(
+                        "deg".to_owned(),
+                        vec![
+                            Expression::new_test(
+                                ExpressionBase::Ident("a".to_owned(), make_str_pos!(1, 9, 1, 9)),
+                                Vec::new(),
+                                make_str_pos!(1, 9, 1, 9)
+                            )
+                        ],
+                        [
+                            make_str_pos!(1, 4, 1, 7),
+                            make_str_pos!(1, 8, 1, 10),
+                        ]
+                    )
+                ],
+                make_str_pos!(1, 1, 1, 10)
+            )
+        }        //  12345678901234
+        test_case!{ "1.degg[a, b, ]", 9, make_str_pos!(1, 1, 1, 14),
+            Expression::new_test(
+                ExpressionBase::Lit(LexicalLiteral::from(1), make_str_pos!(1, 1, 1, 1)),
+                vec![
+                    ExpressionOperator::MemberGetIndex(
+                        "degg".to_owned(),
+                        vec![
+                            Expression::new_test(
+                                ExpressionBase::Ident("a".to_owned(), make_str_pos!(1, 8, 1, 8)),
+                                Vec::new(),
+                                make_str_pos!(1, 8, 1, 8),
+                            ),
+                            Expression::new_test(
+                                ExpressionBase::Ident("b".to_owned(), make_str_pos!(1, 11, 1, 11)),
+                                Vec::new(),
+                                make_str_pos!(1, 11, 1, 11),
+                            )
+                        ],
+                        [
+                            make_str_pos!(1, 2, 1, 6),
+                            make_str_pos!(1, 7, 1, 14),
+                        ]
+                    )
+                ],
+                make_str_pos!(1, 1, 1, 14)
+            )
+        }        //   1 23456789
+        test_case!{ "\"\".de[, ]", 6, make_str_pos!(1, 1, 1, 9),
+            Expression::new_test(
+                ExpressionBase::Lit(LexicalLiteral::from(""), make_str_pos!(1, 1, 1, 2)),
+                vec![
+                    ExpressionOperator::MemberGetIndex(
+                        "de".to_owned(),
+                        Vec::new(),
+                        [
+                            make_str_pos!(1, 3, 1, 5),
+                            make_str_pos!(1, 6, 1, 9),
+                        ]
+                    )
+                ],
+                make_str_pos!(1, 1, 1, 9)
+            ),
+            [
+                SyntaxMessage::SingleCommaInSubscription{ sub_pos: make_str_pos!(1, 6, 1, 9), comma_pos: make_str_pos!(1, 7, 1, 7).start_pos }
+            ]
+        }
 
         // explicit type cast
+        //           12345678
+        test_case!{ "1 as u32", 3, make_str_pos!(1, 1, 1, 8),
+            Expression::new_test(
+                ExpressionBase::Lit(LexicalLiteral::from(1), make_str_pos!(1, 1, 1, 1)),
+                vec![
+                    ExpressionOperator::TypeCast(
+                        SMType::make_base(SMTypeBase::U32, make_str_pos!(1, 6, 1, 8)),
+                        make_str_pos!(1, 3, 1, 4),
+                    )
+                ],
+                make_str_pos!(1, 1, 1, 8),
+            )
+        }        //  123456789012
+        test_case!{ "[1] as [f32]", 7, make_str_pos!(1, 1, 1, 12),
+            Expression::new_test(
+                ExpressionBase::ArrayDef(
+                    vec![
+                        Expression::new_test(
+                            ExpressionBase::Lit(LexicalLiteral::from(1), make_str_pos!(1, 2, 1, 2)),
+                            Vec::new(), 
+                            make_str_pos!(1, 2, 1, 2),
+                        )
+                    ],
+                    make_str_pos!(1, 1, 1, 3),
+                ),
+                vec![
+                    ExpressionOperator::TypeCast(
+                        SMType::make_array(SMType::make_base(SMTypeBase::F32, make_str_pos!(1, 9, 1, 11)), make_str_pos!(1, 8, 1, 12)),
+                        make_str_pos!(1, 5, 1, 6),
+                    )
+                ],
+                make_str_pos!(1, 1, 1, 12),
+            )
+        }
+
+        // Multi postfixes
+        // member at prev, check 
+        // sub at next, check
+        // call at next, check
+        // sub at prev, member at next, check
+        // call at prev, cast at next, check
+        // cast at prev, member at next check
+        //           123456
+        test_case!{ "2[3].a", 6, make_str_pos!(1, 1, 1, 6),
+            Expression::new_test(
+                ExpressionBase::Lit(LexicalLiteral::from(2), make_str_pos!(1, 1, 1, 1)),
+                vec![
+                    ExpressionOperator::GetIndex(
+                        vec![
+                            Expression::new_test(
+                                ExpressionBase::Lit(LexicalLiteral::from(3), make_str_pos!(1, 3, 1, 3)),
+                                Vec::new(),
+                                make_str_pos!(1, 3, 1, 3),
+                            )
+                        ], 
+                        make_str_pos!(1, 2, 1, 4),
+                    ),
+                    ExpressionOperator::MemberAccess(
+                        "a".to_owned(),
+                        make_str_pos!(1, 5, 1, 6),
+                    ),
+                ],
+                make_str_pos!(1, 1, 1, 6),
+            )    //  0         1          2         
+        }        //  123456 789012 345678901
+        test_case!{ "write(\"hello\") as i32", 6, make_str_pos!(1, 1, 1, 21), 
+            Expression::new_test(
+                ExpressionBase::Ident("write".to_owned(), make_str_pos!(1, 1, 1, 5)),
+                vec![
+                    ExpressionOperator::FunctionCall(
+                        vec![
+                            Expression::new_test(
+                                ExpressionBase::Lit(LexicalLiteral::from("hello"), make_str_pos!(1, 7, 1, 13)),
+                                Vec::new(),
+                                make_str_pos!(1, 7, 1, 13),
+                            )
+                        ],
+                        make_str_pos!(1, 6, 1, 14),
+                    ),
+                    ExpressionOperator::TypeCast(
+                        SMType::make_base(SMTypeBase::I32, make_str_pos!(1, 19, 1, 21)),
+                        make_str_pos!(1, 16, 1, 17),
+                    )
+                ],
+                make_str_pos!(1, 1, 1, 21),
+            )
+        }        //  1234567890123456
+        test_case!{ "print(233, ).bit", 7, make_str_pos!(1, 1, 1, 16),
+            Expression::new_test(
+                ExpressionBase::Ident("print".to_owned(), make_str_pos!(1, 1, 1, 5)),
+                vec![
+                    ExpressionOperator::FunctionCall(
+                        vec![
+                            Expression::new_test(
+                                ExpressionBase::Lit(LexicalLiteral::from(233), make_str_pos!(1, 7, 1, 9)),
+                                Vec::new(),
+                                make_str_pos!(1, 7, 1, 9)
+                            )
+                        ],
+                        make_str_pos!(1, 6, 1, 12),
+                    ),
+                    ExpressionOperator::MemberAccess(
+                        "bit".to_owned(),
+                        make_str_pos!(1, 13, 1, 16),
+                    )
+                ],
+                make_str_pos!(1, 1, 1, 16),
+            )
+        }
+
         // logical not and bit not
+        //           1234567
+        test_case!{ "!~!1[1]", 7, make_str_pos!(1, 1, 1, 7),
+            Expression::new_test(
+                ExpressionBase::Lit(LexicalLiteral::from(1), make_str_pos!(1, 4, 1, 4)),
+                vec![
+                    ExpressionOperator::GetIndex(
+                        vec![
+                            Expression::new_test(
+                                ExpressionBase::Lit(LexicalLiteral::from(1), make_str_pos!(1, 6, 1, 6)),
+                                Vec::new(),
+                                make_str_pos!(1, 6, 1, 6),
+                            )
+                        ],
+                        make_str_pos!(1, 5, 1, 7),
+                    ),
+                    ExpressionOperator::Unary(
+                        SeperatorKind::LogicalNot,
+                        make_str_pos!(1, 3, 1, 3),
+                    ),
+                    ExpressionOperator::Unary(
+                        SeperatorKind::BitNot,
+                        make_str_pos!(1, 2, 1, 2),
+                    ),
+                    ExpressionOperator::Unary(
+                        SeperatorKind::LogicalNot,
+                        make_str_pos!(1, 1, 1, 1),
+                    )
+                ],
+                make_str_pos!(1, 1, 1, 7),
+            )
+        }
+
         // increase and decrease
+        //           1234567
+        test_case!{ "!++--!1", 5, make_str_pos!(1, 1, 1, 7),
+            Expression::new_test(
+                ExpressionBase::Lit(LexicalLiteral::from(1), make_str_pos!(1, 7, 1, 7)),
+                vec![
+                    ExpressionOperator::Unary(SeperatorKind::LogicalNot, make_str_pos!(1, 6, 1, 6)),
+                    ExpressionOperator::Unary(SeperatorKind::Decrease, make_str_pos!(1, 4, 1, 5)),
+                    ExpressionOperator::Unary(SeperatorKind::Increase, make_str_pos!(1, 2, 1, 3)),
+                    ExpressionOperator::Unary(SeperatorKind::LogicalNot, make_str_pos!(1, 1, 1, 1)),
+                ],
+                make_str_pos!(1, 1, 1, 7),
+            )
+        }
+
         // binary operators priority
+        //           0        1         2         3         4     
+        //           123456789012345678901234567890123456789012345678
+        test_case!{ "1 || 2 && 3 == 4 ^ 5 | 6 & 7 >= 8 >> 9 + 10 * 11", 21,  make_str_pos!(1, 1, 1, 48),
+            Expression::new_test(
+                ExpressionBase::Lit(LexicalLiteral::from(1), make_str_pos!(1, 1, 1, 1)),
+                vec![
+                    ExpressionOperator::Binary(
+                        SeperatorKind::LogicalOr,
+                        make_str_pos!(1, 3, 1, 4),
+                        Expression::new_test(
+                            ExpressionBase::Lit(LexicalLiteral::from(2), make_str_pos!(1, 6, 1, 6)),
+                            vec![
+                                ExpressionOperator::Binary(
+                                    SeperatorKind::LogicalAnd,
+                                    make_str_pos!(1, 8, 1, 9),
+                                    Expression::new_test(
+                                        ExpressionBase::Lit(LexicalLiteral::from(3), make_str_pos!(1, 11, 1, 11)),
+                                        vec![
+                                            ExpressionOperator::Binary(
+                                                SeperatorKind::Equal,
+                                                make_str_pos!(1, 13, 1, 14),
+                                                Expression::new_test(
+                                                    ExpressionBase::Lit(LexicalLiteral::from(4), make_str_pos!(1, 16, 1, 16)),
+                                                    vec![
+                                                        ExpressionOperator::Binary(
+                                                            SeperatorKind::BitXor,
+                                                            make_str_pos!(1, 18, 1, 18),
+                                                            Expression::new_test(
+                                                                ExpressionBase::Lit(LexicalLiteral::from(5), make_str_pos!(1, 20, 1, 20)),
+                                                                vec![
+                                                                    ExpressionOperator::Binary(
+                                                                        SeperatorKind::BitOr,
+                                                                        make_str_pos!(1, 22, 1, 22),
+                                                                        Expression::new_test(
+                                                                            ExpressionBase::Lit(LexicalLiteral::from(6), make_str_pos!(1, 24, 1, 24)),
+                                                                            vec![
+                                                                                ExpressionOperator::Binary(
+                                                                                    SeperatorKind::BitAnd,
+                                                                                    make_str_pos!(1, 26, 1, 26),
+                                                                                    Expression::new_test(
+                                                                                        ExpressionBase::Lit(LexicalLiteral::from(7), make_str_pos!(1, 28, 1, 28)),
+                                                                                        vec![
+                                                                                            ExpressionOperator::Binary(
+                                                                                                SeperatorKind::GreatEqual,
+                                                                                                make_str_pos!(1, 30, 1, 31),
+                                                                                                Expression::new_test(
+                                                                                                    ExpressionBase::Lit(LexicalLiteral::from(8), make_str_pos!(1, 33, 1, 33)),
+                                                                                                    vec![
+                                                                                                        ExpressionOperator::Binary(
+                                                                                                            SeperatorKind::ShiftRight,
+                                                                                                            make_str_pos!(1, 35, 1, 36),
+                                                                                                            Expression::new_test(
+                                                                                                                ExpressionBase::Lit(LexicalLiteral::from(9), make_str_pos!(1, 38, 1, 38)),
+                                                                                                                vec![
+                                                                                                                    ExpressionOperator::Binary(
+                                                                                                                        SeperatorKind::Add,
+                                                                                                                        make_str_pos!(1, 40, 1, 40),
+                                                                                                                        Expression::new_test(
+                                                                                                                            ExpressionBase::Lit(LexicalLiteral::from(10), make_str_pos!(1, 42, 1, 43)),
+                                                                                                                            vec![
+                                                                                                                                ExpressionOperator::Binary(
+                                                                                                                                    SeperatorKind::Mul,
+                                                                                                                                    make_str_pos!(1, 45, 1, 45),
+                                                                                                                                    Expression::new_test(
+                                                                                                                                        ExpressionBase::Lit(LexicalLiteral::from(11), make_str_pos!(1, 47, 1, 48)),
+                                                                                                                                        Vec::new(),
+                                                                                                                                        make_str_pos!(1, 47, 1, 48),
+                                                                                                                                    ),
+                                                                                                                                ),
+                                                                                                                            ],
+                                                                                                                            make_str_pos!(1, 42, 1, 48),
+                                                                                                                        ),
+                                                                                                                    ),
+                                                                                                                ],
+                                                                                                                make_str_pos!(1, 38, 1, 48),
+                                                                                                            ),
+                                                                                                        ),
+                                                                                                    ],
+                                                                                                    make_str_pos!(1, 33, 1, 48),
+                                                                                                ),
+                                                                                            ),
+                                                                                        ],
+                                                                                        make_str_pos!(1, 28, 1, 48),
+                                                                                    ),
+                                                                                ),
+                                                                            ],
+                                                                            make_str_pos!(1, 24, 1, 48),
+                                                                        ),
+                                                                    ),
+                                                                ],
+                                                                make_str_pos!(1, 20, 1, 48),
+                                                            ),
+                                                        ),
+                                                    ],
+                                                    make_str_pos!(1, 16, 1, 48),
+                                                ),
+                                            ),
+                                        ],
+                                        make_str_pos!(1, 11, 1, 48),
+                                    ),
+                                ),
+                            ],
+                            make_str_pos!(1, 6, 1, 48),
+                        ),
+                    ),
+                ],
+                make_str_pos!(1, 1, 1, 48),
+            )
+        }
     }
 
     #[test]

@@ -180,7 +180,9 @@ pub enum SyntaxMessage {
 
     // First recoverable of syntax!!!
     EmptySubscription{ pos: StringPosition },
-    SingleCommaInNonArgumentFunctionDef{ fn_pos: Position, comma_pos: Position },
+    SingleCommaInNonArgumentFunctionDef{ fn_pos: StringPosition, comma_pos: Position },
+    SingleCommaInFunctionCall{ call_pos: StringPosition, comma_pos: Position },
+    SingleCommaInSubscription{ sub_pos: StringPosition, comma_pos: Position },
 }
 
 impl fmt::Debug for SyntaxMessage {
@@ -196,6 +198,12 @@ impl fmt::Debug for SyntaxMessage {
             SingleCommaInNonArgumentFunctionDef{ ref fn_pos, ref comma_pos } => {
                 write!(f, "Single comma at {:?} in no argument function def at {:?}", comma_pos, fn_pos)
             }
+            SingleCommaInFunctionCall{ ref call_pos, ref comma_pos } => {
+                write!(f, "Single comma at {:?} in function call at {:?}", comma_pos, call_pos)
+            }
+            SingleCommaInSubscription{ ref sub_pos, ref comma_pos } => {
+                write!(f, "Single comma at {:?} in subscription at {:?}", comma_pos, sub_pos)
+            }
         }
     }
 }
@@ -207,6 +215,8 @@ impl SyntaxMessage {
             SyntaxMessage::ExpectSymbol{ .. } => false,
             SyntaxMessage::EmptySubscription{ .. } => true,
             SyntaxMessage::SingleCommaInNonArgumentFunctionDef{ .. } => true,
+            SyntaxMessage::SingleCommaInFunctionCall{ .. } => true,
+            SyntaxMessage::SingleCommaInSubscription{ .. } => true,
         }
     }
 }

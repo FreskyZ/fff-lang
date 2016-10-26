@@ -127,7 +127,7 @@ impl IASTItem for FunctionDef {
             if lexer.nth(index + current_len).is_seperator(SeperatorKind::Comma)   // accept `fn main(i32 a,) {}`
                 && lexer.nth(index + current_len + 1).is_seperator(SeperatorKind::RightParenthenes) {
                 if args.is_empty() {                // recoverable error on fn main(, ) {}
-                    let pos1 = lexer.pos(index).start_pos;
+                    let pos1 = StringPosition::from2(lexer.pos(index).start_pos, lexer.pos(index + current_len + 1).end_pos);
                     let pos2 = lexer.pos(index + current_len - 2).start_pos;
                     lexer.push(Message::SingleCommaInNonArgumentFunctionDef{ fn_pos: pos1, comma_pos: pos2 });
                 }   

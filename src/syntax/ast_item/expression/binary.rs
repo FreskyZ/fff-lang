@@ -100,7 +100,7 @@ fn parse_multiplicative(lexer: &mut Lexer, index: usize) -> (Option<BinaryExpres
                     (Some(oprand), oprand_len) => {
                         ops.push(BinaryOperator{ 
                             operator: sep.clone(), 
-                            pos: lexer.pos(current_len - 1), 
+                            pos: lexer.pos(index + current_len - 1), 
                             oprand: D3Expression(BinaryExpression{ unary: oprand, ops: Vec::new() }) 
                         });
                         current_len += oprand_len;

@@ -61,7 +61,7 @@ impl Postfix {
             Postfix::Subscription(ref _exprs, ref pos) => *pos,
             Postfix::FunctionCall(ref _exprs, ref pos) => *pos,
             Postfix::MemberAccess(ref _name, ref pos) => *pos,
-            Postfix::TypeCast(ref _ty, ref pos) => *pos,
+            Postfix::TypeCast(ref ty, ref pos) => StringPosition::from2(pos.start_pos, ty.pos_all().end_pos),
         }
     }
 }
@@ -158,6 +158,18 @@ impl IASTItem for PostfixExpression {
                     current_len += 2;
                     continue 'postfix; // no param function call
                 }
+                if lexer.nth(index + current_len + 1).is_seperator(SeperatorKind::Comma) 
+                    && lexer.nth(index + current_len + 2).is_seperator(SeperatorKind::RightParenthenes) {
+                        let pos1 = StringPosition::from2(lexer.pos(index + current_len).start_pos, lexer.pos(index + current_len + 2).end_pos);
+                        let pos2 = lexer.pos(index + current_len + 1).start_pos;
+                        lexer.push(Message::SingleCommaInFunctionCall{ call_pos: pos1, comma_pos: pos2 });
+                        postfixs.push(Postfix::FunctionCall(
+                            Vec::new(),
+                            pos1,
+                        ));
+                        current_len += 3;
+                        continue 'postfix;
+                }
                 expect_end_sep = SeperatorKind::RightParenthenes;
             } else if lexer.nth(index + current_len).is_seperator(SeperatorKind::LeftBracket) {
                 if lexer.nth(index + current_len + 1).is_seperator(SeperatorKind::RightBracket) {
@@ -170,6 +182,18 @@ impl IASTItem for PostfixExpression {
                     ));
                     current_len += 2;
                     continue 'postfix;
+                }
+                if lexer.nth(index + current_len + 1).is_seperator(SeperatorKind::Comma) 
+                    && lexer.nth(index + current_len + 2).is_seperator(SeperatorKind::RightBracket) {
+                        let pos1 = StringPosition::from2(lexer.pos(index + current_len).start_pos, lexer.pos(index + current_len + 2).end_pos);
+                        let pos2 = lexer.pos(index + current_len + 1).start_pos;
+                        lexer.push(Message::SingleCommaInSubscription{ sub_pos: pos1, comma_pos: pos2 });
+                        postfixs.push(Postfix::Subscription(
+                            Vec::new(),
+                            pos1,
+                        ));
+                        current_len += 3;
+                        continue 'postfix;
                 }
                 expect_end_sep = SeperatorKind::RightBracket;
             } else {
