@@ -183,6 +183,8 @@ pub enum SyntaxMessage {
     SingleCommaInNonArgumentFunctionDef{ fn_pos: StringPosition, comma_pos: Position },
     SingleCommaInFunctionCall{ call_pos: StringPosition, comma_pos: Position },
     SingleCommaInSubscription{ sub_pos: StringPosition, comma_pos: Position },
+
+    SingleItemTupleType{ pos: StringPosition },
 }
 
 impl fmt::Debug for SyntaxMessage {
@@ -204,6 +206,9 @@ impl fmt::Debug for SyntaxMessage {
             SingleCommaInSubscription{ ref sub_pos, ref comma_pos } => {
                 write!(f, "Single comma at {:?} in subscription at {:?}", comma_pos, sub_pos)
             }
+            SingleItemTupleType{ ref pos } => {
+                write!(f, "Single element tuple type at {:?}", pos)
+            }
         }
     }
 }
@@ -217,6 +222,7 @@ impl SyntaxMessage {
             SyntaxMessage::SingleCommaInNonArgumentFunctionDef{ .. } => true,
             SyntaxMessage::SingleCommaInFunctionCall{ .. } => true,
             SyntaxMessage::SingleCommaInSubscription{ .. } => true,
+            SyntaxMessage::SingleItemTupleType{ .. } => true,
         }
     }
 }

@@ -27,6 +27,15 @@ macro_rules! define_keyword {
                 }
             }
         }
+        impl fmt::Display for $enum_name {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                match *self {
+                    $(
+                        $enum_name::$var_name => write!(f, "{}", $value),
+                    )*
+                }
+            }
+        }
 
         use common::TryFrom;
         impl <'a> TryFrom<&'a str> for $enum_name {

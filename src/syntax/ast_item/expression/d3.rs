@@ -52,7 +52,7 @@ mod tests {
     use lexical::LexicalLiteral;
 
     use syntax::SMType;
-    use syntax::SMTypeBase;
+    use syntax::PrimitiveType;
     use syntax::ast_item::expression::postfix::PostfixExpression;
     use syntax::ast_item::expression::primary::PrimaryExpression;
     use syntax::ast_item::expression::postfix::Postfix;
@@ -262,7 +262,9 @@ mod tests {
                 make_str_pos!(1, 45, 1, 46)
             )
             Postfix::TypeCast(
-                SMType::make_array(SMType::make_base(SMTypeBase::I32, make_str_pos!(1, 52, 1, 54)), make_str_pos!(1, 51, 1, 55)),
+                SMType::Array(Box::new(
+                    SMType::Prim(PrimitiveType::I32, make_str_pos!(1, 52, 1, 54))
+                ), make_str_pos!(1, 51, 1, 55)),
                 make_str_pos!(1, 48, 1, 49)
             )
             Postfix::MemberAccess("rst".to_owned(), make_str_pos!(1, 56, 1, 59))

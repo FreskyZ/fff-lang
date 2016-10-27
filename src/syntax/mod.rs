@@ -21,8 +21,8 @@ pub use syntax::ast_item::statement::WhileStatement;
 pub use syntax::ast_item::statement::ForStatement;
 pub use syntax::ast_item::statement::ElseIfBranch;
 pub use syntax::ast_item::statement::IfStatement;
-pub use syntax::ast_item::smtype::SMTypeBase;
 pub use syntax::ast_item::smtype::SMType;
+pub use syntax::ast_item::smtype::PrimitiveType;
 pub use syntax::ast_item::block::Block;
 
 use lexical::Lexer;

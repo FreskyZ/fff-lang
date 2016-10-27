@@ -13,7 +13,7 @@ use lexical::IToken;
 
 use syntax::ast_item::IASTItem;
 use syntax::FunctionDef;
-use syntax::SMTypeBase;
+use syntax::PrimitiveType;
 
 #[derive(Eq, PartialEq)]
 pub struct Program {
@@ -35,7 +35,7 @@ impl Program {
     pub fn get_main(&self) -> Option<&FunctionDef> {
 
         for func in &self.functions {
-            if func.name == "main" && func.ret_type.inner() == &SMTypeBase::Unit {
+            if func.name == "main" && func.ret_type.is_spec_prim(PrimitiveType::Unit) {
                 return Some(&func);
             }
         }

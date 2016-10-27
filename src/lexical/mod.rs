@@ -25,7 +25,8 @@ pub trait IToken : fmt::Debug {
 
     fn is_keyword(&self, kind: KeywordKind) -> bool;
     fn is_seperator(&self, kind: SeperatorKind) -> bool;
-    fn is_identifier(&self, name: &str) -> bool;
+    fn is_spec_ident(&self, name: &str) -> bool;
+    fn is_ident(&self) -> bool;
     fn is_eof(&self) -> bool;
 
     fn is_lit(&self) -> bool;

@@ -90,9 +90,15 @@ impl IToken for V4Token {
             _ => false,
         }
     }
-    fn is_identifier(&self, name: &str) -> bool {
+    fn is_spec_ident(&self, name: &str) -> bool {
         match self.value {
             TokenValue::Identifier(ref self_name) => self_name == name,
+            _ => false,
+        }
+    }
+    fn is_ident(&self) -> bool {
+        match self.value {
+            TokenValue::Identifier(_) => true,
             _ => false,
         }
     }
@@ -292,7 +298,7 @@ mod tests {
         assert_eq!(lexer.nth(0).get_position(), make_str_pos!(1, 1, 1, 3));
         assert_eq!(lexer.pos(0), make_str_pos!(1, 1, 1, 3));
 
-        assert_eq!(lexer.nth(1).is_identifier("abc"), true);
+        assert_eq!(lexer.nth(1).is_spec_ident("abc"), true);
         assert_eq!(lexer.nth(1).get_identifier().unwrap(), format!("abc"));
         assert_eq!(lexer.nth(1).get_position(), make_str_pos!(1, 5, 1, 7));
         assert_eq!(lexer.pos(1), make_str_pos!(1, 5, 1, 7));
