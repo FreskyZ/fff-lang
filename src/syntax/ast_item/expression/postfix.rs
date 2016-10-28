@@ -102,6 +102,10 @@ impl IASTItem for PostfixExpression {
         )
     }
 
+    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
+        PrimaryExpression::is_first_final(lexer, index)
+    }
+
     fn parse(lexer: &mut Lexer, index: usize) -> (Option<PostfixExpression>, usize) {
         let log_enable = false;
 

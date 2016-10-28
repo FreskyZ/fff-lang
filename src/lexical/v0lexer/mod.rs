@@ -1,5 +1,6 @@
 
 // Level0 parser, input file, output exact every char, record line and column
+// TODO: use chars instead of buf: String to index, this will support Chinese identifiers
 
 use common::Position;
 use message::MessageEmitter;

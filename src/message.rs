@@ -185,6 +185,8 @@ pub enum SyntaxMessage {
     SingleCommaInSubscription{ sub_pos: StringPosition, comma_pos: Position },
 
     SingleItemTupleType{ pos: StringPosition },
+
+    LoopNameSpecifierIsNotStringLiteral{ pos: StringPosition },  // pos for the expression
 }
 
 impl fmt::Debug for SyntaxMessage {
@@ -209,6 +211,9 @@ impl fmt::Debug for SyntaxMessage {
             SingleItemTupleType{ ref pos } => {
                 write!(f, "Single element tuple type at {:?}", pos)
             }
+            LoopNameSpecifierIsNotStringLiteral{ ref pos } => {
+                write!(f, "Loop name specifier is not string literal at {:?}", pos)
+            }
         }
     }
 }
@@ -223,6 +228,7 @@ impl SyntaxMessage {
             SyntaxMessage::SingleCommaInFunctionCall{ .. } => true,
             SyntaxMessage::SingleCommaInSubscription{ .. } => true,
             SyntaxMessage::SingleItemTupleType{ .. } => true,
+            SyntaxMessage::LoopNameSpecifierIsNotStringLiteral{ .. } => true,
         }
     }
 }

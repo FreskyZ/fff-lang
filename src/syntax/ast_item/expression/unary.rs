@@ -84,6 +84,14 @@ impl IASTItem for UnaryExpression {
         }
     }
 
+    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
+        PostfixExpression::is_first_final(lexer, index)
+        || match lexer.nth(index).get_seperator() {
+            Some(ref sep) => sep.is_category(SeperatorCategory::Unary),
+            None => false,
+        }
+    }
+
     fn parse(lexer: &mut Lexer, index: usize) -> (Option<UnaryExpression>, usize) {
 
         let mut current_len = 0;

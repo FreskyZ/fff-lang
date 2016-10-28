@@ -1,13 +1,17 @@
 
 // JumpStatement = ReturnStatement | BreakStatement | ContinueStatement
 // ReturnStatemt = fReturn [Expression] fSemiColon
-// BreakStatement = fBreak [Expression] fSemiColon        
-// ContinueStatement = fContinue [Expression] fSemiColon 
+// BreakStatement = fBreak [fStringLiteral] fSemiColon        
+// ContinueStatement = fContinue [fStringLiteral] fSemiColon
+
+// Recoverable:
+// fBreak|fContinue OtherExpression fSemiColon => loop name specifier must be string literal
 
 use std::fmt;
 
 use common::From2;
 use common::StringPosition;
+use message::SyntaxMessage;
 
 use lexical::Lexer;
 use lexical::IToken;
@@ -18,77 +22,57 @@ use syntax::ast_item::IASTItem;
 use syntax::Expression;
 
 #[derive(Eq, PartialEq)]
-pub enum JumpStatementType {
-    Return, 
-    Break,
-    Continue,
-}
-impl fmt::Debug for JumpStatementType {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            JumpStatementType::Return => write!(f, "return"),
-            JumpStatementType::Break => write!(f, "break"),
-            JumpStatementType::Continue => write!(f, "continue"),
-        }
-    }
-}
-impl_display_by_debug!{ JumpStatementType }
-
-#[derive(Eq, PartialEq)]
-pub struct JumpStatement {
+pub struct ReturnStatement {
     pub id: usize,
-    pub ty: JumpStatementType,
     pub expr: Option<Expression>,
-    pub pos: [StringPosition; 2],
+    pub pos: [StringPosition; 2], // position for return and semicolon
 }
 
-impl fmt::Debug for JumpStatement {
+impl fmt::Debug for ReturnStatement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<{}>{} @ {:?}{}; @ {:?}", 
-            self.id, self.ty, self.pos[0], 
+        write!(f, "<{}>return @ {:?}{}; @ {:?}", 
+            self.id, self.pos[0], 
             match self.expr { Some(ref expr) => format!(" {:?} ", expr), None => String::new() }, 
             self.pos[1]
         )
     }
 }
-impl fmt::Display for JumpStatement {
+impl fmt::Display for ReturnStatement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<{}>{}{};", 
-            self.id, self.ty,
+        write!(f, "<{}>return{};", 
+            self.id,
             match self.expr { Some(ref expr) => format!(" {} ", expr), None => String::new() }, 
         )
     }
 }
-
-impl IASTItem for JumpStatement {
+impl IASTItem for ReturnStatement {
 
     fn pos_all(&self) -> StringPosition { StringPosition::from2(self.pos[0].start_pos, self.pos[1].end_pos) } 
 
-    // It's also speciall..., index is for index of break|continue|return for distinguish them
-    fn parse(lexer: &mut Lexer, index: usize) -> (Option<JumpStatement>, usize) {
+    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
+        lexer.nth(index).is_keyword(KeywordKind::Return)
+    }
 
-        let ty = match lexer.nth(index).get_keyword() {
-            Some(KeywordKind::Return) => JumpStatementType::Return,
-            Some(KeywordKind::Continue) => JumpStatementType::Continue,
-            Some(KeywordKind::Break) => JumpStatementType::Break,
-            _ => return (None, 0), 
-        };
+    fn parse(lexer: &mut Lexer, index: usize) -> (Option<ReturnStatement>, usize) {
+
+        if !lexer.nth(index).is_keyword(KeywordKind::Return) {
+            unreachable!()
+        }
 
         if lexer.nth(index + 1).is_seperator(SeperatorKind::SemiColon) {
-            return (Some(JumpStatement{
+            return (Some(ReturnStatement{
                 id: 0,
-                ty: ty,
                 expr: None,
                 pos: [lexer.pos(index), lexer.pos(index + 1)],
             }), 2);
         }
+
         match Expression::parse(lexer, index + 1) {
             (None, length) => return (None, length),
             (Some(expr), expr_len) => {
                 if lexer.nth(index + 1 + expr_len).is_seperator(SeperatorKind::SemiColon) {
-                    return (Some(JumpStatement{
+                    return (Some(ReturnStatement{
                         id: 0,
-                        ty: ty,
                         expr: Some(expr),
                         pos: [lexer.pos(index), lexer.pos(index + 1 + expr_len)],
                     }), 2 + expr_len);
@@ -100,11 +84,153 @@ impl IASTItem for JumpStatement {
     }
 }
 
+#[derive(Eq, PartialEq)]
+pub struct ContinueStatement {
+    pub id: usize,
+    pub name: Option<String>,
+    pub pos: [StringPosition; 3], // position for continue, name and semicolon
+}
+#[derive(Eq, PartialEq)]
+pub struct BreakStatement {
+    pub id: usize,
+    pub name: Option<String>,
+    pub pos: [StringPosition; 3], // position for break, name and semicolon
+}
+
+impl fmt::Debug for ContinueStatement {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "<{}>continue @ {:?}{}; @ {:?}", 
+            self.id, self.pos[0],
+            match self.name { Some(ref name) => format!(" {} @ {:?}", name, self.pos[1]), None => format!(" \"\" @ {:?}", self.pos[1]), },
+            self.pos[2]
+        )
+    }
+}
+impl fmt::Display for ContinueStatement {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "<{}>continue{};",
+            self.id,
+            match self.name { Some(ref name) => format!(" {}", name), None => String::new(), }
+        )
+    }
+}
+impl fmt::Debug for BreakStatement {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "<{}>break @ {:?}{}; @ {:?}", 
+            self.id, self.pos[0],
+            match self.name { Some(ref name) => format!(" {} @ {:?}", name, self.pos[1]), None => format!(" \"\" @ {:?}", self.pos[1]), },
+            self.pos[2]
+        )
+    }
+}
+impl fmt::Display for BreakStatement {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "<{}>break{};",
+            self.id,
+            match self.name { Some(ref name) => format!(" {}", name), None => String::new(), }
+        )
+    }
+}
+
+impl IASTItem for ContinueStatement {
+
+    fn pos_all(&self) -> StringPosition { StringPosition::from2(self.pos[0].start_pos, self.pos[2].end_pos) }
+
+    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
+        lexer.nth(index).is_keyword(KeywordKind::Continue)
+    }
+
+    fn parse(lexer: &mut Lexer, index: usize) -> (Option<ContinueStatement>, usize) {
+        
+        if !lexer.nth(index).is_keyword(KeywordKind::Continue) {
+            unreachable!()
+        }
+
+        if lexer.nth(index + 1).is_seperator(SeperatorKind::SemiColon) {
+            return (Some(ContinueStatement{
+                id: 0,
+                name: None,
+                pos: [lexer.pos(index), StringPosition::new(), lexer.pos(index + 1)],
+            }), 2);
+        }
+
+        match Expression::parse(lexer, index + 1) {
+            (None, length) => return (None, length),
+            (Some(expr), expr_len) => {
+                if lexer.nth(index + 1 + expr_len).is_seperator(SeperatorKind::SemiColon) {
+                    let mut name_pos = expr.pos_all();
+                    if !expr.is_pure_str_lit() {
+                        lexer.push(SyntaxMessage::LoopNameSpecifierIsNotStringLiteral{ pos: expr.pos_all() });
+                        name_pos = StringPosition::new();
+                    }
+                    let name = expr.into_pure_str_lit();
+                    return (Some(ContinueStatement{
+                        id: 0,
+                        name: name,
+                        pos: [lexer.pos(index), name_pos, lexer.pos(index + 1 + expr_len)],
+                    }), 2 + expr_len);
+                } else {
+                    return lexer.push_expect("semicolon", index + expr_len + 1, expr_len + 1);
+                }
+            } 
+        }
+    }
+}
+impl IASTItem for BreakStatement {
+
+    fn pos_all(&self) -> StringPosition { StringPosition::from2(self.pos[0].start_pos, self.pos[2].end_pos) }
+
+    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
+        lexer.nth(index).is_keyword(KeywordKind::Break)
+    }
+
+    fn parse(lexer: &mut Lexer, index: usize) -> (Option<BreakStatement>, usize) {
+        
+        if !lexer.nth(index).is_keyword(KeywordKind::Break) {
+            unreachable!()
+        }
+
+        if lexer.nth(index + 1).is_seperator(SeperatorKind::SemiColon) {
+            return (Some(BreakStatement{
+                id: 0,
+                name: None,
+                pos: [lexer.pos(index), StringPosition::new(), lexer.pos(index + 1)],
+            }), 2);
+        }
+
+        match Expression::parse(lexer, index + 1) {
+            (None, length) => return (None, length),
+            (Some(expr), expr_len) => {
+                if lexer.nth(index + 1 + expr_len).is_seperator(SeperatorKind::SemiColon) {
+                    let mut name_pos = expr.pos_all();
+                    if !expr.is_pure_str_lit() {
+                        lexer.push(SyntaxMessage::LoopNameSpecifierIsNotStringLiteral{ pos: expr.pos_all() });
+                        name_pos = StringPosition::new();
+                    }
+
+                    let name = expr.into_pure_str_lit();
+                    return (Some(BreakStatement{
+                        id: 0,
+                        name: name,
+                        pos: [lexer.pos(index), name_pos, lexer.pos(index + 1 + expr_len)],
+                    }), 2 + expr_len);
+                } else {
+                    return lexer.push_expect("semicolon", index + expr_len + 1, expr_len + 1);
+                }
+            } 
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::JumpStatement;
-    use super::JumpStatementType;
+    use super::ReturnStatement;
+    use super::BreakStatement;
+    use super::ContinueStatement;
     use common::StringPosition;
+    use message::SyntaxMessage;
+    use message::MessageEmitter;
+    use message::Message;
     use lexical::Lexer;
     use syntax::ast_item::IASTItem;
     use syntax::Expression;
@@ -113,70 +239,81 @@ mod tests {
     use lexical::SeperatorKind;
     use lexical::NumLitValue;
     use lexical::LexicalLiteral;
+    use std::marker::PhantomData;
+    use std::fmt;
+    use syntax::ast_item::TestCase;
 
     #[test]
-    fn ast_stmt_jump() {
+    fn ast_stmt_jump_parse() {
 
-        macro_rules! test_case {
-            ($program: expr, $len: expr, $expect: expr) => (
-                let lexer = &mut Lexer::new_test2($program);
-                let (result, len) = JumpStatement::parse(lexer, 0);
-                assert_eq!(result, Some($expect));
-                assert_eq!(len, $len);
-            )
-        }
-
-        test_case!{ "continue;", 2,
-            JumpStatement{ 
+        // Return statement
+        //               1234567
+        ast_test_case!{ "return;", 2, make_str_pos!(1, 1, 1, 7),
+            ReturnStatement{ 
                 id: 0, 
-                ty: JumpStatementType::Continue, 
-                expr: None, 
-                pos: [make_str_pos!(1, 1, 1, 8), make_str_pos!(1, 9, 1, 9)] 
-            }
-        }
-        test_case!{ "break   ;", 2,
-            JumpStatement{ 
-                id: 0, 
-                ty: JumpStatementType::Break, 
-                expr: None, 
-                pos: [make_str_pos!(1, 1, 1, 5), make_str_pos!(1, 9, 1, 9)] 
-            }
-        }
-        test_case!{ "return;", 2,
-            JumpStatement{ 
-                id: 0, 
-                ty: JumpStatementType::Return, 
                 expr: None, 
                 pos: [make_str_pos!(1, 1, 1, 6), make_str_pos!(1, 7, 1, 7)] 
             }
-        }
-        
-        //           123456789 012345 67
-        test_case!{ "continue \"inner\";", 3,
-            JumpStatement{ 
-                id: 0, 
-                ty: JumpStatementType::Continue, 
-                expr: Some(Expression::from_str("continue \"inner\";", 1)), 
-                pos: [make_str_pos!(1, 1, 1, 8), make_str_pos!(1, 17, 1, 17)] 
-            }
-        }
-        //           123456 7890123 45
-        test_case!{ "break \"outter\";", 3,
-            JumpStatement{ 
-                id: 0, 
-                ty: JumpStatementType::Break, 
-                expr: Some(Expression::from_str("break \"outter\";", 1)), 
-                pos: [make_str_pos!(1, 1, 1, 5), make_str_pos!(1, 15, 1, 15)] 
-            }
-        }
-        //           1234567890123
-        test_case!{ "return 1 + 1;", 5,
-            JumpStatement{ 
-                id: 0, 
-                ty: JumpStatementType::Return, 
+        }            //  1234567890123
+        ast_test_case!{ "return 1 + 1;", 5, make_str_pos!(1, 1, 1, 13),
+            ReturnStatement{ 
+                id: 0,
                 expr: Some(Expression::from_str("return 1 + 1", 1)),
                 pos: [make_str_pos!(1, 1, 1, 6), make_str_pos!(1, 13, 1, 13)] 
             }
+        }
+        
+        // Continue statement
+        //               1234567890
+        ast_test_case!{ "continue;", 2, make_str_pos!(1, 1, 1, 9),
+            ContinueStatement{ 
+                id: 0, 
+                name: None, 
+                pos: [make_str_pos!(1, 1, 1, 8), StringPosition::new(), make_str_pos!(1, 9, 1, 9)] 
+            }
+        }            //  123456789 012345 67
+        ast_test_case!{ "continue \"inner\";", 3, make_str_pos!(1, 1, 1, 17),
+            ContinueStatement{ 
+                id: 0,
+                name: Some("inner".to_owned()), 
+                pos: [make_str_pos!(1, 1, 1, 8), make_str_pos!(1, 10, 1, 16), make_str_pos!(1, 17, 1, 17)] 
+            }
+        }            //  1234567890123
+        ast_test_case!{ "continue 123;", 3, make_str_pos!(1, 1, 1, 13),
+            ContinueStatement{
+                id: 0,
+                name: None, 
+                pos: [make_str_pos!(1, 1, 1, 8), StringPosition::new(), make_str_pos!(1, 13, 1, 13)]
+            },
+            [
+                Message::Syntax(SyntaxMessage::LoopNameSpecifierIsNotStringLiteral{ pos: make_str_pos!(1, 10, 1, 12) })
+            ]
+        }
+
+        // Break statement
+        ast_test_case!{ "break   ;", 2, make_str_pos!(1, 1, 1, 9),
+            BreakStatement{ 
+                id: 0, 
+                name: None, 
+                pos: [make_str_pos!(1, 1, 1, 5), StringPosition::new(), make_str_pos!(1, 9, 1, 9)] 
+            }
+        }            // 123456 7890123 45
+        ast_test_case!{ "break \"outter\";", 3, make_str_pos!(1, 1, 1, 15),
+            BreakStatement{ 
+                id: 0, 
+                name: Some("outter".to_owned()), 
+                pos: [make_str_pos!(1, 1, 1, 5), make_str_pos!(1, 7, 1, 14), make_str_pos!(1, 15, 1, 15)] 
+            }
+        }            //  1234567890
+        ast_test_case!{ "break 123;", 3, make_str_pos!(1, 1, 1, 10),
+            BreakStatement{
+                id: 0,
+                name: None,
+                pos: [make_str_pos!(1, 1, 1, 5), StringPosition::new(), make_str_pos!(1, 10, 1, 10)],
+            },
+            [
+                Message::Syntax(SyntaxMessage::LoopNameSpecifierIsNotStringLiteral{ pos: make_str_pos!(1, 7, 1, 9) })
+            ]
         }
     }
 }

@@ -34,11 +34,20 @@ impl fmt::Display for Block {
 
 impl Block {
 
+    #[cfg(test)]
+    pub fn from_str(program: &str, index: usize) -> Block {
+        let lexer = &mut Lexer::new_test2(program);
+        Block::parse(lexer, index).0.unwrap()
+    }
 }
 
 impl IASTItem for Block {
     
     fn pos_all(&self) -> StringPosition { self.pos }
+
+    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
+        lexer.nth(index).is_seperator(SeperatorKind::LeftBrace) 
+    }
 
     fn parse(lexer: &mut Lexer, index: usize) -> (Option<Block>, usize) {
 

@@ -41,6 +41,10 @@ impl IASTItem for Argument {
 
     fn pos_all(&self) -> StringPosition { StringPosition::from2(self.ty.pos_all().start_pos, self.pos_name.end_pos) }
 
+    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool { 
+        SMType::is_first_final(lexer, index)
+    }
+
     fn parse(lexer: &mut Lexer, index: usize) -> (Option<Argument>, usize) {
 
         let (ty, ty_len) = match SMType::parse(lexer, index) {
@@ -97,6 +101,10 @@ impl FunctionDef {
 impl IASTItem for FunctionDef {
     
     fn pos_all(&self) -> StringPosition { StringPosition::from2(self.pos2[0].start_pos, self.body.pos_all().end_pos) }
+
+    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
+        lexer.nth(index).is_keyword(KeywordKind::FnDef)
+    }
 
     fn parse(lexer: &mut Lexer, index: usize) -> (Option<FunctionDef>, usize) {
 

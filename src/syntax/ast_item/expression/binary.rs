@@ -168,6 +168,10 @@ impl IASTItem for BinaryExpression {
         }
     }
 
+    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
+        UnaryExpression::is_first_final(lexer, index)
+    }
+
     fn parse(lexer: &mut Lexer, index: usize) -> (Option<BinaryExpression>, usize) {
 
         parse_logical_or(lexer, index)

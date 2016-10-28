@@ -13,8 +13,9 @@ pub use syntax::ast_item::expression::ExpressionBase;
 pub use syntax::ast_item::expression::ExpressionOperator;
 pub use syntax::ast_item::statement::Statement;
 pub use syntax::ast_item::statement::VarDeclStatement;
-pub use syntax::ast_item::statement::JumpStatementType;
-pub use syntax::ast_item::statement::JumpStatement;
+pub use syntax::ast_item::statement::ReturnStatement;
+pub use syntax::ast_item::statement::BreakStatement;
+pub use syntax::ast_item::statement::ContinueStatement;
 pub use syntax::ast_item::statement::ExpressionStatement;
 pub use syntax::ast_item::statement::LoopStatement;
 pub use syntax::ast_item::statement::WhileStatement;
@@ -64,6 +65,8 @@ mod tests {
     }
 
 }
+
+
 
 // Designment
 // First there is syntax definition, then there is syntax diagram and confirm there is no collision, then

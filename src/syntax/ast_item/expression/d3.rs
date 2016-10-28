@@ -31,6 +31,10 @@ impl IASTItem for D3Expression {
     
     fn pos_all(&self) -> StringPosition { self.0.pos_all() }
 
+    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
+        BinaryExpression::is_first_final(lexer, index)
+    }
+
     fn parse(lexer: &mut Lexer, index: usize) -> (Option<D3Expression>, usize) {
 
         match BinaryExpression::parse(lexer, index) {

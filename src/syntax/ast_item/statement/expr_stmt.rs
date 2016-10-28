@@ -67,6 +67,10 @@ impl IASTItem for ExpressionStatement {
 
     fn pos_all(&self) -> StringPosition { StringPosition::from2(self.left_expr.pos_all().start_pos, self.pos[1].end_pos) }
 
+    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
+        Expression::is_first_final(lexer, index)
+    }
+
     fn parse(lexer: &mut Lexer, index: usize) -> (Option<ExpressionStatement>, usize) {
 
         let (left_expr, mut current_len) = match Expression::parse(lexer, index) {

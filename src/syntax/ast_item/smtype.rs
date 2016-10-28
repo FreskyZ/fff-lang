@@ -127,6 +127,16 @@ impl IASTItem for SMType {
         }
     }
 
+    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
+        lexer.nth(index).is_ident()
+        || lexer.nth(index).is_seperator(SeperatorKind::LeftBracket)
+        || lexer.nth(index).is_seperator(SeperatorKind::LeftParenthenes)
+        || match lexer.nth(index).get_keyword() {
+            Some(keyword) => keyword.is_prim_type(),
+            None => false,    
+        }
+    }
+
     fn parse(lexer: &mut Lexer, index: usize) -> (Option<SMType>, usize) {
         let log_enable = false;
 

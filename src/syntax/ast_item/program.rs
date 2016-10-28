@@ -54,6 +54,10 @@ impl IASTItem for Program {
         }
     }
 
+    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
+        FunctionDef::is_first_final(lexer, index) 
+    }
+
     fn parse(lexer: &mut Lexer, index: usize) -> (Option<Program>, usize) {
         // meet EOF and break, 
         // meet function get None break actually is an unrecoverable and return none

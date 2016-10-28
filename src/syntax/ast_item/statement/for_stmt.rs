@@ -44,6 +44,10 @@ impl IASTItem for ForStatement {
 
     fn pos_all(&self) -> StringPosition { StringPosition::from2(self.pos[0].start_pos, self.body.pos_all().end_pos) }
 
+    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
+        lexer.nth(index).is_keyword(KeywordKind::For)
+    }
+
     fn parse(lexer: &mut Lexer, index: usize) -> (Option<ForStatement>, usize) {
 
         if !lexer.nth(index).is_keyword(KeywordKind::For) {

@@ -84,6 +84,13 @@ impl IASTItem for PrimaryExpression {
             PrimaryExpression::ArrayDupDef(ref _expr1, ref _expr2, pos) => pos[0],
         }
     }
+    
+    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
+        lexer.nth(index).is_ident()
+        || lexer.nth(index).is_lit()
+        || lexer.nth(index).is_seperator(SeperatorKind::LeftParenthenes)
+        || lexer.nth(index).is_seperator(SeperatorKind::LeftBracket)
+    }
 
     fn parse(lexer: &mut Lexer, index: usize) -> (Option<PrimaryExpression>, usize) {
         let log_enable = false;

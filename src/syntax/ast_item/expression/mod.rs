@@ -83,6 +83,20 @@ impl ExpressionBase {
             ExpressionBase::ArrayDupDef(ref _expr1, ref _expr2, ref pos) => pos[0],
         }
     }
+
+    pub fn is_lit(&self) -> bool {
+        match *self {
+            ExpressionBase::Lit(_, _) => true,
+            _ => false,
+        }
+    }
+    
+    pub fn get_lit(&self) -> Option<&LexicalLiteral> {
+        match *self {
+            ExpressionBase::Lit(ref val, ref _pos) => Some(val),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Eq, PartialEq)]
@@ -173,8 +187,8 @@ impl fmt::Display for ExpressionOperator {
 
 #[derive(Eq, PartialEq)]
 pub struct Expression {
-    pub base: Box<ExpressionBase>,
-    pub ops: Vec<ExpressionOperator>,
+    base: Box<ExpressionBase>,
+    ops: Vec<ExpressionOperator>,
     all_pos: StringPosition,
 }
 impl fmt::Debug for Expression {
@@ -291,6 +305,10 @@ impl IASTItem for Expression {
 
     fn pos_all(&self) -> StringPosition { self.all_pos }
 
+    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
+        BinaryExpression::is_first_final(lexer, index)
+    }
+
     fn parse(lexer: &mut Lexer, index: usize) -> (Option<Expression>, usize) {
         
         match D3Expression::parse(lexer, index) {
@@ -298,6 +316,33 @@ impl IASTItem for Expression {
             (None, length) => (None, length),
         }
     } 
+}
+
+impl Expression {
+
+    pub fn is_pure_base(&self) -> bool { // ops == empty
+        self.ops.is_empty()
+    }
+
+    pub fn get_base(&self) -> &ExpressionBase {
+        self.base.as_ref()
+    }
+
+    // mainly for loop name specifier
+    pub fn is_pure_str_lit(&self) -> bool {
+        match self.base.as_ref() {
+            &ExpressionBase::Lit(LexicalLiteral::Str(_), _) => true,
+            _ => false, 
+        }
+    }
+    // ignored lexically invalid string literal because all kinds of error will be denied after syntax parse
+    pub fn into_pure_str_lit(self) -> Option<String> {
+        match self.base.as_ref() {
+            &ExpressionBase::Lit(LexicalLiteral::Str(Some(ref val)), _) => Some(val.clone()),
+            &ExpressionBase::Lit(LexicalLiteral::Str(None), _) => None,
+            _ => None,
+        }
+    }
 }
 
 #[cfg(test)]

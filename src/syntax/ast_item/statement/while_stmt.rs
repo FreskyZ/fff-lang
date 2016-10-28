@@ -37,6 +37,10 @@ impl IASTItem for WhileStatement {
 
     fn pos_all(&self) -> StringPosition { StringPosition::from2(self.pos.start_pos, self.body.pos_all().end_pos) }
 
+    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
+        lexer.nth(index).is_keyword(KeywordKind::While)
+    }
+
     fn parse(lexer: &mut Lexer, index: usize) -> (Option<WhileStatement>, usize) {
 
         if !lexer.nth(index).is_keyword(KeywordKind::While) {

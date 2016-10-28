@@ -320,7 +320,7 @@ mod tests {
             tchar!('\n', 2, 30), 
         );
         // test_case!(PROGRAM5, 
-        //     tnumber!("123", 1, 1, 1, 3),
+        //     tnumber!(123, 1, 1, 1, 3),
         //     tchar!(',', 1, 4),
         //     tchar!(' ', 1, 5),
         //     tident!("abc", 1, 6, 1, 8),
@@ -330,7 +330,7 @@ mod tests {
         //     tchar!('\n', 1, 18),
         //     tident!("_a", 2, 1, 2, 2),
         //     tchar!('，', 2, 3),
-        //     tnumber!(r"123世界", 2, 4, 2, 8),
+        //     tnumber!(2, 4, 2, 8),
         // );
     }
 

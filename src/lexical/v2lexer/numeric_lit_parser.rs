@@ -1,5 +1,6 @@
 
 // numeric literal parser
+// TODO: ' as seperator, multi seperator not supported, full test
 
 use common::StringPosition;
 use message::LexicalMessage as Message;

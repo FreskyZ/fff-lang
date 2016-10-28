@@ -38,6 +38,10 @@ impl IASTItem for ElseIfBranch {
 
     fn pos_all(&self) -> StringPosition { StringPosition::from2(self.pos[0].start_pos, self.body.pos_all().end_pos) }
 
+    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
+        lexer.nth(index).is_keyword(KeywordKind::Else)
+    }
+
     /// given index should be index of else and nth(index) = else, nth(index + 1) = if are confirmed
     fn parse(lexer: &mut Lexer, index: usize) -> (Option<ElseIfBranch>, usize) {
 
@@ -99,6 +103,10 @@ impl fmt::Display for IfStatement {
 impl IASTItem for IfStatement {
 
     fn pos_all(&self) -> StringPosition { StringPosition::new() }
+
+    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
+        lexer.nth(index).is_keyword(KeywordKind::If)
+    }
 
     fn parse(lexer: &mut Lexer, index: usize) -> (Option<IfStatement>, usize) {
 

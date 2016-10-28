@@ -56,6 +56,11 @@ impl IASTItem for VarDeclStatement {
 
     fn pos_all(&self) -> StringPosition { StringPosition::from2(self.pos[0].start_pos, self.pos[2].end_pos) }
 
+    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
+        lexer.nth(index).is_keyword(KeywordKind::Const)
+        || lexer.nth(index).is_keyword(KeywordKind::Var) 
+    }
+
     /// It is special that the given index is index of 'const' or 'var' not the next
     fn parse(lexer: &mut Lexer, index: usize) -> (Option<VarDeclStatement>, usize) {
 
@@ -221,6 +226,33 @@ mod tests {
                     make_str_pos!(1, 13, 1, 13),
                 ],
             }), 6)
+        );
+        //                           0        1         2         3         4
+        //                           12345678901234567890123456789012345678901234567
+        let lexer = &mut Lexer::new("var ([u8], u32) buf = ([1u8, 5u8, 0x7u8], abc);".to_owned());
+        assert_eq!(
+            VarDeclStatement::parse(lexer, 0),
+            (Some(VarDeclStatement {
+                id: 0,
+                is_const: false,
+                ty: SMType::Tuple(
+                        vec![
+                            SMType::Array(Box::new(
+                                SMType::Prim(PrimitiveType::U8, make_str_pos!(1, 7, 1, 8))
+                            ), make_str_pos!(1, 6, 1, 9)),
+                            SMType::Prim(PrimitiveType::U32, make_str_pos!(1, 12, 1, 14)),
+                        ], 
+                        make_str_pos!(1, 5, 1, 15),
+                    ),
+                name: "buf".to_owned(),
+                init_expr: Some(Expression::from_str("var ([u8], u32) buf = ([1u8, 5u8, 0x7u8], abc);", 10)),
+                pos: [
+                    make_str_pos!(1, 1, 1, 3),
+                    make_str_pos!(1, 17, 1, 19),
+                    make_str_pos!(1, 21, 1, 21),
+                    make_str_pos!(1, 47, 1, 47),
+                ],
+            }), 22)
         );
     }
 }
