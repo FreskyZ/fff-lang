@@ -14,7 +14,7 @@ use lexical::v1lexer::V1Token;
 use lexical::v1lexer::BufV1Token;
 use lexical::v1lexer::BufV1Lexer;
 
-use lexical::buf_lexer::ILexer;
+use lexical::buf_lexer::IDetailLexer;
 use lexical::buf_lexer::BufToken;
 use lexical::buf_lexer::BufLexer;
 
@@ -119,7 +119,7 @@ impl V2Lexer {
     pub fn position(&self) -> Position { self.v1.inner().position() }
 }
 
-impl ILexer<V2Token> for V2Lexer {
+impl IDetailLexer<V2Token> for V2Lexer {
 
     // input stringliteral or otherchar without comment, output identifier and numeric literal
     fn next(&mut self, messages: &mut MessageEmitter) -> Option<V2Token> {
@@ -218,7 +218,7 @@ pub type BufV2Lexer = BufLexer<V2Lexer, V2Token>;
 mod tests {
     use super::V2Token;
     use super::V2Lexer;
-    use lexical::buf_lexer::ILexer;
+    use lexical::buf_lexer::IDetailLexer;
     use common::Position;
     use common::StringPosition;
     use message::MessageEmitter;

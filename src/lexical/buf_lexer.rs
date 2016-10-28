@@ -5,7 +5,8 @@
 
 use message::MessageEmitter;
 
-pub trait ILexer<TToken> {
+// detail compare with the public interface ILexer
+pub trait IDetailLexer<TToken> {
 
     fn next(&mut self, emitter: &mut MessageEmitter) -> Option<TToken>;
 }
@@ -47,7 +48,7 @@ pub struct BufLexer<TLexer, TToken> {
 }
 
 impl<TLexer, TToken> From<String> for BufLexer<TLexer, TToken>
-    where TLexer: ILexer<TToken> + From<String>, TToken: Clone {
+    where TLexer: IDetailLexer<TToken> + From<String>, TToken: Clone {
 
     fn from(content: String) -> BufLexer<TLexer, TToken> {
         BufLexer { 
@@ -59,7 +60,7 @@ impl<TLexer, TToken> From<String> for BufLexer<TLexer, TToken>
 }
 
 impl<TLexer, TToken> BufLexer<TLexer, TToken>
-    where TLexer: ILexer<TToken> + From<String>, TToken: Clone {
+    where TLexer: IDetailLexer<TToken> + From<String>, TToken: Clone {
 
     #[cfg(test)]
     pub fn from_test(content: &str) ->  BufLexer<TLexer, TToken> {

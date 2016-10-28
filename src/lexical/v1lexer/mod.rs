@@ -20,7 +20,7 @@ use lexical::v0lexer::V0Token;
 use lexical::v0lexer::BufV0Token;
 use lexical::v0lexer::BufV0Lexer;
 
-use lexical::buf_lexer::ILexer;
+use lexical::buf_lexer::IDetailLexer;
 use lexical::buf_lexer::BufToken;
 use lexical::buf_lexer::BufLexer;
 
@@ -86,7 +86,7 @@ impl V1Lexer {
 }
 
 
-impl ILexer<V1Token> for V1Lexer {
+impl IDetailLexer<V1Token> for V1Lexer {
 
     // input v0, output stringliteral or otherchar without comment
     fn next(&mut self, messages: &mut MessageEmitter) -> Option<V1Token> {
@@ -236,7 +236,7 @@ mod tests {
     use common::StringPosition;
     use message::LexicalMessage as Message;
     use message::MessageEmitter;
-    use lexical::buf_lexer::ILexer;
+    use lexical::buf_lexer::IDetailLexer;
     use lexical::symbol_type::string_literal::StringLiteral;
     use lexical::symbol_type::char_literal::CharLiteral;
 

@@ -180,7 +180,7 @@ pub struct V4Lexer {
 impl V4Lexer {
     
     pub fn new(content: String) -> V4Lexer {
-        use lexical::buf_lexer::ILexer;
+        use lexical::buf_lexer::IDetailLexer;
 
         let mut messages = MessageEmitter::new();
         let mut v3lexer = V3Lexer::from(content);

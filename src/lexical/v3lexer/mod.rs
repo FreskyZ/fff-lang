@@ -20,7 +20,7 @@ use lexical::v2lexer::V2Token;
 use lexical::v2lexer::BufV2Token;
 use lexical::v2lexer::BufV2Lexer;
 
-use lexical::buf_lexer::ILexer;
+use lexical::buf_lexer::IDetailLexer;
 
 use lexical::symbol_type::string_literal::StringLiteral;
 use lexical::symbol_type::numeric_literal::NumericLiteral;
@@ -73,7 +73,7 @@ impl V3Lexer {
     pub fn position(&self) -> Position { self.v2.inner().position() }
 }
 
-impl ILexer<V3Token> for V3Lexer {
+impl IDetailLexer<V3Token> for V3Lexer {
 
     fn next(&mut self, messages: &mut MessageEmitter) -> Option<V3Token> {
 
@@ -134,7 +134,7 @@ impl ILexer<V3Token> for V3Lexer {
 
 #[cfg(test)]
 mod tests {
-    use lexical::buf_lexer::ILexer;
+    use lexical::buf_lexer::IDetailLexer;
 
     // TODO: ~Extend: Unicode seperator error recover
 

@@ -4,7 +4,7 @@
 
 use common::Position;
 use message::MessageEmitter;
-use lexical::buf_lexer::ILexer;
+use lexical::buf_lexer::IDetailLexer;
 use lexical::buf_lexer::BufToken;
 use lexical::buf_lexer::BufLexer;
 
@@ -119,7 +119,7 @@ impl V0Lexer {
     }
 }
 
-impl ILexer<V0Token> for V0Lexer {
+impl IDetailLexer<V0Token> for V0Lexer {
 
     // Exact next char, LF and CRLF are acceptable line end
     // So CR is always ignored and LF is returned and position fields are updated
@@ -198,7 +198,7 @@ mod tests {
         use super::V0Lexer;
         use super::V0Token;
         use common::Position;
-        use lexical::buf_lexer::ILexer;
+        use lexical::buf_lexer::IDetailLexer;
         use message::MessageEmitter;
 
         macro_rules! test_case {
