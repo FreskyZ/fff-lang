@@ -25,6 +25,7 @@ pub trait IASTItem {
 }
 
 // Test infrastructure macro
+#[macro_export]
 macro_rules! ast_test_case {
     ($program: expr, $len: expr, $expect_pos: expr, $expect: expr) => (
         TestCase::run($program, $len, $expect_pos, $expect, line!(), column!());
@@ -36,13 +37,6 @@ macro_rules! ast_test_case {
         TestCase::<$ty>::run_oe($program, $len, vec![$($msg, )*], line!(), column!());
     );
 }
-
-pub mod program;
-pub mod function_def;
-pub mod smtype;
-pub mod statement;
-pub mod block;
-pub mod expression;
 
 // Test infrastructure
 #[cfg(test)]

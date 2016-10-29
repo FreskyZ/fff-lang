@@ -57,14 +57,14 @@ mod tests {
 
     use syntax::SMType;
     use syntax::PrimitiveType;
-    use syntax::ast_item::expression::postfix::PostfixExpression;
-    use syntax::ast_item::expression::primary::PrimaryExpression;
-    use syntax::ast_item::expression::postfix::Postfix;
-    use syntax::ast_item::expression::unary::UnaryOperator;
-    use syntax::ast_item::expression::unary::UnaryExpression;
-    // use syntax::ast_item::expression::binary::BinaryOperator;
-    use syntax::ast_item::expression::binary::BinaryExpression;
-    use syntax::ast_item::expression::d3::D3Expression;
+    use syntax::expression::postfix::PostfixExpression;
+    use syntax::expression::primary::PrimaryExpression;
+    use syntax::expression::postfix::Postfix;
+    use syntax::expression::unary::UnaryOperator;
+    use syntax::expression::unary::UnaryExpression;
+    // use syntax::expression::binary::BinaryOperator;
+    use syntax::expression::binary::BinaryExpression;
+    use syntax::expression::d3::D3Expression;
         
     // Helper macros
     // primary expression

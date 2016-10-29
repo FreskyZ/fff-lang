@@ -3,28 +3,35 @@
 // TODO far: Add error recovery, which need new structure of message emitter and symbol length
 // TODO far: Add support for semantic error, which need postition information in ast items
 
+#[macro_use]
 mod ast_item;
+mod program;
+mod function_def;
+mod smtype;
+mod statement;
+mod block;
+mod expression;
 
-pub use syntax::ast_item::program::Program;
-pub use syntax::ast_item::function_def::Argument;
-pub use syntax::ast_item::function_def::FunctionDef;
-pub use syntax::ast_item::expression::Expression;
-pub use syntax::ast_item::expression::ExpressionBase;
-pub use syntax::ast_item::expression::ExpressionOperator;
-pub use syntax::ast_item::statement::Statement;
-pub use syntax::ast_item::statement::VarDeclStatement;
-pub use syntax::ast_item::statement::ReturnStatement;
-pub use syntax::ast_item::statement::BreakStatement;
-pub use syntax::ast_item::statement::ContinueStatement;
-pub use syntax::ast_item::statement::ExpressionStatement;
-pub use syntax::ast_item::statement::LoopStatement;
-pub use syntax::ast_item::statement::WhileStatement;
-pub use syntax::ast_item::statement::ForStatement;
-pub use syntax::ast_item::statement::ElseIfBranch;
-pub use syntax::ast_item::statement::IfStatement;
-pub use syntax::ast_item::smtype::SMType;
-pub use syntax::ast_item::smtype::PrimitiveType;
-pub use syntax::ast_item::block::Block;
+pub use syntax::program::Program;
+pub use syntax::function_def::Argument;
+pub use syntax::function_def::FunctionDef;
+pub use syntax::expression::Expression;
+pub use syntax::expression::ExpressionBase;
+pub use syntax::expression::ExpressionOperator;
+pub use syntax::statement::Statement;
+pub use syntax::statement::VarDeclStatement;
+pub use syntax::statement::ReturnStatement;
+pub use syntax::statement::BreakStatement;
+pub use syntax::statement::ContinueStatement;
+pub use syntax::statement::ExpressionStatement;
+pub use syntax::statement::LoopStatement;
+pub use syntax::statement::WhileStatement;
+pub use syntax::statement::ForStatement;
+pub use syntax::statement::ElseIfBranch;
+pub use syntax::statement::IfStatement;
+pub use syntax::smtype::SMType;
+pub use syntax::smtype::PrimitiveType;
+pub use syntax::block::Block;
 
 use lexical::Lexer;
 pub fn parse(lexer: &mut Lexer) -> Option<Program> {

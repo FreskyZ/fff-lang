@@ -12,7 +12,7 @@ use lexical::SeperatorKind;
 use lexical::SeperatorCategory;
 
 use syntax::ast_item::IASTItem;
-use syntax::ast_item::expression::postfix::PostfixExpression;
+use syntax::expression::postfix::PostfixExpression;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct UnaryOperator {

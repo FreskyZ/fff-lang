@@ -23,7 +23,7 @@ use lexical::SeperatorKind;
 use lexical::KeywordKind;
 
 use syntax::ast_item::IASTItem;
-use syntax::ast_item::expression::d3::D3Expression;
+use syntax::expression::d3::D3Expression;
 use syntax::SMType;
 
 use super::primary::PrimaryExpression;
