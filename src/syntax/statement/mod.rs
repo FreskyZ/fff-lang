@@ -11,7 +11,6 @@ use std::fmt;
 use common::StringPosition;
 
 use lexical::Lexer;
-use lexical::IToken;
 use lexical::KeywordKind;
 
 use syntax::ast_item::IASTItem;

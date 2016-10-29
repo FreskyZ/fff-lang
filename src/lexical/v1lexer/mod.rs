@@ -81,12 +81,9 @@ impl<'chs> From<Chars<'chs>> for V1Lexer<'chs> {
     }
 }
 
-impl<'chs> V1Lexer<'chs> {
-    pub fn position(&self) -> Position { self.v0.inner().position() }
-}
-
-
 impl<'chs> IDetailLexer<'chs, V1Token> for V1Lexer<'chs> {
+    
+    fn position(&self) -> Position { self.v0.inner().position() }
 
     // input v0, output stringliteral or otherchar without comment
     fn next(&mut self, messages: &mut MessageEmitter) -> Option<V1Token> {

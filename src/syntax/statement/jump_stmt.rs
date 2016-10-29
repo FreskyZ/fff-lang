@@ -14,7 +14,6 @@ use common::StringPosition;
 use message::SyntaxMessage;
 
 use lexical::Lexer;
-use lexical::IToken;
 use lexical::SeperatorKind;
 use lexical::KeywordKind;
 
@@ -229,18 +228,8 @@ mod tests {
     use super::ContinueStatement;
     use common::StringPosition;
     use message::SyntaxMessage;
-    use message::MessageEmitter;
     use message::Message;
-    use lexical::Lexer;
-    use syntax::ast_item::IASTItem;
     use syntax::Expression;
-    use syntax::ExpressionBase;
-    use syntax::ExpressionOperator;
-    use lexical::SeperatorKind;
-    use lexical::NumLitValue;
-    use lexical::LexicalLiteral;
-    use std::marker::PhantomData;
-    use std::fmt;
     use syntax::ast_item::TestCase;
 
     #[test]

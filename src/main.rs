@@ -1,7 +1,4 @@
 #![allow(dead_code)]
-#![allow(unused_assignments)]
-#![allow(unused_imports)]
-#![allow(unused_variables)]
 
 #[macro_use]
 extern crate fsz_common;
@@ -64,9 +61,3 @@ mod tests {
         
     }
 }
-
-// TODOs:
-// make a new ILexer interface for V4Lexer
-// add chinese seperator hint to v3's seperator
-// make ast_items to be in syntax module, not ast_item module
-// codegens

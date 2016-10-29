@@ -21,7 +21,6 @@ use common::format_vector_display;
 use message::SyntaxMessage;
 
 use lexical::Lexer;
-use lexical::IToken;
 use lexical::KeywordKind;
 use lexical::SeperatorKind;
 
@@ -255,9 +254,6 @@ mod tests {
     fn ast_smtype_parse() {
         use message::Message;
         use message::SyntaxMessage;
-        use message::MessageEmitter;
-        use lexical::Lexer;
-        use syntax::ast_item::IASTItem;
         use super::SMType;
         use super::PrimitiveType;
         use common::StringPosition;

@@ -10,7 +10,6 @@ use common::format_vector_display;
 use message::SyntaxMessage as Message;
 
 use lexical::Lexer;
-use lexical::IToken;
 use lexical::KeywordKind;
 use lexical::SeperatorKind;
 
@@ -105,7 +104,8 @@ impl IASTItem for FunctionDef {
     fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
         lexer.nth(index).is_keyword(KeywordKind::FnDef)
     }
-
+    
+    #[allow(unused_assignments)]
     fn parse(lexer: &mut Lexer, index: usize) -> (Option<FunctionDef>, usize) {
 
         let mut current_len = 0;

@@ -11,14 +11,12 @@
 use std::fmt;
 
 use common::From2;
-use common::Position;
 use common::StringPosition;
 use common::format_vector_display;
 use common::format_vector_debug;
 use message::SyntaxMessage as Message;
 
 use lexical::Lexer;
-use lexical::IToken;
 use lexical::SeperatorKind;
 use lexical::KeywordKind;
 
@@ -105,7 +103,8 @@ impl IASTItem for PostfixExpression {
     fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
         PrimaryExpression::is_first_final(lexer, index)
     }
-
+    
+    #[allow(unused_assignments)]
     fn parse(lexer: &mut Lexer, index: usize) -> (Option<PostfixExpression>, usize) {
         let log_enable = false;
 

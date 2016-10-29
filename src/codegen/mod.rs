@@ -23,15 +23,11 @@
 // First optimization!
 // Remove pair of LoadLocal and StoreLocal which have same name
 
-use lexical::NumLitValue;
-use syntax::ExpressionOperator;
-use syntax::SMType;
 use syntax::Program as SyntaxProgram;
 
 mod vm_code;
 mod gen_ctrl_flow;
 mod gen_expr_stmt;
-mod validate;
 
 pub use self::vm_code::VMCode;
 
@@ -49,7 +45,7 @@ impl CodeGenerater {
 
 }
 
-pub fn generate(program: SyntaxProgram) -> Program {
+pub fn generate(_program: SyntaxProgram) -> Program {
 
     Program(Vec::new())
 }

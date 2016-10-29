@@ -48,7 +48,6 @@ impl IASTItem for D3Expression {
 mod tests {
     use syntax::ast_item::IASTItem;
     use common::StringPosition;
-    use message::MessageEmitter;
 
     use lexical::Lexer;
     use lexical::SeperatorKind;

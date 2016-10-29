@@ -42,7 +42,6 @@ pub struct V0Lexer<'chs> {
 
 impl<'chs> From<Chars<'chs>> for V0Lexer<'chs> {
     fn from(content_chars: Chars<'chs>) -> V0Lexer {
-        use std::iter::FromIterator;
         V0Lexer {
             chars: content_chars,
             text_pos: Position{ row: 1, col: 0 },
@@ -53,8 +52,6 @@ impl<'chs> From<Chars<'chs>> for V0Lexer<'chs> {
 
 impl<'chs> V0Lexer<'chs> {
     
-    pub fn position(&self) -> Position { self.text_pos }
-
     // get next char not CR
     // Make called completely cannot see \r
     fn next_not_carriage_return(&mut self) -> Option<char> {
@@ -70,6 +67,8 @@ impl<'chs> V0Lexer<'chs> {
 }
 
 impl<'chs> IDetailLexer<'chs, V0Token> for V0Lexer<'chs> {
+
+    fn position(&self) -> Position { self.text_pos }
 
     // Exact next char, LF and CRLF are acceptable line end
     // So CR is always ignored and LF is returned and position fields are updated

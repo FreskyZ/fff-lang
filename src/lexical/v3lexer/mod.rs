@@ -73,10 +73,6 @@ impl<'chs> From<Chars<'chs>> for V3Lexer<'chs> {
     }
 }
 
-impl<'chs> V3Lexer<'chs> {
-    pub fn position(&self) -> Position { self.v2.inner().position() }
-}
-
 // Process every may be seperator char, if it is special unicode char, emit message and return the ascii version
 fn pass_unicode_char(ch: char, pos: Position) -> (char, Option<LexicalMessage>) {
     use self::unicode_char::check_unicode_char;
@@ -92,6 +88,8 @@ fn pass_unicode_char(ch: char, pos: Position) -> (char, Option<LexicalMessage>) 
 }
 
 impl<'chs> IDetailLexer<'chs, V3Token> for V3Lexer<'chs> {
+
+    fn position(&self) -> Position { self.v2.inner().position() }
 
     fn next(&mut self, messages: &mut MessageEmitter) -> Option<V3Token> {
 

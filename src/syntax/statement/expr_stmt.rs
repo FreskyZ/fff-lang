@@ -5,9 +5,9 @@ use std::fmt;
 
 use common::From2;
 use common::StringPosition;
+use message::SyntaxMessage;
 
 use lexical::Lexer;
-use lexical::IToken;
 use lexical::SeperatorKind;
 use lexical::SeperatorCategory;
 
@@ -79,6 +79,9 @@ impl IASTItem for ExpressionStatement {
         };
 
         if lexer.nth(index + current_len).is_seperator(SeperatorKind::SemiColon) {
+            if !left_expr.is_function_call() {
+                lexer.push(SyntaxMessage::NotFunctionCallIndependentExpressionStatement{ pos: left_expr.pos_all() });
+            }
             return (Some(ExpressionStatement{
                 id: 0,
                 left_expr: left_expr,
@@ -136,16 +139,12 @@ mod tests {
                 assert_eq!(len, $len);
             )
         }
-        macro_rules! make_expr {
-            ($program: expr) => (Expression::parse(&mut Lexer::new($program), 0).0.unwrap());
-            ($program: expr, $token_index: expr) => (Expression::parse(&mut Lexer::new($program), $token_index).0.unwrap())
-        }
 
         //           12345678 90123456789 0123
         test_case!{ "writeln(\"helloworld\");", 5,
             ExpressionStatement {
                 id: 0,
-                left_expr: make_expr!("writeln(\"helloworld\")"),
+                left_expr: Expression::from_str("writeln(\"helloworld\")", 0),
                 op: None,
                 right_expr: None,
                 pos: [StringPosition::new(), make_str_pos!(1, 22, 1, 22)]
@@ -155,9 +154,9 @@ mod tests {
         test_case!{ "1 + 1 = 2;", 6,
             ExpressionStatement {
                 id: 0,
-                left_expr: make_expr!("1 + 1"),
+                left_expr: Expression::from_str("1 + 1", 0),
                 op: Some(SeperatorKind::Assign),
-                right_expr: Some(make_expr!("1 + 1 = 2", 4)),
+                right_expr: Some(Expression::from_str("1 + 1 = 2", 4)),
                 pos: [make_str_pos!(1, 7, 1, 7), make_str_pos!(1, 10, 1, 10)]
             }
         }
@@ -165,9 +164,9 @@ mod tests {
         test_case!{ "1 + 1+= 2;", 6,
             ExpressionStatement {
                 id: 0,
-                left_expr: make_expr!("1 + 1"),
+                left_expr: Expression::from_str("1 + 1", 0),
                 op: Some(SeperatorKind::AddAssign),
-                right_expr: Some(make_expr!("1 + 1 = 2", 4)),
+                right_expr: Some(Expression::from_str("1 + 1 = 2", 4)),
                 pos: [make_str_pos!(1, 6, 1, 7), make_str_pos!(1, 10, 1, 10)]
             }
         }

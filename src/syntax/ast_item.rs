@@ -1,6 +1,5 @@
 
 // ASTItem interface
-// TODO: add check head symbol
 
 use std::fmt;
 use std::marker::PhantomData;

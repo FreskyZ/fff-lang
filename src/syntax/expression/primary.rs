@@ -15,8 +15,6 @@ use common::format_vector_debug;
 use common::format_vector_display;
 
 use lexical::Lexer;
-use lexical::IToken;
-use lexical::NumLitValue;
 use lexical::SeperatorKind;
 use lexical::LexicalLiteral;
 

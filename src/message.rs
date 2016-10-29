@@ -207,6 +207,8 @@ pub enum SyntaxMessage {
     SingleItemTupleType{ pos: StringPosition },
 
     LoopNameSpecifierIsNotStringLiteral{ pos: StringPosition },  // pos for the expression
+    
+    NotFunctionCallIndependentExpressionStatement { pos: StringPosition }, // pos for the statement
 }
 
 impl fmt::Debug for SyntaxMessage {
@@ -234,6 +236,9 @@ impl fmt::Debug for SyntaxMessage {
             LoopNameSpecifierIsNotStringLiteral{ ref pos } => {
                 write!(f, "Loop name specifier is not string literal at {:?}", pos)
             }
+            NotFunctionCallIndependentExpressionStatement{ ref pos } => {
+                write!(f, "Invalid expression statement at {:?}, only function call or assignment can be expression statement", pos)
+            }
         }
     }
 }
@@ -249,6 +254,7 @@ impl SyntaxMessage {
             SyntaxMessage::SingleCommaInSubscription{ .. } => true,
             SyntaxMessage::SingleItemTupleType{ .. } => true,
             SyntaxMessage::LoopNameSpecifierIsNotStringLiteral{ .. } => true,
+            SyntaxMessage::NotFunctionCallIndependentExpressionStatement{ .. } => true,
         }
     }
 }
@@ -302,6 +308,17 @@ pub struct MessageEmitter {
     messages: Vec<Message>,
 }
 
+impl fmt::Debug for MessageEmitter {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        for message in &self.messages {
+            try!(writeln!(f, "{:?}", message));
+            try!(writeln!(f, ""));
+        }
+        Ok(())
+    }
+}
+impl_display_by_debug!(MessageEmitter);
+
 impl MessageEmitter {
 
     pub fn new() -> MessageEmitter {
@@ -318,15 +335,3 @@ impl MessageEmitter {
         let _ = self.messages.pop();
     }
 }
-
-impl fmt::Debug for MessageEmitter {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for message in &self.messages {
-            try!(writeln!(f, "{:?}", message));
-            try!(writeln!(f, ""));
-        }
-        Ok(())
-    }
-}
-
-impl_display_by_debug!(MessageEmitter);

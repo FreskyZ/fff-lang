@@ -116,11 +116,9 @@ impl IdentifierChar for char {
     }
 }
 
-impl<'chs> V2Lexer<'chs> {    
-    pub fn position(&self) -> Position { self.v1.inner().position() }
-}
-
 impl<'chs> IDetailLexer<'chs, V2Token> for V2Lexer<'chs> {
+
+    fn position(&self) -> Position { self.v1.inner().position() }
 
     // input stringliteral or otherchar without comment, output identifier and numeric literal
     fn next(&mut self, messages: &mut MessageEmitter) -> Option<V2Token> {

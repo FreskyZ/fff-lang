@@ -13,7 +13,6 @@ use lexical::symbol_type::char_literal::CharLiteral;
 use lexical::symbol_type::numeric_literal::NumericLiteral;
 use lexical::KeywordKind;
 use lexical::SeperatorKind;
-use lexical::NumLitValue;
 use lexical::LexicalLiteral;
 
 use lexical::v3lexer::V3Lexer;
@@ -264,14 +263,9 @@ mod tests {
     #[test]
     fn v4_base() {
         use common::StringPosition;
-        use message::MessageEmitter;
-        use super::TokenValue;
         use super::V4Lexer;
-        use super::V4Token;
-        use lexical::IToken;
         use lexical::NumLitValue;
         use lexical::SeperatorKind;
-        use lexical::LexicalLiteral;
 
         // numeric, 123, 1:1-1:3
         // identifier, abc, 1:5-1:7

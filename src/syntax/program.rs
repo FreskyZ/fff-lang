@@ -9,7 +9,6 @@ use common::format_vector_debug;
 use common::format_vector_display;
 
 use lexical::Lexer;
-use lexical::IToken;
 
 use syntax::ast_item::IASTItem;
 use syntax::FunctionDef;

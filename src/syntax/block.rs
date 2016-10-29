@@ -9,7 +9,6 @@ use common::format_vector_display;
 use common::format_vector_debug;
 
 use lexical::Lexer;
-use lexical::IToken;
 use lexical::SeperatorKind;
 
 use syntax::ast_item::IASTItem;

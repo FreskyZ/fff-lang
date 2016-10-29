@@ -3,8 +3,6 @@
 // mainly primitive type implementations
 // vmcode design is in mod codegen
 
-use syntax::SMType;
-
 use codegen::VMCode;
 use codegen::FunctionDef;
 use codegen::Program;

@@ -23,6 +23,11 @@ pub fn compile_input(file_name: String) {
 
     let lexer = &mut Lexer::new(&content);
     let ast_program = syntax_parse(lexer);
+    if !lexer.messages().is_empty() {
+        println!("{:?}", lexer.messages());
+        return;
+    }
+
     let _codes = generate(ast_program.unwrap());
 }
 

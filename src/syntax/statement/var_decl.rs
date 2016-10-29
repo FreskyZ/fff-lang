@@ -8,7 +8,6 @@ use common::From2;
 use common::StringPosition;
 
 use lexical::Lexer;
-use lexical::IToken;
 use lexical::KeywordKind;
 use lexical::SeperatorKind;
 
@@ -140,12 +139,7 @@ mod tests {
     use syntax::SMType;
     use syntax::PrimitiveType;
     use syntax::Expression;
-    use syntax::ExpressionBase;
-    use syntax::ExpressionOperator;
     use common::StringPosition;
-    use lexical::NumLitValue;
-    use lexical::SeperatorKind;
-    use lexical::LexicalLiteral;
 
     #[test]
     fn ast_stmt_var_decl() {

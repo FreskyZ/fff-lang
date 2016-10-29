@@ -4,14 +4,11 @@
 
 use std::fmt;
 
-use common::From2;
-use common::Position;
 use common::StringPosition;
 use common::format_vector_display;
 use common::format_vector_debug;
 
 use lexical::Lexer;
-use lexical::NumLitValue;
 use lexical::SeperatorKind;
 use lexical::LexicalLiteral;
 
@@ -105,7 +102,6 @@ pub enum ExpressionOperator {
     FunctionCall(Vec<Expression>, StringPosition),      // '(', ')''s position,
     MemberFunctionCall(String, Vec<Expression>, [StringPosition; 2]),   // .xxx and () 's position  
     GetIndex(Vec<Expression>, StringPosition),          // '[', ']''s position,
-    MemberGetIndex(String, Vec<Expression>, [StringPosition; 2]),       // .xxx and [] 's position
     TypeCast(SMType, StringPosition),                   // `as`'s position
     Unary(SeperatorKind, StringPosition),
     Binary(SeperatorKind, StringPosition, Expression),  // operator, pos, operand
@@ -118,7 +114,6 @@ impl fmt::Debug for ExpressionOperator {
             ExpressionOperator::MemberAccess(ref name, ref pos) => format!(".{} @ {:?}", name, pos),
             ExpressionOperator::TypeCast(ref ty, ref pos) => format!(".operator {:?}() @ {:?}", ty, pos),
             ExpressionOperator::MemberFunctionCall(ref name, ref exprs, ref pos) => format!(".{} @ {:?}({}) @ {:?}", name, pos[0], format_vector_debug(exprs, ", "), pos[1]),
-            ExpressionOperator::MemberGetIndex(ref name, ref exprs, ref pos) => format!(".{} @ {:?}[{}] @ {:?}", name, pos[0], format_vector_debug(exprs, ", "), pos[1]),
             ExpressionOperator::Unary(SeperatorKind::BitNot, ref pos) => format!(".operator~() @ {}", pos),
             ExpressionOperator::Unary(SeperatorKind::LogicalNot, ref pos) => format!(".operator!() @ {}", pos),
             ExpressionOperator::Unary(SeperatorKind::Increase, ref pos) => format!(".operator++() @ {}", pos),
@@ -155,7 +150,6 @@ impl fmt::Display for ExpressionOperator {
             ExpressionOperator::MemberAccess(ref name, ref _pos) => format!(".{}", name),
             ExpressionOperator::TypeCast(ref ty, ref _pos) => format!(".operator {}()", ty),
             ExpressionOperator::MemberFunctionCall(ref name, ref exprs, ref _pos) => format!(".{}({})", name, format_vector_display(exprs, ", ")),
-            ExpressionOperator::MemberGetIndex(ref name, ref exprs, ref _pos) => format!(".{}({})", name, format_vector_display(exprs, ", ")),
             ExpressionOperator::Unary(SeperatorKind::BitNot, ref _pos) => format!(".operator~()"),
             ExpressionOperator::Unary(SeperatorKind::LogicalNot, ref _pos) => format!(".operator!()"),
             ExpressionOperator::Unary(SeperatorKind::Increase, ref _pos) => format!(".operator++()"),
@@ -266,14 +260,6 @@ fn d3_expr_to_expr(d3: D3Expression) -> Expression {
                     [pos1, pos2]
                 ));
             }
-            (Some(Postfix::MemberAccess(ident1, pos1)), Some(Postfix::Subscription(indexers, pos2))) => {
-                pos_all.end_pos = pos2.end_pos;
-                ops.push(ExpressionOperator::MemberGetIndex(
-                    ident1, 
-                    indexers.into_iter().map(d3_expr_to_expr).collect(),
-                    [pos1, pos2]
-                ));
-            }
             (Some(other_postfix1), Some(other_postfix2)) => {
                 pos_all.end_pos = other_postfix2.pos().end_pos;
                 ops.push(postfix_to_operator(other_postfix1));
@@ -343,6 +329,15 @@ impl Expression {
             _ => None,
         }
     }
+
+    // Only last of ops is function call can be independent statement
+    pub fn is_function_call(&self) -> bool {
+        match self.ops.iter().last() {
+            Some(&ExpressionOperator::FunctionCall(_, _))
+            | Some(&ExpressionOperator::MemberFunctionCall(_, _, _)) => true,
+            _ => false,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -354,9 +349,7 @@ mod tests {
     use common::StringPosition;
     use message::SyntaxMessage;
     use message::Message;
-    use message::MessageEmitter;
     use lexical::Lexer;
-    use lexical::NumLitValue;
     use lexical::SeperatorKind;
     use lexical::LexicalLiteral;
     use syntax::ast_item::IASTItem;
@@ -845,93 +838,6 @@ mod tests {
             ]
         }
 
-        // member get index
-        //           1234567890
-        ast_test_case!{ "abc.defg[]", 5, make_str_pos!(1, 1, 1, 10),
-            Expression::new_test(
-                ExpressionBase::Ident("abc".to_owned(), make_str_pos!(1, 1, 1, 3)),
-                vec![
-                    ExpressionOperator::MemberGetIndex(
-                        "defg".to_owned(),
-                        Vec::new(),
-                        [
-                            make_str_pos!(1, 4, 1, 8),
-                            make_str_pos!(1, 9, 1, 10),
-                        ]
-                    )
-                ],
-                make_str_pos!(1, 1, 1, 10),
-            )
-        }        //  1234567890
-        ast_test_case!{ "abc.deg[a]", 6, make_str_pos!(1, 1, 1, 10),
-            Expression::new_test(
-                ExpressionBase::Ident("abc".to_owned(), make_str_pos!(1, 1, 1, 3)),
-                vec![
-                    ExpressionOperator::MemberGetIndex(
-                        "deg".to_owned(),
-                        vec![
-                            Expression::new_test(
-                                ExpressionBase::Ident("a".to_owned(), make_str_pos!(1, 9, 1, 9)),
-                                Vec::new(),
-                                make_str_pos!(1, 9, 1, 9)
-                            )
-                        ],
-                        [
-                            make_str_pos!(1, 4, 1, 7),
-                            make_str_pos!(1, 8, 1, 10),
-                        ]
-                    )
-                ],
-                make_str_pos!(1, 1, 1, 10)
-            )
-        }        //  12345678901234
-        ast_test_case!{ "1.degg[a, b, ]", 9, make_str_pos!(1, 1, 1, 14),
-            Expression::new_test(
-                ExpressionBase::Lit(LexicalLiteral::from(1), make_str_pos!(1, 1, 1, 1)),
-                vec![
-                    ExpressionOperator::MemberGetIndex(
-                        "degg".to_owned(),
-                        vec![
-                            Expression::new_test(
-                                ExpressionBase::Ident("a".to_owned(), make_str_pos!(1, 8, 1, 8)),
-                                Vec::new(),
-                                make_str_pos!(1, 8, 1, 8),
-                            ),
-                            Expression::new_test(
-                                ExpressionBase::Ident("b".to_owned(), make_str_pos!(1, 11, 1, 11)),
-                                Vec::new(),
-                                make_str_pos!(1, 11, 1, 11),
-                            )
-                        ],
-                        [
-                            make_str_pos!(1, 2, 1, 6),
-                            make_str_pos!(1, 7, 1, 14),
-                        ]
-                    )
-                ],
-                make_str_pos!(1, 1, 1, 14)
-            )
-        }        //   1 23456789
-        ast_test_case!{ "\"\".de[, ]", 6, make_str_pos!(1, 1, 1, 9),
-            Expression::new_test(
-                ExpressionBase::Lit(LexicalLiteral::from(""), make_str_pos!(1, 1, 1, 2)),
-                vec![
-                    ExpressionOperator::MemberGetIndex(
-                        "de".to_owned(),
-                        Vec::new(),
-                        [
-                            make_str_pos!(1, 3, 1, 5),
-                            make_str_pos!(1, 6, 1, 9),
-                        ]
-                    )
-                ],
-                make_str_pos!(1, 1, 1, 9)
-            ),
-            [
-                Message::Syntax(SyntaxMessage::SingleCommaInSubscription{ sub_pos: make_str_pos!(1, 6, 1, 9), comma_pos: make_str_pos!(1, 7, 1, 7).start_pos })
-            ]
-        }
-
         // explicit type cast
         //           12345678
         ast_test_case!{ "1 as u32", 3, make_str_pos!(1, 1, 1, 8),
@@ -1043,7 +949,34 @@ mod tests {
                 ],
                 make_str_pos!(1, 1, 1, 16),
             )
-        }
+        }            //  12345678901234
+        ast_test_case!{ "1.degg[a, b, ]", 9, make_str_pos!(1, 1, 1, 14),
+            Expression::new_test(
+                ExpressionBase::Lit(LexicalLiteral::from(1), make_str_pos!(1, 1, 1, 1)),
+                vec![
+                    ExpressionOperator::MemberAccess(
+                        "degg".to_owned(),
+                        make_str_pos!(1, 2, 1, 6),
+                    ),
+                    ExpressionOperator::GetIndex(
+                        vec![
+                            Expression::new_test(
+                                ExpressionBase::Ident("a".to_owned(), make_str_pos!(1, 8, 1, 8)),
+                                Vec::new(),
+                                make_str_pos!(1, 8, 1, 8),
+                            ),
+                            Expression::new_test(
+                                ExpressionBase::Ident("b".to_owned(), make_str_pos!(1, 11, 1, 11)),
+                                Vec::new(),
+                                make_str_pos!(1, 11, 1, 11),
+                            )
+                        ],
+                        make_str_pos!(1, 7, 1, 14),
+                    )
+                ],
+                make_str_pos!(1, 1, 1, 14)
+            )
+        }        
 
         // logical not and bit not
         //           1234567
@@ -1224,7 +1157,7 @@ mod tests {
                 let (result, length) = Expression::parse(lexer, 0);
                 perrorln!("Debug: ({:?}, {})", result, length);
                 match result {
-                    Some(result) => perrorln!("Display: {}", result),
+                    Some(result) => perrorln!("Display: {}, is_function_call: {}", result, result.is_function_call()),
                     None => perrorln!("messages: {:?}", lexer.messages()),
                 }
             } else {

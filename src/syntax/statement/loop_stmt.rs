@@ -8,7 +8,6 @@ use common::StringPosition;
 use message::SyntaxMessage;
 
 use lexical::Lexer;
-use lexical::IToken;
 use lexical::KeywordKind;
 
 use syntax::ast_item::IASTItem;
@@ -91,8 +90,6 @@ impl IASTItem for LoopStatement {
 #[cfg(test)]
 mod tests {
     use super::LoopStatement;
-    use lexical::Lexer;
-    use syntax::ast_item::IASTItem;
     use syntax::Block;
     use message::Message;
     use message::SyntaxMessage;

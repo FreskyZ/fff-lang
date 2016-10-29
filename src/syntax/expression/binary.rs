@@ -16,7 +16,6 @@ use common::From2;
 use common::StringPosition;
 
 use lexical::Lexer;
-use lexical::IToken;
 use lexical::SeperatorKind;
 use lexical::SeperatorCategory;
 

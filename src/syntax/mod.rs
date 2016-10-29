@@ -1,7 +1,6 @@
 
 // Syntax, form abstract syntax tree
-// TODO far: Add error recovery, which need new structure of message emitter and symbol length
-// TODO far: Add support for semantic error, which need postition information in ast items
+// TODO: Add error recovery, which need new structure of message emitter and symbol length
 
 #[macro_use]
 mod ast_item;
