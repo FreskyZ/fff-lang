@@ -3,11 +3,14 @@
 //     with TToken: Copy
 //     and TLexer: ILexer<TToken>
 
+use std::str::Chars;
 use message::MessageEmitter;
 
 // detail compare with the public interface ILexer
-pub trait IDetailLexer<TToken> {
+pub trait IDetailLexer<'chs, TToken> : From<Chars<'chs>> {
 
+    // TODO
+    // fn positiona()
     fn next(&mut self, emitter: &mut MessageEmitter) -> Option<TToken>;
 }
 
@@ -47,24 +50,24 @@ pub struct BufLexer<TLexer, TToken> {
     next_to_return: Option<TToken>,
 }
 
-impl<TLexer, TToken> From<String> for BufLexer<TLexer, TToken>
-    where TLexer: IDetailLexer<TToken> + From<String>, TToken: Clone {
+impl<'chs, TLexer, TToken> From<Chars<'chs>> for BufLexer<TLexer, TToken>
+    where TLexer: IDetailLexer<'chs, TToken>, TToken: Clone {
 
-    fn from(content: String) -> BufLexer<TLexer, TToken> {
+    fn from(content_chars: Chars<'chs>) -> BufLexer<TLexer, TToken> {
         BufLexer { 
-            lexer: TLexer::from(content),
+            lexer: TLexer::from(content_chars),
             is_first: true,
             next_to_return: None,
         }
     }
 }
 
-impl<TLexer, TToken> BufLexer<TLexer, TToken>
-    where TLexer: IDetailLexer<TToken> + From<String>, TToken: Clone {
+impl<'chs, TLexer, TToken> BufLexer<TLexer, TToken>
+    where TLexer: IDetailLexer<'chs, TToken>, TToken: Clone {
 
     #[cfg(test)]
-    pub fn from_test(content: &str) ->  BufLexer<TLexer, TToken> {
-        BufLexer::from(content.to_owned())
+    pub fn from_test(content: &'chs str) ->  BufLexer<TLexer, TToken> {
+        BufLexer::from(content.chars())
     }
 
     pub fn inner(&self) -> &TLexer { &self.lexer }

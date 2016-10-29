@@ -264,9 +264,22 @@ fn get_content(raw: &str, pos: StringPosition, radix: u32, mut postfix: Postfix)
     let mut ret_val1 = Vec::new();
     let mut ret_val2 = Vec::new();
 
+    let mut has_underscore = false;
+    let mut has_singlequote = false;
     for ch in raw.chars() {   
-        if ch == '_' { continue; }  // ignore underscore
-        if ch == '.' {
+        if ch == '_' { // ignore underscore
+            if has_singlequote {
+                return Err(Message::MultiSeperatorInNumericLiteral{ literal_pos: pos });
+            }
+            has_underscore = true;
+            continue; 
+        } else if ch == '\'' {
+            if has_underscore {
+                return Err(Message::MultiSeperatorInNumericLiteral{ literal_pos: pos });
+            }
+            has_singlequote = true;
+            continue;
+        } else if ch == '.' {
             if postfix.is_integral() { // integral and '.', immediate error
                 return Err(Message::UnexpectedDecimalPointInIntegralLiteral{ literal_pos: pos });       // C1, 123.456i32
             } else if postfix.is_not_set() {
@@ -470,6 +483,21 @@ fn num_lit_content() {
     assert_eq!(get_content("ABCDEFG", pos, 16, Postfix::I32), Err(Message::UnexpectedCharInNumericLiteral{ literal_pos: pos }));
     assert_eq!(get_content("____123", pos, 10, Postfix::F32), Ok((Content::Float(vec![1, 2, 3], vec![]), Postfix::F32)));
     assert_eq!(get_content("123.________", pos, 10, Postfix::F32), Ok((Content::Float(vec![1, 2, 3], vec![]), Postfix::F32)));
+
+    // single quote
+    assert_eq!(get_content("1'23", pos, 10, Postfix::I32), Ok((Content::Integral(vec![1, 2, 3]), Postfix::I32)));
+    assert_eq!(get_content("1''''23", pos, 10, Postfix::I32), Ok((Content::Integral(vec![1, 2, 3]), Postfix::I32)));
+    assert_eq!(get_content("'1'23", pos, 10, Postfix::I32), Ok((Content::Integral(vec![1, 2, 3]), Postfix::I32)));
+    assert_eq!(get_content("1'2'3'", pos, 10, Postfix::I32), Ok((Content::Integral(vec![1, 2, 3]), Postfix::I32)));
+    assert_eq!(get_content("123.456", pos, 10, Postfix::I32), Err(Message::UnexpectedDecimalPointInIntegralLiteral{ literal_pos: pos }));
+    assert_eq!(get_content("'''''123", pos, 10, Postfix::NotSet), Ok((Content::Integral(vec![1, 2, 3]), Postfix::I32)));
+    assert_eq!(get_content("123'.'456'''''", pos, 10, Postfix::NotSet), Ok((Content::Float(vec![1, 2, 3], vec![4, 5, 6]), Postfix::F64))); // strange but supported
+    assert_eq!(get_content("123.456.789", pos, 10, Postfix::F64), Err(Message::UnexpectedMultiDecimalPointInFloatLiteral{ literal_pos: pos }));
+    assert_eq!(get_content("123ABC", pos, 10, Postfix::I32), Err(Message::UnexpectedCharInNumericLiteral{ literal_pos: pos }));
+    assert_eq!(get_content("123321", pos, 2, Postfix::I32), Err(Message::UnexpectedCharInNumericLiteral{ literal_pos: pos }));
+    assert_eq!(get_content("ABCDEFG", pos, 16, Postfix::I32), Err(Message::UnexpectedCharInNumericLiteral{ literal_pos: pos }));
+    assert_eq!(get_content("''''123", pos, 10, Postfix::F32), Ok((Content::Float(vec![1, 2, 3], vec![]), Postfix::F32)));
+    assert_eq!(get_content("123.''''''''", pos, 10, Postfix::F32), Ok((Content::Float(vec![1, 2, 3], vec![]), Postfix::F32)));
 }
 
 #[cfg(test)]

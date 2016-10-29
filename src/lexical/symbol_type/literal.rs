@@ -4,15 +4,12 @@
 use std::fmt;
 use lexical::NumLitValue;
 
-test_only_attr!{
-    [derive(Clone, Eq, PartialEq)]
-    ![derive(Clone)]
-    pub enum LexicalLiteral {
-        Str(Option<String>),
-        Num(Option<NumLitValue>),
-        Char(Option<char>),
-        Bool(bool),
-    }
+#[derive(Clone, Eq, PartialEq)]
+pub enum LexicalLiteral {
+    Str(Option<String>),
+    Num(Option<NumLitValue>),
+    Char(Option<char>),
+    Bool(bool),
 }
 
 impl LexicalLiteral {

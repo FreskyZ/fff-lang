@@ -66,8 +66,7 @@ mod tests {
 }
 
 // TODOs:
-// make v0lexer's buf to be Chars not string, pass v2_base's Chinese identifier test
 // make a new ILexer interface for V4Lexer
+// add chinese seperator hint to v3's seperator
 // make ast_items to be in syntax module, not ast_item module
-// numeric literal accept ' as seperator, not used together, full test of numeric literals
 // codegens

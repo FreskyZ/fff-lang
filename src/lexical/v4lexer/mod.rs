@@ -183,7 +183,7 @@ impl V4Lexer {
         use lexical::buf_lexer::IDetailLexer;
 
         let mut messages = MessageEmitter::new();
-        let mut v3lexer = V3Lexer::from(content);
+        let mut v3lexer = V3Lexer::from(content.chars());
         let mut buf = Vec::new();
         loop {
             match v3lexer.next(&mut messages) {

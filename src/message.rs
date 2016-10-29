@@ -81,6 +81,9 @@ pub enum LexicalMessage {
     NumericLiteralTooLarge {
         literal_pos: StringPosition,
     },
+    MultiSeperatorInNumericLiteral {
+        literal_pos: StringPosition,
+    },
 
     EmptyCharLiteral {
         pos: Position,
@@ -125,6 +128,9 @@ impl fmt::Debug for LexicalMessage {
             }
             IncorrectUnicodeCharEscapeValue { ref escape_start, ref raw_value } => {
                 write!(f, "Incorrect unicode char escape value starts from {:?}, 0x{} is not a valid unicode code point", escape_start, raw_value)
+            }
+            MultiSeperatorInNumericLiteral { ref literal_pos } => {
+                write!(f, "Multi seperator in numeric literal at {:?}, you can only use one of `'` or `_` at one numeric literal", literal_pos)
             }
 
             UnexpectedStringLiteralEndInUnicodeCharEscape { ref literal_start, ref escape_start, ref unexpected_end_pos } => {

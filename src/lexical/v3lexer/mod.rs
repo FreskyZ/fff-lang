@@ -10,6 +10,7 @@
 //      seperators, [, ], {, }, (, ), ;, ,
 // May be final layer, --- not, 17/10/8
 
+use std::str::Chars;
 use common::From2;
 use common::TryFrom;
 use common::Position;
@@ -59,21 +60,21 @@ impl fmt::Debug for V3Token {
     }
 }
 
-pub struct V3Lexer {
-    v2: BufV2Lexer,
+pub struct V3Lexer<'chs> {
+    v2: BufV2Lexer<'chs>,
 }
 
-impl From<String> for V3Lexer {
-    fn from(content: String) -> V3Lexer {
-        V3Lexer { v2: BufV2Lexer::from(content) }
+impl<'chs> From<Chars<'chs>> for V3Lexer<'chs> {
+    fn from(content_chars: Chars) -> V3Lexer {
+        V3Lexer { v2: BufV2Lexer::from(content_chars) }
     }
 }
 
-impl V3Lexer {
+impl<'chs> V3Lexer<'chs> {
     pub fn position(&self) -> Position { self.v2.inner().position() }
 }
 
-impl IDetailLexer<V3Token> for V3Lexer {
+impl<'chs> IDetailLexer<'chs, V3Token> for V3Lexer<'chs> {
 
     fn next(&mut self, messages: &mut MessageEmitter) -> Option<V3Token> {
 
@@ -150,7 +151,7 @@ mod tests {
 
         let mut content = String::new();
         let _read_size = file.read_to_string(&mut content).expect("Read file failed");
-        let mut v3lexer = V3Lexer::from(content);
+        let mut v3lexer = V3Lexer::from(content.chars());
 
         let mut messages = MessageEmitter::new();
         loop {
@@ -176,7 +177,7 @@ mod tests {
 
         let mut content = String::new();
         let _read_size = file.read_to_string(&mut content).expect("Read file failed");
-        let mut v3lexer = V3Lexer::from(content);
+        let mut v3lexer = V3Lexer::from(content.chars());
 
         let mut messages = MessageEmitter::new();
         loop {

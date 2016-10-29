@@ -5,6 +5,7 @@
 
 mod numeric_lit_parser;
 
+use std::str::Chars;
 use common::From2;
 use common::Position;
 use common::StringPosition;
@@ -68,14 +69,14 @@ impl fmt::Debug for V2Token {
     }
 }
 
-pub struct V2Lexer {
-    v1: BufV1Lexer,
+pub struct V2Lexer<'chs> {
+    v1: BufV1Lexer<'chs>,
 }
-impl From<String> for V2Lexer {
+impl<'chs> From<Chars<'chs>> for V2Lexer<'chs> {
 
-    fn from(content: String) -> V2Lexer {
+    fn from(content_chars: Chars<'chs>) -> V2Lexer<'chs> {
         V2Lexer { 
-            v1: BufV1Lexer::from(content),
+            v1: BufV1Lexer::from(content_chars),
         }
     }
 }
@@ -107,7 +108,7 @@ impl IdentifierChar for char {
     }
     // Only digit or ASCII letters or underscore
     fn is_numeric_literal(&self) -> bool {
-        *self == '_' || self.is_digit(36) || *self == '.'
+        *self == '_' || *self == '\'' || self.is_alphabetic() || self.is_digit(36) || *self == '.'
     }
 
     fn is_seperator(&self) -> bool {
@@ -115,11 +116,11 @@ impl IdentifierChar for char {
     }
 }
 
-impl V2Lexer {    
+impl<'chs> V2Lexer<'chs> {    
     pub fn position(&self) -> Position { self.v1.inner().position() }
 }
 
-impl IDetailLexer<V2Token> for V2Lexer {
+impl<'chs> IDetailLexer<'chs, V2Token> for V2Lexer<'chs> {
 
     // input stringliteral or otherchar without comment, output identifier and numeric literal
     fn next(&mut self, messages: &mut MessageEmitter) -> Option<V2Token> {
@@ -212,7 +213,7 @@ impl IDetailLexer<V2Token> for V2Lexer {
 }
 
 pub type BufV2Token = BufToken<V2Token>;
-pub type BufV2Lexer = BufLexer<V2Lexer, V2Token>;
+pub type BufV2Lexer<'chs> = BufLexer<V2Lexer<'chs>, V2Token>;
 
 #[cfg(test)]
 mod tests {
@@ -228,7 +229,7 @@ mod tests {
     
     macro_rules! test_case {
         ($program: expr, $($expect: expr, )*) => ({
-            let mut v2lexer = V2Lexer::from($program.to_owned());
+            let mut v2lexer = V2Lexer::from($program.chars());
             let mut messages = MessageEmitter::new();
             let mut v2s = Vec::new();
             loop {
@@ -283,7 +284,7 @@ mod tests {
     const PROGRAM1: &'static str = "123 456.1";    // Space char as seperator 
     const PROGRAM2: &'static str = "abc/**/def\"\"ght"; // Comment and string literal as seperator 
     const PROGRAM3: &'static str = "123a/ qw1.ad -qw+\nR\"1.23+456\".to_owned()kekekee\n"; // Otherchar as seperator
-    // const PROGRAM5: &'static str = r"123, abc，你好world_a，123世界";   // Chinese identifier
+    const PROGRAM5: &'static str = "123, abc, hello世界, 你好world_a，123世界";   // Chinese identifier
 
     #[test]
     fn v2_base() {
@@ -319,19 +320,19 @@ mod tests {
             tident!("kekekee", 2, 23, 2, 29),
             tchar!('\n', 2, 30), 
         );
-        // test_case!(PROGRAM5, 
-        //     tnumber!(123, 1, 1, 1, 3),
-        //     tchar!(',', 1, 4),
-        //     tchar!(' ', 1, 5),
-        //     tident!("abc", 1, 6, 1, 8),
-        //     tchar!('，', 1, 9),
-        //     tident!(r"你好world", 1, 10, 1, 16),
-        //     tchar!(',', 1, 17),
-        //     tchar!('\n', 1, 18),
-        //     tident!("_a", 2, 1, 2, 2),
-        //     tchar!('，', 2, 3),
-        //     tnumber!(2, 4, 2, 8),
-        // );
+        test_case!("123, abc。hello世界，你好world_a,\n123世界", 
+            tnumber!(123, 1, 1, 1, 3),
+            tchar!(',', 1, 4),
+            tchar!(' ', 1, 5),
+            tident!("abc", 1, 6, 1, 8),
+            tchar!('。', 1, 9),
+            tident!("hello世界", 1, 10, 1, 16),
+            tchar!('，', 1, 17),
+            tident!("你好world_a", 1, 18, 1, 26),
+            tchar!(',', 1, 27),
+            tchar!('\n', 1, 28),
+            tnumber!(2, 1, 2, 5),
+        );
     }
 
     #[test] 
@@ -340,7 +341,7 @@ mod tests {
 
         macro_rules! test_case_buf {
             ($program: expr) => ({
-                let mut bufv2 = BufV2Lexer::from($program.to_owned());
+                let mut bufv2 = BufV2Lexer::from($program.chars());
                 let mut messages = MessageEmitter::new();
                 loop {
                     match bufv2.next(&mut messages) {

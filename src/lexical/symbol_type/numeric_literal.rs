@@ -79,12 +79,12 @@ pub struct NumericLiteral {
 impl fmt::Debug for NumericLiteral {
 
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "NumericLiteral at {:?}{}",
-            self.pos,
+        write!(f, "NumLit {} @ {:?}",
             match self.value {
-                Some(ref value) => format!(", with value {:?}", value),
-                None => ", invalid".to_owned(),
-            }
+                Some(ref value) => format!("{:?}", value),
+                None => format!("<invalid>"),
+            },
+            self.pos,
         )
     }
 }

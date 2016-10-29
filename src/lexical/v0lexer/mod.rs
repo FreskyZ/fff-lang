@@ -2,6 +2,7 @@
 // Level0 parser, input file, output exact every char, record line and column
 // TODO: use chars instead of buf: String to index, this will support Chinese identifiers
 
+use std::str::Chars;
 use common::Position;
 use message::MessageEmitter;
 use lexical::buf_lexer::IDetailLexer;
@@ -32,94 +33,43 @@ impl fmt::Debug for V0Token {
 }
 
 // pos, column and row and next char's
-pub struct V0Lexer {
-    buf: String,
-    buf_index: usize, 
+pub struct V0Lexer<'chs> {
+    chars: Chars<'chs>,
     text_pos: Position,
 
     previous_is_new_line: bool,
 }
 
-impl From<String> for V0Lexer {
-    fn from(content: String) -> V0Lexer {
+impl<'chs> From<Chars<'chs>> for V0Lexer<'chs> {
+    fn from(content_chars: Chars<'chs>) -> V0Lexer {
+        use std::iter::FromIterator;
         V0Lexer {
-            buf: content,
-            buf_index: 0,
+            chars: content_chars,
             text_pos: Position{ row: 1, col: 0 },
             previous_is_new_line: false,
         }
     }
 }
 
-impl V0Lexer {
+impl<'chs> V0Lexer<'chs> {
     
     pub fn position(&self) -> Position { self.text_pos }
 
-    fn buf_index_at_end(&self) -> bool { self.buf.len() <= self.buf_index }
-
-    // Update buf_index to get next not CR
+    // get next char not CR
     // Make called completely cannot see \r
-    // e.g.
-    // previous state:  idx
-    //    after state:      idx, return 'a'
-    // previous state:              idx
-    //    after state:                            idx, return 'd'
-    //            buf:   a | b | c | d | \r | \r | e | f | \r | EOF
-    // previous state:                                idx 
-    //    after state:                                         idx, return 'f'
-    // previous state:                                         idx
-    //    after state:                                         idx, return None
-    // 
-    // A special e.g.
-    //            buf:  \r | b | c | d | \r | \r | e | f | \r | EOF
-    // previous state: idx 
-    //    after state:          idx, return *'b'*
-    //
-    // A more special e.g.
-    //            buf:  \r | \r | \r | EOF
-    // previous state: idx 
-    //    after state:                 idx, return None
     fn next_not_carriage_return(&mut self) -> Option<char> {
-        // `perrorln!("1: ...")`: some sort of coverage check...    
 
-        if self.buf_index_at_end() {
-            // perrorln!("1: called when index at end, return None");
-            return None;
-        }
-
-        let mut ret_val = string_index!(self.buf, self.buf_index).unwrap();
-        while ret_val == '\r' { // If start idx is \r, see special e.g.
-            self.buf_index += 1;
-            // perrorln!("2: ret_val is \\r, trying find next not \\r at index {}", self.buf_index);
-            if self.buf_index_at_end() {
-                // Find \r to end
-                // perrorln!("3: find \\r to end, return None with index at {}", self.buf_index);
-                return None;
-            }
-            ret_val = string_index!(self.buf, self.buf_index).unwrap();
-        }
-
-        // perrorln!("4: Find something not \\r as ret_val, ret_val is {:?}", ret_val);
-        self.buf_index += 1;
-        if self.buf_index_at_end() {
-            // perrorln!("5: but next is end, so return {:?}", ret_val);
-            return Some(ret_val);
-        }
-        while string_index!(self.buf, self.buf_index).unwrap() == '\r' {
-            // perrorln!("6: finding next not \\r index, index {} is still \\r", self.buf_index);
-            self.buf_index += 1;
-            if self.buf_index_at_end() {
-                // perrorln!("7: find next not \\r to end, break with buf_index: {}", self.buf_index);
-                break;
+        loop {
+            match self.chars.next() {
+                Some('\r') => continue,
+                Some(ch) => return Some(ch),
+                None => return None,
             }
         }
-
-        // perrorln!("8: next not carriage return result is {:?}", ret_val);
-        Some(ret_val)
     }
 }
 
-impl IDetailLexer<V0Token> for V0Lexer {
+impl<'chs> IDetailLexer<'chs, V0Token> for V0Lexer<'chs> {
 
     // Exact next char, LF and CRLF are acceptable line end
     // So CR is always ignored and LF is returned and position fields are updated
@@ -127,7 +77,7 @@ impl IDetailLexer<V0Token> for V0Lexer {
     // Because need next preview, so actually is getting next next char
     //
     // Provide None|EOF a special virtual pos 
-    fn next(&mut self, _emitter: &mut MessageEmitter) -> Option<V0Token> {
+    fn next(&mut self, _messages: &mut MessageEmitter) -> Option<V0Token> {
         
         // next not cr will return None if buf index at end
         self.next_not_carriage_return().map(|ch|{
@@ -147,12 +97,12 @@ impl IDetailLexer<V0Token> for V0Lexer {
 }
 
 pub type BufV0Token = BufToken<V0Token>;
-pub type BufV0Lexer = BufLexer<V0Lexer, V0Token>;
+pub type BufV0Lexer<'chs> = BufLexer<V0Lexer<'chs>, V0Token>;
 
 // Visitors for test
 #[cfg(test)]
-pub fn v0_next_no_cr_visitor(lexer: &mut V0Lexer) -> (Option<char>, usize) {
-    (lexer.next_not_carriage_return(), lexer.buf_index)
+pub fn v0_next_no_cr_visitor(lexer: &mut V0Lexer) -> Option<char> {
+    lexer.next_not_carriage_return()
 }
 
 #[cfg(test)]
@@ -163,32 +113,30 @@ mod tests {
         use super::V0Lexer;
         use super::v0_next_no_cr_visitor;
 
-        let mut v0lexer = V0Lexer::from("\rabc\r\ref\r".to_owned());
-
+        let mut v0lexer = V0Lexer::from("\rabc\r\ref\r".chars());
         let mut result = Vec::new();
         loop {
             match v0_next_no_cr_visitor(&mut v0lexer) {
-                (None, _) => break,
-                (Some(ch), index) => result.push((ch, index)),
+                None => break,
+                Some(ch) => result.push(ch),
             }
         }
-        assert_eq!(result, vec![('a', 2), ('b', 3), ('c', 6), ('e', 7), ('f', 9)]);
+        assert_eq!(result, vec!['a', 'b', 'c', 'e', 'f']);
 
-        let mut v0lexer = V0Lexer::from("abc\r\re\rf".to_owned());
-
+        let mut v0lexer = V0Lexer::from("abc\r\re\rf".chars());
         let mut result = Vec::new();
         loop {
             match v0_next_no_cr_visitor(&mut v0lexer) {
-                (None, _) => break,
-                (Some(ch), index) => result.push((ch, index)),
+                None => break,
+                Some(ch) => result.push(ch),
             }
         }
-        assert_eq!(result, vec![('a', 1), ('b', 2), ('c', 5), ('e', 7), ('f', 8)]);
+        assert_eq!(result, vec!['a', 'b', 'c', 'e', 'f']);
 
-        let mut v0lexer = V0Lexer::from("\r\r\r\r".to_owned());
+        let mut v0lexer = V0Lexer::from("\r\r\r\r".chars());
         match v0_next_no_cr_visitor(&mut v0lexer) {
-            (None, index) => assert_eq!(index, 4),
-            (Some(t), _) => panic!("Unexpected v0token: {:?}", t),
+            None => (),
+            Some(t) => panic!("Unexpected v0token: {:?}", t),
         }
     }
 
@@ -203,7 +151,7 @@ mod tests {
 
         macro_rules! test_case {
             ($input: expr, $($ch: expr, $row: expr, $col: expr, )*) => (
-                let mut v0lexer = V0Lexer::from($input.to_owned());
+                let mut v0lexer = V0Lexer::from($input.chars());
                 let mut v0s = Vec::new();
                 let mut dummy = MessageEmitter::new();
                 loop {
@@ -287,7 +235,7 @@ mod tests {
         use super::BufV0Lexer;
         use message::MessageEmitter;
         
-        let mut bufv0 = BufV0Lexer::from("\r\rabc\ndef\r\r\nasdwe\r\r\rq1da\nawsedq\r\r\r".to_owned());
+        let mut bufv0 = BufV0Lexer::from("\r\rabc\ndef\r\r\nasdwe\r\r\rq1da\nawsedq\r\r\r".chars());
         let mut dummy = MessageEmitter::new();
         loop {
             match bufv0.next(&mut dummy) {
@@ -296,7 +244,7 @@ mod tests {
             }
         }
         
-        let mut bufv0 = BufV0Lexer::from("abc\ndef\r\r\n\nasd\nwe\rq1da\nawsedq\n".to_owned());
+        let mut bufv0 = BufV0Lexer::from("abc\ndef\r\r\n\nasd\nwe\rq1da\nawsedq\n".chars());
         let mut dummy = MessageEmitter::new();
         loop {
             match bufv0.next(&mut dummy) {

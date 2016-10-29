@@ -12,6 +12,7 @@ mod char_lit_parser;
 mod string_lit_parser;
 mod raw_string_lit_parser;
 
+use std::str::Chars;
 use common::Position;
 use message::LexicalMessage as Message;
 use message::MessageEmitter;
@@ -69,24 +70,23 @@ impl fmt::Debug for V1Token {
     }
 }
 
-pub struct V1Lexer {
-    v0: BufV0Lexer,
+pub struct V1Lexer<'chs> {
+    v0: BufV0Lexer<'chs>,
 }
-impl From<String> for V1Lexer {
-
-    fn from(content: String) -> V1Lexer {
+impl<'chs> From<Chars<'chs>> for V1Lexer<'chs> {
+    fn from(content_chars: Chars<'chs>) -> V1Lexer {
         V1Lexer { 
-            v0: BufV0Lexer::from(content),
+            v0: BufV0Lexer::from(content_chars),
         }
     }
 }
 
-impl V1Lexer {
+impl<'chs> V1Lexer<'chs> {
     pub fn position(&self) -> Position { self.v0.inner().position() }
 }
 
 
-impl IDetailLexer<V1Token> for V1Lexer {
+impl<'chs> IDetailLexer<'chs, V1Token> for V1Lexer<'chs> {
 
     // input v0, output stringliteral or otherchar without comment
     fn next(&mut self, messages: &mut MessageEmitter) -> Option<V1Token> {
@@ -225,7 +225,7 @@ impl IDetailLexer<V1Token> for V1Lexer {
 }
 
 pub type BufV1Token = BufToken<V1Token>;
-pub type BufV1Lexer = BufLexer<V1Lexer, V1Token>;
+pub type BufV1Lexer<'chs> = BufLexer<V1Lexer<'chs>, V1Token>;
 
 #[cfg(test)]
 mod tests {
@@ -245,7 +245,7 @@ mod tests {
 
         macro_rules! test_case {
             ($program: expr, [$($expect: expr)*] [$($expect_msg: expr)*]) => ({
-                let mut v1lexer = V1Lexer::from($program.to_owned());
+                let mut v1lexer = V1Lexer::from($program.chars());
                 let messages = &mut MessageEmitter::new();
                 $(
                     match v1lexer.next(messages) {
