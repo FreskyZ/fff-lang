@@ -15,6 +15,7 @@ use common::From2;
 use common::TryFrom;
 use common::Position;
 use common::StringPosition;
+use message::LexicalMessage;
 use message::MessageEmitter;
 
 use lexical::v2lexer::V2Token;
@@ -28,6 +29,8 @@ use lexical::symbol_type::numeric_literal::NumericLiteral;
 use lexical::symbol_type::char_literal::CharLiteral;
 use lexical::KeywordKind;
 use lexical::SeperatorKind;
+
+mod unicode_char;
 
 test_only_attr!{
     test: [derive(Clone, Eq, PartialEq)]
@@ -74,6 +77,20 @@ impl<'chs> V3Lexer<'chs> {
     pub fn position(&self) -> Position { self.v2.inner().position() }
 }
 
+// Process every may be seperator char, if it is special unicode char, emit message and return the ascii version
+fn pass_unicode_char(ch: char, pos: Position) -> (char, Option<LexicalMessage>) {
+    use self::unicode_char::check_unicode_char;
+
+    match check_unicode_char(ch) {
+        Some((unicode_ch, unicode_name, ascii_ch, ascii_name)) => {
+            (ascii_ch, Some(LexicalMessage::UnexpectedUnicodeChar{ 
+                ch: unicode_ch, pos: pos, unicode_name: unicode_name.to_owned(), ascii_ch: ascii_ch, ascii_name: ascii_name.to_owned()
+            }))
+        }
+        None => (ch, None),
+    }
+}
+
 impl<'chs> IDetailLexer<'chs, V3Token> for V3Lexer<'chs> {
 
     fn next(&mut self, messages: &mut MessageEmitter) -> Option<V3Token> {
@@ -102,12 +119,17 @@ impl<'chs> IDetailLexer<'chs, V3Token> for V3Lexer<'chs> {
                     }
                 }
                 Some(BufV2Token{ token: V2Token::Other{ ch, pos }, next: Some(V2Token::Other{ ch: next_ch, pos: next_pos }) }) => {
-                    // Dispatch otherchar to seperator
+                    let (ch, msg) = pass_unicode_char(ch, pos);
+                    let (next_ch, next_msg) = pass_unicode_char(next_ch, next_pos);
+                    match msg { Some(msg) => messages.push(msg), None => () }
+                    
                     match SeperatorKind::try_from((ch ,next_ch)) {
                         Some(sep) => match sep.len() { 
                             1 => return Some(V3Token::Seperator(sep, StringPosition::from2(pos, pos))),
                             2 => {
                                 self.v2.skip1(messages);
+                                // Lazy push next_msg because if is not some of 2 word seperator, it will be pushed again in next loop
+                                match next_msg { Some(next_msg) => messages.push(next_msg), None => () }
                                 return Some(V3Token::Seperator(sep, StringPosition::from2(pos, next_pos)));
                             }
                             _ => unreachable!(),
@@ -116,7 +138,9 @@ impl<'chs> IDetailLexer<'chs, V3Token> for V3Lexer<'chs> {
                     }
                 }
                 Some(BufV2Token{ token: V2Token::Other{ ch, pos }, next: _other }) => {
-                    // Dispatch otherchar, seperator to seperator or operators
+                    let (ch, msg) = pass_unicode_char(ch, pos);
+                    match msg { Some(msg) => messages.push(msg), None => () }
+
                     match SeperatorKind::try_from(ch) {
                         Some(sep) => match sep.len() { 
                             1 => return Some(V3Token::Seperator(sep, StringPosition::from2(pos, pos))),
@@ -136,8 +160,6 @@ impl<'chs> IDetailLexer<'chs, V3Token> for V3Lexer<'chs> {
 #[cfg(test)]
 mod tests {
     use lexical::buf_lexer::IDetailLexer;
-
-    // TODO: ~Extend: Unicode seperator error recover
 
     #[test]
     fn v3_test1() {

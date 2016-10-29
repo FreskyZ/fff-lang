@@ -119,7 +119,7 @@ mod tests {
 
         macro_rules! parse {
             ($program: expr) => ({
-                let lexer = &mut Lexer::new_test($program, MessageEmitter::new());
+                let lexer = &mut Lexer::new($program);
                 let result = D3Expression::parse(lexer, 0);
                 perrorln!("messages: {:?}", lexer.messages());
                 result
@@ -233,7 +233,7 @@ mod tests {
 
         //                                0        1         2         3         4         5         6         7         8     
         //                                1234567890123456789012345678901234567890123456789012345678901234567890123456789
-        let lexer = &mut Lexer::new_test("abc.defg[[1](klm, [123, 456,], )](opq, 456.)() as [i32].rst[uvw, xyz, ABC]", MessageEmitter::new());
+        let lexer = &mut Lexer::new("abc.defg[[1](klm, [123, 456,], )](opq, 456.)() as [i32].rst[uvw, xyz, ABC]");
         let left = D3Expression::parse(lexer, 0).0.unwrap();
         let right = expr_to_postfix!{
             PrimaryExpression::Ident("abc".to_owned(), make_str_pos!(1, 1, 1, 3)),
@@ -297,14 +297,14 @@ mod tests {
     #[test]
     fn ast_expr_post_helloworld_expr() {
 
-        let lexer = &mut Lexer::new("writeln(\"helloworld\")".to_owned());
+        let lexer = &mut Lexer::new("writeln(\"helloworld\")");
         perrorln!("{}", D3Expression::parse(lexer, 0).0.unwrap());
     }
 
     #[test]
     fn ast_expr_unary_parse() {
         //                           12345678901234
-        let lexer = &mut Lexer::new("++!~[!1; ~--2]".to_owned());
+        let lexer = &mut Lexer::new("++!~[!1; ~--2]");
         let (result, length) = D3Expression::parse(lexer, 0);
 
         assert_eq!(length, 11);
@@ -342,23 +342,23 @@ mod tests {
     #[test]
     fn ast_expr_binary() {
 
-        let lexer = &mut Lexer::new("[1] * [2] / [3]".to_owned());
+        let lexer = &mut Lexer::new("[1] * [2] / [3]");
         { perrorln!("{:?}", BinaryExpression::parse(lexer, 0)); }
         { perrorln!("{}", BinaryExpression::parse(lexer, 0).0.unwrap()); }
 
-        let lexer = &mut Lexer::new("a * b / c + d % e - f".to_owned());
+        let lexer = &mut Lexer::new("a * b / c + d % e - f");
         perrorln!("{:?}", BinaryExpression::parse(lexer, 0));
         perrorln!("{}", BinaryExpression::parse(lexer, 0).0.unwrap());
         
-        let lexer = &mut Lexer::new("a * b << h / c + d % e - f >> g".to_owned());
+        let lexer = &mut Lexer::new("a * b << h / c + d % e - f >> g");
         perrorln!("{:?}", BinaryExpression::parse(lexer, 0));
         perrorln!("{}", BinaryExpression::parse(lexer, 0).0.unwrap());
 
-        let lexer = &mut Lexer::new("a * b << h / c + d % e - f >> g > h * i < j << k > m && n || o & p | q ^ r != s == t".to_owned());
+        let lexer = &mut Lexer::new("a * b << h / c + d % e - f >> g > h * i < j << k > m && n || o & p | q ^ r != s == t");
         perrorln!("{:?}", BinaryExpression::parse(lexer, 0));
         perrorln!("{}", BinaryExpression::parse(lexer, 0).0.unwrap());
 
-        let lexer = &mut Lexer::new("a & b == c".to_owned());
+        let lexer = &mut Lexer::new("a & b == c");
         perrorln!("{:?}", BinaryExpression::parse(lexer, 0));
         perrorln!("{}", BinaryExpression::parse(lexer, 0).0.unwrap());
     }

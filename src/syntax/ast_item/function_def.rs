@@ -201,7 +201,7 @@ mod tests {
     fn ast_argument_parse() {
         
         assert_eq!(
-            Argument::parse(&mut Lexer::new("i32 a".to_owned()), 0), 
+            Argument::parse(&mut Lexer::new("i32 a"), 0), 
             (Some(Argument{ 
                 ty: SMType::Prim(PrimitiveType::I32, make_str_pos!(1, 1, 1, 3)), 
                 name: "a".to_owned(),
@@ -210,7 +210,7 @@ mod tests {
         );
         
         assert_eq!(
-            Argument::parse(&mut Lexer::new("[u8] buffer".to_owned()), 0), 
+            Argument::parse(&mut Lexer::new("[u8] buffer"), 0), 
             (Some(Argument{ 
                 ty: SMType::Array(Box::new(SMType::Prim(PrimitiveType::U8, make_str_pos!(1, 2, 1, 3))), make_str_pos!(1, 1, 1, 4)), 
                 name: "buffer".to_owned(),
@@ -223,7 +223,7 @@ mod tests {
     fn ast_function_def_parse() {
 
         perrorln!("Case 1:"); //           123456789ABC
-        let lexer = &mut Lexer::new_test2("fn main() {}");
+        let lexer = &mut Lexer::new("fn main() {}");
         let result = FunctionDef::parse(lexer, 0);
         perrorln!("messages: {:?}", lexer.messages());
         assert_eq!(
@@ -238,7 +238,7 @@ mod tests {
         );
 
         perrorln!("Case 2:"); //           0123456789ABCDEFGHI
-        let lexer = &mut Lexer::new_test2("fn main(i32 abc) {}");
+        let lexer = &mut Lexer::new("fn main(i32 abc) {}");
         let result = FunctionDef::parse(lexer, 0);
         perrorln!("messages: {:?}", lexer.messages());
         assert_eq!(
@@ -259,7 +259,7 @@ mod tests {
         );
                               //          0         1         2         3         4         5         6
         perrorln!("Case 3:"); //           12345678901234567890123456789012345678901234567890123456789012
-        let lexer = &mut Lexer::new_test2(" fn mainxxx([[string] ] argv  ,i32 argc, char some_other, )  {}");
+        let lexer = &mut Lexer::new(" fn mainxxx([[string] ] argv  ,i32 argc, char some_other, )  {}");
         let result = FunctionDef::parse(lexer, 0);
         perrorln!("messages: {:?}", lexer.messages());
         assert_eq!(
@@ -294,7 +294,7 @@ mod tests {
         );
                               //           1        2        
         perrorln!("Case 4:"); //           123456789012345678901
-        let lexer = &mut Lexer::new_test2("fn main(, ) -> i32 {}");
+        let lexer = &mut Lexer::new("fn main(, ) -> i32 {}");
         let result = FunctionDef::parse(lexer, 0);
         perrorln!("messages: {:?}", lexer.messages());
         assert_eq!(
@@ -309,7 +309,7 @@ mod tests {
         );
                               //           0        1         2         3         4         5         6
         perrorln!("Case 5:"); //           1234567890123456789012345678901234567890123456789012345678901234567
-        let lexer = &mut Lexer::new_test2("fn main([string] argv, i32 argc, char some_other,) -> [[string]] {}");
+        let lexer = &mut Lexer::new("fn main([string] argv, i32 argc, char some_other,) -> [[string]] {}");
         let result = FunctionDef::parse(lexer, 0);
         perrorln!("messages: {:?}", lexer.messages());
         assert_eq!(

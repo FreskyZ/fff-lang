@@ -33,6 +33,14 @@ pub enum LexicalMessage {
         unrecogonize_escape: char,
     },
 
+    UnexpectedUnicodeChar {
+        ch: char, 
+        pos: Position,
+        unicode_name: String,
+        ascii_ch: char,
+        ascii_name: String,
+    },
+
     UnexpectedIdentifierCharInNumericLiteral {
         literal_start: Position,
         unexpected_char: char,
@@ -172,6 +180,12 @@ impl fmt::Debug for LexicalMessage {
             }
             NumericLiteralTooLarge { ref literal_pos } => {
                 write!(f, "Numeric literal too large at {:?}", literal_pos)
+            }
+
+            UnexpectedUnicodeChar { ref ch, ref pos, ref unicode_name, ref ascii_ch, ref ascii_name } => {
+                write!(f, "Unexpected unicode char {:?}({}) @ {:?}, do you mean ascii char {:?}({})?", 
+                    ch, unicode_name, pos, ascii_ch, ascii_name
+                )
             }
         }
     }

@@ -57,7 +57,7 @@ mod tests {
         use lexical::Lexer;
         use super::parse;
 
-        let lexer = &mut Lexer::new_test2(r#"fn main() { println("helloworld"); }"#);
+        let lexer = &mut Lexer::new(r#"fn main() { println("helloworld"); }"#);
         let program = parse(lexer);
 
         perrorln!("program: {:?}", program);

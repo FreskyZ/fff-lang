@@ -21,7 +21,7 @@ pub fn compile_input(file_name: String) {
         file_reader.into_result()
     };
 
-    let lexer = &mut Lexer::new(content);
+    let lexer = &mut Lexer::new(&content);
     let ast_program = syntax_parse(lexer);
     let _codes = generate(ast_program.unwrap());
 }

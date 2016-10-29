@@ -253,6 +253,7 @@ mod tests {
 
     #[test]
     fn ast_smtype_parse() {
+        use message::Message;
         use message::SyntaxMessage;
         use message::MessageEmitter;
         use lexical::Lexer;
@@ -260,79 +261,40 @@ mod tests {
         use super::SMType;
         use super::PrimitiveType;
         use common::StringPosition;
-
-        macro_rules! test_case {
-            ($program: expr, $len: expr, $pos_all: expr, $expr: expr) => ({
-                let lexer = &mut Lexer::new_test2($program);
-                if let (Some(expr), len) = SMType::parse(lexer, 0) {
-                    assert_eq!(expr, $expr);
-                    assert_eq!(len, $len);
-                    assert_eq!(expr.pos_all(), $pos_all);
-                } else {
-                    panic!("expr is not some, messages: {:?}", lexer.messages())
-                }
-            });
-            ($program: expr, $len: expr, $pos_all: expr, $expr: expr, [$($msg: expr)*]) => ({
-                let lexer = &mut Lexer::new_test2($program);
-                if let (Some(expr), len) = SMType::parse(lexer, 0) {
-                    assert_eq!(expr, $expr);
-                    assert_eq!(len, $len);
-                    assert_eq!(expr.pos_all(), $pos_all);
-                    let messages = &mut MessageEmitter::new();
-                    $(
-                        messages.push($msg);
-                    )*
-                    assert_eq!(lexer.messages(), messages);
-                } else {
-                    panic!("expr is not some")
-                }
-            });
-            ($program: expr, $len: expr, [$($msg: expr)*]) => ({
-                perrorln!("Case #{}:", COUNTER);
-                let (expr, len) = SMType::parse(lexer, 0);
-                assert_eq!(expr, None);
-                assert_eq!(len, $len);
-
-                let messages = &mut MessageEmitter::new();
-                $(
-                    messages.push($msg);
-                )*
-                assert_eq!(lexer.messages(), messages);
-            });
-        }
+        use syntax::ast_item::TestCase;
 
         // Primitive
-        test_case!{ "u8", 1, make_str_pos!(1, 1, 1, 2),
+        ast_test_case!{ "u8", 1, make_str_pos!(1, 1, 1, 2),
             SMType::Prim(PrimitiveType::U8, make_str_pos!(1, 1, 1, 2))
         }
-        test_case!{ "i16", 1, make_str_pos!(1, 1, 1, 3),
+        ast_test_case!{ "i16", 1, make_str_pos!(1, 1, 1, 3),
             SMType::Prim(PrimitiveType::I16, make_str_pos!(1, 1, 1, 3))
         }
-        test_case!{ "char", 1, make_str_pos!(1, 1, 1, 4),
+        ast_test_case!{ "char", 1, make_str_pos!(1, 1, 1, 4),
             SMType::Prim(PrimitiveType::Char, make_str_pos!(1, 1, 1, 4))
         }
-        test_case!{ "f32", 1, make_str_pos!(1, 1, 1, 3),
+        ast_test_case!{ "f32", 1, make_str_pos!(1, 1, 1, 3),
             SMType::Prim(PrimitiveType::F32, make_str_pos!(1, 1, 1, 3))
         }
-        test_case!{ "bool", 1, make_str_pos!(1, 1, 1, 4),
+        ast_test_case!{ "bool", 1, make_str_pos!(1, 1, 1, 4),
             SMType::Prim(PrimitiveType::Bool, make_str_pos!(1, 1, 1, 4))
         }
-        test_case!{ "string", 1, make_str_pos!(1, 1, 1, 6),
+        ast_test_case!{ "string", 1, make_str_pos!(1, 1, 1, 6),
             SMType::Prim(PrimitiveType::SMString, make_str_pos!(1, 1, 1, 6))
         }
 
         // Simple user define
-        test_case!{ "helloworld_t", 1, make_str_pos!(1, 1, 1, 12),
+        ast_test_case!{ "helloworld_t", 1, make_str_pos!(1, 1, 1, 12),
             SMType::User("helloworld_t".to_owned(), make_str_pos!(1, 1, 1, 12))
         }
 
         // Array
-        test_case!{ "[u8]", 3, make_str_pos!(1, 1, 1, 4),
+        ast_test_case!{ "[u8]", 3, make_str_pos!(1, 1, 1, 4),
             SMType::Array(Box::new(
                 SMType::Prim(PrimitiveType::U8, make_str_pos!(1, 2, 1, 3)),
             ), make_str_pos!(1, 1, 1, 4))
         }
-        test_case!{ "[[helloworld_t]]", 5, make_str_pos!(1, 1, 1, 16),
+        ast_test_case!{ "[[helloworld_t]]", 5, make_str_pos!(1, 1, 1, 16),
             SMType::Array(Box::new(
                 SMType::Array(Box::new( 
                     SMType::User("helloworld_t".to_owned(), make_str_pos!(1, 3, 1, 14))
@@ -341,13 +303,13 @@ mod tests {
         }
 
         // Unit
-        test_case!{ "()", 2, make_str_pos!(1, 1, 1, 2),
+        ast_test_case!{ "()", 2, make_str_pos!(1, 1, 1, 2),
             SMType::Prim(PrimitiveType::Unit, make_str_pos!(1, 1, 1, 2))
         }
 
         // Tuple
         //           1234567890123
-        test_case!{ "(i32, string)", 5, make_str_pos!(1, 1, 1, 13),
+        ast_test_case!{ "(i32, string)", 5, make_str_pos!(1, 1, 1, 13),
             SMType::Tuple(
                 vec![
                     SMType::Prim(PrimitiveType::I32, make_str_pos!(1, 2, 1, 4)),
@@ -356,7 +318,7 @@ mod tests {
                 make_str_pos!(1, 1, 1, 13)
             )
         }        //  12345678901234
-        test_case!{ "(char, hw_t, )", 6, make_str_pos!(1, 1, 1, 14),
+        ast_test_case!{ "(char, hw_t, )", 6, make_str_pos!(1, 1, 1, 14),
             SMType::Tuple(
                 vec![
                     SMType::Prim(PrimitiveType::Char, make_str_pos!(1, 2, 1, 5)),
@@ -365,7 +327,7 @@ mod tests {
                 make_str_pos!(1, 1, 1, 14),
             )    //  0        1         2         3
         }        //  123456789012345678901234567890123456
-        test_case!{ "([char], i32, u17, [((), u8, f128)])", 20, make_str_pos!(1, 1, 1, 36), 
+        ast_test_case!{ "([char], i32, u17, [((), u8, f128)])", 20, make_str_pos!(1, 1, 1, 36), 
             SMType::Tuple(
                 vec![
                     SMType::Array(Box::new(
@@ -389,7 +351,7 @@ mod tests {
         }
 
         // Not tuple
-        test_case!{ "(i32)", 3, make_str_pos!(1, 1, 1, 5),
+        ast_test_case!{ "(i32)", 3, make_str_pos!(1, 1, 1, 5),
             SMType::Tuple(
                 vec![
                     SMType::Prim(PrimitiveType::I32, make_str_pos!(1, 2, 1, 4)),
@@ -397,7 +359,7 @@ mod tests {
                 make_str_pos!(1, 1, 1, 5),
             ),
             [
-                SyntaxMessage::SingleItemTupleType{ pos: make_str_pos!(1, 1, 1, 5) }
+                Message::Syntax(SyntaxMessage::SingleItemTupleType{ pos: make_str_pos!(1, 1, 1, 5) })
             ]
         }
     }

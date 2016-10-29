@@ -151,7 +151,7 @@ mod tests {
     fn ast_stmt_var_decl() {
         
         //                           123456789012345678
-        let lexer = &mut Lexer::new("const i32 abc = 0;".to_owned());
+        let lexer = &mut Lexer::new("const i32 abc = 0;");
         assert_eq!(
             VarDeclStatement::parse(lexer, 0),
             (Some(VarDeclStatement {
@@ -170,7 +170,7 @@ mod tests {
         );
         //                                 0        1         2
         //                                 1234567890123456789012
-        let lexer = &mut Lexer::new_test2("var [i32] abc = 1 + 1;");
+        let lexer = &mut Lexer::new("var [i32] abc = 1 + 1;");
         assert_eq!(
             VarDeclStatement::parse(lexer, 0),
             (Some(VarDeclStatement {
@@ -189,7 +189,7 @@ mod tests {
         );
         
         //                           1234567890123456789
-        let lexer = &mut Lexer::new("const string input;".to_owned());
+        let lexer = &mut Lexer::new("const string input;");
         assert_eq!(
             VarDeclStatement::parse(lexer, 0),
             (Some(VarDeclStatement {
@@ -208,7 +208,7 @@ mod tests {
         );
         
         //                           1234567890123
-        let lexer = &mut Lexer::new("var [u8] buf;".to_owned());
+        let lexer = &mut Lexer::new("var [u8] buf;");
         assert_eq!(
             VarDeclStatement::parse(lexer, 0),
             (Some(VarDeclStatement {
@@ -229,7 +229,7 @@ mod tests {
         );
         //                           0        1         2         3         4
         //                           12345678901234567890123456789012345678901234567
-        let lexer = &mut Lexer::new("var ([u8], u32) buf = ([1u8, 5u8, 0x7u8], abc);".to_owned());
+        let lexer = &mut Lexer::new("var ([u8], u32) buf = ([1u8, 5u8, 0x7u8], abc);");
         assert_eq!(
             VarDeclStatement::parse(lexer, 0),
             (Some(VarDeclStatement {

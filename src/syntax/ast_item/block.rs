@@ -36,7 +36,7 @@ impl Block {
 
     #[cfg(test)]
     pub fn from_str(program: &str, index: usize) -> Block {
-        let lexer = &mut Lexer::new_test2(program);
+        let lexer = &mut Lexer::new(program);
         Block::parse(lexer, index).0.unwrap()
     }
 }
@@ -88,10 +88,10 @@ mod tests {
         use common::StringPosition;
         
         assert_eq!(
-            Block::parse(&mut Lexer::new_test2("{}", ), 0), 
+            Block::parse(&mut Lexer::new("{}", ), 0), 
             (Some(Block{ stmts: Vec::new(), pos: make_str_pos!(1, 1, 1, 2) }), 2)
         );
 
-        perrorln!("{}", Block::parse(&mut Lexer::new_test2("{ 1; 1 + 1; while true { writeln(\"fresky loves zmj\"); } loop { writeln(\"zmj loves fresky\"); } }"), 0).0.unwrap()); 
+        perrorln!("{}", Block::parse(&mut Lexer::new("{ 1; 1 + 1; while true { writeln(\"fresky loves zmj\"); } loop { writeln(\"zmj loves fresky\"); } }"), 0).0.unwrap()); 
     }
 }

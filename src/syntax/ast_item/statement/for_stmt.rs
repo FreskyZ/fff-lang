@@ -111,6 +111,6 @@ mod tests {
     #[test]
     fn ast_stmt_for() {
 
-        perrorln!("{}", ForStatement::parse(&mut Lexer::new_test2("for i in 1 + 1[2]..infinite(true) { fresky.loves(zmj); }"), 0).0.unwrap());
+        perrorln!("{}", ForStatement::parse(&mut Lexer::new("for i in 1 + 1[2]..infinite(true) { fresky.loves(zmj); }"), 0).0.unwrap());
     }
 }

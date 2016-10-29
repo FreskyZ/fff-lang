@@ -253,7 +253,8 @@ fn get_postfix(raw: &str, pos: StringPosition, has_prefix: bool) -> Result<Postf
 // iterate content to get content before decimal dot and after decimal dot
 //     ignore underscore, check char according to radix of prefix
 //     with prefix or with integral postfix should not have any decimal point                                   // IntegralPostfixForFloatingPointLiteral
-//     prefix limits the max char value,                                                                        // InvalidCharInNumericLiteral            
+//     prefix limits the max char value,                                                                        // InvalidCharInNumericLiteral     
+//     can not use underscore and single quote at same time                                                     // MultiSeperatorInNumericLiteral       
 fn get_content(raw: &str, pos: StringPosition, radix: u32, mut postfix: Postfix) -> Result<(Content, Postfix), Message> {
     // that is, prefix only has radix meaning, postfix notset is decided by whether have decimal dot
     // so, iterate content to vec of u32 and final postfix 
@@ -342,7 +343,6 @@ fn delegate(raw: String, pos: StringPosition) -> Result<NumLitValue, Message> {
 }
 
 /// NumericLiteral => [0b|0o|0d|0x|][\._0-9]*[u8|u32|i32|u64|f32|f64|]
-// TODO: change raw to string and consumed the temp string in v2
 pub fn parse_numeric_literal(raw: String, pos: StringPosition, messages: &mut MessageEmitter) -> NumericLiteral {
     
     match delegate(raw, pos) {
@@ -361,7 +361,7 @@ fn num_lit_prefix() {
 
     macro_rules! test_case {
         ([$raw: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr] [$expect: expr]) => ({
-            assert_eq!(get_prefix($raw, StringPosition::from(($row1, $col1, $row2, $col2))), $expect);
+            assert_eq!(get_prefix($raw, make_str_pos!($row1, $col1, $row2, $col2)), $expect);
         })
     }
 
@@ -374,7 +374,8 @@ fn num_lit_prefix() {
     test_case!{ ["12", 1, 1, 1, 2] [Ok(Prefix::NotSet)] };
     test_case!{ ["1234567", 1, 1, 1, 7] [Ok(Prefix::NotSet)] };
     test_case!{ ["12", 1, 1, 1, 2] [Ok(Prefix::NotSet)] };
-    test_case!{ ["0f32", 1, 1, 1, 2] [Ok(Prefix::NotSet)] };
+    test_case!{ ["0f32", 1, 1, 1, 4] [Ok(Prefix::NotSet)] };
+    test_case!{ ["0u8", 1, 1, 1, 3] [Ok(Prefix::NotSet)] };
     test_case!{ ["0u78", 1, 1, 1, 2] [Err(Message::InvalidPrefixInNumericLiteral{ literal_pos: StringPosition::from((1, 1, 1, 2)), prefix: 'u' })] };
     test_case!{ ["0x", 1, 1, 1, 2] [Err(Message::EmptyNumericLiteral{ literal_pos: StringPosition::from((1, 1, 1, 2)) })] };
     test_case!{ ["001", 1, 1, 1, 3] [Err(Message::InvalidPrefixInNumericLiteral{ literal_pos: StringPosition::from((1, 1, 1, 3)), prefix: '0' })] };
@@ -388,6 +389,18 @@ fn num_lit_postfix() {
     assert_eq!(
         get_postfix("u8", StringPosition::from((1, 1, 1, 2)), false), 
         Err(Message::EmptyNumericLiteral{ literal_pos: StringPosition::from((1, 1, 1, 2)) }));
+    assert_eq!(
+        get_postfix("i8", StringPosition::from((1, 1, 1, 2)), false), 
+        Err(Message::EmptyNumericLiteral{ literal_pos: StringPosition::from((1, 1, 1, 2)) }));
+    assert_eq!(
+        get_postfix("u16", StringPosition::from((1, 1, 1, 3)), false), 
+        Err(Message::EmptyNumericLiteral{ literal_pos: StringPosition::from((1, 1, 1, 3)) }));
+    assert_eq!(
+        get_postfix("i16", StringPosition::from((1, 1, 1, 3)), false), 
+        Err(Message::EmptyNumericLiteral{ literal_pos: StringPosition::from((1, 1, 1, 3)) }));
+    assert_eq!(
+        get_postfix("i64", StringPosition::from((1, 1, 1, 3)), false), 
+        Err(Message::EmptyNumericLiteral{ literal_pos: StringPosition::from((1, 1, 1, 3)) }));
     assert_eq!(
         get_postfix("u32", StringPosition::from((1, 1, 1, 3)), false), 
         Err(Message::EmptyNumericLiteral{ literal_pos: StringPosition::from((1, 1, 1, 3)) }));
@@ -407,6 +420,18 @@ fn num_lit_postfix() {
     assert_eq!(
         get_postfix("1u8", StringPosition::from((1, 1, 1, 3)), false), 
         Ok(Postfix::U8));
+    assert_eq!(
+        get_postfix("1i8", StringPosition::from((1, 1, 1, 3)), false), 
+        Ok(Postfix::I8));
+    assert_eq!(
+        get_postfix("1i64", StringPosition::from((1, 1, 1, 3)), false), 
+        Ok(Postfix::I64));
+    assert_eq!(
+        get_postfix("1u16", StringPosition::from((1, 1, 1, 3)), false), 
+        Ok(Postfix::U16));
+    assert_eq!(
+        get_postfix("1i16", StringPosition::from((1, 1, 1, 3)), false), 
+        Ok(Postfix::I16));
     assert_eq!(
         get_postfix("1u64", StringPosition::from((1, 1, 1, 3)), false), 
         Ok(Postfix::U64));
@@ -491,13 +516,16 @@ fn num_lit_content() {
     assert_eq!(get_content("1'2'3'", pos, 10, Postfix::I32), Ok((Content::Integral(vec![1, 2, 3]), Postfix::I32)));
     assert_eq!(get_content("123.456", pos, 10, Postfix::I32), Err(Message::UnexpectedDecimalPointInIntegralLiteral{ literal_pos: pos }));
     assert_eq!(get_content("'''''123", pos, 10, Postfix::NotSet), Ok((Content::Integral(vec![1, 2, 3]), Postfix::I32)));
-    assert_eq!(get_content("123'.'456'''''", pos, 10, Postfix::NotSet), Ok((Content::Float(vec![1, 2, 3], vec![4, 5, 6]), Postfix::F64))); // strange but supported
+    assert_eq!(get_content("123'.'456'''''", pos, 10, Postfix::NotSet), Ok((Content::Float(vec![1, 2, 3], vec![4, 5, 6]), Postfix::F64))); // more strange but supported
     assert_eq!(get_content("123.456.789", pos, 10, Postfix::F64), Err(Message::UnexpectedMultiDecimalPointInFloatLiteral{ literal_pos: pos }));
     assert_eq!(get_content("123ABC", pos, 10, Postfix::I32), Err(Message::UnexpectedCharInNumericLiteral{ literal_pos: pos }));
     assert_eq!(get_content("123321", pos, 2, Postfix::I32), Err(Message::UnexpectedCharInNumericLiteral{ literal_pos: pos }));
     assert_eq!(get_content("ABCDEFG", pos, 16, Postfix::I32), Err(Message::UnexpectedCharInNumericLiteral{ literal_pos: pos }));
     assert_eq!(get_content("''''123", pos, 10, Postfix::F32), Ok((Content::Float(vec![1, 2, 3], vec![]), Postfix::F32)));
     assert_eq!(get_content("123.''''''''", pos, 10, Postfix::F32), Ok((Content::Float(vec![1, 2, 3], vec![]), Postfix::F32)));
+
+    assert_eq!(get_content("1'2_3", pos, 10, Postfix::I32), Err(Message::MultiSeperatorInNumericLiteral{ literal_pos: pos }));
+    assert_eq!(get_content("1_2'3", pos, 10, Postfix::I32), Err(Message::MultiSeperatorInNumericLiteral{ literal_pos: pos }));
 }
 
 #[cfg(test)]
@@ -556,7 +584,7 @@ fn num_lit_inter() {
     test_case!{ "___123", pos, ok: NumLitValue::I32(123) };
     test_case!{ "01_23", pos, err: Message::InvalidPrefixInNumericLiteral{ literal_pos: pos, prefix: '1' } };
     test_case!{ "123_____.", pos, ok: NumLitValue::F64(123f64) };
-    test_case!{ "0x1_2_3", pos, ok: NumLitValue::I32(0x123) };
+    test_case!{ "0x1'2'3", pos, ok: NumLitValue::I32(0x123) };
     test_case!{ "0o12_3u64", pos, ok: NumLitValue::U64(0o123) };
     test_case!{ "0b101_0", pos, ok: NumLitValue::I32(0b1010) };
     test_case!{ "0f3_2", pos, err: Message::InvalidPrefixInNumericLiteral{ literal_pos: pos, prefix: 'f' } };

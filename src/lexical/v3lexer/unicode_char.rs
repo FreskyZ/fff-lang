@@ -223,20 +223,29 @@ const ASCII_ARRAY: &'static [(char, &'static str)] = &[
     ('=', "Equals Sign"),
     ('>', "Greater-Than Sign"), ];
 
-pub fn check_for_substitution(ch: char) -> Option<String> {
+pub fn check_unicode_char(maybe_unicode: char) -> Option<(char, &'static str, char, &'static str)> {
     
-    UNICODE_ARRAY
-    .iter()
-    .find(|&&(c, _, _)| c == ch)
-    .map(|&(_, u_name, ascii_char)| {
-        match ASCII_ARRAY.iter().find(|&&(c, _)| c == ascii_char) {
-            Some(&(ascii_char, ascii_name)) => {
-                format!("unicode character '{}' ({}) looks much like '{}' ({}), but it's not",
-                            ch, u_name, ascii_char, ascii_name)
-            },
-            None => {
-                format!("substitution character not found for '{}'", ch)
-            }
-        }
-    });
+    let (unicode_ch, unicode_name, ascii_char) = match UNICODE_ARRAY.iter().find(|&&(c, _, _)| c == maybe_unicode) {
+        Some(&(ch, name, asc)) => (ch, name, asc),
+        None => return None,
+    };
+
+    let (ascii_char, ascii_name) = match ASCII_ARRAY.iter().find(|&&(c, _)| c == ascii_char) {
+        Some(&(asc_ch, asc_name)) => (asc_ch, asc_name),
+        None => return None,
+    };
+
+    Some((unicode_ch, unicode_name, ascii_char, ascii_name))
+}
+
+#[cfg(test)]
+#[test]
+fn uni_sep() {
+
+    assert_eq!(check_unicode_char('。'), Some(('。', "Ideographic Full Stop", '.', "Period")));
+    assert_eq!(check_unicode_char('.'), None);
+    assert_eq!(check_unicode_char('⧹'), Some(('⧹', "Big Reverse Solidus", '\\', "Backslash")));
+    assert_eq!(check_unicode_char('\\'), None);
+    assert_eq!(check_unicode_char('；'), Some(('；', "Fullwidth Semicolon", ';', "Semicolon")));
+    assert_eq!(check_unicode_char(';'), None);
 }

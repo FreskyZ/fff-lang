@@ -171,15 +171,15 @@ mod tests {
     #[test]
     fn ast_stmt_if() {
 
-        perrorln!("{}", IfStatement::parse(&mut Lexer::new_test2(
+        perrorln!("{}", IfStatement::parse(&mut Lexer::new(
             "if 1 { fresky.love(zmj); zmj.love(fresky); }"
         ), 0).0.unwrap());
 
-        perrorln!("{}", IfStatement::parse(&mut Lexer::new_test2(
+        perrorln!("{}", IfStatement::parse(&mut Lexer::new(
             "if 1 { fresky.love(zmj); zmj.love(fresky); } else { writeln(\"hellworld\"); }"
         ), 0).0.unwrap());
 
-        perrorln!("{}", IfStatement::parse(&mut Lexer::new_test2(
+        perrorln!("{}", IfStatement::parse(&mut Lexer::new(
 r#"
             if 1 { 
                 fresky.love(zmj); 

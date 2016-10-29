@@ -130,15 +130,15 @@ mod tests {
 
         macro_rules! test_case {
             ($program: expr, $len: expr, $expect: expr) => (
-                let lexer = &mut Lexer::new_test2($program);
+                let lexer = &mut Lexer::new($program);
                 let (result, len) = ExpressionStatement::parse(lexer, 0);
                 assert_eq!(result, Some($expect));
                 assert_eq!(len, $len);
             )
         }
         macro_rules! make_expr {
-            ($program: expr) => (Expression::parse(&mut Lexer::new_test2($program), 0).0.unwrap());
-            ($program: expr, $token_index: expr) => (Expression::parse(&mut Lexer::new_test2($program), $token_index).0.unwrap())
+            ($program: expr) => (Expression::parse(&mut Lexer::new($program), 0).0.unwrap());
+            ($program: expr, $token_index: expr) => (Expression::parse(&mut Lexer::new($program), $token_index).0.unwrap())
         }
 
         //           12345678 90123456789 0123

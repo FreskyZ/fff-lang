@@ -72,7 +72,7 @@ mod tests {
     #[test]
     fn ast_stmt_while () {
 
-        let (result, length) = WhileStatement::parse(&mut Lexer::new_test2("while true { writeln(\"fresky loves zmj\"); }"), 0);
+        let (result, length) = WhileStatement::parse(&mut Lexer::new("while true { writeln(\"fresky loves zmj\"); }"), 0);
         perrorln!("Debug: {:?}", result);
         perrorln!("Display: {}, {}", result.unwrap(), length);
     }

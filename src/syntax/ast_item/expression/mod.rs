@@ -216,7 +216,7 @@ impl Expression {
     #[cfg(test)]
     // Directly from string, only for test, may panic
     pub fn from_str(program: &str, sym_index: usize) -> Expression {
-        let lexer = &mut Lexer::new_test2(program);
+        let lexer = &mut Lexer::new(program);
         Expression::parse(lexer, sym_index).0.unwrap() 
     }
 }
@@ -353,6 +353,7 @@ mod tests {
 
     use common::StringPosition;
     use message::SyntaxMessage;
+    use message::Message;
     use message::MessageEmitter;
     use lexical::Lexer;
     use lexical::NumLitValue;
@@ -361,75 +362,36 @@ mod tests {
     use syntax::ast_item::IASTItem;
     use syntax::SMType;
     use syntax::PrimitiveType;
+    use syntax::ast_item::TestCase;
 
     #[test]
     fn ast_expr_all() {
 
-        macro_rules! test_case {
-            ($program: expr, $len: expr, $pos_all: expr, $expr: expr) => ({
-                let lexer = &mut Lexer::new_test2($program);
-                if let (Some(expr), len) = Expression::parse(lexer, 0) {
-                    assert_eq!(expr, $expr);
-                    assert_eq!(len, $len);
-                    assert_eq!(expr.pos_all(), $pos_all);
-                } else {
-                    panic!("expr is not some, messages: {:?}", lexer.messages())
-                }
-            });
-            ($program: expr, $len: expr, $pos_all: expr, $expr: expr, [$($msg: expr)*]) => ({
-                let lexer = &mut Lexer::new_test2($program);
-                if let (Some(expr), len) = Expression::parse(lexer, 0) {
-                    assert_eq!(expr, $expr);
-                    assert_eq!(len, $len);
-                    assert_eq!(expr.pos_all(), $pos_all);
-                    let messages = &mut MessageEmitter::new();
-                    $(
-                        messages.push($msg);
-                    )*
-                    assert_eq!(lexer.messages(), messages);
-                } else {
-                    panic!("expr is not some")
-                }
-            });
-            ($program: expr, $len: expr, [$($msg: expr)*]) => ({
-                let lexer = &mut Lexer::new_test2($program);
-                let (expr, len) = Expression::parse(lexer, 0);
-                assert_eq!(expr, None);
-                assert_eq!(len, $len);
-
-                let messages = &mut MessageEmitter::new();
-                $(
-                    messages.push($msg);
-                )*
-                assert_eq!(lexer.messages(), messages);
-            });
-        }
-
         // Features
         // Literal forward
         //            1234 5
-        test_case!{ "\"abc\"", 1, make_str_pos!(1, 1, 1, 5),
+        ast_test_case!{ "\"abc\"", 1, make_str_pos!(1, 1, 1, 5),
             Expression::new_test(
                 ExpressionBase::Lit(LexicalLiteral::from("abc"), make_str_pos!(1, 1, 1, 5)),
                 Vec::new(),
                 make_str_pos!(1, 1, 1, 5),
             )
         }        //  12345678
-        test_case!{ "0xfffu64", 1, make_str_pos!(1, 1, 1, 8),
+        ast_test_case!{ "0xfffu64", 1, make_str_pos!(1, 1, 1, 8),
             Expression::new_test(
                 ExpressionBase::Lit(LexicalLiteral::from(0xfffu64), make_str_pos!(1, 1, 1, 8)),
                 Vec::new(),
                 make_str_pos!(1, 1, 1, 8),
             )
         }        //  123
-        test_case!{ "'f'", 1, make_str_pos!(1, 1, 1, 3),
+        ast_test_case!{ "'f'", 1, make_str_pos!(1, 1, 1, 3),
             Expression::new_test(
                 ExpressionBase::Lit(LexicalLiteral::from('f'), make_str_pos!(1, 1, 1, 3)),
                 Vec::new(),
                 make_str_pos!(1, 1, 1, 3),
             )
         }
-        test_case!{ "true", 1, make_str_pos!(1, 1, 1, 4),
+        ast_test_case!{ "true", 1, make_str_pos!(1, 1, 1, 4),
             Expression::new_test(
                 ExpressionBase::Lit(LexicalLiteral::from(true), make_str_pos!(1, 1, 1, 4)),
                 Vec::new(),
@@ -440,7 +402,7 @@ mod tests {
         // Identifier forward
         //           0        1         2         3
         //           12345678901234567890123456789012
-        test_case!{ "_very_long_var_name_to_avoid_use", 1, make_str_pos!(1, 1, 1, 32),
+        ast_test_case!{ "_very_long_var_name_to_avoid_use", 1, make_str_pos!(1, 1, 1, 32),
             Expression::new_test(
                 ExpressionBase::Ident("_very_long_var_name_to_avoid_use".to_owned(), make_str_pos!(1, 1, 1, 32)),
                 Vec::new(),
@@ -449,7 +411,7 @@ mod tests {
         }
 
         // Unit Literal
-        test_case!{ "()", 2, make_str_pos!(1, 1, 1, 2),
+        ast_test_case!{ "()", 2, make_str_pos!(1, 1, 1, 2),
             Expression::new_test(
                 ExpressionBase::Unit(make_str_pos!(1, 1, 1, 2)),
                 Vec::new(),
@@ -459,7 +421,7 @@ mod tests {
 
         // Paren expr
         //           1234567
-        test_case!{ "(1)", 3, make_str_pos!(1, 1, 1, 3),
+        ast_test_case!{ "(1)", 3, make_str_pos!(1, 1, 1, 3),
             Expression::new_test(
                 ExpressionBase::Paren(
                     Expression::new_test(
@@ -474,7 +436,7 @@ mod tests {
             )
         }
         // I can see future of Ok(())! 
-        test_case!{ "(())", 4, make_str_pos!(1, 1, 1, 4),
+        ast_test_case!{ "(())", 4, make_str_pos!(1, 1, 1, 4),
             Expression::new_test(
                 ExpressionBase::Paren(
                     Expression::new_test(
@@ -491,7 +453,7 @@ mod tests {
 
         // Tuple def
         //           123456
-        test_case!{ "(a, b)", 5, make_str_pos!(1, 1, 1, 6),
+        ast_test_case!{ "(a, b)", 5, make_str_pos!(1, 1, 1, 6),
             Expression::new_test(
                 ExpressionBase::TupleDef(
                     vec![
@@ -512,7 +474,7 @@ mod tests {
                 make_str_pos!(1, 1, 1, 6),
             ) 
         }        //  12345678901
-        test_case!{ "(1, 2, 3, )", 8, make_str_pos!(1, 1, 1, 11),
+        ast_test_case!{ "(1, 2, 3, )", 8, make_str_pos!(1, 1, 1, 11),
             Expression::new_test(
                 ExpressionBase::TupleDef(
                     vec![
@@ -540,7 +502,7 @@ mod tests {
         }
 
         // Array def
-        test_case!{ "[a]", 3, make_str_pos!(1, 1, 1, 3), 
+        ast_test_case!{ "[a]", 3, make_str_pos!(1, 1, 1, 3), 
             Expression::new_test(
                 ExpressionBase::ArrayDef(
                     vec![
@@ -556,7 +518,7 @@ mod tests {
                 make_str_pos!(1, 1, 1, 3),
             )
         }        //  12345678
-        test_case!{ "[1, 2, ]", 6, make_str_pos!(1, 1, 1, 8),
+        ast_test_case!{ "[1, 2, ]", 6, make_str_pos!(1, 1, 1, 8),
             Expression::new_test(
                 ExpressionBase::ArrayDef(
                     vec![
@@ -577,7 +539,7 @@ mod tests {
                 make_str_pos!(1, 1, 1, 8)
             )
         }
-        test_case!{ "[]", 2, make_str_pos!(1, 1, 1, 2),
+        ast_test_case!{ "[]", 2, make_str_pos!(1, 1, 1, 2),
             Expression::new_test(
                 ExpressionBase::ArrayDef(Vec::new(), make_str_pos!(1, 1, 1, 2)),
                 Vec::new(),
@@ -588,7 +550,7 @@ mod tests {
 
         // Array dup def
         //           123456
-        test_case!{ "[1; 2]", 5, make_str_pos!(1, 1, 1, 6),
+        ast_test_case!{ "[1; 2]", 5, make_str_pos!(1, 1, 1, 6),
             Expression::new_test(
                 ExpressionBase::ArrayDupDef(
                     Expression::new_test(
@@ -610,7 +572,7 @@ mod tests {
                 make_str_pos!(1, 1, 1, 6),
             )
         }        //  1234567890
-        test_case!{ "[[1]; [2]]", 9, make_str_pos!(1, 1, 1, 10), 
+        ast_test_case!{ "[[1]; [2]]", 9, make_str_pos!(1, 1, 1, 10), 
             Expression::new_test(
                 ExpressionBase::ArrayDupDef(
                     Expression::new_test(
@@ -652,7 +614,7 @@ mod tests {
         }
 
         // Member access
-        test_case!{ "a.b", 3, make_str_pos!(1, 1, 1, 3),
+        ast_test_case!{ "a.b", 3, make_str_pos!(1, 1, 1, 3),
             Expression::new_test(
                 ExpressionBase::Ident("a".to_owned(), make_str_pos!(1, 1, 1, 1)),
                 vec![
@@ -663,7 +625,7 @@ mod tests {
         }
 
         // function call
-        test_case!{ "defg()", 3, make_str_pos!(1, 1, 1, 6),
+        ast_test_case!{ "defg()", 3, make_str_pos!(1, 1, 1, 6),
             Expression::new_test(
                 ExpressionBase::Ident("defg".to_owned(), make_str_pos!(1, 1, 1, 4)),
                 vec![
@@ -672,7 +634,7 @@ mod tests {
                 make_str_pos!(1, 1, 1, 6),
             )
         }        //  123456
-        test_case!{ "deg(a)", 4, make_str_pos!(1, 1, 1, 6),
+        ast_test_case!{ "deg(a)", 4, make_str_pos!(1, 1, 1, 6),
             Expression::new_test(
                 ExpressionBase::Ident("deg".to_owned(), make_str_pos!(1, 1, 1, 3)),
                 vec![
@@ -690,7 +652,7 @@ mod tests {
                 make_str_pos!(1, 1, 1, 6),
             )
         }        //  1234567890123
-        test_case!{ "degg(a, b, )", 7, make_str_pos!(1, 1, 1, 12),
+        ast_test_case!{ "degg(a, b, )", 7, make_str_pos!(1, 1, 1, 12),
             Expression::new_test(
                 ExpressionBase::Ident("degg".to_owned(), make_str_pos!(1, 1, 1, 4)),
                 vec![
@@ -713,7 +675,7 @@ mod tests {
                 make_str_pos!(1, 1, 1, 12),
             )
         }        //  123456
-        test_case!{ "de(, )", 4, make_str_pos!(1, 1, 1, 6),
+        ast_test_case!{ "de(, )", 4, make_str_pos!(1, 1, 1, 6),
             Expression::new_test(
                 ExpressionBase::Ident("de".to_owned(), make_str_pos!(1, 1, 1, 2)),
                 vec![
@@ -725,13 +687,13 @@ mod tests {
                 make_str_pos!(1, 1, 1, 6),
             ),
             [
-                SyntaxMessage::SingleCommaInFunctionCall{ call_pos: make_str_pos!(1, 3, 1, 6), comma_pos: make_str_pos!(1, 4, 1, 4).start_pos }
+                Message::Syntax(SyntaxMessage::SingleCommaInFunctionCall{ call_pos: make_str_pos!(1, 3, 1, 6), comma_pos: make_str_pos!(1, 4, 1, 4).start_pos })
             ]
         }
 
         // member function call
         //           1234567890
-        test_case!{ "abc.defg()", 5, make_str_pos!(1, 1, 1, 10),
+        ast_test_case!{ "abc.defg()", 5, make_str_pos!(1, 1, 1, 10),
             Expression::new_test(
                 ExpressionBase::Ident("abc".to_owned(), make_str_pos!(1, 1, 1, 3)),
                 vec![
@@ -747,7 +709,7 @@ mod tests {
                 make_str_pos!(1, 1, 1, 10),
             )
         }        //  1234567890
-        test_case!{ "abc.deg(a)", 6, make_str_pos!(1, 1, 1, 10),
+        ast_test_case!{ "abc.deg(a)", 6, make_str_pos!(1, 1, 1, 10),
             Expression::new_test(
                 ExpressionBase::Ident("abc".to_owned(), make_str_pos!(1, 1, 1, 3)),
                 vec![
@@ -769,7 +731,7 @@ mod tests {
                 make_str_pos!(1, 1, 1, 10)
             )
         }        //  12345678901234
-        test_case!{ "1.degg(a, b, )", 9, make_str_pos!(1, 1, 1, 14),
+        ast_test_case!{ "1.degg(a, b, )", 9, make_str_pos!(1, 1, 1, 14),
             Expression::new_test(
                 ExpressionBase::Lit(LexicalLiteral::from(1), make_str_pos!(1, 1, 1, 1)),
                 vec![
@@ -796,7 +758,7 @@ mod tests {
                 make_str_pos!(1, 1, 1, 14)
             )
         }        //   1 23456789
-        test_case!{ "\"\".de(, )", 6, make_str_pos!(1, 1, 1, 9),
+        ast_test_case!{ "\"\".de(, )", 6, make_str_pos!(1, 1, 1, 9),
             Expression::new_test(
                 ExpressionBase::Lit(LexicalLiteral::from(""), make_str_pos!(1, 1, 1, 2)),
                 vec![
@@ -812,12 +774,12 @@ mod tests {
                 make_str_pos!(1, 1, 1, 9)
             ),
             [
-                SyntaxMessage::SingleCommaInFunctionCall{ call_pos: make_str_pos!(1, 6, 1, 9), comma_pos: make_str_pos!(1, 7, 1, 7).start_pos }
+                Message::Syntax(SyntaxMessage::SingleCommaInFunctionCall{ call_pos: make_str_pos!(1, 6, 1, 9), comma_pos: make_str_pos!(1, 7, 1, 7).start_pos })
             ]
         }
 
         // get index
-        test_case!{ "defg[]", 3, make_str_pos!(1, 1, 1, 6),
+        ast_test_case!{ "defg[]", 3, make_str_pos!(1, 1, 1, 6),
             Expression::new_test(
                 ExpressionBase::Ident("defg".to_owned(), make_str_pos!(1, 1, 1, 4)),
                 vec![
@@ -826,7 +788,7 @@ mod tests {
                 make_str_pos!(1, 1, 1, 6),
             )
         }        //  123456
-        test_case!{ "deg[a]", 4, make_str_pos!(1, 1, 1, 6),
+        ast_test_case!{ "deg[a]", 4, make_str_pos!(1, 1, 1, 6),
             Expression::new_test(
                 ExpressionBase::Ident("deg".to_owned(), make_str_pos!(1, 1, 1, 3)),
                 vec![
@@ -844,7 +806,7 @@ mod tests {
                 make_str_pos!(1, 1, 1, 6),
             )
         }        //  123456789012
-        test_case!{ "degg[a, b, ]", 7, make_str_pos!(1, 1, 1, 12),
+        ast_test_case!{ "degg[a, b, ]", 7, make_str_pos!(1, 1, 1, 12),
             Expression::new_test(
                 ExpressionBase::Ident("degg".to_owned(), make_str_pos!(1, 1, 1, 4)),
                 vec![
@@ -867,7 +829,7 @@ mod tests {
                 make_str_pos!(1, 1, 1, 12),
             )
         }        //  123456
-        test_case!{ "de[, ]", 4, make_str_pos!(1, 1, 1, 6),
+        ast_test_case!{ "de[, ]", 4, make_str_pos!(1, 1, 1, 6),
             Expression::new_test(
                 ExpressionBase::Ident("de".to_owned(), make_str_pos!(1, 1, 1, 2)),
                 vec![
@@ -879,13 +841,13 @@ mod tests {
                 make_str_pos!(1, 1, 1, 6),
             ),
             [
-                SyntaxMessage::SingleCommaInSubscription{ sub_pos: make_str_pos!(1, 3, 1, 6), comma_pos: make_str_pos!(1, 4, 1, 4).start_pos }
+                Message::Syntax(SyntaxMessage::SingleCommaInSubscription{ sub_pos: make_str_pos!(1, 3, 1, 6), comma_pos: make_str_pos!(1, 4, 1, 4).start_pos })
             ]
         }
 
         // member get index
         //           1234567890
-        test_case!{ "abc.defg[]", 5, make_str_pos!(1, 1, 1, 10),
+        ast_test_case!{ "abc.defg[]", 5, make_str_pos!(1, 1, 1, 10),
             Expression::new_test(
                 ExpressionBase::Ident("abc".to_owned(), make_str_pos!(1, 1, 1, 3)),
                 vec![
@@ -901,7 +863,7 @@ mod tests {
                 make_str_pos!(1, 1, 1, 10),
             )
         }        //  1234567890
-        test_case!{ "abc.deg[a]", 6, make_str_pos!(1, 1, 1, 10),
+        ast_test_case!{ "abc.deg[a]", 6, make_str_pos!(1, 1, 1, 10),
             Expression::new_test(
                 ExpressionBase::Ident("abc".to_owned(), make_str_pos!(1, 1, 1, 3)),
                 vec![
@@ -923,7 +885,7 @@ mod tests {
                 make_str_pos!(1, 1, 1, 10)
             )
         }        //  12345678901234
-        test_case!{ "1.degg[a, b, ]", 9, make_str_pos!(1, 1, 1, 14),
+        ast_test_case!{ "1.degg[a, b, ]", 9, make_str_pos!(1, 1, 1, 14),
             Expression::new_test(
                 ExpressionBase::Lit(LexicalLiteral::from(1), make_str_pos!(1, 1, 1, 1)),
                 vec![
@@ -950,7 +912,7 @@ mod tests {
                 make_str_pos!(1, 1, 1, 14)
             )
         }        //   1 23456789
-        test_case!{ "\"\".de[, ]", 6, make_str_pos!(1, 1, 1, 9),
+        ast_test_case!{ "\"\".de[, ]", 6, make_str_pos!(1, 1, 1, 9),
             Expression::new_test(
                 ExpressionBase::Lit(LexicalLiteral::from(""), make_str_pos!(1, 1, 1, 2)),
                 vec![
@@ -966,13 +928,13 @@ mod tests {
                 make_str_pos!(1, 1, 1, 9)
             ),
             [
-                SyntaxMessage::SingleCommaInSubscription{ sub_pos: make_str_pos!(1, 6, 1, 9), comma_pos: make_str_pos!(1, 7, 1, 7).start_pos }
+                Message::Syntax(SyntaxMessage::SingleCommaInSubscription{ sub_pos: make_str_pos!(1, 6, 1, 9), comma_pos: make_str_pos!(1, 7, 1, 7).start_pos })
             ]
         }
 
         // explicit type cast
         //           12345678
-        test_case!{ "1 as u32", 3, make_str_pos!(1, 1, 1, 8),
+        ast_test_case!{ "1 as u32", 3, make_str_pos!(1, 1, 1, 8),
             Expression::new_test(
                 ExpressionBase::Lit(LexicalLiteral::from(1), make_str_pos!(1, 1, 1, 1)),
                 vec![
@@ -984,7 +946,7 @@ mod tests {
                 make_str_pos!(1, 1, 1, 8),
             )
         }        //  123456789012
-        test_case!{ "[1] as [f32]", 7, make_str_pos!(1, 1, 1, 12),
+        ast_test_case!{ "[1] as [f32]", 7, make_str_pos!(1, 1, 1, 12),
             Expression::new_test(
                 ExpressionBase::ArrayDef(
                     vec![
@@ -1016,7 +978,7 @@ mod tests {
         // call at prev, cast at next, check
         // cast at prev, member at next check
         //           123456
-        test_case!{ "2[3].a", 6, make_str_pos!(1, 1, 1, 6),
+        ast_test_case!{ "2[3].a", 6, make_str_pos!(1, 1, 1, 6),
             Expression::new_test(
                 ExpressionBase::Lit(LexicalLiteral::from(2), make_str_pos!(1, 1, 1, 1)),
                 vec![
@@ -1038,7 +1000,7 @@ mod tests {
                 make_str_pos!(1, 1, 1, 6),
             )    //  0         1          2         
         }        //  123456 789012 345678901
-        test_case!{ "write(\"hello\") as i32", 6, make_str_pos!(1, 1, 1, 21), 
+        ast_test_case!{ "write(\"hello\") as i32", 6, make_str_pos!(1, 1, 1, 21), 
             Expression::new_test(
                 ExpressionBase::Ident("write".to_owned(), make_str_pos!(1, 1, 1, 5)),
                 vec![
@@ -1060,7 +1022,7 @@ mod tests {
                 make_str_pos!(1, 1, 1, 21),
             )
         }        //  1234567890123456
-        test_case!{ "print(233, ).bit", 7, make_str_pos!(1, 1, 1, 16),
+        ast_test_case!{ "print(233, ).bit", 7, make_str_pos!(1, 1, 1, 16),
             Expression::new_test(
                 ExpressionBase::Ident("print".to_owned(), make_str_pos!(1, 1, 1, 5)),
                 vec![
@@ -1085,7 +1047,7 @@ mod tests {
 
         // logical not and bit not
         //           1234567
-        test_case!{ "!~!1[1]", 7, make_str_pos!(1, 1, 1, 7),
+        ast_test_case!{ "!~!1[1]", 7, make_str_pos!(1, 1, 1, 7),
             Expression::new_test(
                 ExpressionBase::Lit(LexicalLiteral::from(1), make_str_pos!(1, 4, 1, 4)),
                 vec![
@@ -1118,7 +1080,7 @@ mod tests {
 
         // increase and decrease
         //           1234567
-        test_case!{ "!++--!1", 5, make_str_pos!(1, 1, 1, 7),
+        ast_test_case!{ "!++--!1", 5, make_str_pos!(1, 1, 1, 7),
             Expression::new_test(
                 ExpressionBase::Lit(LexicalLiteral::from(1), make_str_pos!(1, 7, 1, 7)),
                 vec![
@@ -1134,7 +1096,7 @@ mod tests {
         // binary operators priority
         //           0        1         2         3         4     
         //           123456789012345678901234567890123456789012345678
-        test_case!{ "1 || 2 && 3 == 4 ^ 5 | 6 & 7 >= 8 >> 9 + 10 * 11", 21,  make_str_pos!(1, 1, 1, 48),
+        ast_test_case!{ "1 || 2 && 3 == 4 ^ 5 | 6 & 7 >= 8 >> 9 + 10 * 11", 21,  make_str_pos!(1, 1, 1, 48),
             Expression::new_test(
                 ExpressionBase::Lit(LexicalLiteral::from(1), make_str_pos!(1, 1, 1, 1)),
                 vec![
@@ -1258,7 +1220,7 @@ mod tests {
             }
 
             if buf != "break\r\n" {
-                let lexer = &mut Lexer::new(buf);
+                let lexer = &mut Lexer::new(&buf);
                 let (result, length) = Expression::parse(lexer, 0);
                 perrorln!("Debug: ({:?}, {})", result, length);
                 match result {

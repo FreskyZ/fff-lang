@@ -179,7 +179,7 @@ pub struct V4Lexer {
 
 impl V4Lexer {
     
-    pub fn new(content: String) -> V4Lexer {
+    pub fn new(content: &str) -> V4Lexer {
         use lexical::buf_lexer::IDetailLexer;
 
         let mut messages = MessageEmitter::new();
@@ -197,16 +197,6 @@ impl V4Lexer {
             messages: messages,
             eof_token: V4Token{ value: TokenValue::EndofFile, pos: StringPosition::from2(v3lexer.position(), v3lexer.position()) },
         }
-    }
-    #[cfg(test)] // for test, receive string literal, provide new messages for checking
-    pub fn new_test(content: &str, messages: MessageEmitter) -> V4Lexer {
-        let mut lexer = V4Lexer::new(content.to_owned());
-        lexer.messages = messages;
-        lexer
-    }
-    #[cfg(test)]
-    pub fn new_test2(content: &str) -> V4Lexer {
-        V4Lexer::new(content.to_owned())
     }
 
     // But after syntax, this method is not used.... no one cares about length, they only knows it is eof and report unexpected error
@@ -290,8 +280,7 @@ mod tests {
         // seperator, leftbracket, 1:14-1:14
         // numeric, 1, 1:15-1:15
         // seperator, rightbracket, 1:16-1:16
-        let messages = MessageEmitter::new();
-        let lexer = V4Lexer::new_test("123 abc 'd', [1]", messages);
+        let lexer = V4Lexer::new("123 abc 'd', [1]");
 
         assert_eq!(lexer.nth(0).is_num_lit(), true);
         assert_eq!(lexer.nth(0).get_lit_val().unwrap().get_num_lit().unwrap(), &Some(NumLitValue::I32(123)));
@@ -344,7 +333,7 @@ mod tests {
     fn v4_push() {
         use super::V4Lexer as Lexer;
 
-        let lexer = &mut Lexer::new("abcdef".to_owned());
+        let lexer = &mut Lexer::new("abcdef");
         let _ = lexer.push_expect::<i32>("123", 0, 0);
         let _ = lexer.push_expects::<i32>(vec!["456", "789"], 0, 0);
         perrorln!("Messages: {:?}", lexer.messages());

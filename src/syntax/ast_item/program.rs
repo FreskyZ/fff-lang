@@ -101,7 +101,7 @@ mod tests {
                     panic!("errors: {:?}", reader.get_errors());
                 }
 
-                let lexer = &mut Lexer::new(reader.into_result());
+                let lexer = &mut Lexer::new(&reader.into_result());
                 let (result, length) = Program::parse(lexer, 0);
 
                 perrorln!("Debug: {:?}", result);
@@ -131,7 +131,7 @@ mod tests {
             }
 
             if buf != "break\r\n" {
-                let lexer = &mut Lexer::new(buf);
+                let lexer = &mut Lexer::new(&buf);
                 let (result, length) = Program::parse(lexer, 0);
                 perrorln!("Debug: ({:?}, {})", result, length);
                 match result {
