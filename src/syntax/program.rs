@@ -12,7 +12,6 @@ use lexical::Lexer;
 
 use syntax::ast_item::IASTItem;
 use syntax::FunctionDef;
-use syntax::PrimitiveType;
 
 #[derive(Eq, PartialEq)]
 pub struct Program {
@@ -27,19 +26,6 @@ impl fmt::Display for Program {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", format_vector_display(&self.functions, "\n\n"))
     }
-}
-
-impl Program {
-
-    pub fn get_main(&self) -> Option<&FunctionDef> {
-
-        for func in &self.functions {
-            if func.name == "main" && func.ret_type.is_spec_prim(PrimitiveType::Unit) {
-                return Some(&func);
-            }
-        }
-        None
-    } 
 }
 
 impl IASTItem for Program {

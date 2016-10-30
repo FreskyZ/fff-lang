@@ -1,0 +1,60 @@
+
+// Demo of eval stacks and call stacks
+                                            // Semantic parse                           // vmcode                               // vm
+
+                                            // push builtin functions: write, writeln, read_i32, read_string...
+                                            // push builtin types: i32, u32, string...
+                                            // prepare argument and local variable stack for check, some stack frame is scope enter and scope leave
+fn some_fn1(string defg) {                  // check function name exist                // declare function some_fn1 
+                                            // check argument type exist                //     arguments string defg
+                                            // // varstack.push(scopeenter), function scopeenter and scopeleave ignored
+                                            // varstack.push((strign, defg))
+                                            // check return type exist                  //     return unit
+    writeln(defg);                          // check local or arg exist                 
+                                            // check function exist                     // 0. load local "defg"                 // evalstack = evalstackstack.top()
+                                                                                                                                // evalstack.push(callstack["defg"])
+                                                                                        // 1. call writeln                      // fn writeln(string abc) -> u32;
+                                                                                                                                // callstack.push(get_rip())         // return ip
+                                                                                                                                // callstack.push(u32::default())    // return value
+                                                                                                                                                                        // callstack.push(evalstack.pop())
+                                                                                                                                // evalstackstack.push(evalstack::new())
+                                                                                                                                                                        // set_rip(writeln::0),              // hook this for internal call
+                                                                                                                                // ... call return
+                                                                                                                                // evalstackstack.pop()
+                                                                                                                                // evalstack.push
+}
+
+                                            // varstack = new()
+fn some_fn(i32 abc) -> i32 {                 // declare function some_fn return i32;
+
+    return abc ^ 0xAAAAAAAA % abc;
+}
+
+fn some_fn2(i32 abc, [string] s) -> u32 {
+
+    for i in 0..s.length() {
+        var i32 abc = some_fn(abc);
+        if abc.is_odd() {
+            abc += some_fn(abc);
+        } else {
+            abc -= some_fn(abc);
+        }
+        s[i] += abc; 
+    }
+    return abc as u32;
+}
+
+fn main([string] args) -> u32 {
+
+    const i32 abc = read_i32();
+    const i32 n = read_i32();
+
+    var [string] strs = [""; 0];
+    for i = 0..n {
+        var string temp = read_string();
+        strs.push_back(temp);
+    }
+
+    const result = some_fn2(abc, strs);
+    return some_fn(result);
+}

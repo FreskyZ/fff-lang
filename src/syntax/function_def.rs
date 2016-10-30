@@ -95,6 +95,14 @@ impl FunctionDef {
 
     pub fn pos_fn(&self) -> StringPosition { self.pos2[0] }
     pub fn pos_name(&self) -> StringPosition { self.pos2[1] }
+
+    #[cfg(test)]
+    pub fn from_str(func_def_str: &str, sym_index: usize) -> FunctionDef {
+        let lexer = &mut Lexer::new(func_def_str);
+        let ret_val = FunctionDef::parse(lexer, sym_index).0.unwrap();
+        assert!(lexer.messages().is_empty());
+        ret_val
+    }
 }
 
 impl IASTItem for FunctionDef {

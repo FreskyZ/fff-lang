@@ -4,8 +4,6 @@
 // vmcode design is in mod codegen
 
 use codegen::VMCode;
-use codegen::FunctionDef;
-use codegen::Program;
 
 pub enum RuntimeValue {
     I32(i32),
@@ -27,7 +25,7 @@ pub struct ExecutionState {
 }
 
 pub struct VirtualMachine {
-    funcs: Vec<FunctionDef>,
+    // funcs: Vec<FunctionDef>,
     states: Vec<ExecutionState>,
 }
 
@@ -35,15 +33,15 @@ impl VirtualMachine {
 
     fn new() -> VirtualMachine { 
         VirtualMachine{ 
-            funcs: Vec::new(),
+            // funcs: Vec::new(),
             states: Vec::new(),
         } 
     }
 
-    fn load_program(&mut self, mut program: Program) {
+    // fn load_program(&mut self, mut program: Program) {
 
-        self.funcs.append(&mut program.0);
-    }
+    //     self.funcs.append(&mut program.0);
+    // }
 
     fn execute_step(&mut self) {
 

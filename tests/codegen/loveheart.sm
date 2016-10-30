@@ -1,0 +1,17 @@
+
+fn main() {
+    for y in -15f32..15f32 {
+        for x in -30f32..30f32 {
+            x = x / 20;
+            y = y / -10;
+            var f32 a = x * x + y * y - 1;
+            var bool is_star = a * a * a - x * x * y * y * y <= 0f32;
+            if is_star {
+                write('*');
+            } else {
+                write(' ');
+            }
+        }
+        writeln("");
+    }
+}

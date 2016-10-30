@@ -5,7 +5,6 @@
 //     | AssignStatement
 //     | JumpStatement
  
-
 use std::fmt;
 
 use common::StringPosition;

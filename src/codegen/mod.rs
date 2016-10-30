@@ -23,29 +23,10 @@
 // First optimization!
 // Remove pair of LoadLocal and StoreLocal which have same name
 
-use syntax::Program as SyntaxProgram;
-
 mod vm_code;
-mod gen_ctrl_flow;
-mod gen_expr_stmt;
+mod gener;
+mod function_gener;
+mod expr_stmt;
 
-pub use self::vm_code::VMCode;
-
-pub struct FunctionDef {
-    pub codes: Vec<VMCode>, 
-}
-
-pub struct Program(pub Vec<FunctionDef>);
-
-pub struct CodeGenerater {
-
-}
-
-impl CodeGenerater {
-
-}
-
-pub fn generate(_program: SyntaxProgram) -> Program {
-
-    Program(Vec::new())
-}
+pub use codegen::vm_code::VMCode;
+pub use codegen::gener::CodeGenerater;

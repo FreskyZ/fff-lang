@@ -4,6 +4,7 @@
 use std::fmt;
 use common::Position;
 use common::StringPosition;
+use common::format_vector_debug;
 
 // Lexical
 #[derive(Eq, PartialEq)]
@@ -261,11 +262,16 @@ impl SyntaxMessage {
 
 #[derive(Eq, PartialEq)]
 pub enum CodegenMessage {
-
+    FunctionHasSameName{ name: String, poss: Vec<StringPosition> },
 }
 impl fmt::Debug for CodegenMessage {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{{}}") // currently nothing
+        use self::CodegenMessage::*;
+        match *self {
+            FunctionHasSameName{ ref name, ref poss } => {
+                write!(f, "Function with name `{}` are defined mutliple time at {}", name, format_vector_debug(poss, ", "))
+            }
+        }
     }
 }
 impl_display_by_debug!{ CodegenMessage }

@@ -4,12 +4,12 @@
 use file_map::InputReader;
 use lexical::Lexer;
 use syntax::parse as syntax_parse;
-use codegen::generate;
+use codegen::CodeGenerater;
 
 // Handle and print error here
 pub fn compile_input(file_name: String) {
 
-    let content = {
+    let content = {                                 // Read file
         let mut file_reader = InputReader::new();
         file_reader.read_inputs(vec![&file_name]);
 
@@ -21,14 +21,14 @@ pub fn compile_input(file_name: String) {
         file_reader.into_result()
     };
 
-    let lexer = &mut Lexer::new(&content);
-    let ast_program = syntax_parse(lexer);
-    if !lexer.messages().is_empty() {
+    let lexer = &mut Lexer::new(&content);          // Lexical parse
+    let ast_program = syntax_parse(lexer);          // Syntax parse
+    if !lexer.messages().is_empty() {               // Any error is not allowed to continue
         println!("{:?}", lexer.messages());
         return;
     }
 
-    let _codes = generate(ast_program.unwrap());
+    let _generater = CodeGenerater::new(ast_program.unwrap());   // Semantic parse
 }
 
 #[cfg(test)]
