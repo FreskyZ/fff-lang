@@ -6,6 +6,7 @@
 //     | JumpStatement
  
 use std::fmt;
+use std::cmp;
 
 use common::StringPosition;
 
@@ -33,7 +34,6 @@ pub use self::for_stmt::ForStatement;
 pub use self::if_stmt::ElseIfBranch;
 pub use self::if_stmt::IfStatement;
 
-#[derive(Eq, PartialEq)]
 pub enum Statement {
     VarDecl(VarDeclStatement),        // const, var
     Break(BreakStatement),            // break 
@@ -74,6 +74,13 @@ impl fmt::Display for Statement {
             Statement::Loop(ref inner) => write!(f, "{}", inner),
         }
     }
+}
+
+impl cmp::PartialEq<Statement> for Statement {
+    fn eq(&self, other: &Statement) -> bool { self.get_id() == other.get_id() }
+    fn ne(&self, other: &Statement) -> bool { self.get_id() != other.get_id() }
+}
+impl cmp::Eq for Statement { 
 }
 
 impl Statement {

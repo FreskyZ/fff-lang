@@ -25,8 +25,10 @@
 
 mod vm_code;
 mod gener;
-mod function_gener;
+// mod function_gener;
 mod expr_stmt;
+mod type_info;
+mod primitive_types;
 
 pub use codegen::vm_code::VMCode;
 pub use codegen::gener::CodeGenerater;

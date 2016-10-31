@@ -1,6 +1,8 @@
 
 // FunctionDef = fFn fIdentifier fLeftParen [Type Identifier [fComma Type Identifier]* [fComma] ] fRightParen [fNarrowRightArrow Type] Block
 
+#[cfg(not(test))]
+use std::cmp;
 use std::fmt;
 
 use common::From2;
@@ -60,8 +62,19 @@ impl IASTItem for Argument {
     }
 }
 
+#[cfg(test)]
 #[derive(Eq, PartialEq)]
 pub struct FunctionDef {
+    pub id: usize,                  // for diff same function in a program, although it's an semantic error
+    pub name: String,
+    pub args: Vec<Argument>,
+    pub ret_type: SMType,           // if not specified, position is decided at exactly after right paren
+    pub body: Block,
+    pub pos2: [StringPosition; 2],  // pos_fn and pos_name
+}
+#[cfg(not(test))]
+pub struct FunctionDef {
+    pub id: usize,                  // for diff same function in a program, although it's an semantic error
     pub name: String,
     pub args: Vec<Argument>,
     pub ret_type: SMType,           // if not specified, position is decided at exactly after right paren
@@ -71,7 +84,8 @@ pub struct FunctionDef {
 
 impl fmt::Debug for FunctionDef {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "fn @ {:?} {:?} @ {:?} ({:?}) -> {:?} {:?}",
+        write!(f, "<{}>fn @ {:?} {:?} @ {:?} ({:?}) -> {:?} {:?}",
+            self.id,
             self.pos2[0], 
             self.name, self.pos2[1],
             format_vector_debug(&self.args, ", "),
@@ -82,13 +96,22 @@ impl fmt::Debug for FunctionDef {
 }
 impl fmt::Display for FunctionDef {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "fn {} ({}) -> {} {}",
+        write!(f, "<{}>fn {} ({}) -> {} {}",
+            self.id,
             self.name, 
             format_vector_display(&self.args, ", "),
             self.ret_type,
             self.body,
         )
     }
+}
+#[cfg(not(test))]
+impl cmp::PartialEq<FunctionDef> for FunctionDef {
+    fn eq(&self, other: &FunctionDef) -> bool { self.id == other.id }
+    fn ne(&self, other: &FunctionDef) -> bool { self.id != other.id }
+}
+#[cfg(not(test))]
+impl cmp::Eq for FunctionDef {
 }
 
 impl FunctionDef {
@@ -187,7 +210,7 @@ impl IASTItem for FunctionDef {
             (Some(block), block_len) => {
                 let pos1 = lexer.pos(index);
                 let pos2 = lexer.pos(index + 1);
-                (Some(FunctionDef{ name: fn_name.clone(), args: args, ret_type: return_type, body: block, pos2: [pos1, pos2] }), current_len + block_len)
+                (Some(FunctionDef{ id: 0, name: fn_name.clone(), args: args, ret_type: return_type, body: block, pos2: [pos1, pos2] }), current_len + block_len)
             }
             (None, length) => (None, current_len + length),
         }
@@ -237,6 +260,7 @@ mod tests {
         assert_eq!(
             result,
             (Some(FunctionDef{ 
+                id: 0,
                 name: "main".to_owned(), 
                 pos2: [make_str_pos!(1, 1, 1, 2), make_str_pos!(1, 4, 1, 7)], 
                 args: Vec::new(), 
@@ -251,7 +275,8 @@ mod tests {
         perrorln!("messages: {:?}", lexer.messages());
         assert_eq!(
             result,
-            (Some(FunctionDef{ 
+            (Some(FunctionDef{  
+                id: 0,
                 name: "main".to_owned(), 
                 pos2: [make_str_pos!(1, 1, 1, 2), make_str_pos!(1, 4, 1, 7)], 
                 args: vec![
@@ -272,7 +297,8 @@ mod tests {
         perrorln!("messages: {:?}", lexer.messages());
         assert_eq!(
             result,
-            (Some(FunctionDef{ 
+            (Some(FunctionDef{  
+                id: 0,
                 name: "mainxxx".to_owned(), 
                 pos2: [make_str_pos!(1, 2, 1, 3), make_str_pos!(1, 5, 1, 11)], 
                 args: vec![
@@ -307,7 +333,8 @@ mod tests {
         perrorln!("messages: {:?}", lexer.messages());
         assert_eq!(
             result,
-            (Some(FunctionDef{ 
+            (Some(FunctionDef{  
+                id: 0,
                 name: "main".to_owned(), 
                 pos2: [make_str_pos!(1, 1, 1, 2), make_str_pos!(1, 4, 1, 7)], 
                 args: Vec::new(), 
@@ -322,7 +349,8 @@ mod tests {
         perrorln!("messages: {:?}", lexer.messages());
         assert_eq!(
             result,
-            (Some(FunctionDef{ 
+            (Some(FunctionDef{  
+                id: 0,
                 name: "main".to_owned(), 
                 pos2: [make_str_pos!(1, 1, 1, 2), make_str_pos!(1, 4, 1, 7)], 
                 args: vec![

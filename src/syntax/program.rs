@@ -55,8 +55,9 @@ impl IASTItem for Program {
                 break;
             }
             match FunctionDef::parse(lexer, index + current_len) {
-                (Some(func), length) => { 
+                (Some(mut func), length) => { 
                     current_len += length;
+                    func.id = funcs.len();
                     funcs.push(func);
                 }
                 (None, length) => return (None, current_len + length),
@@ -96,9 +97,9 @@ mod tests {
         }
 
         test_case!("tests/syntax/hello.sm");
-        // test_case!("tests/syntax/list.sm");
-        // test_case!("tests/syntax/prime.sm");
-        // test_case!("tests/syntax/string.sm");
+        test_case!("tests/syntax/list.sm");
+        test_case!("tests/syntax/prime.sm");
+        test_case!("tests/syntax/string.sm");
     }
 
     #[test]

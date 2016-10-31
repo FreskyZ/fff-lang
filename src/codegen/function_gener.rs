@@ -2,7 +2,7 @@
 // Function generater, provide function current generate state
 
 use syntax::FunctionDef;
-use syntax::Argument;
+// use syntax::Argument;
 use syntax::Statement;
 
 use codegen::vm_code::VMCode;
