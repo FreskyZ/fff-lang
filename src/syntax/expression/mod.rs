@@ -354,7 +354,6 @@ mod tests {
     use lexical::LexicalLiteral;
     use syntax::ast_item::IASTItem;
     use syntax::SMType;
-    use syntax::PrimitiveType;
     use syntax::ast_item::TestCase;
 
     #[test]
@@ -845,7 +844,7 @@ mod tests {
                 ExpressionBase::Lit(LexicalLiteral::from(1), make_str_pos!(1, 1, 1, 1)),
                 vec![
                     ExpressionOperator::TypeCast(
-                        SMType::Prim(PrimitiveType::U32, make_str_pos!(1, 6, 1, 8)),
+                        SMType::Base("u32".to_owned(), make_str_pos!(1, 6, 1, 8)),
                         make_str_pos!(1, 3, 1, 4),
                     )
                 ],
@@ -867,7 +866,7 @@ mod tests {
                 vec![
                     ExpressionOperator::TypeCast(
                         SMType::Array(Box::new(
-                            SMType::Prim(PrimitiveType::F32, make_str_pos!(1, 9, 1, 11))
+                            SMType::Base("f32".to_owned(), make_str_pos!(1, 9, 1, 11))
                         ), make_str_pos!(1, 8, 1, 12)),
                         make_str_pos!(1, 5, 1, 6),
                     )
@@ -921,7 +920,7 @@ mod tests {
                         make_str_pos!(1, 6, 1, 14),
                     ),
                     ExpressionOperator::TypeCast(
-                        SMType::Prim(PrimitiveType::I32, make_str_pos!(1, 19, 1, 21)),
+                        SMType::Base("i32".to_owned(), make_str_pos!(1, 19, 1, 21)),
                         make_str_pos!(1, 16, 1, 17),
                     )
                 ],

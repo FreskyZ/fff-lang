@@ -55,7 +55,6 @@ mod tests {
     use lexical::LexicalLiteral;
 
     use syntax::SMType;
-    use syntax::PrimitiveType;
     use syntax::expression::postfix::PostfixExpression;
     use syntax::expression::primary::PrimaryExpression;
     use syntax::expression::postfix::Postfix;
@@ -266,7 +265,7 @@ mod tests {
             )
             Postfix::TypeCast(
                 SMType::Array(Box::new(
-                    SMType::Prim(PrimitiveType::I32, make_str_pos!(1, 52, 1, 54))
+                    SMType::Base("i32".to_owned(), make_str_pos!(1, 52, 1, 54))
                 ), make_str_pos!(1, 51, 1, 55)),
                 make_str_pos!(1, 48, 1, 49)
             )

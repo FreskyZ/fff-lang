@@ -11,6 +11,7 @@
 // Then tuple type and identifier as user define types are accepted and SMTypeBase is managed to 6 enum members 
 //      and position info are moved back, so there is no more SMTypeBase again                                          // SMType
 // Then a Primtype enum is added instead of the keywordkind, for unit is not keyword but prim type                      // SMType + PrimitiveType
+// Then primitive type are removed from sytnax parse                                                                    // SMType
 
 use std::fmt;
 
@@ -21,46 +22,14 @@ use common::format_vector_display;
 use message::SyntaxMessage;
 
 use lexical::Lexer;
-use lexical::KeywordKind;
 use lexical::SeperatorKind;
 
 use syntax::ast_item::IASTItem;
 
 #[derive(Eq, PartialEq, Clone)]
-pub enum PrimitiveType {
-    Unit,
-    U8, I8,
-    U16, I16,
-    U32, I32,
-    U64, I64,
-    F32,
-    F64,
-    Char, 
-    Bool,
-    SMString,
-}
-impl fmt::Debug for PrimitiveType {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::PrimitiveType::*;
-        match *self {
-            Unit => write!(f, "()"),
-            U8 => write!(f, "u8"), I8 => write!(f, "i8"),
-            U16 => write!(f, "u16"), I16 => write!(f, "i16"),
-            U32 => write!(f, "u32"), I32 => write!(f, "i32"),
-            U64 => write!(f, "u64"), I64 => write!(f, "i64"),
-            F32 => write!(f, "f32"), 
-            F64 => write!(f, "f64"),
-            Char => write!(f, "char"), 
-            Bool => write!(f, "bool"),
-            SMString => write!(f, "string"),
-        }
-    }
-}
-
-#[derive(Eq, PartialEq, Clone)]
 pub enum SMType {
-    User(String, StringPosition),           // position for the identifier, although User define type is accepted here, user define type syntax is not added
-    Prim(PrimitiveType, StringPosition),    // position for the primitive type
+    Unit(StringPosition),
+    Base(String, StringPosition),           // position for the identifier, primitive type not aware here
     Tuple(Vec<SMType>, StringPosition),     // position for ()
     Array(Box<SMType>, StringPosition),     // position for []
 }
@@ -68,8 +37,8 @@ pub enum SMType {
 impl fmt::Debug for SMType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            SMType::User(ref name, ref pos) => write!(f, "{} @ {:?}", name, pos),
-            SMType::Prim(ref ty, ref pos) => write!(f, "{:?} @ {:?}", ty, pos),
+            SMType::Unit(ref pos) => write!(f, "() @ {:?}", pos),
+            SMType::Base(ref name, ref pos) => write!(f, "{} @ {:?}", name, pos),
             SMType::Tuple(ref types, ref pos) => write!(f, "({}) @ {:?}", format_vector_debug(types, ", "), pos),
             SMType::Array(ref inner, ref pos) => write!(f, "[{:?}] @ {:?}", inner.as_ref(), pos),
         }
@@ -78,8 +47,8 @@ impl fmt::Debug for SMType {
 impl fmt::Display for SMType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            SMType::User(ref name, ref _pos) => write!(f, "{}", name),
-            SMType::Prim(ref ty, ref _pos) => write!(f, "{:?}", ty),
+            SMType::Unit(_) => write!(f, "()"),
+            SMType::Base(ref name, ref _pos) => write!(f, "{}", name),
             SMType::Tuple(ref types, ref _pos) => write!(f, "({})", format_vector_display(types, ", ")),
             SMType::Array(ref inner, ref _pos) => write!(f, "[{:?}]", inner.as_ref()),
         }
@@ -88,30 +57,11 @@ impl fmt::Display for SMType {
 
 impl SMType {
 
-    pub fn is_spec_prim(&self, expect: PrimitiveType) -> bool {
+    pub fn is_unit(&self) -> bool {
         match *self {
-            SMType::Prim(ref prim, ref _pos) => *prim == expect,
+            SMType::Unit(_) => true,
             _ => false,
         }
-    }
-}
-
-fn keyword_to_primitive_type(keyword: KeywordKind) -> Option<PrimitiveType> {
-    match keyword {
-        KeywordKind::PrimTypeU8 => Some(PrimitiveType::U8),
-        KeywordKind::PrimTypeI8 => Some(PrimitiveType::I8),
-        KeywordKind::PrimTypeU16 => Some(PrimitiveType::U16),
-        KeywordKind::PrimTypeI16 => Some(PrimitiveType::I16),
-        KeywordKind::PrimTypeU32 => Some(PrimitiveType::U32),
-        KeywordKind::PrimTypeI32 => Some(PrimitiveType::I32),
-        KeywordKind::PrimTypeU64 => Some(PrimitiveType::U64),
-        KeywordKind::PrimTypeI64 => Some(PrimitiveType::I64),
-        KeywordKind::PrimTypeF32 => Some(PrimitiveType::F32),
-        KeywordKind::PrimTypeF64 => Some(PrimitiveType::F64),
-        KeywordKind::PrimTypeChar => Some(PrimitiveType::Char),
-        KeywordKind::PrimTypeBool => Some(PrimitiveType::Bool),
-        KeywordKind::PrimTypeString => Some(PrimitiveType::SMString),
-        _ => None,
     }
 }
 
@@ -119,8 +69,8 @@ impl IASTItem for SMType {
 
     fn pos_all(&self) -> StringPosition { 
         match *self {
-            SMType::User(ref _name, ref pos) => *pos,
-            SMType::Prim(ref _keyword, ref pos) => *pos,
+            SMType::Unit(ref pos) => *pos,
+            SMType::Base(ref _name, ref pos) => *pos,
             SMType::Tuple(ref _types, ref pos) => *pos,
             SMType::Array(ref _inner, ref pos) => *pos,
         }
@@ -141,13 +91,13 @@ impl IASTItem for SMType {
 
         if lexer.nth(index).is_ident() {
             test_condition_perrorln!{ log_enable, "is ident, return" }
-            return (Some(SMType::User(lexer.nth(index).get_identifier().unwrap(), lexer.pos(index))), 1);
+            return (Some(SMType::Base(lexer.nth(index).get_identifier().unwrap(), lexer.pos(index))), 1);
         }
         if let Some(keyword) = lexer.nth(index).get_keyword() {
             test_condition_perrorln!{ log_enable, "is some keyword" }
             if keyword.is_prim_type() {
                 test_condition_perrorln!{ log_enable, "is primitive type keyword, return" }
-                return (Some(SMType::Prim(keyword_to_primitive_type(keyword).unwrap(), lexer.pos(index))), 1);
+                return (Some(SMType::Base(format!("{}", keyword), lexer.pos(index))), 1);
             } 
         }
 
@@ -185,8 +135,7 @@ impl IASTItem for SMType {
             test_condition_perrorln!{ log_enable, "meet left paren, start tuple" }
             if lexer.nth(index + 1).is_seperator(SeperatorKind::RightParenthenes) {  // still, '(, )' is not allowed here
                 test_condition_perrorln!{ log_enable, "is left paren and right paren, it's unit" }
-                return (Some(SMType::Prim(
-                    PrimitiveType::Unit, 
+                return (Some(SMType::Unit(
                     StringPosition::from2(lexer.pos(index).start_pos, lexer.pos(index + 1).end_pos),
                 )), 2)
             }
@@ -255,52 +204,51 @@ mod tests {
         use message::Message;
         use message::SyntaxMessage;
         use super::SMType;
-        use super::PrimitiveType;
         use common::StringPosition;
         use syntax::ast_item::TestCase;
 
         // Primitive
         ast_test_case!{ "u8", 1, make_str_pos!(1, 1, 1, 2),
-            SMType::Prim(PrimitiveType::U8, make_str_pos!(1, 1, 1, 2))
+            SMType::Base("u8".to_owned(), make_str_pos!(1, 1, 1, 2))
         }
         ast_test_case!{ "i16", 1, make_str_pos!(1, 1, 1, 3),
-            SMType::Prim(PrimitiveType::I16, make_str_pos!(1, 1, 1, 3))
+            SMType::Base("i16".to_owned(), make_str_pos!(1, 1, 1, 3))
         }
         ast_test_case!{ "char", 1, make_str_pos!(1, 1, 1, 4),
-            SMType::Prim(PrimitiveType::Char, make_str_pos!(1, 1, 1, 4))
+            SMType::Base("char".to_owned(), make_str_pos!(1, 1, 1, 4))
         }
         ast_test_case!{ "f32", 1, make_str_pos!(1, 1, 1, 3),
-            SMType::Prim(PrimitiveType::F32, make_str_pos!(1, 1, 1, 3))
+            SMType::Base("f32".to_owned(), make_str_pos!(1, 1, 1, 3))
         }
         ast_test_case!{ "bool", 1, make_str_pos!(1, 1, 1, 4),
-            SMType::Prim(PrimitiveType::Bool, make_str_pos!(1, 1, 1, 4))
+            SMType::Base("bool".to_owned(), make_str_pos!(1, 1, 1, 4))
         }
         ast_test_case!{ "string", 1, make_str_pos!(1, 1, 1, 6),
-            SMType::Prim(PrimitiveType::SMString, make_str_pos!(1, 1, 1, 6))
+            SMType::Base("string".to_owned(), make_str_pos!(1, 1, 1, 6))
         }
 
         // Simple user define
         ast_test_case!{ "helloworld_t", 1, make_str_pos!(1, 1, 1, 12),
-            SMType::User("helloworld_t".to_owned(), make_str_pos!(1, 1, 1, 12))
+            SMType::Base("helloworld_t".to_owned(), make_str_pos!(1, 1, 1, 12))
         }
 
         // Array
         ast_test_case!{ "[u8]", 3, make_str_pos!(1, 1, 1, 4),
             SMType::Array(Box::new(
-                SMType::Prim(PrimitiveType::U8, make_str_pos!(1, 2, 1, 3)),
+                SMType::Base("u8".to_owned(), make_str_pos!(1, 2, 1, 3)),
             ), make_str_pos!(1, 1, 1, 4))
         }
         ast_test_case!{ "[[helloworld_t]]", 5, make_str_pos!(1, 1, 1, 16),
             SMType::Array(Box::new(
                 SMType::Array(Box::new( 
-                    SMType::User("helloworld_t".to_owned(), make_str_pos!(1, 3, 1, 14))
+                    SMType::Base("helloworld_t".to_owned(), make_str_pos!(1, 3, 1, 14))
                 ), make_str_pos!(1, 2, 1, 15))
             ), make_str_pos!(1, 1, 1, 16))
         }
 
         // Unit
         ast_test_case!{ "()", 2, make_str_pos!(1, 1, 1, 2),
-            SMType::Prim(PrimitiveType::Unit, make_str_pos!(1, 1, 1, 2))
+            SMType::Unit(make_str_pos!(1, 1, 1, 2))
         }
 
         // Tuple
@@ -308,8 +256,8 @@ mod tests {
         ast_test_case!{ "(i32, string)", 5, make_str_pos!(1, 1, 1, 13),
             SMType::Tuple(
                 vec![
-                    SMType::Prim(PrimitiveType::I32, make_str_pos!(1, 2, 1, 4)),
-                    SMType::Prim(PrimitiveType::SMString, make_str_pos!(1, 7, 1, 12)),
+                    SMType::Base("i32".to_owned(), make_str_pos!(1, 2, 1, 4)),
+                    SMType::Base("string".to_owned(), make_str_pos!(1, 7, 1, 12)),
                 ],
                 make_str_pos!(1, 1, 1, 13)
             )
@@ -317,8 +265,8 @@ mod tests {
         ast_test_case!{ "(char, hw_t, )", 6, make_str_pos!(1, 1, 1, 14),
             SMType::Tuple(
                 vec![
-                    SMType::Prim(PrimitiveType::Char, make_str_pos!(1, 2, 1, 5)),
-                    SMType::User("hw_t".to_owned(), make_str_pos!(1, 8, 1, 11)),
+                    SMType::Base("char".to_owned(), make_str_pos!(1, 2, 1, 5)),
+                    SMType::Base("hw_t".to_owned(), make_str_pos!(1, 8, 1, 11)),
                 ],
                 make_str_pos!(1, 1, 1, 14),
             )    //  0        1         2         3
@@ -327,16 +275,16 @@ mod tests {
             SMType::Tuple(
                 vec![
                     SMType::Array(Box::new(
-                        SMType::Prim(PrimitiveType::Char, make_str_pos!(1, 3, 1, 6))
+                        SMType::Base("char".to_owned(), make_str_pos!(1, 3, 1, 6))
                     ), make_str_pos!(1, 2, 1, 7)),
-                    SMType::Prim(PrimitiveType::I32, make_str_pos!(1, 10, 1, 12)),
-                    SMType::User("u17".to_owned(), make_str_pos!(1, 15, 1, 17)),
+                    SMType::Base("i32".to_owned(), make_str_pos!(1, 10, 1, 12)),
+                    SMType::Base("u17".to_owned(), make_str_pos!(1, 15, 1, 17)),
                     SMType::Array(Box::new(
                         SMType::Tuple(
                             vec![
-                                SMType::Prim(PrimitiveType::Unit, make_str_pos!(1, 22, 1, 23)),
-                                SMType::Prim(PrimitiveType::U8, make_str_pos!(1, 26, 1, 27)),
-                                SMType::User("f128".to_owned(), make_str_pos!(1, 30, 1, 33)),
+                                SMType::Unit(make_str_pos!(1, 22, 1, 23)),
+                                SMType::Base("u8".to_owned(), make_str_pos!(1, 26, 1, 27)),
+                                SMType::Base("f128".to_owned(), make_str_pos!(1, 30, 1, 33)),
                             ],
                             make_str_pos!(1, 21, 1, 34)
                         )
@@ -350,7 +298,7 @@ mod tests {
         ast_test_case!{ "(i32)", 3, make_str_pos!(1, 1, 1, 5),
             SMType::Tuple(
                 vec![
-                    SMType::Prim(PrimitiveType::I32, make_str_pos!(1, 2, 1, 4)),
+                    SMType::Base("i32".to_owned(), make_str_pos!(1, 2, 1, 4)),
                 ],
                 make_str_pos!(1, 1, 1, 5),
             ),

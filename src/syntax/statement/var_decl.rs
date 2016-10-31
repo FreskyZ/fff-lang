@@ -137,7 +137,6 @@ mod tests {
     use lexical::Lexer;
     use syntax::ast_item::IASTItem;
     use syntax::SMType;
-    use syntax::PrimitiveType;
     use syntax::Expression;
     use common::StringPosition;
 
@@ -151,7 +150,7 @@ mod tests {
             (Some(VarDeclStatement {
                 id: 0,
                 is_const: true,
-                ty: SMType::Prim(PrimitiveType::I32, make_str_pos!(1, 7, 1, 9)),
+                ty: SMType::Base("i32".to_owned(), make_str_pos!(1, 7, 1, 9)),
                 name: "abc".to_owned(),
                 init_expr: Some(Expression::from_str("const i32 abc = 0;", 4)),
                 pos: [
@@ -170,7 +169,7 @@ mod tests {
             (Some(VarDeclStatement {
                 id: 0,
                 is_const: false,
-                ty: SMType::Array(Box::new(SMType::Prim(PrimitiveType::I32, make_str_pos!(1, 6, 1, 8))), make_str_pos!(1, 5, 1, 9)),
+                ty: SMType::Array(Box::new(SMType::Base("i32".to_owned(), make_str_pos!(1, 6, 1, 8))), make_str_pos!(1, 5, 1, 9)),
                 name: "abc".to_owned(),
                 init_expr: Some(Expression::from_str("var [i32] abc = 1 + 1", 6)),
                 pos: [
@@ -189,7 +188,7 @@ mod tests {
             (Some(VarDeclStatement {
                 id: 0,
                 is_const: true,
-                ty: SMType::Prim(PrimitiveType::SMString, make_str_pos!(1, 7, 1, 12)),
+                ty: SMType::Base("string".to_owned(), make_str_pos!(1, 7, 1, 12)),
                 name: "input".to_owned(),
                 init_expr: None,
                 pos: [
@@ -209,7 +208,7 @@ mod tests {
                 id: 0,
                 is_const: false,
                 ty: SMType::Array(Box::new(
-                        SMType::Prim(PrimitiveType::U8, make_str_pos!(1, 6, 1, 7))
+                        SMType::Base("u8".to_owned(), make_str_pos!(1, 6, 1, 7))
                     ), make_str_pos!(1, 5, 1, 8)),
                 name: "buf".to_owned(),
                 init_expr: None,
@@ -232,9 +231,9 @@ mod tests {
                 ty: SMType::Tuple(
                         vec![
                             SMType::Array(Box::new(
-                                SMType::Prim(PrimitiveType::U8, make_str_pos!(1, 7, 1, 8))
+                                SMType::Base("u8".to_owned(), make_str_pos!(1, 7, 1, 8))
                             ), make_str_pos!(1, 6, 1, 9)),
-                            SMType::Prim(PrimitiveType::U32, make_str_pos!(1, 12, 1, 14)),
+                            SMType::Base("u32".to_owned(), make_str_pos!(1, 12, 1, 14)),
                         ], 
                         make_str_pos!(1, 5, 1, 15),
                     ),

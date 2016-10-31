@@ -29,7 +29,6 @@ pub use syntax::statement::ForStatement;
 pub use syntax::statement::ElseIfBranch;
 pub use syntax::statement::IfStatement;
 pub use syntax::smtype::SMType;
-pub use syntax::smtype::PrimitiveType;
 pub use syntax::block::Block;
 
 use lexical::Lexer;
@@ -69,7 +68,6 @@ mod tests {
         perrorln!("program: {:?}", program);
         perrorln!("messages: {:?}", lexer.messages())
     }
-
 }
 
 
