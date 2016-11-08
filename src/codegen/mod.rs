@@ -25,10 +25,13 @@
 
 mod vm_code;
 mod gener;
-// mod function_gener;
 mod expr_stmt;
 mod type_info;
-mod primitive_types;
+mod function_def;
 
+pub use codegen::type_info::TypeField;
+pub use codegen::type_info::TypeInfo;
+pub use codegen::type_info::Type;
+pub use codegen::type_info::TypeCollection;
 pub use codegen::vm_code::VMCode;
 pub use codegen::gener::CodeGenerater;

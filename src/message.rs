@@ -263,6 +263,7 @@ impl SyntaxMessage {
 #[derive(Eq, PartialEq)]
 pub enum CodegenMessage {
     FunctionHasSameName{ name: String, poss: Vec<StringPosition> },
+    TypeNotExist{ name: String, pos: StringPosition },
 }
 impl fmt::Debug for CodegenMessage {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -270,6 +271,9 @@ impl fmt::Debug for CodegenMessage {
         match *self {
             FunctionHasSameName{ ref name, ref poss } => {
                 write!(f, "Function with name `{}` are defined mutliple time at {}", name, format_vector_debug(poss, ", "))
+            },
+            TypeNotExist{ ref name, ref pos } => {
+                write!(f, "Type {} at {:?} not defined or not in scope", name, pos)
             }
         }
     }

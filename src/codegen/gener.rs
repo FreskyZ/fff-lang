@@ -13,12 +13,14 @@ use syntax::FunctionDef;
 // use syntax::Statement;
 
 use codegen::VMCode;
+use codegen::TypeCollection;
 // use codegen::expr_stmt::expr_stmt_expand;
 
 pub struct CodeGenerater {
     msgs: MessageEmitter,
     funcs: Vec<FunctionDef>,
     codes: Vec<VMCode>,
+    types: TypeCollection,
 
     cur_func_index: usize, // current generating
 }
@@ -32,6 +34,7 @@ impl CodeGenerater {
             funcs: program.functions,
             codes: Vec::new(),
             cur_func_index: 0,
+            types: TypeCollection::new(),
         }
     }
 }
