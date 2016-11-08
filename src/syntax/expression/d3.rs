@@ -138,7 +138,7 @@ mod tests {
 
         // Case 1         0        1         2         3
         //                12345678901234567890123456789012345
-        let res = parse!("[[(1)], [abc, (3)], [4, defg, [6]]]"); 
+        let res = parse!("[[(1)], [abc, (3)], [4, this, [6]]]"); 
         assert_eq!(res.0.unwrap(),
             expr_array_def!{[
                 expr_array_def!{[
@@ -152,7 +152,7 @@ mod tests {
                 },
                 expr_array_def!{[
                     expr_num_lit!(NumLitValue::I32(4), make_str_pos!(1, 22, 1, 22)),
-                    expr_ident!("defg", make_str_pos!(1, 25, 1, 28)),
+                    expr_ident!("this", make_str_pos!(1, 25, 1, 28)),
                     expr_array_def!{[
                         expr_num_lit!(NumLitValue::I32(6), make_str_pos!(1, 32, 1, 32)),]
                         make_str_pos!(1, 31, 1, 33)

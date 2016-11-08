@@ -11,9 +11,9 @@ use std::cmp;
 use common::StringPosition;
 
 use lexical::Lexer;
-use lexical::KeywordKind;
 
 use syntax::ast_item::IASTItem;
+use syntax::Block;
 
 mod var_decl;
 mod expr_stmt;
@@ -44,6 +44,7 @@ pub enum Statement {
     While(WhileStatement),            // while
     For(ForStatement),                // for
     Loop(LoopStatement),              // loop
+    Block(Block, usize),              // {
 }
 impl fmt::Debug for Statement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -57,6 +58,7 @@ impl fmt::Debug for Statement {
             Statement::While(ref inner) => write!(f, "{:?}", inner),
             Statement::For(ref inner) => write!(f, "{:?}", inner),
             Statement::Loop(ref inner) => write!(f, "{:?}", inner),
+            Statement::Block(ref block, ref index) => write!(f, "<{}>{:?}", index, block),
         }
     }
 }
@@ -72,6 +74,7 @@ impl fmt::Display for Statement {
             Statement::While(ref inner) => write!(f, "{}", inner),
             Statement::For(ref inner) => write!(f, "{}", inner),
             Statement::Loop(ref inner) => write!(f, "{}", inner),
+            Statement::Block(ref block, ref index) => write!(f, "<{}>{}", index, block),
         }
     }
 }
@@ -96,6 +99,7 @@ impl Statement {
             Statement::While(ref inner) => inner.id,
             Statement::For(ref inner) => inner.id,
             Statement::Loop(ref inner) => inner.id,
+            Statement::Block(ref _block, ref index) => *index, 
         }
     }
 
@@ -110,6 +114,7 @@ impl Statement {
             Statement::While(ref mut inner) => inner.id = id,
             Statement::For(ref mut inner) => inner.id = id,
             Statement::Loop(ref mut inner) => inner.id = id,
+            Statement::Block(ref _block, ref mut index) => *index = id,
         }
     }
 }
@@ -127,6 +132,7 @@ impl IASTItem for Statement {
             Statement::While(ref inner) => inner.pos_all(),
             Statement::For(ref inner) => inner.pos_all(),
             Statement::Loop(ref inner) => inner.pos_all(),
+            Statement::Block(ref block, ref _index) => block.pos_all(),
         }
     }
     
@@ -140,48 +146,63 @@ impl IASTItem for Statement {
         || WhileStatement::is_first_final(lexer, index)
         || ForStatement::is_first_final(lexer, index)
         || LoopStatement::is_first_final(lexer, index)
+        || Block::is_first_final(lexer, index)
     }
     
     fn parse(lexer: &mut Lexer, index: usize) -> (Option<Statement>, usize) {
 
-        match lexer.nth(index).get_keyword() {
-            Some(KeywordKind::Const) 
-            | Some(KeywordKind::Var) => match VarDeclStatement::parse(lexer, index) {
+        if VarDeclStatement::is_first_final(lexer, index) { 
+            return match VarDeclStatement::parse(lexer, index) {
                 (Some(var_decl), var_decl_len) => (Some(Statement::VarDecl(var_decl)), var_decl_len),
                 (None, length) => (None, length),
-            },
-            Some(KeywordKind::Break) => match BreakStatement::parse(lexer, index) {
+            };
+        } else if BreakStatement::is_first_final(lexer, index) {
+            return match BreakStatement::parse(lexer, index) {
                 (Some(break_stmt), break_stmt_len) => (Some(Statement::Break(break_stmt)), break_stmt_len),
                 (None, length) => (None, length),
-            },
-            Some(KeywordKind::Continue) => match ContinueStatement::parse(lexer, index) {
+            };
+        } else if ContinueStatement::is_first_final(lexer, index) {
+            return match ContinueStatement::parse(lexer, index) {
                 (Some(cont_stmt), cont_stmt_len) => (Some(Statement::Continue(cont_stmt)), cont_stmt_len),
                 (None, length) => (None, length),
-            },
-            Some(KeywordKind::Return) => match ReturnStatement::parse(lexer, index) {
+            };
+        } else if ReturnStatement::is_first_final(lexer, index) {
+            return match ReturnStatement::parse(lexer, index) {
                 (Some(ret_stmt), ret_stmt_len) => (Some(Statement::Return(ret_stmt)), ret_stmt_len),
                 (None, length) => (None, length), 
-            },
-            Some(KeywordKind::Loop) => match LoopStatement::parse(lexer, index) {
+            };
+        } else if LoopStatement::is_first_final(lexer, index) {
+            return match LoopStatement::parse(lexer, index) {
                 (Some(loop_stmt), loop_stmt_len) => (Some(Statement::Loop(loop_stmt)), loop_stmt_len),
                 (None, length) => (None, length),
-            },
-            Some(KeywordKind::While) => match WhileStatement::parse(lexer, index) {
+            };
+        } else if WhileStatement::is_first_final(lexer, index) {
+            return match WhileStatement::parse(lexer, index) {
                 (Some(while_stmt), while_stmt_len) => (Some(Statement::While(while_stmt)), while_stmt_len),
                 (None, length) => (None, length),
-            },
-            Some(KeywordKind::For) => match ForStatement::parse(lexer, index) {
+            };
+        } else if ForStatement::is_first_final(lexer, index) {
+            return match ForStatement::parse(lexer, index) {
                 (Some(for_stmt), for_stmt_len) => (Some(Statement::For(for_stmt)), for_stmt_len),
                 (None, length) => (None, length),
-            },
-            Some(KeywordKind::If) => match IfStatement::parse(lexer, index) {
+            };
+        } else if IfStatement::is_first_final(lexer, index) {
+            return match IfStatement::parse(lexer, index) {
                 (Some(if_stmt), if_stmt_len) => (Some(Statement::If(if_stmt)), if_stmt_len),
                 (None, length) => (None, length),
-            },
-            _ => match ExpressionStatement::parse(lexer, index) {
+            };
+        } else if Block::is_first_final(lexer, index) {
+            return match Block::parse(lexer, index) {
+                (Some(block), block_len) => (Some(Statement::Block(block, 0)), block_len),
+                (None, length) => (None, length),
+            };
+        } else if ExpressionStatement::is_first_final(lexer, index) {
+            return match ExpressionStatement::parse(lexer, index) {
                 (Some(expr_stmt), expr_stmt_len) => (Some(Statement::Expression(expr_stmt)), expr_stmt_len),
                 (None, length) => (None, length),
             }
+        } else {
+            return lexer.push_expect("statement", 0, index);
         }
     }
 }

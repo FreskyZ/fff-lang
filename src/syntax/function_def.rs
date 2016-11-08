@@ -52,9 +52,13 @@ impl IASTItem for Argument {
             (None, len) => return (None, len), 
         };
 
-        let name = match lexer.nth(index + ty_len).get_identifier() {
-            Some(ident) => ident,
-            None => return lexer.push_expect("identifier", index + ty_len, ty_len),
+        let name = if lexer.nth(index + ty_len).is_keyword(KeywordKind::This) {
+            "this".to_owned()
+        } else { 
+            match lexer.nth(index + ty_len).get_identifier() {
+                Some(ident) => ident,
+                None => return lexer.push_expect("identifier", index + ty_len, ty_len),
+            }
         };
 
         (Some(Argument{ ty: ty, name: name, pos_name: lexer.pos(index + ty_len) }), ty_len + 1)
@@ -290,7 +294,7 @@ mod tests {
         );
                               //          0         1         2         3         4         5         6
         perrorln!("Case 3:"); //           12345678901234567890123456789012345678901234567890123456789012
-        let lexer = &mut Lexer::new(" fn mainxxx([[string] ] argv  ,i32 argc, char some_other, )  {}");
+        let lexer = &mut Lexer::new(" fn mainxxx([[string] ] argv  ,i32 this, char some_other, )  {}");
         let result = FunctionDef::parse(lexer, 0);
         perrorln!("messages: {:?}", lexer.messages());
         assert_eq!(
@@ -311,7 +315,7 @@ mod tests {
                     },
                     Argument{
                         ty: SMType::Base("i32".to_owned(), make_str_pos!(1, 32, 1, 34)), 
-                        name: "argc".to_owned(),
+                        name: "this".to_owned(),
                         pos_name: make_str_pos!(1, 36, 1, 39),
                     },
                     Argument{

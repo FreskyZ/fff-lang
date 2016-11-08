@@ -1,7 +1,5 @@
 
 // Block = fLeftBrace [Statement]* fRightBrace
-// TODO: because do not allow variable shadowing, so allow direct block in block
-//     that is, Block = fLeftBrace [Statement | Block] fRightBrace
 
 use std::fmt;
 

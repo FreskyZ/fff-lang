@@ -16,6 +16,7 @@ use common::format_vector_display;
 
 use lexical::Lexer;
 use lexical::SeperatorKind;
+use lexical::KeywordKind;
 use lexical::LexicalLiteral;
 
 use syntax::ast_item::IASTItem;
@@ -99,6 +100,9 @@ impl IASTItem for PrimaryExpression {
         match lexer.nth(index).get_identifier() {
             Some(ident) => return (Some(PrimaryExpression::Ident(ident.clone(), lexer.pos(index))), 1), 
             None => (),
+        }
+        if lexer.nth(index).is_keyword(KeywordKind::This) {
+            return (Some(PrimaryExpression::Ident("this".to_owned(), lexer.pos(index))), 1);
         }
 
         test_condition_perrorln!{ log_enable, "parsing primary not literal or identifier" }
