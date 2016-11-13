@@ -262,8 +262,21 @@ impl SyntaxMessage {
 
 #[derive(Eq, PartialEq)]
 pub enum CodegenMessage {
-    FunctionHasSameName{ name: String, poss: Vec<StringPosition> },
-    TypeNotExist{ name: String, pos: StringPosition },
+    FunctionHasSameName{ 
+        name: String, 
+        poss: Vec<StringPosition> 
+    },
+    TypeNotExist{ 
+        name: String, 
+        pos: StringPosition 
+    },
+    FunctionArgumentNameConfilict{ 
+        func_pos: StringPosition,  // position of the fn 
+        func_name: String,        
+        name: String,          
+        pos1: StringPosition,      // first def of the name
+        pos2: StringPosition,      // more def of the name
+    },
 }
 impl fmt::Debug for CodegenMessage {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -274,6 +287,11 @@ impl fmt::Debug for CodegenMessage {
             },
             TypeNotExist{ ref name, ref pos } => {
                 write!(f, "Type {} at {:?} not defined or not in scope", name, pos)
+            },
+            FunctionArgumentNameConfilict{ ref func_pos, ref func_name, ref name, ref pos1, ref pos2 } => {
+                write!(f, "Parameter {} redifinition at {:?}, whose previous def at {:?} in function {} at {:?}",
+                    name, pos1, pos2, func_name, func_pos
+                )   
             }
         }
     }

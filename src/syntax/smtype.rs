@@ -63,12 +63,14 @@ impl SMType {
             _ => false,
         }
     }
+    pub fn pos(&self) -> StringPosition { self.pos_all() } // for outter use
 
     #[cfg(test)]
     pub fn from_str(smstr: &str, index: usize) -> SMType {
         let lexer = &mut Lexer::new(smstr);
         SMType::parse(lexer, index).0.unwrap()
     }
+
 }
 
 impl IASTItem for SMType {
