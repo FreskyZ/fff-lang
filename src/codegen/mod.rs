@@ -26,13 +26,12 @@
 mod vm_code;
 mod gener;
 mod expr_stmt;
-mod type_info;
+mod type_def;
 mod function_def;
 
-pub use codegen::type_info::TypeField;
-pub use codegen::type_info::TypeInfo;
-pub use codegen::type_info::Type;
-pub use codegen::type_info::TypeCollection;
+pub use codegen::type_def::TypeID;
+pub use codegen::type_def::Type;
+pub use codegen::type_def::TypeCollection;
 pub use codegen::function_def::FuncArg;
 pub use codegen::function_def::FuncSign;
 pub use codegen::function_def::Function;
