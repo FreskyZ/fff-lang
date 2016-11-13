@@ -41,7 +41,7 @@ pub enum Type {
     Unit,
     Base(Box<TypeInfo>),
     Array(Box<Type>),
-    Tuple(Vec<Type>),
+    Tuple(Vec<Type>),   
 }
 impl fmt::Debug for Type {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

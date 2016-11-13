@@ -28,7 +28,8 @@ pub fn compile_input(file_name: String) {
         return;
     }
 
-    let _generater = CodeGenerater::new(ast_program.unwrap());   // Semantic parse
+    let mut generater = CodeGenerater::new();   // Semantic parse
+    generater.generate(ast_program.unwrap());
 }
 
 #[cfg(test)]

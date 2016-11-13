@@ -1,57 +1,90 @@
 
 // Function generater, provide function current generate state
 
+use common::StringPosition;
+use message::CodegenMessage;
+
 use syntax::FunctionDef as SyntaxFunctionDef; 
 use syntax::Argument as SyntaxArgument;
+use syntax::Block as SyntaxBlock;
 // use syntax::Statement;
 
-// use codegen::VMCode;
+use codegen::VMCode;
 // use codegen::expr_stmt::expr_stmt_expand;
 use codegen::Type;
 
-pub struct Argument {
+pub struct FuncArg {
     pub name: String,
     pub ty: Type,
 }
 
-impl Argument {
+impl FuncArg {
     
-    fn new_for_proto(_sync_arg: SyntaxArgument) -> Option<Argument> {
+    fn new_proto(sync_arg: SyntaxArgument) -> Option<FuncArg> {
         None
     }
 }
 
-pub struct FunctionDef {
+pub struct FuncSign {       
     pub name: String,
-    pub args: Vec<Argument>,
+    pub has_this: bool,      // same as args.iter().first().name == "this"
+    pub args: Vec<FuncArg>,
     pub ret_type: Type,
 }
 
-impl FunctionDef {
+pub struct Function {
+    pub sign: FuncSign,
+    pub imp: Option<VMCode>, // None for build in
+}
 
-    pub fn new_for_proto(_syn_func: SyntaxFunctionDef) -> Option<FunctionDef> {
-        None
+pub struct FunctionCollection {
+    funcs: Vec<Function>,
+}
+
+impl FunctionCollection {
+    
+    pub fn new() -> FunctionCollection {
+        let mut ret_val = FunctionCollection{ funcs: Vec::new() };
+        ret_val.add_prim_funcs();
+        ret_val
+    }
+
+    fn add_prim_funcs(&mut self) {
+
     }
 }
 
-// impl<'a> FunctionGenerater<'a> {
+impl FunctionCollection {
 
-//     pub fn new(func: &'a FunctionDef) -> FunctionGenerater {
-//         FunctionGenerater{
-//             syn_func: func,
-//             codes: Vec::new(),
-//         }
-//     }
+    // Check function names and emit message, then ignore them and keep parse
+    fn validate_func_names(&self, syn_funcs: &Vec<SyntaxFunctionDef>) {
 
-//     #[cfg(test)]
-//     pub fn get_syn_func(&self) -> &'a FunctionDef {
-//         &self.syn_func
-//     }
+        let mut name_and_poss = Vec::<(String, Vec<StringPosition>)>::new(); // function name and their 'fn' positions, vec<pos> are for 3 or more same name
+        for func in syn_funcs {
+            let mut found_same = false;
+            for &mut (ref exist_name, ref mut their_pos) in &mut name_and_poss {
+                if exist_name == &func.name {
+                    their_pos.push(func.pos_fn());
+                    found_same = true;
+                    break;
+                }
+            }
+            if !found_same {
+                name_and_poss.push((func.name.clone(), Vec::new()));
+            }
+        }
 
-//     // validate arg type exist and arg name not conflict
-//     fn validate_arg(&self) {
+        for (name, their_pos) in name_and_poss {
+            if their_pos.len() > 1 {
+                // self.msgs.push(CodegenMessage::FunctionHasSameName{ name: name, poss: their_pos });
+            }
+        }
+    }
 
-//     }
+    pub fn generate(&mut self, syn_funcs: Vec<SyntaxFunctionDef>) {
+
+    }
+}
 
 //     pub fn generate(&mut self) {
 
@@ -70,4 +103,3 @@ impl FunctionDef {
 //         //     }
 //         // }
 //     }
-// }

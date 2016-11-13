@@ -39,3 +39,14 @@ pub enum VMCode {
     Goto(usize),
     GotoIf(bool, usize),
 }
+
+pub struct VMCodeCollection {
+    codes: Vec<VMCode>,
+}
+
+impl VMCodeCollection {
+    
+    pub fn new() -> VMCodeCollection {
+        VMCodeCollection{ codes: Vec::new() }
+    }
+}
