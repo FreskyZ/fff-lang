@@ -76,12 +76,14 @@ impl VarOrScope {
 pub struct VarCollection {
     items: Vec<VarOrScope>,  
     // no need to use buffered mask, rfind, that's exactly variable shadowing's logical meaning and best implementation method
+    next_temp: usize, // next temp local var name, start from ?, which change into "?0", "?1", etc.
 }
 impl VarCollection {
 
     pub fn new() -> VarCollection {
         VarCollection{
             items: Vec::new(),
+            next_temp: 0,
         }
     }
 
@@ -165,6 +167,12 @@ impl VarCollection {
             VarID::Invalid => None,
         }
     }
+
+    pub fn push_temp(&mut self, ty: TypeID, is_const: bool, messages: &mut MessageEmitter) -> VarID {
+        self.next_temp += 1; // do not worry about start from 0
+        let next_temp = self.next_temp;
+        self.try_push(Var::new("?".to_owned() + &format!("{}", next_temp), ty, is_const), messages)
+    }  
 
     pub fn len(&self) -> usize { self.items.len() }
     pub fn index(&self, idx: usize) -> &VarOrScope { &self.items[idx] }

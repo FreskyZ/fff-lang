@@ -6,10 +6,10 @@ use message::MessageEmitter;
 
 use syntax::SMType as SyntaxType;
 use syntax::Program as SyntaxProgram;
-// use syntax::FunctionDef as SyntaxFunction;
 
 use codegen::TypeID;
 use codegen::TypeDeclCollection;
+use codegen::FnID;
 use codegen::FnDecl;
 use codegen::FnDeclCollection;
 use codegen::VMCodeCollection;
@@ -50,6 +50,17 @@ impl GenerationSession {
     // TypeCollection interface 
     pub fn type_usage_to_id(&mut self, ty: SyntaxType) -> TypeID {
         self.types.try_get_id(ty, &mut self.msgs)
+    }
+
+    // FunctionCollection interface
+    pub fn fn_idx_to_decl(&self, id: usize) -> Option<&FnDecl> {
+        self.fndecls.index(id)
+    }
+    pub fn fn_id_to_decl(&self, id: FnID) -> Option<&FnDecl> {
+        match id {
+            FnID::Some(id) => self.fndecls.index(id),
+            FnID::Invalid => None,
+        }
     }
     
     // Dispatch program items to session, return Program for vm use

@@ -19,8 +19,20 @@ impl Block {
         Block{ fn_id: id, block: block }
     }
 
-    fn fn_id_to_vars(&self, _sess: &mut GenerationSession) -> VarCollection {
-        VarCollection::new()
+    fn fn_id_to_vars(&self, sess: &mut GenerationSession) -> VarCollection {
+
+        let mut ret_val = VarCollection::new();
+
+        let fn_decl = match sess.fn_idx_to_decl(self.fn_id) {
+            Some(ref fn_decl) => fn_decl,
+            None => return ret_val,
+        };
+
+        for arg in &fn_decl.args {
+            ret_val.try_push(Var{ name: arg.name.clone(), id: arg.id, is_const: false });
+        }
+
+        return ret_val;
     }
 
     // All next generation steps dispatcher
