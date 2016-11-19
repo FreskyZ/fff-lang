@@ -10,66 +10,116 @@ use message::MessageEmitter;
 
 use syntax::SMType;
 
-pub type TypeID = usize;
+// use codegen::FnID;
 
-#[derive(Clone)]
-pub struct Type {
-    pub id: TypeID,
-    pub name: String,             // currently is only string, to be `Name` in the future
-    pub type_params: Vec<TypeID>, // for array and tuple
-    // fields,                    // primitive type do not have fields
-    // funcs,                     // primitive type member function are checked at runtime 
-    pub size: usize,
+#[derive(Eq, PartialEq, Clone, Copy)]
+pub enum TypeID {
+    Some(usize),
+    Invalid,
 }
-impl fmt::Debug for Type {
+impl fmt::Debug for TypeID {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "type {}, typeid = {}, sizeof = {}", self.name, self.id, self.size)
+        match self {
+            &TypeID::Some(ref val) => write!(f, "type[{}]", val),
+            &TypeID::Invalid => write!(f, "type[-]"),
+        }
     }
 }
-impl cmp::PartialEq<Type> for Type {
-    fn eq(&self, rhs: &Type) -> bool {
+impl TypeID {
+    pub fn is_invalid(&self) -> bool {
+        match self {
+            &TypeID::Some(_) => false,
+            &TypeID::Invalid => true,
+        }
+    }
+    pub fn is_valid(&self) -> bool {
+        match self {
+            &TypeID::Some(_) => true,
+            &TypeID::Invalid => false,
+        }
+    }
+}
+
+// Type declare is type's name and type parameter
+pub struct TypeDecl {
+    pub id: usize,                // Here use usize for ID because they must be valid
+    pub name: String,             // currently is only string, to be `Name` in the future
+    pub type_params: Vec<usize>,  // for array and tuple
+    // fields,                    
+}
+impl fmt::Debug for TypeDecl {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self.type_params.len() {
+            0 => write!(f, "typeid = {}, {}", self.id, self.name),
+            _ => write!(f, "typeid = {}, {}<{}>", self.id, self.name, format_vector_debug(&self.type_params, ", "))
+        }
+    }
+}
+impl cmp::PartialEq<TypeDecl> for TypeDecl {
+    fn eq(&self, rhs: &TypeDecl) -> bool {
         self.id == rhs.id
     }
-    fn ne(&self, rhs: &Type) -> bool {
+    fn ne(&self, rhs: &TypeDecl) -> bool {
         self.id != rhs.id
     }
 }
-impl cmp::Eq for Type {
+impl cmp::Eq for TypeDecl {
 }
-impl Type {
+impl TypeDecl {
 
-    fn ident_eq(&self, name: &str, type_params: &Vec<TypeID>) -> bool {
+    fn ident_eq(&self, name: &str, type_params: &Vec<usize>) -> bool {
         self.name == name
         && &self.type_params == type_params
     }
 }
 
-// Will support free order of declaration
-// Currently not concern recursive reference so that need delay resolve 
-#[derive(Eq, PartialEq)]
-pub struct TypeCollection {
-    tys: Vec<Type>,  // TODO: change to Vec, id are index in vec
+// Unimplemented because no typedefs in syntax, all types are primitive now
+// // Member fields and functions
+// pub struct TypeDef {
+//     pub id: usize,
+//     // pub fields: Vec<TypeField>, // primitive type do not have fields
+//     pub funcs: Vec<FunctionID>, 
+// }
+// impl fmt::Debug for TypeDef {
+//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+//         write!(f, "typeid = {}, funcs = {}", self.id, self.funcs)
+//     }
+// }
+// impl cmp::PartialEq<TypeDef> for TypeDef {
+//     fn eq(&self, rhs: &TypeDef) -> bool {
+//         self.id == rhs.id
+//     }
+//     fn ne(&self, rhs: &TypeDef) -> bool {
+//         self.id != rhs.id
+//     }
+// }
+// impl cmp::Eq for TypeDef {
+// }
+// impl TypeDef {
+// }
+
+pub struct TypeDeclCollection {
+    decls: Vec<TypeDecl>,
 }
-impl fmt::Debug for TypeCollection {
+impl fmt::Debug for TypeDeclCollection {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", format_vector_debug(&self.tys, "\n"))
+        write!(f, "{}", format_vector_debug(&self.decls, "\n"))
     }
 }
+impl TypeDeclCollection {
 
-impl TypeCollection {
+    pub fn new() -> TypeDeclCollection {
 
-    pub fn new() -> TypeCollection {
-
-        let mut ret_val = TypeCollection{
-            tys: Vec::new(),
+        let mut ret_val = TypeDeclCollection{
+            decls: Vec::new(),
         };
 
         ret_val.add_prim_types();
         ret_val
     }
 
-    fn add_prim(&mut self, id: TypeID, name: &str, size: usize) {
-        self.tys.push(Type{ id: id, name: name.to_owned(), type_params: Vec::new(), size: size });
+    fn add_prim(&mut self, id: usize, name: &str, _size: usize) {
+        self.decls.push(TypeDecl{ id: id, name: name.to_owned(), type_params: Vec::new() });
     }
     // Do not tell primitive type to gener
     fn add_prim_types(&mut self) {
@@ -91,12 +141,12 @@ impl TypeCollection {
         self.add_prim(13, "string", 24);   // special [char], which is sizeof pointer add capability and size
     }
 
-    fn next_id(&self) -> TypeID {
-        self.tys.len()
+    fn next_id(&self) -> usize {
+        self.decls.len()
     }
 
-    fn check_exist(&self, name: &str, type_params: &Vec<TypeID>) -> Option<TypeID> {
-        for ty in &self.tys {
+    fn check_exist(&self, name: &str, type_params: &Vec<usize>) -> Option<usize> {
+        for ty in &self.decls {
             if ty.ident_eq(name, type_params) {
                 return Some(ty.id);
             }
@@ -108,12 +158,12 @@ impl TypeCollection {
     // check base type existence, currently only primitive types, return the id of the primitive type
     // record processed array and tuple types, set their type params, return their type ids
     // position info are removed because messages are finally here, furthur errors will only report "variable with type" etc.
-    pub fn try_get_id(&mut self, ty: SMType, messages: &mut MessageEmitter) -> Option<TypeID> {
+    fn get_id(&mut self, ty: SMType, messages: &mut MessageEmitter) -> Option<usize> {
 
         match ty {
             SMType::Unit(_pos) => self.check_exist("unit", &Vec::new()),
             SMType::Base(name, pos) => {
-                match self.check_exist(&name, &Vec::new()) {
+                match self.check_exist(&name, &Vec::new()){
                     Some(id) => Some(id),
                     None => {
                         messages.push(CodegenMessage::TypeNotExist{ name: name, pos: pos });
@@ -122,19 +172,19 @@ impl TypeCollection {
                 }
             }
             SMType::Array(boxed_base, _pos) => {
-                let ty_params = vec![match self.try_get_id(boxed_base.as_ref().clone(), messages) {
+                let ty_params = vec![match self.get_id(boxed_base.as_ref().clone(), messages) {
                     Some(inner_id) => inner_id,
-                    None => return None, // message emitted
+                    None => return None,
                 }];
                 match self.check_exist("array", &ty_params) {
                     Some(id) => Some(id),
                     None => {
                         let this_id = self.next_id();
-                        self.tys.push(Type{
+                        self.decls.push(TypeDecl{
                             id: this_id,
                             name: "array".to_owned(),
                             type_params: ty_params,
-                            size: 24,
+                            // size: 24,
                         });
                         Some(this_id)
                     }
@@ -142,31 +192,30 @@ impl TypeCollection {
             }
             SMType::Tuple(smtypes, _pos) => {
                 let mut ids = Vec::new();
-                let mut all_size = 0_usize;
+                // let mut all_size = 0_usize;
                 let mut has_failed = false;
                 for smtype in smtypes {
-                    match self.try_get_id(smtype, messages) {
-                        Some(id) =>{
-                            all_size += self.tys[id].size;
+                    match self.get_id(smtype, messages) {
+                        Some(id) => {
+                            // all_size += self.decls[id].size;
                             ids.push(id);
-                        }
+                        },
                         None => has_failed = true, // message emitted
                     }
                 }
                 if has_failed {
-                    // if has failed, just return none
-                    return None;   
+                    return None;    // if has failed, just return none
                 }
 
                 match self.check_exist("tuple", &ids) {
                     Some(id) => Some(id),
                     None => {
                         let this_id = self.next_id();
-                        self.tys.push(Type{
+                        self.decls.push(TypeDecl{
                             id: this_id,
                             name: "tuple".to_owned(),
                             type_params: ids,
-                            size: all_size
+                            // size: all_size
                         });
                         Some(this_id)
                     }
@@ -175,15 +224,22 @@ impl TypeCollection {
         }
     }
 
+    // wrap Option<usize> to TypeID
+    pub fn try_get_id(&mut self, ty: SMType, messages: &mut MessageEmitter) -> TypeID {
+        match self.get_id(ty, messages) {
+            Some(id) => TypeID::Some(id),
+            None => TypeID::Invalid,
+        }
+    }
+
     #[cfg(test)]
-    pub fn id_to_type(&self, id: TypeID) -> &Type {
-        &self.tys[id]
+    pub fn id_to_type(&self, id: usize) -> &TypeDecl {
+        &self.decls[id]
     }
     #[cfg(test)]
     pub fn ty_len(&self) -> usize {
-        self.tys.len()
+        self.decls.len()
     }
-
 }
 
 #[cfg(test)]
@@ -191,7 +247,8 @@ mod tests {
 
     #[test]
     fn gen_type() {
-        use super::TypeCollection;
+        use super::TypeDeclCollection;
+        use super::TypeID;
         use syntax::SMType;
         use message::CodegenMessage;
         use message::MessageEmitter;
@@ -203,23 +260,23 @@ mod tests {
                 assert_eq!(ty.id, $id);
                 assert_eq!(ty.name, $name);
                 assert_eq!(ty.type_params, $params);
-                assert_eq!(ty.size, $size);
+                // assert_eq!(ty.size, $size);
             )
         }
 
         macro_rules! test_case {
             ($types: expr, $ty_str: expr, $expect: expr) => (
                 match $types.try_get_id(SMType::from_str($ty_str, 0), &mut MessageEmitter::new()) {
-                    Some(id) => assert_eq!(id, $expect),
-                    None => panic!("Unexpectedly return None"),
+                    TypeID::Some(id) => assert_eq!(id, $expect),
+                    TypeID::Invalid => panic!("Unexpectedly return None"),
                 }
             );
             
             ($types: expr, $ty_str: expr => $($msg: expr)*) => (
                 let messages = &mut MessageEmitter::new();
                 match $types.try_get_id(SMType::from_str($ty_str, 0), messages) {
-                    Some(id) => panic!("Unexpectedly success, result: {:?}", id),
-                    None => (),
+                    TypeID::Some(id) => panic!("Unexpectedly success, result: {:?}", id),
+                    TypeID::Invalid => (),
                 }
                 let expect_messages = &mut MessageEmitter::new();
                 $(
@@ -229,7 +286,7 @@ mod tests {
             )
         }
 
-        let mut types = TypeCollection::new();
+        let mut types = TypeDeclCollection::new();
 
         {   // Initial content
             assert_eq!(types.ty_len(), 14);

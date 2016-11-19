@@ -24,18 +24,32 @@
 // Remove pair of LoadLocal and StoreLocal which have same name
 
 mod vm_code;
-mod gener;
+mod session;
 mod expr_stmt;
 mod type_def;
 mod function_def;
+mod block;
+mod variable;
 
 pub use codegen::type_def::TypeID;
-pub use codegen::type_def::Type;
-pub use codegen::type_def::TypeCollection;
-pub use codegen::function_def::FuncArg;
-pub use codegen::function_def::FuncSign;
-pub use codegen::function_def::Function;
-pub use codegen::function_def::FunctionCollection;
+pub use codegen::type_def::TypeDecl;
+pub use codegen::type_def::TypeDeclCollection;
+pub use codegen::function_def::FnID;
+pub use codegen::function_def::FnArg;
+pub use codegen::function_def::FnDecl;
+pub use codegen::function_def::FnDeclCollection;
+pub use codegen::block::Block;
+pub use codegen::variable::VarID;
+pub use codegen::variable::Var;
+pub use codegen::variable::VarOrScope;
+pub use codegen::variable::VarCollection;
 pub use codegen::vm_code::VMCode;
 pub use codegen::vm_code::VMCodeCollection;
-pub use codegen::gener::CodeGenerater;
+pub use codegen::session::Program;
+
+use syntax::Program as SyntaxProgram;
+use codegen::session::GenerationSession;
+
+pub fn generate(program: SyntaxProgram) -> Program {
+    GenerationSession::dispatch(program)
+}

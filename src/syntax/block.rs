@@ -19,7 +19,6 @@ pub struct Block {
     pub stmts: Vec<Statement>, 
     pub pos: StringPosition,   // pos for { and }
 }
-
 impl fmt::Debug for Block {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{{\n{}\n}} @ {:?}", format_vector_debug(&self.stmts, "\n"), self.pos)
@@ -30,7 +29,6 @@ impl fmt::Display for Block {
         write!(f, "{{\n{}\n}}", format_vector_display(&self.stmts, "\n"))
     }
 }
-
 impl Block {
 
     #[cfg(test)]
@@ -39,7 +37,6 @@ impl Block {
         Block::parse(lexer, index).0.unwrap()
     }
 }
-
 impl IASTItem for Block {
     
     fn pos_all(&self) -> StringPosition { self.pos }

@@ -70,7 +70,6 @@ impl SMType {
         let lexer = &mut Lexer::new(smstr);
         SMType::parse(lexer, index).0.unwrap()
     }
-
 }
 
 impl IASTItem for SMType {

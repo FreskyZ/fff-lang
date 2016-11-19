@@ -2,26 +2,25 @@
 // Expand expr stmt to vmcodes 
 // if and while's expression are first change to 'somelocal = the expr; while ...' and come to here
 
-use syntax::Expression;
-use syntax::ExpressionStatement;
+// use syntax::Expression;
+// use syntax::ExpressionStatement;
 
-use codegen::vm_code::VMCode;
-use codegen::gener::CodeGenerater;
+// use codegen::vm_code::VMCode;
 
-fn expr_expand(_gener: &mut CodeGenerater, _expr: Expression) -> Vec<VMCode> {
-    Vec::new()
-}
+// fn expr_expand(_gener: &mut , _expr: Expression) -> Vec<VMCode> {
+//     Vec::new()
+// }
 
-pub fn expr_stmt_expand(_gener: &mut CodeGenerater, _expr_stmt: &ExpressionStatement) -> Vec<VMCode> {
+// pub fn expr_stmt_expand(_gener: &mut CodeGenerater, _expr_stmt: &ExpressionStatement) -> Vec<VMCode> {
     
-    // match expr_stmt.op {
-    //     (Some(assign_op)) => {
+//     // match expr_stmt.op {
+//     //     (Some(assign_op)) => {
 
-    //     }
-    // }
+//     //     }
+//     // }
 
-    Vec::new()
-}
+//     Vec::new()
+// }
 
 #[cfg(test)]
 #[test]

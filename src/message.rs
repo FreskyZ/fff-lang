@@ -277,6 +277,11 @@ pub enum CodegenMessage {
         pos1: StringPosition,      // first def of the name
         pos2: StringPosition,      // more def of the name
     },
+    VariableDefined{
+        name: String,
+        predef: StringPosition,    // Previous VarDeclStmt
+        curdef: StringPosition,    // Current VarDeclStmt, compiler generated will not collision
+    }
 }
 impl fmt::Debug for CodegenMessage {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -292,6 +297,9 @@ impl fmt::Debug for CodegenMessage {
                 write!(f, "Parameter {} redifinition at {:?}, whose previous def at {:?} in function {} at {:?}",
                     name, pos1, pos2, func_name, func_pos
                 )   
+            },
+            VariableDefined{ ref name, ref predef, ref curdef } => {
+                write!(f, "Variable {} already defined at {:?} but redefiened at {:?}", name, predef, curdef)
             }
         }
     }

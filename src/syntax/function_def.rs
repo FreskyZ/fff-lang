@@ -36,7 +36,6 @@ impl fmt::Display for Argument {
         write!(f, "{} {}", self.ty, self.name)
     }
 }
-
 impl IASTItem for Argument {
 
     fn pos_all(&self) -> StringPosition { StringPosition::from2(self.ty.pos_all().start_pos, self.pos_name.end_pos) }
@@ -62,6 +61,14 @@ impl IASTItem for Argument {
         };
 
         (Some(Argument{ ty: ty, name: name, pos_name: lexer.pos(index + ty_len) }), ty_len + 1)
+    }
+}
+impl Argument {
+    
+    #[cfg(test)]
+    pub fn from_str(arg_str: &str, index: usize) -> Argument {
+        let lexer = &mut Lexer::new(arg_str);
+        Argument::parse(lexer, index).0.unwrap()
     }
 }
 
@@ -116,7 +123,6 @@ impl cmp::PartialEq<FunctionDef> for FunctionDef {
 #[cfg(not(test))]
 impl cmp::Eq for FunctionDef {
 }
-
 impl FunctionDef {
 
     pub fn pos_fn(&self) -> StringPosition { self.pos2[0] }
@@ -129,8 +135,15 @@ impl FunctionDef {
         assert!(lexer.messages().is_empty());
         ret_val
     }
+    #[cfg(test)]
+    pub fn from_str_with_id(func_def_str: &str, sym_index: usize, id: usize) -> FunctionDef {
+        let lexer = &mut Lexer::new(func_def_str);
+        let mut ret_val = FunctionDef::parse(lexer, sym_index).0.unwrap();
+        assert!(lexer.messages().is_empty());
+        ret_val.id = id;
+        ret_val
+    }
 }
-
 impl IASTItem for FunctionDef {
     
     fn pos_all(&self) -> StringPosition { StringPosition::from2(self.pos2[0].start_pos, self.body.pos_all().end_pos) }
