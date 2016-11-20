@@ -16,6 +16,8 @@ use syntax::Block as SyntaxBlock;
 // use codegen::VMCode;
 // use codegen::expr_stmt::expr_stmt_expand;
 use codegen::TypeID;
+use codegen::TypeDeclCollection;
+use codegen::VMCodeCollection;
 use codegen::session::GenerationSession;
 
 #[derive(Eq, PartialEq, Clone, Copy)]
@@ -26,8 +28,8 @@ pub enum FnID {
 impl fmt::Debug for FnID {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            &FnID::Some(ref val) => write!(f, "type[{}]", val),
-            &FnID::Invalid => write!(f, "type[-]"),
+            &FnID::Some(ref val) => write!(f, "fn[{}]", val),
+            &FnID::Invalid => write!(f, "fn[-]"),
         }
     }
 }
@@ -59,11 +61,11 @@ impl fmt::Debug for FnArg {
 impl FnArg {
     
     // Always construct, ty maybe none for invalid type
-    fn new(syn_arg: SyntaxArgument, sess: &mut GenerationSession) -> FnArg {
+    fn new(syn_arg: SyntaxArgument, types: &mut TypeDeclCollection, messages: &mut MessageEmitter) -> FnArg {
 
         let pos1 = syn_arg.ty.pos();
         let pos2 = syn_arg.pos_name;
-        let ty = sess.type_usage_to_id(syn_arg.ty);   // message emitted for none
+        let ty = types.try_get_id(syn_arg.ty, messages);   // message emitted for none
         FnArg{ name: syn_arg.name, ty: ty, pos: [pos1, pos2] }  
     }
 
@@ -73,32 +75,34 @@ impl FnArg {
     }
 }
 
-pub struct FnDecl {
+pub struct FnImpl { // Not Fn because Fn is used in std
     pub id: usize,
     pub name: String, 
     pub args: Vec<FnArg>,
     pub ret_type: TypeID,
     pub pos: [StringPosition; 3],  // pos_fn and pos_name and pos_ret_type
-    valid: bool,                   // buf for all args valid and ret_type valid
+    valid: bool,                   // buf for all args valid and ret_type valid and later not sign collission with other
+    pub codes: VMCodeCollection,
 }
-impl cmp::PartialEq<FnDecl> for FnDecl {
-    fn eq(&self, rhs: &FnDecl) -> bool { self.id == rhs.id }
-    fn ne(&self, rhs: &FnDecl) -> bool { self.id != rhs.id }
+impl cmp::PartialEq<FnImpl> for FnImpl {
+    fn eq(&self, rhs: &FnImpl) -> bool { self.id == rhs.id }
+    fn ne(&self, rhs: &FnImpl) -> bool { self.id != rhs.id }
 }
-impl cmp::Eq for FnDecl{
+impl cmp::Eq for FnImpl{
 }
-impl FnDecl {
+impl FnImpl {
 
     // From Vec<Argument> to Vec<FnArg>
     // returned bool for all arg type valid and no redefinition
-    fn new_args(syn_args: Vec<SyntaxArgument>, fn_pos: StringPosition, fn_name: &str, sess: &mut GenerationSession) -> (Vec<FnArg>, bool) {
+    fn new_args(syn_args: Vec<SyntaxArgument>, fn_pos: StringPosition, fn_name: &str, 
+        types: &mut TypeDeclCollection, messages: &mut MessageEmitter) -> (Vec<FnArg>, bool) {
 
         let mut args = Vec::<FnArg>::new();
         let mut valid = true;
         'new_arg: for syn_arg in syn_args {
             'exist_args: for arg in &args {
                 if arg.name == syn_arg.name {
-                    sess.push_message(CodegenMessage::FunctionArgumentNameConfilict{ 
+                    messages.push(CodegenMessage::FunctionArgumentNameConfilict{ 
                         func_pos: fn_pos,
                         func_name: fn_name.to_owned(),
                         name: arg.name.clone(),
@@ -111,7 +115,7 @@ impl FnDecl {
             }
             
             // No more errors
-            let arg = FnArg::new(syn_arg, sess);
+            let arg = FnArg::new(syn_arg, types, messages);
             valid = valid && arg.is_valid();
             args.push(arg);
         }
@@ -119,50 +123,139 @@ impl FnDecl {
         (args, valid)
     }
     // As it consumes the SyntaxFnDef but not process the block, return it
-    pub fn new(syn_fn: SyntaxFunctionDef, sess: &mut GenerationSession) -> (FnDecl, usize, SyntaxBlock) {
+    fn new(syn_fn: SyntaxFunctionDef, id: usize, types: &mut TypeDeclCollection, messages: &mut MessageEmitter) -> (FnImpl, SyntaxBlock) {
         
-        let (args, mut valid) = FnDecl::new_args(syn_fn.args, syn_fn.pos2[0], &syn_fn.name, sess);
+        let (args, mut valid) = FnImpl::new_args(syn_fn.args, syn_fn.pos2[0], &syn_fn.name, types, messages);
         let pos_ret_type = syn_fn.ret_type.pos();
-        let ret_type = sess.type_usage_to_id(syn_fn.ret_type);
+        let ret_type = types.try_get_id(syn_fn.ret_type, messages);
         valid = valid && ret_type.is_valid();
-        (FnDecl{ 
-            id: syn_fn.id, name: syn_fn.name, pos: [syn_fn.pos2[0], syn_fn.pos2[1], pos_ret_type], 
-            args: args, ret_type: ret_type, valid: valid
-        }, syn_fn.id, syn_fn.body)
+        (FnImpl{ 
+            id: id, 
+            name: syn_fn.name, 
+            pos: [syn_fn.pos2[0], syn_fn.pos2[1], pos_ret_type], 
+            args: args, 
+            ret_type: ret_type, 
+            valid: valid,
+            codes: VMCodeCollection::new(),
+        }, syn_fn.body)
     }
 
     pub fn is_valid(&self) -> bool {
         self.valid
     }
-    fn sign_eq(&self, rhs: &FnDecl) -> bool {
-        self.is_valid() && rhs.is_valid()
-        && self.name == rhs.name
-        && self.ret_type == rhs.ret_type
-        && self.args.len() == rhs.args.len()
+    fn sign_eq(&self, name: &str, args: &Vec<TypeID>, _ret_type: TypeID) -> bool {
+        self.is_valid()
+        && self.name == name
+        // && self.ret_type == ret_type // Can not overload by ret type
+        && self.args.len() == args.len()
         && {
             let mut ret_val = true;
-            for (ref arg1, ref arg2) in self.args.iter().zip(rhs.args.iter()) {
-                if arg1.ty != arg2.ty {
+            for (ref arg1, ref arg2) in self.args.iter().zip(args.iter()) {
+                if arg1.ty != **arg2 {
                     ret_val = false;
                 }
             }  
             ret_val
         }
     }
+
+    fn format_display_sign(&self, types: &TypeDeclCollection) -> String {
+
+        let mut buf = self.name.clone();
+
+        buf += "(";
+        let args_len = self.args.len();
+        for (index, arg) in self.args.iter().enumerate() {
+            buf += &types.format_display_by_id(arg.ty);
+            if index != args_len - 1 {
+                buf += ", ";
+            }
+        }
+        buf += ")";
+        buf
+    }
 }
 
-pub struct FnDeclCollection {
-    fns: HashMap<usize, FnDecl>,
+pub struct FnCollection {
+    fns: Vec<FnImpl>,
 }
-impl FnDeclCollection {
+impl FnCollection {
     
-    pub fn new() -> FnDeclCollection {
-        FnDeclCollection{ fns: HashMap::new() }
+    pub fn new() -> FnCollection {
+        FnCollection{ fns: Vec::new() }
     }
 
-    pub fn push(&mut self, func: FnDecl) { self.fns.insert(func.id, func); }
+    // If same signature, still push the fndecl and return index, but push message and when require ID by signature, return invalid
+    pub fn push_decl(&mut self, syn_fn: SyntaxFunctionDef, types: &mut TypeDeclCollection, msgs: &mut MessageEmitter) -> (usize, SyntaxBlock) {
+
+        let (newfn, syn_block) = FnImpl::new(syn_fn, self.fns.len(), types, msgs);
+        let ret_val = newfn.id;
+        self.fns.push(newfn);
+        return (ret_val, syn_block);
+    }
+    pub fn check_sign_eq(&mut self, types: &mut TypeDeclCollection, msgs: &mut MessageEmitter) {
+
+        let mut sign_map_pos = HashMap::<String, Vec<usize>>::new();
+        for fcn in &mut self.fns {
+
+            let sign_display = fcn.format_display_sign(types);
+            let mut should_insert = false;
+            match sign_map_pos.get_mut(&sign_display) {
+                Some(poss) => { 
+                    poss.push(fcn.id);
+                },
+                None => {
+                    should_insert = true;
+                }
+            }
+            if should_insert {
+                sign_map_pos.insert(sign_display, vec![fcn.id]);
+            }
+        }
+
+        for (sign, ids) in sign_map_pos {
+            if ids.len() > 1 {
+                let mut poss = Vec::new();
+                for id in ids {
+                    self.fns[id].valid = false;
+                    poss.push(self.fns[id].pos[0]);
+                }
+                msgs.push(CodegenMessage::FunctionRedefinition{
+                    sign: sign,
+                    fnposs: poss,
+                });
+            }
+        }
+    }
+
+    // Here if find recorded sign collision return invalid
+    pub fn find_by_sign(&self, name: &str, args: &Vec<TypeID>, ret: TypeID) -> FnID {
+        
+        for (index, fcn) in self.fns.iter().enumerate() {
+            if fcn.is_valid() && fcn.sign_eq(name, args, ret) {
+                return FnID::Some(index);
+            }
+        }
+        return FnID::Invalid;
+    }
+    // Will return None if is invalid
+    pub fn find_by_id(&self, idx: FnID) -> Option<&FnImpl> {
+        match idx {
+            FnID::Some(id) => match self.fns[id].valid {
+                true => Some(&self.fns[id]),
+                false => None,
+            },
+            FnID::Invalid => None,
+        }
+    }
+    pub fn find_by_idx(&self, idx: usize) -> Option<&FnImpl> {
+        match self.fns[idx].valid {
+            true => Some(&self.fns[idx]),
+            false => None,
+        }
+    }
+
     pub fn len(&self) -> usize { self.fns.len() }
-    pub fn index(&self, idx: usize) -> Option<&FnDecl> { self.fns.get(&idx) }
 }
 
 #[cfg(test)]
@@ -172,10 +265,10 @@ use syntax::Argument;
 #[test]
 fn gen_fn_arg() {
 
-    let sess = &mut GenerationSession::new();
+    let mut sess = GenerationSession::new();
 
     let arg = Argument::from_str("[i32] a", 0);
-    let arg = FnArg::new(arg, sess);
+    let arg = FnArg::new(arg, &mut sess.types, &mut sess.msgs);
     assert_eq!(arg.name, "a");
     assert_eq!(arg.ty, TypeID::Some(14));
     assert_eq!(arg.pos, [make_str_pos!(1, 1, 1, 5), make_str_pos!(1, 7, 1, 7)]);
@@ -183,7 +276,7 @@ fn gen_fn_arg() {
     assert_eq!(sess.messages(), expect_messages);
 
     let arg = Argument::from_str("int argc", 0);
-    let arg = FnArg::new(arg, sess);
+    let arg = FnArg::new(arg, &mut sess.types, &mut sess.msgs);
     assert_eq!(arg.name, "argc");
     assert_eq!(arg.ty, TypeID::Invalid);
     assert_eq!(arg.pos, [make_str_pos!(1, 1, 1, 3), make_str_pos!(1, 5, 1, 8)]);
@@ -196,7 +289,7 @@ fn gen_fn_arg() {
 #[test]
 fn gen_fn_sign_eq() {
     
-    let left_getter = || FnDecl{
+    let left_getter = || FnImpl{
         id: 0,
         name: "main".to_owned(),
         ret_type: TypeID::Some(5),
@@ -206,59 +299,35 @@ fn gen_fn_sign_eq() {
         ],
         pos: [StringPosition::new(), StringPosition::new(), StringPosition::new()],
         valid: true,
-    };
-    let right_getter = || FnDecl{
-        id: 0,
-        name: "main".to_owned(),
-        ret_type: TypeID::Some(5),
-        args: vec![ 
-            FnArg{ name: "argc".to_owned(), ty: TypeID::Some(1), pos: [StringPosition::new(), StringPosition::new()] },
-            FnArg{ name: "argv".to_owned(), ty: TypeID::Some(2), pos: [StringPosition::new(), StringPosition::new()] },
-        ],
-        pos: [StringPosition::new(), StringPosition::new(), StringPosition::new()],
-        valid: true,
+        codes: VMCodeCollection::new(),
     };
 
     // Normal equal
     let left = &mut left_getter();
-    let right = &mut right_getter();
-    assert!(left.sign_eq(right));
-    assert!(right.sign_eq(left));
+    assert!(left.sign_eq("main", &vec![TypeID::Some(1), TypeID::Some(2)], TypeID::Some(5)));
 
     // Name not Equal
     let left = &mut left_getter();
-    let right = &mut right_getter();
-    left.name = "another".to_owned();
-    assert!(!left.sign_eq(right));
-    assert!(!right.sign_eq(left));
+    assert!(!left.sign_eq("another", &vec![TypeID::Some(1), TypeID::Some(2)], TypeID::Some(5)));
 
     // Something is invalid
     let left = &mut left_getter();
-    let right = &mut right_getter();
-    right.valid = false;
-    assert!(!left.sign_eq(right));
-    assert!(!right.sign_eq(left));
+    left.valid = false;
+    assert!(!left.sign_eq("main", &vec![TypeID::Some(1), TypeID::Some(2)], TypeID::Some(5)));
 
     // One of the arg is invalid
     let left = &mut left_getter();
-    let right = &mut right_getter();
-    left.args[0].ty = TypeID::Invalid;
-    assert!(!left.sign_eq(right));
-    assert!(!right.sign_eq(left));
+    assert!(!left.sign_eq("main", &vec![TypeID::Invalid, TypeID::Some(2)], TypeID::Some(5)));
 
     // One of the arg name is not same
     let left = &mut left_getter();
-    let right = &mut right_getter();
-    right.args[1].name = "some other".to_owned();
-    assert!(left.sign_eq(right));
-    assert!(right.sign_eq(left));
+    left.args[1].name = "some other".to_owned();
+    assert!(left.sign_eq("main", &vec![TypeID::Some(1), TypeID::Some(2)], TypeID::Some(5)));
 
     // One of the arg type is not same
     let left = &mut left_getter();
-    let right = &mut right_getter();
     left.args[1].ty = TypeID::Some(8);
-    assert!(!left.sign_eq(right));
-    assert!(!right.sign_eq(left));
+    assert!(!left.sign_eq("main", &vec![TypeID::Some(1), TypeID::Some(2)], TypeID::Some(5)));
 }
 
 #[cfg(test)]
@@ -273,7 +342,7 @@ fn gen_fn_args() {
     let fn_pos = make_str_pos!(1, 1, 1, 2);
     let fn_name = "main";
     let sess = &mut GenerationSession::new();
-    let (args, valid) = FnDecl::new_args(syn_args, fn_pos, fn_name, sess);
+    let (args, valid) = FnImpl::new_args(syn_args, fn_pos, fn_name, &mut sess.types, &mut sess.msgs);
     assert_eq!(valid, true);
     assert_eq!(args[0].name, "a");
     assert_eq!(args[0].ty, TypeID::Some(5));
@@ -296,7 +365,7 @@ fn gen_fn_args() {
     let fn_pos = make_str_pos!(1, 1, 1, 2);
     let fn_name = "main";
     let sess = &mut GenerationSession::new();
-    let (args, valid) = FnDecl::new_args(syn_args, fn_pos, fn_name, sess);
+    let (args, valid) = FnImpl::new_args(syn_args, fn_pos, fn_name, &mut sess.types, &mut sess.msgs);
     assert_eq!(valid, false);
     assert_eq!(args[0].name, "a");
     assert_eq!(args[0].ty, TypeID::Some(5));
@@ -325,7 +394,7 @@ fn gen_fn_args() {
     let fn_pos = make_str_pos!(1, 1, 1, 2);
     let fn_name = "main";
     let sess = &mut GenerationSession::new();
-    let (args, valid) = FnDecl::new_args(syn_args, fn_pos, fn_name, sess);
+    let (args, valid) = FnImpl::new_args(syn_args, fn_pos, fn_name, &mut sess.types, &mut sess.msgs);
     assert_eq!(valid, false);
     assert_eq!(args[0].name, "a");
     assert_eq!(args[0].ty, TypeID::Some(5));
@@ -352,7 +421,7 @@ fn gen_fn_args() {
     let fn_pos = make_str_pos!(1, 1, 1, 2);
     let fn_name = "main";
     let sess = &mut GenerationSession::new();
-    let (args, valid) = FnDecl::new_args(syn_args, fn_pos, fn_name, sess);
+    let (args, valid) = FnImpl::new_args(syn_args, fn_pos, fn_name, &mut sess.types, &mut sess.msgs);
     assert_eq!(valid, true);
     assert_eq!(args.len(), 0);
     let expect_message = MessageEmitter::new();
@@ -369,14 +438,48 @@ fn gen_fn_decl() {
     let program = "fn main() -> () { writeln(\"helloworld\"); }";
     //             1  2   34 5  67 8 9      A B            CD E
     let sess = &mut GenerationSession::new();
-    let mut syn_fn = SyntaxFunctionDef::from_str(program, 0);
-    syn_fn.id = 42;
-    let (fndecl, id, block) = FnDecl::new(syn_fn, sess);
-    assert_eq!(fndecl.id, 42);
-    assert_eq!(fndecl.name, "main");
-    assert_eq!(fndecl.args.len(), 0);
-    assert_eq!(fndecl.pos, [make_str_pos!(1, 1, 1, 2), make_str_pos!(1, 4, 1, 7), make_str_pos!(1, 14, 1, 15)]);
-    assert_eq!(fndecl.ret_type, TypeID::Some(0));
-    assert_eq!(id, 42);
-    assert_eq!(block.stmts.len(), 1);
+    let syn_fn = SyntaxFunctionDef::from_str(program, 0);
+    let (id, block) = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs);
+    {
+        let fndecl = sess.fns.find_by_idx(id).unwrap();
+        assert_eq!(fndecl.id, 0);
+        assert_eq!(fndecl.name, "main");
+        assert_eq!(fndecl.args.len(), 0);
+        assert_eq!(fndecl.pos, [make_str_pos!(1, 1, 1, 2), make_str_pos!(1, 4, 1, 7), make_str_pos!(1, 14, 1, 15)]);
+        assert_eq!(fndecl.ret_type, TypeID::Some(0));
+        assert_eq!(id, 0);
+        assert_eq!(block.stmts.len(), 1);
+    }
+
+    let program = "fn some(i32 a, u32 b, [string] c) -> [u8] {}";
+    let syn_fn = SyntaxFunctionDef::from_str(program, 0);
+    let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs);
+    let program = " fn some(i32 a, u32 b, [string] c) -> [u8] {}";
+    let syn_fn = SyntaxFunctionDef::from_str(program, 0);
+    let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs);
+    let program = "  fn some(i32 a, u32 b, string c) -> u8 {}";
+    let syn_fn = SyntaxFunctionDef::from_str(program, 0);
+    let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs);
+    let program = "   fn some(i32 a, u32 b, [string] c) -> [u8] {}";
+    let syn_fn = SyntaxFunctionDef::from_str(program, 0);
+    let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs);
+    let program = "    fn some(i32 a, u32 b) -> [u8] {}";
+    let syn_fn = SyntaxFunctionDef::from_str(program, 0);
+    let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs);
+
+    let program = "     fn some(i32 a, u32 b, string c) -> [u8] {}";
+    let syn_fn = SyntaxFunctionDef::from_str(program, 0);
+    let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs);
+
+    sess.fns.check_sign_eq(&mut sess.types, &mut sess.msgs);
+    let expect_messsage = &mut MessageEmitter::new();
+    expect_messsage.push(CodegenMessage::FunctionRedefinition{
+        sign: "some(i32, u32, array[string])".to_owned(),
+        fnposs: vec![make_str_pos!(1, 1, 1, 2), make_str_pos!(1, 2, 1, 3), make_str_pos!(1, 4, 1, 5)]
+    });
+    expect_messsage.push(CodegenMessage::FunctionRedefinition{
+        sign: "some(i32, u32, string)".to_owned(),
+        fnposs: vec![make_str_pos!(1, 3, 1, 4), make_str_pos!(1, 6, 1, 7)]
+    });
+    assert_eq!(sess.messages(), expect_messsage);
 }

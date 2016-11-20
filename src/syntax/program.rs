@@ -55,9 +55,8 @@ impl IASTItem for Program {
                 break;
             }
             match FunctionDef::parse(lexer, index + current_len) {
-                (Some(mut func), length) => { 
+                (Some(func), length) => { 
                     current_len += length;
-                    func.id = funcs.len();
                     funcs.push(func);
                 }
                 (None, length) => return (None, current_len + length),

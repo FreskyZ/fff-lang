@@ -264,7 +264,7 @@ impl SyntaxMessage {
 pub enum CodegenMessage {
     FunctionHasSameName{ 
         name: String, 
-        poss: Vec<StringPosition> 
+        poss: Vec<StringPosition>,
     },
     TypeNotExist{ 
         name: String, 
@@ -281,6 +281,10 @@ pub enum CodegenMessage {
         name: String,
         predef: StringPosition,    // Previous VarDeclStmt
         curdef: StringPosition,    // Current VarDeclStmt, compiler generated will not collision
+    },
+    FunctionRedefinition{
+        sign: String,
+        fnposs: Vec<StringPosition>,
     }
 }
 impl fmt::Debug for CodegenMessage {
@@ -296,10 +300,13 @@ impl fmt::Debug for CodegenMessage {
             FunctionArgumentNameConfilict{ ref func_pos, ref func_name, ref name, ref pos1, ref pos2 } => {
                 write!(f, "Parameter {} redifinition at {:?}, whose previous def at {:?} in function {} at {:?}",
                     name, pos1, pos2, func_name, func_pos
-                )   
+                )
             },
             VariableDefined{ ref name, ref predef, ref curdef } => {
                 write!(f, "Variable {} already defined at {:?} but redefiened at {:?}", name, predef, curdef)
+            },
+            FunctionRedefinition{ ref sign, ref fnposs } => {
+                write!(f, "Function with signature `{}` redefined at {}", sign, format_vector_debug(fnposs, ", "))
             }
         }
     }

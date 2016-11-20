@@ -13,7 +13,7 @@ pub trait From2<T1, T2> {
 }
 
 /// Text position
-#[derive(Eq, PartialEq, Clone, Copy)]
+#[derive(Eq, PartialEq, Clone, Copy, Hash)]
 pub struct Position {
     pub row: usize,
     pub col: usize,
@@ -57,7 +57,7 @@ impl From2<usize, usize> for Position {
 }
 
 /// Text position of a string
-#[derive(Eq, PartialEq, Clone, Copy)]
+#[derive(Eq, PartialEq, Clone, Copy, Hash)]
 pub struct StringPosition {
     pub start_pos: Position,
     pub end_pos: Position,

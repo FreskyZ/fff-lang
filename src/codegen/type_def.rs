@@ -231,6 +231,31 @@ impl TypeDeclCollection {
             None => TypeID::Invalid,
         }
     }
+    pub fn format_display_by_id(&self, id: TypeID) -> String {
+        
+        match id {
+            TypeID::Invalid => "<error-type>".to_owned(),
+            TypeID::Some(id) => {
+                match self.decls[id].type_params.len() {
+                    0 => self.decls[id].name.clone(),
+                    _ => {
+                        let ty = &self.decls[id];
+                        let mut buf = ty.name.clone();
+                        buf += "[";
+                        let len = ty.type_params.len();
+                        for (index, param) in ty.type_params.iter().enumerate() {
+                            buf += &self.format_display_by_id(TypeID::Some(*param));
+                            if index != len - 1 {
+                                buf += ", ";
+                            }
+                        }
+                        buf += "]";
+                        buf
+                    }
+                }
+            }
+        }
+    }
 
     #[cfg(test)]
     pub fn id_to_type(&self, id: usize) -> &TypeDecl {

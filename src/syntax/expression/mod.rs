@@ -40,7 +40,6 @@ pub enum ExpressionBase {
     ArrayDef(Vec<Expression>, StringPosition),          // '[', ']''s position
     ArrayDupDef(Expression, Expression, [StringPosition; 2]), // '[',  ';', ']''s position
 }
-
 impl fmt::Debug for ExpressionBase {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
@@ -178,7 +177,6 @@ impl fmt::Display for ExpressionOperator {
         })
     }
 }
-
 #[derive(Eq, PartialEq)]
 pub struct Expression {
     base: Box<ExpressionBase>,

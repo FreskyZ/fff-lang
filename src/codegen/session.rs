@@ -10,22 +10,22 @@ use syntax::Program as SyntaxProgram;
 use codegen::TypeID;
 use codegen::TypeDeclCollection;
 use codegen::FnID;
-use codegen::FnDecl;
-use codegen::FnDeclCollection;
+use codegen::FnImpl;
+use codegen::FnCollection;
 use codegen::VMCodeCollection;
 use codegen::Block;
 
 pub struct GenerationSession {
-    msgs: MessageEmitter,
-    types: TypeDeclCollection,
-    fndecls: FnDeclCollection,
-    codes: VMCodeCollection,
+    pub msgs: MessageEmitter,
+    pub types: TypeDeclCollection,
+    pub fns: FnCollection,
+    pub codes: VMCodeCollection,
 }
 pub struct Program {
     pub msgs: MessageEmitter,
     pub codes: VMCodeCollection,
     pub types: TypeDeclCollection,
-    pub funcs: FnDeclCollection,
+    pub funcs: FnCollection,
 }
 
 impl GenerationSession {
@@ -34,7 +34,7 @@ impl GenerationSession {
         GenerationSession{
             msgs: MessageEmitter::new(),
             types: TypeDeclCollection::new(),
-            fndecls: FnDeclCollection::new(),
+            fns: FnCollection::new(),
             codes: VMCodeCollection::new(),
         }
     } 
@@ -53,14 +53,11 @@ impl GenerationSession {
     }
 
     // FunctionCollection interface
-    pub fn fn_idx_to_decl(&self, id: usize) -> Option<&FnDecl> {
-        self.fndecls.index(id)
+    pub fn fn_idx_to_decl(&self, id: usize) -> Option<&FnImpl> {
+        self.fns.find_by_idx(id)
     }
-    pub fn fn_id_to_decl(&self, id: FnID) -> Option<&FnDecl> {
-        match id {
-            FnID::Some(id) => self.fndecls.index(id),
-            FnID::Invalid => None,
-        }
+    pub fn fn_id_to_decl(&self, id: FnID) -> Option<&FnImpl> {
+        self.fns.find_by_id(id)
     }
     
     // Dispatch program items to session, return Program for vm use
@@ -73,10 +70,10 @@ impl GenerationSession {
         // such that function can declare in any order
         let mut blocks = Vec::new();
         for func in program.functions {
-            let (fn_decl, its_id, its_block) = FnDecl::new(func, &mut sess);
-            sess.fndecls.push(fn_decl);
+            let (its_id, its_block) = sess.fns.push_decl(func, &mut sess.types, &mut sess.msgs);
             blocks.push(Block::new(its_id, its_block));
         }
+        sess.fns.check_sign_eq(&mut sess.types, &mut sess.msgs);
         
         for mut block in blocks {
             block.generate(&mut sess);
@@ -87,7 +84,7 @@ impl GenerationSession {
         //     sess.funcs.index_mut(i).generate_code(&mut sess);
         // }
 
-        Program{ codes: sess.codes, types: sess.types, msgs: sess.msgs, funcs: sess.fndecls }
+        Program{ codes: sess.codes, types: sess.types, msgs: sess.msgs, funcs: sess.fns }
     }
 }
 
