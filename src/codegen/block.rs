@@ -1,6 +1,9 @@
 
 // Block
 
+use common::From2;
+use common::StringPosition;
+
 use syntax::Block as SyntaxBlock;
 // use syntax::Statement;
 
@@ -23,16 +26,12 @@ impl Block {
     fn fn_id_to_vars(&self, sess: &mut GenerationSession) -> VarCollection {
 
         let mut ret_val = VarCollection::new();
-
         match sess.fns.find_by_idx(self.fn_id) {
             None => return ret_val,
             Some(ref fn_decl) => {
-
                 for arg in &fn_decl.args {
-                    let id = ret_val.try_push(Var::new(arg.name.clone(), arg.ty, false), &mut sess.msgs);
-                    perrorln!("push returned id is {:?}", id);
+                    ret_val.try_push(Var::new(arg.name.clone(), arg.ty, false, StringPosition::from2(arg.pos[0].start_pos, arg.pos[1].end_pos)), &mut sess.msgs);
                 }
-
                 return ret_val;
             }
         };
@@ -43,6 +42,10 @@ impl Block {
 
     }
 }
+
+// TODO: VarCollection position
+// Block merge into funcs
+// New statement generater for dispatch each statement
 
 #[cfg(test)]
 #[test]
@@ -64,8 +67,8 @@ fn gen_block_fn_id_to_vars() {
 
     let vars = gen_vars("i32 a, u32 b");
     assert_eq!(vars.len(), 2);
-    assert_eq!(vars.index(0), &VarOrScope::Some(Var::new("a".to_owned(), TypeID::Some(5), false )));
-    assert_eq!(vars.index(1), &VarOrScope::Some(Var::new("b".to_owned(), TypeID::Some(6), false )));
+    assert_eq!(vars.index(0), &VarOrScope::Some(Var::new("a".to_owned(), TypeID::Some(5), false, make_str_pos!(1, 1, 1, 5) )));
+    assert_eq!(vars.index(1), &VarOrScope::Some(Var::new("b".to_owned(), TypeID::Some(6), false, make_str_pos!(1, 7, 1, 11) )));
 }
 
 

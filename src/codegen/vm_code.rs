@@ -26,16 +26,13 @@ pub enum Operator {
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum VMCode {
-    ScopeEnter, 
-    RegisterLocal(String, SMType),
-    ScopeLeave,
+    
+    Mov(usize, usize),
+    UnOp(usize, Operator),
+    BinOp(usize, usize, Operator),
 
-    LoadLiteral(LiteralValue),      // load literal to rax,
-    LoadLocal(String),              // read local with this name to  
-    StoreLocal(String),             // store rax to rbp[n],
-
-    PerformOperator(Operator),     // Perform operator on stack top
-
+    Call(usize),
+    
     Goto(usize),
     GotoIf(bool, usize),
 }
