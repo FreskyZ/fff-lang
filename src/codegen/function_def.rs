@@ -248,11 +248,9 @@ impl FnCollection {
             FnID::Invalid => None,
         }
     }
-    pub fn find_by_idx(&self, idx: usize) -> Option<&FnImpl> {
-        match self.fns[idx].valid {
-            true => Some(&self.fns[idx]),
-            false => None,
-        }
+    // It mainly used internal and ignore not valid
+    pub fn find_by_idx(&self, idx: usize) -> &FnImpl {
+        &self.fns[idx]
     }
 
     pub fn len(&self) -> usize { self.fns.len() }
@@ -441,7 +439,7 @@ fn gen_fn_decl() {
     let syn_fn = SyntaxFunctionDef::from_str(program, 0);
     let (id, block) = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs);
     {
-        let fndecl = sess.fns.find_by_idx(id).unwrap();
+        let fndecl = sess.fns.find_by_idx(id);
         assert_eq!(fndecl.id, 0);
         assert_eq!(fndecl.name, "main");
         assert_eq!(fndecl.args.len(), 0);
@@ -472,14 +470,23 @@ fn gen_fn_decl() {
     let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs);
 
     sess.fns.check_sign_eq(&mut sess.types, &mut sess.msgs);
-    let expect_messsage = &mut MessageEmitter::new();
-    expect_messsage.push(CodegenMessage::FunctionRedefinition{
+    let expect_messsage1 = &mut MessageEmitter::new();
+    expect_messsage1.push(CodegenMessage::FunctionRedefinition{
         sign: "some(i32, u32, array[string])".to_owned(),
         fnposs: vec![make_str_pos!(1, 1, 1, 2), make_str_pos!(1, 2, 1, 3), make_str_pos!(1, 4, 1, 5)]
     });
-    expect_messsage.push(CodegenMessage::FunctionRedefinition{
+    expect_messsage1.push(CodegenMessage::FunctionRedefinition{
         sign: "some(i32, u32, string)".to_owned(),
         fnposs: vec![make_str_pos!(1, 3, 1, 4), make_str_pos!(1, 6, 1, 7)]
     });
-    assert_eq!(sess.messages(), expect_messsage);
+    let expect_messsage2 = &mut MessageEmitter::new();
+    expect_messsage2.push(CodegenMessage::FunctionRedefinition{
+        sign: "some(i32, u32, string)".to_owned(),
+        fnposs: vec![make_str_pos!(1, 3, 1, 4), make_str_pos!(1, 6, 1, 7)]
+    });
+    expect_messsage2.push(CodegenMessage::FunctionRedefinition{
+        sign: "some(i32, u32, array[string])".to_owned(),
+        fnposs: vec![make_str_pos!(1, 1, 1, 2), make_str_pos!(1, 2, 1, 3), make_str_pos!(1, 4, 1, 5)]
+    });
+    assert!(sess.messages() == expect_messsage1 || sess.messages() == expect_messsage2);
 }

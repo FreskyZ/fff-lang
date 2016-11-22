@@ -9,8 +9,6 @@ use syntax::Program as SyntaxProgram;
 
 use codegen::TypeID;
 use codegen::TypeDeclCollection;
-use codegen::FnID;
-use codegen::FnImpl;
 use codegen::FnCollection;
 use codegen::VMCodeCollection;
 use codegen::Block;
@@ -50,14 +48,6 @@ impl GenerationSession {
     // TypeCollection interface 
     pub fn type_usage_to_id(&mut self, ty: SyntaxType) -> TypeID {
         self.types.try_get_id(ty, &mut self.msgs)
-    }
-
-    // FunctionCollection interface
-    pub fn fn_idx_to_decl(&self, id: usize) -> Option<&FnImpl> {
-        self.fns.find_by_idx(id)
-    }
-    pub fn fn_id_to_decl(&self, id: FnID) -> Option<&FnImpl> {
-        self.fns.find_by_id(id)
     }
     
     // Dispatch program items to session, return Program for vm use

@@ -350,7 +350,6 @@ pub struct MessageEmitter {
 pub struct MessageEmitter {
     messages: Vec<Message>,
 }
-
 impl fmt::Debug for MessageEmitter {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for message in &self.messages {
@@ -361,7 +360,6 @@ impl fmt::Debug for MessageEmitter {
     }
 }
 impl_display_by_debug!(MessageEmitter);
-
 impl MessageEmitter {
 
     pub fn new() -> MessageEmitter {

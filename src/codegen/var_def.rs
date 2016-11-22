@@ -10,6 +10,7 @@ use message::MessageEmitter;
 use message::CodegenMessage;
 
 use codegen::TypeID;
+use codegen::TypeDeclCollection;
 
 // Variable collection
 #[derive(Debug, Eq, PartialEq)]
@@ -18,12 +19,12 @@ pub struct Var {
     pub ty: TypeID,
     pub is_const: bool,
     pub def_pos: StringPosition,
-    is_shadowed: bool,
+    offset: usize, // rbp offset, 0 for some error, while any error won't go into vm
 }
 impl Var {
     
     pub fn new(name: String, ty: TypeID, is_const: bool, def_pos: StringPosition) -> Var {
-        Var{ name: name, ty: ty, is_const: is_const, def_pos: def_pos, is_shadowed: false }
+        Var{ name: name, ty: ty, is_const: is_const, def_pos: def_pos, offset: 0 }
     }
 }
 
@@ -77,7 +78,11 @@ impl VarOrScope {
 pub struct VarCollection {
     items: Vec<VarOrScope>,  
     // no need to use buffered mask, rfind, that's exactly variable shadowing's logical meaning and best implementation method
-    next_temp: usize, // next temp local var name, start from ?, which change into "?0", "?1", etc.
+     // next temp local var name, start from ?, which change into "?0", "?1", etc.
+    next_temp: usize,
+    // next local variable offset from ebp
+    // Some means still working, None means meat some error and no need to continue working
+    next_offset: Option<usize>, 
 }
 impl VarCollection {
 
@@ -85,13 +90,20 @@ impl VarCollection {
         VarCollection{
             items: Vec::new(),
             next_temp: 0,
+            next_offset: Some(0),
         }
     }
 
     // When meet var decl statment or compiler generated var decl statement
     // Add a variable definition, shadow previous scope item
-    // return the ID if success, the previous item reference and the current item if failed
-    pub fn try_push(&mut self, item: Var, messages: &mut MessageEmitter) -> VarID {
+    // First check var name existence before the last scope barrier, 
+    //     if this name defined, ignore the item, push message and return invalid id, act like this var is not defined
+    // Then check var type validation,
+    //     if type is not valid, then the next_offset invalidated because furthur calculation is not necessary
+    //     still push the var and return valid id for furthur reference for the name, but as type is invalid, expression type eval will be invalidated, too
+    // If next_offset had been None before, just do not add the item_size to the next_offset, 
+    //     if the item pass before check, push it, not set offset and return valid id
+    pub fn try_push(&mut self, mut item: Var, types: &TypeDeclCollection, messages: &mut MessageEmitter) -> VarID {
 
         for exist_item in self.items.iter().rev() {
             match exist_item {
@@ -102,7 +114,7 @@ impl VarCollection {
                             predef: exist_item.def_pos,
                             curdef: item.def_pos,
                         });
-                        return VarID::Invalid;
+                        return VarID::Invalid;  // Ignore the item
                     }
                 }
                 &VarOrScope::ScopeBarrier => { 
@@ -111,8 +123,19 @@ impl VarCollection {
             }
         }
 
-        // Err returned and new masks set
         let ret_val = self.items.len();
+        match (types.find_by_id(item.ty), self.next_offset) {
+            (None, ref mut next_offset) => { // Invalid type, invalidate next_offset, not set item.offset, push item and return valid id
+                *next_offset = None;
+            }
+            (Some(ty), Some(ref mut next_offset)) => { // valid item type and valid next offset, set item.offset, set next_offset, push item and return valid id
+                item.offset = *next_offset;
+                *next_offset += ty.size;
+            }
+            (Some(_ty), None) => {  // Valid item type but next offset is invalid, not set item.offset, push item and return valid id   
+            },
+        }
+
         self.items.push(VarOrScope::Some(item));
         return VarID::Some(ret_val);
     }
@@ -121,7 +144,7 @@ impl VarCollection {
     pub fn push_scope(&mut self) {
         self.items.push(VarOrScope::ScopeBarrier);
     }
-    pub fn pop_scope(&mut self) {
+    pub fn pop_scope(&mut self, types: &TypeDeclCollection) {
         
         let mut pop_count = 1; // Add Scopebarrier here
         for item in self.items.iter().rev() {
@@ -132,7 +155,27 @@ impl VarCollection {
         }
 
         for _ in 0..pop_count {
-            let _ = self.items.pop();
+            let _ = self.items.pop().unwrap();
+        }
+
+        match self.next_offset {
+            None => (),
+            Some(ref mut offset) => { 
+                let mut last_ty = TypeID::Invalid;
+                let mut last_offset = 0;
+                for item in self.items.iter().rev() { // Skip barriers and get last offset and last typeid
+                    match item {
+                        &VarOrScope::ScopeBarrier => (),
+                        &VarOrScope::Some(ref item) => {
+                            last_ty = item.ty;
+                            last_offset = item.offset;
+                        }
+                    }
+                }
+
+                // if offset is valid, item.offset must be some and types.get(id) must be some
+                *offset = last_offset + types.find_by_id(last_ty).unwrap().size;
+            }
         }
     }
 
@@ -169,10 +212,10 @@ impl VarCollection {
         }
     }
 
-    pub fn push_temp(&mut self, ty: TypeID, is_const: bool, messages: &mut MessageEmitter) -> VarID {
+    pub fn push_temp(&mut self, ty: TypeID, is_const: bool, types: &TypeDeclCollection, messages: &mut MessageEmitter) -> VarID {
         self.next_temp += 1; // do not worry about start from 0
         let next_temp = self.next_temp;
-        self.try_push(Var::new("?".to_owned() + &format!("{}", next_temp), ty, is_const, StringPosition::new()), messages)  // They are not gonna to redefined
+        self.try_push(Var::new("?".to_owned() + &format!("{}", next_temp), ty, is_const, StringPosition::new()), types, messages)  // They are not gonna to redefined
     }  
 
     pub fn len(&self) -> usize { self.items.len() }
@@ -180,13 +223,15 @@ impl VarCollection {
 }
 
 #[cfg(test)]
+macro_rules! new_var {
+    ($name: expr, $id: expr, $is_const: expr, $pos: expr) => (Var::new($name.to_owned(), TypeID::Some($id), $is_const, $pos))
+}
+
+#[cfg(test)]
 #[test]
-fn gen_var_shadow() {
+fn gen_vars_id() {
 
-    macro_rules! new_var {
-        ($name: expr, $id: expr, $is_const: expr, $pos: expr) => (Var::new($name.to_owned(), TypeID::Some($id), $is_const, $pos))
-    }
-
+    let types = &TypeDeclCollection::new();
     let mut vars = VarCollection::new();
 
     // Nothing
@@ -195,14 +240,14 @@ fn gen_var_shadow() {
 
     // Normal no barrier no collision push
     let messages = &mut MessageEmitter::new();
-    assert_eq!(vars.try_push(new_var!("1", 1, false, make_str_pos!(1, 1, 1, 1)), messages), VarID::Some(0));
+    assert_eq!(vars.try_push(new_var!("1", 1, false, make_str_pos!(1, 1, 1, 1)), types, messages), VarID::Some(0));
     assert_eq!(vars.items.len(), 1);
     assert_eq!(vars.find_by_name("1"), VarID::Some(0));
     assert_eq!(vars.find_by_name("2"), VarID::Invalid);
     assert_eq!(messages, &MessageEmitter::new());
 
     let messages = &mut MessageEmitter::new();
-    assert_eq!(vars.try_push(new_var!("3", 5, true, make_str_pos!(1, 2, 1, 2)), messages), VarID::Some(1));
+    assert_eq!(vars.try_push(new_var!("3", 5, true, make_str_pos!(1, 2, 1, 2)), types, messages), VarID::Some(1));
     assert_eq!(vars.items.len(), 2);
     assert_eq!(vars.find_by_name("1"), VarID::Some(0));
     assert_eq!(vars.find_by_name("3"), VarID::Some(1));
@@ -210,7 +255,7 @@ fn gen_var_shadow() {
 
     // Normal no barrier but collision push
     let messages = &mut MessageEmitter::new();
-    assert_eq!(vars.try_push(new_var!("1", 5, false, make_str_pos!(1, 3, 1, 3)), messages), VarID::Invalid);
+    assert_eq!(vars.try_push(new_var!("1", 5, false, make_str_pos!(1, 3, 1, 3)), types, messages), VarID::Invalid);
     assert_eq!(vars.items.len(), 2);
     assert_eq!(vars.find_by_name("1"), VarID::Some(0));
     assert_eq!(vars.find_by_name("3"), VarID::Some(1));
@@ -221,7 +266,7 @@ fn gen_var_shadow() {
     // Push barrier
     vars.push_scope();
     let messages = &mut MessageEmitter::new();
-    assert_eq!(vars.try_push(new_var!("1", 13, false, make_str_pos!(1, 4, 1, 4)), messages), VarID::Some(3));
+    assert_eq!(vars.try_push(new_var!("1", 13, false, make_str_pos!(1, 4, 1, 4)), types, messages), VarID::Some(3));
     assert_eq!(vars.items.len(), 4);
     assert_eq!(vars.find_by_name("1"), VarID::Some(3));  // 2 is the barrier
     assert_eq!(vars.find_by_name("3"), VarID::Some(1));
@@ -230,7 +275,7 @@ fn gen_var_shadow() {
     assert_eq!(messages, &MessageEmitter::new());
 
     let messages = &mut MessageEmitter::new();
-    assert_eq!(vars.try_push(new_var!("42", 5, true, make_str_pos!(1, 5, 1, 5)), messages), VarID::Some(4));
+    assert_eq!(vars.try_push(new_var!("42", 5, true, make_str_pos!(1, 5, 1, 5)), types, messages), VarID::Some(4));
     assert_eq!(vars.items.len(), 5);
     assert_eq!(vars.find_by_name("1"), VarID::Some(3));
     assert_eq!(vars.find_by_name("3"), VarID::Some(1));
@@ -239,7 +284,7 @@ fn gen_var_shadow() {
     assert_eq!(messages, &MessageEmitter::new());
 
     let messages = &mut MessageEmitter::new();
-    assert_eq!(vars.try_push(new_var!("1", 16, false, make_str_pos!(1, 6, 1, 6)), messages), VarID::Invalid);
+    assert_eq!(vars.try_push(new_var!("1", 16, false, make_str_pos!(1, 6, 1, 6)), types, messages), VarID::Invalid);
     assert_eq!(vars.items.len(), 5);
     assert_eq!(vars.find_by_name("1"), VarID::Some(3));
     assert_eq!(vars.find_by_name("3"), VarID::Some(1));
@@ -250,10 +295,32 @@ fn gen_var_shadow() {
     assert_eq!(messages, expect_message);
 
     // Pop barrier
-    vars.pop_scope();
+    vars.pop_scope(types);
     assert_eq!(vars.items.len(), 2);
     assert_eq!(vars.find_by_name("1"), VarID::Some(0));
     assert_eq!(vars.find_by_name("3"), VarID::Some(1));
     assert_eq!(vars.find_by_name("42"), VarID::Invalid);
     assert_eq!(vars.find_by_name("1024"), VarID::Invalid);
 }
+
+#[cfg(test)]
+#[test]
+fn gen_vars_offset() {
+
+    let types = &TypeDeclCollection::new();
+    let mut vars = VarCollection::new();
+
+    let messages = &mut MessageEmitter::new();
+    assert_eq!(vars.try_push(new_var!("1", 1, false, make_str_pos!(1, 1, 1, 1)), types, messages), VarID::Some(0));
+    assert_eq!(vars.next_offset, 1); // u8
+    assert_eq!(vars.find_by_id(vars.find_by_name("1")).unwrap().offset, 0);
+    
+    let messages = &mut MessageEmitter::new();
+    assert_eq!(vars.try_push(new_var!("1", 1, false, make_str_pos!(1, 1, 1, 1)), types, messages), VarID::Some(0));
+    assert_eq!(vars.next_offset, 1); // u8
+    assert_eq!(vars.find_by_id(vars.find_by_name("1")).unwrap().offset, 0);
+
+
+}
+
+// TODO vars offset, attention call stack are reverse order, heap are normal order

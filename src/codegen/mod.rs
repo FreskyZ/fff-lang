@@ -25,13 +25,14 @@
 
 mod vm_code;
 mod session;
-mod expr_stmt;
 mod type_def;
 mod function_def;
 mod var_def;
 mod block;
+mod statement;
 
 pub use codegen::type_def::TypeID;
+pub use codegen::type_def::TypeField;
 pub use codegen::type_def::TypeDecl;
 pub use codegen::type_def::TypeDeclCollection;
 pub use codegen::function_def::FnID;
