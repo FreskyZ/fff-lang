@@ -4,26 +4,20 @@
 use message::Message;
 use message::MessageEmitter;
 
-use syntax::SMType as SyntaxType;
 use syntax::Program as SyntaxProgram;
 
-use codegen::TypeID;
 use codegen::TypeDeclCollection;
 use codegen::FnCollection;
-use codegen::VMCodeCollection;
+use codegen::CodeCollection;
+use codegen::VarCollection;
 use codegen::Block;
 
 pub struct GenerationSession {
     pub msgs: MessageEmitter,
     pub types: TypeDeclCollection,
     pub fns: FnCollection,
-    pub codes: VMCodeCollection,
-}
-pub struct Program {
-    pub msgs: MessageEmitter,
-    pub codes: VMCodeCollection,
-    pub types: TypeDeclCollection,
-    pub funcs: FnCollection,
+    pub codes: CodeCollection,
+    pub vars: VarCollection,
 }
 
 impl GenerationSession {
@@ -33,7 +27,8 @@ impl GenerationSession {
             msgs: MessageEmitter::new(),
             types: TypeDeclCollection::new(),
             fns: FnCollection::new(),
-            codes: VMCodeCollection::new(),
+            codes: CodeCollection::new(),
+            vars: VarCollection::new(),
         }
     } 
     
@@ -44,18 +39,11 @@ impl GenerationSession {
     pub fn messages(&self) -> &MessageEmitter {
         &self.msgs
     }
-
-    // TypeCollection interface 
-    pub fn type_usage_to_id(&mut self, ty: SyntaxType) -> TypeID {
-        self.types.try_get_id(ty, &mut self.msgs)
-    }
     
     // Dispatch program items to session, return Program for vm use
-    pub fn dispatch(program: SyntaxProgram) -> Program {
-        let mut sess = GenerationSession::new();
+    pub fn dispatch(program: SyntaxProgram) -> CodeCollection {
 
-        // Future: aliases(using)
-        // Future: typedefs
+        let mut sess = GenerationSession::new();
 
         // such that function can declare in any order
         let mut blocks = Vec::new();
@@ -69,14 +57,6 @@ impl GenerationSession {
             block.generate(&mut sess);
         }
 
-        // Seperate function id, function sign with SyntaxBlock and generate next
-        // for i in 0..sess.funcs.len() {
-        //     sess.funcs.index_mut(i).generate_code(&mut sess);
-        // }
-
-        Program{ codes: sess.codes, types: sess.types, msgs: sess.msgs, funcs: sess.fns }
+        sess.codes
     }
-}
-
-impl Program {
 }

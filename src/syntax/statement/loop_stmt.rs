@@ -16,7 +16,6 @@ use syntax::Expression;
 
 #[derive(Eq, PartialEq)]
 pub struct LoopStatement {
-    pub id: usize,
     pub name: Option<String>,
     pub body: Block,
     pub pos: [StringPosition; 2],   // position for 'loop' and loop name
@@ -24,8 +23,7 @@ pub struct LoopStatement {
 
 impl fmt::Debug for LoopStatement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<{}>loop @ {:?}{} @ {:?} {:?}", 
-            self.id, 
+        write!(f, "loop @ {:?}{} @ {:?} {:?}", 
             self.pos[0],
             match self.name { Some(ref name) => format!("{}", name), None => format!("\"\""), },
             self.pos[1], 
@@ -35,8 +33,7 @@ impl fmt::Debug for LoopStatement {
 }
 impl fmt::Display for LoopStatement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<{}>loop {}{}", 
-            self.id,
+        write!(f, "loop {}{}", 
             match self.name{ Some(ref name) => format!("{}", name), None => format!("\"\"") },
             self.body
         )
@@ -77,7 +74,6 @@ impl IASTItem for LoopStatement {
         match Block::parse(lexer, index + current_len) {
             (Some(block), block_len) => 
                 (Some(LoopStatement{ 
-                    id: 0, 
                     name: name, 
                     body: block, 
                     pos: [lexer.pos(index), name_pos] 
@@ -103,7 +99,6 @@ mod tests {
         //               123456789012345 678901234 56789
         ast_test_case!{ "loop { writeln(\"love zmj\"); }", 8, make_str_pos!(1, 1, 1, 29),
             LoopStatement{
-                id: 0,
                 name: None, 
                 body: Block::from_str("loop { writeln(\"love zmj\"); }", 1),
                 pos: [make_str_pos!(1, 1, 1, 4), StringPosition::new()]
@@ -111,7 +106,6 @@ mod tests {
         }            //  12345 678901 2345
         ast_test_case!{ "loop \"innnn\" {}", 4, make_str_pos!(1, 1, 1, 15),
             LoopStatement{
-                id: 0,
                 name: Some("innnn".to_owned()),
                 body: Block::from_str("loop \"innnn\" {}", 2),
                 pos: [make_str_pos!(1, 1, 1, 4), make_str_pos!(1, 6, 1, 12)],
@@ -119,7 +113,6 @@ mod tests {
         }            //  12345678901
         ast_test_case!{ "loop abc {}", 4, make_str_pos!(1, 1, 1, 11),
             LoopStatement{
-                id: 0,
                 name: None,
                 body: Block::from_str("loop abc {}", 2),
                 pos: [make_str_pos!(1, 1, 1, 4), StringPosition::new()],

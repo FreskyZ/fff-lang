@@ -26,6 +26,11 @@ impl Var {
     pub fn new(name: String, ty: TypeID, is_const: bool, def_pos: StringPosition) -> Var {
         Var{ name: name, ty: ty, is_const: is_const, def_pos: def_pos, offset: 0 }
     }
+
+    #[cfg(test)]
+    pub fn new_test(name: &str, ty: TypeID, is_const: bool, def_pos: StringPosition, offset: usize) -> Var {
+        Var{ name: name.to_owned(), ty: ty, is_const: is_const, def_pos: def_pos, offset: offset }
+    } 
 }
 
 // Scoped collection infrastructure
@@ -124,15 +129,15 @@ impl VarCollection {
         }
 
         let ret_val = self.items.len();
-        match (types.find_by_id(item.ty), self.next_offset) {
-            (None, ref mut next_offset) => { // Invalid type, invalidate next_offset, not set item.offset, push item and return valid id
+        match (types.find_by_id(item.ty), &mut self.next_offset) {
+            (None, next_offset) => { // Invalid type, invalidate next_offset, not set item.offset
                 *next_offset = None;
             }
-            (Some(ty), Some(ref mut next_offset)) => { // valid item type and valid next offset, set item.offset, set next_offset, push item and return valid id
-                item.offset = *next_offset;
+            (Some(ty), &mut Some(ref mut next_offset)) => { // valid item type and valid next offset, set next_offset, set item.offset
                 *next_offset += ty.size;
+                item.offset = *next_offset;
             }
-            (Some(_ty), None) => {  // Valid item type but next offset is invalid, not set item.offset, push item and return valid id   
+            (Some(_ty), &mut None) => {  // Valid item type but next offset is invalid, not set item.offset
             },
         }
 
@@ -144,7 +149,7 @@ impl VarCollection {
     pub fn push_scope(&mut self) {
         self.items.push(VarOrScope::ScopeBarrier);
     }
-    pub fn pop_scope(&mut self, types: &TypeDeclCollection) {
+    pub fn pop_scope(&mut self) {
         
         let mut pop_count = 1; // Add Scopebarrier here
         for item in self.items.iter().rev() {
@@ -161,20 +166,15 @@ impl VarCollection {
         match self.next_offset {
             None => (),
             Some(ref mut offset) => { 
-                let mut last_ty = TypeID::Invalid;
-                let mut last_offset = 0;
-                for item in self.items.iter().rev() { // Skip barriers and get last offset and last typeid
+                for item in self.items.iter().rev() { // Skip barriers
                     match item {
                         &VarOrScope::ScopeBarrier => (),
                         &VarOrScope::Some(ref item) => {
-                            last_ty = item.ty;
-                            last_offset = item.offset;
+                            *offset = item.offset;     // is just the needed next_offset
+                            break;
                         }
                     }
                 }
-
-                // if offset is valid, item.offset must be some and types.get(id) must be some
-                *offset = last_offset + types.find_by_id(last_ty).unwrap().size;
             }
         }
     }
@@ -295,7 +295,7 @@ fn gen_vars_id() {
     assert_eq!(messages, expect_message);
 
     // Pop barrier
-    vars.pop_scope(types);
+    vars.pop_scope();
     assert_eq!(vars.items.len(), 2);
     assert_eq!(vars.find_by_name("1"), VarID::Some(0));
     assert_eq!(vars.find_by_name("3"), VarID::Some(1));
@@ -307,20 +307,49 @@ fn gen_vars_id() {
 #[test]
 fn gen_vars_offset() {
 
+    macro_rules! test_case {
+        ($vars: expr, $types: expr, $name: expr, $typeid: expr, $var_id: expr, $offset: expr) => ({
+            assert_eq!($vars.try_push(Var::new($name.to_owned(), $typeid, false, StringPosition::new()), $types, &mut MessageEmitter::new()), $var_id, "try push return unexpceted");
+            assert_eq!($vars.next_offset, Some($offset), "vars.next_offset unexpceted");
+            if $var_id.is_valid() {
+                assert_eq!($vars.find_by_name($name), $var_id, "find by name return unexpected");
+                assert_eq!($vars.find_by_id($var_id).unwrap().offset, $offset, "find by id and unwrap's offset unexpceted");
+            }
+        });
+        ($vars: expr, $types: expr, $name: expr, $typeid: expr, $var_id: expr) => ({
+            assert_eq!($vars.try_push(Var::new($name.to_owned(), $typeid, false, StringPosition::new()), $types, &mut MessageEmitter::new()), $var_id, "try push return unexpceted");
+            assert_eq!($vars.next_offset, None, "vars.next_offset unexpceted");
+            if $var_id.is_valid() {
+                assert_eq!($vars.find_by_name($name), $var_id, "find by name return unexpected");
+                assert_eq!($vars.find_by_id($var_id).unwrap().offset, 0, "find by id and unwrap's offset unexpceted");
+            }
+        }) 
+    }
+
     let types = &TypeDeclCollection::new();
     let mut vars = VarCollection::new();
 
-    let messages = &mut MessageEmitter::new();
-    assert_eq!(vars.try_push(new_var!("1", 1, false, make_str_pos!(1, 1, 1, 1)), types, messages), VarID::Some(0));
-    assert_eq!(vars.next_offset, 1); // u8
-    assert_eq!(vars.find_by_id(vars.find_by_name("1")).unwrap().offset, 0);
-    
-    let messages = &mut MessageEmitter::new();
-    assert_eq!(vars.try_push(new_var!("1", 1, false, make_str_pos!(1, 1, 1, 1)), types, messages), VarID::Some(0));
-    assert_eq!(vars.next_offset, 1); // u8
-    assert_eq!(vars.find_by_id(vars.find_by_name("1")).unwrap().offset, 0);
+    //          vars, types, name,    var typeid,       var expect id,  var offset and next offset
+    test_case!{ vars, types, "name1", TypeID::Some(1),  VarID::Some(0), 1 }
+    test_case!{ vars, types, "name2", TypeID::Some(2),  VarID::Some(1), 2 }
+    test_case!{ vars, types, "name3", TypeID::Some(13), VarID::Some(2), 26 }
 
+    test_case!{ vars, types, "name1", TypeID::Some(5),  VarID::Invalid, 26 }
+    vars.push_scope(); // this is var id 3
+    test_case!{ vars, types, "name2", TypeID::Some(5),  VarID::Some(4), 30 }
+    test_case!{ vars, types, "name1", TypeID::Some(11), VarID::Some(5), 34 }
+    test_case!{ vars, types, "name5", TypeID::Some(1),  VarID::Some(6), 35 }
+    vars.push_scope(); // this is var id 7
+    test_case!{ vars, types, "name1", TypeID::Some(7),  VarID::Some(8), 43 }
+    vars.pop_scope();
+    assert_eq!{ vars.next_offset, Some(35) }
+    vars.pop_scope();
+    assert_eq!{ vars.next_offset, Some(26) }
 
+    vars.push_scope();
+    test_case!{ vars, types, "name2", TypeID::Some(5),  VarID::Some(4), 30 }
+    test_case!{ vars, types, "name not care", TypeID::Invalid, VarID::Some(5) }
+    test_case!{ vars, types, "name not care again", TypeID::Some(8), VarID::Some(6) }
+    vars.pop_scope();
+    assert_eq!{ vars.next_offset, None }
 }
-
-// TODO vars offset, attention call stack are reverse order, heap are normal order

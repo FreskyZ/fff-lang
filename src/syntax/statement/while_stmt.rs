@@ -15,7 +15,6 @@ use syntax::Block;
 
 #[derive(Eq, PartialEq)]
 pub struct WhileStatement {
-    pub id: usize,
     pub expr: Expression,
     pub body: Block,
     pub pos: StringPosition, // while position
@@ -23,12 +22,12 @@ pub struct WhileStatement {
 
 impl fmt::Debug for WhileStatement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<{}> while @ {:?} {:?} {:?}", self.id, self.pos, self.expr, self.body)
+        write!(f, "while @ {:?} {:?} {:?}", self.pos, self.expr, self.body)
     }
 }
 impl fmt::Display for WhileStatement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<{}> while {} {}", self.id, self.expr, self.body)
+        write!(f, "while {} {}", self.expr, self.body)
     }
 }
 
@@ -58,7 +57,7 @@ impl IASTItem for WhileStatement {
             (None, length) => return (None, current_len + length),
         };
 
-        (Some(WhileStatement{ id: 0, expr: expr, body: body, pos: pos}), current_len)
+        (Some(WhileStatement{ expr: expr, body: body, pos: pos}), current_len)
     }
 }
 

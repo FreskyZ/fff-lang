@@ -3,7 +3,7 @@
 // mainly primitive type implementations
 // vmcode design is in mod codegen
 
-use codegen::VMCode;
+use codegen::Code;
 
 pub enum RuntimeValue {
     I32(i32),
@@ -18,8 +18,8 @@ pub enum RuntimeValue {
 
 // execution state in a function
 pub struct ExecutionState {
-    insts: Vec<VMCode>,
-    rip: usize,
+    insts: Vec<Code>,
+    regs: usize,
     local_vars: Vec<RuntimeValue>,
     eval_stack: Vec<RuntimeValue>,
 }

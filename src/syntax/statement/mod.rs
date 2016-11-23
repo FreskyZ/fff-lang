@@ -6,7 +6,6 @@
 //     | JumpStatement
  
 use std::fmt;
-use std::cmp;
 
 use common::StringPosition;
 
@@ -34,6 +33,7 @@ pub use self::for_stmt::ForStatement;
 pub use self::if_stmt::ElseIfBranch;
 pub use self::if_stmt::IfStatement;
 
+#[derive(Eq, PartialEq)]
 pub enum Statement {
     VarDecl(VarDeclStatement),        // const, var
     Break(BreakStatement),            // break 
@@ -44,7 +44,7 @@ pub enum Statement {
     While(WhileStatement),            // while
     For(ForStatement),                // for
     Loop(LoopStatement),              // loop
-    Block(Block, usize),              // {
+    Block(Block),                     // {
 }
 impl fmt::Debug for Statement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -58,7 +58,7 @@ impl fmt::Debug for Statement {
             Statement::While(ref inner) => write!(f, "{:?}", inner),
             Statement::For(ref inner) => write!(f, "{:?}", inner),
             Statement::Loop(ref inner) => write!(f, "{:?}", inner),
-            Statement::Block(ref block, ref index) => write!(f, "<{}>{:?}", index, block),
+            Statement::Block(ref block) => write!(f, "{:?}", block),
         }
     }
 }
@@ -74,47 +74,7 @@ impl fmt::Display for Statement {
             Statement::While(ref inner) => write!(f, "{}", inner),
             Statement::For(ref inner) => write!(f, "{}", inner),
             Statement::Loop(ref inner) => write!(f, "{}", inner),
-            Statement::Block(ref block, ref index) => write!(f, "<{}>{}", index, block),
-        }
-    }
-}
-
-impl cmp::PartialEq<Statement> for Statement {
-    fn eq(&self, other: &Statement) -> bool { self.get_id() == other.get_id() }
-    fn ne(&self, other: &Statement) -> bool { self.get_id() != other.get_id() }
-}
-impl cmp::Eq for Statement { 
-}
-
-impl Statement {
-
-    pub fn get_id(&self) -> usize {
-        match *self {
-            Statement::VarDecl(ref inner) => inner.id,
-            Statement::Break(ref inner) => inner.id,
-            Statement::Continue(ref inner) => inner.id,
-            Statement::Return(ref inner) => inner.id,
-            Statement::Expression(ref inner) => inner.id,
-            Statement::If(ref inner) => inner.id,
-            Statement::While(ref inner) => inner.id,
-            Statement::For(ref inner) => inner.id,
-            Statement::Loop(ref inner) => inner.id,
-            Statement::Block(ref _block, ref index) => *index, 
-        }
-    }
-
-    pub fn set_id(&mut self, id: usize) {
-        match *self {
-            Statement::VarDecl(ref mut inner) => inner.id = id,
-            Statement::Break(ref mut inner) => inner.id = id,
-            Statement::Return(ref mut inner) => inner.id = id,
-            Statement::Continue(ref mut inner) => inner.id = id,
-            Statement::Expression(ref mut inner) => inner.id = id,
-            Statement::If(ref mut inner) => inner.id = id,
-            Statement::While(ref mut inner) => inner.id = id,
-            Statement::For(ref mut inner) => inner.id = id,
-            Statement::Loop(ref mut inner) => inner.id = id,
-            Statement::Block(ref _block, ref mut index) => *index = id,
+            Statement::Block(ref block) => write!(f, "{}", block),
         }
     }
 }
@@ -132,7 +92,7 @@ impl IASTItem for Statement {
             Statement::While(ref inner) => inner.pos_all(),
             Statement::For(ref inner) => inner.pos_all(),
             Statement::Loop(ref inner) => inner.pos_all(),
-            Statement::Block(ref block, ref _index) => block.pos_all(),
+            Statement::Block(ref block) => block.pos_all(),
         }
     }
     
@@ -193,7 +153,7 @@ impl IASTItem for Statement {
             };
         } else if Block::is_first_final(lexer, index) {
             return match Block::parse(lexer, index) {
-                (Some(block), block_len) => (Some(Statement::Block(block, 0)), block_len),
+                (Some(block), block_len) => (Some(Statement::Block(block)), block_len),
                 (None, length) => (None, length),
             };
         } else if ExpressionStatement::is_first_final(lexer, index) {

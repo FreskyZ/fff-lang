@@ -13,11 +13,8 @@ use syntax::FunctionDef as SyntaxFunctionDef;
 use syntax::Argument as SyntaxArgument;
 use syntax::Block as SyntaxBlock;
 
-// use codegen::VMCode;
-// use codegen::expr_stmt::expr_stmt_expand;
 use codegen::TypeID;
 use codegen::TypeDeclCollection;
-use codegen::VMCodeCollection;
 use codegen::session::GenerationSession;
 
 #[derive(Eq, PartialEq, Clone, Copy)]
@@ -82,7 +79,6 @@ pub struct FnImpl { // Not Fn because Fn is used in std
     pub ret_type: TypeID,
     pub pos: [StringPosition; 3],  // pos_fn and pos_name and pos_ret_type
     valid: bool,                   // buf for all args valid and ret_type valid and later not sign collission with other
-    pub codes: VMCodeCollection,
 }
 impl cmp::PartialEq<FnImpl> for FnImpl {
     fn eq(&self, rhs: &FnImpl) -> bool { self.id == rhs.id }
@@ -136,7 +132,6 @@ impl FnImpl {
             args: args, 
             ret_type: ret_type, 
             valid: valid,
-            codes: VMCodeCollection::new(),
         }, syn_fn.body)
     }
 
@@ -297,7 +292,6 @@ fn gen_fn_sign_eq() {
         ],
         pos: [StringPosition::new(), StringPosition::new(), StringPosition::new()],
         valid: true,
-        codes: VMCodeCollection::new(),
     };
 
     // Normal equal

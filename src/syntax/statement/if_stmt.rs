@@ -67,7 +67,6 @@ impl IASTItem for ElseIfBranch {
 
 #[derive(Eq, PartialEq)]
 pub struct IfStatement {
-    pub id: usize,
     pub if_expr: Expression,
     pub if_body: Block,
     pub elseifs: Vec<ElseIfBranch>,
@@ -151,7 +150,6 @@ impl IASTItem for IfStatement {
         }
 
         return (Some(IfStatement{
-            id: 0,
             if_expr: expr,
             if_body: body,
             elseifs: elseifs,

@@ -44,13 +44,14 @@ pub use codegen::var_def::Var;
 pub use codegen::var_def::VarOrScope;
 pub use codegen::var_def::VarCollection;
 pub use codegen::block::Block;
-pub use codegen::vm_code::VMCode;
-pub use codegen::vm_code::VMCodeCollection;
-pub use codegen::session::Program;
+pub use codegen::statement::IStatementDispatcher;
+pub use codegen::statement::StatementGenerator;
+pub use codegen::vm_code::Code;
+pub use codegen::vm_code::CodeCollection;
 
 use syntax::Program as SyntaxProgram;
 use codegen::session::GenerationSession;
 
-pub fn generate(program: SyntaxProgram) -> Program {
+pub fn generate(program: SyntaxProgram) -> CodeCollection {
     GenerationSession::dispatch(program)
 }

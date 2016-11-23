@@ -17,7 +17,6 @@ use syntax::SMType;
 
 #[derive(Eq, PartialEq)]
 pub struct VarDeclStatement {
-    pub id: usize,
     pub is_const: bool,
     pub ty: SMType,
     pub name: String,
@@ -27,8 +26,7 @@ pub struct VarDeclStatement {
 
 impl fmt::Debug for VarDeclStatement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<{}>{} @ {:?} {:?} {} @ {:?}{}; @ {:?}",
-            self.id,
+        write!(f, "{} @ {:?} {:?} {} @ {:?}{}; @ {:?}",
             if self.is_const { format!("const") } else { format!("var") },
             self.pos[0],
             self.ty,
@@ -41,8 +39,7 @@ impl fmt::Debug for VarDeclStatement {
 }
 impl fmt::Display for VarDeclStatement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<{}>{} {} {}{};",
-            self.id,
+        write!(f, "{} {} {}{};",
             if self.is_const { format!("const") } else { format!("var") },
             self.ty,
             self.name,
@@ -94,7 +91,6 @@ impl IASTItem for VarDeclStatement {
                 poss[3] = lexer.pos(index + current_len);
                 current_len += 1;
                 return (Some(VarDeclStatement{ 
-                    id: 0, 
                     is_const: is_const, 
                     ty: ty, 
                     name: name, 
@@ -113,7 +109,6 @@ impl IASTItem for VarDeclStatement {
                             poss[3] = lexer.pos(index + current_len);
                             current_len += 1;
                             return (Some(VarDeclStatement{
-                                id: 0,
                                 is_const: is_const,
                                 ty: ty,
                                 name: name,
@@ -148,7 +143,6 @@ mod tests {
         assert_eq!(
             VarDeclStatement::parse(lexer, 0),
             (Some(VarDeclStatement {
-                id: 0,
                 is_const: true,
                 ty: SMType::Base("i32".to_owned(), make_str_pos!(1, 7, 1, 9)),
                 name: "abc".to_owned(),
@@ -167,7 +161,6 @@ mod tests {
         assert_eq!(
             VarDeclStatement::parse(lexer, 0),
             (Some(VarDeclStatement {
-                id: 0,
                 is_const: false,
                 ty: SMType::Array(Box::new(SMType::Base("i32".to_owned(), make_str_pos!(1, 6, 1, 8))), make_str_pos!(1, 5, 1, 9)),
                 name: "abc".to_owned(),
@@ -186,7 +179,6 @@ mod tests {
         assert_eq!(
             VarDeclStatement::parse(lexer, 0),
             (Some(VarDeclStatement {
-                id: 0,
                 is_const: true,
                 ty: SMType::Base("string".to_owned(), make_str_pos!(1, 7, 1, 12)),
                 name: "input".to_owned(),
@@ -205,7 +197,6 @@ mod tests {
         assert_eq!(
             VarDeclStatement::parse(lexer, 0),
             (Some(VarDeclStatement {
-                id: 0,
                 is_const: false,
                 ty: SMType::Array(Box::new(
                         SMType::Base("u8".to_owned(), make_str_pos!(1, 6, 1, 7))
@@ -226,7 +217,6 @@ mod tests {
         assert_eq!(
             VarDeclStatement::parse(lexer, 0),
             (Some(VarDeclStatement {
-                id: 0,
                 is_const: false,
                 ty: SMType::Tuple(
                         vec![

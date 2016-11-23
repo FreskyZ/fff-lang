@@ -16,7 +16,6 @@ use syntax::Expression;
 
 #[derive(Eq, PartialEq)]
 pub struct ExpressionStatement {
-    pub id: usize,
     pub left_expr: Expression,
     pub op: Option<SeperatorKind>,
     pub right_expr: Option<Expression>,
@@ -40,8 +39,7 @@ fn format_assign_op(op: &SeperatorKind) -> String {
 
 impl fmt::Debug for ExpressionStatement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<{}>{:?}{}; @ {:?}",
-            self.id,
+        write!(f, "{:?}{}; @ {:?}",
             self.left_expr,
             match (&self.op, &self.right_expr) { 
                 (&Some(ref op), &Some(ref expr)) => format!("{:?}({:?}) @ {:?}", format_assign_op(op), expr, self.pos[0]), 
@@ -53,8 +51,7 @@ impl fmt::Debug for ExpressionStatement {
 }
 impl fmt::Display for ExpressionStatement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<{}>{}{};",
-            self.id,
+        write!(f, "{}{};",
             self.left_expr,
             match (&self.op, &self.right_expr) { 
                 (&Some(ref op), &Some(ref expr)) => format!("{}({})", format_assign_op(op), expr), 
@@ -83,7 +80,6 @@ impl IASTItem for ExpressionStatement {
                 lexer.push(SyntaxMessage::NotFunctionCallIndependentExpressionStatement{ pos: left_expr.pos_all() });
             }
             return (Some(ExpressionStatement{
-                id: 0,
                 left_expr: left_expr,
                 op: None,
                 right_expr: None,
@@ -104,7 +100,6 @@ impl IASTItem for ExpressionStatement {
                 current_len += right_expr_len;
                 if lexer.nth(index + current_len).is_seperator(SeperatorKind::SemiColon) {
                     return (Some(ExpressionStatement{
-                        id: 0,
                         left_expr: left_expr,
                         op: Some(assign_op),
                         right_expr: Some(right_expr),
@@ -143,7 +138,6 @@ mod tests {
         //           12345678 90123456789 0123
         test_case!{ "writeln(\"helloworld\");", 5,
             ExpressionStatement {
-                id: 0,
                 left_expr: Expression::from_str("writeln(\"helloworld\")", 0),
                 op: None,
                 right_expr: None,
@@ -153,7 +147,6 @@ mod tests {
         //           1234567890
         test_case!{ "1 + 1 = 2;", 6,
             ExpressionStatement {
-                id: 0,
                 left_expr: Expression::from_str("1 + 1", 0),
                 op: Some(SeperatorKind::Assign),
                 right_expr: Some(Expression::from_str("1 + 1 = 2", 4)),
@@ -163,7 +156,6 @@ mod tests {
         //           1234567890
         test_case!{ "1 + 1+= 2;", 6,
             ExpressionStatement {
-                id: 0,
                 left_expr: Expression::from_str("1 + 1", 0),
                 op: Some(SeperatorKind::AddAssign),
                 right_expr: Some(Expression::from_str("1 + 1 = 2", 4)),

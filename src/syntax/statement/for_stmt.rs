@@ -16,7 +16,6 @@ use syntax::Block;
 
 #[derive(Eq, PartialEq)]
 pub struct ForStatement {
-    pub id: usize,
     pub iter_name: String, 
     pub expr_low: Expression,
     pub expr_high: Expression,
@@ -26,15 +25,15 @@ pub struct ForStatement {
 
 impl fmt::Debug for ForStatement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<{}> for @ {:?} {} @ {:?} in @ {:?} {:?}.. @ {:?} {:?} {:?}", 
-            self.id, self.pos[0], self.iter_name, self.pos[1], self.pos[2], self.expr_low, self.pos[3], self.expr_high, self.body    
+        write!(f, "for @ {:?} {} @ {:?} in @ {:?} {:?}.. @ {:?} {:?} {:?}", 
+            self.pos[0], self.iter_name, self.pos[1], self.pos[2], self.expr_low, self.pos[3], self.expr_high, self.body    
         )
     }
 }
 impl fmt::Display for ForStatement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<{}> for {} in {}..{} {}", 
-            self.id, self.iter_name, self.expr_low, self.expr_high, self.body    
+        write!(f, "for {} in {}..{} {}", 
+            self.iter_name, self.expr_low, self.expr_high, self.body    
         )
     }
 }
@@ -91,7 +90,6 @@ impl IASTItem for ForStatement {
         };
 
         return (Some(ForStatement{
-            id: 0, 
             iter_name: iter_name, 
             expr_low: left_expr, 
             expr_high: right_expr, 

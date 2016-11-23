@@ -61,9 +61,8 @@ impl IASTItem for Block {
                 }), current_len + 1);
             }
             match Statement::parse(lexer, index + current_len) {
-                (Some(mut stmt), stmt_len) => {
+                (Some(stmt), stmt_len) => {
                     current_len += stmt_len;
-                    stmt.set_id(stmts.len());
                     stmts.push(stmt);
                     continue;
                 }

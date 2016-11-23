@@ -16,31 +16,56 @@ pub enum Operand {
     Identifier(String),
 }
 
-#[derive(Debug, Eq, PartialEq)]
-pub enum Operator {
+pub enum UnaryOperator {
+
+}
+pub enum BinaryOperator {
 
 }
 
-#[derive(Debug, Eq, PartialEq)]
-pub enum VMCode {
-    
-    Mov(usize, usize),
-    UnOp(usize, Operator),
-    BinOp(usize, usize, Operator),
+pub enum Register {
+    RAX,
+    EAX,
+    AX,
+    AH,
+    AL,
 
-    Call(usize),
+    RIP,
+    RBP,
+}
+
+pub enum AddrOrReg {
+    Stack(usize), // actually negative, but all negative
+    Heap(usize),
+    Reg(Register),
+}
+
+pub enum Code {
+    
+    Mov(AddrOrReg, AddrOrReg),                    // Move from 0 to 1
+    UnOp(AddrOrReg, UnaryOperator),               // UnOp on 0 and return to rax
+    BinOp(AddrOrReg, AddrOrReg, BinaryOperator),  // BinOp on 0 and 1 and return to rax
 
     Goto(usize),
     GotoIf(bool, usize),
 }
 
-pub struct VMCodeCollection {
-    codes: Vec<VMCode>,
+#[derive(Eq, PartialEq, Debug, Copy, Clone)]
+pub struct CodeID(usize); // CodeID are always valid
+
+pub struct CodeCollection {
+    codes: Vec<Code>,
 }
 
-impl VMCodeCollection {
+impl CodeCollection {
     
-    pub fn new() -> VMCodeCollection {
-        VMCodeCollection{ codes: Vec::new() }
+    pub fn new() -> CodeCollection {
+        CodeCollection{ codes: Vec::new() }
+    }
+
+    pub fn push(&mut self, code: Code) -> CodeID {
+        let ret_val = self.codes.len();
+        self.codes.push(code);
+        return CodeID(ret_val);
     }
 }
