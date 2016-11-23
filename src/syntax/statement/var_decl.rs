@@ -23,7 +23,6 @@ pub struct VarDeclStatement {
     pub init_expr: Option<Expression>,
     pub pos: [StringPosition; 4],     // position for 'const' or 'var', name, assign, and semicolon
 }
-
 impl fmt::Debug for VarDeclStatement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{} @ {:?} {:?} {} @ {:?}{}; @ {:?}",
@@ -47,10 +46,13 @@ impl fmt::Display for VarDeclStatement {
         )
     }
 }
+impl VarDeclStatement {
 
+    pub fn pub_pos_all(&self) -> StringPosition { self.pos_all() }
+}
 impl IASTItem for VarDeclStatement {
 
-    fn pos_all(&self) -> StringPosition { StringPosition::from2(self.pos[0].start_pos, self.pos[2].end_pos) }
+    fn pos_all(&self) -> StringPosition { StringPosition::from2(self.pos[0].start_pos, self.pos[3].end_pos) }
 
     fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
         lexer.nth(index).is_keyword(KeywordKind::Const)

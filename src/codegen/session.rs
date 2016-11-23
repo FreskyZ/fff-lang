@@ -53,7 +53,7 @@ impl GenerationSession {
         }
         sess.fns.check_sign_eq(&mut sess.types, &mut sess.msgs);
         
-        for mut block in blocks {
+        for block in blocks {
             block.generate(&mut sess);
         }
 

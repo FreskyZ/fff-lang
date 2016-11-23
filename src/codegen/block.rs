@@ -10,7 +10,6 @@ use syntax::Block as SyntaxBlock;
 use codegen::TypeID;
 use codegen::Var;
 use codegen::VarCollection;
-use codegen::IStatementDispatcher;
 use codegen::StatementGenerator;
 use codegen::session::GenerationSession;
 
@@ -39,11 +38,11 @@ impl Block {
     }
 
     // All next generation steps dispatcher
-    pub fn generate(&mut self, sess: &mut GenerationSession) {
+    pub fn generate(self, sess: &mut GenerationSession) {
 
         let vars = self.fn_id_to_vars(sess);
         sess.vars = vars;
-        StatementGenerator::generate(&self.block, sess);
+        StatementGenerator::generate(self.block, sess);
 
     }
 }

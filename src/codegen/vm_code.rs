@@ -2,18 +2,29 @@
 // VM Instruction design
 
 #[derive(Debug, PartialEq)]
-pub enum LiteralValue {
-    IntegralLiteral(u64),  // integral, char, bool
-    FloatingLiteral(f64),  // f32, f64
-    StringLiteral(String),  
+pub enum LitValue {
+    Int(u64),  // integral, char, bool
+    Float(f64),  // f32, f64
+    Str(String),  
 }
 impl Eq for LiteralValue {
 }
 
-#[derive(Debug, Eq, PartialEq)]
+pub enum Register {
+    RAX,
+    EAX,
+    AX,
+    AH, // I don't know what it can do, just leave it here
+    AL,
+    RIP,
+    RBP,
+}
+
 pub enum Operand {
-    Literal(LiteralValue),
-    Identifier(String),
+    Lit(LitValue),
+    Stack(usize), // actually negative, but all negative
+    Heap(usize),
+    Reg(Register),
 }
 
 pub enum UnaryOperator {
@@ -23,28 +34,11 @@ pub enum BinaryOperator {
 
 }
 
-pub enum Register {
-    RAX,
-    EAX,
-    AX,
-    AH,
-    AL,
-
-    RIP,
-    RBP,
-}
-
-pub enum AddrOrReg {
-    Stack(usize), // actually negative, but all negative
-    Heap(usize),
-    Reg(Register),
-}
-
 pub enum Code {
     
-    Mov(AddrOrReg, AddrOrReg),                    // Move from 0 to 1
-    UnOp(AddrOrReg, UnaryOperator),               // UnOp on 0 and return to rax
-    BinOp(AddrOrReg, AddrOrReg, BinaryOperator),  // BinOp on 0 and 1 and return to rax
+    Mov(Operand, Operand),                    // Move from 0 to 1
+    UnOp(Operand, UnaryOperator),               // UnOp on 0 and return to rax
+    BinOp(Operand, Operand, BinaryOperator),  // BinOp on 0 and 1 and return to rax
 
     Goto(usize),
     GotoIf(bool, usize),

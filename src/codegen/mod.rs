@@ -30,6 +30,7 @@ mod function_def;
 mod var_def;
 mod block;
 mod statement;
+mod expression;
 
 pub use codegen::type_def::TypeID;
 pub use codegen::type_def::TypeField;
@@ -44,7 +45,6 @@ pub use codegen::var_def::Var;
 pub use codegen::var_def::VarOrScope;
 pub use codegen::var_def::VarCollection;
 pub use codegen::block::Block;
-pub use codegen::statement::IStatementDispatcher;
 pub use codegen::statement::StatementGenerator;
 pub use codegen::vm_code::Code;
 pub use codegen::vm_code::CodeCollection;

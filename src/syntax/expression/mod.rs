@@ -196,7 +196,7 @@ impl fmt::Display for Expression {
 
 impl Expression {
 
-    fn new(base: ExpressionBase, ops: Vec<ExpressionOperator>, pos: StringPosition) -> Expression {
+    pub fn new(base: ExpressionBase, ops: Vec<ExpressionOperator>, pos: StringPosition) -> Expression {
         Expression{ base: Box::new(base), ops: ops, all_pos: pos }
     }
 
@@ -205,8 +205,7 @@ impl Expression {
         Expression{ base: Box::new(base), ops: ops, all_pos: all_pos }
     }
 
-    #[cfg(test)]
-    // Directly from string, only for test, may panic
+    #[cfg(test)] // Directly from string, only for test, may panic
     pub fn from_str(program: &str, sym_index: usize) -> Expression {
         let lexer = &mut Lexer::new(program);
         Expression::parse(lexer, sym_index).0.unwrap() 

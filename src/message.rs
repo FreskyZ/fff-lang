@@ -285,6 +285,11 @@ pub enum CodegenMessage {
     FunctionRedefinition{
         sign: String,
         fnposs: Vec<StringPosition>,
+    },
+
+    ConstVariableDeclareMissingInitializationExpression{
+        name: String,
+        pos: StringPosition,
     }
 }
 impl fmt::Debug for CodegenMessage {
@@ -307,6 +312,9 @@ impl fmt::Debug for CodegenMessage {
             },
             FunctionRedefinition{ ref sign, ref fnposs } => {
                 write!(f, "Function with signature `{}` redefined at {}", sign, format_vector_debug(fnposs, ", "))
+            },
+            ConstVariableDeclareMissingInitializationExpression{ ref name, ref pos } => {
+                write!(f, "Variable declaration of {} at {:?} is const but missing init expression", name, pos)
             }
         }
     }
