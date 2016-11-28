@@ -13,9 +13,11 @@ use syntax::FunctionDef as SyntaxFunctionDef;
 use syntax::Argument as SyntaxArgument;
 use syntax::Block as SyntaxBlock;
 
-use codegen::TypeID;
-use codegen::TypeDeclCollection;
+use codegen::type_def::TypeID;
+use codegen::type_def::TypeCollection;
+use codegen::var_def::VarCollection;
 use codegen::session::GenerationSession;
+use codegen::InternalFn;
 
 #[derive(Eq, PartialEq, Clone, Copy)]
 pub enum FnID {
@@ -58,7 +60,7 @@ impl fmt::Debug for FnArg {
 impl FnArg {
     
     // Always construct, ty maybe none for invalid type
-    fn new(syn_arg: SyntaxArgument, types: &mut TypeDeclCollection, messages: &mut MessageEmitter) -> FnArg {
+    fn new(syn_arg: SyntaxArgument, types: &mut TypeCollection, messages: &mut MessageEmitter) -> FnArg {
 
         let pos1 = syn_arg.ty.pos();
         let pos2 = syn_arg.pos_name;
@@ -79,6 +81,7 @@ pub struct FnImpl { // Not Fn because Fn is used in std
     pub ret_type: TypeID,
     pub pos: [StringPosition; 3],  // pos_fn and pos_name and pos_ret_type
     valid: bool,                   // buf for all args valid and ret_type valid and later not sign collission with other
+    internal: Option<InternalFn>,
 }
 impl cmp::PartialEq<FnImpl> for FnImpl {
     fn eq(&self, rhs: &FnImpl) -> bool { self.id == rhs.id }
@@ -91,7 +94,7 @@ impl FnImpl {
     // From Vec<Argument> to Vec<FnArg>
     // returned bool for all arg type valid and no redefinition
     fn new_args(syn_args: Vec<SyntaxArgument>, fn_pos: StringPosition, fn_name: &str, 
-        types: &mut TypeDeclCollection, messages: &mut MessageEmitter) -> (Vec<FnArg>, bool) {
+        types: &mut TypeCollection, messages: &mut MessageEmitter) -> (Vec<FnArg>, bool) {
 
         let mut args = Vec::<FnArg>::new();
         let mut valid = true;
@@ -119,7 +122,7 @@ impl FnImpl {
         (args, valid)
     }
     // As it consumes the SyntaxFnDef but not process the block, return it
-    fn new(syn_fn: SyntaxFunctionDef, id: usize, types: &mut TypeDeclCollection, messages: &mut MessageEmitter) -> (FnImpl, SyntaxBlock) {
+    fn new(syn_fn: SyntaxFunctionDef, id: usize, types: &mut TypeCollection, messages: &mut MessageEmitter) -> (FnImpl, SyntaxBlock) {
         
         let (args, mut valid) = FnImpl::new_args(syn_fn.args, syn_fn.pos2[0], &syn_fn.name, types, messages);
         let pos_ret_type = syn_fn.ret_type.pos();
@@ -132,13 +135,14 @@ impl FnImpl {
             args: args, 
             ret_type: ret_type, 
             valid: valid,
+            is_internal: false,
         }, syn_fn.body)
     }
 
     pub fn is_valid(&self) -> bool {
         self.valid
     }
-    fn sign_eq(&self, name: &str, args: &Vec<TypeID>, _ret_type: TypeID) -> bool {
+    fn sign_eq(&self, name: &str, args: &Vec<TypeID>) -> bool {
         self.is_valid()
         && self.name == name
         // && self.ret_type == ret_type // Can not overload by ret type
@@ -154,7 +158,7 @@ impl FnImpl {
         }
     }
 
-    fn format_display_sign(&self, types: &TypeDeclCollection) -> String {
+    fn format_display_sign(&self, types: &TypeCollection) -> String {
 
         let mut buf = self.name.clone();
 
@@ -177,18 +181,40 @@ pub struct FnCollection {
 impl FnCollection {
     
     pub fn new() -> FnCollection {
-        FnCollection{ fns: Vec::new() }
+        let mut ret_val = FnCollection{ fns: Vec::new() };
+        ret_val.add_internal_fns();
+        ret_val
+    }
+
+    fn add_internal_fns(&mut self) {
+        self.fns.push(FnImpl{
+            id: 0,
+            name: "writeln".to_owned(),
+            args: vec![
+                FnArg{ name: "arg".to_owned(), ty: TypeID::Some(13), pos: [StringPosition::new(), StringPosition::new()] }
+            ],
+            ret_type: TypeID::Some(0),
+            pos: [StringPosition::new(), StringPosition::new(), StringPosition::new(), ],
+            valid: true,
+            internal: Some(InternalFn::WriteLine_String),
+        });
+    }
+    pub fn get_if_internal(&self, id: FnID) -> Option<InternalFn> {
+        match id {
+            FnID::Invalid => None,
+            FnID::Some(id) => self.fns[id].internal,
+        }
     }
 
     // If same signature, still push the fndecl and return index, but push message and when require ID by signature, return invalid
-    pub fn push_decl(&mut self, syn_fn: SyntaxFunctionDef, types: &mut TypeDeclCollection, msgs: &mut MessageEmitter) -> (usize, SyntaxBlock) {
+    pub fn push_decl(&mut self, syn_fn: SyntaxFunctionDef, types: &mut TypeCollection, msgs: &mut MessageEmitter, vars: &mut VarCollection) -> (usize, SyntaxBlock) {
 
         let (newfn, syn_block) = FnImpl::new(syn_fn, self.fns.len(), types, msgs);
         let ret_val = newfn.id;
         self.fns.push(newfn);
         return (ret_val, syn_block);
     }
-    pub fn check_sign_eq(&mut self, types: &mut TypeDeclCollection, msgs: &mut MessageEmitter) {
+    pub fn check_sign_eq(&mut self, types: &mut TypeCollection, msgs: &mut MessageEmitter) {
 
         let mut sign_map_pos = HashMap::<String, Vec<usize>>::new();
         for fcn in &mut self.fns {
@@ -224,10 +250,10 @@ impl FnCollection {
     }
 
     // Here if find recorded sign collision return invalid
-    pub fn find_by_sign(&self, name: &str, args: &Vec<TypeID>, ret: TypeID) -> FnID {
+    pub fn find_by_sign(&self, name: &str, args: &Vec<TypeID>) -> FnID {
         
         for (index, fcn) in self.fns.iter().enumerate() {
-            if fcn.is_valid() && fcn.sign_eq(name, args, ret) {
+            if fcn.is_valid() && fcn.sign_eq(name, args) {
                 return FnID::Some(index);
             }
         }
@@ -292,6 +318,7 @@ fn gen_fn_sign_eq() {
         ],
         pos: [StringPosition::new(), StringPosition::new(), StringPosition::new()],
         valid: true,
+        is_internal: false,
     };
 
     // Normal equal
@@ -431,7 +458,7 @@ fn gen_fn_decl() {
     //             1  2   34 5  67 8 9      A B            CD E
     let sess = &mut GenerationSession::new();
     let syn_fn = SyntaxFunctionDef::from_str(program, 0);
-    let (id, block) = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs);
+    let (id, block) = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
     {
         let fndecl = sess.fns.find_by_idx(id);
         assert_eq!(fndecl.id, 0);
@@ -445,23 +472,23 @@ fn gen_fn_decl() {
 
     let program = "fn some(i32 a, u32 b, [string] c) -> [u8] {}";
     let syn_fn = SyntaxFunctionDef::from_str(program, 0);
-    let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs);
+    let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
     let program = " fn some(i32 a, u32 b, [string] c) -> [u8] {}";
     let syn_fn = SyntaxFunctionDef::from_str(program, 0);
-    let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs);
+    let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
     let program = "  fn some(i32 a, u32 b, string c) -> u8 {}";
     let syn_fn = SyntaxFunctionDef::from_str(program, 0);
-    let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs);
+    let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
     let program = "   fn some(i32 a, u32 b, [string] c) -> [u8] {}";
     let syn_fn = SyntaxFunctionDef::from_str(program, 0);
-    let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs);
+    let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
     let program = "    fn some(i32 a, u32 b) -> [u8] {}";
     let syn_fn = SyntaxFunctionDef::from_str(program, 0);
-    let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs);
+    let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
 
     let program = "     fn some(i32 a, u32 b, string c) -> [u8] {}";
     let syn_fn = SyntaxFunctionDef::from_str(program, 0);
-    let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs);
+    let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
 
     sess.fns.check_sign_eq(&mut sess.types, &mut sess.msgs);
     let expect_messsage1 = &mut MessageEmitter::new();

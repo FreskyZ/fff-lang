@@ -23,10 +23,10 @@ use syntax::ForStatement;
 use syntax::ElseIfBranch;
 use syntax::IfStatement;
 
-use codegen::Var;
-use codegen::VarID;
-// use codegen::TypeDeclCollection;
-// use codegen::FnCollection;
+use codegen::var_def::Var;
+use codegen::var_def::VarID;
+// use codegen::type_def::TypeCollection;
+// use codegen::fn_def::FnCollection;
 // use codegen::VarCollection;
 // use codegen::CodeCollection;
 use codegen::session::GenerationSession;
@@ -36,11 +36,10 @@ use codegen::expression::gen_expr;
 pub struct StatementGenerator{
 }
 
-
 // Expression
 // A special ignore left const for const var declaration generation
-fn generate_expr_stmt(_expr_stmt: ExpressionStatement, _sess: &mut GenerationSession, _ignore_left_const: bool) {
-    
+fn generate_expr_stmt(expr_stmt: ExpressionStatement, sess: &mut GenerationSession, _ignore_left_const: bool) {
+    let res = gen_expr(expr_stmt.left_expr, sess);
 }
 
 // VarDeclaration
@@ -94,6 +93,7 @@ impl StatementGenerator {
         for stmt in block.stmts {
             match stmt {
                 Statement::VarDecl(var_decl) => generate_var_decl(var_decl, sess),
+                Statement::Expression(expr_stmt) => generate_expr_stmt(expr_stmt, sess, false),
                 _ => (),        
             }
         }

@@ -9,8 +9,8 @@ use common::StringPosition;
 use message::MessageEmitter;
 use message::CodegenMessage;
 
-use codegen::TypeID;
-use codegen::TypeDeclCollection;
+use codegen::type_def::TypeID;
+use codegen::type_def::TypeCollection;
 
 // Variable collection
 #[derive(Debug, Eq, PartialEq)]
@@ -108,7 +108,7 @@ impl VarCollection {
     //     still push the var and return valid id for furthur reference for the name, but as type is invalid, expression type eval will be invalidated, too
     // If next_offset had been None before, just do not add the item_size to the next_offset, 
     //     if the item pass before check, push it, not set offset and return valid id
-    pub fn try_push(&mut self, mut item: Var, types: &TypeDeclCollection, messages: &mut MessageEmitter) -> VarID {
+    pub fn try_push(&mut self, mut item: Var, types: &TypeCollection, messages: &mut MessageEmitter) -> VarID {
 
         for exist_item in self.items.iter().rev() {
             match exist_item {
@@ -179,6 +179,16 @@ impl VarCollection {
         }
     }
 
+    pub fn get_offset(&self, id: VarID) -> usize {
+        match id {
+            VarID::Invalid => 0,
+            VarID::Some(id) => self.items[id].offset,
+        }
+    }
+    pub fn current_offset(&self) -> usize {
+        self.next_offset.unwrap_or(0)
+    }
+
     // When a name is referenced
     pub fn find_by_name(&self, rhs: &str) -> VarID {
 
@@ -212,7 +222,7 @@ impl VarCollection {
         }
     }
 
-    pub fn push_temp(&mut self, ty: TypeID, is_const: bool, types: &TypeDeclCollection, messages: &mut MessageEmitter) -> VarID {
+    pub fn push_temp(&mut self, ty: TypeID, is_const: bool, types: &TypeCollection, messages: &mut MessageEmitter) -> VarID {
         self.next_temp += 1; // do not worry about start from 0
         let next_temp = self.next_temp;
         self.try_push(Var::new("?".to_owned() + &format!("{}", next_temp), ty, is_const, StringPosition::new()), types, messages)  // They are not gonna to redefined
@@ -231,7 +241,7 @@ macro_rules! new_var {
 #[test]
 fn gen_vars_id() {
 
-    let types = &TypeDeclCollection::new();
+    let types = &TypeCollection::new();
     let mut vars = VarCollection::new();
 
     // Nothing
@@ -326,7 +336,7 @@ fn gen_vars_offset() {
         }) 
     }
 
-    let types = &TypeDeclCollection::new();
+    let types = &TypeCollection::new();
     let mut vars = VarCollection::new();
 
     //          vars, types, name,    var typeid,       var expect id,  var offset and next offset

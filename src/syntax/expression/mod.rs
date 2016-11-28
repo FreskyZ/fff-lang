@@ -22,9 +22,7 @@ mod binary;
 mod d3;
 
 use self::d3::D3Expression;
-// use self::binary::BinaryOperator;
 use self::binary::BinaryExpression;
-// use self::unary::UnaryOperator;
 use self::unary::UnaryExpression;
 use self::postfix::Postfix;
 use self::postfix::PostfixExpression;

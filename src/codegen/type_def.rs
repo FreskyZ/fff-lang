@@ -8,7 +8,11 @@ use common::format_vector_debug;
 use message::CodegenMessage;
 use message::MessageEmitter;
 
+use lexical::SeperatorKind;
+
 use syntax::SMType;
+
+use codegen::fn_def::FnID;
 
 #[derive(Eq, PartialEq, Clone, Copy)]
 pub enum TypeID {
@@ -57,14 +61,15 @@ impl TypeField {
 }
 
 // Type declare is type's name and type parameter
-pub struct TypeDecl {
+pub struct Type {
     pub id: usize,                // Here use usize for ID because they must be valid
     pub name: String,             // currently is only string, to be `Name` in the future
     pub type_params: Vec<usize>,  // for array and tuple
     pub fields: Vec<TypeField>,
+    pub fns: Vec<FnID>,
     pub size: usize,
 }
-impl fmt::Debug for TypeDecl {
+impl fmt::Debug for Type {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.type_params.len() {
             0 => write!(f, "typeid = {}, {}", self.id, self.name),
@@ -72,17 +77,17 @@ impl fmt::Debug for TypeDecl {
         }
     }
 }
-impl cmp::PartialEq<TypeDecl> for TypeDecl {
-    fn eq(&self, rhs: &TypeDecl) -> bool {
+impl cmp::PartialEq<Type> for Type {
+    fn eq(&self, rhs: &Type) -> bool {
         self.id == rhs.id
     }
-    fn ne(&self, rhs: &TypeDecl) -> bool {
+    fn ne(&self, rhs: &Type) -> bool {
         self.id != rhs.id
     }
 }
-impl cmp::Eq for TypeDecl {
+impl cmp::Eq for Type {
 }
-impl TypeDecl {
+impl Type {
 
     fn ident_eq(&self, name: &str, type_params: &Vec<usize>) -> bool {
         self.name == name
@@ -90,28 +95,32 @@ impl TypeDecl {
     }
 }
 
-pub struct TypeDeclCollection {
-    decls: Vec<TypeDecl>,
+pub struct TypeCollection {
+    decls: Vec<Type>,
 }
-impl fmt::Debug for TypeDeclCollection {
+impl fmt::Debug for TypeCollection {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", format_vector_debug(&self.decls, "\n"))
     }
 }
-impl TypeDeclCollection {
+// New
+impl TypeCollection {
 
-    pub fn new() -> TypeDeclCollection {
+    pub fn new() -> TypeCollection {
 
-        let mut ret_val = TypeDeclCollection{
+        let mut ret_val = TypeCollection{
             decls: Vec::new(),
         };
 
         ret_val.add_prim_types();
         ret_val
     }
+}
+// Primitive types
+impl TypeCollection {
 
     fn add_prim(&mut self, id: usize, name: &str, size: usize) {
-        self.decls.push(TypeDecl{ id: id, name: name.to_owned(), type_params: Vec::new(), size: size, fields: Vec::new() });
+        self.decls.push(Type{ id: id, name: name.to_owned(), type_params: Vec::new(), size: size, fields: Vec::new(), fns: Vec::new() });
     }
     // Do not tell primitive type to gener
     fn add_prim_types(&mut self) {
@@ -130,13 +139,76 @@ impl TypeDeclCollection {
         self.add_prim(10, "f64", 8);
         self.add_prim(11, "char", 4);      // UTF32 char
         self.add_prim(12, "bool", 1);      // 1 byte bool
-        self.add_prim(13, "string", 24);   // special [char], which is sizeof pointer add capability and size
+        self.add_prim(13, "string", 8);   // special [char]
     }
+
+    pub fn is_prim_numeric_type(&self, id: TypeID) -> bool {
+        match id {
+            TypeID::Some(id) => id >= 1 && id <= 12,
+            TypeID::Invalid => false,
+        }
+    } 
+    // Check primitive numeric type bin and un op existence, do not input anything rejected by before method and other ops not in ExpressionOperator
+    pub fn check_prim_numeric_type_op(&self, id: TypeID, op: SeperatorKind) -> bool {
+
+        macro_rules! check_prim_numeric_op_impl {
+            (
+                $input_id: expr, $input_op: expr,
+                $([$op: pat, $($id: expr, )*])*
+            ) => (
+                match ($input_op, $input_id) {
+                    $(
+                        $(
+                            ($op, $id) => true,
+                        )*
+                        ($op, _) => false,   
+                    )*
+                    (_, _) => unreachable!(),
+                }
+            )
+        }
+
+        let id = match id {
+            TypeID::Some(id) if id >= 1 && id <= 12 => id,
+            _ => unreachable!(),
+        };
+        check_prim_numeric_op_impl!{ id, op,
+            //    operator kind,       i8, u8, i16, u16, i32, u32, i64, u64, f32, f64, char, bool, 
+            [SeperatorKind::Add,        1,  2,   3,   4,   5,   6,   7,   8,   9,  10, ]
+            [SeperatorKind::Sub,        1,  2,   3,   4,   5,   6,   7,   8,   9,  10, ]
+            [SeperatorKind::Mul,        1,  2,   3,   4,   5,   6,   7,   8,   9,  10, ]
+            [SeperatorKind::Div,        1,  2,   3,   4,   5,   6,   7,   8,   9,  10, ]
+            [SeperatorKind::Rem,        1,  2,   3,   4,   5,   6,   7,   8,   9,  10, ]
+            [SeperatorKind::ShiftLeft,  1,  2,   3,   4,   5,   6,   7,   8, ]
+            [SeperatorKind::ShiftRight, 1,  2,   3,   4,   5,   6,   7,   8, ]
+            [SeperatorKind::Equal,      1,  2,   3,   4,   5,   6,   7,   8,   9,  10,   11,   12, ]
+            [SeperatorKind::NotEqual,   1,  2,   3,   4,   5,   6,   7,   8,   9,  10,   11,   12, ]
+            [SeperatorKind::Great,      1,  2,   3,   4,   5,   6,   7,   8,   9,  10,   11, ]
+            [SeperatorKind::Less,       1,  2,   3,   4,   5,   6,   7,   8,   9,  10,   11, ]
+            [SeperatorKind::GreatEqual, 1,  2,   3,   4,   5,   6,   7,   8,   9,  10,   11, ]
+            [SeperatorKind::LessEqual,  1,  2,   3,   4,   5,   6,   7,   8,   9,  10,   11, ]
+            [SeperatorKind::BitAnd,     1,  2,   3,   4,   5,   6,   7,   8, ]
+            [SeperatorKind::BitOr,      1,  2,   3,   4,   5,   6,   7,   8, ]
+            [SeperatorKind::BitXor,     1,  2,   3,   4,   5,   6,   7,   8, ]
+            [SeperatorKind::LogicalAnd,                                                        12, ]
+            [SeperatorKind::LogicalOr,                                                         12, ]
+            [SeperatorKind::BitNot,     1,  2,   3,   4,   5,   6,   7,   8, ]
+            [SeperatorKind::LogicalNot,                                                        12, ]
+            [SeperatorKind::Increase,   1,  2,   3,   4,   5,   6,   7,   8, ]
+            [SeperatorKind::Decrease,   1,  2,   3,   4,   5,   6,   7,   8, ]
+        }
+    }
+    // Return the smallest type that can hold the bin op between the 2 types, input should not be rejected by before method
+    pub fn check_prim_numeric_type_promotion(&self, id1: TypeID, id2: TypeID) -> TypeID {
+        id1
+    }
+}
+// Type usage to ID
+impl TypeCollection {
 
     fn next_id(&self) -> usize {
         self.decls.len()
     }
-
     fn check_exist(&self, name: &str, type_params: &Vec<usize>) -> Option<usize> {
         for ty in &self.decls {
             if ty.ident_eq(name, type_params) {
@@ -145,7 +217,6 @@ impl TypeDeclCollection {
         }
         return None;
     }
-
     // Because multi message may occur in long tuple type, need a message emitter
     // check base type existence, currently only primitive types, return the id of the primitive type
     // record processed array and tuple types, set their type params, return their type ids
@@ -172,16 +243,15 @@ impl TypeDeclCollection {
                     Some(id) => Some(id),
                     None => {
                         let this_id = self.next_id();
-                        self.decls.push(TypeDecl{
+                        self.decls.push(Type{
                             id: this_id,
                             name: "array".to_owned(),
                             type_params: ty_params,
-                            size: 24,
+                            size: 8,
                             fields: vec![
-                                TypeField::new("len", 8, 0),
-                                TypeField::new("cap", 8, 8),
                                 TypeField::new("data", 8, 8),
                             ],
+                            fns: Vec::new(),
                         });
                         Some(this_id)
                     }
@@ -211,12 +281,13 @@ impl TypeDeclCollection {
                     Some(id) => Some(id),
                     None => {
                         let this_id = self.next_id();
-                        self.decls.push(TypeDecl{
+                        self.decls.push(Type{
                             id: this_id,
                             name: "tuple".to_owned(),
                             type_params: ids,
                             size: all_size,
                             fields: fields,
+                            fns: Vec::new(),
                         });
                         Some(this_id)
                     }
@@ -224,7 +295,6 @@ impl TypeDeclCollection {
             }
         }
     }
-
     // wrap Option<usize> to TypeID
     pub fn try_get_id(&mut self, ty: SMType, messages: &mut MessageEmitter) -> TypeID {
         match self.get_id(ty, messages) {
@@ -232,6 +302,34 @@ impl TypeDeclCollection {
             None => TypeID::Invalid,
         }
     }
+    // Special `fn(u32, [string]) -> u32` etc. type
+    // if one of the ids are invalid, then return invalid
+    pub fn push_fn(&mut self, mut params: Vec<TypeID>, ret_type: TypeID, fnid: FnID) -> TypeID {
+
+        params.push(ret_type);
+
+        let mut type_params = Vec::new();
+        for param in params {
+            match param {
+                TypeID::Invalid => return TypeID::Invalid,
+                TypeID::Some(id) => type_params.push(id),
+            }
+        }
+
+        let ret_val = self.next_id();
+        self.decls.push(Type{
+            id: ret_val,
+            name: "fn".to_owned(),
+            type_params: type_params,
+            fields: Vec::new(),
+            size: 8,  // same as CodeID
+            fns: Vec::new(),
+        });
+        return TypeID::Some(ret_val);
+    }
+}
+// Helper
+impl TypeCollection {
     pub fn format_display_by_id(&self, id: TypeID) -> String {
         
         match id {
@@ -258,7 +356,7 @@ impl TypeDeclCollection {
         }
     }
 
-    pub fn find_by_id(&self, id: TypeID) -> Option<&TypeDecl> {
+    pub fn find_by_id(&self, id: TypeID) -> Option<&Type> {
         match id {
             TypeID::Invalid => None,
             TypeID::Some(id) => Some(&self.decls[id]),
@@ -266,7 +364,7 @@ impl TypeDeclCollection {
     }
 
     #[cfg(test)]
-    pub fn find_by_idx(&self, id: usize) -> &TypeDecl {
+    pub fn find_by_idx(&self, id: usize) -> &Type {
         &self.decls[id]
     }
     #[cfg(test)]
@@ -275,12 +373,26 @@ impl TypeDeclCollection {
     }
 }
 
+#[cfg(test)] #[test]
+fn gen_type_prim_op() {
+
+    macro_rules! test_case { 
+        ($id: expr, $op: expr, $res: expr) => (
+            let types = &TypeCollection::new(); 
+            assert_eq!(types.check_prim_numeric_type_op(TypeID::Some($id), $op), $res);
+        ) 
+    }
+
+    test_case!(1, SeperatorKind::Add, true);
+    test_case!(12, SeperatorKind::Sub, false);
+}
+
 #[cfg(test)]
 mod tests {
 
     #[test]
     fn gen_type() {
-        use super::TypeDeclCollection;
+        use super::TypeCollection;
         use super::TypeID;
         use super::TypeField;
         use syntax::SMType;
@@ -321,7 +433,7 @@ mod tests {
             )
         }
 
-        let mut types = TypeDeclCollection::new();
+        let mut types = TypeCollection::new();
 
         {   // Initial content
             assert_eq!(types.ty_len(), 14);

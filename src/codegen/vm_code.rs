@@ -3,11 +3,17 @@
 
 #[derive(Debug, PartialEq)]
 pub enum LitValue {
-    Int(u64),  // integral, char, bool
+    Int(u64),    // integral, char, bool
     Float(f64),  // f32, f64
-    Str(String),  
 }
-impl Eq for LiteralValue {
+impl Eq for LitValue {
+}
+
+#[derive(Eq, PartialEq, Copy, Clone)]
+#[allow(non_camel_case_types)]
+pub enum InternalFn {
+    HeapAlloc,
+    WriteLine_String,
 }
 
 pub enum Register {
@@ -36,12 +42,19 @@ pub enum BinaryOperator {
 
 pub enum Code {
     
+    LoadStr(String, usize),                   // Special for Str literal, load to stack offset
+                                              // because before string is constructed, you cannot move the rust string literal to the stack 
+                                              // and call `?string_new` internal fn 
+    CallInternal(InternalFn),
+
     Mov(Operand, Operand),                    // Move from 0 to 1
-    UnOp(Operand, UnaryOperator),               // UnOp on 0 and return to rax
+    UnOp(Operand, UnaryOperator),             // UnOp on 0 and return to rax
     BinOp(Operand, Operand, BinaryOperator),  // BinOp on 0 and 1 and return to rax
 
     Goto(usize),
     GotoIf(bool, usize),
+
+    Halt,                                     // Special Halt at head for vm exit
 }
 
 #[derive(Eq, PartialEq, Debug, Copy, Clone)]
@@ -54,10 +67,10 @@ pub struct CodeCollection {
 impl CodeCollection {
     
     pub fn new() -> CodeCollection {
-        CodeCollection{ codes: Vec::new() }
+        CodeCollection{ codes: vec![Code::Halt] }
     }
 
-    pub fn push(&mut self, code: Code) -> CodeID {
+    pub fn emit(&mut self, code: Code) -> CodeID {
         let ret_val = self.codes.len();
         self.codes.push(code);
         return CodeID(ret_val);

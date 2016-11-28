@@ -7,10 +7,10 @@ use common::StringPosition;
 use syntax::Block as SyntaxBlock;
 // use syntax::Statement;
 
-use codegen::TypeID;
-use codegen::Var;
-use codegen::VarCollection;
-use codegen::StatementGenerator;
+use codegen::type_def::TypeID;
+use codegen::var_def::Var;
+use codegen::var_def::VarCollection;
+use codegen::statement::StatementGenerator;
 use codegen::session::GenerationSession;
 
 pub struct Block {
@@ -52,8 +52,8 @@ impl Block {
 fn gen_block_fn_id_to_vars() {
     
     use syntax::FunctionDef as SyntaxFunctionDef;
-    use codegen::VarOrScope;
-    use codegen::Var;
+    use codegen::var_def::VarOrScope;
+    use codegen::var_def::Var;
 
     let gen_vars = |param_str: &str| -> VarCollection {
         //              12345678
@@ -61,7 +61,7 @@ fn gen_block_fn_id_to_vars() {
         let program2 = ") { writeln(\"helloworld\"); }";
         let syn_fn = SyntaxFunctionDef::from_str(&(program1 + param_str + program2), 0);
         let mut sess = GenerationSession::new();
-        let (id, block) = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs);
+        let (id, block) = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
         let block = Block::new(id, block);
         block.fn_id_to_vars(&mut sess)
     };

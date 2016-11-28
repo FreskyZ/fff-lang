@@ -6,15 +6,15 @@ use message::MessageEmitter;
 
 use syntax::Program as SyntaxProgram;
 
-use codegen::TypeDeclCollection;
-use codegen::FnCollection;
+use codegen::type_def::TypeCollection;
+use codegen::fn_def::FnCollection;
 use codegen::CodeCollection;
-use codegen::VarCollection;
-use codegen::Block;
+use codegen::var_def::VarCollection;
+use codegen::block::Block;
 
 pub struct GenerationSession {
     pub msgs: MessageEmitter,
-    pub types: TypeDeclCollection,
+    pub types: TypeCollection,
     pub fns: FnCollection,
     pub codes: CodeCollection,
     pub vars: VarCollection,
@@ -25,7 +25,7 @@ impl GenerationSession {
     pub fn new() -> GenerationSession {
         GenerationSession{
             msgs: MessageEmitter::new(),
-            types: TypeDeclCollection::new(),
+            types: TypeCollection::new(),
             fns: FnCollection::new(),
             codes: CodeCollection::new(),
             vars: VarCollection::new(),
@@ -48,7 +48,7 @@ impl GenerationSession {
         // such that function can declare in any order
         let mut blocks = Vec::new();
         for func in program.functions {
-            let (its_id, its_block) = sess.fns.push_decl(func, &mut sess.types, &mut sess.msgs);
+            let (its_id, its_block) = sess.fns.push_decl(func, &mut sess.types, &mut sess.msgs, &mut sess.vars);
             blocks.push(Block::new(its_id, its_block));
         }
         sess.fns.check_sign_eq(&mut sess.types, &mut sess.msgs);

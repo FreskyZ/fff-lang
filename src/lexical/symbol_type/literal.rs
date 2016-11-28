@@ -38,6 +38,15 @@ impl LexicalLiteral {
             _ => None,
         }
     }
+
+    /// replace error content with <error-content>, do not call on not Str
+    pub fn get_str_lit_not_option(self) -> String {
+        match self {
+            LexicalLiteral::Str(Some(val)) => val,
+            LexicalLiteral::Str(None) => "<error-content>".to_owned(),
+            _ => unreachable!(),
+        }
+    }
 }
 
 impl fmt::Debug for LexicalLiteral {
