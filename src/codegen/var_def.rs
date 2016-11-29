@@ -19,17 +19,17 @@ pub struct Var {
     pub ty: TypeID,
     pub is_const: bool,
     pub def_pos: StringPosition,
-    offset: usize, // rbp offset, 0 for some error, while any error won't go into vm
+    //offset: usize, // rbp offset, 0 for some error, while any error won't go into vm
 }
 impl Var {
     
     pub fn new(name: String, ty: TypeID, is_const: bool, def_pos: StringPosition) -> Var {
-        Var{ name: name, ty: ty, is_const: is_const, def_pos: def_pos, offset: 0 }
+        Var{ name: name, ty: ty, is_const: is_const, def_pos: def_pos }
     }
 
     #[cfg(test)]
     pub fn new_test(name: &str, ty: TypeID, is_const: bool, def_pos: StringPosition, offset: usize) -> Var {
-        Var{ name: name.to_owned(), ty: ty, is_const: is_const, def_pos: def_pos, offset: offset }
+        Var{ name: name.to_owned(), ty: ty, is_const: is_const, def_pos: def_pos }
     } 
 }
 
@@ -83,11 +83,11 @@ impl VarOrScope {
 pub struct VarCollection {
     items: Vec<VarOrScope>,  
     // no need to use buffered mask, rfind, that's exactly variable shadowing's logical meaning and best implementation method
-     // next temp local var name, start from ?, which change into "?0", "?1", etc.
+    // next temp local var name, start from ?, which change into "?0", "?1", etc.
     next_temp: usize,
     // next local variable offset from ebp
     // Some means still working, None means meat some error and no need to continue working
-    next_offset: Option<usize>, 
+    // next_offset: Option<usize>, 
 }
 impl VarCollection {
 
@@ -95,7 +95,7 @@ impl VarCollection {
         VarCollection{
             items: Vec::new(),
             next_temp: 0,
-            next_offset: Some(0),
+            // next_offset: Some(0),
         }
     }
 
@@ -108,7 +108,7 @@ impl VarCollection {
     //     still push the var and return valid id for furthur reference for the name, but as type is invalid, expression type eval will be invalidated, too
     // If next_offset had been None before, just do not add the item_size to the next_offset, 
     //     if the item pass before check, push it, not set offset and return valid id
-    pub fn try_push(&mut self, mut item: Var, types: &TypeCollection, messages: &mut MessageEmitter) -> VarID {
+    pub fn try_push(&mut self, item: Var, _types: &TypeCollection, messages: &mut MessageEmitter) -> VarID {
 
         for exist_item in self.items.iter().rev() {
             match exist_item {
@@ -129,18 +129,6 @@ impl VarCollection {
         }
 
         let ret_val = self.items.len();
-        match (types.find_by_id(item.ty), &mut self.next_offset) {
-            (None, next_offset) => { // Invalid type, invalidate next_offset, not set item.offset
-                *next_offset = None;
-            }
-            (Some(ty), &mut Some(ref mut next_offset)) => { // valid item type and valid next offset, set next_offset, set item.offset
-                *next_offset += ty.size;
-                item.offset = *next_offset;
-            }
-            (Some(_ty), &mut None) => {  // Valid item type but next offset is invalid, not set item.offset
-            },
-        }
-
         self.items.push(VarOrScope::Some(item));
         return VarID::Some(ret_val);
     }
@@ -163,30 +151,30 @@ impl VarCollection {
             let _ = self.items.pop().unwrap();
         }
 
-        match self.next_offset {
-            None => (),
-            Some(ref mut offset) => { 
-                for item in self.items.iter().rev() { // Skip barriers
-                    match item {
-                        &VarOrScope::ScopeBarrier => (),
-                        &VarOrScope::Some(ref item) => {
-                            *offset = item.offset;     // is just the needed next_offset
-                            break;
-                        }
-                    }
-                }
-            }
-        }
+        // match self.next_offset {
+        //     None => (),
+        //     Some(ref mut offset) => { 
+        //         for item in self.items.iter().rev() { // Skip barriers
+        //             match item {
+        //                 &VarOrScope::ScopeBarrier => (),
+        //                 &VarOrScope::Some(ref item) => {
+        //                     *offset = item.offset;     // is just the needed next_offset
+        //                     break;
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
     }
 
     pub fn get_offset(&self, id: VarID) -> usize {
         match id {
             VarID::Invalid => 0,
-            VarID::Some(id) => self.items[id].offset,
+            VarID::Some(id) => id, // self.items[id].id,
         }
     }
     pub fn current_offset(&self) -> usize {
-        self.next_offset.unwrap_or(0)
+        0 // self.next_offset.unwrap_or(0)
     }
 
     // When a name is referenced
@@ -320,18 +308,18 @@ fn gen_vars_offset() {
     macro_rules! test_case {
         ($vars: expr, $types: expr, $name: expr, $typeid: expr, $var_id: expr, $offset: expr) => ({
             assert_eq!($vars.try_push(Var::new($name.to_owned(), $typeid, false, StringPosition::new()), $types, &mut MessageEmitter::new()), $var_id, "try push return unexpceted");
-            assert_eq!($vars.next_offset, Some($offset), "vars.next_offset unexpceted");
+            // assert_eq!($vars.next_offset, Some($offset), "vars.next_offset unexpceted");
             if $var_id.is_valid() {
                 assert_eq!($vars.find_by_name($name), $var_id, "find by name return unexpected");
-                assert_eq!($vars.find_by_id($var_id).unwrap().offset, $offset, "find by id and unwrap's offset unexpceted");
+                // assert_eq!($vars.find_by_id($var_id).unwrap().offset, $offset, "find by id and unwrap's offset unexpceted");
             }
         });
         ($vars: expr, $types: expr, $name: expr, $typeid: expr, $var_id: expr) => ({
             assert_eq!($vars.try_push(Var::new($name.to_owned(), $typeid, false, StringPosition::new()), $types, &mut MessageEmitter::new()), $var_id, "try push return unexpceted");
-            assert_eq!($vars.next_offset, None, "vars.next_offset unexpceted");
+            // assert_eq!($vars.next_offset, None, "vars.next_offset unexpceted");
             if $var_id.is_valid() {
                 assert_eq!($vars.find_by_name($name), $var_id, "find by name return unexpected");
-                assert_eq!($vars.find_by_id($var_id).unwrap().offset, 0, "find by id and unwrap's offset unexpceted");
+                // assert_eq!($vars.find_by_id($var_id).unwrap().offset, 0, "find by id and unwrap's offset unexpceted");
             }
         }) 
     }
@@ -352,14 +340,14 @@ fn gen_vars_offset() {
     vars.push_scope(); // this is var id 7
     test_case!{ vars, types, "name1", TypeID::Some(7),  VarID::Some(8), 43 }
     vars.pop_scope();
-    assert_eq!{ vars.next_offset, Some(35) }
+    // assert_eq!{ vars.next_offset, Some(35) }
     vars.pop_scope();
-    assert_eq!{ vars.next_offset, Some(26) }
+    // assert_eq!{ vars.next_offset, Some(26) }
 
     vars.push_scope();
     test_case!{ vars, types, "name2", TypeID::Some(5),  VarID::Some(4), 30 }
     test_case!{ vars, types, "name not care", TypeID::Invalid, VarID::Some(5) }
     test_case!{ vars, types, "name not care again", TypeID::Some(8), VarID::Some(6) }
     vars.pop_scope();
-    assert_eq!{ vars.next_offset, None }
+    // assert_eq!{ vars.next_offset, None }
 }

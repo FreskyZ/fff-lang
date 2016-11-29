@@ -81,7 +81,6 @@ pub struct FnImpl { // Not Fn because Fn is used in std
     pub ret_type: TypeID,
     pub pos: [StringPosition; 3],  // pos_fn and pos_name and pos_ret_type
     valid: bool,                   // buf for all args valid and ret_type valid and later not sign collission with other
-    internal: Option<InternalFn>,
 }
 impl cmp::PartialEq<FnImpl> for FnImpl {
     fn eq(&self, rhs: &FnImpl) -> bool { self.id == rhs.id }
@@ -135,7 +134,6 @@ impl FnImpl {
             args: args, 
             ret_type: ret_type, 
             valid: valid,
-            is_internal: false,
         }, syn_fn.body)
     }
 
@@ -187,23 +185,7 @@ impl FnCollection {
     }
 
     fn add_internal_fns(&mut self) {
-        self.fns.push(FnImpl{
-            id: 0,
-            name: "writeln".to_owned(),
-            args: vec![
-                FnArg{ name: "arg".to_owned(), ty: TypeID::Some(13), pos: [StringPosition::new(), StringPosition::new()] }
-            ],
-            ret_type: TypeID::Some(0),
-            pos: [StringPosition::new(), StringPosition::new(), StringPosition::new(), ],
-            valid: true,
-            internal: Some(InternalFn::WriteLine_String),
-        });
-    }
-    pub fn get_if_internal(&self, id: FnID) -> Option<InternalFn> {
-        match id {
-            FnID::Invalid => None,
-            FnID::Some(id) => self.fns[id].internal,
-        }
+        // Reserved
     }
 
     // If same signature, still push the fndecl and return index, but push message and when require ID by signature, return invalid
@@ -318,35 +300,34 @@ fn gen_fn_sign_eq() {
         ],
         pos: [StringPosition::new(), StringPosition::new(), StringPosition::new()],
         valid: true,
-        is_internal: false,
     };
 
     // Normal equal
     let left = &mut left_getter();
-    assert!(left.sign_eq("main", &vec![TypeID::Some(1), TypeID::Some(2)], TypeID::Some(5)));
+    assert!(left.sign_eq("main", &vec![TypeID::Some(1), TypeID::Some(2)]));
 
     // Name not Equal
     let left = &mut left_getter();
-    assert!(!left.sign_eq("another", &vec![TypeID::Some(1), TypeID::Some(2)], TypeID::Some(5)));
+    assert!(!left.sign_eq("another", &vec![TypeID::Some(1), TypeID::Some(2)]));
 
     // Something is invalid
     let left = &mut left_getter();
     left.valid = false;
-    assert!(!left.sign_eq("main", &vec![TypeID::Some(1), TypeID::Some(2)], TypeID::Some(5)));
+    assert!(!left.sign_eq("main", &vec![TypeID::Some(1), TypeID::Some(2)]));
 
     // One of the arg is invalid
     let left = &mut left_getter();
-    assert!(!left.sign_eq("main", &vec![TypeID::Invalid, TypeID::Some(2)], TypeID::Some(5)));
+    assert!(!left.sign_eq("main", &vec![TypeID::Invalid, TypeID::Some(2)]));
 
     // One of the arg name is not same
     let left = &mut left_getter();
     left.args[1].name = "some other".to_owned();
-    assert!(left.sign_eq("main", &vec![TypeID::Some(1), TypeID::Some(2)], TypeID::Some(5)));
+    assert!(left.sign_eq("main", &vec![TypeID::Some(1), TypeID::Some(2)]));
 
     // One of the arg type is not same
     let left = &mut left_getter();
     left.args[1].ty = TypeID::Some(8);
-    assert!(!left.sign_eq("main", &vec![TypeID::Some(1), TypeID::Some(2)], TypeID::Some(5)));
+    assert!(!left.sign_eq("main", &vec![TypeID::Some(1), TypeID::Some(2)]));
 }
 
 #[cfg(test)]
@@ -493,7 +474,7 @@ fn gen_fn_decl() {
     sess.fns.check_sign_eq(&mut sess.types, &mut sess.msgs);
     let expect_messsage1 = &mut MessageEmitter::new();
     expect_messsage1.push(CodegenMessage::FunctionRedefinition{
-        sign: "some(i32, u32, array[string])".to_owned(),
+        sign: "some(i32, u32, [string])".to_owned(),
         fnposs: vec![make_str_pos!(1, 1, 1, 2), make_str_pos!(1, 2, 1, 3), make_str_pos!(1, 4, 1, 5)]
     });
     expect_messsage1.push(CodegenMessage::FunctionRedefinition{
@@ -506,8 +487,10 @@ fn gen_fn_decl() {
         fnposs: vec![make_str_pos!(1, 3, 1, 4), make_str_pos!(1, 6, 1, 7)]
     });
     expect_messsage2.push(CodegenMessage::FunctionRedefinition{
-        sign: "some(i32, u32, array[string])".to_owned(),
+        sign: "some(i32, u32, [string])".to_owned(),
         fnposs: vec![make_str_pos!(1, 1, 1, 2), make_str_pos!(1, 2, 1, 3), make_str_pos!(1, 4, 1, 5)]
     });
-    assert!(sess.messages() == expect_messsage1 || sess.messages() == expect_messsage2);
+    if !(sess.messages() == expect_messsage1 || sess.messages() == expect_messsage2) {
+        panic!("assertion failed, left: `{:?}`, right: `{:?}`", sess.messages(), expect_messsage1);
+    }
 }

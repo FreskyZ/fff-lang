@@ -14,6 +14,7 @@ use codegen::Operand;
 use codegen::var_def::VarID;
 use codegen::fn_def::FnID;
 use codegen::type_def::TypeID;
+use codegen::Code;
 use codegen::session::GenerationSession;
 
 pub struct SimpleAssignStatement {
@@ -72,10 +73,11 @@ fn gen_expr_base(_expr_base: FullExpressionBase, _sess: &mut GenerationSession) 
 // Process expression, check type and operator existence
 // return returned value addr or eax or lit and type
 pub fn gen_expr(expr: FullExpression, sess: &mut GenerationSession) -> (Operand, TypeID) {
+    use std::ops::Deref;
 
-    let mut ident_name: String;
+    let mut ident_name = String::new();
     let mut base_is_ident = false;
-    match expr.base {
+    match expr.base.as_ref().clone() {
         FullExpressionBase::Ident(name, _pos) => {
             ident_name = name;
             base_is_ident = true;
@@ -99,25 +101,28 @@ pub fn gen_expr(expr: FullExpression, sess: &mut GenerationSession) -> (Operand,
     let mut is_first = true;
     for op in expr.ops {
         match op {
-            FullExpressionOperator::FunctionCall(exprs, _pos) if is_first => {
-                if base_is_ident { // global fn call
-                    let mut ops = Vec::new();
-                    let mut types = Vec::new();
-                    for expr in exprs {
-                        let ret = gen_expr(expr, sess);
-                        ops.push(ret.0);
-                        types.push(ret.1);
-                    }
+            FullExpressionOperator::FunctionCall(exprs, _pos) => {
+                if is_first {
+                    if base_is_ident { // global fn call
+                        let mut ops = Vec::new();
+                        let mut types = Vec::new();
+                        for expr in exprs {
+                            let ret = gen_expr(expr, sess);
+                            ops.push(ret.0);
+                            types.push(ret.1);
+                        }
 
-                    let fnid = sess.fns.find_by_sign(&ident_name, &types);
-                    let current_sp = sess.vars.current_offset();    // push parameter
-                    
-                    match sess.fns.get_if_internal(fnid) {
-                        Some(internal) => sess.codes.emit(Code::CallInternal(internal)), 
-                        None => (),
+                        let fnid = sess.fns.find_by_sign(&ident_name, &types);
+                        let current_sp = sess.vars.current_offset();    // push parameter
+
+                        // match sess.fns.get_if_internal(fnid) {
+                        //     Some(internal) => sess.codes.emit(Code::CallInternal(internal)), 
+                        //     None => (),
+                        // }
                     }
                 }
             } 
+            _ => (),
         }
         is_first = false;
     }

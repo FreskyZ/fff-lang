@@ -91,3 +91,15 @@ pub fn generate(program: SyntaxProgram) -> CodeCollection {
 //     emit
 //     emit
 //     return CodeID
+
+// Designment 3
+// High level vm, nearly executing AST
+// remove type aware from this module
+// generate nearly the same code as AST expression
+// check type and type member at runtime, remove rax
+// every expression has fixed address, 
+// every function call is copy push and copy assignment back, such that 1 + 1 = 2 is a valid expression, do not pay attention to this detail
+// fn collection, or declared fn collection is pass to the vm and check parameter number and type at runtime
+// integral promotion is not used, use type cast instead, type cast is also function call also copy push and copy assign back
+// type size are removed, every runtime stack slot is a special runtime value, which can hold any size of value by something like dictionary
+// var id and var offset are removed, only var name is pass to vm 

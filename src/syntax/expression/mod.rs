@@ -28,7 +28,7 @@ use self::postfix::Postfix;
 use self::postfix::PostfixExpression;
 use self::primary::PrimaryExpression;
 
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Clone)]
 pub enum ExpressionBase {
     Lit(LexicalLiteral, StringPosition),                // literal's postion
     Ident(String, StringPosition),                      // ident's position
@@ -93,7 +93,7 @@ impl ExpressionBase {
     }
 }
 
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Clone)]
 pub enum ExpressionOperator {
     MemberAccess(String, StringPosition),               // `.xxxx`'s position 
     FunctionCall(Vec<Expression>, StringPosition),      // '(', ')''s position,
@@ -175,11 +175,11 @@ impl fmt::Display for ExpressionOperator {
         })
     }
 }
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Clone)]
 pub struct Expression {
-    base: Box<ExpressionBase>,
-    ops: Vec<ExpressionOperator>,
-    all_pos: StringPosition,
+    pub base: Box<ExpressionBase>,
+    pub ops: Vec<ExpressionOperator>,
+    pub all_pos: StringPosition,
 }
 impl fmt::Debug for Expression {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
