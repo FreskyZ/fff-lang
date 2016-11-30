@@ -83,7 +83,7 @@ pub fn gen_expr(expr: FullExpression, sess: &mut GenerationSession) -> (Operand,
             base_is_ident = true;
         }
         FullExpressionBase::Lit(LexicalLiteral::Str(val), _pos) => {
-            let val = LexicalLiteral::Str(val).get_str_lit_not_option();
+            let val = LexicalLiteral::Str(val).get_str_not_option();
             let varid = sess.vars.push_temp(TypeID::Some(13), true, &mut sess.types, &mut sess.msgs);
             let offset = sess.vars.get_offset(varid);
             

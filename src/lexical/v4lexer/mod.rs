@@ -277,7 +277,7 @@ mod tests {
         let lexer = V4Lexer::new("123 abc 'd', [1]");
 
         assert_eq!(lexer.nth(0).is_num_lit(), true);
-        assert_eq!(lexer.nth(0).get_lit_val().unwrap().get_num_lit().unwrap(), &Some(NumLitValue::I32(123)));
+        assert_eq!(lexer.nth(0).get_lit_val().unwrap().get_num().unwrap(), &Some(NumLitValue::I32(123)));
         assert_eq!(lexer.nth(0).get_position(), make_str_pos!(1, 1, 1, 3));
         assert_eq!(lexer.pos(0), make_str_pos!(1, 1, 1, 3));
 
@@ -287,7 +287,7 @@ mod tests {
         assert_eq!(lexer.pos(1), make_str_pos!(1, 5, 1, 7));
 
         assert_eq!(lexer.nth(2).is_char_lit(), true);
-        assert_eq!(lexer.nth(2).get_lit_val().unwrap().get_char_lit().unwrap(), &Some('d'));
+        assert_eq!(lexer.nth(2).get_lit_val().unwrap().get_char().unwrap(), &Some('d'));
         assert_eq!(lexer.nth(2).get_position(), make_str_pos!(1, 9, 1, 11));
         assert_eq!(lexer.pos(2), make_str_pos!(1, 9, 1, 11));
 
@@ -302,7 +302,7 @@ mod tests {
         assert_eq!(lexer.pos(4), make_str_pos!(1, 14, 1, 14));
 
         assert_eq!(lexer.nth(5).is_num_lit(), true);
-        assert_eq!(lexer.nth(5).get_lit_val().unwrap().get_num_lit().unwrap(), &Some(NumLitValue::I32(1)));
+        assert_eq!(lexer.nth(5).get_lit_val().unwrap().get_num().unwrap(), &Some(NumLitValue::I32(1)));
         assert_eq!(lexer.nth(5).get_position(), lexer.pos(5));
         assert_eq!(lexer.pos(5), make_str_pos!(1, 15, 1, 15));
 
