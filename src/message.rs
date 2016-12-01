@@ -290,6 +290,13 @@ pub enum CodegenMessage {
     ConstVariableDeclareMissingInitializationExpression{
         name: String,
         pos: StringPosition,
+    },
+
+    FunctionCallOperatorNotAppliedToIdentifier{
+        pos: StringPosition,
+    },
+    SubscriptionOperatorParameterCountNot1{
+        pos: StringPosition,
     }
 }
 impl fmt::Debug for CodegenMessage {
@@ -315,6 +322,12 @@ impl fmt::Debug for CodegenMessage {
             },
             ConstVariableDeclareMissingInitializationExpression{ ref name, ref pos } => {
                 write!(f, "Variable declaration of {} at {:?} is const but missing init expression", name, pos)
+            },
+            FunctionCallOperatorNotAppliedToIdentifier{ ref pos } => {
+                write!(f, "Function call operator not applied to identifier at {:?}", pos)
+            },
+            SubscriptionOperatorParameterCountNot1{ ref pos } => {
+                write!(f, "Get index operator should provide exact 1 parameter at {:?}, *CURRENTLY*", pos)
             }
         }
     }

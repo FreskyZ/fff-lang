@@ -1,7 +1,7 @@
 
 fn main() {
-    for y in -15f32..15f32 {
-        for x in -30f32..30f32 {
+    for y in -15f32 : 15f32 {
+        for x in -30f32 : 30f32 {
             x = x / 20;
             y = y / -10;
             var f32 a = x * x + y * y - 1;

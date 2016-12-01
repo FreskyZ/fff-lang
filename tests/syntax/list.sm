@@ -27,7 +27,7 @@ fn main() {
 
     list.push_back(6);
     list.remove_at(3); // [1, 2, 4, 5, 8, 6]
-    for i in 0..list.length {
+    for i in 0 : list.length {
         list[i] *= 2;
     }
     list.sort();

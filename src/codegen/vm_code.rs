@@ -9,19 +9,12 @@ pub enum LitValue {
 impl Eq for LitValue {
 }
 
-#[derive(Eq, PartialEq, Copy, Clone)]
-#[allow(non_camel_case_types)]
-pub enum InternalFn {
-    HeapAlloc,
-    WriteLine_String,
-}
-
 pub enum Register {
     RAX,
-    EAX,
-    AX,
-    AH, // I don't know what it can do, just leave it here
-    AL,
+    // EAX,
+    // AX,
+    // AH, // I don't know what it can do, just leave it here
+    // AL,
     RIP,
     RBP,
 }
@@ -33,23 +26,11 @@ pub enum Operand {
     Reg(Register),
 }
 
-pub enum UnaryOperator {
-
-}
-pub enum BinaryOperator {
-
-}
-
 pub enum Code {
     
     LoadStr(String, usize),                   // Special for Str literal, load to stack offset
                                               // because before string is constructed, you cannot move the rust string literal to the stack 
-                                              // and call `?string_new` internal fn 
-    CallInternal(InternalFn),
-
-    Mov(Operand, Operand),                    // Move from 0 to 1
-    UnOp(Operand, UnaryOperator),             // UnOp on 0 and return to rax
-    BinOp(Operand, Operand, BinaryOperator),  // BinOp on 0 and 1 and return to rax
+                                              // and call `?string_new` internal fn
 
     Goto(usize),
     GotoIf(bool, usize),

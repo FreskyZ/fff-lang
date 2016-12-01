@@ -30,7 +30,6 @@ mod block;
 mod statement;
 mod expression;
 
-pub use codegen::vm_code::InternalFn;
 pub use codegen::vm_code::Operand;
 pub use codegen::vm_code::Code;
 pub use codegen::vm_code::CodeCollection;

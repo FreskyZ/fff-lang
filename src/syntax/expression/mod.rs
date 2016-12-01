@@ -33,7 +33,6 @@ pub enum ExpressionBase {
     Lit(LexicalLiteral, StringPosition),                // literal's postion
     Ident(String, StringPosition),                      // ident's position
     Paren(Expression, StringPosition),                  // '(', ')''s position
-    Unit(StringPosition),                               // '(', ')''s position
     TupleDef(Vec<Expression>, StringPosition),          // '(', ')''s position
     ArrayDef(Vec<Expression>, StringPosition),          // '[', ']''s position
     ArrayDupDef(Expression, Expression, [StringPosition; 2]), // '[',  ';', ']''s position
@@ -44,7 +43,6 @@ impl fmt::Debug for ExpressionBase {
             ExpressionBase::Ident(ref name, ref pos) => write!(f, "{} @ {:?}", name, pos),
             ExpressionBase::Lit(ref val, ref pos) => write!(f, "{:?} @ {:?}", val, pos),
             ExpressionBase::Paren(ref expr, ref pos) => write!(f, "({:?}) @ {:?}", expr, pos),
-            ExpressionBase::Unit(ref pos) => write!(f, "() @ {:?}", pos),
             ExpressionBase::TupleDef(ref exprs, ref pos) => write!(f, "({}) @ {:?}", format_vector_debug(exprs, ", "), pos),
             ExpressionBase::ArrayDef(ref exprs, ref pos) => write!(f, "[{}] @ {:?}", format_vector_debug(exprs, ", "), pos),
             ExpressionBase::ArrayDupDef(ref expr1, ref expr2, ref pos) => write!(f, "[{:?}; @ {:?} {:?}] @ {:?}", expr1, pos[1], expr2, pos[0]),
@@ -57,7 +55,6 @@ impl fmt::Display for ExpressionBase {
             ExpressionBase::Ident(ref name, ref _pos) => write!(f, "{}", name),
             ExpressionBase::Lit(ref val, ref _pos) => write!(f, "{}", val),
             ExpressionBase::Paren(ref expr, ref _pos) => write!(f, "({})", expr),
-            ExpressionBase::Unit(ref _pos) => write!(f, "()"),
             ExpressionBase::TupleDef(ref exprs, ref _pos) => write!(f, "({})", format_vector_display(exprs, ", ")),
             ExpressionBase::ArrayDef(ref exprs, ref _pos) =>  write!(f, "[{}]", format_vector_display(exprs, ", ")),
             ExpressionBase::ArrayDupDef(ref expr1, ref expr2, ref _pos) => write!(f, "[{}; {}]", expr1, expr2),
@@ -71,7 +68,6 @@ impl ExpressionBase {
             ExpressionBase::Ident(ref _name, ref pos) => *pos,
             ExpressionBase::Lit(ref _val, ref pos) => *pos,
             ExpressionBase::Paren(ref _expr, ref pos) => *pos,
-            ExpressionBase::Unit(ref pos) => *pos,
             ExpressionBase::TupleDef(ref _exprs, ref pos) => *pos,
             ExpressionBase::ArrayDef(ref _exprs, ref pos) => *pos,
             ExpressionBase::ArrayDupDef(ref _expr1, ref _expr2, ref pos) => pos[0],
@@ -84,7 +80,6 @@ impl ExpressionBase {
             _ => false,
         }
     }
-    
     pub fn get_lit(&self) -> Option<&LexicalLiteral> {
         match *self {
             ExpressionBase::Lit(ref val, ref _pos) => Some(val),
@@ -224,7 +219,7 @@ fn d3_expr_to_expr(d3: D3Expression) -> Expression {
     }) = d3;
 
     let expr_base = match primary {
-        PrimaryExpression::Unit(pos) => ExpressionBase::Unit(pos),
+        PrimaryExpression::Unit(pos) => ExpressionBase::Lit(LexicalLiteral::Unit, pos),
         PrimaryExpression::Lit(val, pos) => ExpressionBase::Lit(val, pos),
         PrimaryExpression::Ident(name, pos) => ExpressionBase::Ident(name, pos),
         PrimaryExpression::ParenExpr(d3_expr, pos) => ExpressionBase::Paren(d3_expr_to_expr(d3_expr.as_ref().clone()), pos),
@@ -245,8 +240,10 @@ fn d3_expr_to_expr(d3: D3Expression) -> Expression {
     }
     let mut ops = Vec::new();
     let mut postfix_ops_iter = postfix_ops.into_iter();
+    // Big bug here, iter next **TWICE** every time!!!
+    let mut previous = postfix_ops_iter.next();
     loop {
-        match (postfix_ops_iter.next(), postfix_ops_iter.next()) {
+        match (previous, postfix_ops_iter.next()) {
             (Some(Postfix::MemberAccess(ident1, pos1)), Some(Postfix::FunctionCall(params, pos2))) => {
                 pos_all.end_pos = pos2.end_pos;
                 ops.push(ExpressionOperator::MemberFunctionCall(
@@ -254,11 +251,13 @@ fn d3_expr_to_expr(d3: D3Expression) -> Expression {
                     params.into_iter().map(d3_expr_to_expr).collect(), 
                     [pos1, pos2]
                 ));
+                previous = postfix_ops_iter.next(); // skip one
             }
             (Some(other_postfix1), Some(other_postfix2)) => {
                 pos_all.end_pos = other_postfix2.pos().end_pos;
                 ops.push(postfix_to_operator(other_postfix1));
-                ops.push(postfix_to_operator(other_postfix2));
+                // ops.push(postfix_to_operator(other_postfix2)); 
+                previous = Some(other_postfix2);   // **IMPORTANT**, fix here, cannot skip one here
             }
             (Some(other_postfix), None) => { 
                 pos_all.end_pos = other_postfix.pos().end_pos;
@@ -400,7 +399,7 @@ mod tests {
         // Unit Literal
         ast_test_case!{ "()", 2, make_str_pos!(1, 1, 1, 2),
             Expression::new_test(
-                ExpressionBase::Unit(make_str_pos!(1, 1, 1, 2)),
+                ExpressionBase::Lit(LexicalLiteral::Unit, make_str_pos!(1, 1, 1, 2)),
                 Vec::new(),
                 make_str_pos!(1, 1, 1, 2),
             )
@@ -427,7 +426,7 @@ mod tests {
             Expression::new_test(
                 ExpressionBase::Paren(
                     Expression::new_test(
-                        ExpressionBase::Unit(make_str_pos!(1, 2, 1, 3)),
+                        ExpressionBase::Lit(LexicalLiteral::Unit, make_str_pos!(1, 2, 1, 3)),
                         Vec::new(),
                         make_str_pos!(1, 2, 1, 3),
                     ),

@@ -43,8 +43,8 @@ pub enum VarID {
 impl fmt::Debug for VarID {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            &VarID::Some(ref val) => write!(f, "type[{}]", val),
-            &VarID::Invalid => write!(f, "type[-]"),
+            &VarID::Some(ref val) => write!(f, "var[{}]", val),
+            &VarID::Invalid => write!(f, "var[-]"),
         }
     }
 }
@@ -180,12 +180,12 @@ impl VarCollection {
     // When a name is referenced
     pub fn find_by_name(&self, rhs: &str) -> VarID {
 
-        let len = self.items.len() - 1;
+        let len = self.items.len();
         for (index, item) in self.items.iter().rev().enumerate() {
             match item {
                 &VarOrScope::Some(ref item) => {
                     if item.name == rhs {
-                        return VarID::Some(len - index);
+                        return VarID::Some(len - 1 - index);
                     } 
                 }
                 &VarOrScope::ScopeBarrier => (),

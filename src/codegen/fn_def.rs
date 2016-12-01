@@ -17,7 +17,6 @@ use codegen::type_def::TypeID;
 use codegen::type_def::TypeCollection;
 use codegen::var_def::VarCollection;
 use codegen::session::GenerationSession;
-use codegen::InternalFn;
 
 #[derive(Eq, PartialEq, Clone, Copy)]
 pub enum FnID {
@@ -271,7 +270,7 @@ fn gen_fn_arg() {
     let arg = Argument::from_str("[i32] a", 0);
     let arg = FnArg::new(arg, &mut sess.types, &mut sess.msgs);
     assert_eq!(arg.name, "a");
-    assert_eq!(arg.ty, TypeID::Some(14));
+    assert_eq!(arg.ty, TypeID::Some(15)); // TODO future: after `auto` primitive type removed, this is 14
     assert_eq!(arg.pos, [make_str_pos!(1, 1, 1, 5), make_str_pos!(1, 7, 1, 7)]);
     let expect_messages = &mut MessageEmitter::new();
     assert_eq!(sess.messages(), expect_messages);
@@ -374,7 +373,7 @@ fn gen_fn_args() {
     assert_eq!(args[1].ty, TypeID::Invalid);
     assert_eq!(args[1].pos, [make_str_pos!(1, 16, 1, 23), make_str_pos!(1, 25, 1, 25)]);
     assert_eq!(args[2].name, "cde");
-    assert_eq!(args[2].ty, TypeID::Some(15)); // [u8] is 14, [[u8]] is 15
+    assert_eq!(args[2].ty, TypeID::Some(16)); // [u8] is 14, [[u8]] is 15  // TODO future: after primitive type auto is removed, this is 15
     assert_eq!(args[2].pos, [make_str_pos!(1, 28, 1, 33), make_str_pos!(1, 35, 1, 37)]);
     let mut expect_message = MessageEmitter::new();
     expect_message.push(CodegenMessage::TypeNotExist{ name: "intttt".to_owned(), pos: make_str_pos!(1, 17, 1, 22) });

@@ -143,6 +143,7 @@ define_seperator!{ SeperatorKind,
         // ':' => Colon,            SeperatorCategory::Seperator,           
         ';' => SemiColon,           SeperatorCategory::Seperator,
         '.' => Dot,                 SeperatorCategory::Seperator,
+        ':' => Range,               SeperatorCategory::Seperator,   // Change from `..` to here because 1..2 is regarded as due decimal point in num lit, a serious problem
         // '#' => AttributeSign,    SeperatorCategory::Seperator,
     ]
     [
@@ -166,7 +167,6 @@ define_seperator!{ SeperatorKind,
         '-', '>' => NarrowRightArrow,       SeperatorCategory::Seperator,
         // '=', '>' => WideRightArrow,      SeperatorCategory::Seperator,
         // ':', ':' => NamespaceSeperator,  SeperatorCategory::Seperator,
-        '.', '.' => Range,                  SeperatorCategory::Seperator,
         '+', '+' => Increase,               SeperatorCategory::Unary,
         '-', '-' => Decrease,               SeperatorCategory::Unary,
     ]

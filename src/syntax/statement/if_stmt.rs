@@ -139,9 +139,9 @@ impl IASTItem for IfStatement {
                     (Some(block), block_len) => {
                         pos[1] = lexer.pos(index + current_len + 1);
                         else_body = Some(block);
-                        current_len += block_len;
-                    }  
-                    (None, length) => return (None, current_len + length),
+                        current_len += block_len + 1;
+                    }  // 16/12/1, we lost TWO `+1`s for current_len here ... fixed
+                    (None, length) => return (None, current_len + 1 + length),
                 },
                 (false, _) => {
                     break;
