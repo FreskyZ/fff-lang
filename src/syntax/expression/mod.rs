@@ -203,6 +203,8 @@ impl Expression {
         let lexer = &mut Lexer::new(program);
         Expression::parse(lexer, sym_index).0.unwrap() 
     }
+
+    pub fn pub_pos_all(&self) -> StringPosition { self.pos_all() }
 }
 
 fn d3_expr_to_expr(d3: D3Expression) -> Expression {

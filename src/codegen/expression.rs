@@ -3,6 +3,7 @@
 
 use std::fmt;
 
+use common::From2;
 use common::StringPosition;
 use common::format_vector_debug;
 use message::CodegenMessage;
@@ -13,14 +14,17 @@ use lexical::SeperatorKind;
 use syntax::ExpressionBase as FullExpressionBase;
 use syntax::ExpressionOperator as FullExpressionOperator;
 use syntax::Expression as FullExpression;
+use syntax::ExpressionStatement as FullExpressionStatement;
 use syntax::SMType;
 
-use codegen::Operand;
 use codegen::var_def::VarID;
 use codegen::var_def::VarCollection;
 use codegen::fn_def::FnID;
 use codegen::type_def::TypeID;
+use codegen::Operand;
 use codegen::Code;
+use codegen::CodeID;
+use codegen::AssignOperator;
 use codegen::session::GenerationSession;
 
 // About unit type
@@ -53,7 +57,6 @@ enum SimpleOp {
     MemberFunctionCall(String, Vec<SimpleBase>, [StringPosition; 2]),
     UnOp(SeperatorKind, StringPosition),               
     BinOp(SimpleBase, SeperatorKind, StringPosition),
-    GetIndex(SimpleBase, StringPosition), // only one parameter accepted here, and changed to var id
     MemberAccess(String, StringPosition),  // Directly to string
     TypeCast(TypeID, StringPosition),
 }
@@ -218,11 +221,9 @@ fn simplize_expr(expr: FullExpression, sess: &mut GenerationSession, assigns: &m
 
                 let simple_base = match check_pure_simple_expr(exprs.pop().unwrap(), sess) {
                     Ok(simple_base) => simple_base,
-                    Err(expr) => {
-                        push_temp_expr!(sess, expr, assigns, pos)
-                    }
+                    Err(expr) => push_temp_expr!(sess, expr, assigns, pos),
                 };
-                ops.push(SimpleOp::GetIndex(simple_base, pos));
+                ops.push(SimpleOp::MemberFunctionCall("get_Index".to_owned(), vec![simple_base], [pos, StringPosition::new()]));
             }
             FullExpressionOperator::TypeCast(smt, pos) => {
                 if ident_name.is_some() { ident_name = None; }
@@ -236,9 +237,11 @@ fn simplize_expr(expr: FullExpression, sess: &mut GenerationSession, assigns: &m
     Some(SimpleExpr{ base: simple_base, ops: ops }) 
 }
 
-// Process expression, check type and operator existence
-// return returned value addr or eax or lit and type
-pub fn gen_expr(expr: FullExpression, sess: &mut GenerationSession) -> Option<SimpleBase> {
+fn gen_simple_expr(_simple_expr: SimpleExpr, _sess: &mut GenerationSession) -> Option<Operand> {
+    None
+}
+
+pub fn gen_expr(expr: FullExpression, sess: &mut GenerationSession) -> Option<Operand> {
    
     let mut assigns = Vec::new();
     let simple_expr = match simplize_expr(expr, sess, &mut assigns) {
@@ -246,8 +249,78 @@ pub fn gen_expr(expr: FullExpression, sess: &mut GenerationSession) -> Option<Si
         Some(simple_expr) => simple_expr,
     };
 
-
+    for assign in assigns {
+        gen_simple_expr(assign.right, sess);
+        
+    }
+    
     None
+}
+
+// Currently, valid expression statement, is one of
+// Assignment or OpAssignment statement, left of assign operator is identifier
+// single expression statement, one of
+//     last of ops is function call or member function call
+//     last of ops is increase or decrease
+pub fn gen_expr_stmt(expr_stmt: FullExpressionStatement, sess: &mut GenerationSession, ignore_left_const: bool) {
+
+    if expr_stmt.op.is_none() { // expression statement
+        let expr = expr_stmt.left_expr;
+        let pos = expr_stmt.pos[1];      // position of semicolon
+
+        if expr.ops.len() == 0 {
+            sess.msgs.push(CodegenMessage::InvalidExpressionStatementSingleSimpleExpression{ pos: StringPosition::from2(expr.pub_pos_all().start_pos, pos.end_pos) });
+            return;
+        }
+
+        match expr.ops.iter().last().unwrap() {
+            &FullExpressionOperator::FunctionCall(_, _) 
+            | &FullExpressionOperator::MemberFunctionCall(_, _, _)
+            | &FullExpressionOperator::Unary(SeperatorKind::Increase, _)
+            | &FullExpressionOperator::Unary(SeperatorKind::Decrease, _) => (),
+            _ => {
+                sess.msgs.push(CodegenMessage::InvalidExpressionStatementLastOpNotValid{ pos: StringPosition::from2(expr.pub_pos_all().start_pos, pos.end_pos) });
+                return;
+            }
+        }
+
+        let _maybe_codeop = gen_expr(expr, sess); // ignore it
+    } else {               // assignment statement
+        let left_expr = expr_stmt.left_expr;
+        let semicolon_pos = expr_stmt.pos[1];
+        let left_expr_pos = left_expr.pub_pos_all();
+        let mut left_ident_name = None;
+        if left_expr.ops.len() != 0 {
+            match left_expr.base.as_ref() {
+                &FullExpressionBase::Ident(ref name, _) => left_ident_name = Some(name.clone()),
+                _ => (),
+            }
+        }
+        if left_ident_name.is_none() {
+            sess.msgs.push(CodegenMessage::LeftOfAssignmentStatementCannotBeComplex{ pos: left_expr.pub_pos_all() });
+            return;
+        }
+
+        let left_varid = sess.vars.find_by_name(&left_ident_name.unwrap());
+        let op = expr_stmt.op.unwrap();
+        let right_expr = expr_stmt.right_expr.unwrap();
+
+        match sess.vars.find_by_id(left_varid) {
+            Some(ref var) => if var.is_const && !ignore_left_const { // is const but not ignore const
+                sess.msgs.push(CodegenMessage::AssignToConstVar{
+                    name: var.name.clone(),
+                    pos: StringPosition::from2(left_expr_pos.start_pos, semicolon_pos.end_pos),
+                });
+                // still generate and continue
+            },
+            None => (), // message emitted
+        }
+
+        match gen_expr(right_expr, sess) {
+            Some(operand) => sess.codes.emit(Code::Assign(left_varid, AssignOperator::from(op), operand)),
+            None => CodeID::dummy(),
+        };
+    }
 }
 
 #[cfg(test)] #[test]
@@ -330,5 +403,10 @@ fn gen_expr_practice() {
 
 #[cfg(test)] #[test]
 fn gen_expr_all() {
+
+}
+
+#[cfg(test)] #[test]
+fn gen_expr_stmt_all() {
 
 }

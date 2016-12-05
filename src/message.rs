@@ -297,7 +297,21 @@ pub enum CodegenMessage {
     },
     SubscriptionOperatorParameterCountNot1{
         pos: StringPosition,
-    }
+    },
+
+    InvalidExpressionStatementSingleSimpleExpression{
+        pos: StringPosition,
+    },
+    InvalidExpressionStatementLastOpNotValid{
+        pos: StringPosition,
+    },
+    LeftOfAssignmentStatementCannotBeComplex{
+        pos: StringPosition,
+    },
+    AssignToConstVar{
+        name: String,
+        pos: StringPosition, // stmt pos
+    },
 }
 impl fmt::Debug for CodegenMessage {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -328,6 +342,18 @@ impl fmt::Debug for CodegenMessage {
             },
             SubscriptionOperatorParameterCountNot1{ ref pos } => {
                 write!(f, "Get index operator should provide exact 1 parameter at {:?}, *CURRENTLY*", pos)
+            },
+            InvalidExpressionStatementSingleSimpleExpression{ ref pos } => {
+                write!(f, "Invalid expression statement at {:?}, simple expression cannot be statement", pos)
+            },
+            InvalidExpressionStatementLastOpNotValid{ ref pos } => {
+                write!(f, "Invalid expression statement at {:?}, expression statement should be at last a function call statement or increase or decrease expression", pos)
+            },
+            LeftOfAssignmentStatementCannotBeComplex{ ref pos } => {
+                write!(f, "Left expression at {:?} of assignment statement cannot be an identifier", pos)
+            },
+            AssignToConstVar{ ref name, ref pos } => {
+                write!(f, "Tru to assign to const variable {:?} at {:?}", name, pos)
             }
         }
     }

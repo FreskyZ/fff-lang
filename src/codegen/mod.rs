@@ -30,8 +30,18 @@ mod block;
 mod statement;
 mod expression;
 
+pub use codegen::var_def::VarID;
+pub use codegen::var_def::Var;
+pub use codegen::var_def::VarCollection;
+pub use codegen::type_def::TypeID;
+pub use codegen::type_def::Type;
+pub use codegen::type_def::TypeCollection;
 pub use codegen::vm_code::Operand;
+pub use codegen::vm_code::AssignOperator;
+pub use codegen::vm_code::BinaryOperator;
+pub use codegen::vm_code::UnaryOperator;
 pub use codegen::vm_code::Code;
+pub use codegen::vm_code::CodeID;
 pub use codegen::vm_code::CodeCollection;
 
 use syntax::Program as SyntaxProgram;
