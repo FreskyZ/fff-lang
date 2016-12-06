@@ -105,20 +105,20 @@ fn gen_if(if_stmt: IfStatement, sess: &mut GenerationSession) {
     let if_expr = gen_expr(if_stmt.if_expr, sess); 
     let if_goto_pos = sess.codes.emit(Code::GotoIf(if_expr, false, CodeID::dummy()));
 
-    gen_block(if_stmt.if_body, sess, false);
+    gen_block(if_stmt.if_body, sess, true);
     let next_codeid = sess.codes.next_id();
     sess.codes.refill_addr(if_goto_pos, next_codeid);
 
     for elseif in if_stmt.elseifs {
         let elseif_expr = gen_expr(elseif.expr, sess);
         let elseif_goto_pos = sess.codes.emit(Code::GotoIf(elseif_expr, false, CodeID::dummy()));
-        gen_block(elseif.body, sess, false);
+        gen_block(elseif.body, sess, true);
         let next_codeid = sess.codes.next_id();
         sess.codes.refill_addr(elseif_goto_pos, next_codeid);
     }
 
     match if_stmt.else_body {
-        Some(else_body) => gen_block(else_body, sess, false),
+        Some(else_body) => gen_block(else_body, sess, true),
         _ => (), // nothing
     }   
 }
@@ -147,7 +147,8 @@ fn gen_loop(loop_stmt: LoopStatement, sess: &mut GenerationSession) {
     let continue_addr = sess.codes.next_id();
     sess.loops.push_loop(loop_stmt.name, continue_addr);
 
-    gen_block(loop_stmt.body, sess, false);
+    gen_block(loop_stmt.body, sess, true);
+    sess.codes.emit(Code::Goto(continue_addr));
     
     let break_refill_addr = sess.codes.next_id();
     sess.loops.pop_and_refill(break_refill_addr, &mut sess.codes);
@@ -164,7 +165,8 @@ fn gen_while(while_stmt: WhileStatement, sess: &mut GenerationSession) {
     let _ = gen_expr(while_stmt.expr, sess); // always reeval the expression
     sess.loops.push_loop(None, continue_addr);
 
-    gen_block(while_stmt.body, sess, false);
+    gen_block(while_stmt.body, sess, true);
+    sess.codes.emit(Code::Goto(continue_addr));
 
     let while_refill_addr = sess.codes.next_id();
     sess.loops.pop_and_refill(while_refill_addr, &mut sess.codes);
@@ -195,7 +197,8 @@ fn gen_for(for_stmt: ForStatement, sess: &mut GenerationSession) {
     let while_implicit_break_addr = sess.codes.emit(Code::GotoIf(Operand::Register, false, CodeID::dummy())); 
     sess.loops.push_last_loop_break_addr(while_implicit_break_addr);
 
-    gen_block(for_stmt.body, sess, true);
+    gen_block(for_stmt.body, sess, false);
+    sess.codes.emit(Code::Goto(continue_addr));
 
     let for_refill_addr = sess.codes.next_id();
     sess.loops.pop_and_refill(for_refill_addr, &mut sess.codes);
@@ -249,9 +252,9 @@ fn gen_break(break_stmt: BreakStatement, sess: &mut GenerationSession) {
 }
 
 // fn and for do not require scope enter on block
-fn gen_block(block: Block, sess: &mut GenerationSession, no_scope_enter: bool) {
+fn gen_block(block: Block, sess: &mut GenerationSession, emit_scope_barrier: bool) {
 
-    if !no_scope_enter { sess.codes.emit_silent(Code::ScopeBarrier(true)); }
+    if emit_scope_barrier { sess.codes.emit_silent(Code::ScopeBarrier(true)); }
     for stmt in block.stmts {
         match stmt {
             Statement::VarDecl(var_decl) => gen_var_decl(var_decl, sess),
@@ -266,13 +269,13 @@ fn gen_block(block: Block, sess: &mut GenerationSession, no_scope_enter: bool) {
             _ => (),        
         }
     }
-    if !no_scope_enter { sess.codes.emit_silent(Code::ScopeBarrier(false)); }
+    if emit_scope_barrier { sess.codes.emit_silent(Code::ScopeBarrier(false)); }
 }
 
 // Block
 impl StatementGenerator {
 
     pub fn generate(block: Block, sess: &mut GenerationSession) {
-        gen_block(block, sess, true);
+        gen_block(block, sess, false);
     }
 }
