@@ -312,6 +312,9 @@ pub enum CodegenMessage {
         name: String,
         pos: StringPosition, // stmt pos
     },
+    MemberAccessNotSupportedCurrently{
+        pos: StringPosition,
+    }
 }
 impl fmt::Debug for CodegenMessage {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -350,10 +353,13 @@ impl fmt::Debug for CodegenMessage {
                 write!(f, "Invalid expression statement at {:?}, expression statement should be at last a function call statement or increase or decrease expression", pos)
             },
             LeftOfAssignmentStatementCannotBeComplex{ ref pos } => {
-                write!(f, "Left expression at {:?} of assignment statement cannot be an identifier", pos)
+                write!(f, "Left expression at {:?} of assignment statement can only be an identifier", pos)
             },
             AssignToConstVar{ ref name, ref pos } => {
                 write!(f, "Tru to assign to const variable {:?} at {:?}", name, pos)
+            },
+            MemberAccessNotSupportedCurrently{ ref pos } => {
+                write!(f, "Member access not supported **CURRENTLY** at {:?}", pos)
             }
         }
     }

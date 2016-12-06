@@ -25,6 +25,8 @@ use codegen::Operand;
 use codegen::Code;
 use codegen::CodeID;
 use codegen::AssignOperator;
+use codegen::BinaryOperator;
+use codegen::UnaryOperator;
 use codegen::session::GenerationSession;
 
 // About unit type
@@ -237,8 +239,56 @@ fn simplize_expr(expr: FullExpression, sess: &mut GenerationSession, assigns: &m
     Some(SimpleExpr{ base: simple_base, ops: ops }) 
 }
 
-fn gen_simple_expr(_simple_expr: SimpleExpr, _sess: &mut GenerationSession) -> Option<Operand> {
-    None
+fn gen_simple_expr_base(simple_base: SimpleBase, sess: &mut GenerationSession) -> Operand {
+    
+    match simple_base {
+        SimpleBase::Ident(varid, _pos) => Operand::Stack(varid),
+        SimpleBase::Lit(lit, _pos) => Operand::Lit(lit),
+        SimpleBase::FunctionCall(name, bases, _pos) => {
+            let mut ops = Vec::new();
+            for base in bases {
+                ops.push(gen_simple_expr_base(base, sess));
+            }
+            sess.codes.emit(Code::CallGlobal(name, ops));
+            Operand::Register
+        }
+    }
+}
+fn gen_simple_expr(simple_expr: SimpleExpr, sess: &mut GenerationSession) -> Option<Operand> {
+
+    let mut last_operand = gen_simple_expr_base(simple_expr.base, sess);
+
+    for operator in simple_expr.ops {
+        match operator {
+            SimpleOp::MemberFunctionCall(name, bases, _pos) => {
+                let mut ops = Vec::new();
+                for base in bases {
+                    ops.push(gen_simple_expr_base(base, sess));
+                }
+                sess.codes.emit(Code::CallMember(last_operand.clone(), name, ops));
+                last_operand = Operand::Register;
+            }
+            SimpleOp::MemberAccess(_, pos) => {
+                sess.msgs.push(CodegenMessage::MemberAccessNotSupportedCurrently{ pos: pos });
+                last_operand = Operand::Register;
+            }
+            SimpleOp::TypeCast(typeid, _pos) => {
+                sess.codes.emit(Code::TypeCast(last_operand, typeid));
+                last_operand = Operand::Register;
+            }
+            SimpleOp::UnOp(sep, _pos) => {
+                sess.codes.emit(Code::Unary(last_operand, UnaryOperator::from(sep)));
+                last_operand = Operand::Register;
+            }
+            SimpleOp::BinOp(base, sep, _pos) => {
+                let operand = gen_simple_expr_base(base, sess);
+                sess.codes.emit(Code::Binary(last_operand, BinaryOperator::from(sep), operand));
+                last_operand = Operand::Register;
+            }
+        }
+    }
+
+    Some(last_operand)
 }
 
 pub fn gen_expr(expr: FullExpression, sess: &mut GenerationSession) -> Option<Operand> {
@@ -250,11 +300,15 @@ pub fn gen_expr(expr: FullExpression, sess: &mut GenerationSession) -> Option<Op
     };
 
     for assign in assigns {
-        gen_simple_expr(assign.right, sess);
-        
+        match gen_simple_expr(assign.right, sess) {
+            Some(operand) => {
+                let _ = sess.codes.emit(Code::Assign(assign.left, AssignOperator::Assign, operand));
+            }
+            None => break, // any error no more need
+        };
     }
-    
-    None
+
+    gen_simple_expr(simple_expr, sess)
 }
 
 // Currently, valid expression statement, is one of
@@ -290,7 +344,7 @@ pub fn gen_expr_stmt(expr_stmt: FullExpressionStatement, sess: &mut GenerationSe
         let semicolon_pos = expr_stmt.pos[1];
         let left_expr_pos = left_expr.pub_pos_all();
         let mut left_ident_name = None;
-        if left_expr.ops.len() != 0 {
+        if left_expr.ops.len() == 0 {
             match left_expr.base.as_ref() {
                 &FullExpressionBase::Ident(ref name, _) => left_ident_name = Some(name.clone()),
                 _ => (),
@@ -316,15 +370,18 @@ pub fn gen_expr_stmt(expr_stmt: FullExpressionStatement, sess: &mut GenerationSe
             None => (), // message emitted
         }
 
+        perrorln!("Assign branch run to here");
         match gen_expr(right_expr, sess) {
-            Some(operand) => sess.codes.emit(Code::Assign(left_varid, AssignOperator::from(op), operand)),
-            None => CodeID::dummy(),
+            Some(operand) => {
+                let _ = sess.codes.emit(Code::Assign(left_varid, AssignOperator::from(op), operand));
+            }
+            None => (),
         };
     }
 }
 
 #[cfg(test)] #[test]
-fn gen_expr_simple() {
+fn gen_expr_simple_test() {
     use codegen::var_def::Var;
     use message::MessageEmitter;
 
@@ -382,7 +439,7 @@ fn gen_expr_simple() {
 }
 
 #[cfg(test)] #[test]
-fn gen_expr_practice() {
+fn gen_expr_practice_test() {
 
     let right_expr = FullExpression::from_str("x * x + y * y - 1", 0);
     let mut assigns = Vec::new();
@@ -402,11 +459,43 @@ fn gen_expr_practice() {
 }
 
 #[cfg(test)] #[test]
-fn gen_expr_all() {
+fn gen_expr_inter() {
 
 }
 
 #[cfg(test)] #[test]
-fn gen_expr_stmt_all() {
+fn gen_expr_stmt_spec() { // special cases indicated by inter test
 
+}
+
+#[cfg(test)] #[test] // #[ignore]
+fn gen_expr_stmt_inter() {
+
+    use std::io::stdin;
+
+    let mut sess = GenerationSession::new();
+    loop {
+        let mut buf = String::new();
+
+        perrorln!("Input:");
+        match stdin().read_line(&mut buf) {
+            Ok(_) => (),
+            Err(_) => break,
+        }
+
+        if buf != "break\r\n" {
+            match FullExpressionStatement::from_str(&buf, 0).0 {
+                Some(expr_stmt) => {
+                    gen_expr_stmt(expr_stmt, &mut sess, false);
+                    perrorln!("Code: {}", sess.codes.dump());
+                    perrorln!("Messages: {:?}", sess.msgs);
+                }
+                None => {
+                    perrorln!("Unexpectedly failed");
+                }
+            }
+        } else {
+            break;
+        }
+    }
 }

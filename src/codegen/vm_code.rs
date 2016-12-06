@@ -12,23 +12,57 @@ use codegen::VarID;
 use codegen::TypeID;
 
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, PartialEq, Clone)]
 pub enum Operand {
     Lit(LexicalLiteral),
-    Stack(usize),
+    Stack(VarID),
     // Heap(usize),
     Register,     // act as register rax, every operation return at stacktop, only store moves it some where
 } 
+impl fmt::Debug for Operand {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Operand::Lit(ref lit) => write!(f, "{}", lit),
+            Operand::Stack(ref varid) => write!(f, "{:?}", varid),
+            Operand::Register => write!(f, "rax"),
+        }
+    }
+}
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Eq, PartialEq)]
 pub enum UnaryOperator {
     Increase,
     Decrease, 
+    BitNot,
     Negative,
     LogicalNot,
 }
+impl From<SeperatorKind> for UnaryOperator {
+    fn from(sep: SeperatorKind) -> UnaryOperator {
+        match sep {
+            SeperatorKind::BitNot => UnaryOperator::BitNot,
+            SeperatorKind::LogicalNot => UnaryOperator::LogicalNot,
+            SeperatorKind::Sub => UnaryOperator::Negative,
+            SeperatorKind::Increase => UnaryOperator::Increase,
+            SeperatorKind::Decrease => UnaryOperator::Decrease, 
+            _ => unreachable!(), // Very confident about this
+        }
+    }
+}
+impl fmt::Debug for UnaryOperator {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            UnaryOperator::Increase => write!(f, "++"),
+            UnaryOperator::Decrease => write!(f, "--"),
+            UnaryOperator::BitNot => write!(f, "~"),
+            UnaryOperator::Negative => write!(f, "-"),
+            UnaryOperator::LogicalNot => write!(f, "!"),
+        }
+    }
+}
 
-#[derive(Eq, PartialEq, Debug)]
+
+#[derive(Eq, PartialEq)]
 pub enum BinaryOperator {
     Add, 
     Sub, 
@@ -49,8 +83,57 @@ pub enum BinaryOperator {
     LogicalAnd, 
     LogicalOr,
 }
+impl From<SeperatorKind> for BinaryOperator {
+    fn from(sep: SeperatorKind) -> BinaryOperator {
+        match sep {
+            SeperatorKind::Add => BinaryOperator::Add,
+            SeperatorKind::Sub => BinaryOperator::Sub,
+            SeperatorKind::Mul => BinaryOperator::Mul,
+            SeperatorKind::Div => BinaryOperator::Div,
+            SeperatorKind::Rem => BinaryOperator::Rem,
+            SeperatorKind::ShiftLeft => BinaryOperator::ShiftLeft,
+            SeperatorKind::ShiftRight => BinaryOperator::ShiftRight,
+            SeperatorKind::Equal => BinaryOperator::Equal,
+            SeperatorKind::NotEqual => BinaryOperator::NotEqual,
+            SeperatorKind::Great => BinaryOperator::Great,
+            SeperatorKind::Less => BinaryOperator::Less,
+            SeperatorKind::GreatEqual => BinaryOperator::GreatEqual,
+            SeperatorKind::LessEqual => BinaryOperator::LessEqual,
+            SeperatorKind::BitAnd => BinaryOperator::BitAnd,
+            SeperatorKind::BitOr => BinaryOperator::BitOr,
+            SeperatorKind::BitXor => BinaryOperator::BitXor,
+            SeperatorKind::LogicalAnd => BinaryOperator::LogicalAnd,
+            SeperatorKind::LogicalOr => BinaryOperator::LogicalOr,
+            _ => unreachable!(), // Very confident about this
+        }
+    }
+}
+impl fmt::Debug for BinaryOperator {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            BinaryOperator::Add => write!(f, "+"),
+            BinaryOperator::Sub => write!(f, "-"),
+            BinaryOperator::Mul => write!(f, "*"),
+            BinaryOperator::Div => write!(f, "/"),
+            BinaryOperator::Rem => write!(f, "%"),
+            BinaryOperator::ShiftLeft => write!(f, "<<"),
+            BinaryOperator::ShiftRight => write!(f, ">>"),
+            BinaryOperator::Equal => write!(f, "=="),
+            BinaryOperator::NotEqual => write!(f, "!="),
+            BinaryOperator::Great => write!(f, ">"),
+            BinaryOperator::Less => write!(f, "<"),
+            BinaryOperator::GreatEqual => write!(f, ">="),
+            BinaryOperator::LessEqual => write!(f, "<="),
+            BinaryOperator::BitAnd => write!(f, "&"),
+            BinaryOperator::BitOr => write!(f, "|"),
+            BinaryOperator::BitXor => write!(f, "^"),
+            BinaryOperator::LogicalAnd => write!(f, "&&"),
+            BinaryOperator::LogicalOr => write!(f, "||"),
+        }
+    }
+}
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, PartialEq)]
 pub enum AssignOperator {
     Assign,
     AddAssign,
@@ -75,6 +158,21 @@ impl From<SeperatorKind> for AssignOperator {
             SeperatorKind::BitOrAssign => AssignOperator::BitOrAssign,
             SeperatorKind::BitXorAssign => AssignOperator::BitXorAssign,
             _ => unreachable!(), // Very confident about this
+        }
+    }
+}
+impl fmt::Debug for AssignOperator {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            AssignOperator::Assign => write!(f, "="),
+            AssignOperator::AddAssign => write!(f, "+="),
+            AssignOperator::SubAssign => write!(f, "-="),
+            AssignOperator::MulAssign => write!(f, "*="),
+            AssignOperator::DivAssign => write!(f, "/="),
+            AssignOperator::RemAssign => write!(f, "%="),
+            AssignOperator::BitAndAssign => write!(f, "&="),
+            AssignOperator::BitOrAssign => write!(f, "|="),
+            AssignOperator::BitXorAssign => write!(f, "^="),
         }
     }
 }
@@ -119,9 +217,9 @@ impl fmt::Debug for Code {
             Code::Unary(ref left, ref op) =>
                 write!(f, "{:?} {:?}", op, left),
             Code::TypeCast(ref op, ref typeid) => 
-                write!(f, "cast {:?} {:?}", op, typeid),
+                write!(f, "cast {:?} as {:?}", op, typeid),
             Code::Assign(ref varid, ref assignop, ref op) =>
-                write!(f, "store {:?} {:?} {:?}", varid, assignop, op),
+                write!(f, "{:?} {:?} {:?}", varid, assignop, op),
             Code::Goto(ref id) => 
                 write!(f, "goto {:?}", id),
             Code::GotoIf(ref op, ref id) =>

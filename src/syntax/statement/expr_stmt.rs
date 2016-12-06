@@ -37,6 +37,12 @@ fn format_assign_op(op: &SeperatorKind) -> String {
     }
 }
 
+impl ExpressionStatement {
+    #[cfg(test)]
+    pub fn from_str(prog: &str, index: usize) -> (Option<ExpressionStatement>, usize) {
+        ExpressionStatement::parse(&mut Lexer::new(prog), index)
+    }
+}
 impl fmt::Debug for ExpressionStatement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}{}; @ {:?}",
