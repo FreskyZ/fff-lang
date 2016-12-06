@@ -27,7 +27,11 @@ impl fmt::Display for Program {
         write!(f, "{}", format_vector_display(&self.functions, "\n\n"))
     }
 }
-
+impl Program {
+    pub fn from_str(prog: &str) -> Option<Program> {
+        Program::parse(&mut Lexer::new(prog), 0).0
+    }
+}
 impl IASTItem for Program {
 
     fn pos_all(&self) -> StringPosition {

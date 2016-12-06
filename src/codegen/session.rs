@@ -11,6 +11,7 @@ use codegen::fn_def::FnCollection;
 use codegen::CodeCollection;
 use codegen::var_def::VarCollection;
 use codegen::block::Block;
+use codegen::loop_def::LoopCollection;
 
 pub struct GenerationSession {
     pub msgs: MessageEmitter,
@@ -18,6 +19,7 @@ pub struct GenerationSession {
     pub fns: FnCollection,
     pub codes: CodeCollection,
     pub vars: VarCollection,
+    pub loops: LoopCollection,
 }
 
 impl GenerationSession {
@@ -29,6 +31,7 @@ impl GenerationSession {
             fns: FnCollection::new(),
             codes: CodeCollection::new(),
             vars: VarCollection::new(),
+            loops: LoopCollection::new(),
         }
     } 
     
@@ -58,5 +61,35 @@ impl GenerationSession {
         }
 
         sess.codes
+    }
+}
+
+
+#[cfg(test)] #[test] // #[ignore]
+fn gen_program_inter() {
+    use std::io::stdin;
+
+    loop {
+        let mut buf = String::new();
+
+        perrorln!("Input:");
+        match stdin().read_line(&mut buf) {
+            Ok(_) => (),
+            Err(_) => break,
+        }
+
+        if buf != "break\r\n" {
+            match SyntaxProgram::from_str(&buf) {
+                Some(program) => {
+                    let codes = GenerationSession::dispatch(program); 
+                    perrorln!("Code: {}", codes.dump());
+                }
+                None => {
+                    perrorln!("Unexpectedly failed");
+                }
+            }
+        } else {
+            break;
+        }
     }
 }

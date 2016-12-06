@@ -12,6 +12,7 @@ use codegen::var_def::Var;
 use codegen::var_def::VarCollection;
 use codegen::statement::StatementGenerator;
 use codegen::session::GenerationSession;
+use codegen::Code;
 
 pub struct Block {
     pub fn_id: usize,
@@ -33,6 +34,7 @@ impl Block {
                 Var::new(arg.name.clone(), arg.ty, false, StringPosition::from2(arg.pos[0].start_pos, arg.pos[1].end_pos)), 
                 &sess.types, &mut sess.msgs
             );
+            sess.codes.emit_silent(Code::DeclareVar(arg.name.clone(), arg.ty, false));
         }
         return ret_val;
     }

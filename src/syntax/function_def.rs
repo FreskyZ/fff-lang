@@ -113,6 +113,10 @@ impl FunctionDef {
         assert!(lexer.messages().is_empty());
         ret_val
     }
+    #[cfg(test)]
+    pub fn from_str_no_panic(prog: &str, index: usize) -> Option<FunctionDef> {
+        FunctionDef::parse(&mut Lexer::new(prog), index).0
+    }
 }
 impl IASTItem for FunctionDef {
     

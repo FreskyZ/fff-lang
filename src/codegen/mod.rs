@@ -26,6 +26,7 @@ mod session;
 mod type_def;
 mod fn_def;
 mod var_def;
+mod loop_def;
 mod block;
 mod statement;
 mod expression;

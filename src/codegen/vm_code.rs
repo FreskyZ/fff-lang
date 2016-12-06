@@ -14,6 +14,7 @@ use codegen::TypeID;
 
 #[derive(Eq, PartialEq, Clone)]
 pub enum Operand {
+    Unknown,
     Lit(LexicalLiteral),
     Stack(VarID),
     // Heap(usize),
@@ -22,14 +23,16 @@ pub enum Operand {
 impl fmt::Debug for Operand {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
+            Operand::Unknown => write!(f, "<unknown>"),
             Operand::Lit(ref lit) => write!(f, "{}", lit),
-            Operand::Stack(ref varid) => write!(f, "{:?}", varid),
+            Operand::Stack(VarID::Some(id)) => write!(f, "[rbp - {}]", id),
+            Operand::Stack(VarID::Invalid) => write!(f, "<unknown-local>"),
             Operand::Register => write!(f, "rax"),
         }
     }
 }
 
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Debug)]
 pub enum UnaryOperator {
     Increase,
     Decrease, 
@@ -49,20 +52,8 @@ impl From<SeperatorKind> for UnaryOperator {
         }
     }
 }
-impl fmt::Debug for UnaryOperator {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            UnaryOperator::Increase => write!(f, "++"),
-            UnaryOperator::Decrease => write!(f, "--"),
-            UnaryOperator::BitNot => write!(f, "~"),
-            UnaryOperator::Negative => write!(f, "-"),
-            UnaryOperator::LogicalNot => write!(f, "!"),
-        }
-    }
-}
 
-
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Debug)]
 pub enum BinaryOperator {
     Add, 
     Sub, 
@@ -108,32 +99,8 @@ impl From<SeperatorKind> for BinaryOperator {
         }
     }
 }
-impl fmt::Debug for BinaryOperator {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            BinaryOperator::Add => write!(f, "+"),
-            BinaryOperator::Sub => write!(f, "-"),
-            BinaryOperator::Mul => write!(f, "*"),
-            BinaryOperator::Div => write!(f, "/"),
-            BinaryOperator::Rem => write!(f, "%"),
-            BinaryOperator::ShiftLeft => write!(f, "<<"),
-            BinaryOperator::ShiftRight => write!(f, ">>"),
-            BinaryOperator::Equal => write!(f, "=="),
-            BinaryOperator::NotEqual => write!(f, "!="),
-            BinaryOperator::Great => write!(f, ">"),
-            BinaryOperator::Less => write!(f, "<"),
-            BinaryOperator::GreatEqual => write!(f, ">="),
-            BinaryOperator::LessEqual => write!(f, "<="),
-            BinaryOperator::BitAnd => write!(f, "&"),
-            BinaryOperator::BitOr => write!(f, "|"),
-            BinaryOperator::BitXor => write!(f, "^"),
-            BinaryOperator::LogicalAnd => write!(f, "&&"),
-            BinaryOperator::LogicalOr => write!(f, "||"),
-        }
-    }
-}
 
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Debug)]
 pub enum AssignOperator {
     Assign,
     AddAssign,
@@ -161,26 +128,11 @@ impl From<SeperatorKind> for AssignOperator {
         }
     }
 }
-impl fmt::Debug for AssignOperator {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            AssignOperator::Assign => write!(f, "="),
-            AssignOperator::AddAssign => write!(f, "+="),
-            AssignOperator::SubAssign => write!(f, "-="),
-            AssignOperator::MulAssign => write!(f, "*="),
-            AssignOperator::DivAssign => write!(f, "/="),
-            AssignOperator::RemAssign => write!(f, "%="),
-            AssignOperator::BitAndAssign => write!(f, "&="),
-            AssignOperator::BitOrAssign => write!(f, "|="),
-            AssignOperator::BitXorAssign => write!(f, "^="),
-        }
-    }
-}
 
 pub enum Code {
     PlaceHolder,
 
-    DeclareLocal(String, TypeID, bool),         // name, type, is const
+    DeclareVar(String, TypeID, bool),         // name, type, is const
     ScopeBarrier(bool),                         // push or pop
 
     CallGlobal(String, Vec<Operand>),
@@ -188,10 +140,11 @@ pub enum Code {
     Binary(Operand, BinaryOperator, Operand),
     Unary(Operand, UnaryOperator),
     TypeCast(Operand, TypeID),
-    Assign(VarID, AssignOperator, Operand),  // use the assign operator to assign the var
+    Assign(Operand, AssignOperator, Operand),  // use the assign operator to assign the var
 
+    Return(Operand),                          // return; is return ();
     Goto(CodeID),
-    GotoIf(Operand, CodeID),
+    GotoIf(Operand, bool, CodeID),
 
     Halt,                                     // Special Halt at head for vm exit
 }
@@ -200,9 +153,9 @@ impl fmt::Debug for Code {
         match *self {
             Code::PlaceHolder => 
                 write!(f, "placeholder"),
-            Code::DeclareLocal(ref name, ref ty, true) => 
+            Code::DeclareVar(ref name, ref ty, true) => 
                 write!(f, "declare const {:?} {}", ty, name),
-            Code::DeclareLocal(ref name, ref ty, false) => 
+            Code::DeclareVar(ref name, ref ty, false) => 
                 write!(f, "declare var {:?} {}", ty, name),
             Code::ScopeBarrier(true) => 
                 write!(f, "scope enter"),
@@ -213,17 +166,21 @@ impl fmt::Debug for Code {
             Code::CallMember(ref this, ref name, ref params) =>
                 write!(f, "call {:?}.{}, {}", this, name, format_vector_debug(params, ", ")),
             Code::Binary(ref left, ref op, ref right) =>
-                write!(f, "{:?} {:?} {:?}", op, left, right),
+                write!(f, "{:?} {:?}, {:?}", op, left, right),
             Code::Unary(ref left, ref op) =>
                 write!(f, "{:?} {:?}", op, left),
             Code::TypeCast(ref op, ref typeid) => 
-                write!(f, "cast {:?} as {:?}", op, typeid),
-            Code::Assign(ref varid, ref assignop, ref op) =>
-                write!(f, "{:?} {:?} {:?}", varid, assignop, op),
+                write!(f, "{:?} as {:?}", op, typeid),
+            Code::Assign(ref target, ref assignop, ref src) =>
+                write!(f, "{:?} {:?} {:?}", assignop, target, src),
+            Code::Return(ref op) => 
+                write!(f, "ret {:?}", op),
             Code::Goto(ref id) => 
-                write!(f, "goto {:?}", id),
-            Code::GotoIf(ref op, ref id) =>
-                write!(f, "goto {:?} if {:?}", id, op),
+                write!(f, "br {:?}", id),
+            Code::GotoIf(ref op, true, ref id) =>
+                write!(f, "brtrue {:?} if {:?}", id, op),
+            Code::GotoIf(ref op, false, ref id) => 
+                write!(f, "brfalse {:?} if {:?}", id, op),
             Code::Halt => 
                 write!(f, "halt"),
         }
@@ -251,12 +208,28 @@ impl CodeCollection {
         self.codes.push(code);
         return CodeID(ret_val);
     }
+    pub fn emit_silent(&mut self, code: Code) {
+        self.codes.push(code);
+    }
+
     pub fn refill(&mut self, id: CodeID, code: Code) {
         let CodeID(id) = id;
         self.codes[id] = code;
     }
 
+    pub fn next_id(&self) -> CodeID {
+        CodeID(self.codes.len())
+    }
+    pub fn refill_addr(&mut self, gotoid: CodeID, target_id: CodeID) {
+        let CodeID(gotoid) = gotoid;
+        match self.codes[gotoid] {
+            Code::Goto(ref mut id) => *id = target_id,
+            Code::GotoIf(ref _op, ref _bool, ref mut id) => *id = target_id,
+            _ => unreachable!(),
+        }
+    }
+
     pub fn dump(&self) -> String {
-        format_vector_debug(&self.codes, "\n")
+        format_vector_debug(&self.codes.iter().enumerate().collect(), "\n")
     }
 }

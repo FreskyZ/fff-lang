@@ -106,6 +106,7 @@ fn simplize_expr(expr: FullExpression, sess: &mut GenerationSession, assigns: &m
                 None => return None,
             };
             let varid = $sess.vars.push_temp(TypeID::Some(14), false, &mut $sess.types, &mut $sess.msgs);
+            $sess.codes.emit(Code::DeclareVar($sess.vars.find_by_id(varid).unwrap().name.clone(), TypeID::Some(14), false));
             $assigns.push(SimpleAssignment{ left: varid, right: simple_expr });
             SimpleBase::Ident(varid, $pos)
         }) 
@@ -254,7 +255,7 @@ fn gen_simple_expr_base(simple_base: SimpleBase, sess: &mut GenerationSession) -
         }
     }
 }
-fn gen_simple_expr(simple_expr: SimpleExpr, sess: &mut GenerationSession) -> Option<Operand> {
+fn gen_simple_expr(simple_expr: SimpleExpr, sess: &mut GenerationSession) -> Operand {
 
     let mut last_operand = gen_simple_expr_base(simple_expr.base, sess);
 
@@ -288,24 +289,20 @@ fn gen_simple_expr(simple_expr: SimpleExpr, sess: &mut GenerationSession) -> Opt
         }
     }
 
-    Some(last_operand)
+    last_operand
 }
 
-pub fn gen_expr(expr: FullExpression, sess: &mut GenerationSession) -> Option<Operand> {
+pub fn gen_expr(expr: FullExpression, sess: &mut GenerationSession) -> Operand {
    
     let mut assigns = Vec::new();
     let simple_expr = match simplize_expr(expr, sess, &mut assigns) {
-        None => return None,
+        None => return Operand::Unknown,
         Some(simple_expr) => simple_expr,
     };
 
     for assign in assigns {
-        match gen_simple_expr(assign.right, sess) {
-            Some(operand) => {
-                let _ = sess.codes.emit(Code::Assign(assign.left, AssignOperator::Assign, operand));
-            }
-            None => break, // any error no more need
-        };
+        let operand = gen_simple_expr(assign.right, sess);
+        sess.codes.emit_silent(Code::Assign(Operand::Stack(assign.left), AssignOperator::Assign, operand));
     }
 
     gen_simple_expr(simple_expr, sess)
@@ -371,12 +368,8 @@ pub fn gen_expr_stmt(expr_stmt: FullExpressionStatement, sess: &mut GenerationSe
         }
 
         perrorln!("Assign branch run to here");
-        match gen_expr(right_expr, sess) {
-            Some(operand) => {
-                let _ = sess.codes.emit(Code::Assign(left_varid, AssignOperator::from(op), operand));
-            }
-            None => (),
-        };
+        let operand = gen_expr(right_expr, sess);
+        sess.codes.emit_silent(Code::Assign(Operand::Stack(left_varid), AssignOperator::from(op), operand));
     }
 }
 
@@ -458,19 +451,8 @@ fn gen_expr_practice_test() {
     perrorln!("final expr: \n{:?}", final_expr);
 }
 
-#[cfg(test)] #[test]
-fn gen_expr_inter() {
-
-}
-
-#[cfg(test)] #[test]
-fn gen_expr_stmt_spec() { // special cases indicated by inter test
-
-}
-
-#[cfg(test)] #[test] // #[ignore]
+#[cfg(test)] #[test] #[ignore]
 fn gen_expr_stmt_inter() {
-
     use std::io::stdin;
 
     let mut sess = GenerationSession::new();

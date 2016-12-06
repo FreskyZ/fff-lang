@@ -314,7 +314,15 @@ pub enum CodegenMessage {
     },
     MemberAccessNotSupportedCurrently{
         pos: StringPosition,
-    }
+    },
+
+    CannotFindLoopName{
+        name: String, 
+        pos: StringPosition,
+    },
+    JumpStatementNotInLoop{
+        pos: StringPosition
+    },
 }
 impl fmt::Debug for CodegenMessage {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -360,6 +368,12 @@ impl fmt::Debug for CodegenMessage {
             },
             MemberAccessNotSupportedCurrently{ ref pos } => {
                 write!(f, "Member access not supported **CURRENTLY** at {:?}", pos)
+            },
+            CannotFindLoopName{ ref name, ref pos } => {
+                write!(f, "Cannot find loop name `{}` in jump statement at {:?}", name, pos)
+            }
+            JumpStatementNotInLoop{ ref pos } => {
+                write!(f, "Jump statement at {:?} not in any loop", pos)
             }
         }
     }

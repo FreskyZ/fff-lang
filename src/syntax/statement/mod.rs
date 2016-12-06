@@ -78,7 +78,6 @@ impl fmt::Display for Statement {
         }
     }
 }
-
 impl IASTItem for Statement {
 
     fn pos_all(&self) -> StringPosition {
