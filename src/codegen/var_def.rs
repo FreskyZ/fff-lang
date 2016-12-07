@@ -28,7 +28,7 @@ impl Var {
     }
 
     #[cfg(test)]
-    pub fn new_test(name: &str, ty: TypeID, is_const: bool, def_pos: StringPosition, offset: usize) -> Var {
+    pub fn new_test(name: &str, ty: TypeID, is_const: bool, def_pos: StringPosition, _offset: usize) -> Var {
         Var{ name: name.to_owned(), ty: ty, is_const: is_const, def_pos: def_pos }
     } 
 }

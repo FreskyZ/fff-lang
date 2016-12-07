@@ -4,50 +4,42 @@
 // vmcode design is in mod codegen
 
 use codegen::Code;
+use codegen::Program;
+use codegen::FnCollection;
+use codegen::TypeCollection;
 
-pub enum RuntimeValue {
-    I32(i32),
-    U32(u32),
-    F32(f32),
-    F64(f64),
+enum RuntimeValue {
+    Int(usize, u64),   // typeid, value
+    Float(usize, f64), // typeid, value
     Char(char),
-    SMString(String),
+    Bool(bool),
+    Str(String),
     Array(Vec<RuntimeValue>),
+    Tuple(Vec<RuntimeValue>),
     ScopeBarrier,
 }
 
 // execution state in a function
-pub struct ExecutionState {
-    insts: Vec<Code>,
-    regs: usize,
-    local_vars: Vec<RuntimeValue>,
-    eval_stack: Vec<RuntimeValue>,
+struct ExecutionContext {
+    stack: Vec<RuntimeValue>,
+    rax: RuntimeValue,
+    rip: usize,
 }
 
-pub struct VirtualMachine {
-    // funcs: Vec<FunctionDef>,
-    states: Vec<ExecutionState>,
+struct VirtualMachine {
+    fns: FnCollection, 
+    types: TypeCollection, 
 }
-
 impl VirtualMachine {
-
-    fn new() -> VirtualMachine { 
-        VirtualMachine{ 
-            // funcs: Vec::new(),
-            states: Vec::new(),
-        } 
+    fn new(program: Program) -> VirtualMachine {
+        VirtualMachine{
+            fns: program.fns,
+            types: program.types,
+        }
     }
+}
 
-    // fn load_program(&mut self, mut program: Program) {
+pub fn run(vm_program: Program) {
 
-    //     self.funcs.append(&mut program.0);
-    // }
-
-    fn execute_step(&mut self) {
-
-    }
-
-    fn execute_to_end(&mut self) {
-
-    }
+    let _vm = VirtualMachine::new(vm_program);
 }

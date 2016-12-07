@@ -253,6 +253,13 @@ impl TypeCollection {
     pub fn ty_len(&self) -> usize {
         self.items.len()
     }
+    pub fn dump(&self) -> String {
+        let mut buf = "Types:\n".to_owned();
+        for i in 0..self.items.len() {
+            buf += &format!("    {}: {}\n", i, self.format_display_by_id(TypeID::Some(i)));
+        }
+        buf
+    }
 }
 
 #[cfg(test)] #[test]

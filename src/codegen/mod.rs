@@ -1,5 +1,4 @@
 
-#![allow(unused_variables)]
 // generate vm code from AST
 
 // vm is a stack based virtual machine
@@ -37,6 +36,10 @@ pub use codegen::var_def::VarCollection;
 pub use codegen::type_def::TypeID;
 pub use codegen::type_def::Type;
 pub use codegen::type_def::TypeCollection;
+pub use codegen::fn_def::FnID;
+pub use codegen::fn_def::FnArg;
+pub use codegen::fn_def::FnImpl;
+pub use codegen::fn_def::FnCollection;
 pub use codegen::vm_code::Operand;
 pub use codegen::vm_code::AssignOperator;
 pub use codegen::vm_code::BinaryOperator;
@@ -44,11 +47,13 @@ pub use codegen::vm_code::UnaryOperator;
 pub use codegen::vm_code::Code;
 pub use codegen::vm_code::CodeID;
 pub use codegen::vm_code::CodeCollection;
+pub use codegen::session::Program;
 
 use syntax::Program as SyntaxProgram;
-pub fn generate(program: SyntaxProgram) -> CodeCollection {
+
+pub fn generate(syntax_program: SyntaxProgram) -> Program {
     use codegen::session::GenerationSession;
-    GenerationSession::dispatch(program)
+    GenerationSession::dispatch(syntax_program)
 }
 
 // Designment2

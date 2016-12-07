@@ -421,7 +421,6 @@ impl fmt::Debug for MessageEmitter {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for message in &self.messages {
             try!(writeln!(f, "{:?}", message));
-            try!(writeln!(f, ""));
         }
         Ok(())
     }

@@ -45,7 +45,7 @@ impl Block {
         let vars = self.fn_id_to_vars(sess);
         sess.vars = vars;
         StatementGenerator::generate(self.block, sess);
-
+        sess.fns.find_by_idx_mut(self.fn_id).codes.move_from(&mut sess.codes);
     }
 }
 

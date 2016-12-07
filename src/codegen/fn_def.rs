@@ -16,6 +16,7 @@ use syntax::Block as SyntaxBlock;
 use codegen::type_def::TypeID;
 use codegen::type_def::TypeCollection;
 use codegen::var_def::VarCollection;
+use codegen::CodeCollection;
 use codegen::session::GenerationSession;
 
 #[derive(Eq, PartialEq, Clone, Copy)]
@@ -79,7 +80,8 @@ pub struct FnImpl { // Not Fn because Fn is used in std
     pub args: Vec<FnArg>,
     pub ret_type: TypeID,
     pub pos: [StringPosition; 3],  // pos_fn and pos_name and pos_ret_type
-    valid: bool,                   // buf for all args valid and ret_type valid and later not sign collission with other
+    pub valid: bool,                   // buf for all args valid and ret_type valid and later not sign collission with other
+    pub codes: CodeCollection,
 }
 impl cmp::PartialEq<FnImpl> for FnImpl {
     fn eq(&self, rhs: &FnImpl) -> bool { self.id == rhs.id }
@@ -133,6 +135,7 @@ impl FnImpl {
             args: args, 
             ret_type: ret_type, 
             valid: valid,
+            codes: CodeCollection::new(),
         }, syn_fn.body)
     }
 
@@ -188,7 +191,7 @@ impl FnCollection {
     }
 
     // If same signature, still push the fndecl and return index, but push message and when require ID by signature, return invalid
-    pub fn push_decl(&mut self, syn_fn: SyntaxFunctionDef, types: &mut TypeCollection, msgs: &mut MessageEmitter, vars: &mut VarCollection) -> (usize, SyntaxBlock) {
+    pub fn push_decl(&mut self, syn_fn: SyntaxFunctionDef, types: &mut TypeCollection, msgs: &mut MessageEmitter, _vars: &mut VarCollection) -> (usize, SyntaxBlock) {
 
         let (newfn, syn_block) = FnImpl::new(syn_fn, self.fns.len(), types, msgs);
         let ret_val = newfn.id;
@@ -254,8 +257,18 @@ impl FnCollection {
     pub fn find_by_idx(&self, idx: usize) -> &FnImpl {
         &self.fns[idx]
     }
+    pub fn find_by_idx_mut(&mut self, idx: usize) -> &mut FnImpl {
+        &mut self.fns[idx]
+    }
 
     pub fn len(&self) -> usize { self.fns.len() }
+    pub fn dump(&self, types: &TypeCollection) -> String {
+        let mut buf = "Fns:\n".to_owned();
+        for i in 0..self.fns.len() {
+            buf += &format!("    {}:\n{}\n", self.fns[i].format_display_sign(types), self.fns[i].codes.dump());
+        }
+        buf
+    }
 }
 
 #[cfg(test)]
@@ -299,6 +312,7 @@ fn gen_fn_sign_eq() {
         ],
         pos: [StringPosition::new(), StringPosition::new(), StringPosition::new()],
         valid: true,
+        codes: CodeCollection::new(),
     };
 
     // Normal equal

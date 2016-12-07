@@ -1,6 +1,8 @@
 
 // GenerationSession, collection of collections, beatifuler interfaces
 
+use std::fmt;
+
 use message::Message;
 use message::MessageEmitter;
 
@@ -13,6 +15,19 @@ use codegen::var_def::VarCollection;
 use codegen::block::Block;
 use codegen::loop_def::LoopCollection;
 
+pub struct Program {
+    pub fns: FnCollection,
+    pub types: TypeCollection,
+    pub msgs: MessageEmitter,
+}
+impl fmt::Debug for Program {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let types = self.types.dump();
+        let fns = self.fns.dump(&self.types);
+        write!(f, "{}{}Messages: {:?}", types, fns, self.msgs)
+    }
+}
+
 pub struct GenerationSession {
     pub msgs: MessageEmitter,
     pub types: TypeCollection,
@@ -21,7 +36,6 @@ pub struct GenerationSession {
     pub vars: VarCollection,
     pub loops: LoopCollection,
 }
-
 impl GenerationSession {
 
     pub fn new() -> GenerationSession {
@@ -44,7 +58,7 @@ impl GenerationSession {
     }
     
     // Dispatch program items to session, return Program for vm use
-    pub fn dispatch(program: SyntaxProgram) -> CodeCollection {
+    pub fn dispatch(program: SyntaxProgram) -> Program {
 
         let mut sess = GenerationSession::new();
 
@@ -60,12 +74,12 @@ impl GenerationSession {
             block.generate(&mut sess);
         }
 
-        sess.codes
+        Program{ fns: sess.fns, types: sess.types, msgs: sess.msgs }
     }
 }
 
 
-#[cfg(test)] #[test] // #[ignore]
+#[cfg(test)] #[test] #[ignore]
 fn gen_program_inter() {
     use std::io::stdin;
 
@@ -81,8 +95,8 @@ fn gen_program_inter() {
         if buf != "break\r\n" {
             match SyntaxProgram::from_str(&buf) {
                 Some(program) => {
-                    let codes = GenerationSession::dispatch(program); 
-                    perrorln!("Code: {}", codes.dump());
+                    let program = GenerationSession::dispatch(program); 
+                    perrorln!("Program: {:?}", program);
                 }
                 None => {
                     perrorln!("Unexpectedly failed");

@@ -183,11 +183,12 @@ fn gen_for(for_stmt: ForStatement, sess: &mut GenerationSession) {
 
     // scope for iter var
     sess.codes.emit_silent(Code::ScopeBarrier(true));
+    sess.vars.push_scope();
 
     let iter_varid = sess.vars.try_push(Var::new(for_stmt.iter_name.clone(), TypeID::Some(14), false, for_stmt.pos[1]), &mut sess.types, &mut sess.msgs);
     sess.codes.emit_silent(Code::DeclareVar(for_stmt.iter_name.clone(), TypeID::Some(14), false));
     let operand = gen_expr(for_stmt.expr_low, sess);
-    sess.codes.emit_silent(Code::Assign(Operand::Stack(iter_varid), AssignOperator::Assign, Operand::Lit(LexicalLiteral::Num(Some(NumLitValue::I32(0))))));
+    sess.codes.emit_silent(Code::Assign(Operand::Stack(iter_varid), AssignOperator::Assign, operand));
 
     let continue_addr = sess.codes.next_id(); // reeval every time
     let high_operand = gen_expr(for_stmt.expr_high, sess);
@@ -198,11 +199,13 @@ fn gen_for(for_stmt: ForStatement, sess: &mut GenerationSession) {
     sess.loops.push_last_loop_break_addr(while_implicit_break_addr);
 
     gen_block(for_stmt.body, sess, false);
+    sess.codes.emit_silent(Code::Binary(Operand::Stack(iter_varid), BinaryOperator::Add, Operand::Lit(LexicalLiteral::from(1))));
     sess.codes.emit(Code::Goto(continue_addr));
 
     let for_refill_addr = sess.codes.next_id();
     sess.loops.pop_and_refill(for_refill_addr, &mut sess.codes);
     sess.codes.emit_silent(Code::ScopeBarrier(false));
+    sess.vars.pop_scope();
 }
 
 // pub struct ContinueStatement {
@@ -254,7 +257,10 @@ fn gen_break(break_stmt: BreakStatement, sess: &mut GenerationSession) {
 // fn and for do not require scope enter on block
 fn gen_block(block: Block, sess: &mut GenerationSession, emit_scope_barrier: bool) {
 
-    if emit_scope_barrier { sess.codes.emit_silent(Code::ScopeBarrier(true)); }
+    if emit_scope_barrier { 
+        sess.codes.emit_silent(Code::ScopeBarrier(true));
+        sess.vars.push_scope(); 
+    }
     for stmt in block.stmts {
         match stmt {
             Statement::VarDecl(var_decl) => gen_var_decl(var_decl, sess),
@@ -266,10 +272,13 @@ fn gen_block(block: Block, sess: &mut GenerationSession, emit_scope_barrier: boo
             Statement::For(for_stmt) => gen_for(for_stmt, sess),
             Statement::Loop(loop_stmt) => gen_loop(loop_stmt, sess),
             Statement::While(while_stmt) => gen_while(while_stmt, sess),
-            _ => (),        
+            Statement::Block(block) => gen_block(block, sess, true),        
         }
     }
-    if emit_scope_barrier { sess.codes.emit_silent(Code::ScopeBarrier(false)); }
+    if emit_scope_barrier { 
+        sess.codes.emit_silent(Code::ScopeBarrier(false));
+        sess.vars.pop_scope(); 
+    }
 }
 
 // Block
@@ -277,5 +286,6 @@ impl StatementGenerator {
 
     pub fn generate(block: Block, sess: &mut GenerationSession) {
         gen_block(block, sess, false);
+        sess.codes.emit(Code::Return(Operand::Lit(LexicalLiteral::Unit))); // a `return ();` at fn end if no return is provided;
     }
 }

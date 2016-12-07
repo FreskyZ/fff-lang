@@ -5,6 +5,7 @@ use file_map::InputReader;
 use lexical::Lexer;
 use syntax::parse;
 use codegen::generate;
+use vm::run;
 
 // Handle and print error here
 pub fn compile_input(file_name: String) {
@@ -27,7 +28,12 @@ pub fn compile_input(file_name: String) {
         println!("{:?}", lexer.messages());
         return;
     }
-    let _vm_program = generate(ast_program.unwrap()); // Semantic parse
+    let vm_program = generate(ast_program.unwrap()); // Semantic parse
+    if !vm_program.msgs.is_empty() {
+        println!("{:?}", vm_program.msgs);
+        return;
+    }
+    let _ = run(vm_program);                         // run!
 }
 
 #[cfg(test)]

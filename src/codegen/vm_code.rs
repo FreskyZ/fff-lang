@@ -32,7 +32,7 @@ impl fmt::Debug for Operand {
     }
 }
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, Clone, PartialEq, Debug)]
 pub enum UnaryOperator {
     Increase,
     Decrease, 
@@ -53,7 +53,7 @@ impl From<SeperatorKind> for UnaryOperator {
     }
 }
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, Clone, PartialEq, Debug)]
 pub enum BinaryOperator {
     Add, 
     Sub, 
@@ -100,7 +100,7 @@ impl From<SeperatorKind> for BinaryOperator {
     }
 }
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, Clone, PartialEq, Debug)]
 pub enum AssignOperator {
     Assign,
     AddAssign,
@@ -129,6 +129,7 @@ impl From<SeperatorKind> for AssignOperator {
     }
 }
 
+#[derive(Clone)]
 pub enum Code {
     PlaceHolder,
 
@@ -145,8 +146,6 @@ pub enum Code {
     Return(Operand),                          // return; is return ();
     Goto(CodeID),
     GotoIf(Operand, bool, CodeID),
-
-    Halt,                                     // Special Halt at head for vm exit
 }
 impl fmt::Debug for Code {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -181,8 +180,6 @@ impl fmt::Debug for Code {
                 write!(f, "brtrue {:?} if {:?}", id, op),
             Code::GotoIf(ref op, false, ref id) => 
                 write!(f, "brfalse {:?} if {:?}", id, op),
-            Code::Halt => 
-                write!(f, "halt"),
         }
     }
 }
@@ -200,7 +197,7 @@ pub struct CodeCollection {
 impl CodeCollection {
     
     pub fn new() -> CodeCollection {
-        CodeCollection{ codes: vec![Code::Halt] }
+        CodeCollection{ codes: Vec::new() }
     }
 
     pub fn emit(&mut self, code: Code) -> CodeID {
@@ -227,6 +224,11 @@ impl CodeCollection {
             Code::GotoIf(ref _op, ref _bool, ref mut id) => *id = target_id,
             _ => unreachable!(),
         }
+    }
+
+    pub fn move_from(&mut self, other: &mut CodeCollection) {
+        self.codes.extend_from_slice(other.codes.as_slice()); 
+        other.codes.clear();
     }
 
     pub fn dump(&self) -> String {
