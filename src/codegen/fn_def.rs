@@ -18,7 +18,7 @@ use syntax::Block as SyntaxBlock;
 use codegen::type_def::TypeID;
 use codegen::type_def::TypeCollection;
 use codegen::var_def::VarCollection;
-use codegen::CodeCollection;
+use codegen::vm_code::CodeCollection;
 use codegen::session::GenerationSession;
 
 #[derive(Eq, PartialEq, Clone, Copy)]
@@ -70,6 +70,10 @@ impl FnArg {
         FnArg{ name: syn_arg.name, ty: ty, pos: [pos1, pos2] }  
     }
 
+    fn new_internal(name: &str, ty: usize) -> FnArg {
+        FnArg{ name: name.to_owned(), ty: TypeID::Some(ty), pos: [StringPosition::new(), StringPosition::new()] }
+    }
+
     // ty is None
     pub fn is_valid(&self) -> bool {
         self.ty.is_valid()
@@ -82,8 +86,8 @@ pub struct FnImpl { // Not Fn because Fn is used in std
     pub args: Vec<FnArg>,
     pub ret_type: TypeID,
     pub pos: [StringPosition; 3],  // pos_fn and pos_name and pos_ret_type
-    pub valid: bool,                   // buf for all args valid and ret_type valid and later not sign collission with other
-    pub codes: CodeCollection,
+    pub valid: bool,               // buf for all args valid and ret_type valid and later not sign collission with other
+    pub code_ptr: Option<usize>,   // start pointer in codes, none for internal
 }
 impl cmp::PartialEq<FnImpl> for FnImpl {
     fn eq(&self, rhs: &FnImpl) -> bool { self.id == rhs.id }
@@ -137,7 +141,7 @@ impl FnImpl {
             args: args, 
             ret_type: ret_type, 
             valid: valid,
-            codes: CodeCollection::new(),
+            code_ptr: None,
         }, syn_fn.body)
     }
 
@@ -194,8 +198,27 @@ impl FnCollection {
         ret_val
     }
 
+    fn add_internal(&mut self, name: &str, ret_type: usize, args: Vec<FnArg>) {
+        let id = self.fns.len();
+        self.fns.push(FnImpl{
+            id: id,
+            name: name.to_owned(),
+            args: args, 
+            ret_type: TypeID::Some(ret_type),
+            pos: [StringPosition::new(), StringPosition::new(), StringPosition::new()],
+            valid: true,
+            code_ptr: None,
+        })
+    }
+
     fn add_internal_fns(&mut self) {
-        // Reserved
+        self.add_internal("write", 0, vec![
+            FnArg::new_internal("arg1", 13),
+        ]);
+        self.add_internal("writeln", 0, vec![
+            FnArg::new_internal("arg1", 13)
+        ]);
+        self.add_internal("read_i32", 5, Vec::new());
     }
 
     // If same signature, still push the fndecl and return index, but push message and when require ID by signature, return invalid
@@ -277,7 +300,7 @@ impl FnCollection {
     pub fn dump(&self, types: &TypeCollection) -> String {
         let mut buf = "Fns:\n".to_owned();
         for i in 0..self.fns.len() {
-            buf += &format!("    {}:\n{}\n", self.fns[i].format_display_sign(types), self.fns[i].codes.dump());
+            buf += &format!("    {} {{ code_ptr: {:?} }}\n", self.fns[i].format_display_sign(types), self.fns[i].code_ptr);
         }
         buf
     }
@@ -324,7 +347,7 @@ fn gen_fn_sign_eq() {
         ],
         pos: [StringPosition::new(), StringPosition::new(), StringPosition::new()],
         valid: true,
-        codes: CodeCollection::new(),
+        code_ptr: None,
     };
 
     // Normal equal

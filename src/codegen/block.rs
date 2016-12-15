@@ -34,7 +34,7 @@ impl Block {
                 Var::new(arg.name.clone(), arg.ty, false, StringPosition::from2(arg.pos[0].start_pos, arg.pos[1].end_pos)), 
                 &sess.types, &mut sess.msgs
             );
-            sess.codes.emit_silent(Code::DeclareVar(arg.name.clone(), arg.ty, false));
+            sess.codes.emit_silent(Code::DeclareVar(arg.ty, false));
         }
         return ret_val;
     }
@@ -42,10 +42,11 @@ impl Block {
     // All next generation steps dispatcher
     pub fn generate(self, sess: &mut GenerationSession) {
 
+        let code_ptr = Some(sess.codes.next_id());
         let vars = self.fn_id_to_vars(sess);
         sess.vars = vars;
         StatementGenerator::generate(self.block, sess);
-        sess.fns.find_by_idx_mut(self.fn_id).codes.move_from(&mut sess.codes);
+        sess.fns.find_by_idx_mut(self.fn_id).code_ptr = code_ptr;
     }
 }
 
@@ -70,12 +71,12 @@ fn gen_block_fn_id_to_vars() {
     //                   901234567890
     let vars = gen_vars("i32 a, u32 b");
     assert_eq!(vars.len(), 2);
-    assert_eq!(vars.index(0), &VarOrScope::Some(Var::new_test("a", TypeID::Some(5), false, make_str_pos!(1, 9, 1, 13), 4)));
-    assert_eq!(vars.index(1), &VarOrScope::Some(Var::new_test("b", TypeID::Some(6), false, make_str_pos!(1, 16, 1, 20), 8)));
+    assert_eq!(vars.index(0), &VarOrScope::Some(Var::new_test("a", TypeID::Some(5), false, make_str_pos!(1, 9, 1, 13), 1)));  // 4)));
+    assert_eq!(vars.index(1), &VarOrScope::Some(Var::new_test("b", TypeID::Some(6), false, make_str_pos!(1, 16, 1, 20), 2))); // 8)));
 
     //                   901234567890
     let vars = gen_vars("i32 a, u32 b, string a, ");
     assert_eq!(vars.len(), 2);
-    assert_eq!(vars.index(0), &VarOrScope::Some(Var::new_test("a", TypeID::Some(5), false, make_str_pos!(1, 9, 1, 13), 4)));
-    assert_eq!(vars.index(1), &VarOrScope::Some(Var::new_test("b", TypeID::Some(6), false, make_str_pos!(1, 16, 1, 20), 8)));
+    assert_eq!(vars.index(0), &VarOrScope::Some(Var::new_test("a", TypeID::Some(5), false, make_str_pos!(1, 9, 1, 13), 1)));  // 4)));
+    assert_eq!(vars.index(1), &VarOrScope::Some(Var::new_test("b", TypeID::Some(6), false, make_str_pos!(1, 16, 1, 20), 2))); // 8)));
 }

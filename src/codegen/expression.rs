@@ -23,7 +23,6 @@ use codegen::fn_def::FnID;
 use codegen::type_def::TypeID;
 use codegen::Operand;
 use codegen::Code;
-use codegen::CodeID;
 use codegen::AssignOperator;
 use codegen::BinaryOperator;
 use codegen::UnaryOperator;
@@ -41,8 +40,8 @@ use codegen::session::GenerationSession;
 #[derive(Eq, PartialEq)]
 pub enum SimpleBase {
     Lit(LexicalLiteral, StringPosition),
-    Ident(VarID, StringPosition),             // Paren is here
-    FunctionCall(String, Vec<SimpleBase>, [StringPosition; 2]),      // call of operator()
+    Ident(usize, StringPosition),             // Paren is here
+    FunctionCall(String, Vec<SimpleBase>, [StringPosition; 2]),      // call global
 }
 impl fmt::Debug for SimpleBase {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -89,7 +88,7 @@ fn check_pure_simple_expr(full_expr: FullExpression, sess: &mut GenerationSessio
         FullExpressionBase::Lit(lit, pos) => Ok(SimpleBase::Lit(lit, pos)),
         FullExpressionBase::Ident(name, pos) => {
             let varid = sess.vars.find_by_name(&name);
-            Ok(SimpleBase::Ident(varid, pos))
+            Ok(SimpleBase::Ident(sess.vars.get_offset(varid), pos))
         } 
         _ => Err(full_expr),
     }
@@ -106,9 +105,10 @@ fn simplize_expr(expr: FullExpression, sess: &mut GenerationSession, assigns: &m
                 None => return None,
             };
             let varid = $sess.vars.push_temp(TypeID::Some(14), false, &mut $sess.types, &mut $sess.msgs);
-            $sess.codes.emit(Code::DeclareVar($sess.vars.find_by_id(varid).unwrap().name.clone(), TypeID::Some(14), false));
+            let varoffset = $sess.vars.get_offset(varid);
+            $sess.codes.emit(Code::DeclareVar(TypeID::Some(14), false));
             $assigns.push(SimpleAssignment{ left: varid, right: simple_expr });
-            SimpleBase::Ident(varid, $pos)
+            SimpleBase::Ident(varoffset, $pos)
         }) 
     }
 
@@ -116,7 +116,9 @@ fn simplize_expr(expr: FullExpression, sess: &mut GenerationSession, assigns: &m
     let mut simple_base = match expr.base.as_ref().clone() {
         FullExpressionBase::Lit(lit, pos) => SimpleBase::Lit(lit, pos),
         FullExpressionBase::Ident(name, pos) => {
-            let this_ret_val = SimpleBase::Ident(sess.vars.find_by_name(&name), pos);
+            let ident_varid = sess.vars.find_by_name(&name);
+            let ident_offset = sess.vars.get_offset(ident_varid);
+            let this_ret_val = SimpleBase::Ident(ident_offset, pos);
             ident_name = Some(name);
             this_ret_val
         }
@@ -243,7 +245,7 @@ fn simplize_expr(expr: FullExpression, sess: &mut GenerationSession, assigns: &m
 fn gen_simple_expr_base(simple_base: SimpleBase, sess: &mut GenerationSession) -> Operand {
     
     match simple_base {
-        SimpleBase::Ident(varid, _pos) => Operand::Stack(varid),
+        SimpleBase::Ident(varoffset, _pos) => Operand::Stack(varoffset),
         SimpleBase::Lit(lit, _pos) => Operand::Lit(lit),
         SimpleBase::FunctionCall(name, bases, _pos) => {
             let mut ops = Vec::new();
@@ -302,7 +304,7 @@ pub fn gen_expr(expr: FullExpression, sess: &mut GenerationSession) -> Operand {
 
     for assign in assigns {
         let operand = gen_simple_expr(assign.right, sess);
-        sess.codes.emit_silent(Code::Assign(Operand::Stack(assign.left), AssignOperator::Assign, operand));
+        sess.codes.emit_silent(Code::Assign(Operand::Stack(sess.vars.get_offset(assign.left)), AssignOperator::Assign, operand));
     }
 
     gen_simple_expr(simple_expr, sess)
@@ -369,7 +371,7 @@ pub fn gen_expr_stmt(expr_stmt: FullExpressionStatement, sess: &mut GenerationSe
 
         perrorln!("Assign branch run to here");
         let operand = gen_expr(right_expr, sess);
-        sess.codes.emit_silent(Code::Assign(Operand::Stack(left_varid), AssignOperator::from(op), operand));
+        sess.codes.emit_silent(Code::Assign(Operand::Stack(sess.vars.get_offset(left_varid)), AssignOperator::from(op), operand));
     }
 }
 

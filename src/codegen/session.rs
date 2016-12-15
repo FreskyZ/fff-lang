@@ -3,6 +3,8 @@
 
 use std::fmt;
 
+use common::format_vector_debug;
+
 use message::Message;
 use message::MessageEmitter;
 
@@ -10,7 +12,8 @@ use syntax::Program as SyntaxProgram;
 
 use codegen::type_def::TypeCollection;
 use codegen::fn_def::FnCollection;
-use codegen::CodeCollection;
+use codegen::Code;
+use codegen::vm_code::CodeCollection;
 use codegen::var_def::VarCollection;
 use codegen::block::Block;
 use codegen::loop_def::LoopCollection;
@@ -19,12 +22,13 @@ pub struct Program {
     pub fns: FnCollection,
     pub types: TypeCollection,
     pub msgs: MessageEmitter,
+    pub codes: Vec<Code>,
 }
 impl fmt::Debug for Program {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let types = self.types.dump();
         let fns = self.fns.dump(&self.types);
-        write!(f, "{}{}Messages: {:?}", types, fns, self.msgs)
+        write!(f, "{}{}Messages: {:?}Codes:\n    {}\n", types, fns, self.msgs, format_vector_debug(&self.codes, "\n    "))
     }
 }
 
@@ -74,7 +78,7 @@ impl GenerationSession {
             block.generate(&mut sess);
         }
 
-        Program{ fns: sess.fns, types: sess.types, msgs: sess.msgs }
+        Program{ fns: sess.fns, types: sess.types, msgs: sess.msgs, codes: sess.codes.codes }
     }
 }
 

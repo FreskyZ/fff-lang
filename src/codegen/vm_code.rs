@@ -8,15 +8,13 @@ use common::format_vector_debug;
 use lexical::LexicalLiteral;
 use lexical::SeperatorKind;
 
-use codegen::VarID;
 use codegen::TypeID;
-
 
 #[derive(Eq, PartialEq, Clone)]
 pub enum Operand {
     Unknown,
     Lit(LexicalLiteral),
-    Stack(VarID),
+    Stack(usize), // [rbp - n]
     // Heap(usize),
     Register,     // act as register rax, every operation return at stacktop, only store moves it some where
 } 
@@ -25,8 +23,7 @@ impl fmt::Debug for Operand {
         match *self {
             Operand::Unknown => write!(f, "<unknown>"),
             Operand::Lit(ref lit) => write!(f, "{}", lit),
-            Operand::Stack(VarID::Some(id)) => write!(f, "[rbp - {}]", id),
-            Operand::Stack(VarID::Invalid) => write!(f, "<unknown-local>"),
+            Operand::Stack(ref offset) => write!(f, "[rbp - {}]", offset),
             Operand::Register => write!(f, "rax"),
         }
     }
@@ -133,8 +130,7 @@ impl From<SeperatorKind> for AssignOperator {
 pub enum Code {
     PlaceHolder,
 
-    DeclareVar(String, TypeID, bool),         // name, type, is const
-    ScopeBarrier(bool),                         // push or pop
+    DeclareVar(TypeID, bool),         // name, type, is const
 
     CallGlobal(String, Vec<Operand>),
     CallMember(Operand, String, Vec<Operand>),
@@ -144,22 +140,18 @@ pub enum Code {
     Assign(Operand, AssignOperator, Operand),  // use the assign operator to assign the var
 
     Return(Operand),                          // return; is return ();
-    Goto(CodeID),
-    GotoIf(Operand, bool, CodeID),
+    Goto(usize),
+    GotoIf(Operand, bool, usize),
 }
 impl fmt::Debug for Code {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Code::PlaceHolder => 
                 write!(f, "placeholder"),
-            Code::DeclareVar(ref name, ref ty, true) => 
-                write!(f, "declare const {:?} {}", ty, name),
-            Code::DeclareVar(ref name, ref ty, false) => 
-                write!(f, "declare var {:?} {}", ty, name),
-            Code::ScopeBarrier(true) => 
-                write!(f, "scope enter"),
-            Code::ScopeBarrier(false) => 
-                write!(f, "scope exit"),
+            Code::DeclareVar(ref ty, true) => 
+                write!(f, "declare const {:?}", ty),
+            Code::DeclareVar(ref ty, false) => 
+                write!(f, "declare var {:?}", ty),
             Code::CallGlobal(ref name, ref params) => 
                 write!(f, "call {}, {}", name, format_vector_debug(params, ", ")),
             Code::CallMember(ref this, ref name, ref params) =>
@@ -184,12 +176,6 @@ impl fmt::Debug for Code {
     }
 }
 
-#[derive(Eq, PartialEq, Debug, Copy, Clone)]
-pub struct CodeID(pub usize); // CodeID are always valid
-impl CodeID {
-    pub fn dummy() -> CodeID{ CodeID(!0) }
-}
-
 pub struct CodeCollection {
     pub codes: Vec<Code>,
 }
@@ -200,25 +186,26 @@ impl CodeCollection {
         CodeCollection{ codes: Vec::new() }
     }
 
-    pub fn emit(&mut self, code: Code) -> CodeID {
+    pub fn emit(&mut self, code: Code) -> usize {
         let ret_val = self.codes.len();
         self.codes.push(code);
-        return CodeID(ret_val);
+        return ret_val;
     }
     pub fn emit_silent(&mut self, code: Code) {
         self.codes.push(code);
     }
 
-    pub fn refill(&mut self, id: CodeID, code: Code) {
-        let CodeID(id) = id;
-        self.codes[id] = code;
+    pub fn next_id(&self) -> usize {
+        self.codes.len()
+    }
+    pub fn dummy_id() -> usize {
+        !0
     }
 
-    pub fn next_id(&self) -> CodeID {
-        CodeID(self.codes.len())
+    pub fn refill(&mut self, id: usize, code: Code) {
+        self.codes[id] = code;
     }
-    pub fn refill_addr(&mut self, gotoid: CodeID, target_id: CodeID) {
-        let CodeID(gotoid) = gotoid;
+    pub fn refill_addr(&mut self, gotoid: usize, target_id: usize) {
         match self.codes[gotoid] {
             Code::Goto(ref mut id) => *id = target_id,
             Code::GotoIf(ref _op, ref _bool, ref mut id) => *id = target_id,
@@ -228,10 +215,6 @@ impl CodeCollection {
 
     pub fn as_slice(&self) -> &[Code] {
         self.codes.as_slice()
-    }
-    pub fn move_from(&mut self, other: &mut CodeCollection) {
-        self.codes.extend_from_slice(other.codes.as_slice()); 
-        other.codes.clear();
     }
 
     pub fn dump(&self) -> String {

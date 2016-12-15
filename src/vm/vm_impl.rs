@@ -6,8 +6,6 @@ use lexical::LexicalLiteral;
 
 use codegen::Operand;
 use codegen::Code;
-use codegen::VarID;
-use codegen::CodeID;
 use codegen::Program;
 use codegen::FnCollection;
 use codegen::Type;
@@ -28,8 +26,7 @@ enum RuntimeValue {
     Array(usize, Vec<RuntimeValue>), // item type, items
     StrRef(usize),                   // heap index
     ArrayRef(usize, usize),          // item type, heap index
-    Tuple(Vec<usize>, Vec<RuntimeValue>), // items type 
-    ScopeBarrier,
+    Tuple(Vec<usize>, Vec<RuntimeValue>), // items type
 }
 impl Eq for RuntimeValue{
 }
@@ -107,29 +104,12 @@ impl ExecutionContext {
     fn push_var_decl(&mut self, ty: &Type, types: &TypeCollection, heap: &mut RuntimeHeap) {
         self.stack.push(RuntimeValue::with_type(ty, types, heap));
     } 
-    fn push_scope_barrier(&mut self) {
-        self.stack.push(RuntimeValue::ScopeBarrier);
-    }
-    fn pop_scope_barrier(&mut self) {
-        let mut pop_count = 1;
-        for value in self.stack.iter().rev() {
-            match value {
-                &RuntimeValue::ScopeBarrier => break,
-                _ => pop_count += 1,
-            }
-        }
-
-        for _ in 0..pop_count {
-            let _ = self.stack.pop().unwrap();
-        }
-    }
 
     fn operand_as_bool(&self, operand: &Operand) -> Result<bool, RuntimeMessage> {
         match operand {
             &Operand::Lit(LexicalLiteral::Bool(value)) => Ok(value),
             &Operand::Lit(_) => Err(RuntimeMessage::ConvertNonBoolToBool),
-            &Operand::Stack(VarID::Invalid) => unreachable!(),
-            &Operand::Stack(VarID::Some(id)) => match self.stack[id] {
+            &Operand::Stack(local_offset) => match self.stack[local_offset] {
                 RuntimeValue::Bool(value) => Ok(value),
                 _ => Err(RuntimeMessage::ConvertNonBoolToBool),
             },
@@ -151,6 +131,7 @@ enum CircleResult{
 pub struct VirtualMachine {
     fns: FnCollection, 
     types: TypeCollection, 
+    codes: Vec<Code>,
     ctxts: Vec<ExecutionContext>,
     heap: RuntimeHeap, // heap are shared
 }
@@ -159,6 +140,7 @@ impl VirtualMachine {
         VirtualMachine{
             fns: program.fns,
             types: program.types,
+            codes: program.codes,
             ctxts: Vec::new(),
             heap: RuntimeHeap::new(),
         }
@@ -177,34 +159,28 @@ impl VirtualMachine {
 
         let ctxts_len = self.ctxts.len();
         let cur_ctxt = &mut self.ctxts[ctxts_len - 1]; // if it's empty it's internal error
-        let cur_codes = &self.fns[cur_ctxt.fn_index].codes.codes;
-        let cur_code = &cur_codes[cur_ctxt.rip];               // if rip out of bound it's internal error
+        let codes = &self.codes;
+        let cur_code = &codes[cur_ctxt.rip];               // if rip out of bound it's internal error
 
         match cur_code {
-            &Code::DeclareVar(ref _name, TypeID::Some(ref id), ref _is_const) => { // const processed in codegen
+            &Code::DeclareVar(TypeID::Some(ref id), ref _is_const) => { // const processed in codegen
                 cur_ctxt.push_var_decl(&self.types.items[*id], &self.types, &mut self.heap);  // assume no new push type and id are all valid
             }
-            &Code::DeclareVar(ref _name, TypeID::Invalid, ref _is_const) => {
+            &Code::DeclareVar(TypeID::Invalid, ref _is_const) => {
                 unreachable!()
             }
-            &Code::ScopeBarrier(false) => {
-                cur_ctxt.push_scope_barrier();
-            }
-            &Code::ScopeBarrier(true) => {
-                cur_ctxt.pop_scope_barrier();
-            }
             
-            &Code::Goto(CodeID(ref new_rip)) => {
+            &Code::Goto(ref new_rip) => {
                 cur_ctxt.rip = *new_rip;
             }
-            &Code::GotoIf(ref operand, ref target, CodeID(ref new_rip)) => {
+            &Code::GotoIf(ref operand, ref target, ref new_rip) => {
                 match cur_ctxt.operand_as_bool(operand) {
                     Ok(value) => if value == *target { cur_ctxt.rip = *new_rip }, // else nothing
                     Err(msg) => return CircleResult::Err(msg),
                 }
             }
 
-            &Code::Unary(ref operand, ref op) => {
+            &Code::Unary(ref _operand, ref _op) => {
                 
             }
             _ => ()
@@ -237,7 +213,7 @@ fn vm_nomain() {
 
     let fns = FnCollection::new();
     let types = TypeCollection::new();
-    let mut vm = VirtualMachine::new(Program{ fns: fns, types: types, msgs: MessageEmitter::new() });
+    let mut vm = VirtualMachine::new(Program{ fns: fns, types: types, msgs: MessageEmitter::new(), codes: Vec::new() });
 
     match vm.execute() {
         Some(exception) => assert_eq!(exception, RuntimeMessage::CannotFindMain),

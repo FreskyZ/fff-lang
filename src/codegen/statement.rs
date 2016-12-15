@@ -32,7 +32,7 @@ use codegen::expression::gen_expr;
 use codegen::expression::gen_expr_stmt;
 use codegen::Operand;
 use codegen::Code;
-use codegen::CodeID;
+use codegen::vm_code::CodeCollection;
 use codegen::TypeID;
 use codegen::AssignOperator;
 use codegen::BinaryOperator;
@@ -54,7 +54,7 @@ fn gen_var_decl(var_decl: VarDeclStatement, sess: &mut GenerationSession) {
     let typeid = sess.types.try_get_id(var_decl.ty, &mut sess.msgs);
 
     let varid = sess.vars.try_push(Var::new(var_decl.name.clone(), typeid, var_decl.is_const, pos_all), &mut sess.types, &mut sess.msgs);
-    sess.codes.emit_silent(Code::DeclareVar(var_decl.name.clone(), typeid, var_decl.is_const));
+    sess.codes.emit_silent(Code::DeclareVar(typeid, var_decl.is_const));
     if varid.is_invalid() { return; } // name collision, ignore the statement
 
     if var_decl.init_expr.is_none() {
@@ -103,7 +103,7 @@ fn gen_var_decl(var_decl: VarDeclStatement, sess: &mut GenerationSession) {
 fn gen_if(if_stmt: IfStatement, sess: &mut GenerationSession) {
 
     let if_expr = gen_expr(if_stmt.if_expr, sess); 
-    let if_goto_pos = sess.codes.emit(Code::GotoIf(if_expr, false, CodeID::dummy()));
+    let if_goto_pos = sess.codes.emit(Code::GotoIf(if_expr, false, CodeCollection::dummy_id()));
 
     gen_block(if_stmt.if_body, sess, true);
     let next_codeid = sess.codes.next_id();
@@ -111,7 +111,7 @@ fn gen_if(if_stmt: IfStatement, sess: &mut GenerationSession) {
 
     for elseif in if_stmt.elseifs {
         let elseif_expr = gen_expr(elseif.expr, sess);
-        let elseif_goto_pos = sess.codes.emit(Code::GotoIf(elseif_expr, false, CodeID::dummy()));
+        let elseif_goto_pos = sess.codes.emit(Code::GotoIf(elseif_expr, false, CodeCollection::dummy_id()));
         gen_block(elseif.body, sess, true);
         let next_codeid = sess.codes.next_id();
         sess.codes.refill_addr(elseif_goto_pos, next_codeid);
@@ -182,29 +182,28 @@ fn gen_while(while_stmt: WhileStatement, sess: &mut GenerationSession) {
 fn gen_for(for_stmt: ForStatement, sess: &mut GenerationSession) {
 
     // scope for iter var
-    sess.codes.emit_silent(Code::ScopeBarrier(true));
     sess.vars.push_scope();
 
     let iter_varid = sess.vars.try_push(Var::new(for_stmt.iter_name.clone(), TypeID::Some(14), false, for_stmt.pos[1]), &mut sess.types, &mut sess.msgs);
-    sess.codes.emit_silent(Code::DeclareVar(for_stmt.iter_name.clone(), TypeID::Some(14), false));
+    let iter_offset = sess.vars.get_offset(iter_varid);
+    sess.codes.emit_silent(Code::DeclareVar(TypeID::Some(14), false));
     let operand = gen_expr(for_stmt.expr_low, sess);
-    sess.codes.emit_silent(Code::Assign(Operand::Stack(iter_varid), AssignOperator::Assign, operand));
+    sess.codes.emit_silent(Code::Assign(Operand::Stack(iter_offset), AssignOperator::Assign, operand));
 
     let continue_addr = sess.codes.next_id(); // reeval every time
     let high_operand = gen_expr(for_stmt.expr_high, sess);
-    sess.codes.emit_silent(Code::Binary(Operand::Stack(iter_varid), BinaryOperator::Less, high_operand));
+    sess.codes.emit_silent(Code::Binary(Operand::Stack(iter_offset), BinaryOperator::Less, high_operand));
     sess.loops.push_loop(None, continue_addr);
 
-    let while_implicit_break_addr = sess.codes.emit(Code::GotoIf(Operand::Register, false, CodeID::dummy())); 
+    let while_implicit_break_addr = sess.codes.emit(Code::GotoIf(Operand::Register, false, CodeCollection::dummy_id())); 
     sess.loops.push_last_loop_break_addr(while_implicit_break_addr);
 
     gen_block(for_stmt.body, sess, false);
-    sess.codes.emit_silent(Code::Binary(Operand::Stack(iter_varid), BinaryOperator::Add, Operand::Lit(LexicalLiteral::from(1))));
+    sess.codes.emit_silent(Code::Binary(Operand::Stack(iter_offset), BinaryOperator::Add, Operand::Lit(LexicalLiteral::from(1))));
     sess.codes.emit(Code::Goto(continue_addr));
 
     let for_refill_addr = sess.codes.next_id();
     sess.loops.pop_and_refill(for_refill_addr, &mut sess.codes);
-    sess.codes.emit_silent(Code::ScopeBarrier(false));
     sess.vars.pop_scope();
 }
 
@@ -236,7 +235,7 @@ fn gen_continue(continue_stmt: ContinueStatement, sess: &mut GenerationSession) 
 // }
 fn gen_break(break_stmt: BreakStatement, sess: &mut GenerationSession) {
     
-    let break_addr = sess.codes.emit(Code::Goto(CodeID::dummy()));
+    let break_addr = sess.codes.emit(Code::Goto(CodeCollection::dummy_id()));
     match break_stmt.name {
         Some(name) => match sess.loops.push_loop_break_addr(&name, break_addr) {
             Some(()) => (),
@@ -258,7 +257,6 @@ fn gen_break(break_stmt: BreakStatement, sess: &mut GenerationSession) {
 fn gen_block(block: Block, sess: &mut GenerationSession, emit_scope_barrier: bool) {
 
     if emit_scope_barrier { 
-        sess.codes.emit_silent(Code::ScopeBarrier(true));
         sess.vars.push_scope(); 
     }
     for stmt in block.stmts {
@@ -276,7 +274,6 @@ fn gen_block(block: Block, sess: &mut GenerationSession, emit_scope_barrier: boo
         }
     }
     if emit_scope_barrier { 
-        sess.codes.emit_silent(Code::ScopeBarrier(false));
         sess.vars.pop_scope(); 
     }
 }

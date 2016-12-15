@@ -58,6 +58,9 @@ impl fmt::Debug for Type {
         }
     }
 }
+impl Type {
+    pub fn get_size(&self) -> usize { 1 } // arbitraty implentation
+}
 
 pub struct TypeCollection {
     pub items: Vec<Type>,
