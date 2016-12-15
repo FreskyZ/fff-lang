@@ -185,13 +185,13 @@ impl fmt::Debug for Code {
 }
 
 #[derive(Eq, PartialEq, Debug, Copy, Clone)]
-pub struct CodeID(usize); // CodeID are always valid
+pub struct CodeID(pub usize); // CodeID are always valid
 impl CodeID {
     pub fn dummy() -> CodeID{ CodeID(!0) }
 }
 
 pub struct CodeCollection {
-    codes: Vec<Code>,
+    pub codes: Vec<Code>,
 }
 
 impl CodeCollection {
@@ -226,6 +226,9 @@ impl CodeCollection {
         }
     }
 
+    pub fn as_slice(&self) -> &[Code] {
+        self.codes.as_slice()
+    }
     pub fn move_from(&mut self, other: &mut CodeCollection) {
         self.codes.extend_from_slice(other.codes.as_slice()); 
         other.codes.clear();

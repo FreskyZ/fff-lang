@@ -60,7 +60,7 @@ impl fmt::Debug for Type {
 }
 
 pub struct TypeCollection {
-    items: Vec<Type>,
+    pub items: Vec<Type>,
 }
 // New
 impl TypeCollection {

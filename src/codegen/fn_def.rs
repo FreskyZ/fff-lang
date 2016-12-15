@@ -3,6 +3,8 @@
 
 use std::fmt;
 use std::cmp;
+use std::ops;
+use std::slice;
 use std::collections::HashMap;
 
 use common::StringPosition;
@@ -178,6 +180,12 @@ impl FnImpl {
 pub struct FnCollection {
     fns: Vec<FnImpl>,
 }
+impl ops::Index<usize> for FnCollection {
+    type Output = FnImpl;
+    fn index(&self, idx: usize) -> &FnImpl {
+        &self.fns[idx]
+    }
+}
 impl FnCollection {
     
     pub fn new() -> FnCollection {
@@ -259,6 +267,10 @@ impl FnCollection {
     }
     pub fn find_by_idx_mut(&mut self, idx: usize) -> &mut FnImpl {
         &mut self.fns[idx]
+    }
+
+    pub fn iter<'a>(&'a self) -> slice::Iter<'a, FnImpl> {
+        self.fns.iter()
     }
 
     pub fn len(&self) -> usize { self.fns.len() }

@@ -381,10 +381,30 @@ impl fmt::Debug for CodegenMessage {
 impl_display_by_debug!{ CodegenMessage }
 
 #[derive(Eq, PartialEq)]
+pub enum RuntimeMessage {
+    CannotFindMain,
+    ConvertNonBoolToBool,
+}
+impl fmt::Debug for RuntimeMessage {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            RuntimeMessage::CannotFindMain => {
+                write!(f, "Can not find a method with name `main` and no argument and no return type")
+            }
+            RuntimeMessage::ConvertNonBoolToBool => {
+                write!(f, "Try convert non bool type to bool type")
+            }
+        }
+    }
+}
+impl_display_by_debug!{ RuntimeMessage }
+
+#[derive(Eq, PartialEq)]
 pub enum Message {
     Lexical(LexicalMessage),
     Syntax(SyntaxMessage),
     Codegen(CodegenMessage),
+    Runtime(RuntimeMessage),
 }
 
 impl From<LexicalMessage> for Message {
@@ -396,6 +416,9 @@ impl From<SyntaxMessage> for Message {
 impl From<CodegenMessage> for Message {
     fn from(msg: CodegenMessage) -> Message { Message::Codegen(msg) }   
 }
+impl From<RuntimeMessage> for Message {
+    fn from(msg: RuntimeMessage) -> Message { Message::Runtime(msg) }
+}
 
 impl fmt::Debug for Message {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -403,6 +426,7 @@ impl fmt::Debug for Message {
             Message::Lexical(ref msg) => write!(f, "{:?}", msg),
             Message::Syntax(ref msg) => write!(f, "{:?}", msg),
             Message::Codegen(ref msg) => write!(f, "{:?}", msg),
+            Message::Runtime(ref msg) => write!(f, "{:?}", msg),
         }
     }
 }

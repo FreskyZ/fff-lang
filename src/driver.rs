@@ -33,7 +33,12 @@ pub fn compile_input(file_name: String) {
         println!("{:?}", vm_program.msgs);
         return;
     }
-    let _ = run(vm_program);                         // run!
+    let maybe_exception = run(vm_program);                         // run!
+    match maybe_exception {
+        Some(exception) => perrorln!("{:?}", exception),
+        None => (),
+    }
+    // Byebye
 }
 
 #[cfg(test)]
