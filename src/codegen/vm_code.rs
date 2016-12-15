@@ -5,7 +5,7 @@ use std::fmt;
 
 use common::format_vector_debug;
 
-use lexical::LexicalLiteral;
+use lexical::LitValue;
 use lexical::SeperatorKind;
 
 use codegen::TypeID;
@@ -13,7 +13,7 @@ use codegen::TypeID;
 #[derive(Eq, PartialEq, Clone)]
 pub enum Operand {
     Unknown,
-    Lit(LexicalLiteral),
+    Lit(LitValue),
     Stack(usize), // [rbp - n]
     // Heap(usize),
     Register,     // act as register rax, every operation return at stacktop, only store moves it some where

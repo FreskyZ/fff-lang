@@ -323,6 +323,23 @@ pub enum CodegenMessage {
     JumpStatementNotInLoop{
         pos: StringPosition
     },
+
+    ArrayInitializeElementNotSameType{
+        expect: String,
+        actual: String,
+        pos: StringPosition,
+    },
+    ArrayDupDefSecondParameterTypeNotExpected{
+        actual: String,
+        pos: StringPosition,
+    },
+
+    MemberNotExist{
+        prev_expr_pos: StringPosition, // previous part position
+        prev_type_desc: String,        // previous part type display name
+        op_pos: StringPosition,        // this op pos
+        member_name: String,           // member name
+    }
 }
 impl fmt::Debug for CodegenMessage {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -371,9 +388,18 @@ impl fmt::Debug for CodegenMessage {
             },
             CannotFindLoopName{ ref name, ref pos } => {
                 write!(f, "Cannot find loop name `{}` in jump statement at {:?}", name, pos)
-            }
+            },
             JumpStatementNotInLoop{ ref pos } => {
                 write!(f, "Jump statement at {:?} not in any loop", pos)
+            },
+            ArrayInitializeElementNotSameType{ ref expect, ref actual, ref pos } => {
+                write!(f, "Unexpected type of initialize element in array at {:?}, expect {}, actual is {}", pos, expect, actual)
+            },
+            ArrayDupDefSecondParameterTypeNotExpected{ ref actual, ref pos } => {
+                write!(f, "Second parameter of array dup def at {:?} type miss match, expect i32 or u64, acutal is {}", pos, actual)
+            },
+            MemberNotExist{ ref prev_expr_pos, ref prev_type_desc, ref op_pos, ref member_name } => {
+                write!(f, "Member {} at {:?} not exist for expression at {:?} with type {}", member_name, op_pos, prev_expr_pos, prev_type_desc)
             }
         }
     }

@@ -66,7 +66,7 @@ impl FnArg {
 
         let pos1 = syn_arg.ty.pos();
         let pos2 = syn_arg.pos_name;
-        let ty = types.try_get_id(syn_arg.ty, messages);   // message emitted for none
+        let ty = types.get_id_by_smtype(syn_arg.ty, messages);   // message emitted for none
         FnArg{ name: syn_arg.name, ty: ty, pos: [pos1, pos2] }  
     }
 
@@ -132,7 +132,7 @@ impl FnImpl {
         
         let (args, mut valid) = FnImpl::new_args(syn_fn.args, syn_fn.pos2[0], &syn_fn.name, types, messages);
         let pos_ret_type = syn_fn.ret_type.pos();
-        let ret_type = types.try_get_id(syn_fn.ret_type, messages);
+        let ret_type = types.get_id_by_smtype(syn_fn.ret_type, messages);
         valid = valid && ret_type.is_valid();
         (FnImpl{ 
             id: id, 

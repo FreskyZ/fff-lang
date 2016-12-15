@@ -2,7 +2,7 @@
 use message::RuntimeMessage;
 use message::MessageEmitter;
 
-use lexical::LexicalLiteral;
+use lexical::LitValue;
 
 use codegen::Operand;
 use codegen::Code;
@@ -107,7 +107,7 @@ impl ExecutionContext {
 
     fn operand_as_bool(&self, operand: &Operand) -> Result<bool, RuntimeMessage> {
         match operand {
-            &Operand::Lit(LexicalLiteral::Bool(value)) => Ok(value),
+            &Operand::Lit(LitValue::Bool(value)) => Ok(value),
             &Operand::Lit(_) => Err(RuntimeMessage::ConvertNonBoolToBool),
             &Operand::Stack(local_offset) => match self.stack[local_offset] {
                 RuntimeValue::Bool(value) => Ok(value),

@@ -16,7 +16,7 @@ pub use lexical::symbol_type::seperator::SeperatorKind;
 pub use lexical::symbol_type::seperator::SeperatorCategory;
 pub use lexical::symbol_type::keyword::KeywordKind;
 pub use lexical::symbol_type::numeric_literal::NumLitValue;
-pub use lexical::symbol_type::literal::LexicalLiteral;
+pub use lexical::symbol_type::literal::LitValue;
 
 pub use lexical::v4lexer::V4Lexer as Lexer;
 
@@ -39,7 +39,7 @@ pub trait IToken : fmt::Debug {
     fn get_keyword(&self) -> Option<KeywordKind>;
     fn get_seperator(&self) -> Option<SeperatorKind>;
     fn get_identifier(&self) -> Option<String>;
-    fn get_lit_val(&self) -> Option<LexicalLiteral>;
+    fn get_lit_val(&self) -> Option<LitValue>;
 
     fn get_position(&self) -> StringPosition;
 }

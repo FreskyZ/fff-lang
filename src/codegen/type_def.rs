@@ -9,6 +9,8 @@ use message::CodegenMessage;
 use message::MessageEmitter;
 
 use lexical::SeperatorKind;
+use lexical::LitValue;
+use lexical::NumLitValue;
 
 use syntax::SMType;
 
@@ -69,30 +71,34 @@ pub struct TypeCollection {
 impl TypeCollection {
 
     pub fn new() -> TypeCollection {
+        TypeCollection{ items: vec![
+            Type::Base("unit".to_owned()),     // 0
+            Type::Base("i8".to_owned()),       // 1
+            Type::Base("u8".to_owned()),       // 2
+            Type::Base("i16".to_owned()),      // 3
+            Type::Base("u16".to_owned()),      // 4
+            Type::Base("i32".to_owned()),      // 5
+            Type::Base("u32".to_owned()),      // 6
+            Type::Base("i64".to_owned()),      // 7
+            Type::Base("u64".to_owned()),      // 8
+            Type::Base("f32".to_owned()),      // 9
+            Type::Base("f64".to_owned()),      // 10
+            Type::Base("char".to_owned()),     // 11   // UTF32 char
+            Type::Base("bool".to_owned()),     // 12   // 1 byte bool
+            Type::Base("string".to_owned()),   // 13   // special [char]
+            Type::Base("auto".to_owned()),     // 14
+        ]}
+    }
 
-        TypeCollection{
-            items: vec![
-                Type::Base("unit".to_owned()),     // 0
-                Type::Base("i8".to_owned()),       // 1
-                Type::Base("u8".to_owned()),       // 2
-                Type::Base("i16".to_owned()),      // 3
-                Type::Base("u16".to_owned()),      // 4
-                Type::Base("i32".to_owned()),      // 5
-                Type::Base("u32".to_owned()),      // 6
-                Type::Base("i64".to_owned()),      // 7
-                Type::Base("u64".to_owned()),      // 8
-                Type::Base("f32".to_owned()),      // 9
-                Type::Base("f64".to_owned()),      // 10
-                Type::Base("char".to_owned()),     // 11   // UTF32 char
-                Type::Base("bool".to_owned()),     // 12   // 1 byte bool
-                Type::Base("string".to_owned()),   // 13   // special [char]
-                Type::Base("auto".to_owned()),     // 14
-            ]
-        }
+    // this unop return type, or this method does not exist for this type
+    pub fn check_unop_ret_type(&self, _id: TypeID, _op: &SeperatorKind) -> TypeID {
+        TypeID::Invalid
+    }
+    pub fn check_binop_ret_type(&self, _left_id: TypeID, _right_id: TypeID, _op: &SeperatorKind) -> TypeID {
+        TypeID::Invalid
     }
 
     // Check primitive numeric type bin and un op existence, do not input anything rejected by before method and other ops not in ExpressionOperator
-    /// Reserved
     fn check_prim_numeric_type_op(&self, id: TypeID, op: SeperatorKind) -> bool {
 
         macro_rules! check_prim_numeric_op_impl {
@@ -209,8 +215,51 @@ impl TypeCollection {
             }
         }
     }
+
+    pub fn get_id_by_lit(lit: &LitValue) -> TypeID {
+        // pub enum LitValue {
+        //     Unit,
+        //     Str(Option<String>),
+        //     Num(Option<NumLitValue>),
+        //     Char(Option<char>),
+        //     Bool(bool),
+        // }
+        // pub enum NumLitValue {
+        //     I8(i8),
+        //     U8(u8),
+        //     I16(i16),
+        //     U16(u16),
+        //     I32(i32),
+        //     U32(u32),
+        //     I64(i64),
+        //     U64(u64),
+        //     F32(f32),
+        //     F64(f64),
+        // }
+        match lit {
+            &LitValue::Num(None) => TypeID::Invalid,
+            &LitValue::Str(None) => TypeID::Invalid,
+            &LitValue::Char(None) => TypeID::Invalid,
+
+            &LitValue::Unit => TypeID::Some(0),
+            &LitValue::Str(_) => TypeID::Some(13),
+            &LitValue::Char(_) => TypeID::Some(11),
+            &LitValue::Bool(_) => TypeID::Some(12),
+
+            &LitValue::Num(Some(NumLitValue::I8(_))) => TypeID::Some(1),
+            &LitValue::Num(Some(NumLitValue::U8(_))) => TypeID::Some(2),
+            &LitValue::Num(Some(NumLitValue::I16(_))) => TypeID::Some(3),
+            &LitValue::Num(Some(NumLitValue::U16(_))) => TypeID::Some(4),
+            &LitValue::Num(Some(NumLitValue::I32(_))) => TypeID::Some(5),
+            &LitValue::Num(Some(NumLitValue::U32(_))) => TypeID::Some(6),
+            &LitValue::Num(Some(NumLitValue::I64(_))) => TypeID::Some(7),
+            &LitValue::Num(Some(NumLitValue::U64(_))) => TypeID::Some(8),
+            &LitValue::Num(Some(NumLitValue::F32(_))) => TypeID::Some(9),
+            &LitValue::Num(Some(NumLitValue::F64(_))) => TypeID::Some(10),
+        }
+    }
     // wrap Option<usize> to TypeID
-    pub fn try_get_id(&mut self, ty: SMType, messages: &mut MessageEmitter) -> TypeID {
+    pub fn get_id_by_smtype(&mut self, ty: SMType, messages: &mut MessageEmitter) -> TypeID {
         match self.get_id(ty, messages) {
             Some(id) => TypeID::Some(id),
             None => TypeID::Invalid,
@@ -286,7 +335,7 @@ fn gen_type() {
 
     macro_rules! test_case {
         ($types: expr, $ty_str: expr, $expect: expr) => (
-            match $types.try_get_id(SMType::from_str($ty_str, 0), &mut MessageEmitter::new()) {
+            match $types.get_id_by_smtype(SMType::from_str($ty_str, 0), &mut MessageEmitter::new()) {
                 TypeID::Some(id) => assert_eq!(id, $expect),
                 TypeID::Invalid => panic!("Unexpectedly return None"),
             }
@@ -294,7 +343,7 @@ fn gen_type() {
         
         ($types: expr, $ty_str: expr => $($msg: expr)*) => (
             let messages = &mut MessageEmitter::new();
-            match $types.try_get_id(SMType::from_str($ty_str, 0), messages) {
+            match $types.get_id_by_smtype(SMType::from_str($ty_str, 0), messages) {
                 TypeID::Some(id) => panic!("Unexpectedly success, result: {:?}", id),
                 TypeID::Invalid => (),
             }

@@ -10,7 +10,7 @@ use common::format_vector_debug;
 
 use lexical::Lexer;
 use lexical::SeperatorKind;
-use lexical::LexicalLiteral;
+use lexical::LitValue;
 
 use syntax::SMType;
 use syntax::ast_item::IASTItem;
@@ -30,7 +30,7 @@ use self::primary::PrimaryExpression;
 
 #[derive(Eq, PartialEq, Clone)]
 pub enum ExpressionBase {
-    Lit(LexicalLiteral, StringPosition),                // literal's postion
+    Lit(LitValue, StringPosition),                // literal's postion
     Ident(String, StringPosition),                      // ident's position
     Paren(Expression, StringPosition),                  // '(', ')''s position
     TupleDef(Vec<Expression>, StringPosition),          // '(', ')''s position
@@ -80,7 +80,7 @@ impl ExpressionBase {
             _ => false,
         }
     }
-    pub fn get_lit(&self) -> Option<&LexicalLiteral> {
+    pub fn get_lit(&self) -> Option<&LitValue> {
         match *self {
             ExpressionBase::Lit(ref val, ref _pos) => Some(val),
             _ => None,
@@ -221,7 +221,7 @@ fn d3_expr_to_expr(d3: D3Expression) -> Expression {
     }) = d3;
 
     let expr_base = match primary {
-        PrimaryExpression::Unit(pos) => ExpressionBase::Lit(LexicalLiteral::Unit, pos),
+        PrimaryExpression::Unit(pos) => ExpressionBase::Lit(LitValue::Unit, pos),
         PrimaryExpression::Lit(val, pos) => ExpressionBase::Lit(val, pos),
         PrimaryExpression::Ident(name, pos) => ExpressionBase::Ident(name, pos),
         PrimaryExpression::ParenExpr(d3_expr, pos) => ExpressionBase::Paren(d3_expr_to_expr(d3_expr.as_ref().clone()), pos),
@@ -313,15 +313,15 @@ impl Expression {
     // mainly for loop name specifier
     pub fn is_pure_str_lit(&self) -> bool {
         match self.base.as_ref() {
-            &ExpressionBase::Lit(LexicalLiteral::Str(_), _) => true,
+            &ExpressionBase::Lit(LitValue::Str(_), _) => true,
             _ => false, 
         }
     }
     // ignored lexically invalid string literal because all kinds of error will be denied after syntax parse
     pub fn into_pure_str_lit(self) -> Option<String> {
         match self.base.as_ref() {
-            &ExpressionBase::Lit(LexicalLiteral::Str(Some(ref val)), _) => Some(val.clone()),
-            &ExpressionBase::Lit(LexicalLiteral::Str(None), _) => None,
+            &ExpressionBase::Lit(LitValue::Str(Some(ref val)), _) => Some(val.clone()),
+            &ExpressionBase::Lit(LitValue::Str(None), _) => None,
             _ => None,
         }
     }
@@ -347,7 +347,7 @@ mod tests {
     use message::Message;
     use lexical::Lexer;
     use lexical::SeperatorKind;
-    use lexical::LexicalLiteral;
+    use lexical::LitValue;
     use syntax::ast_item::IASTItem;
     use syntax::SMType;
     use syntax::ast_item::TestCase;
@@ -360,28 +360,28 @@ mod tests {
         //            1234 5
         ast_test_case!{ "\"abc\"", 1, make_str_pos!(1, 1, 1, 5),
             Expression::new_test(
-                ExpressionBase::Lit(LexicalLiteral::from("abc"), make_str_pos!(1, 1, 1, 5)),
+                ExpressionBase::Lit(LitValue::from("abc"), make_str_pos!(1, 1, 1, 5)),
                 Vec::new(),
                 make_str_pos!(1, 1, 1, 5),
             )
         }        //  12345678
         ast_test_case!{ "0xfffu64", 1, make_str_pos!(1, 1, 1, 8),
             Expression::new_test(
-                ExpressionBase::Lit(LexicalLiteral::from(0xfffu64), make_str_pos!(1, 1, 1, 8)),
+                ExpressionBase::Lit(LitValue::from(0xfffu64), make_str_pos!(1, 1, 1, 8)),
                 Vec::new(),
                 make_str_pos!(1, 1, 1, 8),
             )
         }        //  123
         ast_test_case!{ "'f'", 1, make_str_pos!(1, 1, 1, 3),
             Expression::new_test(
-                ExpressionBase::Lit(LexicalLiteral::from('f'), make_str_pos!(1, 1, 1, 3)),
+                ExpressionBase::Lit(LitValue::from('f'), make_str_pos!(1, 1, 1, 3)),
                 Vec::new(),
                 make_str_pos!(1, 1, 1, 3),
             )
         }
         ast_test_case!{ "true", 1, make_str_pos!(1, 1, 1, 4),
             Expression::new_test(
-                ExpressionBase::Lit(LexicalLiteral::from(true), make_str_pos!(1, 1, 1, 4)),
+                ExpressionBase::Lit(LitValue::from(true), make_str_pos!(1, 1, 1, 4)),
                 Vec::new(),
                 make_str_pos!(1, 1, 1, 4),
             )
@@ -401,7 +401,7 @@ mod tests {
         // Unit Literal
         ast_test_case!{ "()", 2, make_str_pos!(1, 1, 1, 2),
             Expression::new_test(
-                ExpressionBase::Lit(LexicalLiteral::Unit, make_str_pos!(1, 1, 1, 2)),
+                ExpressionBase::Lit(LitValue::Unit, make_str_pos!(1, 1, 1, 2)),
                 Vec::new(),
                 make_str_pos!(1, 1, 1, 2),
             )
@@ -413,7 +413,7 @@ mod tests {
             Expression::new_test(
                 ExpressionBase::Paren(
                     Expression::new_test(
-                        ExpressionBase::Lit(LexicalLiteral::from(1), make_str_pos!(1, 2, 1, 2)),
+                        ExpressionBase::Lit(LitValue::from(1), make_str_pos!(1, 2, 1, 2)),
                         Vec::new(),
                         make_str_pos!(1, 2, 1, 2),
                     ),
@@ -428,7 +428,7 @@ mod tests {
             Expression::new_test(
                 ExpressionBase::Paren(
                     Expression::new_test(
-                        ExpressionBase::Lit(LexicalLiteral::Unit, make_str_pos!(1, 2, 1, 3)),
+                        ExpressionBase::Lit(LitValue::Unit, make_str_pos!(1, 2, 1, 3)),
                         Vec::new(),
                         make_str_pos!(1, 2, 1, 3),
                     ),
@@ -467,17 +467,17 @@ mod tests {
                 ExpressionBase::TupleDef(
                     vec![
                         Expression::new_test(
-                            ExpressionBase::Lit(LexicalLiteral::from(1), make_str_pos!(1, 2, 1, 2)),
+                            ExpressionBase::Lit(LitValue::from(1), make_str_pos!(1, 2, 1, 2)),
                             Vec::new(), 
                             make_str_pos!(1, 2, 1, 2),
                         ),
                         Expression::new_test(
-                            ExpressionBase::Lit(LexicalLiteral::from(2), make_str_pos!(1, 5, 1, 5)),
+                            ExpressionBase::Lit(LitValue::from(2), make_str_pos!(1, 5, 1, 5)),
                             Vec::new(),
                             make_str_pos!(1, 5, 1, 5),
                         ),
                         Expression::new_test(
-                            ExpressionBase::Lit(LexicalLiteral::from(3), make_str_pos!(1, 8, 1, 8)),
+                            ExpressionBase::Lit(LitValue::from(3), make_str_pos!(1, 8, 1, 8)),
                             Vec::new(),
                             make_str_pos!(1, 8, 1, 8),
                         )
@@ -511,12 +511,12 @@ mod tests {
                 ExpressionBase::ArrayDef(
                     vec![
                         Expression::new_test(
-                            ExpressionBase::Lit(LexicalLiteral::from(1), make_str_pos!(1, 2, 1, 2)),
+                            ExpressionBase::Lit(LitValue::from(1), make_str_pos!(1, 2, 1, 2)),
                             Vec::new(), 
                             make_str_pos!(1, 2, 1, 2)
                         ),
                         Expression::new_test(
-                            ExpressionBase::Lit(LexicalLiteral::from(2), make_str_pos!(1, 5, 1, 5)),
+                            ExpressionBase::Lit(LitValue::from(2), make_str_pos!(1, 5, 1, 5)),
                             Vec::new(),
                             make_str_pos!(1, 5, 1, 5)
                         )
@@ -542,12 +542,12 @@ mod tests {
             Expression::new_test(
                 ExpressionBase::ArrayDupDef(
                     Expression::new_test(
-                        ExpressionBase::Lit(LexicalLiteral::from(1), make_str_pos!(1, 2, 1, 2)),
+                        ExpressionBase::Lit(LitValue::from(1), make_str_pos!(1, 2, 1, 2)),
                         Vec::new(), 
                         make_str_pos!(1, 2, 1, 2)
                     ),
                     Expression::new_test(
-                        ExpressionBase::Lit(LexicalLiteral::from(2), make_str_pos!(1, 5, 1, 5)),
+                        ExpressionBase::Lit(LitValue::from(2), make_str_pos!(1, 5, 1, 5)),
                         Vec::new(),
                         make_str_pos!(1, 5, 1, 5)
                     ),
@@ -567,7 +567,7 @@ mod tests {
                         ExpressionBase::ArrayDef(
                             vec![
                                 Expression::new_test(
-                                    ExpressionBase::Lit(LexicalLiteral::from(1), make_str_pos!(1, 3, 1, 3)),
+                                    ExpressionBase::Lit(LitValue::from(1), make_str_pos!(1, 3, 1, 3)),
                                     Vec::new(),
                                     make_str_pos!(1, 3, 1, 3)
                                 )
@@ -581,7 +581,7 @@ mod tests {
                         ExpressionBase::ArrayDef(
                             vec![
                                 Expression::new_test(
-                                    ExpressionBase::Lit(LexicalLiteral::from(2), make_str_pos!(1, 8, 1, 8)),
+                                    ExpressionBase::Lit(LitValue::from(2), make_str_pos!(1, 8, 1, 8)),
                                     Vec::new(),
                                     make_str_pos!(1, 8, 1, 8),
                                 )
@@ -721,7 +721,7 @@ mod tests {
         }        //  12345678901234
         ast_test_case!{ "1.degg(a, b, )", 9, make_str_pos!(1, 1, 1, 14),
             Expression::new_test(
-                ExpressionBase::Lit(LexicalLiteral::from(1), make_str_pos!(1, 1, 1, 1)),
+                ExpressionBase::Lit(LitValue::from(1), make_str_pos!(1, 1, 1, 1)),
                 vec![
                     ExpressionOperator::MemberFunctionCall(
                         "degg".to_owned(),
@@ -748,7 +748,7 @@ mod tests {
         }        //   1 23456789
         ast_test_case!{ "\"\".de(, )", 6, make_str_pos!(1, 1, 1, 9),
             Expression::new_test(
-                ExpressionBase::Lit(LexicalLiteral::from(""), make_str_pos!(1, 1, 1, 2)),
+                ExpressionBase::Lit(LitValue::from(""), make_str_pos!(1, 1, 1, 2)),
                 vec![
                     ExpressionOperator::MemberFunctionCall(
                         "de".to_owned(),
@@ -837,7 +837,7 @@ mod tests {
         //           12345678
         ast_test_case!{ "1 as u32", 3, make_str_pos!(1, 1, 1, 8),
             Expression::new_test(
-                ExpressionBase::Lit(LexicalLiteral::from(1), make_str_pos!(1, 1, 1, 1)),
+                ExpressionBase::Lit(LitValue::from(1), make_str_pos!(1, 1, 1, 1)),
                 vec![
                     ExpressionOperator::TypeCast(
                         SMType::Base("u32".to_owned(), make_str_pos!(1, 6, 1, 8)),
@@ -852,7 +852,7 @@ mod tests {
                 ExpressionBase::ArrayDef(
                     vec![
                         Expression::new_test(
-                            ExpressionBase::Lit(LexicalLiteral::from(1), make_str_pos!(1, 2, 1, 2)),
+                            ExpressionBase::Lit(LitValue::from(1), make_str_pos!(1, 2, 1, 2)),
                             Vec::new(), 
                             make_str_pos!(1, 2, 1, 2),
                         )
@@ -881,12 +881,12 @@ mod tests {
         //           123456
         ast_test_case!{ "2[3].a", 6, make_str_pos!(1, 1, 1, 6),
             Expression::new_test(
-                ExpressionBase::Lit(LexicalLiteral::from(2), make_str_pos!(1, 1, 1, 1)),
+                ExpressionBase::Lit(LitValue::from(2), make_str_pos!(1, 1, 1, 1)),
                 vec![
                     ExpressionOperator::GetIndex(
                         vec![
                             Expression::new_test(
-                                ExpressionBase::Lit(LexicalLiteral::from(3), make_str_pos!(1, 3, 1, 3)),
+                                ExpressionBase::Lit(LitValue::from(3), make_str_pos!(1, 3, 1, 3)),
                                 Vec::new(),
                                 make_str_pos!(1, 3, 1, 3),
                             )
@@ -908,7 +908,7 @@ mod tests {
                     ExpressionOperator::FunctionCall(
                         vec![
                             Expression::new_test(
-                                ExpressionBase::Lit(LexicalLiteral::from("hello"), make_str_pos!(1, 7, 1, 13)),
+                                ExpressionBase::Lit(LitValue::from("hello"), make_str_pos!(1, 7, 1, 13)),
                                 Vec::new(),
                                 make_str_pos!(1, 7, 1, 13),
                             )
@@ -930,7 +930,7 @@ mod tests {
                     ExpressionOperator::FunctionCall(
                         vec![
                             Expression::new_test(
-                                ExpressionBase::Lit(LexicalLiteral::from(233), make_str_pos!(1, 7, 1, 9)),
+                                ExpressionBase::Lit(LitValue::from(233), make_str_pos!(1, 7, 1, 9)),
                                 Vec::new(),
                                 make_str_pos!(1, 7, 1, 9)
                             )
@@ -947,7 +947,7 @@ mod tests {
         }            //  12345678901234
         ast_test_case!{ "1.degg[a, b, ]", 9, make_str_pos!(1, 1, 1, 14),
             Expression::new_test(
-                ExpressionBase::Lit(LexicalLiteral::from(1), make_str_pos!(1, 1, 1, 1)),
+                ExpressionBase::Lit(LitValue::from(1), make_str_pos!(1, 1, 1, 1)),
                 vec![
                     ExpressionOperator::MemberAccess(
                         "degg".to_owned(),
@@ -977,12 +977,12 @@ mod tests {
         //           1234567
         ast_test_case!{ "!~!1[1]", 7, make_str_pos!(1, 1, 1, 7),
             Expression::new_test(
-                ExpressionBase::Lit(LexicalLiteral::from(1), make_str_pos!(1, 4, 1, 4)),
+                ExpressionBase::Lit(LitValue::from(1), make_str_pos!(1, 4, 1, 4)),
                 vec![
                     ExpressionOperator::GetIndex(
                         vec![
                             Expression::new_test(
-                                ExpressionBase::Lit(LexicalLiteral::from(1), make_str_pos!(1, 6, 1, 6)),
+                                ExpressionBase::Lit(LitValue::from(1), make_str_pos!(1, 6, 1, 6)),
                                 Vec::new(),
                                 make_str_pos!(1, 6, 1, 6),
                             )
@@ -1010,7 +1010,7 @@ mod tests {
         //           1234567
         ast_test_case!{ "!++--!1", 5, make_str_pos!(1, 1, 1, 7),
             Expression::new_test(
-                ExpressionBase::Lit(LexicalLiteral::from(1), make_str_pos!(1, 7, 1, 7)),
+                ExpressionBase::Lit(LitValue::from(1), make_str_pos!(1, 7, 1, 7)),
                 vec![
                     ExpressionOperator::Unary(SeperatorKind::LogicalNot, make_str_pos!(1, 6, 1, 6)),
                     ExpressionOperator::Unary(SeperatorKind::Decrease, make_str_pos!(1, 4, 1, 5)),
@@ -1026,67 +1026,67 @@ mod tests {
         //           123456789012345678901234567890123456789012345678
         ast_test_case!{ "1 || 2 && 3 == 4 ^ 5 | 6 & 7 >= 8 >> 9 + 10 * 11", 21,  make_str_pos!(1, 1, 1, 48),
             Expression::new_test(
-                ExpressionBase::Lit(LexicalLiteral::from(1), make_str_pos!(1, 1, 1, 1)),
+                ExpressionBase::Lit(LitValue::from(1), make_str_pos!(1, 1, 1, 1)),
                 vec![
                     ExpressionOperator::Binary(
                         SeperatorKind::LogicalOr,
                         make_str_pos!(1, 3, 1, 4),
                         Expression::new_test(
-                            ExpressionBase::Lit(LexicalLiteral::from(2), make_str_pos!(1, 6, 1, 6)),
+                            ExpressionBase::Lit(LitValue::from(2), make_str_pos!(1, 6, 1, 6)),
                             vec![
                                 ExpressionOperator::Binary(
                                     SeperatorKind::LogicalAnd,
                                     make_str_pos!(1, 8, 1, 9),
                                     Expression::new_test(
-                                        ExpressionBase::Lit(LexicalLiteral::from(3), make_str_pos!(1, 11, 1, 11)),
+                                        ExpressionBase::Lit(LitValue::from(3), make_str_pos!(1, 11, 1, 11)),
                                         vec![
                                             ExpressionOperator::Binary(
                                                 SeperatorKind::Equal,
                                                 make_str_pos!(1, 13, 1, 14),
                                                 Expression::new_test(
-                                                    ExpressionBase::Lit(LexicalLiteral::from(4), make_str_pos!(1, 16, 1, 16)),
+                                                    ExpressionBase::Lit(LitValue::from(4), make_str_pos!(1, 16, 1, 16)),
                                                     vec![
                                                         ExpressionOperator::Binary(
                                                             SeperatorKind::BitXor,
                                                             make_str_pos!(1, 18, 1, 18),
                                                             Expression::new_test(
-                                                                ExpressionBase::Lit(LexicalLiteral::from(5), make_str_pos!(1, 20, 1, 20)),
+                                                                ExpressionBase::Lit(LitValue::from(5), make_str_pos!(1, 20, 1, 20)),
                                                                 vec![
                                                                     ExpressionOperator::Binary(
                                                                         SeperatorKind::BitOr,
                                                                         make_str_pos!(1, 22, 1, 22),
                                                                         Expression::new_test(
-                                                                            ExpressionBase::Lit(LexicalLiteral::from(6), make_str_pos!(1, 24, 1, 24)),
+                                                                            ExpressionBase::Lit(LitValue::from(6), make_str_pos!(1, 24, 1, 24)),
                                                                             vec![
                                                                                 ExpressionOperator::Binary(
                                                                                     SeperatorKind::BitAnd,
                                                                                     make_str_pos!(1, 26, 1, 26),
                                                                                     Expression::new_test(
-                                                                                        ExpressionBase::Lit(LexicalLiteral::from(7), make_str_pos!(1, 28, 1, 28)),
+                                                                                        ExpressionBase::Lit(LitValue::from(7), make_str_pos!(1, 28, 1, 28)),
                                                                                         vec![
                                                                                             ExpressionOperator::Binary(
                                                                                                 SeperatorKind::GreatEqual,
                                                                                                 make_str_pos!(1, 30, 1, 31),
                                                                                                 Expression::new_test(
-                                                                                                    ExpressionBase::Lit(LexicalLiteral::from(8), make_str_pos!(1, 33, 1, 33)),
+                                                                                                    ExpressionBase::Lit(LitValue::from(8), make_str_pos!(1, 33, 1, 33)),
                                                                                                     vec![
                                                                                                         ExpressionOperator::Binary(
                                                                                                             SeperatorKind::ShiftRight,
                                                                                                             make_str_pos!(1, 35, 1, 36),
                                                                                                             Expression::new_test(
-                                                                                                                ExpressionBase::Lit(LexicalLiteral::from(9), make_str_pos!(1, 38, 1, 38)),
+                                                                                                                ExpressionBase::Lit(LitValue::from(9), make_str_pos!(1, 38, 1, 38)),
                                                                                                                 vec![
                                                                                                                     ExpressionOperator::Binary(
                                                                                                                         SeperatorKind::Add,
                                                                                                                         make_str_pos!(1, 40, 1, 40),
                                                                                                                         Expression::new_test(
-                                                                                                                            ExpressionBase::Lit(LexicalLiteral::from(10), make_str_pos!(1, 42, 1, 43)),
+                                                                                                                            ExpressionBase::Lit(LitValue::from(10), make_str_pos!(1, 42, 1, 43)),
                                                                                                                             vec![
                                                                                                                                 ExpressionOperator::Binary(
                                                                                                                                     SeperatorKind::Mul,
                                                                                                                                     make_str_pos!(1, 45, 1, 45),
                                                                                                                                     Expression::new_test(
-                                                                                                                                        ExpressionBase::Lit(LexicalLiteral::from(11), make_str_pos!(1, 47, 1, 48)),
+                                                                                                                                        ExpressionBase::Lit(LitValue::from(11), make_str_pos!(1, 47, 1, 48)),
                                                                                                                                         Vec::new(),
                                                                                                                                         make_str_pos!(1, 47, 1, 48),
                                                                                                                                     ),

@@ -6,7 +6,7 @@ use common::StringPosition;
 use message::CodegenMessage;
 
 use lexical::SeperatorKind;
-use lexical::LexicalLiteral;
+use lexical::LitValue;
 use lexical::NumLitValue;
 
 use syntax::Block;
@@ -51,7 +51,7 @@ pub struct StatementGenerator{
 fn gen_var_decl(var_decl: VarDeclStatement, sess: &mut GenerationSession) {
 
     let pos_all = var_decl.pub_pos_all();
-    let typeid = sess.types.try_get_id(var_decl.ty, &mut sess.msgs);
+    let typeid = sess.types.get_id_by_smtype(var_decl.ty, &mut sess.msgs);
 
     let varid = sess.vars.try_push(Var::new(var_decl.name.clone(), typeid, var_decl.is_const, pos_all), &mut sess.types, &mut sess.msgs);
     sess.codes.emit_silent(Code::DeclareVar(typeid, var_decl.is_const));
@@ -131,7 +131,7 @@ fn gen_return(ret_stmt: ReturnStatement, sess: &mut GenerationSession) {
 
     let operand = match ret_stmt.expr {
         Some(expr) => gen_expr(expr, sess),
-        None => Operand::Lit(LexicalLiteral::Unit),
+        None => Operand::Lit(LitValue::Unit),
     };
 
     sess.codes.emit(Code::Return(operand));
@@ -199,7 +199,7 @@ fn gen_for(for_stmt: ForStatement, sess: &mut GenerationSession) {
     sess.loops.push_last_loop_break_addr(while_implicit_break_addr);
 
     gen_block(for_stmt.body, sess, false);
-    sess.codes.emit_silent(Code::Binary(Operand::Stack(iter_offset), BinaryOperator::Add, Operand::Lit(LexicalLiteral::from(1))));
+    sess.codes.emit_silent(Code::Binary(Operand::Stack(iter_offset), BinaryOperator::Add, Operand::Lit(LitValue::from(1))));
     sess.codes.emit(Code::Goto(continue_addr));
 
     let for_refill_addr = sess.codes.next_id();
@@ -283,6 +283,6 @@ impl StatementGenerator {
 
     pub fn generate(block: Block, sess: &mut GenerationSession) {
         gen_block(block, sess, false);
-        sess.codes.emit(Code::Return(Operand::Lit(LexicalLiteral::Unit))); // a `return ();` at fn end if no return is provided;
+        sess.codes.emit(Code::Return(Operand::Lit(LitValue::Unit))); // a `return ();` at fn end if no return is provided;
     }
 }

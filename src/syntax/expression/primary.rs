@@ -17,7 +17,7 @@ use common::format_vector_display;
 use lexical::Lexer;
 use lexical::SeperatorKind;
 use lexical::KeywordKind;
-use lexical::LexicalLiteral;
+use lexical::LitValue;
 
 use syntax::ast_item::IASTItem;
 use syntax::expression::d3::D3Expression;
@@ -25,7 +25,7 @@ use syntax::expression::d3::D3Expression;
 #[derive(Eq, PartialEq, Clone)]
 pub enum PrimaryExpression {
     Ident(String, StringPosition),
-    Lit(LexicalLiteral, StringPosition),
+    Lit(LitValue, StringPosition),
     Unit(StringPosition),                                                   // Position for '(', ')'
     ParenExpr(Box<D3Expression>, StringPosition),                           // Position for '(', ')'
     TupleDef(Vec<D3Expression>, StringPosition),                            // Position for '(', ')'

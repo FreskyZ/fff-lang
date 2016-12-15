@@ -178,6 +178,15 @@ impl VarCollection {
         }
     }
 
+    pub fn get_type(&self, id: VarID) -> TypeID {
+        match id {
+            VarID::Invalid => TypeID::Invalid,
+            VarID::Some(id) => match self.items[id] {
+                VarOrScope::Some(ref var) => var.ty,
+                VarOrScope::ScopeBarrier => unreachable!(),
+            }
+        }
+    }
     pub fn get_offset(&self, id: VarID) -> usize {
         match id {
             VarID::Invalid => 0,

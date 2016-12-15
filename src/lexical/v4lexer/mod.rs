@@ -13,7 +13,7 @@ use lexical::symbol_type::char_literal::CharLiteral;
 use lexical::symbol_type::numeric_literal::NumericLiteral;
 use lexical::KeywordKind;
 use lexical::SeperatorKind;
-use lexical::LexicalLiteral;
+use lexical::LitValue;
 
 use lexical::v3lexer::V3Lexer;
 use lexical::v3lexer::V3Token;
@@ -25,7 +25,7 @@ test_only_attr!{
     [derive(Clone, Eq, PartialEq)]
     ![derive(Clone)]
     pub enum TokenValue {
-        Literal(LexicalLiteral),
+        Literal(LitValue),
         Identifier(String),
         Keyword(KeywordKind),
         Seperator(SeperatorKind),
@@ -48,13 +48,13 @@ impl From<V3Token> for V4Token {
     fn from(v3: V3Token) -> V4Token {
         match v3 {
             V3Token::StringLiteral(StringLiteral{ value, pos, is_raw: _is_raw }) => 
-                V4Token{ value: TokenValue::Literal(LexicalLiteral::Str(value)), pos: pos },
+                V4Token{ value: TokenValue::Literal(LitValue::Str(value)), pos: pos },
             V3Token::NumericLiteral(NumericLiteral{ value, pos }) => 
-                V4Token{ value: TokenValue::Literal(LexicalLiteral::Num(value)), pos: pos },
+                V4Token{ value: TokenValue::Literal(LitValue::Num(value)), pos: pos },
             V3Token::CharLiteral(CharLiteral{ value, pos }) => 
-                V4Token{ value: TokenValue::Literal(LexicalLiteral::Char(value)), pos: pos },
+                V4Token{ value: TokenValue::Literal(LitValue::Char(value)), pos: pos },
             V3Token::BooleanLiteral(value, pos) => 
-                V4Token{ value: TokenValue::Literal(LexicalLiteral::Bool(value)), pos: pos },
+                V4Token{ value: TokenValue::Literal(LitValue::Bool(value)), pos: pos },
             V3Token::Identifier(name, pos) => V4Token{ value: TokenValue::Identifier(name), pos: pos },
             V3Token::Keyword(kind, pos) => V4Token{ value: TokenValue::Keyword(kind), pos: pos },
             V3Token::Seperator(kind, pos) => V4Token{ value: TokenValue::Seperator(kind), pos: pos },
@@ -116,25 +116,25 @@ impl IToken for V4Token {
     }
     fn is_str_lit(&self) -> bool {
         match self.value {
-            TokenValue::Literal(LexicalLiteral::Str(_)) => true,
+            TokenValue::Literal(LitValue::Str(_)) => true,
             _ => false,
         }
     }
     fn is_num_lit(&self) -> bool {
         match self.value {
-            TokenValue::Literal(LexicalLiteral::Num(_)) => true,
+            TokenValue::Literal(LitValue::Num(_)) => true,
             _ => false,
         }
     }
     fn is_char_lit(&self) -> bool {
         match self.value {
-            TokenValue::Literal(LexicalLiteral::Char(_)) => true,
+            TokenValue::Literal(LitValue::Char(_)) => true,
             _ => false,
         }
     }
     fn is_bool_lit(&self) -> bool {
         match self.value {
-            TokenValue::Literal(LexicalLiteral::Bool(_)) => true,
+            TokenValue::Literal(LitValue::Bool(_)) => true,
             _ => false,
         }
     }
@@ -157,7 +157,7 @@ impl IToken for V4Token {
             _ => None
         }
     }
-    fn get_lit_val(&self) -> Option<LexicalLiteral> {
+    fn get_lit_val(&self) -> Option<LitValue> {
         match self.value {
             TokenValue::Literal(ref val) => Some(val.clone()),
             _ => None

@@ -52,7 +52,7 @@ mod tests {
     use lexical::Lexer;
     use lexical::SeperatorKind;
     use lexical::NumLitValue;
-    use lexical::LexicalLiteral;
+    use lexical::LitValue;
 
     use syntax::SMType;
     use syntax::expression::postfix::PostfixExpression;
@@ -73,19 +73,19 @@ mod tests {
         ($name: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::Ident($name.to_owned(), $pos)))
     }
     macro_rules! expr_str_lit { 
-        ($pos: expr) => (expr_to_primary!(PrimaryExpression::Lit(LexicalLiteral::Str(None), $pos)));
-        ($val: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::Lit(LexicalLiteral::Str(Some($val.to_owned())), $pos)))
+        ($pos: expr) => (expr_to_primary!(PrimaryExpression::Lit(LitValue::Str(None), $pos)));
+        ($val: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::Lit(LitValue::Str(Some($val.to_owned())), $pos)))
     }
     macro_rules! expr_char_lit { 
-        ($pos: expr) => (expr_to_primary!(PrimaryExpression::Lit(LexicalLiteral::Char(None), $pos)));
-        ($val: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::Lit(LexicalLiteral::Char(Some($val)), $pos)))
+        ($pos: expr) => (expr_to_primary!(PrimaryExpression::Lit(LitValue::Char(None), $pos)));
+        ($val: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::Lit(LitValue::Char(Some($val)), $pos)))
     }
     macro_rules! expr_num_lit { 
-        ($pos: expr) => (expr_to_primary!(PrimaryExpression::Lit(LexicalLiteral::Num(None), $pos)));
-        ($val: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::Lit(LexicalLiteral::Num(Some($val)), $pos)))
+        ($pos: expr) => (expr_to_primary!(PrimaryExpression::Lit(LitValue::Num(None), $pos)));
+        ($val: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::Lit(LitValue::Num(Some($val)), $pos)))
     }
     macro_rules! expr_bool_lit { 
-        ($val: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::Lit(LexicalLiteral::Bool($val), $pos)))
+        ($val: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::Lit(LitValue::Bool($val), $pos)))
     }
     macro_rules! expr_paren_expr { 
         ($expr: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::make_paren($expr, $pos)))
@@ -313,14 +313,14 @@ mod tests {
                     prim: PrimaryExpression::make_array_dup_def(
                         expr_to_unary!(
                             PostfixExpression{ 
-                                prim: PrimaryExpression::Lit(LexicalLiteral::Num(Some(NumLitValue::I32(1))), make_str_pos!(1, 7, 1, 7)),
+                                prim: PrimaryExpression::Lit(LitValue::Num(Some(NumLitValue::I32(1))), make_str_pos!(1, 7, 1, 7)),
                                 postfixs: Vec::new()
                             },
                             UnaryOperator::new(SeperatorKind::LogicalNot, make_str_pos!(1, 6, 1, 6))
                         ), 
                         expr_to_unary!(
                             PostfixExpression{ 
-                                prim: PrimaryExpression::Lit(LexicalLiteral::Num(Some(NumLitValue::I32(2))), make_str_pos!(1, 13, 1, 13)),
+                                prim: PrimaryExpression::Lit(LitValue::Num(Some(NumLitValue::I32(2))), make_str_pos!(1, 13, 1, 13)),
                                 postfixs: Vec::new()
                             },
                             UnaryOperator::new(SeperatorKind::BitNot, make_str_pos!(1, 10, 1, 10))
