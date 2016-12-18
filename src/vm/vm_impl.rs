@@ -9,7 +9,7 @@ use codegen::Code;
 use codegen::Program;
 use codegen::FnCollection;
 use codegen::Type;
-use codegen::TypeID;
+use codegen::ItemID;
 use codegen::TypeCollection;
 
 #[derive(Debug, PartialEq)]
@@ -54,8 +54,8 @@ impl RuntimeValue {
             &Type::Array(ref inner) => RuntimeValue::ArrayRef(*inner, heap.allocate_array(*inner)),
             &Type::Tuple(ref item_types) => {
                 let mut values = Vec::new();
-                for ty in item_types {
-                    values.push(RuntimeValue::with_type(&types.items[*ty], types, heap));
+                for _ty in item_types {
+                    // values.push(RuntimeValue::with_type(&types.items[*ty], types, heap));
                 }
                 RuntimeValue::Tuple(item_types.clone(), values)
             }
@@ -148,7 +148,7 @@ impl VirtualMachine {
 
     fn find_main(&self) -> Option<usize> { // main fn index
         for (index, f) in self.fns.iter().enumerate() {
-            if f.name == "main" && f.args.len() == 0 && f.ret_type == TypeID::Some(0) { // currently only support fn main() { ... }
+            if f.name.fmt(&self.types) == "main" && f.args.len() == 0 && f.ret_type == ItemID::new(0) { // currently only support fn main() { ... }
                 return Some(index);
             }
         }
@@ -163,13 +163,6 @@ impl VirtualMachine {
         let cur_code = &codes[cur_ctxt.rip];               // if rip out of bound it's internal error
 
         match cur_code {
-            &Code::DeclareVar(TypeID::Some(ref id), ref _is_const) => { // const processed in codegen
-                cur_ctxt.push_var_decl(&self.types.items[*id], &self.types, &mut self.heap);  // assume no new push type and id are all valid
-            }
-            &Code::DeclareVar(TypeID::Invalid, ref _is_const) => {
-                unreachable!()
-            }
-            
             &Code::Goto(ref new_rip) => {
                 cur_ctxt.rip = *new_rip;
             }

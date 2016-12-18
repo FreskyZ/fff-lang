@@ -30,11 +30,11 @@ mod block;
 mod statement;
 mod expression;
 
-pub use codegen::type_def::TypeID;
 pub use codegen::type_def::Type;
+pub use codegen::type_def::TypeField;
 pub use codegen::type_def::TypeCollection;
-pub use codegen::fn_def::FnID;
 pub use codegen::fn_def::FnArg;
+pub use codegen::fn_def::FnName;
 pub use codegen::fn_def::FnImpl;
 pub use codegen::fn_def::FnCollection;
 pub use codegen::vm_code::Operand;
@@ -43,6 +43,7 @@ pub use codegen::vm_code::BinaryOperator;
 pub use codegen::vm_code::UnaryOperator;
 pub use codegen::vm_code::Code;
 pub use codegen::session::Program;
+pub use codegen::session::ItemID;
 
 use syntax::Program as SyntaxProgram;
 

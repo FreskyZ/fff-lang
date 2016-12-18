@@ -11,47 +11,22 @@ use common::StringPosition;
 use message::CodegenMessage;
 use message::MessageEmitter;
 
+use lexical::SeperatorKind;
+
 use syntax::FunctionDef as SyntaxFunctionDef; 
 use syntax::Argument as SyntaxArgument;
 use syntax::Block as SyntaxBlock;
 
-use codegen::type_def::TypeID;
+use codegen::ItemID;
+use codegen::type_def::Type;
 use codegen::type_def::TypeCollection;
 use codegen::var_def::VarCollection;
 use codegen::vm_code::CodeCollection;
 use codegen::session::GenerationSession;
 
-#[derive(Eq, PartialEq, Clone, Copy)]
-pub enum FnID {
-    Some(usize),
-    Invalid,
-}
-impl fmt::Debug for FnID {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            &FnID::Some(ref val) => write!(f, "fn[{}]", val),
-            &FnID::Invalid => write!(f, "fn[-]"),
-        }
-    }
-}
-impl FnID {
-    pub fn is_invalid(&self) -> bool {
-        match self {
-            &FnID::Some(_) => false,
-            &FnID::Invalid => true,
-        }
-    }
-    pub fn is_valid(&self) -> bool {
-        match self {
-            &FnID::Some(_) => true,
-            &FnID::Invalid => false,
-        }
-    }
-}
-
 pub struct FnArg {
     pub name: String,
-    pub ty: TypeID, // may be invalid, but the name should be remained for furthure check
+    pub typeid: ItemID,           // may be invalid, but the name should be remained for furthure check
     pub pos: [StringPosition; 2],
 }
 impl fmt::Debug for FnArg {
@@ -71,7 +46,7 @@ impl FnArg {
     }
 
     fn new_internal(name: &str, ty: usize) -> FnArg {
-        FnArg{ name: name.to_owned(), ty: TypeID::Some(ty), pos: [StringPosition::new(), StringPosition::new()] }
+        FnArg{ name: name.to_owned(), ty: ItemID::new(ty), pos: [StringPosition::new(), StringPosition::new()] }
     }
 
     // ty is None
@@ -80,11 +55,27 @@ impl FnArg {
     }
 }
 
+#[derive(Eq, PartialEq, Clone)]
+pub enum FnName{
+    Ident(String), 
+    Operator(SeperatorKind),
+    Cast(usize), // cast to the typeid
+}
+impl FnName {
+    pub fn fmt(&self, types: &TypeCollection) -> String {
+        match *self {
+            FnName::Ident(ref name) => format!("{}", name),
+            FnName::Operator(ref sep) => format!("{}", sep),
+            FnName::Cast(ref typeid) => format!("as {}", types.fmt_by_id(ItemID::new(*typeid))),
+        }
+    }
+}
+
 pub struct FnImpl { // Not Fn because Fn is used in std
     pub id: usize,
-    pub name: String, 
+    pub name: FnName, 
     pub args: Vec<FnArg>,
-    pub ret_type: TypeID,
+    pub ret_type: ItemID,
     pub pos: [StringPosition; 3],  // pos_fn and pos_name and pos_ret_type
     pub valid: bool,               // buf for all args valid and ret_type valid and later not sign collission with other
     pub code_ptr: Option<usize>,   // start pointer in codes, none for internal
@@ -136,7 +127,7 @@ impl FnImpl {
         valid = valid && ret_type.is_valid();
         (FnImpl{ 
             id: id, 
-            name: syn_fn.name, 
+            name: FnName::Ident(syn_fn.name), 
             pos: [syn_fn.pos2[0], syn_fn.pos2[1], pos_ret_type], 
             args: args, 
             ret_type: ret_type, 
@@ -148,9 +139,9 @@ impl FnImpl {
     pub fn is_valid(&self) -> bool {
         self.valid
     }
-    fn sign_eq(&self, name: &str, args: &Vec<TypeID>) -> bool {
+    fn sign_eq_name(&self, name: &str, args: &Vec<ItemID>) -> bool {
         self.is_valid()
-        && self.name == name
+        && match &self.name { &FnName::Ident(ref self_name) => self_name == name, _ => false }
         // && self.ret_type == ret_type // Can not overload by ret type
         && self.args.len() == args.len()
         && {
@@ -163,15 +154,35 @@ impl FnImpl {
             ret_val
         }
     }
+    fn sign_eq_operator(&self, operator: SeperatorKind, args: &Vec<ItemID>) -> bool {
+        self.is_valid()
+        && match &self.name { &FnName::Operator(ref self_operator) => *self_operator == operator, _ => false }
+        // && self.ret_type == ret_type // Can not overload by ret type
+        && self.args.len() == args.len()
+        && {
+            let mut ret_val = true;
+            for (ref arg1, ref arg2) in self.args.iter().zip(args.iter()) {
+                if arg1.ty != **arg2 {
+                    ret_val = false;
+                }
+            }  
+            ret_val
+        }
+    }
+    fn sign_eq_cast(&self, typeid: usize) -> bool {
+        self.is_valid()
+        && match &self.name { &FnName::Cast(ref self_typeid) => *self_typeid == typeid, _ => false }
+        && self.args.len() == 0
+    }
 
     fn format_display_sign(&self, types: &TypeCollection) -> String {
 
-        let mut buf = self.name.clone();
+        let mut buf =self.name.fmt(types);
 
         buf += "(";
         let args_len = self.args.len();
         for (index, arg) in self.args.iter().enumerate() {
-            buf += &types.format_display_by_id(arg.ty);
+            buf += &types.fmt_by_id(arg.ty);
             if index != args_len - 1 {
                 buf += ", ";
             }
@@ -202,15 +213,14 @@ impl FnCollection {
         let id = self.fns.len();
         self.fns.push(FnImpl{
             id: id,
-            name: name.to_owned(),
+            name: FnName::Ident(name.to_owned()),
             args: args, 
-            ret_type: TypeID::Some(ret_type),
+            ret_type: ItemID::new(ret_type),
             pos: [StringPosition::new(), StringPosition::new(), StringPosition::new()],
             valid: true,
             code_ptr: None,
         })
     }
-
     fn add_internal_fns(&mut self) {
         self.add_internal("write", 0, vec![
             FnArg::new_internal("arg1", 13),
@@ -264,39 +274,141 @@ impl FnCollection {
         }
     }
 
-    // Here if find recorded sign collision return invalid
-    pub fn find_by_sign(&self, name: &str, args: &Vec<TypeID>) -> FnID {
-        
+    // Array::new(T...), assume item_types are all same
+    fn push_array_ctor1(&mut self, item_types: &Vec<ItemID>, types: &mut TypeCollection) -> ItemID {
+
         for (index, fcn) in self.fns.iter().enumerate() {
-            if fcn.is_valid() && fcn.sign_eq(name, args) {
-                return FnID::Some(index);
+            if fcn.sign_eq_name("?new_array", item_types) {
+                return ItemID::new(index);
             }
         }
-        return FnID::Invalid;
+
+        let item_type = if let Some(item_type) = item_types[0].as_option() {
+            item_type
+        } else {
+            return ItemID::new_invalid();
+        };        
+
+        let mut args = Vec::new();
+        for i in 0..item_types.len() {
+            args.push(FnArg::new_internal(&format!("arg{}", i), item_type));
+        }
+
+        let ret_val = self.fns.len();
+        match types.push_builtin_template_type(Type::Array(item_type), self).into_option() {
+            Some(typeid) => {
+                self.add_internal("?new_array", typeid, args);
+                return ItemID::new(ret_val);
+            }
+            _ => unreachable!(),
+        }
     }
+    fn push_array_ctor2(&mut self, item_type: ItemID, size_type: ItemID, types: &mut TypeCollection) -> ItemID {
+
+        for (index, fcn) in self.fns.iter().enumerate() {
+            if fcn.sign_eq_name("?new_dup_array", &vec![item_type, size_type]) {
+                return ItemID::new(index);
+            }
+        }
+
+        match item_type.as_option() {
+            None => return ItemID::new_invalid(),
+            Some(item_type) => match size_type.as_option() {
+                None => return ItemID::new_invalid(),
+                Some(size_type) => {
+                    let args = vec![
+                        FnArg::new_internal("arg1", item_type),
+                        FnArg::new_internal("arg2", size_type),
+                    ];
+                    match types.push_builtin_template_type(Type::Array(item_type), self).as_option() {
+                        Some(typeid) => {
+                            let ret_val = self.fns.len();   // TODO FUTURE FUTURE: if var only used in a smaller scope, hint it
+                            self.add_internal("?new_dup_array", typeid, args);
+                            return ItemID::new(ret_val);
+                        }
+                        _ => unreachable!()
+                    } 
+                }
+            },
+        }
+    }
+    fn push_tuple_ctor(&mut self, item_types: &Vec<ItemID>, types: &mut TypeCollection) -> ItemID {
+
+        for (index, fcn) in self.fns.iter().enumerate() {
+            if fcn.sign_eq_name("?new_tuple", item_types) {
+                return ItemID::new(index);
+            }
+        }
+
+        let mut args = Vec::new();
+        let mut unwrapped_item_ids = Vec::new();
+        for (index, item_type) in item_types.iter().enumerate() {
+            match item_type.as_option() {
+                Some(item_typeid) => {
+                    args.push(FnArg::new_internal(&format!("arg{}", index), item_typeid));
+                    unwrapped_item_ids.push(item_typeid);
+                }
+                None => return ItemID::new_invalid(), // any error no more
+            }
+        }
+
+        match types.push_builtin_template_type(Type::Tuple(unwrapped_item_ids), self).as_option() {
+            Some(tuple_typeid) => {
+                let ret_val = self.fns.len();
+                self.add_internal("?new_tuple", tuple_typeid, args);
+                return ItemID::new(ret_val);
+            }
+            _ => unreachable!()
+        }
+    }
+    // Here if find recorded sign collision return invalid
+    pub fn find_by_sign_name(&mut self, name: &str, args: &Vec<ItemID>, types: &mut TypeCollection) -> ItemID {
+        
+        for (index, fcn) in self.fns.iter().enumerate() {
+            if fcn.is_valid() && fcn.sign_eq_name(name, args) {
+                return ItemID::new(index);
+            }
+        }
+
+        // special for ?new_array, ?new_dup_array and ?new_tuple
+        match name {
+            "?new_array" => self.push_array_ctor1(args, types),
+            "?new_dup_array" => self.push_array_ctor2(args[0], args[1], types),
+            "?new_tuple" => self.push_tuple_ctor(args, types),
+            _ => ItemID::new_invalid(),
+        }
+    }
+    pub fn find_by_sign_operator(&mut self, _operator: SeperatorKind, _args: &Vec<ItemID>, _types: &mut TypeCollection) -> ItemID {
+        ItemID::new_invalid()
+    }
+    pub fn find_by_sign_cast(&mut self, _cast_target: ItemID, _types: &mut TypeCollection) -> ItemID {
+        ItemID::new_invalid()
+    }
+
     // Will return None if is invalid
-    pub fn find_by_id(&self, idx: FnID) -> Option<&FnImpl> {
-        match idx {
-            FnID::Some(id) => match self.fns[id].valid {
+    pub fn find_by_id(&self, id: ItemID) -> Option<&FnImpl> {
+        match id.into_option() {
+            Some(id) => match self.fns[id].valid {
                 true => Some(&self.fns[id]),
                 false => None,
             },
-            FnID::Invalid => None,
+            None => None,
         }
     }
     // It mainly used internal and ignore not valid
-    pub fn find_by_idx(&self, idx: usize) -> &FnImpl {
+    pub fn get_by_idx(&self, idx: usize) -> &FnImpl {
         &self.fns[idx]
     }
-    pub fn find_by_idx_mut(&mut self, idx: usize) -> &mut FnImpl {
+    pub fn get_by_idx_mut(&mut self, idx: usize) -> &mut FnImpl {
         &mut self.fns[idx]
     }
 
+    // Act like Vec<FnImpl>
+    pub fn len(&self) -> usize { self.fns.len() }
     pub fn iter<'a>(&'a self) -> slice::Iter<'a, FnImpl> {
         self.fns.iter()
     }
 
-    pub fn len(&self) -> usize { self.fns.len() }
     pub fn dump(&self, types: &TypeCollection) -> String {
         let mut buf = "Fns:\n".to_owned();
         for i in 0..self.fns.len() {
@@ -318,7 +430,7 @@ fn gen_fn_arg() {
     let arg = Argument::from_str("[i32] a", 0);
     let arg = FnArg::new(arg, &mut sess.types, &mut sess.msgs);
     assert_eq!(arg.name, "a");
-    assert_eq!(arg.ty, TypeID::Some(15)); // TODO future: after `auto` primitive type removed, this is 14
+    assert_eq!(arg.ty, ItemID::new(15)); // TODO future: after `auto` primitive type removed, this is 14
     assert_eq!(arg.pos, [make_str_pos!(1, 1, 1, 5), make_str_pos!(1, 7, 1, 7)]);
     let expect_messages = &mut MessageEmitter::new();
     assert_eq!(sess.messages(), expect_messages);
@@ -326,7 +438,7 @@ fn gen_fn_arg() {
     let arg = Argument::from_str("int argc", 0);
     let arg = FnArg::new(arg, &mut sess.types, &mut sess.msgs);
     assert_eq!(arg.name, "argc");
-    assert_eq!(arg.ty, TypeID::Invalid);
+    assert_eq!(arg.ty, ItemID::new_invalid());
     assert_eq!(arg.pos, [make_str_pos!(1, 1, 1, 3), make_str_pos!(1, 5, 1, 8)]);
     let expect_messages = &mut MessageEmitter::new();
     expect_messages.push(CodegenMessage::TypeNotExist{ name: "int".to_owned(), pos: make_str_pos!(1, 1, 1, 3) });
@@ -339,11 +451,11 @@ fn gen_fn_sign_eq() {
     
     let left_getter = || FnImpl{
         id: 0,
-        name: "main".to_owned(),
-        ret_type: TypeID::Some(5),
+        name: FnName::Ident("main".to_owned()),
+        ret_type: ItemID::new(5),
         args: vec![ 
-            FnArg{ name: "argc".to_owned(), ty: TypeID::Some(1), pos: [StringPosition::new(), StringPosition::new()] },
-            FnArg{ name: "argv".to_owned(), ty: TypeID::Some(2), pos: [StringPosition::new(), StringPosition::new()] },
+            FnArg{ name: "argc".to_owned(), ty: ItemID::new(1), pos: [StringPosition::new(), StringPosition::new()] },
+            FnArg{ name: "argv".to_owned(), ty: ItemID::new(2), pos: [StringPosition::new(), StringPosition::new()] },
         ],
         pos: [StringPosition::new(), StringPosition::new(), StringPosition::new()],
         valid: true,
@@ -352,30 +464,30 @@ fn gen_fn_sign_eq() {
 
     // Normal equal
     let left = &mut left_getter();
-    assert!(left.sign_eq("main", &vec![TypeID::Some(1), TypeID::Some(2)]));
+    assert!(left.sign_eq_name("main", &vec![ItemID::new(1), ItemID::new(2)]));
 
     // Name not Equal
     let left = &mut left_getter();
-    assert!(!left.sign_eq("another", &vec![TypeID::Some(1), TypeID::Some(2)]));
+    assert!(!left.sign_eq_name("another", &vec![ItemID::new(1), ItemID::new(2)]));
 
     // Something is invalid
     let left = &mut left_getter();
     left.valid = false;
-    assert!(!left.sign_eq("main", &vec![TypeID::Some(1), TypeID::Some(2)]));
+    assert!(!left.sign_eq_name("main", &vec![ItemID::new(1), ItemID::new(2)]));
 
     // One of the arg is invalid
     let left = &mut left_getter();
-    assert!(!left.sign_eq("main", &vec![TypeID::Invalid, TypeID::Some(2)]));
+    assert!(!left.sign_eq_name("main", &vec![ItemID::new_invalid(), ItemID::new(2)]));
 
     // One of the arg name is not same
     let left = &mut left_getter();
     left.args[1].name = "some other".to_owned();
-    assert!(left.sign_eq("main", &vec![TypeID::Some(1), TypeID::Some(2)]));
+    assert!(left.sign_eq_name("main", &vec![ItemID::new(1), ItemID::new(2)]));
 
     // One of the arg type is not same
     let left = &mut left_getter();
-    left.args[1].ty = TypeID::Some(8);
-    assert!(!left.sign_eq("main", &vec![TypeID::Some(1), TypeID::Some(2)]));
+    left.args[1].ty = ItemID::new(8);
+    assert!(!left.sign_eq_name("main", &vec![ItemID::new(1), ItemID::new(2)]));
 }
 
 #[cfg(test)]
@@ -393,10 +505,10 @@ fn gen_fn_args() {
     let (args, valid) = FnImpl::new_args(syn_args, fn_pos, fn_name, &mut sess.types, &mut sess.msgs);
     assert_eq!(valid, true);
     assert_eq!(args[0].name, "a");
-    assert_eq!(args[0].ty, TypeID::Some(5));
+    assert_eq!(args[0].ty, ItemID::new(5));
     assert_eq!(args[0].pos, [make_str_pos!(1, 9, 1, 11), make_str_pos!(1, 13, 1, 13)]);
     assert_eq!(args[1].name, "b");
-    assert_eq!(args[1].ty, TypeID::Some(13));
+    assert_eq!(args[1].ty, ItemID::new(13));
     assert_eq!(args[1].pos, [make_str_pos!(1, 16, 1, 21), make_str_pos!(1, 23, 1, 23)]);
     let expect_message = MessageEmitter::new();
     assert_eq!(sess.messages(), &expect_message);
@@ -416,13 +528,13 @@ fn gen_fn_args() {
     let (args, valid) = FnImpl::new_args(syn_args, fn_pos, fn_name, &mut sess.types, &mut sess.msgs);
     assert_eq!(valid, false);
     assert_eq!(args[0].name, "a");
-    assert_eq!(args[0].ty, TypeID::Some(5));
+    assert_eq!(args[0].ty, ItemID::new(5));
     assert_eq!(args[0].pos, [make_str_pos!(1, 9, 1, 11), make_str_pos!(1, 13, 1, 13)]);
     assert_eq!(args[1].name, "b");
-    assert_eq!(args[1].ty, TypeID::Invalid);
+    assert_eq!(args[1].ty, ItemID::new_invalid());
     assert_eq!(args[1].pos, [make_str_pos!(1, 16, 1, 23), make_str_pos!(1, 25, 1, 25)]);
     assert_eq!(args[2].name, "cde");
-    assert_eq!(args[2].ty, TypeID::Some(16)); // [u8] is 14, [[u8]] is 15  // TODO future: after primitive type auto is removed, this is 15
+    assert_eq!(args[2].ty, ItemID::new(16)); // [u8] is 14, [[u8]] is 15  // TODO future: after primitive type auto is removed, this is 15
     assert_eq!(args[2].pos, [make_str_pos!(1, 28, 1, 33), make_str_pos!(1, 35, 1, 37)]);
     let mut expect_message = MessageEmitter::new();
     expect_message.push(CodegenMessage::TypeNotExist{ name: "intttt".to_owned(), pos: make_str_pos!(1, 17, 1, 22) });
@@ -445,13 +557,13 @@ fn gen_fn_args() {
     let (args, valid) = FnImpl::new_args(syn_args, fn_pos, fn_name, &mut sess.types, &mut sess.msgs);
     assert_eq!(valid, false);
     assert_eq!(args[0].name, "a");
-    assert_eq!(args[0].ty, TypeID::Some(5));
+    assert_eq!(args[0].ty, ItemID::new(5));
     assert_eq!(args[0].pos, [make_str_pos!(1, 9, 1, 11), make_str_pos!(1, 13, 1, 13)]);
     assert_eq!(args[1].name, "bc");
-    assert_eq!(args[1].ty, TypeID::Some(6));
+    assert_eq!(args[1].ty, ItemID::new(6));
     assert_eq!(args[1].pos, [make_str_pos!(1, 16, 1, 18), make_str_pos!(1, 20, 1, 21)]);
     assert_eq!(args[2].name, "d");
-    assert_eq!(args[2].ty, TypeID::Some(13));
+    assert_eq!(args[2].ty, ItemID::new(13));
     assert_eq!(args[2].pos, [make_str_pos!(1, 39, 1, 44), make_str_pos!(1, 46, 1, 46)]);
     let mut expect_message = MessageEmitter::new();
     expect_message.push(CodegenMessage::FunctionArgumentNameConfilict{ 
@@ -489,12 +601,12 @@ fn gen_fn_decl() {
     let syn_fn = SyntaxFunctionDef::from_str(program, 0);
     let (id, block) = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
     {
-        let fndecl = sess.fns.find_by_idx(id);
+        let fndecl = sess.fns.get_by_idx(id);
         assert_eq!(fndecl.id, 0);
-        assert_eq!(fndecl.name, "main");
+        assert_eq!(fndecl.name.fmt(&sess.types), "main");
         assert_eq!(fndecl.args.len(), 0);
         assert_eq!(fndecl.pos, [make_str_pos!(1, 1, 1, 2), make_str_pos!(1, 4, 1, 7), make_str_pos!(1, 14, 1, 15)]);
-        assert_eq!(fndecl.ret_type, TypeID::Some(0));
+        assert_eq!(fndecl.ret_type, ItemID::new(0));
         assert_eq!(id, 0);
         assert_eq!(block.stmts.len(), 1);
     }

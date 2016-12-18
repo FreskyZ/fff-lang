@@ -19,8 +19,7 @@ use syntax::SMType;
 
 use codegen::var_def::VarID;
 use codegen::var_def::VarCollection;
-use codegen::fn_def::FnID;
-use codegen::type_def::TypeID;
+use codegen::ItemID;
 use codegen::type_def::TypeCollection;
 use codegen::Operand;
 use codegen::Code;
@@ -40,44 +39,44 @@ use codegen::session::GenerationSession;
 
 #[derive(Eq, PartialEq)]
 pub enum SimpleBase {
-    Lit(LitValue, TypeID, StringPosition),
-    Ident(usize, TypeID, StringPosition),                            // Paren is here
-    FunctionCall(String, Vec<SimpleBase>, [StringPosition; 2]),      // call global
+    Lit(LitValue, ItemID, StringPosition),
+    Ident(usize, ItemID, StringPosition),                            // Paren is here
+    FunctionCall(ItemID, ItemID, Vec<SimpleBase>, [StringPosition; 2]),      // call global
 }
 impl fmt::Debug for SimpleBase {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             SimpleBase::Lit(ref lit, ref typeid, ref pos) => write!(f, "{:?} @ {:?}, typeid = {:?}", lit, pos, typeid),
             SimpleBase::Ident(ref id, ref typeid, ref pos) => write!(f, "{:?} @ {:?}, typeid = {:?}", id, pos, typeid),
-            SimpleBase::FunctionCall(ref name, ref params, ref pos) => write!(f, "call {}, {} @ {:?}", name, format_vector_debug(params, ", "), pos),
+            SimpleBase::FunctionCall(ref name, ref typeid, ref params, ref pos) => write!(f, "call {:?}, {} @ {:?}, ret typeid = {:?}", name, format_vector_debug(params, ", "), pos, typeid),
         }
     }
 }
 impl SimpleBase {
-    fn final_typeid(&self) -> TypeID {
+    fn final_typeid(&self) -> ItemID {
         match *self {
             SimpleBase::Lit(ref _lit_val, ref typeid, ref _pos) => *typeid,
             SimpleBase::Ident(ref _offset, ref typeid, ref _pos) => *typeid,
-            SimpleBase::FunctionCall(ref _name, ref _params, ref _pos) => TypeID::Invalid,
+            SimpleBase::FunctionCall(ref _name, ref typeid, ref _params, ref _pos) => *typeid,
         }
     }
 }
 
 #[derive(Eq, PartialEq, Debug)]
 enum SimpleOp {
-    MemberFunctionCall(String, Vec<SimpleBase>, [StringPosition; 2]),
-    UnOp(UnaryOperator, TypeID, StringPosition),                    // sep, result typeid, pos
-    BinOp(SimpleBase, BinaryOperator, TypeID, StringPosition),      // right_expr, sep, result typeid, pos
-    MemberAccess(String, StringPosition),  // Directly to string
-    TypeCast(TypeID, StringPosition),
+    MemberFunctionCall(String, ItemID, Vec<SimpleBase>, [StringPosition; 2]),
+    UnOp(UnaryOperator, ItemID, StringPosition),                    // sep, result typeid, pos
+    BinOp(SimpleBase, BinaryOperator, ItemID, StringPosition),      // right_expr, sep, result typeid, pos
+    MemberAccess(String, ItemID, StringPosition),  // Directly to string
+    TypeCast(ItemID, StringPosition),
 }
 impl SimpleOp {
-    fn final_typeid(&self) -> TypeID {
+    fn final_typeid(&self) -> ItemID {
         match *self {
-            SimpleOp::MemberFunctionCall(ref _name, ref _params, ref _pos) => TypeID::Invalid,
+            SimpleOp::MemberFunctionCall(ref _name, ref typeid, ref _params, ref _pos) => *typeid,
             SimpleOp::UnOp(ref _unop, ref typeid, ref _pos) => *typeid,
             SimpleOp::BinOp(ref _operand, ref _operator, ref typeid, ref _pos) => *typeid,
-            SimpleOp::MemberAccess(ref _name, ref _pos) => TypeID::Invalid,
+            SimpleOp::MemberAccess(ref _name, ref typeid, ref _pos) => *typeid,
             SimpleOp::TypeCast(ref typeid, ref _pos) => *typeid,
         }
     }
@@ -89,7 +88,7 @@ struct SimpleExpr {
     ops: Vec<SimpleOp>,
 }
 impl SimpleExpr {
-    fn final_typeid(&self) -> TypeID {
+    fn final_typeid(&self) -> ItemID {
         match self.ops.len() {
             0 => self.base.final_typeid(),
             n => self.ops[n - 1].final_typeid(),
@@ -132,7 +131,7 @@ fn check_pure_simple_expr(full_expr: FullExpression, sess: &mut GenerationSessio
 // ++ limit is not here, ++anything's type is unit, thus prevent any more operation
 fn simplize_expr(expr: FullExpression, sess: &mut GenerationSession, assigns: &mut Vec<SimpleAssignment>) -> Option<SimpleExpr> {
     
-    // When meet nested fullexpr, use this and returns the simple base and simple base typeid
+    // When meet nested fullexpr, use this and returns the ident as simple base and its type
     macro_rules! process_nested_full_expr { 
         ($sess: expr, $expr: expr, $assigns: expr, $pos: expr) => ({
             match check_pure_simple_expr($expr, $sess) {
@@ -148,7 +147,7 @@ fn simplize_expr(expr: FullExpression, sess: &mut GenerationSession, assigns: &m
                     let simple_expr_typeid = simple_expr.final_typeid();
                     let varid = $sess.vars.push_temp(simple_expr_typeid, false, &mut $sess.types, &mut $sess.msgs);
                     let varoffset = $sess.vars.get_offset(varid);
-                    $sess.codes.emit(Code::DeclareVar(simple_expr_typeid, false));
+                    $sess.codes.emit(Code::DeclareVar(simple_expr_typeid));
                     $assigns.push(SimpleAssignment{ left: varid, right: simple_expr });
                     (SimpleBase::Ident(varoffset, simple_expr_typeid, $pos), simple_expr_typeid)
                 }
@@ -158,10 +157,10 @@ fn simplize_expr(expr: FullExpression, sess: &mut GenerationSession, assigns: &m
 
     let mut ident_name = None; // if function call, need another to record fn name because it (may) cannot be found in vars, may means local var shadow the global fn
     let mut current_prev_pos = expr.base.pos();
-    let (mut simple_base, mut cur_typeid) = match expr.base.as_ref().clone() {
+    let mut simple_base = match expr.base.as_ref().clone() {
         FullExpressionBase::Lit(lit, pos) => {
             let lit_typeid = TypeCollection::get_id_by_lit(&lit);
-            (SimpleBase::Lit(lit, lit_typeid, pos), lit_typeid)
+            SimpleBase::Lit(lit, lit_typeid, pos)
         }
         FullExpressionBase::Ident(name, pos) => {
             let ident_varid = sess.vars.find_by_name(&name);
@@ -169,44 +168,46 @@ fn simplize_expr(expr: FullExpression, sess: &mut GenerationSession, assigns: &m
             let ident_typeid = sess.vars.get_type(ident_varid);
             let this_ret_val = SimpleBase::Ident(ident_offset, ident_typeid, pos);
             ident_name = Some(name);
-            (this_ret_val, ident_typeid)
+            this_ret_val
         }
         FullExpressionBase::Paren(expr, pos) => { // allocate temp var and push to assigns
-            process_nested_full_expr!(sess, expr, assigns, pos)
+            process_nested_full_expr!(sess, expr, assigns, pos).0
         }
         FullExpressionBase::ArrayDef(exprs, pos) => {
             let mut bases = Vec::new();
-            let mut item0_type: Option<TypeID> = None;
+            let mut item0_type: Option<ItemID> = None;
             let mut item0_desc = String::new();
             for expr in exprs {
                 let expr_pos = expr.pub_pos_all();
                 let (item, item_type) = process_nested_full_expr!(sess, expr, assigns, pos);
                 if item0_type.is_none() {
                     item0_type = Some(item_type);
-                    item0_desc = sess.types.format_display_by_id(item_type);
+                    item0_desc = sess.types.fmt_by_id(item_type);
                 } else {
                     if Some(item_type) != item0_type {
-                        let actual_desc = sess.types.format_display_by_id(item_type);
+                        let actual_desc = sess.types.fmt_by_id(item_type);
                         sess.msgs.push(CodegenMessage::ArrayInitializeElementNotSameType{ expect: item0_desc.clone(), actual: actual_desc, pos: expr_pos });
                         // continue
                     }
                 }
                 bases.push(item);
             }
-            // TODO: special method to generate new_array with the type and the ret type, or special code
-            (SimpleBase::FunctionCall("?new_array".to_owned(), bases, [StringPosition::new(), pos]), TypeID::Invalid)
+            let fnid = sess.fns.find_by_sign_name("?new_array", &vec![item0_type.unwrap()], &mut sess.types); // array no content has been denied at syntax
+            let ret_type = sess.fns.find_by_id(fnid).unwrap().ret_type;
+            SimpleBase::FunctionCall(fnid, ret_type, bases, [StringPosition::new(), pos])
         }
         FullExpressionBase::ArrayDupDef(expr1, expr2, pos) => {
             let expr2_pos = expr2.pub_pos_all();
             let (base1, typeid1) = process_nested_full_expr!(sess, expr1, assigns, pos[0]);
             let (base2, typeid2) = process_nested_full_expr!(sess, expr2, assigns, pos[1]);
 
-            if typeid2 != TypeID::Some(5) || typeid2 != TypeID::Some(8) {
-                let actual_desc = sess.types.format_display_by_id(typeid2);
+            if typeid2 != ItemID::new(5) || typeid2 != ItemID::new(8) {
+                let actual_desc = sess.types.fmt_by_id(typeid2);
                 sess.msgs.push(CodegenMessage::ArrayDupDefSecondParameterTypeNotExpected{ actual: actual_desc, pos: expr2_pos });
             }
-            // TODO: special method to generate new_array with the type and the ret type, or special code
-            (SimpleBase::FunctionCall("?new_dup_array".to_owned(), vec![base1, base2], pos), TypeID::Invalid)
+            let fnid = sess.fns.find_by_sign_name("?new_dup_array", &vec![typeid1, typeid2], &mut sess.types);
+            let ret_type = sess.fns.find_by_id(fnid).unwrap().ret_type;
+            SimpleBase::FunctionCall(fnid, ret_type, vec![base1, base2], pos)
         }
         FullExpressionBase::TupleDef(exprs, pos) => {
             let mut bases = Vec::new();
@@ -216,10 +217,12 @@ fn simplize_expr(expr: FullExpression, sess: &mut GenerationSession, assigns: &m
                 bases.push(simple_base);
                 item_types.push(base_typeid);
             }
-            // TODO: special method to generate new_array with the type and the ret type, or special code
-            (SimpleBase::FunctionCall("?new_tuple".to_owned(), bases, [StringPosition::new(), pos]), TypeID::Invalid)
+            let fnid = sess.fns.find_by_sign_name("?new_tuple", &item_types, &mut sess.types);
+            let ret_type = sess.fns.find_by_id(fnid).unwrap().ret_type;
+            SimpleBase::FunctionCall(fnid, ret_type, bases, [StringPosition::new(), pos])
         }
     };
+    let mut cur_typeid = simple_base.final_typeid();
 
     let mut ops = Vec::new();
     let mut is_first = true;
@@ -240,28 +243,46 @@ fn simplize_expr(expr: FullExpression, sess: &mut GenerationSession, assigns: &m
                     bases.push(simple_base);
                     param_types.push(base_typeid);
                 }
-                simple_base = SimpleBase::FunctionCall(fn_name, bases, [StringPosition::new(), pos]);
+
+                let fnid = sess.fns.find_by_sign_name(&fn_name, &param_types, &mut sess.types);
+                let ret_type = sess.fns.find_by_id(fnid).unwrap().ret_type;
+                simple_base = SimpleBase::FunctionCall(fnid, ret_type, bases, [StringPosition::new(), pos]);
+                current_prev_pos.end_pos = pos.end_pos;
+                cur_typeid = ret_type;
             }
             FullExpressionOperator::MemberFunctionCall(name, exprs, pos) => {
                 let mut bases = Vec::new();
-                let mut param_types = Vec::new();
+                let mut param_types = vec![cur_typeid]; // to be searched in fns like a global fn
                 for expr in exprs {
                     let (simple_base, base_typeid) = process_nested_full_expr!(sess, expr, assigns, pos[1]);
                     bases.push(simple_base);
                     param_types.push(base_typeid);
                 }
-                ops.push(SimpleOp::MemberFunctionCall(name, bases, pos));
+                let fnid = sess.fns.find_by_sign_name(&name, &param_types, &mut sess.types);
+                let ret_type = sess.fns.find_by_id(fnid).unwrap().ret_type;
+                ops.push(SimpleOp::MemberFunctionCall(name, ret_type, bases, pos));
+                current_prev_pos.end_pos = pos[1].end_pos;
+                cur_typeid = ret_type;
             }
             FullExpressionOperator::MemberAccess(name, pos) => {
-                ops.push(SimpleOp::MemberAccess(name, pos));
+                match sess.types.find_by_id(cur_typeid).unwrap().find_field(&name) {
+                    None => (), // TODO: emit message
+                    Some(field) => {
+                        let ret_type = field.typeid;
+                        ops.push(SimpleOp::MemberAccess(name, ret_type, pos));
+                        current_prev_pos.end_pos = pos.end_pos;
+                        cur_typeid = ret_type;
+                    }
+                }
             }
             FullExpressionOperator::Binary(sep, pos, expr) => {
                 let (right_simple_base, right_typeid) = process_nested_full_expr!(sess, expr, assigns, pos);
                 let ret_type = if cur_typeid.is_valid() { // check only previous has no type error
-                    let ret_type = sess.types.check_binop_ret_type(cur_typeid, right_typeid, &sep);
+                    // let ret_type = sess.types.check_binop_ret_type(cur_typeid, right_typeid, &sep);
+                    let ret_type = ItemID::new_invalid();
                     if ret_type.is_invalid() {
-                        let prev_type_desc = sess.types.format_display_by_id(cur_typeid);
-                        let right_type_desc = sess.types.format_display_by_id(right_typeid);
+                        let prev_type_desc = sess.types.fmt_by_id(cur_typeid);
+                        let right_type_desc = sess.types.fmt_by_id(right_typeid);
                         sess.msgs.push(CodegenMessage::MemberNotExist{
                             prev_expr_pos: current_prev_pos, // previous part position
                             prev_type_desc: prev_type_desc,  // previous part type display name
@@ -292,15 +313,17 @@ fn simplize_expr(expr: FullExpression, sess: &mut GenerationSession, assigns: &m
                     cur_typeid = right_typeid;
                     cur_typeid
                 } else {
-                    TypeID::Invalid
+                    ItemID::new_invalid()
                 };
                 ops.push(SimpleOp::BinOp(right_simple_base, BinaryOperator::from(sep), ret_type, pos));
+                current_prev_pos.end_pos = pos.end_pos;
             }
             FullExpressionOperator::Unary(sep, pos) => {
                 let ret_type = if cur_typeid.is_valid() { // check only previous has no type error
-                    let ret_type = sess.types.check_unop_ret_type(cur_typeid, &sep);
+                    // let ret_type = sess.types.check_unop_ret_type(cur_typeid, &sep);
+                    let ret_type = ItemID::new_invalid();
                     if ret_type.is_invalid() {
-                        let prev_type_desc = sess.types.format_display_by_id(cur_typeid);
+                        let prev_type_desc = sess.types.fmt_by_id(cur_typeid);
                         sess.msgs.push(CodegenMessage::MemberNotExist{
                             prev_expr_pos: current_prev_pos, // previous part position
                             prev_type_desc: prev_type_desc,  // previous part type display name
@@ -318,9 +341,10 @@ fn simplize_expr(expr: FullExpression, sess: &mut GenerationSession, assigns: &m
                     cur_typeid = ret_type;
                     cur_typeid
                 } else {
-                    TypeID::Invalid
+                    ItemID::new_invalid()
                 };
                 ops.push(SimpleOp::UnOp(UnaryOperator::from(sep), ret_type, pos));
+                current_prev_pos.end_pos = pos.end_pos;
             }
             FullExpressionOperator::GetIndex(mut exprs, pos) => {
                 if exprs.len() != 1 {
@@ -329,11 +353,18 @@ fn simplize_expr(expr: FullExpression, sess: &mut GenerationSession, assigns: &m
                 }
 
                 let (simple_base, base_typeid) = process_nested_full_expr!(sess, exprs.pop().unwrap(), assigns, pos);
-                ops.push(SimpleOp::MemberFunctionCall("get_Index".to_owned(), vec![simple_base], [pos, StringPosition::new()]));
+                let fnid = sess.fns.find_by_sign_name("get_index", &vec![cur_typeid, base_typeid], &mut sess.types);
+                let ret_type = sess.fns.find_by_id(fnid).unwrap().ret_type;
+                ops.push(SimpleOp::MemberFunctionCall("get_index".to_owned(), ret_type, vec![simple_base], [pos, StringPosition::new()]));
+                current_prev_pos.end_pos = pos.end_pos;
+                cur_typeid = ret_type;
             }
             FullExpressionOperator::TypeCast(smt, pos) => {
                 let typeid = sess.types.get_id_by_smtype(smt, &mut sess.msgs);
+                // TODO, check this cast existence
                 ops.push(SimpleOp::TypeCast(typeid, pos));
+                current_prev_pos.end_pos = pos.end_pos;
+                cur_typeid = typeid;
             }
         }
         is_first = false;
@@ -347,12 +378,12 @@ fn gen_simple_expr_base(simple_base: SimpleBase, sess: &mut GenerationSession) -
     match simple_base {
         SimpleBase::Ident(varoffset, _typeid, _pos) => Operand::Stack(varoffset),
         SimpleBase::Lit(lit, _typeid, _pos) => Operand::Lit(lit),
-        SimpleBase::FunctionCall(name, bases, _pos) => {
+        SimpleBase::FunctionCall(fnid, _typeid, bases, _pos) => {
             let mut ops = Vec::new();
             for base in bases {
                 ops.push(gen_simple_expr_base(base, sess));
             }
-            sess.codes.emit(Code::CallGlobal(name, ops));
+            sess.codes.emit(Code::CallGlobal(fnid, ops));
             Operand::Register
         }
     }
@@ -363,7 +394,7 @@ fn gen_simple_expr(simple_expr: SimpleExpr, sess: &mut GenerationSession) -> Ope
 
     for operator in simple_expr.ops {
         match operator {
-            SimpleOp::MemberFunctionCall(name, bases, _pos) => {
+            SimpleOp::MemberFunctionCall(name, _type, bases, _pos) => {
                 let mut ops = Vec::new();
                 for base in bases {
                     ops.push(gen_simple_expr_base(base, sess));
@@ -371,7 +402,7 @@ fn gen_simple_expr(simple_expr: SimpleExpr, sess: &mut GenerationSession) -> Ope
                 sess.codes.emit(Code::CallMember(last_operand.clone(), name, ops));
                 last_operand = Operand::Register;
             }
-            SimpleOp::MemberAccess(_, pos) => {
+            SimpleOp::MemberAccess(_, _type, pos) => {
                 sess.msgs.push(CodegenMessage::MemberAccessNotSupportedCurrently{ pos: pos });
                 last_operand = Operand::Register;
             }
@@ -490,13 +521,13 @@ fn gen_expr_pure_simple_test() {
     }
 
     test_case!{ "1",
-        Ok(SimpleBase::Lit(LitValue::from(1), TypeID::Some(5), make_str_pos!(1, 1, 1, 1)))
+        Ok(SimpleBase::Lit(LitValue::from(1), ItemID::new(5), make_str_pos!(1, 1, 1, 1)))
     }
     test_case!{ "2u32", 
-        Ok(SimpleBase::Lit(LitValue::from(2u32), TypeID::Some(6), make_str_pos!(1, 1, 1, 4)))
+        Ok(SimpleBase::Lit(LitValue::from(2u32), ItemID::new(6), make_str_pos!(1, 1, 1, 4)))
     }
     test_case!{ "\"2f32\"", 
-        Ok(SimpleBase::Lit(LitValue::from("2f32"), TypeID::Some(13), make_str_pos!(1, 1, 1, 6)))
+        Ok(SimpleBase::Lit(LitValue::from("2f32"), ItemID::new(13), make_str_pos!(1, 1, 1, 6)))
     }
     test_case!{ "1 as u32", 
         Err(FullExpression::from_str("1 as u32", 0))
@@ -540,7 +571,7 @@ fn gen_expr_simple_test() {
     macro_rules! prepare_vars { 
         ($sess: expr, $($name: expr, )*) => (
             $(
-                $sess.vars.try_push(Var::new($name.to_owned(), TypeID::Some(1), false, StringPosition::new()), &mut $sess.types, &mut $sess.msgs);
+                $sess.vars.try_push(Var::new($name.to_owned(), ItemID::new(1), false, StringPosition::new()), &mut $sess.types, &mut $sess.msgs);
             )*
         )
     }

@@ -59,6 +59,21 @@ macro_rules! define_seperator {
                 }
             }
         }
+        impl fmt::Display for $enum_name {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result{
+                match *self {
+                    $(
+                        $enum_name::$name1 => write!(f, "operator{}", $ch),
+                    )*
+                    $(
+                        $enum_name::$name2 => write!(f, "operator{}{}", $ch1, $ch2),
+                    )*
+                    $(
+                        $enum_name::$name3 => write!(f, "operator{}", $ch3),
+                    )*
+                }
+            }
+        }
 
         use common::TryFrom;
         impl TryFrom<char> for $enum_name {

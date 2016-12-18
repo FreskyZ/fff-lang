@@ -33,7 +33,7 @@ use codegen::expression::gen_expr_stmt;
 use codegen::Operand;
 use codegen::Code;
 use codegen::vm_code::CodeCollection;
-use codegen::TypeID;
+use codegen::ItemID;
 use codegen::AssignOperator;
 use codegen::BinaryOperator;
 
@@ -54,7 +54,7 @@ fn gen_var_decl(var_decl: VarDeclStatement, sess: &mut GenerationSession) {
     let typeid = sess.types.get_id_by_smtype(var_decl.ty, &mut sess.msgs);
 
     let varid = sess.vars.try_push(Var::new(var_decl.name.clone(), typeid, var_decl.is_const, pos_all), &mut sess.types, &mut sess.msgs);
-    sess.codes.emit_silent(Code::DeclareVar(typeid, var_decl.is_const));
+    sess.codes.emit_silent(Code::DeclareVar(typeid));
     if varid.is_invalid() { return; } // name collision, ignore the statement
 
     if var_decl.init_expr.is_none() {
@@ -184,9 +184,9 @@ fn gen_for(for_stmt: ForStatement, sess: &mut GenerationSession) {
     // scope for iter var
     sess.vars.push_scope();
 
-    let iter_varid = sess.vars.try_push(Var::new(for_stmt.iter_name.clone(), TypeID::Some(14), false, for_stmt.pos[1]), &mut sess.types, &mut sess.msgs);
+    let iter_varid = sess.vars.try_push(Var::new(for_stmt.iter_name.clone(), ItemID::new(14), false, for_stmt.pos[1]), &mut sess.types, &mut sess.msgs);
     let iter_offset = sess.vars.get_offset(iter_varid);
-    sess.codes.emit_silent(Code::DeclareVar(TypeID::Some(14), false));
+    sess.codes.emit_silent(Code::DeclareVar(ItemID::new(14)));
     let operand = gen_expr(for_stmt.expr_low, sess);
     sess.codes.emit_silent(Code::Assign(Operand::Stack(iter_offset), AssignOperator::Assign, operand));
 

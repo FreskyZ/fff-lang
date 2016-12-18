@@ -18,6 +18,28 @@ use codegen::var_def::VarCollection;
 use codegen::block::Block;
 use codegen::loop_def::LoopCollection;
 
+#[derive(Eq, PartialEq, Copy, Clone)]
+pub struct ItemID(Option<usize>);
+impl ItemID {
+
+    pub fn new(value: usize) -> ItemID { ItemID(Some(value)) }
+    pub fn new_invalid() -> ItemID { ItemID(None) }
+
+    pub fn is_valid(&self) -> bool { self.0.is_some() }
+    pub fn is_invalid(&self) -> bool { self.0.is_none() }
+
+    pub fn as_option(&self) -> Option<usize> { match self.0 { Some(ref value) => Some(*value), None => None } }
+    pub fn into_option(self) -> Option<usize> { self.0 }
+}
+impl fmt::Debug for ItemID {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self.0 {
+            Some(ref value) => write!(f, "{}", value),
+            None => write!(f, "<invalid-id>"),
+        }
+    }
+}
+
 pub struct Program {
     pub fns: FnCollection,
     pub types: TypeCollection,

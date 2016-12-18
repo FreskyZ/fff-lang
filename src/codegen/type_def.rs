@@ -14,34 +14,14 @@ use lexical::NumLitValue;
 
 use syntax::SMType;
 
-use codegen::fn_def::FnID;
+use codegen::ItemID;
+use codegen::fn_def::FnCollection;
 
-#[derive(Eq, PartialEq, Clone, Copy)]
-pub enum TypeID {
-    Some(usize),
-    Invalid,
-}
-impl fmt::Debug for TypeID {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            &TypeID::Some(ref val) => write!(f, "type[{}]", val),
-            &TypeID::Invalid => write!(f, "type[-]"),
-        }
-    }
-}
-impl TypeID {
-    pub fn is_invalid(&self) -> bool {
-        match self {
-            &TypeID::Some(_) => false,
-            &TypeID::Invalid => true,
-        }
-    }
-    pub fn is_valid(&self) -> bool {
-        match self {
-            &TypeID::Some(_) => true,
-            &TypeID::Invalid => false,
-        }
-    }
+#[derive(Eq, PartialEq, Debug, Clone)]
+pub struct TypeField {
+    pub name: String,
+    pub typeid: ItemID,
+    pub offset: usize,
 }
 
 // Type declare is type's name and type parameter
@@ -63,15 +43,66 @@ impl fmt::Debug for Type {
 impl Type {
     pub fn get_size(&self) -> usize { 1 } // arbitraty implentation
 }
+impl Type {
+
+    // Currently, `item0` => 0 `item1` => 1, `item2` => 2
+    fn get_field_id_by_field_name(&self, field_name: &str) -> Option<usize> {
+        match *self {
+            Type::Base(_) | Type::Array(_) => None,
+            Type::Tuple(ref _item_types) => {
+                // Start with `item`
+                let mut field_name_chars = field_name.chars();
+                match (field_name_chars.next(), field_name_chars.next(), field_name_chars.next(), field_name_chars.next()) {
+                    (Some('i'), Some('t'), Some('e'), Some('m')) => (),
+                    _ => return None,
+                }
+
+                // follow with simple number
+                let mut maybe_field_id = 0usize;
+                let left_chars: Vec<_> = field_name_chars.collect();
+                let left_chars_len = left_chars.len();
+                if left_chars_len >= 8 {
+                    return None;
+                }
+                const TENS: [u32; 9] = [1, 10, 100, 1000, 1_0000, 10_0000, 100_0000, 1000_0000, 10000_0000]; // no 10_0000_0000 for more convenient way to prevent arithmetic overflow panic
+                for (index, ch) in left_chars.into_iter().enumerate() {
+                    if ch > '9' || ch < '0' { return None; } 
+                    maybe_field_id += TENS[left_chars_len - index - 1] as usize * (ch as usize - '0' as usize);
+                }
+                
+                // return 
+                return Some(maybe_field_id);
+            }
+        }
+    }
+
+    // Currently it returns value not ref because no where to ref
+    pub fn find_field(&self, field_name: &str) -> Option<TypeField> {
+        match self.get_field_id_by_field_name(field_name) {
+            None => None,
+            Some(field_id) => match *self {
+                Type::Base(_) | Type::Array(_) => unreachable!(),
+                Type::Tuple(ref item_types) => match field_id < item_types.len() {
+                    true => Some(TypeField{
+                        name: field_name.to_owned(),
+                        typeid: ItemID::new(item_types[field_id]),
+                        offset: field_id,
+                    }),
+                    false => None,
+                },
+            }
+        }
+    }
+}
 
 pub struct TypeCollection {
-    pub items: Vec<Type>,
+    types: Vec<Type>,
 }
 // New
 impl TypeCollection {
 
     pub fn new() -> TypeCollection {
-        TypeCollection{ items: vec![
+        TypeCollection{ types: vec![
             Type::Base("unit".to_owned()),     // 0
             Type::Base("i8".to_owned()),       // 1
             Type::Base("u8".to_owned()),       // 2
@@ -86,20 +117,11 @@ impl TypeCollection {
             Type::Base("char".to_owned()),     // 11   // UTF32 char
             Type::Base("bool".to_owned()),     // 12   // 1 byte bool
             Type::Base("string".to_owned()),   // 13   // special [char]
-            Type::Base("auto".to_owned()),     // 14
         ]}
     }
 
-    // this unop return type, or this method does not exist for this type
-    pub fn check_unop_ret_type(&self, _id: TypeID, _op: &SeperatorKind) -> TypeID {
-        TypeID::Invalid
-    }
-    pub fn check_binop_ret_type(&self, _left_id: TypeID, _right_id: TypeID, _op: &SeperatorKind) -> TypeID {
-        TypeID::Invalid
-    }
-
     // Check primitive numeric type bin and un op existence, do not input anything rejected by before method and other ops not in ExpressionOperator
-    fn check_prim_numeric_type_op(&self, id: TypeID, op: SeperatorKind) -> bool {
+    fn check_prim_numeric_type_op(&self, id: ItemID, op: SeperatorKind) -> bool {
 
         macro_rules! check_prim_numeric_op_impl {
             (
@@ -118,8 +140,8 @@ impl TypeCollection {
             )
         }
 
-        let id = match id {
-            TypeID::Some(id) if id >= 1 && id <= 12 => id,
+        let id = match id.as_option() {
+            Some(id) if id >= 1 && id <= 12 => id,
             _ => unreachable!(),
         };
         check_prim_numeric_op_impl!{ id, op,
@@ -153,7 +175,7 @@ impl TypeCollection {
 impl TypeCollection {
 
     fn check_exist(&self, newtype: &Type) -> Option<usize> {
-        for (index, ty) in self.items.iter().enumerate() {
+        for (index, ty) in self.types.iter().enumerate() {
             if newtype == ty {
                 return Some(index);
             }
@@ -164,7 +186,7 @@ impl TypeCollection {
     // check base type existence, currently only primitive types, return the id of the primitive type
     // record processed array and tuple types, set their type params, return their type ids
     // position info are removed because messages are finally here, furthur errors will only report "variable with type" etc.
-    fn get_id(&mut self, ty: SMType, messages: &mut MessageEmitter) -> Option<usize> {
+    fn get_id_internal(&mut self, ty: SMType, messages: &mut MessageEmitter) -> Option<usize> {
 
         match ty {
             SMType::Unit(_pos) => Some(0),
@@ -178,13 +200,13 @@ impl TypeCollection {
                 }
             }
             SMType::Array(boxed_base, _pos) => {
-                match self.get_id(boxed_base.as_ref().clone(), messages) {
+                match self.get_id_internal(boxed_base.as_ref().clone(), messages) {
                     None => None, // message emitted
                     Some(id) => match self.check_exist(&Type::Array(id)) {
                         Some(id) => Some(id),
                         None => {
-                            let ret_val = self.items.len();
-                            self.items.push(Type::Array(id));
+                            let ret_val = self.types.len();
+                            self.types.push(Type::Array(id));
                             return Some(ret_val);
                         }
                     },
@@ -194,7 +216,7 @@ impl TypeCollection {
                 let mut ids = Vec::new();
                 let mut has_failed = false;
                 for smtype in smtypes {
-                    match self.get_id(smtype, messages) {
+                    match self.get_id_internal(smtype, messages) {
                         Some(id) => ids.push(id),
                         None => has_failed = true, // message emitted
                     }
@@ -207,8 +229,8 @@ impl TypeCollection {
                 match self.check_exist(&newtype) {
                     Some(id) => Some(id),
                     None => {
-                        let this_id = self.items.len();
-                        self.items.push(newtype);
+                        let this_id = self.types.len();
+                        self.types.push(newtype);
                         Some(this_id)
                     }
                 }
@@ -216,7 +238,7 @@ impl TypeCollection {
         }
     }
 
-    pub fn get_id_by_lit(lit: &LitValue) -> TypeID {
+    pub fn get_id_by_lit(lit: &LitValue) -> ItemID {
         // pub enum LitValue {
         //     Unit,
         //     Str(Option<String>),
@@ -237,50 +259,66 @@ impl TypeCollection {
         //     F64(f64),
         // }
         match lit {
-            &LitValue::Num(None) => TypeID::Invalid,
-            &LitValue::Str(None) => TypeID::Invalid,
-            &LitValue::Char(None) => TypeID::Invalid,
+            &LitValue::Num(None) => ItemID::new_invalid(),
+            &LitValue::Str(None) => ItemID::new_invalid(),
+            &LitValue::Char(None) => ItemID::new_invalid(),
 
-            &LitValue::Unit => TypeID::Some(0),
-            &LitValue::Str(_) => TypeID::Some(13),
-            &LitValue::Char(_) => TypeID::Some(11),
-            &LitValue::Bool(_) => TypeID::Some(12),
+            &LitValue::Unit => ItemID::new(0),
+            &LitValue::Str(_) => ItemID::new(13),
+            &LitValue::Char(_) => ItemID::new(11),
+            &LitValue::Bool(_) => ItemID::new(12),
 
-            &LitValue::Num(Some(NumLitValue::I8(_))) => TypeID::Some(1),
-            &LitValue::Num(Some(NumLitValue::U8(_))) => TypeID::Some(2),
-            &LitValue::Num(Some(NumLitValue::I16(_))) => TypeID::Some(3),
-            &LitValue::Num(Some(NumLitValue::U16(_))) => TypeID::Some(4),
-            &LitValue::Num(Some(NumLitValue::I32(_))) => TypeID::Some(5),
-            &LitValue::Num(Some(NumLitValue::U32(_))) => TypeID::Some(6),
-            &LitValue::Num(Some(NumLitValue::I64(_))) => TypeID::Some(7),
-            &LitValue::Num(Some(NumLitValue::U64(_))) => TypeID::Some(8),
-            &LitValue::Num(Some(NumLitValue::F32(_))) => TypeID::Some(9),
-            &LitValue::Num(Some(NumLitValue::F64(_))) => TypeID::Some(10),
+            &LitValue::Num(Some(NumLitValue::I8(_))) => ItemID::new(1),
+            &LitValue::Num(Some(NumLitValue::U8(_))) => ItemID::new(2),
+            &LitValue::Num(Some(NumLitValue::I16(_))) => ItemID::new(3),
+            &LitValue::Num(Some(NumLitValue::U16(_))) => ItemID::new(4),
+            &LitValue::Num(Some(NumLitValue::I32(_))) => ItemID::new(5),
+            &LitValue::Num(Some(NumLitValue::U32(_))) => ItemID::new(6),
+            &LitValue::Num(Some(NumLitValue::I64(_))) => ItemID::new(7),
+            &LitValue::Num(Some(NumLitValue::U64(_))) => ItemID::new(8),
+            &LitValue::Num(Some(NumLitValue::F32(_))) => ItemID::new(9),
+            &LitValue::Num(Some(NumLitValue::F64(_))) => ItemID::new(10),
         }
     }
-    // wrap Option<usize> to TypeID
-    pub fn get_id_by_smtype(&mut self, ty: SMType, messages: &mut MessageEmitter) -> TypeID {
-        match self.get_id(ty, messages) {
-            Some(id) => TypeID::Some(id),
-            None => TypeID::Invalid,
+    // wrap Option<usize> to ItemID
+    pub fn get_id_by_smtype(&mut self, ty: SMType, messages: &mut MessageEmitter) -> ItemID {
+        match self.get_id_internal(ty, messages) {
+            Some(id) => ItemID::new(id),
+            None => ItemID::new_invalid(),
         }
+    }
+
+    // push instantiated builtin template type(currently array and tuple), push their member fns to the collection
+    pub fn push_builtin_template_type(&mut self, ty: Type, _fns: &mut FnCollection) -> ItemID {
+        
+        // assert
+        if let &Type::Base(_) = &ty { unreachable!() }
+
+        for (index, item) in self.types.iter().enumerate() {
+            if *item == ty {
+                return ItemID::new(index);
+            }
+        }
+        let ret_val = self.types.len();
+        self.types.push(ty);
+        return ItemID::new(ret_val);
     }
 }
 // Helper
 impl TypeCollection {
 
-    pub fn format_display_by_id(&self, id: TypeID) -> String {
+    pub fn fmt_by_id(&self, id: ItemID) -> String {
         
-        match id {
-            TypeID::Invalid => "<error-type>".to_owned(),
-            TypeID::Some(id) => {
-                match self.items[id] {
+        match id.as_option() {
+            None => "<error-type>".to_owned(),
+            Some(id) => {
+                match self.types[id] {
                     Type::Base(ref name) => name.to_owned(),
-                    Type::Array(ref inner_id) => format!("[{}]", self.format_display_by_id(TypeID::Some(*inner_id))),
+                    Type::Array(ref inner_id) => format!("[{}]", self.fmt_by_id(ItemID::new(*inner_id))),
                     Type::Tuple(ref ids) => {
                         let mut buf = "[".to_owned();
                         for id in ids {
-                            buf += &self.format_display_by_id(TypeID::Some(*id));
+                            buf += &self.fmt_by_id(ItemID::new(*id));
                         }
                         buf += "]";
                         return buf;
@@ -290,37 +328,55 @@ impl TypeCollection {
         }
     }
 
-    pub fn find_by_id(&self, id: TypeID) -> Option<&Type> {
-        match id {
-            TypeID::Invalid => None,
-            TypeID::Some(id) => Some(&self.items[id]),
+    pub fn find_by_id(&self, id: ItemID) -> Option<&Type> {
+        match id.as_option() {
+            None => None,
+            Some(id) => Some(&self.types[id]),
         }
     }
-
-    #[cfg(test)]
-    pub fn find_by_idx(&self, id: usize) -> &Type {
-        &self.items[id]
+    pub fn get_by_idx(&self, id: usize) -> &Type {
+        &self.types[id]
     }
-    #[cfg(test)]
-    pub fn ty_len(&self) -> usize {
-        self.items.len()
+
+    pub fn len(&self) -> usize {
+        self.types.len()
     }
     pub fn dump(&self) -> String {
         let mut buf = "Types:\n".to_owned();
-        for i in 0..self.items.len() {
-            buf += &format!("    {}: {}\n", i, self.format_display_by_id(TypeID::Some(i)));
+        for i in 0..self.types.len() {
+            buf += &format!("    {}: {}\n", i, self.fmt_by_id(ItemID::new(i)));
         }
         buf
     }
 }
 
 #[cfg(test)] #[test]
-fn gen_type_prim_op() {
+fn gen_types_find_field() {
+    
+    assert_eq!(Type::Tuple(vec![1, 3, 7, 11]).find_field("item1"),
+        Some(TypeField{ name: "item1".to_owned(), typeid: ItemID::new(3), offset: 1 })
+    );
+    assert_eq!(Type::Tuple(vec![1, 3, 7, 11]).find_field("item0"),
+        Some(TypeField{ name: "item0".to_owned(), typeid: ItemID::new(1), offset: 0 })
+    );
+    assert_eq!(Type::Tuple(vec![1, 3, 7, 11]).find_field("item3"),
+        Some(TypeField{ name: "item3".to_owned(), typeid: ItemID::new(11), offset: 3 })
+    );
+    assert_eq!(Type::Tuple(vec![1, 3, 7, 11]).find_field("item4"), None);
+    assert_eq!(Type::Tuple(vec![1, 3, 7, 11]).find_field("itemxxx"), None);
+    assert_eq!(Type::Tuple(vec![1, 3, 7, 11]).find_field("zzzfield"), None);
+
+    assert_eq!(Type::Base("123".to_owned()).find_field("item0"), None);
+    assert_eq!(Type::Array(5).find_field("itemxxx"), None);
+}
+
+#[cfg(test)] #[test]
+fn gen_types_prim_op() {
 
     macro_rules! test_case { 
         ($id: expr, $op: expr, $res: expr) => (
             let types = &TypeCollection::new(); 
-            assert_eq!(types.check_prim_numeric_type_op(TypeID::Some($id), $op), $res);
+            assert_eq!(types.check_prim_numeric_type_op(ItemID::new($id), $op), $res);
         ) 
     }
 
@@ -329,23 +385,22 @@ fn gen_type_prim_op() {
 }
 
 #[cfg(test)] #[test]
-#[ignore] // it is ignored because added a special hack type auto at index 14, remove it in future
-fn gen_type() {
+fn gen_types_by_smtype() {
     use common::StringPosition;
 
     macro_rules! test_case {
         ($types: expr, $ty_str: expr, $expect: expr) => (
-            match $types.get_id_by_smtype(SMType::from_str($ty_str, 0), &mut MessageEmitter::new()) {
-                TypeID::Some(id) => assert_eq!(id, $expect),
-                TypeID::Invalid => panic!("Unexpectedly return None"),
+            match $types.get_id_by_smtype(SMType::from_str($ty_str, 0), &mut MessageEmitter::new()).as_option() {
+                Some(id) => assert_eq!(id, $expect),
+                None => panic!("Unexpectedly return None"),
             }
         );
         
         ($types: expr, $ty_str: expr => $($msg: expr)*) => (
             let messages = &mut MessageEmitter::new();
-            match $types.get_id_by_smtype(SMType::from_str($ty_str, 0), messages) {
-                TypeID::Some(id) => panic!("Unexpectedly success, result: {:?}", id),
-                TypeID::Invalid => (),
+            match $types.get_id_by_smtype(SMType::from_str($ty_str, 0), messages).as_option() {
+                Some(id) => panic!("Unexpectedly success, result: {:?}", id),
+                None => (),
             }
             let expect_messages = &mut MessageEmitter::new();
             $(
@@ -358,21 +413,21 @@ fn gen_type() {
     let mut types = TypeCollection::new();
 
     {   // Initial content
-        assert_eq!(types.items.len(), 14);
-        assert_eq!(types.items[0], Type::Base("unit".to_owned()));
-        assert_eq!(types.items[1], Type::Base("i8".to_owned()));
-        assert_eq!(types.items[2], Type::Base("u8".to_owned()));
-        assert_eq!(types.items[3], Type::Base("i16".to_owned()));
-        assert_eq!(types.items[4], Type::Base("u16".to_owned()));
-        assert_eq!(types.items[5], Type::Base("i32".to_owned()));
-        assert_eq!(types.items[6], Type::Base("u32".to_owned()));
-        assert_eq!(types.items[7], Type::Base("i64".to_owned()));
-        assert_eq!(types.items[8], Type::Base("u64".to_owned()));
-        assert_eq!(types.items[9], Type::Base("f32".to_owned()));
-        assert_eq!(types.items[10], Type::Base("f64".to_owned()));
-        assert_eq!(types.items[11], Type::Base("char".to_owned()));
-        assert_eq!(types.items[12], Type::Base("bool".to_owned()));
-        assert_eq!(types.items[13], Type::Base("string".to_owned()));
+        assert_eq!(types.types.len(), 14);
+        assert_eq!(types.types[0], Type::Base("unit".to_owned()));
+        assert_eq!(types.types[1], Type::Base("i8".to_owned()));
+        assert_eq!(types.types[2], Type::Base("u8".to_owned()));
+        assert_eq!(types.types[3], Type::Base("i16".to_owned()));
+        assert_eq!(types.types[4], Type::Base("u16".to_owned()));
+        assert_eq!(types.types[5], Type::Base("i32".to_owned()));
+        assert_eq!(types.types[6], Type::Base("u32".to_owned()));
+        assert_eq!(types.types[7], Type::Base("i64".to_owned()));
+        assert_eq!(types.types[8], Type::Base("u64".to_owned()));
+        assert_eq!(types.types[9], Type::Base("f32".to_owned()));
+        assert_eq!(types.types[10], Type::Base("f64".to_owned()));
+        assert_eq!(types.types[11], Type::Base("char".to_owned()));
+        assert_eq!(types.types[12], Type::Base("bool".to_owned()));
+        assert_eq!(types.types[13], Type::Base("string".to_owned()));
     }
 
     // Unit
@@ -394,9 +449,9 @@ fn gen_type() {
     }
     test_case!{ types, "[u8]", 14 }
     {
-        assert_eq!(types.items[14], Type::Array(2));   // [u8]
-        assert_eq!(types.items[15], Type::Array(13));  // [string]
-        assert_eq!(types.items[16], Type::Array(15));  // [[string]]
+        assert_eq!(types.types[14], Type::Array(2));   // [u8]
+        assert_eq!(types.types[15], Type::Array(13));  // [string]
+        assert_eq!(types.types[16], Type::Array(15));  // [[string]]
     }
 
     // Tuple only base
@@ -412,10 +467,10 @@ fn gen_type() {
         CodegenMessage::TypeNotExist{ name: "str".to_owned(), pos: make_str_pos!(1, 26, 1, 28) }
     }
     {
-        assert_eq!(types.items[17], Type::Tuple(vec![5, 8, 11]));   // (i32, u64, char), 4 + 8 + 4 = 16
-        assert_eq!(types.items[18], Type::Tuple(vec![13, 12]));     // (string, bool),   24 + 1 = 25
-        assert_eq!(types.items[19], Type::Array(18));               // [(string, bool)],
-        assert_eq!(types.items[20], Type::Tuple(vec![2, 5, 19]));   // (u8, i32, [(string, bool)]), 1 + 4 + 24
-        assert_eq!(types.items[21], Type::Tuple(vec![5, 16, 20]));  // (i32, [[string]], (u8, i32, [(string, bool)])), 4 + 24 + 29 = 58
+        assert_eq!(types.types[17], Type::Tuple(vec![5, 8, 11]));   // (i32, u64, char), 4 + 8 + 4 = 16
+        assert_eq!(types.types[18], Type::Tuple(vec![13, 12]));     // (string, bool),   24 + 1 = 25
+        assert_eq!(types.types[19], Type::Array(18));               // [(string, bool)],
+        assert_eq!(types.types[20], Type::Tuple(vec![2, 5, 19]));   // (u8, i32, [(string, bool)]), 1 + 4 + 24
+        assert_eq!(types.types[21], Type::Tuple(vec![5, 16, 20]));  // (i32, [[string]], (u8, i32, [(string, bool)])), 4 + 24 + 29 = 58
     }
 }

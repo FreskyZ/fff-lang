@@ -11,7 +11,7 @@ use common::StringPosition;
 use message::MessageEmitter;
 use message::CodegenMessage;
 
-use codegen::type_def::TypeID;
+use codegen::ItemID;
 use codegen::type_def::TypeCollection;
 
 #[derive(Eq, PartialEq, Clone, Copy)]
@@ -46,19 +46,19 @@ impl VarID {
 #[derive(Debug, Eq, PartialEq)]
 pub struct Var {
     pub name: String, 
-    pub ty: TypeID,
+    pub ty: ItemID,
     pub is_const: bool,
     pub def_pos: StringPosition,
     offset: usize, // rbp offset, 0 for some error, while any error won't go into vm
 }
 impl Var {
     
-    pub fn new(name: String, ty: TypeID, is_const: bool, def_pos: StringPosition) -> Var {
+    pub fn new(name: String, ty: ItemID, is_const: bool, def_pos: StringPosition) -> Var {
         Var{ name: name, ty: ty, is_const: is_const, def_pos: def_pos, offset: 0 }
     }
 
     #[cfg(test)]
-    pub fn new_test(name: &str, ty: TypeID, is_const: bool, def_pos: StringPosition, offset: usize) -> Var {
+    pub fn new_test(name: &str, ty: ItemID, is_const: bool, def_pos: StringPosition, offset: usize) -> Var {
         Var{ name: name.to_owned(), ty: ty, is_const: is_const, def_pos: def_pos, offset: offset }
     } 
 }
@@ -178,9 +178,9 @@ impl VarCollection {
         }
     }
 
-    pub fn get_type(&self, id: VarID) -> TypeID {
+    pub fn get_type(&self, id: VarID) -> ItemID {
         match id {
-            VarID::Invalid => TypeID::Invalid,
+            VarID::Invalid => ItemID::new_invalid(),
             VarID::Some(id) => match self.items[id] {
                 VarOrScope::Some(ref var) => var.ty,
                 VarOrScope::ScopeBarrier => unreachable!(),
@@ -233,7 +233,7 @@ impl VarCollection {
         }
     }
 
-    pub fn push_temp(&mut self, ty: TypeID, is_const: bool, types: &TypeCollection, messages: &mut MessageEmitter) -> VarID {
+    pub fn push_temp(&mut self, ty: ItemID, is_const: bool, types: &TypeCollection, messages: &mut MessageEmitter) -> VarID {
         self.next_temp += 1; // do not worry about start from 0
         let next_temp = self.next_temp;
         self.try_push(Var::new("?".to_owned() + &format!("{}", next_temp), ty, is_const, StringPosition::new()), types, messages)  // They are not gonna to redefined
@@ -245,7 +245,7 @@ impl VarCollection {
 
 #[cfg(test)]
 macro_rules! new_var {
-    ($name: expr, $id: expr, $is_const: expr, $pos: expr) => (Var::new($name.to_owned(), TypeID::Some($id), $is_const, $pos))
+    ($name: expr, $id: expr, $is_const: expr, $pos: expr) => (Var::new($name.to_owned(), ItemID::new($id), $is_const, $pos))
 }
 
 #[cfg(test)]
@@ -351,26 +351,26 @@ fn gen_vars_offset() {
     let mut vars = VarCollection::new();
 
     //          vars, types, name,    var typeid,       var expect id,  var offset and next offset
-    test_case!{ vars, types, "name1", TypeID::Some(1),  VarID::Some(0), 1 }
-    test_case!{ vars, types, "name2", TypeID::Some(2),  VarID::Some(1), 2 }
-    test_case!{ vars, types, "name3", TypeID::Some(13), VarID::Some(2), 3 } // 26 }
+    test_case!{ vars, types, "name1", ItemID::new(1),  VarID::Some(0), 1 }
+    test_case!{ vars, types, "name2", ItemID::new(2),  VarID::Some(1), 2 }
+    test_case!{ vars, types, "name3", ItemID::new(13), VarID::Some(2), 3 } // 26 }
 
-    test_case!{ vars, types, "name1", TypeID::Some(5),  VarID::Invalid, 3 } // 26 }
+    test_case!{ vars, types, "name1", ItemID::new(5),  VarID::Invalid, 3 } // 26 }
     vars.push_scope(); // this is var id 3
-    test_case!{ vars, types, "name2", TypeID::Some(5),  VarID::Some(4), 4 } // 30 }
-    test_case!{ vars, types, "name1", TypeID::Some(11), VarID::Some(5), 5 } // 34 }
-    test_case!{ vars, types, "name5", TypeID::Some(1),  VarID::Some(6), 6 } // 35 }
+    test_case!{ vars, types, "name2", ItemID::new(5),  VarID::Some(4), 4 } // 30 }
+    test_case!{ vars, types, "name1", ItemID::new(11), VarID::Some(5), 5 } // 34 }
+    test_case!{ vars, types, "name5", ItemID::new(1),  VarID::Some(6), 6 } // 35 }
     vars.push_scope(); // this is var id 7
-    test_case!{ vars, types, "name1", TypeID::Some(7),  VarID::Some(8), 7 } // 43 }
+    test_case!{ vars, types, "name1", ItemID::new(7),  VarID::Some(8), 7 } // 43 }
     vars.pop_scope();
     assert_eq!{ vars.next_offset, Some(6) } //35) }
     vars.pop_scope();
     assert_eq!{ vars.next_offset, Some(3) } // 26) }
 
     vars.push_scope();
-    test_case!{ vars, types, "name2", TypeID::Some(5),  VarID::Some(4), 4 } // 30 }
-    test_case!{ vars, types, "name not care", TypeID::Invalid, VarID::Some(5) }
-    test_case!{ vars, types, "name not care again", TypeID::Some(8), VarID::Some(6) }
+    test_case!{ vars, types, "name2", ItemID::new(5),  VarID::Some(4), 4 } // 30 }
+    test_case!{ vars, types, "name not care", ItemID::new_invalid(), VarID::Some(5) }
+    test_case!{ vars, types, "name not care again", ItemID::new(8), VarID::Some(6) }
     vars.pop_scope();
     assert_eq!{ vars.next_offset, None }
 }

@@ -8,7 +8,7 @@ use common::format_vector_debug;
 use lexical::LitValue;
 use lexical::SeperatorKind;
 
-use codegen::TypeID;
+use codegen::ItemID;
 
 #[derive(Eq, PartialEq, Clone)]
 pub enum Operand {
@@ -130,13 +130,13 @@ impl From<SeperatorKind> for AssignOperator {
 pub enum Code {
     PlaceHolder,
 
-    DeclareVar(TypeID, bool),         // name, type, is const
+    DeclareVar(ItemID),         // name, type, is const
 
-    CallGlobal(String, Vec<Operand>),
+    CallGlobal(ItemID, Vec<Operand>),
     CallMember(Operand, String, Vec<Operand>),
     Binary(Operand, BinaryOperator, Operand),
     Unary(Operand, UnaryOperator),
-    TypeCast(Operand, TypeID),
+    TypeCast(Operand, ItemID),
     Assign(Operand, AssignOperator, Operand),  // use the assign operator to assign the var
 
     Return(Operand),                          // return; is return ();
@@ -148,12 +148,10 @@ impl fmt::Debug for Code {
         match *self {
             Code::PlaceHolder => 
                 write!(f, "placeholder"),
-            Code::DeclareVar(ref ty, true) => 
-                write!(f, "declare const {:?}", ty),
-            Code::DeclareVar(ref ty, false) => 
-                write!(f, "declare var {:?}", ty),
-            Code::CallGlobal(ref name, ref params) => 
-                write!(f, "call {}, {}", name, format_vector_debug(params, ", ")),
+            Code::DeclareVar(ref ty) => 
+                write!(f, "declare {:?}", ty),
+            Code::CallGlobal(ref id, ref params) => 
+                write!(f, "call {:?}, {}", id, format_vector_debug(params, ", ")),
             Code::CallMember(ref this, ref name, ref params) =>
                 write!(f, "call {:?}.{}, {}", this, name, format_vector_debug(params, ", ")),
             Code::Binary(ref left, ref op, ref right) =>

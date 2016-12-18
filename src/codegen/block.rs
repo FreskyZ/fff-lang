@@ -7,7 +7,7 @@ use common::StringPosition;
 use syntax::Block as SyntaxBlock;
 // use syntax::Statement;
 
-use codegen::type_def::TypeID;
+use codegen::ItemID;
 use codegen::var_def::Var;
 use codegen::var_def::VarCollection;
 use codegen::statement::StatementGenerator;
@@ -28,13 +28,13 @@ impl Block {
     fn fn_id_to_vars(&self, sess: &mut GenerationSession) -> VarCollection {
 
         let mut ret_val = VarCollection::new();
-        let fn_decl = sess.fns.find_by_idx(self.fn_id);
+        let fn_decl = sess.fns.get_by_idx(self.fn_id);
         for arg in &fn_decl.args {
             ret_val.try_push(
                 Var::new(arg.name.clone(), arg.ty, false, StringPosition::from2(arg.pos[0].start_pos, arg.pos[1].end_pos)), 
                 &sess.types, &mut sess.msgs
             );
-            sess.codes.emit_silent(Code::DeclareVar(arg.ty, false));
+            sess.codes.emit_silent(Code::DeclareVar(arg.ty));
         }
         return ret_val;
     }
@@ -46,7 +46,7 @@ impl Block {
         let vars = self.fn_id_to_vars(sess);
         sess.vars = vars;
         StatementGenerator::generate(self.block, sess);
-        sess.fns.find_by_idx_mut(self.fn_id).code_ptr = code_ptr;
+        sess.fns.get_by_idx_mut(self.fn_id).code_ptr = code_ptr;
     }
 }
 
@@ -71,12 +71,12 @@ fn gen_block_fn_id_to_vars() {
     //                   901234567890
     let vars = gen_vars("i32 a, u32 b");
     assert_eq!(vars.len(), 2);
-    assert_eq!(vars.index(0), &VarOrScope::Some(Var::new_test("a", TypeID::Some(5), false, make_str_pos!(1, 9, 1, 13), 1)));  // 4)));
-    assert_eq!(vars.index(1), &VarOrScope::Some(Var::new_test("b", TypeID::Some(6), false, make_str_pos!(1, 16, 1, 20), 2))); // 8)));
+    assert_eq!(vars.index(0), &VarOrScope::Some(Var::new_test("a", ItemID::new(5), false, make_str_pos!(1, 9, 1, 13), 1)));  // 4)));
+    assert_eq!(vars.index(1), &VarOrScope::Some(Var::new_test("b", ItemID::new(6), false, make_str_pos!(1, 16, 1, 20), 2))); // 8)));
 
     //                   901234567890
     let vars = gen_vars("i32 a, u32 b, string a, ");
     assert_eq!(vars.len(), 2);
-    assert_eq!(vars.index(0), &VarOrScope::Some(Var::new_test("a", TypeID::Some(5), false, make_str_pos!(1, 9, 1, 13), 1)));  // 4)));
-    assert_eq!(vars.index(1), &VarOrScope::Some(Var::new_test("b", TypeID::Some(6), false, make_str_pos!(1, 16, 1, 20), 2))); // 8)));
+    assert_eq!(vars.index(0), &VarOrScope::Some(Var::new_test("a", ItemID::new(5), false, make_str_pos!(1, 9, 1, 13), 1)));  // 4)));
+    assert_eq!(vars.index(1), &VarOrScope::Some(Var::new_test("b", ItemID::new(6), false, make_str_pos!(1, 16, 1, 20), 2))); // 8)));
 }
