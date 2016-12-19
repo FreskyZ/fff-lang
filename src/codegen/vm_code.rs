@@ -30,74 +30,6 @@ impl fmt::Debug for Operand {
 }
 
 #[derive(Eq, Clone, PartialEq, Debug)]
-pub enum UnaryOperator {
-    Increase,
-    Decrease, 
-    BitNot,
-    Negative,
-    LogicalNot,
-}
-impl From<SeperatorKind> for UnaryOperator {
-    fn from(sep: SeperatorKind) -> UnaryOperator {
-        match sep {
-            SeperatorKind::BitNot => UnaryOperator::BitNot,
-            SeperatorKind::LogicalNot => UnaryOperator::LogicalNot,
-            SeperatorKind::Sub => UnaryOperator::Negative,
-            SeperatorKind::Increase => UnaryOperator::Increase,
-            SeperatorKind::Decrease => UnaryOperator::Decrease, 
-            _ => unreachable!(), // Very confident about this
-        }
-    }
-}
-
-#[derive(Eq, Clone, PartialEq, Debug)]
-pub enum BinaryOperator {
-    Add, 
-    Sub, 
-    Mul, 
-    Div,
-    Rem, 
-    ShiftLeft, 
-    ShiftRight, 
-    Equal, 
-    NotEqual,
-    Great, 
-    Less, 
-    GreatEqual, 
-    LessEqual,
-    BitAnd, 
-    BitOr, 
-    BitXor, 
-    LogicalAnd, 
-    LogicalOr,
-}
-impl From<SeperatorKind> for BinaryOperator {
-    fn from(sep: SeperatorKind) -> BinaryOperator {
-        match sep {
-            SeperatorKind::Add => BinaryOperator::Add,
-            SeperatorKind::Sub => BinaryOperator::Sub,
-            SeperatorKind::Mul => BinaryOperator::Mul,
-            SeperatorKind::Div => BinaryOperator::Div,
-            SeperatorKind::Rem => BinaryOperator::Rem,
-            SeperatorKind::ShiftLeft => BinaryOperator::ShiftLeft,
-            SeperatorKind::ShiftRight => BinaryOperator::ShiftRight,
-            SeperatorKind::Equal => BinaryOperator::Equal,
-            SeperatorKind::NotEqual => BinaryOperator::NotEqual,
-            SeperatorKind::Great => BinaryOperator::Great,
-            SeperatorKind::Less => BinaryOperator::Less,
-            SeperatorKind::GreatEqual => BinaryOperator::GreatEqual,
-            SeperatorKind::LessEqual => BinaryOperator::LessEqual,
-            SeperatorKind::BitAnd => BinaryOperator::BitAnd,
-            SeperatorKind::BitOr => BinaryOperator::BitOr,
-            SeperatorKind::BitXor => BinaryOperator::BitXor,
-            SeperatorKind::LogicalAnd => BinaryOperator::LogicalAnd,
-            SeperatorKind::LogicalOr => BinaryOperator::LogicalOr,
-            _ => unreachable!(), // Very confident about this
-        }
-    }
-}
-
-#[derive(Eq, Clone, PartialEq, Debug)]
 pub enum AssignOperator {
     Assign,
     AddAssign,
@@ -130,13 +62,10 @@ impl From<SeperatorKind> for AssignOperator {
 pub enum Code {
     PlaceHolder,
 
-    DeclareVar(ItemID),         // name, type, is const
+    PrepareLocal(usize), // prepare n empty slots for local
 
-    CallGlobal(ItemID, Vec<Operand>),
-    CallMember(Operand, String, Vec<Operand>),
-    Binary(Operand, BinaryOperator, Operand),
-    Unary(Operand, UnaryOperator),
-    TypeCast(Operand, ItemID),
+    Call(ItemID, Vec<Operand>),
+    CallMember(Operand, ItemID, Vec<Operand>), 
     Assign(Operand, AssignOperator, Operand),  // use the assign operator to assign the var
 
     Return(Operand),                          // return; is return ();
@@ -148,18 +77,12 @@ impl fmt::Debug for Code {
         match *self {
             Code::PlaceHolder => 
                 write!(f, "placeholder"),
-            Code::DeclareVar(ref ty) => 
-                write!(f, "declare {:?}", ty),
-            Code::CallGlobal(ref id, ref params) => 
+            Code::PrepareLocal(ref size) => 
+                write!(f, "rbp -= {}", size),
+            Code::Call(ref id, ref params) => 
                 write!(f, "call {:?}, {}", id, format_vector_debug(params, ", ")),
-            Code::CallMember(ref this, ref name, ref params) =>
-                write!(f, "call {:?}.{}, {}", this, name, format_vector_debug(params, ", ")),
-            Code::Binary(ref left, ref op, ref right) =>
-                write!(f, "{:?} {:?}, {:?}", op, left, right),
-            Code::Unary(ref left, ref op) =>
-                write!(f, "{:?} {:?}", op, left),
-            Code::TypeCast(ref op, ref typeid) => 
-                write!(f, "{:?} as {:?}", op, typeid),
+            Code::CallMember(ref operand, ref id, ref params) => 
+                write!(f, "call {:?} {:?}, {}", operand, id, format_vector_debug(params, ", ")),
             Code::Assign(ref target, ref assignop, ref src) =>
                 write!(f, "{:?} {:?} {:?}", assignop, target, src),
             Code::Return(ref op) => 

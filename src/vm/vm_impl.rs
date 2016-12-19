@@ -172,10 +172,6 @@ impl VirtualMachine {
                     Err(msg) => return CircleResult::Err(msg),
                 }
             }
-
-            &Code::Unary(ref _operand, ref _op) => {
-                
-            }
             _ => ()
         }
 

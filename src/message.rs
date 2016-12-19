@@ -339,6 +339,15 @@ pub enum CodegenMessage {
         prev_type_desc: String,        // previous part type display name
         op_pos: StringPosition,        // this op pos
         member_name: String,           // member name
+    },
+
+    IdentNotDeclared{
+        name: String,
+        pos: StringPosition,
+    },
+    FunctionNotDefined{
+        sign: String,
+        pos: StringPosition,
     }
 }
 impl fmt::Debug for CodegenMessage {
@@ -400,6 +409,13 @@ impl fmt::Debug for CodegenMessage {
             },
             MemberNotExist{ ref prev_expr_pos, ref prev_type_desc, ref op_pos, ref member_name } => {
                 write!(f, "Member {} at {:?} not exist for expression at {:?} with type {}", member_name, op_pos, prev_expr_pos, prev_type_desc)
+            },
+            IdentNotDeclared{ ref name, ref pos } => {
+                write!(f, "Identifier `{}` not defined at {:?}", name, pos)
+            },
+
+            FunctionNotDefined{ ref sign, ref pos } => {
+                write!(f, "Function with signature {} not defined at scope of the expression at {:?}", sign, pos)
             }
         }
     }

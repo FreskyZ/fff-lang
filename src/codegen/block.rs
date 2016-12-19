@@ -34,7 +34,7 @@ impl Block {
                 Var::new(arg.name.clone(), arg.typeid, false, arg.pos), 
                 &sess.types, &mut sess.msgs
             );
-            sess.codes.emit_silent(Code::DeclareVar(arg.typeid));
+            // sess.codes.emit_silent(Code::DeclareVar(arg.typeid));
         }
         return ret_val;
     }

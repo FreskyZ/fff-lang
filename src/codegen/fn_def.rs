@@ -69,7 +69,31 @@ impl FnName {
     pub fn fmt(&self, types: &TypeCollection) -> String {
         match *self {
             FnName::Ident(ref name) => format!("{}", name),
-            FnName::Operator(ref sep) => format!("{}", sep),
+            FnName::Operator(ref sep) => match sep {
+                &SeperatorKind::Mul => format!("operator*"),
+                &SeperatorKind::Div => format!("operator/"),
+                &SeperatorKind::Rem => format!("operator%"),
+                &SeperatorKind::Add => format!("operator+"),
+                &SeperatorKind::Sub => format!("operator-"),
+                &SeperatorKind::ShiftLeft => format!("operator<<"),
+                &SeperatorKind::ShiftRight => format!("operator>>"),
+                &SeperatorKind::Equal => format!("operator=="),
+                &SeperatorKind::NotEqual => format!("operator!="),
+                &SeperatorKind::Great => format!("operator>"),
+                &SeperatorKind::Less => format!("operator<"),
+                &SeperatorKind::GreatEqual => format!("operator>="),
+                &SeperatorKind::LessEqual => format!("operator<="),
+                &SeperatorKind::BitAnd => format!("operator&"),
+                &SeperatorKind::BitOr => format!("operator|"),
+                &SeperatorKind::BitXor => format!("operator^"),
+                &SeperatorKind::LogicalAnd => format!("operator&&"),
+                &SeperatorKind::LogicalOr => format!("operator||"),
+                &SeperatorKind::Increase => format!("operator++"),
+                &SeperatorKind::Decrease => format!("operator--"),
+                &SeperatorKind::BitNot => format!("operator^"),
+                &SeperatorKind::LogicalNot => format!("operator!"),
+                _ => unreachable!()
+            },
             FnName::Cast(ref typeid) => format!("as {}", types.fmt_by_id(ItemID::new(*typeid))),
         }
     }
@@ -196,6 +220,21 @@ impl FnImpl {
         let args_len = self.args.len();
         for (index, arg) in self.args.iter().enumerate() {
             buf += &types.fmt_by_id(arg.typeid);
+            if index != args_len - 1 {
+                buf += ", ";
+            }
+        }
+        buf += ")";
+        buf
+    }
+    pub fn fmt_display_sign_temp<T: Into<FnName>>(name: T, args: &Vec<ItemID>, types: &TypeCollection) -> String {
+
+        let mut buf = name.into().fmt(types);
+
+        buf += "(";
+        let args_len = args.len();
+        for (index, arg_typeid) in args.iter().enumerate() {
+            buf += &types.fmt_by_id(*arg_typeid);
             if index != args_len - 1 {
                 buf += ", ";
             }

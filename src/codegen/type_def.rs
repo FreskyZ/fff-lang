@@ -360,6 +360,8 @@ impl TypeCollection {
                 self.types.push(Type::Array(item_typeid));
 
                 push_builtin_fn!(fns, format!("?new_array_{}", item_typeid), array_typeid); // fn ?new_array_5() -> 14  // [i32]
+                push_builtin_fn!(fns, "?new_array", array_typeid, [item_typeid, 5]);   // dup ctor 1
+                push_builtin_fn!(fns, "?new_array", array_typeid, [item_typeid, 8]);   // dup ctor 2
                 push_builtin_fn!(fns, "set_index", 0, [array_typeid, 5, item_typeid]);
                 push_builtin_fn!(fns, "set_index", 0, [array_typeid, 8, item_typeid]);
                 push_builtin_fn!(fns, "set_index", item_typeid, [array_typeid, 5]);
