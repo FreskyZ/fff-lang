@@ -26,7 +26,6 @@ use syntax::ElseIfBranch;
 use syntax::IfStatement;
 
 use codegen::var_def::Var;
-use codegen::var_def::VarID;
 use codegen::session::GenerationSession;
 use codegen::expression::gen_expr;
 use codegen::expression::gen_expr_stmt;
@@ -51,7 +50,7 @@ pub struct StatementGenerator{
 fn gen_var_decl(var_decl: VarDeclStatement, sess: &mut GenerationSession) {
 
     let pos_all = var_decl.pub_pos_all();
-    let typeid = sess.types.get_id_by_smtype(var_decl.ty, &mut sess.msgs);
+    let typeid = sess.types.get_id_by_smtype(var_decl.ty, &mut sess.msgs, &mut sess.fns);
 
     let varid = sess.vars.try_push(Var::new(var_decl.name.clone(), typeid, var_decl.is_const, pos_all), &mut sess.types, &mut sess.msgs);
     sess.codes.emit_silent(Code::DeclareVar(typeid));

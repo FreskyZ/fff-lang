@@ -31,10 +31,10 @@ impl Block {
         let fn_decl = sess.fns.get_by_idx(self.fn_id);
         for arg in &fn_decl.args {
             ret_val.try_push(
-                Var::new(arg.name.clone(), arg.ty, false, StringPosition::from2(arg.pos[0].start_pos, arg.pos[1].end_pos)), 
+                Var::new(arg.name.clone(), arg.typeid, false, arg.pos), 
                 &sess.types, &mut sess.msgs
             );
-            sess.codes.emit_silent(Code::DeclareVar(arg.ty));
+            sess.codes.emit_silent(Code::DeclareVar(arg.typeid));
         }
         return ret_val;
     }

@@ -65,24 +65,21 @@ pub struct GenerationSession {
 impl GenerationSession {
 
     pub fn new() -> GenerationSession {
+
+        let mut types = TypeCollection::new();
+        let mut fns = FnCollection::new();
+        types.push_builtin_types(&mut fns);    // special dependent initialization
+
         GenerationSession{
             msgs: MessageEmitter::new(),
-            types: TypeCollection::new(),
-            fns: FnCollection::new(),
+            types: types,
+            fns: fns,
             codes: CodeCollection::new(),
             vars: VarCollection::new(),
             loops: LoopCollection::new(),
         }
     } 
-    
-    // Messages interface
-    pub fn push_message<T: Into<Message>>(&mut self, msg: T) {
-        self.msgs.push(msg);
-    }
-    pub fn messages(&self) -> &MessageEmitter {
-        &self.msgs
-    }
-    
+        
     // Dispatch program items to session, return Program for vm use
     pub fn dispatch(program: SyntaxProgram) -> Program {
 

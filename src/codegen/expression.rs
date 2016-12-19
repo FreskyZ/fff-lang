@@ -17,7 +17,6 @@ use syntax::Expression as FullExpression;
 use syntax::ExpressionStatement as FullExpressionStatement;
 use syntax::SMType;
 
-use codegen::var_def::VarID;
 use codegen::var_def::VarCollection;
 use codegen::ItemID;
 use codegen::type_def::TypeCollection;
@@ -98,7 +97,7 @@ impl SimpleExpr {
 
 #[derive(Eq, PartialEq)]
 struct SimpleAssignment {
-    left: VarID,
+    left: ItemID, // var id
     right: SimpleExpr,
 }
 impl fmt::Debug for SimpleAssignment {
@@ -192,7 +191,7 @@ fn simplize_expr(expr: FullExpression, sess: &mut GenerationSession, assigns: &m
                 }
                 bases.push(item);
             }
-            let fnid = sess.fns.find_by_sign_name("?new_array", &vec![item0_type.unwrap()], &mut sess.types); // array no content has been denied at syntax
+            let fnid = sess.fns.find_by_sign("?new_array", &vec![item0_type.unwrap()]); // array no content has been denied at syntax
             let ret_type = sess.fns.find_by_id(fnid).unwrap().ret_type;
             SimpleBase::FunctionCall(fnid, ret_type, bases, [StringPosition::new(), pos])
         }
@@ -205,7 +204,7 @@ fn simplize_expr(expr: FullExpression, sess: &mut GenerationSession, assigns: &m
                 let actual_desc = sess.types.fmt_by_id(typeid2);
                 sess.msgs.push(CodegenMessage::ArrayDupDefSecondParameterTypeNotExpected{ actual: actual_desc, pos: expr2_pos });
             }
-            let fnid = sess.fns.find_by_sign_name("?new_dup_array", &vec![typeid1, typeid2], &mut sess.types);
+            let fnid = sess.fns.find_by_sign("?new_dup_array", &vec![typeid1, typeid2]);
             let ret_type = sess.fns.find_by_id(fnid).unwrap().ret_type;
             SimpleBase::FunctionCall(fnid, ret_type, vec![base1, base2], pos)
         }
@@ -217,7 +216,7 @@ fn simplize_expr(expr: FullExpression, sess: &mut GenerationSession, assigns: &m
                 bases.push(simple_base);
                 item_types.push(base_typeid);
             }
-            let fnid = sess.fns.find_by_sign_name("?new_tuple", &item_types, &mut sess.types);
+            let fnid = sess.fns.find_by_sign("?new_tuple", &item_types);
             let ret_type = sess.fns.find_by_id(fnid).unwrap().ret_type;
             SimpleBase::FunctionCall(fnid, ret_type, bases, [StringPosition::new(), pos])
         }
@@ -244,7 +243,7 @@ fn simplize_expr(expr: FullExpression, sess: &mut GenerationSession, assigns: &m
                     param_types.push(base_typeid);
                 }
 
-                let fnid = sess.fns.find_by_sign_name(&fn_name, &param_types, &mut sess.types);
+                let fnid = sess.fns.find_by_sign(fn_name, &param_types);
                 let ret_type = sess.fns.find_by_id(fnid).unwrap().ret_type;
                 simple_base = SimpleBase::FunctionCall(fnid, ret_type, bases, [StringPosition::new(), pos]);
                 current_prev_pos.end_pos = pos.end_pos;
@@ -258,7 +257,7 @@ fn simplize_expr(expr: FullExpression, sess: &mut GenerationSession, assigns: &m
                     bases.push(simple_base);
                     param_types.push(base_typeid);
                 }
-                let fnid = sess.fns.find_by_sign_name(&name, &param_types, &mut sess.types);
+                let fnid = sess.fns.find_by_sign(name.clone(), &param_types);
                 let ret_type = sess.fns.find_by_id(fnid).unwrap().ret_type;
                 ops.push(SimpleOp::MemberFunctionCall(name, ret_type, bases, pos));
                 current_prev_pos.end_pos = pos[1].end_pos;
@@ -353,14 +352,14 @@ fn simplize_expr(expr: FullExpression, sess: &mut GenerationSession, assigns: &m
                 }
 
                 let (simple_base, base_typeid) = process_nested_full_expr!(sess, exprs.pop().unwrap(), assigns, pos);
-                let fnid = sess.fns.find_by_sign_name("get_index", &vec![cur_typeid, base_typeid], &mut sess.types);
+                let fnid = sess.fns.find_by_sign("get_index", &vec![cur_typeid, base_typeid]);
                 let ret_type = sess.fns.find_by_id(fnid).unwrap().ret_type;
                 ops.push(SimpleOp::MemberFunctionCall("get_index".to_owned(), ret_type, vec![simple_base], [pos, StringPosition::new()]));
                 current_prev_pos.end_pos = pos.end_pos;
                 cur_typeid = ret_type;
             }
             FullExpressionOperator::TypeCast(smt, pos) => {
-                let typeid = sess.types.get_id_by_smtype(smt, &mut sess.msgs);
+                let typeid = sess.types.get_id_by_smtype(smt, &mut sess.msgs, &mut sess.fns);
                 // TODO, check this cast existence
                 ops.push(SimpleOp::TypeCast(typeid, pos));
                 current_prev_pos.end_pos = pos.end_pos;

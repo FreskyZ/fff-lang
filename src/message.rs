@@ -353,7 +353,7 @@ impl fmt::Debug for CodegenMessage {
             },
             FunctionArgumentNameConfilict{ ref func_pos, ref func_name, ref name, ref pos1, ref pos2 } => {
                 write!(f, "Parameter {} redifinition at {:?}, whose previous def at {:?} in function {} at {:?}",
-                    name, pos1, pos2, func_name, func_pos
+                    name, pos2, pos1, func_name, func_pos
                 )
             },
             VariableDefined{ ref name, ref predef, ref curdef } => {

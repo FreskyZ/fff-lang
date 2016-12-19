@@ -65,6 +65,8 @@ impl IASTItem for Argument {
 }
 impl Argument {
     
+    pub fn pub_pos_all(&self) -> StringPosition { self.pos_all() }
+
     #[cfg(test)]
     pub fn from_str(arg_str: &str, index: usize) -> Argument {
         let lexer = &mut Lexer::new(arg_str);

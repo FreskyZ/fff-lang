@@ -31,7 +31,7 @@ enum RuntimeValue {
 impl Eq for RuntimeValue{
 }
 impl RuntimeValue {
-    fn with_type(ty: &Type, types: &TypeCollection, heap: &mut RuntimeHeap) -> RuntimeValue {
+    fn with_type(ty: &Type, _types: &TypeCollection, heap: &mut RuntimeHeap) -> RuntimeValue {
         match ty {
             &Type::Base(ref typename) => match typename.as_ref() {
                 "unit" => RuntimeValue::Unit,
@@ -53,7 +53,7 @@ impl RuntimeValue {
             },
             &Type::Array(ref inner) => RuntimeValue::ArrayRef(*inner, heap.allocate_array(*inner)),
             &Type::Tuple(ref item_types) => {
-                let mut values = Vec::new();
+                let values = Vec::new();
                 for _ty in item_types {
                     // values.push(RuntimeValue::with_type(&types.items[*ty], types, heap));
                 }

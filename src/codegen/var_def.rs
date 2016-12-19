@@ -14,34 +14,6 @@ use message::CodegenMessage;
 use codegen::ItemID;
 use codegen::type_def::TypeCollection;
 
-#[derive(Eq, PartialEq, Clone, Copy)]
-pub enum VarID {
-    Some(usize),
-    Invalid,
-}
-impl fmt::Debug for VarID {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            &VarID::Some(ref val) => write!(f, "vars[{}]", val),
-            &VarID::Invalid => write!(f, "vars[<invalid>]"),
-        }
-    }
-}
-impl VarID {
-    pub fn is_invalid(&self) -> bool {
-        match self {
-            &VarID::Some(_) => false,
-            &VarID::Invalid => true,
-        }
-    }
-    pub fn is_valid(&self) -> bool {
-        match self {
-            &VarID::Some(_) => true,
-            &VarID::Invalid => false,
-        }
-    }
-}
-
 // Variable collection
 #[derive(Debug, Eq, PartialEq)]
 pub struct Var {
@@ -108,7 +80,7 @@ impl VarCollection {
     //     still push the var and return valid id for furthur reference for the name, but as type is invalid, expression type eval will be invalidated, too
     // If next_offset had been None before, just do not add the item_size to the next_offset, 
     //     if the item pass before check, push it, not set offset and return valid id
-    pub fn try_push(&mut self, mut item: Var, types: &TypeCollection, messages: &mut MessageEmitter) -> VarID {
+    pub fn try_push(&mut self, mut item: Var, types: &TypeCollection, messages: &mut MessageEmitter) -> ItemID {
 
         for exist_item in self.items.iter().rev() {
             match exist_item {
@@ -119,7 +91,7 @@ impl VarCollection {
                             predef: exist_item.def_pos,
                             curdef: item.def_pos,
                         });
-                        return VarID::Invalid;  // Ignore the item
+                        return ItemID::new_invalid();  // Ignore the item
                     }
                 }
                 &VarOrScope::ScopeBarrier => { 
@@ -141,7 +113,7 @@ impl VarCollection {
             },
         }
         self.items.push(VarOrScope::Some(item));
-        return VarID::Some(ret_val);
+        return ItemID::new(ret_val);
     }
     // When meet a scope barrier, or in other words, currently, meet a left brace
     // Add a scope barrier
@@ -178,19 +150,19 @@ impl VarCollection {
         }
     }
 
-    pub fn get_type(&self, id: VarID) -> ItemID {
-        match id {
-            VarID::Invalid => ItemID::new_invalid(),
-            VarID::Some(id) => match self.items[id] {
+    pub fn get_type(&self, id: ItemID) -> ItemID {
+        match id.into_option() {
+            None => ItemID::new_invalid(),
+            Some(id) => match self.items[id] {
                 VarOrScope::Some(ref var) => var.ty,
                 VarOrScope::ScopeBarrier => unreachable!(),
             }
         }
     }
-    pub fn get_offset(&self, id: VarID) -> usize {
-        match id {
-            VarID::Invalid => 0,
-            VarID::Some(id) => match self.items[id] {
+    pub fn get_offset(&self, id: ItemID) -> usize {
+        match id.into_option() {
+            None => 0,
+            Some(id) => match self.items[id] {
                 VarOrScope::Some(ref var) => var.offset,
                 VarOrScope::ScopeBarrier => unreachable!(),
             }
@@ -201,25 +173,25 @@ impl VarCollection {
     }
 
     // When a name is referenced
-    pub fn find_by_name(&self, rhs: &str) -> VarID {
+    pub fn find_by_name(&self, rhs: &str) -> ItemID {
 
         let len = self.items.len();
         for (index, item) in self.items.iter().rev().enumerate() {
             match item {
                 &VarOrScope::Some(ref item) => {
                     if item.name == rhs {
-                        return VarID::Some(len - 1 - index);
+                        return ItemID::new(len - 1 - index);
                     } 
                 }
                 &VarOrScope::ScopeBarrier => (),
             }
         }
-        return VarID::Invalid;
+        return ItemID::new_invalid();
     }
-    pub fn find_by_id(&self, id: VarID) -> Option<&Var> { // scope do not have id
+    pub fn find_by_id(&self, id: ItemID) -> Option<&Var> { // scope do not have id
 
-        match id {
-            VarID::Some(id) => {
+        match id.into_option() {
+            Some(id) => {
                  if id >= self.items.len() {
                      None
                  } else {
@@ -229,11 +201,11 @@ impl VarCollection {
                      }
                  }
             } 
-            VarID::Invalid => None,
+            None => None,
         }
     }
 
-    pub fn push_temp(&mut self, ty: ItemID, is_const: bool, types: &TypeCollection, messages: &mut MessageEmitter) -> VarID {
+    pub fn push_temp(&mut self, ty: ItemID, is_const: bool, types: &TypeCollection, messages: &mut MessageEmitter) -> ItemID {
         self.next_temp += 1; // do not worry about start from 0
         let next_temp = self.next_temp;
         self.try_push(Var::new("?".to_owned() + &format!("{}", next_temp), ty, is_const, StringPosition::new()), types, messages)  // They are not gonna to redefined
@@ -261,25 +233,25 @@ fn gen_vars_id() {
 
     // Normal no barrier no collision push
     let messages = &mut MessageEmitter::new();
-    assert_eq!(vars.try_push(new_var!("1", 1, false, make_str_pos!(1, 1, 1, 1)), types, messages), VarID::Some(0));
+    assert_eq!(vars.try_push(new_var!("1", 1, false, make_str_pos!(1, 1, 1, 1)), types, messages), ItemID::new(0));
     assert_eq!(vars.items.len(), 1);
-    assert_eq!(vars.find_by_name("1"), VarID::Some(0));
-    assert_eq!(vars.find_by_name("2"), VarID::Invalid);
+    assert_eq!(vars.find_by_name("1"), ItemID::new(0));
+    assert_eq!(vars.find_by_name("2"), ItemID::new_invalid());
     assert_eq!(messages, &MessageEmitter::new());
 
     let messages = &mut MessageEmitter::new();
-    assert_eq!(vars.try_push(new_var!("3", 5, true, make_str_pos!(1, 2, 1, 2)), types, messages), VarID::Some(1));
+    assert_eq!(vars.try_push(new_var!("3", 5, true, make_str_pos!(1, 2, 1, 2)), types, messages), ItemID::new(1));
     assert_eq!(vars.items.len(), 2);
-    assert_eq!(vars.find_by_name("1"), VarID::Some(0));
-    assert_eq!(vars.find_by_name("3"), VarID::Some(1));
+    assert_eq!(vars.find_by_name("1"), ItemID::new(0));
+    assert_eq!(vars.find_by_name("3"), ItemID::new(1));
     assert_eq!(messages, &MessageEmitter::new());
 
     // Normal no barrier but collision push
     let messages = &mut MessageEmitter::new();
-    assert_eq!(vars.try_push(new_var!("1", 5, false, make_str_pos!(1, 3, 1, 3)), types, messages), VarID::Invalid);
+    assert_eq!(vars.try_push(new_var!("1", 5, false, make_str_pos!(1, 3, 1, 3)), types, messages), ItemID::new_invalid());
     assert_eq!(vars.items.len(), 2);
-    assert_eq!(vars.find_by_name("1"), VarID::Some(0));
-    assert_eq!(vars.find_by_name("3"), VarID::Some(1));
+    assert_eq!(vars.find_by_name("1"), ItemID::new(0));
+    assert_eq!(vars.find_by_name("3"), ItemID::new(1));
     let expect_message = &mut MessageEmitter::new();
     expect_message.push(CodegenMessage::VariableDefined{ name: "1".to_owned(), predef: make_str_pos!(1, 1, 1, 1), curdef: make_str_pos!(1, 3, 1, 3) });
     assert_eq!(messages, expect_message);
@@ -287,30 +259,30 @@ fn gen_vars_id() {
     // Push barrier
     vars.push_scope();
     let messages = &mut MessageEmitter::new();
-    assert_eq!(vars.try_push(new_var!("1", 13, false, make_str_pos!(1, 4, 1, 4)), types, messages), VarID::Some(3));
+    assert_eq!(vars.try_push(new_var!("1", 13, false, make_str_pos!(1, 4, 1, 4)), types, messages), ItemID::new(3));
     assert_eq!(vars.items.len(), 4);
-    assert_eq!(vars.find_by_name("1"), VarID::Some(3));  // 2 is the barrier
-    assert_eq!(vars.find_by_name("3"), VarID::Some(1));
-    assert_eq!(vars.find_by_name("42"), VarID::Invalid);
-    assert_eq!(vars.find_by_name("1024"), VarID::Invalid);
+    assert_eq!(vars.find_by_name("1"), ItemID::new(3));  // 2 is the barrier
+    assert_eq!(vars.find_by_name("3"), ItemID::new(1));
+    assert_eq!(vars.find_by_name("42"), ItemID::new_invalid());
+    assert_eq!(vars.find_by_name("1024"), ItemID::new_invalid());
     assert_eq!(messages, &MessageEmitter::new());
 
     let messages = &mut MessageEmitter::new();
-    assert_eq!(vars.try_push(new_var!("42", 5, true, make_str_pos!(1, 5, 1, 5)), types, messages), VarID::Some(4));
+    assert_eq!(vars.try_push(new_var!("42", 5, true, make_str_pos!(1, 5, 1, 5)), types, messages), ItemID::new(4));
     assert_eq!(vars.items.len(), 5);
-    assert_eq!(vars.find_by_name("1"), VarID::Some(3));
-    assert_eq!(vars.find_by_name("3"), VarID::Some(1));
-    assert_eq!(vars.find_by_name("42"), VarID::Some(4));
-    assert_eq!(vars.find_by_name("1024"), VarID::Invalid);
+    assert_eq!(vars.find_by_name("1"), ItemID::new(3));
+    assert_eq!(vars.find_by_name("3"), ItemID::new(1));
+    assert_eq!(vars.find_by_name("42"), ItemID::new(4));
+    assert_eq!(vars.find_by_name("1024"), ItemID::new_invalid());
     assert_eq!(messages, &MessageEmitter::new());
 
     let messages = &mut MessageEmitter::new();
-    assert_eq!(vars.try_push(new_var!("1", 16, false, make_str_pos!(1, 6, 1, 6)), types, messages), VarID::Invalid);
+    assert_eq!(vars.try_push(new_var!("1", 16, false, make_str_pos!(1, 6, 1, 6)), types, messages), ItemID::new_invalid());
     assert_eq!(vars.items.len(), 5);
-    assert_eq!(vars.find_by_name("1"), VarID::Some(3));
-    assert_eq!(vars.find_by_name("3"), VarID::Some(1));
-    assert_eq!(vars.find_by_name("42"), VarID::Some(4));
-    assert_eq!(vars.find_by_name("1024"), VarID::Invalid);
+    assert_eq!(vars.find_by_name("1"), ItemID::new(3));
+    assert_eq!(vars.find_by_name("3"), ItemID::new(1));
+    assert_eq!(vars.find_by_name("42"), ItemID::new(4));
+    assert_eq!(vars.find_by_name("1024"), ItemID::new_invalid());
     let expect_message = &mut MessageEmitter::new();
     expect_message.push(CodegenMessage::VariableDefined{ name: "1".to_owned(), predef: make_str_pos!(1, 4, 1, 4), curdef: make_str_pos!(1, 6, 1, 6) });
     assert_eq!(messages, expect_message);
@@ -318,10 +290,10 @@ fn gen_vars_id() {
     // Pop barrier
     vars.pop_scope();
     assert_eq!(vars.items.len(), 2);
-    assert_eq!(vars.find_by_name("1"), VarID::Some(0));
-    assert_eq!(vars.find_by_name("3"), VarID::Some(1));
-    assert_eq!(vars.find_by_name("42"), VarID::Invalid);
-    assert_eq!(vars.find_by_name("1024"), VarID::Invalid);
+    assert_eq!(vars.find_by_name("1"), ItemID::new(0));
+    assert_eq!(vars.find_by_name("3"), ItemID::new(1));
+    assert_eq!(vars.find_by_name("42"), ItemID::new_invalid());
+    assert_eq!(vars.find_by_name("1024"), ItemID::new_invalid());
 }
 
 #[cfg(test)]
@@ -351,26 +323,26 @@ fn gen_vars_offset() {
     let mut vars = VarCollection::new();
 
     //          vars, types, name,    var typeid,       var expect id,  var offset and next offset
-    test_case!{ vars, types, "name1", ItemID::new(1),  VarID::Some(0), 1 }
-    test_case!{ vars, types, "name2", ItemID::new(2),  VarID::Some(1), 2 }
-    test_case!{ vars, types, "name3", ItemID::new(13), VarID::Some(2), 3 } // 26 }
+    test_case!{ vars, types, "name1", ItemID::new(1),  ItemID::new(0), 1 }
+    test_case!{ vars, types, "name2", ItemID::new(2),  ItemID::new(1), 2 }
+    test_case!{ vars, types, "name3", ItemID::new(13), ItemID::new(2), 3 } // 26 }
 
-    test_case!{ vars, types, "name1", ItemID::new(5),  VarID::Invalid, 3 } // 26 }
+    test_case!{ vars, types, "name1", ItemID::new(5),  ItemID::new_invalid(), 3 } // 26 }
     vars.push_scope(); // this is var id 3
-    test_case!{ vars, types, "name2", ItemID::new(5),  VarID::Some(4), 4 } // 30 }
-    test_case!{ vars, types, "name1", ItemID::new(11), VarID::Some(5), 5 } // 34 }
-    test_case!{ vars, types, "name5", ItemID::new(1),  VarID::Some(6), 6 } // 35 }
+    test_case!{ vars, types, "name2", ItemID::new(5),  ItemID::new(4), 4 } // 30 }
+    test_case!{ vars, types, "name1", ItemID::new(11), ItemID::new(5), 5 } // 34 }
+    test_case!{ vars, types, "name5", ItemID::new(1),  ItemID::new(6), 6 } // 35 }
     vars.push_scope(); // this is var id 7
-    test_case!{ vars, types, "name1", ItemID::new(7),  VarID::Some(8), 7 } // 43 }
+    test_case!{ vars, types, "name1", ItemID::new(7),  ItemID::new(8), 7 } // 43 }
     vars.pop_scope();
     assert_eq!{ vars.next_offset, Some(6) } //35) }
     vars.pop_scope();
     assert_eq!{ vars.next_offset, Some(3) } // 26) }
 
     vars.push_scope();
-    test_case!{ vars, types, "name2", ItemID::new(5),  VarID::Some(4), 4 } // 30 }
-    test_case!{ vars, types, "name not care", ItemID::new_invalid(), VarID::Some(5) }
-    test_case!{ vars, types, "name not care again", ItemID::new(8), VarID::Some(6) }
+    test_case!{ vars, types, "name2", ItemID::new(5),  ItemID::new(4), 4 } // 30 }
+    test_case!{ vars, types, "name not care", ItemID::new_invalid(), ItemID::new(5) }
+    test_case!{ vars, types, "name not care again", ItemID::new(8), ItemID::new(6) }
     vars.pop_scope();
     assert_eq!{ vars.next_offset, None }
 }

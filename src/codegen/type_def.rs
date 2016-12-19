@@ -16,6 +16,7 @@ use syntax::SMType;
 
 use codegen::ItemID;
 use codegen::fn_def::FnCollection;
+use codegen::fn_def::FnArg;
 
 #[derive(Eq, PartialEq, Debug, Clone)]
 pub struct TypeField {
@@ -98,79 +99,7 @@ impl Type {
 pub struct TypeCollection {
     types: Vec<Type>,
 }
-// New
-impl TypeCollection {
 
-    pub fn new() -> TypeCollection {
-        TypeCollection{ types: vec![
-            Type::Base("unit".to_owned()),     // 0
-            Type::Base("i8".to_owned()),       // 1
-            Type::Base("u8".to_owned()),       // 2
-            Type::Base("i16".to_owned()),      // 3
-            Type::Base("u16".to_owned()),      // 4
-            Type::Base("i32".to_owned()),      // 5
-            Type::Base("u32".to_owned()),      // 6
-            Type::Base("i64".to_owned()),      // 7
-            Type::Base("u64".to_owned()),      // 8
-            Type::Base("f32".to_owned()),      // 9
-            Type::Base("f64".to_owned()),      // 10
-            Type::Base("char".to_owned()),     // 11   // UTF32 char
-            Type::Base("bool".to_owned()),     // 12   // 1 byte bool
-            Type::Base("string".to_owned()),   // 13   // special [char]
-        ]}
-    }
-
-    // Check primitive numeric type bin and un op existence, do not input anything rejected by before method and other ops not in ExpressionOperator
-    fn check_prim_numeric_type_op(&self, id: ItemID, op: SeperatorKind) -> bool {
-
-        macro_rules! check_prim_numeric_op_impl {
-            (
-                $input_id: expr, $input_op: expr,
-                $([$op: pat, $($id: expr, )*])*
-            ) => (
-                match ($input_op, $input_id) {
-                    $(
-                        $(
-                            ($op, $id) => true,
-                        )*
-                        ($op, _) => false,   
-                    )*
-                    (_, _) => unreachable!(),
-                }
-            )
-        }
-
-        let id = match id.as_option() {
-            Some(id) if id >= 1 && id <= 12 => id,
-            _ => unreachable!(),
-        };
-        check_prim_numeric_op_impl!{ id, op,
-            //    operator kind,       i8, u8, i16, u16, i32, u32, i64, u64, f32, f64, char, bool, 
-            [SeperatorKind::Add,        1,  2,   3,   4,   5,   6,   7,   8,   9,  10, ]
-            [SeperatorKind::Sub,        1,  2,   3,   4,   5,   6,   7,   8,   9,  10, ]
-            [SeperatorKind::Mul,        1,  2,   3,   4,   5,   6,   7,   8,   9,  10, ]
-            [SeperatorKind::Div,        1,  2,   3,   4,   5,   6,   7,   8,   9,  10, ]
-            [SeperatorKind::Rem,        1,  2,   3,   4,   5,   6,   7,   8,   9,  10, ]
-            [SeperatorKind::ShiftLeft,  1,  2,   3,   4,   5,   6,   7,   8, ]
-            [SeperatorKind::ShiftRight, 1,  2,   3,   4,   5,   6,   7,   8, ]
-            [SeperatorKind::Equal,      1,  2,   3,   4,   5,   6,   7,   8,   9,  10,   11,   12, ]
-            [SeperatorKind::NotEqual,   1,  2,   3,   4,   5,   6,   7,   8,   9,  10,   11,   12, ]
-            [SeperatorKind::Great,      1,  2,   3,   4,   5,   6,   7,   8,   9,  10,   11, ]
-            [SeperatorKind::Less,       1,  2,   3,   4,   5,   6,   7,   8,   9,  10,   11, ]
-            [SeperatorKind::GreatEqual, 1,  2,   3,   4,   5,   6,   7,   8,   9,  10,   11, ]
-            [SeperatorKind::LessEqual,  1,  2,   3,   4,   5,   6,   7,   8,   9,  10,   11, ]
-            [SeperatorKind::BitAnd,     1,  2,   3,   4,   5,   6,   7,   8, ]
-            [SeperatorKind::BitOr,      1,  2,   3,   4,   5,   6,   7,   8, ]
-            [SeperatorKind::BitXor,     1,  2,   3,   4,   5,   6,   7,   8, ]
-            [SeperatorKind::LogicalAnd,                                                        12, ]
-            [SeperatorKind::LogicalOr,                                                         12, ]
-            [SeperatorKind::BitNot,     1,  2,   3,   4,   5,   6,   7,   8, ]
-            [SeperatorKind::LogicalNot,                                                        12, ]
-            [SeperatorKind::Increase,   1,  2,   3,   4,   5,   6,   7,   8, ]
-            [SeperatorKind::Decrease,   1,  2,   3,   4,   5,   6,   7,   8, ]
-        }
-    }
-}
 // Type usage to ID
 impl TypeCollection {
 
@@ -186,7 +115,7 @@ impl TypeCollection {
     // check base type existence, currently only primitive types, return the id of the primitive type
     // record processed array and tuple types, set their type params, return their type ids
     // position info are removed because messages are finally here, furthur errors will only report "variable with type" etc.
-    fn get_id_internal(&mut self, ty: SMType, messages: &mut MessageEmitter) -> Option<usize> {
+    fn get_id_internal(&mut self, ty: SMType, messages: &mut MessageEmitter, fns: &mut FnCollection) -> Option<usize> {
 
         match ty {
             SMType::Unit(_pos) => Some(0),
@@ -200,24 +129,17 @@ impl TypeCollection {
                 }
             }
             SMType::Array(boxed_base, _pos) => {
-                match self.get_id_internal(boxed_base.as_ref().clone(), messages) {
+                match self.get_id_internal(boxed_base.as_ref().clone(), messages, fns) {
+                    Some(item_typeid) => self.push_builtin_template_type(Type::Array(item_typeid), fns).into_option(),
                     None => None, // message emitted
-                    Some(id) => match self.check_exist(&Type::Array(id)) {
-                        Some(id) => Some(id),
-                        None => {
-                            let ret_val = self.types.len();
-                            self.types.push(Type::Array(id));
-                            return Some(ret_val);
-                        }
-                    },
                 }
             }
             SMType::Tuple(smtypes, _pos) => {
-                let mut ids = Vec::new();
+                let mut item_typeids = Vec::new();
                 let mut has_failed = false;
                 for smtype in smtypes {
-                    match self.get_id_internal(smtype, messages) {
-                        Some(id) => ids.push(id),
+                    match self.get_id_internal(smtype, messages, fns) {
+                        Some(id) => item_typeids.push(id),
                         None => has_failed = true, // message emitted
                     }
                 }
@@ -225,15 +147,7 @@ impl TypeCollection {
                     return None;    // if has failed, just return none
                 }
 
-                let newtype = Type::Tuple(ids);
-                match self.check_exist(&newtype) {
-                    Some(id) => Some(id),
-                    None => {
-                        let this_id = self.types.len();
-                        self.types.push(newtype);
-                        Some(this_id)
-                    }
-                }
+                self.push_builtin_template_type(Type::Tuple(item_typeids), fns).into_option()
             }
         }
     }
@@ -281,27 +195,194 @@ impl TypeCollection {
         }
     }
     // wrap Option<usize> to ItemID
-    pub fn get_id_by_smtype(&mut self, ty: SMType, messages: &mut MessageEmitter) -> ItemID {
-        match self.get_id_internal(ty, messages) {
+    pub fn get_id_by_smtype(&mut self, ty: SMType, messages: &mut MessageEmitter, fns: &mut FnCollection) -> ItemID {
+        match self.get_id_internal(ty, messages, fns) {
             Some(id) => ItemID::new(id),
             None => ItemID::new_invalid(),
         }
     }
+}
 
-    // push instantiated builtin template type(currently array and tuple), push their member fns to the collection
-    pub fn push_builtin_template_type(&mut self, ty: Type, _fns: &mut FnCollection) -> ItemID {
+macro_rules! push_builtin_fn {
+    ($fns: expr, $name: expr, $ret_type: expr, $arg_types: expr) => (
+        let mut args = Vec::new();
+        for arg_type in &$arg_types {
+            args.push(FnArg::new_internal("arg", *arg_type));
+        }
+        $fns.push_builtin_fn($name, $ret_type, args);
+    );
+    ($fns: expr, $name: expr, $ret_type: expr) => (
+        $fns.push_builtin_fn($name, $ret_type, Vec::new());
+    )
+}
+
+// New
+impl TypeCollection {
+    
+    pub fn new() -> TypeCollection {
+        TypeCollection{ types: vec![
+            Type::Base("unit".to_owned()),     // 0
+            Type::Base("i8".to_owned()),       // 1
+            Type::Base("u8".to_owned()),       // 2
+            Type::Base("i16".to_owned()),      // 3
+            Type::Base("u16".to_owned()),      // 4
+            Type::Base("i32".to_owned()),      // 5
+            Type::Base("u32".to_owned()),      // 6
+            Type::Base("i64".to_owned()),      // 7
+            Type::Base("u64".to_owned()),      // 8
+            Type::Base("f32".to_owned()),      // 9
+            Type::Base("f64".to_owned()),      // 10
+            Type::Base("char".to_owned()),     // 11   // UTF32 char
+            Type::Base("bool".to_owned()),     // 12   // 1 byte bool
+            Type::Base("string".to_owned()),   // 13   // special [char]
+        ]}
+    }
+
+    // push primitive type member fns
+    pub fn push_builtin_types(&mut self, fns: &mut FnCollection) {
+
+        macro_rules! push_integral_base_member {
+            ($fns: expr, $typeid: expr) => (
+                push_builtin_fn!($fns, SeperatorKind::Add, $typeid, [$typeid, $typeid]);
+                push_builtin_fn!($fns, SeperatorKind::Sub, $typeid, [$typeid, $typeid]);
+                push_builtin_fn!($fns, SeperatorKind::Mul, $typeid, [$typeid, $typeid]);
+                push_builtin_fn!($fns, SeperatorKind::Div, $typeid, [$typeid, $typeid]);
+                push_builtin_fn!($fns, SeperatorKind::Rem, $typeid, [$typeid, $typeid]);
+                push_builtin_fn!($fns, SeperatorKind::ShiftLeft, $typeid, [$typeid, 5]);
+                push_builtin_fn!($fns, SeperatorKind::ShiftRight, $typeid, [$typeid, 5]);
+                push_builtin_fn!($fns, SeperatorKind::BitAnd, $typeid, [$typeid, $typeid]);
+                push_builtin_fn!($fns, SeperatorKind::BitOr, $typeid, [$typeid, $typeid]);
+                push_builtin_fn!($fns, SeperatorKind::BitXor, $typeid, [$typeid, $typeid]);
+
+                push_builtin_fn!($fns, SeperatorKind::Equal, 12, [$typeid, $typeid]);
+                push_builtin_fn!($fns, SeperatorKind::NotEqual, 12, [$typeid, $typeid]);
+                push_builtin_fn!($fns, SeperatorKind::GreatEqual, 12, [$typeid, $typeid]);
+                push_builtin_fn!($fns, SeperatorKind::LessEqual, 12, [$typeid, $typeid]);
+                push_builtin_fn!($fns, SeperatorKind::Great, 12, [$typeid, $typeid]);
+                push_builtin_fn!($fns, SeperatorKind::Less, 12, [$typeid, $typeid]);
+
+                push_builtin_fn!($fns, SeperatorKind::BitNot, $typeid, [$typeid, $typeid]);
+                push_builtin_fn!($fns, SeperatorKind::Increase, 0, [$typeid, $typeid]);
+                push_builtin_fn!($fns, SeperatorKind::Decrease, 0, [$typeid, $typeid]);
+
+                push_builtin_fn!($fns, "is_odd", 12, [$typeid, $typeid]);
+                push_builtin_fn!($fns, "to_string", 13, [$typeid]);
+
+                // cast
+                push_builtin_fn!($fns, 1, 1, [$typeid]);
+                push_builtin_fn!($fns, 2, 2, [$typeid]);
+                push_builtin_fn!($fns, 3, 3, [$typeid]);
+                push_builtin_fn!($fns, 4, 4, [$typeid]);
+                push_builtin_fn!($fns, 5, 5, [$typeid]);
+                push_builtin_fn!($fns, 6, 6, [$typeid]);
+                push_builtin_fn!($fns, 7, 7, [$typeid]);
+                push_builtin_fn!($fns, 8, 8, [$typeid]);
+                push_builtin_fn!($fns, 10, 10, [$typeid]);
+            )
+        }
+        macro_rules! push_floating_base_member {
+            ($fns: expr, $typeid: expr) => (
+                push_builtin_fn!($fns, SeperatorKind::Add, $typeid, [$typeid, $typeid]);
+                push_builtin_fn!($fns, SeperatorKind::Sub, $typeid, [$typeid, $typeid]);
+                push_builtin_fn!($fns, SeperatorKind::Mul, $typeid, [$typeid, $typeid]);
+                push_builtin_fn!($fns, SeperatorKind::Div, $typeid, [$typeid, $typeid]);
+                push_builtin_fn!($fns, SeperatorKind::Rem, $typeid, [$typeid, $typeid]);
+
+                push_builtin_fn!($fns, SeperatorKind::Equal, 12, [$typeid, $typeid]);
+                push_builtin_fn!($fns, SeperatorKind::NotEqual, 12, [$typeid, $typeid]);
+                push_builtin_fn!($fns, SeperatorKind::GreatEqual, 12, [$typeid, $typeid]);
+                push_builtin_fn!($fns, SeperatorKind::LessEqual, 12, [$typeid, $typeid]);
+                push_builtin_fn!($fns, SeperatorKind::Great, 12, [$typeid, $typeid]);
+                push_builtin_fn!($fns, SeperatorKind::Less, 12, [$typeid, $typeid]);
+
+                push_builtin_fn!($fns, "to_string", 13, [$typeid]);
+
+                // cast
+                push_builtin_fn!($fns, 8, 8, [$typeid]);
+                push_builtin_fn!($fns, 9, 9, [$typeid]);
+                push_builtin_fn!($fns, 10, 10, [$typeid]);
+            )
+        }
+        macro_rules! push_char_base_member {
+            ($fns: expr, $typeid: expr) => (
+                push_builtin_fn!($fns, SeperatorKind::Equal, 12, [$typeid, $typeid]);
+                push_builtin_fn!($fns, SeperatorKind::NotEqual, 12, [$typeid, $typeid]);
+                push_builtin_fn!($fns, SeperatorKind::GreatEqual, 12, [$typeid, $typeid]);
+                push_builtin_fn!($fns, SeperatorKind::LessEqual, 12, [$typeid, $typeid]);
+                push_builtin_fn!($fns, SeperatorKind::Great, 12, [$typeid, $typeid]);
+                push_builtin_fn!($fns, SeperatorKind::Less, 12, [$typeid, $typeid]);
+
+                push_builtin_fn!($fns, 6, 6, vec![$typeid]);
+            )
+        }
         
-        // assert
-        if let &Type::Base(_) = &ty { unreachable!() }
+        // integral, floating
+        push_integral_base_member!(fns, 1);
+        push_integral_base_member!(fns, 2);
+        push_integral_base_member!(fns, 3);
+        push_integral_base_member!(fns, 4);
+        push_integral_base_member!(fns, 5);
+        push_integral_base_member!(fns, 6);
+        push_integral_base_member!(fns, 7);
+        push_integral_base_member!(fns, 8);
+        push_floating_base_member!(fns, 9);
+        push_floating_base_member!(fns, 10);
+        push_char_base_member!(fns, 11);
 
+        // bool
+        push_builtin_fn!(fns, SeperatorKind::Equal, 12, [12, 12]);
+        push_builtin_fn!(fns, SeperatorKind::NotEqual, 12, [12, 12]);
+        push_builtin_fn!(fns, SeperatorKind::LogicalAnd, 12, [12, 12]);
+        push_builtin_fn!(fns, SeperatorKind::LogicalOr, 12, [12, 12]);
+        push_builtin_fn!(fns, SeperatorKind::LogicalNot, 12, [12]);
+
+        // string
+        push_builtin_fn!(fns, SeperatorKind::Add, 13, [13, 13]);
+        push_builtin_fn!(fns, "length", 8, [13]);
+        push_builtin_fn!(fns, "get_index", 11, [13, 5]);
+        push_builtin_fn!(fns, "get_index", 11, [13, 8]);
+    }
+    
+    // push instantiated builtin template type(currently array and tuple), push their member fns and ctors to the collection
+    pub fn push_builtin_template_type(&mut self, ty: Type, fns: &mut FnCollection) -> ItemID {
+        
+        // if exist, just return
         for (index, item) in self.types.iter().enumerate() {
             if *item == ty {
                 return ItemID::new(index);
             }
         }
-        let ret_val = self.types.len();
-        self.types.push(ty);
-        return ItemID::new(ret_val);
+
+        match ty {
+            Type::Base(_) => unreachable!(),
+            Type::Array(item_typeid) => {
+                let array_typeid = self.types.len();
+                self.types.push(Type::Array(item_typeid));
+
+                push_builtin_fn!(fns, format!("?new_array_{}", item_typeid), array_typeid); // fn ?new_array_5() -> 14  // [i32]
+                push_builtin_fn!(fns, "set_index", 0, [array_typeid, 5, item_typeid]);
+                push_builtin_fn!(fns, "set_index", 0, [array_typeid, 8, item_typeid]);
+                push_builtin_fn!(fns, "set_index", item_typeid, [array_typeid, 5]);
+                push_builtin_fn!(fns, "set_index", item_typeid, [array_typeid, 8]);
+                push_builtin_fn!(fns, "push", 0, [array_typeid, item_typeid]);              // fn 14::push(5) -> 0
+                push_builtin_fn!(fns, "pop", 5, [array_typeid]);
+
+                ItemID::new(array_typeid)
+            }
+            Type::Tuple(item_typeids) => {
+                let tuple_typeid = self.types.len();
+                self.types.push(Type::Tuple(item_typeids.clone()));
+
+                push_builtin_fn!(fns, "?new_tuple", tuple_typeid, *item_typeids.as_slice());
+
+                for (index, item_typeid) in item_typeids.iter().enumerate() {
+                    push_builtin_fn!(fns, format!("set_item{}", index), 0, [tuple_typeid, 5, *item_typeid]);
+                    push_builtin_fn!(fns, format!("set_item{}", index), 0, [tuple_typeid, 8, *item_typeid]);
+                }
+
+                ItemID::new(tuple_typeid)
+            }
+        }
     }
 }
 // Helper
@@ -316,11 +397,11 @@ impl TypeCollection {
                     Type::Base(ref name) => name.to_owned(),
                     Type::Array(ref inner_id) => format!("[{}]", self.fmt_by_id(ItemID::new(*inner_id))),
                     Type::Tuple(ref ids) => {
-                        let mut buf = "[".to_owned();
+                        let mut buf = "(".to_owned();
                         for id in ids {
                             buf += &self.fmt_by_id(ItemID::new(*id));
                         }
-                        buf += "]";
+                        buf += ")";
                         return buf;
                     }
                 }
@@ -371,17 +452,27 @@ fn gen_types_find_field() {
 }
 
 #[cfg(test)] #[test]
-fn gen_types_prim_op() {
+fn gen_types_member_fn() {
+    use codegen::session::GenerationSession;
 
-    macro_rules! test_case { 
-        ($id: expr, $op: expr, $res: expr) => (
-            let types = &TypeCollection::new(); 
-            assert_eq!(types.check_prim_numeric_type_op(ItemID::new($id), $op), $res);
-        ) 
+    let mut sess = GenerationSession::new();
+
+    assert_eq!(sess.fns.find_by_sign(SeperatorKind::Add, &vec![ItemID::new(5), ItemID::new(5)]).is_valid(), true);
+    assert_eq!(sess.fns.find_by_sign(SeperatorKind::ShiftLeft, &vec![ItemID::new(8), ItemID::new(5)]).is_valid(), true);
+    assert_eq!(sess.fns.find_by_sign("length", &vec![ItemID::new(13)]).is_valid(), true);
+    assert_eq!(sess.fns.find_by_sign(12, &vec![ItemID::new(5)]).is_valid(), false); // proud about that
+
+    sess.types.push_builtin_template_type(Type::Array(5), &mut sess.fns);
+    sess.types.push_builtin_template_type(Type::Array(9), &mut sess.fns);
+    sess.types.push_builtin_template_type(Type::Tuple(vec![14, 15]), &mut sess.fns);
+
+    let messages = &mut MessageEmitter::new();
+    sess.fns.check_sign_eq(&sess.types, messages);
+    if !messages.is_empty() {
+        panic!("Messages not empty: {:?}", messages);
     }
 
-    test_case!(1, SeperatorKind::Add, true);
-    test_case!(12, SeperatorKind::Sub, false);
+    // perrorln!("{}", sess.fns.dump(&sess.types));
 }
 
 #[cfg(test)] #[test]
@@ -390,7 +481,7 @@ fn gen_types_by_smtype() {
 
     macro_rules! test_case {
         ($types: expr, $ty_str: expr, $expect: expr) => (
-            match $types.get_id_by_smtype(SMType::from_str($ty_str, 0), &mut MessageEmitter::new()).as_option() {
+            match $types.get_id_by_smtype(SMType::from_str($ty_str, 0), &mut MessageEmitter::new(), &mut FnCollection::new()).as_option() {
                 Some(id) => assert_eq!(id, $expect),
                 None => panic!("Unexpectedly return None"),
             }
@@ -398,7 +489,7 @@ fn gen_types_by_smtype() {
         
         ($types: expr, $ty_str: expr => $($msg: expr)*) => (
             let messages = &mut MessageEmitter::new();
-            match $types.get_id_by_smtype(SMType::from_str($ty_str, 0), messages).as_option() {
+            match $types.get_id_by_smtype(SMType::from_str($ty_str, 0), messages, &mut FnCollection::new()).as_option() {
                 Some(id) => panic!("Unexpectedly success, result: {:?}", id),
                 None => (),
             }
