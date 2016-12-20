@@ -38,7 +38,6 @@ pub use codegen::fn_def::FnName;
 pub use codegen::fn_def::FnImpl;
 pub use codegen::fn_def::FnCollection;
 pub use codegen::vm_code::Operand;
-pub use codegen::vm_code::AssignOperator;
 pub use codegen::vm_code::Code;
 pub use codegen::session::Program;
 pub use codegen::session::ItemID;

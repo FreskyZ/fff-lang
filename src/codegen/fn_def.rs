@@ -59,7 +59,7 @@ impl FnArg {
     }
 }
 
-#[derive(Eq, PartialEq, Clone)]
+#[derive(Eq, PartialEq, Clone, Debug)]
 pub enum FnName{
     Ident(String), 
     Operator(SeperatorKind),
@@ -90,7 +90,7 @@ impl FnName {
                 &SeperatorKind::LogicalOr => format!("operator||"),
                 &SeperatorKind::Increase => format!("operator++"),
                 &SeperatorKind::Decrease => format!("operator--"),
-                &SeperatorKind::BitNot => format!("operator^"),
+                &SeperatorKind::BitNot => format!("operator~"),
                 &SeperatorKind::LogicalNot => format!("operator!"),
                 _ => unreachable!()
             },
@@ -119,6 +119,7 @@ pub struct FnImpl { // Not Fn because Fn is used in std
     pub pos: [StringPosition; 3],  // pos_fn and pos_name and pos_ret_type
     pub valid: bool,               // buf for all args valid and ret_type valid and later not sign collission with other
     pub code_ptr: Option<usize>,   // start pointer in codes, none for internal
+    pub local_size: usize,
 }
 impl cmp::PartialEq<FnImpl> for FnImpl {
     fn eq(&self, rhs: &FnImpl) -> bool { self.id == rhs.id }
@@ -159,20 +160,21 @@ impl FnImpl {
         (args, valid)
     }
     // As it consumes the SyntaxFnDef but not process the block, return it
-    fn new(syn_fn: SyntaxFunctionDef, id: usize, types: &mut TypeCollection, messages: &mut MessageEmitter, fns: &mut FnCollection) -> (FnImpl, SyntaxBlock) {
+    fn new(syn_fn: SyntaxFunctionDef, types: &mut TypeCollection, messages: &mut MessageEmitter, fns: &mut FnCollection) -> (FnImpl, SyntaxBlock) {
         
         let (args, mut valid) = FnImpl::new_args(syn_fn.args, syn_fn.pos2[0], &syn_fn.name, types, messages, fns);
         let pos_ret_type = syn_fn.ret_type.pos();
         let ret_type = types.get_id_by_smtype(syn_fn.ret_type, messages, fns);
         valid = valid && ret_type.is_valid();
         (FnImpl{ 
-            id: id, 
+            id: 0, 
             name: FnName::Ident(syn_fn.name), 
             pos: [syn_fn.pos2[0], syn_fn.pos2[1], pos_ret_type], 
             args: args, 
             ret_type: ret_type, 
             valid: valid,
             code_ptr: None,
+            local_size: 0,
         }, syn_fn.body)
     }
 
@@ -271,6 +273,7 @@ impl FnCollection {
             pos: [StringPosition::new(); 3],
             valid: true,
             code_ptr: None,
+            local_size: 0,
         });
     }
     fn push_builtin_global_fn(&mut self) {
@@ -285,9 +288,22 @@ impl FnCollection {
 
     // If same signature, still push the fndecl and return index, but push message and when require ID by signature, return invalid
     pub fn push_decl(&mut self, syn_fn: SyntaxFunctionDef, types: &mut TypeCollection, msgs: &mut MessageEmitter, _vars: &mut VarCollection) -> (usize, SyntaxBlock) {
-
-        let (newfn, syn_block) = FnImpl::new(syn_fn, self.fns.len(), types, msgs, self);
-        let ret_val = newfn.id;
+        // BIG BUG HERE
+        // This method read in syntax function def and generate semantic function def
+        // In the process, get new fn id according to current fns collection and set the id field in the newfn
+        // I chose to give the id previous to the fn constructor to avoid make `newfn` here to be mut, just because of a bit of lazy
+        // It works well for very long time
+        // **BUT** after template type instantiation(although currently only builtin) are added
+        // they will push instantiated member functions to this collection
+        // this makes the previous recorded new id to be invalid
+        // this is a problem that the borrower checker cannot find, because the length field is primitive integral type and is auto copied when recorded
+        // so even if the length changed, it cannot notify here
+        // Then the error propagates to expression generation where the generater cannot find the identifiers declared in function arguments
+        // It's a long way to find the bug here, thanks to gen_fn_decl2 test's 2nd test case's guess on FnName not equal
+        // 2016/12/20 - Fresky Han
+        let (mut newfn, syn_block) = FnImpl::new(syn_fn, types, msgs, self);
+        let ret_val = self.fns.len();
+        newfn.id = ret_val;
         self.fns.push(newfn);
         return (ret_val, syn_block);
     }
@@ -365,7 +381,12 @@ impl FnCollection {
     pub fn dump(&self, types: &TypeCollection) -> String {
         let mut buf = "Fns:\n".to_owned();
         for i in 0..self.fns.len() {
-            buf += &format!("    <{}> {} {{ code_ptr: {:?} }}\n", i, self.fns[i].fmt_display(types), self.fns[i].code_ptr);
+            match self.fns[i].code_ptr {
+                Some(ref code_ptr) =>
+                    buf += &format!("    <{}> {} {{ local size = {}, code ptr = {} }};\n", i, self.fns[i].fmt_display(types), self.fns[i].local_size, code_ptr),
+                None => 
+                    buf += &format!("    <{}> {};\n", i, self.fns[i].fmt_display(types)),
+            }
         }
         buf
     }
@@ -413,6 +434,7 @@ fn gen_fn_sign_eq() {
         pos: [StringPosition::new(), StringPosition::new(), StringPosition::new()],
         valid: true,
         code_ptr: None,
+        local_size: 0,
     };
 
     // Normal equal
@@ -588,8 +610,7 @@ fn gen_fn_decl() {
     let expect_messsage1 = &mut MessageEmitter::new();
     expect_messsage1.push(CodegenMessage::FunctionRedefinition{
         sign: "some(i32, u32, [string])".to_owned(),
-        // TODO FUTURE: this should be (1, 1, 1, 2), (1, 2, 1, 3) and (1, 3, 1, 4) but I do not want to solve it currently, leave it here
-        fnposs: vec![make_str_pos!(1, 1, 1, 1), make_str_pos!(1, 2, 1, 3), make_str_pos!(1, 4, 1, 5)]
+        fnposs: vec![make_str_pos!(1, 1, 1, 2), make_str_pos!(1, 2, 1, 3), make_str_pos!(1, 4, 1, 5)]
     });
     expect_messsage1.push(CodegenMessage::FunctionRedefinition{
         sign: "some(i32, u32, string)".to_owned(),
@@ -602,10 +623,32 @@ fn gen_fn_decl() {
     });
     expect_messsage2.push(CodegenMessage::FunctionRedefinition{
         sign: "some(i32, u32, [string])".to_owned(),
-        // TODO FUTURE: this should be (1, 1, 1, 2), (1, 2, 1, 3) and (1, 3, 1, 4) but I do not want to solve it currently, leave it here
-        fnposs: vec![make_str_pos!(1, 1, 1, 1), make_str_pos!(1, 2, 1, 3), make_str_pos!(1, 4, 1, 5)] 
+        fnposs: vec![make_str_pos!(1, 1, 1, 2), make_str_pos!(1, 2, 1, 3), make_str_pos!(1, 4, 1, 5)] 
     });
     if !(&sess.msgs == expect_messsage1 || &sess.msgs == expect_messsage2) {
         panic!("assertion failed, left: `{:?}`, right: `{:?}`", &sess.msgs, expect_messsage1);
+    }
+}
+
+#[cfg(test)] #[test]
+fn gen_fn_decl2() {
+    {
+    let program = "fn main(i32 a) -> () { ++a; }";
+    let sess = &mut GenerationSession::new();
+    let syn_fn = SyntaxFunctionDef::from_str(program, 0);
+    let (fnid, _syn_block) = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
+    let thefn = sess.fns.get_by_idx(fnid);
+    assert_eq!(thefn.args[0].name, "a");
+    assert_eq!(thefn.args[0].typeid, ItemID::new(5));
+    }
+    {
+    let program = "fn main(i32 a) -> [u32] { ++a; }";
+    let sess = &mut GenerationSession::new();
+    let syn_fn = SyntaxFunctionDef::from_str(program, 0);
+    let (fnid, _syn_block) = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
+    let thefn = sess.fns.get_by_idx(fnid);
+    assert_eq!(thefn.name, FnName::Ident("main".to_owned()));
+    assert_eq!(thefn.args[0].name, "a");
+    assert_eq!(thefn.args[0].typeid, ItemID::new(5));
     }
 }

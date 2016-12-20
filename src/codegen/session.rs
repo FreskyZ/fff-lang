@@ -50,7 +50,7 @@ impl fmt::Debug for Program {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let types = self.types.dump();
         let fns = self.fns.dump(&self.types);
-        write!(f, "{}{}Messages: {:?}Codes:\n    {}\n", types, fns, self.msgs, format_vector_debug(&self.codes, "\n    "))
+        write!(f, "{}{}Messages: {:?}Codes:\n    {}\n", types, fns, self.msgs, format_vector_debug(&self.codes.iter().enumerate().collect(), "\n    "))
     }
 }
 
@@ -116,13 +116,14 @@ fn gen_program_inter() {
         }
 
         if buf != "break\r\n" {
-            match SyntaxProgram::from_str(&buf) {
-                Some(program) => {
+            match SyntaxProgram::try_from_str(&buf) {
+                Ok(program) => {
+                    perrorln!("Syntax program: {}", program);
                     let program = GenerationSession::dispatch(program); 
                     perrorln!("Program: {:?}", program);
                 }
-                None => {
-                    perrorln!("Unexpectedly failed");
+                Err(errs) => {
+                    perrorln!("Unexpectedly syntax failed: {:?}", errs);
                 }
             }
         } else {

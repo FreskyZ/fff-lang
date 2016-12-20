@@ -112,7 +112,9 @@ impl FunctionDef {
     pub fn from_str(func_def_str: &str, sym_index: usize) -> FunctionDef {
         let lexer = &mut Lexer::new(func_def_str);
         let ret_val = FunctionDef::parse(lexer, sym_index).0.unwrap();
-        assert!(lexer.messages().is_empty());
+        if !lexer.messages().is_empty() {
+            panic!("assertion failed: lexer.messages().is_empty() is false, content: {:?}", lexer.messages());
+        }
         ret_val
     }
     #[cfg(test)]

@@ -295,9 +295,6 @@ pub enum CodegenMessage {
     FunctionCallOperatorNotAppliedToIdentifier{
         pos: StringPosition,
     },
-    SubscriptionOperatorParameterCountNot1{
-        pos: StringPosition,
-    },
 
     InvalidExpressionStatementSingleSimpleExpression{
         pos: StringPosition,
@@ -348,6 +345,29 @@ pub enum CodegenMessage {
     FunctionNotDefined{
         sign: String,
         pos: StringPosition,
+    },
+    AssignmentTypeMismatch{
+        left_desc: String,
+        right_desc: String,
+        pos: StringPosition,
+    },
+    IfConditionNotBoolType{
+        pos: StringPosition,
+        actual: String,
+    },
+    ReturnTypeMismatch{
+        pos: StringPosition,
+        expect: String,
+        actual: String,
+    },
+    ForIteraterTypeMismatch{
+        pos: StringPosition,
+        actual: String,
+    },
+    ForRangeTypeMismatch{
+        pos: StringPosition,
+        expect: String,
+        actual: String,
     }
 }
 impl fmt::Debug for CodegenMessage {
@@ -377,9 +397,6 @@ impl fmt::Debug for CodegenMessage {
             FunctionCallOperatorNotAppliedToIdentifier{ ref pos } => {
                 write!(f, "Function call operator not applied to identifier at {:?}", pos)
             },
-            SubscriptionOperatorParameterCountNot1{ ref pos } => {
-                write!(f, "Get index operator should provide exact 1 parameter at {:?}, *CURRENTLY*", pos)
-            },
             InvalidExpressionStatementSingleSimpleExpression{ ref pos } => {
                 write!(f, "Invalid expression statement at {:?}, simple expression cannot be statement", pos)
             },
@@ -390,7 +407,7 @@ impl fmt::Debug for CodegenMessage {
                 write!(f, "Left expression at {:?} of assignment statement can only be an identifier", pos)
             },
             AssignToConstVar{ ref name, ref pos } => {
-                write!(f, "Tru to assign to const variable {:?} at {:?}", name, pos)
+                write!(f, "Try to assign to const variable {:?} at {:?}", name, pos)
             },
             MemberAccessNotSupportedCurrently{ ref pos } => {
                 write!(f, "Member access not supported **CURRENTLY** at {:?}", pos)
@@ -416,7 +433,22 @@ impl fmt::Debug for CodegenMessage {
 
             FunctionNotDefined{ ref sign, ref pos } => {
                 write!(f, "Function with signature {} not defined at scope of the expression at {:?}", sign, pos)
-            }
+            },
+            AssignmentTypeMismatch{ ref left_desc, ref right_desc, ref pos } => {
+                write!(f, "Assignment type mismatch at {:?}, left is `{}`, right is `{}`", pos, left_desc, right_desc)
+            },
+            IfConditionNotBoolType{ ref pos, ref actual } => {
+                write!(f, "Expect if condition to be bool type, but actually is {} at {:?}", actual, pos)
+            },
+            ReturnTypeMismatch{ ref pos, ref actual, ref expect } => {
+                write!(f, "Return type mismatch at {:?}, expect {}, actual is {}", pos, expect, actual)
+            },
+            ForIteraterTypeMismatch{ ref pos, ref actual } => {
+                write!(f, "**CURRENTLY** if iterater only supports integral type, meet {} at {:}", actual, pos)
+            },
+            ForRangeTypeMismatch{ ref pos, ref actual, ref expect } => {
+                write!(f, "For range type mismatch at {:?}, expect {}, actual is {}", pos, expect, actual)
+            },
         }
     }
 }

@@ -2,6 +2,7 @@
 // loop operation
 // store temp values for loop name and refill addresses
 
+use codegen::ItemID;
 use codegen::vm_code::CodeCollection;
 
 pub struct Loop {
@@ -12,12 +13,14 @@ pub struct Loop {
 
 pub struct LoopCollection {
     loops: Vec<Loop>,
+    pub ret_type: ItemID, // so it is not only loop collection but a jump statement context storage
 }
 
 impl LoopCollection {
     pub fn new() -> LoopCollection {
         LoopCollection{ 
             loops: Vec::new(),    
+            ret_type: ItemID::new_invalid(),
         }
     }
 

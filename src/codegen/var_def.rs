@@ -28,6 +28,12 @@ impl Var {
     pub fn new(name: String, ty: ItemID, is_const: bool, def_pos: StringPosition) -> Var {
         Var{ name: name, ty: ty, is_const: is_const, def_pos: def_pos, offset: 0 }
     }
+    pub fn dump(&self, types: &TypeCollection) -> String {
+        match self.is_const {
+            true => format!("const {} {};", types.fmt_by_id(self.ty), self.name),
+            false => format!("var {} {};", types.fmt_by_id(self.ty), self.name),
+        }
+    }
 
     #[cfg(test)]
     pub fn new_test(name: &str, ty: ItemID, is_const: bool, def_pos: StringPosition, offset: usize) -> Var {
@@ -60,6 +66,7 @@ pub struct VarCollection {
     // next local variable offset from ebp
     // Some means still working, None means meat some error and no need to continue working
     next_offset: Option<usize>, 
+    max_offset: usize,
 }
 impl VarCollection {
 
@@ -68,6 +75,7 @@ impl VarCollection {
             items: Vec::new(),
             next_temp: 0,
             next_offset: Some(0),
+            max_offset: 0,
         }
     }
 
@@ -107,6 +115,9 @@ impl VarCollection {
             }
             (Some(ty), &mut Some(ref mut next_offset)) => { // valid item type and valid next offset, set next_offset, set item.offset
                 *next_offset += ty.get_size();
+                if *next_offset > self.max_offset {
+                    self.max_offset = *next_offset;
+                }
                 item.offset = *next_offset;
             }
             (Some(_ty), &mut None) => {  // Valid item type but next offset is invalid, not set item.offset
@@ -171,6 +182,9 @@ impl VarCollection {
     pub fn current_offset(&self) -> usize {
         self.next_offset.unwrap_or(0)
     }
+    pub fn get_max_offset(&self) -> usize {
+        self.max_offset + 1  // TODO FUTURE: because this offset assumes reverse stack layout, but currently our stack uses not reverse layout, so add 1
+    }
 
     // When a name is referenced
     pub fn find_by_name(&self, rhs: &str) -> ItemID {
@@ -213,6 +227,22 @@ impl VarCollection {
 
     pub fn len(&self) -> usize { self.items.len() }
     pub fn index(&self, idx: usize) -> &VarOrScope { &self.items[idx] }
+    pub fn dump(&self, types: &TypeCollection) -> String {
+
+        let mut buf = "Vars: \n".to_owned();
+        for item in &self.items {
+            match item {
+                &VarOrScope::Some(ref var) => {
+                    buf += &var.dump(types);
+                    buf += "\n";
+                }
+                &VarOrScope::ScopeBarrier => {
+                    buf += "scope barrier";
+                }
+            }
+        }
+        buf
+    }
 }
 
 #[cfg(test)]

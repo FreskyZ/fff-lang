@@ -29,44 +29,14 @@ impl fmt::Debug for Operand {
     }
 }
 
-#[derive(Eq, Clone, PartialEq, Debug)]
-pub enum AssignOperator {
-    Assign,
-    AddAssign,
-    SubAssign,
-    MulAssign,
-    DivAssign,
-    RemAssign,
-    BitAndAssign,
-    BitOrAssign,
-    BitXorAssign,
-}
-impl From<SeperatorKind> for AssignOperator {
-    fn from(sep: SeperatorKind) -> AssignOperator {
-        match sep {
-            SeperatorKind::Assign => AssignOperator::Assign,
-            SeperatorKind::AddAssign => AssignOperator::AddAssign,
-            SeperatorKind::SubAssign => AssignOperator::SubAssign,
-            SeperatorKind::MulAssign => AssignOperator::MulAssign,
-            SeperatorKind::DivAssign => AssignOperator::DivAssign,
-            SeperatorKind::RemAssign => AssignOperator::RemAssign,
-            SeperatorKind::BitAndAssign => AssignOperator::BitAndAssign,
-            SeperatorKind::BitOrAssign => AssignOperator::BitOrAssign,
-            SeperatorKind::BitXorAssign => AssignOperator::BitXorAssign,
-            _ => unreachable!(), // Very confident about this
-        }
-    }
-}
-
 #[derive(Clone)]
 pub enum Code {
     PlaceHolder,
 
-    PrepareLocal(usize), // prepare n empty slots for local
-
     Call(ItemID, Vec<Operand>),
     CallMember(Operand, ItemID, Vec<Operand>), 
-    Assign(Operand, AssignOperator, Operand),  // use the assign operator to assign the var
+    FieldAccess(Operand, usize),               // operand, field id
+    Store(Operand, Operand),  // use the assign operator to assign the var
 
     Return(Operand),                          // return; is return ();
     Goto(usize),
@@ -77,14 +47,14 @@ impl fmt::Debug for Code {
         match *self {
             Code::PlaceHolder => 
                 write!(f, "placeholder"),
-            Code::PrepareLocal(ref size) => 
-                write!(f, "rbp -= {}", size),
             Code::Call(ref id, ref params) => 
                 write!(f, "call {:?}, {}", id, format_vector_debug(params, ", ")),
             Code::CallMember(ref operand, ref id, ref params) => 
-                write!(f, "call {:?} {:?}, {}", operand, id, format_vector_debug(params, ", ")),
-            Code::Assign(ref target, ref assignop, ref src) =>
-                write!(f, "{:?} {:?} {:?}", assignop, target, src),
+                write!(f, "call member {:?} {:?}, {}", operand, id, format_vector_debug(params, ", ")),
+            Code::FieldAccess(ref operand, ref field_id) => 
+                write!(f, "get field {:?} {}", operand, field_id),
+            Code::Store(ref target, ref src) =>
+                write!(f, "store {:?} {:?}", target, src),
             Code::Return(ref op) => 
                 write!(f, "ret {:?}", op),
             Code::Goto(ref id) => 

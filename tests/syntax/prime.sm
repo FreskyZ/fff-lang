@@ -1,31 +1,38 @@
 
 // Get primes
 
-fn get_primes(u32 high_bound) -> [u32] {
+fn main() {
+    write_array_6(get_primes(18u64));
+}
+
+fn get_primes(u64 high_bound) -> [u64] {
     
-    var [bool] is_prime = [true; high_bound]; 
-    for i in 1 : high_bound / 2 + 1 {
-        for j in 2 : high_bound {
+    var [bool] is_prime = [true; high_bound as i32]; 
+    for i in 1u64 : high_bound / 2u64 + 1u64 {
+        for j in 2u64 : high_bound {
             if i * j < high_bound {
-                is_prime[i * j] = false;
+                is_prime.set_index(i * j, false);
             }
         }
     }
 
-    var [u32] ret_val = [0u32; 0]; // because no type infer, should provide type for empty array def
-    for i in 1 : high_bound {
+    var [u64] ret_val = [0u64; 0]; // because no type infer, should provide type for empty array def
+    for i in 1u64 : high_bound {
         if is_prime[i] {
-            ret_val.push_back(i);
+            ret_val.push(i);
         }
     }
     return ret_val;
 }
 
-fn main() {
-
-    println(get_primes(18) == [2, 3, 5, 7, 11, 13, 15, 17]);
-    println(get_primes(10) == [2, 3, 5, 7]);
-
-    const i32 high_bound = read_i32();
-    println(get_primes(high_bound));
+fn write_array_6([u64] thearray) {
+    writeln("[");
+    for i in 0u64 : thearray.length() - 1u64 {
+        write(thearray[i].to_string());
+        write(", ");
+    }
+    if thearray.length() > 1u64 {
+        write(thearray[thearray.length() - 1u64].to_string());
+    }
+    writeln("]");
 }

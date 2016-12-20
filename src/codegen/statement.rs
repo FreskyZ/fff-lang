@@ -33,7 +33,6 @@ use codegen::Operand;
 use codegen::Code;
 use codegen::vm_code::CodeCollection;
 use codegen::ItemID;
-use codegen::AssignOperator;
 
 // Just a static dispatcher
 pub struct StatementGenerator{
@@ -100,7 +99,15 @@ fn gen_var_decl(var_decl: VarDeclStatement, sess: &mut GenerationSession) {
 ///     to c            to e           to g 
 fn gen_if(if_stmt: IfStatement, sess: &mut GenerationSession) {
 
-    let if_expr = gen_expr(if_stmt.if_expr, sess); 
+    let if_expr_pos = if_stmt.if_expr.pub_pos_all();
+    let (if_expr, if_expr_typeid) = gen_expr(if_stmt.if_expr, sess);
+    if if_expr_typeid != ItemID::new(12) {
+        sess.msgs.push(CodegenMessage::IfConditionNotBoolType {
+            pos: if_expr_pos,
+            actual: sess.types.fmt_by_id(if_expr_typeid),
+        });
+        // continue;
+    }
     let if_goto_pos = sess.codes.emit(Code::GotoIf(if_expr, false, CodeCollection::dummy_id()));
 
     gen_block(if_stmt.if_body, sess, true);
@@ -108,8 +115,17 @@ fn gen_if(if_stmt: IfStatement, sess: &mut GenerationSession) {
     sess.codes.refill_addr(if_goto_pos, next_codeid);
 
     for elseif in if_stmt.elseifs {
-        let elseif_expr = gen_expr(elseif.expr, sess);
+        let elseif_expr_pos = elseif.expr.pub_pos_all();
+        let (elseif_expr, elseif_expr_typeid) = gen_expr(elseif.expr, sess); 
+        if if_expr_typeid != ItemID::new(12) {
+            sess.msgs.push(CodegenMessage::IfConditionNotBoolType {
+                pos: elseif_expr_pos,
+                actual: sess.types.fmt_by_id(elseif_expr_typeid),
+            });
+            // continue;
+        }
         let elseif_goto_pos = sess.codes.emit(Code::GotoIf(elseif_expr, false, CodeCollection::dummy_id()));
+        
         gen_block(elseif.body, sess, true);
         let next_codeid = sess.codes.next_id();
         sess.codes.refill_addr(elseif_goto_pos, next_codeid);
@@ -127,12 +143,21 @@ fn gen_if(if_stmt: IfStatement, sess: &mut GenerationSession) {
 // }
 fn gen_return(ret_stmt: ReturnStatement, sess: &mut GenerationSession) {
 
-    let operand = match ret_stmt.expr {
+    let pos = ret_stmt.pub_pos_all();
+    let (operand, typeid) = match ret_stmt.expr {
         Some(expr) => gen_expr(expr, sess),
-        None => Operand::Lit(LitValue::Unit),
+        None => (Operand::Lit(LitValue::Unit), ItemID::new(0))
     };
 
-    sess.codes.emit(Code::Return(operand));
+    if typeid != sess.loops.ret_type {
+        sess.msgs.push(CodegenMessage::ReturnTypeMismatch{ 
+            pos: pos,
+            expect: sess.types.fmt_by_id(sess.loops.ret_type),
+            actual: sess.types.fmt_by_id(typeid),
+        });
+    } else {
+        sess.codes.emit(Code::Return(operand));
+    }
 }
 
 // pub struct LoopStatement {
@@ -182,22 +207,39 @@ fn gen_for(for_stmt: ForStatement, sess: &mut GenerationSession) {
     // scope for iter var
     sess.vars.push_scope();
 
-    let iter_varid = sess.vars.try_push(Var::new(for_stmt.iter_name.clone(), ItemID::new(14), false, for_stmt.pos[1]), &mut sess.types, &mut sess.msgs);
+    let low_expr_pos = for_stmt.expr_low.pub_pos_all();
+    let (low_operand, low_typeid) = gen_expr(for_stmt.expr_low, sess);
+    if !sess.types.is_primitive_integral(low_typeid) {
+        sess.msgs.push(CodegenMessage::ForIteraterTypeMismatch{
+            pos: low_expr_pos,
+            actual: sess.types.fmt_by_id(low_typeid),
+        });
+        // continue, mainly for not ignoring block content
+    }
+    let iter_varid = sess.vars.try_push(Var::new(for_stmt.iter_name.clone(), low_typeid, false, for_stmt.pos[1]), &mut sess.types, &mut sess.msgs);
     let iter_offset = sess.vars.get_offset(iter_varid);
-    // sess.codes.emit_silent(Code::DeclareVar(ItemID::new(14)));
-    let operand = gen_expr(for_stmt.expr_low, sess);
-    sess.codes.emit_silent(Code::Assign(Operand::Stack(iter_offset), AssignOperator::Assign, operand));
+    sess.codes.emit_silent(Code::Store(Operand::Stack(iter_offset), low_operand));
 
-    let continue_addr = sess.codes.next_id(); // reeval every time
-    let high_operand = gen_expr(for_stmt.expr_high, sess);
-    // sess.codes.emit_silent(Code::Call(SeperatorKind::Less, Operand::Stack(iter_offset), BinaryOperator::Less, high_operand));
+    let continue_addr = sess.codes.next_id(); // reveal every time
+    let high_expr_pos = for_stmt.expr_high.pub_pos_all();
+    let (high_operand, high_typeid) = gen_expr(for_stmt.expr_high, sess);
+    if high_typeid != low_typeid {
+        sess.msgs.push(CodegenMessage::ForRangeTypeMismatch{
+            pos: high_expr_pos,
+            actual: sess.types.fmt_by_id(high_typeid),
+            expect: sess.types.fmt_by_id(low_typeid),
+        })
+    }
+    let compare_fnid = sess.fns.find_by_sign(SeperatorKind::Less, &vec![low_typeid, high_typeid]); // TODO FUTURE: currently primitive integral type has operator<, but future may not and needs check here
+    sess.codes.emit_silent(Code::CallMember(Operand::Stack(iter_offset), compare_fnid, vec![high_operand]));
     sess.loops.push_loop(None, continue_addr);
 
     let while_implicit_break_addr = sess.codes.emit(Code::GotoIf(Operand::Register, false, CodeCollection::dummy_id())); 
     sess.loops.push_last_loop_break_addr(while_implicit_break_addr);
 
     gen_block(for_stmt.body, sess, false);
-    // sess.codes.emit_silent(Code::Binary(Operand::Stack(iter_offset), BinaryOperator::Add, Operand::Lit(LitValue::from(1))));
+    let increase_fnid = sess.fns.find_by_sign(SeperatorKind::Increase, &vec![low_typeid]);
+    sess.codes.emit_silent(Code::CallMember(Operand::Stack(iter_offset), increase_fnid, Vec::new()));
     sess.codes.emit(Code::Goto(continue_addr));
 
     let for_refill_addr = sess.codes.next_id();
@@ -281,6 +323,6 @@ impl StatementGenerator {
 
     pub fn generate(block: Block, sess: &mut GenerationSession) {
         gen_block(block, sess, false);
-        sess.codes.emit(Code::Return(Operand::Lit(LitValue::Unit))); // a `return ();` at fn end if no return is provided;
+        sess.codes.emit(Code::Return(Operand::Lit(LitValue::Unit))); // a `return ();` at fn end if no return is provided
     }
 }

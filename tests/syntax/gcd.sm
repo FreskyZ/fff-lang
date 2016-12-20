@@ -11,7 +11,7 @@ fn main() {
             break "main";
         }
 
-        println("gcd(" + a.to_string() + ", " + b.to_string() + ") is " + gcd(a, b));
+        writeln("gcd(" + a.to_string() + ", " + b.to_string() + ") is " + gcd(a, b).to_string());
     }
 }
 

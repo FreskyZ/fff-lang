@@ -42,6 +42,9 @@ impl fmt::Display for ReturnStatement {
         )
     }
 }
+impl ReturnStatement {
+    pub fn pub_pos_all(&self) -> StringPosition { self.pos_all() }
+}
 impl IASTItem for ReturnStatement {
 
     fn pos_all(&self) -> StringPosition { StringPosition::from2(self.pos[0].start_pos, self.pos[1].end_pos) } 

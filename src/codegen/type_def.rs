@@ -238,6 +238,13 @@ impl TypeCollection {
         ]}
     }
 
+    pub fn is_primitive_integral(&self, typeid: ItemID) -> bool {
+        match typeid.into_option() {
+            Some(id) => 1 <= id && id <= 12,
+            None => false,
+        }
+    }
+
     // push primitive type member fns
     pub fn push_builtin_types(&mut self, fns: &mut FnCollection) {
 
@@ -261,9 +268,9 @@ impl TypeCollection {
                 push_builtin_fn!($fns, SeperatorKind::Great, 12, [$typeid, $typeid]);
                 push_builtin_fn!($fns, SeperatorKind::Less, 12, [$typeid, $typeid]);
 
-                push_builtin_fn!($fns, SeperatorKind::BitNot, $typeid, [$typeid, $typeid]);
-                push_builtin_fn!($fns, SeperatorKind::Increase, 0, [$typeid, $typeid]);
-                push_builtin_fn!($fns, SeperatorKind::Decrease, 0, [$typeid, $typeid]);
+                push_builtin_fn!($fns, SeperatorKind::BitNot, $typeid, [$typeid]);
+                push_builtin_fn!($fns, SeperatorKind::Increase, 0, [$typeid]);
+                push_builtin_fn!($fns, SeperatorKind::Decrease, 0, [$typeid]);
 
                 push_builtin_fn!($fns, "is_odd", 12, [$typeid, $typeid]);
                 push_builtin_fn!($fns, "to_string", 13, [$typeid]);
@@ -312,7 +319,9 @@ impl TypeCollection {
                 push_builtin_fn!($fns, SeperatorKind::Great, 12, [$typeid, $typeid]);
                 push_builtin_fn!($fns, SeperatorKind::Less, 12, [$typeid, $typeid]);
 
-                push_builtin_fn!($fns, 6, 6, vec![$typeid]);
+                push_builtin_fn!($fns, 6, 6, vec![$typeid]); // char as u32
+                
+                push_builtin_fn!($fns, "to_string", 13, [$typeid]);
             )
         }
         
@@ -364,10 +373,13 @@ impl TypeCollection {
                 push_builtin_fn!(fns, "?new_array", array_typeid, [item_typeid, 8]);   // dup ctor 2
                 push_builtin_fn!(fns, "set_index", 0, [array_typeid, 5, item_typeid]);
                 push_builtin_fn!(fns, "set_index", 0, [array_typeid, 8, item_typeid]);
-                push_builtin_fn!(fns, "set_index", item_typeid, [array_typeid, 5]);
-                push_builtin_fn!(fns, "set_index", item_typeid, [array_typeid, 8]);
+                push_builtin_fn!(fns, "get_index", item_typeid, [array_typeid, 5]);
+                push_builtin_fn!(fns, "get_index", item_typeid, [array_typeid, 8]);
                 push_builtin_fn!(fns, "push", 0, [array_typeid, item_typeid]);              // fn 14::push(5) -> 0
                 push_builtin_fn!(fns, "pop", 5, [array_typeid]);
+                push_builtin_fn!(fns, "length", 8, [array_typeid]);
+                push_builtin_fn!(fns, SeperatorKind::Equal, 12, [array_typeid, array_typeid]);
+                push_builtin_fn!(fns, SeperatorKind::NotEqual, 12, [array_typeid, array_typeid]);
 
                 ItemID::new(array_typeid)
             }
@@ -381,6 +393,8 @@ impl TypeCollection {
                     push_builtin_fn!(fns, format!("set_item{}", index), 0, [tuple_typeid, 5, *item_typeid]);
                     push_builtin_fn!(fns, format!("set_item{}", index), 0, [tuple_typeid, 8, *item_typeid]);
                 }
+                push_builtin_fn!(fns, SeperatorKind::Equal, 12, [tuple_typeid, tuple_typeid]);
+                push_builtin_fn!(fns, SeperatorKind::NotEqual, 12, [tuple_typeid, tuple_typeid]);
 
                 ItemID::new(tuple_typeid)
             }
@@ -402,6 +416,7 @@ impl TypeCollection {
                         let mut buf = "(".to_owned();
                         for id in ids {
                             buf += &self.fmt_by_id(ItemID::new(*id));
+                            buf += ", ";
                         }
                         buf += ")";
                         return buf;

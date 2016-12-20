@@ -15,7 +15,6 @@ use codegen::TypeCollection;
 #[derive(Debug, PartialEq)]
 enum RuntimeValue {
     Nothing,           // dummy
-    Auto,              // auto, assign to any other but any operation are invalid
     Unit,
     Int(usize, u64),   // typeid, value
     F32(f32),

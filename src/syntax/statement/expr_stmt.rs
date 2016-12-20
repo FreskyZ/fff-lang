@@ -82,9 +82,9 @@ impl IASTItem for ExpressionStatement {
         };
 
         if lexer.nth(index + current_len).is_seperator(SeperatorKind::SemiColon) {
-            if !left_expr.is_function_call() {
-                lexer.push(SyntaxMessage::NotFunctionCallIndependentExpressionStatement{ pos: left_expr.pos_all() });
-            }
+            // if !left_expr.is_function_call() { // process in codegen not here
+            //     lexer.push(SyntaxMessage::NotFunctionCallIndependentExpressionStatement{ pos: left_expr.pos_all() });
+            // }
             return (Some(ExpressionStatement{
                 left_expr: left_expr,
                 op: None,

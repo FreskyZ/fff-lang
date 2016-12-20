@@ -8,6 +8,8 @@ use common::StringPosition;
 use common::format_vector_debug;
 use common::format_vector_display;
 
+use message::MessageEmitter;
+
 use lexical::Lexer;
 
 use syntax::ast_item::IASTItem;
@@ -30,6 +32,13 @@ impl fmt::Display for Program {
 impl Program {
     pub fn from_str(prog: &str) -> Option<Program> {
         Program::parse(&mut Lexer::new(prog), 0).0
+    }
+    pub fn try_from_str(prog: &str) -> Result<Program, MessageEmitter> {
+        let mut lexer = Lexer::new(prog);
+        match Program::parse(&mut lexer, 0).0 {
+            Some(program) => Ok(program),
+            None => Err(lexer.into_messages()),
+        }
     }
 }
 impl IASTItem for Program {
