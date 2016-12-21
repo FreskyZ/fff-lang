@@ -4,6 +4,8 @@
 // vmcode design is in mod codegen
 
 mod vm_impl;
+mod runtime;
+mod builtin_impl;
 
 use message::RuntimeMessage;
 use codegen::Program;

@@ -35,12 +35,13 @@ pub fn compile_input(file_name: String) {
     }
 
     println!("vm_program: {:?}", vm_program);
-
     let maybe_exception = run(vm_program);                         // run!
     match maybe_exception {
         Some(exception) => perrorln!("{:?}", exception),
         None => (),
     }
+
+    println!("Byebye");
     // Byebye
 }
 

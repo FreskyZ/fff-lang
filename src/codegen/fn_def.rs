@@ -199,6 +199,10 @@ impl FnImpl {
         }
     }
 
+    pub fn get_sign(&self) -> (FnName, Vec<ItemID>) { // pure signature
+        (self.name.clone(), self.args.iter().map(|ref arg| arg.typeid).collect())
+    }
+
     fn fmt_display(&self, types: &TypeCollection) -> String {
 
         let mut buf = self.name.fmt(types);
@@ -284,6 +288,7 @@ impl FnCollection {
             FnArg::new_internal("arg1", 13)
         ]);
         self.push_builtin_fn("read_i32", 5, Vec::new());
+        self.push_builtin_fn("read_u64", 8, Vec::new());
     }
 
     // If same signature, still push the fndecl and return index, but push message and when require ID by signature, return invalid

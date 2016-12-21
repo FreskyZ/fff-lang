@@ -457,16 +457,12 @@ impl_display_by_debug!{ CodegenMessage }
 #[derive(Eq, PartialEq)]
 pub enum RuntimeMessage {
     CannotFindMain,
-    ConvertNonBoolToBool,
 }
 impl fmt::Debug for RuntimeMessage {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             RuntimeMessage::CannotFindMain => {
                 write!(f, "Can not find a method with name `main` and no argument and no return type")
-            }
-            RuntimeMessage::ConvertNonBoolToBool => {
-                write!(f, "Try convert non bool type to bool type")
             }
         }
     }

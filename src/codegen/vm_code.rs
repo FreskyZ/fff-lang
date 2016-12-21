@@ -36,9 +36,9 @@ pub enum Code {
     Call(ItemID, Vec<Operand>),
     CallMember(Operand, ItemID, Vec<Operand>), 
     FieldAccess(Operand, usize),               // operand, field id
-    Store(Operand, Operand),  // use the assign operator to assign the var
+    Store(Operand, Operand),                  
 
-    Return(Operand),                          // return; is return ();
+    Return(Operand),                           // return; is return ();
     Goto(usize),
     GotoIf(Operand, bool, usize),
 }
@@ -48,21 +48,21 @@ impl fmt::Debug for Code {
             Code::PlaceHolder => 
                 write!(f, "placeholder"),
             Code::Call(ref id, ref params) => 
-                write!(f, "call {:?}, {}", id, format_vector_debug(params, ", ")),
+                write!(f, "Call {:?}, {}", id, format_vector_debug(params, ", ")),
             Code::CallMember(ref operand, ref id, ref params) => 
-                write!(f, "call member {:?} {:?}, {}", operand, id, format_vector_debug(params, ", ")),
+                write!(f, "Call {:?} {:?}, {}", id, operand, format_vector_debug(params, ", ")),
             Code::FieldAccess(ref operand, ref field_id) => 
-                write!(f, "get field {:?} {}", operand, field_id),
+                write!(f, "FieldAccess {:?} {}", operand, field_id),
             Code::Store(ref target, ref src) =>
-                write!(f, "store {:?} {:?}", target, src),
+                write!(f, "Store {:?} {:?}", target, src),
             Code::Return(ref op) => 
-                write!(f, "ret {:?}", op),
+                write!(f, "Return {:?}", op),
             Code::Goto(ref id) => 
-                write!(f, "br {:?}", id),
+                write!(f, "Goto {:?}", id),
             Code::GotoIf(ref op, true, ref id) =>
-                write!(f, "brtrue {:?} if {:?}", id, op),
+                write!(f, "Goto {:?} if {:?} is true", id, op),
             Code::GotoIf(ref op, false, ref id) => 
-                write!(f, "brfalse {:?} if {:?}", id, op),
+                write!(f, "Goto {:?} if {:?} is false", id, op),
         }
     }
 }

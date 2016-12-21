@@ -1,4 +1,9 @@
 
+// Virtual machine implementation
+// Stack = [StackFrame]*
+// StackFrame = RIP RBP [Local]*
+//                      RBP points to Local[0]
+
 use message::RuntimeMessage;
 use message::MessageEmitter;
 
@@ -12,114 +17,9 @@ use codegen::Type;
 use codegen::ItemID;
 use codegen::TypeCollection;
 
-#[derive(Debug, PartialEq)]
-enum RuntimeValue {
-    Nothing,           // dummy
-    Unit,
-    Int(usize, u64),   // typeid, value
-    F32(f32),
-    F64(f64),
-    Char(char),
-    Bool(bool),
-    Str(String),
-    Array(usize, Vec<RuntimeValue>), // item type, items
-    StrRef(usize),                   // heap index
-    ArrayRef(usize, usize),          // item type, heap index
-    Tuple(Vec<usize>, Vec<RuntimeValue>), // items type
-}
-impl Eq for RuntimeValue{
-}
-impl RuntimeValue {
-    fn with_type(ty: &Type, _types: &TypeCollection, heap: &mut RuntimeHeap) -> RuntimeValue {
-        match ty {
-            &Type::Base(ref typename) => match typename.as_ref() {
-                "unit" => RuntimeValue::Unit,
-                "i8" => RuntimeValue::Int(1, 0),
-                "u8" => RuntimeValue::Int(2, 0),
-                "i16" => RuntimeValue::Int(3, 0),
-                "u16" => RuntimeValue::Int(4, 0),
-                "i32" => RuntimeValue::Int(5, 0),
-                "u32" => RuntimeValue::Int(6, 0),
-                "i64" => RuntimeValue::Int(7, 0),
-                "u64" => RuntimeValue::Int(8, 0),
-                "f32" => RuntimeValue::F32(0f32),
-                "f64" => RuntimeValue::F64(0f64),
-                "char" => RuntimeValue::Char('\0'),
-                "bool" => RuntimeValue::Bool(false),
-                "string" => RuntimeValue::StrRef(heap.allocate_string()),
-                "auto" => RuntimeValue::Auto,
-                _ => unreachable!()
-            },
-            &Type::Array(ref inner) => RuntimeValue::ArrayRef(*inner, heap.allocate_array(*inner)),
-            &Type::Tuple(ref item_types) => {
-                let values = Vec::new();
-                for _ty in item_types {
-                    // values.push(RuntimeValue::with_type(&types.items[*ty], types, heap));
-                }
-                RuntimeValue::Tuple(item_types.clone(), values)
-            }
-        }
-    }
-}
-
-struct RuntimeHeap {
-    objs: Vec<RuntimeValue>,
-}
-impl RuntimeHeap {
-    fn new() -> RuntimeHeap {
-        RuntimeHeap{
-            objs: vec![RuntimeValue::Nothing], // nothing at nullptr
-        }
-    }
-    fn allocate_array(&mut self, item_ty: usize) -> usize {
-        let ret_val = self.objs.len();
-        self.objs.push(RuntimeValue::Array(item_ty, Vec::new()));
-        return ret_val;
-    }
-    fn allocate_string(&mut self) -> usize {
-        self.objs.push(RuntimeValue::Str(String::new()));
-        self.objs.len() - 1
-    }
-}
-
-// execution state in a function
-struct ExecutionContext {
-    fn_index: usize,
-    stack: Vec<RuntimeValue>,
-    rax: RuntimeValue,
-    rip: usize,
-}
-impl ExecutionContext {
-
-    fn new(fn_index: usize) -> ExecutionContext {
-        ExecutionContext{
-            fn_index: fn_index,
-            stack: Vec::new(),
-            rax: RuntimeValue::Nothing,
-            rip: 0,
-        }
-    }
-
-    fn push_var_decl(&mut self, ty: &Type, types: &TypeCollection, heap: &mut RuntimeHeap) {
-        self.stack.push(RuntimeValue::with_type(ty, types, heap));
-    } 
-
-    fn operand_as_bool(&self, operand: &Operand) -> Result<bool, RuntimeMessage> {
-        match operand {
-            &Operand::Lit(LitValue::Bool(value)) => Ok(value),
-            &Operand::Lit(_) => Err(RuntimeMessage::ConvertNonBoolToBool),
-            &Operand::Stack(local_offset) => match self.stack[local_offset] {
-                RuntimeValue::Bool(value) => Ok(value),
-                _ => Err(RuntimeMessage::ConvertNonBoolToBool),
-            },
-            &Operand::Register => match self.rax {
-                RuntimeValue::Bool(value) => Ok(value),
-                _ => Err(RuntimeMessage::ConvertNonBoolToBool),
-            },
-            &Operand::Unknown => unreachable!()
-        }
-    }
-}
+use super::runtime::RuntimeValue;
+use super::runtime::Runtime;
+use super::builtin_impl::dispatch_builtin;
 
 enum CircleResult{
     Continue,
@@ -131,17 +31,14 @@ pub struct VirtualMachine {
     fns: FnCollection, 
     types: TypeCollection, 
     codes: Vec<Code>,
-    ctxts: Vec<ExecutionContext>,
-    heap: RuntimeHeap, // heap are shared
 }
 impl VirtualMachine {
+    
     pub fn new(program: Program) -> VirtualMachine {
         VirtualMachine{
             fns: program.fns,
             types: program.types,
             codes: program.codes,
-            ctxts: Vec::new(),
-            heap: RuntimeHeap::new(),
         }
     }
 
@@ -154,27 +51,84 @@ impl VirtualMachine {
         return None;
     }
 
-    fn circle(&mut self) -> CircleResult {
+    fn circle(&mut self, rt: &mut Runtime) -> CircleResult {
 
-        let ctxts_len = self.ctxts.len();
-        let cur_ctxt = &mut self.ctxts[ctxts_len - 1]; // if it's empty it's internal error
-        let codes = &self.codes;
-        let cur_code = &codes[cur_ctxt.rip];               // if rip out of bound it's internal error
+        if rt.rip == !1 {
+            return CircleResult::Exit;  // normal exit
+        }
+        perrorln!("Current code: {:?}", self.codes[rt.rip]);
+        perrorln!("Current State: {}", rt.dump());
 
-        match cur_code {
+        match &self.codes[rt.rip] {
+            &Code::PlaceHolder => unreachable!(),
+
             &Code::Goto(ref new_rip) => {
-                cur_ctxt.rip = *new_rip;
+                rt.rip = *new_rip;
             }
             &Code::GotoIf(ref operand, ref target, ref new_rip) => {
-                match cur_ctxt.operand_as_bool(operand) {
-                    Ok(value) => if value == *target { cur_ctxt.rip = *new_rip }, // else nothing
-                    Err(msg) => return CircleResult::Err(msg),
+                let rt_value = rt.operand_to_value(operand);
+                if rt_value == *target {
+                    rt.rip = *new_rip;
                 }
             }
-            _ => ()
+
+            &Code::Call(ref fnid, ref operands) => {
+                let mut rt_values = Vec::new();
+                for operand in operands {
+                    rt_values.push(rt.operand_to_value(operand));
+                }
+
+                let thefn = self.fns.get_by_idx(fnid.as_option().unwrap());
+                if thefn.is_internal() {
+                    let fn_sign = thefn.get_sign();
+                    rt.rax = dispatch_builtin(fn_sign, rt_values, &self.types, rt);
+                } else {
+                    rt.stack.push(RuntimeValue::StoredRegister(rt.rip + 1));
+                    rt.stack.push(RuntimeValue::StoredRegister(rt.rbp));
+                    rt.rbp = rt.stack.len();
+                    rt.reserve_stack(thefn.local_size);
+                    for (index, rt_value) in rt_values.into_iter().enumerate() {
+                        rt.stack[rt.rbp + index + 1] = rt_value; // TODO FUTURE: this `+1` is also because of that feature in VarCollection offset
+                    }
+                    rt.rip = thefn.code_ptr.unwrap();
+                }
+            }
+            &Code::CallMember(ref operand, ref fnid, ref operands) => {
+                let mut rt_values = Vec::new();
+                rt_values.push(rt.operand_to_value(operand));
+                for operand in operands {
+                    rt_values.push(rt.operand_to_value(operand));
+                }
+
+                let thefn = self.fns.get_by_idx(fnid.as_option().unwrap());
+                if thefn.is_internal() {
+                    let fn_sign = thefn.get_sign();
+                    rt.rax = dispatch_builtin(fn_sign, rt_values, &self.types, rt);
+                } else {
+                    unreachable!() // yeah
+                }
+            }
+
+            &Code::FieldAccess(ref operand, ref field_id) => {
+                let rt_value = rt.operand_to_value(operand);
+                rt.rax = rt_value.get_field(*field_id);
+            }
+
+            // TODO: change to store to local
+            &Code::Store(ref _op1, ref _ops2) => {
+
+                rt.rip += 1;
+            }
+
+            &Code::Return(ref operand) => {
+                // But not complex at all
+                rt.rax = rt.operand_to_value(operand);
+                rt.rip = rt.stack[rt.rbp - 2].unwrap_stored_register();
+                rt.rbp = rt.stack[rt.rbp - 1].unwrap_stored_register(); 
+            }
         }
 
-        CircleResult::Exit
+        CircleResult::Continue // TODO: after circle finished, this should be Err or unreachable
     }
 
     pub fn execute(&mut self) -> Option<RuntimeMessage> {
@@ -184,10 +138,14 @@ impl VirtualMachine {
             None => return Some(RuntimeMessage::CannotFindMain),
         };
 
-        self.ctxts.push(ExecutionContext::new(main_fn_index));
-        
+        let mut rt = Runtime::new();
+        rt.rip = self.fns[main_fn_index].code_ptr.unwrap(); // should be unwrap able
+        rt.stack.push(RuntimeValue::StoredRegister(!1));    // prev rip
+        rt.stack.push(RuntimeValue::StoredRegister(0));     // prev rbp is not important
+        rt.reserve_stack(self.fns[main_fn_index].local_size);
+
         loop {
-            match self.circle() {
+            match self.circle(&mut rt) {
                 CircleResult::Continue => continue,
                 CircleResult::Err(msg) => return Some(msg),
                 CircleResult::Exit => return None,

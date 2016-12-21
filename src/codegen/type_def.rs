@@ -293,7 +293,6 @@ impl TypeCollection {
                 push_builtin_fn!($fns, SeperatorKind::Sub, $typeid, [$typeid, $typeid]);
                 push_builtin_fn!($fns, SeperatorKind::Mul, $typeid, [$typeid, $typeid]);
                 push_builtin_fn!($fns, SeperatorKind::Div, $typeid, [$typeid, $typeid]);
-                push_builtin_fn!($fns, SeperatorKind::Rem, $typeid, [$typeid, $typeid]);
 
                 push_builtin_fn!($fns, SeperatorKind::Equal, 12, [$typeid, $typeid]);
                 push_builtin_fn!($fns, SeperatorKind::NotEqual, 12, [$typeid, $typeid]);
@@ -319,7 +318,7 @@ impl TypeCollection {
                 push_builtin_fn!($fns, SeperatorKind::Great, 12, [$typeid, $typeid]);
                 push_builtin_fn!($fns, SeperatorKind::Less, 12, [$typeid, $typeid]);
 
-                push_builtin_fn!($fns, 6, 6, vec![$typeid]); // char as u32
+                push_builtin_fn!($fns, 6, 6, [$typeid]); // char as u32
                 
                 push_builtin_fn!($fns, "to_string", 13, [$typeid]);
             )
@@ -376,7 +375,7 @@ impl TypeCollection {
                 push_builtin_fn!(fns, "get_index", item_typeid, [array_typeid, 5]);
                 push_builtin_fn!(fns, "get_index", item_typeid, [array_typeid, 8]);
                 push_builtin_fn!(fns, "push", 0, [array_typeid, item_typeid]);              // fn 14::push(5) -> 0
-                push_builtin_fn!(fns, "pop", 5, [array_typeid]);
+                push_builtin_fn!(fns, "pop", item_typeid, [array_typeid]);
                 push_builtin_fn!(fns, "length", 8, [array_typeid]);
                 push_builtin_fn!(fns, SeperatorKind::Equal, 12, [array_typeid, array_typeid]);
                 push_builtin_fn!(fns, SeperatorKind::NotEqual, 12, [array_typeid, array_typeid]);
@@ -390,8 +389,8 @@ impl TypeCollection {
                 push_builtin_fn!(fns, "?new_tuple", tuple_typeid, *item_typeids.as_slice());
 
                 for (index, item_typeid) in item_typeids.iter().enumerate() {
-                    push_builtin_fn!(fns, format!("set_item{}", index), 0, [tuple_typeid, 5, *item_typeid]);
-                    push_builtin_fn!(fns, format!("set_item{}", index), 0, [tuple_typeid, 8, *item_typeid]);
+                    push_builtin_fn!(fns, format!("set_item{}", index), 0, [tuple_typeid, *item_typeid]);
+                    push_builtin_fn!(fns, format!("set_item{}", index), 0, [tuple_typeid, *item_typeid]);
                 }
                 push_builtin_fn!(fns, SeperatorKind::Equal, 12, [tuple_typeid, tuple_typeid]);
                 push_builtin_fn!(fns, SeperatorKind::NotEqual, 12, [tuple_typeid, tuple_typeid]);
