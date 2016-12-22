@@ -111,6 +111,7 @@ fn gen_if(if_stmt: IfStatement, sess: &mut GenerationSession) {
     let if_goto_pos = sess.codes.emit(Code::GotoIf(if_expr, false, CodeCollection::dummy_id()));
 
     gen_block(if_stmt.if_body, sess, true);
+    // sess.codes.emit_silent(Code::Goto(CodeCollection::dummy_id()));
     let next_codeid = sess.codes.next_id();
     sess.codes.refill_addr(if_goto_pos, next_codeid);
 
@@ -209,7 +210,7 @@ fn gen_for(for_stmt: ForStatement, sess: &mut GenerationSession) {
 
     let low_expr_pos = for_stmt.expr_low.pub_pos_all();
     let (low_operand, low_typeid) = gen_expr(for_stmt.expr_low, sess);
-    if !sess.types.is_primitive_integral(low_typeid) {
+    if !sess.types.is_primitive_numeric(low_typeid) {
         sess.msgs.push(CodegenMessage::ForIteraterTypeMismatch{
             pos: low_expr_pos,
             actual: sess.types.fmt_by_id(low_typeid),
@@ -218,7 +219,7 @@ fn gen_for(for_stmt: ForStatement, sess: &mut GenerationSession) {
     }
     let iter_varid = sess.vars.try_push(Var::new(for_stmt.iter_name.clone(), low_typeid, false, for_stmt.pos[1]), &mut sess.types, &mut sess.msgs);
     let iter_offset = sess.vars.get_offset(iter_varid);
-    sess.codes.emit_silent(Code::Store(Operand::Stack(iter_offset), low_operand));
+    sess.codes.emit_silent(Code::Store(iter_offset, low_operand));
 
     let continue_addr = sess.codes.next_id(); // reveal every time
     let high_expr_pos = for_stmt.expr_high.pub_pos_all();
@@ -231,7 +232,7 @@ fn gen_for(for_stmt: ForStatement, sess: &mut GenerationSession) {
         })
     }
     let compare_fnid = sess.fns.find_by_sign(SeperatorKind::Less, &vec![low_typeid, high_typeid]); // TODO FUTURE: currently primitive integral type has operator<, but future may not and needs check here
-    sess.codes.emit_silent(Code::CallMember(Operand::Stack(iter_offset), compare_fnid, vec![high_operand]));
+    sess.codes.emit_silent(Code::Call(compare_fnid, vec![Operand::Stack(iter_offset), high_operand]));
     sess.loops.push_loop(None, continue_addr);
 
     let while_implicit_break_addr = sess.codes.emit(Code::GotoIf(Operand::Register, false, CodeCollection::dummy_id())); 
@@ -239,7 +240,7 @@ fn gen_for(for_stmt: ForStatement, sess: &mut GenerationSession) {
 
     gen_block(for_stmt.body, sess, false);
     let increase_fnid = sess.fns.find_by_sign(SeperatorKind::Increase, &vec![low_typeid]);
-    sess.codes.emit_silent(Code::CallMember(Operand::Stack(iter_offset), increase_fnid, Vec::new()));
+    sess.codes.emit_silent(Code::Call(increase_fnid, vec![Operand::Stack(iter_offset)]));
     sess.codes.emit(Code::Goto(continue_addr));
 
     let for_refill_addr = sess.codes.next_id();

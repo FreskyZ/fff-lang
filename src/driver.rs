@@ -42,7 +42,6 @@ pub fn compile_input(file_name: String) {
     }
 
     println!("Byebye");
-    // Byebye
 }
 
 #[cfg(test)]

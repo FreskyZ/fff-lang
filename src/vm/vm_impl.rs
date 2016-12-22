@@ -56,7 +56,7 @@ impl VirtualMachine {
         if rt.rip == !1 {
             return CircleResult::Exit;  // normal exit
         }
-        perrorln!("Current code: {:?}", self.codes[rt.rip]);
+        perrorln!("Current Code: ({}, {:?})", rt.rip, self.codes[rt.rip]);
         perrorln!("Current State: {}", rt.dump());
 
         match &self.codes[rt.rip] {
@@ -64,71 +64,61 @@ impl VirtualMachine {
 
             &Code::Goto(ref new_rip) => {
                 rt.rip = *new_rip;
+                CircleResult::Continue
             }
             &Code::GotoIf(ref operand, ref target, ref new_rip) => {
-                let rt_value = rt.operand_to_value(operand);
-                if rt_value == *target {
-                    rt.rip = *new_rip;
-                }
+                rt.rip = if rt.index(operand) == *target { *new_rip } else { rt.rip + 1 };
+                CircleResult::Continue
             }
 
             &Code::Call(ref fnid, ref operands) => {
-                let mut rt_values = Vec::new();
-                for operand in operands {
-                    rt_values.push(rt.operand_to_value(operand));
-                }
-
                 let thefn = self.fns.get_by_idx(fnid.as_option().unwrap());
                 if thefn.is_internal() {
                     let fn_sign = thefn.get_sign();
-                    rt.rax = dispatch_builtin(fn_sign, rt_values, &self.types, rt);
+                    rt.rax = dispatch_builtin(fn_sign, operands, &self.types, rt);
+                    rt.rip += 1;
                 } else {
-                    rt.stack.push(RuntimeValue::StoredRegister(rt.rip + 1));
-                    rt.stack.push(RuntimeValue::StoredRegister(rt.rbp));
-                    rt.rbp = rt.stack.len();
+                    rt.stack.push(RuntimeValue::PrevRIP(rt.rip + 1));
+                    rt.stack.push(RuntimeValue::PrevRBP(rt.rbp));
+                    let new_rbp = rt.stack.len(); // Use new rbp because if set rbp here and use previous function Operand::Stack, they are invalid
+                    perrorln!("[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call(fnid: {:?}, operands: {:?})]", fnid, operands);
                     rt.reserve_stack(thefn.local_size);
-                    for (index, rt_value) in rt_values.into_iter().enumerate() {
-                        rt.stack[rt.rbp + index + 1] = rt_value; // TODO FUTURE: this `+1` is also because of that feature in VarCollection offset
+                    for (index, operand) in operands.iter().enumerate() {
+                        perrorln!("[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call] Iterating operand, current operand: ({}, {:?}), stack index to be set: {}, value to be set: {:?}", index, operand, rt.rbp + index + 1, rt.index(operand));
+                        rt.stack[new_rbp + index + 1] = rt.index(operand); // TODO FUTURE: this `+1` is also because of that feature in VarCollection offset
                     }
+                    rt.rbp = new_rbp;
                     rt.rip = thefn.code_ptr.unwrap();
                 }
+                CircleResult::Continue
             }
-            &Code::CallMember(ref operand, ref fnid, ref operands) => {
-                let mut rt_values = Vec::new();
-                rt_values.push(rt.operand_to_value(operand));
-                for operand in operands {
-                    rt_values.push(rt.operand_to_value(operand));
+            &Code::Return(ref operand) => {
+                // But not complex at all
+                rt.rax = rt.index(operand).clone();
+
+                let pop_num = rt.stack.len() - rt.rbp + 2;
+                rt.rip = rt.stack[rt.rbp - 2].unwrap_stored_register();
+                rt.rbp = rt.stack[rt.rbp - 1].unwrap_stored_register(); 
+                for _ in 0..pop_num {
+                    let _ = rt.stack.pop();
                 }
 
-                let thefn = self.fns.get_by_idx(fnid.as_option().unwrap());
-                if thefn.is_internal() {
-                    let fn_sign = thefn.get_sign();
-                    rt.rax = dispatch_builtin(fn_sign, rt_values, &self.types, rt);
-                } else {
-                    unreachable!() // yeah
-                }
+                CircleResult::Continue
             }
 
             &Code::FieldAccess(ref operand, ref field_id) => {
-                let rt_value = rt.operand_to_value(operand);
-                rt.rax = rt_value.get_field(*field_id);
-            }
-
-            // TODO: change to store to local
-            &Code::Store(ref _op1, ref _ops2) => {
-
+                rt.rax = rt.index(operand).get_field(*field_id);
                 rt.rip += 1;
+                CircleResult::Continue
             }
 
-            &Code::Return(ref operand) => {
-                // But not complex at all
-                rt.rax = rt.operand_to_value(operand);
-                rt.rip = rt.stack[rt.rbp - 2].unwrap_stored_register();
-                rt.rbp = rt.stack[rt.rbp - 1].unwrap_stored_register(); 
+            &Code::Store(ref local_id, ref operand) => {
+
+                *rt.index_mut(&Operand::Stack(*local_id)) = rt.index(operand).clone();
+                rt.rip += 1;
+                CircleResult::Continue
             }
         }
-
-        CircleResult::Continue // TODO: after circle finished, this should be Err or unreachable
     }
 
     pub fn execute(&mut self) -> Option<RuntimeMessage> {
@@ -140,9 +130,12 @@ impl VirtualMachine {
 
         let mut rt = Runtime::new();
         rt.rip = self.fns[main_fn_index].code_ptr.unwrap(); // should be unwrap able
-        rt.stack.push(RuntimeValue::StoredRegister(!1));    // prev rip
-        rt.stack.push(RuntimeValue::StoredRegister(0));     // prev rbp is not important
+        rt.stack.push(RuntimeValue::PrevRIP(!1));    // prev rip
+        rt.stack.push(RuntimeValue::PrevRBP(0));     // prev rbp is not important
+        rt.rbp = 2;
+        perrorln!("[DEBUG][3][vm/vm_impl.rs|VirtualMachine::execute] main fn local_size = {}", self.fns[main_fn_index].local_size);
         rt.reserve_stack(self.fns[main_fn_index].local_size);
+        perrorln!("[DEBUG][3][vm/vm_impl.rs|VirtualMachine::execute] after reserve stack, rt.rbp = {}, rt.stack.len() = {}", rt.rbp, rt.stack.len());
 
         loop {
             match self.circle(&mut rt) {

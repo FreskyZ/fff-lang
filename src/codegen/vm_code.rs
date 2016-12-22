@@ -15,7 +15,6 @@ pub enum Operand {
     Unknown,
     Lit(LitValue),
     Stack(usize), // [rbp - n]
-    // Heap(usize),
     Register,     // act as register rax, every operation return at stacktop, only store moves it some where
 } 
 impl fmt::Debug for Operand {
@@ -34,9 +33,8 @@ pub enum Code {
     PlaceHolder,
 
     Call(ItemID, Vec<Operand>),
-    CallMember(Operand, ItemID, Vec<Operand>), 
     FieldAccess(Operand, usize),               // operand, field id
-    Store(Operand, Operand),                  
+    Store(usize, Operand),                  
 
     Return(Operand),                           // return; is return ();
     Goto(usize),
@@ -49,8 +47,6 @@ impl fmt::Debug for Code {
                 write!(f, "placeholder"),
             Code::Call(ref id, ref params) => 
                 write!(f, "Call {:?}, {}", id, format_vector_debug(params, ", ")),
-            Code::CallMember(ref operand, ref id, ref params) => 
-                write!(f, "Call {:?} {:?}, {}", id, operand, format_vector_debug(params, ", ")),
             Code::FieldAccess(ref operand, ref field_id) => 
                 write!(f, "FieldAccess {:?} {}", operand, field_id),
             Code::Store(ref target, ref src) =>

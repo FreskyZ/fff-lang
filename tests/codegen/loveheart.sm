@@ -1,15 +1,15 @@
 
 fn main() {
-    for y in -15f32 : 15f32 {
-        for x in -30f32 : 30f32 {
-            x = x / 20;
-            y = y / -10;
-            var f32 a = x * x + y * y - 1;
+    for y in 0f32 - 15f32 : 15f32 {
+        for x in 0f32 - 30f32 : 30f32 {
+            x = x / 20f32;
+            y = y / (0f32 - 10f32);
+            var f32 a = x * x + y * y - 1f32;
             var bool is_star = a * a * a - x * x * y * y * y <= 0f32;
             if is_star {
-                write('*');
+                write("*");
             } else {
-                write(' ');
+                write(" ");
             }
         }
         writeln("");

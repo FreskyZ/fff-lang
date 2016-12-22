@@ -4,6 +4,7 @@
 //     | IfStatement | WhileStatement | ForStatement | LoopStatement 
 //     | AssignStatement
 //     | JumpStatement
+// TODO: loop label to be identifier
  
 use std::fmt;
 

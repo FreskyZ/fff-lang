@@ -438,10 +438,10 @@ fn gen_simple_expr_base(simple_base: SimpleBase, sess: &mut GenerationSession) -
         SimpleBase::ArrayDef(ctor_fnid, push_fnid, temp_varoffset, array_typeid, bases) => {
             sess.codes.emit_silent(Code::Call(ctor_fnid, Vec::new()));
             let array_operand = Operand::Stack(temp_varoffset);
-            sess.codes.emit_silent(Code::Store(array_operand.clone(), Operand::Register));
+            sess.codes.emit_silent(Code::Store(temp_varoffset, Operand::Register));
             for base in bases {
                 let (right_operand, _right_typeid) = gen_simple_expr_base(base, sess);
-                sess.codes.emit(Code::CallMember(array_operand.clone(), push_fnid, vec![right_operand]));
+                sess.codes.emit(Code::Call(push_fnid, vec![array_operand.clone(), right_operand]));
             }
             (array_operand, array_typeid)
         }
@@ -454,11 +454,11 @@ fn gen_simple_expr(simple_expr: SimpleExpr, sess: &mut GenerationSession) -> (Op
     for operator in simple_expr.ops {
         match operator {
             SimpleOp::MemberFunctionCall(fnid, ret_typeid, bases, _pos) => {
-                let mut ops = Vec::new();
+                let mut ops = vec![last_operand.clone()];
                 for base in bases {
                     ops.push(gen_simple_expr_base(base, sess).0);
                 }
-                sess.codes.emit(Code::CallMember(last_operand.clone(), fnid, ops));
+                sess.codes.emit(Code::Call(fnid, ops));
                 last_operand = Operand::Register;
                 last_typeid = ret_typeid;
             }
@@ -483,7 +483,7 @@ pub fn gen_expr(expr: FullExpression, sess: &mut GenerationSession) -> (Operand,
         Some(simple_expr) => {
             for assign in assigns {
                 let (operand, _typeid) = gen_simple_expr(assign.right, sess);
-                sess.codes.emit_silent(Code::Store(Operand::Stack(sess.vars.get_offset(assign.left)), operand));
+                sess.codes.emit_silent(Code::Store(sess.vars.get_offset(assign.left), operand));
             }
             gen_simple_expr(simple_expr, sess)
         }
@@ -564,7 +564,7 @@ pub fn gen_expr_stmt(expr_stmt: FullExpressionStatement, sess: &mut GenerationSe
 
         let left_varid = sess.vars.find_by_name(&left_ident_name.unwrap());
         let left_typeid = sess.vars.get_type(left_varid);
-        let left_operand = Operand::Stack(sess.vars.get_offset(left_varid));
+        let left_offset = sess.vars.get_offset(left_varid);
         let op = expr_stmt.op.unwrap();
         let right_expr = expr_stmt.right_expr.unwrap();
 
@@ -588,7 +588,7 @@ pub fn gen_expr_stmt(expr_stmt: FullExpressionStatement, sess: &mut GenerationSe
 
                 for assign in assigns {
                     let (operand, _typeid) = gen_simple_expr(assign.right, sess);
-                    sess.codes.emit_silent(Code::Store(Operand::Stack(sess.vars.get_offset(assign.left)), operand));
+                    sess.codes.emit_silent(Code::Store(sess.vars.get_offset(assign.left), operand));
                 }
                 
                 if maybe_op.is_some() { // some xxassignment
@@ -603,8 +603,8 @@ pub fn gen_expr_stmt(expr_stmt: FullExpressionStatement, sess: &mut GenerationSe
                     }
 
                     let (right_operand, _right_typeid) = gen_simple_expr(right_simple_expr, sess);
-                    sess.codes.emit_silent(Code::CallMember(left_operand.clone(), fnid, vec![right_operand]));
-                    sess.codes.emit_silent(Code::Store(left_operand, Operand::Register));
+                    sess.codes.emit_silent(Code::Call(fnid, vec![Operand::Stack(left_offset), right_operand]));
+                    sess.codes.emit_silent(Code::Store(left_offset, Operand::Register));
                 } else { // direct assignment
                     if left_typeid != right_typeid {
                         sess.msgs.push(CodegenMessage::AssignmentTypeMismatch{
@@ -615,7 +615,7 @@ pub fn gen_expr_stmt(expr_stmt: FullExpressionStatement, sess: &mut GenerationSe
                         return;
                     }
                     let (right_operand, _right_typeid) = gen_simple_expr(right_simple_expr, sess);
-                    sess.codes.emit_silent(Code::Store(left_operand, right_operand));
+                    sess.codes.emit_silent(Code::Store(left_offset, right_operand));
                 }
             }
         }

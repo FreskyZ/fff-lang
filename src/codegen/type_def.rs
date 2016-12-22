@@ -238,7 +238,7 @@ impl TypeCollection {
         ]}
     }
 
-    pub fn is_primitive_integral(&self, typeid: ItemID) -> bool {
+    pub fn is_primitive_numeric(&self, typeid: ItemID) -> bool {
         match typeid.into_option() {
             Some(id) => 1 <= id && id <= 12,
             None => false,
@@ -272,7 +272,7 @@ impl TypeCollection {
                 push_builtin_fn!($fns, SeperatorKind::Increase, 0, [$typeid]);
                 push_builtin_fn!($fns, SeperatorKind::Decrease, 0, [$typeid]);
 
-                push_builtin_fn!($fns, "is_odd", 12, [$typeid, $typeid]);
+                push_builtin_fn!($fns, "is_odd", 12, [$typeid]);
                 push_builtin_fn!($fns, "to_string", 13, [$typeid]);
 
                 // cast
@@ -346,6 +346,8 @@ impl TypeCollection {
 
         // string
         push_builtin_fn!(fns, SeperatorKind::Add, 13, [13, 13]);
+        push_builtin_fn!(fns, SeperatorKind::Equal, 12, [13, 13]);
+        push_builtin_fn!(fns, SeperatorKind::NotEqual, 12, [13, 13]);
         push_builtin_fn!(fns, "length", 8, [13]);
         push_builtin_fn!(fns, "get_index", 11, [13, 5]);
         push_builtin_fn!(fns, "get_index", 11, [13, 8]);

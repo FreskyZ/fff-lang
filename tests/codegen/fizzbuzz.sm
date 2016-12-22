@@ -1,0 +1,8 @@
+
+fn main() {
+
+    var i32 a = 1;
+    var i32 b = 2;
+    var [[i32]] array_of_array = [[0, 1, 2, 3]; 10];
+    writeln(array_of_array[1][2].to_string());
+}

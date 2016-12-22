@@ -4,6 +4,7 @@
 fn main() {
 
     loop "main" {
+        writeln("Input 2 numbers");
         var i32 a = read_i32();
         var i32 b = read_i32();
 
@@ -11,17 +12,17 @@ fn main() {
             break "main";
         }
 
-        writeln("gcd(" + a.to_string() + ", " + b.to_string() + ") is " + gcd(a, b).to_string());
+        writeln("最大公约数(" + a.to_string() + ", " + b.to_string() + ") is " + 最大公约数(a, b).to_string());
     }
 }
 
-fn gcd(i32 a, i32 b) -> i32 {
+fn 最大公约数(i32 a, i32 b) -> i32 {
     if b == 0 {
         return a;
     }
     if a < b {
-        return gcd(b, a);
+        return 最大公约数(b, a);
     } else {
-        return gcd(b, a % b);
+        return 最大公约数(b, a % b);
     }
 }

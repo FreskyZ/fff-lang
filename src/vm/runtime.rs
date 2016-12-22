@@ -1,6 +1,7 @@
 
 // Runtime value, slot content in runtime heap and stack
 
+use std::ops;
 use common::format_vector_debug;
 
 use lexical::LitValue;
@@ -14,7 +15,7 @@ use codegen::Operand;
 pub enum RuntimeValue {
     Nothing,           // dummy
     Unit,
-    Int(u64),   // typeid, value
+    Int(u64), 
     Float(f64),
     Char(char),
     Bool(bool),
@@ -22,7 +23,8 @@ pub enum RuntimeValue {
     Array(Vec<RuntimeValue>), // items
     ArrayRef(usize),          // heap index
     Tuple(Vec<RuntimeValue>), // 
-    StoredRegister(usize),
+    PrevRIP(usize),
+    PrevRBP(usize),
 }
 impl Eq for RuntimeValue{
 }
@@ -62,36 +64,11 @@ impl RuntimeValue {
         }
     }
 
-    pub fn from_type(ty: &Type, _types: &TypeCollection) -> RuntimeValue {
-        // match ty {
-        //     &Type::Base(ref typename) => match typename.as_ref() {
-        //         "unit" => RuntimeValue::Unit,
-        //         "i8" => RuntimeValue::Int(0),
-        //         "u8" => RuntimeValue::Int(0),
-        //         "i16" => RuntimeValue::Int(0),
-        //         "u16" => RuntimeValue::Int(0),
-        //         "i32" => RuntimeValue::Int(0),
-        //         "u32" => RuntimeValue::Int(0),
-        //         "i64" => RuntimeValue::Int(0),
-        //         "u64" => RuntimeValue::Int(0),
-        //         "f32" => RuntimeValue::F32(0f32),
-        //         "f64" => RuntimeValue::F64(0f64),
-        //         "char" => RuntimeValue::Char('\0'),
-        //         "bool" => RuntimeValue::Bool(false),
-        //         "string" => RuntimeValue::StrRef(heap.allocate_string()),
-        //         "auto" => RuntimeValue::Auto,
-        //         _ => unreachable!()
-        //     },
-        //     &Type::Array(ref inner) => RuntimeValue::ArrayRef(*inner, heap.allocate_array(*inner)),
-        //     &Type::Tuple(ref item_types) => {
-        //         let values = Vec::new();
-        //         for _ty in item_types {
-        //             // values.push(RuntimeValue::with_type(&types.items[*ty], types, heap));
-        //         }
-        //         RuntimeValue::Tuple(item_types.clone(), values)
-        //     }
-        // }
-        RuntimeValue::Unit
+    pub fn get_str_lit(&self) -> &String {
+        match *self {
+            RuntimeValue::Str(ref value) => value,
+            _ => unreachable!(),
+        }
     }
 
     pub fn get_field(&self, field_id: usize) -> RuntimeValue {
@@ -103,7 +80,8 @@ impl RuntimeValue {
 
     pub fn unwrap_stored_register(&self) -> usize {
         match *self {
-            RuntimeValue::StoredRegister(ref value) => *value,
+            RuntimeValue::PrevRBP(ref value) => *value,
+            RuntimeValue::PrevRIP(ref value) => *value,
             _ => unreachable!()
         }
     }
@@ -117,6 +95,7 @@ pub struct Runtime {
     pub stack: Vec<RuntimeValue>,
     pub heap: Vec<RuntimeValue>,
 }
+
 impl Runtime {
 
     pub fn new() -> Runtime {
@@ -130,18 +109,28 @@ impl Runtime {
         }
     }
 
-    pub fn reserve_stack(&mut self, local_size: usize) {
-        for _ in 0..local_size {
-            self.stack.push(RuntimeValue::Nothing);
+    pub fn index(&self, idx: &Operand) -> RuntimeValue {
+        match idx {
+            &Operand::Unknown => unreachable!(),
+            &Operand::Lit(ref lit_value) => RuntimeValue::from_lit(lit_value),
+            &Operand::Stack(ref index) => self.stack[self.rbp + *index].clone(), // Currently +, future -
+            &Operand::Register => self.rax.clone(),
         }
     }
 
-    pub fn operand_to_value(&mut self, operand: &Operand) -> RuntimeValue { // copy
-        match operand {
+    pub fn index_mut(&mut self, idx: &Operand) -> &mut RuntimeValue {
+        match idx {
             &Operand::Unknown => unreachable!(),
-            &Operand::Lit(ref lit_value) => RuntimeValue::from_lit(lit_value),
-            &Operand::Stack(ref index) => self.stack[*index].clone(),
-            &Operand::Register => self.rax.clone(),
+            &Operand::Lit(ref _lit_value) => unreachable!(), // literal is not modifiable lvalue
+            &Operand::Stack(ref index) => &mut self.stack[self.rbp + *index], // Currently +, future -
+            &Operand::Register => &mut self.rax,
+        }
+    }
+
+    pub fn reserve_stack(&mut self, local_size: usize) {
+        perrorln!("[DEBUG][3][vm/runtime.rs|Runtime::reserve_stack][FnBegin] Param local_size = {}", local_size);
+        for _ in 0..local_size {
+            self.stack.push(RuntimeValue::Nothing);
         }
     }
 
@@ -153,7 +142,7 @@ impl Runtime {
     }
 
     pub fn dump(&self) -> String {
-        format!("\n   RIP: {}\n    RBP: {}\n    RSP: {}\n    RAX: {:?}\n    Stack:\n {}\n    Heap: {}\n", 
-            self.rip, self.rbp, self.rsp, self.rax, format_vector_debug(&self.stack, "\n        "), format_vector_debug(&self.heap, "\n        "))
+        format!("\n   RIP: {}\n   RBP: {}\n   RSP: {}\n   RAX: {:?}\n   Stack:\n      {}\n   Heap:\n      {}\n", 
+            self.rip, self.rbp, self.rsp, self.rax, format_vector_debug(&self.stack, "\n      "), format_vector_debug(&self.heap, "\n      "))
     }
 }
