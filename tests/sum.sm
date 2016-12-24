@@ -1,0 +1,9 @@
+
+fn main() {
+
+    var i32 sum = 0;
+    for i in 0 : 100 {
+        sum += i;
+    }
+    writeln("1 add to 100 is " + sum.to_string());
+}

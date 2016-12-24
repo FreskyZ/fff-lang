@@ -1,0 +1,25 @@
+
+fn is_even(i32 a) -> bool {
+    return a & 1 == 0;
+}
+
+fn main() -> () {
+    
+    if (2.is_odd()) {
+        writeln("2 is odd");
+    } else {
+        writeln("2 is not odd");
+    }
+    
+    if (2.is_even()) {
+        writeln("2 is even");
+    } else {
+        writeln("2 is not even");
+    }
+    (++a).helloworld();
+
+    // unassigned variable runtime error...
+    // var i32 a;
+    // writeln(a.to_string());
+    writeln("helloworld");
+}
