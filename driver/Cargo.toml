@@ -3,6 +3,9 @@ name = "ffc"
 version = "0.1.1"
 authors = ["FreskyZ <fresky7@outlook.com>"]
 
+[dependencies]
+new_lexical = { path = "../lexical" }
+
 [[bin]]
 path = "src/main.rs"
 name = "ffc"

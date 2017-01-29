@@ -1,9 +1,6 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
-// #[macro_use]
-// extern crate fsz_common;
-
 #[macro_use]
 mod common;
 mod message;
@@ -28,7 +25,7 @@ fn print_usage() {
 fn print_version() {
     println!("{}", VERSION_STRING);
 }
-
+ 
 // For feel safe
 fn returnable_main() {
     use std::env::args;
@@ -53,12 +50,10 @@ fn main() {
     returnable_main();
 }
 
-#[cfg(test)]
-mod tests {
-    
-    #[test]
-    #[ignore]
-    fn sometest() {
-        
-    }
+extern crate new_lexical;
+#[test]
+fn lexical_lib_available() {
+    use new_lexical;
+
+    assert_eq!(new_lexical::add(3, 2), 1);
 }

@@ -43,14 +43,3 @@ pub fn compile_input(file_name: String) {
 
     println!("Byebye");
 }
-
-#[cfg(test)]
-mod tests {
-
-    #[allow(dead_code)]
-    fn xxxxxxxxxxxxxxxxxxx() {
-        use super::compile_input;
-
-        compile_input("tests/syntax/hello.sm".to_owned());
-    }
-}
