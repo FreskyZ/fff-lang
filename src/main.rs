@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
-#[macro_use]
-extern crate fsz_common;
+// #[macro_use]
+// extern crate fsz_common;
 
 #[macro_use]
 mod common;
@@ -18,9 +18,9 @@ mod driver;
 const USAGE_STRING: &'static str = r"
 Usage: 
 
-    smc [inputfile]
+    ffc [inputfile]
 ";
-const VERSION_STRING: &'static str = "Fresky's SmallC compiler v0.1.0";
+const VERSION_STRING: &'static str = "fff-lang compiler v0.1.1";
 
 fn print_usage() {
     println!("{}{}", VERSION_STRING, USAGE_STRING);

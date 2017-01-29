@@ -1,11 +1,8 @@
 [package]
-name = "smallc"
-version = "0.1.0"
+name = "ffc"
+version = "0.1.1"
 authors = ["FreskyZ <fresky7@outlook.com>"]
-
-[dependencies]
-fsz-common = { path = "../fsz-common" }
 
 [[bin]]
 path = "src/main.rs"
-name = "smc"
+name = "ffc"

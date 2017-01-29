@@ -71,3 +71,19 @@ LogicalOrOperator = fLogicalOr
 // Seperator: `=`, `+=`, `-=`, `*=`, `/=`, `%=`, `&=`, `^=`, `|=`, `++`, `--`,
 //     `-`, `!`, `~`, `*`, `\`, `%`, `+`, `-`, `<<`, `>>`, `<`, `>`, `<=`, `>=`, 
 //     `&`, `|`, `^`, `!=`, `==`, `&&`, `||`, `->`, `.`
+
+
+// Temp Road map here
+// fix bug on while and if in the test cases and slightly refactor code generation and virtual machine
+// add type size back to codegen and make array and string std type, make tuple and reference(pointer) primitive type
+// record video
+// huge refactor syntax and codegen, merge their syntax trees, maybe use visitor mode 
+// native codegen
+// bootstrap
+
+// Road map concern2
+// 0.1.0, handin, current at 17/1/3
+// 0.2.0, private release 1, educational release, for video recording
+// 0.3.0, private deployment, some usable scripts are deployed
+// 0.4.0 ~ 0.5.0, native build, exe generated
+// 1.0.0, bootstrap, no rust dependency
