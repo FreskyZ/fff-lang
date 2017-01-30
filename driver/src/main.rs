@@ -1,8 +1,10 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
-#[macro_use]
+#[macro_use] // make_str_pos 
 extern crate lexical_pos;
+#[macro_use] // perrorln, test_only_attribute, test_only, test_condition_only
+extern crate util;
 extern crate new_lexical;
 extern crate codemap;
 

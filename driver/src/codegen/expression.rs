@@ -4,7 +4,7 @@
 use std::fmt;
 
 use lexical_pos::StringPosition;
-use common::format_vector_debug;
+use util::format_vector_debug;
 use message::CodegenMessage;
 
 use lexical::LitValue;

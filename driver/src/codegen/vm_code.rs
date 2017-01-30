@@ -3,7 +3,7 @@
 
 use std::fmt;
 
-use common::format_vector_debug;
+use util::format_vector_debug;
 
 use lexical::LitValue;
 use lexical::SeperatorKind;

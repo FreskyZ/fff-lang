@@ -2,7 +2,7 @@
 // Runtime value, slot content in runtime heap and stack
 
 use std::ops;
-use common::format_vector_debug;
+use util::format_vector_debug;
 
 use lexical::LitValue;
 use lexical::NumLitValue;

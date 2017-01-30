@@ -6,8 +6,8 @@ use std::cmp;
 use std::fmt;
 
 use lexical_pos::StringPosition;
-use common::format_vector_debug;
-use common::format_vector_display;
+use util::format_vector_debug;
+use util::format_vector_display;
 use message::SyntaxMessage as Message;
 
 use lexical::Lexer;
