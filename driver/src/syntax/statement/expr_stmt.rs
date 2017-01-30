@@ -3,8 +3,7 @@
 
 use std::fmt;
 
-use common::From2;
-use common::StringPosition;
+use lexical_pos::StringPosition;
 use message::SyntaxMessage;
 
 use lexical::Lexer;
@@ -123,7 +122,7 @@ impl IASTItem for ExpressionStatement {
 #[cfg(test)]
 mod tests {
     use super::ExpressionStatement;
-    use common::StringPosition;
+    use lexical_pos::StringPosition;
     use lexical::Lexer;
     use lexical::SeperatorKind;
     use syntax::ast_item::IASTItem;

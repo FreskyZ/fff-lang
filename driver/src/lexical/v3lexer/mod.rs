@@ -11,10 +11,9 @@
 // May be final layer, --- not, 17/10/8
 
 use std::str::Chars;
-use common::From2;
 use common::TryFrom;
-use common::Position;
-use common::StringPosition;
+use lexical_pos::Position;
+use lexical_pos::StringPosition;
 use message::LexicalMessage;
 use message::MessageEmitter;
 
@@ -187,7 +186,7 @@ mod tests {
     #[test]
     #[ignore]
     fn v3_on_lexical_v2_num_lit_parser() {
-         use std::fs::File;
+        use std::fs::File;
         use std::io::Read;
         use super::V3Lexer;
         use message::MessageEmitter;

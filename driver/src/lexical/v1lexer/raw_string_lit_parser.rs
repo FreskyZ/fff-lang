@@ -1,9 +1,8 @@
 
 // Raw string literal parser
 
-use common::From2;
-use common::Position;
-use common::StringPosition;
+use lexical_pos::Position;
+use lexical_pos::StringPosition;
 use message::LexicalMessage as Message;
 use message::MessageEmitter;
 use lexical::symbol_type::string_literal::StringLiteral;
@@ -37,7 +36,7 @@ impl RawStringLiteralParser {
     pub fn input(&mut self, ch: Option<char>, pos: Position, messages: &mut MessageEmitter) -> RawStringLiteralParserResult {
         match (ch, pos) {
             (Some('"'), pos) => {                                               // C1: in raw string, meet ", finish, return
-                return RawStringLiteralParserResult::Finished(StringLiteral::new(self.raw.clone(), StringPosition::from((self.start_pos, pos)), true));
+                return RawStringLiteralParserResult::Finished(StringLiteral::new(self.raw.clone(), StringPosition::from2(self.start_pos, pos), true));
             }
             (Some(ch), _1) => {                                                 // C2: in raw string, meet other, continue
                 self.raw.push(ch);
@@ -60,9 +59,8 @@ mod tests {
     
     #[test]
     fn raw_string_lit_parser_test() {
-        use common::From2;
-        use common::Position;
-        use common::StringPosition;
+        use lexical_pos::Position;
+        use lexical_pos::StringPosition;
         use message::LexicalMessage as Message;
         use message::MessageEmitter;
         use lexical::symbol_type::string_literal::StringLiteral;
@@ -70,9 +68,9 @@ mod tests {
         use super::RawStringLiteralParserResult::*;
 
         let dummy_pos = Position::new();
-        let spec_pos1 = Position::from((12, 34));
-        let spec_pos2 = Position::from((56, 78));
-        let spec_pos4 = Position::from((1314, 1516));
+        let spec_pos1 = Position::from2(12, 34);
+        let spec_pos2 = Position::from2(56, 78);
+        let spec_pos4 = Position::from2(1314, 1516);
 
         {   // r"hell\u\no", normal, C1, C2
             let mut parser = RawStringLiteralParser::new(spec_pos1);
@@ -88,7 +86,7 @@ mod tests {
             assert_eq!(parser.input(Some('n'), dummy_pos, messages), WantMore);
             assert_eq!(parser.input(Some('o'), dummy_pos, messages), WantMore);
             assert_eq!(parser.input(Some('"'), spec_pos4, messages), 
-                Finished(StringLiteral::new(r"hell\u\no".to_owned(), StringPosition::from((spec_pos1, spec_pos4)), true)));
+                Finished(StringLiteral::new(r"hell\u\no".to_owned(), StringPosition::from2(spec_pos1, spec_pos4), true)));
 
             assert_eq!(messages, expect_messages);
         }

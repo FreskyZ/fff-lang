@@ -2,7 +2,7 @@
 // numeric literal parser
 // TODO: ' as seperator, multi seperator not supported, full test
 
-use common::StringPosition;
+use lexical_pos::StringPosition;
 use message::LexicalMessage as Message;
 use message::MessageEmitter;
 
@@ -376,10 +376,10 @@ fn num_lit_prefix() {
     test_case!{ ["12", 1, 1, 1, 2] [Ok(Prefix::NotSet)] };
     test_case!{ ["0f32", 1, 1, 1, 4] [Ok(Prefix::NotSet)] };
     test_case!{ ["0u8", 1, 1, 1, 3] [Ok(Prefix::NotSet)] };
-    test_case!{ ["0u78", 1, 1, 1, 2] [Err(Message::InvalidPrefixInNumericLiteral{ literal_pos: StringPosition::from((1, 1, 1, 2)), prefix: 'u' })] };
-    test_case!{ ["0x", 1, 1, 1, 2] [Err(Message::EmptyNumericLiteral{ literal_pos: StringPosition::from((1, 1, 1, 2)) })] };
-    test_case!{ ["001", 1, 1, 1, 3] [Err(Message::InvalidPrefixInNumericLiteral{ literal_pos: StringPosition::from((1, 1, 1, 3)), prefix: '0' })] };
-    test_case!{ ["0X1", 1, 1, 1, 450] [Err(Message::InvalidPrefixInNumericLiteral{ literal_pos: StringPosition::from((1, 1, 1, 450)), prefix: 'X' })] };
+    test_case!{ ["0u78", 1, 1, 1, 2] [Err(Message::InvalidPrefixInNumericLiteral{ literal_pos: StringPosition::from4(1, 1, 1, 2), prefix: 'u' })] };
+    test_case!{ ["0x", 1, 1, 1, 2] [Err(Message::EmptyNumericLiteral{ literal_pos: StringPosition::from4(1, 1, 1, 2) })] };
+    test_case!{ ["001", 1, 1, 1, 3] [Err(Message::InvalidPrefixInNumericLiteral{ literal_pos: StringPosition::from4(1, 1, 1, 3), prefix: '0' })] };
+    test_case!{ ["0X1", 1, 1, 1, 450] [Err(Message::InvalidPrefixInNumericLiteral{ literal_pos: StringPosition::from4(1, 1, 1, 450), prefix: 'X' })] };
 }
 
 #[cfg(test)]
@@ -387,101 +387,101 @@ fn num_lit_prefix() {
 fn num_lit_postfix() {
 
     assert_eq!(
-        get_postfix("u8", StringPosition::from((1, 1, 1, 2)), false), 
-        Err(Message::EmptyNumericLiteral{ literal_pos: StringPosition::from((1, 1, 1, 2)) }));
+        get_postfix("u8", StringPosition::from4(1, 1, 1, 2), false), 
+        Err(Message::EmptyNumericLiteral{ literal_pos: StringPosition::from4(1, 1, 1, 2) }));
     assert_eq!(
-        get_postfix("i8", StringPosition::from((1, 1, 1, 2)), false), 
-        Err(Message::EmptyNumericLiteral{ literal_pos: StringPosition::from((1, 1, 1, 2)) }));
+        get_postfix("i8", StringPosition::from4(1, 1, 1, 2), false), 
+        Err(Message::EmptyNumericLiteral{ literal_pos: StringPosition::from4(1, 1, 1, 2) }));
     assert_eq!(
-        get_postfix("u16", StringPosition::from((1, 1, 1, 3)), false), 
-        Err(Message::EmptyNumericLiteral{ literal_pos: StringPosition::from((1, 1, 1, 3)) }));
+        get_postfix("u16", StringPosition::from4(1, 1, 1, 3), false), 
+        Err(Message::EmptyNumericLiteral{ literal_pos: StringPosition::from4(1, 1, 1, 3) }));
     assert_eq!(
-        get_postfix("i16", StringPosition::from((1, 1, 1, 3)), false), 
-        Err(Message::EmptyNumericLiteral{ literal_pos: StringPosition::from((1, 1, 1, 3)) }));
+        get_postfix("i16", StringPosition::from4(1, 1, 1, 3), false), 
+        Err(Message::EmptyNumericLiteral{ literal_pos: StringPosition::from4(1, 1, 1, 3) }));
     assert_eq!(
-        get_postfix("i64", StringPosition::from((1, 1, 1, 3)), false), 
-        Err(Message::EmptyNumericLiteral{ literal_pos: StringPosition::from((1, 1, 1, 3)) }));
+        get_postfix("i64", StringPosition::from4(1, 1, 1, 3), false), 
+        Err(Message::EmptyNumericLiteral{ literal_pos: StringPosition::from4(1, 1, 1, 3) }));
     assert_eq!(
-        get_postfix("u32", StringPosition::from((1, 1, 1, 3)), false), 
-        Err(Message::EmptyNumericLiteral{ literal_pos: StringPosition::from((1, 1, 1, 3)) }));
+        get_postfix("u32", StringPosition::from4(1, 1, 1, 3), false), 
+        Err(Message::EmptyNumericLiteral{ literal_pos: StringPosition::from4(1, 1, 1, 3) }));
     assert_eq!(
-        get_postfix("i32", StringPosition::from((1, 1, 1, 3)), false), 
-        Err(Message::EmptyNumericLiteral{ literal_pos: StringPosition::from((1, 1, 1, 3)) }));
+        get_postfix("i32", StringPosition::from4(1, 1, 1, 3), false), 
+        Err(Message::EmptyNumericLiteral{ literal_pos: StringPosition::from4(1, 1, 1, 3) }));
     assert_eq!(
-        get_postfix("u64", StringPosition::from((1, 1, 1, 3)), false), 
-        Err(Message::EmptyNumericLiteral{ literal_pos: StringPosition::from((1, 1, 1, 3)) }));
+        get_postfix("u64", StringPosition::from4(1, 1, 1, 3), false), 
+        Err(Message::EmptyNumericLiteral{ literal_pos: StringPosition::from4(1, 1, 1, 3) }));
     assert_eq!(
-        get_postfix("f32", StringPosition::from((1, 1, 1, 3)), false), 
-        Err(Message::EmptyNumericLiteral{ literal_pos: StringPosition::from((1, 1, 1, 3)) }));
+        get_postfix("f32", StringPosition::from4(1, 1, 1, 3), false), 
+        Err(Message::EmptyNumericLiteral{ literal_pos: StringPosition::from4(1, 1, 1, 3) }));
     assert_eq!(
-        get_postfix("f64", StringPosition::from((1, 1, 1, 3)), false), 
-        Err(Message::EmptyNumericLiteral{ literal_pos: StringPosition::from((1, 1, 1, 3)) }));
+        get_postfix("f64", StringPosition::from4(1, 1, 1, 3), false), 
+        Err(Message::EmptyNumericLiteral{ literal_pos: StringPosition::from4(1, 1, 1, 3) }));
 
     assert_eq!(
-        get_postfix("1u8", StringPosition::from((1, 1, 1, 3)), false), 
+        get_postfix("1u8", StringPosition::from4(1, 1, 1, 3), false), 
         Ok(Postfix::U8));
     assert_eq!(
-        get_postfix("1i8", StringPosition::from((1, 1, 1, 3)), false), 
+        get_postfix("1i8", StringPosition::from4(1, 1, 1, 3), false), 
         Ok(Postfix::I8));
     assert_eq!(
-        get_postfix("1i64", StringPosition::from((1, 1, 1, 3)), false), 
+        get_postfix("1i64", StringPosition::from4(1, 1, 1, 3), false), 
         Ok(Postfix::I64));
     assert_eq!(
-        get_postfix("1u16", StringPosition::from((1, 1, 1, 3)), false), 
+        get_postfix("1u16", StringPosition::from4(1, 1, 1, 3), false), 
         Ok(Postfix::U16));
     assert_eq!(
-        get_postfix("1i16", StringPosition::from((1, 1, 1, 3)), false), 
+        get_postfix("1i16", StringPosition::from4(1, 1, 1, 3), false), 
         Ok(Postfix::I16));
     assert_eq!(
-        get_postfix("1u64", StringPosition::from((1, 1, 1, 3)), false), 
+        get_postfix("1u64", StringPosition::from4(1, 1, 1, 3), false), 
         Ok(Postfix::U64));
     assert_eq!(
-        get_postfix("1u32", StringPosition::from((1, 1, 1, 3)), false), 
+        get_postfix("1u32", StringPosition::from4(1, 1, 1, 3), false), 
         Ok(Postfix::U32));
     assert_eq!(
-        get_postfix("1i32", StringPosition::from((1, 1, 1, 3)), false), 
+        get_postfix("1i32", StringPosition::from4(1, 1, 1, 3), false), 
         Ok(Postfix::I32));
     assert_eq!(
-        get_postfix("1f64", StringPosition::from((1, 1, 1, 3)), false), 
+        get_postfix("1f64", StringPosition::from4(1, 1, 1, 3), false), 
         Ok(Postfix::F64));
     assert_eq!(
-        get_postfix("1f32", StringPosition::from((1, 1, 1, 3)), false), 
+        get_postfix("1f32", StringPosition::from4(1, 1, 1, 3), false), 
         Ok(Postfix::F32));
     
     assert_eq!(
-        get_postfix("1u18", StringPosition::from((1, 1, 1, 3)), false), 
+        get_postfix("1u18", StringPosition::from4(1, 1, 1, 3), false), 
         Ok(Postfix::NotSet));
     assert_eq!(
-        get_postfix("1xxx", StringPosition::from((1, 1, 1, 3)), false), 
+        get_postfix("1xxx", StringPosition::from4(1, 1, 1, 3), false), 
         Ok(Postfix::NotSet));
     assert_eq!(
-        get_postfix("1abc", StringPosition::from((1, 1, 1, 3)), false), 
+        get_postfix("1abc", StringPosition::from4(1, 1, 1, 3), false), 
         Ok(Postfix::NotSet));
         
     assert_eq!(
-        get_postfix("1u8", StringPosition::from((1, 1, 1, 3)), true), 
+        get_postfix("1u8", StringPosition::from4(1, 1, 1, 3), true), 
         Ok(Postfix::U8));
     assert_eq!(
-        get_postfix("1u64", StringPosition::from((1, 1, 1, 3)), true), 
+        get_postfix("1u64", StringPosition::from4(1, 1, 1, 3), true), 
         Ok(Postfix::U64));
     assert_eq!(
-        get_postfix("1u32", StringPosition::from((1, 1, 1, 3)), true), 
+        get_postfix("1u32", StringPosition::from4(1, 1, 1, 3), true), 
         Ok(Postfix::U32));
     assert_eq!(
-        get_postfix("1i32", StringPosition::from((1, 1, 1, 3)), true), 
+        get_postfix("1i32", StringPosition::from4(1, 1, 1, 3), true), 
         Ok(Postfix::I32));
     assert_eq!(
-        get_postfix("1f64", StringPosition::from((1, 1, 1, 3)), true), 
-        Err(Message::PrefixNotSupportedForFloatLiteral{ literal_pos: StringPosition::from((1, 1, 1, 3)) }));
+        get_postfix("1f64", StringPosition::from4(1, 1, 1, 3), true), 
+        Err(Message::PrefixNotSupportedForFloatLiteral{ literal_pos: StringPosition::from4(1, 1, 1, 3) }));
     assert_eq!(
-        get_postfix("1f32", StringPosition::from((1, 1, 1, 3)), true), 
-        Err(Message::PrefixNotSupportedForFloatLiteral{ literal_pos: StringPosition::from((1, 1, 1, 3)) }));
+        get_postfix("1f32", StringPosition::from4(1, 1, 1, 3), true), 
+        Err(Message::PrefixNotSupportedForFloatLiteral{ literal_pos: StringPosition::from4(1, 1, 1, 3) }));
 }
 
 #[cfg(test)]
 #[test]
 fn num_lit_content() {
-    let pos = StringPosition::from((1, 1, 1, 8));
+    let pos = StringPosition::from4(1, 1, 1, 8);
     
     assert_eq!(get_content("123", pos, 10, Postfix::I32), Ok((Content::Integral(vec![1, 2, 3]), Postfix::I32)));
     assert_eq!(get_content("123.456", pos, 10, Postfix::I32), Err(Message::UnexpectedDecimalPointInIntegralLiteral{ literal_pos: pos }));
@@ -531,7 +531,7 @@ fn num_lit_content() {
 #[cfg(test)]
 #[test]
 fn num_lit_u32() {
-    let pos = StringPosition::from((1, 2, 3, 4));
+    let pos = StringPosition::from4(1, 2, 3, 4);
 
     assert_eq!(values_to_u32(2, vec![1, 0, 1, 0], pos), Ok(NumLitValue::U32(0b1010)));
     assert_eq!(values_to_u32(8, vec![1, 2, 3], pos), Ok(NumLitValue::U32(0o123)));
@@ -553,7 +553,7 @@ fn num_lit_u32() {
 #[cfg(test)]
 #[test]
 fn num_lit_f32() {
-    let pos = StringPosition::from((1, 2, 3, 4));
+    let pos = StringPosition::from4(1, 2, 3, 4);
 
     assert_eq!(values_to_f32(10, vec![1, 2, 3], vec![4, 5, 6], pos), Ok(NumLitValue::F32(123.456f32)));
     assert_eq!(values_to_f32(10, vec![0], vec![], pos), Ok(NumLitValue::F32(0f32)));
@@ -563,7 +563,7 @@ fn num_lit_f32() {
 #[cfg(test)]
 #[test]
 fn num_lit_inter() {
-    let pos = StringPosition::from((1, 2, 3, 4));
+    let pos = StringPosition::from4(1, 2, 3, 4);
     macro_rules! test_case {
         ($input: expr, $pos: expr, ok: $expect: expr) => (
             assert_eq!(delegate($input.to_owned(), $pos), Ok(NumLitValue::from($expect)));

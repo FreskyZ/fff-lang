@@ -4,8 +4,7 @@
 
 use std::fmt;
 
-use common::From2;
-use common::StringPosition;
+use lexical_pos::StringPosition;
 
 use lexical::Lexer;
 use lexical::KeywordKind;
@@ -135,7 +134,7 @@ mod tests {
     use syntax::ast_item::IASTItem;
     use syntax::SMType;
     use syntax::Expression;
-    use common::StringPosition;
+    use lexical_pos::StringPosition;
 
     #[test]
     fn ast_stmt_var_decl() {

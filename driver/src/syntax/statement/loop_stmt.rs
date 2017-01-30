@@ -3,8 +3,7 @@
 
 use std::fmt;
 
-use common::From2;
-use common::StringPosition;
+use lexical_pos::StringPosition;
 use message::SyntaxMessage;
 
 use lexical::Lexer;
@@ -90,7 +89,7 @@ mod tests {
     use message::Message;
     use message::SyntaxMessage;
     use syntax::ast_item::TestCase;
-    use common::StringPosition;
+    use lexical_pos::StringPosition;
 
     #[test]
     fn ast_stmt_loop_parse() {

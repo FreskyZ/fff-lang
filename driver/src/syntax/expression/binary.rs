@@ -12,8 +12,7 @@
 
 use std::fmt;
 
-use common::From2;
-use common::StringPosition;
+use lexical_pos::StringPosition;
 
 use lexical::Lexer;
 use lexical::SeperatorKind;

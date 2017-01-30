@@ -3,8 +3,7 @@
 
 use std::fmt;
 
-use common::From2;
-use common::StringPosition;
+use lexical_pos::StringPosition;
 use common::format_vector_debug;
 use common::format_vector_display;
 

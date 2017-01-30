@@ -6,9 +6,8 @@
 mod numeric_lit_parser;
 
 use std::str::Chars;
-use common::From2;
-use common::Position;
-use common::StringPosition;
+use lexical_pos::Position;
+use lexical_pos::StringPosition;
 use message::MessageEmitter;
 
 use lexical::v1lexer::V1Token;
@@ -197,7 +196,7 @@ impl<'chs> IDetailLexer<'chs, V2Token> for V2Lexer<'chs> {
                     if vhalf.ch.is_numeric_literal() {  
                         value.push(vhalf.ch);                        
                         if vhalf.next_is_sep && !vhalf.next_is_dot { // To be finished, return here
-                            return Some(V2Token::NumericLiteral { inner: parse_numeric_literal(value, StringPosition::from((start_pos, vhalf.pos)), messages) } );
+                            return Some(V2Token::NumericLiteral { inner: parse_numeric_literal(value, StringPosition::from2(start_pos, vhalf.pos), messages) } );
                         } else {
                             state = State::InNumericLiteral { value: value, start_pos: start_pos };
                         }
@@ -218,8 +217,8 @@ mod tests {
     use super::V2Token;
     use super::V2Lexer;
     use lexical::buf_lexer::IDetailLexer;
-    use common::Position;
-    use common::StringPosition;
+    use lexical_pos::Position;
+    use lexical_pos::StringPosition;
     use message::MessageEmitter;
     use lexical::symbol_type::string_literal::StringLiteral;
     use lexical::symbol_type::numeric_literal::NumericLiteral;
@@ -247,7 +246,7 @@ mod tests {
 
     macro_rules! tstring {
         ($val: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr, $is_raw: expr, $has_fail: expr) => (
-            V2Token::StringLiteral{ inner: StringLiteral::new($val.to_owned(), StringPosition::from(($row1, $col1, $row2, $col2)), $is_raw) } 
+            V2Token::StringLiteral{ inner: StringLiteral::new($val.to_owned(), StringPosition::from4($row1, $col1, $row2, $col2), $is_raw) } 
         )
     }
     macro_rules! tnumber {
@@ -255,7 +254,7 @@ mod tests {
             V2Token::NumericLiteral{ 
                 inner: NumericLiteral{ 
                     value: Some(NumLitValue::from($val)), 
-                    pos: StringPosition::from(($row1, $col1, $row2, $col2))
+                    pos: StringPosition::from4($row1, $col1, $row2, $col2)
                 }
             }
         );        
@@ -263,14 +262,14 @@ mod tests {
             V2Token::NumericLiteral{ 
                 inner: NumericLiteral{ 
                     value: None, 
-                    pos: StringPosition::from(($row1, $col1, $row2, $col2))
+                    pos: StringPosition::from4($row1, $col1, $row2, $col2)
                 }
             }
         )
     }
     macro_rules! tident {
         ($name: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr) => (
-            V2Token::Identifier{ name: $name.to_owned(), pos: StringPosition::from(($row1, $col1, $row2, $col2)) }
+            V2Token::Identifier{ name: $name.to_owned(), pos: StringPosition::from4($row1, $col1, $row2, $col2) }
         )
     }
     macro_rules! tchar {

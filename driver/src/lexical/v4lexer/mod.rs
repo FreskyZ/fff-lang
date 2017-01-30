@@ -2,8 +2,7 @@
 // v4 lexer, input v3, act as lexer interface
 
 use std::fmt;
-use common::From2;
-use common::StringPosition;
+use lexical_pos::StringPosition;
 use message::SyntaxMessage;
 use message::Message;
 use message::MessageEmitter;
@@ -262,7 +261,7 @@ mod tests {
 
     #[test]
     fn v4_base() {
-        use common::StringPosition;
+        use lexical_pos::StringPosition;
         use super::V4Lexer;
         use lexical::NumLitValue;
         use lexical::SeperatorKind;

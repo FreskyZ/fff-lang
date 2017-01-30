@@ -1,8 +1,7 @@
 
 // Block
 
-use common::From2;
-use common::StringPosition;
+use lexical_pos::StringPosition;
 
 use syntax::Block as SyntaxBlock;
 // use syntax::Statement;

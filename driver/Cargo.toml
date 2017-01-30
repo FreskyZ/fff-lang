@@ -5,6 +5,8 @@ authors = ["FreskyZ <fresky7@outlook.com>"]
 
 [dependencies]
 new_lexical = { path = "../lexical" }
+codemap = { path="../codemap" }
+lexical_pos = { path="../lexical_pos" }
 
 [[bin]]
 path = "src/main.rs"

@@ -15,8 +15,7 @@
 
 use std::fmt;
 
-use common::From2;
-use common::StringPosition;
+use lexical_pos::StringPosition;
 use common::format_vector_debug;
 use common::format_vector_display;
 use message::SyntaxMessage;
@@ -211,7 +210,7 @@ mod tests {
         use message::Message;
         use message::SyntaxMessage;
         use super::SMType;
-        use common::StringPosition;
+        use lexical_pos::StringPosition;
         use syntax::ast_item::TestCase;
 
         // Primitive

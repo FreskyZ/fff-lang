@@ -3,8 +3,7 @@
 
 use std::fmt;
 
-use common::From2;
-use common::StringPosition;
+use lexical_pos::StringPosition;
 use common::format_vector_display;
 use common::format_vector_debug;
 
@@ -80,7 +79,7 @@ mod tests {
         use super::Block;
         use syntax::ast_item::IASTItem;
         use lexical::Lexer;
-        use common::StringPosition;
+        use lexical_pos::StringPosition;
         
         assert_eq!(
             Block::parse(&mut Lexer::new("{}", ), 0), 

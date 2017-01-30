@@ -3,7 +3,7 @@
 // TODO imm: Rename NumLitValue to NumLitVal!!!
 
 use std::fmt;
-use common::StringPosition;
+use lexical_pos::StringPosition;
 
 #[derive(PartialEq, Clone)]
 pub enum NumLitValue {

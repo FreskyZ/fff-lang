@@ -2,6 +2,11 @@
 #![allow(unused_imports)]
 
 #[macro_use]
+extern crate lexical_pos;
+extern crate new_lexical;
+extern crate codemap;
+
+#[macro_use]
 mod common;
 mod message;
 mod config;
@@ -50,10 +55,16 @@ fn main() {
     returnable_main();
 }
 
-extern crate new_lexical;
 #[test]
 fn lexical_lib_available() {
     use new_lexical;
 
     assert_eq!(new_lexical::add(3, 2), 1);
+} 
+
+#[test]
+fn codemap_lib_available() {
+    use codemap;
+
+    assert_eq!(codemap::sub(3, 5), 8);
 }

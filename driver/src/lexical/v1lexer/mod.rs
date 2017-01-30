@@ -13,7 +13,7 @@ mod string_lit_parser;
 mod raw_string_lit_parser;
 
 use std::str::Chars;
-use common::Position;
+use lexical_pos::Position;
 use message::LexicalMessage as Message;
 use message::MessageEmitter;
 
@@ -228,9 +228,8 @@ pub type BufV1Lexer<'chs> = BufLexer<V1Lexer<'chs>, V1Token>;
 mod tests {
     use super::V1Token;
     use super::V1Lexer;
-    use common::From2;
-    use common::Position;
-    use common::StringPosition;
+    use lexical_pos::Position;
+    use lexical_pos::StringPosition;
     use message::LexicalMessage as Message;
     use message::MessageEmitter;
     use lexical::buf_lexer::IDetailLexer;
@@ -270,17 +269,17 @@ mod tests {
         }
         macro_rules! is_char {
             ($ch: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr) => (
-                V1Token::CharLiteral{ inner: CharLiteral{ value: Some($ch), pos: StringPosition::from(($row1, $col1, $row2, $col2)) } }
+                V1Token::CharLiteral{ inner: CharLiteral{ value: Some($ch), pos: StringPosition::from4($row1, $col1, $row2, $col2) } }
             );
             ($row1: expr, $col1: expr, $row2: expr, $col2: expr) => (
-                V1Token::CharLiteral{ inner: CharLiteral{ value: None, pos: StringPosition::from(($row1, $col1, $row2, $col2)) } }
+                V1Token::CharLiteral{ inner: CharLiteral{ value: None, pos: StringPosition::from4($row1, $col1, $row2, $col2) } }
             )
         }
         macro_rules! is_string {
             ($row1: expr, $col1: expr, $row2: expr, $col2: expr, $is_raw: expr) => 
-                (V1Token::StringLiteral { inner: StringLiteral::new(None, StringPosition::from(($row1, $col1, $row2, $col2)), $is_raw) });
+                (V1Token::StringLiteral { inner: StringLiteral::new(None, StringPosition::from4($row1, $col1, $row2, $col2), $is_raw) });
             ($val: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr, $is_raw: expr) => 
-                (V1Token::StringLiteral { inner: StringLiteral::new2($val, StringPosition::from(($row1, $col1, $row2, $col2)), $is_raw) })
+                (V1Token::StringLiteral { inner: StringLiteral::new2($val, StringPosition::from4($row1, $col1, $row2, $col2), $is_raw) })
         }
 
         // Line comment as \n

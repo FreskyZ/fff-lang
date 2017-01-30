@@ -5,8 +5,7 @@
 use std::cmp;
 use std::fmt;
 
-use common::From2;
-use common::StringPosition;
+use lexical_pos::StringPosition;
 use common::format_vector_debug;
 use common::format_vector_display;
 use message::SyntaxMessage as Message;
@@ -219,7 +218,7 @@ mod tests {
     use syntax::ast_item::IASTItem;
     use super::Argument;
     use super::FunctionDef;
-    use common::StringPosition;
+    use lexical_pos::StringPosition;
 
     #[test]
     fn ast_argument_parse() {

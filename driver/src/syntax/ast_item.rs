@@ -4,7 +4,7 @@
 use std::fmt;
 use std::marker::PhantomData;
 
-use common::StringPosition;
+use lexical_pos::StringPosition;
 use message::Message;
 use message::MessageEmitter;
 
