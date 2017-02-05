@@ -10,7 +10,7 @@
 
 use std::fmt;
 
-use codemap::StringPosition;
+use codepos::StringPosition;
 use util::format_vector_display;
 use util::format_vector_debug;
 use message::SyntaxMessage as Message;
@@ -58,7 +58,7 @@ impl Postfix {
             Postfix::Subscription(ref _exprs, ref pos) => *pos,
             Postfix::FunctionCall(ref _exprs, ref pos) => *pos,
             Postfix::MemberAccess(ref _name, ref pos) => *pos,
-            Postfix::TypeCast(ref ty, ref pos) => StringPosition::from2(pos.start_pos, ty.pos_all().end_pos),
+            Postfix::TypeCast(ref ty, ref pos) => StringPosition::merge(*pos, ty.pos_all()),
         }
     }
 }
@@ -88,13 +88,13 @@ impl PostfixExpression {
 impl IASTItem for PostfixExpression {
     
     fn pos_all(&self) -> StringPosition { 
-        StringPosition::from2(
-            self.prim.pos_all().start_pos, 
+        StringPosition::merge(
+            self.prim.pos_all(), 
             match self.postfixs.iter().last() {
-                Some(&Postfix::Subscription(ref _exprs, ref pos)) | Some(&Postfix::FunctionCall(ref _exprs, ref pos)) => pos.end_pos,
-                Some(&Postfix::MemberAccess(ref _name, ref pos)) => pos.end_pos,
-                Some(&Postfix::TypeCast(ref ty, ref _pos)) => ty.pos_all().end_pos,
-                None => self.prim.pos_all().end_pos,
+                Some(&Postfix::Subscription(ref _exprs, ref pos)) | Some(&Postfix::FunctionCall(ref _exprs, ref pos)) => *pos,
+                Some(&Postfix::MemberAccess(ref _name, ref pos)) => *pos,
+                Some(&Postfix::TypeCast(ref ty, ref _pos)) => ty.pos_all(),
+                None => self.prim.pos_all(),
             }
         )
     }
@@ -124,9 +124,9 @@ impl IASTItem for PostfixExpression {
                         test_condition_perrorln!{ log_enable, "get one postfix, member access {:?}", ident, }
                         postfixs.push(Postfix::MemberAccess(
                             ident.clone(), 
-                            StringPosition::from2(
-                                lexer.pos(index + current_len).start_pos,
-                                lexer.pos(index + current_len + 1).end_pos
+                            StringPosition::merge(
+                                lexer.pos(index + current_len),
+                                lexer.pos(index + current_len + 1)
                             )
                         ));
                         current_len += 2;
@@ -155,15 +155,15 @@ impl IASTItem for PostfixExpression {
                     test_condition_perrorln!{ log_enable, "get one postfix, none parameter function call" }
                     postfixs.push(Postfix::FunctionCall(
                         Vec::new(), 
-                        StringPosition::from2(lexer.pos(index + current_len).start_pos, lexer.pos(index + current_len + 1).end_pos)
+                        StringPosition::merge(lexer.pos(index + current_len), lexer.pos(index + current_len + 1))
                     ));
                     current_len += 2;
                     continue 'postfix; // no param function call
                 }
                 if lexer.nth(index + current_len + 1).is_seperator(SeperatorKind::Comma) 
                     && lexer.nth(index + current_len + 2).is_seperator(SeperatorKind::RightParenthenes) {
-                        let pos1 = StringPosition::from2(lexer.pos(index + current_len).start_pos, lexer.pos(index + current_len + 2).end_pos);
-                        let pos2 = lexer.pos(index + current_len + 1).start_pos;
+                        let pos1 = StringPosition::merge(lexer.pos(index + current_len), lexer.pos(index + current_len + 2));
+                        let pos2 = lexer.pos(index + current_len + 1).start_pos();
                         lexer.push(Message::SingleCommaInFunctionCall{ call_pos: pos1, comma_pos: pos2 });
                         postfixs.push(Postfix::FunctionCall(
                             Vec::new(),
@@ -180,15 +180,15 @@ impl IASTItem for PostfixExpression {
                     lexer.push(Message::EmptySubscription{ pos: pos });
                     postfixs.push(Postfix::Subscription(
                         Vec::new(),
-                        StringPosition::from2(lexer.pos(index + current_len).start_pos, lexer.pos(index + current_len + 1).end_pos),
+                        StringPosition::merge(lexer.pos(index + current_len), lexer.pos(index + current_len + 1)),
                     ));
                     current_len += 2;
                     continue 'postfix;
                 }
                 if lexer.nth(index + current_len + 1).is_seperator(SeperatorKind::Comma) 
                     && lexer.nth(index + current_len + 2).is_seperator(SeperatorKind::RightBracket) {
-                        let pos1 = StringPosition::from2(lexer.pos(index + current_len).start_pos, lexer.pos(index + current_len + 2).end_pos);
-                        let pos2 = lexer.pos(index + current_len + 1).start_pos;
+                        let pos1 = StringPosition::merge(lexer.pos(index + current_len), lexer.pos(index + current_len + 2));
+                        let pos2 = lexer.pos(index + current_len + 1).start_pos();
                         lexer.push(Message::SingleCommaInSubscription{ sub_pos: pos1, comma_pos: pos2 });
                         postfixs.push(Postfix::Subscription(
                             Vec::new(),
@@ -226,7 +226,7 @@ impl IASTItem for PostfixExpression {
                                 let pos_right_paren = lexer.pos(index + current_len - 1);
                                 postfixs.push(Postfix::FunctionCall(
                                     exprs,
-                                    StringPosition::from2(pos_left_paren.start_pos, pos_right_paren.end_pos)
+                                    StringPosition::merge(pos_left_paren, pos_right_paren)
                                 ));
                                 continue 'postfix;
                             }
@@ -240,7 +240,7 @@ impl IASTItem for PostfixExpression {
                                 let pos_right_bracket = lexer.pos(index + current_len - 1);
                                 postfixs.push(Postfix::Subscription(
                                     exprs,
-                                    StringPosition::from2(pos_left_bracket.start_pos, pos_right_bracket.end_pos)
+                                    StringPosition::merge(pos_left_bracket, pos_right_bracket)
                                 ));
                                 continue 'postfix;
                             }

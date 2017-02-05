@@ -3,7 +3,7 @@
 
 use std::fmt;
 
-use codemap::StringPosition;
+use codepos::StringPosition;
 use util::format_vector_display;
 use util::format_vector_debug;
 
@@ -56,7 +56,7 @@ impl IASTItem for Block {
             if lexer.nth(index + current_len).is_seperator(SeperatorKind::RightBrace) {
                 return (Some(Block{
                     stmts: stmts,
-                    pos: StringPosition::from2(lexer.pos(index).start_pos, lexer.pos(index + current_len).end_pos)
+                    pos: StringPosition::merge(lexer.pos(index), lexer.pos(index + current_len))
                 }), current_len + 1);
             }
             match Statement::parse(lexer, index + current_len) {
@@ -79,7 +79,7 @@ mod tests {
         use super::Block;
         use syntax::ast_item::IASTItem;
         use lexical::Lexer;
-        use codemap::StringPosition;
+        use codepos::StringPosition;
         
         assert_eq!(
             Block::parse(&mut Lexer::new("{}", ), 0), 

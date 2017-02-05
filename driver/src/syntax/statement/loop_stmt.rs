@@ -3,7 +3,7 @@
 
 use std::fmt;
 
-use codemap::StringPosition;
+use codepos::StringPosition;
 use message::SyntaxMessage;
 
 use lexical::Lexer;
@@ -41,7 +41,7 @@ impl fmt::Display for LoopStatement {
 
 impl IASTItem for LoopStatement {
 
-    fn pos_all(&self) -> StringPosition { StringPosition::from2(self.pos[0].start_pos, self.body.pos_all().end_pos) }
+    fn pos_all(&self) -> StringPosition { StringPosition::merge(self.pos[0], self.body.pos_all()) }
 
     fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
         lexer.nth(index).is_keyword(KeywordKind::Loop)
@@ -89,7 +89,7 @@ mod tests {
     use message::Message;
     use message::SyntaxMessage;
     use syntax::ast_item::TestCase;
-    use codemap::StringPosition;
+    use codepos::StringPosition;
 
     #[test]
     fn ast_stmt_loop_parse() {

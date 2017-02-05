@@ -3,7 +3,7 @@
 // TODO: use chars instead of buf: String to index, this will support Chinese identifiers
 
 use std::str::Chars;
-use codemap::Position;
+use codepos::Position;
 use message::MessageEmitter;
 use lexical::buf_lexer::IDetailLexer;
 use lexical::buf_lexer::BufToken;
@@ -44,7 +44,7 @@ impl<'chs> From<Chars<'chs>> for V0Lexer<'chs> {
     fn from(content_chars: Chars<'chs>) -> V0Lexer {
         V0Lexer {
             chars: content_chars,
-            text_pos: Position{ row: 1, col: 0 },
+            text_pos: Position::from2(1, 0),
             previous_is_new_line: false,
         }
     }
@@ -144,7 +144,7 @@ mod tests {
     fn v0_test2() {
         use super::V0Lexer;
         use super::V0Token;
-        use codemap::Position;
+        use codepos::Position;
         use lexical::buf_lexer::IDetailLexer;
         use message::MessageEmitter;
 
@@ -162,7 +162,7 @@ mod tests {
 
                 let mut expects = Vec::new();
                 $(
-                    expects.push(V0Token { ch: $ch, pos: Position { row: $row, col: $col } });
+                    expects.push(V0Token { ch: $ch, pos: Position::from2($row, $col) });
                 )*
                 
                 assert_eq!(v0s, expects);

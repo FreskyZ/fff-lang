@@ -1,7 +1,7 @@
 
 // Statement generation
 
-use codemap::StringPosition;
+use codepos::StringPosition;
 use message::CodegenMessage;
 
 use lexical::SeperatorKind;
@@ -258,13 +258,13 @@ fn gen_continue(continue_stmt: ContinueStatement, sess: &mut GenerationSession) 
             Some(continue_addr) => sess.codes.emit_silent(Code::Goto(continue_addr)),
             None => sess.msgs.push(CodegenMessage::CannotFindLoopName{
                 name: name, 
-                pos: StringPosition::from2(continue_stmt.pos[0].start_pos, continue_stmt.pos[2].end_pos) 
+                pos: StringPosition::merge(continue_stmt.pos[0], continue_stmt.pos[2]) 
             }),
         },
         None => match sess.loops.get_last_loop_continue_addr() {
             Some(continue_addr) => sess.codes.emit_silent(Code::Goto(continue_addr)),
             None => sess.msgs.push(CodegenMessage::JumpStatementNotInLoop{ 
-                pos: StringPosition::from2(continue_stmt.pos[0].start_pos, continue_stmt.pos[2].end_pos) 
+                pos: StringPosition::merge(continue_stmt.pos[0], continue_stmt.pos[2]) 
             }),
         },
     }
@@ -281,13 +281,13 @@ fn gen_break(break_stmt: BreakStatement, sess: &mut GenerationSession) {
             Some(()) => (),
             None => sess.msgs.push(CodegenMessage::CannotFindLoopName{
                 name: name, 
-                pos: StringPosition::from2(break_stmt.pos[0].start_pos, break_stmt.pos[2].end_pos) 
+                pos: StringPosition::merge(break_stmt.pos[0], break_stmt.pos[2]) 
             }),
         },
         None => match sess.loops.push_last_loop_break_addr(break_addr) {
             Some(()) => (),
             None => sess.msgs.push(CodegenMessage::JumpStatementNotInLoop{ 
-                pos: StringPosition::from2(break_stmt.pos[0].start_pos, break_stmt.pos[2].end_pos) 
+                pos: StringPosition::merge(break_stmt.pos[0], break_stmt.pos[2]) 
             }),
         },
     }

@@ -7,7 +7,7 @@ use std::ops;
 use std::slice;
 use std::collections::HashMap;
 
-use codemap::StringPosition;
+use codepos::StringPosition;
 use message::CodegenMessage;
 use message::MessageEmitter;
 
@@ -42,7 +42,7 @@ impl FnArg {
         let pos1 = syn_arg.ty.pos();
         let pos2 = syn_arg.pos_name;
         let ty = types.get_id_by_smtype(syn_arg.ty, messages, fns);   // message emitted for none
-        FnArg{ name: syn_arg.name, typeid: ty, pos: StringPosition::from2(pos1.start_pos, pos2.end_pos) }  
+        FnArg{ name: syn_arg.name, typeid: ty, pos: StringPosition::merge(pos1, pos2) }  
     }
     pub fn new_internal(name: &str, typeid: usize) -> FnArg {
         FnArg{ name: name.to_owned(), typeid: ItemID::new(typeid), pos: StringPosition::new() }

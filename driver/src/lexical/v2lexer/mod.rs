@@ -6,8 +6,8 @@
 mod numeric_lit_parser;
 
 use std::str::Chars;
-use codemap::Position;
-use codemap::StringPosition;
+use codepos::Position;
+use codepos::StringPosition;
 use message::MessageEmitter;
 
 use lexical::v1lexer::V1Token;
@@ -217,8 +217,8 @@ mod tests {
     use super::V2Token;
     use super::V2Lexer;
     use lexical::buf_lexer::IDetailLexer;
-    use codemap::Position;
-    use codemap::StringPosition;
+    use codepos::Position;
+    use codepos::StringPosition;
     use message::MessageEmitter;
     use lexical::symbol_type::string_literal::StringLiteral;
     use lexical::symbol_type::numeric_literal::NumericLiteral;
@@ -274,7 +274,7 @@ mod tests {
     }
     macro_rules! tchar {
         ($ch: expr, $row: expr, $col: expr) => (
-            V2Token::Other{ ch: $ch, pos: Position{ row: $row, col: $col } }
+            V2Token::Other{ ch: $ch, pos: Position::from2($row, $col) }
         )
     }
 

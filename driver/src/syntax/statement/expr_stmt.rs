@@ -3,7 +3,7 @@
 
 use std::fmt;
 
-use codemap::StringPosition;
+use codepos::StringPosition;
 use message::SyntaxMessage;
 
 use lexical::Lexer;
@@ -67,7 +67,7 @@ impl fmt::Display for ExpressionStatement {
 }
 impl IASTItem for ExpressionStatement {
 
-    fn pos_all(&self) -> StringPosition { StringPosition::from2(self.left_expr.pos_all().start_pos, self.pos[1].end_pos) }
+    fn pos_all(&self) -> StringPosition { StringPosition::merge(self.left_expr.pos_all(), self.pos[1]) }
 
     fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
         Expression::is_first_final(lexer, index)
@@ -122,7 +122,7 @@ impl IASTItem for ExpressionStatement {
 #[cfg(test)]
 mod tests {
     use super::ExpressionStatement;
-    use codemap::StringPosition;
+    use codepos::StringPosition;
     use lexical::Lexer;
     use lexical::SeperatorKind;
     use syntax::ast_item::IASTItem;

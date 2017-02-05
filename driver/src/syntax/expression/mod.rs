@@ -4,7 +4,7 @@
 
 use std::fmt;
 
-use codemap::StringPosition;
+use codepos::StringPosition;
 use util::format_vector_display;
 use util::format_vector_debug;
 
@@ -230,7 +230,8 @@ fn d3_expr_to_expr(d3: D3Expression) -> Expression {
         PrimaryExpression::ArrayDupDef(d3_expr1, d3_expr2, pos) =>
             ExpressionBase::ArrayDupDef(d3_expr_to_expr(d3_expr1.as_ref().clone()), d3_expr_to_expr(d3_expr2.as_ref().clone()), pos),
     };
-    let mut pos_all = expr_base.pos();
+    let mut pos_all_start = expr_base.pos().start_pos();
+    let mut pos_all_end = expr_base.pos().end_pos();
 
     fn postfix_to_operator(postfix: Postfix) -> ExpressionOperator {
         match postfix {
@@ -247,7 +248,7 @@ fn d3_expr_to_expr(d3: D3Expression) -> Expression {
     loop {
         match (previous, postfix_ops_iter.next()) {
             (Some(Postfix::MemberAccess(ident1, pos1)), Some(Postfix::FunctionCall(params, pos2))) => {
-                pos_all.end_pos = pos2.end_pos;
+                pos_all_end = pos2.end_pos();
                 ops.push(ExpressionOperator::MemberFunctionCall(
                     ident1, 
                     params.into_iter().map(d3_expr_to_expr).collect(), 
@@ -256,13 +257,13 @@ fn d3_expr_to_expr(d3: D3Expression) -> Expression {
                 previous = postfix_ops_iter.next(); // skip one
             }
             (Some(other_postfix1), Some(other_postfix2)) => {
-                pos_all.end_pos = other_postfix2.pos().end_pos;
+                pos_all_end = other_postfix2.pos().end_pos();
                 ops.push(postfix_to_operator(other_postfix1));
                 // ops.push(postfix_to_operator(other_postfix2)); 
                 previous = Some(other_postfix2);   // **IMPORTANT**, fix here, cannot skip one here
             }
             (Some(other_postfix), None) => { 
-                pos_all.end_pos = other_postfix.pos().end_pos;
+                pos_all_end = other_postfix.pos().end_pos();
                 ops.push(postfix_to_operator(other_postfix));
                 break;
             }
@@ -271,16 +272,16 @@ fn d3_expr_to_expr(d3: D3Expression) -> Expression {
     }
 
     for prefix in unary_ops.into_iter().rev() { // they are applied reversely
-        pos_all.start_pos = prefix.pos.start_pos;
+        pos_all_start = prefix.pos.start_pos();
         ops.push(ExpressionOperator::Unary(prefix.op, prefix.pos));
     }
 
     for binary in bin_ops {
-        pos_all.end_pos = binary.oprand.pos_all().end_pos;
+        pos_all_end = binary.oprand.pos_all().end_pos();
         ops.push(ExpressionOperator::Binary(binary.operator, binary.pos, d3_expr_to_expr(binary.oprand)));
     }
 
-    Expression::new(expr_base, ops, pos_all)
+    Expression::new(expr_base, ops, StringPosition::from2(pos_all_start, pos_all_end))
 }
 
 impl IASTItem for Expression {
@@ -342,7 +343,8 @@ mod tests {
     use super::ExpressionBase;
     use super::ExpressionOperator;
 
-    use codemap::StringPosition;
+    use codepos::Position;
+    use codepos::StringPosition;
     use message::SyntaxMessage;
     use message::Message;
     use lexical::Lexer;
@@ -675,7 +677,7 @@ mod tests {
                 make_str_pos!(1, 1, 1, 6),
             ),
             [
-                Message::Syntax(SyntaxMessage::SingleCommaInFunctionCall{ call_pos: make_str_pos!(1, 3, 1, 6), comma_pos: make_str_pos!(1, 4, 1, 4).start_pos })
+                Message::Syntax(SyntaxMessage::SingleCommaInFunctionCall{ call_pos: make_str_pos!(1, 3, 1, 6), comma_pos: make_pos!(1, 4) })
             ]
         }
 
@@ -762,7 +764,7 @@ mod tests {
                 make_str_pos!(1, 1, 1, 9)
             ),
             [
-                Message::Syntax(SyntaxMessage::SingleCommaInFunctionCall{ call_pos: make_str_pos!(1, 6, 1, 9), comma_pos: make_str_pos!(1, 7, 1, 7).start_pos })
+                Message::Syntax(SyntaxMessage::SingleCommaInFunctionCall{ call_pos: make_str_pos!(1, 6, 1, 9), comma_pos: make_pos!(1, 7) })
             ]
         }
 
@@ -829,7 +831,7 @@ mod tests {
                 make_str_pos!(1, 1, 1, 6),
             ),
             [
-                Message::Syntax(SyntaxMessage::SingleCommaInSubscription{ sub_pos: make_str_pos!(1, 3, 1, 6), comma_pos: make_str_pos!(1, 4, 1, 4).start_pos })
+                Message::Syntax(SyntaxMessage::SingleCommaInSubscription{ sub_pos: make_str_pos!(1, 3, 1, 6), comma_pos: make_pos!(1, 4) })
             ]
         }
 

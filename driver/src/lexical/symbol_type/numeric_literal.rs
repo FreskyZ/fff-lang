@@ -3,7 +3,7 @@
 // TODO imm: Rename NumLitValue to NumLitVal!!!
 
 use std::fmt;
-use codemap::StringPosition;
+use codepos::StringPosition;
 
 #[derive(PartialEq, Clone)]
 pub enum NumLitValue {

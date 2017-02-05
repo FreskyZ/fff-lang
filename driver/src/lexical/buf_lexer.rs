@@ -4,7 +4,7 @@
 //     and TLexer: ILexer<TToken>
 
 use std::str::Chars;
-use codemap::Position;
+use codepos::Position;
 use message::MessageEmitter;
 
 // detail compare with the public interface ILexer

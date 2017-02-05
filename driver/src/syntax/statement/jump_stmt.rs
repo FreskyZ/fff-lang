@@ -9,7 +9,7 @@
 
 use std::fmt;
 
-use codemap::StringPosition;
+use codepos::StringPosition;
 use message::SyntaxMessage;
 
 use lexical::Lexer;
@@ -46,7 +46,7 @@ impl ReturnStatement {
 }
 impl IASTItem for ReturnStatement {
 
-    fn pos_all(&self) -> StringPosition { StringPosition::from2(self.pos[0].start_pos, self.pos[1].end_pos) } 
+    fn pos_all(&self) -> StringPosition { StringPosition::merge(self.pos[0], self.pos[1]) } 
 
     fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
         lexer.nth(index).is_keyword(KeywordKind::Return)
@@ -127,7 +127,7 @@ impl fmt::Display for BreakStatement {
 
 impl IASTItem for ContinueStatement {
 
-    fn pos_all(&self) -> StringPosition { StringPosition::from2(self.pos[0].start_pos, self.pos[2].end_pos) }
+    fn pos_all(&self) -> StringPosition { StringPosition::merge(self.pos[0], self.pos[2]) }
 
     fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
         lexer.nth(index).is_keyword(KeywordKind::Continue)
@@ -169,7 +169,7 @@ impl IASTItem for ContinueStatement {
 }
 impl IASTItem for BreakStatement {
 
-    fn pos_all(&self) -> StringPosition { StringPosition::from2(self.pos[0].start_pos, self.pos[2].end_pos) }
+    fn pos_all(&self) -> StringPosition { StringPosition::merge(self.pos[0], self.pos[2]) }
 
     fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
         lexer.nth(index).is_keyword(KeywordKind::Break)
@@ -216,7 +216,7 @@ mod tests {
     use super::ReturnStatement;
     use super::BreakStatement;
     use super::ContinueStatement;
-    use codemap::StringPosition;
+    use codepos::StringPosition;
     use message::SyntaxMessage;
     use message::Message;
     use syntax::Expression;

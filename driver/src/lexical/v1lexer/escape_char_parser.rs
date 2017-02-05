@@ -1,7 +1,7 @@
 
 // Escape char parser
 
-use codemap::Position;
+use codepos::Position;
 use message::LexicalMessage as Message;
 use message::MessageEmitter;
 
@@ -129,7 +129,7 @@ mod tests {
     fn escape_char_parser_test() {
         use super::escape_char_parser_new;
         use super::EscapeCharParserResult::*;
-        use codemap::Position;
+        use codepos::Position;
         use message::LexicalMessage as Message;
         use message::MessageEmitter;
 

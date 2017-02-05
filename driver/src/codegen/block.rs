@@ -1,7 +1,7 @@
 
 // Block
 
-use codemap::StringPosition;
+use codepos::StringPosition;
 
 use syntax::Block as SyntaxBlock;
 // use syntax::Statement;

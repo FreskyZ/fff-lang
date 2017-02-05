@@ -2,8 +2,8 @@
 // Process messages
 
 use std::fmt;
-use codemap::Position;
-use codemap::StringPosition;
+use codepos::Position;
+use codepos::StringPosition;
 use util::format_vector_debug;
 
 // Lexical

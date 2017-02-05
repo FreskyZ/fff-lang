@@ -6,7 +6,7 @@
 
 use std::fmt;
 
-use codemap::StringPosition;
+use codepos::StringPosition;
 
 use message::MessageEmitter;
 use message::CodegenMessage;

@@ -3,7 +3,7 @@
 
 use std::fmt;
 
-use codemap::StringPosition;
+use codepos::StringPosition;
 use util::format_vector_debug;
 use util::format_vector_display;
 
@@ -47,7 +47,7 @@ impl IASTItem for Program {
         match self.functions.len() {
             0 => StringPosition::new(),
             1 => self.functions[0].pos_all(),
-            _n => StringPosition::from2(self.functions[0].pos_all().start_pos, self.functions.iter().last().unwrap().pos_all().end_pos),
+            _ => StringPosition::merge(self.functions[0].pos_all(), self.functions.iter().last().unwrap().pos_all()),
         }
     }
 

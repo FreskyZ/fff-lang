@@ -5,7 +5,8 @@
 extern crate util;
 extern crate new_lexical;
 #[macro_use]
-extern crate codemap; // make_pos, make_str_pos
+extern crate codepos; // make_pos, make_str_pos
+extern crate codemap;
 
 #[macro_use]
 mod common;

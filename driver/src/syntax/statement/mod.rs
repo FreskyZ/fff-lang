@@ -8,7 +8,7 @@
  
 use std::fmt;
 
-use codemap::StringPosition;
+use codepos::StringPosition;
 
 use lexical::Lexer;
 

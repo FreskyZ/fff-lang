@@ -12,7 +12,7 @@
 
 use std::fmt;
 
-use codemap::StringPosition;
+use codepos::StringPosition;
 
 use lexical::Lexer;
 use lexical::SeperatorKind;
@@ -161,7 +161,7 @@ impl IASTItem for BinaryExpression {
 
     fn pos_all(&self) -> StringPosition {
         match self.ops.iter().last() {
-            Some(op) => StringPosition::from2(self.unary.pos_all().start_pos, op.oprand.pos_all().end_pos),
+            Some(op) => StringPosition::merge(self.unary.pos_all(), op.oprand.pos_all()),
             None => self.unary.pos_all()
         }
     }

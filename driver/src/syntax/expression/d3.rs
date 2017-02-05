@@ -6,7 +6,7 @@
 
 use std::fmt;
 
-use codemap::StringPosition;
+use codepos::StringPosition;
 
 use lexical::Lexer;
 use syntax::ast_item::IASTItem;
@@ -47,7 +47,7 @@ impl IASTItem for D3Expression {
 #[cfg(test)]
 mod tests {
     use syntax::ast_item::IASTItem;
-    use codemap::StringPosition;
+    use codepos::StringPosition;
 
     use lexical::Lexer;
     use lexical::SeperatorKind;

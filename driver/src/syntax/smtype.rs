@@ -15,7 +15,7 @@
 
 use std::fmt;
 
-use codemap::StringPosition;
+use codepos::StringPosition;
 use util::format_vector_debug;
 use util::format_vector_display;
 use message::SyntaxMessage;
@@ -125,7 +125,7 @@ impl IASTItem for SMType {
                         return (
                             Some(SMType::Array(
                                 Box::new(inner), 
-                                StringPosition::from2(lexer.pos(index).start_pos, lexer.pos(index + current_len - 1).end_pos)
+                                StringPosition::merge(lexer.pos(index), lexer.pos(index + current_len - 1))
                             )), 
                             inner_length + 2    
                         );
@@ -142,7 +142,7 @@ impl IASTItem for SMType {
             if lexer.nth(index + 1).is_seperator(SeperatorKind::RightParenthenes) {  // still, '(, )' is not allowed here
                 test_condition_perrorln!{ log_enable, "is left paren and right paren, it's unit" }
                 return (Some(SMType::Unit(
-                    StringPosition::from2(lexer.pos(index).start_pos, lexer.pos(index + 1).end_pos),
+                    StringPosition::merge(lexer.pos(index), lexer.pos(index + 1)),
                 )), 2)
             }
             
@@ -185,7 +185,7 @@ impl IASTItem for SMType {
                 }
             }
             
-            let pos = StringPosition::from2(lexer.pos(index).start_pos, lexer.pos(index + current_len - 1).end_pos);
+            let pos = StringPosition::merge(lexer.pos(index), lexer.pos(index + current_len - 1));
             if types.len() == 0 {
                 unreachable!()
             } else if types.len() == 1 {
@@ -210,7 +210,7 @@ mod tests {
         use message::Message;
         use message::SyntaxMessage;
         use super::SMType;
-        use codemap::StringPosition;
+        use codepos::StringPosition;
         use syntax::ast_item::TestCase;
 
         // Primitive

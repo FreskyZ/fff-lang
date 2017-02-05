@@ -3,7 +3,7 @@
 
 use std::fmt;
 
-use codemap::StringPosition;
+use codepos::StringPosition;
 use util::format_vector_debug;
 use message::CodegenMessage;
 
@@ -278,10 +278,12 @@ fn simplize_expr_base(expr_base: FullExpressionBase, sess: &mut GenerationSessio
 
     }
 }
+
+#[allow(unused_variables)] // for current_prev_pos_end, don't know why
 fn simplize_expr(expr: FullExpression, sess: &mut GenerationSession, assigns: &mut Vec<SimpleAssignment>) -> Option<SimpleExpr> {
    
     macro_rules! process_member_call {
-        ($sess: expr, $exprs: expr, $fn_name: expr, $assigns: expr, $ops: expr, $pos: expr, $current_typeid: expr, $current_prev_pos: expr) => ({
+        ($sess: expr, $exprs: expr, $fn_name: expr, $assigns: expr, $ops: expr, $pos: expr, $current_typeid: expr, $current_prev_pos_end: expr) => ({
             let mut bases = Vec::new();
             let mut param_types = vec![$current_typeid]; // to be searched in fns like a global fn
             let mut has_failed = false;
@@ -310,13 +312,14 @@ fn simplize_expr(expr: FullExpression, sess: &mut GenerationSession, assigns: &m
                 }
                 let ret_typeid = $sess.fns.find_by_id(fnid).unwrap().ret_type;
                 $ops.push(SimpleOp::MemberFunctionCall(fnid, ret_typeid, bases, [$pos, $pos]));
-                $current_prev_pos.end_pos = $pos.end_pos;
+                $current_prev_pos_end = $pos.end_pos();
                 $current_typeid = ret_typeid;
             }
         })
     }
 
-    let (maybe_simple_base, mut maybe_ident_name, mut current_typeid, mut current_prev_pos) = simplize_expr_base(expr.base.as_ref().clone(), sess, assigns);
+    let (maybe_simple_base, mut maybe_ident_name, mut current_typeid, current_prev_pos) = simplize_expr_base(expr.base.as_ref().clone(), sess, assigns);
+    let mut current_prev_pos_end = current_prev_pos.end_pos(); // I don't know what it is used for, just leave it here  -- 17/2/5 Fresky Han
     let mut simple_base = match maybe_simple_base {
         Some(simple_base) => simple_base,
         None => return None, // type cannot be judged and members type cannot be checked, no more things to do
@@ -365,7 +368,7 @@ fn simplize_expr(expr: FullExpression, sess: &mut GenerationSession, assigns: &m
                     let ret_type = sess.fns.find_by_id(fnid).unwrap().ret_type;
                     simple_base = SimpleBase::FunctionCall(fnid, ret_type, bases, [pos, pos]);
                     current_typeid = ret_type;
-                    current_prev_pos.end_pos = pos.end_pos;
+                    current_prev_pos_end = pos.end_pos();
                 }
             }
             FullExpressionOperator::MemberAccess(name, pos) => {
@@ -375,28 +378,28 @@ fn simplize_expr(expr: FullExpression, sess: &mut GenerationSession, assigns: &m
                         let ret_type = field.typeid;
                         let offset = field.offset;
                         ops.push(SimpleOp::MemberAccess(offset, ret_type, pos));
-                        current_prev_pos.end_pos = pos.end_pos;
+                        current_prev_pos_end = pos.end_pos();
                         current_typeid = ret_type;
                     }
                 }
             }
             FullExpressionOperator::MemberFunctionCall(name, exprs, pos) => {
-                process_member_call!(sess, exprs, name, assigns, ops, pos[0], current_typeid, current_prev_pos);
+                process_member_call!(sess, exprs, name, assigns, ops, pos[0], current_typeid, current_prev_pos_end);
             }
             FullExpressionOperator::Binary(sep, pos, expr) => {
-                process_member_call!(sess, vec![expr], sep, assigns, ops, pos, current_typeid, current_prev_pos);
+                process_member_call!(sess, vec![expr], sep, assigns, ops, pos, current_typeid, current_prev_pos_end);
             }
             FullExpressionOperator::Unary(sep, pos) => {
-                process_member_call!(sess, Vec::new(), sep, assigns, ops, pos, current_typeid, current_prev_pos);
+                process_member_call!(sess, Vec::new(), sep, assigns, ops, pos, current_typeid, current_prev_pos_end);
             }
             FullExpressionOperator::GetIndex(exprs, pos) => {
-                process_member_call!(sess, exprs, "get_index", assigns, ops, pos, current_typeid, current_prev_pos);
+                process_member_call!(sess, exprs, "get_index", assigns, ops, pos, current_typeid, current_prev_pos_end);
             }
             FullExpressionOperator::TypeCast(smt, pos) => {
                 let typeid = sess.types.get_id_by_smtype(smt, &mut sess.msgs, &mut sess.fns);
                 match typeid.as_option() {
                     Some(typeid) => {
-                        process_member_call!(sess, Vec::new(), typeid, assigns, ops, pos, current_typeid, current_prev_pos);
+                        process_member_call!(sess, Vec::new(), typeid, assigns, ops, pos, current_typeid, current_prev_pos_end);
                     }
                     None => (), // message maybe emitted
                 } 
@@ -514,7 +517,7 @@ pub fn gen_expr_stmt(expr_stmt: FullExpressionStatement, sess: &mut GenerationSe
         let pos_semicolon = expr_stmt.pos[1];
 
         if left_expr.ops.len() == 0 {
-            sess.msgs.push(CodegenMessage::InvalidExpressionStatementSingleSimpleExpression{ pos: StringPosition::from2(left_expr.pub_pos_all().start_pos, pos_semicolon.end_pos) });
+            sess.msgs.push(CodegenMessage::InvalidExpressionStatementSingleSimpleExpression{ pos: StringPosition::merge(left_expr.pub_pos_all(), pos_semicolon) });
             return;
         }
         
@@ -536,7 +539,7 @@ pub fn gen_expr_stmt(expr_stmt: FullExpressionStatement, sess: &mut GenerationSe
                 }
             }
             _ => {
-                sess.msgs.push(CodegenMessage::InvalidExpressionStatementLastOpNotValid{ pos: StringPosition::from2(left_expr.pub_pos_all().start_pos, pos_semicolon.end_pos) });
+                sess.msgs.push(CodegenMessage::InvalidExpressionStatementLastOpNotValid{ pos: StringPosition::merge(left_expr.pub_pos_all(), pos_semicolon) });
                 return;
             }
         }
@@ -572,7 +575,7 @@ pub fn gen_expr_stmt(expr_stmt: FullExpressionStatement, sess: &mut GenerationSe
             Some(ref var) => if var.is_const && !ignore_left_const { // is const but not ignore const
                 sess.msgs.push(CodegenMessage::AssignToConstVar{
                     name: var.name.clone(),
-                    pos: StringPosition::from2(left_expr_pos.start_pos, semicolon_pos.end_pos),
+                    pos: StringPosition::merge(left_expr_pos, semicolon_pos),
                 });
             },
             None => (), // message emitted

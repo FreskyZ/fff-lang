@@ -4,12 +4,6 @@
 //! iterator<(char, position)>,  
 //! which is <0.1.0>'s filemap and lexical's layer 0
 
-#[macro_use]
-mod position;
-
-pub use position::Position;
-pub use position::StringPosition;
-
 // pub struct CodeChar {
 //     ch: char, 
 //     pos: Position,

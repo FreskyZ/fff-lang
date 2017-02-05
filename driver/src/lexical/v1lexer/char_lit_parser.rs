@@ -2,8 +2,8 @@
 // Char literal parser
 // TODO: optimize
 
-use codemap::Position;
-use codemap::StringPosition;
+use codepos::Position;
+use codepos::StringPosition;
 use message::LexicalMessage as Message;
 use message::MessageEmitter;
 use lexical::symbol_type::char_literal::CharLiteral;
@@ -232,8 +232,8 @@ mod tests {
     #[test]
     #[allow(unused_mut)]
     fn char_lit_parser() {
-        use codemap::Position;
-        use codemap::StringPosition;
+        use codepos::Position;
+        use codepos::StringPosition;
         use message::LexicalMessage as Message;
         use message::MessageEmitter;
         use lexical::symbol_type::char_literal::CharLiteral;

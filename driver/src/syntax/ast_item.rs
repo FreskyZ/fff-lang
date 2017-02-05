@@ -4,7 +4,7 @@
 use std::fmt;
 use std::marker::PhantomData;
 
-use codemap::StringPosition;
+use codepos::StringPosition;
 use message::Message;
 use message::MessageEmitter;
 

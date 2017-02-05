@@ -13,7 +13,7 @@ mod string_lit_parser;
 mod raw_string_lit_parser;
 
 use std::str::Chars;
-use codemap::Position;
+use codepos::Position;
 use message::LexicalMessage as Message;
 use message::MessageEmitter;
 
@@ -228,8 +228,8 @@ pub type BufV1Lexer<'chs> = BufLexer<V1Lexer<'chs>, V1Token>;
 mod tests {
     use super::V1Token;
     use super::V1Lexer;
-    use codemap::Position;
-    use codemap::StringPosition;
+    use codepos::Position;
+    use codepos::StringPosition;
     use message::LexicalMessage as Message;
     use message::MessageEmitter;
     use lexical::buf_lexer::IDetailLexer;

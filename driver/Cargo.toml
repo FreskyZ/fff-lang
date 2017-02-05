@@ -6,6 +6,7 @@ authors = ["FreskyZ <fresky7@outlook.com>"]
 [dependencies]
 new_lexical = { path = "../lexical" }
 codemap = { path="../codemap" }
+codepos = { path="../codepos" }
 util = { path="../util" }
 
 [[bin]]

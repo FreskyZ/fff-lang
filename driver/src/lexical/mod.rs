@@ -2,7 +2,7 @@
 // Lexer public interface
 
 use std::fmt;
-use codemap::StringPosition;
+use codepos::StringPosition;
 
 mod symbol_type;
 mod buf_lexer;

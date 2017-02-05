@@ -9,7 +9,7 @@
 
 use std::fmt;
 
-use codemap::StringPosition;
+use codepos::StringPosition;
 use util::format_vector_debug;
 use util::format_vector_display;
 
@@ -108,7 +108,7 @@ impl IASTItem for PrimaryExpression {
         if lexer.nth(index).is_seperator(SeperatorKind::LeftParenthenes) {
             if lexer.nth(index + 1).is_seperator(SeperatorKind::RightParenthenes) {
                 return (Some(PrimaryExpression::Unit(
-                    StringPosition::from2(lexer.pos(index).start_pos, lexer.pos(index + 1).end_pos)
+                    StringPosition::merge(lexer.pos(index), lexer.pos(index + 1))
                 )), 2);
             }
 
@@ -140,7 +140,7 @@ impl IASTItem for PrimaryExpression {
                 }
             }
 
-            let pos = StringPosition::from2(lexer.pos(index).start_pos, lexer.pos(index + current_len - 1).end_pos);
+            let pos = StringPosition::merge(lexer.pos(index), lexer.pos(index + current_len - 1));
             if exprs.len() == 0 {
                 unreachable!()
             } else if exprs.len() == 1 {
@@ -156,7 +156,7 @@ impl IASTItem for PrimaryExpression {
                 return (
                     Some(PrimaryExpression::ArrayDef(
                         Vec::new(), 
-                        StringPosition::from2(lexer.pos(index).start_pos, lexer.pos(index + 1).end_pos),
+                        StringPosition::merge(lexer.pos(index), lexer.pos(index + 1)),
                     )), 
                     2
                 );
@@ -180,7 +180,7 @@ impl IASTItem for PrimaryExpression {
                                     test_condition_perrorln!{ log_enable, "parsing array dup def succeed, expr1: {}, expr2: {}", expr1, expr2, } 
                                     return (
                                         Some(PrimaryExpression::make_array_dup_def(expr1, expr2, [
-                                            StringPosition::from2(lexer.pos(index).start_pos, lexer.pos(index + expr1_len + expr2_len + 2).end_pos),
+                                            StringPosition::merge(lexer.pos(index), lexer.pos(index + expr1_len + expr2_len + 2)),
                                             semicolon_pos,
                                         ])),
                                         expr1_len + expr2_len + 3
@@ -202,7 +202,7 @@ impl IASTItem for PrimaryExpression {
                             return (
                                 Some(PrimaryExpression::ArrayDef(
                                     exprs, 
-                                    StringPosition::from2(lexer.pos(index).start_pos, lexer.pos(index + current_len).end_pos)
+                                    StringPosition::merge(lexer.pos(index), lexer.pos(index + current_len))
                                 )), 
                                 current_len + 1
                             );
@@ -213,7 +213,7 @@ impl IASTItem for PrimaryExpression {
                             return (
                                 Some(PrimaryExpression::ArrayDef(
                                     exprs, 
-                                    StringPosition::from2(lexer.pos(index).start_pos, lexer.pos(index + 1 + current_len).end_pos)
+                                    StringPosition::merge(lexer.pos(index), lexer.pos(index + 1 + current_len))
                                 )), 
                                 current_len + 2
                             );

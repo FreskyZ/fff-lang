@@ -2,7 +2,7 @@
 // v4 lexer, input v3, act as lexer interface
 
 use std::fmt;
-use codemap::StringPosition;
+use codepos::StringPosition;
 use message::SyntaxMessage;
 use message::Message;
 use message::MessageEmitter;
@@ -244,7 +244,7 @@ impl V4Lexer {
         self.messages.push(SyntaxMessage::ExpectSymbol{ 
             expect: desc,
             actual: format!("{:?}", actual_token), 
-            pos: actual_token.get_position().start_pos,
+            pos: actual_token.get_position().start_pos(),
         });
         return (None, sym_size);
     }
@@ -261,7 +261,7 @@ mod tests {
 
     #[test]
     fn v4_base() {
-        use codemap::StringPosition;
+        use codepos::StringPosition;
         use super::V4Lexer;
         use lexical::NumLitValue;
         use lexical::SeperatorKind;

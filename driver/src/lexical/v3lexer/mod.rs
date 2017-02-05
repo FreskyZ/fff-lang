@@ -12,8 +12,8 @@
 
 use std::str::Chars;
 use common::TryFrom;
-use codemap::Position;
-use codemap::StringPosition;
+use codepos::Position;
+use codepos::StringPosition;
 use message::LexicalMessage;
 use message::MessageEmitter;
 

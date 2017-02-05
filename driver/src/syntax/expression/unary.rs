@@ -3,7 +3,7 @@
 
 use std::fmt;
 
-use codemap::StringPosition;
+use codepos::StringPosition;
 
 use lexical::Lexer;
 use lexical::SeperatorKind;
@@ -77,7 +77,7 @@ impl IASTItem for UnaryExpression {
 
     fn pos_all(&self) -> StringPosition {
         match self.unaries.iter().last() {
-            Some(&UnaryOperator{ op: ref _op, ref pos }) => StringPosition::from2(pos.start_pos, self.post.pos_all().end_pos),
+            Some(&UnaryOperator{ op: ref _op, ref pos }) => StringPosition::merge(*pos, self.post.pos_all()),
             None => self.post.pos_all(),
         }
     }

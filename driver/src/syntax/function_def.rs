@@ -5,7 +5,7 @@
 use std::cmp;
 use std::fmt;
 
-use codemap::StringPosition;
+use codepos::StringPosition;
 use util::format_vector_debug;
 use util::format_vector_display;
 use message::SyntaxMessage as Message;
@@ -37,7 +37,7 @@ impl fmt::Display for Argument {
 }
 impl IASTItem for Argument {
 
-    fn pos_all(&self) -> StringPosition { StringPosition::from2(self.ty.pos_all().start_pos, self.pos_name.end_pos) }
+    fn pos_all(&self) -> StringPosition { StringPosition::merge(self.ty.pos_all(), self.pos_name) }
 
     fn is_first_final(lexer: &mut Lexer, index: usize) -> bool { 
         SMType::is_first_final(lexer, index)
@@ -123,7 +123,7 @@ impl FunctionDef {
 }
 impl IASTItem for FunctionDef {
     
-    fn pos_all(&self) -> StringPosition { StringPosition::from2(self.pos2[0].start_pos, self.body.pos_all().end_pos) }
+    fn pos_all(&self) -> StringPosition { StringPosition::merge(self.pos2[0], self.body.pos_all()) }
 
     fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
         lexer.nth(index).is_keyword(KeywordKind::FnDef)
@@ -159,8 +159,8 @@ impl IASTItem for FunctionDef {
             if lexer.nth(index + current_len).is_seperator(SeperatorKind::Comma)   // accept `fn main(i32 a,) {}`
                 && lexer.nth(index + current_len + 1).is_seperator(SeperatorKind::RightParenthenes) {
                 if args.is_empty() {                // recoverable error on fn main(, ) {}
-                    let pos1 = StringPosition::from2(lexer.pos(index).start_pos, lexer.pos(index + current_len + 1).end_pos);
-                    let pos2 = lexer.pos(index + current_len - 2).start_pos;
+                    let pos1 = StringPosition::merge(lexer.pos(index), lexer.pos(index + current_len + 1));
+                    let pos2 = lexer.pos(index + current_len - 2).start_pos();
                     lexer.push(Message::SingleCommaInNonArgumentFunctionDef{ fn_pos: pos1, comma_pos: pos2 });
                 }   
                 current_len += 2;
@@ -179,7 +179,7 @@ impl IASTItem for FunctionDef {
             }
         }
 
-        let may_be_ret_type_pos = lexer.pos(index + current_len - 1).start_pos.next_col();
+        let may_be_ret_type_pos = lexer.pos(index + current_len - 1).start_pos().next_col();
         let mut return_type = SMType::Unit(StringPosition::from2(may_be_ret_type_pos, may_be_ret_type_pos));
         if lexer.nth(index + current_len).is_seperator(SeperatorKind::NarrowRightArrow) {
             current_len += 1;
@@ -218,7 +218,7 @@ mod tests {
     use syntax::ast_item::IASTItem;
     use super::Argument;
     use super::FunctionDef;
-    use codemap::StringPosition;
+    use codepos::StringPosition;
 
     #[test]
     fn ast_argument_parse() {

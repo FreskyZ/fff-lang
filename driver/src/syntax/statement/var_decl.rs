@@ -4,7 +4,7 @@
 
 use std::fmt;
 
-use codemap::StringPosition;
+use codepos::StringPosition;
 
 use lexical::Lexer;
 use lexical::KeywordKind;
@@ -51,7 +51,7 @@ impl VarDeclStatement {
 }
 impl IASTItem for VarDeclStatement {
 
-    fn pos_all(&self) -> StringPosition { StringPosition::from2(self.pos[0].start_pos, self.pos[3].end_pos) }
+    fn pos_all(&self) -> StringPosition { StringPosition::merge(self.pos[0], self.pos[3]) }
 
     fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
         lexer.nth(index).is_keyword(KeywordKind::Const)
@@ -134,7 +134,7 @@ mod tests {
     use syntax::ast_item::IASTItem;
     use syntax::SMType;
     use syntax::Expression;
-    use codemap::StringPosition;
+    use codepos::StringPosition;
 
     #[test]
     fn ast_stmt_var_decl() {
