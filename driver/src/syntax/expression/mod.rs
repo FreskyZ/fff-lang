@@ -4,7 +4,7 @@
 
 use std::fmt;
 
-use lexical_pos::StringPosition;
+use codemap::StringPosition;
 use util::format_vector_display;
 use util::format_vector_debug;
 
@@ -342,7 +342,7 @@ mod tests {
     use super::ExpressionBase;
     use super::ExpressionOperator;
 
-    use lexical_pos::StringPosition;
+    use codemap::StringPosition;
     use message::SyntaxMessage;
     use message::Message;
     use lexical::Lexer;

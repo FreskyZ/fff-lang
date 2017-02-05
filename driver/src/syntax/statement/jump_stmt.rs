@@ -9,7 +9,7 @@
 
 use std::fmt;
 
-use lexical_pos::StringPosition;
+use codemap::StringPosition;
 use message::SyntaxMessage;
 
 use lexical::Lexer;
@@ -216,7 +216,7 @@ mod tests {
     use super::ReturnStatement;
     use super::BreakStatement;
     use super::ContinueStatement;
-    use lexical_pos::StringPosition;
+    use codemap::StringPosition;
     use message::SyntaxMessage;
     use message::Message;
     use syntax::Expression;

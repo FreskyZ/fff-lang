@@ -1,7 +1,7 @@
 
 // Statement generation
 
-use lexical_pos::StringPosition;
+use codemap::StringPosition;
 use message::CodegenMessage;
 
 use lexical::SeperatorKind;

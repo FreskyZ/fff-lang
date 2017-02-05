@@ -2,3 +2,4 @@ target
 Cargo.lock
 *.stdout
 *.stderr
+temp

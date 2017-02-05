@@ -7,7 +7,7 @@ use std::ops;
 use std::slice;
 use std::collections::HashMap;
 
-use lexical_pos::StringPosition;
+use codemap::StringPosition;
 use message::CodegenMessage;
 use message::MessageEmitter;
 

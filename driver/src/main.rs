@@ -1,12 +1,11 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
-#[macro_use] // make_str_pos 
-extern crate lexical_pos;
 #[macro_use] // perrorln, test_only_attribute, test_only, test_condition_only
 extern crate util;
 extern crate new_lexical;
-extern crate codemap;
+#[macro_use]
+extern crate codemap; // make_pos, make_str_pos
 
 #[macro_use]
 mod common;
@@ -63,10 +62,3 @@ fn lexical_lib_available() {
 
     assert_eq!(new_lexical::add(3, 2), 1);
 } 
-
-#[test]
-fn codemap_lib_available() {
-    use codemap;
-
-    assert_eq!(codemap::sub(3, 5), 8);
-}

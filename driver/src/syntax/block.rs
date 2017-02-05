@@ -3,7 +3,7 @@
 
 use std::fmt;
 
-use lexical_pos::StringPosition;
+use codemap::StringPosition;
 use util::format_vector_display;
 use util::format_vector_debug;
 
@@ -79,7 +79,7 @@ mod tests {
         use super::Block;
         use syntax::ast_item::IASTItem;
         use lexical::Lexer;
-        use lexical_pos::StringPosition;
+        use codemap::StringPosition;
         
         assert_eq!(
             Block::parse(&mut Lexer::new("{}", ), 0), 

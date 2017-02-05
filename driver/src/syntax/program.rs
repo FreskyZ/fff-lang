@@ -3,7 +3,7 @@
 
 use std::fmt;
 
-use lexical_pos::StringPosition;
+use codemap::StringPosition;
 use util::format_vector_debug;
 use util::format_vector_display;
 

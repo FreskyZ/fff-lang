@@ -495,7 +495,7 @@ fn gen_types_member_fn() {
 
 #[cfg(test)] #[test]
 fn gen_types_by_smtype() {
-    use lexical_pos::StringPosition;
+    use codemap::StringPosition;
 
     macro_rules! test_case {
         ($types: expr, $ty_str: expr, $expect: expr) => (

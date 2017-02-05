@@ -1,6 +1,0 @@
-[package]
-name = "lexical_pos"
-version = "0.1.0"
-authors = ["FreskyZ <fresky7@outlook.com>"]
-
-[dependencies]

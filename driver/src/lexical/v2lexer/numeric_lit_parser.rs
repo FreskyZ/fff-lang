@@ -2,7 +2,7 @@
 // numeric literal parser
 // TODO: ' as seperator, multi seperator not supported, full test
 
-use lexical_pos::StringPosition;
+use codemap::StringPosition;
 use message::LexicalMessage as Message;
 use message::MessageEmitter;
 

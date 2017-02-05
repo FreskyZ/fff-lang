@@ -3,7 +3,7 @@
 // TODO: use chars instead of buf: String to index, this will support Chinese identifiers
 
 use std::str::Chars;
-use lexical_pos::Position;
+use codemap::Position;
 use message::MessageEmitter;
 use lexical::buf_lexer::IDetailLexer;
 use lexical::buf_lexer::BufToken;
@@ -144,7 +144,7 @@ mod tests {
     fn v0_test2() {
         use super::V0Lexer;
         use super::V0Token;
-        use lexical_pos::Position;
+        use codemap::Position;
         use lexical::buf_lexer::IDetailLexer;
         use message::MessageEmitter;
 

@@ -10,7 +10,7 @@
 
 use std::fmt;
 
-use lexical_pos::StringPosition;
+use codemap::StringPosition;
 use util::format_vector_display;
 use util::format_vector_debug;
 use message::SyntaxMessage as Message;

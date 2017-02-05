@@ -15,7 +15,7 @@
 
 use std::fmt;
 
-use lexical_pos::StringPosition;
+use codemap::StringPosition;
 use util::format_vector_debug;
 use util::format_vector_display;
 use message::SyntaxMessage;
@@ -210,7 +210,7 @@ mod tests {
         use message::Message;
         use message::SyntaxMessage;
         use super::SMType;
-        use lexical_pos::StringPosition;
+        use codemap::StringPosition;
         use syntax::ast_item::TestCase;
 
         // Primitive

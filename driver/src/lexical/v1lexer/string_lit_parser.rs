@@ -1,8 +1,8 @@
 
 // String literal parser
 
-use lexical_pos::Position;
-use lexical_pos::StringPosition;
+use codemap::Position;
+use codemap::StringPosition;
 use message::LexicalMessage as Message;
 use message::MessageEmitter;
 use lexical::symbol_type::string_literal::StringLiteral;
@@ -162,8 +162,8 @@ mod tests {
 
     #[test]
     fn string_lit_parser_test() {
-        use lexical_pos::Position;
-        use lexical_pos::StringPosition;
+        use codemap::Position;
+        use codemap::StringPosition;
         use message::LexicalMessage as Message;
         use message::MessageEmitter;
         use lexical::symbol_type::string_literal::StringLiteral;

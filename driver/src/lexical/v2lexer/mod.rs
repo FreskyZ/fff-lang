@@ -6,8 +6,8 @@
 mod numeric_lit_parser;
 
 use std::str::Chars;
-use lexical_pos::Position;
-use lexical_pos::StringPosition;
+use codemap::Position;
+use codemap::StringPosition;
 use message::MessageEmitter;
 
 use lexical::v1lexer::V1Token;
@@ -217,8 +217,8 @@ mod tests {
     use super::V2Token;
     use super::V2Lexer;
     use lexical::buf_lexer::IDetailLexer;
-    use lexical_pos::Position;
-    use lexical_pos::StringPosition;
+    use codemap::Position;
+    use codemap::StringPosition;
     use message::MessageEmitter;
     use lexical::symbol_type::string_literal::StringLiteral;
     use lexical::symbol_type::numeric_literal::NumericLiteral;

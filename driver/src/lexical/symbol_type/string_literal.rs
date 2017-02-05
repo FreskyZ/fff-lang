@@ -3,7 +3,7 @@
 // string literal storage, escape and display
 
 use std::fmt;
-use lexical_pos::StringPosition;
+use codemap::StringPosition;
 
 // String literal symbol
 #[cfg(test)]

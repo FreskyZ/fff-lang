@@ -2,7 +2,7 @@
 // lexical literal, for lexical and syntax parser convenience
 
 use std::fmt;
-use lexical_pos::StringPosition;
+use codemap::StringPosition;
 use lexical::NumLitValue;
 
 #[derive(Clone, Eq, PartialEq)]

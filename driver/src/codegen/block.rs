@@ -1,7 +1,7 @@
 
 // Block
 
-use lexical_pos::StringPosition;
+use codemap::StringPosition;
 
 use syntax::Block as SyntaxBlock;
 // use syntax::Statement;
