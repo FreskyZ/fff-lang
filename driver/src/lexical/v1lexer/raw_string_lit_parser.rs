@@ -68,9 +68,9 @@ mod tests {
         use super::RawStringLiteralParserResult::*;
 
         let dummy_pos = Position::new();
-        let spec_pos1 = Position::from2(12, 34);
-        let spec_pos2 = Position::from2(56, 78);
-        let spec_pos4 = Position::from2(1314, 1516);
+        let spec_pos1 = make_pos!(12, 34);
+        let spec_pos2 = make_pos!(56, 78);
+        let spec_pos4 = make_pos!(1314, 1516);
 
         {   // r"hell\u\no", normal, C1, C2
             let mut parser = RawStringLiteralParser::new(spec_pos1);

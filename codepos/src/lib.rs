@@ -7,37 +7,38 @@
 use std::fmt;
 
 /// Position of a character
-#[derive(Eq, PartialEq, Clone, Copy, Hash)]
+#[derive(Eq, PartialEq, PartialOrd, Ord, Clone, Copy)]
 pub struct Position {
+    m_file_id: u32,
     m_row: u32,
     m_col: u32,
 }
 
 impl fmt::Debug for Position {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}:{}", self.m_row, self.m_col)
-    }
-}
-impl fmt::Display for Position {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}:{}", self.m_row, self.m_col)
+        write!(f, "<{}>{}:{}", self.m_file_id, self.m_row, self.m_col)
     }
 }
 impl Position {
 
     pub fn new() -> Position {
-        Position { m_row: 1, m_col: 1 }
+        Position { m_file_id: 0, m_row: 1, m_col: 1 }
+    }
+    pub fn with_file_id(file_id: u32) -> Position {
+        Position{ m_file_id: file_id, m_row: 1, m_col: 1 }
+    }
+    pub fn with_row_and_col(row: u32, col: u32) -> Position {
+        Position{ m_file_id: 0, m_row: row, m_col: col }
+    }
+    pub fn with_all(file_id: u32, row: u32, col: u32) -> Position {
+        Position{ m_file_id: file_id, m_row: row, m_col: col }
     }
 
     pub fn next_col(&self) -> Position {
-        Position { m_row: self.m_row, m_col: self.m_col + 1 }
+        Position { m_file_id: self.m_file_id, m_row: self.m_row, m_col: self.m_col + 1 }
     }
     pub fn next_row(&self) -> Position {
-        Position { m_row: self.m_row + 1, m_col: 1 }
-    } 
-
-    pub fn from2(row: u32, col: u32) -> Position {
-        Position{ m_row: row, m_col: col }
+        Position { m_file_id: self.m_file_id, m_row: self.m_row + 1, m_col: 1 }
     }
 
     pub fn row(&self) -> u32 {
@@ -46,87 +47,104 @@ impl Position {
     pub fn col(&self) -> u32 {
         self.m_col
     }
+    pub fn file_id(&self) -> u32 {
+        self.m_file_id
+    }
 }
 
 #[macro_export]
 macro_rules! make_pos {
-    ($row: expr, $col: expr) => (Position::from2($row, $col))
+    ($row: expr, $col: expr) => (Position::with_row_and_col($row, $col));
+    ($id: expr, $row: expr, $col: expr) => (Position::with_all($id, $row, $col))
 }
 
-use std::rc::Rc;
 /// Position of a string
-#[derive(Eq, PartialEq, Clone, Copy, Hash)]
+#[derive(Eq, PartialEq, Clone, Copy)]
 pub struct StringPosition {
-    m_start_pos: Position,
-    m_end_pos: Position,
+    m_file_id: u32,
+    m_start_row: u32, 
+    m_start_col: u32,
+    m_end_row: u32,
+    m_end_col: u32,
 }
 
 impl fmt::Debug for StringPosition {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}-{:?}", self.m_start_pos, self.m_end_pos)
-    }
-}
-impl fmt::Display for StringPosition {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}-{:?}", self.m_start_pos, self.m_end_pos)
+        write!(f, "<{}>{}:{}-{}:{}", self.m_file_id, self.m_start_row, self.m_start_col, self.m_end_row, self.m_end_col)
     }
 }
 impl StringPosition { // Construct
     
     pub fn new() -> StringPosition {
-        StringPosition { m_start_pos: Position::new(), m_end_pos: Position::new() }
+        StringPosition{ m_file_id: 0, m_start_row: 1, m_start_col: 1, m_end_row: 1, m_end_col: 1 }
+    }
+    pub fn with_file_id(file_id: u32) -> StringPosition {
+        StringPosition{ m_file_id: file_id, m_start_row: 1, m_start_col: 1, m_end_row: 1, m_end_col: 1 }
     }
 
     /// Same as `StringPosition::from2(pos1.start_pos, pos2.end_pos)`
     pub fn merge(pos1: StringPosition, pos2: StringPosition) -> StringPosition {
-        StringPosition{ m_start_pos: pos1.m_start_pos, m_end_pos: pos2.m_end_pos }
+        
+        if pos1.m_file_id != pos2.m_file_id {
+            panic!("Trying to merge position from different source file")
+        } else {
+            StringPosition{ 
+                m_file_id: pos1.m_file_id, 
+                m_start_row: pos1.m_start_row, 
+                m_start_col: pos1.m_start_col, 
+                m_end_row: pos2.m_end_row, 
+                m_end_col: pos2.m_end_col,
+            }
+        }
     }
     pub fn from2(start_pos: Position, end_pos: Position) -> StringPosition {
-        StringPosition{ m_start_pos: start_pos, m_end_pos: end_pos }
+        if start_pos.m_file_id != end_pos.m_file_id {
+            panic!("Trying to construct string position from different source file")
+        } else {
+            StringPosition{ 
+                m_file_id: start_pos.m_file_id, 
+                m_start_row: start_pos.m_row, 
+                m_start_col: start_pos.m_col, 
+                m_end_row: end_pos.m_row, 
+                m_end_col: end_pos.m_col,
+            }
+        }
     }
     pub fn from4(start_row: u32, start_col: u32, end_row: u32, end_col: u32) -> StringPosition {
-        StringPosition{ m_start_pos: Position::from2(start_row, start_col), m_end_pos: Position::from2(end_row, end_col) }
+        StringPosition{ 
+            m_file_id: 0,
+            m_start_row: start_row,
+            m_start_col: start_col, 
+            m_end_row: end_row, 
+            m_end_col: end_col,
+        }
+    }
+    pub fn with_all(file_id: u32, start_row: u32, start_col: u32, end_row: u32, end_col: u32) -> StringPosition {
+        StringPosition{ 
+            m_file_id: file_id, 
+            m_start_row: start_row,
+            m_start_col: start_col, 
+            m_end_row: end_row, 
+            m_end_col: end_col,
+        }
     }
 }
 impl StringPosition { // access
 
+    pub fn file_id(&self) -> u32 {
+        self.m_file_id
+    }
+
     pub fn start_pos(&self) -> Position {
-        self.m_start_pos
+        Position::with_row_and_col(self.m_start_row, self.m_start_col)
     }
     pub fn end_pos(&self) -> Position {
-        self.m_end_pos
+        Position::with_row_and_col(self.m_end_row, self.m_end_col)
     }
 }
 
 #[macro_export]
 macro_rules! make_str_pos {
-    ($row1: expr, $col1: expr, $row2: expr, $col2: expr) => (StringPosition::from4($row1, $col1, $row2, $col2))
-}
-
-#[cfg(test)]
-#[test]
-fn availability() {
-    use std::rc::Rc;
-    use std::mem::size_of;
-    use std::io::stderr;
-    use std::io::Write;
-
-    struct S1 {
-        a: u32, 
-        b: u32
-    }
-    struct S2 {
-        a: u32, 
-        b: u32,
-        fileid: u16,
-    }
-    struct S3 {
-        a: u32, 
-        b: u32,
-        file: Rc<String>,
-    }
-
-    stderr().write_all(format!("{}\n", size_of::<[S1; 10]>()).as_bytes());
-    stderr().write_all(format!("{}\n", size_of::<[S2; 10]>()).as_bytes());
-    stderr().write_all(format!("{}\n", size_of::<[S3; 10]>()).as_bytes());
+    ($row1: expr, $col1: expr, $row2: expr, $col2: expr) => (StringPosition::from4($row1, $col1, $row2, $col2));
+    ($id: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr) => (StringPosition::with_all($id, $row1, $col1, $row2, $col2))
 }

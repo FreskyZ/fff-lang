@@ -265,7 +265,7 @@ mod tests {
             });
         }
         macro_rules! is_o {
-            ($ch: expr, $row: expr, $col: expr) => (V1Token::Other{ ch: $ch, pos: Position::from2($row, $col) })
+            ($ch: expr, $row: expr, $col: expr) => (V1Token::Other{ ch: $ch, pos: make_pos!($row, $col) })
         }
         macro_rules! is_char {
             ($ch: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr) => (
@@ -316,8 +316,8 @@ mod tests {
             ]
             [
                 Message::UnexpectedEndofFileInBlockComment{
-                    block_start: Position::from2(1, 2),
-                    eof_pos: Position::from2(1, 6),
+                    block_start: make_pos!(1, 2),
+                    eof_pos: make_pos!(1, 6),
                 }
             ]
         }
@@ -334,8 +334,8 @@ mod tests {
             ]
             [
                 Message::UnexpectedEndofFileInStringLiteral{ 
-                    literal_start: Position::from2(1, 1), 
-                    eof_pos: Position::from2(1, 4), 
+                    literal_start: make_pos!(1, 1), 
+                    eof_pos: make_pos!(1, 4), 
                     hint_escaped_quote_pos: None,
                 }
             ]
@@ -346,9 +346,9 @@ mod tests {
             ]
             [
                 Message::UnexpectedEndofFileInStringLiteral{
-                    literal_start: Position::from2(1, 1), 
-                    eof_pos: Position::from2(1, 11), 
-                    hint_escaped_quote_pos: Some(Position::from2(1, 7)),
+                    literal_start: make_pos!(1, 1), 
+                    eof_pos: make_pos!(1, 11), 
+                    hint_escaped_quote_pos: Some(make_pos!(1, 7)),
                 }
             ]
         }
@@ -363,13 +363,13 @@ mod tests {
             ]
             [
                 Message::UnrecognizedEscapeCharInStringLiteral{ 
-                    literal_start: Position::from2(1, 1), unrecogonize_pos: Position::from2(1, 3), unrecogonize_escape: 'c' }
+                    literal_start: make_pos!(1, 1), unrecogonize_pos: make_pos!(1, 3), unrecogonize_escape: 'c' }
                 Message::UnrecognizedEscapeCharInStringLiteral{ 
-                    literal_start: Position::from2(1, 1), unrecogonize_pos: Position::from2(1, 5), unrecogonize_escape: 'd' }
+                    literal_start: make_pos!(1, 1), unrecogonize_pos: make_pos!(1, 5), unrecogonize_escape: 'd' }
                 Message::UnrecognizedEscapeCharInStringLiteral{ 
-                    literal_start: Position::from2(1, 1), unrecogonize_pos: Position::from2(1, 7), unrecogonize_escape: 'e' }
+                    literal_start: make_pos!(1, 1), unrecogonize_pos: make_pos!(1, 7), unrecogonize_escape: 'e' }
                 Message::UnrecognizedEscapeCharInStringLiteral{ 
-                    literal_start: Position::from2(1, 1), unrecogonize_pos: Position::from2(1, 11), unrecogonize_escape: 'g' }
+                    literal_start: make_pos!(1, 1), unrecogonize_pos: make_pos!(1, 11), unrecogonize_escape: 'g' }
             ]
         }
         test_case!{ r#""H\uABCDel""#,
@@ -383,16 +383,16 @@ mod tests {
             ]
             [
                 Message::UnexpectedCharInUnicodeCharEscape{ 
-                    escape_start: Position::from2(1, 3), unexpected_char_pos: Position::from2(1, 8), unexpected_char: 'H' }
+                    escape_start: make_pos!(1, 3), unexpected_char_pos: make_pos!(1, 8), unexpected_char: 'H' }
                 Message::UnexpectedCharInUnicodeCharEscape{ 
-                    escape_start: Position::from2(1, 11), unexpected_char_pos: Position::from2(1, 16), unexpected_char: 'g' }
+                    escape_start: make_pos!(1, 11), unexpected_char_pos: make_pos!(1, 16), unexpected_char: 'g' }
             ]
         }
         test_case!{ r#""H\U0011ABCD""#,
             [is_string!(1, 1, 1, 13, false)]
             [
                 Message::IncorrectUnicodeCharEscapeValue{ 
-                    escape_start: Position::from2(1, 3), 
+                    escape_start: make_pos!(1, 3), 
                     raw_value: "0011ABCD".to_owned() 
                 }
             ]
@@ -401,9 +401,9 @@ mod tests {
             [is_string!(1, 1, 1, 5, false)]
             [
                 Message::UnexpectedStringLiteralEndInUnicodeCharEscape{
-                    literal_start: Position::from2(1, 1), 
-                    escape_start: Position::from2(1, 3), 
-                    unexpected_end_pos: Position::from2(1, 5),
+                    literal_start: make_pos!(1, 1), 
+                    escape_start: make_pos!(1, 3), 
+                    unexpected_end_pos: make_pos!(1, 5),
                 }
             ]
         }
@@ -411,8 +411,8 @@ mod tests {
             [is_string!(1, 1, 1, 8, false)]
             [
                 Message::UnexpectedEndofFileInStringLiteral{ 
-                    literal_start: Position::from2(1, 1), 
-                    eof_pos: Position::from2(1, 8), 
+                    literal_start: make_pos!(1, 1), 
+                    eof_pos: make_pos!(1, 8), 
                     hint_escaped_quote_pos: None,
                 }
             ]
@@ -421,8 +421,8 @@ mod tests {
             [is_string!(1, 1, 1, 5, false)]
             [
                 Message::UnexpectedEndofFileInStringLiteral{ 
-                    literal_start: Position::from2(1, 1), 
-                    eof_pos: Position::from2(1, 5), 
+                    literal_start: make_pos!(1, 1), 
+                    eof_pos: make_pos!(1, 5), 
                     hint_escaped_quote_pos: None,
                 }
             ]
@@ -436,8 +436,8 @@ mod tests {
             [is_string!(1, 1, 1, 5, true)]
             [
                 Message::UnexpectedEndofFileInStringLiteral{ 
-                    literal_start: Position::from2(1, 1), 
-                    eof_pos: Position::from2(1, 5), 
+                    literal_start: make_pos!(1, 1), 
+                    eof_pos: make_pos!(1, 5), 
                     hint_escaped_quote_pos: None,
                 }
             ]
@@ -455,18 +455,18 @@ mod tests {
         }
         test_case!{ "''",
             [is_char!(1, 1, 1, 2)]
-            [Message::EmptyCharLiteral{ pos: Position::from2(1, 1) }]
+            [Message::EmptyCharLiteral{ pos: make_pos!(1, 1) }]
         }
         test_case!{ "'ABC'",
             [is_char!(1, 1, 1, 5)]
-            [Message::CharLiteralTooLong{ start_pos: Position::from2(1, 1) }]
+            [Message::CharLiteralTooLong{ start_pos: make_pos!(1, 1) }]
         }
         test_case!{ r"'\c'",
             [is_char!(1, 1, 1, 4)]
             [
                 Message::UnrecognizedEscapeCharInCharLiteral{
-                    literal_start: Position::from2(1, 1),
-                    unrecogonize_pos: Position::from2(1, 2),
+                    literal_start: make_pos!(1, 1),
+                    unrecogonize_pos: make_pos!(1, 2),
                     unrecogonize_escape: 'c',
                 }
             ]
@@ -475,38 +475,38 @@ mod tests {
             [is_char!(1, 1, 1, 6)]
             [
                 Message::UnexpectedCharInUnicodeCharEscape{ 
-                    escape_start: Position::from2(1, 2),
-                    unexpected_char_pos: Position::from2(1, 5),
+                    escape_start: make_pos!(1, 2),
+                    unexpected_char_pos: make_pos!(1, 5),
                     unexpected_char: 'G' }
                 Message::UnexpectedCharLiteralEndInUnicodeCharEscape {
-                    literal_start: Position::from2(1, 1),
-                    escape_start: Position::from2(1, 2),
-                    unexpected_end_pos: Position::from2(1, 6) }
+                    literal_start: make_pos!(1, 1),
+                    escape_start: make_pos!(1, 2),
+                    unexpected_end_pos: make_pos!(1, 6) }
             ]
         }
         test_case!{ r"'\U0011ABCD'",
             [is_char!(1, 1, 1, 12)]
             [
                 Message::IncorrectUnicodeCharEscapeValue{
-                    escape_start: Position::from2(1, 2),
+                    escape_start: make_pos!(1, 2),
                     raw_value: "0011ABCD".to_owned()
                 }
             ]
         }
         test_case!{ r"'\na'",
             [is_char!(1, 1, 1, 5)]
-            [Message::CharLiteralTooLong{ start_pos: Position::from2(1, 1) }]
+            [Message::CharLiteralTooLong{ start_pos: make_pos!(1, 1) }]
         }
         test_case!{ r"'\uABCDA'",
             [is_char!(1, 1, 1, 9)]
-            [Message::CharLiteralTooLong{ start_pos: Position::from2(1, 1) }] 
+            [Message::CharLiteralTooLong{ start_pos: make_pos!(1, 1) }] 
         }
         test_case!{ "'",
             [is_char!(1, 1, 1, 2)]
             [
                 Message::UnexpectedEndofFileInCharLiteral{ 
-                    literal_start: Position::from2(1, 1), 
-                    eof_pos: Position::from2(1, 2), 
+                    literal_start: make_pos!(1, 1), 
+                    eof_pos: make_pos!(1, 2), 
                 }
             ]
         }
@@ -514,8 +514,8 @@ mod tests {
             [is_char!(1, 1, 1, 3)]
             [
                 Message::UnexpectedEndofFileInCharLiteral{ 
-                    literal_start: Position::from2(1, 1), 
-                    eof_pos: Position::from2(1, 3), 
+                    literal_start: make_pos!(1, 1), 
+                    eof_pos: make_pos!(1, 3), 
                 }
             ]
         }
@@ -523,8 +523,8 @@ mod tests {
             [is_char!(1, 1, 1, 4)]
             [
                 Message::UnexpectedEndofFileInCharLiteral{ 
-                    literal_start: Position::from2(1, 1), 
-                    eof_pos: Position::from2(1, 4), 
+                    literal_start: make_pos!(1, 1), 
+                    eof_pos: make_pos!(1, 4), 
                 }
             ]
         }
@@ -532,8 +532,8 @@ mod tests {
             [is_char!(1, 1, 1, 3)]
             [
                 Message::UnexpectedEndofFileInCharLiteral{ 
-                    literal_start: Position::from2(1, 1), 
-                    eof_pos: Position::from2(1, 3), 
+                    literal_start: make_pos!(1, 1), 
+                    eof_pos: make_pos!(1, 3), 
                 }
             ]
         }
@@ -541,8 +541,8 @@ mod tests {
             [is_char!(1, 1, 1, 5)]
             [
                 Message::UnexpectedEndofFileInCharLiteral{ 
-                    literal_start: Position::from2(1, 1), 
-                    eof_pos: Position::from2(1, 5) 
+                    literal_start: make_pos!(1, 1), 
+                    eof_pos: make_pos!(1, 5) 
                 }
             ]
         }
@@ -552,7 +552,7 @@ mod tests {
                 is_o!('A', 1, 4)
                 is_o!('B', 1, 5)
             ]
-            [Message::InvalidEscapeInCharLiteral{ start_pos: Position::from2(1, 1) }]
+            [Message::InvalidEscapeInCharLiteral{ start_pos: make_pos!(1, 1) }]
         }
     }
 }

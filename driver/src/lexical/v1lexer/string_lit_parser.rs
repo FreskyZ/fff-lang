@@ -171,13 +171,13 @@ mod tests {
         use super::StringLiteralParserResult::*;
 
         let dummy_pos = Position::new();
-        let spec_pos1 = Position::from2(12, 34);
-        let spec_pos2 = Position::from2(56, 78);
-        let spec_pos3 = Position::from2(910, 1112);
-        let spec_pos4 = Position::from2(1314, 1516);
+        let spec_pos1 = make_pos!(12, 34);
+        let spec_pos2 = make_pos!(56, 78);
+        let spec_pos3 = make_pos!(910, 1112);
+        let spec_pos4 = make_pos!(1314, 1516);
 
         {   // "Hello, world!", most normal,                                    C11, C5, C7
-            let mut parser = StringLiteralParser::new(Position::from2(12, 34));
+            let mut parser = StringLiteralParser::new(make_pos!(12, 34));
             let messages = &mut MessageEmitter::new(); 
             assert_eq!(parser.input(Some('H'), dummy_pos, Some('e'), messages), WantMore);
             assert_eq!(parser.input(Some('e'), dummy_pos, Some('l'), messages), WantMore);
@@ -192,7 +192,7 @@ mod tests {
             assert_eq!(parser.input(Some('l'), dummy_pos, Some('l'), messages), WantMore);
             assert_eq!(parser.input(Some('d'), dummy_pos, Some('d'), messages), WantMore);
             assert_eq!(parser.input(Some('!'), dummy_pos, None, messages), WantMore);
-            assert_eq!(parser.input(Some('"'), Position::from2(56, 78), None, messages), 
+            assert_eq!(parser.input(Some('"'), make_pos!(56, 78), None, messages), 
                 Finished(StringLiteral::new2("Hello, world!", StringPosition::from4(12, 34, 56, 78), false)));
 
             assert_eq!(messages, &MessageEmitter::new());

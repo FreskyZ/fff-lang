@@ -38,11 +38,11 @@ impl fmt::Debug for UnaryExpression {
                 String::new(), 
                 |mut buf, ref unary| {
                     match unary.op {
-                        SeperatorKind::BitNot => buf.push_str(&format!(".operator~() @ {}", unary.pos)),
-                        SeperatorKind::LogicalNot => buf.push_str(&format!(".operator!() @ {}", unary.pos)),
-                        SeperatorKind::Increase => buf.push_str(&format!(".operator++() @ {}", unary.pos)),
-                        SeperatorKind::Decrease => buf.push_str(&format!(".operator--() @ {}", unary.pos)),
-                        SeperatorKind::Sub => buf.push_str(&format!(".operator-() @ {}", unary.pos)),
+                        SeperatorKind::BitNot => buf.push_str(&format!(".operator~() @ {:?}", unary.pos)),
+                        SeperatorKind::LogicalNot => buf.push_str(&format!(".operator!() @ {:?}", unary.pos)),
+                        SeperatorKind::Increase => buf.push_str(&format!(".operator++() @ {:?}", unary.pos)),
+                        SeperatorKind::Decrease => buf.push_str(&format!(".operator--() @ {:?}", unary.pos)),
+                        SeperatorKind::Sub => buf.push_str(&format!(".operator-() @ {:?}", unary.pos)),
                         _ => unreachable!(),
                     }
                     buf

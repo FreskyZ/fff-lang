@@ -8,6 +8,7 @@ new_lexical = { path = "../lexical" }
 codemap = { path="../codemap" }
 codepos = { path="../codepos" }
 util = { path="../util" }
+messages = { path = "../messages" }
 
 [[bin]]
 path = "src/main.rs"

@@ -274,7 +274,7 @@ mod tests {
     }
     macro_rules! tchar {
         ($ch: expr, $row: expr, $col: expr) => (
-            V2Token::Other{ ch: $ch, pos: Position::from2($row, $col) }
+            V2Token::Other{ ch: $ch, pos: make_pos!($row, $col) }
         )
     }
 

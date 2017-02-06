@@ -242,11 +242,11 @@ mod tests {
 
         use std::collections::HashSet;
 
-        let spec_pos1 = Position::from2(12, 34);
-        let spec_pos2 = Position::from2(56, 78);
-        let spec_pos3 = Position::from2(910, 11);
-        let spec_pos4 = Position::from2(12, 13);
-        let spec_pos5 = Position::from2(14, 15);
+        let spec_pos1 = make_pos!(12, 34);
+        let spec_pos2 = make_pos!(56, 78);
+        let spec_pos3 = make_pos!(910, 11);
+        let spec_pos4 = make_pos!(12, 13);
+        let spec_pos5 = make_pos!(14, 15);
 
         const INVALID_CHAR: char = '\u{FFFE}';
         let mut all_counter = HashSet::<i32>::new();

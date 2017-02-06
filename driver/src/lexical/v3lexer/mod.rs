@@ -165,7 +165,7 @@ mod tests {
         use super::V3Lexer;
         use message::MessageEmitter;
 
-        let file_name = "tests/lexical/2.sm";
+        let file_name = "../tests/lexical/2.sm";
         let mut file: File = File::open(file_name).expect("Open file failed");
 
         let mut content = String::new();

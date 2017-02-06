@@ -110,26 +110,26 @@ impl fmt::Debug for LexicalMessage {
         use self::LexicalMessage::*;
         match *self {
             UnexpectedEndofFileInBlockComment { ref block_start, ref eof_pos } => {
-                write!(f, "Unexpected end of file at {} in block comment starts from {}", eof_pos, block_start)
+                write!(f, "Unexpected end of file at {:?} in block comment starts from {:?}", eof_pos, block_start)
             }
             UnexpectedEndofFileInStringLiteral { ref literal_start, ref eof_pos, ref hint_escaped_quote_pos } => {
-                try!(write!(f, "Unexpected end of file at {} in string literal starts from {}", eof_pos, literal_start));
+                try!(write!(f, "Unexpected end of file at {:?} in string literal starts from {:?}", eof_pos, literal_start));
                 match hint_escaped_quote_pos {
                     &None => Ok(()),
-                    &Some(ref hint) => write!(f, ", did you accidentally escape the quotation mark at {}?", hint),
+                    &Some(ref hint) => write!(f, ", did you accidentally escape the quotation mark at {:?}?", hint),
                 }
             }
             UnexpectedEndofFileInCharLiteral { ref literal_start, ref eof_pos } => {
-                write!(f, "Unexpected end of file at {} in char literal starts from {}", eof_pos, literal_start)
+                write!(f, "Unexpected end of file at {:?} in char literal starts from {:?}", eof_pos, literal_start)
             }
             UnrecognizedEscapeCharInStringLiteral { ref literal_start, ref unrecogonize_pos, ref unrecogonize_escape } => {
-                write!(f, "Unrecogonized escape char {:?} at {} in string literal starts from {}", unrecogonize_escape, unrecogonize_pos, literal_start)
+                write!(f, "Unrecogonized escape char {:?} at {:?} in string literal starts from {:?}", unrecogonize_escape, unrecogonize_pos, literal_start)
             }
             UnrecognizedEscapeCharInCharLiteral { ref literal_start, ref unrecogonize_pos, ref unrecogonize_escape } => {
-                write!(f, "Unrecogonized escape char {:?} at {} in char literal starts from {}", unrecogonize_escape, unrecogonize_pos, literal_start)
+                write!(f, "Unrecogonized escape char {:?} at {:?} in char literal starts from {:?}", unrecogonize_escape, unrecogonize_pos, literal_start)
             }
             UnexpectedIdentifierCharInNumericLiteral { ref literal_start, ref unexpected_char } => {
-                write!(f, "Unexpected character {:?} in numeric litral starts from {}", unexpected_char, literal_start)
+                write!(f, "Unexpected character {:?} in numeric litral starts from {:?}", unexpected_char, literal_start)
             }
             UnexpectedCharInUnicodeCharEscape { ref escape_start, ref unexpected_char_pos, ref unexpected_char } => {
                 write!(f, "Unexpected char {:?} at {:?} in unicode char escape start from {:?}, unicode char escape is like \\uxxxx or \\Uxxxxxxxx", 
@@ -444,7 +444,7 @@ impl fmt::Debug for CodegenMessage {
                 write!(f, "Return type mismatch at {:?}, expect {}, actual is {}", pos, expect, actual)
             },
             ForIteraterTypeMismatch{ ref pos, ref actual } => {
-                write!(f, "**CURRENTLY** if iterater only supports integral type, meet {} at {:}", actual, pos)
+                write!(f, "**CURRENTLY** if iterater only supports integral type, meet {} at {:?}", actual, pos)
             },
             ForRangeTypeMismatch{ ref pos, ref actual, ref expect } => {
                 write!(f, "For range type mismatch at {:?}, expect {}, actual is {}", pos, expect, actual)
@@ -504,14 +504,14 @@ impl_display_by_debug!{ Message }
 
 #[cfg(test)]
 #[derive(Eq, PartialEq)]
-pub struct MessageEmitter {
+pub struct MessageCollection {
     messages: Vec<Message>,
 }
 #[cfg(not(test))]
-pub struct MessageEmitter {
+pub struct MessageCollection {
     messages: Vec<Message>,
 }
-impl fmt::Debug for MessageEmitter {
+impl fmt::Debug for MessageCollection {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for message in &self.messages {
             try!(writeln!(f, "{:?}", message));
@@ -519,11 +519,11 @@ impl fmt::Debug for MessageEmitter {
         Ok(())
     }
 }
-impl_display_by_debug!(MessageEmitter);
-impl MessageEmitter {
+impl_display_by_debug!(MessageCollection);
+impl MessageCollection {
 
-    pub fn new() -> MessageEmitter {
-        MessageEmitter { messages: Vec::new() }
+    pub fn new() -> MessageCollection {
+        MessageCollection { messages: Vec::new() }
     }
 
     pub fn is_empty(&self) -> bool { self.messages.is_empty() }
@@ -536,3 +536,5 @@ impl MessageEmitter {
         let _ = self.messages.pop();
     }
 }
+
+pub type MessageEmitter = MessageCollection;

@@ -44,7 +44,7 @@ impl<'chs> From<Chars<'chs>> for V0Lexer<'chs> {
     fn from(content_chars: Chars<'chs>) -> V0Lexer {
         V0Lexer {
             chars: content_chars,
-            text_pos: Position::from2(1, 0),
+            text_pos: Position::with_row_and_col(1, 0),
             previous_is_new_line: false,
         }
     }
@@ -162,7 +162,7 @@ mod tests {
 
                 let mut expects = Vec::new();
                 $(
-                    expects.push(V0Token { ch: $ch, pos: Position::from2($row, $col) });
+                    expects.push(V0Token { ch: $ch, pos: make_pos!($row, $col) });
                 )*
                 
                 assert_eq!(v0s, expects);

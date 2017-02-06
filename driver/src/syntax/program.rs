@@ -107,10 +107,10 @@ mod tests {
             )
         }
 
-        test_case!("tests/syntax/hello.sm");
-        test_case!("tests/syntax/list.sm");
-        test_case!("tests/syntax/prime.sm");
-        test_case!("tests/syntax/string.sm");
+        test_case!("../tests/syntax/hello.sm");
+        test_case!("../tests/syntax/list.sm");
+        test_case!("../tests/syntax/prime.sm");
+        test_case!("../tests/syntax/string.sm");
     }
 
     #[test]
