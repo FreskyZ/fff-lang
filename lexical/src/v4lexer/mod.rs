@@ -7,17 +7,17 @@ use message::SyntaxMessage;
 use message::LegacyMessage as Message;
 use message::MessageEmitter;
 
-use lexical::symbol_type::string_literal::StringLiteral;
-use lexical::symbol_type::char_literal::CharLiteral;
-use lexical::symbol_type::numeric_literal::NumericLiteral;
-use lexical::KeywordKind;
-use lexical::SeperatorKind;
-use lexical::LitValue;
+use super::symbol_type::string_literal::StringLiteral;
+use super::symbol_type::char_literal::CharLiteral;
+use super::symbol_type::numeric_literal::NumericLiteral;
+use super::KeywordKind;
+use super::SeperatorKind;
+use super::LitValue;
 
-use lexical::v3lexer::V3Lexer;
-use lexical::v3lexer::V3Token;
+use super::v3lexer::V3Lexer;
+use super::v3lexer::V3Token;
 
-use lexical::IToken;
+use super::IToken;
 
 // Token
 test_only_attr!{
@@ -178,7 +178,7 @@ pub struct V4Lexer {
 impl V4Lexer {
     
     pub fn new(content: &str) -> V4Lexer {
-        use lexical::buf_lexer::IDetailLexer;
+        use super::buf_lexer::IDetailLexer;
 
         let mut messages = MessageEmitter::new();
         let mut v3lexer = V3Lexer::from(content.chars());
@@ -257,78 +257,72 @@ impl V4Lexer {
 }
 
 #[cfg(test)]
-mod tests {
+#[test]
+fn v4_base() {
+    use super::NumLitValue;
 
-    #[test]
-    fn v4_base() {
-        use codepos::StringPosition;
-        use super::V4Lexer;
-        use lexical::NumLitValue;
-        use lexical::SeperatorKind;
+    // numeric, 123, 1:1-1:3
+    // identifier, abc, 1:5-1:7
+    // char, 'd', 1:9-1:11
+    // seperator, comma, 1:12-1:12
+    // seperator, leftbracket, 1:14-1:14
+    // numeric, 1, 1:15-1:15
+    // seperator, rightbracket, 1:16-1:16
+    let lexer = V4Lexer::new("123 abc 'd', [1]");
 
-        // numeric, 123, 1:1-1:3
-        // identifier, abc, 1:5-1:7
-        // char, 'd', 1:9-1:11
-        // seperator, comma, 1:12-1:12
-        // seperator, leftbracket, 1:14-1:14
-        // numeric, 1, 1:15-1:15
-        // seperator, rightbracket, 1:16-1:16
-        let lexer = V4Lexer::new("123 abc 'd', [1]");
+    assert_eq!(lexer.nth(0).is_num_lit(), true);
+    assert_eq!(lexer.nth(0).get_lit_val().unwrap().get_num().unwrap(), &Some(NumLitValue::I32(123)));
+    assert_eq!(lexer.nth(0).get_position(), make_str_pos!(1, 1, 1, 3));
+    assert_eq!(lexer.pos(0), make_str_pos!(1, 1, 1, 3));
 
-        assert_eq!(lexer.nth(0).is_num_lit(), true);
-        assert_eq!(lexer.nth(0).get_lit_val().unwrap().get_num().unwrap(), &Some(NumLitValue::I32(123)));
-        assert_eq!(lexer.nth(0).get_position(), make_str_pos!(1, 1, 1, 3));
-        assert_eq!(lexer.pos(0), make_str_pos!(1, 1, 1, 3));
+    assert_eq!(lexer.nth(1).is_spec_ident("abc"), true);
+    assert_eq!(lexer.nth(1).get_identifier().unwrap(), format!("abc"));
+    assert_eq!(lexer.nth(1).get_position(), make_str_pos!(1, 5, 1, 7));
+    assert_eq!(lexer.pos(1), make_str_pos!(1, 5, 1, 7));
 
-        assert_eq!(lexer.nth(1).is_spec_ident("abc"), true);
-        assert_eq!(lexer.nth(1).get_identifier().unwrap(), format!("abc"));
-        assert_eq!(lexer.nth(1).get_position(), make_str_pos!(1, 5, 1, 7));
-        assert_eq!(lexer.pos(1), make_str_pos!(1, 5, 1, 7));
+    assert_eq!(lexer.nth(2).is_char_lit(), true);
+    assert_eq!(lexer.nth(2).get_lit_val().unwrap().get_char().unwrap(), &Some('d'));
+    assert_eq!(lexer.nth(2).get_position(), make_str_pos!(1, 9, 1, 11));
+    assert_eq!(lexer.pos(2), make_str_pos!(1, 9, 1, 11));
 
-        assert_eq!(lexer.nth(2).is_char_lit(), true);
-        assert_eq!(lexer.nth(2).get_lit_val().unwrap().get_char().unwrap(), &Some('d'));
-        assert_eq!(lexer.nth(2).get_position(), make_str_pos!(1, 9, 1, 11));
-        assert_eq!(lexer.pos(2), make_str_pos!(1, 9, 1, 11));
+    assert_eq!(lexer.nth(3).is_seperator(SeperatorKind::Comma), true);
+    assert_eq!(lexer.nth(3).get_seperator().unwrap(), SeperatorKind::Comma);
+    assert_eq!(lexer.nth(3).get_position(), lexer.pos(3));
+    assert_eq!(lexer.pos(3), make_str_pos!(1, 12, 1, 12));
 
-        assert_eq!(lexer.nth(3).is_seperator(SeperatorKind::Comma), true);
-        assert_eq!(lexer.nth(3).get_seperator().unwrap(), SeperatorKind::Comma);
-        assert_eq!(lexer.nth(3).get_position(), lexer.pos(3));
-        assert_eq!(lexer.pos(3), make_str_pos!(1, 12, 1, 12));
+    assert_eq!(lexer.nth(4).is_seperator(SeperatorKind::LeftBracket), true);
+    assert_eq!(lexer.nth(4).get_seperator().unwrap(), SeperatorKind::LeftBracket);
+    assert_eq!(lexer.nth(4).get_position(), lexer.pos(4));
+    assert_eq!(lexer.pos(4), make_str_pos!(1, 14, 1, 14));
 
-        assert_eq!(lexer.nth(4).is_seperator(SeperatorKind::LeftBracket), true);
-        assert_eq!(lexer.nth(4).get_seperator().unwrap(), SeperatorKind::LeftBracket);
-        assert_eq!(lexer.nth(4).get_position(), lexer.pos(4));
-        assert_eq!(lexer.pos(4), make_str_pos!(1, 14, 1, 14));
+    assert_eq!(lexer.nth(5).is_num_lit(), true);
+    assert_eq!(lexer.nth(5).get_lit_val().unwrap().get_num().unwrap(), &Some(NumLitValue::I32(1)));
+    assert_eq!(lexer.nth(5).get_position(), lexer.pos(5));
+    assert_eq!(lexer.pos(5), make_str_pos!(1, 15, 1, 15));
 
-        assert_eq!(lexer.nth(5).is_num_lit(), true);
-        assert_eq!(lexer.nth(5).get_lit_val().unwrap().get_num().unwrap(), &Some(NumLitValue::I32(1)));
-        assert_eq!(lexer.nth(5).get_position(), lexer.pos(5));
-        assert_eq!(lexer.pos(5), make_str_pos!(1, 15, 1, 15));
+    assert_eq!(lexer.nth(6).is_seperator(SeperatorKind::RightBracket), true);
+    assert_eq!(lexer.nth(6).get_seperator().unwrap(), SeperatorKind::RightBracket);
+    assert_eq!(lexer.nth(6).get_position(), lexer.pos(6));
+    assert_eq!(lexer.pos(6), make_str_pos!(1, 16, 1, 16));
 
-        assert_eq!(lexer.nth(6).is_seperator(SeperatorKind::RightBracket), true);
-        assert_eq!(lexer.nth(6).get_seperator().unwrap(), SeperatorKind::RightBracket);
-        assert_eq!(lexer.nth(6).get_position(), lexer.pos(6));
-        assert_eq!(lexer.pos(6), make_str_pos!(1, 16, 1, 16));
+    assert_eq!(lexer.nth(7).is_eof(), true);
+    assert_eq!(lexer.pos(7), make_str_pos!(1, 17, 1, 17));
 
-        assert_eq!(lexer.nth(7).is_eof(), true);
-        assert_eq!(lexer.pos(7), make_str_pos!(1, 17, 1, 17));
+    assert_eq!(lexer.nth(8).is_eof(), true);
+    assert_eq!(lexer.nth(8).get_position(), lexer.pos(8));
+    assert_eq!(lexer.pos(8), make_str_pos!(1, 17, 1, 17));
 
-        assert_eq!(lexer.nth(8).is_eof(), true);
-        assert_eq!(lexer.nth(8).get_position(), lexer.pos(8));
-        assert_eq!(lexer.pos(8), make_str_pos!(1, 17, 1, 17));
+    assert_eq!(lexer.nth(42).is_eof(), true);
+    assert_eq!(lexer.nth(42).get_position(), lexer.pos(8));  // this 8 here is not forgetten
+    assert_eq!(lexer.pos(42), make_str_pos!(1, 17, 1, 17));
+}
 
-        assert_eq!(lexer.nth(42).is_eof(), true);
-        assert_eq!(lexer.nth(42).get_position(), lexer.pos(8));  // this 8 here is not forgetten
-        assert_eq!(lexer.pos(42), make_str_pos!(1, 17, 1, 17));
-    }
+#[cfg(test)]
+#[test]
+fn v4_push() {
 
-    #[test]
-    fn v4_push() {
-        use super::V4Lexer as Lexer;
-
-        let lexer = &mut Lexer::new("abcdef");
-        let _ = lexer.push_expect::<i32>("123", 0, 0);
-        let _ = lexer.push_expects::<i32>(vec!["456", "789"], 0, 0);
-        perrorln!("Messages: {:?}", lexer.messages());
-    }
+    let lexer = &mut V4Lexer::new("abcdef");
+    let _ = lexer.push_expect::<i32>("123", 0, 0);
+    let _ = lexer.push_expects::<i32>(vec!["456", "789"], 0, 0);
+    perrorln!("Messages: {:?}", lexer.messages());
 }

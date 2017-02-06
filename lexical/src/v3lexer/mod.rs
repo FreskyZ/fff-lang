@@ -11,23 +11,23 @@
 // May be final layer, --- not, 17/10/8
 
 use std::str::Chars;
-use common::TryFrom;
+use util::TryFrom;
 use codepos::Position;
 use codepos::StringPosition;
 use message::LexicalMessage;
 use message::MessageEmitter;
 
-use lexical::v2lexer::V2Token;
-use lexical::v2lexer::BufV2Token;
-use lexical::v2lexer::BufV2Lexer;
+use super::v2lexer::V2Token;
+use super::v2lexer::BufV2Token;
+use super::v2lexer::BufV2Lexer;
 
-use lexical::buf_lexer::IDetailLexer;
+use super::buf_lexer::IDetailLexer;
 
-use lexical::symbol_type::string_literal::StringLiteral;
-use lexical::symbol_type::numeric_literal::NumericLiteral;
-use lexical::symbol_type::char_literal::CharLiteral;
-use lexical::KeywordKind;
-use lexical::SeperatorKind;
+use super::symbol_type::string_literal::StringLiteral;
+use super::symbol_type::numeric_literal::NumericLiteral;
+use super::symbol_type::char_literal::CharLiteral;
+use super::KeywordKind;
+use super::SeperatorKind;
 
 mod unicode_char;
 
@@ -155,57 +155,25 @@ impl<'chs> IDetailLexer<'chs, V3Token> for V3Lexer<'chs> {
 }
 
 #[cfg(test)]
-mod tests {
-    use lexical::buf_lexer::IDetailLexer;
+#[test]
+fn v3_test1() {
+    use std::fs::File;
+    use std::io::Read;
 
-    #[test]
-    fn v3_test1() {
-        use std::fs::File;
-        use std::io::Read;
-        use super::V3Lexer;
-        use message::MessageEmitter;
+    let file_name = "../tests/lexical/2.sm";
+    let mut file: File = File::open(file_name).expect("Open file failed");
 
-        let file_name = "../tests/lexical/2.sm";
-        let mut file: File = File::open(file_name).expect("Open file failed");
+    let mut content = String::new();
+    let _read_size = file.read_to_string(&mut content).expect("Read file failed");
+    let mut v3lexer = V3Lexer::from(content.chars());
 
-        let mut content = String::new();
-        let _read_size = file.read_to_string(&mut content).expect("Read file failed");
-        let mut v3lexer = V3Lexer::from(content.chars());
-
-        let mut messages = MessageEmitter::new();
-        loop {
-            match v3lexer.next(&mut messages) {
-                Some(v3) => perrorln!("{:?}", v3),
-                None => break, 
-            }
+    let mut messages = MessageEmitter::new();
+    loop {
+        match v3lexer.next(&mut messages) {
+            Some(v3) => perrorln!("{:?}", v3),
+            None => break, 
         }
-        
-        perrorln!("messages: \n{:?}", messages);
     }
-
-    #[test]
-    #[ignore]
-    fn v3_on_lexical_v2_num_lit_parser() {
-        use std::fs::File;
-        use std::io::Read;
-        use super::V3Lexer;
-        use message::MessageEmitter;
-
-        let file_name = "src/lexical/v2lexer/numeric_lit_parser.rs";
-        let mut file: File = File::open(file_name).expect("Open file failed");
-
-        let mut content = String::new();
-        let _read_size = file.read_to_string(&mut content).expect("Read file failed");
-        let mut v3lexer = V3Lexer::from(content.chars());
-
-        let mut messages = MessageEmitter::new();
-        loop {
-            match v3lexer.next(&mut messages) {
-                Some(v3) => perrorln!("{:?}", v3),
-                None => break, 
-            }
-        }
-        
-        perrorln!("messages: \n{:?}", messages);
-    }
+    
+    perrorln!("messages: \n{:?}", messages);
 }

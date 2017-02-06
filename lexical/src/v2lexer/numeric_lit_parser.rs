@@ -6,8 +6,8 @@ use codepos::StringPosition;
 use message::LexicalMessage as Message;
 use message::MessageEmitter;
 
-use lexical::symbol_type::numeric_literal::NumericLiteral;
-use lexical::NumLitValue;
+use super::super::symbol_type::numeric_literal::NumericLiteral;
+use super::super::NumLitValue;
 
 // Final to value, check too large
 macro_rules! values_to_integral {

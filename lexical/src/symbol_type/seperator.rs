@@ -75,7 +75,7 @@ macro_rules! define_seperator {
             }
         }
 
-        use common::TryFrom;
+        use util::TryFrom;
         impl TryFrom<char> for $enum_name {
             fn try_from(ch: char) -> Option<$enum_name> {
                 match ch {

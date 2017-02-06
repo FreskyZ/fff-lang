@@ -2,8 +2,7 @@
 // lexical literal, for lexical and syntax parser convenience
 
 use std::fmt;
-use codepos::StringPosition;
-use lexical::NumLitValue;
+use super::numeric_literal::NumLitValue;
 
 #[derive(Clone, Eq, PartialEq)]
 pub enum LitValue {
@@ -136,7 +135,6 @@ impl From<String> for LitValue {
         LitValue::Str(Some(val))
     }
 }
-#[cfg(test)]
 impl<'a> From<&'a str> for LitValue {
     fn from(val: &'a str) -> LitValue {
         LitValue::Str(Some(val.to_owned()))

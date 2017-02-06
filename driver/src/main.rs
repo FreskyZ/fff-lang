@@ -3,7 +3,7 @@
 
 #[macro_use] // perrorln, test_only_attribute, test_only, test_condition_only
 extern crate util;
-extern crate new_lexical;
+extern crate lexical;
 #[macro_use]
 extern crate codepos; // make_pos, make_str_pos
 extern crate codemap;
@@ -11,11 +11,8 @@ extern crate codemap;
 extern crate messages as message;  // TODO: this is for legacy compatibility, remove it
 
 #[macro_use]
-mod common;
-// mod message;
 mod config;
 mod file_map;
-mod lexical;
 mod syntax;
 mod codegen;
 mod vm;
@@ -59,9 +56,3 @@ fn main() {
     returnable_main();
 }
 
-#[test]
-fn lexical_lib_available() {
-    use new_lexical;
-
-    assert_eq!(new_lexical::add(3, 2), 1);
-} 

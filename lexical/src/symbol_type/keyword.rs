@@ -37,7 +37,7 @@ macro_rules! define_keyword {
             }
         }
 
-        use common::TryFrom;
+        use util::TryFrom;
         impl <'a> TryFrom<&'a str> for $enum_name {
             
             fn try_from(name: &'a str) -> Option<$enum_name> {

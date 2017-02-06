@@ -1,7 +1,9 @@
 [package]
-name = "new_lexical"
+name = "lexical"
 version = "0.1.0"
 authors = ["FreskyZ <fresky7@outlook.com>"]
 
 [dependencies]
-
+util = { path = "../util" }
+codepos = { path = "../codepos" }
+messages = { path = "../messages" }

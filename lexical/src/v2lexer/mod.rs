@@ -10,19 +10,19 @@ use codepos::Position;
 use codepos::StringPosition;
 use message::MessageEmitter;
 
-use lexical::v1lexer::V1Token;
-use lexical::v1lexer::BufV1Token;
-use lexical::v1lexer::BufV1Lexer;
+use super::v1lexer::V1Token;
+use super::v1lexer::BufV1Token;
+use super::v1lexer::BufV1Lexer;
 
-use lexical::buf_lexer::IDetailLexer;
-use lexical::buf_lexer::BufToken;
-use lexical::buf_lexer::BufLexer;
+use super::buf_lexer::IDetailLexer;
+use super::buf_lexer::BufToken;
+use super::buf_lexer::BufLexer;
 
-use lexical::symbol_type::string_literal::StringLiteral;
-use lexical::symbol_type::numeric_literal::NumericLiteral;
-use lexical::symbol_type::char_literal::CharLiteral;
+use super::symbol_type::string_literal::StringLiteral;
+use super::symbol_type::numeric_literal::NumericLiteral;
+use super::symbol_type::char_literal::CharLiteral;
 
-use lexical::v2lexer::numeric_lit_parser::parse_numeric_literal;
+use self::numeric_lit_parser::parse_numeric_literal;
 
 #[cfg(test)]
 #[derive(Eq, PartialEq, Clone)]
@@ -216,13 +216,13 @@ pub type BufV2Lexer<'chs> = BufLexer<V2Lexer<'chs>, V2Token>;
 mod tests {
     use super::V2Token;
     use super::V2Lexer;
-    use lexical::buf_lexer::IDetailLexer;
+    use super::super::buf_lexer::IDetailLexer;
     use codepos::Position;
     use codepos::StringPosition;
     use message::MessageEmitter;
-    use lexical::symbol_type::string_literal::StringLiteral;
-    use lexical::symbol_type::numeric_literal::NumericLiteral;
-    use lexical::NumLitValue;
+    use super::super::symbol_type::string_literal::StringLiteral;
+    use super::super::symbol_type::numeric_literal::NumericLiteral;
+    use super::super::NumLitValue;
     
     macro_rules! test_case {
         ($program: expr, $($expect: expr, )*) => ({
