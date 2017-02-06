@@ -14,7 +14,7 @@ mod raw_string_lit_parser;
 
 use std::str::Chars;
 use codepos::Position;
-use message::LexicalMessage as Message;
+use message::LexicalMessage;
 use message::MessageEmitter;
 
 use lexical::v0lexer::V0Token;
@@ -141,7 +141,7 @@ impl<'chs> IDetailLexer<'chs, V1Token> for V1Lexer<'chs> {
                             // state = State::InBlockComment{ start_pos: start_pos };           // C9: in block, continue block
                         }
                         None => {
-                            messages.push(Message::UnexpectedEndofFileInBlockComment { block_start: *start_pos, eof_pos: self.position() });
+                            messages.push(LexicalMessage::UnexpectedEndofFileInBlockComment { block_start: *start_pos, eof_pos: self.position() });
                             return None;                                                        // C10: in block, meet EOF, emit error, return
                         }
                     }
@@ -230,7 +230,7 @@ mod tests {
     use super::V1Lexer;
     use codepos::Position;
     use codepos::StringPosition;
-    use message::LexicalMessage as Message;
+    use message::LexicalMessage;
     use message::MessageEmitter;
     use lexical::buf_lexer::IDetailLexer;
     use lexical::symbol_type::string_literal::StringLiteral;
@@ -315,7 +315,7 @@ mod tests {
                 is_o!('A', 1, 1)
             ]
             [
-                Message::UnexpectedEndofFileInBlockComment{
+                LexicalMessage::UnexpectedEndofFileInBlockComment{
                     block_start: make_pos!(1, 2),
                     eof_pos: make_pos!(1, 6),
                 }
@@ -333,7 +333,7 @@ mod tests {
                 is_string!(1, 1, 1, 4, false)
             ]
             [
-                Message::UnexpectedEndofFileInStringLiteral{ 
+                LexicalMessage::UnexpectedEndofFileInStringLiteral{ 
                     literal_start: make_pos!(1, 1), 
                     eof_pos: make_pos!(1, 4), 
                     hint_escaped_quote_pos: None,
@@ -345,7 +345,7 @@ mod tests {
                 is_string!(1, 1, 1, 11, false)
             ]
             [
-                Message::UnexpectedEndofFileInStringLiteral{
+                LexicalMessage::UnexpectedEndofFileInStringLiteral{
                     literal_start: make_pos!(1, 1), 
                     eof_pos: make_pos!(1, 11), 
                     hint_escaped_quote_pos: Some(make_pos!(1, 7)),
@@ -362,13 +362,13 @@ mod tests {
                 is_string!(1, 1, 1, 13, false)
             ]
             [
-                Message::UnrecognizedEscapeCharInStringLiteral{ 
+                LexicalMessage::UnrecognizedEscapeCharInStringLiteral{ 
                     literal_start: make_pos!(1, 1), unrecogonize_pos: make_pos!(1, 3), unrecogonize_escape: 'c' }
-                Message::UnrecognizedEscapeCharInStringLiteral{ 
+                LexicalMessage::UnrecognizedEscapeCharInStringLiteral{ 
                     literal_start: make_pos!(1, 1), unrecogonize_pos: make_pos!(1, 5), unrecogonize_escape: 'd' }
-                Message::UnrecognizedEscapeCharInStringLiteral{ 
+                LexicalMessage::UnrecognizedEscapeCharInStringLiteral{ 
                     literal_start: make_pos!(1, 1), unrecogonize_pos: make_pos!(1, 7), unrecogonize_escape: 'e' }
-                Message::UnrecognizedEscapeCharInStringLiteral{ 
+                LexicalMessage::UnrecognizedEscapeCharInStringLiteral{ 
                     literal_start: make_pos!(1, 1), unrecogonize_pos: make_pos!(1, 11), unrecogonize_escape: 'g' }
             ]
         }
@@ -382,16 +382,16 @@ mod tests {
                 is_string!(1, 1, 1, 17, false)
             ]
             [
-                Message::UnexpectedCharInUnicodeCharEscape{ 
+                LexicalMessage::UnexpectedCharInUnicodeCharEscape{ 
                     escape_start: make_pos!(1, 3), unexpected_char_pos: make_pos!(1, 8), unexpected_char: 'H' }
-                Message::UnexpectedCharInUnicodeCharEscape{ 
+                LexicalMessage::UnexpectedCharInUnicodeCharEscape{ 
                     escape_start: make_pos!(1, 11), unexpected_char_pos: make_pos!(1, 16), unexpected_char: 'g' }
             ]
         }
         test_case!{ r#""H\U0011ABCD""#,
             [is_string!(1, 1, 1, 13, false)]
             [
-                Message::IncorrectUnicodeCharEscapeValue{ 
+                LexicalMessage::IncorrectUnicodeCharEscapeValue{ 
                     escape_start: make_pos!(1, 3), 
                     raw_value: "0011ABCD".to_owned() 
                 }
@@ -400,7 +400,7 @@ mod tests {
         test_case!{ r#""H\u""#,
             [is_string!(1, 1, 1, 5, false)]
             [
-                Message::UnexpectedStringLiteralEndInUnicodeCharEscape{
+                LexicalMessage::UnexpectedStringLiteralEndInUnicodeCharEscape{
                     literal_start: make_pos!(1, 1), 
                     escape_start: make_pos!(1, 3), 
                     unexpected_end_pos: make_pos!(1, 5),
@@ -410,7 +410,7 @@ mod tests {
         test_case!{ r#""h\U123"#,
             [is_string!(1, 1, 1, 8, false)]
             [
-                Message::UnexpectedEndofFileInStringLiteral{ 
+                LexicalMessage::UnexpectedEndofFileInStringLiteral{ 
                     literal_start: make_pos!(1, 1), 
                     eof_pos: make_pos!(1, 8), 
                     hint_escaped_quote_pos: None,
@@ -420,7 +420,7 @@ mod tests {
         test_case!{ r#""he\"#,
             [is_string!(1, 1, 1, 5, false)]
             [
-                Message::UnexpectedEndofFileInStringLiteral{ 
+                LexicalMessage::UnexpectedEndofFileInStringLiteral{ 
                     literal_start: make_pos!(1, 1), 
                     eof_pos: make_pos!(1, 5), 
                     hint_escaped_quote_pos: None,
@@ -435,7 +435,7 @@ mod tests {
         test_case!{ r#"R"he"#,
             [is_string!(1, 1, 1, 5, true)]
             [
-                Message::UnexpectedEndofFileInStringLiteral{ 
+                LexicalMessage::UnexpectedEndofFileInStringLiteral{ 
                     literal_start: make_pos!(1, 1), 
                     eof_pos: make_pos!(1, 5), 
                     hint_escaped_quote_pos: None,
@@ -455,16 +455,16 @@ mod tests {
         }
         test_case!{ "''",
             [is_char!(1, 1, 1, 2)]
-            [Message::EmptyCharLiteral{ pos: make_pos!(1, 1) }]
+            [LexicalMessage::EmptyCharLiteral{ pos: make_pos!(1, 1) }]
         }
         test_case!{ "'ABC'",
             [is_char!(1, 1, 1, 5)]
-            [Message::CharLiteralTooLong{ start_pos: make_pos!(1, 1) }]
+            [LexicalMessage::CharLiteralTooLong{ start_pos: make_pos!(1, 1) }]
         }
         test_case!{ r"'\c'",
             [is_char!(1, 1, 1, 4)]
             [
-                Message::UnrecognizedEscapeCharInCharLiteral{
+                LexicalMessage::UnrecognizedEscapeCharInCharLiteral{
                     literal_start: make_pos!(1, 1),
                     unrecogonize_pos: make_pos!(1, 2),
                     unrecogonize_escape: 'c',
@@ -474,11 +474,11 @@ mod tests {
         test_case!{ r"'\uBG'",
             [is_char!(1, 1, 1, 6)]
             [
-                Message::UnexpectedCharInUnicodeCharEscape{ 
+                LexicalMessage::UnexpectedCharInUnicodeCharEscape{ 
                     escape_start: make_pos!(1, 2),
                     unexpected_char_pos: make_pos!(1, 5),
                     unexpected_char: 'G' }
-                Message::UnexpectedCharLiteralEndInUnicodeCharEscape {
+                LexicalMessage::UnexpectedCharLiteralEndInUnicodeCharEscape {
                     literal_start: make_pos!(1, 1),
                     escape_start: make_pos!(1, 2),
                     unexpected_end_pos: make_pos!(1, 6) }
@@ -487,7 +487,7 @@ mod tests {
         test_case!{ r"'\U0011ABCD'",
             [is_char!(1, 1, 1, 12)]
             [
-                Message::IncorrectUnicodeCharEscapeValue{
+                LexicalMessage::IncorrectUnicodeCharEscapeValue{
                     escape_start: make_pos!(1, 2),
                     raw_value: "0011ABCD".to_owned()
                 }
@@ -495,16 +495,16 @@ mod tests {
         }
         test_case!{ r"'\na'",
             [is_char!(1, 1, 1, 5)]
-            [Message::CharLiteralTooLong{ start_pos: make_pos!(1, 1) }]
+            [LexicalMessage::CharLiteralTooLong{ start_pos: make_pos!(1, 1) }]
         }
         test_case!{ r"'\uABCDA'",
             [is_char!(1, 1, 1, 9)]
-            [Message::CharLiteralTooLong{ start_pos: make_pos!(1, 1) }] 
+            [LexicalMessage::CharLiteralTooLong{ start_pos: make_pos!(1, 1) }] 
         }
         test_case!{ "'",
             [is_char!(1, 1, 1, 2)]
             [
-                Message::UnexpectedEndofFileInCharLiteral{ 
+                LexicalMessage::UnexpectedEndofFileInCharLiteral{ 
                     literal_start: make_pos!(1, 1), 
                     eof_pos: make_pos!(1, 2), 
                 }
@@ -513,7 +513,7 @@ mod tests {
         test_case!{ r"'\",
             [is_char!(1, 1, 1, 3)]
             [
-                Message::UnexpectedEndofFileInCharLiteral{ 
+                LexicalMessage::UnexpectedEndofFileInCharLiteral{ 
                     literal_start: make_pos!(1, 1), 
                     eof_pos: make_pos!(1, 3), 
                 }
@@ -522,7 +522,7 @@ mod tests {
         test_case!{ r"'\u",
             [is_char!(1, 1, 1, 4)]
             [
-                Message::UnexpectedEndofFileInCharLiteral{ 
+                LexicalMessage::UnexpectedEndofFileInCharLiteral{ 
                     literal_start: make_pos!(1, 1), 
                     eof_pos: make_pos!(1, 4), 
                 }
@@ -531,7 +531,7 @@ mod tests {
         test_case! { r"'A",
             [is_char!(1, 1, 1, 3)]
             [
-                Message::UnexpectedEndofFileInCharLiteral{ 
+                LexicalMessage::UnexpectedEndofFileInCharLiteral{ 
                     literal_start: make_pos!(1, 1), 
                     eof_pos: make_pos!(1, 3), 
                 }
@@ -540,7 +540,7 @@ mod tests {
         test_case! { "'ABC",
             [is_char!(1, 1, 1, 5)]
             [
-                Message::UnexpectedEndofFileInCharLiteral{ 
+                LexicalMessage::UnexpectedEndofFileInCharLiteral{ 
                     literal_start: make_pos!(1, 1), 
                     eof_pos: make_pos!(1, 5) 
                 }
@@ -552,7 +552,7 @@ mod tests {
                 is_o!('A', 1, 4)
                 is_o!('B', 1, 5)
             ]
-            [Message::InvalidEscapeInCharLiteral{ start_pos: make_pos!(1, 1) }]
+            [LexicalMessage::InvalidEscapeInCharLiteral{ start_pos: make_pos!(1, 1) }]
         }
     }
 }

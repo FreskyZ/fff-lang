@@ -207,7 +207,7 @@ mod tests {
 
     #[test]
     fn ast_smtype_parse() {
-        use message::Message;
+        use message::LegacyMessage as Message;
         use message::SyntaxMessage;
         use super::SMType;
         use codepos::StringPosition;

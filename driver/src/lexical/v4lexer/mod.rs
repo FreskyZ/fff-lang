@@ -4,7 +4,7 @@
 use std::fmt;
 use codepos::StringPosition;
 use message::SyntaxMessage;
-use message::Message;
+use message::LegacyMessage as Message;
 use message::MessageEmitter;
 
 use lexical::symbol_type::string_literal::StringLiteral;

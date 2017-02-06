@@ -5,7 +5,7 @@ use std::fmt;
 use std::marker::PhantomData;
 
 use codepos::StringPosition;
-use message::Message;
+use message::LegacyMessage as Message;
 use message::MessageEmitter;
 
 use lexical::Lexer;

@@ -346,7 +346,7 @@ mod tests {
     use codepos::Position;
     use codepos::StringPosition;
     use message::SyntaxMessage;
-    use message::Message;
+    use message::LegacyMessage as Message;
     use lexical::Lexer;
     use lexical::SeperatorKind;
     use lexical::LitValue;

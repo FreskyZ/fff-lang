@@ -8,7 +8,7 @@ use std::fmt;
 use codepos::StringPosition;
 use util::format_vector_debug;
 use util::format_vector_display;
-use message::SyntaxMessage as Message;
+use message::SyntaxMessage;
 
 use lexical::Lexer;
 use lexical::KeywordKind;
@@ -161,7 +161,7 @@ impl IASTItem for FunctionDef {
                 if args.is_empty() {                // recoverable error on fn main(, ) {}
                     let pos1 = StringPosition::merge(lexer.pos(index), lexer.pos(index + current_len + 1));
                     let pos2 = lexer.pos(index + current_len - 2).start_pos();
-                    lexer.push(Message::SingleCommaInNonArgumentFunctionDef{ fn_pos: pos1, comma_pos: pos2 });
+                    lexer.push(SyntaxMessage::SingleCommaInNonArgumentFunctionDef{ fn_pos: pos1, comma_pos: pos2 });
                 }   
                 current_len += 2;
                 break;

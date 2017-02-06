@@ -8,9 +8,11 @@ extern crate new_lexical;
 extern crate codepos; // make_pos, make_str_pos
 extern crate codemap;
 
+extern crate messages as message;  // TODO: this is for legacy compatibility, remove it
+
 #[macro_use]
 mod common;
-mod message;
+// mod message;
 mod config;
 mod file_map;
 mod lexical;

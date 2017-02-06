@@ -86,7 +86,7 @@ impl IASTItem for LoopStatement {
 mod tests {
     use super::LoopStatement;
     use syntax::Block;
-    use message::Message;
+    use message::LegacyMessage as Message;
     use message::SyntaxMessage;
     use syntax::ast_item::TestCase;
     use codepos::StringPosition;
