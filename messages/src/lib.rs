@@ -492,6 +492,15 @@ pub enum LegacyMessage {
     New(Message),
 }
 
+impl LegacyMessage {
+    fn is_new(&self) -> bool {
+        match self {
+            &LegacyMessage::New(_) => true,
+            _ => false,
+        }
+    }
+}
+
 impl From<LexicalMessage> for LegacyMessage {
     fn from(msg: LexicalMessage) -> LegacyMessage { LegacyMessage::Lexical(msg) }   
 }
@@ -527,6 +536,12 @@ impl Message {
     pub fn new(main_desc: String, pos_and_descs: Vec<(StringPosition, String)>) -> Message {
         Message{ main_desc: main_desc, pos_and_descs: pos_and_descs }
     }
+    pub fn new_by_str(main_desc: &str, pos_and_descs: Vec<(StringPosition, &str)>) -> Message {
+        Message{ 
+            main_desc: main_desc.to_owned(), 
+            pos_and_descs: pos_and_descs.into_iter().map(|pos_and_desc| match pos_and_desc { (pos, desc) => (pos, desc.to_owned()) }).collect()
+        }
+    }
 }
 impl From<Message> for LegacyMessage {
     fn from(msg: Message) -> LegacyMessage { LegacyMessage::New(msg) }
@@ -535,7 +550,7 @@ impl fmt::Debug for Message {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use util;
         
-        let _ = write!(f, "{}", self.main_desc);
+        let _ = write!(f, "{}:\n", self.main_desc);
         write!(f, "{}", util::format_vector_debug(&self.pos_and_descs, "\n"))
     }
 }
@@ -562,7 +577,11 @@ impl MessageCollection {
     pub fn is_empty(&self) -> bool { self.messages.is_empty() }
 
     pub fn push<T: Into<LegacyMessage>>(&mut self, message: T) {
-        self.messages.push(message.into());
+        let legacy = message.into();
+        if !legacy.is_new() {
+            // panic!("Message is not new"); // magic to make lots of tests to fail
+        }
+        self.messages.push(legacy);
     }
 
     pub fn pop(&mut self) { // Pop top
@@ -571,3 +590,19 @@ impl MessageCollection {
 }
 
 pub type MessageEmitter = MessageCollection;
+
+#[cfg(test)]
+#[test]
+fn message_complex_new() {
+
+    assert_eq!(
+        Message::new_by_str("123", vec![
+            (StringPosition::new(), "456"),
+            (StringPosition::new(), "789"),
+        ]), 
+        Message::new("123".to_owned(), vec![
+            (StringPosition::new(), "456".to_owned()),
+            (StringPosition::new(), "789".to_owned()),
+        ])
+    );
+}

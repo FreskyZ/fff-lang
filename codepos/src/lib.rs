@@ -110,6 +110,16 @@ impl StringPosition { // Construct
             }
         }
     }
+    /// Make string position from single Position by duplicate it
+    pub fn double(char_pos: Position) -> StringPosition {
+        StringPosition{ 
+            m_file_id: char_pos.m_file_id, 
+            m_start_row: char_pos.m_row, 
+            m_start_col: char_pos.m_col, 
+            m_end_row: char_pos.m_row, 
+            m_end_col: char_pos.m_col,
+        }
+    }
     pub fn from4(start_row: u32, start_col: u32, end_row: u32, end_col: u32) -> StringPosition {
         StringPosition{ 
             m_file_id: 0,

@@ -14,8 +14,10 @@ mod raw_string_lit_parser;
 
 use std::str::Chars;
 use codepos::Position;
+use codepos::StringPosition;
 use message::LexicalMessage;
-use message::MessageEmitter;
+use message::Message;
+use message::MessageCollection;
 
 use lexical::v0lexer::V0Token;
 use lexical::v0lexer::BufV0Token;
@@ -86,7 +88,7 @@ impl<'chs> IDetailLexer<'chs, V1Token> for V1Lexer<'chs> {
     fn position(&self) -> Position { self.v0.inner().position() }
 
     // input v0, output stringliteral or otherchar without comment
-    fn next(&mut self, messages: &mut MessageEmitter) -> Option<V1Token> {
+    fn next(&mut self, messages: &mut MessageCollection) -> Option<V1Token> {
         // First there is quote, and anything inside is regarded as string literal, include `\n` as real `\n`
         // and then outside of quote pair there is comments, anything inside comment, // and /n, or /* and */ is regarded as comment
         
@@ -141,7 +143,10 @@ impl<'chs> IDetailLexer<'chs, V1Token> for V1Lexer<'chs> {
                             // state = State::InBlockComment{ start_pos: start_pos };           // C9: in block, continue block
                         }
                         None => {
-                            messages.push(LexicalMessage::UnexpectedEndofFileInBlockComment { block_start: *start_pos, eof_pos: self.position() });
+                            messages.push(Message::new_by_str("Unexpected EOF", vec![
+                                (StringPosition::double(*start_pos), "Block comment starts here"),
+                                (StringPosition::double(self.position()), "EOF here"),
+                            ]));
                             return None;                                                        // C10: in block, meet EOF, emit error, return
                         }
                     }
@@ -230,8 +235,9 @@ mod tests {
     use super::V1Lexer;
     use codepos::Position;
     use codepos::StringPosition;
+    use message::Message;
     use message::LexicalMessage;
-    use message::MessageEmitter;
+    use message::MessageCollection;
     use lexical::buf_lexer::IDetailLexer;
     use lexical::symbol_type::string_literal::StringLiteral;
     use lexical::symbol_type::char_literal::CharLiteral;
@@ -242,7 +248,7 @@ mod tests {
         macro_rules! test_case {
             ($program: expr, [$($expect: expr)*] [$($expect_msg: expr)*]) => ({
                 let mut v1lexer = V1Lexer::from($program.chars());
-                let messages = &mut MessageEmitter::new();
+                let messages = &mut MessageCollection::new();
                 $(
                     match v1lexer.next(messages) {
                         Some(v1) => assert_eq!(v1, $expect),
@@ -254,7 +260,7 @@ mod tests {
                     None => (),
                 }
                 
-                let expect_messages = &mut MessageEmitter::new();
+                let expect_messages = &mut MessageCollection::new();
                 $(
                     expect_messages.push($expect_msg);
                 )*
@@ -315,10 +321,10 @@ mod tests {
                 is_o!('A', 1, 1)
             ]
             [
-                LexicalMessage::UnexpectedEndofFileInBlockComment{
-                    block_start: make_pos!(1, 2),
-                    eof_pos: make_pos!(1, 6),
-                }
+                Message::new_by_str("Unexpected EOF", vec![
+                    (StringPosition::double(make_pos!(1, 2)), "Block comment starts here"),
+                    (StringPosition::double(make_pos!(1, 6)), "EOF here"),
+                ])
             ]
         }
 

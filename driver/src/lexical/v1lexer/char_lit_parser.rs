@@ -4,8 +4,8 @@
 
 use codepos::Position;
 use codepos::StringPosition;
-use message::LexicalMessage as Message;
-use message::MessageEmitter;
+use message::LexicalMessage;
+use message::MessageCollection;
 use lexical::symbol_type::char_literal::CharLiteral;
 use lexical::v1lexer::escape_char_parser::EscapeCharParser;
 use lexical::v1lexer::escape_char_parser::EscapeCharSimpleCheckResult;
@@ -66,7 +66,7 @@ impl CharLiteralParser {
         ch: Option<char>, 
         pos: Position, 
         next_ch: Option<char>, 
-        messages: &mut MessageEmitter
+        messages: &mut MessageCollection
         , coverage_recorder: &mut CoverageRecorder) -> CharLiteralParserResult {
 
         if self.is_very_special_that_previous_is_single_quote_escape_and_not_require_skipped {
@@ -74,7 +74,7 @@ impl CharLiteralParser {
                 None => (), // continue to C14
                 Some(next_ch) => {
                     if next_ch != '\'' {   // else continue to C15
-                        messages.push(Message::InvalidEscapeInCharLiteral{ start_pos: self.start_pos });
+                        messages.push(LexicalMessage::InvalidEscapeInCharLiteral{ start_pos: self.start_pos });
                         return CharLiteralParserResult::Finished(CharLiteral{ value: None, pos: StringPosition::from2(self.start_pos, pos) });
                     }
                 }
@@ -90,7 +90,7 @@ impl CharLiteralParser {
                             Some(ch) => {
                                 if ch == '\'' { // '\'' should report unexpected EOL
                                     coverage_recorder.insert(18);
-                                    messages.push(Message::UnexpectedCharLiteralEndInUnicodeCharEscape{
+                                    messages.push(LexicalMessage::UnexpectedCharLiteralEndInUnicodeCharEscape{
                                         literal_start: self.start_pos, 
                                         escape_start: self.escape_start_pos,
                                         unexpected_end_pos: pos });
@@ -117,7 +117,7 @@ impl CharLiteralParser {
                                 // WantMore  // wait to reset until out of match self.escape_parser
                             }
                             None => {   // another 'u123$
-                                messages.push(Message::UnexpectedEndofFileInCharLiteral{ literal_start: self.start_pos, eof_pos: pos });
+                                messages.push(LexicalMessage::UnexpectedEndofFileInCharLiteral{ literal_start: self.start_pos, eof_pos: pos });
                                 coverage_recorder.insert(4);                        // C4, first char is EOF
                                 return CharLiteralParserResult::Finished(CharLiteral{ value: None, pos: StringPosition::from2(self.start_pos, pos) });
                             }
@@ -126,13 +126,13 @@ impl CharLiteralParser {
                     None => {   // Not parsing unicode escape char
                         match ch {
                             Some('\'') => { 
-                                messages.push(Message::EmptyCharLiteral{ pos: self.start_pos });            
+                                messages.push(LexicalMessage::EmptyCharLiteral{ pos: self.start_pos });            
                                 coverage_recorder.insert(5);                        // C5, empty
                                 return CharLiteralParserResult::Finished(CharLiteral{ value: None, pos: StringPosition::from2(self.start_pos, pos) });
                             }
                             None => {
                                 coverage_recorder.insert(6);                        // C6, '$, report EOF in char literal
-                                messages.push(Message::UnexpectedEndofFileInCharLiteral{ literal_start: self.start_pos, eof_pos: pos });
+                                messages.push(LexicalMessage::UnexpectedEndofFileInCharLiteral{ literal_start: self.start_pos, eof_pos: pos });
                                 return CharLiteralParserResult::Finished(CharLiteral{ value: None, pos: StringPosition::from2(self.start_pos, pos) });
                             }
                             Some(ch) => {   // other char, then
@@ -150,7 +150,7 @@ impl CharLiteralParser {
                                                 return CharLiteralParserResult::WantMoreWithSkip1;
                                             }
                                             EscapeCharSimpleCheckResult::Invalid(ch) => {
-                                                messages.push(Message::UnrecognizedEscapeCharInCharLiteral {
+                                                messages.push(LexicalMessage::UnrecognizedEscapeCharInCharLiteral {
                                                     literal_start: self.start_pos, 
                                                     unrecogonize_pos: slash_pos, 
                                                     unrecogonize_escape: ch });
@@ -168,7 +168,7 @@ impl CharLiteralParser {
                                         }
                                     }
                                     ('\\', pos, None) => { 
-                                        messages.push(Message::UnexpectedEndofFileInCharLiteral{ literal_start: self.start_pos, eof_pos: pos.next_col() });
+                                        messages.push(LexicalMessage::UnexpectedEndofFileInCharLiteral{ literal_start: self.start_pos, eof_pos: pos.next_col() });
                                         coverage_recorder.insert(10);               // C10, '\$
                                         return CharLiteralParserResult::Finished(CharLiteral{ value: None, pos: StringPosition::from2(self.start_pos, pos.next_col()) });
                                     }
@@ -197,7 +197,7 @@ impl CharLiteralParser {
                         if self.has_too_longed {
                             messages.pop();  // if previously there is too long, remove it
                         }
-                        messages.push(Message::UnexpectedEndofFileInCharLiteral{ literal_start: self.start_pos, eof_pos: pos });
+                        messages.push(LexicalMessage::UnexpectedEndofFileInCharLiteral{ literal_start: self.start_pos, eof_pos: pos });
                         coverage_recorder.insert(14);                               // C14, 'ABCD$
                         return CharLiteralParserResult::Finished(CharLiteral{ value: None, pos: StringPosition::from2(self.start_pos, pos) });
                     }
@@ -211,7 +211,7 @@ impl CharLiteralParser {
                         } else {
                             if !self.has_too_longed { // 'AB... is too long, report only once
                                 coverage_recorder.insert(16);                       // C16, too long and report
-                                messages.push(Message::CharLiteralTooLong{ start_pos: self.start_pos });
+                                messages.push(LexicalMessage::CharLiteralTooLong{ start_pos: self.start_pos });
                                 self.has_too_longed = true;
                                 self.has_failed = true;     // if too longed, devalidate the buffer
                             }
@@ -234,8 +234,8 @@ mod tests {
     fn char_lit_parser() {
         use codepos::Position;
         use codepos::StringPosition;
-        use message::LexicalMessage as Message;
-        use message::MessageEmitter;
+        use message::LexicalMessage;
+        use message::MessageCollection;
         use lexical::symbol_type::char_literal::CharLiteral;
         use super::CharLiteralParser;
         use super::CharLiteralParserResult::*;
@@ -265,7 +265,7 @@ mod tests {
 
         macro_rules! messages_expect {
             ($result_messages: expr, [$($e: expr)*]) => ({
-                let expect_messages = &mut MessageEmitter::new();
+                let expect_messages = &mut MessageCollection::new();
                 $(
                     expect_messages.push($e);
                 )*
@@ -275,7 +275,7 @@ mod tests {
 
         {   // 'A', normal, C11, C15
             let mut parser = CharLiteralParser::new(spec_pos1);
-            let messages = &mut MessageEmitter::new();
+            let messages = &mut MessageCollection::new();
             let current_counter = &mut HashSet::<i32>::new();
 
             assert_eq!(parser.input(Some('A'), spec_pos2, Some('\''), messages, current_counter), WantMore);
@@ -288,7 +288,7 @@ mod tests {
 
         {   // '\t', normal escape
             let mut parser = CharLiteralParser::new(spec_pos1);
-            let messages = &mut MessageEmitter::new();
+            let messages = &mut MessageCollection::new();
             let current_counter = &mut HashSet::<i32>::new();
 
             assert_eq!(parser.input(Some('\\'), spec_pos3, Some('t'), messages, current_counter), WantMoreWithSkip1);
@@ -301,7 +301,7 @@ mod tests {
 
         {   // '\uABCD', normal unicode escape
             let mut parser = CharLiteralParser::new(spec_pos1);
-            let messages = &mut MessageEmitter::new();
+            let messages = &mut MessageCollection::new();
             let current_counter = &mut HashSet::<i32>::new();
 
             assert_eq!(parser.input(Some('\\'), spec_pos3, Some('u'), messages, current_counter), WantMoreWithSkip1);
@@ -318,19 +318,19 @@ mod tests {
 
         {   // '', empty
             let mut parser = CharLiteralParser::new(spec_pos1);
-            let messages = &mut MessageEmitter::new();
+            let messages = &mut MessageCollection::new();
             let current_counter = &mut HashSet::<i32>::new();
 
             assert_eq!(parser.input(Some('\''), spec_pos2, Some('$'), messages, current_counter), 
                 Finished(CharLiteral{ value: None, pos: StringPosition::from2(spec_pos1, spec_pos2) }));
 
-            messages_expect!(messages, [Message::EmptyCharLiteral{ pos: spec_pos1 }]);
+            messages_expect!(messages, [LexicalMessage::EmptyCharLiteral{ pos: spec_pos1 }]);
             counter_expect!(current_counter, all_counter, [5]);
         }
 
         {   // 'ABC', normal too long, ask if is string literal
             let mut parser = CharLiteralParser::new(spec_pos1);
-            let messages = &mut MessageEmitter::new();
+            let messages = &mut MessageCollection::new();
             let current_counter = &mut HashSet::<i32>::new();
 
             assert_eq!(parser.input(Some('A'), spec_pos3, Some('B'), messages, current_counter), WantMore);
@@ -339,20 +339,20 @@ mod tests {
             assert_eq!(parser.input(Some('\''), spec_pos4, Some('$'), messages, current_counter), 
                 Finished(CharLiteral{ value: None, pos: StringPosition::from2(spec_pos1, spec_pos4) }));
             
-            messages_expect!(messages, [Message::CharLiteralTooLong{ start_pos: spec_pos1 }]);
+            messages_expect!(messages, [LexicalMessage::CharLiteralTooLong{ start_pos: spec_pos1 }]);
             counter_expect!(current_counter, all_counter, [11 15 16 17]);
         }
 
         {   // '\c', other simple escape
             let mut parser = CharLiteralParser::new(spec_pos1);
-            let messages = &mut MessageEmitter::new();
+            let messages = &mut MessageCollection::new();
             let current_counter = &mut HashSet::<i32>::new();
 
             assert_eq!(parser.input(Some('\\'), spec_pos3, Some('c'), messages, current_counter), WantMoreWithSkip1);
             assert_eq!(parser.input(Some('\''), spec_pos4, Some('$'), messages, current_counter), 
                 Finished(CharLiteral{ value: None, pos: StringPosition::from2(spec_pos1, spec_pos4) }));
             
-            messages_expect!(messages, [Message::UnrecognizedEscapeCharInCharLiteral{ 
+            messages_expect!(messages, [LexicalMessage::UnrecognizedEscapeCharInCharLiteral{ 
                                                     literal_start: spec_pos1, 
                                                     unrecogonize_pos: spec_pos3, 
                                                     unrecogonize_escape: 'c' }]);
@@ -361,7 +361,7 @@ mod tests {
 
         {   // '\uBG', unexpect char in unicode escape, unexpected EOL in unicode escape
             let mut parser = CharLiteralParser::new(spec_pos1);
-            let messages = &mut MessageEmitter::new();
+            let messages = &mut MessageCollection::new();
             let current_counter = &mut HashSet::<i32>::new();
 
             assert_eq!(parser.input(Some('\\'), spec_pos3, Some('u'), messages, current_counter), WantMoreWithSkip1);
@@ -371,11 +371,11 @@ mod tests {
                 Finished(CharLiteral{ value: None, pos: StringPosition::from2(spec_pos1, spec_pos2) }));
             
             messages_expect!(messages, [
-                Message::UnexpectedCharInUnicodeCharEscape{ 
+                LexicalMessage::UnexpectedCharInUnicodeCharEscape{ 
                     escape_start: spec_pos3,
                     unexpected_char_pos: spec_pos5,
                     unexpected_char: 'G' }
-                Message::UnexpectedCharLiteralEndInUnicodeCharEscape {
+                LexicalMessage::UnexpectedCharLiteralEndInUnicodeCharEscape {
                     literal_start: spec_pos1,
                     escape_start: spec_pos3,
                     unexpected_end_pos: spec_pos2 }
@@ -385,7 +385,7 @@ mod tests {
 
         {   // '\U0011ABCD', unicode escape error 2
             let mut parser = CharLiteralParser::new(spec_pos1);
-            let messages = &mut MessageEmitter::new();
+            let messages = &mut MessageCollection::new();
             let current_counter = &mut HashSet::<i32>::new();
 
             assert_eq!(parser.input(Some('\\'), spec_pos3, Some('U'), messages, current_counter), WantMoreWithSkip1);
@@ -401,7 +401,7 @@ mod tests {
                 Finished(CharLiteral{ value: None, pos: StringPosition::from2(spec_pos1, spec_pos2) }));
             
             messages_expect!(messages, [
-                Message::IncorrectUnicodeCharEscapeValue{ 
+                LexicalMessage::IncorrectUnicodeCharEscapeValue{ 
                     escape_start: spec_pos3,
                     raw_value: "0011ABCD".to_owned() }
             ]);
@@ -410,7 +410,7 @@ mod tests {
 
         {   // '\na', too long after simple escape
             let mut parser = CharLiteralParser::new(spec_pos1);
-            let messages = &mut MessageEmitter::new();
+            let messages = &mut MessageCollection::new();
             let current_counter = &mut HashSet::<i32>::new();
 
             assert_eq!(parser.input(Some('\\'), spec_pos3, Some('n'), messages, current_counter), WantMoreWithSkip1);
@@ -418,13 +418,13 @@ mod tests {
             assert_eq!(parser.input(Some('\''), spec_pos2, Some('$'), messages, current_counter), 
                 Finished(CharLiteral{ value: None, pos: StringPosition::from2(spec_pos1, spec_pos2) }));
             
-            messages_expect!(messages, [Message::CharLiteralTooLong{ start_pos: spec_pos1 }]);
+            messages_expect!(messages, [LexicalMessage::CharLiteralTooLong{ start_pos: spec_pos1 }]);
             counter_expect!(current_counter, all_counter, [7 16 17 15]);
         }
 
         {   // '\uABCDA', too long after unicode escape
             let mut parser = CharLiteralParser::new(spec_pos1);
-            let messages = &mut MessageEmitter::new();
+            let messages = &mut MessageCollection::new();
             let current_counter = &mut HashSet::<i32>::new();
 
             assert_eq!(parser.input(Some('\\'), spec_pos3, Some('u'), messages, current_counter), WantMoreWithSkip1);
@@ -436,63 +436,63 @@ mod tests {
             assert_eq!(parser.input(Some('\''), spec_pos2, Some('$'), messages, current_counter), 
                 Finished(CharLiteral{ value: None, pos: StringPosition::from2(spec_pos1, spec_pos2) }));
             
-            messages_expect!(messages, [Message::CharLiteralTooLong{ start_pos: spec_pos1 }]);
+            messages_expect!(messages, [LexicalMessage::CharLiteralTooLong{ start_pos: spec_pos1 }]);
             counter_expect!(current_counter, all_counter, [9 1 12 3 13 16 17 15]);
         }
 
         {   // '$, EOF 
             let mut parser = CharLiteralParser::new(spec_pos1);
-            let messages = &mut MessageEmitter::new();
+            let messages = &mut MessageCollection::new();
             let current_counter = &mut HashSet::<i32>::new();
 
             assert_eq!(parser.input(None, spec_pos3, None, messages, current_counter),
                 Finished(CharLiteral{ value: None, pos: StringPosition::from2(spec_pos1, spec_pos3) }));
             
-            messages_expect!(messages, [Message::UnexpectedEndofFileInCharLiteral{ literal_start: spec_pos1, eof_pos: spec_pos3 }]);
+            messages_expect!(messages, [LexicalMessage::UnexpectedEndofFileInCharLiteral{ literal_start: spec_pos1, eof_pos: spec_pos3 }]);
             counter_expect!(current_counter, all_counter, [6]);
         }
 
         {   // '\$
             let mut parser = CharLiteralParser::new(spec_pos1);
-            let messages = &mut MessageEmitter::new();
+            let messages = &mut MessageCollection::new();
             let current_counter = &mut HashSet::<i32>::new();
 
             assert_eq!(parser.input(Some('\\'), spec_pos3, None, messages, current_counter), 
                 Finished(CharLiteral{ value: None, pos: StringPosition::from2(spec_pos1, spec_pos3.next_col()) }));
             
-            messages_expect!(messages, [Message::UnexpectedEndofFileInCharLiteral{ literal_start: spec_pos1, eof_pos: spec_pos3.next_col() }]);
+            messages_expect!(messages, [LexicalMessage::UnexpectedEndofFileInCharLiteral{ literal_start: spec_pos1, eof_pos: spec_pos3.next_col() }]);
             counter_expect!(current_counter, all_counter, [10]);
         }
 
         {   // '\u$', EOF in unicode escape
             let mut parser = CharLiteralParser::new(spec_pos1);
-            let messages = &mut MessageEmitter::new();
+            let messages = &mut MessageCollection::new();
             let current_counter = &mut HashSet::<i32>::new();
 
             assert_eq!(parser.input(Some('\\'), spec_pos3, Some('u'), messages, current_counter), WantMoreWithSkip1);
             assert_eq!(parser.input(None, spec_pos4, None, messages, current_counter), 
                 Finished(CharLiteral{ value: None, pos: StringPosition::from2(spec_pos1, spec_pos4) }));
             
-            messages_expect!(messages, [Message::UnexpectedEndofFileInCharLiteral{ literal_start: spec_pos1, eof_pos: spec_pos4 }]);
+            messages_expect!(messages, [LexicalMessage::UnexpectedEndofFileInCharLiteral{ literal_start: spec_pos1, eof_pos: spec_pos4 }]);
             counter_expect!(current_counter, all_counter, [9 4]);
         }
 
         {   // 'A$, normal and EOF
             let mut parser = CharLiteralParser::new(spec_pos1);
-            let messages = &mut MessageEmitter::new();
+            let messages = &mut MessageCollection::new();
             let current_counter = &mut HashSet::<i32>::new();
 
             assert_eq!(parser.input(Some('A'), spec_pos3, None, messages, current_counter), WantMore);
             assert_eq!(parser.input(None, spec_pos4, None, messages, current_counter), 
                 Finished(CharLiteral{ value: None, pos: StringPosition::from2(spec_pos1, spec_pos4) }));
             
-            messages_expect!(messages, [Message::UnexpectedEndofFileInCharLiteral{ literal_start: spec_pos1, eof_pos: spec_pos4 }]);
+            messages_expect!(messages, [LexicalMessage::UnexpectedEndofFileInCharLiteral{ literal_start: spec_pos1, eof_pos: spec_pos4 }]);
             counter_expect!(current_counter, all_counter, [11 14]); 
         }
 
         {   // 'ABC$, too long and EOF and remove too long, do no revert because don't known where to revert
             let mut parser = CharLiteralParser::new(spec_pos1);
-            let messages = &mut MessageEmitter::new();
+            let messages = &mut MessageCollection::new();
             let current_counter = &mut HashSet::<i32>::new();
 
             assert_eq!(parser.input(Some('A'), spec_pos3, Some('B'), messages, current_counter), WantMore);
@@ -501,20 +501,20 @@ mod tests {
             assert_eq!(parser.input(None, spec_pos4, None, messages, current_counter), 
                 Finished(CharLiteral{ value: None, pos: StringPosition::from2(spec_pos1, spec_pos4) }));
             
-            messages_expect!(messages, [Message::UnexpectedEndofFileInCharLiteral{ literal_start: spec_pos1, eof_pos: spec_pos4 }]);
+            messages_expect!(messages, [LexicalMessage::UnexpectedEndofFileInCharLiteral{ literal_start: spec_pos1, eof_pos: spec_pos4 }]);
             counter_expect!(current_counter, all_counter, [11 16 17 14]); 
         }
 
         {   // '\'AB$, when meet too long A and find buf is \\, so return invalid char literal and continue other v1
             let mut parser = CharLiteralParser::new(spec_pos1);
-            let messages = &mut MessageEmitter::new();
+            let messages = &mut MessageCollection::new();
             let current_counter = &mut HashSet::<i32>::new();
 
             assert_eq!(parser.input(Some('\\'), spec_pos3, Some('\''), messages, current_counter), WantMore);
             assert_eq!(parser.input(Some('\''), spec_pos3, Some('A'), messages, current_counter), 
                 Finished(CharLiteral{ value: None, pos: StringPosition::from2(spec_pos1, spec_pos3) }));
             
-            messages_expect!(messages, [Message::InvalidEscapeInCharLiteral{ start_pos: spec_pos1 }]);
+            messages_expect!(messages, [LexicalMessage::InvalidEscapeInCharLiteral{ start_pos: spec_pos1 }]);
             counter_expect!(current_counter, all_counter, []); 
         }
 
