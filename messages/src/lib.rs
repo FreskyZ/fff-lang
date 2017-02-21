@@ -528,18 +528,54 @@ impl fmt::Debug for LegacyMessage {
 impl_display_by_debug!{ LegacyMessage }
 
 #[derive(Eq, PartialEq)]
+pub struct PosAndDesc {
+    pub pos: StringPosition, 
+    pub desc: String,
+}
+impl From<(StringPosition, String)> for PosAndDesc {
+    fn from(pos_and_desc: (StringPosition, String)) -> PosAndDesc {
+        PosAndDesc{ pos: pos_and_desc.0, desc: pos_and_desc.1 }
+    }
+}
+impl fmt::Debug for PosAndDesc {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "At {:?}: {}", self.pos, self.desc)
+    }
+}
+
+#[derive(Eq, PartialEq)]
 pub struct Message {
     pub main_desc: String, 
-    pub pos_and_descs: Vec<(StringPosition, String)>,
+    pub pos_and_descs: Vec<PosAndDesc>,
+    pub helps: Vec<String>,
 }
-impl Message {
+impl Message {    
     pub fn new(main_desc: String, pos_and_descs: Vec<(StringPosition, String)>) -> Message {
-        Message{ main_desc: main_desc, pos_and_descs: pos_and_descs }
+        Message{ 
+            main_desc: main_desc, 
+            pos_and_descs: pos_and_descs.into_iter().map(|pos_and_desc| pos_and_desc.into()).collect(), 
+            helps: Vec::new() 
+        }
     }
     pub fn new_by_str(main_desc: &str, pos_and_descs: Vec<(StringPosition, &str)>) -> Message {
         Message{ 
             main_desc: main_desc.to_owned(), 
-            pos_and_descs: pos_and_descs.into_iter().map(|pos_and_desc| match pos_and_desc { (pos, desc) => (pos, desc.to_owned()) }).collect()
+            pos_and_descs: pos_and_descs.into_iter().map(|pos_and_desc| match pos_and_desc { (pos, desc) => (pos, desc.to_owned()).into() }).collect(),
+            helps: Vec::new(),
+        }
+    }
+    pub fn with_help(main_desc: String, pos_and_descs: Vec<(StringPosition, String)>, helps: Vec<String>) -> Message {
+        Message{ 
+            main_desc: main_desc, 
+            pos_and_descs: pos_and_descs.into_iter().map(|pos_and_desc| pos_and_desc.into()).collect(), 
+            helps: helps 
+        }
+    }
+    pub fn with_help_by_str(main_desc: &str, pos_and_descs: Vec<(StringPosition, &str)>, helps: Vec<&str>) -> Message {
+        Message{ 
+            main_desc: main_desc.to_owned(), 
+            pos_and_descs: pos_and_descs.into_iter().map(|pos_and_desc| match pos_and_desc { (pos, desc) => (pos, desc.to_owned()).into() }).collect(),
+            helps: helps.into_iter().map(|help| help.to_owned()).collect(),
         }
     }
 }
@@ -551,7 +587,12 @@ impl fmt::Debug for Message {
         use util;
         
         let _ = write!(f, "{}:\n", self.main_desc);
-        write!(f, "{}", util::format_vector_debug(&self.pos_and_descs, "\n"))
+        let _ = write!(f, "    | {}", util::format_vector_debug(&self.pos_and_descs, "\n    | "));
+        if !self.helps.is_empty() {
+            write!(f, "\n    = {}", util::format_vector_display(&self.helps, "\n"))
+        } else {
+            Ok(())
+        }
     }
 }
 

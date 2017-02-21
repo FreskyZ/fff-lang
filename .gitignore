@@ -3,3 +3,5 @@ Cargo.lock
 *.stdout
 *.stderr
 temp
+.vscode
+scripts

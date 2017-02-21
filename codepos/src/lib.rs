@@ -75,9 +75,11 @@ impl fmt::Debug for StringPosition {
 }
 impl StringPosition { // Construct
     
+    /// New empty
     pub fn new() -> StringPosition {
         StringPosition{ m_file_id: 0, m_start_row: 1, m_start_col: 1, m_end_row: 1, m_end_col: 1 }
     }
+    /// New empty with file id
     pub fn with_file_id(file_id: u32) -> StringPosition {
         StringPosition{ m_file_id: file_id, m_start_row: 1, m_start_col: 1, m_end_row: 1, m_end_col: 1 }
     }
@@ -97,6 +99,7 @@ impl StringPosition { // Construct
             }
         }
     }
+    /// New with 2 `Position`
     pub fn from2(start_pos: Position, end_pos: Position) -> StringPosition {
         if start_pos.m_file_id != end_pos.m_file_id {
             panic!("Trying to construct string position from different source file")
@@ -120,6 +123,7 @@ impl StringPosition { // Construct
             m_end_col: char_pos.m_col,
         }
     }
+    /// New with 4 column or row numbers
     pub fn from4(start_row: u32, start_col: u32, end_row: u32, end_col: u32) -> StringPosition {
         StringPosition{ 
             m_file_id: 0,
@@ -129,6 +133,7 @@ impl StringPosition { // Construct
             m_end_col: end_col,
         }
     }
+    /// New with all field
     pub fn with_all(file_id: u32, start_row: u32, start_col: u32, end_row: u32, end_col: u32) -> StringPosition {
         StringPosition{ 
             m_file_id: file_id, 

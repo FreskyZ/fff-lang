@@ -32,7 +32,7 @@ fn print_version() {
     println!("{}", VERSION_STRING);
 }
  
-// For feel safe
+// For feel comfortable
 fn returnable_main() {
     use std::env::args;
     use config::Config;
@@ -55,4 +55,3 @@ fn main() {
 
     returnable_main();
 }
-

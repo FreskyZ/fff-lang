@@ -95,6 +95,7 @@ impl<'chs> IDetailLexer<'chs, V0Token> for V0Lexer<'chs> {
     }
 }
 
+#[allow(dead_code)] // don't know what rustc is thinking
 pub type BufV0Token = BufToken<V0Token>;
 pub type BufV0Lexer<'chs> = BufLexer<V0Lexer<'chs>, V0Token>;
 

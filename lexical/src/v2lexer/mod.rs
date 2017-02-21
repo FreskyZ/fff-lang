@@ -209,6 +209,7 @@ impl<'chs> IDetailLexer<'chs, V2Token> for V2Lexer<'chs> {
     }
 }
 
+#[allow(dead_code)] // don't know what rustc is thinking
 pub type BufV2Token = BufToken<V2Token>;
 pub type BufV2Lexer<'chs> = BufLexer<V2Lexer<'chs>, V2Token>;
 
@@ -281,6 +282,7 @@ mod tests {
     const PROGRAM1: &'static str = "123 456.1";    // Space char as seperator 
     const PROGRAM2: &'static str = "abc/**/def\"\"ght"; // Comment and string literal as seperator 
     const PROGRAM3: &'static str = "123a/ qw1.ad -qw+\nR\"1.23+456\".to_owned()kekekee\n"; // Otherchar as seperator
+    #[allow(dead_code)] // temp
     const PROGRAM5: &'static str = "123, abc, hello世界, 你好world_a，123世界";   // Chinese identifier
 
     #[test]

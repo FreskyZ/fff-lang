@@ -1,12 +1,13 @@
 
 // Char literal parser
-// TODO: optimize
 
 use codepos::Position;
 use codepos::StringPosition;
+use message::Message;
 use message::LexicalMessage;
 use message::MessageCollection;
 use super::super::symbol_type::char_literal::CharLiteral;
+use super::error_strings;
 use super::escape_char_parser::EscapeCharParser;
 use super::escape_char_parser::EscapeCharSimpleCheckResult;
 use super::escape_char_parser::EscapeCharParserResult;
@@ -28,7 +29,7 @@ pub struct CharLiteralParser {
     buf: char,    // has some means has processed one char, error or not error
     expect_first: bool,     // true, expect first, false, processed first expect end quotation
     has_failed: bool,
-    has_too_longed: bool,
+    prepare_to_too_long: bool,
     escape_parser: Option<EscapeCharParser>,
     escape_start_pos: Position,
     is_very_special_that_previous_is_single_quote_escape_and_not_require_skipped: bool,
@@ -52,7 +53,7 @@ impl CharLiteralParser {
             buf: '\0',
             expect_first: true,
             has_failed: false,
-            has_too_longed: false,
+            prepare_to_too_long: false,
             escape_parser: None, 
             escape_start_pos: Position::new(),
             is_very_special_that_previous_is_single_quote_escape_and_not_require_skipped: false,
@@ -61,9 +62,9 @@ impl CharLiteralParser {
 
     pub fn input(
         &mut self, 
-        ch: Option<char>, 
-        pos: Position, 
-        next_ch: Option<char>, 
+        ch: Option<char>,       // Current char
+        pos: Position,          // Current char pos
+        next_ch: Option<char>,  // Next char preview
         messages: &mut MessageCollection
         , coverage_recorder: &mut CoverageRecorder) -> CharLiteralParserResult {
 
@@ -72,7 +73,11 @@ impl CharLiteralParser {
                 None => (), // continue to C14
                 Some(next_ch) => {
                     if next_ch != '\'' {   // else continue to C15
-                        messages.push(LexicalMessage::InvalidEscapeInCharLiteral{ start_pos: self.start_pos });
+                        messages.push(Message::with_help_by_str(error_strings::UnknownCharEscape, vec![
+                            (StringPosition::from2(self.start_pos, self.start_pos.next_col().next_col()), "")
+                        ], vec![
+                            error_strings::SingleQuoteOrBackSlashCharLiteralMaybeHelp
+                        ]));
                         return CharLiteralParserResult::Finished(CharLiteral{ value: None, pos: StringPosition::from2(self.start_pos, pos) });
                     }
                 }
@@ -88,10 +93,12 @@ impl CharLiteralParser {
                             Some(ch) => {
                                 if ch == '\'' { // '\'' should report unexpected EOL
                                     coverage_recorder.insert(18);
-                                    messages.push(LexicalMessage::UnexpectedCharLiteralEndInUnicodeCharEscape{
-                                        literal_start: self.start_pos, 
-                                        escape_start: self.escape_start_pos,
-                                        unexpected_end_pos: pos });
+                                    messages.push(Message::with_help_by_str(error_strings::UnexpectedCharLiteralEnd, vec![
+                                        (StringPosition::double(self.start_pos), error_strings::CharLiteralStartHere),
+                                        (StringPosition::double(pos), error_strings::CharLiteralEndHere),
+                                    ], vec![
+                                        error_strings::UnicodeCharEscapeHelp
+                                    ]));
                                     return CharLiteralParserResult::Finished(CharLiteral{ value: None, pos: StringPosition::from2(self.start_pos, pos) });
                                 }
 
@@ -115,7 +122,10 @@ impl CharLiteralParser {
                                 // WantMore  // wait to reset until out of match self.escape_parser
                             }
                             None => {   // another 'u123$
-                                messages.push(LexicalMessage::UnexpectedEndofFileInCharLiteral{ literal_start: self.start_pos, eof_pos: pos });
+                                messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
+                                    (StringPosition::double(self.start_pos), error_strings::CharLiteralStartHere),
+                                    (StringPosition::double(pos), error_strings::EOFHere)
+                                ]));
                                 coverage_recorder.insert(4);                        // C4, first char is EOF
                                 return CharLiteralParserResult::Finished(CharLiteral{ value: None, pos: StringPosition::from2(self.start_pos, pos) });
                             }
@@ -124,13 +134,20 @@ impl CharLiteralParser {
                     None => {   // Not parsing unicode escape char
                         match ch {
                             Some('\'') => { 
-                                messages.push(LexicalMessage::EmptyCharLiteral{ pos: self.start_pos });            
                                 coverage_recorder.insert(5);                        // C5, empty
+                                messages.push(Message::with_help_by_str(error_strings::EmptyCharLiteral, vec![
+                                    (StringPosition::double(self.start_pos), error_strings::CharLiteralStartHere),
+                                ], vec![
+                                    error_strings::CharLiteralSyntaxHelp1
+                                ]));
                                 return CharLiteralParserResult::Finished(CharLiteral{ value: None, pos: StringPosition::from2(self.start_pos, pos) });
                             }
                             None => {
                                 coverage_recorder.insert(6);                        // C6, '$, report EOF in char literal
-                                messages.push(LexicalMessage::UnexpectedEndofFileInCharLiteral{ literal_start: self.start_pos, eof_pos: pos });
+                                messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
+                                    (StringPosition::double(self.start_pos), error_strings::CharLiteralStartHere),
+                                    (StringPosition::double(pos), error_strings::EOFHere)
+                                ]));
                                 return CharLiteralParserResult::Finished(CharLiteral{ value: None, pos: StringPosition::from2(self.start_pos, pos) });
                             }
                             Some(ch) => {   // other char, then
@@ -148,10 +165,10 @@ impl CharLiteralParser {
                                                 return CharLiteralParserResult::WantMoreWithSkip1;
                                             }
                                             EscapeCharSimpleCheckResult::Invalid(ch) => {
-                                                messages.push(LexicalMessage::UnrecognizedEscapeCharInCharLiteral {
-                                                    literal_start: self.start_pos, 
-                                                    unrecogonize_pos: slash_pos, 
-                                                    unrecogonize_escape: ch });
+                                                messages.push(Message::new(format!("{} '\\{}'", error_strings::UnknownCharEscape, ch), vec![
+                                                    (StringPosition::double(self.start_pos), error_strings::CharLiteralStartHere.to_owned()),
+                                                    (StringPosition::double(slash_pos), error_strings::UnknownCharEscapeHere.to_owned()),
+                                                ]));
                                                 self.expect_first = false;
                                                 self.has_failed = true;
                                                 coverage_recorder.insert(8);        // C8, invalid simple escape
@@ -166,7 +183,10 @@ impl CharLiteralParser {
                                         }
                                     }
                                     ('\\', pos, None) => { 
-                                        messages.push(LexicalMessage::UnexpectedEndofFileInCharLiteral{ literal_start: self.start_pos, eof_pos: pos.next_col() });
+                                        messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
+                                            (StringPosition::double(self.start_pos), error_strings::CharLiteralStartHere),
+                                            (StringPosition::double(pos.next_col()), error_strings::EOFHere)
+                                        ]));
                                         coverage_recorder.insert(10);               // C10, '\$
                                         return CharLiteralParserResult::Finished(CharLiteral{ value: None, pos: StringPosition::from2(self.start_pos, pos.next_col()) });
                                     }
@@ -192,25 +212,33 @@ impl CharLiteralParser {
                 // No possibility for a unicode parser here, just wait for a ', if not, report too long
                 match ch {
                     None => {
-                        if self.has_too_longed {
-                            messages.pop();  // if previously there is too long, remove it
-                        }
-                        messages.push(LexicalMessage::UnexpectedEndofFileInCharLiteral{ literal_start: self.start_pos, eof_pos: pos });
+                        messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
+                            (StringPosition::double(self.start_pos), error_strings::CharLiteralStartHere),
+                            (StringPosition::double(pos), error_strings::EOFHere)
+                        ]));
                         coverage_recorder.insert(14);                               // C14, 'ABCD$
                         return CharLiteralParserResult::Finished(CharLiteral{ value: None, pos: StringPosition::from2(self.start_pos, pos) });
                     }
                     Some(ch) => {
                         if ch == '\'' { // Normally successed
                             coverage_recorder.insert(15);                           // C15, most normal finish
+                            if self.prepare_to_too_long {
+                                coverage_recorder.insert(19);                       // C19, actual report too long
+                                messages.push(Message::with_help_by_str(error_strings::CharLiteralTooLong, vec![
+                                    (StringPosition::double(self.start_pos), error_strings::CharLiteralStartHere),
+                                    (StringPosition::double(pos), error_strings::CharLiteralEndHere),
+                                ], vec![
+                                    error_strings::StringLiteralSyntaxHelp,
+                                ]));
+                            }
                             return CharLiteralParserResult::Finished(CharLiteral{ 
-                                value: if !self.has_failed && !self.has_too_longed { Some(self.buf) } else { None }, 
+                                value: if !self.has_failed && !self.prepare_to_too_long { Some(self.buf) } else { None }, 
                                 pos: StringPosition::from2(self.start_pos, pos)   // any one of them is failed 
                             });
                         } else {
-                            if !self.has_too_longed { // 'AB... is too long, report only once
-                                coverage_recorder.insert(16);                       // C16, too long and report
-                                messages.push(LexicalMessage::CharLiteralTooLong{ start_pos: self.start_pos });
-                                self.has_too_longed = true;
+                            if !self.prepare_to_too_long { // 'AB... is too long, report only once
+                                coverage_recorder.insert(16);                       // C16, too long and prepare to report
+                                self.prepare_to_too_long = true;
                                 self.has_failed = true;     // if too longed, devalidate the buffer
                             }
                             coverage_recorder.insert(17);                           // C17, too long and return
@@ -226,7 +254,7 @@ impl CharLiteralParser {
 
 #[cfg(test)]
 #[test]
-#[allow(unused_mut)]
+#[allow(unused_mut)] // for all_counter, don't know what rustc is thinking
 fn char_lit_parser() {
     use self::CharLiteralParserResult::*;
 
@@ -236,7 +264,6 @@ fn char_lit_parser() {
     let spec_pos4 = make_pos!(12, 13);
     let spec_pos5 = make_pos!(14, 15);
 
-    const INVALID_CHAR: char = '\u{FFFE}';
     let mut all_counter = HashSet::<i32>::new();
 
     macro_rules! counter_expect {
@@ -312,7 +339,11 @@ fn char_lit_parser() {
         assert_eq!(parser.input(Some('\''), spec_pos2, Some('$'), messages, current_counter), 
             Finished(CharLiteral{ value: None, pos: StringPosition::from2(spec_pos1, spec_pos2) }));
 
-        messages_expect!(messages, [LexicalMessage::EmptyCharLiteral{ pos: spec_pos1 }]);
+        messages_expect!(messages, [Message::with_help_by_str(error_strings::EmptyCharLiteral, vec![
+            (StringPosition::double(spec_pos1), error_strings::CharLiteralStartHere),
+        ], vec![
+            error_strings::CharLiteralSyntaxHelp1
+        ])]);
         counter_expect!(current_counter, all_counter, [5]);
     }
 
@@ -326,9 +357,14 @@ fn char_lit_parser() {
         assert_eq!(parser.input(Some('C'), spec_pos5, Some('\''), messages, current_counter), WantMore);
         assert_eq!(parser.input(Some('\''), spec_pos4, Some('$'), messages, current_counter), 
             Finished(CharLiteral{ value: None, pos: StringPosition::from2(spec_pos1, spec_pos4) }));
-        
-        messages_expect!(messages, [LexicalMessage::CharLiteralTooLong{ start_pos: spec_pos1 }]);
-        counter_expect!(current_counter, all_counter, [11 15 16 17]);
+                                 
+        messages_expect!(messages, [Message::with_help_by_str(error_strings::CharLiteralTooLong, vec![
+            (StringPosition::double(spec_pos1), error_strings::CharLiteralStartHere),
+            (StringPosition::double(spec_pos4), error_strings::CharLiteralEndHere),
+        ], vec![
+            error_strings::StringLiteralSyntaxHelp,
+        ])]);
+        counter_expect!(current_counter, all_counter, [11 15 16 17 19]);
     }
 
     {   // '\c', other simple escape
@@ -340,10 +376,10 @@ fn char_lit_parser() {
         assert_eq!(parser.input(Some('\''), spec_pos4, Some('$'), messages, current_counter), 
             Finished(CharLiteral{ value: None, pos: StringPosition::from2(spec_pos1, spec_pos4) }));
         
-        messages_expect!(messages, [LexicalMessage::UnrecognizedEscapeCharInCharLiteral{ 
-                                                literal_start: spec_pos1, 
-                                                unrecogonize_pos: spec_pos3, 
-                                                unrecogonize_escape: 'c' }]);
+        messages_expect!(messages, [Message::new(format!("{} '\\{}'", error_strings::UnknownCharEscape, 'c'), vec![
+            (StringPosition::double(spec_pos1), error_strings::CharLiteralStartHere.to_owned()),
+            (StringPosition::double(spec_pos3), error_strings::UnknownCharEscapeHere.to_owned()),
+        ])]);
         counter_expect!(current_counter, all_counter, [8 15]);
     }
 
@@ -359,14 +395,17 @@ fn char_lit_parser() {
             Finished(CharLiteral{ value: None, pos: StringPosition::from2(spec_pos1, spec_pos2) }));
         
         messages_expect!(messages, [
-            LexicalMessage::UnexpectedCharInUnicodeCharEscape{ 
+            LexicalMessage::UnexpectedCharInUnicodeCharEscape {
                 escape_start: spec_pos3,
                 unexpected_char_pos: spec_pos5,
-                unexpected_char: 'G' }
-            LexicalMessage::UnexpectedCharLiteralEndInUnicodeCharEscape {
-                literal_start: spec_pos1,
-                escape_start: spec_pos3,
-                unexpected_end_pos: spec_pos2 }
+                unexpected_char: 'G' 
+            }
+            Message::with_help_by_str(error_strings::UnexpectedCharLiteralEnd, vec![
+                (StringPosition::double(spec_pos1), error_strings::CharLiteralStartHere),
+                (StringPosition::double(spec_pos2), error_strings::CharLiteralEndHere)
+            ], vec![
+                error_strings::UnicodeCharEscapeHelp
+            ])
         ]);
         counter_expect!(current_counter, all_counter, [9 1 13 8 18]);
     }
@@ -406,8 +445,13 @@ fn char_lit_parser() {
         assert_eq!(parser.input(Some('\''), spec_pos2, Some('$'), messages, current_counter), 
             Finished(CharLiteral{ value: None, pos: StringPosition::from2(spec_pos1, spec_pos2) }));
         
-        messages_expect!(messages, [LexicalMessage::CharLiteralTooLong{ start_pos: spec_pos1 }]);
-        counter_expect!(current_counter, all_counter, [7 16 17 15]);
+        messages_expect!(messages, [Message::with_help_by_str(error_strings::CharLiteralTooLong, vec![
+            (StringPosition::double(spec_pos1), error_strings::CharLiteralStartHere),
+            (StringPosition::double(spec_pos2), error_strings::CharLiteralEndHere),
+        ], vec![
+            error_strings::StringLiteralSyntaxHelp,
+        ])]);
+        counter_expect!(current_counter, all_counter, [7 16 17 15 19]);
     }
 
     {   // '\uABCDA', too long after unicode escape
@@ -424,8 +468,13 @@ fn char_lit_parser() {
         assert_eq!(parser.input(Some('\''), spec_pos2, Some('$'), messages, current_counter), 
             Finished(CharLiteral{ value: None, pos: StringPosition::from2(spec_pos1, spec_pos2) }));
         
-        messages_expect!(messages, [LexicalMessage::CharLiteralTooLong{ start_pos: spec_pos1 }]);
-        counter_expect!(current_counter, all_counter, [9 1 12 3 13 16 17 15]);
+        messages_expect!(messages, [Message::with_help_by_str(error_strings::CharLiteralTooLong, vec![
+            (StringPosition::double(spec_pos1), error_strings::CharLiteralStartHere),
+            (StringPosition::double(spec_pos2), error_strings::CharLiteralEndHere),
+        ], vec![
+            error_strings::StringLiteralSyntaxHelp,
+        ])]);
+        counter_expect!(current_counter, all_counter, [9 1 12 3 13 16 17 15 19]);
     }
 
     {   // '$, EOF 
@@ -436,7 +485,10 @@ fn char_lit_parser() {
         assert_eq!(parser.input(None, spec_pos3, None, messages, current_counter),
             Finished(CharLiteral{ value: None, pos: StringPosition::from2(spec_pos1, spec_pos3) }));
         
-        messages_expect!(messages, [LexicalMessage::UnexpectedEndofFileInCharLiteral{ literal_start: spec_pos1, eof_pos: spec_pos3 }]);
+        messages_expect!(messages, [Message::new_by_str(error_strings::UnexpectedEOF, vec![
+            (StringPosition::double(spec_pos1), error_strings::CharLiteralStartHere),
+            (StringPosition::double(spec_pos3), error_strings::EOFHere)
+        ])]);
         counter_expect!(current_counter, all_counter, [6]);
     }
 
@@ -448,7 +500,10 @@ fn char_lit_parser() {
         assert_eq!(parser.input(Some('\\'), spec_pos3, None, messages, current_counter), 
             Finished(CharLiteral{ value: None, pos: StringPosition::from2(spec_pos1, spec_pos3.next_col()) }));
         
-        messages_expect!(messages, [LexicalMessage::UnexpectedEndofFileInCharLiteral{ literal_start: spec_pos1, eof_pos: spec_pos3.next_col() }]);
+        messages_expect!(messages, [Message::new_by_str(error_strings::UnexpectedEOF, vec![
+            (StringPosition::double(spec_pos1), error_strings::CharLiteralStartHere),
+            (StringPosition::double(spec_pos3.next_col()), error_strings::EOFHere)
+        ])]);
         counter_expect!(current_counter, all_counter, [10]);
     }
 
@@ -461,7 +516,10 @@ fn char_lit_parser() {
         assert_eq!(parser.input(None, spec_pos4, None, messages, current_counter), 
             Finished(CharLiteral{ value: None, pos: StringPosition::from2(spec_pos1, spec_pos4) }));
         
-        messages_expect!(messages, [LexicalMessage::UnexpectedEndofFileInCharLiteral{ literal_start: spec_pos1, eof_pos: spec_pos4 }]);
+        messages_expect!(messages, [Message::new_by_str(error_strings::UnexpectedEOF, vec![
+            (StringPosition::double(spec_pos1), error_strings::CharLiteralStartHere),
+            (StringPosition::double(spec_pos4), error_strings::EOFHere)
+        ])]);
         counter_expect!(current_counter, all_counter, [9 4]);
     }
 
@@ -474,7 +532,10 @@ fn char_lit_parser() {
         assert_eq!(parser.input(None, spec_pos4, None, messages, current_counter), 
             Finished(CharLiteral{ value: None, pos: StringPosition::from2(spec_pos1, spec_pos4) }));
         
-        messages_expect!(messages, [LexicalMessage::UnexpectedEndofFileInCharLiteral{ literal_start: spec_pos1, eof_pos: spec_pos4 }]);
+        messages_expect!(messages, [Message::new_by_str(error_strings::UnexpectedEOF, vec![
+            (StringPosition::double(spec_pos1), error_strings::CharLiteralStartHere),
+            (StringPosition::double(spec_pos4), error_strings::EOFHere)
+        ])]);
         counter_expect!(current_counter, all_counter, [11 14]); 
     }
 
@@ -489,7 +550,10 @@ fn char_lit_parser() {
         assert_eq!(parser.input(None, spec_pos4, None, messages, current_counter), 
             Finished(CharLiteral{ value: None, pos: StringPosition::from2(spec_pos1, spec_pos4) }));
         
-        messages_expect!(messages, [LexicalMessage::UnexpectedEndofFileInCharLiteral{ literal_start: spec_pos1, eof_pos: spec_pos4 }]);
+        messages_expect!(messages, [Message::new_by_str(error_strings::UnexpectedEOF, vec![
+            (StringPosition::double(spec_pos1), error_strings::CharLiteralStartHere),
+            (StringPosition::double(spec_pos4), error_strings::EOFHere)
+        ])]);
         counter_expect!(current_counter, all_counter, [11 16 17 14]); 
     }
 
@@ -502,12 +566,15 @@ fn char_lit_parser() {
         assert_eq!(parser.input(Some('\''), spec_pos3, Some('A'), messages, current_counter), 
             Finished(CharLiteral{ value: None, pos: StringPosition::from2(spec_pos1, spec_pos3) }));
         
-        messages_expect!(messages, [LexicalMessage::InvalidEscapeInCharLiteral{ start_pos: spec_pos1 }]);
+        messages_expect!(messages, [Message::with_help_by_str(error_strings::UnknownCharEscape, vec![
+            (StringPosition::from2(spec_pos1, spec_pos1.next_col().next_col()), "")
+        ], vec![
+            error_strings::SingleQuoteOrBackSlashCharLiteralMaybeHelp
+        ])]);
         counter_expect!(current_counter, all_counter, []); 
     }
 
     let mut sorted_all_counter = all_counter.into_iter().collect::<Vec<i32>>();
     sorted_all_counter.sort();
-    // perrorln!("All counter is {:?}", sorted_all_counter);
-    assert_eq!(sorted_all_counter, vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]);
+    assert_eq!(sorted_all_counter, vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
 }

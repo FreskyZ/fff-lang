@@ -2,18 +2,26 @@
 // Escape char parser
 
 use codepos::Position;
-use message::LexicalMessage as Message;
-use message::MessageEmitter;
+use codepos::StringPosition;
 
-test_only_attr!{
-    [derive(Debug, Eq, PartialEq)]
-    ![]
-    pub struct EscapeCharParser {
-        expect_size: usize, // \u expect 4 hex, \U expect 8 hex
-        temp: String,
-        value: u32,
-        has_failed: bool
-    }
+use message::LexicalMessage;
+use message::Message;
+use message::MessageCollection;
+
+#[cfg(test)]
+#[derive(Debug, Eq, PartialEq)]
+pub struct EscapeCharParser {
+    expect_size: usize, // \u expect 4 hex, \U expect 8 hex
+    temp: String,
+    value: u32,
+    has_failed: bool
+}
+#[cfg(not(test))]
+pub struct EscapeCharParser {
+    expect_size: usize, // \u expect 4 hex, \U expect 8 hex
+    temp: String,
+    value: u32,
+    has_failed: bool
 }
 
 pub enum EscapeCharSimpleCheckResult {
@@ -21,15 +29,18 @@ pub enum EscapeCharSimpleCheckResult {
     Invalid(char),
     Unicode(EscapeCharParser),
 }
-
-test_only_attr!{
-    [derive(Debug, Eq, PartialEq)]
-    ![]
-    pub enum EscapeCharParserResult {
-        WantMore,               // Sucess and want more or unexpected char but keep until got 4 or 8 char
-        Failed,                 // Unexpected char fail, or, u32 value is not char fail, finished, error emitted
-        Success(char),          // Succeed and result
-    }
+#[cfg(test)]
+#[derive(Debug, Eq, PartialEq)]
+pub enum EscapeCharParserResult {
+    WantMore,               // Sucess and want more or unexpected char but keep until got 4 or 8 char
+    Failed,                 // Unexpected char fail, or, u32 value is not char fail, finished, error emitted
+    Success(char),          // Succeed and result
+}
+#[cfg(not(test))]
+pub enum EscapeCharParserResult {
+    WantMore,               // Sucess and want more or unexpected char but keep until got 4 or 8 char
+    Failed,                 // Unexpected char fail, or, u32 value is not char fail, finished, error emitted
+    Success(char),          // Succeed and result
 }
 
 // 16(F plus 1) powered
@@ -70,7 +81,7 @@ impl EscapeCharParser {
 
     // pos for message: (escape_start_pos, current_pos)
     /// ATTENTION: if returned finished but continue input, may cause algorithm overflow panic
-    pub fn input(&mut self, ch: char, pos_for_message: (Position, Position), messages: &mut MessageEmitter) -> EscapeCharParserResult {
+    pub fn input(&mut self, ch: char, pos_for_message: (Position, Position), messages: &mut MessageCollection) -> EscapeCharParserResult {
         
         self.temp.push(ch);   // because expect size check rely on temp length, so push regardless will happen
         if self.has_failed {
@@ -89,7 +100,7 @@ impl EscapeCharParser {
                     match char::from_u32(self.value) {
                         Some(ch) => EscapeCharParserResult::Success(ch),               // C3
                         None => {
-                            messages.push(Message::IncorrectUnicodeCharEscapeValue {
+                            messages.push(LexicalMessage::IncorrectUnicodeCharEscapeValue {
                                 escape_start: pos_for_message.0,
                                 raw_value: self.temp.clone(), 
                             });
@@ -101,7 +112,7 @@ impl EscapeCharParser {
                 }
             }
             None => {
-                messages.push(Message::UnexpectedCharInUnicodeCharEscape {
+                messages.push(LexicalMessage::UnexpectedCharInUnicodeCharEscape {
                     escape_start: pos_for_message.0,
                     unexpected_char_pos: pos_for_message.1,
                     unexpected_char: ch,        
@@ -118,93 +129,81 @@ impl EscapeCharParser {
 }
 
 #[cfg(test)]
-pub fn escape_char_parser_new(expect_size: usize) -> EscapeCharParser {
-    EscapeCharParser::new(expect_size)
-}
+#[test]
+fn escape_char_parser() {
+    use self::EscapeCharParserResult::*;
 
-#[cfg(test)]
-mod tests {
-    
-    #[test]
-    fn escape_char_parser_test() {
-        use super::escape_char_parser_new;
-        use super::EscapeCharParserResult::*;
-        use codepos::Position;
-        use message::LexicalMessage as Message;
-        use message::MessageEmitter;
+    {   // \u2764      => '\u{2764}' | '❤'                          C3, C5, 4
+        let mut parser = EscapeCharParser::new(4);
+        let messages = &mut MessageCollection::new();
+        let poss = (Position::new(), Position::new());
+        assert_eq!(parser.input('2', poss, messages), WantMore);
+        assert_eq!(parser.input('7', poss, messages), WantMore);
+        assert_eq!(parser.input('6', poss, messages), WantMore);
+        assert_eq!(parser.input('4', poss, messages), Success('\u{2764}'));
+    }
+            
+    {   // \U00020E70 => 𠹰                                         C3, C5, 8
+        let mut parser = EscapeCharParser::new(8);
+        let messages = &mut MessageCollection::new();
+        let poss = (Position::new(), Position::new());
+        assert_eq!(parser.input('0', poss, messages), WantMore);
+        assert_eq!(parser.input('0', poss, messages), WantMore);
+        assert_eq!(parser.input('0', poss, messages), WantMore);
+        assert_eq!(parser.input('2', poss, messages), WantMore);
+        assert_eq!(parser.input('0', poss, messages), WantMore);
+        assert_eq!(parser.input('E', poss, messages), WantMore);
+        assert_eq!(parser.input('7', poss, messages), WantMore);
+        assert_eq!(parser.input('0', poss, messages), Success('\u{20E70}'));
+    }
 
-        {   // \u2764      => '\u{2764}' | '❤'                          C3, C5, 4
-            let mut parser = escape_char_parser_new(4);
-            let messages = &mut MessageEmitter::new();
-            let poss = (Position::new(), Position::new());
-            assert_eq!(parser.input('2', poss, messages), WantMore);
-            assert_eq!(parser.input('7', poss, messages), WantMore);
-            assert_eq!(parser.input('6', poss, messages), WantMore);
-            assert_eq!(parser.input('4', poss, messages), Success('\u{2764}'));
-        }
-                
-        {   // \U00020E70 => 𠹰                                         C3, C5, 8
-            let mut parser = escape_char_parser_new(8);
-            let messages = &mut MessageEmitter::new();
-            let poss = (Position::new(), Position::new());
-            assert_eq!(parser.input('0', poss, messages), WantMore);
-            assert_eq!(parser.input('0', poss, messages), WantMore);
-            assert_eq!(parser.input('0', poss, messages), WantMore);
-            assert_eq!(parser.input('2', poss, messages), WantMore);
-            assert_eq!(parser.input('0', poss, messages), WantMore);
-            assert_eq!(parser.input('E', poss, messages), WantMore);
-            assert_eq!(parser.input('7', poss, messages), WantMore);
-            assert_eq!(parser.input('0', poss, messages), Success('\u{20E70}'));
-        }
+    {   // \U0011ABCD => out of range                               C3, C4, C5
+        let mut parser = EscapeCharParser::new(8);
+        let messages = &mut MessageCollection::new();
+        let poss = (Position::new(), Position::new());
+        assert_eq!(parser.input('0', poss, messages), WantMore);
+        assert_eq!(parser.input('0', poss, messages), WantMore);
+        assert_eq!(parser.input('1', poss, messages), WantMore);
+        assert_eq!(parser.input('1', poss, messages), WantMore);
+        assert_eq!(parser.input('A', poss, messages), WantMore);
+        assert_eq!(parser.input('B', poss, messages), WantMore);
+        assert_eq!(parser.input('C', poss, messages), WantMore);
+        assert_eq!(parser.input('D', (make_pos!(12, 34), Position::new()), messages), Failed);
 
-        {   // \U0011ABCD => out of range                               C3, C4, C5
-            let mut parser = escape_char_parser_new(8);
-            let messages = &mut MessageEmitter::new();
-            let poss = (Position::new(), Position::new());
-            assert_eq!(parser.input('0', poss, messages), WantMore);
-            assert_eq!(parser.input('0', poss, messages), WantMore);
-            assert_eq!(parser.input('1', poss, messages), WantMore);
-            assert_eq!(parser.input('1', poss, messages), WantMore);
-            assert_eq!(parser.input('A', poss, messages), WantMore);
-            assert_eq!(parser.input('B', poss, messages), WantMore);
-            assert_eq!(parser.input('C', poss, messages), WantMore);
-            assert_eq!(parser.input('D', (make_pos!(12, 34), Position::new()), messages), Failed);
+        let expect_messages = &mut MessageCollection::new();
+        expect_messages.push(LexicalMessage::IncorrectUnicodeCharEscapeValue{ escape_start: make_pos!(12, 34), raw_value: "0011ABCD".to_owned() });
+        assert_eq!(messages, expect_messages);
+    }
 
-            let expect_messages = &mut MessageEmitter::new();
-            expect_messages.push(Message::IncorrectUnicodeCharEscapeValue{ escape_start: make_pos!(12, 34), raw_value: "0011ABCD".to_owned() });
-            assert_eq!(messages, expect_messages);
-        }
+    {   // \uH123 => early error char                               C1, C2, C6
+        let mut parser = EscapeCharParser::new(4);
+        let messages = &mut MessageCollection::new();
+        let poss = (Position::new(), Position::new());
+        assert_eq!(parser.input('H', (make_pos!(12, 34), make_pos!(56, 78)), messages), WantMore);
+        assert_eq!(parser.input('1', poss, messages), WantMore);
+        assert_eq!(parser.input('2', poss, messages), WantMore);
+        assert_eq!(parser.input('3', poss, messages), Failed);
 
-        {   // \uH123 => early error char                               C1, C2, C6
-            let mut parser = escape_char_parser_new(4);
-            let messages = &mut MessageEmitter::new();
-            let poss = (Position::new(), Position::new());
-            assert_eq!(parser.input('H', (make_pos!(12, 34), make_pos!(56, 78)), messages), WantMore);
-            assert_eq!(parser.input('1', poss, messages), WantMore);
-            assert_eq!(parser.input('2', poss, messages), WantMore);
-            assert_eq!(parser.input('3', poss, messages), Failed);
+        let expect_messages = &mut MessageCollection::new();
+        expect_messages.push(
+            LexicalMessage::UnexpectedCharInUnicodeCharEscape{ 
+                escape_start: make_pos!(12, 34), unexpected_char_pos: make_pos!(56, 78), unexpected_char: 'H' });
+        assert_eq!(messages, expect_messages);
+    }
 
-            let expect_messages = &mut MessageEmitter::new();
-            expect_messages.push(
-                Message::UnexpectedCharInUnicodeCharEscape{ 
-                    escape_start: make_pos!(12, 34), unexpected_char_pos: make_pos!(56, 78), unexpected_char: 'H' });
-            assert_eq!(messages, expect_messages);
-        }
+    {   // \u123g => last error char                                C3, C5, C7
+        let mut parser = EscapeCharParser::new(4);
+        let messages = &mut MessageCollection::new();
+        let poss = (Position::new(), Position::new());
+        assert_eq!(parser.input('1', poss, messages), WantMore);
+        assert_eq!(parser.input('2', poss, messages), WantMore);
+        assert_eq!(parser.input('3', poss, messages), WantMore);
+        assert_eq!(parser.input('g', (make_pos!(78, 65), make_pos!(43, 21)), messages), Failed);
 
-        {   // \u123g => last error char                                C3, C5, C7
-            let mut parser = escape_char_parser_new(4);
-            let messages = &mut MessageEmitter::new();
-            let poss = (Position::new(), Position::new());
-            assert_eq!(parser.input('1', poss, messages), WantMore);
-            assert_eq!(parser.input('2', poss, messages), WantMore);
-            assert_eq!(parser.input('3', poss, messages), WantMore);
-            assert_eq!(parser.input('g', (make_pos!(78, 65), make_pos!(43, 21)), messages), Failed);
-
-            let expect_messages = &mut MessageEmitter::new();
-            expect_messages.push(
-                Message::UnexpectedCharInUnicodeCharEscape{ 
-                    escape_start: make_pos!(78, 65), unexpected_char_pos: make_pos!(43, 21), unexpected_char: 'g' });
-            assert_eq!(messages, expect_messages);
-        }
+        let expect_messages = &mut MessageCollection::new();
+        expect_messages.push(
+            LexicalMessage::UnexpectedCharInUnicodeCharEscape{ 
+                escape_start: make_pos!(78, 65), unexpected_char_pos: make_pos!(43, 21), unexpected_char: 'g' });
+        assert_eq!(messages, expect_messages);
     }
 }

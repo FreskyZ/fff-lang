@@ -51,23 +51,19 @@ pub struct BufLexer<TLexer, TToken> {
     next_to_return: Option<TToken>,
 }
 
-impl<'chs, TLexer, TToken> From<Chars<'chs>> for BufLexer<TLexer, TToken>
+#[allow(dead_code)] // because it is not a type public to other crate, some methods remained for extension will be warned
+impl<'chs, TLexer, TToken> BufLexer<TLexer, TToken>
     where TLexer: IDetailLexer<'chs, TToken>, TToken: Clone {
 
-    fn from(content_chars: Chars<'chs>) -> BufLexer<TLexer, TToken> {
+    pub fn from(content_chars: Chars<'chs>) -> BufLexer<TLexer, TToken> {
         BufLexer { 
             lexer: TLexer::from(content_chars),
             is_first: true,
             next_to_return: None,
         }
     }
-}
 
-impl<'chs, TLexer, TToken> BufLexer<TLexer, TToken>
-    where TLexer: IDetailLexer<'chs, TToken>, TToken: Clone {
-
-    #[cfg(test)]
-    pub fn from_test(content: &'chs str) ->  BufLexer<TLexer, TToken> {
+    pub fn from_str(content: &'chs str) ->  BufLexer<TLexer, TToken> {
         BufLexer::from(content.chars())
     }
 

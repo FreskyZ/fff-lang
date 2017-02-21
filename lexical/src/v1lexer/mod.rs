@@ -11,12 +11,14 @@ mod escape_char_parser;
 mod char_lit_parser;
 mod string_lit_parser;
 mod raw_string_lit_parser;
+mod error_strings;
 
 use std::str::Chars;
 use codepos::Position;
 use codepos::StringPosition;
-use message::LexicalMessage;
 use message::Message;
+#[allow(unused_imports)] // don't know what rustc is thinking
+use message::LexicalMessage; 
 use message::MessageCollection;
 
 use super::v0lexer::V0Token;
@@ -143,9 +145,9 @@ impl<'chs> IDetailLexer<'chs, V1Token> for V1Lexer<'chs> {
                             // state = State::InBlockComment{ start_pos: start_pos };           // C9: in block, continue block
                         }
                         None => {
-                            messages.push(Message::new_by_str("Unexpected EOF", vec![
-                                (StringPosition::double(*start_pos), "Block comment starts here"),
-                                (StringPosition::double(self.position()), "EOF here"),
+                            messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
+                                (StringPosition::double(*start_pos), error_strings::BlockCommentStartHere),
+                                (StringPosition::double(self.position()), error_strings::EOFHere),
                             ]));
                             return None;                                                        // C10: in block, meet EOF, emit error, return
                         }
@@ -226,6 +228,7 @@ impl<'chs> IDetailLexer<'chs, V1Token> for V1Lexer<'chs> {
     }
 }
 
+#[allow(dead_code)] // don't know what rustc is thinking
 pub type BufV1Token = BufToken<V1Token>;
 pub type BufV1Lexer<'chs> = BufLexer<V1Lexer<'chs>, V1Token>;
 
@@ -308,9 +311,9 @@ fn v1_base() {
             is_o!('A', 1, 1)
         ]
         [
-            Message::new_by_str("Unexpected EOF", vec![
-                (StringPosition::double(make_pos!(1, 2)), "Block comment starts here"),
-                (StringPosition::double(make_pos!(1, 6)), "EOF here"),
+            Message::new_by_str(error_strings::UnexpectedEOF, vec![
+                (StringPosition::double(make_pos!(1, 2)), error_strings::BlockCommentStartHere),
+                (StringPosition::double(make_pos!(1, 6)), error_strings::EOFHere),
             ])
         ]
     }
