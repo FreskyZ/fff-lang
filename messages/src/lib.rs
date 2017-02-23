@@ -589,7 +589,7 @@ impl fmt::Debug for Message {
         let _ = write!(f, "{}:\n", self.main_desc);
         let _ = write!(f, "    | {}", util::format_vector_debug(&self.pos_and_descs, "\n    | "));
         if !self.helps.is_empty() {
-            write!(f, "\n    = {}", util::format_vector_display(&self.helps, "\n"))
+            write!(f, "\n    = {}", util::format_vector_display(&self.helps, "\n    = "))
         } else {
             Ok(())
         }

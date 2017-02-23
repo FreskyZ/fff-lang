@@ -8,18 +8,20 @@ use message::LexicalMessage;
 use message::Message;
 use message::MessageCollection;
 
+use super::error_strings;
+
 #[cfg(test)]
 #[derive(Debug, Eq, PartialEq)]
 pub struct EscapeCharParser {
     expect_size: usize, // \u expect 4 hex, \U expect 8 hex
-    temp: String,
+    buf: String,
     value: u32,
     has_failed: bool
 }
 #[cfg(not(test))]
 pub struct EscapeCharParser {
     expect_size: usize, // \u expect 4 hex, \U expect 8 hex
-    temp: String,
+    buf: String,
     value: u32,
     has_failed: bool
 }
@@ -44,8 +46,8 @@ pub enum EscapeCharParserResult {
 }
 
 // 16(F plus 1) powered
-const FP1_POWERED: [u32; 8] = 
-    [1_u32, 0x10_u32, 0x100_u32, 0x1000_u32, 0x1000_0_u32, 0x1000_00_u32, 0x1000_000_u32, 0x1000_0000_u32];
+// 17/2/23: Now use shift left instead
+// const FP1_POWERED: [u32; 8] = [1_u32, 0x10_u32, 0x100_u32, 0x1000_u32, 0x1000_0_u32, 0x1000_00_u32, 0x1000_000_u32, 0x1000_0000_u32];
 
 use std::char;
 impl EscapeCharParser {
@@ -53,7 +55,7 @@ impl EscapeCharParser {
     fn new(expect_size: usize) -> EscapeCharParser {
         EscapeCharParser{ 
             expect_size: expect_size, 
-            temp: String::new(),
+            buf: String::new(),
             value: 0, 
             has_failed: false,
         }
@@ -83,9 +85,9 @@ impl EscapeCharParser {
     /// ATTENTION: if returned finished but continue input, may cause algorithm overflow panic
     pub fn input(&mut self, ch: char, pos_for_message: (Position, Position), messages: &mut MessageCollection) -> EscapeCharParserResult {
         
-        self.temp.push(ch);   // because expect size check rely on temp length, so push regardless will happen
+        self.buf.push(ch);   // because expect size check rely on buf length, so push regardless will happen
         if self.has_failed {
-            if self.temp.len() < self.expect_size {
+            if self.buf.len() < self.expect_size {
                 return EscapeCharParserResult::WantMore;                               // C1
             } else {
                 return EscapeCharParserResult::Failed;                                 // C2
@@ -94,16 +96,18 @@ impl EscapeCharParser {
 
         match ch.to_digit(16) {
             Some(digit) => {
-                self.value += digit * FP1_POWERED[self.expect_size - self.temp.len()];
+                self.value += digit << (4 * (self.expect_size - self.buf.len()));   // `digit << (4 * i)` is same as `digit * (16 ** i)`
                 
-                if self.temp.len() == self.expect_size {
+                if self.buf.len() == self.expect_size {
                     match char::from_u32(self.value) {
                         Some(ch) => EscapeCharParserResult::Success(ch),               // C3
                         None => {
-                            messages.push(LexicalMessage::IncorrectUnicodeCharEscapeValue {
-                                escape_start: pos_for_message.0,
-                                raw_value: self.temp.clone(), 
-                            });
+                            messages.push(Message::with_help(error_strings::InvalidUnicodeCharEscape.to_owned(), vec![
+                                (StringPosition::double(pos_for_message.0), error_strings::UnicodeCharEscapeStartHere.to_owned()),
+                            ], vec![
+                                format!("{}{}", error_strings::UnicodeCharEscapeCodePointValueIs, self.buf.clone()),
+                                error_strings::UnicodeCharEscapeHelpValue.to_owned(),
+                            ]));
                             EscapeCharParserResult::Failed                             // C4
                         }
                     }
@@ -112,13 +116,14 @@ impl EscapeCharParser {
                 }
             }
             None => {
-                messages.push(LexicalMessage::UnexpectedCharInUnicodeCharEscape {
-                    escape_start: pos_for_message.0,
-                    unexpected_char_pos: pos_for_message.1,
-                    unexpected_char: ch,        
-                });
+                messages.push(Message::with_help_by_str(error_strings::InvalidUnicodeCharEscape, vec![
+                    (StringPosition::double(pos_for_message.0), error_strings::UnicodeCharEscapeStartHere),
+                    (StringPosition::double(pos_for_message.1), error_strings::UnicodeCharEscapeInvalidChar)
+                ], vec![
+                    error_strings::UnicodeCharEscapeHelpSyntax,
+                ]));
                 self.has_failed = true;
-                if self.temp.len() < self.expect_size {
+                if self.buf.len() < self.expect_size {
                     EscapeCharParserResult::WantMore                                   // C6
                 } else {
                     EscapeCharParserResult::Failed                                     // C7
@@ -171,7 +176,12 @@ fn escape_char_parser() {
         assert_eq!(parser.input('D', (make_pos!(12, 34), Position::new()), messages), Failed);
 
         let expect_messages = &mut MessageCollection::new();
-        expect_messages.push(LexicalMessage::IncorrectUnicodeCharEscapeValue{ escape_start: make_pos!(12, 34), raw_value: "0011ABCD".to_owned() });
+        expect_messages.push(Message::with_help(error_strings::InvalidUnicodeCharEscape.to_owned(), vec![
+            (make_str_pos!(12, 34, 12, 34), error_strings::UnicodeCharEscapeStartHere.to_owned()),
+        ], vec![
+            format!("{}{}", error_strings::UnicodeCharEscapeCodePointValueIs, "0011ABCD".to_owned()),
+            error_strings::UnicodeCharEscapeHelpValue.to_owned(),
+        ]));
         assert_eq!(messages, expect_messages);
     }
 
@@ -185,9 +195,12 @@ fn escape_char_parser() {
         assert_eq!(parser.input('3', poss, messages), Failed);
 
         let expect_messages = &mut MessageCollection::new();
-        expect_messages.push(
-            LexicalMessage::UnexpectedCharInUnicodeCharEscape{ 
-                escape_start: make_pos!(12, 34), unexpected_char_pos: make_pos!(56, 78), unexpected_char: 'H' });
+        expect_messages.push(Message::with_help_by_str(error_strings::InvalidUnicodeCharEscape, vec![
+            (make_str_pos!(12, 34, 12, 34), error_strings::UnicodeCharEscapeStartHere),
+            (make_str_pos!(56, 78, 56, 78), error_strings::UnicodeCharEscapeInvalidChar)
+        ], vec![
+            error_strings::UnicodeCharEscapeHelpSyntax,
+        ]));
         assert_eq!(messages, expect_messages);
     }
 
@@ -201,9 +214,12 @@ fn escape_char_parser() {
         assert_eq!(parser.input('g', (make_pos!(78, 65), make_pos!(43, 21)), messages), Failed);
 
         let expect_messages = &mut MessageCollection::new();
-        expect_messages.push(
-            LexicalMessage::UnexpectedCharInUnicodeCharEscape{ 
-                escape_start: make_pos!(78, 65), unexpected_char_pos: make_pos!(43, 21), unexpected_char: 'g' });
+        expect_messages.push(Message::with_help_by_str(error_strings::InvalidUnicodeCharEscape, vec![
+            (make_str_pos!(78, 65, 78, 65), error_strings::UnicodeCharEscapeStartHere),
+            (make_str_pos!(43, 21, 43, 21), error_strings::UnicodeCharEscapeInvalidChar)
+        ], vec![
+            error_strings::UnicodeCharEscapeHelpSyntax,
+        ]));
         assert_eq!(messages, expect_messages);
     }
 }

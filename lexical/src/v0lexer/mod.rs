@@ -4,7 +4,7 @@
 
 use std::str::Chars;
 use codepos::Position;
-use message::MessageEmitter;
+use message::MessageCollection;
 use super::buf_lexer::IDetailLexer;
 use super::buf_lexer::BufToken;
 use super::buf_lexer::BufLexer;
@@ -76,7 +76,7 @@ impl<'chs> IDetailLexer<'chs, V0Token> for V0Lexer<'chs> {
     // Because need next preview, so actually is getting next next char
     //
     // Provide None|EOF a special virtual pos 
-    fn next(&mut self, _messages: &mut MessageEmitter) -> Option<V0Token> {
+    fn next(&mut self, _messages: &mut MessageCollection) -> Option<V0Token> {
         
         // next not cr will return None if buf index at end
         self.next_not_carriage_return().map(|ch|{
@@ -145,7 +145,7 @@ fn v0_test2() {
         ($input: expr, $($ch: expr, $row: expr, $col: expr, )*) => (
             let mut v0lexer = V0Lexer::from($input.chars());
             let mut v0s = Vec::new();
-            let mut dummy = MessageEmitter::new();
+            let mut dummy = MessageCollection::new();
             loop {
                 match v0lexer.next(&mut dummy) {
                     Some(v0) => v0s.push(v0),
@@ -224,23 +224,52 @@ fn v0_test2() {
 
 #[cfg(test)]
 #[test]
+#[allow(unused_assignments)] // don't know what rustc is thinking series, DKWRIT
 fn v0_buf() {
-    
-    let mut bufv0 = BufV0Lexer::from("\r\rabc\ndef\r\r\nasdwe\r\r\rq1da\nawsedq\r\r\r".chars());
-    let mut dummy = MessageEmitter::new();
-    loop {
-        match bufv0.next(&mut dummy) {
-            Some(bufv0) => perrorln!("{:?}", bufv0),    
-            None => break,
-        }
+
+    macro_rules! test_case {
+        ($program: expr, $($ch: expr, $row: expr, $col: expr, )*) => (
+            let mut bufv0lexer = BufV0Lexer::from($program.chars());
+            let mut bufv0s = Vec::new();
+            let mut dummy = MessageCollection::new();
+            loop {
+                match bufv0lexer.next(&mut dummy) {
+                    Some(bufv0) => bufv0s.push(bufv0),
+                    None => break,
+                }
+            }
+
+            let mut is_first = true;
+            let mut expects = Vec::new();
+            let mut prev_token = V0Token{ ch: 'X', pos: Position::new() };
+            $(
+                if is_first {
+                    prev_token = V0Token{ ch: $ch, pos: make_pos!($row, $col) };
+                    is_first = false;
+                } else {
+                    let current_token = V0Token{ ch: $ch, pos: make_pos!($row, $col) };
+                    expects.push(BufV0Token{ token: prev_token.clone(), next: Some(current_token.clone()) });
+                    prev_token = current_token;
+                }
+            )*
+            expects.push(BufV0Token{ token: prev_token, next: None }); 
+            assert_eq!(bufv0s, expects);
+        )
     }
+
+    test_case!{ "\r\rabc\ndef\r\r\nasdwe\r\r\rq1da\nawsedq\r\r\r",
+        'a', 1, 1, 'b', 1, 2, 'c', 1, 3, '\n', 1, 4,
+        'd', 2, 1, 'e', 2, 2, 'f', 2, 3, '\n', 2, 4,
+        'a', 3, 1, 's', 3, 2, 'd', 3, 3, 'w', 3, 4, 'e', 3, 5, 'q', 3, 6, '1', 3, 7, 'd', 3, 8, 'a', 3, 9, '\n', 3, 10,
+        'a', 4, 1, 'w', 4, 2, 's', 4, 3, 'e', 4, 4, 'd', 4, 5, 'q', 4, 6,
+    }    
     
-    let mut bufv0 = BufV0Lexer::from("abc\ndef\r\r\n\nasd\nwe\rq1da\nawsedq\n".chars());
-    let mut dummy = MessageEmitter::new();
-    loop {
-        match bufv0.next(&mut dummy) {
-            Some(bufv0) => perrorln!("{:?}", bufv0),    
-            None => break,
-        }
+    test_case!{ "abc\ndef\r\r\n\nasd\nwe\rq1da\nawsedq\n",
+        'a', 1, 1, 'b', 1, 2, 'c', 1, 3, '\n', 1, 4,
+        'd', 2, 1, 'e', 2, 2, 'f', 2, 3, '\n', 2, 4,
+        '\n', 3, 1,
+        'a', 4, 1, 's', 4, 2, 'd', 4, 3, '\n', 4, 4,
+        'w', 5, 1, 'e', 5, 2, 'q', 5, 3, '1', 5, 4, 'd', 5, 5, 'a', 5, 6, '\n', 5, 7,
+        'a', 6, 1, 'w', 6, 2, 's', 6, 3, 'e', 6, 4, 'd', 6, 5, 'q', 6, 6, '\n', 6, 7,
     }
 }

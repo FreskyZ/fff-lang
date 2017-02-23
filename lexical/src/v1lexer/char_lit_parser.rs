@@ -97,7 +97,7 @@ impl CharLiteralParser {
                                         (StringPosition::double(self.start_pos), error_strings::CharLiteralStartHere),
                                         (StringPosition::double(pos), error_strings::CharLiteralEndHere),
                                     ], vec![
-                                        error_strings::UnicodeCharEscapeHelp
+                                        error_strings::UnicodeCharEscapeHelpSyntax
                                     ]));
                                     return CharLiteralParserResult::Finished(CharLiteral{ value: None, pos: StringPosition::from2(self.start_pos, pos) });
                                 }
@@ -404,7 +404,7 @@ fn char_lit_parser() {
                 (StringPosition::double(spec_pos1), error_strings::CharLiteralStartHere),
                 (StringPosition::double(spec_pos2), error_strings::CharLiteralEndHere)
             ], vec![
-                error_strings::UnicodeCharEscapeHelp
+                error_strings::UnicodeCharEscapeHelpSyntax
             ])
         ]);
         counter_expect!(current_counter, all_counter, [9 1 13 8 18]);
