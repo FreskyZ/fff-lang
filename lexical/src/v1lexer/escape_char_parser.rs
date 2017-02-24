@@ -4,7 +4,6 @@
 use codepos::Position;
 use codepos::StringPosition;
 
-use message::LexicalMessage;
 use message::Message;
 use message::MessageCollection;
 

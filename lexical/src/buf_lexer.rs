@@ -5,14 +5,16 @@
 
 use std::str::Chars;
 use codepos::Position;
-use message::MessageEmitter;
+use message::MessageCollection;
 
 // detail compare with the public interface ILexer
-pub trait IDetailLexer<'chs, TToken> : From<Chars<'chs>> {
+pub trait IDetailLexer<'chs, TToken> {
+
+    fn new(chars: Chars<'chs>) -> Self;
 
     fn position(&self) -> Position;
 
-    fn next(&mut self, emitter: &mut MessageEmitter) -> Option<TToken>;
+    fn next(&mut self, messages: &mut MessageCollection) -> Option<TToken>;
 }
 
 #[cfg(test)]
@@ -27,6 +29,20 @@ pub struct BufToken<T>
     where T : Clone {
     pub token: T, 
     pub next: Option<T>,
+}
+#[cfg(test)]
+use std::fmt;
+#[cfg(test)]
+impl<T> fmt::Debug for BufToken<T> 
+    where T : fmt::Debug + Clone {
+
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        try!(writeln!(f, "{:?}", self.token));
+        match self.next {
+            Some(ref next) => write!(f, "    Next: {:?}", next),
+            None => write!(f, "    Next: None"),
+        }
+    }
 }
 
 // Buffed lexer
@@ -55,32 +71,28 @@ pub struct BufLexer<TLexer, TToken> {
 impl<'chs, TLexer, TToken> BufLexer<TLexer, TToken>
     where TLexer: IDetailLexer<'chs, TToken>, TToken: Clone {
 
-    pub fn from(content_chars: Chars<'chs>) -> BufLexer<TLexer, TToken> {
+    pub fn new(content_chars: Chars<'chs>) -> BufLexer<TLexer, TToken> {
         BufLexer { 
-            lexer: TLexer::from(content_chars),
+            lexer: TLexer::new(content_chars),
             is_first: true,
             next_to_return: None,
         }
     }
 
-    pub fn from_str(content: &'chs str) ->  BufLexer<TLexer, TToken> {
-        BufLexer::from(content.chars())
-    }
-
     pub fn inner(&self) -> &TLexer { &self.lexer }
     pub fn inner_mut(&mut self) -> &mut TLexer { &mut self.lexer }
 
-    pub fn next(&mut self, emitter: &mut MessageEmitter) -> Option<BufToken<TToken>> {
+    pub fn next(&mut self, messages: &mut MessageCollection) -> Option<BufToken<TToken>> {
 
         if self.is_first {
-            self.next_to_return = self.lexer.next(emitter);
+            self.next_to_return = self.lexer.next(messages);
             self.is_first = false;
         }
 
         let ret_val = match self.next_to_return {
             None => return None,
             Some(ref token) => {
-                Some(BufToken {token: token.clone(), next: self.lexer.next(emitter)})
+                Some(BufToken {token: token.clone(), next: self.lexer.next(messages)})
             }
         };
 
@@ -91,22 +103,7 @@ impl<'chs, TLexer, TToken> BufLexer<TLexer, TToken>
         ret_val
     }
 
-    pub fn skip1(&mut self, emitter: &mut MessageEmitter) {
-        let _ = self.next(emitter);
-    }
-}
-
-#[cfg(test)]
-use std::fmt;
-#[cfg(test)]
-impl<T> fmt::Debug for BufToken<T> 
-    where T : fmt::Debug + Clone {
-
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        try!(writeln!(f, "{:?}", self.token));
-        match self.next {
-            Some(ref next) => write!(f, "    Next: {:?}", next),
-            None => write!(f, "    Next: None"),
-        }
+    pub fn skip1(&mut self, messages: &mut MessageCollection) {
+        let _ = self.next(messages);
     }
 }

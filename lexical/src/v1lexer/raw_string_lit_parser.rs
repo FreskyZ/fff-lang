@@ -3,8 +3,10 @@
 
 use codepos::Position;
 use codepos::StringPosition;
-use message::LexicalMessage as Message;
-use message::MessageEmitter;
+use message::Message;
+use message::MessageCollection;
+
+use super::error_strings;
 use super::super::symbol_type::string_literal::StringLiteral;
 
 pub struct RawStringLiteralParser {
@@ -33,7 +35,7 @@ impl RawStringLiteralParser {
         }
     }
 
-    pub fn input(&mut self, ch: Option<char>, pos: Position, messages: &mut MessageEmitter) -> RawStringLiteralParserResult {
+    pub fn input(&mut self, ch: Option<char>, pos: Position, messages: &mut MessageCollection) -> RawStringLiteralParserResult {
         match (ch, pos) {
             (Some('"'), pos) => {                                               // C1: in raw string, meet ", finish, return
                 return RawStringLiteralParserResult::Finished(StringLiteral::new(self.raw.clone(), StringPosition::from2(self.start_pos, pos), true));
@@ -42,12 +44,11 @@ impl RawStringLiteralParser {
                 self.raw.push(ch);
                 return RawStringLiteralParserResult::WantMore;
             }
-            (None, pos) => {
-                messages.push(Message::UnexpectedEndofFileInStringLiteral {     // C3: in raw string, meet EOF, emit error, return  
-                    literal_start: self.start_pos, 
-                    eof_pos: pos,
-                    hint_escaped_quote_pos: None
-                });
+            (None, pos) => {                                                    // C3: in raw string, meet EOF, emit error, return  
+                messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![ 
+                    (StringPosition::double(self.start_pos), error_strings::StringLiteralStartHere),
+                    (StringPosition::double(pos), error_strings::EOFHere),
+                ]));
                 return RawStringLiteralParserResult::Finished(StringLiteral::new(None, StringPosition::from2(self.start_pos, pos), true));
             }
         }
@@ -56,7 +57,7 @@ impl RawStringLiteralParser {
 
 #[cfg(test)]    
 #[test]
-fn raw_string_lit_parser_test() {
+fn raw_string_lit_parser() {
     use self::RawStringLiteralParserResult::*;
 
     let dummy_pos = Position::new();
@@ -66,8 +67,8 @@ fn raw_string_lit_parser_test() {
 
     {   // r"hell\u\no", normal, C1, C2
         let mut parser = RawStringLiteralParser::new(spec_pos1);
-        let messages = &mut MessageEmitter::new(); 
-        let expect_messages = &mut MessageEmitter::new();
+        let messages = &mut MessageCollection::new(); 
+        let expect_messages = &mut MessageCollection::new();
         assert_eq!(parser.input(Some('h'), dummy_pos, messages), WantMore);
         assert_eq!(parser.input(Some('e'), dummy_pos, messages), WantMore);
         assert_eq!(parser.input(Some('l'), dummy_pos, messages), WantMore);
@@ -85,15 +86,17 @@ fn raw_string_lit_parser_test() {
 
     {   // R"he$, normal, C2, C3
         let mut parser = RawStringLiteralParser::new(spec_pos1);
-        let messages = &mut MessageEmitter::new(); 
-        let expect_messages = &mut MessageEmitter::new();
+        let messages = &mut MessageCollection::new(); 
+        let expect_messages = &mut MessageCollection::new();
         assert_eq!(parser.input(Some('h'), dummy_pos, messages), WantMore);
         assert_eq!(parser.input(Some('e'), dummy_pos, messages), WantMore);
         assert_eq!(parser.input(None, spec_pos2, messages), 
             Finished(StringLiteral::new(None, StringPosition::from2(spec_pos1, spec_pos2), true)));
 
-        expect_messages.push(Message::UnexpectedEndofFileInStringLiteral{ 
-            literal_start: spec_pos1, eof_pos: spec_pos2,  hint_escaped_quote_pos: None});
+        expect_messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![ 
+                    (StringPosition::double(spec_pos1), error_strings::StringLiteralStartHere),
+                    (StringPosition::double(spec_pos2), error_strings::EOFHere),
+        ]));
         assert_eq!(messages, expect_messages);
     }
 }

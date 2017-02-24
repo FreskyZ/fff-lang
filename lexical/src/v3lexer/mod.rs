@@ -66,12 +66,6 @@ pub struct V3Lexer<'chs> {
     v2: BufV2Lexer<'chs>,
 }
 
-impl<'chs> From<Chars<'chs>> for V3Lexer<'chs> {
-    fn from(content_chars: Chars) -> V3Lexer {
-        V3Lexer { v2: BufV2Lexer::from(content_chars) }
-    }
-}
-
 // Process every may be seperator char, if it is special unicode char, emit message and return the ascii version
 fn pass_unicode_char(ch: char, pos: Position) -> (char, Option<LexicalMessage>) {
     use self::unicode_char::check_unicode_char;
@@ -87,6 +81,10 @@ fn pass_unicode_char(ch: char, pos: Position) -> (char, Option<LexicalMessage>) 
 }
 
 impl<'chs> IDetailLexer<'chs, V3Token> for V3Lexer<'chs> {
+
+    fn new(content_chars: Chars) -> V3Lexer {
+        V3Lexer { v2: BufV2Lexer::new(content_chars) }
+    }
 
     fn position(&self) -> Position { self.v2.inner().position() }
 
@@ -165,7 +163,7 @@ fn v3_test1() {
 
     let mut content = String::new();
     let _read_size = file.read_to_string(&mut content).expect("Read file failed");
-    let mut v3lexer = V3Lexer::from(content.chars());
+    let mut v3lexer = V3Lexer::new(content.chars());
 
     let mut messages = MessageEmitter::new();
     loop {

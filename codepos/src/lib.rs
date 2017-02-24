@@ -4,6 +4,8 @@
 //! Currently only provides 2 types, Position and StringPosition, 
 //! and make_pos! and make_str_pos! macro for convenience in writing test
 
+// TODO: currently too much string position in message collection, try fix it
+
 use std::fmt;
 
 /// Position of a character

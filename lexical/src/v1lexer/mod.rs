@@ -7,6 +7,8 @@
 ///! string literal is allowed to cross line, line end is regarded as \n
 ///! raw string literal supported, `r'C:\\abc'` or `R"C:\\abc"`
 
+// TODO: check better usage of Message's StringPositions, because previously they use Position
+
 mod escape_char_parser;
 mod char_lit_parser;
 mod string_lit_parser;
@@ -17,8 +19,6 @@ use std::str::Chars;
 use codepos::Position;
 use codepos::StringPosition;
 use message::Message;
-#[allow(unused_imports)] // don't know what rustc is thinking
-use message::LexicalMessage; 
 use message::MessageCollection;
 
 use super::v0lexer::V0Token;
@@ -77,15 +77,14 @@ impl fmt::Debug for V1Token {
 pub struct V1Lexer<'chs> {
     v0: BufV0Lexer<'chs>,
 }
-impl<'chs> From<Chars<'chs>> for V1Lexer<'chs> {
-    fn from(content_chars: Chars<'chs>) -> V1Lexer {
-        V1Lexer { 
-            v0: BufV0Lexer::from(content_chars),
-        }
-    }
-}
 
 impl<'chs> IDetailLexer<'chs, V1Token> for V1Lexer<'chs> {
+
+    fn new(content_chars: Chars<'chs>) -> V1Lexer {
+        V1Lexer { 
+            v0: BufV0Lexer::new(content_chars),
+        }
+    }
     
     fn position(&self) -> Position { self.v0.inner().position() }
 
@@ -232,12 +231,13 @@ impl<'chs> IDetailLexer<'chs, V1Token> for V1Lexer<'chs> {
 pub type BufV1Token = BufToken<V1Token>;
 pub type BufV1Lexer<'chs> = BufLexer<V1Lexer<'chs>, V1Token>;
 
-#[cfg(test)] #[test]
+#[cfg(test)]
+#[test]
 fn v1_base() {
 
     macro_rules! test_case {
         ($program: expr, [$($expect: expr)*] [$($expect_msg: expr)*]) => ({
-            let mut v1lexer = V1Lexer::from($program.chars());
+            let mut v1lexer = V1Lexer::new($program.chars());
             let messages = &mut MessageCollection::new();
             $(
                 match v1lexer.next(messages) {
@@ -260,10 +260,10 @@ fn v1_base() {
             test_case!($program, [$($expect)*] [])
         });
     }
-    macro_rules! is_o {
+    macro_rules! other {
         ($ch: expr, $row: expr, $col: expr) => (V1Token::Other{ ch: $ch, pos: make_pos!($row, $col) })
     }
-    macro_rules! is_char {
+    macro_rules! ch {
         ($ch: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr) => (
             V1Token::CharLiteral{ inner: CharLiteral{ value: Some($ch), pos: StringPosition::from4($row1, $col1, $row2, $col2) } }
         );
@@ -271,7 +271,7 @@ fn v1_base() {
             V1Token::CharLiteral{ inner: CharLiteral{ value: None, pos: StringPosition::from4($row1, $col1, $row2, $col2) } }
         )
     }
-    macro_rules! is_string {
+    macro_rules! string {
         ($row1: expr, $col1: expr, $row2: expr, $col2: expr, $is_raw: expr) => 
             (V1Token::StringLiteral { inner: StringLiteral::new(None, StringPosition::from4($row1, $col1, $row2, $col2), $is_raw) });
         ($val: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr, $is_raw: expr) => 
@@ -281,39 +281,39 @@ fn v1_base() {
     // Line comment as \n
     test_case!{ "ABC//DEF\n",           // C6, C1, C12, C11, C7
         [
-            is_o!('A', 1, 1)
-            is_o!('B', 1, 2)
-            is_o!('C', 1, 3)
-            is_o!('\n', 1, 9)
+            other!('A', 1, 1)
+            other!('B', 1, 2)
+            other!('C', 1, 3)
+            other!('\n', 1, 9)
         ]
     }
     // Line comment EOF is not error
     test_case!{ "ABC//DEF",             // C6, C1, C12, C13
         [
-            is_o!('A', 1, 1)
-            is_o!('B', 1, 2)
-            is_o!('C', 1, 3)
+            other!('A', 1, 1)
+            other!('B', 1, 2)
+            other!('C', 1, 3)
         ]
     }
 
     // Block comment is ' '
     test_case!{ "A/*D\nEF*/GH",         // C6, C2, C9, C8
         [
-            is_o!('A', 1, 1)
-            is_o!(' ', 1, 2)
-            is_o!('G', 2, 5)
-            is_o!('H', 2, 6)
+            other!('A', 1, 1)
+            other!(' ', 1, 2)
+            other!('G', 2, 5)
+            other!('H', 2, 6)
         ]
     }
     // EOF in block comment is error
     test_case!{ "A/*BC",                // C6, C2, C9, C10
         [
-            is_o!('A', 1, 1)
+            other!('A', 1, 1)
         ]
         [
             Message::new_by_str(error_strings::UnexpectedEOF, vec![
-                (StringPosition::double(make_pos!(1, 2)), error_strings::BlockCommentStartHere),
-                (StringPosition::double(make_pos!(1, 6)), error_strings::EOFHere),
+                (make_str_pos!(1, 2, 1, 2), error_strings::BlockCommentStartHere),
+                (make_str_pos!(1, 6, 1, 6), error_strings::EOFHere),
             ])
         ]
     }
@@ -321,233 +321,281 @@ fn v1_base() {
     // String literal test cases
     test_case!{ r#""Hello, world!""#,
         [
-            is_string!("Hello, world!", 1, 1, 1, 15, false)
+            string!("Hello, world!", 1, 1, 1, 15, false)
         ]
     }
     test_case!{ r#""He"#,
         [
-            is_string!(1, 1, 1, 4, false)
+            string!(1, 1, 1, 4, false)
         ]
         [
-            LexicalMessage::UnexpectedEndofFileInStringLiteral{ 
-                literal_start: make_pos!(1, 1), 
-                eof_pos: make_pos!(1, 4), 
-                hint_escaped_quote_pos: None,
-            }
+            Message::new_by_str(error_strings::UnexpectedEOF, vec![
+                (make_str_pos!(1, 1, 1, 1), error_strings::StringLiteralStartHere),
+                (make_str_pos!(1, 4, 1, 4), error_strings::EOFHere)
+            ])
         ]
     }
     test_case!{ r#""He\"l\"lo"#,
         [
-            is_string!(1, 1, 1, 11, false)
+            string!(1, 1, 1, 11, false)
         ]
         [
-            LexicalMessage::UnexpectedEndofFileInStringLiteral{
-                literal_start: make_pos!(1, 1), 
-                eof_pos: make_pos!(1, 11), 
-                hint_escaped_quote_pos: Some(make_pos!(1, 7)),
-            }
+            Message::new_by_str(error_strings::UnexpectedEOF, vec![
+                (make_str_pos!(1, 1, 1, 1), error_strings::StringLiteralStartHere),
+                (make_str_pos!(1, 11, 1, 11), error_strings::EOFHere),
+                (make_str_pos!(1, 7, 1, 7), error_strings::LastEscapedQuoteHere),
+            ])
         ]
     }
     test_case!{ r#""H\t\n\0\'\"llo""#,
         [
-            is_string!("H\t\n\0'\"llo", 1, 1, 1, 16, false)
+            string!("H\t\n\0'\"llo", 1, 1, 1, 16, false)
         ]
     }
     test_case!{ r#""h\c\d\e\n\g""#,
         [
-            is_string!(1, 1, 1, 13, false)
+            string!(1, 1, 1, 13, false)
         ]
         [
-            LexicalMessage::UnrecognizedEscapeCharInStringLiteral{ 
-                literal_start: make_pos!(1, 1), unrecogonize_pos: make_pos!(1, 3), unrecogonize_escape: 'c' }
-            LexicalMessage::UnrecognizedEscapeCharInStringLiteral{ 
-                literal_start: make_pos!(1, 1), unrecogonize_pos: make_pos!(1, 5), unrecogonize_escape: 'd' }
-            LexicalMessage::UnrecognizedEscapeCharInStringLiteral{ 
-                literal_start: make_pos!(1, 1), unrecogonize_pos: make_pos!(1, 7), unrecogonize_escape: 'e' }
-            LexicalMessage::UnrecognizedEscapeCharInStringLiteral{ 
-                literal_start: make_pos!(1, 1), unrecogonize_pos: make_pos!(1, 11), unrecogonize_escape: 'g' }
+            Message::new(format!("{} '\\{}'", error_strings::UnknownCharEscape, 'c'), vec![
+                (make_str_pos!(1, 1, 1, 1), error_strings::StringLiteralStartHere.to_owned()),
+                (make_str_pos!(1, 3, 1, 3), error_strings::UnknownCharEscapeHere.to_owned()),
+            ])
+            Message::new(format!("{} '\\{}'", error_strings::UnknownCharEscape, 'd'), vec![
+                (make_str_pos!(1, 1, 1, 1), error_strings::StringLiteralStartHere.to_owned()),
+                (make_str_pos!(1, 5, 1, 5), error_strings::UnknownCharEscapeHere.to_owned()),
+            ])
+            Message::new(format!("{} '\\{}'", error_strings::UnknownCharEscape, 'e'), vec![
+                (make_str_pos!(1, 1, 1, 1), error_strings::StringLiteralStartHere.to_owned()),
+                (make_str_pos!(1, 7, 1, 7), error_strings::UnknownCharEscapeHere.to_owned()),
+            ])
+            Message::new(format!("{} '\\{}'", error_strings::UnknownCharEscape, 'g'), vec![
+                (make_str_pos!(1, 1, 1, 1), error_strings::StringLiteralStartHere.to_owned()),
+                (make_str_pos!(1, 11, 1, 11), error_strings::UnknownCharEscapeHere.to_owned()),
+            ])
         ]
     }
     test_case!{ r#""H\uABCDel""#,
         [
-            is_string!("H\u{ABCD}el", 1, 1, 1, 11, false)
+            string!("H\u{ABCD}el", 1, 1, 1, 11, false)
         ]
     }
     test_case!{ r#""H\uABCHel\uABCg""#,
         [
-            is_string!(1, 1, 1, 17, false)
+            string!(1, 1, 1, 17, false)
         ]
         [
-            LexicalMessage::UnexpectedCharInUnicodeCharEscape{ 
-                escape_start: make_pos!(1, 3), unexpected_char_pos: make_pos!(1, 8), unexpected_char: 'H' }
-            LexicalMessage::UnexpectedCharInUnicodeCharEscape{ 
-                escape_start: make_pos!(1, 11), unexpected_char_pos: make_pos!(1, 16), unexpected_char: 'g' }
+            Message::with_help_by_str(error_strings::InvalidUnicodeCharEscape, vec![
+                (make_str_pos!(1, 3, 1, 3), error_strings::UnicodeCharEscapeStartHere),
+                (make_str_pos!(1, 8, 1, 8), error_strings::UnicodeCharEscapeInvalidChar)
+            ], vec![
+                error_strings::UnicodeCharEscapeHelpSyntax,
+            ])
+            Message::with_help_by_str(error_strings::InvalidUnicodeCharEscape, vec![
+                (make_str_pos!(1, 11, 1, 11), error_strings::UnicodeCharEscapeStartHere),
+                (make_str_pos!(1, 16, 1, 16), error_strings::UnicodeCharEscapeInvalidChar)
+            ], vec![
+                error_strings::UnicodeCharEscapeHelpSyntax,
+            ])
         ]
     }
     test_case!{ r#""H\U0011ABCD""#,
-        [is_string!(1, 1, 1, 13, false)]
+        [string!(1, 1, 1, 13, false)]
         [
-            LexicalMessage::IncorrectUnicodeCharEscapeValue{ 
-                escape_start: make_pos!(1, 3), 
-                raw_value: "0011ABCD".to_owned() 
-            }
+            Message::with_help(error_strings::InvalidUnicodeCharEscape.to_owned(), vec![
+                (make_str_pos!(1, 3, 1, 3), error_strings::UnicodeCharEscapeStartHere.to_owned()),
+            ], vec![
+                format!("{}{}", error_strings::UnicodeCharEscapeCodePointValueIs, "0011ABCD".to_owned()),
+                error_strings::UnicodeCharEscapeHelpValue.to_owned(),
+            ])
         ]
     }
     test_case!{ r#""H\u""#,
-        [is_string!(1, 1, 1, 5, false)]
+        [string!(1, 1, 1, 5, false)]
         [
-            LexicalMessage::UnexpectedStringLiteralEndInUnicodeCharEscape{
-                literal_start: make_pos!(1, 1), 
-                escape_start: make_pos!(1, 3), 
-                unexpected_end_pos: make_pos!(1, 5),
-            }
+            Message::with_help_by_str(error_strings::UnexpectedStringLiteralEnd, vec![
+                (make_str_pos!(1, 1, 1, 1), error_strings::StringLiteralStartHere),
+                (make_str_pos!(1, 3, 1, 3), error_strings::UnicodeCharEscapeStartHere),
+                (make_str_pos!(1, 5, 1, 5), error_strings::StringLiteralEndHere),
+            ], vec![
+                error_strings::UnicodeCharEscapeHelpSyntax,
+            ])
         ]
     }
     test_case!{ r#""h\U123"#,
-        [is_string!(1, 1, 1, 8, false)]
+        [string!(1, 1, 1, 8, false)]
         [
-            LexicalMessage::UnexpectedEndofFileInStringLiteral{ 
-                literal_start: make_pos!(1, 1), 
-                eof_pos: make_pos!(1, 8), 
-                hint_escaped_quote_pos: None,
-            }
+            Message::new_by_str(error_strings::UnexpectedEOF, vec![
+                (make_str_pos!(1, 1, 1, 1), error_strings::StringLiteralStartHere),
+                (make_str_pos!(1, 8, 1, 8), error_strings::EOFHere)
+            ])
         ]
     }
     test_case!{ r#""he\"#,
-        [is_string!(1, 1, 1, 5, false)]
+        [string!(1, 1, 1, 5, false)]
         [
-            LexicalMessage::UnexpectedEndofFileInStringLiteral{ 
-                literal_start: make_pos!(1, 1), 
-                eof_pos: make_pos!(1, 5), 
-                hint_escaped_quote_pos: None,
-            }
+            Message::new_by_str(error_strings::UnexpectedEOF, vec![
+                (make_str_pos!(1, 1, 1, 1), error_strings::StringLiteralStartHere),
+                (make_str_pos!(1, 5, 1, 5), error_strings::EOFHere)
+            ])
         ]
     }
 
     // Raw string literal test cases
     test_case!{ r#"r"hell\u\no""#,
-        [is_string!(r"hell\u\no", 1, 1, 1, 12, true)]
+        [string!(r"hell\u\no", 1, 1, 1, 12, true)]
     }
     test_case!{ r#"R"he"#,
-        [is_string!(1, 1, 1, 5, true)]
+        [string!(1, 1, 1, 5, true)]
         [
-            LexicalMessage::UnexpectedEndofFileInStringLiteral{ 
-                literal_start: make_pos!(1, 1), 
-                eof_pos: make_pos!(1, 5), 
-                hint_escaped_quote_pos: None,
-            }
+            Message::new_by_str(error_strings::UnexpectedEOF, vec![
+                (make_str_pos!(1, 1, 1, 1), error_strings::StringLiteralStartHere),
+                (make_str_pos!(1, 5, 1, 5), error_strings::EOFHere)
+            ])
         ]
     }
 
     // Char literal test cases
     test_case!{ "'A'",
-        [is_char!('A', 1, 1, 1, 3)]
+        [ch!('A', 1, 1, 1, 3)]
     }
     test_case!{ r"'\t'", 
-        [is_char!('\t', 1, 1, 1, 4)]
+        [ch!('\t', 1, 1, 1, 4)]
     }
     test_case!{ r"'\uABCD'",
-        [is_char!('\u{ABCD}', 1, 1, 1, 8)]
+        [ch!('\u{ABCD}', 1, 1, 1, 8)]
     }
     test_case!{ "''",
-        [is_char!(1, 1, 1, 2)]
-        [LexicalMessage::EmptyCharLiteral{ pos: make_pos!(1, 1) }]
+        [ch!(1, 1, 1, 2)]
+        [
+            Message::with_help_by_str(error_strings::EmptyCharLiteral, vec![
+                (make_str_pos!(1, 1, 1, 1), error_strings::CharLiteralStartHere),
+            ], vec![
+                error_strings::CharLiteralSyntaxHelp1
+            ])
+        ]
     }
     test_case!{ "'ABC'",
-        [is_char!(1, 1, 1, 5)]
-        [LexicalMessage::CharLiteralTooLong{ start_pos: make_pos!(1, 1) }]
+        [ch!(1, 1, 1, 5)]
+        [
+            Message::new_by_str(error_strings::CharLiteralTooLong, vec![
+                (make_str_pos!(1, 1, 1, 1), error_strings::CharLiteralStartHere),
+                (make_str_pos!(1, 5, 1, 5), error_strings::CharLiteralEndHere),
+            ])
+        ]
     }
     test_case!{ r"'\c'",
-        [is_char!(1, 1, 1, 4)]
+        [ch!(1, 1, 1, 4)]
         [
-            LexicalMessage::UnrecognizedEscapeCharInCharLiteral{
-                literal_start: make_pos!(1, 1),
-                unrecogonize_pos: make_pos!(1, 2),
-                unrecogonize_escape: 'c',
-            }
+            Message::new(format!("{} '\\{}'", error_strings::UnknownCharEscape, 'c'), vec![
+                (make_str_pos!(1, 1, 1, 1), error_strings::CharLiteralStartHere.to_owned()),
+                (make_str_pos!(1, 2, 1, 2), error_strings::UnknownCharEscapeHere.to_owned()),
+            ])
         ]
     }
     test_case!{ r"'\uBG'",
-        [is_char!(1, 1, 1, 6)]
+        [ch!(1, 1, 1, 6)]
         [
-            LexicalMessage::UnexpectedCharInUnicodeCharEscape{ 
-                escape_start: make_pos!(1, 2),
-                unexpected_char_pos: make_pos!(1, 5),
-                unexpected_char: 'G' }
-            LexicalMessage::UnexpectedCharLiteralEndInUnicodeCharEscape {
-                literal_start: make_pos!(1, 1),
-                escape_start: make_pos!(1, 2),
-                unexpected_end_pos: make_pos!(1, 6) }
+            Message::with_help_by_str(error_strings::InvalidUnicodeCharEscape, vec![
+                (make_str_pos!(1, 2, 1, 2), error_strings::UnicodeCharEscapeStartHere),
+                (make_str_pos!(1, 5, 1, 5), error_strings::UnicodeCharEscapeInvalidChar)
+            ], vec![
+                error_strings::UnicodeCharEscapeHelpSyntax,
+            ])
+            Message::with_help_by_str(error_strings::UnexpectedCharLiteralEnd, vec![
+                (make_str_pos!(1, 1, 1, 1), error_strings::CharLiteralStartHere),
+                (make_str_pos!(1, 6, 1, 6), error_strings::CharLiteralEndHere)
+            ], vec![
+                error_strings::UnicodeCharEscapeHelpSyntax
+            ])
         ]
     }
     test_case!{ r"'\U0011ABCD'",
-        [is_char!(1, 1, 1, 12)]
+        [ch!(1, 1, 1, 12)]
         [
-            LexicalMessage::IncorrectUnicodeCharEscapeValue{
-                escape_start: make_pos!(1, 2),
-                raw_value: "0011ABCD".to_owned()
-            }
+            Message::with_help(error_strings::InvalidUnicodeCharEscape.to_owned(), vec![
+                (make_str_pos!(1, 2, 1, 2), error_strings::UnicodeCharEscapeStartHere.to_owned()),
+            ], vec![
+                format!("{}{}", error_strings::UnicodeCharEscapeCodePointValueIs, "0011ABCD".to_owned()),
+                error_strings::UnicodeCharEscapeHelpValue.to_owned(),
+            ])
         ]
     }
     test_case!{ r"'\na'",
-        [is_char!(1, 1, 1, 5)]
-        [LexicalMessage::CharLiteralTooLong{ start_pos: make_pos!(1, 1) }]
+        [ch!(1, 1, 1, 5)]
+        [
+            Message::new_by_str(error_strings::CharLiteralTooLong, vec![
+                (make_str_pos!(1, 1, 1, 1), error_strings::CharLiteralStartHere),
+                (make_str_pos!(1, 5, 1, 5), error_strings::CharLiteralEndHere),
+            ])
+        ]
     }
     test_case!{ r"'\uABCDA'",
-        [is_char!(1, 1, 1, 9)]
-        [LexicalMessage::CharLiteralTooLong{ start_pos: make_pos!(1, 1) }] 
+        [ch!(1, 1, 1, 9)]
+        [
+            Message::new_by_str(error_strings::CharLiteralTooLong, vec![
+                (make_str_pos!(1, 1, 1, 1), error_strings::CharLiteralStartHere),
+                (make_str_pos!(1, 9, 1, 9), error_strings::CharLiteralEndHere),
+            ])
+        ] 
     }
     test_case!{ "'",
-        [is_char!(1, 1, 1, 2)]
+        [ch!(1, 1, 1, 2)]
         [
-            LexicalMessage::UnexpectedEndofFileInCharLiteral{ 
-                literal_start: make_pos!(1, 1), 
-                eof_pos: make_pos!(1, 2), 
-            }
+            Message::new_by_str(error_strings::UnexpectedEOF, vec![
+                (make_str_pos!(1, 1, 1, 1), error_strings::CharLiteralStartHere),
+                (make_str_pos!(1, 2, 1, 2), error_strings::EOFHere)
+            ])
         ]
     }
     test_case!{ r"'\",
-        [is_char!(1, 1, 1, 3)]
+        [ch!(1, 1, 1, 3)]
         [
-            LexicalMessage::UnexpectedEndofFileInCharLiteral{ 
-                literal_start: make_pos!(1, 1), 
-                eof_pos: make_pos!(1, 3), 
-            }
+            Message::new_by_str(error_strings::UnexpectedEOF, vec![
+                (make_str_pos!(1, 1, 1, 1), error_strings::CharLiteralStartHere),
+                (make_str_pos!(1, 3, 1, 3), error_strings::EOFHere)
+            ])
         ]
     }
     test_case!{ r"'\u",
-        [is_char!(1, 1, 1, 4)]
+        [ch!(1, 1, 1, 4)]
         [
-            LexicalMessage::UnexpectedEndofFileInCharLiteral{ 
-                literal_start: make_pos!(1, 1), 
-                eof_pos: make_pos!(1, 4), 
-            }
+            Message::new_by_str(error_strings::UnexpectedEOF, vec![
+                (make_str_pos!(1, 1, 1, 1), error_strings::CharLiteralStartHere),
+                (make_str_pos!(1, 4, 1, 4), error_strings::EOFHere)
+            ])
         ]
     }
     test_case! { r"'A",
-        [is_char!(1, 1, 1, 3)]
+        [ch!(1, 1, 1, 3)]
         [
-            LexicalMessage::UnexpectedEndofFileInCharLiteral{ 
-                literal_start: make_pos!(1, 1), 
-                eof_pos: make_pos!(1, 3), 
-            }
+            Message::new_by_str(error_strings::UnexpectedEOF, vec![
+                (make_str_pos!(1, 1, 1, 1), error_strings::CharLiteralStartHere),
+                (make_str_pos!(1, 3, 1, 3), error_strings::EOFHere)
+            ])
         ]
     }
     test_case! { "'ABC",
-        [is_char!(1, 1, 1, 5)]
+        [ch!(1, 1, 1, 5)]
         [
-            LexicalMessage::UnexpectedEndofFileInCharLiteral{ 
-                literal_start: make_pos!(1, 1), 
-                eof_pos: make_pos!(1, 5) 
-            }
+            Message::new_by_str(error_strings::UnexpectedEOF, vec![
+                (make_str_pos!(1, 1, 1, 1), error_strings::CharLiteralStartHere),
+                (make_str_pos!(1, 5, 1, 5), error_strings::EOFHere)
+            ])
         ]
     }
     test_case!{ r"'\'AB",
         [
-            is_char!(1, 1, 1, 3)
-            is_o!('A', 1, 4)
-            is_o!('B', 1, 5)
+            ch!(1, 1, 1, 3)
+            other!('A', 1, 4)
+            other!('B', 1, 5)
         ]
-        [LexicalMessage::InvalidEscapeInCharLiteral{ start_pos: make_pos!(1, 1) }]
+        [
+            Message::with_help_by_str(error_strings::UnknownCharEscape, vec![
+                (make_str_pos!(1, 1, 1, 3), "")
+            ], vec![
+                error_strings::SingleQuoteOrBackSlashCharLiteralMaybeHelp
+            ])
+        ]
     }
 }

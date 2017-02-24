@@ -71,14 +71,6 @@ impl fmt::Debug for V2Token {
 pub struct V2Lexer<'chs> {
     v1: BufV1Lexer<'chs>,
 }
-impl<'chs> From<Chars<'chs>> for V2Lexer<'chs> {
-
-    fn from(content_chars: Chars<'chs>) -> V2Lexer<'chs> {
-        V2Lexer { 
-            v1: BufV1Lexer::from(content_chars),
-        }
-    }
-}
 
 trait IdentifierChar {
 
@@ -116,6 +108,12 @@ impl IdentifierChar for char {
 }
 
 impl<'chs> IDetailLexer<'chs, V2Token> for V2Lexer<'chs> {
+
+    fn new(content_chars: Chars<'chs>) -> V2Lexer<'chs> {
+        V2Lexer { 
+            v1: BufV1Lexer::new(content_chars),
+        }
+    }
 
     fn position(&self) -> Position { self.v1.inner().position() }
 
@@ -227,7 +225,7 @@ mod tests {
     
     macro_rules! test_case {
         ($program: expr, $($expect: expr, )*) => ({
-            let mut v2lexer = V2Lexer::from($program.chars());
+            let mut v2lexer = V2Lexer::new($program.chars());
             let mut messages = MessageEmitter::new();
             let mut v2s = Vec::new();
             loop {
@@ -340,7 +338,7 @@ mod tests {
 
         macro_rules! test_case_buf {
             ($program: expr) => ({
-                let mut bufv2 = BufV2Lexer::from($program.chars());
+                let mut bufv2 = BufV2Lexer::new($program.chars());
                 let mut messages = MessageEmitter::new();
                 loop {
                     match bufv2.next(&mut messages) {

@@ -40,16 +40,6 @@ pub struct V0Lexer<'chs> {
     previous_is_new_line: bool,
 }
 
-impl<'chs> From<Chars<'chs>> for V0Lexer<'chs> {
-    fn from(content_chars: Chars<'chs>) -> V0Lexer {
-        V0Lexer {
-            chars: content_chars,
-            text_pos: Position::with_row_and_col(1, 0),
-            previous_is_new_line: false,
-        }
-    }
-}
-
 impl<'chs> V0Lexer<'chs> {
     
     // get next char not CR
@@ -67,6 +57,14 @@ impl<'chs> V0Lexer<'chs> {
 }
 
 impl<'chs> IDetailLexer<'chs, V0Token> for V0Lexer<'chs> {
+
+    fn new(content_chars: Chars<'chs>) -> V0Lexer {
+        V0Lexer {
+            chars: content_chars,
+            text_pos: Position::with_row_and_col(1, 0),
+            previous_is_new_line: false,
+        }
+    }
 
     fn position(&self) -> Position { self.text_pos }
 
@@ -109,7 +107,7 @@ pub fn v0_next_no_cr_visitor(lexer: &mut V0Lexer) -> Option<char> {
 #[test]
 fn v0_test1() {
 
-    let mut v0lexer = V0Lexer::from("\rabc\r\ref\r".chars());
+    let mut v0lexer = V0Lexer::new("\rabc\r\ref\r".chars());
     let mut result = Vec::new();
     loop {
         match v0_next_no_cr_visitor(&mut v0lexer) {
@@ -119,7 +117,7 @@ fn v0_test1() {
     }
     assert_eq!(result, vec!['a', 'b', 'c', 'e', 'f']);
 
-    let mut v0lexer = V0Lexer::from("abc\r\re\rf".chars());
+    let mut v0lexer = V0Lexer::new("abc\r\re\rf".chars());
     let mut result = Vec::new();
     loop {
         match v0_next_no_cr_visitor(&mut v0lexer) {
@@ -129,7 +127,7 @@ fn v0_test1() {
     }
     assert_eq!(result, vec!['a', 'b', 'c', 'e', 'f']);
 
-    let mut v0lexer = V0Lexer::from("\r\r\r\r".chars());
+    let mut v0lexer = V0Lexer::new("\r\r\r\r".chars());
     match v0_next_no_cr_visitor(&mut v0lexer) {
         None => (),
         Some(t) => panic!("Unexpected v0token: {:?}", t),
@@ -143,7 +141,7 @@ fn v0_test2() {
 
     macro_rules! test_case {
         ($input: expr, $($ch: expr, $row: expr, $col: expr, )*) => (
-            let mut v0lexer = V0Lexer::from($input.chars());
+            let mut v0lexer = V0Lexer::new($input.chars());
             let mut v0s = Vec::new();
             let mut dummy = MessageCollection::new();
             loop {
@@ -229,7 +227,7 @@ fn v0_buf() {
 
     macro_rules! test_case {
         ($program: expr, $($ch: expr, $row: expr, $col: expr, )*) => (
-            let mut bufv0lexer = BufV0Lexer::from($program.chars());
+            let mut bufv0lexer = BufV0Lexer::new($program.chars());
             let mut bufv0s = Vec::new();
             let mut dummy = MessageCollection::new();
             loop {

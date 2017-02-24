@@ -603,7 +603,7 @@ pub struct MessageCollection {
 impl fmt::Debug for MessageCollection {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for message in &self.messages {
-            try!(writeln!(f, "{:?}", message));
+            try!(writeln!(f, "{:?}\n", message));
         }
         Ok(())
     }

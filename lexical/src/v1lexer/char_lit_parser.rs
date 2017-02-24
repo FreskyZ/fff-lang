@@ -4,7 +4,6 @@
 use codepos::Position;
 use codepos::StringPosition;
 use message::Message;
-use message::LexicalMessage;
 use message::MessageCollection;
 use super::super::symbol_type::char_literal::CharLiteral;
 use super::error_strings;
@@ -224,11 +223,9 @@ impl CharLiteralParser {
                             coverage_recorder.insert(15);                           // C15, most normal finish
                             if self.prepare_to_too_long {
                                 coverage_recorder.insert(19);                       // C19, actual report too long
-                                messages.push(Message::with_help_by_str(error_strings::CharLiteralTooLong, vec![
+                                messages.push(Message::new_by_str(error_strings::CharLiteralTooLong, vec![
                                     (StringPosition::double(self.start_pos), error_strings::CharLiteralStartHere),
                                     (StringPosition::double(pos), error_strings::CharLiteralEndHere),
-                                ], vec![
-                                    error_strings::StringLiteralSyntaxHelp,
                                 ]));
                             }
                             return CharLiteralParserResult::Finished(CharLiteral{ 
@@ -358,11 +355,9 @@ fn char_lit_parser() {
         assert_eq!(parser.input(Some('\''), spec_pos4, Some('$'), messages, current_counter), 
             Finished(CharLiteral{ value: None, pos: StringPosition::from2(spec_pos1, spec_pos4) }));
                                  
-        messages_expect!(messages, [Message::with_help_by_str(error_strings::CharLiteralTooLong, vec![
+        messages_expect!(messages, [Message::new_by_str(error_strings::CharLiteralTooLong, vec![
             (StringPosition::double(spec_pos1), error_strings::CharLiteralStartHere),
             (StringPosition::double(spec_pos4), error_strings::CharLiteralEndHere),
-        ], vec![
-            error_strings::StringLiteralSyntaxHelp,
         ])]);
         counter_expect!(current_counter, all_counter, [11 15 16 17 19]);
     }
@@ -395,11 +390,12 @@ fn char_lit_parser() {
             Finished(CharLiteral{ value: None, pos: StringPosition::from2(spec_pos1, spec_pos2) }));
         
         messages_expect!(messages, [
-            LexicalMessage::UnexpectedCharInUnicodeCharEscape {
-                escape_start: spec_pos3,
-                unexpected_char_pos: spec_pos5,
-                unexpected_char: 'G' 
-            }
+            Message::with_help_by_str(error_strings::InvalidUnicodeCharEscape, vec![
+                (StringPosition::double(spec_pos3), error_strings::UnicodeCharEscapeStartHere),
+                (StringPosition::double(spec_pos5), error_strings::UnicodeCharEscapeInvalidChar)
+            ], vec![
+                error_strings::UnicodeCharEscapeHelpSyntax,
+            ])
             Message::with_help_by_str(error_strings::UnexpectedCharLiteralEnd, vec![
                 (StringPosition::double(spec_pos1), error_strings::CharLiteralStartHere),
                 (StringPosition::double(spec_pos2), error_strings::CharLiteralEndHere)
@@ -428,9 +424,12 @@ fn char_lit_parser() {
             Finished(CharLiteral{ value: None, pos: StringPosition::from2(spec_pos1, spec_pos2) }));
         
         messages_expect!(messages, [
-            LexicalMessage::IncorrectUnicodeCharEscapeValue{ 
-                escape_start: spec_pos3,
-                raw_value: "0011ABCD".to_owned() }
+            Message::with_help(error_strings::InvalidUnicodeCharEscape.to_owned(), vec![
+                (StringPosition::double(spec_pos3), error_strings::UnicodeCharEscapeStartHere.to_owned()),
+            ], vec![
+                format!("{}{}", error_strings::UnicodeCharEscapeCodePointValueIs, "0011ABCD"),
+                error_strings::UnicodeCharEscapeHelpValue.to_owned(),
+            ])
         ]);
         counter_expect!(current_counter, all_counter, [9 1 13 2 12 15]);
     }
@@ -445,11 +444,9 @@ fn char_lit_parser() {
         assert_eq!(parser.input(Some('\''), spec_pos2, Some('$'), messages, current_counter), 
             Finished(CharLiteral{ value: None, pos: StringPosition::from2(spec_pos1, spec_pos2) }));
         
-        messages_expect!(messages, [Message::with_help_by_str(error_strings::CharLiteralTooLong, vec![
+        messages_expect!(messages, [Message::new_by_str(error_strings::CharLiteralTooLong, vec![
             (StringPosition::double(spec_pos1), error_strings::CharLiteralStartHere),
             (StringPosition::double(spec_pos2), error_strings::CharLiteralEndHere),
-        ], vec![
-            error_strings::StringLiteralSyntaxHelp,
         ])]);
         counter_expect!(current_counter, all_counter, [7 16 17 15 19]);
     }
@@ -468,11 +465,9 @@ fn char_lit_parser() {
         assert_eq!(parser.input(Some('\''), spec_pos2, Some('$'), messages, current_counter), 
             Finished(CharLiteral{ value: None, pos: StringPosition::from2(spec_pos1, spec_pos2) }));
         
-        messages_expect!(messages, [Message::with_help_by_str(error_strings::CharLiteralTooLong, vec![
+        messages_expect!(messages, [Message::new_by_str(error_strings::CharLiteralTooLong, vec![
             (StringPosition::double(spec_pos1), error_strings::CharLiteralStartHere),
             (StringPosition::double(spec_pos2), error_strings::CharLiteralEndHere),
-        ], vec![
-            error_strings::StringLiteralSyntaxHelp,
         ])]);
         counter_expect!(current_counter, all_counter, [9 1 12 3 13 16 17 15 19]);
     }
