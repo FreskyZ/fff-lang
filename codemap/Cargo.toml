@@ -5,3 +5,7 @@ authors = ["FreskyZ <fresky7@outlook.com>"]
 
 [dependencies]
 codepos = { path = "../codepos" }
+
+[lib]
+name = "codemap"
+path = "lib.rs"

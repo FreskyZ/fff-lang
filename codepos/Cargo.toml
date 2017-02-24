@@ -4,3 +4,8 @@ version = "0.1.0"
 authors = ["FreskyZ <fresky7@outlook.com>"]
 
 [dependencies]
+
+
+[lib]
+name = "codepos"
+path = "lib.rs"
