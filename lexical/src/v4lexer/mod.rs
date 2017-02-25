@@ -5,7 +5,7 @@ use std::fmt;
 use codepos::StringPosition;
 use message::SyntaxMessage;
 use message::LegacyMessage as Message;
-use message::MessageEmitter;
+use message::MessageCollection;
 
 use super::symbol_type::string_literal::StringLiteral;
 use super::symbol_type::char_literal::CharLiteral;
@@ -172,7 +172,7 @@ impl IToken for V4Token {
 pub struct V4Lexer {
     buf: Vec<V4Token>,
     eof_token: V4Token,
-    messages: MessageEmitter,
+    messages: MessageCollection,
 }
 
 impl V4Lexer {
@@ -180,8 +180,8 @@ impl V4Lexer {
     pub fn new(content: &str) -> V4Lexer {
         use super::buf_lexer::IDetailLexer;
 
-        let mut messages = MessageEmitter::new();
-        let mut v3lexer = V3Lexer::new(content.chars());
+        let mut messages = MessageCollection::new();
+        let mut v3lexer = V3Lexer::new(content.chars(), &mut messages);
         let mut buf = Vec::new();
         loop {
             match v3lexer.next(&mut messages) {
@@ -216,7 +216,7 @@ impl V4Lexer {
         }
     }
 
-    // MessageEmitter
+    // MessageCollection
     pub fn push<T: Into<Message>>(&mut self, message: T) {
         self.messages.push(message);
     }
@@ -248,10 +248,10 @@ impl V4Lexer {
         });
         return (None, sym_size);
     }
-    pub fn messages(&self) -> &MessageEmitter {
+    pub fn messages(&self) -> &MessageCollection {
         &self.messages
     }
-    pub fn into_messages(self) -> MessageEmitter {
+    pub fn into_messages(self) -> MessageCollection {
         self.messages
     }
 }

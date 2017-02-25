@@ -1,6 +1,5 @@
 
 // String literal parser
-
 use codepos::Position;
 use codepos::StringPosition;
 use message::Message;
@@ -10,6 +9,7 @@ use super::escape_char_parser::EscapeCharParser;
 use super::escape_char_parser::EscapeCharSimpleCheckResult;
 use super::escape_char_parser::EscapeCharParserResult;
 use super::error_strings;
+use super::super::v0lexer::EOFCHAR;
 
 #[cfg(test)]
 #[derive(Debug)]
@@ -69,11 +69,14 @@ impl StringLiteralParser {
     }
 
     /// Try get string literal, use in state machine of v1, 
-    /// ch is none means get none, next_ch is none means next is none
-    pub fn input(&mut self, ch: Option<char>, pos: Position, next_ch: Option<char>, messages: &mut MessageCollection) -> StringLiteralParserResult {
+    pub fn input(&mut self, ch: char, pos: Position, next_ch: char, messages: &mut MessageCollection) -> StringLiteralParserResult {
 
         match (ch, pos, next_ch) {
-            (Some('\\'), slash_pos, Some(next_ch)) => {
+            ('\\', _1, EOFCHAR) => {                                                // C4, \EOF, ignore
+                // Do nothing here, `"abc\udef$` reports EOF in string error, not end of string or EOF in escape error
+                return StringLiteralParserResult::WantMore;
+            }
+            ('\\', slash_pos, next_ch) => {
                 match EscapeCharParser::simple_check(next_ch) {
                     EscapeCharSimpleCheckResult::Normal(ch) => {                    // C1, normal escape
                         self.raw.push(ch);
@@ -97,11 +100,7 @@ impl StringLiteralParser {
                     }
                 }
             }
-            (Some('\\'), _pos, None) => {                                            // C4, \EOF, ignore
-                // Do nothing here, `"abc\udef$` reports EOF in string error, not end of string or EOF in escape error
-                return StringLiteralParserResult::WantMore;
-            }
-            (Some('"'), pos, _1) => {
+            ('"', pos, _2) => {
                 // String finished, check if is parsing escape
                 match self.escape_parser {
                     Some(ref _parser) => {                                           // C5, \uxxx\EOL, emit error and return
@@ -121,7 +120,23 @@ impl StringLiteralParser {
                     }
                 }
             }
-            (Some(ch), pos, _2) => {
+            (EOFCHAR, pos, _2) => {
+                match self.last_escape_quote_pos {                                      // C12: in string, meet EOF, emit error, return 
+                    Some(escaped_quote_pos_hint) => 
+                        messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
+                            (StringPosition::double(self.start_pos), error_strings::StringLiteralStartHere),
+                            (StringPosition::double(pos), error_strings::EOFHere),
+                            (StringPosition::double(escaped_quote_pos_hint), error_strings::LastEscapedQuoteHere),
+                        ])),
+                    None => 
+                        messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
+                            (StringPosition::double(self.start_pos), error_strings::StringLiteralStartHere),
+                            (StringPosition::double(pos), error_strings::EOFHere),
+                        ]))
+                }
+                return StringLiteralParserResult::Finished(StringLiteral::new(None, StringPosition::from2(self.start_pos, pos), false));
+            }
+            (ch, pos, _2) => {
                 // Normal in string
                 let mut need_reset_escape_parser = false;
                 match self.escape_parser {
@@ -147,22 +162,6 @@ impl StringLiteralParser {
                 }
                 return StringLiteralParserResult::WantMore;
             }
-            (None, pos, _2) => {
-                match self.last_escape_quote_pos {                                      // C12: in string, meet EOF, emit error, return 
-                    Some(escaped_quote_pos_hint) => 
-                        messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
-                            (StringPosition::double(self.start_pos), error_strings::StringLiteralStartHere),
-                            (StringPosition::double(pos), error_strings::EOFHere),
-                            (StringPosition::double(escaped_quote_pos_hint), error_strings::LastEscapedQuoteHere),
-                        ])),
-                    None => 
-                        messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
-                            (StringPosition::double(self.start_pos), error_strings::StringLiteralStartHere),
-                            (StringPosition::double(pos), error_strings::EOFHere),
-                        ]))
-                }
-                return StringLiteralParserResult::Finished(StringLiteral::new(None, StringPosition::from2(self.start_pos, pos), false));
-            }
         }
     }
 }
@@ -182,20 +181,20 @@ fn str_lit_parser() {
     {   // "Hello, world!", most normal,                                    C11, C5, C7
         let mut parser = StringLiteralParser::new(make_pos!(12, 34));
         let messages = &mut MessageCollection::new(); 
-        assert_eq!(parser.input(Some('H'), dummy_pos, Some('e'), messages), WantMore);
-        assert_eq!(parser.input(Some('e'), dummy_pos, Some('l'), messages), WantMore);
-        assert_eq!(parser.input(Some('l'), dummy_pos, Some('l'), messages), WantMore);
-        assert_eq!(parser.input(Some('l'), dummy_pos, Some('o'), messages), WantMore);
-        assert_eq!(parser.input(Some('o'), dummy_pos, Some('o'), messages), WantMore);
-        assert_eq!(parser.input(Some(','), dummy_pos, Some(','), messages), WantMore);
-        assert_eq!(parser.input(Some(' '), dummy_pos, Some(' '), messages), WantMore);
-        assert_eq!(parser.input(Some('w'), dummy_pos, Some('w'), messages), WantMore);
-        assert_eq!(parser.input(Some('o'), dummy_pos, Some('o'), messages), WantMore);
-        assert_eq!(parser.input(Some('r'), dummy_pos, Some('r'), messages), WantMore);
-        assert_eq!(parser.input(Some('l'), dummy_pos, Some('l'), messages), WantMore);
-        assert_eq!(parser.input(Some('d'), dummy_pos, Some('d'), messages), WantMore);
-        assert_eq!(parser.input(Some('!'), dummy_pos, None, messages), WantMore);
-        assert_eq!(parser.input(Some('"'), make_pos!(56, 78), None, messages), 
+        assert_eq!(parser.input('H', dummy_pos, 'e', messages), WantMore);
+        assert_eq!(parser.input('e', dummy_pos, 'l', messages), WantMore);
+        assert_eq!(parser.input('l', dummy_pos, 'l', messages), WantMore);
+        assert_eq!(parser.input('l', dummy_pos, 'o', messages), WantMore);
+        assert_eq!(parser.input('o', dummy_pos, 'o', messages), WantMore);
+        assert_eq!(parser.input(',', dummy_pos, ',', messages), WantMore);
+        assert_eq!(parser.input(' ', dummy_pos, ' ', messages), WantMore);
+        assert_eq!(parser.input('w', dummy_pos, 'w', messages), WantMore);
+        assert_eq!(parser.input('o', dummy_pos, 'o', messages), WantMore);
+        assert_eq!(parser.input('r', dummy_pos, 'r', messages), WantMore);
+        assert_eq!(parser.input('l', dummy_pos, 'l', messages), WantMore);
+        assert_eq!(parser.input('d', dummy_pos, 'd', messages), WantMore);
+        assert_eq!(parser.input('!', dummy_pos, EOFCHAR, messages), WantMore);
+        assert_eq!(parser.input('"', make_pos!(56, 78), EOFCHAR, messages), 
             Finished(StringLiteral::new2("Hello, world!", StringPosition::from4(12, 34, 56, 78), false)));
 
         assert_eq!(messages, &MessageCollection::new());
@@ -205,9 +204,9 @@ fn str_lit_parser() {
         let mut parser = StringLiteralParser::new(spec_pos1);
         let messages = &mut MessageCollection::new();
         let expect_messages = &mut MessageCollection::new();  
-        assert_eq!(parser.input(Some('H'), dummy_pos, Some('e'), messages), WantMore);
-        assert_eq!(parser.input(Some('e'), dummy_pos, Some('l'), messages), WantMore);
-        assert_eq!(parser.input(None, spec_pos2, None, messages), 
+        assert_eq!(parser.input('H', dummy_pos, 'e', messages), WantMore);
+        assert_eq!(parser.input('e', dummy_pos, 'l', messages), WantMore);
+        assert_eq!(parser.input(EOFCHAR, spec_pos2, EOFCHAR, messages), 
             Finished(StringLiteral::new(None, StringPosition::from2(spec_pos1, spec_pos2), false)));
 
         expect_messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
@@ -221,14 +220,14 @@ fn str_lit_parser() {
         let mut parser = StringLiteralParser::new(spec_pos1);
         let messages = &mut MessageCollection::new();
         let expect_messages = &mut MessageCollection::new();
-        assert_eq!(parser.input(Some('H'), dummy_pos, Some('e'), messages), WantMore);
-        assert_eq!(parser.input(Some('e'), dummy_pos, Some('\\'), messages), WantMore);
-        assert_eq!(parser.input(Some('\\'), spec_pos2, Some('"'), messages), WantMoreWithSkip1);
-        assert_eq!(parser.input(Some('l'), dummy_pos, Some('\\'), messages), WantMore);
-        assert_eq!(parser.input(Some('\\'), spec_pos3, Some('"'), messages), WantMoreWithSkip1);
-        assert_eq!(parser.input(Some('l'), dummy_pos, Some('o'), messages), WantMore);
-        assert_eq!(parser.input(Some('o'), dummy_pos, None, messages), WantMore);
-        assert_eq!(parser.input(None, spec_pos4, None, messages), 
+        assert_eq!(parser.input('H', dummy_pos, 'e', messages), WantMore);
+        assert_eq!(parser.input('e', dummy_pos, '\\', messages), WantMore);
+        assert_eq!(parser.input('\\', spec_pos2, '"', messages), WantMoreWithSkip1);
+        assert_eq!(parser.input('l', dummy_pos, '\\', messages), WantMore);
+        assert_eq!(parser.input('\\', spec_pos3, '"', messages), WantMoreWithSkip1);
+        assert_eq!(parser.input('l', dummy_pos, 'o', messages), WantMore);
+        assert_eq!(parser.input('o', dummy_pos, EOFCHAR, messages), WantMore);
+        assert_eq!(parser.input(EOFCHAR, spec_pos4, EOFCHAR, messages), 
             Finished(StringLiteral::new(None, StringPosition::from2(spec_pos1, spec_pos4), false)));
 
         expect_messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
@@ -243,16 +242,16 @@ fn str_lit_parser() {
         let mut parser = StringLiteralParser::new(spec_pos1);
         let messages = &mut MessageCollection::new();
         let expect_messages = &mut MessageCollection::new();
-        assert_eq!(parser.input(Some('H'), dummy_pos, Some('\\'), messages), WantMore);
-        assert_eq!(parser.input(Some('\\'), dummy_pos, Some('t'), messages), WantMoreWithSkip1);
-        assert_eq!(parser.input(Some('\\'), dummy_pos, Some('n'), messages), WantMoreWithSkip1);
-        assert_eq!(parser.input(Some('\\'), dummy_pos, Some('0'), messages), WantMoreWithSkip1);
-        assert_eq!(parser.input(Some('\\'), dummy_pos, Some('\''), messages), WantMoreWithSkip1);
-        assert_eq!(parser.input(Some('\\'), dummy_pos, Some('"'), messages), WantMoreWithSkip1);
-        assert_eq!(parser.input(Some('l'), dummy_pos, Some('l'), messages), WantMore);
-        assert_eq!(parser.input(Some('l'), dummy_pos, Some('o'), messages), WantMore);
-        assert_eq!(parser.input(Some('o'), dummy_pos, Some('"'), messages), WantMore);
-        assert_eq!(parser.input(Some('"'), spec_pos4, Some('$'), messages), 
+        assert_eq!(parser.input('H', dummy_pos, '\\', messages), WantMore);
+        assert_eq!(parser.input('\\', dummy_pos, 't', messages), WantMoreWithSkip1);
+        assert_eq!(parser.input('\\', dummy_pos, 'n', messages), WantMoreWithSkip1);
+        assert_eq!(parser.input('\\', dummy_pos, '0', messages), WantMoreWithSkip1);
+        assert_eq!(parser.input('\\', dummy_pos, '\'', messages), WantMoreWithSkip1);
+        assert_eq!(parser.input('\\', dummy_pos, '"', messages), WantMoreWithSkip1);
+        assert_eq!(parser.input('l', dummy_pos, 'l', messages), WantMore);
+        assert_eq!(parser.input('l', dummy_pos, 'o', messages), WantMore);
+        assert_eq!(parser.input('o', dummy_pos, '"', messages), WantMore);
+        assert_eq!(parser.input('"', spec_pos4, '$', messages), 
             Finished(StringLiteral::new2("H\t\n\0\'\"llo", StringPosition::from2(spec_pos1, spec_pos4), false)));
 
         assert_eq!(messages, expect_messages);
@@ -262,13 +261,13 @@ fn str_lit_parser() {
         let mut parser = StringLiteralParser::new(spec_pos1);
         let messages = &mut MessageCollection::new();
         let expect_messages = &mut MessageCollection::new();
-        assert_eq!(parser.input(Some('H'), dummy_pos, Some('\\'), messages), WantMore);
-        assert_eq!(parser.input(Some('\\'), spec_pos2, Some('c'), messages), WantMoreWithSkip1);
-        assert_eq!(parser.input(Some('\\'), spec_pos3, Some('d'), messages), WantMoreWithSkip1);
-        assert_eq!(parser.input(Some('\\'), spec_pos2, Some('e'), messages), WantMoreWithSkip1);
-        assert_eq!(parser.input(Some('\\'), dummy_pos, Some('n'), messages), WantMoreWithSkip1);
-        assert_eq!(parser.input(Some('\\'), spec_pos3, Some('g'), messages), WantMoreWithSkip1);
-        assert_eq!(parser.input(Some('"'), spec_pos4, Some('$'), messages),
+        assert_eq!(parser.input('H', dummy_pos, '\\', messages), WantMore);
+        assert_eq!(parser.input('\\', spec_pos2, 'c', messages), WantMoreWithSkip1);
+        assert_eq!(parser.input('\\', spec_pos3, 'd', messages), WantMoreWithSkip1);
+        assert_eq!(parser.input('\\', spec_pos2, 'e', messages), WantMoreWithSkip1);
+        assert_eq!(parser.input('\\', dummy_pos, 'n', messages), WantMoreWithSkip1);
+        assert_eq!(parser.input('\\', spec_pos3, 'g', messages), WantMoreWithSkip1);
+        assert_eq!(parser.input('"', spec_pos4, '$', messages),
             Finished(StringLiteral::new(None, StringPosition::from2(spec_pos1, spec_pos4), false)));
 
         expect_messages.push(Message::new(format!("{} '\\{}'", error_strings::UnknownCharEscape, 'c'), vec![
@@ -294,15 +293,15 @@ fn str_lit_parser() {
         let mut parser = StringLiteralParser::new(spec_pos1);
         let messages = &mut MessageCollection::new();
         let expect_messages = &mut MessageCollection::new();
-        assert_eq!(parser.input(Some('H'), dummy_pos, Some('\\'), messages), WantMore);
-        assert_eq!(parser.input(Some('\\'), spec_pos2, Some('u'), messages), WantMoreWithSkip1);
-        assert_eq!(parser.input(Some('A'), dummy_pos, Some('B'), messages), WantMore);
-        assert_eq!(parser.input(Some('B'), dummy_pos, Some('C'), messages), WantMore);
-        assert_eq!(parser.input(Some('C'), dummy_pos, Some('D'), messages), WantMore);
-        assert_eq!(parser.input(Some('D'), dummy_pos, Some('e'), messages), WantMore);
-        assert_eq!(parser.input(Some('e'), dummy_pos, Some('l'), messages), WantMore);
-        assert_eq!(parser.input(Some('l'), dummy_pos, Some('"'), messages), WantMore);
-        assert_eq!(parser.input(Some('"'), spec_pos3, Some('$'), messages), 
+        assert_eq!(parser.input('H', dummy_pos, '\\', messages), WantMore);
+        assert_eq!(parser.input('\\', spec_pos2, 'u', messages), WantMoreWithSkip1);
+        assert_eq!(parser.input('A', dummy_pos, 'B', messages), WantMore);
+        assert_eq!(parser.input('B', dummy_pos, 'C', messages), WantMore);
+        assert_eq!(parser.input('C', dummy_pos, 'D', messages), WantMore);
+        assert_eq!(parser.input('D', dummy_pos, 'e', messages), WantMore);
+        assert_eq!(parser.input('e', dummy_pos, 'l', messages), WantMore);
+        assert_eq!(parser.input('l', dummy_pos, '"', messages), WantMore);
+        assert_eq!(parser.input('"', spec_pos3, '$', messages), 
             Finished(StringLiteral::new(Some("H\u{ABCD}el".to_owned()), StringPosition::from2(spec_pos1, spec_pos3), false)));
         
         assert_eq!(messages, expect_messages);
@@ -312,20 +311,20 @@ fn str_lit_parser() {
         let mut parser = StringLiteralParser::new(spec_pos1);
         let messages = &mut MessageCollection::new();
         let expect_messages = &mut MessageCollection::new();
-        assert_eq!(parser.input(Some('H'), dummy_pos, Some('\\'), messages), WantMore);
-        assert_eq!(parser.input(Some('\\'), spec_pos2, Some('u'), messages), WantMoreWithSkip1);
-        assert_eq!(parser.input(Some('A'), dummy_pos, Some('B'), messages), WantMore);
-        assert_eq!(parser.input(Some('B'), dummy_pos, Some('C'), messages), WantMore);
-        assert_eq!(parser.input(Some('C'), dummy_pos, Some('H'), messages), WantMore);
-        assert_eq!(parser.input(Some('H'), spec_pos3, Some('e'), messages), WantMore);
-        assert_eq!(parser.input(Some('e'), dummy_pos, Some('l'), messages), WantMore);
-        assert_eq!(parser.input(Some('l'), dummy_pos, Some('\\'), messages), WantMore);
-        assert_eq!(parser.input(Some('\\'), spec_pos3, Some('u'), messages), WantMoreWithSkip1);
-        assert_eq!(parser.input(Some('A'), dummy_pos, Some('B'), messages), WantMore);
-        assert_eq!(parser.input(Some('B'), dummy_pos, Some('C'), messages), WantMore);
-        assert_eq!(parser.input(Some('C'), dummy_pos, Some('g'), messages), WantMore);
-        assert_eq!(parser.input(Some('g'), spec_pos4, Some('"'), messages), WantMore);
-        assert_eq!(parser.input(Some('"'), spec_pos4, Some('$'), messages), 
+        assert_eq!(parser.input('H', dummy_pos, '\\', messages), WantMore);
+        assert_eq!(parser.input('\\', spec_pos2, 'u', messages), WantMoreWithSkip1);
+        assert_eq!(parser.input('A', dummy_pos, 'B', messages), WantMore);
+        assert_eq!(parser.input('B', dummy_pos, 'C', messages), WantMore);
+        assert_eq!(parser.input('C', dummy_pos, 'H', messages), WantMore);
+        assert_eq!(parser.input('H', spec_pos3, 'e', messages), WantMore);
+        assert_eq!(parser.input('e', dummy_pos, 'l', messages), WantMore);
+        assert_eq!(parser.input('l', dummy_pos, '\\', messages), WantMore);
+        assert_eq!(parser.input('\\', spec_pos3, 'u', messages), WantMoreWithSkip1);
+        assert_eq!(parser.input('A', dummy_pos, 'B', messages), WantMore);
+        assert_eq!(parser.input('B', dummy_pos, 'C', messages), WantMore);
+        assert_eq!(parser.input('C', dummy_pos, 'g', messages), WantMore);
+        assert_eq!(parser.input('g', spec_pos4, '"', messages), WantMore);
+        assert_eq!(parser.input('"', spec_pos4, '$', messages), 
             Finished(StringLiteral::new(None, StringPosition::from2(spec_pos1, spec_pos4), false)));
         
         expect_messages.push(Message::with_help_by_str(error_strings::InvalidUnicodeCharEscape, vec![
@@ -347,17 +346,17 @@ fn str_lit_parser() {
         let mut parser = StringLiteralParser::new(spec_pos1);
         let messages = &mut MessageCollection::new();
         let expect_messages = &mut MessageCollection::new();
-        assert_eq!(parser.input(Some('H'), dummy_pos, Some('\\'), messages), WantMore);
-        assert_eq!(parser.input(Some('\\'), spec_pos2, Some('U'), messages), WantMoreWithSkip1);
-        assert_eq!(parser.input(Some('0'), dummy_pos, Some('0'), messages), WantMore);
-        assert_eq!(parser.input(Some('0'), dummy_pos, Some('1'), messages), WantMore);
-        assert_eq!(parser.input(Some('1'), dummy_pos, Some('1'), messages), WantMore);
-        assert_eq!(parser.input(Some('1'), dummy_pos, Some('A'), messages), WantMore);
-        assert_eq!(parser.input(Some('A'), dummy_pos, Some('B'), messages), WantMore);
-        assert_eq!(parser.input(Some('B'), dummy_pos, Some('C'), messages), WantMore);
-        assert_eq!(parser.input(Some('C'), dummy_pos, Some('D'), messages), WantMore);
-        assert_eq!(parser.input(Some('D'), dummy_pos, Some('"'), messages), WantMore);
-        assert_eq!(parser.input(Some('"'), spec_pos3, Some('$'), messages),
+        assert_eq!(parser.input('H', dummy_pos, '\\', messages), WantMore);
+        assert_eq!(parser.input('\\', spec_pos2, 'U', messages), WantMoreWithSkip1);
+        assert_eq!(parser.input('0', dummy_pos, '0', messages), WantMore);
+        assert_eq!(parser.input('0', dummy_pos, '1', messages), WantMore);
+        assert_eq!(parser.input('1', dummy_pos, '1', messages), WantMore);
+        assert_eq!(parser.input('1', dummy_pos, 'A', messages), WantMore);
+        assert_eq!(parser.input('A', dummy_pos, 'B', messages), WantMore);
+        assert_eq!(parser.input('B', dummy_pos, 'C', messages), WantMore);
+        assert_eq!(parser.input('C', dummy_pos, 'D', messages), WantMore);
+        assert_eq!(parser.input('D', dummy_pos, '"', messages), WantMore);
+        assert_eq!(parser.input('"', spec_pos3, '$', messages),
             Finished(StringLiteral::new(None, StringPosition::from2(spec_pos1, spec_pos3), false)));
         
         expect_messages.push(Message::with_help(error_strings::InvalidUnicodeCharEscape.to_owned(), vec![
@@ -373,9 +372,9 @@ fn str_lit_parser() {
         let mut parser = StringLiteralParser::new(spec_pos1);
         let messages = &mut MessageCollection::new();
         let expect_messages = &mut MessageCollection::new();
-        assert_eq!(parser.input(Some('H'), dummy_pos, Some('\\'), messages), WantMore);
-        assert_eq!(parser.input(Some('\\'), spec_pos2, Some('u'), messages), WantMoreWithSkip1);
-        assert_eq!(parser.input(Some('"'), spec_pos3, Some('$'), messages), 
+        assert_eq!(parser.input('H', dummy_pos, '\\', messages), WantMore);
+        assert_eq!(parser.input('\\', spec_pos2, 'u', messages), WantMoreWithSkip1);
+        assert_eq!(parser.input('"', spec_pos3, '$', messages), 
             Finished(StringLiteral::new(None, StringPosition::from2(spec_pos1, spec_pos3), false)));
         
         expect_messages.push(Message::with_help_by_str(error_strings::UnexpectedStringLiteralEnd, vec![
@@ -392,12 +391,12 @@ fn str_lit_parser() {
         let mut parser = StringLiteralParser::new(spec_pos1);
         let messages = &mut MessageCollection::new();
         let expect_messages = &mut MessageCollection::new();
-        assert_eq!(parser.input(Some('h'), dummy_pos, Some('\\'), messages), WantMore);
-        assert_eq!(parser.input(Some('\\'), spec_pos2, Some('U'), messages), WantMoreWithSkip1);
-        assert_eq!(parser.input(Some('1'), dummy_pos, Some('2'), messages), WantMore);
-        assert_eq!(parser.input(Some('2'), dummy_pos, Some('3'), messages), WantMore);
-        assert_eq!(parser.input(Some('3'), dummy_pos, None, messages), WantMore);
-        assert_eq!(parser.input(None, spec_pos3, None, messages), 
+        assert_eq!(parser.input('h', dummy_pos, '\\', messages), WantMore);
+        assert_eq!(parser.input('\\', spec_pos2, 'U', messages), WantMoreWithSkip1);
+        assert_eq!(parser.input('1', dummy_pos, '2', messages), WantMore);
+        assert_eq!(parser.input('2', dummy_pos, '3', messages), WantMore);
+        assert_eq!(parser.input('3', dummy_pos, EOFCHAR, messages), WantMore);
+        assert_eq!(parser.input(EOFCHAR, spec_pos3, EOFCHAR, messages), 
             Finished(StringLiteral::new(None, StringPosition::from2(spec_pos1, spec_pos3), false)));
         
         expect_messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
@@ -411,10 +410,10 @@ fn str_lit_parser() {
         let mut parser = StringLiteralParser::new(spec_pos1);
         let messages = &mut MessageCollection::new();
         let expect_messages = &mut MessageCollection::new();
-        assert_eq!(parser.input(Some('h'), dummy_pos, Some('e'), messages), WantMore);
-        assert_eq!(parser.input(Some('e'), dummy_pos, Some('\\'), messages), WantMore);
-        assert_eq!(parser.input(Some('\\'), spec_pos2, None, messages), WantMore);
-        assert_eq!(parser.input(None, spec_pos3, None, messages), 
+        assert_eq!(parser.input('h', dummy_pos, 'e', messages), WantMore);
+        assert_eq!(parser.input('e', dummy_pos, '\\', messages), WantMore);
+        assert_eq!(parser.input('\\', spec_pos2, EOFCHAR, messages), WantMore);
+        assert_eq!(parser.input(EOFCHAR, spec_pos3, EOFCHAR, messages), 
             Finished(StringLiteral::new(None, StringPosition::from2(spec_pos1, spec_pos3), false)));
         
         expect_messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![

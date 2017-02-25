@@ -15,7 +15,7 @@ use util::TryFrom;
 use codepos::Position;
 use codepos::StringPosition;
 use message::LexicalMessage;
-use message::MessageEmitter;
+use message::MessageCollection;
 
 use super::v2lexer::V2Token;
 use super::v2lexer::BufV2Token;
@@ -82,13 +82,13 @@ fn pass_unicode_char(ch: char, pos: Position) -> (char, Option<LexicalMessage>) 
 
 impl<'chs> IDetailLexer<'chs, V3Token> for V3Lexer<'chs> {
 
-    fn new(content_chars: Chars) -> V3Lexer {
-        V3Lexer { v2: BufV2Lexer::new(content_chars) }
+    fn new(content_chars: Chars<'chs>, messages: &mut MessageCollection) -> V3Lexer<'chs> {
+        V3Lexer { v2: BufV2Lexer::new(content_chars, messages) }
     }
 
     fn position(&self) -> Position { self.v2.inner().position() }
 
-    fn next(&mut self, messages: &mut MessageEmitter) -> Option<V3Token> {
+    fn next(&mut self, messages: &mut MessageCollection) -> Option<V3Token> {
 
         loop { // Loop for ignore char
             match self.v2.next(messages) {
@@ -163,9 +163,9 @@ fn v3_test1() {
 
     let mut content = String::new();
     let _read_size = file.read_to_string(&mut content).expect("Read file failed");
-    let mut v3lexer = V3Lexer::new(content.chars());
+    let mut messages = MessageCollection::new();
+    let mut v3lexer = V3Lexer::new(content.chars(), &mut messages);
 
-    let mut messages = MessageEmitter::new();
     loop {
         match v3lexer.next(&mut messages) {
             Some(v3) => perrorln!("{:?}", v3),

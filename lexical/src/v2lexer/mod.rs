@@ -8,7 +8,7 @@ mod numeric_lit_parser;
 use std::str::Chars;
 use codepos::Position;
 use codepos::StringPosition;
-use message::MessageEmitter;
+use message::MessageCollection;
 
 use super::v1lexer::V1Token;
 use super::v1lexer::BufV1Token;
@@ -16,7 +16,7 @@ use super::v1lexer::BufV1Lexer;
 
 use super::buf_lexer::IDetailLexer;
 use super::buf_lexer::BufToken;
-use super::buf_lexer::BufLexer;
+use super::buf_lexer::LegacyBufLexer as BufLexer;
 
 use super::symbol_type::string_literal::StringLiteral;
 use super::symbol_type::numeric_literal::NumericLiteral;
@@ -109,16 +109,16 @@ impl IdentifierChar for char {
 
 impl<'chs> IDetailLexer<'chs, V2Token> for V2Lexer<'chs> {
 
-    fn new(content_chars: Chars<'chs>) -> V2Lexer<'chs> {
+    fn new(content_chars: Chars<'chs>, messages: &mut MessageCollection) -> V2Lexer<'chs> {
         V2Lexer { 
-            v1: BufV1Lexer::new(content_chars),
+            v1: BufV1Lexer::new(content_chars, messages),
         }
     }
 
     fn position(&self) -> Position { self.v1.inner().position() }
 
     // input stringliteral or otherchar without comment, output identifier and numeric literal
-    fn next(&mut self, messages: &mut MessageEmitter) -> Option<V2Token> {
+    fn next(&mut self, messages: &mut MessageCollection) -> Option<V2Token> {
         
         struct VHalf{ ch: char, pos: Position, next_is_sep: bool, next_is_dot: bool }
 
@@ -218,15 +218,15 @@ mod tests {
     use super::super::buf_lexer::IDetailLexer;
     use codepos::Position;
     use codepos::StringPosition;
-    use message::MessageEmitter;
+    use message::MessageCollection;
     use super::super::symbol_type::string_literal::StringLiteral;
     use super::super::symbol_type::numeric_literal::NumericLiteral;
     use super::super::NumLitValue;
     
     macro_rules! test_case {
         ($program: expr, $($expect: expr, )*) => ({
-            let mut v2lexer = V2Lexer::new($program.chars());
-            let mut messages = MessageEmitter::new();
+            let mut messages = MessageCollection::new();
+            let mut v2lexer = V2Lexer::new($program.chars(), &mut messages);
             let mut v2s = Vec::new();
             loop {
                 match v2lexer.next(&mut messages) {
@@ -243,12 +243,12 @@ mod tests {
         })
     }
 
-    macro_rules! tstring {
+    macro_rules! string {
         ($val: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr, $is_raw: expr, $has_fail: expr) => (
             V2Token::StringLiteral{ inner: StringLiteral::new($val.to_owned(), StringPosition::from4($row1, $col1, $row2, $col2), $is_raw) } 
         )
     }
-    macro_rules! tnumber {
+    macro_rules! number {
         ($val: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr) => (
             V2Token::NumericLiteral{ 
                 inner: NumericLiteral{ 
@@ -266,12 +266,12 @@ mod tests {
             }
         )
     }
-    macro_rules! tident {
+    macro_rules! ident {
         ($name: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr) => (
             V2Token::Identifier{ name: $name.to_owned(), pos: StringPosition::from4($row1, $col1, $row2, $col2) }
         )
     }
-    macro_rules! tchar {
+    macro_rules! ch {
         ($ch: expr, $row: expr, $col: expr) => (
             V2Token::Other{ ch: $ch, pos: make_pos!($row, $col) }
         )
@@ -286,49 +286,49 @@ mod tests {
     #[test]
     fn v2_base() {
         test_case!(PROGRAM1,
-            tnumber!(123, 1, 1, 1, 3),
-            tchar!(' ', 1, 4),
-            tnumber!(456.1, 1, 5, 1, 9), 
+            number!(123, 1, 1, 1, 3),
+            ch!(' ', 1, 4),
+            number!(456.1, 1, 5, 1, 9), 
         );
         test_case!(PROGRAM2,
-            tident!("abc", 1, 1, 1, 3),
-            tchar!(' ', 1, 4),
-            tident!("def", 1, 8, 1, 10),
-            tstring!("", 1, 11, 1, 12, false, false),
-            tident!("ght", 1, 13, 1, 15),    
+            ident!("abc", 1, 1, 1, 3),
+            ch!(' ', 1, 4),
+            ident!("def", 1, 8, 1, 10),
+            string!("", 1, 11, 1, 12, false, false),
+            ident!("ght", 1, 13, 1, 15),    
         );
         test_case!(PROGRAM3,
-            tnumber!(1, 1, 1, 4),
-            tchar!('/', 1, 5), 
-            tchar!(' ', 1, 6),
-            tident!("qw1", 1, 7, 1, 9),
-            tchar!('.', 1, 10),
-            tident!("ad", 1, 11, 1, 12),
-            tchar!(' ', 1, 13),
-            tchar!('-', 1, 14),
-            tident!("qw", 1, 15, 1, 16),
-            tchar!('+', 1, 17),
-            tchar!('\n', 1, 18),
-            tstring!("1.23+456", 2, 1, 2, 11, true, false),
-            tchar!('.', 2, 12),
-            tident!("to_owned", 2, 13, 2, 20),
-            tchar!('(', 2, 21),
-            tchar!(')', 2, 22),
-            tident!("kekekee", 2, 23, 2, 29),
-            tchar!('\n', 2, 30), 
+            number!(1, 1, 1, 4),
+            ch!('/', 1, 5), 
+            ch!(' ', 1, 6),
+            ident!("qw1", 1, 7, 1, 9),
+            ch!('.', 1, 10),
+            ident!("ad", 1, 11, 1, 12),
+            ch!(' ', 1, 13),
+            ch!('-', 1, 14),
+            ident!("qw", 1, 15, 1, 16),
+            ch!('+', 1, 17),
+            ch!('\n', 1, 18),
+            string!("1.23+456", 2, 1, 2, 11, true, false),
+            ch!('.', 2, 12),
+            ident!("to_owned", 2, 13, 2, 20),
+            ch!('(', 2, 21),
+            ch!(')', 2, 22),
+            ident!("kekekee", 2, 23, 2, 29),
+            ch!('\n', 2, 30), 
         );
         test_case!("123, abc。hello世界，你好world_a,\n123世界", 
-            tnumber!(123, 1, 1, 1, 3),
-            tchar!(',', 1, 4),
-            tchar!(' ', 1, 5),
-            tident!("abc", 1, 6, 1, 8),
-            tchar!('。', 1, 9),
-            tident!("hello世界", 1, 10, 1, 16),
-            tchar!('，', 1, 17),
-            tident!("你好world_a", 1, 18, 1, 26),
-            tchar!(',', 1, 27),
-            tchar!('\n', 1, 28),
-            tnumber!(2, 1, 2, 5),
+            number!(123, 1, 1, 1, 3),
+            ch!(',', 1, 4),
+            ch!(' ', 1, 5),
+            ident!("abc", 1, 6, 1, 8),
+            ch!('。', 1, 9),
+            ident!("hello世界", 1, 10, 1, 16),
+            ch!('，', 1, 17),
+            ident!("你好world_a", 1, 18, 1, 26),
+            ch!(',', 1, 27),
+            ch!('\n', 1, 28),
+            number!(2, 1, 2, 5),
         );
     }
 
@@ -338,8 +338,8 @@ mod tests {
 
         macro_rules! test_case_buf {
             ($program: expr) => ({
-                let mut bufv2 = BufV2Lexer::new($program.chars());
-                let mut messages = MessageEmitter::new();
+                let mut messages = MessageCollection::new();
+                let mut bufv2 = BufV2Lexer::new($program.chars(), &mut messages);
                 loop {
                     match bufv2.next(&mut messages) {
                         Some(v2) => perrorln!("{:?}", v2),

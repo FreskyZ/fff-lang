@@ -21,13 +21,14 @@ use codepos::StringPosition;
 use message::Message;
 use message::MessageCollection;
 
-use super::v0lexer::V0Token;
-use super::v0lexer::BufV0Token;
-use super::v0lexer::BufV0Lexer;
-
+// use super::buf_lexer::ILexer;
 use super::buf_lexer::IDetailLexer;
-use super::buf_lexer::BufToken;
 use super::buf_lexer::BufLexer;
+use super::buf_lexer::BufToken;
+use super::buf_lexer::LegacyBufLexer;
+
+use super::v0lexer::V0Lexer;
+use super::v0lexer::EOFCHAR;
 
 use super::symbol_type::char_literal::CharLiteral;
 use super::symbol_type::string_literal::StringLiteral;
@@ -61,7 +62,7 @@ use std::fmt;
 impl fmt::Debug for V1Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            V1Token::StringLiteral { ref inner} => {
+            V1Token::StringLiteral { ref inner } => {
                 write!(f, "{:?}", inner)
             }
             V1Token::CharLiteral{ ref inner } => {
@@ -75,18 +76,17 @@ impl fmt::Debug for V1Token {
 }
 
 pub struct V1Lexer<'chs> {
-    v0: BufV0Lexer<'chs>,
+    v0: BufLexer<V0Lexer<'chs>, char>,
 }
-
 impl<'chs> IDetailLexer<'chs, V1Token> for V1Lexer<'chs> {
 
-    fn new(content_chars: Chars<'chs>) -> V1Lexer {
+    fn new(content_chars: Chars<'chs>, messages: &mut MessageCollection) -> V1Lexer<'chs> {
         V1Lexer { 
-            v0: BufV0Lexer::new(content_chars),
+            v0: BufLexer::new(content_chars, messages),
         }
     }
     
-    fn position(&self) -> Position { self.v0.inner().position() }
+    fn position(&self) -> Position { Position::new() }
 
     // input v0, output stringliteral or otherchar without comment
     fn next(&mut self, messages: &mut MessageCollection) -> Option<V1Token> {
@@ -106,116 +106,89 @@ impl<'chs> IDetailLexer<'chs, V1Token> for V1Lexer<'chs> {
 
         let mut state = State::Nothing;
         loop {
-            let bufv0 = self.v0.next(messages);
-            match state {
-                State::Nothing => {
-                    match bufv0 {
-                        Some(BufV0Token{ token: V0Token{ ch: '/', pos: _1 }, next: Some(V0Token{ ch: '/', pos: _2 }) }) => {
-                            self.v0.skip1(messages);
-                            state = State::InLineComment;                                       // C1: in nothing, meet //
-                        }
-                        Some(BufV0Token{ token: V0Token{ ch: '/', pos }, next: Some(V0Token{ ch: '*', pos: _1 }) }) => {
-                            state = State::InBlockComment { start_pos: pos };                   // C2: in nothing, meet /*
-                        }
-                        Some(BufV0Token{ token: V0Token{ ch: '"', pos }, next: _1 }) => {       // C3: in nothing, meet "
-                            state = State::InStringLiteral { parser: StringLiteralParser::new(pos) };
-                        }
-                        Some(BufV0Token { token: V0Token { ch: 'r', pos }, next: Some(V0Token { ch: '"', pos: _1 }) })
-                            | Some(BufV0Token { token: V0Token { ch: 'R', pos }, next: Some(V0Token { ch: '"', pos: _1 }) }) => {
-                            self.v0.skip1(messages);                                            // C4: in nothing, meet r" or R"
-                            state = State::InRawStringLiteral { parser: RawStringLiteralParser::new(pos) };
-                        }
-                        Some(BufV0Token{ token: V0Token{ ch: '\'', pos }, next: _1 }) => {      // C5: in nothing, meet '
-                            state = State::InCharLiteral{ parser: CharLiteralParser::new(pos) };
-                        }
-                        Some(BufV0Token{ token: V0Token{ ch, pos }, next: _1 }) => {
-                            return Some(V1Token::Other{ ch: ch, pos: pos });                    // C6: in nothing, meet other, return
-                        }
-                        None => { return None; }                                                // C7: in nothing, meet EOF, return 
-                    }
+            self.v0.move_next(messages);
+            match self.v0.current_with_state(state) {
+                (State::Nothing, &'/', _1, &'/', _4, _5, _6) => {                       // C1: in nothing, meet //
+                    self.v0.prepare_skip1();
+                    state = State::InLineComment;                                       
                 }
-                State::InBlockComment { ref start_pos } => {
-                    match bufv0 {
-                        Some(BufV0Token{ token: V0Token { ch: '*', pos: _1 }, next: Some(V0Token{ ch: '/', pos: _2 }) }) => {
-                            self.v0.skip1(messages);
-                            return Some(V1Token::Other{ ch: ' ', pos: *start_pos });            // C8: in block, meet */, return
-                        }
-                        Some(_) => {
-                            // state = State::InBlockComment{ start_pos: start_pos };           // C9: in block, continue block
-                        }
-                        None => {
-                            messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
-                                (StringPosition::double(*start_pos), error_strings::BlockCommentStartHere),
-                                (StringPosition::double(self.position()), error_strings::EOFHere),
-                            ]));
-                            return None;                                                        // C10: in block, meet EOF, emit error, return
-                        }
-                    }
+                (State::Nothing, &'/', start_strpos, &'*', _4, _5, _6) => {             // C2: in nothing, meet /*
+                    state = State::InBlockComment { start_pos: start_strpos.start_pos() };                  
                 }
-                State::InLineComment => {
-                    match bufv0 {
-                        Some(BufV0Token{ token: V0Token { ch: '\n', pos }, next: _1 }) => {
-                            return Some(V1Token::Other { ch: '\n', pos: pos });                 // C11: in line, meet \n, return
-                        }
-                        Some(_) => {
-                            // state = State::InLineComment;                                    // C12: in line, continue line
-                        }
-                        None => {
-                            return None;                                                        // C13: in line, meet EOF, return
-                        }
-                    }
+                (State::Nothing, &'"', start_strpos, _3, _4, _5, _6) => {               // C3: in nothing, meet "
+                    state = State::InStringLiteral { parser: StringLiteralParser::new(start_strpos.start_pos()) };
                 }
-                State::InStringLiteral { ref mut parser } => {
-                    match match bufv0 {
-                        Some(BufV0Token{ token: V0Token{ ch, pos }, next: Some(V0Token{ ch: next_ch, pos: _1 }) }) => {
-                            parser.input(Some(ch), pos, Some(next_ch), messages)
-                        }
-                        Some(BufV0Token{ token: V0Token { ch, pos }, next: None }) => {        // Cx: anything inside "" is none about this module
-                            parser.input(Some(ch), pos, None, messages)
-                        }
-                        None => {
-                            parser.input(None, self.position(), None, messages)
-                        }
-                    } {
-                        StringLiteralParserResult::WantMore => (), // continue
+                (State::Nothing, &'r', start_strpos, &'"', _4, _5, _6)
+                | (State::Nothing, &'R', start_strpos, &'"', _4, _5, _6) => {           // C4: in nothing, meet r" or R"
+                    self.v0.prepare_skip1();                   
+                    state = State::InRawStringLiteral { parser: RawStringLiteralParser::new(start_strpos.start_pos()) };
+                }
+                (State::Nothing, &'\'', start_strpos, _3, _4, _5, _6) => {              // C5: in nothing, meet '
+                    state = State::InCharLiteral{ parser: CharLiteralParser::new(start_strpos.start_pos()) };
+                }
+                (State::Nothing, &EOFCHAR, _2, _3, _4, _5, _6) => {                     // C7: in nothing, meet EOF, return 
+                    return None;
+                }
+                (State::Nothing, ch, strpos, _3, _4, _5, _6) => {                       // C6: in nothing, meet other, return
+                    return Some(V1Token::Other{ ch: *ch, pos: strpos.start_pos() });
+                }
+
+                (State::InBlockComment{ start_pos }, &'*', _2, &'/', _4, _5, _6) => {   // C8: in block, meet */, return
+                    self.v0.prepare_skip1();
+                    return Some(V1Token::Other{ ch: ' ', pos: start_pos });
+                }
+                (State::InBlockComment{ start_pos }, &EOFCHAR, eof_pos, _3, _4, _5, _6) => {  // C10: in block, meet EOF, emit error, return
+                    messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
+                        (StringPosition::double(start_pos), error_strings::BlockCommentStartHere),
+                        (eof_pos, error_strings::EOFHere),
+                    ]));
+                    return None;
+                }
+                (State::InBlockComment{ start_pos }, _1, _2, _3, _4, _5, _6) => {       // C9: in block, continue block
+                    state = State::InBlockComment{ start_pos: start_pos };
+                }
+                (State::InLineComment, &'\n', lf_pos, _3, _4, _5, _6) => {              // C11: in line, meet \n, return
+                    return Some(V1Token::Other { ch: '\n', pos: lf_pos.start_pos() });
+                }
+                (State::InLineComment, &EOFCHAR, _2, _3, _4, _5, _6) => {               // C13: in line, meet EOF, return
+                    return None;
+                }
+                (State::InLineComment, _1, _2, _3, _4, _5, _6) => {                     // C12: in line, continue line
+                    state = State::InLineComment;
+                }
+
+                (State::InStringLiteral{ mut parser }, ch, pos, next_ch, _4, _5, _6) => {   // Cx: anything inside "" is none about this module
+                    match parser.input(*ch, pos.start_pos(), *next_ch, messages) {
+                        StringLiteralParserResult::WantMore => {
+                            state = State::InStringLiteral{ parser: parser };
+                        },
                         StringLiteralParserResult::WantMoreWithSkip1 => {
-                            self.v0.skip1(messages);
+                            self.v0.prepare_skip1();
+                            state = State::InStringLiteral{ parser: parser };
                         }
                         StringLiteralParserResult::Finished(literal) => {
                             return Some(V1Token::StringLiteral{ inner: literal });
                         }
                     }
                 }
-                State::InRawStringLiteral { ref mut parser } => {
-                    match match bufv0 {
-                        Some(BufV0Token{ token: V0Token { ch, pos }, next: _2 }) => {          // Cx, anything inside r"" is none about this module
-                            parser.input(Some(ch), pos, messages)
+                (State::InRawStringLiteral{ mut parser }, ch, strpos, _3, _4, _5, _6) => {     // Cx, anything inside r"" is none about this module
+                    match parser.input(*ch, strpos.start_pos(), messages) {
+                        RawStringLiteralParserResult::WantMore => {
+                            state = State::InRawStringLiteral{ parser: parser };
                         }
-                        None => {
-                            parser.input(None, self.position(), messages)
-                        }
-                    } {
-                        RawStringLiteralParserResult::WantMore => (),
                         RawStringLiteralParserResult::Finished(literal) => {
                             return Some(V1Token::StringLiteral{ inner: literal });
                         }
                     }
                 }
-                State::InCharLiteral { ref mut parser } => {
-                    match match bufv0 {
-                        Some(BufV0Token{ token: V0Token{ ch, pos }, next: Some(V0Token{ ch: next_ch, pos: _1 }) }) => {
-                            parser.input(Some(ch), pos, Some(next_ch), messages, dummy_coverage_recorder)
-                        }
-                        Some(BufV0Token{ token: V0Token { ch, pos }, next: None }) => {        // Cx: anything inside '' is none about this module
-                            parser.input(Some(ch), pos, None, messages, dummy_coverage_recorder)
-                        }
-                        None => {
-                            parser.input(None, self.position(), None, messages, dummy_coverage_recorder)
-                        }
-                    } {
-                        CharLiteralParserResult::WantMore => (), // continue
+                (State::InCharLiteral{ mut parser }, ch, strpos, next_ch, _4, _5, _6) => {     // Cx: anything inside '' is none about this module
+                    match parser.input(*ch, strpos.start_pos(), *next_ch, messages, dummy_coverage_recorder) {
+                        CharLiteralParserResult::WantMore => {
+                            state = State::InCharLiteral{ parser: parser };
+                        },
                         CharLiteralParserResult::WantMoreWithSkip1 => {
-                            self.v0.skip1(messages);
+                            self.v0.prepare_skip1();
+                            state = State::InCharLiteral{ parser: parser };
                         }
                         CharLiteralParserResult::Finished(literal) => {
                             return Some(V1Token::CharLiteral{ inner: literal });
@@ -229,7 +202,7 @@ impl<'chs> IDetailLexer<'chs, V1Token> for V1Lexer<'chs> {
 
 #[allow(dead_code)] // don't know what rustc is thinking
 pub type BufV1Token = BufToken<V1Token>;
-pub type BufV1Lexer<'chs> = BufLexer<V1Lexer<'chs>, V1Token>;
+pub type BufV1Lexer<'chs> = LegacyBufLexer<V1Lexer<'chs>, V1Token>;
 
 #[cfg(test)]
 #[test]
@@ -237,8 +210,8 @@ fn v1_base() {
 
     macro_rules! test_case {
         ($program: expr, [$($expect: expr)*] [$($expect_msg: expr)*]) => ({
-            let mut v1lexer = V1Lexer::new($program.chars());
             let messages = &mut MessageCollection::new();
+            let mut v1lexer = V1Lexer::new($program.chars(), messages);
             $(
                 match v1lexer.next(messages) {
                     Some(v1) => assert_eq!(v1, $expect),
