@@ -30,9 +30,6 @@ use super::buf_lexer::LegacyBufLexer;
 use super::v0lexer::V0Lexer;
 use super::v0lexer::EOFCHAR;
 
-use super::symbol_type::char_literal::CharLiteral;
-use super::symbol_type::string_literal::StringLiteral;
-
 use self::string_lit_parser::StringLiteralParser;
 use self::string_lit_parser::StringLiteralParserResult;
 use self::raw_string_lit_parser::RawStringLiteralParser;
@@ -44,15 +41,17 @@ use self::char_lit_parser::CharLiteralParserResult;
 #[cfg(test)]
 #[derive(Clone, Eq, PartialEq)]
 pub enum V1Token {
-    StringLiteral { inner: StringLiteral },
-    CharLiteral { inner: CharLiteral },
+    StringLiteral(Option<String>, StringPosition),
+    RawStringLiteral(Option<String>, StringPosition),
+    CharLiteral(Option<char>, StringPosition),
     Other { ch: char, pos: Position },
 }
 #[cfg(not(test))]
 #[derive(Clone)]
 pub enum V1Token {
-    StringLiteral { inner: StringLiteral },
-    CharLiteral { inner: CharLiteral },
+    StringLiteral(Option<String>, StringPosition),
+    RawStringLiteral(Option<String>, StringPosition),
+    CharLiteral(Option<char>, StringPosition),
     Other { ch: char, pos: Position },
 }
 
@@ -62,12 +61,9 @@ use std::fmt;
 impl fmt::Debug for V1Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            V1Token::StringLiteral { ref inner } => {
-                write!(f, "{:?}", inner)
-            }
-            V1Token::CharLiteral{ ref inner } => {
-                write!(f, "{:?}", inner)
-            }
+            V1Token::StringLiteral(ref value, ref pos) => write!(f, "String litera {:?} at {:?}", value, pos),
+            V1Token::RawStringLiteral(ref value, ref pos) => write!(f, "Raw string literal {:?} at {:?}", value, pos),
+            V1Token::CharLiteral(ref value, ref pos) => write!(f, "Char literal {:?} at {:?}", value, pos),
             V1Token::Other { ref ch, ref pos } => {
                 write!(f, "Other {:?} at {:?}", ch, pos)
             }
@@ -166,8 +162,8 @@ impl<'chs> IDetailLexer<'chs, V1Token> for V1Lexer<'chs> {
                             self.v0.prepare_skip1();
                             state = State::InStringLiteral{ parser: parser };
                         }
-                        StringLiteralParserResult::Finished(literal) => {
-                            return Some(V1Token::StringLiteral{ inner: literal });
+                        StringLiteralParserResult::Finished(value, pos) => {
+                            return Some(V1Token::StringLiteral(value, pos));
                         }
                     }
                 }
@@ -176,8 +172,8 @@ impl<'chs> IDetailLexer<'chs, V1Token> for V1Lexer<'chs> {
                         RawStringLiteralParserResult::WantMore => {
                             state = State::InRawStringLiteral{ parser: parser };
                         }
-                        RawStringLiteralParserResult::Finished(literal) => {
-                            return Some(V1Token::StringLiteral{ inner: literal });
+                        RawStringLiteralParserResult::Finished(value, pos) => {
+                            return Some(V1Token::RawStringLiteral(value, pos));
                         }
                     }
                 }
@@ -190,8 +186,8 @@ impl<'chs> IDetailLexer<'chs, V1Token> for V1Lexer<'chs> {
                             self.v0.prepare_skip1();
                             state = State::InCharLiteral{ parser: parser };
                         }
-                        CharLiteralParserResult::Finished(literal) => {
-                            return Some(V1Token::CharLiteral{ inner: literal });
+                        CharLiteralParserResult::Finished(value, pos) => {
+                            return Some(V1Token::CharLiteral(value, pos));
                         }
                     }
                 }
@@ -238,17 +234,23 @@ fn v1_base() {
     }
     macro_rules! ch {
         ($ch: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr) => (
-            V1Token::CharLiteral{ inner: CharLiteral{ value: Some($ch), pos: StringPosition::from4($row1, $col1, $row2, $col2) } }
+            V1Token::CharLiteral(Some($ch), StringPosition::from4($row1, $col1, $row2, $col2))
         );
         ($row1: expr, $col1: expr, $row2: expr, $col2: expr) => (
-            V1Token::CharLiteral{ inner: CharLiteral{ value: None, pos: StringPosition::from4($row1, $col1, $row2, $col2) } }
+            V1Token::CharLiteral(None, StringPosition::from4($row1, $col1, $row2, $col2))
         )
     }
     macro_rules! string {
         ($row1: expr, $col1: expr, $row2: expr, $col2: expr, $is_raw: expr) => 
-            (V1Token::StringLiteral { inner: StringLiteral::new(None, StringPosition::from4($row1, $col1, $row2, $col2), $is_raw) });
+            (V1Token::StringLiteral(None, StringPosition::from4($row1, $col1, $row2, $col2)));
         ($val: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr, $is_raw: expr) => 
-            (V1Token::StringLiteral { inner: StringLiteral::new2($val, StringPosition::from4($row1, $col1, $row2, $col2), $is_raw) })
+            (V1Token::StringLiteral(Some($val.to_owned()), StringPosition::from4($row1, $col1, $row2, $col2)))
+    }
+    macro_rules! rstring {
+        ($row1: expr, $col1: expr, $row2: expr, $col2: expr, $is_raw: expr) => 
+            (V1Token::RawStringLiteral(None, StringPosition::from4($row1, $col1, $row2, $col2)));
+        ($val: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr, $is_raw: expr) => 
+            (V1Token::RawStringLiteral(Some($val.to_owned()), StringPosition::from4($row1, $col1, $row2, $col2)))
     }
 
     // Line comment as \n
@@ -416,10 +418,10 @@ fn v1_base() {
 
     // Raw string literal test cases
     test_case!{ r#"r"hell\u\no""#,
-        [string!(r"hell\u\no", 1, 1, 1, 12, true)]
+        [rstring!(r"hell\u\no", 1, 1, 1, 12, true)]
     }
     test_case!{ r#"R"he"#,
-        [string!(1, 1, 1, 5, true)]
+        [rstring!(1, 1, 1, 5, true)]
         [
             Message::new_by_str(error_strings::UnexpectedEOF, vec![
                 (make_str_pos!(1, 1, 1, 1), error_strings::StringLiteralStartHere),
@@ -559,15 +561,12 @@ fn v1_base() {
     }
     test_case!{ r"'\'AB",
         [
-            ch!(1, 1, 1, 3)
-            other!('A', 1, 4)
-            other!('B', 1, 5)
+            ch!(1, 1, 1, 6)
         ]
         [
-            Message::with_help_by_str(error_strings::UnknownCharEscape, vec![
-                (make_str_pos!(1, 1, 1, 3), "")
-            ], vec![
-                error_strings::SingleQuoteOrBackSlashCharLiteralMaybeHelp
+            Message::new_by_str(error_strings::UnexpectedEOF, vec![
+                (make_str_pos!(1, 1, 1, 1), error_strings::CharLiteralStartHere),
+                (make_str_pos!(1, 6, 1, 6), error_strings::EOFHere),
             ])
         ]
     }

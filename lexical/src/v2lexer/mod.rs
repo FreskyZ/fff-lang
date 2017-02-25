@@ -132,17 +132,21 @@ impl<'chs> IDetailLexer<'chs, V2Token> for V2Lexer<'chs> {
         loop {
             // Pass string literal and None and process with other char
             let vhalf = match self.v1.next(messages) {
-                Some(BufV1Token{ token: V1Token::StringLiteral { inner }, next: _1 }) => { 
-                    return Some(V2Token::StringLiteral { inner: inner });
+                Some(BufV1Token{ token: V1Token::StringLiteral(value, pos), next: _1 }) => { 
+                    return Some(V2Token::StringLiteral { inner: StringLiteral::new(value, pos, false) });
                 }
-                Some(BufV1Token{ token: V1Token::CharLiteral{ inner }, next: _1 }) => {
-                    return Some(V2Token::CharLiteral { inner: inner });
+                Some(BufV1Token{ token: V1Token::RawStringLiteral(value, pos), next: _1 }) => {
+                    return Some(V2Token::StringLiteral{ inner: StringLiteral::new(value, pos, true) })
+                }
+                Some(BufV1Token{ token: V1Token::CharLiteral(value, pos), next: _1 }) => {
+                    return Some(V2Token::CharLiteral { inner: CharLiteral{ value: value, pos: pos } });
                 }
                 None => {
                     return None;
                 }
-                Some(BufV1Token{ token: V1Token::Other{ ch, pos }, next: Some(V1Token::StringLiteral{ .. }) }) 
-                    | Some(BufV1Token{ token: V1Token::Other{ ch, pos }, next: Some(V1Token::CharLiteral{ .. }) }) 
+                Some(BufV1Token{ token: V1Token::Other{ ch, pos }, next: Some(V1Token::StringLiteral(_, _)) }) 
+                    | Some(BufV1Token{ token: V1Token::Other{ ch, pos }, next: Some(V1Token::RawStringLiteral(_, _)) }) 
+                    | Some(BufV1Token{ token: V1Token::Other{ ch, pos }, next: Some(V1Token::CharLiteral(_, _)) }) 
                     | Some(BufV1Token{ token: V1Token::Other{ ch, pos }, next: None }) => { 
                     VHalf{ ch: ch, pos: pos, next_is_sep: true, next_is_dot: false } 
                 }

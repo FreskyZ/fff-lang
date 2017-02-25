@@ -20,7 +20,6 @@ define_string!{ CharLiteralTooLong, "Char literal too long" }
 define_string!{ StringLiteralSyntaxHelp, "String literal should be surround with double quotation" }
 define_string!{ EmptyCharLiteral, "Empty char literal" }
 define_string!{ CharLiteralSyntaxHelp1, "Char literal should contain exactly one code point" }
-define_string!{ SingleQuoteOrBackSlashCharLiteralMaybeHelp, "did you mean `'\\''` or `'\\\\'`?" }
 define_string!{ InvalidUnicodeCharEscape, "Invalid unicode char escape" }
 define_string!{ UnicodeCharEscapeCodePointValueIs, "The code point value is 0x" }
 define_string!{ UnicodeCharEscapeStartHere, "Unicode escape start here" }

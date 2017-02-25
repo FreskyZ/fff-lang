@@ -7,7 +7,6 @@ use message::Message;
 use message::MessageCollection;
 
 use super::error_strings;
-use super::super::symbol_type::string_literal::StringLiteral;
 use super::super::v0lexer::EOFCHAR;
 
 pub struct RawStringLiteralParser {
@@ -19,12 +18,12 @@ pub struct RawStringLiteralParser {
 #[derive(Debug, Eq, PartialEq)]
 pub enum RawStringLiteralParserResult { 
     WantMore, 
-    Finished(StringLiteral),
+    Finished(Option<String>, StringPosition),
 }
 #[cfg(not(test))]
 pub enum RawStringLiteralParserResult { 
     WantMore, 
-    Finished(StringLiteral),
+    Finished(Option<String>, StringPosition),
 }
 
 impl RawStringLiteralParser {
@@ -39,14 +38,14 @@ impl RawStringLiteralParser {
     pub fn input(&mut self, ch: char, pos: Position, messages: &mut MessageCollection) -> RawStringLiteralParserResult {
         match (ch, pos) {
             ('"', pos) => {                                               // C1: in raw string, meet ", finish, return
-                return RawStringLiteralParserResult::Finished(StringLiteral::new(self.raw.clone(), StringPosition::from2(self.start_pos, pos), true));
+                return RawStringLiteralParserResult::Finished(Some(self.raw.clone()), StringPosition::from2(self.start_pos, pos));
             }
             (EOFCHAR, pos) => {                                                    // C3: in raw string, meet EOF, emit error, return  
                 messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![ 
                     (StringPosition::double(self.start_pos), error_strings::StringLiteralStartHere),
                     (StringPosition::double(pos), error_strings::EOFHere),
                 ]));
-                return RawStringLiteralParserResult::Finished(StringLiteral::new(None, StringPosition::from2(self.start_pos, pos), true));
+                return RawStringLiteralParserResult::Finished(None, StringPosition::from2(self.start_pos, pos));
             }
             (ch, _1) => {                                                 // C2: in raw string, meet other, continue
                 self.raw.push(ch);
@@ -80,7 +79,7 @@ fn raw_string_lit_parser() {
         assert_eq!(parser.input('n', dummy_pos, messages), WantMore);
         assert_eq!(parser.input('o', dummy_pos, messages), WantMore);
         assert_eq!(parser.input('"', spec_pos4, messages), 
-            Finished(StringLiteral::new(r"hell\u\no".to_owned(), StringPosition::from2(spec_pos1, spec_pos4), true)));
+            Finished(Some(r"hell\u\no".to_owned()), StringPosition::from2(spec_pos1, spec_pos4)));
 
         assert_eq!(messages, expect_messages);
     }
@@ -92,7 +91,7 @@ fn raw_string_lit_parser() {
         assert_eq!(parser.input('h', dummy_pos, messages), WantMore);
         assert_eq!(parser.input('e', dummy_pos, messages), WantMore);
         assert_eq!(parser.input(EOFCHAR, spec_pos2, messages), 
-            Finished(StringLiteral::new(None, StringPosition::from2(spec_pos1, spec_pos2), true)));
+            Finished(None, StringPosition::from2(spec_pos1, spec_pos2)));
 
         expect_messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![ 
                     (StringPosition::double(spec_pos1), error_strings::StringLiteralStartHere),

@@ -4,7 +4,6 @@ use codepos::Position;
 use codepos::StringPosition;
 use message::Message;
 use message::MessageCollection;
-use super::super::symbol_type::string_literal::StringLiteral;
 use super::escape_char_parser::EscapeCharParser;
 use super::escape_char_parser::EscapeCharSimpleCheckResult;
 use super::escape_char_parser::EscapeCharParserResult;
@@ -45,13 +44,13 @@ pub struct StringLiteralParser {
 pub enum StringLiteralParserResult {
     WantMore,
     WantMoreWithSkip1,
-    Finished(StringLiteral),
+    Finished(Option<String>, StringPosition),
 }
 #[cfg(not(test))]
 pub enum StringLiteralParserResult {
     WantMore,
     WantMoreWithSkip1,
-    Finished(StringLiteral),
+    Finished(Option<String>, StringPosition),
 }
 
 impl StringLiteralParser {
@@ -112,11 +111,13 @@ impl StringLiteralParser {
                         ], vec![
                             error_strings::UnicodeCharEscapeHelpSyntax,
                         ]));
-                        return StringLiteralParserResult::Finished(StringLiteral::new(None, StringPosition::from2(self.start_pos, pos), false));
+                        return StringLiteralParserResult::Finished(None, StringPosition::from2(self.start_pos, pos));
                     }
                     None => {                                                       // C7, normal EOL, return
-                        return StringLiteralParserResult::Finished(StringLiteral::new(
-                            if self.has_failed { None } else { Some(self.raw.clone()) }, StringPosition::from2(self.start_pos, pos), false));
+                        return StringLiteralParserResult::Finished(
+                            if self.has_failed { None } else { Some(self.raw.clone()) }, 
+                            StringPosition::from2(self.start_pos, pos)
+                        );
                     }
                 }
             }
@@ -134,7 +135,7 @@ impl StringLiteralParser {
                             (StringPosition::double(pos), error_strings::EOFHere),
                         ]))
                 }
-                return StringLiteralParserResult::Finished(StringLiteral::new(None, StringPosition::from2(self.start_pos, pos), false));
+                return StringLiteralParserResult::Finished(None, StringPosition::from2(self.start_pos, pos));
             }
             (ch, pos, _2) => {
                 // Normal in string
@@ -195,7 +196,7 @@ fn str_lit_parser() {
         assert_eq!(parser.input('d', dummy_pos, 'd', messages), WantMore);
         assert_eq!(parser.input('!', dummy_pos, EOFCHAR, messages), WantMore);
         assert_eq!(parser.input('"', make_pos!(56, 78), EOFCHAR, messages), 
-            Finished(StringLiteral::new2("Hello, world!", StringPosition::from4(12, 34, 56, 78), false)));
+            Finished(Some("Hello, world!".to_owned()), StringPosition::from4(12, 34, 56, 78)));
 
         assert_eq!(messages, &MessageCollection::new());
     }
@@ -207,7 +208,7 @@ fn str_lit_parser() {
         assert_eq!(parser.input('H', dummy_pos, 'e', messages), WantMore);
         assert_eq!(parser.input('e', dummy_pos, 'l', messages), WantMore);
         assert_eq!(parser.input(EOFCHAR, spec_pos2, EOFCHAR, messages), 
-            Finished(StringLiteral::new(None, StringPosition::from2(spec_pos1, spec_pos2), false)));
+            Finished(None, StringPosition::from2(spec_pos1, spec_pos2)));
 
         expect_messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
             (StringPosition::double(spec_pos1), error_strings::StringLiteralStartHere),
@@ -228,7 +229,7 @@ fn str_lit_parser() {
         assert_eq!(parser.input('l', dummy_pos, 'o', messages), WantMore);
         assert_eq!(parser.input('o', dummy_pos, EOFCHAR, messages), WantMore);
         assert_eq!(parser.input(EOFCHAR, spec_pos4, EOFCHAR, messages), 
-            Finished(StringLiteral::new(None, StringPosition::from2(spec_pos1, spec_pos4), false)));
+            Finished(None, StringPosition::from2(spec_pos1, spec_pos4)));
 
         expect_messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
             (StringPosition::double(spec_pos1), error_strings::StringLiteralStartHere),
@@ -252,7 +253,7 @@ fn str_lit_parser() {
         assert_eq!(parser.input('l', dummy_pos, 'o', messages), WantMore);
         assert_eq!(parser.input('o', dummy_pos, '"', messages), WantMore);
         assert_eq!(parser.input('"', spec_pos4, '$', messages), 
-            Finished(StringLiteral::new2("H\t\n\0\'\"llo", StringPosition::from2(spec_pos1, spec_pos4), false)));
+            Finished(Some("H\t\n\0\'\"llo".to_owned()), StringPosition::from2(spec_pos1, spec_pos4)));
 
         assert_eq!(messages, expect_messages);
     }
@@ -268,7 +269,7 @@ fn str_lit_parser() {
         assert_eq!(parser.input('\\', dummy_pos, 'n', messages), WantMoreWithSkip1);
         assert_eq!(parser.input('\\', spec_pos3, 'g', messages), WantMoreWithSkip1);
         assert_eq!(parser.input('"', spec_pos4, '$', messages),
-            Finished(StringLiteral::new(None, StringPosition::from2(spec_pos1, spec_pos4), false)));
+            Finished(None, StringPosition::from2(spec_pos1, spec_pos4)));
 
         expect_messages.push(Message::new(format!("{} '\\{}'", error_strings::UnknownCharEscape, 'c'), vec![
             (StringPosition::double(spec_pos1), error_strings::StringLiteralStartHere.to_owned()),
@@ -302,7 +303,7 @@ fn str_lit_parser() {
         assert_eq!(parser.input('e', dummy_pos, 'l', messages), WantMore);
         assert_eq!(parser.input('l', dummy_pos, '"', messages), WantMore);
         assert_eq!(parser.input('"', spec_pos3, '$', messages), 
-            Finished(StringLiteral::new(Some("H\u{ABCD}el".to_owned()), StringPosition::from2(spec_pos1, spec_pos3), false)));
+            Finished(Some("H\u{ABCD}el".to_owned()), StringPosition::from2(spec_pos1, spec_pos3)));
         
         assert_eq!(messages, expect_messages);
     }
@@ -325,7 +326,7 @@ fn str_lit_parser() {
         assert_eq!(parser.input('C', dummy_pos, 'g', messages), WantMore);
         assert_eq!(parser.input('g', spec_pos4, '"', messages), WantMore);
         assert_eq!(parser.input('"', spec_pos4, '$', messages), 
-            Finished(StringLiteral::new(None, StringPosition::from2(spec_pos1, spec_pos4), false)));
+            Finished(None, StringPosition::from2(spec_pos1, spec_pos4)));
         
         expect_messages.push(Message::with_help_by_str(error_strings::InvalidUnicodeCharEscape, vec![
             (StringPosition::double(spec_pos2), error_strings::UnicodeCharEscapeStartHere),
@@ -357,7 +358,7 @@ fn str_lit_parser() {
         assert_eq!(parser.input('C', dummy_pos, 'D', messages), WantMore);
         assert_eq!(parser.input('D', dummy_pos, '"', messages), WantMore);
         assert_eq!(parser.input('"', spec_pos3, '$', messages),
-            Finished(StringLiteral::new(None, StringPosition::from2(spec_pos1, spec_pos3), false)));
+            Finished(None, StringPosition::from2(spec_pos1, spec_pos3)));
         
         expect_messages.push(Message::with_help(error_strings::InvalidUnicodeCharEscape.to_owned(), vec![
             (StringPosition::double(spec_pos2), error_strings::UnicodeCharEscapeStartHere.to_owned()),
@@ -375,7 +376,7 @@ fn str_lit_parser() {
         assert_eq!(parser.input('H', dummy_pos, '\\', messages), WantMore);
         assert_eq!(parser.input('\\', spec_pos2, 'u', messages), WantMoreWithSkip1);
         assert_eq!(parser.input('"', spec_pos3, '$', messages), 
-            Finished(StringLiteral::new(None, StringPosition::from2(spec_pos1, spec_pos3), false)));
+            Finished(None, StringPosition::from2(spec_pos1, spec_pos3)));
         
         expect_messages.push(Message::with_help_by_str(error_strings::UnexpectedStringLiteralEnd, vec![
             (StringPosition::double(spec_pos1), error_strings::StringLiteralStartHere),
@@ -397,7 +398,7 @@ fn str_lit_parser() {
         assert_eq!(parser.input('2', dummy_pos, '3', messages), WantMore);
         assert_eq!(parser.input('3', dummy_pos, EOFCHAR, messages), WantMore);
         assert_eq!(parser.input(EOFCHAR, spec_pos3, EOFCHAR, messages), 
-            Finished(StringLiteral::new(None, StringPosition::from2(spec_pos1, spec_pos3), false)));
+            Finished(None, StringPosition::from2(spec_pos1, spec_pos3)));
         
         expect_messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
             (StringPosition::double(spec_pos1), error_strings::StringLiteralStartHere),
@@ -414,7 +415,7 @@ fn str_lit_parser() {
         assert_eq!(parser.input('e', dummy_pos, '\\', messages), WantMore);
         assert_eq!(parser.input('\\', spec_pos2, EOFCHAR, messages), WantMore);
         assert_eq!(parser.input(EOFCHAR, spec_pos3, EOFCHAR, messages), 
-            Finished(StringLiteral::new(None, StringPosition::from2(spec_pos1, spec_pos3), false)));
+            Finished(None, StringPosition::from2(spec_pos1, spec_pos3)));
         
         expect_messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
             (StringPosition::double(spec_pos1), error_strings::StringLiteralStartHere),
