@@ -37,10 +37,9 @@ macro_rules! define_keyword {
             }
         }
 
-        use util::TryFrom;
-        impl <'a> TryFrom<&'a str> for $enum_name {
+        impl $enum_name {
             
-            fn try_from(name: &'a str) -> Option<$enum_name> {
+            pub fn try_from(name: &str) -> Option<$enum_name> {
                 use self::$enum_name::*;
                 match name {
                     $(
@@ -49,9 +48,6 @@ macro_rules! define_keyword {
                     _ => None,
                 }
             }
-        }
-
-        impl $enum_name {
 
             pub fn is_prim_type(&self) -> bool {
                 match *self {
@@ -87,6 +83,8 @@ define_keyword!{ KeywordKind,
     "as" =>         As,             false,          false,
     "loop" =>       Loop,           false,          false,
     "this" =>       This,           false,          false,
+    "true" =>       True,           false,          false,
+    "false" =>      False,          false,          false,
 
     "u8" =>         PrimTypeU8,     true,           false,
     "i32" =>        PrimTypeI32,    true,           false,

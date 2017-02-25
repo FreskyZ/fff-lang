@@ -89,16 +89,10 @@ impl<'chs> ILexer<'chs, V3Token> for V3Lexer<'chs> {
                     return (V3Token::Literal(lit_value.clone()), lit_pos);
                 }
                 (&V2Token::Identifier(ref name), ident_pos, _2, _3, _4, _5) => {
-                    match KeywordKind::try_from(&name) {
-                        Some(keyword) => return (V3Token::Keyword(keyword), ident_pos),
-                        None => {
-                            match name.as_ref() {
-                                "true" => return (V3Token::Literal(LitValue::from(true)), ident_pos),
-                                "false" => return (V3Token::Literal(LitValue::from(false)), ident_pos),
-                                _ => return (V3Token::Identifier(name.clone()), ident_pos),
-                            }
-                        }
-                    }
+                    return (V3Token::Identifier(name.clone()), ident_pos);
+                }
+                (&V2Token::Keyword(ref kind), keyword_pos, _2, _3, _4, _5) => {
+                    return (V3Token::Keyword(kind.clone()), keyword_pos);
                 }
                 (&V2Token::Other(ref ch), pos, &V2Token::Other(ref next_ch), next_pos, _4, _5) => {
                     let (ch, msg) = pass_unicode_char(*ch, pos.start_pos());

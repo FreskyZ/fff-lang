@@ -17,6 +17,7 @@ use super::buf_lexer::ILexer;
 use super::buf_lexer::BufLexer;
 
 use super::LitValue;
+use super::KeywordKind;
 use self::numeric_lit_parser::parse_numeric_literal;
 
 #[cfg(test)]
@@ -24,6 +25,7 @@ use self::numeric_lit_parser::parse_numeric_literal;
 pub enum V2Token {
     Literal(LitValue),
     Identifier(String),   // Anything of [_a-zA-Z][_a-zA-Z0-9]*
+    Keyword(KeywordKind),
     Other(char),
     EOF,
 }
@@ -32,6 +34,7 @@ pub enum V2Token {
 pub enum V2Token {
     Literal(LitValue),
     Identifier(String),   // Anything of [_a-zA-Z][_a-zA-Z0-9]*
+    Keyword(KeywordKind),
     Other(char),
     EOF,
 }
@@ -44,6 +47,7 @@ impl fmt::Debug for V2Token {
         match *self {
             V2Token::Literal(ref value) => write!(f, "{:?}", value),
             V2Token::Identifier(ref value) => write!(f, "Identifier {:?}", value),
+            V2Token::Keyword(ref kind) => write!(f, "Keyword {:?}", kind),
             V2Token::Other(ref value) => write!(f, "Other {:?}", value),
             V2Token::EOF => write!(f, "EOF"),
         }
@@ -164,7 +168,15 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                     if vhalf.ch.is_identifier() {
                         value.push(vhalf.ch);
                         if vhalf.next_is_sep { // To be finished, return here
-                            return (V2Token::Identifier(value), StringPosition::from2(start_pos, vhalf.pos));
+                            let ident_pos = StringPosition::from2(start_pos, vhalf.pos);
+                            match KeywordKind::try_from(&value) { 
+                                Some(keyword) => match keyword {
+                                    KeywordKind::True => return (V2Token::Literal(LitValue::from(true)), ident_pos),
+                                    KeywordKind::False => return (V2Token::Literal(LitValue::from(false)), ident_pos),
+                                    other_keyword => return (V2Token::Keyword(other_keyword), ident_pos),
+                                },
+                                None => return (V2Token::Identifier(value), ident_pos),
+                            }
                         } else {
                             state = State::InIdentifier { value: value, start_pos: start_pos };
                         }
