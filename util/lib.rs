@@ -14,7 +14,7 @@
 ///
 /// # Examples
 /// ```rust
-/// # #[macro_use] extern crate fsz_common;
+/// # #[macro_use] extern crate util;
 /// # fn main() {
 /// perror!("Hello ");
 /// perror!("{}", "World");
@@ -40,7 +40,7 @@ macro_rules! perror {
 ///
 /// # Examples
 /// ```rust
-/// # #[macro_use] extern crate fsz_common;
+/// # #[macro_use] extern crate util;
 /// # fn main() {
 /// perrorln!("Hello world!");
 /// perrorln!("format {} arguments", "some");
