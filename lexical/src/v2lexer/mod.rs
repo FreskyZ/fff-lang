@@ -11,36 +11,29 @@ use codepos::StringPosition;
 use message::MessageCollection;
 
 use super::v1lexer::V1Token;
-use super::v1lexer::BufV1Token;
-use super::v1lexer::BufV1Lexer;
+use super::v1lexer::V1Lexer;
 
-use super::buf_lexer::IDetailLexer;
-use super::buf_lexer::BufToken;
-use super::buf_lexer::LegacyBufLexer as BufLexer;
+use super::buf_lexer::ILexer;
+use super::buf_lexer::BufLexer;
 
-use super::symbol_type::string_literal::StringLiteral;
-use super::symbol_type::numeric_literal::NumericLiteral;
-use super::symbol_type::char_literal::CharLiteral;
-
+use super::LitValue;
 use self::numeric_lit_parser::parse_numeric_literal;
 
 #[cfg(test)]
 #[derive(Eq, PartialEq, Clone)]
 pub enum V2Token {
-    StringLiteral { inner: StringLiteral },
-    CharLiteral { inner: CharLiteral },
-    NumericLiteral { inner: NumericLiteral },           // Anything of [0-9][._a-zA-Z0-9]*
-    Identifier { name: String, pos: StringPosition },   // Anything of [_a-zA-Z][_a-zA-Z0-9]*
-    Other { ch: char, pos: Position },
+    Literal(LitValue),
+    Identifier(String),   // Anything of [_a-zA-Z][_a-zA-Z0-9]*
+    Other(char),
+    EOF,
 }
 #[cfg(not(test))]
 #[derive(Clone)]
 pub enum V2Token {
-    StringLiteral { inner: StringLiteral },
-    CharLiteral { inner: CharLiteral },
-    NumericLiteral { inner: NumericLiteral },
-    Identifier { name: String, pos: StringPosition },
-    Other { ch: char, pos: Position },
+    Literal(LitValue),
+    Identifier(String),   // Anything of [_a-zA-Z][_a-zA-Z0-9]*
+    Other(char),
+    EOF,
 }
 
 #[cfg(test)]
@@ -49,27 +42,16 @@ use std::fmt;
 impl fmt::Debug for V2Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            V2Token::StringLiteral { ref inner } => {
-                write!(f, "{:?}", inner)
-            }
-            V2Token::CharLiteral { ref inner } => {
-                write!(f, "{:?}", inner)
-            }
-            V2Token::NumericLiteral { ref inner } => {
-                write!(f, "{:?}", inner)
-            }
-            V2Token::Identifier{ ref name, ref pos } => {
-                write!(f, "Identifier {:?} at {:?}", name, pos)
-            }
-            V2Token::Other{ ch, pos } => {
-                write!(f, "Other {:?} at {:?}", ch, pos)
-            }
+            V2Token::Literal(ref value) => write!(f, "{:?}", value),
+            V2Token::Identifier(ref value) => write!(f, "Identifier {:?}", value),
+            V2Token::Other(ref value) => write!(f, "Other {:?}", value),
+            V2Token::EOF => write!(f, "EOF"),
         }
     }
 }
 
 pub struct V2Lexer<'chs> {
-    v1: BufV1Lexer<'chs>,
+    v1: BufLexer<V1Lexer<'chs>, V1Token>,
 }
 
 trait IdentifierChar {
@@ -107,18 +89,16 @@ impl IdentifierChar for char {
     }
 }
 
-impl<'chs> IDetailLexer<'chs, V2Token> for V2Lexer<'chs> {
+impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
 
     fn new(content_chars: Chars<'chs>, messages: &mut MessageCollection) -> V2Lexer<'chs> {
         V2Lexer { 
-            v1: BufV1Lexer::new(content_chars, messages),
+            v1: BufLexer::new(content_chars, messages),
         }
     }
 
-    fn position(&self) -> Position { self.v1.inner().position() }
-
     // input stringliteral or otherchar without comment, output identifier and numeric literal
-    fn next(&mut self, messages: &mut MessageCollection) -> Option<V2Token> {
+    fn next(&mut self, messages: &mut MessageCollection) -> (V2Token, StringPosition) {
         
         struct VHalf{ ch: char, pos: Position, next_is_sep: bool, next_is_dot: bool }
 
@@ -130,28 +110,25 @@ impl<'chs> IDetailLexer<'chs, V2Token> for V2Lexer<'chs> {
 
         let mut state = State::Nothing;
         loop {
-            // Pass string literal and None and process with other char
-            let vhalf = match self.v1.next(messages) {
-                Some(BufV1Token{ token: V1Token::StringLiteral(value, pos), next: _1 }) => { 
-                    return Some(V2Token::StringLiteral { inner: StringLiteral::new(value, pos, false) });
+            self.v1.move_next(messages);
+            let vhalf = match self.v1.current_with_preview() {
+                (&V1Token::StringLiteral(ref value), pos, _2, _3) => {
+                    return (V2Token::Literal(LitValue::Str(value.clone())), pos);
                 }
-                Some(BufV1Token{ token: V1Token::RawStringLiteral(value, pos), next: _1 }) => {
-                    return Some(V2Token::StringLiteral{ inner: StringLiteral::new(value, pos, true) })
+                (&V1Token::RawStringLiteral(ref value), pos, _2, _3) => {
+                    return (V2Token::Literal(LitValue::Str(value.clone())), pos);
                 }
-                Some(BufV1Token{ token: V1Token::CharLiteral(value, pos), next: _1 }) => {
-                    return Some(V2Token::CharLiteral { inner: CharLiteral{ value: value, pos: pos } });
+                (&V1Token::CharLiteral(ref value), pos, _2, _3) => {
+                    return (V2Token::Literal(LitValue::Char(value.clone())), pos);
                 }
-                None => {
-                    return None;
+                (&V1Token::EOF, eof_pos, _2, _3) => {
+                    return (V2Token::EOF, eof_pos);
                 }
-                Some(BufV1Token{ token: V1Token::Other{ ch, pos }, next: Some(V1Token::StringLiteral(_, _)) }) 
-                    | Some(BufV1Token{ token: V1Token::Other{ ch, pos }, next: Some(V1Token::RawStringLiteral(_, _)) }) 
-                    | Some(BufV1Token{ token: V1Token::Other{ ch, pos }, next: Some(V1Token::CharLiteral(_, _)) }) 
-                    | Some(BufV1Token{ token: V1Token::Other{ ch, pos }, next: None }) => { 
-                    VHalf{ ch: ch, pos: pos, next_is_sep: true, next_is_dot: false } 
+                (&V1Token::Other(ch), pos, &V1Token::Other(next_ch), _3) => {
+                    VHalf{ ch: ch, pos: pos.start_pos(), next_is_sep: next_ch.is_seperator(), next_is_dot: next_ch == '.' }
                 }
-                Some(BufV1Token{ token: V1Token::Other{ ch, pos }, next: Some(V1Token::Other{ ch: next_ch, pos: _1 }) }) => {
-                    VHalf{ ch: ch, pos: pos, next_is_sep: next_ch.is_seperator(), next_is_dot: next_ch == '.' }
+                (&V1Token::Other(ch), pos, _2, _3) => { 
+                    VHalf{ ch: ch, pos: pos.start_pos(), next_is_sep: true, next_is_dot: false } 
                 }
             };
 
@@ -159,13 +136,13 @@ impl<'chs> IDetailLexer<'chs, V2Token> for V2Lexer<'chs> {
                 State::Nothing => {
                     match (vhalf.ch.is_identifier_start(), vhalf.ch.is_numeric_literal_start(), vhalf.pos, vhalf.next_is_sep, vhalf.next_is_dot) {
                         (false, false, pos, _next_is_sep, _next_is_dot) => {  // Nothing 
-                            return Some(V2Token::Other { ch: vhalf.ch, pos: pos });
+                            return (V2Token::Other(vhalf.ch), StringPosition::double(pos));
                         }
                         (true, false, pos, next_is_sep, _next_is_dot) => { // Identifier try start
                             let mut value = String::new();
                             value.push(vhalf.ch);
                             if next_is_sep {  // Direct return identifier is next preview is a sperator
-                                return Some(V2Token::Identifier { name: value, pos: StringPosition::from2(pos, pos) });
+                                return (V2Token::Identifier(value), StringPosition::from2(pos, pos));
                             } else {          // Else normal goto InIdentifier state
                                 state = State::InIdentifier { value: value, start_pos: pos };
                             }
@@ -174,7 +151,8 @@ impl<'chs> IDetailLexer<'chs, V2Token> for V2Lexer<'chs> {
                             let mut value = String::new();
                             value.push(vhalf.ch);
                             if next_is_sep {    // Direct return numeric literal is next preview is a sperator
-                                return Some(V2Token::NumericLiteral { inner: parse_numeric_literal(value, StringPosition::from2(pos, pos), messages) });
+                                let (num_lit_val, pos) = parse_numeric_literal(value, StringPosition::double(pos), messages);
+                                return (V2Token::Literal(LitValue::Num(num_lit_val)), pos);
                             } else {            // else normal goto InIdentifier state
                                 state = State::InNumericLiteral { value: value, start_pos: pos };
                             }
@@ -186,7 +164,7 @@ impl<'chs> IDetailLexer<'chs, V2Token> for V2Lexer<'chs> {
                     if vhalf.ch.is_identifier() {
                         value.push(vhalf.ch);
                         if vhalf.next_is_sep { // To be finished, return here
-                            return Some(V2Token::Identifier { name: value, pos: StringPosition::from2(start_pos, vhalf.pos) });
+                            return (V2Token::Identifier(value), StringPosition::from2(start_pos, vhalf.pos));
                         } else {
                             state = State::InIdentifier { value: value, start_pos: start_pos };
                         }
@@ -198,9 +176,10 @@ impl<'chs> IDetailLexer<'chs, V2Token> for V2Lexer<'chs> {
                     if vhalf.ch.is_numeric_literal() {  
                         value.push(vhalf.ch);                        
                         if vhalf.next_is_sep && !vhalf.next_is_dot { // To be finished, return here
-                            return Some(V2Token::NumericLiteral { inner: parse_numeric_literal(value, StringPosition::from2(start_pos, vhalf.pos), messages) } );
+                            let (num_lit_val, pos) = parse_numeric_literal(value, StringPosition::from2(start_pos, vhalf.pos), messages);
+                            return (V2Token::Literal(LitValue::Num(num_lit_val)), pos);
                         } else {
-                            state = State::InNumericLiteral { value: value, start_pos: start_pos };
+                            state = State::InNumericLiteral{ value: value, start_pos: start_pos };
                         }
                     } else {
                         unreachable!()
@@ -211,22 +190,10 @@ impl<'chs> IDetailLexer<'chs, V2Token> for V2Lexer<'chs> {
     }
 }
 
-#[allow(dead_code)] // don't know what rustc is thinking
-pub type BufV2Token = BufToken<V2Token>;
-pub type BufV2Lexer<'chs> = BufLexer<V2Lexer<'chs>, V2Token>;
-
 #[cfg(test)]
-mod tests {
-    use super::V2Token;
-    use super::V2Lexer;
-    use super::super::buf_lexer::IDetailLexer;
-    use codepos::Position;
-    use codepos::StringPosition;
-    use message::MessageCollection;
-    use super::super::symbol_type::string_literal::StringLiteral;
-    use super::super::symbol_type::numeric_literal::NumericLiteral;
-    use super::super::NumLitValue;
-    
+#[test]
+fn v2_base() {    
+
     macro_rules! test_case {
         ($program: expr, $($expect: expr, )*) => ({
             let mut messages = MessageCollection::new();
@@ -234,8 +201,8 @@ mod tests {
             let mut v2s = Vec::new();
             loop {
                 match v2lexer.next(&mut messages) {
-                    Some(v2) => v2s.push(v2),
-                    None => break,
+                    (V2Token::EOF, _) => break,
+                    v2 => v2s.push(v2),
                 }
             }
 
@@ -247,37 +214,22 @@ mod tests {
         })
     }
 
-    macro_rules! string {
-        ($val: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr, $is_raw: expr, $has_fail: expr) => (
-            V2Token::StringLiteral{ inner: StringLiteral::new($val.to_owned(), StringPosition::from4($row1, $col1, $row2, $col2), $is_raw) } 
-        )
-    }
-    macro_rules! number {
+    macro_rules! lit {
         ($val: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr) => (
-            V2Token::NumericLiteral{ 
-                inner: NumericLiteral{ 
-                    value: Some(NumLitValue::from($val)), 
-                    pos: StringPosition::from4($row1, $col1, $row2, $col2)
-                }
-            }
-        );        
-        ($row1: expr, $col1: expr, $row2: expr, $col2: expr) => (
-            V2Token::NumericLiteral{ 
-                inner: NumericLiteral{ 
-                    value: None, 
-                    pos: StringPosition::from4($row1, $col1, $row2, $col2)
-                }
-            }
+            (V2Token::Literal(LitValue::from($val)), StringPosition::from4($row1, $col1, $row2, $col2))
         )
     }
     macro_rules! ident {
         ($name: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr) => (
-            V2Token::Identifier{ name: $name.to_owned(), pos: StringPosition::from4($row1, $col1, $row2, $col2) }
+            (V2Token::Identifier($name.to_owned()), StringPosition::from4($row1, $col1, $row2, $col2))
         )
     }
     macro_rules! ch {
         ($ch: expr, $row: expr, $col: expr) => (
-            V2Token::Other{ ch: $ch, pos: make_pos!($row, $col) }
+            (V2Token::Other($ch), make_str_pos!($row, $col, $row, $col))
+        );
+        ($ch: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr) => (
+            (V2Token::Other($ch), make_str_pos!($row1, $col1, $row2, $col2))
         )
     }
 
@@ -287,79 +239,76 @@ mod tests {
     #[allow(dead_code)] // temp
     const PROGRAM5: &'static str = "123, abc, hello世界, 你好world_a，123世界";   // Chinese identifier
 
-    #[test]
-    fn v2_base() {
-        test_case!(PROGRAM1,
-            number!(123, 1, 1, 1, 3),
-            ch!(' ', 1, 4),
-            number!(456.1, 1, 5, 1, 9), 
-        );
-        test_case!(PROGRAM2,
-            ident!("abc", 1, 1, 1, 3),
-            ch!(' ', 1, 4),
-            ident!("def", 1, 8, 1, 10),
-            string!("", 1, 11, 1, 12, false, false),
-            ident!("ght", 1, 13, 1, 15),    
-        );
-        test_case!(PROGRAM3,
-            number!(1, 1, 1, 4),
-            ch!('/', 1, 5), 
-            ch!(' ', 1, 6),
-            ident!("qw1", 1, 7, 1, 9),
-            ch!('.', 1, 10),
-            ident!("ad", 1, 11, 1, 12),
-            ch!(' ', 1, 13),
-            ch!('-', 1, 14),
-            ident!("qw", 1, 15, 1, 16),
-            ch!('+', 1, 17),
-            ch!('\n', 1, 18),
-            string!("1.23+456", 2, 1, 2, 11, true, false),
-            ch!('.', 2, 12),
-            ident!("to_owned", 2, 13, 2, 20),
-            ch!('(', 2, 21),
-            ch!(')', 2, 22),
-            ident!("kekekee", 2, 23, 2, 29),
-            ch!('\n', 2, 30), 
-        );
-        test_case!("123, abc。hello世界，你好world_a,\n123世界", 
-            number!(123, 1, 1, 1, 3),
-            ch!(',', 1, 4),
-            ch!(' ', 1, 5),
-            ident!("abc", 1, 6, 1, 8),
-            ch!('。', 1, 9),
-            ident!("hello世界", 1, 10, 1, 16),
-            ch!('，', 1, 17),
-            ident!("你好world_a", 1, 18, 1, 26),
-            ch!(',', 1, 27),
-            ch!('\n', 1, 28),
-            number!(2, 1, 2, 5),
-        );
-    }
+    test_case!(PROGRAM1,
+        lit!(123, 1, 1, 1, 3),
+        ch!(' ', 1, 4),
+        lit!(456.1, 1, 5, 1, 9), 
+    );
+    test_case!(PROGRAM2,
+        ident!("abc", 1, 1, 1, 3),
+        ch!(' ', 1, 4),
+        ident!("def", 1, 8, 1, 10),
+        lit!("", 1, 11, 1, 12),
+        ident!("ght", 1, 13, 1, 15),    
+    );
+    test_case!(PROGRAM3,
+        lit!(123, 1, 1, 1, 4),
+        ch!('/', 1, 5), 
+        ch!(' ', 1, 6),
+        ident!("qw1", 1, 7, 1, 9),
+        ch!('.', 1, 10),
+        ident!("ad", 1, 11, 1, 12),
+        ch!(' ', 1, 13),
+        ch!('-', 1, 14),
+        ident!("qw", 1, 15, 1, 16),
+        ch!('+', 1, 17),
+        ch!('\n', 1, 18),
+        lit!("1.23+456", 2, 1, 2, 11),
+        ch!('.', 2, 12),
+        ident!("to_owned", 2, 13, 2, 20),
+        ch!('(', 2, 21),
+        ch!(')', 2, 22),
+        ident!("kekekee", 2, 23, 2, 29),
+        ch!('\n', 2, 30), 
+    );
+    test_case!("123, abc。hello世界，你好world_a,\n123世界", 
+        lit!(123, 1, 1, 1, 3),
+        ch!(',', 1, 4),
+        ch!(' ', 1, 5),
+        ident!("abc", 1, 6, 1, 8),
+        ch!('。', 1, 9),
+        ident!("hello世界", 1, 10, 1, 16),
+        ch!('，', 1, 17),
+        ident!("你好world_a", 1, 18, 1, 26),
+        ch!(',', 1, 27),
+        ch!('\n', 1, 28),
+        lit!(123, 2, 1, 2, 5),
+    );
+}
 
-    #[test] 
-    fn v2_buf() {
-        use super::BufV2Lexer;
+#[test] 
+fn v2_buf() {
+    // use super::BufV2Lexer;
 
-        macro_rules! test_case_buf {
-            ($program: expr) => ({
-                let mut messages = MessageCollection::new();
-                let mut bufv2 = BufV2Lexer::new($program.chars(), &mut messages);
-                loop {
-                    match bufv2.next(&mut messages) {
-                        Some(v2) => perrorln!("{:?}", v2),
-                        None => break,
-                    }
-                }
+    // macro_rules! test_case_buf {
+    //     ($program: expr) => ({
+    //         let mut messages = MessageCollection::new();
+    //         let mut bufv2 = BufV2Lexer::new($program.chars(), &mut messages);
+    //         loop {
+    //             match bufv2.next(&mut messages) {
+    //                 Some(v2) => perrorln!("{:?}", v2),
+    //                 None => break,
+    //             }
+    //         }
 
-                if !messages.is_empty() {
-                    perrorln!("Messages for {}:", stringify!($program));
-                    perror!("{:?}", messages);
-                }
-            })
-        }
+    //         if !messages.is_empty() {
+    //             perrorln!("Messages for {}:", stringify!($program));
+    //             perror!("{:?}", messages);
+    //         }
+    //     })
+    // }
 
-        test_case_buf!(PROGRAM1);
-        test_case_buf!(PROGRAM2);
-        test_case_buf!(PROGRAM3);
-    }
+    // test_case_buf!(PROGRAM1);
+    // test_case_buf!(PROGRAM2);
+    // test_case_buf!(PROGRAM3);
 }

@@ -1,113 +1,10 @@
-#![allow(dead_code)] // remove it after new buf lexer finished
+///! fff-lang
 // Buffed lexer
-//     with TToken: Copy
-//     and TLexer: ILexer<TToken>
 
 use std::str::Chars;
 use std::cell::Cell;
-use codepos::Position;
 use codepos::StringPosition;
 use message::MessageCollection;
-
-// detail compare with the public interface ILexer
-pub trait IDetailLexer<'chs, TToken> {
-
-    fn new(chars: Chars<'chs>, messages: &mut MessageCollection) -> Self;
-
-    fn position(&self) -> Position;
-
-    fn next(&mut self, messages: &mut MessageCollection) -> Option<TToken>;
-}
-
-#[cfg(test)]
-#[derive(Eq, PartialEq)]
-pub struct BufToken<T>
-    where T : Clone {
-    pub token: T, 
-    pub next: Option<T>,
-}
-#[cfg(not(test))]
-pub struct BufToken<T>
-    where T : Clone {
-    pub token: T, 
-    pub next: Option<T>,
-}
-#[cfg(test)]
-use std::fmt;
-#[cfg(test)]
-impl<T> fmt::Debug for BufToken<T> 
-    where T : fmt::Debug + Clone {
-
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        try!(writeln!(f, "{:?}", self.token));
-        match self.next {
-            Some(ref next) => write!(f, "    Next: {:?}", next),
-            None => write!(f, "    Next: None"),
-        }
-    }
-}
-
-// Buffed lexer
-// Example
-//
-// type BufV0Lexer = BufLexer<V0Lexer, V0Token>;
-// let mut bufv0 = ...
-// loop { 
-//    match bufv0.next() {
-//        BufToken<V0Token> { token: V0Token { ch, pos }, next: Some(V0Token { ch, pos }) } => {
-//            ...
-//        }
-//        BufToken<V0Token> { token: V0Token { ch, pos }, next: None } => {
-//            ...
-//        }
-//        ...
-//    }
-// }
-pub struct LegacyBufLexer<TLexer, TToken> {
-    lexer: TLexer,
-    is_first: bool,
-    next_to_return: Option<TToken>,
-}
-
-impl<'chs, TLexer, TToken> LegacyBufLexer<TLexer, TToken>
-    where TLexer: IDetailLexer<'chs, TToken>, TToken: Clone {
-
-    pub fn new(content_chars: Chars<'chs>, messages: &mut MessageCollection) -> LegacyBufLexer<TLexer, TToken> {
-        LegacyBufLexer { 
-            lexer: TLexer::new(content_chars, messages),
-            is_first: true,
-            next_to_return: None,
-        }
-    }
-
-    pub fn inner(&self) -> &TLexer { &self.lexer }
-    pub fn inner_mut(&mut self) -> &mut TLexer { &mut self.lexer }
-
-    pub fn next(&mut self, messages: &mut MessageCollection) -> Option<BufToken<TToken>> {
-
-        if self.is_first {
-            self.next_to_return = self.lexer.next(messages);
-            self.is_first = false;
-        }
-
-        let ret_val = match self.next_to_return {
-            None => return None,
-            Some(ref token) => {
-                Some(BufToken {token: token.clone(), next: self.lexer.next(messages)})
-            }
-        };
-
-        self.next_to_return = match ret_val {
-            None => None,
-            Some(ref buf_token) => buf_token.next.clone(),
-        };
-        ret_val
-    }
-
-    pub fn skip1(&mut self, messages: &mut MessageCollection) {
-        let _ = self.next(messages);
-    }
-}
 
 pub trait ILexer<'chs, TToken> {
 
@@ -118,7 +15,17 @@ pub trait ILexer<'chs, TToken> {
     fn next(&mut self, messages: &mut MessageCollection) -> (TToken, StringPosition);
 }
 
-// TODO: buf lexer that not require token to be Copy
+// Buffed lexer
+// Example
+//
+// type BufV0Lexer = BufLexer<V0Lexer, V0Token>;
+// let mut bufv0 = ...
+// loop { 
+//    bufv0.move_next();
+//    match bufv0.current_with_preview2() {
+//        ...
+//    }
+// }
 pub struct BufLexer<TLexer, TToken> {
     lexer: TLexer, 
     skips: Cell<i32>,
@@ -128,6 +35,7 @@ pub struct BufLexer<TLexer, TToken> {
     nextnext: (TToken, StringPosition),
 }
 
+#[allow(dead_code)]
 impl<'chs, TLexer, TToken> BufLexer<TLexer, TToken> 
     where TLexer: ILexer<'chs, TToken> {
     

@@ -4,9 +4,8 @@
 
 use codepos::StringPosition;
 use message::LexicalMessage as Message;
-use message::MessageEmitter;
+use message::MessageCollection;
 
-use super::super::symbol_type::numeric_literal::NumericLiteral;
 use super::super::NumLitValue;
 
 // Final to value, check too large
@@ -343,13 +342,13 @@ fn delegate(raw: String, pos: StringPosition) -> Result<NumLitValue, Message> {
 }
 
 /// NumericLiteral => [0b|0o|0d|0x|][\._0-9]*[u8|u32|i32|u64|f32|f64|]
-pub fn parse_numeric_literal(raw: String, pos: StringPosition, messages: &mut MessageEmitter) -> NumericLiteral {
+pub fn parse_numeric_literal(raw: String, pos: StringPosition, messages: &mut MessageCollection) -> (Option<NumLitValue>, StringPosition) {
     
     match delegate(raw, pos) {
-        Ok(value) => NumericLiteral{ value: Some(value), pos: pos },
+        Ok(value) => (Some(value), pos),
         Err(msg) => {
             messages.push(msg);
-            NumericLiteral{ value: None, pos: pos }
+            (None, pos)
         }
     }
 

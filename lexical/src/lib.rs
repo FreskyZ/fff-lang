@@ -21,7 +21,7 @@ mod v4lexer;
 pub use self::symbol_type::seperator::SeperatorKind;
 pub use self::symbol_type::seperator::SeperatorCategory;
 pub use self::symbol_type::keyword::KeywordKind;
-pub use self::symbol_type::numeric_literal::NumLitValue;
+pub use self::symbol_type::literal::NumLitValue;
 pub use self::symbol_type::literal::LitValue;
 
 pub use self::v4lexer::V4Lexer as Lexer;

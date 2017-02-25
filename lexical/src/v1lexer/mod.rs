@@ -21,11 +21,8 @@ use codepos::StringPosition;
 use message::Message;
 use message::MessageCollection;
 
-// use super::buf_lexer::ILexer;
-use super::buf_lexer::IDetailLexer;
+use super::buf_lexer::ILexer;
 use super::buf_lexer::BufLexer;
-use super::buf_lexer::BufToken;
-use super::buf_lexer::LegacyBufLexer;
 
 use super::v0lexer::V0Lexer;
 use super::v0lexer::EOFCHAR;
@@ -39,20 +36,21 @@ use self::char_lit_parser::CoverageRecorder;
 use self::char_lit_parser::CharLiteralParserResult;
 
 #[cfg(test)]
-#[derive(Clone, Eq, PartialEq)]
+#[derive(Eq, PartialEq)]
 pub enum V1Token {
-    StringLiteral(Option<String>, StringPosition),
-    RawStringLiteral(Option<String>, StringPosition),
-    CharLiteral(Option<char>, StringPosition),
-    Other { ch: char, pos: Position },
+    StringLiteral(Option<String>),
+    RawStringLiteral(Option<String>),
+    CharLiteral(Option<char>),
+    Other(char),
+    EOF,
 }
 #[cfg(not(test))]
-#[derive(Clone)]
 pub enum V1Token {
-    StringLiteral(Option<String>, StringPosition),
-    RawStringLiteral(Option<String>, StringPosition),
-    CharLiteral(Option<char>, StringPosition),
-    Other { ch: char, pos: Position },
+    StringLiteral(Option<String>),
+    RawStringLiteral(Option<String>),
+    CharLiteral(Option<char>),
+    Other(char),
+    EOF,
 }
 
 #[cfg(test)]
@@ -61,12 +59,11 @@ use std::fmt;
 impl fmt::Debug for V1Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            V1Token::StringLiteral(ref value, ref pos) => write!(f, "String litera {:?} at {:?}", value, pos),
-            V1Token::RawStringLiteral(ref value, ref pos) => write!(f, "Raw string literal {:?} at {:?}", value, pos),
-            V1Token::CharLiteral(ref value, ref pos) => write!(f, "Char literal {:?} at {:?}", value, pos),
-            V1Token::Other { ref ch, ref pos } => {
-                write!(f, "Other {:?} at {:?}", ch, pos)
-            }
+            V1Token::StringLiteral(ref value) => write!(f, "String litera {:?}", value),
+            V1Token::RawStringLiteral(ref value) => write!(f, "Raw string literal {:?}", value),
+            V1Token::CharLiteral(ref value) => write!(f, "Char literal {:?}", value),
+            V1Token::Other(ref ch) => write!(f, "Other {:?}", ch),
+            V1Token::EOF => write!(f, "EOF"),
         }
     }
 }
@@ -74,18 +71,16 @@ impl fmt::Debug for V1Token {
 pub struct V1Lexer<'chs> {
     v0: BufLexer<V0Lexer<'chs>, char>,
 }
-impl<'chs> IDetailLexer<'chs, V1Token> for V1Lexer<'chs> {
+impl<'chs> ILexer<'chs, V1Token> for V1Lexer<'chs> {
 
     fn new(content_chars: Chars<'chs>, messages: &mut MessageCollection) -> V1Lexer<'chs> {
         V1Lexer { 
             v0: BufLexer::new(content_chars, messages),
         }
     }
-    
-    fn position(&self) -> Position { Position::new() }
 
     // input v0, output stringliteral or otherchar without comment
-    fn next(&mut self, messages: &mut MessageCollection) -> Option<V1Token> {
+    fn next(&mut self, messages: &mut MessageCollection) -> (V1Token, StringPosition) {
         // First there is quote, and anything inside is regarded as string literal, include `\n` as real `\n`
         // and then outside of quote pair there is comments, anything inside comment, // and /n, or /* and */ is regarded as comment
         
@@ -122,32 +117,32 @@ impl<'chs> IDetailLexer<'chs, V1Token> for V1Lexer<'chs> {
                 (State::Nothing, &'\'', start_strpos, _3, _4, _5, _6) => {              // C5: in nothing, meet '
                     state = State::InCharLiteral{ parser: CharLiteralParser::new(start_strpos.start_pos()) };
                 }
-                (State::Nothing, &EOFCHAR, _2, _3, _4, _5, _6) => {                     // C7: in nothing, meet EOF, return 
-                    return None;
+                (State::Nothing, &EOFCHAR, eof_pos, _3, _4, _5, _6) => {                // C7: in nothing, meet EOF, return 
+                    return (V1Token::EOF, eof_pos);
                 }
                 (State::Nothing, ch, strpos, _3, _4, _5, _6) => {                       // C6: in nothing, meet other, return
-                    return Some(V1Token::Other{ ch: *ch, pos: strpos.start_pos() });
+                    return (V1Token::Other(*ch), strpos);
                 }
 
-                (State::InBlockComment{ start_pos }, &'*', _2, &'/', _4, _5, _6) => {   // C8: in block, meet */, return
+                (State::InBlockComment{ start_pos }, &'*', _2, &'/', end_pos, _5, _6) => {   // C8: in block, meet */, return
                     self.v0.prepare_skip1();
-                    return Some(V1Token::Other{ ch: ' ', pos: start_pos });
+                    return (V1Token::Other(' '), StringPosition::from2(start_pos, end_pos.end_pos()));
                 }
                 (State::InBlockComment{ start_pos }, &EOFCHAR, eof_pos, _3, _4, _5, _6) => {  // C10: in block, meet EOF, emit error, return
                     messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
                         (StringPosition::double(start_pos), error_strings::BlockCommentStartHere),
                         (eof_pos, error_strings::EOFHere),
                     ]));
-                    return None;
+                    return (V1Token::EOF, eof_pos);
                 }
                 (State::InBlockComment{ start_pos }, _1, _2, _3, _4, _5, _6) => {       // C9: in block, continue block
                     state = State::InBlockComment{ start_pos: start_pos };
                 }
                 (State::InLineComment, &'\n', lf_pos, _3, _4, _5, _6) => {              // C11: in line, meet \n, return
-                    return Some(V1Token::Other { ch: '\n', pos: lf_pos.start_pos() });
+                    return (V1Token::Other('\n'), lf_pos);
                 }
-                (State::InLineComment, &EOFCHAR, _2, _3, _4, _5, _6) => {               // C13: in line, meet EOF, return
-                    return None;
+                (State::InLineComment, &EOFCHAR, eof_pos, _3, _4, _5, _6) => {          // C13: in line, meet EOF, return
+                    return (V1Token::EOF, eof_pos);
                 }
                 (State::InLineComment, _1, _2, _3, _4, _5, _6) => {                     // C12: in line, continue line
                     state = State::InLineComment;
@@ -163,7 +158,7 @@ impl<'chs> IDetailLexer<'chs, V1Token> for V1Lexer<'chs> {
                             state = State::InStringLiteral{ parser: parser };
                         }
                         StringLiteralParserResult::Finished(value, pos) => {
-                            return Some(V1Token::StringLiteral(value, pos));
+                            return (V1Token::StringLiteral(value), pos);
                         }
                     }
                 }
@@ -173,7 +168,7 @@ impl<'chs> IDetailLexer<'chs, V1Token> for V1Lexer<'chs> {
                             state = State::InRawStringLiteral{ parser: parser };
                         }
                         RawStringLiteralParserResult::Finished(value, pos) => {
-                            return Some(V1Token::RawStringLiteral(value, pos));
+                            return (V1Token::RawStringLiteral(value), pos);
                         }
                     }
                 }
@@ -187,7 +182,7 @@ impl<'chs> IDetailLexer<'chs, V1Token> for V1Lexer<'chs> {
                             state = State::InCharLiteral{ parser: parser };
                         }
                         CharLiteralParserResult::Finished(value, pos) => {
-                            return Some(V1Token::CharLiteral(value, pos));
+                            return (V1Token::CharLiteral(value), pos);
                         }
                     }
                 }
@@ -195,10 +190,6 @@ impl<'chs> IDetailLexer<'chs, V1Token> for V1Lexer<'chs> {
         }
     }
 }
-
-#[allow(dead_code)] // don't know what rustc is thinking
-pub type BufV1Token = BufToken<V1Token>;
-pub type BufV1Lexer<'chs> = LegacyBufLexer<V1Lexer<'chs>, V1Token>;
 
 #[cfg(test)]
 #[test]
@@ -210,13 +201,13 @@ fn v1_base() {
             let mut v1lexer = V1Lexer::new($program.chars(), messages);
             $(
                 match v1lexer.next(messages) {
-                    Some(v1) => assert_eq!(v1, $expect),
-                    None => panic!("Unexpect end of iteration"),
+                    (V1Token::EOF, _) => panic!("Unexpected end of iteration"),
+                    v1 => assert_eq!(v1, $expect),
                 }
             )*
             match v1lexer.next(messages) {
-                Some(v1) => panic!("Unexpected more symbol after expect: {:?}", v1),
-                None => (),
+                (V1Token::EOF, _) => (),
+                v1 => panic!("Unexpected more symbol after expect: {:?}", v1),
             }
             
             let expect_messages = &mut MessageCollection::new();
@@ -230,27 +221,28 @@ fn v1_base() {
         });
     }
     macro_rules! other {
-        ($ch: expr, $row: expr, $col: expr) => (V1Token::Other{ ch: $ch, pos: make_pos!($row, $col) })
+        ($ch: expr, $row: expr, $col: expr) => ((V1Token::Other($ch), make_str_pos!($row, $col, $row, $col)));
+        ($ch: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr) => ((V1Token::Other($ch), make_str_pos!($row1, $col1, $row2, $col2)))
     }
     macro_rules! ch {
         ($ch: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr) => (
-            V1Token::CharLiteral(Some($ch), StringPosition::from4($row1, $col1, $row2, $col2))
+            (V1Token::CharLiteral(Some($ch)), StringPosition::from4($row1, $col1, $row2, $col2))
         );
         ($row1: expr, $col1: expr, $row2: expr, $col2: expr) => (
-            V1Token::CharLiteral(None, StringPosition::from4($row1, $col1, $row2, $col2))
+            (V1Token::CharLiteral(None), StringPosition::from4($row1, $col1, $row2, $col2))
         )
     }
     macro_rules! string {
         ($row1: expr, $col1: expr, $row2: expr, $col2: expr, $is_raw: expr) => 
-            (V1Token::StringLiteral(None, StringPosition::from4($row1, $col1, $row2, $col2)));
+            ((V1Token::StringLiteral(None), StringPosition::from4($row1, $col1, $row2, $col2)));
         ($val: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr, $is_raw: expr) => 
-            (V1Token::StringLiteral(Some($val.to_owned()), StringPosition::from4($row1, $col1, $row2, $col2)))
+            ((V1Token::StringLiteral(Some($val.to_owned())), StringPosition::from4($row1, $col1, $row2, $col2)))
     }
     macro_rules! rstring {
         ($row1: expr, $col1: expr, $row2: expr, $col2: expr, $is_raw: expr) => 
-            (V1Token::RawStringLiteral(None, StringPosition::from4($row1, $col1, $row2, $col2)));
+            ((V1Token::RawStringLiteral(None), StringPosition::from4($row1, $col1, $row2, $col2)));
         ($val: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr, $is_raw: expr) => 
-            (V1Token::RawStringLiteral(Some($val.to_owned()), StringPosition::from4($row1, $col1, $row2, $col2)))
+            ((V1Token::RawStringLiteral(Some($val.to_owned())), StringPosition::from4($row1, $col1, $row2, $col2)))
     }
 
     // Line comment as \n
@@ -271,11 +263,12 @@ fn v1_base() {
         ]
     }
 
-    // Block comment is ' '
+    // Block comment is ' ', but has correct position
+    //           1234 5123456
     test_case!{ "A/*D\nEF*/GH",         // C6, C2, C9, C8
         [
             other!('A', 1, 1)
-            other!(' ', 1, 2)
+            other!(' ', 1, 2, 2, 4)
             other!('G', 2, 5)
             other!('H', 2, 6)
         ]

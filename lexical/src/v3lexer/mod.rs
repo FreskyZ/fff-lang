@@ -18,14 +18,12 @@ use message::LexicalMessage;
 use message::MessageCollection;
 
 use super::v2lexer::V2Token;
-use super::v2lexer::BufV2Token;
-use super::v2lexer::BufV2Lexer;
+use super::v2lexer::V2Lexer;
 
-use super::buf_lexer::IDetailLexer;
+use super::buf_lexer::ILexer;
+use super::buf_lexer::BufLexer;
 
-use super::symbol_type::string_literal::StringLiteral;
-use super::symbol_type::numeric_literal::NumericLiteral;
-use super::symbol_type::char_literal::CharLiteral;
+use super::LitValue;
 use super::KeywordKind;
 use super::SeperatorKind;
 
@@ -35,13 +33,11 @@ test_only_attr!{
     test: [derive(Clone, Eq, PartialEq)]
     not_test: [derive(Clone)]
     pub enum V3Token {
-        StringLiteral(StringLiteral),
-        NumericLiteral(NumericLiteral),
-        CharLiteral(CharLiteral),
-        Identifier(String, StringPosition),
-        Keyword(KeywordKind, StringPosition),
-        BooleanLiteral(bool, StringPosition),
-        Seperator(SeperatorKind, StringPosition),
+        Literal(LitValue),
+        Identifier(String),
+        Keyword(KeywordKind),
+        Seperator(SeperatorKind),
+        EOF,
     }
 }
 
@@ -51,19 +47,17 @@ use std::fmt;
 impl fmt::Debug for V3Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            V3Token::StringLiteral(ref literal) => write!(f, "{:?}", literal),
-            V3Token::NumericLiteral(ref literal) => write!(f, "{:?}", literal),
-            V3Token::CharLiteral(ref literal) => write!(f, "{:?}", literal),
-            V3Token::BooleanLiteral(ref literal, ref pos) => write!(f, "Boolean literal {} at {:?}", literal, pos),
-            V3Token::Identifier(ref identifier, ref pos) => write!(f, "Identifier `{}` at {:?}", identifier, pos),
-            V3Token::Keyword(ref keyword, ref pos) => write!(f, "Keyword {:?} at {:?}", keyword, pos),
-            V3Token::Seperator(ref seperator, ref pos) => write!(f, "Seperator {:?} at {:?}", seperator, pos),
+            V3Token::Literal(ref literal) => write!(f, "{:?}", literal),
+            V3Token::Identifier(ref identifier) => write!(f, "Identifier `{}`", identifier),
+            V3Token::Keyword(ref keyword) => write!(f, "Keyword {:?}", keyword),
+            V3Token::Seperator(ref seperator) => write!(f, "Seperator {:?}", seperator),
+            V3Token::EOF => write!(f, "EOF"),
         }
     }
 }
 
 pub struct V3Lexer<'chs> {
-    v2: BufV2Lexer<'chs>,
+    v2: BufLexer<V2Lexer<'chs>, V2Token>,
 }
 
 // Process every may be seperator char, if it is special unicode char, emit message and return the ascii version
@@ -80,73 +74,64 @@ fn pass_unicode_char(ch: char, pos: Position) -> (char, Option<LexicalMessage>) 
     }
 }
 
-impl<'chs> IDetailLexer<'chs, V3Token> for V3Lexer<'chs> {
+impl<'chs> ILexer<'chs, V3Token> for V3Lexer<'chs> {
 
     fn new(content_chars: Chars<'chs>, messages: &mut MessageCollection) -> V3Lexer<'chs> {
-        V3Lexer { v2: BufV2Lexer::new(content_chars, messages) }
+        V3Lexer { v2: BufLexer::new(content_chars, messages) }
     }
 
-    fn position(&self) -> Position { self.v2.inner().position() }
-
-    fn next(&mut self, messages: &mut MessageCollection) -> Option<V3Token> {
+    fn next(&mut self, messages: &mut MessageCollection) -> (V3Token, StringPosition) {
 
         loop { // Loop for ignore char
-            match self.v2.next(messages) {
-                Some(BufV2Token{ token: V2Token::StringLiteral{ inner }, next: _1 }) => {
-                    return Some(V3Token::StringLiteral(inner));
+            self.v2.move_next(messages);
+            match self.v2.current_with_preview2() {
+                (&V2Token::Literal(ref lit_value), lit_pos, _2, _3, _4, _5) => {
+                    return (V3Token::Literal(lit_value.clone()), lit_pos);
                 }
-                Some(BufV2Token{ token: V2Token::NumericLiteral{ inner }, next: _1 }) => {
-                    return Some(V3Token::NumericLiteral(inner));
-                }
-                Some(BufV2Token{ token: V2Token::CharLiteral{ inner }, next: _1 }) => {
-                    return Some(V3Token::CharLiteral(inner));
-                }
-                Some(BufV2Token{ token: V2Token::Identifier{ name, pos }, next: _1 }) => {
+                (&V2Token::Identifier(ref name), ident_pos, _2, _3, _4, _5) => {
                     match KeywordKind::try_from(&name) {
-                        Some(keyword) => return Some(V3Token::Keyword(keyword, pos)),
+                        Some(keyword) => return (V3Token::Keyword(keyword), ident_pos),
                         None => {
-                            match &*name {
-                                "true" => return Some(V3Token::BooleanLiteral(true, pos)),
-                                "false" => return Some(V3Token::BooleanLiteral(false, pos)),
-                                _ => return Some(V3Token::Identifier(name, pos)),
+                            match name.as_ref() {
+                                "true" => return (V3Token::Literal(LitValue::from(true)), ident_pos),
+                                "false" => return (V3Token::Literal(LitValue::from(false)), ident_pos),
+                                _ => return (V3Token::Identifier(name.clone()), ident_pos),
                             }
                         }
                     }
                 }
-                Some(BufV2Token{ token: V2Token::Other{ ch, pos }, next: Some(V2Token::Other{ ch: next_ch, pos: next_pos }) }) => {
-                    let (ch, msg) = pass_unicode_char(ch, pos);
-                    let (next_ch, next_msg) = pass_unicode_char(next_ch, next_pos);
+                (&V2Token::Other(ref ch), pos, &V2Token::Other(ref next_ch), next_pos, _4, _5) => {
+                    let (ch, msg) = pass_unicode_char(*ch, pos.start_pos());
+                    let (next_ch, next_msg) = pass_unicode_char(*next_ch, next_pos.start_pos());
                     match msg { Some(msg) => messages.push(msg), None => () }
                     
                     match SeperatorKind::try_from((ch ,next_ch)) {
                         Some(sep) => match sep.len() { 
-                            1 => return Some(V3Token::Seperator(sep, StringPosition::from2(pos, pos))),
+                            1 => return (V3Token::Seperator(sep), pos),
                             2 => {
-                                self.v2.skip1(messages);
+                                self.v2.prepare_skip1();
                                 // Lazy push next_msg because if is not some of 2 word seperator, it will be pushed again in next loop
                                 match next_msg { Some(next_msg) => messages.push(next_msg), None => () }
-                                return Some(V3Token::Seperator(sep, StringPosition::from2(pos, next_pos)));
+                                return (V3Token::Seperator(sep), StringPosition::merge(pos, next_pos));
                             }
                             _ => unreachable!(),
                         },
-                        None => continue,
+                        None => (),
                     }
                 }
-                Some(BufV2Token{ token: V2Token::Other{ ch, pos }, next: _other }) => {
-                    let (ch, msg) = pass_unicode_char(ch, pos);
+                (&V2Token::Other(ch), pos, _2, _3, _4, _5) => {
+                    let (ch, msg) = pass_unicode_char(ch, pos.start_pos());
                     match msg { Some(msg) => messages.push(msg), None => () }
 
                     match SeperatorKind::try_from(ch) {
                         Some(sep) => match sep.len() { 
-                            1 => return Some(V3Token::Seperator(sep, StringPosition::from2(pos, pos))),
+                            1 => return (V3Token::Seperator(sep), pos),
                             _ => unreachable!(),
                         },
-                        None => continue,
+                        None => (),
                     }
                 }
-                None => {
-                    return None;
-                }
+                (&V2Token::EOF, eof_pos, _2, _3, _4, _5) => return (V3Token::EOF, eof_pos),
             }
         }
     }
@@ -168,8 +153,8 @@ fn v3_test1() {
 
     loop {
         match v3lexer.next(&mut messages) {
-            Some(v3) => perrorln!("{:?}", v3),
-            None => break, 
+            (V3Token::EOF, _) => break,
+            v3 => perrorln!("{:?}", v3),
         }
     }
     

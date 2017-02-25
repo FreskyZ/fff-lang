@@ -7,9 +7,6 @@ use message::SyntaxMessage;
 use message::LegacyMessage as Message;
 use message::MessageCollection;
 
-use super::symbol_type::string_literal::StringLiteral;
-use super::symbol_type::char_literal::CharLiteral;
-use super::symbol_type::numeric_literal::NumericLiteral;
 use super::KeywordKind;
 use super::SeperatorKind;
 use super::LitValue;
@@ -41,22 +38,15 @@ test_only_attr!{
     }
 }
 
-impl From<V3Token> for V4Token {
+impl V4Token {
 
-    // map None to EOF
-    fn from(v3: V3Token) -> V4Token {
-        match v3 {
-            V3Token::StringLiteral(StringLiteral{ value, pos, is_raw: _is_raw }) => 
-                V4Token{ value: TokenValue::Literal(LitValue::Str(value)), pos: pos },
-            V3Token::NumericLiteral(NumericLiteral{ value, pos }) => 
-                V4Token{ value: TokenValue::Literal(LitValue::Num(value)), pos: pos },
-            V3Token::CharLiteral(CharLiteral{ value, pos }) => 
-                V4Token{ value: TokenValue::Literal(LitValue::Char(value)), pos: pos },
-            V3Token::BooleanLiteral(value, pos) => 
-                V4Token{ value: TokenValue::Literal(LitValue::Bool(value)), pos: pos },
-            V3Token::Identifier(name, pos) => V4Token{ value: TokenValue::Identifier(name), pos: pos },
-            V3Token::Keyword(kind, pos) => V4Token{ value: TokenValue::Keyword(kind), pos: pos },
-            V3Token::Seperator(kind, pos) => V4Token{ value: TokenValue::Seperator(kind), pos: pos },
+    fn from(v3_and_pos: (V3Token, StringPosition)) -> V4Token {
+        match v3_and_pos {
+            (V3Token::Literal(lit_value), pos) => V4Token{ value: TokenValue::Literal(lit_value), pos: pos },
+            (V3Token::Identifier(name), pos) => V4Token{ value: TokenValue::Identifier(name), pos: pos },
+            (V3Token::Keyword(kind), pos) => V4Token{ value: TokenValue::Keyword(kind), pos: pos },
+            (V3Token::Seperator(kind), pos) => V4Token{ value: TokenValue::Seperator(kind), pos: pos },
+            (V3Token::EOF, pos) => V4Token{ value: TokenValue::EndofFile, pos: pos },
         }
     }
 }
@@ -177,23 +167,28 @@ pub struct V4Lexer {
 
 impl V4Lexer {
     
+    #[allow(unused_assignments)]
     pub fn new(content: &str) -> V4Lexer {
-        use super::buf_lexer::IDetailLexer;
+        use super::buf_lexer::ILexer;
 
         let mut messages = MessageCollection::new();
         let mut v3lexer = V3Lexer::new(content.chars(), &mut messages);
         let mut buf = Vec::new();
+        let mut eof_pos = StringPosition::new();
         loop {
             match v3lexer.next(&mut messages) {
-                Some(token) => buf.push(V4Token::from(token)),
-                None => break,
+                (V3Token::EOF, pos) => {
+                    eof_pos = pos;
+                    break;
+                }
+                v3_and_pos => buf.push(V4Token::from(v3_and_pos)),
             }
         }
 
         V4Lexer{ 
             buf: buf, 
             messages: messages,
-            eof_token: V4Token{ value: TokenValue::EndofFile, pos: StringPosition::from2(v3lexer.position(), v3lexer.position()) },
+            eof_token: V4Token{ value: TokenValue::EndofFile, pos: eof_pos },
         }
     }
 
