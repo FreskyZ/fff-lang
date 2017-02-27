@@ -4,10 +4,11 @@
 // output string or numeric literal, identifier or other char
 
 mod numeric_lit_parser;
+mod unicode_char;
 
 use std::str::Chars;
-use codepos::Position;
 use codepos::StringPosition;
+use message::Message;
 use message::MessageCollection;
 
 use super::v1lexer::V1Token;
@@ -18,7 +19,13 @@ use super::buf_lexer::BufLexer;
 
 use super::LitValue;
 use super::KeywordKind;
+use super::SeperatorKind;
 use self::numeric_lit_parser::parse_numeric_literal;
+
+mod error_strings {
+    #![allow(non_upper_case_globals)]
+    pub const UnexpectedNonASCIIChar: &'static str = "Unexpected non ASCII char";
+}
 
 #[cfg(test)]
 #[derive(Eq, PartialEq, Clone)]
@@ -26,7 +33,7 @@ pub enum V2Token {
     Literal(LitValue),
     Identifier(String),   // Anything of [_a-zA-Z][_a-zA-Z0-9]*
     Keyword(KeywordKind),
-    Other(char),
+    Seperator(SeperatorKind),
     EOF,
 }
 #[cfg(not(test))]
@@ -35,7 +42,7 @@ pub enum V2Token {
     Literal(LitValue),
     Identifier(String),   // Anything of [_a-zA-Z][_a-zA-Z0-9]*
     Keyword(KeywordKind),
-    Other(char),
+    Seperator(SeperatorKind),
     EOF,
 }
 
@@ -48,14 +55,10 @@ impl fmt::Debug for V2Token {
             V2Token::Literal(ref value) => write!(f, "{:?}", value),
             V2Token::Identifier(ref value) => write!(f, "Identifier {:?}", value),
             V2Token::Keyword(ref kind) => write!(f, "Keyword {:?}", kind),
-            V2Token::Other(ref value) => write!(f, "Other {:?}", value),
+            V2Token::Seperator(ref kind) => write!(f, "Seperator {:?}", kind),
             V2Token::EOF => write!(f, "EOF"),
         }
     }
-}
-
-pub struct V2Lexer<'chs> {
-    v1: BufLexer<V1Lexer<'chs>, V1Token>,
 }
 
 trait IdentifierChar {
@@ -67,6 +70,8 @@ trait IdentifierChar {
     fn is_numeric_literal(&self) -> bool;
 
     fn is_seperator(&self) -> bool;
+    
+    fn pass_non_ascii_char(&self, strpos: StringPosition, messages: &mut MessageCollection) -> char; 
 }
 impl IdentifierChar for char {
 
@@ -85,14 +90,33 @@ impl IdentifierChar for char {
     }
     // Only digit or ASCII letters or underscore
     fn is_numeric_literal(&self) -> bool {
-        *self == '_' || *self == '\'' || self.is_alphabetic() || self.is_digit(36) || *self == '.'
+        *self == '_' || self.is_digit(36) || *self == '.'
     }
 
     fn is_seperator(&self) -> bool {
         !self.is_identifier()
     }
+
+    fn pass_non_ascii_char(&self, strpos: StringPosition, messages: &mut MessageCollection) -> char {
+        use self::unicode_char::check_unicode_char;
+
+        match check_unicode_char(*self) {
+            Some((unicode_ch, unicode_name, ascii_ch, ascii_name)) => {
+                messages.push(Message::with_help_by_str(error_strings::UnexpectedNonASCIIChar, vec![
+                    (strpos, ""), 
+                ], vec![
+                    &format!("Did you mean `{}`({}) by `{}`({})?", ascii_ch, ascii_name, unicode_ch, unicode_name),
+                ]));
+                ascii_ch
+            }
+            None => *self,
+        }
+    }
 }
 
+pub struct V2Lexer<'chs> {
+    v1: BufLexer<V1Lexer<'chs>, V1Token>,
+}
 impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
 
     fn new(content_chars: Chars<'chs>, messages: &mut MessageCollection) -> V2Lexer<'chs> {
@@ -103,98 +127,115 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
 
     // input stringliteral or otherchar without comment, output identifier and numeric literal
     fn next(&mut self, messages: &mut MessageCollection) -> (V2Token, StringPosition) {
-        
-        struct VHalf{ ch: char, pos: Position, next_is_sep: bool, next_is_dot: bool }
 
+        #[derive(Debug)] // temp-test-only
+        struct V15Token(char, StringPosition, char, StringPosition, char, StringPosition);
+
+        #[derive(Debug)] // temp-test-only
         enum State {
             Nothing,
-            InIdentifier { value: String, start_pos: Position },
-            InNumericLiteral { value: String, start_pos: Position },
+            InIdent(String, StringPosition),
+            InNumLit(String, StringPosition),
         }
 
         let mut state = State::Nothing;
+        let mut eofed = false;
         loop {
             self.v1.move_next(messages);
-            let vhalf = match self.v1.current_with_preview() {
-                (&V1Token::StringLiteral(ref value), pos, _2, _3) => {
+            let v15 = match self.v1.current_with_preview2() {
+                (&V1Token::StringLiteral(ref value), pos, _2, _3, _4, _5) => {
                     return (V2Token::Literal(LitValue::Str(value.clone())), pos);
                 }
-                (&V1Token::RawStringLiteral(ref value), pos, _2, _3) => {
+                (&V1Token::RawStringLiteral(ref value), pos, _2, _3, _4, _5) => {
                     return (V2Token::Literal(LitValue::Str(value.clone())), pos);
                 }
-                (&V1Token::CharLiteral(ref value), pos, _2, _3) => {
+                (&V1Token::CharLiteral(ref value), pos, _2, _3, _4, _5) => {
                     return (V2Token::Literal(LitValue::Char(value.clone())), pos);
                 }
-                (&V1Token::EOF, eof_pos, _2, _3) => {
-                    return (V2Token::EOF, eof_pos);
+                (&V1Token::EOF, eof_pos, _2, next_strpos, _4, nextnext_strpos) => {
+                    // because if last token is ident, it will not finish because eof return early here
+                    if eofed {
+                        return (V2Token::EOF, eof_pos);
+                    } else {
+                        eofed = true;
+                        V15Token(' ', eof_pos, ' ', next_strpos, ' ', nextnext_strpos)
+                    }
                 }
-                (&V1Token::Other(ch), pos, &V1Token::Other(next_ch), _3) => {
-                    VHalf{ ch: ch, pos: pos.start_pos(), next_is_sep: next_ch.is_seperator(), next_is_dot: next_ch == '.' }
+                (&V1Token::Other(ch), strpos, &V1Token::Other(next_ch), next_strpos, &V1Token::Other(nextnext_ch), nextnext_strpos) => {
+                    let ch = ch.pass_non_ascii_char(strpos, messages);
+                    // let next_ch = next_ch.pass_non_ascii_char(next_strpos, messages);  // check next time
+                    // let nextnext_ch = nextnext_ch.pass_non_ascii_char(nextnext_strpos, messages);
+                    V15Token(ch, strpos, next_ch, next_strpos, nextnext_ch, nextnext_strpos)
                 }
-                (&V1Token::Other(ch), pos, _2, _3) => { 
-                    VHalf{ ch: ch, pos: pos.start_pos(), next_is_sep: true, next_is_dot: false } 
+                (&V1Token::Other(ch), strpos, &V1Token::Other(next_ch), next_strpos, _4, nextnext_strpos) => { // even EOF can be regarded as space
+                    let ch = ch.pass_non_ascii_char(strpos, messages);
+                    // let next_ch = next_ch.pass_non_ascii_char(next_strpos, messages);
+                    V15Token(ch, strpos, next_ch, next_strpos, ' ', nextnext_strpos)
+                }
+                (&V1Token::Other(ch), strpos, _2, next_strpos, _4, nextnext_strpos) => { 
+                    let ch = ch.pass_non_ascii_char(strpos, messages);
+                    V15Token(ch, strpos, ' ', next_strpos, ' ', nextnext_strpos)
                 }
             };
+            // println!("state is {:?}, v15 is {:?}", state, v15);
 
-            match state {
-                State::Nothing => {
-                    match (vhalf.ch.is_identifier_start(), vhalf.ch.is_numeric_literal_start(), vhalf.pos, vhalf.next_is_sep, vhalf.next_is_dot) {
-                        (false, false, pos, _next_is_sep, _next_is_dot) => {  // Nothing 
-                            return (V2Token::Other(vhalf.ch), StringPosition::double(pos));
+            match (state, v15) {
+                (State::Nothing, V15Token(ch, strpos, next_ch, next_strpos, nextnext_ch, nextnext_strpos)) => {
+                    if ch.is_identifier_start() {
+                        let mut value = String::new();
+                        value.push(ch);
+                        state = State::InIdent(value, strpos);
+                    } else if ch.is_numeric_literal_start() {
+                        let mut value = String::new();
+                        value.push(ch);
+                        state = State::InNumLit(value, strpos);
+                    } else {
+                        match SeperatorKind::try_from3(ch, next_ch, nextnext_ch) { // the try_from will check 3, if not, check 2, if not, check 1
+                            Some(sep) => match sep.len() { 
+                                1 => {
+                                    return (V2Token::Seperator(sep), strpos);
+                                }
+                                2 => {
+                                    self.v1.prepare_skip1();
+                                    return (V2Token::Seperator(sep), StringPosition::merge(strpos, next_strpos));
+                                }
+                                3 => {
+                                    self.v1.prepare_skip1();
+                                    self.v1.prepare_skip1();
+                                    return (V2Token::Seperator(sep), StringPosition::merge(strpos, nextnext_strpos));
+                                }
+                                _ => unreachable!(),
+                            },
+                            None => state = State::Nothing,
                         }
-                        (true, false, pos, next_is_sep, _next_is_dot) => { // Identifier try start
-                            let mut value = String::new();
-                            value.push(vhalf.ch);
-                            if next_is_sep {  // Direct return identifier is next preview is a sperator
-                                return (V2Token::Identifier(value), StringPosition::from2(pos, pos));
-                            } else {          // Else normal goto InIdentifier state
-                                state = State::InIdentifier { value: value, start_pos: pos };
-                            }
-                        }
-                        (false, true, pos, next_is_sep, _next_is_dot) => { // Numeric try start
-                            let mut value = String::new();
-                            value.push(vhalf.ch);
-                            if next_is_sep {    // Direct return numeric literal is next preview is a sperator
-                                let (num_lit_val, pos) = parse_numeric_literal(value, StringPosition::double(pos), messages);
-                                return (V2Token::Literal(LitValue::Num(num_lit_val)), pos);
-                            } else {            // else normal goto InIdentifier state
-                                state = State::InNumericLiteral { value: value, start_pos: pos };
-                            }
-                        }
-                        _ => unreachable!()
                     }
-                }
-                State::InIdentifier { mut value, start_pos } => {
-                    if vhalf.ch.is_identifier() {
-                        value.push(vhalf.ch);
-                        if vhalf.next_is_sep { // To be finished, return here
-                            let ident_pos = StringPosition::from2(start_pos, vhalf.pos);
-                            match KeywordKind::try_from(&value) { 
-                                Some(keyword) => match keyword {
-                                    KeywordKind::True => return (V2Token::Literal(LitValue::from(true)), ident_pos),
-                                    KeywordKind::False => return (V2Token::Literal(LitValue::from(false)), ident_pos),
-                                    other_keyword => return (V2Token::Keyword(other_keyword), ident_pos),
-                                },
-                                None => return (V2Token::Identifier(value), ident_pos),
-                            }
-                        } else {
-                            state = State::InIdentifier { value: value, start_pos: start_pos };
+                } 
+                (State::InIdent(mut value, mut ident_strpos), V15Token(ch, strpos, _3, _4, _5, _6)) => {
+                    if !ch.is_identifier() {
+                        self.v1.prepare_dummy1();
+                        match KeywordKind::try_from(&value) { 
+                            Some(keyword) => match keyword {
+                                KeywordKind::True => return (V2Token::Literal(LitValue::from(true)), ident_strpos),
+                                KeywordKind::False => return (V2Token::Literal(LitValue::from(false)), ident_strpos),
+                                other_keyword => return (V2Token::Keyword(other_keyword), ident_strpos),
+                            },
+                            None => return (V2Token::Identifier(value), ident_strpos),
                         }
                     } else {
-                        unreachable!()
+                        value.push(ch);
+                        ident_strpos = StringPosition::merge(ident_strpos, strpos);
+                        state = State::InIdent(value, ident_strpos);
                     }
                 }
-                State::InNumericLiteral { mut value, start_pos } => {
-                    if vhalf.ch.is_numeric_literal() {  
-                        value.push(vhalf.ch);                        
-                        if vhalf.next_is_sep && !vhalf.next_is_dot { // To be finished, return here
-                            let (num_lit_val, pos) = parse_numeric_literal(value, StringPosition::from2(start_pos, vhalf.pos), messages);
-                            return (V2Token::Literal(LitValue::Num(num_lit_val)), pos);
-                        } else {
-                            state = State::InNumericLiteral{ value: value, start_pos: start_pos };
-                        }
+                (State::InNumLit(mut value, mut num_lit_strpos), V15Token(ch, strpos, next_ch, _4, _5, _6)) => {
+                    if (ch == '.' && next_ch == '.') || !ch.is_numeric_literal() {
+                        self.v1.prepare_dummy1();
+                        let (num_lit_val, pos) = parse_numeric_literal(value, num_lit_strpos, messages);
+                        return (V2Token::Literal(LitValue::Num(num_lit_val)), pos);
                     } else {
-                        unreachable!()
+                        value.push(ch);
+                        num_lit_strpos = StringPosition::merge(num_lit_strpos, strpos);
+                        state = State::InNumLit(value, num_lit_strpos);
                     }
                 }
             }
@@ -204,26 +245,158 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
 
 #[cfg(test)]
 #[test]
+fn v2_char_ext() {
+    
+    assert_eq!('a'.is_identifier_start(), true);
+    assert_eq!('啊'.is_identifier_start(), true);
+    assert_eq!(','.is_identifier_start(), false);
+    assert_eq!('，'.is_identifier_start(), false);
+    assert_eq!('_'.is_identifier_start(), true);
+    assert_eq!('.'.is_identifier_start(), false);
+    assert_eq!('1'.is_identifier_start(), false);
+
+    assert_eq!('a'.is_identifier(), true);
+    assert_eq!('啊'.is_identifier(), true);
+    assert_eq!(','.is_identifier(), false);
+    assert_eq!('，'.is_identifier(), false);
+    assert_eq!('_'.is_identifier(), true);
+    assert_eq!('.'.is_identifier(), false);
+    assert_eq!('1'.is_identifier(), true);
+
+    assert_eq!('a'.is_numeric_literal_start(), false);
+    assert_eq!('啊'.is_numeric_literal_start(), false);
+    assert_eq!(','.is_numeric_literal_start(), false);
+    assert_eq!('，'.is_numeric_literal_start(), false);
+    assert_eq!('_'.is_numeric_literal_start(), false);
+    assert_eq!('1'.is_numeric_literal_start(), true);
+    assert_eq!('.'.is_numeric_literal_start(), false);
+
+    assert_eq!('a'.is_numeric_literal(), true);
+    assert_eq!('啊'.is_numeric_literal(), false);
+    assert_eq!(','.is_numeric_literal(), false);
+    assert_eq!('，'.is_numeric_literal(), false);
+    assert_eq!('_'.is_numeric_literal(), true);
+    assert_eq!('1'.is_numeric_literal(), true);
+    assert_eq!('.'.is_numeric_literal(), true);
+    
+    assert_eq!('a'.is_seperator(), false);
+    assert_eq!('啊'.is_seperator(), false);
+    assert_eq!(','.is_seperator(), true);
+    assert_eq!('，'.is_seperator(), true);
+    assert_eq!('_'.is_seperator(), false);
+    assert_eq!('.'.is_seperator(), true);
+    assert_eq!('1'.is_seperator(), false);
+}
+
+#[cfg(test)]
+#[test]
+fn v2_non_ascii_ch() {
+    
+    {
+        let messages = &mut MessageCollection::new();
+        assert_eq!('.'.pass_non_ascii_char(make_str_pos!(3, 4, 5, 6), messages), '.');
+
+        let expect_messages = &mut MessageCollection::new();
+        assert_eq!(messages, expect_messages);
+    }
+    
+    {
+        let messages = &mut MessageCollection::new();
+        assert_eq!('\\'.pass_non_ascii_char(make_str_pos!(3, 4, 5, 6), messages), '\\');
+
+        let expect_messages = &mut MessageCollection::new();
+        assert_eq!(messages, expect_messages);
+    }
+    
+    {
+        let messages = &mut MessageCollection::new();
+        assert_eq!(';'.pass_non_ascii_char(make_str_pos!(3, 4, 5, 6), messages), ';');
+
+        let expect_messages = &mut MessageCollection::new();
+        assert_eq!(messages, expect_messages);
+    }
+
+    {
+        let messages = &mut MessageCollection::new();
+        assert_eq!('。'.pass_non_ascii_char(make_str_pos!(3, 4, 5, 6), messages), '.');
+
+        let expect_messages = &mut MessageCollection::new();
+        expect_messages.push(Message::with_help_by_str(error_strings::UnexpectedNonASCIIChar, vec![
+            (make_str_pos!(3, 4, 5, 6), ""), 
+        ], vec![
+            &format!("Did you mean `{}`({}) by `{}`({})?", '.', "Period", '。', "Ideographic Full Stop"),
+        ]));
+        assert_eq!(messages, expect_messages);
+    }
+
+    {
+        let messages = &mut MessageCollection::new();
+        assert_eq!('⧹'.pass_non_ascii_char(make_str_pos!(3, 4, 5, 6), messages), '\\');
+
+        let expect_messages = &mut MessageCollection::new();
+        expect_messages.push(Message::with_help_by_str(error_strings::UnexpectedNonASCIIChar, vec![
+            (make_str_pos!(3, 4, 5, 6), ""), 
+        ], vec![
+            &format!("Did you mean `{}`({}) by `{}`({})?", '\\', "Backslash", '⧹', "Big Reverse Solidus"),
+        ]));
+        assert_eq!(messages, expect_messages);
+    }
+
+    {
+        let messages = &mut MessageCollection::new();
+        assert_eq!('；'.pass_non_ascii_char(make_str_pos!(3, 4, 5, 6), messages), ';');
+
+        let expect_messages = &mut MessageCollection::new();
+        expect_messages.push(Message::with_help_by_str(error_strings::UnexpectedNonASCIIChar, vec![
+            (make_str_pos!(3, 4, 5, 6), ""), 
+        ], vec![
+            &format!("Did you mean `{}`({}) by `{}`({})?", ';', "Semicolon", '；', "Fullwidth Semicolon"),
+        ]));
+        assert_eq!(messages, expect_messages);
+    }
+}
+
+#[cfg(test)]
+#[test]
 fn v2_base() {    
+    use message::LexicalMessage;
+
+    // Only to make decltype(V2Lexer as BufLexer::next(...)) to display better
+    #[derive(Eq, PartialEq)]
+    struct V2AndStrPos(V2Token, StringPosition);
+    use std::fmt;
+    impl From<(V2Token, StringPosition)> for V2AndStrPos {
+        fn from(v2_and_strpos: (V2Token, StringPosition)) -> V2AndStrPos {
+            V2AndStrPos(v2_and_strpos.0, v2_and_strpos.1)
+        }
+    }
+    impl fmt::Debug for V2AndStrPos {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(f, "\n({:?}, {:?})", self.0, self.1)
+        }
+    }
 
     macro_rules! test_case {
-        ($program: expr, $($expect: expr, )*) => ({
-            let mut messages = MessageCollection::new();
-            let mut v2lexer = V2Lexer::new($program.chars(), &mut messages);
+        ($program: expr, [$($expect: expr, )*] [$($expect_msg: expr, )*]) => ({
+            let messages = &mut MessageCollection::new();
+            let mut v2lexer = V2Lexer::new($program.chars(), messages);
             let mut v2s = Vec::new();
             loop {
-                match v2lexer.next(&mut messages) {
+                match v2lexer.next(messages) {
                     (V2Token::EOF, _) => break,
-                    v2 => v2s.push(v2),
+                    v2 => v2s.push(V2AndStrPos::from(v2)),
                 }
             }
 
-            assert_eq!(v2s, vec![$($expect, )*]);
-            if !messages.is_empty() {
-                perrorln!("Messages for {}:", stringify!($program));
-                perror!("{:?}", messages);
-            }
-        })
+            assert_eq!(v2s, vec![$(V2AndStrPos::from($expect), )*]);
+
+            let expect_messages = &mut MessageCollection::new();
+            $(
+                expect_messages.push($expect_msg);
+            )*
+            assert_eq!(messages, expect_messages);
+        });
+        ($program: expr, [$($expect: expr, )*]) => (test_case!($program, [$($expect, )*] []))
     }
 
     macro_rules! lit {
@@ -231,96 +404,168 @@ fn v2_base() {
             (V2Token::Literal(LitValue::from($val)), StringPosition::from4($row1, $col1, $row2, $col2))
         )
     }
+    macro_rules! lit_num_none {
+        ($row1: expr, $col1: expr, $row2: expr, $col2: expr) => (
+            (V2Token::Literal(LitValue::Num(None)), StringPosition::from4($row1, $col1, $row2, $col2))
+        )
+    }
+    macro_rules! kw {
+        ($val: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr) => (
+            (V2Token::Keyword($val), StringPosition::from4($row1, $col1, $row2, $col2))
+        )
+    }
     macro_rules! ident {
         ($name: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr) => (
             (V2Token::Identifier($name.to_owned()), StringPosition::from4($row1, $col1, $row2, $col2))
         )
     }
-    macro_rules! ch {
-        ($ch: expr, $row: expr, $col: expr) => (
-            (V2Token::Other($ch), make_str_pos!($row, $col, $row, $col))
-        );
-        ($ch: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr) => (
-            (V2Token::Other($ch), make_str_pos!($row1, $col1, $row2, $col2))
+    macro_rules! sep {
+        ($sep: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr) => (
+            (V2Token::Seperator($sep), make_str_pos!($row1, $col1, $row2, $col2))
         )
     }
 
-    const PROGRAM1: &'static str = "123 456.1";    // Space char as seperator 
-    const PROGRAM2: &'static str = "abc/**/def\"\"ght"; // Comment and string literal as seperator 
-    const PROGRAM3: &'static str = "123a/ qw1.ad -qw+\nR\"1.23+456\".to_owned()kekekee\n"; // Otherchar as seperator
-    #[allow(dead_code)] // temp
-    const PROGRAM5: &'static str = "123, abc, hello世界, 你好world_a，123世界";   // Chinese identifier
+    // row       1              2                     3
+    // col       0        1     0        1         2  0
+    // col       1234567890123 412345678901234567890 11234
+    test_case!{ "var a = true;\nvar b = 789_123.456;\ndefg", [  // keyword, identifier, bool lit, num lit, seperator
+            kw!(KeywordKind::Var, 1, 1, 1, 3),
+            ident!("a", 1, 5, 1, 5),
+            sep!(SeperatorKind::Assign, 1, 7, 1, 7),
+            lit!(true, 1, 9, 1, 12),
+            sep!(SeperatorKind::SemiColon, 1, 13, 1, 13),
+            kw!(KeywordKind::Var, 2, 1, 2, 3),
+            ident!("b", 2, 5, 2, 5),
+            sep!(SeperatorKind::Assign, 2, 7, 2, 7),
+            lit!(789123.4560000001, 2, 9, 2, 19),
+            sep!(SeperatorKind::SemiColon, 2, 20, 2, 20),
+            ident!("defg", 3, 1, 3, 4),
+        ]
+    }
 
-    test_case!(PROGRAM1,
-        lit!(123, 1, 1, 1, 3),
-        ch!(' ', 1, 4),
-        lit!(456.1, 1, 5, 1, 9), 
-    );
-    test_case!(PROGRAM2,
-        ident!("abc", 1, 1, 1, 3),
-        ch!(' ', 1, 4),
-        ident!("def", 1, 8, 1, 10),
-        lit!("", 1, 11, 1, 12),
-        ident!("ght", 1, 13, 1, 15),    
-    );
-    test_case!(PROGRAM3,
-        lit!(123, 1, 1, 1, 4),
-        ch!('/', 1, 5), 
-        ch!(' ', 1, 6),
-        ident!("qw1", 1, 7, 1, 9),
-        ch!('.', 1, 10),
-        ident!("ad", 1, 11, 1, 12),
-        ch!(' ', 1, 13),
-        ch!('-', 1, 14),
-        ident!("qw", 1, 15, 1, 16),
-        ch!('+', 1, 17),
-        ch!('\n', 1, 18),
-        lit!("1.23+456", 2, 1, 2, 11),
-        ch!('.', 2, 12),
-        ident!("to_owned", 2, 13, 2, 20),
-        ch!('(', 2, 21),
-        ch!(')', 2, 22),
-        ident!("kekekee", 2, 23, 2, 29),
-        ch!('\n', 2, 30), 
-    );
-    test_case!("123, abc。hello世界，你好world_a,\n123世界", 
-        lit!(123, 1, 1, 1, 3),
-        ch!(',', 1, 4),
-        ch!(' ', 1, 5),
-        ident!("abc", 1, 6, 1, 8),
-        ch!('。', 1, 9),
-        ident!("hello世界", 1, 10, 1, 16),
-        ch!('，', 1, 17),
-        ident!("你好world_a", 1, 18, 1, 26),
-        ch!(',', 1, 27),
-        ch!('\n', 1, 28),
-        lit!(123, 2, 1, 2, 5),
-    );
-}
+    //           0          1            2
+    //           1 2 34567890 123456 7 8901
+    test_case!{ "一个chinese变量, a_中文_var", [  // chinese ident
+            ident!("一个chinese变量", 1, 1, 1, 11),
+            sep!(SeperatorKind::Comma, 1, 12, 1, 12),
+            ident!("a_中文_var", 1, 14, 1, 21),
+        ]
+    }
 
-#[test] 
-fn v2_buf() {
-    // use super::BufV2Lexer;
+    //           0        1         2         3         4         5         6         7
+    //           123456789012345678901234567890123456789012345678901234567890123456789012345
+    test_case!{ "[1, 123 _ 1u64( 123.456,) 123_456{123u32}123f32 += 123.0 / 123u8 && 1024u8]", [  // different postfix\types of num lit, different types of sep
+            sep!(SeperatorKind::LeftBracket, 1, 1, 1, 1),
+            lit!(1, 1, 2, 1, 2),
+            sep!(SeperatorKind::Comma, 1, 3, 1, 3),
+            lit!(123, 1, 5, 1, 7),
+            ident!("_", 1, 9, 1, 9),
+            lit!(1u64, 1, 11, 1, 14),
+            sep!(SeperatorKind::LeftParenthenes, 1, 15, 1, 15),
+            lit!(123.456, 1, 17, 1, 23),
+            sep!(SeperatorKind::Comma, 1, 24, 1, 24),
+            sep!(SeperatorKind::RightParenthenes, 1, 25, 1, 25),
+            lit!(123456, 1, 27, 1, 33),
+            sep!(SeperatorKind::LeftBrace, 1, 34, 1, 34),
+            lit!(123u32, 1, 35, 1, 40),
+            sep!(SeperatorKind::RightBrace, 1, 41, 1, 41),
+            lit!(123f32, 1, 42, 1, 47),
+            sep!(SeperatorKind::AddAssign, 1, 49, 1, 50),
+            lit!(123.0, 1, 52, 1, 56),
+            sep!(SeperatorKind::Div, 1, 58, 1, 58),
+            lit!(123u8, 1, 60, 1, 64),
+            sep!(SeperatorKind::LogicalAnd, 1, 66, 1, 67),
+            lit_num_none!(1, 69, 1, 74),
+            sep!(SeperatorKind::RightBracket, 1, 75, 1, 75),
+        ] [
+            LexicalMessage::NumericLiteralTooLarge{ literal_pos: make_str_pos!(1, 69, 1, 74) },
+        ]
+    }
 
-    // macro_rules! test_case_buf {
-    //     ($program: expr) => ({
-    //         let mut messages = MessageCollection::new();
-    //         let mut bufv2 = BufV2Lexer::new($program.chars(), &mut messages);
-    //         loop {
-    //             match bufv2.next(&mut messages) {
-    //                 Some(v2) => perrorln!("{:?}", v2),
-    //                 None => break,
-    //             }
-    //         }
+    //           0        1         2         3         4         5         6         7
+    //           1234567890123456789012345678901234567890123456789012345678901234567890123456789
+    test_case!{ "[123 * 0x123 - 0xAFF & 0o777 || 0oXXX != 0b101010 == 0b123456 -> 0d123.. 0dABC]", [    // differnt prefix\base of num lit
+            sep!(SeperatorKind::LeftBracket, 1, 1, 1, 1),
+            lit!(123, 1, 2, 1, 4),
+            sep!(SeperatorKind::Mul, 1, 6, 1, 6),
+            lit!(0x123, 1, 8, 1, 12),
+            sep!(SeperatorKind::Sub, 1, 14, 1, 14),
+            lit!(0xAFF, 1, 16, 1, 20),
+            sep!(SeperatorKind::BitAnd, 1, 22, 1, 22),
+            lit!(0o777, 1, 24, 1, 28),
+            sep!(SeperatorKind::LogicalOr, 1, 30, 1, 31),
+            lit_num_none!(1, 33, 1, 37),
+            sep!(SeperatorKind::NotEqual, 1, 39, 1, 40),
+            lit!(0b101010, 1, 42, 1, 49),
+            sep!(SeperatorKind::Equal, 1, 51, 1, 52),
+            lit_num_none!(1, 54, 1, 61),
+            sep!(SeperatorKind::NarrowRightArrow, 1, 63, 1, 64),
+            lit!(123, 1, 66, 1, 70),
+            sep!(SeperatorKind::Range, 1, 71, 1, 72),
+            lit_num_none!(1, 74, 1, 78),
+            sep!(SeperatorKind::RightBracket, 1, 79, 1, 79),
+        ] [
+            LexicalMessage::UnexpectedCharInNumericLiteral{ literal_pos: make_str_pos!(1, 33, 1, 37) },
+            LexicalMessage::UnexpectedCharInNumericLiteral{ literal_pos: make_str_pos!(1, 54, 1, 61) },
+            LexicalMessage::UnexpectedCharInNumericLiteral{ literal_pos: make_str_pos!(1, 74, 1, 78) },
+        ]
+    }
 
-    //         if !messages.is_empty() {
-    //             perrorln!("Messages for {}:", stringify!($program));
-    //             perror!("{:?}", messages);
-    //         }
-    //     })
-    // }
+    //           0         1
+    //           123456 7890123 45678
+    test_case!{ "[1, 2，3.5, 4。5】<<=", [  // not ascii char hint and recover
+            sep!(SeperatorKind::LeftBracket, 1, 1, 1, 1),
+            lit!(1, 1, 2, 1, 2),
+            sep!(SeperatorKind::Comma, 1, 3, 1, 3),
+            lit!(2, 1, 5, 1, 5),
+            sep!(SeperatorKind::Comma, 1, 6, 1, 6),
+            lit!(3.5, 1, 7, 1, 9),
+            sep!(SeperatorKind::Comma, 1, 10, 1, 10),
+            lit!(4.5, 1, 12, 1, 14),
+            sep!(SeperatorKind::RightBracket, 1, 15, 1, 15),
+            sep!(SeperatorKind::ShiftLeftEqual, 1, 16, 1, 18),
+        ] [
+            Message::with_help_by_str(error_strings::UnexpectedNonASCIIChar, vec![
+                (make_str_pos!(1, 6, 1, 6), ""), 
+            ], vec![
+                &format!("Did you mean `{}`({}) by `{}`({})?", ',', "Comma", '，', "Fullwidth Comma"),
+            ]),
+            Message::with_help_by_str(error_strings::UnexpectedNonASCIIChar, vec![
+                (make_str_pos!(1, 13, 1, 13), ""), 
+            ], vec![
+                &format!("Did you mean `{}`({}) by `{}`({})?", '.', "Period", '。', "Ideographic Full Stop"),
+            ]),
+            Message::with_help_by_str(error_strings::UnexpectedNonASCIIChar, vec![
+                (make_str_pos!(1, 15, 1, 15), ""), 
+            ], vec![
+                &format!("Did you mean `{}`({}) by `{}`({})?", ']', "Right Square Bracket", '】', "Right Black Lenticular Bracket"),
+            ]),
+        ]
+    }
 
-    // test_case_buf!(PROGRAM1);
-    // test_case_buf!(PROGRAM2);
-    // test_case_buf!(PROGRAM3);
+    //           123456789
+    test_case!{ "1..2.0f32",  [  // range operator special case
+            lit!(1, 1, 1, 1, 1),
+            sep!(SeperatorKind::Range, 1, 2, 1, 3),
+            lit!(2f32, 1, 4, 1, 9),
+        ]
+    }
+
+    test_case!{ "2...3",  [  // range operator special case 2
+            lit!(2, 1, 1, 1, 1),
+            sep!(SeperatorKind::Range, 1, 2, 1, 3),
+            sep!(SeperatorKind::Dot, 1, 4, 1, 4),
+            lit!(3, 1, 5, 1, 5),
+        ]
+    }
+
+    //           0          1          2
+    //           1 234567 8901 234567890123456
+    test_case!{ "r\"hello\" '\\u1234' 12/**/34 ", [    // dispatch v1
+            lit!("hello", 1, 1, 1, 8),
+            lit!('\u{1234}', 1, 10, 1, 17),
+            lit!(12, 1, 19, 1, 20),
+            lit!(34, 1, 25, 1, 26),
+        ]
+    }
 }

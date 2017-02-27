@@ -622,7 +622,12 @@ impl MessageCollection {
         if !legacy.is_new() {
             // panic!("Message is not new"); // magic to make lots of tests to fail
         }
-        self.messages.push(legacy);
+        
+        // Not repeat report error
+        // Used in lexical/v2lexer/char::pass_non_ascii_char
+        if self.messages.len() == 0 || (self.messages.len() > 0 && legacy != self.messages[self.messages.len() - 1]) {
+            self.messages.push(legacy);
+        }
     }
 
     pub fn pop(&mut self) { // Pop top

@@ -249,3 +249,21 @@ fn uni_sep() {
     assert_eq!(check_unicode_char('；'), Some(('；', "Fullwidth Semicolon", ';', "Semicolon")));
     assert_eq!(check_unicode_char(';'), None);
 }
+
+// this means unicode char hint should be exactly after v1 before identifier parser
+#[cfg(test)]
+#[test]
+#[should_panic]
+fn uni_sep_is_not_alphabetic() {
+
+    let mut fails = Vec::new();
+    for uni_sep in UNICODE_ARRAY {
+        if uni_sep.0.is_alphabetic() != uni_sep.2.is_alphabetic() {
+            fails.push(uni_sep);
+        }
+    }
+
+    if fails.len() != 0 {
+        panic!("{:?}", fails);
+    }
+}

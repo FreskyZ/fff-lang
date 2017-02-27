@@ -29,7 +29,7 @@ pub trait ILexer<'chs, TToken> {
 pub struct BufLexer<TLexer, TToken> {
     lexer: TLexer, 
     skips: Cell<i32>,
-    is_first_time: bool,
+    dummys: Cell<i32>,
     current: (TToken, StringPosition),
     next: (TToken, StringPosition),
     nextnext: (TToken, StringPosition),
@@ -45,17 +45,24 @@ impl<'chs, TLexer, TToken> BufLexer<TLexer, TToken>
         let current = lexer.next(messages);
         let next = lexer.next(messages);
         let nextnext = lexer.next(messages);
-        BufLexer{ lexer: lexer, current: current, next: next, nextnext: nextnext, skips: Cell::new(0), is_first_time: true }
+        BufLexer { 
+            lexer: lexer, 
+            current: current, next: next, nextnext: nextnext,
+            skips: Cell::new(0), 
+            dummys: Cell::new(1), 
+        }
     }
 
     fn actual_move_next(&mut self, messages: &mut MessageCollection) {
 
+        // Update: now the feature is based on self.dummys not on self.is_first_time
         // discard first time of next, too make this usage possible
         // loop{ buflexer.move_next(); match buflexer.current() { ... return ... return ... } }
-        if self.is_first_time {   
-            self.is_first_time = false;
-            return;
-        }
+        // if self.is_first_time {   
+        //     self.is_first_time = false;
+        //     return;
+        // }
+
         // strange method for 
         //     self.current = self.next;  // as self is mutable borrowed, cannot move self.next
         //     self.next = self.nextnext; // same
@@ -67,6 +74,10 @@ impl<'chs, TLexer, TToken> BufLexer<TLexer, TToken>
         self.nextnext = self.lexer.next(messages);
     }
     pub fn move_next(&mut self, messages: &mut MessageCollection) {
+        if self.dummys.get() != 0 {
+            self.dummys.set(self.dummys.get() - 1);
+            return;
+        }
         for _ in 0..self.skips.get() + 1 {
             self.actual_move_next(messages);
         }
@@ -75,6 +86,10 @@ impl<'chs, TLexer, TToken> BufLexer<TLexer, TToken>
     /// this skip will perform at next time of move next
     pub fn prepare_skip1(&self) {
         self.skips.set(self.skips.get() + 1)
+    }
+    /// this dummy makes next more 1 move attempt to be dummy
+    pub fn prepare_dummy1(&self) {
+        self.dummys.set(self.dummys.get() + 1);
     }
 
     pub fn current(&self) -> (&TToken, StringPosition) {
@@ -111,15 +126,31 @@ fn buf_lexer_test() {
     } 
     
     let mut buflexer = BufLexer::<TestLexer, TestToken>::new("".chars(), &mut MessageCollection::new());
+    let messages = &mut MessageCollection::new();
 
-    buflexer.move_next(&mut MessageCollection::new());
+    buflexer.move_next(messages);
     assert_eq!(buflexer.current_with_preview2(), 
         (&TestToken(1), make_str_pos!(1, 1, 1, 2), &TestToken(2), make_str_pos!(1, 2, 1, 3), &TestToken(3), make_str_pos!(1, 3, 1, 4)));
-    buflexer.move_next(&mut MessageCollection::new());
+    buflexer.move_next(messages);
     assert_eq!(buflexer.current_with_preview2(), 
         (&TestToken(2), make_str_pos!(1, 2, 1, 3), &TestToken(3), make_str_pos!(1, 3, 1, 4), &TestToken(4), make_str_pos!(1, 4, 1, 5)));
-    buflexer.move_next(&mut MessageCollection::new());
-    buflexer.move_next(&mut MessageCollection::new());
+    buflexer.prepare_skip1();
+    buflexer.move_next(messages);
     assert_eq!(buflexer.current_with_preview2(), 
         (&TestToken(4), make_str_pos!(1, 4, 1, 5), &TestToken(5), make_str_pos!(1, 5, 1, 6), &TestToken(6), make_str_pos!(1, 6, 1, 7)));
+    buflexer.prepare_skip1();
+    buflexer.prepare_skip1();
+    buflexer.move_next(messages);
+    assert_eq!(buflexer.current_with_preview2(), 
+        (&TestToken(7), make_str_pos!(1, 7, 1, 8), &TestToken(8), make_str_pos!(1, 8, 1, 9), &TestToken(9), make_str_pos!(1, 9, 1, 10)));
+    buflexer.prepare_dummy1();
+    buflexer.move_next(messages);
+    assert_eq!(buflexer.current_with_preview2(), 
+        (&TestToken(7), make_str_pos!(1, 7, 1, 8), &TestToken(8), make_str_pos!(1, 8, 1, 9), &TestToken(9), make_str_pos!(1, 9, 1, 10)));
+    buflexer.prepare_dummy1();
+    buflexer.prepare_dummy1();
+    buflexer.move_next(messages);
+    buflexer.move_next(messages);
+    assert_eq!(buflexer.current_with_preview2(), 
+        (&TestToken(7), make_str_pos!(1, 7, 1, 8), &TestToken(8), make_str_pos!(1, 8, 1, 9), &TestToken(9), make_str_pos!(1, 9, 1, 10)));
 }

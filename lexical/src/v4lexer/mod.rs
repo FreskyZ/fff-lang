@@ -11,144 +11,124 @@ use super::KeywordKind;
 use super::SeperatorKind;
 use super::LitValue;
 
-use super::v3lexer::V3Lexer;
-use super::v3lexer::V3Token;
+use super::v2lexer::V2Lexer;
+use super::v2lexer::V2Token;
 
 use super::IToken;
 
-// Token
-test_only_attr!{
-    [derive(Clone, Eq, PartialEq)]
-    ![derive(Clone)]
-    pub enum TokenValue {
-        Literal(LitValue),
-        Identifier(String),
-        Keyword(KeywordKind),
-        Seperator(SeperatorKind),
-        EndofFile,
-    }
+#[cfg(test)]
+#[derive(Eq, PartialEq)]  
+struct V4Token {
+    value: V2Token,
+    pos: StringPosition,
 }
-
-test_only_attr!{
-    [derive(Clone, Eq, PartialEq)]
-    ![derive(Clone)]    
-    pub struct V4Token {
-        value: TokenValue,
-        pos: StringPosition,
-    }
+#[cfg(not(test))]
+struct V4Token {
+    value: V2Token, 
+    pos: StringPosition,
 }
-
 impl V4Token {
-
-    fn from(v3_and_pos: (V3Token, StringPosition)) -> V4Token {
-        match v3_and_pos {
-            (V3Token::Literal(lit_value), pos) => V4Token{ value: TokenValue::Literal(lit_value), pos: pos },
-            (V3Token::Identifier(name), pos) => V4Token{ value: TokenValue::Identifier(name), pos: pos },
-            (V3Token::Keyword(kind), pos) => V4Token{ value: TokenValue::Keyword(kind), pos: pos },
-            (V3Token::Seperator(kind), pos) => V4Token{ value: TokenValue::Seperator(kind), pos: pos },
-            (V3Token::EOF, pos) => V4Token{ value: TokenValue::EndofFile, pos: pos },
-        }
+    fn from(v2_and_pos: (V2Token, StringPosition)) -> V4Token {
+        V4Token{ value: v2_and_pos.0, pos: v2_and_pos.1 }
     }
 }
-
 impl fmt::Debug for V4Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         try!(match self.value {
-            TokenValue::Literal(ref lit) => write!(f, "{:?} at ", lit),
-            TokenValue::Identifier(ref name) => write!(f, "Identifier `{}` at ", name),
-            TokenValue::Keyword(ref kind) => write!(f, "Keyword {:?} at ", kind),
-            TokenValue::Seperator(ref kind) => write!(f, "Seperator {:?} at ", kind),
-            TokenValue::EndofFile => write!(f, "<EOF> at "), 
+            V2Token::Literal(ref lit) => write!(f, "{:?} at ", lit),
+            V2Token::Identifier(ref name) => write!(f, "Identifier `{}` at ", name),
+            V2Token::Keyword(ref kind) => write!(f, "Keyword {:?} at ", kind),
+            V2Token::Seperator(ref kind) => write!(f, "Seperator {:?} at ", kind),
+            V2Token::EOF => write!(f, "<EOF> at "), 
         });
         write!(f, "{:?}", self.pos)
     }
 }
-
 impl IToken for V4Token {
 
     fn is_keyword(&self, kind: KeywordKind) -> bool {
         match self.value {
-            TokenValue::Keyword(ref self_kind) => *self_kind == kind,
+            V2Token::Keyword(ref self_kind) => *self_kind == kind,
             _ => false,
         }
     }
     fn is_seperator(&self, kind: SeperatorKind) -> bool {
         match self.value {
-            TokenValue::Seperator(ref self_kind) => *self_kind == kind,
+            V2Token::Seperator(ref self_kind) => *self_kind == kind,
             _ => false,
         }
     }
     fn is_spec_ident(&self, name: &str) -> bool {
         match self.value {
-            TokenValue::Identifier(ref self_name) => self_name == name,
+            V2Token::Identifier(ref self_name) => self_name == name,
             _ => false,
         }
     }
     fn is_ident(&self) -> bool {
         match self.value {
-            TokenValue::Identifier(_) => true,
+            V2Token::Identifier(_) => true,
             _ => false,
         }
     }
     fn is_eof(&self) -> bool {
         match self.value {
-            TokenValue::EndofFile => true, 
+            V2Token::EOF => true, 
             _ => false,
         }
     }
 
     fn is_lit(&self) -> bool {
         match self.value {
-            TokenValue::Literal(_) => true,
+            V2Token::Literal(_) => true,
             _ => false,
         }
     }
     fn is_str_lit(&self) -> bool {
         match self.value {
-            TokenValue::Literal(LitValue::Str(_)) => true,
+            V2Token::Literal(LitValue::Str(_)) => true,
             _ => false,
         }
     }
     fn is_num_lit(&self) -> bool {
         match self.value {
-            TokenValue::Literal(LitValue::Num(_)) => true,
+            V2Token::Literal(LitValue::Num(_)) => true,
             _ => false,
         }
     }
     fn is_char_lit(&self) -> bool {
         match self.value {
-            TokenValue::Literal(LitValue::Char(_)) => true,
+            V2Token::Literal(LitValue::Char(_)) => true,
             _ => false,
         }
     }
     fn is_bool_lit(&self) -> bool {
         match self.value {
-            TokenValue::Literal(LitValue::Bool(_)) => true,
+            V2Token::Literal(LitValue::Bool(_)) => true,
             _ => false,
         }
     }
 
     fn get_keyword(&self) -> Option<KeywordKind> {
         match self.value {
-            TokenValue::Keyword(ref kind) => Some(kind.clone()),
+            V2Token::Keyword(ref kind) => Some(kind.clone()),
             _ => None
         }
     }
     fn get_seperator(&self) -> Option<SeperatorKind> {
         match self.value {
-            TokenValue::Seperator(ref kind) => Some(kind.clone()),
+            V2Token::Seperator(ref kind) => Some(kind.clone()),
             _ => None
         }
     }
     fn get_identifier(&self) -> Option<String> {
         match self.value {
-            TokenValue::Identifier(ref name) => Some(name.clone()),
+            V2Token::Identifier(ref name) => Some(name.clone()),
             _ => None
         }
     }
     fn get_lit_val(&self) -> Option<LitValue> {
         match self.value {
-            TokenValue::Literal(ref val) => Some(val.clone()),
+            V2Token::Literal(ref val) => Some(val.clone()),
             _ => None
         }
     }
@@ -172,12 +152,12 @@ impl V4Lexer {
         use super::buf_lexer::ILexer;
 
         let mut messages = MessageCollection::new();
-        let mut v3lexer = V3Lexer::new(content.chars(), &mut messages);
+        let mut v2lexer = V2Lexer::new(content.chars(), &mut messages);
         let mut buf = Vec::new();
         let mut eof_pos = StringPosition::new();
         loop {
-            match v3lexer.next(&mut messages) {
-                (V3Token::EOF, pos) => {
+            match v2lexer.next(&mut messages) {
+                (V2Token::EOF, pos) => {
                     eof_pos = pos;
                     break;
                 }
@@ -188,7 +168,7 @@ impl V4Lexer {
         V4Lexer{ 
             buf: buf, 
             messages: messages,
-            eof_token: V4Token{ value: TokenValue::EndofFile, pos: eof_pos },
+            eof_token: V4Token{ value: V2Token::EOF, pos: eof_pos },
         }
     }
 

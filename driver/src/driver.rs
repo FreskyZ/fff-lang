@@ -43,3 +43,11 @@ pub fn compile_input(file_name: String) {
 
     println!("Byebye");
 }
+
+// TODO: 
+// Finish lexical move out, use new message format
+// Move syntax out
+// Move codegen out
+// Create optimize
+// Move vm out
+// Move main out and change this to be a lib

@@ -21,13 +21,16 @@ macro_rules! define_seperator {
     (
         $enum_name: ident,
         [
-            $($ch: expr => $name1: ident, $category1: expr,)*
+            $($ch1: expr => $name1: ident, $category1: expr,)*
         ]
         [
-            $($ch1: expr, $ch2: expr => $name2: ident, $category2: expr,)*
+            $($ch21: expr, $ch22: expr => $name2: ident, $category2: expr,)*
         ]
         [
-            $($ch3: expr => $name3: ident, $category31: expr, $category32: expr, )*   // for multiple category...
+            $($ch31: expr, $ch32: expr, $ch33: expr => $name3: ident, $category3: expr, )*
+        ]
+        [
+            $($ch4: expr => $name4: ident, $category41: expr, $category42: expr, )*   // for multiple category...
         ]
     ) => (
         #[derive(Clone, Eq, PartialEq)]
@@ -41,6 +44,9 @@ macro_rules! define_seperator {
             $(
                 $name3,
             )*
+            $(
+                $name4,
+            )*
         }
 
         use std::fmt;
@@ -48,13 +54,16 @@ macro_rules! define_seperator {
             fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result{
                 match *self {
                     $(
-                        $enum_name::$name1 => write!(f, "`{}`({})", $ch, stringify!($name1)),
+                        $enum_name::$name1 => write!(f, "`{}`({})", $ch1, stringify!($name1)),
                     )*
                     $(
-                        $enum_name::$name2 => write!(f, "`{}{}`({})", $ch1, $ch2, stringify!($name2)),
+                        $enum_name::$name2 => write!(f, "`{}{}`({})", $ch21, $ch22, stringify!($name2)),
                     )*
                     $(
-                        $enum_name::$name3 => write!(f, "`{}`({})", $ch3, stringify!($name3)),
+                        $enum_name::$name3 => write!(f, "`{}{}{}`({})", $ch31, $ch32, $ch33, stringify!($name3)),
+                    )*
+                    $(
+                        $enum_name::$name4 => write!(f, "`{}`({})", $ch4, stringify!($name4)),
                     )*
                 }
             }
@@ -63,40 +72,49 @@ macro_rules! define_seperator {
             fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result{
                 match *self {
                     $(
-                        $enum_name::$name1 => write!(f, "operator{}", $ch),
+                        $enum_name::$name1 => write!(f, "{}", $ch1),
                     )*
                     $(
-                        $enum_name::$name2 => write!(f, "operator{}{}", $ch1, $ch2),
+                        $enum_name::$name2 => write!(f, "{}{}", $ch21, $ch22),
                     )*
                     $(
-                        $enum_name::$name3 => write!(f, "operator{}", $ch3),
+                        $enum_name::$name3 => write!(f, "{}{}{}", $ch32, $ch32, $ch33),
+                    )*
+                    $(
+                        $enum_name::$name4 => write!(f, "{}", $ch4),
                     )*
                 }
             }
         }
 
-        use util::TryFrom;
-        impl TryFrom<char> for $enum_name {
-            fn try_from(ch: char) -> Option<$enum_name> {
+        impl $enum_name {
+            pub fn try_from1(ch: char) -> Option<$enum_name> {
                 match ch {
                     $(
-                        $ch => Some($enum_name::$name1),
+                        $ch1 => Some($enum_name::$name1),
                     )*
                     $(
-                        $ch3 => Some($enum_name::$name3),
+                        $ch4 => Some($enum_name::$name4),
                     )*
                     _ => None,
                 }
             }
-        }
 
-        impl TryFrom<(char, char)> for $enum_name {
-            fn try_from(chs: (char, char)) -> Option<$enum_name> {
-                match chs {
+            pub fn try_from2(ch1: char, ch2: char) -> Option<$enum_name> {
+                match (ch1, ch2) {
                     $(
-                        ($ch1, $ch2) => Some($enum_name::$name2),
+                        ($ch21, $ch22) => Some($enum_name::$name2),
                     )*
-                    (ch, _) => $enum_name::try_from(ch),
+                    (ch, _) => $enum_name::try_from1(ch),
+                }
+            }
+
+            pub fn try_from3(ch1: char, ch2: char, ch3: char) -> Option<$enum_name> {
+                match (ch1, ch2, ch3) {
+                    $(
+                        ($ch31, $ch32, $ch33) => Some($enum_name::$name3), 
+                    )*
+                    (ch1, ch2, _) => $enum_name::try_from2(ch1, ch2),
                 }
             }
         }
@@ -111,7 +129,10 @@ macro_rules! define_seperator {
                         $enum_name::$name2 => 2,
                     )*
                     $(
-                        $enum_name::$name3 => 1,
+                        $enum_name::$name3 => 3,
+                    )*
+                    $(
+                        $enum_name::$name4 => 1,
                     )*
                 }
             }
@@ -125,7 +146,10 @@ macro_rules! define_seperator {
                         $enum_name::$name2 => $category2 == expect,
                     )*
                     $(
-                        $enum_name::$name3 => $category31 == expect || $category32 == expect, 
+                        $enum_name::$name3 => $category3 == expect,
+                    )*
+                    $(
+                        $enum_name::$name4 => $category41 == expect || $category42 == expect, 
                     )*
                 }
             }
@@ -155,10 +179,9 @@ define_seperator!{ SeperatorKind,
         '{' => LeftBrace,           SeperatorCategory::Seperator,
         '}' => RightBrace,          SeperatorCategory::Seperator,
         ',' => Comma,               SeperatorCategory::Seperator,
-        // ':' => Colon,            SeperatorCategory::Seperator,           
+        ':' => Colon,               SeperatorCategory::Seperator,           
         ';' => SemiColon,           SeperatorCategory::Seperator,
         '.' => Dot,                 SeperatorCategory::Seperator,
-        ':' => Range,               SeperatorCategory::Seperator,   // Change from `..` to here because 1..2 is regarded as due decimal point in num lit, a serious problem
         // '#' => AttributeSign,    SeperatorCategory::Seperator,
     ]
     [
@@ -180,10 +203,16 @@ define_seperator!{ SeperatorKind,
         '>', '=' => GreatEqual,             SeperatorCategory::Relational,
         '!', '=' => NotEqual,               SeperatorCategory::Equality,
         '-', '>' => NarrowRightArrow,       SeperatorCategory::Seperator,
-        // '=', '>' => WideRightArrow,      SeperatorCategory::Seperator,
-        // ':', ':' => NamespaceSeperator,  SeperatorCategory::Seperator,
+        '.', '.' => Range,                  SeperatorCategory::Seperator,
         '+', '+' => Increase,               SeperatorCategory::Unary,
         '-', '-' => Decrease,               SeperatorCategory::Unary,
+        // '=', '>' => WideRightArrow,      SeperatorCategory::Seperator,
+        // ':', ':' => NamespaceSeperator,  SeperatorCategory::Seperator,
+    ]
+    [
+    //  ch1, ch2, ch3 => var,               category
+        '>', '>', '=' => ShiftRightEqual,   SeperatorCategory::Assign,
+        '<', '<', '=' => ShiftLeftEqual,    SeperatorCategory::Assign,
     ]
     [
     //  ch,    var,                 category1,                      category2
