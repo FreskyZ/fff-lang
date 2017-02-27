@@ -15,7 +15,6 @@ mod buf_lexer;
 mod v0lexer;
 mod v1lexer;
 mod v2lexer;
-// mod v3lexer;
 mod v4lexer;
 
 pub use self::symbol_type::seperator::SeperatorKind;
@@ -51,6 +50,4 @@ pub trait IToken : fmt::Debug {
 }
 
 // TODO: 
-// Merge v3 to v2, directly use v2 in v4, remove useless codes
-// standarize v2 test, v4 test, no stdout and stderr, keep track of output length
-// keep track of build time of lexical and driver
+// numeric literal refactor, use new message, add 1.1E10 feature, remove ' seperator， remove double _ seperator

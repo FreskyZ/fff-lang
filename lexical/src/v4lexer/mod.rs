@@ -144,7 +144,6 @@ pub struct V4Lexer {
     eof_token: V4Token,
     messages: MessageCollection,
 }
-
 impl V4Lexer {
     
     #[allow(unused_assignments)]
@@ -161,7 +160,7 @@ impl V4Lexer {
                     eof_pos = pos;
                     break;
                 }
-                v3_and_pos => buf.push(V4Token::from(v3_and_pos)),
+                v2 => buf.push(V4Token::from(v2)),
             }
         }
 
@@ -199,17 +198,9 @@ impl V4Lexer {
         self.push_expects(vec![final_token], index, sym_size)
     }
     pub fn push_expects<T>(&mut self, final_tokens: Vec<&str>, index: usize, sym_size: usize) -> (Option<T>, usize) {
+        use util::format_vector_display;
 
-        let mut desc = final_tokens.into_iter().fold(String::new(), |mut buf, token| {
-            buf.push_str(token);
-            buf.push_str(", ");
-            buf
-        });
-        if desc.len() > 2 {
-            let target_len = desc.len() - 2; 
-            desc.truncate(target_len); 
-        }
-
+        let desc = format_vector_display(&final_tokens, ", ");
         let actual_token = if index >= self.buf.len() { 
             &self.eof_token 
         } else { 
@@ -295,9 +286,22 @@ fn v4_base() {
 #[cfg(test)]
 #[test]
 fn v4_push() {
+    use codepos::Position;
 
     let lexer = &mut V4Lexer::new("abcdef");
-    let _ = lexer.push_expect::<i32>("123", 0, 0);
-    let _ = lexer.push_expects::<i32>(vec!["456", "789"], 0, 0);
-    perrorln!("Messages: {:?}", lexer.messages());
+    assert_eq!(lexer.push_expect::<i32>("123", 0, 0), (None, 0));
+    assert_eq!(lexer.push_expects::<i32>(vec!["456", "789"], 0, 0xABCD), (None, 0xABCD));
+    
+    let expect_messages = &mut MessageCollection::new();
+    expect_messages.push(SyntaxMessage::ExpectSymbol{
+        expect: "123".to_owned(),
+        actual: format!("{:?}", V4Token{ value: V2Token::Identifier("abcdef".to_owned()), pos: make_str_pos!(1, 1, 1, 6) }),
+        pos: make_pos!(1, 1),
+    });
+    expect_messages.push(SyntaxMessage::ExpectSymbol{
+        expect: "456, 789".to_owned(),
+        actual: format!("{:?}", V4Token{ value: V2Token::Identifier("abcdef".to_owned()), pos: make_str_pos!(1, 1, 1, 6) }),
+        pos: make_pos!(1, 1),
+    });
+    assert_eq!(lexer.messages(), expect_messages);
 }
