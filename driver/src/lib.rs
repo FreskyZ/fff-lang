@@ -1,5 +1,22 @@
+#![allow(dead_code)]
+#![allow(unused_imports)]
 
-// Compiler core driver 
+///! fff-lang
+///! compiler driver
+
+#[macro_use] // perrorln, test_only_attribute, test_only, test_condition_only
+extern crate util;
+extern crate lexical;
+#[macro_use]
+extern crate codepos; // make_pos, make_str_pos
+extern crate codemap;
+
+extern crate messages as message;  // TODO: this is for legacy compatibility, remove it
+
+mod file_map;
+mod syntax;
+mod codegen;
+mod vm;
 
 use file_map::InputReader;
 use lexical::Lexer;

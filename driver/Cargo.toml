@@ -1,5 +1,5 @@
 [package]
-name = "ffc"
+name = "driver"
 version = "0.1.1"
 authors = ["FreskyZ <fresky7@outlook.com>"]
 
@@ -10,6 +10,6 @@ codepos = { path="../codepos" }
 util = { path="../util" }
 messages = { path = "../messages" }
 
-[[bin]]
-path = "src/main.rs"
-name = "ffc"
+[lib]
+name = "driver"
+path = "src/lib.rs"

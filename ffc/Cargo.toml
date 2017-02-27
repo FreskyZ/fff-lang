@@ -1,0 +1,12 @@
+[package]
+name = "ffc"
+version = "0.1.0"
+authors = ["FreskyZ <fresky7@outlook.com>"]
+
+[dependencies]
+driver = { path = "../driver" }
+util = { path="../util" }
+
+[[bin]]
+name = "ffc"
+path = "main.rs"

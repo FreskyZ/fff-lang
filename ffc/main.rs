@@ -1,22 +1,11 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
-#[macro_use] // perrorln, test_only_attribute, test_only, test_condition_only
+#[macro_use]
 extern crate util;
-extern crate lexical;
-#[macro_use]
-extern crate codepos; // make_pos, make_str_pos
-extern crate codemap;
+extern crate driver;
 
-extern crate messages as message;  // TODO: this is for legacy compatibility, remove it
-
-#[macro_use]
 mod config;
-mod file_map;
-mod syntax;
-mod codegen;
-mod vm;
-mod driver;
 
 const USAGE_STRING: &'static str = r"
 Usage: 
