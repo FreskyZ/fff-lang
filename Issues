@@ -16,3 +16,10 @@ Extensions:
 
 Compile to native code, 
     if register is hard to use, just use a stack
+
+
+Use a DSL to impl a macro, like DSL for and DSL while, it looks like normal code, but is all compile time,
+it may make compiler more complex, but used it is more happy
+suggest `$` to represent a macro invocation
+
+Suggest data driven rather than runtime reflection

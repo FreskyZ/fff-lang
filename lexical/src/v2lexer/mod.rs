@@ -86,7 +86,7 @@ impl IdentifierChar for char {
 
     // Only digit, '.' start is not supported
     fn is_numeric_literal_start(&self) -> bool {
-        self.is_digit(10)
+        self.is_digit(10) || *self == '-'
     }
     // Only digit or ASCII letters or underscore
     fn is_numeric_literal(&self) -> bool {
@@ -228,7 +228,10 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                     }
                 }
                 (State::InNumLit(mut value, mut num_lit_strpos), V15Token(ch, strpos, next_ch, _4, _5, _6)) => {
-                    if (ch == '.' && next_ch == '.') || !ch.is_numeric_literal() {
+                    // 1. for `1..2` case; 2. for `1.some_member_fn()` case, not considered `123.f32` because it is invalid
+                    if (ch == '.' && next_ch == '.')
+                        || (ch == '.' && next_ch.is_identifier_start()) 
+                        || !ch.is_numeric_literal() {
                         self.v1.prepare_dummy1();
                         let (num_lit_val, pos) = parse_numeric_literal(value, num_lit_strpos, messages);
                         return (V2Token::Literal(LitValue::Num(num_lit_val)), pos);
@@ -454,7 +457,7 @@ fn v2_base() {
 
     //           0        1         2         3         4         5         6         7
     //           123456789012345678901234567890123456789012345678901234567890123456789012345
-    test_case!{ "[1, 123 _ 1u64( 123.456,) 123_456{123u32}123f32 += 123.0 / 123u8 && 1024u8]", [  // different postfix\types of num lit, different types of sep
+    test_case!{ "[1, 123 _ 1u64( 123.456,) -123_456{123u32}123f32 += 123.0 / 123u8 && 1024u8]", [  // different postfix\types of num lit, different types of sep
             sep!(SeperatorKind::LeftBracket, 1, 1, 1, 1),
             lit!(1, 1, 2, 1, 2),
             sep!(SeperatorKind::Comma, 1, 3, 1, 3),
@@ -465,7 +468,7 @@ fn v2_base() {
             lit!(123.456, 1, 17, 1, 23),
             sep!(SeperatorKind::Comma, 1, 24, 1, 24),
             sep!(SeperatorKind::RightParenthenes, 1, 25, 1, 25),
-            lit!(123456, 1, 27, 1, 33),
+            lit!(-123456, 1, 27, 1, 33),
             sep!(SeperatorKind::LeftBrace, 1, 34, 1, 34),
             lit!(123u32, 1, 35, 1, 40),
             sep!(SeperatorKind::RightBrace, 1, 41, 1, 41),
@@ -556,6 +559,16 @@ fn v2_base() {
             sep!(SeperatorKind::Range, 1, 2, 1, 3),
             sep!(SeperatorKind::Dot, 1, 4, 1, 4),
             lit!(3, 1, 5, 1, 5),
+        ]
+    }
+
+    //           1234567890
+    test_case!{ "1.is_odd()", [  //  another special case
+            lit!(1, 1, 1, 1, 1),
+            sep!(SeperatorKind::Dot, 1, 2, 1, 2),
+            ident!("is_odd", 1, 3, 1, 8),
+            sep!(SeperatorKind::LeftParenthenes, 1, 9, 1, 9),
+            sep!(SeperatorKind::RightParenthenes, 1, 10, 1, 10),
         ]
     }
 
