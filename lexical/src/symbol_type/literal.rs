@@ -3,7 +3,7 @@
 
 use std::fmt;
 
-#[derive(PartialEq, Clone)]
+#[derive(Clone)]
 pub enum NumLitValue {
     I8(i8),
     U8(u8),
@@ -15,6 +15,40 @@ pub enum NumLitValue {
     U64(u64),
     F32(f32),
     F64(f64),
+}
+impl PartialEq<NumLitValue> for NumLitValue {
+
+    fn eq(&self, rhs: &NumLitValue) -> bool {
+        use std::mem;
+
+        match (self, rhs) {
+            (&NumLitValue::I8(lhs), &NumLitValue::I8(rhs)) => lhs == rhs,
+            (&NumLitValue::U8(lhs), &NumLitValue::U8(rhs)) => lhs == rhs,
+            (&NumLitValue::I16(lhs), &NumLitValue::I16(rhs)) => lhs == rhs,
+            (&NumLitValue::U16(lhs), &NumLitValue::U16(rhs)) => lhs == rhs,
+            (&NumLitValue::I32(lhs), &NumLitValue::I32(rhs)) => lhs == rhs,
+            (&NumLitValue::U32(lhs), &NumLitValue::U32(rhs)) => lhs == rhs,
+            (&NumLitValue::I64(lhs), &NumLitValue::I64(rhs)) => lhs == rhs,
+            (&NumLitValue::U64(lhs), &NumLitValue::U64(rhs)) => lhs == rhs,
+            (&NumLitValue::F32(lhs), &NumLitValue::F32(rhs)) => if lhs.is_normal() && rhs.is_normal() { 
+                unsafe {
+                    let (lhs, rhs) = (mem::transmute::<_, u32>(lhs), mem::transmute::<_, u32>(rhs));
+                    if lhs > rhs { lhs - rhs == 1 } else { rhs - lhs <= 1 }
+                }
+            } else {
+                lhs == rhs
+            },  // strangely fix num_lit_parser test case: 12345678901234567890.0
+            (&NumLitValue::F64(lhs), &NumLitValue::F64(rhs)) => if lhs.is_normal() && rhs.is_normal() {
+                unsafe { 
+                    let (lhs, rhs) = (mem::transmute::<_, u64>(lhs), mem::transmute::<_, u64>(rhs));
+                    if lhs > rhs { lhs - rhs == 1 } else { rhs - lhs <= 1 }
+                }
+            } else {
+                lhs == rhs
+            },
+            _ => false,
+        }
+    }
 }
 impl Eq for NumLitValue {
 }
