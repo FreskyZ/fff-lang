@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 ///! fff-lang
 ///! numeric literal parser
 // TODO: ' as seperator, multi seperator not supported, full test
@@ -121,14 +120,6 @@ impl<T> BufChars<T> where T : Iterator<Item = char> {
     }
 }
 
-enum Prefix {
-    Binary,
-    Octal,
-    Decimal,
-    Hex,
-    NotSet,
-}
-
 fn f64_checked_add<T: Into<f64>>(lhs: f64, rhs: T) -> Option<f64> {
     use std::f64;
 
@@ -161,343 +152,451 @@ fn f64_checked_mul_add<T: Into<f64>, U: Into<f64>>(lhs: f64, muler: T, adder: U)
         (false, false) => if (f64::MAX - adder) / muler <= lhs { None } else { Some(lhs.mul_add(muler, adder)) },
     }
 }
-// for pure number conditions, use i32 or u32 or i64 or u64 or f64 to hold the value
-fn f64_final_value(value: f64, is_negative: bool) -> NumLitValue {
-    use std::{i32, u32, i64, u64, f64};
-    if value <= i32::MAX as f64 {
-        return NumLitValue::I32(value as i32);
-    } else if value <= u32::MAX as f64 && !is_negative {
-        return NumLitValue::U32(value as u32);
-    } else if value <= i64::MAX as f64{
-        return NumLitValue::I64(value as i64);
-    } else if value <= u64::MAX as f64 && !is_negative {
-        return NumLitValue::U64(value as u64);
-    } else {
-        return NumLitValue::F64(value);
-    }
-}
-fn u64_final_value(value: u64, is_negative: bool) -> NumLitValue {
+fn u64_final_value(value: u64, is_positive: bool) -> NumLitValue {
     use std::{i32, u32, i64, u64 };
     if value <= i32::MAX as u64 {
-        return NumLitValue::I32(value as i32);
-    } else if value <= u32::MAX as u64 && !is_negative {
+        return NumLitValue::I32(if is_positive { value as i32 } else { -(value as i32) });
+    } else if value <= u32::MAX as u64 && is_positive {
         return NumLitValue::U32(value as u32);
     } else if value <= i64::MAX as u64 {
-        return NumLitValue::I64(value as i64);
+        return NumLitValue::I64(if is_positive { value as i64 } else { -(value as i64) });
     } else {
-        return NumLitValue::U64(value as u64);
+        return NumLitValue::U64(value);
     }
 }
 
-fn delegate(raw: String, strpos: StringPosition) -> Result<NumLitValue, Message> {
+fn str_to_num_lit_impl(raw: String, strpos: StringPosition) -> Result<NumLitValue, Message> {
     use std::{ i8, u8, i16, u16, i32, u32, i64, u64, f32, f64 };
 
-    let new_empty_error = |i: i32| { 
-        Err(Message::new(error_strings::InvalidNumericLiteral.to_owned(), vec![(strpos, format!("{}", i))])) 
+    let new_empty_error = |_: i32| { 
+        Err(Message::new(error_strings::InvalidNumericLiteral.to_owned(), vec![(strpos, format!("{}", 0))])) 
     };
-
-    // enum State {
-    //     Nothing, // no char processed
-    //     CheckedNegative(bool), // first char processed, negative and move next or nothing, has_negative_prefix
-    //     // after a char after checked int prefix, value stored f64 and name is maybe int because it may expand to f64, normally record current value with base by prefix
-    //     // meet dot, e to error, meet EOF to return, meet u and i to check more
-    //     MaybeIntNormal(bool, Prefix, bool, f64),  // has_negative, int prefix, previous is underscore, current value
-    //     // after a char after checked int prefix which is notset, normally record current value with base 10
-    //     UnknownNormal(bool, f64),
-    //     // current char is u or i, check if is some int postfix
-    //     // if not, error, if is, check current value overflow, if success, return
-    //     ExpectingIntPostfix(bool, f64),
-    //     // after dot, meet e to FloatExpo
-    //     FloatFraction(bool, f64, u32), // is_negative, current value, current after dot length
-    //     // after e
-    //     FloatExpo(bool, f64, u32), // is_negative, current value, current expo
-    //     // currenc char is f, check if is some float postfix
-    //     ExpectingFloatPostfix(bool, f64, u32),
-    // }
-    // let mut state = State::Nothing;
     
-    macro_rules! conv { ($id: expr, $new_state: expr) => ({ println!("    conv {}", $id); $new_state }) }
+    enum State {
+        ReallyNothing,
+        Nothing(bool),                  // is positive
+        UnknownI32(i32, bool),          // value, is positive
+        UnknownU32(u32),
+        UnknownI64(i64, bool),
+        UnknownU64(u64),
+        UnknownF64(f64, bool),          
+        IntPrefix(u32, bool),           // base, is positive
+        AfterDot(f64, i32, bool),       // current value, bits after dot, is positive
+        DirectAfterE(f64),              // direct after e means expect char09 or + or -
+        AfterE(f64, i32),               // exp may be i32
+        ExpectInt(u32, u64, bool),      // base, current value, is positive
+        ExpectSignedIntPostfix(i64),
+        ExpectUnsignedIntPostfix(u64),
+        ExpectFloatPostfix(f64),
+        ExpectEOF(NumLitValue),         // retval
+    }
+
+    let mut state = State::ReallyNothing;
+    let mut chars = BufChars::new(raw.chars());
+    
+    macro_rules! conv { ($id: expr, $new_state: expr) => ({ println!("    conv {}", $id); state = $new_state; }) }
     macro_rules! retok { ($id: expr, $ret_val: expr) => ({ println!("    retok {}", $id); return Ok($ret_val); }) }
     macro_rules! reterr { ($id: expr) => ({ println!("    reterr {}", $id); return new_empty_error($id); }) }
 
-    enum State {
-        Nothing,
-        SomeValue(f64),         // TODO NOW: split it into SomeValueInIntRange(u64) and SomeValueOutIntRange(f64) to fix test case 27
-        IntPrefix(u32), // base
-        AfterDot(f64, i32),  // current value, bits after dot
-        DirectAfterE(f64),   // direct after e means expect char09 or + or -
-        AfterE(f64, i32),    // exp may be i32
-        ExpectInt(u32, u64), // base, current value
-        ExpectIntPostfix(u64),
-        ExpectFloatPostfix(f64),
-        ExpectEOF(NumLitValue),  // retval
-    }
-
-    let mut state = State::Nothing;
-    let mut chars = BufChars::new(raw.chars());
     loop {
         chars.move_next();
         match chars.current_with_state(state) {
-            (State::Nothing, '0', EOFCHAR, _) 
-                => retok!(0, NumLitValue::I32(0)),
 
-            (State::Nothing, '0', 'i', _)
-            | (State::Nothing, '0', 'u', _) => {
-                state = conv!(0, State::ExpectIntPostfix(0));
-            }
-            (State::Nothing, '0', 'f', _) => {
-                state = conv!(1, State::ExpectFloatPostfix(0f64));
+            // ---- ReallyNothing ----
+            (State::ReallyNothing, '-', EOFCHAR, _) => reterr!(0),
+            (State::ReallyNothing, '-', _, _) => conv!(0, State::Nothing(false)),
+            (State::ReallyNothing, _, _, _) => {
+                chars.skip1();
+                conv!(1, State::Nothing(true)); 
             }
 
-            (State::Nothing, '0', 'b', EOFCHAR)
-            | (State::Nothing, '0', 'o', EOFCHAR)
-            | (State::Nothing, '0', 'd', EOFCHAR)
-            | (State::Nothing, '0', 'x', EOFCHAR) 
-                => reterr!(18),           
+            // ---- Nothing(is_positive) ----
+            (State::Nothing(_), '0', EOFCHAR, _) => retok!(0, NumLitValue::I32(0)),
 
-            (State::Nothing, '0', 'b', _) => {
+            (State::Nothing(_), '0', 'i', _) => conv!(2, State::ExpectSignedIntPostfix(0i64)),
+            (State::Nothing(_), '0', 'u', _) => conv!(3, State::ExpectUnsignedIntPostfix(0u64)),
+            (State::Nothing(_), '0', 'f', _) => conv!(4, State::ExpectFloatPostfix(0f64)),
+
+            (State::Nothing(_), '0', 'b', EOFCHAR)
+            | (State::Nothing(_), '0', 'o', EOFCHAR)
+            | (State::Nothing(_), '0', 'd', EOFCHAR)
+            | (State::Nothing(_), '0', 'x', EOFCHAR) => reterr!(1),           
+
+            (State::Nothing(is_positive), '0', 'b', _) => {
                 chars.dummy1();
-                state = conv!(2, State::IntPrefix(2));
+                conv!(5, State::IntPrefix(2, is_positive));
             }
-            (State::Nothing, '0', 'o', _) => {
+            (State::Nothing(is_positive), '0', 'o', _) => {
                 chars.dummy1();
-                state = conv!(3, State::IntPrefix(8));
+                conv!(6, State::IntPrefix(8, is_positive));
             }
-            (State::Nothing, '0', 'd', _) => {
+            (State::Nothing(is_positive), '0', 'd', _) => {
                 chars.dummy1();
-                state = conv!(4, State::IntPrefix(10));
+                conv!(7, State::IntPrefix(10, is_positive));
             }
-            (State::Nothing, '0', 'x', _) => {
+            (State::Nothing(is_positive), '0', 'x', _) => {
                 chars.dummy1();
-                state = conv!(5, State::IntPrefix(16));
+                conv!(8, State::IntPrefix(16, is_positive));
             }
 
-            (State::Nothing, '0', _, _) => reterr!(0),
-            (State::Nothing, ch, _, _) => match ch.to_digit(10) {
-                Some(digit) => {
-                    state = conv!(6, State::SomeValue(digit as f64));
-                }
-                None => reterr!(1),
+            (State::Nothing(_), '0', _, _) => reterr!(2),  
+            (State::Nothing(is_positive), ch, _, _) => match ch.to_digit(10) {
+                Some(digit) => conv!(9, State::UnknownI32(digit as i32, is_positive)),
+                None => reterr!(3),
             },
 
-            (State::SomeValue(value), EOFCHAR, _, _) => {
-                retok!(1, f64_final_value(value, false));
+            // ---- UnknownI32(value, is_positive) ----
+            (State::UnknownI32(value, is_positive), EOFCHAR, _, _) => 
+                retok!(1, NumLitValue::I32(if is_positive { value } else { -value })),
+            (State::UnknownI32(value, is_positive), 'i', _, _) => {
+                chars.skip1();
+                conv!(10, State::ExpectSignedIntPostfix(if is_positive { value } else { -value } as i64));
+            },
+            (State::UnknownI32(value, true), 'u', _, _) => {
+                chars.skip1();
+                conv!(11, State::ExpectUnsignedIntPostfix(value as u64));
+            },
+            (State::UnknownI32(_, false), 'u', _, _) => reterr!(4),
+            (State::UnknownI32(value, is_positive), 'f', _, _) => {
+                chars.skip1();
+                conv!(12, State::ExpectFloatPostfix(if is_positive { value } else { -value } as f64));
             }
-            (State::SomeValue(value), 'i', _, _)
-            | (State::SomeValue(value), 'u', _, _) => if value > u64::max_value() as f64 {
-                reterr!(28);
+            (State::UnknownI32(value, is_positive), 'e', _, _) 
+            | (State::UnknownI32(value, is_positive), 'E', _, _) => {
+                chars.skip1();
+                conv!(13, State::DirectAfterE(if is_positive { value } else { -value } as f64));
+            }
+            (State::UnknownI32(value, is_positive), '.', _, _) => 
+                conv!(14, State::AfterDot(value as f64, 1, is_positive)),
+            (State::UnknownI32(value, is_positive), ch, _, _) => match ch.to_digit(10) {
+                None => reterr!(5),
+                Some(digit) => match value.checked_mul(10) {
+                    None => {
+                        let i64_value = value as i64 * 10i64 + digit as i64;  // won't overflow i64 anyway, may not overflow u32
+                        if is_positive && i64_value <= u32::MAX as i64 {
+                            conv!(67, State::UnknownU32(i64_value as u32));
+                        } else {
+                            conv!(15, State::UnknownI64(i64_value, is_positive));
+                        }
+                    }
+                    Some(value) => match (value.checked_add(digit as i32), is_positive) {
+                        (None, false) => conv!(16, State::UnknownI64(-(value as i64 + digit as i64), false)),   // negative i32 add digit overflow is i64
+                        (None, true) => conv!(17, State::UnknownU32(value as u32 + digit)),                     // positive i32 add digit overflow must be u32
+                        (Some(value), is_positive) => conv!(18, State::UnknownI32(value, is_positive)),         // not overflow continue i32
+                    },
+                },
+            },
+
+            // ---- UnknownU32(value) ----
+            (State::UnknownU32(value), EOFCHAR, _, _) => 
+                retok!(2, NumLitValue::U32(value)),
+            (State::UnknownU32(value), 'i', _, _) => {
+                chars.skip1();
+                conv!(19, State::ExpectSignedIntPostfix(value as i64));
+            },
+            (State::UnknownU32(value), 'u', _, _) => {
+                chars.skip1();
+                conv!(20, State::ExpectUnsignedIntPostfix(value as u64));
+            },
+            (State::UnknownU32(value), 'f', _, _) => {
+                chars.skip1();
+                conv!(21, State::ExpectFloatPostfix(value as f64));
+            }
+            (State::UnknownU32(value), 'e', _, _) 
+            | (State::UnknownU32(value), 'E', _, _) => {
+                chars.skip1();
+                conv!(22, State::DirectAfterE(value as f64));
+            }
+            (State::UnknownU32(value), '.', _, _) => 
+                conv!(23, State::AfterDot(value as f64, 1, true)),
+            (State::UnknownU32(value), ch, _, _) => match ch.to_digit(10) {
+                None => reterr!(6),
+                Some(digit) => match value.checked_mul(10) { 
+                    None => conv!(24, State::UnknownI64(value as i64 * 10i64 + digit as i64, true)),   // u32 mul 10 overflow must be positive i64
+                    Some(value) => match value.checked_add(digit) {
+                        None => conv!(25, State::UnknownI64(value as i64 + digit as i64, true)),       // u32 add digit overflow must be positive i64
+                        Some(value) => conv!(26, State::UnknownU32(value)),                            // not overflow continue u32
+                    },
+                },
+            },
+
+            // ---- UnknownI64(value, is_positive) ----
+            (State::UnknownI64(value, is_positive), EOFCHAR, _, _) => 
+                retok!(3, NumLitValue::I64(if is_positive { value } else { -value })),
+            (State::UnknownI64(value, is_positive), 'i', _, _) => {
+                chars.skip1();
+                conv!(27, State::ExpectSignedIntPostfix(if is_positive { value } else { -value }));
+            },
+            (State::UnknownI64(value, true), 'u', _, _) => {
+                chars.skip1();
+                conv!(28, State::ExpectUnsignedIntPostfix(value as u64));
+            },
+            (State::UnknownI64(_, false), 'u', _, _) => reterr!(7),
+            (State::UnknownI64(value, is_positive), 'f', _, _) => {
+                chars.skip1();
+                conv!(29, State::ExpectFloatPostfix(if is_positive { value } else { -value } as f64));
+            }
+            (State::UnknownI64(value, is_positive), 'e', _, _) 
+            | (State::UnknownI64(value, is_positive), 'E', _, _) => {
+                chars.skip1();
+                conv!(30, State::DirectAfterE(if is_positive { value } else { -value } as f64));
+            }
+            (State::UnknownI64(value, is_positive), '.', _, _) => 
+                conv!(31, State::AfterDot(value as f64, 1, is_positive)),
+            (State::UnknownI64(value, is_positive), ch, _, _) => match ch.to_digit(10) {
+                None => reterr!(8),
+                Some(digit) => match value.checked_mul(10i64) {
+                    None => match (value as u64).checked_mul(10u64) {
+                        None => conv!(32, State::UnknownF64(value as f64 * 10f64 + digit as f64, is_positive)), // mul 10 overflow i64, mul 10 overflow u64, that is f64
+                        Some(value) => match value.checked_add(digit as u64) {
+                            None => conv!(68, State::UnknownF64(value as f64 + digit as f64, is_positive)),     // mul 10 overflow i64, mul 10 not overflow u64, but add digit overflow u64, that is f64
+                            Some(value) => conv!(69, State::UnknownU64(value)),                                 // mul 10 overflow i64, mul 10 and add digit not overflow u64 // LAST CONV
+                        },
+                    },
+                    Some(value) => match (value.checked_add(digit as i64), is_positive) {
+                        (None, false) => conv!(33, State::UnknownF64(value as f64 + digit as f64, false)),     // negative i64 add digit overflow is f64
+                        (None, true) => conv!(34, State::UnknownU64(value as u64 + digit as u64)),             // positive i64 add digit overflow must be u64
+                        (Some(value), is_positive) => conv!(35, State::UnknownI64(value, is_positive)),        // not overflow continue i64
+                    },
+                },
+            },
+
+            // ---- UnknownU64(value) ----
+            (State::UnknownU64(value), EOFCHAR, _, _) => 
+                retok!(4, NumLitValue::U64(value)),
+            (State::UnknownU64(_), 'i', _, _) => reterr!(9), // UnknownU64 must large then i64::MAX
+            (State::UnknownU64(value), 'u', _, _) => {
+                chars.skip1();
+                conv!(36, State::ExpectUnsignedIntPostfix(value));
+            },
+            (State::UnknownU64(value), 'f', _, _) => {
+                chars.skip1();
+                conv!(37, State::ExpectFloatPostfix(value as f64));
+            }
+            (State::UnknownU64(value), 'e', _, _) 
+            | (State::UnknownU64(value), 'E', _, _) => {
+                chars.skip1();
+                conv!(38, State::DirectAfterE(value as f64));
+            }
+            (State::UnknownU64(value), '.', _, _) => 
+                conv!(39, State::AfterDot(value as f64, 1, true)),
+            (State::UnknownU64(value), ch, _, _) => match ch.to_digit(10) {
+                None => reterr!(10),
+                Some(digit) => match value.checked_mul(10) { 
+                    None => conv!(40, State::UnknownF64(value as f64 * 10f64 + digit as f64, true)),    // u64 mul 10 overflow must be positive f64
+                    Some(value) => match value.checked_add(digit as u64) {
+                        None => conv!(41, State::UnknownF64(value as f64 + digit as f64, true)),        // u64 add digit overflow must be positive f64
+                        Some(value) => conv!(42, State::UnknownU64(value)),                             // not overflow continue u64
+                    },
+                },
+            },
+
+            // ---- UnknownF64(value, is_positive) ----
+            (State::UnknownF64(value, is_positive), EOFCHAR, _, _) => 
+                retok!(5, NumLitValue::F64(if is_positive { value } else { -value })),
+            (State::UnknownF64(_, _), 'i', _, _) => reterr!(11),
+            (State::UnknownF64(_, _), 'u', _, _) => reterr!(12),
+            (State::UnknownF64(value, is_positive), 'f', _, _) => {
+                chars.skip1();
+                conv!(43, State::ExpectFloatPostfix(if is_positive { value } else { -value }));
+            }
+            (State::UnknownF64(value, is_positive), 'e', _, _) 
+            | (State::UnknownF64(value, is_positive), 'E', _, _) => {
+                chars.skip1();
+                conv!(44, State::DirectAfterE(if is_positive { value } else { -value }));
+            }
+            (State::UnknownF64(value, is_positive), '.', _, _) => conv!(45, State::AfterDot(value, 1, is_positive)),
+            (State::UnknownF64(value, is_positive), ch, _, _) => match ch.to_digit(10) {
+                Some(digit) => match f64_checked_mul_add(value, 10, if is_positive { digit as i32 } else { -(digit as i32) }) {
+                    Some(value) => conv!(46, State::UnknownF64(value, is_positive)),
+                    None => reterr!(13),
+                },
+                None => reterr!(14),
+            },
+
+            // ---- IntPrefix(base, is_postive) ----
+            (State::IntPrefix(_, _), 'e', _, _) 
+            | (State::IntPrefix(_, _), 'E', _, _) => reterr!(15),
+            (State::IntPrefix(_, _), '.', _, _) => reterr!(16),
+            (State::IntPrefix(base, is_positive), ch, _, _) => match ch.to_digit(base) {
+                Some(digit) => conv!(47, State::ExpectInt(base, digit as u64, is_positive)),
+                None => reterr!(17),
+            },
+
+            // ---- ExpectInt(base, value, is_positive) ----
+            (State::ExpectInt(_, _, _), '.', _, _) => reterr!(20),
+            (State::ExpectInt(_, value, is_positive), EOFCHAR, _, _) => retok!(6, u64_final_value(value, is_positive)),
+            (State::ExpectInt(_, value, is_positive), 'i', _, _) => if value > i64::MAX as u64 {
+                reterr!(21);
             } else {
                 chars.skip1();
-                state = conv!(format!("7, value: {}, value as u64: {}", value, value as u64), State::ExpectIntPostfix(value as u64));
+                conv!(48, State::ExpectSignedIntPostfix(if is_positive { value as i64 } else { -(value as i64) }));
             },
-            (State::SomeValue(value), 'f', _, _) => {
+            (State::ExpectInt(_, value, true), 'u', _, _) => {
                 chars.skip1();
-                state = conv!(8, State::ExpectFloatPostfix(value));
+                conv!(49, State::ExpectUnsignedIntPostfix(value));
             }
-            (State::SomeValue(value), 'e', _, _) 
-            | (State::SomeValue(value), 'E', _, _) => {
-                chars.skip1();
-                state = conv!(24, State::DirectAfterE(value));
+            (State::ExpectInt(_, _, false), 'u', _, _) => {
+                reterr!(22); 
             }
-            (State::SomeValue(value), '.', _, _) => {
-                state = conv!(21, State::AfterDot(value, 1));
-            }
-            (State::SomeValue(value), ch, _, _) => match ch.to_digit(10) {
-                Some(digit) => match f64_checked_mul_add(value, 10, digit) {
-                    Some(value) => {
-                        state = conv!(9, State::SomeValue(value));
-                    }
-                    None => reterr!(2),
-                },
-                None => reterr!(4),
-            },
-
-            (State::IntPrefix(_), 'e', _, _) 
-            | (State::IntPrefix(_), 'E', _, _) => reterr!(20),
-            (State::IntPrefix(_), '.', _, _) => reterr!(21),
-            (State::IntPrefix(base), ch, _, _) => match ch.to_digit(base) {
-                Some(digit) => {
-                    state = conv!(10, State::ExpectInt(base, digit as u64));
-                }
-                None => reterr!(19),
-            },
-
-            (State::ExpectInt(_, _), 'e', _, _) 
-            | (State::ExpectInt(_, _), 'E', _, _) => reterr!(22),
-            (State::ExpectInt(_, _), 'f', _, _) => reterr!(27),
-            (State::ExpectInt(_, _), '.', _, _) => reterr!(23),
-            (State::ExpectInt(_, value), EOFCHAR, _, _) => {
-                retok!(2, u64_final_value(value, false));
-            }
-            (State::ExpectInt(_, value), 'i', _, _)
-            | (State::ExpectInt(_, value), 'u', _, _) => {
-                chars.skip1();
-                state = conv!(11, State::ExpectIntPostfix(value));
-            }
-            (State::ExpectInt(base, value), ch, _, _) => match ch.to_digit(base) {
+            (State::ExpectInt(base, value, is_positive), ch, _, _) => match ch.to_digit(base) {
+                // TODO: check i64 overflow for negative here
                 Some(digit) => match value.checked_mul(base as u64) {
                     Some(value) => match value.checked_add(digit as u64) {
-                        Some(value) => {
-                            state = conv!(12, State::ExpectInt(base, value));
-                        }
-                        None => reterr!(25),
+                        Some(value) => conv!(50, State::ExpectInt(base, value, is_positive)),
+                        None => reterr!(23),
                     },
-                    None => reterr!(26),                        
+                    None => reterr!(24),                        
                 },
-                None => reterr!(24),
+                None => reterr!(25),
             },
 
-            (State::AfterDot(_, _), '.', _, _) => reterr!(29),
-            (State::AfterDot(_, _), 'i', _, _)
-            | (State::AfterDot(_, _), 'u', _, _) => reterr!(32),  
-            (State::AfterDot(value, _), 'f', _, _) => {
+            // ---- AfterDot(value, bits, is_positive) ----
+            (State::AfterDot(_, _, _), '.', _, _) => reterr!(26),
+            (State::AfterDot(_, _, _), 'i', _, _) => reterr!(50),                                              // LAST RETERR
+            (State::AfterDot(_, _, _), 'u', _, _) => reterr!(27),  
+            (State::AfterDot(value, _, _), 'f', _, _) => {
                 chars.skip1();
-                state = conv!(23, State::ExpectFloatPostfix(value));
+                conv!(51, State::ExpectFloatPostfix(value));
             }
-            (State::AfterDot(value, _), 'e', _, _)
-            | (State::AfterDot(value, _), 'E', _, _) => {
-                state = conv!(29, State::DirectAfterE(value));
-            }
-            (State::AfterDot(_, 1), EOFCHAR, _, _) => reterr!(3),
-            (State::AfterDot(value, _), EOFCHAR, _, _) => retok!(6, NumLitValue::F64(value)),
-            (State::AfterDot(value, bits), ch, _, _) => match ch.to_digit(10) {
+            (State::AfterDot(value, _, is_positive), 'e', _, _)
+            | (State::AfterDot(value, _, is_positive), 'E', _, _) => conv!(52, State::DirectAfterE(if is_positive { value } else { -value })),
+            (State::AfterDot(_, 1, _), EOFCHAR, _, _) => reterr!(28),
+            (State::AfterDot(value, _, is_positive), EOFCHAR, _, _) => retok!(9, NumLitValue::F64(if is_positive { value } else { -value })),
+            (State::AfterDot(value, bits, is_positive), ch, _, _) => match ch.to_digit(10) {
                 Some(digit) => match f64_checked_add(value, digit as f64 / 10f64.powi(bits)) {
-                    Some(value) => {
-                        state = conv!(22, State::AfterDot(value, bits + 1));
-                    }
-                    None => reterr!(30),
+                    Some(value) => conv!(53, State::AfterDot(value, bits + 1, is_positive)),
+                    None => reterr!(29),
                 },
-                None => reterr!(31),                             
+                None => reterr!(30),                             
             },
 
+            // ---- DirectAfterE(value) ----
             (State::DirectAfterE(_), '+', EOFCHAR, _)
-            | (State::DirectAfterE(_), '-', EOFCHAR, _) => reterr!(33), 
+            | (State::DirectAfterE(_), '-', EOFCHAR, _) => reterr!(31), 
             (State::DirectAfterE(value), '+', ch, _) => match ch.to_digit(10) {
                 Some(digit) => {
                     chars.dummy1();
-                    state = conv!(25, State::AfterE(value, digit as i32));
+                    conv!(54, State::AfterE(value, digit as i32));
                 }
-                None => reterr!(34),
+                None => reterr!(32),
             },
             (State::DirectAfterE(value), '-', ch, _) => match ch.to_digit(10) {
                 Some(digit) => {
                     chars.dummy1();
-                    state = conv!(26, State::AfterE(value, -(digit as i32)));
+                    conv!(55, State::AfterE(value, -(digit as i32)));
                 }
-                None => reterr!(35),
+                None => reterr!(33),
             },
             (State::DirectAfterE(value), ch, _, _) => match ch.to_digit(10) {
-                Some(digit) => {
-                    state = conv!(27, State::AfterE(value, digit as i32));
-                }
-                None => reterr!(36),                        
+                Some(digit) => conv!(56, State::AfterE(value, digit as i32)),
+                None => reterr!(34),                        
             },
 
+            // ---- AfterE(value, exp) ----
             (State::AfterE(_, _), 'u', _, _)
-            | (State::AfterE(_, _), 'i', _, _) => reterr!(37),
+            | (State::AfterE(_, _), 'i', _, _) => reterr!(35),
             (State::AfterE(value, _), 'f', _, _) => {
                 chars.skip1();
-                state = conv!(30, State::ExpectFloatPostfix(value));                                  // LAST CONV
+                conv!(57, State::ExpectFloatPostfix(value));
             }
             (State::AfterE(value, exp), EOFCHAR, _, _) => match f64_checked_mul(value, 10f64.powi(exp)) {
-                Some(value) => retok!(7, NumLitValue::F64(value)),                                    // LAST RETOK
-                None => reterr!(38), 
+                Some(value) => retok!(10, NumLitValue::F64(value)),
+                None => reterr!(36), 
             },
             (State::AfterE(value, exp), ch, _, _) => match ch.to_digit(10) {
-                None => reterr!(39),                                                                  // LAST RETERR
+                None => reterr!(37),               
                 Some(digit) => match exp.checked_mul(10) {
-                    None => reterr!(40),
+                    None => reterr!(38),
                     Some(exp) => match exp.checked_add(digit as i32) {
-                        None => reterr!(41),
-                        Some(exp) => { 
-                            state = conv!(28, State::AfterE(value, exp));
-                        }
+                        None => reterr!(39),
+                        Some(exp) => conv!(58, State::AfterE(value, exp)),
                     }
                 }
             },
 
-            (State::ExpectIntPostfix(value), 'i', '8', EOFCHAR) => 
-                if value > i8::max_value() as u64 { 
-                    reterr!(5);
+            // ---- ExpectSignedIntPostfix(value) ----
+            (State::ExpectSignedIntPostfix(value), 'i', '8', EOFCHAR) => 
+                if value > i8::MAX as i64 || value < i8::MIN as i64 { 
+                    reterr!(40);
                 } else {
-                    retok!(3, NumLitValue::I8(value as i8));
+                    retok!(format!("11, value: {}", value), NumLitValue::I8(value as i8));
                 },
-            (State::ExpectIntPostfix(value), 'u', '8', EOFCHAR) => 
+            (State::ExpectSignedIntPostfix(value), 'i', '1', '6') => 
+                if value > i16::MAX as i64 || value < i64::MIN as i64 { 
+                    reterr!(41);
+                } else {
+                    chars.dummy1();
+                    chars.dummy1();
+                    conv!(59, State::ExpectEOF(NumLitValue::I16(value as i16))); 
+                },
+            (State::ExpectSignedIntPostfix(value), 'i', '3', '2') => 
+                if value > i32::MAX as i64 || value < i32::MIN as i64 { 
+                    reterr!(42);
+                } else {
+                    chars.dummy1();
+                    chars.dummy1();
+                    conv!(60, State::ExpectEOF(NumLitValue::I32(value as i32))); 
+                },
+            (State::ExpectSignedIntPostfix(value), 'i', '6', '4') => {
+                chars.dummy1();
+                chars.dummy1();
+                conv!(61, State::ExpectEOF(NumLitValue::I64(value as i64)));
+            }
+            (State::ExpectSignedIntPostfix(_), _, _, _) => reterr!(43),
+
+            // ---- ExpectUnsignedIntPostfix(value) ---- 
+            (State::ExpectUnsignedIntPostfix(value), 'u', '8', EOFCHAR) => 
                 if value > u8::max_value() as u64 { 
-                    reterr!(6) 
+                    reterr!(44) 
                 } else {
-                    retok!(4, NumLitValue::U8(value as u8));
+                    retok!(12, NumLitValue::U8(value as u8));
                 },
-            (State::ExpectIntPostfix(value), 'i', '1', '6') => 
-                if value > i16::max_value() as u64 { 
-                    reterr!(7);
-                } else {
-                    chars.dummy1();
-                    chars.dummy1();
-                    state = conv!(13, State::ExpectEOF(NumLitValue::I16(value as i16))); 
-                },
-            (State::ExpectIntPostfix(value), 'u', '1', '6') => 
+            (State::ExpectUnsignedIntPostfix(value), 'u', '1', '6') => 
                 if value > u16::max_value() as u64 { 
-                    reterr!(8);
+                    reterr!(45);
                 } else {
                     chars.dummy1();
                     chars.dummy1();
-                    state = conv!(14, State::ExpectEOF(NumLitValue::U16(value as u16))); 
+                    conv!(62, State::ExpectEOF(NumLitValue::U16(value as u16))); 
                 },
-            (State::ExpectIntPostfix(value), 'i', '3', '2') => 
-                if value > i32::max_value() as u64 { 
-                    reterr!(9);
-                } else {
-                    chars.dummy1();
-                    chars.dummy1();
-                    state = conv!(15, State::ExpectEOF(NumLitValue::I32(value as i32))); 
-                },
-            (State::ExpectIntPostfix(value), 'u', '3', '2') => 
+            (State::ExpectUnsignedIntPostfix(value), 'u', '3', '2') => 
                 if value > u32::max_value() as u64 { 
-                    reterr!(10);
+                    reterr!(46);
                 } else { 
                     chars.dummy1();
                     chars.dummy1();
-                    state = conv!(16, State::ExpectEOF(NumLitValue::U32(value as u32))); 
+                    conv!(63, State::ExpectEOF(NumLitValue::U32(value as u32))); 
                 },
-            (State::ExpectIntPostfix(value), 'i', '6', '4') => 
-                if value > i64::max_value() as u64 { 
-                    reterr!(11);
-                } else {
-                    chars.dummy1();
-                    chars.dummy1();
-                    state = conv!(17, State::ExpectEOF(NumLitValue::I64(value as i64))); 
-                },
-            (State::ExpectIntPostfix(value), 'u', '6', '4') => 
-                if value > u64::max_value() { 
-                    reterr!(12);
-                } else {
-                    chars.dummy1();
-                    chars.dummy1();
-                    state = conv!(18, State::ExpectEOF(NumLitValue::U64(value))); 
-                },
-            (State::ExpectIntPostfix(_), _, _, _) => reterr!(13),
+            (State::ExpectUnsignedIntPostfix(value), 'u', '6', '4') => {
+                chars.dummy1();
+                chars.dummy1();
+                conv!(64, State::ExpectEOF(NumLitValue::U64(value))); 
+            }
+            (State::ExpectUnsignedIntPostfix(_), _, _, _) => reterr!(47),
 
+            // ---- ExpectFloatPostfix(value) ----
             (State::ExpectFloatPostfix(value), 'f', '3', '2') => 
                 if value > f32::MAX as f64 { 
-                    reterr!(14);
+                    reterr!(48);
                 } else { 
                     chars.dummy1();
                     chars.dummy1();
-                    state = conv!(19, State::ExpectEOF(NumLitValue::F32(value as f32))); 
+                    conv!(65, State::ExpectEOF(NumLitValue::F32(value as f32))); 
                 },
             (State::ExpectFloatPostfix(value), 'f', '6', '4') => 
                 if value > f64::MAX { 
-                    reterr!(15);
+                    reterr!(49);
                 } else { 
                     chars.dummy1();
                     chars.dummy1();
-                    state = conv!(20, State::ExpectEOF(NumLitValue::F64(value)));
+                    conv!(66, State::ExpectEOF(NumLitValue::F64(value)));
                 },
-            (State::ExpectFloatPostfix(_), _, _, _) => reterr!(16),
+            (State::ExpectFloatPostfix(_), _, _, _) => reterr!(7), 
 
-            (State::ExpectEOF(ret_val), EOFCHAR, _, _) => retok!(5, ret_val),
-            (State::ExpectEOF(_), _, _, _) => reterr!(17),
+            // ---- ExpectEOF(value) ---- 
+            (State::ExpectEOF(ret_val), EOFCHAR, _, _) => retok!(13, ret_val),          // LAST RETOK
+            (State::ExpectEOF(_), _, _, _) => reterr!(8),
         }
     }
 
@@ -505,7 +604,7 @@ fn delegate(raw: String, strpos: StringPosition) -> Result<NumLitValue, Message>
 
 pub fn parse_numeric_literal(raw: String, pos: StringPosition, messages: &mut MessageCollection) -> (Option<NumLitValue>, StringPosition) {
     
-    match delegate(raw, pos) {
+    match str_to_num_lit_impl(raw, pos) {
         Ok(value) => (Some(value), pos),
         Err(msg) => {
             messages.push(msg);
@@ -559,18 +658,18 @@ fn num_lit_buf_char() {
 fn num_lit_feature() {
 
     // let strpos = make_str_pos!(1, 2, 3, 4);
-    fn new_empty_error(i: i32) -> Message { 
-        Message::new(error_strings::InvalidNumericLiteral.to_owned(), vec![(make_str_pos!(1, 2, 3, 4), format!("{}", i))])
+    fn new_empty_error(_: i32) -> Message { 
+        Message::new(error_strings::InvalidNumericLiteral.to_owned(), vec![(make_str_pos!(1, 2, 3, 4), format!("{}", 0))])
     }
 
     macro_rules! test_case {
         ($input: expr, $expect: expr) => (
             println!("\ncase {:?} at {}:", $input, line!());
-            assert_eq!(delegate($input.to_owned(), make_str_pos!(1, 2, 3, 4)), Ok(NumLitValue::from($expect)));
+            assert_eq!(str_to_num_lit_impl($input.to_owned(), make_str_pos!(1, 2, 3, 4)), Ok(NumLitValue::from($expect)));
         );
         ($input: expr, err, $expect: expr) => (
             println!("\ncase {:?} at {}:", $input, line!());
-            assert_eq!(delegate($input.to_owned(), make_str_pos!(1, 2, 3, 4)), Err($expect));
+            assert_eq!(str_to_num_lit_impl($input.to_owned(), make_str_pos!(1, 2, 3, 4)), Err($expect));
         )
     }
     
@@ -616,14 +715,15 @@ fn num_lit_feature() {
     test_case!("61234u16", NumLitValue::U16(61234));            // 29
     test_case!("9223372036854775807i64", NumLitValue::I64(9223372036854775807));        // 30
     // overflow and downflow is error
-    test_case!("256u8", err, new_empty_error(0));               // 31, should be overflow and explain large than u8::max
-    test_case!("100000i16", err, new_empty_error(0));           // 32, should be overflow and explain large than i16::max
-    test_case!("-800i8", err, new_empty_error(0));              // 33, should be downflow and explain smaller than i8
+    test_case!("256u8", err, new_empty_error(6));               // 31, should be overflow and explain large than u8::max
+    test_case!("100000i16", err, new_empty_error(7));           // 32, should be overflow and explain large than i16::max
+    test_case!("-800i8", err, new_empty_error(1023));           // 33, should be downflow and explain smaller than i8
 
     // negative value
+    test_case!("-0d123", NumLitValue::I32(-123));               // 94, ---- LAST TEST CASE ----
     test_case!("-123", NumLitValue::I32(-123));                 // 34
-    test_case!("-123.456", NumLitValue::F64(-123.456));         // 35
-    test_case!("-30000i16", NumLitValue::I16(-30000));          // 36
+    test_case!("-30000i16", NumLitValue::I16(-30000));          // 35
+    test_case!("-123.456", NumLitValue::F64(-123.456));         // 36
     // negative not applicapable for unsigned
 
     // integral prefix
@@ -667,43 +767,43 @@ fn num_lit_feature() {
     test_case!("123.456E789.0", err, new_empty_error(0));           // 65, should be floating point scientific representation's exponential part should be integer
 
     // cannot first or last char is dot
-    test_case!(".123", err, new_empty_error(0));
-    test_case!("0x.123", err, new_empty_error(0));
-    test_case!("123.", err, new_empty_error(0));
-    test_case!(".", err, new_empty_error(0));
+    test_case!(".123", err, new_empty_error(0));                    // 66
+    test_case!("0x.123", err, new_empty_error(0));                  // 67
+    test_case!("123.", err, new_empty_error(0));                    // 68
+    test_case!(".", err, new_empty_error(0));                       // 69
 
     // multi dot
-    test_case!("123.456.789", err, new_empty_error(0));
-    test_case!("123..456", err, new_empty_error(0));
+    test_case!("123.456.789", err, new_empty_error(0));             // 70
+    test_case!("123..456", err, new_empty_error(0));                // 71
 
     // underscore as sepreator
-    test_case!("0b110_111_000_001u16", NumLitValue::U16(0b11011100000));
-    test_case!("123_456_789u64", NumLitValue::U64(123456789));
-    test_case!("1_2_3_4", NumLitValue::I32(1234));
+    test_case!("0b110_111_000_001u16", NumLitValue::U16(0b11011100000));            // 72
+    test_case!("123_456_789u64", NumLitValue::U64(123456789));      // 73
+    test_case!("1_2_3_4", NumLitValue::I32(1234));                  // 74
     // underscore not at head, tail
-    test_case!("_1234", err, new_empty_error(0));
-    test_case!("1_", err, new_empty_error(0));
-    test_case!("_", err, new_empty_error(0));
-    test_case!("0b_1110_1001", NumLitValue::I32(0b11101001));
-    test_case!("0x_1234_i64", NumLitValue::I64(0x1234));
+    test_case!("_1234", err, new_empty_error(0));                   // 75
+    test_case!("1_", err, new_empty_error(0));                      // 76
+    test_case!("_", err, new_empty_error(0));                       // 77
+    test_case!("0b_1110_1001", NumLitValue::I32(0b11101001));       // 78
+    test_case!("0x_1234_i64", NumLitValue::I64(0x1234));            // 79
     // underscore not in postfix or prefix
-    test_case!("0_xABCD", err, new_empty_error(0));
-    test_case!("ABCDu6_4", err, new_empty_error(0));
-    test_case!("123i_32", err, new_empty_error(0));
+    test_case!("0_xABCD", err, new_empty_error(0));                 // 80
+    test_case!("ABCDu6_4", err, new_empty_error(0));                // 81
+    test_case!("123i_32", err, new_empty_error(0));                 // 82
     // underscore no double
-    test_case!("123__456", err, new_empty_error(0));
-    test_case!("0b__101100", err, new_empty_error(0));
+    test_case!("123__456", err, new_empty_error(0));                // 83
+    test_case!("0b__101100", err, new_empty_error(0));              // 84
 
     // empty
-    test_case!("0xu64", err, new_empty_error(0));
-    test_case!("0bf32", err, new_empty_error(0));
+    test_case!("0xu64", err, new_empty_error(0));                   // 85
+    test_case!("0bf32", err, new_empty_error(0));                   // 86
 
     // strange postfix and prefix
-    test_case!("0X123", err, new_empty_error(0));
-    test_case!("001", err, new_empty_error(0));
-    test_case!("0u123", err, new_empty_error(0));
-    test_case!("123u18", err, new_empty_error(0));
-    test_case!("1u128", err, new_empty_error(0));
-    test_case!("654321u1024", err, new_empty_error(0));
-    test_case!("0x3f2048", err, new_empty_error(0));
+    test_case!("0X123", err, new_empty_error(0));                   // 87
+    test_case!("001", err, new_empty_error(0));                     // 88
+    test_case!("0u123", err, new_empty_error(0));                   // 89
+    test_case!("123u18", err, new_empty_error(0));                  // 90
+    test_case!("1u128", err, new_empty_error(0));                   // 91
+    test_case!("654321u1024", err, new_empty_error(0));             // 92
+    test_case!("0x3f2048", err, new_empty_error(0));                // 93
 }
