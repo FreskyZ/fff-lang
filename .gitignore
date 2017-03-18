@@ -5,3 +5,6 @@ Cargo.lock
 temp
 .vscode
 scripts
+*.exe
+pefile/test/.vs
+*.obj
