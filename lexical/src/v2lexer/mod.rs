@@ -3,7 +3,7 @@
 // input v1
 // output string or numeric literal, identifier or other char
 
-mod numeric_lit_parser;
+mod num_lit_parser;
 mod unicode_char;
 
 use std::str::Chars;
@@ -20,7 +20,7 @@ use super::buf_lexer::BufLexer;
 use super::LitValue;
 use super::KeywordKind;
 use super::SeperatorKind;
-use self::numeric_lit_parser::parse_numeric_literal;
+use self::num_lit_parser::parse_numeric_literal;
 
 mod error_strings;
 
