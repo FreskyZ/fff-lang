@@ -7,3 +7,6 @@ authors = ["FreskyZ <fresky7@outlook.com>"]
 util = { path = "../util" }
 codepos = { path = "../codepos" }
 messages = { path = "../messages" }
+
+[features]
+trace_num_lit_parse = []

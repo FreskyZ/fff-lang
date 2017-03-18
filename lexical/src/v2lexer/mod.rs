@@ -22,10 +22,7 @@ use super::KeywordKind;
 use super::SeperatorKind;
 use self::numeric_lit_parser::parse_numeric_literal;
 
-mod error_strings {
-    #![allow(non_upper_case_globals)]
-    pub const UnexpectedNonASCIIChar: &'static str = "Unexpected non ASCII char";
-}
+mod error_strings;
 
 #[cfg(test)]
 #[derive(Eq, PartialEq, Clone)]
@@ -85,8 +82,11 @@ impl IdentifierChar for char {
     }
 
     // Only digit, '.' start is not supported
+    // Update: remove '-' here, 
+    //     that is, take several weeks to impl '-' and 'E' feature in num lit, but finally remove the feature in v2
+    //     leave the feature in num lit parser for future use of FromStr
     fn is_numeric_literal_start(&self) -> bool {
-        self.is_digit(10) || *self == '-'
+        self.is_digit(10)
     }
     // Only digit or ASCII letters or underscore
     fn is_numeric_literal(&self) -> bool {
@@ -361,8 +361,7 @@ fn v2_non_ascii_ch() {
 
 #[cfg(test)]
 #[test]
-fn v2_base() {    
-    use message::LexicalMessage;
+fn v2_base() {
 
     // Only to make decltype(V2Lexer as BufLexer::next(...)) to display better
     #[derive(Eq, PartialEq)]
@@ -456,7 +455,7 @@ fn v2_base() {
     }
 
     //           0        1         2         3         4         5         6         7
-    //           123456789012345678901234567890123456789012345678901234567890123456789012345
+    //           1234567890123456789012345678901234567890123456789012345678901234567890123456
     test_case!{ "[1, 123 _ 1u64( 123.456,) -123_456{123u32}123f32 += 123.0 / 123u8 && 1024u8]", [  // different postfix\types of num lit, different types of sep
             sep!(SeperatorKind::LeftBracket, 1, 1, 1, 1),
             lit!(1, 1, 2, 1, 2),
@@ -468,26 +467,27 @@ fn v2_base() {
             lit!(123.456, 1, 17, 1, 23),
             sep!(SeperatorKind::Comma, 1, 24, 1, 24),
             sep!(SeperatorKind::RightParenthenes, 1, 25, 1, 25),
-            lit!(-123456, 1, 27, 1, 33),
-            sep!(SeperatorKind::LeftBrace, 1, 34, 1, 34),
-            lit!(123u32, 1, 35, 1, 40),
-            sep!(SeperatorKind::RightBrace, 1, 41, 1, 41),
-            lit!(123f32, 1, 42, 1, 47),
-            sep!(SeperatorKind::AddAssign, 1, 49, 1, 50),
-            lit!(123.0, 1, 52, 1, 56),
-            sep!(SeperatorKind::Div, 1, 58, 1, 58),
-            lit!(123u8, 1, 60, 1, 64),
-            sep!(SeperatorKind::LogicalAnd, 1, 66, 1, 67),
-            lit_num_none!(1, 69, 1, 74),
-            sep!(SeperatorKind::RightBracket, 1, 75, 1, 75),
+            sep!(SeperatorKind::Sub, 1, 27, 1, 27),
+            lit!(123456, 1, 28, 1, 34),
+            sep!(SeperatorKind::LeftBrace, 1, 35, 1, 35),
+            lit!(123u32, 1, 36, 1, 41),
+            sep!(SeperatorKind::RightBrace, 1, 42, 1, 42),
+            lit!(123f32, 1, 43, 1, 48),
+            sep!(SeperatorKind::AddAssign, 1, 50, 1, 51),
+            lit!(123.0, 1, 53, 1, 57),
+            sep!(SeperatorKind::Div, 1, 59, 1, 59),
+            lit!(123u8, 1, 61, 1, 65),
+            sep!(SeperatorKind::LogicalAnd, 1, 67, 1, 68),
+            lit_num_none!(1, 70, 1, 75),
+            sep!(SeperatorKind::RightBracket, 1, 76, 1, 76),
         ] [
-            LexicalMessage::NumericLiteralTooLarge{ literal_pos: make_str_pos!(1, 69, 1, 74) },
+            Message::new_by_str(error_strings::InvalidNumericLiteral, vec![(make_str_pos!(1, 70, 1, 75), "")]),
         ]
     }
 
-    //           0        1         2         3         4         5         6         7
-    //           1234567890123456789012345678901234567890123456789012345678901234567890123456789
-    test_case!{ "[123 * 0x123 - 0xAFF & 0o777 || 0oXXX != 0b101010 == 0b123456 -> 0d123.. 0dABC]", [    // differnt prefix\base of num lit
+    //           0        1         2         3         4         5         6         7         8
+    //           1234567890123456789012345678901234567890123456789012345678901234567890123456789012345
+    test_case!{ "[123 * 0x123 - 0xAFF & 0o777 || 0oXXX != 0b101010 == 0b123456 -> 0d123.. 0dABC] -- -=", [    // differnt prefix\base of num lit
             sep!(SeperatorKind::LeftBracket, 1, 1, 1, 1),
             lit!(123, 1, 2, 1, 4),
             sep!(SeperatorKind::Mul, 1, 6, 1, 6),
@@ -507,10 +507,12 @@ fn v2_base() {
             sep!(SeperatorKind::Range, 1, 71, 1, 72),
             lit_num_none!(1, 74, 1, 78),
             sep!(SeperatorKind::RightBracket, 1, 79, 1, 79),
+            sep!(SeperatorKind::Decrease, 1, 81, 1, 82),
+            sep!(SeperatorKind::SubAssign, 1, 84, 1, 85),
         ] [
-            LexicalMessage::UnexpectedCharInNumericLiteral{ literal_pos: make_str_pos!(1, 33, 1, 37) },
-            LexicalMessage::UnexpectedCharInNumericLiteral{ literal_pos: make_str_pos!(1, 54, 1, 61) },
-            LexicalMessage::UnexpectedCharInNumericLiteral{ literal_pos: make_str_pos!(1, 74, 1, 78) },
+            Message::new_by_str(error_strings::InvalidNumericLiteral, vec![(make_str_pos!(1, 33, 1, 37), "")]),
+            Message::new_by_str(error_strings::InvalidNumericLiteral, vec![(make_str_pos!(1, 54, 1, 61), "")]),
+            Message::new_by_str(error_strings::InvalidNumericLiteral, vec![(make_str_pos!(1, 74, 1, 78), "")]),
         ]
     }
 
