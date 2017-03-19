@@ -37,5 +37,17 @@ pub const IntegralUnderflowHelpMinValue: [&'static str; 4] = [
     "Max value of i32 is -2147483648",
     "Max value of i32 is -9223372036854775808",
 ];
-pub const InvalidCharInIntLiteral: &'static str = "invalid char in integral literal";
 pub const InvalidCharInFloatLiteral: &'static str = "invalid char in floating point literal";
+pub const InvalidCharInIntLiteral: &'static str = "invalid char in integral literal";
+pub const IntLiteralAllowedChars: [&'static str; 4] = [
+    "It is a binary literal and only allows 0 and 1",
+    "It is an octal literal and only allows 0-7",
+    "It is a decimal literal and only allows 0-9",
+    "It is a hexadecimal liteteral and only allows 0-9a-fA-F"
+];
+pub const InternalErrorAt: &'static str = "internal error at ";
+pub const ExponentialInIntLiteral: &'static str = "exponential not allowed in integral literal";
+pub const EmptyIntLiteral: &'static str = "empty integral literal";
+pub const AndFloatPostfixInIntLiteral: &'static str = "And floating point literal not allowed in integral literal";
+pub const DotInIntLiteral: &'static str = "decimal dot not allowed in integral literal";
+pub const FloatExponentialFloat: &'static str = "floating point exponentail should be integer";

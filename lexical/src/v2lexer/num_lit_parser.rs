@@ -238,13 +238,13 @@ fn str_to_num_lit_impl(raw: String, strpos: StringPosition) -> Result<NumLitValu
     let mut state = State::ReallyNothing;
     let mut chars = BufChars::new(raw.chars());
     
+    // use with --features trace_num_lit_parse
     #[cfg(feature = "trace_num_lit_parse")] macro_rules! conv { ($id: expr, $new_state: expr) => ({ println!("    conv {}", $id); state = $new_state; }) }
     #[cfg(feature = "trace_num_lit_parse")] macro_rules! retok { ($id: expr, $ret_val: expr) => ({ println!("    retok {}", $id); return Ok($ret_val); }) }
     #[cfg(feature = "trace_num_lit_parse")] 
     macro_rules! reterr { 
         ($id: expr) => ({ println!("    reterr {}", $id); return Err(Message::new_by_str(error_strings::InvalidNumericLiteral, vec![(strpos, "")])); });
-        ($id: expr, $msg: expr) => ({ println!("    reterr {}", $id); return Err(Message::new_by_str($msg, vec![(strpos, "")])); });
-        ($id: expr, witharg, $msg: expr) => ({ println!("    reterr {}", $id); return Err($msg); })
+        ($id: expr, $msg: expr) => ({ println!("    reterr {}", $id); return Err($msg); })
     }
 
     #[cfg(not(feature = "trace_num_lit_parse"))] macro_rules! conv { ($id: expr, $new_state: expr) => ({ state = $new_state; }) }
@@ -252,8 +252,14 @@ fn str_to_num_lit_impl(raw: String, strpos: StringPosition) -> Result<NumLitValu
     #[cfg(not(feature = "trace_num_lit_parse"))] 
     macro_rules! reterr { 
         ($id: expr) => ({ return Err(Message::new_by_str(error_strings::InvalidNumericLiteral, vec![(strpos, "")])); });
-        ($id: expr, $msg: expr) => ({ return Err(Message::new_by_str($msg, vec![(strpos, "")])); });
-        ($id: expr, witharg, $msg: expr) => ({ return Err($msg); })
+        ($id: expr, $msg: expr) => ({ return Err($msg); })
+    }
+
+    macro_rules! reterr_internal {
+        () => (reterr!(0, Message::new(
+            format!("{}, {} {}", error_strings::InvalidNumericLiteral, error_strings::InternalErrorAt, line!()),
+            vec![(strpos, String::new())],
+        )))
     }
 
     loop {
@@ -304,7 +310,7 @@ fn str_to_num_lit_impl(raw: String, strpos: StringPosition) -> Result<NumLitValu
             (State::Nothing(_), '0', 'B', _)
             | (State::Nothing(_), '0', 'O', _)
             | (State::Nothing(_), '0', 'D', _)
-            | (State::Nothing(_), '0', 'X', _) => reterr!(84, witharg, Message::with_help(
+            | (State::Nothing(_), '0', 'X', _) => reterr!(84, Message::with_help(
                 format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::NumLitShouldNotStartWith0), 
                 vec![(strpos, String::new())],
                 vec![error_strings::IntegralPrefixIsLowerCase.to_owned()]
@@ -315,7 +321,7 @@ fn str_to_num_lit_impl(raw: String, strpos: StringPosition) -> Result<NumLitValu
                 chars.dummy1();
                 conv!(10, State::AfterDot(0f64, 1, is_positive, false));                       
             }
-            (State::Nothing(_), '0', _, _) => reterr!(6, witharg, Message::with_help(
+            (State::Nothing(_), '0', _, _) => reterr!(6, Message::with_help(
                 format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::NumLitShouldNotStartWith0), 
                 vec![(strpos, String::new())],
                 vec![error_strings::CStyleOctNumLitHelp.to_owned()]
@@ -525,11 +531,11 @@ fn str_to_num_lit_impl(raw: String, strpos: StringPosition) -> Result<NumLitValu
             (State::UnknownF64(value, is_positive), ch, _, _) => match ch.to_digit(10) {
                 Some(digit) => match value.checked_mul_add(10, if is_positive { digit as i32 } else { -(digit as i32) }) {
                     FloatCheckedResult::Ok(value) => conv!(61, State::UnknownF64(value, is_positive)),
-                    FloatCheckedResult::Overflow => reterr!(34, witharg, Message::new(
+                    FloatCheckedResult::Overflow => reterr!(34, Message::new(
                         format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::FloatingPointOverflow),
                         vec![(strpos, String::new())]
                     )),
-                    FloatCheckedResult::Underflow => reterr!(0, witharg, Message::new(
+                    FloatCheckedResult::Underflow => reterr!(88, Message::new(
                         format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::FloatingPointUnderflow),
                         vec![(strpos, String::new())]
                     )),
@@ -542,14 +548,41 @@ fn str_to_num_lit_impl(raw: String, strpos: StringPosition) -> Result<NumLitValu
             | (State::IntPrefix(_, _, _), 'E', _, _) => reterr!(36),
             (State::IntPrefix(_, _, _), '.', _, _) => reterr!(37),
             (State::IntPrefix(_, _, true), '_', _, _) => reterr!(38),
+            (State::IntPrefix(_, _, _), 'i', '8', EOFCHAR)
+            | (State::IntPrefix(_, _, _), 'i', '1', '6')
+            | (State::IntPrefix(_, _, _), 'i', '3', '2')
+            | (State::IntPrefix(_, _, _), 'i', '6', '4')
+            | (State::IntPrefix(_, _, _), 'u', '8', EOFCHAR)
+            | (State::IntPrefix(_, _, _), 'u', '1', '6')
+            | (State::IntPrefix(_, _, _), 'u', '3', '2')
+            | (State::IntPrefix(_, _, _), 'u', '6', '4') => reterr!(0, Message::new(
+                format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::EmptyIntLiteral),
+                vec![(strpos, String::new())]
+            )),
+            (State::IntPrefix(_, _, _), 'f', '3', '2') 
+            | (State::IntPrefix(_, _, _), 'f', '6', '4') => reterr!(0, Message::with_help(
+                format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::EmptyIntLiteral),
+                vec![(strpos, String::new())],
+                vec![error_strings::AndFloatPostfixInIntLiteral.to_owned()],
+            )),
+            // u, i, f
             (State::IntPrefix(base, is_positive, false), '_', _, _) => conv!(62, State::IntPrefix(base, is_positive, true)),
             (State::IntPrefix(base, is_positive, _), ch, _, _) => match ch.to_digit(base) {
                 Some(digit) => conv!(63, State::ExpectInt(base, digit as u64, is_positive, false)),
-                None => reterr!(39),
+                None => reterr!(39, Message::with_help(
+                    format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::InvalidCharInIntLiteral),
+                    vec![(strpos, String::new())],
+                    vec![error_strings::IntLiteralAllowedChars[
+                        match base { 2 => 0, 8 => 1, 10 => 2, 16 => 3, _ => reterr_internal!() }
+                    ].to_owned()],
+                )),
             },
 
-            // ---- ExpectInt(base, value, is_positive) ----
-            (State::ExpectInt(_, _, _, _), '.', _, _) => reterr!(40),
+            // ---- ExpectInt(base, value, is_positive, prev_is_underscore) ----
+            (State::ExpectInt(_, _, _, _), '.', _, _) => reterr!(40, Message::new(
+                format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::DotInIntLiteral),
+                vec![(strpos, String::new())],
+            )),
             (State::ExpectInt(_, value, is_positive, _), EOFCHAR, _, _) => retok!(7, u64_final_value(value, is_positive)),
             (State::ExpectInt(_, value, is_positive, _), 'i', _, _) => if value > i64::MAX as u64 {
                 reterr!(41);
@@ -561,14 +594,31 @@ fn str_to_num_lit_impl(raw: String, strpos: StringPosition) -> Result<NumLitValu
                 chars.skip1();
                 conv!(65, State::ExpectUnsignedIntPostfix(value));
             }
-            (State::ExpectInt(_, _, false, _), 'u', _, _) => {
-                reterr!(42); 
-            }
+            (State::ExpectInt(_, _, false, _), 'u', _, _) => reterr!(42),
+            (State::ExpectInt(2, _, _, _), 'e', _, _) 
+            | (State::ExpectInt(2, _, _, _), 'E', _, _)
+            | (State::ExpectInt(8, _, _, _), 'e', _, _)     // because E is allowed in 16
+            | (State::ExpectInt(8, _, _, _), 'E', _, _) 
+            | (State::ExpectInt(10, _, _, _), 'e', _, _) 
+            | (State::ExpectInt(10, _, _, _), 'E', _, _)
+            | (State::ExpectInt(16, _, _, _), 'e', '+', _)  // because E is allowed in 16
+            | (State::ExpectInt(16, _, _, _), 'E', '+', _) 
+            | (State::ExpectInt(16, _, _, _), 'e', '-', _) 
+            | (State::ExpectInt(16, _, _, _), 'E', '-', _) => reterr!(0, Message::new(
+                format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::ExponentialInIntLiteral),
+                vec![(strpos, String::new())],
+            )),
             (State::ExpectInt(base, value, is_positive, prev_is_underscore), ch, _, _) => match (prev_is_underscore, ch == '_') {
                 (true, true) => reterr!(43),
                 (_, true) => conv!(66, State::ExpectInt(base, value, is_positive, true)),
                 (_, false) => match ch.to_digit(base) {
-                    None => reterr!(44),
+                    None => reterr!(44, Message::with_help(
+                        format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::InvalidCharInIntLiteral),
+                        vec![(strpos, String::new())],
+                        vec![error_strings::IntLiteralAllowedChars[
+                            match base { 2 => 0, 8 => 1, 10 => 2, 16 => 3, _ => reterr_internal!() }
+                        ].to_owned()],
+                    )),
                     Some(digit) => match value.checked_mul(base as u64) {
                         None => reterr!(45), 
                         Some(value) => match value.checked_add(digit as u64) {
@@ -605,22 +655,22 @@ fn str_to_num_lit_impl(raw: String, strpos: StringPosition) -> Result<NumLitValu
                     (None, _) => reterr!(54),
                     (Some(digit), true) => match value.checked_add(digit as f64 / 10f64.powi(bits)) {
                         FloatCheckedResult::Ok(value) => conv!(71, State::AfterDot(value, bits + 1, is_positive, false)),
-                        FloatCheckedResult::Overflow => reterr!(55, witharg, Message::new(
+                        FloatCheckedResult::Overflow => reterr!(55, Message::new(
                             format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::FloatingPointOverflow),
                             vec![(strpos, String::new())]
                         )),
-                        FloatCheckedResult::Underflow => reterr!(0, witharg, Message::new(
+                        FloatCheckedResult::Underflow => reterr!(89, Message::new(
                             format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::FloatingPointUnderflow),
                             vec![(strpos, String::new())]
                         )),
                     },                 
                     (Some(digit), false) => match value.checked_sub(digit as f64 / 10f64.powi(bits)) {
                         FloatCheckedResult::Ok(value) => conv!(72, State::AfterDot(value, bits + 1, is_positive, false)),
-                        FloatCheckedResult::Overflow => reterr!(56, witharg, Message::new(
+                        FloatCheckedResult::Overflow => reterr!(56, Message::new(
                             format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::FloatingPointOverflow),
                             vec![(strpos, String::new())]
                         )),
-                        FloatCheckedResult::Underflow => reterr!(0, witharg, Message::new(
+                        FloatCheckedResult::Underflow => reterr!(90, Message::new(
                             format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::FloatingPointUnderflow),
                             vec![(strpos, String::new())]
                         )),
@@ -658,11 +708,11 @@ fn str_to_num_lit_impl(raw: String, strpos: StringPosition) -> Result<NumLitValu
             (State::AfterE(_, _, _), 'u', _, _)
             | (State::AfterE(_, _, _), 'i', _, _) => reterr!(64),
             (State::AfterE(value, exp, _), 'f', _, _) => match value.checked_mul(10f64.powi(exp)) {
-                FloatCheckedResult::Overflow => reterr!(65, witharg, Message::new(
+                FloatCheckedResult::Overflow => reterr!(65, Message::new(
                     format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::FloatingPointOverflow),
                     vec![(strpos, String::new())]
                 )),
-                FloatCheckedResult::Underflow => reterr!(0, witharg, Message::new(
+                FloatCheckedResult::Underflow => reterr!(91, Message::new(
                     format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::FloatingPointUnderflow),
                     vec![(strpos, String::new())]
                 )),
@@ -674,11 +724,11 @@ fn str_to_num_lit_impl(raw: String, strpos: StringPosition) -> Result<NumLitValu
             (State::AfterE(_, _, true), EOFCHAR, _, _) => reterr!(66),
             (State::AfterE(value, exp, false), EOFCHAR, _, _) => match value.checked_mul(10f64.powi(exp)) {
                 FloatCheckedResult::Ok(value) => retok!(9, NumLitValue::F64(value)),
-                FloatCheckedResult::Overflow => reterr!(0, witharg, Message::new(
+                FloatCheckedResult::Overflow => reterr!(92, Message::new(
                     format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::FloatingPointOverflow),
                     vec![(strpos, String::new())]
                 )),
-                FloatCheckedResult::Underflow => reterr!(67, witharg, Message::new(
+                FloatCheckedResult::Underflow => reterr!(67, Message::new(
                     format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::FloatingPointUnderflow),
                     vec![(strpos, String::new())]
                 )), 
@@ -701,13 +751,13 @@ fn str_to_num_lit_impl(raw: String, strpos: StringPosition) -> Result<NumLitValu
             // ---- ExpectSignedIntPostfix(value) ----
             (State::ExpectSignedIntPostfix(value), 'i', '8', EOFCHAR) => 
                 if value > i8::MAX as i64 { 
-                    reterr!(72, witharg, Message::with_help(
+                    reterr!(72, Message::with_help(
                         format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::IntegralOverflow),
                         vec![(strpos, String::new())],
                         vec![error_strings::IntegralOverflowHelpMaxValue[0].to_owned()],
                     ));
                 } else if value < i8::MIN as i64 {
-                    reterr!(0, witharg, Message::with_help(
+                    reterr!(93, Message::with_help(
                         format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::IntegralUnderflow),
                         vec![(strpos, String::new())],
                         vec![error_strings::IntegralUnderflowHelpMinValue[0].to_owned()],
@@ -717,13 +767,13 @@ fn str_to_num_lit_impl(raw: String, strpos: StringPosition) -> Result<NumLitValu
                 },
             (State::ExpectSignedIntPostfix(value), 'i', '1', '6') => 
                 if value > i16::MAX as i64 { 
-                    reterr!(73, witharg, Message::with_help(
+                    reterr!(73, Message::with_help(
                         format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::IntegralOverflow),
                         vec![(strpos, String::new())],
                         vec![error_strings::IntegralOverflowHelpMaxValue[2].to_owned()],
                     ));
                 } else if value < i64::MIN as i64 {
-                    reterr!(0, witharg, Message::with_help(
+                    reterr!(94, Message::with_help(
                         format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::IntegralUnderflow),
                         vec![(strpos, String::new())],
                         vec![error_strings::IntegralUnderflowHelpMinValue[1].to_owned()],
@@ -735,17 +785,17 @@ fn str_to_num_lit_impl(raw: String, strpos: StringPosition) -> Result<NumLitValu
                 },
             (State::ExpectSignedIntPostfix(value), 'i', '3', '2') => 
                 if value > i32::MAX as i64 { 
-                    reterr!(74, witharg, Message::with_help(
+                    reterr!(74, Message::with_help(
                         format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::IntegralOverflow),
                         vec![(strpos, String::new())],
                         vec![error_strings::IntegralOverflowHelpMaxValue[5].to_owned()],
                     ));
                 } else if value < i32::MIN as i64 {
-                    reterr!(0, witharg, Message::with_help(
+                    reterr!(95, Message::with_help(
                         format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::IntegralUnderflow),
                         vec![(strpos, String::new())],
                         vec![error_strings::IntegralUnderflowHelpMinValue[1].to_owned()],
-                    ));
+                    ));                                                                                             // LAST RETERR
                 } else {
                     chars.dummy1();
                     chars.dummy1();
@@ -756,11 +806,11 @@ fn str_to_num_lit_impl(raw: String, strpos: StringPosition) -> Result<NumLitValu
                 chars.dummy1();
                 conv!(82, State::ExpectEOF(NumLitValue::I64(value as i64)));
             }
-            (State::ExpectSignedIntPostfix(_), 'i', EOFCHAR, _) => reterr!(75, witharg, Message::new(
+            (State::ExpectSignedIntPostfix(_), 'i', EOFCHAR, _) => reterr!(75, Message::new(
                 format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::UnexpectedEOFInMaybeSignedIntPostfix),
                 vec![(strpos, String::new())],
             )),
-            (State::ExpectSignedIntPostfix(_), _, _, _) => reterr!(85, witharg, Message::new(
+            (State::ExpectSignedIntPostfix(_), _, _, _) => reterr!(85, Message::new(
                 format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::UnexpectedValueAfterMaybeSignedIntPostfix),
                 vec![(strpos, String::new())],
             )),    
@@ -768,7 +818,7 @@ fn str_to_num_lit_impl(raw: String, strpos: StringPosition) -> Result<NumLitValu
             // ---- ExpectUnsignedIntPostfix(value) ---- 
             (State::ExpectUnsignedIntPostfix(value), 'u', '8', EOFCHAR) => 
                 if value > u8::max_value() as u64 { 
-                    reterr!(76, witharg, Message::with_help(
+                    reterr!(76, Message::with_help(
                         format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::IntegralOverflow),
                         vec![(strpos, String::new())],
                         vec![error_strings::IntegralOverflowHelpMaxValue[1].to_owned()],
@@ -778,7 +828,7 @@ fn str_to_num_lit_impl(raw: String, strpos: StringPosition) -> Result<NumLitValu
                 },
             (State::ExpectUnsignedIntPostfix(value), 'u', '1', '6') => 
                 if value > u16::max_value() as u64 { 
-                    reterr!(77, witharg, Message::with_help(
+                    reterr!(77, Message::with_help(
                         format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::IntegralOverflow),
                         vec![(strpos, String::new())],
                         vec![error_strings::IntegralOverflowHelpMaxValue[3].to_owned()],
@@ -790,7 +840,7 @@ fn str_to_num_lit_impl(raw: String, strpos: StringPosition) -> Result<NumLitValu
                 },
             (State::ExpectUnsignedIntPostfix(value), 'u', '3', '2') => 
                 if value > u32::max_value() as u64 { 
-                    reterr!(78, witharg, Message::with_help(
+                    reterr!(78, Message::with_help(
                         format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::IntegralOverflow),
                         vec![(strpos, String::new())],
                         vec![error_strings::IntegralOverflowHelpMaxValue[5].to_owned()],
@@ -805,11 +855,11 @@ fn str_to_num_lit_impl(raw: String, strpos: StringPosition) -> Result<NumLitValu
                 chars.dummy1();
                 conv!(85, State::ExpectEOF(NumLitValue::U64(value))); 
             }
-            (State::ExpectUnsignedIntPostfix(_), 'u', EOFCHAR, _) => reterr!(79, witharg, Message::new(
+            (State::ExpectUnsignedIntPostfix(_), 'u', EOFCHAR, _) => reterr!(79, Message::new(
                 format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::UnexpectedEOFInMaybeUnsignedIntPostfix),
                 vec![(strpos, String::new())],
             )),
-            (State::ExpectUnsignedIntPostfix(_), _, _, _) => reterr!(86, witharg, Message::new(
+            (State::ExpectUnsignedIntPostfix(_), _, _, _) => reterr!(86, Message::new(
                 format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::UnexpectedValueAfterMaybeUnsignedIntPostfix),
                 vec![(strpos, String::new())],
             )),    
@@ -835,18 +885,18 @@ fn str_to_num_lit_impl(raw: String, strpos: StringPosition) -> Result<NumLitValu
                 chars.dummy1();
                 conv!(88, State::ExpectEOF(NumLitValue::F64(value)));
             }
-            (State::ExpectFloatPostfix(_), 'f', EOFCHAR, _) => reterr!(82, witharg, Message::new(
+            (State::ExpectFloatPostfix(_), 'f', EOFCHAR, _) => reterr!(82, Message::new(
                 format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::UnexpectedEOFInMaybeFloatingPostfix),
                 vec![(strpos, String::new())],
             )), 
-            (State::ExpectFloatPostfix(_), _, _, _) => reterr!(87, witharg, Message::new(
+            (State::ExpectFloatPostfix(_), _, _, _) => reterr!(87, Message::new(
                 format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::UnexpectedValueAfterMaybeFloatingPostfix),
                 vec![(strpos, String::new())],
-            )),                                                                                 // LAST RETERR
+            )),
 
             // ---- ExpectEOF(value) ---- 
             (State::ExpectEOF(ret_val), EOFCHAR, _, _) => retok!(12, ret_val),
-            (State::ExpectEOF(_), _, _, _) => reterr!(83, witharg, Message::new(
+            (State::ExpectEOF(_), _, _, _) => reterr!(83, Message::new(
                 format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::UnexpectedNotEOF),
                 vec![(strpos, String::new())],
             )),
@@ -931,8 +981,7 @@ fn num_lit_feature() {
 
     macro_rules! make_err { 
         () => (Message::new_by_str(error_strings::InvalidNumericLiteral, vec![(strpos, "")]));
-        ($msg: expr) => (Message::new_by_str($msg, vec![(strpos, "")]));
-        (witharg, $msg: expr) => ($msg);
+        ($msg: expr) => ($msg);
     }
 
     #[cfg(feature = "trace_num_lit_parse")]
@@ -956,13 +1005,16 @@ fn num_lit_feature() {
         )
     }
     
+    // 64/99 reterr to be done
+    // 18/45 make_err to be done, that means, many error not tested
+
     // normal i32
     test_case!("123", NumLitValue::I32(123));                   // 0
     test_case!("1", NumLitValue::I32(1));                       // 1
     test_case!("123456789", NumLitValue::I32(123456789));       // 2
     test_case!("2147483647", NumLitValue::I32(2147483647));     // 3
     // should not start with 0
-    test_case!("0123", err, make_err!(witharg, Message::with_help(
+    test_case!("0123", err, make_err!(Message::with_help(
         format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::NumLitShouldNotStartWith0), 
         posinfo.clone(),
         vec![error_strings::CStyleOctNumLitHelp.to_owned()]
@@ -974,19 +1026,19 @@ fn num_lit_feature() {
     test_case!("0f32", NumLitValue::F32(0f32));                 // 7
     test_case!("0x0", NumLitValue::I32(0));                     // 8
     test_case!("0o0u8", NumLitValue::U8(0));                    // 9
-    test_case!("0u", err, make_err!(witharg, Message::new(
+    test_case!("0u", err, make_err!(Message::new(
         format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::UnexpectedEOFInMaybeUnsignedIntPostfix),
         posinfo.clone(),
     )));                                                        // 10
-    test_case!("0f", err, make_err!(witharg, Message::new(
+    test_case!("0f", err, make_err!(Message::new(
         format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::UnexpectedEOFInMaybeFloatingPostfix),
         posinfo.clone(),
     )));                                                        // 11
-    test_case!("0i888", err, make_err!(witharg, Message::new(
+    test_case!("0i888", err, make_err!(Message::new(
         format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::UnexpectedValueAfterMaybeSignedIntPostfix),
         posinfo.clone(),
     )));                                                        // 12
-    test_case!("0f3210", err, make_err!(witharg, Message::new(
+    test_case!("0f3210", err, make_err!(Message::new(
         format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::UnexpectedNotEOF),
         posinfo.clone(),
     )));                                                        // 13
@@ -1004,11 +1056,11 @@ fn num_lit_feature() {
     // test_case!("1.79E308", NumLitValue::F64(1.79E308));      // 22, too difficult to make it pass
     // test_case!("1.79E-308", NumLitValue::F64(1.79E-308));    // 23, too difficult too
     // smallflow
-    test_case!("1.79E-2333", err, make_err!(witharg, Message::new(
+    test_case!("1.79E-2333", err, make_err!(Message::new(
         format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::FloatingPointUnderflow),
         posinfo.clone(),
     )));                                                        // 24
-    test_case!("1.79E2333", err, make_err!(witharg, Message::new(
+    test_case!("1.79E2333", err, make_err!(Message::new(
         format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::FloatingPointOverflow),
         posinfo.clone(),
     )));                                                        // 0
@@ -1021,17 +1073,17 @@ fn num_lit_feature() {
     test_case!("61234u16", NumLitValue::U16(61234));            // 29
     test_case!("9223372036854775807i64", NumLitValue::I64(9223372036854775807));        // 30
     // overflow and downflow is error
-    test_case!("256u8", err, make_err!(witharg, Message::with_help(
+    test_case!("256u8", err, make_err!(Message::with_help(
         format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::IntegralOverflow),
         posinfo.clone(),
         vec![error_strings::IntegralOverflowHelpMaxValue[1].to_owned()],
     )));                                                        // 31
-    test_case!("100000i16", err, make_err!(witharg, Message::with_help(
+    test_case!("100000i16", err, make_err!(Message::with_help(
         format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::IntegralOverflow),
         posinfo.clone(),
         vec![error_strings::IntegralOverflowHelpMaxValue[2].to_owned()],
     )));                                                        // 32
-    test_case!("-800i8", err, make_err!(witharg, Message::with_help(
+    test_case!("-800i8", err, make_err!(Message::with_help(
         format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::IntegralUnderflow),
         posinfo.clone(),
         vec![error_strings::IntegralUnderflowHelpMinValue[0].to_owned()],
@@ -1050,13 +1102,31 @@ fn num_lit_feature() {
     test_case!("0b101010", NumLitValue::I32(0b101010));         // 40
     test_case!("-0o777", NumLitValue::I32(-0o777));             // 41
     // invalid char
-    test_case!("0xXXXX", err, make_err!());              // 42, should be invalid char at xx:xx
-    test_case!("0b1234", err, make_err!());              // 43, should be invalid char at xx:xx
-    test_case!("0daaaa", err, make_err!());              // 44, should be invalid char at xx:xx
+    test_case!("0xXXXX", err, make_err!(Message::with_help(
+        format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::InvalidCharInIntLiteral),
+        posinfo.clone(),
+        vec![error_strings::IntLiteralAllowedChars[3].to_owned()],
+    )));                                                        // 42
+    test_case!("0b1234", err, make_err!(Message::with_help(
+        format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::InvalidCharInIntLiteral),
+        posinfo.clone(),
+        vec![error_strings::IntLiteralAllowedChars[0].to_owned()],
+    )));                                                        // 43
+    test_case!("0daaaa", err, make_err!(Message::with_help(
+        format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::InvalidCharInIntLiteral),
+        posinfo.clone(),
+        vec![error_strings::IntLiteralAllowedChars[2].to_owned()],
+    )));                                                        // 44
 
     // floating point no prefix 
-    test_case!("0x123.0", err, make_err!());             // 45, should be floating point no prefix
-    test_case!("0b111.01", err, make_err!());            // 46, should be floating point no prefix
+    test_case!("0x123.0", err, make_err!(Message::new(
+        format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::DotInIntLiteral),
+        posinfo.clone(),
+    )));                                                       // 45
+    test_case!("0b111.01", err, make_err!(Message::new(
+        format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::DotInIntLiteral),
+        posinfo.clone(),
+    )));                                                        // 46
 
     // auto expansion for no postfix
     test_case!("2147483645", NumLitValue::I32(2147483645));                         // 47
@@ -1080,10 +1150,20 @@ fn num_lit_feature() {
     test_case!("123E+10", NumLitValue::F64(123E10));                // 62
     test_case!("123E-10", NumLitValue::F64(123E-10));               // 63
     // e not with prefix or postfix, exp should be integer
-    test_case!("0x123E-5", err, make_err!());                // 64, should be floating point should not use prefix
-    test_case!("123.456E789.0", err, make_err!());           // 65, should be floating point scientific representation's exponential part should be integer
+    test_case!("0d123E-5", err, make_err!(Message::new(
+        format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::ExponentialInIntLiteral),
+        posinfo.clone(),
+    )));                                                            // 0
+    test_case!("0x123E-5", err, make_err!(Message::new(
+        format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::ExponentialInIntLiteral),
+        posinfo.clone(),
+    )));                                                            // 64
+    test_case!("123.456E789.0", err, make_err!(Message::new(
+        format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::FloatExponentialFloat),
+        posinfo.clone(),
+    )));                                                            // 65
     // after e is a i32
-    test_case!("123E12345678901", err, make_err!());         // 66
+    test_case!("123E12345678901", err, make_err!());                // 66
 
     // decimal dot
     test_case!("123.456", NumLitValue::F64(123.456));               // 67
@@ -1124,53 +1204,60 @@ fn num_lit_feature() {
     test_case!("123.4_5_6E1_23", NumLitValue::F64(123.456E123));    // 94
     test_case!("0.1_2_3_4_5_6E0", NumLitValue::F64(0.123456));      // 95
     // underscore not at head, tail, not around dot
-    test_case!("_1234", err, make_err!());                   // 96
-    test_case!("1_", err, make_err!());                      // 97
-    test_case!("_", err, make_err!());                       // 98
-    test_case!("123_.5", err, make_err!());                  // 99
-    test_case!("0._456", err, make_err!());                  // 100
-    test_case!("0.123_", err, make_err!());                  // 101
+    test_case!("_1234", err, make_err!());                          // 96
+    test_case!("1_", err, make_err!());                             // 97
+    test_case!("_", err, make_err!());                              // 98
+    test_case!("123_.5", err, make_err!());                         // 99
+    test_case!("0._456", err, make_err!());                         // 100
+    test_case!("0.123_", err, make_err!());                         // 101
     test_case!("0b_1110_1001", NumLitValue::I32(0b11101001));       // 102
     test_case!("0x_1234_i64", NumLitValue::I64(0x1234));            // 103
     // underscore not in postfix or prefix
-    test_case!("0_xABCD", err, make_err!(witharg, Message::with_help(
+    test_case!("0_xABCD", err, make_err!(Message::with_help(
         format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::NumLitShouldNotStartWith0), 
         posinfo.clone(),
         vec![error_strings::CStyleOctNumLitHelp.to_owned()]
     )));                 // 104
-    test_case!("ABCDu6_4", err, make_err!());                // 105
-    test_case!("123i_32", err, make_err!(witharg, Message::new(
+    test_case!("ABCDu6_4", err, make_err!());                       // 105
+    test_case!("123i_32", err, make_err!(Message::new(
         format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::UnexpectedValueAfterMaybeSignedIntPostfix),
         posinfo.clone(),
-    )));                                                     // 106
+    )));                                                            // 106
     // underscore no double
-    test_case!("123__456", err, make_err!());                // 107
-    test_case!("0b__101100", err, make_err!());              // 108
+    test_case!("123__456", err, make_err!());                       // 107
+    test_case!("0b__101100", err, make_err!());                     // 108
 
     // empty
-    test_case!("0xu64", err, make_err!());                   // 109
-    test_case!("0bf32", err, make_err!());                   // 110
+    test_case!("0xu64", err, make_err!(Message::new(
+        format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::EmptyIntLiteral),
+        posinfo.clone(),
+    )));                                                            // 109
+    test_case!("0bf32", err, make_err!(Message::with_help(
+        format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::EmptyIntLiteral),
+        posinfo.clone(),
+        vec![error_strings::AndFloatPostfixInIntLiteral.to_owned()],
+    )));                                                            // 110
 
     // strange postfix and prefix
-    test_case!("0X123", err, make_err!(witharg, Message::with_help(
+    test_case!("0X123", err, make_err!(Message::with_help(
         format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::NumLitShouldNotStartWith0), 
         posinfo.clone(),
         vec![error_strings::IntegralPrefixIsLowerCase.to_owned()]
     )));                                                    // 111
-    test_case!("001", err, make_err!(witharg, Message::with_help(
+    test_case!("001", err, make_err!(Message::with_help(
         format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::NumLitShouldNotStartWith0), 
         posinfo.clone(),
         vec![error_strings::CStyleOctNumLitHelp.to_owned()]
     )));                                                     // 112
-    test_case!("0u123", err, make_err!(witharg, Message::new(
+    test_case!("0u123", err, make_err!(Message::new(
         format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::UnexpectedValueAfterMaybeUnsignedIntPostfix),
         posinfo.clone(),
     )));                   // 113
-    test_case!("123u18", err, make_err!(witharg, Message::new(
+    test_case!("123u18", err, make_err!(Message::new(
         format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::UnexpectedValueAfterMaybeUnsignedIntPostfix),
         posinfo.clone(),
     )));                  // 114
-    test_case!("654321i1024", err, make_err!(witharg, Message::new(
+    test_case!("654321i1024", err, make_err!(Message::new(
         format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::UnexpectedValueAfterMaybeSignedIntPostfix),
         posinfo.clone(),
     )));             // 116
