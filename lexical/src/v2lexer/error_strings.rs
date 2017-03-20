@@ -13,12 +13,13 @@ pub const IntegralPrefixIsLowerCase: &'static str = "Integral prefix `0b`, `0o`,
 pub const UnexpectedEOFInMaybeUnsignedIntPostfix: &'static str = "unexpected EOF in maybe unsigned integral postfix";
 pub const UnexpectedEOFInMaybeSignedIntPostfix: &'static str = "unexpected EOF in maybe signed integral postfix";
 pub const UnexpectedEOFInMaybeFloatingPostfix: &'static str = "unexpected EOF in maybe floating point postfix";
+pub const UnexpectedEOFInExponent: &'static str = "unexpected EOF in floating point Exponent";
 pub const UnexpectedValueAfterMaybeUnsignedIntPostfix: &'static str = "unexpected value after maybe unsigned integral postfix";
 pub const UnexpectedValueAfterMaybeSignedIntPostfix: &'static str = "unexpected value after maybe signed integral postfix";
 pub const UnexpectedValueAfterMaybeFloatingPostfix: &'static str = "unexpected value after maybe floating point postfix";
 pub const UnexpectedNotEOF: &'static str = "unexpected not EOF";
-pub const FloatingPointUnderflow: &'static str = "floating point underflow";
-pub const FloatingPointOverflow: &'static str = "floating point overflow";
+pub const FloatPointUnderflow: &'static str = "floating point underflow";
+pub const FloatPointOverflow: &'static str = "floating point overflow";
 pub const IntegralOverflow: &'static str = "integral overflow";
 pub const IntegralUnderflow: &'static str = "integral underflow";
 pub const IntegralOverflowHelpMaxValue: [&'static str; 8] = [
@@ -39,6 +40,7 @@ pub const IntegralUnderflowHelpMinValue: [&'static str; 4] = [
 ];
 pub const InvalidCharInFloatLiteral: &'static str = "invalid char in floating point literal";
 pub const InvalidCharInIntLiteral: &'static str = "invalid char in integral literal";
+pub const InvalidChar: &'static str = "invalid char";
 pub const IntLiteralAllowedChars: [&'static str; 4] = [
     "It is a binary literal and only allows 0 and 1",
     "It is an octal literal and only allows 0-7",
@@ -46,8 +48,34 @@ pub const IntLiteralAllowedChars: [&'static str; 4] = [
     "It is a hexadecimal liteteral and only allows 0-9a-fA-F"
 ];
 pub const InternalErrorAt: &'static str = "internal error at ";
-pub const ExponentialInIntLiteral: &'static str = "exponential not allowed in integral literal";
+pub const ExponentInIntLiteral: &'static str = "Exponent not allowed in integral literal";
 pub const EmptyIntLiteral: &'static str = "empty integral literal";
+pub const EmptyLiteral: &'static str = "empty literal";
 pub const AndFloatPostfixInIntLiteral: &'static str = "And floating point literal not allowed in integral literal";
 pub const DotInIntLiteral: &'static str = "decimal dot not allowed in integral literal";
-pub const FloatExponentialFloat: &'static str = "floating point exponentail should be integer";
+pub const FloatExponentFloat: &'static str = "floating point exponentail should be integer";
+pub const FloatPointOverflowHelpMaxValue: [&'static str; 4] = [
+    "It is a single precision floating point literal and positive max value is about 3.40282347E+38",
+    "It is a single precision floating point literal and negative max value is about -3.40282347E+38",
+    "It is a double precision floating point literal and positive max value is about 1.7976931348623157E+308", // 1.79E308?
+    "It is a double precision floating point literal and negative max value is about -1.7976931348623157E+308", // -1.79E308
+];
+pub const FloatPointUnderflowHelpMinValue: [&'static str; 4] = [
+    "It is a single precision floating point literal and positive min value is about 1.17549435E-38",
+    "It is a single precision floating point literal and negative min value is about -1.17549435E-38",
+    "It is a double precision floating point literal and positive min value is about 2.2250738585072014E-308", // 1.79E-308?
+    "It is a double precision floating point literal and negative min value is about -2.2250738585072014E-308", // -1.79E-308?
+];
+pub const NegativeOperatorOnUnsignedInt: &'static str = "Negative operator should not apply to unsigned integral literal";
+pub const UnderscoreDouble: &'static str = "continuous underscore not allowed";
+pub const UnderscoreArroundDot: &'static str = "underscore should not before or after decimal dot";
+pub const UnderscoreAtHead: &'static str = "underscore should not be before first digit of numeric literal";
+pub const UnderscoreAtExponentHead: &'static str = "underscore should not be before first digit of floating point literal exponent";
+pub const UnderscoreAtEnd: &'static str = "underscore should not be end of numeric literal";
+pub const UnderscoreInMaybeSignedIntPostfix: &'static str = "underscore should not be within maybe signed integral postfix";
+pub const UnderscoreInMaybeUnsignedIntPostfix: &'static str = "underscore should not be within maybe unsigned integral postfix";
+pub const UnderscoreInMaybeFloatPointPostfix: &'static str = "underscore should not be within maybe floating point integral postfix";
+pub const DotAtHead: &'static str = "decimal dot should not be before first digit of numeric literal";
+pub const DotAtEnd: &'static str = "decimal dot should not be after last digit of numeric literal";
+pub const DotDouble: &'static str = "multiple decimal dot";
+pub const MaybeIntPostfixInFloatPoint: &'static str = "maybe integral postfix not allowed in floating point literal";

@@ -481,7 +481,11 @@ fn v2_base() {
             lit_num_none!(1, 70, 1, 75),
             sep!(SeperatorKind::RightBracket, 1, 76, 1, 76),
         ] [
-            Message::new_by_str(error_strings::InvalidNumericLiteral, vec![(make_str_pos!(1, 70, 1, 75), "")]),
+            Message::with_help(
+                format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::IntegralOverflow),
+                vec![(make_str_pos!(1, 70, 1, 75), String::new())],
+                vec![error_strings::IntegralOverflowHelpMaxValue[1].to_owned()]
+            ),
         ]
     }
 
@@ -510,9 +514,21 @@ fn v2_base() {
             sep!(SeperatorKind::Decrease, 1, 81, 1, 82),
             sep!(SeperatorKind::SubAssign, 1, 84, 1, 85),
         ] [
-            Message::new_by_str(error_strings::InvalidNumericLiteral, vec![(make_str_pos!(1, 33, 1, 37), "")]),
-            Message::new_by_str(error_strings::InvalidNumericLiteral, vec![(make_str_pos!(1, 54, 1, 61), "")]),
-            Message::new_by_str(error_strings::InvalidNumericLiteral, vec![(make_str_pos!(1, 74, 1, 78), "")]),
+            Message::with_help(
+                format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::InvalidCharInIntLiteral),
+                vec![(make_str_pos!(1, 33, 1, 37), String::new())],
+                vec![error_strings::IntLiteralAllowedChars[1].to_owned()]
+            ),
+            Message::with_help(
+                format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::InvalidCharInIntLiteral),
+                vec![(make_str_pos!(1, 54, 1, 61), String::new())],
+                vec![error_strings::IntLiteralAllowedChars[0].to_owned()]
+            ),
+            Message::with_help(
+                format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::InvalidCharInIntLiteral),
+                vec![(make_str_pos!(1, 74, 1, 78), String::new())],
+                vec![error_strings::IntLiteralAllowedChars[2].to_owned()]
+            ),
         ]
     }
 

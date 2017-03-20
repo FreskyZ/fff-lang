@@ -49,5 +49,9 @@ pub trait IToken : fmt::Debug {
     fn get_position(&self) -> StringPosition;
 }
 
+// pub fn parse() -> Lexer {
+
+// }
+
 // TODO: 
 // numeric literal refactor, use new message, add 1.1E10 feature, remove ' seperator， remove double _ seperator
