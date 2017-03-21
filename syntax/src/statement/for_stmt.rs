@@ -9,9 +9,9 @@ use lexical::Lexer;
 use lexical::KeywordKind;
 use lexical::SeperatorKind;
 
-use syntax::ast_item::IASTItem;
-use syntax::Expression;
-use syntax::Block;
+use super::super::ast_item::IASTItem;
+use super::super::Expression;
+use super::super::Block;
 
 #[derive(Eq, PartialEq)]
 pub struct ForStatement {
@@ -101,12 +101,12 @@ impl IASTItem for ForStatement {
 #[cfg(test)]
 mod tests {
     use super::ForStatement;
-    use syntax::ast_item::IASTItem;
+    use super::super::super::ast_item::IASTItem;
     use lexical::Lexer;
 
     #[test]
     fn ast_stmt_for() {
 
-        perrorln!("{}", ForStatement::parse(&mut Lexer::new("for i in 1 + 1[2] : infinite(true) { fresky.loves(zmj); }"), 0).0.unwrap());
+        perrorln!("{}", ForStatement::parse(&mut Lexer::new("for i in 1 + 1[2] .. infinite(true) { fresky.loves(zmj); }"), 0).0.unwrap());
     }
 }

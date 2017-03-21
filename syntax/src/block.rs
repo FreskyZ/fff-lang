@@ -10,8 +10,8 @@ use util::format_vector_debug;
 use lexical::Lexer;
 use lexical::SeperatorKind;
 
-use syntax::ast_item::IASTItem;
-use syntax::Statement;
+use super::ast_item::IASTItem;
+use super::Statement;
 
 #[derive(Eq, PartialEq)]
 pub struct Block {
@@ -77,7 +77,7 @@ mod tests {
     #[test]
     fn ast_block_parse() {
         use super::Block;
-        use syntax::ast_item::IASTItem;
+        use super::super::ast_item::IASTItem;
         use lexical::Lexer;
         use codepos::StringPosition;
         

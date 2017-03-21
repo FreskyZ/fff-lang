@@ -10,9 +10,9 @@ use util::format_vector_debug;
 use lexical::Lexer;
 use lexical::KeywordKind;
 
-use syntax::ast_item::IASTItem;
-use syntax::Expression;
-use syntax::Block;
+use super::super::ast_item::IASTItem;
+use super::super::Expression;
+use super::super::Block;
 
 #[derive(Eq, PartialEq)]
 pub struct ElseIfBranch {
@@ -161,7 +161,7 @@ impl IASTItem for IfStatement {
 #[cfg(test)]
 mod tests {
     use super::IfStatement;
-    use syntax::ast_item::IASTItem;
+    use super::super::super::ast_item::IASTItem;
     use lexical::Lexer;
 
     #[test]

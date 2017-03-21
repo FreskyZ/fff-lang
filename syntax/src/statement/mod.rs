@@ -12,8 +12,8 @@ use codepos::StringPosition;
 
 use lexical::Lexer;
 
-use syntax::ast_item::IASTItem;
-use syntax::Block;
+use super::ast_item::IASTItem;
+use super::Block;
 
 mod var_decl;
 mod expr_stmt;

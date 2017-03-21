@@ -16,8 +16,8 @@ use lexical::Lexer;
 use lexical::SeperatorKind;
 use lexical::KeywordKind;
 
-use syntax::ast_item::IASTItem;
-use syntax::Expression;
+use super::super::ast_item::IASTItem;
+use super::super::Expression;
 
 #[derive(Eq, PartialEq)]
 pub struct ReturnStatement {
@@ -219,8 +219,8 @@ mod tests {
     use codepos::StringPosition;
     use message::SyntaxMessage;
     use message::LegacyMessage as Message;
-    use syntax::Expression;
-    use syntax::ast_item::TestCase;
+    use super::super::super::Expression;
+    use super::super::super::ast_item::TestCase;
 
     #[test]
     fn ast_stmt_jump_parse() {

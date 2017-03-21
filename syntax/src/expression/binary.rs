@@ -18,9 +18,9 @@ use lexical::Lexer;
 use lexical::SeperatorKind;
 use lexical::SeperatorCategory;
 
-use syntax::ast_item::IASTItem;
-use syntax::expression::d3::D3Expression;
-use syntax::expression::unary::UnaryExpression;
+use super::super::ast_item::IASTItem;
+use super::super::expression::d3::D3Expression;
+use super::super::expression::unary::UnaryExpression;
 
 #[derive(Eq, PartialEq, Clone)]
 pub struct BinaryOperator {

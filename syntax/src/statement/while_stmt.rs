@@ -8,9 +8,9 @@ use codepos::StringPosition;
 use lexical::Lexer;
 use lexical::KeywordKind;
 
-use syntax::ast_item::IASTItem;
-use syntax::Expression;
-use syntax::Block;
+use super::super::ast_item::IASTItem;
+use super::super::Expression;
+use super::super::Block;
 
 #[derive(Eq, PartialEq)]
 pub struct WhileStatement {
@@ -63,7 +63,7 @@ impl IASTItem for WhileStatement {
 #[cfg(test)]
 mod tests {
     use super::WhileStatement;
-    use syntax::ast_item::IASTItem;
+    use super::super::super::ast_item::IASTItem;
     use lexical::Lexer;
 
     #[test]

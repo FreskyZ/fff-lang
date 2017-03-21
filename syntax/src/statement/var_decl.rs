@@ -10,9 +10,9 @@ use lexical::Lexer;
 use lexical::KeywordKind;
 use lexical::SeperatorKind;
 
-use syntax::ast_item::IASTItem;
-use syntax::Expression;
-use syntax::SMType;
+use super::super::ast_item::IASTItem;
+use super::super::Expression;
+use super::super::SMType;
 
 #[derive(Eq, PartialEq)]
 pub struct VarDeclStatement {
@@ -131,9 +131,9 @@ impl IASTItem for VarDeclStatement {
 mod tests {
     use super::VarDeclStatement;
     use lexical::Lexer;
-    use syntax::ast_item::IASTItem;
-    use syntax::SMType;
-    use syntax::Expression;
+    use super::super::super::ast_item::IASTItem;
+    use super::super::super::SMType;
+    use super::super::super::Expression;
     use codepos::StringPosition;
 
     #[test]

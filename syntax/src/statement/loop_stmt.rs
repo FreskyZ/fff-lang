@@ -9,9 +9,9 @@ use message::SyntaxMessage;
 use lexical::Lexer;
 use lexical::KeywordKind;
 
-use syntax::ast_item::IASTItem;
-use syntax::Block;
-use syntax::Expression;
+use super::super::ast_item::IASTItem;
+use super::super::Block;
+use super::super::Expression;
 
 #[derive(Eq, PartialEq)]
 pub struct LoopStatement {
@@ -85,10 +85,10 @@ impl IASTItem for LoopStatement {
 #[cfg(test)]
 mod tests {
     use super::LoopStatement;
-    use syntax::Block;
+    use super::super::Block;
     use message::LegacyMessage as Message;
     use message::SyntaxMessage;
-    use syntax::ast_item::TestCase;
+    use super::super::super::ast_item::TestCase;
     use codepos::StringPosition;
 
     #[test]

@@ -1,8 +1,6 @@
 
 // FunctionDef = fFn fIdentifier fLeftParen [Type Identifier [fComma Type Identifier]* [fComma] ] fRightParen [fNarrowRightArrow Type] Block
 
-#[cfg(not(test))]
-use std::cmp;
 use std::fmt;
 
 use codepos::StringPosition;
@@ -14,9 +12,9 @@ use lexical::Lexer;
 use lexical::KeywordKind;
 use lexical::SeperatorKind;
 
-use syntax::ast_item::IASTItem;
-use syntax::SMType;
-use syntax::Block;
+use super::ast_item::IASTItem;
+use super::SMType;
+use super::Block;
 
 #[derive(Eq, PartialEq)]
 pub struct Argument {
@@ -66,7 +64,6 @@ impl Argument {
     
     pub fn pub_pos_all(&self) -> StringPosition { self.pos_all() }
 
-    #[cfg(test)]
     pub fn from_str(arg_str: &str, index: usize) -> Argument {
         let lexer = &mut Lexer::new(arg_str);
         Argument::parse(lexer, index).0.unwrap()
@@ -107,7 +104,6 @@ impl FunctionDef {
     pub fn pos_fn(&self) -> StringPosition { self.pos2[0] }
     pub fn pos_name(&self) -> StringPosition { self.pos2[1] }
 
-    #[cfg(test)]
     pub fn from_str(func_def_str: &str, sym_index: usize) -> FunctionDef {
         let lexer = &mut Lexer::new(func_def_str);
         let ret_val = FunctionDef::parse(lexer, sym_index).0.unwrap();
@@ -213,9 +209,9 @@ impl IASTItem for FunctionDef {
 #[cfg(test)]
 mod tests {
     use lexical::Lexer;
-    use syntax::SMType;
-    use syntax::Block;
-    use syntax::ast_item::IASTItem;
+    use super::super::SMType;
+    use super::super::Block;
+    use super::super::ast_item::IASTItem;
     use super::Argument;
     use super::FunctionDef;
     use codepos::StringPosition;

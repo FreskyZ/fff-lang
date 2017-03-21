@@ -9,7 +9,7 @@ use std::fmt;
 use codepos::StringPosition;
 
 use lexical::Lexer;
-use syntax::ast_item::IASTItem;
+use super::super::ast_item::IASTItem;
 
 use super::binary::BinaryExpression;
 
@@ -46,7 +46,7 @@ impl IASTItem for D3Expression {
 
 #[cfg(test)]
 mod tests {
-    use syntax::ast_item::IASTItem;
+    use super::super::super::ast_item::IASTItem;
     use codepos::StringPosition;
 
     use lexical::Lexer;
@@ -54,15 +54,15 @@ mod tests {
     use lexical::NumLitValue;
     use lexical::LitValue;
 
-    use syntax::SMType;
-    use syntax::expression::postfix::PostfixExpression;
-    use syntax::expression::primary::PrimaryExpression;
-    use syntax::expression::postfix::Postfix;
-    use syntax::expression::unary::UnaryOperator;
-    use syntax::expression::unary::UnaryExpression;
-    // use syntax::expression::binary::BinaryOperator;
-    use syntax::expression::binary::BinaryExpression;
-    use syntax::expression::d3::D3Expression;
+    use super::super::SMType;
+    use super::super::super::expression::postfix::PostfixExpression;
+    use super::super::super::expression::primary::PrimaryExpression;
+    use super::super::super::expression::postfix::Postfix;
+    use super::super::super::expression::unary::UnaryOperator;
+    use super::super::super::expression::unary::UnaryExpression;
+    // use super::super::super::expression::binary::BinaryOperator;
+    use super::super::super::expression::binary::BinaryExpression;
+    use super::super::super::expression::d3::D3Expression;
         
     // Helper macros
     // primary expression

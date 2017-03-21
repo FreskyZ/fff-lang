@@ -18,8 +18,8 @@ use lexical::SeperatorKind;
 use lexical::KeywordKind;
 use lexical::LitValue;
 
-use syntax::ast_item::IASTItem;
-use syntax::expression::d3::D3Expression;
+use super::super::ast_item::IASTItem;
+use super::super::expression::d3::D3Expression;
 
 #[derive(Eq, PartialEq, Clone)]
 pub enum PrimaryExpression {

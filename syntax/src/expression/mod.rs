@@ -12,8 +12,8 @@ use lexical::Lexer;
 use lexical::SeperatorKind;
 use lexical::LitValue;
 
-use syntax::SMType;
-use syntax::ast_item::IASTItem;
+use super::SMType;
+use super::ast_item::IASTItem;
 
 mod primary;
 mod postfix;
@@ -193,12 +193,11 @@ impl Expression {
         Expression{ base: Box::new(base), ops: ops, all_pos: pos }
     }
 
-    #[cfg(test)]
     pub fn new_test(base: ExpressionBase, ops: Vec<ExpressionOperator>, all_pos: StringPosition) -> Expression {
         Expression{ base: Box::new(base), ops: ops, all_pos: all_pos }
     }
 
-    #[cfg(test)] // Directly from string, only for test, may panic
+    // Directly from string, only for test, may panic
     pub fn from_str(program: &str, sym_index: usize) -> Expression {
         let lexer = &mut Lexer::new(program);
         Expression::parse(lexer, sym_index).0.unwrap() 
@@ -350,9 +349,9 @@ mod tests {
     use lexical::Lexer;
     use lexical::SeperatorKind;
     use lexical::LitValue;
-    use syntax::ast_item::IASTItem;
-    use syntax::SMType;
-    use syntax::ast_item::TestCase;
+    use super::super::ast_item::IASTItem;
+    use super::super::SMType;
+    use super::super::ast_item::TestCase;
 
     #[test]
     fn ast_expr_all() {

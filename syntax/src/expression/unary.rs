@@ -9,8 +9,8 @@ use lexical::Lexer;
 use lexical::SeperatorKind;
 use lexical::SeperatorCategory;
 
-use syntax::ast_item::IASTItem;
-use syntax::expression::postfix::PostfixExpression;
+use super::super::ast_item::IASTItem;
+use super::super::expression::postfix::PostfixExpression;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct UnaryOperator {

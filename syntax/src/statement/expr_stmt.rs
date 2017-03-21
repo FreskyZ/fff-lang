@@ -4,14 +4,14 @@
 use std::fmt;
 
 use codepos::StringPosition;
-use message::SyntaxMessage;
+// use message::SyntaxMessage;
 
 use lexical::Lexer;
 use lexical::SeperatorKind;
 use lexical::SeperatorCategory;
 
-use syntax::ast_item::IASTItem;
-use syntax::Expression;
+use super::super::ast_item::IASTItem;
+use super::super::Expression;
 
 #[derive(Eq, PartialEq)]
 pub struct ExpressionStatement {
@@ -37,7 +37,7 @@ fn format_assign_op(op: &SeperatorKind) -> String {
 }
 
 impl ExpressionStatement {
-    #[cfg(test)]
+    
     pub fn from_str(prog: &str, index: usize) -> (Option<ExpressionStatement>, usize) {
         ExpressionStatement::parse(&mut Lexer::new(prog), index)
     }
@@ -125,8 +125,8 @@ mod tests {
     use codepos::StringPosition;
     use lexical::Lexer;
     use lexical::SeperatorKind;
-    use syntax::ast_item::IASTItem;
-    use syntax::Expression;
+    use super::super::super::ast_item::IASTItem;
+    use super::super::super::Expression;
 
     #[test]
     fn ast_stmt_expr() {

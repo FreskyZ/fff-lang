@@ -1,6 +1,15 @@
+#![allow(dead_code)]
 
-// Syntax, form abstract syntax tree
+///! fff-lang
+///!
+///! syntax, abstract syntax tree types and generation
+
 // TODO: Add error recovery, which need new structure of message emitter and symbol length
+
+#[macro_use] extern crate util;
+#[macro_use] extern crate codepos;
+extern crate messages as message;
+extern crate lexical;
 
 #[macro_use]
 mod ast_item;
@@ -11,29 +20,29 @@ mod statement;
 mod block;
 mod expression;
 
-pub use syntax::program::Program;
-pub use syntax::function_def::Argument;
-pub use syntax::function_def::FunctionDef;
-pub use syntax::expression::Expression;
-pub use syntax::expression::ExpressionBase;
-pub use syntax::expression::ExpressionOperator;
-pub use syntax::statement::Statement;
-pub use syntax::statement::VarDeclStatement;
-pub use syntax::statement::ReturnStatement;
-pub use syntax::statement::BreakStatement;
-pub use syntax::statement::ContinueStatement;
-pub use syntax::statement::ExpressionStatement;
-pub use syntax::statement::LoopStatement;
-pub use syntax::statement::WhileStatement;
-pub use syntax::statement::ForStatement;
-pub use syntax::statement::ElseIfBranch;
-pub use syntax::statement::IfStatement;
-pub use syntax::smtype::SMType;
-pub use syntax::block::Block;
+pub use self::program::Program;
+pub use self::function_def::Argument;
+pub use self::function_def::FunctionDef;
+pub use self::expression::Expression;
+pub use self::expression::ExpressionBase;
+pub use self::expression::ExpressionOperator;
+pub use self::statement::Statement;
+pub use self::statement::VarDeclStatement;
+pub use self::statement::ReturnStatement;
+pub use self::statement::BreakStatement;
+pub use self::statement::ContinueStatement;
+pub use self::statement::ExpressionStatement;
+pub use self::statement::LoopStatement;
+pub use self::statement::WhileStatement;
+pub use self::statement::ForStatement;
+pub use self::statement::ElseIfBranch;
+pub use self::statement::IfStatement;
+pub use self::smtype::SMType;
+pub use self::block::Block;
 
 use lexical::Lexer;
 pub fn parse(lexer: &mut Lexer) -> Option<Program> {
-    use syntax::ast_item::IASTItem;
+    use self::ast_item::IASTItem;
 
     Program::parse(lexer, 0).0
 }
@@ -69,8 +78,6 @@ mod tests {
         perrorln!("messages: {:?}", lexer.messages())
     }
 }
-
-
 
 // Designment
 // First there is syntax definition, then there is syntax diagram and confirm there is no collision, then

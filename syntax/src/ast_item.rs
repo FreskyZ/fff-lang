@@ -1,13 +1,7 @@
 
 // ASTItem interface
 
-use std::fmt;
-use std::marker::PhantomData;
-
 use codepos::StringPosition;
-use message::LegacyMessage as Message;
-use message::MessageEmitter;
-
 use lexical::Lexer;
 
 pub trait IASTItem {
@@ -36,6 +30,11 @@ macro_rules! ast_test_case {
         TestCase::<$ty>::run_oe($program, $len, vec![$($msg, )*], line!(), column!());
     );
 }
+
+#[cfg(test)] use std::fmt;
+#[cfg(test)] use std::marker::PhantomData;
+#[cfg(test)] use message::LegacyMessage as Message;
+#[cfg(test)] use message::MessageEmitter;
 
 // Test infrastructure
 #[cfg(test)]

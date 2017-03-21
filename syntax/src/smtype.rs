@@ -23,7 +23,7 @@ use message::SyntaxMessage;
 use lexical::Lexer;
 use lexical::SeperatorKind;
 
-use syntax::ast_item::IASTItem;
+use super::ast_item::IASTItem;
 
 #[derive(Eq, PartialEq, Clone)]
 pub enum SMType {
@@ -64,7 +64,6 @@ impl SMType {
     }
     pub fn pos(&self) -> StringPosition { self.pos_all() } // for outter use
 
-    #[cfg(test)]
     pub fn from_str(smstr: &str, index: usize) -> SMType {
         let lexer = &mut Lexer::new(smstr);
         SMType::parse(lexer, index).0.unwrap()
@@ -211,7 +210,7 @@ mod tests {
         use message::SyntaxMessage;
         use super::SMType;
         use codepos::StringPosition;
-        use syntax::ast_item::TestCase;
+        use super::super::ast_item::TestCase;
 
         // Primitive
         ast_test_case!{ "u8", 1, make_str_pos!(1, 1, 1, 2),

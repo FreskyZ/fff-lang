@@ -9,6 +9,7 @@ codemap = { path="../codemap" }
 codepos = { path="../codepos" }
 util = { path="../util" }
 messages = { path = "../messages" }
+syntax = { path = "../syntax" }
 
 [lib]
 name = "driver"
