@@ -4,6 +4,7 @@
 use std::fmt;
 
 use codepos::StringPosition;
+use codemap::CodeMap;
 // use message::SyntaxMessage;
 
 use lexical::Lexer;
@@ -39,7 +40,8 @@ fn format_assign_op(op: &SeperatorKind) -> String {
 impl ExpressionStatement {
     
     pub fn from_str(prog: &str, index: usize) -> (Option<ExpressionStatement>, usize) {
-        ExpressionStatement::parse(&mut Lexer::new(prog), index)
+        let mut codemap = CodeMap::with_str(prog);
+        ExpressionStatement::parse(&mut Lexer::new(codemap.iter()), index)
     }
 }
 impl fmt::Debug for ExpressionStatement {

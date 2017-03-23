@@ -5,9 +5,9 @@ use codepos::Position;
 use codepos::StringPosition;
 use message::Message;
 use message::MessageCollection;
+use codemap::EOFCHAR;
 
 use super::error_strings;
-use super::super::v0lexer::EOFCHAR;
 
 pub struct RawStringLiteralParser {
     raw: String,

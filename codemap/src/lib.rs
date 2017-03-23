@@ -14,9 +14,10 @@ use messages::Message;
 mod code_char;
 mod code_file;
 
+pub use code_char::EOFCHAR;
+pub use code_char::EOFSCHAR;
 pub use code_char::CodeChar;
 use code_char::new_code_char;
-use code_char::EOFSCHAR;
 use code_file::CodeFile;
 use code_file::CodeFileIter;
 
@@ -38,7 +39,7 @@ impl<'a> CodeChars<'a> {
         }
     }
 
-    fn next(&mut self) -> CodeChar {
+    pub fn next(&mut self) -> CodeChar {
 
         match self.current_index {
             Some(index) => {
@@ -61,7 +62,7 @@ impl<'a> CodeChars<'a> {
 // CodeMap, source code file and content manager
 // # Examples
 // ```
-/// let mut codemap = CodeMap::new_by_str("123\ndef");
+/// let mut codemap = CodeMap::with_str("123\ndef");
 /// codemap.input_str("456");
 /// let mut iter = codemap.iter();
 /// assert_eq!(iter.next().as_tuple(), ('1', make_pos!(0, 1, 1)));
@@ -89,11 +90,11 @@ impl CodeMap {
     }
     
     // helper function to make it simple
-    pub fn new_by_files(file_names: Vec<String>) -> Result<CodeMap, Message> {
+    pub fn with_files(file_names: Vec<String>) -> Result<CodeMap, Message> {
         let mut ret_val = CodeMap::new();
         ret_val.input_files(file_names).map(|_| ret_val)
     }
-    pub fn new_by_str(content: &str) -> CodeMap {
+    pub fn with_str(content: &str) -> CodeMap {
         let mut ret_val = CodeMap::new();
         ret_val.input_str(content);
         ret_val
@@ -175,4 +176,225 @@ fn codemap_input() {
     assert_eq!(iter.next(), new_code_char(EOFSCHAR, make_pos!(2, 3, 1)));
     assert_eq!(iter.next(), new_code_char(EOFSCHAR, make_pos!(2, 3, 1)));
     assert_eq!(iter.next(), new_code_char(EOFSCHAR, make_pos!(2, 3, 1)));
+}
+
+#[cfg(test)]
+mod cool_driver_feas {
+
+    mod detail {
+
+        #[derive(Debug, Eq, PartialEq)]
+        pub struct MessageCollectionMapper<'a, T>{
+            ret_val: T,
+            messages: &'a mut MessageCollection,
+        }
+        impl<'a, TCurrent> MessageCollectionMapper<'a, TCurrent> {
+            fn new(ret_val: TCurrent, messages: &'a mut MessageCollection) -> MessageCollectionMapper<'a, TCurrent> {
+                MessageCollectionMapper{ ret_val: ret_val, messages: messages }
+            }
+
+            pub fn map<
+                TNext: IMessageCollectionMapResult, 
+                TFn: FnOnce(TCurrent) -> (TNext, MessageCollection)>
+                (self, f: TFn) -> MessageCollectionMapper<'a, TNext> {
+                
+                if self.messages.continuable {
+                    let (result, messages) = f(self.ret_val);
+                    self.messages.merge(messages);
+                    MessageCollectionMapper::new(result, self.messages)
+                } else {
+                    MessageCollectionMapper::new(TNext::empty(), self.messages)
+                }
+            }
+
+            pub fn map_err<TFn: FnOnce(&MessageCollection)>(self, f: TFn) {
+                f(self.messages);
+            }
+        }
+
+        pub trait IMessageCollectionMapResult {
+            fn empty() -> Self;
+        }
+        impl IMessageCollectionMapResult for () {
+            fn empty() -> () { () }
+        }
+
+        #[derive(Debug, Eq, PartialEq)]
+        pub struct MessageCollection {
+            continuable: bool,
+            errors: Vec<String>,
+        }
+        impl MessageCollection {
+            pub fn new() -> MessageCollection {
+                MessageCollection{ 
+                    continuable: true,
+                    errors: Vec::new(),
+                }
+            }
+            pub fn push(&mut self, error: &str) {
+                self.errors.push(error.to_owned());
+            }
+
+            pub fn is_continuable(&self) -> bool { self.continuable }
+            fn merge(&mut self, mut other: MessageCollection) {
+                self.errors.append(&mut other.errors);
+                self.continuable = self.continuable && other.continuable;
+            }
+            pub fn set_uncontinuable(&mut self) {
+                self.continuable = false;
+            }
+
+            pub fn map<
+                TResult: IMessageCollectionMapResult, 
+                TFn: FnOnce(i32) -> (TResult, MessageCollection)>
+                (&mut self, f: TFn) -> MessageCollectionMapper<TResult> {
+                
+                if self.continuable {
+                    let (result, messages) = f(0);
+                    self.merge(messages);
+                    MessageCollectionMapper::new(result, self)
+                } else {
+                    MessageCollectionMapper::new(TResult::empty(), self)
+                }
+            }
+        }
+
+        #[derive(Debug, Eq, PartialEq)]
+        pub struct CodeMapIter<'a>{
+            map: &'a mut CodeMap,
+            j: i32,
+        }
+        impl<'a> CodeMapIter<'a> {
+            pub fn next(&mut self) -> i32 {
+                self.map.i += 1;
+                self.j = self.map.i;
+                self.j
+            }
+        }
+
+        #[derive(Debug, Eq, PartialEq)]
+        pub struct CodeMap {
+            i: i32,
+        }
+        impl IMessageCollectionMapResult for CodeMap {
+            fn empty() -> CodeMap {
+                CodeMap{ i: -1 }
+            }
+        }
+        impl CodeMap {
+            pub fn new(file_names: Vec<String>, set_uncontinuable: bool) -> (CodeMap, MessageCollection) {
+
+                println!("CodeMap::new(), file_names: {:?}, set_uncontinuable: {}", file_names, set_uncontinuable);
+                let mut messages = MessageCollection::new();
+                messages.push("codemap continuable error");
+                if set_uncontinuable { 
+                    messages.push("codemap uncontinuable error");
+                    messages.set_uncontinuable(); 
+                }
+
+                (CodeMap{ i: 0 }, messages)
+            }
+            pub fn iter<'a>(&'a mut self) -> CodeMapIter<'a> {
+                CodeMapIter{ map: self, j: 0 }
+            }
+            pub fn format(&self, messages: &MessageCollection) -> String {
+                format!("{:?}", messages)
+            }
+        }
+
+        #[derive(Debug, Eq, PartialEq)]
+        pub struct TokenStream {
+            tokens: Vec<i32>,
+        }
+        impl IMessageCollectionMapResult for TokenStream {
+            fn empty() -> TokenStream {
+                TokenStream{ tokens: Vec::new() }
+            }
+        }
+        pub fn lexical_parse<'a>(mut chars: CodeMapIter<'a>, set_uncontinuable: bool) -> (TokenStream, MessageCollection) {
+
+            println!("lexical_parse, chars: {:?}, set_uncontinuable: {}", chars, set_uncontinuable);
+            let mut messages = MessageCollection::new();
+            messages.push("lexical_parse continuable error");
+            if set_uncontinuable { 
+                messages.push("lexical_parse uncontinuable error");
+                messages.set_uncontinuable(); 
+            }
+
+            let mut result = Vec::new();
+            result.push(chars.next());
+            result.push(chars.next());
+            (TokenStream{ tokens: result }, messages)
+        }
+
+        #[derive(Debug, Eq, PartialEq)]
+        pub struct SyntaxTree {
+            items: Vec<String>,
+        }
+        impl IMessageCollectionMapResult for SyntaxTree {
+            fn empty() -> SyntaxTree {
+                SyntaxTree{ items: Vec::new() }
+            }
+        }
+        pub fn syntax_parse(token_stream: TokenStream, set_uncontinuable: bool) -> (SyntaxTree, MessageCollection) {
+
+            println!("syntax_parase, token_stream: {:?}, set_uncontinuable: {}", token_stream, set_uncontinuable);
+            let mut messages = MessageCollection::new();
+            messages.push("syntax_parase continuable error");
+            if set_uncontinuable { 
+                messages.push("syntax_parase uncontinuable error");
+                messages.set_uncontinuable(); 
+            }
+
+            let mut result = Vec::new();
+            for token in token_stream.tokens {
+                result.push(format!("{}", token));
+            }
+            (SyntaxTree{ items: result }, messages)
+        }
+
+        pub fn vm_run(syntax_tree: SyntaxTree, set_uncontinuable: bool) -> ((), MessageCollection) {
+
+            println!("vm_run, syntax_tree: {:?}, set_uncontinuable: {}", syntax_tree, set_uncontinuable);
+            let mut messages = MessageCollection::new();
+            messages.push("vm_run continuable error");
+            if set_uncontinuable { 
+                messages.push("vm_run uncontinuable error");
+                messages.set_uncontinuable(); 
+            }
+
+            let mut output = String::new();
+            for item in syntax_tree.items {
+                output += &format!("{}", item);
+            }
+            println!("vm_run, output: {}", output);
+            ((), messages)
+        }
+    }
+
+    #[test]
+    fn cool_driver_test() {
+        use self::detail::MessageCollection;
+        use self::detail::CodeMap;
+        use self::detail::lexical_parse;
+        use self::detail::syntax_parse;
+        use self::detail::vm_run;
+
+        println!(); 
+
+        let file_name = "file1.ff".to_owned();
+        
+        // TODO: try `struct MessageCollectionAndReturnValue<T>(T, MessageCollection)
+        // Attention:
+        //     can I impl `messages::IMessageCollectionResult` for `messages::MessageCollectionAndRetVal<syntax::SyntaxTree>`
+        //     and call it's `map` in `driver`?
+        MessageCollection::new()
+            .map(|_| CodeMap::new(vec![file_name], false))
+            .map(|mut codemap| lexical_parse(codemap.iter(), false))
+            .map(|tokens| syntax_parse(tokens, false))
+            .map(|ast| vm_run(ast, false))
+            .map_err(|errs| { println!("\nerrors: {:?}", errs); });
+        
+        assert!(false);
+    }
 }

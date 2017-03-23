@@ -9,6 +9,7 @@
 #[macro_use] extern crate util;
 #[macro_use] extern crate codepos;
 extern crate messages as message;
+extern crate codemap;
 extern crate lexical;
 
 #[macro_use]

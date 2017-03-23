@@ -15,7 +15,6 @@ mod string_lit_parser;
 mod raw_string_lit_parser;
 mod error_strings;
 
-use std::str::Chars;
 use codepos::Position;
 use codepos::StringPosition;
 use message::Message;
@@ -24,8 +23,9 @@ use message::MessageCollection;
 use super::buf_lexer::ILexer;
 use super::buf_lexer::BufLexer;
 
-use super::v0lexer::V0Lexer;
-use super::v0lexer::EOFCHAR;
+use codemap::CodeChars;
+use codemap::EOFCHAR;
+use codemap::EOFSCHAR;
 
 use self::string_lit_parser::StringLiteralParser;
 use self::string_lit_parser::StringLiteralParserResult;
@@ -35,22 +35,28 @@ use self::char_lit_parser::CharLiteralParser;
 use self::char_lit_parser::CoverageRecorder;
 use self::char_lit_parser::CharLiteralParserResult;
 
-#[cfg(test)]
-#[derive(Eq, PartialEq)]
-pub enum V1Token {
-    StringLiteral(Option<String>),
-    RawStringLiteral(Option<String>),
-    CharLiteral(Option<char>),
-    Other(char),
-    EOF,
+// CodeChars wrapper
+struct V0Lexer<'a> {
+    chars: CodeChars<'a>,
 }
-#[cfg(not(test))]
+impl<'a> ILexer<'a, char> for V0Lexer<'a> {
+    fn new(chars: CodeChars<'a>, _: &mut MessageCollection) -> V0Lexer<'a> {
+        V0Lexer{ chars: chars }
+    }
+    fn next(&mut self, _: &mut MessageCollection) -> (char, StringPosition) {
+        let ret_val = self.chars.next().as_tuple();
+        (ret_val.0, StringPosition::double(ret_val.1))
+    }
+}
+
+#[cfg_attr(test, derive(Eq, PartialEq))]
 pub enum V1Token {
     StringLiteral(Option<String>),
     RawStringLiteral(Option<String>),
     CharLiteral(Option<char>),
     Other(char),
     EOF,
+    EOFs,
 }
 
 #[cfg(test)]
@@ -64,6 +70,7 @@ impl fmt::Debug for V1Token {
             V1Token::CharLiteral(ref value) => write!(f, "Char literal {:?}", value),
             V1Token::Other(ref ch) => write!(f, "Other {:?}", ch),
             V1Token::EOF => write!(f, "EOF"),
+            V1Token::EOFs => write!(f, "EOFs"),
         }
     }
 }
@@ -73,7 +80,7 @@ pub struct V1Lexer<'chs> {
 }
 impl<'chs> ILexer<'chs, V1Token> for V1Lexer<'chs> {
 
-    fn new(content_chars: Chars<'chs>, messages: &mut MessageCollection) -> V1Lexer<'chs> {
+    fn new(content_chars: CodeChars<'chs>, messages: &mut MessageCollection) -> V1Lexer<'chs> {
         V1Lexer { 
             v0: BufLexer::new(content_chars, messages),
         }
@@ -120,10 +127,12 @@ impl<'chs> ILexer<'chs, V1Token> for V1Lexer<'chs> {
                 (State::Nothing, &EOFCHAR, eof_pos, _3, _4, _5, _6) => {                // C7: in nothing, meet EOF, return 
                     return (V1Token::EOF, eof_pos);
                 }
+                (State::Nothing, &EOFSCHAR, eofs_pos, _3, _4, _5, _6) => {              // C13, directly redirect EOFs
+                    return (V1Token::EOFs, eofs_pos);
+                }
                 (State::Nothing, ch, strpos, _3, _4, _5, _6) => {                       // C6: in nothing, meet other, return
                     return (V1Token::Other(*ch), strpos);
                 }
-
                 (State::InBlockComment{ start_pos }, &'*', _2, &'/', end_pos, _5, _6) => {   // C8: in block, meet */, return
                     self.v0.prepare_skip1();
                     return (V1Token::Other(' '), StringPosition::from2(start_pos, end_pos.end_pos()));
@@ -194,19 +203,21 @@ impl<'chs> ILexer<'chs, V1Token> for V1Lexer<'chs> {
 #[cfg(test)]
 #[test]
 fn v1_base() {
+    use codemap::CodeMap;
 
     macro_rules! test_case {
         ($program: expr, [$($expect: expr)*] [$($expect_msg: expr)*]) => ({
             let messages = &mut MessageCollection::new();
-            let mut v1lexer = V1Lexer::new($program.chars(), messages);
+            let mut codemap = CodeMap::with_str($program);
+            let mut v1lexer = V1Lexer::new(codemap.iter(), messages);
             $(
                 match v1lexer.next(messages) {
-                    (V1Token::EOF, _) => panic!("Unexpected end of iteration"),
                     v1 => assert_eq!(v1, $expect),
                 }
             )*
             match v1lexer.next(messages) {
-                (V1Token::EOF, _) => (),
+                (V1Token::EOF, _)
+                | (V1Token::EOFs, _) => (),
                 v1 => panic!("Unexpected more symbol after expect: {:?}", v1),
             }
             

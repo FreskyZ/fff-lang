@@ -6,8 +6,8 @@
 mod num_lit_parser;
 mod unicode_char;
 
-use std::str::Chars;
 use codepos::StringPosition;
+use codemap::CodeChars;
 use message::Message;
 use message::MessageCollection;
 
@@ -24,23 +24,14 @@ use self::num_lit_parser::parse_numeric_literal;
 
 mod error_strings;
 
-#[cfg(test)]
-#[derive(Eq, PartialEq, Clone)]
+#[cfg_attr(test, derive(Eq, PartialEq))]
 pub enum V2Token {
     Literal(LitValue),
     Identifier(String),   // Anything of [_a-zA-Z][_a-zA-Z0-9]*
     Keyword(KeywordKind),
     Seperator(SeperatorKind),
     EOF,
-}
-#[cfg(not(test))]
-#[derive(Clone)]
-pub enum V2Token {
-    Literal(LitValue),
-    Identifier(String),   // Anything of [_a-zA-Z][_a-zA-Z0-9]*
-    Keyword(KeywordKind),
-    Seperator(SeperatorKind),
-    EOF,
+    EOFs,
 }
 
 #[cfg(test)]
@@ -54,6 +45,7 @@ impl fmt::Debug for V2Token {
             V2Token::Keyword(ref kind) => write!(f, "Keyword {:?}", kind),
             V2Token::Seperator(ref kind) => write!(f, "Seperator {:?}", kind),
             V2Token::EOF => write!(f, "EOF"),
+            V2Token::EOFs => write!(f, "EOFs"),
         }
     }
 }
@@ -119,7 +111,7 @@ pub struct V2Lexer<'chs> {
 }
 impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
 
-    fn new(content_chars: Chars<'chs>, messages: &mut MessageCollection) -> V2Lexer<'chs> {
+    fn new(content_chars: CodeChars<'chs>, messages: &mut MessageCollection) -> V2Lexer<'chs> {
         V2Lexer { 
             v1: BufLexer::new(content_chars, messages),
         }
@@ -160,6 +152,9 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                         eofed = true;
                         V15Token(' ', eof_pos, ' ', next_strpos, ' ', nextnext_strpos)
                     }
+                }
+                (&V1Token::EOFs, eofs_pos, _2, _3, _4, _5) => {
+                    return (V2Token::EOFs, eofs_pos);
                 }
                 (&V1Token::Other(ch), strpos, &V1Token::Other(next_ch), next_strpos, &V1Token::Other(nextnext_ch), nextnext_strpos) => {
                     let ch = ch.pass_non_ascii_char(strpos, messages);
@@ -362,6 +357,7 @@ fn v2_non_ascii_ch() {
 #[cfg(test)]
 #[test]
 fn v2_base() {
+    use codemap::CodeMap;
 
     // Only to make decltype(V2Lexer as BufLexer::next(...)) to display better
     #[derive(Eq, PartialEq)]
@@ -381,11 +377,12 @@ fn v2_base() {
     macro_rules! test_case {
         ($program: expr, [$($expect: expr, )*] [$($expect_msg: expr, )*]) => ({
             let messages = &mut MessageCollection::new();
-            let mut v2lexer = V2Lexer::new($program.chars(), messages);
+            let mut codemap = CodeMap::with_str($program);
+            let mut v2lexer = V2Lexer::new(codemap.iter(), messages);
             let mut v2s = Vec::new();
             loop {
                 match v2lexer.next(messages) {
-                    (V2Token::EOF, _) => break,
+                    (V2Token::EOFs, _) => break,
                     v2 => v2s.push(V2AndStrPos::from(v2)),
                 }
             }

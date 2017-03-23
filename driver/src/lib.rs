@@ -4,21 +4,18 @@
 ///! fff-lang
 ///! compiler driver
 
-#[macro_use] // perrorln, test_only_attribute, test_only, test_condition_only
-extern crate util;
-#[macro_use] // make_pos, make_str_pos
-extern crate codepos; 
-
+#[macro_use] extern crate util;
+#[macro_use] extern crate codepos; 
 extern crate messages as message;  // TODO: this is for legacy compatibility, remove it
 extern crate codemap;
 extern crate lexical;
 extern crate syntax;
 
-mod file_map;
 mod codegen;
 mod vm;
 
-use file_map::InputReader;
+// use file_map::InputReader;
+use codemap::CodeMap;
 use lexical::Lexer;
 use syntax::parse;
 use codegen::generate;
@@ -27,21 +24,38 @@ use vm::run;
 // Handle and print error here
 pub fn compile_input(file_name: String) {
 
-    let content = {                                 // Read file
-        let mut file_reader = InputReader::new();
-        file_reader.read_inputs(vec![&file_name]);
+    // MessageCollection::new()                                                   // everything was OK
+    //     .map(|_| CodeMap::from_files(vec![file_name]))  
+    //     .map(|codemap| Tokens::parse(codemap.iter()))       // MessageCollection::map(Fn) // if continuable, continue else nothing
+    //     .map(|tokens| syntax::parse(tokens))
+    //     .map(|tree| codegen::generate(tree))
+    //     .map(|vmcodes| vm::run(vmcodes))
+    //     .map(|_| println!("Success!"))                       // so it is eager map
+    //     .map_err(|errs| println!("{:?}", codemap.format(errs))); // this is a problem, maybe a IMessageFormatter in messages
+    // 
+    // cool!
 
-        if !file_reader.get_errors().is_empty() {
-            perrorln!("Read file errors: {:?}", file_reader.get_errors());
+    // let content = {                                 // Read file
+    //     let mut file_reader = InputReader::new();
+    //     file_reader.read_inputs(vec![&file_name]);
+
+    //     if !file_reader.get_errors().is_empty() {
+    //         perrorln!("Read file errors: {:?}", file_reader.get_errors());
+    //         return;
+    //     }
+
+    //     file_reader.into_result()
+    // };
+    let mut codemap = match CodeMap::with_files(vec![file_name]) {
+        Ok(codemap) => codemap,
+        Err(message) => {
+            println!("{:?}", message);
             return;
         }
-
-        file_reader.into_result()
     };
-
-    let lexer = &mut Lexer::new(&content);           // Lexical parse
-    let ast_program = parse(lexer);                  // Syntax parse
-    if !lexer.messages().is_empty() {                // Any error is not allowed to continue
+    let mut lexer = Lexer::new(codemap.iter());             // Lexical parse
+    let ast_program = parse(&mut lexer);                    // Syntax parse
+    if !lexer.messages().is_empty() {                       // Any error is not allowed to continue
         println!("{:?}", lexer.messages());
         return;
     }
@@ -51,7 +65,6 @@ pub fn compile_input(file_name: String) {
         return;
     }
 
-    println!("vm_program: {:?}", vm_program);
     let maybe_exception = run(vm_program);                         // run!
     match maybe_exception {
         Some(exception) => perrorln!("{:?}", exception),
@@ -62,7 +75,6 @@ pub fn compile_input(file_name: String) {
 }
 
 // TODO: 
-// Finish lexical move out, use new message format
 // Move syntax out
 // Move codegen out
 // Create optimize

@@ -1,14 +1,14 @@
 ///! fff-lang
 // Buffed lexer
 
-use std::str::Chars;
 use std::cell::Cell;
+use codemap::CodeChars;
 use codepos::StringPosition;
 use message::MessageCollection;
 
 pub trait ILexer<'chs, TToken> {
 
-    fn new(chars: Chars<'chs>, messaegs: &mut MessageCollection) -> Self;
+    fn new(chars: CodeChars<'chs>, messaegs: &mut MessageCollection) -> Self;
 
     // now position is out of token type
     // now token type provide EOF hint by itself
@@ -39,7 +39,7 @@ pub struct BufLexer<TLexer, TToken> {
 impl<'chs, TLexer, TToken> BufLexer<TLexer, TToken> 
     where TLexer: ILexer<'chs, TToken> {
     
-    pub fn new(content_chars: Chars<'chs>, messages: &mut MessageCollection) -> BufLexer<TLexer, TToken> {
+    pub fn new(content_chars: CodeChars<'chs>, messages: &mut MessageCollection) -> BufLexer<TLexer, TToken> {
 
         let mut lexer = TLexer::new(content_chars, messages);
         let current = lexer.next(messages);
@@ -111,12 +111,13 @@ impl<'chs, TLexer, TToken> BufLexer<TLexer, TToken>
 #[cfg(test)]
 #[test]
 fn buf_lexer_test() {
+    use codemap::CodeMap;
 
     #[derive(Eq, PartialEq, Debug)] struct TestToken(u32); // cannot copy and clone and other, eq for test
     struct TestLexer(u32);
     impl<'chs> ILexer<'chs, TestToken> for TestLexer {
 
-        fn new(_: Chars<'chs>, _: &mut MessageCollection) -> TestLexer {
+        fn new(_: CodeChars<'chs>, _: &mut MessageCollection) -> TestLexer {
             TestLexer(0)
         }
         fn next(&mut self, _: &mut MessageCollection) -> (TestToken, StringPosition) {
@@ -125,7 +126,7 @@ fn buf_lexer_test() {
         }
     } 
     
-    let mut buflexer = BufLexer::<TestLexer, TestToken>::new("".chars(), &mut MessageCollection::new());
+    let mut buflexer = BufLexer::<TestLexer, TestToken>::new(CodeMap::with_str("").iter(), &mut MessageCollection::new());
     let messages = &mut MessageCollection::new();
 
     buflexer.move_next(messages);

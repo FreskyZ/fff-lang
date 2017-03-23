@@ -7,6 +7,7 @@ use codepos::StringPosition;
 use util::format_vector_debug;
 use util::format_vector_display;
 use message::SyntaxMessage;
+use codemap::CodeMap;
 
 use lexical::Lexer;
 use lexical::KeywordKind;
@@ -65,7 +66,8 @@ impl Argument {
     pub fn pub_pos_all(&self) -> StringPosition { self.pos_all() }
 
     pub fn from_str(arg_str: &str, index: usize) -> Argument {
-        let lexer = &mut Lexer::new(arg_str);
+        let mut codemap = CodeMap::with_str(arg_str);
+        let lexer = &mut Lexer::new(codemap.iter());
         Argument::parse(lexer, index).0.unwrap()
     }
 }
@@ -105,7 +107,8 @@ impl FunctionDef {
     pub fn pos_name(&self) -> StringPosition { self.pos2[1] }
 
     pub fn from_str(func_def_str: &str, sym_index: usize) -> FunctionDef {
-        let lexer = &mut Lexer::new(func_def_str);
+        let mut codemap = CodeMap::with_str(func_def_str);
+        let lexer = &mut Lexer::new(codemap.iter());
         let ret_val = FunctionDef::parse(lexer, sym_index).0.unwrap();
         if !lexer.messages().is_empty() {
             panic!("assertion failed: lexer.messages().is_empty() is false, content: {:?}", lexer.messages());
@@ -114,7 +117,8 @@ impl FunctionDef {
     }
     #[cfg(test)]
     pub fn from_str_no_panic(prog: &str, index: usize) -> Option<FunctionDef> {
-        FunctionDef::parse(&mut Lexer::new(prog), index).0
+        let mut codemap = CodeMap::with_str(prog);
+        FunctionDef::parse(&mut Lexer::new(codemap.iter()), index).0
     }
 }
 impl IASTItem for FunctionDef {

@@ -9,7 +9,8 @@ use codepos::StringPosition;
 use message::Message;
 use message::MessageCollection;
 
-use super::super::v0lexer::EOFCHAR;
+use codemap::EOFCHAR;
+
 use super::error_strings;
 use super::escape_char_parser::EscapeCharParser;
 use super::escape_char_parser::EscapeCharSimpleCheckResult;

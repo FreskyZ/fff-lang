@@ -1,10 +1,9 @@
 
 // Lexer public interface
 
-#[macro_use]
-extern crate util;
-#[macro_use]
-extern crate codepos;
+#[macro_use] extern crate util;
+#[macro_use] extern crate codepos;
+extern crate codemap;
 extern crate messages as message; // TODO: legacy remove
 
 use std::fmt;
@@ -12,7 +11,6 @@ use codepos::StringPosition;
 
 mod symbol_type;
 mod buf_lexer;
-mod v0lexer;
 mod v1lexer;
 mod v2lexer;
 mod v4lexer;
@@ -25,7 +23,6 @@ pub use self::symbol_type::literal::LitValue;
 
 pub use self::v4lexer::V4Lexer as Lexer;
 
-// token interface definition
 pub trait IToken : fmt::Debug {
 
     fn is_keyword(&self, kind: KeywordKind) -> bool;

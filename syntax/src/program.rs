@@ -7,8 +7,8 @@ use codepos::StringPosition;
 use util::format_vector_debug;
 use util::format_vector_display;
 
+use codemap::CodeMap;
 use message::MessageEmitter;
-
 use lexical::Lexer;
 
 use super::ast_item::IASTItem;
@@ -30,10 +30,12 @@ impl fmt::Display for Program {
 }
 impl Program {
     pub fn from_str(prog: &str) -> Option<Program> {
-        Program::parse(&mut Lexer::new(prog), 0).0
+        let mut codemap = CodeMap::with_str(prog);
+        Program::parse(&mut Lexer::new(codemap.iter()), 0).0
     }
     pub fn try_from_str(prog: &str) -> Result<Program, MessageEmitter> {
-        let mut lexer = Lexer::new(prog);
+        let mut codemap = CodeMap::with_str(prog);
+        let mut lexer = Lexer::new(codemap.iter());
         match Program::parse(&mut lexer, 0).0 {
             Some(program) => Ok(program),
             None => Err(lexer.into_messages()),

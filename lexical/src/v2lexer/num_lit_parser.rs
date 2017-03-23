@@ -27,16 +27,16 @@
 // Char0To7 = '0'...'7'
 // Char0ToF = '0'...'9' | 'A'...'F' | 'a'...'f'
 
+use std::cell::Cell;
+
 use codepos::StringPosition;
 use message::Message;
 use message::MessageCollection;
+use codemap::EOFCHAR;
 
 use super::error_strings;
 use super::super::NumLitValue;
 
-// Buf char helper
-use super::super::v0lexer::EOFCHAR;
-use std::cell::Cell;
 struct BufChars<T> {
     chars: T,
     skips: Cell<i32>,

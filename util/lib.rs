@@ -54,38 +54,6 @@ macro_rules! perrorln {
     })
 }
 
-/// test_only_attr!([derive(1)] [derive(2) Encodable] struct abc{})
-#[macro_export]
-macro_rules! test_only_attr {
-    (
-        test: [$($attr_test: meta)*] 
-        not_test: [$($attr_build: meta)*] 
-        $typedef: item
-    ) => (
-        #[cfg(test)]
-        $(#[$attr_test])*
-        $typedef
-
-        #[cfg(not(test))]
-        $(#[$attr_build])*
-        $typedef
-    );
-
-    (
-        [$($attr_test: meta)*] 
-        ![$($attr_build: meta)*] 
-        $typedef: item
-    ) => (
-        #[cfg(test)]
-        $(#[$attr_test])*
-        $typedef
-
-        #[cfg(not(test))]
-        $(#[$attr_build])*
-        $typedef
-    )
-}
-
 use std::fmt;
 pub fn format_vector_display<T: fmt::Display>(items: &Vec<T>, sep: &str) -> String {
     let length = items.len();
@@ -121,13 +89,6 @@ macro_rules! test_condition_perrorln {
 macro_rules! test_condition_perrorln {
     ($cond: expr, $format: expr, $($args: expr, )+) => ();
     ($cond: expr, $format: expr) => ();
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-    }
 }
 
 /// Implement `fmt::Display` by previous implementation of `fmt::Debug`

@@ -7,6 +7,7 @@ use std::fmt;
 use codepos::StringPosition;
 use util::format_vector_display;
 use util::format_vector_debug;
+use codemap::CodeMap;
 
 use lexical::Lexer;
 use lexical::SeperatorKind;
@@ -199,7 +200,8 @@ impl Expression {
 
     // Directly from string, only for test, may panic
     pub fn from_str(program: &str, sym_index: usize) -> Expression {
-        let lexer = &mut Lexer::new(program);
+        let mut codemap = CodeMap::with_str(program);
+        let lexer = &mut Lexer::new(codemap.iter());
         Expression::parse(lexer, sym_index).0.unwrap() 
     }
 

@@ -19,6 +19,7 @@ use codepos::StringPosition;
 use util::format_vector_debug;
 use util::format_vector_display;
 use message::SyntaxMessage;
+use codemap::CodeMap;
 
 use lexical::Lexer;
 use lexical::SeperatorKind;
@@ -65,7 +66,8 @@ impl SMType {
     pub fn pos(&self) -> StringPosition { self.pos_all() } // for outter use
 
     pub fn from_str(smstr: &str, index: usize) -> SMType {
-        let lexer = &mut Lexer::new(smstr);
+        let mut codemap = CodeMap::with_str(smstr);
+        let lexer = &mut Lexer::new(codemap.iter());
         SMType::parse(lexer, index).0.unwrap()
     }
 }

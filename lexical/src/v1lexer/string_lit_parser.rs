@@ -4,11 +4,11 @@ use codepos::Position;
 use codepos::StringPosition;
 use message::Message;
 use message::MessageCollection;
+use codemap::EOFCHAR;
 use super::escape_char_parser::EscapeCharParser;
 use super::escape_char_parser::EscapeCharSimpleCheckResult;
 use super::escape_char_parser::EscapeCharParserResult;
 use super::error_strings;
-use super::super::v0lexer::EOFCHAR;
 
 #[cfg(test)]
 #[derive(Debug)]

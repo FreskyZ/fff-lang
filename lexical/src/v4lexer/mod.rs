@@ -6,6 +6,7 @@ use codepos::StringPosition;
 use message::SyntaxMessage;
 use message::LegacyMessage as Message;
 use message::MessageCollection;
+use codemap::CodeChars;
 
 use super::KeywordKind;
 use super::SeperatorKind;
@@ -40,6 +41,7 @@ impl fmt::Debug for V4Token {
             V2Token::Keyword(ref kind) => write!(f, "Keyword {:?} at ", kind),
             V2Token::Seperator(ref kind) => write!(f, "Seperator {:?} at ", kind),
             V2Token::EOF => write!(f, "<EOF> at "), 
+            V2Token::EOFs => write!(f, "<EOFs> at "),
         });
         write!(f, "{:?}", self.pos)
     }
@@ -147,16 +149,16 @@ pub struct V4Lexer {
 impl V4Lexer {
     
     #[allow(unused_assignments)]
-    pub fn new(content: &str) -> V4Lexer {
+    pub fn new<'a>(chars: CodeChars<'a>) -> V4Lexer {
         use super::buf_lexer::ILexer;
 
         let mut messages = MessageCollection::new();
-        let mut v2lexer = V2Lexer::new(content.chars(), &mut messages);
+        let mut v2lexer = V2Lexer::new(chars, &mut messages);
         let mut buf = Vec::new();
         let mut eof_pos = StringPosition::new();
         loop {
             match v2lexer.next(&mut messages) {
-                (V2Token::EOF, pos) => {
+                (V2Token::EOFs, pos) => {
                     eof_pos = pos;
                     break;
                 }
@@ -225,6 +227,7 @@ impl V4Lexer {
 #[cfg(test)]
 #[test]
 fn v4_base() {
+    use codemap::CodeMap;
     use super::NumLitValue;
 
     // numeric, 123, 1:1-1:3
@@ -234,7 +237,7 @@ fn v4_base() {
     // seperator, leftbracket, 1:14-1:14
     // numeric, 1, 1:15-1:15
     // seperator, rightbracket, 1:16-1:16
-    let lexer = V4Lexer::new("123 abc 'd', [1]");
+    let lexer = V4Lexer::new(CodeMap::with_str("123 abc 'd', [1]").iter());
 
     assert_eq!(lexer.nth(0).is_num_lit(), true);
     assert_eq!(lexer.nth(0).get_lit_val().unwrap().get_num().unwrap(), &Some(NumLitValue::I32(123)));
@@ -287,8 +290,9 @@ fn v4_base() {
 #[test]
 fn v4_push() {
     use codepos::Position;
+    use codemap::CodeMap;
 
-    let lexer = &mut V4Lexer::new("abcdef");
+    let lexer = &mut V4Lexer::new(CodeMap::with_str("abcdef").iter());
     assert_eq!(lexer.push_expect::<i32>("123", 0, 0), (None, 0));
     assert_eq!(lexer.push_expects::<i32>(vec!["456", "789"], 0, 0xABCD), (None, 0xABCD));
     
