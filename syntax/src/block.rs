@@ -7,11 +7,12 @@ use codepos::StringPosition;
 use util::format_vector_display;
 use util::format_vector_debug;
 use message::Message;
+use message::MessageCollection;
 
 use lexical::Lexer;
 use lexical::SeperatorKind;
 
-use super::ast_item::IASTItem;
+use super::ast_item::ISyntaxItem;
 use super::Statement;
 
 #[derive(Eq, PartialEq)]
@@ -30,13 +31,8 @@ impl fmt::Display for Block {
     }
 }
 impl Block {
-
-    pub fn from_str(program: &str, index: usize) -> Block {
-        use lexical::parse_test_str;
-        Block::parse(&mut parse_test_str(program), index).0.unwrap()
-    }
 }
-impl IASTItem for Block {
+impl ISyntaxItem for Block {
     
     fn pos_all(&self) -> StringPosition { self.pos }
 
@@ -44,10 +40,10 @@ impl IASTItem for Block {
         lexer.nth(index).is_seperator(SeperatorKind::LeftBrace) 
     }
 
-    fn parse(lexer: &mut Lexer, index: usize) -> (Option<Block>, usize) {
+    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<Block>, usize) {
 
         if !lexer.nth(index).is_seperator(SeperatorKind::LeftBrace) {
-            return push_unexpect!(lexer, "left brace", index, 0);
+            return push_unexpect!(lexer, messages, "left brace", index, 0);
         }
 
         let mut stmts = Vec::new();
@@ -59,7 +55,7 @@ impl IASTItem for Block {
                     pos: StringPosition::merge(lexer.pos(index), lexer.pos(index + current_len))
                 }), current_len + 1);
             }
-            match Statement::parse(lexer, index + current_len) {
+            match Statement::parse(lexer, messages, index + current_len) {
                 (Some(stmt), stmt_len) => {
                     current_len += stmt_len;
                     stmts.push(stmt);
@@ -77,15 +73,14 @@ mod tests {
     #[test]
     fn ast_block_parse() {
         use super::Block;
-        use super::super::ast_item::IASTItem;
-        use lexical::parse_test_str;
+        use super::super::ast_item::ISyntaxItem;
         use codepos::StringPosition;
         
         assert_eq!(
-            Block::parse(&mut parse_test_str("{}", ), 0), 
+            Block::with_test_str_ret_size("{}"), 
             (Some(Block{ stmts: Vec::new(), pos: make_str_pos!(1, 1, 1, 2) }), 2)
         );
 
-        perrorln!("{}", Block::parse(&mut parse_test_str("{ 1; 1 + 1; while true { writeln(\"fresky loves zmj\"); } loop { writeln(\"zmj loves fresky\"); } }"), 0).0.unwrap()); 
+        perrorln!("{}", Block::with_test_str("{ 1; 1 + 1; while true { writeln(\"fresky loves zmj\"); } loop { writeln(\"zmj loves fresky\"); } }")); 
     }
 }

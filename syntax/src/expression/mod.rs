@@ -7,13 +7,14 @@ use std::fmt;
 use codepos::StringPosition;
 use util::format_vector_display;
 use util::format_vector_debug;
+use message::MessageCollection;
 
 use lexical::Lexer;
 use lexical::SeperatorKind;
 use lexical::LitValue;
 
 use super::SMType;
-use super::ast_item::IASTItem;
+use super::ast_item::ISyntaxItem;
 
 mod primary;
 mod postfix;
@@ -197,13 +198,6 @@ impl Expression {
         Expression{ base: Box::new(base), ops: ops, all_pos: all_pos }
     }
 
-    // Directly from string, only for test, may panic
-    pub fn from_str(program: &str, sym_index: usize) -> Expression {
-        use lexical::parse_test_str;
-        let lexer = &mut parse_test_str(program);
-        Expression::parse(lexer, sym_index).0.unwrap() 
-    }
-
     pub fn pub_pos_all(&self) -> StringPosition { self.pos_all() }
 }
 
@@ -284,7 +278,7 @@ fn d3_expr_to_expr(d3: D3Expression) -> Expression {
     Expression::new(expr_base, ops, StringPosition::from2(pos_all_start, pos_all_end))
 }
 
-impl IASTItem for Expression {
+impl ISyntaxItem for Expression {
 
     fn pos_all(&self) -> StringPosition { self.all_pos }
 
@@ -292,9 +286,9 @@ impl IASTItem for Expression {
         BinaryExpression::is_first_final(lexer, index)
     }
 
-    fn parse(lexer: &mut Lexer, index: usize) -> (Option<Expression>, usize) {
+    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<Expression>, usize) {
         
-        match D3Expression::parse(lexer, index) {
+        match D3Expression::parse(lexer, messages, index) {
             (Some(d3), d3_length) => (Some(d3_expr_to_expr(d3)), d3_length),
             (None, length) => (None, length),
         }
@@ -349,7 +343,7 @@ mod tests {
     use message::LegacyMessage as Message;
     use lexical::SeperatorKind;
     use lexical::LitValue;
-    // use super::super::ast_item::IASTItem;
+    // use super::super::ast_item::ISyntaxItem;
     use super::super::SMType;
     use super::super::ast_item::TestCase;
 

@@ -4,12 +4,13 @@
 use std::fmt;
 
 use codepos::StringPosition;
+use message::MessageCollection;
 
 use lexical::Lexer;
 use lexical::SeperatorKind;
 use lexical::SeperatorCategory;
 
-use super::super::ast_item::IASTItem;
+use super::super::ast_item::ISyntaxItem;
 use super::super::expression::postfix::PostfixExpression;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
@@ -73,7 +74,7 @@ impl fmt::Display for UnaryExpression {
     }
 }
 
-impl IASTItem for UnaryExpression {
+impl ISyntaxItem for UnaryExpression {
 
     fn pos_all(&self) -> StringPosition {
         match self.unaries.iter().last() {
@@ -90,7 +91,7 @@ impl IASTItem for UnaryExpression {
         }
     }
 
-    fn parse(lexer: &mut Lexer, index: usize) -> (Option<UnaryExpression>, usize) {
+    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<UnaryExpression>, usize) {
 
         let mut current_len = 0;
         let mut unaries = Vec::new();
@@ -100,7 +101,7 @@ impl IASTItem for UnaryExpression {
                     unaries.push(UnaryOperator::new(sep.clone(), lexer.pos(index + current_len)));
                     current_len += 1;
                 }
-                Some(_) | None => match PostfixExpression::parse(lexer, index + current_len) {
+                Some(_) | None => match PostfixExpression::parse(lexer, messages, index + current_len) {
                     (Some(postfix), postfix_len) => return (Some(UnaryExpression{ post: postfix, unaries: unaries }), current_len + postfix_len),
                     (None, length) => return (None, current_len + length),
                 }

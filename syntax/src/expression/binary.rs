@@ -13,12 +13,13 @@
 use std::fmt;
 
 use codepos::StringPosition;
+use message::MessageCollection;
 
 use lexical::Lexer;
 use lexical::SeperatorKind;
 use lexical::SeperatorCategory;
 
-use super::super::ast_item::IASTItem;
+use super::super::ast_item::ISyntaxItem;
 use super::super::expression::d3::D3Expression;
 use super::super::expression::unary::UnaryExpression;
 
@@ -81,9 +82,9 @@ impl fmt::Display for BinaryExpression {
     }
 }
 
-fn parse_multiplicative(lexer: &mut Lexer, index: usize) -> (Option<BinaryExpression>, usize) {
+fn parse_multiplicative(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<BinaryExpression>, usize) {
 
-    let (unary, mut current_len) = match UnaryExpression::parse(lexer, index) {
+    let (unary, mut current_len) = match UnaryExpression::parse(lexer, messages, index) {
         (None, length) => return (None, length),
         (Some(unary), unary_length) => (unary, unary_length),
     };
@@ -93,7 +94,7 @@ fn parse_multiplicative(lexer: &mut Lexer, index: usize) -> (Option<BinaryExpres
         match lexer.nth(index + current_len).get_seperator() {
             Some(ref sep) if sep.is_category(SeperatorCategory::Multiplicative) => {
                 current_len += 1;
-                match UnaryExpression::parse(lexer, index + current_len) {
+                match UnaryExpression::parse(lexer, messages, index + current_len) {
                     (None, length) => return (None, current_len + length),
                     (Some(oprand), oprand_len) => {
                         ops.push(BinaryOperator{ 
@@ -115,9 +116,9 @@ fn parse_multiplicative(lexer: &mut Lexer, index: usize) -> (Option<BinaryExpres
 macro_rules! impl_binary_parser {
     ($parser_name: ident, $previous_parser: ident, $op_category: expr) => (
 
-        fn $parser_name(lexer: &mut Lexer, index: usize) -> (Option<BinaryExpression>, usize) {
+        fn $parser_name(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<BinaryExpression>, usize) {
     
-            let (mut left, mut current_len) = match $previous_parser(lexer, index) {
+            let (mut left, mut current_len) = match $previous_parser(lexer, messages, index) {
                 (None, length) => return (None, length),
                 (Some(prev_level), prev_length) => (prev_level, prev_length),
             };
@@ -126,7 +127,7 @@ macro_rules! impl_binary_parser {
                 match lexer.nth(index + current_len).get_seperator() {
                     Some(ref sep) if sep.is_category($op_category) => {
                         current_len += 1;
-                        match $previous_parser(lexer, index + current_len) {
+                        match $previous_parser(lexer, messages, index + current_len) {
                             (None, length) => return (None, current_len + length),
                             (Some(oprand), oprand_len) => {
                                 left.ops.push(BinaryOperator{ operator: sep.clone(), pos: lexer.pos(index + current_len - 1), oprand: D3Expression(oprand) });
@@ -157,7 +158,7 @@ impl BinaryExpression {
    
 }
 
-impl IASTItem for BinaryExpression {
+impl ISyntaxItem for BinaryExpression {
 
     fn pos_all(&self) -> StringPosition {
         match self.ops.iter().last() {
@@ -170,8 +171,8 @@ impl IASTItem for BinaryExpression {
         UnaryExpression::is_first_final(lexer, index)
     }
 
-    fn parse(lexer: &mut Lexer, index: usize) -> (Option<BinaryExpression>, usize) {
+    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<BinaryExpression>, usize) {
 
-        parse_logical_or(lexer, index)
+        parse_logical_or(lexer, messages, index)
     }
 }

@@ -12,12 +12,13 @@ use std::fmt;
 use codepos::StringPosition;
 use message::SyntaxMessage;
 use message::Message;
+use message::MessageCollection;
 
 use lexical::Lexer;
 use lexical::SeperatorKind;
 use lexical::KeywordKind;
 
-use super::super::ast_item::IASTItem;
+use super::super::ast_item::ISyntaxItem;
 use super::super::Expression;
 
 #[derive(Eq, PartialEq)]
@@ -45,7 +46,7 @@ impl fmt::Display for ReturnStatement {
 impl ReturnStatement {
     pub fn pub_pos_all(&self) -> StringPosition { self.pos_all() }
 }
-impl IASTItem for ReturnStatement {
+impl ISyntaxItem for ReturnStatement {
 
     fn pos_all(&self) -> StringPosition { StringPosition::merge(self.pos[0], self.pos[1]) } 
 
@@ -53,7 +54,7 @@ impl IASTItem for ReturnStatement {
         lexer.nth(index).is_keyword(KeywordKind::Return)
     }
 
-    fn parse(lexer: &mut Lexer, index: usize) -> (Option<ReturnStatement>, usize) {
+    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<ReturnStatement>, usize) {
 
         if !lexer.nth(index).is_keyword(KeywordKind::Return) {
             unreachable!()
@@ -66,7 +67,7 @@ impl IASTItem for ReturnStatement {
             }), 2);
         }
 
-        match Expression::parse(lexer, index + 1) {
+        match Expression::parse(lexer, messages, index + 1) {
             (None, length) => return (None, length),
             (Some(expr), expr_len) => {
                 if lexer.nth(index + 1 + expr_len).is_seperator(SeperatorKind::SemiColon) {
@@ -75,7 +76,7 @@ impl IASTItem for ReturnStatement {
                         pos: [lexer.pos(index), lexer.pos(index + 1 + expr_len)],
                     }), 2 + expr_len);
                 } else {
-                    return push_unexpect!(lexer, "semicolon", index + expr_len + 1, expr_len + 1);
+                    return push_unexpect!(lexer, messages, "semicolon", index + expr_len + 1, expr_len + 1);
                 }
             } 
         }
@@ -126,7 +127,7 @@ impl fmt::Display for BreakStatement {
     }
 }
 
-impl IASTItem for ContinueStatement {
+impl ISyntaxItem for ContinueStatement {
 
     fn pos_all(&self) -> StringPosition { StringPosition::merge(self.pos[0], self.pos[2]) }
 
@@ -134,7 +135,7 @@ impl IASTItem for ContinueStatement {
         lexer.nth(index).is_keyword(KeywordKind::Continue)
     }
 
-    fn parse(lexer: &mut Lexer, index: usize) -> (Option<ContinueStatement>, usize) {
+    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<ContinueStatement>, usize) {
         
         if !lexer.nth(index).is_keyword(KeywordKind::Continue) {
             unreachable!()
@@ -147,13 +148,13 @@ impl IASTItem for ContinueStatement {
             }), 2);
         }
 
-        match Expression::parse(lexer, index + 1) {
+        match Expression::parse(lexer, messages, index + 1) {
             (None, length) => return (None, length),
             (Some(expr), expr_len) => {
                 if lexer.nth(index + 1 + expr_len).is_seperator(SeperatorKind::SemiColon) {
                     let mut name_pos = expr.pos_all();
                     if !expr.is_pure_str_lit() {
-                        lexer.push(SyntaxMessage::LoopNameSpecifierIsNotStringLiteral{ pos: expr.pos_all() });
+                        messages.push(SyntaxMessage::LoopNameSpecifierIsNotStringLiteral{ pos: expr.pos_all() });
                         name_pos = StringPosition::new();
                     }
                     let name = expr.into_pure_str_lit();
@@ -162,13 +163,13 @@ impl IASTItem for ContinueStatement {
                         pos: [lexer.pos(index), name_pos, lexer.pos(index + 1 + expr_len)],
                     }), 2 + expr_len);
                 } else {
-                    return push_unexpect!(lexer, "semicolon", index + expr_len + 1, expr_len + 1);
+                    return push_unexpect!(lexer, messages, "semicolon", index + expr_len + 1, expr_len + 1);
                 }
             } 
         }
     }
 }
-impl IASTItem for BreakStatement {
+impl ISyntaxItem for BreakStatement {
 
     fn pos_all(&self) -> StringPosition { StringPosition::merge(self.pos[0], self.pos[2]) }
 
@@ -176,7 +177,7 @@ impl IASTItem for BreakStatement {
         lexer.nth(index).is_keyword(KeywordKind::Break)
     }
 
-    fn parse(lexer: &mut Lexer, index: usize) -> (Option<BreakStatement>, usize) {
+    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<BreakStatement>, usize) {
         
         if !lexer.nth(index).is_keyword(KeywordKind::Break) {
             unreachable!()
@@ -189,13 +190,13 @@ impl IASTItem for BreakStatement {
             }), 2);
         }
 
-        match Expression::parse(lexer, index + 1) {
+        match Expression::parse(lexer, messages, index + 1) {
             (None, length) => return (None, length),
             (Some(expr), expr_len) => {
                 if lexer.nth(index + 1 + expr_len).is_seperator(SeperatorKind::SemiColon) {
                     let mut name_pos = expr.pos_all();
                     if !expr.is_pure_str_lit() {
-                        lexer.push(SyntaxMessage::LoopNameSpecifierIsNotStringLiteral{ pos: expr.pos_all() });
+                        messages.push(SyntaxMessage::LoopNameSpecifierIsNotStringLiteral{ pos: expr.pos_all() });
                         name_pos = StringPosition::new();
                     }
 
@@ -205,7 +206,7 @@ impl IASTItem for BreakStatement {
                         pos: [lexer.pos(index), name_pos, lexer.pos(index + 1 + expr_len)],
                     }), 2 + expr_len);
                 } else {
-                    return push_unexpect!(lexer, "semicolon", index + expr_len + 1, expr_len + 1);
+                    return push_unexpect!(lexer, messages, "semicolon", index + expr_len + 1, expr_len + 1);
                 }
             } 
         }
@@ -222,6 +223,7 @@ mod tests {
     use message::LegacyMessage;
     use super::super::super::Expression;
     use super::super::super::ast_item::TestCase;
+    use super::super::super::ast_item::ISyntaxItem;
 
     #[test]
     fn ast_stmt_jump_parse() {
@@ -236,7 +238,7 @@ mod tests {
         }            //  1234567890123
         ast_test_case!{ "return 1 + 1;", 5, make_str_pos!(1, 1, 1, 13),
             ReturnStatement{ 
-                expr: Some(Expression::from_str("return 1 + 1", 1)),
+                expr: Some(Expression::with_test_str("       1 + 1")),
                 pos: [make_str_pos!(1, 1, 1, 6), make_str_pos!(1, 13, 1, 13)] 
             }
         }

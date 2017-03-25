@@ -8,12 +8,13 @@ use util::format_vector_debug;
 use util::format_vector_display;
 use message::SyntaxMessage;
 use message::Message;
+use message::MessageCollection;
 
 use lexical::Lexer;
 use lexical::KeywordKind;
 use lexical::SeperatorKind;
 
-use super::ast_item::IASTItem;
+use super::ast_item::ISyntaxItem;
 use super::SMType;
 use super::Block;
 
@@ -34,7 +35,7 @@ impl fmt::Display for Argument {
         write!(f, "{} {}", self.ty, self.name)
     }
 }
-impl IASTItem for Argument {
+impl ISyntaxItem for Argument {
 
     fn pos_all(&self) -> StringPosition { StringPosition::merge(self.ty.pos_all(), self.pos_name) }
 
@@ -42,9 +43,9 @@ impl IASTItem for Argument {
         SMType::is_first_final(lexer, index)
     }
 
-    fn parse(lexer: &mut Lexer, index: usize) -> (Option<Argument>, usize) {
+    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<Argument>, usize) {
 
-        let (ty, ty_len) = match SMType::parse(lexer, index) {
+        let (ty, ty_len) = match SMType::parse(lexer, messages, index) {
             (Some(ty), ty_len) => (ty, ty_len),
             (None, len) => return (None, len), 
         };
@@ -54,7 +55,7 @@ impl IASTItem for Argument {
         } else { 
             match lexer.nth(index + ty_len).get_identifier() {
                 Some(ident) => ident,
-                None => return push_unexpect!(lexer, ["identifier", ], index + ty_len, ty_len),
+                None => return push_unexpect!(lexer, messages, ["identifier", ], index + ty_len, ty_len),
             }
         };
 
@@ -64,12 +65,6 @@ impl IASTItem for Argument {
 impl Argument {
     
     pub fn pub_pos_all(&self) -> StringPosition { self.pos_all() }
-
-    pub fn from_str(arg_str: &str, index: usize) -> Argument {
-        use lexical::parse_test_str;
-        let lexer = &mut parse_test_str(arg_str);
-        Argument::parse(lexer, index).0.unwrap()
-    }
 }
 
 #[derive(Eq, PartialEq)]
@@ -105,23 +100,8 @@ impl FunctionDef {
 
     pub fn pos_fn(&self) -> StringPosition { self.pos2[0] }
     pub fn pos_name(&self) -> StringPosition { self.pos2[1] }
-
-    pub fn from_str(func_def_str: &str, sym_index: usize) -> FunctionDef {
-        use lexical::parse_test_str;
-        let lexer = &mut parse_test_str(func_def_str);
-        let ret_val = FunctionDef::parse(lexer, sym_index).0.unwrap();
-        if !lexer.messages().is_empty() {
-            panic!("assertion failed: lexer.messages().is_empty() is false, content: {:?}", lexer.messages());
-        }
-        ret_val
-    }
-    #[cfg(test)]
-    pub fn from_str_no_panic(prog: &str, index: usize) -> Option<FunctionDef> {
-        use lexical::parse_test_str;
-        FunctionDef::parse(&mut parse_test_str(prog), index).0
-    }
 }
-impl IASTItem for FunctionDef {
+impl ISyntaxItem for FunctionDef {
     
     fn pos_all(&self) -> StringPosition { StringPosition::merge(self.pos2[0], self.body.pos_all()) }
 
@@ -130,23 +110,23 @@ impl IASTItem for FunctionDef {
     }
     
     #[allow(unused_assignments)]
-    fn parse(lexer: &mut Lexer, index: usize) -> (Option<FunctionDef>, usize) {
+    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<FunctionDef>, usize) {
 
         let mut current_len = 0;
 
         if !lexer.nth(index).is_keyword(KeywordKind::FnDef) {
-            return push_unexpect!(lexer, "keyword fn", index, 0);
+            return push_unexpect!(lexer, messages, "keyword fn", index, 0);
         }
         current_len = 1;
 
         let fn_name = match lexer.nth(index + current_len).get_identifier() {
             Some(name) => name.clone(),
-            None => return push_unexpect!(lexer, "identifier", index + 1, current_len),
+            None => return push_unexpect!(lexer, messages, "identifier", index + 1, current_len),
         };
         current_len = 2;
 
         if !lexer.nth(index + 2).is_seperator(SeperatorKind::LeftParenthenes) {
-            return push_unexpect!(lexer, "left parenthenes", index + 2, current_len);
+            return push_unexpect!(lexer, messages, "left parenthenes", index + 2, current_len);
         }
         current_len = 3;
 
@@ -161,7 +141,7 @@ impl IASTItem for FunctionDef {
                 if args.is_empty() {                // recoverable error on fn main(, ) {}
                     let pos1 = StringPosition::merge(lexer.pos(index), lexer.pos(index + current_len + 1));
                     let pos2 = lexer.pos(index + current_len - 2).start_pos();
-                    lexer.push(SyntaxMessage::SingleCommaInNonArgumentFunctionDef{ fn_pos: pos1, comma_pos: pos2 });
+                    messages.push(SyntaxMessage::SingleCommaInNonArgumentFunctionDef{ fn_pos: pos1, comma_pos: pos2 });
                 }   
                 current_len += 2;
                 break;
@@ -170,7 +150,7 @@ impl IASTItem for FunctionDef {
                 current_len += 1;
                 continue;
             }
-            match Argument::parse(lexer, index + current_len) {
+            match Argument::parse(lexer, messages, index + current_len) {
                 (None, arg_len) => return (None, current_len + arg_len),
                 (Some(arg), arg_len) => {
                     current_len += arg_len;
@@ -183,13 +163,13 @@ impl IASTItem for FunctionDef {
         let mut return_type = SMType::Unit(StringPosition::from2(may_be_ret_type_pos, may_be_ret_type_pos));
         if lexer.nth(index + current_len).is_seperator(SeperatorKind::NarrowRightArrow) {
             current_len += 1;
-            match SMType::parse(lexer, index + current_len) {
+            match SMType::parse(lexer, messages, index + current_len) {
                 (Some(ret_type), ret_type_len) => {
                     return_type = ret_type;
                     current_len += ret_type_len;
                 }
                 (None, _length) => { // other things expect Type, find next left brace to continue
-                    let _: (Option<i32>, _) = push_unexpect!(lexer, "typedef", index + current_len, current_len);
+                    let _: (Option<i32>, _) = push_unexpect!(lexer, messages, "typedef", index + current_len, current_len);
                     for i in (index + current_len)..lexer.len() {
                         if lexer.nth(i).is_seperator(SeperatorKind::LeftBrace) {
                             current_len = i - index;
@@ -199,7 +179,7 @@ impl IASTItem for FunctionDef {
             }
         }
 
-        match Block::parse(lexer, index + current_len) {
+        match Block::parse(lexer, messages, index + current_len) {
             (Some(block), block_len) => {
                 let pos1 = lexer.pos(index);
                 let pos2 = lexer.pos(index + 1);
@@ -212,10 +192,9 @@ impl IASTItem for FunctionDef {
 
 #[cfg(test)]
 mod tests {
-    use lexical::parse_test_str;
     use super::super::SMType;
     use super::super::Block;
-    use super::super::ast_item::IASTItem;
+    use super::super::ast_item::ISyntaxItem;
     use super::Argument;
     use super::FunctionDef;
     use codepos::StringPosition;
@@ -224,7 +203,7 @@ mod tests {
     fn ast_argument_parse() {
         
         assert_eq!(
-            Argument::parse(&mut parse_test_str("i32 a"), 0), 
+            Argument::with_test_str_ret_size("i32 a"), 
             (Some(Argument{ 
                 ty: SMType::Base("i32".to_owned(), make_str_pos!(1, 1, 1, 3)), 
                 name: "a".to_owned(),
@@ -233,7 +212,7 @@ mod tests {
         );
         
         assert_eq!(
-            Argument::parse(&mut parse_test_str("[u8] buffer"), 0), 
+            Argument::with_test_str_ret_size("[u8] buffer"), 
             (Some(Argument{ 
                 ty: SMType::Array(Box::new(SMType::Base("u8".to_owned(), make_str_pos!(1, 2, 1, 3))), make_str_pos!(1, 1, 1, 4)), 
                 name: "buffer".to_owned(),
@@ -244,11 +223,10 @@ mod tests {
 
     #[test]
     fn ast_function_def_parse() {
+        // TODO: there was println!(messages) to manually check messages, update them to auto check when refactoring this
 
-        perrorln!("Case 1:"); //           123456789ABC
-        let lexer = &mut parse_test_str("fn main() {}");
-        let result = FunctionDef::parse(lexer, 0);
-        perrorln!("messages: {:?}", lexer.messages());
+        perrorln!("Case 1:"); //                 123456789ABC
+        let result = FunctionDef::with_test_str_ret_size("fn main() {}");
         assert_eq!(
             result,
             (Some(FunctionDef{ 
@@ -260,10 +238,8 @@ mod tests {
             }), 6)
         );
 
-        perrorln!("Case 2:"); //           0123456789ABCDEFGHI
-        let lexer = &mut parse_test_str("fn main(i32 abc) {}");
-        let result = FunctionDef::parse(lexer, 0);
-        perrorln!("messages: {:?}", lexer.messages());
+        perrorln!("Case 2:"); //                 123456789ABCDEFGHI
+        let result = FunctionDef::with_test_str_ret_size("fn main(i32 abc) {}");
         assert_eq!(
             result,
             (Some(FunctionDef{  
@@ -280,11 +256,9 @@ mod tests {
                 body: Block{ stmts: Vec::new(), pos: make_str_pos!(1, 18, 1, 19) },
             }), 8)
         );
-                              //          0         1         2         3         4         5         6
-        perrorln!("Case 3:"); //           12345678901234567890123456789012345678901234567890123456789012
-        let lexer = &mut parse_test_str(" fn mainxxx([[string] ] argv  ,i32 this, char some_other, )  {}");
-        let result = FunctionDef::parse(lexer, 0);
-        perrorln!("messages: {:?}", lexer.messages());
+                              //                 0        1         2         3         4         5         6
+        perrorln!("Case 3:"); //                 12345678901234567890123456789012345678901234567890123456789012
+        let result = FunctionDef::with_test_str_ret_size(" fn mainxxx([[string] ] argv  ,i32 this, char some_other, )  {}");
         assert_eq!(
             result,
             (Some(FunctionDef{  
@@ -315,11 +289,9 @@ mod tests {
                 body: Block{ stmts: Vec::new(), pos: make_str_pos!(1, 62, 1, 63) },
             }), 19)
         );
-                              //           1        2        
-        perrorln!("Case 4:"); //           123456789012345678901
-        let lexer = &mut parse_test_str("fn main(, ) -> i32 {}");
-        let result = FunctionDef::parse(lexer, 0);
-        perrorln!("messages: {:?}", lexer.messages());
+                              //                 0        1         2        
+        perrorln!("Case 4:"); //                 123456789012345678901
+        let result = FunctionDef::with_test_str_ret_size("fn main(, ) -> i32 {}");
         assert_eq!(
             result,
             (Some(FunctionDef{  
@@ -330,11 +302,9 @@ mod tests {
                 body: Block{ stmts: Vec::new(), pos: make_str_pos!(1, 20, 1, 21) },
             }), 9)
         );
-                              //           0        1         2         3         4         5         6
-        perrorln!("Case 5:"); //           1234567890123456789012345678901234567890123456789012345678901234567
-        let lexer = &mut parse_test_str("fn main([string] argv, i32 argc, char some_other,) -> [[string]] {}");
-        let result = FunctionDef::parse(lexer, 0);
-        perrorln!("messages: {:?}", lexer.messages());
+                              //                 0        1         2         3         4         5         6
+        perrorln!("Case 5:"); //                 1234567890123456789012345678901234567890123456789012345678901234567
+        let result = FunctionDef::with_test_str_ret_size("fn main([string] argv, i32 argc, char some_other,) -> [[string]] {}");
         assert_eq!(
             result,
             (Some(FunctionDef{  

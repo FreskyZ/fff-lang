@@ -7,10 +7,10 @@ use codepos::StringPosition;
 use util::format_vector_debug;
 use util::format_vector_display;
 
-use message::MessageEmitter;
+use message::MessageCollection;
 use lexical::Lexer;
 
-use super::ast_item::IASTItem;
+use super::ast_item::ISyntaxItem;
 use super::FunctionDef;
 
 #[derive(Eq, PartialEq)]
@@ -27,21 +27,7 @@ impl fmt::Display for Program {
         write!(f, "{}", format_vector_display(&self.functions, "\n\n"))
     }
 }
-impl Program {
-    pub fn from_str(prog: &str) -> Option<Program> {
-        use lexical::parse_test_str;
-        Program::parse(&mut parse_test_str(prog), 0).0
-    }
-    pub fn try_from_str(prog: &str) -> Result<Program, MessageEmitter> {
-        use lexical::parse_test_str;
-        let mut lexer = parse_test_str(prog);
-        match Program::parse(&mut lexer, 0).0 {
-            Some(program) => Ok(program),
-            None => Err(lexer.into_messages()),
-        }
-    }
-}
-impl IASTItem for Program {
+impl ISyntaxItem for Program {
 
     fn pos_all(&self) -> StringPosition {
 
@@ -56,7 +42,7 @@ impl IASTItem for Program {
         FunctionDef::is_first_final(lexer, index) 
     }
 
-    fn parse(lexer: &mut Lexer, index: usize) -> (Option<Program>, usize) {
+    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<Program>, usize) {
         // meet EOF and break, 
         // meet function get None break actually is an unrecoverable and return none
         // recover none function by find next paired '}' and expecting `fn` again
@@ -67,7 +53,7 @@ impl IASTItem for Program {
             if lexer.nth(index + current_len).is_eof() {
                 break;
             }
-            match FunctionDef::parse(lexer, index + current_len) {
+            match FunctionDef::parse(lexer, messages, index + current_len) {
                 (Some(func), length) => { 
                     current_len += length;
                     funcs.push(func);
@@ -84,7 +70,7 @@ impl IASTItem for Program {
 mod tests {
     // use file_map::InputReader;
     // use lexical::Lexer;
-    // use super::super::ast_item::IASTItem;
+    // use super::super::ast_item::ISyntaxItem;
     // use super::Program;
 
     #[test]

@@ -6,12 +6,13 @@ use std::fmt;
 
 use codepos::StringPosition;
 use message::Message;
+use message::MessageCollection;
 
 use lexical::Lexer;
 use lexical::KeywordKind;
 use lexical::SeperatorKind;
 
-use super::super::ast_item::IASTItem;
+use super::super::ast_item::ISyntaxItem;
 use super::super::Expression;
 use super::super::SMType;
 
@@ -50,7 +51,7 @@ impl VarDeclStatement {
 
     pub fn pub_pos_all(&self) -> StringPosition { self.pos_all() }
 }
-impl IASTItem for VarDeclStatement {
+impl ISyntaxItem for VarDeclStatement {
 
     fn pos_all(&self) -> StringPosition { StringPosition::merge(self.pos[0], self.pos[3]) }
 
@@ -60,7 +61,7 @@ impl IASTItem for VarDeclStatement {
     }
 
     /// It is special that the given index is index of 'const' or 'var' not the next
-    fn parse(lexer: &mut Lexer, index: usize) -> (Option<VarDeclStatement>, usize) {
+    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<VarDeclStatement>, usize) {
 
         let is_const = match lexer.nth(index).get_keyword() {
             Some(KeywordKind::Const) => true, 
@@ -71,7 +72,7 @@ impl IASTItem for VarDeclStatement {
         let mut poss = [StringPosition::new(); 4];
         poss[0] = lexer.pos(index);
 
-        let ty = match SMType::parse(lexer, index + current_len) {
+        let ty = match SMType::parse(lexer, messages, index + current_len) {
             (None, length) => return (None, length),
             (Some(ty), ty_len) => {
                 current_len += ty_len;
@@ -84,7 +85,7 @@ impl IASTItem for VarDeclStatement {
                 current_len += 1;
                 (name.clone(), lexer.pos(index + current_len - 1))
             } 
-            None => return push_unexpect!(lexer, "identifier", index + current_len, current_len),
+            None => return push_unexpect!(lexer, messages, "identifier", index + current_len, current_len),
         };
         poss[1] = name_pos;
 
@@ -103,7 +104,7 @@ impl IASTItem for VarDeclStatement {
             Some(SeperatorKind::Assign) => {
                 poss[2] = lexer.pos(index + current_len);
                 current_len += 1;
-                match Expression::parse(lexer, index + current_len) {
+                match Expression::parse(lexer, messages, index + current_len) {
                     (None, length) => return (None, current_len + length),
                     (Some(expr), expr_len) => {
                         current_len += expr_len;
@@ -118,12 +119,12 @@ impl IASTItem for VarDeclStatement {
                                 pos: poss,
                             }), current_len);
                         } else {
-                            return push_unexpect!(lexer, "semicolon", index + current_len, current_len);
+                            return push_unexpect!(lexer, messages, "semicolon", index + current_len, current_len);
                         }
                     }
                 }
             }
-            _ => return push_unexpect!(lexer, ["assignment and initial expr", "semicolon", ], index + current_len, current_len),
+            _ => return push_unexpect!(lexer, messages, ["assignment and initial expr", "semicolon", ], index + current_len, current_len),
         }
     }
 }
@@ -131,8 +132,7 @@ impl IASTItem for VarDeclStatement {
 #[cfg(test)]
 mod tests {
     use super::VarDeclStatement;
-    use lexical::parse_test_str;
-    use super::super::super::ast_item::IASTItem;
+    use super::super::super::ast_item::ISyntaxItem;
     use super::super::super::SMType;
     use super::super::super::Expression;
     use codepos::StringPosition;
@@ -140,15 +140,14 @@ mod tests {
     #[test]
     fn ast_stmt_var_decl() {
         
-        //                           123456789012345678
-        let lexer = &mut parse_test_str("const i32 abc = 0;");
-        assert_eq!(
-            VarDeclStatement::parse(lexer, 0),
+        
+        assert_eq!( //                                123456789012345678
+            VarDeclStatement::with_test_str_ret_size("const i32 abc = 0;"),
             (Some(VarDeclStatement {
                 is_const: true,
                 ty: SMType::Base("i32".to_owned(), make_str_pos!(1, 7, 1, 9)),
-                name: "abc".to_owned(),
-                init_expr: Some(Expression::from_str("const i32 abc = 0;", 4)),
+                name: "abc".to_owned(),                                    
+                init_expr: Some(Expression::with_test_str("                0;")),
                 pos: [
                     make_str_pos!(1, 1, 1, 5),
                     make_str_pos!(1, 11, 1, 13),
@@ -157,16 +156,14 @@ mod tests {
                 ],
             }), 6)
         );
-        //                                 0        1         2
-        //                                 1234567890123456789012
-        let lexer = &mut parse_test_str("var [i32] abc = 1 + 1;");
-        assert_eq!(
-            VarDeclStatement::parse(lexer, 0),
+        //                                            0        1         2
+        assert_eq!( //                                1234567890123456789012
+            VarDeclStatement::with_test_str_ret_size("var [i32] abc = 1 + 1;"),
             (Some(VarDeclStatement {
                 is_const: false,
                 ty: SMType::Array(Box::new(SMType::Base("i32".to_owned(), make_str_pos!(1, 6, 1, 8))), make_str_pos!(1, 5, 1, 9)),
-                name: "abc".to_owned(),
-                init_expr: Some(Expression::from_str("var [i32] abc = 1 + 1", 6)),
+                name: "abc".to_owned(),                                    
+                init_expr: Some(Expression::with_test_str("                1 + 1")),
                 pos: [
                     make_str_pos!(1, 1, 1, 3),
                     make_str_pos!(1, 11, 1, 13),
@@ -176,10 +173,9 @@ mod tests {
             }), 10)
         );
         
-        //                           1234567890123456789
-        let lexer = &mut parse_test_str("const string input;");
-        assert_eq!(
-            VarDeclStatement::parse(lexer, 0),
+        
+        assert_eq!( //                                1234567890123456789
+            VarDeclStatement::with_test_str_ret_size("const string input;"),
             (Some(VarDeclStatement {
                 is_const: true,
                 ty: SMType::Base("string".to_owned(), make_str_pos!(1, 7, 1, 12)),
@@ -194,10 +190,8 @@ mod tests {
             }), 4)
         );
         
-        //                           1234567890123
-        let lexer = &mut parse_test_str("var [u8] buf;");
-        assert_eq!(
-            VarDeclStatement::parse(lexer, 0),
+        assert_eq!( //               1234567890123
+            VarDeclStatement::with_test_str_ret_size("var [u8] buf;"),
             (Some(VarDeclStatement {
                 is_const: false,
                 ty: SMType::Array(Box::new(
@@ -214,10 +208,9 @@ mod tests {
             }), 6)
         );
         //                           0        1         2         3         4
-        //                           12345678901234567890123456789012345678901234567
-        let lexer = &mut parse_test_str("var ([u8], u32) buf = ([1u8, 5u8, 0x7u8], abc);");
-        assert_eq!(
-            VarDeclStatement::parse(lexer, 0),
+        
+        assert_eq!(//                           12345678901234567890123456789012345678901234567
+            VarDeclStatement::with_test_str_ret_size("var ([u8], u32) buf = ([1u8, 5u8, 0x7u8], abc);"),
             (Some(VarDeclStatement {
                 is_const: false,
                 ty: SMType::Tuple(
@@ -229,8 +222,8 @@ mod tests {
                         ], 
                         make_str_pos!(1, 5, 1, 15),
                     ),
-                name: "buf".to_owned(),
-                init_expr: Some(Expression::from_str("var ([u8], u32) buf = ([1u8, 5u8, 0x7u8], abc);", 10)),
+                name: "buf".to_owned(),                                          
+                init_expr: Some(Expression::with_test_str("                      ([1u8, 5u8, 0x7u8], abc);")),
                 pos: [
                     make_str_pos!(1, 1, 1, 3),
                     make_str_pos!(1, 17, 1, 19),

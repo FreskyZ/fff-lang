@@ -10,10 +10,11 @@ use std::fmt;
 
 use codepos::StringPosition;
 use message::Message;
+use message::MessageCollection;
 
 use lexical::Lexer;
 
-use super::ast_item::IASTItem;
+use super::ast_item::ISyntaxItem;
 use super::Block;
 
 mod var_decl;
@@ -80,7 +81,7 @@ impl fmt::Display for Statement {
         }
     }
 }
-impl IASTItem for Statement {
+impl ISyntaxItem for Statement {
 
     fn pos_all(&self) -> StringPosition {
         match *self {  
@@ -110,60 +111,60 @@ impl IASTItem for Statement {
         || Block::is_first_final(lexer, index)
     }
     
-    fn parse(lexer: &mut Lexer, index: usize) -> (Option<Statement>, usize) {
+    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<Statement>, usize) {
 
         if VarDeclStatement::is_first_final(lexer, index) { 
-            return match VarDeclStatement::parse(lexer, index) {
+            return match VarDeclStatement::parse(lexer, messages, index) {
                 (Some(var_decl), var_decl_len) => (Some(Statement::VarDecl(var_decl)), var_decl_len),
                 (None, length) => (None, length),
             };
         } else if BreakStatement::is_first_final(lexer, index) {
-            return match BreakStatement::parse(lexer, index) {
+            return match BreakStatement::parse(lexer, messages, index) {
                 (Some(break_stmt), break_stmt_len) => (Some(Statement::Break(break_stmt)), break_stmt_len),
                 (None, length) => (None, length),
             };
         } else if ContinueStatement::is_first_final(lexer, index) {
-            return match ContinueStatement::parse(lexer, index) {
+            return match ContinueStatement::parse(lexer, messages, index) {
                 (Some(cont_stmt), cont_stmt_len) => (Some(Statement::Continue(cont_stmt)), cont_stmt_len),
                 (None, length) => (None, length),
             };
         } else if ReturnStatement::is_first_final(lexer, index) {
-            return match ReturnStatement::parse(lexer, index) {
+            return match ReturnStatement::parse(lexer, messages, index) {
                 (Some(ret_stmt), ret_stmt_len) => (Some(Statement::Return(ret_stmt)), ret_stmt_len),
                 (None, length) => (None, length), 
             };
         } else if LoopStatement::is_first_final(lexer, index) {
-            return match LoopStatement::parse(lexer, index) {
+            return match LoopStatement::parse(lexer, messages, index) {
                 (Some(loop_stmt), loop_stmt_len) => (Some(Statement::Loop(loop_stmt)), loop_stmt_len),
                 (None, length) => (None, length),
             };
         } else if WhileStatement::is_first_final(lexer, index) {
-            return match WhileStatement::parse(lexer, index) {
+            return match WhileStatement::parse(lexer, messages, index) {
                 (Some(while_stmt), while_stmt_len) => (Some(Statement::While(while_stmt)), while_stmt_len),
                 (None, length) => (None, length),
             };
         } else if ForStatement::is_first_final(lexer, index) {
-            return match ForStatement::parse(lexer, index) {
+            return match ForStatement::parse(lexer, messages, index) {
                 (Some(for_stmt), for_stmt_len) => (Some(Statement::For(for_stmt)), for_stmt_len),
                 (None, length) => (None, length),
             };
         } else if IfStatement::is_first_final(lexer, index) {
-            return match IfStatement::parse(lexer, index) {
+            return match IfStatement::parse(lexer, messages, index) {
                 (Some(if_stmt), if_stmt_len) => (Some(Statement::If(if_stmt)), if_stmt_len),
                 (None, length) => (None, length),
             };
         } else if Block::is_first_final(lexer, index) {
-            return match Block::parse(lexer, index) {
+            return match Block::parse(lexer, messages, index) {
                 (Some(block), block_len) => (Some(Statement::Block(block)), block_len),
                 (None, length) => (None, length),
             };
         } else if ExpressionStatement::is_first_final(lexer, index) {
-            return match ExpressionStatement::parse(lexer, index) {
+            return match ExpressionStatement::parse(lexer, messages, index) {
                 (Some(expr_stmt), expr_stmt_len) => (Some(Statement::Expression(expr_stmt)), expr_stmt_len),
                 (None, length) => (None, length),
             }
         } else {
-            return push_unexpect!(lexer, "statement", 0, index);
+            return push_unexpect!(lexer, messages, "statement", 0, index);
         }
     }
 }

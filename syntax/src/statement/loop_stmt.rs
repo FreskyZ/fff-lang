@@ -5,11 +5,12 @@ use std::fmt;
 
 use codepos::StringPosition;
 use message::SyntaxMessage;
+use message::MessageCollection;
 
 use lexical::Lexer;
 use lexical::KeywordKind;
 
-use super::super::ast_item::IASTItem;
+use super::super::ast_item::ISyntaxItem;
 use super::super::Block;
 use super::super::Expression;
 
@@ -39,7 +40,7 @@ impl fmt::Display for LoopStatement {
     }
 }
 
-impl IASTItem for LoopStatement {
+impl ISyntaxItem for LoopStatement {
 
     fn pos_all(&self) -> StringPosition { StringPosition::merge(self.pos[0], self.body.pos_all()) }
 
@@ -47,20 +48,20 @@ impl IASTItem for LoopStatement {
         lexer.nth(index).is_keyword(KeywordKind::Loop)
     }
 
-    fn parse(lexer: &mut Lexer, index: usize) -> (Option<LoopStatement>, usize) {
+    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<LoopStatement>, usize) {
 
         if !lexer.nth(index).is_keyword(KeywordKind::Loop) {
             unreachable!()
         }
 
         let (name, name_pos, current_len) = if Expression::is_first_final(lexer, index + 1) {
-            match Expression::parse(lexer, index + 1) {
+            match Expression::parse(lexer, messages, index + 1) {
                 (Some(expr), expr_len) => {
                     let expr_pos = expr.pos_all();
                     if expr.is_pure_str_lit() {
                         (expr.into_pure_str_lit(), expr_pos, expr_len + 1)
                     } else {
-                        lexer.push(SyntaxMessage::LoopNameSpecifierIsNotStringLiteral{ pos: expr_pos });
+                        messages.push(SyntaxMessage::LoopNameSpecifierIsNotStringLiteral{ pos: expr_pos });
                         (None, StringPosition::new(), expr_len + 1)
                     }
                 }
@@ -70,7 +71,7 @@ impl IASTItem for LoopStatement {
             (None, StringPosition::new(), 1)
         };
 
-        match Block::parse(lexer, index + current_len) {
+        match Block::parse(lexer, messages, index + current_len) {
             (Some(block), block_len) => 
                 (Some(LoopStatement{ 
                     name: name, 
@@ -90,6 +91,7 @@ mod tests {
     use message::SyntaxMessage;
     use super::super::super::ast_item::TestCase;
     use codepos::StringPosition;
+    use super::super::super::ast_item::ISyntaxItem;
 
     #[test]
     fn ast_stmt_loop_parse() {
@@ -99,21 +101,21 @@ mod tests {
         ast_test_case!{ "loop { writeln(\"love zmj\"); }", 8, make_str_pos!(1, 1, 1, 29),
             LoopStatement{
                 name: None, 
-                body: Block::from_str("loop { writeln(\"love zmj\"); }", 1),
+                body: Block::with_test_str("     { writeln(\"love zmj\"); }"),
                 pos: [make_str_pos!(1, 1, 1, 4), StringPosition::new()]
             }
         }            //  12345 678901 2345
         ast_test_case!{ "loop \"innnn\" {}", 4, make_str_pos!(1, 1, 1, 15),
             LoopStatement{
                 name: Some("innnn".to_owned()),
-                body: Block::from_str("loop \"innnn\" {}", 2),
+                body: Block::with_test_str("               {}"),
                 pos: [make_str_pos!(1, 1, 1, 4), make_str_pos!(1, 6, 1, 12)],
-            }
+            }                                              
         }            //  12345678901
         ast_test_case!{ "loop abc {}", 4, make_str_pos!(1, 1, 1, 11),
             LoopStatement{
-                name: None,
-                body: Block::from_str("loop abc {}", 2),
+                name: None,                          
+                body: Block::with_test_str("         {}"),
                 pos: [make_str_pos!(1, 1, 1, 4), StringPosition::new()],
             },
             [

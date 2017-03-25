@@ -7,9 +7,10 @@
 use std::fmt;
 
 use codepos::StringPosition;
+use message::MessageCollection;
 
 use lexical::Lexer;
-use super::super::ast_item::IASTItem;
+use super::super::ast_item::ISyntaxItem;
 
 use super::binary::BinaryExpression;
 
@@ -27,7 +28,7 @@ impl fmt::Display for D3Expression {
     }
 }
 
-impl IASTItem for D3Expression {
+impl ISyntaxItem for D3Expression {
     
     fn pos_all(&self) -> StringPosition { self.0.pos_all() }
 
@@ -35,9 +36,9 @@ impl IASTItem for D3Expression {
         BinaryExpression::is_first_final(lexer, index)
     }
 
-    fn parse(lexer: &mut Lexer, index: usize) -> (Option<D3Expression>, usize) {
+    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<D3Expression>, usize) {
 
-        match BinaryExpression::parse(lexer, index) {
+        match BinaryExpression::parse(lexer, messages, index) {
             (None, length) => (None, length), // no recoverable here, pass through
             (Some(binary), length) => (Some(D3Expression(binary)), length),
         }
@@ -46,13 +47,12 @@ impl IASTItem for D3Expression {
 
 #[cfg(test)]
 mod tests {
-    use super::super::super::ast_item::IASTItem;
+    use super::super::super::ast_item::ISyntaxItem;
     use codepos::StringPosition;
 
     use lexical::SeperatorKind;
     use lexical::NumLitValue;
     use lexical::LitValue;
-    use lexical::parse_test_str;
 
     use super::super::SMType;
     use super::super::super::expression::postfix::PostfixExpression;
@@ -117,16 +117,13 @@ mod tests {
 
         macro_rules! parse {
             ($program: expr) => ({
-                let lexer = &mut parse_test_str($program);
-                let result = D3Expression::parse(lexer, 0);
-                perrorln!("messages: {:?}", lexer.messages());
-                result
+                D3Expression::with_test_str($program)
             })
         }
 
         // Case 0
         assert_eq!(//12345678901234567890
-            parse!( "[1, 2, 3f128, 0u64]").0.unwrap(), 
+            parse!( "[1, 2, 3f128, 0u64]"),
             expr_array_def!{[
                 expr_num_lit!(NumLitValue::I32(1), make_str_pos!(1, 2, 1, 2)),
                 expr_num_lit!(NumLitValue::I32(2), make_str_pos!(1, 5, 1, 5)), 
@@ -136,10 +133,9 @@ mod tests {
             }
         );
 
-        // Case 1         0        1         2         3
-        //                12345678901234567890123456789012345
-        let res = parse!("[[(1)], [abc, (3)], [4, this, [6]]]"); 
-        assert_eq!(res.0.unwrap(),
+        // Case 1          0        1         2         3
+        //                 12345678901234567890123456789012345
+        assert_eq!(parse!("[[(1)], [abc, (3)], [4, this, [6]]]"),
             expr_array_def!{[
                 expr_array_def!{[
                     expr_paren_expr!(expr_num_lit!(NumLitValue::I32(1), make_str_pos!(1, 4, 1, 4)), make_str_pos!(1, 3, 1, 5)),]
@@ -166,15 +162,15 @@ mod tests {
         // Case 2, empty array literal
         assert_eq!(
             parse!("[]"),
-            (Some(expr_array_def!{
+            expr_array_def!{
                 []
                 make_str_pos!(1, 1, 1, 2)
-            }), 2)
+            }
         );
 
         // Case 3    0        1           2          3         4         5           6
         assert_eq!(//12345678901234 5678 9012 3456789012345678901234567890123 456789 0123456
-            parse!( "[abc, 123u32, \"456\", '\\u0065', false, (), (a), (abc, \"hello\", ), ]").0.unwrap(),
+            parse!( "[abc, 123u32, \"456\", '\\u0065', false, (), (a), (abc, \"hello\", ), ]"),
             expr_array_def!{[
                 expr_ident!("abc", make_str_pos!(1, 2, 1, 4)),
                 expr_num_lit!(NumLitValue::U32(123), make_str_pos!(1, 7, 1, 12)),
@@ -196,7 +192,7 @@ mod tests {
         
         // Case 4    0        1            2          3         4
         assert_eq!(//123456789012 3456 78 9012 345678901234567890123456
-            parse!( "[abc, 123f, \"456\\u\", '\\u00', false, (a), (  )]").0.unwrap(),
+            parse!( "[abc, 123f, \"456\\u\", '\\u00', false, (a), (  )]"),
             expr_array_def!{[
                 expr_ident!("abc", make_str_pos!(1, 2, 1, 4)),
                 expr_num_lit!(make_str_pos!(1, 7, 1, 10)),
@@ -211,7 +207,7 @@ mod tests {
 
         // Case 5    0        1         2
         assert_eq!(//1234567890123456789012
-            parse!( "[[123u32, abc]; 4567]").0.unwrap(),
+            parse!( "[[123u32, abc]; 4567]"),
             expr_array_dup_def!{
                 expr_array_def!{[
                     expr_num_lit!(NumLitValue::U32(123), make_str_pos!(1, 3, 1, 8)),
@@ -228,11 +224,11 @@ mod tests {
     
     #[test]
     fn ast_expr_post_parse() {
+        // TODO: there was println!(messages) to manually check messages, update them to auto check
 
-        //                                0        1         2         3         4         5         6         7         8     
-        //                                1234567890123456789012345678901234567890123456789012345678901234567890123456789
-        let lexer = &mut parse_test_str("abc.defg[[1](klm, [123, 456,], )](opq, 456.)() as [i32].rst[uvw, xyz, ABC]");
-        let left = D3Expression::parse(lexer, 0).0.unwrap();
+        //                                      0        1         2         3         4         5         6         7         8     
+        //                                      1234567890123456789012345678901234567890123456789012345678901234567890123456789
+        let left = D3Expression::with_test_str("abc.defg[[1](klm, [123, 456,], )](opq, 456.)() as [i32].rst[uvw, xyz, ABC]");
         let right = expr_to_postfix!{
             PrimaryExpression::Ident("abc".to_owned(), make_str_pos!(1, 1, 1, 3)),
             Postfix::MemberAccess("defg".to_owned(), make_str_pos!(1, 4, 1, 8))
@@ -287,27 +283,19 @@ mod tests {
           
             }
         }
-        perrorln!("Messages: {:?}", lexer.messages());
-
-
     }
 
     #[test]
     fn ast_expr_post_helloworld_expr() {
 
-        let lexer = &mut parse_test_str("writeln(\"helloworld\")");
-        perrorln!("{}", D3Expression::parse(lexer, 0).0.unwrap());
+        perrorln!("{}", D3Expression::with_test_str("writeln(\"helloworld\")"));
     }
 
     #[test]
     fn ast_expr_unary_parse() {
-        //                           12345678901234
-        let lexer = &mut parse_test_str("++!~[!1; ~--2]");
-        let (result, length) = D3Expression::parse(lexer, 0);
-
-        assert_eq!(length, 11);
-        assert_eq!(
-            result.unwrap(),
+        
+        assert_eq!( //                   12345678901234
+            D3Expression::with_test_str("++!~[!1; ~--2]"),
             expr_to_unary!(
                 PostfixExpression{ 
                     prim: PrimaryExpression::make_array_dup_def(
@@ -340,24 +328,24 @@ mod tests {
     #[test]
     fn ast_expr_binary() {
 
-        let lexer = &mut parse_test_str("[1] * [2] / [3]");
-        { perrorln!("{:?}", BinaryExpression::parse(lexer, 0)); }
-        { perrorln!("{}", BinaryExpression::parse(lexer, 0).0.unwrap()); }
+        // let lexer = &mut parse_test_str("[1] * [2] / [3]");
+        // { perrorln!("{:?}", BinaryExpression::with_test_str(lexer, 0)); }
+        // { perrorln!("{}", BinaryExpression::parse(lexer, 0).0.unwrap()); }
 
-        let lexer = &mut parse_test_str("a * b / c + d % e - f");
-        perrorln!("{:?}", BinaryExpression::parse(lexer, 0));
-        perrorln!("{}", BinaryExpression::parse(lexer, 0).0.unwrap());
+        // let lexer = &mut parse_test_str("a * b / c + d % e - f");
+        // perrorln!("{:?}", BinaryExpression::parse(lexer, 0));
+        // perrorln!("{}", BinaryExpression::parse(lexer, 0).0.unwrap());
         
-        let lexer = &mut parse_test_str("a * b << h / c + d % e - f >> g");
-        perrorln!("{:?}", BinaryExpression::parse(lexer, 0));
-        perrorln!("{}", BinaryExpression::parse(lexer, 0).0.unwrap());
+        // let lexer = &mut parse_test_str("a * b << h / c + d % e - f >> g");
+        // perrorln!("{:?}", BinaryExpression::parse(lexer, 0));
+        // perrorln!("{}", BinaryExpression::parse(lexer, 0).0.unwrap());
 
-        let lexer = &mut parse_test_str("a * b << h / c + d % e - f >> g > h * i < j << k > m && n || o & p | q ^ r != s == t");
-        perrorln!("{:?}", BinaryExpression::parse(lexer, 0));
-        perrorln!("{}", BinaryExpression::parse(lexer, 0).0.unwrap());
+        // let lexer = &mut parse_test_str("a * b << h / c + d % e - f >> g > h * i < j << k > m && n || o & p | q ^ r != s == t");
+        // perrorln!("{:?}", BinaryExpression::parse(lexer, 0));
+        // perrorln!("{}", BinaryExpression::parse(lexer, 0).0.unwrap());
 
-        let lexer = &mut parse_test_str("a & b == c");
-        perrorln!("{:?}", BinaryExpression::parse(lexer, 0));
-        perrorln!("{}", BinaryExpression::parse(lexer, 0).0.unwrap());
+        // let lexer = &mut parse_test_str("a & b == c");
+        // perrorln!("{:?}", BinaryExpression::parse(lexer, 0));
+        // perrorln!("{}", BinaryExpression::parse(lexer, 0).0.unwrap());
     }
 }

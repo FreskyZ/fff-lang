@@ -5,12 +5,13 @@ use std::fmt;
 
 use codepos::StringPosition;
 use message::Message;
+use message::MessageCollection;
 
 use lexical::Lexer;
 use lexical::SeperatorKind;
 use lexical::SeperatorCategory;
 
-use super::super::ast_item::IASTItem;
+use super::super::ast_item::ISyntaxItem;
 use super::super::Expression;
 
 #[derive(Eq, PartialEq)]
@@ -37,11 +38,6 @@ fn format_assign_op(op: &SeperatorKind) -> String {
 }
 
 impl ExpressionStatement {
-    
-    pub fn from_str(prog: &str, index: usize) -> (Option<ExpressionStatement>, usize) {
-        use lexical::parse_test_str;
-        ExpressionStatement::parse(&mut parse_test_str(prog), index)
-    }
 }
 impl fmt::Debug for ExpressionStatement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -66,7 +62,7 @@ impl fmt::Display for ExpressionStatement {
         )
     }
 }
-impl IASTItem for ExpressionStatement {
+impl ISyntaxItem for ExpressionStatement {
 
     fn pos_all(&self) -> StringPosition { StringPosition::merge(self.left_expr.pos_all(), self.pos[1]) }
 
@@ -74,16 +70,16 @@ impl IASTItem for ExpressionStatement {
         Expression::is_first_final(lexer, index)
     }
 
-    fn parse(lexer: &mut Lexer, index: usize) -> (Option<ExpressionStatement>, usize) {
+    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<ExpressionStatement>, usize) {
 
-        let (left_expr, mut current_len) = match Expression::parse(lexer, index) {
+        let (left_expr, mut current_len) = match Expression::parse(lexer, messages, index) {
             (Some(expr), expr_len) => (expr, expr_len),
             (None, length) => return (None, length),
         };
 
         if lexer.nth(index + current_len).is_seperator(SeperatorKind::SemiColon) {
             // if !left_expr.is_function_call() { // process in codegen not here
-            //     lexer.push(SyntaxMessage::NotFunctionCallIndependentExpressionStatement{ pos: left_expr.pos_all() });
+            //     messages.push(SyntaxMessage::NotFunctionCallIndependentExpressionStatement{ pos: left_expr.pos_all() });
             // }
             return (Some(ExpressionStatement{
                 left_expr: left_expr,
@@ -98,10 +94,10 @@ impl IASTItem for ExpressionStatement {
                 current_len += 1;
                 (assign_op.clone(), lexer.pos(index + current_len - 1))
             },
-            Some(_) | None => return push_unexpect!(lexer, ["assignment operator", "semicolon", ], index + current_len, current_len),
+            Some(_) | None => return push_unexpect!(lexer, messages, ["assignment operator", "semicolon", ], index + current_len, current_len),
         };
         
-        match Expression::parse(lexer, index + current_len) {
+        match Expression::parse(lexer, messages, index + current_len) {
             (Some(right_expr), right_expr_len) => {
                 current_len += right_expr_len;
                 if lexer.nth(index + current_len).is_seperator(SeperatorKind::SemiColon) {
@@ -112,7 +108,7 @@ impl IASTItem for ExpressionStatement {
                         pos: [assign_op_pos, lexer.pos(index + current_len)]
                     }), current_len + 1);
                 } else {
-                    return push_unexpect!(lexer, "semicolon", index + current_len, current_len);
+                    return push_unexpect!(lexer, messages, "semicolon", index + current_len, current_len);
                 }
             }
             (None, length) => return (None, current_len + length),
@@ -124,9 +120,8 @@ impl IASTItem for ExpressionStatement {
 mod tests {
     use super::ExpressionStatement;
     use codepos::StringPosition;
-    use lexical::parse_test_str;
     use lexical::SeperatorKind;
-    use super::super::super::ast_item::IASTItem;
+    use super::super::super::ast_item::ISyntaxItem;
     use super::super::super::Expression;
 
     #[test]
@@ -134,8 +129,7 @@ mod tests {
 
         macro_rules! test_case {
             ($program: expr, $len: expr, $expect: expr) => (
-                let lexer = &mut parse_test_str($program);
-                let (result, len) = ExpressionStatement::parse(lexer, 0);
+                let (result, len) = ExpressionStatement::with_test_str_ret_size($program);
                 assert_eq!(result, Some($expect));
                 assert_eq!(len, $len);
             )
@@ -144,7 +138,7 @@ mod tests {
         //           12345678 90123456789 0123
         test_case!{ "writeln(\"helloworld\");", 5,
             ExpressionStatement {
-                left_expr: Expression::from_str("writeln(\"helloworld\")", 0),
+                left_expr: Expression::with_test_str("writeln(\"helloworld\")"),
                 op: None,
                 right_expr: None,
                 pos: [StringPosition::new(), make_str_pos!(1, 22, 1, 22)]
@@ -153,18 +147,18 @@ mod tests {
         //           1234567890
         test_case!{ "1 + 1 = 2;", 6,
             ExpressionStatement {
-                left_expr: Expression::from_str("1 + 1", 0),
+                left_expr: Expression::with_test_str("1 + 1"),
                 op: Some(SeperatorKind::Assign),
-                right_expr: Some(Expression::from_str("1 + 1 = 2", 4)),
+                right_expr: Some(Expression::with_test_str("        2")),
                 pos: [make_str_pos!(1, 7, 1, 7), make_str_pos!(1, 10, 1, 10)]
             }
         }
         //           1234567890
         test_case!{ "1 + 1+= 2;", 6,
             ExpressionStatement {
-                left_expr: Expression::from_str("1 + 1", 0),
+                left_expr: Expression::with_test_str("1 + 1"),
                 op: Some(SeperatorKind::AddAssign),
-                right_expr: Some(Expression::from_str("1 + 1 = 2", 4)),
+                right_expr: Some(Expression::with_test_str("       2")),
                 pos: [make_str_pos!(1, 6, 1, 7), make_str_pos!(1, 10, 1, 10)]
             }
         }

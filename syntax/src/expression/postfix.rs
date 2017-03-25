@@ -15,12 +15,13 @@ use util::format_vector_display;
 use util::format_vector_debug;
 use message::SyntaxMessage;
 use message::Message;
+use message::MessageCollection;
 
 use lexical::Lexer;
 use lexical::SeperatorKind;
 use lexical::KeywordKind;
 
-use super::super::ast_item::IASTItem;
+use super::super::ast_item::ISyntaxItem;
 use super::super::expression::d3::D3Expression;
 use super::super::SMType;
 
@@ -86,7 +87,7 @@ impl PostfixExpression {
     pub fn pos_prim(&self) -> StringPosition { self.prim.pos_all() }
 }
 
-impl IASTItem for PostfixExpression {
+impl ISyntaxItem for PostfixExpression {
     
     fn pos_all(&self) -> StringPosition { 
         StringPosition::merge(
@@ -105,10 +106,10 @@ impl IASTItem for PostfixExpression {
     }
     
     #[allow(unused_assignments)]
-    fn parse(lexer: &mut Lexer, index: usize) -> (Option<PostfixExpression>, usize) {
+    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<PostfixExpression>, usize) {
         let log_enable = false;
 
-        let (primary, primary_len) = match PrimaryExpression::parse(lexer, index) {
+        let (primary, primary_len) = match PrimaryExpression::parse(lexer, messages, index) {
             (Some(prim), prim_len) => (prim, prim_len),
             (None, prim_len) => return (None, prim_len), // no recover
         };
@@ -135,11 +136,11 @@ impl IASTItem for PostfixExpression {
                     }
                     None => {
                         test_condition_perrorln!{ log_enable, "get postfix failed, member access not followed ident" }
-                        return push_unexpect!(lexer, "member identifier", index + current_len + 1, current_len + 1);
+                        return push_unexpect!(lexer, messages, "member identifier", index + current_len + 1, current_len + 1);
                     }
                 }
             } else if lexer.nth(index + current_len).is_keyword(KeywordKind::As) {
-                match SMType::parse(lexer, index + current_len + 1) {
+                match SMType::parse(lexer, messages, index + current_len + 1) {
                     (Some(ty), ty_len) => {
                         test_condition_perrorln!{ log_enable, "get one postfix, type cast as {:?}", ty, }
                         postfixs.push(Postfix::TypeCast(ty, lexer.pos(index + current_len)));
@@ -165,7 +166,7 @@ impl IASTItem for PostfixExpression {
                     && lexer.nth(index + current_len + 2).is_seperator(SeperatorKind::RightParenthenes) {
                         let pos1 = StringPosition::merge(lexer.pos(index + current_len), lexer.pos(index + current_len + 2));
                         let pos2 = lexer.pos(index + current_len + 1).start_pos();
-                        lexer.push(SyntaxMessage::SingleCommaInFunctionCall{ call_pos: pos1, comma_pos: pos2 });
+                        messages.push(SyntaxMessage::SingleCommaInFunctionCall{ call_pos: pos1, comma_pos: pos2 });
                         postfixs.push(Postfix::FunctionCall(
                             Vec::new(),
                             pos1,
@@ -178,7 +179,7 @@ impl IASTItem for PostfixExpression {
                 if lexer.nth(index + current_len + 1).is_seperator(SeperatorKind::RightBracket) {
                     // first recoverable error here!!!, it is recoverable because later with type infer it can be used
                     let pos = lexer.pos(index + current_len);
-                    lexer.push(SyntaxMessage::EmptySubscription{ pos: pos });
+                    messages.push(SyntaxMessage::EmptySubscription{ pos: pos });
                     postfixs.push(Postfix::Subscription(
                         Vec::new(),
                         StringPosition::merge(lexer.pos(index + current_len), lexer.pos(index + current_len + 1)),
@@ -190,7 +191,7 @@ impl IASTItem for PostfixExpression {
                     && lexer.nth(index + current_len + 2).is_seperator(SeperatorKind::RightBracket) {
                         let pos1 = StringPosition::merge(lexer.pos(index + current_len), lexer.pos(index + current_len + 2));
                         let pos2 = lexer.pos(index + current_len + 1).start_pos();
-                        lexer.push(SyntaxMessage::SingleCommaInSubscription{ sub_pos: pos1, comma_pos: pos2 });
+                        messages.push(SyntaxMessage::SingleCommaInSubscription{ sub_pos: pos1, comma_pos: pos2 });
                         postfixs.push(Postfix::Subscription(
                             Vec::new(),
                             pos1,
@@ -207,7 +208,7 @@ impl IASTItem for PostfixExpression {
             test_condition_perrorln!{ log_enable, "parsing postfix, start processing expression list of {}", 
                 if expect_end_sep == SeperatorKind::RightParenthenes { "function call".to_owned() } else { "subscription".to_owned() }, }
             current_len += 1; 
-            match D3Expression::parse(lexer,  index + current_len) {
+            match D3Expression::parse(lexer, messages, index + current_len) {
                 (None, length) => { 
                     test_condition_perrorln!{ log_enable, "parsing postfix's expression list, expression parse failed" }
                     return (None, current_len + length);
@@ -250,7 +251,7 @@ impl IASTItem for PostfixExpression {
                         }
                         if lexer.nth(index + current_len + exprs_len).is_seperator(SeperatorKind::Comma) {
                             exprs_len += 1;
-                            match D3Expression::parse(lexer, index + current_len + exprs_len) {
+                            match D3Expression::parse(lexer, messages, index + current_len + exprs_len) {
                                 (Some(expr), expr_len) => {
                                     test_condition_perrorln!{ log_enable, "parsing postfix's expression list, get expression: {}", expr, }
                                     exprs_len += expr_len;

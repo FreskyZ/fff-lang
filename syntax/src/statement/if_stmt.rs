@@ -6,11 +6,12 @@ use std::fmt;
 use codepos::StringPosition;
 use util::format_vector_display;
 use util::format_vector_debug;
+use message::MessageCollection;
 
 use lexical::Lexer;
 use lexical::KeywordKind;
 
-use super::super::ast_item::IASTItem;
+use super::super::ast_item::ISyntaxItem;
 use super::super::Expression;
 use super::super::Block;
 
@@ -32,7 +33,7 @@ impl fmt::Display for ElseIfBranch {
     }
 }
 
-impl IASTItem for ElseIfBranch {
+impl ISyntaxItem for ElseIfBranch {
 
     fn pos_all(&self) -> StringPosition { StringPosition::merge(self.pos[0], self.body.pos_all()) }
 
@@ -41,7 +42,7 @@ impl IASTItem for ElseIfBranch {
     }
 
     /// given index should be index of else and nth(index) = else, nth(index + 1) = if are confirmed
-    fn parse(lexer: &mut Lexer, index: usize) -> (Option<ElseIfBranch>, usize) {
+    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<ElseIfBranch>, usize) {
 
         if !lexer.nth(index).is_keyword(KeywordKind::Else)
             || !lexer.nth(index + 1).is_keyword(KeywordKind::If) {
@@ -50,12 +51,12 @@ impl IASTItem for ElseIfBranch {
         let mut current_len = 2;
         let pos = [lexer.pos(index), lexer.pos(index + 1)];
 
-        let expr = match Expression::parse(lexer, index + current_len) {
+        let expr = match Expression::parse(lexer, messages, index + current_len) {
             (Some(expr), expr_len) => { current_len += expr_len; expr }
             (None, length) => return (None, current_len + length),
         };
 
-        let body = match Block::parse(lexer, index + current_len) {
+        let body = match Block::parse(lexer, messages, index + current_len) {
             (Some(block), block_len) => { current_len += block_len; block }
             (None, length) => return (None, current_len + length),
         };
@@ -97,7 +98,7 @@ impl fmt::Display for IfStatement {
     }
 }
 
-impl IASTItem for IfStatement {
+impl ISyntaxItem for IfStatement {
 
     fn pos_all(&self) -> StringPosition { StringPosition::new() }
 
@@ -105,7 +106,7 @@ impl IASTItem for IfStatement {
         lexer.nth(index).is_keyword(KeywordKind::If)
     }
 
-    fn parse(lexer: &mut Lexer, index: usize) -> (Option<IfStatement>, usize) {
+    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<IfStatement>, usize) {
 
         if !lexer.nth(index).is_keyword(KeywordKind::If) {
             unreachable!()
@@ -113,12 +114,12 @@ impl IASTItem for IfStatement {
         let mut current_len = 1;
         let mut pos = [lexer.pos(index), StringPosition::new()];
         
-        let expr = match Expression::parse(lexer, index + current_len) {
+        let expr = match Expression::parse(lexer, messages, index + current_len) {
             (Some(expr), expr_len) => { current_len += expr_len; expr }
             (None, length) => return (None, current_len + length),
         };
 
-        let body = match Block::parse(lexer, index + current_len) {
+        let body = match Block::parse(lexer, messages, index + current_len) {
             (Some(block), block_len) => { current_len += block_len; block }
             (None, length) => return (None, current_len + length),
         };
@@ -127,14 +128,14 @@ impl IASTItem for IfStatement {
         let mut else_body = None;
         loop {
             match (lexer.nth(index + current_len).is_keyword(KeywordKind::Else), lexer.nth(index + current_len + 1).is_keyword(KeywordKind::If)) {
-                (true, true) => match ElseIfBranch::parse(lexer, index + current_len) {  // else if
+                (true, true) => match ElseIfBranch::parse(lexer, messages, index + current_len) {  // else if
                     (Some(elseif), elseif_len) => { 
                         current_len += elseif_len;
                         elseifs.push(elseif);  
                     }
                     (None, length) => return (None, current_len + length),
                 },
-                (true, false) => match Block::parse(lexer, index + current_len + 1) { // normal else
+                (true, false) => match Block::parse(lexer, messages, index + current_len + 1) { // normal else
                     (Some(block), block_len) => {
                         pos[1] = lexer.pos(index + current_len + 1);
                         else_body = Some(block);
@@ -161,21 +162,16 @@ impl IASTItem for IfStatement {
 #[cfg(test)]
 mod tests {
     use super::IfStatement;
-    use super::super::super::ast_item::IASTItem;
-    use lexical::parse_test_str;
+    use super::super::super::ast_item::ISyntaxItem;
 
     #[test]
     fn ast_stmt_if() {
 
-        perrorln!("{}", IfStatement::parse(&mut parse_test_str(
-            "if 1 { fresky.love(zmj); zmj.love(fresky); }"
-        ), 0).0.unwrap());
+        perrorln!("{}", IfStatement::with_test_str("if 1 { fresky.love(zmj); zmj.love(fresky); }"));
 
-        perrorln!("{}", IfStatement::parse(&mut parse_test_str(
-            "if 1 { fresky.love(zmj); zmj.love(fresky); } else { writeln(\"hellworld\"); }"
-        ), 0).0.unwrap());
+        perrorln!("{}", IfStatement::with_test_str("if 1 { fresky.love(zmj); zmj.love(fresky); } else { writeln(\"hellworld\"); }"));
 
-        perrorln!("{}", IfStatement::parse(&mut parse_test_str(
+        perrorln!("{}", IfStatement::with_test_str(
 r#"
             if 1 { 
                 fresky.love(zmj); 
@@ -188,6 +184,6 @@ r#"
             } else { 
                 writeln("hellworld"); 
             }"#
-        ), 0).0.unwrap());
+        ));
     }
 }

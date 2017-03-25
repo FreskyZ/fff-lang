@@ -20,11 +20,12 @@ use util::format_vector_debug;
 use util::format_vector_display;
 use message::SyntaxMessage;
 use message::Message;
+use message::MessageCollection;
 
 use lexical::Lexer;
 use lexical::SeperatorKind;
 
-use super::ast_item::IASTItem;
+use super::ast_item::ISyntaxItem;
 
 #[derive(Eq, PartialEq, Clone)]
 pub enum SMType {
@@ -64,15 +65,9 @@ impl SMType {
         }
     }
     pub fn pos(&self) -> StringPosition { self.pos_all() } // for outter use
-
-    pub fn from_str(smstr: &str, index: usize) -> SMType {
-        use lexical::parse_test_str;
-        let lexer = &mut parse_test_str(smstr);
-        SMType::parse(lexer, index).0.unwrap()
-    }
 }
 
-impl IASTItem for SMType {
+impl ISyntaxItem for SMType {
 
     fn pos_all(&self) -> StringPosition { 
         match *self {
@@ -93,7 +88,7 @@ impl IASTItem for SMType {
         }
     }
 
-    fn parse(lexer: &mut Lexer, index: usize) -> (Option<SMType>, usize) {
+    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<SMType>, usize) {
         let log_enable = false;
 
         if lexer.nth(index).is_ident() {
@@ -112,7 +107,7 @@ impl IASTItem for SMType {
         if lexer.nth(index).is_seperator(SeperatorKind::LeftBracket) {
             test_condition_perrorln!{ log_enable, "is left bracket, try get array inner type" }
             current_len += 1;
-            match SMType::parse(lexer, index + current_len) {
+            match SMType::parse(lexer, messages, index + current_len) {
                 (None, length) => { // TODO: recover by find paired right bracket
                     test_condition_perrorln!{ log_enable, "parse array inner type failed, return none" }
                     return (None, current_len + length);
@@ -132,7 +127,7 @@ impl IASTItem for SMType {
                         );
                     } else {
                         test_condition_perrorln!{ log_enable, "parse array failed, not right bracket" }
-                        return push_unexpect!(lexer, "right bracket", index + current_len, current_len);
+                        return push_unexpect!(lexer, messages, "right bracket", index + current_len, current_len);
                     }
                 } 
             }
@@ -149,7 +144,7 @@ impl IASTItem for SMType {
             
             current_len += 1;
             let mut types = Vec::new();
-            match SMType::parse(lexer, index + current_len) {
+            match SMType::parse(lexer, messages, index + current_len) {
                 (Some(ty), ty_len) => {
                     test_condition_perrorln!{ log_enable, "parse first tuple element succeed" }
                     types.push(ty);
@@ -173,7 +168,7 @@ impl IASTItem for SMType {
                         current_len += 1;
                         break;
                     }
-                    match SMType::parse(lexer, index + current_len) {
+                    match SMType::parse(lexer, messages, index + current_len) {
                         (Some(ty), ty_len) => {
                             test_condition_perrorln!{ log_enable, "parse tuple elements succeed" }
                             types.push(ty);
@@ -190,7 +185,7 @@ impl IASTItem for SMType {
             if types.len() == 0 {
                 unreachable!()
             } else if types.len() == 1 {
-                lexer.push(SyntaxMessage::SingleItemTupleType{ pos: pos });
+                messages.push(SyntaxMessage::SingleItemTupleType{ pos: pos });
                 return (Some(SMType::Tuple(types, pos)), current_len);
             } else if types.len() >= 2 {
                 return (Some(SMType::Tuple(types, pos)), current_len);
@@ -199,7 +194,7 @@ impl IASTItem for SMType {
 
         test_condition_perrorln!{ log_enable, "pass every check and return None at end" }
         let _log_enable = log_enable;
-        return push_unexpect!(lexer, ["primitive type keyword", "left bracket", "left parenthenes", "identifier", ], index, 0);
+        return push_unexpect!(lexer, messages, ["primitive type keyword", "left bracket", "left parenthenes", "identifier", ], index, 0);
     }
 }
 

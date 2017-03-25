@@ -4,11 +4,12 @@
 use std::fmt;
 
 use codepos::StringPosition;
+use message::MessageCollection;
 
 use lexical::Lexer;
 use lexical::KeywordKind;
 
-use super::super::ast_item::IASTItem;
+use super::super::ast_item::ISyntaxItem;
 use super::super::Expression;
 use super::super::Block;
 
@@ -30,7 +31,7 @@ impl fmt::Display for WhileStatement {
     }
 }
 
-impl IASTItem for WhileStatement {
+impl ISyntaxItem for WhileStatement {
 
     fn pos_all(&self) -> StringPosition { StringPosition::merge(self.pos, self.body.pos_all()) }
 
@@ -38,7 +39,7 @@ impl IASTItem for WhileStatement {
         lexer.nth(index).is_keyword(KeywordKind::While)
     }
 
-    fn parse(lexer: &mut Lexer, index: usize) -> (Option<WhileStatement>, usize) {
+    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<WhileStatement>, usize) {
 
         if !lexer.nth(index).is_keyword(KeywordKind::While) {
             unreachable!()
@@ -46,12 +47,12 @@ impl IASTItem for WhileStatement {
         let pos = lexer.pos(index);
         let mut current_len = 1;
 
-        let expr = match Expression::parse(lexer, index + current_len) {
+        let expr = match Expression::parse(lexer, messages, index + current_len) {
             (Some(expr), expr_len) => { current_len += expr_len; expr }
             (None, length) => return (None, current_len + length),
         };
 
-        let body = match Block::parse(lexer, index + current_len) {
+        let body = match Block::parse(lexer, messages, index + current_len) {
             (Some(block), block_len) => { current_len += block_len; block }
             (None, length) => return (None, current_len + length),
         };
@@ -63,14 +64,13 @@ impl IASTItem for WhileStatement {
 #[cfg(test)]
 mod tests {
     use super::WhileStatement;
-    use super::super::super::ast_item::IASTItem;
-    use lexical::parse_test_str;
+    use super::super::super::ast_item::ISyntaxItem;
 
     #[test]
     fn ast_stmt_while () {
 
-        let (result, length) = WhileStatement::parse(&mut parse_test_str("while true { writeln(\"fresky loves zmj\"); }"), 0);
+        let result = WhileStatement::with_test_str("while true { writeln(\"fresky loves zmj\"); }");
         perrorln!("Debug: {:?}", result);
-        perrorln!("Display: {}, {}", result.unwrap(), length);
+        perrorln!("Display: {}", result);
     }
 }

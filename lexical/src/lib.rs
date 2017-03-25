@@ -1,5 +1,9 @@
-
-// Lexer public interface
+///! fff-lang
+///! 
+///! lexical parser
+///!
+///! TokenStream::new(codechars, messages) for formal use
+///! lexical::parse_test_str(program) for test use
 
 #[macro_use] extern crate util;
 #[macro_use] extern crate codepos;
@@ -11,17 +15,18 @@ use codepos::StringPosition;
 
 mod symbol_type;
 mod buf_lexer;
+mod token_stream;
 mod v1lexer;
 mod v2lexer;
-mod v4lexer;
 
 pub use self::symbol_type::seperator::SeperatorKind;
 pub use self::symbol_type::seperator::SeperatorCategory;
 pub use self::symbol_type::keyword::KeywordKind;
 pub use self::symbol_type::literal::NumLitValue;
 pub use self::symbol_type::literal::LitValue;
+pub use self::token_stream::TokenStream;
 
-pub use self::v4lexer::V4Lexer as Lexer;
+pub type Lexer = TokenStream;
 
 pub trait IToken : fmt::Debug {
 
@@ -30,6 +35,7 @@ pub trait IToken : fmt::Debug {
     fn is_spec_ident(&self, name: &str) -> bool;
     fn is_ident(&self) -> bool;
     fn is_eof(&self) -> bool;
+    fn is_eofs(&self) -> bool;
 
     fn is_lit(&self) -> bool;
     fn is_str_lit(&self) -> bool;
@@ -47,14 +53,12 @@ pub trait IToken : fmt::Debug {
 }
 
 // test helper, may panic
-pub fn parse_test_str(program: &str) -> Lexer {
+pub fn parse_test_str(program: &str) -> TokenStream {
     use codemap::CodeMap;
+    use message::MessageCollection;
     let mut codemap = CodeMap::with_test_str(program);
-    Lexer::new(codemap.iter())
+    let mut messages = MessageCollection::new();
+    let ret_val = TokenStream::new(codemap.iter(), &mut messages);
+    check_messages_continuable!(messages);
+    return ret_val;
 }
-// pub fn parse() -> Lexer {
-
-// }
-
-// TODO: 
-// numeric literal refactor, use new message, add 1.1E10 feature, remove ' seperator， remove double _ seperator
