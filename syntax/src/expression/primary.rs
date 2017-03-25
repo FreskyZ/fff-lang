@@ -12,6 +12,7 @@ use std::fmt;
 use codepos::StringPosition;
 use util::format_vector_debug;
 use util::format_vector_display;
+use message::Message;
 
 use lexical::Lexer;
 use lexical::SeperatorKind;
@@ -136,7 +137,7 @@ impl IASTItem for PrimaryExpression {
                     current_len += 1;
                     continue;
                 } else {
-                    return lexer.push_expect("Right paren", index + current_len, current_len);
+                    return push_unexpect!(lexer, "Right paren", index + current_len, current_len);
                 }
             }
 
@@ -187,7 +188,7 @@ impl IASTItem for PrimaryExpression {
                                     );
                                 } else {
                                     test_condition_perrorln!{ log_enable, "parsing array dup def failed, not followed right bracket" }
-                                    return lexer.push_expect("Right bracket after array dup def", index + 3 + expr1_len + expr2_len, expr1_len + expr2_len + 1);
+                                    return push_unexpect!(lexer, "Right bracket after array dup def", index + 3 + expr1_len + expr2_len, expr1_len + expr2_len + 1);
                                 }
                             }
                         }
@@ -239,6 +240,6 @@ impl IASTItem for PrimaryExpression {
 
         test_condition_perrorln!{ log_enable, "Failed in prim expr parse, not start with left paren or left bracket" }
         let _dummy = log_enable;
-        return lexer.push_expects(vec!["identifier", "literal", "array def"], index, 0);
+        return push_unexpect!(lexer, ["identifier", "literal", "array def", ], index, 0);
     }
 } 

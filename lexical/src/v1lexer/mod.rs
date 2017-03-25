@@ -208,7 +208,7 @@ fn v1_base() {
     macro_rules! test_case {
         ($program: expr, [$($expect: expr)*] [$($expect_msg: expr)*]) => ({
             let messages = &mut MessageCollection::new();
-            let mut codemap = CodeMap::with_str($program);
+            let mut codemap = CodeMap::with_test_str($program);
             let mut v1lexer = V1Lexer::new(codemap.iter(), messages);
             $(
                 match v1lexer.next(messages) {

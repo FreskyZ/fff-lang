@@ -4,6 +4,7 @@
 use std::fmt;
 
 use codepos::StringPosition;
+use message::Message;
 
 use lexical::Lexer;
 use lexical::KeywordKind;
@@ -56,13 +57,13 @@ impl IASTItem for ForStatement {
 
         let iter_name = match lexer.nth(index + current_len).get_identifier() {
             Some(ident) => ident.clone(),
-            None => return lexer.push_expect("identifier", index + current_len, current_len),
+            None => return push_unexpect!(lexer, "identifier", index + current_len, current_len),
         };
         pos[1] = lexer.pos(index + current_len);
         current_len += 1;
 
         if !lexer.nth(index + current_len).is_keyword(KeywordKind::In) {
-            return lexer.push_expect("keyword in", index + current_len, current_len);
+            return push_unexpect!(lexer, "keyword in", index + current_len, current_len);
         }
         pos[2] = lexer.pos(index + current_len);
         current_len += 1;
@@ -73,7 +74,7 @@ impl IASTItem for ForStatement {
         };
 
         if !lexer.nth(index + current_len).is_seperator(SeperatorKind::Range) {
-            return lexer.push_expect("range operator", index + current_len, current_len);
+            return push_unexpect!(lexer, "range operator", index + current_len, current_len);
         }
         pos[3] = lexer.pos(index + current_len);
         current_len += 1;
@@ -102,11 +103,11 @@ impl IASTItem for ForStatement {
 mod tests {
     use super::ForStatement;
     use super::super::super::ast_item::IASTItem;
-    use lexical::Lexer;
+    use lexical::parse_test_str;
 
     #[test]
     fn ast_stmt_for() {
 
-        perrorln!("{}", ForStatement::parse(&mut Lexer::new("for i in 1 + 1[2] .. infinite(true) { fresky.loves(zmj); }"), 0).0.unwrap());
+        perrorln!("{}", ForStatement::parse(&mut parse_test_str("for i in 1 + 1[2] .. infinite(true) { fresky.loves(zmj); }"), 0).0.unwrap());
     }
 }

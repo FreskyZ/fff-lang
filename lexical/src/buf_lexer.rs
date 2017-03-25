@@ -126,7 +126,10 @@ fn buf_lexer_test() {
         }
     } 
     
-    let mut buflexer = BufLexer::<TestLexer, TestToken>::new(CodeMap::with_str("").iter(), &mut MessageCollection::new());
+    let mut codemap = CodeMap::with_test_str("");
+    let mut messages = MessageCollection::new();
+    let mut buflexer = BufLexer::<TestLexer, TestToken>::new(codemap.iter(), &mut messages);
+    check_messages_continuable!(messages);
     let messages = &mut MessageCollection::new();
 
     buflexer.move_next(messages);

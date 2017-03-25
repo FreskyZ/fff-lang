@@ -13,7 +13,8 @@ use std::fmt;
 use codepos::StringPosition;
 use util::format_vector_display;
 use util::format_vector_debug;
-use message::SyntaxMessage as Message;
+use message::SyntaxMessage;
+use message::Message;
 
 use lexical::Lexer;
 use lexical::SeperatorKind;
@@ -134,7 +135,7 @@ impl IASTItem for PostfixExpression {
                     }
                     None => {
                         test_condition_perrorln!{ log_enable, "get postfix failed, member access not followed ident" }
-                        return lexer.push_expect("member identifier", index + current_len + 1, current_len + 1);
+                        return push_unexpect!(lexer, "member identifier", index + current_len + 1, current_len + 1);
                     }
                 }
             } else if lexer.nth(index + current_len).is_keyword(KeywordKind::As) {
@@ -164,7 +165,7 @@ impl IASTItem for PostfixExpression {
                     && lexer.nth(index + current_len + 2).is_seperator(SeperatorKind::RightParenthenes) {
                         let pos1 = StringPosition::merge(lexer.pos(index + current_len), lexer.pos(index + current_len + 2));
                         let pos2 = lexer.pos(index + current_len + 1).start_pos();
-                        lexer.push(Message::SingleCommaInFunctionCall{ call_pos: pos1, comma_pos: pos2 });
+                        lexer.push(SyntaxMessage::SingleCommaInFunctionCall{ call_pos: pos1, comma_pos: pos2 });
                         postfixs.push(Postfix::FunctionCall(
                             Vec::new(),
                             pos1,
@@ -177,7 +178,7 @@ impl IASTItem for PostfixExpression {
                 if lexer.nth(index + current_len + 1).is_seperator(SeperatorKind::RightBracket) {
                     // first recoverable error here!!!, it is recoverable because later with type infer it can be used
                     let pos = lexer.pos(index + current_len);
-                    lexer.push(Message::EmptySubscription{ pos: pos });
+                    lexer.push(SyntaxMessage::EmptySubscription{ pos: pos });
                     postfixs.push(Postfix::Subscription(
                         Vec::new(),
                         StringPosition::merge(lexer.pos(index + current_len), lexer.pos(index + current_len + 1)),
@@ -189,7 +190,7 @@ impl IASTItem for PostfixExpression {
                     && lexer.nth(index + current_len + 2).is_seperator(SeperatorKind::RightBracket) {
                         let pos1 = StringPosition::merge(lexer.pos(index + current_len), lexer.pos(index + current_len + 2));
                         let pos2 = lexer.pos(index + current_len + 1).start_pos();
-                        lexer.push(Message::SingleCommaInSubscription{ sub_pos: pos1, comma_pos: pos2 });
+                        lexer.push(SyntaxMessage::SingleCommaInSubscription{ sub_pos: pos1, comma_pos: pos2 });
                         postfixs.push(Postfix::Subscription(
                             Vec::new(),
                             pos1,

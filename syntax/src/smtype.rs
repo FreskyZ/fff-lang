@@ -19,7 +19,7 @@ use codepos::StringPosition;
 use util::format_vector_debug;
 use util::format_vector_display;
 use message::SyntaxMessage;
-use codemap::CodeMap;
+use message::Message;
 
 use lexical::Lexer;
 use lexical::SeperatorKind;
@@ -66,8 +66,8 @@ impl SMType {
     pub fn pos(&self) -> StringPosition { self.pos_all() } // for outter use
 
     pub fn from_str(smstr: &str, index: usize) -> SMType {
-        let mut codemap = CodeMap::with_str(smstr);
-        let lexer = &mut Lexer::new(codemap.iter());
+        use lexical::parse_test_str;
+        let lexer = &mut parse_test_str(smstr);
         SMType::parse(lexer, index).0.unwrap()
     }
 }
@@ -132,7 +132,7 @@ impl IASTItem for SMType {
                         );
                     } else {
                         test_condition_perrorln!{ log_enable, "parse array failed, not right bracket" }
-                        return lexer.push_expect("right bracket", index + current_len, current_len);
+                        return push_unexpect!(lexer, "right bracket", index + current_len, current_len);
                     }
                 } 
             }
@@ -199,7 +199,7 @@ impl IASTItem for SMType {
 
         test_condition_perrorln!{ log_enable, "pass every check and return None at end" }
         let _log_enable = log_enable;
-        return lexer.push_expects(vec!["primitive type keyword", "left bracket", "left parenthenes", "identifier"], index, 0);
+        return push_unexpect!(lexer, ["primitive type keyword", "left bracket", "left parenthenes", "identifier", ], index, 0);
     }
 }
 

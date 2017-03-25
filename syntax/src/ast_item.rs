@@ -47,7 +47,8 @@ impl<T> TestCase<T>
     where T: IASTItem + Eq + PartialEq + fmt::Debug {
 
     pub fn run(program: &str, expect_len: usize, expect_pos_all: StringPosition, expect_result: T, line: u32, column: u32) {
-        let lexer = &mut Lexer::new(program);
+        use lexical::parse_test_str;
+        let lexer = &mut parse_test_str(program);
         perrorln!("Case at {}:{}", line, column);
         if let (Some(actual_result), actual_len) = T::parse(lexer, 0) {
             assert_eq!(actual_result, expect_result, "error result");
@@ -60,7 +61,8 @@ impl<T> TestCase<T>
 
     /// run with check error
     pub fn run_e(program: &str, expect_len: usize, expect_pos_all: StringPosition, expect_result: T, expect_messages: Vec<Message>, line: u32, column: u32) {
-        let lexer = &mut Lexer::new(program);
+        use lexical::parse_test_str;
+        let lexer = &mut parse_test_str(program);
         perrorln!("Case at {}:{}", line, column);
         if let (Some(actual_result), actual_len) = T::parse(lexer, 0) {
             assert_eq!(actual_result, expect_result, "error result");
@@ -78,7 +80,8 @@ impl<T> TestCase<T>
 
     /// run with only check error
     pub fn run_oe(program: &str, expect_len: usize, expect_messages: Vec<Message>, line: u32, column: u32) {
-        let lexer = &mut Lexer::new(program);
+        use lexical::parse_test_str;
+        let lexer = &mut parse_test_str(program);
         perrorln!("Case at {}:{}", line, column);
         let (actual_result, actual_len) = T::parse(lexer, 0);
         assert_eq!(actual_len, expect_len, "error symbol length");

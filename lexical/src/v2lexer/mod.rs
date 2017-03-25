@@ -377,7 +377,7 @@ fn v2_base() {
     macro_rules! test_case {
         ($program: expr, [$($expect: expr, )*] [$($expect_msg: expr, )*]) => ({
             let messages = &mut MessageCollection::new();
-            let mut codemap = CodeMap::with_str($program);
+            let mut codemap = CodeMap::with_test_str($program);
             let mut v2lexer = V2Lexer::new(codemap.iter(), messages);
             let mut v2s = Vec::new();
             loop {

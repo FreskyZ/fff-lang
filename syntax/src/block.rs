@@ -6,6 +6,7 @@ use std::fmt;
 use codepos::StringPosition;
 use util::format_vector_display;
 use util::format_vector_debug;
+use message::Message;
 
 use lexical::Lexer;
 use lexical::SeperatorKind;
@@ -30,10 +31,9 @@ impl fmt::Display for Block {
 }
 impl Block {
 
-    #[cfg(test)]
     pub fn from_str(program: &str, index: usize) -> Block {
-        let lexer = &mut Lexer::new(program);
-        Block::parse(lexer, index).0.unwrap()
+        use lexical::parse_test_str;
+        Block::parse(&mut parse_test_str(program), index).0.unwrap()
     }
 }
 impl IASTItem for Block {
@@ -47,7 +47,7 @@ impl IASTItem for Block {
     fn parse(lexer: &mut Lexer, index: usize) -> (Option<Block>, usize) {
 
         if !lexer.nth(index).is_seperator(SeperatorKind::LeftBrace) {
-            return lexer.push_expect("left brace", index, 0);
+            return push_unexpect!(lexer, "left brace", index, 0);
         }
 
         let mut stmts = Vec::new();
@@ -78,14 +78,14 @@ mod tests {
     fn ast_block_parse() {
         use super::Block;
         use super::super::ast_item::IASTItem;
-        use lexical::Lexer;
+        use lexical::parse_test_str;
         use codepos::StringPosition;
         
         assert_eq!(
-            Block::parse(&mut Lexer::new("{}", ), 0), 
+            Block::parse(&mut parse_test_str("{}", ), 0), 
             (Some(Block{ stmts: Vec::new(), pos: make_str_pos!(1, 1, 1, 2) }), 2)
         );
 
-        perrorln!("{}", Block::parse(&mut Lexer::new("{ 1; 1 + 1; while true { writeln(\"fresky loves zmj\"); } loop { writeln(\"zmj loves fresky\"); } }"), 0).0.unwrap()); 
+        perrorln!("{}", Block::parse(&mut parse_test_str("{ 1; 1 + 1; while true { writeln(\"fresky loves zmj\"); } loop { writeln(\"zmj loves fresky\"); } }"), 0).0.unwrap()); 
     }
 }

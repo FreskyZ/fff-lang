@@ -64,12 +64,12 @@ impl IASTItem for WhileStatement {
 mod tests {
     use super::WhileStatement;
     use super::super::super::ast_item::IASTItem;
-    use lexical::Lexer;
+    use lexical::parse_test_str;
 
     #[test]
     fn ast_stmt_while () {
 
-        let (result, length) = WhileStatement::parse(&mut Lexer::new("while true { writeln(\"fresky loves zmj\"); }"), 0);
+        let (result, length) = WhileStatement::parse(&mut parse_test_str("while true { writeln(\"fresky loves zmj\"); }"), 0);
         perrorln!("Debug: {:?}", result);
         perrorln!("Display: {}, {}", result.unwrap(), length);
     }

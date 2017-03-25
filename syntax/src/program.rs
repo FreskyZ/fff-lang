@@ -7,7 +7,6 @@ use codepos::StringPosition;
 use util::format_vector_debug;
 use util::format_vector_display;
 
-use codemap::CodeMap;
 use message::MessageEmitter;
 use lexical::Lexer;
 
@@ -30,12 +29,12 @@ impl fmt::Display for Program {
 }
 impl Program {
     pub fn from_str(prog: &str) -> Option<Program> {
-        let mut codemap = CodeMap::with_str(prog);
-        Program::parse(&mut Lexer::new(codemap.iter()), 0).0
+        use lexical::parse_test_str;
+        Program::parse(&mut parse_test_str(prog), 0).0
     }
     pub fn try_from_str(prog: &str) -> Result<Program, MessageEmitter> {
-        let mut codemap = CodeMap::with_str(prog);
-        let mut lexer = Lexer::new(codemap.iter());
+        use lexical::parse_test_str;
+        let mut lexer = parse_test_str(prog);
         match Program::parse(&mut lexer, 0).0 {
             Some(program) => Ok(program),
             None => Err(lexer.into_messages()),
@@ -84,9 +83,9 @@ impl IASTItem for Program {
 #[cfg(test)]
 mod tests {
     // use file_map::InputReader;
-    use lexical::Lexer;
-    use super::super::ast_item::IASTItem;
-    use super::Program;
+    // use lexical::Lexer;
+    // use super::super::ast_item::IASTItem;
+    // use super::Program;
 
     #[test]
     fn ast_all() {
@@ -118,28 +117,28 @@ mod tests {
     #[test]
     #[ignore]
     fn ast_interactive() {
-        use std::io::stdin;
+        // use std::io::stdin;
 
-        loop {
-            let mut buf = String::new();
+        // loop {
+        //     let mut buf = String::new();
 
-            perrorln!("Input:");
-            match stdin().read_line(&mut buf) {
-                Ok(_) => (),
-                Err(_) => break,
-            }
+        //     perrorln!("Input:");
+        //     match stdin().read_line(&mut buf) {
+        //         Ok(_) => (),
+        //         Err(_) => break,
+        //     }
 
-            if buf != "break\r\n" {
-                let lexer = &mut Lexer::new(&buf);
-                let (result, length) = Program::parse(lexer, 0);
-                perrorln!("Debug: ({:?}, {})", result, length);
-                match result {
-                    Some(result) => perrorln!("Display: {}", result),
-                    None => perrorln!("messages: {:?}", lexer.messages()),
-                }
-            } else {
-                break;
-            }
-        }
+        //     if buf != "break\r\n" {
+        //         let lexer = &mut Lexer::new(&buf);
+        //         let (result, length) = Program::parse(lexer, 0);
+        //         perrorln!("Debug: ({:?}, {})", result, length);
+        //         match result {
+        //             Some(result) => perrorln!("Display: {}", result),
+        //             None => perrorln!("messages: {:?}", lexer.messages()),
+        //         }
+        //     } else {
+        //         break;
+        //     }
+        // }
     }
 }

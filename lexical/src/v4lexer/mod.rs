@@ -196,26 +196,6 @@ impl V4Lexer {
     pub fn push<T: Into<Message>>(&mut self, message: T) {
         self.messages.push(message);
     }
-    pub fn push_expect<T>(&mut self, final_token: &str, index: usize, sym_size: usize) -> (Option<T>, usize) {
-        self.push_expects(vec![final_token], index, sym_size)
-    }
-    pub fn push_expects<T>(&mut self, final_tokens: Vec<&str>, index: usize, sym_size: usize) -> (Option<T>, usize) {
-        use util::format_vector_display;
-
-        let desc = format_vector_display(&final_tokens, ", ");
-        let actual_token = if index >= self.buf.len() { 
-            &self.eof_token 
-        } else { 
-            &self.buf[index]
-        };
-
-        self.messages.push(SyntaxMessage::ExpectSymbol{ 
-            expect: desc,
-            actual: format!("{:?}", actual_token), 
-            pos: actual_token.get_position().start_pos(),
-        });
-        return (None, sym_size);
-    }
     pub fn messages(&self) -> &MessageCollection {
         &self.messages
     }
@@ -237,7 +217,7 @@ fn v4_base() {
     // seperator, leftbracket, 1:14-1:14
     // numeric, 1, 1:15-1:15
     // seperator, rightbracket, 1:16-1:16
-    let lexer = V4Lexer::new(CodeMap::with_str("123 abc 'd', [1]").iter());
+    let lexer = V4Lexer::new(CodeMap::with_test_str("123 abc 'd', [1]").iter());
 
     assert_eq!(lexer.nth(0).is_num_lit(), true);
     assert_eq!(lexer.nth(0).get_lit_val().unwrap().get_num().unwrap(), &Some(NumLitValue::I32(123)));
@@ -292,7 +272,7 @@ fn v4_push() {
     use codepos::Position;
     use codemap::CodeMap;
 
-    let lexer = &mut V4Lexer::new(CodeMap::with_str("abcdef").iter());
+    let lexer = &mut V4Lexer::new(CodeMap::with_test_str("abcdef").iter());
     assert_eq!(lexer.push_expect::<i32>("123", 0, 0), (None, 0));
     assert_eq!(lexer.push_expects::<i32>(vec!["456", "789"], 0, 0xABCD), (None, 0xABCD));
     

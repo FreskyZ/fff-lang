@@ -6,6 +6,5 @@ authors = ["FreskyZ <fresky7@outlook.com>"]
 [dependencies]
 util = { path = "../util" }
 codepos = { path = "../codepos" }
-codemap = { path = "../codemap" }
 messages = { path = "../messages" }
 lexical = { path = "../lexical" }

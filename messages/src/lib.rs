@@ -407,6 +407,7 @@ impl fmt::Debug for Message {
 #[derive(Eq, PartialEq)]
 pub struct MessageCollection {
     messages: Vec<LegacyMessage>,
+    m_uncontinuable: bool,
 }
 impl fmt::Debug for MessageCollection {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -420,7 +421,10 @@ impl_display_by_debug!(MessageCollection);
 impl MessageCollection {
 
     pub fn new() -> MessageCollection {
-        MessageCollection { messages: Vec::new() }
+        MessageCollection { 
+            messages: Vec::new(),
+            m_uncontinuable: false,
+        }
     }
 
     pub fn is_empty(&self) -> bool { self.messages.is_empty() }
@@ -441,6 +445,14 @@ impl MessageCollection {
     pub fn pop(&mut self) { // Pop top
         let _ = self.messages.pop();
     }
+
+    pub fn set_uncontinuable(&mut self) { self.m_uncontinuable = true; }
+    pub fn is_uncontinuable(&self) -> bool { self.m_uncontinuable }
+}
+
+#[macro_export]
+macro_rules! check_messages_continuable {
+    ($msgs: expr) => (if $msgs.is_uncontinuable() { panic!("messages is uncontinuable: {:?}", $msgs) })
 }
 
 pub type MessageEmitter = MessageCollection;

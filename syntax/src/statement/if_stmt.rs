@@ -162,20 +162,20 @@ impl IASTItem for IfStatement {
 mod tests {
     use super::IfStatement;
     use super::super::super::ast_item::IASTItem;
-    use lexical::Lexer;
+    use lexical::parse_test_str;
 
     #[test]
     fn ast_stmt_if() {
 
-        perrorln!("{}", IfStatement::parse(&mut Lexer::new(
+        perrorln!("{}", IfStatement::parse(&mut parse_test_str(
             "if 1 { fresky.love(zmj); zmj.love(fresky); }"
         ), 0).0.unwrap());
 
-        perrorln!("{}", IfStatement::parse(&mut Lexer::new(
+        perrorln!("{}", IfStatement::parse(&mut parse_test_str(
             "if 1 { fresky.love(zmj); zmj.love(fresky); } else { writeln(\"hellworld\"); }"
         ), 0).0.unwrap());
 
-        perrorln!("{}", IfStatement::parse(&mut Lexer::new(
+        perrorln!("{}", IfStatement::parse(&mut parse_test_str(
 r#"
             if 1 { 
                 fresky.love(zmj); 

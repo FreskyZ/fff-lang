@@ -3,8 +3,8 @@
 
 #[macro_use] extern crate util;
 #[macro_use] extern crate codepos;
+#[macro_use] extern crate messages as message; 
 extern crate codemap;
-extern crate messages as message; // TODO: legacy remove
 
 use std::fmt;
 use codepos::StringPosition;
@@ -46,6 +46,12 @@ pub trait IToken : fmt::Debug {
     fn get_position(&self) -> StringPosition;
 }
 
+// test helper, may panic
+pub fn parse_test_str(program: &str) -> Lexer {
+    use codemap::CodeMap;
+    let mut codemap = CodeMap::with_test_str(program);
+    Lexer::new(codemap.iter())
+}
 // pub fn parse() -> Lexer {
 
 // }

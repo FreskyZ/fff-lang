@@ -11,6 +11,7 @@ use std::fmt;
 
 use codepos::StringPosition;
 use message::SyntaxMessage;
+use message::Message;
 
 use lexical::Lexer;
 use lexical::SeperatorKind;
@@ -74,7 +75,7 @@ impl IASTItem for ReturnStatement {
                         pos: [lexer.pos(index), lexer.pos(index + 1 + expr_len)],
                     }), 2 + expr_len);
                 } else {
-                    return lexer.push_expect("semicolon", index + expr_len + 1, expr_len + 1);
+                    return push_unexpect!(lexer, "semicolon", index + expr_len + 1, expr_len + 1);
                 }
             } 
         }
@@ -161,7 +162,7 @@ impl IASTItem for ContinueStatement {
                         pos: [lexer.pos(index), name_pos, lexer.pos(index + 1 + expr_len)],
                     }), 2 + expr_len);
                 } else {
-                    return lexer.push_expect("semicolon", index + expr_len + 1, expr_len + 1);
+                    return push_unexpect!(lexer, "semicolon", index + expr_len + 1, expr_len + 1);
                 }
             } 
         }
@@ -204,7 +205,7 @@ impl IASTItem for BreakStatement {
                         pos: [lexer.pos(index), name_pos, lexer.pos(index + 1 + expr_len)],
                     }), 2 + expr_len);
                 } else {
-                    return lexer.push_expect("semicolon", index + expr_len + 1, expr_len + 1);
+                    return push_unexpect!(lexer, "semicolon", index + expr_len + 1, expr_len + 1);
                 }
             } 
         }
@@ -218,7 +219,7 @@ mod tests {
     use super::ContinueStatement;
     use codepos::StringPosition;
     use message::SyntaxMessage;
-    use message::LegacyMessage as Message;
+    use message::LegacyMessage;
     use super::super::super::Expression;
     use super::super::super::ast_item::TestCase;
 
@@ -260,7 +261,7 @@ mod tests {
                 pos: [make_str_pos!(1, 1, 1, 8), StringPosition::new(), make_str_pos!(1, 13, 1, 13)]
             },
             [
-                Message::Syntax(SyntaxMessage::LoopNameSpecifierIsNotStringLiteral{ pos: make_str_pos!(1, 10, 1, 12) })
+                LegacyMessage::Syntax(SyntaxMessage::LoopNameSpecifierIsNotStringLiteral{ pos: make_str_pos!(1, 10, 1, 12) })
             ]
         }
 
@@ -283,7 +284,7 @@ mod tests {
                 pos: [make_str_pos!(1, 1, 1, 5), StringPosition::new(), make_str_pos!(1, 10, 1, 10)],
             },
             [
-                Message::Syntax(SyntaxMessage::LoopNameSpecifierIsNotStringLiteral{ pos: make_str_pos!(1, 7, 1, 9) })
+                LegacyMessage::Syntax(SyntaxMessage::LoopNameSpecifierIsNotStringLiteral{ pos: make_str_pos!(1, 7, 1, 9) })
             ]
         }
     }

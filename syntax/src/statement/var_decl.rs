@@ -5,6 +5,7 @@
 use std::fmt;
 
 use codepos::StringPosition;
+use message::Message;
 
 use lexical::Lexer;
 use lexical::KeywordKind;
@@ -83,7 +84,7 @@ impl IASTItem for VarDeclStatement {
                 current_len += 1;
                 (name.clone(), lexer.pos(index + current_len - 1))
             } 
-            None => return lexer.push_expect("identifier", index + current_len, current_len),
+            None => return push_unexpect!(lexer, "identifier", index + current_len, current_len),
         };
         poss[1] = name_pos;
 
@@ -117,12 +118,12 @@ impl IASTItem for VarDeclStatement {
                                 pos: poss,
                             }), current_len);
                         } else {
-                            return lexer.push_expect("semicolon", index + current_len, current_len);
+                            return push_unexpect!(lexer, "semicolon", index + current_len, current_len);
                         }
                     }
                 }
             }
-            _ => return lexer.push_expects(vec!["assignment and initial expr", "semicolon"], index + current_len, current_len),
+            _ => return push_unexpect!(lexer, ["assignment and initial expr", "semicolon", ], index + current_len, current_len),
         }
     }
 }
@@ -130,7 +131,7 @@ impl IASTItem for VarDeclStatement {
 #[cfg(test)]
 mod tests {
     use super::VarDeclStatement;
-    use lexical::Lexer;
+    use lexical::parse_test_str;
     use super::super::super::ast_item::IASTItem;
     use super::super::super::SMType;
     use super::super::super::Expression;
@@ -140,7 +141,7 @@ mod tests {
     fn ast_stmt_var_decl() {
         
         //                           123456789012345678
-        let lexer = &mut Lexer::new("const i32 abc = 0;");
+        let lexer = &mut parse_test_str("const i32 abc = 0;");
         assert_eq!(
             VarDeclStatement::parse(lexer, 0),
             (Some(VarDeclStatement {
@@ -158,7 +159,7 @@ mod tests {
         );
         //                                 0        1         2
         //                                 1234567890123456789012
-        let lexer = &mut Lexer::new("var [i32] abc = 1 + 1;");
+        let lexer = &mut parse_test_str("var [i32] abc = 1 + 1;");
         assert_eq!(
             VarDeclStatement::parse(lexer, 0),
             (Some(VarDeclStatement {
@@ -176,7 +177,7 @@ mod tests {
         );
         
         //                           1234567890123456789
-        let lexer = &mut Lexer::new("const string input;");
+        let lexer = &mut parse_test_str("const string input;");
         assert_eq!(
             VarDeclStatement::parse(lexer, 0),
             (Some(VarDeclStatement {
@@ -194,7 +195,7 @@ mod tests {
         );
         
         //                           1234567890123
-        let lexer = &mut Lexer::new("var [u8] buf;");
+        let lexer = &mut parse_test_str("var [u8] buf;");
         assert_eq!(
             VarDeclStatement::parse(lexer, 0),
             (Some(VarDeclStatement {
@@ -214,7 +215,7 @@ mod tests {
         );
         //                           0        1         2         3         4
         //                           12345678901234567890123456789012345678901234567
-        let lexer = &mut Lexer::new("var ([u8], u32) buf = ([1u8, 5u8, 0x7u8], abc);");
+        let lexer = &mut parse_test_str("var ([u8], u32) buf = ([1u8, 5u8, 0x7u8], abc);");
         assert_eq!(
             VarDeclStatement::parse(lexer, 0),
             (Some(VarDeclStatement {

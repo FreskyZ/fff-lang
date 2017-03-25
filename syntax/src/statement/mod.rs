@@ -9,6 +9,7 @@
 use std::fmt;
 
 use codepos::StringPosition;
+use message::Message;
 
 use lexical::Lexer;
 
@@ -162,7 +163,7 @@ impl IASTItem for Statement {
                 (None, length) => (None, length),
             }
         } else {
-            return lexer.push_expect("statement", 0, index);
+            return push_unexpect!(lexer, "statement", 0, index);
         }
     }
 }

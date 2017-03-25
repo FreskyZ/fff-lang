@@ -6,7 +6,7 @@
 use std::str::Chars;
 
 use codepos::Position;
-use messages::Message;
+use message::Message;
 
 use super::code_char::EOFCHAR;
 use super::code_char::CodeChar;

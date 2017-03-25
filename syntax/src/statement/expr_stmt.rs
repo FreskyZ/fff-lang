@@ -4,8 +4,7 @@
 use std::fmt;
 
 use codepos::StringPosition;
-use codemap::CodeMap;
-// use message::SyntaxMessage;
+use message::Message;
 
 use lexical::Lexer;
 use lexical::SeperatorKind;
@@ -40,8 +39,8 @@ fn format_assign_op(op: &SeperatorKind) -> String {
 impl ExpressionStatement {
     
     pub fn from_str(prog: &str, index: usize) -> (Option<ExpressionStatement>, usize) {
-        let mut codemap = CodeMap::with_str(prog);
-        ExpressionStatement::parse(&mut Lexer::new(codemap.iter()), index)
+        use lexical::parse_test_str;
+        ExpressionStatement::parse(&mut parse_test_str(prog), index)
     }
 }
 impl fmt::Debug for ExpressionStatement {
@@ -99,7 +98,7 @@ impl IASTItem for ExpressionStatement {
                 current_len += 1;
                 (assign_op.clone(), lexer.pos(index + current_len - 1))
             },
-            Some(_) | None => return lexer.push_expects(vec!["assignment operator", "semicolon"], index + current_len, current_len),
+            Some(_) | None => return push_unexpect!(lexer, ["assignment operator", "semicolon", ], index + current_len, current_len),
         };
         
         match Expression::parse(lexer, index + current_len) {
@@ -113,7 +112,7 @@ impl IASTItem for ExpressionStatement {
                         pos: [assign_op_pos, lexer.pos(index + current_len)]
                     }), current_len + 1);
                 } else {
-                    return lexer.push_expect("semicolon", index + current_len, current_len);
+                    return push_unexpect!(lexer, "semicolon", index + current_len, current_len);
                 }
             }
             (None, length) => return (None, current_len + length),
@@ -125,7 +124,7 @@ impl IASTItem for ExpressionStatement {
 mod tests {
     use super::ExpressionStatement;
     use codepos::StringPosition;
-    use lexical::Lexer;
+    use lexical::parse_test_str;
     use lexical::SeperatorKind;
     use super::super::super::ast_item::IASTItem;
     use super::super::super::Expression;
@@ -135,7 +134,7 @@ mod tests {
 
         macro_rules! test_case {
             ($program: expr, $len: expr, $expect: expr) => (
-                let lexer = &mut Lexer::new($program);
+                let lexer = &mut parse_test_str($program);
                 let (result, len) = ExpressionStatement::parse(lexer, 0);
                 assert_eq!(result, Some($expect));
                 assert_eq!(len, $len);

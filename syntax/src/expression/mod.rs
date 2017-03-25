@@ -7,7 +7,6 @@ use std::fmt;
 use codepos::StringPosition;
 use util::format_vector_display;
 use util::format_vector_debug;
-use codemap::CodeMap;
 
 use lexical::Lexer;
 use lexical::SeperatorKind;
@@ -200,8 +199,8 @@ impl Expression {
 
     // Directly from string, only for test, may panic
     pub fn from_str(program: &str, sym_index: usize) -> Expression {
-        let mut codemap = CodeMap::with_str(program);
-        let lexer = &mut Lexer::new(codemap.iter());
+        use lexical::parse_test_str;
+        let lexer = &mut parse_test_str(program);
         Expression::parse(lexer, sym_index).0.unwrap() 
     }
 
@@ -348,10 +347,9 @@ mod tests {
     use codepos::StringPosition;
     use message::SyntaxMessage;
     use message::LegacyMessage as Message;
-    use lexical::Lexer;
     use lexical::SeperatorKind;
     use lexical::LitValue;
-    use super::super::ast_item::IASTItem;
+    // use super::super::ast_item::IASTItem;
     use super::super::SMType;
     use super::super::ast_item::TestCase;
 
@@ -1139,28 +1137,28 @@ mod tests {
     #[test]
     #[ignore] // strange interactive test
     fn ast_expr_interactive() {
-        use std::io::stdin;
+        // use std::io::stdin;
 
-        loop {
-            let mut buf = String::new();
+        // loop {
+        //     let mut buf = String::new();
 
-            perrorln!("Input:");
-            match stdin().read_line(&mut buf) {
-                Ok(_) => (),
-                Err(_) => break,
-            }
+        //     perrorln!("Input:");
+        //     match stdin().read_line(&mut buf) {
+        //         Ok(_) => (),
+        //         Err(_) => break,
+        //     }
 
-            if buf != "break\r\n" {
-                let lexer = &mut Lexer::new(&buf);
-                let (result, length) = Expression::parse(lexer, 0);
-                perrorln!("Debug: ({:?}, {})", result, length);
-                match result {
-                    Some(result) => perrorln!("Display: {}, is_function_call: {}", result, result.is_function_call()),
-                    None => perrorln!("messages: {:?}", lexer.messages()),
-                }
-            } else {
-                break;
-            }
-        }
+        //     if buf != "break\r\n" {
+        //         let lexer = &mut parse_test_str(&buf);
+        //         let (result, length) = Expression::parse(lexer, 0);
+        //         perrorln!("Debug: ({:?}, {})", result, length);
+        //         match result {
+        //             Some(result) => perrorln!("Display: {}, is_function_call: {}", result, result.is_function_call()),
+        //             None => perrorln!("messages: {:?}", lexer.messages()),
+        //         }
+        //     } else {
+        //         break;
+        //     }
+        // }
     }
 }
