@@ -160,6 +160,10 @@ fn v4_base() { // remain the name of v4 here for memory
     assert_eq!(lexer.nth(8).get_position(), lexer.pos(8));
     assert_eq!(lexer.pos(8), make_str_pos!(1, 17, 1, 17));
 
+    assert_eq!(lexer.nth(9).is_eofs(), true);
+    assert_eq!(lexer.nth(9).get_position(), lexer.pos(9));
+    assert_eq!(lexer.pos(9), make_str_pos!(1, 17, 1, 17));
+
     assert_eq!(lexer.nth(42).is_eofs(), true);
     assert_eq!(lexer.nth(42).get_position(), lexer.pos(8));  // this 8 here is not forgetten
     assert_eq!(lexer.pos(42), make_str_pos!(1, 17, 1, 17));

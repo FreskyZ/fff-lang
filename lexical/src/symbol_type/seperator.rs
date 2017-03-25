@@ -88,31 +88,31 @@ macro_rules! define_seperator {
         }
 
         impl $enum_name {
-            pub fn try_from1(ch: char) -> Option<$enum_name> {
+            pub fn try_from1(ch: char) -> Option<($enum_name, usize)> {
                 match ch {
                     $(
-                        $ch1 => Some($enum_name::$name1),
+                        $ch1 => Some(($enum_name::$name1, 1)),
                     )*
                     $(
-                        $ch4 => Some($enum_name::$name4),
+                        $ch4 => Some(($enum_name::$name4, 1)),
                     )*
                     _ => None,
                 }
             }
 
-            pub fn try_from2(ch1: char, ch2: char) -> Option<$enum_name> {
+            pub fn try_from2(ch1: char, ch2: char) -> Option<($enum_name, usize)> {
                 match (ch1, ch2) {
                     $(
-                        ($ch21, $ch22) => Some($enum_name::$name2),
+                        ($ch21, $ch22) => Some(($enum_name::$name2, 2)),
                     )*
                     (ch, _) => $enum_name::try_from1(ch),
                 }
             }
 
-            pub fn try_from3(ch1: char, ch2: char, ch3: char) -> Option<$enum_name> {
+            pub fn try_from3(ch1: char, ch2: char, ch3: char) -> Option<($enum_name, usize)> {
                 match (ch1, ch2, ch3) {
                     $(
-                        ($ch31, $ch32, $ch33) => Some($enum_name::$name3), 
+                        ($ch31, $ch32, $ch33) => Some(($enum_name::$name3, 3)),
                     )*
                     (ch1, ch2, _) => $enum_name::try_from2(ch1, ch2),
                 }

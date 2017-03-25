@@ -167,6 +167,9 @@ impl<'chs> ILexer<'chs, V1Token> for V1Lexer<'chs> {
                             state = State::InStringLiteral{ parser: parser };
                         }
                         StringLiteralParserResult::Finished(value, pos) => {
+                            if *ch == EOFCHAR { // if EOFCHAR was consumed by str lit parser, it will not be returned as EOF, which is not designed by feature
+                                self.v0.prepare_dummy1();
+                            }
                             return (V1Token::StringLiteral(value), pos);
                         }
                     }
@@ -177,6 +180,9 @@ impl<'chs> ILexer<'chs, V1Token> for V1Lexer<'chs> {
                             state = State::InRawStringLiteral{ parser: parser };
                         }
                         RawStringLiteralParserResult::Finished(value, pos) => {
+                            if *ch == EOFCHAR { // same as str lit parser
+                                self.v0.prepare_dummy1();
+                            }
                             return (V1Token::RawStringLiteral(value), pos);
                         }
                     }
@@ -191,6 +197,9 @@ impl<'chs> ILexer<'chs, V1Token> for V1Lexer<'chs> {
                             state = State::InCharLiteral{ parser: parser };
                         }
                         CharLiteralParserResult::Finished(value, pos) => {
+                            if *ch == EOFCHAR { // same as str lit parser
+                                self.v0.prepare_dummy1();
+                            }
                             return (V1Token::CharLiteral(value), pos);
                         }
                     }
@@ -207,6 +216,7 @@ fn v1_base() {
 
     macro_rules! test_case {
         ($program: expr, [$($expect: expr)*] [$($expect_msg: expr)*]) => ({
+            println!("Case {} at {}:", $program, line!());
             let messages = &mut MessageCollection::new();
             let mut codemap = CodeMap::with_test_str($program);
             let mut v1lexer = V1Lexer::new(codemap.iter(), messages);
@@ -215,10 +225,17 @@ fn v1_base() {
                     v1 => assert_eq!(v1, $expect),
                 }
             )*
+
+            let next = v1lexer.next(messages);
+            if next.0 != V1Token::EOF {
+                panic!("next is not EOF but {:?}", next);
+            }
+            if v1lexer.next(messages).0 != V1Token::EOFs {
+                panic!("next next is not EOFs");
+            }
             match v1lexer.next(messages) {
-                (V1Token::EOF, _)
-                | (V1Token::EOFs, _) => (),
-                v1 => panic!("Unexpected more symbol after expect: {:?}", v1),
+                (V1Token::EOFs, _) => (),
+                v1 => panic!("Unexpected more symbol after eofs: {:?}", v1),
             }
             
             let expect_messages = &mut MessageCollection::new();
@@ -226,6 +243,7 @@ fn v1_base() {
                 expect_messages.push($expect_msg);
             )*
             assert_eq!(messages, expect_messages);
+            println!("");
         });
         ($program: expr, [$($expect: expr)*]) => ({
             test_case!($program, [$($expect)*] [])

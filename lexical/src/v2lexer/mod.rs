@@ -5,9 +5,11 @@
 
 mod num_lit_parser;
 mod unicode_char;
+mod error_strings;
 
 use codepos::StringPosition;
 use codemap::CodeChars;
+use codemap::EOFCHAR;
 use message::Message;
 use message::MessageCollection;
 
@@ -21,8 +23,6 @@ use super::LitValue;
 use super::KeywordKind;
 use super::SeperatorKind;
 use self::num_lit_parser::parse_numeric_literal;
-
-mod error_strings;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub enum V2Token {
@@ -120,10 +120,23 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
     // input stringliteral or otherchar without comment, output identifier and numeric literal
     fn next(&mut self, messages: &mut MessageCollection) -> (V2Token, StringPosition) {
 
-        #[derive(Debug)] // temp-test-only
+        macro_rules! ident_to_v2 { ($ident_value: expr) => ({
+            match KeywordKind::try_from(&$ident_value) { 
+                Some(KeywordKind::True) => V2Token::Literal(LitValue::from(true)),
+                Some(KeywordKind::False) => V2Token::Literal(LitValue::from(false)),
+                Some(other_keyword) => V2Token::Keyword(other_keyword),
+                None => V2Token::Identifier($ident_value),
+            }
+        }) }
+        macro_rules! num_lit_to_v2 { ($num_lit_value: expr, $num_lit_strpos: expr) => ({
+            let (num_lit_val, pos) = parse_numeric_literal($num_lit_value, $num_lit_strpos, messages);
+            (V2Token::Literal(LitValue::Num(num_lit_val)), pos)
+        }) }
+
+        #[cfg_attr(test, derive(Debug))]
         struct V15Token(char, StringPosition, char, StringPosition, char, StringPosition);
 
-        #[derive(Debug)] // temp-test-only
+        #[cfg_attr(test, derive(Debug))]
         enum State {
             Nothing,
             InIdent(String, StringPosition),
@@ -131,7 +144,6 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
         }
 
         let mut state = State::Nothing;
-        let mut eofed = false;
         loop {
             self.v1.move_next(messages);
             let v15 = match self.v1.current_with_preview2() {
@@ -144,37 +156,55 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                 (&V1Token::CharLiteral(ref value), pos, _2, _3, _4, _5) => {
                     return (V2Token::Literal(LitValue::Char(value.clone())), pos);
                 }
-                (&V1Token::EOF, eof_pos, _2, next_strpos, _4, nextnext_strpos) => {
+                (&V1Token::EOF, eof_pos, _2, _3, _4, _5) => {
                     // because if last token is ident, it will not finish because eof return early here
-                    if eofed {
-                        return (V2Token::EOF, eof_pos);
-                    } else {
-                        eofed = true;
-                        V15Token(' ', eof_pos, ' ', next_strpos, ' ', nextnext_strpos)
-                    }
+                    // Update, 17/3/25
+                    //     it used be like this: `if eofed { return v2::eof } else { eofed = true, v15 = ' ' }` 
+                    //     After add mutliple file support to codemap, here is a bug
+                    //     because these codes assume that after EOF and call next again you will still receive a EOF, 
+                    //     at that time you can return the true EOF, but now after EOF is other char or normal tokens
+                    //     after last EOF is EOFs and after EOFs is EOFs, so EOF is not returned because of this
+                    //     So, because not support preview2, preview nextch and return properly in InIdent, not here
+                    return (V2Token::EOF, eof_pos);
                 }
                 (&V1Token::EOFs, eofs_pos, _2, _3, _4, _5) => {
                     return (V2Token::EOFs, eofs_pos);
                 }
                 (&V1Token::Other(ch), strpos, &V1Token::Other(next_ch), next_strpos, &V1Token::Other(nextnext_ch), nextnext_strpos) => {
-                    let ch = ch.pass_non_ascii_char(strpos, messages);
-                    // let next_ch = next_ch.pass_non_ascii_char(next_strpos, messages);  // check next time
-                    // let nextnext_ch = nextnext_ch.pass_non_ascii_char(nextnext_strpos, messages);
+                    let ch = ch.pass_non_ascii_char(strpos, messages); // not need check next_ch and nextnext_ch because they will be checked in next loops
                     V15Token(ch, strpos, next_ch, next_strpos, nextnext_ch, nextnext_strpos)
                 }
-                (&V1Token::Other(ch), strpos, &V1Token::Other(next_ch), next_strpos, _4, nextnext_strpos) => { // even EOF can be regarded as space
+                (&V1Token::Other(ch), strpos, &V1Token::Other(next_ch), next_strpos, _4, nextnext_strpos) => {
                     let ch = ch.pass_non_ascii_char(strpos, messages);
-                    // let next_ch = next_ch.pass_non_ascii_char(next_strpos, messages);
                     V15Token(ch, strpos, next_ch, next_strpos, ' ', nextnext_strpos)
                 }
+                (&V1Token::Other(ch), strpos, &V1Token::EOF, eof_strpos, _4, nextnext_strpos) => {
+                    let ch = ch.pass_non_ascii_char(strpos, messages);
+                    V15Token(ch, strpos, EOFCHAR, eof_strpos, ' ', nextnext_strpos)
+                } 
                 (&V1Token::Other(ch), strpos, _2, next_strpos, _4, nextnext_strpos) => { 
                     let ch = ch.pass_non_ascii_char(strpos, messages);
                     V15Token(ch, strpos, ' ', next_strpos, ' ', nextnext_strpos)
                 }
             };
-            // println!("state is {:?}, v15 is {:?}", state, v15);
 
             match (state, v15) {
+                (State::Nothing, V15Token(ch, strpos, EOFCHAR, _3, _4, _5)) => {
+                    if ch.is_identifier_start() {
+                        let mut value = String::new();
+                        value.push(ch);
+                        return (ident_to_v2!(value), strpos);
+                    } else if ch.is_numeric_literal_start() {
+                        let mut value = String::new();
+                        value.push(ch);
+                        return num_lit_to_v2!(value, strpos);
+                    } else {
+                        match SeperatorKind::try_from1(ch) {
+                            Some((seperator, _)) => return (V2Token::Seperator(seperator), strpos),
+                            None => state = State::Nothing,
+                        }
+                    }
+                }
                 (State::Nothing, V15Token(ch, strpos, next_ch, next_strpos, nextnext_ch, nextnext_strpos)) => {
                     if ch.is_identifier_start() {
                         let mut value = String::new();
@@ -185,37 +215,28 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                         value.push(ch);
                         state = State::InNumLit(value, strpos);
                     } else {
-                        match SeperatorKind::try_from3(ch, next_ch, nextnext_ch) { // the try_from will check 3, if not, check 2, if not, check 1
-                            Some(sep) => match sep.len() { 
-                                1 => {
-                                    return (V2Token::Seperator(sep), strpos);
-                                }
-                                2 => {
-                                    self.v1.prepare_skip1();
-                                    return (V2Token::Seperator(sep), StringPosition::merge(strpos, next_strpos));
-                                }
-                                3 => {
-                                    self.v1.prepare_skip1();
-                                    self.v1.prepare_skip1();
-                                    return (V2Token::Seperator(sep), StringPosition::merge(strpos, nextnext_strpos));
-                                }
-                                _ => unreachable!(),
-                            },
-                            None => state = State::Nothing,
+                        match SeperatorKind::try_from3(ch, next_ch, nextnext_ch) { // the try_from3 will check 3, if not, check 2, if not, check 1
+                            Some((seperator, 1)) => return (V2Token::Seperator(seperator), strpos),
+                            Some((seperator, 2)) => {
+                                self.v1.prepare_skip1();
+                                return (V2Token::Seperator(seperator), StringPosition::merge(strpos, next_strpos));
+                            }
+                            Some((seperator, 3)) => {
+                                self.v1.prepare_skip1();
+                                self.v1.prepare_skip1();
+                                return (V2Token::Seperator(seperator), StringPosition::merge(strpos, nextnext_strpos));
+                            }
+                            _ => state = State::Nothing,
                         }
                     }
                 } 
-                (State::InIdent(mut value, mut ident_strpos), V15Token(ch, strpos, _3, _4, _5, _6)) => {
+                (State::InIdent(mut value, mut ident_strpos), V15Token(ch, strpos, next_ch, _4, _5, _6)) => {
                     if !ch.is_identifier() {
-                        self.v1.prepare_dummy1();
-                        match KeywordKind::try_from(&value) { 
-                            Some(keyword) => match keyword {
-                                KeywordKind::True => return (V2Token::Literal(LitValue::from(true)), ident_strpos),
-                                KeywordKind::False => return (V2Token::Literal(LitValue::from(false)), ident_strpos),
-                                other_keyword => return (V2Token::Keyword(other_keyword), ident_strpos),
-                            },
-                            None => return (V2Token::Identifier(value), ident_strpos),
-                        }
+                        return (ident_to_v2!(value), ident_strpos);
+                    } else if !next_ch.is_identifier() {
+                        value.push(ch); 
+                        ident_strpos = StringPosition::merge(ident_strpos, strpos);
+                        return (ident_to_v2!(value), ident_strpos);
                     } else {
                         value.push(ch);
                         ident_strpos = StringPosition::merge(ident_strpos, strpos);
@@ -223,16 +244,22 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                     }
                 }
                 (State::InNumLit(mut value, mut num_lit_strpos), V15Token(ch, strpos, next_ch, _4, _5, _6)) => {
-                    // 1. for `1..2` case; 2. for `1.some_member_fn()` case, not considered `123.f32` because it is invalid
-                    if (ch == '.' && next_ch == '.')
-                        || (ch == '.' && next_ch.is_identifier_start()) 
-                        || !ch.is_numeric_literal() {
+
+                    if (ch == '.' && next_ch == '.')                        // for 1..2
+                        || (ch == '.' && next_ch.is_identifier_start())     // for 1.to_string()
+                        || !ch.is_numeric_literal() {                       // normal end
+                        println!("NumLit finished, return");
                         self.v1.prepare_dummy1();
-                        let (num_lit_val, pos) = parse_numeric_literal(value, num_lit_strpos, messages);
-                        return (V2Token::Literal(LitValue::Num(num_lit_val)), pos);
+                        return num_lit_to_v2!(value, num_lit_strpos);
+                    } else if !next_ch.is_numeric_literal() {
+                        value.push(ch);
+                        num_lit_strpos = StringPosition::merge(num_lit_strpos, strpos);
+                        println!("NumLit finished by preview, returning value: {:?}, strpos: {:?}", value, num_lit_strpos);
+                        return num_lit_to_v2!(value, num_lit_strpos);
                     } else {
                         value.push(ch);
                         num_lit_strpos = StringPosition::merge(num_lit_strpos, strpos);
+                        println!("NumLit not finishing, goto state, value: {:?}, strpos: {:?}", value, num_lit_strpos);
                         state = State::InNumLit(value, num_lit_strpos);
                     }
                 }
@@ -375,7 +402,8 @@ fn v2_base() {
     }
 
     macro_rules! test_case {
-        ($program: expr, [$($expect: expr, )*] [$($expect_msg: expr, )*]) => ({
+        ($program: expr, $eof_pos: expr, [$($expect: expr, )*] [$($expect_msg: expr, )*]) => ({
+            println!("Case {:?} at {}:", $program, line!());
             let messages = &mut MessageCollection::new();
             let mut codemap = CodeMap::with_test_str($program);
             let mut v2lexer = V2Lexer::new(codemap.iter(), messages);
@@ -387,15 +415,18 @@ fn v2_base() {
                 }
             }
 
-            assert_eq!(v2s, vec![$(V2AndStrPos::from($expect), )*]);
+            let mut expect_v2s = vec![$(V2AndStrPos::from($expect), )*];
+            expect_v2s.push(V2AndStrPos::from((V2Token::EOF, $eof_pos)));
+            assert_eq!(v2s, expect_v2s);
 
             let expect_messages = &mut MessageCollection::new();
             $(
                 expect_messages.push($expect_msg);
             )*
             assert_eq!(messages, expect_messages);
+            println!("");
         });
-        ($program: expr, [$($expect: expr, )*]) => (test_case!($program, [$($expect, )*] []))
+        ($program: expr, $eof_pos: expr, [$($expect: expr, )*]) => (test_case!($program, $eof_pos, [$($expect, )*] []))
     }
 
     macro_rules! lit {
@@ -427,7 +458,7 @@ fn v2_base() {
     // row       1              2                     3
     // col       0        1     0        1         2  0
     // col       1234567890123 412345678901234567890 11234
-    test_case!{ "var a = true;\nvar b = 789_123.456;\ndefg", [  // keyword, identifier, bool lit, num lit, seperator
+    test_case!{ "var a = true;\nvar b = 789_123.456;\ndefg", make_str_pos!(3, 5, 3, 5), [  // keyword, identifier, bool lit, num lit, seperator
             kw!(KeywordKind::Var, 1, 1, 1, 3),
             ident!("a", 1, 5, 1, 5),
             sep!(SeperatorKind::Assign, 1, 7, 1, 7),
@@ -444,7 +475,7 @@ fn v2_base() {
 
     //           0          1            2
     //           1 2 34567890 123456 7 8901
-    test_case!{ "一个chinese变量, a_中文_var", [  // chinese ident
+    test_case!{ "一个chinese变量, a_中文_var", make_str_pos!(1, 22, 1, 22), [  // chinese ident
             ident!("一个chinese变量", 1, 1, 1, 11),
             sep!(SeperatorKind::Comma, 1, 12, 1, 12),
             ident!("a_中文_var", 1, 14, 1, 21),
@@ -453,7 +484,7 @@ fn v2_base() {
 
     //           0        1         2         3         4         5         6         7
     //           1234567890123456789012345678901234567890123456789012345678901234567890123456
-    test_case!{ "[1, 123 _ 1u64( 123.456,) -123_456{123u32}123f32 += 123.0 / 123u8 && 1024u8]", [  // different postfix\types of num lit, different types of sep
+    test_case!{ "[1, 123 _ 1u64( 123.456,) -123_456{123u32}123f32 += 123.0 / 123u8 && 1024u8]", make_str_pos!(1, 77, 1, 77), [  // different postfix\types of num lit, different types of sep
             sep!(SeperatorKind::LeftBracket, 1, 1, 1, 1),
             lit!(1, 1, 2, 1, 2),
             sep!(SeperatorKind::Comma, 1, 3, 1, 3),
@@ -488,7 +519,7 @@ fn v2_base() {
 
     //           0        1         2         3         4         5         6         7         8
     //           1234567890123456789012345678901234567890123456789012345678901234567890123456789012345
-    test_case!{ "[123 * 0x123 - 0xAFF & 0o777 || 0oXXX != 0b101010 == 0b123456 -> 0d123.. 0dABC] -- -=", [    // differnt prefix\base of num lit
+    test_case!{ "[123 * 0x123 - 0xAFF & 0o777 || 0oXXX != 0b101010 == 0b123456 -> 0d123.. 0dABC] -- -=", make_str_pos!(1, 86, 1, 86), [    // differnt prefix\base of num lit
             sep!(SeperatorKind::LeftBracket, 1, 1, 1, 1),
             lit!(123, 1, 2, 1, 4),
             sep!(SeperatorKind::Mul, 1, 6, 1, 6),
@@ -531,7 +562,7 @@ fn v2_base() {
 
     //           0         1
     //           123456 7890123 45678
-    test_case!{ "[1, 2，3.5, 4。5】<<=", [  // not ascii char hint and recover
+    test_case!{ "[1, 2，3.5, 4。5】<<=", make_str_pos!(1, 19, 1, 19), [  // not ascii char hint and recover
             sep!(SeperatorKind::LeftBracket, 1, 1, 1, 1),
             lit!(1, 1, 2, 1, 2),
             sep!(SeperatorKind::Comma, 1, 3, 1, 3),
@@ -562,14 +593,15 @@ fn v2_base() {
     }
 
     //           123456789
-    test_case!{ "1..2.0f32",  [  // range operator special case
+    test_case!{ "1..2.0f32", make_str_pos!(1, 10, 1, 10), [  // range operator special case
             lit!(1, 1, 1, 1, 1),
             sep!(SeperatorKind::Range, 1, 2, 1, 3),
             lit!(2f32, 1, 4, 1, 9),
         ]
     }
 
-    test_case!{ "2...3",  [  // range operator special case 2
+    //           12345
+    test_case!{ "2...3", make_str_pos!(1, 6, 1, 6), [  // range operator special case 2
             lit!(2, 1, 1, 1, 1),
             sep!(SeperatorKind::Range, 1, 2, 1, 3),
             sep!(SeperatorKind::Dot, 1, 4, 1, 4),
@@ -577,19 +609,26 @@ fn v2_base() {
         ]
     }
 
-    //           1234567890
-    test_case!{ "1.is_odd()", [  //  another special case
+    //           0        1         2         3
+    //           123456789012345678901234567890
+    test_case!{ "1.is_odd(), 123f64.to_string()", make_str_pos!(1, 31, 1, 31), [  //  another special case
             lit!(1, 1, 1, 1, 1),
             sep!(SeperatorKind::Dot, 1, 2, 1, 2),
             ident!("is_odd", 1, 3, 1, 8),
             sep!(SeperatorKind::LeftParenthenes, 1, 9, 1, 9),
             sep!(SeperatorKind::RightParenthenes, 1, 10, 1, 10),
+            sep!(SeperatorKind::Comma, 1, 11, 1, 11),
+            lit!(123f64, 1, 13, 1, 18),
+            sep!(SeperatorKind::Dot, 1, 19, 1, 19),
+            ident!("to_string", 1, 20, 1, 28),
+            sep!(SeperatorKind::LeftParenthenes, 1, 29, 1, 29),
+            sep!(SeperatorKind::RightParenthenes, 1, 30, 1, 30),
         ]
     }
 
     //           0          1          2
-    //           1 234567 8901 234567890123456
-    test_case!{ "r\"hello\" '\\u1234' 12/**/34 ", [    // dispatch v1
+    //           1 234567 8901 2345678901234567
+    test_case!{ "r\"hello\" '\\u1234' 12/**/34 ", make_str_pos!(1, 28, 1, 28), [    // dispatch v1
             lit!("hello", 1, 1, 1, 8),
             lit!('\u{1234}', 1, 10, 1, 17),
             lit!(12, 1, 19, 1, 20),
