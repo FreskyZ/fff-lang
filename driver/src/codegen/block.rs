@@ -4,7 +4,7 @@
 use codepos::StringPosition;
 
 use syntax::Block as SyntaxBlock;
-// use syntax::Statement;
+use syntax::ISyntaxItem;
 
 use codegen::ItemID;
 use codegen::var_def::Var;
@@ -60,7 +60,7 @@ fn gen_block_prepare_vars() {
         //              12345678
         let program1 = "fn main(".to_owned();
         let program2 = ") { writeln(\"helloworld\"); }";
-        let syn_fn = SyntaxFunctionDef::from_str(&(program1 + param_str + program2), 0);
+        let syn_fn = SyntaxFunctionDef::with_test_str(&(program1 + param_str + program2));
         let mut sess = GenerationSession::new();
         let (id, block) = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
         let block = Block::new(id, block);

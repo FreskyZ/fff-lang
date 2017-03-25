@@ -93,20 +93,29 @@ impl ISyntaxItem for PrimaryExpression {
     }
 
     fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<PrimaryExpression>, usize) {
-        let log_enable = false;
+
+        #[cfg(feature = "trace_primary_expr_parse")]
+        macro_rules! trace_to_stderr { ($($arg:tt)*) => ({ perror!("[PrimaryExpr]"); perrorln!($($arg)*); }) }
+        #[cfg(not(feature = "trace_primary_expr_parse"))]
+        macro_rules! trace_to_stderr { ($($arg:tt)*) => () }
+
+        trace_to_stderr!("in this method to prove you are running this, current token: {:?}", lexer.nth(index));
 
         if lexer.nth(index).is_lit() {
             return (Some(PrimaryExpression::Lit(lexer.nth(index).get_lit_val().unwrap(), lexer.pos(index))), 1);
         }
         match lexer.nth(index).get_identifier() {
-            Some(ident) => return (Some(PrimaryExpression::Ident(ident.clone(), lexer.pos(index))), 1), 
+            Some(ident) => {
+                trace_to_stderr!("yes this is a identifier: {:?}, going to return", ident);
+                return (Some(PrimaryExpression::Ident(ident.clone(), lexer.pos(index))), 1);
+            }
             None => (),
         }
         if lexer.nth(index).is_keyword(KeywordKind::This) {
             return (Some(PrimaryExpression::Ident("this".to_owned(), lexer.pos(index))), 1);
         }
 
-        test_condition_perrorln!{ log_enable, "parsing primary not literal or identifier" }
+        trace_to_stderr!("parsing primary not literal or identifier");
         if lexer.nth(index).is_seperator(SeperatorKind::LeftParenthenes) {
             if lexer.nth(index + 1).is_seperator(SeperatorKind::RightParenthenes) {
                 return (Some(PrimaryExpression::Unit(
@@ -119,7 +128,7 @@ impl ISyntaxItem for PrimaryExpression {
             loop {
                 match D3Expression::parse(lexer, messages, index + current_len) {
                     (None, length) => {
-                        test_condition_perrorln!{ log_enable, "parsing paren expression get expression failed" }
+                        trace_to_stderr!("parsing paren expression get expression failed");
                         return (None, current_len + length);
                     }
                     (Some(expr), expr_len) => {
@@ -165,21 +174,21 @@ impl ISyntaxItem for PrimaryExpression {
             }
             match D3Expression::parse(lexer, messages, index + 1) {
                 (None, length) => {
-                    test_condition_perrorln!{ log_enable, "parsing array (dup) def failed, parse expr1 return none" }
+                    trace_to_stderr!("parsing array (dup) def failed, parse expr1 return none");
                     return (None, length);  // recover by find paired right bracket
                 }
                 (Some(expr1), expr1_len) => {
-                    test_condition_perrorln!{ log_enable, "parsing array (dup) def get expr1: {} with length {} and next is {:?}", expr1, expr1_len, lexer.nth(index + 1 + expr1_len), }
+                    trace_to_stderr!("parsing array (dup) def get expr1: {} with length {} and next is {:?}", expr1, expr1_len, lexer.nth(index + 1 + expr1_len));
                     if lexer.nth(index + 1 + expr1_len).is_seperator(SeperatorKind::SemiColon) {
                         let semicolon_pos = lexer.pos(index + 1 + expr1_len);
                         match D3Expression::parse(lexer, messages, index + 2 + expr1_len) {
                             (None, length) => {
-                                test_condition_perrorln!{ log_enable, "parsing array dup def failed, parse expr2 failed" }
+                                trace_to_stderr!("parsing array dup def failed, parse expr2 failed");
                                 return (None, expr1_len + 2 + length);
                             } 
                             (Some(expr2), expr2_len) => {
                                 if lexer.nth(index + 2 + expr1_len + expr2_len).is_seperator(SeperatorKind::RightBracket) {
-                                    test_condition_perrorln!{ log_enable, "parsing array dup def succeed, expr1: {}, expr2: {}", expr1, expr2, } 
+                                    trace_to_stderr!("parsing array dup def succeed, expr1: {}, expr2: {}", expr1, expr2);
                                     return (
                                         Some(PrimaryExpression::make_array_dup_def(expr1, expr2, [
                                             StringPosition::merge(lexer.pos(index), lexer.pos(index + expr1_len + expr2_len + 2)),
@@ -188,19 +197,20 @@ impl ISyntaxItem for PrimaryExpression {
                                         expr1_len + expr2_len + 3
                                     );
                                 } else {
-                                    test_condition_perrorln!{ log_enable, "parsing array dup def failed, not followed right bracket" }
+                                    trace_to_stderr!("parsing array dup def failed, not followed right bracket");
                                     return push_unexpect!(lexer, messages, "Right bracket after array dup def", index + 3 + expr1_len + expr2_len, expr1_len + expr2_len + 1);
                                 }
                             }
                         }
                     }
 
-                    test_condition_perrorln!{ log_enable, "parsing array def, before loop" }
+                    trace_to_stderr!("parsing array def, before loop");
                     let mut current_len = 1 + expr1_len; // 1 for left bracket
                     let mut exprs = vec![expr1];
                     loop {
+                        trace_to_stderr!("parsing array def, in loop, current: {:?}", lexer.nth(index + current_len));
                         if lexer.nth(index + current_len).is_seperator(SeperatorKind::RightBracket) {
-                            test_condition_perrorln!{ log_enable, "parsing array def succeed, exprs: {:?}", exprs, }
+                            trace_to_stderr!("parsing array def succeed, exprs: {:?}", exprs);
                             return (
                                 Some(PrimaryExpression::ArrayDef(
                                     exprs, 
@@ -208,10 +218,9 @@ impl ISyntaxItem for PrimaryExpression {
                                 )), 
                                 current_len + 1
                             );
-                        }
-                        if lexer.nth(index + current_len).is_seperator(SeperatorKind::Comma)  // Accept [1, 2, 3, abc, ] 
+                        } else if lexer.nth(index + current_len).is_seperator(SeperatorKind::Comma)  // Accept [1, 2, 3, abc, ] 
                             && lexer.nth(index + current_len + 1).is_seperator(SeperatorKind::RightBracket) {
-                            test_condition_perrorln!{ log_enable, "parsing array def succeed, exprs: {:?}", exprs, }
+                            trace_to_stderr!("parsing array def succeed, exprs: {:?}", exprs);
                             return (
                                 Some(PrimaryExpression::ArrayDef(
                                     exprs, 
@@ -219,28 +228,39 @@ impl ISyntaxItem for PrimaryExpression {
                                 )), 
                                 current_len + 2
                             );
-                        }
-                        if lexer.nth(index + current_len).is_seperator(SeperatorKind::Comma) {
+                        } else if lexer.nth(index + current_len).is_seperator(SeperatorKind::Comma) {
                             current_len += 1;
                             match D3Expression::parse(lexer, messages, index + current_len) {
                                 (Some(exprn), exprn_len) => {
-                                    test_condition_perrorln!{ log_enable, "parsing array def, get expression n {}", exprn, }
+                                    trace_to_stderr!("parsing array def, get expression n {}", exprn);
                                     current_len += exprn_len;
                                     exprs.push(exprn);
                                 }
                                 (None, length) => {
-                                    test_condition_perrorln!{ log_enable, "parsing array def failed, parse expression return none" }
+                                    trace_to_stderr!("parsing array def failed, parse expression return none");
                                     return (None, current_len + length);
                                 }
                             }
+                        } else {
+                            return push_unexpect!(lexer, messages, ["comma", "left bracket", ], index + current_len, current_len);
                         }
                     }
                 }
             }
         }
 
-        test_condition_perrorln!{ log_enable, "Failed in prim expr parse, not start with left paren or left bracket" }
-        let _dummy = log_enable;
+        trace_to_stderr!("Failed in prim expr parse, not start with left paren or left bracket");
         return push_unexpect!(lexer, messages, ["identifier", "literal", "array def", ], index, 0);
     }
 } 
+
+#[cfg(test)] #[test]
+fn expr_prim_bug() {
+
+    assert_eq!(
+        PrimaryExpression::with_test_str("[a]"),   // this is the loop of lexer.nth(current) is left bracket does not cover everything and infinite loop is here
+        PrimaryExpression::Unit(make_str_pos!(1, 1, 1, 3)),
+        "..."
+        // PrimaryExpression::ArrayDef(vec![D3Expression::with_test_str(" a")], make_str_pos!(1, 1, 1, 3))
+    );
+}

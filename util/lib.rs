@@ -78,19 +78,6 @@ pub fn format_vector_debug<T: fmt::Debug>(items: &Vec<T>, sep: &str) -> String {
     buf
 }
 
-#[cfg(test)]
-#[macro_export]
-macro_rules! test_condition_perrorln {
-    ($cond: expr, $format: expr, $($args: expr, )+) => (if $cond { perrorln!($format, $($args, )+); });
-    ($cond: expr, $format: expr) => (if $cond { perrorln!($format); });
-}
-#[cfg(not(test))]
-#[macro_export]
-macro_rules! test_condition_perrorln {
-    ($cond: expr, $format: expr, $($args: expr, )+) => ();
-    ($cond: expr, $format: expr) => ();
-}
-
 /// Implement `fmt::Display` by previous implementation of `fmt::Debug`
 #[macro_export]
 macro_rules! impl_display_by_debug {

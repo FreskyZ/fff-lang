@@ -6,9 +6,9 @@ use std::fmt;
 use util::format_vector_debug;
 
 use message::Message;
-use message::MessageEmitter;
+use message::MessageCollection;
 
-use syntax::Program as SyntaxProgram;
+use syntax::SyntaxTree;
 
 use codegen::type_def::TypeCollection;
 use codegen::fn_def::FnCollection;
@@ -43,7 +43,7 @@ impl fmt::Debug for ItemID {
 pub struct Program {
     pub fns: FnCollection,
     pub types: TypeCollection,
-    pub msgs: MessageEmitter,
+    pub msgs: MessageCollection,
     pub codes: Vec<Code>,
 }
 impl fmt::Debug for Program {
@@ -53,9 +53,14 @@ impl fmt::Debug for Program {
         write!(f, "{}{}Messages: {:?}Codes:\n    {}\n", types, fns, self.msgs, format_vector_debug(&self.codes.iter().enumerate().collect(), "\n    "))
     }
 }
+impl Program {
+    pub fn new(syntax_tree: SyntaxTree, _: &mut MessageCollection) -> Program {
+        GenerationSession::dispatch(syntax_tree) // messages not used, fix it later
+    } 
+}
 
 pub struct GenerationSession {
-    pub msgs: MessageEmitter,
+    pub msgs: MessageCollection,
     pub types: TypeCollection,
     pub fns: FnCollection,
     pub codes: CodeCollection,
@@ -70,8 +75,8 @@ impl GenerationSession {
         let mut fns = FnCollection::new();
         types.push_builtin_types(&mut fns);    // special dependent initialization
 
-        GenerationSession{
-            msgs: MessageEmitter::new(),
+        GenerationSession {
+            msgs: MessageCollection::new(),
             types: types,
             fns: fns,
             codes: CodeCollection::new(),
@@ -81,7 +86,7 @@ impl GenerationSession {
     } 
         
     // Dispatch program items to session, return Program for vm use
-    pub fn dispatch(program: SyntaxProgram) -> Program {
+    pub fn dispatch(program: SyntaxTree) -> Program {
 
         let mut sess = GenerationSession::new();
 
@@ -104,30 +109,30 @@ impl GenerationSession {
 
 #[cfg(test)] #[test] #[ignore]
 fn gen_program_inter() {
-    use std::io::stdin;
+    // use std::io::stdin;
 
-    loop {
-        let mut buf = String::new();
+    // loop {
+    //     let mut buf = String::new();
 
-        perrorln!("Input:");
-        match stdin().read_line(&mut buf) {
-            Ok(_) => (),
-            Err(_) => break,
-        }
+    //     perrorln!("Input:");
+    //     match stdin().read_line(&mut buf) {
+    //         Ok(_) => (),
+    //         Err(_) => break,
+    //     }
 
-        if buf != "break\r\n" {
-            match SyntaxProgram::try_from_str(&buf) {
-                Ok(program) => {
-                    perrorln!("Syntax program: {}", program);
-                    let program = GenerationSession::dispatch(program); 
-                    perrorln!("Program: {:?}", program);
-                }
-                Err(errs) => {
-                    perrorln!("Unexpectedly syntax failed: {:?}", errs);
-                }
-            }
-        } else {
-            break;
-        }
-    }
+    //     if buf != "break\r\n" {
+    //         match SyntaxTree::with_test_str(&buf) {
+    //             Ok(program) => {
+    //                 perrorln!("Syntax program: {}", program);
+    //                 let program = GenerationSession::dispatch(program); 
+    //                 perrorln!("Program: {:?}", program);
+    //             }
+    //             Err(errs) => {
+    //                 perrorln!("Unexpectedly syntax failed: {:?}", errs);
+    //             }
+    //         }
+    //     } else {
+    //         break;
+    //     }
+    // }
 }

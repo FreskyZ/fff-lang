@@ -16,36 +16,29 @@ mod vm;
 
 use message::MessageCollection;
 use codemap::CodeMap;
-use lexical::Lexer;
-use syntax::parse;
-use codegen::generate;
-use vm::run;
+use lexical::TokenStream;
+use syntax::SyntaxTree;
+use codegen::Program;
+use vm::VirtualMachine;
 
 // Handle and print error here
 pub fn compile_input(file_name: String) {
 
     let mut messages = MessageCollection::new();
-    let mut codemap = CodeMap::with_files(vec![file_name], &mut messages);
+
+    let mut codemap = CodeMap::with_files(vec![file_name], &mut messages);          // read file
     if messages.is_uncontinuable() { println!("{:?}", messages); return; }
+    let mut tokens = TokenStream::new(codemap.iter(), &mut messages);               // Lexical parse
+    if messages.is_uncontinuable() { println!("{:?}", messages); return; }          // although it will not happen currently
+    let syntax_tree = SyntaxTree::new(&mut tokens, &mut messages);                  // Syntax parse
+    if messages.is_uncontinuable() { println!("{:?}", messages); return; }    
+    let program = Program::new(syntax_tree, &mut messages);                         // Semantic parse
+    if !messages.is_empty() { println!("{:?}", messages); return; }    
 
-    let mut lexer = Lexer::new(codemap.iter());             // Lexical parse
-    let ast_program = parse(&mut lexer);                    // Syntax parse
-    if !lexer.messages().is_empty() {                       // Any error is not allowed to continue
-        println!("{:?}", lexer.messages());
-        return;
-    }
-    let vm_program = generate(ast_program.unwrap()); // Semantic parse
-    if !vm_program.msgs.is_empty() {
-        println!("{:?}", vm_program.msgs);
-        return;
-    }
-
-    let maybe_exception = run(vm_program);                         // run!
-    match maybe_exception {
-        Some(exception) => perrorln!("{:?}", exception),
-        None => (),
-    }
-
+    let mut virtual_machine = VirtualMachine::new(program);
+    virtual_machine.execute(&mut messages);                                         // run!
+    if !messages.is_empty() { println!("{:?}", messages); return; }
+    
     println!("Byebye");
 }
 

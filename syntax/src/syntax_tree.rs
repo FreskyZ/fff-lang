@@ -8,26 +8,26 @@ use util::format_vector_debug;
 use util::format_vector_display;
 
 use message::MessageCollection;
-use lexical::Lexer;
+use lexical::TokenStream;
 
 use super::ast_item::ISyntaxItem;
 use super::FunctionDef;
 
 #[derive(Eq, PartialEq)]
-pub struct Program {
+pub struct SyntaxTree {
     pub functions: Vec<FunctionDef>,
 }
-impl fmt::Debug for Program {
+impl fmt::Debug for SyntaxTree {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", format_vector_debug(&self.functions, "\n\n"))
     }
 }
-impl fmt::Display for Program {
+impl fmt::Display for SyntaxTree {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", format_vector_display(&self.functions, "\n\n"))
     }
 }
-impl ISyntaxItem for Program {
+impl ISyntaxItem for SyntaxTree {
 
     fn pos_all(&self) -> StringPosition {
 
@@ -38,11 +38,11 @@ impl ISyntaxItem for Program {
         }
     }
 
-    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
+    fn is_first_final(lexer: &mut TokenStream, index: usize) -> bool {
         FunctionDef::is_first_final(lexer, index) 
     }
 
-    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<Program>, usize) {
+    fn parse(lexer: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<SyntaxTree>, usize) {
         // meet EOF and break, 
         // meet function get None break actually is an unrecoverable and return none
         // recover none function by find next paired '}' and expecting `fn` again
@@ -62,7 +62,15 @@ impl ISyntaxItem for Program {
             }
         }
 
-        (Some(Program{ functions: funcs }), current_len)
+        (Some(SyntaxTree{ functions: funcs }), current_len)
+    }
+}
+impl SyntaxTree {
+    pub fn new(tokens: &mut TokenStream, messages: &mut MessageCollection) -> SyntaxTree {
+        match SyntaxTree::parse(tokens, messages, 0).0 {
+            Some(tree) => tree,
+            None => SyntaxTree{ functions: Vec::new() },
+        }
     }
 }
 

@@ -6,13 +6,14 @@ use std::fmt;
 
 use util::format_vector_debug;
 use message::CodegenMessage;
-use message::MessageEmitter;
+use message::MessageCollection;
 
 use lexical::SeperatorKind;
 use lexical::LitValue;
 use lexical::NumLitValue;
 
 use syntax::SMType;
+use syntax::ISyntaxItem;
 
 use codegen::ItemID;
 use codegen::fn_def::FnCollection;
@@ -115,7 +116,7 @@ impl TypeCollection {
     // check base type existence, currently only primitive types, return the id of the primitive type
     // record processed array and tuple types, set their type params, return their type ids
     // position info are removed because messages are finally here, furthur errors will only report "variable with type" etc.
-    fn get_id_internal(&mut self, ty: SMType, messages: &mut MessageEmitter, fns: &mut FnCollection) -> Option<usize> {
+    fn get_id_internal(&mut self, ty: SMType, messages: &mut MessageCollection, fns: &mut FnCollection) -> Option<usize> {
 
         match ty {
             SMType::Unit(_pos) => Some(0),
@@ -195,7 +196,7 @@ impl TypeCollection {
         }
     }
     // wrap Option<usize> to ItemID
-    pub fn get_id_by_smtype(&mut self, ty: SMType, messages: &mut MessageEmitter, fns: &mut FnCollection) -> ItemID {
+    pub fn get_id_by_smtype(&mut self, ty: SMType, messages: &mut MessageCollection, fns: &mut FnCollection) -> ItemID {
         match self.get_id_internal(ty, messages, fns) {
             Some(id) => ItemID::new(id),
             None => ItemID::new_invalid(),
@@ -484,7 +485,7 @@ fn gen_types_member_fn() {
     sess.types.push_builtin_template_type(Type::Array(9), &mut sess.fns);
     sess.types.push_builtin_template_type(Type::Tuple(vec![14, 15]), &mut sess.fns);
 
-    let messages = &mut MessageEmitter::new();
+    let messages = &mut MessageCollection::new();
     sess.fns.check_sign_eq(&sess.types, messages);
     if !messages.is_empty() {
         panic!("Messages not empty: {:?}", messages);
@@ -499,19 +500,19 @@ fn gen_types_by_smtype() {
 
     macro_rules! test_case {
         ($types: expr, $ty_str: expr, $expect: expr) => (
-            match $types.get_id_by_smtype(SMType::from_str($ty_str, 0), &mut MessageEmitter::new(), &mut FnCollection::new()).as_option() {
+            match $types.get_id_by_smtype(SMType::with_test_str($ty_str), &mut MessageCollection::new(), &mut FnCollection::new()).as_option() {
                 Some(id) => assert_eq!(id, $expect),
                 None => panic!("Unexpectedly return None"),
             }
         );
         
         ($types: expr, $ty_str: expr => $($msg: expr)*) => (
-            let messages = &mut MessageEmitter::new();
-            match $types.get_id_by_smtype(SMType::from_str($ty_str, 0), messages, &mut FnCollection::new()).as_option() {
+            let messages = &mut MessageCollection::new();
+            match $types.get_id_by_smtype(SMType::with_test_str($ty_str), messages, &mut FnCollection::new()).as_option() {
                 Some(id) => panic!("Unexpectedly success, result: {:?}", id),
                 None => (),
             }
-            let expect_messages = &mut MessageEmitter::new();
+            let expect_messages = &mut MessageCollection::new();
             $(
                 expect_messages.push($msg);
             )*

@@ -33,14 +33,15 @@ macro_rules! push_unexpect {
 
 #[macro_use]
 mod ast_item;
-mod program;
+mod syntax_tree;
 mod function_def;
 mod smtype;
 mod statement;
 mod block;
 mod expression;
 
-pub use self::program::Program;
+pub use self::ast_item::ISyntaxItem;
+pub use self::syntax_tree::SyntaxTree;
 pub use self::function_def::Argument;
 pub use self::function_def::FunctionDef;
 pub use self::expression::Expression;
@@ -59,15 +60,6 @@ pub use self::statement::ElseIfBranch;
 pub use self::statement::IfStatement;
 pub use self::smtype::SMType;
 pub use self::block::Block;
-
-use lexical::Lexer;
-use message::MessageCollection;
-
-pub fn parse(lexer: &mut Lexer, messages: &mut MessageCollection) -> Option<Program> {
-    use self::ast_item::ISyntaxItem;
-
-    Program::parse(lexer, messages, 0).0
-}
 
 #[cfg(test)]
 mod tests {

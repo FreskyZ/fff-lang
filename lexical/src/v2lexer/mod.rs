@@ -248,18 +248,15 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                     if (ch == '.' && next_ch == '.')                        // for 1..2
                         || (ch == '.' && next_ch.is_identifier_start())     // for 1.to_string()
                         || !ch.is_numeric_literal() {                       // normal end
-                        println!("NumLit finished, return");
                         self.v1.prepare_dummy1();
                         return num_lit_to_v2!(value, num_lit_strpos);
                     } else if !next_ch.is_numeric_literal() {
                         value.push(ch);
                         num_lit_strpos = StringPosition::merge(num_lit_strpos, strpos);
-                        println!("NumLit finished by preview, returning value: {:?}, strpos: {:?}", value, num_lit_strpos);
                         return num_lit_to_v2!(value, num_lit_strpos);
                     } else {
                         value.push(ch);
                         num_lit_strpos = StringPosition::merge(num_lit_strpos, strpos);
-                        println!("NumLit not finishing, goto state, value: {:?}, strpos: {:?}", value, num_lit_strpos);
                         state = State::InNumLit(value, num_lit_strpos);
                     }
                 }

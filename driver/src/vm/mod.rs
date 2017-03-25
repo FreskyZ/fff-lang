@@ -10,13 +10,7 @@ mod builtin_impl;
 use message::RuntimeMessage;
 use codegen::Program;
 
-// Runtime exception will report immediately and abort
-pub fn run(vm_program: Program) -> Option<RuntimeMessage> {
-    use vm::vm_impl::VirtualMachine;
-
-    let mut vm = VirtualMachine::new(vm_program);
-    vm.execute()
-}
+pub use self::vm_impl::VirtualMachine;
 
 // At first program is inputed, fns and types, fns include all codes
 // then a vm is constructed, these information are loaded

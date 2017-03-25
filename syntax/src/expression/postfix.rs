@@ -107,13 +107,17 @@ impl ISyntaxItem for PostfixExpression {
     
     #[allow(unused_assignments)]
     fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<PostfixExpression>, usize) {
-        let log_enable = false;
+        
+        #[cfg(feature = "trace_postfix_expr_parse")]
+        macro_rules! trace_to_stderr { ($($arg:tt)*) => ({ perror!("[PostfixExpr]"); perrorln!($($arg)*); }) }
+        #[cfg(not(feature = "trace_postfix_expr_parse"))]
+        macro_rules! trace_to_stderr { ($($arg:tt)*) => () }
 
         let (primary, primary_len) = match PrimaryExpression::parse(lexer, messages, index) {
             (Some(prim), prim_len) => (prim, prim_len),
             (None, prim_len) => return (None, prim_len), // no recover
         };
-        test_condition_perrorln!{ log_enable, "parsing postfix, primary is {}", primary, }
+        trace_to_stderr!("parsing postfix, primary is {}", primary);
 
         let mut postfixs = Vec::new();
         let mut current_len = primary_len;
@@ -123,7 +127,7 @@ impl ISyntaxItem for PostfixExpression {
             if lexer.nth(index + current_len).is_seperator(SeperatorKind::Dot) {
                 match lexer.nth(index + current_len + 1).get_identifier() {
                     Some(ident) => {
-                        test_condition_perrorln!{ log_enable, "get one postfix, member access {:?}", ident, }
+                        trace_to_stderr!{ "get one postfix, member access {:?}", ident, }
                         postfixs.push(Postfix::MemberAccess(
                             ident.clone(), 
                             StringPosition::merge(
@@ -135,26 +139,26 @@ impl ISyntaxItem for PostfixExpression {
                         continue 'postfix;
                     }
                     None => {
-                        test_condition_perrorln!{ log_enable, "get postfix failed, member access not followed ident" }
+                        trace_to_stderr!{ "get postfix failed, member access not followed ident" }
                         return push_unexpect!(lexer, messages, "member identifier", index + current_len + 1, current_len + 1);
                     }
                 }
             } else if lexer.nth(index + current_len).is_keyword(KeywordKind::As) {
                 match SMType::parse(lexer, messages, index + current_len + 1) {
                     (Some(ty), ty_len) => {
-                        test_condition_perrorln!{ log_enable, "get one postfix, type cast as {:?}", ty, }
+                        trace_to_stderr!{ "get one postfix, type cast as {:?}", ty, }
                         postfixs.push(Postfix::TypeCast(ty, lexer.pos(index + current_len)));
                         current_len += ty_len + 1;
                         continue 'postfix;
                     }
                     (None, length) => {
-                        test_condition_perrorln!{ log_enable, "get postfix failed, type cast not followed typedef" }
+                        trace_to_stderr!{ "get postfix failed, type cast not followed typedef" }
                         return (None, current_len + 1 + length);  
                     } 
                 }
             } else if lexer.nth(index + current_len).is_seperator(SeperatorKind::LeftParenthenes) {
                 if lexer.nth(index + current_len + 1).is_seperator(SeperatorKind::RightParenthenes) {
-                    test_condition_perrorln!{ log_enable, "get one postfix, none parameter function call" }
+                    trace_to_stderr!{ "get one postfix, none parameter function call" }
                     postfixs.push(Postfix::FunctionCall(
                         Vec::new(), 
                         StringPosition::merge(lexer.pos(index + current_len), lexer.pos(index + current_len + 1))
@@ -205,12 +209,12 @@ impl ISyntaxItem for PostfixExpression {
             }
 
             // Get the expression list
-            test_condition_perrorln!{ log_enable, "parsing postfix, start processing expression list of {}", 
+            trace_to_stderr!{ "parsing postfix, start processing expression list of {}", 
                 if expect_end_sep == SeperatorKind::RightParenthenes { "function call".to_owned() } else { "subscription".to_owned() }, }
             current_len += 1; 
             match D3Expression::parse(lexer, messages, index + current_len) {
                 (None, length) => { 
-                    test_condition_perrorln!{ log_enable, "parsing postfix's expression list, expression parse failed" }
+                    trace_to_stderr!{ "parsing postfix's expression list, expression parse failed" }
                     return (None, current_len + length);
                 }
                 (Some(expr1), expr1_len) => {
@@ -222,7 +226,7 @@ impl ISyntaxItem for PostfixExpression {
                                 if lexer.nth(index + current_len + exprs_len).is_seperator(SeperatorKind::RightParenthenes) 
                                     || (lexer.nth(index + current_len + exprs_len).is_seperator(SeperatorKind::Comma)
                                         && lexer.nth(index + current_len + exprs_len + 1).is_seperator(SeperatorKind::RightParenthenes))  => {
-                                test_condition_perrorln!{ log_enable, "parsing postfix function call's expression list finished" }
+                                trace_to_stderr!{ "parsing postfix function call's expression list finished" }
                                 let pos_left_paren = lexer.pos(index + current_len - 1);
                                 current_len += exprs_len + if lexer.nth(index + current_len + exprs_len).is_seperator(SeperatorKind::Comma) { 2 } else { 1 };
                                 let pos_right_paren = lexer.pos(index + current_len - 1);
@@ -236,7 +240,7 @@ impl ISyntaxItem for PostfixExpression {
                                 if lexer.nth(index + current_len + exprs_len).is_seperator(SeperatorKind::RightBracket)
                                     || (lexer.nth(index + current_len + exprs_len).is_seperator(SeperatorKind::Comma)
                                         && lexer.nth(index + current_len + exprs_len + 1).is_seperator(SeperatorKind::RightBracket)) => {
-                                test_condition_perrorln!{ log_enable, "parsing postfix subscription's expression list finished" }
+                                trace_to_stderr!{ "parsing postfix subscription's expression list finished" }
                                 let pos_left_bracket = lexer.pos(index + current_len - 1);
                                 current_len += exprs_len + if lexer.nth(index + current_len + exprs_len).is_seperator(SeperatorKind::Comma) { 2 } else { 1 };
                                 let pos_right_bracket = lexer.pos(index + current_len - 1);
@@ -253,12 +257,12 @@ impl ISyntaxItem for PostfixExpression {
                             exprs_len += 1;
                             match D3Expression::parse(lexer, messages, index + current_len + exprs_len) {
                                 (Some(expr), expr_len) => {
-                                    test_condition_perrorln!{ log_enable, "parsing postfix's expression list, get expression: {}", expr, }
+                                    trace_to_stderr!{ "parsing postfix's expression list, get expression: {}", expr, }
                                     exprs_len += expr_len;
                                     exprs.push(expr);
                                 }
                                 (None, length) => {
-                                    test_condition_perrorln!{ log_enable, "parsing postfix's expression list failed, get none expression" }
+                                    trace_to_stderr!{ "parsing postfix's expression list failed, get none expression" }
                                     return (None, current_len + exprs_len + length);
                                 }
                             }
@@ -268,8 +272,7 @@ impl ISyntaxItem for PostfixExpression {
             }
         }
 
-        test_condition_perrorln!{ log_enable, "parsing postfixs finished, get postfixes: {:?}", postfixs, }
-        let _dummy = log_enable;
+        trace_to_stderr!{ "parsing postfixs finished, get postfixes: {:?}", postfixs, }
         (Some(PostfixExpression{ prim: primary, postfixs: postfixs }), current_len)
     }
 }

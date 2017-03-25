@@ -92,31 +92,31 @@ impl ISyntaxItem for SMType {
         let log_enable = false;
 
         if lexer.nth(index).is_ident() {
-            test_condition_perrorln!{ log_enable, "is ident, return" }
+            perrorln!{ "is ident, return" }
             return (Some(SMType::Base(lexer.nth(index).get_identifier().unwrap(), lexer.pos(index))), 1);
         }
         if let Some(keyword) = lexer.nth(index).get_keyword() {
-            test_condition_perrorln!{ log_enable, "is some keyword" }
+            perrorln!{ "is some keyword" }
             if keyword.is_prim_type() {
-                test_condition_perrorln!{ log_enable, "is primitive type keyword, return" }
+                perrorln!{ "is primitive type keyword, return" }
                 return (Some(SMType::Base(format!("{}", keyword), lexer.pos(index))), 1);
             } 
         }
 
         let mut current_len = 0;
         if lexer.nth(index).is_seperator(SeperatorKind::LeftBracket) {
-            test_condition_perrorln!{ log_enable, "is left bracket, try get array inner type" }
+            perrorln!{ "is left bracket, try get array inner type" }
             current_len += 1;
             match SMType::parse(lexer, messages, index + current_len) {
                 (None, length) => { // TODO: recover by find paired right bracket
-                    test_condition_perrorln!{ log_enable, "parse array inner type failed, return none" }
+                    perrorln!{ "parse array inner type failed, return none" }
                     return (None, current_len + length);
                 }  
                 (Some(inner), inner_length) => {
-                    test_condition_perrorln!{ log_enable, "parse array inner type succeed" }
+                    perrorln!{ "parse array inner type succeed" }
                     current_len += inner_length;
                     if lexer.nth(index + current_len).is_seperator(SeperatorKind::RightBracket) {
-                        test_condition_perrorln!{ log_enable, "parse array inner type succeed, expect right bracket" }
+                        perrorln!{ "parse array inner type succeed, expect right bracket" }
                         current_len += 1;
                         return (
                             Some(SMType::Array(
@@ -126,7 +126,7 @@ impl ISyntaxItem for SMType {
                             inner_length + 2    
                         );
                     } else {
-                        test_condition_perrorln!{ log_enable, "parse array failed, not right bracket" }
+                        perrorln!{ "parse array failed, not right bracket" }
                         return push_unexpect!(lexer, messages, "right bracket", index + current_len, current_len);
                     }
                 } 
@@ -134,9 +134,9 @@ impl ISyntaxItem for SMType {
         }
 
         if lexer.nth(index).is_seperator(SeperatorKind::LeftParenthenes) {
-            test_condition_perrorln!{ log_enable, "meet left paren, start tuple" }
+            perrorln!{ "meet left paren, start tuple" }
             if lexer.nth(index + 1).is_seperator(SeperatorKind::RightParenthenes) {  // still, '(, )' is not allowed here
-                test_condition_perrorln!{ log_enable, "is left paren and right paren, it's unit" }
+                perrorln!{ "is left paren and right paren, it's unit" }
                 return (Some(SMType::Unit(
                     StringPosition::merge(lexer.pos(index), lexer.pos(index + 1)),
                 )), 2)
@@ -146,19 +146,19 @@ impl ISyntaxItem for SMType {
             let mut types = Vec::new();
             match SMType::parse(lexer, messages, index + current_len) {
                 (Some(ty), ty_len) => {
-                    test_condition_perrorln!{ log_enable, "parse first tuple element succeed" }
+                    perrorln!{ "parse first tuple element succeed" }
                     types.push(ty);
                     current_len += ty_len;
                 }
                 (None, length) => {
-                    test_condition_perrorln!{ log_enable, "parse first tuple element failed, return" }
+                    perrorln!{ "parse first tuple element failed, return" }
                     return (None, length);
                 }
             }
 
             loop {
                 if lexer.nth(index + current_len).is_seperator(SeperatorKind::RightParenthenes) {
-                    test_condition_perrorln!{ log_enable, "parse tuple elements finished" }
+                    perrorln!{ "parse tuple elements finished" }
                     current_len += 1;
                     break;
                 }
@@ -170,7 +170,7 @@ impl ISyntaxItem for SMType {
                     }
                     match SMType::parse(lexer, messages, index + current_len) {
                         (Some(ty), ty_len) => {
-                            test_condition_perrorln!{ log_enable, "parse tuple elements succeed" }
+                            perrorln!{ "parse tuple elements succeed" }
                             types.push(ty);
                             current_len += ty_len;
                         }
@@ -192,7 +192,7 @@ impl ISyntaxItem for SMType {
             }
         }
 
-        test_condition_perrorln!{ log_enable, "pass every check and return None at end" }
+        perrorln!{ "pass every check and return None at end" }
         let _log_enable = log_enable;
         return push_unexpect!(lexer, messages, ["primitive type keyword", "left bracket", "left parenthenes", "identifier", ], index, 0);
     }

@@ -42,13 +42,6 @@ pub use codegen::vm_code::Code;
 pub use codegen::session::Program;
 pub use codegen::session::ItemID;
 
-use syntax::Program as SyntaxProgram;
-
-pub fn generate(syntax_program: SyntaxProgram) -> Program {
-    use codegen::session::GenerationSession;
-    GenerationSession::dispatch(syntax_program)
-}
-
 // Designment2
 // Input vector of syntax functions
 // Prepare types collection with primitive types

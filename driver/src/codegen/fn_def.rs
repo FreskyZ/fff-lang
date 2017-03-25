@@ -9,10 +9,11 @@ use std::collections::HashMap;
 
 use codepos::StringPosition;
 use message::CodegenMessage;
-use message::MessageEmitter;
+use message::MessageCollection;
 
 use lexical::SeperatorKind;
 
+use syntax::ISyntaxItem;
 use syntax::FunctionDef as SyntaxFunctionDef; 
 use syntax::Argument as SyntaxArgument;
 use syntax::Block as SyntaxBlock;
@@ -37,7 +38,7 @@ impl fmt::Debug for FnArg {
 impl FnArg {
     
     // Always construct, ty maybe none for invalid type
-    fn new(syn_arg: SyntaxArgument, types: &mut TypeCollection, messages: &mut MessageEmitter, fns: &mut FnCollection) -> FnArg {
+    fn new(syn_arg: SyntaxArgument, types: &mut TypeCollection, messages: &mut MessageCollection, fns: &mut FnCollection) -> FnArg {
 
         let pos1 = syn_arg.ty.pos();
         let pos2 = syn_arg.pos_name;
@@ -131,7 +132,7 @@ impl FnImpl {
     // From Vec<Argument> to Vec<FnArg>
     // returned bool for all arg type valid and no redefinition
     fn new_args(syn_args: Vec<SyntaxArgument>, fn_pos: StringPosition, fn_name: &str, 
-        types: &mut TypeCollection, messages: &mut MessageEmitter, fns: &mut FnCollection) -> (Vec<FnArg>, bool) {
+        types: &mut TypeCollection, messages: &mut MessageCollection, fns: &mut FnCollection) -> (Vec<FnArg>, bool) {
 
         let mut args = Vec::<FnArg>::new();
         let mut valid = true;
@@ -159,7 +160,7 @@ impl FnImpl {
         (args, valid)
     }
     // As it consumes the SyntaxFnDef but not process the block, return it
-    fn new(syn_fn: SyntaxFunctionDef, types: &mut TypeCollection, messages: &mut MessageEmitter, fns: &mut FnCollection) -> (FnImpl, SyntaxBlock) {
+    fn new(syn_fn: SyntaxFunctionDef, types: &mut TypeCollection, messages: &mut MessageCollection, fns: &mut FnCollection) -> (FnImpl, SyntaxBlock) {
         
         let (args, mut valid) = FnImpl::new_args(syn_fn.args, syn_fn.pos2[0], &syn_fn.name, types, messages, fns);
         let pos_ret_type = syn_fn.ret_type.pos();
@@ -291,7 +292,7 @@ impl FnCollection {
     }
 
     // If same signature, still push the fndecl and return index, but push message and when require ID by signature, return invalid
-    pub fn push_decl(&mut self, syn_fn: SyntaxFunctionDef, types: &mut TypeCollection, msgs: &mut MessageEmitter, _vars: &mut VarCollection) -> (usize, SyntaxBlock) {
+    pub fn push_decl(&mut self, syn_fn: SyntaxFunctionDef, types: &mut TypeCollection, msgs: &mut MessageCollection, _vars: &mut VarCollection) -> (usize, SyntaxBlock) {
         // BIG BUG HERE
         // This method read in syntax function def and generate semantic function def
         // In the process, get new fn id according to current fns collection and set the id field in the newfn
@@ -312,7 +313,7 @@ impl FnCollection {
         return (ret_val, syn_block);
     }
     // check equal sign after push all decl, for occassions like, A A B A B, to report 2 messages for A and B, not 3 messages for 3 collisions
-    pub fn check_sign_eq(&mut self, types: &TypeCollection, msgs: &mut MessageEmitter) {
+    pub fn check_sign_eq(&mut self, types: &TypeCollection, msgs: &mut MessageCollection) {
 
         let mut sign_map_pos = HashMap::<String, Vec<usize>>::new();
         for fcn in &mut self.fns {
@@ -405,20 +406,20 @@ fn gen_fn_arg() {
 
     let mut sess = GenerationSession::new();
 
-    let arg = Argument::from_str("[i32] a", 0);
+    let arg = Argument::with_test_str("[i32] a");
     let arg = FnArg::new(arg, &mut sess.types, &mut sess.msgs, &mut sess.fns);
     assert_eq!(arg.name, "a");
     assert_eq!(arg.typeid, ItemID::new(14)); 
     assert_eq!(arg.pos, make_str_pos!(1, 1, 1, 7));
-    let expect_messages = &mut MessageEmitter::new();
+    let expect_messages = &mut MessageCollection::new();
     assert_eq!(&sess.msgs, expect_messages);
 
-    let arg = Argument::from_str("int argc", 0);
+    let arg = Argument::with_test_str("int argc");
     let arg = FnArg::new(arg, &mut sess.types, &mut sess.msgs, &mut sess.fns);
     assert_eq!(arg.name, "argc");
     assert_eq!(arg.typeid, ItemID::new_invalid());
     assert_eq!(arg.pos, make_str_pos!(1, 1, 1, 8));
-    let expect_messages = &mut MessageEmitter::new();
+    let expect_messages = &mut MessageCollection::new();
     expect_messages.push(CodegenMessage::TypeNotExist{ name: "int".to_owned(), pos: make_str_pos!(1, 1, 1, 3) });
     assert_eq!(&sess.msgs, expect_messages);
 }
@@ -475,8 +476,8 @@ fn gen_fn_args() {
 
     // Normal
     let syn_args = vec![ // 12345678901234567890123
-        Argument::from_str("fn main(i32 a", 3),
-        Argument::from_str("fn main(i32 a, string b", 6),
+        Argument::with_test_str_and_index("fn main(i32 a", 3),
+        Argument::with_test_str_and_index("fn main(i32 a, string b", 6),
     ];
     let fn_pos = make_str_pos!(1, 1, 1, 2);
     let fn_name = "main";
@@ -489,17 +490,17 @@ fn gen_fn_args() {
     assert_eq!(args[1].name, "b");
     assert_eq!(args[1].typeid, ItemID::new(13));
     assert_eq!(args[1].pos, make_str_pos!(1, 16, 1, 23));
-    let expect_message = MessageEmitter::new();
+    let expect_message = MessageCollection::new();
     assert_eq!(&sess.msgs, &expect_message);
 
     // 1 arg type invalid
     let syn_args = vec![ 
         //                  12345678901234567890123456789012345678 
-        Argument::from_str("fn main(i32 a, [intttt] b, [[u8]] cde)", 3),
+        Argument::with_test_str_and_index("fn main(i32 a, [intttt] b, [[u8]] cde)", 3),
         //                  0        1         2         3
-        Argument::from_str("fn main(i32 a, [intttt] b, [[u8]] cde)", 6),
+        Argument::with_test_str_and_index("fn main(i32 a, [intttt] b, [[u8]] cde)", 6),
         //                  0  1   23   45 67     8 90 123 45 6  7
-        Argument::from_str("fn main(i32 a, [intttt] b, [[u8]] cde)", 11),
+        Argument::with_test_str_and_index("fn main(i32 a, [intttt] b, [[u8]] cde)", 11),
     ];  
     let fn_pos = make_str_pos!(1, 1, 1, 2);
     let fn_name = "main";
@@ -515,20 +516,20 @@ fn gen_fn_args() {
     assert_eq!(args[2].name, "cde");
     assert_eq!(args[2].typeid, ItemID::new(15)); // [u8] is 14, [[u8]] is 15 
     assert_eq!(args[2].pos, make_str_pos!(1, 28, 1, 37));
-    let mut expect_message = MessageEmitter::new();
+    let mut expect_message = MessageCollection::new();
     expect_message.push(CodegenMessage::TypeNotExist{ name: "intttt".to_owned(), pos: make_str_pos!(1, 17, 1, 22) });
     assert_eq!(&sess.msgs, &expect_message);
 
     // 2 name collision
     let syn_args = vec![ 
         //                  12345678901234567890123456789012345678901234567
-        Argument::from_str("fn main(i32 a, u32 bc, i32 a, i32 bc, string d)", 3),
+        Argument::with_test_str_and_index("fn main(i32 a, u32 bc, i32 a, i32 bc, string d)", 3),
         //                  0        1         2         3         4
-        Argument::from_str("fn main(i32 a, u32 bc, i32 a, i32 bc, string d)", 6),
+        Argument::with_test_str_and_index("fn main(i32 a, u32 bc, i32 a, i32 bc, string d)", 6),
         //                  0  1   23   45 6   7 8 9   01 2   3 4 5      67
-        Argument::from_str("fn main(i32 a, u32 bc, i32 a, i32 bc, string d)", 9),
-        Argument::from_str("fn main(i32 a, u32 bc, i32 a, i32 bc, string d)", 12),
-        Argument::from_str("fn main(i32 a, u32 bc, i32 a, i32 bc, string d)", 15),
+        Argument::with_test_str_and_index("fn main(i32 a, u32 bc, i32 a, i32 bc, string d)", 9),
+        Argument::with_test_str_and_index("fn main(i32 a, u32 bc, i32 a, i32 bc, string d)", 12),
+        Argument::with_test_str_and_index("fn main(i32 a, u32 bc, i32 a, i32 bc, string d)", 15),
     ];
     let fn_pos = make_str_pos!(1, 1, 1, 2);
     let fn_name = "main";
@@ -544,7 +545,7 @@ fn gen_fn_args() {
     assert_eq!(args[2].name, "d");
     assert_eq!(args[2].typeid, ItemID::new(13));
     assert_eq!(args[2].pos, make_str_pos!(1, 39, 1, 46));
-    let mut expect_message = MessageEmitter::new();
+    let mut expect_message = MessageCollection::new();
     expect_message.push(CodegenMessage::FunctionArgumentNameConfilict{ 
         func_pos: make_str_pos!(1, 1, 1, 2), func_name: "main".to_owned(),
         name: "a".to_owned(), pos1: make_str_pos!(1, 9, 1, 13), pos2: make_str_pos!(1, 24, 1, 28),
@@ -563,7 +564,7 @@ fn gen_fn_args() {
     let (args, valid) = FnImpl::new_args(syn_args, fn_pos, fn_name, &mut sess.types, &mut sess.msgs, &mut sess.fns);
     assert_eq!(valid, true);
     assert_eq!(args.len(), 0);
-    let expect_message = MessageEmitter::new();
+    let expect_message = MessageCollection::new();
     assert_eq!(&sess.msgs, &expect_message);
 }
 
@@ -577,7 +578,7 @@ fn gen_fn_decl() {
     let program = "fn main() -> () { writeln(\"helloworld\"); }";
     //             1  2   34 5  67 8 9      A B            CD E
     let sess = &mut GenerationSession::new();
-    let syn_fn = SyntaxFunctionDef::from_str(program, 0);
+    let syn_fn = SyntaxFunctionDef::with_test_str(program);
     let (id, block) = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
     {
         let fndecl = sess.fns.get_by_idx(id);
@@ -591,27 +592,27 @@ fn gen_fn_decl() {
     }
 
     let program = "fn some(i32 a, u32 b, [string] c) -> [u8] {}";
-    let syn_fn = SyntaxFunctionDef::from_str(program, 0);
+    let syn_fn = SyntaxFunctionDef::with_test_str(program);
     let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
     let program = " fn some(i32 a, u32 b, [string] c) -> [u8] {}";
-    let syn_fn = SyntaxFunctionDef::from_str(program, 0);
+    let syn_fn = SyntaxFunctionDef::with_test_str(program);
     let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
     let program = "  fn some(i32 a, u32 b, string c) -> u8 {}";
-    let syn_fn = SyntaxFunctionDef::from_str(program, 0);
+    let syn_fn = SyntaxFunctionDef::with_test_str(program);
     let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
     let program = "   fn some(i32 a, u32 b, [string] c) -> [u8] {}";
-    let syn_fn = SyntaxFunctionDef::from_str(program, 0);
+    let syn_fn = SyntaxFunctionDef::with_test_str(program);
     let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
     let program = "    fn some(i32 a, u32 b) -> [u8] {}";
-    let syn_fn = SyntaxFunctionDef::from_str(program, 0);
+    let syn_fn = SyntaxFunctionDef::with_test_str(program);
     let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
 
     let program = "     fn some(i32 a, u32 b, string c) -> [u8] {}";
-    let syn_fn = SyntaxFunctionDef::from_str(program, 0);
+    let syn_fn = SyntaxFunctionDef::with_test_str(program);
     let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
 
     sess.fns.check_sign_eq(&mut sess.types, &mut sess.msgs);
-    let expect_messsage1 = &mut MessageEmitter::new();
+    let expect_messsage1 = &mut MessageCollection::new();
     expect_messsage1.push(CodegenMessage::FunctionRedefinition{
         sign: "some(i32, u32, [string])".to_owned(),
         fnposs: vec![make_str_pos!(1, 1, 1, 2), make_str_pos!(1, 2, 1, 3), make_str_pos!(1, 4, 1, 5)]
@@ -620,7 +621,7 @@ fn gen_fn_decl() {
         sign: "some(i32, u32, string)".to_owned(),
         fnposs: vec![make_str_pos!(1, 3, 1, 4), make_str_pos!(1, 6, 1, 7)]
     });
-    let expect_messsage2 = &mut MessageEmitter::new();
+    let expect_messsage2 = &mut MessageCollection::new();
     expect_messsage2.push(CodegenMessage::FunctionRedefinition{
         sign: "some(i32, u32, string)".to_owned(),
         fnposs: vec![make_str_pos!(1, 3, 1, 4), make_str_pos!(1, 6, 1, 7)]
@@ -639,7 +640,7 @@ fn gen_fn_decl2() {
     {
     let program = "fn main(i32 a) -> () { ++a; }";
     let sess = &mut GenerationSession::new();
-    let syn_fn = SyntaxFunctionDef::from_str(program, 0);
+    let syn_fn = SyntaxFunctionDef::with_test_str(program);
     let (fnid, _syn_block) = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
     let thefn = sess.fns.get_by_idx(fnid);
     assert_eq!(thefn.args[0].name, "a");
@@ -648,7 +649,7 @@ fn gen_fn_decl2() {
     {
     let program = "fn main(i32 a) -> [u32] { ++a; }";
     let sess = &mut GenerationSession::new();
-    let syn_fn = SyntaxFunctionDef::from_str(program, 0);
+    let syn_fn = SyntaxFunctionDef::with_test_str(program);
     let (fnid, _syn_block) = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
     let thefn = sess.fns.get_by_idx(fnid);
     assert_eq!(thefn.name, FnName::Ident("main".to_owned()));

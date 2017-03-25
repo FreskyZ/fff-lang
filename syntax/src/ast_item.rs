@@ -17,6 +17,14 @@ pub trait ISyntaxItem {
     /// Check lexer[index] is acceptable final
     fn is_first_final(lexer: &mut Lexer, index: usize) -> bool;
 
+    fn with_test_str_and_index(program: &str, index: usize) -> Self where Self: Sized {
+        use lexical::parse_test_str;
+        let lexer = &mut parse_test_str(program);
+        let messages = &mut MessageCollection::new();
+        let ret_val = Self::parse(lexer, messages, index).0.unwrap();
+        check_messages_continuable!(messages);
+        return ret_val;
+    }
     fn with_test_str(program: &str) -> Self where Self: Sized {
         use lexical::parse_test_str;
         let lexer = &mut parse_test_str(program);

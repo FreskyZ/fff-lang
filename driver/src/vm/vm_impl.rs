@@ -5,7 +5,7 @@
 //                      RBP points to Local[0]
 
 use message::RuntimeMessage;
-use message::MessageEmitter;
+use message::MessageCollection;
 
 use lexical::LitValue;
 
@@ -121,11 +121,14 @@ impl VirtualMachine {
         }
     }
 
-    pub fn execute(&mut self) -> Option<RuntimeMessage> {
+    pub fn execute(&mut self, messages: &mut MessageCollection) {
 
         let main_fn_index = match self.find_main() {
             Some(index) => index,
-            None => return Some(RuntimeMessage::CannotFindMain),
+            None => {
+                messages.push(RuntimeMessage::CannotFindMain);
+                return;
+            }
         };
 
         let mut rt = Runtime::new();
@@ -140,8 +143,11 @@ impl VirtualMachine {
         loop {
             match self.circle(&mut rt) {
                 CircleResult::Continue => continue,
-                CircleResult::Err(msg) => return Some(msg),
-                CircleResult::Exit => return None,
+                CircleResult::Exit => return,
+                CircleResult::Err(msg) => {
+                    messages.push(msg);
+                    return;
+                }
             }
         }
     }
@@ -152,10 +158,12 @@ fn vm_nomain() {
 
     let fns = FnCollection::new();
     let types = TypeCollection::new();
-    let mut vm = VirtualMachine::new(Program{ fns: fns, types: types, msgs: MessageEmitter::new(), codes: Vec::new() });
+    let messages = &mut MessageCollection::new();
+    let mut vm = VirtualMachine::new(Program{ fns: fns, types: types, msgs: MessageCollection::new(), codes: Vec::new() });
 
-    match vm.execute() {
-        Some(exception) => assert_eq!(exception, RuntimeMessage::CannotFindMain),
-        None => panic!("Unexpectedly succeed"),
+    vm.execute(messages);
+    match messages.is_empty() {
+        false => (),
+        true => panic!("Unexpectedly succeed"),
     }
 }
