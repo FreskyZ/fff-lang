@@ -5,7 +5,6 @@
 use std::fmt;
 
 use codepos::StringPosition;
-use util::format_vector_display;
 use util::format_vector_debug;
 use message::MessageCollection;
 
@@ -47,18 +46,6 @@ impl fmt::Debug for ExpressionBase {
             ExpressionBase::TupleDef(ref exprs, ref pos) => write!(f, "({}) @ {:?}", format_vector_debug(exprs, ", "), pos),
             ExpressionBase::ArrayDef(ref exprs, ref pos) => write!(f, "[{}] @ {:?}", format_vector_debug(exprs, ", "), pos),
             ExpressionBase::ArrayDupDef(ref expr1, ref expr2, ref pos) => write!(f, "[{:?}; @ {:?} {:?}] @ {:?}", expr1, pos[1], expr2, pos[0]),
-        }
-    }
-}
-impl fmt::Display for ExpressionBase {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            ExpressionBase::Ident(ref name, ref _pos) => write!(f, "{}", name),
-            ExpressionBase::Lit(ref val, ref _pos) => write!(f, "{}", val),
-            ExpressionBase::Paren(ref expr, ref _pos) => write!(f, "({})", expr),
-            ExpressionBase::TupleDef(ref exprs, ref _pos) => write!(f, "({})", format_vector_display(exprs, ", ")),
-            ExpressionBase::ArrayDef(ref exprs, ref _pos) =>  write!(f, "[{}]", format_vector_display(exprs, ", ")),
-            ExpressionBase::ArrayDupDef(ref expr1, ref expr2, ref _pos) => write!(f, "[{}; {}]", expr1, expr2),
         }
     }
 }
@@ -135,42 +122,7 @@ impl fmt::Debug for ExpressionOperator {
         })
     }
 }
-impl fmt::Display for ExpressionOperator {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", match *self {
-            ExpressionOperator::GetIndex(ref exprs, ref _pos) => format!(".operator[]({})", format_vector_display(exprs, ", ")),
-            ExpressionOperator::FunctionCall(ref exprs, ref _pos) => format!(".operator()({})", format_vector_display(exprs, ", ")),
-            ExpressionOperator::MemberAccess(ref name, ref _pos) => format!(".{}", name),
-            ExpressionOperator::TypeCast(ref ty, ref _pos) => format!(".operator {}()", ty),
-            ExpressionOperator::MemberFunctionCall(ref name, ref exprs, ref _pos) => format!(".{}({})", name, format_vector_display(exprs, ", ")),
-            ExpressionOperator::Unary(SeperatorKind::BitNot, ref _pos) => format!(".operator~()"),
-            ExpressionOperator::Unary(SeperatorKind::LogicalNot, ref _pos) => format!(".operator!()"),
-            ExpressionOperator::Unary(SeperatorKind::Increase, ref _pos) => format!(".operator++()"),
-            ExpressionOperator::Unary(SeperatorKind::Decrease, ref _pos) => format!(".operator--()"),
-            ExpressionOperator::Unary(SeperatorKind::Sub, ref _pos) => format!(".operator-()"),
-            ExpressionOperator::Binary(SeperatorKind::Mul, ref _pos, ref operand) => format!(".operator*({})", operand),
-            ExpressionOperator::Binary(SeperatorKind::Div, ref _pos, ref operand) => format!(".operator/({})", operand),
-            ExpressionOperator::Binary(SeperatorKind::Rem, ref _pos, ref operand) => format!(".operator%({})", operand),
-            ExpressionOperator::Binary(SeperatorKind::Add, ref _pos, ref operand) => format!(".operator+({})", operand),
-            ExpressionOperator::Binary(SeperatorKind::Sub, ref _pos, ref operand) => format!(".operator-({})", operand),
-            ExpressionOperator::Binary(SeperatorKind::ShiftLeft, ref _pos, ref operand) => format!(".operator<<({})", operand),
-            ExpressionOperator::Binary(SeperatorKind::ShiftRight, ref _pos, ref operand) => format!(".operator>>({})", operand),
-            ExpressionOperator::Binary(SeperatorKind::Equal, ref _pos, ref operand) => format!(".operator==({})", operand),
-            ExpressionOperator::Binary(SeperatorKind::NotEqual, ref _pos, ref operand) => format!(".operator!=({})", operand),
-            ExpressionOperator::Binary(SeperatorKind::Great, ref _pos, ref operand) => format!(".operator>({})", operand),
-            ExpressionOperator::Binary(SeperatorKind::Less, ref _pos, ref operand) => format!(".operator<({})", operand),
-            ExpressionOperator::Binary(SeperatorKind::GreatEqual, ref _pos, ref operand) => format!(".operator>=({})", operand),
-            ExpressionOperator::Binary(SeperatorKind::LessEqual, ref _pos, ref operand) => format!(".operator<=({})", operand),
-            ExpressionOperator::Binary(SeperatorKind::BitAnd, ref _pos, ref operand) => format!(".operator&({})", operand),
-            ExpressionOperator::Binary(SeperatorKind::BitOr, ref _pos, ref operand) => format!(".operator|({})", operand),
-            ExpressionOperator::Binary(SeperatorKind::BitXor, ref _pos, ref operand) => format!(".operator^({})", operand),
-            ExpressionOperator::Binary(SeperatorKind::LogicalAnd, ref _pos, ref operand) => format!(".operator&&({})", operand),
-            ExpressionOperator::Binary(SeperatorKind::LogicalOr, ref _pos, ref operand) => format!(".operator||({})", operand),
-            ExpressionOperator::Unary(_, _) => unreachable!(),
-            ExpressionOperator::Binary(_, _, _) => unreachable!(),
-        })
-    }
-}
+
 #[derive(Eq, PartialEq, Clone)]
 pub struct Expression {
     pub base: Box<ExpressionBase>,
@@ -180,11 +132,6 @@ pub struct Expression {
 impl fmt::Debug for Expression {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}{} @ {:?}", self.base, format_vector_debug(&self.ops, ""), self.all_pos)
-    }
-}
-impl fmt::Display for Expression {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}{}", self.base, format_vector_display(&self.ops, ""))
     }
 }
 
@@ -199,7 +146,7 @@ impl Expression {
 fn d3_expr_to_expr(d3: D3Expression) -> Expression {
 
     let D3Expression(BinaryExpression{ 
-        ops: bin_ops,
+        operators: bin_ops,
         unary: UnaryExpression{
             unaries: unary_ops,
             post: PostfixExpression{
@@ -266,8 +213,8 @@ fn d3_expr_to_expr(d3: D3Expression) -> Expression {
     }
 
     for binary in bin_ops {
-        pos_all_end = binary.oprand.pos_all().end_pos();
-        ops.push(ExpressionOperator::Binary(binary.operator, binary.pos, d3_expr_to_expr(binary.oprand)));
+        pos_all_end = binary.operand.pos_all().end_pos();
+        ops.push(ExpressionOperator::Binary(binary.operator, binary.operator_strpos, d3_expr_to_expr(binary.operand)));
     }
 
     Expression::new(expr_base, ops, StringPosition::from2(pos_all_start, pos_all_end))

@@ -11,23 +11,22 @@ use message::MessageCollection;
 
 use lexical::Lexer;
 use super::super::ast_item::ISyntaxItem;
+use super::super::ISyntaxItemFormat;
 
 use super::binary::BinaryExpression;
 
 #[derive(Eq, PartialEq, Clone)]
 pub struct D3Expression(pub BinaryExpression);
-
+impl ISyntaxItemFormat for D3Expression {
+    fn format(&self, indent: u32) -> String {
+        format!("{}", self.0.format(indent))
+    }
+}
 impl fmt::Debug for D3Expression {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self.0)
+        write!(f, "\n{}", self.format(0))
     }
 }
-impl fmt::Display for D3Expression {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
 impl ISyntaxItem for D3Expression {
     
     fn pos_all(&self) -> StringPosition { self.0.pos_all() }
@@ -67,7 +66,7 @@ mod tests {
     // Helper macros
     // primary expression
     macro_rules! expr_to_primary {
-        ($inner: expr) => (D3Expression(BinaryExpression{ unary: UnaryExpression{ post: PostfixExpression{ prim: $inner, postfixs: Vec::new() }, unaries: Vec::new() }, ops: Vec::new() }));
+        ($inner: expr) => (D3Expression(BinaryExpression{ unary: UnaryExpression{ post: PostfixExpression{ prim: $inner, postfixs: Vec::new() }, unaries: Vec::new() }, operators: Vec::new() }));
     }
     macro_rules! expr_ident { 
         ($name: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::Ident($name.to_owned(), $pos)))
@@ -101,15 +100,15 @@ mod tests {
     macro_rules! expr_to_postfix {
         ($prim: expr, $($posts: expr)*) => (
             D3Expression(BinaryExpression{ unary: UnaryExpression{ 
-                post: PostfixExpression{ prim: $prim, postfixs: vec![$($posts, )*]}, unaries: Vec::new() }, ops: Vec::new() })
+                post: PostfixExpression{ prim: $prim, postfixs: vec![$($posts, )*]}, unaries: Vec::new() }, operators: Vec::new() })
         )
     }
 
     // unary expression
     macro_rules! expr_to_unary {
-        ($post: expr) => (D3Expression(BinaryExpression{ unary: UnaryExpression{ post: $post, unary: Vec::new() }, ops: Vec::new() }));
+        ($post: expr) => (D3Expression(BinaryExpression{ unary: UnaryExpression{ post: $post, unary: Vec::new() }, operators: Vec::new() }));
         ($post: expr, $($unaries: expr)*) => 
-            (D3Expression(BinaryExpression{ unary: UnaryExpression{ post: $post, unaries: vec![$($unaries, )*] }, ops: Vec::new() }));
+            (D3Expression(BinaryExpression{ unary: UnaryExpression{ post: $post, unaries: vec![$($unaries, )*] }, operators: Vec::new() }));
     }
 
     #[test]
@@ -288,7 +287,7 @@ mod tests {
     #[test]
     fn ast_expr_post_helloworld_expr() {
 
-        perrorln!("{}", D3Expression::with_test_str("writeln(\"helloworld\")"));
+        perrorln!("{:?}", D3Expression::with_test_str("writeln(\"helloworld\")"));
     }
 
     #[test]

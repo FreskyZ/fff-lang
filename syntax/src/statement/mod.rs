@@ -65,22 +65,6 @@ impl fmt::Debug for Statement {
         }
     }
 }
-impl fmt::Display for Statement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            Statement::VarDecl(ref inner) => write!(f, "{}", inner),
-            Statement::Break(ref inner) => write!(f, "{}", inner),
-            Statement::Continue(ref inner) => write!(f, "{}", inner),
-            Statement::Return(ref inner) => write!(f, "{}", inner),
-            Statement::Expression(ref inner) => write!(f, "{}", inner),
-            Statement::If(ref inner) => write!(f, "{}", inner),
-            Statement::While(ref inner) => write!(f, "{}", inner),
-            Statement::For(ref inner) => write!(f, "{}", inner),
-            Statement::Loop(ref inner) => write!(f, "{}", inner),
-            Statement::Block(ref block) => write!(f, "{}", block),
-        }
-    }
-}
 impl ISyntaxItem for Statement {
 
     fn pos_all(&self) -> StringPosition {

@@ -4,7 +4,6 @@
 use std::fmt;
 
 use codepos::StringPosition;
-use util::format_vector_display;
 use util::format_vector_debug;
 use message::Message;
 use message::MessageCollection;
@@ -23,11 +22,6 @@ pub struct Block {
 impl fmt::Debug for Block {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{{\n{}\n}} @ {:?}", format_vector_debug(&self.stmts, "\n"), self.pos)
-    }
-}
-impl fmt::Display for Block {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{{\n{}\n}}", format_vector_display(&self.stmts, "\n"))
     }
 }
 impl Block {
@@ -81,6 +75,6 @@ mod tests {
             (Some(Block{ stmts: Vec::new(), pos: make_str_pos!(1, 1, 1, 2) }), 2)
         );
 
-        perrorln!("{}", Block::with_test_str("{ 1; 1 + 1; while true { writeln(\"fresky loves zmj\"); } loop { writeln(\"zmj loves fresky\"); } }")); 
+        perrorln!("{:?}", Block::with_test_str("{ 1; 1 + 1; while true { writeln(\"fresky loves zmj\"); } loop { writeln(\"zmj loves fresky\"); } }")); 
     }
 }

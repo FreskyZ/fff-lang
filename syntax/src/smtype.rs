@@ -17,7 +17,6 @@ use std::fmt;
 
 use codepos::StringPosition;
 use util::format_vector_debug;
-use util::format_vector_display;
 use message::SyntaxMessage;
 use message::Message;
 use message::MessageCollection;
@@ -25,7 +24,8 @@ use message::MessageCollection;
 use lexical::Lexer;
 use lexical::SeperatorKind;
 
-use super::ast_item::ISyntaxItem;
+use super::ISyntaxItem;
+use super::ISyntaxItemFormat;
 
 #[derive(Eq, PartialEq, Clone)]
 pub enum SMType {
@@ -34,7 +34,23 @@ pub enum SMType {
     Tuple(Vec<SMType>, StringPosition),     // position for ()
     Array(Box<SMType>, StringPosition),     // position for []
 }
-
+impl ISyntaxItemFormat for SMType {
+    fn format(&self, indent: u32) -> String {
+        match self {
+            &SMType::Unit(ref strpos) => format!("{}UnitTypeUse <{:?}>", SMType::indent_str(indent), strpos),
+            &SMType::Base(ref name, ref strpos) => format!("{}SimpleTypeUse {} <{:?}>", SMType::indent_str(indent), name, strpos),
+            &SMType::Tuple(ref types, ref strpos) => 
+                format!("{}TupleTypeUse\n{}Paren at <{:?}>{}",
+                    SMType::indent_str(indent), SMType::indent_str(indent + 1),
+                    strpos, types.iter().fold(String::new(), |mut buf, fftype| { buf.push_str("\n"); buf.push_str(&fftype.format(indent + 1)); buf })
+                ),
+            &SMType::Array(ref inner, ref strpos) => 
+                format!("{}ArrayTypeUse\n{}Bracket at <{:?}>\n{}", 
+                    SMType::indent_str(indent), SMType::indent_str(indent + 1), strpos, inner.format(indent + 1)
+                ),
+        }
+    }
+}
 impl fmt::Debug for SMType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
@@ -42,16 +58,6 @@ impl fmt::Debug for SMType {
             SMType::Base(ref name, ref pos) => write!(f, "{} @ {:?}", name, pos),
             SMType::Tuple(ref types, ref pos) => write!(f, "({}) @ {:?}", format_vector_debug(types, ", "), pos),
             SMType::Array(ref inner, ref pos) => write!(f, "[{:?}] @ {:?}", inner.as_ref(), pos),
-        }
-    }
-}
-impl fmt::Display for SMType {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            SMType::Unit(_) => write!(f, "()"),
-            SMType::Base(ref name, ref _pos) => write!(f, "{}", name),
-            SMType::Tuple(ref types, ref _pos) => write!(f, "({})", format_vector_display(types, ", ")),
-            SMType::Array(ref inner, ref _pos) => write!(f, "[{:?}]", inner.as_ref()),
         }
     }
 }

@@ -31,13 +31,6 @@ impl fmt::Debug for ForStatement {
         )
     }
 }
-impl fmt::Display for ForStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "for {} in {}..{} {}", 
-            self.iter_name, self.expr_low, self.expr_high, self.body    
-        )
-    }
-}
 
 impl ISyntaxItem for ForStatement {
 
@@ -108,6 +101,6 @@ mod tests {
     #[test]
     fn ast_stmt_for() {
 
-        perrorln!("{}", ForStatement::with_test_str("for i in 1 + 1[2] .. infinite(true) { fresky.loves(zmj); }"));
+        perrorln!("{:?}", ForStatement::with_test_str("for i in 1 + 1[2] .. infinite(true) { fresky.loves(zmj); }"));
     }
 }

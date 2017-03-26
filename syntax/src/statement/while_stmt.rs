@@ -25,11 +25,6 @@ impl fmt::Debug for WhileStatement {
         write!(f, "while @ {:?} {:?} {:?}", self.pos, self.expr, self.body)
     }
 }
-impl fmt::Display for WhileStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "while {} {}", self.expr, self.body)
-    }
-}
 
 impl ISyntaxItem for WhileStatement {
 
@@ -71,6 +66,5 @@ mod tests {
 
         let result = WhileStatement::with_test_str("while true { writeln(\"fresky loves zmj\"); }");
         perrorln!("Debug: {:?}", result);
-        perrorln!("Display: {}", result);
     }
 }

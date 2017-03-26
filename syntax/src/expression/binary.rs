@@ -19,66 +19,45 @@ use lexical::Lexer;
 use lexical::SeperatorKind;
 use lexical::SeperatorCategory;
 
-use super::super::ast_item::ISyntaxItem;
+use super::super::ISyntaxItem;
+use super::super::ISyntaxItemFormat;
 use super::super::expression::d3::D3Expression;
 use super::super::expression::unary::UnaryExpression;
 
 #[derive(Eq, PartialEq, Clone)]
 pub struct BinaryOperator {
     pub operator: SeperatorKind,
-    pub pos: StringPosition,
-    pub oprand: D3Expression,
-}
-
-fn operator_to_string(op: &SeperatorKind) -> String {
-    match *op {
-        SeperatorKind::Mul => format!(".operator*"),
-        SeperatorKind::Div => format!(".operator/"),
-        SeperatorKind::Rem => format!(".operator%"),
-        SeperatorKind::Add => format!(".operator+"),
-        SeperatorKind::Sub => format!(".operator-"),
-        SeperatorKind::ShiftLeft => format!(".operator<<"),
-        SeperatorKind::ShiftRight => format!(".operator>>"),
-        SeperatorKind::Equal => format!(".operator=="),
-        SeperatorKind::NotEqual => format!(".operator!="),
-        SeperatorKind::Great => format!(".operator>"),
-        SeperatorKind::Less => format!(".operator<"),
-        SeperatorKind::GreatEqual => format!(".operator>="),
-        SeperatorKind::LessEqual => format!(".operator<="),
-        SeperatorKind::BitAnd => format!(".operator&"),
-        SeperatorKind::BitOr => format!(".operator|"),
-        SeperatorKind::BitXor => format!(".operator^"),
-        SeperatorKind::LogicalAnd => format!(".operator&&"),
-        SeperatorKind::LogicalOr => format!(".operator||"),
-        _ => unreachable!(),
-    }
-}
-
-impl fmt::Debug for BinaryOperator {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} @ {:?}({:?})", operator_to_string(&self.operator), self.pos, self.oprand)
-    }
-}
-impl fmt::Display for BinaryOperator {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}({})", operator_to_string(&self.operator), self.oprand)
-    }
+    pub operator_strpos: StringPosition,
+    pub operand: D3Expression,
 }
 
 #[derive(Eq, PartialEq, Clone)]
 pub struct BinaryExpression {
     pub unary: UnaryExpression,
-    pub ops: Vec<BinaryOperator>,
+    pub operators: Vec<BinaryOperator>,
 }
+impl ISyntaxItemFormat for BinaryExpression {
 
-impl fmt::Debug for BinaryExpression {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}{}", self.unary, self.ops.iter().fold(String::new(), |mut buf, op| { buf.push_str(&format!("{:?}", op)); buf }))
+    fn format(&self, indent: u32) -> String {
+        if self.operators.len() == 0 {
+            format!("{}", self.unary.format(indent))
+        } else {
+            format!("{}BinaryExpr:\n{}{}", 
+                BinaryExpression::indent_str(indent), 
+                self.unary.format(indent + 1),
+                self.operators.iter().fold("\n".to_owned(),
+                    |mut buf, &BinaryOperator{ ref operator, ref operator_strpos, ref operand }| { 
+                        buf.push_str(&format!("{:?}<{:?}> {}", operator, operator_strpos, operand.format(indent + 1))); 
+                        buf 
+                    }
+                ),
+            )
+        }
     }
 }
-impl fmt::Display for BinaryExpression {
+impl fmt::Debug for BinaryExpression {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}{}", self.unary, self.ops.iter().fold(String::new(), |mut buf, op| { buf.push_str(&format!("{}", op)); buf }))
+        write!(f, "\n{}", self.format(0))
     }
 }
 
@@ -96,13 +75,13 @@ fn parse_multiplicative(lexer: &mut Lexer, messages: &mut MessageCollection, ind
                 current_len += 1;
                 match UnaryExpression::parse(lexer, messages, index + current_len) {
                     (None, length) => return (None, current_len + length),
-                    (Some(oprand), oprand_len) => {
+                    (Some(operand), operand_len) => {
                         ops.push(BinaryOperator{ 
                             operator: sep.clone(), 
-                            pos: lexer.pos(index + current_len - 1), 
-                            oprand: D3Expression(BinaryExpression{ unary: oprand, ops: Vec::new() }) 
+                            operator_strpos: lexer.pos(index + current_len - 1), 
+                            operand: D3Expression(BinaryExpression{ unary: operand, operators: Vec::new() }) 
                         });
-                        current_len += oprand_len;
+                        current_len += operand_len;
                     }
                 }
             }
@@ -110,7 +89,7 @@ fn parse_multiplicative(lexer: &mut Lexer, messages: &mut MessageCollection, ind
         }
     }
 
-    (Some(BinaryExpression{ unary: unary, ops: ops }), current_len)
+    (Some(BinaryExpression{ unary: unary, operators: ops }), current_len)
 }
 
 macro_rules! impl_binary_parser {
@@ -129,9 +108,9 @@ macro_rules! impl_binary_parser {
                         current_len += 1;
                         match $previous_parser(lexer, messages, index + current_len) {
                             (None, length) => return (None, current_len + length),
-                            (Some(oprand), oprand_len) => {
-                                left.ops.push(BinaryOperator{ operator: sep.clone(), pos: lexer.pos(index + current_len - 1), oprand: D3Expression(oprand) });
-                                current_len += oprand_len;
+                            (Some(operand), operand_len) => {
+                                left.operators.push(BinaryOperator{ operator: sep.clone(), operator_strpos: lexer.pos(index + current_len - 1), operand: D3Expression(operand) });
+                                current_len += operand_len;
                             }
                         }
                     }
@@ -154,15 +133,11 @@ impl_binary_parser! { parse_equality, parse_bitxor, SeperatorCategory::Equality 
 impl_binary_parser! { parse_logical_and, parse_equality, SeperatorCategory::LogicalAnd }
 impl_binary_parser! { parse_logical_or, parse_logical_and, SeperatorCategory::LogicalOr }
 
-impl BinaryExpression {
-   
-}
-
 impl ISyntaxItem for BinaryExpression {
 
     fn pos_all(&self) -> StringPosition {
-        match self.ops.iter().last() {
-            Some(op) => StringPosition::merge(self.unary.pos_all(), op.oprand.pos_all()),
+        match self.operators.iter().last() {
+            Some(operator) => StringPosition::merge(self.unary.pos_all(), operator.operand.pos_all()),
             None => self.unary.pos_all()
         }
     }

@@ -11,8 +11,6 @@
 use std::fmt;
 
 use codepos::StringPosition;
-use util::format_vector_display;
-use util::format_vector_debug;
 use message::SyntaxMessage;
 use message::Message;
 use message::MessageCollection;
@@ -21,38 +19,19 @@ use lexical::Lexer;
 use lexical::SeperatorKind;
 use lexical::KeywordKind;
 
-use super::super::ast_item::ISyntaxItem;
+use super::super::ISyntaxItem;
+use super::super::ISyntaxItemFormat;
 use super::super::expression::d3::D3Expression;
 use super::super::SMType;
 
 use super::primary::PrimaryExpression;
 
-#[derive(Eq, PartialEq, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum Postfix {
     Subscription(Vec<D3Expression>, StringPosition),  // '[', ']' position
     FunctionCall(Vec<D3Expression>, StringPosition),  // '(', ')' position
     MemberAccess(String, StringPosition),             // '.xxx' position
     TypeCast(SMType, StringPosition),                 // 'as' position
-}
-impl fmt::Debug for Postfix {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            Postfix::Subscription(ref exprs, ref pos) => write!(f, ".operator[] @ {:?} ({})", pos, format_vector_debug(exprs, ", ")),
-            Postfix::FunctionCall(ref exprs, ref pos) => write!(f, ".operator() @ {:?} ({})", pos, format_vector_debug(exprs, ", ")),
-            Postfix::MemberAccess(ref name, ref pos) => write!(f, ".{} @ {:?}", name, pos),
-            Postfix::TypeCast(ref ty, ref pos) => write!(f, ".operator {:?}() @ {:?}", ty, pos),
-        }
-    }
-}
-impl fmt::Display for Postfix {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            Postfix::Subscription(ref exprs, ref _pos) => write!(f, ".operator[]({})", format_vector_display(exprs, ", ")),
-            Postfix::FunctionCall(ref exprs, ref _pos) => write!(f, ".operator()({})", format_vector_display(exprs, ", ")),
-            Postfix::MemberAccess(ref name, ref _pos) => write!(f, ".{}", name),
-            Postfix::TypeCast(ref ty, ref _pos) => write!(f, ".operator {}()", ty),
-        }
-    }
 }
 impl Postfix {
     pub fn pos(&self) -> StringPosition {
@@ -70,15 +49,36 @@ pub struct PostfixExpression {
     pub prim: PrimaryExpression,
     pub postfixs: Vec<Postfix>,
 }
-
-impl fmt::Debug for PostfixExpression {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Post{{ {:?}{} }}", self.prim, format_vector_debug(&self.postfixs, ""))
+impl ISyntaxItemFormat for PostfixExpression {
+    fn format(&self, indent: u32) -> String {
+        if self.postfixs.len() == 0 {
+            format!("{}", self.prim.format(indent))
+        } else {
+            format!("{}PostfixExpr:\n{}{}", 
+                PostfixExpression::indent_str(indent),
+                self.prim.format(indent + 1),
+                self.postfixs.iter().fold(String::new(), |mut buf, postfix| { buf.push_str("\n"); buf.push_str(&match postfix {
+                    &Postfix::Subscription(ref exprs, ref strpos) => 
+                        format!("{}Subscription\n{}Bracket at <{:?}>{}", 
+                            PostfixExpression::indent_str(indent + 1), PostfixExpression::indent_str(indent + 2),
+                            strpos, exprs.iter().fold(String::new(), |mut buf, expr| { buf.push_str("\n"); buf.push_str(&expr.format(indent + 2)); buf })),
+                    &Postfix::FunctionCall(ref exprs, ref strpos) => 
+                        format!("{}FunctionCall\n{}Paren at <{:?}>{}", 
+                            PostfixExpression::indent_str(indent + 1), PostfixExpression::indent_str(indent + 2),
+                            strpos, exprs.iter().fold(String::new(), |mut buf, expr| { buf.push_str("\n"); buf.push_str(&expr.format(indent + 2)); buf })),
+                    &Postfix::MemberAccess(ref name, ref strpos) => 
+                        format!("{}AccessMember: {} <{:?}>", PostfixExpression::indent_str(indent + 1), name, strpos),
+                    &Postfix::TypeCast(ref type_use, ref strpos) => 
+                        format!("{}CastAs\n{}As at <{:?}>\n{}", 
+                            PostfixExpression::indent_str(indent + 1), PostfixExpression::indent_str(indent + 2), strpos, type_use.format(indent + 2)),
+                }); buf }),
+            )
+        }
     }
 }
-impl fmt::Display for PostfixExpression {
+impl fmt::Debug for PostfixExpression {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}{}", self.prim, format_vector_display(&self.postfixs, ""))
+        write!(f, "\n{}", self.format(0))
     }
 }
 

@@ -10,7 +10,8 @@ use lexical::Lexer;
 use lexical::SeperatorKind;
 use lexical::SeperatorCategory;
 
-use super::super::ast_item::ISyntaxItem;
+use super::super::ISyntaxItem;
+use super::super::ISyntaxItemFormat;
 use super::super::expression::postfix::PostfixExpression;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
@@ -18,7 +19,6 @@ pub struct UnaryOperator {
     pub op: SeperatorKind,
     pub pos: StringPosition,
 }
-
 impl UnaryOperator {
     pub fn new(op: SeperatorKind, pos: StringPosition) -> UnaryOperator {
         UnaryOperator{ op: op, pos: pos }
@@ -30,47 +30,24 @@ pub struct UnaryExpression {
     pub post: PostfixExpression,
     pub unaries: Vec<UnaryOperator>,  // if it is [LogicalNot, BitNot], that is `!~abc`
 }
-
-impl fmt::Debug for UnaryExpression {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}{}",
-            self.post,
-            self.unaries.iter().fold(
-                String::new(), 
-                |mut buf, ref unary| {
-                    match unary.op {
-                        SeperatorKind::BitNot => buf.push_str(&format!(".operator~() @ {:?}", unary.pos)),
-                        SeperatorKind::LogicalNot => buf.push_str(&format!(".operator!() @ {:?}", unary.pos)),
-                        SeperatorKind::Increase => buf.push_str(&format!(".operator++() @ {:?}", unary.pos)),
-                        SeperatorKind::Decrease => buf.push_str(&format!(".operator--() @ {:?}", unary.pos)),
-                        SeperatorKind::Sub => buf.push_str(&format!(".operator-() @ {:?}", unary.pos)),
-                        _ => unreachable!(),
-                    }
-                    buf
-                }
-            ),
-        )
+impl ISyntaxItemFormat for UnaryExpression {
+    fn format(&self, indent: u32) -> String {
+        if self.unaries.len() == 0 {
+            format!("{}", self.post.format(indent))
+        } else {
+            format!("{}UnaryExpr:\n{}{}", 
+                UnaryExpression::indent_str(indent), 
+                self.post.format(indent + 1),
+                self.unaries.iter().fold(String::new(),
+                    |mut buf, &UnaryOperator{ ref op, ref pos }| { buf.push('\n'); buf.push_str(&format!("{:?}<{:?}>", op, pos)); buf }
+                ),
+            )
+        }
     }
 }
-impl fmt::Display for UnaryExpression {
+impl fmt::Debug for UnaryExpression {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}{}", 
-            self.post,
-            self.unaries.iter().fold(
-                String::new(), 
-                |mut buf, ref unary| {
-                    match unary.op {
-                        SeperatorKind::BitNot => buf.push_str(".operator~()"),
-                        SeperatorKind::LogicalNot => buf.push_str(".operator!()"),
-                        SeperatorKind::Increase => buf.push_str(".operator++()"),
-                        SeperatorKind::Decrease => buf.push_str(".operator--()"),
-                        SeperatorKind::Sub => buf.push_str(".operator-()"),
-                        _ => unreachable!(),
-                    }
-                    buf
-                }
-            ),
-        )
+        write!(f, "\n{}", self.format(0))
     }
 }
 

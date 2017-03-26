@@ -10,8 +10,6 @@
 use std::fmt;
 
 use codepos::StringPosition;
-use util::format_vector_debug;
-use util::format_vector_display;
 use message::Message;
 use message::MessageCollection;
 
@@ -20,7 +18,8 @@ use lexical::SeperatorKind;
 use lexical::KeywordKind;
 use lexical::LitValue;
 
-use super::super::ast_item::ISyntaxItem;
+use super::super::ISyntaxItem;
+use super::super::ISyntaxItemFormat;
 use super::super::expression::d3::D3Expression;
 
 #[derive(Eq, PartialEq, Clone)]
@@ -33,31 +32,37 @@ pub enum PrimaryExpression {
     ArrayDef(Vec<D3Expression>, StringPosition),                            // Position for '[', ']'
     ArrayDupDef(Box<D3Expression>, Box<D3Expression>, [StringPosition; 2]), // Position for '[', ']' and ';'
 }
+impl ISyntaxItemFormat for PrimaryExpression {
+    fn format(&self, indent: u32) -> String {
+        match self {
+            &PrimaryExpression::Unit(ref strpos) => 
+                format!("{}Unit <{:?}>", PrimaryExpression::indent_str(indent), strpos),
+            &PrimaryExpression::Lit(ref lit_val, ref strpos) => 
+                format!("{}Literal: {} <{:?}>", PrimaryExpression::indent_str(indent), lit_val, strpos),
+            &PrimaryExpression::Ident(ref name, ref strpos) => 
+                format!("{}Identifier: {} <{:?}>", PrimaryExpression::indent_str(indent), name, strpos),
 
-impl fmt::Debug for PrimaryExpression {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            PrimaryExpression::Ident(ref name, ref pos) => write!(f, "Prim{{ {} @ {:?} }}", name, pos),
-            PrimaryExpression::Lit(ref val, ref pos) => write!(f, "Prim{{ {} @ {:?} }}", val, pos),
-            PrimaryExpression::Unit(ref pos) => write!(f, "Prim{{ () @ {:?} }}", pos),
-            PrimaryExpression::ParenExpr(ref expr, ref pos) => write!(f, "Prim{{ ({:?}) @ {:?} }}", expr, pos),
-            PrimaryExpression::TupleDef(ref exprs, ref pos) => write!(f, "Prim{{ ({}) @ {:?} }}", format_vector_debug(exprs, ", "), pos),
-            PrimaryExpression::ArrayDef(ref exprs, pos) => write!(f, "Prim{{ [{}] @ {:?} }}", format_vector_debug(exprs, ", "), pos),
-            PrimaryExpression::ArrayDupDef(ref expr1, ref expr2, ref pos) => write!(f, "Prim{{ [{:?} ; @ {:?} {:?}] @ {:?} }}", expr1, pos[1], expr2, pos[0]),
+            &PrimaryExpression::ParenExpr(ref expr, ref strpos) => 
+                format!("{}ParenExpr\n{}Paren at <{:?}>\n{:?}", 
+                    PrimaryExpression::indent_str(indent), PrimaryExpression::indent_str(indent + 1), strpos, expr.format(indent + 1)),
+            &PrimaryExpression::ArrayDupDef(ref expr1, ref expr2, ref strpos) => 
+                format!("{0}DefineArrayDuply:\n{1}Bracket at <{2:?}>\n{1}SemiColon at <{3:?}>\n{4:?}\n{5:?}",
+                    PrimaryExpression::indent_str(indent), PrimaryExpression::indent_str(indent + 1), 
+                    strpos[0], strpos[1], expr1.format(indent + 1), expr2.format(indent + 2)),
+            &PrimaryExpression::TupleDef(ref exprs, ref strpos) => 
+                format!("{}DefineTuple:\n{}Bracket at <{:?}>{}", PrimaryExpression::indent_str(indent), PrimaryExpression::indent_str(indent + 1),
+                    strpos, exprs.iter().fold(String::new(), |mut buf, expr| { buf.push_str("\n"); buf.push_str(&expr.format(indent + 1)); buf })
+                ),
+            &PrimaryExpression::ArrayDef(ref exprs, strpos) => 
+                format!("{}DefineArray:\n{}Bracket at <{:?}>{}", PrimaryExpression::indent_str(indent), PrimaryExpression::indent_str(indent + 1),
+                    strpos, exprs.iter().fold(String::new(), |mut buf, expr| { buf.push_str("\n"); buf.push_str(&expr.format(indent + 1)); buf })
+                ),
         }
     }
 }
-impl fmt::Display for PrimaryExpression {
+impl fmt::Debug for PrimaryExpression {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            PrimaryExpression::Ident(ref name, ref _pos) => write!(f, "{}", name),
-            PrimaryExpression::Lit(ref val, ref _pos) => write!(f, "{}", val),
-            PrimaryExpression::Unit(ref _pos) => write!(f, "()"),
-            PrimaryExpression::ParenExpr(ref expr, ref _pos) => write!(f, "({})", expr),
-            PrimaryExpression::TupleDef(ref exprs, ref _pos) => write!(f, "({})", format_vector_display(exprs, ", ")),
-            PrimaryExpression::ArrayDef(ref exprs, ref _pos) => write!(f, "[{}]", format_vector_display(exprs, ", ")),
-            PrimaryExpression::ArrayDupDef(ref expr1, ref expr2, ref _pos) => write!(f, "[{}; {}]", expr1, expr2),
-        }
+        write!(f, "\n{}", self.format(0))
     }
 }
 
@@ -255,7 +260,7 @@ impl ISyntaxItem for PrimaryExpression {
 } 
 
 #[cfg(test)] #[test]
-fn expr_prim_bug() {
+fn primary_expr_bug() {
 
     assert_eq!(
         PrimaryExpression::with_test_str("[a]"),   // this is the loop of lexer.nth(current) is left bracket does not cover everything and infinite loop is here

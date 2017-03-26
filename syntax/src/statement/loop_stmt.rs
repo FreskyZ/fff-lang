@@ -31,14 +31,6 @@ impl fmt::Debug for LoopStatement {
         )
     }
 }
-impl fmt::Display for LoopStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "loop {}{}", 
-            match self.name{ Some(ref name) => format!("{}", name), None => format!("\"\"") },
-            self.body
-        )
-    }
-}
 
 impl ISyntaxItem for LoopStatement {
 

@@ -37,16 +37,6 @@ impl fmt::Debug for VarDeclStatement {
         )
     }
 }
-impl fmt::Display for VarDeclStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} {} {}{};",
-            if self.is_const { format!("const") } else { format!("var") },
-            self.ty,
-            self.name,
-            match self.init_expr { Some(ref expr) => format!(" = {}", expr), None => String::new(), },
-        )
-    }
-}
 impl VarDeclStatement {
 
     pub fn pub_pos_all(&self) -> StringPosition { self.pos_all() }

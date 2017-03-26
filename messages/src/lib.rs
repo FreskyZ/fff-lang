@@ -455,8 +455,6 @@ macro_rules! check_messages_continuable {
     ($msgs: expr) => (if $msgs.is_uncontinuable() { panic!("messages is uncontinuable: {:?}", $msgs) })
 }
 
-pub type MessageEmitter = MessageCollection;
-
 #[cfg(test)]
 #[test]
 fn message_complex_new() {

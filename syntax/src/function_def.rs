@@ -5,7 +5,6 @@ use std::fmt;
 
 use codepos::StringPosition;
 use util::format_vector_debug;
-use util::format_vector_display;
 use message::SyntaxMessage;
 use message::Message;
 use message::MessageCollection;
@@ -28,11 +27,6 @@ pub struct Argument {
 impl fmt::Debug for Argument {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?} {:?} @ {:?}", self.ty, self.name, self.pos_name)
-    }
-}
-impl fmt::Display for Argument {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} {}", self.ty, self.name)
     }
 }
 impl ISyntaxItem for Argument {
@@ -81,16 +75,6 @@ impl fmt::Debug for FunctionDef {
             self.pos2[0], 
             self.name, self.pos2[1],
             format_vector_debug(&self.args, ", "),
-            self.ret_type,
-            self.body,
-        )
-    }
-}
-impl fmt::Display for FunctionDef {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "fn {} ({}) -> {} {}",
-            self.name, 
-            format_vector_display(&self.args, ", "),
             self.ret_type,
             self.body,
         )

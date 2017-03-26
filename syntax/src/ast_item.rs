@@ -44,6 +44,19 @@ pub trait ISyntaxItem {
     }
 }
 
+const INDENT_STRS: [&'static str; 16] = [
+    "", "  ", "    ", "      ", "        ", "          ", "            ", "              ", "                ", "                  ", "                    ",
+    "                      ", "                        ", "                          ", "                            ", "                          "
+];
+pub trait ISyntaxItemFormat {
+
+    fn indent_str(indent: u32) -> &'static str {
+        INDENT_STRS[indent as usize]
+    }
+
+    fn format(&self, indent: u32) -> String;
+}
+
 // Test infrastructure macro
 #[macro_export]
 macro_rules! ast_test_case {

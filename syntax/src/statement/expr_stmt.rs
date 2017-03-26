@@ -51,17 +51,6 @@ impl fmt::Debug for ExpressionStatement {
         )
     }
 }
-impl fmt::Display for ExpressionStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}{};",
-            self.left_expr,
-            match (&self.op, &self.right_expr) { 
-                (&Some(ref op), &Some(ref expr)) => format!("{}({})", format_assign_op(op), expr), 
-                (_, _) => String::new() 
-            },
-        )
-    }
-}
 impl ISyntaxItem for ExpressionStatement {
 
     fn pos_all(&self) -> StringPosition { StringPosition::merge(self.left_expr.pos_all(), self.pos[1]) }

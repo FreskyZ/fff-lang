@@ -36,13 +36,6 @@ impl fmt::Debug for ReturnStatement {
         )
     }
 }
-impl fmt::Display for ReturnStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "return{};",
-            match self.expr { Some(ref expr) => format!(" {} ", expr), None => String::new() }, 
-        )
-    }
-}
 impl ReturnStatement {
     pub fn pub_pos_all(&self) -> StringPosition { self.pos_all() }
 }
@@ -103,26 +96,12 @@ impl fmt::Debug for ContinueStatement {
         )
     }
 }
-impl fmt::Display for ContinueStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "continue{};",
-            match self.name { Some(ref name) => format!(" {}", name), None => String::new(), }
-        )
-    }
-}
 impl fmt::Debug for BreakStatement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "break @ {:?}{}; @ {:?}", 
             self.pos[0],
             match self.name { Some(ref name) => format!(" {} @ {:?}", name, self.pos[1]), None => format!(" \"\" @ {:?}", self.pos[1]), },
             self.pos[2]
-        )
-    }
-}
-impl fmt::Display for BreakStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "break{};",
-            match self.name { Some(ref name) => format!(" {}", name), None => String::new(), }
         )
     }
 }

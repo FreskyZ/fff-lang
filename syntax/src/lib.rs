@@ -61,42 +61,6 @@ pub use self::statement::IfStatement;
 pub use self::smtype::SMType;
 pub use self::block::Block;
 
-#[cfg(test)]
-mod tests {
+use self::ast_item::ISyntaxItemFormat;
 
-    #[test]
-    fn program_get_main() {
-        // use super::Function;
-        // use super::Program;
-
-        // let mut program = Program{ functions: Vec::new() };
-        // program.functions.push(Function{ name: "123".to_owned() });
-        // program.functions.push(Function{ name: "main".to_owned() });
-        // program.functions.push(Function{ name: "456".to_owned() });
-
-        // match program.get_main() {
-        //     Some(main_function) => assert_eq!(main_function.name, "main"),
-        //     None => panic!("Not got main function"),
-        // }
-    }
-
-    #[test]
-    fn ast_hello_world() {
-        // use lexical::parse_test_str;
-        // use super::parse;
-
-        // let lexer = &mut parse_test_str(r#"fn main() { println("helloworld"); }"#);
-        // let program = parse(lexer);
-
-        // perrorln!("program: {:?}", program);
-        // perrorln!("messages: {:?}", lexer.messages())
-    }
-}
-
-// recoverable, recoverable is actually another syntax rule with emitting messages
-
-// TODO: 
-// Change lexer.push_expect(s) to messages.push(Message::new...)
-// Move MessageCollection out of lexer and add messages to ISyntaxItem, change lexer driver to TokenStream::parse(codechars, messages)
-// Rename ISyntaxItem to ISyntaxItem, change syntax driver to SyntaxTree::parse(tokens, messages)
- 
+// TODO: recoverable, recoverable is actually another syntax rule with emitting messages

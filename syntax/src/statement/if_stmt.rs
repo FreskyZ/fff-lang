@@ -4,7 +4,6 @@
 use std::fmt;
 
 use codepos::StringPosition;
-use util::format_vector_display;
 use util::format_vector_debug;
 use message::MessageCollection;
 
@@ -25,11 +24,6 @@ pub struct ElseIfBranch {
 impl fmt::Debug for ElseIfBranch {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "else @ {:?} if @ {:?} {:?} {:?}", self.pos[0], self.pos[1], self.expr, self.body)
-    }
-}
-impl fmt::Display for ElseIfBranch {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "else if {} {}", self.expr, self.body)
     }
 }
 
@@ -80,18 +74,6 @@ impl fmt::Debug for IfStatement {
             format_vector_debug(&self.elseifs, "\n"), 
             match self.else_body { 
                 Some(ref else_body) => format!("else @ {:?} {:?}", self.pos[1], else_body),
-                None => String::new(),
-            }
-        )
-    }
-}
-impl fmt::Display for IfStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "if {} {}{}{}", 
-            self.if_expr, self.if_body,
-            format_vector_display(&self.elseifs, "\n"), 
-            match self.else_body { 
-                Some(ref else_body) => format!("else {}", else_body),
                 None => String::new(),
             }
         )
@@ -167,11 +149,11 @@ mod tests {
     #[test]
     fn ast_stmt_if() {
 
-        perrorln!("{}", IfStatement::with_test_str("if 1 { fresky.love(zmj); zmj.love(fresky); }"));
+        perrorln!("{:?}", IfStatement::with_test_str("if 1 { fresky.love(zmj); zmj.love(fresky); }"));
 
-        perrorln!("{}", IfStatement::with_test_str("if 1 { fresky.love(zmj); zmj.love(fresky); } else { writeln(\"hellworld\"); }"));
+        perrorln!("{:?}", IfStatement::with_test_str("if 1 { fresky.love(zmj); zmj.love(fresky); } else { writeln(\"hellworld\"); }"));
 
-        perrorln!("{}", IfStatement::with_test_str(
+        perrorln!("{:?}", IfStatement::with_test_str(
 r#"
             if 1 { 
                 fresky.love(zmj); 

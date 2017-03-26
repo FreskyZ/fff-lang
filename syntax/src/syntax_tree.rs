@@ -5,7 +5,6 @@ use std::fmt;
 
 use codepos::StringPosition;
 use util::format_vector_debug;
-use util::format_vector_display;
 
 use message::MessageCollection;
 use lexical::TokenStream;
@@ -20,11 +19,6 @@ pub struct SyntaxTree {
 impl fmt::Debug for SyntaxTree {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", format_vector_debug(&self.functions, "\n\n"))
-    }
-}
-impl fmt::Display for SyntaxTree {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", format_vector_display(&self.functions, "\n\n"))
     }
 }
 impl ISyntaxItem for SyntaxTree {
