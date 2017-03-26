@@ -1,0 +1,39 @@
+Test standarlization actually is make every test no output to stdout or stderr
+
+[16/1/30 23:10 @ a08b929]
+every crate's tests' stderr output line length
+codemap: 0
+lexical: 0
+lexical_pos: 0
+ffc: 330 1737 11083 (wc result)
+
+[16/2/6 16:44 @ 989457ba]
+STDOUT length:
+    lexical: 217 1019 6730
+    ffc: 377 2947 23932
+    codemap: 0
+    messages: 0
+    codepos: 0
+    util: 0
+Analyze:
+    ffc is worth mainly because position types and new message's debug contains more info and display longer
+
+[17/2/24 23:41 @ 68d86de]
+stdout length:
+    ffc: 387 2918 23444
+    lexical: 134 583 4504
+Analyze:
+    lexical is much better
+    ffc is a little worth because message formating is a little more complex
+
+[17/2/27 17:12 @ b80ba02]
+stdout length:
+    driver: 237 1557 11357
+    lexical: 8 37 312 
+Analyze: 
+    driver I don't know, partially because main and config is moved out
+    lexical nearly finished
+
+[17/2/27 18:36 @ c54f9dd]
+lexical: 0 0 0 
+finished lexical

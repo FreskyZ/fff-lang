@@ -1,6 +1,6 @@
 [package]
 name = "ffc"
-version = "0.1.0"
+version = "0.1.2"
 authors = ["FreskyZ <fresky7@outlook.com>"]
 
 [dependencies]

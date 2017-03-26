@@ -1,0 +1,53 @@
+Learn Error Message Format from Other Compiler
+
+[17/1/30 22:06]
+For source file not exist
+rustc: counldn't read "not_exist.rs": 系统找不到指定的文件。 (os error 2)   // This is FormatMessageW, 233
+cl: clxx: fatal error C1083: Can not open source file 'not_exist.cpp': No such file or directory  // "Can not ... '%1': %2", %2 is c lib error message
+gcc: error: not_exist.cpp: No such file or directory  // also c lib error message
+ghc: can't file file: not_exist.hs
+python: can't open file: 'not_exist.py': [Errno 2] No such file or directory    // c lib error message
+
+[17/2/24 18:38]
+For unexpected end of string literal when processing unicode char escape
+rusrc: incorrect unicode escape sequence (`"a\u"`)
+cl: (cannot construct a similar error)
+gcc: (same as cl...)
+
+[17/2/24 22:18]
+For invalid unicode char escape (`'\u12345678'`)
+rustc: invalid unicode char escape (...)
+cl: a universal-character-name specifies an invalid character
+clang: 
+
+[17/2/24 22:18]
+For EOF in block comment
+rustc: unterminated block comment
+cl: unexpected end of file found in comment
+
+[17/2/25 14:16]
+A complex error formating, wrong parameter given when calling function
+error[E0061]: this function takes 2 parameters but 1 parameter was supplied
+   --> src\v2lexer\mod.rs: 341:49
+    |
+341 |                   somefn($p1);
+    |
+...
+358 |     some_macro!(1);
+    |     --------------- in this macro invocation
+    |
+   ::: src\buf_lexer.rs
+    |
+74  |     pub fn somefn(a: i32, b: i32) -> i32 {
+    |   __- starting here...
+75  |  |      a + b
+76  |  |  }
+77  |  |__- ...ending here: defined here
+
+[17/2/27 12:38]
+Unexpected unicode char in source code
+rustc: unknown start of token: '\u{ff0c}', unicode character '，'(Fullwidth Comma) looks much like ',', but is not
+
+[17/3/14 14:42]
+Empty integral literal like '0x'
+rustc: no valid digits found for number

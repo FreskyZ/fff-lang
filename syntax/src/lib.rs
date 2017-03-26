@@ -99,3 +99,4 @@ mod tests {
 // Change lexer.push_expect(s) to messages.push(Message::new...)
 // Move MessageCollection out of lexer and add messages to ISyntaxItem, change lexer driver to TokenStream::parse(codechars, messages)
 // Rename ISyntaxItem to ISyntaxItem, change syntax driver to SyntaxTree::parse(tokens, messages)
+ 

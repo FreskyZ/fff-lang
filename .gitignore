@@ -4,7 +4,8 @@ Cargo.lock
 *.stderr
 temp
 .vscode
-scripts
+temp_output
 *.exe
 pefile/test/.vs
 *.obj
+*.pyc

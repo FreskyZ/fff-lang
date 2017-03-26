@@ -48,3 +48,4 @@ pub fn compile_input(file_name: String) {
 // Create optimize
 // Move vm out
 // Move main out and change this to be a lib
+ 
