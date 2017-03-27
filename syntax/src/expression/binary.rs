@@ -10,6 +10,10 @@
 // LogicalAndExpression = EqualityExpression | LogicalAndExpression LogicalAndOperator EqualityExpression 
 // LogicalOrExpression = LogicalAndExpression | LogicalOrExpression LogicalOrOperator LogicalAndExpression
 
+// TODO: according to docs/bits-type, change the priority to
+// mul, add, relation, shift, bitand, bitxor, bitor, equal, logicaland, logicalor
+// integral binray operators in advance, then is bits binary operators, they are should precede equality operators, then logical operators
+
 use std::fmt;
 
 use codepos::StringPosition;
@@ -139,6 +143,11 @@ impl BinaryExpr { // get
     }
 }
 
+#[cfg(feature = "trace_binary_expr_parse")]
+macro_rules! trace { ($($arg:tt)*) => ({ print!("[PrimaryExpr] "); println!($($arg)*); }) }
+#[cfg(not(feature = "trace_binary_expr_parse"))]
+macro_rules! trace { ($($arg:tt)*) => () }
+
 fn parse_unary_wrapper(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<BinaryExpr>, usize) {
     match UnaryExpression::parse(tokens, messages, index) {
         (Some(unary_expr), symbol_len) => (Some(BinaryExpr::new_unary(unary_expr)), symbol_len),
@@ -149,22 +158,33 @@ macro_rules! impl_binary_parser {
     ($parser_name: ident, $previous_parser: ident, $op_category: expr) => (
 
         fn $parser_name(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<BinaryExpr>, usize) {
-    
-            let (left, mut current_len) = match $previous_parser(tokens, messages, index) {
-                (None, length) => return (None, length),
+            trace!("parsing {}", stringify!($parser_name));
+
+            let (mut current_ret_val, mut current_len) = match $previous_parser(tokens, messages, index) {
+                (None, length) => { trace!("   return None because parsing left return none"); return (None, length); }
                 (Some(prev_level), prev_length) => (prev_level, prev_length),
             };
 
-            if tokens.nth(index + current_len).is_seperator_category($op_category) {
-                let operator_strpos = tokens.pos(index + current_len);
-                let operator = tokens.nth(index + current_len).get_seperator().unwrap();
-                current_len += 1;
-                match $previous_parser(tokens, messages, index + current_len) {
-                    (None, length) => (None, current_len + length),
-                    (Some(right), right_len) => (Some(BinaryExpr::new_binary(left, operator, operator_strpos, right)), current_len + right_len),
+            loop {
+                if tokens.nth(index + current_len).is_seperator_category($op_category) {
+                    let operator_strpos = tokens.pos(index + current_len);
+                    let operator = tokens.nth(index + current_len).get_seperator().unwrap();
+                    current_len += 1;
+                    match $previous_parser(tokens, messages, index + current_len) {
+                        (None, length) => { 
+                            trace!("    return None because parsing right return none"); 
+                            return (None, current_len + length);
+                        }
+                        (Some(right), right_len) => {
+                            current_ret_val = BinaryExpr::new_binary(current_ret_val, operator, operator_strpos, right);
+                            current_len += right_len;
+                            trace!("    changing current ret_val to {:?}", current_ret_val);
+                        }
+                    }
+                } else {
+                    trace!("   operator or other not '{}', return left: {:?}", stringify!($op_category), current_ret_val);
+                    return (Some(current_ret_val), current_len);
                 }
-            } else {
-                (Some(left), current_len)
             }
         }
     )
@@ -174,9 +194,9 @@ impl_binary_parser! { parse_additive, parse_multiplicative, SeperatorCategory::A
 impl_binary_parser! { parse_shift, parse_additive, SeperatorCategory::Shift }
 impl_binary_parser! { parse_relational, parse_shift, SeperatorCategory::Relational }
 impl_binary_parser! { parse_bitand, parse_relational, SeperatorCategory::BitAnd }
-impl_binary_parser! { parse_bitor, parse_bitand, SeperatorCategory::BitOr }
-impl_binary_parser! { parse_bitxor, parse_bitor, SeperatorCategory::BitXor }
-impl_binary_parser! { parse_equality, parse_bitxor, SeperatorCategory::Equality }
+impl_binary_parser! { parse_bitxor, parse_bitand, SeperatorCategory::BitXor }
+impl_binary_parser! { parse_bitor, parse_bitxor, SeperatorCategory::BitOr }
+impl_binary_parser! { parse_equality, parse_bitor, SeperatorCategory::Equality }
 impl_binary_parser! { parse_logical_and, parse_equality, SeperatorCategory::LogicalAnd }
 impl_binary_parser! { parse_logical_or, parse_logical_and, SeperatorCategory::LogicalOr }
 
@@ -185,11 +205,9 @@ impl ISyntaxItem for BinaryExpr {
     fn pos_all(&self) -> StringPosition {
         self.get_all_strpos()
     }
-
     fn is_first_final(lexer: &mut TokenStream, index: usize) -> bool {
         UnaryExpression::is_first_final(lexer, index)
     }
-
     fn parse(lexer: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<BinaryExpr>, usize) {
         parse_logical_or(lexer, messages, index)
     }
@@ -209,12 +227,315 @@ fn binary_expr_format() {
 
 #[cfg(test)] #[test]
 fn binary_expr_parse() {
+    
+    macro_rules! ident { ($ident_name: expr, $strpos: expr) => (BinaryExpr::new_primary(PrimaryExpression::Ident($ident_name.to_owned(), $strpos))) }
+    macro_rules! int { ($value: expr, $strpos: expr) => (BinaryExpr::new_primary(PrimaryExpression::Lit(LitValue::from($value), $strpos))) }
 
-    perrorln!("{:?}", BinaryExpr::with_test_str("[1] * [2] / [3]"));
-    perrorln!("{:?}", BinaryExpr::with_test_str("a * b / c + d % e - f"));
-    perrorln!("{:?}", BinaryExpr::with_test_str("a * b << h / c + d % e - f >> g"));
-    perrorln!("{:?}", BinaryExpr::with_test_str("a * b << h / c + d % e - f >> g > h * i < j << k > m && n || o & p | q ^ r != s == t"));
-    perrorln!("{:?}", BinaryExpr::with_test_str("a & b == c"));
+    let new_binary = BinaryExpr::new_binary;
+
+    // my random tests
+    //                                     123456789012345
+    assert_eq!{ BinaryExpr::with_test_str("[1] * [2] / [3]"), 
+        BinaryExpr::new_binary(
+            BinaryExpr::new_binary(
+                BinaryExpr::new_primary(PrimaryExpression::ArrayDef(vec![
+                    BinaryExpr::new_primary(PrimaryExpression::Lit(LitValue::from(1), make_str_pos!(1, 2, 1, 2))),
+                ], make_str_pos!(1, 1, 1, 3))), 
+                SeperatorKind::Mul, make_str_pos!(1, 5, 1, 5),
+                BinaryExpr::new_primary(PrimaryExpression::ArrayDef(vec![
+                    BinaryExpr::new_primary(PrimaryExpression::Lit(LitValue::from(2), make_str_pos!(1, 8, 1, 8))),
+                ], make_str_pos!(1, 7, 1, 9))),
+            ),
+            SeperatorKind::Div, make_str_pos!(1, 11, 1, 11),
+            BinaryExpr::new_primary(PrimaryExpression::ArrayDef(vec![
+                BinaryExpr::new_primary(PrimaryExpression::Lit(LitValue::from(3), make_str_pos!(1, 14, 1, 14))),
+            ], make_str_pos!(1, 13, 1, 15)))
+        )
+    }           
+    //                                     0        1         2
+    //                                     123456789012345678901
+    assert_eq!{ BinaryExpr::with_test_str("a * b / c + d % e - f"),  // ((((a * b) / c) + (d % e)) - f)
+        BinaryExpr::new_binary(
+            BinaryExpr::new_binary(
+                BinaryExpr::new_binary(
+                    BinaryExpr::new_binary(
+                        ident!("a", make_str_pos!(1, 1, 1, 1)),
+                        SeperatorKind::Mul, make_str_pos!(1, 3, 1, 3), 
+                        ident!("b", make_str_pos!(1, 5, 1, 5)),
+                    ),
+                    SeperatorKind::Div, make_str_pos!(1, 7, 1, 7),
+                    ident!("c", make_str_pos!(1, 9, 1, 9)),
+                ),
+                SeperatorKind::Add, make_str_pos!(1, 11, 1, 11),
+                BinaryExpr::new_binary(
+                    ident!("d", make_str_pos!(1, 13, 1, 13)),
+                    SeperatorKind::Rem, make_str_pos!(1, 15, 1, 15),
+                    ident!("e", make_str_pos!(1, 17, 1, 17)),
+                )
+            ),
+            SeperatorKind::Sub, make_str_pos!(1, 19, 1, 19),
+            ident!("f", make_str_pos!(1, 21, 1, 21)),
+        )
+    }           
+    //                                     0        1         2         3
+    //                                     1234567890123456789012345678901
+    assert_eq!{ BinaryExpr::with_test_str("a * b << h / c + d % e - f >> g"), // (((a * b) << (((h / c) + (d % e)) - f)) >> g)
+        BinaryExpr::new_binary(
+            BinaryExpr::new_binary(
+                BinaryExpr::new_binary(
+                    ident!("a", make_str_pos!(1, 1, 1, 1)),
+                    SeperatorKind::Mul, make_str_pos!(1, 3, 1, 3),
+                    ident!("b", make_str_pos!(1, 5, 1, 5))
+                ),
+                SeperatorKind::ShiftLeft, make_str_pos!(1, 7, 1, 8),
+                BinaryExpr::new_binary(
+                    BinaryExpr::new_binary(
+                        BinaryExpr::new_binary(
+                            ident!("h", make_str_pos!(1, 10, 1, 10)),
+                            SeperatorKind::Div, make_str_pos!(1, 12, 1, 12),
+                            ident!("c", make_str_pos!(1, 14, 1, 14))
+                        ),
+                        SeperatorKind::Add, make_str_pos!(1, 16, 1, 16),
+                        BinaryExpr::new_binary(
+                            ident!("d", make_str_pos!(1, 18, 1, 18)),
+                            SeperatorKind::Rem, make_str_pos!(1, 20, 1, 20),
+                            ident!("e", make_str_pos!(1, 22, 1, 22))
+                        )
+                    ),
+                    SeperatorKind::Sub, make_str_pos!(1, 24, 1, 24),
+                    ident!("f", make_str_pos!(1, 26, 1, 26))
+                )
+            ),
+            SeperatorKind::ShiftRight, make_str_pos!(1, 28, 1, 29),
+            ident!("g", make_str_pos!(1, 31, 1, 31)),
+        )
+    }          
+
+    // This very huge test case it not useless: 
+    //     the operator priority impl in `with_test_str` is according to the parser_impl macro definition order
+    //     my test case oracle is according to the comments on top of this file, which originally are copy and paste from c++ standard
+    //     I accidently mistake the order of xor_expr and or_expr in parser_impl macros, this case help me find this
+    // continue story: I changed name of the parsers and found the error not fixed
+    //     then I find out that the last parameter of the macros, operator_category is the actual order definition
+    //     only change that can I fix the bug
+    //                                     0        1         2         3         4         5         6         7         8
+    //                                     1234567890123456789012345678901234567890123456789012345678901234567890123456789012345
+    assert_eq!{ BinaryExpr::with_test_str("a * b << h / c + d % e - f >> g > h * i < j << k >= m && n || o & p | q ^ r != s == t"),
+        // ((((((((a * b) << (((h / c) + (d % e)) - f)) >> g) > (h * i)) < (j << k)) >= m) && n) || ((((o & p) | (q ^ r)) != s) == t))
+        BinaryExpr::new_binary(
+            BinaryExpr::new_binary(
+                BinaryExpr::new_binary(
+                    BinaryExpr::new_binary(
+                        BinaryExpr::new_binary(
+                            BinaryExpr::new_binary(
+                                BinaryExpr::new_binary(
+                                    BinaryExpr::new_binary(
+                                        ident!("a", make_str_pos!(1, 1, 1, 1)),
+                                        SeperatorKind::Mul, make_str_pos!(1, 3, 1, 3),
+                                        ident!("b", make_str_pos!(1, 5, 1, 5)),
+                                    ),
+                                    SeperatorKind::ShiftLeft, make_str_pos!(1, 7, 1, 8),
+                                    BinaryExpr::new_binary(
+                                        BinaryExpr::new_binary(
+                                            BinaryExpr::new_binary(
+                                                ident!("h", make_str_pos!(1, 10, 1, 10)),
+                                                SeperatorKind::Div, make_str_pos!(1, 12, 1, 12),
+                                                ident!("c", make_str_pos!(1, 14, 1, 14)),
+                                            ),
+                                            SeperatorKind::Add, make_str_pos!(1, 16, 1, 16),
+                                            BinaryExpr::new_binary(
+                                                ident!("d", make_str_pos!(1, 18, 1, 18)),
+                                                SeperatorKind::Rem, make_str_pos!(1, 20, 1, 20),
+                                                ident!("e", make_str_pos!(1, 22, 1, 22)),
+                                            )
+                                        ),
+                                        SeperatorKind::Sub, make_str_pos!(1, 24, 1, 24),
+                                        ident!("f", make_str_pos!(1, 26, 1, 26))
+                                    )
+                                ),
+                                SeperatorKind::ShiftRight, make_str_pos!(1, 28, 1, 29),
+                                ident!("g", make_str_pos!(1, 31, 1, 31)),
+                            ),
+                            SeperatorKind::Great, make_str_pos!(1, 33, 1, 33),
+                            BinaryExpr::new_binary(
+                                ident!("h", make_str_pos!(1, 35, 1, 35)),
+                                SeperatorKind::Mul, make_str_pos!(1, 37, 1, 37),
+                                ident!("i", make_str_pos!(1, 39, 1, 39)),
+                            )
+                        ),
+                        SeperatorKind::Less, make_str_pos!(1, 41, 1, 41),
+                        BinaryExpr::new_binary(
+                            ident!("j", make_str_pos!(1, 43, 1, 43)),
+                            SeperatorKind::ShiftLeft, make_str_pos!(1, 45, 1, 46),
+                            ident!("k", make_str_pos!(1, 48, 1, 48)),
+                        )
+                    ),
+                    SeperatorKind::GreatEqual, make_str_pos!(1, 50, 1, 51),
+                    ident!("m", make_str_pos!(1, 53, 1, 53)),
+                ),
+                SeperatorKind::LogicalAnd, make_str_pos!(1, 55, 1, 56),
+                ident!("n", make_str_pos!(1, 58, 1, 58))
+            ),
+            SeperatorKind::LogicalOr, make_str_pos!(1, 60, 1, 61),
+            BinaryExpr::new_binary(
+                BinaryExpr::new_binary(
+                    BinaryExpr::new_binary(
+                        BinaryExpr::new_binary(
+                            ident!("o", make_str_pos!(1, 63, 1, 63)),
+                            SeperatorKind::BitAnd, make_str_pos!(1, 65, 1, 65),
+                            ident!("p", make_str_pos!(1, 67, 1, 67)),
+                        ),
+                        SeperatorKind::BitOr, make_str_pos!(1, 69, 1, 69),
+                        BinaryExpr::new_binary(
+                            ident!("q", make_str_pos!(1, 71, 1, 71)),
+                            SeperatorKind::BitXor, make_str_pos!(1, 73, 1, 73),
+                            ident!("r", make_str_pos!(1, 75, 1, 75)),
+                        )
+                    ),
+                    SeperatorKind::NotEqual, make_str_pos!(1, 77, 1, 78),
+                    ident!("s", make_str_pos!(1, 80, 1, 80)),
+                ),
+                SeperatorKind::Equal, make_str_pos!(1, 82, 1, 83),
+                ident!("t", make_str_pos!(1, 85, 1, 85))
+            )
+        )
+    }
+    //                                     1234567890
+    assert_eq!{ BinaryExpr::with_test_str("a & b == c"), // ((a & b) == c)
+        BinaryExpr::new_binary(
+            BinaryExpr::new_binary(
+                ident!("a", make_str_pos!(1, 1, 1, 1)),
+                SeperatorKind::BitAnd, make_str_pos!(1, 3, 1, 3),
+                ident!("b", make_str_pos!(1, 5, 1, 5)),
+            ),
+            SeperatorKind::Equal, make_str_pos!(1, 7, 1, 8),
+            ident!("c", make_str_pos!(1, 10, 1, 10)),
+        )
+    }
+
+    // 1 + 2 << 3 => (1 + 2) << 3, don't want this
+    // cout << 5 + 6 => cout << (5 + 6), want this
+
+    // program generated random tests
+    //                                     0        1         2         3    
+    //                                     1234567890123456789012345678901234
+    assert_eq!{ BinaryExpr::with_test_str("0 + 6 ^ 3 & 3 / 3 - 8 && 2 & 0 + 6"), // (((0 + 6) ^ (3 & ((3 / 3) - 8))) && (2 & (0 + 6)))
+        BinaryExpr::new_binary(
+            BinaryExpr::new_binary(
+                BinaryExpr::new_binary(
+                    int!(0, make_str_pos!(1, 1, 1, 1)),
+                    SeperatorKind::Add, make_str_pos!(1, 3, 1, 3),
+                    int!(6, make_str_pos!(1, 5, 1, 5))
+                ),
+                SeperatorKind::BitXor, make_str_pos!(1, 7, 1, 7),
+                BinaryExpr::new_binary(
+                    int!(3, make_str_pos!(1, 9, 1, 9)),
+                    SeperatorKind::BitAnd, make_str_pos!(1, 11, 1, 11),
+                    BinaryExpr::new_binary(
+                        BinaryExpr::new_binary(
+                            int!(3, make_str_pos!(1, 13, 1, 13)),
+                            SeperatorKind::Div, make_str_pos!(1, 15, 1, 15),
+                            int!(3, make_str_pos!(1, 17, 1, 17))
+                        ),
+                        SeperatorKind::Sub, make_str_pos!(1, 19, 1, 19),
+                        int!(8, make_str_pos!(1, 21, 1, 21))
+                    )
+                )
+            ),
+            SeperatorKind::LogicalAnd, make_str_pos!(1, 23, 1, 24),
+            BinaryExpr::new_binary(
+                int!(2, make_str_pos!(1, 26, 1, 26)),
+                SeperatorKind::BitAnd, make_str_pos!(1, 28, 1, 28),
+                BinaryExpr::new_binary(
+                    int!(0, make_str_pos!(1, 30, 1, 30)),
+                    SeperatorKind::Add, make_str_pos!(1, 32, 1, 32),
+                    int!(6, make_str_pos!(1, 34, 1, 34))
+                )
+            )
+        )
+    }
+    //                                     0        1         2         3         4         5         6         7
+    //                                     1234567890123456789012345678901234567890123456789012345678901234567890
+    assert_eq!{ BinaryExpr::with_test_str("7 > 1 | 0 % 8 | 1 % 7 * 3 % 6 == 1 >> 8 % 3 ^ 6 << 0 ^ 2 >> 6 || 1 - 0"),
+        // (((((7 > 1) | (0 % 8)) | (((1 % 7) * 3) % 6)) == (((1 >> (8 % 3)) ^ (6 << 0)) ^ (2 >> 6))) || (1 - 0))
+        new_binary(
+            new_binary(
+                new_binary(
+                    new_binary(
+                        new_binary(
+                            int!(7, make_str_pos!(1, 1, 1, 1)),
+                            SeperatorKind::Great, make_str_pos!(1, 3, 1, 3),
+                            int!(1, make_str_pos!(1, 5, 1, 5)),
+                        ),
+                        SeperatorKind::BitOr, make_str_pos!(1, 7, 1, 7),
+                        new_binary(
+                            int!(0, make_str_pos!(1, 9, 1, 9)),
+                            SeperatorKind::Rem, make_str_pos!(1, 11, 1, 11),
+                            int!(8, make_str_pos!(1, 13, 1, 13))
+                        )
+                    ), 
+                    SeperatorKind::BitOr, make_str_pos!(1, 15, 1, 15),
+                    new_binary(
+                        new_binary(
+                            new_binary(
+                                int!(1, make_str_pos!(1, 17, 1, 17)),
+                                SeperatorKind::Rem, make_str_pos!(1, 19, 1, 19),
+                                int!(7, make_str_pos!(1, 21, 1, 21)),
+                            ),
+                            SeperatorKind::Mul, make_str_pos!(1, 23, 1, 23),
+                            int!(3, make_str_pos!(1, 25, 1, 25)),
+                        ),
+                        SeperatorKind::Rem, make_str_pos!(1, 27, 1, 27),
+                        int!(6, make_str_pos!(1, 29, 1, 29))
+                    )
+                ),
+                SeperatorKind::Equal, make_str_pos!(1, 31, 1, 32),
+                new_binary(
+                    new_binary(
+                        new_binary(
+                            int!(1, make_str_pos!(1, 34, 1, 34)),
+                            SeperatorKind::ShiftRight, make_str_pos!(1, 36, 1, 37),
+                            new_binary(
+                                int!(8, make_str_pos!(1, 39, 1, 39)),
+                                SeperatorKind::Rem, make_str_pos!(1, 41, 1, 41),
+                                int!(3, make_str_pos!(1, 43, 1, 43)),
+                            )
+                        ),
+                        SeperatorKind::BitXor, make_str_pos!(1, 45, 1, 45),
+                        new_binary(
+                            int!(6, make_str_pos!(1, 47, 1, 47)),
+                            SeperatorKind::ShiftLeft, make_str_pos!(1, 49, 1, 50),
+                            int!(0, make_str_pos!(1, 52, 1, 52)),
+                        )
+                    ),
+                    SeperatorKind::BitXor, make_str_pos!(1, 54, 1, 54),
+                    new_binary(
+                        int!(2, make_str_pos!(1, 56, 1, 56)),
+                        SeperatorKind::ShiftRight, make_str_pos!(1, 58, 1, 59),
+                        int!(6, make_str_pos!(1, 61, 1, 61)),
+                    )
+                )
+            ),
+            SeperatorKind::LogicalOr, make_str_pos!(1, 63, 1, 64),
+            new_binary(
+                int!(1, make_str_pos!(1, 66, 1, 66)),
+                SeperatorKind::Sub, make_str_pos!(1, 68, 1, 68),
+                int!(0, make_str_pos!(1, 70, 1, 70))
+            )
+        )
+    }
+    //                                     0        1         2         3         4         5         6         7
+    //                                     1234567890123456789012345678901234567890123456789012345678901234567890
+    assert_eq!{ BinaryExpr::with_test_str("7 >> 3 == 8 / 1 && 6 == 1 <= 3 % 6 ^ 3 - 1 - 2 >> 7 || 1 >= 1"),
+        // ((7 >> 3) == (8 / 1)) && (6 == ((1 <= (3 % 6)) ^ ((3 - 1) - 2))
+        int!(1, make_str_pos!(1, 1, 1, 1))
+    }
+    perrorln!("{:?}", BinaryExpr::with_test_str("4 >> 7"));
+    perrorln!("{:?}", BinaryExpr::with_test_str("8 & 0 | 7 + 7 | 7 * 0 && 1 - 2 * 3 | 0 - 7 >= 6 >> 5 % 5 || 5 % 3"));
+    perrorln!("{:?}", BinaryExpr::with_test_str("3 <= 2 + 4 <= 5 && 3 < 3 + 2 >> 1 * 2 & 8 && 1 >= 1 < 0 || 6 < 4 * 4"));
+    perrorln!("{:?}", BinaryExpr::with_test_str("5 >= 6 | 3 == 4 && 3"));
+    perrorln!("{:?}", BinaryExpr::with_test_str("6 && 7 >> 8 && 0 / 8 * 7 + 5 < 5 / 5 >> 5 - 1 >= 6 > 8 | 6 >> 5 > 2 + 1 || 0"));
+
 }
 
 #[cfg(test)]
@@ -258,13 +579,13 @@ mod tests {
         ($val: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::Lit(LitValue::Bool($val), $pos)))
     }
     macro_rules! expr_paren_expr { 
-        ($expr: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::make_paren($expr, $pos)))
+        ($expr: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::new_paren_expr($expr, $pos)))
     }
     macro_rules! expr_array_def { 
         ([$($exprs: expr, )*] $pos: expr) => (expr_to_primary!(PrimaryExpression::ArrayDef(vec![$($exprs, )*], $pos)))
     }
     macro_rules! expr_array_dup_def { 
-        ($expr1: expr, $expr2: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::make_array_dup_def($expr1, $expr2, $pos))); 
+        ($expr1: expr, $expr2: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::new_array_dup_def($expr1, $expr2, $pos))); 
     }
 
     // postfix expression
@@ -468,7 +789,7 @@ mod tests {
             BinaryExpr::with_test_str("++!~[!1; ~--2]"),
             expr_to_unary!(
                 PostfixExpression{ 
-                    prim: PrimaryExpression::make_array_dup_def(
+                    prim: PrimaryExpression::new_array_dup_def(
                         expr_to_unary!(
                             PostfixExpression{ 
                                 prim: PrimaryExpression::Lit(LitValue::Num(Some(NumLitValue::I32(1))), make_str_pos!(1, 7, 1, 7)),

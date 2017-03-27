@@ -145,7 +145,12 @@ impl Expression {
 
 fn d3_expr_to_expr(_binary: BinaryExpr) -> Expression {
 
-    Expression::with_test_str("42")
+    Expression {
+        base: Box::new(ExpressionBase::Lit(LitValue::from(42), StringPosition::new())),
+        ops: Vec::new(),
+        all_pos: StringPosition::new(),
+    }
+
     // let BinaryExpr{ 
     //     operators: bin_ops,
     //     unary: UnaryExpression{

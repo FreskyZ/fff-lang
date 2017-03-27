@@ -65,14 +65,13 @@ impl fmt::Debug for PrimaryExpression {
         write!(f, "\n{}", self.format(0))
     }
 }
-
 impl PrimaryExpression {
 
-    pub fn make_paren(expr: BinaryExpr, pos: StringPosition) -> PrimaryExpression {
-        PrimaryExpression::ParenExpr(Box::new(expr), pos)
+    pub fn new_paren_expr(expr: BinaryExpr, strpos: StringPosition) -> PrimaryExpression {
+        PrimaryExpression::ParenExpr(Box::new(expr), strpos)
     }
-    pub fn make_array_dup_def(expr1: BinaryExpr, expr2: BinaryExpr, pos: [StringPosition; 2]) -> PrimaryExpression {
-        PrimaryExpression::ArrayDupDef(Box::new(expr1), Box::new(expr2), pos)
+    pub fn new_array_dup_def(expr1: BinaryExpr, expr2: BinaryExpr, strpos: [StringPosition; 2]) -> PrimaryExpression {
+        PrimaryExpression::ArrayDupDef(Box::new(expr1), Box::new(expr2), strpos)
     }
 }
 
@@ -160,7 +159,7 @@ impl ISyntaxItem for PrimaryExpression {
             if exprs.len() == 0 {
                 unreachable!()
             } else if exprs.len() == 1 {
-                return (Some(PrimaryExpression::make_paren(exprs.into_iter().last().unwrap(), pos)), current_len);
+                return (Some(PrimaryExpression::new_paren_expr(exprs.into_iter().last().unwrap(), pos)), current_len);
             } else {
                 return (Some(PrimaryExpression::TupleDef(exprs, pos)), current_len);
             }
@@ -195,7 +194,7 @@ impl ISyntaxItem for PrimaryExpression {
                                 if lexer.nth(index + 2 + expr1_len + expr2_len).is_seperator(SeperatorKind::RightBracket) {
                                     trace_to_stderr!("parsing array dup def succeed, expr1: {}, expr2: {}", expr1, expr2);
                                     return (
-                                        Some(PrimaryExpression::make_array_dup_def(expr1, expr2, [
+                                        Some(PrimaryExpression::new_array_dup_def(expr1, expr2, [
                                             StringPosition::merge(lexer.pos(index), lexer.pos(index + expr1_len + expr2_len + 2)),
                                             semicolon_pos,
                                         ])),
