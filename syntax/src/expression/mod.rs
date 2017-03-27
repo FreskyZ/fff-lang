@@ -1,4 +1,4 @@
-
+#![allow(unused_imports)]
 // Expression interface
 // to make 3d expression like Expression{ Expression, some other }, that is, flattened 3DExpression
 
@@ -19,10 +19,10 @@ mod primary;
 mod postfix;
 mod unary;
 mod binary;
-mod d3;
+// mod d3;
 
-use self::d3::D3Expression;
-use self::binary::BinaryExpression;
+// use self::d3::D3Expression;
+use self::binary::BinaryExpr;
 use self::unary::UnaryExpression;
 use self::postfix::Postfix;
 use self::postfix::PostfixExpression;
@@ -143,81 +143,82 @@ impl Expression {
     pub fn pub_pos_all(&self) -> StringPosition { self.pos_all() }
 }
 
-fn d3_expr_to_expr(d3: D3Expression) -> Expression {
+fn d3_expr_to_expr(_binary: BinaryExpr) -> Expression {
 
-    let D3Expression(BinaryExpression{ 
-        operators: bin_ops,
-        unary: UnaryExpression{
-            unaries: unary_ops,
-            post: PostfixExpression{
-                postfixs: postfix_ops,
-                prim: primary, 
-            },
-        }, 
-    }) = d3;
+    Expression::with_test_str("42")
+    // let BinaryExpr{ 
+    //     operators: bin_ops,
+    //     unary: UnaryExpression{
+    //         unaries: unary_ops,
+    //         post: PostfixExpression{
+    //             postfixs: postfix_ops,
+    //             prim: primary, 
+    //         },
+    //     }, 
+    // } = d3;
 
-    let expr_base = match primary {
-        PrimaryExpression::Unit(pos) => ExpressionBase::Lit(LitValue::Unit, pos),
-        PrimaryExpression::Lit(val, pos) => ExpressionBase::Lit(val, pos),
-        PrimaryExpression::Ident(name, pos) => ExpressionBase::Ident(name, pos),
-        PrimaryExpression::ParenExpr(d3_expr, pos) => ExpressionBase::Paren(d3_expr_to_expr(d3_expr.as_ref().clone()), pos),
-        PrimaryExpression::ArrayDef(d3_exprs, pos) => ExpressionBase::ArrayDef(d3_exprs.into_iter().map(d3_expr_to_expr).collect(), pos),
-        PrimaryExpression::TupleDef(d3_exprs, pos) => ExpressionBase::TupleDef(d3_exprs.into_iter().map(d3_expr_to_expr).collect(), pos),
-        PrimaryExpression::ArrayDupDef(d3_expr1, d3_expr2, pos) =>
-            ExpressionBase::ArrayDupDef(d3_expr_to_expr(d3_expr1.as_ref().clone()), d3_expr_to_expr(d3_expr2.as_ref().clone()), pos),
-    };
-    let mut pos_all_start = expr_base.pos().start_pos();
-    let mut pos_all_end = expr_base.pos().end_pos();
+    // let expr_base = match primary {
+    //     PrimaryExpression::Unit(pos) => ExpressionBase::Lit(LitValue::Unit, pos),
+    //     PrimaryExpression::Lit(val, pos) => ExpressionBase::Lit(val, pos),
+    //     PrimaryExpression::Ident(name, pos) => ExpressionBase::Ident(name, pos),
+    //     PrimaryExpression::ParenExpr(d3_expr, pos) => ExpressionBase::Paren(d3_expr_to_expr(d3_expr.as_ref().clone()), pos),
+    //     PrimaryExpression::ArrayDef(d3_exprs, pos) => ExpressionBase::ArrayDef(d3_exprs.into_iter().map(d3_expr_to_expr).collect(), pos),
+    //     PrimaryExpression::TupleDef(d3_exprs, pos) => ExpressionBase::TupleDef(d3_exprs.into_iter().map(d3_expr_to_expr).collect(), pos),
+    //     PrimaryExpression::ArrayDupDef(d3_expr1, d3_expr2, pos) =>
+    //         ExpressionBase::ArrayDupDef(d3_expr_to_expr(d3_expr1.as_ref().clone()), d3_expr_to_expr(d3_expr2.as_ref().clone()), pos),
+    // };
+    // let mut pos_all_start = expr_base.pos().start_pos();
+    // let mut pos_all_end = expr_base.pos().end_pos();
 
-    fn postfix_to_operator(postfix: Postfix) -> ExpressionOperator {
-        match postfix {
-            Postfix::FunctionCall(d3_exprs, pos) => ExpressionOperator::FunctionCall(d3_exprs.into_iter().map(d3_expr_to_expr).collect(), pos),
-            Postfix::Subscription(d3_exprs, pos) => ExpressionOperator::GetIndex(d3_exprs.into_iter().map(d3_expr_to_expr).collect(), pos),
-            Postfix::MemberAccess(ident, pos) => ExpressionOperator::MemberAccess(ident, pos),
-            Postfix::TypeCast(ty, pos) => ExpressionOperator::TypeCast(ty, pos),
-        }
-    }
-    let mut ops = Vec::new();
-    let mut postfix_ops_iter = postfix_ops.into_iter();
-    // Big bug here, iter next **TWICE** every time!!!
-    let mut previous = postfix_ops_iter.next();
-    loop {
-        match (previous, postfix_ops_iter.next()) {
-            (Some(Postfix::MemberAccess(ident1, pos1)), Some(Postfix::FunctionCall(params, pos2))) => {
-                pos_all_end = pos2.end_pos();
-                ops.push(ExpressionOperator::MemberFunctionCall(
-                    ident1, 
-                    params.into_iter().map(d3_expr_to_expr).collect(), 
-                    [pos1, pos2]
-                ));
-                previous = postfix_ops_iter.next(); // skip one
-            }
-            (Some(other_postfix1), Some(other_postfix2)) => {
-                pos_all_end = other_postfix2.pos().end_pos();
-                ops.push(postfix_to_operator(other_postfix1));
-                // ops.push(postfix_to_operator(other_postfix2)); 
-                previous = Some(other_postfix2);   // **IMPORTANT**, fix here, cannot skip one here
-            }
-            (Some(other_postfix), None) => { 
-                pos_all_end = other_postfix.pos().end_pos();
-                ops.push(postfix_to_operator(other_postfix));
-                break;
-            }
-            (None, _) => break,
-        }
-    }
+    // fn postfix_to_operator(postfix: Postfix) -> ExpressionOperator {
+    //     match postfix {
+    //         Postfix::FunctionCall(d3_exprs, pos) => ExpressionOperator::FunctionCall(d3_exprs.into_iter().map(d3_expr_to_expr).collect(), pos),
+    //         Postfix::Subscription(d3_exprs, pos) => ExpressionOperator::GetIndex(d3_exprs.into_iter().map(d3_expr_to_expr).collect(), pos),
+    //         Postfix::MemberAccess(ident, pos) => ExpressionOperator::MemberAccess(ident, pos),
+    //         Postfix::TypeCast(ty, pos) => ExpressionOperator::TypeCast(ty, pos),
+    //     }
+    // }
+    // let mut ops = Vec::new();
+    // let mut postfix_ops_iter = postfix_ops.into_iter();
+    // // Big bug here, iter next **TWICE** every time!!!
+    // let mut previous = postfix_ops_iter.next();
+    // loop {
+    //     match (previous, postfix_ops_iter.next()) {
+    //         (Some(Postfix::MemberAccess(ident1, pos1)), Some(Postfix::FunctionCall(params, pos2))) => {
+    //             pos_all_end = pos2.end_pos();
+    //             ops.push(ExpressionOperator::MemberFunctionCall(
+    //                 ident1, 
+    //                 params.into_iter().map(d3_expr_to_expr).collect(), 
+    //                 [pos1, pos2]
+    //             ));
+    //             previous = postfix_ops_iter.next(); // skip one
+    //         }
+    //         (Some(other_postfix1), Some(other_postfix2)) => {
+    //             pos_all_end = other_postfix2.pos().end_pos();
+    //             ops.push(postfix_to_operator(other_postfix1));
+    //             // ops.push(postfix_to_operator(other_postfix2)); 
+    //             previous = Some(other_postfix2);   // **IMPORTANT**, fix here, cannot skip one here
+    //         }
+    //         (Some(other_postfix), None) => { 
+    //             pos_all_end = other_postfix.pos().end_pos();
+    //             ops.push(postfix_to_operator(other_postfix));
+    //             break;
+    //         }
+    //         (None, _) => break,
+    //     }
+    // }
 
-    for prefix in unary_ops.into_iter().rev() { // they are applied reversely
-        pos_all_start = prefix.pos.start_pos();
-        ops.push(ExpressionOperator::Unary(prefix.op, prefix.pos));
-    }
+    // for prefix in unary_ops.into_iter().rev() { // they are applied reversely
+    //     pos_all_start = prefix.pos.start_pos();
+    //     ops.push(ExpressionOperator::Unary(prefix.op, prefix.pos));
+    // }
 
-    for binary in bin_ops {
-        pos_all_end = binary.operand.pos_all().end_pos();
-        ops.push(ExpressionOperator::Binary(binary.operator, binary.operator_strpos, d3_expr_to_expr(binary.operand)));
-    }
+    // for binary in bin_ops {
+    //     pos_all_end = binary.operand.pos_all().end_pos();
+    //     ops.push(ExpressionOperator::Binary(binary.operator, binary.operator_strpos, d3_expr_to_expr(binary.operand)));
+    // }
 
-    Expression::new(expr_base, ops, StringPosition::from2(pos_all_start, pos_all_end))
+    // Expression::new(expr_base, ops, StringPosition::from2(pos_all_start, pos_all_end))
 }
 
 impl ISyntaxItem for Expression {
@@ -225,12 +226,12 @@ impl ISyntaxItem for Expression {
     fn pos_all(&self) -> StringPosition { self.all_pos }
 
     fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
-        BinaryExpression::is_first_final(lexer, index)
+        BinaryExpr::is_first_final(lexer, index)
     }
 
     fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<Expression>, usize) {
         
-        match D3Expression::parse(lexer, messages, index) {
+        match BinaryExpr::parse(lexer, messages, index) {
             (Some(d3), d3_length) => (Some(d3_expr_to_expr(d3)), d3_length),
             (None, length) => (None, length),
         }

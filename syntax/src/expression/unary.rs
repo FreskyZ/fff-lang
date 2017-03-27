@@ -12,7 +12,8 @@ use lexical::SeperatorCategory;
 
 use super::super::ISyntaxItem;
 use super::super::ISyntaxItemFormat;
-use super::super::expression::postfix::PostfixExpression;
+use super::postfix::PostfixExpression;
+use super::primary::PrimaryExpression;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct UnaryOperator {
@@ -50,7 +51,15 @@ impl fmt::Debug for UnaryExpression {
         write!(f, "\n{}", self.format(0))
     }
 }
+impl UnaryExpression {
 
+    pub fn new_postfix(postfix_expr: PostfixExpression) -> UnaryExpression {
+        UnaryExpression{ post: postfix_expr, unaries: Vec::new() }
+    }
+    pub fn new_primary(primary_expr: PrimaryExpression) -> UnaryExpression {
+        UnaryExpression{ post: PostfixExpression::new_primary(primary_expr), unaries: Vec::new() }
+    }
+}
 impl ISyntaxItem for UnaryExpression {
 
     fn pos_all(&self) -> StringPosition {

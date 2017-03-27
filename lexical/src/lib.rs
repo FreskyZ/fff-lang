@@ -43,6 +43,8 @@ pub trait IToken : fmt::Debug {
     fn is_char_lit(&self) -> bool;
     fn is_bool_lit(&self) -> bool;
 
+    fn is_seperator_category(&self, category: SeperatorCategory) -> bool;
+
     // clone them if need
     fn get_keyword(&self) -> Option<KeywordKind>;
     fn get_seperator(&self) -> Option<SeperatorKind>;

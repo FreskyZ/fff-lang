@@ -7,9 +7,10 @@ use codepos::StringPosition;
 use message::MessageCollection;
 use codemap::CodeChars;
 
+use super::LitValue;
 use super::KeywordKind;
 use super::SeperatorKind;
-use super::LitValue;
+use super::SeperatorCategory;
 
 use super::v2lexer::V2Lexer;
 use super::v2lexer::V2Token;
@@ -45,6 +46,10 @@ impl IToken for V4Token {
     fn is_num_lit(&self) -> bool { match self.0 { V2Token::Literal(LitValue::Num(_)) => true, _ => false } }
     fn is_char_lit(&self) -> bool { match self.0 { V2Token::Literal(LitValue::Char(_)) => true, _ => false } }
     fn is_bool_lit(&self) -> bool { match self.0 { V2Token::Literal(LitValue::Bool(_)) => true, _ => false } }
+
+    fn is_seperator_category(&self, category: SeperatorCategory) -> bool { 
+        match self.0 { V2Token::Seperator(ref seperator) => seperator.is_category(category), _ => false } 
+    }
 
     fn get_keyword(&self) -> Option<KeywordKind> { match self.0 { V2Token::Keyword(ref kind) => Some(kind.clone()), _ => None } }
     fn get_seperator(&self) -> Option<SeperatorKind> { match self.0 { V2Token::Seperator(ref kind) => Some(kind.clone()), _ => None } }

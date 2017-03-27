@@ -21,15 +21,15 @@ use lexical::KeywordKind;
 
 use super::super::ISyntaxItem;
 use super::super::ISyntaxItemFormat;
-use super::super::expression::d3::D3Expression;
+use super::binary::BinaryExpr;
 use super::super::SMType;
 
 use super::primary::PrimaryExpression;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum Postfix {
-    Subscription(Vec<D3Expression>, StringPosition),  // '[', ']' position
-    FunctionCall(Vec<D3Expression>, StringPosition),  // '(', ')' position
+    Subscription(Vec<BinaryExpr>, StringPosition),  // '[', ']' position
+    FunctionCall(Vec<BinaryExpr>, StringPosition),  // '(', ')' position
     MemberAccess(String, StringPosition),             // '.xxx' position
     TypeCast(SMType, StringPosition),                 // 'as' position
 }
@@ -85,6 +85,10 @@ impl fmt::Debug for PostfixExpression {
 impl PostfixExpression {
 
     pub fn pos_prim(&self) -> StringPosition { self.prim.pos_all() }
+
+    pub fn new_primary(primary_expr: PrimaryExpression) -> PostfixExpression {
+        PostfixExpression{ prim: primary_expr, postfixs: Vec::new() }
+    }
 }
 
 impl ISyntaxItem for PostfixExpression {
@@ -212,7 +216,7 @@ impl ISyntaxItem for PostfixExpression {
             trace_to_stderr!{ "parsing postfix, start processing expression list of {}", 
                 if expect_end_sep == SeperatorKind::RightParenthenes { "function call".to_owned() } else { "subscription".to_owned() }, }
             current_len += 1; 
-            match D3Expression::parse(lexer, messages, index + current_len) {
+            match BinaryExpr::parse(lexer, messages, index + current_len) {
                 (None, length) => { 
                     trace_to_stderr!{ "parsing postfix's expression list, expression parse failed" }
                     return (None, current_len + length);
@@ -255,7 +259,7 @@ impl ISyntaxItem for PostfixExpression {
                         }
                         if lexer.nth(index + current_len + exprs_len).is_seperator(SeperatorKind::Comma) {
                             exprs_len += 1;
-                            match D3Expression::parse(lexer, messages, index + current_len + exprs_len) {
+                            match BinaryExpr::parse(lexer, messages, index + current_len + exprs_len) {
                                 (Some(expr), expr_len) => {
                                     trace_to_stderr!{ "parsing postfix's expression list, get expression: {}", expr, }
                                     exprs_len += expr_len;

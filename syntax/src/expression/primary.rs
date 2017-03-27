@@ -20,17 +20,17 @@ use lexical::LitValue;
 
 use super::super::ISyntaxItem;
 use super::super::ISyntaxItemFormat;
-use super::super::expression::d3::D3Expression;
+use super::super::expression::binary::BinaryExpr;
 
 #[derive(Eq, PartialEq, Clone)]
 pub enum PrimaryExpression {
     Ident(String, StringPosition),
     Lit(LitValue, StringPosition),
     Unit(StringPosition),                                                   // Position for '(', ')'
-    ParenExpr(Box<D3Expression>, StringPosition),                           // Position for '(', ')'
-    TupleDef(Vec<D3Expression>, StringPosition),                            // Position for '(', ')'
-    ArrayDef(Vec<D3Expression>, StringPosition),                            // Position for '[', ']'
-    ArrayDupDef(Box<D3Expression>, Box<D3Expression>, [StringPosition; 2]), // Position for '[', ']' and ';'
+    ParenExpr(Box<BinaryExpr>, StringPosition),                           // Position for '(', ')'
+    TupleDef(Vec<BinaryExpr>, StringPosition),                            // Position for '(', ')'
+    ArrayDef(Vec<BinaryExpr>, StringPosition),                            // Position for '[', ']'
+    ArrayDupDef(Box<BinaryExpr>, Box<BinaryExpr>, [StringPosition; 2]), // Position for '[', ']' and ';'
 }
 impl ISyntaxItemFormat for PrimaryExpression {
     fn format(&self, indent: u32) -> String {
@@ -68,10 +68,10 @@ impl fmt::Debug for PrimaryExpression {
 
 impl PrimaryExpression {
 
-    pub fn make_paren(expr: D3Expression, pos: StringPosition) -> PrimaryExpression {
+    pub fn make_paren(expr: BinaryExpr, pos: StringPosition) -> PrimaryExpression {
         PrimaryExpression::ParenExpr(Box::new(expr), pos)
     }
-    pub fn make_array_dup_def(expr1: D3Expression, expr2: D3Expression, pos: [StringPosition; 2]) -> PrimaryExpression {
+    pub fn make_array_dup_def(expr1: BinaryExpr, expr2: BinaryExpr, pos: [StringPosition; 2]) -> PrimaryExpression {
         PrimaryExpression::ArrayDupDef(Box::new(expr1), Box::new(expr2), pos)
     }
 }
@@ -131,7 +131,7 @@ impl ISyntaxItem for PrimaryExpression {
             let mut current_len = 1;
             let mut exprs = Vec::new();
             loop {
-                match D3Expression::parse(lexer, messages, index + current_len) {
+                match BinaryExpr::parse(lexer, messages, index + current_len) {
                     (None, length) => {
                         trace_to_stderr!("parsing paren expression get expression failed");
                         return (None, current_len + length);
@@ -177,7 +177,7 @@ impl ISyntaxItem for PrimaryExpression {
                     2
                 );
             }
-            match D3Expression::parse(lexer, messages, index + 1) {
+            match BinaryExpr::parse(lexer, messages, index + 1) {
                 (None, length) => {
                     trace_to_stderr!("parsing array (dup) def failed, parse expr1 return none");
                     return (None, length);  // recover by find paired right bracket
@@ -186,7 +186,7 @@ impl ISyntaxItem for PrimaryExpression {
                     trace_to_stderr!("parsing array (dup) def get expr1: {} with length {} and next is {:?}", expr1, expr1_len, lexer.nth(index + 1 + expr1_len));
                     if lexer.nth(index + 1 + expr1_len).is_seperator(SeperatorKind::SemiColon) {
                         let semicolon_pos = lexer.pos(index + 1 + expr1_len);
-                        match D3Expression::parse(lexer, messages, index + 2 + expr1_len) {
+                        match BinaryExpr::parse(lexer, messages, index + 2 + expr1_len) {
                             (None, length) => {
                                 trace_to_stderr!("parsing array dup def failed, parse expr2 failed");
                                 return (None, expr1_len + 2 + length);
@@ -235,7 +235,7 @@ impl ISyntaxItem for PrimaryExpression {
                             );
                         } else if lexer.nth(index + current_len).is_seperator(SeperatorKind::Comma) {
                             current_len += 1;
-                            match D3Expression::parse(lexer, messages, index + current_len) {
+                            match BinaryExpr::parse(lexer, messages, index + current_len) {
                                 (Some(exprn), exprn_len) => {
                                     trace_to_stderr!("parsing array def, get expression n {}", exprn);
                                     current_len += exprn_len;
@@ -266,6 +266,6 @@ fn primary_expr_bug() {
         PrimaryExpression::with_test_str("[a]"),   // this is the loop of lexer.nth(current) is left bracket does not cover everything and infinite loop is here
         PrimaryExpression::Unit(make_str_pos!(1, 1, 1, 3)),
         "..."
-        // PrimaryExpression::ArrayDef(vec![D3Expression::with_test_str(" a")], make_str_pos!(1, 1, 1, 3))
+        // PrimaryExpression::ArrayDef(vec![BinaryExpr::with_test_str(" a")], make_str_pos!(1, 1, 1, 3))
     );
 }
