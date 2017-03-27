@@ -1,0 +1,5 @@
+#!/bin/bash
+
+cd ..
+wc */*.rs */*/*.rs */*/*/*.rs
+cd scripts
