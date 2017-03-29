@@ -5,8 +5,10 @@
 ///! iterator<(char, position)>,  
 ///! which is <0.1.0>'s filemap and lexical's layer 0
 
-#[macro_use] extern crate codepos;
-#[macro_use] extern crate messages as message;
+#[macro_use] 
+extern crate codepos;
+#[cfg_attr(test, macro_use)]
+extern crate messages as message;
 
 use codepos::Position;
 use message::MessageCollection;

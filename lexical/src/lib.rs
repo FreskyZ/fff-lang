@@ -6,8 +6,8 @@
 ///! lexical::parse_test_str(program) for test use
 
 #[macro_use] extern crate util;
-#[macro_use] extern crate codepos;
 #[macro_use] extern crate messages as message; 
+#[cfg_attr(test, macro_use)] extern crate codepos;
 extern crate codemap;
 
 use std::fmt;

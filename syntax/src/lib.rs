@@ -7,8 +7,8 @@
 // TODO: Add error recovery, which need new structure of message emitter and symbol length
 
 #[macro_use] extern crate util;
-#[macro_use] extern crate codepos;
 #[macro_use] extern crate messages as message;
+#[cfg_attr(test, macro_use)] extern crate codepos;
 extern crate lexical;
 
 macro_rules! push_unexpect {

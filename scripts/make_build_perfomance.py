@@ -13,7 +13,7 @@ if not os.path.isfile(log_file_name):
         print('# fff-lang Build Performace Log\n', file = log_file)
 log_file = open(log_file_name, 'a')
 
-print('## Build perform report at `' + datetime.now().strftime('%Y/%m/%d %H:%M:%S') + '` at `' + solution.git_current_commit()[:7] + '`\n', file = log_file)
+print('## Build performance report at `' + datetime.now().strftime('%Y/%m/%d %H:%M:%S') + '` at `' + solution.git_current_commit()[:7] + '`\n', file = log_file)
 
 print('<table>\n<tr class=\'table-header\'><td>project name</td><td>build type</td><td>avg build time</td><td>build times</td></tr>', file = log_file)
 for project_name in to_be_test:
@@ -39,6 +39,8 @@ for project_name in to_be_test:
             print('    <tr><td>%s</td><td>%s</td><td>%.2fs</td><td>%s</td>\n</tr>' % ('', params[0], average_build_time, ', '.join(map(lambda x: '%.2fs' % x, build_times))), file = log_file)
 
         print('[Info] Average build time is %.2f seconds\n' % average_build_time)
+
+solution.call_cargo_all('clean')
 
 print('[Info] Finished making perform report')
 print('</table>\n', file = log_file)

@@ -108,3 +108,21 @@ Analyze
 </tr>
 </table>
 
+## Build perform report at `2017/03/28 03:28:54` at `8c7ad9d`
+
+<table>
+<tr class='table-header'><td>project name</td><td>build type</td><td>avg build time</td><td>build times</td></tr>
+    <tr class='row-project-start'><td>lexical</td><td>test</td><td>14.29s</td><td>14.83s, 13.99s, 14.93s, 13.92s, 13.80s</td>
+</tr>
+    <tr><td></td><td>build</td><td>3.61s</td><td>3.63s, 3.59s, 3.56s, 3.65s, 3.62s</td>
+</tr>
+    <tr class='row-project-start'><td>syntax</td><td>test</td><td>7.23s</td><td>7.21s, 7.20s, 7.50s, 7.10s, 7.12s</td>
+</tr>
+    <tr><td></td><td>build</td><td>3.66s</td><td>3.12s, 3.90s, 3.60s, 3.90s, 3.80s</td>
+</tr>
+    <tr class='row-project-start'><td>driver</td><td>test</td><td>21.49s</td><td>21.50s, 22.69s, 20.57s, 21.24s, 21.44s</td>
+</tr>
+    <tr><td></td><td>build</td><td>13.58s</td><td>12.86s, 12.82s, 12.86s, 15.39s, 13.97s</td>
+</tr>
+</table>
+
