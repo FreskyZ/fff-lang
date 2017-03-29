@@ -280,27 +280,27 @@ pub fn dispatch_builtin(fn_sign: (FnName, Vec<ItemID>), params: &Vec<Operand>, t
         | (&FnName::Operator(SeperatorKind::BitNot), Some(8), None, Some(ref param0), None) 
         => native_forward_1!{ param0, Int(value) => { return Int(!value); } },
 
-        // Integral Increase
-        (&FnName::Operator(SeperatorKind::Increase), Some(1), None, Some(ref param0), None) 
-        | (&FnName::Operator(SeperatorKind::Increase), Some(2), None, Some(ref param0), None)
-        | (&FnName::Operator(SeperatorKind::Increase), Some(3), None, Some(ref param0), None)
-        | (&FnName::Operator(SeperatorKind::Increase), Some(4), None, Some(ref param0), None)
-        | (&FnName::Operator(SeperatorKind::Increase), Some(5), None, Some(ref param0), None)
-        | (&FnName::Operator(SeperatorKind::Increase), Some(6), None, Some(ref param0), None)
-        | (&FnName::Operator(SeperatorKind::Increase), Some(7), None, Some(ref param0), None)
-        | (&FnName::Operator(SeperatorKind::Increase), Some(8), None, Some(ref param0), None) 
-        => native_forward_mut_1!{ param0, &mut Int(ref mut value) => { *value += 1; return Unit; } },
+        // // Integral Increase
+        // (&FnName::Operator(SeperatorKind::Increase), Some(1), None, Some(ref param0), None) 
+        // | (&FnName::Operator(SeperatorKind::Increase), Some(2), None, Some(ref param0), None)
+        // | (&FnName::Operator(SeperatorKind::Increase), Some(3), None, Some(ref param0), None)
+        // | (&FnName::Operator(SeperatorKind::Increase), Some(4), None, Some(ref param0), None)
+        // | (&FnName::Operator(SeperatorKind::Increase), Some(5), None, Some(ref param0), None)
+        // | (&FnName::Operator(SeperatorKind::Increase), Some(6), None, Some(ref param0), None)
+        // | (&FnName::Operator(SeperatorKind::Increase), Some(7), None, Some(ref param0), None)
+        // | (&FnName::Operator(SeperatorKind::Increase), Some(8), None, Some(ref param0), None) 
+        // => native_forward_mut_1!{ param0, &mut Int(ref mut value) => { *value += 1; return Unit; } },
 
-        // Integral Decrease
-        (&FnName::Operator(SeperatorKind::Decrease), Some(1), None, Some(ref param0), None) 
-        | (&FnName::Operator(SeperatorKind::Decrease), Some(2), None, Some(ref param0), None)
-        | (&FnName::Operator(SeperatorKind::Decrease), Some(3), None, Some(ref param0), None)
-        | (&FnName::Operator(SeperatorKind::Decrease), Some(4), None, Some(ref param0), None)
-        | (&FnName::Operator(SeperatorKind::Decrease), Some(5), None, Some(ref param0), None)
-        | (&FnName::Operator(SeperatorKind::Decrease), Some(6), None, Some(ref param0), None)
-        | (&FnName::Operator(SeperatorKind::Decrease), Some(7), None, Some(ref param0), None)
-        | (&FnName::Operator(SeperatorKind::Decrease), Some(8), None, Some(ref param0), None)
-        => native_forward_mut_1!{ param0, &mut Int(ref mut value) => { *value -= 1; return Unit; } },
+        // // Integral Decrease
+        // (&FnName::Operator(SeperatorKind::Decrease), Some(1), None, Some(ref param0), None) 
+        // | (&FnName::Operator(SeperatorKind::Decrease), Some(2), None, Some(ref param0), None)
+        // | (&FnName::Operator(SeperatorKind::Decrease), Some(3), None, Some(ref param0), None)
+        // | (&FnName::Operator(SeperatorKind::Decrease), Some(4), None, Some(ref param0), None)
+        // | (&FnName::Operator(SeperatorKind::Decrease), Some(5), None, Some(ref param0), None)
+        // | (&FnName::Operator(SeperatorKind::Decrease), Some(6), None, Some(ref param0), None)
+        // | (&FnName::Operator(SeperatorKind::Decrease), Some(7), None, Some(ref param0), None)
+        // | (&FnName::Operator(SeperatorKind::Decrease), Some(8), None, Some(ref param0), None)
+        // => native_forward_mut_1!{ param0, &mut Int(ref mut value) => { *value -= 1; return Unit; } },
 
         // Integral Cast to integral
         (&FnName::Cast(1), Some(1), None, Some(ref param0), None) 

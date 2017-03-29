@@ -525,20 +525,20 @@ pub fn gen_expr_stmt(expr_stmt: FullExpressionStatement, sess: &mut GenerationSe
         match left_expr.ops.iter().last().unwrap() {
             &FullExpressionOperator::FunctionCall(_, _) 
             | &FullExpressionOperator::MemberFunctionCall(_, _, _) => (),
-            &FullExpressionOperator::Unary(SeperatorKind::Increase, _)
-            | &FullExpressionOperator::Unary(SeperatorKind::Decrease, _) => {
-                let mut left_ident_name = None;
-                if left_expr.ops.len() == 1 { // only ++a is acceptable, ++a[10] is not
-                    match left_expr.base.as_ref() {
-                        &FullExpressionBase::Ident(ref name, _) => left_ident_name = Some(name.clone()),
-                        _ => (),
-                    }
-                }
-                if left_ident_name.is_none() {
-                    sess.msgs.push(CodegenMessage::LeftOfAssignmentStatementCannotBeComplex{ pos: left_expr.pub_pos_all() });
-                    return;
-                }
-            }
+            // &FullExpressionOperator::Unary(SeperatorKind::Increase, _)
+            // | &FullExpressionOperator::Unary(SeperatorKind::Decrease, _) => {
+            //     let mut left_ident_name = None;
+            //     if left_expr.ops.len() == 1 { // only ++a is acceptable, ++a[10] is not
+            //         match left_expr.base.as_ref() {
+            //             &FullExpressionBase::Ident(ref name, _) => left_ident_name = Some(name.clone()),
+            //             _ => (),
+            //         }
+            //     }
+            //     if left_ident_name.is_none() {
+            //         sess.msgs.push(CodegenMessage::LeftOfAssignmentStatementCannotBeComplex{ pos: left_expr.pub_pos_all() });
+            //         return;
+            //     }
+            // }
             _ => {
                 sess.msgs.push(CodegenMessage::InvalidExpressionStatementLastOpNotValid{ pos: StringPosition::merge(left_expr.pub_pos_all(), pos_semicolon) });
                 return;

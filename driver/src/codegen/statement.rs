@@ -237,10 +237,11 @@ fn gen_for(for_stmt: ForStatement, sess: &mut GenerationSession) {
     let while_implicit_break_addr = sess.codes.emit(Code::GotoIf(Operand::Register, false, CodeCollection::dummy_id())); 
     sess.loops.push_last_loop_break_addr(while_implicit_break_addr);
 
-    gen_block(for_stmt.body, sess, false);
-    let increase_fnid = sess.fns.find_by_sign(SeperatorKind::Increase, &vec![low_typeid]);
-    sess.codes.emit_silent(Code::Call(increase_fnid, vec![Operand::Stack(iter_offset)]));
-    sess.codes.emit(Code::Goto(continue_addr));
+    // TODOOOOOO: ++ is removed and I forget how to write the correct version of iter_var += 1
+    // gen_block(for_stmt.body, sess, false);
+    // let increase_fnid = sess.fns.find_by_sign(SeperatorKind::Increase, &vec![low_typeid]);
+    // sess.codes.emit_silent(Code::Call(increase_fnid, vec![Operand::Stack(iter_offset)]));
+    // sess.codes.emit(Code::Goto(continue_addr));
 
     let for_refill_addr = sess.codes.next_id();
     sess.loops.pop_and_refill(for_refill_addr, &mut sess.codes);

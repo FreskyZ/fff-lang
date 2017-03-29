@@ -88,8 +88,8 @@ impl FnName {
                 &SeperatorKind::BitXor => format!("operator^"),
                 &SeperatorKind::LogicalAnd => format!("operator&&"),
                 &SeperatorKind::LogicalOr => format!("operator||"),
-                &SeperatorKind::Increase => format!("operator++"),
-                &SeperatorKind::Decrease => format!("operator--"),
+                // &SeperatorKind::Increase => format!("operator++"),
+                // &SeperatorKind::Decrease => format!("operator--"),
                 &SeperatorKind::BitNot => format!("operator~"),
                 &SeperatorKind::LogicalNot => format!("operator!"),
                 _ => unreachable!()

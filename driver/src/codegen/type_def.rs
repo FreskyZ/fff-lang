@@ -270,8 +270,8 @@ impl TypeCollection {
                 push_builtin_fn!($fns, SeperatorKind::Less, 12, [$typeid, $typeid]);
 
                 push_builtin_fn!($fns, SeperatorKind::BitNot, $typeid, [$typeid]);
-                push_builtin_fn!($fns, SeperatorKind::Increase, 0, [$typeid]);
-                push_builtin_fn!($fns, SeperatorKind::Decrease, 0, [$typeid]);
+                // push_builtin_fn!($fns, SeperatorKind::Increase, 0, [$typeid]);
+                // push_builtin_fn!($fns, SeperatorKind::Decrease, 0, [$typeid]);
 
                 push_builtin_fn!($fns, "is_odd", 12, [$typeid]);
                 push_builtin_fn!($fns, "to_string", 13, [$typeid]);
