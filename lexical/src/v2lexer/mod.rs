@@ -516,7 +516,7 @@ fn v2_base() {
 
     //           0        1         2         3         4         5         6         7         8
     //           1234567890123456789012345678901234567890123456789012345678901234567890123456789012345
-    test_case!{ "[123 * 0x123 - 0xAFF & 0o777 || 0oXXX != 0b101010 == 0b123456 -> 0d123.. 0dABC] -- -=", make_str_pos!(1, 86, 1, 86), [    // differnt prefix\base of num lit
+    test_case!{ "[123 * 0x123 - 0xAFF & 0o777 || 0oXXX != 0b101010 == 0b123456 -> 0d123.. 0dABC] .. -=", make_str_pos!(1, 86, 1, 86), [    // differnt prefix\base of num lit
             sep!(SeperatorKind::LeftBracket, 1, 1, 1, 1),
             lit!(123, 1, 2, 1, 4),
             sep!(SeperatorKind::Mul, 1, 6, 1, 6),
@@ -536,7 +536,7 @@ fn v2_base() {
             sep!(SeperatorKind::Range, 1, 71, 1, 72),
             lit_num_none!(1, 74, 1, 78),
             sep!(SeperatorKind::RightBracket, 1, 79, 1, 79),
-            sep!(SeperatorKind::Decrease, 1, 81, 1, 82),
+            sep!(SeperatorKind::Range, 1, 81, 1, 82),
             sep!(SeperatorKind::SubAssign, 1, 84, 1, 85),
         ] [
             Message::with_help(
