@@ -23,7 +23,7 @@ mod binary;
 
 // use self::d3::D3Expression;
 use self::binary::BinaryExpr;
-use self::unary::UnaryExpression;
+use self::unary::UnaryExpr;
 use self::postfix::Postfix;
 use self::postfix::PostfixExpression;
 use self::primary::PrimaryExpression;
@@ -96,8 +96,8 @@ impl fmt::Debug for ExpressionOperator {
             ExpressionOperator::MemberFunctionCall(ref name, ref exprs, ref pos) => format!(".{} @ {:?}({}) @ {:?}", name, pos[0], format_vector_debug(exprs, ", "), pos[1]),
             ExpressionOperator::Unary(SeperatorKind::BitNot, ref pos) => format!(".operator~() @ {:?}", pos),
             ExpressionOperator::Unary(SeperatorKind::LogicalNot, ref pos) => format!(".operator!() @ {:?}", pos),
-            ExpressionOperator::Unary(SeperatorKind::Increase, ref pos) => format!(".operator++() @ {:?}", pos),
-            ExpressionOperator::Unary(SeperatorKind::Decrease, ref pos) => format!(".operator--() @ {:?}", pos),
+            // ExpressionOperator::Unary(SeperatorKind::Increase, ref pos) => format!(".operator++() @ {:?}", pos),
+            // ExpressionOperator::Unary(SeperatorKind::Decrease, ref pos) => format!(".operator--() @ {:?}", pos),
             ExpressionOperator::Unary(SeperatorKind::Sub, ref pos) => format!(".operator-() @ {:?}", pos),
             ExpressionOperator::Binary(SeperatorKind::Mul, ref pos, ref operand) => format!(".operator*({:?}) @ {:?}", operand, pos),
             ExpressionOperator::Binary(SeperatorKind::Div, ref pos, ref operand) => format!(".operator/({:?}) @ {:?}", operand, pos),
@@ -153,7 +153,7 @@ fn d3_expr_to_expr(_binary: BinaryExpr) -> Expression {
 
     // let BinaryExpr{ 
     //     operators: bin_ops,
-    //     unary: UnaryExpression{
+    //     unary: UnaryExpr{
     //         unaries: unary_ops,
     //         post: PostfixExpression{
     //             postfixs: postfix_ops,
@@ -956,8 +956,8 @@ mod tests {
                 ExpressionBase::Lit(LitValue::from(1), make_str_pos!(1, 7, 1, 7)),
                 vec![
                     ExpressionOperator::Unary(SeperatorKind::LogicalNot, make_str_pos!(1, 6, 1, 6)),
-                    ExpressionOperator::Unary(SeperatorKind::Decrease, make_str_pos!(1, 4, 1, 5)),
-                    ExpressionOperator::Unary(SeperatorKind::Increase, make_str_pos!(1, 2, 1, 3)),
+                    ExpressionOperator::Unary(SeperatorKind::BitNot, make_str_pos!(1, 4, 1, 5)),
+                    ExpressionOperator::Unary(SeperatorKind::LogicalNot, make_str_pos!(1, 2, 1, 3)),
                     ExpressionOperator::Unary(SeperatorKind::LogicalNot, make_str_pos!(1, 1, 1, 1)),
                 ],
                 make_str_pos!(1, 1, 1, 7),

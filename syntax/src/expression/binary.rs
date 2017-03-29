@@ -1,5 +1,5 @@
 
-// MultiplicativeExpression = UnaryExpression | MultiplicativeExpression MultiplicativeOperator UnaryExpression
+// MultiplicativeExpression = UnaryExpr | MultiplicativeExpression MultiplicativeOperator UnaryExpr
 // AdditiveExpression = MultiplicativeExpression | AdditiveExpression AdditiveOperator MultiplicativeExpression
 // RelationalExpression = AdditiveExpression | RelationalExpression RelationalOperator AdditiveExpression
 // ShiftExpression = RelationalExpression | ShiftExpression ShiftOperator RelationalExpression
@@ -25,7 +25,7 @@ use lexical::SeperatorCategory;
 
 use super::super::ISyntaxItem;
 use super::super::ISyntaxItemFormat;
-use super::unary::UnaryExpression;
+use super::unary::UnaryExpr;
 use super::postfix::PostfixExpression;
 use super::primary::PrimaryExpression;
 use lexical::LitValue;
@@ -41,7 +41,7 @@ struct BinaryBinaryExpr {
 }
 #[derive(Eq, PartialEq, Clone)]
 enum BinaryExprImpl {
-    Unary(UnaryExpression),
+    Unary(UnaryExpr),
     Binary(BinaryBinaryExpr),
 }
 #[derive(Eq, PartialEq, Clone)]
@@ -50,7 +50,7 @@ pub struct BinaryExpr(Box<BinaryExprImpl>); // wrapper for make it not public
 impl ISyntaxItemFormat for BinaryExpr {
     fn format(&self, indent: u32) -> String {
         match self.0.as_ref() {
-            &BinaryExprImpl::Unary(ref unary_expr) => format!("{}", unary_expr.format(indent)),
+            &BinaryExprImpl::Unary(ref unary_expr) => unary_expr.format(indent),
             &BinaryExprImpl::Binary(BinaryBinaryExpr{ ref left, ref right, ref operator, ref operator_strpos, ref all_strpos }) => {
                 format!("{}BinaryExpr <{:?}>\n{}\n{}{} <{:?}>\n{}", 
                     BinaryExpr::indent_str(indent), all_strpos,
@@ -80,14 +80,14 @@ impl BinaryExpr { // New
             all_strpos: all_strpos
         })))
     }
-    pub fn new_unary(unary_expr: UnaryExpression) -> BinaryExpr {
+    pub fn new_unary(unary_expr: UnaryExpr) -> BinaryExpr {
         BinaryExpr(Box::new(BinaryExprImpl::Unary(unary_expr)))
     }
     pub fn new_postfix(postfix_expr: PostfixExpression) -> BinaryExpr {
-        BinaryExpr(Box::new(BinaryExprImpl::Unary(UnaryExpression::new_postfix(postfix_expr))))
+        BinaryExpr(Box::new(BinaryExprImpl::Unary(UnaryExpr::new_postfix(postfix_expr))))
     }
     pub fn new_primary(primary_expr: PrimaryExpression) -> BinaryExpr {
-        BinaryExpr(Box::new(BinaryExprImpl::Unary(UnaryExpression::new_primary(primary_expr))))
+        BinaryExpr(Box::new(BinaryExprImpl::Unary(UnaryExpr::new_primary(primary_expr))))
     }
 }
 impl BinaryExpr { // get
@@ -105,7 +105,7 @@ impl BinaryExpr { // get
         }
     }
 
-    pub fn get_unary(&self) -> Option<&UnaryExpression> {
+    pub fn get_unary(&self) -> Option<&UnaryExpr> {
         match self.0.as_ref() {
             &BinaryExprImpl::Unary(ref unary_expr) => Some(unary_expr),
             &BinaryExprImpl::Binary(_) => None,
@@ -149,7 +149,7 @@ macro_rules! trace { ($($arg:tt)*) => ({ print!("[PrimaryExpr] "); println!($($a
 macro_rules! trace { ($($arg:tt)*) => () }
 
 fn parse_unary_wrapper(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<BinaryExpr>, usize) {
-    match UnaryExpression::parse(tokens, messages, index) {
+    match UnaryExpr::parse(tokens, messages, index) {
         (Some(unary_expr), symbol_len) => (Some(BinaryExpr::new_unary(unary_expr)), symbol_len),
         (None, symbol_len) => (None, symbol_len)
     }
@@ -205,11 +205,11 @@ impl ISyntaxItem for BinaryExpr {
     fn pos_all(&self) -> StringPosition {
         self.get_all_strpos()
     }
-    fn is_first_final(lexer: &mut TokenStream, index: usize) -> bool {
-        UnaryExpression::is_first_final(lexer, index)
+    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
+        UnaryExpr::is_first_final(tokens, index)
     }
-    fn parse(lexer: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<BinaryExpr>, usize) {
-        parse_logical_or(lexer, messages, index)
+    fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<BinaryExpr>, usize) {
+        parse_logical_or(tokens, messages, index)
     }
 }
 
@@ -837,14 +837,13 @@ mod tests {
     use super::super::super::expression::postfix::PostfixExpression;
     use super::super::super::expression::primary::PrimaryExpression;
     use super::super::super::expression::postfix::Postfix;
-    use super::super::super::expression::unary::UnaryOperator;
-    use super::super::super::expression::unary::UnaryExpression;
+    use super::super::super::expression::unary::UnaryExpr;
     use super::super::super::expression::binary::BinaryExpr;
     
     // Helper macros
     // primary expression
     macro_rules! expr_to_primary {
-        ($inner: expr) => (BinaryExpr::new_unary(UnaryExpression{ post: PostfixExpression{ prim: $inner, postfixs: Vec::new() }, unaries: Vec::new() }))
+        ($inner: expr) => (BinaryExpr::new_primary($inner))
     }
     macro_rules! expr_ident { 
         ($name: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::Ident($name.to_owned(), $pos)))
@@ -877,16 +876,8 @@ mod tests {
     // postfix expression
     macro_rules! expr_to_postfix {
         ($prim: expr, $($posts: expr)*) => (
-            BinaryExpr::new_unary(UnaryExpression{ 
-                post: PostfixExpression{ prim: $prim, postfixs: vec![$($posts, )*]}, unaries: Vec::new() })
+            BinaryExpr::new_postfix(PostfixExpression{ prim: $prim, postfixs: vec![$($posts, )*]})
         )
-    }
-
-    // unary expression
-    macro_rules! expr_to_unary {
-        ($post: expr) => (BinaryExpr::new_unary(UnaryExpression{ post: $post, unary: Vec::new() }));
-        ($post: expr, $($unaries: expr)*) => 
-            (BinaryExpr::new_unary(UnaryExpression{ post: $post, unaries: vec![$($unaries, )*] }));
     }
 
     #[test]
@@ -1066,39 +1057,5 @@ mod tests {
     fn ast_expr_post_helloworld_expr() {
 
         perrorln!("{:?}", BinaryExpr::with_test_str("writeln(\"helloworld\")"));
-    }
-
-    #[test]
-    fn ast_expr_unary_parse() {
-        
-        assert_eq!( //                   12345678901234
-            BinaryExpr::with_test_str("++!~[!1; ~--2]"),
-            expr_to_unary!(
-                PostfixExpression{ 
-                    prim: PrimaryExpression::new_array_dup_def(
-                        expr_to_unary!(
-                            PostfixExpression{ 
-                                prim: PrimaryExpression::Lit(LitValue::Num(Some(NumLitValue::I32(1))), make_str_pos!(1, 7, 1, 7)),
-                                postfixs: Vec::new()
-                            },
-                            UnaryOperator::new(SeperatorKind::LogicalNot, make_str_pos!(1, 6, 1, 6))
-                        ), 
-                        expr_to_unary!(
-                            PostfixExpression{ 
-                                prim: PrimaryExpression::Lit(LitValue::Num(Some(NumLitValue::I32(2))), make_str_pos!(1, 13, 1, 13)),
-                                postfixs: Vec::new()
-                            },
-                            UnaryOperator::new(SeperatorKind::BitNot, make_str_pos!(1, 10, 1, 10))
-                            UnaryOperator::new(SeperatorKind::Decrease, make_str_pos!(1, 11, 1, 12))
-                        ), 
-                        [make_str_pos!(1, 5, 1, 14), make_str_pos!(1, 8, 1, 8)]
-                    ),
-                    postfixs: Vec::new(),
-                },
-                UnaryOperator::new(SeperatorKind::Increase, make_str_pos!(1, 1, 1, 2))
-                UnaryOperator::new(SeperatorKind::LogicalNot, make_str_pos!(1, 3, 1, 3))
-                UnaryOperator::new(SeperatorKind::BitNot, make_str_pos!(1, 4, 1, 4))
-            )
-        );
     }
 }

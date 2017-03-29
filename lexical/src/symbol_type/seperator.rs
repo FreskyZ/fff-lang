@@ -204,8 +204,8 @@ define_seperator!{ SeperatorKind,
         '!', '=' => NotEqual,               SeperatorCategory::Equality,
         '-', '>' => NarrowRightArrow,       SeperatorCategory::Seperator,
         '.', '.' => Range,                  SeperatorCategory::Seperator,
-        '+', '+' => Increase,               SeperatorCategory::Unary,
-        '-', '-' => Decrease,               SeperatorCategory::Unary,
+        // '+', '+' => Increase,               SeperatorCategory::Unary,  // removed, goodbye
+        // '-', '-' => Decrease,               SeperatorCategory::Unary,  // removed, goodbye
         // '=', '>' => WideRightArrow,      SeperatorCategory::Seperator,
         // ':', ':' => NamespaceSeperator,  SeperatorCategory::Seperator,
     ]
