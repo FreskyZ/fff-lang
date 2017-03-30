@@ -12,21 +12,20 @@ use lexical::Lexer;
 use lexical::SeperatorKind;
 use lexical::LitValue;
 
-use super::SMType;
+use super::TypeUse;
 use super::ast_item::ISyntaxItem;
 
+// mod common; // temply not used
 mod primary;
 mod postfix;
 mod unary;
 mod binary;
-// mod d3;
 
-// use self::d3::D3Expression;
-use self::binary::BinaryExpr;
-use self::unary::UnaryExpr;
-use self::postfix::Postfix;
-use self::postfix::PostfixExpression;
-use self::primary::PrimaryExpression;
+pub use self::binary::BinaryExpr;
+pub use self::unary::UnaryExpr;
+pub use self::postfix::Postfix;
+pub use self::postfix::PostfixExpr;
+pub use self::primary::PrimaryExpression;
 
 #[derive(Eq, PartialEq, Clone)]
 pub enum ExpressionBase {
@@ -82,7 +81,7 @@ pub enum ExpressionOperator {
     FunctionCall(Vec<Expression>, StringPosition),      // '(', ')''s position,
     MemberFunctionCall(String, Vec<Expression>, [StringPosition; 2]),   // .xxx and () 's position  
     GetIndex(Vec<Expression>, StringPosition),          // '[', ']''s position,
-    TypeCast(SMType, StringPosition),                   // `as`'s position
+    TypeCast(TypeUse, StringPosition),                   // `as`'s position
     Unary(SeperatorKind, StringPosition),
     Binary(SeperatorKind, StringPosition, Expression),  // operator, pos, operand
 }
@@ -155,7 +154,7 @@ fn d3_expr_to_expr(_binary: BinaryExpr) -> Expression {
     //     operators: bin_ops,
     //     unary: UnaryExpr{
     //         unaries: unary_ops,
-    //         post: PostfixExpression{
+    //         post: PostfixExpr{
     //             postfixs: postfix_ops,
     //             prim: primary, 
     //         },
@@ -292,7 +291,7 @@ mod tests {
     use lexical::SeperatorKind;
     use lexical::LitValue;
     // use super::super::ast_item::ISyntaxItem;
-    use super::super::SMType;
+    use super::super::TypeUse;
     use super::super::ast_item::TestCase;
 
     #[test]
@@ -783,7 +782,7 @@ mod tests {
                 ExpressionBase::Lit(LitValue::from(1), make_str_pos!(1, 1, 1, 1)),
                 vec![
                     ExpressionOperator::TypeCast(
-                        SMType::Base("u32".to_owned(), make_str_pos!(1, 6, 1, 8)),
+                        TypeUse::Base("u32".to_owned(), make_str_pos!(1, 6, 1, 8)),
                         make_str_pos!(1, 3, 1, 4),
                     )
                 ],
@@ -804,8 +803,8 @@ mod tests {
                 ),
                 vec![
                     ExpressionOperator::TypeCast(
-                        SMType::Array(Box::new(
-                            SMType::Base("f32".to_owned(), make_str_pos!(1, 9, 1, 11))
+                        TypeUse::Array(Box::new(
+                            TypeUse::Base("f32".to_owned(), make_str_pos!(1, 9, 1, 11))
                         ), make_str_pos!(1, 8, 1, 12)),
                         make_str_pos!(1, 5, 1, 6),
                     )
@@ -859,7 +858,7 @@ mod tests {
                         make_str_pos!(1, 6, 1, 14),
                     ),
                     ExpressionOperator::TypeCast(
-                        SMType::Base("i32".to_owned(), make_str_pos!(1, 19, 1, 21)),
+                        TypeUse::Base("i32".to_owned(), make_str_pos!(1, 19, 1, 21)),
                         make_str_pos!(1, 16, 1, 17),
                     )
                 ],

@@ -53,14 +53,3 @@ pub trait IToken : fmt::Debug {
 
     fn get_position(&self) -> StringPosition;
 }
-
-// test helper, may panic
-pub fn parse_test_str(program: &str) -> TokenStream {
-    use codemap::CodeMap;
-    use message::MessageCollection;
-    let mut codemap = CodeMap::with_test_str(program);
-    let mut messages = MessageCollection::new();
-    let ret_val = TokenStream::new(codemap.iter(), &mut messages);
-    check_messages_continuable!(messages);
-    return ret_val;
-}

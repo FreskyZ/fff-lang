@@ -14,12 +14,12 @@ use lexical::SeperatorKind;
 
 use super::super::ast_item::ISyntaxItem;
 use super::super::Expression;
-use super::super::SMType;
+use super::super::TypeUse;
 
 #[derive(Eq, PartialEq)]
 pub struct VarDeclStatement {
     pub is_const: bool,
-    pub ty: SMType,
+    pub ty: TypeUse,
     pub name: String,
     pub init_expr: Option<Expression>,
     pub pos: [StringPosition; 4],     // position for 'const' or 'var', name, assign, and semicolon
@@ -62,7 +62,7 @@ impl ISyntaxItem for VarDeclStatement {
         let mut poss = [StringPosition::new(); 4];
         poss[0] = lexer.pos(index);
 
-        let ty = match SMType::parse(lexer, messages, index + current_len) {
+        let ty = match TypeUse::parse(lexer, messages, index + current_len) {
             (None, length) => return (None, length),
             (Some(ty), ty_len) => {
                 current_len += ty_len;
@@ -123,7 +123,7 @@ impl ISyntaxItem for VarDeclStatement {
 mod tests {
     use super::VarDeclStatement;
     use super::super::super::ast_item::ISyntaxItem;
-    use super::super::super::SMType;
+    use super::super::super::TypeUse;
     use super::super::super::Expression;
     use codepos::StringPosition;
 
@@ -135,7 +135,7 @@ mod tests {
             VarDeclStatement::with_test_str_ret_size("const i32 abc = 0;"),
             (Some(VarDeclStatement {
                 is_const: true,
-                ty: SMType::Base("i32".to_owned(), make_str_pos!(1, 7, 1, 9)),
+                ty: TypeUse::Base("i32".to_owned(), make_str_pos!(1, 7, 1, 9)),
                 name: "abc".to_owned(),                                    
                 init_expr: Some(Expression::with_test_str("                0;")),
                 pos: [
@@ -151,7 +151,7 @@ mod tests {
             VarDeclStatement::with_test_str_ret_size("var [i32] abc = 1 + 1;"),
             (Some(VarDeclStatement {
                 is_const: false,
-                ty: SMType::Array(Box::new(SMType::Base("i32".to_owned(), make_str_pos!(1, 6, 1, 8))), make_str_pos!(1, 5, 1, 9)),
+                ty: TypeUse::Array(Box::new(TypeUse::Base("i32".to_owned(), make_str_pos!(1, 6, 1, 8))), make_str_pos!(1, 5, 1, 9)),
                 name: "abc".to_owned(),                                    
                 init_expr: Some(Expression::with_test_str("                1 + 1")),
                 pos: [
@@ -168,7 +168,7 @@ mod tests {
             VarDeclStatement::with_test_str_ret_size("const string input;"),
             (Some(VarDeclStatement {
                 is_const: true,
-                ty: SMType::Base("string".to_owned(), make_str_pos!(1, 7, 1, 12)),
+                ty: TypeUse::Base("string".to_owned(), make_str_pos!(1, 7, 1, 12)),
                 name: "input".to_owned(),
                 init_expr: None,
                 pos: [
@@ -184,8 +184,8 @@ mod tests {
             VarDeclStatement::with_test_str_ret_size("var [u8] buf;"),
             (Some(VarDeclStatement {
                 is_const: false,
-                ty: SMType::Array(Box::new(
-                        SMType::Base("u8".to_owned(), make_str_pos!(1, 6, 1, 7))
+                ty: TypeUse::Array(Box::new(
+                        TypeUse::Base("u8".to_owned(), make_str_pos!(1, 6, 1, 7))
                     ), make_str_pos!(1, 5, 1, 8)),
                 name: "buf".to_owned(),
                 init_expr: None,
@@ -203,12 +203,12 @@ mod tests {
             VarDeclStatement::with_test_str_ret_size("var ([u8], u32) buf = ([1u8, 5u8, 0x7u8], abc);"),
             (Some(VarDeclStatement {
                 is_const: false,
-                ty: SMType::Tuple(
+                ty: TypeUse::Tuple(
                         vec![
-                            SMType::Array(Box::new(
-                                SMType::Base("u8".to_owned(), make_str_pos!(1, 7, 1, 8))
+                            TypeUse::Array(Box::new(
+                                TypeUse::Base("u8".to_owned(), make_str_pos!(1, 7, 1, 8))
                             ), make_str_pos!(1, 6, 1, 9)),
-                            SMType::Base("u32".to_owned(), make_str_pos!(1, 12, 1, 14)),
+                            TypeUse::Base("u32".to_owned(), make_str_pos!(1, 12, 1, 14)),
                         ], 
                         make_str_pos!(1, 5, 1, 15),
                     ),

@@ -1,5 +1,5 @@
 
-// UnaryExpr = PostfixExpression | UnaryOperator UnaryExpr
+// UnaryExpr = PostfixExpr | UnaryOperator UnaryExpr
 
 // TODO: remove ++ and -- operator when I'm in strong mind and high san
 
@@ -14,7 +14,7 @@ use lexical::SeperatorCategory;
 
 use super::super::ISyntaxItem;
 use super::super::ISyntaxItemFormat;
-use super::postfix::PostfixExpression;
+use super::postfix::PostfixExpr;
 use super::primary::PrimaryExpression;
 
 #[derive(Eq, PartialEq, Clone)]
@@ -26,7 +26,7 @@ struct ActualUnaryExpr {
 }
 #[derive(Eq, PartialEq, Clone)]
 enum UnaryExprImpl {
-    Postfix(PostfixExpression),
+    Postfix(PostfixExpr),
     Unary(ActualUnaryExpr),
 }
 #[derive(Eq, PartialEq, Clone)]
@@ -63,11 +63,11 @@ impl UnaryExpr { // New
             all_strpos: all_strpos
         })))
     }
-    pub fn new_postfix(postfix_expr: PostfixExpression) -> UnaryExpr {
+    pub fn new_postfix(postfix_expr: PostfixExpr) -> UnaryExpr {
         UnaryExpr(Box::new(UnaryExprImpl::Postfix(postfix_expr)))
     }
     pub fn new_primary(primary_expr: PrimaryExpression) -> UnaryExpr {
-        UnaryExpr(Box::new(UnaryExprImpl::Postfix(PostfixExpression::new_primary(primary_expr))))
+        UnaryExpr(Box::new(UnaryExprImpl::Postfix(PostfixExpr::new_primary(primary_expr))))
     }
 }
 impl UnaryExpr { // Get
@@ -85,7 +85,7 @@ impl UnaryExpr { // Get
         }
     }
 
-    pub fn get_postfix(&self) -> Option<&PostfixExpression> {
+    pub fn get_postfix(&self) -> Option<&PostfixExpr> {
         match self.0.as_ref() {
             &UnaryExprImpl::Postfix(ref postfix_expr) => Some(postfix_expr),
             &UnaryExprImpl::Unary(_) => None,
@@ -123,7 +123,7 @@ impl ISyntaxItem for UnaryExpr {
     }
 
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
-        PostfixExpression::is_first_final(tokens, index) || tokens.nth(index).is_seperator_category(SeperatorCategory::Unary)
+        PostfixExpr::is_first_final(tokens, index) || tokens.nth(index).is_seperator_category(SeperatorCategory::Unary)
     }
 
     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<UnaryExpr>, usize) {
@@ -135,7 +135,7 @@ impl ISyntaxItem for UnaryExpr {
                 operator_and_strposs.push((tokens.nth(index + current_len).get_seperator().unwrap(), tokens.pos(index + current_len)));
                 current_len += 1;
             } else {
-                match PostfixExpression::parse(tokens, messages, index + current_len) {
+                match PostfixExpr::parse(tokens, messages, index + current_len) {
                     (None, length) => return (None, current_len + length),
                     (Some(postfix_expr), postfix_len) => {
                         let mut current_unary = UnaryExpr::new_postfix(postfix_expr);

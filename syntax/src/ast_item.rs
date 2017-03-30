@@ -3,7 +3,7 @@
 
 use codepos::StringPosition;
 use message::MessageCollection;
-use lexical::Lexer;
+use lexical::TokenStream;
 
 pub trait ISyntaxItem {
 
@@ -12,33 +12,29 @@ pub trait ISyntaxItem {
 
     // some for valid ones, none for invalid and can not recover
     // and consumed symbol length
-    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<Self>, usize) where Self: Sized;
+    fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<Self>, usize) where Self: Sized;
 
-    /// Check lexer[index] is acceptable final
-    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool;
+    /// Check tokens[index] is acceptable final
+    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool;
 
     fn with_test_str_and_index(program: &str, index: usize) -> Self where Self: Sized {
-        use lexical::parse_test_str;
-        let lexer = &mut parse_test_str(program);
+        let tokens = &mut TokenStream::with_test_str(program);
         let messages = &mut MessageCollection::new();
-        let ret_val = Self::parse(lexer, messages, index).0.unwrap();
+        let ret_val = Self::parse(tokens, messages, index).0.unwrap();
         check_messages_continuable!(messages);
         return ret_val;
     }
     fn with_test_str(program: &str) -> Self where Self: Sized {
-        use lexical::parse_test_str;
-        let lexer = &mut parse_test_str(program);
+        let tokens = &mut TokenStream::with_test_str(program);
         let messages = &mut MessageCollection::new();
-        let ret_val = Self::parse(lexer, messages, 0).0.unwrap();
+        let ret_val = Self::parse(tokens, messages, 0).0.unwrap();
         check_messages_continuable!(messages);
         return ret_val;
     }
     fn with_test_str_ret_size(program: &str) -> (Option<Self>, usize) where Self: Sized {
-        
-        use lexical::parse_test_str;
-        let lexer = &mut parse_test_str(program);
+        let tokens = &mut TokenStream::with_test_str(program);
         let messages = &mut MessageCollection::new();
-        let ret_val = Self::parse(lexer, messages, 0);
+        let ret_val = Self::parse(tokens, messages, 0);
         check_messages_continuable!(messages);
         return ret_val;
     }
@@ -96,12 +92,11 @@ impl<T> TestCase<T>
 
     /// run with check error
     pub fn run_e(program: &str, expect_len: usize, expect_pos_all: StringPosition, expect_result: T, expect_messages: Vec<Message>, line: u32, column: u32) {
-        use lexical::parse_test_str;
         perrorln!("Case at {}:{}", line, column);
 
-        let lexer = &mut parse_test_str(program);
+        let tokens = &mut TokenStream::with_test_str(program);
         let messages = &mut MessageCollection::new();
-        if let (Some(actual_result), actual_len) =T::parse(lexer, messages, 0) {
+        if let (Some(actual_result), actual_len) =T::parse(tokens, messages, 0) {
             assert_eq!(actual_result, expect_result, "error result");
             assert_eq!(actual_len, expect_len, "error symbol length");
             assert_eq!(actual_result.pos_all(), expect_pos_all, "error pos all");
@@ -115,12 +110,11 @@ impl<T> TestCase<T>
 
     /// run with only check error
     pub fn run_oe(program: &str, expect_len: usize, expect_messages: Vec<Message>, line: u32, column: u32) {
-        use lexical::parse_test_str;
         perrorln!("Case at {}:{}", line, column);
         
-        let lexer = &mut parse_test_str(program);
+        let tokens = &mut TokenStream::with_test_str(program);
         let messages = &mut MessageCollection::new();
-        let (actual_result, actual_len) = T::parse(lexer, messages, 0);
+        let (actual_result, actual_len) = T::parse(tokens, messages, 0);
         assert_eq!(actual_len, expect_len, "error symbol length");
         assert_eq!(actual_result, None, "result is not none");
 

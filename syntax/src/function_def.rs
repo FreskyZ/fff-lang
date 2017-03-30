@@ -14,12 +14,12 @@ use lexical::KeywordKind;
 use lexical::SeperatorKind;
 
 use super::ast_item::ISyntaxItem;
-use super::SMType;
+use super::TypeUse;
 use super::Block;
 
 #[derive(Eq, PartialEq)]
 pub struct Argument {
-    pub ty: SMType,
+    pub ty: TypeUse,
     pub name: String,
     pub pos_name: StringPosition,
 }
@@ -34,12 +34,12 @@ impl ISyntaxItem for Argument {
     fn pos_all(&self) -> StringPosition { StringPosition::merge(self.ty.pos_all(), self.pos_name) }
 
     fn is_first_final(lexer: &mut Lexer, index: usize) -> bool { 
-        SMType::is_first_final(lexer, index)
+        TypeUse::is_first_final(lexer, index)
     }
 
     fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<Argument>, usize) {
 
-        let (ty, ty_len) = match SMType::parse(lexer, messages, index) {
+        let (ty, ty_len) = match TypeUse::parse(lexer, messages, index) {
             (Some(ty), ty_len) => (ty, ty_len),
             (None, len) => return (None, len), 
         };
@@ -65,7 +65,7 @@ impl Argument {
 pub struct FunctionDef {
     pub name: String,
     pub args: Vec<Argument>,
-    pub ret_type: SMType,           // if not specified, position is decided at exactly after right paren
+    pub ret_type: TypeUse,           // if not specified, position is decided at exactly after right paren
     pub body: Block,
     pub pos2: [StringPosition; 2],  // pos_fn and pos_name
 }
@@ -144,10 +144,10 @@ impl ISyntaxItem for FunctionDef {
         }
 
         let may_be_ret_type_pos = lexer.pos(index + current_len - 1).start_pos().next_col();
-        let mut return_type = SMType::Unit(StringPosition::from2(may_be_ret_type_pos, may_be_ret_type_pos));
+        let mut return_type = TypeUse::Unit(StringPosition::from2(may_be_ret_type_pos, may_be_ret_type_pos));
         if lexer.nth(index + current_len).is_seperator(SeperatorKind::NarrowRightArrow) {
             current_len += 1;
-            match SMType::parse(lexer, messages, index + current_len) {
+            match TypeUse::parse(lexer, messages, index + current_len) {
                 (Some(ret_type), ret_type_len) => {
                     return_type = ret_type;
                     current_len += ret_type_len;
@@ -176,7 +176,7 @@ impl ISyntaxItem for FunctionDef {
 
 #[cfg(test)]
 mod tests {
-    use super::super::SMType;
+    use super::super::TypeUse;
     use super::super::Block;
     use super::super::ast_item::ISyntaxItem;
     use super::Argument;
@@ -189,7 +189,7 @@ mod tests {
         assert_eq!(
             Argument::with_test_str_ret_size("i32 a"), 
             (Some(Argument{ 
-                ty: SMType::Base("i32".to_owned(), make_str_pos!(1, 1, 1, 3)), 
+                ty: TypeUse::Base("i32".to_owned(), make_str_pos!(1, 1, 1, 3)), 
                 name: "a".to_owned(),
                 pos_name: make_str_pos!(1, 5, 1, 5), 
             }), 2)
@@ -198,7 +198,7 @@ mod tests {
         assert_eq!(
             Argument::with_test_str_ret_size("[u8] buffer"), 
             (Some(Argument{ 
-                ty: SMType::Array(Box::new(SMType::Base("u8".to_owned(), make_str_pos!(1, 2, 1, 3))), make_str_pos!(1, 1, 1, 4)), 
+                ty: TypeUse::Array(Box::new(TypeUse::Base("u8".to_owned(), make_str_pos!(1, 2, 1, 3))), make_str_pos!(1, 1, 1, 4)), 
                 name: "buffer".to_owned(),
                 pos_name: make_str_pos!(1, 6, 1, 11), 
             }), 4)
@@ -217,7 +217,7 @@ mod tests {
                 name: "main".to_owned(), 
                 pos2: [make_str_pos!(1, 1, 1, 2), make_str_pos!(1, 4, 1, 7)], 
                 args: Vec::new(), 
-                ret_type: SMType::Unit(make_str_pos!(1, 10, 1, 10)), 
+                ret_type: TypeUse::Unit(make_str_pos!(1, 10, 1, 10)), 
                 body: Block{ stmts: Vec::new(), pos: make_str_pos!(1, 11, 1, 12) },
             }), 6)
         );
@@ -231,12 +231,12 @@ mod tests {
                 pos2: [make_str_pos!(1, 1, 1, 2), make_str_pos!(1, 4, 1, 7)], 
                 args: vec![
                     Argument{
-                        ty: SMType::Base("i32".to_owned(), make_str_pos!(1, 9, 1, 11)), 
+                        ty: TypeUse::Base("i32".to_owned(), make_str_pos!(1, 9, 1, 11)), 
                         name: "abc".to_owned(),
                         pos_name: make_str_pos!(1, 13, 1, 15),
                     }
                 ], 
-                ret_type: SMType::Unit(make_str_pos!(1, 17, 1, 17)), 
+                ret_type: TypeUse::Unit(make_str_pos!(1, 17, 1, 17)), 
                 body: Block{ stmts: Vec::new(), pos: make_str_pos!(1, 18, 1, 19) },
             }), 8)
         );
@@ -250,26 +250,26 @@ mod tests {
                 pos2: [make_str_pos!(1, 2, 1, 3), make_str_pos!(1, 5, 1, 11)], 
                 args: vec![
                     Argument{
-                        ty: SMType::Array(Box::new(
-                                SMType::Array(Box::new(
-                                    SMType::Base("string".to_owned(), make_str_pos!(1, 15, 1, 20))
+                        ty: TypeUse::Array(Box::new(
+                                TypeUse::Array(Box::new(
+                                    TypeUse::Base("string".to_owned(), make_str_pos!(1, 15, 1, 20))
                                 ), make_str_pos!(1, 14, 1, 21))
                             ), make_str_pos!(1, 13, 1, 23)), 
                         name: "argv".to_owned(),
                         pos_name: make_str_pos!(1, 25, 1, 28),
                     },
                     Argument{
-                        ty: SMType::Base("i32".to_owned(), make_str_pos!(1, 32, 1, 34)), 
+                        ty: TypeUse::Base("i32".to_owned(), make_str_pos!(1, 32, 1, 34)), 
                         name: "this".to_owned(),
                         pos_name: make_str_pos!(1, 36, 1, 39),
                     },
                     Argument{
-                        ty: SMType::Base("char".to_owned(), make_str_pos!(1, 42, 1, 45)), 
+                        ty: TypeUse::Base("char".to_owned(), make_str_pos!(1, 42, 1, 45)), 
                         name: "some_other".to_owned(),
                         pos_name: make_str_pos!(1, 47, 1, 56),
                     },
                 ],
-                ret_type: SMType::Unit(make_str_pos!(1, 60, 1, 60)), 
+                ret_type: TypeUse::Unit(make_str_pos!(1, 60, 1, 60)), 
                 body: Block{ stmts: Vec::new(), pos: make_str_pos!(1, 62, 1, 63) },
             }), 19)
         );
@@ -282,7 +282,7 @@ mod tests {
                 name: "main".to_owned(), 
                 pos2: [make_str_pos!(1, 1, 1, 2), make_str_pos!(1, 4, 1, 7)], 
                 args: Vec::new(), 
-                ret_type: SMType::Base("i32".to_owned(), make_str_pos!(1, 16, 1, 18)), 
+                ret_type: TypeUse::Base("i32".to_owned(), make_str_pos!(1, 16, 1, 18)), 
                 body: Block{ stmts: Vec::new(), pos: make_str_pos!(1, 20, 1, 21) },
             }), 9)
         );
@@ -296,24 +296,24 @@ mod tests {
                 pos2: [make_str_pos!(1, 1, 1, 2), make_str_pos!(1, 4, 1, 7)], 
                 args: vec![
                     Argument{
-                        ty: SMType::Array(Box::new(SMType::Base("string".to_owned(), make_str_pos!(1, 10, 1, 15))), make_str_pos!(1, 9, 1, 16)), 
+                        ty: TypeUse::Array(Box::new(TypeUse::Base("string".to_owned(), make_str_pos!(1, 10, 1, 15))), make_str_pos!(1, 9, 1, 16)), 
                         name: "argv".to_owned(),
                         pos_name: make_str_pos!(1, 18, 1, 21),
                     },
                     Argument{
-                        ty: SMType::Base("i32".to_owned(), make_str_pos!(1, 24, 1, 26)), 
+                        ty: TypeUse::Base("i32".to_owned(), make_str_pos!(1, 24, 1, 26)), 
                         name: "argc".to_owned(),
                         pos_name: make_str_pos!(1, 28, 1, 31),
                     },
                     Argument{
-                        ty: SMType::Base("char".to_owned(), make_str_pos!(1, 34, 1, 37)), 
+                        ty: TypeUse::Base("char".to_owned(), make_str_pos!(1, 34, 1, 37)), 
                         name: "some_other".to_owned(),
                         pos_name: make_str_pos!(1, 39, 1, 48),
                     },
                 ],
-                ret_type: SMType::Array(Box::new(
-                            SMType::Array(Box::new(
-                                SMType::Base("string".to_owned(), make_str_pos!(1, 57, 1, 62))
+                ret_type: TypeUse::Array(Box::new(
+                            TypeUse::Array(Box::new(
+                                TypeUse::Base("string".to_owned(), make_str_pos!(1, 57, 1, 62))
                             ), make_str_pos!(1, 56, 1, 63))
                         ), make_str_pos!(1, 55, 1, 64)), 
                 body: Block{ stmts: Vec::new(), pos: make_str_pos!(1, 66, 1, 67) },

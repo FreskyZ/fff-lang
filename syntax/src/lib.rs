@@ -1,13 +1,12 @@
 #![allow(dead_code)]
-
 ///! fff-lang
 ///!
 ///! syntax, abstract syntax tree types and generation
 
 // TODO: Add error recovery, which need new structure of message emitter and symbol length
 
-#[macro_use] extern crate util;
 #[macro_use] extern crate messages as message;
+#[cfg_attr(test, macro_use)] extern crate util;
 #[cfg_attr(test, macro_use)] extern crate codepos;
 extern crate lexical;
 
@@ -35,18 +34,18 @@ macro_rules! push_unexpect {
 mod ast_item;
 mod syntax_tree;
 mod function_def;
-mod smtype;
+mod type_use;
 mod statement;
 mod block;
-mod expression;
+mod expr;
 
 pub use self::ast_item::ISyntaxItem;
 pub use self::syntax_tree::SyntaxTree;
 pub use self::function_def::Argument;
 pub use self::function_def::FunctionDef;
-pub use self::expression::Expression;
-pub use self::expression::ExpressionBase;
-pub use self::expression::ExpressionOperator;
+pub use self::expr::Expression;
+pub use self::expr::ExpressionBase;
+pub use self::expr::ExpressionOperator;
 pub use self::statement::Statement;
 pub use self::statement::VarDeclStatement;
 pub use self::statement::ReturnStatement;
@@ -58,7 +57,7 @@ pub use self::statement::WhileStatement;
 pub use self::statement::ForStatement;
 pub use self::statement::ElseIfBranch;
 pub use self::statement::IfStatement;
-pub use self::smtype::SMType;
+pub use self::type_use::TypeUse;
 pub use self::block::Block;
 
 use self::ast_item::ISyntaxItemFormat;

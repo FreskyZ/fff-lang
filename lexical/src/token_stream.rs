@@ -84,6 +84,15 @@ impl TokenStream {
             eofs_token: V4Token(V2Token::EOFs, eofs_pos),
         }
     }
+    pub fn with_test_str(program: &str) -> TokenStream {
+        use codemap::CodeMap;
+        
+        let mut codemap = CodeMap::with_test_str(program);
+        let mut messages = MessageCollection::new();
+        let ret_val = TokenStream::new(codemap.iter(), &mut messages);
+        check_messages_continuable!(messages);
+        return ret_val;
+    }
 
     // But after syntax, this method is not used.... no one cares about length, they only knows it is eof and report unexpected error
     pub fn len(&self) -> usize {

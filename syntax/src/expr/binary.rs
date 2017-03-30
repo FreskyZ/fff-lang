@@ -26,7 +26,7 @@ use lexical::SeperatorCategory;
 use super::super::ISyntaxItem;
 use super::super::ISyntaxItemFormat;
 use super::unary::UnaryExpr;
-use super::postfix::PostfixExpression;
+use super::postfix::PostfixExpr;
 use super::primary::PrimaryExpression;
 use lexical::LitValue;
 
@@ -83,7 +83,7 @@ impl BinaryExpr { // New
     pub fn new_unary(unary_expr: UnaryExpr) -> BinaryExpr {
         BinaryExpr(Box::new(BinaryExprImpl::Unary(unary_expr)))
     }
-    pub fn new_postfix(postfix_expr: PostfixExpression) -> BinaryExpr {
+    pub fn new_postfix(postfix_expr: PostfixExpr) -> BinaryExpr {
         BinaryExpr(Box::new(BinaryExprImpl::Unary(UnaryExpr::new_postfix(postfix_expr))))
     }
     pub fn new_primary(primary_expr: PrimaryExpression) -> BinaryExpr {
@@ -833,12 +833,12 @@ mod tests {
     use lexical::NumLitValue;
     use lexical::LitValue;
 
-    use super::super::SMType;
-    use super::super::super::expression::postfix::PostfixExpression;
-    use super::super::super::expression::primary::PrimaryExpression;
-    use super::super::super::expression::postfix::Postfix;
-    use super::super::super::expression::unary::UnaryExpr;
-    use super::super::super::expression::binary::BinaryExpr;
+    use super::super::TypeUse;
+    use super::super::postfix::PostfixExpr;
+    use super::super::primary::PrimaryExpression;
+    use super::super::postfix::Postfix;
+    use super::super::unary::UnaryExpr;
+    use super::super::binary::BinaryExpr;
     
     // Helper macros
     // primary expression
@@ -871,13 +871,6 @@ mod tests {
     }
     macro_rules! expr_array_dup_def { 
         ($expr1: expr, $expr2: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::new_array_dup_def($expr1, $expr2, $pos))); 
-    }
-
-    // postfix expression
-    macro_rules! expr_to_postfix {
-        ($prim: expr, $($posts: expr)*) => (
-            BinaryExpr::new_postfix(PostfixExpression{ prim: $prim, postfixs: vec![$($posts, )*]})
-        )
     }
 
     #[test]
@@ -988,74 +981,5 @@ mod tests {
         );   
 
 
-    }
-    
-    #[test]
-    fn ast_expr_post_parse() {
-        // TODO: there was println!(messages) to manually check messages, update them to auto check
-
-        //                                      0        1         2         3         4         5         6         7         8     
-        //                                      1234567890123456789012345678901234567890123456789012345678901234567890123456789
-        let left = BinaryExpr::with_test_str("abc.defg[[1](klm, [123, 456,], )](opq, 456.)() as [i32].rst[uvw, xyz, ABC]");
-        let right = expr_to_postfix!{
-            PrimaryExpression::Ident("abc".to_owned(), make_str_pos!(1, 1, 1, 3)),
-            Postfix::MemberAccess("defg".to_owned(), make_str_pos!(1, 4, 1, 8))
-            Postfix::Subscription(vec![
-                expr_to_postfix!(
-                    PrimaryExpression::ArrayDef(
-                        vec![expr_num_lit!(NumLitValue::I32(1), make_str_pos!(1, 11, 1, 11))],
-                        make_str_pos!(1, 10, 1, 12)
-                    ), 
-                    Postfix::FunctionCall(vec![
-                        expr_ident!("klm", make_str_pos!(1, 14, 1, 16)),
-                        expr_array_def!([
-                            expr_num_lit!(NumLitValue::I32(123), make_str_pos!(1, 20, 1, 22)),
-                            expr_num_lit!(NumLitValue::I32(456), make_str_pos!(1, 25, 1, 27)), ]
-                            make_str_pos!(1, 19, 1, 29)
-                        )], 
-                        make_str_pos!(1, 13, 1, 32)
-                    )
-                )], 
-                make_str_pos!(1, 9, 1, 33)
-            )
-            Postfix::FunctionCall(vec![
-                expr_ident!("opq", make_str_pos!(1, 35, 1, 37)),
-                expr_num_lit!(NumLitValue::F64(456f64), make_str_pos!(1, 40, 1, 43))],
-                make_str_pos!(1, 34, 1, 44) 
-            )
-            Postfix::FunctionCall(
-                Vec::new(),
-                make_str_pos!(1, 45, 1, 46)
-            )
-            Postfix::TypeCast(
-                SMType::Array(Box::new(
-                    SMType::Base("i32".to_owned(), make_str_pos!(1, 52, 1, 54))
-                ), make_str_pos!(1, 51, 1, 55)),
-                make_str_pos!(1, 48, 1, 49)
-            )
-            Postfix::MemberAccess("rst".to_owned(), make_str_pos!(1, 56, 1, 59))
-            Postfix::Subscription(vec![
-                expr_ident!("uvw", make_str_pos!(1, 61, 1, 63)),
-                expr_ident!("xyz", make_str_pos!(1, 66, 1, 68)),
-                expr_ident!("ABC", make_str_pos!(1, 71, 1, 73)),],
-                make_str_pos!(1, 60, 1, 74),
-            )
-        };
-
-        assert_eq!(left, right);
-        let left_desc = &format!("{:?}", left);
-        let right_desc = &format!("{:?}", right);
-        for (index, (ch1, ch2)) in left_desc.chars().into_iter().zip(right_desc.chars().into_iter()).enumerate() {
-            if ch1 != ch2 {
-                panic!("ch pair diff at {}: {}, {}", index, ch1, ch2);
-          
-            }
-        }
-    }
-
-    #[test]
-    fn ast_expr_post_helloworld_expr() {
-
-        perrorln!("{:?}", BinaryExpr::with_test_str("writeln(\"helloworld\")"));
     }
 }

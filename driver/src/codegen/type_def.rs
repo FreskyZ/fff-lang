@@ -12,7 +12,7 @@ use lexical::SeperatorKind;
 use lexical::LitValue;
 use lexical::NumLitValue;
 
-use syntax::SMType;
+use syntax::TypeUse;
 use syntax::ISyntaxItem;
 
 use codegen::ItemID;
@@ -116,11 +116,11 @@ impl TypeCollection {
     // check base type existence, currently only primitive types, return the id of the primitive type
     // record processed array and tuple types, set their type params, return their type ids
     // position info are removed because messages are finally here, furthur errors will only report "variable with type" etc.
-    fn get_id_internal(&mut self, ty: SMType, messages: &mut MessageCollection, fns: &mut FnCollection) -> Option<usize> {
+    fn get_id_internal(&mut self, ty: TypeUse, messages: &mut MessageCollection, fns: &mut FnCollection) -> Option<usize> {
 
         match ty {
-            SMType::Unit(_pos) => Some(0),
-            SMType::Base(name, pos) => {
+            TypeUse::Unit(_pos) => Some(0),
+            TypeUse::Base(name, pos) => {
                 match self.check_exist(&Type::Base(name.clone())){
                     Some(id) => Some(id),
                     None => {
@@ -129,13 +129,13 @@ impl TypeCollection {
                     }
                 }
             }
-            SMType::Array(boxed_base, _pos) => {
+            TypeUse::Array(boxed_base, _pos) => {
                 match self.get_id_internal(boxed_base.as_ref().clone(), messages, fns) {
                     Some(item_typeid) => self.push_builtin_template_type(Type::Array(item_typeid), fns).into_option(),
                     None => None, // message emitted
                 }
             }
-            SMType::Tuple(smtypes, _pos) => {
+            TypeUse::Tuple(smtypes, _pos) => {
                 let mut item_typeids = Vec::new();
                 let mut has_failed = false;
                 for smtype in smtypes {
@@ -196,7 +196,7 @@ impl TypeCollection {
         }
     }
     // wrap Option<usize> to ItemID
-    pub fn get_id_by_smtype(&mut self, ty: SMType, messages: &mut MessageCollection, fns: &mut FnCollection) -> ItemID {
+    pub fn get_id_by_smtype(&mut self, ty: TypeUse, messages: &mut MessageCollection, fns: &mut FnCollection) -> ItemID {
         match self.get_id_internal(ty, messages, fns) {
             Some(id) => ItemID::new(id),
             None => ItemID::new_invalid(),
@@ -500,7 +500,7 @@ fn gen_types_by_smtype() {
 
     macro_rules! test_case {
         ($types: expr, $ty_str: expr, $expect: expr) => (
-            match $types.get_id_by_smtype(SMType::with_test_str($ty_str), &mut MessageCollection::new(), &mut FnCollection::new()).as_option() {
+            match $types.get_id_by_smtype(TypeUse::with_test_str($ty_str), &mut MessageCollection::new(), &mut FnCollection::new()).as_option() {
                 Some(id) => assert_eq!(id, $expect),
                 None => panic!("Unexpectedly return None"),
             }
@@ -508,7 +508,7 @@ fn gen_types_by_smtype() {
         
         ($types: expr, $ty_str: expr => $($msg: expr)*) => (
             let messages = &mut MessageCollection::new();
-            match $types.get_id_by_smtype(SMType::with_test_str($ty_str), messages, &mut FnCollection::new()).as_option() {
+            match $types.get_id_by_smtype(TypeUse::with_test_str($ty_str), messages, &mut FnCollection::new()).as_option() {
                 Some(id) => panic!("Unexpectedly success, result: {:?}", id),
                 None => (),
             }
