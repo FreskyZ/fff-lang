@@ -23,7 +23,6 @@ mod binary;
 
 pub use self::binary::BinaryExpr;
 pub use self::unary::UnaryExpr;
-pub use self::postfix::Postfix;
 pub use self::postfix::PostfixExpr;
 pub use self::primary::PrimaryExpression;
 

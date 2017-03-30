@@ -836,7 +836,6 @@ mod tests {
     use super::super::TypeUse;
     use super::super::postfix::PostfixExpr;
     use super::super::primary::PrimaryExpression;
-    use super::super::postfix::Postfix;
     use super::super::unary::UnaryExpr;
     use super::super::binary::BinaryExpr;
     

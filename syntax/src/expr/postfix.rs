@@ -15,7 +15,7 @@ use message::SyntaxMessage;
 use message::Message;
 use message::MessageCollection;
 
-use lexical::Lexer;
+use lexical::TokenStream;
 use lexical::SeperatorKind;
 use lexical::KeywordKind;
 
@@ -26,53 +26,58 @@ use super::super::TypeUse;
 
 use super::primary::PrimaryExpression;
 
-#[derive(Debug, Eq, PartialEq, Clone)]
-pub enum Postfix {
-    Subscription(Vec<BinaryExpr>, StringPosition),  // '[', ']' position
-    FunctionCall(Vec<BinaryExpr>, StringPosition),  // '(', ')' position
-    MemberAccess(String, StringPosition),             // '.xxx' position
-    TypeCast(TypeUse, StringPosition),                 // 'as' position
-}
-impl Postfix {
-    pub fn pos(&self) -> StringPosition {
-        match *self {
-            Postfix::Subscription(ref _exprs, ref pos) => *pos,
-            Postfix::FunctionCall(ref _exprs, ref pos) => *pos,
-            Postfix::MemberAccess(ref _name, ref pos) => *pos,
-            Postfix::TypeCast(ref ty, ref pos) => StringPosition::merge(*pos, ty.pos_all()),
-        }
-    }
-}
-
 #[derive(Eq, PartialEq, Clone)]
-pub struct PostfixExpr {
-    pub prim: PrimaryExpression,
-    pub postfixs: Vec<Postfix>,
+enum ActualPostfix {
+    Subscription(Vec<BinaryExpr>, StringPosition),      // []'s position
+    FunctionCall(Vec<BinaryExpr>, StringPosition),      // ()'s position
+    MemberFunctionCall(String, Vec<BinaryExpr>, StringPosition, StringPosition), // .xxx()'s position
+    MemberAccess(String, StringPosition),               // .xxx's position
+    TypeCast(TypeUse, StringPosition),                  // as position
 }
+#[derive(Eq, PartialEq, Clone)]
+enum PostfixExprImpl {
+    Primary(PrimaryExpression),
+    Postfix(PostfixExpr, ActualPostfix, StringPosition), // all_strpos
+}
+#[derive(Eq, PartialEq, Clone)]
+pub struct PostfixExpr(Box<PostfixExprImpl>);
+
 impl ISyntaxItemFormat for PostfixExpr {
     fn format(&self, indent: u32) -> String {
-        if self.postfixs.len() == 0 {
-            format!("{}", self.prim.format(indent))
-        } else {
-            format!("{}PostfixExpr:\n{}{}", 
-                PostfixExpr::indent_str(indent),
-                self.prim.format(indent + 1),
-                self.postfixs.iter().fold(String::new(), |mut buf, postfix| { buf.push_str("\n"); buf.push_str(&match postfix {
-                    &Postfix::Subscription(ref exprs, ref strpos) => 
-                        format!("{}Subscription\n{}Bracket at <{:?}>{}", 
-                            PostfixExpr::indent_str(indent + 1), PostfixExpr::indent_str(indent + 2),
-                            strpos, exprs.iter().fold(String::new(), |mut buf, expr| { buf.push_str("\n"); buf.push_str(&expr.format(indent + 2)); buf })),
-                    &Postfix::FunctionCall(ref exprs, ref strpos) => 
-                        format!("{}FunctionCall\n{}Paren at <{:?}>{}", 
-                            PostfixExpr::indent_str(indent + 1), PostfixExpr::indent_str(indent + 2),
-                            strpos, exprs.iter().fold(String::new(), |mut buf, expr| { buf.push_str("\n"); buf.push_str(&expr.format(indent + 2)); buf })),
-                    &Postfix::MemberAccess(ref name, ref strpos) => 
-                        format!("{}AccessMember: {} <{:?}>", PostfixExpr::indent_str(indent + 1), name, strpos),
-                    &Postfix::TypeCast(ref type_use, ref strpos) => 
-                        format!("{}CastAs\n{}As at <{:?}>\n{}", 
-                            PostfixExpr::indent_str(indent + 1), PostfixExpr::indent_str(indent + 2), strpos, type_use.format(indent + 2)),
-                }); buf }),
-            )
+        match self.0.as_ref() {
+            &PostfixExprImpl::Primary(ref primary_expr) => primary_expr.format(indent),
+            &PostfixExprImpl::Postfix(ref postfix_expr, ActualPostfix::Subscription(ref exprs, ref bracket_strpos), ref all_strpos) => 
+                format!("{}PostfixExpr <{:?}>\n{}\n{}Subscription\n{}Bracket at <{:?}>{}", 
+                    PostfixExpr::indent_str(indent), all_strpos,
+                    postfix_expr.format(indent + 1),
+                    PostfixExpr::indent_str(indent + 1), 
+                    PostfixExpr::indent_str(indent + 2), bracket_strpos, 
+                    exprs.iter().fold(String::new(), |mut buf, expr| { buf.push_str("\n"); buf.push_str(&expr.format(indent + 2)); buf })),
+            &PostfixExprImpl::Postfix(ref postfix_expr, ActualPostfix::FunctionCall(ref exprs, ref paren_strpos), ref all_strpos) => 
+                format!("{}PostfixExpr <{:?}>\n{}\n{}FunctionCall\n{}Paren at <{:?}>{}", 
+                    PostfixExpr::indent_str(indent), all_strpos,
+                    postfix_expr.format(indent + 1),
+                    PostfixExpr::indent_str(indent + 1), 
+                    PostfixExpr::indent_str(indent + 2), paren_strpos, 
+                    exprs.iter().fold(String::new(), |mut buf, expr| { buf.push_str("\n"); buf.push_str(&expr.format(indent + 2)); buf })),
+            &PostfixExprImpl::Postfix(ref postfix_expr, ActualPostfix::MemberFunctionCall(ref name, ref exprs, ref ident_strpos, ref paren_strpos), ref all_strpos) =>
+                format!("{}PostfixExpr <{:?}>\n{}\n{}MemberFunctionCall\n{}{} <{:?}>, Paren at <{:?}>{}", 
+                    PostfixExpr::indent_str(indent), all_strpos,
+                    postfix_expr.format(indent + 1),
+                    PostfixExpr::indent_str(indent + 1), 
+                    PostfixExpr::indent_str(indent + 2), name, ident_strpos, paren_strpos, 
+                    exprs.iter().fold(String::new(), |mut buf, expr| { buf.push_str("\n"); buf.push_str(&expr.format(indent + 2)); buf })), 
+            &PostfixExprImpl::Postfix(ref postfix_expr, ActualPostfix::MemberAccess(ref name, ref name_strpos), ref all_strpos) => 
+                format!("{}PostfixExpr <{:?}>\n{}\n{}AccessMember: {} <{:?}>",
+                    PostfixExpr::indent_str(indent), all_strpos,
+                    postfix_expr.format(indent + 1), PostfixExpr::indent_str(indent + 1), name, name_strpos),
+            &PostfixExprImpl::Postfix(ref postfix_expr, ActualPostfix::TypeCast(ref typeuse, ref as_strpos), ref all_strpos) => 
+                format!("{}PostfixExpr <{:?}>\n{}\n{}CastAs\n{}As at <{:?}>\n{}", 
+                    PostfixExpr::indent_str(indent), all_strpos,
+                    postfix_expr.format(indent + 1),
+                    PostfixExpr::indent_str(indent + 1), 
+                    PostfixExpr::indent_str(indent + 2), as_strpos, 
+                    typeuse.format(indent + 2)),
         }
     }
 }
@@ -81,130 +86,236 @@ impl fmt::Debug for PostfixExpr {
         write!(f, "\n{}", self.format(0))
     }
 }
-
-impl PostfixExpr {
-
-    pub fn pos_prim(&self) -> StringPosition { self.prim.pos_all() }
+impl PostfixExpr { // New
 
     pub fn new_primary(primary_expr: PrimaryExpression) -> PostfixExpr {
-        PostfixExpr{ prim: primary_expr, postfixs: Vec::new() }
+        PostfixExpr(Box::new(PostfixExprImpl::Primary(primary_expr)))
+    }
+
+    pub fn new_subscription(postfix_expr: PostfixExpr, bracket_strpos: StringPosition, exprs: Vec<BinaryExpr>) -> PostfixExpr {
+        let all_strpos = StringPosition::merge(postfix_expr.pos_all(), bracket_strpos);
+        PostfixExpr(Box::new(PostfixExprImpl::Postfix(postfix_expr, ActualPostfix::Subscription(exprs, bracket_strpos), all_strpos)))
+    }
+    pub fn new_function_call(postfix_expr: PostfixExpr, paren_strpos: StringPosition, exprs: Vec<BinaryExpr>) -> PostfixExpr {
+        let all_strpos = StringPosition::merge(postfix_expr.pos_all(), paren_strpos);
+        PostfixExpr(Box::new(PostfixExprImpl::Postfix(postfix_expr, ActualPostfix::FunctionCall(exprs, paren_strpos), all_strpos)))
+    }
+    pub fn new_member_function_call(postfix_expr: PostfixExpr, name: String, ident_strpos: StringPosition, paren_strpos: StringPosition, exprs: Vec<BinaryExpr>) -> PostfixExpr {
+        let all_strpos = StringPosition::merge(postfix_expr.pos_all(), paren_strpos);
+        PostfixExpr(Box::new(PostfixExprImpl::Postfix(postfix_expr, ActualPostfix::MemberFunctionCall(name, exprs, ident_strpos, paren_strpos), all_strpos)))
+    }
+    pub fn new_member_access(postfix_expr: PostfixExpr, name: String, name_strpos: StringPosition) -> PostfixExpr {
+        let all_strpos = StringPosition::merge(postfix_expr.pos_all(), name_strpos);
+        PostfixExpr(Box::new(PostfixExprImpl::Postfix(postfix_expr, ActualPostfix::MemberAccess(name, name_strpos), all_strpos)))
+    }
+    pub fn new_type_cast(postfix_expr: PostfixExpr, typeuse: TypeUse, as_strpos: StringPosition) -> PostfixExpr {
+        let all_strpos = StringPosition::merge(postfix_expr.pos_all(), as_strpos);
+        PostfixExpr(Box::new(PostfixExprImpl::Postfix(postfix_expr, ActualPostfix::TypeCast(typeuse, as_strpos), all_strpos)))
     }
 }
+impl PostfixExpr { // Get
 
+    pub fn is_primary(&self) -> bool {
+        match self.0.as_ref() {
+            &PostfixExprImpl::Primary(_) => true,
+            &PostfixExprImpl::Postfix(_, _, _) => false,
+        }
+    }
+    pub fn is_postfix(&self) -> bool {
+        match self.0.as_ref() {
+            &PostfixExprImpl::Primary(_) => false,
+            &PostfixExprImpl::Postfix(_, _, _) => true,
+        }
+    }
+
+    pub fn get_primary(&self) -> Option<&PrimaryExpression> {
+        match self.0.as_ref() {
+            &PostfixExprImpl::Primary(ref primary_expr) => Some(primary_expr),
+            &PostfixExprImpl::Postfix(_, _, _) => None,
+        }
+    }
+    pub fn get_postfix(&self) -> Option<&PostfixExpr> {
+        match self.0.as_ref() {
+            &PostfixExprImpl::Primary(_) => None,
+            &PostfixExprImpl::Postfix(ref postfix_expr, ref _2, ref _3) => Some(postfix_expr),
+        }
+    }
+    pub fn get_all_strpos(&self) -> StringPosition {
+        match self.0.as_ref() {
+            &PostfixExprImpl::Primary(ref primary_expr) => primary_expr.pos_all(),
+            &PostfixExprImpl::Postfix(ref _1, ref _2, ref all_strpos) => *all_strpos,
+        }
+    }
+
+    pub fn is_subscription(&self) -> bool {
+        match self.0.as_ref() {
+            &PostfixExprImpl::Postfix(ref _1, ActualPostfix::Subscription(_, _), ref _2) => true,
+            _ => false,
+        }
+    }
+    pub fn is_function_call(&self) -> bool {
+        match self.0.as_ref() {
+            &PostfixExprImpl::Postfix(ref _1, ActualPostfix::FunctionCall(_, _), ref _2) => true,
+            _ => false,
+        }
+    }
+    pub fn is_member_function_call(&self) -> bool {
+        match self.0.as_ref() {
+            &PostfixExprImpl::Postfix(ref _1, ActualPostfix::MemberFunctionCall(_, _, _, _), ref _2) => true,
+            _ => false,
+        }
+    }
+    pub fn is_member_access(&self) -> bool {
+        match self.0.as_ref() {
+            &PostfixExprImpl::Postfix(ref _1, ActualPostfix::MemberAccess(_, _), ref _2) => true,
+            _ => false,
+        }
+    }
+    pub fn is_type_cast(&self) -> bool {
+        match self.0.as_ref() {
+            &PostfixExprImpl::Postfix(ref _1, ActualPostfix::TypeCast(_, _), ref _2) => true,
+            _ => false,
+        }
+    }
+
+    pub fn get_exprs(&self) -> Option<&Vec<BinaryExpr>> {
+        match self.0.as_ref() {
+            &PostfixExprImpl::Postfix(_, ActualPostfix::Subscription(ref exprs, _), _)
+            | &PostfixExprImpl::Postfix(_, ActualPostfix::FunctionCall(ref exprs, _), _) => Some(exprs),
+            &PostfixExprImpl::Postfix(_, ActualPostfix::MemberFunctionCall(_, ref exprs, _, _), _) => Some(exprs),
+            _ => None,
+        }
+    }
+    pub fn get_delimeter_strpos(&self) -> StringPosition { // [] or ()'s position
+        match self.0.as_ref() {
+            &PostfixExprImpl::Postfix(_, ActualPostfix::Subscription(_, ref delimeter_strpos), _)
+            | &PostfixExprImpl::Postfix(_, ActualPostfix::FunctionCall(_, ref delimeter_strpos), _) => *delimeter_strpos,
+            &PostfixExprImpl::Postfix(_, ActualPostfix::MemberFunctionCall(_, _, _, ref delimeter_strpos), _) => *delimeter_strpos,
+            _ => StringPosition::new(),
+        }
+    }
+    pub fn get_name(&self) -> Option<&String> {
+        match self.0.as_ref() {
+            &PostfixExprImpl::Postfix(_, ActualPostfix::MemberAccess(ref name, _), _) => Some(name),
+            &PostfixExprImpl::Postfix(_, ActualPostfix::MemberFunctionCall(ref name, _, _, _), _) => Some(name),
+            _ => None,            
+        }
+    }
+    pub fn get_name_strpos(&self) -> StringPosition {
+        match self.0.as_ref() {
+            &PostfixExprImpl::Postfix(_, ActualPostfix::MemberAccess(_, ref name_strpos), _) => *name_strpos,
+            &PostfixExprImpl::Postfix(_, ActualPostfix::MemberFunctionCall(_, _, ref name_strpos, _), _) => *name_strpos,
+            _ => StringPosition::new(),
+        }
+    }
+    pub fn get_typeuse(&self) -> Option<&TypeUse> {
+        match self.0.as_ref() {
+            &PostfixExprImpl::Postfix(_, ActualPostfix::TypeCast(ref typeuse, _), _) => Some(typeuse),
+            _ => None,
+        }
+    }
+    pub fn get_as_strpos(&self) -> StringPosition {
+        match self.0.as_ref() {
+            &PostfixExprImpl::Postfix(_, ActualPostfix::TypeCast(_, ref as_strpos), _) => *as_strpos,
+            _ => StringPosition::new(),
+        }
+    }
+}
 impl ISyntaxItem for PostfixExpr {
     
     fn pos_all(&self) -> StringPosition { 
-        StringPosition::merge(
-            self.prim.pos_all(), 
-            match self.postfixs.iter().last() {
-                Some(&Postfix::Subscription(ref _exprs, ref pos)) | Some(&Postfix::FunctionCall(ref _exprs, ref pos)) => *pos,
-                Some(&Postfix::MemberAccess(ref _name, ref pos)) => *pos,
-                Some(&Postfix::TypeCast(ref ty, ref _pos)) => ty.pos_all(),
-                None => self.prim.pos_all(),
-            }
-        )
+        self.get_all_strpos()
     }
-
-    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
-        PrimaryExpression::is_first_final(lexer, index)
+    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
+        PrimaryExpression::is_first_final(tokens, index)
     }
     
     #[allow(unused_assignments)]
-    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<PostfixExpr>, usize) {
+    fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<PostfixExpr>, usize) {
         
         #[cfg(feature = "trace_postfix_expr_parse")]
-        macro_rules! trace { ($($arg:tt)*) => ({ print!("[PostfixExpr]"); println!($($arg)*); }) }
+        macro_rules! trace { ($($arg:tt)*) => ({ print!("[PostfixExpr:{}] ", line!()); println!($($arg)*); }) }
         #[cfg(not(feature = "trace_postfix_expr_parse"))]
         macro_rules! trace { ($($arg:tt)*) => () }
 
-        let (primary, primary_len) = match PrimaryExpression::parse(lexer, messages, index) {
-            (Some(prim), prim_len) => (prim, prim_len),
-            (None, prim_len) => return (None, prim_len), // no recover
+        let (mut current_retval, mut current_length) = match PrimaryExpression::parse(tokens, messages, index) {
+            (Some(primary_expr), primary_length) => (PostfixExpr::new_primary(primary_expr), primary_length),
+            (None, none_length) => return (None, none_length), // no recover
         };
-        trace!("parsing postfix, primary is {}", primary);
+        trace!("parsed primary, current is {:?}", current_retval);
 
-        let mut postfixs = Vec::new();
-        let mut current_len = primary_len;
         'postfix: loop {
             // function call and subscription both accept expression list, merge the processor and it is the end seperator
             let mut expect_end_sep = SeperatorKind::Add;
-            if lexer.nth(index + current_len).is_seperator(SeperatorKind::Dot) {
-                match lexer.nth(index + current_len + 1).get_identifier() {
+            if tokens.nth(index + current_length).is_seperator(SeperatorKind::Dot) {
+                match tokens.nth(index + current_length + 1).get_identifier() {
                     Some(ident) => {
                         trace!{ "get one postfix, member access {:?}", ident, }
-                        postfixs.push(Postfix::MemberAccess(
-                            ident.clone(), 
-                            StringPosition::merge(
-                                lexer.pos(index + current_len),
-                                lexer.pos(index + current_len + 1)
-                            )
-                        ));
-                        current_len += 2;
+                        current_retval = PostfixExpr::new_member_access(
+                            current_retval, ident.clone(), StringPosition::merge(tokens.pos(index + current_length), tokens.pos(index + current_length + 1))
+                        );
+                        current_length += 2;
                         continue 'postfix;
                     }
                     None => {
-                        trace!{ "get postfix failed, member access not followed ident" }
-                        return push_unexpect!(lexer, messages, "member identifier", index + current_len + 1, current_len + 1);
+                        trace!("get postfix failed, member access not followed ident");
+                        return push_unexpect!(tokens, messages, "member identifier", index + current_length + 1, current_length + 1);
                     }
                 }
-            } else if lexer.nth(index + current_len).is_keyword(KeywordKind::As) {
-                match TypeUse::parse(lexer, messages, index + current_len + 1) {
+            } else if tokens.nth(index + current_length).is_keyword(KeywordKind::As) {
+                match TypeUse::parse(tokens, messages, index + current_length + 1) {
                     (Some(ty), ty_len) => {
-                        trace!{ "get one postfix, type cast as {:?}", ty, }
-                        postfixs.push(Postfix::TypeCast(ty, lexer.pos(index + current_len)));
-                        current_len += ty_len + 1;
+                        trace!("get one postfix, type cast as {:?}", ty);
+                        current_retval = PostfixExpr::new_type_cast(
+                            current_retval, ty, tokens.pos(index + current_length)
+                        );
+                        current_length += ty_len + 1;
                         continue 'postfix;
                     }
                     (None, length) => {
                         trace!{ "get postfix failed, type cast not followed typedef" }
-                        return (None, current_len + 1 + length);  
+                        return (None, current_length + 1 + length);  
                     } 
                 }
-            } else if lexer.nth(index + current_len).is_seperator(SeperatorKind::LeftParenthenes) {
-                if lexer.nth(index + current_len + 1).is_seperator(SeperatorKind::RightParenthenes) {
-                    trace!{ "get one postfix, none parameter function call" }
-                    postfixs.push(Postfix::FunctionCall(
-                        Vec::new(), 
-                        StringPosition::merge(lexer.pos(index + current_len), lexer.pos(index + current_len + 1))
-                    ));
-                    current_len += 2;
+            } else if tokens.nth(index + current_length).is_seperator(SeperatorKind::LeftParenthenes) {
+                if tokens.nth(index + current_length + 1).is_seperator(SeperatorKind::RightParenthenes) {
+                    trace!("get one postfix, none parameter function call");
+                    current_retval = PostfixExpr::new_function_call(
+                        current_retval, StringPosition::merge(tokens.pos(index + current_length), tokens.pos(index + current_length + 1)), Vec::new()
+                    );
+                    current_length += 2;
                     continue 'postfix; // no param function call
                 }
-                if lexer.nth(index + current_len + 1).is_seperator(SeperatorKind::Comma) 
-                    && lexer.nth(index + current_len + 2).is_seperator(SeperatorKind::RightParenthenes) {
-                        let pos1 = StringPosition::merge(lexer.pos(index + current_len), lexer.pos(index + current_len + 2));
-                        let pos2 = lexer.pos(index + current_len + 1).start_pos();
-                        messages.push(SyntaxMessage::SingleCommaInFunctionCall{ call_pos: pos1, comma_pos: pos2 });
-                        postfixs.push(Postfix::FunctionCall(
-                            Vec::new(),
-                            pos1,
-                        ));
-                        current_len += 3;
+                if tokens.nth(index + current_length + 1).is_seperator(SeperatorKind::Comma) 
+                    && tokens.nth(index + current_length + 2).is_seperator(SeperatorKind::RightParenthenes) {
+                        let paren_strpos = StringPosition::merge(tokens.pos(index + current_length), tokens.pos(index + current_length + 2));
+                        let pos2 = tokens.pos(index + current_length + 1).start_pos();
+                        messages.push(SyntaxMessage::SingleCommaInFunctionCall{ call_pos: paren_strpos, comma_pos: pos2 });
+                        current_retval = PostfixExpr::new_function_call(current_retval, paren_strpos, Vec::new());
+                        current_length += 3;
                         continue 'postfix;
                 }
                 expect_end_sep = SeperatorKind::RightParenthenes;
-            } else if lexer.nth(index + current_len).is_seperator(SeperatorKind::LeftBracket) {
-                if lexer.nth(index + current_len + 1).is_seperator(SeperatorKind::RightBracket) {
+            } else if tokens.nth(index + current_length).is_seperator(SeperatorKind::LeftBracket) {
+                if tokens.nth(index + current_length + 1).is_seperator(SeperatorKind::RightBracket) {
                     // first recoverable error here!!!, it is recoverable because later with type infer it can be used
-                    let pos = lexer.pos(index + current_len);
+                    let pos = tokens.pos(index + current_length);
                     messages.push(SyntaxMessage::EmptySubscription{ pos: pos });
-                    postfixs.push(Postfix::Subscription(
-                        Vec::new(),
-                        StringPosition::merge(lexer.pos(index + current_len), lexer.pos(index + current_len + 1)),
-                    ));
-                    current_len += 2;
+                    current_retval = PostfixExpr::new_subscription(
+                        current_retval, StringPosition::merge(tokens.pos(index + current_length), tokens.pos(index + current_length + 1)), Vec::new()
+                    );
+                    current_length += 2;
                     continue 'postfix;
                 }
-                if lexer.nth(index + current_len + 1).is_seperator(SeperatorKind::Comma) 
-                    && lexer.nth(index + current_len + 2).is_seperator(SeperatorKind::RightBracket) {
-                        let pos1 = StringPosition::merge(lexer.pos(index + current_len), lexer.pos(index + current_len + 2));
-                        let pos2 = lexer.pos(index + current_len + 1).start_pos();
+                if tokens.nth(index + current_length + 1).is_seperator(SeperatorKind::Comma) 
+                    && tokens.nth(index + current_length + 2).is_seperator(SeperatorKind::RightBracket) {
+                        let pos1 = StringPosition::merge(tokens.pos(index + current_length), tokens.pos(index + current_length + 2));
+                        let pos2 = tokens.pos(index + current_length + 1).start_pos();
                         messages.push(SyntaxMessage::SingleCommaInSubscription{ sub_pos: pos1, comma_pos: pos2 });
-                        postfixs.push(Postfix::Subscription(
-                            Vec::new(),
-                            pos1,
-                        ));
-                        current_len += 3;
+                        current_retval = PostfixExpr::new_subscription(
+                            current_retval, pos1, Vec::new()
+                        );
+                        current_length += 3;
                         continue 'postfix;
                 }
                 expect_end_sep = SeperatorKind::RightBracket;
@@ -215,11 +326,11 @@ impl ISyntaxItem for PostfixExpr {
             // Get the expression list
             trace!{ "parsing postfix, start processing expression list of {}", 
                 if expect_end_sep == SeperatorKind::RightParenthenes { "function call".to_owned() } else { "subscription".to_owned() }, }
-            current_len += 1; 
-            match BinaryExpr::parse(lexer, messages, index + current_len) {
+            current_length += 1; 
+            match BinaryExpr::parse(tokens, messages, index + current_length) {
                 (None, length) => { 
                     trace!{ "parsing postfix's expression list, expression parse failed" }
-                    return (None, current_len + length);
+                    return (None, current_length + length);
                 }
                 (Some(expr1), expr1_len) => {
                     let mut exprs_len = expr1_len;
@@ -227,47 +338,45 @@ impl ISyntaxItem for PostfixExpr {
                     'expr: loop { 
                         match expect_end_sep {
                             SeperatorKind::RightParenthenes 
-                                if lexer.nth(index + current_len + exprs_len).is_seperator(SeperatorKind::RightParenthenes) 
-                                    || (lexer.nth(index + current_len + exprs_len).is_seperator(SeperatorKind::Comma)
-                                        && lexer.nth(index + current_len + exprs_len + 1).is_seperator(SeperatorKind::RightParenthenes))  => {
+                                if tokens.nth(index + current_length + exprs_len).is_seperator(SeperatorKind::RightParenthenes) 
+                                    || (tokens.nth(index + current_length + exprs_len).is_seperator(SeperatorKind::Comma)
+                                        && tokens.nth(index + current_length + exprs_len + 1).is_seperator(SeperatorKind::RightParenthenes))  => {
                                 trace!{ "parsing postfix function call's expression list finished" }
-                                let pos_left_paren = lexer.pos(index + current_len - 1);
-                                current_len += exprs_len + if lexer.nth(index + current_len + exprs_len).is_seperator(SeperatorKind::Comma) { 2 } else { 1 };
-                                let pos_right_paren = lexer.pos(index + current_len - 1);
-                                postfixs.push(Postfix::FunctionCall(
-                                    exprs,
-                                    StringPosition::merge(pos_left_paren, pos_right_paren)
-                                ));
+                                let pos_left_paren = tokens.pos(index + current_length - 1);
+                                current_length += exprs_len + if tokens.nth(index + current_length + exprs_len).is_seperator(SeperatorKind::Comma) { 2 } else { 1 };
+                                let pos_right_paren = tokens.pos(index + current_length - 1);
+                                current_retval = PostfixExpr::new_function_call(
+                                    current_retval, StringPosition::merge(pos_left_paren, pos_right_paren), exprs
+                                );
                                 continue 'postfix;
                             }
                             SeperatorKind::RightBracket 
-                                if lexer.nth(index + current_len + exprs_len).is_seperator(SeperatorKind::RightBracket)
-                                    || (lexer.nth(index + current_len + exprs_len).is_seperator(SeperatorKind::Comma)
-                                        && lexer.nth(index + current_len + exprs_len + 1).is_seperator(SeperatorKind::RightBracket)) => {
+                                if tokens.nth(index + current_length + exprs_len).is_seperator(SeperatorKind::RightBracket)
+                                    || (tokens.nth(index + current_length + exprs_len).is_seperator(SeperatorKind::Comma)
+                                        && tokens.nth(index + current_length + exprs_len + 1).is_seperator(SeperatorKind::RightBracket)) => {
                                 trace!{ "parsing postfix subscription's expression list finished" }
-                                let pos_left_bracket = lexer.pos(index + current_len - 1);
-                                current_len += exprs_len + if lexer.nth(index + current_len + exprs_len).is_seperator(SeperatorKind::Comma) { 2 } else { 1 };
-                                let pos_right_bracket = lexer.pos(index + current_len - 1);
-                                postfixs.push(Postfix::Subscription(
-                                    exprs,
-                                    StringPosition::merge(pos_left_bracket, pos_right_bracket)
-                                ));
+                                let pos_left_bracket = tokens.pos(index + current_length - 1);
+                                current_length += exprs_len + if tokens.nth(index + current_length + exprs_len).is_seperator(SeperatorKind::Comma) { 2 } else { 1 };
+                                let pos_right_bracket = tokens.pos(index + current_length - 1);
+                                current_retval = PostfixExpr::new_subscription(
+                                    current_retval, StringPosition::merge(pos_left_bracket, pos_right_bracket), exprs
+                                );
                                 continue 'postfix;
                             }
                             SeperatorKind::RightParenthenes | SeperatorKind::RightBracket => (),
                             _ => unreachable!()
                         }
-                        if lexer.nth(index + current_len + exprs_len).is_seperator(SeperatorKind::Comma) {
+                        if tokens.nth(index + current_length + exprs_len).is_seperator(SeperatorKind::Comma) {
                             exprs_len += 1;
-                            match BinaryExpr::parse(lexer, messages, index + current_len + exprs_len) {
+                            match BinaryExpr::parse(tokens, messages, index + current_length + exprs_len) {
                                 (Some(expr), expr_len) => {
-                                    trace!{ "parsing postfix's expression list, get expression: {}", expr, }
+                                    trace!("parsing postfix's expression list, get expression: {:?}", expr);
                                     exprs_len += expr_len;
                                     exprs.push(expr);
                                 }
                                 (None, length) => {
                                     trace!{ "parsing postfix's expression list failed, get none expression" }
-                                    return (None, current_len + exprs_len + length);
+                                    return (None, current_length + exprs_len + length);
                                 }
                             }
                         }
@@ -276,17 +385,28 @@ impl ISyntaxItem for PostfixExpr {
             }
         }
 
-        trace!{ "parsing postfixs finished, get postfixes: {:?}", postfixs, }
-        (Some(PostfixExpr{ prim: primary, postfixs: postfixs }), current_len)
+        trace!("parsing postfix finished, get retval: {:?}", current_retval);
+        (Some(current_retval), current_length)
     }
 }
 
 #[cfg(test)] #[test]
 fn postfix_expr_parse() {
-    
-    //                                      0        1         2         3         4         5         6         7         8     
-    //                                      1234567890123456789012345678901234567890123456789012345678901234567890123456789
-    // let left = BinaryExpr::with_test_str("abc.defg[[1](klm, [123, 456,], )](opq, 456.)() as [i32].rst[uvw, xyz, ABC]");
+    use lexical::LitValue;
+
+    //                                      0        1         2         3         4         5     
+    //                                      12345678901234567890123456789012345678901234567890123
+    assert_eq!{ PostfixExpr::with_test_str("1.a[[3](4, [5, 6,], )](7, 8)() as [i32].b[10, 11, 12]"),
+        PostfixExpr::new_subscription(
+            PostfixExpr::new_primary(PrimaryExpression::Lit(LitValue::from(1), make_str_pos!(1, 1, 1, 1))),
+            make_str_pos!(1, 42, 1, 53),
+            vec![
+                BinaryExpr::new_primary(PrimaryExpression::Lit(LitValue::from(10), make_str_pos!(1, 43, 1, 44))),
+                BinaryExpr::new_primary(PrimaryExpression::Lit(LitValue::from(11), make_str_pos!(1, 47, 1, 48))),
+                BinaryExpr::new_primary(PrimaryExpression::Lit(LitValue::from(12), make_str_pos!(1, 51, 1, 52))),
+            ]
+        )
+    }
     // let right = expr_to_postfix!{
     //     PrimaryExpression::Ident("abc".to_owned(), make_str_pos!(1, 1, 1, 3)),
     //     Postfix::MemberAccess("defg".to_owned(), make_str_pos!(1, 4, 1, 8))
@@ -333,14 +453,6 @@ fn postfix_expr_parse() {
     // };
 
     // assert_eq!(left, right);
-    // let left_desc = &format!("{:?}", left);
-    // let right_desc = &format!("{:?}", right);
-    // for (index, (ch1, ch2)) in left_desc.chars().into_iter().zip(right_desc.chars().into_iter()).enumerate() {
-    //     if ch1 != ch2 {
-    //         panic!("ch pair diff at {}: {}, {}", index, ch1, ch2);
-        
-    //     }
-    // }
 
     // perrorln!("{:?}", BinaryExpr::with_test_str("writeln(\"helloworld\")"));
 }
