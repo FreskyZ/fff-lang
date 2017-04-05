@@ -2,9 +2,7 @@
 name = "codepos"
 version = "0.1.2"
 authors = ["FreskyZ <fresky7@outlook.com>"]
-
-[dependencies]
-
+workspace = "../ffc"
 
 [lib]
 name = "codepos"

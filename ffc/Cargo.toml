@@ -10,3 +10,15 @@ util = { path="../util" }
 [[bin]]
 name = "ffc"
 path = "main.rs"
+
+[workspace]
+members = [
+    "../codemap",
+    "../codepos",
+    "../driver",
+    "../lexical",
+    "../messages",
+    "../syntax",
+    "../pefile",
+    "../util"
+]
