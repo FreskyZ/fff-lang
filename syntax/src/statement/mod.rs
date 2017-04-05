@@ -14,7 +14,7 @@ use message::MessageCollection;
 
 use lexical::Lexer;
 
-use super::ast_item::ISyntaxItem;
+use super::ISyntaxItem;
 use super::Block;
 
 mod var_decl;

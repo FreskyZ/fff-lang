@@ -11,7 +11,7 @@ use lexical::Lexer;
 use lexical::SeperatorKind;
 use lexical::SeperatorCategory;
 
-use super::super::ast_item::ISyntaxItem;
+use super::super::ISyntaxItem;
 use super::super::Expression;
 
 #[derive(Eq, PartialEq)]
@@ -105,51 +105,44 @@ impl ISyntaxItem for ExpressionStatement {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::ExpressionStatement;
-    use codepos::StringPosition;
-    use lexical::SeperatorKind;
-    use super::super::super::ast_item::ISyntaxItem;
-    use super::super::super::Expression;
+#[cfg(test)] #[test]
+fn ast_stmt_expr() {
+    use super::super::ISyntaxItemWithStr;
+    use super::super::Expression;
 
-    #[test]
-    fn ast_stmt_expr() {
+    macro_rules! test_case {
+        ($program: expr, $len: expr, $expect: expr) => (
+            let (result, len) = ExpressionStatement::with_test_str_ret_size($program);
+            assert_eq!(result, Some($expect));
+            assert_eq!(len, $len);
+        )
+    }
 
-        macro_rules! test_case {
-            ($program: expr, $len: expr, $expect: expr) => (
-                let (result, len) = ExpressionStatement::with_test_str_ret_size($program);
-                assert_eq!(result, Some($expect));
-                assert_eq!(len, $len);
-            )
+    //           12345678 90123456789 0123
+    test_case!{ "writeln(\"helloworld\");", 5,
+        ExpressionStatement {
+            left_expr: Expression::with_test_str("writeln(\"helloworld\")"),
+            op: None,
+            right_expr: None,
+            pos: [StringPosition::new(), make_str_pos!(1, 22, 1, 22)]
+        } 
+    }
+    //           1234567890
+    test_case!{ "1 + 1 = 2;", 6,
+        ExpressionStatement {
+            left_expr: Expression::with_test_str("1 + 1"),
+            op: Some(SeperatorKind::Assign),
+            right_expr: Some(Expression::with_test_str("        2")),
+            pos: [make_str_pos!(1, 7, 1, 7), make_str_pos!(1, 10, 1, 10)]
         }
-
-        //           12345678 90123456789 0123
-        test_case!{ "writeln(\"helloworld\");", 5,
-            ExpressionStatement {
-                left_expr: Expression::with_test_str("writeln(\"helloworld\")"),
-                op: None,
-                right_expr: None,
-                pos: [StringPosition::new(), make_str_pos!(1, 22, 1, 22)]
-            } 
-        }
-        //           1234567890
-        test_case!{ "1 + 1 = 2;", 6,
-            ExpressionStatement {
-                left_expr: Expression::with_test_str("1 + 1"),
-                op: Some(SeperatorKind::Assign),
-                right_expr: Some(Expression::with_test_str("        2")),
-                pos: [make_str_pos!(1, 7, 1, 7), make_str_pos!(1, 10, 1, 10)]
-            }
-        }
-        //           1234567890
-        test_case!{ "1 + 1+= 2;", 6,
-            ExpressionStatement {
-                left_expr: Expression::with_test_str("1 + 1"),
-                op: Some(SeperatorKind::AddAssign),
-                right_expr: Some(Expression::with_test_str("       2")),
-                pos: [make_str_pos!(1, 6, 1, 7), make_str_pos!(1, 10, 1, 10)]
-            }
+    }
+    //           1234567890
+    test_case!{ "1 + 1+= 2;", 6,
+        ExpressionStatement {
+            left_expr: Expression::with_test_str("1 + 1"),
+            op: Some(SeperatorKind::AddAssign),
+            right_expr: Some(Expression::with_test_str("       2")),
+            pos: [make_str_pos!(1, 6, 1, 7), make_str_pos!(1, 10, 1, 10)]
         }
     }
 }

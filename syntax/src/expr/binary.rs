@@ -27,11 +27,11 @@ use super::super::ISyntaxItem;
 use super::super::ISyntaxItemFormat;
 use super::unary::UnaryExpr;
 use super::postfix::PostfixExpr;
-use super::primary::PrimaryExpression;
+use super::primary::PrimaryExpr;
 use lexical::LitValue;
 
 // TODO: try change them to cfg_attr(test, ...)
-#[derive(Eq, PartialEq, Clone)]
+#[derive(Eq, PartialEq)]
 struct BinaryBinaryExpr {
     left: BinaryExpr,
     operator: SeperatorKind,            // this means every binary operator matches a binary expr
@@ -39,12 +39,12 @@ struct BinaryBinaryExpr {
     right: BinaryExpr,
     all_strpos: StringPosition,
 }
-#[derive(Eq, PartialEq, Clone)]
+#[derive(Eq, PartialEq)]
 enum BinaryExprImpl {
     Unary(UnaryExpr),
     Binary(BinaryBinaryExpr),
 }
-#[derive(Eq, PartialEq, Clone)]
+#[derive(Eq, PartialEq)]
 pub struct BinaryExpr(Box<BinaryExprImpl>); // wrapper for make it not public
 
 impl ISyntaxItemFormat for BinaryExpr {
@@ -86,7 +86,7 @@ impl BinaryExpr { // New
     pub fn new_postfix(postfix_expr: PostfixExpr) -> BinaryExpr {
         BinaryExpr(Box::new(BinaryExprImpl::Unary(UnaryExpr::new_postfix(postfix_expr))))
     }
-    pub fn new_primary(primary_expr: PrimaryExpression) -> BinaryExpr {
+    pub fn new_primary(primary_expr: PrimaryExpr) -> BinaryExpr {
         BinaryExpr(Box::new(BinaryExprImpl::Unary(UnaryExpr::new_primary(primary_expr))))
     }
 }
@@ -217,19 +217,21 @@ impl ISyntaxItem for BinaryExpr {
 fn binary_expr_format() {
     
     let binary_expr = BinaryExpr::new_binary(
-        BinaryExpr::new_primary(PrimaryExpression::Lit(LitValue::from(1), make_str_pos!(1, 1, 1, 1))),
+        BinaryExpr::new_primary(PrimaryExpr::new_lit(LitValue::from(1), make_str_pos!(1, 1, 1, 1))),
         SeperatorKind::Add,
         make_str_pos!(1, 3, 1, 3),
-        BinaryExpr::new_primary(PrimaryExpression::Lit(LitValue::from(2), make_str_pos!(1, 5, 1, 5))),
+        BinaryExpr::new_primary(PrimaryExpr::new_lit(LitValue::from(2), make_str_pos!(1, 5, 1, 5))),
     );
     assert_eq!(binary_expr.format(0), "BinaryExpr <<0>1:1-1:5>\n  Literal: (i32)1 <<0>1:1-1:1>\n  + <<0>1:3-1:3>\n  Literal: (i32)2 <<0>1:5-1:5>");
 }
 
 #[cfg(test)] #[test]
 fn binary_expr_parse() {
+    use lexical::NumLitValue;
+    use super::super::ISyntaxItemWithStr;
     
-    macro_rules! ident { ($ident_name: expr, $strpos: expr) => (BinaryExpr::new_primary(PrimaryExpression::Ident($ident_name.to_owned(), $strpos))) }
-    macro_rules! int { ($value: expr, $strpos: expr) => (BinaryExpr::new_primary(PrimaryExpression::Lit(LitValue::from($value), $strpos))) }
+    macro_rules! ident { ($ident_name: expr, $strpos: expr) => (BinaryExpr::new_primary(PrimaryExpr::new_ident($ident_name.to_owned(), $strpos))) }
+    macro_rules! int { ($value: expr, $strpos: expr) => (BinaryExpr::new_primary(PrimaryExpr::new_lit_num(NumLitValue::from($value), $strpos))) }
 
     let new_binary = BinaryExpr::new_binary;
 
@@ -238,18 +240,18 @@ fn binary_expr_parse() {
     assert_eq!{ BinaryExpr::with_test_str("[1] * [2] / [3]"), 
         BinaryExpr::new_binary(
             BinaryExpr::new_binary(
-                BinaryExpr::new_primary(PrimaryExpression::ArrayDef(vec![
-                    BinaryExpr::new_primary(PrimaryExpression::Lit(LitValue::from(1), make_str_pos!(1, 2, 1, 2))),
-                ], make_str_pos!(1, 1, 1, 3))), 
+                BinaryExpr::new_primary(PrimaryExpr::new_array(make_str_pos!(1, 1, 1, 3), vec![
+                    int!(1, make_str_pos!(1, 2, 1, 2)),
+                ])), 
                 SeperatorKind::Mul, make_str_pos!(1, 5, 1, 5),
-                BinaryExpr::new_primary(PrimaryExpression::ArrayDef(vec![
-                    BinaryExpr::new_primary(PrimaryExpression::Lit(LitValue::from(2), make_str_pos!(1, 8, 1, 8))),
-                ], make_str_pos!(1, 7, 1, 9))),
+                BinaryExpr::new_primary(PrimaryExpr::new_array(make_str_pos!(1, 7, 1, 9), vec![
+                    int!(2, make_str_pos!(1, 8, 1, 8)),
+                ])),
             ),
             SeperatorKind::Div, make_str_pos!(1, 11, 1, 11),
-            BinaryExpr::new_primary(PrimaryExpression::ArrayDef(vec![
-                BinaryExpr::new_primary(PrimaryExpression::Lit(LitValue::from(3), make_str_pos!(1, 14, 1, 14))),
-            ], make_str_pos!(1, 13, 1, 15)))
+            BinaryExpr::new_primary(PrimaryExpr::new_array(make_str_pos!(1, 13, 1, 15), vec![
+                int!(3, make_str_pos!(1, 14, 1, 14)),
+            ]))
         )
     }           
     //                                     0        1         2
@@ -821,164 +823,5 @@ fn binary_expr_parse() {
             SeperatorKind::LogicalOr, make_str_pos!(1, 73, 1, 74),
             int!(0, make_str_pos!(1, 76, 1, 76))
         )
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::super::super::ast_item::ISyntaxItem;
-    use codepos::StringPosition;
-
-    use lexical::SeperatorKind;
-    use lexical::NumLitValue;
-    use lexical::LitValue;
-
-    use super::super::TypeUse;
-    use super::super::postfix::PostfixExpr;
-    use super::super::primary::PrimaryExpression;
-    use super::super::unary::UnaryExpr;
-    use super::super::binary::BinaryExpr;
-    
-    // Helper macros
-    // primary expression
-    macro_rules! expr_to_primary {
-        ($inner: expr) => (BinaryExpr::new_primary($inner))
-    }
-    macro_rules! expr_ident { 
-        ($name: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::Ident($name.to_owned(), $pos)))
-    }
-    macro_rules! expr_str_lit { 
-        ($pos: expr) => (expr_to_primary!(PrimaryExpression::Lit(LitValue::Str(None), $pos)));
-        ($val: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::Lit(LitValue::Str(Some($val.to_owned())), $pos)))
-    }
-    macro_rules! expr_char_lit { 
-        ($pos: expr) => (expr_to_primary!(PrimaryExpression::Lit(LitValue::Char(None), $pos)));
-        ($val: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::Lit(LitValue::Char(Some($val)), $pos)))
-    }
-    macro_rules! expr_num_lit { 
-        ($pos: expr) => (expr_to_primary!(PrimaryExpression::Lit(LitValue::Num(None), $pos)));
-        ($val: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::Lit(LitValue::Num(Some($val)), $pos)))
-    }
-    macro_rules! expr_bool_lit { 
-        ($val: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::Lit(LitValue::Bool($val), $pos)))
-    }
-    macro_rules! expr_paren_expr { 
-        ($expr: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::new_paren_expr($expr, $pos)))
-    }
-    macro_rules! expr_array_def { 
-        ([$($exprs: expr, )*] $pos: expr) => (expr_to_primary!(PrimaryExpression::ArrayDef(vec![$($exprs, )*], $pos)))
-    }
-    macro_rules! expr_array_dup_def { 
-        ($expr1: expr, $expr2: expr, $pos: expr) => (expr_to_primary!(PrimaryExpression::new_array_dup_def($expr1, $expr2, $pos))); 
-    }
-
-    #[test]
-    fn ast_expr_prim_parse() {
-
-        macro_rules! parse {
-            ($program: expr) => ({
-                BinaryExpr::with_test_str($program)
-            })
-        }
-
-        // Case 0
-        assert_eq!(//12345678901234567890
-            parse!( "[1, 2, 3f128, 0u64]"),
-            expr_array_def!{[
-                expr_num_lit!(NumLitValue::I32(1), make_str_pos!(1, 2, 1, 2)),
-                expr_num_lit!(NumLitValue::I32(2), make_str_pos!(1, 5, 1, 5)), 
-                expr_num_lit!(make_str_pos!(1, 8, 1, 12)),
-                expr_num_lit!(NumLitValue::U64(0), make_str_pos!(1, 15, 1, 18)),]
-                make_str_pos!(1, 1, 1, 19)
-            }
-        );
-
-        // Case 1          0        1         2         3
-        //                 12345678901234567890123456789012345
-        assert_eq!(parse!("[[(1)], [abc, (3)], [4, this, [6]]]"),
-            expr_array_def!{[
-                expr_array_def!{[
-                    expr_paren_expr!(expr_num_lit!(NumLitValue::I32(1), make_str_pos!(1, 4, 1, 4)), make_str_pos!(1, 3, 1, 5)),]
-                    make_str_pos!(1, 2, 1, 6) 
-                },
-                expr_array_def!{[
-                    expr_ident!("abc", make_str_pos!(1, 10, 1, 12)),
-                    expr_paren_expr!(expr_num_lit!(NumLitValue::I32(3), make_str_pos!(1, 16, 1, 16)), make_str_pos!(1, 15, 1, 17)),]
-                    make_str_pos!(1, 9, 1, 18)
-                },
-                expr_array_def!{[
-                    expr_num_lit!(NumLitValue::I32(4), make_str_pos!(1, 22, 1, 22)),
-                    expr_ident!("this", make_str_pos!(1, 25, 1, 28)),
-                    expr_array_def!{[
-                        expr_num_lit!(NumLitValue::I32(6), make_str_pos!(1, 32, 1, 32)),]
-                        make_str_pos!(1, 31, 1, 33)
-                    },]
-                    make_str_pos!(1, 21, 1, 34)
-                },]
-                make_str_pos!(1, 1, 1, 35)
-            }
-        );
-
-        // Case 2, empty array literal
-        assert_eq!(
-            parse!("[]"),
-            expr_array_def!{
-                []
-                make_str_pos!(1, 1, 1, 2)
-            }
-        );
-
-        // Case 3    0        1           2          3         4         5           6
-        assert_eq!(//12345678901234 5678 9012 3456789012345678901234567890123 456789 0123456
-            parse!( "[abc, 123u32, \"456\", '\\u0065', false, (), (a), (abc, \"hello\", ), ]"),
-            expr_array_def!{[
-                expr_ident!("abc", make_str_pos!(1, 2, 1, 4)),
-                expr_num_lit!(NumLitValue::U32(123), make_str_pos!(1, 7, 1, 12)),
-                expr_str_lit!("456", make_str_pos!(1, 15, 1, 19)),
-                expr_char_lit!('\u{0065}', make_str_pos!(1, 22, 1, 29)),
-                expr_bool_lit!(false, make_str_pos!(1, 32, 1, 36)),
-                expr_to_primary!(PrimaryExpression::Unit(make_str_pos!(1, 39, 1, 40))),
-                expr_paren_expr!(expr_ident!("a", make_str_pos!(1, 44, 1, 44)), make_str_pos!(1, 43, 1, 45)),
-                expr_to_primary!(PrimaryExpression::TupleDef(
-                    vec![
-                        expr_ident!("abc", make_str_pos!(1, 49, 1, 51)),
-                        expr_str_lit!("hello", make_str_pos!(1, 54, 1, 60)),
-                    ], 
-                    make_str_pos!(1, 48, 1, 63)
-                )), ]
-                make_str_pos!(1, 1, 1, 66)
-            }
-        );        
-        
-        // Case 4    0        1            2          3         4
-        assert_eq!(//123456789012 3456 78 9012 345678901234567890123456
-            parse!( "[abc, 123f, \"456\\u\", '\\u00', false, (a), (  )]"),
-            expr_array_def!{[
-                expr_ident!("abc", make_str_pos!(1, 2, 1, 4)),
-                expr_num_lit!(make_str_pos!(1, 7, 1, 10)),
-                expr_str_lit!(make_str_pos!(1, 13, 1, 19)),
-                expr_char_lit!( make_str_pos!(1, 22, 1, 27)),
-                expr_bool_lit!(false, make_str_pos!(1, 30, 1, 34)),
-                expr_paren_expr!(expr_ident!("a", make_str_pos!(1, 38, 1, 38)), make_str_pos!(1, 37, 1, 39)),
-                expr_to_primary!(PrimaryExpression::Unit(make_str_pos!(1, 42, 1, 45))),]
-                make_str_pos!(1, 1, 1, 46)
-            }
-        );
-
-        // Case 5    0        1         2
-        assert_eq!(//1234567890123456789012
-            parse!( "[[123u32, abc]; 4567]"),
-            expr_array_dup_def!{
-                expr_array_def!{[
-                    expr_num_lit!(NumLitValue::U32(123), make_str_pos!(1, 3, 1, 8)),
-                    expr_ident!("abc", make_str_pos!(1, 11, 1, 13)),]
-                    make_str_pos!(1, 2, 1, 14)
-                },
-                expr_num_lit!(NumLitValue::I32(4567), make_str_pos!(1, 17, 1, 20)),
-                [make_str_pos!(1, 1, 1, 21), make_str_pos!(1, 15, 1, 15)]
-            }
-        );   
-
-
     }
 }

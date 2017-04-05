@@ -11,7 +11,7 @@ use message::MessageCollection;
 use lexical::Lexer;
 use lexical::SeperatorKind;
 
-use super::ast_item::ISyntaxItem;
+use super::ISyntaxItem;
 use super::Statement;
 
 #[derive(Eq, PartialEq)]
@@ -67,7 +67,7 @@ mod tests {
     #[test]
     fn ast_block_parse() {
         use super::Block;
-        use super::super::ast_item::ISyntaxItem;
+        use super::super::ISyntaxItemWithStr;
         use codepos::StringPosition;
         
         assert_eq!(

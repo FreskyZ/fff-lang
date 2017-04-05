@@ -10,7 +10,7 @@ use message::MessageCollection;
 use lexical::Lexer;
 use lexical::KeywordKind;
 
-use super::super::ast_item::ISyntaxItem;
+use super::super::ISyntaxItem;
 use super::super::Expression;
 use super::super::Block;
 
@@ -144,7 +144,7 @@ impl ISyntaxItem for IfStatement {
 #[cfg(test)]
 mod tests {
     use super::IfStatement;
-    use super::super::super::ast_item::ISyntaxItem;
+    use super::super::super::ISyntaxItemWithStr;
 
     #[test]
     fn ast_stmt_if() {

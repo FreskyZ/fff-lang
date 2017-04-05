@@ -4,7 +4,7 @@
 use codepos::StringPosition;
 
 use syntax::Block as SyntaxBlock;
-use syntax::ISyntaxItem;
+use syntax::ISyntaxItemWithStr;
 
 use codegen::ItemID;
 use codegen::var_def::Var;

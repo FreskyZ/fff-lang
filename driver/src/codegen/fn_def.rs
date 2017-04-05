@@ -13,7 +13,7 @@ use message::MessageCollection;
 
 use lexical::SeperatorKind;
 
-use syntax::ISyntaxItem;
+use syntax::ISyntaxItemWithStr;
 use syntax::FunctionDef as SyntaxFunctionDef; 
 use syntax::Argument as SyntaxArgument;
 use syntax::Block as SyntaxBlock;

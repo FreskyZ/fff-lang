@@ -18,7 +18,7 @@ use lexical::Lexer;
 use lexical::SeperatorKind;
 use lexical::KeywordKind;
 
-use super::super::ast_item::ISyntaxItem;
+use super::super::ISyntaxItem;
 use super::super::Expression;
 
 #[derive(Eq, PartialEq)]
@@ -192,81 +192,72 @@ impl ISyntaxItem for BreakStatement {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::ReturnStatement;
-    use super::BreakStatement;
-    use super::ContinueStatement;
-    use codepos::StringPosition;
-    use message::SyntaxMessage;
+#[cfg(test)] #[test]
+fn ast_stmt_jump_parse() {
     use message::LegacyMessage;
-    use super::super::super::Expression;
-    use super::super::super::ast_item::TestCase;
-    use super::super::super::ast_item::ISyntaxItem;
+    use super::super::Expression;
+    use super::super::TestCase;
+    use super::super::ISyntaxItemWithStr;
 
-    #[test]
-    fn ast_stmt_jump_parse() {
+    // Return statement
+    //               1234567
+    ast_test_case!{ "return;", 2, make_str_pos!(1, 1, 1, 7),
+        ReturnStatement{ 
+            expr: None, 
+            pos: [make_str_pos!(1, 1, 1, 6), make_str_pos!(1, 7, 1, 7)] 
+        }
+    }            //  1234567890123
+    ast_test_case!{ "return 1 + 1;", 5, make_str_pos!(1, 1, 1, 13),
+        ReturnStatement{ 
+            expr: Some(Expression::with_test_str("       1 + 1")),
+            pos: [make_str_pos!(1, 1, 1, 6), make_str_pos!(1, 13, 1, 13)] 
+        }
+    }
+    
+    // Continue statement
+    //               1234567890
+    ast_test_case!{ "continue;", 2, make_str_pos!(1, 1, 1, 9),
+        ContinueStatement{ 
+            name: None, 
+            pos: [make_str_pos!(1, 1, 1, 8), StringPosition::new(), make_str_pos!(1, 9, 1, 9)] 
+        }
+    }            //  123456789 012345 67
+    ast_test_case!{ "continue \"inner\";", 3, make_str_pos!(1, 1, 1, 17),
+        ContinueStatement{ 
+            name: Some("inner".to_owned()), 
+            pos: [make_str_pos!(1, 1, 1, 8), make_str_pos!(1, 10, 1, 16), make_str_pos!(1, 17, 1, 17)] 
+        }
+    }            //  1234567890123
+    ast_test_case!{ "continue 123;", 3, make_str_pos!(1, 1, 1, 13),
+        ContinueStatement{
+            name: None, 
+            pos: [make_str_pos!(1, 1, 1, 8), StringPosition::new(), make_str_pos!(1, 13, 1, 13)]
+        },
+        [
+            LegacyMessage::Syntax(SyntaxMessage::LoopNameSpecifierIsNotStringLiteral{ pos: make_str_pos!(1, 10, 1, 12) })
+        ]
+    }
 
-        // Return statement
-        //               1234567
-        ast_test_case!{ "return;", 2, make_str_pos!(1, 1, 1, 7),
-            ReturnStatement{ 
-                expr: None, 
-                pos: [make_str_pos!(1, 1, 1, 6), make_str_pos!(1, 7, 1, 7)] 
-            }
-        }            //  1234567890123
-        ast_test_case!{ "return 1 + 1;", 5, make_str_pos!(1, 1, 1, 13),
-            ReturnStatement{ 
-                expr: Some(Expression::with_test_str("       1 + 1")),
-                pos: [make_str_pos!(1, 1, 1, 6), make_str_pos!(1, 13, 1, 13)] 
-            }
+    // Break statement
+    ast_test_case!{ "break   ;", 2, make_str_pos!(1, 1, 1, 9),
+        BreakStatement{ 
+            name: None, 
+            pos: [make_str_pos!(1, 1, 1, 5), StringPosition::new(), make_str_pos!(1, 9, 1, 9)] 
         }
-        
-        // Continue statement
-        //               1234567890
-        ast_test_case!{ "continue;", 2, make_str_pos!(1, 1, 1, 9),
-            ContinueStatement{ 
-                name: None, 
-                pos: [make_str_pos!(1, 1, 1, 8), StringPosition::new(), make_str_pos!(1, 9, 1, 9)] 
-            }
-        }            //  123456789 012345 67
-        ast_test_case!{ "continue \"inner\";", 3, make_str_pos!(1, 1, 1, 17),
-            ContinueStatement{ 
-                name: Some("inner".to_owned()), 
-                pos: [make_str_pos!(1, 1, 1, 8), make_str_pos!(1, 10, 1, 16), make_str_pos!(1, 17, 1, 17)] 
-            }
-        }            //  1234567890123
-        ast_test_case!{ "continue 123;", 3, make_str_pos!(1, 1, 1, 13),
-            ContinueStatement{
-                name: None, 
-                pos: [make_str_pos!(1, 1, 1, 8), StringPosition::new(), make_str_pos!(1, 13, 1, 13)]
-            },
-            [
-                LegacyMessage::Syntax(SyntaxMessage::LoopNameSpecifierIsNotStringLiteral{ pos: make_str_pos!(1, 10, 1, 12) })
-            ]
+    }            // 123456 7890123 45
+    ast_test_case!{ "break \"outter\";", 3, make_str_pos!(1, 1, 1, 15),
+        BreakStatement{ 
+            name: Some("outter".to_owned()), 
+            pos: [make_str_pos!(1, 1, 1, 5), make_str_pos!(1, 7, 1, 14), make_str_pos!(1, 15, 1, 15)] 
         }
-
-        // Break statement
-        ast_test_case!{ "break   ;", 2, make_str_pos!(1, 1, 1, 9),
-            BreakStatement{ 
-                name: None, 
-                pos: [make_str_pos!(1, 1, 1, 5), StringPosition::new(), make_str_pos!(1, 9, 1, 9)] 
-            }
-        }            // 123456 7890123 45
-        ast_test_case!{ "break \"outter\";", 3, make_str_pos!(1, 1, 1, 15),
-            BreakStatement{ 
-                name: Some("outter".to_owned()), 
-                pos: [make_str_pos!(1, 1, 1, 5), make_str_pos!(1, 7, 1, 14), make_str_pos!(1, 15, 1, 15)] 
-            }
-        }            //  1234567890
-        ast_test_case!{ "break 123;", 3, make_str_pos!(1, 1, 1, 10),
-            BreakStatement{
-                name: None,
-                pos: [make_str_pos!(1, 1, 1, 5), StringPosition::new(), make_str_pos!(1, 10, 1, 10)],
-            },
-            [
-                LegacyMessage::Syntax(SyntaxMessage::LoopNameSpecifierIsNotStringLiteral{ pos: make_str_pos!(1, 7, 1, 9) })
-            ]
-        }
+    }            //  1234567890
+    ast_test_case!{ "break 123;", 3, make_str_pos!(1, 1, 1, 10),
+        BreakStatement{
+            name: None,
+            pos: [make_str_pos!(1, 1, 1, 5), StringPosition::new(), make_str_pos!(1, 10, 1, 10)],
+        },
+        [
+            LegacyMessage::Syntax(SyntaxMessage::LoopNameSpecifierIsNotStringLiteral{ pos: make_str_pos!(1, 7, 1, 9) })
+        ]
     }
 }

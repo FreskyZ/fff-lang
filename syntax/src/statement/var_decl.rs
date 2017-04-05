@@ -12,7 +12,7 @@ use lexical::Lexer;
 use lexical::KeywordKind;
 use lexical::SeperatorKind;
 
-use super::super::ast_item::ISyntaxItem;
+use super::super::ISyntaxItem;
 use super::super::Expression;
 use super::super::TypeUse;
 
@@ -119,108 +119,101 @@ impl ISyntaxItem for VarDeclStatement {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::VarDeclStatement;
-    use super::super::super::ast_item::ISyntaxItem;
-    use super::super::super::TypeUse;
-    use super::super::super::Expression;
-    use codepos::StringPosition;
-
-    #[test]
-    fn ast_stmt_var_decl() {
-        
-        
-        assert_eq!( //                                123456789012345678
-            VarDeclStatement::with_test_str_ret_size("const i32 abc = 0;"),
-            (Some(VarDeclStatement {
-                is_const: true,
-                ty: TypeUse::Base("i32".to_owned(), make_str_pos!(1, 7, 1, 9)),
-                name: "abc".to_owned(),                                    
-                init_expr: Some(Expression::with_test_str("                0;")),
-                pos: [
-                    make_str_pos!(1, 1, 1, 5),
-                    make_str_pos!(1, 11, 1, 13),
-                    make_str_pos!(1, 15, 1, 15),
-                    make_str_pos!(1, 18, 1, 18),
-                ],
-            }), 6)
-        );
-        //                                            0        1         2
-        assert_eq!( //                                1234567890123456789012
-            VarDeclStatement::with_test_str_ret_size("var [i32] abc = 1 + 1;"),
-            (Some(VarDeclStatement {
-                is_const: false,
-                ty: TypeUse::Array(Box::new(TypeUse::Base("i32".to_owned(), make_str_pos!(1, 6, 1, 8))), make_str_pos!(1, 5, 1, 9)),
-                name: "abc".to_owned(),                                    
-                init_expr: Some(Expression::with_test_str("                1 + 1")),
-                pos: [
-                    make_str_pos!(1, 1, 1, 3),
-                    make_str_pos!(1, 11, 1, 13),
-                    make_str_pos!(1, 15, 1, 15),
-                    make_str_pos!(1, 22, 1, 22),
-                ],
-            }), 10)
-        );
-        
-        
-        assert_eq!( //                                1234567890123456789
-            VarDeclStatement::with_test_str_ret_size("const string input;"),
-            (Some(VarDeclStatement {
-                is_const: true,
-                ty: TypeUse::Base("string".to_owned(), make_str_pos!(1, 7, 1, 12)),
-                name: "input".to_owned(),
-                init_expr: None,
-                pos: [
-                    make_str_pos!(1, 1, 1, 5),
-                    make_str_pos!(1, 14, 1, 18),
-                    StringPosition::new(), 
-                    make_str_pos!(1, 19, 1, 19),
-                ],
-            }), 4)
-        );
-        
-        assert_eq!( //               1234567890123
-            VarDeclStatement::with_test_str_ret_size("var [u8] buf;"),
-            (Some(VarDeclStatement {
-                is_const: false,
-                ty: TypeUse::Array(Box::new(
-                        TypeUse::Base("u8".to_owned(), make_str_pos!(1, 6, 1, 7))
-                    ), make_str_pos!(1, 5, 1, 8)),
-                name: "buf".to_owned(),
-                init_expr: None,
-                pos: [
-                    make_str_pos!(1, 1, 1, 3),
-                    make_str_pos!(1, 10, 1, 12),
-                    StringPosition::new(), 
-                    make_str_pos!(1, 13, 1, 13),
-                ],
-            }), 6)
-        );
-        //                           0        1         2         3         4
-        
-        assert_eq!(//                           12345678901234567890123456789012345678901234567
-            VarDeclStatement::with_test_str_ret_size("var ([u8], u32) buf = ([1u8, 5u8, 0x7u8], abc);"),
-            (Some(VarDeclStatement {
-                is_const: false,
-                ty: TypeUse::Tuple(
-                        vec![
-                            TypeUse::Array(Box::new(
-                                TypeUse::Base("u8".to_owned(), make_str_pos!(1, 7, 1, 8))
-                            ), make_str_pos!(1, 6, 1, 9)),
-                            TypeUse::Base("u32".to_owned(), make_str_pos!(1, 12, 1, 14)),
-                        ], 
-                        make_str_pos!(1, 5, 1, 15),
-                    ),
-                name: "buf".to_owned(),                                          
-                init_expr: Some(Expression::with_test_str("                      ([1u8, 5u8, 0x7u8], abc);")),
-                pos: [
-                    make_str_pos!(1, 1, 1, 3),
-                    make_str_pos!(1, 17, 1, 19),
-                    make_str_pos!(1, 21, 1, 21),
-                    make_str_pos!(1, 47, 1, 47),
-                ],
-            }), 22)
-        );
-    }
+#[cfg(test)] #[test]
+fn ast_stmt_var_decl() {
+    use super::super::ISyntaxItemWithStr;
+    use super::super::TypeUse;
+    use super::super::Expression;
+    
+    assert_eq!( //                                123456789012345678
+        VarDeclStatement::with_test_str_ret_size("const i32 abc = 0;"),
+        (Some(VarDeclStatement {
+            is_const: true,
+            ty: TypeUse::Base("i32".to_owned(), make_str_pos!(1, 7, 1, 9)),
+            name: "abc".to_owned(),                                    
+            init_expr: Some(Expression::with_test_str("                0;")),
+            pos: [
+                make_str_pos!(1, 1, 1, 5),
+                make_str_pos!(1, 11, 1, 13),
+                make_str_pos!(1, 15, 1, 15),
+                make_str_pos!(1, 18, 1, 18),
+            ],
+        }), 6)
+    );
+    //                                            0        1         2
+    assert_eq!( //                                1234567890123456789012
+        VarDeclStatement::with_test_str_ret_size("var [i32] abc = 1 + 1;"),
+        (Some(VarDeclStatement {
+            is_const: false,
+            ty: TypeUse::Array(Box::new(TypeUse::Base("i32".to_owned(), make_str_pos!(1, 6, 1, 8))), make_str_pos!(1, 5, 1, 9)),
+            name: "abc".to_owned(),                                    
+            init_expr: Some(Expression::with_test_str("                1 + 1")),
+            pos: [
+                make_str_pos!(1, 1, 1, 3),
+                make_str_pos!(1, 11, 1, 13),
+                make_str_pos!(1, 15, 1, 15),
+                make_str_pos!(1, 22, 1, 22),
+            ],
+        }), 10)
+    );
+    
+    
+    assert_eq!( //                                1234567890123456789
+        VarDeclStatement::with_test_str_ret_size("const string input;"),
+        (Some(VarDeclStatement {
+            is_const: true,
+            ty: TypeUse::Base("string".to_owned(), make_str_pos!(1, 7, 1, 12)),
+            name: "input".to_owned(),
+            init_expr: None,
+            pos: [
+                make_str_pos!(1, 1, 1, 5),
+                make_str_pos!(1, 14, 1, 18),
+                StringPosition::new(), 
+                make_str_pos!(1, 19, 1, 19),
+            ],
+        }), 4)
+    );
+    
+    assert_eq!( //               1234567890123
+        VarDeclStatement::with_test_str_ret_size("var [u8] buf;"),
+        (Some(VarDeclStatement {
+            is_const: false,
+            ty: TypeUse::Array(Box::new(
+                    TypeUse::Base("u8".to_owned(), make_str_pos!(1, 6, 1, 7))
+                ), make_str_pos!(1, 5, 1, 8)),
+            name: "buf".to_owned(),
+            init_expr: None,
+            pos: [
+                make_str_pos!(1, 1, 1, 3),
+                make_str_pos!(1, 10, 1, 12),
+                StringPosition::new(), 
+                make_str_pos!(1, 13, 1, 13),
+            ],
+        }), 6)
+    );
+    //                           0        1         2         3         4
+    
+    assert_eq!(//                           12345678901234567890123456789012345678901234567
+        VarDeclStatement::with_test_str_ret_size("var ([u8], u32) buf = ([1u8, 5u8, 0x7u8], abc);"),
+        (Some(VarDeclStatement {
+            is_const: false,
+            ty: TypeUse::Tuple(
+                    vec![
+                        TypeUse::Array(Box::new(
+                            TypeUse::Base("u8".to_owned(), make_str_pos!(1, 7, 1, 8))
+                        ), make_str_pos!(1, 6, 1, 9)),
+                        TypeUse::Base("u32".to_owned(), make_str_pos!(1, 12, 1, 14)),
+                    ], 
+                    make_str_pos!(1, 5, 1, 15),
+                ),
+            name: "buf".to_owned(),                                          
+            init_expr: Some(Expression::with_test_str("                      ([1u8, 5u8, 0x7u8], abc);")),
+            pos: [
+                make_str_pos!(1, 1, 1, 3),
+                make_str_pos!(1, 17, 1, 19),
+                make_str_pos!(1, 21, 1, 21),
+                make_str_pos!(1, 47, 1, 47),
+            ],
+        }), 22)
+    );
 }

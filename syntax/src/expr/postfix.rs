@@ -1,6 +1,6 @@
 
 // PostfixExpr = 
-//     PrimaryExpression [
+//     PrimaryExpr [
 //             fLeftBracket [Expression [fComma Expression]*] fRightBracket
 //             | fLeftParen [Expression [fComma Expression]*] fRightParen
 //             | fDot fIdentifier fLeftParen [Expression [fComma Expression]*] fRightParen
@@ -24,9 +24,9 @@ use super::super::ISyntaxItemFormat;
 use super::binary::BinaryExpr;
 use super::super::TypeUse;
 
-use super::primary::PrimaryExpression;
+use super::primary::PrimaryExpr;
 
-#[derive(Eq, PartialEq, Clone)]
+#[derive(Eq, PartialEq)]
 enum ActualPostfix {
     Subscription(Vec<BinaryExpr>, StringPosition),      // []'s position
     FunctionCall(Vec<BinaryExpr>, StringPosition),      // ()'s position
@@ -34,12 +34,12 @@ enum ActualPostfix {
     MemberAccess(String, StringPosition),               // .xxx's position
     TypeCast(TypeUse, StringPosition),                  // as position
 }
-#[derive(Eq, PartialEq, Clone)]
+#[derive(Eq, PartialEq)]
 enum PostfixExprImpl {
-    Primary(PrimaryExpression),
+    Primary(PrimaryExpr),
     Postfix(PostfixExpr, ActualPostfix, StringPosition), // all_strpos
 }
-#[derive(Eq, PartialEq, Clone)]
+#[derive(Eq, PartialEq)]
 pub struct PostfixExpr(Box<PostfixExprImpl>);
 
 impl ISyntaxItemFormat for PostfixExpr {
@@ -88,7 +88,7 @@ impl fmt::Debug for PostfixExpr {
 }
 impl PostfixExpr { // New
 
-    pub fn new_primary(primary_expr: PrimaryExpression) -> PostfixExpr {
+    pub fn new_primary(primary_expr: PrimaryExpr) -> PostfixExpr {
         PostfixExpr(Box::new(PostfixExprImpl::Primary(primary_expr)))
     }
 
@@ -128,7 +128,7 @@ impl PostfixExpr { // Get
         }
     }
 
-    pub fn get_primary(&self) -> Option<&PrimaryExpression> {
+    pub fn get_primary(&self) -> Option<&PrimaryExpr> {
         match self.0.as_ref() {
             &PostfixExprImpl::Primary(ref primary_expr) => Some(primary_expr),
             &PostfixExprImpl::Postfix(_, _, _) => None,
@@ -227,7 +227,7 @@ impl ISyntaxItem for PostfixExpr {
         self.get_all_strpos()
     }
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
-        PrimaryExpression::is_first_final(tokens, index)
+        PrimaryExpr::is_first_final(tokens, index)
     }
     
     #[allow(unused_assignments)]
@@ -238,7 +238,7 @@ impl ISyntaxItem for PostfixExpr {
         #[cfg(not(feature = "trace_postfix_expr_parse"))]
         macro_rules! trace { ($($arg:tt)*) => () }
 
-        let (mut current_retval, mut current_length) = match PrimaryExpression::parse(tokens, messages, index) {
+        let (mut current_retval, mut current_length) = match PrimaryExpr::parse(tokens, messages, index) {
             (Some(primary_expr), primary_length) => (PostfixExpr::new_primary(primary_expr), primary_length),
             (None, none_length) => return (None, none_length), // no recover
         };
@@ -393,26 +393,41 @@ impl ISyntaxItem for PostfixExpr {
 #[cfg(test)] #[test]
 fn postfix_expr_parse() {
     use lexical::LitValue;
+    use super::super::ISyntaxItemWithStr;
 
     //                                      0        1         2         3         4         5     
     //                                      12345678901234567890123456789012345678901234567890123
     assert_eq!{ PostfixExpr::with_test_str("1.a[[3](4, [5, 6,], )](7, 8)() as [i32].b[10, 11, 12]"),
         PostfixExpr::new_subscription(
-            PostfixExpr::new_primary(PrimaryExpression::Lit(LitValue::from(1), make_str_pos!(1, 1, 1, 1))),
+            PostfixExpr::new_primary(PrimaryExpr::new_lit(LitValue::from(1), make_str_pos!(1, 1, 1, 1))),
             make_str_pos!(1, 42, 1, 53),
             vec![
-                BinaryExpr::new_primary(PrimaryExpression::Lit(LitValue::from(10), make_str_pos!(1, 43, 1, 44))),
-                BinaryExpr::new_primary(PrimaryExpression::Lit(LitValue::from(11), make_str_pos!(1, 47, 1, 48))),
-                BinaryExpr::new_primary(PrimaryExpression::Lit(LitValue::from(12), make_str_pos!(1, 51, 1, 52))),
+                BinaryExpr::new_primary(PrimaryExpr::new_lit(LitValue::from(10), make_str_pos!(1, 43, 1, 44))),
+                BinaryExpr::new_primary(PrimaryExpr::new_lit(LitValue::from(11), make_str_pos!(1, 47, 1, 48))),
+                BinaryExpr::new_primary(PrimaryExpr::new_lit(LitValue::from(12), make_str_pos!(1, 51, 1, 52))),
             ]
         )
     }
+
+
+    // "[FihB1w8, true, (), 75] as u64" 
+    // "L()" 
+    // "f.heA4fp" 
+    // "iryl8L(hOvKj01K(xLvnM604, ()[(MK1), lCN0pK, [wpwh, "e\rbx", 0o5249485353525454], 220], a2iDC(mC8fhmr(tq6, Evaj5Hap, jwDO5G2E.GB7lt7 as eFaF, 64112, (false)[Cuov4, (c, [vr2sAs;false], q), Ch]), D as (), OyM6jv).O, qgh4j([([[L6E, (BgGyKg), (gg221GyNK,)], (), (true)]), 0d336, true, (eGgyN), 'm'] as [[f64]], a(), mJ.pNHwe34[tg2 as i8, n as (u64, Bs, (brft, [LEG], [gao])), esr(), 7806533], ot() as klE, 3.0853 as i8).yL3s5K2)EHMDCmO,)" 
+    // "(true, oxA4r4g, 0o495451524853545453i16, 5, true) as KbM0" 
+    // "hio3yaH(tIBONx, 842154.uuvsBB1r[jvLh('\', kDxLG0H, "QB".Iww0tJia, () as [f0rdrt][[1875, [jsIvKGhD023i,], 0b0, (), (Bm)][], D6ta1wB[Mlcdq0Dnhj.c,], D6s2lIE3(true, BNm4CvL8.p4kHd, Ap5Iq()) as m3qcm7, 154.766204 as [repp03].xDArJE]), y4ibtGo, O48J.II6Juwq as [i8]] as r, BI7hxse)" 
+    // "pbfN6 as ((([[[DBm]]], [a0kjv;0d6i32], NxvlxA), n0ANq, J8car8cE, string, i16)[bool],)" 
+    // "L2y(trueGh4p(false as ().Gpj, 3825727.l1Jm3B[true[0b10111110, true, (0b000110010001u6,), jDw], DAeBm, Dw1tylyj.vn, true.j], M),)" 
+    // "g[(), (CttKay4f), true, wE, 0b11110110111] as ([Bx1A7F], [(tbje, bool, [mb])], (char, (u64, bool, A, string), (ttrof32,)), gjMaxI4f, [tJEp3])" 
+    // "[false, (((wg), thLaI, IggO, "t")), ()] as u8" 
+    // "f(h.w, [0xc2u32, [jcGs0f30, (cN5qg), "13{\r-xw"], (true), ("H8eHs[9", (), v, lumL)].m.GMjriIc, c023qs[q, u34, pEkuEB, false], [false, 0d866, 362388u16, (43E1)].AsI).Ksmfhi" 
+
     // let right = expr_to_postfix!{
-    //     PrimaryExpression::Ident("abc".to_owned(), make_str_pos!(1, 1, 1, 3)),
+    //     PrimaryExpr::Ident("abc".to_owned(), make_str_pos!(1, 1, 1, 3)),
     //     Postfix::MemberAccess("defg".to_owned(), make_str_pos!(1, 4, 1, 8))
     //     Postfix::Subscription(vec![
     //         expr_to_postfix!(
-    //             PrimaryExpression::ArrayDef(
+    //             PrimaryExpr::ArrayDef(
     //                 vec![expr_num_lit!(NumLitValue::I32(1), make_str_pos!(1, 11, 1, 11))],
     //                 make_str_pos!(1, 10, 1, 12)
     //             ), 

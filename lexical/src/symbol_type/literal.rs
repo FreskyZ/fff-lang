@@ -100,7 +100,7 @@ from_for_num_lit_value!{
 
 #[derive(Clone, Eq, PartialEq)]
 pub enum LitValue {
-    Unit,
+    Unit,                // unit is not generated here in v2 or some other, because for cases like `1.to_string()`, this is function call not unit
     Str(Option<String>),
     Num(Option<NumLitValue>),
     Char(Option<char>),

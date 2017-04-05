@@ -15,21 +15,21 @@ use lexical::SeperatorCategory;
 use super::super::ISyntaxItem;
 use super::super::ISyntaxItemFormat;
 use super::postfix::PostfixExpr;
-use super::primary::PrimaryExpression;
+use super::primary::PrimaryExpr;
 
-#[derive(Eq, PartialEq, Clone)]
+#[derive(Eq, PartialEq)]
 struct ActualUnaryExpr {
     right: UnaryExpr, 
     operator: SeperatorKind, 
     operator_strpos: StringPosition,
     all_strpos: StringPosition,
 }
-#[derive(Eq, PartialEq, Clone)]
+#[derive(Eq, PartialEq)]
 enum UnaryExprImpl {
     Postfix(PostfixExpr),
     Unary(ActualUnaryExpr),
 }
-#[derive(Eq, PartialEq, Clone)]
+#[derive(Eq, PartialEq)]
 pub struct UnaryExpr(Box<UnaryExprImpl>);
 
 impl ISyntaxItemFormat for UnaryExpr {
@@ -66,7 +66,7 @@ impl UnaryExpr { // New
     pub fn new_postfix(postfix_expr: PostfixExpr) -> UnaryExpr {
         UnaryExpr(Box::new(UnaryExprImpl::Postfix(postfix_expr)))
     }
-    pub fn new_primary(primary_expr: PrimaryExpression) -> UnaryExpr {
+    pub fn new_primary(primary_expr: PrimaryExpr) -> UnaryExpr {
         UnaryExpr(Box::new(UnaryExprImpl::Postfix(PostfixExpr::new_primary(primary_expr))))
     }
 }
@@ -153,9 +153,10 @@ impl ISyntaxItem for UnaryExpr {
 #[cfg(test)] #[test]
 fn unary_expr_parse() {
     use lexical::LitValue;
+    use super::super::ISyntaxItemWithStr;
     
     assert_eq!{ UnaryExpr::with_test_str("1"), 
-        UnaryExpr::new_primary(PrimaryExpression::Lit(LitValue::from(1), make_str_pos!(1, 1, 1, 1))) 
+        UnaryExpr::new_primary(PrimaryExpr::new_lit(LitValue::from(1), make_str_pos!(1, 1, 1, 1))) 
     }
 
     assert_eq!{ UnaryExpr::with_test_str("!~!1"),
@@ -165,7 +166,7 @@ fn unary_expr_parse() {
                 SeperatorKind::BitNot, make_str_pos!(1, 2, 1, 2),            
                 UnaryExpr::new_unary(
                     SeperatorKind::LogicalNot, make_str_pos!(1, 3, 1, 3),
-                    UnaryExpr::new_primary(PrimaryExpression::Lit(LitValue::from(1), make_str_pos!(1, 4, 1, 4))),
+                    UnaryExpr::new_primary(PrimaryExpr::new_lit(LitValue::from(1), make_str_pos!(1, 4, 1, 4))),
                 )
             )
         )

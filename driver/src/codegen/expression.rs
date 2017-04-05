@@ -15,7 +15,7 @@ use syntax::ExpressionOperator as FullExpressionOperator;
 use syntax::Expression as FullExpression;
 use syntax::ExpressionStatement as FullExpressionStatement;
 use syntax::TypeUse;
-use syntax::ISyntaxItem;
+use syntax::ISyntaxItemWithStr;
 
 use codegen::var_def::VarCollection;
 use codegen::ItemID;

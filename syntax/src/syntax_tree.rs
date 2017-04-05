@@ -9,7 +9,7 @@ use util::format_vector_debug;
 use message::MessageCollection;
 use lexical::TokenStream;
 
-use super::ast_item::ISyntaxItem;
+use super::ISyntaxItem;
 use super::FunctionDef;
 
 #[derive(Eq, PartialEq)]

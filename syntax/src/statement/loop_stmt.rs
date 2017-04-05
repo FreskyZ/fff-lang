@@ -10,7 +10,7 @@ use message::MessageCollection;
 use lexical::Lexer;
 use lexical::KeywordKind;
 
-use super::super::ast_item::ISyntaxItem;
+use super::super::ISyntaxItem;
 use super::super::Block;
 use super::super::Expression;
 
@@ -75,44 +75,37 @@ impl ISyntaxItem for LoopStatement {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::LoopStatement;
-    use super::super::Block;
+#[cfg(test)] #[test]
+fn ast_stmt_loop_parse() {
     use message::LegacyMessage as Message;
     use message::SyntaxMessage;
-    use super::super::super::ast_item::TestCase;
-    use codepos::StringPosition;
-    use super::super::super::ast_item::ISyntaxItem;
+    use super::super::TestCase;
+    use super::super::ISyntaxItemWithStr;
 
-    #[test]
-    fn ast_stmt_loop_parse() {
-
-        //               0        1          2          3
-        //               123456789012345 678901234 56789
-        ast_test_case!{ "loop { writeln(\"love zmj\"); }", 8, make_str_pos!(1, 1, 1, 29),
-            LoopStatement{
-                name: None, 
-                body: Block::with_test_str("     { writeln(\"love zmj\"); }"),
-                pos: [make_str_pos!(1, 1, 1, 4), StringPosition::new()]
-            }
-        }            //  12345 678901 2345
-        ast_test_case!{ "loop \"innnn\" {}", 4, make_str_pos!(1, 1, 1, 15),
-            LoopStatement{
-                name: Some("innnn".to_owned()),
-                body: Block::with_test_str("               {}"),
-                pos: [make_str_pos!(1, 1, 1, 4), make_str_pos!(1, 6, 1, 12)],
-            }                                              
-        }            //  12345678901
-        ast_test_case!{ "loop abc {}", 4, make_str_pos!(1, 1, 1, 11),
-            LoopStatement{
-                name: None,                          
-                body: Block::with_test_str("         {}"),
-                pos: [make_str_pos!(1, 1, 1, 4), StringPosition::new()],
-            },
-            [
-                Message::Syntax(SyntaxMessage::LoopNameSpecifierIsNotStringLiteral{ pos: make_str_pos!(1, 6, 1, 8) })
-            ]
+    //               0        1          2          3
+    //               123456789012345 678901234 56789
+    ast_test_case!{ "loop { writeln(\"love zmj\"); }", 8, make_str_pos!(1, 1, 1, 29),
+        LoopStatement{
+            name: None, 
+            body: Block::with_test_str("     { writeln(\"love zmj\"); }"),
+            pos: [make_str_pos!(1, 1, 1, 4), StringPosition::new()]
         }
+    }            //  12345 678901 2345
+    ast_test_case!{ "loop \"innnn\" {}", 4, make_str_pos!(1, 1, 1, 15),
+        LoopStatement{
+            name: Some("innnn".to_owned()),
+            body: Block::with_test_str("               {}"),
+            pos: [make_str_pos!(1, 1, 1, 4), make_str_pos!(1, 6, 1, 12)],
+        }                                              
+    }            //  12345678901
+    ast_test_case!{ "loop abc {}", 4, make_str_pos!(1, 1, 1, 11),
+        LoopStatement{
+            name: None,                          
+            body: Block::with_test_str("         {}"),
+            pos: [make_str_pos!(1, 1, 1, 4), StringPosition::new()],
+        },
+        [
+            Message::Syntax(SyntaxMessage::LoopNameSpecifierIsNotStringLiteral{ pos: make_str_pos!(1, 6, 1, 8) })
+        ]
     }
 }

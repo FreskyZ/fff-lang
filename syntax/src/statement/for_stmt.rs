@@ -11,7 +11,7 @@ use lexical::Lexer;
 use lexical::KeywordKind;
 use lexical::SeperatorKind;
 
-use super::super::ast_item::ISyntaxItem;
+use super::super::ISyntaxItem;
 use super::super::Expression;
 use super::super::Block;
 
@@ -96,7 +96,7 @@ impl ISyntaxItem for ForStatement {
 #[cfg(test)]
 mod tests {
     use super::ForStatement;
-    use super::super::super::ast_item::ISyntaxItem;
+    use super::super::super::ISyntaxItemWithStr;
 
     #[test]
     fn ast_stmt_for() {

@@ -1,6 +1,7 @@
 
-// PrimaryExpression = 
-//     fIdentifier | fLiteral 
+// PrimaryExpr = 
+//     fIdentifier 
+//     | fLiteral 
 //     | fLeftParen fRighParen                                            // `()`, unit type and unit literal
 //     | fLeftParen Expression fRightParen
 //     | fLeftParen Expression [fComma Expression]+ fRightParen           // var tuple = (1, "abc", 'd') 
@@ -13,124 +14,192 @@ use codepos::StringPosition;
 use message::Message;
 use message::MessageCollection;
 
-use lexical::Lexer;
+use lexical::TokenStream;
 use lexical::SeperatorKind;
 use lexical::KeywordKind;
 use lexical::LitValue;
+use lexical::NumLitValue;
 
 use super::super::ISyntaxItem;
 use super::super::ISyntaxItemFormat;
 use super::binary::BinaryExpr;
 
-#[derive(Eq, PartialEq, Clone)]
-pub enum PrimaryExpression {
-    Ident(String, StringPosition),
-    Lit(LitValue, StringPosition),
-    Unit(StringPosition),                                                   // Position for '(', ')'
-    ParenExpr(Box<BinaryExpr>, StringPosition),                           // Position for '(', ')'
-    TupleDef(Vec<BinaryExpr>, StringPosition),                            // Position for '(', ')'
-    ArrayDef(Vec<BinaryExpr>, StringPosition),                            // Position for '[', ']'
-    ArrayDupDef(Box<BinaryExpr>, Box<BinaryExpr>, [StringPosition; 2]), // Position for '[', ']' and ';'
+#[derive(Eq, PartialEq)]
+enum ActualPrimaryExpr {
+    Ident(String),
+    Lit(LitValue),
+    ParenExpr(BinaryExpr),
+    TupleDef(Vec<BinaryExpr>),
+    ArrayDef(Vec<BinaryExpr>),
+    ArrayDupDef(BinaryExpr, BinaryExpr),   // Now position of `;` is not recorded because I think I don't use it
 }
-impl ISyntaxItemFormat for PrimaryExpression {
-    fn format(&self, indent: u32) -> String {
-        match self {
-            &PrimaryExpression::Unit(ref strpos) => 
-                format!("{}Unit <{:?}>", PrimaryExpression::indent_str(indent), strpos),
-            &PrimaryExpression::Lit(ref lit_val, ref strpos) => 
-                format!("{}Literal: {} <{:?}>", PrimaryExpression::indent_str(indent), lit_val, strpos),
-            &PrimaryExpression::Ident(ref name, ref strpos) => 
-                format!("{}Identifier: {} <{:?}>", PrimaryExpression::indent_str(indent), name, strpos),
+#[derive(Eq, PartialEq)]
+pub struct PrimaryExpr(ActualPrimaryExpr, StringPosition);
 
-            &PrimaryExpression::ParenExpr(ref expr, ref strpos) => 
-                format!("{}ParenExpr\n{}Paren at <{:?}>\n{:?}", 
-                    PrimaryExpression::indent_str(indent), PrimaryExpression::indent_str(indent + 1), strpos, expr.format(indent + 1)),
-            &PrimaryExpression::ArrayDupDef(ref expr1, ref expr2, ref strpos) => 
-                format!("{0}DefineArrayDuply:\n{1}Bracket at <{2:?}>\n{1}SemiColon at <{3:?}>\n{4:?}\n{5:?}",
-                    PrimaryExpression::indent_str(indent), PrimaryExpression::indent_str(indent + 1), 
-                    strpos[0], strpos[1], expr1.format(indent + 1), expr2.format(indent + 2)),
-            &PrimaryExpression::TupleDef(ref exprs, ref strpos) => 
-                format!("{}DefineTuple:\n{}Bracket at <{:?}>{}", PrimaryExpression::indent_str(indent), PrimaryExpression::indent_str(indent + 1),
-                    strpos, exprs.iter().fold(String::new(), |mut buf, expr| { buf.push_str("\n"); buf.push_str(&expr.format(indent + 1)); buf })
-                ),
-            &PrimaryExpression::ArrayDef(ref exprs, strpos) => 
-                format!("{}DefineArray:\n{}Bracket at <{:?}>{}", PrimaryExpression::indent_str(indent), PrimaryExpression::indent_str(indent + 1),
-                    strpos, exprs.iter().fold(String::new(), |mut buf, expr| { buf.push_str("\n"); buf.push_str(&expr.format(indent + 1)); buf })
-                ),
+impl ISyntaxItemFormat for PrimaryExpr {
+    fn format(&self, indent: u32) -> String {
+        match (&self.0, self.1) {
+            (&ActualPrimaryExpr::Ident(ref ident_name), strpos) =>
+                format!("{}Ident: {} <{:?}>", PrimaryExpr::indent_str(indent), ident_name, strpos),
+            (&ActualPrimaryExpr::Lit(ref lit_value), strpos) => 
+                format!("{}Literal: {} <{:?}>", PrimaryExpr::indent_str(indent), lit_value, strpos),
+            (&ActualPrimaryExpr::ParenExpr(ref inner_expr), strpos) =>
+                format!("{}ParenExpr\n{}Paren at <{:?}>\n{}", 
+                    PrimaryExpr::indent_str(indent), 
+                    PrimaryExpr::indent_str(indent + 1), strpos, 
+                    inner_expr.format(indent + 1)),
+            (&ActualPrimaryExpr::ArrayDupDef(ref expr1, ref expr2), strpos) =>
+                format!("{}DefineArrayDuply:\n{}Bracket at <{:?}>\n{}\n{}",
+                    PrimaryExpr::indent_str(indent), 
+                    PrimaryExpr::indent_str(indent + 1), strpos, 
+                    expr1.format(indent + 1),
+                    expr2.format(indent + 2)),
+            (&ActualPrimaryExpr::TupleDef(ref exprs), strpos) =>
+                format!("{}DefineTuple:\n{}Bracket at <{:?}>{}", 
+                    PrimaryExpr::indent_str(indent), 
+                    PrimaryExpr::indent_str(indent + 1), strpos,
+                    exprs.iter().fold(String::new(), |mut buf, expr| { buf.push_str("\n"); buf.push_str(&expr.format(indent + 1)); buf })),
+            (&ActualPrimaryExpr::ArrayDef(ref exprs), strpos) =>
+                format!("{}DefineArray:\n{}Paren at <{:?}>{}", 
+                    PrimaryExpr::indent_str(indent), 
+                    PrimaryExpr::indent_str(indent + 1), strpos, 
+                    exprs.iter().fold(String::new(), |mut buf, expr| { buf.push_str("\n"); buf.push_str(&expr.format(indent + 1)); buf })),
         }
     }
 }
-impl fmt::Debug for PrimaryExpression {
+impl fmt::Debug for PrimaryExpr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "\n{}", self.format(0))
     }
 }
-impl PrimaryExpression {
+impl PrimaryExpr { // New
 
-    pub fn new_paren_expr(expr: BinaryExpr, strpos: StringPosition) -> PrimaryExpression {
-        PrimaryExpression::ParenExpr(Box::new(expr), strpos)
+    pub fn new_ident(ident_name: String, ident_strpos: StringPosition) -> PrimaryExpr {
+        PrimaryExpr(ActualPrimaryExpr::Ident(ident_name), ident_strpos)
     }
-    pub fn new_array_dup_def(expr1: BinaryExpr, expr2: BinaryExpr, strpos: [StringPosition; 2]) -> PrimaryExpression {
-        PrimaryExpression::ArrayDupDef(Box::new(expr1), Box::new(expr2), strpos)
+    pub fn new_lit(lit_value: LitValue, lit_strpos: StringPosition) -> PrimaryExpr {
+        PrimaryExpr(ActualPrimaryExpr::Lit(lit_value), lit_strpos)
+    }
+    pub fn new_lit_num(num_val: NumLitValue, num_val_strpos: StringPosition) -> PrimaryExpr {
+        PrimaryExpr(ActualPrimaryExpr::Lit(LitValue::Num(Some(num_val))), num_val_strpos)
+    }
+    pub fn new_lit_str(value: String, str_strpos: StringPosition) -> PrimaryExpr {
+        PrimaryExpr(ActualPrimaryExpr::Lit(LitValue::Str(Some(value))), str_strpos)
+    }
+    pub fn new_lit_char(ch: char, ch_strpos: StringPosition) -> PrimaryExpr {
+        PrimaryExpr(ActualPrimaryExpr::Lit(LitValue::Char(Some(ch))), ch_strpos)
+    }
+    pub fn new_lit_bool(value: bool, bool_strpos: StringPosition) -> PrimaryExpr {
+        PrimaryExpr(ActualPrimaryExpr::Lit(LitValue::Bool(value)), bool_strpos)
+    }
+    pub fn new_unit(unit_strpos: StringPosition) -> PrimaryExpr {
+        PrimaryExpr(ActualPrimaryExpr::Lit(LitValue::Unit), unit_strpos)
+    }
+    pub fn new_paren(paren_strpos: StringPosition, inner: BinaryExpr) -> PrimaryExpr {
+        PrimaryExpr(ActualPrimaryExpr::ParenExpr(inner), paren_strpos)
+    }
+    pub fn new_array_dup(bracket_strpos: StringPosition, expr1: BinaryExpr, expr2: BinaryExpr) -> PrimaryExpr {
+        PrimaryExpr(ActualPrimaryExpr::ArrayDupDef(expr1, expr2), bracket_strpos)
+    }
+    pub fn new_tuple(paren_strpos: StringPosition, exprs: Vec<BinaryExpr>) -> PrimaryExpr {
+        PrimaryExpr(ActualPrimaryExpr::TupleDef(exprs), paren_strpos)
+    }
+    pub fn new_array(bracket_strpos: StringPosition, exprs: Vec<BinaryExpr>) -> PrimaryExpr {
+        PrimaryExpr(ActualPrimaryExpr::ArrayDef(exprs), bracket_strpos)
     }
 }
+impl PrimaryExpr { // Get
 
-impl ISyntaxItem for PrimaryExpression {
-    
-    fn pos_all(&self) -> StringPosition {
-        match *self {
-            PrimaryExpression::Ident(ref _name, pos) => pos,
-            PrimaryExpression::Lit(ref _val, pos) => pos,
-            PrimaryExpression::Unit(pos) => pos,
-            PrimaryExpression::ParenExpr(ref _expr, pos) => pos,
-            PrimaryExpression::TupleDef(ref _exprs, pos) => pos, 
-            PrimaryExpression::ArrayDef(ref _exprs, pos) => pos,
-            PrimaryExpression::ArrayDupDef(ref _expr1, ref _expr2, pos) => pos[0],
-        }
-    }
-    
-    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
-        lexer.nth(index).is_ident()
-        || lexer.nth(index).is_lit()
-        || lexer.nth(index).is_seperator(SeperatorKind::LeftParenthenes)
-        || lexer.nth(index).is_seperator(SeperatorKind::LeftBracket)
+    pub fn get_strpos(&self) -> StringPosition {
+        self.1
     }
 
-    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<PrimaryExpression>, usize) {
+    pub fn is_ident(&self) -> bool {
+        match self.0 { ActualPrimaryExpr::Ident(_) => true, _ => false }
+    }    
+    pub fn is_lit(&self) -> bool {
+        match self.0 { ActualPrimaryExpr::Lit(_) => true, _ => false }
+    }    
+    pub fn is_paren(&self) -> bool {
+        match self.0 { ActualPrimaryExpr::ParenExpr(_) => true, _ => false }
+    }    
+    pub fn is_tuple(&self) -> bool {
+        match self.0 { ActualPrimaryExpr::TupleDef(_) => true, _ => false }
+    }
+    pub fn is_array(&self) -> bool {
+        match self.0 { ActualPrimaryExpr::ArrayDef(_) => true, _ => false }
+    }
+    pub fn is_array_dup(&self) -> bool {
+        match self.0 { ActualPrimaryExpr::ArrayDupDef(_, _) => true, _ => false }
+    }
+
+    pub fn get_ident_name(&self) -> Option<&String> {
+        match self.0 { ActualPrimaryExpr::Ident(ref ident_name) => Some(ident_name), _ => None }
+    }
+    pub fn get_lit_value(&self) -> Option<&LitValue> {
+        match self.0 { ActualPrimaryExpr::Lit(ref lit_value) => Some(lit_value), _ => None }
+    }
+    pub fn get_paren_inner(&self) -> Option<&BinaryExpr> {
+        match self.0 { ActualPrimaryExpr::ParenExpr(ref inner) => Some(inner), _ => None }
+    }
+    pub fn get_tuple_inners(&self) -> Option<&Vec<BinaryExpr>> {
+        match self.0 { ActualPrimaryExpr::TupleDef(ref exprs) => Some(exprs), _ => None }
+    }
+    pub fn get_array_inners(&self) -> Option<&Vec<BinaryExpr>> {
+        match self.0 { ActualPrimaryExpr::ArrayDef(ref exprs) => Some(exprs), _ => None }
+    }
+
+    pub fn get_array_dup_element(&self) -> Option<&BinaryExpr> {
+        match self.0 { ActualPrimaryExpr::ArrayDupDef(ref expr1, _) => Some(expr1), _ => None }
+    }
+    pub fn get_array_dup_count(&self) -> Option<&BinaryExpr> {
+        match self.0 { ActualPrimaryExpr::ArrayDupDef(_, ref expr2) => Some(expr2), _ => None }
+    }
+}
+impl ISyntaxItem for PrimaryExpr {
+    
+    fn pos_all(&self) -> StringPosition { self.1 }
+    
+    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
+        tokens.nth(index).is_ident()
+        || tokens.nth(index).is_lit()
+        || tokens.nth(index).is_seperator(SeperatorKind::LeftParenthenes)
+        || tokens.nth(index).is_seperator(SeperatorKind::LeftBracket)
+    }
+
+    fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<PrimaryExpr>, usize) {
 
         #[cfg(feature = "trace_primary_expr_parse")]
         macro_rules! trace { ($($arg:tt)*) => ({ print!("[PrimaryExpr]"); println!($($arg)*); }) }
         #[cfg(not(feature = "trace_primary_expr_parse"))]
         macro_rules! trace { ($($arg:tt)*) => () }
 
-        trace!("in this method to prove you are running this, current token: {:?}", lexer.nth(index));
+        trace!("in this method to prove you are running this, current token: {:?}", tokens.nth(index));
 
-        if lexer.nth(index).is_lit() {
-            return (Some(PrimaryExpression::Lit(lexer.nth(index).get_lit_val().unwrap(), lexer.pos(index))), 1);
+        if tokens.nth(index).is_lit() {
+            return (Some(PrimaryExpr::new_lit(tokens.nth(index).get_lit_val().unwrap(), tokens.pos(index))), 1);
         }
-        match lexer.nth(index).get_identifier() {
+        match tokens.nth(index).get_identifier() {
             Some(ident) => {
                 trace!("yes this is a identifier: {:?}, going to return", ident);
-                return (Some(PrimaryExpression::Ident(ident.clone(), lexer.pos(index))), 1);
+                return (Some(PrimaryExpr::new_ident(ident.clone(), tokens.pos(index))), 1);
             }
             None => (),
         }
-        if lexer.nth(index).is_keyword(KeywordKind::This) {
-            return (Some(PrimaryExpression::Ident("this".to_owned(), lexer.pos(index))), 1);
+        if tokens.nth(index).is_keyword(KeywordKind::This) {
+            return (Some(PrimaryExpr::new_ident("this".to_owned(), tokens.pos(index))), 1);
         }
 
         trace!("parsing primary not literal or identifier");
-        if lexer.nth(index).is_seperator(SeperatorKind::LeftParenthenes) {
-            if lexer.nth(index + 1).is_seperator(SeperatorKind::RightParenthenes) {
-                return (Some(PrimaryExpression::Unit(
-                    StringPosition::merge(lexer.pos(index), lexer.pos(index + 1))
-                )), 2);
+        if tokens.nth(index).is_seperator(SeperatorKind::LeftParenthenes) {
+            if tokens.nth(index + 1).is_seperator(SeperatorKind::RightParenthenes) {
+                return (Some(PrimaryExpr::new_unit(StringPosition::merge(tokens.pos(index), tokens.pos(index + 1)))), 2);
             }
 
             let mut current_len = 1;
             let mut exprs = Vec::new();
             loop {
-                match BinaryExpr::parse(lexer, messages, index + current_len) {
+                match BinaryExpr::parse(tokens, messages, index + current_len) {
                     (None, length) => {
                         trace!("parsing paren expression get expression failed");
                         return (None, current_len + length);
@@ -140,69 +209,69 @@ impl ISyntaxItem for PrimaryExpression {
                         exprs.push(expr);
                     }
                 }
-                if lexer.nth(index + current_len).is_seperator(SeperatorKind::RightParenthenes) {
+                if tokens.nth(index + current_len).is_seperator(SeperatorKind::RightParenthenes) {
                     current_len += 1;
                     break; // Finished
-                } else if lexer.nth(index + current_len).is_seperator(SeperatorKind::Comma) 
-                    && lexer.nth(index + current_len + 1).is_seperator(SeperatorKind::RightParenthenes) {
+                } else if tokens.nth(index + current_len).is_seperator(SeperatorKind::Comma) 
+                    && tokens.nth(index + current_len + 1).is_seperator(SeperatorKind::RightParenthenes) {
                     current_len += 2; 
                     break; // Finished
-                } else if lexer.nth(index + current_len).is_seperator(SeperatorKind::Comma) {
+                } else if tokens.nth(index + current_len).is_seperator(SeperatorKind::Comma) {
                     current_len += 1;
                     continue;
                 } else {
-                    return push_unexpect!(lexer, messages, "Right paren", index + current_len, current_len);
+                    return push_unexpect!(tokens, messages, "Right paren", index + current_len, current_len);
                 }
             }
 
-            let pos = StringPosition::merge(lexer.pos(index), lexer.pos(index + current_len - 1));
+            let pos = StringPosition::merge(tokens.pos(index), tokens.pos(index + current_len - 1));
             if exprs.len() == 0 {
                 unreachable!()
             } else if exprs.len() == 1 {
-                return (Some(PrimaryExpression::new_paren_expr(exprs.into_iter().last().unwrap(), pos)), current_len);
+                return (Some(PrimaryExpr::new_paren(pos, exprs.into_iter().last().unwrap())), current_len);
             } else {
-                return (Some(PrimaryExpression::TupleDef(exprs, pos)), current_len);
+                return (Some(PrimaryExpr::new_tuple(pos, exprs)), current_len);
             }
         }
 
-        if lexer.nth(index).is_seperator(SeperatorKind::LeftBracket) {
+        if tokens.nth(index).is_seperator(SeperatorKind::LeftBracket) {
              // Empty array literal, accept in syntax parse, currently denied in codegen
-            if lexer.nth(index + 1).is_seperator(SeperatorKind::RightBracket) {
+            if tokens.nth(index + 1).is_seperator(SeperatorKind::RightBracket) {
                 return (
-                    Some(PrimaryExpression::ArrayDef(
+                    Some(PrimaryExpr::new_array(
+                        StringPosition::merge(tokens.pos(index), tokens.pos(index + 1)),
                         Vec::new(), 
-                        StringPosition::merge(lexer.pos(index), lexer.pos(index + 1)),
                     )), 
                     2
                 );
             }
-            match BinaryExpr::parse(lexer, messages, index + 1) {
+            match BinaryExpr::parse(tokens, messages, index + 1) {
                 (None, length) => {
                     trace!("parsing array (dup) def failed, parse expr1 return none");
                     return (None, length);  // recover by find paired right bracket
                 }
                 (Some(expr1), expr1_len) => {
-                    trace!("parsing array (dup) def get expr1: {} with length {} and next is {:?}", expr1, expr1_len, lexer.nth(index + 1 + expr1_len));
-                    if lexer.nth(index + 1 + expr1_len).is_seperator(SeperatorKind::SemiColon) {
-                        let semicolon_pos = lexer.pos(index + 1 + expr1_len);
-                        match BinaryExpr::parse(lexer, messages, index + 2 + expr1_len) {
+                    trace!("parsing array (dup) def get expr1: {} with length {} and next is {:?}", expr1, expr1_len, tokens.nth(index + 1 + expr1_len));
+                    if tokens.nth(index + 1 + expr1_len).is_seperator(SeperatorKind::SemiColon) {
+                        // let semicolon_pos = tokens.pos(index + 1 + expr1_len); // semicolon is not recorded now
+                        match BinaryExpr::parse(tokens, messages, index + 2 + expr1_len) {
                             (None, length) => {
                                 trace!("parsing array dup def failed, parse expr2 failed");
                                 return (None, expr1_len + 2 + length);
                             } 
                             (Some(expr2), expr2_len) => {
-                                if lexer.nth(index + 2 + expr1_len + expr2_len).is_seperator(SeperatorKind::RightBracket) {
+                                if tokens.nth(index + 2 + expr1_len + expr2_len).is_seperator(SeperatorKind::RightBracket) {
                                     trace!("parsing array dup def succeed, expr1: {}, expr2: {}", expr1, expr2);
                                     return (
-                                        Some(PrimaryExpression::new_array_dup_def(expr1, expr2, [
-                                            StringPosition::merge(lexer.pos(index), lexer.pos(index + expr1_len + expr2_len + 2)),
-                                            semicolon_pos,
-                                        ])),
+                                        Some(PrimaryExpr::new_array_dup(
+                                            StringPosition::merge(tokens.pos(index), tokens.pos(index + expr1_len + expr2_len + 2)), 
+                                            expr1, expr2,
+                                        )),
                                         expr1_len + expr2_len + 3
                                     );
                                 } else {
                                     trace!("parsing array dup def failed, not followed right bracket");
-                                    return push_unexpect!(lexer, messages, "Right bracket after array dup def", index + 3 + expr1_len + expr2_len, expr1_len + expr2_len + 1);
+                                    return push_unexpect!(tokens, messages, "Right bracket after array dup def", index + 3 + expr1_len + expr2_len, expr1_len + expr2_len + 1);
                                 }
                             }
                         }
@@ -212,29 +281,29 @@ impl ISyntaxItem for PrimaryExpression {
                     let mut current_len = 1 + expr1_len; // 1 for left bracket
                     let mut exprs = vec![expr1];
                     loop {
-                        trace!("parsing array def, in loop, current: {:?}", lexer.nth(index + current_len));
-                        if lexer.nth(index + current_len).is_seperator(SeperatorKind::RightBracket) {
+                        trace!("parsing array def, in loop, current: {:?}", tokens.nth(index + current_len));
+                        if tokens.nth(index + current_len).is_seperator(SeperatorKind::RightBracket) {
                             trace!("parsing array def succeed, exprs: {:?}", exprs);
                             return (
-                                Some(PrimaryExpression::ArrayDef(
+                                Some(PrimaryExpr::new_array(
+                                    StringPosition::merge(tokens.pos(index), tokens.pos(index + current_len)),
                                     exprs, 
-                                    StringPosition::merge(lexer.pos(index), lexer.pos(index + current_len))
                                 )), 
                                 current_len + 1
                             );
-                        } else if lexer.nth(index + current_len).is_seperator(SeperatorKind::Comma)  // Accept [1, 2, 3, abc, ] 
-                            && lexer.nth(index + current_len + 1).is_seperator(SeperatorKind::RightBracket) {
+                        } else if tokens.nth(index + current_len).is_seperator(SeperatorKind::Comma)  // Accept [1, 2, 3, abc, ] 
+                            && tokens.nth(index + current_len + 1).is_seperator(SeperatorKind::RightBracket) {
                             trace!("parsing array def succeed, exprs: {:?}", exprs);
                             return (
-                                Some(PrimaryExpression::ArrayDef(
+                                Some(PrimaryExpr::new_array(
+                                    StringPosition::merge(tokens.pos(index), tokens.pos(index + 1 + current_len)),
                                     exprs, 
-                                    StringPosition::merge(lexer.pos(index), lexer.pos(index + 1 + current_len))
                                 )), 
                                 current_len + 2
                             );
-                        } else if lexer.nth(index + current_len).is_seperator(SeperatorKind::Comma) {
+                        } else if tokens.nth(index + current_len).is_seperator(SeperatorKind::Comma) {
                             current_len += 1;
-                            match BinaryExpr::parse(lexer, messages, index + current_len) {
+                            match BinaryExpr::parse(tokens, messages, index + current_len) {
                                 (Some(exprn), exprn_len) => {
                                     trace!("parsing array def, get expression n {}", exprn);
                                     current_len += exprn_len;
@@ -246,7 +315,7 @@ impl ISyntaxItem for PrimaryExpression {
                                 }
                             }
                         } else {
-                            return push_unexpect!(lexer, messages, ["comma", "left bracket", ], index + current_len, current_len);
+                            return push_unexpect!(tokens, messages, ["comma", "left bracket", ], index + current_len, current_len);
                         }
                     }
                 }
@@ -254,17 +323,116 @@ impl ISyntaxItem for PrimaryExpression {
         }
 
         trace!("Failed in prim expr parse, not start with left paren or left bracket");
-        return push_unexpect!(lexer, messages, ["identifier", "literal", "array def", ], index, 0);
+        return push_unexpect!(tokens, messages, ["identifier", "literal", "array def", ], index, 0);
     }
 } 
 
 #[cfg(test)] #[test]
-fn primary_expr_bug() {
+fn primary_expr_parse() {
+    use super::super::ISyntaxItemWithStr;
 
     assert_eq!(
-        PrimaryExpression::with_test_str("[a]"),   // this is the loop of lexer.nth(current) is left bracket does not cover everything and infinite loop is here
-        PrimaryExpression::Unit(make_str_pos!(1, 1, 1, 3)),
+        PrimaryExpr::with_test_str("[a]"),   // this is the loop of tokens.nth(current) is left bracket does not cover everything and infinite loop is here
+        PrimaryExpr::new_unit(make_str_pos!(1, 1, 1, 3)),
         "..."
-        // PrimaryExpression::ArrayDef(vec![BinaryExpr::with_test_str(" a")], make_str_pos!(1, 1, 1, 3))
+        // PrimaryExpr::ArrayDef(vec![BinaryExpr::with_test_str(" a")], make_str_pos!(1, 1, 1, 3))
     );
+
+    // // Case 0
+    // assert_eq!(//12345678901234567890
+    //     parse!( "[1, 2, 3f128, 0u64]"),
+    //     expr_array_def!{[
+    //         expr_num_lit!(NumLitValue::I32(1), make_str_pos!(1, 2, 1, 2)),
+    //         expr_num_lit!(NumLitValue::I32(2), make_str_pos!(1, 5, 1, 5)), 
+    //         expr_num_lit!(make_str_pos!(1, 8, 1, 12)),
+    //         expr_num_lit!(NumLitValue::U64(0), make_str_pos!(1, 15, 1, 18)),]
+    //         make_str_pos!(1, 1, 1, 19)
+    //     }
+    // );
+
+    // // Case 1          0        1         2         3
+    // //                 12345678901234567890123456789012345
+    // assert_eq!(parse!("[[(1)], [abc, (3)], [4, this, [6]]]"),
+    //     expr_array_def!{[
+    //         expr_array_def!{[
+    //             expr_paren_expr!(expr_num_lit!(NumLitValue::I32(1), make_str_pos!(1, 4, 1, 4)), make_str_pos!(1, 3, 1, 5)),]
+    //             make_str_pos!(1, 2, 1, 6) 
+    //         },
+    //         expr_array_def!{[
+    //             expr_ident!("abc", make_str_pos!(1, 10, 1, 12)),
+    //             expr_paren_expr!(expr_num_lit!(NumLitValue::I32(3), make_str_pos!(1, 16, 1, 16)), make_str_pos!(1, 15, 1, 17)),]
+    //             make_str_pos!(1, 9, 1, 18)
+    //         },
+    //         expr_array_def!{[
+    //             expr_num_lit!(NumLitValue::I32(4), make_str_pos!(1, 22, 1, 22)),
+    //             expr_ident!("this", make_str_pos!(1, 25, 1, 28)),
+    //             expr_array_def!{[
+    //                 expr_num_lit!(NumLitValue::I32(6), make_str_pos!(1, 32, 1, 32)),]
+    //                 make_str_pos!(1, 31, 1, 33)
+    //             },]
+    //             make_str_pos!(1, 21, 1, 34)
+    //         },]
+    //         make_str_pos!(1, 1, 1, 35)
+    //     }
+    // );
+
+    // // Case 2, empty array literal
+    // assert_eq!(
+    //     parse!("[]"),
+    //     expr_array_def!{
+    //         []
+    //         make_str_pos!(1, 1, 1, 2)
+    //     }
+    // );
+
+    // // Case 3    0        1           2          3         4         5           6
+    // assert_eq!(//12345678901234 5678 9012 3456789012345678901234567890123 456789 0123456
+    //     parse!( "[abc, 123u32, \"456\", '\\u0065', false, (), (a), (abc, \"hello\", ), ]"),
+    //     expr_array_def!{[
+    //         expr_ident!("abc", make_str_pos!(1, 2, 1, 4)),
+    //         expr_num_lit!(NumLitValue::U32(123), make_str_pos!(1, 7, 1, 12)),
+    //         expr_str_lit!("456", make_str_pos!(1, 15, 1, 19)),
+    //         expr_char_lit!('\u{0065}', make_str_pos!(1, 22, 1, 29)),
+    //         expr_bool_lit!(false, make_str_pos!(1, 32, 1, 36)),
+    //         expr_to_primary!(PrimaryExpr::Lit(LitValue::Unit, make_str_pos!(1, 39, 1, 40))),
+    //         expr_paren_expr!(expr_ident!("a", make_str_pos!(1, 44, 1, 44)), make_str_pos!(1, 43, 1, 45)),
+    //         expr_to_primary!(PrimaryExpr::TupleDef(
+    //             vec![
+    //                 expr_ident!("abc", make_str_pos!(1, 49, 1, 51)),
+    //                 expr_str_lit!("hello", make_str_pos!(1, 54, 1, 60)),
+    //             ], 
+    //             make_str_pos!(1, 48, 1, 63)
+    //         )), ]
+    //         make_str_pos!(1, 1, 1, 66)
+    //     }
+    // );        
+    
+    // // Case 4    0        1            2          3         4
+    // assert_eq!(//123456789012 3456 78 9012 345678901234567890123456
+    //     parse!( "[abc, 123f, \"456\\u\", '\\u00', false, (a), (  )]"),
+    //     expr_array_def!{[
+    //         expr_ident!("abc", make_str_pos!(1, 2, 1, 4)),
+    //         expr_num_lit!(make_str_pos!(1, 7, 1, 10)),
+    //         expr_str_lit!(make_str_pos!(1, 13, 1, 19)),
+    //         expr_char_lit!( make_str_pos!(1, 22, 1, 27)),
+    //         expr_bool_lit!(false, make_str_pos!(1, 30, 1, 34)),
+    //         expr_paren_expr!(expr_ident!("a", make_str_pos!(1, 38, 1, 38)), make_str_pos!(1, 37, 1, 39)),
+    //         expr_to_primary!(PrimaryExpr::Lit(LitValue::Unit, make_str_pos!(1, 42, 1, 45))),]
+    //         make_str_pos!(1, 1, 1, 46)
+    //     }
+    // );
+
+    // // Case 5    0        1         2
+    // assert_eq!(//1234567890123456789012
+    //     parse!( "[[123u32, abc]; 4567]"),
+    //     expr_array_dup_def!{
+    //         expr_array_def!{[
+    //             expr_num_lit!(NumLitValue::U32(123), make_str_pos!(1, 3, 1, 8)),
+    //             expr_ident!("abc", make_str_pos!(1, 11, 1, 13)),]
+    //             make_str_pos!(1, 2, 1, 14)
+    //         },
+    //         expr_num_lit!(NumLitValue::I32(4567), make_str_pos!(1, 17, 1, 20)),
+    //         [make_str_pos!(1, 1, 1, 21), make_str_pos!(1, 15, 1, 15)]
+    //     }
+    // );   
 }

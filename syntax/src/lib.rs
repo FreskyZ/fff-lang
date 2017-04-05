@@ -31,7 +31,7 @@ macro_rules! push_unexpect {
 }
 
 #[macro_use]
-mod ast_item;
+mod traits;
 mod syntax_tree;
 mod function_def;
 mod type_use;
@@ -39,7 +39,6 @@ mod statement;
 mod block;
 mod expr;
 
-pub use self::ast_item::ISyntaxItem;
 pub use self::syntax_tree::SyntaxTree;
 pub use self::function_def::Argument;
 pub use self::function_def::FunctionDef;
@@ -60,6 +59,10 @@ pub use self::statement::IfStatement;
 pub use self::type_use::TypeUse;
 pub use self::block::Block;
 
-use self::ast_item::ISyntaxItemFormat;
+use self::traits::ISyntaxItem;
+use self::traits::ISyntaxItemFormat;
+pub use self::traits::ISyntaxItemWithStr;
+
+#[cfg(test)] use self::traits::TestCase;
 
 // TODO: recoverable, recoverable is actually another syntax rule with emitting messages

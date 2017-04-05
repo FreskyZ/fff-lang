@@ -16,28 +16,33 @@ pub trait ISyntaxItem {
 
     /// Check tokens[index] is acceptable final
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool;
+}
 
-    fn with_test_str_and_index(program: &str, index: usize) -> Self where Self: Sized {
+pub trait ISyntaxItemWithStr {
+
+    fn with_test_str_and_index(program: &str, index: usize) -> Self where Self: Sized + ISyntaxItem {
         let tokens = &mut TokenStream::with_test_str(program);
         let messages = &mut MessageCollection::new();
         let ret_val = Self::parse(tokens, messages, index).0.unwrap();
         check_messages_continuable!(messages);
         return ret_val;
     }
-    fn with_test_str(program: &str) -> Self where Self: Sized {
+    fn with_test_str(program: &str) -> Self where Self: Sized + ISyntaxItem {
         let tokens = &mut TokenStream::with_test_str(program);
         let messages = &mut MessageCollection::new();
         let ret_val = Self::parse(tokens, messages, 0).0.unwrap();
         check_messages_continuable!(messages);
         return ret_val;
     }
-    fn with_test_str_ret_size(program: &str) -> (Option<Self>, usize) where Self: Sized {
+    fn with_test_str_ret_size(program: &str) -> (Option<Self>, usize) where Self: Sized + ISyntaxItem {
         let tokens = &mut TokenStream::with_test_str(program);
         let messages = &mut MessageCollection::new();
         let ret_val = Self::parse(tokens, messages, 0);
         check_messages_continuable!(messages);
         return ret_val;
     }
+}
+impl<T> ISyntaxItemWithStr for T where T: ISyntaxItem {
 }
 
 const INDENT_STRS: [&'static str; 16] = [

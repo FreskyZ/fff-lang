@@ -13,7 +13,7 @@ use lexical::LitValue;
 use lexical::NumLitValue;
 
 use syntax::TypeUse;
-use syntax::ISyntaxItem;
+use syntax::ISyntaxItemWithStr;
 
 use codegen::ItemID;
 use codegen::fn_def::FnCollection;

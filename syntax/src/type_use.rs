@@ -200,115 +200,110 @@ impl ISyntaxItem for TypeUse {
     }
 }
 
-#[cfg(test)]
-mod tests {
+#[cfg(test)] #[test]
+fn ast_smtype_parse() {
+    use message::LegacyMessage as Message;
+    use message::SyntaxMessage;
+    use codepos::StringPosition;
+    use super::TestCase;
 
-    #[test]
-    fn ast_smtype_parse() {
-        use message::LegacyMessage as Message;
-        use message::SyntaxMessage;
-        use super::TypeUse;
-        use codepos::StringPosition;
-        use super::super::ast_item::TestCase;
+    // Primitive
+    ast_test_case!{ "u8", 1, make_str_pos!(1, 1, 1, 2),
+        TypeUse::Base("u8".to_owned(), make_str_pos!(1, 1, 1, 2))
+    }
+    ast_test_case!{ "i16", 1, make_str_pos!(1, 1, 1, 3),
+        TypeUse::Base("i16".to_owned(), make_str_pos!(1, 1, 1, 3))
+    }
+    ast_test_case!{ "char", 1, make_str_pos!(1, 1, 1, 4),
+        TypeUse::Base("char".to_owned(), make_str_pos!(1, 1, 1, 4))
+    }
+    ast_test_case!{ "f32", 1, make_str_pos!(1, 1, 1, 3),
+        TypeUse::Base("f32".to_owned(), make_str_pos!(1, 1, 1, 3))
+    }
+    ast_test_case!{ "bool", 1, make_str_pos!(1, 1, 1, 4),
+        TypeUse::Base("bool".to_owned(), make_str_pos!(1, 1, 1, 4))
+    }
+    ast_test_case!{ "string", 1, make_str_pos!(1, 1, 1, 6),
+        TypeUse::Base("string".to_owned(), make_str_pos!(1, 1, 1, 6))
+    }
 
-        // Primitive
-        ast_test_case!{ "u8", 1, make_str_pos!(1, 1, 1, 2),
-            TypeUse::Base("u8".to_owned(), make_str_pos!(1, 1, 1, 2))
-        }
-        ast_test_case!{ "i16", 1, make_str_pos!(1, 1, 1, 3),
-            TypeUse::Base("i16".to_owned(), make_str_pos!(1, 1, 1, 3))
-        }
-        ast_test_case!{ "char", 1, make_str_pos!(1, 1, 1, 4),
-            TypeUse::Base("char".to_owned(), make_str_pos!(1, 1, 1, 4))
-        }
-        ast_test_case!{ "f32", 1, make_str_pos!(1, 1, 1, 3),
-            TypeUse::Base("f32".to_owned(), make_str_pos!(1, 1, 1, 3))
-        }
-        ast_test_case!{ "bool", 1, make_str_pos!(1, 1, 1, 4),
-            TypeUse::Base("bool".to_owned(), make_str_pos!(1, 1, 1, 4))
-        }
-        ast_test_case!{ "string", 1, make_str_pos!(1, 1, 1, 6),
-            TypeUse::Base("string".to_owned(), make_str_pos!(1, 1, 1, 6))
-        }
+    // Simple user define
+    ast_test_case!{ "helloworld_t", 1, make_str_pos!(1, 1, 1, 12),
+        TypeUse::Base("helloworld_t".to_owned(), make_str_pos!(1, 1, 1, 12))
+    }
 
-        // Simple user define
-        ast_test_case!{ "helloworld_t", 1, make_str_pos!(1, 1, 1, 12),
-            TypeUse::Base("helloworld_t".to_owned(), make_str_pos!(1, 1, 1, 12))
-        }
+    // Array
+    ast_test_case!{ "[u8]", 3, make_str_pos!(1, 1, 1, 4),
+        TypeUse::Array(Box::new(
+            TypeUse::Base("u8".to_owned(), make_str_pos!(1, 2, 1, 3)),
+        ), make_str_pos!(1, 1, 1, 4))
+    }
+    ast_test_case!{ "[[helloworld_t]]", 5, make_str_pos!(1, 1, 1, 16),
+        TypeUse::Array(Box::new(
+            TypeUse::Array(Box::new( 
+                TypeUse::Base("helloworld_t".to_owned(), make_str_pos!(1, 3, 1, 14))
+            ), make_str_pos!(1, 2, 1, 15))
+        ), make_str_pos!(1, 1, 1, 16))
+    }
 
-        // Array
-        ast_test_case!{ "[u8]", 3, make_str_pos!(1, 1, 1, 4),
-            TypeUse::Array(Box::new(
-                TypeUse::Base("u8".to_owned(), make_str_pos!(1, 2, 1, 3)),
-            ), make_str_pos!(1, 1, 1, 4))
-        }
-        ast_test_case!{ "[[helloworld_t]]", 5, make_str_pos!(1, 1, 1, 16),
-            TypeUse::Array(Box::new(
-                TypeUse::Array(Box::new( 
-                    TypeUse::Base("helloworld_t".to_owned(), make_str_pos!(1, 3, 1, 14))
-                ), make_str_pos!(1, 2, 1, 15))
-            ), make_str_pos!(1, 1, 1, 16))
-        }
+    // Unit
+    ast_test_case!{ "()", 2, make_str_pos!(1, 1, 1, 2),
+        TypeUse::Unit(make_str_pos!(1, 1, 1, 2))
+    }
 
-        // Unit
-        ast_test_case!{ "()", 2, make_str_pos!(1, 1, 1, 2),
-            TypeUse::Unit(make_str_pos!(1, 1, 1, 2))
-        }
+    // Tuple
+    //           1234567890123
+    ast_test_case!{ "(i32, string)", 5, make_str_pos!(1, 1, 1, 13),
+        TypeUse::Tuple(
+            vec![
+                TypeUse::Base("i32".to_owned(), make_str_pos!(1, 2, 1, 4)),
+                TypeUse::Base("string".to_owned(), make_str_pos!(1, 7, 1, 12)),
+            ],
+            make_str_pos!(1, 1, 1, 13)
+        )
+    }        //  12345678901234
+    ast_test_case!{ "(char, hw_t, )", 6, make_str_pos!(1, 1, 1, 14),
+        TypeUse::Tuple(
+            vec![
+                TypeUse::Base("char".to_owned(), make_str_pos!(1, 2, 1, 5)),
+                TypeUse::Base("hw_t".to_owned(), make_str_pos!(1, 8, 1, 11)),
+            ],
+            make_str_pos!(1, 1, 1, 14),
+        )    //  0        1         2         3
+    }        //  123456789012345678901234567890123456
+    ast_test_case!{ "([char], i32, u17, [((), u8, f128)])", 20, make_str_pos!(1, 1, 1, 36), 
+        TypeUse::Tuple(
+            vec![
+                TypeUse::Array(Box::new(
+                    TypeUse::Base("char".to_owned(), make_str_pos!(1, 3, 1, 6))
+                ), make_str_pos!(1, 2, 1, 7)),
+                TypeUse::Base("i32".to_owned(), make_str_pos!(1, 10, 1, 12)),
+                TypeUse::Base("u17".to_owned(), make_str_pos!(1, 15, 1, 17)),
+                TypeUse::Array(Box::new(
+                    TypeUse::Tuple(
+                        vec![
+                            TypeUse::Unit(make_str_pos!(1, 22, 1, 23)),
+                            TypeUse::Base("u8".to_owned(), make_str_pos!(1, 26, 1, 27)),
+                            TypeUse::Base("f128".to_owned(), make_str_pos!(1, 30, 1, 33)),
+                        ],
+                        make_str_pos!(1, 21, 1, 34)
+                    )
+                ), make_str_pos!(1, 20, 1, 35))
+            ],
+            make_str_pos!(1, 1, 1, 36)
+        )
+    }
 
-        // Tuple
-        //           1234567890123
-        ast_test_case!{ "(i32, string)", 5, make_str_pos!(1, 1, 1, 13),
-            TypeUse::Tuple(
-                vec![
-                    TypeUse::Base("i32".to_owned(), make_str_pos!(1, 2, 1, 4)),
-                    TypeUse::Base("string".to_owned(), make_str_pos!(1, 7, 1, 12)),
-                ],
-                make_str_pos!(1, 1, 1, 13)
-            )
-        }        //  12345678901234
-        ast_test_case!{ "(char, hw_t, )", 6, make_str_pos!(1, 1, 1, 14),
-            TypeUse::Tuple(
-                vec![
-                    TypeUse::Base("char".to_owned(), make_str_pos!(1, 2, 1, 5)),
-                    TypeUse::Base("hw_t".to_owned(), make_str_pos!(1, 8, 1, 11)),
-                ],
-                make_str_pos!(1, 1, 1, 14),
-            )    //  0        1         2         3
-        }        //  123456789012345678901234567890123456
-        ast_test_case!{ "([char], i32, u17, [((), u8, f128)])", 20, make_str_pos!(1, 1, 1, 36), 
-            TypeUse::Tuple(
-                vec![
-                    TypeUse::Array(Box::new(
-                        TypeUse::Base("char".to_owned(), make_str_pos!(1, 3, 1, 6))
-                    ), make_str_pos!(1, 2, 1, 7)),
-                    TypeUse::Base("i32".to_owned(), make_str_pos!(1, 10, 1, 12)),
-                    TypeUse::Base("u17".to_owned(), make_str_pos!(1, 15, 1, 17)),
-                    TypeUse::Array(Box::new(
-                        TypeUse::Tuple(
-                            vec![
-                                TypeUse::Unit(make_str_pos!(1, 22, 1, 23)),
-                                TypeUse::Base("u8".to_owned(), make_str_pos!(1, 26, 1, 27)),
-                                TypeUse::Base("f128".to_owned(), make_str_pos!(1, 30, 1, 33)),
-                            ],
-                            make_str_pos!(1, 21, 1, 34)
-                        )
-                    ), make_str_pos!(1, 20, 1, 35))
-                ],
-                make_str_pos!(1, 1, 1, 36)
-            )
-        }
-
-        // Not tuple
-        ast_test_case!{ "(i32)", 3, make_str_pos!(1, 1, 1, 5),
-            TypeUse::Tuple(
-                vec![
-                    TypeUse::Base("i32".to_owned(), make_str_pos!(1, 2, 1, 4)),
-                ],
-                make_str_pos!(1, 1, 1, 5),
-            ),
-            [
-                Message::Syntax(SyntaxMessage::SingleItemTupleType{ pos: make_str_pos!(1, 1, 1, 5) })
-            ]
-        }
+    // Not tuple
+    ast_test_case!{ "(i32)", 3, make_str_pos!(1, 1, 1, 5),
+        TypeUse::Tuple(
+            vec![
+                TypeUse::Base("i32".to_owned(), make_str_pos!(1, 2, 1, 4)),
+            ],
+            make_str_pos!(1, 1, 1, 5),
+        ),
+        [
+            Message::Syntax(SyntaxMessage::SingleItemTupleType{ pos: make_str_pos!(1, 1, 1, 5) })
+        ]
     }
 }
