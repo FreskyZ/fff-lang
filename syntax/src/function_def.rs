@@ -5,11 +5,10 @@ use std::fmt;
 
 use codepos::StringPosition;
 use util::format_vector_debug;
-use message::SyntaxMessage;
 use message::Message;
 use message::MessageCollection;
 
-use lexical::Lexer;
+use lexical::TokenStream;
 use lexical::KeywordKind;
 use lexical::SeperatorKind;
 
@@ -33,27 +32,27 @@ impl ISyntaxItem for Argument {
 
     fn pos_all(&self) -> StringPosition { StringPosition::merge(self.ty.pos_all(), self.pos_name) }
 
-    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool { 
-        TypeUse::is_first_final(lexer, index)
+    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool { 
+        TypeUse::is_first_final(tokens, index)
     }
 
-    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<Argument>, usize) {
+    fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<Argument>, usize) {
 
-        let (ty, ty_len) = match TypeUse::parse(lexer, messages, index) {
+        let (ty, ty_len) = match TypeUse::parse(tokens, messages, index) {
             (Some(ty), ty_len) => (ty, ty_len),
             (None, len) => return (None, len), 
         };
 
-        let name = if lexer.nth(index + ty_len).is_keyword(KeywordKind::This) {
+        let name = if tokens.nth(index + ty_len).is_keyword(KeywordKind::This) {
             "this".to_owned()
         } else { 
-            match lexer.nth(index + ty_len).get_identifier() {
+            match tokens.nth(index + ty_len).get_identifier() {
                 Some(ident) => ident,
-                None => return push_unexpect!(lexer, messages, ["identifier", ], index + ty_len, ty_len),
+                None => return push_unexpect!(tokens, messages, ["identifier", ], index + ty_len, ty_len),
             }
         };
 
-        (Some(Argument{ ty: ty, name: name, pos_name: lexer.pos(index + ty_len) }), ty_len + 1)
+        (Some(Argument{ ty: ty, name: name, pos_name: tokens.pos(index + ty_len) }), ty_len + 1)
     }
 }
 impl Argument {
@@ -89,52 +88,52 @@ impl ISyntaxItem for FunctionDef {
     
     fn pos_all(&self) -> StringPosition { StringPosition::merge(self.pos2[0], self.body.pos_all()) }
 
-    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
-        lexer.nth(index).is_keyword(KeywordKind::FnDef)
+    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
+        tokens.nth(index).is_keyword(KeywordKind::FnDef)
     }
     
     #[allow(unused_assignments)]
-    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<FunctionDef>, usize) {
+    fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<FunctionDef>, usize) {
 
-        let mut current_len = 0;
-
-        if !lexer.nth(index).is_keyword(KeywordKind::FnDef) {
-            return push_unexpect!(lexer, messages, "keyword fn", index, 0);
+        if !tokens.nth(index).is_keyword(KeywordKind::FnDef) {
+            return push_unexpect!(tokens, messages, "keyword fn", index, 0);
         }
-        current_len = 1;
 
-        let fn_name = match lexer.nth(index + current_len).get_identifier() {
+        let fn_name = match tokens.nth(index + 1).get_identifier() {
             Some(name) => name.clone(),
-            None => return push_unexpect!(lexer, messages, "identifier", index + 1, current_len),
+            None => return push_unexpect!(tokens, messages, "identifier", index + 1, 1),
         };
-        current_len = 2;
 
-        if !lexer.nth(index + 2).is_seperator(SeperatorKind::LeftParenthenes) {
-            return push_unexpect!(lexer, messages, "left parenthenes", index + 2, current_len);
+        if !tokens.nth(index + 2).is_seperator(SeperatorKind::LeftParenthenes) {
+            return push_unexpect!(tokens, messages, "left parenthenes", index + 2, 2);
         }
-        current_len = 3;
+        let param_list_left_paren_strpos = tokens.pos(index + 2);
+        let mut current_len = 3;
 
         let mut args = Vec::new();
         loop {
-            if lexer.nth(index + current_len).is_seperator(SeperatorKind::RightParenthenes) {
+            if tokens.nth(index + current_len).is_seperator(SeperatorKind::RightParenthenes) {
                 current_len += 1;
                 break; 
             }
-            if lexer.nth(index + current_len).is_seperator(SeperatorKind::Comma)   // accept `fn main(i32 a,) {}`
-                && lexer.nth(index + current_len + 1).is_seperator(SeperatorKind::RightParenthenes) {
+            if tokens.nth(index + current_len).is_seperator(SeperatorKind::Comma)   // accept `fn main(i32 a,) {}`
+                && tokens.nth(index + current_len + 1).is_seperator(SeperatorKind::RightParenthenes) {
                 if args.is_empty() {                // recoverable error on fn main(, ) {}
-                    let pos1 = StringPosition::merge(lexer.pos(index), lexer.pos(index + current_len + 1));
-                    let pos2 = lexer.pos(index + current_len - 2).start_pos();
-                    messages.push(SyntaxMessage::SingleCommaInNonArgumentFunctionDef{ fn_pos: pos1, comma_pos: pos2 });
+                    let fn_strpos = StringPosition::merge(tokens.pos(index), tokens.pos(index + current_len + 1));
+                    let params_strpos = StringPosition::merge(param_list_left_paren_strpos, tokens.pos(index + current_len - 1));
+                    messages.push(Message::new_by_str("Single comma in function definition argument list", vec![
+                        (fn_strpos, "function definition here"),
+                        (params_strpos, "param list here")
+                    ]));
                 }   
                 current_len += 2;
                 break;
             }
-            if lexer.nth(index + current_len).is_seperator(SeperatorKind::Comma) {
+            if tokens.nth(index + current_len).is_seperator(SeperatorKind::Comma) {
                 current_len += 1;
                 continue;
             }
-            match Argument::parse(lexer, messages, index + current_len) {
+            match Argument::parse(tokens, messages, index + current_len) {
                 (None, arg_len) => return (None, current_len + arg_len),
                 (Some(arg), arg_len) => {
                     current_len += arg_len;
@@ -143,19 +142,19 @@ impl ISyntaxItem for FunctionDef {
             }
         }
 
-        let may_be_ret_type_pos = lexer.pos(index + current_len - 1).start_pos().next_col();
+        let may_be_ret_type_pos = tokens.pos(index + current_len - 1).start_pos().next_col();
         let mut return_type = TypeUse::Unit(StringPosition::from2(may_be_ret_type_pos, may_be_ret_type_pos));
-        if lexer.nth(index + current_len).is_seperator(SeperatorKind::NarrowRightArrow) {
+        if tokens.nth(index + current_len).is_seperator(SeperatorKind::NarrowRightArrow) {
             current_len += 1;
-            match TypeUse::parse(lexer, messages, index + current_len) {
+            match TypeUse::parse(tokens, messages, index + current_len) {
                 (Some(ret_type), ret_type_len) => {
                     return_type = ret_type;
                     current_len += ret_type_len;
                 }
                 (None, _length) => { // other things expect Type, find next left brace to continue
-                    let _: (Option<i32>, _) = push_unexpect!(lexer, messages, "typedef", index + current_len, current_len);
-                    for i in (index + current_len)..lexer.len() {
-                        if lexer.nth(i).is_seperator(SeperatorKind::LeftBrace) {
+                    let _: (Option<i32>, _) = push_unexpect!(tokens, messages, "typedef", index + current_len, current_len);
+                    for i in (index + current_len)..tokens.len() {
+                        if tokens.nth(i).is_seperator(SeperatorKind::LeftBrace) {
                             current_len = i - index;
                         }
                     }
@@ -163,10 +162,10 @@ impl ISyntaxItem for FunctionDef {
             }
         }
 
-        match Block::parse(lexer, messages, index + current_len) {
+        match Block::parse(tokens, messages, index + current_len) {
             (Some(block), block_len) => {
-                let pos1 = lexer.pos(index);
-                let pos2 = lexer.pos(index + 1);
+                let pos1 = tokens.pos(index);
+                let pos2 = tokens.pos(index + 1);
                 (Some(FunctionDef{ name: fn_name.clone(), args: args, ret_type: return_type, body: block, pos2: [pos1, pos2] }), current_len + block_len)
             }
             (None, length) => (None, current_len + length),

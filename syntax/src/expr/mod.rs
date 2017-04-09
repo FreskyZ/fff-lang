@@ -280,8 +280,7 @@ impl Expression {
 #[cfg(test)] #[test]
 fn ast_expr_all() {
     use codepos::Position;
-    use message::SyntaxMessage;
-    use message::LegacyMessage as Message;
+    use message::Message;
     use super::TypeUse;
     use super::TestCase;
 
@@ -605,7 +604,7 @@ fn ast_expr_all() {
             make_str_pos!(1, 1, 1, 6),
         ),
         [
-            Message::Syntax(SyntaxMessage::SingleCommaInFunctionCall{ call_pos: make_str_pos!(1, 3, 1, 6), comma_pos: make_pos!(1, 4) })
+            // Message::Syntax(SyntaxMessage::SingleCommaInFunctionCall{ call_pos: make_str_pos!(1, 3, 1, 6), comma_pos: make_pos!(1, 4) })
         ]
     }
 
@@ -692,7 +691,7 @@ fn ast_expr_all() {
             make_str_pos!(1, 1, 1, 9)
         ),
         [
-            Message::Syntax(SyntaxMessage::SingleCommaInFunctionCall{ call_pos: make_str_pos!(1, 6, 1, 9), comma_pos: make_pos!(1, 7) })
+            // Message::Syntax(SyntaxMessage::SingleCommaInFunctionCall{ call_pos: make_str_pos!(1, 6, 1, 9), comma_pos: make_pos!(1, 7) })
         ]
     }
 
@@ -759,7 +758,7 @@ fn ast_expr_all() {
             make_str_pos!(1, 1, 1, 6),
         ),
         [
-            Message::Syntax(SyntaxMessage::SingleCommaInSubscription{ sub_pos: make_str_pos!(1, 3, 1, 6), comma_pos: make_pos!(1, 4) })
+            // Message::Syntax(SyntaxMessage::SingleCommaInSubscription{ sub_pos: make_str_pos!(1, 3, 1, 6), comma_pos: make_pos!(1, 4) })
         ]
     }
 

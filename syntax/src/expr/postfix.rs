@@ -11,7 +11,6 @@
 use std::fmt;
 
 use codepos::StringPosition;
-use message::SyntaxMessage;
 use message::Message;
 use message::MessageCollection;
 
@@ -289,8 +288,8 @@ impl ISyntaxItem for PostfixExpr {
                 if tokens.nth(index + current_length + 1).is_seperator(SeperatorKind::Comma) 
                     && tokens.nth(index + current_length + 2).is_seperator(SeperatorKind::RightParenthenes) {
                         let paren_strpos = StringPosition::merge(tokens.pos(index + current_length), tokens.pos(index + current_length + 2));
-                        let pos2 = tokens.pos(index + current_length + 1).start_pos();
-                        messages.push(SyntaxMessage::SingleCommaInFunctionCall{ call_pos: paren_strpos, comma_pos: pos2 });
+                        // let pos2 = tokens.pos(index + current_length + 1).start_pos();  // comma pos is not used now
+                        messages.push(Message::new_by_str("Single comma in function call", vec![(paren_strpos, "Function call here")]));
                         current_retval = PostfixExpr::new_function_call(current_retval, paren_strpos, Vec::new());
                         current_length += 3;
                         continue 'postfix;
@@ -298,9 +297,8 @@ impl ISyntaxItem for PostfixExpr {
                 expect_end_sep = SeperatorKind::RightParenthenes;
             } else if tokens.nth(index + current_length).is_seperator(SeperatorKind::LeftBracket) {
                 if tokens.nth(index + current_length + 1).is_seperator(SeperatorKind::RightBracket) {
-                    // first recoverable error here!!!, it is recoverable because later with type infer it can be used
                     let pos = tokens.pos(index + current_length);
-                    messages.push(SyntaxMessage::EmptySubscription{ pos: pos });
+                    messages.push(Message::new_by_str("Empty subscription", vec![(pos, "subscription here")]));
                     current_retval = PostfixExpr::new_subscription(
                         current_retval, StringPosition::merge(tokens.pos(index + current_length), tokens.pos(index + current_length + 1)), Vec::new()
                     );
@@ -309,11 +307,11 @@ impl ISyntaxItem for PostfixExpr {
                 }
                 if tokens.nth(index + current_length + 1).is_seperator(SeperatorKind::Comma) 
                     && tokens.nth(index + current_length + 2).is_seperator(SeperatorKind::RightBracket) {
-                        let pos1 = StringPosition::merge(tokens.pos(index + current_length), tokens.pos(index + current_length + 2));
-                        let pos2 = tokens.pos(index + current_length + 1).start_pos();
-                        messages.push(SyntaxMessage::SingleCommaInSubscription{ sub_pos: pos1, comma_pos: pos2 });
+                        let bracket_pair_strpos = StringPosition::merge(tokens.pos(index + current_length), tokens.pos(index + current_length + 2));
+                        // let pos2 = tokens.pos(index + current_length + 1).start_pos(); // comma pos is not used now
+                        messages.push(Message::new_by_str("Empty subscription", vec![(bracket_pair_strpos, "Subscription here")]));
                         current_retval = PostfixExpr::new_subscription(
-                            current_retval, pos1, Vec::new()
+                            current_retval, bracket_pair_strpos, Vec::new()
                         );
                         current_length += 3;
                         continue 'postfix;
@@ -408,7 +406,6 @@ fn postfix_expr_parse() {
             ]
         )
     }
-
 
     // "[FihB1w8, true, (), 75] as u64" 
     // "L()" 

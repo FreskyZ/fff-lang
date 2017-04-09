@@ -4,7 +4,7 @@
 use std::fmt;
 
 use codepos::StringPosition;
-use message::SyntaxMessage;
+use message::Message;
 use message::MessageCollection;
 
 use lexical::Lexer;
@@ -13,6 +13,10 @@ use lexical::KeywordKind;
 use super::super::ISyntaxItem;
 use super::super::Block;
 use super::super::Expression;
+
+macro_rules! loop_name_not_str_lit_message {
+    ($strpos: expr) => (Message::new_by_str("Require string literal for loop name specifier", vec![($strpos, "expression here")]))
+}
 
 #[derive(Eq, PartialEq)]
 pub struct LoopStatement {
@@ -53,7 +57,7 @@ impl ISyntaxItem for LoopStatement {
                     if expr.is_pure_str_lit() {
                         (expr.into_pure_str_lit(), expr_pos, expr_len + 1)
                     } else {
-                        messages.push(SyntaxMessage::LoopNameSpecifierIsNotStringLiteral{ pos: expr_pos });
+                        messages.push(loop_name_not_str_lit_message!(expr_pos));
                         (None, StringPosition::new(), expr_len + 1)
                     }
                 }
@@ -77,8 +81,6 @@ impl ISyntaxItem for LoopStatement {
 
 #[cfg(test)] #[test]
 fn ast_stmt_loop_parse() {
-    use message::LegacyMessage as Message;
-    use message::SyntaxMessage;
     use super::super::TestCase;
     use super::super::ISyntaxItemWithStr;
 
@@ -105,7 +107,7 @@ fn ast_stmt_loop_parse() {
             pos: [make_str_pos!(1, 1, 1, 4), StringPosition::new()],
         },
         [
-            Message::Syntax(SyntaxMessage::LoopNameSpecifierIsNotStringLiteral{ pos: make_str_pos!(1, 6, 1, 8) })
+            loop_name_not_str_lit_message!(make_str_pos!(1, 6, 1, 8))
         ]
     }
 }

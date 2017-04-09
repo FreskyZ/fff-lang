@@ -68,7 +68,7 @@ impl ISyntaxItem for ExpressionStatement {
 
         if lexer.nth(index + current_len).is_seperator(SeperatorKind::SemiColon) {
             // if !left_expr.is_function_call() { // process in codegen not here
-            //     messages.push(SyntaxMessage::NotFunctionCallIndependentExpressionStatement{ pos: left_expr.pos_all() });
+            //     messages.push(Message::new_by_str("Not function call neither assign statement expression statement", vec![(left_expr.pos_all(), "statement here")]));
             // }
             return (Some(ExpressionStatement{
                 left_expr: left_expr,

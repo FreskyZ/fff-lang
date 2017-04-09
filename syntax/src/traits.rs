@@ -74,7 +74,7 @@ macro_rules! ast_test_case {
 
 #[cfg(test)] use std::fmt;
 #[cfg(test)] use std::marker::PhantomData;
-#[cfg(test)] use message::LegacyMessage as Message;
+#[cfg(test)] use message::Message;
 
 // Test infrastructure
 #[cfg(test)]

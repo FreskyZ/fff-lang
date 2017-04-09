@@ -10,7 +10,6 @@
 use std::fmt;
 
 use codepos::StringPosition;
-use message::SyntaxMessage;
 use message::Message;
 use message::MessageCollection;
 
@@ -20,6 +19,10 @@ use lexical::KeywordKind;
 
 use super::super::ISyntaxItem;
 use super::super::Expression;
+
+macro_rules! loop_name_not_str_lit_message {
+    ($strpos: expr) => (Message::new_by_str("Require string literal for loop name specifier", vec![($strpos, "expression here")]))
+}
 
 #[derive(Eq, PartialEq)]
 pub struct ReturnStatement {
@@ -133,7 +136,7 @@ impl ISyntaxItem for ContinueStatement {
                 if lexer.nth(index + 1 + expr_len).is_seperator(SeperatorKind::SemiColon) {
                     let mut name_pos = expr.pos_all();
                     if !expr.is_pure_str_lit() {
-                        messages.push(SyntaxMessage::LoopNameSpecifierIsNotStringLiteral{ pos: expr.pos_all() });
+                        messages.push(loop_name_not_str_lit_message!(expr.pos_all()));
                         name_pos = StringPosition::new();
                     }
                     let name = expr.into_pure_str_lit();
@@ -175,7 +178,7 @@ impl ISyntaxItem for BreakStatement {
                 if lexer.nth(index + 1 + expr_len).is_seperator(SeperatorKind::SemiColon) {
                     let mut name_pos = expr.pos_all();
                     if !expr.is_pure_str_lit() {
-                        messages.push(SyntaxMessage::LoopNameSpecifierIsNotStringLiteral{ pos: expr.pos_all() });
+                        messages.push(loop_name_not_str_lit_message!(expr.pos_all()));
                         name_pos = StringPosition::new();
                     }
 
@@ -194,7 +197,6 @@ impl ISyntaxItem for BreakStatement {
 
 #[cfg(test)] #[test]
 fn ast_stmt_jump_parse() {
-    use message::LegacyMessage;
     use super::super::Expression;
     use super::super::TestCase;
     use super::super::ISyntaxItemWithStr;
@@ -234,7 +236,7 @@ fn ast_stmt_jump_parse() {
             pos: [make_str_pos!(1, 1, 1, 8), StringPosition::new(), make_str_pos!(1, 13, 1, 13)]
         },
         [
-            LegacyMessage::Syntax(SyntaxMessage::LoopNameSpecifierIsNotStringLiteral{ pos: make_str_pos!(1, 10, 1, 12) })
+            loop_name_not_str_lit_message!(make_str_pos!(1, 10, 1, 12))
         ]
     }
 
@@ -257,7 +259,7 @@ fn ast_stmt_jump_parse() {
             pos: [make_str_pos!(1, 1, 1, 5), StringPosition::new(), make_str_pos!(1, 10, 1, 10)],
         },
         [
-            LegacyMessage::Syntax(SyntaxMessage::LoopNameSpecifierIsNotStringLiteral{ pos: make_str_pos!(1, 7, 1, 9) })
+            loop_name_not_str_lit_message!(make_str_pos!(1, 7, 1, 9))
         ]
     }
 }

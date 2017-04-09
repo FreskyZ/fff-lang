@@ -6,7 +6,6 @@ extern crate codepos;
 extern crate util;
 
 use std::fmt;
-use codepos::Position;
 use codepos::StringPosition;
 use util::format_vector_debug;
 
@@ -18,73 +17,6 @@ macro_rules! impl_display_by_debug {
             }
         }
     )
-}
-
-#[derive(Eq, PartialEq)]
-pub enum SyntaxMessage {
-
-    // Syntax!
-    ExpectSymbol{ expect: String, actual: String, pos: Position },
-
-    // First recoverable of syntax!!!
-    EmptySubscription{ pos: StringPosition },
-    SingleCommaInNonArgumentFunctionDef{ fn_pos: StringPosition, comma_pos: Position },
-    SingleCommaInFunctionCall{ call_pos: StringPosition, comma_pos: Position },
-    SingleCommaInSubscription{ sub_pos: StringPosition, comma_pos: Position },
-
-    SingleItemTupleType{ pos: StringPosition },
-
-    LoopNameSpecifierIsNotStringLiteral{ pos: StringPosition },  // pos for the expression
-    
-    NotFunctionCallIndependentExpressionStatement { pos: StringPosition }, // pos for the statement
-}
-
-impl fmt::Debug for SyntaxMessage {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::SyntaxMessage::*;
-        match *self {
-            ExpectSymbol{ ref expect, ref actual, ref pos } => {
-                write!(f, "Expect {} at {:?} but actually is {:?}", expect, pos, actual)
-            }
-            EmptySubscription{ ref pos } => {
-                write!(f, "Empty subscription at {:?}", pos)
-            }
-            SingleCommaInNonArgumentFunctionDef{ ref fn_pos, ref comma_pos } => {
-                write!(f, "Single comma at {:?} in no argument function def at {:?}", comma_pos, fn_pos)
-            }
-            SingleCommaInFunctionCall{ ref call_pos, ref comma_pos } => {
-                write!(f, "Single comma at {:?} in function call at {:?}", comma_pos, call_pos)
-            }
-            SingleCommaInSubscription{ ref sub_pos, ref comma_pos } => {
-                write!(f, "Single comma at {:?} in subscription at {:?}", comma_pos, sub_pos)
-            }
-            SingleItemTupleType{ ref pos } => {
-                write!(f, "Single element tuple type at {:?}", pos)
-            }
-            LoopNameSpecifierIsNotStringLiteral{ ref pos } => {
-                write!(f, "Loop name specifier is not string literal at {:?}", pos)
-            }
-            NotFunctionCallIndependentExpressionStatement{ ref pos } => {
-                write!(f, "Invalid expression statement at {:?}, only function call or assignment can be expression statement", pos)
-            }
-        }
-    }
-}
-impl_display_by_debug!{ SyntaxMessage }
-
-impl SyntaxMessage {
-    pub fn is_recoverable(&self) -> bool {
-        match *self {
-            SyntaxMessage::ExpectSymbol{ .. } => false,
-            SyntaxMessage::EmptySubscription{ .. } => true,
-            SyntaxMessage::SingleCommaInNonArgumentFunctionDef{ .. } => true,
-            SyntaxMessage::SingleCommaInFunctionCall{ .. } => true,
-            SyntaxMessage::SingleCommaInSubscription{ .. } => true,
-            SyntaxMessage::SingleItemTupleType{ .. } => true,
-            SyntaxMessage::LoopNameSpecifierIsNotStringLiteral{ .. } => true,
-            SyntaxMessage::NotFunctionCallIndependentExpressionStatement{ .. } => true,
-        }
-    }
 }
 
 #[derive(Eq, PartialEq)]
@@ -298,12 +230,11 @@ impl_display_by_debug!{ RuntimeMessage }
 
 #[derive(Eq, PartialEq)]
 pub enum LegacyMessage {
-    Syntax(SyntaxMessage),
+    // Syntax(SyntaxMessage),
     Codegen(CodegenMessage),
     Runtime(RuntimeMessage),
     New(Message),
 }
-
 impl LegacyMessage {
     fn is_new(&self) -> bool {
         match self {
@@ -311,10 +242,6 @@ impl LegacyMessage {
             _ => false,
         }
     }
-}
-
-impl From<SyntaxMessage> for LegacyMessage {
-    fn from(msg: SyntaxMessage) -> LegacyMessage { LegacyMessage::Syntax(msg) }   
 }
 impl From<CodegenMessage> for LegacyMessage {
     fn from(msg: CodegenMessage) -> LegacyMessage { LegacyMessage::Codegen(msg) }   
@@ -326,7 +253,6 @@ impl From<RuntimeMessage> for LegacyMessage {
 impl fmt::Debug for LegacyMessage {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            LegacyMessage::Syntax(ref msg) => write!(f, "{:?}", msg),
             LegacyMessage::Codegen(ref msg) => write!(f, "{:?}", msg),
             LegacyMessage::Runtime(ref msg) => write!(f, "{:?}", msg),
             LegacyMessage::New(ref msg) => write!(f, "{:?}", msg),

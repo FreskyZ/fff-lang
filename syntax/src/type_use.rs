@@ -16,7 +16,6 @@
 use std::fmt;
 
 use codepos::StringPosition;
-use message::SyntaxMessage;
 use message::Message;
 use message::MessageCollection;
 
@@ -188,7 +187,7 @@ impl ISyntaxItem for TypeUse {
             if types.len() == 0 {
                 unreachable!()
             } else if types.len() == 1 {
-                messages.push(SyntaxMessage::SingleItemTupleType{ pos: pos });
+                messages.push(Message::new_by_str("Single item tuple type use", vec![(pos, "type use here")]));
                 return (Some(TypeUse::Tuple(types, pos)), current_len);
             } else if types.len() >= 2 {
                 return (Some(TypeUse::Tuple(types, pos)), current_len);
@@ -202,8 +201,7 @@ impl ISyntaxItem for TypeUse {
 
 #[cfg(test)] #[test]
 fn ast_smtype_parse() {
-    use message::LegacyMessage as Message;
-    use message::SyntaxMessage;
+    use message::Message;
     use codepos::StringPosition;
     use super::TestCase;
 
@@ -303,7 +301,7 @@ fn ast_smtype_parse() {
             make_str_pos!(1, 1, 1, 5),
         ),
         [
-            Message::Syntax(SyntaxMessage::SingleItemTupleType{ pos: make_str_pos!(1, 1, 1, 5) })
+            Message::new_by_str("Single item tuple type use", vec![(make_str_pos!(1, 1, 1, 5), "type use here")])
         ]
     }
 }
