@@ -160,8 +160,13 @@ impl StringPosition { // access
     }
 }
 
-#[macro_export]
+#[macro_export] // obsolete
 macro_rules! make_str_pos {
+    ($row1: expr, $col1: expr, $row2: expr, $col2: expr) => (StringPosition::from4($row1, $col1, $row2, $col2));
+    ($id: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr) => (StringPosition::with_all($id, $row1, $col1, $row2, $col2))
+}
+#[macro_export] // this name is better
+macro_rules! make_strpos { 
     ($row1: expr, $col1: expr, $row2: expr, $col2: expr) => (StringPosition::from4($row1, $col1, $row2, $col2));
     ($id: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr) => (StringPosition::with_all($id, $row1, $col1, $row2, $col2))
 }

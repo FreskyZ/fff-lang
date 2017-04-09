@@ -100,6 +100,7 @@ define_keyword!{ KeywordKind,
     "bool" =>       PrimTypeBool,   true,           false,
     "string" =>     PrimTypeString, true,           false,
 
+    "_" =>          Underscore,     false,          true,
     "struct" =>     Struct,         false,          true,
     "namespace" =>  Namespace,      false,          true,
     "type" =>       Type,           false,          true,

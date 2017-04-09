@@ -14,6 +14,7 @@ use lexical::SeperatorKind;
 
 use super::ISyntaxItem;
 use super::TypeUse;
+use super::TypeUseF;
 use super::Block;
 
 #[derive(Eq, PartialEq)]
@@ -143,7 +144,7 @@ impl ISyntaxItem for FunctionDef {
         }
 
         let may_be_ret_type_pos = tokens.pos(index + current_len - 1).start_pos().next_col();
-        let mut return_type = TypeUse::Unit(StringPosition::from2(may_be_ret_type_pos, may_be_ret_type_pos));
+        let mut return_type = TypeUseF::new_unit(StringPosition::from2(may_be_ret_type_pos, may_be_ret_type_pos));
         if tokens.nth(index + current_len).is_seperator(SeperatorKind::NarrowRightArrow) {
             current_len += 1;
             match TypeUse::parse(tokens, messages, index + current_len) {
@@ -180,7 +181,7 @@ fn ast_argument_parse() {
     assert_eq!(
         Argument::with_test_str_ret_size("i32 a"), 
         (Some(Argument{ 
-            ty: TypeUse::Base("i32".to_owned(), make_str_pos!(1, 1, 1, 3)), 
+            ty: TypeUseF::new_simple_test("i32", make_str_pos!(1, 1, 1, 3)), 
             name: "a".to_owned(),
             pos_name: make_str_pos!(1, 5, 1, 5), 
         }), 2)
@@ -189,7 +190,7 @@ fn ast_argument_parse() {
     assert_eq!(
         Argument::with_test_str_ret_size("[u8] buffer"), 
         (Some(Argument{ 
-            ty: TypeUse::Array(Box::new(TypeUse::Base("u8".to_owned(), make_str_pos!(1, 2, 1, 3))), make_str_pos!(1, 1, 1, 4)), 
+            ty: TypeUseF::new_array(make_str_pos!(1, 1, 1, 4), TypeUseF::new_simple_test("u8", make_str_pos!(1, 2, 1, 3))), 
             name: "buffer".to_owned(),
             pos_name: make_str_pos!(1, 6, 1, 11), 
         }), 4)
@@ -198,7 +199,6 @@ fn ast_argument_parse() {
 #[cfg(test)] #[test]
 fn ast_function_def_parse() {
     use super::ISyntaxItemWithStr;
-    // TODO: there was println!(messages) to manually check messages, update them to auto check when refactoring this
 
     perrorln!("Case 1:"); //                 123456789ABC
     let result = FunctionDef::with_test_str_ret_size("fn main() {}");
@@ -208,7 +208,7 @@ fn ast_function_def_parse() {
             name: "main".to_owned(), 
             pos2: [make_str_pos!(1, 1, 1, 2), make_str_pos!(1, 4, 1, 7)], 
             args: Vec::new(), 
-            ret_type: TypeUse::Unit(make_str_pos!(1, 10, 1, 10)), 
+            ret_type: TypeUseF::new_unit(make_str_pos!(1, 10, 1, 10)), 
             body: Block{ stmts: Vec::new(), pos: make_str_pos!(1, 11, 1, 12) },
         }), 6)
     );
@@ -222,12 +222,12 @@ fn ast_function_def_parse() {
             pos2: [make_str_pos!(1, 1, 1, 2), make_str_pos!(1, 4, 1, 7)], 
             args: vec![
                 Argument{
-                    ty: TypeUse::Base("i32".to_owned(), make_str_pos!(1, 9, 1, 11)), 
+                    ty: TypeUseF::new_simple_test("i32", make_str_pos!(1, 9, 1, 11)), 
                     name: "abc".to_owned(),
                     pos_name: make_str_pos!(1, 13, 1, 15),
                 }
             ], 
-            ret_type: TypeUse::Unit(make_str_pos!(1, 17, 1, 17)), 
+            ret_type: TypeUseF::new_unit(make_str_pos!(1, 17, 1, 17)), 
             body: Block{ stmts: Vec::new(), pos: make_str_pos!(1, 18, 1, 19) },
         }), 8)
     );
@@ -241,26 +241,26 @@ fn ast_function_def_parse() {
             pos2: [make_str_pos!(1, 2, 1, 3), make_str_pos!(1, 5, 1, 11)], 
             args: vec![
                 Argument{
-                    ty: TypeUse::Array(Box::new(
-                            TypeUse::Array(Box::new(
-                                TypeUse::Base("string".to_owned(), make_str_pos!(1, 15, 1, 20))
-                            ), make_str_pos!(1, 14, 1, 21))
-                        ), make_str_pos!(1, 13, 1, 23)), 
+                    ty: TypeUseF::new_array(make_str_pos!(1, 13, 1, 23), 
+                            TypeUseF::new_array(make_str_pos!(1, 14, 1, 21),
+                                TypeUseF::new_simple_test("string", make_str_pos!(1, 15, 1, 20))
+                            )
+                        ), 
                     name: "argv".to_owned(),
                     pos_name: make_str_pos!(1, 25, 1, 28),
                 },
                 Argument{
-                    ty: TypeUse::Base("i32".to_owned(), make_str_pos!(1, 32, 1, 34)), 
+                    ty: TypeUseF::new_simple_test("i32", make_str_pos!(1, 32, 1, 34)), 
                     name: "this".to_owned(),
                     pos_name: make_str_pos!(1, 36, 1, 39),
                 },
                 Argument{
-                    ty: TypeUse::Base("char".to_owned(), make_str_pos!(1, 42, 1, 45)), 
+                    ty: TypeUseF::new_simple_test("char", make_str_pos!(1, 42, 1, 45)), 
                     name: "some_other".to_owned(),
                     pos_name: make_str_pos!(1, 47, 1, 56),
                 },
             ],
-            ret_type: TypeUse::Unit(make_str_pos!(1, 60, 1, 60)), 
+            ret_type: TypeUseF::new_unit(make_str_pos!(1, 60, 1, 60)), 
             body: Block{ stmts: Vec::new(), pos: make_str_pos!(1, 62, 1, 63) },
         }), 19)
     );
@@ -273,7 +273,7 @@ fn ast_function_def_parse() {
             name: "main".to_owned(), 
             pos2: [make_str_pos!(1, 1, 1, 2), make_str_pos!(1, 4, 1, 7)], 
             args: Vec::new(), 
-            ret_type: TypeUse::Base("i32".to_owned(), make_str_pos!(1, 16, 1, 18)), 
+            ret_type: TypeUseF::new_simple_test("i32", make_str_pos!(1, 16, 1, 18)), 
             body: Block{ stmts: Vec::new(), pos: make_str_pos!(1, 20, 1, 21) },
         }), 9)
     );
@@ -287,26 +287,26 @@ fn ast_function_def_parse() {
             pos2: [make_str_pos!(1, 1, 1, 2), make_str_pos!(1, 4, 1, 7)], 
             args: vec![
                 Argument{
-                    ty: TypeUse::Array(Box::new(TypeUse::Base("string".to_owned(), make_str_pos!(1, 10, 1, 15))), make_str_pos!(1, 9, 1, 16)), 
+                    ty: TypeUseF::new_array(make_str_pos!(1, 9, 1, 16), TypeUseF::new_simple_test("string", make_str_pos!(1, 10, 1, 15))), 
                     name: "argv".to_owned(),
                     pos_name: make_str_pos!(1, 18, 1, 21),
                 },
                 Argument{
-                    ty: TypeUse::Base("i32".to_owned(), make_str_pos!(1, 24, 1, 26)), 
+                    ty: TypeUseF::new_simple_test("i32", make_str_pos!(1, 24, 1, 26)), 
                     name: "argc".to_owned(),
                     pos_name: make_str_pos!(1, 28, 1, 31),
                 },
                 Argument{
-                    ty: TypeUse::Base("char".to_owned(), make_str_pos!(1, 34, 1, 37)), 
+                    ty: TypeUseF::new_simple_test("char", make_str_pos!(1, 34, 1, 37)), 
                     name: "some_other".to_owned(),
                     pos_name: make_str_pos!(1, 39, 1, 48),
                 },
             ],
-            ret_type: TypeUse::Array(Box::new(
-                        TypeUse::Array(Box::new(
-                            TypeUse::Base("string".to_owned(), make_str_pos!(1, 57, 1, 62))
-                        ), make_str_pos!(1, 56, 1, 63))
-                    ), make_str_pos!(1, 55, 1, 64)), 
+            ret_type: TypeUseF::new_array(make_str_pos!(1, 55, 1, 64),
+                          TypeUseF::new_array(make_str_pos!(1, 56, 1, 63),
+                              TypeUseF::new_simple_test("string", make_str_pos!(1, 57, 1, 62))
+                          )
+                      ), 
             body: Block{ stmts: Vec::new(), pos: make_str_pos!(1, 66, 1, 67) },
         }), 23)
     );

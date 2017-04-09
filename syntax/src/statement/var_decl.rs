@@ -122,14 +122,13 @@ impl ISyntaxItem for VarDeclStatement {
 #[cfg(test)] #[test]
 fn ast_stmt_var_decl() {
     use super::super::ISyntaxItemWithStr;
-    use super::super::TypeUse;
-    use super::super::Expression;
+    use super::super::TypeUseF;
     
     assert_eq!( //                                123456789012345678
         VarDeclStatement::with_test_str_ret_size("const i32 abc = 0;"),
         (Some(VarDeclStatement {
             is_const: true,
-            ty: TypeUse::Base("i32".to_owned(), make_str_pos!(1, 7, 1, 9)),
+            ty: TypeUseF::new_simple_test("i32", make_str_pos!(1, 7, 1, 9)),
             name: "abc".to_owned(),                                    
             init_expr: Some(Expression::with_test_str("                0;")),
             pos: [
@@ -145,7 +144,7 @@ fn ast_stmt_var_decl() {
         VarDeclStatement::with_test_str_ret_size("var [i32] abc = 1 + 1;"),
         (Some(VarDeclStatement {
             is_const: false,
-            ty: TypeUse::Array(Box::new(TypeUse::Base("i32".to_owned(), make_str_pos!(1, 6, 1, 8))), make_str_pos!(1, 5, 1, 9)),
+            ty: TypeUseF::new_array(make_str_pos!(1, 5, 1, 9), TypeUseF::new_simple_test("i32", make_str_pos!(1, 6, 1, 8))),
             name: "abc".to_owned(),                                    
             init_expr: Some(Expression::with_test_str("                1 + 1")),
             pos: [
@@ -162,7 +161,7 @@ fn ast_stmt_var_decl() {
         VarDeclStatement::with_test_str_ret_size("const string input;"),
         (Some(VarDeclStatement {
             is_const: true,
-            ty: TypeUse::Base("string".to_owned(), make_str_pos!(1, 7, 1, 12)),
+            ty: TypeUseF::new_simple_test("string", make_str_pos!(1, 7, 1, 12)),
             name: "input".to_owned(),
             init_expr: None,
             pos: [
@@ -178,9 +177,9 @@ fn ast_stmt_var_decl() {
         VarDeclStatement::with_test_str_ret_size("var [u8] buf;"),
         (Some(VarDeclStatement {
             is_const: false,
-            ty: TypeUse::Array(Box::new(
-                    TypeUse::Base("u8".to_owned(), make_str_pos!(1, 6, 1, 7))
-                ), make_str_pos!(1, 5, 1, 8)),
+            ty: TypeUseF::new_array(make_str_pos!(1, 5, 1, 8),
+                    TypeUseF::new_simple_test("u8", make_str_pos!(1, 6, 1, 7))
+                ),
             name: "buf".to_owned(),
             init_expr: None,
             pos: [
@@ -197,15 +196,12 @@ fn ast_stmt_var_decl() {
         VarDeclStatement::with_test_str_ret_size("var ([u8], u32) buf = ([1u8, 5u8, 0x7u8], abc);"),
         (Some(VarDeclStatement {
             is_const: false,
-            ty: TypeUse::Tuple(
-                    vec![
-                        TypeUse::Array(Box::new(
-                            TypeUse::Base("u8".to_owned(), make_str_pos!(1, 7, 1, 8))
-                        ), make_str_pos!(1, 6, 1, 9)),
-                        TypeUse::Base("u32".to_owned(), make_str_pos!(1, 12, 1, 14)),
-                    ], 
-                    make_str_pos!(1, 5, 1, 15),
-                ),
+            ty: TypeUseF::new_tuple(make_str_pos!(1, 5, 1, 15), vec![
+                    TypeUseF::new_array(make_str_pos!(1, 6, 1, 9),
+                        TypeUseF::new_simple_test("u8", make_str_pos!(1, 7, 1, 8))
+                    ),
+                    TypeUseF::new_simple_test("u32", make_str_pos!(1, 12, 1, 14)),
+                ]),
             name: "buf".to_owned(),                                          
             init_expr: Some(Expression::with_test_str("                      ([1u8, 5u8, 0x7u8], abc);")),
             pos: [

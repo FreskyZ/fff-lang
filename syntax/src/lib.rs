@@ -1,37 +1,13 @@
-#![allow(dead_code)]
 ///! fff-lang
 ///!
 ///! syntax, abstract syntax tree types and generation
-
-// TODO: Add error recovery, which need new structure of message emitter and symbol length
 
 #[macro_use] extern crate messages as message;
 #[cfg_attr(test, macro_use)] extern crate util;
 #[cfg_attr(test, macro_use)] extern crate codepos;
 extern crate lexical;
 
-macro_rules! push_unexpect {
-    ($lexer: expr, $messages: expr, [$($final_tokens: expr, )+], $index: expr, $ret_size: expr) => ({
-        use util::format_vector_display;
-
-        let desc = format!("Expect {}", format_vector_display(&vec![$($final_tokens, )+], ", "));
-        let actual_token_desc = format!("Meet {:?}", $lexer.nth($index));
-        let strpos = $lexer.pos($index);
-
-        $messages.push(Message::with_help("Unexpect symbol".to_owned(), 
-            vec![(strpos, actual_token_desc)],
-            vec![desc]
-        ));
-
-        (None, $ret_size)
-    });
-    ($lexer: expr, $messages: expr, $final_token: expr, $index: expr, $ret_size: expr) => ({
-        push_unexpect!($lexer, $messages, [$final_token, ], $index, $ret_size)
-    })
-}
-
-#[macro_use]
-mod traits;
+#[macro_use] mod traits;
 mod syntax_tree;
 mod function_def;
 mod type_use;
@@ -45,6 +21,10 @@ pub use self::function_def::FunctionDef;
 pub use self::expr::Expression;
 pub use self::expr::ExpressionBase;
 pub use self::expr::ExpressionOperator;
+pub use self::expr::BinaryExpr;
+pub use self::expr::UnaryExpr;
+pub use self::expr::PostfixExpr;
+pub use self::expr::PrimaryExpr;
 pub use self::statement::Statement;
 pub use self::statement::VarDeclStatement;
 pub use self::statement::ReturnStatement;
@@ -57,6 +37,7 @@ pub use self::statement::ForStatement;
 pub use self::statement::ElseIfBranch;
 pub use self::statement::IfStatement;
 pub use self::type_use::TypeUse;
+pub use self::type_use::TypeUseF;
 pub use self::block::Block;
 
 use self::traits::ISyntaxItem;

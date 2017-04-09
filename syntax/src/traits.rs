@@ -83,11 +83,12 @@ pub struct TestCase<T> {
 }
 
 #[cfg(test)]
+#[allow(dead_code)] // may be unused
 impl<T> TestCase<T> 
     where T: ISyntaxItem + Eq + PartialEq + fmt::Debug {
 
     pub fn run(program: &str, expect_len: usize, expect_pos_all: StringPosition, expect_result: T, line: u32, column: u32) {
-        perrorln!("Case at {}:{}", line, column);
+        println!("Case `{}` at {}:{}", program, line, column);
         if let (Some(actual_result), actual_len) = T::with_test_str_ret_size(program) {
             assert_eq!(actual_result, expect_result, "error result");
             assert_eq!(actual_len, expect_len, "error symbol length");
@@ -97,7 +98,7 @@ impl<T> TestCase<T>
 
     /// run with check error
     pub fn run_e(program: &str, expect_len: usize, expect_pos_all: StringPosition, expect_result: T, expect_messages: Vec<Message>, line: u32, column: u32) {
-        perrorln!("Case at {}:{}", line, column);
+        println!("Case `{}` at {}:{}", program, line, column);
 
         let tokens = &mut TokenStream::with_test_str(program);
         let messages = &mut MessageCollection::new();
@@ -115,7 +116,7 @@ impl<T> TestCase<T>
 
     /// run with only check error
     pub fn run_oe(program: &str, expect_len: usize, expect_messages: Vec<Message>, line: u32, column: u32) {
-        perrorln!("Case at {}:{}", line, column);
+        println!("Case `{}` at {}:{}", program, line, column);
         
         let tokens = &mut TokenStream::with_test_str(program);
         let messages = &mut MessageCollection::new();
@@ -129,4 +130,25 @@ impl<T> TestCase<T>
         }
         assert_eq!(messages, &formated_expect_messages, "error messages");
     }
+}
+
+#[macro_export]
+macro_rules! push_unexpect {
+    ($lexer: expr, $messages: expr, [$($final_tokens: expr, )+], $index: expr, $ret_size: expr) => ({
+        use util::format_vector_display;
+
+        let desc = format!("Expect {}", format_vector_display(&vec![$($final_tokens, )+], ", "));
+        let actual_token_desc = format!("Meet {:?}", $lexer.nth($index));
+        let strpos = $lexer.pos($index);
+
+        $messages.push(Message::with_help("Unexpect symbol".to_owned(), 
+            vec![(strpos, actual_token_desc)],
+            vec![desc]
+        ));
+
+        (None, $ret_size)
+    });
+    ($lexer: expr, $messages: expr, $final_token: expr, $index: expr, $ret_size: expr) => ({
+        push_unexpect!($lexer, $messages, [$final_token, ], $index, $ret_size)
+    })
 }

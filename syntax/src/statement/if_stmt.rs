@@ -150,9 +150,7 @@ mod tests {
     fn ast_stmt_if() {
 
         perrorln!("{:?}", IfStatement::with_test_str("if 1 { fresky.love(zmj); zmj.love(fresky); }"));
-
         perrorln!("{:?}", IfStatement::with_test_str("if 1 { fresky.love(zmj); zmj.love(fresky); } else { writeln(\"hellworld\"); }"));
-
         perrorln!("{:?}", IfStatement::with_test_str(
 r#"
             if 1 { 

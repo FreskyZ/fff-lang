@@ -40,7 +40,7 @@ impl FnArg {
     // Always construct, ty maybe none for invalid type
     fn new(syn_arg: SyntaxArgument, types: &mut TypeCollection, messages: &mut MessageCollection, fns: &mut FnCollection) -> FnArg {
 
-        let pos1 = syn_arg.ty.pos();
+        let pos1 = syn_arg.ty.get_all_strpos();
         let pos2 = syn_arg.pos_name;
         let ty = types.get_id_by_smtype(syn_arg.ty, messages, fns);   // message emitted for none
         FnArg{ name: syn_arg.name, typeid: ty, pos: StringPosition::merge(pos1, pos2) }  
@@ -163,7 +163,7 @@ impl FnImpl {
     fn new(syn_fn: SyntaxFunctionDef, types: &mut TypeCollection, messages: &mut MessageCollection, fns: &mut FnCollection) -> (FnImpl, SyntaxBlock) {
         
         let (args, mut valid) = FnImpl::new_args(syn_fn.args, syn_fn.pos2[0], &syn_fn.name, types, messages, fns);
-        let pos_ret_type = syn_fn.ret_type.pos();
+        let pos_ret_type = syn_fn.ret_type.get_all_strpos();
         let ret_type = types.get_id_by_smtype(syn_fn.ret_type, messages, fns);
         valid = valid && ret_type.is_valid();
         (FnImpl{ 

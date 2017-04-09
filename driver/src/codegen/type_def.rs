@@ -5,6 +5,7 @@ use std::cmp;
 use std::fmt;
 
 use util::format_vector_debug;
+use message::Message;
 use message::CodegenMessage;
 use message::MessageCollection;
 
@@ -116,63 +117,46 @@ impl TypeCollection {
     // check base type existence, currently only primitive types, return the id of the primitive type
     // record processed array and tuple types, set their type params, return their type ids
     // position info are removed because messages are finally here, furthur errors will only report "variable with type" etc.
-    fn get_id_internal(&mut self, ty: TypeUse, messages: &mut MessageCollection, fns: &mut FnCollection) -> Option<usize> {
+    fn get_id_internal(&mut self, typeuse: TypeUse, messages: &mut MessageCollection, fns: &mut FnCollection) -> Option<usize> {
 
-        match ty {
-            TypeUse::Unit(_pos) => Some(0),
-            TypeUse::Base(name, pos) => {
-                match self.check_exist(&Type::Base(name.clone())){
-                    Some(id) => Some(id),
-                    None => {
-                        messages.push(CodegenMessage::TypeNotExist{ name: name, pos: pos });
-                        None
-                    }
+        if typeuse.is_unit() {
+            return Some(0);
+        } else if typeuse.is_simple() {
+            let ident_name = typeuse.get_simple().unwrap();
+            let ident_strpos = typeuse.get_all_strpos();
+            match self.check_exist(&Type::Base(ident_name.clone())) {
+                Some(id) => return Some(id),
+                None => {
+                    messages.push(Message::new(format!("Type `{}` not exist", ident_name), vec![(ident_strpos, "Type use here".to_owned())]));
+                    return None;
                 }
             }
-            TypeUse::Array(boxed_base, _pos) => {
-                match self.get_id_internal(boxed_base.as_ref().clone(), messages, fns) {
-                    Some(item_typeid) => self.push_builtin_template_type(Type::Array(item_typeid), fns).into_option(),
-                    None => None, // message emitted
+        } else if typeuse.is_array() {
+            match self.get_id_internal(typeuse.get_array_inner().unwrap().clone(), messages, fns) {
+                Some(item_typeid) => return self.push_builtin_template_type(Type::Array(item_typeid), fns).into_option(),
+                None => return None, // message emitted
+            }
+        } else if typeuse.is_tuple() {
+            let mut item_typeids = Vec::new();
+            let mut has_failed = false;
+            for typeuse in typeuse.get_tuple_items().unwrap() {
+                match self.get_id_internal(typeuse.clone(), messages, fns) {
+                    Some(id) => item_typeids.push(id),
+                    None => has_failed = true, // not returning here because want to check more failure
                 }
             }
-            TypeUse::Tuple(smtypes, _pos) => {
-                let mut item_typeids = Vec::new();
-                let mut has_failed = false;
-                for smtype in smtypes {
-                    match self.get_id_internal(smtype, messages, fns) {
-                        Some(id) => item_typeids.push(id),
-                        None => has_failed = true, // message emitted
-                    }
-                }
-                if has_failed {
-                    return None;    // if has failed, just return none
-                }
+            if has_failed {
+                return None;    // if has failed, just return none
+            }
 
-                self.push_builtin_template_type(Type::Tuple(item_typeids), fns).into_option()
-            }
+            return self.push_builtin_template_type(Type::Tuple(item_typeids), fns).into_option();
+        } else {
+            unreachable!();
         }
     }
 
     pub fn get_id_by_lit(lit: &LitValue) -> ItemID {
-        // pub enum LitValue {
-        //     Unit,
-        //     Str(Option<String>),
-        //     Num(Option<NumLitValue>),
-        //     Char(Option<char>),
-        //     Bool(bool),
-        // }
-        // pub enum NumLitValue {
-        //     I8(i8),
-        //     U8(u8),
-        //     I16(i16),
-        //     U16(u16),
-        //     I32(i32),
-        //     U32(u32),
-        //     I64(i64),
-        //     U64(u64),
-        //     F32(f32),
-        //     F64(f64),
-        // }
+
         match lit {
             &LitValue::Num(None) => ItemID::new_invalid(),
             &LitValue::Str(None) => ItemID::new_invalid(),

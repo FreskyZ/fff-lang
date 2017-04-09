@@ -281,7 +281,7 @@ impl Expression {
 fn ast_expr_all() {
     use codepos::Position;
     use message::Message;
-    use super::TypeUse;
+    use super::TypeUseF;
     use super::TestCase;
 
     // Features
@@ -769,7 +769,7 @@ fn ast_expr_all() {
             ExpressionBase::Lit(LitValue::from(1), make_str_pos!(1, 1, 1, 1)),
             vec![
                 ExpressionOperator::TypeCast(
-                    TypeUse::Base("u32".to_owned(), make_str_pos!(1, 6, 1, 8)),
+                    TypeUseF::new_simple("u32".to_owned(), make_str_pos!(1, 6, 1, 8)),
                     make_str_pos!(1, 3, 1, 4),
                 )
             ],
@@ -790,9 +790,9 @@ fn ast_expr_all() {
             ),
             vec![
                 ExpressionOperator::TypeCast(
-                    TypeUse::Array(Box::new(
-                        TypeUse::Base("f32".to_owned(), make_str_pos!(1, 9, 1, 11))
-                    ), make_str_pos!(1, 8, 1, 12)),
+                    // TypeUse::Array(Box::new(
+                        TypeUseF::new_simple("f32".to_owned(), make_str_pos!(1, 9, 1, 11)),
+                    // ), make_str_pos!(1, 8, 1, 12)),
                     make_str_pos!(1, 5, 1, 6),
                 )
             ],
@@ -845,7 +845,7 @@ fn ast_expr_all() {
                     make_str_pos!(1, 6, 1, 14),
                 ),
                 ExpressionOperator::TypeCast(
-                    TypeUse::Base("i32".to_owned(), make_str_pos!(1, 19, 1, 21)),
+                    TypeUseF::new_simple("i32".to_owned(), make_str_pos!(1, 19, 1, 21)),
                     make_str_pos!(1, 16, 1, 17),
                 )
             ],
