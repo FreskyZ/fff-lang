@@ -22,12 +22,12 @@ struct V4Token(V2Token, StringPosition);
 impl fmt::Debug for V4Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         try!(match self.0 {
-            V2Token::Literal(ref lit) => write!(f, "{:?} at ", lit),
-            V2Token::Identifier(ref name) => write!(f, "Identifier `{}` at ", name),
-            V2Token::Keyword(ref kind) => write!(f, "Keyword {:?} at ", kind),
-            V2Token::Seperator(ref kind) => write!(f, "Seperator {:?} at ", kind),
-            V2Token::EOF => write!(f, "<EOF> at "), 
-            V2Token::EOFs => write!(f, "<EOFs> at "),
+            V2Token::Literal(ref lit) => write!(f, "{:?} ", lit),
+            V2Token::Identifier(ref name) => write!(f, "Ident '{}' ", name),
+            V2Token::Keyword(ref kind) => write!(f, "Keyword {:?} ", kind),
+            V2Token::Seperator(ref kind) => write!(f, "Seperator {:?} ", kind),
+            V2Token::EOF => write!(f, "<EOF> "), 
+            V2Token::EOFs => write!(f, "<EOFs> "),
         });
         write!(f, "{:?}", self.1)
     }
@@ -112,7 +112,30 @@ impl TokenStream {
             &self.tokens[idx]
         }
     }
+
+    pub fn iter<'a>(&'a self) -> TokenStreamIter<'a> {
+        TokenStreamIter{ stream: self, index: 0 }
+    }
 }
+
+pub struct TokenStreamIter<'a> {
+    stream: &'a TokenStream,
+    index: usize,
+}
+impl<'a> Iterator for TokenStreamIter<'a> {
+    type Item = &'a IToken;
+
+    fn next(&mut self) -> Option<&'a IToken> {
+        if self.index >= self.stream.len() {
+            return None;
+        } else {
+            let retval = Some(self.stream.nth(self.index));
+            self.index += 1;
+            return retval;
+        }
+    }
+}
+
 
 #[cfg(test)] #[test]
 fn v4_base() { // remain the name of v4 here for memory

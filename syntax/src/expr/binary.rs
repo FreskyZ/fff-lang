@@ -222,7 +222,7 @@ fn binary_expr_format() {
         make_str_pos!(1, 3, 1, 3),
         BinaryExpr::new_primary(PrimaryExpr::new_lit(LitValue::from(2), make_str_pos!(1, 5, 1, 5))),
     );
-    assert_eq!(binary_expr.format(0), "BinaryExpr <<0>1:1-1:5>\n  Literal: (i32)1 <<0>1:1-1:1>\n  + <<0>1:3-1:3>\n  Literal: (i32)2 <<0>1:5-1:5>");
+    assert_eq!(binary_expr.format(0), "BinaryExpr <<0>1:1-1:5>\n  Literal (i32)1 <<0>1:1-1:1>\n  + <<0>1:3-1:3>\n  Literal (i32)2 <<0>1:5-1:5>");
 }
 
 #[cfg(test)] #[test]

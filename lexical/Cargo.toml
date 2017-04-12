@@ -12,3 +12,4 @@ messages = { path = "../messages" }
 
 [features]
 trace_num_lit_parse = []
+trace_v2_parse = []

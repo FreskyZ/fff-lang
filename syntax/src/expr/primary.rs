@@ -40,29 +40,27 @@ impl ISyntaxItemFormat for PrimaryExpr {
     fn format(&self, indent: u32) -> String {
         match (&self.0, self.1) {
             (&ActualPrimaryExpr::Ident(ref ident_name), strpos) =>
-                format!("{}Ident: {} <{:?}>", PrimaryExpr::indent_str(indent), ident_name, strpos),
+                format!("{}Ident {} <{:?}>", 
+                    PrimaryExpr::indent_str(indent), ident_name, strpos),
             (&ActualPrimaryExpr::Lit(ref lit_value), strpos) => 
-                format!("{}Literal: {} <{:?}>", PrimaryExpr::indent_str(indent), lit_value, strpos),
+                format!("{}Literal {} <{:?}>", 
+                    PrimaryExpr::indent_str(indent), lit_value, strpos),
             (&ActualPrimaryExpr::ParenExpr(ref inner_expr), strpos) =>
-                format!("{}ParenExpr\n{}Paren at <{:?}>\n{}", 
-                    PrimaryExpr::indent_str(indent), 
-                    PrimaryExpr::indent_str(indent + 1), strpos, 
+                format!("{}ParenExpr <{:?}>\n{}", 
+                    PrimaryExpr::indent_str(indent), strpos, 
                     inner_expr.format(indent + 1)),
             (&ActualPrimaryExpr::ArrayDupDef(ref expr1, ref expr2), strpos) =>
-                format!("{}DefineArrayDuply:\n{}Bracket at <{:?}>\n{}\n{}",
-                    PrimaryExpr::indent_str(indent), 
-                    PrimaryExpr::indent_str(indent + 1), strpos, 
+                format!("{}DefineArrayDuply <{:?}>\n{}\n{}",
+                    PrimaryExpr::indent_str(indent), strpos, 
                     expr1.format(indent + 1),
                     expr2.format(indent + 2)),
             (&ActualPrimaryExpr::TupleDef(ref exprs), strpos) =>
-                format!("{}DefineTuple:\n{}Bracket at <{:?}>{}", 
-                    PrimaryExpr::indent_str(indent), 
-                    PrimaryExpr::indent_str(indent + 1), strpos,
+                format!("{}DefineTuple <{:?}>{}", 
+                    PrimaryExpr::indent_str(indent), strpos,
                     exprs.iter().fold(String::new(), |mut buf, expr| { buf.push_str("\n"); buf.push_str(&expr.format(indent + 1)); buf })),
             (&ActualPrimaryExpr::ArrayDef(ref exprs), strpos) =>
-                format!("{}DefineArray:\n{}Paren at <{:?}>{}", 
-                    PrimaryExpr::indent_str(indent), 
-                    PrimaryExpr::indent_str(indent + 1), strpos, 
+                format!("{}DefineArray <{:?}>{}", 
+                    PrimaryExpr::indent_str(indent), strpos, 
                     exprs.iter().fold(String::new(), |mut buf, expr| { buf.push_str("\n"); buf.push_str(&expr.format(indent + 1)); buf })),
         }
     }
@@ -333,8 +331,7 @@ fn primary_expr_parse() {
 
     assert_eq!(
         PrimaryExpr::with_test_str("[a]"),   // this is the loop of tokens.nth(current) is left bracket does not cover everything and infinite loop is here
-        PrimaryExpr::new_unit(make_str_pos!(1, 1, 1, 3)),
-        "..."
+        PrimaryExpr::new_unit(make_str_pos!(1, 1, 1, 3))
         // PrimaryExpr::ArrayDef(vec![BinaryExpr::with_test_str(" a")], make_str_pos!(1, 1, 1, 3))
     );
 

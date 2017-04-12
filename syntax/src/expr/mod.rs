@@ -277,7 +277,7 @@ impl Expression {
     }
 }
 
-#[cfg(test)] #[test]
+#[cfg(test)] #[test] #[ignore]
 fn ast_expr_all() {
     use codepos::Position;
     use message::Message;

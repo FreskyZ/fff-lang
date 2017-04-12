@@ -120,6 +120,9 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
     // input stringliteral or otherchar without comment, output identifier and numeric literal
     fn next(&mut self, messages: &mut MessageCollection) -> (V2Token, StringPosition) {
 
+        #[cfg(feature = "trace_v2_parse")] macro_rules! trace { ($($arg:tt)*) => ({ print!("[V2Next:{}] ", line!()); println!($($arg)*); }) }
+        #[cfg(not(feature = "trace_v2_parse"))] macro_rules! trace { ($($arg:tt)*) => () }
+
         macro_rules! ident_to_v2 { ($ident_value: expr) => ({
             match KeywordKind::try_from(&$ident_value) { 
                 Some(KeywordKind::True) => V2Token::Literal(LitValue::from(true)),
@@ -209,6 +212,9 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                     if ch.is_identifier_start() {
                         let mut value = String::new();
                         value.push(ch);
+                        if !next_ch.is_identifier() {             // TODO future: understand why it is here to make the last case pass
+                            return (ident_to_v2!(value), strpos);
+                        }
                         state = State::InIdent(value, strpos);
                     } else if ch.is_numeric_literal_start() {
                         let mut value = String::new();
@@ -216,12 +222,17 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                         state = State::InNumLit(value, strpos);
                     } else {
                         match SeperatorKind::try_from3(ch, next_ch, nextnext_ch) { // the try_from3 will check 3, if not, check 2, if not, check 1
-                            Some((seperator, 1)) => return (V2Token::Seperator(seperator), strpos),
+                            Some((seperator, 1)) => {
+                                trace!("ch is {:?} at {:?}, result is {:?}", ch, strpos, seperator);
+                                return (V2Token::Seperator(seperator), strpos);
+                            }
                             Some((seperator, 2)) => {
+                                trace!("ch is {:?} at {:?}, next_ch is {:?}, result is {:?}", ch, strpos, next_ch, seperator);
                                 self.v1.prepare_skip1();
                                 return (V2Token::Seperator(seperator), StringPosition::merge(strpos, next_strpos));
                             }
                             Some((seperator, 3)) => {
+                                trace!("ch is {:?} at {:?}, next_ch is {:?}, nextnext_ch is {:?}, result is {:?}", ch, strpos, next_ch, nextnext_ch, seperator);
                                 self.v1.prepare_skip1();
                                 self.v1.prepare_skip1();
                                 return (V2Token::Seperator(seperator), StringPosition::merge(strpos, nextnext_strpos));
@@ -400,7 +411,7 @@ fn v2_base() {
 
     macro_rules! test_case {
         ($program: expr, $eof_pos: expr, [$($expect: expr, )*] [$($expect_msg: expr, )*]) => ({
-            println!("Case {:?} at {}:", $program, line!());
+            println!("Case {:?} at {}", $program, line!());
             let messages = &mut MessageCollection::new();
             let mut codemap = CodeMap::with_test_str($program);
             let mut v2lexer = V2Lexer::new(codemap.iter(), messages);
@@ -414,13 +425,13 @@ fn v2_base() {
 
             let mut expect_v2s = vec![$(V2AndStrPos::from($expect), )*];
             expect_v2s.push(V2AndStrPos::from((V2Token::EOF, $eof_pos)));
-            assert_eq!(v2s, expect_v2s);
+            assert_eq!(v2s, expect_v2s, "Case {:?}", $program);
 
             let expect_messages = &mut MessageCollection::new();
             $(
                 expect_messages.push($expect_msg);
             )*
-            assert_eq!(messages, expect_messages);
+            assert_eq!(messages, expect_messages, "Case {:?}", $program);
             println!("");
         });
         ($program: expr, $eof_pos: expr, [$($expect: expr, )*]) => (test_case!($program, $eof_pos, [$($expect, )*] []))
@@ -486,7 +497,7 @@ fn v2_base() {
             lit!(1, 1, 2, 1, 2),
             sep!(SeperatorKind::Comma, 1, 3, 1, 3),
             lit!(123, 1, 5, 1, 7),
-            ident!("_", 1, 9, 1, 9),
+            kw!(KeywordKind::Underscore, 1, 9, 1, 9),
             lit!(1u64, 1, 11, 1, 14),
             sep!(SeperatorKind::LeftParenthenes, 1, 15, 1, 15),
             lit!(123.456, 1, 17, 1, 23),
@@ -632,4 +643,47 @@ fn v2_base() {
             lit!(34, 1, 25, 1, 26),
         ]
     }
+
+    //           0        1         2         3         4         5
+    //           123456789012345678901234567890123456789012345678901234
+    test_case!{ "1.a[[3](4, [5, 6], )](7, 8)() as [i32].bcd[10, 11, 12]", make_strpos!(1, 55, 1, 55), [ // bug from syntax::expr::postfix_expr
+        lit!(1, 1, 1, 1, 1),
+        sep!(SeperatorKind::Dot, 1, 2, 1, 2),
+        ident!("a", 1, 3, 1, 3),
+        sep!(SeperatorKind::LeftBracket, 1, 4, 1, 4),
+        sep!(SeperatorKind::LeftBracket, 1, 5, 1, 5),
+        lit!(3, 1, 6, 1, 6),
+        sep!(SeperatorKind::RightBracket, 1, 7, 1, 7),
+        sep!(SeperatorKind::LeftParenthenes, 1, 8, 1, 8),
+        lit!(4, 1, 9, 1, 9),
+        sep!(SeperatorKind::Comma, 1, 10, 1, 10),
+        sep!(SeperatorKind::LeftBracket, 1, 12, 1, 12),
+        lit!(5, 1, 13, 1, 13),
+        sep!(SeperatorKind::Comma, 1, 14, 1, 14),
+        lit!(6, 1, 16, 1, 16),
+        sep!(SeperatorKind::RightBracket, 1, 17, 1, 17),
+        sep!(SeperatorKind::Comma, 1, 18, 1, 18),
+        sep!(SeperatorKind::RightParenthenes, 1, 20, 1, 20),
+        sep!(SeperatorKind::RightBracket, 1, 21, 1, 21),
+        sep!(SeperatorKind::LeftParenthenes, 1, 22, 1, 22),
+        lit!(7, 1, 23, 1, 23),
+        sep!(SeperatorKind::Comma, 1, 24, 1, 24),
+        lit!(8, 1, 26, 1, 26),
+        sep!(SeperatorKind::RightParenthenes, 1, 27, 1, 27),
+        sep!(SeperatorKind::LeftParenthenes, 1, 28, 1, 28),
+        sep!(SeperatorKind::RightParenthenes, 1, 29, 1, 29),
+        kw!(KeywordKind::As, 1, 31, 1, 32),
+        sep!(SeperatorKind::LeftBracket, 1, 34, 1, 34),
+        kw!(KeywordKind::PrimTypeI32, 1, 35, 1, 37),
+        sep!(SeperatorKind::RightBracket, 1, 38, 1, 38),
+        sep!(SeperatorKind::Dot, 1, 39, 1, 39),
+        ident!("bcd", 1, 40, 1, 42),
+        sep!(SeperatorKind::LeftBracket, 1, 43, 1, 43),
+        lit!(10, 1, 44, 1, 45),
+        sep!(SeperatorKind::Comma, 1, 46, 1, 46),
+        lit!(11, 1, 48, 1, 49),
+        sep!(SeperatorKind::Comma, 1, 50, 1, 50),
+        lit!(12, 1, 52, 1, 53),
+        sep!(SeperatorKind::RightBracket, 1, 54, 1, 54),
+    ]}
 }

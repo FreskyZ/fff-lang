@@ -43,14 +43,14 @@ pub struct TypeUse(ActualTypeUse, StringPosition);
 impl ISyntaxItemFormat for TypeUse {
     fn format(&self, indent: u32) -> String {
         match (&self.0, &self.1) {
-            (&ActualTypeUse::Unit, strpos) => format!("{}TypeUse::Unit <{:?}>", TypeUse::indent_str(indent), strpos),
-            (&ActualTypeUse::Simple(ref name), strpos) => format!("{}TypeUse::Simple {} <{:?}>", TypeUse::indent_str(indent), name, strpos),
+            (&ActualTypeUse::Unit, strpos) => format!("{}TypeUse '()' <{:?}>", TypeUse::indent_str(indent), strpos),
+            (&ActualTypeUse::Simple(ref name), strpos) => format!("{}TypeUse '{}' <{:?}>", TypeUse::indent_str(indent), name, strpos),
             (&ActualTypeUse::Tuple(ref type_uses), strpos) => 
                 format!("{}TypeUse::Tuple, <{:?}>{}",
                     TypeUse::indent_str(indent), strpos, 
                     type_uses.iter().fold(String::new(), |mut buf, typeuse| { buf.push_str("\n"); buf.push_str(&typeuse.format(indent + 1)); buf })),
             (&ActualTypeUse::Array(ref inner), strpos) => 
-                format!("{}ArrayTypeUse <{:?}>\n{}", 
+                format!("{}TypeUse::Array <{:?}>\n{}", 
                     TypeUse::indent_str(indent), strpos,
                     inner.format(indent + 1)),
         }
