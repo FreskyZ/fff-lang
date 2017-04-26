@@ -27,7 +27,8 @@ use self::num_lit_parser::parse_numeric_literal;
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub enum V2Token {
     Literal(LitValue),
-    Identifier(String),   // Anything of [_a-zA-Z][_a-zA-Z0-9]*
+    Identifier(String), // Anything of [_a-zA-Z][_a-zA-Z0-9]*
+    Label(String),      // Anything of @[_a-zA-Z0-9@]*
     Keyword(KeywordKind),
     Seperator(SeperatorKind),
     EOF,
@@ -42,6 +43,7 @@ impl fmt::Debug for V2Token {
         match *self {
             V2Token::Literal(ref value) => write!(f, "{:?}", value),
             V2Token::Identifier(ref value) => write!(f, "Identifier {:?}", value),
+            V2Token::Label(ref value) => write!(f, "Lable {:?}", value),
             V2Token::Keyword(ref kind) => write!(f, "Keyword {:?}", kind),
             V2Token::Seperator(ref kind) => write!(f, "Seperator {:?}", kind),
             V2Token::EOF => write!(f, "EOF"),
@@ -54,6 +56,9 @@ trait IdentifierChar {
 
     fn is_identifier_start(&self) -> bool;
     fn is_identifier(&self) -> bool;
+
+    fn is_label_start(&self) -> bool;
+    fn is_label(&self) -> bool;
 
     fn is_numeric_literal_start(&self) -> bool;
     fn is_numeric_literal(&self) -> bool;
@@ -71,6 +76,13 @@ impl IdentifierChar for char {
     // Include digit
     fn is_identifier(&self) -> bool {
         *self == '_' || self.is_alphabetic() || self.is_digit(10)  
+    }
+
+    fn is_label_start(&self) -> bool {
+        *self == '@'
+    }
+    fn is_label(&self) -> bool {
+        *self == '_' || *self == '@' || self.is_alphabetic() || self.is_digit(10)
     }
 
     // Only digit, '.' start is not supported
@@ -143,6 +155,7 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
         enum State {
             Nothing,
             InIdent(String, StringPosition),
+            InLabel(String, StringPosition),
             InNumLit(String, StringPosition),
         }
 
@@ -201,6 +214,8 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                         let mut value = String::new();
                         value.push(ch);
                         return num_lit_to_v2!(value, strpos);
+                    } else if ch.is_label_start() {
+                        return (V2Token::Label("".to_owned()), strpos); // simple '@' is allowed
                     } else {
                         match SeperatorKind::try_from1(ch) {
                             Some((seperator, _)) => return (V2Token::Seperator(seperator), strpos),
@@ -220,6 +235,8 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                         let mut value = String::new();
                         value.push(ch);
                         state = State::InNumLit(value, strpos);
+                    } else if ch.is_label_start() {
+                        state = State::InLabel(String::new(), strpos);
                     } else {
                         match SeperatorKind::try_from3(ch, next_ch, nextnext_ch) { // the try_from3 will check 3, if not, check 2, if not, check 1
                             Some((seperator, 1)) => {
@@ -252,6 +269,19 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                         value.push(ch);
                         ident_strpos = StringPosition::merge(ident_strpos, strpos);
                         state = State::InIdent(value, ident_strpos);
+                    }
+                }
+                (State::InLabel(mut value, mut label_strpos), V15Token(ch, strpos, next_ch, _4, _5, _6)) => {
+                    if !ch.is_label() {
+                        return (V2Token::Label(value), label_strpos);
+                    } else if !next_ch.is_label() {
+                        value.push(ch);
+                        label_strpos = StringPosition::merge(label_strpos, strpos);
+                        return (V2Token::Label(value), label_strpos);
+                    } else {
+                        value.push(ch);
+                        label_strpos = StringPosition::merge(label_strpos, strpos);
+                        state = State::InLabel(value, label_strpos);
                     }
                 }
                 (State::InNumLit(mut value, mut num_lit_strpos), V15Token(ch, strpos, next_ch, _4, _5, _6)) => {
@@ -445,6 +475,11 @@ fn v2_base() {
     macro_rules! lit_num_none {
         ($row1: expr, $col1: expr, $row2: expr, $col2: expr) => (
             (V2Token::Literal(LitValue::Num(None)), StringPosition::from4($row1, $col1, $row2, $col2))
+        )
+    }
+    macro_rules! label {
+        ($val: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr) => (
+            (V2Token::Label($val.to_owned()), StringPosition::from4($row1, $col1, $row2, $col2))
         )
     }
     macro_rules! kw {
@@ -686,4 +721,17 @@ fn v2_base() {
         lit!(12, 1, 52, 1, 53),
         sep!(SeperatorKind::RightBracket, 1, 54, 1, 54),
     ]}
+
+    //           0        1     
+    //           123456789012345678
+    test_case!{ "abc @abc @ @@ 1 @a", make_strpos!(1, 19, 1, 19), [
+        ident!("abc", 1, 1, 1, 3),
+        label!("abc", 1, 5, 1, 8),
+        label!("", 1, 10, 1, 10),
+        label!("@", 1, 12, 1, 13),
+        lit!(1, 1, 15, 1, 15),
+        label!("a", 1, 17, 1, 18),
+    ]}
+
+    test_case!{ "@", make_strpos!(1, 2, 1, 2), [label!("", 1, 1, 1, 1),] }
 }

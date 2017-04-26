@@ -24,6 +24,7 @@ impl fmt::Debug for V4Token {
         try!(match self.0 {
             V2Token::Literal(ref lit) => write!(f, "{:?} ", lit),
             V2Token::Identifier(ref name) => write!(f, "Ident '{}' ", name),
+            V2Token::Label(ref name) => write!(f, "Lable '@{}'", name),
             V2Token::Keyword(ref kind) => write!(f, "Keyword {:?} ", kind),
             V2Token::Seperator(ref kind) => write!(f, "Seperator {:?} ", kind),
             V2Token::EOF => write!(f, "<EOF> "), 
@@ -38,6 +39,7 @@ impl IToken for V4Token {
     fn is_seperator(&self, kind: SeperatorKind) -> bool { match self.0 { V2Token::Seperator(ref self_kind) => *self_kind == kind, _ => false } }
     fn is_spec_ident(&self, name: &str) -> bool { match self.0 { V2Token::Identifier(ref self_name) => self_name == name, _ => false } }
     fn is_ident(&self) -> bool { match self.0 { V2Token::Identifier(_) => true, _ => false } }
+    fn is_label(&self) -> bool { match self.0 { V2Token::Label(_) => true, _ => false } }
     fn is_eof(&self) -> bool { match self.0 { V2Token::EOF => true, _ => false } }
     fn is_eofs(&self) -> bool { match self.0 { V2Token::EOFs => true, _ => false } }
 
@@ -54,6 +56,7 @@ impl IToken for V4Token {
     fn get_keyword(&self) -> Option<KeywordKind> { match self.0 { V2Token::Keyword(ref kind) => Some(kind.clone()), _ => None } }
     fn get_seperator(&self) -> Option<SeperatorKind> { match self.0 { V2Token::Seperator(ref kind) => Some(kind.clone()), _ => None } }
     fn get_identifier(&self) -> Option<String> { match self.0 { V2Token::Identifier(ref name) => Some(name.clone()), _ => None } }
+    fn get_label(&self) -> Option<String> { match self.0 { V2Token::Label(ref name) => Some(name.clone()), _ => None } }
     fn get_lit_val(&self) -> Option<LitValue> { match self.0 { V2Token::Literal(ref val) => Some(val.clone()), _ => None } }
 
     fn get_position(&self) -> StringPosition { self.1 }

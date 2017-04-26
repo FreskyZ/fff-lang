@@ -34,6 +34,7 @@ pub trait IToken : fmt::Debug {
     fn is_seperator(&self, kind: SeperatorKind) -> bool;
     fn is_spec_ident(&self, name: &str) -> bool;
     fn is_ident(&self) -> bool;
+    fn is_label(&self) -> bool;
     fn is_eof(&self) -> bool;
     fn is_eofs(&self) -> bool;
 
@@ -49,6 +50,7 @@ pub trait IToken : fmt::Debug {
     fn get_keyword(&self) -> Option<KeywordKind>;
     fn get_seperator(&self) -> Option<SeperatorKind>;
     fn get_identifier(&self) -> Option<String>;
+    fn get_label(&self) -> Option<String>;
     fn get_lit_val(&self) -> Option<LitValue>;
 
     fn get_position(&self) -> StringPosition;
