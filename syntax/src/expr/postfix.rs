@@ -27,11 +27,10 @@ use super::primary::PrimaryExpr;
 
 #[derive(Eq, PartialEq)]
 enum ActualPostfix {
+    MemberAccess(String, [StringPosition; 2]),          // dot's position, xxx's position
     Subscription(Vec<BinaryExpr>, StringPosition),      // []'s position
     FunctionCall(Vec<BinaryExpr>, StringPosition),      // ()'s position
     MemberFunctionCall(String, Vec<BinaryExpr>, [StringPosition; 3]), // dot's position, xxx's position ()'s position
-    MemberAccess(String, [StringPosition; 2]),          // dot's position, xxx's position
-    TypeCast(TypeUse, StringPosition),                  // as position
 }
 #[derive(Eq, PartialEq)]
 enum PostfixExprImpl {
@@ -59,10 +58,10 @@ impl ISyntaxItemFormat for PostfixExpr {
                     exprs.iter().fold(String::new(), |mut buf, expr| { buf.push_str("\n"); buf.push_str(&expr.format(indent + 2)); buf })),
             &PostfixExprImpl::Postfix(ref postfix_expr, 
                 ActualPostfix::MemberFunctionCall(ref name, ref exprs, ref strposs), ref all_strpos) =>
-                format!("{}PostfixExpr <{:?}>\n{}\n{}MemberFunctionCall\n{}'.' <{:?}>\n{}{} <{:?}>\n{}paren <{:?}>{}", 
+                format!("{}PostfixExpr <{:?}>\n{}\n{}MemberFunctionCall <{:?}>\n{}'.' <{:?}>\n{}Ident '{}' <{:?}>\n{}paren <{:?}>{}", 
                     PostfixExpr::indent_str(indent), all_strpos,
                     postfix_expr.format(indent + 1),
-                    PostfixExpr::indent_str(indent + 1), 
+                    PostfixExpr::indent_str(indent + 1), StringPosition::merge(strposs[0], strposs[2]),
                     PostfixExpr::indent_str(indent + 2), strposs[0],
                     PostfixExpr::indent_str(indent + 2), name, strposs[1],
                     PostfixExpr::indent_str(indent + 2), strposs[2], 
@@ -75,13 +74,6 @@ impl ISyntaxItemFormat for PostfixExpr {
                     PostfixExpr::indent_str(indent + 1), StringPosition::merge(strposs[0], strposs[1]),
                     PostfixExpr::indent_str(indent + 2), strposs[0],
                     PostfixExpr::indent_str(indent + 2), name, strposs[1]),
-            &PostfixExprImpl::Postfix(ref postfix_expr, ActualPostfix::TypeCast(ref typeuse, ref as_strpos), ref all_strpos) => 
-                format!("{}PostfixExpr <{:?}>\n{}\n{}CastAs <{:?}>\n{}'as' <{:?}>\n{}", 
-                    PostfixExpr::indent_str(indent), all_strpos,
-                    postfix_expr.format(indent + 1),
-                    PostfixExpr::indent_str(indent + 1), StringPosition::merge(*as_strpos, typeuse.get_all_strpos()),
-                    PostfixExpr::indent_str(indent + 2), as_strpos, 
-                    typeuse.format(indent + 2)),
         }
     }
 }
@@ -114,10 +106,6 @@ impl PostfixExpr { // New
         let all_strpos = StringPosition::merge(postfix_expr.pos_all(), name_strpos);
         PostfixExpr(Box::new(PostfixExprImpl::Postfix(postfix_expr, 
             ActualPostfix::MemberAccess(name, [dot_strpos, name_strpos]), all_strpos)))
-    }
-    pub fn new_type_cast(postfix_expr: PostfixExpr, as_strpos: StringPosition, typeuse: TypeUse) -> PostfixExpr {
-        let all_strpos = StringPosition::merge(postfix_expr.pos_all(), typeuse.get_all_strpos());
-        PostfixExpr(Box::new(PostfixExprImpl::Postfix(postfix_expr, ActualPostfix::TypeCast(typeuse, as_strpos), all_strpos)))
     }
 
     // parse helper, don't want to handle this there
@@ -193,12 +181,6 @@ impl PostfixExpr { // Get
             _ => false,
         }
     }
-    pub fn is_type_cast(&self) -> bool {
-        match self.0.as_ref() {
-            &PostfixExprImpl::Postfix(ref _1, ActualPostfix::TypeCast(_, _), ref _2) => true,
-            _ => false,
-        }
-    }
 
     pub fn get_exprs(&self) -> Option<&Vec<BinaryExpr>> {
         match self.0.as_ref() {
@@ -227,18 +209,6 @@ impl PostfixExpr { // Get
         match self.0.as_ref() {
             &PostfixExprImpl::Postfix(_, ActualPostfix::MemberAccess(_, ref strposs), _) => strposs[1],
             &PostfixExprImpl::Postfix(_, ActualPostfix::MemberFunctionCall(_, _, ref strposs), _) => strposs[1],
-            _ => StringPosition::new(),
-        }
-    }
-    pub fn get_typeuse(&self) -> Option<&TypeUse> {
-        match self.0.as_ref() {
-            &PostfixExprImpl::Postfix(_, ActualPostfix::TypeCast(ref typeuse, _), _) => Some(typeuse),
-            _ => None,
-        }
-    }
-    pub fn get_as_strpos(&self) -> StringPosition {
-        match self.0.as_ref() {
-            &PostfixExprImpl::Postfix(_, ActualPostfix::TypeCast(_, ref as_strpos), _) => *as_strpos,
             _ => StringPosition::new(),
         }
     }
@@ -285,23 +255,8 @@ impl ISyntaxItem for PostfixExpr {
                     }
                     None => {
                         trace!("get postfix failed, member access not followed ident");
-                        return push_unexpect!(tokens, messages, "member identifier", index + current_length + 1, current_length + 1);
+                        return push_unexpect!(tokens, messages, "identifier", index + current_length + 1, current_length + 1);
                     }
-                }
-            } else if tokens.nth(index + current_length).is_keyword(KeywordKind::As) {
-                match TypeUse::parse(tokens, messages, index + current_length + 1) {
-                    (Some(ty), ty_len) => {
-                        trace!("get one postfix, type cast as {:?}", ty);
-                        current_retval = PostfixExpr::new_type_cast(
-                            current_retval, tokens.pos(index + current_length), ty
-                        );
-                        current_length += ty_len + 1;
-                        continue 'postfix;
-                    }
-                    (None, length) => {
-                        trace!{ "get postfix failed, type cast not followed typedef" }
-                        return (None, current_length + 1 + length);  
-                    } 
                 }
             } else if tokens.nth(index + current_length).is_seperator(SeperatorKind::LeftParenthenes) {
                 if tokens.nth(index + current_length + 1).is_seperator(SeperatorKind::RightParenthenes) {
@@ -315,7 +270,7 @@ impl ISyntaxItem for PostfixExpr {
                 if tokens.nth(index + current_length + 1).is_seperator(SeperatorKind::Comma) 
                     && tokens.nth(index + current_length + 2).is_seperator(SeperatorKind::RightParenthenes) {
                         let paren_strpos = StringPosition::merge(tokens.pos(index + current_length), tokens.pos(index + current_length + 2));
-                        messages.push(Message::new_by_str("Single comma in function call", vec![(paren_strpos, "Function call here")]));
+                        messages.push(Message::new_by_str("Single comma in function call", vec![(paren_strpos, "function call here")]));
                         current_retval = PostfixExpr::new_function_call_auto_merge_prev_member_access(current_retval, paren_strpos, Vec::new());
                         current_length += 3;
                         continue 'postfix;
@@ -324,8 +279,8 @@ impl ISyntaxItem for PostfixExpr {
             } else if tokens.nth(index + current_length).is_seperator(SeperatorKind::LeftBracket) {
                 trace!("meet left bracket '{:?}', assume subscription", tokens.nth(index + current_length));
                 if tokens.nth(index + current_length + 1).is_seperator(SeperatorKind::RightBracket) {
-                    let pos = tokens.pos(index + current_length);
-                    messages.push(Message::new_by_str("Empty subscription", vec![(pos, "subscription here")]));
+                    let bracket_strpos = StringPosition::merge(tokens.pos(index + current_length), tokens.pos(index + current_length + 1));
+                    messages.push(Message::new_by_str("Empty subscription", vec![(bracket_strpos, "subscription here")]));
                     current_retval = PostfixExpr::new_subscription(
                         current_retval, StringPosition::merge(tokens.pos(index + current_length), tokens.pos(index + current_length + 1)), Vec::new()
                     );
@@ -335,7 +290,7 @@ impl ISyntaxItem for PostfixExpr {
                 if tokens.nth(index + current_length + 1).is_seperator(SeperatorKind::Comma) 
                     && tokens.nth(index + current_length + 2).is_seperator(SeperatorKind::RightBracket) {
                         let bracket_pair_strpos = StringPosition::merge(tokens.pos(index + current_length), tokens.pos(index + current_length + 2));
-                        messages.push(Message::new_by_str("Empty subscription", vec![(bracket_pair_strpos, "Subscription here")]));
+                        messages.push(Message::new_by_str("Empty subscription", vec![(bracket_pair_strpos, "subscription here")]));
                         current_retval = PostfixExpr::new_subscription(
                             current_retval, bracket_pair_strpos, Vec::new()
                         );
@@ -436,43 +391,54 @@ fn postfix_expr_format() {
     }
 
     // Attention that this source code line's LF is also the string literal (test oracle)'s LF
-    //                                     0        1         2         3         4         5     
-    //                                     123456789012345678901234567890123456789012345678901234
-    test_case!(PostfixExpr::with_test_str("1.a[[3](4, [5, 6], )](7, 8)() as [i32].bcd[10, 11, 12]").format(0), r#"PostfixExpr <<0>1:1-1:54>
-  PostfixExpr <<0>1:1-1:42>
-    PostfixExpr <<0>1:1-1:38>
-      PostfixExpr <<0>1:1-1:29>
-        PostfixExpr <<0>1:1-1:27>
-          PostfixExpr <<0>1:1-1:21>
-            PostfixExpr <<0>1:1-1:3>
-              Literal (i32)1 <<0>1:1-1:1>
-              MemberAccess <<0>1:2-1:3>
-                '.' <<0>1:2-1:2>
-                Ident 'a' <<0>1:3-1:3>
-            Subscription <<0>1:4-1:21>
-              PostfixExpr <<0>1:5-1:20>
-                DefineArray <<0>1:5-1:7>
-                  Literal (i32)3 <<0>1:6-1:6>
-                FunctionCall <<0>1:8-1:20>
-                  Literal (i32)4 <<0>1:9-1:9>
-                  DefineArray <<0>1:12-1:17>
-                    Literal (i32)5 <<0>1:13-1:13>
-                    Literal (i32)6 <<0>1:16-1:16>
-          FunctionCall <<0>1:22-1:27>
-            Literal (i32)7 <<0>1:23-1:23>
-            Literal (i32)8 <<0>1:26-1:26>
-        FunctionCall <<0>1:28-1:29>
-      CastAs <<0>1:31-1:38>
-        'as' <<0>1:31-1:32>
-        TypeUse::Array <<0>1:34-1:38>
-          TypeUse 'i32' <<0>1:35-1:37>
-    MemberAccess <<0>1:39-1:42>
-      '.' <<0>1:39-1:39>
-      Ident 'bcd' <<0>1:40-1:42>
-  Subscription <<0>1:43-1:54>
-    Literal (i32)10 <<0>1:44-1:45>
-    Literal (i32)11 <<0>1:48-1:49>
-    Literal (i32)12 <<0>1:52-1:53>"#
+    //                                     0        1         2         3         4         5        
+    //                                     1234567890123456789012345678901234567890123456789012345678
+    test_case!(PostfixExpr::with_test_str("a.b(c, d, e).f(g, h, i,)(u,).j[k].l().m[n, o, p][r, s, t,]").format(0), r#"PostfixExpr <<0>1:1-1:58>
+  PostfixExpr <<0>1:1-1:48>
+    PostfixExpr <<0>1:1-1:39>
+      PostfixExpr <<0>1:1-1:37>
+        PostfixExpr <<0>1:1-1:33>
+          PostfixExpr <<0>1:1-1:30>
+            PostfixExpr <<0>1:1-1:28>
+              PostfixExpr <<0>1:1-1:24>
+                PostfixExpr <<0>1:1-1:12>
+                  Ident 'a' <<0>1:1-1:1>
+                  MemberFunctionCall <<0>1:2-1:12>
+                    '.' <<0>1:2-1:2>
+                    Ident 'b' <<0>1:3-1:3>
+                    paren <<0>1:4-1:12>
+                    Ident 'c' <<0>1:5-1:5>
+                    Ident 'd' <<0>1:8-1:8>
+                    Ident 'e' <<0>1:11-1:11>
+                MemberFunctionCall <<0>1:13-1:24>
+                  '.' <<0>1:13-1:13>
+                  Ident 'f' <<0>1:14-1:14>
+                  paren <<0>1:15-1:24>
+                  Ident 'g' <<0>1:16-1:16>
+                  Ident 'h' <<0>1:19-1:19>
+                  Ident 'i' <<0>1:22-1:22>
+              FunctionCall <<0>1:25-1:28>
+                Ident 'u' <<0>1:26-1:26>
+            MemberAccess <<0>1:29-1:30>
+              '.' <<0>1:29-1:29>
+              Ident 'j' <<0>1:30-1:30>
+          Subscription <<0>1:31-1:33>
+            Ident 'k' <<0>1:32-1:32>
+        MemberFunctionCall <<0>1:34-1:37>
+          '.' <<0>1:34-1:34>
+          Ident 'l' <<0>1:35-1:35>
+          paren <<0>1:36-1:37>
+      MemberAccess <<0>1:38-1:39>
+        '.' <<0>1:38-1:38>
+        Ident 'm' <<0>1:39-1:39>
+    Subscription <<0>1:40-1:48>
+      Ident 'n' <<0>1:41-1:41>
+      Ident 'o' <<0>1:44-1:44>
+      Ident 'p' <<0>1:47-1:47>
+  Subscription <<0>1:49-1:58>
+    Ident 'r' <<0>1:50-1:50>
+    Ident 's' <<0>1:53-1:53>
+    Ident 't' <<0>1:56-1:56>"#
     );
 }
 
@@ -482,80 +448,103 @@ fn postfix_expr_parse() {
     use super::super::TypeUseF;
     use super::super::ISyntaxItemWithStr;
 
+    macro_rules! ident {
+        ($name: expr, $strpos: expr) => (BinaryExpr::new_primary(PrimaryExpr::new_ident($name.to_owned(), $strpos)));
+        (post, $name: expr, $strpos: expr) => (PostfixExpr::new_primary(PrimaryExpr::new_ident($name.to_owned(), $strpos)))
+    }
+
     //                                      0        1         2         3         4         5     
-    //                                      123456789012345678901234567890123456789012345678901234
-    assert_eq!{ PostfixExpr::with_test_str("1.a[[3](4, [5, 6], )](7, 8)() as [i32].bcd[10, 11, 12]"),
+    // plain                                1234567890123456789012345678901234567890123456789012345678
+    assert_eq!{ PostfixExpr::with_test_str("a.b(c, d, e).f(g, h, i,)(u,).j[k].l().m[n, o, p][r, s, t,]"),
         PostfixExpr::new_subscription(
-            PostfixExpr::new_member_access(
-                PostfixExpr::new_type_cast(
-                    PostfixExpr::new_function_call(
-                        PostfixExpr::new_function_call(
-                            PostfixExpr::new_subscription(
-                                PostfixExpr::new_member_access(
-                                    PostfixExpr::new_primary(PrimaryExpr::new_lit(LitValue::from(1), make_str_pos!(1, 1, 1, 1))),
-                                    make_strpos!(1, 2, 1, 2),
-                                    "a".to_owned(),
-                                    make_strpos!(1, 3, 1, 3)
-                                ),
-                                make_strpos!(1, 4, 1, 21), vec![
-                                    BinaryExpr::new_postfix(PostfixExpr::new_function_call(
-                                        PostfixExpr::new_primary(PrimaryExpr::new_array(make_strpos!(1, 5, 1, 7), vec![
-                                            BinaryExpr::new_primary(PrimaryExpr::new_lit(LitValue::from(3), make_strpos!(1, 6, 1, 6)))
-                                        ])),
-                                        make_strpos!(1, 8, 1, 20), vec![
-                                            BinaryExpr::new_primary(PrimaryExpr::new_lit(LitValue::from(4), make_strpos!(1, 9, 1, 9))),
-                                            BinaryExpr::new_primary(PrimaryExpr::new_array(make_strpos!(1, 12, 1, 17), vec![
-                                                BinaryExpr::new_primary(PrimaryExpr::new_lit(LitValue::from(5), make_strpos!(1, 13, 1, 13))),
-                                                BinaryExpr::new_primary(PrimaryExpr::new_lit(LitValue::from(6), make_strpos!(1, 16, 1, 16))),
-                                            ]))
+            PostfixExpr::new_subscription(
+                PostfixExpr::new_member_access(
+                    PostfixExpr::new_member_function_call(
+                        PostfixExpr::new_subscription(
+                            PostfixExpr::new_member_access(
+                                PostfixExpr::new_function_call(
+                                    PostfixExpr::new_member_function_call(
+                                        PostfixExpr::new_member_function_call(
+                                            ident!(post, "a", make_strpos!(1, 1, 1, 1)),
+                                            make_strpos!(1, 2, 1, 2),
+                                            "b".to_owned(), make_strpos!(1, 3, 1, 3),
+                                            make_strpos!(1, 4, 1, 12), vec![
+                                                ident!("c", make_strpos!(1, 5, 1, 5)),
+                                                ident!("d", make_strpos!(1, 8, 1, 8)),
+                                                ident!("e", make_strpos!(1, 11, 1, 11)),
+                                            ]
+                                        ),
+                                        make_strpos!(1, 13, 1, 13),
+                                        "f".to_owned(), make_strpos!(1, 14, 1, 14),
+                                        make_strpos!(1, 15, 1, 24), vec![
+                                            ident!("g", make_strpos!(1, 16, 1, 16)),
+                                            ident!("h", make_strpos!(1, 19, 1, 19)),
+                                            ident!("i", make_strpos!(1, 22, 1, 22)),
                                         ]
-                                    ))
-                                ]
-                            ), 
-                            make_strpos!(1, 22, 1, 27), vec![
-                                BinaryExpr::new_primary(PrimaryExpr::new_lit(LitValue::from(7), make_strpos!(1, 23, 1, 23))),
-                                BinaryExpr::new_primary(PrimaryExpr::new_lit(LitValue::from(8), make_strpos!(1, 26, 1, 26))),
+                                    ),
+                                    make_strpos!(1, 25, 1, 28), vec![
+                                        ident!("u", make_strpos!(1, 26, 1, 26))
+                                    ]
+                                ),
+                                make_strpos!(1, 29, 1, 29),
+                                "j".to_owned(), make_strpos!(1, 30, 1, 30)
+                            ),
+                            make_strpos!(1, 31, 1, 33), vec![
+                                ident!("k", make_strpos!(1, 32, 1, 32))
                             ]
                         ),
-                        make_strpos!(1, 28, 1, 29), vec![]
+                        make_strpos!(1, 34, 1, 34),
+                        "l".to_owned(), make_strpos!(1, 35, 1, 35),
+                        make_strpos!(1, 36, 1, 37),
+                        vec![]
                     ),
-                    make_strpos!(1, 31, 1, 32),
-                    TypeUseF::new_array(make_strpos!(1, 34, 1, 38),
-                        TypeUseF::new_simple_test("i32", make_strpos!(1, 35, 1, 37))
-                    )
+                    make_strpos!(1, 38, 1, 38),
+                    "m".to_owned(), make_strpos!(1, 39, 1, 39)
                 ),
-                make_strpos!(1, 39, 1, 39),
-                "bcd".to_owned(), make_strpos!(1, 40, 1, 42),
+                make_strpos!(1, 40, 1, 48), vec![
+                    ident!("n", make_strpos!(1, 41, 1, 41)),
+                    ident!("o", make_strpos!(1, 44, 1, 44)),
+                    ident!("p", make_strpos!(1, 47, 1, 47))
+                ]
             ),
-            make_strpos!(1, 43, 1, 54), vec![
-                BinaryExpr::new_primary(PrimaryExpr::new_lit(LitValue::from(10), make_str_pos!(1, 44, 1, 45))),
-                BinaryExpr::new_primary(PrimaryExpr::new_lit(LitValue::from(11), make_str_pos!(1, 48, 1, 49))),
-                BinaryExpr::new_primary(PrimaryExpr::new_lit(LitValue::from(12), make_str_pos!(1, 52, 1, 53))),
+            make_strpos!(1, 49, 1, 58), vec![
+                ident!("r", make_strpos!(1, 50, 1, 50)),
+                ident!("s", make_strpos!(1, 53, 1, 53)),
+                ident!("t", make_strpos!(1, 56, 1, 56))
             ]
         )
     }
     
-    //                                      0        1         2         3         4         5         6         7         8         9         A         B         C         D
-    //                                      1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
-    // assert_eq!{ PostfixExpr::with_test_str("met4H4(qth[0i64gNa7Km6(lH1G(y8(falseJ,), Lo34kd, b.vt1HtC, true, km.ty), D as [KGA] as Gm2qK[(), x0pqj, 825454.053314E+6, Ftqu])])"), 
-       // PostfixExpr::new_primary(PrimaryExpr::new_lit(LitValue::from(42), make_strpos!(1, 1, 1, 1)))
-    // }
-
-    // MbE6Mat([] as [((u64, [BkM],), f64, bool, ())] as [NxIE], (), x.B(b107foJ, 766168i8, gcFHwNC), nmsH)
-    // "vgc.oAd2G6C"  
-    // "f.heA4fp"   
-    // "new7Mgnb(x, J, DgeL2iB7, "O1I2tR_")" 
-    // "Ie2jl43e.o5aG5(IBa3oDn, MhHir66l(false as la4il3B, true, 1664), qp) as () as [[qyBIcx]]" 
-    // "DLam(() as [n4].mlm, xtOm1f[K3.y1jhKHya, O50(f1nil, "/XOp", Ib60Ip), 2225.22], sHO6wv(i, MxFewp2, v)) as u32" 
-    // "xx('}', yBMk8pfu.BNajxb, m5L as GoNC)" 
-    // "true.d" 
-    // "false[1326451E41, 3788, F7E73Nvg, k7xiE]" 
-    // "false[77.867624, MoB56(().b7BdF, AdcvJ(M, N2Heo, gvHC), gFEc7.it(()), OINIb.GJ1x2), CGF6y61D(tfHuaLFw, nKl, n(false0x08,)[N2eeNpqG(vghNH, true, tC8)[ea5fd.Ovi66oCp, sAps as i8, bjNjD8L()], eg7f()[cqxw, p7 as [c5251].rOg, nnC2(), H1[mwnp3(KE'c',), true, 'F']], 'L', true][].mD8dspmv)].ykxM" 
-    // "L()" 
-    // "hio3yaH(tIBONx, 842154.uuvsBB1r[jvLh('\', kDxLG0H, "QB".Iww0tJia, () as [f0rdrt][[1875, [jsIvKGhD023i,], 0b0, (), (Bm)][], D6ta1wB[Mlcdq0Dnhj.c,], D6s2lIE3(true, BNm4CvL8.p4kHd, Ap5Iq()) as m3qcm7, 154.766204 as [repp03].xDArJE]), y4ibtGo, O48J.II6Juwq as [i8]] as r, BI7hxse)" 
-    // "pbfN6.bbb() as ((([[[DBm]]], [a0kjv], NxvlxA), n0ANq, J8car8cE, string, i16)[booll],)" 
-    // "L2y(trueGh4p(false as ().Gpj, 3825727.l1Jm3B[true[0b10111110, true, (0b000110010001u6,), jDw], DAeBm, Dw1tylyj.vn, true.j], M),)" 
-    // "oAd2G6C.g[(), (CttKay4f), true, wE, 0b11110110111] as ([Bx1A7F], [(tbje, bool, [mb])], (char, (u64, bool, A, string), (ttrof32,)), gjMaxI4f, [tJEp3])" 
-    // "[false, [IggO], ()] as u8" 
-    // "f(h.w, [0xc2u32, [jcGs0f30, (cN5qg), "13{\r-xw"], (true), ("H8eHs[9", (), v, lumL)].m.GMjriIc, c023qs[q, u34, pEkuEB, false], [false, 0d866, 362388u16, (43E1)].AsI).Ksmfhi" 
+    assert_eq!{ PostfixExpr::with_test_str_ret_size_messages("a[]"), (
+        Some(PostfixExpr::new_subscription(
+            ident!(post, "a", make_strpos!(1, 1, 1, 1)), 
+            make_strpos!(1, 2, 1, 3), vec![]
+        )), 
+        make_messages![
+            Message::new_by_str("Empty subscription", vec![(make_strpos!(1, 2, 1, 3), "subscription here")])
+        ],
+        3
+    )}
+    
+    assert_eq!{ PostfixExpr::with_test_str_ret_size_messages("a[, ]"), (
+        Some(PostfixExpr::new_subscription(
+            ident!(post, "a", make_strpos!(1, 1, 1, 1)), 
+            make_strpos!(1, 2, 1, 5), vec![]
+        )), 
+        make_messages![
+            Message::new_by_str("Empty subscription", vec![(make_strpos!(1, 2, 1, 5), "subscription here")])
+        ],
+        4
+    )}
+    
+    assert_eq!{ PostfixExpr::with_test_str_ret_size_messages("a(, )"), (
+        Some(PostfixExpr::new_function_call(
+            ident!(post, "a", make_strpos!(1, 1, 1, 1)),
+            make_strpos!(1, 2, 1, 5), vec![]
+        )), 
+        make_messages![
+            Message::new_by_str("Single comma in function call", vec![(make_strpos!(1, 2, 1, 5), "function call here")])
+        ],
+        4
+    )}
 }

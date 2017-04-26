@@ -41,6 +41,16 @@ pub trait ISyntaxItemWithStr {
         check_messages_continuable!(messages);
         return ret_val;
     }
+    fn with_test_str_ret_size_messages(program: &str) -> (Option<Self>, MessageCollection, usize) where Self: Sized + ISyntaxItem {
+        let tokens = &mut TokenStream::with_test_str(program);
+        let mut messages = MessageCollection::new();
+        let ret_val = { // to satisfy liefetime checker
+            let ret_val = Self::parse(tokens, &mut messages, 0);
+            check_messages_continuable!(&mut messages);
+            ret_val
+        };
+        return (ret_val.0, messages, ret_val.1);
+    }
 }
 impl<T> ISyntaxItemWithStr for T where T: ISyntaxItem {
 }

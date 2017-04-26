@@ -40,7 +40,7 @@ impl ISyntaxItemFormat for PrimaryExpr {
     fn format(&self, indent: u32) -> String {
         match (&self.0, self.1) {
             (&ActualPrimaryExpr::Ident(ref ident_name), strpos) =>
-                format!("{}Ident {} <{:?}>", 
+                format!("{}Ident '{}' <{:?}>", 
                     PrimaryExpr::indent_str(indent), ident_name, strpos),
             (&ActualPrimaryExpr::Lit(ref lit_value), strpos) => 
                 format!("{}Literal {} <{:?}>", 
@@ -329,11 +329,33 @@ impl ISyntaxItem for PrimaryExpr {
 fn primary_expr_parse() {
     use super::super::ISyntaxItemWithStr;
 
-    assert_eq!(
-        PrimaryExpr::with_test_str("[a]"),   // this is the loop of tokens.nth(current) is left bracket does not cover everything and infinite loop is here
-        PrimaryExpr::new_unit(make_str_pos!(1, 1, 1, 3))
-        // PrimaryExpr::ArrayDef(vec![BinaryExpr::with_test_str(" a")], make_str_pos!(1, 1, 1, 3))
-    );
+    // this is the loop of tokens.nth(current) is left bracket does not cover everything and infinite loop is here
+    assert_eq!{ PrimaryExpr::with_test_str("[a]"),   
+        PrimaryExpr::new_array(
+            make_strpos!(1, 1, 1, 3), vec![
+                BinaryExpr::new_primary(PrimaryExpr::new_ident("a".to_owned(), make_strpos!(1, 2, 1, 2)))
+            ]
+        )
+    }
+
+    // "(463857, IEfN, atau8M, (fNAE, ((cAeJN4)), nHg))" 
+    // "10363" 
+    // "264616.15474f32" 
+    // "[(0x7E), FFGqfJe, I4, [(m7A, (41, ([(jL, rAn, K0FgLc7h, true), C, w]), (J3cEFDG, d, (j8h))), (), eIuArjF), 400, 0o535148505153515453, 0xDB747]]" 
+    // "CMDoF" 
+    // "false"
+    // "[uy6, 4373577, [(q, AJBN0n, MDEgKh5), KG, (NsL, ((), D, false, d), "H="), true, ((vvB3, true, 5))]]" 
+    // "(())" 
+    // "(fLyl4He)" 
+    // "[Fhi;vjIj0Dt]" 
+    // "("o5")" 
+    // "(nn, ([false;true]), 183455)" 
+    // "((true, (mO, [(q5k);a], (((KttG))), (K5DJ, r, ())), (McsaEdfdfalse,))rIOKt,)" 
+    // "["il", 0o52u32, sO04n]" 
+    // "['f';()]" 
+    // "[]" 
+    // "[8, "@=?GF", 87f32, 1340323.74f64, FKOxAvx5]" 
+    // "[[dnr4, lGFd3yL, tJ], ['\', p, ('G'BwiL,), DE], true, aB8aE]" 
 
     // // Case 0
     // assert_eq!(//12345678901234567890

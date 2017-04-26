@@ -26,6 +26,8 @@ pub use self::unary::UnaryExpr;
 pub use self::postfix::PostfixExpr;
 pub use self::primary::PrimaryExpr;
 
+// pub type Expression = self::binary::BinaryExpr;
+
 #[derive(Eq, PartialEq, Clone)]
 pub enum ExpressionBase {
     Lit(LitValue, StringPosition),                // literal's postion

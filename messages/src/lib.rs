@@ -2,7 +2,7 @@
 //!
 //! Every kind of messages
 
-extern crate codepos;
+#[cfg_attr(test, macro_use)] extern crate codepos;
 extern crate util;
 
 use std::fmt;
@@ -381,8 +381,22 @@ macro_rules! check_messages_continuable {
     ($msgs: expr) => (if $msgs.is_uncontinuable() { panic!("messages is uncontinuable: {:?}", $msgs) })
 }
 
-#[cfg(test)]
-#[test]
+#[macro_export]
+macro_rules! make_messages {
+    ($($x:expr),*) => ({
+        let mut retval = MessageCollection::new();
+        {
+            let _retval = &mut retval; // `&mut` for statisfy 'unused mut', `_` for statisfy unused var
+            $(
+                _retval.push($x);
+            )*
+        }
+        retval
+    });
+    ($($x:expr,)*) => (make_messages![$($x),*])
+}
+
+#[cfg(test)] #[test]
 fn message_complex_new() {
 
     assert_eq!(
@@ -395,4 +409,28 @@ fn message_complex_new() {
             (StringPosition::new(), "789".to_owned()),
         ])
     );
+}
+
+#[cfg(test)] #[test]
+fn message_by_macro() {
+
+    let mut messages = MessageCollection::new();
+    assert_eq!(messages, make_messages![]);
+
+    messages.push(Message::new_by_str("a", vec![(make_strpos!(1, 1, 1, 1), "b")]));
+    assert_eq!(messages, make_messages![Message::new_by_str("a", vec![(make_strpos!(1, 1, 1, 1), "b")])]);
+    assert_eq!(messages, make_messages![Message::new_by_str("a", vec![(make_strpos!(1, 1, 1, 1), "b")]), ]);
+
+    messages.push(Message::new_by_str("c", vec![(make_strpos!(1, 2, 1, 3), "d")]));
+    messages.push(Message::new_by_str("e", vec![(make_strpos!(1, 2, 1, 8), "f")]));
+    assert_eq!(messages, make_messages![
+        Message::new_by_str("a", vec![(make_strpos!(1, 1, 1, 1), "b")]), 
+        Message::new_by_str("c", vec![(make_strpos!(1, 2, 1, 3), "d")]),
+        Message::new_by_str("e", vec![(make_strpos!(1, 2, 1, 8), "f")])
+    ]);
+    assert_eq!(messages, make_messages![
+        Message::new_by_str("a", vec![(make_strpos!(1, 1, 1, 1), "b")]), 
+        Message::new_by_str("c", vec![(make_strpos!(1, 2, 1, 3), "d")]),
+        Message::new_by_str("e", vec![(make_strpos!(1, 2, 1, 8), "f")]),
+    ]);
 }
