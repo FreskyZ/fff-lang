@@ -24,8 +24,6 @@ impl fmt::Debug for Block {
         write!(f, "{{\n{}\n}} @ {:?}", format_vector_debug(&self.stmts, "\n"), self.pos)
     }
 }
-impl Block {
-}
 impl ISyntaxItem for Block {
     
     fn pos_all(&self) -> StringPosition { self.pos }

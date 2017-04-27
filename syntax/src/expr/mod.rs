@@ -279,7 +279,7 @@ impl Expression {
     }
 }
 
-#[cfg(test)] #[test] #[ignore]
+#[cfg(test)] #[allow(dead_code)]
 fn ast_expr_all() {
     use codepos::Position;
     use message::Message;
