@@ -91,7 +91,7 @@ impl LoopStatement { // Get
         }
     }
 
-    // temp for make codegen pass compile
+    // TODO: remove this temp for make codegen pass compile
     pub fn into_body(self) -> Block {
         self.m_body
     }
@@ -144,7 +144,7 @@ fn loop_stmt_parse() {
     use super::super::ISyntaxItemWithStr;
 
     assert_eq!{ LoopStatement::with_test_str("loop {}"),
-        LoopStatement::new(make_strpos!(1, 1, 1, 4), Block{ pos: make_strpos!(1, 5, 1, 6), stmts: Vec::new() })
+        LoopStatement::new(make_strpos!(1, 1, 1, 4), Block{ pos: make_strpos!(1, 6, 1, 7), stmts: Vec::new() })
     }
 }
 

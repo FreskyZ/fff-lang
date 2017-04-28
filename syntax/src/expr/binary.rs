@@ -89,6 +89,29 @@ impl BinaryExpr { // New
     pub fn new_primary(primary_expr: PrimaryExpr) -> BinaryExpr {
         BinaryExpr(Box::new(BinaryExprImpl::Unary(UnaryExpr::new_primary(primary_expr))))
     }
+
+    // Primary helpers
+    pub fn new_ident(ident: String, ident_strpos: StringPosition) -> BinaryExpr {
+        BinaryExpr::new_primary(PrimaryExpr::new_ident(ident, ident_strpos))
+    }
+    pub fn new_tuple(paren_strpos: StringPosition, exprs: Vec<BinaryExpr>) -> BinaryExpr {
+        BinaryExpr::new_primary(PrimaryExpr::new_tuple(paren_strpos, exprs))
+    }
+    pub fn new_array(bracket_strpos: StringPosition, exprs: Vec<BinaryExpr>) -> BinaryExpr {
+        BinaryExpr::new_primary(PrimaryExpr::new_array(bracket_strpos, exprs))
+    }
+    pub fn new_lit(value: LitValue, lit_strpos: StringPosition) -> BinaryExpr {
+        BinaryExpr::new_primary(PrimaryExpr::new_lit(value, lit_strpos))
+    }
+    pub fn new_unit(unit_strpos: StringPosition) -> BinaryExpr {
+        BinaryExpr::new_primary(PrimaryExpr::new_unit(unit_strpos))
+    }
+    pub fn new_paren(paren_strpos: StringPosition, inner: BinaryExpr) -> BinaryExpr {
+        BinaryExpr::new_primary(PrimaryExpr::new_paren(paren_strpos, inner))
+    }
+    pub fn new_array_dup(bracket_strpos: StringPosition, expr1: BinaryExpr, expr2: BinaryExpr) -> BinaryExpr {
+        BinaryExpr::new_primary(PrimaryExpr::new_array_dup(bracket_strpos, expr1, expr2))
+    }
 }
 impl BinaryExpr { // get
 
