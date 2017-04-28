@@ -168,9 +168,9 @@ fn gen_return(ret_stmt: ReturnStatement, sess: &mut GenerationSession) {
 fn gen_loop(loop_stmt: LoopStatement, sess: &mut GenerationSession) {
 
     let continue_addr = sess.codes.next_id();
-    sess.loops.push_loop(loop_stmt.name, continue_addr);
+    sess.loops.push_loop(loop_stmt.get_name().cloned(), continue_addr);
 
-    gen_block(loop_stmt.body, sess, true);
+    gen_block(loop_stmt.into_body(), sess, true);
     sess.codes.emit(Code::Goto(continue_addr));
     
     let break_refill_addr = sess.codes.next_id();

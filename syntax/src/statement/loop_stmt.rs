@@ -90,6 +90,11 @@ impl LoopStatement { // Get
             None => StringPosition::merge(self.m_loop_strpos, self.m_body.pos_all()),
         }
     }
+
+    // temp for make codegen pass compile
+    pub fn into_body(self) -> Block {
+        self.m_body
+    }
 }
 
 impl ISyntaxItem for LoopStatement {
