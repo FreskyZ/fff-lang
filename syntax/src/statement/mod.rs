@@ -24,11 +24,12 @@ mod for_stmt;
 mod jump_stmt;
 mod while_stmt;
 mod loop_stmt;
+mod ret_stmt;
 
 pub use self::var_decl::VarDeclStatement;
 pub use self::jump_stmt::BreakStatement;
 pub use self::jump_stmt::ContinueStatement;
-pub use self::jump_stmt::ReturnStatement;
+pub use self::ret_stmt::ReturnStatement;
 pub use self::expr_stmt::ExpressionStatement;
 pub use self::loop_stmt::LoopStatement;
 pub use self::while_stmt::WhileStatement;
@@ -162,3 +163,8 @@ mod tests {
 
     }
 }
+
+// TODO: ReturnStatement move to new ret_stmt module
+// BlockStatement move to new block_stmt module, add label support
+// ContinueStatement and BreakStatement merge impl, add label support
+// For and While add label support

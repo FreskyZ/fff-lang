@@ -137,14 +137,10 @@ fn gen_if(if_stmt: IfStatement, sess: &mut GenerationSession) {
     }   
 }
 
-// pub struct ReturnStatement {
-//     pub expr: Option<Expression>,
-//     pub pos: [StringPosition; 2], // position for return and semicolon
-// }
 fn gen_return(ret_stmt: ReturnStatement, sess: &mut GenerationSession) {
 
-    let pos = ret_stmt.pub_pos_all();
-    let (operand, typeid) = match ret_stmt.expr {
+    let pos = ret_stmt.get_all_strpos();
+    let (operand, typeid) = match ret_stmt.into_expr() {
         Some(expr) => gen_expr(expr, sess),
         None => (Operand::Lit(LitValue::Unit), ItemID::new(0))
     };
@@ -160,11 +156,6 @@ fn gen_return(ret_stmt: ReturnStatement, sess: &mut GenerationSession) {
     }
 }
 
-// pub struct LoopStatement {
-//     pub name: Option<String>,
-//     pub body: Block,
-//     pub pos: [StringPosition; 2],   // position for 'loop' and loop name
-// }
 fn gen_loop(loop_stmt: LoopStatement, sess: &mut GenerationSession) {
 
     let continue_addr = sess.codes.next_id();
@@ -248,47 +239,39 @@ fn gen_for(for_stmt: ForStatement, sess: &mut GenerationSession) {
     sess.vars.pop_scope();
 }
 
-// pub struct ContinueStatement {
-//     pub name: Option<String>,
-//     pub pos: [StringPosition; 3], // position for continue, name and semicolon
-// }
 fn gen_continue(continue_stmt: ContinueStatement, sess: &mut GenerationSession) {
     
-    match continue_stmt.name {
+    match continue_stmt.get_target() {
         Some(name) => match sess.loops.get_loop_continue_addr(&name) {
             Some(continue_addr) => sess.codes.emit_silent(Code::Goto(continue_addr)),
             None => sess.msgs.push(CodegenMessage::CannotFindLoopName{
-                name: name, 
-                pos: StringPosition::merge(continue_stmt.pos[0], continue_stmt.pos[2]) 
+                name: name.clone(), 
+                pos: continue_stmt.get_all_strpos(),
             }),
         },
         None => match sess.loops.get_last_loop_continue_addr() {
             Some(continue_addr) => sess.codes.emit_silent(Code::Goto(continue_addr)),
             None => sess.msgs.push(CodegenMessage::JumpStatementNotInLoop{ 
-                pos: StringPosition::merge(continue_stmt.pos[0], continue_stmt.pos[2]) 
+                pos: continue_stmt.get_all_strpos(),
             }),
         },
     }
 }
-// pub struct BreakStatement {
-//     pub name: Option<String>,
-//     pub pos: [StringPosition; 3], // position for break, name and semicolon
-// }
 fn gen_break(break_stmt: BreakStatement, sess: &mut GenerationSession) {
     
     let break_addr = sess.codes.emit(Code::Goto(CodeCollection::dummy_id()));
-    match break_stmt.name {
+    match break_stmt.get_target() {
         Some(name) => match sess.loops.push_loop_break_addr(&name, break_addr) {
             Some(()) => (),
             None => sess.msgs.push(CodegenMessage::CannotFindLoopName{
-                name: name, 
-                pos: StringPosition::merge(break_stmt.pos[0], break_stmt.pos[2]) 
+                name: name.clone(), 
+                pos: break_stmt.get_all_strpos(),
             }),
         },
         None => match sess.loops.push_last_loop_break_addr(break_addr) {
             Some(()) => (),
             None => sess.msgs.push(CodegenMessage::JumpStatementNotInLoop{ 
-                pos: StringPosition::merge(break_stmt.pos[0], break_stmt.pos[2]) 
+                pos: break_stmt.get_all_strpos(),
             }),
         },
     }

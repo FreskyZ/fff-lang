@@ -1,11 +1,8 @@
-
-// JumpStatement = ReturnStatement | BreakStatement | ContinueStatement
-// ReturnStatemt = fReturn [Expression] fSemiColon
-// BreakStatement = fBreak [fStringLiteral] fSemiColon        
-// ContinueStatement = fContinue [fStringLiteral] fSemiColon
-
-// Recoverable:
-// fBreak|fContinue OtherExpression fSemiColon => loop name specifier must be string literal
+///! fff-lang
+///! 
+///! syntax/jump_stmt for BreakStatement and ContinueStatement
+///! BreakStatement = fBreak [fLabel] fSemiColon        
+///! ContinueStatement = fContinue [fLabel] fSemiColon
 
 use std::fmt;
 
@@ -13,253 +10,138 @@ use codepos::StringPosition;
 use message::Message;
 use message::MessageCollection;
 
-use lexical::Lexer;
+use lexical::TokenStream;
 use lexical::SeperatorKind;
 use lexical::KeywordKind;
 
 use super::super::ISyntaxItem;
-use super::super::Expression;
-
-macro_rules! loop_name_not_str_lit_message {
-    ($strpos: expr) => (Message::new_by_str("Require string literal for loop name specifier", vec![($strpos, "expression here")]))
-}
+use super::super::ISyntaxItemFormat;
 
 #[derive(Eq, PartialEq)]
-pub struct ReturnStatement {
-    pub expr: Option<Expression>,
-    pub pos: [StringPosition; 2], // position for return and semicolon
+struct JumpStatement {
+    m_target: Option<String>,
+    m_target_strpos: StringPosition,
+    m_all_strpos: StringPosition,
 }
+impl JumpStatement {
 
-impl fmt::Debug for ReturnStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "return @ {:?}{}; @ {:?}", 
-            self.pos[0], 
-            match self.expr { Some(ref expr) => format!(" {:?} ", expr), None => String::new() }, 
-            self.pos[1]
-        )
+    fn new_no_target(all_strpos: StringPosition) -> JumpStatement {
+        JumpStatement{ m_target: None, m_target_strpos: StringPosition::new(), m_all_strpos: all_strpos }
     }
-}
-impl ReturnStatement {
-    pub fn pub_pos_all(&self) -> StringPosition { self.pos_all() }
-}
-impl ISyntaxItem for ReturnStatement {
-
-    fn pos_all(&self) -> StringPosition { StringPosition::merge(self.pos[0], self.pos[1]) } 
-
-    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
-        lexer.nth(index).is_keyword(KeywordKind::Return)
+    fn new_target(all_strpos: StringPosition, target: String, target_strpos: StringPosition) -> JumpStatement {
+        JumpStatement{ m_target: Some(target), m_target_strpos: target_strpos, m_all_strpos: all_strpos }
     }
 
-    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<ReturnStatement>, usize) {
-
-        if !lexer.nth(index).is_keyword(KeywordKind::Return) {
-            unreachable!()
+    fn format(&self, indent: u32, stmt_name: &str) -> String {
+        match self.m_target {
+            Some(ref target_name) => format!("{}{} <{:?}>\n{}To '@{}' <{:?}>", 
+                ContinueStatement::indent_str(indent), stmt_name, self.m_all_strpos,
+                ContinueStatement::indent_str(indent + 1), target_name, self.m_target_strpos
+            ),
+            None => format!("{}{} <{:?}>",
+                ContinueStatement::indent_str(indent), stmt_name, self.m_all_strpos
+            )
         }
+    }
 
-        if lexer.nth(index + 1).is_seperator(SeperatorKind::SemiColon) {
-            return (Some(ReturnStatement{
-                expr: None,
-                pos: [lexer.pos(index), lexer.pos(index + 1)],
-            }), 2);
-        }
+    fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<JumpStatement>, usize) {
 
-        match Expression::parse(lexer, messages, index + 1) {
-            (None, length) => return (None, length),
-            (Some(expr), expr_len) => {
-                if lexer.nth(index + 1 + expr_len).is_seperator(SeperatorKind::SemiColon) {
-                    return (Some(ReturnStatement{
-                        expr: Some(expr),
-                        pos: [lexer.pos(index), lexer.pos(index + 1 + expr_len)],
-                    }), 2 + expr_len);
+        if tokens.nth(index + 1).is_seperator(SeperatorKind::SemiColon) {
+            (Some(JumpStatement::new_no_target(StringPosition::merge(tokens.pos(index), tokens.pos(index + 1)))), 2)
+        } else {
+            match tokens.nth(index + 1).get_label() {
+                Some(target) => if tokens.nth(index + 2).is_seperator(SeperatorKind::SemiColon) {
+                    (Some(JumpStatement::new_target(StringPosition::merge(tokens.pos(index), tokens.pos(index + 2)), target.clone(), tokens.pos(index + 1))), 3)
                 } else {
-                    return push_unexpect!(lexer, messages, "semicolon", index + expr_len + 1, expr_len + 1);
-                }
-            } 
+                    push_unexpect!(tokens, messages, "semicolon", index + 2, 2)
+                },
+                None => push_unexpect!(tokens, messages, "label or semicolon", index + 1, 1),
+            }
         }
     }
 }
 
 #[derive(Eq, PartialEq)]
-pub struct ContinueStatement {
-    pub name: Option<String>,
-    pub pos: [StringPosition; 3], // position for continue, name and semicolon
-}
+pub struct ContinueStatement(JumpStatement);
 #[derive(Eq, PartialEq)]
-pub struct BreakStatement {
-    pub name: Option<String>,
-    pub pos: [StringPosition; 3], // position for break, name and semicolon
-}
+pub struct BreakStatement(JumpStatement);
 
+impl ISyntaxItemFormat for ContinueStatement {
+    fn format(&self, indent: u32) -> String { self.0.format(indent, "ContinueStmt") }
+}
+impl ISyntaxItemFormat for BreakStatement {
+    fn format(&self, indent: u32) -> String { self.0.format(indent, "BreakStmt") }
+}
 impl fmt::Debug for ContinueStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "continue @ {:?}{}; @ {:?}", 
-            self.pos[0],
-            match self.name { Some(ref name) => format!(" {} @ {:?}", name, self.pos[1]), None => format!(" \"\" @ {:?}", self.pos[1]), },
-            self.pos[2]
-        )
-    }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(0)) }
 }
 impl fmt::Debug for BreakStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "break @ {:?}{}; @ {:?}", 
-            self.pos[0],
-            match self.name { Some(ref name) => format!(" {} @ {:?}", name, self.pos[1]), None => format!(" \"\" @ {:?}", self.pos[1]), },
-            self.pos[2]
-        )
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(0)) }
+}
+
+impl ContinueStatement {
+
+    pub fn new_no_target(all_strpos: StringPosition) -> ContinueStatement { ContinueStatement(JumpStatement::new_no_target(all_strpos)) }
+    pub fn new_with_target(all_strpos: StringPosition, target: String, target_strpos: StringPosition) -> ContinueStatement {
+        ContinueStatement(JumpStatement::new_target(all_strpos, target, target_strpos))
     }
+
+    pub fn has_target(&self) -> bool { match self.0.m_target { Some(_) => true, None => false } }
+    pub fn get_all_strpos(&self) -> StringPosition { self.0.m_all_strpos }
+    pub fn get_target(&self) -> Option<&String> { match self.0.m_target { Some(ref target) => Some(target), None => None } }
+    pub fn get_target_strpos(&self) -> Option<StringPosition> { match self.0.m_target { Some(_) => Some(self.0.m_target_strpos), None => None } }
+}
+impl BreakStatement {
+
+    pub fn new_no_target(all_strpos: StringPosition) -> BreakStatement { BreakStatement(JumpStatement::new_no_target(all_strpos)) }
+    pub fn new_with_target(all_strpos: StringPosition, target: String, target_strpos: StringPosition) -> BreakStatement {
+        BreakStatement(JumpStatement::new_target(all_strpos, target, target_strpos))
+    }
+
+    pub fn has_target(&self) -> bool { match self.0.m_target { Some(_) => true, None => false } }
+    pub fn get_all_strpos(&self) -> StringPosition { self.0.m_all_strpos }
+    pub fn get_target(&self) -> Option<&String> { match self.0.m_target { Some(ref target) => Some(target), None => None } }
+    pub fn get_target_strpos(&self) -> Option<StringPosition> { match self.0.m_target { Some(_) => Some(self.0.m_target_strpos), None => None } }
 }
 
 impl ISyntaxItem for ContinueStatement {
 
-    fn pos_all(&self) -> StringPosition { StringPosition::merge(self.pos[0], self.pos[2]) }
+    fn pos_all(&self) -> StringPosition { self.get_all_strpos() }
+    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool { tokens.nth(index).is_keyword(KeywordKind::Continue) }
 
-    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
-        lexer.nth(index).is_keyword(KeywordKind::Continue)
-    }
-
-    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<ContinueStatement>, usize) {
+    fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<ContinueStatement>, usize) {
         
-        if !lexer.nth(index).is_keyword(KeywordKind::Continue) {
-            unreachable!()
-        }
-
-        if lexer.nth(index + 1).is_seperator(SeperatorKind::SemiColon) {
-            return (Some(ContinueStatement{
-                name: None,
-                pos: [lexer.pos(index), StringPosition::new(), lexer.pos(index + 1)],
-            }), 2);
-        }
-
-        match Expression::parse(lexer, messages, index + 1) {
-            (None, length) => return (None, length),
-            (Some(expr), expr_len) => {
-                if lexer.nth(index + 1 + expr_len).is_seperator(SeperatorKind::SemiColon) {
-                    let mut name_pos = expr.pos_all();
-                    if !expr.is_pure_str_lit() {
-                        messages.push(loop_name_not_str_lit_message!(expr.pos_all()));
-                        name_pos = StringPosition::new();
-                    }
-                    let name = expr.into_pure_str_lit();
-                    return (Some(ContinueStatement{
-                        name: name,
-                        pos: [lexer.pos(index), name_pos, lexer.pos(index + 1 + expr_len)],
-                    }), 2 + expr_len);
-                } else {
-                    return push_unexpect!(lexer, messages, "semicolon", index + expr_len + 1, expr_len + 1);
-                }
-            } 
+        match JumpStatement::parse(tokens, messages, index) {
+            (None, length) => (None, length),
+            (Some(jump_stmt), length) => (Some(ContinueStatement(jump_stmt)), length),
         }
     }
 }
 impl ISyntaxItem for BreakStatement {
 
-    fn pos_all(&self) -> StringPosition { StringPosition::merge(self.pos[0], self.pos[2]) }
+    fn pos_all(&self) -> StringPosition { self.get_all_strpos() }
+    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool { tokens.nth(index).is_keyword(KeywordKind::Continue) }
 
-    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
-        lexer.nth(index).is_keyword(KeywordKind::Break)
-    }
-
-    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<BreakStatement>, usize) {
+    fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<BreakStatement>, usize) {
         
-        if !lexer.nth(index).is_keyword(KeywordKind::Break) {
-            unreachable!()
-        }
-
-        if lexer.nth(index + 1).is_seperator(SeperatorKind::SemiColon) {
-            return (Some(BreakStatement{
-                name: None,
-                pos: [lexer.pos(index), StringPosition::new(), lexer.pos(index + 1)],
-            }), 2);
-        }
-
-        match Expression::parse(lexer, messages, index + 1) {
-            (None, length) => return (None, length),
-            (Some(expr), expr_len) => {
-                if lexer.nth(index + 1 + expr_len).is_seperator(SeperatorKind::SemiColon) {
-                    let mut name_pos = expr.pos_all();
-                    if !expr.is_pure_str_lit() {
-                        messages.push(loop_name_not_str_lit_message!(expr.pos_all()));
-                        name_pos = StringPosition::new();
-                    }
-
-                    let name = expr.into_pure_str_lit();
-                    return (Some(BreakStatement{
-                        name: name,
-                        pos: [lexer.pos(index), name_pos, lexer.pos(index + 1 + expr_len)],
-                    }), 2 + expr_len);
-                } else {
-                    return push_unexpect!(lexer, messages, "semicolon", index + expr_len + 1, expr_len + 1);
-                }
-            } 
+        match JumpStatement::parse(tokens, messages, index) {
+            (None, length) => (None, length),
+            (Some(jump_stmt), length) => (Some(BreakStatement(jump_stmt)), length),
         }
     }
 }
 
 #[cfg(test)] #[test]
-fn ast_stmt_jump_parse() {
-    use super::super::Expression;
-    use super::super::TestCase;
+fn jump_stmt_parse() {
     use super::super::ISyntaxItemWithStr;
-
-    // Return statement
-    //               1234567
-    ast_test_case!{ "return;", 2, make_str_pos!(1, 1, 1, 7),
-        ReturnStatement{ 
-            expr: None, 
-            pos: [make_str_pos!(1, 1, 1, 6), make_str_pos!(1, 7, 1, 7)] 
-        }
-    }            //  1234567890123
-    ast_test_case!{ "return 1 + 1;", 5, make_str_pos!(1, 1, 1, 13),
-        ReturnStatement{ 
-            expr: Some(Expression::with_test_str("       1 + 1")),
-            pos: [make_str_pos!(1, 1, 1, 6), make_str_pos!(1, 13, 1, 13)] 
-        }
+    
+    assert_eq!{ ContinueStatement::with_test_str("continue;"), ContinueStatement::new_no_target(make_strpos!(1, 1, 1, 9)) }
+    assert_eq!{ ContinueStatement::with_test_str("continue @1;"), 
+        ContinueStatement::new_with_target(make_strpos!(1, 1, 1, 12), "1".to_owned(), make_strpos!(1, 10, 1, 11))
     }
     
-    // Continue statement
-    //               1234567890
-    ast_test_case!{ "continue;", 2, make_str_pos!(1, 1, 1, 9),
-        ContinueStatement{ 
-            name: None, 
-            pos: [make_str_pos!(1, 1, 1, 8), StringPosition::new(), make_str_pos!(1, 9, 1, 9)] 
-        }
-    }            //  123456789 012345 67
-    ast_test_case!{ "continue \"inner\";", 3, make_str_pos!(1, 1, 1, 17),
-        ContinueStatement{ 
-            name: Some("inner".to_owned()), 
-            pos: [make_str_pos!(1, 1, 1, 8), make_str_pos!(1, 10, 1, 16), make_str_pos!(1, 17, 1, 17)] 
-        }
-    }            //  1234567890123
-    ast_test_case!{ "continue 123;", 3, make_str_pos!(1, 1, 1, 13),
-        ContinueStatement{
-            name: None, 
-            pos: [make_str_pos!(1, 1, 1, 8), StringPosition::new(), make_str_pos!(1, 13, 1, 13)]
-        },
-        [
-            loop_name_not_str_lit_message!(make_str_pos!(1, 10, 1, 12))
-        ]
-    }
-
-    // Break statement
-    ast_test_case!{ "break   ;", 2, make_str_pos!(1, 1, 1, 9),
-        BreakStatement{ 
-            name: None, 
-            pos: [make_str_pos!(1, 1, 1, 5), StringPosition::new(), make_str_pos!(1, 9, 1, 9)] 
-        }
-    }            // 123456 7890123 45
-    ast_test_case!{ "break \"outter\";", 3, make_str_pos!(1, 1, 1, 15),
-        BreakStatement{ 
-            name: Some("outter".to_owned()), 
-            pos: [make_str_pos!(1, 1, 1, 5), make_str_pos!(1, 7, 1, 14), make_str_pos!(1, 15, 1, 15)] 
-        }
-    }            //  1234567890
-    ast_test_case!{ "break 123;", 3, make_str_pos!(1, 1, 1, 10),
-        BreakStatement{
-            name: None,
-            pos: [make_str_pos!(1, 1, 1, 5), StringPosition::new(), make_str_pos!(1, 10, 1, 10)],
-        },
-        [
-            loop_name_not_str_lit_message!(make_str_pos!(1, 7, 1, 9))
-        ]
+    assert_eq!{ BreakStatement::with_test_str("break;"), BreakStatement::new_no_target(make_strpos!(1, 1, 1, 6)) }
+    assert_eq!{ BreakStatement::with_test_str("break @1;"), 
+        BreakStatement::new_with_target(make_strpos!(1, 1, 1, 9), "1".to_owned(), make_strpos!(1, 7, 1, 8))
     }
 }
