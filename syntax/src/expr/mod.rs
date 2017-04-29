@@ -8,7 +8,7 @@ use codepos::StringPosition;
 use util::format_vector_debug;
 use message::MessageCollection;
 
-use lexical::Lexer;
+use lexical::TokenStream;
 use lexical::SeperatorKind;
 use lexical::LitValue;
 
@@ -174,11 +174,11 @@ fn expr_usage() {
 
 //     fn pos_all(&self) -> StringPosition { self.all_pos }
 
-//     fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
+//     fn is_first_final(lexer: &mut TokenStream, index: usize) -> bool {
 //         BinaryExpr::is_first_final(lexer, index)
 //     }
 
-//     fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<Expression>, usize) {
+//     fn parse(lexer: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<Expression>, usize) {
         
 //         match BinaryExpr::parse(lexer, messages, index) {
 //             (Some(d3), d3_length) => (Some(d3_expr_to_expr(d3)), d3_length),

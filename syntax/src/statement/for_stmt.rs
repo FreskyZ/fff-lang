@@ -7,7 +7,7 @@ use codepos::StringPosition;
 use message::Message;
 use message::MessageCollection;
 
-use lexical::Lexer;
+use lexical::TokenStream;
 use lexical::KeywordKind;
 use lexical::SeperatorKind;
 
@@ -36,11 +36,11 @@ impl ISyntaxItem for ForStatement {
 
     fn pos_all(&self) -> StringPosition { StringPosition::merge(self.pos[0], self.body.pos_all()) }
 
-    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
+    fn is_first_final(lexer: &mut TokenStream, index: usize) -> bool {
         lexer.nth(index).is_keyword(KeywordKind::For)
     }
 
-    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<ForStatement>, usize) {
+    fn parse(lexer: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<ForStatement>, usize) {
 
         if !lexer.nth(index).is_keyword(KeywordKind::For) {
             unreachable!()

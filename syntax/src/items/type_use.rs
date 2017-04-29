@@ -27,8 +27,8 @@ use message::MessageCollection;
 use lexical::TokenStream;
 use lexical::SeperatorKind;
 
-use super::ISyntaxItem;
-use super::ISyntaxItemFormat;
+use super::super::ISyntaxItem;
+use super::super::ISyntaxItemFormat;
 
 #[derive(Eq, PartialEq, Clone)]
 enum ActualTypeUse {
@@ -209,7 +209,7 @@ impl ISyntaxItem for TypeUse {
 
 #[cfg(test)] #[test]
 fn type_use_parse() {
-    use super::TestCase;
+    use super::super::TestCase;
 
     macro_rules! simple { 
         ($ident: expr, $strpos: expr) => (TypeUseF::new_simple_test($ident, $strpos));

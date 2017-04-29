@@ -26,8 +26,6 @@ pub use self::symbol_type::literal::NumLitValue;
 pub use self::symbol_type::literal::LitValue;
 pub use self::token_stream::TokenStream;
 
-pub type Lexer = TokenStream;
-
 pub trait IToken : fmt::Debug {
 
     fn is_keyword(&self, kind: KeywordKind) -> bool;

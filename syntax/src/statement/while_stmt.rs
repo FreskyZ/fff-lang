@@ -6,7 +6,7 @@ use std::fmt;
 use codepos::StringPosition;
 use message::MessageCollection;
 
-use lexical::Lexer;
+use lexical::TokenStream;
 use lexical::KeywordKind;
 
 use super::super::ISyntaxItem;
@@ -30,11 +30,11 @@ impl ISyntaxItem for WhileStatement {
 
     fn pos_all(&self) -> StringPosition { StringPosition::merge(self.pos, self.body.pos_all()) }
 
-    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
+    fn is_first_final(lexer: &mut TokenStream, index: usize) -> bool {
         lexer.nth(index).is_keyword(KeywordKind::While)
     }
 
-    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<WhileStatement>, usize) {
+    fn parse(lexer: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<WhileStatement>, usize) {
 
         if !lexer.nth(index).is_keyword(KeywordKind::While) {
             unreachable!()

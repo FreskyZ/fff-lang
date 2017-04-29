@@ -12,8 +12,8 @@ use message::MessageCollection;
 use lexical::TokenStream;
 use lexical::SeperatorKind;
 
-use super::ISyntaxItem;
-use super::ISyntaxItemFormat;
+use super::super::ISyntaxItem;
+use super::super::ISyntaxItemFormat;
 
 #[derive(Eq, PartialEq)]
 pub struct LabelDef {
@@ -61,7 +61,7 @@ impl ISyntaxItem for LabelDef {
 
 #[cfg(test)] #[test]
 fn label_def_parse() {
-    use super::ISyntaxItemWithStr;
+    use super::super::ISyntaxItemWithStr;
 
     assert_eq!(LabelDef::with_test_str("@1:"), LabelDef::new("1".to_owned(), make_strpos!(1, 1, 1, 3)));
 }

@@ -12,10 +12,10 @@ use lexical::TokenStream;
 use lexical::KeywordKind;
 use lexical::SeperatorKind;
 
-use super::ISyntaxItem;
-use super::TypeUse;
-use super::TypeUseF;
-use super::Block;
+use super::super::ISyntaxItem;
+use super::super::TypeUse;
+use super::super::TypeUseF;
+use super::super::Block;
 
 #[derive(Eq, PartialEq)]
 pub struct Argument {
@@ -176,7 +176,7 @@ impl ISyntaxItem for FunctionDef {
 
 #[cfg(test)] #[test]
 fn ast_argument_parse() {
-    use super::ISyntaxItemWithStr;
+    use super::super::ISyntaxItemWithStr;
 
     assert_eq!(
         Argument::with_test_str_ret_size("i32 a"), 
@@ -198,7 +198,7 @@ fn ast_argument_parse() {
 }
 #[cfg(test)] #[test]
 fn ast_function_def_parse() {
-    use super::ISyntaxItemWithStr;
+    use super::super::ISyntaxItemWithStr;
 
     perrorln!("Case 1:"); //                 123456789ABC
     let result = FunctionDef::with_test_str_ret_size("fn main() {}");

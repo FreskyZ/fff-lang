@@ -8,11 +8,11 @@ use util::format_vector_debug;
 use message::Message;
 use message::MessageCollection;
 
-use lexical::Lexer;
+use lexical::TokenStream;
 use lexical::SeperatorKind;
 
-use super::ISyntaxItem;
-use super::Statement;
+use super::super::ISyntaxItem;
+use super::super::Statement;
 
 #[derive(Eq, PartialEq)]
 pub struct Block {
@@ -28,11 +28,11 @@ impl ISyntaxItem for Block {
     
     fn pos_all(&self) -> StringPosition { self.pos }
 
-    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
+    fn is_first_final(lexer: &mut TokenStream, index: usize) -> bool {
         lexer.nth(index).is_seperator(SeperatorKind::LeftBrace) 
     }
 
-    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<Block>, usize) {
+    fn parse(lexer: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<Block>, usize) {
 
         if !lexer.nth(index).is_seperator(SeperatorKind::LeftBrace) {
             return push_unexpect!(lexer, messages, "left brace", index, 0);
@@ -59,20 +59,14 @@ impl ISyntaxItem for Block {
     }
 }
 
-#[cfg(test)]
-mod tests {
+#[cfg(test)] #[test]
+fn block_parse() {
+    use super::super::ISyntaxItemWithStr;
+    
+    assert_eq!(
+        Block::with_test_str_ret_size("{}"), 
+        (Some(Block{ stmts: Vec::new(), pos: make_str_pos!(1, 1, 1, 2) }), 2)
+    );
 
-    #[test]
-    fn ast_block_parse() {
-        use super::Block;
-        use super::super::ISyntaxItemWithStr;
-        use codepos::StringPosition;
-        
-        assert_eq!(
-            Block::with_test_str_ret_size("{}"), 
-            (Some(Block{ stmts: Vec::new(), pos: make_str_pos!(1, 1, 1, 2) }), 2)
-        );
-
-        perrorln!("{:?}", Block::with_test_str("{ 1; 1 + 1; while true { writeln(\"fresky loves zmj\"); } loop { writeln(\"zmj loves fresky\"); } }")); 
-    }
+    perrorln!("{:?}", Block::with_test_str("{ 1; 1 + 1; while true { writeln(\"fresky loves zmj\"); } loop { writeln(\"zmj loves fresky\"); } }")); 
 }

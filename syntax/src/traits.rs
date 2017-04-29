@@ -1,5 +1,6 @@
-
-// ASTItem interface
+///! fff-lang
+///!
+///! syntax/traits, for ISyntaxItem for various relevant staffs
 
 use codepos::StringPosition;
 use message::MessageCollection;
@@ -18,6 +19,7 @@ pub trait ISyntaxItem {
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool;
 }
 
+// WithStr
 pub trait ISyntaxItemWithStr {
 
     fn with_test_str_and_index(program: &str, index: usize) -> Self where Self: Sized + ISyntaxItem {
@@ -55,6 +57,7 @@ pub trait ISyntaxItemWithStr {
 impl<T> ISyntaxItemWithStr for T where T: ISyntaxItem {
 }
 
+// Format
 const INDENT_STRS: [&'static str; 16] = [
     "", "  ", "    ", "      ", "        ", "          ", "            ", "              ", "                ", "                  ", "                    ",
     "                      ", "                        ", "                          ", "                            ", "                          "
@@ -66,6 +69,13 @@ pub trait ISyntaxItemFormat {
     }
 
     fn format(&self, indent: u32) -> String;
+}
+#[macro_export] macro_rules! impl_debug_for_format {
+    ($t: ty) => (
+        impl fmt::Debug for $t {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
+        }
+    )
 }
 
 // Test infrastructure macro

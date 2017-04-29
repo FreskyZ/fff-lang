@@ -12,7 +12,7 @@ use codepos::StringPosition;
 use message::Message;
 use message::MessageCollection;
 
-use lexical::Lexer;
+use lexical::TokenStream;
 
 use super::ISyntaxItem;
 use super::Block;
@@ -85,7 +85,7 @@ impl ISyntaxItem for Statement {
         }
     }
     
-    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
+    fn is_first_final(lexer: &mut TokenStream, index: usize) -> bool {
         VarDeclStatement::is_first_final(lexer, index)
         || BreakStatement::is_first_final(lexer, index)
         || ContinueStatement::is_first_final(lexer, index)
@@ -98,7 +98,7 @@ impl ISyntaxItem for Statement {
         || Block::is_first_final(lexer, index)
     }
     
-    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<Statement>, usize) {
+    fn parse(lexer: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<Statement>, usize) {
 
         if VarDeclStatement::is_first_final(lexer, index) { 
             return match VarDeclStatement::parse(lexer, messages, index) {
@@ -162,8 +162,7 @@ fn stmt_parse() {
 }
 
 // TODO: 
-// BlockStatement move to new block_stmt module, add label support
-// For and While add label support
-// About loop's internal to LabelDef
+// Add ISyntaxItemFormat to all types, 
+// impl Debug for ISyntaxItemFormat
 // Remove ISyntaxItem::pos_all
-// Concert impl Debug for ISyntaxItemFormat
+// For and While add label support

@@ -7,7 +7,7 @@ use codepos::StringPosition;
 use message::Message;
 use message::MessageCollection;
 
-use lexical::Lexer;
+use lexical::TokenStream;
 use lexical::SeperatorKind;
 use lexical::SeperatorCategory;
 
@@ -55,11 +55,11 @@ impl ISyntaxItem for ExpressionStatement {
 
     fn pos_all(&self) -> StringPosition { StringPosition::merge(self.left_expr.pos_all(), self.pos[1]) }
 
-    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
+    fn is_first_final(lexer: &mut TokenStream, index: usize) -> bool {
         Expression::is_first_final(lexer, index)
     }
 
-    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<ExpressionStatement>, usize) {
+    fn parse(lexer: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<ExpressionStatement>, usize) {
 
         let (left_expr, mut current_len) = match Expression::parse(lexer, messages, index) {
             (Some(expr), expr_len) => (expr, expr_len),

@@ -7,7 +7,7 @@ use codepos::StringPosition;
 use util::format_vector_debug;
 use message::MessageCollection;
 
-use lexical::Lexer;
+use lexical::TokenStream;
 use lexical::KeywordKind;
 
 use super::super::ISyntaxItem;
@@ -31,12 +31,12 @@ impl ISyntaxItem for ElseIfBranch {
 
     fn pos_all(&self) -> StringPosition { StringPosition::merge(self.pos[0], self.body.pos_all()) }
 
-    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
+    fn is_first_final(lexer: &mut TokenStream, index: usize) -> bool {
         lexer.nth(index).is_keyword(KeywordKind::Else)
     }
 
     /// given index should be index of else and nth(index) = else, nth(index + 1) = if are confirmed
-    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<ElseIfBranch>, usize) {
+    fn parse(lexer: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<ElseIfBranch>, usize) {
 
         if !lexer.nth(index).is_keyword(KeywordKind::Else)
             || !lexer.nth(index + 1).is_keyword(KeywordKind::If) {
@@ -84,11 +84,11 @@ impl ISyntaxItem for IfStatement {
 
     fn pos_all(&self) -> StringPosition { StringPosition::new() }
 
-    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
+    fn is_first_final(lexer: &mut TokenStream, index: usize) -> bool {
         lexer.nth(index).is_keyword(KeywordKind::If)
     }
 
-    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<IfStatement>, usize) {
+    fn parse(lexer: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<IfStatement>, usize) {
 
         if !lexer.nth(index).is_keyword(KeywordKind::If) {
             unreachable!()

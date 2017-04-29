@@ -8,7 +8,7 @@ use codepos::StringPosition;
 use message::Message;
 use message::MessageCollection;
 
-use lexical::Lexer;
+use lexical::TokenStream;
 use lexical::KeywordKind;
 use lexical::SeperatorKind;
 
@@ -45,13 +45,13 @@ impl ISyntaxItem for VarDeclStatement {
 
     fn pos_all(&self) -> StringPosition { StringPosition::merge(self.pos[0], self.pos[3]) }
 
-    fn is_first_final(lexer: &mut Lexer, index: usize) -> bool {
+    fn is_first_final(lexer: &mut TokenStream, index: usize) -> bool {
         lexer.nth(index).is_keyword(KeywordKind::Const)
         || lexer.nth(index).is_keyword(KeywordKind::Var) 
     }
 
     /// It is special that the given index is index of 'const' or 'var' not the next
-    fn parse(lexer: &mut Lexer, messages: &mut MessageCollection, index: usize) -> (Option<VarDeclStatement>, usize) {
+    fn parse(lexer: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<VarDeclStatement>, usize) {
 
         let is_const = match lexer.nth(index).get_keyword() {
             Some(KeywordKind::Const) => true, 
