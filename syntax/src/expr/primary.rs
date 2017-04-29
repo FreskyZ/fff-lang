@@ -154,6 +154,15 @@ impl PrimaryExpr { // Get
         match self.0 { ActualPrimaryExpr::ArrayDupDef(_, ref expr2) => Some(expr2), _ => None }
     }
 }
+
+#[allow(non_upper_case_globals)]
+mod error_strings {
+    // Prefer full word to abbr word at displayed string
+    // for example, difinition, literal, identifier
+
+    pub const ExpectExpression: &'static str = "literal, identifier, array definition, tuple definition, unary operators";
+}
+
 impl ISyntaxItem for PrimaryExpr {
     
     fn pos_all(&self) -> StringPosition { self.1 }
@@ -174,64 +183,68 @@ impl ISyntaxItem for PrimaryExpr {
 
         trace!("start parsing, current token: {:?}", tokens.nth(index));
 
-        if tokens.nth(index).is_lit() {
-            return (Some(PrimaryExpr::new_lit(tokens.nth(index).get_lit_val().unwrap(), tokens.pos(index))), 1);
+        match tokens.nth(index).get_lit_val() {
+            None => (),
+            Some(lit_val) => {
+                trace!("returning literal {:?} at {:?}", lit_val, tokens.pos(index));
+                return (Some(PrimaryExpr::new_lit(lit_val, tokens.pos(index))), 1);
+            }
         }
         match tokens.nth(index).get_identifier() {
-            Some(ident) => {
-                trace!("yes this is a identifier: {:?}, going to return", ident);
-                return (Some(PrimaryExpr::new_ident(ident.clone(), tokens.pos(index))), 1);
-            }
             None => (),
+            Some(ident_name) => {
+                trace!("returning identifier {:?} at {:?} ", ident_name, tokens.pos(index));
+                return (Some(PrimaryExpr::new_ident(ident_name, tokens.pos(index))), 1);
+            }
         }
-        if tokens.nth(index).is_keyword(KeywordKind::This) {
+        if tokens.nth(index).is_keyword(KeywordKind::This) { // `this` is identifier
+            trace!("returning identifier this at {:?}", tokens.pos(index));
             return (Some(PrimaryExpr::new_ident("this".to_owned(), tokens.pos(index))), 1);
         }
 
-        trace!("parsing primary not literal or identifier");
         if tokens.nth(index).is_seperator(SeperatorKind::LeftParenthenes) {
+            trace!("at index is left paren");
             if tokens.nth(index + 1).is_seperator(SeperatorKind::RightParenthenes) {
+                trace!("returning unit at {:?}", tokens.pos(index));
                 return (Some(PrimaryExpr::new_unit(StringPosition::merge(tokens.pos(index), tokens.pos(index + 1)))), 2);
             }
 
-            let mut current_len = 1;
-            let mut exprs = Vec::new();
+            let mut current_length = 1;
+            let mut maybe_tuple_exprs = Vec::new();
             let mut end_by_comma = false;
             loop {
-                match BinaryExpr::parse(tokens, messages, index + current_len) {
+                match BinaryExpr::parse(tokens, messages, index + current_length) {
                     (None, length) => {
-                        trace!("parsing paren expression get expression failed");
-                        return (None, current_len + length);
+                        trace!("returning None passed from tuple's BinaryExpr::parse");
+                        return (None, current_length + length);
                     }
-                    (Some(expr), expr_len) => {
-                        current_len += expr_len;
-                        exprs.push(expr);
+                    (Some(expr), expr_length) => {
+                        current_length += expr_length;
+                        maybe_tuple_exprs.push(expr);
                     }
                 }
-                if tokens.nth(index + current_len).is_seperator(SeperatorKind::RightParenthenes) {
-                    current_len += 1;
-                    break; // Finished
-                } else if tokens.nth(index + current_len).is_seperator(SeperatorKind::Comma) 
-                    && tokens.nth(index + current_len + 1).is_seperator(SeperatorKind::RightParenthenes) {
+                if tokens.nth(index + current_length).is_seperator(SeperatorKind::RightParenthenes) {
+                    current_length += 1;
+                    break;
+                } else if tokens.nth(index + current_length).is_seperator(SeperatorKind::Comma) 
+                    && tokens.nth(index + current_length + 1).is_seperator(SeperatorKind::RightParenthenes) {
                     end_by_comma = true;
-                    current_len += 2; 
-                    break; // Finished
-                } else if tokens.nth(index + current_len).is_seperator(SeperatorKind::Comma) {
-                    current_len += 1;
+                    current_length += 2; 
+                    break;
+                } else if tokens.nth(index + current_length).is_seperator(SeperatorKind::Comma) {
+                    current_length += 1;
                     continue;
                 } else {
-                    return push_unexpect!(tokens, messages, "Right paren", index + current_len, current_len);
+                    return push_unexpect!(tokens, messages, [error_strings::ExpectExpression, "right parenthenes",], index + current_length, current_length);
                 }
             }
 
-            trace!("after left paren's loop, exprs are {:?}", exprs);
-            let paren_strpos = StringPosition::merge(tokens.pos(index), tokens.pos(index + current_len - 1));
-            if exprs.len() == 0 {
-                unreachable!() // very confident about this
-            } else if exprs.len() == 1 && !end_by_comma {
-                return (Some(PrimaryExpr::new_paren(paren_strpos, exprs.into_iter().last().unwrap())), current_len);
-            } else {
-                return (Some(PrimaryExpr::new_tuple(paren_strpos, exprs)), current_len);
+            trace!("after left paren's loop, exprs are {:?}", maybe_tuple_exprs);
+            let paren_strpos = StringPosition::merge(tokens.pos(index), tokens.pos(index + current_length - 1));
+            if maybe_tuple_exprs.len() == 1 && !end_by_comma {
+                return (Some(PrimaryExpr::new_paren(paren_strpos, maybe_tuple_exprs.into_iter().last().unwrap())), current_length);
+            } else { // no length = 0 here because it is rejected before
+                return (Some(PrimaryExpr::new_tuple(paren_strpos, maybe_tuple_exprs)), current_length);
             }
         }
 
@@ -279,52 +292,53 @@ impl ISyntaxItem for PrimaryExpr {
                     }
 
                     trace!("parsing array def, before loop");
-                    let mut current_len = 1 + expr1_len; // 1 for left bracket
+                    let mut current_length = 1 + expr1_len; // 1 for left bracket
                     let mut exprs = vec![expr1];
                     loop {
-                        trace!("parsing array def, in loop, current: {:?}", tokens.nth(index + current_len));
-                        if tokens.nth(index + current_len).is_seperator(SeperatorKind::RightBracket) {
+                        trace!("parsing array def, in loop, current: {:?}", tokens.nth(index + current_length));
+                        if tokens.nth(index + current_length).is_seperator(SeperatorKind::RightBracket) {
                             trace!("parsing array def succeed, exprs: {:?}", exprs);
                             return (
                                 Some(PrimaryExpr::new_array(
-                                    StringPosition::merge(tokens.pos(index), tokens.pos(index + current_len)),
+                                    StringPosition::merge(tokens.pos(index), tokens.pos(index + current_length)),
                                     exprs, 
                                 )), 
-                                current_len + 1
+                                current_length + 1
                             );
-                        } else if tokens.nth(index + current_len).is_seperator(SeperatorKind::Comma)  // Accept [1, 2, 3, abc, ] 
-                            && tokens.nth(index + current_len + 1).is_seperator(SeperatorKind::RightBracket) {
+                        } else if tokens.nth(index + current_length).is_seperator(SeperatorKind::Comma)  // Accept [1, 2, 3, abc, ] 
+                            && tokens.nth(index + current_length + 1).is_seperator(SeperatorKind::RightBracket) {
                             trace!("parsing array def succeed, exprs: {:?}", exprs);
                             return (
                                 Some(PrimaryExpr::new_array(
-                                    StringPosition::merge(tokens.pos(index), tokens.pos(index + 1 + current_len)),
+                                    StringPosition::merge(tokens.pos(index), tokens.pos(index + 1 + current_length)),
                                     exprs, 
                                 )), 
-                                current_len + 2
+                                current_length + 2
                             );
-                        } else if tokens.nth(index + current_len).is_seperator(SeperatorKind::Comma) {
-                            current_len += 1;
-                            match BinaryExpr::parse(tokens, messages, index + current_len) {
+                        } else if tokens.nth(index + current_length).is_seperator(SeperatorKind::Comma) {
+                            current_length += 1;
+                            match BinaryExpr::parse(tokens, messages, index + current_length) {
                                 (Some(exprn), exprn_len) => {
                                     trace!("parsing array def, get expression n {:?}", exprn);
-                                    current_len += exprn_len;
+                                    current_length += exprn_len;
                                     exprs.push(exprn);
                                 }
                                 (None, length) => {
                                     trace!("parsing array def failed, parse expression return none");
-                                    return (None, current_len + length);
+                                    return (None, current_length + length);
                                 }
                             }
                         } else {
-                            return push_unexpect!(tokens, messages, ["comma", "left bracket", ], index + current_len, current_len);
+                            return push_unexpect!(tokens, messages, ["comma", "left bracket", ], index + current_length, current_length);
                         }
                     }
                 }
             }
         }
 
+        // TODO: make this unreachable
         trace!("Failed in prim expr parse, not start with left paren or left bracket");
-        return push_unexpect!(tokens, messages, ["identifier", "literal", "array def", ], index, 0);
+        return push_unexpect!(tokens, messages, error_strings::ExpectExpression, index, 0);
     }
 } 
 
@@ -599,4 +613,34 @@ fn primary_expr_parse() {
             BinaryExpr::new_lit(LitValue::from(4567), make_strpos!(1, 17, 1, 20))
         )
     }
+}
+
+#[cfg(test)] #[test]
+fn primary_expr_errors() {
+    use super::super::ISyntaxItemWithStr;
+
+    const UNEXPECTED_SYMBOL: &'static str = "Unexpected symbol";
+
+    assert_eq!{ PrimaryExpr::with_test_str_ret_size_messages("(1, ]"), (
+        None, 
+        make_messages![
+            Message::with_help_by_str(UNEXPECTED_SYMBOL, 
+                vec![(make_strpos!(1, 5, 1, 5), "Meet Seperator `]`(RightBracket) <0>1:5-1:5")],
+                vec![&("Expect ".to_owned() + error_strings::ExpectExpression)]
+            )
+        ], 
+        3
+    )}
+
+    assert_eq!{ PrimaryExpr::with_test_str_ret_size_messages("(,)"), (
+        None, 
+        make_messages![],
+        1,
+    )}
+
+    assert_eq!{ PrimaryExpr::with_test_str_ret_size_messages("[1, )"), (
+        None,
+        make_messages![],
+        1,
+    )}
 }

@@ -26,6 +26,7 @@ pub use self::unary::UnaryExpr;
 pub use self::postfix::PostfixExpr;
 pub use self::primary::PrimaryExpr;
 
+// TODO: remove compatibility alias
 pub type Expression = self::BinaryExpr;
 
 #[cfg(test)] #[test]
@@ -46,7 +47,6 @@ fn expr_usage() {
     assert!(false);
 }
 
-// #[derive(Eq, PartialEq, Clone)]
 // pub enum ExpressionBase {
 //     Lit(LitValue, StringPosition),                // literal's postion
 //     Ident(String, StringPosition),                      // ident's position
@@ -55,46 +55,6 @@ fn expr_usage() {
 //     ArrayDef(Vec<Expression>, StringPosition),          // '[', ']''s position
 //     ArrayDupDef(Expression, Expression, [StringPosition; 2]), // '[',  ';', ']''s position
 // }
-// impl fmt::Debug for ExpressionBase {
-//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         match *self {
-//             ExpressionBase::Ident(ref name, ref pos) => write!(f, "{} @ {:?}", name, pos),
-//             ExpressionBase::Lit(ref val, ref pos) => write!(f, "{:?} @ {:?}", val, pos),
-//             ExpressionBase::Paren(ref expr, ref pos) => write!(f, "({:?}) @ {:?}", expr, pos),
-//             ExpressionBase::TupleDef(ref exprs, ref pos) => write!(f, "({}) @ {:?}", format_vector_debug(exprs, ", "), pos),
-//             ExpressionBase::ArrayDef(ref exprs, ref pos) => write!(f, "[{}] @ {:?}", format_vector_debug(exprs, ", "), pos),
-//             ExpressionBase::ArrayDupDef(ref expr1, ref expr2, ref pos) => write!(f, "[{:?}; @ {:?} {:?}] @ {:?}", expr1, pos[1], expr2, pos[0]),
-//         }
-//     }
-// }
-// impl ExpressionBase {
-
-//     pub fn pos(&self) -> StringPosition {
-//         match *self {
-//             ExpressionBase::Ident(ref _name, ref pos) => *pos,
-//             ExpressionBase::Lit(ref _val, ref pos) => *pos,
-//             ExpressionBase::Paren(ref _expr, ref pos) => *pos,
-//             ExpressionBase::TupleDef(ref _exprs, ref pos) => *pos,
-//             ExpressionBase::ArrayDef(ref _exprs, ref pos) => *pos,
-//             ExpressionBase::ArrayDupDef(ref _expr1, ref _expr2, ref pos) => pos[0],
-//         }
-//     }
-
-//     pub fn is_lit(&self) -> bool {
-//         match *self {
-//             ExpressionBase::Lit(_, _) => true,
-//             _ => false,
-//         }
-//     }
-//     pub fn get_lit(&self) -> Option<&LitValue> {
-//         match *self {
-//             ExpressionBase::Lit(ref val, ref _pos) => Some(val),
-//             _ => None,
-//         }
-//     }
-// }
-
-// #[derive(Eq, PartialEq, Clone)]
 // pub enum ExpressionOperator {
 //     MemberAccess(String, StringPosition),               // `.xxxx`'s position 
 //     FunctionCall(Vec<Expression>, StringPosition),      // '(', ')''s position,
@@ -104,131 +64,16 @@ fn expr_usage() {
 //     Unary(SeperatorKind, StringPosition),
 //     Binary(SeperatorKind, StringPosition, Expression),  // operator, pos, operand
 // }
-// impl fmt::Debug for ExpressionOperator {
-//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         write!(f, "{}", match *self {
-//             ExpressionOperator::GetIndex(ref exprs, ref pos) => format!(".operator[]({}) @ {:?}", format_vector_debug(exprs, ", "), pos),
-//             ExpressionOperator::FunctionCall(ref exprs, ref pos) => format!(".operator()({}) @ {:?}", format_vector_debug(exprs, ", "), pos),
-//             ExpressionOperator::MemberAccess(ref name, ref pos) => format!(".{} @ {:?}", name, pos),
-//             ExpressionOperator::TypeCast(ref ty, ref pos) => format!(".operator {:?}() @ {:?}", ty, pos),
-//             ExpressionOperator::MemberFunctionCall(ref name, ref exprs, ref pos) => format!(".{} @ {:?}({}) @ {:?}", name, pos[0], format_vector_debug(exprs, ", "), pos[1]),
-//             ExpressionOperator::Unary(SeperatorKind::BitNot, ref pos) => format!(".operator~() @ {:?}", pos),
-//             ExpressionOperator::Unary(SeperatorKind::LogicalNot, ref pos) => format!(".operator!() @ {:?}", pos),
-//             // ExpressionOperator::Unary(SeperatorKind::Increase, ref pos) => format!(".operator++() @ {:?}", pos),
-//             // ExpressionOperator::Unary(SeperatorKind::Decrease, ref pos) => format!(".operator--() @ {:?}", pos),
-//             ExpressionOperator::Unary(SeperatorKind::Sub, ref pos) => format!(".operator-() @ {:?}", pos),
-//             ExpressionOperator::Binary(SeperatorKind::Mul, ref pos, ref operand) => format!(".operator*({:?}) @ {:?}", operand, pos),
-//             ExpressionOperator::Binary(SeperatorKind::Div, ref pos, ref operand) => format!(".operator/({:?}) @ {:?}", operand, pos),
-//             ExpressionOperator::Binary(SeperatorKind::Rem, ref pos, ref operand) => format!(".operator%({:?}) @ {:?}", operand, pos),
-//             ExpressionOperator::Binary(SeperatorKind::Add, ref pos, ref operand) => format!(".operator+({:?}) @ {:?}", operand, pos),
-//             ExpressionOperator::Binary(SeperatorKind::Sub, ref pos, ref operand) => format!(".operator-({:?}) @ {:?}", operand, pos),
-//             ExpressionOperator::Binary(SeperatorKind::ShiftLeft, ref pos, ref operand) => format!(".operator<<({:?}) @ {:?}", operand, pos),
-//             ExpressionOperator::Binary(SeperatorKind::ShiftRight, ref pos, ref operand) => format!(".operator>>({:?}) @ {:?}", operand, pos),
-//             ExpressionOperator::Binary(SeperatorKind::Equal, ref pos, ref operand) => format!(".operator==({:?}) @ {:?}", operand, pos),
-//             ExpressionOperator::Binary(SeperatorKind::NotEqual, ref pos, ref operand) => format!(".operator!=({:?}) @ {:?}", operand, pos),
-//             ExpressionOperator::Binary(SeperatorKind::Great, ref pos, ref operand) => format!(".operator>({:?}) @ {:?}", operand, pos),
-//             ExpressionOperator::Binary(SeperatorKind::Less, ref pos, ref operand) => format!(".operator<({:?}) @ {:?}", operand, pos),
-//             ExpressionOperator::Binary(SeperatorKind::GreatEqual, ref pos, ref operand) => format!(".operator>=({:?}) @ {:?}", operand, pos),
-//             ExpressionOperator::Binary(SeperatorKind::LessEqual, ref pos, ref operand) => format!(".operator<=({:?}) @ {:?}", operand, pos),
-//             ExpressionOperator::Binary(SeperatorKind::BitAnd, ref pos, ref operand) => format!(".operator&({:?}) @ {:?}", operand, pos),
-//             ExpressionOperator::Binary(SeperatorKind::BitOr, ref pos, ref operand) => format!(".operator|({:?}) @ {:?}", operand, pos),
-//             ExpressionOperator::Binary(SeperatorKind::BitXor, ref pos, ref operand) => format!(".operator^({:?}) @ {:?}", operand, pos),
-//             ExpressionOperator::Binary(SeperatorKind::LogicalAnd, ref pos, ref operand) => format!(".operator&&({:?}) @ {:?}", operand, pos),
-//             ExpressionOperator::Binary(SeperatorKind::LogicalOr, ref pos, ref operand) => format!(".operator||({:?}) @ {:?}", operand, pos),
-//             ExpressionOperator::Unary(_, _) => unreachable!(),
-//             ExpressionOperator::Binary(_, _, _) => unreachable!(),
-//         })
-//     }
-// }
-
-// #[derive(Eq, PartialEq, Clone)]
 // pub struct Expression {
 //     pub base: Box<ExpressionBase>,
 //     pub ops: Vec<ExpressionOperator>,
 //     pub all_pos: StringPosition,
 // }
-// impl fmt::Debug for Expression {
-//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         write!(f, "{:?}{} @ {:?}", self.base, format_vector_debug(&self.ops, ""), self.all_pos)
-//     }
-// }
 
-// impl Expression {
-
-//     pub fn new(base: ExpressionBase, ops: Vec<ExpressionOperator>, pos: StringPosition) -> Expression {
-//         Expression{ base: Box::new(base), ops: ops, all_pos: pos }
-//     }
-//     pub fn pub_pos_all(&self) -> StringPosition { self.pos_all() }
-// }
-
-// fn d3_expr_to_expr(_binary: BinaryExpr) -> Expression {
-
-//     Expression {
-//         base: Box::new(ExpressionBase::Lit(LitValue::from(42), StringPosition::new())),
-//         ops: Vec::new(),
-//         all_pos: StringPosition::new(),
-//     }
-// }
-
-// impl ISyntaxItem for Expression {
-
-//     fn pos_all(&self) -> StringPosition { self.all_pos }
-
-//     fn is_first_final(lexer: &mut TokenStream, index: usize) -> bool {
-//         BinaryExpr::is_first_final(lexer, index)
-//     }
-
-//     fn parse(lexer: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<Expression>, usize) {
-        
-//         match BinaryExpr::parse(lexer, messages, index) {
-//             (Some(d3), d3_length) => (Some(d3_expr_to_expr(d3)), d3_length),
-//             (None, length) => (None, length),
-//         }
-//     } 
-// }
-
-// impl Expression {
-
-//     pub fn is_pure_base(&self) -> bool { // ops == empty
-//         self.ops.is_empty()
-//     }
-
-//     pub fn get_base(&self) -> &ExpressionBase {
-//         self.base.as_ref()
-//     }
-
-//     // mainly for loop name specifier
-//     pub fn is_pure_str_lit(&self) -> bool {
-//         match self.base.as_ref() {
-//             &ExpressionBase::Lit(LitValue::Str(_), _) => true,
-//             _ => false, 
-//         }
-//     }
-//     // ignored lexically invalid string literal because all kinds of error will be denied after syntax parse
-//     pub fn into_pure_str_lit(self) -> Option<String> {
-//         match self.base.as_ref() {
-//             &ExpressionBase::Lit(LitValue::Str(Some(ref val)), _) => Some(val.clone()),
-//             &ExpressionBase::Lit(LitValue::Str(None), _) => None,
-//             _ => None,
-//         }
-//     }
-
-//     // Only last of ops is function call can be independent statement
-//     pub fn is_function_call(&self) -> bool {
-//         match self.ops.iter().last() {
-//             Some(&ExpressionOperator::FunctionCall(_, _))
-//             | Some(&ExpressionOperator::MemberFunctionCall(_, _, _)) => true,
-//             _ => false,
-//         }
-//     }
-// }
-
-// #[cfg(test)] #[allow(dead_code)]
-// fn ast_expr_all() {
-//     use codepos::Position;
-//     use message::Message;
-//     use super::TypeUseF;
-//     use super::TestCase;
+#[cfg(test)] #[test]
+fn expr_parse() {
+    
+}
 
 //     // Features
 //     // Literal forward

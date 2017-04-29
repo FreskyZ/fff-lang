@@ -164,5 +164,9 @@ fn stmt_parse() {
 // TODO: 
 // Add ISyntaxItemFormat to all types, 
 // impl Debug for ISyntaxItemFormat
-// Remove ISyntaxItem::pos_all
+// Remove ISyntaxItem::pos_all, add ISyntaxItemGetPosition
+// try set Eq and PartialEq as test only
 // For and While add label support
+// move is_first_final into ISyntaxItemGrammar
+// move parse into ISyntaxItemParse and apply ParseSession
+// try design and apply ISyntaxItemResolve and ResolveSession

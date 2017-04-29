@@ -68,37 +68,10 @@ impl SyntaxTree {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    // use file_map::InputReader;
-    // use lexical::Lexer;
-    // use super::super::ast_item::ISyntaxItem;
-    // use super::Program;
-
-    #[test]
-    fn syntax_tree_parse() {
-        
-        // macro_rules! test_case {
-        //     ($file_name: expr) => (
-        //         let mut reader = InputReader::new();
-        //         reader.read_inputs(vec![$file_name]);
-
-        //         if !reader.get_errors().is_empty() {
-        //             panic!("errors: {:?}", reader.get_errors());
-        //         }
-
-        //         let lexer = &mut Lexer::new(&reader.into_result());
-        //         let (result, length) = Program::parse(lexer, 0);
-
-        //         perrorln!("Debug: {:?}", result);
-        //         perrorln!("errors: {:?}", lexer.messages());
-        //         perrorln!("Display: {}, {}", result.unwrap(), length);
-        //     )
-        // }
-
-        // test_case!("../tests/syntax/hello.sm");
-        // test_case!("../tests/syntax/list.sm");
-        // test_case!("../tests/syntax/prime.sm");
-        // test_case!("../tests/syntax/string.sm");
-    }
+#[cfg(test)] #[test]
+fn syntax_tree_parse() {
+    // test_case!("../tests/syntax/hello.sm");
+    // test_case!("../tests/syntax/list.sm");
+    // test_case!("../tests/syntax/prime.sm");
+    // test_case!("../tests/syntax/string.sm");
 }
