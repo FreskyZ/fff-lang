@@ -25,6 +25,7 @@ mod jump_stmt;
 mod while_stmt;
 mod loop_stmt;
 mod ret_stmt;
+mod block_stmt;
 
 pub use self::var_decl::VarDeclStatement;
 pub use self::jump_stmt::BreakStatement;
@@ -36,6 +37,7 @@ pub use self::while_stmt::WhileStatement;
 pub use self::for_stmt::ForStatement;
 pub use self::if_stmt::ElseIfBranch;
 pub use self::if_stmt::IfStatement;
+pub use self::block_stmt::BlockStatement;
 
 #[derive(Eq, PartialEq)]
 pub enum Statement {
@@ -48,7 +50,7 @@ pub enum Statement {
     While(WhileStatement),            // while
     For(ForStatement),                // for
     Loop(LoopStatement),              // loop
-    Block(Block),                     // {
+    Block(BlockStatement),            // {
 }
 impl fmt::Debug for Statement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -62,7 +64,7 @@ impl fmt::Debug for Statement {
             Statement::While(ref inner) => write!(f, "{:?}", inner),
             Statement::For(ref inner) => write!(f, "{:?}", inner),
             Statement::Loop(ref inner) => write!(f, "{:?}", inner),
-            Statement::Block(ref block) => write!(f, "{:?}", block),
+            Statement::Block(ref inner) => write!(f, "{:?}", inner),
         }
     }
 }
@@ -138,8 +140,8 @@ impl ISyntaxItem for Statement {
                 (Some(if_stmt), if_stmt_len) => (Some(Statement::If(if_stmt)), if_stmt_len),
                 (None, length) => (None, length),
             };
-        } else if Block::is_first_final(lexer, index) {
-            return match Block::parse(lexer, messages, index) {
+        } else if BlockStatement::is_first_final(lexer, index) {
+            return match BlockStatement::parse(lexer, messages, index) {
                 (Some(block), block_len) => (Some(Statement::Block(block)), block_len),
                 (None, length) => (None, length),
             };
@@ -154,17 +156,14 @@ impl ISyntaxItem for Statement {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    
-    #[test]
-    #[ignore]
-    fn ast_stmt_all() {
+#[cfg(test)] #[test] #[ignore]
+fn stmt_parse() {
 
-    }
 }
 
-// TODO: ReturnStatement move to new ret_stmt module
+// TODO: 
 // BlockStatement move to new block_stmt module, add label support
-// ContinueStatement and BreakStatement merge impl, add label support
 // For and While add label support
+// About loop's internal to LabelDef
+// Remove ISyntaxItem::pos_all
+// Concert impl Debug for ISyntaxItemFormat

@@ -9,25 +9,24 @@ use message::MessageCollection;
 
 use lexical::TokenStream;
 use lexical::KeywordKind;
-use lexical::SeperatorKind;
 
 use super::super::Block;
+use super::super::LabelDef;
 use super::super::ISyntaxItem;
 use super::super::ISyntaxItemFormat;
 
 #[derive(Eq, PartialEq)]
 pub struct LoopStatement {
-    m_name: Option<String>,
-    m_name_strpos: StringPosition,
+    m_label: Option<LabelDef>,
     m_loop_strpos: StringPosition,
     m_body: Block,
 }
 impl ISyntaxItemFormat for LoopStatement {
     fn format(&self, indent: u32) -> String {
-        match self.m_name {
-            Some(ref loop_name) => format!("{}Loop <{:?}>\n{}Name {} <{:?}>\n{:?}", 
-                LoopStatement::indent_str(indent), StringPosition::merge(self.m_name_strpos, self.m_body.pos_all()),
-                LoopStatement::indent_str(indent + 1), loop_name, self.m_name_strpos,
+        match self.m_label {
+            Some(ref label_def) => format!("{}Loop <{:?}>\n{}\n{:?}", 
+                LoopStatement::indent_str(indent), StringPosition::merge(label_def.get_all_strpos(), self.m_body.pos_all()),
+                label_def.format(indent + 1),
                 self.m_body),
             None => format!("{}Loop <{:?}>\n{:?}", 
                 LoopStatement::indent_str(indent), StringPosition::merge(self.m_loop_strpos, self.m_body.pos_all()),
@@ -42,18 +41,16 @@ impl fmt::Debug for LoopStatement {
 }
 impl LoopStatement { // New
     
-    pub fn new(loop_strpos: StringPosition, body: Block) -> LoopStatement {
+    pub fn new_no_label(loop_strpos: StringPosition, body: Block) -> LoopStatement {
         LoopStatement {
-            m_name: None,
-            m_name_strpos: StringPosition::new(),
+            m_label: None,
             m_loop_strpos: loop_strpos,
             m_body: body
         }
     }
-    pub fn new_by_name(name: String, name_strpos: StringPosition, loop_strpos: StringPosition, body: Block) -> LoopStatement {
+    pub fn new_with_label(label: LabelDef, loop_strpos: StringPosition, body: Block) -> LoopStatement {
         LoopStatement {
-            m_name: Some(name), 
-            m_name_strpos: name_strpos,
+            m_label: Some(label),
             m_loop_strpos: loop_strpos,
             m_body: body
         }
@@ -61,32 +58,15 @@ impl LoopStatement { // New
 }
 impl LoopStatement { // Get
 
-    pub fn has_name(&self) -> bool {
-        self.m_name.is_some()
-    }
+    pub fn has_label(&self) -> bool { self.m_label.is_some() }
+    pub fn get_label(&self) -> Option<&LabelDef> { self.m_label.as_ref() }
 
-    pub fn get_name(&self) -> Option<&String> {
-        match self.m_name {
-            Some(ref name) => Some(name),
-            None => None
-        }
-    }
-    pub fn get_name_strpos(&self) -> Option<StringPosition> {
-        match self.m_name {
-            Some(_) => Some(self.m_name_strpos),
-            None => None
-        }
-    }
-    pub fn get_loop_strpos(&self) -> StringPosition {
-        self.m_loop_strpos
-    }
-    pub fn get_body(&self) -> &Block {
-        &self.m_body
-    }
+    pub fn get_loop_strpos(&self) -> StringPosition { self.m_loop_strpos }
+    pub fn get_body(&self) -> &Block { &self.m_body }
 
     pub fn get_all_strpos(&self) -> StringPosition {
-        match self.m_name {
-            Some(_) => StringPosition::merge(self.m_name_strpos, self.m_body.pos_all()),
+        match self.m_label {
+            Some(ref label_def) => StringPosition::merge(label_def.get_all_strpos(), self.m_body.pos_all()),
             None => StringPosition::merge(self.m_loop_strpos, self.m_body.pos_all()),
         }
     }
@@ -102,32 +82,31 @@ impl ISyntaxItem for LoopStatement {
     fn pos_all(&self) -> StringPosition { self.get_all_strpos() }
 
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
-        tokens.nth(index).is_label() || tokens.nth(index).is_keyword(KeywordKind::Loop)
+        (tokens.nth(index).is_label() && tokens.nth(index + 2).is_keyword(KeywordKind::Loop)) || tokens.nth(index).is_keyword(KeywordKind::Loop)
     }
 
     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<LoopStatement>, usize) {
 
         match tokens.nth(index).get_label() {
-            Some(loop_name) => { 
-                if !tokens.nth(index + 1).is_seperator(SeperatorKind::Colon) {
-                    return push_unexpect!(tokens, messages, "colon", index, 0);
-                }
-                if !tokens.nth(index + 2).is_keyword(KeywordKind::Loop) {
-                    return push_unexpect!(tokens, messages, "keyword loop", index, 0);
-                }
-                match Block::parse(tokens, messages, index + 3) {
-                    (None, length) => (None, 3 + length),
-                    (Some(body), body_length) => 
-                        (Some(LoopStatement::new_by_name(loop_name, tokens.pos(index), tokens.pos(index + 2), body)), 3 + body_length),
-                }
-            }
+            Some(_) => match LabelDef::parse(tokens, messages, index) {
+                (None, length) => (None, length),
+                (Some(label_def), _label_length_which_is_2) => if !tokens.nth(index + 2).is_keyword(KeywordKind::Loop) {
+                    push_unexpect!(tokens, messages, "keyword loop", index + 2, 2)
+                } else {
+                    match Block::parse(tokens, messages, index + 3) {
+                        (None, length) => (None, 3 + length),
+                        (Some(body), body_length) => 
+                            (Some(LoopStatement::new_with_label(label_def, tokens.pos(index + 2), body)), 3 + body_length),
+                    }
+                },
+            },
             None => {
                 if !tokens.nth(index).is_keyword(KeywordKind::Loop) {
                     return push_unexpect!(tokens, messages, "keyword loop", index, 0);
                 }
                 match Block::parse(tokens, messages, index + 1) {
                     (None, length) => (None, 1 + length),
-                    (Some(body), body_length) => (Some(LoopStatement::new(tokens.pos(index), body)), 1 + body_length),
+                    (Some(body), body_length) => (Some(LoopStatement::new_no_label(tokens.pos(index), body)), 1 + body_length),
                 }
             }
         }
@@ -144,7 +123,7 @@ fn loop_stmt_parse() {
     use super::super::ISyntaxItemWithStr;
 
     assert_eq!{ LoopStatement::with_test_str("loop {}"),
-        LoopStatement::new(make_strpos!(1, 1, 1, 4), Block{ pos: make_strpos!(1, 6, 1, 7), stmts: Vec::new() })
+        LoopStatement::new_no_label(make_strpos!(1, 1, 1, 4), Block{ pos: make_strpos!(1, 6, 1, 7), stmts: Vec::new() })
     }
 }
 

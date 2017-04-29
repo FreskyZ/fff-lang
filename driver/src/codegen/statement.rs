@@ -11,6 +11,7 @@ use lexical::NumLitValue;
 use syntax::Block;
 use syntax::Statement;
 use syntax::Expression;
+use syntax::LabelDef;
 
 use syntax::VarDeclStatement;
 use syntax::ReturnStatement;
@@ -154,7 +155,7 @@ fn gen_return(ret_stmt: ReturnStatement, sess: &mut GenerationSession) {
 fn gen_loop(loop_stmt: LoopStatement, sess: &mut GenerationSession) {
 
     let continue_addr = sess.codes.next_id();
-    sess.loops.push_loop(loop_stmt.get_name().cloned(), continue_addr);
+    sess.loops.push_loop(loop_stmt.get_label().map(LabelDef::get_name).cloned(), continue_addr);
 
     gen_block(loop_stmt.into_body(), sess, true);
     sess.codes.emit(Code::Goto(continue_addr));
@@ -289,7 +290,7 @@ fn gen_block(block: Block, sess: &mut GenerationSession, emit_scope_barrier: boo
             Statement::For(for_stmt) => gen_for(for_stmt, sess),
             Statement::Loop(loop_stmt) => gen_loop(loop_stmt, sess),
             Statement::While(while_stmt) => gen_while(while_stmt, sess),
-            Statement::Block(block) => gen_block(block, sess, true),        
+            Statement::Block(_block_stmt) => (), // gen_block(block.get_body(), sess, true),   // ignore to pass compile
         }
     }
     if emit_scope_barrier { 
