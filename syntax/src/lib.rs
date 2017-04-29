@@ -19,8 +19,6 @@ pub use self::syntax_tree::SyntaxTree;
 pub use self::function_def::Argument;
 pub use self::function_def::FunctionDef;
 pub use self::expr::Expression;
-pub use self::expr::ExpressionBase;
-pub use self::expr::ExpressionOperator;
 pub use self::expr::BinaryExpr;
 pub use self::expr::UnaryExpr;
 pub use self::expr::PostfixExpr;

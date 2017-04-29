@@ -11,7 +11,6 @@ use lexical::NumLitValue;
 use syntax::Block;
 use syntax::Statement;
 use syntax::Expression;
-use syntax::ExpressionBase;
 
 use syntax::VarDeclStatement;
 use syntax::ReturnStatement;
@@ -63,11 +62,7 @@ fn gen_var_decl(var_decl: VarDeclStatement, sess: &mut GenerationSession) {
     // Has some init Expression
     gen_expr_stmt(
         ExpressionStatement{
-            left_expr: Expression::new(
-                ExpressionBase::Ident(var_decl.name, var_decl.pos[1]),
-                Vec::new(),
-                var_decl.pos[1],
-            ),
+            left_expr: Expression::new_ident(var_decl.name, var_decl.pos[1]),
             op: Some(SeperatorKind::Assign),
             right_expr: var_decl.init_expr,
             pos: [var_decl.pos[2], var_decl.pos[3]],
@@ -98,7 +93,7 @@ fn gen_var_decl(var_decl: VarDeclStatement, sess: &mut GenerationSession) {
 ///     to c            to e           to g 
 fn gen_if(if_stmt: IfStatement, sess: &mut GenerationSession) {
 
-    let if_expr_pos = if_stmt.if_expr.pub_pos_all();
+    let if_expr_pos = if_stmt.if_expr.get_all_strpos();
     let (if_expr, if_expr_typeid) = gen_expr(if_stmt.if_expr, sess);
     if if_expr_typeid != ItemID::new(12) {
         sess.msgs.push(CodegenMessage::IfConditionNotBoolType {
@@ -115,7 +110,7 @@ fn gen_if(if_stmt: IfStatement, sess: &mut GenerationSession) {
     sess.codes.refill_addr(if_goto_pos, next_codeid);
 
     for elseif in if_stmt.elseifs {
-        let elseif_expr_pos = elseif.expr.pub_pos_all();
+        let elseif_expr_pos = elseif.expr.get_all_strpos();
         let (elseif_expr, elseif_expr_typeid) = gen_expr(elseif.expr, sess); 
         if if_expr_typeid != ItemID::new(12) {
             sess.msgs.push(CodegenMessage::IfConditionNotBoolType {
@@ -198,7 +193,7 @@ fn gen_for(for_stmt: ForStatement, sess: &mut GenerationSession) {
     // scope for iter var
     sess.vars.push_scope();
 
-    let low_expr_pos = for_stmt.expr_low.pub_pos_all();
+    let low_expr_pos = for_stmt.expr_low.get_all_strpos();
     let (low_operand, low_typeid) = gen_expr(for_stmt.expr_low, sess);
     if !sess.types.is_primitive_numeric(low_typeid) {
         sess.msgs.push(CodegenMessage::ForIteraterTypeMismatch{
@@ -212,7 +207,7 @@ fn gen_for(for_stmt: ForStatement, sess: &mut GenerationSession) {
     sess.codes.emit_silent(Code::Store(iter_offset, low_operand));
 
     let continue_addr = sess.codes.next_id(); // reveal every time
-    let high_expr_pos = for_stmt.expr_high.pub_pos_all();
+    let high_expr_pos = for_stmt.expr_high.get_all_strpos();
     let (high_operand, high_typeid) = gen_expr(for_stmt.expr_high, sess);
     if high_typeid != low_typeid {
         sess.msgs.push(CodegenMessage::ForRangeTypeMismatch{

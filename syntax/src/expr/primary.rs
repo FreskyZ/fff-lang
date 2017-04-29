@@ -108,7 +108,7 @@ impl PrimaryExpr { // New
 }
 impl PrimaryExpr { // Get
 
-    pub fn get_strpos(&self) -> StringPosition {
+    pub fn get_all_strpos(&self) -> StringPosition {
         self.1
     }
 
