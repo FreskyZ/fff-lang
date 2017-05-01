@@ -8,14 +8,15 @@
  
 use std::fmt;
 
-use codepos::StringPosition;
+// use codepos::StringPosition;
 use message::Message;
 use message::MessageCollection;
 
 use lexical::TokenStream;
 
-use super::ISyntaxItem;
+use super::ISyntaxItemParse;
 use super::ISyntaxItemFormat;
+use super::ISyntaxItemGrammar;
 
 mod var_decl;
 mod expr_stmt;
@@ -75,10 +76,8 @@ impl ISyntaxItemFormat for Statement {
 impl fmt::Debug for Statement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(0)) }
 }
-impl ISyntaxItem for Statement {
+impl ISyntaxItemGrammar for Statement {
 
-    fn pos_all(&self) -> StringPosition { dispatch_statement_impl!(self, inner, { inner.get_all_strpos() }) }
-    
     fn is_first_final(lexer: &mut TokenStream, index: usize) -> bool {
         VarDeclStatement::is_first_final(lexer, index)
         || BreakStatement::is_first_final(lexer, index)
@@ -91,6 +90,8 @@ impl ISyntaxItem for Statement {
         || LoopStatement::is_first_final(lexer, index)
         || BlockStatement::is_first_final(lexer, index)
     }
+}
+impl ISyntaxItemParse for Statement {
     
     fn parse(lexer: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<Statement>, usize) {
 
@@ -156,7 +157,5 @@ fn stmt_parse() {
 }
 
 // TODO: 
-// Remove ISyntaxItem::pos_all, add ISyntaxItemGetPosition
-// move is_first_final into ISyntaxItemGrammar
-// move parse into ISyntaxItemParse and apply ParseSession
+// apply ParseSession
 // try design and apply ISyntaxItemResolve and ResolveSession

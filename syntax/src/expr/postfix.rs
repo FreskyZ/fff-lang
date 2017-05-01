@@ -18,8 +18,9 @@ use lexical::TokenStream;
 use lexical::SeperatorKind;
 use lexical::KeywordKind;
 
-use super::super::ISyntaxItem;
+use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
+use super::super::ISyntaxItemGrammar;
 use super::super::BinaryExpr;
 use super::super::TypeUse;
 
@@ -89,21 +90,21 @@ impl PostfixExpr { // New
     }
 
     pub fn new_subscription(postfix_expr: PostfixExpr, bracket_strpos: StringPosition, exprs: Vec<BinaryExpr>) -> PostfixExpr {
-        let all_strpos = StringPosition::merge(postfix_expr.pos_all(), bracket_strpos);
+        let all_strpos = StringPosition::merge(postfix_expr.get_all_strpos(), bracket_strpos);
         PostfixExpr(Box::new(PostfixExprImpl::Postfix(postfix_expr, ActualPostfix::Subscription(exprs, bracket_strpos), all_strpos)))
     }
     pub fn new_function_call(postfix_expr: PostfixExpr, paren_strpos: StringPosition, exprs: Vec<BinaryExpr>) -> PostfixExpr {
-        let all_strpos = StringPosition::merge(postfix_expr.pos_all(), paren_strpos);
+        let all_strpos = StringPosition::merge(postfix_expr.get_all_strpos(), paren_strpos);
         PostfixExpr(Box::new(PostfixExprImpl::Postfix(postfix_expr, ActualPostfix::FunctionCall(exprs, paren_strpos), all_strpos)))
     }
     pub fn new_member_function_call(postfix_expr: PostfixExpr, 
         dot_strpos: StringPosition, name: String, ident_strpos: StringPosition, paren_strpos: StringPosition, exprs: Vec<BinaryExpr>) -> PostfixExpr {
-        let all_strpos = StringPosition::merge(postfix_expr.pos_all(), paren_strpos);
+        let all_strpos = StringPosition::merge(postfix_expr.get_all_strpos(), paren_strpos);
         PostfixExpr(Box::new(PostfixExprImpl::Postfix(postfix_expr, 
             ActualPostfix::MemberFunctionCall(name, exprs, [dot_strpos, ident_strpos, paren_strpos]), all_strpos)))
     }
     pub fn new_member_access(postfix_expr: PostfixExpr, dot_strpos: StringPosition, name: String, name_strpos: StringPosition) -> PostfixExpr {
-        let all_strpos = StringPosition::merge(postfix_expr.pos_all(), name_strpos);
+        let all_strpos = StringPosition::merge(postfix_expr.get_all_strpos(), name_strpos);
         PostfixExpr(Box::new(PostfixExprImpl::Postfix(postfix_expr, 
             ActualPostfix::MemberAccess(name, [dot_strpos, name_strpos]), all_strpos)))
     }
@@ -152,7 +153,7 @@ impl PostfixExpr { // Get
     }
     pub fn get_all_strpos(&self) -> StringPosition {
         match self.0.as_ref() {
-            &PostfixExprImpl::Primary(ref primary_expr) => primary_expr.pos_all(),
+            &PostfixExprImpl::Primary(ref primary_expr) => primary_expr.get_all_strpos(),
             &PostfixExprImpl::Postfix(ref _1, ref _2, ref all_strpos) => *all_strpos,
         }
     }
@@ -213,15 +214,13 @@ impl PostfixExpr { // Get
         }
     }
 }
-impl ISyntaxItem for PostfixExpr {
+
+impl ISyntaxItemGrammar for PostfixExpr {
+    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool { PrimaryExpr::is_first_final(tokens, index) }
+}
+impl ISyntaxItemParse for PostfixExpr {
     
-    fn pos_all(&self) -> StringPosition { 
-        self.get_all_strpos()
-    }
-    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
-        PrimaryExpr::is_first_final(tokens, index)
-    }
-    
+    // TODO: check whether this is a rustc bug
     #[allow(unused_assignments)]
     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<PostfixExpr>, usize) {
         

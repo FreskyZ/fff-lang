@@ -23,8 +23,9 @@ use lexical::TokenStream;
 use lexical::SeperatorKind;
 use lexical::SeperatorCategory;
 
-use super::super::ISyntaxItem;
+use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
+use super::super::ISyntaxItemGrammar;
 use super::unary::UnaryExpr;
 use super::postfix::PostfixExpr;
 use super::primary::PrimaryExpr;
@@ -71,7 +72,7 @@ impl BinaryExpr { // New
 
     pub fn new_binary(left: BinaryExpr, operator: SeperatorKind, operator_strpos: StringPosition, right: BinaryExpr) -> BinaryExpr {
 
-        let all_strpos =  StringPosition::merge(left.pos_all(), right.pos_all());
+        let all_strpos =  StringPosition::merge(left.get_all_strpos(), right.get_all_strpos());
         BinaryExpr(Box::new(BinaryExprImpl::Binary(BinaryBinaryExpr{
             left: left,
             right: right,
@@ -160,7 +161,7 @@ impl BinaryExpr { // get
     }
     pub fn get_all_strpos(&self) -> StringPosition {
         match self.0.as_ref() {
-            &BinaryExprImpl::Unary(ref unary_expr) => unary_expr.pos_all(),
+            &BinaryExprImpl::Unary(ref unary_expr) => unary_expr.get_all_strpos(),
             &BinaryExprImpl::Binary(BinaryBinaryExpr{ ref all_strpos, right: ref _1, operator: ref _2, operator_strpos: ref _3, left: ref _4 }) => *all_strpos,
         }
     }
@@ -223,14 +224,11 @@ impl_binary_parser! { parse_equality, parse_bitor, SeperatorCategory::Equality }
 impl_binary_parser! { parse_logical_and, parse_equality, SeperatorCategory::LogicalAnd }
 impl_binary_parser! { parse_logical_or, parse_logical_and, SeperatorCategory::LogicalOr }
 
-impl ISyntaxItem for BinaryExpr {
+impl ISyntaxItemGrammar for BinaryExpr {
+    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool { UnaryExpr::is_first_final(tokens, index) }
+}
+impl ISyntaxItemParse for BinaryExpr {
 
-    fn pos_all(&self) -> StringPosition {
-        self.get_all_strpos()
-    }
-    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
-        UnaryExpr::is_first_final(tokens, index)
-    }
     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<BinaryExpr>, usize) {
         parse_logical_or(tokens, messages, index)
     }

@@ -14,8 +14,9 @@ use lexical::TokenStream;
 use lexical::SeperatorKind;
 use lexical::KeywordKind;
 
-use super::super::ISyntaxItem;
+use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
+use super::super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 struct JumpStatement {
@@ -104,10 +105,14 @@ impl BreakStatement {
     pub fn get_target_strpos(&self) -> Option<StringPosition> { match self.0.m_target { Some(_) => Some(self.0.m_target_strpos), None => None } }
 }
 
-impl ISyntaxItem for ContinueStatement {
-
-    fn pos_all(&self) -> StringPosition { self.get_all_strpos() }
+impl ISyntaxItemGrammar for ContinueStatement {
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool { tokens.nth(index).is_keyword(KeywordKind::Continue) }
+}
+impl ISyntaxItemGrammar for BreakStatement {
+    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool { tokens.nth(index).is_keyword(KeywordKind::Continue) }
+}
+
+impl ISyntaxItemParse for ContinueStatement {
 
     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<ContinueStatement>, usize) {
         
@@ -117,10 +122,7 @@ impl ISyntaxItem for ContinueStatement {
         }
     }
 }
-impl ISyntaxItem for BreakStatement {
-
-    fn pos_all(&self) -> StringPosition { self.get_all_strpos() }
-    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool { tokens.nth(index).is_keyword(KeywordKind::Continue) }
+impl ISyntaxItemParse for BreakStatement {
 
     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<BreakStatement>, usize) {
         

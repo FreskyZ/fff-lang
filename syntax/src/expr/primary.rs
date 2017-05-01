@@ -20,8 +20,9 @@ use lexical::KeywordKind;
 use lexical::LitValue;
 use lexical::NumLitValue;
 
-use super::super::ISyntaxItem;
+use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
+use super::super::ISyntaxItemGrammar;
 use super::binary::BinaryExpr;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
@@ -160,20 +161,19 @@ mod error_strings {
     // Prefer full word to abbr word at displayed string
     // for example, difinition, literal, identifier
 
-    pub const ExpectExpression: &'static str = "literal, identifier, array definition, tuple definition, unary operators";
+    pub const ExpectExpression: &str = "literal, identifier, array definition, tuple definition, unary operators";
 }
 
-impl ISyntaxItem for PrimaryExpr {
-    
-    fn pos_all(&self) -> StringPosition { self.1 }
-    
+impl ISyntaxItemGrammar for PrimaryExpr {
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
         tokens.nth(index).is_ident()
         || tokens.nth(index).is_lit()
         || tokens.nth(index).is_seperator(SeperatorKind::LeftParenthenes)
         || tokens.nth(index).is_seperator(SeperatorKind::LeftBracket)
     }
-
+}
+impl ISyntaxItemParse for PrimaryExpr {
+    
     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<PrimaryExpr>, usize) {
 
         #[cfg(feature = "trace_primary_expr_parse")]

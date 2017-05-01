@@ -12,8 +12,9 @@ use message::MessageCollection;
 use lexical::TokenStream;
 use lexical::SeperatorKind;
 
-use super::super::ISyntaxItem;
+use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
+use super::super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct LabelDef {
@@ -39,10 +40,10 @@ impl LabelDef {
 
     pub fn into(self) -> (String, StringPosition) { (self.m_name, self.m_strpos) }
 }
-impl ISyntaxItem for LabelDef {
-
-    fn pos_all(&self) -> StringPosition { self.get_all_strpos() }
+impl ISyntaxItemGrammar for LabelDef {
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool { tokens.nth(index).is_label() }
+}
+impl ISyntaxItemParse for LabelDef {
 
     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<LabelDef>, usize) {
 

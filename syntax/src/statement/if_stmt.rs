@@ -12,8 +12,9 @@ use message::MessageCollection;
 use lexical::TokenStream;
 use lexical::KeywordKind;
 
-use super::super::ISyntaxItem;
+use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
+use super::super::ISyntaxItemGrammar;
 use super::super::BinaryExpr;
 use super::super::Block;
 
@@ -119,13 +120,12 @@ impl IfStatement {
     pub fn get_else_body(&self) -> Option<&Block> { self.else_body.as_ref() }
     pub fn get_else_strpos(&self) -> StringPosition { self.else_strpos }
 }
-impl ISyntaxItem for IfStatement {
-
-    fn pos_all(&self) -> StringPosition { self.get_all_strpos() }
-
+impl ISyntaxItemGrammar for IfStatement {
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
         tokens.nth(index).is_keyword(KeywordKind::If)
     }
+}
+impl ISyntaxItemParse for IfStatement {
 
     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<IfStatement>, usize) {
 

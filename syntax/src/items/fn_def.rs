@@ -13,8 +13,9 @@ use lexical::TokenStream;
 use lexical::KeywordKind;
 use lexical::SeperatorKind;
 
-use super::super::ISyntaxItem;
+use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
+use super::super::ISyntaxItemGrammar;
 use super::super::TypeUse;
 use super::super::Block;
 
@@ -79,12 +80,10 @@ impl FnDef {
     pub fn get_body(&self) -> &Block { &self.body }
     pub fn get_all_strpos(&self) -> StringPosition { self.all_strpos }
 }
-impl ISyntaxItem for FnDef {
-    
-    fn pos_all(&self) -> StringPosition { self.get_all_strpos() }
-
+impl ISyntaxItemGrammar for FnDef {   
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool { tokens.nth(index).is_keyword(KeywordKind::FnDef) }
-    
+}
+impl ISyntaxItemParse for FnDef {
     // #[allow(unused_assignments)]
     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<FnDef>, usize) {
 

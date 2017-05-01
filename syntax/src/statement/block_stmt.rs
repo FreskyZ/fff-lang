@@ -12,8 +12,9 @@ use message::MessageCollection;
 
 use lexical::TokenStream;
 
-use super::super::ISyntaxItem;
+use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
+use super::super::ISyntaxItemGrammar;
 use super::super::Block;
 use super::super::LabelDef;
 
@@ -26,12 +27,12 @@ impl ISyntaxItemFormat for BlockStatement {
     fn format(&self, indent: u32) -> String {
         match self.m_label {
             Some(ref label_def) => format!("BlockStmt <{:?}>\n{}\n{}", 
-                StringPosition::merge(label_def.get_all_strpos(), self.m_body.pos_all()),
+                StringPosition::merge(label_def.get_all_strpos(), self.m_body.get_all_strpos()),
                 label_def.format(indent + 1),
                 self.m_body.format(indent + 1),
             ),
             None => format!("BlockStmt <{:?}>\n{}", 
-                self.m_body.pos_all(),
+                self.m_body.get_all_strpos(),
                 self.m_body.format(indent + 1)
             )
         }
@@ -51,17 +52,17 @@ impl BlockStatement {
 
     pub fn get_all_strpos(&self) -> StringPosition {
         match self.m_label {
-            Some(ref label_def) => StringPosition::merge(label_def.get_all_strpos(), self.m_body.pos_all()),
-            None => self.m_body.pos_all(),
+            Some(ref label_def) => StringPosition::merge(label_def.get_all_strpos(), self.m_body.get_all_strpos()),
+            None => self.m_body.get_all_strpos(),
         }
     }
 }
-impl ISyntaxItem for BlockStatement {
-
-    fn pos_all(&self) -> StringPosition { self.get_all_strpos() }
+impl ISyntaxItemGrammar for BlockStatement {
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
         (tokens.nth(index).is_label() && Block::is_first_final(tokens, index + 2) ) || Block::is_first_final(tokens, index)
     }
+}
+impl ISyntaxItemParse for BlockStatement {
 
     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<BlockStatement>, usize) {
 

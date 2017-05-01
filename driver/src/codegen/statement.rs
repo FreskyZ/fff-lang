@@ -10,7 +10,7 @@ use lexical::NumLitValue;
 
 use syntax::Block;
 use syntax::Statement;
-use syntax::Expression;
+use syntax::BinaryExpr;
 use syntax::LabelDef;
 
 use syntax::VarDeclStatement;
@@ -42,7 +42,7 @@ pub struct StatementGenerator{
 //     pub is_const: bool,
 //     pub ty: SMType,
 //     pub name: String,
-//     pub init_expr: Option<Expression>,
+//     pub init_expr: Option<BinaryExpr>,
 //     pub pos: [StringPosition; 4],     // position for 'const' or 'var', name, assign, and semicolon
 fn gen_var_decl(var_decl: VarDeclStatement, sess: &mut GenerationSession) {
 
@@ -57,16 +57,16 @@ fn gen_var_decl(var_decl: VarDeclStatement, sess: &mut GenerationSession) {
 
     // if var_decl.init_expr.is_none() {
     //     if var_decl.is_const {
-    //         sess.msgs.push(CodegenMessage::ConstVariableDeclareMissingInitializationExpression{ name: var_decl.name, pos: pos_all });
+    //         sess.msgs.push(CodegenMessage::ConstVariableDeclareMissingInitializationBinaryExpr{ name: var_decl.name, pos: pos_all });
     //     }
     //     return;
     // }
 
-    // // Has some init Expression
+    // // Has some init BinaryExpr
     // gen_expr_stmt(
     //     ExprStatement::new_assign(
     //         pos_all, SeperatorKind::Assign, var_decl.pos[2], 
-    //         Expression::new_ident(var_decl.name, var_decl.pos[1]), 
+    //         BinaryExpr::new_ident(var_decl.name, var_decl.pos[1]), 
     //         var_decl.init_expr),
     //     sess,
     //     true,
@@ -74,12 +74,12 @@ fn gen_var_decl(var_decl: VarDeclStatement, sess: &mut GenerationSession) {
 }
 
 // pub struct IfConditionBody {
-//     pub expr: Expression,
+//     pub expr: BinaryExpr,
 //     pub body: Block,
 //     pub pos: [StringPosition; 2],   // position for if and else
 // }
 // pub struct IfStatement {
-//     pub if_expr: Expression,
+//     pub if_expr: BinaryExpr,
 //     pub if_body: Block,
 //     pub elseifs: Vec<IfConditionBody>,
 //     pub else_body: Option<Block>,
@@ -167,7 +167,7 @@ fn gen_loop(loop_stmt: LoopStatement, sess: &mut GenerationSession) {
 }
 
 // pub struct WhileStatement {
-//     pub expr: Expression,
+//     pub expr: BinaryExpr,
 //     pub body: Block,
 //     pub pos: StringPosition, // while position
 // }
@@ -188,8 +188,8 @@ fn gen_while(while_stmt: WhileStatement, sess: &mut GenerationSession) {
 
 // pub struct ForStatement {
 //     pub iter_name: String, 
-//     pub expr_low: Expression,
-//     pub expr_high: Expression,
+//     pub expr_low: BinaryExpr,
+//     pub expr_high: BinaryExpr,
 //     pub body: Block,
 //     pub pos: [StringPosition; 4]  // position for 'for', iter_name, 'in', range operator, 
 // }
@@ -291,7 +291,7 @@ fn gen_block(block: Block, sess: &mut GenerationSession, emit_scope_barrier: boo
     // for stmt in block.stmts {
     //     match stmt {
     //         Statement::VarDecl(var_decl) => gen_var_decl(var_decl, sess),
-    //         Statement::Expression(expr_stmt) => gen_expr_stmt(expr_stmt, sess, false),
+    //         Statement::BinaryExpr(expr_stmt) => gen_expr_stmt(expr_stmt, sess, false),
     //         Statement::If(if_stmt) => gen_if(if_stmt, sess),
     //         Statement::Return(ret_stmt) => gen_return(ret_stmt, sess),
     //         Statement::Break(break_stmt) => gen_break(break_stmt, sess),

@@ -13,9 +13,8 @@ use lexical::SeperatorKind;
 use lexical::LitValue;
 
 use super::TypeUse;
-use super::ISyntaxItem;
+use super::ISyntaxItemParse;
 
-// mod common; // temply not used
 mod primary;
 mod postfix;
 mod unary;
@@ -25,9 +24,6 @@ pub use self::binary::BinaryExpr;
 pub use self::unary::UnaryExpr;
 pub use self::postfix::PostfixExpr;
 pub use self::primary::PrimaryExpr;
-
-// TODO: remove compatibility alias
-pub type Expression = self::BinaryExpr;
 
 #[cfg(test)] #[test]
 fn expr_usage() {

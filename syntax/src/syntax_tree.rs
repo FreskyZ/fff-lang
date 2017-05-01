@@ -9,7 +9,7 @@ use util::format_vector_debug;
 use message::MessageCollection;
 use lexical::TokenStream;
 
-use super::ISyntaxItem;
+use super::ISyntaxItemParse;
 use super::FnDef;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
@@ -21,20 +21,16 @@ impl fmt::Debug for SyntaxTree {
         write!(f, "{}", format_vector_debug(&self.functions, "\n\n"))
     }
 }
-impl ISyntaxItem for SyntaxTree {
-
-    fn pos_all(&self) -> StringPosition {
-
+impl SyntaxTree {
+    pub fn get_all_strpos(&self) -> StringPosition {
         match self.functions.len() {
             0 => StringPosition::new(),
-            1 => self.functions[0].pos_all(),
-            _ => StringPosition::merge(self.functions[0].pos_all(), self.functions.iter().last().unwrap().pos_all()),
+            1 => self.functions[0].get_all_strpos(),
+            _ => StringPosition::merge(self.functions[0].get_all_strpos(), self.functions.iter().last().unwrap().get_all_strpos()),
         }
     }
-
-    fn is_first_final(lexer: &mut TokenStream, index: usize) -> bool {
-        FnDef::is_first_final(lexer, index) 
-    }
+}
+impl ISyntaxItemParse for SyntaxTree {
 
     fn parse(lexer: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<SyntaxTree>, usize) {
         // meet EOF and break, 

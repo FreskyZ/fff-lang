@@ -12,8 +12,9 @@ use lexical::TokenStream;
 use lexical::SeperatorKind;
 use lexical::SeperatorCategory;
 
-use super::super::ISyntaxItem;
+use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
+use super::super::ISyntaxItemGrammar;
 use super::postfix::PostfixExpr;
 use super::primary::PrimaryExpr;
 
@@ -55,7 +56,7 @@ impl UnaryExpr { // New
 
     pub fn new_unary(operator: SeperatorKind, operator_strpos: StringPosition, right: UnaryExpr) -> UnaryExpr {
         
-        let all_strpos =  StringPosition::merge(operator_strpos, right.pos_all());
+        let all_strpos =  StringPosition::merge(operator_strpos, right.get_all_strpos());
         UnaryExpr(Box::new(UnaryExprImpl::Unary(ActualUnaryExpr{
             right: right,
             operator: operator,
@@ -111,20 +112,17 @@ impl UnaryExpr { // Get
     }
     pub fn get_all_strpos(&self) -> StringPosition {
         match self.0.as_ref() {
-            &UnaryExprImpl::Postfix(ref postfix_expr) => postfix_expr.pos_all(),
+            &UnaryExprImpl::Postfix(ref postfix_expr) => postfix_expr.get_all_strpos(),
             &UnaryExprImpl::Unary(ActualUnaryExpr{ ref all_strpos, operator: ref _1, operator_strpos: ref _2, right: ref _3 }) => *all_strpos,
         }
     }
 }
-impl ISyntaxItem for UnaryExpr {
-
-    fn pos_all(&self) -> StringPosition {
-        self.get_all_strpos()
-    }
-
+impl ISyntaxItemGrammar for UnaryExpr {
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
         PostfixExpr::is_first_final(tokens, index) || tokens.nth(index).is_seperator_category(SeperatorCategory::Unary)
     }
+}
+impl ISyntaxItemParse for UnaryExpr {
 
     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<UnaryExpr>, usize) {
 

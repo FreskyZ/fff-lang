@@ -20,7 +20,6 @@ pub use self::items::TypeUse;
 pub use self::items::TypeUseF;
 pub use self::items::Block;
 pub use self::items::LabelDef;
-pub use self::expr::Expression;
 pub use self::expr::BinaryExpr;
 pub use self::expr::UnaryExpr;
 pub use self::expr::PostfixExpr;
@@ -39,8 +38,9 @@ pub use self::statement::IfStatement;
 pub use self::syntax_tree::SyntaxTree;
 
 // use self::parse_sess::ParseSession;
-use self::traits::ISyntaxItem;
+use self::traits::ISyntaxItemParse;
 use self::traits::ISyntaxItemFormat;
+use self::traits::ISyntaxItemGrammar;
 pub use self::traits::ISyntaxItemWithStr;
 
-#[cfg(test)] use self::traits::TestCase;
+// #[cfg(test)] use self::traits::TestCase;

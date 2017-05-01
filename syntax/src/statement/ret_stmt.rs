@@ -12,13 +12,14 @@ use lexical::TokenStream;
 use lexical::SeperatorKind;
 use lexical::KeywordKind;
 
-use super::super::ISyntaxItem;
+use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
-use super::super::Expression;
+use super::super::ISyntaxItemGrammar;
+use super::super::BinaryExpr;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct ReturnStatement {
-    m_expr: Option<Expression>,
+    m_expr: Option<BinaryExpr>,
     m_all_strpos: StringPosition,
 }
 impl ISyntaxItemFormat for ReturnStatement {
@@ -37,25 +38,22 @@ impl ReturnStatement {
     pub fn new_unit(all_strpos: StringPosition) -> ReturnStatement {
         ReturnStatement{ m_expr: None, m_all_strpos: all_strpos }
     }
-    pub fn new_expr(all_strpos: StringPosition, expr: Expression) -> ReturnStatement {
+    pub fn new_expr(all_strpos: StringPosition, expr: BinaryExpr) -> ReturnStatement {
         ReturnStatement{ m_expr: Some(expr), m_all_strpos: all_strpos }
     }
 }
 impl ReturnStatement {
 
-    pub fn get_expr(&self) -> Option<&Expression> { match self.m_expr { Some(ref expr) => Some(expr), None => None } }
+    pub fn get_expr(&self) -> Option<&BinaryExpr> { match self.m_expr { Some(ref expr) => Some(expr), None => None } }
     pub fn get_all_strpos(&self) -> StringPosition { self.m_all_strpos }
 
     // TODO: maybe should remove this temp for make codegen compile
-    pub fn into_expr(self) -> Option<Expression> { self.m_expr }
+    pub fn into_expr(self) -> Option<BinaryExpr> { self.m_expr }
 }
-impl ISyntaxItem for ReturnStatement {
-
-    fn pos_all(&self) -> StringPosition { self.get_all_strpos() } 
-
-    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
-        tokens.nth(index).is_keyword(KeywordKind::Return)
-    }
+impl ISyntaxItemGrammar for ReturnStatement {
+    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool { tokens.nth(index).is_keyword(KeywordKind::Return) }
+}
+impl ISyntaxItemParse for ReturnStatement {
 
     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<ReturnStatement>, usize) {
 
@@ -67,7 +65,7 @@ impl ISyntaxItem for ReturnStatement {
             return (Some(ReturnStatement::new_unit(StringPosition::merge(tokens.pos(index), tokens.pos(index + 1)))), 2);
         }
 
-        match Expression::parse(tokens, messages, index + 1) {
+        match BinaryExpr::parse(tokens, messages, index + 1) {
             (None, length) => return (None, length),
             (Some(expr), expr_len) => {
                 if tokens.nth(index + 1 + expr_len).is_seperator(SeperatorKind::SemiColon) {

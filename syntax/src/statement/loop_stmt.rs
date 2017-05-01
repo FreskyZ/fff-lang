@@ -10,10 +10,11 @@ use message::MessageCollection;
 use lexical::TokenStream;
 use lexical::KeywordKind;
 
+use super::super::ISyntaxItemParse;
+use super::super::ISyntaxItemFormat;
+use super::super::ISyntaxItemGrammar;
 use super::super::Block;
 use super::super::LabelDef;
-use super::super::ISyntaxItem;
-use super::super::ISyntaxItemFormat;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct LoopStatement {
@@ -25,11 +26,11 @@ impl ISyntaxItemFormat for LoopStatement {
     fn format(&self, indent: u32) -> String {
         match self.m_label {
             Some(ref label_def) => format!("{}Loop <{:?}>\n{}\n{:?}", 
-                LoopStatement::indent_str(indent), StringPosition::merge(label_def.get_all_strpos(), self.m_body.pos_all()),
+                LoopStatement::indent_str(indent), StringPosition::merge(label_def.get_all_strpos(), self.m_body.get_all_strpos()),
                 label_def.format(indent + 1),
                 self.m_body),
             None => format!("{}Loop <{:?}>\n{:?}", 
-                LoopStatement::indent_str(indent), StringPosition::merge(self.m_loop_strpos, self.m_body.pos_all()),
+                LoopStatement::indent_str(indent), StringPosition::merge(self.m_loop_strpos, self.m_body.get_all_strpos()),
                 self.m_body),
         }
     }
@@ -66,8 +67,8 @@ impl LoopStatement { // Get
 
     pub fn get_all_strpos(&self) -> StringPosition {
         match self.m_label {
-            Some(ref label_def) => StringPosition::merge(label_def.get_all_strpos(), self.m_body.pos_all()),
-            None => StringPosition::merge(self.m_loop_strpos, self.m_body.pos_all()),
+            Some(ref label_def) => StringPosition::merge(label_def.get_all_strpos(), self.m_body.get_all_strpos()),
+            None => StringPosition::merge(self.m_loop_strpos, self.m_body.get_all_strpos()),
         }
     }
 
@@ -76,14 +77,12 @@ impl LoopStatement { // Get
         self.m_body
     }
 }
-
-impl ISyntaxItem for LoopStatement {
-
-    fn pos_all(&self) -> StringPosition { self.get_all_strpos() }
-
+impl ISyntaxItemGrammar for LoopStatement {
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
         (tokens.nth(index).is_label() && tokens.nth(index + 2).is_keyword(KeywordKind::Loop)) || tokens.nth(index).is_keyword(KeywordKind::Loop)
     }
+}
+impl ISyntaxItemParse for LoopStatement {
 
     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<LoopStatement>, usize) {
 

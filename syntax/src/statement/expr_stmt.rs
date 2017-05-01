@@ -13,8 +13,9 @@ use lexical::TokenStream;
 use lexical::SeperatorKind;
 use lexical::SeperatorCategory;
 
-use super::super::ISyntaxItem;
+use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
+use super::super::ISyntaxItemGrammar;
 use super::super::BinaryExpr;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
@@ -109,13 +110,12 @@ impl ExprStatement {
         }
     }
 }
-impl ISyntaxItem for ExprStatement {
-
-    fn pos_all(&self) -> StringPosition { self.get_all_strpos() }
-
+impl ISyntaxItemGrammar for ExprStatement {
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
         BinaryExpr::is_first_final(tokens, index)
     }
+}
+impl ISyntaxItemParse for ExprStatement {
 
     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<ExprStatement>, usize) {
 

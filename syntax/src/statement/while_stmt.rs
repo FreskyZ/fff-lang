@@ -11,8 +11,9 @@ use message::MessageCollection;
 use lexical::TokenStream;
 use lexical::KeywordKind;
 
-use super::super::ISyntaxItem;
+use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
+use super::super::ISyntaxItemGrammar;
 use super::super::BinaryExpr;
 use super::super::Block;
 use super::super::LabelDef;
@@ -61,13 +62,12 @@ impl WhileStatement {
 
     pub fn get_all_strpos(&self) -> StringPosition { self.all_strpos }
 }
-impl ISyntaxItem for WhileStatement {
-
-    fn pos_all(&self) -> StringPosition { self.get_all_strpos() }
-
+impl ISyntaxItemGrammar for WhileStatement {
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
         (tokens.nth(index).is_label() && tokens.nth(index + 2).is_keyword(KeywordKind::While)) || tokens.nth(index).is_keyword(KeywordKind::While)
     }
+}
+impl ISyntaxItemParse for WhileStatement {
 
     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<WhileStatement>, usize) {
 

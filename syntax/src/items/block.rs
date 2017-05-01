@@ -12,8 +12,9 @@ use message::MessageCollection;
 use lexical::TokenStream;
 use lexical::SeperatorKind;
 
-use super::super::ISyntaxItem;
+use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
+use super::super::ISyntaxItemGrammar;
 use super::super::Statement;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
@@ -39,13 +40,12 @@ impl Block {
     pub fn get_all_strpos(&self) -> StringPosition { self.all_strpos }
     pub fn get_statements(&self) -> &Vec<Statement> { &self.items }
 }
-impl ISyntaxItem for Block {
-    
-    fn pos_all(&self) -> StringPosition { self.get_all_strpos() }
-
+impl ISyntaxItemGrammar for Block {
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
         tokens.nth(index).is_seperator(SeperatorKind::LeftBrace) 
     }
+}
+impl ISyntaxItemParse for Block {
 
     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<Block>, usize) {
 
