@@ -52,7 +52,7 @@ impl Block {
 #[cfg(test)] #[test]
 fn gen_block_prepare_vars() {
     
-    use syntax::FunctionDef as SyntaxFunctionDef;
+    use syntax::FnDef as SyntaxFunctionDef;
     use codegen::var_def::VarOrScope;
     use codegen::var_def::Var;
 

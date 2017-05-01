@@ -3,7 +3,7 @@
 ///! syntax, abstract syntax tree types and generation
 
 #[macro_use] extern crate messages as message;
-#[cfg_attr(test, macro_use)] extern crate util;
+/* #[cfg_attr(test, macro_use)] */ extern crate util;
 #[cfg_attr(test, macro_use)] extern crate codepos;
 extern crate lexical;
 
@@ -14,9 +14,12 @@ mod expr;
 mod items;
 // mod parse_sess;
 
-pub use self::syntax_tree::SyntaxTree;
-pub use self::items::Argument;
-pub use self::items::FunctionDef;
+pub use self::items::FnParam;
+pub use self::items::FnDef;
+pub use self::items::TypeUse;
+pub use self::items::TypeUseF;
+pub use self::items::Block;
+pub use self::items::LabelDef;
 pub use self::expr::Expression;
 pub use self::expr::BinaryExpr;
 pub use self::expr::UnaryExpr;
@@ -33,10 +36,7 @@ pub use self::statement::WhileStatement;
 pub use self::statement::ForStatement;
 pub use self::statement::IfConditionBody;
 pub use self::statement::IfStatement;
-pub use self::items::TypeUse;
-pub use self::items::TypeUseF;
-pub use self::items::Block;
-pub use self::items::LabelDef;
+pub use self::syntax_tree::SyntaxTree;
 
 // use self::parse_sess::ParseSession;
 use self::traits::ISyntaxItem;

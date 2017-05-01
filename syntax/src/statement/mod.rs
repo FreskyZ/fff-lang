@@ -15,7 +15,7 @@ use message::MessageCollection;
 use lexical::TokenStream;
 
 use super::ISyntaxItem;
-use super::Block;
+use super::ISyntaxItemFormat;
 
 mod var_decl;
 mod expr_stmt;
@@ -39,51 +39,45 @@ pub use self::if_stmt::IfConditionBody;
 pub use self::if_stmt::IfStatement;
 pub use self::block_stmt::BlockStatement;
 
+macro_rules! dispatch_statement_impl {
+    ($this: expr, $inner: ident, $b: block) => (
+        match $this {
+            &Statement::VarDecl(ref $inner) => $b,
+            &Statement::Break(ref $inner) => $b,
+            &Statement::Continue(ref $inner) => $b,
+            &Statement::Return(ref $inner) => $b,
+            &Statement::Expr(ref $inner) => $b,
+            &Statement::If(ref $inner) => $b,
+            &Statement::While(ref $inner) => $b,
+            &Statement::For(ref $inner) => $b,
+            &Statement::Loop(ref $inner) => $b,
+            &Statement::Block(ref $inner) => $b,
+        }
+    )
+}
+
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub enum Statement {
-    VarDecl(VarDeclStatement),        // const, var
+    Block(BlockStatement),            // {
     Break(BreakStatement),            // break 
     Continue(ContinueStatement),      // continue
-    Return(ReturnStatement),          // return
-    Expression(ExprStatement),  // _, (unary seperator, literal, identifier, left paren, left bracket)
-    If(IfStatement),                  // if
-    While(WhileStatement),            // while
+    Expr(ExprStatement),        // _, (unary seperator, literal, identifier, left paren, left bracket)
     For(ForStatement),                // for
+    If(IfStatement),                  // if
     Loop(LoopStatement),              // loop
-    Block(BlockStatement),            // {
+    Return(ReturnStatement),          // return
+    VarDecl(VarDeclStatement),        // const, var
+    While(WhileStatement),            // while
+}
+impl ISyntaxItemFormat for Statement {
+    fn format(&self, indent: u32) -> String { dispatch_statement_impl!(self, inner, { inner.format(indent) }) }
 }
 impl fmt::Debug for Statement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            Statement::VarDecl(ref inner) => write!(f, "{:?}", inner),
-            Statement::Break(ref inner) => write!(f, "{:?}", inner),
-            Statement::Continue(ref inner) => write!(f, "{:?}", inner),
-            Statement::Return(ref inner) => write!(f, "{:?}", inner),
-            Statement::Expression(ref inner) => write!(f, "{:?}", inner),
-            Statement::If(ref inner) => write!(f, "{:?}", inner),
-            Statement::While(ref inner) => write!(f, "{:?}", inner),
-            Statement::For(ref inner) => write!(f, "{:?}", inner),
-            Statement::Loop(ref inner) => write!(f, "{:?}", inner),
-            Statement::Block(ref inner) => write!(f, "{:?}", inner),
-        }
-    }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(0)) }
 }
 impl ISyntaxItem for Statement {
 
-    fn pos_all(&self) -> StringPosition {
-        match *self {  
-            Statement::VarDecl(ref inner) => inner.pos_all(),
-            Statement::Break(ref inner) => inner.pos_all(),
-            Statement::Continue(ref inner) => inner.pos_all(),
-            Statement::Return(ref inner) => inner.pos_all(),
-            Statement::Expression(ref inner) => inner.pos_all(),
-            Statement::If(ref inner) => inner.pos_all(),
-            Statement::While(ref inner) => inner.pos_all(),
-            Statement::For(ref inner) => inner.pos_all(),
-            Statement::Loop(ref inner) => inner.pos_all(),
-            Statement::Block(ref block) => block.pos_all(),
-        }
-    }
+    fn pos_all(&self) -> StringPosition { dispatch_statement_impl!(self, inner, { inner.get_all_strpos() }) }
     
     fn is_first_final(lexer: &mut TokenStream, index: usize) -> bool {
         VarDeclStatement::is_first_final(lexer, index)
@@ -95,7 +89,7 @@ impl ISyntaxItem for Statement {
         || WhileStatement::is_first_final(lexer, index)
         || ForStatement::is_first_final(lexer, index)
         || LoopStatement::is_first_final(lexer, index)
-        || Block::is_first_final(lexer, index)
+        || BlockStatement::is_first_final(lexer, index)
     }
     
     fn parse(lexer: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<Statement>, usize) {
@@ -147,7 +141,7 @@ impl ISyntaxItem for Statement {
             };
         } else if ExprStatement::is_first_final(lexer, index) {
             return match ExprStatement::parse(lexer, messages, index) {
-                (Some(expr_stmt), expr_stmt_len) => (Some(Statement::Expression(expr_stmt)), expr_stmt_len),
+                (Some(expr_stmt), expr_stmt_len) => (Some(Statement::Expr(expr_stmt)), expr_stmt_len),
                 (None, length) => (None, length),
             }
         } else {
@@ -156,17 +150,13 @@ impl ISyntaxItem for Statement {
     }
 }
 
-#[cfg(test)] #[test] #[ignore]
+#[cfg(test)] #[test]
 fn stmt_parse() {
 
 }
 
 // TODO: 
-// Add ISyntaxItemFormat to all types, 
-// impl Debug for ISyntaxItemFormat
 // Remove ISyntaxItem::pos_all, add ISyntaxItemGetPosition
-// try set Eq and PartialEq as test only
-// For and While add label support
 // move is_first_final into ISyntaxItemGrammar
 // move parse into ISyntaxItemParse and apply ParseSession
 // try design and apply ISyntaxItemResolve and ResolveSession

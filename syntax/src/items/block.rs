@@ -25,8 +25,7 @@ impl ISyntaxItemFormat for Block {
     fn format(&self, indent: u32) -> String {
         format!("{}Block {}<{:?}>{}",
             Block::indent_str(indent), if self.items.is_empty() { "(empty) " } else { "" }, self.all_strpos,
-            // self.items.iter().fold(String::new(), |mut buf, expr| { buf.push_str("\n"); buf.push_str(&expr.format(indent + 2)); buf })
-            self.items.iter().fold(String::new(), |mut buf, stmt| { buf.push_str("\n"); buf.push_str(&format!("{:?}", stmt)); buf })
+            self.items.iter().fold(String::new(), |mut buf, expr| { buf.push_str("\n"); buf.push_str(&expr.format(indent + 1)); buf })
         )
     }
 }
@@ -78,5 +77,5 @@ fn block_parse() {
     
     assert_eq!{ Block::with_test_str_ret_size("{}"), (Some(Block::new(make_strpos!(1, 1, 1, 2), vec![])), 2) }
 
-    perrorln!("{:?}", Block::with_test_str("{ 1; 1 + 1; while true { writeln(\"fresky loves zmj\"); } loop { writeln(\"zmj loves fresky\"); } }")); 
+    // perrorln!("{:?}", Block::with_test_str("{ 1; 1 + 1; while true { writeln(\"fresky loves zmj\"); } loop { writeln(\"zmj loves fresky\"); } }")); 
 }

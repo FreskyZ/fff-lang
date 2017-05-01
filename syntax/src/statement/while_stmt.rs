@@ -43,7 +43,7 @@ impl ISyntaxItemFormat for WhileStatement {
     }
 }
 impl fmt::Debug for WhileStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(0)) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
 }
 impl WhileStatement {
     
@@ -92,7 +92,7 @@ impl ISyntaxItem for WhileStatement {
             (None, length) => return (None, current_length + length),
         };
 
-        let all_strpos = StringPosition::merge(tokens.pos(index), tokens.pos(index + current_length));
+        let all_strpos = StringPosition::merge(tokens.pos(index), tokens.pos(index + current_length - 1));
         match maybe_label {
             Some(label) => (Some(WhileStatement::new_with_label(all_strpos, label, while_strpos, expr, body)), current_length),
             None => (Some(WhileStatement::new_no_label(all_strpos, while_strpos, expr, body)), current_length),
@@ -103,18 +103,31 @@ impl ISyntaxItem for WhileStatement {
 #[cfg(test)] #[test]
 fn while_stmt_parse() {
     use super::super::ISyntaxItemWithStr;
+    use super::super::Statement;
+    use super::super::ExprStatement;
+    use super::super::PostfixExpr;
+    use super::super::PrimaryExpr;
     use lexical::LitValue;
 
     //                                         0        1         2         3         4        
-    //                                         1234567890123456789012345678901234567890123456789
-    assert_eq!{ WhileStatement::with_test_str("@2: while true { writeln(\"fresky loves zmj\"); }"),
+    //                                         1234567890123456789012345 67890123456789012 34567
+    assert_eq!{ WhileStatement::with_test_str("@2: while true { writeln(\"fresky hellooooo\"); }"),
         WhileStatement::new_with_label(
-            make_strpos!(1, 1, 1, 49),
-            LabelDef::new("2".to_owned(), make_strpos!(1, 1, 1, 2)),
+            make_strpos!(1, 1, 1, 47),
+            LabelDef::new("2".to_owned(), make_strpos!(1, 1, 1, 3)),
             make_strpos!(1, 5, 1, 9),
             BinaryExpr::new_lit(LitValue::from(true), make_strpos!(1, 11, 1, 14)),
-            Block::new(make_strpos!(1, 16, 1, 49), vec![
-                // TODO: fill it
+            Block::new(make_strpos!(1, 16, 1, 47), vec![
+                Statement::Expr(ExprStatement::new_simple(make_strpos!(1, 18, 1, 45), 
+                    BinaryExpr::new_postfix(
+                        PostfixExpr::new_function_call(
+                            PostfixExpr::new_primary(PrimaryExpr::new_ident("writeln".to_owned(), make_strpos!(1, 18, 1, 24))),
+                            make_strpos!(1, 25, 1, 44), vec![
+                                BinaryExpr::new_lit(LitValue::from("fresky hellooooo"), make_strpos!(1, 26, 1, 43))
+                            ]
+                        )
+                    )
+                ))
             ])
         )
     }

@@ -14,8 +14,8 @@ use message::MessageCollection;
 use lexical::SeperatorKind;
 
 use syntax::ISyntaxItemWithStr;
-use syntax::FunctionDef as SyntaxFunctionDef; 
-use syntax::Argument as SyntaxArgument;
+use syntax::FnDef as SyntaxFnDef; 
+use syntax::FnParam as SyntaxFnParam;
 use syntax::Block as SyntaxBlock;
 
 use codegen::ItemID;
@@ -38,12 +38,16 @@ impl fmt::Debug for FnArg {
 impl FnArg {
     
     // Always construct, ty maybe none for invalid type
-    fn new(syn_arg: SyntaxArgument, types: &mut TypeCollection, messages: &mut MessageCollection, fns: &mut FnCollection) -> FnArg {
+    fn new(syn_arg: SyntaxFnParam, types: &mut TypeCollection, messages: &mut MessageCollection, fns: &mut FnCollection) -> FnArg {
+        let _ = types;
+        let _ = messages;
+        let _ = fns;
 
-        let pos1 = syn_arg.ty.get_all_strpos();
-        let pos2 = syn_arg.pos_name;
-        let ty = types.get_id_by_smtype(syn_arg.ty, messages, fns);   // message emitted for none
-        FnArg{ name: syn_arg.name, typeid: ty, pos: StringPosition::merge(pos1, pos2) }  
+        let pos1 = syn_arg.get_decltype().get_all_strpos();
+        let pos2 = syn_arg.get_name_strpos();
+        // let ty = types.get_id_by_smtype(syn_arg.get_decltype(), messages, fns);   // message emitted for none
+        let ty = ItemID::new_invalid(); // make pass compile
+        FnArg{ name: syn_arg.get_name().clone(), typeid: ty, pos: StringPosition::merge(pos1, pos2) }  
     }
     pub fn new_internal(name: &str, typeid: usize) -> FnArg {
         FnArg{ name: name.to_owned(), typeid: ItemID::new(typeid), pos: StringPosition::new() }
@@ -131,20 +135,20 @@ impl FnImpl {
 
     // From Vec<Argument> to Vec<FnArg>
     // returned bool for all arg type valid and no redefinition
-    fn new_args(syn_args: Vec<SyntaxArgument>, fn_pos: StringPosition, fn_name: &str, 
+    fn new_args(syn_args: Vec<SyntaxFnParam>, fn_pos: StringPosition, fn_name: &str, 
         types: &mut TypeCollection, messages: &mut MessageCollection, fns: &mut FnCollection) -> (Vec<FnArg>, bool) {
 
         let mut args = Vec::<FnArg>::new();
         let mut valid = true;
         'new_arg: for syn_arg in syn_args {
             'exist_args: for arg in &args {
-                if arg.name == syn_arg.name {
+                if &arg.name == syn_arg.get_name() {
                     messages.push(CodegenMessage::FunctionArgumentNameConfilict{ 
                         func_pos: fn_pos,
                         func_name: fn_name.to_owned(),
                         name: arg.name.clone(),
                         pos1: arg.pos.clone(),
-                        pos2: syn_arg.pub_pos_all(),
+                        pos2: syn_arg.get_name_strpos(),
                     });
                     valid = false;
                     continue 'new_arg; // ignore same name arg
@@ -160,22 +164,29 @@ impl FnImpl {
         (args, valid)
     }
     // As it consumes the SyntaxFnDef but not process the block, return it
-    fn new(syn_fn: SyntaxFunctionDef, types: &mut TypeCollection, messages: &mut MessageCollection, fns: &mut FnCollection) -> (FnImpl, SyntaxBlock) {
-        
-        let (args, mut valid) = FnImpl::new_args(syn_fn.args, syn_fn.pos2[0], &syn_fn.name, types, messages, fns);
-        let pos_ret_type = syn_fn.ret_type.get_all_strpos();
-        let ret_type = types.get_id_by_smtype(syn_fn.ret_type, messages, fns);
+    fn new(syn_fn: SyntaxFnDef, types: &mut TypeCollection, messages: &mut MessageCollection, fns: &mut FnCollection) -> (FnImpl, SyntaxBlock) {
+        let _ = types;
+        let _ = messages;
+        let _ = fns;
+
+        // let (args, mut valid) = FnImpl::new_args(syn_fn.get_params(), syn_fn.pos2[0], &syn_fn.name, types, messages, fns);
+        let args = Vec::new(); // to pass compile
+        let mut valid = true;  // to pass compile
+        let pos_ret_type = StringPosition::new(); // syn_fn.get_ret_type().get_all_strpos(); // to pass compile
+        // let ret_type = types.get_id_by_smtype(syn_fn.get_ret_type(), messages, fns);
+        let ret_type = ItemID::new_invalid();  // to pass compile
         valid = valid && ret_type.is_valid();
         (FnImpl{ 
             id: 0, 
-            name: FnName::Ident(syn_fn.name), 
-            pos: [syn_fn.pos2[0], syn_fn.pos2[1], pos_ret_type], 
+            name: FnName::Ident(syn_fn.get_name().clone()), 
+            pos: [StringPosition::new(); 3], // [syn_fn.pos2[0], syn_fn.pos2[1], pos_ret_type],  // to pass compile
             args: args, 
             ret_type: ret_type, 
             valid: valid,
             code_ptr: None,
             local_size: 0,
-        }, syn_fn.body)
+        // }, syn_fn.get_body())
+        }, SyntaxBlock::new(StringPosition::new(), Vec::new()))  // to pass compile
     }
 
     pub fn is_internal(&self) -> bool { self.code_ptr.is_none() }
@@ -292,7 +303,7 @@ impl FnCollection {
     }
 
     // If same signature, still push the fndecl and return index, but push message and when require ID by signature, return invalid
-    pub fn push_decl(&mut self, syn_fn: SyntaxFunctionDef, types: &mut TypeCollection, msgs: &mut MessageCollection, _vars: &mut VarCollection) -> (usize, SyntaxBlock) {
+    pub fn push_decl(&mut self, syn_fn: SyntaxFnDef, types: &mut TypeCollection, msgs: &mut MessageCollection, _vars: &mut VarCollection) -> (usize, SyntaxBlock) {
         // BIG BUG HERE
         // This method read in syntax function def and generate semantic function def
         // In the process, get new fn id according to current fns collection and set the id field in the newfn
@@ -397,16 +408,13 @@ impl FnCollection {
     }
 }
 
-#[cfg(test)]
-use syntax::Argument;
-
-#[cfg(test)]
-#[test]
+#[cfg(test)] #[test]
 fn gen_fn_arg() {
+    use syntax::TypeUseF;
 
     let mut sess = GenerationSession::new();
 
-    let arg = Argument::with_test_str("[i32] a");
+    let arg = SyntaxFnParam::new("a".to_owned(), make_strpos!(1, 1, 1, 1), TypeUseF::new_simple_test("i32", make_strpos!(1, 1, 1, 1))); // ("a: [i32]");
     let arg = FnArg::new(arg, &mut sess.types, &mut sess.msgs, &mut sess.fns);
     assert_eq!(arg.name, "a");
     assert_eq!(arg.typeid, ItemID::new(14)); 
@@ -414,7 +422,8 @@ fn gen_fn_arg() {
     let expect_messages = &mut MessageCollection::new();
     assert_eq!(&sess.msgs, expect_messages);
 
-    let arg = Argument::with_test_str("int argc");
+    let arg = SyntaxFnParam::new("argc".to_owned(), make_strpos!(1, 1, 1, 1), TypeUseF::new_simple("i32".to_owned(), make_strpos!(1, 1, 1, 1)));
+    // let arg = SyntaxFnParam::with_test_str("argc: int");
     let arg = FnArg::new(arg, &mut sess.types, &mut sess.msgs, &mut sess.fns);
     assert_eq!(arg.name, "argc");
     assert_eq!(arg.typeid, ItemID::new_invalid());
@@ -424,8 +433,7 @@ fn gen_fn_arg() {
     assert_eq!(&sess.msgs, expect_messages);
 }
 
-#[cfg(test)]
-#[test]
+#[cfg(test)] #[test]
 fn gen_fn_sign_eq() {
     
     let left_getter = || FnImpl{
@@ -473,11 +481,12 @@ fn gen_fn_sign_eq() {
 #[cfg(test)]
 #[test]
 fn gen_fn_args() {
+    use syntax::ISyntaxItemWithStr;
 
     // Normal
     let syn_args = vec![ // 12345678901234567890123
-        Argument::with_test_str_and_index("fn main(i32 a", 3),
-        Argument::with_test_str_and_index("fn main(i32 a, string b", 6),
+        // SyntaxFnParam::with_test_str_and_index("fn main(i32 a", 3),
+        // SyntaxFnParam::with_test_str_and_index("fn main(i32 a, string b", 6),
     ];
     let fn_pos = make_str_pos!(1, 1, 1, 2);
     let fn_name = "main";
@@ -496,11 +505,11 @@ fn gen_fn_args() {
     // 1 arg type invalid
     let syn_args = vec![ 
         //                  12345678901234567890123456789012345678 
-        Argument::with_test_str_and_index("fn main(i32 a, [intttt] b, [[u8]] cde)", 3),
+        // SyntaxFnParam::with_test_str_and_index("fn main(i32 a, [intttt] b, [[u8]] cde)", 3),
         //                  0        1         2         3
-        Argument::with_test_str_and_index("fn main(i32 a, [intttt] b, [[u8]] cde)", 6),
+        // SyntaxFnParam::with_test_str_and_index("fn main(i32 a, [intttt] b, [[u8]] cde)", 6),
         //                  0  1   23   45 67     8 90 123 45 6  7
-        Argument::with_test_str_and_index("fn main(i32 a, [intttt] b, [[u8]] cde)", 11),
+        // SyntaxFnParam::with_test_str_and_index("fn main(i32 a, [intttt] b, [[u8]] cde)", 11),
     ];  
     let fn_pos = make_str_pos!(1, 1, 1, 2);
     let fn_name = "main";
@@ -523,13 +532,13 @@ fn gen_fn_args() {
     // 2 name collision
     let syn_args = vec![ 
         //                  12345678901234567890123456789012345678901234567
-        Argument::with_test_str_and_index("fn main(i32 a, u32 bc, i32 a, i32 bc, string d)", 3),
+        // SyntaxFnParam::with_test_str_and_index("fn main(i32 a, u32 bc, i32 a, i32 bc, string d)", 3),
         //                  0        1         2         3         4
-        Argument::with_test_str_and_index("fn main(i32 a, u32 bc, i32 a, i32 bc, string d)", 6),
+        // SyntaxFnParam::with_test_str_and_index("fn main(i32 a, u32 bc, i32 a, i32 bc, string d)", 6),
         //                  0  1   23   45 6   7 8 9   01 2   3 4 5      67
-        Argument::with_test_str_and_index("fn main(i32 a, u32 bc, i32 a, i32 bc, string d)", 9),
-        Argument::with_test_str_and_index("fn main(i32 a, u32 bc, i32 a, i32 bc, string d)", 12),
-        Argument::with_test_str_and_index("fn main(i32 a, u32 bc, i32 a, i32 bc, string d)", 15),
+        // SyntaxFnParam::with_test_str_and_index("fn main(i32 a, u32 bc, i32 a, i32 bc, string d)", 9),
+        // SyntaxFnParam::with_test_str_and_index("fn main(i32 a, u32 bc, i32 a, i32 bc, string d)", 12),
+        // SyntaxFnParam::with_test_str_and_index("fn main(i32 a, u32 bc, i32 a, i32 bc, string d)", 15),
     ];
     let fn_pos = make_str_pos!(1, 1, 1, 2);
     let fn_name = "main";
@@ -571,6 +580,7 @@ fn gen_fn_args() {
 #[cfg(test)]
 #[test]
 fn gen_fn_decl() {
+    use syntax::ISyntaxItemWithStr;
     // Because no branch, so only one test
 
     //             0        1         2          3          4
@@ -578,7 +588,7 @@ fn gen_fn_decl() {
     let program = "fn main() -> () { writeln(\"helloworld\"); }";
     //             1  2   34 5  67 8 9      A B            CD E
     let sess = &mut GenerationSession::new();
-    let syn_fn = SyntaxFunctionDef::with_test_str(program);
+    let syn_fn = SyntaxFnDef::with_test_str(program);
     let (id, block) = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
     {
         let fndecl = sess.fns.get_by_idx(id);
@@ -592,23 +602,23 @@ fn gen_fn_decl() {
     }
 
     let program = "fn some(i32 a, u32 b, [string] c) -> [u8] {}";
-    let syn_fn = SyntaxFunctionDef::with_test_str(program);
+    let syn_fn = SyntaxFnDef::with_test_str(program);
     let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
     let program = " fn some(i32 a, u32 b, [string] c) -> [u8] {}";
-    let syn_fn = SyntaxFunctionDef::with_test_str(program);
+    let syn_fn = SyntaxFnDef::with_test_str(program);
     let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
     let program = "  fn some(i32 a, u32 b, string c) -> u8 {}";
-    let syn_fn = SyntaxFunctionDef::with_test_str(program);
+    let syn_fn = SyntaxFnDef::with_test_str(program);
     let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
     let program = "   fn some(i32 a, u32 b, [string] c) -> [u8] {}";
-    let syn_fn = SyntaxFunctionDef::with_test_str(program);
+    let syn_fn = SyntaxFnDef::with_test_str(program);
     let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
     let program = "    fn some(i32 a, u32 b) -> [u8] {}";
-    let syn_fn = SyntaxFunctionDef::with_test_str(program);
+    let syn_fn = SyntaxFnDef::with_test_str(program);
     let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
 
     let program = "     fn some(i32 a, u32 b, string c) -> [u8] {}";
-    let syn_fn = SyntaxFunctionDef::with_test_str(program);
+    let syn_fn = SyntaxFnDef::with_test_str(program);
     let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
 
     sess.fns.check_sign_eq(&mut sess.types, &mut sess.msgs);
@@ -640,7 +650,7 @@ fn gen_fn_decl2() {
     {
     let program = "fn main(i32 a) -> () { ++a; }";
     let sess = &mut GenerationSession::new();
-    let syn_fn = SyntaxFunctionDef::with_test_str(program);
+    let syn_fn = SyntaxFnDef::with_test_str(program);
     let (fnid, _syn_block) = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
     let thefn = sess.fns.get_by_idx(fnid);
     assert_eq!(thefn.args[0].name, "a");
@@ -649,7 +659,7 @@ fn gen_fn_decl2() {
     {
     let program = "fn main(i32 a) -> [u32] { ++a; }";
     let sess = &mut GenerationSession::new();
-    let syn_fn = SyntaxFunctionDef::with_test_str(program);
+    let syn_fn = SyntaxFnDef::with_test_str(program);
     let (fnid, _syn_block) = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
     let thefn = sess.fns.get_by_idx(fnid);
     assert_eq!(thefn.name, FnName::Ident("main".to_owned()));

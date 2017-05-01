@@ -1,5 +1,5 @@
 
-// Program = [FunctionDef]*
+// Program = [FnDef]*
 
 use std::fmt;
 
@@ -10,11 +10,11 @@ use message::MessageCollection;
 use lexical::TokenStream;
 
 use super::ISyntaxItem;
-use super::FunctionDef;
+use super::FnDef;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct SyntaxTree {
-    pub functions: Vec<FunctionDef>,
+    pub functions: Vec<FnDef>,
 }
 impl fmt::Debug for SyntaxTree {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -33,7 +33,7 @@ impl ISyntaxItem for SyntaxTree {
     }
 
     fn is_first_final(lexer: &mut TokenStream, index: usize) -> bool {
-        FunctionDef::is_first_final(lexer, index) 
+        FnDef::is_first_final(lexer, index) 
     }
 
     fn parse(lexer: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<SyntaxTree>, usize) {
@@ -47,7 +47,7 @@ impl ISyntaxItem for SyntaxTree {
             if lexer.nth(index + current_len).is_eof() {
                 break;
             }
-            match FunctionDef::parse(lexer, messages, index + current_len) {
+            match FnDef::parse(lexer, messages, index + current_len) {
                 (Some(func), length) => { 
                     current_len += length;
                     funcs.push(func);

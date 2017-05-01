@@ -17,49 +17,6 @@ use super::super::ISyntaxItemFormat;
 use super::super::BinaryExpr;
 use super::super::Block;
 
-// #[cfg_attr(test, derive(Eq, PartialEq))]
-// pub struct ElseIfBranch {
-//     pub expr: BinaryExpr,
-//     pub body: Block,
-//     pub pos: [StringPosition; 2],   // position for if and else
-// }
-// impl fmt::Debug for ElseIfBranch {
-//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         write!(f, "else @ {:?} if @ {:?} {:?} {:?}", self.pos[0], self.pos[1], self.expr, self.body)
-//     }
-// }
-// impl ISyntaxItem for ElseIfBranch {
-
-//     fn pos_all(&self) -> StringPosition { StringPosition::merge(self.pos[0], self.body.pos_all()) }
-
-//     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
-//         tokens.nth(index).is_keyword(KeywordKind::Else)
-//     }
-
-//     /// given index should be index of else and nth(index) = else, nth(index + 1) = if are confirmed
-//     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<ElseIfBranch>, usize) {
-
-//         if !tokens.nth(index).is_keyword(KeywordKind::Else)
-//             || !tokens.nth(index + 1).is_keyword(KeywordKind::If) {
-//             unreachable!()
-//         }
-//         let mut current_length = 2;
-//         let pos = [tokens.pos(index), tokens.pos(index + 1)];
-
-//         let expr = match BinaryExpr::parse(tokens, messages, index + current_length) {
-//             (Some(expr), expr_len) => { current_length += expr_len; expr }
-//             (None, length) => return (None, current_length + length),
-//         };
-
-//         let body = match Block::parse(tokens, messages, index + current_length) {
-//             (Some(block), block_len) => { current_length += block_len; block }
-//             (None, length) => return (None, current_length + length),
-//         };
-
-//         (Some(ElseIfBranch{ expr: expr, body: body, pos: pos }), current_length)
-//     }
-// }
-
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct IfConditionBody {
     if_strpos: StringPosition, // or `else if`'s strpos
