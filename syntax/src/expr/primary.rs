@@ -24,7 +24,7 @@ use super::super::ISyntaxItem;
 use super::super::ISyntaxItemFormat;
 use super::binary::BinaryExpr;
 
-#[derive(Eq, PartialEq)]
+#[cfg_attr(test, derive(Eq, PartialEq))]
 enum ActualPrimaryExpr {
     Ident(String),
     Lit(LitValue),
@@ -33,7 +33,7 @@ enum ActualPrimaryExpr {
     ArrayDef(Vec<BinaryExpr>),
     ArrayDupDef(BinaryExpr, BinaryExpr),   // Now position of `;` is not recorded because I think I don't use it
 }
-#[derive(Eq, PartialEq)]
+#[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct PrimaryExpr(ActualPrimaryExpr, StringPosition);
 
 impl ISyntaxItemFormat for PrimaryExpr {
@@ -59,8 +59,8 @@ impl ISyntaxItemFormat for PrimaryExpr {
                     PrimaryExpr::indent_str(indent), strpos,
                     exprs.iter().fold(String::new(), |mut buf, expr| { buf.push_str("\n"); buf.push_str(&expr.format(indent + 1)); buf })),
             (&ActualPrimaryExpr::ArrayDef(ref exprs), strpos) =>
-                format!("{}DefineArray <{:?}>{}", 
-                    PrimaryExpr::indent_str(indent), strpos, 
+                format!("{}DefineArray {}<{:?}>{}", 
+                    PrimaryExpr::indent_str(indent), if exprs.is_empty() { "(empty) " } else { "" }, strpos, 
                     exprs.iter().fold(String::new(), |mut buf, expr| { buf.push_str("\n"); buf.push_str(&expr.format(indent + 1)); buf })),
         }
     }

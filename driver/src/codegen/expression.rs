@@ -14,7 +14,7 @@ use syntax::BinaryExpr;
 use syntax::UnaryExpr;
 use syntax::PostfixExpr;
 use syntax::PrimaryExpr;
-use syntax::ExpressionStatement as BinaryExprStatement;
+use syntax::ExprStatement as BinaryExprStatement;
 use syntax::TypeUse;
 use syntax::ISyntaxItemWithStr;
 

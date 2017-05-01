@@ -17,7 +17,7 @@ use super::super::ISyntaxItemFormat;
 use super::super::Block;
 use super::super::LabelDef;
 
-#[derive(Eq, PartialEq)]
+#[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct BlockStatement {
     m_label: Option<LabelDef>,
     m_body: Block,
@@ -25,14 +25,14 @@ pub struct BlockStatement {
 impl ISyntaxItemFormat for BlockStatement {
     fn format(&self, indent: u32) -> String {
         match self.m_label {
-            Some(ref label_def) => format!("BlockStmt <{:?}>\n{}\n{:?}", 
+            Some(ref label_def) => format!("BlockStmt <{:?}>\n{}\n{}", 
                 StringPosition::merge(label_def.get_all_strpos(), self.m_body.pos_all()),
                 label_def.format(indent + 1),
-                self.m_body,
+                self.m_body.format(indent + 1),
             ),
-            None => format!("BlockStmt <{:?}>\n{:?}", 
+            None => format!("BlockStmt <{:?}>\n{}", 
                 self.m_body.pos_all(),
-                self.m_body
+                self.m_body.format(indent + 1)
             )
         }
     }

@@ -31,7 +31,7 @@ use super::primary::PrimaryExpr;
 use lexical::LitValue;
 
 // TODO: try change them to cfg_attr(test, ...)
-#[derive(Eq, PartialEq)]
+#[cfg_attr(test, derive(Eq, PartialEq))]
 struct BinaryBinaryExpr {
     left: BinaryExpr,
     operator: SeperatorKind,            // this means every binary operator matches a binary expr
@@ -39,12 +39,12 @@ struct BinaryBinaryExpr {
     right: BinaryExpr,
     all_strpos: StringPosition,
 }
-#[derive(Eq, PartialEq)]
+#[cfg_attr(test, derive(Eq, PartialEq))]
 enum BinaryExprImpl {
     Unary(UnaryExpr),
     Binary(BinaryBinaryExpr),
 }
-#[derive(Eq, PartialEq)]
+#[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct BinaryExpr(Box<BinaryExprImpl>); // wrapper for make it not public
 
 impl ISyntaxItemFormat for BinaryExpr {

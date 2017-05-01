@@ -31,21 +31,21 @@ pub use self::var_decl::VarDeclStatement;
 pub use self::jump_stmt::BreakStatement;
 pub use self::jump_stmt::ContinueStatement;
 pub use self::ret_stmt::ReturnStatement;
-pub use self::expr_stmt::ExpressionStatement;
+pub use self::expr_stmt::ExprStatement;
 pub use self::loop_stmt::LoopStatement;
 pub use self::while_stmt::WhileStatement;
 pub use self::for_stmt::ForStatement;
-pub use self::if_stmt::ElseIfBranch;
+pub use self::if_stmt::IfConditionBody;
 pub use self::if_stmt::IfStatement;
 pub use self::block_stmt::BlockStatement;
 
-#[derive(Eq, PartialEq)]
+#[cfg_attr(test, derive(Eq, PartialEq))]
 pub enum Statement {
     VarDecl(VarDeclStatement),        // const, var
     Break(BreakStatement),            // break 
     Continue(ContinueStatement),      // continue
     Return(ReturnStatement),          // return
-    Expression(ExpressionStatement),  // _, (unary seperator, literal, identifier, left paren, left bracket)
+    Expression(ExprStatement),  // _, (unary seperator, literal, identifier, left paren, left bracket)
     If(IfStatement),                  // if
     While(WhileStatement),            // while
     For(ForStatement),                // for
@@ -90,7 +90,7 @@ impl ISyntaxItem for Statement {
         || BreakStatement::is_first_final(lexer, index)
         || ContinueStatement::is_first_final(lexer, index)
         || ReturnStatement::is_first_final(lexer, index)
-        || ExpressionStatement::is_first_final(lexer, index)
+        || ExprStatement::is_first_final(lexer, index)
         || IfStatement::is_first_final(lexer, index)
         || WhileStatement::is_first_final(lexer, index)
         || ForStatement::is_first_final(lexer, index)
@@ -145,8 +145,8 @@ impl ISyntaxItem for Statement {
                 (Some(block), block_len) => (Some(Statement::Block(block)), block_len),
                 (None, length) => (None, length),
             };
-        } else if ExpressionStatement::is_first_final(lexer, index) {
-            return match ExpressionStatement::parse(lexer, messages, index) {
+        } else if ExprStatement::is_first_final(lexer, index) {
+            return match ExprStatement::parse(lexer, messages, index) {
                 (Some(expr_stmt), expr_stmt_len) => (Some(Statement::Expression(expr_stmt)), expr_stmt_len),
                 (None, length) => (None, length),
             }

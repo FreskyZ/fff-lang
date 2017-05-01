@@ -1,169 +1,272 @@
 
-// IfStatement = fIf Expression Block [fElse fIf Expression Block]* [ fElse Block ]
+///! fff-lang
+///!
+///! syntax/if_stmt
+///! IfStatement = fIf BinaryExpr Block [fElse fIf BinaryExpr Block]* [ fElse Block ]
 
 use std::fmt;
 
 use codepos::StringPosition;
-use util::format_vector_debug;
 use message::MessageCollection;
 
 use lexical::TokenStream;
 use lexical::KeywordKind;
 
 use super::super::ISyntaxItem;
-use super::super::Expression;
+use super::super::ISyntaxItemFormat;
+use super::super::BinaryExpr;
 use super::super::Block;
 
-#[derive(Eq, PartialEq)]
-pub struct ElseIfBranch {
-    pub expr: Expression,
-    pub body: Block,
-    pub pos: [StringPosition; 2],   // position for if and else
+// #[cfg_attr(test, derive(Eq, PartialEq))]
+// pub struct ElseIfBranch {
+//     pub expr: BinaryExpr,
+//     pub body: Block,
+//     pub pos: [StringPosition; 2],   // position for if and else
+// }
+// impl fmt::Debug for ElseIfBranch {
+//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+//         write!(f, "else @ {:?} if @ {:?} {:?} {:?}", self.pos[0], self.pos[1], self.expr, self.body)
+//     }
+// }
+// impl ISyntaxItem for ElseIfBranch {
+
+//     fn pos_all(&self) -> StringPosition { StringPosition::merge(self.pos[0], self.body.pos_all()) }
+
+//     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
+//         tokens.nth(index).is_keyword(KeywordKind::Else)
+//     }
+
+//     /// given index should be index of else and nth(index) = else, nth(index + 1) = if are confirmed
+//     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<ElseIfBranch>, usize) {
+
+//         if !tokens.nth(index).is_keyword(KeywordKind::Else)
+//             || !tokens.nth(index + 1).is_keyword(KeywordKind::If) {
+//             unreachable!()
+//         }
+//         let mut current_length = 2;
+//         let pos = [tokens.pos(index), tokens.pos(index + 1)];
+
+//         let expr = match BinaryExpr::parse(tokens, messages, index + current_length) {
+//             (Some(expr), expr_len) => { current_length += expr_len; expr }
+//             (None, length) => return (None, current_length + length),
+//         };
+
+//         let body = match Block::parse(tokens, messages, index + current_length) {
+//             (Some(block), block_len) => { current_length += block_len; block }
+//             (None, length) => return (None, current_length + length),
+//         };
+
+//         (Some(ElseIfBranch{ expr: expr, body: body, pos: pos }), current_length)
+//     }
+// }
+
+#[cfg_attr(test, derive(Eq, PartialEq))]
+pub struct IfConditionBody {
+    if_strpos: StringPosition, // or `else if`'s strpos
+    cond_expr: BinaryExpr,
+    body: Block,
+}
+impl IfConditionBody {
+    pub fn new(if_strpos: StringPosition, cond_expr: BinaryExpr, body: Block) -> IfConditionBody { IfConditionBody{ if_strpos, cond_expr, body } }
+    pub fn get_if_strpos(&self) -> StringPosition { self.if_strpos }
+    pub fn get_cond_expr(&self) -> &BinaryExpr { &self.cond_expr }
+    pub fn get_body(&self) -> &Block { &self.body }
 }
 
-impl fmt::Debug for ElseIfBranch {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "else @ {:?} if @ {:?} {:?} {:?}", self.pos[0], self.pos[1], self.expr, self.body)
-    }
-}
-
-impl ISyntaxItem for ElseIfBranch {
-
-    fn pos_all(&self) -> StringPosition { StringPosition::merge(self.pos[0], self.body.pos_all()) }
-
-    fn is_first_final(lexer: &mut TokenStream, index: usize) -> bool {
-        lexer.nth(index).is_keyword(KeywordKind::Else)
-    }
-
-    /// given index should be index of else and nth(index) = else, nth(index + 1) = if are confirmed
-    fn parse(lexer: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<ElseIfBranch>, usize) {
-
-        if !lexer.nth(index).is_keyword(KeywordKind::Else)
-            || !lexer.nth(index + 1).is_keyword(KeywordKind::If) {
-            unreachable!()
-        }
-        let mut current_len = 2;
-        let pos = [lexer.pos(index), lexer.pos(index + 1)];
-
-        let expr = match Expression::parse(lexer, messages, index + current_len) {
-            (Some(expr), expr_len) => { current_len += expr_len; expr }
-            (None, length) => return (None, current_len + length),
-        };
-
-        let body = match Block::parse(lexer, messages, index + current_len) {
-            (Some(block), block_len) => { current_len += block_len; block }
-            (None, length) => return (None, current_len + length),
-        };
-
-        (Some(ElseIfBranch{ expr: expr, body: body, pos: pos }), current_len)
-    }
-}
-
-#[derive(Eq, PartialEq)]
+#[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct IfStatement {
-    pub if_expr: Expression,
-    pub if_body: Block,
-    pub elseifs: Vec<ElseIfBranch>,
-    pub else_body: Option<Block>,
-    pub pos: [StringPosition; 2],  // position for if and else
+    base: IfConditionBody,
+    elseifs: Vec<IfConditionBody>,
+    else_body: Option<Block>,
+    else_strpos: StringPosition,
+    all_strpos: StringPosition,
+}
+impl ISyntaxItemFormat for IfStatement {
+    fn format(&self, indent: u32) -> String {
+
+        let mut retval = String::new();
+        retval.push_str(&format!("{}IfStmt <{:?}>\n", IfStatement::indent_str(indent), self.all_strpos));
+
+        let IfConditionBody{ ref if_strpos, ref cond_expr, ref body } = self.base;
+        retval.push_str(&format!("{}'if' <{:?}>\n{}\n{}", 
+            IfStatement::indent_str(indent + 1), if_strpos, cond_expr.format(indent + 2), body.format(indent + 2)));
+
+        for &IfConditionBody{ if_strpos: ref else_if_strpos, ref cond_expr, ref body } in &self.elseifs {
+            retval.push_str(&format!("\n{}'else if' <{:?}>\n{}\n{}", 
+                IfStatement::indent_str(indent + 1), else_if_strpos, cond_expr.format(indent + 2), body.format(indent + 2)));
+        }
+        
+        match self.else_body {
+            Some(ref else_body) => 
+                retval.push_str(&format!("\n{}'else' <{:?}>\n{}", IfStatement::indent_str(indent + 1), self.else_strpos, else_body.format(indent + 2))),
+            None => (),
+        }
+
+        return retval;
+    }
 }
 impl fmt::Debug for IfStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "if @ {:?} {:?} {:?}{}{}", 
-            self.pos[0], self.if_expr, self.if_body,
-            format_vector_debug(&self.elseifs, "\n"), 
-            match self.else_body { 
-                Some(ref else_body) => format!("else @ {:?} {:?}", self.pos[1], else_body),
-                None => String::new(),
-            }
-        )
-    }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(0)) }
 }
+impl IfStatement {
 
+    pub fn new_if(all_strpos: StringPosition, if_strpos: StringPosition, cond_expr: BinaryExpr, body: Block) -> IfStatement {
+        IfStatement {
+            base: IfConditionBody::new(if_strpos, cond_expr, body),
+            elseifs: Vec::new(),
+            else_body: None,
+            else_strpos: StringPosition::new(),
+            all_strpos
+        }
+    }
+    pub fn new_ifelse(all_strpos: StringPosition, 
+        if_strpos: StringPosition, cond_expr: BinaryExpr, if_body: Block, 
+        else_strpos: StringPosition, else_body: Block) -> IfStatement {
+        IfStatement {
+            base: IfConditionBody::new(if_strpos, cond_expr, if_body),
+            elseifs: Vec::new(),
+            else_body: Some(else_body),
+            else_strpos,
+            all_strpos,
+        }
+    }
+    pub fn new_ifelseif(all_strpos: StringPosition,
+        if_strpos: StringPosition, cond_expr: BinaryExpr, if_body: Block,
+        elseifs: Vec<IfConditionBody>) -> IfStatement {
+        IfStatement {
+            base: IfConditionBody::new(if_strpos, cond_expr, if_body),
+            elseifs,
+            else_body: None,
+            else_strpos: StringPosition::new(),
+            all_strpos,
+        }
+    }
+    pub fn new_ifelseifelse(all_strpos: StringPosition, 
+        if_strpos: StringPosition, cond_expr: BinaryExpr, if_body: Block, 
+        elseifs: Vec<IfConditionBody>,
+        else_strpos: StringPosition, else_body: Block) -> IfStatement {
+        IfStatement {
+            base: IfConditionBody::new(if_strpos, cond_expr, if_body),
+            elseifs,
+            else_body: Some(else_body),
+            else_strpos,
+            all_strpos,
+        }
+    }
+
+    pub fn get_all_strpos(&self) -> StringPosition { self.all_strpos }
+    pub fn get_if_strpos(&self) -> StringPosition { self.base.if_strpos }
+    pub fn get_if_expr(&self) -> &BinaryExpr { &self.base.cond_expr }
+    pub fn get_if_body(&self) -> &Block { &self.base.body }
+    pub fn get_elseifs(&self) -> &Vec<IfConditionBody> { &self.elseifs }
+    pub fn get_else_body(&self) -> Option<&Block> { self.else_body.as_ref() }
+    pub fn get_else_strpos(&self) -> StringPosition { self.else_strpos }
+}
 impl ISyntaxItem for IfStatement {
 
-    fn pos_all(&self) -> StringPosition { StringPosition::new() }
+    fn pos_all(&self) -> StringPosition { self.get_all_strpos() }
 
-    fn is_first_final(lexer: &mut TokenStream, index: usize) -> bool {
-        lexer.nth(index).is_keyword(KeywordKind::If)
+    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
+        tokens.nth(index).is_keyword(KeywordKind::If)
     }
 
-    fn parse(lexer: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<IfStatement>, usize) {
+    fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<IfStatement>, usize) {
 
-        if !lexer.nth(index).is_keyword(KeywordKind::If) {
+        if !tokens.nth(index).is_keyword(KeywordKind::If) {
             unreachable!()
         }
-        let mut current_len = 1;
-        let mut pos = [lexer.pos(index), StringPosition::new()];
-        
-        let expr = match Expression::parse(lexer, messages, index + current_len) {
-            (Some(expr), expr_len) => { current_len += expr_len; expr }
-            (None, length) => return (None, current_len + length),
-        };
 
-        let body = match Block::parse(lexer, messages, index + current_len) {
-            (Some(block), block_len) => { current_len += block_len; block }
-            (None, length) => return (None, current_len + length),
+        let mut current_length = 1;
+        let if_strpos = tokens.pos(index);
+        
+        let if_expr = match BinaryExpr::parse(tokens, messages, index + current_length) {
+            (Some(expr), expr_len) => { current_length += expr_len; expr }
+            (None, length) => return (None, current_length + length),
+        };
+        let if_body = match Block::parse(tokens, messages, index + current_length) {
+            (Some(block), block_len) => { current_length += block_len; block }
+            (None, length) => return (None, current_length + length),
         };
 
         let mut elseifs = Vec::new();
+        let mut else_strpos = StringPosition::new();
         let mut else_body = None;
         loop {
-            match (lexer.nth(index + current_len).is_keyword(KeywordKind::Else), lexer.nth(index + current_len + 1).is_keyword(KeywordKind::If)) {
-                (true, true) => match ElseIfBranch::parse(lexer, messages, index + current_len) {  // else if
-                    (Some(elseif), elseif_len) => { 
-                        current_len += elseif_len;
-                        elseifs.push(elseif);  
+            match (tokens.nth(index + current_length).is_keyword(KeywordKind::Else), tokens.nth(index + current_length + 1).is_keyword(KeywordKind::If)) {
+                (true, true) => {
+                    let elseif_strpos = StringPosition::merge(tokens.pos(index + current_length), tokens.pos(index + current_length + 1));
+                    current_length += 2;
+                    let elseif_expr = match BinaryExpr::parse(tokens, messages, index + current_length) {
+                        (Some(expr), expr_len) => { current_length += expr_len; expr }
+                        (None, length) => return (None, current_length + length),
+                    };
+                    let elseif_body = match Block::parse(tokens, messages, index + current_length) {
+                        (Some(block), block_len) => { current_length += block_len; block }
+                        (None, length) => return (None, current_length + length),
+                    };
+                    elseifs.push(IfConditionBody::new(elseif_strpos, elseif_expr, elseif_body));
+                }
+                (true, false) => {
+                    else_strpos = tokens.pos(index + current_length);
+                    match Block::parse(tokens, messages, index + current_length + 1) { 
+                        (Some(block), block_len) => {
+                            else_body = Some(block);
+                            current_length += block_len + 1;
+                        }  // 16/12/1, we lost TWO `+1`s for current_length here ... fixed
+                        (None, length) => return (None, current_length + 1 + length),
                     }
-                    (None, length) => return (None, current_len + length),
-                },
-                (true, false) => match Block::parse(lexer, messages, index + current_len + 1) { // normal else
-                    (Some(block), block_len) => {
-                        pos[1] = lexer.pos(index + current_len + 1);
-                        else_body = Some(block);
-                        current_len += block_len + 1;
-                    }  // 16/12/1, we lost TWO `+1`s for current_len here ... fixed
-                    (None, length) => return (None, current_len + 1 + length),
-                },
+                }
                 (false, _) => {
                     break;
                 }
             }
         }
 
-        return (Some(IfStatement{
-            if_expr: expr,
-            if_body: body,
-            elseifs: elseifs,
-            else_body: else_body,
-            pos: pos
-        }), current_len);
+        let all_strpos = StringPosition::merge(tokens.pos(index), tokens.pos(index + current_length - 1));
+        match else_body {
+            Some(else_body) => (Some(IfStatement::new_ifelseifelse(all_strpos, if_strpos, if_expr, if_body, elseifs, else_strpos, else_body)), current_length),
+            None => (Some(IfStatement::new_ifelseif(all_strpos, if_strpos, if_expr, if_body, elseifs)), current_length),
+        }
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::IfStatement;
-    use super::super::super::ISyntaxItemWithStr;
+#[cfg(test)] #[test]
+fn ast_stmt_if() {
+    use super::super::ISyntaxItemWithStr;
+    use lexical::LitValue;
 
-    #[test]
-    fn ast_stmt_if() {
-
-        perrorln!("{:?}", IfStatement::with_test_str("if 1 { fresky.love(zmj); zmj.love(fresky); }"));
-        perrorln!("{:?}", IfStatement::with_test_str("if 1 { fresky.love(zmj); zmj.love(fresky); } else { writeln(\"hellworld\"); }"));
-        perrorln!("{:?}", IfStatement::with_test_str(
-r#"
-            if 1 { 
-                fresky.love(zmj); 
-                zmj.love(fresky); 
-            } else if false {
-                1 + 1 = 2;
-            } else if abc * defg == hij {
-                keywords.remove("def");
-                use_in_test("def");
-            } else { 
-                writeln("hellworld"); 
-            }"#
-        ));
+    //                                      0        1         2         3
+    //                                      1234567890123456789012345678901234567
+    assert_eq!{ IfStatement::with_test_str("if true { } else if false { } else {}"),
+        IfStatement::new_ifelseifelse(make_strpos!(1, 1, 1, 37),
+            make_strpos!(1, 1, 1, 2),
+            BinaryExpr::new_lit(LitValue::from(true), make_strpos!(1, 4, 1, 7)),
+            Block::new(make_strpos!(1, 9, 1, 11), vec![]), vec![
+                IfConditionBody::new(
+                    make_strpos!(1, 13, 1, 19),
+                    BinaryExpr::new_lit(LitValue::from(false), make_strpos!(1, 21, 1, 25)),
+                    Block::new(make_strpos!(1, 27, 1, 29), vec![])
+                )
+            ],
+            make_strpos!(1, 31, 1, 34),
+            Block::new(make_strpos!(1, 36, 1, 37), vec![])
+        )
     }
+
+//     perrorln!("{:?}", IfStatement::with_test_str("if 1 { fresky.love(zmj); zmj.love(fresky); }"));
+//     perrorln!("{:?}", IfStatement::with_test_str("if 1 { fresky.love(zmj); zmj.love(fresky); } else { writeln(\"hellworld\"); }"));
+//     perrorln!("{:?}", IfStatement::with_test_str(
+// r#"
+//         if 1 { 
+//             fresky.love(zmj); 
+//             zmj.love(fresky); 
+//         } else if false {
+//             1 + 1 = 2;
+//         } else if abc * defg == hij {
+//             keywords.remove("def");
+//             use_in_test("def");
+//         } else { 
+//             writeln("hellworld"); 
+//         }"#
+//     ));
 }

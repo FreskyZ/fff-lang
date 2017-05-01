@@ -12,7 +12,7 @@ use lexical::TokenStream;
 use super::ISyntaxItem;
 use super::FunctionDef;
 
-#[derive(Eq, PartialEq)]
+#[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct SyntaxTree {
     pub functions: Vec<FunctionDef>,
 }

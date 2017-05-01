@@ -15,7 +15,7 @@ use super::super::LabelDef;
 use super::super::ISyntaxItem;
 use super::super::ISyntaxItemFormat;
 
-#[derive(Eq, PartialEq)]
+#[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct LoopStatement {
     m_label: Option<LabelDef>,
     m_loop_strpos: StringPosition,
@@ -123,7 +123,7 @@ fn loop_stmt_parse() {
     use super::super::ISyntaxItemWithStr;
 
     assert_eq!{ LoopStatement::with_test_str("loop {}"),
-        LoopStatement::new_no_label(make_strpos!(1, 1, 1, 4), Block{ pos: make_strpos!(1, 6, 1, 7), stmts: Vec::new() })
+        LoopStatement::new_no_label(make_strpos!(1, 1, 1, 4), Block::new(make_strpos!(1, 6, 1, 7), vec![]))
     }
 }
 

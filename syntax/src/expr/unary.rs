@@ -17,19 +17,19 @@ use super::super::ISyntaxItemFormat;
 use super::postfix::PostfixExpr;
 use super::primary::PrimaryExpr;
 
-#[derive(Eq, PartialEq)]
+#[cfg_attr(test, derive(Eq, PartialEq))]
 struct ActualUnaryExpr {
     right: UnaryExpr, 
     operator: SeperatorKind, 
     operator_strpos: StringPosition,
     all_strpos: StringPosition,
 }
-#[derive(Eq, PartialEq)]
+#[cfg_attr(test, derive(Eq, PartialEq))]
 enum UnaryExprImpl {
     Postfix(PostfixExpr),
     Unary(ActualUnaryExpr),
 }
-#[derive(Eq, PartialEq)]
+#[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct UnaryExpr(Box<UnaryExprImpl>);
 
 impl ISyntaxItemFormat for UnaryExpr {

@@ -1,6 +1,8 @@
-
-// ConstDecl = fConst Type fIdentifier [fAssign Expression] fSemiColon
-// VarDecl = fVar Type fIdentifier [fAssign Expression] fSemiColon
+///! fff-lang
+///! 
+///! syntax/var_decl
+///! ConstDecl = fConst TypeUse fIdentifier [fAssign BinaryExpr] fSemiColon
+///! VarDecl = fVar TypeUse fIdentifier [fAssign BinaryExpr] fSemiColon
 
 use std::fmt;
 
@@ -13,15 +15,15 @@ use lexical::KeywordKind;
 use lexical::SeperatorKind;
 
 use super::super::ISyntaxItem;
-use super::super::Expression;
+use super::super::BinaryExpr;
 use super::super::TypeUse;
 
-#[derive(Eq, PartialEq)]
+#[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct VarDeclStatement {
     pub is_const: bool,
     pub ty: TypeUse,
     pub name: String,
-    pub init_expr: Option<Expression>,
+    pub init_expr: Option<BinaryExpr>,
     pub pos: [StringPosition; 4],     // position for 'const' or 'var', name, assign, and semicolon
 }
 impl fmt::Debug for VarDeclStatement {
@@ -94,7 +96,7 @@ impl ISyntaxItem for VarDeclStatement {
             Some(SeperatorKind::Assign) => {
                 poss[2] = lexer.pos(index + current_len);
                 current_len += 1;
-                match Expression::parse(lexer, messages, index + current_len) {
+                match BinaryExpr::parse(lexer, messages, index + current_len) {
                     (None, length) => return (None, current_len + length),
                     (Some(expr), expr_len) => {
                         current_len += expr_len;
@@ -130,7 +132,7 @@ fn ast_stmt_var_decl() {
             is_const: true,
             ty: TypeUseF::new_simple_test("i32", make_str_pos!(1, 7, 1, 9)),
             name: "abc".to_owned(),                                    
-            init_expr: Some(Expression::with_test_str("                0;")),
+            init_expr: Some(BinaryExpr::with_test_str("                0;")),
             pos: [
                 make_str_pos!(1, 1, 1, 5),
                 make_str_pos!(1, 11, 1, 13),
@@ -146,7 +148,7 @@ fn ast_stmt_var_decl() {
             is_const: false,
             ty: TypeUseF::new_array(make_str_pos!(1, 5, 1, 9), TypeUseF::new_simple_test("i32", make_str_pos!(1, 6, 1, 8))),
             name: "abc".to_owned(),                                    
-            init_expr: Some(Expression::with_test_str("                1 + 1")),
+            init_expr: Some(BinaryExpr::with_test_str("                1 + 1")),
             pos: [
                 make_str_pos!(1, 1, 1, 3),
                 make_str_pos!(1, 11, 1, 13),
@@ -203,7 +205,7 @@ fn ast_stmt_var_decl() {
                     TypeUseF::new_simple_test("u32", make_str_pos!(1, 12, 1, 14)),
                 ]),
             name: "buf".to_owned(),                                          
-            init_expr: Some(Expression::with_test_str("                      ([1u8, 5u8, 0x7u8], abc);")),
+            init_expr: Some(BinaryExpr::with_test_str("                      ([1u8, 5u8, 0x7u8], abc);")),
             pos: [
                 make_str_pos!(1, 1, 1, 3),
                 make_str_pos!(1, 17, 1, 19),

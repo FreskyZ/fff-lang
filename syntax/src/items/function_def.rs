@@ -17,7 +17,7 @@ use super::super::TypeUse;
 use super::super::TypeUseF;
 use super::super::Block;
 
-#[derive(Eq, PartialEq)]
+#[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct Argument {
     pub ty: TypeUse,
     pub name: String,
@@ -61,7 +61,7 @@ impl Argument {
     pub fn pub_pos_all(&self) -> StringPosition { self.pos_all() }
 }
 
-#[derive(Eq, PartialEq)]
+#[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct FunctionDef {
     pub name: String,
     pub args: Vec<Argument>,
@@ -209,7 +209,7 @@ fn ast_function_def_parse() {
             pos2: [make_str_pos!(1, 1, 1, 2), make_str_pos!(1, 4, 1, 7)], 
             args: Vec::new(), 
             ret_type: TypeUseF::new_unit(make_str_pos!(1, 10, 1, 10)), 
-            body: Block{ stmts: Vec::new(), pos: make_str_pos!(1, 11, 1, 12) },
+            body: Block::new(make_str_pos!(1, 11, 1, 12), vec![]),
         }), 6)
     );
 
@@ -228,7 +228,7 @@ fn ast_function_def_parse() {
                 }
             ], 
             ret_type: TypeUseF::new_unit(make_str_pos!(1, 17, 1, 17)), 
-            body: Block{ stmts: Vec::new(), pos: make_str_pos!(1, 18, 1, 19) },
+            body: Block::new(make_str_pos!(1, 18, 1, 19), vec![]),
         }), 8)
     );
                             //                 0        1         2         3         4         5         6
@@ -261,7 +261,7 @@ fn ast_function_def_parse() {
                 },
             ],
             ret_type: TypeUseF::new_unit(make_str_pos!(1, 60, 1, 60)), 
-            body: Block{ stmts: Vec::new(), pos: make_str_pos!(1, 62, 1, 63) },
+            body: Block::new(make_str_pos!(1, 62, 1, 63), vec![]),
         }), 19)
     );
                             //                 0        1         2        
@@ -274,7 +274,7 @@ fn ast_function_def_parse() {
             pos2: [make_str_pos!(1, 1, 1, 2), make_str_pos!(1, 4, 1, 7)], 
             args: Vec::new(), 
             ret_type: TypeUseF::new_simple_test("i32", make_str_pos!(1, 16, 1, 18)), 
-            body: Block{ stmts: Vec::new(), pos: make_str_pos!(1, 20, 1, 21) },
+            body: Block::new(make_str_pos!(1, 20, 1, 21), vec![]),
         }), 9)
     );
                             //                 0        1         2         3         4         5         6
@@ -307,7 +307,7 @@ fn ast_function_def_parse() {
                               TypeUseF::new_simple_test("string", make_str_pos!(1, 57, 1, 62))
                           )
                       ), 
-            body: Block{ stmts: Vec::new(), pos: make_str_pos!(1, 66, 1, 67) },
+            body: Block::new(make_str_pos!(1, 66, 1, 67), vec![]),
         }), 23)
     );
 }

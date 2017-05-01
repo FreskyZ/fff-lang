@@ -17,7 +17,7 @@ use lexical::KeywordKind;
 use super::super::ISyntaxItem;
 use super::super::ISyntaxItemFormat;
 
-#[derive(Eq, PartialEq)]
+#[cfg_attr(test, derive(Eq, PartialEq))]
 struct JumpStatement {
     m_target: Option<String>,
     m_target_strpos: StringPosition,
@@ -61,9 +61,9 @@ impl JumpStatement {
     }
 }
 
-#[derive(Eq, PartialEq)]
+#[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct ContinueStatement(JumpStatement);
-#[derive(Eq, PartialEq)]
+#[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct BreakStatement(JumpStatement);
 
 impl ISyntaxItemFormat for ContinueStatement {

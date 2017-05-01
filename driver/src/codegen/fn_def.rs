@@ -588,7 +588,7 @@ fn gen_fn_decl() {
         assert_eq!(fndecl.pos, [make_str_pos!(1, 1, 1, 2), make_str_pos!(1, 4, 1, 7), make_str_pos!(1, 14, 1, 15)]);
         assert_eq!(fndecl.ret_type, ItemID::new(0));
         // assert_eq!(id, 0);
-        assert_eq!(block.stmts.len(), 1);
+        assert_eq!(block.get_statements().len(), 1);
     }
 
     let program = "fn some(i32 a, u32 b, [string] c) -> [u8] {}";

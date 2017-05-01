@@ -16,7 +16,7 @@ use super::super::ISyntaxItem;
 use super::super::ISyntaxItemFormat;
 use super::super::Expression;
 
-#[derive(Eq, PartialEq)]
+#[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct ReturnStatement {
     m_expr: Option<Expression>,
     m_all_strpos: StringPosition,

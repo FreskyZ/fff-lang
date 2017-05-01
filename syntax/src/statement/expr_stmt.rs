@@ -1,5 +1,7 @@
-
-// ExpressionStatement = Expression [AssignOperator Expression] fSemiColon
+///! fff-lang
+///! 
+///! syntax/expr_stmt
+///! ExprStatement = BinaryExpr [AssignOperator BinaryExpr] fSemiColon
 
 use std::fmt;
 
@@ -12,95 +14,145 @@ use lexical::SeperatorKind;
 use lexical::SeperatorCategory;
 
 use super::super::ISyntaxItem;
-use super::super::Expression;
+use super::super::ISyntaxItemFormat;
+use super::super::BinaryExpr;
 
-#[derive(Eq, PartialEq)]
-pub struct ExpressionStatement {
-    pub left_expr: Expression,
-    pub op: Option<SeperatorKind>,
-    pub right_expr: Option<Expression>,
-    pub pos: [StringPosition; 2],       // position for assign op and ';'
+#[cfg_attr(test, derive(Eq, PartialEq))]
+struct SimpleExprStatement {
+    expr: BinaryExpr, 
+    all_strpos: StringPosition, // include semicolon
 }
+#[cfg_attr(test, derive(Eq, PartialEq))]
+struct AssignExprStatement {
+    left: BinaryExpr,
+    right: BinaryExpr,
+    assign_op: SeperatorKind,
+    assign_op_strpos: StringPosition,
+    all_strpos: StringPosition,
+}
+#[cfg_attr(test, derive(Eq, PartialEq))]
+enum ActualExprStatement {
+    Simple(SimpleExprStatement),
+    Assign(AssignExprStatement),
+}
+#[cfg_attr(test, derive(Eq, PartialEq))]
+pub struct ExprStatement(ActualExprStatement);
 
-fn format_assign_op(op: &SeperatorKind) -> String {
-    match *op {
-        SeperatorKind::Assign => format!(".operator="),
-        SeperatorKind::AddAssign => format!(".operator+="),
-        SeperatorKind::SubAssign => format!(".operator-="),
-        SeperatorKind::MulAssign => format!(".operator*="),
-        SeperatorKind::DivAssign => format!(".operator/="),
-        SeperatorKind::RemAssign => format!(".operator%="),
-        SeperatorKind::BitAndAssign => format!(".operator&="),
-        SeperatorKind::BitOrAssign => format!(".operator|="),
-        SeperatorKind::BitXorAssign => format!(".operator^="),
-        _ => unreachable!(),
+impl ISyntaxItemFormat for ExprStatement {
+    fn format(&self, indent: u32) -> String {
+        match self.0 {
+            ActualExprStatement::Simple(SimpleExprStatement{ ref expr, ref all_strpos }) => 
+                format!("{}ExprStmt <{:?}>\n{}", ExprStatement::indent_str(indent), all_strpos, expr.format(indent + 1)),
+            ActualExprStatement::Assign(AssignExprStatement{ ref left, ref right, ref assign_op, ref assign_op_strpos, ref all_strpos }) =>
+                format!("{}ExprStmt <{:?}>\n{}{:?} <{:?}>\n{}\n{}",
+                    ExprStatement::indent_str(indent), all_strpos,
+                    ExprStatement::indent_str(indent + 1), assign_op, assign_op_strpos,
+                    left.format(indent + 1),
+                    right.format(indent + 1), 
+                ),
+        }
     }
 }
-
-impl ExpressionStatement {
+impl fmt::Debug for ExprStatement {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
 }
-impl fmt::Debug for ExpressionStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}{}; @ {:?}",
-            self.left_expr,
-            match (&self.op, &self.right_expr) { 
-                (&Some(ref op), &Some(ref expr)) => format!("{:?}({:?}) @ {:?}", format_assign_op(op), expr, self.pos[0]), 
-                (ref _other_op, ref _other_expr) => String::new() 
-            },
-            self.pos[1]
-        )
+impl ExprStatement {
+    
+    pub fn new_simple(all_strpos: StringPosition, expr: BinaryExpr) -> ExprStatement { 
+        ExprStatement(ActualExprStatement::Simple(SimpleExprStatement{ expr, all_strpos })) 
     }
-}
-impl ISyntaxItem for ExpressionStatement {
-
-    fn pos_all(&self) -> StringPosition { StringPosition::merge(self.left_expr.pos_all(), self.pos[1]) }
-
-    fn is_first_final(lexer: &mut TokenStream, index: usize) -> bool {
-        Expression::is_first_final(lexer, index)
+    pub fn new_assign(all_strpos: StringPosition, 
+        assign_op: SeperatorKind, assign_op_strpos: StringPosition, left: BinaryExpr, right: BinaryExpr) -> ExprStatement {
+        ExprStatement(ActualExprStatement::Assign(AssignExprStatement{
+            left: left, right: right, assign_op: assign_op, assign_op_strpos: assign_op_strpos, all_strpos: all_strpos
+        }))
     }
 
-    fn parse(lexer: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<ExpressionStatement>, usize) {
+    pub fn is_simple(&self) -> bool { match self.0 { ActualExprStatement::Simple(_) => true, ActualExprStatement::Assign(_) => false } }
+    pub fn is_assign(&self) -> bool { match self.0 { ActualExprStatement::Simple(_) => false, ActualExprStatement::Assign(_) => true } }
 
-        let (left_expr, mut current_len) = match Expression::parse(lexer, messages, index) {
+    pub fn get_all_strpos(&self) -> StringPosition {
+        match self.0 {
+            ActualExprStatement::Simple(ref simple) => simple.all_strpos,
+            ActualExprStatement::Assign(ref assign) => assign.all_strpos,
+        }
+    }
+
+    pub fn get_expr(&self) -> Option<&BinaryExpr> {
+        match self.0 {
+            ActualExprStatement::Simple(ref simple) => Some(&simple.expr),
+            ActualExprStatement::Assign(_) => None,
+        }
+    }
+    pub fn get_left_expr(&self) -> Option<&BinaryExpr> {
+        match self.0 {
+            ActualExprStatement::Simple(_) => None,
+            ActualExprStatement::Assign(ref assign) => Some(&assign.left),
+        }
+    }
+    pub fn get_right_expr(&self) -> Option<&BinaryExpr> {
+        match self.0 {
+            ActualExprStatement::Simple(_) => None,
+            ActualExprStatement::Assign(ref assign) => Some(&assign.right),
+        }
+    }
+    pub fn get_assign_op(&self) -> Option<&SeperatorKind> {
+        match self.0 {
+            ActualExprStatement::Simple(_) => None,
+            ActualExprStatement::Assign(ref assign) => Some(&assign.assign_op),
+        }
+    }
+    pub fn get_assign_op_strpos(&self) -> StringPosition {
+        match self.0 {
+            ActualExprStatement::Simple(_) => StringPosition::new(),
+            ActualExprStatement::Assign(ref assign) => assign.assign_op_strpos,
+        }
+    }
+}
+impl ISyntaxItem for ExprStatement {
+
+    fn pos_all(&self) -> StringPosition { self.get_all_strpos() }
+
+    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
+        BinaryExpr::is_first_final(tokens, index)
+    }
+
+    fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<ExprStatement>, usize) {
+
+        let (left_expr, mut current_length) = match BinaryExpr::parse(tokens, messages, index) {
             (Some(expr), expr_len) => (expr, expr_len),
             (None, length) => return (None, length),
         };
 
-        if lexer.nth(index + current_len).is_seperator(SeperatorKind::SemiColon) {
-            // if !left_expr.is_function_call() { // process in codegen not here
-            //     messages.push(Message::new_by_str("Not function call neither assign statement expression statement", vec![(left_expr.pos_all(), "statement here")]));
-            // }
-            return (Some(ExpressionStatement{
-                left_expr: left_expr,
-                op: None,
-                right_expr: None,
-                pos: [StringPosition::new(), lexer.pos(index + current_len)]
-            }), current_len + 1);
+        if tokens.nth(index + current_length).is_seperator(SeperatorKind::SemiColon) {
+            return (Some(ExprStatement::new_simple(
+                StringPosition::merge(tokens.pos(index), tokens.pos(index + current_length)),
+                left_expr
+            )), current_length + 1);
         }
 
-        let (assign_op, assign_op_pos) = match lexer.nth(index + current_len).get_seperator() {
+        let (assign_op, assign_op_strpos) = match tokens.nth(index + current_length).get_seperator() {
             Some(ref assign_op) if assign_op.is_category(SeperatorCategory::Assign) => {
-                current_len += 1;
-                (assign_op.clone(), lexer.pos(index + current_len - 1))
+                current_length += 1;
+                (assign_op.clone(), tokens.pos(index + current_length - 1))
             },
-            Some(_) | None => return push_unexpect!(lexer, messages, ["assignment operator", "semicolon", ], index + current_len, current_len),
+            Some(_) | None => return push_unexpect!(tokens, messages, ["assignment operator", "semicolon", ], index + current_length, current_length),
         };
         
-        match Expression::parse(lexer, messages, index + current_len) {
+        match BinaryExpr::parse(tokens, messages, index + current_length) {
             (Some(right_expr), right_expr_len) => {
-                current_len += right_expr_len;
-                if lexer.nth(index + current_len).is_seperator(SeperatorKind::SemiColon) {
-                    return (Some(ExpressionStatement{
-                        left_expr: left_expr,
-                        op: Some(assign_op),
-                        right_expr: Some(right_expr),
-                        pos: [assign_op_pos, lexer.pos(index + current_len)]
-                    }), current_len + 1);
+                current_length += right_expr_len;
+                if tokens.nth(index + current_length).is_seperator(SeperatorKind::SemiColon) {
+                    return (Some(ExprStatement::new_assign(
+                        StringPosition::merge(tokens.pos(index), tokens.pos(index + current_length)),
+                        assign_op, assign_op_strpos,
+                        left_expr, right_expr,
+                    )), current_length + 1);
                 } else {
-                    return push_unexpect!(lexer, messages, "semicolon", index + current_len, current_len);
+                    return push_unexpect!(tokens, messages, "semicolon", index + current_length, current_length);
                 }
             }
-            (None, length) => return (None, current_len + length),
+            (None, length) => return (None, current_length + length),
         }
     }
 }
@@ -108,41 +160,39 @@ impl ISyntaxItem for ExpressionStatement {
 #[cfg(test)] #[test]
 fn ast_stmt_expr() {
     use super::super::ISyntaxItemWithStr;
-    use super::super::Expression;
+    use super::super::BinaryExpr;
+    use super::super::PostfixExpr;
+    use super::super::PrimaryExpr;
+    use lexical::LitValue;
 
-    macro_rules! test_case {
-        ($program: expr, $len: expr, $expect: expr) => (
-            let (result, len) = ExpressionStatement::with_test_str_ret_size($program);
-            assert_eq!(result, Some($expect));
-            assert_eq!(len, $len);
-        )
-    }
+    //                                                 0         1          2
+    //                                                 12345678 90123456789 012
+    assert_eq!{ ExprStatement::with_test_str_ret_size("writeln(\"helloworld\");"), (
+        Some(ExprStatement::new_simple(
+            make_strpos!(1, 1, 1, 22),
+            BinaryExpr::new_postfix(
+                PostfixExpr::new_function_call(
+                    PostfixExpr::new_primary(PrimaryExpr::new_ident("writeln".to_owned(), make_strpos!(1, 1, 1, 7))),
+                    make_strpos!(1, 8, 1, 21), vec![
+                    BinaryExpr::new_lit(LitValue::from("helloworld"), make_strpos!(1, 9, 1, 20))
+                ])
+            )
+        )),
+        5
+    )}
 
-    //           12345678 90123456789 0123
-    test_case!{ "writeln(\"helloworld\");", 5,
-        ExpressionStatement {
-            left_expr: Expression::with_test_str("writeln(\"helloworld\")"),
-            op: None,
-            right_expr: None,
-            pos: [StringPosition::new(), make_str_pos!(1, 22, 1, 22)]
-        } 
-    }
-    //           1234567890
-    test_case!{ "1 + 1 = 2;", 6,
-        ExpressionStatement {
-            left_expr: Expression::with_test_str("1 + 1"),
-            op: Some(SeperatorKind::Assign),
-            right_expr: Some(Expression::with_test_str("        2")),
-            pos: [make_str_pos!(1, 7, 1, 7), make_str_pos!(1, 10, 1, 10)]
-        }
-    }
-    //           1234567890
-    test_case!{ "1 + 1+= 2;", 6,
-        ExpressionStatement {
-            left_expr: Expression::with_test_str("1 + 1"),
-            op: Some(SeperatorKind::AddAssign),
-            right_expr: Some(Expression::with_test_str("       2")),
-            pos: [make_str_pos!(1, 6, 1, 7), make_str_pos!(1, 10, 1, 10)]
-        }
-    }
+    //                                                 123456789012
+    assert_eq!{ ExprStatement::with_test_str_ret_size("1 + 1 <<= 2;"), ( // to show I have 3 char seperator available
+        Some(ExprStatement::new_assign(
+            make_strpos!(1, 1, 1, 12),
+            SeperatorKind::ShiftLeftAssign, make_strpos!(1, 7, 1, 9),
+            BinaryExpr::new_binary(
+                BinaryExpr::new_lit(LitValue::from(1), make_strpos!(1, 1, 1, 1)),
+                SeperatorKind::Add, make_strpos!(1, 3, 1, 3),
+                BinaryExpr::new_lit(LitValue::from(1), make_strpos!(1, 5, 1, 5)),
+            ),
+            BinaryExpr::new_lit(LitValue::from(2), make_strpos!(1, 11, 1, 11))
+        )),
+        6
+    )}
 }

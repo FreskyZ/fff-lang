@@ -15,7 +15,7 @@ use lexical::SeperatorKind;
 use super::super::ISyntaxItem;
 use super::super::ISyntaxItemFormat;
 
-#[derive(Eq, PartialEq)]
+#[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct LabelDef {
     m_name: String,
     m_strpos: StringPosition,

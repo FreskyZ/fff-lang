@@ -615,7 +615,7 @@ fn v2_base() {
             sep!(SeperatorKind::Comma, 1, 10, 1, 10),
             lit!(4.5, 1, 12, 1, 14),
             sep!(SeperatorKind::RightBracket, 1, 15, 1, 15),
-            sep!(SeperatorKind::ShiftLeftEqual, 1, 16, 1, 18),
+            sep!(SeperatorKind::ShiftLeftAssign, 1, 16, 1, 18),
         ] [
             Message::with_help_by_str(error_strings::UnexpectedNonASCIIChar, vec![
                 (make_str_pos!(1, 6, 1, 6), ""), 

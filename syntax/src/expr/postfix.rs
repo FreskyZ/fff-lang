@@ -25,19 +25,19 @@ use super::super::TypeUse;
 
 use super::primary::PrimaryExpr;
 
-#[derive(Eq, PartialEq)]
+#[cfg_attr(test, derive(Eq, PartialEq))]
 enum ActualPostfix {
     MemberAccess(String, [StringPosition; 2]),          // dot's position, xxx's position
     Subscription(Vec<BinaryExpr>, StringPosition),      // []'s position
     FunctionCall(Vec<BinaryExpr>, StringPosition),      // ()'s position
     MemberFunctionCall(String, Vec<BinaryExpr>, [StringPosition; 3]), // dot's position, xxx's position ()'s position
 }
-#[derive(Eq, PartialEq)]
+#[cfg_attr(test, derive(Eq, PartialEq))]
 enum PostfixExprImpl {
     Primary(PrimaryExpr),
     Postfix(PostfixExpr, ActualPostfix, StringPosition), // all_strpos
 }
-#[derive(Eq, PartialEq)]
+#[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct PostfixExpr(Box<PostfixExprImpl>);
 
 impl ISyntaxItemFormat for PostfixExpr {
@@ -45,23 +45,23 @@ impl ISyntaxItemFormat for PostfixExpr {
         match self.0.as_ref() {
             &PostfixExprImpl::Primary(ref primary_expr) => primary_expr.format(indent),
             &PostfixExprImpl::Postfix(ref postfix_expr, ActualPostfix::Subscription(ref exprs, ref bracket_strpos), ref all_strpos) => 
-                format!("{}PostfixExpr <{:?}>\n{}\n{}Subscription <{:?}>{}", 
+                format!("{}PostfixExpr <{:?}>\n{}\n{}Subscription {}<{:?}>{}", 
                     PostfixExpr::indent_str(indent), all_strpos,
                     postfix_expr.format(indent + 1),
-                    PostfixExpr::indent_str(indent + 1), bracket_strpos, 
+                    PostfixExpr::indent_str(indent + 1), if exprs.is_empty() { "(empty) " } else { "" }, bracket_strpos, 
                     exprs.iter().fold(String::new(), |mut buf, expr| { buf.push_str("\n"); buf.push_str(&expr.format(indent + 2)); buf })),
             &PostfixExprImpl::Postfix(ref postfix_expr, ActualPostfix::FunctionCall(ref exprs, ref paren_strpos), ref all_strpos) => 
-                format!("{}PostfixExpr <{:?}>\n{}\n{}FunctionCall <{:?}>{}", 
+                format!("{}PostfixExpr <{:?}>\n{}\n{}FunctionCall {}<{:?}>{}", 
                     PostfixExpr::indent_str(indent), all_strpos,
                     postfix_expr.format(indent + 1),
-                    PostfixExpr::indent_str(indent + 1), paren_strpos, 
+                    PostfixExpr::indent_str(indent + 1), if exprs.is_empty() { "(empty) " } else { "" }, paren_strpos, 
                     exprs.iter().fold(String::new(), |mut buf, expr| { buf.push_str("\n"); buf.push_str(&expr.format(indent + 2)); buf })),
             &PostfixExprImpl::Postfix(ref postfix_expr, 
                 ActualPostfix::MemberFunctionCall(ref name, ref exprs, ref strposs), ref all_strpos) =>
-                format!("{}PostfixExpr <{:?}>\n{}\n{}MemberFunctionCall <{:?}>\n{}'.' <{:?}>\n{}Ident '{}' <{:?}>\n{}paren <{:?}>{}", 
+                format!("{}PostfixExpr <{:?}>\n{}\n{}MemberFunctionCall {}<{:?}>\n{}'.' <{:?}>\n{}Ident '{}' <{:?}>\n{}paren <{:?}>{}", 
                     PostfixExpr::indent_str(indent), all_strpos,
                     postfix_expr.format(indent + 1),
-                    PostfixExpr::indent_str(indent + 1), StringPosition::merge(strposs[0], strposs[2]),
+                    PostfixExpr::indent_str(indent + 1), if exprs.is_empty() { "(empty) " } else { "" }, StringPosition::merge(strposs[0], strposs[2]),
                     PostfixExpr::indent_str(indent + 2), strposs[0],
                     PostfixExpr::indent_str(indent + 2), name, strposs[1],
                     PostfixExpr::indent_str(indent + 2), strposs[2], 
@@ -424,7 +424,7 @@ fn postfix_expr_format() {
               Ident 'j' <<0>1:30-1:30>
           Subscription <<0>1:31-1:33>
             Ident 'k' <<0>1:32-1:32>
-        MemberFunctionCall <<0>1:34-1:37>
+        MemberFunctionCall (empty) <<0>1:34-1:37>
           '.' <<0>1:34-1:34>
           Ident 'l' <<0>1:35-1:35>
           paren <<0>1:36-1:37>

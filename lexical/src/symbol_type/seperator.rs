@@ -211,8 +211,8 @@ define_seperator!{ SeperatorKind,
     ]
     [
     //  ch1, ch2, ch3 => var,               category
-        '>', '>', '=' => ShiftRightEqual,   SeperatorCategory::Assign,
-        '<', '<', '=' => ShiftLeftEqual,    SeperatorCategory::Assign,
+        '>', '>', '=' => ShiftRightAssign,  SeperatorCategory::Assign,
+        '<', '<', '=' => ShiftLeftAssign,   SeperatorCategory::Assign,
     ]
     [
     //  ch,    var,                 category1,                      category2
