@@ -35,31 +35,24 @@ impl fmt::Debug for V4Token {
 }
 impl IToken for V4Token {
 
-    fn is_keyword(&self, kind: KeywordKind) -> bool { match self.0 { V2Token::Keyword(ref self_kind) => *self_kind == kind, _ => false } }
-    fn is_seperator(&self, kind: SeperatorKind) -> bool { match self.0 { V2Token::Seperator(ref self_kind) => *self_kind == kind, _ => false } }
-    fn is_spec_ident(&self, name: &str) -> bool { match self.0 { V2Token::Identifier(ref self_name) => self_name == name, _ => false } }
-    fn is_ident(&self) -> bool { match self.0 { V2Token::Identifier(_) => true, _ => false } }
-    fn is_label(&self) -> bool { match self.0 { V2Token::Label(_) => true, _ => false } }
     fn is_eof(&self) -> bool { match self.0 { V2Token::EOF => true, _ => false } }
     fn is_eofs(&self) -> bool { match self.0 { V2Token::EOFs => true, _ => false } }
-
+    fn is_label(&self) -> bool { match self.0 { V2Token::Label(_) => true, _ => false } }
     fn is_lit(&self) -> bool { match self.0 { V2Token::Literal(_) => true, _ => false } }
-    fn is_str_lit(&self) -> bool { match self.0 { V2Token::Literal(LitValue::Str(_)) => true, _ => false } }
-    fn is_num_lit(&self) -> bool { match self.0 { V2Token::Literal(LitValue::Num(_)) => true, _ => false } }
-    fn is_char_lit(&self) -> bool { match self.0 { V2Token::Literal(LitValue::Char(_)) => true, _ => false } }
-    fn is_bool_lit(&self) -> bool { match self.0 { V2Token::Literal(LitValue::Bool(_)) => true, _ => false } }
-
+    fn is_identifier(&self) -> bool { match self.0 { V2Token::Identifier(_) => true, _ => false } }
+    fn is_keyword(&self, kind: KeywordKind) -> bool { match self.0 { V2Token::Keyword(ref self_kind) => *self_kind == kind, _ => false } }
+    fn is_seperator(&self, kind: SeperatorKind) -> bool { match self.0 { V2Token::Seperator(ref self_kind) => *self_kind == kind, _ => false } }
     fn is_seperator_category(&self, category: SeperatorCategory) -> bool { 
-        match self.0 { V2Token::Seperator(ref seperator) => seperator.is_category(category), _ => false } 
+        match self.0 { V2Token::Seperator(ref self_kind) => self_kind.is_category(category), _ => false } 
     }
 
-    fn get_keyword(&self) -> Option<KeywordKind> { match self.0 { V2Token::Keyword(ref kind) => Some(kind.clone()), _ => None } }
-    fn get_seperator(&self) -> Option<SeperatorKind> { match self.0 { V2Token::Seperator(ref kind) => Some(kind.clone()), _ => None } }
-    fn get_identifier(&self) -> Option<String> { match self.0 { V2Token::Identifier(ref name) => Some(name.clone()), _ => None } }
+    fn get_lit(&self) -> Option<LitValue> { match self.0 { V2Token::Literal(ref val) => Some(val.clone()), _ => None } }
     fn get_label(&self) -> Option<String> { match self.0 { V2Token::Label(ref name) => Some(name.clone()), _ => None } }
-    fn get_lit_val(&self) -> Option<LitValue> { match self.0 { V2Token::Literal(ref val) => Some(val.clone()), _ => None } }
+    fn get_keyword(&self) -> Option<KeywordKind> { match self.0 { V2Token::Keyword(ref kind) => Some(kind.clone()), _ => None } }
+    fn get_identifier(&self) -> Option<String> { match self.0 { V2Token::Identifier(ref name) => Some(name.clone()), _ => None } }
+    fn get_seperator(&self) -> Option<SeperatorKind> { match self.0 { V2Token::Seperator(ref kind) => Some(kind.clone()), _ => None } }
 
-    fn get_position(&self) -> StringPosition { self.1 }
+    fn get_strpos(&self) -> StringPosition { self.1 }
 }
 
 pub struct TokenStream {
@@ -68,13 +61,12 @@ pub struct TokenStream {
 }
 impl TokenStream {
     
-    #[allow(unused_assignments)] // value assigned to eofs_pos is never used
     pub fn new<'a>(chars: CodeChars<'a>, messages: &mut MessageCollection) -> TokenStream {
         use super::buf_lexer::ILexer;
 
         let mut v2lexer = V2Lexer::new(chars, messages);
         let mut tokens = Vec::new();
-        let mut eofs_pos = StringPosition::new();
+        let eofs_pos: StringPosition;
         loop {
             match v2lexer.next(messages) {
                 (V2Token::EOFs, pos) => { eofs_pos = pos; break; }
@@ -103,9 +95,9 @@ impl TokenStream {
     }
     pub fn pos(&self, idx: usize) -> StringPosition { 
         if idx >= self.tokens.len() { 
-            self.eofs_token.get_position()
+            self.eofs_token.get_strpos()
         } else {
-            self.tokens[idx].get_position()
+            self.tokens[idx].get_strpos()
         }
     }
     pub fn nth(&self, idx: usize) -> &IToken {
@@ -155,56 +147,55 @@ fn v4_base() { // remain the name of v4 here for memory
     // EOF, 1:17-1:17
     // EOFs, 1:17-1:17
     let messages = &mut MessageCollection::new();
-    let lexer = TokenStream::new(CodeMap::with_test_str("123 abc 'd', [1]").iter(), messages);
+    let tokens = TokenStream::new(CodeMap::with_test_str("123 abc 'd', [1]").iter(), messages);
     assert!(!messages.is_uncontinuable());
 
-    assert_eq!(lexer.nth(0).is_num_lit(), true);
-    assert_eq!(lexer.nth(0).get_lit_val().unwrap().get_num().unwrap(), &Some(NumLitValue::I32(123)));
-    assert_eq!(lexer.nth(0).get_position(), make_str_pos!(1, 1, 1, 3));
-    assert_eq!(lexer.pos(0), make_str_pos!(1, 1, 1, 3));
+    assert_eq!(tokens.nth(0).get_lit().unwrap().is_num(), true);
+    assert_eq!(tokens.nth(0).get_lit().unwrap().get_num(), &NumLitValue::I32(123));
+    assert_eq!(tokens.nth(0).get_strpos(), make_str_pos!(1, 1, 1, 3));
+    assert_eq!(tokens.pos(0), make_str_pos!(1, 1, 1, 3));
 
-    assert_eq!(lexer.nth(1).is_spec_ident("abc"), true);
-    assert_eq!(lexer.nth(1).get_identifier().unwrap(), format!("abc"));
-    assert_eq!(lexer.nth(1).get_position(), make_str_pos!(1, 5, 1, 7));
-    assert_eq!(lexer.pos(1), make_str_pos!(1, 5, 1, 7));
+    assert_eq!(tokens.nth(1).get_identifier().unwrap(), "abc".to_owned());
+    assert_eq!(tokens.nth(1).get_strpos(), make_str_pos!(1, 5, 1, 7));
+    assert_eq!(tokens.pos(1), make_str_pos!(1, 5, 1, 7));
 
-    assert_eq!(lexer.nth(2).is_char_lit(), true);
-    assert_eq!(lexer.nth(2).get_lit_val().unwrap().get_char().unwrap(), &Some('d'));
-    assert_eq!(lexer.nth(2).get_position(), make_str_pos!(1, 9, 1, 11));
-    assert_eq!(lexer.pos(2), make_str_pos!(1, 9, 1, 11));
+    assert_eq!(tokens.nth(2).get_lit().unwrap().is_char(), true);
+    assert_eq!(tokens.nth(2).get_lit().unwrap().get_char(), 'd');
+    assert_eq!(tokens.nth(2).get_strpos(), make_str_pos!(1, 9, 1, 11));
+    assert_eq!(tokens.pos(2), make_str_pos!(1, 9, 1, 11));
 
-    assert_eq!(lexer.nth(3).is_seperator(SeperatorKind::Comma), true);
-    assert_eq!(lexer.nth(3).get_seperator().unwrap(), SeperatorKind::Comma);
-    assert_eq!(lexer.nth(3).get_position(), lexer.pos(3));
-    assert_eq!(lexer.pos(3), make_str_pos!(1, 12, 1, 12));
+    assert_eq!(tokens.nth(3).is_seperator(SeperatorKind::Comma), true);
+    assert_eq!(tokens.nth(3).get_seperator().unwrap(), SeperatorKind::Comma);
+    assert_eq!(tokens.nth(3).get_strpos(), tokens.pos(3));
+    assert_eq!(tokens.pos(3), make_str_pos!(1, 12, 1, 12));
 
-    assert_eq!(lexer.nth(4).is_seperator(SeperatorKind::LeftBracket), true);
-    assert_eq!(lexer.nth(4).get_seperator().unwrap(), SeperatorKind::LeftBracket);
-    assert_eq!(lexer.nth(4).get_position(), lexer.pos(4));
-    assert_eq!(lexer.pos(4), make_str_pos!(1, 14, 1, 14));
+    assert_eq!(tokens.nth(4).is_seperator(SeperatorKind::LeftBracket), true);
+    assert_eq!(tokens.nth(4).get_seperator().unwrap(), SeperatorKind::LeftBracket);
+    assert_eq!(tokens.nth(4).get_strpos(), tokens.pos(4));
+    assert_eq!(tokens.pos(4), make_str_pos!(1, 14, 1, 14));
 
-    assert_eq!(lexer.nth(5).is_num_lit(), true);
-    assert_eq!(lexer.nth(5).get_lit_val().unwrap().get_num().unwrap(), &Some(NumLitValue::I32(1)));
-    assert_eq!(lexer.nth(5).get_position(), lexer.pos(5));
-    assert_eq!(lexer.pos(5), make_str_pos!(1, 15, 1, 15));
+    assert_eq!(tokens.nth(5).get_lit().unwrap().is_num(), true);
+    assert_eq!(tokens.nth(5).get_lit().unwrap().get_num(), &NumLitValue::I32(1));
+    assert_eq!(tokens.nth(5).get_strpos(), tokens.pos(5));
+    assert_eq!(tokens.pos(5), make_str_pos!(1, 15, 1, 15));
 
-    assert_eq!(lexer.nth(6).is_seperator(SeperatorKind::RightBracket), true);
-    assert_eq!(lexer.nth(6).get_seperator().unwrap(), SeperatorKind::RightBracket);
-    assert_eq!(lexer.nth(6).get_position(), lexer.pos(6));
-    assert_eq!(lexer.pos(6), make_str_pos!(1, 16, 1, 16));
+    assert_eq!(tokens.nth(6).is_seperator(SeperatorKind::RightBracket), true);
+    assert_eq!(tokens.nth(6).get_seperator().unwrap(), SeperatorKind::RightBracket);
+    assert_eq!(tokens.nth(6).get_strpos(), tokens.pos(6));
+    assert_eq!(tokens.pos(6), make_str_pos!(1, 16, 1, 16));
 
-    assert_eq!(lexer.nth(7).is_eof(), true);
-    assert_eq!(lexer.pos(7), make_str_pos!(1, 17, 1, 17));
+    assert_eq!(tokens.nth(7).is_eof(), true);
+    assert_eq!(tokens.pos(7), make_str_pos!(1, 17, 1, 17));
 
-    assert_eq!(lexer.nth(8).is_eofs(), true);
-    assert_eq!(lexer.nth(8).get_position(), lexer.pos(8));
-    assert_eq!(lexer.pos(8), make_str_pos!(1, 17, 1, 17));
+    assert_eq!(tokens.nth(8).is_eofs(), true);
+    assert_eq!(tokens.nth(8).get_strpos(), tokens.pos(8));
+    assert_eq!(tokens.pos(8), make_str_pos!(1, 17, 1, 17));
 
-    assert_eq!(lexer.nth(9).is_eofs(), true);
-    assert_eq!(lexer.nth(9).get_position(), lexer.pos(9));
-    assert_eq!(lexer.pos(9), make_str_pos!(1, 17, 1, 17));
+    assert_eq!(tokens.nth(9).is_eofs(), true);
+    assert_eq!(tokens.nth(9).get_strpos(), tokens.pos(9));
+    assert_eq!(tokens.pos(9), make_str_pos!(1, 17, 1, 17));
 
-    assert_eq!(lexer.nth(42).is_eofs(), true);
-    assert_eq!(lexer.nth(42).get_position(), lexer.pos(8));  // this 8 here is not forgetten
-    assert_eq!(lexer.pos(42), make_str_pos!(1, 17, 1, 17));
+    assert_eq!(tokens.nth(42).is_eofs(), true);
+    assert_eq!(tokens.nth(42).get_strpos(), tokens.pos(8));  // this 8 here is not forgetten
+    assert_eq!(tokens.pos(42), make_str_pos!(1, 17, 1, 17));
 }

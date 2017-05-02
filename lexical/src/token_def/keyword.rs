@@ -1,5 +1,7 @@
+///! fff-lang
+///! 
+///! lexical/keyword
 
-// Keyword kind
 macro_rules! define_keyword {
     (
         $enum_name: ident, 

@@ -1,5 +1,7 @@
+///! fff-lang
+///!
+///! lexical/seperator
 
-// Seperator kind
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum SeperatorCategory {
     Assign,     // =, +=, -=, *=, /=, %=, &=, ^=, |=

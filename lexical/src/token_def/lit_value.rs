@@ -1,4 +1,6 @@
-
+///! fff-lang
+///!
+///! lexical/literal
 // lexical literal, for lexical and syntax parser convenience
 
 use std::fmt;
@@ -107,90 +109,44 @@ pub enum LitValue {
     Bool(bool),
 }
 
+const ERROR_STRING: &str = "<error>";
+static NOT_A_STRING: &str = "<not a string>";
+static NOT_NUM_LIT_VALUE: NumLitValue = NumLitValue::I32(0);
+
 impl LitValue {
 
-    pub fn is_unit(&self) -> bool {
-        match *self {
-            LitValue::Unit => true,
-            _ => false,
-        }
-    }
-    pub fn is_str(&self) -> bool {
-        match *self {
-            LitValue::Str(_) => true,
-            _ => false,
-        }
-    }
-    pub fn is_num(&self) -> bool {
-        match *self {
-            LitValue::Num(_) => true,
-            _ => false,
-        }
-    }
-    pub fn is_char(&self) -> bool {
-        match *self {
-            LitValue::Char(_) => true,
-            _ => false,
-        }
-    }
-    pub fn is_bool(&self) -> bool {
-        match *self {
-            LitValue::Bool(_) => true,
+    pub fn is_unit(&self) -> bool { match self { &LitValue::Unit => true, _ => false } }
+    pub fn is_str(&self) -> bool { match self { &LitValue::Str(_) => true, _ => false } }
+    pub fn is_num(&self) -> bool { match self { &LitValue::Num(_) => true, _ => false } }
+    pub fn is_char(&self) -> bool { match self { &LitValue::Char(_) => true, _ => false } }
+    pub fn is_bool(&self) -> bool { match self { &LitValue::Bool(_) => true, _ => false } }
+
+    pub fn is_valid(&self) -> bool { 
+        match self {
+            &LitValue::Unit
+            | &LitValue::Bool(_)
+            | &LitValue::Str(Some(_))
+            | &LitValue::Num(Some(_))
+            | &LitValue::Char(Some(_)) => true,
             _ => false,
         }
     }
 
-    pub fn get_str(&self) -> Option<&Option<String>> {
+    /// get char if is char and is valid, make sure the condition
+    pub fn get_char(&self) -> char { match self { &LitValue::Char(Some(val)) => val, _ => '\0' } }
+    pub fn get_bool(&self) -> bool { match self { &LitValue::Bool(val) => val, _ => false } }
+    pub fn get_str(&self) -> &str {
         match self {
-            &LitValue::Str(ref val) => Some(val),
-            _ => None,
+            &LitValue::Str(Some(ref val)) => val,
+            &LitValue::Str(None) => ERROR_STRING,
+            _ => NOT_A_STRING,
         }
     }
-    pub fn get_char(&self) -> Option<&Option<char>> {
+    pub fn get_num(&self) -> &NumLitValue {
         match self {
-            &LitValue::Char(ref val) => Some(val),
-            _ => None,
-        }
-    }
-    pub fn get_num(&self) -> Option<&Option<NumLitValue>> {
-        match self {
-            &LitValue::Num(ref val) => Some(val),
-            _ => None,
-        }
-    }
-    pub fn get_bool(&self) -> Option<bool> {
-        match self {
-            &LitValue::Bool(val) => Some(val),
-            _ => None,
-        }
-    }
-
-    /// replace error content with <error-content>, do not call on not Str
-    pub fn get_str_not_option(self) -> String {
-        match self {
-            LitValue::Str(Some(val)) => val,
-            LitValue::Str(None) => "<error-content>".to_owned(),
-            _ => unreachable!(),
-        }
-    }
-    pub fn get_num_not_option(self) -> NumLitValue {
-        match self {
-            LitValue::Num(Some(val)) => val,
-            LitValue::Num(None) => NumLitValue::I32(0),
-            _ => unreachable!(),
-        }
-    }
-    pub fn get_char_not_option(self) -> char {
-        match self {
-            LitValue::Char(Some(val)) => val,
-            LitValue::Char(None) => '\u{FEFF}',
-            _ => unreachable!()
-        }
-    }
-    pub fn get_bool_not_option(self) -> bool {
-        match self {
-            LitValue::Bool(val) => val,
-            _ => false,
+            &LitValue::Num(Some(ref val)) => val,
+            &LitValue::Num(None) => &NOT_NUM_LIT_VALUE,
+            _ => &NOT_NUM_LIT_VALUE,
         }
     }
 }
@@ -198,14 +154,14 @@ impl LitValue {
 impl fmt::Debug for LitValue {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            LitValue::Unit => write!(f, "Unit literal"),
-            LitValue::Str(Some(ref val)) => write!(f, "String literal {:?}", val),
-            LitValue::Str(None) => write!(f, "String literal \"<invalid>\""),
-            LitValue::Char(Some(ref val)) => write!(f, "Char literal {:?}", val),
-            LitValue::Char(None) => write!(f, "Char literal '<invalid>'"),
-            LitValue::Num(Some(ref val)) => write!(f, "Numeric literal {:?}", val),
-            LitValue::Num(None) => write!(f, "Numeric literal <invalid>"),
-            LitValue::Bool(val) => write!(f, "Boolean literal {}", val),
+            LitValue::Unit => write!(f, "Literal ()"),
+            LitValue::Str(Some(ref val)) => write!(f, "Literal {:?}", val),
+            LitValue::Str(None) => write!(f, "Literal \"<invalid>\""),
+            LitValue::Char(Some(ref val)) => write!(f, "Literal {:?}", val),
+            LitValue::Char(None) => write!(f, "Literal '<invalid>'"),
+            LitValue::Num(Some(ref val)) => write!(f, "Literal {:?}", val),
+            LitValue::Num(None) => write!(f, "Literal <invalid-num>"),
+            LitValue::Bool(val) => write!(f, "Literal {}", val),
         }
     }
 }
@@ -214,11 +170,11 @@ impl fmt::Display for LitValue {
         match *self {
             LitValue::Unit => write!(f, "()"),
             LitValue::Str(Some(ref val)) => write!(f, "{:?}", val),
-            LitValue::Str(None) => write!(f, "<invalid>"),
+            LitValue::Str(None) => write!(f, "\"<invalid>\""),
             LitValue::Char(Some(ref val)) => write!(f, "{:?}", val),
-            LitValue::Char(None) => write!(f, "<invalid>"),
+            LitValue::Char(None) => write!(f, "'<invalid>'"),
             LitValue::Num(Some(ref val)) => write!(f, "{:?}", val),
-            LitValue::Num(None) => write!(f, "<invalid>"),
+            LitValue::Num(None) => write!(f, "<invalid-num>"),
             LitValue::Bool(val) => write!(f, "{}", val),
         }
     }

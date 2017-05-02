@@ -172,7 +172,7 @@ impl FnImpl {
         // let (args, mut valid) = FnImpl::new_args(syn_fn.get_params(), syn_fn.pos2[0], &syn_fn.name, types, messages, fns);
         let args = Vec::new(); // to pass compile
         let mut valid = true;  // to pass compile
-        let pos_ret_type = StringPosition::new(); // syn_fn.get_ret_type().get_all_strpos(); // to pass compile
+        let _pos_ret_type = StringPosition::new(); // syn_fn.get_ret_type().get_all_strpos(); // to pass compile
         // let ret_type = types.get_id_by_smtype(syn_fn.get_ret_type(), messages, fns);
         let ret_type = ItemID::new_invalid();  // to pass compile
         valid = valid && ret_type.is_valid();

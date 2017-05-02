@@ -166,7 +166,7 @@ mod error_strings {
 
 impl ISyntaxItemGrammar for PrimaryExpr {
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
-        tokens.nth(index).is_ident()
+        tokens.nth(index).is_identifier()
         || tokens.nth(index).is_lit()
         || tokens.nth(index).is_seperator(SeperatorKind::LeftParenthenes)
         || tokens.nth(index).is_seperator(SeperatorKind::LeftBracket)
@@ -183,7 +183,7 @@ impl ISyntaxItemParse for PrimaryExpr {
 
         trace!("start parsing, current token: {:?}", tokens.nth(index));
 
-        match tokens.nth(index).get_lit_val() {
+        match tokens.nth(index).get_lit() {
             None => (),
             Some(lit_val) => {
                 trace!("returning literal {:?} at {:?}", lit_val, tokens.pos(index));

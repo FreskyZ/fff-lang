@@ -88,7 +88,7 @@ impl TypeUseF { // New
 }
 impl ISyntaxItemGrammar for TypeUse {
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
-        tokens.nth(index).is_ident()
+        tokens.nth(index).is_identifier()
         || tokens.nth(index).is_seperator(SeperatorKind::LeftBracket)
         || tokens.nth(index).is_seperator(SeperatorKind::LeftParenthenes)
         || match tokens.nth(index).get_keyword() {
@@ -105,7 +105,7 @@ impl ISyntaxItemParse for TypeUse {
         #[cfg(not(feature = "trace_type_use_parse"))]
         macro_rules! trace { ($($arg:tt)*) => () }
 
-        if tokens.nth(index).is_ident() {
+        if tokens.nth(index).is_identifier() {
             trace!{ "is ident, return" }
             return (Some(TypeUseF::new_simple(tokens.nth(index).get_identifier().unwrap(), tokens.pos(index))), 1);
         }
