@@ -9,6 +9,8 @@ use std::fmt;
 use codepos::StringPosition;
 use message::Message;
 use message::MessageCollection;
+
+use lexical::Token;
 use lexical::TokenStream;
 use lexical::SeperatorKind;
 
@@ -41,21 +43,19 @@ impl LabelDef {
     pub fn into(self) -> (String, StringPosition) { (self.m_name, self.m_strpos) }
 }
 impl ISyntaxItemGrammar for LabelDef {
-    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool { tokens.nth(index).is_label() }
+    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool { if let &Token::Label(_) = tokens.nth(index) { true } else { false } }
 }
 impl ISyntaxItemParse for LabelDef {
 
     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<LabelDef>, usize) {
 
-        match tokens.nth(index).get_label() {
-            None => return push_unexpect!(tokens, messages, "label", index, 0),
-            Some(label_name) => {
-                if tokens.nth(index + 1).is_seperator(SeperatorKind::Colon) {
-                    return (Some(LabelDef::new(label_name.clone(), StringPosition::merge(tokens.pos(index), tokens.pos(index + 1)))), 2);
-                } else {
-                    return push_unexpect!(tokens, messages, "colon", index + 1, 1);
-                }
-            }
+        match (tokens.nth(index), tokens.nth(index + 1)) {
+            (&Token::Label(ref label_name), &Token::Sep(SeperatorKind::Colon)) => 
+                (Some(LabelDef::new(label_name.clone(), StringPosition::merge(tokens.pos(index), tokens.pos(index + 1)))), 2),
+            (&Token::Label(_), _) =>
+                push_unexpect!(tokens, messages, "colon", index + 1, 1),
+            _ => 
+                push_unexpect!(tokens, messages, "label", index, 0),
         }
     }
 }

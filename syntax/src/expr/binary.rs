@@ -1,4 +1,6 @@
-
+///! fff-lang
+///!
+///! syntax/binary_expr
 // MultiplicativeExpression = UnaryExpr | MultiplicativeExpression MultiplicativeOperator UnaryExpr
 // AdditiveExpression = MultiplicativeExpression | AdditiveExpression AdditiveOperator MultiplicativeExpression
 // RelationalExpression = AdditiveExpression | RelationalExpression RelationalOperator AdditiveExpression
@@ -19,6 +21,7 @@ use std::fmt;
 use codepos::StringPosition;
 use message::MessageCollection;
 
+use lexical::Token;
 use lexical::TokenStream;
 use lexical::SeperatorKind;
 use lexical::SeperatorCategory;
@@ -190,24 +193,26 @@ macro_rules! impl_binary_parser {
             };
 
             loop {
-                if tokens.nth(index + current_len).is_seperator_category($op_category) {
-                    let operator_strpos = tokens.pos(index + current_len);
-                    let operator = tokens.nth(index + current_len).get_seperator().unwrap();
-                    current_len += 1;
-                    match $previous_parser(tokens, messages, index + current_len) {
-                        (None, length) => { 
-                            trace!("    return None because parsing right return none"); 
-                            return (None, current_len + length);
-                        }
-                        (Some(right), right_len) => {
-                            current_ret_val = BinaryExpr::new_binary(current_ret_val, operator, operator_strpos, right);
-                            current_len += right_len;
-                            trace!("    changing current ret_val to {:?}", current_ret_val);
+                match tokens.nth(index + current_len) {
+                    &Token::Sep(operator) if operator.is_category($op_category) => {
+                        let operator_strpos = tokens.pos(index + current_len);
+                        current_len += 1;
+                        match $previous_parser(tokens, messages, index + current_len) {
+                            (None, length) => { 
+                                trace!("    return None because parsing right return none"); 
+                                return (None, current_len + length);
+                            }
+                            (Some(right), right_len) => {
+                                current_ret_val = BinaryExpr::new_binary(current_ret_val, operator, operator_strpos, right);
+                                current_len += right_len;
+                                trace!("    changing current ret_val to {:?}", current_ret_val);
+                            }
                         }
                     }
-                } else {
-                    trace!("   operator or other not '{}', return left: {:?}", stringify!($op_category), current_ret_val);
-                    return (Some(current_ret_val), current_len);
+                    _ => {
+                        trace!("   operator or other not '{}', return left: {:?}", stringify!($op_category), current_ret_val);
+                        return (Some(current_ret_val), current_len);
+                    }
                 }
             }
         }

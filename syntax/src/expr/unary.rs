@@ -8,6 +8,7 @@ use std::fmt;
 use codepos::StringPosition;
 use message::MessageCollection;
 
+use lexical::Token;
 use lexical::TokenStream;
 use lexical::SeperatorKind;
 use lexical::SeperatorCategory;
@@ -119,7 +120,10 @@ impl UnaryExpr { // Get
 }
 impl ISyntaxItemGrammar for UnaryExpr {
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
-        PostfixExpr::is_first_final(tokens, index) || tokens.nth(index).is_seperator_category(SeperatorCategory::Unary)
+        PostfixExpr::is_first_final(tokens, index) || match tokens.nth(index) {
+            &Token::Sep(ref sep) if sep.is_category(SeperatorCategory::Unary) => true,
+            _ => false
+        }
     }
 }
 impl ISyntaxItemParse for UnaryExpr {
@@ -129,11 +133,12 @@ impl ISyntaxItemParse for UnaryExpr {
         let mut current_len = 0;
         let mut operator_and_strposs = Vec::new();
         loop {
-            if tokens.nth(index + current_len).is_seperator_category(SeperatorCategory::Unary) {
-                operator_and_strposs.push((tokens.nth(index + current_len).get_seperator().unwrap(), tokens.pos(index + current_len)));
-                current_len += 1;
-            } else {
-                match PostfixExpr::parse(tokens, messages, index + current_len) {
+            match tokens.nth(index + current_len) {
+                &Token::Sep(operator) if operator.is_category(SeperatorCategory::Unary) => {
+                    operator_and_strposs.push((operator, tokens.pos(index + current_len)));
+                    current_len += 1;
+                }
+                _ => match PostfixExpr::parse(tokens, messages, index + current_len) {
                     (None, length) => return (None, current_len + length),
                     (Some(postfix_expr), postfix_len) => {
                         let mut current_unary = UnaryExpr::new_postfix(postfix_expr);

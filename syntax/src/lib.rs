@@ -42,5 +42,3 @@ use self::traits::ISyntaxItemParse;
 use self::traits::ISyntaxItemFormat;
 use self::traits::ISyntaxItemGrammar;
 pub use self::traits::ISyntaxItemWithStr;
-
-// #[cfg(test)] use self::traits::TestCase;

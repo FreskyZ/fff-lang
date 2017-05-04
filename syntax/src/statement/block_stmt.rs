@@ -10,6 +10,7 @@ use std::fmt;
 use codepos::StringPosition;
 use message::MessageCollection;
 
+use lexical::Token;
 use lexical::TokenStream;
 
 use super::super::ISyntaxItemParse;
@@ -59,26 +60,26 @@ impl BlockStatement {
 }
 impl ISyntaxItemGrammar for BlockStatement {
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
-        (tokens.nth(index).is_label() && Block::is_first_final(tokens, index + 2) ) || Block::is_first_final(tokens, index)
+        if let &Token::Label(_) = tokens.nth(index) { Block::is_first_final(tokens, index + 2) } else { Block::is_first_final(tokens, index) }
     }
 }
 impl ISyntaxItemParse for BlockStatement {
 
     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<BlockStatement>, usize) {
 
-        match tokens.nth(index).get_label() {
-            None => match Block::parse(tokens, messages, index) {
-                (None, length) => (None, length),
-                (Some(block), block_length) => 
-                    (Some(BlockStatement::new_no_label(block)), block_length),
-            },
-            Some(_) => match LabelDef::parse(tokens, messages, index) {
+        match tokens.nth(index) {
+            &Token::Label(_) => match LabelDef::parse(tokens, messages, index) {
                 (None, length) => (None, length),
                 (Some(label_def), _label_def_which_is_definitely_2) => match Block::parse(tokens, messages, index + 2) {
                     (None, length) => (None, length + 2),
                     (Some(block), block_length) => 
                         (Some(BlockStatement::new_with_label(label_def, block)), 2 + block_length),
                 },
+            },
+            _ => match Block::parse(tokens, messages, index) {
+                (None, length) => (None, length),
+                (Some(block), block_length) => 
+                    (Some(BlockStatement::new_no_label(block)), block_length),
             },
         }
     }

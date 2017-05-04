@@ -14,10 +14,12 @@ use codepos::StringPosition;
 use message::Message;
 use message::MessageCollection;
 
+use lexical::Token;
 use lexical::TokenStream;
 use lexical::SeperatorKind;
 use lexical::KeywordKind;
 
+// use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -219,9 +221,7 @@ impl ISyntaxItemGrammar for PostfixExpr {
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool { PrimaryExpr::is_first_final(tokens, index) }
 }
 impl ISyntaxItemParse for PostfixExpr {
-    
-    // TODO: check whether this is a rustc bug
-    #[allow(unused_assignments)]
+
     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<PostfixExpr>, usize) {
         
         #[cfg(feature = "trace_postfix_expr_parse")]
@@ -237,12 +237,12 @@ impl ISyntaxItemParse for PostfixExpr {
 
         'postfix: loop {
             // function call and subscription both accept expression list, merge the processor and it is the end seperator
-            let mut expect_end_sep = SeperatorKind::Add;
-            if tokens.nth(index + current_length).is_seperator(SeperatorKind::Dot) {
+            let expect_end_sep: SeperatorKind;
+            if tokens.nth(index + current_length) == &Token::Sep(SeperatorKind::Dot) {
                 let dot_strpos = tokens.pos(index + current_length);
                 let maybe_ident_strpos = tokens.pos(index + current_length + 1);
-                match tokens.nth(index + current_length + 1).get_identifier() {
-                    Some(ident) => {
+                match tokens.nth(index + current_length + 1) {
+                    &Token::Ident(ref ident) => {
                         current_retval = PostfixExpr::new_member_access(
                             current_retval, dot_strpos, ident.clone(), maybe_ident_strpos,
                         );
@@ -252,13 +252,13 @@ impl ISyntaxItemParse for PostfixExpr {
                         trace!("after member access finished, current token: {:?}", tokens.nth(index + current_length));
                         continue 'postfix;
                     }
-                    None => {
+                    _ => {
                         trace!("get postfix failed, member access not followed ident");
                         return push_unexpect!(tokens, messages, "identifier", index + current_length + 1, current_length + 1);
                     }
                 }
-            } else if tokens.nth(index + current_length).is_seperator(SeperatorKind::LeftParenthenes) {
-                if tokens.nth(index + current_length + 1).is_seperator(SeperatorKind::RightParenthenes) {
+            } else if tokens.nth(index + current_length) == &Token::Sep(SeperatorKind::LeftParenthenes) {
+                if tokens.nth(index + current_length + 1) == &Token::Sep(SeperatorKind::RightParenthenes) {
                     trace!("get one postfix, none parameter function call");
                     current_retval = PostfixExpr::new_function_call_auto_merge_prev_member_access(
                         current_retval, StringPosition::merge(tokens.pos(index + current_length), tokens.pos(index + current_length + 1)), Vec::new()
@@ -266,8 +266,8 @@ impl ISyntaxItemParse for PostfixExpr {
                     current_length += 2;
                     continue 'postfix; // no param function call
                 }
-                if tokens.nth(index + current_length + 1).is_seperator(SeperatorKind::Comma) 
-                    && tokens.nth(index + current_length + 2).is_seperator(SeperatorKind::RightParenthenes) {
+                if tokens.nth(index + current_length + 1) == &Token::Sep(SeperatorKind::Comma) 
+                    && tokens.nth(index + current_length + 2) == &Token::Sep(SeperatorKind::RightParenthenes) {
                         let paren_strpos = StringPosition::merge(tokens.pos(index + current_length), tokens.pos(index + current_length + 2));
                         messages.push(Message::new_by_str("Single comma in function call", vec![(paren_strpos, "function call here")]));
                         current_retval = PostfixExpr::new_function_call_auto_merge_prev_member_access(current_retval, paren_strpos, Vec::new());
@@ -275,9 +275,9 @@ impl ISyntaxItemParse for PostfixExpr {
                         continue 'postfix;
                 }
                 expect_end_sep = SeperatorKind::RightParenthenes;
-            } else if tokens.nth(index + current_length).is_seperator(SeperatorKind::LeftBracket) {
+            } else if tokens.nth(index + current_length) == &Token::Sep(SeperatorKind::LeftBracket) {
                 trace!("meet left bracket '{:?}', assume subscription", tokens.nth(index + current_length));
-                if tokens.nth(index + current_length + 1).is_seperator(SeperatorKind::RightBracket) {
+                if tokens.nth(index + current_length + 1) == &Token::Sep(SeperatorKind::RightBracket) {
                     let bracket_strpos = StringPosition::merge(tokens.pos(index + current_length), tokens.pos(index + current_length + 1));
                     messages.push(Message::new_by_str("Empty subscription", vec![(bracket_strpos, "subscription here")]));
                     current_retval = PostfixExpr::new_subscription(
@@ -286,8 +286,8 @@ impl ISyntaxItemParse for PostfixExpr {
                     current_length += 2;
                     continue 'postfix;
                 }
-                if tokens.nth(index + current_length + 1).is_seperator(SeperatorKind::Comma) 
-                    && tokens.nth(index + current_length + 2).is_seperator(SeperatorKind::RightBracket) {
+                if tokens.nth(index + current_length + 1) == &Token::Sep(SeperatorKind::Comma) 
+                    && tokens.nth(index + current_length + 2) == &Token::Sep(SeperatorKind::RightBracket) {
                         let bracket_pair_strpos = StringPosition::merge(tokens.pos(index + current_length), tokens.pos(index + current_length + 2));
                         messages.push(Message::new_by_str("Empty subscription", vec![(bracket_pair_strpos, "subscription here")]));
                         current_retval = PostfixExpr::new_subscription(
@@ -317,12 +317,12 @@ impl ISyntaxItemParse for PostfixExpr {
                     'expr: loop { 
                         match expect_end_sep {
                             SeperatorKind::RightParenthenes 
-                                if tokens.nth(index + current_length + exprs_len).is_seperator(SeperatorKind::RightParenthenes) 
-                                    || (tokens.nth(index + current_length + exprs_len).is_seperator(SeperatorKind::Comma)
-                                        && tokens.nth(index + current_length + exprs_len + 1).is_seperator(SeperatorKind::RightParenthenes))  => {
+                                if tokens.nth(index + current_length + exprs_len) == &Token::Sep(SeperatorKind::RightParenthenes) 
+                                    || (tokens.nth(index + current_length + exprs_len) == &Token::Sep(SeperatorKind::Comma)
+                                        && tokens.nth(index + current_length + exprs_len + 1) == &Token::Sep(SeperatorKind::RightParenthenes))  => {
                                 trace!{ "parsing postfix function call's expression list finished" }
                                 let pos_left_paren = tokens.pos(index + current_length - 1);
-                                current_length += exprs_len + if tokens.nth(index + current_length + exprs_len).is_seperator(SeperatorKind::Comma) { 2 } else { 1 };
+                                current_length += exprs_len + if tokens.nth(index + current_length + exprs_len) == &Token::Sep(SeperatorKind::Comma) { 2 } else { 1 };
                                 let pos_right_paren = tokens.pos(index + current_length - 1);
                                 current_retval = PostfixExpr::new_function_call_auto_merge_prev_member_access(
                                     current_retval, StringPosition::merge(pos_left_paren, pos_right_paren), exprs
@@ -330,12 +330,12 @@ impl ISyntaxItemParse for PostfixExpr {
                                 continue 'postfix;
                             }
                             SeperatorKind::RightBracket 
-                                if tokens.nth(index + current_length + exprs_len).is_seperator(SeperatorKind::RightBracket)
-                                    || (tokens.nth(index + current_length + exprs_len).is_seperator(SeperatorKind::Comma)
-                                        && tokens.nth(index + current_length + exprs_len + 1).is_seperator(SeperatorKind::RightBracket)) => {
+                                if tokens.nth(index + current_length + exprs_len) == &Token::Sep(SeperatorKind::RightBracket)
+                                    || (tokens.nth(index + current_length + exprs_len) == &Token::Sep(SeperatorKind::Comma)
+                                        && tokens.nth(index + current_length + exprs_len + 1) == &Token::Sep(SeperatorKind::RightBracket)) => {
                                 trace!{ "parsing postfix subscription's expression list finished" }
                                 let pos_left_bracket = tokens.pos(index + current_length - 1);
-                                current_length += exprs_len + if tokens.nth(index + current_length + exprs_len).is_seperator(SeperatorKind::Comma) { 2 } else { 1 };
+                                current_length += exprs_len + if tokens.nth(index + current_length + exprs_len) == &Token::Sep(SeperatorKind::Comma) { 2 } else { 1 };
                                 let pos_right_bracket = tokens.pos(index + current_length - 1);
                                 current_retval = PostfixExpr::new_subscription(
                                     current_retval, StringPosition::merge(pos_left_bracket, pos_right_bracket), exprs
@@ -345,7 +345,7 @@ impl ISyntaxItemParse for PostfixExpr {
                             SeperatorKind::RightParenthenes | SeperatorKind::RightBracket => (),
                             _ => unreachable!()
                         }
-                        if tokens.nth(index + current_length + exprs_len).is_seperator(SeperatorKind::Comma) {
+                        if tokens.nth(index + current_length + exprs_len) == &Token::Sep(SeperatorKind::Comma) {
                             exprs_len += 1;
                             match BinaryExpr::parse(tokens, messages, index + current_length + exprs_len) {
                                 (Some(expr), expr_len) => {
@@ -547,3 +547,5 @@ fn postfix_expr_parse() {
         4
     )}
 }
+
+// TODO: make parse sess version postfix::parse pass compile

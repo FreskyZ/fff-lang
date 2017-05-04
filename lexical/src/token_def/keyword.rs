@@ -8,7 +8,7 @@ macro_rules! define_keyword {
         $($value: expr => $var_name: ident, $is_prim_type: expr, $is_reserved: expr,)*
     ) => (
 
-        #[derive(Clone, Eq, PartialEq)]
+        #[derive(Copy, Clone, Eq, PartialEq)]
         pub enum $enum_name {
             $(
                 $var_name,

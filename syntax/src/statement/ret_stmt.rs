@@ -8,6 +8,7 @@ use codepos::StringPosition;
 use message::Message;
 use message::MessageCollection;
 
+use lexical::Token;
 use lexical::TokenStream;
 use lexical::SeperatorKind;
 use lexical::KeywordKind;
@@ -51,24 +52,21 @@ impl ReturnStatement {
     pub fn into_expr(self) -> Option<BinaryExpr> { self.m_expr }
 }
 impl ISyntaxItemGrammar for ReturnStatement {
-    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool { tokens.nth(index).is_keyword(KeywordKind::Return) }
+    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool { tokens.nth(index) == &Token::Keyword(KeywordKind::Return) }
 }
 impl ISyntaxItemParse for ReturnStatement {
 
     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<ReturnStatement>, usize) {
+        assert!(tokens.nth(index) == &Token::Keyword(KeywordKind::Return));
 
-        if !tokens.nth(index).is_keyword(KeywordKind::Return) {
-            unreachable!()
-        }
-
-        if tokens.nth(index + 1).is_seperator(SeperatorKind::SemiColon) {
+        if tokens.nth(index + 1) == &Token::Sep(SeperatorKind::SemiColon) {
             return (Some(ReturnStatement::new_unit(StringPosition::merge(tokens.pos(index), tokens.pos(index + 1)))), 2);
         }
 
         match BinaryExpr::parse(tokens, messages, index + 1) {
             (None, length) => return (None, length),
             (Some(expr), expr_len) => {
-                if tokens.nth(index + 1 + expr_len).is_seperator(SeperatorKind::SemiColon) {
+                if tokens.nth(index + 1 + expr_len) == &Token::Sep(SeperatorKind::SemiColon) {
                     return (Some(ReturnStatement::new_expr(StringPosition::merge(tokens.pos(index), tokens.pos(index + 1 + expr_len)), expr)), 2 + expr_len);
                 } else {
                     return push_unexpect!(tokens, messages, "semicolon", index + expr_len + 1, expr_len + 1);

@@ -21,5 +21,5 @@ pub use self::token_def::SeperatorCategory;
 pub use self::token_def::KeywordKind;
 pub use self::token_def::NumLitValue;
 pub use self::token_def::LitValue;
-pub use self::token_def::IToken;
+pub use self::token_def::Token;
 pub use self::token_stream::TokenStream;

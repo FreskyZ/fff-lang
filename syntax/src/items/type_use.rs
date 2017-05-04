@@ -1,3 +1,6 @@
+///! fff-lang
+///! 
+///! syntax/typeuse
 
 // TypeUse = fPrimitiveType 
 //           | fIdentifier 
@@ -24,6 +27,7 @@ use codepos::StringPosition;
 use message::Message;
 use message::MessageCollection;
 
+use lexical::Token;
 use lexical::TokenStream;
 use lexical::SeperatorKind;
 
@@ -88,12 +92,12 @@ impl TypeUseF { // New
 }
 impl ISyntaxItemGrammar for TypeUse {
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
-        tokens.nth(index).is_identifier()
-        || tokens.nth(index).is_seperator(SeperatorKind::LeftBracket)
-        || tokens.nth(index).is_seperator(SeperatorKind::LeftParenthenes)
-        || match tokens.nth(index).get_keyword() {
-            Some(keyword) => keyword.is_prim_type(),
-            None => false,    
+        match tokens.nth(index) {
+            &Token::Ident(_) 
+            | &Token::Sep(SeperatorKind::LeftBracket)
+            | &Token::Sep(SeperatorKind::LeftParenthenes) => true,
+            &Token::Keyword(kw) => kw.is_prim_type(),
+            _ => false,
         }
     }
 }
@@ -105,119 +109,109 @@ impl ISyntaxItemParse for TypeUse {
         #[cfg(not(feature = "trace_type_use_parse"))]
         macro_rules! trace { ($($arg:tt)*) => () }
 
-        if tokens.nth(index).is_identifier() {
-            trace!{ "is ident, return" }
-            return (Some(TypeUseF::new_simple(tokens.nth(index).get_identifier().unwrap(), tokens.pos(index))), 1);
-        }
-        if let Some(keyword) = tokens.nth(index).get_keyword() {
-            trace!{ "is some keyword" }
-            if keyword.is_prim_type() {
-                trace!{ "is primitive type keyword, return" }
-                return (Some(TypeUseF::new_simple(format!("{}", keyword), tokens.pos(index))), 1);
-            } 
+        match tokens.nth(index) {
+            &Token::Ident(ref ident) =>
+                return (Some(TypeUseF::new_simple(ident.clone(), tokens.pos(index))), 1),
+            &Token::Keyword(keyword) if keyword.is_prim_type() => 
+                return (Some(TypeUseF::new_simple(format!("{}", keyword), tokens.pos(index))), 1),
+            _ => (),
         }
 
         let mut current_len = 0;
-        if tokens.nth(index).is_seperator(SeperatorKind::LeftBracket) {
-            trace!{ "is left bracket, try get array inner type" }
-            current_len += 1;
-            match TypeUse::parse(tokens, messages, index + current_len) {
-                (None, length) => { // TODO: recover by find paired right bracket
-                    trace!{ "parse array inner type failed, return none" }
-                    return (None, current_len + length);
-                }  
-                (Some(inner), inner_length) => {
-                    trace!{ "parse array inner type succeed" }
-                    current_len += inner_length;
-                    if tokens.nth(index + current_len).is_seperator(SeperatorKind::RightBracket) {
-                        trace!{ "parse array inner type succeed, expect right bracket" }
-                        current_len += 1;
-                        return (
-                            Some(TypeUseF::new_array(StringPosition::merge(tokens.pos(index), tokens.pos(index + current_len - 1)), inner)),
-                            inner_length + 2    
-                        );
-                    } else {
-                        trace!{ "parse array failed, not right bracket" }
-                        return push_unexpect!(tokens, messages, "right bracket", index + current_len, current_len);
-                    }
-                } 
-            }
-        }
-
-        if tokens.nth(index).is_seperator(SeperatorKind::LeftParenthenes) {
-            trace!{ "meet left paren, start tuple" }
-            if tokens.nth(index + 1).is_seperator(SeperatorKind::RightParenthenes) {  // still, '(, )' is not allowed here
-                trace!{ "is left paren and right paren, it's unit" }
-                return (Some(TypeUseF::new_unit(StringPosition::merge(tokens.pos(index), tokens.pos(index + 1)))), 2)
-            }
-            
-            current_len += 1;
-            let mut types = Vec::new();
-            match TypeUse::parse(tokens, messages, index + current_len) {
-                (Some(ty), ty_len) => {
-                    trace!{ "parse first tuple element succeed" }
-                    types.push(ty);
-                    current_len += ty_len;
-                }
-                (None, length) => {
-                    trace!{ "parse first tuple element failed, return" }
-                    return (None, length);
-                }
-            }
-
-            loop {
-                if tokens.nth(index + current_len).is_seperator(SeperatorKind::RightParenthenes) {
-                    trace!{ "parse tuple elements finished" }
-                    current_len += 1;
-                    break;
-                }
-                if tokens.nth(index + current_len).is_seperator(SeperatorKind::Comma) {
-                    current_len += 1;
-                    if tokens.nth(index + current_len).is_seperator(SeperatorKind::RightParenthenes) {
-                        current_len += 1;
-                        break;
-                    }
-                    match TypeUse::parse(tokens, messages, index + current_len) {
-                        (Some(ty), ty_len) => {
-                            trace!{ "parse tuple elements succeed" }
-                            types.push(ty);
-                            current_len += ty_len;
-                        }
-                        (None, length) => {
-                            return (None, current_len + length);
+        match tokens.nth(index) {
+            &Token::Sep(SeperatorKind::LeftBracket) => {
+                trace!{ "is left bracket, try get array inner type" }
+                current_len += 1;
+                match TypeUse::parse(tokens, messages, index + current_len) {
+                    (None, length) => { // TODO: recover by find paired right bracket
+                        trace!{ "parse array inner type failed, return none" }
+                        return (None, current_len + length);
+                    }  
+                    (Some(inner), inner_length) => {
+                        trace!{ "parse array inner type succeed" }
+                        current_len += inner_length;
+                        if tokens.nth(index + current_len) == &Token::Sep(SeperatorKind::RightBracket) {
+                            trace!{ "parse array inner type succeed, expect right bracket" }
+                            current_len += 1;
+                            return (
+                                Some(TypeUseF::new_array(StringPosition::merge(tokens.pos(index), tokens.pos(index + current_len - 1)), inner)),
+                                inner_length + 2    
+                            );
+                        } else {
+                            trace!{ "parse array failed, not right bracket" }
+                            return push_unexpect!(tokens, messages, "right bracket", index + current_len, current_len);
                         }
                     }
                 }
             }
-            
-            let pos = StringPosition::merge(tokens.pos(index), tokens.pos(index + current_len - 1));
-            if types.len() == 0 {
-                unreachable!()
-            } else if types.len() == 1 {
-                messages.push(Message::new_by_str("Single item tuple type use", vec![(pos, "type use here")]));
-                return (Some(TypeUseF::new_tuple(pos, types)), current_len);
-            } else if types.len() >= 2 {
-                return (Some(TypeUseF::new_tuple(pos, types)), current_len);
-            }
-        }
+            &Token::Sep(SeperatorKind::LeftParenthenes) => {
+                trace!{ "meet left paren, start tuple" }
+                if tokens.nth(index + 1) == &Token::Sep(SeperatorKind::RightParenthenes) {  // still, '(, )' is not allowed here
+                    trace!{ "is left paren and right paren, it's unit" }
+                    return (Some(TypeUseF::new_unit(StringPosition::merge(tokens.pos(index), tokens.pos(index + 1)))), 2)
+                }
+                
+                current_len += 1;
+                let mut types = Vec::new();
+                match TypeUse::parse(tokens, messages, index + current_len) {
+                    (Some(ty), ty_len) => {
+                        trace!{ "parse first tuple element succeed" }
+                        types.push(ty);
+                        current_len += ty_len;
+                    }
+                    (None, length) => {
+                        trace!{ "parse first tuple element failed, return" }
+                        return (None, length);
+                    }
+                }
 
-        trace!{ "pass every check and return None at end" }
-        return push_unexpect!(tokens, messages, ["primitive type keyword", "left bracket", "left parenthenes", "identifier", ], index, 0);
+                loop {
+                    match (tokens.nth(index + current_len), tokens.nth(index + current_len + 1)) {
+                        (&Token::Sep(SeperatorKind::Comma), &Token::Sep(SeperatorKind::RightParenthenes)) => {
+                            current_len += 2;
+                            break;
+                        }
+                        (&Token::Sep(SeperatorKind::RightParenthenes), _) => {
+                            current_len += 1;
+                            break;
+                        }
+                        (&Token::Sep(SeperatorKind::Comma), _) => {
+                            current_len += 1;
+                            match TypeUse::parse(tokens, messages, index + current_len) {
+                                (Some(ty), ty_len) => {
+                                    trace!("parse tuple elements succeed");
+                                    types.push(ty);
+                                    current_len += ty_len;
+                                }
+                                (None, length) => {
+                                    return (None, current_len + length);
+                                }
+                            }
+                        }
+                        _ => return push_unexpect!(tokens, messages, "comma or right parenthenes", index + current_len, current_len),
+                    }
+                }
+                
+                let pos = StringPosition::merge(tokens.pos(index), tokens.pos(index + current_len - 1));
+                if types.len() == 1 {
+                    messages.push(Message::new_by_str("Single item tuple type use", vec![(pos, "type use here")]));
+                    return (Some(TypeUseF::new_tuple(pos, types)), current_len);
+                } else { // len() == 0 already rejected
+                    return (Some(TypeUseF::new_tuple(pos, types)), current_len);
+                }
+            }
+            _ => return push_unexpect!(tokens, messages, ["primitive type keyword", "left bracket", "left parenthenes", "identifier", ], index, 0),
+        }
     }
 }
 
 #[cfg(test)] #[test]
 fn type_use_parse() {
-    // use super::super::TestCase;
-
-    // macro_rules! simple { 
-    //     ($ident: expr, $strpos: expr) => (TypeUseF::new_simple_test($ident, $strpos));
-    // }
+    use super::super::ISyntaxItemWithStr;
 
     // // Primitive
-    // ast_test_case!{ "u8", 1, make_str_pos!(1, 1, 1, 2),
-    //     simple!("u8", make_str_pos!(1, 1, 1, 2))
-    // }
+    assert_eq!{ TypeUse::with_test_str("u8"), TypeUseF::new_simple("u8".to_owned(), make_strpos!(1, 1, 1, 2)) }
+
     // ast_test_case!{ "i32", 1, make_str_pos!(1, 1, 1, 3),
     //     simple!("i32", make_str_pos!(1, 1, 1, 3))
     // }

@@ -9,6 +9,7 @@ use codepos::StringPosition;
 use message::Message;
 use message::MessageCollection;
 
+use lexical::Token;
 use lexical::TokenStream;
 use lexical::KeywordKind;
 use lexical::SeperatorKind;
@@ -81,25 +82,22 @@ impl FnDef {
     pub fn get_all_strpos(&self) -> StringPosition { self.all_strpos }
 }
 impl ISyntaxItemGrammar for FnDef {   
-    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool { tokens.nth(index).is_keyword(KeywordKind::FnDef) }
+    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool { tokens.nth(index) == &Token::Keyword(KeywordKind::FnDef) }
 }
 impl ISyntaxItemParse for FnDef {
-    // #[allow(unused_assignments)]
-    fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<FnDef>, usize) {
 
-        if !tokens.nth(index).is_keyword(KeywordKind::FnDef) {
-            // 17/5/1: Why is this so yasashi while all others panic
-            return push_unexpect!(tokens, messages, "keyword fn", index, 0);
-        }
+    fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<FnDef>, usize) {
+        assert!(tokens.nth(index) == &Token::Keyword(KeywordKind::FnDef));
+
         let mut current_length = 1;
 
-        let (fn_name, fn_name_strpos) = match tokens.nth(index + current_length).get_identifier() {
-            Some(name) => (name.clone(), tokens.pos(index + current_length)),
-            None => return push_unexpect!(tokens, messages, "identifier", index + 1, 1),
+        let (fn_name, fn_name_strpos) = match tokens.nth(index + current_length) {
+            &Token::Ident(ref name) => (name.clone(), tokens.pos(index + current_length)),
+            _ => return push_unexpect!(tokens, messages, "identifier", index + 1, 1),
         };
         current_length += 1;
 
-        if !tokens.nth(index + 2).is_seperator(SeperatorKind::LeftParenthenes) {
+        if tokens.nth(index + current_length) != &Token::Sep(SeperatorKind::LeftParenthenes) {
             return push_unexpect!(tokens, messages, "left parenthenes", index + 2, 2);
         }
         let param_list_left_paren_strpos = tokens.pos(index + current_length);
@@ -107,12 +105,12 @@ impl ISyntaxItemParse for FnDef {
 
         let mut params = Vec::new();
         loop {
-            if tokens.nth(index + current_length).is_seperator(SeperatorKind::RightParenthenes) {
+            if tokens.nth(index + current_length) == &Token::Sep(SeperatorKind::RightParenthenes) {
                 current_length += 1;
                 break; 
             }
-            if tokens.nth(index + current_length).is_seperator(SeperatorKind::Comma)   // accept `fn main(i32 a,) {}`
-                && tokens.nth(index + current_length + 1).is_seperator(SeperatorKind::RightParenthenes) {
+            if tokens.nth(index + current_length) == &Token::Sep(SeperatorKind::Comma)   // accept `fn main(i32 a,) {}`
+                && tokens.nth(index + current_length + 1) == &Token::Sep(SeperatorKind::RightParenthenes) {
                 if params.is_empty() {                // recoverable error on fn main(, ) {}
                     let params_strpos = StringPosition::merge(param_list_left_paren_strpos, tokens.pos(index + current_length - 1));
                     messages.push(Message::new_by_str("Single comma in function definition argument list", vec![
@@ -123,23 +121,17 @@ impl ISyntaxItemParse for FnDef {
                 current_length += 2;
                 break;
             }
-            if tokens.nth(index + current_length).is_seperator(SeperatorKind::Comma) {
+            if tokens.nth(index + current_length) == &Token::Sep(SeperatorKind::Comma) {
                 current_length += 1;
                 continue;
             }
             
-            let (param_name, param_strpos) = match tokens.nth(index + current_length).get_identifier() {
-                None => {
-                    if tokens.nth(index + current_length).is_keyword(KeywordKind::This) {
-                        current_length += 1;
-                        ("this".to_owned(), tokens.pos(index + current_length - 1))
-                    } else {
-                        return push_unexpect!(tokens, messages, ["identifier", "comma", "parenthenes",], index + current_length, current_length);
-                    }
-                }
-                Some(param_name) => { current_length += 1; (param_name, tokens.pos(index + current_length - 1)) }
+            let (param_name, param_strpos) = match tokens.nth(index + current_length) {
+                &Token::Ident(ref param_name) => { current_length += 1; (param_name.clone(), tokens.pos(index + current_length - 1)) }
+                &Token::Keyword(KeywordKind::This) => { current_length += 1; ("this".to_owned(), tokens.pos(index + current_length - 1)) }
+                _ => return push_unexpect!(tokens, messages, ["identifier", "comma", "parenthenes",], index + current_length, current_length),
             };
-            if !tokens.nth(index + current_length).is_seperator(SeperatorKind::Colon) {
+            if tokens.nth(index + current_length) != &Token::Sep(SeperatorKind::Colon) {
                 return push_unexpect!(tokens, messages, "colon", index + current_length, current_length);
             }
             current_length += 1;
@@ -151,14 +143,14 @@ impl ISyntaxItemParse for FnDef {
             params.push(FnParam::new(param_name, param_strpos, decltype));
         }
 
-        let maybe_ret_type = if tokens.nth(index + current_length).is_seperator(SeperatorKind::NarrowRightArrow) {
+        let maybe_ret_type = if tokens.nth(index + current_length) == &Token::Sep(SeperatorKind::NarrowRightArrow) {
             current_length += 1;
             match TypeUse::parse(tokens, messages, index + current_length) {
                 (Some(ret_type), ret_type_len) => { current_length += ret_type_len; Some(ret_type) }
                 // (None, _length) => { // other things expect Type, find next left brace to continue
                 //     let _: (Option<i32>, _) = push_unexpect!(tokens, messages, "typedef", index + current_len, current_len);
                 //     for i in (index + current_len)..tokens.len() {
-                //         if tokens.nth(i).is_seperator(SeperatorKind::LeftBrace) {
+                //         if tokens.nth(i) == &Token::Sep(SeperatorKind::LeftBrace) {
                 //             current_length = i - index;
                 //         }
                 //     }

@@ -1,13 +1,11 @@
-
-///! Level1 parser
-///! input v0
+///! fff-lang
+///!
+///! lexical/v1, input v0
 ///! remove line comment
 ///! report block comment as OtherChar ' '
 ///! find string literal with only '"' escaped
 ///! string literal is allowed to cross line, line end is regarded as \n
 ///! raw string literal supported, `r'C:\\abc'` or `R"C:\\abc"`
-
-// TODO: check better usage of Message's StringPositions, because previously they use Position
 
 mod escape_char_parser;
 mod char_lit_parser;

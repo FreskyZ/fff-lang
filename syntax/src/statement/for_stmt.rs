@@ -9,6 +9,7 @@ use codepos::StringPosition;
 use message::Message;
 use message::MessageCollection;
 
+use lexical::Token;
 use lexical::TokenStream;
 use lexical::KeywordKind;
 
@@ -91,36 +92,36 @@ impl ForStatement {
 }
 impl ISyntaxItemGrammar for ForStatement {
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
-        (tokens.nth(index).is_label() && tokens.nth(index + 2).is_keyword(KeywordKind::For)) && tokens.nth(index).is_keyword(KeywordKind::For)
+        match (tokens.nth(index), tokens.nth(index + 2)) {
+            (&Token::Label(_), &Token::Keyword(KeywordKind::For)) | (&Token::Keyword(KeywordKind::For), _) => true,
+            _ => false
+        }
     }
 }
 impl ISyntaxItemParse for ForStatement {
 
     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<ForStatement>, usize) {
 
-        let (maybe_label, mut current_length) = match tokens.nth(index).get_label() {
-            Some(_) => match LabelDef::parse(tokens, messages, index) {
+        let (maybe_label, mut current_length) = match tokens.nth(index) {
+            &Token::Label(_) => match LabelDef::parse(tokens, messages, index) {
                 (Some(label_def), _label_length_is_2) => (Some(label_def), 2),
                 (None, length) => return (None, length),
             },
-            None => (None, 0),
+            _ => (None, 0),
         };
 
         let for_strpos = tokens.pos(index + current_length);
         current_length += 1;
 
-        let iter_name = match tokens.nth(index + current_length).get_identifier() {
-            None => if tokens.nth(index + current_length).is_keyword(KeywordKind::Underscore) {
-                "_".to_owned()   // _ do not declare iter var
-            } else {
-                return push_unexpect!(tokens, messages, "identifier", index + current_length, current_length);
-            },
-            Some(ident) => ident.clone(),
+        let iter_name = match tokens.nth(index + current_length) {
+            &Token::Ident(ref ident) => ident.clone(),
+            &Token::Keyword(KeywordKind::Underscore) => "_".to_owned(), // _ do not declare iter var
+            _ => return push_unexpect!(tokens, messages, "identifier", index + current_length, current_length),
         };
         let iter_strpos = tokens.pos(index + current_length);
         current_length += 1;
 
-        if !tokens.nth(index + current_length).is_keyword(KeywordKind::In) {
+        if tokens.nth(index + current_length) == &Token::Keyword(KeywordKind::In) {
             return push_unexpect!(tokens, messages, "keyword in", index + current_length, current_length);
         }
         current_length += 1;

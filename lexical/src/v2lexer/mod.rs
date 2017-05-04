@@ -1,7 +1,6 @@
-
-// Level2 parser
-// input v1
-// output string or numeric literal, identifier or other char
+///! fff-lang
+///! 
+///! lexical/v2, input v1, output string or numeric literal, identifier or other char
 
 mod num_lit_parser;
 mod unicode_char;

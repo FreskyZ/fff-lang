@@ -9,6 +9,7 @@ use codepos::StringPosition;
 use message::Message;
 use message::MessageCollection;
 
+use lexical::Token;
 use lexical::TokenStream;
 use lexical::SeperatorKind;
 use lexical::SeperatorCategory;
@@ -124,25 +125,24 @@ impl ISyntaxItemParse for ExprStatement {
             (None, length) => return (None, length),
         };
 
-        if tokens.nth(index + current_length).is_seperator(SeperatorKind::SemiColon) {
-            return (Some(ExprStatement::new_simple(
-                StringPosition::merge(tokens.pos(index), tokens.pos(index + current_length)),
-                left_expr
-            )), current_length + 1);
-        }
-
-        let (assign_op, assign_op_strpos) = match tokens.nth(index + current_length).get_seperator() {
-            Some(ref assign_op) if assign_op.is_category(SeperatorCategory::Assign) => {
+        let (assign_op, assign_op_strpos) =  match tokens.nth(index + current_length) {
+            &Token::Sep(SeperatorKind::SemiColon) => {
+                return (Some(ExprStatement::new_simple(
+                    StringPosition::merge(tokens.pos(index), tokens.pos(index + current_length)),
+                    left_expr
+                )), current_length + 1);
+            }
+            &Token::Sep(assign_op) if assign_op.is_category(SeperatorCategory::Assign) => {
                 current_length += 1;
-                (assign_op.clone(), tokens.pos(index + current_length - 1))
-            },
-            Some(_) | None => return push_unexpect!(tokens, messages, ["assignment operator", "semicolon", ], index + current_length, current_length),
+                (assign_op, tokens.pos(index + current_length - 1))
+            }
+            _ => return push_unexpect!(tokens, messages, ["assignment operator", "semicolon", ], index + current_length, current_length),
         };
         
         match BinaryExpr::parse(tokens, messages, index + current_length) {
             (Some(right_expr), right_expr_len) => {
                 current_length += right_expr_len;
-                if tokens.nth(index + current_length).is_seperator(SeperatorKind::SemiColon) {
+                if tokens.nth(index + current_length) == &Token::Sep(SeperatorKind::SemiColon) {
                     return (Some(ExprStatement::new_assign(
                         StringPosition::merge(tokens.pos(index), tokens.pos(index + current_length)),
                         assign_op, assign_op_strpos,

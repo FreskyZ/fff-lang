@@ -9,6 +9,7 @@ use std::fmt;
 use codepos::StringPosition;
 use message::MessageCollection;
 
+use lexical::Token;
 use lexical::TokenStream;
 use lexical::KeywordKind;
 
@@ -122,16 +123,13 @@ impl IfStatement {
 }
 impl ISyntaxItemGrammar for IfStatement {
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
-        tokens.nth(index).is_keyword(KeywordKind::If)
+        tokens.nth(index) == &Token::Keyword(KeywordKind::If)
     }
 }
 impl ISyntaxItemParse for IfStatement {
 
     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<IfStatement>, usize) {
-
-        if !tokens.nth(index).is_keyword(KeywordKind::If) {
-            unreachable!()
-        }
+        assert!(tokens.nth(index) == &Token::Keyword(KeywordKind::If));
 
         let mut current_length = 1;
         let if_strpos = tokens.pos(index);
@@ -149,8 +147,8 @@ impl ISyntaxItemParse for IfStatement {
         let mut else_strpos = StringPosition::new();
         let mut else_body = None;
         loop {
-            match (tokens.nth(index + current_length).is_keyword(KeywordKind::Else), tokens.nth(index + current_length + 1).is_keyword(KeywordKind::If)) {
-                (true, true) => {
+            match (tokens.nth(index + current_length), tokens.nth(index + current_length + 1)) {
+                (&Token::Keyword(KeywordKind::Else), &Token::Keyword(KeywordKind::If)) => {
                     let elseif_strpos = StringPosition::merge(tokens.pos(index + current_length), tokens.pos(index + current_length + 1));
                     current_length += 2;
                     let elseif_expr = match BinaryExpr::parse(tokens, messages, index + current_length) {
@@ -163,7 +161,7 @@ impl ISyntaxItemParse for IfStatement {
                     };
                     elseifs.push(IfConditionBody::new(elseif_strpos, elseif_expr, elseif_body));
                 }
-                (true, false) => {
+                (&Token::Keyword(KeywordKind::Else), _) => {
                     else_strpos = tokens.pos(index + current_length);
                     match Block::parse(tokens, messages, index + current_length + 1) { 
                         (Some(block), block_len) => {
@@ -173,9 +171,7 @@ impl ISyntaxItemParse for IfStatement {
                         (None, length) => return (None, current_length + 1 + length),
                     }
                 }
-                (false, _) => {
-                    break;
-                }
+                _ => break,
             }
         }
 

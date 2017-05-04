@@ -7,6 +7,7 @@ use codepos::StringPosition;
 use message::Message;
 use message::MessageCollection;
 
+use lexical::Token;
 use lexical::TokenStream;
 use lexical::KeywordKind;
 
@@ -79,17 +80,20 @@ impl LoopStatement { // Get
 }
 impl ISyntaxItemGrammar for LoopStatement {
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
-        (tokens.nth(index).is_label() && tokens.nth(index + 2).is_keyword(KeywordKind::Loop)) || tokens.nth(index).is_keyword(KeywordKind::Loop)
+        match (tokens.nth(index), tokens.nth(index + 2)) {
+            (&Token::Label(_), &Token::Keyword(KeywordKind::Loop)) | (&Token::Keyword(KeywordKind::Loop), _) => true,
+            _ => false
+        }
     }
 }
 impl ISyntaxItemParse for LoopStatement {
 
     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<LoopStatement>, usize) {
 
-        match tokens.nth(index).get_label() {
-            Some(_) => match LabelDef::parse(tokens, messages, index) {
+        match tokens.nth(index) {
+            &Token::Label(_) => match LabelDef::parse(tokens, messages, index) {
                 (None, length) => (None, length),
-                (Some(label_def), _label_length_which_is_2) => if !tokens.nth(index + 2).is_keyword(KeywordKind::Loop) {
+                (Some(label_def), _label_length_which_is_2) => if tokens.nth(index + 2) != &Token::Keyword(KeywordKind::Loop) {
                     push_unexpect!(tokens, messages, "keyword loop", index + 2, 2)
                 } else {
                     match Block::parse(tokens, messages, index + 3) {
@@ -99,8 +103,8 @@ impl ISyntaxItemParse for LoopStatement {
                     }
                 },
             },
-            None => {
-                if !tokens.nth(index).is_keyword(KeywordKind::Loop) {
+            _ => {
+                if tokens.nth(index) != &Token::Keyword(KeywordKind::Loop) {
                     return push_unexpect!(tokens, messages, "keyword loop", index, 0);
                 }
                 match Block::parse(tokens, messages, index + 1) {

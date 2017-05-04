@@ -10,6 +10,7 @@ use codepos::StringPosition;
 use message::Message;
 use message::MessageCollection;
 
+use lexical::Token;
 use lexical::TokenStream;
 use lexical::SeperatorKind;
 use lexical::KeywordKind;
@@ -45,19 +46,18 @@ impl JumpStatement {
         }
     }
 
-    fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<JumpStatement>, usize) {
+    fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize, expect_first_kw: KeywordKind) -> (Option<JumpStatement>, usize) {
+        assert!(tokens.nth(index) == &Token::Keyword(expect_first_kw));
 
-        if tokens.nth(index + 1).is_seperator(SeperatorKind::SemiColon) {
-            (Some(JumpStatement::new_no_target(StringPosition::merge(tokens.pos(index), tokens.pos(index + 1)))), 2)
-        } else {
-            match tokens.nth(index + 1).get_label() {
-                Some(target) => if tokens.nth(index + 2).is_seperator(SeperatorKind::SemiColon) {
-                    (Some(JumpStatement::new_target(StringPosition::merge(tokens.pos(index), tokens.pos(index + 2)), target.clone(), tokens.pos(index + 1))), 3)
-                } else {
-                    push_unexpect!(tokens, messages, "semicolon", index + 2, 2)
-                },
-                None => push_unexpect!(tokens, messages, "label or semicolon", index + 1, 1),
-            }
+        match (tokens.nth(index + 1), tokens.nth(index + 2)) {
+            (&Token::Label(ref target), &Token::Sep(SeperatorKind::SemiColon)) => 
+                (Some(JumpStatement::new_target(StringPosition::merge(tokens.pos(index), tokens.pos(index + 2)), target.clone(), tokens.pos(index + 1))), 3),
+            (&Token::Label(_), _) => 
+                push_unexpect!(tokens, messages, "semicolon", index + 2, 2),
+            (&Token::Sep(SeperatorKind::SemiColon), _) => 
+                (Some(JumpStatement::new_no_target(StringPosition::merge(tokens.pos(index), tokens.pos(index + 1)))), 2),
+            _ =>
+                push_unexpect!(tokens, messages, "label or semicolon", index + 1, 1),
         }
     }
 }
@@ -106,17 +106,17 @@ impl BreakStatement {
 }
 
 impl ISyntaxItemGrammar for ContinueStatement {
-    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool { tokens.nth(index).is_keyword(KeywordKind::Continue) }
+    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool { tokens.nth(index) == &Token::Keyword(KeywordKind::Continue) }
 }
 impl ISyntaxItemGrammar for BreakStatement {
-    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool { tokens.nth(index).is_keyword(KeywordKind::Continue) }
+    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool { tokens.nth(index) == &Token::Keyword(KeywordKind::Continue) }
 }
 
 impl ISyntaxItemParse for ContinueStatement {
 
     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<ContinueStatement>, usize) {
         
-        match JumpStatement::parse(tokens, messages, index) {
+        match JumpStatement::parse(tokens, messages, index, KeywordKind::Continue) {
             (None, length) => (None, length),
             (Some(jump_stmt), length) => (Some(ContinueStatement(jump_stmt)), length),
         }
@@ -126,7 +126,7 @@ impl ISyntaxItemParse for BreakStatement {
 
     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<BreakStatement>, usize) {
         
-        match JumpStatement::parse(tokens, messages, index) {
+        match JumpStatement::parse(tokens, messages, index, KeywordKind::Break) {
             (None, length) => (None, length),
             (Some(jump_stmt), length) => (Some(BreakStatement(jump_stmt)), length),
         }

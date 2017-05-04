@@ -8,6 +8,7 @@ use util::format_vector_debug;
 
 use message::MessageCollection;
 use lexical::TokenStream;
+use lexical::Token;
 
 use super::ISyntaxItemParse;
 use super::FnDef;
@@ -32,7 +33,7 @@ impl SyntaxTree {
 }
 impl ISyntaxItemParse for SyntaxTree {
 
-    fn parse(lexer: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<SyntaxTree>, usize) {
+    fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<SyntaxTree>, usize) {
         // meet EOF and break, 
         // meet function get None break actually is an unrecoverable and return none
         // recover none function by find next paired '}' and expecting `fn` again
@@ -40,10 +41,10 @@ impl ISyntaxItemParse for SyntaxTree {
         let mut funcs = Vec::new();
         let mut current_len = 0_usize;
         loop {
-            if lexer.nth(index + current_len).is_eof() {
+            if tokens.nth(index + current_len) == &Token::EOF {
                 break;
             }
-            match FnDef::parse(lexer, messages, index + current_len) {
+            match FnDef::parse(tokens, messages, index + current_len) {
                 (Some(func), length) => { 
                     current_len += length;
                     funcs.push(func);

@@ -6,9 +6,9 @@
 use std::fmt;
 
 use codepos::StringPosition;
-use message::Message;
 use message::MessageCollection;
 
+use lexical::Token;
 use lexical::TokenStream;
 use lexical::SeperatorKind;
 
@@ -42,21 +42,18 @@ impl Block {
 }
 impl ISyntaxItemGrammar for Block {
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
-        tokens.nth(index).is_seperator(SeperatorKind::LeftBrace) 
+        tokens.nth(index) == &Token::Sep(SeperatorKind::LeftBrace) 
     }
 }
 impl ISyntaxItemParse for Block {
 
     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<Block>, usize) {
-
-        if !tokens.nth(index).is_seperator(SeperatorKind::LeftBrace) {
-            return push_unexpect!(tokens, messages, "left brace", index, 0);
-        }
+        assert!(tokens.nth(index) == &Token::Sep(SeperatorKind::LeftBrace));
 
         let mut items = Vec::new();
         let mut current_length = 1;
         loop {
-            if tokens.nth(index + current_length).is_seperator(SeperatorKind::RightBrace) {
+            if tokens.nth(index + current_length) == &Token::Sep(SeperatorKind::RightBrace) {
                 return (Some(Block::new(StringPosition::merge(tokens.pos(index), tokens.pos(index + current_length)), items)), current_length + 1);
             }
             match Statement::parse(tokens, messages, index + current_length) {

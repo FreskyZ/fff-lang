@@ -35,7 +35,7 @@ macro_rules! define_seperator {
             $($ch4: expr => $name4: ident, $category41: expr, $category42: expr, )*   // for multiple category...
         ]
     ) => (
-        #[derive(Clone, Eq, PartialEq)]
+        #[derive(Copy, Clone, Eq, PartialEq)]
         pub enum $enum_name {
             $(
                 $name1, 

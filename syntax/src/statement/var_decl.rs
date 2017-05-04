@@ -10,6 +10,7 @@ use codepos::StringPosition;
 use message::Message;
 use message::MessageCollection;
 
+use lexical::Token;
 use lexical::TokenStream;
 use lexical::KeywordKind;
 use lexical::SeperatorKind;
@@ -71,7 +72,7 @@ impl VarDeclStatement {
 }
 impl ISyntaxItemGrammar for VarDeclStatement {
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
-        tokens.nth(index).is_keyword(KeywordKind::Const) || tokens.nth(index).is_keyword(KeywordKind::Var) 
+        tokens.nth(index) == &Token::Keyword(KeywordKind::Const) || tokens.nth(index) == &Token::Keyword(KeywordKind::Var) 
     }
 }
 impl ISyntaxItemParse for VarDeclStatement {
@@ -80,20 +81,20 @@ impl ISyntaxItemParse for VarDeclStatement {
     /// It is special that the given index is index of 'const' or 'var' not the next
     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<VarDeclStatement>, usize) {
 
-        let is_const = match tokens.nth(index).get_keyword() {
-            Some(KeywordKind::Const) => true, 
-            Some(KeywordKind::Var) => false,
+        let is_const = match tokens.nth(index) {
+            &Token::Keyword(KeywordKind::Const) => true, 
+            &Token::Keyword(KeywordKind::Var) => false,
             _ => unreachable!(), 
         };
 
         let mut current_length = 1;
 
-        let (name, name_strpos) = match tokens.nth(index + current_length).get_identifier() {
-            Some(name) => { current_length += 1; (name.clone(), tokens.pos(index + current_length - 1)) }
-            None => return push_unexpect!(tokens, messages, "identifier", index + current_length, current_length),
+        let (name, name_strpos) = match tokens.nth(index + current_length) {
+            &Token::Ident(ref name) => { current_length += 1; (name.clone(), tokens.pos(index + current_length - 1)) }
+            _ => return push_unexpect!(tokens, messages, "identifier", index + current_length, current_length),
         };
 
-        let maybe_decltype = if tokens.nth(index + current_length).is_seperator(SeperatorKind::Colon) {
+        let maybe_decltype = if tokens.nth(index + current_length) == &Token::Sep(SeperatorKind::Colon) {
             current_length += 1;
             match TypeUse::parse(tokens, messages, index + current_length) {
                 (None, length) => return (None, length),
@@ -103,7 +104,7 @@ impl ISyntaxItemParse for VarDeclStatement {
             None
         };
 
-        let maybe_init_expr = if tokens.nth(index + current_length).is_seperator(SeperatorKind::Assign) {
+        let maybe_init_expr = if tokens.nth(index + current_length) == &Token::Sep(SeperatorKind::Assign) {
             current_length += 1;
             match BinaryExpr::parse(tokens, messages, index + current_length) {
                 (None, length) => return (None, length),
@@ -120,7 +121,7 @@ impl ISyntaxItemParse for VarDeclStatement {
             ));
         }
 
-        if !tokens.nth(index + current_length).is_seperator(SeperatorKind::SemiColon) {
+        if tokens.nth(index + current_length) != &Token::Sep(SeperatorKind::SemiColon) {
             return push_unexpect!(tokens, messages, "semicolon", index + current_length, current_length);
         }
 

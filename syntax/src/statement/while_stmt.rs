@@ -8,6 +8,7 @@ use std::fmt;
 use codepos::StringPosition;
 use message::MessageCollection;
 
+use lexical::Token;
 use lexical::TokenStream;
 use lexical::KeywordKind;
 
@@ -64,19 +65,22 @@ impl WhileStatement {
 }
 impl ISyntaxItemGrammar for WhileStatement {
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
-        (tokens.nth(index).is_label() && tokens.nth(index + 2).is_keyword(KeywordKind::While)) || tokens.nth(index).is_keyword(KeywordKind::While)
+        match (tokens.nth(index), tokens.nth(index + 2)) {
+            (&Token::Label(_), &Token::Keyword(KeywordKind::While)) | (&Token::Keyword(KeywordKind::While), _) => true,
+            _ => false
+        }
     }
 }
 impl ISyntaxItemParse for WhileStatement {
 
     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<WhileStatement>, usize) {
 
-        let (maybe_label, mut current_length) = match tokens.nth(index).get_label() {
-            Some(_) => match LabelDef::parse(tokens, messages, index) {
+        let (maybe_label, mut current_length) = match tokens.nth(index) {
+            &Token::Label(_) => match LabelDef::parse(tokens, messages, index) {
                 (Some(label_def), _label_length_is_2) => (Some(label_def), 2),
                 (None, length) => return (None, length),
             },
-            None => (None, 0),
+            _ => (None, 0),
         };
 
         let while_strpos = tokens.pos(index + current_length);
