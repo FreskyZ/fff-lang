@@ -12,6 +12,10 @@ use lexical::Token;
 use lexical::TokenStream;
 use lexical::KeywordKind;
 
+#[cfg(feature = "parse_sess")] use super::super::ParseSession;
+#[cfg(feature = "parse_sess")] use super::super::ParseResult;
+#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemParseX;
+#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemGrammarX;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -56,6 +60,17 @@ impl WhileStatement {
         WhileStatement{ label_def: Some(label_def), loop_expr, body, while_strpos, all_strpos }
     }
 
+    #[cfg(feature = "parse_sess")] // TODO: remove the cfg after parse_sess
+    fn new_some_label(maybe_label_def: Option<LabelDef>, while_strpos: StringPosition, loop_expr: BinaryExpr, body: Block) -> WhileStatement {
+        WhileStatement{
+            all_strpos: StringPosition::merge(
+                match maybe_label_def { Some(ref label_def) => label_def.get_all_strpos(), None => while_strpos }, 
+                body.get_all_strpos()),          
+            label_def: maybe_label_def,
+            loop_expr, body, while_strpos,
+        }
+    }
+
     pub fn get_label(&self) -> Option<&LabelDef> { self.label_def.as_ref() }
     pub fn get_loop_expr(&self) -> &BinaryExpr { &self.loop_expr }
     pub fn get_body(&self) -> &Block { &self.body }
@@ -66,6 +81,15 @@ impl WhileStatement {
 impl ISyntaxItemGrammar for WhileStatement {
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
         match (tokens.nth(index), tokens.nth(index + 2)) {
+            (&Token::Label(_), &Token::Keyword(KeywordKind::While)) | (&Token::Keyword(KeywordKind::While), _) => true,
+            _ => false
+        }
+    }
+}
+#[cfg(feature = "parse_sess")]
+impl ISyntaxItemGrammarX for WhileStatement {
+    fn is_first_finalx(sess: &ParseSession) -> bool {
+        match (sess.tk, sess.nextnext_tk) {
             (&Token::Label(_), &Token::Keyword(KeywordKind::While)) | (&Token::Keyword(KeywordKind::While), _) => true,
             _ => false
         }
@@ -101,6 +125,19 @@ impl ISyntaxItemParse for WhileStatement {
             Some(label) => (Some(WhileStatement::new_with_label(all_strpos, label, while_strpos, expr, body)), current_length),
             None => (Some(WhileStatement::new_no_label(all_strpos, while_strpos, expr, body)), current_length),
         }
+    }
+}
+#[cfg(feature = "parse_sess")]
+impl ISyntaxItemParseX for WhileStatement {
+    
+    fn parsex(sess: &mut ParseSession) -> ParseResult<WhileStatement> {
+        
+        let maybe_label = if let &Token::Label(_) = sess.tk { Some(LabelDef::parsex(sess)?) } else { None };
+        let while_strpos = sess.expect_keyword(KeywordKind::While)?;
+        let expr = BinaryExpr::parsex(sess)?;
+        let body = Block::parsex(sess)?;
+
+        return Ok(WhileStatement::new_some_label(maybe_label, while_strpos, expr, body));
     }
 }
 

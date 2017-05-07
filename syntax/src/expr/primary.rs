@@ -21,7 +21,10 @@ use lexical::KeywordKind;
 use lexical::LitValue;
 use lexical::NumLitValue;
 
-// use super::super::ParseSession;
+#[cfg(feature = "parse_sess")] use super::super::ParseSession;
+#[cfg(feature = "parse_sess")] use super::super::ParseResult;
+#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemParseX;
+#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemGrammarX;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -169,6 +172,18 @@ mod error_strings {
 impl ISyntaxItemGrammar for PrimaryExpr {
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
         match tokens.nth(index) {
+            &Token::Ident(_) 
+            | &Token::Lit(_)
+            | &Token::Sep(SeperatorKind::LeftParenthenes)
+            | &Token::Sep(SeperatorKind::LeftBracket) => true,
+            _ => false,
+        }
+    }
+}
+#[cfg(feature = "parse_sess")]
+impl ISyntaxItemGrammarX for PrimaryExpr {
+    fn is_first_finalx(sess: &ParseSession) -> bool {
+        match sess.tk {
             &Token::Ident(_) 
             | &Token::Lit(_)
             | &Token::Sep(SeperatorKind::LeftParenthenes)
@@ -338,9 +353,120 @@ impl ISyntaxItemParse for PrimaryExpr {
             }
         }
 
-        // TODO: make this unreachable
         trace!("Failed in prim expr parse, not start with left paren or left bracket");
         return push_unexpect!(tokens, messages, error_strings::ExpectExpression, index, 0);
+    }
+}
+#[cfg(feature = "parse_sess")]
+impl ISyntaxItemParseX for PrimaryExpr {
+    
+    fn parsex(sess: &mut ParseSession) -> ParseResult<PrimaryExpr> {
+        #[cfg(feature = "trace_primary_expr_parse")]
+        macro_rules! trace { ($($arg:tt)*) => ({ print!("[PrimaryExpr: {}]", line!()); println!($($arg)*); }) }
+        #[cfg(not(feature = "trace_primary_expr_parse"))]
+        macro_rules! trace { ($($arg:tt)*) => () }
+
+        trace!("start parsing, current token: {:?}", sess.tk);
+
+        match (sess.tk, sess.pos, sess.next_tk, sess.next_pos) {
+            (&Token::Lit(ref lit_val), ref lit_val_strpos, _, _) => {
+                sess.move_next();
+                trace!("returning literal {:?} at {:?}", lit_val, lit_val_strpos);
+                return Ok(PrimaryExpr::new_lit(lit_val.clone(), *lit_val_strpos));
+            }
+            (&Token::Ident(ref ident_name), ref ident_strpos, _, _) => {
+                sess.move_next();
+                trace!("returning identifier {:?} at {:?} ", ident_name, ident_strpos);
+                return Ok(PrimaryExpr::new_ident(ident_name.clone(), *ident_strpos));
+            }
+            (&Token::Keyword(KeywordKind::This), ref ident_strpos, _, _) => {
+                sess.move_next();
+                trace!("returning identifier this at {:?}", ident_strpos);
+                return Ok(PrimaryExpr::new_ident("this".to_owned(), *ident_strpos));
+            }
+            (&Token::Sep(SeperatorKind::LeftParenthenes), ref left_paren_strpos, 
+                &Token::Sep(SeperatorKind::RightParenthenes), ref right_paren_strpos) => {
+                sess.move_next2();
+                trace!("returning unit at {:?}", left_paren_strpos);
+                return Ok(PrimaryExpr::new_unit(StringPosition::merge(*left_paren_strpos, *right_paren_strpos)));
+            }
+            (&Token::Sep(SeperatorKind::LeftParenthenes), ref left_paren_strpos, _, _) => {
+                sess.move_next();
+                let mut maybe_tuple_exprs = Vec::new();
+                let end_by_comma: bool;
+                let ending_strpos: StringPosition;
+                loop {
+                    maybe_tuple_exprs.push(BinaryExpr::parsex(sess)?);
+                    match (sess.tk, sess.pos, sess.next_tk, sess.next_pos) {
+                        (&Token::Sep(SeperatorKind::Comma), _, &Token::Sep(SeperatorKind::RightParenthenes), ref right_paren_strpos) => {
+                            sess.move_next2();
+                            end_by_comma = true;
+                            ending_strpos = *right_paren_strpos;
+                            break;
+                        }
+                        (&Token::Sep(SeperatorKind::RightParenthenes), ref right_paren_strpos, _, _) => {
+                            sess.move_next();
+                            end_by_comma = false;
+                            ending_strpos = *right_paren_strpos;
+                            break;
+                        }
+                        (&Token::Sep(SeperatorKind::Comma), _, _, _) => {
+                            sess.move_next();
+                        }
+                        _ => {
+                            return sess.push_unexpect("right paren, comma, expr");
+                        }
+                    }
+                }
+
+                trace!("after left paren's loop, exprs are {:?}", maybe_tuple_exprs);
+                let paren_strpos = StringPosition::merge(*left_paren_strpos, ending_strpos);
+                if maybe_tuple_exprs.len() == 1 && !end_by_comma {
+                    return Ok(PrimaryExpr::new_paren(paren_strpos, maybe_tuple_exprs.into_iter().last().unwrap()));
+                } else { // no length = 0 here because it is rejected before
+                    return Ok(PrimaryExpr::new_tuple(paren_strpos, maybe_tuple_exprs));
+                }
+            }
+            (&Token::Sep(SeperatorKind::LeftBracket), ref left_bracket_strpos, 
+                &Token::Sep(SeperatorKind::RightBracket), ref right_bracket_strpos) => {
+                sess.move_next2();
+                return Ok(PrimaryExpr::new_array(StringPosition::merge(*left_bracket_strpos, *right_bracket_strpos), Vec::new()));
+            }
+            (&Token::Sep(SeperatorKind::LeftBracket), ref left_bracket_strpos, _, _) => {
+                sess.move_next();
+                let expr1 = BinaryExpr::parsex(sess)?; 
+
+                if sess.tk == &Token::Sep(SeperatorKind::SemiColon) {
+                    sess.move_next();
+                    let expr2 = BinaryExpr::parsex(sess)?; 
+                    let right_bracket_strpos = sess.expect_sep(SeperatorKind::RightBracket)?;
+                    trace!("parsing array dup def succeed, expr1: {:?}, expr2: {:?}", expr1, expr2);
+                    return Ok(PrimaryExpr::new_array_dup(StringPosition::merge(*left_bracket_strpos, right_bracket_strpos), expr1, expr2));
+                }
+
+                trace!("parsing array def, before loop");
+                let mut exprs = vec![expr1];
+                loop {
+                    match (sess.tk, sess.pos, sess.next_tk, sess.next_pos) {
+                        (&Token::Sep(SeperatorKind::Comma), _, 
+                            &Token::Sep(SeperatorKind::RightBracket), ref right_bracket_strpos) => {
+                            sess.move_next2();
+                            return Ok(PrimaryExpr::new_array(StringPosition::merge(*left_bracket_strpos, *right_bracket_strpos), exprs));
+                        }
+                        (&Token::Sep(SeperatorKind::RightBracket), ref right_bracket_strpos, _, _) => {
+                            sess.move_next();
+                            return Ok(PrimaryExpr::new_array(StringPosition::merge(*left_bracket_strpos, *right_bracket_strpos), exprs));
+                        }
+                        (&Token::Sep(SeperatorKind::Comma), _, _, _) => {
+                            sess.move_next();
+                            exprs.push(BinaryExpr::parsex(sess)?);
+                        }
+                        _ => return sess.push_unexpect("comma, left bracket"),
+                    }
+                }
+            }
+            _ => return sess.push_unexpect("literal, identifier, left parenthenes, left bracekt"),
+        }
     }
 }
 
@@ -617,7 +743,7 @@ fn primary_expr_parse() {
     }
 }
 
-#[cfg(test)] #[test]
+#[cfg(test)] #[test] #[ignore]
 fn primary_expr_errors() {
     use super::super::ISyntaxItemWithStr;
 
@@ -625,24 +751,24 @@ fn primary_expr_errors() {
 
     assert_eq!{ PrimaryExpr::with_test_str_ret_size_messages("(1, ]"), (
         None, 
+        3,
         make_messages![
             Message::with_help_by_str(UNEXPECTED_SYMBOL, 
                 vec![(make_strpos!(1, 5, 1, 5), "Meet Seperator `]`(RightBracket) <0>1:5-1:5")],
                 vec![&("Expect ".to_owned() + error_strings::ExpectExpression)]
             )
         ], 
-        3
     )}
 
     assert_eq!{ PrimaryExpr::with_test_str_ret_size_messages("(,)"), (
         None, 
-        make_messages![],
         1,
+        make_messages![],
     )}
 
     assert_eq!{ PrimaryExpr::with_test_str_ret_size_messages("[1, )"), (
         None,
-        make_messages![],
         1,
+        make_messages![],
     )}
 }

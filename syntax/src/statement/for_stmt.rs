@@ -13,6 +13,10 @@ use lexical::Token;
 use lexical::TokenStream;
 use lexical::KeywordKind;
 
+#[cfg(feature = "parse_sess")] use super::super::ParseSession;
+#[cfg(feature = "parse_sess")] use super::super::ParseResult;
+#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemParseX;
+#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemGrammarX;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -81,6 +85,24 @@ impl ForStatement {
         }
     }
 
+    #[cfg(feature = "parse_sess")]
+    fn new_some_label(
+        label: Option<LabelDef>,
+        for_strpos: StringPosition,
+        iter_name: String, iter_strpos: StringPosition,
+        iter_expr: BinaryExpr,
+        body: Block) -> ForStatement {
+        ForStatement{
+            m_all_strpos: StringPosition::merge(match label { Some(ref label) => label.get_all_strpos(), None => for_strpos }, body.get_all_strpos()),
+            m_label: label,
+            m_for_strpos: for_strpos,
+            m_iter_name: iter_name,
+            m_iter_expr: iter_expr,
+            m_body: body,
+            m_ident_strpos: iter_strpos,
+        }
+    }
+
     pub fn get_label(&self) -> Option<&LabelDef> { self.m_label.as_ref() }
     pub fn get_iter_name(&self) -> &String { &self.m_iter_name }
     pub fn get_iter_expr(&self) -> &BinaryExpr { &self.m_iter_expr }
@@ -93,6 +115,15 @@ impl ForStatement {
 impl ISyntaxItemGrammar for ForStatement {
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
         match (tokens.nth(index), tokens.nth(index + 2)) {
+            (&Token::Label(_), &Token::Keyword(KeywordKind::For)) | (&Token::Keyword(KeywordKind::For), _) => true,
+            _ => false
+        }
+    }
+}
+#[cfg(feature = "parse_sess")]
+impl ISyntaxItemGrammarX for ForStatement {
+    fn is_first_finalx(sess: &ParseSession) -> bool {
+        match (sess.tk, sess.nextnext_tk) {
             (&Token::Label(_), &Token::Keyword(KeywordKind::For)) | (&Token::Keyword(KeywordKind::For), _) => true,
             _ => false
         }
@@ -121,7 +152,7 @@ impl ISyntaxItemParse for ForStatement {
         let iter_strpos = tokens.pos(index + current_length);
         current_length += 1;
 
-        if tokens.nth(index + current_length) == &Token::Keyword(KeywordKind::In) {
+        if tokens.nth(index + current_length) != &Token::Keyword(KeywordKind::In) {
             return push_unexpect!(tokens, messages, "keyword in", index + current_length, current_length);
         }
         current_length += 1;
@@ -143,6 +174,23 @@ impl ISyntaxItemParse for ForStatement {
         }
     }
 }
+#[cfg(feature = "parse_sess")]
+impl ISyntaxItemParseX for ForStatement {
+
+    fn parsex(sess: &mut ParseSession) -> ParseResult<ForStatement> {
+
+        let maybe_label = if let &Token::Label(_) = sess.tk { Some(LabelDef::parsex(sess)?) } else { None };
+        let for_strpos = sess.expect_keyword(KeywordKind::For)?;
+
+        // Accept _ as iter_name, _ do not declare iter var
+        let (iter_name, iter_strpos) = sess.expect_ident_or(vec![KeywordKind::Underscore])?;
+
+        let _in_strpos = sess.expect_keyword(KeywordKind::In)?;
+        let iter_expr = BinaryExpr::parsex(sess)?;
+        let body = Block::parsex(sess)?;
+        return Ok(ForStatement::new_some_label(maybe_label, for_strpos, iter_name, iter_strpos, iter_expr, body));
+    }
+}
 
 #[cfg(test)] #[test]
 fn for_stmt_parse() {
@@ -150,15 +198,16 @@ fn for_stmt_parse() {
     use lexical::LitValue;
 
     //                                       123456789012345678
-    assert_eq!{ ForStatement::with_test_str("@2: for i in 42 {}"), 
-        ForStatement::new_with_label(make_strpos!(1, 1, 1, 18),
+    assert_eq!{ ForStatement::with_test_str_ret_messages("@2: for i in 42 {}"), (
+        Some(ForStatement::new_with_label(make_strpos!(1, 1, 1, 18),
             LabelDef::new("2".to_owned(), make_strpos!(1, 1, 1, 3)),
             make_strpos!(1, 5, 1, 7),
             "i".to_owned(), make_strpos!(1, 9, 1, 9),
             BinaryExpr::new_lit(LitValue::from(42), make_strpos!(1, 14, 1, 15)),
             Block::new(make_strpos!(1, 17, 1, 18), vec![])
-        )
-    }
+        )),
+        make_messages![],
+    )}
 
     // TODO: finish this
     // assert_eq!{ ForStatement::with_test_str("@hello:  for _ in range(0, 10).enumerate().reverse() { writeln(\"helloworld\"); }"),

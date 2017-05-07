@@ -14,6 +14,10 @@ use lexical::TokenStream;
 use lexical::SeperatorKind;
 use lexical::SeperatorCategory;
 
+#[cfg(feature = "parse_sess")] use super::super::ParseSession;
+#[cfg(feature = "parse_sess")] use super::super::ParseResult;
+#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemParseX;
+#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemGrammarX;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -116,6 +120,10 @@ impl ISyntaxItemGrammar for ExprStatement {
         BinaryExpr::is_first_final(tokens, index)
     }
 }
+#[cfg(feature = "parse_sess")]
+impl ISyntaxItemGrammarX for ExprStatement {
+    fn is_first_finalx(sess: &ParseSession) -> bool { BinaryExpr::is_first_finalx(sess) }
+}
 impl ISyntaxItemParse for ExprStatement {
 
     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<ExprStatement>, usize) {
@@ -156,9 +164,35 @@ impl ISyntaxItemParse for ExprStatement {
         }
     }
 }
+#[cfg(feature = "parse_sess")]
+impl ISyntaxItemParseX for ExprStatement {
+
+    fn parsex(sess: &mut ParseSession) -> ParseResult<ExprStatement> {
+
+        let starting_strpos = sess.pos;
+        let left_expr = BinaryExpr::parsex(sess)?;
+
+        let (assign_op, assign_op_strpos) = match (sess.tk, sess.pos) {
+            (&Token::Sep(SeperatorKind::SemiColon), ref semi_colon_strpos) => {
+                sess.move_next();
+                return Ok(ExprStatement::new_simple(StringPosition::merge(starting_strpos, *semi_colon_strpos), left_expr));
+            }
+            (&Token::Sep(assign_op), assign_op_strpos) if assign_op.is_category(SeperatorCategory::Assign) => {
+                sess.move_next();
+                (assign_op, assign_op_strpos)
+            }
+            _ => return sess.push_unexpect("assignment operator, semicolon"),
+        };
+
+        let right_expr = BinaryExpr::parsex(sess)?;
+        let ending_strpos = sess.pos;
+        sess.expect_sep(SeperatorKind::SemiColon)?;
+        return Ok(ExprStatement::new_assign(StringPosition::merge(starting_strpos, ending_strpos), assign_op, assign_op_strpos, left_expr, right_expr));
+    }
+}
 
 #[cfg(test)] #[test]
-fn ast_stmt_expr() {
+fn expr_stmt_parse() {
     use super::super::ISyntaxItemWithStr;
     use super::super::BinaryExpr;
     use super::super::PostfixExpr;

@@ -14,6 +14,10 @@ use lexical::Token;
 use lexical::TokenStream;
 use lexical::SeperatorKind;
 
+#[cfg(feature = "parse_sess")] use super::super::ParseSession;
+#[cfg(feature = "parse_sess")] use super::super::ParseResult;
+#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemParseX;
+#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemGrammarX;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -25,7 +29,7 @@ pub struct LabelDef {
 }
 impl ISyntaxItemFormat for LabelDef {
     fn format(&self, indent: u32) -> String {
-        format!("{}Label {} <{:?}>", LabelDef::indent_str(indent), self.m_name, self.m_strpos)
+        format!("{}Label '@{}' <{:?}>", LabelDef::indent_str(indent), self.m_name, self.m_strpos)
     }
 }
 impl fmt::Debug for LabelDef {
@@ -45,6 +49,10 @@ impl LabelDef {
 impl ISyntaxItemGrammar for LabelDef {
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool { if let &Token::Label(_) = tokens.nth(index) { true } else { false } }
 }
+#[cfg(feature = "parse_sess")]
+impl ISyntaxItemGrammarX for LabelDef {
+    fn is_first_finalx(sess: &ParseSession) -> bool { if let &Token::Label(_) = sess.tk { true } else { false } }
+}
 impl ISyntaxItemParse for LabelDef {
 
     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<LabelDef>, usize) {
@@ -56,6 +64,22 @@ impl ISyntaxItemParse for LabelDef {
                 push_unexpect!(tokens, messages, "colon", index + 1, 1),
             _ => 
                 push_unexpect!(tokens, messages, "label", index, 0),
+        }
+    }
+}
+#[cfg(feature = "parse_sess")]
+impl ISyntaxItemParseX for LabelDef {
+
+    fn parsex(sess: &mut ParseSession) -> ParseResult<LabelDef> {
+
+        match (sess.tk, sess.pos, sess.next_tk, sess.next_pos) {
+            (&Token::Label(ref label_name), ref label_name_strpos,
+                &Token::Sep(SeperatorKind::Colon), ref colon_strpos) => {
+                sess.move_next2();
+                Ok(LabelDef::new(label_name.clone(), StringPosition::merge(*label_name_strpos, *colon_strpos)))
+            }
+            (&Token::Label(_), _, _, _) => sess.push_unexpect("colon"),
+            _ => sess.push_unexpect("label"),
         }
     }
 }

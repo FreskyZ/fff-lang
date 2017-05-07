@@ -1,19 +1,22 @@
-
+///! fff-lang
+///!
+///! syntax/stmt
 // Statement = 
 //     ConstDecl | VarDecl 
 //     | IfStatement | WhileStatement | ForStatement | LoopStatement 
 //     | AssignStatement
 //     | JumpStatement
-// TODO: loop label to be identifier
  
 use std::fmt;
 
-// use codepos::StringPosition;
 use message::Message;
 use message::MessageCollection;
-
 use lexical::TokenStream;
 
+#[cfg(feature = "parse_sess")] use super::ParseSession;
+#[cfg(feature = "parse_sess")] use super::ParseResult;
+#[cfg(feature = "parse_sess")] use super::ISyntaxItemParseX;
+#[cfg(feature = "parse_sess")] use super::ISyntaxItemGrammarX;
 use super::ISyntaxItemParse;
 use super::ISyntaxItemFormat;
 use super::ISyntaxItemGrammar;
@@ -91,6 +94,22 @@ impl ISyntaxItemGrammar for Statement {
         || BlockStatement::is_first_final(lexer, index)
     }
 }
+#[cfg(feature = "parse_sess")]
+impl ISyntaxItemGrammarX for Statement {
+    
+    fn is_first_finalx(sess: &ParseSession) -> bool {
+        VarDeclStatement::is_first_finalx(sess)
+        || BreakStatement::is_first_finalx(sess)
+        || ContinueStatement::is_first_finalx(sess)
+        || ReturnStatement::is_first_finalx(sess)
+        || ExprStatement::is_first_finalx(sess)
+        || IfStatement::is_first_finalx(sess)
+        || WhileStatement::is_first_finalx(sess)
+        || ForStatement::is_first_finalx(sess)
+        || LoopStatement::is_first_finalx(sess)
+        || BlockStatement::is_first_finalx(sess)
+    }
+}
 impl ISyntaxItemParse for Statement {
     
     fn parse(lexer: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<Statement>, usize) {
@@ -147,6 +166,36 @@ impl ISyntaxItemParse for Statement {
             }
         } else {
             return push_unexpect!(lexer, messages, "statement", 0, index);
+        }
+    }
+}
+#[cfg(feature = "parse_sess")]
+impl ISyntaxItemParseX for Statement {
+
+    fn parsex(sess: &mut ParseSession) -> ParseResult<Statement> {
+
+        if VarDeclStatement::is_first_finalx(sess) { 
+            return Ok(Statement::VarDecl(VarDeclStatement::parsex(sess)?));
+        } else if BreakStatement::is_first_finalx(sess) {
+            return Ok(Statement::Break(BreakStatement::parsex(sess)?));
+        } else if ContinueStatement::is_first_finalx(sess) {
+            return Ok(Statement::Continue(ContinueStatement::parsex(sess)?));
+        } else if ReturnStatement::is_first_finalx(sess) {
+            return Ok(Statement::Return(ReturnStatement::parsex(sess)?));
+        } else if LoopStatement::is_first_finalx(sess) {
+            return Ok(Statement::Loop(LoopStatement::parsex(sess)?));
+        } else if WhileStatement::is_first_finalx(sess) {
+            return Ok(Statement::While(WhileStatement::parsex(sess)?));
+        } else if ForStatement::is_first_finalx(sess) {
+            return Ok(Statement::For(ForStatement::parsex(sess)?));
+        } else if IfStatement::is_first_finalx(sess) {
+            return Ok(Statement::If(IfStatement::parsex(sess)?));
+        } else if BlockStatement::is_first_finalx(sess) {
+            return Ok(Statement::Block(BlockStatement::parsex(sess)?));
+        } else if ExprStatement::is_first_finalx(sess) {
+            return Ok(Statement::Expr(ExprStatement::parsex(sess)?));
+        } else {
+            return sess.push_unexpect("statement");
         }
     }
 }

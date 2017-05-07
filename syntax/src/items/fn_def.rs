@@ -14,13 +14,17 @@ use lexical::TokenStream;
 use lexical::KeywordKind;
 use lexical::SeperatorKind;
 
+#[cfg(feature = "parse_sess")] use super::super::ParseSession;
+#[cfg(feature = "parse_sess")] use super::super::ParseResult;
+#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemParseX;
+#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemGrammarX;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
 use super::super::TypeUse;
 use super::super::Block;
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct FnParam {
     decltype: TypeUse,
     name: String,
@@ -64,7 +68,7 @@ impl ISyntaxItemFormat for FnDef {
     }
 }
 impl fmt::Debug for FnDef {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(0)) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
 }
 impl FnDef {
 
@@ -83,6 +87,10 @@ impl FnDef {
 }
 impl ISyntaxItemGrammar for FnDef {   
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool { tokens.nth(index) == &Token::Keyword(KeywordKind::FnDef) }
+}
+#[cfg(feature = "parse_sess")]
+impl ISyntaxItemGrammarX for FnDef {
+    fn is_first_finalx(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(KeywordKind::FnDef) }
 }
 impl ISyntaxItemParse for FnDef {
 
@@ -166,8 +174,56 @@ impl ISyntaxItemParse for FnDef {
             (None, length) => return (None, current_length + length),
         };
 
-        let all_strpos = StringPosition::merge(tokens.pos(index), tokens.pos(index + current_length));
+        let all_strpos = StringPosition::merge(tokens.pos(index), tokens.pos(index + current_length - 1));
         return (Some(FnDef::new(all_strpos, fn_name, fn_name_strpos, params, maybe_ret_type, body)), current_length);
+    }
+}
+#[cfg(feature = "parse_sess")]
+impl ISyntaxItemParseX for FnDef {
+
+    fn parsex(sess: &mut ParseSession) -> ParseResult<FnDef> {
+        
+        let fn_strpos = sess.expect_keyword(KeywordKind::FnDef)?;
+        let (fn_name, fn_name_strpos) = sess.expect_ident()?;
+        let param_list_left_paren_strpos = sess.expect_sep(SeperatorKind::LeftParenthenes)?;
+
+        let mut params = Vec::new();
+        loop {
+            match (sess.tk, sess.pos, sess.next_tk, sess.next_pos) {
+                (&Token::Sep(SeperatorKind::Comma), _,
+                    &Token::Sep(SeperatorKind::RightParenthenes), ref right_paren_strpos) => {
+                    sess.move_next2();
+                    if params.is_empty() {
+                        let params_strpos = StringPosition::merge(param_list_left_paren_strpos, *right_paren_strpos);
+                        sess.push_message(Message::new_by_str("Single comma in function definition argument list", vec![
+                            (fn_name_strpos, "function definition here"),
+                            (params_strpos, "param list here")
+                        ]));
+                    }
+                    break;
+                }
+                (&Token::Sep(SeperatorKind::RightParenthenes), ref _right_paren_strpos, _, _) => {
+                    sess.move_next();
+                    break;
+                }
+                (&Token::Sep(SeperatorKind::Comma), _, _, _) => {
+                    sess.move_next();
+                    continue;
+                }
+                _ => (),
+            }
+
+            let (param_name, param_strpos) = sess.expect_ident_or(vec![KeywordKind::Underscore, KeywordKind::This])?;
+            let _ = sess.expect_sep(SeperatorKind::Colon)?;
+            let decltype = TypeUse::parsex(sess)?;
+            params.push(FnParam::new(param_name, param_strpos, decltype));
+        }
+
+        let maybe_ret_type = if sess.tk == &Token::Sep(SeperatorKind::NarrowRightArrow) { sess.move_next(); Some(TypeUse::parsex(sess)?) } else { None };
+        let body = Block::parsex(sess)?;
+
+        let all_strpos = StringPosition::merge(fn_strpos, body.get_all_strpos());
+        return Ok(FnDef::new(all_strpos, fn_name, fn_name_strpos, params, maybe_ret_type, body));
     }
 }
 
@@ -197,7 +253,7 @@ fn fn_def_parse() {
         FnDef::new(make_strpos!(1, 1, 1, 19), 
             "main".to_owned(), make_strpos!(1, 4, 1, 7), vec![
                 FnParam::new(
-                    "abc".to_owned(), make_strpos!(1, 9, 1, 10),
+                    "ac".to_owned(), make_strpos!(1, 9, 1, 10),
                     TypeUseF::new_simple_test("i32", make_strpos!(1, 13, 1, 15))
                 ),
             ],
@@ -208,8 +264,8 @@ fn fn_def_parse() {
 
     //                                0        1         2         3         4         5         6         7         8
     //                                123456789012345678901234567890123456789012345678901234567890123456789012345678901
-    assert_eq!{ FnDef::with_test_str(" fn mainxxx(argv:[[string] ]   ,this:i32, some_other: char, )  { println(this); }"),
-        FnDef::new(make_strpos!(1, 1, 1, 81),
+    assert_eq!{ FnDef::with_test_str(" fn mainxxx(argv:[[string] ]   ,this:i32, some_other: char, )  { println(this); }"), 
+        FnDef::new(make_strpos!(1, 2, 1, 81),
             "mainxxx".to_owned(), make_strpos!(1, 5, 1, 11), vec![
                 FnParam::new(
                     "argv".to_owned(), make_strpos!(1, 13, 1, 16),
@@ -239,7 +295,7 @@ fn fn_def_parse() {
                     ))
                 ))
             ])
-        ) 
+        )
     }
     //                                0        1               
     //                                1234567890123456789

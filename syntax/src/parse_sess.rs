@@ -1,6 +1,11 @@
+#![allow(dead_code)]
+#![allow(unused_imports)]
 ///! fff-lang
 ///!
 ///! syntax/parse_sess, to be ISyntaxItem::parse's parameter
+
+use std::ops;
+use std::cell::Cell;
 
 use codepos::StringPosition;
 use message::Message;
@@ -8,47 +13,178 @@ use message::MessageCollection;
 use lexical::Token;
 use lexical::TokenStream;
 use lexical::SeperatorKind;
+use lexical::KeywordKind;
+
+pub type ParseResult<T> = Result<T, ()>;
 
 pub struct ParseSession<'tokens, 'msgs> {
     tokens: &'tokens TokenStream,
     messages: &'msgs mut MessageCollection,
-    current_index: usize,
+    current_index: Cell<usize>,
+    pub tk: &'tokens Token,
+    pub next_tk: &'tokens Token,
+    pub nextnext_tk: &'tokens Token,
+    pub pos: StringPosition,
+    pub next_pos: StringPosition,
+    pub nextnext_pos: StringPosition,
 }
-
+// TODO: maybe expect, maybe expect2
+// or, SeperatorKind::parse(sess)?  , try_parse
+// KeywordKind::parse(sess)?        , try_parse
+// IdentAndPos::parse(sess)?        , try_parse
+// SeperatorKind2::parse(sess)?   // type SeperatorKind2 = (Seperator, Seperator)
+// LabelDef::try_parse
 impl<'a, 'b> ParseSession<'a, 'b> {
 
     pub fn new(tokens: &'a TokenStream, messages: &'b mut MessageCollection) -> ParseSession<'a, 'b> {
-        ParseSession{ tokens, messages, current_index: 0 }
+        ParseSession{ 
+            tokens, 
+            messages, 
+            current_index: Cell::new(0),
+            tk: tokens.nth(0),
+            next_tk: tokens.nth(1),
+            nextnext_tk: tokens.nth(2),
+            pos: tokens.pos(0),
+            next_pos: tokens.pos(1),
+            nextnext_pos: tokens.pos(2),
+        }
     }
 
-    // pub fn current_token_is_seperator2(&self, sep1: SeperatorKind, sep2: SeperatorKind) -> bool {
-    //     self.tokens.nth(self.current_index).is_seperator(sep1) && self.tokens.nth(self.current_index + 1).is_seperator(sep2)
-    // }
+    pub fn move_next(&mut self) { 
+        self.current_index.set(self.current_index.get() + 1);
+        self.tk = self.tokens.nth(self.current_index.get());
+        self.next_tk = self.tokens.nth(self.current_index.get() + 1);
+        self.nextnext_tk = self.tokens.nth(self.current_index.get() + 2);
+        self.pos = self.tokens.pos(self.current_index.get());
+        self.next_pos = self.tokens.pos(self.current_index.get() + 1);
+        self.nextnext_pos = self.tokens.pos(self.current_index.get() + 2);
+    }
+    pub fn move_next2(&mut self) {
+        self.current_index.set(self.current_index.get() + 2);
+        self.tk = self.tokens.nth(self.current_index.get());
+        self.next_tk = self.tokens.nth(self.current_index.get() + 1);
+        self.nextnext_tk = self.tokens.nth(self.current_index.get() + 2);
+        self.pos = self.tokens.pos(self.current_index.get());
+        self.next_pos = self.tokens.pos(self.current_index.get() + 1);
+        self.nextnext_pos = self.tokens.pos(self.current_index.get() + 2);
+    }
 
-    // pub fn get_current_token(&self) -> &Token { self.tokens.nth(self.current_index) }
-    // pub fn get_current_strpos(&self) -> StringPosition { self.tokens.pos(self.current_index) }
+    // for test compatibility
+    pub fn get_current_index(&self) -> usize { self.current_index.get() }
 
-    // pub fn consume_current_token(&mut self) -> &Token {
-    //     let retval = self.tokens.nth(self.current_index);
-    //     self.current_index += 1;
-    //     return retval;
-    // }
-    // pub fn consume_current_strpos(&mut self) -> StringPosition { 
-    //     let retval = self.tokens.pos(self.current_index);
-    //     self.current_index += 1;
-    //     return retval;
-    // }
+    /// Check current index is keyword, if so, move next and Ok(keyword_strpos),
+    /// if not, push unexpect and Err(())
+    /// use like `let kw_strpos = sess.expect_keyword(KeywordKind::In)?;`
+    pub fn expect_keyword(&mut self, expect_kw: KeywordKind) -> Result<StringPosition, ()> {
 
-    // pub fn skip_current_token(&mut self) { self.current_index += 1; }
+        let current_index = self.current_index.get();
+        self.move_next();
+        match (self.tokens.nth(current_index), self.tokens.pos(current_index)) {
+            (&Token::Keyword(ref actual_kw), ref kw_strpos) if actual_kw == &expect_kw => Ok(*kw_strpos),
+            (&Token::Keyword(_), _) => self.push_unexpect::<StringPosition>(&format!("{}", expect_kw)),
+            _ => self.push_unexpect::<StringPosition>(&format!("{}", expect_kw)),
+        }
+    }
+    /// Check current index is seperator, if so, move next and Ok(seperator_strpos),
+    /// if not, push unexpect and Err(())
+    /// use like `let sep_strpos = sess.expect_sep(SeperatorKind::Comma)?;`
+    pub fn expect_sep(&mut self, expect_sep: SeperatorKind) -> Result<StringPosition, ()> {
 
-    // pub fn push_message(&mut self, message: Message) { self.messages.push(message); }
-    // pub fn push_unexpect<T>(&mut self, expect_desc: &str) -> Option<T> {
+        let current_index = self.current_index.get();
+        self.move_next();
+        match (self.tokens.nth(current_index), self.tokens.pos(current_index)) {
+            (&Token::Sep(ref actual_sep), ref sep_strpos) if actual_sep == &expect_sep => Ok(*sep_strpos),
+            (&Token::Sep(_), _) => self.push_unexpect::<StringPosition>(&format!("{}", expect_sep)),
+            _ => self.push_unexpect::<StringPosition>(&format!("{}", expect_sep)),
+        }
+    }
+    /// Check current index is identifier, if so, move next and Ok((owned_ident_name, ident_strpos)),
+    /// if not, push unexpect and Err(())
+    /// use like `let (ident_name, ident_strpos) = sess.expect_ident()?;`
+    pub fn expect_ident(&mut self) -> Result<(String, StringPosition), ()> {
 
-    //     self.messages.push(Message::with_help("Unexpect symbol".to_owned(), 
-    //         vec![(self.tokens.pos(self.current_index), format!("Meet {:?}", self.tokens.nth(self.current_index)))],
-    //         vec![format!("Expect {}", expect_desc)]
-    //     ));
+        let current_index = self.current_index.get();
+        self.move_next();
+        match (self.tokens.nth(current_index), self.tokens.pos(current_index)) {
+            (&Token::Ident(ref ident), ref ident_strpos) => Ok((ident.clone(), *ident_strpos)),
+            _ => self.push_unexpect::<(String, StringPosition)>("identifier"),
+        }
+    }
+    // TODO: more info unexpect desc string
+    /// Check current index is identifier or accept keywords, 
+    /// used for some where accept underscore and this
+    /// if so, move next and Ok((owned_ident_name, ident_strpos)),
+    /// if not, push unexpect and Err(())
+    /// use like `let (ident_name, ident_strpos) = sess.expect_ident_or(vec![KeywordKind::This, KeywordKind::Underscore])?;`
+    pub fn expect_ident_or(&mut self, accept_keywords: Vec<KeywordKind>) -> Result<(String, StringPosition), ()> {
 
-    //     return None;
-    // }
+        let current_index = self.current_index.get();
+        self.move_next();
+        match (self.tokens.nth(current_index), self.tokens.pos(current_index)) {
+            (&Token::Ident(ref ident), ref ident_strpos) => Ok((ident.clone(), *ident_strpos)),
+            (&Token::Keyword(ref actual_kw), ref kw_strpos) => {
+                if accept_keywords.iter().any(|accept_kw| actual_kw == accept_kw) {
+                    Ok((format!("{}", actual_kw), *kw_strpos))
+                } else {
+                    self.push_unexpect::<(String, StringPosition)>("identifier")
+                }
+            }
+            _ => self.push_unexpect::<(String, StringPosition)>("identifier"),
+        }
+    }
+    // TODO: more info unexpect desc string
+    /// Check current index is identifier or meet the predict
+    /// used for some where (typeuse simple) accept more keywords
+    /// if so, move next and Ok((owned_ident_name, ident_strpos)),
+    /// if not, push unexpect and Err(())
+    /// use like `let (ident_name, ident_strpos) = sess.expect_ident_or_if(|kw| kw.is_prim_type())?;`
+    pub fn expect_ident_or_if<F>(&mut self, keyword_predict: F) -> Result<(String, StringPosition), ()> where F: Fn(&KeywordKind) -> bool {
+        
+        let current_index = self.current_index.get();
+        self.move_next();
+        match (self.tokens.nth(current_index), self.tokens.pos(current_index)) {
+            (&Token::Ident(ref ident), ref ident_strpos) => 
+                Ok((ident.clone(), *ident_strpos)),
+            (&Token::Keyword(ref actual_kw), ref kw_strpos) if keyword_predict(actual_kw) => 
+                Ok((format!("{}", actual_kw), *kw_strpos)),
+            _ => 
+                self.push_unexpect::<(String, StringPosition)>("identifier"),
+        }
+    }
+
+    pub fn push_message(&mut self, message: Message) { self.messages.push(message); }
+    pub fn push_unexpect<T>(&mut self, expect_desc: &str) -> ParseResult<T> {
+
+        self.messages.push(Message::with_help("Unexpect symbol".to_owned(), 
+            vec![(self.tokens.pos(self.current_index.get()), format!("Meet {:?}", self.tokens.nth(self.current_index.get())))],
+            vec![format!("Expect {}", expect_desc)]
+        ));
+
+        return Err(());
+    }
+}
+
+pub trait ISyntaxItemParseX {
+    fn parsex(sess: &mut ParseSession) -> ParseResult<Self> where Self: Sized;
+}
+pub trait ISyntaxItemGrammarX {
+    fn is_first_finalx(sess: &ParseSession) -> bool;
+}
+
+#[cfg(test)] #[test]
+fn parse_sess_usage() {
+    use lexical::LitValue;
+
+    let tokens = TokenStream::with_test_str("1 2 3 4 5 6 7 8 9 0");
+    let mut messages = MessageCollection::new();
+    let mut sess = ParseSession::new(&tokens, &mut messages);
+
+    match (sess.tk, sess.next_tk) {
+        (&Token::Lit(ref _lit1), &Token::Lit(ref _lit2)) => {
+            sess.move_next();
+            println!("{:?}", sess.pos);
+            let _ : ParseResult<i32> = sess.push_unexpect("abc, def");
+        }
+        _ => (),
+    }
 }

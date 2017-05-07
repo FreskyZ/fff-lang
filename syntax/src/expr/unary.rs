@@ -1,7 +1,7 @@
-
-// UnaryExpr = PostfixExpr | UnaryOperator UnaryExpr
-
-// TODO: remove ++ and -- operator when I'm in strong mind and high san
+///! fff-lang
+///!
+///! syntax/unary_expr
+///! UnaryExpr = PostfixExpr | UnaryOperator UnaryExpr
 
 use std::fmt;
 
@@ -13,6 +13,10 @@ use lexical::TokenStream;
 use lexical::SeperatorKind;
 use lexical::SeperatorCategory;
 
+#[cfg(feature = "parse_sess")] use super::super::ParseSession;
+#[cfg(feature = "parse_sess")] use super::super::ParseResult;
+#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemParseX;
+#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemGrammarX;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -126,6 +130,15 @@ impl ISyntaxItemGrammar for UnaryExpr {
         }
     }
 }
+#[cfg(feature = "parse_sess")]
+impl ISyntaxItemGrammarX for UnaryExpr {
+    fn is_first_finalx(sess: &ParseSession) -> bool {
+        PostfixExpr::is_first_finalx(sess) || match sess.tk {
+            &Token::Sep(ref sep) if sep.is_category(SeperatorCategory::Unary) => true,
+            _ => false,
+        }
+    }
+}
 impl ISyntaxItemParse for UnaryExpr {
 
     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<UnaryExpr>, usize) {
@@ -149,6 +162,30 @@ impl ISyntaxItemParse for UnaryExpr {
                     }
                 }
             } 
+        }
+    }
+}
+#[cfg(feature = "parse_sess")]
+impl ISyntaxItemParseX for UnaryExpr {
+
+    fn parsex(sess: &mut ParseSession) -> ParseResult<UnaryExpr> {
+        
+        let mut operator_and_strposs = Vec::new();
+        loop {
+            match (sess.tk, sess.pos) {
+                (&Token::Sep(operator), operator_strpos) if operator.is_category(SeperatorCategory::Unary) => {
+                    sess.move_next();
+                    operator_and_strposs.push((operator, operator_strpos));
+                }
+                _ => {
+                    let postfix_expr = PostfixExpr::parsex(sess)?;
+                    let mut current_unary = UnaryExpr::new_postfix(postfix_expr);
+                    for (operator, operator_strpos) in operator_and_strposs.into_iter().rev() {
+                        current_unary = UnaryExpr::new_unary(operator, operator_strpos, current_unary);
+                    }
+                    return Ok(current_unary);
+                }
+            }
         }
     }
 }

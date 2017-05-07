@@ -31,6 +31,10 @@ use lexical::Token;
 use lexical::TokenStream;
 use lexical::SeperatorKind;
 
+#[cfg(feature = "parse_sess")] use super::super::ParseSession;
+#[cfg(feature = "parse_sess")] use super::super::ParseResult;
+#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemParseX;
+#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemGrammarX;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -93,6 +97,18 @@ impl TypeUseF { // New
 impl ISyntaxItemGrammar for TypeUse {
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
         match tokens.nth(index) {
+            &Token::Ident(_) 
+            | &Token::Sep(SeperatorKind::LeftBracket)
+            | &Token::Sep(SeperatorKind::LeftParenthenes) => true,
+            &Token::Keyword(kw) => kw.is_prim_type(),
+            _ => false,
+        }
+    }
+}
+#[cfg(feature = "parse_sess")]
+impl ISyntaxItemGrammarX for TypeUse {
+    fn is_first_finalx(sess: &ParseSession) -> bool {
+        match sess.tk {
             &Token::Ident(_) 
             | &Token::Sep(SeperatorKind::LeftBracket)
             | &Token::Sep(SeperatorKind::LeftParenthenes) => true,
@@ -204,52 +220,104 @@ impl ISyntaxItemParse for TypeUse {
         }
     }
 }
+#[cfg(feature = "parse_sess")]
+impl ISyntaxItemParseX for TypeUse {
+
+    fn parsex(sess: &mut ParseSession) -> ParseResult<TypeUse> {
+        #[cfg(feature = "trace_type_use_parse")]
+        macro_rules! trace { ($($arg:tt)*) => ({ print!("[TypeUse]"); println!($($arg)*); }) }
+        #[cfg(not(feature = "trace_type_use_parse"))]
+        macro_rules! trace { ($($arg:tt)*) => () }
+
+        match (sess.tk, sess.pos) {
+            (&Token::Ident(ref ident), ref ident_strpos) => {
+                sess.move_next();
+                return Ok(TypeUseF::new_simple(ident.clone(), *ident_strpos));
+            }
+            (&Token::Keyword(keyword), ref keyword_strpos) if keyword.is_prim_type() => {
+                sess.move_next();
+                return Ok(TypeUseF::new_simple(format!("{}", keyword), *keyword_strpos));
+            }
+            (&Token::Sep(SeperatorKind::LeftBracket), ref left_bracket_strpos) => {
+                sess.move_next();
+                let inner = TypeUse::parsex(sess)?;
+                let right_bracket_strpos = sess.expect_sep(SeperatorKind::RightBracket)?;
+                return Ok(TypeUseF::new_array(StringPosition::merge(*left_bracket_strpos, right_bracket_strpos), inner));
+            }
+            (&Token::Sep(SeperatorKind::LeftParenthenes), ref left_paren_strpos) => {
+                sess.move_next();
+                if let (&Token::Sep(SeperatorKind::RightParenthenes), ref right_paren_strpos) = (sess.tk, sess.pos) { 
+                    sess.move_next();
+                    return Ok(TypeUseF::new_unit(StringPosition::merge(*left_paren_strpos, *right_paren_strpos)));
+                }
+
+                let mut tuple_types = Vec::new();
+                let ending_strpos: StringPosition;
+                let end_by_comma: bool;
+                tuple_types.push(TypeUse::parsex(sess)?);
+                loop {
+                    match (sess.tk, sess.pos, sess.next_tk, sess.next_pos) {
+                        (&Token::Sep(SeperatorKind::Comma), _, 
+                            &Token::Sep(SeperatorKind::RightParenthenes), ref right_paren_strpos) => {
+                            sess.move_next2();
+                            ending_strpos = *right_paren_strpos;
+                            end_by_comma = true;
+                            break;        
+                        }
+                        (&Token::Sep(SeperatorKind::RightParenthenes), ref right_paren_strpos, _, _) => {
+                            sess.move_next();
+                            ending_strpos = *right_paren_strpos;
+                            end_by_comma = false;
+                            break;
+                        }
+                        (&Token::Sep(SeperatorKind::Comma), _, _, _) => {
+                            sess.move_next();
+                            tuple_types.push(TypeUse::parsex(sess)?);
+                        }
+                        _ => return sess.push_unexpect("comma, right parenthenes"),
+                    }
+                }
+                
+                let paren_pair_strpos = StringPosition::merge(*left_paren_strpos, ending_strpos);
+                if tuple_types.len() == 1 && !end_by_comma {
+                    sess.push_message(Message::new_by_str("Single item tuple type use", vec![(paren_pair_strpos, "type use here")]));
+                    return Ok(TypeUseF::new_tuple(paren_pair_strpos, tuple_types));
+                } else { // len() == 0 already rejected
+                    return Ok(TypeUseF::new_tuple(paren_pair_strpos, tuple_types));
+                }
+            }
+            _ => return sess.push_unexpect("primitive type keyword, left bracket, left parenthenes, identifier"),
+        }
+    }
+}
 
 #[cfg(test)] #[test]
 fn type_use_parse() {
     use super::super::ISyntaxItemWithStr;
 
-    // // Primitive
     assert_eq!{ TypeUse::with_test_str("u8"), TypeUseF::new_simple("u8".to_owned(), make_strpos!(1, 1, 1, 2)) }
+    assert_eq!{ TypeUse::with_test_str("i32"), TypeUseF::new_simple("i32".to_owned(), make_strpos!(1, 1, 1, 3)) }
+    assert_eq!{ TypeUse::with_test_str("char"), TypeUseF::new_simple("char".to_owned(), make_strpos!(1, 1, 1, 4)) }
+    assert_eq!{ TypeUse::with_test_str("string"), TypeUseF::new_simple("string".to_owned(), make_strpos!(1, 1, 1, 6)) }
+    assert_eq!{ TypeUse::with_test_str("helloworld_t"), TypeUseF::new_simple("helloworld_t".to_owned(), make_strpos!(1, 1, 1, 12)) }
 
-    // ast_test_case!{ "i32", 1, make_str_pos!(1, 1, 1, 3),
-    //     simple!("i32", make_str_pos!(1, 1, 1, 3))
-    // }
-    // ast_test_case!{ "char", 1, make_str_pos!(1, 1, 1, 4),
-    //     simple!("char", make_str_pos!(1, 1, 1, 4))
-    // }
-    // ast_test_case!{ "string", 1, make_str_pos!(1, 1, 1, 6),
-    //     simple!("string", make_str_pos!(1, 1, 1, 6))
-    // }
+    assert_eq!{ TypeUse::with_test_str("()"), TypeUseF::new_unit(make_strpos!(1, 1, 1, 2)) }
 
-    // // Simple user define
-    // ast_test_case!{ "helloworld_t", 1, make_str_pos!(1, 1, 1, 12),
-    //     simple!("helloworld_t", make_str_pos!(1, 1, 1, 12))
-    // }
-    // ast_test_case!{ "a", 1, make_str_pos!(1, 1, 1, 1),
-    //     simple!("a", make_str_pos!(1, 1, 1, 1))
-    // }
-
-    // // Array
-    // ast_test_case!{ "[u8]", 3, make_str_pos!(1, 1, 1, 4),
-    //     TypeUseF::new_array(make_str_pos!(1, 1, 1, 4),
-    //         simple!("u8", make_str_pos!(1, 2, 1, 3)),
-    //     )
-    // }
-    // ast_test_case!{ "[[helloworld_t]]", 5, make_str_pos!(1, 1, 1, 16),
-    //     TypeUseF::new_array(make_str_pos!(1, 1, 1, 16), 
-    //         TypeUseF::new_array(make_str_pos!(1, 2, 1, 15),
-    //             simple!("helloworld_t", make_str_pos!(1, 3, 1, 14))
-    //         )
-    //     )
-    // }
-
-    // // Unit
-    // ast_test_case!{ "()", 2, make_str_pos!(1, 1, 1, 2),
-    //     TypeUseF::new_unit(make_str_pos!(1, 1, 1, 2))
-    // }
+    assert_eq!{ TypeUse::with_test_str("[u8]"),
+        TypeUseF::new_array(make_strpos!(1, 1, 1, 4), 
+            TypeUseF::new_simple("u8".to_owned(), make_strpos!(1, 2, 1, 3))
+        )
+    }
+    assert_eq!{ TypeUse::with_test_str("[[he_t]]"),
+        TypeUseF::new_array(make_strpos!(1, 1, 1, 8),
+            TypeUseF::new_array(make_strpos!(1, 2, 1, 7), 
+                TypeUseF::new_simple("he_t".to_owned(), make_strpos!(1, 3, 1, 6))
+            )
+        )
+    }
 
     // // Tuple
+    // (i32,)
     // //           1234567890123
     // ast_test_case!{ "(i32, string)", 5, make_str_pos!(1, 1, 1, 13),
     //     TypeUseF::new_tuple(make_str_pos!(1, 1, 1, 13), vec![

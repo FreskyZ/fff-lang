@@ -12,6 +12,10 @@ use lexical::Token;
 use lexical::TokenStream;
 use lexical::SeperatorKind;
 
+#[cfg(feature = "parse_sess")] use super::super::ParseSession;
+#[cfg(feature = "parse_sess")] use super::super::ParseResult;
+#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemParseX;
+#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemGrammarX;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -45,6 +49,10 @@ impl ISyntaxItemGrammar for Block {
         tokens.nth(index) == &Token::Sep(SeperatorKind::LeftBrace) 
     }
 }
+#[cfg(feature = "parse_sess")]
+impl ISyntaxItemGrammarX for Block {
+    fn is_first_finalx(sess: &ParseSession) -> bool { sess.tk == &Token::Sep(SeperatorKind::LeftBrace) }
+}
 impl ISyntaxItemParse for Block {
 
     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<Block>, usize) {
@@ -67,12 +75,30 @@ impl ISyntaxItemParse for Block {
         }
     }
 }
+#[cfg(feature = "parse_sess")]
+impl ISyntaxItemParseX for Block {
+
+    fn parsex(sess: &mut ParseSession) -> ParseResult<Block> {
+
+        let starting_strpos = sess.expect_sep(SeperatorKind::LeftBrace)?;
+        let mut items = Vec::new();
+        loop {
+            if let (&Token::Sep(SeperatorKind::RightBrace), ref right_brace_strpos) = (sess.tk, sess.pos) {
+                sess.move_next();
+                return Ok(Block::new(StringPosition::merge(starting_strpos, *right_brace_strpos), items));
+            }
+            items.push(Statement::parsex(sess)?); 
+        }
+    }
+}
 
 #[cfg(test)] #[test]
 fn block_parse() {
     use super::super::ISyntaxItemWithStr;
     
-    assert_eq!{ Block::with_test_str_ret_size("{}"), (Some(Block::new(make_strpos!(1, 1, 1, 2), vec![])), 2) }
-
-    // perrorln!("{:?}", Block::with_test_str("{ 1; 1 + 1; while true { writeln(\"fresky loves zmj\"); } loop { writeln(\"zmj loves fresky\"); } }")); 
+    assert_eq!{ Block::with_test_str_ret_size_messages("{}"), (
+        Some(Block::new(make_strpos!(1, 1, 1, 2), vec![])), 
+        2,
+        make_messages![],
+    )}
 }

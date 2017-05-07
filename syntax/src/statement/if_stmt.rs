@@ -13,6 +13,10 @@ use lexical::Token;
 use lexical::TokenStream;
 use lexical::KeywordKind;
 
+#[cfg(feature = "parse_sess")] use super::super::ParseSession;
+#[cfg(feature = "parse_sess")] use super::super::ParseResult;
+#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemParseX;
+#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemGrammarX;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -126,6 +130,10 @@ impl ISyntaxItemGrammar for IfStatement {
         tokens.nth(index) == &Token::Keyword(KeywordKind::If)
     }
 }
+#[cfg(feature = "parse_sess")]
+impl ISyntaxItemGrammarX for IfStatement {
+    fn is_first_finalx(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(KeywordKind::If) }
+}
 impl ISyntaxItemParse for IfStatement {
 
     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<IfStatement>, usize) {
@@ -182,9 +190,57 @@ impl ISyntaxItemParse for IfStatement {
         }
     }
 }
+#[cfg(feature = "parse_sess")]
+impl ISyntaxItemParseX for IfStatement {
+    
+    fn parsex(sess: &mut ParseSession) -> ParseResult<IfStatement> {
+        assert!(sess.tk == &Token::Keyword(KeywordKind::If));
+
+        let if_strpos = sess.pos;
+        sess.move_next();
+        
+        let if_expr = BinaryExpr::parsex(sess)?;
+        let if_body = Block::parsex(sess)?;
+
+        let mut elseifs = Vec::new();
+        let mut ending_strpos = if_body.get_all_strpos();
+        let mut else_strpos = StringPosition::new();
+        let mut else_body = None;
+        loop {
+            match (sess.tk, sess.pos, sess.next_tk, sess.next_pos) {
+                (&Token::Keyword(KeywordKind::Else), ref else_strpos,
+                    &Token::Keyword(KeywordKind::If), ref if_strpos) => {
+                    sess.move_next2();
+                    let elseif_strpos = StringPosition::merge(*else_strpos, *if_strpos);
+                    let elseif_expr = BinaryExpr::parsex(sess)?;
+                    let elseif_body = Block::parsex(sess)?;
+                    ending_strpos = elseif_body.get_all_strpos();
+                    elseifs.push(IfConditionBody::new(elseif_strpos, elseif_expr, elseif_body));
+                }
+                (&Token::Keyword(KeywordKind::Else), ref this_else_strpos, _, _) => {
+                    sess.move_next();
+                    // 17/5/6: When there is match Block::parse(tokens, messages, index + current_length), etc.
+                    // There is a bug fix here, now no more current_length handling!
+                    // // 16/12/1, we lost TWO `+1`s for current_length here ... fixed
+                    else_strpos = *this_else_strpos;
+                    let this_else_body = Block::parsex(sess)?;
+                    ending_strpos = this_else_body.get_all_strpos();
+                    else_body = Some(this_else_body);
+                }
+                _ => break,
+            }
+        }
+
+        let all_strpos = StringPosition::merge(if_strpos, ending_strpos);
+        match else_body {
+            Some(else_body) => Ok(IfStatement::new_ifelseifelse(all_strpos, if_strpos, if_expr, if_body, elseifs, else_strpos, else_body)),
+            None => Ok(IfStatement::new_ifelseif(all_strpos, if_strpos, if_expr, if_body, elseifs)),
+        }
+    }
+}
 
 #[cfg(test)] #[test]
-fn ast_stmt_if() {
+fn if_stmt_parse() {
     use super::super::ISyntaxItemWithStr;
     use lexical::LitValue;
 

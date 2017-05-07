@@ -15,6 +15,10 @@ use lexical::TokenStream;
 use lexical::SeperatorKind;
 use lexical::KeywordKind;
 
+#[cfg(feature = "parse_sess")] use super::super::ParseSession;
+#[cfg(feature = "parse_sess")] use super::super::ParseResult;
+#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemParseX;
+#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemGrammarX;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -58,6 +62,25 @@ impl JumpStatement {
                 (Some(JumpStatement::new_no_target(StringPosition::merge(tokens.pos(index), tokens.pos(index + 1)))), 2),
             _ =>
                 push_unexpect!(tokens, messages, "label or semicolon", index + 1, 1),
+        }
+    }
+
+    #[cfg(feature = "parse_sess")]
+    fn parsex(sess: &mut ParseSession, expect_first_kw: KeywordKind) -> ParseResult<JumpStatement> {
+        assert!(sess.tk == &Token::Keyword(expect_first_kw));
+
+        let starting_strpos = sess.pos;
+        sess.move_next();
+        match (sess.tk, sess.pos, sess.next_tk, sess.next_pos) {
+            (&Token::Label(ref target), target_strpos, 
+                &Token::Sep(SeperatorKind::SemiColon), ref semi_colon_strpos) => 
+                Ok(JumpStatement::new_target(StringPosition::merge(starting_strpos, *semi_colon_strpos), target.clone(), target_strpos)),
+            (&Token::Sep(SeperatorKind::SemiColon), ref semi_colon_strpos, _, _) => 
+                Ok(JumpStatement::new_no_target(StringPosition::merge(starting_strpos, *semi_colon_strpos))),
+            (&Token::Label(_), _, _, _) =>
+                sess.push_unexpect("semicolon"),
+            _ => 
+                sess.push_unexpect("label, semicolo"),
         }
     }
 }
@@ -109,7 +132,15 @@ impl ISyntaxItemGrammar for ContinueStatement {
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool { tokens.nth(index) == &Token::Keyword(KeywordKind::Continue) }
 }
 impl ISyntaxItemGrammar for BreakStatement {
-    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool { tokens.nth(index) == &Token::Keyword(KeywordKind::Continue) }
+    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool { tokens.nth(index) == &Token::Keyword(KeywordKind::Break) }
+}
+#[cfg(feature = "parse_sess")]
+impl ISyntaxItemGrammarX for ContinueStatement {
+    fn is_first_finalx(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(KeywordKind::Continue) }
+}
+#[cfg(feature = "parse_sess")]
+impl ISyntaxItemGrammarX for BreakStatement {
+    fn is_first_finalx(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(KeywordKind::Break) }
 }
 
 impl ISyntaxItemParse for ContinueStatement {
@@ -130,6 +161,20 @@ impl ISyntaxItemParse for BreakStatement {
             (None, length) => (None, length),
             (Some(jump_stmt), length) => (Some(BreakStatement(jump_stmt)), length),
         }
+    }
+}
+#[cfg(feature = "parse_sess")]
+impl ISyntaxItemParseX for ContinueStatement {
+
+    fn parsex(sess: &mut ParseSession) -> ParseResult<ContinueStatement> { 
+        Ok(ContinueStatement(JumpStatement::parsex(sess, KeywordKind::Continue)?))
+    }
+}
+#[cfg(feature = "parse_sess")]
+impl ISyntaxItemParseX for BreakStatement {
+
+    fn parsex(sess: &mut ParseSession) -> ParseResult<BreakStatement> {
+        Ok(BreakStatement(JumpStatement::parsex(sess, KeywordKind::Break)?))
     }
 }
 

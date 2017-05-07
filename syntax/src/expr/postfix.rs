@@ -17,14 +17,15 @@ use message::MessageCollection;
 use lexical::Token;
 use lexical::TokenStream;
 use lexical::SeperatorKind;
-use lexical::KeywordKind;
 
-// use super::super::ParseSession;
+#[cfg(feature = "parse_sess")] use super::super::ParseSession;
+#[cfg(feature = "parse_sess")] use super::super::ParseResult;
+#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemParseX;
+#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemGrammarX;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
 use super::super::BinaryExpr;
-use super::super::TypeUse;
 
 use super::primary::PrimaryExpr;
 
@@ -220,10 +221,13 @@ impl PostfixExpr { // Get
 impl ISyntaxItemGrammar for PostfixExpr {
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool { PrimaryExpr::is_first_final(tokens, index) }
 }
+#[cfg(feature = "parse_sess")]
+impl ISyntaxItemGrammarX for PostfixExpr {
+    fn is_first_finalx(sess: &ParseSession) -> bool { PrimaryExpr::is_first_finalx(sess) }
+}
 impl ISyntaxItemParse for PostfixExpr {
 
     fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<PostfixExpr>, usize) {
-        
         #[cfg(feature = "trace_postfix_expr_parse")]
         macro_rules! trace { ($($arg:tt)*) => ({ perror!("    [PostfixExpr:{}] ", line!()); perrorln!($($arg)*); }) }
         #[cfg(not(feature = "trace_postfix_expr_parse"))]
@@ -368,6 +372,126 @@ impl ISyntaxItemParse for PostfixExpr {
         (Some(current_retval), current_length)
     }
 }
+#[cfg(feature = "parse_sess")]
+impl ISyntaxItemParseX for PostfixExpr {
+
+    fn parsex(sess: &mut ParseSession) -> ParseResult<PostfixExpr> {   
+        #[cfg(feature = "trace_postfix_expr_parse")]
+        macro_rules! trace { ($($arg:tt)*) => ({ perror!("    [PostfixExpr:{}] ", line!()); perrorln!($($arg)*); }) }
+        #[cfg(not(feature = "trace_postfix_expr_parse"))]
+        macro_rules! trace { ($($arg:tt)*) => () }
+
+        let mut current_retval = PostfixExpr::new_primary(PrimaryExpr::parsex(sess)?);
+        trace!("parsed primary, current is {:?}", current_retval);
+
+        'postfix: loop {
+            // function call and subscription both accept expression list, merge the processor and it is the end seperator
+            let (starting_strpos, expect_end_sep) = match (sess.tk, sess.pos, sess.next_tk, sess.next_pos) {
+                (&Token::Sep(SeperatorKind::Dot), ref dot_strpos, &Token::Ident(ref ident), ref ident_strpos) => {
+                    sess.move_next2();
+                    current_retval = PostfixExpr::new_member_access(current_retval, *dot_strpos, ident.clone(), *ident_strpos);
+                    trace!("after member access finished");
+                    continue 'postfix;
+                }
+                (&Token::Sep(SeperatorKind::Dot), ref _dot_strpos, _, _) => {
+                    trace!("get postfix failed, member access not followed ident");
+                    return sess.push_unexpect("identifier");
+                }
+                (&Token::Sep(SeperatorKind::LeftParenthenes), ref left_paren_strpos, &Token::Sep(SeperatorKind::RightParenthenes), ref right_paren_strpos) => {
+                    trace!("get one postfix, none parameter function call");
+                    sess.move_next2();
+                    current_retval = PostfixExpr::new_function_call_auto_merge_prev_member_access(
+                        current_retval, StringPosition::merge(*left_paren_strpos, *right_paren_strpos), Vec::new()
+                    );
+                    continue 'postfix;
+                }
+                (&Token::Sep(SeperatorKind::LeftParenthenes), ref left_paren_strpos, &Token::Sep(SeperatorKind::Comma), _) => {
+                    sess.move_next2();
+                    if sess.tk == &Token::Sep(SeperatorKind::RightParenthenes) {
+                        let paren_strpos = StringPosition::merge(*left_paren_strpos, sess.pos);
+                        sess.push_message(Message::new_by_str("Single comma in function call", vec![(paren_strpos, "function call here")]));
+                        current_retval = PostfixExpr::new_function_call_auto_merge_prev_member_access(current_retval, paren_strpos, Vec::new());
+                        sess.move_next();
+                        continue 'postfix;
+                    }
+                    (*left_paren_strpos, SeperatorKind::RightParenthenes)
+                }
+                (&Token::Sep(SeperatorKind::LeftParenthenes), ref left_paren_strpos, _, _) => {
+                    (*left_paren_strpos, SeperatorKind::RightParenthenes)
+                }
+                (&Token::Sep(SeperatorKind::LeftBracket), ref left_bracket_strpos, &Token::Sep(SeperatorKind::RightBracket), ref right_bracket_strpos) => {
+                    sess.move_next2();
+                    let bracket_strpos = StringPosition::merge(*left_bracket_strpos, *right_bracket_strpos);
+                    sess.push_message(Message::new_by_str("Empty subscription", vec![(bracket_strpos, "subscription here")]));
+                    current_retval = PostfixExpr::new_subscription(current_retval, bracket_strpos, Vec::new());
+                    continue 'postfix;
+                }
+                (&Token::Sep(SeperatorKind::LeftBracket), ref left_bracket_strpos, &Token::Sep(SeperatorKind::Comma), _) => {
+                    sess.move_next2();
+                    if sess.tk == &Token::Sep(SeperatorKind::RightBracket) {
+                        let bracket_strpos = StringPosition::merge(*left_bracket_strpos, sess.pos);
+                        sess.push_message(Message::new_by_str("Empty subscription", vec![(bracket_strpos, "subscription here")]));
+                        current_retval = PostfixExpr::new_subscription(current_retval, bracket_strpos, Vec::new());
+                        sess.move_next();
+                        continue 'postfix;
+                    }
+                    (*left_bracket_strpos, SeperatorKind::RightBracket)
+                }
+                (&Token::Sep(SeperatorKind::LeftBracket), ref left_bracket_strpos, _, _) => {
+                    (*left_bracket_strpos, SeperatorKind::RightBracket)
+                }
+                _ => break,
+            };
+
+            // Get the expression list
+            sess.move_next();
+            let expr1 = BinaryExpr::parsex(sess)?;
+            let mut exprs = vec![expr1];
+            'expr: loop { 
+                match (&expect_end_sep, sess.tk, sess.pos, sess.next_tk, sess.next_pos) {
+                    (&SeperatorKind::RightParenthenes, 
+                        &Token::Sep(SeperatorKind::Comma), _, 
+                        &Token::Sep(SeperatorKind::RightParenthenes), ref right_paren_strpos) => {
+                        sess.move_next2();
+                        current_retval = PostfixExpr::new_function_call_auto_merge_prev_member_access(
+                            current_retval, StringPosition::merge(starting_strpos, *right_paren_strpos), exprs
+                        );
+                        continue 'postfix;
+                    }
+                    (&SeperatorKind::RightParenthenes, 
+                        &Token::Sep(SeperatorKind::RightParenthenes), ref right_paren_strpos, _, _) => {
+                        sess.move_next();
+                        current_retval = PostfixExpr::new_function_call_auto_merge_prev_member_access(
+                            current_retval, StringPosition::merge(starting_strpos, *right_paren_strpos), exprs
+                        );
+                        continue 'postfix;
+                    }
+                    (&SeperatorKind::RightBracket, 
+                        &Token::Sep(SeperatorKind::Comma), _, 
+                        &Token::Sep(SeperatorKind::RightBracket), ref right_bracket_strpos) => {
+                        sess.move_next2();
+                        current_retval = PostfixExpr::new_subscription(current_retval, StringPosition::merge(starting_strpos, *right_bracket_strpos), exprs);
+                        continue 'postfix;
+                    }
+                    (&SeperatorKind::RightBracket, 
+                        &Token::Sep(SeperatorKind::RightBracket), ref right_bracket_strpos, _, _) => {
+                        sess.move_next();
+                        current_retval = PostfixExpr::new_subscription(current_retval, StringPosition::merge(starting_strpos, *right_bracket_strpos), exprs);
+                        continue 'postfix;
+                    }
+                    (_, &Token::Sep(SeperatorKind::Comma), _, _, _) => {
+                        sess.move_next();
+                        exprs.push(BinaryExpr::parsex(sess)?);
+                    }
+                    _ => (),
+                }
+            }
+        }
+
+        trace!("parsing postfix finished, get retval: {:?}", current_retval);
+        return Ok(current_retval);
+    }
+}
 
 #[cfg(test)] #[test]
 fn postfix_expr_format() {
@@ -443,8 +567,6 @@ fn postfix_expr_format() {
 
 #[cfg(test)] #[test]
 fn postfix_expr_parse() {
-    use lexical::LitValue;
-    use super::super::TypeUseF;
     use super::super::ISyntaxItemWithStr;
 
     macro_rules! ident {
@@ -519,10 +641,10 @@ fn postfix_expr_parse() {
             ident!(post, "a", make_strpos!(1, 1, 1, 1)), 
             make_strpos!(1, 2, 1, 3), vec![]
         )), 
+        3,
         make_messages![
             Message::new_by_str("Empty subscription", vec![(make_strpos!(1, 2, 1, 3), "subscription here")])
         ],
-        3
     )}
     
     assert_eq!{ PostfixExpr::with_test_str_ret_size_messages("a[, ]"), (
@@ -530,10 +652,10 @@ fn postfix_expr_parse() {
             ident!(post, "a", make_strpos!(1, 1, 1, 1)), 
             make_strpos!(1, 2, 1, 5), vec![]
         )), 
+        4,
         make_messages![
             Message::new_by_str("Empty subscription", vec![(make_strpos!(1, 2, 1, 5), "subscription here")])
         ],
-        4
     )}
     
     assert_eq!{ PostfixExpr::with_test_str_ret_size_messages("a(, )"), (
@@ -541,11 +663,9 @@ fn postfix_expr_parse() {
             ident!(post, "a", make_strpos!(1, 1, 1, 1)),
             make_strpos!(1, 2, 1, 5), vec![]
         )), 
+        4,
         make_messages![
             Message::new_by_str("Single comma in function call", vec![(make_strpos!(1, 2, 1, 5), "function call here")])
         ],
-        4
     )}
 }
-
-// TODO: make parse sess version postfix::parse pass compile

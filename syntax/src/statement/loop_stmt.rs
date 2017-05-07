@@ -11,6 +11,10 @@ use lexical::Token;
 use lexical::TokenStream;
 use lexical::KeywordKind;
 
+#[cfg(feature = "parse_sess")] use super::super::ParseSession;
+#[cfg(feature = "parse_sess")] use super::super::ParseResult;
+#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemParseX;
+#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemGrammarX;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -26,13 +30,15 @@ pub struct LoopStatement {
 impl ISyntaxItemFormat for LoopStatement {
     fn format(&self, indent: u32) -> String {
         match self.m_label {
-            Some(ref label_def) => format!("{}Loop <{:?}>\n{}\n{:?}", 
+            Some(ref label_def) => format!("{}LoopStmt <{:?}>\n{}\n{}'loop' <{:?}>\n{}", 
                 LoopStatement::indent_str(indent), StringPosition::merge(label_def.get_all_strpos(), self.m_body.get_all_strpos()),
                 label_def.format(indent + 1),
-                self.m_body),
-            None => format!("{}Loop <{:?}>\n{:?}", 
+                LoopStatement::indent_str(indent + 1), self.m_loop_strpos,
+                self.m_body.format(indent + 1)),
+            None => format!("{}LoopStmt <{:?}>\n{}'loop' <{:?}>\n{}", 
                 LoopStatement::indent_str(indent), StringPosition::merge(self.m_loop_strpos, self.m_body.get_all_strpos()),
-                self.m_body),
+                LoopStatement::indent_str(indent + 1), self.m_loop_strpos,
+                self.m_body.format(indent + 1)),
         }
     }
 }
@@ -55,6 +61,15 @@ impl LoopStatement { // New
             m_label: Some(label),
             m_loop_strpos: loop_strpos,
             m_body: body
+        }
+    }
+
+    #[cfg(feature = "parse_sess")]  // TODO: remove this cfg
+    fn new_some_label(label: Option<LabelDef>, loop_strpos: StringPosition, body: Block) -> LoopStatement {
+        LoopStatement{  
+            m_label: label,
+            m_loop_strpos: loop_strpos,
+            m_body: body,
         }
     }
 }
@@ -81,6 +96,15 @@ impl LoopStatement { // Get
 impl ISyntaxItemGrammar for LoopStatement {
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
         match (tokens.nth(index), tokens.nth(index + 2)) {
+            (&Token::Label(_), &Token::Keyword(KeywordKind::Loop)) | (&Token::Keyword(KeywordKind::Loop), _) => true,
+            _ => false
+        }
+    }
+}
+#[cfg(feature = "parse_sess")]
+impl ISyntaxItemGrammarX for LoopStatement {
+    fn is_first_finalx(sess: &ParseSession) -> bool {
+        match (sess.tk, sess.nextnext_tk) {
             (&Token::Label(_), &Token::Keyword(KeywordKind::Loop)) | (&Token::Keyword(KeywordKind::Loop), _) => true,
             _ => false
         }
@@ -115,50 +139,66 @@ impl ISyntaxItemParse for LoopStatement {
         }
     }
 }
+#[cfg(feature = "parse_sess")]
+impl ISyntaxItemParseX for LoopStatement {
+    
+    fn parsex(sess: &mut ParseSession) -> ParseResult<LoopStatement> {
+
+        let maybe_label = if let &Token::Label(_) = sess.tk { Some(LabelDef::parsex(sess)?) } else { None };
+        let loop_strpos = sess.expect_keyword(KeywordKind::Loop)?;
+        let body = Block::parsex(sess)?;
+        return Ok(LoopStatement::new_some_label(maybe_label, loop_strpos, body));
+    }
+}
 
 #[cfg(test)] #[test]
 fn loop_stmt_format() {
-    unimplemented!()
+    use super::super::ISyntaxItemWithStr;
+    
+    //                                         1234567890123456789 0123 45678
+    let actual = LoopStatement::with_test_str("@@: loop { println(\"233\"); }").format(0);
+    let expect = r#"LoopStmt <<0>1:1-1:28>
+  Label '@@' <<0>1:1-1:3>
+  'loop' <<0>1:5-1:8>
+  Block <<0>1:10-1:28>
+    ExprStmt <<0>1:12-1:26>
+      PostfixExpr <<0>1:12-1:25>
+        Ident 'println' <<0>1:12-1:18>
+        FunctionCall <<0>1:19-1:25>
+          Literal "233" <<0>1:20-1:24>"#;
+
+    if actual != expect { panic!("assertion failed: left: {}, right: {}", actual, expect) }
 }
 
 #[cfg(test)] #[test]
 fn loop_stmt_parse() {
     use super::super::ISyntaxItemWithStr;
+    use super::super::Statement;
+    use super::super::ExprStatement;
+    use super::super::BinaryExpr;
+    use super::super::PostfixExpr;
+    use super::super::PrimaryExpr;
+    use lexical::LitValue;
 
     assert_eq!{ LoopStatement::with_test_str("loop {}"),
         LoopStatement::new_no_label(make_strpos!(1, 1, 1, 4), Block::new(make_strpos!(1, 6, 1, 7), vec![]))
     }
-}
-
-#[cfg(test)] #[test]
-fn ast_stmt_loop_parse() {
-    // use super::super::TestCase;
-    // use super::super::ISyntaxItemWithStr;
-
-    // //               0        1          2          3
-    // //               123456789012345 678901234 56789
-    // ast_test_case!{ "loop { writeln(\"love zmj\"); }", 8, make_str_pos!(1, 1, 1, 29),
-    //     LoopStatement{
-    //         name: None, 
-    //         body: Block::with_test_str("     { writeln(\"love zmj\"); }"),
-    //         pos: [make_str_pos!(1, 1, 1, 4), StringPosition::new()]
-    //     }
-    // }            //  12345 678901 2345
-    // ast_test_case!{ "loop \"innnn\" {}", 4, make_str_pos!(1, 1, 1, 15),
-    //     LoopStatement{
-    //         name: Some("innnn".to_owned()),
-    //         body: Block::with_test_str("               {}"),
-    //         pos: [make_str_pos!(1, 1, 1, 4), make_str_pos!(1, 6, 1, 12)],
-    //     }                                              
-    // }            //  12345678901
-    // ast_test_case!{ "loop abc {}", 4, make_str_pos!(1, 1, 1, 11),
-    //     LoopStatement{
-    //         name: None,                          
-    //         body: Block::with_test_str("         {}"),
-    //         pos: [make_str_pos!(1, 1, 1, 4), StringPosition::new()],
-    //     },
-    //     [
-    //         // loop_name_not_str_lit_message!(make_str_pos!(1, 6, 1, 8))
-    //     ]
-    // }
+    //                                        1234567890123456789 0123 45678
+    assert_eq!{ LoopStatement::with_test_str("@@: loop { println(\"233\"); }"),
+        LoopStatement::new_with_label(
+            LabelDef::new("@".to_owned(), make_strpos!(1, 1, 1, 3)),
+            make_strpos!(1, 5, 1, 8),
+            Block::new(make_strpos!(1, 10, 1, 28), vec![
+                Statement::Expr(ExprStatement::new_simple(
+                    make_strpos!(1, 12, 1, 26), 
+                    BinaryExpr::new_postfix(PostfixExpr::new_function_call(
+                        PostfixExpr::new_primary(PrimaryExpr::new_ident("println".to_owned(), make_strpos!(1, 12, 1, 18))),
+                        make_strpos!(1, 19, 1, 25), vec![
+                            BinaryExpr::new_lit(LitValue::from("233".to_owned()), make_strpos!(1, 20, 1, 24))
+                        ]
+                    ))
+                ))
+            ])
+        )
+    }
 }

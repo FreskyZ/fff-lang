@@ -1,19 +1,6 @@
-#![allow(unused_imports)]
-// Expression interface
-// to make 3d expression like Expression{ Expression, some other }, that is, flattened 3DExpression
-
-use std::fmt;
-
-use codepos::StringPosition;
-use util::format_vector_debug;
-use message::MessageCollection;
-
-use lexical::TokenStream;
-use lexical::SeperatorKind;
-use lexical::LitValue;
-
-use super::TypeUse;
-use super::ISyntaxItemParse;
+///! fff-lang
+///!
+///! syntax/expr
 
 mod primary;
 mod postfix;
@@ -27,6 +14,8 @@ pub use self::primary::PrimaryExpr;
 
 #[cfg(test)] #[test]
 fn expr_usage() {
+    use codepos::StringPosition;
+    use lexical::LitValue;
     use super::ISyntaxItemFormat;
 
     // Quickly get lit and ident
@@ -39,89 +28,36 @@ fn expr_usage() {
             .and_then(PostfixExpr::get_primary)
             .map(|primary| primary.format(0))
     );
-
-    assert!(false);
 }
-
-// pub enum ExpressionBase {
-//     Lit(LitValue, StringPosition),                // literal's postion
-//     Ident(String, StringPosition),                      // ident's position
-//     Paren(Expression, StringPosition),                  // '(', ')''s position
-//     TupleDef(Vec<Expression>, StringPosition),          // '(', ')''s position
-//     ArrayDef(Vec<Expression>, StringPosition),          // '[', ']''s position
-//     ArrayDupDef(Expression, Expression, [StringPosition; 2]), // '[',  ';', ']''s position
-// }
-// pub enum ExpressionOperator {
-//     MemberAccess(String, StringPosition),               // `.xxxx`'s position 
-//     FunctionCall(Vec<Expression>, StringPosition),      // '(', ')''s position,
-//     MemberFunctionCall(String, Vec<Expression>, [StringPosition; 2]),   // .xxx and () 's position  
-//     GetIndex(Vec<Expression>, StringPosition),          // '[', ']''s position,
-//     TypeCast(TypeUse, StringPosition),                   // `as`'s position
-//     Unary(SeperatorKind, StringPosition),
-//     Binary(SeperatorKind, StringPosition, Expression),  // operator, pos, operand
-// }
-// pub struct Expression {
-//     pub base: Box<ExpressionBase>,
-//     pub ops: Vec<ExpressionOperator>,
-//     pub all_pos: StringPosition,
-// }
 
 #[cfg(test)] #[test]
 fn expr_parse() {
-    
+    use codepos::StringPosition;    
+    // use lexical::SeperatorKind;
+    use lexical::LitValue;
+    use super::ISyntaxItemWithStr;
+
+    assert_eq!{ BinaryExpr::with_test_str("\"abc\""),
+        BinaryExpr::new_lit(LitValue::from("abc"), make_strpos!(1, 1, 1, 5))
+    }
+    assert_eq!{ BinaryExpr::with_test_str("0xfffu64"), 
+        BinaryExpr::new_lit(LitValue::from(0xFFFu64), make_strpos!(1, 1, 1, 8))
+    }
+    assert_eq!{ BinaryExpr::with_test_str("'f'"), 
+        BinaryExpr::new_lit(LitValue::from('f'), make_strpos!(1, 1, 1, 3))
+    }
+    assert_eq!{ BinaryExpr::with_test_str("true"),
+        BinaryExpr::new_lit(LitValue::from(true), make_str_pos!(1, 1, 1, 4))
+    }
+
+    assert_eq!{ BinaryExpr::with_test_str("binary_expr"),
+        BinaryExpr::new_ident("binary_expr".to_owned(), make_strpos!(1, 1, 1, 11))
+    }
+
+    assert_eq!{ BinaryExpr::with_test_str("(  )"),
+        BinaryExpr::new_unit(make_strpos!(1, 1, 1, 4))
+    }
 }
-
-//     // Features
-//     // Literal forward
-//     //            1234 5
-//     ast_test_case!{ "\"abc\"", 1, make_str_pos!(1, 1, 1, 5),
-//         Expression::new(
-//             ExpressionBase::Lit(LitValue::from("abc"), make_str_pos!(1, 1, 1, 5)),
-//             Vec::new(),
-//             make_str_pos!(1, 1, 1, 5),
-//         )
-//     }        //  12345678
-//     ast_test_case!{ "0xfffu64", 1, make_str_pos!(1, 1, 1, 8),
-//         Expression::new(
-//             ExpressionBase::Lit(LitValue::from(0xfffu64), make_str_pos!(1, 1, 1, 8)),
-//             Vec::new(),
-//             make_str_pos!(1, 1, 1, 8),
-//         )
-//     }        //  123
-//     ast_test_case!{ "'f'", 1, make_str_pos!(1, 1, 1, 3),
-//         Expression::new(
-//             ExpressionBase::Lit(LitValue::from('f'), make_str_pos!(1, 1, 1, 3)),
-//             Vec::new(),
-//             make_str_pos!(1, 1, 1, 3),
-//         )
-//     }
-//     ast_test_case!{ "true", 1, make_str_pos!(1, 1, 1, 4),
-//         Expression::new(
-//             ExpressionBase::Lit(LitValue::from(true), make_str_pos!(1, 1, 1, 4)),
-//             Vec::new(),
-//             make_str_pos!(1, 1, 1, 4),
-//         )
-//     }
-
-//     // Identifier forward
-//     //           0        1         2         3
-//     //           12345678901234567890123456789012
-//     ast_test_case!{ "_very_long_var_name_to_avoid_use", 1, make_str_pos!(1, 1, 1, 32),
-//         Expression::new(
-//             ExpressionBase::Ident("_very_long_var_name_to_avoid_use".to_owned(), make_str_pos!(1, 1, 1, 32)),
-//             Vec::new(),
-//             make_str_pos!(1, 1, 1, 32),
-//         )
-//     }
-
-//     // Unit Literal
-//     ast_test_case!{ "()", 2, make_str_pos!(1, 1, 1, 2),
-//         Expression::new(
-//             ExpressionBase::Lit(LitValue::Unit, make_str_pos!(1, 1, 1, 2)),
-//             Vec::new(),
-//             make_str_pos!(1, 1, 1, 2),
-//         )
-//     }
 
 //     // Paren expr
 //     //           1234567

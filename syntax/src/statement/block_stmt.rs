@@ -12,7 +12,12 @@ use message::MessageCollection;
 
 use lexical::Token;
 use lexical::TokenStream;
+#[cfg(feature = "parse_sess")] use lexical::SeperatorKind; // Remove this cfg after parse sess is applied
 
+#[cfg(feature = "parse_sess")] use super::super::ParseSession;
+#[cfg(feature = "parse_sess")] use super::super::ParseResult;
+#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemParseX;
+#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemGrammarX;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -46,6 +51,7 @@ impl BlockStatement {
     
     pub fn new_no_label(body: Block) -> BlockStatement { BlockStatement{ m_body: body, m_label: None } }
     pub fn new_with_label(label: LabelDef, body: Block) -> BlockStatement { BlockStatement { m_body: body, m_label: Some(label) } }
+    #[cfg(feature = "parse_sess")] fn new_some_label(label: Option<LabelDef>, body: Block) -> BlockStatement { BlockStatement{ m_body: body, m_label: label } }
 
     pub fn has_label(&self) -> bool { self.m_label.is_some() }
     pub fn get_label(&self) -> Option<&LabelDef> { self.m_label.as_ref() }
@@ -61,6 +67,16 @@ impl BlockStatement {
 impl ISyntaxItemGrammar for BlockStatement {
     fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
         if let &Token::Label(_) = tokens.nth(index) { Block::is_first_final(tokens, index + 2) } else { Block::is_first_final(tokens, index) }
+    }
+}
+#[cfg(feature = "parse_sess")]
+impl ISyntaxItemGrammarX for BlockStatement {
+    fn is_first_finalx(sess: &ParseSession) -> bool { 
+        match (sess.tk, sess.nextnext_tk) {
+            (&Token::Label(_), &Token::Sep(SeperatorKind::LeftBrace)) 
+            | (&Token::Sep(SeperatorKind::LeftBrace), _) => true,
+            _ => false,
+        }
     }
 }
 impl ISyntaxItemParse for BlockStatement {
@@ -83,4 +99,21 @@ impl ISyntaxItemParse for BlockStatement {
             },
         }
     }
+}
+#[cfg(feature = "parse_sess")]
+impl ISyntaxItemParseX for BlockStatement {
+
+    fn parsex(sess: &mut ParseSession) -> ParseResult<BlockStatement> {
+    
+        let maybe_label = if let &Token::Label(_) = sess.tk { Some(LabelDef::parsex(sess)?) } else { None };
+        let body = Block::parsex(sess)?;
+        return Ok(BlockStatement::new_some_label(maybe_label, body));
+    }
+}
+
+#[cfg(test)] #[test]
+fn block_stmt_parse() {
+    use super::super::ISyntaxItemWithStr;
+
+    assert_eq!{ BlockStatement::with_test_str("{}"), BlockStatement::new_no_label(Block::new(make_strpos!(1, 1, 1, 2), vec![])) }
 }

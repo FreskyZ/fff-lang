@@ -15,6 +15,10 @@ use lexical::TokenStream;
 use lexical::KeywordKind;
 use lexical::SeperatorKind;
 
+#[cfg(feature = "parse_sess")] use super::super::ParseSession;
+#[cfg(feature = "parse_sess")] use super::super::ParseResult;
+#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemParseX;
+#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemGrammarX;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -75,6 +79,10 @@ impl ISyntaxItemGrammar for VarDeclStatement {
         tokens.nth(index) == &Token::Keyword(KeywordKind::Const) || tokens.nth(index) == &Token::Keyword(KeywordKind::Var) 
     }
 }
+#[cfg(feature = "parse_sess")]
+impl ISyntaxItemGrammarX for VarDeclStatement {
+    fn is_first_finalx(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(KeywordKind::Const) || sess.tk == &Token::Keyword(KeywordKind::Var) }
+}
 impl ISyntaxItemParse for VarDeclStatement {
 
     // 17/5/1: ??? what is the next line mean?
@@ -127,6 +135,34 @@ impl ISyntaxItemParse for VarDeclStatement {
 
         let all_strpos = StringPosition::merge(tokens.pos(index), tokens.pos(index + current_length));
         (Some(VarDeclStatement::new(all_strpos, is_const, name, name_strpos, maybe_decltype, maybe_init_expr)), current_length)
+    }
+}
+#[cfg(feature = "parse_sess")]
+impl ISyntaxItemParseX for VarDeclStatement {
+
+    fn parsex(sess: &mut ParseSession) -> ParseResult<VarDeclStatement> {
+
+        let starting_strpos = sess.pos;
+        let is_const = match sess.tk {
+            &Token::Keyword(KeywordKind::Const) => true, 
+            &Token::Keyword(KeywordKind::Var) => false,
+            _ => unreachable!(), 
+        };
+        sess.move_next();
+
+        let (name, name_strpos) = sess.expect_ident_or(vec![KeywordKind::Underscore])?;
+        let maybe_decltype = if sess.tk == &Token::Sep(SeperatorKind::Colon) { sess.move_next(); Some(TypeUse::parsex(sess)?) } else { None };
+        let maybe_init_expr = if sess.tk == &Token::Sep(SeperatorKind::Assign) { sess.move_next(); Some(BinaryExpr::parsex(sess)?) } else { None };
+        if maybe_decltype.is_none() && maybe_init_expr.is_none() {
+            sess.push_message(Message::with_help_by_str("Require type annotation", 
+                vec![(name_strpos, "Variable declaration here")],
+                vec!["cannot infer type without initialization expression"]
+            ));
+        }
+        let ending_strpos = sess.expect_sep(SeperatorKind::SemiColon)?;
+
+        let all_strpos = StringPosition::merge(starting_strpos, ending_strpos);
+        return Ok(VarDeclStatement::new(all_strpos, is_const, name, name_strpos, maybe_decltype, maybe_init_expr));
     }
 }
 
