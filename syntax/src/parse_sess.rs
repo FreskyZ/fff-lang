@@ -199,3 +199,4 @@ fn parse_sess_usage() {
 // syntax_tree: -13
 //                      // summary: -358
 // length include both parse_sess and not(parse_sess): 6844
+// length after remove all legacy: 5444, removed 1/4!
