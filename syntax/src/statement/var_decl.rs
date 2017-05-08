@@ -8,17 +8,12 @@ use std::fmt;
 
 use codepos::StringPosition;
 use message::Message;
-use message::MessageCollection;
-
 use lexical::Token;
-use lexical::TokenStream;
 use lexical::KeywordKind;
 use lexical::SeperatorKind;
 
-#[cfg(feature = "parse_sess")] use super::super::ParseSession;
-#[cfg(feature = "parse_sess")] use super::super::ParseResult;
-#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemParseX;
-#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemGrammarX;
+use super::super::ParseSession;
+use super::super::ParseResult;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -75,72 +70,11 @@ impl VarDeclStatement {
     pub fn get_all_strpos(&self) -> StringPosition { self.all_strpos }
 }
 impl ISyntaxItemGrammar for VarDeclStatement {
-    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
-        tokens.nth(index) == &Token::Keyword(KeywordKind::Const) || tokens.nth(index) == &Token::Keyword(KeywordKind::Var) 
-    }
-}
-#[cfg(feature = "parse_sess")]
-impl ISyntaxItemGrammarX for VarDeclStatement {
-    fn is_first_finalx(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(KeywordKind::Const) || sess.tk == &Token::Keyword(KeywordKind::Var) }
+    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(KeywordKind::Const) || sess.tk == &Token::Keyword(KeywordKind::Var) }
 }
 impl ISyntaxItemParse for VarDeclStatement {
 
-    // 17/5/1: ??? what is the next line mean?
-    /// It is special that the given index is index of 'const' or 'var' not the next
-    fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<VarDeclStatement>, usize) {
-
-        let is_const = match tokens.nth(index) {
-            &Token::Keyword(KeywordKind::Const) => true, 
-            &Token::Keyword(KeywordKind::Var) => false,
-            _ => unreachable!(), 
-        };
-
-        let mut current_length = 1;
-
-        let (name, name_strpos) = match tokens.nth(index + current_length) {
-            &Token::Ident(ref name) => { current_length += 1; (name.clone(), tokens.pos(index + current_length - 1)) }
-            _ => return push_unexpect!(tokens, messages, "identifier", index + current_length, current_length),
-        };
-
-        let maybe_decltype = if tokens.nth(index + current_length) == &Token::Sep(SeperatorKind::Colon) {
-            current_length += 1;
-            match TypeUse::parse(tokens, messages, index + current_length) {
-                (None, length) => return (None, length),
-                (Some(typeuse), typeuse_length) => { current_length += typeuse_length; Some(typeuse) }
-            }
-        } else {
-            None
-        };
-
-        let maybe_init_expr = if tokens.nth(index + current_length) == &Token::Sep(SeperatorKind::Assign) {
-            current_length += 1;
-            match BinaryExpr::parse(tokens, messages, index + current_length) {
-                (None, length) => return (None, length),
-                (Some(expr), expr_length) => { current_length += expr_length; Some(expr) }
-            }
-        } else {
-            None
-        };
-
-        if maybe_decltype.is_none() && maybe_init_expr.is_none() {
-            messages.push(Message::with_help_by_str("Require type annotation", 
-                vec![(name_strpos, "Variable declaration here")],
-                vec!["cannot infer type without initialization expression"]
-            ));
-        }
-
-        if tokens.nth(index + current_length) != &Token::Sep(SeperatorKind::SemiColon) {
-            return push_unexpect!(tokens, messages, "semicolon", index + current_length, current_length);
-        }
-
-        let all_strpos = StringPosition::merge(tokens.pos(index), tokens.pos(index + current_length));
-        (Some(VarDeclStatement::new(all_strpos, is_const, name, name_strpos, maybe_decltype, maybe_init_expr)), current_length)
-    }
-}
-#[cfg(feature = "parse_sess")]
-impl ISyntaxItemParseX for VarDeclStatement {
-
-    fn parsex(sess: &mut ParseSession) -> ParseResult<VarDeclStatement> {
+    fn parse(sess: &mut ParseSession) -> ParseResult<VarDeclStatement> {
 
         let starting_strpos = sess.pos;
         let is_const = match sess.tk {
@@ -151,8 +85,8 @@ impl ISyntaxItemParseX for VarDeclStatement {
         sess.move_next();
 
         let (name, name_strpos) = sess.expect_ident_or(vec![KeywordKind::Underscore])?;
-        let maybe_decltype = if sess.tk == &Token::Sep(SeperatorKind::Colon) { sess.move_next(); Some(TypeUse::parsex(sess)?) } else { None };
-        let maybe_init_expr = if sess.tk == &Token::Sep(SeperatorKind::Assign) { sess.move_next(); Some(BinaryExpr::parsex(sess)?) } else { None };
+        let maybe_decltype = if sess.tk == &Token::Sep(SeperatorKind::Colon) { sess.move_next(); Some(TypeUse::parse(sess)?) } else { None };
+        let maybe_init_expr = if sess.tk == &Token::Sep(SeperatorKind::Assign) { sess.move_next(); Some(BinaryExpr::parse(sess)?) } else { None };
         if maybe_decltype.is_none() && maybe_init_expr.is_none() {
             sess.push_message(Message::with_help_by_str("Require type annotation", 
                 vec![(name_strpos, "Variable declaration here")],

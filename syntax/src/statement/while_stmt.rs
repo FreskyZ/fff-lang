@@ -6,16 +6,11 @@
 use std::fmt;
 
 use codepos::StringPosition;
-use message::MessageCollection;
-
 use lexical::Token;
-use lexical::TokenStream;
 use lexical::KeywordKind;
 
-#[cfg(feature = "parse_sess")] use super::super::ParseSession;
-#[cfg(feature = "parse_sess")] use super::super::ParseResult;
-#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemParseX;
-#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemGrammarX;
+use super::super::ParseSession;
+use super::super::ParseResult;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -60,7 +55,6 @@ impl WhileStatement {
         WhileStatement{ label_def: Some(label_def), loop_expr, body, while_strpos, all_strpos }
     }
 
-    #[cfg(feature = "parse_sess")] // TODO: remove the cfg after parse_sess
     fn new_some_label(maybe_label_def: Option<LabelDef>, while_strpos: StringPosition, loop_expr: BinaryExpr, body: Block) -> WhileStatement {
         WhileStatement{
             all_strpos: StringPosition::merge(
@@ -79,16 +73,7 @@ impl WhileStatement {
     pub fn get_all_strpos(&self) -> StringPosition { self.all_strpos }
 }
 impl ISyntaxItemGrammar for WhileStatement {
-    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
-        match (tokens.nth(index), tokens.nth(index + 2)) {
-            (&Token::Label(_), &Token::Keyword(KeywordKind::While)) | (&Token::Keyword(KeywordKind::While), _) => true,
-            _ => false
-        }
-    }
-}
-#[cfg(feature = "parse_sess")]
-impl ISyntaxItemGrammarX for WhileStatement {
-    fn is_first_finalx(sess: &ParseSession) -> bool {
+    fn is_first_final(sess: &ParseSession) -> bool {
         match (sess.tk, sess.nextnext_tk) {
             (&Token::Label(_), &Token::Keyword(KeywordKind::While)) | (&Token::Keyword(KeywordKind::While), _) => true,
             _ => false
@@ -97,45 +82,12 @@ impl ISyntaxItemGrammarX for WhileStatement {
 }
 impl ISyntaxItemParse for WhileStatement {
 
-    fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<WhileStatement>, usize) {
-
-        let (maybe_label, mut current_length) = match tokens.nth(index) {
-            &Token::Label(_) => match LabelDef::parse(tokens, messages, index) {
-                (Some(label_def), _label_length_is_2) => (Some(label_def), 2),
-                (None, length) => return (None, length),
-            },
-            _ => (None, 0),
-        };
-
-        let while_strpos = tokens.pos(index + current_length);
-        current_length += 1;
-
-        let expr = match BinaryExpr::parse(tokens, messages, index + current_length) {
-            (Some(expr), expr_len) => { current_length += expr_len; expr }
-            (None, length) => return (None, current_length + length),
-        };
-
-        let body = match Block::parse(tokens, messages, index + current_length) {
-            (Some(block), block_len) => { current_length += block_len; block }
-            (None, length) => return (None, current_length + length),
-        };
-
-        let all_strpos = StringPosition::merge(tokens.pos(index), tokens.pos(index + current_length - 1));
-        match maybe_label {
-            Some(label) => (Some(WhileStatement::new_with_label(all_strpos, label, while_strpos, expr, body)), current_length),
-            None => (Some(WhileStatement::new_no_label(all_strpos, while_strpos, expr, body)), current_length),
-        }
-    }
-}
-#[cfg(feature = "parse_sess")]
-impl ISyntaxItemParseX for WhileStatement {
-    
-    fn parsex(sess: &mut ParseSession) -> ParseResult<WhileStatement> {
+    fn parse(sess: &mut ParseSession) -> ParseResult<WhileStatement> {
         
         let maybe_label = LabelDef::try_parse(sess)?;
         let while_strpos = sess.expect_keyword(KeywordKind::While)?;
-        let expr = BinaryExpr::parsex(sess)?;
-        let body = Block::parsex(sess)?;
+        let expr = BinaryExpr::parse(sess)?;
+        let body = Block::parse(sess)?;
         return Ok(WhileStatement::new_some_label(maybe_label, while_strpos, expr, body));
     }
 }

@@ -6,17 +6,12 @@
 use std::fmt;
 
 use codepos::StringPosition;
-use message::MessageCollection;
-
 use lexical::Token;
-use lexical::TokenStream;
 use lexical::SeperatorKind;
 use lexical::SeperatorCategory;
 
-#[cfg(feature = "parse_sess")] use super::super::ParseSession;
-#[cfg(feature = "parse_sess")] use super::super::ParseResult;
-#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemParseX;
-#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemGrammarX;
+use super::super::ParseSession;
+use super::super::ParseResult;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -123,17 +118,8 @@ impl UnaryExpr { // Get
     }
 }
 impl ISyntaxItemGrammar for UnaryExpr {
-    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
-        PostfixExpr::is_first_final(tokens, index) || match tokens.nth(index) {
-            &Token::Sep(ref sep) if sep.is_category(SeperatorCategory::Unary) => true,
-            _ => false
-        }
-    }
-}
-#[cfg(feature = "parse_sess")]
-impl ISyntaxItemGrammarX for UnaryExpr {
-    fn is_first_finalx(sess: &ParseSession) -> bool {
-        PostfixExpr::is_first_finalx(sess) || match sess.tk {
+    fn is_first_final(sess: &ParseSession) -> bool {
+        PostfixExpr::is_first_final(sess) || match sess.tk {
             &Token::Sep(ref sep) if sep.is_category(SeperatorCategory::Unary) => true,
             _ => false,
         }
@@ -141,34 +127,7 @@ impl ISyntaxItemGrammarX for UnaryExpr {
 }
 impl ISyntaxItemParse for UnaryExpr {
 
-    fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<UnaryExpr>, usize) {
-
-        let mut current_len = 0;
-        let mut operator_and_strposs = Vec::new();
-        loop {
-            match tokens.nth(index + current_len) {
-                &Token::Sep(operator) if operator.is_category(SeperatorCategory::Unary) => {
-                    operator_and_strposs.push((operator, tokens.pos(index + current_len)));
-                    current_len += 1;
-                }
-                _ => match PostfixExpr::parse(tokens, messages, index + current_len) {
-                    (None, length) => return (None, current_len + length),
-                    (Some(postfix_expr), postfix_len) => {
-                        let mut current_unary = UnaryExpr::new_postfix(postfix_expr);
-                        for (operator, operator_strpos) in operator_and_strposs.into_iter().rev() {
-                            current_unary = UnaryExpr::new_unary(operator, operator_strpos, current_unary);
-                        }
-                        return (Some(current_unary), current_len + postfix_len);
-                    }
-                }
-            } 
-        }
-    }
-}
-#[cfg(feature = "parse_sess")]
-impl ISyntaxItemParseX for UnaryExpr {
-
-    fn parsex(sess: &mut ParseSession) -> ParseResult<UnaryExpr> {
+    fn parse(sess: &mut ParseSession) -> ParseResult<UnaryExpr> {
         
         let mut operator_and_strposs = Vec::new();
         loop {
@@ -178,7 +137,7 @@ impl ISyntaxItemParseX for UnaryExpr {
                     operator_and_strposs.push((operator, operator_strpos));
                 }
                 _ => {
-                    let postfix_expr = PostfixExpr::parsex(sess)?;
+                    let postfix_expr = PostfixExpr::parse(sess)?;
                     let mut current_unary = UnaryExpr::new_postfix(postfix_expr);
                     for (operator, operator_strpos) in operator_and_strposs.into_iter().rev() {
                         current_unary = UnaryExpr::new_unary(operator, operator_strpos, current_unary);

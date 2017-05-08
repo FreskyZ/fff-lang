@@ -6,18 +6,12 @@
 use std::fmt;
 
 use codepos::StringPosition;
-use message::Message;
-use message::MessageCollection;
-
 use lexical::Token;
-use lexical::TokenStream;
 use lexical::SeperatorKind;
 use lexical::SeperatorCategory;
 
-#[cfg(feature = "parse_sess")] use super::super::ParseSession;
-#[cfg(feature = "parse_sess")] use super::super::ParseResult;
-#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemParseX;
-#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemGrammarX;
+use super::super::ParseSession;
+use super::super::ParseResult;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -116,61 +110,14 @@ impl ExprStatement {
     }
 }
 impl ISyntaxItemGrammar for ExprStatement {
-    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
-        BinaryExpr::is_first_final(tokens, index)
-    }
-}
-#[cfg(feature = "parse_sess")]
-impl ISyntaxItemGrammarX for ExprStatement {
-    fn is_first_finalx(sess: &ParseSession) -> bool { BinaryExpr::is_first_finalx(sess) }
+    fn is_first_final(sess: &ParseSession) -> bool { BinaryExpr::is_first_final(sess) }
 }
 impl ISyntaxItemParse for ExprStatement {
 
-    fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<ExprStatement>, usize) {
-
-        let (left_expr, mut current_length) = match BinaryExpr::parse(tokens, messages, index) {
-            (Some(expr), expr_len) => (expr, expr_len),
-            (None, length) => return (None, length),
-        };
-
-        let (assign_op, assign_op_strpos) =  match tokens.nth(index + current_length) {
-            &Token::Sep(SeperatorKind::SemiColon) => {
-                return (Some(ExprStatement::new_simple(
-                    StringPosition::merge(tokens.pos(index), tokens.pos(index + current_length)),
-                    left_expr
-                )), current_length + 1);
-            }
-            &Token::Sep(assign_op) if assign_op.is_category(SeperatorCategory::Assign) => {
-                current_length += 1;
-                (assign_op, tokens.pos(index + current_length - 1))
-            }
-            _ => return push_unexpect!(tokens, messages, ["assignment operator", "semicolon", ], index + current_length, current_length),
-        };
-        
-        match BinaryExpr::parse(tokens, messages, index + current_length) {
-            (Some(right_expr), right_expr_len) => {
-                current_length += right_expr_len;
-                if tokens.nth(index + current_length) == &Token::Sep(SeperatorKind::SemiColon) {
-                    return (Some(ExprStatement::new_assign(
-                        StringPosition::merge(tokens.pos(index), tokens.pos(index + current_length)),
-                        assign_op, assign_op_strpos,
-                        left_expr, right_expr,
-                    )), current_length + 1);
-                } else {
-                    return push_unexpect!(tokens, messages, "semicolon", index + current_length, current_length);
-                }
-            }
-            (None, length) => return (None, current_length + length),
-        }
-    }
-}
-#[cfg(feature = "parse_sess")]
-impl ISyntaxItemParseX for ExprStatement {
-
-    fn parsex(sess: &mut ParseSession) -> ParseResult<ExprStatement> {
+    fn parse(sess: &mut ParseSession) -> ParseResult<ExprStatement> {
 
         let starting_strpos = sess.pos;
-        let left_expr = BinaryExpr::parsex(sess)?;
+        let left_expr = BinaryExpr::parse(sess)?;
 
         let (assign_op, assign_op_strpos) = match (sess.tk, sess.pos) {
             (&Token::Sep(SeperatorKind::SemiColon), ref semi_colon_strpos) => {
@@ -184,7 +131,7 @@ impl ISyntaxItemParseX for ExprStatement {
             _ => return sess.push_unexpect("assignment operator, semicolon"),
         };
 
-        let right_expr = BinaryExpr::parsex(sess)?;
+        let right_expr = BinaryExpr::parse(sess)?;
         let ending_strpos = sess.pos;
         sess.expect_sep(SeperatorKind::SemiColon)?;
         return Ok(ExprStatement::new_assign(StringPosition::merge(starting_strpos, ending_strpos), assign_op, assign_op_strpos, left_expr, right_expr));

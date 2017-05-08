@@ -7,13 +7,12 @@
 #[cfg_attr(test, macro_use)] extern crate codepos;
 extern crate lexical;
 
-#[macro_use] mod traits;
+mod traits;
 mod syntax_tree;
 mod statement;
 mod expr;
 mod items;
-#[cfg(feature = "parse_sess")] mod parse_sess;
-
+mod parse_sess;
 pub use self::items::FnParam;
 pub use self::items::FnDef;
 pub use self::items::TypeUse;
@@ -37,10 +36,8 @@ pub use self::statement::IfConditionBody;
 pub use self::statement::IfStatement;
 pub use self::syntax_tree::SyntaxTree;
 
-#[cfg(feature = "parse_sess")] use self::parse_sess::ParseSession;
-#[cfg(feature = "parse_sess")] use self::parse_sess::ParseResult;
-#[cfg(feature = "parse_sess")] use self::parse_sess::ISyntaxItemParseX;
-#[cfg(feature = "parse_sess")] use self::parse_sess::ISyntaxItemGrammarX;
+use self::parse_sess::ParseSession;
+use self::parse_sess::ParseResult;
 use self::traits::ISyntaxItemParse;
 use self::traits::ISyntaxItemFormat;
 use self::traits::ISyntaxItemGrammar;

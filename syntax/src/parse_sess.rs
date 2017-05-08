@@ -1,10 +1,8 @@
-#![allow(dead_code)]
-#![allow(unused_imports)]
+#![allow(dead_code)] // leave it here
 ///! fff-lang
 ///!
 ///! syntax/parse_sess, to be ISyntaxItem::parse's parameter
 
-use std::ops;
 use std::cell::Cell;
 
 use codepos::StringPosition;
@@ -33,8 +31,6 @@ pub struct ParseSession<'tokens, 'msgs> {
 // KeywordKind::parse(sess)?        , try_parse
 // IdentAndPos::parse(sess)?        , try_parse
 // SeperatorKind2::parse(sess)?   // type SeperatorKind2 = (Seperator, Seperator)
-// LabelDef::try_parse
-// TODOOO: after ParseSession stabled and finally removing feature gate, count actual lines decreased
 impl<'a, 'b> ParseSession<'a, 'b> {
 
     pub fn new(tokens: &'a TokenStream, messages: &'b mut MessageCollection) -> ParseSession<'a, 'b> {
@@ -165,22 +161,8 @@ impl<'a, 'b> ParseSession<'a, 'b> {
     }
 }
 
-pub trait ISyntaxItemParseX {
-    
-    fn parsex(sess: &mut ParseSession) -> ParseResult<Self> where Self: Sized;
-
-    // check is_first_final, if pass, parse, return Ok(Some(T)) or Err(()), else return None
-    fn try_parse(sess: &mut ParseSession) -> ParseResult<Option<Self>> where Self: Sized + ISyntaxItemGrammarX {
-        if Self::is_first_finalx(sess) { Ok(Some(Self::parsex(sess)?)) } else { Ok(None) }
-    }
-}
-pub trait ISyntaxItemGrammarX {
-    fn is_first_finalx(sess: &ParseSession) -> bool;
-}
-
 #[cfg(test)] #[test]
 fn parse_sess_usage() {
-    use lexical::LitValue;
 
     let tokens = TokenStream::with_test_str("1 2 3 4 5 6 7 8 9 0");
     let mut messages = MessageCollection::new();

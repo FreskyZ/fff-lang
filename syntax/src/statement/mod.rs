@@ -9,14 +9,8 @@
  
 use std::fmt;
 
-use message::Message;
-use message::MessageCollection;
-use lexical::TokenStream;
-
-#[cfg(feature = "parse_sess")] use super::ParseSession;
-#[cfg(feature = "parse_sess")] use super::ParseResult;
-#[cfg(feature = "parse_sess")] use super::ISyntaxItemParseX;
-#[cfg(feature = "parse_sess")] use super::ISyntaxItemGrammarX;
+use super::ParseSession;
+use super::ParseResult;
 use super::ISyntaxItemParse;
 use super::ISyntaxItemFormat;
 use super::ISyntaxItemGrammar;
@@ -30,7 +24,6 @@ mod while_stmt;
 mod loop_stmt;
 mod ret_stmt;
 mod block_stmt;
-
 pub use self::var_decl::VarDeclStatement;
 pub use self::jump_stmt::BreakStatement;
 pub use self::jump_stmt::ContinueStatement;
@@ -81,119 +74,43 @@ impl fmt::Debug for Statement {
 }
 impl ISyntaxItemGrammar for Statement {
 
-    fn is_first_final(lexer: &mut TokenStream, index: usize) -> bool {
-        VarDeclStatement::is_first_final(lexer, index)
-        || BreakStatement::is_first_final(lexer, index)
-        || ContinueStatement::is_first_final(lexer, index)
-        || ReturnStatement::is_first_final(lexer, index)
-        || ExprStatement::is_first_final(lexer, index)
-        || IfStatement::is_first_final(lexer, index)
-        || WhileStatement::is_first_final(lexer, index)
-        || ForStatement::is_first_final(lexer, index)
-        || LoopStatement::is_first_final(lexer, index)
-        || BlockStatement::is_first_final(lexer, index)
-    }
-}
-#[cfg(feature = "parse_sess")]
-impl ISyntaxItemGrammarX for Statement {
-    
-    fn is_first_finalx(sess: &ParseSession) -> bool {
-        VarDeclStatement::is_first_finalx(sess)
-        || BreakStatement::is_first_finalx(sess)
-        || ContinueStatement::is_first_finalx(sess)
-        || ReturnStatement::is_first_finalx(sess)
-        || ExprStatement::is_first_finalx(sess)
-        || IfStatement::is_first_finalx(sess)
-        || WhileStatement::is_first_finalx(sess)
-        || ForStatement::is_first_finalx(sess)
-        || LoopStatement::is_first_finalx(sess)
-        || BlockStatement::is_first_finalx(sess)
+    fn is_first_final(sess: &ParseSession) -> bool {
+        VarDeclStatement::is_first_final(sess)
+        || BreakStatement::is_first_final(sess)
+        || ContinueStatement::is_first_final(sess)
+        || ReturnStatement::is_first_final(sess)
+        || ExprStatement::is_first_final(sess)
+        || IfStatement::is_first_final(sess)
+        || WhileStatement::is_first_final(sess)
+        || ForStatement::is_first_final(sess)
+        || LoopStatement::is_first_final(sess)
+        || BlockStatement::is_first_final(sess)
     }
 }
 impl ISyntaxItemParse for Statement {
-    
-    fn parse(lexer: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<Statement>, usize) {
 
-        if VarDeclStatement::is_first_final(lexer, index) { 
-            return match VarDeclStatement::parse(lexer, messages, index) {
-                (Some(var_decl), var_decl_len) => (Some(Statement::VarDecl(var_decl)), var_decl_len),
-                (None, length) => (None, length),
-            };
-        } else if BreakStatement::is_first_final(lexer, index) {
-            return match BreakStatement::parse(lexer, messages, index) {
-                (Some(break_stmt), break_stmt_len) => (Some(Statement::Break(break_stmt)), break_stmt_len),
-                (None, length) => (None, length),
-            };
-        } else if ContinueStatement::is_first_final(lexer, index) {
-            return match ContinueStatement::parse(lexer, messages, index) {
-                (Some(cont_stmt), cont_stmt_len) => (Some(Statement::Continue(cont_stmt)), cont_stmt_len),
-                (None, length) => (None, length),
-            };
-        } else if ReturnStatement::is_first_final(lexer, index) {
-            return match ReturnStatement::parse(lexer, messages, index) {
-                (Some(ret_stmt), ret_stmt_len) => (Some(Statement::Return(ret_stmt)), ret_stmt_len),
-                (None, length) => (None, length), 
-            };
-        } else if LoopStatement::is_first_final(lexer, index) {
-            return match LoopStatement::parse(lexer, messages, index) {
-                (Some(loop_stmt), loop_stmt_len) => (Some(Statement::Loop(loop_stmt)), loop_stmt_len),
-                (None, length) => (None, length),
-            };
-        } else if WhileStatement::is_first_final(lexer, index) {
-            return match WhileStatement::parse(lexer, messages, index) {
-                (Some(while_stmt), while_stmt_len) => (Some(Statement::While(while_stmt)), while_stmt_len),
-                (None, length) => (None, length),
-            };
-        } else if ForStatement::is_first_final(lexer, index) {
-            return match ForStatement::parse(lexer, messages, index) {
-                (Some(for_stmt), for_stmt_len) => (Some(Statement::For(for_stmt)), for_stmt_len),
-                (None, length) => (None, length),
-            };
-        } else if IfStatement::is_first_final(lexer, index) {
-            return match IfStatement::parse(lexer, messages, index) {
-                (Some(if_stmt), if_stmt_len) => (Some(Statement::If(if_stmt)), if_stmt_len),
-                (None, length) => (None, length),
-            };
-        } else if BlockStatement::is_first_final(lexer, index) {
-            return match BlockStatement::parse(lexer, messages, index) {
-                (Some(block), block_len) => (Some(Statement::Block(block)), block_len),
-                (None, length) => (None, length),
-            };
-        } else if ExprStatement::is_first_final(lexer, index) {
-            return match ExprStatement::parse(lexer, messages, index) {
-                (Some(expr_stmt), expr_stmt_len) => (Some(Statement::Expr(expr_stmt)), expr_stmt_len),
-                (None, length) => (None, length),
-            }
-        } else {
-            return push_unexpect!(lexer, messages, "statement", 0, index);
-        }
-    }
-}
-#[cfg(feature = "parse_sess")]
-impl ISyntaxItemParseX for Statement {
+    fn parse(sess: &mut ParseSession) -> ParseResult<Statement> {
 
-    fn parsex(sess: &mut ParseSession) -> ParseResult<Statement> {
-
-        if VarDeclStatement::is_first_finalx(sess) { 
-            return Ok(Statement::VarDecl(VarDeclStatement::parsex(sess)?));
-        } else if BreakStatement::is_first_finalx(sess) {
-            return Ok(Statement::Break(BreakStatement::parsex(sess)?));
-        } else if ContinueStatement::is_first_finalx(sess) {
-            return Ok(Statement::Continue(ContinueStatement::parsex(sess)?));
-        } else if ReturnStatement::is_first_finalx(sess) {
-            return Ok(Statement::Return(ReturnStatement::parsex(sess)?));
-        } else if LoopStatement::is_first_finalx(sess) {
-            return Ok(Statement::Loop(LoopStatement::parsex(sess)?));
-        } else if WhileStatement::is_first_finalx(sess) {
-            return Ok(Statement::While(WhileStatement::parsex(sess)?));
-        } else if ForStatement::is_first_finalx(sess) {
-            return Ok(Statement::For(ForStatement::parsex(sess)?));
-        } else if IfStatement::is_first_finalx(sess) {
-            return Ok(Statement::If(IfStatement::parsex(sess)?));
-        } else if BlockStatement::is_first_finalx(sess) {
-            return Ok(Statement::Block(BlockStatement::parsex(sess)?));
-        } else if ExprStatement::is_first_finalx(sess) {
-            return Ok(Statement::Expr(ExprStatement::parsex(sess)?));
+        if VarDeclStatement::is_first_final(sess) { 
+            return Ok(Statement::VarDecl(VarDeclStatement::parse(sess)?));
+        } else if BreakStatement::is_first_final(sess) {
+            return Ok(Statement::Break(BreakStatement::parse(sess)?));
+        } else if ContinueStatement::is_first_final(sess) {
+            return Ok(Statement::Continue(ContinueStatement::parse(sess)?));
+        } else if ReturnStatement::is_first_final(sess) {
+            return Ok(Statement::Return(ReturnStatement::parse(sess)?));
+        } else if LoopStatement::is_first_final(sess) {
+            return Ok(Statement::Loop(LoopStatement::parse(sess)?));
+        } else if WhileStatement::is_first_final(sess) {
+            return Ok(Statement::While(WhileStatement::parse(sess)?));
+        } else if ForStatement::is_first_final(sess) {
+            return Ok(Statement::For(ForStatement::parse(sess)?));
+        } else if IfStatement::is_first_final(sess) {
+            return Ok(Statement::If(IfStatement::parse(sess)?));
+        } else if BlockStatement::is_first_final(sess) {
+            return Ok(Statement::Block(BlockStatement::parse(sess)?));
+        } else if ExprStatement::is_first_final(sess) {
+            return Ok(Statement::Expr(ExprStatement::parse(sess)?));
         } else {
             return sess.push_unexpect("statement");
         }

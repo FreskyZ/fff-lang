@@ -7,17 +7,12 @@ use std::fmt;
 
 use codepos::StringPosition;
 use message::Message;
-use message::MessageCollection;
-
 use lexical::Token;
-use lexical::TokenStream;
 use lexical::KeywordKind;
 use lexical::SeperatorKind;
 
-#[cfg(feature = "parse_sess")] use super::super::ParseSession;
-#[cfg(feature = "parse_sess")] use super::super::ParseResult;
-#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemParseX;
-#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemGrammarX;
+use super::super::ParseSession;
+use super::super::ParseResult;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -86,102 +81,11 @@ impl FnDef {
     pub fn get_all_strpos(&self) -> StringPosition { self.all_strpos }
 }
 impl ISyntaxItemGrammar for FnDef {   
-    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool { tokens.nth(index) == &Token::Keyword(KeywordKind::FnDef) }
-}
-#[cfg(feature = "parse_sess")]
-impl ISyntaxItemGrammarX for FnDef {
-    fn is_first_finalx(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(KeywordKind::FnDef) }
+    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(KeywordKind::FnDef) }
 }
 impl ISyntaxItemParse for FnDef {
 
-    fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<FnDef>, usize) {
-        assert!(tokens.nth(index) == &Token::Keyword(KeywordKind::FnDef));
-
-        let mut current_length = 1;
-
-        let (fn_name, fn_name_strpos) = match tokens.nth(index + current_length) {
-            &Token::Ident(ref name) => (name.clone(), tokens.pos(index + current_length)),
-            _ => return push_unexpect!(tokens, messages, "identifier", index + 1, 1),
-        };
-        current_length += 1;
-
-        if tokens.nth(index + current_length) != &Token::Sep(SeperatorKind::LeftParenthenes) {
-            return push_unexpect!(tokens, messages, "left parenthenes", index + 2, 2);
-        }
-        let param_list_left_paren_strpos = tokens.pos(index + current_length);
-        current_length += 1;
-
-        let mut params = Vec::new();
-        loop {
-            if tokens.nth(index + current_length) == &Token::Sep(SeperatorKind::RightParenthenes) {
-                current_length += 1;
-                break; 
-            }
-            if tokens.nth(index + current_length) == &Token::Sep(SeperatorKind::Comma)   // accept `fn main(i32 a,) {}`
-                && tokens.nth(index + current_length + 1) == &Token::Sep(SeperatorKind::RightParenthenes) {
-                if params.is_empty() {                // recoverable error on fn main(, ) {}
-                    let params_strpos = StringPosition::merge(param_list_left_paren_strpos, tokens.pos(index + current_length - 1));
-                    messages.push(Message::new_by_str("Single comma in function definition argument list", vec![
-                        (fn_name_strpos, "function definition here"),
-                        (params_strpos, "param list here")
-                    ]));
-                }   
-                current_length += 2;
-                break;
-            }
-            if tokens.nth(index + current_length) == &Token::Sep(SeperatorKind::Comma) {
-                current_length += 1;
-                continue;
-            }
-            
-            let (param_name, param_strpos) = match tokens.nth(index + current_length) {
-                &Token::Ident(ref param_name) => { current_length += 1; (param_name.clone(), tokens.pos(index + current_length - 1)) }
-                &Token::Keyword(KeywordKind::This) => { current_length += 1; ("this".to_owned(), tokens.pos(index + current_length - 1)) }
-                _ => return push_unexpect!(tokens, messages, ["identifier", "comma", "parenthenes",], index + current_length, current_length),
-            };
-            if tokens.nth(index + current_length) != &Token::Sep(SeperatorKind::Colon) {
-                return push_unexpect!(tokens, messages, "colon", index + current_length, current_length);
-            }
-            current_length += 1;
-            let decltype = match TypeUse::parse(tokens, messages, index + current_length) {
-                (None, length) => return (None, current_length + length),
-                (Some(decltype), decltype_length) => { current_length += decltype_length; decltype },
-            };
-
-            params.push(FnParam::new(param_name, param_strpos, decltype));
-        }
-
-        let maybe_ret_type = if tokens.nth(index + current_length) == &Token::Sep(SeperatorKind::NarrowRightArrow) {
-            current_length += 1;
-            match TypeUse::parse(tokens, messages, index + current_length) {
-                (Some(ret_type), ret_type_len) => { current_length += ret_type_len; Some(ret_type) }
-                // (None, _length) => { // other things expect Type, find next left brace to continue
-                //     let _: (Option<i32>, _) = push_unexpect!(tokens, messages, "typedef", index + current_len, current_len);
-                //     for i in (index + current_len)..tokens.len() {
-                //         if tokens.nth(i) == &Token::Sep(SeperatorKind::LeftBrace) {
-                //             current_length = i - index;
-                //         }
-                //     }
-                // }
-                (None, length) => return (None, current_length + length),
-            }
-        } else {
-            None
-        };
-
-        let body = match Block::parse(tokens, messages, index + current_length) {
-            (Some(block), block_length) => { current_length += block_length; block }
-            (None, length) => return (None, current_length + length),
-        };
-
-        let all_strpos = StringPosition::merge(tokens.pos(index), tokens.pos(index + current_length - 1));
-        return (Some(FnDef::new(all_strpos, fn_name, fn_name_strpos, params, maybe_ret_type, body)), current_length);
-    }
-}
-#[cfg(feature = "parse_sess")]
-impl ISyntaxItemParseX for FnDef {
-
-    fn parsex(sess: &mut ParseSession) -> ParseResult<FnDef> {
+    fn parse(sess: &mut ParseSession) -> ParseResult<FnDef> {
         
         let fn_strpos = sess.expect_keyword(KeywordKind::FnDef)?;
         let (fn_name, fn_name_strpos) = sess.expect_ident()?;
@@ -215,12 +119,12 @@ impl ISyntaxItemParseX for FnDef {
 
             let (param_name, param_strpos) = sess.expect_ident_or(vec![KeywordKind::Underscore, KeywordKind::This])?;
             let _ = sess.expect_sep(SeperatorKind::Colon)?;
-            let decltype = TypeUse::parsex(sess)?;
+            let decltype = TypeUse::parse(sess)?;
             params.push(FnParam::new(param_name, param_strpos, decltype));
         }
 
-        let maybe_ret_type = if sess.tk == &Token::Sep(SeperatorKind::NarrowRightArrow) { sess.move_next(); Some(TypeUse::parsex(sess)?) } else { None };
-        let body = Block::parsex(sess)?;
+        let maybe_ret_type = if sess.tk == &Token::Sep(SeperatorKind::NarrowRightArrow) { sess.move_next(); Some(TypeUse::parse(sess)?) } else { None };
+        let body = Block::parse(sess)?;
 
         let all_strpos = StringPosition::merge(fn_strpos, body.get_all_strpos());
         return Ok(FnDef::new(all_strpos, fn_name, fn_name_strpos, params, maybe_ret_type, body));

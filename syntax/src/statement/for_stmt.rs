@@ -6,17 +6,11 @@
 use std::fmt;
 
 use codepos::StringPosition;
-use message::Message;
-use message::MessageCollection;
-
 use lexical::Token;
-use lexical::TokenStream;
 use lexical::KeywordKind;
 
-#[cfg(feature = "parse_sess")] use super::super::ParseSession;
-#[cfg(feature = "parse_sess")] use super::super::ParseResult;
-#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemParseX;
-#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemGrammarX;
+use super::super::ParseSession;
+use super::super::ParseResult;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -85,7 +79,6 @@ impl ForStatement {
         }
     }
 
-    #[cfg(feature = "parse_sess")]
     fn new_some_label(
         label: Option<LabelDef>,
         for_strpos: StringPosition,
@@ -113,16 +106,8 @@ impl ForStatement {
     pub fn get_all_strpos(&self) ->StringPosition { self.m_all_strpos }
 }
 impl ISyntaxItemGrammar for ForStatement {
-    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
-        match (tokens.nth(index), tokens.nth(index + 2)) {
-            (&Token::Label(_), &Token::Keyword(KeywordKind::For)) | (&Token::Keyword(KeywordKind::For), _) => true,
-            _ => false
-        }
-    }
-}
-#[cfg(feature = "parse_sess")]
-impl ISyntaxItemGrammarX for ForStatement {
-    fn is_first_finalx(sess: &ParseSession) -> bool {
+
+    fn is_first_final(sess: &ParseSession) -> bool {
         match (sess.tk, sess.nextnext_tk) {
             (&Token::Label(_), &Token::Keyword(KeywordKind::For)) | (&Token::Keyword(KeywordKind::For), _) => true,
             _ => false
@@ -131,53 +116,7 @@ impl ISyntaxItemGrammarX for ForStatement {
 }
 impl ISyntaxItemParse for ForStatement {
 
-    fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<ForStatement>, usize) {
-
-        let (maybe_label, mut current_length) = match tokens.nth(index) {
-            &Token::Label(_) => match LabelDef::parse(tokens, messages, index) {
-                (Some(label_def), _label_length_is_2) => (Some(label_def), 2),
-                (None, length) => return (None, length),
-            },
-            _ => (None, 0),
-        };
-
-        let for_strpos = tokens.pos(index + current_length);
-        current_length += 1;
-
-        let iter_name = match tokens.nth(index + current_length) {
-            &Token::Ident(ref ident) => ident.clone(),
-            &Token::Keyword(KeywordKind::Underscore) => "_".to_owned(), // _ do not declare iter var
-            _ => return push_unexpect!(tokens, messages, "identifier", index + current_length, current_length),
-        };
-        let iter_strpos = tokens.pos(index + current_length);
-        current_length += 1;
-
-        if tokens.nth(index + current_length) != &Token::Keyword(KeywordKind::In) {
-            return push_unexpect!(tokens, messages, "keyword in", index + current_length, current_length);
-        }
-        current_length += 1;
-
-        let iter_expr = match BinaryExpr::parse(tokens, messages, index + current_length) {
-            (Some(expr), expr_len) => { current_length += expr_len; expr }
-            (None, length) => return (None, current_length + length),
-        };
-
-        let body = match Block::parse(tokens, messages, index + current_length) {
-            (Some(block), block_len) => { current_length += block_len; block }
-            (None, length) => return (None, current_length + length),
-        };
-
-        let all_strpos = StringPosition::merge(tokens.pos(index), body.get_all_strpos());
-        match maybe_label {
-            Some(label) => (Some(ForStatement::new_with_label(all_strpos, label, for_strpos, iter_name, iter_strpos, iter_expr, body)), current_length),
-            None => (Some(ForStatement::new_no_label(all_strpos, for_strpos, iter_name, iter_strpos, iter_expr, body)), current_length)
-        }
-    }
-}
-#[cfg(feature = "parse_sess")]
-impl ISyntaxItemParseX for ForStatement {
-
-    fn parsex(sess: &mut ParseSession) -> ParseResult<ForStatement> {
+    fn parse(sess: &mut ParseSession) -> ParseResult<ForStatement> {
 
         let maybe_label = LabelDef::try_parse(sess)?;
         let for_strpos = sess.expect_keyword(KeywordKind::For)?;
@@ -186,8 +125,8 @@ impl ISyntaxItemParseX for ForStatement {
         let (iter_name, iter_strpos) = sess.expect_ident_or(vec![KeywordKind::Underscore])?;
 
         let _in_strpos = sess.expect_keyword(KeywordKind::In)?;
-        let iter_expr = BinaryExpr::parsex(sess)?;
-        let body = Block::parsex(sess)?;
+        let iter_expr = BinaryExpr::parse(sess)?;
+        let body = Block::parse(sess)?;
         return Ok(ForStatement::new_some_label(maybe_label, for_strpos, iter_name, iter_strpos, iter_expr, body));
     }
 }
@@ -195,6 +134,7 @@ impl ISyntaxItemParseX for ForStatement {
 #[cfg(test)] #[test]
 fn for_stmt_parse() {
     use super::super::ISyntaxItemWithStr;
+    use message::MessageCollection;
     use lexical::LitValue;
 
     //                                       123456789012345678

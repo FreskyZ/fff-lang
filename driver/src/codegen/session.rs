@@ -92,7 +92,7 @@ impl GenerationSession {
 
         // such that function can declare in any order
         let mut blocks = Vec::new();
-        for func in program.functions {
+        for func in program.into_items() {
             let (its_id, its_block) = sess.fns.push_decl(func, &mut sess.types, &mut sess.msgs, &mut sess.vars);
             blocks.push(Block::new(its_id, its_block));
         }

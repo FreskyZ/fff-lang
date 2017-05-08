@@ -6,16 +6,11 @@
 use std::fmt;
 
 use codepos::StringPosition;
-use message::MessageCollection;
-
 use lexical::Token;
-use lexical::TokenStream;
 use lexical::KeywordKind;
 
-#[cfg(feature = "parse_sess")] use super::super::ParseSession;
-#[cfg(feature = "parse_sess")] use super::super::ParseResult;
-#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemParseX;
-#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemGrammarX;
+use super::super::ParseSession;
+use super::super::ParseResult;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -125,81 +120,18 @@ impl IfStatement {
     pub fn get_else_strpos(&self) -> StringPosition { self.else_strpos }
 }
 impl ISyntaxItemGrammar for IfStatement {
-    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
-        tokens.nth(index) == &Token::Keyword(KeywordKind::If)
-    }
-}
-#[cfg(feature = "parse_sess")]
-impl ISyntaxItemGrammarX for IfStatement {
-    fn is_first_finalx(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(KeywordKind::If) }
+    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(KeywordKind::If) }
 }
 impl ISyntaxItemParse for IfStatement {
 
-    fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<IfStatement>, usize) {
-        assert!(tokens.nth(index) == &Token::Keyword(KeywordKind::If));
-
-        let mut current_length = 1;
-        let if_strpos = tokens.pos(index);
-        
-        let if_expr = match BinaryExpr::parse(tokens, messages, index + current_length) {
-            (Some(expr), expr_len) => { current_length += expr_len; expr }
-            (None, length) => return (None, current_length + length),
-        };
-        let if_body = match Block::parse(tokens, messages, index + current_length) {
-            (Some(block), block_len) => { current_length += block_len; block }
-            (None, length) => return (None, current_length + length),
-        };
-
-        let mut elseifs = Vec::new();
-        let mut else_strpos = StringPosition::new();
-        let mut else_body = None;
-        loop {
-            match (tokens.nth(index + current_length), tokens.nth(index + current_length + 1)) {
-                (&Token::Keyword(KeywordKind::Else), &Token::Keyword(KeywordKind::If)) => {
-                    let elseif_strpos = StringPosition::merge(tokens.pos(index + current_length), tokens.pos(index + current_length + 1));
-                    current_length += 2;
-                    let elseif_expr = match BinaryExpr::parse(tokens, messages, index + current_length) {
-                        (Some(expr), expr_len) => { current_length += expr_len; expr }
-                        (None, length) => return (None, current_length + length),
-                    };
-                    let elseif_body = match Block::parse(tokens, messages, index + current_length) {
-                        (Some(block), block_len) => { current_length += block_len; block }
-                        (None, length) => return (None, current_length + length),
-                    };
-                    elseifs.push(IfConditionBody::new(elseif_strpos, elseif_expr, elseif_body));
-                }
-                (&Token::Keyword(KeywordKind::Else), _) => {
-                    else_strpos = tokens.pos(index + current_length);
-                    match Block::parse(tokens, messages, index + current_length + 1) { 
-                        (Some(block), block_len) => {
-                            else_body = Some(block);
-                            current_length += block_len + 1;
-                        }  // 16/12/1, we lost TWO `+1`s for current_length here ... fixed
-                        (None, length) => return (None, current_length + 1 + length),
-                    }
-                }
-                _ => break,
-            }
-        }
-
-        let all_strpos = StringPosition::merge(tokens.pos(index), tokens.pos(index + current_length - 1));
-        match else_body {
-            Some(else_body) => (Some(IfStatement::new_ifelseifelse(all_strpos, if_strpos, if_expr, if_body, elseifs, else_strpos, else_body)), current_length),
-            None => (Some(IfStatement::new_ifelseif(all_strpos, if_strpos, if_expr, if_body, elseifs)), current_length),
-        }
-    }
-}
-#[cfg(feature = "parse_sess")]
-impl ISyntaxItemParseX for IfStatement {
-    
-    fn parsex(sess: &mut ParseSession) -> ParseResult<IfStatement> {
+    fn parse(sess: &mut ParseSession) -> ParseResult<IfStatement> {
         assert!(sess.tk == &Token::Keyword(KeywordKind::If));
 
         let if_strpos = sess.pos;
         sess.move_next();
         
-        let if_expr = BinaryExpr::parsex(sess)?;
-        let if_body = Block::parsex(sess)?;
+        let if_expr = BinaryExpr::parse(sess)?;
+        let if_body = Block::parse(sess)?;
 
         let mut elseifs = Vec::new();
         let mut ending_strpos = if_body.get_all_strpos();
@@ -211,8 +143,8 @@ impl ISyntaxItemParseX for IfStatement {
                     &Token::Keyword(KeywordKind::If), ref if_strpos) => {
                     sess.move_next2();
                     let elseif_strpos = StringPosition::merge(*else_strpos, *if_strpos);
-                    let elseif_expr = BinaryExpr::parsex(sess)?;
-                    let elseif_body = Block::parsex(sess)?;
+                    let elseif_expr = BinaryExpr::parse(sess)?;
+                    let elseif_body = Block::parse(sess)?;
                     ending_strpos = elseif_body.get_all_strpos();
                     elseifs.push(IfConditionBody::new(elseif_strpos, elseif_expr, elseif_body));
                 }
@@ -222,7 +154,7 @@ impl ISyntaxItemParseX for IfStatement {
                     // There is a bug fix here, now no more current_length handling!
                     // // 16/12/1, we lost TWO `+1`s for current_length here ... fixed
                     else_strpos = *this_else_strpos;
-                    let this_else_body = Block::parsex(sess)?;
+                    let this_else_body = Block::parse(sess)?;
                     ending_strpos = this_else_body.get_all_strpos();
                     else_body = Some(this_else_body);
                 }

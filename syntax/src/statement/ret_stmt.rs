@@ -5,18 +5,12 @@
 use std::fmt;
 
 use codepos::StringPosition;
-use message::Message;
-use message::MessageCollection;
-
 use lexical::Token;
-use lexical::TokenStream;
 use lexical::SeperatorKind;
 use lexical::KeywordKind;
 
-#[cfg(feature = "parse_sess")] use super::super::ParseSession;
-#[cfg(feature = "parse_sess")] use super::super::ParseResult;
-#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemParseX;
-#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemGrammarX;
+use super::super::ParseSession;
+use super::super::ParseResult;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -56,37 +50,11 @@ impl ReturnStatement {
     pub fn into_expr(self) -> Option<BinaryExpr> { self.m_expr }
 }
 impl ISyntaxItemGrammar for ReturnStatement {
-    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool { tokens.nth(index) == &Token::Keyword(KeywordKind::Return) }
-}
-#[cfg(feature = "parse_sess")]
-impl ISyntaxItemGrammarX for ReturnStatement {
-    fn is_first_finalx(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(KeywordKind::Return) }
+    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(KeywordKind::Return) }
 }
 impl ISyntaxItemParse for ReturnStatement {
 
-    fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<ReturnStatement>, usize) {
-        assert!(tokens.nth(index) == &Token::Keyword(KeywordKind::Return));
-
-        if tokens.nth(index + 1) == &Token::Sep(SeperatorKind::SemiColon) {
-            return (Some(ReturnStatement::new_unit(StringPosition::merge(tokens.pos(index), tokens.pos(index + 1)))), 2);
-        }
-
-        match BinaryExpr::parse(tokens, messages, index + 1) {
-            (None, length) => return (None, length),
-            (Some(expr), expr_len) => {
-                if tokens.nth(index + 1 + expr_len) == &Token::Sep(SeperatorKind::SemiColon) {
-                    return (Some(ReturnStatement::new_expr(StringPosition::merge(tokens.pos(index), tokens.pos(index + 1 + expr_len)), expr)), 2 + expr_len);
-                } else {
-                    return push_unexpect!(tokens, messages, "semicolon", index + expr_len + 1, expr_len + 1);
-                }
-            } 
-        }
-    }
-}
-#[cfg(feature = "parse_sess")]
-impl ISyntaxItemParseX for ReturnStatement {
-    
-    fn parsex(sess: &mut ParseSession) -> ParseResult<ReturnStatement> {
+    fn parse(sess: &mut ParseSession) -> ParseResult<ReturnStatement> {
 
         let return_strpos = sess.expect_keyword(KeywordKind::Return)?;
 
@@ -94,7 +62,7 @@ impl ISyntaxItemParseX for ReturnStatement {
             return Ok(ReturnStatement::new_unit(StringPosition::merge(return_strpos, sess.pos)));
         }
 
-        let expr = BinaryExpr::parsex(sess)?;
+        let expr = BinaryExpr::parse(sess)?;
         let ending_strpos = sess.expect_sep(SeperatorKind::SemiColon)?;
 
         return Ok(ReturnStatement::new_expr(StringPosition::merge(return_strpos, ending_strpos), expr));

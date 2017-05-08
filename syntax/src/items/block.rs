@@ -6,16 +6,11 @@
 use std::fmt;
 
 use codepos::StringPosition;
-use message::MessageCollection;
-
 use lexical::Token;
-use lexical::TokenStream;
 use lexical::SeperatorKind;
 
-#[cfg(feature = "parse_sess")] use super::super::ParseSession;
-#[cfg(feature = "parse_sess")] use super::super::ParseResult;
-#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemParseX;
-#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemGrammarX;
+use super::super::ParseSession;
+use super::super::ParseResult;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -45,40 +40,11 @@ impl Block {
     pub fn get_statements(&self) -> &Vec<Statement> { &self.items }
 }
 impl ISyntaxItemGrammar for Block {
-    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
-        tokens.nth(index) == &Token::Sep(SeperatorKind::LeftBrace) 
-    }
-}
-#[cfg(feature = "parse_sess")]
-impl ISyntaxItemGrammarX for Block {
-    fn is_first_finalx(sess: &ParseSession) -> bool { sess.tk == &Token::Sep(SeperatorKind::LeftBrace) }
+    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Sep(SeperatorKind::LeftBrace) }
 }
 impl ISyntaxItemParse for Block {
 
-    fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<Block>, usize) {
-        assert!(tokens.nth(index) == &Token::Sep(SeperatorKind::LeftBrace));
-
-        let mut items = Vec::new();
-        let mut current_length = 1;
-        loop {
-            if tokens.nth(index + current_length) == &Token::Sep(SeperatorKind::RightBrace) {
-                return (Some(Block::new(StringPosition::merge(tokens.pos(index), tokens.pos(index + current_length)), items)), current_length + 1);
-            }
-            match Statement::parse(tokens, messages, index + current_length) {
-                (Some(stmt), stmt_len) => {
-                    current_length += stmt_len;
-                    items.push(stmt);
-                    continue;
-                }
-                (None, length) => return (None, current_length + length),
-            }
-        }
-    }
-}
-#[cfg(feature = "parse_sess")]
-impl ISyntaxItemParseX for Block {
-
-    fn parsex(sess: &mut ParseSession) -> ParseResult<Block> {
+    fn parse(sess: &mut ParseSession) -> ParseResult<Block> {
 
         let starting_strpos = sess.expect_sep(SeperatorKind::LeftBrace)?;
         let mut items = Vec::new();
@@ -87,7 +53,7 @@ impl ISyntaxItemParseX for Block {
                 sess.move_next();
                 return Ok(Block::new(StringPosition::merge(starting_strpos, *right_brace_strpos), items));
             }
-            items.push(Statement::parsex(sess)?); 
+            items.push(Statement::parse(sess)?); 
         }
     }
 }
@@ -95,6 +61,7 @@ impl ISyntaxItemParseX for Block {
 #[cfg(test)] #[test]
 fn block_parse() {
     use super::super::ISyntaxItemWithStr;
+    use message::MessageCollection;
     
     assert_eq!{ Block::with_test_str_ret_size_messages("{}"), (
         Some(Block::new(make_strpos!(1, 1, 1, 2), vec![])), 

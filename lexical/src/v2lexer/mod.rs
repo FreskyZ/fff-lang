@@ -235,6 +235,9 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                         value.push(ch);
                         state = State::InNumLit(value, strpos);
                     } else if ch.is_label_start() {
+                        if !next_ch.is_label() {                // 17/5/8: TODO: same question as before, why this is needed
+                            return (V2Token::Label(String::new()), strpos);
+                        }
                         state = State::InLabel(String::new(), strpos);
                     } else {
                         match SeperatorKind::try_from3(ch, next_ch, nextnext_ch) { // the try_from3 will check 3, if not, check 2, if not, check 1
@@ -440,7 +443,6 @@ fn v2_base() {
 
     macro_rules! test_case {
         ($program: expr, $eof_pos: expr, [$($expect: expr, )*] [$($expect_msg: expr, )*]) => ({
-            println!("Case {:?} at {}", $program, line!());
             let messages = &mut MessageCollection::new();
             let mut codemap = CodeMap::with_test_str($program);
             let mut v2lexer = V2Lexer::new(codemap.iter(), messages);
@@ -454,14 +456,13 @@ fn v2_base() {
 
             let mut expect_v2s = vec![$(V2AndStrPos::from($expect), )*];
             expect_v2s.push(V2AndStrPos::from((V2Token::EOF, $eof_pos)));
-            assert_eq!(v2s, expect_v2s, "Case {:?}", $program);
+            assert_eq!(v2s, expect_v2s, "Case {:?}\n", $program);
 
             let expect_messages = &mut MessageCollection::new();
             $(
                 expect_messages.push($expect_msg);
             )*
-            assert_eq!(messages, expect_messages, "Case {:?}", $program);
-            println!("");
+            assert_eq!(messages, expect_messages, "Case {:?}\n", $program);
         });
         ($program: expr, $eof_pos: expr, [$($expect: expr, )*]) => (test_case!($program, $eof_pos, [$($expect, )*] []))
     }
@@ -733,4 +734,15 @@ fn v2_base() {
     ]}
 
     test_case!{ "@", make_strpos!(1, 2, 1, 2), [label!("", 1, 1, 1, 1),] }
+
+    test_case!{ "a:", make_strpos!(1, 3, 1, 3), [
+        ident!("a", 1, 1, 1, 1),
+        sep!(SeperatorKind::Colon, 1, 2, 1, 2),
+    ]}
+    test_case!{ "@: {}", make_strpos!(1, 6, 1, 6), [
+        label!("", 1, 1, 1, 1),
+        sep!(SeperatorKind::Colon, 1, 2, 1, 2),
+        sep!(SeperatorKind::LeftBrace, 1, 4, 1, 4),
+        sep!(SeperatorKind::RightBrace, 1, 5, 1, 5),
+    ]}
 }

@@ -19,17 +19,12 @@
 use std::fmt;
 
 use codepos::StringPosition;
-use message::MessageCollection;
-
 use lexical::Token;
-use lexical::TokenStream;
 use lexical::SeperatorKind;
 use lexical::SeperatorCategory;
 
-#[cfg(feature = "parse_sess")] use super::super::ParseSession;
-#[cfg(feature = "parse_sess")] use super::super::ParseResult;
-#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemParseX;
-#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemGrammarX;
+use super::super::ParseSession;
+use super::super::ParseResult;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -178,66 +173,9 @@ macro_rules! trace { ($($arg:tt)*) => ({ print!("[PrimaryExpr] "); println!($($a
 #[cfg(not(feature = "trace_binary_expr_parse"))]
 macro_rules! trace { ($($arg:tt)*) => () }
 
-fn parse_unary_wrapper(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<BinaryExpr>, usize) {
-    match UnaryExpr::parse(tokens, messages, index) {
-        (Some(unary_expr), symbol_len) => (Some(BinaryExpr::new_unary(unary_expr)), symbol_len),
-        (None, symbol_len) => (None, symbol_len)
-    }
-}
+fn parse_unary_wrapper(sess: &mut ParseSession) -> ParseResult<BinaryExpr> { Ok(BinaryExpr::new_unary(UnaryExpr::parse(sess)?)) }
 macro_rules! impl_binary_parser {
     ($parser_name: ident, $previous_parser: ident, $op_category: expr) => (
-
-        fn $parser_name(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<BinaryExpr>, usize) {
-            trace!("parsing {}", stringify!($parser_name));
-
-            let (mut current_ret_val, mut current_len) = match $previous_parser(tokens, messages, index) {
-                (None, length) => { trace!("   return None because parsing left return none"); return (None, length); }
-                (Some(prev_level), prev_length) => (prev_level, prev_length),
-            };
-
-            loop {
-                match tokens.nth(index + current_len) {
-                    &Token::Sep(operator) if operator.is_category($op_category) => {
-                        let operator_strpos = tokens.pos(index + current_len);
-                        current_len += 1;
-                        match $previous_parser(tokens, messages, index + current_len) {
-                            (None, length) => { 
-                                trace!("    return None because parsing right return none"); 
-                                return (None, current_len + length);
-                            }
-                            (Some(right), right_len) => {
-                                current_ret_val = BinaryExpr::new_binary(current_ret_val, operator, operator_strpos, right);
-                                current_len += right_len;
-                                trace!("    changing current ret_val to {:?}", current_ret_val);
-                            }
-                        }
-                    }
-                    _ => {
-                        trace!("   operator or other not '{}', return left: {:?}", stringify!($op_category), current_ret_val);
-                        return (Some(current_ret_val), current_len);
-                    }
-                }
-            }
-        }
-    )
-}
-impl_binary_parser! { parse_multiplicative, parse_unary_wrapper, SeperatorCategory::Multiplicative }
-impl_binary_parser! { parse_additive, parse_multiplicative, SeperatorCategory::Additive }
-impl_binary_parser! { parse_relational, parse_additive, SeperatorCategory::Relational }
-impl_binary_parser! { parse_shift, parse_relational, SeperatorCategory::Shift }
-impl_binary_parser! { parse_bitand, parse_shift, SeperatorCategory::BitAnd }
-impl_binary_parser! { parse_bitxor, parse_bitand, SeperatorCategory::BitXor }
-impl_binary_parser! { parse_bitor, parse_bitxor, SeperatorCategory::BitOr }
-impl_binary_parser! { parse_equality, parse_bitor, SeperatorCategory::Equality }
-impl_binary_parser! { parse_logical_and, parse_equality, SeperatorCategory::LogicalAnd }
-impl_binary_parser! { parse_logical_or, parse_logical_and, SeperatorCategory::LogicalOr }
-
-// x
-#[cfg(feature = "parse_sess")] 
-fn parsex_unary_wrapper(sess: &mut ParseSession) -> ParseResult<BinaryExpr> { Ok(BinaryExpr::new_unary(UnaryExpr::parsex(sess)?)) }
-macro_rules! impl_binary_parserx {
-    ($parser_name: ident, $previous_parser: ident, $op_category: expr) => (
-        #[cfg(feature = "parse_sess")] 
         fn $parser_name(sess: &mut ParseSession) -> ParseResult<BinaryExpr> {
             trace!("parsing {}", stringify!($parser_name));
 
@@ -259,33 +197,22 @@ macro_rules! impl_binary_parserx {
         }
     )
 }
-impl_binary_parserx! { parsex_multiplicative, parsex_unary_wrapper, SeperatorCategory::Multiplicative }
-impl_binary_parserx! { parsex_additive, parsex_multiplicative, SeperatorCategory::Additive }
-impl_binary_parserx! { parsex_relational, parsex_additive, SeperatorCategory::Relational }
-impl_binary_parserx! { parsex_shift, parsex_relational, SeperatorCategory::Shift }
-impl_binary_parserx! { parsex_bitand, parsex_shift, SeperatorCategory::BitAnd }
-impl_binary_parserx! { parsex_bitxor, parsex_bitand, SeperatorCategory::BitXor }
-impl_binary_parserx! { parsex_bitor, parsex_bitxor, SeperatorCategory::BitOr }
-impl_binary_parserx! { parsex_equality, parsex_bitor, SeperatorCategory::Equality }
-impl_binary_parserx! { parsex_logical_and, parsex_equality, SeperatorCategory::LogicalAnd }
-impl_binary_parserx! { parsex_logical_or, parsex_logical_and, SeperatorCategory::LogicalOr }
+impl_binary_parser! { parse_multiplicative, parse_unary_wrapper, SeperatorCategory::Multiplicative }
+impl_binary_parser! { parse_additive, parse_multiplicative, SeperatorCategory::Additive }
+impl_binary_parser! { parse_relational, parse_additive, SeperatorCategory::Relational }
+impl_binary_parser! { parse_shift, parse_relational, SeperatorCategory::Shift }
+impl_binary_parser! { parse_bitand, parse_shift, SeperatorCategory::BitAnd }
+impl_binary_parser! { parse_bitxor, parse_bitand, SeperatorCategory::BitXor }
+impl_binary_parser! { parse_bitor, parse_bitxor, SeperatorCategory::BitOr }
+impl_binary_parser! { parse_equality, parse_bitor, SeperatorCategory::Equality }
+impl_binary_parser! { parse_logical_and, parse_equality, SeperatorCategory::LogicalAnd }
+impl_binary_parser! { parse_logical_or, parse_logical_and, SeperatorCategory::LogicalOr }
 
 impl ISyntaxItemGrammar for BinaryExpr {
-    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool { UnaryExpr::is_first_final(tokens, index) }
-}
-#[cfg(feature = "parse_sess")]
-impl ISyntaxItemGrammarX for BinaryExpr {
-    fn is_first_finalx(sess: &ParseSession) -> bool { UnaryExpr::is_first_finalx(sess) }
+    fn is_first_final(sess: &ParseSession) -> bool { UnaryExpr::is_first_final(sess) }
 }
 impl ISyntaxItemParse for BinaryExpr {
-
-    fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<BinaryExpr>, usize) {
-        parse_logical_or(tokens, messages, index)
-    }
-}
-#[cfg(feature = "parse_sess")] 
-impl ISyntaxItemParseX for BinaryExpr {
-    fn parsex(sess: &mut ParseSession) -> ParseResult<BinaryExpr> { parsex_logical_or(sess) }
+    fn parse(sess: &mut ParseSession) -> ParseResult<BinaryExpr> { parse_logical_or(sess) }
 }
 
 #[cfg(test)] #[test]

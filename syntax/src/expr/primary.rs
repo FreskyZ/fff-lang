@@ -11,20 +11,14 @@
 use std::fmt;
 
 use codepos::StringPosition;
-use message::Message;
-use message::MessageCollection;
-
 use lexical::Token;
-use lexical::TokenStream;
 use lexical::SeperatorKind;
 use lexical::KeywordKind;
 use lexical::LitValue;
 use lexical::NumLitValue;
 
-#[cfg(feature = "parse_sess")] use super::super::ParseSession;
-#[cfg(feature = "parse_sess")] use super::super::ParseResult;
-#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemParseX;
-#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemGrammarX;
+use super::super::ParseSession;
+use super::super::ParseResult;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -160,29 +154,8 @@ impl PrimaryExpr { // Get
         match self.0 { ActualPrimaryExpr::ArrayDupDef(_, ref expr2) => Some(expr2), _ => None }
     }
 }
-
-#[allow(non_upper_case_globals)]
-mod error_strings {
-    // Prefer full word to abbr word at displayed string
-    // for example, difinition, literal, identifier
-
-    pub const ExpectExpression: &str = "literal, identifier, array definition, tuple definition, unary operators";
-}
-
 impl ISyntaxItemGrammar for PrimaryExpr {
-    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
-        match tokens.nth(index) {
-            &Token::Ident(_) 
-            | &Token::Lit(_)
-            | &Token::Sep(SeperatorKind::LeftParenthenes)
-            | &Token::Sep(SeperatorKind::LeftBracket) => true,
-            _ => false,
-        }
-    }
-}
-#[cfg(feature = "parse_sess")]
-impl ISyntaxItemGrammarX for PrimaryExpr {
-    fn is_first_finalx(sess: &ParseSession) -> bool {
+    fn is_first_final(sess: &ParseSession) -> bool {
         match sess.tk {
             &Token::Ident(_) 
             | &Token::Lit(_)
@@ -194,173 +167,7 @@ impl ISyntaxItemGrammarX for PrimaryExpr {
 }
 impl ISyntaxItemParse for PrimaryExpr {
     
-    fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<PrimaryExpr>, usize) {
-
-        #[cfg(feature = "trace_primary_expr_parse")]
-        macro_rules! trace { ($($arg:tt)*) => ({ print!("[PrimaryExpr: {}]", line!()); println!($($arg)*); }) }
-        #[cfg(not(feature = "trace_primary_expr_parse"))]
-        macro_rules! trace { ($($arg:tt)*) => () }
-
-        trace!("start parsing, current token: {:?}", tokens.nth(index));
-
-        match tokens.nth(index) {
-            &Token::Lit(ref lit_val) => {
-                trace!("returning literal {:?} at {:?}", lit_val, tokens.pos(index));
-                return (Some(PrimaryExpr::new_lit(lit_val.clone(), tokens.pos(index))), 1);
-            }
-            &Token::Ident(ref ident_name) => {
-                trace!("returning identifier {:?} at {:?} ", ident_name, tokens.pos(index));
-                return (Some(PrimaryExpr::new_ident(ident_name.clone(), tokens.pos(index))), 1);
-            }
-            &Token::Keyword(KeywordKind::This) => {
-                trace!("returning identifier this at {:?}", tokens.pos(index));
-                return (Some(PrimaryExpr::new_ident("this".to_owned(), tokens.pos(index))), 1);
-            }
-            _ => (),
-        }
-
-        if tokens.nth(index) == &Token::Sep(SeperatorKind::LeftParenthenes) {
-            trace!("at index is left paren");
-            if tokens.nth(index + 1) == &Token::Sep(SeperatorKind::RightParenthenes) {
-                trace!("returning unit at {:?}", tokens.pos(index));
-                return (Some(PrimaryExpr::new_unit(StringPosition::merge(tokens.pos(index), tokens.pos(index + 1)))), 2);
-            }
-
-            let mut current_length = 1;
-            let mut maybe_tuple_exprs = Vec::new();
-            let mut end_by_comma = false;
-            loop {
-                match BinaryExpr::parse(tokens, messages, index + current_length) {
-                    (None, length) => {
-                        trace!("returning None passed from tuple's BinaryExpr::parse");
-                        return (None, current_length + length);
-                    }
-                    (Some(expr), expr_length) => {
-                        current_length += expr_length;
-                        maybe_tuple_exprs.push(expr);
-                    }
-                }
-                if tokens.nth(index + current_length) == &Token::Sep(SeperatorKind::RightParenthenes) {
-                    current_length += 1;
-                    break;
-                } else if tokens.nth(index + current_length) == &Token::Sep(SeperatorKind::Comma) 
-                    && tokens.nth(index + current_length + 1) == &Token::Sep(SeperatorKind::RightParenthenes) {
-                    end_by_comma = true;
-                    current_length += 2; 
-                    break;
-                } else if tokens.nth(index + current_length) == &Token::Sep(SeperatorKind::Comma) {
-                    current_length += 1;
-                    continue;
-                } else {
-                    return push_unexpect!(tokens, messages, [error_strings::ExpectExpression, "right parenthenes",], index + current_length, current_length);
-                }
-            }
-
-            trace!("after left paren's loop, exprs are {:?}", maybe_tuple_exprs);
-            let paren_strpos = StringPosition::merge(tokens.pos(index), tokens.pos(index + current_length - 1));
-            if maybe_tuple_exprs.len() == 1 && !end_by_comma {
-                return (Some(PrimaryExpr::new_paren(paren_strpos, maybe_tuple_exprs.into_iter().last().unwrap())), current_length);
-            } else { // no length = 0 here because it is rejected before
-                return (Some(PrimaryExpr::new_tuple(paren_strpos, maybe_tuple_exprs)), current_length);
-            }
-        }
-
-        if tokens.nth(index) == &Token::Sep(SeperatorKind::LeftBracket) {
-             // Empty array literal, accept in syntax parse, currently denied in codegen
-            if tokens.nth(index + 1) == &Token::Sep(SeperatorKind::RightBracket) {
-                return (
-                    Some(PrimaryExpr::new_array(
-                        StringPosition::merge(tokens.pos(index), tokens.pos(index + 1)),
-                        Vec::new(), 
-                    )), 
-                    2
-                );
-            }
-            match BinaryExpr::parse(tokens, messages, index + 1) {
-                (None, length) => {
-                    trace!("parsing array (dup) def failed, parse expr1 return none");
-                    return (None, length);  // recover by find paired right bracket
-                }
-                (Some(expr1), expr1_len) => {
-                    trace!("parsing array (dup) def get expr1: {:?} with length {} and next is {:?}", expr1, expr1_len, tokens.nth(index + 1 + expr1_len));
-                    if tokens.nth(index + 1 + expr1_len) == &Token::Sep(SeperatorKind::SemiColon) {
-                        // let semicolon_pos = tokens.pos(index + 1 + expr1_len); // semicolon is not recorded now
-                        match BinaryExpr::parse(tokens, messages, index + 2 + expr1_len) {
-                            (None, length) => {
-                                trace!("parsing array dup def failed, parse expr2 failed");
-                                return (None, expr1_len + 2 + length);
-                            } 
-                            (Some(expr2), expr2_len) => {
-                                if tokens.nth(index + 2 + expr1_len + expr2_len) == &Token::Sep(SeperatorKind::RightBracket) {
-                                    trace!("parsing array dup def succeed, expr1: {:?}, expr2: {:?}", expr1, expr2);
-                                    return (
-                                        Some(PrimaryExpr::new_array_dup(
-                                            StringPosition::merge(tokens.pos(index), tokens.pos(index + expr1_len + expr2_len + 2)), 
-                                            expr1, expr2,
-                                        )),
-                                        expr1_len + expr2_len + 3
-                                    );
-                                } else {
-                                    trace!("parsing array dup def failed, not followed right bracket");
-                                    return push_unexpect!(tokens, messages, "Right bracket after array dup def", index + 3 + expr1_len + expr2_len, expr1_len + expr2_len + 1);
-                                }
-                            }
-                        }
-                    }
-
-                    trace!("parsing array def, before loop");
-                    let mut current_length = 1 + expr1_len; // 1 for left bracket
-                    let mut exprs = vec![expr1];
-                    loop {
-                        trace!("parsing array def, in loop, current: {:?}", tokens.nth(index + current_length));
-                        if tokens.nth(index + current_length) == &Token::Sep(SeperatorKind::RightBracket) {
-                            trace!("parsing array def succeed, exprs: {:?}", exprs);
-                            return (
-                                Some(PrimaryExpr::new_array(
-                                    StringPosition::merge(tokens.pos(index), tokens.pos(index + current_length)),
-                                    exprs, 
-                                )), 
-                                current_length + 1
-                            );
-                        } else if tokens.nth(index + current_length) == &Token::Sep(SeperatorKind::Comma)  // Accept [1, 2, 3, abc, ] 
-                            && tokens.nth(index + current_length + 1) == &Token::Sep(SeperatorKind::RightBracket) {
-                            trace!("parsing array def succeed, exprs: {:?}", exprs);
-                            return (
-                                Some(PrimaryExpr::new_array(
-                                    StringPosition::merge(tokens.pos(index), tokens.pos(index + 1 + current_length)),
-                                    exprs, 
-                                )), 
-                                current_length + 2
-                            );
-                        } else if tokens.nth(index + current_length) == &Token::Sep(SeperatorKind::Comma) {
-                            current_length += 1;
-                            match BinaryExpr::parse(tokens, messages, index + current_length) {
-                                (Some(exprn), exprn_len) => {
-                                    trace!("parsing array def, get expression n {:?}", exprn);
-                                    current_length += exprn_len;
-                                    exprs.push(exprn);
-                                }
-                                (None, length) => {
-                                    trace!("parsing array def failed, parse expression return none");
-                                    return (None, current_length + length);
-                                }
-                            }
-                        } else {
-                            return push_unexpect!(tokens, messages, ["comma", "left bracket", ], index + current_length, current_length);
-                        }
-                    }
-                }
-            }
-        }
-
-        trace!("Failed in prim expr parse, not start with left paren or left bracket");
-        return push_unexpect!(tokens, messages, error_strings::ExpectExpression, index, 0);
-    }
-}
-#[cfg(feature = "parse_sess")]
-impl ISyntaxItemParseX for PrimaryExpr {
-    
-    fn parsex(sess: &mut ParseSession) -> ParseResult<PrimaryExpr> {
+    fn parse(sess: &mut ParseSession) -> ParseResult<PrimaryExpr> {
         #[cfg(feature = "trace_primary_expr_parse")]
         macro_rules! trace { ($($arg:tt)*) => ({ print!("[PrimaryExpr: {}]", line!()); println!($($arg)*); }) }
         #[cfg(not(feature = "trace_primary_expr_parse"))]
@@ -396,7 +203,7 @@ impl ISyntaxItemParseX for PrimaryExpr {
                 let end_by_comma: bool;
                 let ending_strpos: StringPosition;
                 loop {
-                    maybe_tuple_exprs.push(BinaryExpr::parsex(sess)?);
+                    maybe_tuple_exprs.push(BinaryExpr::parse(sess)?);
                     match (sess.tk, sess.pos, sess.next_tk, sess.next_pos) {
                         (&Token::Sep(SeperatorKind::Comma), _, &Token::Sep(SeperatorKind::RightParenthenes), ref right_paren_strpos) => {
                             sess.move_next2();
@@ -434,11 +241,11 @@ impl ISyntaxItemParseX for PrimaryExpr {
             }
             (&Token::Sep(SeperatorKind::LeftBracket), ref left_bracket_strpos, _, _) => {
                 sess.move_next();
-                let expr1 = BinaryExpr::parsex(sess)?; 
+                let expr1 = BinaryExpr::parse(sess)?; 
 
                 if sess.tk == &Token::Sep(SeperatorKind::SemiColon) {
                     sess.move_next();
-                    let expr2 = BinaryExpr::parsex(sess)?; 
+                    let expr2 = BinaryExpr::parse(sess)?; 
                     let right_bracket_strpos = sess.expect_sep(SeperatorKind::RightBracket)?;
                     trace!("parsing array dup def succeed, expr1: {:?}, expr2: {:?}", expr1, expr2);
                     return Ok(PrimaryExpr::new_array_dup(StringPosition::merge(*left_bracket_strpos, right_bracket_strpos), expr1, expr2));
@@ -459,7 +266,7 @@ impl ISyntaxItemParseX for PrimaryExpr {
                         }
                         (&Token::Sep(SeperatorKind::Comma), _, _, _) => {
                             sess.move_next();
-                            exprs.push(BinaryExpr::parsex(sess)?);
+                            exprs.push(BinaryExpr::parse(sess)?);
                         }
                         _ => return sess.push_unexpect("comma, left bracket"),
                     }
@@ -746,6 +553,8 @@ fn primary_expr_parse() {
 #[cfg(test)] #[test] #[ignore]
 fn primary_expr_errors() {
     use super::super::ISyntaxItemWithStr;
+    use message::Message;
+    use message::MessageCollection;
 
     const UNEXPECTED_SYMBOL: &'static str = "Unexpected symbol";
 
@@ -755,7 +564,7 @@ fn primary_expr_errors() {
         make_messages![
             Message::with_help_by_str(UNEXPECTED_SYMBOL, 
                 vec![(make_strpos!(1, 5, 1, 5), "Meet Seperator `]`(RightBracket) <0>1:5-1:5")],
-                vec![&("Expect ".to_owned() + error_strings::ExpectExpression)]
+                vec![&("Expect ".to_owned() + "error_strings::ExpectExpression")]
             )
         ], 
     )}

@@ -1,20 +1,16 @@
-
-// LoopStatement = [fLabel fColon] fLoop Block
+///! fff-lang
+///!
+///! syntax/loop_stmt
+///! LoopStatement = [LabelDef] fLoop Block
 
 use std::fmt;
 
 use codepos::StringPosition;
-use message::Message;
-use message::MessageCollection;
-
 use lexical::Token;
-use lexical::TokenStream;
 use lexical::KeywordKind;
 
-#[cfg(feature = "parse_sess")] use super::super::ParseSession;
-#[cfg(feature = "parse_sess")] use super::super::ParseResult;
-#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemParseX;
-#[cfg(feature = "parse_sess")] use super::super::ISyntaxItemGrammarX;
+use super::super::ParseSession;
+use super::super::ParseResult;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -64,7 +60,6 @@ impl LoopStatement { // New
         }
     }
 
-    #[cfg(feature = "parse_sess")]  // TODO: remove this cfg
     fn new_some_label(label: Option<LabelDef>, loop_strpos: StringPosition, body: Block) -> LoopStatement {
         LoopStatement{  
             m_label: label,
@@ -94,16 +89,7 @@ impl LoopStatement { // Get
     }
 }
 impl ISyntaxItemGrammar for LoopStatement {
-    fn is_first_final(tokens: &mut TokenStream, index: usize) -> bool {
-        match (tokens.nth(index), tokens.nth(index + 2)) {
-            (&Token::Label(_), &Token::Keyword(KeywordKind::Loop)) | (&Token::Keyword(KeywordKind::Loop), _) => true,
-            _ => false
-        }
-    }
-}
-#[cfg(feature = "parse_sess")]
-impl ISyntaxItemGrammarX for LoopStatement {
-    fn is_first_finalx(sess: &ParseSession) -> bool {
+    fn is_first_final(sess: &ParseSession) -> bool {
         match (sess.tk, sess.nextnext_tk) {
             (&Token::Label(_), &Token::Keyword(KeywordKind::Loop)) | (&Token::Keyword(KeywordKind::Loop), _) => true,
             _ => false
@@ -112,41 +98,11 @@ impl ISyntaxItemGrammarX for LoopStatement {
 }
 impl ISyntaxItemParse for LoopStatement {
 
-    fn parse(tokens: &mut TokenStream, messages: &mut MessageCollection, index: usize) -> (Option<LoopStatement>, usize) {
-
-        match tokens.nth(index) {
-            &Token::Label(_) => match LabelDef::parse(tokens, messages, index) {
-                (None, length) => (None, length),
-                (Some(label_def), _label_length_which_is_2) => if tokens.nth(index + 2) != &Token::Keyword(KeywordKind::Loop) {
-                    push_unexpect!(tokens, messages, "keyword loop", index + 2, 2)
-                } else {
-                    match Block::parse(tokens, messages, index + 3) {
-                        (None, length) => (None, 3 + length),
-                        (Some(body), body_length) => 
-                            (Some(LoopStatement::new_with_label(label_def, tokens.pos(index + 2), body)), 3 + body_length),
-                    }
-                },
-            },
-            _ => {
-                if tokens.nth(index) != &Token::Keyword(KeywordKind::Loop) {
-                    return push_unexpect!(tokens, messages, "keyword loop", index, 0);
-                }
-                match Block::parse(tokens, messages, index + 1) {
-                    (None, length) => (None, 1 + length),
-                    (Some(body), body_length) => (Some(LoopStatement::new_no_label(tokens.pos(index), body)), 1 + body_length),
-                }
-            }
-        }
-    }
-}
-#[cfg(feature = "parse_sess")]
-impl ISyntaxItemParseX for LoopStatement {
-    
-    fn parsex(sess: &mut ParseSession) -> ParseResult<LoopStatement> {
+    fn parse(sess: &mut ParseSession) -> ParseResult<LoopStatement> {
 
         let maybe_label = LabelDef::try_parse(sess)?;
         let loop_strpos = sess.expect_keyword(KeywordKind::Loop)?;
-        let body = Block::parsex(sess)?;
+        let body = Block::parse(sess)?;
         return Ok(LoopStatement::new_some_label(maybe_label, loop_strpos, body));
     }
 }
