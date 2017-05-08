@@ -1,4 +1,3 @@
-
 ///! fff-lang
 ///!
 ///! syntax/if_stmt

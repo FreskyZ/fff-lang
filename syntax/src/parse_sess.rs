@@ -34,6 +34,7 @@ pub struct ParseSession<'tokens, 'msgs> {
 // IdentAndPos::parse(sess)?        , try_parse
 // SeperatorKind2::parse(sess)?   // type SeperatorKind2 = (Seperator, Seperator)
 // LabelDef::try_parse
+// TODOOO: after ParseSession stabled and finally removing feature gate, count actual lines decreased
 impl<'a, 'b> ParseSession<'a, 'b> {
 
     pub fn new(tokens: &'a TokenStream, messages: &'b mut MessageCollection) -> ParseSession<'a, 'b> {
@@ -165,7 +166,13 @@ impl<'a, 'b> ParseSession<'a, 'b> {
 }
 
 pub trait ISyntaxItemParseX {
+    
     fn parsex(sess: &mut ParseSession) -> ParseResult<Self> where Self: Sized;
+
+    // check is_first_final, if pass, parse, return Ok(Some(T)) or Err(()), else return None
+    fn try_parse(sess: &mut ParseSession) -> ParseResult<Option<Self>> where Self: Sized + ISyntaxItemGrammarX {
+        if Self::is_first_finalx(sess) { Ok(Some(Self::parsex(sess)?)) } else { Ok(None) }
+    }
 }
 pub trait ISyntaxItemGrammarX {
     fn is_first_finalx(sess: &ParseSession) -> bool;
@@ -188,3 +195,25 @@ fn parse_sess_usage() {
         _ => (),
     }
 }
+
+// binary_expr: -12
+// postfix_expr: -28
+// primary_expr: -54
+// unary_expr: -3
+// block: -7
+// fn_def: -39
+// label_def: +1
+// type_use: -34
+// block_stmt: -9
+// expr_stmt: -15
+// for_stmt: -29
+// if_stmt: -19
+// jump_stmt: +3
+// loop_stmt: -19
+// stmt: -30
+// ret_stmt: -5
+// var_decl: -25
+// while_stmt: -21
+// syntax_tree: -13
+//                      // summary: -358
+// length include both parse_sess and not(parse_sess): 6844

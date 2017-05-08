@@ -443,7 +443,7 @@ impl ISyntaxItemParseX for PrimaryExpr {
                     trace!("parsing array dup def succeed, expr1: {:?}, expr2: {:?}", expr1, expr2);
                     return Ok(PrimaryExpr::new_array_dup(StringPosition::merge(*left_bracket_strpos, right_bracket_strpos), expr1, expr2));
                 }
-
+                
                 trace!("parsing array def, before loop");
                 let mut exprs = vec![expr1];
                 loop {

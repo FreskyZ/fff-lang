@@ -179,7 +179,7 @@ impl ISyntaxItemParseX for ForStatement {
 
     fn parsex(sess: &mut ParseSession) -> ParseResult<ForStatement> {
 
-        let maybe_label = if let &Token::Label(_) = sess.tk { Some(LabelDef::parsex(sess)?) } else { None };
+        let maybe_label = LabelDef::try_parse(sess)?;
         let for_strpos = sess.expect_keyword(KeywordKind::For)?;
 
         // Accept _ as iter_name, _ do not declare iter var

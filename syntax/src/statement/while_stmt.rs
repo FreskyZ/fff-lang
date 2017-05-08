@@ -132,11 +132,10 @@ impl ISyntaxItemParseX for WhileStatement {
     
     fn parsex(sess: &mut ParseSession) -> ParseResult<WhileStatement> {
         
-        let maybe_label = if let &Token::Label(_) = sess.tk { Some(LabelDef::parsex(sess)?) } else { None };
+        let maybe_label = LabelDef::try_parse(sess)?;
         let while_strpos = sess.expect_keyword(KeywordKind::While)?;
         let expr = BinaryExpr::parsex(sess)?;
         let body = Block::parsex(sess)?;
-
         return Ok(WhileStatement::new_some_label(maybe_label, while_strpos, expr, body));
     }
 }

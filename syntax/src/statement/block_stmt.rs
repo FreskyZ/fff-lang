@@ -105,7 +105,7 @@ impl ISyntaxItemParseX for BlockStatement {
 
     fn parsex(sess: &mut ParseSession) -> ParseResult<BlockStatement> {
     
-        let maybe_label = if let &Token::Label(_) = sess.tk { Some(LabelDef::parsex(sess)?) } else { None };
+        let maybe_label = LabelDef::try_parse(sess)?;
         let body = Block::parsex(sess)?;
         return Ok(BlockStatement::new_some_label(maybe_label, body));
     }
@@ -116,4 +116,11 @@ fn block_stmt_parse() {
     use super::super::ISyntaxItemWithStr;
 
     assert_eq!{ BlockStatement::with_test_str("{}"), BlockStatement::new_no_label(Block::new(make_strpos!(1, 1, 1, 2), vec![])) }
+    assert_eq!{ BlockStatement::with_test_str_ret_messages("@: {}"), (
+        Some(BlockStatement::new_with_label(
+            LabelDef::new("".to_owned(), make_strpos!(1, 1, 1, 2)),
+            Block::new(make_strpos!(1, 4, 1, 5), vec![])
+        )),
+        make_messages![],
+    )}
 }

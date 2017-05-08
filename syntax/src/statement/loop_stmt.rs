@@ -144,7 +144,7 @@ impl ISyntaxItemParseX for LoopStatement {
     
     fn parsex(sess: &mut ParseSession) -> ParseResult<LoopStatement> {
 
-        let maybe_label = if let &Token::Label(_) = sess.tk { Some(LabelDef::parsex(sess)?) } else { None };
+        let maybe_label = LabelDef::try_parse(sess)?;
         let loop_strpos = sess.expect_keyword(KeywordKind::Loop)?;
         let body = Block::parsex(sess)?;
         return Ok(LoopStatement::new_some_label(maybe_label, loop_strpos, body));

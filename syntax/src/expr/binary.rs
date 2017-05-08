@@ -235,7 +235,6 @@ impl_binary_parser! { parse_logical_or, parse_logical_and, SeperatorCategory::Lo
 // x
 #[cfg(feature = "parse_sess")] 
 fn parsex_unary_wrapper(sess: &mut ParseSession) -> ParseResult<BinaryExpr> { Ok(BinaryExpr::new_unary(UnaryExpr::parsex(sess)?)) }
-
 macro_rules! impl_binary_parserx {
     ($parser_name: ident, $previous_parser: ident, $op_category: expr) => (
         #[cfg(feature = "parse_sess")] 
