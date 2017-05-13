@@ -1,0 +1,171 @@
+// std.ff
+// std lib types and fns
+
+// Issue11: namespace or module, C# like namespace or rust like module?
+namespace std {
+
+#[builtin]
+fn print(text: string);
+fn println(text: string) { print(text + "\n"); }
+
+#[builtin]
+fn read_stdin() -> string;
+
+// Issue9: remove function parameter type overloading?
+// Issue10: static member function call syntax
+fn read_i32() -> i32 { i32::convert_str(read_stdin()); }
+
+#[builtin]
+fn malloc<T>(size: u64) -> &T;
+#[builtin]
+fn free<T>(p: &T);
+#[builtin]
+fn memcmp<T>(lhs: &T, rhs: &T) -> i32;  // C style return
+#[builtin]
+fn memcpy<T>(dest: &T, src: &T, size: u64);
+
+#[builtin]
+struct unit{}
+
+struct string {
+    data: &u8,
+    len: u64,
+    cap: u64,
+
+    // Issue1: you should make `fn new` special or impl move semantic or else there will be a copy
+    // Issue2: function template use syntax
+    // Issue3: this member method syntax seems great
+    // Issue4: use rust struct initialize syntax?, remember it is a primary expr
+    public fn new() -> &string {
+        var retval = malloc::<string>(1);
+        retval.data = malloc::<u8>(16);
+        retval.len = 0;
+        retval.cap = 16;
+        return retval;
+    }
+
+    // Issue12: how to report cap < 0's invalid argument exception and cap too large's out of memory exception
+    //          OOM maybe runtime crash in malloc, try VS debug at that time, which requires much debug information in .pdb
+    //          use Windows's SEH or rust's tagged union?
+    public fn with_capacity(cap: u64) -> &string {
+        if cap < 8 { cap = 8; }
+
+        var retval = malloc::<string>(1);
+        retval.data = malloc::<u8>(cap);
+        retval.len = 0;
+        retval.cap = cap;
+        return retval;
+    }
+
+    // v2! attention that it is not function parameter overloading
+    // Issue17: `fn new(this)` as a special name?, that is str.get_length() and string::with_capacity, 
+    //          but string::new() is very special because it requires a this parameter but actually is static fn
+    public fn new(this) {
+        this.data = malloc::<u8>(16);
+        this.len = 0;
+        this.cap = 16;
+    }
+
+    // v2! attention that it is not function parameter overloading
+    // Issue18, attribute `constructor` on member function to indicate it is a constructor
+    #[constructor]
+    public fn with_capacity(this, cap: u64) {
+        if cap < 8 { cap = 8; }
+
+        this.data = malloc::<u8>(cap);
+        this.len = 0;
+        this.cap = cap;
+    }
+
+    public fn get_length(this: &string) -> u64 { return this.len; }
+    public fn get_capacity(this: &string) -> u64 { return this.cap; }
+
+    // Issue5: `operator[]` as keyword or `operator, [, ]` to form a lexical token?
+    // Issue6: ptr::index or &T::operator[](this, index: u64)
+    // Issue7: in issue6, member functions allow `fn fnname(this, xxx: XXX)`?
+    // Issue8: in rust and C++, operator[] returns reference to allow modify
+    //         in C#, if operator index's return type is reference type, reference is copied, if is value type, value type is copied
+    //         then here, return pointer?
+    public fn operator[](this: &string, index: u64) -> &char { return &this.data[index]; }
+
+    public fn operator==(this, other: &string) -> bool {
+        if this.len != other.len { return false; }
+        return memcmp::<u8>(this.data, other.data) == 0;
+    }
+
+    // Issue13: now you want your `this.cap * 1.5 as u64`?
+    //          but this is actually a static_cast, the as operator is not readable enough to represent this
+    //          but the paren before is quit annoying
+    //          how about `this.cap * 1.5 static_as u64`
+    //          C++'s static cast includes not only primitive integral and floating point and enum cast but also
+    //              call constructor like fn new(U) -> T for static_cast<T>(u)
+    //              call operator type
+    //              small feature: static_cast<void>(_) to discard anything
+    public fn push_back(this, ch: char) {  
+        if this.len + 1 > this.cap {
+            const new_cap = (this.cap * 1.5).to_u64();
+            var new_data = malloc::<u8>(new_cap);
+            memcpy(new_data, this.data, this.len);
+            free(this.data);
+            this.data = new_data;
+            this.cap = new_cap;
+        }
+    }
+
+    // Issue14: get_iter as IEnumerable or IntoIter, `iter` is too short
+    public fn get_iter(this) -> string_iter { return string_iter::new(this); }
+
+    public fn push_str(this, str: &string) {
+
+    }
+}
+
+// Issue16: this syntax of Concept
+struct string_iter: Iterator {
+    str: &string,
+    index: u64,
+
+    // Issue16 cont: this syntax of impl Concept
+    public fn Iterator::has_next(this) -> bool {
+
+    }
+
+    // Issue15: However, I currently believe I will not use the feature that `allow trailing comma at end of param list`
+    // if has_next() == false, then next will <del>undefined behavior</del> exception!, this should be runtime exception
+    public fn next(this, ) -> char {
+
+    }
+}
+
+// Issue19: mark type as builtin to auto mark all its member as builtin
+#[builtin]
+struct i32 {
+
+    // Issue20: primitive integral operator overflow/underflow?
+    public fn operator+(this, rhs: i32) -> i32;
+    public fn operator+(this, rhs: i8) -> i32;
+    // ... to be finished
+
+    public fn operator-(this, rhs: i32) -> i32;
+    public fn operator-(this, rhs: u64) -> u64;
+    // ... to be finished
+
+    public fn operator*(this, rhs: i32) -> i32;
+    // ... to be finished
+
+    public fn operator/(this, rhs: i32) -> f64; // yes default to double
+
+    // no operator |&^! hahahahaha
+}
+
+// Issue20: launch the feature?
+// Issue21: bits type range type index operator, this should be discussed in doc
+#[builtin]
+struct bits32 {
+
+    public fn operator|(this: rhs: bits32) -> bits32;
+
+    public fn operator[](this, range: Range) -> bits32;   // some_bits & some_mask
+}
+
+}
