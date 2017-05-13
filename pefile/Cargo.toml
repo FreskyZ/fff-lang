@@ -5,4 +5,4 @@ authors = ["FreskyZ <fresky7@outlook.com>"]
 workspace = "../ffc"
 
 [dependencies]
-bitflags = "0.7.0"
+util = { path = "../util" }

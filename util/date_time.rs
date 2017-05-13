@@ -1,10 +1,10 @@
 ///! fff-lang
 ///!
-///! to be merged into fff-lang/util
+///! util/date_time for Readonly UTC date time
 
 use std::fmt;
 
-/// UTC date time
+/// Readonly UTC date time
 #[derive(Clone, Eq, PartialEq)]
 pub struct DateTime {
     m_year: u32,
@@ -117,8 +117,7 @@ impl fmt::Debug for DateTime {
     }
 }
 
-#[cfg(test)]
-#[test]
+#[cfg(test)] #[test]
 fn date_time_timestamp() {
 
     assert_eq!(DateTime::with6(2017, 3, 13, 6, 40, 40).as_timestamp(), 1489387240);

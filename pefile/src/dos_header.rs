@@ -2,6 +2,8 @@
 ///!
 ///! dos header include dos stub, no custom stub provided
 
+use super::Error;
+
 // ref: http://www.fysnet.net/exehdr.htm
 // ref: http://www.tavi.co.uk/phobos/exeformat.html
 // ref: https://en.wikibooks.org/wiki/X86_Disassembly/Windows_Executable_Files
@@ -63,26 +65,22 @@ static DEFAULT_DOS_HEADER : [u8; 208] = [
 
 pub fn get_default_dos_header() -> &'static [u8] { &DEFAULT_DOS_HEADER[..] }
 
-#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
-pub enum CheckDOSHeaderResult {
-    Ok(u32),
-    InvalidMagicNumber,
-    ByteArrayToShort, // shorter then 64
-}
-pub fn check_dos_header(header: &[u8]) -> CheckDOSHeaderResult {
+pub fn check_dos_header(bytes: &[u8]) -> Result<usize, Error> {
 
-    if header.len() < 2 || header[0] != 0x4D || header[1] != 0x5A {
-        CheckDOSHeaderResult::InvalidMagicNumber
-    } else if header.len() < 64 {
-        CheckDOSHeaderResult::ByteArrayToShort
+    if bytes.len() < 64 {
+        Err(Error::ByteArrayTooShort)
+    } else if bytes[0] != 0x4D || bytes[1] != 0x5A {
+        Err(Error::InvalidDOSHeaderMagic)
     } else {
-        CheckDOSHeaderResult::Ok(unsafe { *(&header[0x3C] as *const u8 as *const u32) })
+        // Small attention: 
+        // cannot use &bytes[0x3C] as *const u8 as *const usize here because
+        // it will regard that pointer as u64 and everything boom
+        Ok(unsafe { *(&bytes[0x3C] as *const u8 as *const u32) as usize })
     }
 }
 
-#[cfg(test)]
-#[test]
-fn dos_header_default() {
+#[cfg(test)] #[test]
+fn get_dos_header_test() {
 
     let default_header = get_default_dos_header();
     assert!(default_header.len() > 64);
@@ -91,30 +89,29 @@ fn dos_header_default() {
     assert_eq!(unsafe { *(&default_header[0x3C] as *const u8 as *const u32) }, 0xD0);
 }
 
-#[cfg(test)]
-#[test]
-fn dos_header_check() {
+#[cfg(test)] #[test]
+fn dos_header_check_test() {
 
     let bytes1 = [0u8; 0];
-    assert_eq!(check_dos_header(&bytes1[..]), CheckDOSHeaderResult::InvalidMagicNumber);
+    assert_eq!(check_dos_header(&bytes1[..]), Err(Error::ByteArrayTooShort));
 
     let bytes2 = [0x4Du8, 0x5Au8, 1, 2, 3];
-    assert_eq!(check_dos_header(&bytes2[..]), CheckDOSHeaderResult::ByteArrayToShort);
+    assert_eq!(check_dos_header(&bytes2[..]), Err(Error::ByteArrayTooShort));
 
     let mut bytes3 = [0u8; 64];
     bytes3[0] = 0x4D;
     bytes3[1] = 0x5A;
     bytes3[60] = 233;
-    assert_eq!(check_dos_header(&bytes3[..]), CheckDOSHeaderResult::Ok(233));
+    assert_eq!(check_dos_header(&bytes3[..]), Ok(233));
 
     let mut bytes4 = [0u8; 233];
     bytes4[0] = 0x4D;
     bytes4[1] = 0x5A;
     bytes4[60] = 42;
-    assert_eq!(check_dos_header(&bytes4[..]), CheckDOSHeaderResult::Ok(42));
+    assert_eq!(check_dos_header(&bytes4[..]), Ok(42));
     
     let mut bytes5 = [0u8; 233];
     bytes5[0] = 0x4D;
     bytes5[60] = 42;
-    assert_eq!(check_dos_header(&bytes5[..]), CheckDOSHeaderResult::InvalidMagicNumber);
+    assert_eq!(check_dos_header(&bytes5[..]), Err(Error::InvalidDOSHeaderMagic));
 }

@@ -6,6 +6,6 @@ temp
 .vscode
 temp_output
 *.exe
-pefile/test/.vs
+tests/pefile/.vs
 *.obj
 *.pyc

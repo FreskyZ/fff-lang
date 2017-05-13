@@ -1,5 +1,9 @@
-//! fff-lang
-//! Some utils
+///! fff-lang
+///! Some utils
+
+mod date_time;
+
+pub use date_time::DateTime;
 
 /// Macro for printing to the standard error.
 /// 
