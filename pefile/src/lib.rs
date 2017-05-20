@@ -43,7 +43,7 @@ fn gen_hello_world_test() {
     let dos_header_bytes = get_default_dos_header();
 
     let file_header = FileHeader::new();
-    
+
     let file_header_bytes = file_header.into_bytes();
 
     let mut file = File::create(r"..\tests\pefile\gened-hello.exe").expect("Create file failed");
@@ -79,3 +79,8 @@ fn it_works() {
     // let file = File::create("hello.exe").expect("create failed");
     // pefile.write(file);
 }
+
+// TODO: 
+// try to finish file header part of helloworld exe generation
+// continue working on from bytes but do not check too much, only check is PE and is x64
+//     no one will give you a file with exe extension and MZ header but with very very special this and that byte not correct
