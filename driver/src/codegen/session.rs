@@ -105,34 +105,3 @@ impl GenerationSession {
         Program{ fns: sess.fns, types: sess.types, msgs: sess.msgs, codes: sess.codes.codes }
     }
 }
-
-
-#[cfg(test)] #[test] #[ignore]
-fn gen_program_inter() {
-    // use std::io::stdin;
-
-    // loop {
-    //     let mut buf = String::new();
-
-    //     perrorln!("Input:");
-    //     match stdin().read_line(&mut buf) {
-    //         Ok(_) => (),
-    //         Err(_) => break,
-    //     }
-
-    //     if buf != "break\r\n" {
-    //         match SyntaxTree::with_test_str(&buf) {
-    //             Ok(program) => {
-    //                 perrorln!("Syntax program: {}", program);
-    //                 let program = GenerationSession::dispatch(program); 
-    //                 perrorln!("Program: {:?}", program);
-    //             }
-    //             Err(errs) => {
-    //                 perrorln!("Unexpectedly syntax failed: {:?}", errs);
-    //             }
-    //         }
-    //     } else {
-    //         break;
-    //     }
-    // }
-}

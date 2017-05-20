@@ -20,5 +20,6 @@ members = [
     "../messages",
     "../syntax",
     "../pefile",
-    "../util"
+    "../util",
+    "../semantic"
 ]
