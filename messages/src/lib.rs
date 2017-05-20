@@ -214,25 +214,8 @@ impl fmt::Debug for CodegenMessage {
 impl_display_by_debug!{ CodegenMessage }
 
 #[derive(Eq, PartialEq)]
-pub enum RuntimeMessage {
-    CannotFindMain,
-}
-impl fmt::Debug for RuntimeMessage {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            RuntimeMessage::CannotFindMain => {
-                write!(f, "Can not find a method with name `main` and no argument and no return type")
-            }
-        }
-    }
-}
-impl_display_by_debug!{ RuntimeMessage }
-
-#[derive(Eq, PartialEq)]
 pub enum LegacyMessage {
-    // Syntax(SyntaxMessage),
     Codegen(CodegenMessage),
-    Runtime(RuntimeMessage),
     New(Message),
 }
 impl LegacyMessage {
@@ -246,15 +229,11 @@ impl LegacyMessage {
 impl From<CodegenMessage> for LegacyMessage {
     fn from(msg: CodegenMessage) -> LegacyMessage { LegacyMessage::Codegen(msg) }   
 }
-impl From<RuntimeMessage> for LegacyMessage {
-    fn from(msg: RuntimeMessage) -> LegacyMessage { LegacyMessage::Runtime(msg) }
-}
 
 impl fmt::Debug for LegacyMessage {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             LegacyMessage::Codegen(ref msg) => write!(f, "{:?}", msg),
-            LegacyMessage::Runtime(ref msg) => write!(f, "{:?}", msg),
             LegacyMessage::New(ref msg) => write!(f, "{:?}", msg),
         }
     }
@@ -312,6 +291,9 @@ impl Message {
             helps: helps.into_iter().map(|help| help.to_owned()).collect(),
         }
     }
+    pub fn new_simple(main_desc: &str) -> Message {
+        Message{ main_desc: main_desc.to_owned(), pos_and_descs: Vec::new(), helps: Vec::new() }
+    }
 }
 impl From<Message> for LegacyMessage {
     fn from(msg: Message) -> LegacyMessage { LegacyMessage::New(msg) }
@@ -320,13 +302,14 @@ impl fmt::Debug for Message {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use util;
         
-        let _ = write!(f, "{}:\n", self.main_desc);
-        let _ = write!(f, "    | {}", util::format_vector_debug(&self.pos_and_descs, "\n    | "));
-        if !self.helps.is_empty() {
-            write!(f, "\n    = {}", util::format_vector_display(&self.helps, "\n    = "))
-        } else {
-            Ok(())
+        write!(f, "{}:\n", self.main_desc)?;
+        if !self.pos_and_descs.is_empty() {
+            write!(f, "    | {}", util::format_vector_debug(&self.pos_and_descs, "\n    | "))?;
         }
+        if !self.helps.is_empty() {
+            write!(f, "\n    = {}", util::format_vector_display(&self.helps, "\n    = "))?;
+        }
+        Ok(())
     }
 }
 
