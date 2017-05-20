@@ -10,13 +10,13 @@ use message::MessageCollection;
 
 use syntax::SyntaxTree;
 
-use codegen::type_def::TypeCollection;
-use codegen::fn_def::FnCollection;
-use codegen::Code;
-use codegen::vm_code::CodeCollection;
-use codegen::var_def::VarCollection;
-use codegen::block::Block;
-use codegen::loop_def::LoopCollection;
+use super::type_def::TypeCollection;
+use super::fn_def::FnCollection;
+use super::Code;
+use super::vm_code::CodeCollection;
+use super::var_def::VarCollection;
+use super::block::Block;
+use super::loop_def::LoopCollection;
 
 #[derive(Eq, PartialEq, Copy, Clone)]
 pub struct ItemID(Option<usize>);

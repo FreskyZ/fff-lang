@@ -24,14 +24,14 @@ use syntax::ForStatement;
 use syntax::IfConditionBody;
 use syntax::IfStatement;
 
-use codegen::var_def::Var;
-use codegen::session::GenerationSession;
-use codegen::expression::gen_expr;
-use codegen::expression::gen_expr_stmt;
-use codegen::Operand;
-use codegen::Code;
-use codegen::vm_code::CodeCollection;
-use codegen::ItemID;
+use super::var_def::Var;
+use super::session::GenerationSession;
+use super::expression::gen_expr;
+use super::expression::gen_expr_stmt;
+use super::Operand;
+use super::Code;
+use super::vm_code::CodeCollection;
+use super::ItemID;
 
 // Just a static dispatcher
 pub struct StatementGenerator{

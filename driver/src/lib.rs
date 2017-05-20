@@ -10,8 +10,8 @@ extern crate messages as message;  // TODO: this is for legacy compatibility, re
 extern crate codemap;
 extern crate lexical;
 extern crate syntax;
+extern crate semantic as codegen;
 
-mod codegen;
 mod vm;
 
 use message::MessageCollection;

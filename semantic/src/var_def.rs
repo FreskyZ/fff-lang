@@ -1,7 +1,7 @@
 
 // Variable, const or var
 // Variable collection, mainly for variable shadowing
-// ATTENTION: (2016-12-15) Currently no type size so codegen::Type will assume all size to be 1 and 
+// ATTENTION: (2016-12-15) Currently no type size so super::Type will assume all size to be 1 and 
 //     so offset mechanism is used in varcollection to support future sized type
 
 use std::fmt;
@@ -11,8 +11,8 @@ use codepos::StringPosition;
 use message::MessageCollection;
 use message::CodegenMessage;
 
-use codegen::ItemID;
-use codegen::type_def::TypeCollection;
+use super::ItemID;
+use super::type_def::TypeCollection;
 
 // Variable collection
 #[derive(Debug, Eq, PartialEq)]

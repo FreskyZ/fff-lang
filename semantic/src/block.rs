@@ -6,12 +6,12 @@ use codepos::StringPosition;
 use syntax::Block as SyntaxBlock;
 use syntax::ISyntaxItemWithStr;
 
-use codegen::ItemID;
-use codegen::var_def::Var;
-use codegen::var_def::VarCollection;
-use codegen::statement::StatementGenerator;
-use codegen::session::GenerationSession;
-use codegen::Code;
+use super::ItemID;
+use super::var_def::Var;
+use super::var_def::VarCollection;
+use super::statement::StatementGenerator;
+use super::session::GenerationSession;
+use super::Code;
 
 pub struct Block {
     pub fn_id: usize,
@@ -53,8 +53,8 @@ impl Block {
 fn gen_block_prepare_vars() {
     
     use syntax::FnDef as SyntaxFunctionDef;
-    use codegen::var_def::VarOrScope;
-    use codegen::var_def::Var;
+    use super::var_def::VarOrScope;
+    use super::var_def::Var;
 
     let gen_vars = |param_str: &str| -> VarCollection {
         //              12345678

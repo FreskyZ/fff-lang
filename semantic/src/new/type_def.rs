@@ -1,10 +1,10 @@
-
-// Type info
+///! fff-lang
+///!
+///! semantic/type_def, but not type template def
 
 use std::cmp;
 use std::fmt;
 
-use util::format_vector_debug;
 use message::Message;
 use message::CodegenMessage;
 use message::MessageCollection;
@@ -14,26 +14,24 @@ use lexical::LitValue;
 use lexical::NumLitValue;
 
 use syntax::TypeUse;
-use syntax::ISyntaxItemWithStr;
 
-use codegen::ItemID;
-use codegen::fn_def::FnCollection;
-use codegen::fn_def::FnArg;
+use super::FnDef;
 
-#[derive(Eq, PartialEq, Debug, Clone)]
-pub struct TypeField {
-    pub name: String,
-    pub typeid: ItemID,
-    pub offset: usize,
+#[cfg_attr(test, derive(Eq, PartialEq))]
+pub struct Field {
+    name: String,
+    typeid: ItemID,
+    offset: usize,
 }
 
-// Type declare is type's name and type parameter
-#[derive(Eq, PartialEq)]
-pub enum Type {
-    Base(String),
-    Array(usize),
-    Tuple(Vec<usize>),
+#[cfg_attr(test, derive(Eq, PartialEq))]
+pub struct Type {
+    name: String,
+    params: Vec<TypeID>,    // Type Parameters, already instantiated
+    fields: Vec<Field>,
+    fns: Vec<FnDef>,
 }
+
 impl fmt::Debug for Type {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {

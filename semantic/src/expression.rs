@@ -18,15 +18,15 @@ use syntax::ExprStatement as BinaryExprStatement;
 use syntax::TypeUse;
 use syntax::ISyntaxItemWithStr;
 
-use codegen::var_def::VarCollection;
-use codegen::ItemID;
-use codegen::Type;
-use codegen::TypeCollection;
-use codegen::Operand;
-use codegen::Code;
-use codegen::FnName;
-use codegen::FnImpl;
-use codegen::session::GenerationSession;
+use super::var_def::VarCollection;
+use super::ItemID;
+use super::Type;
+use super::TypeCollection;
+use super::Operand;
+use super::Code;
+use super::FnName;
+use super::FnImpl;
+use super::session::GenerationSession;
 
 // About unit type
 // unit type is (), only one value, which is (),
@@ -663,7 +663,7 @@ fn gen_expr_pure_simple_test() {
 
 #[cfg(test)] #[test]
 fn gen_expr_simple_test() {
-    // use codegen::var_def::Var;
+    // use self::var_def::Var;
     // use message::MessageCollection;
 
     // // function call not after ident

@@ -1,10 +1,10 @@
-///! fff-lang
-///!
-///! semantic/type_def, but not type template def
+
+// Type info
 
 use std::cmp;
 use std::fmt;
 
+use util::format_vector_debug;
 use message::Message;
 use message::CodegenMessage;
 use message::MessageCollection;
@@ -14,24 +14,26 @@ use lexical::LitValue;
 use lexical::NumLitValue;
 
 use syntax::TypeUse;
+use syntax::ISyntaxItemWithStr;
 
-use super::FnDef;
+use super::ItemID;
+use super::fn_def::FnCollection;
+use super::fn_def::FnArg;
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
-pub struct Field {
-    name: String,
-    typeid: ItemID,
-    offset: usize,
+#[derive(Eq, PartialEq, Debug, Clone)]
+pub struct TypeField {
+    pub name: String,
+    pub typeid: ItemID,
+    pub offset: usize,
 }
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
-pub struct Type {
-    name: String,
-    params: Vec<TypeID>,    // Type Parameters, already instantiated
-    fields: Vec<Field>,
-    fns: Vec<FnDef>,
+// Type declare is type's name and type parameter
+#[derive(Eq, PartialEq)]
+pub enum Type {
+    Base(String),
+    Array(usize),
+    Tuple(Vec<usize>),
 }
-
 impl fmt::Debug for Type {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
@@ -454,7 +456,7 @@ fn gen_types_find_field() {
 
 #[cfg(test)] #[test]
 fn gen_types_member_fn() {
-    use codegen::session::GenerationSession;
+    use super::session::GenerationSession;
 
     let mut sess = GenerationSession::new();
 

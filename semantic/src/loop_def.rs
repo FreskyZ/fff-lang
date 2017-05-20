@@ -2,8 +2,8 @@
 // loop operation
 // store temp values for loop name and refill addresses
 
-use codegen::ItemID;
-use codegen::vm_code::CodeCollection;
+use super::ItemID;
+use super::vm_code::CodeCollection;
 
 pub struct Loop {
     pub name: Option<String>,

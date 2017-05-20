@@ -8,7 +8,7 @@ use util::format_vector_debug;
 use lexical::LitValue;
 use lexical::SeperatorKind;
 
-use codegen::ItemID;
+use super::ItemID;
 
 #[derive(Eq, PartialEq, Clone)]
 pub enum Operand {
