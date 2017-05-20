@@ -144,3 +144,41 @@ Analyze
 </tr>
 </table>
 
+## Build performance report at `2017/03/31 00:55:15` at `a727bc2`
+
+<table>
+<tr class='table-header'><td>project name</td><td>build type</td><td>avg build time</td><td>build times</td></tr>
+    <tr class='row-project-start'><td>lexical</td><td>test</td><td>13.15s</td><td>13.00s, 13.22s, 12.84s, 13.85s, 12.85s</td>
+</tr>
+    <tr><td></td><td>build</td><td>3.52s</td><td>3.52s, 3.53s, 3.52s, 3.51s, 3.53s</td>
+</tr>
+    <tr class='row-project-start'><td>syntax</td><td>test</td><td>6.81s</td><td>6.88s, 7.27s, 6.61s, 6.69s, 6.61s</td>
+</tr>
+    <tr><td></td><td>build</td><td>3.41s</td><td>3.45s, 3.40s, 3.42s, 3.38s, 3.38s</td>
+</tr>
+    <tr class='row-project-start'><td>driver</td><td>test</td><td>18.52s</td><td>17.74s, 17.78s, 18.76s, 18.96s, 19.35s</td>
+</tr>
+    <tr><td></td><td>build</td><td>12.17s</td><td>11.96s, 13.18s, 11.91s, 11.92s, 11.88s</td>
+</tr>
+</table>
+
+## Build performance report at `2017/04/06 01:25:39` at `8d3c277`
+
+<table>
+<tr class='table-header'><td>project name</td><td>build type</td><td>avg build time</td><td>build times</td></tr>
+    <tr class='row-project-start'><td>lexical</td><td>test</td><td>13.75s</td><td>13.45s, 13.50s, 13.50s, 14.48s, 13.83s</td>
+</tr>
+    <tr><td></td><td>build</td><td>3.59s</td><td>3.52s, 3.48s, 3.75s, 3.73s, 3.48s</td>
+</tr>
+    <tr class='row-project-start'><td>syntax</td><td>test</td><td>7.19s</td><td>6.88s, 7.43s, 6.99s, 7.50s, 7.13s</td>
+</tr>
+    <tr><td></td><td>build</td><td>3.41s</td><td>3.67s, 3.22s, 3.45s, 3.31s, 3.38s</td>
+</tr>
+    <tr class='row-project-start'><td>driver</td><td>test</td><td>20.07s</td><td>20.20s, 19.80s, 20.40s, 20.28s, 19.69s</td>
+</tr>
+    <tr><td></td><td>build</td><td>12.44s</td><td>12.70s, 13.29s, 12.21s, 11.65s, 12.36s</td>
+</tr>
+</table>
+
+I think their difference are just because of my computer performance at that  
+time...
