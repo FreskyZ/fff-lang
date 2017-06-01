@@ -1,5 +1,9 @@
+///! fff-lang
+///!
+///! config, argument parser
 
-// Error
+use std::iter::FromIterator;
+
 #[derive(Eq, PartialEq)]
 pub enum ConfigError {
     UnexpectedArgument(String),
@@ -16,7 +20,6 @@ impl fmt::Debug for ConfigError {
         }
     }
 }
-impl_display_by_debug!(ConfigError);
 
 #[derive(Eq, PartialEq, Debug)]
 pub struct CompileFileConfig {
@@ -29,8 +32,6 @@ pub enum Config {
     Version,
     CompileFile(CompileFileConfig),
 }
-
-use std::iter::FromIterator;
 impl Config {
 
     pub fn from_args<T>(mut args: T) -> Result<Config, ConfigError>
@@ -55,31 +56,24 @@ impl Config {
     }
 }
 
-#[cfg(test)]
-mod tests {
+#[cfg(test)] #[test]
+fn config_from_args_test() {
+    use std::env::args;
 
-    #[test]
-    fn config_from_args_test() {
-        use super::Config;
-        use super::CompileFileConfig;
-        use super::ConfigError;
-        use std::env::args;
-
-        assert_eq!(Ok(Config::Help), Config::from_args(vec!["smc".to_owned()].into_iter()));
-        assert_eq!(Ok(Config::Help), Config::from_args(args()));
-        assert_eq!(
-            Err(ConfigError::UnexpectedArgument("somearg3".to_owned())), 
-            Config::from_args(vec![
-                "smc".to_owned(), "balabala".to_owned(), 
-                "somearg3".to_owned(), "someargmore".to_owned()].into_iter()));   
-        assert_eq!(
-            Err(ConfigError::UnexpectedArgument("somearg3".to_owned())), 
-            Config::from_args(vec![
-                "smc".to_owned(), "balabala".to_owned(), 
-                "somearg3".to_owned()].into_iter()));      
-        assert_eq!(
-            Ok(Config::CompileFile(CompileFileConfig { file_name: "balabala".to_owned() } )), 
-            Config::from_args(vec![
-                "smc".to_owned(), "balabala".to_owned()].into_iter()));
-    }
+    assert_eq!(Ok(Config::Help), Config::from_args(vec!["smc".to_owned()].into_iter()));
+    assert_eq!(Ok(Config::Help), Config::from_args(args()));
+    assert_eq!(
+        Err(ConfigError::UnexpectedArgument("somearg3".to_owned())), 
+        Config::from_args(vec![
+            "smc".to_owned(), "balabala".to_owned(), 
+            "somearg3".to_owned(), "someargmore".to_owned()].into_iter()));   
+    assert_eq!(
+        Err(ConfigError::UnexpectedArgument("somearg3".to_owned())), 
+        Config::from_args(vec![
+            "smc".to_owned(), "balabala".to_owned(), 
+            "somearg3".to_owned()].into_iter()));      
+    assert_eq!(
+        Ok(Config::CompileFile(CompileFileConfig { file_name: "balabala".to_owned() } )), 
+        Config::from_args(vec![
+            "smc".to_owned(), "balabala".to_owned()].into_iter()));
 }

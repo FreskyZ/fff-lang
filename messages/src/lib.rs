@@ -9,16 +9,6 @@ use std::fmt;
 use codepos::StringPosition;
 use util::format_vector_debug;
 
-macro_rules! impl_display_by_debug {
-    ($t: ty) => (
-        impl fmt::Display for $t {
-            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                write!(f, "{:?}", self)
-            }
-        }
-    )
-}
-
 #[derive(Eq, PartialEq)]
 pub enum CodegenMessage {
     FunctionHasSameName{ 
@@ -211,7 +201,6 @@ impl fmt::Debug for CodegenMessage {
         }
     }
 }
-impl_display_by_debug!{ CodegenMessage }
 
 #[derive(Eq, PartialEq)]
 pub enum LegacyMessage {
@@ -238,7 +227,6 @@ impl fmt::Debug for LegacyMessage {
         }
     }
 }
-impl_display_by_debug!{ LegacyMessage }
 
 #[derive(Eq, PartialEq)]
 pub struct PosAndDesc {
@@ -326,7 +314,6 @@ impl fmt::Debug for MessageCollection {
         Ok(())
     }
 }
-impl_display_by_debug!(MessageCollection);
 impl MessageCollection {
 
     pub fn new() -> MessageCollection {
