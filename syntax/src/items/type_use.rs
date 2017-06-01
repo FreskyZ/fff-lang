@@ -34,19 +34,23 @@ use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
 
-#[derive(Eq, PartialEq, Clone)]
-enum ActualTypeUse {
+#[cfg_attr(test, derive(Eq, PartialEq))]
+#[derive(Clone)]            // Move out of boxed
+pub enum ActualTypeUse {
     Unit, 
     Simple(String),         // strpos for identifier
     Array(Box<TypeUse>),    // strpos for bracket
     Tuple(Vec<TypeUse>),    // strpos for paren
 }
-#[derive(Eq, PartialEq, Clone)]
-pub struct TypeUse(ActualTypeUse, StringPosition);
-
+#[cfg_attr(test, derive(Eq, PartialEq))]
+#[derive(Clone)]            // Move out of boxed
+pub struct TypeUse {
+    pub actual: ActualTypeUse, 
+    pub all_strpos: StringPosition,
+}
 impl ISyntaxItemFormat for TypeUse {
     fn format(&self, indent: u32) -> String {
-        match (&self.0, &self.1) {
+        match (&self.actual, &self.all_strpos) {
             (&ActualTypeUse::Unit, strpos) => format!("{}TypeUse '()' <{:?}>", TypeUse::indent_str(indent), strpos),
             (&ActualTypeUse::Simple(ref name), strpos) => format!("{}TypeUse '{}' <{:?}>", TypeUse::indent_str(indent), name, strpos),
             (&ActualTypeUse::Tuple(ref type_uses), strpos) => 
@@ -67,27 +71,29 @@ impl fmt::Debug for TypeUse {
 }
 impl TypeUse { // Get
 
-    pub fn is_unit(&self) -> bool { match self.0 { ActualTypeUse::Unit => true, _ => false } }
-    pub fn is_simple(&self) -> bool { match self.0 { ActualTypeUse::Simple(_) => true, _ => false } }
-    pub fn is_array(&self) -> bool { match self.0 { ActualTypeUse::Array(_) => true, _ => false } }
-    pub fn is_tuple(&self) -> bool { match self.0 { ActualTypeUse::Tuple(_) => true, _ => false } }
+    pub fn is_unit(&self) -> bool { match self.actual { ActualTypeUse::Unit => true, _ => false } }
+    pub fn is_simple(&self) -> bool { match self.actual { ActualTypeUse::Simple(_) => true, _ => false } }
+    pub fn is_array(&self) -> bool { match self.actual { ActualTypeUse::Array(_) => true, _ => false } }
+    pub fn is_tuple(&self) -> bool { match self.actual { ActualTypeUse::Tuple(_) => true, _ => false } }
 
-    pub fn get_simple(&self) -> Option<&String> { match self.0 { ActualTypeUse::Simple(ref name) => Some(name), _ => None } }
-    pub fn get_array_inner(&self) -> Option<&TypeUse> { match self.0 { ActualTypeUse::Array(ref inner) => Some(inner.as_ref()), _ => None } }
-    pub fn get_tuple_items(&self) -> Option<&Vec<TypeUse>> { match self.0 { ActualTypeUse::Tuple(ref type_uses) => Some(type_uses), _ => None } }
+    pub fn get_simple(&self) -> Option<&String> { match self.actual { ActualTypeUse::Simple(ref name) => Some(name), _ => None } }
+    pub fn get_array_inner(&self) -> Option<&TypeUse> { match self.actual { ActualTypeUse::Array(ref inner) => Some(inner.as_ref()), _ => None } }
+    pub fn get_tuple_items(&self) -> Option<&Vec<TypeUse>> { match self.actual { ActualTypeUse::Tuple(ref type_uses) => Some(type_uses), _ => None } }
 
-    pub fn get_all_strpos(&self) -> StringPosition { self.1 }
+    pub fn get_all_strpos(&self) -> StringPosition { self.all_strpos }
 }
 
 /// TypeUse Factory
 pub struct TypeUseF;
 impl TypeUseF { // New
 
-    pub fn new_unit(strpos: StringPosition) -> TypeUse { TypeUse(ActualTypeUse::Unit, strpos) }
-    pub fn new_simple(name: String, ident_strpos: StringPosition) -> TypeUse { TypeUse(ActualTypeUse::Simple(name), ident_strpos) }
-    pub fn new_simple_test(name: &str, ident_strpos: StringPosition) -> TypeUse { TypeUse(ActualTypeUse::Simple(name.to_owned()), ident_strpos) }
-    pub fn new_array(bracket_strpos: StringPosition, inner: TypeUse) -> TypeUse { TypeUse(ActualTypeUse::Array(Box::new(inner)), bracket_strpos) }
-    pub fn new_tuple(paren_strpos: StringPosition, items: Vec<TypeUse>) -> TypeUse { TypeUse(ActualTypeUse::Tuple(items), paren_strpos) }
+    /// decided to be internal new standard name
+    fn new_(actual: ActualTypeUse, strpos: StringPosition) -> TypeUse { TypeUse{ actual, all_strpos: strpos } }
+    pub fn new_unit(strpos: StringPosition) -> TypeUse { TypeUseF::new_(ActualTypeUse::Unit, strpos) }
+    pub fn new_simple(name: String, ident_strpos: StringPosition) -> TypeUse { TypeUseF::new_(ActualTypeUse::Simple(name), ident_strpos) }
+    pub fn new_simple_test(name: &str, ident_strpos: StringPosition) -> TypeUse { TypeUseF::new_(ActualTypeUse::Simple(name.to_owned()), ident_strpos) }
+    pub fn new_array(bracket_strpos: StringPosition, inner: TypeUse) -> TypeUse { TypeUseF::new_(ActualTypeUse::Array(Box::new(inner)), bracket_strpos) }
+    pub fn new_tuple(paren_strpos: StringPosition, items: Vec<TypeUse>) -> TypeUse { TypeUseF::new_(ActualTypeUse::Tuple(items), paren_strpos) }
 }
 impl ISyntaxItemGrammar for TypeUse {
     fn is_first_final(sess: &ParseSession) -> bool {

@@ -27,6 +27,20 @@
 // Char0To7 = '0'...'7'
 // Char0ToF = '0'...'9' | 'A'...'F' | 'a'...'f'
 
+// Interestingly, currently numeric literal support `-` prefix to declare negative literals
+// while v2lexer do not use this feature and later unary expr recognize it as a operator negate
+// which allows this: `1----------1` to be a 
+// BinaryExpr <1:1-1:12>
+//    Literal (i32)1 <1:1-1:1>
+//    '-' <1:2-1:2>
+//    UnaryExpr <1:3-1:12>
+//      UnaryExpr <1:4-1:12>
+//      ...
+//        '-' <1:4-1:4>
+//      '-' <1:11-1:11》
+//      Literal (i32)1 <1:12-1:12>
+// ...let it go
+
 use std::cell::Cell;
 
 use codepos::StringPosition;

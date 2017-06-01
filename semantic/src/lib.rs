@@ -26,32 +26,43 @@
 //     previous expression by this temp local
 
 #[cfg_attr(test, macro_use)] extern crate codepos;
-#[cfg_attr(test, macro_use)] extern crate messages as message;
+#[macro_use] extern crate messages as message;
 #[macro_use] extern crate util;
 extern crate lexical;
 extern crate syntax;
 
+#[macro_use] mod symbols;
+mod iddef;
 mod vm_code;
 mod session;
-mod type_def;
-mod fn_def;
 mod var_def;
 mod loop_def;
 mod block;
 mod statement;
 mod expression;
+mod items;
+mod traits;
+mod resolve_sess;
 
-pub use self::type_def::Type;
-pub use self::type_def::TypeField;
-pub use self::type_def::TypeCollection;
-pub use self::fn_def::FnArg;
-pub use self::fn_def::FnName;
-pub use self::fn_def::FnImpl;
-pub use self::fn_def::FnCollection;
+use self::iddef::SymbolID;
+use self::iddef::DefID;
+use self::symbols::SymbolCollection;
+use self::traits::ISemanticItemFromSyntaxItem;
+use self::traits::ISemanticItemFormat;
+use self::resolve_sess::ResolveSession;
+use self::items::TypeUse;
+
+pub use self::items::Type;
+pub use self::items::TypeField;
+pub use self::items::TypeCollection;
+pub use self::items::FnParam;
+pub use self::items::FnDef;
+pub use self::items::FnCollection;
 pub use self::vm_code::Operand;
 pub use self::vm_code::Code;
 pub use self::session::Program;
 pub use self::session::ItemID;
+pub use self::traits::ISemanticItemWithStr;
 
 // Designment2
 // Input vector of syntax functions

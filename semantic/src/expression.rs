@@ -24,8 +24,7 @@ use super::Type;
 use super::TypeCollection;
 use super::Operand;
 use super::Code;
-use super::FnName;
-use super::FnImpl;
+use super::FnDef;
 use super::session::GenerationSession;
 
 // About unit type
@@ -310,7 +309,7 @@ impl SimpleBase {
 //                 let fnid = $sess.fns.find_by_sign($fn_name.clone(), &param_types);
 //                 if fnid.is_invalid() {
 //                     $sess.msgs.push(CodegenMessage::FunctionNotDefined{ 
-//                         sign: FnImpl::fmt_display_sign_temp($fn_name, &param_types, &sess.types),
+//                         sign: FnDef::fmt_display_sign_temp($fn_name, &param_types, &sess.types),
 //                         pos: $pos, 
 //                     });
 //                     continue;
@@ -365,7 +364,7 @@ impl SimpleBase {
     //                 let fnid = sess.fns.find_by_sign(fn_name.clone(), &param_types);
     //                 if fnid.is_invalid() {
     //                     sess.msgs.push(CodegenMessage::FunctionNotDefined{ 
-    //                         sign: FnImpl::fmt_display_sign_temp(fn_name, &param_types, &sess.types),
+    //                         sign: FnDef::fmt_display_sign_temp(fn_name, &param_types, &sess.types),
     //                         pos: pos, 
     //                     });
     //                     continue;
@@ -609,7 +608,7 @@ pub fn gen_expr_stmt(expr_stmt: BinaryExprStatement, sess: &mut GenerationSessio
     //                 let fnid = sess.fns.find_by_sign(op.clone(), &vec![left_typeid, right_typeid]);
     //                 if fnid.is_invalid() {
     //                     sess.msgs.push(CodegenMessage::FunctionNotDefined{ 
-    //                         sign: FnImpl::fmt_display_sign_temp(op.clone(), &vec![left_typeid, right_typeid], &sess.types),
+    //                         sign: FnDef::fmt_display_sign_temp(op.clone(), &vec![left_typeid, right_typeid], &sess.types),
     //                         pos: assign_op_pos, 
     //                     });
     //                     return;

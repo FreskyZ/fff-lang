@@ -209,7 +209,7 @@ define_seperator!{ SeperatorKind,
         // '+', '+' => Increase,               SeperatorCategory::Unary,  // removed, goodbye
         // '-', '-' => Decrease,               SeperatorCategory::Unary,  // removed, goodbye
         // '=', '>' => WideRightArrow,      SeperatorCategory::Seperator,
-        // ':', ':' => NamespaceSeperator,  SeperatorCategory::Seperator,
+        ':', ':' => NamespaceSeperator,     SeperatorCategory::Seperator,
     ]
     [
     //  ch1, ch2, ch3 => var,               category

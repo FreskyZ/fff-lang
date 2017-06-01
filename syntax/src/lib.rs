@@ -13,12 +13,16 @@ mod statement;
 mod expr;
 mod items;
 mod parse_sess;
+
 pub use self::items::FnParam;
 pub use self::items::FnDef;
 pub use self::items::TypeUse;
 pub use self::items::TypeUseF;
+pub use self::items::ActualTypeUse;
 pub use self::items::Block;
 pub use self::items::LabelDef;
+pub use self::items::NameSegment;
+pub use self::items::Name;
 pub use self::expr::BinaryExpr;
 pub use self::expr::UnaryExpr;
 pub use self::expr::PostfixExpr;
@@ -38,7 +42,7 @@ pub use self::syntax_tree::SyntaxTree;
 
 use self::parse_sess::ParseSession;
 use self::parse_sess::ParseResult;
-use self::traits::ISyntaxItemParse;
 use self::traits::ISyntaxItemFormat;
 use self::traits::ISyntaxItemGrammar;
+pub use self::traits::ISyntaxItemParse; // for semantic/traits
 pub use self::traits::ISyntaxItemWithStr;

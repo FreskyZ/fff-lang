@@ -40,8 +40,9 @@ pub struct FnDef {
     name: String,
     name_strpos: StringPosition,
     params: Vec<FnParam>,
-    ret_type: Option<TypeUse>,    
-    body: Block,    
+    params_paren_strpos: StringPosition,
+    ret_type: Option<TypeUse>,
+    body: Block,
     all_strpos: StringPosition,
 }
 impl ISyntaxItemFormat for FnDef {
@@ -55,6 +56,7 @@ impl ISyntaxItemFormat for FnDef {
             Some(ref ret_type) => retval.push_str(&format!("\n{}", ret_type.format(indent + 1))),
             None => (), 
         }
+        retval.push_str(&format!("\n{}Params <{:?}>", FnDef::indent_str(indent + 1), self.params_paren_strpos));
         for &FnParam{ ref decltype, ref name, ref name_strpos } in &self.params {
             retval.push_str(&format!("\n{}Param '{}' <{:?}>\n{}", FnDef::indent_str(indent + 1), name, name_strpos, decltype.format(indent + 2)));
         }
@@ -69,8 +71,9 @@ impl FnDef {
 
     pub fn new(all_strpos: StringPosition, 
         name: String, name_strpos: StringPosition,
-        params: Vec<FnParam>, ret_type: Option<TypeUse>, body: Block) -> FnDef {
-        FnDef{ name, name_strpos, params, ret_type, body, all_strpos }
+        params_paren_strpos: StringPosition, params: Vec<FnParam>, 
+        ret_type: Option<TypeUse>, body: Block) -> FnDef {
+        FnDef{ name, name_strpos, params, params_paren_strpos, ret_type, body, all_strpos }
     }
 
     pub fn get_name(&self) -> &String { &self.name }
@@ -89,7 +92,7 @@ impl ISyntaxItemParse for FnDef {
         
         let fn_strpos = sess.expect_keyword(KeywordKind::FnDef)?;
         let (fn_name, fn_name_strpos) = sess.expect_ident()?;
-        let param_list_left_paren_strpos = sess.expect_sep(SeperatorKind::LeftParenthenes)?;
+        let mut params_paren_strpos = sess.expect_sep(SeperatorKind::LeftParenthenes)?;
 
         let mut params = Vec::new();
         loop {
@@ -97,17 +100,18 @@ impl ISyntaxItemParse for FnDef {
                 (&Token::Sep(SeperatorKind::Comma), _,
                     &Token::Sep(SeperatorKind::RightParenthenes), ref right_paren_strpos) => {
                     sess.move_next2();
+                    params_paren_strpos = StringPosition::merge(params_paren_strpos, *right_paren_strpos);
                     if params.is_empty() {
-                        let params_strpos = StringPosition::merge(param_list_left_paren_strpos, *right_paren_strpos);
                         sess.push_message(Message::new_by_str("Single comma in function definition argument list", vec![
                             (fn_name_strpos, "function definition here"),
-                            (params_strpos, "param list here")
+                            (params_paren_strpos, "param list here")
                         ]));
                     }
                     break;
                 }
-                (&Token::Sep(SeperatorKind::RightParenthenes), ref _right_paren_strpos, _, _) => {
+                (&Token::Sep(SeperatorKind::RightParenthenes), ref right_paren_strpos, _, _) => {
                     sess.move_next();
+                    params_paren_strpos = StringPosition::merge(params_paren_strpos, *right_paren_strpos);
                     break;
                 }
                 (&Token::Sep(SeperatorKind::Comma), _, _, _) => {
@@ -127,7 +131,7 @@ impl ISyntaxItemParse for FnDef {
         let body = Block::parse(sess)?;
 
         let all_strpos = StringPosition::merge(fn_strpos, body.get_all_strpos());
-        return Ok(FnDef::new(all_strpos, fn_name, fn_name_strpos, params, maybe_ret_type, body));
+        return Ok(FnDef::new(all_strpos, fn_name, fn_name_strpos, params_paren_strpos, params, maybe_ret_type, body));
     }
 }
 
@@ -145,7 +149,7 @@ fn fn_def_parse() {
     assert_eq!{ FnDef::with_test_str("fn main() {}"),
         FnDef::new(make_strpos!(1, 1, 1, 12),
             "main".to_owned(), make_strpos!(1, 4, 1, 7), 
-            vec![],
+            make_strpos!(1, 8, 1, 9), vec![], 
             None,
             Block::new(make_strpos!(1, 11, 1, 12), vec![])
         )
@@ -155,7 +159,8 @@ fn fn_def_parse() {
     //                                1234567890123456789
     assert_eq!{ FnDef::with_test_str("fn main(ac: i32) {}"),
         FnDef::new(make_strpos!(1, 1, 1, 19), 
-            "main".to_owned(), make_strpos!(1, 4, 1, 7), vec![
+            "main".to_owned(), make_strpos!(1, 4, 1, 7), 
+            make_strpos!(1, 8, 1, 16), vec![
                 FnParam::new(
                     "ac".to_owned(), make_strpos!(1, 9, 1, 10),
                     TypeUseF::new_simple_test("i32", make_strpos!(1, 13, 1, 15))
@@ -170,7 +175,8 @@ fn fn_def_parse() {
     //                                123456789012345678901234567890123456789012345678901234567890123456789012345678901
     assert_eq!{ FnDef::with_test_str(" fn mainxxx(argv:[[string] ]   ,this:i32, some_other: char, )  { println(this); }"), 
         FnDef::new(make_strpos!(1, 2, 1, 81),
-            "mainxxx".to_owned(), make_strpos!(1, 5, 1, 11), vec![
+            "mainxxx".to_owned(), make_strpos!(1, 5, 1, 11), 
+            make_strpos!(1, 12, 1, 61), vec![
                 FnParam::new(
                     "argv".to_owned(), make_strpos!(1, 13, 1, 16),
                     TypeUseF::new_array(make_strpos!(1, 18, 1, 28), 
@@ -206,7 +212,7 @@ fn fn_def_parse() {
     assert_eq!{ FnDef::with_test_str("fn main() -> i32 {}"),
         FnDef::new(make_strpos!(1, 1, 1, 19),
             "main".to_owned(), make_strpos!(1, 4, 1, 7), 
-            vec![],
+            make_strpos!(1, 8, 1, 9), vec![],
             Some(TypeUseF::new_simple_test("i32", make_strpos!(1, 14, 1, 16))),
             Block::new(make_strpos!(1, 18, 1, 19), vec![])
         )
@@ -215,7 +221,8 @@ fn fn_def_parse() {
     //                                12345678901234567890123456789012345678901234567890123456789012345678
     assert_eq!{ FnDef::with_test_str("fn ffff(argc: i32, argv: [string], envv: [string],) -> [[string]] {}"),
         FnDef::new(make_strpos!(1, 1, 1, 68),
-            "ffff".to_owned(), make_strpos!(1, 4, 1, 7), vec![
+            "ffff".to_owned(), make_strpos!(1, 4, 1, 7), 
+            make_strpos!(1, 8, 1, 51), vec![
                 FnParam::new(
                     "argc".to_owned(), make_strpos!(1, 9, 1, 12),
                     TypeUseF::new_simple("i32".to_owned(), make_strpos!(1, 15, 1, 17))

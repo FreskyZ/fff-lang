@@ -11,7 +11,7 @@ use message::MessageCollection;
 use syntax::SyntaxTree;
 
 use super::type_def::TypeCollection;
-use super::fn_def::FnCollection;
+use super::FnCollection;
 use super::Code;
 use super::vm_code::CodeCollection;
 use super::var_def::VarCollection;
