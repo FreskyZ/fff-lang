@@ -5,5 +5,5 @@ authors = ["FreskyZ <fresky7@outlook.com>"]
 workspace = "../ffc"
 
 [dependencies]
-codepos = { path = "../codepos"}
+codemap = { path = "../codemap"}
 util = { path = "../util" }

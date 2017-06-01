@@ -5,7 +5,7 @@
 
 use std::fmt;
 
-use codepos::StringPosition;
+use codemap::StringPosition;
 use lexical::Token;
 use lexical::SeperatorKind;
 

@@ -6,7 +6,6 @@ workspace = "../ffc"
 
 [dependencies]
 util = { path = "../util" }
-codepos = { path = "../codepos" }
 messages = { path = "../messages" }
 lexical = { path = "../lexical" }
 syntax = { path = "../syntax" }

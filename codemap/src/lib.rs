@@ -5,22 +5,20 @@
 ///! iterator<(char, position)>,  
 ///! which is <0.1.0>'s filemap and lexical's layer 0
 
-#[macro_use] 
-extern crate codepos;
-
-use codepos::Position;
-
+#[macro_use] mod span;
 mod error;
 mod code_char;
 mod code_file;
 
+use code_char::new_code_char;
+use code_file::CodeFile;
+use code_file::CodeFileIter;
 pub use code_char::EOFCHAR;
 pub use code_char::EOFSCHAR;
 pub use code_char::CodeChar;
 pub use error::CodeMapError;
-use code_char::new_code_char;
-use code_file::CodeFile;
-use code_file::CodeFileIter;
+pub use span::Position;
+pub use span::StringPosition;
 
 // Iterator to get chars, this is my multi source file core logic processor
 pub struct CodeChars<'a> {

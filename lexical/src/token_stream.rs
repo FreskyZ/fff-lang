@@ -2,7 +2,7 @@
 ///!
 ///! token stream, vec<token> wrapper
 
-use codepos::StringPosition;
+use codemap::StringPosition;
 use message::MessageCollection;
 use codemap::CodeChars;
 

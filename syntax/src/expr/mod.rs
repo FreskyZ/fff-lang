@@ -14,7 +14,7 @@ pub use self::primary::PrimaryExpr;
 
 #[cfg(test)] #[test]
 fn expr_usage() {
-    use codepos::StringPosition;
+    use codemap::StringPosition;
     use lexical::LitValue;
     use super::ISyntaxItemFormat;
 
@@ -32,7 +32,7 @@ fn expr_usage() {
 
 #[cfg(test)] #[test]
 fn expr_parse() {
-    use codepos::StringPosition;    
+    use codemap::StringPosition;    
     // use lexical::SeperatorKind;
     use lexical::LitValue;
     use super::ISyntaxItemWithStr;

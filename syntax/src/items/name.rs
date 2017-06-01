@@ -5,7 +5,7 @@
 // future may support something like `to_string::<i32>(a)`
 
 use std::fmt;
-use codepos::StringPosition;
+use codemap::StringPosition;
 
 use lexical::Token;
 use lexical::SeperatorKind;

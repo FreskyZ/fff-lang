@@ -4,7 +4,7 @@
 
 #[macro_use] extern crate messages as message;
 /* #[cfg_attr(test, macro_use)] */ extern crate util;
-#[cfg_attr(test, macro_use)] extern crate codepos;
+#[cfg_attr(test, macro_use)] extern crate codemap;
 extern crate lexical;
 
 mod traits;

@@ -3,7 +3,7 @@
 
 use std::cell::Cell;
 use codemap::CodeChars;
-use codepos::StringPosition;
+use codemap::StringPosition;
 use message::MessageCollection;
 
 pub trait ILexer<'chs, TToken> {

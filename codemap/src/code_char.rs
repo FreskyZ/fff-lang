@@ -4,7 +4,7 @@
 
 use std::fmt;
 
-use codepos::Position;
+use super::Position;
 
 pub const EOFCHAR: char = 0u8 as char;
 pub const EOFSCHAR: char = 255u8 as char;

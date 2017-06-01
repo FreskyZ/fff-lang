@@ -10,7 +10,7 @@
 
 use std::fmt;
 
-use codepos::StringPosition;
+use codemap::StringPosition;
 use message::Message;
 use lexical::Token;
 use lexical::SeperatorKind;

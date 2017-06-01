@@ -13,8 +13,8 @@ mod string_lit_parser;
 mod raw_string_lit_parser;
 mod error_strings;
 
-use codepos::Position;
-use codepos::StringPosition;
+use codemap::Position;
+use codemap::StringPosition;
 use message::Message;
 use message::MessageCollection;
 

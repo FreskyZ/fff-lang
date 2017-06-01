@@ -1,7 +1,7 @@
 
 // String literal parser
-use codepos::Position;
-use codepos::StringPosition;
+use codemap::Position;
+use codemap::StringPosition;
 use message::Message;
 use message::MessageCollection;
 use codemap::EOFCHAR;

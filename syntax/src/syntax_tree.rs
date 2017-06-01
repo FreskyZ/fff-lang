@@ -5,7 +5,7 @@
 
 use std::fmt;
 
-use codepos::StringPosition;
+use codemap::StringPosition;
 use message::MessageCollection;
 use lexical::TokenStream;
 use lexical::Token;

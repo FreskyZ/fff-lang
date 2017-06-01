@@ -6,7 +6,7 @@ mod num_lit_parser;
 mod unicode_char;
 mod error_strings;
 
-use codepos::StringPosition;
+use codemap::StringPosition;
 use codemap::CodeChars;
 use codemap::EOFCHAR;
 use message::Message;

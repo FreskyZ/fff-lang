@@ -5,12 +5,11 @@
 
 use std::str::Chars;
 
-use codepos::Position;
-
+use super::Position;
+use super::CodeMapError;
 use super::code_char::EOFCHAR;
 use super::code_char::CodeChar;
 use super::code_char::new_code_char;
-use super::CodeMapError;
 
 pub struct CodeFileIter<'a> {
     text_pos: Position,     // id integrated here

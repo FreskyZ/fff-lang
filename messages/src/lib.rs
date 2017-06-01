@@ -2,11 +2,11 @@
 //!
 //! Every kind of messages
 
-#[cfg_attr(test, macro_use)] extern crate codepos;
+#[cfg_attr(test, macro_use)] extern crate codemap;
 extern crate util;
 
 use std::fmt;
-use codepos::StringPosition;
+use codemap::StringPosition;
 use util::format_vector_debug;
 
 #[derive(Eq, PartialEq)]

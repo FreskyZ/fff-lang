@@ -43,7 +43,7 @@
 
 use std::cell::Cell;
 
-use codepos::StringPosition;
+use codemap::StringPosition;
 use message::Message;
 use message::MessageCollection;
 use codemap::EOFCHAR;

@@ -7,6 +7,7 @@ for codemap, codepos, messages, lexical and syntax
 every step should make them pass compile, optionally pass test
 
   - remove codepos::Position or consider better CharPos, should pass test
+    update: v1lexer and at least str lit parser relies on codepos::Position, do not remove it
   - change codepos::StringPosition to Span which based on file id and 2 byte positions, which only takes 2 u32s
     make sure `type StringPosition = Span` is given and old `make_strpos` and `make_str_pos` still working, may not pass test
   - do not move codepos::Span to codemap::Span, continue not pass test, because messages rely on codepos
@@ -41,3 +42,11 @@ for source code string, that is, codemap has its own simple message format, and 
 message's format is also implemented in messages itself
 
 // TODO: make previous more clear
+
+actual steps:
+
+  - remove impl_display_for_debug in messages, which is also used in ffc, which should cause ffc's compile error, which I don't known why it not happened
+  - add codemap::error and remove all messages dependency in codemap, lexical and syntax do not rely on this part and pass compile directly,
+    modified driver without compiling
+
+  - merge codepos into codemap and make messages, lexical and syntax depend on codemap

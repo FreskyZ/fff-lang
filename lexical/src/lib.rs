@@ -7,8 +7,7 @@
 
 #[macro_use] extern crate util;
 #[macro_use] extern crate messages as message; 
-#[cfg_attr(test, macro_use)] extern crate codepos;
-extern crate codemap;
+#[cfg_attr(test, macro_use)] extern crate codemap;
 
 mod token_def;
 mod buf_lexer;
