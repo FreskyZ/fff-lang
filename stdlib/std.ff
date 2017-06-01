@@ -28,9 +28,9 @@ fn memcpy<T>(dest: &T, src: &T, size: u64);
 struct unit{}
 
 struct string {
-    data: &u8,
-    len: u64,
-    cap: u64,
+    data: &u8;
+    len: u64;
+    cap: u64;
 
     // Issue1: you should make `fn new` special or impl move semantic or else there will be a copy
     // Issue2: function template use syntax

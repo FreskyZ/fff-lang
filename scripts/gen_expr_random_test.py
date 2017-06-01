@@ -138,6 +138,10 @@ def gen_random_expr_test_case():
 # print(reduce(lambda x, y: x + y + '\n', [gen_random_postfix_expr_test_case() for _ in range(0, 10)], ''))
 
 #expr = gen_random_postfix_expr_test_case()
-expr = gen_random_primary_expr_test_case()
+#expr = gen_random_binary_expr_test_case()
+
+expr = choice(list(map(str, range(10))))
+for _ in range(20):
+    expr += ' ' + get_random_binary_operator() + ' ' + choice(list(map(str, range(10))))
 print(expr)
 os.system('echo "%s" | clip' % expr)
