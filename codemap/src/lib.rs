@@ -7,18 +7,17 @@
 
 #[macro_use] 
 extern crate codepos;
-#[cfg_attr(test, macro_use)]
-extern crate messages as message;
 
 use codepos::Position;
-use message::MessageCollection;
 
+mod error;
 mod code_char;
 mod code_file;
 
 pub use code_char::EOFCHAR;
 pub use code_char::EOFSCHAR;
 pub use code_char::CodeChar;
+pub use error::CodeMapError;
 use code_char::new_code_char;
 use code_file::CodeFile;
 use code_file::CodeFileIter;
@@ -91,10 +90,10 @@ impl CodeMap {
         CodeMap{ files: Vec::new() }
     }
 
-    pub fn with_files(file_names: Vec<String>, messages: &mut MessageCollection) -> CodeMap {
+    pub fn with_files(file_names: Vec<String>) -> Result<CodeMap, CodeMapError> {
         let mut codemap = CodeMap::new();
-        codemap.input_files(file_names, messages);
-        return codemap;
+        codemap.input_files(file_names)?;
+        return Ok(codemap);
     }
 
     // test helper, may panic, but this will not
@@ -106,18 +105,13 @@ impl CodeMap {
 }
 impl CodeMap {
 
-    pub fn input_files(&mut self, file_names: Vec<String>, messages: &mut MessageCollection) {
+    pub fn input_files(&mut self, file_names: Vec<String>) -> Result<(), CodeMapError> {
 
         let len = self.files.len();
         for (index, file_name) in file_names.into_iter().enumerate() {
-            match CodeFile::from_file((len + index) as u32, file_name) {
-                Ok(codefile) => self.files.push(codefile),
-                Err(err) => {
-                    messages.push(err);
-                    messages.set_uncontinuable();
-                }
-            }
+            self.files.push(CodeFile::from_file((len + index) as u32, file_name)?);
         }
+        Ok(())
     }
     pub fn input_str(&mut self, content: &str) {
 
@@ -132,9 +126,6 @@ impl CodeMap {
     // pub fn get_line(file_id: u32, line: u32) -> &str {
 
     // }
-    // pub fn format_message(message: Message) -> String {
-
-    // }
 }
 
 #[cfg(test)] #[test]
@@ -144,11 +135,9 @@ fn codemap_input() {
     let file1 = "../tests/codemap/file1.ff".to_owned();
     let file2 = "../tests/codemap/file2.ff".to_owned();
 
-    let mut messages = MessageCollection::new();
     let mut codemap = CodeMap::new();
-    let _ = codemap.input_files(vec![file1, file2], &mut messages);
+    let _ = codemap.input_files(vec![file1, file2]).expect("unexpectedly input file fail");
     let _ = codemap.input_str("some\nstr\n");
-    check_messages_continuable!(messages);
 
     // current feature is, simple merge and yield char
     let mut iter = codemap.iter();

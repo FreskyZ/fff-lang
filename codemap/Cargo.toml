@@ -6,7 +6,6 @@ workspace = "../ffc"
 
 [dependencies]
 codepos = { path = "../codepos" }
-messages = { path = "../messages" }
 
 [lib]
 name = "codemap"

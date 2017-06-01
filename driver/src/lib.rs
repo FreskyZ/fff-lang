@@ -26,8 +26,10 @@ pub fn compile_input(file_name: String) {
 
     let mut messages = MessageCollection::new();
 
-    let mut codemap = CodeMap::with_files(vec![file_name], &mut messages);          // read file
-    if messages.is_uncontinuable() { println!("{:?}", messages); return; }
+    let mut codemap = match CodeMap::with_files(vec![file_name]) {          // read file
+        Some(codemap) => codemap,
+        Err(e) => { println!("{:?}", e); return; }
+    };
     let mut tokens = TokenStream::new(codemap.iter(), &mut messages);               // Lexical parse
     if messages.is_uncontinuable() { println!("{:?}", messages); return; }          // although it will not happen currently
     let syntax_tree = SyntaxTree::new(&mut tokens, &mut messages);                  // Syntax parse

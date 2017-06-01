@@ -6,11 +6,11 @@
 use std::str::Chars;
 
 use codepos::Position;
-use message::Message;
 
 use super::code_char::EOFCHAR;
 use super::code_char::CodeChar;
 use super::code_char::new_code_char;
+use super::CodeMapError;
 
 pub struct CodeFileIter<'a> {
     text_pos: Position,     // id integrated here
@@ -83,13 +83,12 @@ impl<'a> CodeFileIter<'a> {
     }
 }
 
-#[allow(dead_code)] // because message format is not finished
 #[cfg_attr(test, derive(Debug, Eq, PartialEq))]
 pub struct CodeFile {
     id: u32,
     name: String,
     content: String,
-    lines: Vec<String>, // only after iterated then lines have content
+    lines: Vec<String>, 
 }
 impl CodeFile {
 
@@ -101,16 +100,13 @@ impl CodeFile {
             lines: Vec::new(),
         }
     }
-    pub fn from_file(id: u32, file_name: String) -> Result<CodeFile, Message> {
+    pub fn from_file(id: u32, file_name: String) -> Result<CodeFile, CodeMapError> {
         use std::fs::File;
         use std::io::Read;
 
-        let mut file = try!(File::open(&file_name)
-            .map_err(|e| Message::new(format!("Cannot open file: {}: {}", file_name, e), Vec::new())));
-        
         let mut content = String::new();
-        let _ = try!(file.read_to_string(&mut content) 
-            .map_err(|e| Message::new(format!("Cannot read file: {}: {}", file_name, e), Vec::new())));
+        let mut file = File::open(&file_name).map_err(|e| CodeMapError::CannotOpenFile(file_name.clone(), e))?;
+        let _ = file.read_to_string(&mut content).map_err(|e| CodeMapError::CannotReadFile(file_name.clone(), e))?;
 
         Ok(CodeFile{ 
             id: id, 
@@ -261,8 +257,9 @@ fn code_file_from_file() {
         ]
     }
 
-    assert_eq!(CodeFile::from_file(0, "not_exist.ff".to_owned()), Err(Message::new(
-        format!("Cannot open file: not_exist.ff: 系统找不到指定的文件。 (os error 2)"),
-        Vec::new(),
-    )));
+    use std::fs::File;
+    assert_eq!{
+        CodeFile::from_file(0, "not_exist.ff".to_owned()), 
+        Err(CodeMapError::CannotOpenFile("not_exist.ff".to_owned(), File::open("not_exist.ff").unwrap_err()))
+    }
 }
