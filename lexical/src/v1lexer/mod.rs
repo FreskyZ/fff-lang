@@ -13,7 +13,7 @@ mod string_lit_parser;
 mod raw_string_lit_parser;
 mod error_strings;
 
-use codemap::Position;
+use codemap::CharPos;
 use codemap::StringPosition;
 use message::Message;
 use message::MessageCollection;
@@ -42,12 +42,12 @@ impl<'a> ILexer<'a, char> for V0Lexer<'a> {
         V0Lexer{ chars: chars }
     }
     fn next(&mut self, _: &mut MessageCollection) -> (char, StringPosition) {
-        let ret_val = self.chars.next().as_tuple();
+        let ret_val = self.chars.next();
         (ret_val.0, StringPosition::double(ret_val.1))
     }
 }
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub enum V1Token {
     StringLiteral(Option<String>),
     RawStringLiteral(Option<String>),
@@ -55,22 +55,6 @@ pub enum V1Token {
     Other(char),
     EOF,
     EOFs,
-}
-
-#[cfg(test)]
-use std::fmt;
-#[cfg(test)]
-impl fmt::Debug for V1Token {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            V1Token::StringLiteral(ref value) => write!(f, "String litera {:?}", value),
-            V1Token::RawStringLiteral(ref value) => write!(f, "Raw string literal {:?}", value),
-            V1Token::CharLiteral(ref value) => write!(f, "Char literal {:?}", value),
-            V1Token::Other(ref ch) => write!(f, "Other {:?}", ch),
-            V1Token::EOF => write!(f, "EOF"),
-            V1Token::EOFs => write!(f, "EOFs"),
-        }
-    }
 }
 
 pub struct V1Lexer<'chs> {
@@ -96,7 +80,7 @@ impl<'chs> ILexer<'chs, V1Token> for V1Lexer<'chs> {
             InStringLiteral { parser: StringLiteralParser },
             InRawStringLiteral { parser: RawStringLiteralParser },
             InLineComment,
-            InBlockComment { start_pos: Position },
+            InBlockComment { start_pos: CharPos },
             InCharLiteral { parser: CharLiteralParser },
         }
 
@@ -216,7 +200,7 @@ fn v1_base() {
         ($program: expr, [$($expect: expr)*] [$($expect_msg: expr)*]) => ({
             println!("Case {} at {}:", $program, line!());
             let messages = &mut MessageCollection::new();
-            let mut codemap = CodeMap::with_test_str($program);
+            let codemap = CodeMap::with_test_str($program);
             let mut v1lexer = V1Lexer::new(codemap.iter(), messages);
             $(
                 match v1lexer.next(messages) {

@@ -1,6 +1,8 @@
+///! fff-lang
+///!
+///! string literal parser
 
-// String literal parser
-use codemap::Position;
+use codemap::CharPos;
 use codemap::StringPosition;
 use message::Message;
 use message::MessageCollection;
@@ -10,24 +12,11 @@ use super::escape_char_parser::EscapeCharSimpleCheckResult;
 use super::escape_char_parser::EscapeCharParserResult;
 use super::error_strings;
 
-#[cfg(test)]
-#[derive(Debug)]
-pub struct StringLiteralParser {
-    raw: String, 
-    start_pos: Position,
-    last_escape_quote_pos: Option<Position>,
-    has_failed: bool,
-    escape_parser: Option<EscapeCharParser>, // Not none means is parsing escape
-    escape_start_pos: Position,
-}
-#[cfg(not(test))]
-pub struct StringLiteralParser {
-    raw: String, 
-    start_pos: Position,
-    last_escape_quote_pos: Option<Position>,
-    has_failed: bool,
-    escape_parser: Option<EscapeCharParser>,
-    escape_start_pos: Position,
+#[cfg_attr(test, derive(Debug, Eq, PartialEq))]
+pub enum StringLiteralParserResult {
+    WantMore,
+    WantMoreWithSkip1,
+    Finished(Option<String>, StringPosition),
 }
 
 // Escape issues about string literal and char literal
@@ -39,36 +28,31 @@ pub struct StringLiteralParser {
 //     '\', char parser will find next is not ' and immediately stop char parser and report a special error for this
 //     "\", string parser will record this escape position and this will most probably cause unexpected EOF in string and string parser will report it
 
-#[cfg(test)]
-#[derive(Debug, Eq, PartialEq)]
-pub enum StringLiteralParserResult {
-    WantMore,
-    WantMoreWithSkip1,
-    Finished(Option<String>, StringPosition),
+#[cfg_attr(test, derive(Debug))]
+pub struct StringLiteralParser {
+    raw: String, 
+    start_pos: CharPos,
+    last_escape_quote_pos: Option<CharPos>,
+    has_failed: bool,
+    escape_parser: Option<EscapeCharParser>, // Not none means is parsing escape
+    escape_start_pos: CharPos,
 }
-#[cfg(not(test))]
-pub enum StringLiteralParserResult {
-    WantMore,
-    WantMoreWithSkip1,
-    Finished(Option<String>, StringPosition),
-}
-
 impl StringLiteralParser {
 
     /// new with start position
-    pub fn new(start_pos: Position) -> StringLiteralParser {
+    pub fn new(start_pos: CharPos) -> StringLiteralParser {
         StringLiteralParser{
             raw: String::new(),
-            start_pos: start_pos, 
+            start_pos,
             last_escape_quote_pos: None, 
             has_failed: false,
             escape_parser: None,
-            escape_start_pos: Position::new(),
+            escape_start_pos: CharPos::default(),
         }
     }
 
     /// Try get string literal, use in state machine of v1, 
-    pub fn input(&mut self, ch: char, pos: Position, next_ch: char, messages: &mut MessageCollection) -> StringLiteralParserResult {
+    pub fn input(&mut self, ch: char, pos: CharPos, next_ch: char, messages: &mut MessageCollection) -> StringLiteralParserResult {
 
         match (ch, pos, next_ch) {
             ('\\', _1, EOFCHAR) => {                                                // C4, \EOF, ignore
@@ -168,19 +152,18 @@ impl StringLiteralParser {
 }
 
 
-#[cfg(test)]
-#[test]
-fn str_lit_parser() {
+#[cfg(test)] #[test]
+fn str_lit_parse() {
     use self::StringLiteralParserResult::*;
 
-    let dummy_pos = Position::new();
-    let spec_pos1 = make_pos!(12, 34);
-    let spec_pos2 = make_pos!(56, 78);
-    let spec_pos3 = make_pos!(910, 1112);
-    let spec_pos4 = make_pos!(1314, 1516);
+    let dummy_pos = CharPos::default();
+    let spec_pos1 = make_charpos!(34);
+    let spec_pos2 = make_charpos!(78);
+    let spec_pos3 = make_charpos!(1112);
+    let spec_pos4 = make_charpos!(1516);
 
     {   // "Hello, world!", most normal,                                    C11, C5, C7
-        let mut parser = StringLiteralParser::new(make_pos!(12, 34));
+        let mut parser = StringLiteralParser::new(spec_pos1);
         let messages = &mut MessageCollection::new(); 
         assert_eq!(parser.input('H', dummy_pos, 'e', messages), WantMore);
         assert_eq!(parser.input('e', dummy_pos, 'l', messages), WantMore);
@@ -195,8 +178,8 @@ fn str_lit_parser() {
         assert_eq!(parser.input('l', dummy_pos, 'l', messages), WantMore);
         assert_eq!(parser.input('d', dummy_pos, 'd', messages), WantMore);
         assert_eq!(parser.input('!', dummy_pos, EOFCHAR, messages), WantMore);
-        assert_eq!(parser.input('"', make_pos!(56, 78), EOFCHAR, messages), 
-            Finished(Some("Hello, world!".to_owned()), StringPosition::from4(12, 34, 56, 78)));
+        assert_eq!(parser.input('"', spec_pos2, EOFCHAR, messages), 
+            Finished(Some("Hello, world!".to_owned()), StringPosition::from2(spec_pos1, spec_pos2)));
 
         assert_eq!(messages, &MessageCollection::new());
     }

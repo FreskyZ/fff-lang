@@ -1,7 +1,8 @@
+///! fff-lang
+///!
+///! Raw string literal parser
 
-// Raw string literal parser
-
-use codemap::Position;
+use codemap::CharPos;
 use codemap::StringPosition;
 use message::Message;
 use message::MessageCollection;
@@ -9,33 +10,26 @@ use codemap::EOFCHAR;
 
 use super::error_strings;
 
+#[cfg_attr(test, derive(Debug, Eq, PartialEq))]
+pub enum RawStringLiteralParserResult { 
+    WantMore, 
+    Finished(Option<String>, StringPosition),
+}
+
 pub struct RawStringLiteralParser {
     raw: String,
-    start_pos: Position,
+    start_pos: CharPos,
 }
-
-#[cfg(test)]
-#[derive(Debug, Eq, PartialEq)]
-pub enum RawStringLiteralParserResult { 
-    WantMore, 
-    Finished(Option<String>, StringPosition),
-}
-#[cfg(not(test))]
-pub enum RawStringLiteralParserResult { 
-    WantMore, 
-    Finished(Option<String>, StringPosition),
-}
-
 impl RawStringLiteralParser {
 
-    pub fn new(start_pos: Position) -> RawStringLiteralParser {
+    pub fn new(start_pos: CharPos) -> RawStringLiteralParser {
         RawStringLiteralParser {
             raw: String::new(),
-            start_pos: start_pos,
+            start_pos,
         }
     }
 
-    pub fn input(&mut self, ch: char, pos: Position, messages: &mut MessageCollection) -> RawStringLiteralParserResult {
+    pub fn input(&mut self, ch: char, pos: CharPos, messages: &mut MessageCollection) -> RawStringLiteralParserResult {
         match (ch, pos) {
             ('"', pos) => {                                               // C1: in raw string, meet ", finish, return
                 return RawStringLiteralParserResult::Finished(Some(self.raw.clone()), StringPosition::from2(self.start_pos, pos));
@@ -55,15 +49,14 @@ impl RawStringLiteralParser {
     }
 }
 
-#[cfg(test)]    
-#[test]
+#[cfg(test)] #[test]
 fn raw_string_lit_parser() {
     use self::RawStringLiteralParserResult::*;
 
-    let dummy_pos = Position::new();
-    let spec_pos1 = make_pos!(12, 34);
-    let spec_pos2 = make_pos!(56, 78);
-    let spec_pos4 = make_pos!(1314, 1516);
+    let dummy_pos = CharPos::default();
+    let spec_pos1 = make_charpos!(34);
+    let spec_pos2 = make_charpos!(78);
+    let spec_pos4 = make_charpos!(1516);
 
     {   // r"hell\u\no", normal, C1, C2
         let mut parser = RawStringLiteralParser::new(spec_pos1);

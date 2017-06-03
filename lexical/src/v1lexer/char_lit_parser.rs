@@ -1,9 +1,10 @@
-
-// Char literal parser
+///! fff-lang
+///!
+///! Character literal parser
 
 use std::cell::Cell;
 
-use codemap::Position;
+use codemap::CharPos;
 use codemap::StringPosition;
 use message::Message;
 use message::MessageCollection;
@@ -28,12 +29,12 @@ impl CoverageRecorder {
 }
 
 pub struct CharLiteralParser {
-    start_pos: Position,
+    start_pos: CharPos,
     state: Cell<ParserState>,
     has_failed: bool,
     prepare_to_too_long: bool,
     escape_parser: Option<EscapeCharParser>,
-    escape_start_pos: Position,
+    escape_start_pos: CharPos,
 }
 
 #[cfg(test)]
@@ -58,19 +59,19 @@ enum ParserState {
 
 impl CharLiteralParser {
 
-    pub fn new(start_pos: Position) -> CharLiteralParser {
+    pub fn new(start_pos: CharPos) -> CharLiteralParser {
         CharLiteralParser{ 
-            start_pos: start_pos, 
+            start_pos,
             state: Cell::new(ParserState::ExpectFirst),
             has_failed: false,
             prepare_to_too_long: false,
             escape_parser: None, 
-            escape_start_pos: Position::new(),
+            escape_start_pos: CharPos::default(),
         }
     }
 
     //            self, current char, current char pos, next char preview
-    pub fn input(&mut self, ch: char, pos: Position, next_ch: char, messages: &mut MessageCollection, 
+    pub fn input(&mut self, ch: char, pos: CharPos, next_ch: char, messages: &mut MessageCollection, 
         coverage_recorder: &mut CoverageRecorder) -> CharLiteralParserResult {
 
         match self.state.get() {
@@ -137,10 +138,10 @@ impl CharLiteralParser {
                     (&mut None, '\\', pos, EOFCHAR) => { 
                         messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
                             (StringPosition::double(self.start_pos), error_strings::CharLiteralStartHere),
-                            (StringPosition::double(pos.next_col()), error_strings::EOFHere)
+                            (StringPosition::double(pos), error_strings::EOFHere)  // TODO: there was pos.next_col
                         ]));
                         coverage_recorder.insert(10);               // C10, '\$
-                        return CharLiteralParserResult::Finished(None, StringPosition::from2(self.start_pos, pos.next_col()));
+                        return CharLiteralParserResult::Finished(None, StringPosition::from2(self.start_pos, pos)); // TODO: there was pos.next_col
                     }
                     (&mut None, '\\', slash_pos, next_ch) => {   // if is escape, try escape
                         match EscapeCharParser::simple_check(next_ch) {
@@ -231,11 +232,11 @@ impl CharLiteralParser {
 fn char_lit_parser() {
     use self::CharLiteralParserResult::*;
 
-    let spec_pos1 = make_pos!(12, 34);
-    let spec_pos2 = make_pos!(56, 78);
-    let spec_pos3 = make_pos!(910, 11);
-    let spec_pos4 = make_pos!(12, 13);
-    let spec_pos5 = make_pos!(14, 15);
+    let spec_pos1 = make_charpos!(34);
+    let spec_pos2 = make_charpos!(78);
+    let spec_pos3 = make_charpos!(11);
+    let spec_pos4 = make_charpos!(13);
+    let spec_pos5 = make_charpos!(15);
 
     let mut all_counter = HashSet::<i32>::new();
 
@@ -482,11 +483,11 @@ fn char_lit_parser() {
         let current_counter = &mut HashSet::<i32>::new();
 
         assert_eq!(parser.input('\\', spec_pos3, EOFCHAR, messages, current_counter), 
-            Finished(None, StringPosition::from2(spec_pos1, spec_pos3.next_col())));
+            Finished(None, StringPosition::from2(spec_pos1, spec_pos3))); // TODO: there was spec_pos3.next_col
         
         messages_expect!(messages, [Message::new_by_str(error_strings::UnexpectedEOF, vec![
             (StringPosition::double(spec_pos1), error_strings::CharLiteralStartHere),
-            (StringPosition::double(spec_pos3.next_col()), error_strings::EOFHere)
+            (StringPosition::double(spec_pos3), error_strings::EOFHere) // TODO: there was spec_pos3.next_col
         ])]);
         counter_expect!(current_counter, all_counter, [10]);
     }

@@ -7,53 +7,50 @@
 
 #[macro_use] mod span;
 mod error;
-mod code_char;
 mod code_file;
 
-use code_char::new_code_char;
 use code_file::CodeFile;
 use code_file::CodeFileIter;
-pub use code_char::EOFCHAR;
-pub use code_char::EOFSCHAR;
-pub use code_char::CodeChar;
+pub use code_file::EOFCHAR;
+pub use code_file::EOFSCHAR;
 pub use error::CodeMapError;
-pub use span::Position;
+pub use span::CharPos;
 pub use span::StringPosition;
 
 // Iterator to get chars, this is my multi source file core logic processor
 pub struct CodeChars<'a> {
     files: Vec<CodeFileIter<'a>>,
     current_index: Option<usize>,   // none for EOFs
-    last_eofpos: Position,          // for furthur returns
+    last_eofpos: CharPos,          // for furthur returns
 }
 impl<'a> CodeChars<'a> {
 
-    fn new(codemap: &'a mut CodeMap) -> CodeChars {
+    fn new(codemap: &'a CodeMap) -> CodeChars {
         
         let current_index = if codemap.files.len() > 0 { Some(0) } else { None };
         CodeChars{ 
-            files: codemap.files.iter_mut().map(|mut file| file.iter()).collect(),
+            files: codemap.files.iter().map(|file| file.iter()).collect(),
             current_index: current_index,
-            last_eofpos: Position::new(),
+            last_eofpos: CharPos::default(),
         }
     }
 
-    pub fn next(&mut self) -> CodeChar {
+    pub fn next(&mut self) -> (char, CharPos) {
 
         match self.current_index {
             Some(index) => {
-                let ret_val = self.files[index].next();
-                if ret_val.is_eof() {
-                    self.last_eofpos = ret_val.pos();
+                let (ret_ch, ret_pos) = self.files[index].next();
+                if ret_ch == EOFCHAR {
+                    self.last_eofpos = ret_pos;
                     if index == self.files.len() - 1 {
                         self.current_index = None;
                     } else {
                         self.current_index = Some(index + 1);
                     }
                 }
-                return ret_val;
+                return (ret_ch, ret_pos);
             }
-            None => return new_code_char(EOFSCHAR, self.last_eofpos.clone()),
+            None => return (EOFSCHAR, self.last_eofpos.clone()),
         }
     }
 }
@@ -64,20 +61,20 @@ impl<'a> CodeChars<'a> {
 /// let mut codemap = CodeMap::with_str("123\ndef");
 /// codemap.input_str("456");
 /// let mut iter = codemap.iter();
-/// assert_eq!(iter.next().as_tuple(), ('1', make_pos!(0, 1, 1)));
-/// assert_eq!(iter.next().as_tuple(), ('2', make_pos!(0, 1, 2)));
-/// assert_eq!(iter.next().as_tuple(), ('3', make_pos!(0, 1, 3)));
-/// assert_eq!(iter.next().as_tuple(), ('\n', make_pos!(0, 1, 4)));
-/// assert_eq!(iter.next().as_tuple(), ('d', make_pos!(0, 2, 1)));
-/// assert_eq!(iter.next().as_tuple(), ('e', make_pos!(0, 2, 2)));
-/// assert_eq!(iter.next().as_tuple(), ('f', make_pos!(0, 2, 3)));;
-/// assert_eq!(iter.next().as_tuple(), (EOFCHAR, make_pos!(0, 2, 4)));
-/// assert_eq!(iter.next().as_tuple(), ('4', make_pos!(1, 1, 1)));
-/// assert_eq!(iter.next().as_tuple(), ('5', make_pos!(1, 1, 2)));
-/// assert_eq!(iter.next().as_tuple(), ('6', make_pos!(1, 1, 3)));
-/// assert_eq!(iter.next().as_tuple(), (EOFCHAR, make_pos!(1, 1, 4)));
-/// assert_eq!(iter.next().as_tuple(), (EOFSCHAR, make_pos!(1, 1, 4)));
-/// assert_eq!(iter.next().as_tuple(), (EOFSCHAR, make_pos!(1, 1, 4)));
+/// assert_eq!(iter.next(), ('1', make_charpos!(0, 1, 1)));
+/// assert_eq!(iter.next(), ('2', make_charpos!(0, 1, 2)));
+/// assert_eq!(iter.next(), ('3', make_charpos!(0, 1, 3)));
+/// assert_eq!(iter.next(), ('\n', make_charpos!(0, 1, 4)));
+/// assert_eq!(iter.next(), ('d', make_charpos!(0, 2, 1)));
+/// assert_eq!(iter.next(), ('e', make_charpos!(0, 2, 2)));
+/// assert_eq!(iter.next(), ('f', make_charpos!(0, 2, 3)));;
+/// assert_eq!(iter.next(), (EOFCHAR, make_charpos!(0, 2, 4)));
+/// assert_eq!(iter.next(), ('4', make_charpos!(1, 1, 1)));
+/// assert_eq!(iter.next(), ('5', make_charpos!(1, 1, 2)));
+/// assert_eq!(iter.next(), ('6', make_charpos!(1, 1, 3)));
+/// assert_eq!(iter.next(), (EOFCHAR, make_charpos!(1, 1, 4)));
+/// assert_eq!(iter.next(), (EOFSCHAR, make_charpos!(1, 1, 4)));
+/// assert_eq!(iter.next(), (EOFSCHAR, make_charpos!(1, 1, 4)));
 // ```
 pub struct CodeMap {
     files: Vec<CodeFile>,
@@ -107,17 +104,17 @@ impl CodeMap {
 
         let len = self.files.len();
         for (index, file_name) in file_names.into_iter().enumerate() {
-            self.files.push(CodeFile::from_file((len + index) as u32, file_name)?);
+            self.files.push(CodeFile::from_file(len + index, file_name)?);
         }
         Ok(())
     }
     pub fn input_str(&mut self, content: &str) {
 
-        let len = self.files.len() as u32;
+        let len = self.files.len();
         self.files.push(CodeFile::from_str(len, content));
     }
 
-    pub fn iter<'a>(&'a mut self) -> CodeChars<'a> {
+    pub fn iter<'a>(&'a self) -> CodeChars<'a> {
         CodeChars::new(self)
     }
 
@@ -128,7 +125,6 @@ impl CodeMap {
 
 #[cfg(test)] #[test]
 fn codemap_input() {
-    use self::code_char::EOFCHAR;
 
     let file1 = "../tests/codemap/file1.ff".to_owned();
     let file2 = "../tests/codemap/file2.ff".to_owned();
@@ -139,37 +135,37 @@ fn codemap_input() {
 
     // current feature is, simple merge and yield char
     let mut iter = codemap.iter();
-    assert_eq!(iter.next().as_tuple(), ('a', make_pos!(0, 1, 1)));
-    assert_eq!(iter.next().as_tuple(), ('b', make_pos!(0, 1, 2)));
-    assert_eq!(iter.next().as_tuple(), ('c', make_pos!(0, 1, 3)));
-    assert_eq!(iter.next().as_tuple(), ('\n', make_pos!(0, 1, 4)));
-    assert_eq!(iter.next().as_tuple(), ('d', make_pos!(0, 2, 1)));
-    assert_eq!(iter.next().as_tuple(), ('e', make_pos!(0, 2, 2)));
-    assert_eq!(iter.next().as_tuple(), ('\n', make_pos!(0, 2, 3)));
-    assert_eq!(iter.next().as_tuple(), ('f', make_pos!(0, 3, 1)));
-    assert_eq!(iter.next().as_tuple(), ('g', make_pos!(0, 3, 2)));
-    assert_eq!(iter.next().as_tuple(), ('h', make_pos!(0, 3, 3)));
-    assert_eq!(iter.next().as_tuple(), (EOFCHAR, make_pos!(0, 3, 4))); 
-    assert_eq!(iter.next().as_tuple(), ('i', make_pos!(1, 1, 1)));
-    assert_eq!(iter.next().as_tuple(), ('j', make_pos!(1, 1, 2)));
-    assert_eq!(iter.next().as_tuple(), ('k', make_pos!(1, 1, 3)));
-    assert_eq!(iter.next().as_tuple(), ('\n', make_pos!(1, 1, 4)));
-    assert_eq!(iter.next().as_tuple(), ('l', make_pos!(1, 2, 1)));
-    assert_eq!(iter.next().as_tuple(), ('m', make_pos!(1, 2, 2)));
-    assert_eq!(iter.next().as_tuple(), ('\n', make_pos!(1, 2, 3)));
-    assert_eq!(iter.next().as_tuple(), (EOFCHAR, make_pos!(1, 3, 1)));
-    assert_eq!(iter.next().as_tuple(), ('s', make_pos!(2, 1, 1)));
-    assert_eq!(iter.next().as_tuple(), ('o', make_pos!(2, 1, 2)));
-    assert_eq!(iter.next().as_tuple(), ('m', make_pos!(2, 1, 3)));
-    assert_eq!(iter.next().as_tuple(), ('e', make_pos!(2, 1, 4)));
-    assert_eq!(iter.next().as_tuple(), ('\n', make_pos!(2, 1, 5)));
-    assert_eq!(iter.next().as_tuple(), ('s', make_pos!(2, 2, 1)));
-    assert_eq!(iter.next().as_tuple(), ('t', make_pos!(2, 2, 2)));
-    assert_eq!(iter.next().as_tuple(), ('r', make_pos!(2, 2, 3)));
-    assert_eq!(iter.next().as_tuple(), ('\n', make_pos!(2, 2, 4)));
-    assert_eq!(iter.next().as_tuple(), (EOFCHAR, make_pos!(2, 3, 1)));
-    assert_eq!(iter.next().as_tuple(), (EOFSCHAR, make_pos!(2, 3, 1)));
-    assert_eq!(iter.next().as_tuple(), (EOFSCHAR, make_pos!(2, 3, 1)));
-    assert_eq!(iter.next().as_tuple(), (EOFSCHAR, make_pos!(2, 3, 1)));
-    assert_eq!(iter.next().as_tuple(), (EOFSCHAR, make_pos!(2, 3, 1)));
+    assert_eq!(iter.next(), ('a', make_charpos!(0, 1)));
+    assert_eq!(iter.next(), ('b', make_charpos!(0, 2)));
+    assert_eq!(iter.next(), ('c', make_charpos!(0, 3)));
+    assert_eq!(iter.next(), ('\n', make_charpos!(0, 4)));
+    assert_eq!(iter.next(), ('d', make_charpos!(0, 1)));
+    assert_eq!(iter.next(), ('e', make_charpos!(0, 2)));
+    assert_eq!(iter.next(), ('\n', make_charpos!(0, 3)));
+    assert_eq!(iter.next(), ('f', make_charpos!(0, 1)));
+    assert_eq!(iter.next(), ('g', make_charpos!(0, 2)));
+    assert_eq!(iter.next(), ('h', make_charpos!(0, 3)));
+    assert_eq!(iter.next(), (EOFCHAR, make_charpos!(0, 4))); 
+    assert_eq!(iter.next(), ('i', make_charpos!(1, 1)));
+    assert_eq!(iter.next(), ('j', make_charpos!(1, 2)));
+    assert_eq!(iter.next(), ('k', make_charpos!(1, 3)));
+    assert_eq!(iter.next(), ('\n', make_charpos!(1, 4)));
+    assert_eq!(iter.next(), ('l', make_charpos!(1, 1)));
+    assert_eq!(iter.next(), ('m', make_charpos!(1, 2)));
+    assert_eq!(iter.next(), ('\n', make_charpos!(1, 3)));
+    assert_eq!(iter.next(), (EOFCHAR, make_charpos!(1, 1)));
+    assert_eq!(iter.next(), ('s', make_charpos!(2, 1)));
+    assert_eq!(iter.next(), ('o', make_charpos!(2, 2)));
+    assert_eq!(iter.next(), ('m', make_charpos!(2, 3)));
+    assert_eq!(iter.next(), ('e', make_charpos!(2, 4)));
+    assert_eq!(iter.next(), ('\n', make_charpos!(2, 5)));
+    assert_eq!(iter.next(), ('s', make_charpos!(2, 1)));
+    assert_eq!(iter.next(), ('t', make_charpos!(2, 2)));
+    assert_eq!(iter.next(), ('r', make_charpos!(2, 3)));
+    assert_eq!(iter.next(), ('\n', make_charpos!(2, 4)));
+    assert_eq!(iter.next(), (EOFCHAR, make_charpos!(2, 1)));
+    assert_eq!(iter.next(), (EOFSCHAR, make_charpos!(2, 1)));
+    assert_eq!(iter.next(), (EOFSCHAR, make_charpos!(2, 1)));
+    assert_eq!(iter.next(), (EOFSCHAR, make_charpos!(2, 1)));
+    assert_eq!(iter.next(), (EOFSCHAR, make_charpos!(2, 1)));
 }

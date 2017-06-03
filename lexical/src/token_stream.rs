@@ -55,7 +55,7 @@ impl TokenStream {
     pub fn with_test_str(program: &str) -> TokenStream {
         use codemap::CodeMap;
         
-        let mut codemap = CodeMap::with_test_str(program);
+        let codemap = CodeMap::with_test_str(program);
         let mut messages = MessageCollection::new();
         let ret_val = TokenStream::new(codemap.iter(), &mut messages);
         check_messages_continuable!(messages);

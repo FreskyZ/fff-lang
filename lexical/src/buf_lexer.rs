@@ -108,8 +108,7 @@ impl<'chs, TLexer, TToken> BufLexer<TLexer, TToken>
 }
 
 
-#[cfg(test)]
-#[test]
+#[cfg(test)] #[test]
 fn buf_lexer_test() {
     use codemap::CodeMap;
 
@@ -126,7 +125,7 @@ fn buf_lexer_test() {
         }
     } 
     
-    let mut codemap = CodeMap::with_test_str("");
+    let codemap = CodeMap::with_test_str("");
     let mut messages = MessageCollection::new();
     let mut buflexer = BufLexer::<TestLexer, TestToken>::new(codemap.iter(), &mut messages);
     check_messages_continuable!(messages);
