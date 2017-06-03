@@ -3,7 +3,7 @@
 ///! string literal parser
 
 use codemap::CharPos;
-use codemap::StringPosition;
+use codemap::Span;
 use message::Message;
 use message::MessageCollection;
 use codemap::EOFCHAR;
@@ -16,7 +16,7 @@ use super::error_strings;
 pub enum StringLiteralParserResult {
     WantMore,
     WantMoreWithSkip1,
-    Finished(Option<String>, StringPosition),
+    Finished(Option<String>, Span),
 }
 
 // Escape issues about string literal and char literal
@@ -70,8 +70,8 @@ impl StringLiteralParser {
                     } 
                     EscapeCharSimpleCheckResult::Invalid(ch) => {                   // C2, error normal escape, emit error and continue
                         messages.push(Message::new(format!("{} '\\{}'", error_strings::UnknownCharEscape, ch), vec![
-                            (StringPosition::double(self.start_pos), error_strings::StringLiteralStartHere.to_owned()),
-                            (StringPosition::double(slash_pos), error_strings::UnknownCharEscapeHere.to_owned()),
+                            (self.start_pos.double(), error_strings::StringLiteralStartHere.to_owned()),
+                            (slash_pos.double(), error_strings::UnknownCharEscapeHere.to_owned()),
                         ]));
                         self.has_failed = true;
                         return StringLiteralParserResult::WantMoreWithSkip1;
@@ -89,18 +89,18 @@ impl StringLiteralParser {
                     Some(ref _parser) => {                                           // C5, \uxxx\EOL, emit error and return
                         // If still parsing, it is absolutely failed
                         messages.push(Message::with_help_by_str(error_strings::UnexpectedStringLiteralEnd, vec![
-                            (StringPosition::double(self.start_pos), error_strings::StringLiteralStartHere),
-                            (StringPosition::double(self.escape_start_pos), error_strings::UnicodeCharEscapeStartHere),
-                            (StringPosition::double(pos), error_strings::StringLiteralEndHere),
+                            (self.start_pos.double(), error_strings::StringLiteralStartHere),
+                            (self.escape_start_pos.double(), error_strings::UnicodeCharEscapeStartHere),
+                            (pos.double(), error_strings::StringLiteralEndHere),
                         ], vec![
                             error_strings::UnicodeCharEscapeHelpSyntax,
                         ]));
-                        return StringLiteralParserResult::Finished(None, StringPosition::from2(self.start_pos, pos));
+                        return StringLiteralParserResult::Finished(None, self.start_pos.merge(&pos));
                     }
                     None => {                                                       // C7, normal EOL, return
                         return StringLiteralParserResult::Finished(
                             if self.has_failed { None } else { Some(self.raw.clone()) }, 
-                            StringPosition::from2(self.start_pos, pos)
+                            self.start_pos.merge(&pos)
                         );
                     }
                 }
@@ -109,17 +109,17 @@ impl StringLiteralParser {
                 match self.last_escape_quote_pos {                                      // C12: in string, meet EOF, emit error, return 
                     Some(escaped_quote_pos_hint) => 
                         messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
-                            (StringPosition::double(self.start_pos), error_strings::StringLiteralStartHere),
-                            (StringPosition::double(pos), error_strings::EOFHere),
-                            (StringPosition::double(escaped_quote_pos_hint), error_strings::LastEscapedQuoteHere),
+                            (self.start_pos.double(), error_strings::StringLiteralStartHere),
+                            (pos.double(), error_strings::EOFHere),
+                            (escaped_quote_pos_hint.double(), error_strings::LastEscapedQuoteHere),
                         ])),
                     None => 
                         messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
-                            (StringPosition::double(self.start_pos), error_strings::StringLiteralStartHere),
-                            (StringPosition::double(pos), error_strings::EOFHere),
+                            (self.start_pos.double(), error_strings::StringLiteralStartHere),
+                            (pos.double(), error_strings::EOFHere),
                         ]))
                 }
-                return StringLiteralParserResult::Finished(None, StringPosition::from2(self.start_pos, pos));
+                return StringLiteralParserResult::Finished(None, self.start_pos.merge(&pos));
             }
             (ch, pos, _2) => {
                 // Normal in string
@@ -179,7 +179,7 @@ fn str_lit_parse() {
         assert_eq!(parser.input('d', dummy_pos, 'd', messages), WantMore);
         assert_eq!(parser.input('!', dummy_pos, EOFCHAR, messages), WantMore);
         assert_eq!(parser.input('"', spec_pos2, EOFCHAR, messages), 
-            Finished(Some("Hello, world!".to_owned()), StringPosition::from2(spec_pos1, spec_pos2)));
+            Finished(Some("Hello, world!".to_owned()), spec_pos1.merge(&spec_pos2)));
 
         assert_eq!(messages, &MessageCollection::new());
     }
@@ -187,23 +187,22 @@ fn str_lit_parse() {
     {   // "He$, unexpected end, no last escaped quote hint                 C11, C12
         let mut parser = StringLiteralParser::new(spec_pos1);
         let messages = &mut MessageCollection::new();
-        let expect_messages = &mut MessageCollection::new();  
         assert_eq!(parser.input('H', dummy_pos, 'e', messages), WantMore);
         assert_eq!(parser.input('e', dummy_pos, 'l', messages), WantMore);
         assert_eq!(parser.input(EOFCHAR, spec_pos2, EOFCHAR, messages), 
-            Finished(None, StringPosition::from2(spec_pos1, spec_pos2)));
-
-        expect_messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
-            (StringPosition::double(spec_pos1), error_strings::StringLiteralStartHere),
-            (StringPosition::double(spec_pos2), error_strings::EOFHere),
-        ]));
-        assert_eq!(messages, expect_messages);
+            Finished(None, spec_pos1.merge(&spec_pos2)));
+        
+        assert_eq!(messages, &make_messages![
+            Message::new_by_str(error_strings::UnexpectedEOF, vec![
+                (spec_pos1.double(), error_strings::StringLiteralStartHere),
+                (spec_pos2.double(), error_strings::EOFHere),
+            ])
+        ]);
     }
 
     {   // "He\"l\"lo$, unexpected EOF, last escaped quote recorded         C11, C1, C12
         let mut parser = StringLiteralParser::new(spec_pos1);
         let messages = &mut MessageCollection::new();
-        let expect_messages = &mut MessageCollection::new();
         assert_eq!(parser.input('H', dummy_pos, 'e', messages), WantMore);
         assert_eq!(parser.input('e', dummy_pos, '\\', messages), WantMore);
         assert_eq!(parser.input('\\', spec_pos2, '"', messages), WantMoreWithSkip1);
@@ -212,20 +211,20 @@ fn str_lit_parse() {
         assert_eq!(parser.input('l', dummy_pos, 'o', messages), WantMore);
         assert_eq!(parser.input('o', dummy_pos, EOFCHAR, messages), WantMore);
         assert_eq!(parser.input(EOFCHAR, spec_pos4, EOFCHAR, messages), 
-            Finished(None, StringPosition::from2(spec_pos1, spec_pos4)));
+            Finished(None, spec_pos1.merge(&spec_pos4)));
 
-        expect_messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
-            (StringPosition::double(spec_pos1), error_strings::StringLiteralStartHere),
-            (StringPosition::double(spec_pos4), error_strings::EOFHere),
-            (StringPosition::double(spec_pos3), error_strings::LastEscapedQuoteHere),
-        ]));
-        assert_eq!(messages, expect_messages);
+        assert_eq!(messages, &make_messages![
+            Message::new_by_str(error_strings::UnexpectedEOF, vec![
+                (spec_pos1.double(), error_strings::StringLiteralStartHere),
+                (spec_pos4.double(), error_strings::EOFHere),
+                (spec_pos3.double(), error_strings::LastEscapedQuoteHere),
+            ])
+        ]);
     }
 
     {   // "H\t\n\0\'\"llo", normal escape                                  C11, C1, C7
         let mut parser = StringLiteralParser::new(spec_pos1);
         let messages = &mut MessageCollection::new();
-        let expect_messages = &mut MessageCollection::new();
         assert_eq!(parser.input('H', dummy_pos, '\\', messages), WantMore);
         assert_eq!(parser.input('\\', dummy_pos, 't', messages), WantMoreWithSkip1);
         assert_eq!(parser.input('\\', dummy_pos, 'n', messages), WantMoreWithSkip1);
@@ -236,15 +235,14 @@ fn str_lit_parse() {
         assert_eq!(parser.input('l', dummy_pos, 'o', messages), WantMore);
         assert_eq!(parser.input('o', dummy_pos, '"', messages), WantMore);
         assert_eq!(parser.input('"', spec_pos4, '$', messages), 
-            Finished(Some("H\t\n\0\'\"llo".to_owned()), StringPosition::from2(spec_pos1, spec_pos4)));
+            Finished(Some("H\t\n\0\'\"llo".to_owned()), spec_pos1.merge(&spec_pos4)));
 
-        assert_eq!(messages, expect_messages);
+        assert_eq!(messages, &make_messages![]);
     }
 
     {   // "h\c\d\e\n\g", error normal escape                               C11, C3, C2
         let mut parser = StringLiteralParser::new(spec_pos1);
         let messages = &mut MessageCollection::new();
-        let expect_messages = &mut MessageCollection::new();
         assert_eq!(parser.input('H', dummy_pos, '\\', messages), WantMore);
         assert_eq!(parser.input('\\', spec_pos2, 'c', messages), WantMoreWithSkip1);
         assert_eq!(parser.input('\\', spec_pos3, 'd', messages), WantMoreWithSkip1);
@@ -252,31 +250,31 @@ fn str_lit_parse() {
         assert_eq!(parser.input('\\', dummy_pos, 'n', messages), WantMoreWithSkip1);
         assert_eq!(parser.input('\\', spec_pos3, 'g', messages), WantMoreWithSkip1);
         assert_eq!(parser.input('"', spec_pos4, '$', messages),
-            Finished(None, StringPosition::from2(spec_pos1, spec_pos4)));
+            Finished(None, spec_pos1.merge(&spec_pos4)));
 
-        expect_messages.push(Message::new(format!("{} '\\{}'", error_strings::UnknownCharEscape, 'c'), vec![
-            (StringPosition::double(spec_pos1), error_strings::StringLiteralStartHere.to_owned()),
-            (StringPosition::double(spec_pos2), error_strings::UnknownCharEscapeHere.to_owned()),
-        ]));
-        expect_messages.push(Message::new(format!("{} '\\{}'", error_strings::UnknownCharEscape, 'd'), vec![
-            (StringPosition::double(spec_pos1), error_strings::StringLiteralStartHere.to_owned()),
-            (StringPosition::double(spec_pos3), error_strings::UnknownCharEscapeHere.to_owned()),
-        ]));
-        expect_messages.push(Message::new(format!("{} '\\{}'", error_strings::UnknownCharEscape, 'e'), vec![
-            (StringPosition::double(spec_pos1), error_strings::StringLiteralStartHere.to_owned()),
-            (StringPosition::double(spec_pos2), error_strings::UnknownCharEscapeHere.to_owned()),
-        ]));
-        expect_messages.push(Message::new(format!("{} '\\{}'", error_strings::UnknownCharEscape, 'g'), vec![
-            (StringPosition::double(spec_pos1), error_strings::StringLiteralStartHere.to_owned()),
-            (StringPosition::double(spec_pos3), error_strings::UnknownCharEscapeHere.to_owned()),
-        ]));
-        assert_eq!(messages, expect_messages);
+        assert_eq!(messages, &make_messages![
+            Message::new(format!("{} '\\{}'", error_strings::UnknownCharEscape, 'c'), vec![
+                (spec_pos1.double(), error_strings::StringLiteralStartHere.to_owned()),
+                (spec_pos2.double(), error_strings::UnknownCharEscapeHere.to_owned()),
+            ]),
+            Message::new(format!("{} '\\{}'", error_strings::UnknownCharEscape, 'd'), vec![
+                (spec_pos1.double(), error_strings::StringLiteralStartHere.to_owned()),
+                (spec_pos3.double(), error_strings::UnknownCharEscapeHere.to_owned()),
+            ]),
+            Message::new(format!("{} '\\{}'", error_strings::UnknownCharEscape, 'e'), vec![
+                (spec_pos1.double(), error_strings::StringLiteralStartHere.to_owned()),
+                (spec_pos2.double(), error_strings::UnknownCharEscapeHere.to_owned()),
+            ]),
+            Message::new(format!("{} '\\{}'", error_strings::UnknownCharEscape, 'g'), vec![
+                (spec_pos1.double(), error_strings::StringLiteralStartHere.to_owned()),
+                (spec_pos3.double(), error_strings::UnknownCharEscapeHere.to_owned()),
+            ])
+        ]);
     }
 
     {   // "H\uABCDel", unicode escape                                      C11, C3, C8, C10, C7
         let mut parser = StringLiteralParser::new(spec_pos1);
         let messages = &mut MessageCollection::new();
-        let expect_messages = &mut MessageCollection::new();
         assert_eq!(parser.input('H', dummy_pos, '\\', messages), WantMore);
         assert_eq!(parser.input('\\', spec_pos2, 'u', messages), WantMoreWithSkip1);
         assert_eq!(parser.input('A', dummy_pos, 'B', messages), WantMore);
@@ -286,15 +284,14 @@ fn str_lit_parse() {
         assert_eq!(parser.input('e', dummy_pos, 'l', messages), WantMore);
         assert_eq!(parser.input('l', dummy_pos, '"', messages), WantMore);
         assert_eq!(parser.input('"', spec_pos3, '$', messages), 
-            Finished(Some("H\u{ABCD}el".to_owned()), StringPosition::from2(spec_pos1, spec_pos3)));
+            Finished(Some("H\u{ABCD}el".to_owned()), spec_pos1.merge(&spec_pos3)));
         
-        assert_eq!(messages, expect_messages);
+        assert_eq!(messages, &make_messages![]);
     }
 
     {   // "H\uABCHel\uABCg", unicode escape error                          C11, C3, C8, C9, C7
         let mut parser = StringLiteralParser::new(spec_pos1);
         let messages = &mut MessageCollection::new();
-        let expect_messages = &mut MessageCollection::new();
         assert_eq!(parser.input('H', dummy_pos, '\\', messages), WantMore);
         assert_eq!(parser.input('\\', spec_pos2, 'u', messages), WantMoreWithSkip1);
         assert_eq!(parser.input('A', dummy_pos, 'B', messages), WantMore);
@@ -309,27 +306,27 @@ fn str_lit_parse() {
         assert_eq!(parser.input('C', dummy_pos, 'g', messages), WantMore);
         assert_eq!(parser.input('g', spec_pos4, '"', messages), WantMore);
         assert_eq!(parser.input('"', spec_pos4, '$', messages), 
-            Finished(None, StringPosition::from2(spec_pos1, spec_pos4)));
+            Finished(None, spec_pos1.merge(&spec_pos4)));
         
-        expect_messages.push(Message::with_help_by_str(error_strings::InvalidUnicodeCharEscape, vec![
-            (StringPosition::double(spec_pos2), error_strings::UnicodeCharEscapeStartHere),
-            (StringPosition::double(spec_pos3), error_strings::UnicodeCharEscapeInvalidChar)
-        ], vec![
-            error_strings::UnicodeCharEscapeHelpSyntax,
-        ]));
-        expect_messages.push(Message::with_help_by_str(error_strings::InvalidUnicodeCharEscape, vec![
-            (StringPosition::double(spec_pos3), error_strings::UnicodeCharEscapeStartHere),
-            (StringPosition::double(spec_pos4), error_strings::UnicodeCharEscapeInvalidChar)
-        ], vec![
-            error_strings::UnicodeCharEscapeHelpSyntax,
-        ]));
-        assert_eq!(messages, expect_messages);
+        assert_eq!(messages, &make_messages![
+            Message::with_help_by_str(error_strings::InvalidUnicodeCharEscape, vec![
+                (spec_pos2.double(), error_strings::UnicodeCharEscapeStartHere),
+                (spec_pos3.double(), error_strings::UnicodeCharEscapeInvalidChar)
+            ], vec![
+                error_strings::UnicodeCharEscapeHelpSyntax,
+            ]),
+            Message::with_help_by_str(error_strings::InvalidUnicodeCharEscape, vec![
+                (spec_pos3.double(), error_strings::UnicodeCharEscapeStartHere),
+                (spec_pos4.double(), error_strings::UnicodeCharEscapeInvalidChar)
+            ], vec![
+                error_strings::UnicodeCharEscapeHelpSyntax,
+            ])
+        ]);
     }
 
     {   // "H\U0011ABCD", unicode escape error 2                            C11, C3, C8, C9, C7
         let mut parser = StringLiteralParser::new(spec_pos1);
         let messages = &mut MessageCollection::new();
-        let expect_messages = &mut MessageCollection::new();
         assert_eq!(parser.input('H', dummy_pos, '\\', messages), WantMore);
         assert_eq!(parser.input('\\', spec_pos2, 'U', messages), WantMoreWithSkip1);
         assert_eq!(parser.input('0', dummy_pos, '0', messages), WantMore);
@@ -339,71 +336,72 @@ fn str_lit_parse() {
         assert_eq!(parser.input('A', dummy_pos, 'B', messages), WantMore);
         assert_eq!(parser.input('B', dummy_pos, 'C', messages), WantMore);
         assert_eq!(parser.input('C', dummy_pos, 'D', messages), WantMore);
-        assert_eq!(parser.input('D', dummy_pos, '"', messages), WantMore);
+        assert_eq!(parser.input('D', spec_pos4, '"', messages), WantMore);
         assert_eq!(parser.input('"', spec_pos3, '$', messages),
-            Finished(None, StringPosition::from2(spec_pos1, spec_pos3)));
+            Finished(None, spec_pos1.merge(&spec_pos3)));
         
-        expect_messages.push(Message::with_help(error_strings::InvalidUnicodeCharEscape.to_owned(), vec![
-            (StringPosition::double(spec_pos2), error_strings::UnicodeCharEscapeStartHere.to_owned()),
-        ], vec![
-            format!("{}{}", error_strings::UnicodeCharEscapeCodePointValueIs, "0011ABCD"),
-            error_strings::UnicodeCharEscapeHelpValue.to_owned(),
-        ]));
-        assert_eq!(messages, expect_messages);
+        assert_eq!(messages, &make_messages![
+            Message::with_help(error_strings::InvalidUnicodeCharEscape.to_owned(), vec![
+                (spec_pos2.merge(&spec_pos4), error_strings::UnicodeCharEscapeHere.to_owned()),
+            ], vec![
+                format!("{}{}", error_strings::UnicodeCharEscapeCodePointValueIs, "0011ABCD"),
+                error_strings::UnicodeCharEscapeHelpValue.to_owned(),
+            ])
+        ]);
     }
 
     {   // "H\u", unexpected EOL in unicode escape                          C11, C3, C5
         let mut parser = StringLiteralParser::new(spec_pos1);
         let messages = &mut MessageCollection::new();
-        let expect_messages = &mut MessageCollection::new();
         assert_eq!(parser.input('H', dummy_pos, '\\', messages), WantMore);
         assert_eq!(parser.input('\\', spec_pos2, 'u', messages), WantMoreWithSkip1);
         assert_eq!(parser.input('"', spec_pos3, '$', messages), 
-            Finished(None, StringPosition::from2(spec_pos1, spec_pos3)));
+            Finished(None, spec_pos1.merge(&spec_pos3)));
         
-        expect_messages.push(Message::with_help_by_str(error_strings::UnexpectedStringLiteralEnd, vec![
-            (StringPosition::double(spec_pos1), error_strings::StringLiteralStartHere),
-            (StringPosition::double(spec_pos2), error_strings::UnicodeCharEscapeStartHere),
-            (StringPosition::double(spec_pos3), error_strings::StringLiteralEndHere),
-        ], vec![
-            error_strings::UnicodeCharEscapeHelpSyntax,
-        ]));
-        assert_eq!(messages, expect_messages);
+        assert_eq!(messages, &make_messages![
+            Message::with_help_by_str(error_strings::UnexpectedStringLiteralEnd, vec![
+                (spec_pos1.double(), error_strings::StringLiteralStartHere),
+                (spec_pos2.double(), error_strings::UnicodeCharEscapeStartHere),
+                (spec_pos3.double(), error_strings::StringLiteralEndHere),
+            ], vec![
+                error_strings::UnicodeCharEscapeHelpSyntax,
+            ])
+        ]);
     }
 
     {   // "h\U123$, unexpected EOF in unicode escape                       C11, C3, C8, C12
         let mut parser = StringLiteralParser::new(spec_pos1);
         let messages = &mut MessageCollection::new();
-        let expect_messages = &mut MessageCollection::new();
         assert_eq!(parser.input('h', dummy_pos, '\\', messages), WantMore);
         assert_eq!(parser.input('\\', spec_pos2, 'U', messages), WantMoreWithSkip1);
         assert_eq!(parser.input('1', dummy_pos, '2', messages), WantMore);
         assert_eq!(parser.input('2', dummy_pos, '3', messages), WantMore);
         assert_eq!(parser.input('3', dummy_pos, EOFCHAR, messages), WantMore);
         assert_eq!(parser.input(EOFCHAR, spec_pos3, EOFCHAR, messages), 
-            Finished(None, StringPosition::from2(spec_pos1, spec_pos3)));
+            Finished(None, spec_pos1.merge(&spec_pos3)));
         
-        expect_messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
-            (StringPosition::double(spec_pos1), error_strings::StringLiteralStartHere),
-            (StringPosition::double(spec_pos3), error_strings::EOFHere),
-        ]));
-        assert_eq!(messages, expect_messages);
+        assert_eq!(messages, &make_messages![
+            Message::new_by_str(error_strings::UnexpectedEOF, vec![
+                (spec_pos1.double(), error_strings::StringLiteralStartHere),
+                (spec_pos3.double(), error_strings::EOFHere),
+            ])
+        ]);
     }
 
     {   // "he\$, unexpected EOF exactly after \                            C11, C4
         let mut parser = StringLiteralParser::new(spec_pos1);
         let messages = &mut MessageCollection::new();
-        let expect_messages = &mut MessageCollection::new();
         assert_eq!(parser.input('h', dummy_pos, 'e', messages), WantMore);
         assert_eq!(parser.input('e', dummy_pos, '\\', messages), WantMore);
         assert_eq!(parser.input('\\', spec_pos2, EOFCHAR, messages), WantMore);
         assert_eq!(parser.input(EOFCHAR, spec_pos3, EOFCHAR, messages), 
-            Finished(None, StringPosition::from2(spec_pos1, spec_pos3)));
+            Finished(None, spec_pos1.merge(&spec_pos3)));
         
-        expect_messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
-            (StringPosition::double(spec_pos1), error_strings::StringLiteralStartHere),
-            (StringPosition::double(spec_pos3), error_strings::EOFHere),
-        ]));
-        assert_eq!(messages, expect_messages);
+        assert_eq!(messages, &make_messages![
+            Message::new_by_str(error_strings::UnexpectedEOF, vec![
+                (spec_pos1.double(), error_strings::StringLiteralStartHere),
+                (spec_pos3.double(), error_strings::EOFHere),
+            ])
+        ]);
     }
 }

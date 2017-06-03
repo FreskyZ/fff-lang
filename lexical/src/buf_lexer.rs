@@ -3,7 +3,7 @@
 
 use std::cell::Cell;
 use codemap::CodeChars;
-use codemap::StringPosition;
+use codemap::Span;
 use message::MessageCollection;
 
 pub trait ILexer<'chs, TToken> {
@@ -12,7 +12,7 @@ pub trait ILexer<'chs, TToken> {
 
     // now position is out of token type
     // now token type provide EOF hint by itself
-    fn next(&mut self, messages: &mut MessageCollection) -> (TToken, StringPosition);
+    fn next(&mut self, messages: &mut MessageCollection) -> (TToken, Span);
 }
 
 // Buffed lexer
@@ -30,9 +30,9 @@ pub struct BufLexer<TLexer, TToken> {
     lexer: TLexer, 
     skips: Cell<i32>,
     dummys: Cell<i32>,
-    current: (TToken, StringPosition),
-    next: (TToken, StringPosition),
-    nextnext: (TToken, StringPosition),
+    current: (TToken, Span),
+    next: (TToken, Span),
+    nextnext: (TToken, Span),
 }
 
 #[allow(dead_code)]
@@ -68,8 +68,8 @@ impl<'chs, TLexer, TToken> BufLexer<TLexer, TToken>
         //     self.next = self.nextnext; // same
         unsafe {
             use std::ptr;
-            ptr::swap(&mut self.current as *mut (TToken, StringPosition), &mut self.next as *mut (TToken, StringPosition));
-            ptr::swap(&mut self.next as *mut (TToken, StringPosition), &mut self.nextnext as *mut (TToken, StringPosition));
+            ptr::swap(&mut self.current as *mut (TToken, Span), &mut self.next as *mut (TToken, Span));
+            ptr::swap(&mut self.next as *mut (TToken, Span), &mut self.nextnext as *mut (TToken, Span));
         }
         self.nextnext = self.lexer.next(messages);
     }
@@ -92,17 +92,17 @@ impl<'chs, TLexer, TToken> BufLexer<TLexer, TToken>
         self.dummys.set(self.dummys.get() + 1);
     }
 
-    pub fn current(&self) -> (&TToken, StringPosition) {
+    pub fn current(&self) -> (&TToken, Span) {
         (&self.current.0, self.current.1)
     }
-    pub fn current_with_preview(&self) -> (&TToken, StringPosition, &TToken, StringPosition) {
+    pub fn current_with_preview(&self) -> (&TToken, Span, &TToken, Span) {
         (&self.current.0, self.current.1, &self.next.0, self.next.1)
     }
-    pub fn current_with_preview2(&self) -> (&TToken, StringPosition, &TToken, StringPosition, &TToken, StringPosition) {
+    pub fn current_with_preview2(&self) -> (&TToken, Span, &TToken, Span, &TToken, Span) {
         (&self.current.0, self.current.1, &self.next.0, self.next.1, &self.nextnext.0, self.nextnext.1)
     }
 
-    pub fn current_with_state<TState>(&self, state: TState) -> (TState, &TToken, StringPosition, &TToken, StringPosition, &TToken, StringPosition) {
+    pub fn current_with_state<TState>(&self, state: TState) -> (TState, &TToken, Span, &TToken, Span, &TToken, Span) {
         (state, &self.current.0, self.current.1, &self.next.0, self.next.1, &self.nextnext.0, self.nextnext.1)
     }
 }
@@ -112,16 +112,16 @@ impl<'chs, TLexer, TToken> BufLexer<TLexer, TToken>
 fn buf_lexer_test() {
     use codemap::CodeMap;
 
-    #[derive(Eq, PartialEq, Debug)] struct TestToken(u32); // cannot copy and clone and other, eq for test
-    struct TestLexer(u32);
+    #[derive(Eq, PartialEq, Debug)] struct TestToken(usize); // cannot copy and clone and other, eq for test
+    struct TestLexer(usize);
     impl<'chs> ILexer<'chs, TestToken> for TestLexer {
 
         fn new(_: CodeChars<'chs>, _: &mut MessageCollection) -> TestLexer {
             TestLexer(0)
         }
-        fn next(&mut self, _: &mut MessageCollection) -> (TestToken, StringPosition) {
+        fn next(&mut self, _: &mut MessageCollection) -> (TestToken, Span) {
             self.0 += 1;
-            (TestToken(self.0), make_str_pos!(1, self.0, 1, self.0 + 1))
+            (TestToken(self.0), make_span!(self.0, self.0 + 1))
         }
     } 
     
@@ -133,27 +133,27 @@ fn buf_lexer_test() {
 
     buflexer.move_next(messages);
     assert_eq!(buflexer.current_with_preview2(), 
-        (&TestToken(1), make_str_pos!(1, 1, 1, 2), &TestToken(2), make_str_pos!(1, 2, 1, 3), &TestToken(3), make_str_pos!(1, 3, 1, 4)));
+        (&TestToken(1), make_span!(1, 2), &TestToken(2), make_span!(2, 3), &TestToken(3), make_span!(3, 4)));
     buflexer.move_next(messages);
     assert_eq!(buflexer.current_with_preview2(), 
-        (&TestToken(2), make_str_pos!(1, 2, 1, 3), &TestToken(3), make_str_pos!(1, 3, 1, 4), &TestToken(4), make_str_pos!(1, 4, 1, 5)));
+        (&TestToken(2), make_span!(2, 3), &TestToken(3), make_span!(3, 4), &TestToken(4), make_span!(4, 5)));
     buflexer.prepare_skip1();
     buflexer.move_next(messages);
     assert_eq!(buflexer.current_with_preview2(), 
-        (&TestToken(4), make_str_pos!(1, 4, 1, 5), &TestToken(5), make_str_pos!(1, 5, 1, 6), &TestToken(6), make_str_pos!(1, 6, 1, 7)));
+        (&TestToken(4), make_span!(4, 5), &TestToken(5), make_span!(5, 6), &TestToken(6), make_span!(6, 7)));
     buflexer.prepare_skip1();
     buflexer.prepare_skip1();
     buflexer.move_next(messages);
     assert_eq!(buflexer.current_with_preview2(), 
-        (&TestToken(7), make_str_pos!(1, 7, 1, 8), &TestToken(8), make_str_pos!(1, 8, 1, 9), &TestToken(9), make_str_pos!(1, 9, 1, 10)));
+        (&TestToken(7), make_span!(7, 8), &TestToken(8), make_span!(8, 9), &TestToken(9), make_span!(9, 10)));
     buflexer.prepare_dummy1();
     buflexer.move_next(messages);
     assert_eq!(buflexer.current_with_preview2(), 
-        (&TestToken(7), make_str_pos!(1, 7, 1, 8), &TestToken(8), make_str_pos!(1, 8, 1, 9), &TestToken(9), make_str_pos!(1, 9, 1, 10)));
+        (&TestToken(7), make_span!(7, 8), &TestToken(8), make_span!(8, 9), &TestToken(9), make_span!(9, 10)));
     buflexer.prepare_dummy1();
     buflexer.prepare_dummy1();
     buflexer.move_next(messages);
     buflexer.move_next(messages);
     assert_eq!(buflexer.current_with_preview2(), 
-        (&TestToken(7), make_str_pos!(1, 7, 1, 8), &TestToken(8), make_str_pos!(1, 8, 1, 9), &TestToken(9), make_str_pos!(1, 9, 1, 10)));
+        (&TestToken(7), make_span!(7, 8), &TestToken(8), make_span!(8, 9), &TestToken(9), make_span!(9, 10)));
 }

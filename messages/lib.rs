@@ -6,115 +6,115 @@
 extern crate util;
 
 use std::fmt;
-use codemap::StringPosition;
+use codemap::Span;
 use util::format_vector_debug;
 
 #[derive(Eq, PartialEq)]
 pub enum CodegenMessage {
     FunctionHasSameName{ 
         name: String, 
-        poss: Vec<StringPosition>,
+        poss: Vec<Span>,
     },
     TypeNotExist{ 
         name: String, 
-        pos: StringPosition 
+        pos: Span 
     },
     FunctionArgumentNameConfilict{ 
-        func_pos: StringPosition,  // position of the fn 
+        func_pos: Span,  // position of the fn 
         func_name: String,        
         name: String,          
-        pos1: StringPosition,      // first def of the name
-        pos2: StringPosition,      // more def of the name
+        pos1: Span,      // first def of the name
+        pos2: Span,      // more def of the name
     },
     VariableDefined{
         name: String,
-        predef: StringPosition,    // Previous VarDeclStmt
-        curdef: StringPosition,    // Current VarDeclStmt, compiler generated will not collision
+        predef: Span,    // Previous VarDeclStmt
+        curdef: Span,    // Current VarDeclStmt, compiler generated will not collision
     },
     FunctionRedefinition{
         sign: String,
-        fnposs: Vec<StringPosition>,
+        fnposs: Vec<Span>,
     },
 
     ConstVariableDeclareMissingInitializationExpression{
         name: String,
-        pos: StringPosition,
+        pos: Span,
     },
 
     FunctionCallOperatorNotAppliedToIdentifier{
-        pos: StringPosition,
+        pos: Span,
     },
 
     InvalidExpressionStatementSingleSimpleExpression{
-        pos: StringPosition,
+        pos: Span,
     },
     InvalidExpressionStatementLastOpNotValid{
-        pos: StringPosition,
+        pos: Span,
     },
     LeftOfAssignmentStatementCannotBeComplex{
-        pos: StringPosition,
+        pos: Span,
     },
     AssignToConstVar{
         name: String,
-        pos: StringPosition, // stmt pos
+        pos: Span, // stmt pos
     },
     MemberAccessNotSupportedCurrently{
-        pos: StringPosition,
+        pos: Span,
     },
 
     CannotFindLoopName{
         name: String, 
-        pos: StringPosition,
+        pos: Span,
     },
     JumpStatementNotInLoop{
-        pos: StringPosition
+        pos: Span
     },
 
     ArrayInitializeElementNotSameType{
         expect: String,
         actual: String,
-        pos: StringPosition,
+        pos: Span,
     },
     ArrayDupDefSecondParameterTypeNotExpected{
         actual: String,
-        pos: StringPosition,
+        pos: Span,
     },
 
     MemberNotExist{
-        prev_expr_pos: StringPosition, // previous part position
+        prev_expr_pos: Span, // previous part position
         prev_type_desc: String,        // previous part type display name
-        op_pos: StringPosition,        // this op pos
+        op_pos: Span,        // this op pos
         member_name: String,           // member name
     },
 
     IdentNotDeclared{
         name: String,
-        pos: StringPosition,
+        pos: Span,
     },
     FunctionNotDefined{
         sign: String,
-        pos: StringPosition,
+        pos: Span,
     },
     AssignmentTypeMismatch{
         left_desc: String,
         right_desc: String,
-        pos: StringPosition,
+        pos: Span,
     },
     IfConditionNotBoolType{
-        pos: StringPosition,
+        pos: Span,
         actual: String,
     },
     ReturnTypeMismatch{
-        pos: StringPosition,
+        pos: Span,
         expect: String,
         actual: String,
     },
     ForIteraterTypeMismatch{
-        pos: StringPosition,
+        pos: Span,
         actual: String,
     },
     ForRangeTypeMismatch{
-        pos: StringPosition,
+        pos: Span,
         expect: String,
         actual: String,
     }
@@ -230,11 +230,11 @@ impl fmt::Debug for LegacyMessage {
 
 #[derive(Eq, PartialEq)]
 pub struct PosAndDesc {
-    pub pos: StringPosition, 
+    pub pos: Span, 
     pub desc: String,
 }
-impl From<(StringPosition, String)> for PosAndDesc {
-    fn from(pos_and_desc: (StringPosition, String)) -> PosAndDesc {
+impl From<(Span, String)> for PosAndDesc {
+    fn from(pos_and_desc: (Span, String)) -> PosAndDesc {
         PosAndDesc{ pos: pos_and_desc.0, desc: pos_and_desc.1 }
     }
 }
@@ -251,28 +251,28 @@ pub struct Message {
     pub helps: Vec<String>,
 }
 impl Message {    
-    pub fn new(main_desc: String, pos_and_descs: Vec<(StringPosition, String)>) -> Message {
+    pub fn new(main_desc: String, pos_and_descs: Vec<(Span, String)>) -> Message {
         Message{ 
             main_desc: main_desc, 
             pos_and_descs: pos_and_descs.into_iter().map(|pos_and_desc| pos_and_desc.into()).collect(), 
             helps: Vec::new() 
         }
     }
-    pub fn new_by_str(main_desc: &str, pos_and_descs: Vec<(StringPosition, &str)>) -> Message {
+    pub fn new_by_str(main_desc: &str, pos_and_descs: Vec<(Span, &str)>) -> Message {
         Message{ 
             main_desc: main_desc.to_owned(), 
             pos_and_descs: pos_and_descs.into_iter().map(|pos_and_desc| match pos_and_desc { (pos, desc) => (pos, desc.to_owned()).into() }).collect(),
             helps: Vec::new(),
         }
     }
-    pub fn with_help(main_desc: String, pos_and_descs: Vec<(StringPosition, String)>, helps: Vec<String>) -> Message {
+    pub fn with_help(main_desc: String, pos_and_descs: Vec<(Span, String)>, helps: Vec<String>) -> Message {
         Message{ 
             main_desc: main_desc, 
             pos_and_descs: pos_and_descs.into_iter().map(|pos_and_desc| pos_and_desc.into()).collect(), 
             helps: helps 
         }
     }
-    pub fn with_help_by_str(main_desc: &str, pos_and_descs: Vec<(StringPosition, &str)>, helps: Vec<&str>) -> Message {
+    pub fn with_help_by_str(main_desc: &str, pos_and_descs: Vec<(Span, &str)>, helps: Vec<&str>) -> Message {
         Message{ 
             main_desc: main_desc.to_owned(), 
             pos_and_descs: pos_and_descs.into_iter().map(|pos_and_desc| match pos_and_desc { (pos, desc) => (pos, desc.to_owned()).into() }).collect(),
@@ -371,12 +371,12 @@ fn message_complex_new() {
 
     assert_eq!(
         Message::new_by_str("123", vec![
-            (StringPosition::new(), "456"),
-            (StringPosition::new(), "789"),
+            (Span::default(), "456"),
+            (Span::default(), "789"),
         ]), 
         Message::new("123".to_owned(), vec![
-            (StringPosition::new(), "456".to_owned()),
-            (StringPosition::new(), "789".to_owned()),
+            (Span::default(), "456".to_owned()),
+            (Span::default(), "789".to_owned()),
         ])
     );
 }
@@ -387,20 +387,20 @@ fn message_by_macro() {
     let mut messages = MessageCollection::new();
     assert_eq!(messages, make_messages![]);
 
-    messages.push(Message::new_by_str("a", vec![(make_strpos!(1, 1, 1, 1), "b")]));
-    assert_eq!(messages, make_messages![Message::new_by_str("a", vec![(make_strpos!(1, 1, 1, 1), "b")])]);
-    assert_eq!(messages, make_messages![Message::new_by_str("a", vec![(make_strpos!(1, 1, 1, 1), "b")]), ]);
+    messages.push(Message::new_by_str("a", vec![(make_span!(1, 1), "b")]));
+    assert_eq!(messages, make_messages![Message::new_by_str("a", vec![(make_span!(1, 1), "b")])]);
+    assert_eq!(messages, make_messages![Message::new_by_str("a", vec![(make_span!(1, 1), "b")]), ]);
 
-    messages.push(Message::new_by_str("c", vec![(make_strpos!(1, 2, 1, 3), "d")]));
-    messages.push(Message::new_by_str("e", vec![(make_strpos!(1, 2, 1, 8), "f")]));
+    messages.push(Message::new_by_str("c", vec![(make_span!(2, 3), "d")]));
+    messages.push(Message::new_by_str("e", vec![(make_span!(2, 8), "f")]));
     assert_eq!(messages, make_messages![
-        Message::new_by_str("a", vec![(make_strpos!(1, 1, 1, 1), "b")]), 
-        Message::new_by_str("c", vec![(make_strpos!(1, 2, 1, 3), "d")]),
-        Message::new_by_str("e", vec![(make_strpos!(1, 2, 1, 8), "f")])
+        Message::new_by_str("a", vec![(make_span!(1, 1), "b")]), 
+        Message::new_by_str("c", vec![(make_span!(2, 3), "d")]),
+        Message::new_by_str("e", vec![(make_span!(2, 8), "f")])
     ]);
     assert_eq!(messages, make_messages![
-        Message::new_by_str("a", vec![(make_strpos!(1, 1, 1, 1), "b")]), 
-        Message::new_by_str("c", vec![(make_strpos!(1, 2, 1, 3), "d")]),
-        Message::new_by_str("e", vec![(make_strpos!(1, 2, 1, 8), "f")]),
+        Message::new_by_str("a", vec![(make_span!(1, 1), "b")]), 
+        Message::new_by_str("c", vec![(make_span!(2, 3), "d")]),
+        Message::new_by_str("e", vec![(make_span!(2, 8), "f")]),
     ]);
 }

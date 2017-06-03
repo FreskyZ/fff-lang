@@ -29,4 +29,6 @@ define_string!{ StringLiteralStartHere, "String literal start here" }
 define_string!{ UnexpectedStringLiteralEnd, "Unexpected string literal end" }
 define_string!{ StringLiteralEndHere, "String literal end here" }
 define_string!{ LastEscapedQuoteHere, "Last escaped quote here" }
+define_string!{ CharLiteralHere, "Char literal here" }
+define_string!{ UnicodeCharEscapeHere, "Unicode char escape here" }
 define_string!{ Empty, "" } // make style same

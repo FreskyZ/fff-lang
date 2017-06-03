@@ -12,6 +12,7 @@ pub const EOFSCHAR: char = 255u8 as char;
 
 pub struct CodeFileIter<'a> {
     file_id: usize,
+    eof_index: usize,
     chars: CharIndices<'a>,
 }
 impl<'a> CodeFileIter<'a> {
@@ -19,6 +20,7 @@ impl<'a> CodeFileIter<'a> {
     fn new(codefile: &'a CodeFile) -> CodeFileIter<'a> {
         CodeFileIter{
             file_id: codefile.id,
+            eof_index: codefile.content.as_bytes().len(),
             chars: codefile.content.char_indices(),
         }
     }
@@ -28,7 +30,7 @@ impl<'a> CodeFileIter<'a> {
             match self.chars.next() {
                 Some((_, '\r')) => continue,
                 Some((index, ch)) => return (ch, CharPos::new(self.file_id, index)),
-                None => return (EOFCHAR, CharPos::new(self.file_id, !1)),
+                None => return (EOFCHAR, CharPos::new(self.file_id, self.eof_index)),
             }
         }
     }

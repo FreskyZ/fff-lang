@@ -79,3 +79,4 @@ pub const DotAtHead: &'static str = "decimal dot should not be before first digi
 pub const DotAtEnd: &'static str = "decimal dot should not be after last digit of numeric literal";
 pub const DotDouble: &'static str = "multiple decimal dot";
 pub const MaybeIntPostfixInFloatPoint: &'static str = "maybe integral postfix not allowed in floating point literal";
+pub const UseReservedKeyword: &str = "Use of reserved keyword";

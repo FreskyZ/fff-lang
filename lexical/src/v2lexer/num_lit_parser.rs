@@ -43,7 +43,7 @@
 
 use std::cell::Cell;
 
-use codemap::StringPosition;
+use codemap::Span;
 use message::Message;
 use message::MessageCollection;
 use codemap::EOFCHAR;
@@ -223,7 +223,7 @@ fn u64_final_value(value: u64, is_positive: bool) -> NumLitValue {
 }
 
 // Actual impl, huge state machine
-fn str_to_num_lit_impl(raw: String, strpos: StringPosition) -> Result<NumLitValue, Message> {
+fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message> {
     use std::{ i8, u8, i16, u16, i32, u32, i64, u64, f32, f64 };
 
     if cfg!(feature = "trace_num_lit_parse") {
@@ -912,7 +912,7 @@ fn str_to_num_lit_impl(raw: String, strpos: StringPosition) -> Result<NumLitValu
     }
 }
 
-pub fn parse_numeric_literal(raw: String, pos: StringPosition, messages: &mut MessageCollection) -> (Option<NumLitValue>, StringPosition) {
+pub fn parse_numeric_literal(raw: String, pos: Span, messages: &mut MessageCollection) -> (Option<NumLitValue>, Span) {
     
     match str_to_num_lit_impl(raw, pos) {
         Ok(value) => (Some(value), pos),
@@ -982,7 +982,7 @@ fn num_lit_f64_checked() {
 #[allow(unused_variables)]
 fn num_lit_feature() {
 
-    let strpos = make_str_pos!(1, 2, 3, 4);
+    let strpos = make_span!(2, 4);
     let refposinfo = vec![(strpos, "")];
     let posinfo = vec![(strpos, String::new())];
 

@@ -6,7 +6,7 @@ mod num_lit_parser;
 mod unicode_char;
 mod error_strings;
 
-use codemap::StringPosition;
+use codemap::Span;
 use codemap::CodeChars;
 use codemap::EOFCHAR;
 use message::Message;
@@ -64,7 +64,7 @@ trait IdentifierChar {
 
     fn is_seperator(&self) -> bool;
     
-    fn pass_non_ascii_char(&self, strpos: StringPosition, messages: &mut MessageCollection) -> char; 
+    fn pass_non_ascii_char(&self, strpos: Span, messages: &mut MessageCollection) -> char; 
 }
 impl IdentifierChar for char {
 
@@ -100,7 +100,7 @@ impl IdentifierChar for char {
         !self.is_identifier()
     }
 
-    fn pass_non_ascii_char(&self, strpos: StringPosition, messages: &mut MessageCollection) -> char {
+    fn pass_non_ascii_char(&self, strpos: Span, messages: &mut MessageCollection) -> char {
         use self::unicode_char::check_unicode_char;
 
         match check_unicode_char(*self) {
@@ -129,16 +129,24 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
     }
 
     // input stringliteral or otherchar without comment, output identifier and numeric literal
-    fn next(&mut self, messages: &mut MessageCollection) -> (V2Token, StringPosition) {
+    fn next(&mut self, messages: &mut MessageCollection) -> (V2Token, Span) {
 
         #[cfg(feature = "trace_v2_parse")] macro_rules! trace { ($($arg:tt)*) => ({ print!("[V2Next:{}] ", line!()); println!($($arg)*); }) }
         #[cfg(not(feature = "trace_v2_parse"))] macro_rules! trace { ($($arg:tt)*) => () }
 
-        macro_rules! ident_to_v2 { ($ident_value: expr) => ({
+        macro_rules! ident_to_v2 { ($ident_value: expr, $ident_pos: expr) => ({
             match KeywordKind::try_from(&$ident_value) { 
                 Some(KeywordKind::True) => V2Token::Literal(LitValue::from(true)),
                 Some(KeywordKind::False) => V2Token::Literal(LitValue::from(false)),
-                Some(other_keyword) => V2Token::Keyword(other_keyword),
+                Some(other_keyword) => {
+                    if other_keyword.is_reserved() {
+                        messages.push(Message::new(
+                            format!("{}: {:?}", error_strings::UseReservedKeyword, KeywordKind::As), 
+                            vec![($ident_pos, String::new())]
+                        ));
+                    }
+                    V2Token::Keyword(other_keyword)
+                }
                 None => V2Token::Identifier($ident_value),
             }
         }) }
@@ -148,14 +156,14 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
         }) }
 
         #[cfg_attr(test, derive(Debug))]
-        struct V15Token(char, StringPosition, char, StringPosition, char, StringPosition);
+        struct V15Token(char, Span, char, Span, char, Span);
 
         #[cfg_attr(test, derive(Debug))]
         enum State {
             Nothing,
-            InIdent(String, StringPosition),
-            InLabel(String, StringPosition),
-            InNumLit(String, StringPosition),
+            InIdent(String, Span),
+            InLabel(String, Span),
+            InNumLit(String, Span),
         }
 
         let mut state = State::Nothing;
@@ -208,7 +216,7 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                     if ch.is_identifier_start() {
                         let mut value = String::new();
                         value.push(ch);
-                        return (ident_to_v2!(value), strpos);
+                        return (ident_to_v2!(value, strpos), strpos);
                     } else if ch.is_numeric_literal_start() {
                         let mut value = String::new();
                         value.push(ch);
@@ -227,7 +235,7 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                         let mut value = String::new();
                         value.push(ch);
                         if !next_ch.is_identifier() {             // TODO future: understand why it is here to make the last case pass
-                            return (ident_to_v2!(value), strpos);
+                            return (ident_to_v2!(value, strpos), strpos);
                         }
                         state = State::InIdent(value, strpos);
                     } else if ch.is_numeric_literal_start() {
@@ -248,13 +256,13 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                             Some((seperator, 2)) => {
                                 trace!("ch is {:?} at {:?}, next_ch is {:?}, result is {:?}", ch, strpos, next_ch, seperator);
                                 self.v1.prepare_skip1();
-                                return (V2Token::Seperator(seperator), StringPosition::merge(strpos, next_strpos));
+                                return (V2Token::Seperator(seperator), strpos.merge(&next_strpos));
                             }
                             Some((seperator, 3)) => {
                                 trace!("ch is {:?} at {:?}, next_ch is {:?}, nextnext_ch is {:?}, result is {:?}", ch, strpos, next_ch, nextnext_ch, seperator);
                                 self.v1.prepare_skip1();
                                 self.v1.prepare_skip1();
-                                return (V2Token::Seperator(seperator), StringPosition::merge(strpos, nextnext_strpos));
+                                return (V2Token::Seperator(seperator), strpos.merge(&nextnext_strpos));
                             }
                             _ => state = State::Nothing,
                         }
@@ -262,14 +270,14 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                 } 
                 (State::InIdent(mut value, mut ident_strpos), V15Token(ch, strpos, next_ch, _4, _5, _6)) => {
                     if !ch.is_identifier() {
-                        return (ident_to_v2!(value), ident_strpos);
+                        return (ident_to_v2!(value, ident_strpos), ident_strpos);
                     } else if !next_ch.is_identifier() {
                         value.push(ch); 
-                        ident_strpos = StringPosition::merge(ident_strpos, strpos);
-                        return (ident_to_v2!(value), ident_strpos);
+                        ident_strpos = ident_strpos.merge(&strpos);
+                        return (ident_to_v2!(value, ident_strpos), ident_strpos);
                     } else {
                         value.push(ch);
-                        ident_strpos = StringPosition::merge(ident_strpos, strpos);
+                        ident_strpos = ident_strpos.merge(&strpos);
                         state = State::InIdent(value, ident_strpos);
                     }
                 }
@@ -278,11 +286,11 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                         return (V2Token::Label(value), label_strpos);
                     } else if !next_ch.is_label() {
                         value.push(ch);
-                        label_strpos = StringPosition::merge(label_strpos, strpos);
+                        label_strpos = label_strpos.merge(&strpos);
                         return (V2Token::Label(value), label_strpos);
                     } else {
                         value.push(ch);
-                        label_strpos = StringPosition::merge(label_strpos, strpos);
+                        label_strpos = label_strpos.merge(&strpos);
                         state = State::InLabel(value, label_strpos);
                     }
                 }
@@ -295,11 +303,11 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                         return num_lit_to_v2!(value, num_lit_strpos);
                     } else if !next_ch.is_numeric_literal() {
                         value.push(ch);
-                        num_lit_strpos = StringPosition::merge(num_lit_strpos, strpos);
+                        num_lit_strpos = num_lit_strpos.merge(&strpos);
                         return num_lit_to_v2!(value, num_lit_strpos);
                     } else {
                         value.push(ch);
-                        num_lit_strpos = StringPosition::merge(num_lit_strpos, strpos);
+                        num_lit_strpos = num_lit_strpos.merge(&strpos);
                         state = State::InNumLit(value, num_lit_strpos);
                     }
                 }
@@ -308,8 +316,7 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
     }
 }
 
-#[cfg(test)]
-#[test]
+#[cfg(test)] #[test]
 fn v2_char_ext() {
     
     assert_eq!('a'.is_identifier_start(), true);
@@ -353,13 +360,12 @@ fn v2_char_ext() {
     assert_eq!('1'.is_seperator(), false);
 }
 
-#[cfg(test)]
-#[test]
+#[cfg(test)] #[test]
 fn v2_non_ascii_ch() {
     
     {
         let messages = &mut MessageCollection::new();
-        assert_eq!('.'.pass_non_ascii_char(make_str_pos!(3, 4, 5, 6), messages), '.');
+        assert_eq!('.'.pass_non_ascii_char(make_span!(4, 6), messages), '.');
 
         let expect_messages = &mut MessageCollection::new();
         assert_eq!(messages, expect_messages);
@@ -367,7 +373,7 @@ fn v2_non_ascii_ch() {
     
     {
         let messages = &mut MessageCollection::new();
-        assert_eq!('\\'.pass_non_ascii_char(make_str_pos!(3, 4, 5, 6), messages), '\\');
+        assert_eq!('\\'.pass_non_ascii_char(make_span!(4, 6), messages), '\\');
 
         let expect_messages = &mut MessageCollection::new();
         assert_eq!(messages, expect_messages);
@@ -375,7 +381,7 @@ fn v2_non_ascii_ch() {
     
     {
         let messages = &mut MessageCollection::new();
-        assert_eq!(';'.pass_non_ascii_char(make_str_pos!(3, 4, 5, 6), messages), ';');
+        assert_eq!(';'.pass_non_ascii_char(make_span!(4, 6), messages), ';');
 
         let expect_messages = &mut MessageCollection::new();
         assert_eq!(messages, expect_messages);
@@ -383,11 +389,11 @@ fn v2_non_ascii_ch() {
 
     {
         let messages = &mut MessageCollection::new();
-        assert_eq!('。'.pass_non_ascii_char(make_str_pos!(3, 4, 5, 6), messages), '.');
+        assert_eq!('。'.pass_non_ascii_char(make_span!(4, 6), messages), '.');
 
         let expect_messages = &mut MessageCollection::new();
         expect_messages.push(Message::with_help_by_str(error_strings::UnexpectedNonASCIIChar, vec![
-            (make_str_pos!(3, 4, 5, 6), ""), 
+            (make_span!(4, 6), ""), 
         ], vec![
             &format!("Did you mean `{}`({}) by `{}`({})?", '.', "Period", '。', "Ideographic Full Stop"),
         ]));
@@ -396,11 +402,11 @@ fn v2_non_ascii_ch() {
 
     {
         let messages = &mut MessageCollection::new();
-        assert_eq!('⧹'.pass_non_ascii_char(make_str_pos!(3, 4, 5, 6), messages), '\\');
+        assert_eq!('⧹'.pass_non_ascii_char(make_span!(4, 6), messages), '\\');
 
         let expect_messages = &mut MessageCollection::new();
         expect_messages.push(Message::with_help_by_str(error_strings::UnexpectedNonASCIIChar, vec![
-            (make_str_pos!(3, 4, 5, 6), ""), 
+            (make_span!(4, 6), ""), 
         ], vec![
             &format!("Did you mean `{}`({}) by `{}`({})?", '\\', "Backslash", '⧹', "Big Reverse Solidus"),
         ]));
@@ -409,11 +415,11 @@ fn v2_non_ascii_ch() {
 
     {
         let messages = &mut MessageCollection::new();
-        assert_eq!('；'.pass_non_ascii_char(make_str_pos!(3, 4, 5, 6), messages), ';');
+        assert_eq!('；'.pass_non_ascii_char(make_span!(4, 6), messages), ';');
 
         let expect_messages = &mut MessageCollection::new();
         expect_messages.push(Message::with_help_by_str(error_strings::UnexpectedNonASCIIChar, vec![
-            (make_str_pos!(3, 4, 5, 6), ""), 
+            (make_span!(4, 6), ""), 
         ], vec![
             &format!("Did you mean `{}`({}) by `{}`({})?", ';', "Semicolon", '；', "Fullwidth Semicolon"),
         ]));
@@ -428,10 +434,10 @@ fn v2_base() {
 
     // Only to make decltype(V2Lexer as BufLexer::next(...)) to display better
     #[derive(Eq, PartialEq)]
-    struct V2AndStrPos(V2Token, StringPosition);
+    struct V2AndStrPos(V2Token, Span);
     use std::fmt;
-    impl From<(V2Token, StringPosition)> for V2AndStrPos {
-        fn from(v2_and_strpos: (V2Token, StringPosition)) -> V2AndStrPos {
+    impl From<(V2Token, Span)> for V2AndStrPos {
+        fn from(v2_and_strpos: (V2Token, Span)) -> V2AndStrPos {
             V2AndStrPos(v2_and_strpos.0, v2_and_strpos.1)
         }
     }
@@ -442,7 +448,7 @@ fn v2_base() {
     }
 
     macro_rules! test_case {
-        ($program: expr, $eof_pos: expr, [$($expect: expr, )*] [$($expect_msg: expr, )*]) => ({
+        ($program: expr, $eof_pos: expr, [$($expect: expr, )*], $expect_msgs: expr) => ({
             let messages = &mut MessageCollection::new();
             let codemap = CodeMap::with_test_str($program);
             let mut v2lexer = V2Lexer::new(codemap.iter(), messages);
@@ -458,291 +464,272 @@ fn v2_base() {
             expect_v2s.push(V2AndStrPos::from((V2Token::EOF, $eof_pos)));
             assert_eq!(v2s, expect_v2s, "Case {:?}\n", $program);
 
-            let expect_messages = &mut MessageCollection::new();
-            $(
-                expect_messages.push($expect_msg);
-            )*
-            assert_eq!(messages, expect_messages, "Case {:?}\n", $program);
+            assert_eq!(messages, &$expect_msgs, "Case {:?}\n", $program);
         });
-        ($program: expr, $eof_pos: expr, [$($expect: expr, )*]) => (test_case!($program, $eof_pos, [$($expect, )*] []))
+        ($program: expr, $eof_pos: expr, [$($expect: expr, )*]) => (test_case!($program, $eof_pos, [$($expect, )*], make_messages![]))
     }
 
     macro_rules! lit {
-        ($val: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr) => (
-            (V2Token::Literal(LitValue::from($val)), StringPosition::from4($row1, $col1, $row2, $col2))
-        )
+        ($val: expr, $start_id: expr, $end_id: expr) => ((V2Token::Literal(LitValue::from($val)), make_span!($start_id, $end_id)))
     }
     macro_rules! lit_num_none {
-        ($row1: expr, $col1: expr, $row2: expr, $col2: expr) => (
-            (V2Token::Literal(LitValue::Num(None)), StringPosition::from4($row1, $col1, $row2, $col2))
-        )
+        ($start_id: expr, $end_id: expr) => ((V2Token::Literal(LitValue::Num(None)), make_span!($start_id, $end_id)))
     }
     macro_rules! label {
-        ($val: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr) => (
-            (V2Token::Label($val.to_owned()), StringPosition::from4($row1, $col1, $row2, $col2))
-        )
+        ($val: expr, $start_id: expr, $end_id: expr) => ((V2Token::Label($val.to_owned()), make_span!($start_id, $end_id)))
     }
     macro_rules! kw {
-        ($val: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr) => (
-            (V2Token::Keyword($val), StringPosition::from4($row1, $col1, $row2, $col2))
-        )
+        ($val: expr, $start_id: expr, $end_id: expr) => ((V2Token::Keyword($val), make_span!($start_id, $end_id)))
     }
     macro_rules! ident {
-        ($name: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr) => (
-            (V2Token::Identifier($name.to_owned()), StringPosition::from4($row1, $col1, $row2, $col2))
-        )
+        ($name: expr, $start_id: expr, $end_id: expr) => ((V2Token::Identifier($name.to_owned()), make_span!($start_id, $end_id)))
     }
     macro_rules! sep {
-        ($sep: expr, $row1: expr, $col1: expr, $row2: expr, $col2: expr) => (
-            (V2Token::Seperator($sep), make_str_pos!($row1, $col1, $row2, $col2))
-        )
+        ($sep: expr, $start_id: expr, $end_id: expr) => ((V2Token::Seperator($sep), make_span!($start_id, $end_id)))
     }
 
     // row       1              2                     3
     // col       0        1     0        1         2  0
     // col       1234567890123 412345678901234567890 11234
-    test_case!{ "var a = true;\nvar b = 789_123.456;\ndefg", make_str_pos!(3, 5, 3, 5), [  // keyword, identifier, bool lit, num lit, seperator
-            kw!(KeywordKind::Var, 1, 1, 1, 3),
-            ident!("a", 1, 5, 1, 5),
-            sep!(SeperatorKind::Assign, 1, 7, 1, 7),
-            lit!(true, 1, 9, 1, 12),
-            sep!(SeperatorKind::SemiColon, 1, 13, 1, 13),
-            kw!(KeywordKind::Var, 2, 1, 2, 3),
-            ident!("b", 2, 5, 2, 5),
-            sep!(SeperatorKind::Assign, 2, 7, 2, 7),
-            lit!(789123.4560000001, 2, 9, 2, 19),
-            sep!(SeperatorKind::SemiColon, 2, 20, 2, 20),
-            ident!("defg", 3, 1, 3, 4),
-        ]
-    }
+    // byte      0         1          2         3   
+    // byte      01234567890123 456789012345678901234 5678
+    test_case!{ "var a = true;\nvar b = 789_123.456;\ndefg", make_span!(39, 39), [  // keyword, identifier, bool lit, num lit, seperator
+        kw!(KeywordKind::Var, 0, 2),
+        ident!("a", 4, 4),
+        sep!(SeperatorKind::Assign, 6, 6),
+        lit!(true, 8, 11),
+        sep!(SeperatorKind::SemiColon, 12, 12),
+        kw!(KeywordKind::Var, 14, 16),
+        ident!("b", 18, 18),
+        sep!(SeperatorKind::Assign, 20, 20),
+        lit!(789123.4560000001, 22, 32),
+        sep!(SeperatorKind::SemiColon, 33, 33),
+        ident!("defg", 35, 38),
+    ]}
 
     //           0          1            2
     //           1 2 34567890 123456 7 8901
-    test_case!{ "一个chinese变量, a_中文_var", make_str_pos!(1, 22, 1, 22), [  // chinese ident
-            ident!("一个chinese变量", 1, 1, 1, 11),
-            sep!(SeperatorKind::Comma, 1, 12, 1, 12),
-            ident!("a_中文_var", 1, 14, 1, 21),
-        ]
-    }
-
-    //           0        1         2         3         4         5         6         7
-    //           1234567890123456789012345678901234567890123456789012345678901234567890123456
-    test_case!{ "[1, 123 _ 1u64( 123.456,) -123_456{123u32}123f32 += 123.0 / 123u8 && 1024u8]", make_str_pos!(1, 77, 1, 77), [  // different postfix\types of num lit, different types of sep
-            sep!(SeperatorKind::LeftBracket, 1, 1, 1, 1),
-            lit!(1, 1, 2, 1, 2),
-            sep!(SeperatorKind::Comma, 1, 3, 1, 3),
-            lit!(123, 1, 5, 1, 7),
-            kw!(KeywordKind::Underscore, 1, 9, 1, 9),
-            lit!(1u64, 1, 11, 1, 14),
-            sep!(SeperatorKind::LeftParenthenes, 1, 15, 1, 15),
-            lit!(123.456, 1, 17, 1, 23),
-            sep!(SeperatorKind::Comma, 1, 24, 1, 24),
-            sep!(SeperatorKind::RightParenthenes, 1, 25, 1, 25),
-            sep!(SeperatorKind::Sub, 1, 27, 1, 27),
-            lit!(123456, 1, 28, 1, 34),
-            sep!(SeperatorKind::LeftBrace, 1, 35, 1, 35),
-            lit!(123u32, 1, 36, 1, 41),
-            sep!(SeperatorKind::RightBrace, 1, 42, 1, 42),
-            lit!(123f32, 1, 43, 1, 48),
-            sep!(SeperatorKind::AddAssign, 1, 50, 1, 51),
-            lit!(123.0, 1, 53, 1, 57),
-            sep!(SeperatorKind::Div, 1, 59, 1, 59),
-            lit!(123u8, 1, 61, 1, 65),
-            sep!(SeperatorKind::LogicalAnd, 1, 67, 1, 68),
-            lit_num_none!(1, 70, 1, 75),
-            sep!(SeperatorKind::RightBracket, 1, 76, 1, 76),
-        ] [
-            Message::with_help(
-                format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::IntegralOverflow),
-                vec![(make_str_pos!(1, 70, 1, 75), String::new())],
-                vec![error_strings::IntegralOverflowHelpMaxValue[1].to_owned()]
-            ),
-        ]
-    }
-
-    //           0        1         2         3         4         5         6         7         8
-    //           1234567890123456789012345678901234567890123456789012345678901234567890123456789012345
-    test_case!{ "[123 * 0x123 - 0xAFF & 0o777 || 0oXXX != 0b101010 == 0b123456 -> 0d123.. 0dABC] .. -=", make_str_pos!(1, 86, 1, 86), [    // differnt prefix\base of num lit
-            sep!(SeperatorKind::LeftBracket, 1, 1, 1, 1),
-            lit!(123, 1, 2, 1, 4),
-            sep!(SeperatorKind::Mul, 1, 6, 1, 6),
-            lit!(0x123, 1, 8, 1, 12),
-            sep!(SeperatorKind::Sub, 1, 14, 1, 14),
-            lit!(0xAFF, 1, 16, 1, 20),
-            sep!(SeperatorKind::BitAnd, 1, 22, 1, 22),
-            lit!(0o777, 1, 24, 1, 28),
-            sep!(SeperatorKind::LogicalOr, 1, 30, 1, 31),
-            lit_num_none!(1, 33, 1, 37),
-            sep!(SeperatorKind::NotEqual, 1, 39, 1, 40),
-            lit!(0b101010, 1, 42, 1, 49),
-            sep!(SeperatorKind::Equal, 1, 51, 1, 52),
-            lit_num_none!(1, 54, 1, 61),
-            sep!(SeperatorKind::NarrowRightArrow, 1, 63, 1, 64),
-            lit!(123, 1, 66, 1, 70),
-            sep!(SeperatorKind::Range, 1, 71, 1, 72),
-            lit_num_none!(1, 74, 1, 78),
-            sep!(SeperatorKind::RightBracket, 1, 79, 1, 79),
-            sep!(SeperatorKind::Range, 1, 81, 1, 82),
-            sep!(SeperatorKind::SubAssign, 1, 84, 1, 85),
-        ] [
-            Message::with_help(
-                format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::InvalidCharInIntLiteral),
-                vec![(make_str_pos!(1, 33, 1, 37), String::new())],
-                vec![error_strings::IntLiteralAllowedChars[1].to_owned()]
-            ),
-            Message::with_help(
-                format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::InvalidCharInIntLiteral),
-                vec![(make_str_pos!(1, 54, 1, 61), String::new())],
-                vec![error_strings::IntLiteralAllowedChars[0].to_owned()]
-            ),
-            Message::with_help(
-                format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::InvalidCharInIntLiteral),
-                vec![(make_str_pos!(1, 74, 1, 78), String::new())],
-                vec![error_strings::IntLiteralAllowedChars[2].to_owned()]
-            ),
-        ]
-    }
-
-    //           0         1
-    //           123456 7890123 45678
-    test_case!{ "[1, 2，3.5, 4。5】<<=", make_str_pos!(1, 19, 1, 19), [  // not ascii char hint and recover
-            sep!(SeperatorKind::LeftBracket, 1, 1, 1, 1),
-            lit!(1, 1, 2, 1, 2),
-            sep!(SeperatorKind::Comma, 1, 3, 1, 3),
-            lit!(2, 1, 5, 1, 5),
-            sep!(SeperatorKind::Comma, 1, 6, 1, 6),
-            lit!(3.5, 1, 7, 1, 9),
-            sep!(SeperatorKind::Comma, 1, 10, 1, 10),
-            lit!(4.5, 1, 12, 1, 14),
-            sep!(SeperatorKind::RightBracket, 1, 15, 1, 15),
-            sep!(SeperatorKind::ShiftLeftAssign, 1, 16, 1, 18),
-        ] [
-            Message::with_help_by_str(error_strings::UnexpectedNonASCIIChar, vec![
-                (make_str_pos!(1, 6, 1, 6), ""), 
-            ], vec![
-                &format!("Did you mean `{}`({}) by `{}`({})?", ',', "Comma", '，', "Fullwidth Comma"),
-            ]),
-            Message::with_help_by_str(error_strings::UnexpectedNonASCIIChar, vec![
-                (make_str_pos!(1, 13, 1, 13), ""), 
-            ], vec![
-                &format!("Did you mean `{}`({}) by `{}`({})?", '.', "Period", '。', "Ideographic Full Stop"),
-            ]),
-            Message::with_help_by_str(error_strings::UnexpectedNonASCIIChar, vec![
-                (make_str_pos!(1, 15, 1, 15), ""), 
-            ], vec![
-                &format!("Did you mean `{}`({}) by `{}`({})?", ']', "Right Square Bracket", '】', "Right Black Lenticular Bracket"),
-            ]),
-        ]
-    }
-
-    //           123456789
-    test_case!{ "1..2.0f32", make_str_pos!(1, 10, 1, 10), [  // range operator special case
-            lit!(1, 1, 1, 1, 1),
-            sep!(SeperatorKind::Range, 1, 2, 1, 3),
-            lit!(2f32, 1, 4, 1, 9),
-        ]
-    }
-
-    //           12345
-    test_case!{ "2...3", make_str_pos!(1, 6, 1, 6), [  // range operator special case 2
-            lit!(2, 1, 1, 1, 1),
-            sep!(SeperatorKind::Range, 1, 2, 1, 3),
-            sep!(SeperatorKind::Dot, 1, 4, 1, 4),
-            lit!(3, 1, 5, 1, 5),
-        ]
-    }
-
-    //           0        1         2         3
-    //           123456789012345678901234567890
-    test_case!{ "1.is_odd(), 123f64.to_string()", make_str_pos!(1, 31, 1, 31), [  //  another special case
-            lit!(1, 1, 1, 1, 1),
-            sep!(SeperatorKind::Dot, 1, 2, 1, 2),
-            ident!("is_odd", 1, 3, 1, 8),
-            sep!(SeperatorKind::LeftParenthenes, 1, 9, 1, 9),
-            sep!(SeperatorKind::RightParenthenes, 1, 10, 1, 10),
-            sep!(SeperatorKind::Comma, 1, 11, 1, 11),
-            lit!(123f64, 1, 13, 1, 18),
-            sep!(SeperatorKind::Dot, 1, 19, 1, 19),
-            ident!("to_string", 1, 20, 1, 28),
-            sep!(SeperatorKind::LeftParenthenes, 1, 29, 1, 29),
-            sep!(SeperatorKind::RightParenthenes, 1, 30, 1, 30),
-        ]
-    }
-
-    //           0          1          2
-    //           1 234567 8901 2345678901234567
-    test_case!{ "r\"hello\" '\\u1234' 12/**/34 ", make_str_pos!(1, 28, 1, 28), [    // dispatch v1
-            lit!("hello", 1, 1, 1, 8),
-            lit!('\u{1234}', 1, 10, 1, 17),
-            lit!(12, 1, 19, 1, 20),
-            lit!(34, 1, 25, 1, 26),
-        ]
-    }
-
-    //           0        1         2         3         4         5
-    //           123456789012345678901234567890123456789012345678901234
-    test_case!{ "1.a[[3](4, [5, 6], )](7, 8)() as [i32].bcd[10, 11, 12]", make_strpos!(1, 55, 1, 55), [ // bug from syntax::expr::postfix_expr
-        lit!(1, 1, 1, 1, 1),
-        sep!(SeperatorKind::Dot, 1, 2, 1, 2),
-        ident!("a", 1, 3, 1, 3),
-        sep!(SeperatorKind::LeftBracket, 1, 4, 1, 4),
-        sep!(SeperatorKind::LeftBracket, 1, 5, 1, 5),
-        lit!(3, 1, 6, 1, 6),
-        sep!(SeperatorKind::RightBracket, 1, 7, 1, 7),
-        sep!(SeperatorKind::LeftParenthenes, 1, 8, 1, 8),
-        lit!(4, 1, 9, 1, 9),
-        sep!(SeperatorKind::Comma, 1, 10, 1, 10),
-        sep!(SeperatorKind::LeftBracket, 1, 12, 1, 12),
-        lit!(5, 1, 13, 1, 13),
-        sep!(SeperatorKind::Comma, 1, 14, 1, 14),
-        lit!(6, 1, 16, 1, 16),
-        sep!(SeperatorKind::RightBracket, 1, 17, 1, 17),
-        sep!(SeperatorKind::Comma, 1, 18, 1, 18),
-        sep!(SeperatorKind::RightParenthenes, 1, 20, 1, 20),
-        sep!(SeperatorKind::RightBracket, 1, 21, 1, 21),
-        sep!(SeperatorKind::LeftParenthenes, 1, 22, 1, 22),
-        lit!(7, 1, 23, 1, 23),
-        sep!(SeperatorKind::Comma, 1, 24, 1, 24),
-        lit!(8, 1, 26, 1, 26),
-        sep!(SeperatorKind::RightParenthenes, 1, 27, 1, 27),
-        sep!(SeperatorKind::LeftParenthenes, 1, 28, 1, 28),
-        sep!(SeperatorKind::RightParenthenes, 1, 29, 1, 29),
-        kw!(KeywordKind::As, 1, 31, 1, 32),
-        sep!(SeperatorKind::LeftBracket, 1, 34, 1, 34),
-        kw!(KeywordKind::PrimTypeI32, 1, 35, 1, 37),
-        sep!(SeperatorKind::RightBracket, 1, 38, 1, 38),
-        sep!(SeperatorKind::Dot, 1, 39, 1, 39),
-        ident!("bcd", 1, 40, 1, 42),
-        sep!(SeperatorKind::LeftBracket, 1, 43, 1, 43),
-        lit!(10, 1, 44, 1, 45),
-        sep!(SeperatorKind::Comma, 1, 46, 1, 46),
-        lit!(11, 1, 48, 1, 49),
-        sep!(SeperatorKind::Comma, 1, 50, 1, 50),
-        lit!(12, 1, 52, 1, 53),
-        sep!(SeperatorKind::RightBracket, 1, 54, 1, 54),
+    //           0       1      2       3
+    //           0 3 67890123 690123 4 9012
+    test_case!{ "一个chinese变量, a_中文_var", make_span!(33, 33), [  // chinese ident
+        ident!("一个chinese变量", 0, 16),
+        sep!(SeperatorKind::Comma, 19, 19),
+        ident!("a_中文_var", 21, 32),
     ]}
 
-    //           0        1     
-    //           123456789012345678
-    test_case!{ "abc @abc @ @@ 1 @a", make_strpos!(1, 19, 1, 19), [
-        ident!("abc", 1, 1, 1, 3),
-        label!("abc", 1, 5, 1, 8),
-        label!("", 1, 10, 1, 10),
-        label!("@", 1, 12, 1, 13),
-        lit!(1, 1, 15, 1, 15),
-        label!("a", 1, 17, 1, 18),
+    //           0         1         2         3         4         5         6         7
+    //           0123456789012345678901234567890123456789012345678901234567890123456789012345
+    test_case!{ "[1, 123 _ 1u64( 123.456,) -123_456{123u32}123f32 += 123.0 / 123u8 && 1024u8]", make_span!(76, 76), [  // different postfix\types of num lit, different types of sep
+        sep!(SeperatorKind::LeftBracket, 0, 0),
+        lit!(1, 1, 1),
+        sep!(SeperatorKind::Comma, 2, 2),
+        lit!(123, 4, 6),
+        kw!(KeywordKind::Underscore, 8, 8),
+        lit!(1u64, 10, 13),
+        sep!(SeperatorKind::LeftParenthenes, 14, 14),
+        lit!(123.456, 16, 22),
+        sep!(SeperatorKind::Comma, 23, 23),
+        sep!(SeperatorKind::RightParenthenes, 24, 24),
+        sep!(SeperatorKind::Sub, 26, 26),
+        lit!(123456, 27, 33),
+        sep!(SeperatorKind::LeftBrace, 34, 34),
+        lit!(123u32, 35, 40),
+        sep!(SeperatorKind::RightBrace, 41, 41),
+        lit!(123f32, 42, 47),
+        sep!(SeperatorKind::AddAssign, 49, 50),
+        lit!(123.0, 52, 56),
+        sep!(SeperatorKind::Div, 58, 58),
+        lit!(123u8, 60, 64),
+        sep!(SeperatorKind::LogicalAnd, 66, 67),
+        lit_num_none!(69, 74),
+        sep!(SeperatorKind::RightBracket, 75, 75),
+    ], make_messages![
+        Message::with_help(
+            format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::IntegralOverflow),
+            vec![(make_span!(69, 74), String::new())],
+            vec![error_strings::IntegralOverflowHelpMaxValue[1].to_owned()]
+        ),
     ]}
 
-    test_case!{ "@", make_strpos!(1, 2, 1, 2), [label!("", 1, 1, 1, 1),] }
-
-    test_case!{ "a:", make_strpos!(1, 3, 1, 3), [
-        ident!("a", 1, 1, 1, 1),
-        sep!(SeperatorKind::Colon, 1, 2, 1, 2),
+    //           0         1         2         3         4         5         6         7         8
+    //           0123456789012345678901234567890123456789012345678901234567890123456789012345678901234
+    test_case!{ "[123 * 0x123 - 0xAFF & 0o777 || 0oXXX != 0b101010 == 0b123456 -> 0d123.. 0dABC] .. -=", make_span!(85, 85), [    // differnt prefix\base of num lit
+        sep!(SeperatorKind::LeftBracket, 0, 0),
+        lit!(123, 1, 3),
+        sep!(SeperatorKind::Mul, 5, 5),
+        lit!(0x123, 7, 11),
+        sep!(SeperatorKind::Sub, 13, 13),
+        lit!(0xAFF, 15, 19),
+        sep!(SeperatorKind::BitAnd, 21, 21),
+        lit!(0o777, 23, 27),
+        sep!(SeperatorKind::LogicalOr, 29, 30),
+        lit_num_none!(32, 36),
+        sep!(SeperatorKind::NotEqual, 38, 39),
+        lit!(0b101010, 41, 48),
+        sep!(SeperatorKind::Equal, 50, 51),
+        lit_num_none!(53, 60),
+        sep!(SeperatorKind::NarrowRightArrow, 62, 63),
+        lit!(123, 65, 69),
+        sep!(SeperatorKind::Range, 70, 71),
+        lit_num_none!(73, 77),
+        sep!(SeperatorKind::RightBracket, 78, 78),
+        sep!(SeperatorKind::Range, 80, 81),
+        sep!(SeperatorKind::SubAssign, 83, 84),
+    ], make_messages![
+        Message::with_help(
+            format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::InvalidCharInIntLiteral),
+            vec![(make_span!(32, 36), String::new())],
+            vec![error_strings::IntLiteralAllowedChars[1].to_owned()]
+        ),
+        Message::with_help(
+            format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::InvalidCharInIntLiteral),
+            vec![(make_span!(53, 60), String::new())],
+            vec![error_strings::IntLiteralAllowedChars[0].to_owned()]
+        ),
+        Message::with_help(
+            format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::InvalidCharInIntLiteral),
+            vec![(make_span!(73, 77), String::new())],
+            vec![error_strings::IntLiteralAllowedChars[2].to_owned()]
+        ),
     ]}
-    test_case!{ "@: {}", make_strpos!(1, 6, 1, 6), [
-        label!("", 1, 1, 1, 1),
-        sep!(SeperatorKind::Colon, 1, 2, 1, 2),
-        sep!(SeperatorKind::LeftBrace, 1, 4, 1, 4),
-        sep!(SeperatorKind::RightBrace, 1, 5, 1, 5),
+
+    //           0       1        2
+    //           012345 8901234578 123
+    test_case!{ "[1, 2，3.5, 4。5】<<=", make_span!(24, 24), [  // not ascii char hint and recover
+        sep!(SeperatorKind::LeftBracket, 0, 0),
+        lit!(1, 1, 1),
+        sep!(SeperatorKind::Comma, 2, 2),
+        lit!(2, 4, 4),
+        sep!(SeperatorKind::Comma, 5, 5),
+        lit!(3.5, 8, 10),
+        sep!(SeperatorKind::Comma, 11, 11),
+        lit!(4.5, 13, 17),
+        sep!(SeperatorKind::RightBracket, 18, 18),
+        sep!(SeperatorKind::ShiftLeftAssign, 21, 23),
+    ], make_messages![
+        Message::with_help_by_str(error_strings::UnexpectedNonASCIIChar, vec![
+            (make_span!(5, 5), ""), 
+        ], vec![
+            &format!("Did you mean `{}`({}) by `{}`({})?", ',', "Comma", '，', "Fullwidth Comma"),
+        ]),
+        Message::with_help_by_str(error_strings::UnexpectedNonASCIIChar, vec![
+            (make_span!(14, 14), ""), 
+        ], vec![
+            &format!("Did you mean `{}`({}) by `{}`({})?", '.', "Period", '。', "Ideographic Full Stop"),
+        ]),
+        Message::with_help_by_str(error_strings::UnexpectedNonASCIIChar, vec![
+            (make_span!(18, 18), ""), 
+        ], vec![
+            &format!("Did you mean `{}`({}) by `{}`({})?", ']', "Right Square Bracket", '】', "Right Black Lenticular Bracket"),
+        ]),
+    ]}
+
+    //           012345678
+    test_case!{ "1..2.0f32", make_span!(9, 9), [  // range operator special case
+        lit!(1, 0, 0),
+        sep!(SeperatorKind::Range, 1, 2),
+        lit!(2f32, 3, 8),
+    ]}
+
+    //           01234
+    test_case!{ "2...3", make_span!(5, 5), [  // range operator special case 2
+        lit!(2, 0, 0),
+        sep!(SeperatorKind::Range, 1, 2),
+        sep!(SeperatorKind::Dot, 3, 3),
+        lit!(3, 4, 4),
+    ]}
+
+    //           0         1         2         
+    //           012345678901234567890123456789
+    test_case!{ "1.is_odd(), 123f64.to_string()", make_span!(30, 30), [  //  another special case
+        lit!(1, 0, 0),
+        sep!(SeperatorKind::Dot, 1, 1),
+        ident!("is_odd", 2, 7),
+        sep!(SeperatorKind::LeftParenthenes, 8, 8),
+        sep!(SeperatorKind::RightParenthenes, 9, 9),
+        sep!(SeperatorKind::Comma, 10, 10),
+        lit!(123f64, 12, 17),
+        sep!(SeperatorKind::Dot, 18, 18),
+        ident!("to_string", 19, 27),
+        sep!(SeperatorKind::LeftParenthenes, 28, 28),
+        sep!(SeperatorKind::RightParenthenes, 29, 29),
+    ]}
+
+    //           0           1          2
+    //           01 234567 890 1234567890123456
+    test_case!{ "r\"hello\" '\\u1234' 12/**/34 ", make_span!(27, 27), [    // dispatch v1
+        lit!("hello", 0, 7),
+        lit!('\u{1234}', 9, 16),
+        lit!(12, 18, 19),
+        lit!(34, 24, 25),
+    ]}
+
+    //           0         1         2         3         4         5
+    //           012345678901234567890123456789012345678901234567890123
+    test_case!{ "1.a[[3](4, [5, 6], )](7, 8)() as [i32].bcd[10, 11, 12]", make_span!(54, 54), [ // bug from syntax::expr::postfix_expr
+        lit!(1, 0, 0),
+        sep!(SeperatorKind::Dot, 1, 1),
+        ident!("a", 2, 2),
+        sep!(SeperatorKind::LeftBracket, 3, 3),
+        sep!(SeperatorKind::LeftBracket, 4, 4),
+        lit!(3, 5, 5),
+        sep!(SeperatorKind::RightBracket, 6, 6),
+        sep!(SeperatorKind::LeftParenthenes, 7, 7),
+        lit!(4, 8, 8),
+        sep!(SeperatorKind::Comma, 9, 9),
+        sep!(SeperatorKind::LeftBracket, 11, 11),
+        lit!(5, 12, 12),
+        sep!(SeperatorKind::Comma, 13, 13),
+        lit!(6, 15, 15),
+        sep!(SeperatorKind::RightBracket, 16, 16),
+        sep!(SeperatorKind::Comma, 17, 17),
+        sep!(SeperatorKind::RightParenthenes, 19, 19),
+        sep!(SeperatorKind::RightBracket, 20, 20),
+        sep!(SeperatorKind::LeftParenthenes, 21, 21),
+        lit!(7, 22, 22),
+        sep!(SeperatorKind::Comma, 23, 23),
+        lit!(8, 25, 25),
+        sep!(SeperatorKind::RightParenthenes, 26, 26),
+        sep!(SeperatorKind::LeftParenthenes, 27, 27),
+        sep!(SeperatorKind::RightParenthenes, 28, 28),
+        kw!(KeywordKind::As, 30, 31),
+        sep!(SeperatorKind::LeftBracket, 33, 33),
+        kw!(KeywordKind::PrimTypeI32, 34, 36),
+        sep!(SeperatorKind::RightBracket, 37, 37),
+        sep!(SeperatorKind::Dot, 38, 38),
+        ident!("bcd", 39, 41),
+        sep!(SeperatorKind::LeftBracket, 42, 42),
+        lit!(10, 43, 44),
+        sep!(SeperatorKind::Comma, 45, 45),
+        lit!(11, 47, 48),
+        sep!(SeperatorKind::Comma, 49, 49),
+        lit!(12, 51, 52),
+        sep!(SeperatorKind::RightBracket, 53, 53),
+    ], make_messages![
+        Message::new(format!("{}: {:?}", error_strings::UseReservedKeyword, KeywordKind::As), vec![(make_span!(30, 31), String::new())]), // TODO: this feature added, add to error_strings
+    ]}
+
+    //           0         1     
+    //           0123456789012345678
+    test_case!{ "abc @abc @ @@ 1 @a", make_span!(18, 18), [
+        ident!("abc", 0, 2),
+        label!("abc", 4, 7),
+        label!("", 9, 9),
+        label!("@", 11, 12),
+        lit!(1, 14, 14),
+        label!("a", 16, 17),
+    ]}
+
+    test_case!{ "@", make_span!(1, 1), [label!("", 0, 0),] }
+
+    test_case!{ "a:", make_span!(2, 2), [
+        ident!("a", 0, 0),
+        sep!(SeperatorKind::Colon, 1, 1),
+    ]}
+    test_case!{ "@: {}", make_span!(5, 5), [
+        label!("", 0, 0),
+        sep!(SeperatorKind::Colon, 1, 1),
+        sep!(SeperatorKind::LeftBrace, 3, 3),
+        sep!(SeperatorKind::RightBrace, 4, 4),
     ]}
 }

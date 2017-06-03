@@ -2,7 +2,7 @@
 ///!
 ///! token stream, vec<token> wrapper
 
-use codemap::StringPosition;
+use codemap::Span;
 use message::MessageCollection;
 use codemap::CodeChars;
 
@@ -10,10 +10,10 @@ use super::v2lexer::V2Lexer;
 use super::v2lexer::V2Token;
 use super::Token;
 
-struct TokenAndPos(Token, StringPosition);
+struct TokenAndPos(Token, Span);
 
 impl TokenAndPos {
-    fn new(v2: (V2Token, StringPosition)) -> TokenAndPos {
+    fn new(v2: (V2Token, Span)) -> TokenAndPos {
         TokenAndPos(
             match v2.0 {
                 V2Token::EOF | V2Token::EOFs => Token::EOF,
@@ -39,7 +39,7 @@ impl TokenStream {
 
         let mut v2lexer = V2Lexer::new(chars, messages);
         let mut tokens = Vec::new();
-        let eofs_pos: StringPosition;
+        let eofs_pos: Span;
         loop {
             match v2lexer.next(messages) {
                 (V2Token::EOFs, pos) => { eofs_pos = pos; break; }
@@ -68,7 +68,7 @@ impl TokenStream {
     pub fn nth(&self, idx: usize) -> &Token {
         if idx >= self.tokens.len() { &self.eofs_token.0 } else { &self.tokens[idx].0 }
     }
-    pub fn pos(&self, idx: usize) -> StringPosition { 
+    pub fn pos(&self, idx: usize) -> Span { 
         if idx >= self.tokens.len() { self.eofs_token.1 } else { self.tokens[idx].1 }
     }
 
@@ -113,35 +113,35 @@ fn v4_base() { // remain the name of v4 here for memory
     let tokens = TokenStream::with_test_str("123 abc 'd', [1]");
 
     assert_eq!(tokens.nth(0), &Token::Lit(LitValue::from(123)));
-    assert_eq!(tokens.pos(0), make_strpos!(1, 1, 1, 3));
+    assert_eq!(tokens.pos(0), make_span!(0, 2));
 
     assert_eq!(tokens.nth(1), &Token::Ident("abc".to_owned()));
-    assert_eq!(tokens.pos(1), make_strpos!(1, 5, 1, 7));
+    assert_eq!(tokens.pos(1), make_span!(4, 6));
 
     assert_eq!(tokens.nth(2), &Token::Lit(LitValue::from('d')));
-    assert_eq!(tokens.pos(2), make_strpos!(1, 9, 1, 11));
+    assert_eq!(tokens.pos(2), make_span!(8, 10));
 
     assert_eq!(tokens.nth(3), &Token::Sep(SeperatorKind::Comma));
-    assert_eq!(tokens.pos(3), make_strpos!(1, 12, 1, 12));
+    assert_eq!(tokens.pos(3), make_span!(11, 11));
 
     assert_eq!(tokens.nth(4), &Token::Sep(SeperatorKind::LeftBracket));
-    assert_eq!(tokens.pos(4), make_strpos!(1, 14, 1, 14));
+    assert_eq!(tokens.pos(4), make_span!(13, 13));
 
     assert_eq!(tokens.nth(5), &Token::Lit(LitValue::from(1)));
-    assert_eq!(tokens.pos(5), make_strpos!(1, 15, 1, 15));
+    assert_eq!(tokens.pos(5), make_span!(14, 14));
 
     assert_eq!(tokens.nth(6), &Token::Sep(SeperatorKind::RightBracket));
-    assert_eq!(tokens.pos(6), make_str_pos!(1, 16, 1, 16));
+    assert_eq!(tokens.pos(6), make_span!(15, 15));
 
     assert_eq!(tokens.nth(7), &Token::EOF);
-    assert_eq!(tokens.pos(7), make_str_pos!(1, 17, 1, 17));
+    assert_eq!(tokens.pos(7), make_span!(16, 16));
 
     assert_eq!(tokens.nth(8), &Token::EOF);
-    assert_eq!(tokens.pos(8), make_str_pos!(1, 17, 1, 17));
+    assert_eq!(tokens.pos(8), make_span!(16, 16));
 
     assert_eq!(tokens.nth(9), &Token::EOF);
-    assert_eq!(tokens.pos(9), make_str_pos!(1, 17, 1, 17));
+    assert_eq!(tokens.pos(9), make_span!(16, 16));
 
     assert_eq!(tokens.nth(42), &Token::EOF);
-    assert_eq!(tokens.pos(42), make_str_pos!(1, 17, 1, 17));
+    assert_eq!(tokens.pos(42), make_span!(16, 16));
 }

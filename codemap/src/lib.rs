@@ -1,21 +1,24 @@
 #![allow(dead_code)]
 ///! fff-lang
 ///!
-///! codemap, from source files to source file string's  
-///! iterator<(char, position)>,  
-///! which is <0.1.0>'s filemap and lexical's layer 0
+///! codemap, manages source code strings, include
+///! providing source file string's iterator<(char, CharPos)>
+///! intern string
+///! source code location required by message
 
-#[macro_use] mod span;
+#[macro_use] 
+mod span;
 mod error;
 mod code_file;
 
 use code_file::CodeFile;
 use code_file::CodeFileIter;
+
+pub use span::CharPos;
+pub use span::Span;
 pub use code_file::EOFCHAR;
 pub use code_file::EOFSCHAR;
 pub use error::CodeMapError;
-pub use span::CharPos;
-pub use span::StringPosition;
 
 // Iterator to get chars, this is my multi source file core logic processor
 pub struct CodeChars<'a> {
@@ -135,37 +138,37 @@ fn codemap_input() {
 
     // current feature is, simple merge and yield char
     let mut iter = codemap.iter();
-    assert_eq!(iter.next(), ('a', make_charpos!(0, 1)));
-    assert_eq!(iter.next(), ('b', make_charpos!(0, 2)));
-    assert_eq!(iter.next(), ('c', make_charpos!(0, 3)));
+    assert_eq!(iter.next(), ('a', make_charpos!(0, 0)));
+    assert_eq!(iter.next(), ('b', make_charpos!(0, 1)));
+    assert_eq!(iter.next(), ('c', make_charpos!(0, 2)));
     assert_eq!(iter.next(), ('\n', make_charpos!(0, 4)));
-    assert_eq!(iter.next(), ('d', make_charpos!(0, 1)));
-    assert_eq!(iter.next(), ('e', make_charpos!(0, 2)));
-    assert_eq!(iter.next(), ('\n', make_charpos!(0, 3)));
-    assert_eq!(iter.next(), ('f', make_charpos!(0, 1)));
-    assert_eq!(iter.next(), ('g', make_charpos!(0, 2)));
-    assert_eq!(iter.next(), ('h', make_charpos!(0, 3)));
-    assert_eq!(iter.next(), (EOFCHAR, make_charpos!(0, 4))); 
-    assert_eq!(iter.next(), ('i', make_charpos!(1, 1)));
-    assert_eq!(iter.next(), ('j', make_charpos!(1, 2)));
-    assert_eq!(iter.next(), ('k', make_charpos!(1, 3)));
+    assert_eq!(iter.next(), ('d', make_charpos!(0, 5)));
+    assert_eq!(iter.next(), ('e', make_charpos!(0, 6)));
+    assert_eq!(iter.next(), ('\n', make_charpos!(0, 8)));
+    assert_eq!(iter.next(), ('f', make_charpos!(0, 9)));
+    assert_eq!(iter.next(), ('g', make_charpos!(0, 10)));
+    assert_eq!(iter.next(), ('h', make_charpos!(0, 11)));
+    assert_eq!(iter.next(), (EOFCHAR, make_charpos!(0, 12))); 
+    assert_eq!(iter.next(), ('i', make_charpos!(1, 0)));
+    assert_eq!(iter.next(), ('j', make_charpos!(1, 1)));
+    assert_eq!(iter.next(), ('k', make_charpos!(1, 2)));
     assert_eq!(iter.next(), ('\n', make_charpos!(1, 4)));
-    assert_eq!(iter.next(), ('l', make_charpos!(1, 1)));
-    assert_eq!(iter.next(), ('m', make_charpos!(1, 2)));
-    assert_eq!(iter.next(), ('\n', make_charpos!(1, 3)));
-    assert_eq!(iter.next(), (EOFCHAR, make_charpos!(1, 1)));
-    assert_eq!(iter.next(), ('s', make_charpos!(2, 1)));
-    assert_eq!(iter.next(), ('o', make_charpos!(2, 2)));
-    assert_eq!(iter.next(), ('m', make_charpos!(2, 3)));
-    assert_eq!(iter.next(), ('e', make_charpos!(2, 4)));
-    assert_eq!(iter.next(), ('\n', make_charpos!(2, 5)));
-    assert_eq!(iter.next(), ('s', make_charpos!(2, 1)));
-    assert_eq!(iter.next(), ('t', make_charpos!(2, 2)));
-    assert_eq!(iter.next(), ('r', make_charpos!(2, 3)));
+    assert_eq!(iter.next(), ('l', make_charpos!(1, 5)));
+    assert_eq!(iter.next(), ('m', make_charpos!(1, 6)));
+    assert_eq!(iter.next(), ('\n', make_charpos!(1, 8)));
+    assert_eq!(iter.next(), (EOFCHAR, make_charpos!(1, 9)));
+    assert_eq!(iter.next(), ('s', make_charpos!(2, 0)));
+    assert_eq!(iter.next(), ('o', make_charpos!(2, 1)));
+    assert_eq!(iter.next(), ('m', make_charpos!(2, 2)));
+    assert_eq!(iter.next(), ('e', make_charpos!(2, 3)));
     assert_eq!(iter.next(), ('\n', make_charpos!(2, 4)));
-    assert_eq!(iter.next(), (EOFCHAR, make_charpos!(2, 1)));
-    assert_eq!(iter.next(), (EOFSCHAR, make_charpos!(2, 1)));
-    assert_eq!(iter.next(), (EOFSCHAR, make_charpos!(2, 1)));
-    assert_eq!(iter.next(), (EOFSCHAR, make_charpos!(2, 1)));
-    assert_eq!(iter.next(), (EOFSCHAR, make_charpos!(2, 1)));
+    assert_eq!(iter.next(), ('s', make_charpos!(2, 5)));
+    assert_eq!(iter.next(), ('t', make_charpos!(2, 6)));
+    assert_eq!(iter.next(), ('r', make_charpos!(2, 7)));
+    assert_eq!(iter.next(), ('\n', make_charpos!(2, 8)));
+    assert_eq!(iter.next(), (EOFCHAR, make_charpos!(2, 9)));
+    assert_eq!(iter.next(), (EOFSCHAR, make_charpos!(2, 9)));
+    assert_eq!(iter.next(), (EOFSCHAR, make_charpos!(2, 9)));
+    assert_eq!(iter.next(), (EOFSCHAR, make_charpos!(2, 9)));
+    assert_eq!(iter.next(), (EOFSCHAR, make_charpos!(2, 9)));
 }

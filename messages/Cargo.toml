@@ -7,3 +7,7 @@ workspace = "../ffc"
 [dependencies]
 codemap = { path = "../codemap"}
 util = { path = "../util" }
+
+[lib]
+name = "messages"
+path = "lib.rs"
