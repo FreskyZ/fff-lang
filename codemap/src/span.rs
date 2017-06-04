@@ -23,10 +23,6 @@ impl CharPos {
     pub fn get_file_id(&self) -> usize { self.file_id }
     pub fn get_char_id(&self) -> usize { self.char_id }
 
-    // deprecated
-    pub fn double(&self) -> Span { 
-        Span{ file_id: self.file_id, start_id: self.char_id, end_id: self.char_id } 
-    }
     pub fn offset(&self, offset: isize) -> CharPos {
         CharPos{ 
             file_id: self.file_id, 
@@ -78,59 +74,36 @@ macro_rules! make_span {
     ($file_id: expr, $start_id: expr, $end_id: expr) => (Span::new($file_id, $start_id, $end_id));
     ($start_id: expr, $end_id: expr) => (Span::new(0, $start_id, $end_id))
 }
+// // Technically remain
+// #[allow(dead_code)]
+// fn utf8_char_next(bytes: &[u8]) -> char {
+//     use std::mem::transmute;
 
-// it is unchecked because the input parameters generated from char_indecis which already checked
-#[allow(dead_code)]
-fn next_char_unchecked(bytes: &[u8]) -> char {
-    use std::char;
-
-    char::from_u32(
-        if bytes[0] & 0b11111000u8 == 0b11110000u8 {
-            (((bytes[0] as u32) & 0b00000111u32) << 18)
-                + (((bytes[1] as u32) & 0b00111111u32) << 12)
-                + (((bytes[2] as u32) & 0b00111111u32) << 6)
-                + ((bytes[3] as u32) & 0b00111111u32)
-        } else if bytes[0] & 0b11110000u8 == 0b11100000u8 {
-            (((bytes[0] as u32) & 0b00001111u32) << 12)
-                + (((bytes[1] as u32) & 0b00111111u32) << 6)
-                + (((bytes[2] as u32) & 0b00111111u32))
-        } else if bytes[0] & 0b11100000u8 == 0b11000000u8 {
-            (((bytes[0] as u32) & 0b00011111u32) << 6)
-                + ((bytes[1] as u32) & 0b00111111u32)
-        } else if bytes[0] & 0b10000000u8 == 0b00000000u8 {
-            bytes[0] as u32
-        } else {
-            0u32
-        }).unwrap()
-}
-#[cfg(test)] #[test]
-fn utf8_iter_my() {
+//     unsafe { transmute(
+//         if bytes[0] <= 0b_1000_0000 {
+//             bytes[0] as u32
+//         } else if bytes[0] > 0b11110000u8 {
+//             (((bytes[0] as u32) & 0b00000111u32) << 18)
+//                 + (((bytes[1] as u32) & 0b00111111u32) << 12)
+//                 + (((bytes[2] as u32) & 0b00111111u32) << 6)
+//                 + ((bytes[3] as u32) & 0b00111111u32)
+//         } else if bytes[0] > 0b11100000u8 {
+//             (((bytes[0] as u32) & 0b00001111u32) << 12)
+//                 + (((bytes[1] as u32) & 0b00111111u32) << 6)
+//                 + (((bytes[2] as u32) & 0b00111111u32))
+//         } else if bytes[0] > 0b11000000u8 {
+//             (((bytes[0] as u32) & 0b00011111u32) << 6)
+//                 + ((bytes[1] as u32) & 0b00111111u32)
+//         } else {
+//             bytes[0] as u32
+//         }
+//     )}
+// }
+// #[cfg(test)] #[test]
+// fn utf8_char_next_test() {
     
-    let s = "12你34我5，6";
-    for (pos, ch) in s.char_indices() {
-        assert_eq!(ch, next_char_unchecked(&s.as_bytes()[pos..]));
-    }
-}
-
-#[allow(dead_code)]
-fn next_char_unchecked2(bytes: &[u8]) -> char {
-    use std::mem::transmute;
-
-    unsafe { transmute(
-        if bytes[0] > 0b11110000u8 {
-            (((bytes[0] as u32) & 0b00000111u32) << 18)
-                + (((bytes[1] as u32) & 0b00111111u32) << 12)
-                + (((bytes[2] as u32) & 0b00111111u32) << 6)
-                + ((bytes[3] as u32) & 0b00111111u32)
-        } else if bytes[0] > 0b11100000u8 {
-            (((bytes[0] as u32) & 0b00001111u32) << 12)
-                + (((bytes[1] as u32) & 0b00111111u32) << 6)
-                + (((bytes[2] as u32) & 0b00111111u32))
-        } else if bytes[0] > 0b11000000u8 {
-            (((bytes[0] as u32) & 0b00011111u32) << 6)
-                + ((bytes[1] as u32) & 0b00111111u32)
-        } else {
-            bytes[0] as u32
-        }
-    )}
-}
+//     let s = "12你34我5，6";
+//     for (pos, ch) in s.char_indices() {
+//         assert_eq!(ch, utf8_char_next(&s.as_bytes()[pos..]));
+//     }
+// }

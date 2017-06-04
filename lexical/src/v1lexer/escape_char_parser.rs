@@ -92,8 +92,8 @@ impl EscapeCharParser {
                 return EscapeCharParserResult::Failed;                                 // C2
             }
         }
-        let escape_start_span = pos_for_message.0.double();
-        let current_span = pos_for_message.1.double();
+        let escape_start_span = pos_for_message.0.as_span();
+        let current_span = pos_for_message.1.as_span();
 
         match ch.to_digit(16) {
             Some(digit) => {

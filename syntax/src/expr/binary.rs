@@ -12,9 +12,7 @@
 // LogicalAndExpression = EqualityExpression | LogicalAndExpression LogicalAndOperator EqualityExpression 
 // LogicalOrExpression = LogicalAndExpression | LogicalOrExpression LogicalOrOperator LogicalAndExpression
 
-// TODO: according to docs/bits-type, change the priority to
-// mul, add, relation, shift, bitand, bitxor, bitor, equal, logicaland, logicalor
-// integral binray operators in advance, then is bits binary operators, they are should precede equality operators, then logical operators
+// TODO: try use `enum Expr` instead of `enum Binary{ enum Unary { enum Postfix { enum Primary { ... } } } }
 
 use std::fmt;
 

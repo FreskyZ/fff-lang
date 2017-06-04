@@ -36,8 +36,8 @@ impl RawStringLiteralParser {
             }
             (EOFCHAR, pos) => {                                                    // C3: in raw string, meet EOF, emit error, return  
                 messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![ 
-                    (self.start_pos.double(), error_strings::StringLiteralStartHere),
-                    (pos.double(), error_strings::EOFHere),
+                    (self.start_pos.as_span(), error_strings::StringLiteralStartHere),
+                    (pos.as_span(), error_strings::EOFHere),
                 ]));
                 return RawStringLiteralParserResult::Finished(None, self.start_pos.merge(&pos));
             }
@@ -87,8 +87,8 @@ fn raw_string_lit_parser() {
             Finished(None, spec_pos1.merge(&spec_pos2)));
 
         expect_messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![ 
-                    (spec_pos1.double(), error_strings::StringLiteralStartHere),
-                    (spec_pos2.double(), error_strings::EOFHere),
+                    (spec_pos1.as_span(), error_strings::StringLiteralStartHere),
+                    (spec_pos2.as_span(), error_strings::EOFHere),
         ]));
         assert_eq!(messages, expect_messages);
     }

@@ -6,8 +6,8 @@
 ///! intern string
 ///! source code location required by message
 
-#[macro_use] 
-mod span;
+#[macro_use] mod span;
+#[macro_use] mod symbol_def;
 mod error;
 mod code_file;
 
@@ -19,6 +19,8 @@ pub use span::Span;
 pub use code_file::EOFCHAR;
 pub use code_file::EOFSCHAR;
 pub use error::CodeMapError;
+pub use symbol_def::SymbolID;
+pub use symbol_def::SymbolCollection;
 
 // Iterator to get chars, this is my multi source file core logic processor
 pub struct CodeChars<'a> {
@@ -81,11 +83,12 @@ impl<'a> CodeChars<'a> {
 // ```
 pub struct CodeMap {
     files: Vec<CodeFile>,
+    symbols: SymbolCollection,
 }
 impl CodeMap {
     
     pub fn new() -> CodeMap {
-        CodeMap{ files: Vec::new() }
+        CodeMap{ files: Vec::new(), symbols: SymbolCollection::new() }
     }
 
     pub fn with_files(file_names: Vec<String>) -> Result<CodeMap, CodeMapError> {
@@ -121,9 +124,21 @@ impl CodeMap {
         CodeChars::new(self)
     }
 
-    // pub fn get_line(file_id: u32, line: u32) -> &str {
+    pub fn get_position_by_charpos(&self, charpos: CharPos) -> (usize, usize) {
+        if charpos.get_file_id() >= self.files.len() { panic!("invalid file id in char pos") }
+        return self.files[charpos.get_file_id()].get_position_by_charpos(charpos);
+    }
+    pub fn get_str_by_span(&self, span: &Span) -> &str {
+        if span.get_file_id() >= self.files.len() { panic!("invalid file id in span") }
+        return self.files[span.get_file_id()].get_str_by_span(span);
+    }
+    pub fn get_line_by_position(&self, file_id: usize, row_num: usize) -> &str {
+        if file_id >= self.files.len() { panic!("invalid file id") }
+        return self.files[file_id].get_line_by_position(row_num);
+    }
 
-    // }
+    pub fn get_symbols(&self) -> &SymbolCollection { &self.symbols }
+    pub fn get_symbols_mut(&mut self) -> &mut SymbolCollection { &mut self.symbols }
 }
 
 #[cfg(test)] #[test]

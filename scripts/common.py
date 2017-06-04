@@ -21,7 +21,7 @@ class temp_set_curdir:
         os.chdir(self.dir)
         return 0
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, ty, value, traceback):
         os.chdir(self.prev_curdir)
 
 class changing_file:
@@ -29,7 +29,7 @@ class changing_file:
     def __init__(self, file_name):
         self.file_name = file_name
         self.file_lines = []
-    
+
     def __enter__(self):
         with open(self.file_name, 'r+') as file:
             self.file_lines = file.readlines()
@@ -38,7 +38,7 @@ class changing_file:
             file.writelines(self.file_lines)
         return 0
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, ty, value, traceback):
         last_line = self.file_lines[len(self.file_lines) - 1]
         self.file_lines[len(self.file_lines) - 1] = last_line[:-1]
         with open(self.file_name, 'w') as file:
@@ -79,7 +79,7 @@ class CargoProject:
         with open(self.cargo_toml_path, 'w') as cargo_file:
             cargo_file.writelines(lines)
             print("[Info] set %s version to %s" % (self.project_name, version_str))
-    
+
     # return retcode, stdout, stderr
     def _call_cargo(self, params, **kwargs):
 
@@ -88,10 +88,10 @@ class CargoProject:
         if 'log' in kwargs:
             enable_log = kwargs['log']
         if 'require_output' in kwargs:
-            require_output = kwargs['require_output']   
-        
+            require_output = kwargs['require_output']
+
         with temp_set_curdir(self.project_dir):
-            params_desc = ' '.join(params);
+            params_desc = ' '.join(params)
             if enable_log:
                 print("[Info] calling `cargo %s` on %s, " % (params_desc, self.project_name), end = '')
             process = subprocess.Popen([CARGO_BIN] + params, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
@@ -109,7 +109,7 @@ class CargoProject:
                 return retcode
 
     def call_cargo(self, params, **kwargs):
-        if type(params) is str:
+        if isinstance(str, params):
             return self._call_cargo([params], **kwargs)
         else:
             return self._call_cargo(params, **kwargs)

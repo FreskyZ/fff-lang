@@ -36,7 +36,7 @@ impl<'a> ILexer<'a, char> for V0Lexer<'a> {
     fn new(chars: CodeChars<'a>, _: &mut MessageCollection) -> V0Lexer<'a> { V0Lexer(chars) }
     fn next(&mut self, _: &mut MessageCollection) -> (char, Span) {
         let ret_val = self.0.next();
-        (ret_val.0, ret_val.1.double())
+        (ret_val.0, ret_val.1.as_span())
     }
 }
 

@@ -5,8 +5,11 @@
 
 use std::str::CharIndices;
 
+use super::Span;
 use super::CharPos;
 use super::CodeMapError;
+
+const EOF_SPAN_STRING: &str = " ";
 pub const EOFCHAR: char = 0u8 as char;
 pub const EOFSCHAR: char = 255u8 as char;
 
@@ -125,8 +128,39 @@ impl CodeFile {
             current_id += current_char_width;
         }
     }
+    pub fn get_str_by_span(&self, span: &Span) -> &str {
+        use std::str::from_utf8_unchecked;
+        if span.get_file_id() != self.id { panic!("incorrect file id when querying string by span") }
+
+        let bytes = self.content.as_bytes();
+        let start_index = span.get_start_id();
+        if start_index > bytes.len() { // e.g. eof_span
+            return EOF_SPAN_STRING;
+        }
+        let end_index = if span.get_end_id() >= bytes.len() {
+            bytes.len()
+        } else {
+            let end_id = span.get_end_id();
+            end_id + self.utf8_char_len_at_index(end_id)
+        };
+        unsafe{ from_utf8_unchecked(&bytes[start_index..end_index]) }
+    }
+    pub fn get_line_by_position(&self, row_num: usize) -> &str {
+
+        let lf_ids = &self.lf_positions;
+        let content_byte_len = self.content.as_bytes().len();
+        if row_num == 0 { return EOF_SPAN_STRING; }                             // downflow
+        if row_num > lf_ids.len() + 1 { return EOF_SPAN_STRING; }               // normal overflow
+        if row_num == 1 && lf_ids.len() == 0 { return EOF_SPAN_STRING; }       // special overflow
+        if row_num == lf_ids.len() + 1 && lf_ids[lf_ids.len() - 1] + 1 == content_byte_len { return EOF_SPAN_STRING; } // last char is \n
+
+        let start_id = if row_num == 1 { 0 } else { lf_ids[row_num - 2] + 1 /* next char of LF */ };
+        let end_id = if row_num == lf_ids.len() + 1 { content_byte_len } else { lf_ids[row_num - 1] };
+        return self.get_str_by_span(&Span::new(self.id, start_id, end_id));
+    }
 }
 
+// old v0 finally seperated into these tests
 #[cfg(test)] #[test]
 fn code_file_get_pos() {
 
@@ -201,6 +235,81 @@ fn code_file_get_pos() {
         [11 => 4, 1, case 32],
         [29 => 6, 7, case 33],
     }
+}
+#[cfg(test)] #[test]
+fn code_file_get_str() {
+    
+    macro_rules! test_case {
+        ($input: expr, $([$start_id: expr, $end_id: expr => $expect: expr, case $caseid: expr], )+) => (
+            let code_file = CodeFile::from_str(0, $input);
+            $(
+                assert_eq!{ code_file.get_str_by_span(&Span::new(0, $start_id, $end_id)), $expect, "#{}", $caseid }
+            )+
+        )
+    }
+
+    test_case!{ "01234567890",
+        [0, 2 => "012", case 1],
+        [3, 5 => "345", case 2],
+        [8, 8 => "8", case 3],
+        [0, 10 => "01234567890", case 4],
+        [0, 100 => "01234567890", case 5],
+        [100, 100 => " ", case 6],
+    }
+
+    test_case!{ "var 你好 =\n 世界;；",
+        //     src, row, col, byte
+        //       v,   1,   1,    0
+        //       a,   1,   2,    1
+        //       r,   1,   3,    2
+        //     ' ',   1,   4,    3,
+        //      你,   1,   5,    4, 5, 6
+        //      好,   1,   6,    7, 8, 9,
+        //     ' ',   1,   7,    10,
+        //       =,   1,   8,    11,
+        //      \n,   1,   9,    12,
+        //     ' ',   2,   1,    13
+        //      世,   2,   2,    14, 15, 16,
+        //      界,   2,   3,    17, 18, 19,
+        //       ;,   2,   4,    20
+        //      ；,   2,   5,    21, 22, 23
+        [0, 3 => "var ", case 7],
+        [3, 4 => " 你", case 8],
+        [4, 10 => "你好 ", case 9],
+        [4, 14 => "你好 =\n 世", case 10],
+        [14, 21 => "世界;；", case 11],
+    }
+}
+#[cfg(test)] #[test]
+fn code_file_get_line() {
+    
+    let codefile = CodeFile::from_str(0, "0123\n56\r8\n01234567\n9");
+    assert_eq!(codefile.get_line_by_position(1), "0123\n");
+    assert_eq!(codefile.get_line_by_position(2), "56\r8\n");
+    assert_eq!(codefile.get_line_by_position(3), "01234567\n");
+    assert_eq!(codefile.get_line_by_position(4), "9");
+    assert_eq!(codefile.get_line_by_position(5), " ");
+    assert_eq!(codefile.get_line_by_position(0), " ");
+
+    let codefile = CodeFile::from_str(0, "abc\ndef\r\r\n\nasd\nwe\rq1da\nawsedq\n");
+    assert_eq!(codefile.get_line_by_position(1), "abc\n");
+    assert_eq!(codefile.get_line_by_position(2), "def\r\r\n");
+    assert_eq!(codefile.get_line_by_position(3), "\n");
+    assert_eq!(codefile.get_line_by_position(4), "asd\n");
+    assert_eq!(codefile.get_line_by_position(5), "we\rq1da\n");
+    assert_eq!(codefile.get_line_by_position(6), "awsedq\n");
+    assert_eq!(codefile.get_line_by_position(7), " ");
+
+    let codefile = CodeFile::from_str(0, "\nabc\ndef\n");
+    assert_eq!(codefile.get_line_by_position(0), " ");
+    assert_eq!(codefile.get_line_by_position(1), "\n");
+    assert_eq!(codefile.get_line_by_position(2), "abc\n");
+    assert_eq!(codefile.get_line_by_position(3), "def\n");
+    assert_eq!(codefile.get_line_by_position(4), " ");
+    
+    let codefile = CodeFile::from_str(0, "");
+    assert_eq!(codefile.get_line_by_position(0), " ");
+    assert_eq!(codefile.get_line_by_position(1), " ");
 }
 
 #[cfg(test)] #[test]
