@@ -5,7 +5,7 @@
 
 use std::cell::Cell;
 
-use codemap::StringPosition;
+use codemap::Span;
 use message::Message;
 use message::MessageCollection;
 use lexical::Token;
@@ -22,9 +22,9 @@ pub struct ParseSession<'tokens, 'msgs> {
     pub tk: &'tokens Token,
     pub next_tk: &'tokens Token,
     pub nextnext_tk: &'tokens Token,
-    pub pos: StringPosition,
-    pub next_pos: StringPosition,
-    pub nextnext_pos: StringPosition,
+    pub pos: Span,
+    pub next_pos: Span,
+    pub nextnext_pos: Span,
 }
 // TODO: maybe expect, maybe expect2
 // or, SeperatorKind::parse(sess)?  , try_parse
@@ -72,39 +72,39 @@ impl<'a, 'b> ParseSession<'a, 'b> {
     /// Check current index is keyword, if so, move next and Ok(keyword_strpos),
     /// if not, push unexpect and Err(())
     /// use like `let kw_strpos = sess.expect_keyword(KeywordKind::In)?;`
-    pub fn expect_keyword(&mut self, expect_kw: KeywordKind) -> Result<StringPosition, ()> {
+    pub fn expect_keyword(&mut self, expect_kw: KeywordKind) -> Result<Span, ()> {
 
         let current_index = self.current_index.get();
         self.move_next();
         match (self.tokens.nth(current_index), self.tokens.pos(current_index)) {
             (&Token::Keyword(ref actual_kw), ref kw_strpos) if actual_kw == &expect_kw => Ok(*kw_strpos),
-            (&Token::Keyword(_), _) => self.push_unexpect::<StringPosition>(&format!("{}", expect_kw)),
-            _ => self.push_unexpect::<StringPosition>(&format!("{}", expect_kw)),
+            (&Token::Keyword(_), _) => self.push_unexpect::<Span>(&format!("{}", expect_kw)),
+            _ => self.push_unexpect::<Span>(&format!("{}", expect_kw)),
         }
     }
     /// Check current index is seperator, if so, move next and Ok(seperator_strpos),
     /// if not, push unexpect and Err(())
     /// use like `let sep_strpos = sess.expect_sep(SeperatorKind::Comma)?;`
-    pub fn expect_sep(&mut self, expect_sep: SeperatorKind) -> Result<StringPosition, ()> {
+    pub fn expect_sep(&mut self, expect_sep: SeperatorKind) -> Result<Span, ()> {
 
         let current_index = self.current_index.get();
         self.move_next();
         match (self.tokens.nth(current_index), self.tokens.pos(current_index)) {
             (&Token::Sep(ref actual_sep), ref sep_strpos) if actual_sep == &expect_sep => Ok(*sep_strpos),
-            (&Token::Sep(_), _) => self.push_unexpect::<StringPosition>(&format!("{}", expect_sep)),
-            _ => self.push_unexpect::<StringPosition>(&format!("{}", expect_sep)),
+            (&Token::Sep(_), _) => self.push_unexpect::<Span>(&format!("{}", expect_sep)),
+            _ => self.push_unexpect::<Span>(&format!("{}", expect_sep)),
         }
     }
     /// Check current index is identifier, if so, move next and Ok((owned_ident_name, ident_strpos)),
     /// if not, push unexpect and Err(())
     /// use like `let (ident_name, ident_strpos) = sess.expect_ident()?;`
-    pub fn expect_ident(&mut self) -> Result<(String, StringPosition), ()> {
+    pub fn expect_ident(&mut self) -> Result<(String, Span), ()> {
 
         let current_index = self.current_index.get();
         self.move_next();
         match (self.tokens.nth(current_index), self.tokens.pos(current_index)) {
             (&Token::Ident(ref ident), ref ident_strpos) => Ok((ident.clone(), *ident_strpos)),
-            _ => self.push_unexpect::<(String, StringPosition)>("identifier"),
+            _ => self.push_unexpect::<(String, Span)>("identifier"),
         }
     }
     // TODO: more info unexpect desc string
@@ -113,7 +113,7 @@ impl<'a, 'b> ParseSession<'a, 'b> {
     /// if so, move next and Ok((owned_ident_name, ident_strpos)),
     /// if not, push unexpect and Err(())
     /// use like `let (ident_name, ident_strpos) = sess.expect_ident_or(vec![KeywordKind::This, KeywordKind::Underscore])?;`
-    pub fn expect_ident_or(&mut self, accept_keywords: Vec<KeywordKind>) -> Result<(String, StringPosition), ()> {
+    pub fn expect_ident_or(&mut self, accept_keywords: Vec<KeywordKind>) -> Result<(String, Span), ()> {
 
         let current_index = self.current_index.get();
         self.move_next();
@@ -123,10 +123,10 @@ impl<'a, 'b> ParseSession<'a, 'b> {
                 if accept_keywords.iter().any(|accept_kw| actual_kw == accept_kw) {
                     Ok((format!("{}", actual_kw), *kw_strpos))
                 } else {
-                    self.push_unexpect::<(String, StringPosition)>("identifier")
+                    self.push_unexpect::<(String, Span)>("identifier")
                 }
             }
-            _ => self.push_unexpect::<(String, StringPosition)>("identifier"),
+            _ => self.push_unexpect::<(String, Span)>("identifier"),
         }
     }
     // TODO: more info unexpect desc string
@@ -135,7 +135,7 @@ impl<'a, 'b> ParseSession<'a, 'b> {
     /// if so, move next and Ok((owned_ident_name, ident_strpos)),
     /// if not, push unexpect and Err(())
     /// use like `let (ident_name, ident_strpos) = sess.expect_ident_or_if(|kw| kw.is_prim_type())?;`
-    pub fn expect_ident_or_if<F>(&mut self, keyword_predict: F) -> Result<(String, StringPosition), ()> where F: Fn(&KeywordKind) -> bool {
+    pub fn expect_ident_or_if<F>(&mut self, keyword_predict: F) -> Result<(String, Span), ()> where F: Fn(&KeywordKind) -> bool {
         
         let current_index = self.current_index.get();
         self.move_next();
@@ -145,7 +145,7 @@ impl<'a, 'b> ParseSession<'a, 'b> {
             (&Token::Keyword(ref actual_kw), ref kw_strpos) if keyword_predict(actual_kw) => 
                 Ok((format!("{}", actual_kw), *kw_strpos)),
             _ => 
-                self.push_unexpect::<(String, StringPosition)>("identifier"),
+                self.push_unexpect::<(String, Span)>("identifier"),
         }
     }
 
@@ -177,26 +177,3 @@ fn parse_sess_usage() {
         _ => (),
     }
 }
-
-// binary_expr: -12
-// postfix_expr: -28
-// primary_expr: -54
-// unary_expr: -3
-// block: -7
-// fn_def: -39
-// label_def: +1
-// type_use: -34
-// block_stmt: -9
-// expr_stmt: -15
-// for_stmt: -29
-// if_stmt: -19
-// jump_stmt: +3
-// loop_stmt: -19
-// stmt: -30
-// ret_stmt: -5
-// var_decl: -25
-// while_stmt: -21
-// syntax_tree: -13
-//                      // summary: -358
-// length include both parse_sess and not(parse_sess): 6844
-// length after remove all legacy: 5444, removed 1/4!

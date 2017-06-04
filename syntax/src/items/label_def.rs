@@ -6,7 +6,7 @@
 
 use std::fmt;
 
-use codemap::StringPosition;
+use codemap::Span;
 use lexical::Token;
 use lexical::SeperatorKind;
 
@@ -19,7 +19,7 @@ use super::super::ISyntaxItemGrammar;
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct LabelDef {
     m_name: String,
-    m_strpos: StringPosition,
+    m_strpos: Span,
 }
 impl ISyntaxItemFormat for LabelDef {
     fn format(&self, indent: u32) -> String {
@@ -33,12 +33,12 @@ impl fmt::Debug for LabelDef {
 }
 impl LabelDef {
     
-    pub fn new(name: String, strpos: StringPosition) -> LabelDef { LabelDef{ m_name: name, m_strpos: strpos } }
+    pub fn new(name: String, strpos: Span) -> LabelDef { LabelDef{ m_name: name, m_strpos: strpos } }
 
-    pub fn get_all_strpos(&self) -> StringPosition { self.m_strpos }
+    pub fn get_all_strpos(&self) -> Span { self.m_strpos }
     pub fn get_name(&self) -> &String { &self.m_name }
 
-    pub fn into(self) -> (String, StringPosition) { (self.m_name, self.m_strpos) }
+    pub fn into(self) -> (String, Span) { (self.m_name, self.m_strpos) }
 }
 impl ISyntaxItemGrammar for LabelDef {
     fn is_first_final(sess: &ParseSession) -> bool { if let &Token::Label(_) = sess.tk { true } else { false } }
@@ -51,7 +51,7 @@ impl ISyntaxItemParse for LabelDef {
             (&Token::Label(ref label_name), ref label_name_strpos,
                 &Token::Sep(SeperatorKind::Colon), ref colon_strpos) => {
                 sess.move_next2();
-                Ok(LabelDef::new(label_name.clone(), StringPosition::merge(*label_name_strpos, *colon_strpos)))
+                Ok(LabelDef::new(label_name.clone(), label_name_strpos.merge(colon_strpos)))
             }
             (&Token::Label(_), _, _, _) => sess.push_unexpect("colon"),
             _ => sess.push_unexpect("label"),
@@ -63,5 +63,5 @@ impl ISyntaxItemParse for LabelDef {
 fn label_def_parse() {
     use super::super::ISyntaxItemWithStr;
 
-    assert_eq!(LabelDef::with_test_str("@1:"), LabelDef::new("1".to_owned(), make_strpos!(1, 1, 1, 3)));
+    assert_eq!(LabelDef::with_test_str("@1:"), LabelDef::new("1".to_owned(), make_span!(0, 2)));
 }

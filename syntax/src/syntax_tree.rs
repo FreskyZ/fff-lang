@@ -5,7 +5,7 @@
 
 use std::fmt;
 
-use codemap::StringPosition;
+use codemap::Span;
 use message::MessageCollection;
 use lexical::TokenStream;
 use lexical::Token;
@@ -19,7 +19,7 @@ use super::FnDef;
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct SyntaxTree {
     items: Vec<FnDef>,
-    all_strpos: StringPosition,
+    all_strpos: Span,
 }
 impl ISyntaxItemFormat for SyntaxTree {
     fn format(&self, indent: u32) -> String {
@@ -36,15 +36,15 @@ impl SyntaxTree {
     pub fn new_items(items: Vec<FnDef>) -> SyntaxTree {
         SyntaxTree{ 
             all_strpos: match items.len() {
-                0 => StringPosition::new(),
+                0 => Span::default(),
                 1 => items[0].get_all_strpos(),
-                n => StringPosition::merge(items[0].get_all_strpos(), items[n - 1].get_all_strpos()),
+                n => items[0].get_all_strpos().merge(&items[n - 1].get_all_strpos()),
             },
             items: items,
         }
     }
     pub fn into_items(self) -> Vec<FnDef> { self.items }
-    pub fn get_all_strpos(&self) -> StringPosition { self.all_strpos }
+    pub fn get_all_strpos(&self) -> Span { self.all_strpos }
 }
 impl ISyntaxItemParse for SyntaxTree {
 

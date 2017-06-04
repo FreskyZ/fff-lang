@@ -18,7 +18,7 @@
 
 use std::fmt;
 
-use codemap::StringPosition;
+use codemap::Span;
 use lexical::Token;
 use lexical::SeperatorKind;
 use lexical::SeperatorCategory;
@@ -37,9 +37,9 @@ use lexical::LitValue;
 struct BinaryBinaryExpr {
     left: BinaryExpr,
     operator: SeperatorKind,            // this means every binary operator matches a binary expr
-    operator_strpos: StringPosition, 
+    operator_strpos: Span, 
     right: BinaryExpr,
-    all_strpos: StringPosition,
+    all_strpos: Span,
 }
 #[cfg_attr(test, derive(Eq, PartialEq))]
 enum BinaryExprImpl {
@@ -71,9 +71,9 @@ impl fmt::Debug for BinaryExpr {
 }
 impl BinaryExpr { // New
 
-    pub fn new_binary(left: BinaryExpr, operator: SeperatorKind, operator_strpos: StringPosition, right: BinaryExpr) -> BinaryExpr {
+    pub fn new_binary(left: BinaryExpr, operator: SeperatorKind, operator_strpos: Span, right: BinaryExpr) -> BinaryExpr {
 
-        let all_strpos =  StringPosition::merge(left.get_all_strpos(), right.get_all_strpos());
+        let all_strpos = left.get_all_strpos().merge(&right.get_all_strpos());
         BinaryExpr(Box::new(BinaryExprImpl::Binary(BinaryBinaryExpr{
             left: left,
             right: right,
@@ -93,25 +93,25 @@ impl BinaryExpr { // New
     }
 
     // Primary helpers
-    pub fn new_ident(ident: String, ident_strpos: StringPosition) -> BinaryExpr {
+    pub fn new_ident(ident: String, ident_strpos: Span) -> BinaryExpr {
         BinaryExpr::new_primary(PrimaryExpr::new_ident(ident, ident_strpos))
     }
-    pub fn new_tuple(paren_strpos: StringPosition, exprs: Vec<BinaryExpr>) -> BinaryExpr {
+    pub fn new_tuple(paren_strpos: Span, exprs: Vec<BinaryExpr>) -> BinaryExpr {
         BinaryExpr::new_primary(PrimaryExpr::new_tuple(paren_strpos, exprs))
     }
-    pub fn new_array(bracket_strpos: StringPosition, exprs: Vec<BinaryExpr>) -> BinaryExpr {
+    pub fn new_array(bracket_strpos: Span, exprs: Vec<BinaryExpr>) -> BinaryExpr {
         BinaryExpr::new_primary(PrimaryExpr::new_array(bracket_strpos, exprs))
     }
-    pub fn new_lit(value: LitValue, lit_strpos: StringPosition) -> BinaryExpr {
+    pub fn new_lit(value: LitValue, lit_strpos: Span) -> BinaryExpr {
         BinaryExpr::new_primary(PrimaryExpr::new_lit(value, lit_strpos))
     }
-    pub fn new_unit(unit_strpos: StringPosition) -> BinaryExpr {
+    pub fn new_unit(unit_strpos: Span) -> BinaryExpr {
         BinaryExpr::new_primary(PrimaryExpr::new_unit(unit_strpos))
     }
-    pub fn new_paren(paren_strpos: StringPosition, inner: BinaryExpr) -> BinaryExpr {
+    pub fn new_paren(paren_strpos: Span, inner: BinaryExpr) -> BinaryExpr {
         BinaryExpr::new_primary(PrimaryExpr::new_paren(paren_strpos, inner))
     }
-    pub fn new_array_dup(bracket_strpos: StringPosition, expr1: BinaryExpr, expr2: BinaryExpr) -> BinaryExpr {
+    pub fn new_array_dup(bracket_strpos: Span, expr1: BinaryExpr, expr2: BinaryExpr) -> BinaryExpr {
         BinaryExpr::new_primary(PrimaryExpr::new_array_dup(bracket_strpos, expr1, expr2))
     }
 }
@@ -154,13 +154,13 @@ impl BinaryExpr { // get
             &BinaryExprImpl::Binary(BinaryBinaryExpr{ ref operator, right: ref _1, left: ref _2, operator_strpos: ref _3, all_strpos: ref _4 }) => Some(operator),
         }
     }
-    pub fn get_operator_strpos(&self) -> StringPosition {
+    pub fn get_operator_strpos(&self) -> Span {
         match self.0.as_ref() {
-            &BinaryExprImpl::Unary(_) => StringPosition::new(),
+            &BinaryExprImpl::Unary(_) => Span::default(),
             &BinaryExprImpl::Binary(BinaryBinaryExpr{ ref operator_strpos, right: ref _1, operator: ref _2, left: ref _3, all_strpos: ref _4 }) => *operator_strpos,
         }
     }
-    pub fn get_all_strpos(&self) -> StringPosition {
+    pub fn get_all_strpos(&self) -> Span {
         match self.0.as_ref() {
             &BinaryExprImpl::Unary(ref unary_expr) => unary_expr.get_all_strpos(),
             &BinaryExprImpl::Binary(BinaryBinaryExpr{ ref all_strpos, right: ref _1, operator: ref _2, operator_strpos: ref _3, left: ref _4 }) => *all_strpos,
@@ -219,12 +219,12 @@ impl ISyntaxItemParse for BinaryExpr {
 fn binary_expr_format() {
     
     let binary_expr = BinaryExpr::new_binary(
-        BinaryExpr::new_primary(PrimaryExpr::new_lit(LitValue::from(1), make_str_pos!(1, 1, 1, 1))),
+        BinaryExpr::new_primary(PrimaryExpr::new_lit(LitValue::from(1), make_span!(0, 0))),
         SeperatorKind::Add,
-        make_str_pos!(1, 3, 1, 3),
-        BinaryExpr::new_primary(PrimaryExpr::new_lit(LitValue::from(2), make_str_pos!(1, 5, 1, 5))),
+        make_span!(2, 2),
+        BinaryExpr::new_primary(PrimaryExpr::new_lit(LitValue::from(2), make_span!(4, 4))),
     );
-    assert_eq!(binary_expr.format(0), "BinaryExpr <<0>1:1-1:5>\n  Literal (i32)1 <<0>1:1-1:1>\n  + <<0>1:3-1:3>\n  Literal (i32)2 <<0>1:5-1:5>");
+    assert_eq!(binary_expr.format(0), "BinaryExpr <<0>0-4>\n  Literal (i32)1 <<0>0-0>\n  + <<0>2-2>\n  Literal (i32)2 <<0>4-4>");
 }
 
 #[cfg(test)] #[test]
@@ -242,17 +242,17 @@ fn binary_expr_parse() {
     assert_eq!{ BinaryExpr::with_test_str("[1] * [2] / [3]"), 
         BinaryExpr::new_binary(
             BinaryExpr::new_binary(
-                BinaryExpr::new_primary(PrimaryExpr::new_array(make_str_pos!(1, 1, 1, 3), vec![
-                    int!(1, make_str_pos!(1, 2, 1, 2)),
+                BinaryExpr::new_primary(PrimaryExpr::new_array(make_span!(0, 2), vec![
+                    int!(1, make_span!(1, 1)),
                 ])), 
-                SeperatorKind::Mul, make_str_pos!(1, 5, 1, 5),
-                BinaryExpr::new_primary(PrimaryExpr::new_array(make_str_pos!(1, 7, 1, 9), vec![
-                    int!(2, make_str_pos!(1, 8, 1, 8)),
+                SeperatorKind::Mul, make_span!(4, 4),
+                BinaryExpr::new_primary(PrimaryExpr::new_array(make_span!(6, 8), vec![
+                    int!(2, make_span!(7, 7)),
                 ])),
             ),
-            SeperatorKind::Div, make_str_pos!(1, 11, 1, 11),
-            BinaryExpr::new_primary(PrimaryExpr::new_array(make_str_pos!(1, 13, 1, 15), vec![
-                int!(3, make_str_pos!(1, 14, 1, 14)),
+            SeperatorKind::Div, make_span!(10, 10),
+            BinaryExpr::new_primary(PrimaryExpr::new_array(make_span!(12, 14), vec![
+                int!(3, make_span!(13, 13)),
             ]))
         )
     }           
@@ -263,22 +263,22 @@ fn binary_expr_parse() {
             BinaryExpr::new_binary(
                 BinaryExpr::new_binary(
                     BinaryExpr::new_binary(
-                        ident!("a", make_str_pos!(1, 1, 1, 1)),
-                        SeperatorKind::Mul, make_str_pos!(1, 3, 1, 3), 
-                        ident!("b", make_str_pos!(1, 5, 1, 5)),
+                        ident!("a", make_span!(0, 0)),
+                        SeperatorKind::Mul, make_span!(2, 2), 
+                        ident!("b", make_span!(4, 4)),
                     ),
-                    SeperatorKind::Div, make_str_pos!(1, 7, 1, 7),
-                    ident!("c", make_str_pos!(1, 9, 1, 9)),
+                    SeperatorKind::Div, make_span!(6, 6),
+                    ident!("c", make_span!(8, 8)),
                 ),
-                SeperatorKind::Add, make_str_pos!(1, 11, 1, 11),
+                SeperatorKind::Add, make_span!(10, 10),
                 BinaryExpr::new_binary(
-                    ident!("d", make_str_pos!(1, 13, 1, 13)),
-                    SeperatorKind::Rem, make_str_pos!(1, 15, 1, 15),
-                    ident!("e", make_str_pos!(1, 17, 1, 17)),
+                    ident!("d", make_span!(12, 12)),
+                    SeperatorKind::Rem, make_span!(14, 14),
+                    ident!("e", make_span!(16, 16)),
                 )
             ),
-            SeperatorKind::Sub, make_str_pos!(1, 19, 1, 19),
-            ident!("f", make_str_pos!(1, 21, 1, 21)),
+            SeperatorKind::Sub, make_span!(18, 18),
+            ident!("f", make_span!(20, 20)),
         )
     }           
     //                                     0        1         2         3
@@ -287,31 +287,31 @@ fn binary_expr_parse() {
         BinaryExpr::new_binary(
             BinaryExpr::new_binary(
                 BinaryExpr::new_binary(
-                    ident!("a", make_str_pos!(1, 1, 1, 1)),
-                    SeperatorKind::Mul, make_str_pos!(1, 3, 1, 3),
-                    ident!("b", make_str_pos!(1, 5, 1, 5))
+                    ident!("a", make_span!(0, 0)),
+                    SeperatorKind::Mul, make_span!(2, 2),
+                    ident!("b", make_span!(4, 4))
                 ),
-                SeperatorKind::ShiftLeft, make_str_pos!(1, 7, 1, 8),
+                SeperatorKind::ShiftLeft, make_span!(6, 7),
                 BinaryExpr::new_binary(
                     BinaryExpr::new_binary(
                         BinaryExpr::new_binary(
-                            ident!("h", make_str_pos!(1, 10, 1, 10)),
-                            SeperatorKind::Div, make_str_pos!(1, 12, 1, 12),
-                            ident!("c", make_str_pos!(1, 14, 1, 14))
+                            ident!("h", make_span!(9, 9)),
+                            SeperatorKind::Div, make_span!(11, 11),
+                            ident!("c", make_span!(13, 13))
                         ),
-                        SeperatorKind::Add, make_str_pos!(1, 16, 1, 16),
+                        SeperatorKind::Add, make_span!(15, 15),
                         BinaryExpr::new_binary(
-                            ident!("d", make_str_pos!(1, 18, 1, 18)),
-                            SeperatorKind::Rem, make_str_pos!(1, 20, 1, 20),
-                            ident!("e", make_str_pos!(1, 22, 1, 22))
+                            ident!("d", make_span!(17, 17)),
+                            SeperatorKind::Rem, make_span!(19, 19),
+                            ident!("e", make_span!(21, 21))
                         )
                     ),
-                    SeperatorKind::Sub, make_str_pos!(1, 24, 1, 24),
-                    ident!("f", make_str_pos!(1, 26, 1, 26))
+                    SeperatorKind::Sub, make_span!(23, 23),
+                    ident!("f", make_span!(25, 25))
                 )
             ),
-            SeperatorKind::ShiftRight, make_str_pos!(1, 28, 1, 29),
-            ident!("g", make_str_pos!(1, 31, 1, 31)),
+            SeperatorKind::ShiftRight, make_span!(27, 28),
+            ident!("g", make_span!(30, 30)),
         )
     }          
 
@@ -333,75 +333,75 @@ fn binary_expr_parse() {
                     BinaryExpr::new_binary(
                         BinaryExpr::new_binary(
                             BinaryExpr::new_binary(
-                                ident!("a", make_str_pos!(1, 1, 1, 1)),
-                                SeperatorKind::Mul, make_str_pos!(1, 3, 1, 3),
-                                ident!("b", make_str_pos!(1, 5, 1, 5)),
+                                ident!("a", make_span!(0, 0)),
+                                SeperatorKind::Mul, make_span!(2, 2),
+                                ident!("b", make_span!(4, 4)),
                             ),
-                            SeperatorKind::ShiftLeft, make_str_pos!(1, 7, 1, 8),
+                            SeperatorKind::ShiftLeft, make_span!(6, 7),
                             BinaryExpr::new_binary(
                                 BinaryExpr::new_binary(
                                     BinaryExpr::new_binary(
-                                        ident!("h", make_str_pos!(1, 10, 1, 10)),
-                                        SeperatorKind::Div, make_str_pos!(1, 12, 1, 12),
-                                        ident!("c", make_str_pos!(1, 14, 1, 14)),
+                                        ident!("h", make_span!(9, 9)),
+                                        SeperatorKind::Div, make_span!(11, 11),
+                                        ident!("c", make_span!(13, 13)),
                                     ),
-                                    SeperatorKind::Add, make_str_pos!(1, 16, 1, 16),
+                                    SeperatorKind::Add, make_span!(15, 15),
                                     BinaryExpr::new_binary(
-                                        ident!("d", make_str_pos!(1, 18, 1, 18)),
-                                        SeperatorKind::Rem, make_str_pos!(1, 20, 1, 20),
-                                        ident!("e", make_str_pos!(1, 22, 1, 22)),
+                                        ident!("d", make_span!(17, 17)),
+                                        SeperatorKind::Rem, make_span!(19, 19),
+                                        ident!("e", make_span!(21, 21)),
                                     )
                                 ),
-                                SeperatorKind::Sub, make_str_pos!(1, 24, 1, 24),
-                                ident!("f", make_str_pos!(1, 26, 1, 26))
+                                SeperatorKind::Sub, make_span!(23, 23),
+                                ident!("f", make_span!(25, 25))
                             ),
                         ),
-                        SeperatorKind::ShiftRight, make_str_pos!(1, 28, 1, 29),
+                        SeperatorKind::ShiftRight, make_span!(27, 28),
                         BinaryExpr::new_binary(
                             BinaryExpr::new_binary(
-                                ident!("g", make_str_pos!(1, 31, 1, 31)),
-                                SeperatorKind::Great, make_str_pos!(1, 33, 1, 33),
+                                ident!("g", make_span!(30, 30)),
+                                SeperatorKind::Great, make_span!(32, 32),
                                 BinaryExpr::new_binary(
-                                    ident!("h", make_str_pos!(1, 35, 1, 35)),
-                                    SeperatorKind::Mul, make_str_pos!(1, 37, 1, 37),
-                                    ident!("i", make_str_pos!(1, 39, 1, 39)),
+                                    ident!("h", make_span!(34, 34)),
+                                    SeperatorKind::Mul, make_span!(36, 36),
+                                    ident!("i", make_span!(38, 38)),
                                 )
                             ),
-                            SeperatorKind::Less, make_str_pos!(1, 41, 1, 41),
-                            ident!("j", make_str_pos!(1, 43, 1, 43)),
+                            SeperatorKind::Less, make_span!(40, 40),
+                            ident!("j", make_span!(42, 42)),
                         )
                     ),
-                    SeperatorKind::ShiftLeft, make_str_pos!(1, 45, 1, 46),
+                    SeperatorKind::ShiftLeft, make_span!(44, 45),
                     BinaryExpr::new_binary(
-                        ident!("k", make_str_pos!(1, 48, 1, 48)),
-                        SeperatorKind::GreatEqual, make_str_pos!(1, 50, 1, 51),
-                        ident!("m", make_str_pos!(1, 53, 1, 53)),
+                        ident!("k", make_span!(47, 47)),
+                        SeperatorKind::GreatEqual, make_span!(49, 50),
+                        ident!("m", make_span!(52, 52)),
                     )
                 ),
-                SeperatorKind::LogicalAnd, make_str_pos!(1, 55, 1, 56),
-                ident!("n", make_str_pos!(1, 58, 1, 58))
+                SeperatorKind::LogicalAnd, make_span!(54, 55),
+                ident!("n", make_span!(57, 57))
             ),
-            SeperatorKind::LogicalOr, make_str_pos!(1, 60, 1, 61),
+            SeperatorKind::LogicalOr, make_span!(59, 60),
             BinaryExpr::new_binary(
                 BinaryExpr::new_binary(
                     BinaryExpr::new_binary(
                         BinaryExpr::new_binary(
-                            ident!("o", make_str_pos!(1, 63, 1, 63)),
-                            SeperatorKind::BitAnd, make_str_pos!(1, 65, 1, 65),
-                            ident!("p", make_str_pos!(1, 67, 1, 67)),
+                            ident!("o", make_span!(62, 62)),
+                            SeperatorKind::BitAnd, make_span!(64, 64),
+                            ident!("p", make_span!(66, 66)),
                         ),
-                        SeperatorKind::BitOr, make_str_pos!(1, 69, 1, 69),
+                        SeperatorKind::BitOr, make_span!(68, 68),
                         BinaryExpr::new_binary(
-                            ident!("q", make_str_pos!(1, 71, 1, 71)),
-                            SeperatorKind::BitXor, make_str_pos!(1, 73, 1, 73),
-                            ident!("r", make_str_pos!(1, 75, 1, 75)),
+                            ident!("q", make_span!(70, 70)),
+                            SeperatorKind::BitXor, make_span!(72, 72),
+                            ident!("r", make_span!(74, 74)),
                         )
                     ),
-                    SeperatorKind::NotEqual, make_str_pos!(1, 77, 1, 78),
-                    ident!("s", make_str_pos!(1, 80, 1, 80)),
+                    SeperatorKind::NotEqual, make_span!(76, 77),
+                    ident!("s", make_span!(79, 79)),
                 ),
-                SeperatorKind::Equal, make_str_pos!(1, 82, 1, 83),
-                ident!("t", make_str_pos!(1, 85, 1, 85))
+                SeperatorKind::Equal, make_span!(81, 82),
+                ident!("t", make_span!(84, 84))
             )
         )
     }
@@ -409,12 +409,12 @@ fn binary_expr_parse() {
     assert_eq!{ BinaryExpr::with_test_str("a & b == c"), // ((a & b) == c)
         BinaryExpr::new_binary(
             BinaryExpr::new_binary(
-                ident!("a", make_str_pos!(1, 1, 1, 1)),
-                SeperatorKind::BitAnd, make_str_pos!(1, 3, 1, 3),
-                ident!("b", make_str_pos!(1, 5, 1, 5)),
+                ident!("a", make_span!(0, 0)),
+                SeperatorKind::BitAnd, make_span!(2, 2),
+                ident!("b", make_span!(4, 4)),
             ),
-            SeperatorKind::Equal, make_str_pos!(1, 7, 1, 8),
-            ident!("c", make_str_pos!(1, 10, 1, 10)),
+            SeperatorKind::Equal, make_span!(6, 7),
+            ident!("c", make_span!(9, 9)),
         )
     }
 
@@ -428,33 +428,33 @@ fn binary_expr_parse() {
         BinaryExpr::new_binary(
             BinaryExpr::new_binary(
                 BinaryExpr::new_binary(
-                    int!(0, make_str_pos!(1, 1, 1, 1)),
-                    SeperatorKind::Add, make_str_pos!(1, 3, 1, 3),
-                    int!(6, make_str_pos!(1, 5, 1, 5))
+                    int!(0, make_span!(0, 0)),
+                    SeperatorKind::Add, make_span!(2, 2),
+                    int!(6, make_span!(4, 4))
                 ),
-                SeperatorKind::BitXor, make_str_pos!(1, 7, 1, 7),
+                SeperatorKind::BitXor, make_span!(6, 6),
                 BinaryExpr::new_binary(
-                    int!(3, make_str_pos!(1, 9, 1, 9)),
-                    SeperatorKind::BitAnd, make_str_pos!(1, 11, 1, 11),
+                    int!(3, make_span!(8, 8)),
+                    SeperatorKind::BitAnd, make_span!(10, 10),
                     BinaryExpr::new_binary(
                         BinaryExpr::new_binary(
-                            int!(3, make_str_pos!(1, 13, 1, 13)),
-                            SeperatorKind::Div, make_str_pos!(1, 15, 1, 15),
-                            int!(3, make_str_pos!(1, 17, 1, 17))
+                            int!(3, make_span!(12, 12)),
+                            SeperatorKind::Div, make_span!(14, 14),
+                            int!(3, make_span!(16, 16))
                         ),
-                        SeperatorKind::Sub, make_str_pos!(1, 19, 1, 19),
-                        int!(8, make_str_pos!(1, 21, 1, 21))
+                        SeperatorKind::Sub, make_span!(18, 18),
+                        int!(8, make_span!(20, 20))
                     )
                 )
             ),
-            SeperatorKind::LogicalAnd, make_str_pos!(1, 23, 1, 24),
+            SeperatorKind::LogicalAnd, make_span!(22, 23),
             BinaryExpr::new_binary(
-                int!(2, make_str_pos!(1, 26, 1, 26)),
-                SeperatorKind::BitAnd, make_str_pos!(1, 28, 1, 28),
+                int!(2, make_span!(25, 25)),
+                SeperatorKind::BitAnd, make_span!(27, 27),
                 BinaryExpr::new_binary(
-                    int!(0, make_str_pos!(1, 30, 1, 30)),
-                    SeperatorKind::Add, make_str_pos!(1, 32, 1, 32),
-                    int!(6, make_str_pos!(1, 34, 1, 34))
+                    int!(0, make_span!(29, 29)),
+                    SeperatorKind::Add, make_span!(31, 31),
+                    int!(6, make_span!(33, 33))
                 )
             )
         )
@@ -468,64 +468,64 @@ fn binary_expr_parse() {
                 new_binary(
                     new_binary(
                         new_binary(
-                            int!(7, make_str_pos!(1, 1, 1, 1)),
-                            SeperatorKind::Great, make_str_pos!(1, 3, 1, 3),
-                            int!(1, make_str_pos!(1, 5, 1, 5)),
+                            int!(7, make_span!(0, 0)),
+                            SeperatorKind::Great, make_span!(2, 2),
+                            int!(1, make_span!(4, 4)),
                         ),
-                        SeperatorKind::BitOr, make_str_pos!(1, 7, 1, 7),
+                        SeperatorKind::BitOr, make_span!(6, 6),
                         new_binary(
-                            int!(0, make_str_pos!(1, 9, 1, 9)),
-                            SeperatorKind::Rem, make_str_pos!(1, 11, 1, 11),
-                            int!(8, make_str_pos!(1, 13, 1, 13))
+                            int!(0, make_span!(8, 8)),
+                            SeperatorKind::Rem, make_span!(10, 10),
+                            int!(8, make_span!(12, 12))
                         )
                     ), 
-                    SeperatorKind::BitOr, make_str_pos!(1, 15, 1, 15),
+                    SeperatorKind::BitOr, make_span!(14, 14),
                     new_binary(
                         new_binary(
                             new_binary(
-                                int!(1, make_str_pos!(1, 17, 1, 17)),
-                                SeperatorKind::Rem, make_str_pos!(1, 19, 1, 19),
-                                int!(7, make_str_pos!(1, 21, 1, 21)),
+                                int!(1, make_span!(16, 16)),
+                                SeperatorKind::Rem, make_span!(18, 18),
+                                int!(7, make_span!(20, 20)),
                             ),
-                            SeperatorKind::Mul, make_str_pos!(1, 23, 1, 23),
-                            int!(3, make_str_pos!(1, 25, 1, 25)),
+                            SeperatorKind::Mul, make_span!(22, 22),
+                            int!(3, make_span!(24, 24)),
                         ),
-                        SeperatorKind::Rem, make_str_pos!(1, 27, 1, 27),
-                        int!(6, make_str_pos!(1, 29, 1, 29))
+                        SeperatorKind::Rem, make_span!(26, 26),
+                        int!(6, make_span!(28, 28))
                     )
                 ),
-                SeperatorKind::Equal, make_str_pos!(1, 31, 1, 32),
+                SeperatorKind::Equal, make_span!(30, 31),
                 new_binary(
                     new_binary(
                         new_binary(
-                            int!(1, make_str_pos!(1, 34, 1, 34)),
-                            SeperatorKind::ShiftRight, make_str_pos!(1, 36, 1, 37),
+                            int!(1, make_span!(33, 33)),
+                            SeperatorKind::ShiftRight, make_span!(35, 36),
                             new_binary(
-                                int!(8, make_str_pos!(1, 39, 1, 39)),
-                                SeperatorKind::Rem, make_str_pos!(1, 41, 1, 41),
-                                int!(3, make_str_pos!(1, 43, 1, 43)),
+                                int!(8, make_span!(38, 38)),
+                                SeperatorKind::Rem, make_span!(40, 40),
+                                int!(3, make_span!(42, 42)),
                             )
                         ),
-                        SeperatorKind::BitXor, make_str_pos!(1, 45, 1, 45),
+                        SeperatorKind::BitXor, make_span!(44, 44),
                         new_binary(
-                            int!(6, make_str_pos!(1, 47, 1, 47)),
-                            SeperatorKind::ShiftLeft, make_str_pos!(1, 49, 1, 50),
-                            int!(0, make_str_pos!(1, 52, 1, 52)),
+                            int!(6, make_span!(46, 46)),
+                            SeperatorKind::ShiftLeft, make_span!(48, 49),
+                            int!(0, make_span!(51, 51)),
                         )
                     ),
-                    SeperatorKind::BitXor, make_str_pos!(1, 54, 1, 54),
+                    SeperatorKind::BitXor, make_span!(53, 53),
                     new_binary(
-                        int!(2, make_str_pos!(1, 56, 1, 56)),
-                        SeperatorKind::ShiftRight, make_str_pos!(1, 58, 1, 59),
-                        int!(6, make_str_pos!(1, 61, 1, 61)),
+                        int!(2, make_span!(55, 55)),
+                        SeperatorKind::ShiftRight, make_span!(57, 58),
+                        int!(6, make_span!(60, 60)),
                     )
                 )
             ),
-            SeperatorKind::LogicalOr, make_str_pos!(1, 63, 1, 64),
+            SeperatorKind::LogicalOr, make_span!(62, 63),
             new_binary(
-                int!(1, make_str_pos!(1, 66, 1, 66)),
-                SeperatorKind::Sub, make_str_pos!(1, 68, 1, 68),
-                int!(0, make_str_pos!(1, 70, 1, 70))
+                int!(1, make_span!(65, 65)),
+                SeperatorKind::Sub, make_span!(67, 67),
+                int!(0, make_span!(69, 69))
             )
         )
     }
@@ -538,53 +538,53 @@ fn binary_expr_parse() {
             BinaryExpr::new_binary(
                 BinaryExpr::new_binary(
                     BinaryExpr::new_binary(
-                        int!(7, make_str_pos!(1, 1, 1, 1)),
-                        SeperatorKind::ShiftRight, make_str_pos!(1, 3, 1, 4),
-                        int!(3, make_str_pos!(1, 6, 1, 6)),
+                        int!(7, make_span!(0, 0)),
+                        SeperatorKind::ShiftRight, make_span!(2, 3),
+                        int!(3, make_span!(5, 5)),
                     ),
-                    SeperatorKind::Equal, make_str_pos!(1, 8, 1, 9),
+                    SeperatorKind::Equal, make_span!(7, 8),
                     BinaryExpr::new_binary(
-                        int!(8, make_str_pos!(1, 11, 1, 11)),
-                        SeperatorKind::Div, make_str_pos!(1, 13, 1, 13),
-                        int!(1, make_str_pos!(1, 15, 1, 15)),
+                        int!(8, make_span!(10, 10)),
+                        SeperatorKind::Div, make_span!(12, 12),
+                        int!(1, make_span!(14, 14)),
                     )
                 ),
-                SeperatorKind::LogicalAnd, make_str_pos!(1, 17, 1, 18),
+                SeperatorKind::LogicalAnd, make_span!(16, 17),
                 BinaryExpr::new_binary(
-                    int!(6, make_str_pos!(1, 20, 1, 20)),
-                    SeperatorKind::Equal, make_str_pos!(1, 22, 1, 23),
+                    int!(6, make_span!(19, 19)),
+                    SeperatorKind::Equal, make_span!(21, 22),
                     BinaryExpr::new_binary(
                         BinaryExpr::new_binary(
-                            int!(1, make_str_pos!(1, 25, 1, 25)),
-                            SeperatorKind::LessEqual, make_str_pos!(1, 27, 1, 28),
+                            int!(1, make_span!(24, 24)),
+                            SeperatorKind::LessEqual, make_span!(26, 27),
                             BinaryExpr::new_binary(
-                                int!(3, make_str_pos!(1, 30, 1, 30)),
-                                SeperatorKind::Rem, make_str_pos!(1, 32, 1, 32),
-                                int!(6, make_str_pos!(1, 34, 1, 34))
+                                int!(3, make_span!(29, 29)),
+                                SeperatorKind::Rem, make_span!(31, 31),
+                                int!(6, make_span!(33, 33))
                             )
                         ),
-                        SeperatorKind::BitXor, make_str_pos!(1, 36, 1, 36),
+                        SeperatorKind::BitXor, make_span!(35, 35),
                         BinaryExpr::new_binary(
                             BinaryExpr::new_binary(
                                 BinaryExpr::new_binary(
-                                    int!(3, make_str_pos!(1, 38, 1, 38)),
-                                    SeperatorKind::Sub, make_str_pos!(1, 40, 1, 40),
-                                    int!(1, make_str_pos!(1, 42, 1, 42)),
+                                    int!(3, make_span!(37, 37)),
+                                    SeperatorKind::Sub, make_span!(39, 39),
+                                    int!(1, make_span!(41, 41)),
                                 ),
-                                SeperatorKind::Sub, make_str_pos!(1, 44, 1, 44),
-                                int!(2, make_str_pos!(1, 46, 1, 46)),
+                                SeperatorKind::Sub, make_span!(43, 43),
+                                int!(2, make_span!(45, 45)),
                             ),
-                            SeperatorKind::ShiftRight, make_str_pos!(1, 48, 1, 49),
-                            int!(7, make_str_pos!(1, 51, 1, 51))
+                            SeperatorKind::ShiftRight, make_span!(47, 48),
+                            int!(7, make_span!(50, 50))
                         )
                     )
                 )
             ),
-            SeperatorKind::LogicalOr, make_str_pos!(1, 53, 1, 54),
+            SeperatorKind::LogicalOr, make_span!(52, 53),
             BinaryExpr::new_binary(
-                int!(1, make_str_pos!(1, 56, 1, 56)),
-                SeperatorKind::GreatEqual, make_str_pos!(1, 58, 1, 59),
-                int!(1, make_str_pos!(1, 61, 1, 61))
+                int!(1, make_span!(55, 55)),
+                SeperatorKind::GreatEqual, make_span!(57, 58),
+                int!(1, make_span!(60, 60))
             )
         )
     }
@@ -592,9 +592,9 @@ fn binary_expr_parse() {
     //                                     123456
     assert_eq!{ BinaryExpr::with_test_str("4 >> 7"),
         BinaryExpr::new_binary(
-            int!(4, make_str_pos!(1, 1, 1, 1)),
-            SeperatorKind::ShiftRight, make_str_pos!(1, 3, 1, 4),
-            int!(7, make_str_pos!(1, 6, 1, 6))
+            int!(4, make_span!(0, 0)),
+            SeperatorKind::ShiftRight, make_span!(2, 3),
+            int!(7, make_span!(5, 5))
         )
     }
     //                                     0        1         2         3         4         5         6     
@@ -606,60 +606,60 @@ fn binary_expr_parse() {
                 BinaryExpr::new_binary(
                     BinaryExpr::new_binary(
                         BinaryExpr::new_binary(
-                            int!(8, make_str_pos!(1, 1, 1, 1)),
-                            SeperatorKind::BitAnd, make_str_pos!(1, 3, 1, 3),
-                            int!(0, make_str_pos!(1, 5, 1, 5))
+                            int!(8, make_span!(0, 0)),
+                            SeperatorKind::BitAnd, make_span!(2, 2),
+                            int!(0, make_span!(4, 4))
                         ),
-                        SeperatorKind::BitOr, make_str_pos!(1, 7, 1, 7),
+                        SeperatorKind::BitOr, make_span!(6, 6),
                         BinaryExpr::new_binary(
-                            int!(7, make_str_pos!(1, 9, 1, 9)),
-                            SeperatorKind::Add, make_str_pos!(1, 11, 1, 11),
-                            int!(7, make_str_pos!(1, 13, 1, 13))
+                            int!(7, make_span!(8, 8)),
+                            SeperatorKind::Add, make_span!(10, 10),
+                            int!(7, make_span!(12, 12))
                         )
                     ),
-                    SeperatorKind::BitOr, make_str_pos!(1, 15, 1, 15),
+                    SeperatorKind::BitOr, make_span!(14, 14),
                     BinaryExpr::new_binary(
-                        int!(7, make_str_pos!(1, 17, 1, 17)),
-                        SeperatorKind::Mul, make_str_pos!(1, 19, 1, 19),
-                        int!(0, make_str_pos!(1, 21, 1, 21))
+                        int!(7, make_span!(16, 16)),
+                        SeperatorKind::Mul, make_span!(18, 18),
+                        int!(0, make_span!(20, 20))
                     )
                 ),
-                SeperatorKind::LogicalAnd, make_str_pos!(1, 23, 1, 24),
+                SeperatorKind::LogicalAnd, make_span!(22, 23),
                 BinaryExpr::new_binary(
                     BinaryExpr::new_binary(
-                        int!(1, make_str_pos!(1, 26, 1, 26)),
-                        SeperatorKind::Sub, make_str_pos!(1, 28, 1, 28),
+                        int!(1, make_span!(25, 25)),
+                        SeperatorKind::Sub, make_span!(27, 27),
                         BinaryExpr::new_binary(
-                            int!(2, make_str_pos!(1, 30, 1, 30)),
-                            SeperatorKind::Mul, make_str_pos!(1, 32, 1, 32),
-                            int!(3, make_str_pos!(1, 34, 1, 34))
+                            int!(2, make_span!(29, 29)),
+                            SeperatorKind::Mul, make_span!(31, 31),
+                            int!(3, make_span!(33, 33))
                         )
                     ),
-                    SeperatorKind::BitOr, make_str_pos!(1, 36, 1, 36),
+                    SeperatorKind::BitOr, make_span!(35, 35),
                     BinaryExpr::new_binary(
                         BinaryExpr::new_binary(
                             BinaryExpr::new_binary(
-                                int!(0, make_str_pos!(1, 38, 1, 38)),
-                                SeperatorKind::Sub, make_str_pos!(1, 40, 1, 40),
-                                int!(7, make_str_pos!(1, 42, 1, 42))
+                                int!(0, make_span!(37, 37)),
+                                SeperatorKind::Sub, make_span!(39, 39),
+                                int!(7, make_span!(41, 41))
                             ),
-                            SeperatorKind::GreatEqual, make_str_pos!(1, 44, 1, 45),
-                            int!(6, make_str_pos!(1, 47, 1, 47))
+                            SeperatorKind::GreatEqual, make_span!(43, 44),
+                            int!(6, make_span!(46, 46))
                         ),
-                        SeperatorKind::ShiftRight, make_str_pos!(1, 49, 1, 50),
+                        SeperatorKind::ShiftRight, make_span!(48, 49),
                         BinaryExpr::new_binary(
-                            int!(5, make_str_pos!(1, 52, 1, 52)),
-                            SeperatorKind::Rem, make_str_pos!(1, 54, 1, 54),
-                            int!(5, make_str_pos!(1, 56, 1, 56))
+                            int!(5, make_span!(51, 51)),
+                            SeperatorKind::Rem, make_span!(53, 53),
+                            int!(5, make_span!(55, 55))
                         )
                     )
                 )
             ),
-            SeperatorKind::LogicalOr, make_str_pos!(1, 58, 1, 59),
+            SeperatorKind::LogicalOr, make_span!(57, 58),
             BinaryExpr::new_binary(
-                int!(5, make_str_pos!(1, 61, 1, 61)),
-                SeperatorKind::Rem, make_str_pos!(1, 63, 1, 63),
-                int!(3, make_str_pos!(1, 65, 1, 65))
+                int!(5, make_span!(60, 60)),
+                SeperatorKind::Rem, make_span!(62, 62),
+                int!(3, make_span!(64, 64))
             )
         )
     }
@@ -672,59 +672,59 @@ fn binary_expr_parse() {
                 BinaryExpr::new_binary(
                     BinaryExpr::new_binary(
                         BinaryExpr::new_binary(
-                            int!(3, make_str_pos!(1, 1, 1, 1)),
-                            SeperatorKind::LessEqual, make_str_pos!(1, 3, 1, 4),
+                            int!(3, make_span!(0, 0)),
+                            SeperatorKind::LessEqual, make_span!(2, 3),
                             BinaryExpr::new_binary(
-                                int!(2, make_str_pos!(1, 6, 1, 6)),
-                                SeperatorKind::Add, make_str_pos!(1, 8, 1, 8),
-                                int!(4, make_str_pos!(1, 10, 1, 10))
+                                int!(2, make_span!(5, 5)),
+                                SeperatorKind::Add, make_span!(7, 7),
+                                int!(4, make_span!(9, 9))
                             )
                         ),
-                        SeperatorKind::LessEqual, make_str_pos!(1, 12, 1, 13),
-                        int!(5, make_str_pos!(1, 15, 1, 15))
+                        SeperatorKind::LessEqual, make_span!(11, 12),
+                        int!(5, make_span!(14, 14))
                     ),
-                    SeperatorKind::LogicalAnd, make_str_pos!(1, 17, 1, 18),
+                    SeperatorKind::LogicalAnd, make_span!(16, 17),
                     BinaryExpr::new_binary(
                         BinaryExpr::new_binary(
                             BinaryExpr::new_binary(
-                                int!(3, make_str_pos!(1, 20, 1, 20)),
-                                SeperatorKind::Less, make_str_pos!(1, 22, 1, 22),
+                                int!(3, make_span!(19, 19)),
+                                SeperatorKind::Less, make_span!(21, 21),
                                 BinaryExpr::new_binary(
-                                    int!(3, make_str_pos!(1, 24, 1, 24)),
-                                    SeperatorKind::Add, make_str_pos!(1, 26, 1, 26),
-                                    int!(2, make_str_pos!(1, 28, 1, 28))
+                                    int!(3, make_span!(23, 23)),
+                                    SeperatorKind::Add, make_span!(25, 25),
+                                    int!(2, make_span!(27, 27))
                                 )
                             ),
-                            SeperatorKind::ShiftRight, make_str_pos!(1, 30, 1, 31),
+                            SeperatorKind::ShiftRight, make_span!(29, 30),
                             BinaryExpr::new_binary(
-                                int!(1, make_str_pos!(1, 33, 1, 33)),
-                                SeperatorKind::Mul, make_str_pos!(1, 35, 1, 35),
-                                int!(2, make_str_pos!(1, 37, 1, 37))
+                                int!(1, make_span!(32, 32)),
+                                SeperatorKind::Mul, make_span!(34, 34),
+                                int!(2, make_span!(36, 36))
                             )
                         ),
-                        SeperatorKind::BitAnd, make_str_pos!(1, 39, 1, 39),
-                        int!(8, make_str_pos!(1, 41, 1, 41))
+                        SeperatorKind::BitAnd, make_span!(38, 38),
+                        int!(8, make_span!(40, 40))
                     )
                 ),
-                SeperatorKind::LogicalAnd, make_str_pos!(1, 43, 1, 44),
+                SeperatorKind::LogicalAnd, make_span!(42, 43),
                 BinaryExpr::new_binary(
                     BinaryExpr::new_binary(
-                        int!(1, make_str_pos!(1, 46, 1, 46)),
-                        SeperatorKind::GreatEqual, make_str_pos!(1, 48, 1, 49),
-                        int!(1, make_str_pos!(1, 51, 1, 51))
+                        int!(1, make_span!(45, 45)),
+                        SeperatorKind::GreatEqual, make_span!(47, 48),
+                        int!(1, make_span!(50, 50))
                     ),
-                    SeperatorKind::Less, make_str_pos!(1, 53, 1, 53),
-                    int!(0, make_str_pos!(1, 55, 1, 55))
+                    SeperatorKind::Less, make_span!(52, 52),
+                    int!(0, make_span!(54, 54))
                 )
             ),
-            SeperatorKind::LogicalOr, make_str_pos!(1, 57, 1, 58),
+            SeperatorKind::LogicalOr, make_span!(56, 57),
             BinaryExpr::new_binary(
-                int!(6, make_str_pos!(1, 60, 1, 60)),
-                SeperatorKind::Less, make_str_pos!(1, 62, 1, 62),
+                int!(6, make_span!(59, 59)),
+                SeperatorKind::Less, make_span!(61, 61),
                 BinaryExpr::new_binary(
-                    int!(4, make_str_pos!(1, 64, 1, 64)),
-                    SeperatorKind::Mul, make_str_pos!(1, 66, 1, 66),
-                    int!(4, make_str_pos!(1, 68, 1, 68))
+                    int!(4, make_span!(63, 63)),
+                    SeperatorKind::Mul, make_span!(65, 65),
+                    int!(4, make_span!(67, 67))
                 )
             )
         )
@@ -737,18 +737,18 @@ fn binary_expr_parse() {
             BinaryExpr::new_binary(
                 BinaryExpr::new_binary(
                     BinaryExpr::new_binary(
-                        int!(5, make_str_pos!(1, 1, 1, 1)),
-                        SeperatorKind::GreatEqual, make_str_pos!(1, 3, 1, 4),
-                        int!(6, make_str_pos!(1, 6, 1, 6))
+                        int!(5, make_span!(0, 0)),
+                        SeperatorKind::GreatEqual, make_span!(2, 3),
+                        int!(6, make_span!(5, 5))
                     ),
-                    SeperatorKind::BitOr, make_str_pos!(1, 8, 1, 8),
-                    int!(3, make_str_pos!(1, 10, 1, 10))
+                    SeperatorKind::BitOr, make_span!(7, 7),
+                    int!(3, make_span!(9, 9))
                 ),
-                SeperatorKind::Equal, make_str_pos!(1, 12, 1, 13),
-                int!(4, make_str_pos!(1, 15, 1, 15))
+                SeperatorKind::Equal, make_span!(11, 12),
+                int!(4, make_span!(14, 14))
             ),
-            SeperatorKind::LogicalAnd, make_str_pos!(1, 17, 1, 18),
-            int!(3, make_str_pos!(1, 20, 1, 20))
+            SeperatorKind::LogicalAnd, make_span!(16, 17),
+            int!(3, make_span!(19, 19))
         )
     }
     //                                     0        1         2         3         4         5         6         7
@@ -759,71 +759,71 @@ fn binary_expr_parse() {
         BinaryExpr::new_binary(
             BinaryExpr::new_binary(
                 BinaryExpr::new_binary(
-                    int!(6, make_str_pos!(1, 1, 1, 1)),
-                    SeperatorKind::LogicalAnd, make_str_pos!(1, 3, 1, 4),
+                    int!(6, make_span!(0, 0)),
+                    SeperatorKind::LogicalAnd, make_span!(2, 3),
                     BinaryExpr::new_binary(
-                        int!(7, make_str_pos!(1, 6, 1, 6)),
-                        SeperatorKind::ShiftRight, make_str_pos!(1, 8, 1, 9),
-                        int!(8, make_str_pos!(1, 11, 1, 11))
+                        int!(7, make_span!(5, 5)),
+                        SeperatorKind::ShiftRight, make_span!(7, 8),
+                        int!(8, make_span!(10, 10))
                     )
                 ),
-                SeperatorKind::LogicalAnd, make_str_pos!(1, 13, 1, 14),
+                SeperatorKind::LogicalAnd, make_span!(12, 13),
                 BinaryExpr::new_binary(
                     BinaryExpr::new_binary(
                         BinaryExpr::new_binary(
                             BinaryExpr::new_binary(
                                 BinaryExpr::new_binary(
                                     BinaryExpr::new_binary(
-                                        int!(0, make_str_pos!(1, 16, 1, 16)),
-                                        SeperatorKind::Div, make_str_pos!(1, 18, 1, 18),
-                                        int!(8, make_str_pos!(1, 20, 1, 20))
+                                        int!(0, make_span!(15, 15)),
+                                        SeperatorKind::Div, make_span!(17, 17),
+                                        int!(8, make_span!(19, 19))
                                     ), 
-                                    SeperatorKind::Mul, make_str_pos!(1, 22, 1, 22),
-                                    int!(7, make_str_pos!(1, 24, 1, 24))
+                                    SeperatorKind::Mul, make_span!(21, 21),
+                                    int!(7, make_span!(23, 23))
                                 ), 
-                                SeperatorKind::Add, make_str_pos!(1, 26, 1, 26),
-                                int!(5, make_str_pos!(1, 28, 1, 28))
+                                SeperatorKind::Add, make_span!(25, 25),
+                                int!(5, make_span!(27, 27))
                             ),
-                            SeperatorKind::Less, make_str_pos!(1, 30, 1, 30),
+                            SeperatorKind::Less, make_span!(29, 29),
                             BinaryExpr::new_binary(
-                                int!(5, make_str_pos!(1, 32, 1, 32)),
-                                SeperatorKind::Div, make_str_pos!(1, 34, 1, 34),
-                                int!(5, make_str_pos!(1, 36, 1, 36))
+                                int!(5, make_span!(31, 31)),
+                                SeperatorKind::Div, make_span!(33, 33),
+                                int!(5, make_span!(35, 35))
                             )
                         ),
-                        SeperatorKind::ShiftRight, make_str_pos!(1, 38, 1, 39),
+                        SeperatorKind::ShiftRight, make_span!(37, 38),
                         BinaryExpr::new_binary(
                             BinaryExpr::new_binary(
                                 BinaryExpr::new_binary(
-                                    int!(5, make_str_pos!(1, 41, 1, 41)),
-                                    SeperatorKind::Sub, make_str_pos!(1, 43, 1, 43),
-                                    int!(1, make_str_pos!(1, 45, 1, 45))
+                                    int!(5, make_span!(40, 40)),
+                                    SeperatorKind::Sub, make_span!(42, 42),
+                                    int!(1, make_span!(44, 44))
                                 ), 
-                                SeperatorKind::GreatEqual, make_str_pos!(1, 47, 1, 48),
-                                int!(6, make_str_pos!(1, 50, 1, 50))
+                                SeperatorKind::GreatEqual, make_span!(46, 47),
+                                int!(6, make_span!(49, 49))
                             ), 
-                            SeperatorKind::Great, make_str_pos!(1, 52, 1, 52),
-                            int!(8, make_str_pos!(1, 54, 1, 54))
+                            SeperatorKind::Great, make_span!(51, 51),
+                            int!(8, make_span!(53, 53))
                         )
                     ),
-                    SeperatorKind::BitOr, make_str_pos!(1, 56, 1, 56),
+                    SeperatorKind::BitOr, make_span!(55, 55),
                     BinaryExpr::new_binary(
-                        int!(6, make_str_pos!(1, 58, 1, 58)),
-                        SeperatorKind::ShiftRight, make_str_pos!(1, 60, 1, 61),
+                        int!(6, make_span!(57, 57)),
+                        SeperatorKind::ShiftRight, make_span!(59, 60),
                         BinaryExpr::new_binary(
-                            int!(5, make_str_pos!(1, 63, 1, 63)),
-                            SeperatorKind::Great, make_str_pos!(1, 65, 1, 65),
+                            int!(5, make_span!(62, 62)),
+                            SeperatorKind::Great, make_span!(64, 64),
                             BinaryExpr::new_binary(
-                                int!(2, make_str_pos!(1, 67, 1, 67)),
-                                SeperatorKind::Add, make_str_pos!(1, 69, 1, 69),
-                                int!(1, make_str_pos!(1, 71, 1, 71))
+                                int!(2, make_span!(66, 66)),
+                                SeperatorKind::Add, make_span!(68, 68),
+                                int!(1, make_span!(70, 70))
                             )
                         )
                     )
                 )
             ),
-            SeperatorKind::LogicalOr, make_str_pos!(1, 73, 1, 74),
-            int!(0, make_str_pos!(1, 76, 1, 76))
+            SeperatorKind::LogicalOr, make_span!(72, 73),
+            int!(0, make_span!(75, 75))
         )
     }
 }

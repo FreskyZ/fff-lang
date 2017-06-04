@@ -5,7 +5,7 @@
 // future may support something like `to_string::<i32>(a)`
 
 use std::fmt;
-use codemap::StringPosition;
+use codemap::Span;
 
 use lexical::Token;
 use lexical::SeperatorKind;
@@ -19,15 +19,15 @@ use super::super::ParseResult;
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct NameSegment{
     pub ident: String,
-    pub ident_strpos: StringPosition,
+    pub ident_strpos: Span,
 }
 impl NameSegment {
-    fn new(ident: String, ident_strpos: StringPosition) -> NameSegment { NameSegment{ ident, ident_strpos } }
+    fn new(ident: String, ident_strpos: Span) -> NameSegment { NameSegment{ ident, ident_strpos } }
 }
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct Name {
     pub segments: Vec<NameSegment>,
-    pub all_strpos: StringPosition,   
+    pub all_strpos: Span,   
 }
 impl ISyntaxItemFormat for Name {
     fn format(&self, indent: u32) -> String {
@@ -44,7 +44,7 @@ impl fmt::Debug for Name {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(0)) }
 }
 impl Name {
-    fn new(all_strpos: StringPosition, segments: Vec<NameSegment>) -> Name { Name{ all_strpos, segments } }
+    fn new(all_strpos: Span, segments: Vec<NameSegment>) -> Name { Name{ all_strpos, segments } }
 }
 impl ISyntaxItemGrammar for Name {
     fn is_first_final(sess: &ParseSession) -> bool { if let &Token::Ident(_) = sess.tk { true } else { false } }
@@ -70,7 +70,7 @@ impl ISyntaxItemParse for Name {
                 break;
             }
         }
-        return Ok(Name::new(StringPosition::merge(starting_strpos, ending_strpos), segments));
+        return Ok(Name::new(starting_strpos.merge(&ending_strpos), segments));
     }
 }
 
@@ -79,19 +79,19 @@ fn name_parse() {
     use super::super::ISyntaxItemWithStr;
 
     assert_eq!{ Name::with_test_str("hello"), 
-        Name::new(make_strpos!(1, 1, 1, 5), vec![
-            NameSegment::new("hello".to_owned(), make_strpos!(1, 1, 1, 5))
+        Name::new(make_span!(0, 4), vec![
+            NameSegment::new("hello".to_owned(), make_span!(0, 4))
         ]) 
     }
     //                               0        1         2         3         4
     //                               12345678901234567890123456789012345678901
     assert_eq!{ Name::with_test_str("std::network::wlan::native::GetWLANHandle"),
-        Name::new(make_strpos!(1, 1, 1, 41), vec![
-            NameSegment::new("std".to_owned(), make_strpos!(1, 1, 1, 3)), 
-            NameSegment::new("network".to_owned(), make_strpos!(1, 6, 1, 12)),
-            NameSegment::new("wlan".to_owned(), make_strpos!(1, 15, 1, 18)),
-            NameSegment::new("native".to_owned(), make_strpos!(1, 21, 1, 26)),
-            NameSegment::new("GetWLANHandle".to_owned(), make_strpos!(1, 29, 1, 41)),
+        Name::new(make_span!(0, 40), vec![
+            NameSegment::new("std".to_owned(), make_span!(0, 2)), 
+            NameSegment::new("network".to_owned(), make_span!(5, 11)),
+            NameSegment::new("wlan".to_owned(), make_span!(14, 17)),
+            NameSegment::new("native".to_owned(), make_span!(20, 25)),
+            NameSegment::new("GetWLANHandle".to_owned(), make_span!(28, 40)),
         ])
     }
 }

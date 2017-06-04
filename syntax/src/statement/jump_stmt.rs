@@ -6,7 +6,7 @@
 
 use std::fmt;
 
-use codemap::StringPosition;
+use codemap::Span;
 use lexical::Token;
 use lexical::SeperatorKind;
 use lexical::KeywordKind;
@@ -20,15 +20,15 @@ use super::super::ISyntaxItemGrammar;
 #[cfg_attr(test, derive(Eq, PartialEq))]
 struct JumpStatement {
     m_target: Option<String>,
-    m_target_strpos: StringPosition,
-    m_all_strpos: StringPosition,
+    m_target_strpos: Span,
+    m_all_strpos: Span,
 }
 impl JumpStatement {
 
-    fn new_no_target(all_strpos: StringPosition) -> JumpStatement {
-        JumpStatement{ m_target: None, m_target_strpos: StringPosition::new(), m_all_strpos: all_strpos }
+    fn new_no_target(all_strpos: Span) -> JumpStatement {
+        JumpStatement{ m_target: None, m_target_strpos: Span::default(), m_all_strpos: all_strpos }
     }
-    fn new_target(all_strpos: StringPosition, target: String, target_strpos: StringPosition) -> JumpStatement {
+    fn new_target(all_strpos: Span, target: String, target_strpos: Span) -> JumpStatement {
         JumpStatement{ m_target: Some(target), m_target_strpos: target_strpos, m_all_strpos: all_strpos }
     }
 
@@ -52,9 +52,9 @@ impl JumpStatement {
         match (sess.tk, sess.pos, sess.next_tk, sess.next_pos) {
             (&Token::Label(ref target), target_strpos, 
                 &Token::Sep(SeperatorKind::SemiColon), ref semi_colon_strpos) => 
-                Ok(JumpStatement::new_target(StringPosition::merge(starting_strpos, *semi_colon_strpos), target.clone(), target_strpos)),
+                Ok(JumpStatement::new_target(starting_strpos.merge(semi_colon_strpos), target.clone(), target_strpos)),
             (&Token::Sep(SeperatorKind::SemiColon), ref semi_colon_strpos, _, _) => 
-                Ok(JumpStatement::new_no_target(StringPosition::merge(starting_strpos, *semi_colon_strpos))),
+                Ok(JumpStatement::new_no_target(starting_strpos.merge(semi_colon_strpos))),
             (&Token::Label(_), _, _, _) =>
                 sess.push_unexpect("semicolon"),
             _ => 
@@ -83,27 +83,27 @@ impl fmt::Debug for BreakStatement {
 
 impl ContinueStatement {
 
-    pub fn new_no_target(all_strpos: StringPosition) -> ContinueStatement { ContinueStatement(JumpStatement::new_no_target(all_strpos)) }
-    pub fn new_with_target(all_strpos: StringPosition, target: String, target_strpos: StringPosition) -> ContinueStatement {
+    pub fn new_no_target(all_strpos: Span) -> ContinueStatement { ContinueStatement(JumpStatement::new_no_target(all_strpos)) }
+    pub fn new_with_target(all_strpos: Span, target: String, target_strpos: Span) -> ContinueStatement {
         ContinueStatement(JumpStatement::new_target(all_strpos, target, target_strpos))
     }
 
     pub fn has_target(&self) -> bool { match self.0.m_target { Some(_) => true, None => false } }
-    pub fn get_all_strpos(&self) -> StringPosition { self.0.m_all_strpos }
+    pub fn get_all_strpos(&self) -> Span { self.0.m_all_strpos }
     pub fn get_target(&self) -> Option<&String> { match self.0.m_target { Some(ref target) => Some(target), None => None } }
-    pub fn get_target_strpos(&self) -> Option<StringPosition> { match self.0.m_target { Some(_) => Some(self.0.m_target_strpos), None => None } }
+    pub fn get_target_strpos(&self) -> Option<Span> { match self.0.m_target { Some(_) => Some(self.0.m_target_strpos), None => None } }
 }
 impl BreakStatement {
 
-    pub fn new_no_target(all_strpos: StringPosition) -> BreakStatement { BreakStatement(JumpStatement::new_no_target(all_strpos)) }
-    pub fn new_with_target(all_strpos: StringPosition, target: String, target_strpos: StringPosition) -> BreakStatement {
+    pub fn new_no_target(all_strpos: Span) -> BreakStatement { BreakStatement(JumpStatement::new_no_target(all_strpos)) }
+    pub fn new_with_target(all_strpos: Span, target: String, target_strpos: Span) -> BreakStatement {
         BreakStatement(JumpStatement::new_target(all_strpos, target, target_strpos))
     }
 
     pub fn has_target(&self) -> bool { match self.0.m_target { Some(_) => true, None => false } }
-    pub fn get_all_strpos(&self) -> StringPosition { self.0.m_all_strpos }
+    pub fn get_all_strpos(&self) -> Span { self.0.m_all_strpos }
     pub fn get_target(&self) -> Option<&String> { match self.0.m_target { Some(ref target) => Some(target), None => None } }
-    pub fn get_target_strpos(&self) -> Option<StringPosition> { match self.0.m_target { Some(_) => Some(self.0.m_target_strpos), None => None } }
+    pub fn get_target_strpos(&self) -> Option<Span> { match self.0.m_target { Some(_) => Some(self.0.m_target_strpos), None => None } }
 }
 
 impl ISyntaxItemGrammar for ContinueStatement {
@@ -128,13 +128,13 @@ impl ISyntaxItemParse for BreakStatement {
 fn jump_stmt_parse() {
     use super::super::ISyntaxItemWithStr;
     
-    assert_eq!{ ContinueStatement::with_test_str("continue;"), ContinueStatement::new_no_target(make_strpos!(1, 1, 1, 9)) }
+    assert_eq!{ ContinueStatement::with_test_str("continue;"), ContinueStatement::new_no_target(make_span!(0, 8)) }
     assert_eq!{ ContinueStatement::with_test_str("continue @1;"), 
-        ContinueStatement::new_with_target(make_strpos!(1, 1, 1, 12), "1".to_owned(), make_strpos!(1, 10, 1, 11))
+        ContinueStatement::new_with_target(make_span!(0, 11), "1".to_owned(), make_span!(9, 10))
     }
     
-    assert_eq!{ BreakStatement::with_test_str("break;"), BreakStatement::new_no_target(make_strpos!(1, 1, 1, 6)) }
+    assert_eq!{ BreakStatement::with_test_str("break;"), BreakStatement::new_no_target(make_span!(0, 5)) }
     assert_eq!{ BreakStatement::with_test_str("break @1;"), 
-        BreakStatement::new_with_target(make_strpos!(1, 1, 1, 9), "1".to_owned(), make_strpos!(1, 7, 1, 8))
+        BreakStatement::new_with_target(make_span!(0, 8), "1".to_owned(), make_span!(6, 7))
     }
 }

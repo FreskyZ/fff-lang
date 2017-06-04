@@ -5,7 +5,7 @@
 
 use std::fmt;
 
-use codemap::StringPosition;
+use codemap::Span;
 use lexical::Token;
 use lexical::KeywordKind;
 
@@ -19,13 +19,13 @@ use super::super::Block;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct IfConditionBody {
-    if_strpos: StringPosition, // or `else if`'s strpos
+    if_strpos: Span, // or `else if`'s strpos
     cond_expr: BinaryExpr,
     body: Block,
 }
 impl IfConditionBody {
-    pub fn new(if_strpos: StringPosition, cond_expr: BinaryExpr, body: Block) -> IfConditionBody { IfConditionBody{ if_strpos, cond_expr, body } }
-    pub fn get_if_strpos(&self) -> StringPosition { self.if_strpos }
+    pub fn new(if_strpos: Span, cond_expr: BinaryExpr, body: Block) -> IfConditionBody { IfConditionBody{ if_strpos, cond_expr, body } }
+    pub fn get_if_strpos(&self) -> Span { self.if_strpos }
     pub fn get_cond_expr(&self) -> &BinaryExpr { &self.cond_expr }
     pub fn get_body(&self) -> &Block { &self.body }
 }
@@ -35,8 +35,8 @@ pub struct IfStatement {
     base: IfConditionBody,
     elseifs: Vec<IfConditionBody>,
     else_body: Option<Block>,
-    else_strpos: StringPosition,
-    all_strpos: StringPosition,
+    else_strpos: Span,
+    all_strpos: Span,
 }
 impl ISyntaxItemFormat for IfStatement {
     fn format(&self, indent: u32) -> String {
@@ -67,18 +67,18 @@ impl fmt::Debug for IfStatement {
 }
 impl IfStatement {
 
-    pub fn new_if(all_strpos: StringPosition, if_strpos: StringPosition, cond_expr: BinaryExpr, body: Block) -> IfStatement {
+    pub fn new_if(all_strpos: Span, if_strpos: Span, cond_expr: BinaryExpr, body: Block) -> IfStatement {
         IfStatement {
             base: IfConditionBody::new(if_strpos, cond_expr, body),
             elseifs: Vec::new(),
             else_body: None,
-            else_strpos: StringPosition::new(),
+            else_strpos: Span::default(),
             all_strpos
         }
     }
-    pub fn new_ifelse(all_strpos: StringPosition, 
-        if_strpos: StringPosition, cond_expr: BinaryExpr, if_body: Block, 
-        else_strpos: StringPosition, else_body: Block) -> IfStatement {
+    pub fn new_ifelse(all_strpos: Span, 
+        if_strpos: Span, cond_expr: BinaryExpr, if_body: Block, 
+        else_strpos: Span, else_body: Block) -> IfStatement {
         IfStatement {
             base: IfConditionBody::new(if_strpos, cond_expr, if_body),
             elseifs: Vec::new(),
@@ -87,21 +87,21 @@ impl IfStatement {
             all_strpos,
         }
     }
-    pub fn new_ifelseif(all_strpos: StringPosition,
-        if_strpos: StringPosition, cond_expr: BinaryExpr, if_body: Block,
+    pub fn new_ifelseif(all_strpos: Span,
+        if_strpos: Span, cond_expr: BinaryExpr, if_body: Block,
         elseifs: Vec<IfConditionBody>) -> IfStatement {
         IfStatement {
             base: IfConditionBody::new(if_strpos, cond_expr, if_body),
             elseifs,
             else_body: None,
-            else_strpos: StringPosition::new(),
+            else_strpos: Span::default(),
             all_strpos,
         }
     }
-    pub fn new_ifelseifelse(all_strpos: StringPosition, 
-        if_strpos: StringPosition, cond_expr: BinaryExpr, if_body: Block, 
+    pub fn new_ifelseifelse(all_strpos: Span, 
+        if_strpos: Span, cond_expr: BinaryExpr, if_body: Block, 
         elseifs: Vec<IfConditionBody>,
-        else_strpos: StringPosition, else_body: Block) -> IfStatement {
+        else_strpos: Span, else_body: Block) -> IfStatement {
         IfStatement {
             base: IfConditionBody::new(if_strpos, cond_expr, if_body),
             elseifs,
@@ -111,13 +111,13 @@ impl IfStatement {
         }
     }
 
-    pub fn get_all_strpos(&self) -> StringPosition { self.all_strpos }
-    pub fn get_if_strpos(&self) -> StringPosition { self.base.if_strpos }
+    pub fn get_all_strpos(&self) -> Span { self.all_strpos }
+    pub fn get_if_strpos(&self) -> Span { self.base.if_strpos }
     pub fn get_if_expr(&self) -> &BinaryExpr { &self.base.cond_expr }
     pub fn get_if_body(&self) -> &Block { &self.base.body }
     pub fn get_elseifs(&self) -> &Vec<IfConditionBody> { &self.elseifs }
     pub fn get_else_body(&self) -> Option<&Block> { self.else_body.as_ref() }
-    pub fn get_else_strpos(&self) -> StringPosition { self.else_strpos }
+    pub fn get_else_strpos(&self) -> Span { self.else_strpos }
 }
 impl ISyntaxItemGrammar for IfStatement {
     fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(KeywordKind::If) }
@@ -135,14 +135,14 @@ impl ISyntaxItemParse for IfStatement {
 
         let mut elseifs = Vec::new();
         let mut ending_strpos = if_body.get_all_strpos();
-        let mut else_strpos = StringPosition::new();
+        let mut else_strpos = Span::default();
         let mut else_body = None;
         loop {
             match (sess.tk, sess.pos, sess.next_tk, sess.next_pos) {
                 (&Token::Keyword(KeywordKind::Else), ref else_strpos,
                     &Token::Keyword(KeywordKind::If), ref if_strpos) => {
                     sess.move_next2();
-                    let elseif_strpos = StringPosition::merge(*else_strpos, *if_strpos);
+                    let elseif_strpos = else_strpos.merge(&if_strpos);
                     let elseif_expr = BinaryExpr::parse(sess)?;
                     let elseif_body = Block::parse(sess)?;
                     ending_strpos = elseif_body.get_all_strpos();
@@ -162,7 +162,7 @@ impl ISyntaxItemParse for IfStatement {
             }
         }
 
-        let all_strpos = StringPosition::merge(if_strpos, ending_strpos);
+        let all_strpos = if_strpos.merge(&ending_strpos);
         match else_body {
             Some(else_body) => Ok(IfStatement::new_ifelseifelse(all_strpos, if_strpos, if_expr, if_body, elseifs, else_strpos, else_body)),
             None => Ok(IfStatement::new_ifelseif(all_strpos, if_strpos, if_expr, if_body, elseifs)),
@@ -178,18 +178,18 @@ fn if_stmt_parse() {
     //                                      0        1         2         3
     //                                      1234567890123456789012345678901234567
     assert_eq!{ IfStatement::with_test_str("if true { } else if false { } else {}"),
-        IfStatement::new_ifelseifelse(make_strpos!(1, 1, 1, 37),
-            make_strpos!(1, 1, 1, 2),
-            BinaryExpr::new_lit(LitValue::from(true), make_strpos!(1, 4, 1, 7)),
-            Block::new(make_strpos!(1, 9, 1, 11), vec![]), vec![
+        IfStatement::new_ifelseifelse(make_span!(0, 36),
+            make_span!(0, 1),
+            BinaryExpr::new_lit(LitValue::from(true), make_span!(3, 6)),
+            Block::new(make_span!(8, 10), vec![]), vec![
                 IfConditionBody::new(
-                    make_strpos!(1, 13, 1, 19),
-                    BinaryExpr::new_lit(LitValue::from(false), make_strpos!(1, 21, 1, 25)),
-                    Block::new(make_strpos!(1, 27, 1, 29), vec![])
+                    make_span!(12, 18),
+                    BinaryExpr::new_lit(LitValue::from(false), make_span!(20, 24)),
+                    Block::new(make_span!(26, 28), vec![])
                 )
             ],
-            make_strpos!(1, 31, 1, 34),
-            Block::new(make_strpos!(1, 36, 1, 37), vec![])
+            make_span!(30, 33),
+            Block::new(make_span!(35, 36), vec![])
         )
     }
 

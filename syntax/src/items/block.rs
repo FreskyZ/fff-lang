@@ -5,7 +5,7 @@
 
 use std::fmt;
 
-use codemap::StringPosition;
+use codemap::Span;
 use lexical::Token;
 use lexical::SeperatorKind;
 
@@ -19,7 +19,7 @@ use super::super::Statement;
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct Block {
     items: Vec<Statement>,
-    all_strpos: StringPosition,
+    all_strpos: Span,
 }
 impl ISyntaxItemFormat for Block {
     fn format(&self, indent: u32) -> String {
@@ -34,9 +34,9 @@ impl fmt::Debug for Block {
 }
 impl Block {
 
-    pub fn new(all_strpos: StringPosition, statements: Vec<Statement>) -> Block { Block{ all_strpos: all_strpos, items: statements } }
+    pub fn new(all_strpos: Span, statements: Vec<Statement>) -> Block { Block{ all_strpos: all_strpos, items: statements } }
 
-    pub fn get_all_strpos(&self) -> StringPosition { self.all_strpos }
+    pub fn get_all_strpos(&self) -> Span { self.all_strpos }
     pub fn get_statements(&self) -> &Vec<Statement> { &self.items }
 }
 impl ISyntaxItemGrammar for Block {
@@ -51,7 +51,7 @@ impl ISyntaxItemParse for Block {
         loop {
             if let (&Token::Sep(SeperatorKind::RightBrace), ref right_brace_strpos) = (sess.tk, sess.pos) {
                 sess.move_next();
-                return Ok(Block::new(StringPosition::merge(starting_strpos, *right_brace_strpos), items));
+                return Ok(Block::new(starting_strpos.merge(right_brace_strpos), items));
             }
             items.push(Statement::parse(sess)?); 
         }
@@ -64,7 +64,7 @@ fn block_parse() {
     use message::MessageCollection;
     
     assert_eq!{ Block::with_test_str_ret_size_messages("{}"), (
-        Some(Block::new(make_strpos!(1, 1, 1, 2), vec![])), 
+        Some(Block::new(make_span!(0, 1), vec![])), 
         2,
         make_messages![],
     )}

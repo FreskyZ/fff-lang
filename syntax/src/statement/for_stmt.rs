@@ -2,10 +2,11 @@
 ///!
 ///! syntax/for_stmt
 ///! ForStatement = [LabelDef] fFor fIdentifier fIn BinaryExpr Block 
+// TODO: add else for break, like python
 
 use std::fmt;
 
-use codemap::StringPosition;
+use codemap::Span;
 use lexical::Token;
 use lexical::KeywordKind;
 
@@ -24,9 +25,9 @@ pub struct ForStatement {
     m_iter_name: String,
     m_iter_expr: BinaryExpr,
     m_body: Block,
-    m_for_strpos: StringPosition,
-    m_ident_strpos: StringPosition,
-    m_all_strpos: StringPosition,
+    m_for_strpos: Span,
+    m_ident_strpos: Span,
+    m_all_strpos: Span,
 }
 impl ISyntaxItemFormat for ForStatement {
     fn format(&self, indent: u32) -> String {
@@ -46,9 +47,9 @@ impl fmt::Debug for ForStatement {
 impl ForStatement {
 
     pub fn new_no_label(
-        all_strpos: StringPosition, 
-        for_strpos: StringPosition, 
-        iter_name: String, iter_strpos: StringPosition,
+        all_strpos: Span, 
+        for_strpos: Span, 
+        iter_name: String, iter_strpos: Span,
         iter_expr: BinaryExpr, 
         body: Block) -> ForStatement {
         ForStatement {
@@ -62,10 +63,10 @@ impl ForStatement {
         }
     }
     pub fn new_with_label(
-        all_strpos: StringPosition, 
+        all_strpos: Span, 
         label: LabelDef,
-        for_strpos: StringPosition,
-        iter_name: String, iter_strpos: StringPosition,
+        for_strpos: Span,
+        iter_name: String, iter_strpos: Span,
         iter_expr: BinaryExpr, 
         body: Block) -> ForStatement {
         ForStatement {
@@ -81,12 +82,12 @@ impl ForStatement {
 
     fn new_some_label(
         label: Option<LabelDef>,
-        for_strpos: StringPosition,
-        iter_name: String, iter_strpos: StringPosition,
+        for_strpos: Span,
+        iter_name: String, iter_strpos: Span,
         iter_expr: BinaryExpr,
         body: Block) -> ForStatement {
         ForStatement{
-            m_all_strpos: StringPosition::merge(match label { Some(ref label) => label.get_all_strpos(), None => for_strpos }, body.get_all_strpos()),
+            m_all_strpos: (match label { Some(ref label) => label.get_all_strpos(), None => for_strpos }).merge(&body.get_all_strpos()),
             m_label: label,
             m_for_strpos: for_strpos,
             m_iter_name: iter_name,
@@ -101,9 +102,9 @@ impl ForStatement {
     pub fn get_iter_expr(&self) -> &BinaryExpr { &self.m_iter_expr }
     pub fn get_body(&self) -> &Block { &self.m_body }
 
-    pub fn get_iter_strpos(&self) -> StringPosition { self.m_ident_strpos }
-    pub fn get_for_strpos(&self) -> StringPosition { self.m_for_strpos }
-    pub fn get_all_strpos(&self) ->StringPosition { self.m_all_strpos }
+    pub fn get_iter_strpos(&self) -> Span { self.m_ident_strpos }
+    pub fn get_for_strpos(&self) -> Span { self.m_for_strpos }
+    pub fn get_all_strpos(&self) ->Span { self.m_all_strpos }
 }
 impl ISyntaxItemGrammar for ForStatement {
 
@@ -139,24 +140,24 @@ fn for_stmt_parse() {
 
     //                                       123456789012345678
     assert_eq!{ ForStatement::with_test_str_ret_messages("@2: for i in 42 {}"), (
-        Some(ForStatement::new_with_label(make_strpos!(1, 1, 1, 18),
-            LabelDef::new("2".to_owned(), make_strpos!(1, 1, 1, 3)),
-            make_strpos!(1, 5, 1, 7),
-            "i".to_owned(), make_strpos!(1, 9, 1, 9),
-            BinaryExpr::new_lit(LitValue::from(42), make_strpos!(1, 14, 1, 15)),
-            Block::new(make_strpos!(1, 17, 1, 18), vec![])
+        Some(ForStatement::new_with_label(make_span!(0, 17),
+            LabelDef::new("2".to_owned(), make_span!(0, 2)),
+            make_span!(4, 6),
+            "i".to_owned(), make_span!(8, 8),
+            BinaryExpr::new_lit(LitValue::from(42), make_span!(13, 14)),
+            Block::new(make_span!(16, 17), vec![])
         )),
         make_messages![],
     )}
 
     // TODO: finish this
     // assert_eq!{ ForStatement::with_test_str("@hello:  for _ in range(0, 10).enumerate().reverse() { writeln(\"helloworld\"); }"),
-    //     ForStatement::new_with_label(make_strpos!(1, 1, 1, 1), 
-    //         LabelDef::new("hello".to_owned(), make_strpos!(1, 1, 1, 1)),
-    //         make_strpos!(1, 1, 1, 1),
-    //         "_".to_owned(), make_strpos!(1, 1, 1, 1),
-    //         BinaryExpr::new_lit(LitValue::from(42), make_strpos!(1, 1, 1, 1)),
-    //         Block::new(make_strpos!(1, 1, 1, 1), vec![])
+    //     ForStatement::new_with_label(make_span!(0, 0), 
+    //         LabelDef::new("hello".to_owned(), make_span!(0, 0)),
+    //         make_span!(0, 0),
+    //         "_".to_owned(), make_span!(0, 0),
+    //         BinaryExpr::new_lit(LitValue::from(42), make_span!(0, 0)),
+    //         Block::new(make_span!(0, 0), vec![])
     //     )
     // }
 }

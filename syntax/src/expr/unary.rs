@@ -5,7 +5,7 @@
 
 use std::fmt;
 
-use codemap::StringPosition;
+use codemap::Span;
 use lexical::Token;
 use lexical::SeperatorKind;
 use lexical::SeperatorCategory;
@@ -22,8 +22,8 @@ use super::primary::PrimaryExpr;
 struct ActualUnaryExpr {
     right: UnaryExpr, 
     operator: SeperatorKind, 
-    operator_strpos: StringPosition,
-    all_strpos: StringPosition,
+    operator_strpos: Span,
+    all_strpos: Span,
 }
 #[cfg_attr(test, derive(Eq, PartialEq))]
 enum UnaryExprImpl {
@@ -54,9 +54,9 @@ impl fmt::Debug for UnaryExpr {
 }
 impl UnaryExpr { // New
 
-    pub fn new_unary(operator: SeperatorKind, operator_strpos: StringPosition, right: UnaryExpr) -> UnaryExpr {
+    pub fn new_unary(operator: SeperatorKind, operator_strpos: Span, right: UnaryExpr) -> UnaryExpr {
         
-        let all_strpos =  StringPosition::merge(operator_strpos, right.get_all_strpos());
+        let all_strpos = operator_strpos.merge(&right.get_all_strpos());
         UnaryExpr(Box::new(UnaryExprImpl::Unary(ActualUnaryExpr{
             right: right,
             operator: operator,
@@ -104,13 +104,13 @@ impl UnaryExpr { // Get
             &UnaryExprImpl::Unary(ActualUnaryExpr{ ref operator, right: ref _1, operator_strpos: ref _2, all_strpos: ref _3 }) => Some(operator),
         }
     }
-    pub fn get_operator_strpos(&self) -> StringPosition {
+    pub fn get_operator_strpos(&self) -> Span {
         match self.0.as_ref() {
-            &UnaryExprImpl::Postfix(_) => StringPosition::new(),
+            &UnaryExprImpl::Postfix(_) => Span::default(),
             &UnaryExprImpl::Unary(ActualUnaryExpr{ ref operator_strpos, operator: ref _1, right: ref _2, all_strpos: ref _3 }) => *operator_strpos,
         }
     }
-    pub fn get_all_strpos(&self) -> StringPosition {
+    pub fn get_all_strpos(&self) -> Span {
         match self.0.as_ref() {
             &UnaryExprImpl::Postfix(ref postfix_expr) => postfix_expr.get_all_strpos(),
             &UnaryExprImpl::Unary(ActualUnaryExpr{ ref all_strpos, operator: ref _1, operator_strpos: ref _2, right: ref _3 }) => *all_strpos,
@@ -155,17 +155,17 @@ fn unary_expr_parse() {
     use super::super::ISyntaxItemWithStr;
     
     assert_eq!{ UnaryExpr::with_test_str("1"), 
-        UnaryExpr::new_primary(PrimaryExpr::new_lit(LitValue::from(1), make_str_pos!(1, 1, 1, 1))) 
+        UnaryExpr::new_primary(PrimaryExpr::new_lit(LitValue::from(1), make_span!(0, 0))) 
     }
 
     assert_eq!{ UnaryExpr::with_test_str("!~!1"),
         UnaryExpr::new_unary(
-            SeperatorKind::LogicalNot, make_str_pos!(1, 1, 1, 1),
+            SeperatorKind::LogicalNot, make_span!(0, 0),
             UnaryExpr::new_unary(
-                SeperatorKind::BitNot, make_str_pos!(1, 2, 1, 2),            
+                SeperatorKind::BitNot, make_span!(1, 1),            
                 UnaryExpr::new_unary(
-                    SeperatorKind::LogicalNot, make_str_pos!(1, 3, 1, 3),
-                    UnaryExpr::new_primary(PrimaryExpr::new_lit(LitValue::from(1), make_str_pos!(1, 4, 1, 4))),
+                    SeperatorKind::LogicalNot, make_span!(2, 2),
+                    UnaryExpr::new_primary(PrimaryExpr::new_lit(LitValue::from(1), make_span!(3, 3))),
                 )
             )
         )

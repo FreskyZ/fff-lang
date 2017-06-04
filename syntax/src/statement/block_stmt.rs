@@ -6,7 +6,7 @@
 
 use std::fmt;
 
-use codemap::StringPosition;
+use codemap::Span;
 use lexical::Token;
 use lexical::SeperatorKind;
 
@@ -27,7 +27,7 @@ impl ISyntaxItemFormat for BlockStatement {
     fn format(&self, indent: u32) -> String {
         match self.m_label {
             Some(ref label_def) => format!("BlockStmt <{:?}>\n{}\n{}", 
-                StringPosition::merge(label_def.get_all_strpos(), self.m_body.get_all_strpos()),
+                label_def.get_all_strpos().merge(&self.m_body.get_all_strpos()),
                 label_def.format(indent + 1),
                 self.m_body.format(indent + 1),
             ),
@@ -51,9 +51,9 @@ impl BlockStatement {
     pub fn get_label(&self) -> Option<&LabelDef> { self.m_label.as_ref() }
     pub fn get_body(&self) -> &Block { &self.m_body }
 
-    pub fn get_all_strpos(&self) -> StringPosition {
+    pub fn get_all_strpos(&self) -> Span {
         match self.m_label {
-            Some(ref label_def) => StringPosition::merge(label_def.get_all_strpos(), self.m_body.get_all_strpos()),
+            Some(ref label_def) => label_def.get_all_strpos().merge(&self.m_body.get_all_strpos()),
             None => self.m_body.get_all_strpos(),
         }
     }
@@ -82,11 +82,11 @@ fn block_stmt_parse() {
     use super::super::ISyntaxItemWithStr;
     use message::MessageCollection;
 
-    assert_eq!{ BlockStatement::with_test_str("{}"), BlockStatement::new_no_label(Block::new(make_strpos!(1, 1, 1, 2), vec![])) }
+    assert_eq!{ BlockStatement::with_test_str("{}"), BlockStatement::new_no_label(Block::new(make_span!(0, 1), vec![])) }
     assert_eq!{ BlockStatement::with_test_str_ret_messages("@: {}"), (
         Some(BlockStatement::new_with_label(
-            LabelDef::new("".to_owned(), make_strpos!(1, 1, 1, 2)),
-            Block::new(make_strpos!(1, 4, 1, 5), vec![])
+            LabelDef::new("".to_owned(), make_span!(0, 1)),
+            Block::new(make_span!(3, 4), vec![])
         )),
         make_messages![],
     )}

@@ -6,7 +6,7 @@
 
 use std::fmt;
 
-use codemap::StringPosition;
+use codemap::Span;
 use message::Message;
 use lexical::Token;
 use lexical::KeywordKind;
@@ -24,10 +24,10 @@ use super::super::TypeUse;
 pub struct VarDeclStatement {
     m_is_const: bool,
     name: String,
-    name_strpos: StringPosition,
+    name_strpos: Span,
     typeuse: Option<TypeUse>,
     init_expr: Option<BinaryExpr>,
-    all_strpos: StringPosition,
+    all_strpos: Span,
 }
 impl ISyntaxItemFormat for VarDeclStatement {
     fn format(&self, indent: u32) -> String {
@@ -45,29 +45,29 @@ impl fmt::Debug for VarDeclStatement {
 impl VarDeclStatement {
 
     // And lazy to provide new_const_no_type, new_const_no_init_expr, new_const_no_type_no_init_expr and new_var version
-    pub fn new(all_strpos: StringPosition, 
-        is_const: bool, name: String, name_strpos: StringPosition, 
+    pub fn new(all_strpos: Span, 
+        is_const: bool, name: String, name_strpos: Span, 
         typeuse: Option<TypeUse>, init_expr: Option<BinaryExpr>) -> VarDeclStatement {
         VarDeclStatement{ all_strpos, m_is_const: is_const, name, name_strpos, typeuse, init_expr }
     }
-    pub fn new_const(all_strpos: StringPosition, 
-        name: String, name_strpos: StringPosition, 
+    pub fn new_const(all_strpos: Span, 
+        name: String, name_strpos: Span, 
         typeuse: Option<TypeUse>, init_expr: Option<BinaryExpr>) -> VarDeclStatement {
         VarDeclStatement{ all_strpos, m_is_const: true, name, name_strpos, typeuse, init_expr }
     }
-    pub fn new_var(all_strpos: StringPosition, 
-        name: String, name_strpos: StringPosition, 
+    pub fn new_var(all_strpos: Span, 
+        name: String, name_strpos: Span, 
         typeuse: Option<TypeUse>, init_expr: Option<BinaryExpr>) -> VarDeclStatement {
         VarDeclStatement{ all_strpos, m_is_const: false, name, name_strpos, typeuse, init_expr }
     }
 
     pub fn is_const(&self) -> bool { self.m_is_const }
     pub fn get_name(&self) -> &String { &self.name }
-    pub fn get_name_strpos(&self) -> StringPosition { self.name_strpos }
+    pub fn get_name_strpos(&self) -> Span { self.name_strpos }
     pub fn get_decltype(&self) -> Option<&TypeUse> { self.typeuse.as_ref() }
     pub fn get_init_expr(&self) -> Option<&BinaryExpr> { self.init_expr.as_ref() }
     
-    pub fn get_all_strpos(&self) -> StringPosition { self.all_strpos }
+    pub fn get_all_strpos(&self) -> Span { self.all_strpos }
 }
 impl ISyntaxItemGrammar for VarDeclStatement {
     fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(KeywordKind::Const) || sess.tk == &Token::Keyword(KeywordKind::Var) }
@@ -95,7 +95,7 @@ impl ISyntaxItemParse for VarDeclStatement {
         }
         let ending_strpos = sess.expect_sep(SeperatorKind::SemiColon)?;
 
-        let all_strpos = StringPosition::merge(starting_strpos, ending_strpos);
+        let all_strpos = starting_strpos.merge(&ending_strpos);
         return Ok(VarDeclStatement::new(all_strpos, is_const, name, name_strpos, maybe_decltype, maybe_init_expr));
     }
 }
@@ -108,44 +108,44 @@ fn var_decl_stmt_parse() {
     
     //                                           12345678901234
     assert_eq!{ VarDeclStatement::with_test_str("const abc = 0;"),
-        VarDeclStatement::new_const(make_strpos!(1, 1, 1, 14),
-            "abc".to_owned(), make_strpos!(1, 7, 1, 9),
+        VarDeclStatement::new_const(make_span!(0, 13),
+            "abc".to_owned(), make_span!(6, 8),
             None,
-            Some(BinaryExpr::new_lit(LitValue::from(0), make_strpos!(1, 13, 1, 13)))
+            Some(BinaryExpr::new_lit(LitValue::from(0), make_span!(12, 12)))
         )
     }
 
     //                                           0        1         
     //                                           12345678901234567890
     assert_eq!{ VarDeclStatement::with_test_str("var hij = [1, 3, 5];"),
-        VarDeclStatement::new_var(make_strpos!(1, 1, 1, 20),
-            "hij".to_owned(), make_strpos!(1, 5, 1, 7),
+        VarDeclStatement::new_var(make_span!(0, 19),
+            "hij".to_owned(), make_span!(4, 6),
             None,
-            Some(BinaryExpr::new_array(make_strpos!(1, 11, 1, 19), vec![
-                BinaryExpr::new_lit(LitValue::from(1), make_strpos!(1, 12, 1, 12)),
-                BinaryExpr::new_lit(LitValue::from(3), make_strpos!(1, 15, 1, 15)),
-                BinaryExpr::new_lit(LitValue::from(5), make_strpos!(1, 18, 1, 18)),
+            Some(BinaryExpr::new_array(make_span!(10, 18), vec![
+                BinaryExpr::new_lit(LitValue::from(1), make_span!(11, 11)),
+                BinaryExpr::new_lit(LitValue::from(3), make_span!(14, 14)),
+                BinaryExpr::new_lit(LitValue::from(5), make_span!(17, 17)),
             ]))
         )
     }
     
     //                                           1234567890123456789
     assert_eq!{ VarDeclStatement::with_test_str("const input: string;"),
-        VarDeclStatement::new_const(make_strpos!(1, 1, 1, 20),
-            "input".to_owned(), make_strpos!(1, 7, 1, 11),
-            Some(TypeUseF::new_simple_test("string", make_strpos!(1, 14, 1, 19))),
+        VarDeclStatement::new_const(make_span!(0, 19),
+            "input".to_owned(), make_span!(6, 10),
+            Some(TypeUseF::new_simple_test("string", make_span!(13, 18))),
             None
         )
     }
     
     //                                           1234567890123456789012
     assert_eq!{ VarDeclStatement::with_test_str("var buf: [(u8, char)];"),
-        VarDeclStatement::new_var(make_strpos!(1, 1, 1, 22), 
-            "buf".to_owned(), make_strpos!(1, 5, 1, 7),
-            Some(TypeUseF::new_array(make_strpos!(1, 10, 1, 21), 
-                TypeUseF::new_tuple(make_strpos!(1, 11, 1, 20), vec![
-                    TypeUseF::new_simple_test("u8", make_strpos!(1, 12, 1, 13)),
-                    TypeUseF::new_simple("char".to_owned(), make_strpos!(1, 16, 1, 19)),
+        VarDeclStatement::new_var(make_span!(0, 21), 
+            "buf".to_owned(), make_span!(4, 6),
+            Some(TypeUseF::new_array(make_span!(9, 20), 
+                TypeUseF::new_tuple(make_span!(10, 19), vec![
+                    TypeUseF::new_simple_test("u8", make_span!(11, 12)),
+                    TypeUseF::new_simple("char".to_owned(), make_span!(15, 18)),
                 ])
             )),
             None
@@ -159,21 +159,21 @@ fn var_decl_stmt_parse() {
     //                                           0        1         2         3         4
     //                                           123456789012345678901234567890123456789012345678
     assert_eq!{ VarDeclStatement::with_test_str("var buf: ([u8], u32) = ([1u8, 5u8, 0x7u8], abc);"),
-        VarDeclStatement::new_var(make_strpos!(1, 1, 1, 48),
-            "buf".to_owned(), make_strpos!(1, 5, 1, 7),
-            Some(TypeUseF::new_tuple(make_strpos!(1, 10, 1, 20), vec![
-                TypeUseF::new_array(make_strpos!(1, 11, 1, 14), 
-                    TypeUseF::new_simple("u8".to_owned(), make_strpos!(1, 12, 1, 13))
+        VarDeclStatement::new_var(make_span!(0, 47),
+            "buf".to_owned(), make_span!(4, 6),
+            Some(TypeUseF::new_tuple(make_span!(9, 19), vec![
+                TypeUseF::new_array(make_span!(10, 13), 
+                    TypeUseF::new_simple("u8".to_owned(), make_span!(11, 12))
                 ),
-                TypeUseF::new_simple("u32".to_owned(), make_strpos!(1, 17, 1, 19))
+                TypeUseF::new_simple("u32".to_owned(), make_span!(16, 18))
             ])),
-            Some(BinaryExpr::new_tuple(make_strpos!(1, 24, 1, 47), vec![
-                BinaryExpr::new_array(make_strpos!(1, 25, 1, 41), vec![
-                    BinaryExpr::new_lit(LitValue::from(1u8), make_strpos!(1, 26, 1, 28)),
-                    BinaryExpr::new_lit(LitValue::from(5u8), make_strpos!(1, 31, 1, 33)),
-                    BinaryExpr::new_lit(LitValue::from(7u8), make_strpos!(1, 36, 1, 40))
+            Some(BinaryExpr::new_tuple(make_span!(23, 46), vec![
+                BinaryExpr::new_array(make_span!(24, 40), vec![
+                    BinaryExpr::new_lit(LitValue::from(1u8), make_span!(25, 27)),
+                    BinaryExpr::new_lit(LitValue::from(5u8), make_span!(30, 32)),
+                    BinaryExpr::new_lit(LitValue::from(7u8), make_span!(35, 39))
                 ]),
-                BinaryExpr::new_ident("abc".to_owned(), make_strpos!(1, 44, 1, 46))
+                BinaryExpr::new_ident("abc".to_owned(), make_span!(43, 45))
             ]))
         )
     }

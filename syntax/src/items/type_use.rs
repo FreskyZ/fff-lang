@@ -23,7 +23,7 @@
 
 use std::fmt;
 
-use codemap::StringPosition;
+use codemap::Span;
 use message::Message;
 use lexical::Token;
 use lexical::SeperatorKind;
@@ -46,7 +46,7 @@ pub enum ActualTypeUse {
 #[derive(Clone)]            // Move out of boxed
 pub struct TypeUse {
     pub actual: ActualTypeUse, 
-    pub all_strpos: StringPosition,
+    pub all_strpos: Span,
 }
 impl ISyntaxItemFormat for TypeUse {
     fn format(&self, indent: u32) -> String {
@@ -80,7 +80,7 @@ impl TypeUse { // Get
     pub fn get_array_inner(&self) -> Option<&TypeUse> { match self.actual { ActualTypeUse::Array(ref inner) => Some(inner.as_ref()), _ => None } }
     pub fn get_tuple_items(&self) -> Option<&Vec<TypeUse>> { match self.actual { ActualTypeUse::Tuple(ref type_uses) => Some(type_uses), _ => None } }
 
-    pub fn get_all_strpos(&self) -> StringPosition { self.all_strpos }
+    pub fn get_all_strpos(&self) -> Span { self.all_strpos }
 }
 
 /// TypeUse Factory
@@ -88,12 +88,12 @@ pub struct TypeUseF;
 impl TypeUseF { // New
 
     /// decided to be internal new standard name
-    fn new_(actual: ActualTypeUse, strpos: StringPosition) -> TypeUse { TypeUse{ actual, all_strpos: strpos } }
-    pub fn new_unit(strpos: StringPosition) -> TypeUse { TypeUseF::new_(ActualTypeUse::Unit, strpos) }
-    pub fn new_simple(name: String, ident_strpos: StringPosition) -> TypeUse { TypeUseF::new_(ActualTypeUse::Simple(name), ident_strpos) }
-    pub fn new_simple_test(name: &str, ident_strpos: StringPosition) -> TypeUse { TypeUseF::new_(ActualTypeUse::Simple(name.to_owned()), ident_strpos) }
-    pub fn new_array(bracket_strpos: StringPosition, inner: TypeUse) -> TypeUse { TypeUseF::new_(ActualTypeUse::Array(Box::new(inner)), bracket_strpos) }
-    pub fn new_tuple(paren_strpos: StringPosition, items: Vec<TypeUse>) -> TypeUse { TypeUseF::new_(ActualTypeUse::Tuple(items), paren_strpos) }
+    fn new_(actual: ActualTypeUse, strpos: Span) -> TypeUse { TypeUse{ actual, all_strpos: strpos } }
+    pub fn new_unit(strpos: Span) -> TypeUse { TypeUseF::new_(ActualTypeUse::Unit, strpos) }
+    pub fn new_simple(name: String, ident_strpos: Span) -> TypeUse { TypeUseF::new_(ActualTypeUse::Simple(name), ident_strpos) }
+    pub fn new_simple_test(name: &str, ident_strpos: Span) -> TypeUse { TypeUseF::new_(ActualTypeUse::Simple(name.to_owned()), ident_strpos) }
+    pub fn new_array(bracket_strpos: Span, inner: TypeUse) -> TypeUse { TypeUseF::new_(ActualTypeUse::Array(Box::new(inner)), bracket_strpos) }
+    pub fn new_tuple(paren_strpos: Span, items: Vec<TypeUse>) -> TypeUse { TypeUseF::new_(ActualTypeUse::Tuple(items), paren_strpos) }
 }
 impl ISyntaxItemGrammar for TypeUse {
     fn is_first_final(sess: &ParseSession) -> bool {
@@ -127,17 +127,17 @@ impl ISyntaxItemParse for TypeUse {
                 sess.move_next();
                 let inner = TypeUse::parse(sess)?;
                 let right_bracket_strpos = sess.expect_sep(SeperatorKind::RightBracket)?;
-                return Ok(TypeUseF::new_array(StringPosition::merge(*left_bracket_strpos, right_bracket_strpos), inner));
+                return Ok(TypeUseF::new_array(left_bracket_strpos.merge(&right_bracket_strpos), inner));
             }
             (&Token::Sep(SeperatorKind::LeftParenthenes), ref left_paren_strpos) => {
                 sess.move_next();
                 if let (&Token::Sep(SeperatorKind::RightParenthenes), ref right_paren_strpos) = (sess.tk, sess.pos) { 
                     sess.move_next();
-                    return Ok(TypeUseF::new_unit(StringPosition::merge(*left_paren_strpos, *right_paren_strpos)));
+                    return Ok(TypeUseF::new_unit(left_paren_strpos.merge(&right_paren_strpos)));
                 }
 
                 let mut tuple_types = Vec::new();
-                let ending_strpos: StringPosition;
+                let ending_strpos: Span;
                 let end_by_comma: bool;
                 tuple_types.push(TypeUse::parse(sess)?);
                 loop {
@@ -163,7 +163,7 @@ impl ISyntaxItemParse for TypeUse {
                     }
                 }
                 
-                let paren_pair_strpos = StringPosition::merge(*left_paren_strpos, ending_strpos);
+                let paren_pair_strpos = left_paren_strpos.merge(&ending_strpos);
                 if tuple_types.len() == 1 && !end_by_comma {
                     sess.push_message(Message::new_by_str("Single item tuple type use", vec![(paren_pair_strpos, "type use here")]));
                     return Ok(TypeUseF::new_tuple(paren_pair_strpos, tuple_types));
@@ -180,23 +180,23 @@ impl ISyntaxItemParse for TypeUse {
 fn type_use_parse() {
     use super::super::ISyntaxItemWithStr;
 
-    assert_eq!{ TypeUse::with_test_str("u8"), TypeUseF::new_simple("u8".to_owned(), make_strpos!(1, 1, 1, 2)) }
-    assert_eq!{ TypeUse::with_test_str("i32"), TypeUseF::new_simple("i32".to_owned(), make_strpos!(1, 1, 1, 3)) }
-    assert_eq!{ TypeUse::with_test_str("char"), TypeUseF::new_simple("char".to_owned(), make_strpos!(1, 1, 1, 4)) }
-    assert_eq!{ TypeUse::with_test_str("string"), TypeUseF::new_simple("string".to_owned(), make_strpos!(1, 1, 1, 6)) }
-    assert_eq!{ TypeUse::with_test_str("helloworld_t"), TypeUseF::new_simple("helloworld_t".to_owned(), make_strpos!(1, 1, 1, 12)) }
+    assert_eq!{ TypeUse::with_test_str("u8"), TypeUseF::new_simple("u8".to_owned(), make_span!(0, 1)) }
+    assert_eq!{ TypeUse::with_test_str("i32"), TypeUseF::new_simple("i32".to_owned(), make_span!(0, 2)) }
+    assert_eq!{ TypeUse::with_test_str("char"), TypeUseF::new_simple("char".to_owned(), make_span!(0, 3)) }
+    assert_eq!{ TypeUse::with_test_str("string"), TypeUseF::new_simple("string".to_owned(), make_span!(0, 5)) }
+    assert_eq!{ TypeUse::with_test_str("helloworld_t"), TypeUseF::new_simple("helloworld_t".to_owned(), make_span!(0, 11)) }
 
-    assert_eq!{ TypeUse::with_test_str("()"), TypeUseF::new_unit(make_strpos!(1, 1, 1, 2)) }
+    assert_eq!{ TypeUse::with_test_str("()"), TypeUseF::new_unit(make_span!(0, 1)) }
 
     assert_eq!{ TypeUse::with_test_str("[u8]"),
-        TypeUseF::new_array(make_strpos!(1, 1, 1, 4), 
-            TypeUseF::new_simple("u8".to_owned(), make_strpos!(1, 2, 1, 3))
+        TypeUseF::new_array(make_span!(0, 3), 
+            TypeUseF::new_simple("u8".to_owned(), make_span!(1, 2))
         )
     }
     assert_eq!{ TypeUse::with_test_str("[[he_t]]"),
-        TypeUseF::new_array(make_strpos!(1, 1, 1, 8),
-            TypeUseF::new_array(make_strpos!(1, 2, 1, 7), 
-                TypeUseF::new_simple("he_t".to_owned(), make_strpos!(1, 3, 1, 6))
+        TypeUseF::new_array(make_span!(0, 7),
+            TypeUseF::new_array(make_span!(1, 6), 
+                TypeUseF::new_simple("he_t".to_owned(), make_span!(2, 5))
             )
         )
     }
@@ -204,115 +204,115 @@ fn type_use_parse() {
     // // Tuple
     // (i32,)
     // //           1234567890123
-    // ast_test_case!{ "(i32, string)", 5, make_str_pos!(1, 1, 1, 13),
-    //     TypeUseF::new_tuple(make_str_pos!(1, 1, 1, 13), vec![
-    //         simple!("i32", make_str_pos!(1, 2, 1, 4)),
-    //         simple!("string", make_str_pos!(1, 7, 1, 12)),
+    // ast_test_case!{ "(i32, string)", 5, make_span!(0, 12),
+    //     TypeUseF::new_tuple(make_span!(0, 12), vec![
+    //         simple!("i32", make_span!(1, 3)),
+    //         simple!("string", make_span!(6, 11)),
     //     ])
     // }        //  12345678901234
-    // ast_test_case!{ "(char, hw_t, )", 6, make_str_pos!(1, 1, 1, 14),
-    //     TypeUseF::new_tuple(make_str_pos!(1, 1, 1, 14), vec![
-    //         simple!("char", make_str_pos!(1, 2, 1, 5)),
-    //         simple!("hw_t", make_str_pos!(1, 8, 1, 11)),
+    // ast_test_case!{ "(char, hw_t, )", 6, make_span!(0, 13),
+    //     TypeUseF::new_tuple(make_span!(0, 13), vec![
+    //         simple!("char", make_span!(1, 4)),
+    //         simple!("hw_t", make_span!(7, 10)),
     //     ])   //  0        1         2         3
     // }        //  123456789012345678901234567890123456
-    // ast_test_case!{ "([char], i32, u17, [((), u8, f128)])", 20, make_str_pos!(1, 1, 1, 36), 
-    //     TypeUseF::new_tuple(make_str_pos!(1, 1, 1, 36), vec![
-    //         TypeUseF::new_array(make_str_pos!(1, 2, 1, 7),
-    //             simple!("char", make_str_pos!(1, 3, 1, 6))
+    // ast_test_case!{ "([char], i32, u17, [((), u8, f128)])", 20, make_span!(0, 35), 
+    //     TypeUseF::new_tuple(make_span!(0, 35), vec![
+    //         TypeUseF::new_array(make_span!(1, 6),
+    //             simple!("char", make_span!(2, 5))
     //         ),
-    //         simple!("i32", make_str_pos!(1, 10, 1, 12)),
-    //         simple!("u17", make_str_pos!(1, 15, 1, 17)),
-    //         TypeUseF::new_array(make_str_pos!(1, 20, 1, 35),
-    //             TypeUseF::new_tuple(make_str_pos!(1, 21, 1, 34), vec![
-    //                 TypeUseF::new_unit(make_str_pos!(1, 22, 1, 23)),
-    //                 simple!("u8", make_str_pos!(1, 26, 1, 27)),
-    //                 simple!("f128", make_str_pos!(1, 30, 1, 33)),
+    //         simple!("i32", make_span!(9, 11)),
+    //         simple!("u17", make_span!(14, 16)),
+    //         TypeUseF::new_array(make_span!(19, 34),
+    //             TypeUseF::new_tuple(make_span!(20, 33), vec![
+    //                 TypeUseF::new_unit(make_span!(21, 22)),
+    //                 simple!("u8", make_span!(25, 26)),
+    //                 simple!("f128", make_span!(29, 32)),
     //             ])
     //         ), 
     //     ])
     // } //             1234567
-    // ast_test_case!{ "(i233,)", 4, make_str_pos!(1, 1, 1, 7), 
-    //     TypeUseF::new_tuple(make_str_pos!(1, 1, 1, 7), vec![
-    //         simple!("i233", make_str_pos!(1, 2, 1, 5))
+    // ast_test_case!{ "(i233,)", 4, make_span!(0, 6), 
+    //     TypeUseF::new_tuple(make_span!(0, 6), vec![
+    //         simple!("i233", make_span!(1, 4))
     //     ])
     // }
-    // ast_test_case!{ "(i32)", 3, make_str_pos!(1, 1, 1, 5),
-    //     TypeUseF::new_tuple(make_str_pos!(1, 1, 1, 5), vec![
-    //         simple!("i32", make_str_pos!(1, 2, 1, 4)),
+    // ast_test_case!{ "(i32)", 3, make_span!(0, 4),
+    //     TypeUseF::new_tuple(make_span!(0, 4), vec![
+    //         simple!("i32", make_span!(1, 3)),
     //     ]),
-    //     [ Message::new_by_str("Single item tuple type use", vec![(make_str_pos!(1, 1, 1, 5), "type use here")]) ]
+    //     [ Message::new_by_str("Single item tuple type use", vec![(make_span!(0, 4), "type use here")]) ]
     // }
 
     // // Auto generated mixed
     // //               0        1         2
     // //               12345678901234567890123
-    // ast_test_case!{ "((i8, clL, Kopu), f64,)", 12, make_str_pos!(1, 1, 1, 23),
-    //     TypeUseF::new_tuple(make_str_pos!(1, 1, 1, 23), vec![
-    //         TypeUseF::new_tuple(make_str_pos!(1, 2, 1, 16), vec![
-    //             simple!("i8", make_str_pos!(1, 3, 1, 4)),
-    //             simple!("clL", make_str_pos!(1, 7, 1, 9)),
-    //             simple!("Kopu", make_str_pos!(1, 12, 1, 15))
+    // ast_test_case!{ "((i8, clL, Kopu), f64,)", 12, make_span!(0, 22),
+    //     TypeUseF::new_tuple(make_span!(0, 22), vec![
+    //         TypeUseF::new_tuple(make_span!(1, 15), vec![
+    //             simple!("i8", make_span!(2, 3)),
+    //             simple!("clL", make_span!(6, 8)),
+    //             simple!("Kopu", make_span!(11, 14))
     //         ]), 
-    //         simple!("f64", make_str_pos!(1, 19, 1, 21))
+    //         simple!("f64", make_span!(18, 20))
     //     ])
     // } //             12345678
-    // ast_test_case!{ "[BJlbk4]", 3, make_str_pos!(1, 1, 1, 8),
-    //     TypeUseF::new_array(make_str_pos!(1, 1, 1, 8), 
-    //         simple!("BJlbk4", make_strpos!(1, 2, 1, 7)),
+    // ast_test_case!{ "[BJlbk4]", 3, make_span!(0, 7),
+    //     TypeUseF::new_array(make_span!(0, 7), 
+    //         simple!("BJlbk4", make_span!(1, 6)),
     //     ) //         0        1         2         3         4         5         6         7         8         9
     // } //             1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234
-    // ast_test_case!{ "((char, jq, ((u8, [([o2fcd], [CKw], ([eCDn2I], u16,))], i16), [pxplh], u32),), [vrud2vC], u64)", 49, make_strpos!(1, 1, 1, 94),
-    //     TypeUseF::new_tuple(make_strpos!(1, 1, 1, 94), vec![
-    //         TypeUseF::new_tuple(make_str_pos!(1, 2, 1, 77), vec![
-    //             simple!("char", make_strpos!(1, 3, 1, 6)), 
-    //             simple!("jq", make_strpos!(1, 9, 1, 10)),
-    //             TypeUseF::new_tuple(make_str_pos!(1, 13, 1, 75), vec![
-    //                 TypeUseF::new_tuple(make_strpos!(1, 14, 1, 60), vec![
-    //                     simple!("u8", make_strpos!(1, 15, 1, 16)),
-    //                     TypeUseF::new_array(make_str_pos!(1, 19, 1, 54), 
-    //                         TypeUseF::new_tuple(make_str_pos!(1, 20, 1, 53), vec![
-    //                             TypeUseF::new_array(make_strpos!(1, 21, 1, 27), 
-    //                                 simple!("o2fcd", make_strpos!(1, 22, 1, 26))
+    // ast_test_case!{ "((char, jq, ((u8, [([o2fcd], [CKw], ([eCDn2I], u16,))], i16), [pxplh], u32),), [vrud2vC], u64)", 49, make_span!(0, 93),
+    //     TypeUseF::new_tuple(make_span!(0, 93), vec![
+    //         TypeUseF::new_tuple(make_span!(1, 76), vec![
+    //             simple!("char", make_span!(2, 5)), 
+    //             simple!("jq", make_span!(8, 9)),
+    //             TypeUseF::new_tuple(make_span!(12, 74), vec![
+    //                 TypeUseF::new_tuple(make_span!(13, 59), vec![
+    //                     simple!("u8", make_span!(14, 15)),
+    //                     TypeUseF::new_array(make_span!(18, 53), 
+    //                         TypeUseF::new_tuple(make_span!(19, 52), vec![
+    //                             TypeUseF::new_array(make_span!(20, 26), 
+    //                                 simple!("o2fcd", make_span!(21, 25))
     //                             ),
-    //                             TypeUseF::new_array(make_str_pos!(1, 30, 1, 34), 
-    //                                 simple!("CKw", make_strpos!(1, 31, 1, 33))
+    //                             TypeUseF::new_array(make_span!(29, 33), 
+    //                                 simple!("CKw", make_span!(30, 32))
     //                             ),
-    //                             TypeUseF::new_tuple(make_strpos!(1, 37, 1, 52), vec![
-    //                                 TypeUseF::new_array(make_strpos!(1, 38, 1, 45), 
-    //                                     simple!("eCDn2I", make_strpos!(1, 39, 1, 44))
+    //                             TypeUseF::new_tuple(make_span!(36, 51), vec![
+    //                                 TypeUseF::new_array(make_span!(37, 44), 
+    //                                     simple!("eCDn2I", make_span!(38, 43))
     //                                 ), 
-    //                                 simple!("u16", make_strpos!(1, 48, 1, 50))
+    //                                 simple!("u16", make_span!(47, 49))
     //                             ])
     //                         ])
     //                     ),
-    //                     simple!("i16", make_strpos!(1, 57, 1, 59))
+    //                     simple!("i16", make_span!(56, 58))
     //                 ]),
-    //                 TypeUseF::new_array(make_str_pos!(1, 63, 1, 69), 
-    //                     simple!("pxplh", make_strpos!(1, 64, 1, 68))
+    //                 TypeUseF::new_array(make_span!(62, 68), 
+    //                     simple!("pxplh", make_span!(63, 67))
     //                 ),
-    //                 simple!("u32", make_strpos!(1, 72, 1, 74))
+    //                 simple!("u32", make_span!(71, 73))
     //             ])
     //         ]),
-    //         TypeUseF::new_array(make_strpos!(1, 80, 1, 88), 
-    //             simple!("vrud2vC", make_str_pos!(1, 81, 1, 87))
+    //         TypeUseF::new_array(make_span!(79, 87), 
+    //             simple!("vrud2vC", make_span!(80, 86))
     //         ),
-    //         simple!("u64", make_strpos!(1, 91, 1,93))
+    //         simple!("u64", make_span!(90, 92))
     //     ])
     // }
-    // ast_test_case!{ "sxM4", 1, make_strpos!(1, 1, 1, 4), simple!("sxM4", make_str_pos!(1, 1, 1, 4)) }
+    // ast_test_case!{ "sxM4", 1, make_span!(0, 3), simple!("sxM4", make_span!(0, 3)) }
     // //               0        1         2
     // //               12345678901234567890123
-    // ast_test_case!{ "([pwi], [u64], i33, i8)", 13, make_strpos!(1, 1, 1, 23), 
-    //     TypeUseF::new_tuple(make_str_pos!(1, 1, 1, 23), vec![
-    //         TypeUseF::new_array(make_str_pos!(1, 2, 1, 6), 
-    //             simple!("pwi", make_strpos!(1, 3, 1, 5))
+    // ast_test_case!{ "([pwi], [u64], i33, i8)", 13, make_span!(0, 22), 
+    //     TypeUseF::new_tuple(make_span!(0, 22), vec![
+    //         TypeUseF::new_array(make_span!(1, 5), 
+    //             simple!("pwi", make_span!(2, 4))
     //         ), 
-    //         TypeUseF::new_array(make_strpos!(1, 9, 1, 13),
-    //             simple!("u64", make_strpos!(1, 10, 1, 12))
+    //         TypeUseF::new_array(make_span!(8, 12),
+    //             simple!("u64", make_span!(9, 11))
     //         ),
-    //         simple!("i33", make_strpos!(1, 16, 1, 18)),
-    //         simple!("i8", make_strpos!(1, 21, 1, 22))
+    //         simple!("i33", make_span!(15, 17)),
+    //         simple!("i8", make_span!(20, 21))
     //     ])
     // }
 }
