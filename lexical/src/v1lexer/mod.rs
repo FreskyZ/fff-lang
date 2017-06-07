@@ -18,10 +18,9 @@ use codemap::CodeChars;
 use codemap::EOFCHAR;
 use codemap::EOFSCHAR;
 use message::Message;
-use message::MessageCollection;
 
-use super::buf_lexer::ILexer;
-use super::buf_lexer::BufLexer;
+use super::ILexer;
+use super::BufLexer;
 
 use self::string_lit_parser::StringLiteralParser;
 use self::string_lit_parser::StringLiteralParserResult;
@@ -29,12 +28,13 @@ use self::raw_string_lit_parser::RawStringLiteralParser;
 use self::raw_string_lit_parser::RawStringLiteralParserResult;
 use self::char_lit_parser::CharLiteralParser;
 use self::char_lit_parser::CharLiteralParserResult;
+use super::ParseSession;
 
 // CodeChars wrapper
 struct V0Lexer<'a>(CodeChars<'a>);
 impl<'a> ILexer<'a, char> for V0Lexer<'a> {
-    fn new(chars: CodeChars<'a>, _: &mut MessageCollection) -> V0Lexer<'a> { V0Lexer(chars) }
-    fn next(&mut self, _: &mut MessageCollection) -> (char, Span) {
+    fn new(chars: CodeChars<'a>) -> V0Lexer<'a> { V0Lexer(chars) }
+    fn next(&mut self, _: &mut ParseSession) -> (char, Span) {
         let ret_val = self.0.next();
         (ret_val.0, ret_val.1.as_span())
     }
@@ -49,20 +49,21 @@ pub enum V1Token {
     EOF,
     EOFs,
 }
+impl Default for V1Token { fn default() -> V1Token { V1Token::EOFs } }
 
 pub struct V1Lexer<'chs> {
     v0: BufLexer<V0Lexer<'chs>, char>,
 }
 impl<'chs> ILexer<'chs, V1Token> for V1Lexer<'chs> {
 
-    fn new(content_chars: CodeChars<'chs>, messages: &mut MessageCollection) -> V1Lexer<'chs> {
+    fn new(content_chars: CodeChars<'chs>) -> V1Lexer<'chs> {
         V1Lexer { 
-            v0: BufLexer::new(content_chars, messages),
+            v0: BufLexer::new(content_chars),
         }
     }
 
     // input v0, output stringliteral or otherchar without comment
-    fn next(&mut self, messages: &mut MessageCollection) -> (V1Token, Span) {
+    fn next(&mut self, sess: &mut ParseSession) -> (V1Token, Span) {
         // First there is quote, and anything inside is regarded as string literal, include `\n` as real `\n`
         // and then outside of quote pair there is comments, anything inside comment, // and /n, or /* and */ is regarded as comment
         
@@ -77,7 +78,7 @@ impl<'chs> ILexer<'chs, V1Token> for V1Lexer<'chs> {
 
         let mut state = State::Nothing;
         loop {
-            self.v0.move_next(messages);
+            self.v0.move_next(sess);
             match self.v0.current_with_state(state) {
                 (State::Nothing, &'/', _1, &'/', _4, _5, _6) => {                       // C1: in nothing, meet //
                     self.v0.prepare_skip1();
@@ -111,7 +112,7 @@ impl<'chs> ILexer<'chs, V1Token> for V1Lexer<'chs> {
                     return (V1Token::Other(' '), start_span.merge(&end_pos));
                 }
                 (State::InBlockComment{ start_span }, &EOFCHAR, eof_pos, _3, _4, _5, _6) => {  // C10: in block, meet EOF, emit error, return
-                    messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
+                    sess.messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
                         (start_span, error_strings::BlockCommentStartHere),
                         (eof_pos, error_strings::EOFHere),
                     ]));
@@ -131,7 +132,7 @@ impl<'chs> ILexer<'chs, V1Token> for V1Lexer<'chs> {
                 }
 
                 (State::InStringLiteral{ mut parser }, ch, pos, next_ch, _4, _5, _6) => {   // Cx: anything inside "" is none about this module
-                    match parser.input(*ch, pos.get_start_pos(), *next_ch, messages) {
+                    match parser.input(*ch, pos.get_start_pos(), *next_ch, sess.messages) {
                         StringLiteralParserResult::WantMore => {
                             state = State::InStringLiteral{ parser: parser };
                         },
@@ -148,7 +149,7 @@ impl<'chs> ILexer<'chs, V1Token> for V1Lexer<'chs> {
                     }
                 }
                 (State::InRawStringLiteral{ mut parser }, ch, strpos, _3, _4, _5, _6) => {     // Cx, anything inside r"" is none about this module
-                    match parser.input(*ch, strpos.get_start_pos(), messages) {
+                    match parser.input(*ch, strpos.get_start_pos(), sess.messages) {
                         RawStringLiteralParserResult::WantMore => {
                             state = State::InRawStringLiteral{ parser: parser };
                         }
@@ -161,7 +162,7 @@ impl<'chs> ILexer<'chs, V1Token> for V1Lexer<'chs> {
                     }
                 }
                 (State::InCharLiteral{ mut parser }, ch, strpos, next_ch, _4, _5, _6) => {     // Cx: anything inside '' is none about this module
-                    match parser.input(*ch, strpos.get_start_pos(), *next_ch, messages) {
+                    match parser.input(*ch, strpos.get_start_pos(), *next_ch, sess.messages) {
                         CharLiteralParserResult::WantMore => {
                             state = State::InCharLiteral{ parser: parser };
                         },
@@ -186,32 +187,36 @@ impl<'chs> ILexer<'chs, V1Token> for V1Lexer<'chs> {
 #[test]
 fn v1_base() {
     use codemap::CodeMap;
+    use codemap::SymbolCollection;
+    use message::MessageCollection;
 
     macro_rules! test_case {
         ($program: expr, [$($expect: expr)*], $expect_msgs: expr) => ({
             println!("Case {} at {}:", $program, line!());
             let messages = &mut MessageCollection::new();
+            let symbols = &mut SymbolCollection::new();
+            let sess = &mut ParseSession::new(messages, symbols);
             let codemap = CodeMap::with_test_str($program);
-            let mut v1lexer = V1Lexer::new(codemap.iter(), messages);
+            let mut v1lexer = V1Lexer::new(codemap.iter());
             $(
-                match v1lexer.next(messages) {
+                match v1lexer.next(sess) {
                     v1 => assert_eq!(v1, $expect),
                 }
             )*
 
-            let next = v1lexer.next(messages);
+            let next = v1lexer.next(sess);
             if next.0 != V1Token::EOF {
                 panic!("next is not EOF but {:?}", next);
             }
-            if v1lexer.next(messages).0 != V1Token::EOFs {
+            if v1lexer.next(sess).0 != V1Token::EOFs {
                 panic!("next next is not EOFs");
             }
-            match v1lexer.next(messages) {
+            match v1lexer.next(sess) {
                 (V1Token::EOFs, _) => (),
                 v1 => panic!("Unexpected more symbol after eofs: {:?}", v1),
             }
 
-            assert_eq!(messages, &$expect_msgs);
+            assert_eq!(sess.messages, &$expect_msgs);
             println!("");
         });
         ($program: expr, [$($expect: expr)*]) => ({

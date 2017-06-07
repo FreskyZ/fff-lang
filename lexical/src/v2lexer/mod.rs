@@ -15,15 +15,16 @@ use message::MessageCollection;
 use super::v1lexer::V1Token;
 use super::v1lexer::V1Lexer;
 
-use super::buf_lexer::ILexer;
-use super::buf_lexer::BufLexer;
+use super::ILexer;
+use super::BufLexer;
 
 use super::LitValue;
 use super::KeywordKind;
 use super::SeperatorKind;
+use super::ParseSession;
 use self::num_lit_parser::parse_numeric_literal;
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub enum V2Token {
     Literal(LitValue),
     Identifier(String), // Anything of [_a-zA-Z][_a-zA-Z0-9]*
@@ -33,23 +34,7 @@ pub enum V2Token {
     EOF,
     EOFs,
 }
-
-#[cfg(test)]
-use std::fmt;
-#[cfg(test)]
-impl fmt::Debug for V2Token {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            V2Token::Literal(ref value) => write!(f, "{:?}", value),
-            V2Token::Identifier(ref value) => write!(f, "Identifier {:?}", value),
-            V2Token::Label(ref value) => write!(f, "Lable {:?}", value),
-            V2Token::Keyword(ref kind) => write!(f, "Keyword {:?}", kind),
-            V2Token::Seperator(ref kind) => write!(f, "Seperator {:?}", kind),
-            V2Token::EOF => write!(f, "EOF"),
-            V2Token::EOFs => write!(f, "EOFs"),
-        }
-    }
-}
+impl Default for V2Token { fn default() -> V2Token { V2Token::EOFs } }
 
 trait IdentifierChar {
 
@@ -122,14 +107,14 @@ pub struct V2Lexer<'chs> {
 }
 impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
 
-    fn new(content_chars: CodeChars<'chs>, messages: &mut MessageCollection) -> V2Lexer<'chs> {
+    fn new(content_chars: CodeChars<'chs>) -> V2Lexer<'chs> {
         V2Lexer { 
-            v1: BufLexer::new(content_chars, messages),
+            v1: BufLexer::new(content_chars),
         }
     }
 
     // input stringliteral or otherchar without comment, output identifier and numeric literal
-    fn next(&mut self, messages: &mut MessageCollection) -> (V2Token, Span) {
+    fn next(&mut self, sess: &mut ParseSession) -> (V2Token, Span) {
 
         #[cfg(feature = "trace_v2_parse")] macro_rules! trace { ($($arg:tt)*) => ({ print!("[V2Next:{}] ", line!()); println!($($arg)*); }) }
         #[cfg(not(feature = "trace_v2_parse"))] macro_rules! trace { ($($arg:tt)*) => () }
@@ -140,8 +125,8 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                 Some(KeywordKind::False) => V2Token::Literal(LitValue::from(false)),
                 Some(other_keyword) => {
                     if other_keyword.is_reserved() {
-                        messages.push(Message::new(
-                            format!("{}: {:?}", error_strings::UseReservedKeyword, KeywordKind::As), 
+                        sess.messages.push(Message::new(
+                            format!("{}: {:?}", error_strings::UseReservedKeyword, other_keyword), 
                             vec![($ident_pos, String::new())]
                         ));
                     }
@@ -151,7 +136,7 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
             }
         }) }
         macro_rules! num_lit_to_v2 { ($num_lit_value: expr, $num_lit_strpos: expr) => ({
-            let (num_lit_val, pos) = parse_numeric_literal($num_lit_value, $num_lit_strpos, messages);
+            let (num_lit_val, pos) = parse_numeric_literal($num_lit_value, $num_lit_strpos, sess.messages);
             (V2Token::Literal(LitValue::Num(num_lit_val)), pos)
         }) }
 
@@ -168,7 +153,7 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
 
         let mut state = State::Nothing;
         loop {
-            self.v1.move_next(messages);
+            self.v1.move_next(sess);
             let v15 = match self.v1.current_with_preview2() {
                 (&V1Token::StringLiteral(ref value), pos, _2, _3, _4, _5) => {
                     return (V2Token::Literal(LitValue::Str(value.clone())), pos);
@@ -194,19 +179,19 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                     return (V2Token::EOFs, eofs_pos);
                 }
                 (&V1Token::Other(ch), strpos, &V1Token::Other(next_ch), next_strpos, &V1Token::Other(nextnext_ch), nextnext_strpos) => {
-                    let ch = ch.pass_non_ascii_char(strpos, messages); // not need check next_ch and nextnext_ch because they will be checked in next loops
+                    let ch = ch.pass_non_ascii_char(strpos, sess.messages); // not need check next_ch and nextnext_ch because they will be checked in next loops
                     V15Token(ch, strpos, next_ch, next_strpos, nextnext_ch, nextnext_strpos)
                 }
                 (&V1Token::Other(ch), strpos, &V1Token::Other(next_ch), next_strpos, _4, nextnext_strpos) => {
-                    let ch = ch.pass_non_ascii_char(strpos, messages);
+                    let ch = ch.pass_non_ascii_char(strpos, sess.messages);
                     V15Token(ch, strpos, next_ch, next_strpos, ' ', nextnext_strpos)
                 }
                 (&V1Token::Other(ch), strpos, &V1Token::EOF, eof_strpos, _4, nextnext_strpos) => {
-                    let ch = ch.pass_non_ascii_char(strpos, messages);
+                    let ch = ch.pass_non_ascii_char(strpos, sess.messages);
                     V15Token(ch, strpos, EOFCHAR, eof_strpos, ' ', nextnext_strpos)
                 } 
                 (&V1Token::Other(ch), strpos, _2, next_strpos, _4, nextnext_strpos) => { 
-                    let ch = ch.pass_non_ascii_char(strpos, messages);
+                    let ch = ch.pass_non_ascii_char(strpos, sess.messages);
                     V15Token(ch, strpos, ' ', next_strpos, ' ', nextnext_strpos)
                 }
             };
@@ -431,6 +416,7 @@ fn v2_non_ascii_ch() {
 #[test]
 fn v2_base() {
     use codemap::CodeMap;
+    use codemap::SymbolCollection;
 
     // Only to make decltype(V2Lexer as BufLexer::next(...)) to display better
     #[derive(Eq, PartialEq)]
@@ -450,11 +436,13 @@ fn v2_base() {
     macro_rules! test_case {
         ($program: expr, $eof_pos: expr, [$($expect: expr, )*], $expect_msgs: expr) => ({
             let messages = &mut MessageCollection::new();
+            let symbols = &mut SymbolCollection::new();
+            let sess = &mut ParseSession::new(messages, symbols);
             let codemap = CodeMap::with_test_str($program);
-            let mut v2lexer = V2Lexer::new(codemap.iter(), messages);
+            let mut v2lexer = V2Lexer::new(codemap.iter());
             let mut v2s = Vec::new();
             loop {
-                match v2lexer.next(messages) {
+                match v2lexer.next(sess) {
                     (V2Token::EOFs, _) => break,
                     v2 => v2s.push(V2AndStrPos::from(v2)),
                 }
@@ -464,7 +452,7 @@ fn v2_base() {
             expect_v2s.push(V2AndStrPos::from((V2Token::EOF, $eof_pos)));
             assert_eq!(v2s, expect_v2s, "Case {:?}\n", $program);
 
-            assert_eq!(messages, &$expect_msgs, "Case {:?}\n", $program);
+            assert_eq!(sess.messages, &$expect_msgs, "Case {:?}\n", $program);
         });
         ($program: expr, $eof_pos: expr, [$($expect: expr, )*]) => (test_case!($program, $eof_pos, [$($expect, )*], make_messages![]))
     }

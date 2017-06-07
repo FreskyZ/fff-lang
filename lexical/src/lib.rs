@@ -10,10 +10,15 @@
 #[cfg_attr(test, macro_use)] extern crate codemap;
 
 mod token_def;
-mod buf_lexer;
+mod token_buf;
 mod token_stream;
+mod parse_sess;
 mod v1lexer;
 mod v2lexer;
+
+use self::token_buf::ILexer;
+use self::token_buf::BufLexer;
+use self::parse_sess::ParseSession;
 
 pub use self::token_def::SeperatorKind;
 pub use self::token_def::SeperatorCategory;

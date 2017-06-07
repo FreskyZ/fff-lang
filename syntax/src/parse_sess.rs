@@ -38,32 +38,32 @@ impl<'a, 'b> ParseSession<'a, 'b> {
             tokens, 
             messages, 
             current_index: Cell::new(0),
-            tk: tokens.nth(0),
-            next_tk: tokens.nth(1),
-            nextnext_tk: tokens.nth(2),
-            pos: tokens.pos(0),
-            next_pos: tokens.pos(1),
-            nextnext_pos: tokens.pos(2),
+            tk: tokens.nth_token(0),
+            next_tk: tokens.nth_token(1),
+            nextnext_tk: tokens.nth_token(2),
+            pos: tokens.nth_span(0),
+            next_pos: tokens.nth_span(1),
+            nextnext_pos: tokens.nth_span(2),
         }
     }
 
     pub fn move_next(&mut self) { 
         self.current_index.set(self.current_index.get() + 1);
-        self.tk = self.tokens.nth(self.current_index.get());
-        self.next_tk = self.tokens.nth(self.current_index.get() + 1);
-        self.nextnext_tk = self.tokens.nth(self.current_index.get() + 2);
-        self.pos = self.tokens.pos(self.current_index.get());
-        self.next_pos = self.tokens.pos(self.current_index.get() + 1);
-        self.nextnext_pos = self.tokens.pos(self.current_index.get() + 2);
+        self.tk = self.tokens.nth_token(self.current_index.get());
+        self.next_tk = self.tokens.nth_token(self.current_index.get() + 1);
+        self.nextnext_tk = self.tokens.nth_token(self.current_index.get() + 2);
+        self.pos = self.tokens.nth_span(self.current_index.get());
+        self.next_pos = self.tokens.nth_span(self.current_index.get() + 1);
+        self.nextnext_pos = self.tokens.nth_span(self.current_index.get() + 2);
     }
     pub fn move_next2(&mut self) {
         self.current_index.set(self.current_index.get() + 2);
-        self.tk = self.tokens.nth(self.current_index.get());
-        self.next_tk = self.tokens.nth(self.current_index.get() + 1);
-        self.nextnext_tk = self.tokens.nth(self.current_index.get() + 2);
-        self.pos = self.tokens.pos(self.current_index.get());
-        self.next_pos = self.tokens.pos(self.current_index.get() + 1);
-        self.nextnext_pos = self.tokens.pos(self.current_index.get() + 2);
+        self.tk = self.tokens.nth_token(self.current_index.get());
+        self.next_tk = self.tokens.nth_token(self.current_index.get() + 1);
+        self.nextnext_tk = self.tokens.nth_token(self.current_index.get() + 2);
+        self.pos = self.tokens.nth_span(self.current_index.get());
+        self.next_pos = self.tokens.nth_span(self.current_index.get() + 1);
+        self.nextnext_pos = self.tokens.nth_span(self.current_index.get() + 2);
     }
 
     // for test compatibility
@@ -76,7 +76,7 @@ impl<'a, 'b> ParseSession<'a, 'b> {
 
         let current_index = self.current_index.get();
         self.move_next();
-        match (self.tokens.nth(current_index), self.tokens.pos(current_index)) {
+        match (self.tokens.nth_token(current_index), self.tokens.nth_span(current_index)) {
             (&Token::Keyword(ref actual_kw), ref kw_strpos) if actual_kw == &expect_kw => Ok(*kw_strpos),
             (&Token::Keyword(_), _) => self.push_unexpect::<Span>(&format!("{}", expect_kw)),
             _ => self.push_unexpect::<Span>(&format!("{}", expect_kw)),
@@ -89,7 +89,7 @@ impl<'a, 'b> ParseSession<'a, 'b> {
 
         let current_index = self.current_index.get();
         self.move_next();
-        match (self.tokens.nth(current_index), self.tokens.pos(current_index)) {
+        match (self.tokens.nth_token(current_index), self.tokens.nth_span(current_index)) {
             (&Token::Sep(ref actual_sep), ref sep_strpos) if actual_sep == &expect_sep => Ok(*sep_strpos),
             (&Token::Sep(_), _) => self.push_unexpect::<Span>(&format!("{}", expect_sep)),
             _ => self.push_unexpect::<Span>(&format!("{}", expect_sep)),
@@ -102,7 +102,7 @@ impl<'a, 'b> ParseSession<'a, 'b> {
 
         let current_index = self.current_index.get();
         self.move_next();
-        match (self.tokens.nth(current_index), self.tokens.pos(current_index)) {
+        match (self.tokens.nth_token(current_index), self.tokens.nth_span(current_index)) {
             (&Token::Ident(ref ident), ref ident_strpos) => Ok((ident.clone(), *ident_strpos)),
             _ => self.push_unexpect::<(String, Span)>("identifier"),
         }
@@ -117,7 +117,7 @@ impl<'a, 'b> ParseSession<'a, 'b> {
 
         let current_index = self.current_index.get();
         self.move_next();
-        match (self.tokens.nth(current_index), self.tokens.pos(current_index)) {
+        match (self.tokens.nth_token(current_index), self.tokens.nth_span(current_index)) {
             (&Token::Ident(ref ident), ref ident_strpos) => Ok((ident.clone(), *ident_strpos)),
             (&Token::Keyword(ref actual_kw), ref kw_strpos) => {
                 if accept_keywords.iter().any(|accept_kw| actual_kw == accept_kw) {
@@ -139,7 +139,7 @@ impl<'a, 'b> ParseSession<'a, 'b> {
         
         let current_index = self.current_index.get();
         self.move_next();
-        match (self.tokens.nth(current_index), self.tokens.pos(current_index)) {
+        match (self.tokens.nth_token(current_index), self.tokens.nth_span(current_index)) {
             (&Token::Ident(ref ident), ref ident_strpos) => 
                 Ok((ident.clone(), *ident_strpos)),
             (&Token::Keyword(ref actual_kw), ref kw_strpos) if keyword_predict(actual_kw) => 
@@ -153,7 +153,7 @@ impl<'a, 'b> ParseSession<'a, 'b> {
     pub fn push_unexpect<T>(&mut self, expect_desc: &str) -> ParseResult<T> {
 
         self.messages.push(Message::with_help("Unexpect symbol".to_owned(), 
-            vec![(self.tokens.pos(self.current_index.get()), format!("Meet {:?}", self.tokens.nth(self.current_index.get())))],
+            vec![(self.tokens.nth_span(self.current_index.get()), format!("Meet {:?}", self.tokens.nth_token(self.current_index.get())))],
             vec![format!("Expect {}", expect_desc)]
         ));
 
