@@ -66,7 +66,7 @@ impl Message {
 impl fmt::Debug for Message {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         
-        write!(f, "{}:\n", self.main_desc)?;
+        write!(f, "{}:", self.main_desc)?;
         for &LocationAndDesc{ ref loc, ref desc } in &self.details {
             write!(f, "\n   | At {:?}: {}", loc, desc)?;
         }

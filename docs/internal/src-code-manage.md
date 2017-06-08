@@ -20,9 +20,7 @@ every step should make them pass compile, optionally pass test
   - move `ISyntaxItemFormat` and `ISemanticItemFormat` to `util::IFormatWithIndent` which contains `fmt_with_indent`
   - try privatify ISyntaxItemGrammar
   - continue your semantic
-
   - name this change as v0.1.2 to v0.1.3
-
 
 consideration: what on earth is relationship between codemap, codepos and messages?
 
@@ -41,12 +39,20 @@ which relies CodeMap for source code string, then, codemap should not rely on me
 for source code string, that is, codemap has its own simple message format, and messages rely on codemap for more info, 
 message's format is also implemented in messages itself
 
-// TODO: make previous more clear
+Attention: Span cannot be identifier for an identifier or a label, different span can be same identifier
+so check same when interning, and use symbol id always
 
 actual steps:
 
   - remove impl_display_for_debug in messages, which is also used in ffc, which should cause ffc's compile error, which I don't known why it not happened
   - add codemap::error and remove all messages dependency in codemap, lexical and syntax do not rely on this part and pass compile directly,
     modified driver without compiling
-
   - merge codepos into codemap and make messages, lexical and syntax depend on codemap
+  - change Position and StringPosition to CharPos and Span, pass messages, lexical and syntax all tests
+
+  - currently at: finish message's format based on codemap
+                  finish new lexical interface based on codemap.symbols, with string literals and identifiers interned
+                  finish new syntax trees based on codemap.symbols, with all kind of strings interned
+                  add for and while statement's else clauses, split primary expr definitions and try refactor expr node physical structures
+
+  - in future: new semantic!

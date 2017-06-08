@@ -1,7 +1,6 @@
 ///! fff-lang
 ///!
 ///! lexical/literal
-// lexical literal, for lexical and syntax parser convenience
 
 use std::fmt;
 
@@ -57,7 +56,6 @@ impl PartialEq<NumLitValue> for NumLitValue {
 }
 impl Eq for NumLitValue {
 }
-
 impl fmt::Debug for NumLitValue {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
@@ -74,7 +72,6 @@ impl fmt::Debug for NumLitValue {
         }
     }
 }
-impl_display_by_debug!{ NumLitValue }
 
 macro_rules! from_for_num_lit_value {
     ($($ty: ty => $pa: path)*) => (
@@ -154,21 +151,7 @@ impl LitValue {
 impl fmt::Debug for LitValue {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            LitValue::Unit => write!(f, "Literal ()"),
-            LitValue::Str(Some(ref val)) => write!(f, "Literal {:?}", val),
-            LitValue::Str(None) => write!(f, "Literal \"<invalid>\""),
-            LitValue::Char(Some(ref val)) => write!(f, "Literal {:?}", val),
-            LitValue::Char(None) => write!(f, "Literal '<invalid>'"),
-            LitValue::Num(Some(ref val)) => write!(f, "Literal {:?}", val),
-            LitValue::Num(None) => write!(f, "Literal <invalid-num>"),
-            LitValue::Bool(val) => write!(f, "Literal {}", val),
-        }
-    }
-}
-impl fmt::Display for LitValue {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            LitValue::Unit => write!(f, "()"),
+            LitValue::Unit => write!(f, "unit"),
             LitValue::Str(Some(ref val)) => write!(f, "{:?}", val),
             LitValue::Str(None) => write!(f, "\"<invalid>\""),
             LitValue::Char(Some(ref val)) => write!(f, "{:?}", val),

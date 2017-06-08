@@ -26,11 +26,6 @@ pub struct ParseSession<'tokens, 'msgs> {
     pub next_pos: Span,
     pub nextnext_pos: Span,
 }
-// TODO: maybe expect, maybe expect2
-// or, SeperatorKind::parse(sess)?  , try_parse
-// KeywordKind::parse(sess)?        , try_parse
-// IdentAndPos::parse(sess)?        , try_parse
-// SeperatorKind2::parse(sess)?   // type SeperatorKind2 = (Seperator, Seperator)
 impl<'a, 'b> ParseSession<'a, 'b> {
 
     pub fn new(tokens: &'a TokenStream, messages: &'b mut MessageCollection) -> ParseSession<'a, 'b> {

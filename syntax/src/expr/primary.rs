@@ -47,7 +47,7 @@ impl ISyntaxItemFormat for PrimaryExpr {
                 format!("{}Ident '{}' <{:?}>", 
                     PrimaryExpr::indent_str(indent), ident_name, strpos),
             (&ActualPrimaryExpr::Lit(ref lit_value), strpos) => 
-                format!("{}Literal {} <{:?}>", 
+                format!("{}Literal {:?} <{:?}>", 
                     PrimaryExpr::indent_str(indent), lit_value, strpos),
             (&ActualPrimaryExpr::ParenExpr(ref inner_expr), strpos) =>
                 format!("{}ParenExpr <{:?}>\n{}", 
