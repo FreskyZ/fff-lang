@@ -50,13 +50,22 @@ impl TokenStream {
             eofs_token: (Token::EOF, eofs_span),
         }
     }
-    // symbols is not added here because lexer is sequential, no very complex order problem
     pub fn with_test_str(program: &str) -> TokenStream {
         use codemap::CodeMap;
         
         let codemap = CodeMap::with_test_str(program);
         let mut messages = MessageCollection::new();
         let mut symbols = SymbolCollection::new();
+        let ret_val = TokenStream::new(codemap.iter(), &mut messages, &mut symbols);
+        check_messages_continuable!(messages);
+        return ret_val;
+    }
+    pub fn with_test(program: &str, symbols: SymbolCollection) -> TokenStream {
+        use codemap::CodeMap;
+        
+        let codemap = CodeMap::with_test_str(program);
+        let mut messages = MessageCollection::new();
+        let mut symbols = symbols;
         let ret_val = TokenStream::new(codemap.iter(), &mut messages, &mut symbols);
         check_messages_continuable!(messages);
         return ret_val;
@@ -110,12 +119,12 @@ fn v4_base() { // remain the name of v4 here for memory
     // seperator, rightbracket, 1:16-1:16
     // EOF, 1:17-1:17
     // EOFs, 1:17-1:17
-    let tokens = TokenStream::with_test_str("123 abc 'd', [1]");
+    let tokens = TokenStream::with_test("123 abc 'd', [1]", make_symbols!["abc"]);
 
     assert_eq!(tokens.nth_token(0), &Token::Lit(LitValue::from(123)));
     assert_eq!(tokens.nth_span(0), make_span!(0, 2));
 
-    assert_eq!(tokens.nth_token(1), &Token::Ident("abc".to_owned()));
+    assert_eq!(tokens.nth_token(1), &Token::Ident(make_id!(1)));
     assert_eq!(tokens.nth_span(1), make_span!(4, 6));
 
     assert_eq!(tokens.nth_token(2), &Token::Lit(LitValue::from('d')));

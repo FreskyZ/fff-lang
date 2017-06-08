@@ -99,3 +99,9 @@ pub trait TryFrom<T>
     where Self: Sized {
     fn try_from(t: T) -> Option<Self>;
 }
+
+/// ID type requires From<{integer}>
+#[macro_export]
+macro_rules! make_id {
+    ($id: expr) => (From::from($id))
+}

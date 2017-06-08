@@ -9,6 +9,7 @@ use std::collections::HashMap;
 #[derive(Eq, PartialEq, Clone, Copy, Hash)]
 pub struct SymbolID(usize);
 impl SymbolID { pub fn new(value: usize) -> SymbolID { SymbolID(value) } }
+impl From<usize> for SymbolID { fn from(value: usize) -> SymbolID { SymbolID(value) } }
 impl fmt::Debug for SymbolID { fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "#{}", self.0) } }
 
 pub struct SymbolCollection {
@@ -24,7 +25,7 @@ impl SymbolCollection {
         if let Some(id) = self.items.get(&value) {
             return *id;
         }
-        let newid = SymbolID(self.items.len());
+        let newid = SymbolID(self.items.len() + 1);     // reserve 0
         self.items.insert(value, newid);
         return newid;
     }
@@ -32,7 +33,7 @@ impl SymbolCollection {
         if let Some(id) = self.items.get(symbol) { 
             return *id;
         }
-        let newid = SymbolID(self.items.len());
+        let newid = SymbolID(self.items.len() + 1);     // reserve 0
         self.items.insert(symbol.to_owned(), newid);
         return newid; 
     }

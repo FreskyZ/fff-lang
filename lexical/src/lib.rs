@@ -5,8 +5,8 @@
 ///! TokenStream::new(codechars, messages) for formal use
 ///! TokenStream::with_test_str(program) for test use
 
-extern crate util;
 #[macro_use] extern crate messages as message; 
+#[cfg_attr(test, macro_use)] extern crate util;
 #[cfg_attr(test, macro_use)] extern crate codemap;
 
 mod token_def;

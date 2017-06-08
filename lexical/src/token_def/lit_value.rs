@@ -3,6 +3,7 @@
 ///! lexical/literal
 
 use std::fmt;
+use codemap::SymbolID;
 
 #[derive(Clone)]
 pub enum NumLitValue {
@@ -97,19 +98,30 @@ from_for_num_lit_value!{
     f64 => NumLitValue::F64
 }
 
+static ERROR_NUM_LIT: NumLitValue = NumLitValue::I32(0);
+
 #[derive(Clone, Eq, PartialEq)]
 pub enum LitValue {
     Unit,                // unit is not generated here in v2 or some other, because for cases like `1.to_string()`, this is function call not unit
-    Str(Option<String>),
+    Str(Option<SymbolID>),
     Num(Option<NumLitValue>),
     Char(Option<char>),
     Bool(bool),
 }
-
-const ERROR_STRING: &str = "<error>";
-static NOT_A_STRING: &str = "<not a string>";
-static NOT_NUM_LIT_VALUE: NumLitValue = NumLitValue::I32(0);
-
+impl fmt::Debug for LitValue {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            LitValue::Unit => write!(f, "unit"),
+            LitValue::Str(Some(ref val)) => write!(f, "{:?}", val),
+            LitValue::Str(None) => write!(f, "#!1"),
+            LitValue::Char(Some(ref val)) => write!(f, "{:?}", val),
+            LitValue::Char(None) => write!(f, "'<invalid>'"),
+            LitValue::Num(Some(ref val)) => write!(f, "{:?}", val),
+            LitValue::Num(None) => write!(f, "<invalid-num>"),
+            LitValue::Bool(val) => write!(f, "{}", val),
+        }
+    }
+}
 impl LitValue {
 
     pub fn is_unit(&self) -> bool { match self { &LitValue::Unit => true, _ => false } }
@@ -129,61 +141,15 @@ impl LitValue {
         }
     }
 
-    /// get char if is char and is valid, make sure the condition
     pub fn get_char(&self) -> char { match self { &LitValue::Char(Some(val)) => val, _ => '\0' } }
     pub fn get_bool(&self) -> bool { match self { &LitValue::Bool(val) => val, _ => false } }
-    pub fn get_str(&self) -> &str {
-        match self {
-            &LitValue::Str(Some(ref val)) => val,
-            &LitValue::Str(None) => ERROR_STRING,
-            _ => NOT_A_STRING,
-        }
-    }
-    pub fn get_num(&self) -> &NumLitValue {
-        match self {
-            &LitValue::Num(Some(ref val)) => val,
-            &LitValue::Num(None) => &NOT_NUM_LIT_VALUE,
-            _ => &NOT_NUM_LIT_VALUE,
-        }
-    }
+    pub fn get_str_id(&self) -> SymbolID { match self { &LitValue::Str(Some(val)) => val, _ => SymbolID::new(!1) } }
+    pub fn get_num(&self) -> &NumLitValue { match self { &LitValue::Num(Some(ref val)) => val, _ => &ERROR_NUM_LIT } }
 }
 
-impl fmt::Debug for LitValue {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            LitValue::Unit => write!(f, "unit"),
-            LitValue::Str(Some(ref val)) => write!(f, "{:?}", val),
-            LitValue::Str(None) => write!(f, "\"<invalid>\""),
-            LitValue::Char(Some(ref val)) => write!(f, "{:?}", val),
-            LitValue::Char(None) => write!(f, "'<invalid>'"),
-            LitValue::Num(Some(ref val)) => write!(f, "{:?}", val),
-            LitValue::Num(None) => write!(f, "<invalid-num>"),
-            LitValue::Bool(val) => write!(f, "{}", val),
-        }
-    }
-}
-
-impl From<String> for LitValue {
-    fn from(val: String) -> LitValue {
-        LitValue::Str(Some(val))
-    }
-}
-impl<'a> From<&'a str> for LitValue {
-    fn from(val: &'a str) -> LitValue {
-        LitValue::Str(Some(val.to_owned()))
-    }
-}
-
-impl From<char> for LitValue {
-    fn from(val: char) -> LitValue {
-        LitValue::Char(Some(val))
-    }
-}
-impl From<bool> for LitValue {
-    fn from(val: bool) -> LitValue {
-        LitValue::Bool(val)
-    }
-}
+impl From<SymbolID> for LitValue { fn from(val: SymbolID) -> LitValue { LitValue::Str(Some(val)) } }
+impl From<char> for LitValue { fn from(val: char) -> LitValue { LitValue::Char(Some(val)) } }
+impl From<bool> for LitValue { fn from(val: bool) -> LitValue { LitValue::Bool(val) } }
 
 macro_rules! from_for_lexical_lit_num {
     ($($ty: ty)*) => (

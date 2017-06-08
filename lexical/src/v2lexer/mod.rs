@@ -7,6 +7,7 @@ mod unicode_char;
 mod error_strings;
 
 use codemap::Span;
+use codemap::SymbolID;
 use codemap::CodeChars;
 use codemap::EOFCHAR;
 use message::Message;
@@ -26,13 +27,12 @@ use self::num_lit_parser::parse_numeric_literal;
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub enum V2Token {
+    EOFs, EOF,
     Literal(LitValue),
-    Identifier(String), // Anything of [_a-zA-Z][_a-zA-Z0-9]*
-    Label(String),      // Anything of @[_a-zA-Z0-9@]*
+    Identifier(SymbolID), // Anything of [_a-zA-Z][_a-zA-Z0-9]*
+    Label(SymbolID),      // Anything of @[_a-zA-Z0-9@]*
     Keyword(KeywordKind),
     Seperator(SeperatorKind),
-    EOF,
-    EOFs,
 }
 impl Default for V2Token { fn default() -> V2Token { V2Token::EOFs } }
 
@@ -116,7 +116,7 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
     // input stringliteral or otherchar without comment, output identifier and numeric literal
     fn next(&mut self, sess: &mut ParseSession) -> (V2Token, Span) {
 
-        #[cfg(feature = "trace_v2_parse")] macro_rules! trace { ($($arg:tt)*) => ({ print!("[V2Next:{}] ", line!()); println!($($arg)*); }) }
+        #[cfg(feature = "trace_v2_parse")] macro_rules! trace { ($($arg:tt)*) => ({ print!("[V2Next: {}] ", line!()); println!($($arg)*); }) }
         #[cfg(not(feature = "trace_v2_parse"))] macro_rules! trace { ($($arg:tt)*) => () }
 
         macro_rules! ident_to_v2 { ($ident_value: expr, $ident_pos: expr) => ({
@@ -132,7 +132,7 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                     }
                     V2Token::Keyword(other_keyword)
                 }
-                None => V2Token::Identifier($ident_value),
+                None => V2Token::Identifier(sess.symbols.intern($ident_value)),
             }
         }) }
         macro_rules! num_lit_to_v2 { ($num_lit_value: expr, $num_lit_strpos: expr) => ({
@@ -156,10 +156,10 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
             self.v1.move_next(sess);
             let v15 = match self.v1.current_with_preview2() {
                 (&V1Token::StringLiteral(ref value), pos, _2, _3, _4, _5) => {
-                    return (V2Token::Literal(LitValue::Str(value.clone())), pos);
+                    return (V2Token::Literal(LitValue::Str(*value)), pos);
                 }
                 (&V1Token::RawStringLiteral(ref value), pos, _2, _3, _4, _5) => {
-                    return (V2Token::Literal(LitValue::Str(value.clone())), pos);
+                    return (V2Token::Literal(LitValue::Str(*value)), pos);
                 }
                 (&V1Token::CharLiteral(ref value), pos, _2, _3, _4, _5) => {
                     return (V2Token::Literal(LitValue::Char(value.clone())), pos);
@@ -207,7 +207,7 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                         value.push(ch);
                         return num_lit_to_v2!(value, strpos);
                     } else if ch.is_label_start() {
-                        return (V2Token::Label("".to_owned()), strpos); // simple '@' is allowed
+                        return (V2Token::Label(sess.symbols.intern_str("@?")), strpos); // simple '@' is allowed, use @? to represent empty
                     } else {
                         match SeperatorKind::try_from1(ch) {
                             Some((seperator, _)) => return (V2Token::Seperator(seperator), strpos),
@@ -229,7 +229,7 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                         state = State::InNumLit(value, strpos);
                     } else if ch.is_label_start() {
                         if !next_ch.is_label() {                // 17/5/8: TODO: same question as before, why this is needed
-                            return (V2Token::Label(String::new()), strpos);
+                            return (V2Token::Label(sess.symbols.intern_str("@?")), strpos);
                         }
                         state = State::InLabel(String::new(), strpos);
                     } else {
@@ -268,11 +268,11 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                 }
                 (State::InLabel(mut value, mut label_strpos), V15Token(ch, strpos, next_ch, _4, _5, _6)) => {
                     if !ch.is_label() {
-                        return (V2Token::Label(value), label_strpos);
+                        return (V2Token::Label(sess.symbols.intern(value)), label_strpos);
                     } else if !next_ch.is_label() {
                         value.push(ch);
                         label_strpos = label_strpos.merge(&strpos);
-                        return (V2Token::Label(value), label_strpos);
+                        return (V2Token::Label(sess.symbols.intern(value)), label_strpos);
                     } else {
                         value.push(ch);
                         label_strpos = label_strpos.merge(&strpos);
@@ -415,46 +415,43 @@ fn v2_non_ascii_ch() {
 #[cfg(test)]
 #[test]
 fn v2_base() {
+    use std::fmt;
     use codemap::CodeMap;
     use codemap::SymbolCollection;
 
     // Only to make decltype(V2Lexer as BufLexer::next(...)) to display better
     #[derive(Eq, PartialEq)]
-    struct V2AndStrPos(V2Token, Span);
-    use std::fmt;
-    impl From<(V2Token, Span)> for V2AndStrPos {
-        fn from(v2_and_strpos: (V2Token, Span)) -> V2AndStrPos {
-            V2AndStrPos(v2_and_strpos.0, v2_and_strpos.1)
-        }
+    struct V2Span(V2Token, Span);
+    impl From<(V2Token, Span)> for V2Span {
+        fn from(v2_and_strpos: (V2Token, Span)) -> V2Span { V2Span(v2_and_strpos.0, v2_and_strpos.1) }
     }
-    impl fmt::Debug for V2AndStrPos {
-        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            write!(f, "\n({:?}, {:?})", self.0, self.1)
+    impl fmt::Debug for V2Span {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n({:?}, {:?})", self.0, self.1) }
+    }
+    
+    fn test_case_full(src: &str, symbols: SymbolCollection, expect_tokens: Vec<(V2Token, Span)>, expect_messages: MessageCollection, line: u32) {
+        println!("Case at {}", line);
+        let mut actual_messages = MessageCollection::new();
+        let mut symbols = symbols;
+        let mut sess = ParseSession::new(&mut actual_messages, &mut symbols);
+        let codemap = CodeMap::with_test_str(src);
+        let mut v2lexer = V2Lexer::new(codemap.iter());
+        for expect_token in expect_tokens {
+            assert_eq!(v2lexer.next(&mut sess), expect_token);
         }
+        let next = v2lexer.next(&mut sess);
+        if next.0 != V2Token::EOF { panic!("next is not EOF but {:?}", next); }
+        let next = v2lexer.next(&mut sess);
+        if next.0 != V2Token::EOFs { panic!("nextnext is not EOFs but {:?}", next); }
+
+        assert_eq!(sess.messages, &expect_messages);
     }
 
     macro_rules! test_case {
-        ($program: expr, $eof_pos: expr, [$($expect: expr, )*], $expect_msgs: expr) => ({
-            let messages = &mut MessageCollection::new();
-            let symbols = &mut SymbolCollection::new();
-            let sess = &mut ParseSession::new(messages, symbols);
-            let codemap = CodeMap::with_test_str($program);
-            let mut v2lexer = V2Lexer::new(codemap.iter());
-            let mut v2s = Vec::new();
-            loop {
-                match v2lexer.next(sess) {
-                    (V2Token::EOFs, _) => break,
-                    v2 => v2s.push(V2AndStrPos::from(v2)),
-                }
-            }
-
-            let mut expect_v2s = vec![$(V2AndStrPos::from($expect), )*];
-            expect_v2s.push(V2AndStrPos::from((V2Token::EOF, $eof_pos)));
-            assert_eq!(v2s, expect_v2s, "Case {:?}\n", $program);
-
-            assert_eq!(sess.messages, &$expect_msgs, "Case {:?}\n", $program);
-        });
-        ($program: expr, $eof_pos: expr, [$($expect: expr, )*]) => (test_case!($program, $eof_pos, [$($expect, )*], make_messages![]))
+        ($src: expr, $symbols: expr, $expect_tokens: expr) => 
+            (test_case_full($src, $symbols, $expect_tokens, MessageCollection::new(), line!()));
+        ($src: expr, $symbols: expr, $expect_tokens: expr, $expect_messages: expr) => 
+            (test_case_full($src, SymbolCollection::new(), $expect_tokens, $expect_messages, line!()));
     }
 
     macro_rules! lit {
@@ -464,50 +461,48 @@ fn v2_base() {
         ($start_id: expr, $end_id: expr) => ((V2Token::Literal(LitValue::Num(None)), make_span!($start_id, $end_id)))
     }
     macro_rules! label {
-        ($val: expr, $start_id: expr, $end_id: expr) => ((V2Token::Label($val.to_owned()), make_span!($start_id, $end_id)))
+        ($val: expr, $start_id: expr, $end_id: expr) => ((V2Token::Label($val), make_span!($start_id, $end_id)))
     }
     macro_rules! kw {
         ($val: expr, $start_id: expr, $end_id: expr) => ((V2Token::Keyword($val), make_span!($start_id, $end_id)))
     }
     macro_rules! ident {
-        ($name: expr, $start_id: expr, $end_id: expr) => ((V2Token::Identifier($name.to_owned()), make_span!($start_id, $end_id)))
+        ($name: expr, $start_id: expr, $end_id: expr) => ((V2Token::Identifier($name), make_span!($start_id, $end_id)))
     }
     macro_rules! sep {
         ($sep: expr, $start_id: expr, $end_id: expr) => ((V2Token::Seperator($sep), make_span!($start_id, $end_id)))
     }
 
-    // row       1              2                     3
-    // col       0        1     0        1         2  0
-    // col       1234567890123 412345678901234567890 11234
+
+    // keyword, identifier, bool lit, num lit, seperator
     // byte      0         1          2         3   
     // byte      01234567890123 456789012345678901234 5678
-    test_case!{ "var a = true;\nvar b = 789_123.456;\ndefg", make_span!(39, 39), [  // keyword, identifier, bool lit, num lit, seperator
+    test_case!{ "var a = true;\nvar b = 789_123.456;\ndefg", make_symbols!["a", "b", "defg"], vec![      
         kw!(KeywordKind::Var, 0, 2),
-        ident!("a", 4, 4),
+        ident!(make_id!(1), 4, 4),
         sep!(SeperatorKind::Assign, 6, 6),
         lit!(true, 8, 11),
         sep!(SeperatorKind::SemiColon, 12, 12),
         kw!(KeywordKind::Var, 14, 16),
-        ident!("b", 18, 18),
+        ident!(make_id!(2), 18, 18),
         sep!(SeperatorKind::Assign, 20, 20),
         lit!(789123.4560000001, 22, 32),
         sep!(SeperatorKind::SemiColon, 33, 33),
-        ident!("defg", 35, 38),
+        ident!(make_id!(3), 35, 38),
     ]}
 
-    //           0          1            2
-    //           1 2 34567890 123456 7 8901
     //           0       1      2       3
     //           0 3 67890123 690123 4 9012
-    test_case!{ "一个chinese变量, a_中文_var", make_span!(33, 33), [  // chinese ident
-        ident!("一个chinese变量", 0, 16),
+    test_case!{ "一个chinese变量, a_中文_var", make_symbols!["一个chinese变量", "a_中文_var"], vec![  // chinese ident
+        ident!(make_id!(1), 0, 16),
         sep!(SeperatorKind::Comma, 19, 19),
-        ident!("a_中文_var", 21, 32),
+        ident!(make_id!(2), 21, 32),
     ]}
 
+    // different postfix\types of num lit, different types of sep
     //           0         1         2         3         4         5         6         7
     //           0123456789012345678901234567890123456789012345678901234567890123456789012345
-    test_case!{ "[1, 123 _ 1u64( 123.456,) -123_456{123u32}123f32 += 123.0 / 123u8 && 1024u8]", make_span!(76, 76), [  // different postfix\types of num lit, different types of sep
+    test_case!{ "[1, 123 _ 1u64( 123.456,) -123_456{123u32}123f32 += 123.0 / 123u8 && 1024u8]", make_symbols![], vec![  
         sep!(SeperatorKind::LeftBracket, 0, 0),
         lit!(1, 1, 1),
         sep!(SeperatorKind::Comma, 2, 2),
@@ -539,9 +534,10 @@ fn v2_base() {
         ),
     ]}
 
+    // differnt prefix\base of num lit
     //           0         1         2         3         4         5         6         7         8
     //           0123456789012345678901234567890123456789012345678901234567890123456789012345678901234
-    test_case!{ "[123 * 0x123 - 0xAFF & 0o777 || 0oXXX != 0b101010 == 0b123456 -> 0d123.. 0dABC] .. -=", make_span!(85, 85), [    // differnt prefix\base of num lit
+    test_case!{ "[123 * 0x123 - 0xAFF & 0o777 || 0oXXX != 0b101010 == 0b123456 -> 0d123.. 0dABC] .. -=", make_symbols![], vec![
         sep!(SeperatorKind::LeftBracket, 0, 0),
         lit!(123, 1, 3),
         sep!(SeperatorKind::Mul, 5, 5),
@@ -583,7 +579,7 @@ fn v2_base() {
 
     //           0       1        2
     //           012345 8901234578 123
-    test_case!{ "[1, 2，3.5, 4。5】<<=", make_span!(24, 24), [  // not ascii char hint and recover
+    test_case!{ "[1, 2，3.5, 4。5】<<=", make_symbols![], vec![  // not ascii char hint and recover
         sep!(SeperatorKind::LeftBracket, 0, 0),
         lit!(1, 1, 1),
         sep!(SeperatorKind::Comma, 2, 2),
@@ -613,14 +609,14 @@ fn v2_base() {
     ]}
 
     //           012345678
-    test_case!{ "1..2.0f32", make_span!(9, 9), [  // range operator special case
+    test_case!{ "1..2.0f32", make_symbols![], vec![  // range operator special case
         lit!(1, 0, 0),
         sep!(SeperatorKind::Range, 1, 2),
         lit!(2f32, 3, 8),
     ]}
 
     //           01234
-    test_case!{ "2...3", make_span!(5, 5), [  // range operator special case 2
+    test_case!{ "2...3", make_symbols![], vec![  // range operator special case 2
         lit!(2, 0, 0),
         sep!(SeperatorKind::Range, 1, 2),
         sep!(SeperatorKind::Dot, 3, 3),
@@ -629,35 +625,36 @@ fn v2_base() {
 
     //           0         1         2         
     //           012345678901234567890123456789
-    test_case!{ "1.is_odd(), 123f64.to_string()", make_span!(30, 30), [  //  another special case
+    test_case!{ "1.is_odd(), 123f64.to_string()", make_symbols!["is_odd", "to_string"], vec![  //  another special case
         lit!(1, 0, 0),
         sep!(SeperatorKind::Dot, 1, 1),
-        ident!("is_odd", 2, 7),
+        ident!(make_id!(1), 2, 7),
         sep!(SeperatorKind::LeftParenthenes, 8, 8),
         sep!(SeperatorKind::RightParenthenes, 9, 9),
         sep!(SeperatorKind::Comma, 10, 10),
         lit!(123f64, 12, 17),
         sep!(SeperatorKind::Dot, 18, 18),
-        ident!("to_string", 19, 27),
+        ident!(make_id!(2), 19, 27),
         sep!(SeperatorKind::LeftParenthenes, 28, 28),
         sep!(SeperatorKind::RightParenthenes, 29, 29),
     ]}
 
     //           0           1          2
     //           01 234567 890 1234567890123456
-    test_case!{ "r\"hello\" '\\u1234' 12/**/34 ", make_span!(27, 27), [    // dispatch v1
-        lit!("hello", 0, 7),
+    test_case!{ "r\"hello\" '\\u1234' 12/**/34 ", make_symbols!["hello"], vec![    // dispatch v1
+        (V2Token::Literal(LitValue::Str(Some(make_id!(1)))), make_span!(0, 7)), // because `lit!(make_id!(1), 0, 7)` is ambiguous
         lit!('\u{1234}', 9, 16),
         lit!(12, 18, 19),
         lit!(34, 24, 25),
     ]}
 
+    // bug from syntax::expr::postfix_expr
     //           0         1         2         3         4         5
     //           012345678901234567890123456789012345678901234567890123
-    test_case!{ "1.a[[3](4, [5, 6], )](7, 8)() as [i32].bcd[10, 11, 12]", make_span!(54, 54), [ // bug from syntax::expr::postfix_expr
+    test_case!{ "1.a[[3](4, [5, 6], )](7, 8)() as [i32].bcd[10, 11, 12]", make_symbols!["a", "bcd"], vec![
         lit!(1, 0, 0),
         sep!(SeperatorKind::Dot, 1, 1),
-        ident!("a", 2, 2),
+        ident!(make_id!(1), 2, 2),
         sep!(SeperatorKind::LeftBracket, 3, 3),
         sep!(SeperatorKind::LeftBracket, 4, 4),
         lit!(3, 5, 5),
@@ -685,7 +682,7 @@ fn v2_base() {
         kw!(KeywordKind::PrimTypeI32, 34, 36),
         sep!(SeperatorKind::RightBracket, 37, 37),
         sep!(SeperatorKind::Dot, 38, 38),
-        ident!("bcd", 39, 41),
+        ident!(make_id!(2), 39, 41),
         sep!(SeperatorKind::LeftBracket, 42, 42),
         lit!(10, 43, 44),
         sep!(SeperatorKind::Comma, 45, 45),
@@ -699,23 +696,23 @@ fn v2_base() {
 
     //           0         1     
     //           0123456789012345678
-    test_case!{ "abc @abc @ @@ 1 @a", make_span!(18, 18), [
-        ident!("abc", 0, 2),
-        label!("abc", 4, 7),
-        label!("", 9, 9),
-        label!("@", 11, 12),
+    test_case!{ "abc @abc @ @@ 1 @a", make_symbols!["abc", "@?", "@", "a"], vec![
+        ident!(make_id!(1), 0, 2),  // yeah
+        label!(make_id!(1), 4, 7),  // yeah
+        label!(make_id!(2), 9, 9),
+        label!(make_id!(3), 11, 12),
         lit!(1, 14, 14),
-        label!("a", 16, 17),
+        label!(make_id!(4), 16, 17),
     ]}
 
-    test_case!{ "@", make_span!(1, 1), [label!("", 0, 0),] }
+    test_case!{ "@", make_symbols!["@?"], vec![label!(make_id!(1), 0, 0)] }
 
-    test_case!{ "a:", make_span!(2, 2), [
-        ident!("a", 0, 0),
+    test_case!{ "a:", make_symbols!["a"], vec![
+        ident!(make_id!(1), 0, 0),
         sep!(SeperatorKind::Colon, 1, 1),
     ]}
-    test_case!{ "@: {}", make_span!(5, 5), [
-        label!("", 0, 0),
+    test_case!{ "@: {}", make_symbols!["@?"], vec![
+        label!(make_id!(1), 0, 0),
         sep!(SeperatorKind::Colon, 1, 1),
         sep!(SeperatorKind::LeftBrace, 3, 3),
         sep!(SeperatorKind::RightBrace, 4, 4),
