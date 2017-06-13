@@ -12,33 +12,33 @@ pub use self::unary::UnaryExpr;
 pub use self::postfix::PostfixExpr;
 pub use self::primary::PrimaryExpr;
 
-#[cfg(test)] #[test]
-fn expr_usage() {
-    use codemap::Span;
-    use lexical::LitValue;
-    use super::ISyntaxItemFormat;
+// #[cfg(test)] #[test]
+// fn expr_usage() {
+//     use codemap::Span;
+//     use lexical::LitValue;
+//     use super::ISyntaxItemFormat;
 
-    // Quickly get lit and ident
-    let actual_lit = BinaryExpr::new_lit(LitValue::from(42), make_span!(2, 3));
+//     // Quickly get lit and ident
+//     let actual_lit = BinaryExpr::new_lit(LitValue::from(42), make_span!(2, 3));
 
-    println!("{:?}", 
-        Some(&actual_lit)
-            .and_then(BinaryExpr::get_unary)
-            .and_then(UnaryExpr::get_postfix)
-            .and_then(PostfixExpr::get_primary)
-            .map(|primary| primary.format(0))
-    );
-}
+//     println!("{:?}", 
+//         Some(&actual_lit)
+//             .and_then(BinaryExpr::get_unary)
+//             .and_then(UnaryExpr::get_postfix)
+//             .and_then(PostfixExpr::get_primary)
+//             .map(|primary| primary.format(0))
+//     );
+// }
 
 #[cfg(test)] #[test]
 fn expr_parse() {
-    use codemap::Span;    
-    // use lexical::SeperatorKind;
+    use codemap::Span;
+    // use codemap::SymbolID;
     use lexical::LitValue;
     use super::ISyntaxItemWithStr;
 
     assert_eq!{ BinaryExpr::with_test_str("\"abc\""),
-        BinaryExpr::new_lit(LitValue::from("abc"), make_span!(0, 4))
+        BinaryExpr::new_lit(LitValue::new_str_lit(make_id!(1)), make_span!(0, 4))
     }
     assert_eq!{ BinaryExpr::with_test_str("0xfffu64"), 
         BinaryExpr::new_lit(LitValue::from(0xFFFu64), make_span!(0, 7))
@@ -51,7 +51,7 @@ fn expr_parse() {
     }
 
     assert_eq!{ BinaryExpr::with_test_str("binary_expr"),
-        BinaryExpr::new_ident("binary_expr".to_owned(), make_span!(0, 10))
+        BinaryExpr::new_ident(make_id!(1), make_span!(0, 10))
     }
 
     assert_eq!{ BinaryExpr::with_test_str("(  )"),

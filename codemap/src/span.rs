@@ -6,6 +6,7 @@
 ///! and make_charpos! and make_span! macro for convenience in test
 
 use std::fmt;
+use std::ops::Range;
 
 /// Byte index of a char
 #[derive(Eq, PartialEq, Clone, Copy, Default)]
@@ -64,16 +65,35 @@ impl Span {
     pub fn get_start_pos(&self) -> CharPos { CharPos::new(self.file_id, self.start_id) }
     pub fn get_end_pos(&self) -> CharPos { CharPos::new(self.file_id, self.end_id) }
 
-    pub fn merge(self, rhs: &Span) -> Span {
+    pub fn merge(&self, rhs: &Span) -> Span {
         if self.file_id != rhs.file_id { panic!("trying to merge span from different source file") }
         Span{ file_id: self.file_id, start_id: self.start_id, end_id: rhs.end_id }
     }
+
+    pub fn slice(&self, range: Range<usize>) -> Span {
+        use std::cmp::min;
+
+        Span{ file_id: self.file_id,
+            start_id: min(self.end_id, self.start_id + range.start),
+            end_id: min(self.end_id, self.start_id + range.end),
+        }
+    }
 }
+
 #[macro_export]
 macro_rules! make_span {
     ($file_id: expr, $start_id: expr, $end_id: expr) => (Span::new($file_id, $start_id, $end_id));
     ($start_id: expr, $end_id: expr) => (Span::new(0, $start_id, $end_id))
 }
+
+#[cfg(test)] #[test]
+fn span_index() {
+
+    assert_eq!(make_span!(1, 5).slice(2..3), make_span!(3, 4));
+    assert_eq!(make_span!(3, 4).slice(0..5), make_span!(3, 4));
+    assert_eq!(make_span!(10, 15).slice(100..200), make_span!(15, 15));
+}
+
 // // Technically remain
 // #[allow(dead_code)]
 // fn utf8_char_next(bytes: &[u8]) -> char {

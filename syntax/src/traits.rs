@@ -2,8 +2,10 @@
 ///!
 ///! syntax/traits, for ISyntaxItem for various relevant staffs
 
+use codemap::SymbolCollection;
 use message::MessageCollection;
 use lexical::TokenStream;
+
 use super::ParseSession;
 use super::ParseResult;
 
@@ -26,24 +28,41 @@ pub trait ISyntaxItemParse {
 // WithStr
 pub trait ISyntaxItemWithStr {
 
-    fn with_test_str(program: &str) -> Self where Self: Sized + ISyntaxItemParse {
-        let full = Self::with_test_str_ret_size_messages(program);
+    fn with_test_str(src: &str) -> Self where Self: Sized + ISyntaxItemParse {
+        let full = Self::with_test_input_ret_size_messages(src, &mut SymbolCollection::new());
         check_messages_continuable!(full.2);
         return full.0.unwrap();
     }
-    fn with_test_str_ret_size(program: &str) -> (Option<Self>, usize) where Self: Sized + ISyntaxItemParse {
-        let full = Self::with_test_str_ret_size_messages(program);
+    fn with_test_str_ret_size(src: &str) -> (Option<Self>, usize) where Self: Sized + ISyntaxItemParse {
+        let full = Self::with_test_input_ret_size_messages(src, &mut SymbolCollection::new());
         return (full.0, full.1);
     }
-    fn with_test_str_ret_messages(program: &str) -> (Option<Self>, MessageCollection) where Self: Sized + ISyntaxItemParse {
-        let full = Self::with_test_str_ret_size_messages(program);
+    fn with_test_str_ret_messages(src: &str) -> (Option<Self>, MessageCollection) where Self: Sized + ISyntaxItemParse {
+        let full = Self::with_test_input_ret_size_messages(src, &mut SymbolCollection::new());
         return (full.0, full.2);
     }
-    fn with_test_str_ret_size_messages(program: &str) -> (Option<Self>, usize, MessageCollection) where Self: Sized + ISyntaxItemParse {
-        let tokens = TokenStream::with_test_str(program);
+    fn with_test_str_ret_size_messages(src: &str) -> (Option<Self>, usize, MessageCollection) where Self: Sized + ISyntaxItemParse {
+        Self::with_test_input_ret_size_messages(src, &mut SymbolCollection::new())
+    }
+
+    fn with_test_input(src: &str, symbols: &mut SymbolCollection) -> Self where Self: Sized + ISyntaxItemParse {
+        let full = Self::with_test_input_ret_size_messages(src, symbols);
+        check_messages_continuable!(full.2);
+        return full.0.unwrap();
+    }
+    fn with_test_input_ret_size(src: &str, symbols: &mut SymbolCollection) -> (Option<Self>, usize) where Self: Sized + ISyntaxItemParse {
+        let full = Self::with_test_input_ret_size_messages(src, symbols);
+        return (full.0, full.1);
+    }
+    fn with_test_input_ret_messages(src: &str, symbols: &mut SymbolCollection) -> (Option<Self>, MessageCollection) where Self: Sized + ISyntaxItemParse {
+        let full = Self::with_test_input_ret_size_messages(src, symbols);
+        return (full.0, full.2);
+    }
+    fn with_test_input_ret_size_messages(src: &str, symbols: &mut SymbolCollection) -> (Option<Self>, usize, MessageCollection) where Self: Sized + ISyntaxItemParse {
+        let tokens = TokenStream::with_test_input(src, symbols);
         let mut messages = MessageCollection::new();
         let ret_val = { // to satisfy liefetime checker
-            let mut sess = ParseSession::new(&tokens, &mut messages);
+            let mut sess = ParseSession::new(&tokens, &mut messages, symbols);
             let retval = match Self::parse(&mut sess) {
                 Ok(retval) => Some(retval),
                 Err(_) => None,

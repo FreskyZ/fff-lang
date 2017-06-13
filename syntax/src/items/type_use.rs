@@ -20,10 +20,13 @@
 // Then primitive type are removed from sytnax parse                                                                    // Type
 // Then rename SMType to TypeUse                                                                                        // TypeUse
 // Then enum members are hide, 17/4/10                                                                                  // TypeUse + ActualTypeUse
+// Then enum members are public, <unknown-time>                                                                         // TypeUse + ActualTypeUse
+// Then array and tuple enum members are removed and use template aware type use, 17/6/12                               // TypeUse
 
 use std::fmt;
 
 use codemap::Span;
+use codemap::SymbolID;
 use message::Message;
 use lexical::Token;
 use lexical::SeperatorKind;
@@ -35,65 +38,38 @@ use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
-#[derive(Clone)]            // Move out of boxed
-pub enum ActualTypeUse {
-    Unit, 
-    Simple(String),         // strpos for identifier
-    Array(Box<TypeUse>),    // strpos for bracket
-    Tuple(Vec<TypeUse>),    // strpos for paren
-}
-#[cfg_attr(test, derive(Eq, PartialEq))]
-#[derive(Clone)]            // Move out of boxed
 pub struct TypeUse {
-    pub actual: ActualTypeUse, 
-    pub all_strpos: Span,
+    pub base: SymbolID,
+    pub base_span: Span,        // maybe default for array and tuple
+    pub quote_span: Span,       // span of `()` or `[]` or (unimplemented)`<>`
+    pub params: Vec<TypeUse>,
+    pub all_span: Span, 
 }
 impl ISyntaxItemFormat for TypeUse {
     fn format(&self, indent: u32) -> String {
-        match (&self.actual, &self.all_strpos) {
-            (&ActualTypeUse::Unit, strpos) => format!("{}TypeUse '()' <{:?}>", TypeUse::indent_str(indent), strpos),
-            (&ActualTypeUse::Simple(ref name), strpos) => format!("{}TypeUse '{}' <{:?}>", TypeUse::indent_str(indent), name, strpos),
-            (&ActualTypeUse::Tuple(ref type_uses), strpos) => 
-                format!("{}TypeUse::Tuple, <{:?}>{}",
-                    TypeUse::indent_str(indent), strpos, 
-                    type_uses.iter().fold(String::new(), |mut buf, typeuse| { buf.push_str("\n"); buf.push_str(&typeuse.format(indent + 1)); buf })),
-            (&ActualTypeUse::Array(ref inner), strpos) => 
-                format!("{}TypeUse::Array <{:?}>\n{}", 
-                    TypeUse::indent_str(indent), strpos,
-                    inner.format(indent + 1)),
-        }
+        format!("{}TypeUse <{:?}>\n{}{:?} <{:?}>{}", 
+            TypeUse::indent_str(indent), self.all_span,
+            TypeUse::indent_str(indent + 1), self.base, self.base_span,
+            match self.params.len() {
+                0 => String::new(),
+                _ => format!("\n{}Quote <{:?}>{}", TypeUse::indent_str(indent + 1), self.quote_span, 
+                    self.params.iter().fold(String::new(), |mut buf, typeuse| { buf.push_str("\n"); buf.push_str(&typeuse.format(indent + 2)); buf }),
+                )
+            }
+        )
     }
 }
 impl fmt::Debug for TypeUse {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.format(0))
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(0)) }
+}
+impl TypeUse {
+
+    pub fn new_simple(base: SymbolID, base_span: Span) -> TypeUse {
+        TypeUse{ all_span: base_span, params: Vec::new(), quote_span: Span::default(), base, base_span }
     }
-}
-impl TypeUse { // Get
-
-    pub fn is_unit(&self) -> bool { match self.actual { ActualTypeUse::Unit => true, _ => false } }
-    pub fn is_simple(&self) -> bool { match self.actual { ActualTypeUse::Simple(_) => true, _ => false } }
-    pub fn is_array(&self) -> bool { match self.actual { ActualTypeUse::Array(_) => true, _ => false } }
-    pub fn is_tuple(&self) -> bool { match self.actual { ActualTypeUse::Tuple(_) => true, _ => false } }
-
-    pub fn get_simple(&self) -> Option<&String> { match self.actual { ActualTypeUse::Simple(ref name) => Some(name), _ => None } }
-    pub fn get_array_inner(&self) -> Option<&TypeUse> { match self.actual { ActualTypeUse::Array(ref inner) => Some(inner.as_ref()), _ => None } }
-    pub fn get_tuple_items(&self) -> Option<&Vec<TypeUse>> { match self.actual { ActualTypeUse::Tuple(ref type_uses) => Some(type_uses), _ => None } }
-
-    pub fn get_all_strpos(&self) -> Span { self.all_strpos }
-}
-
-/// TypeUse Factory
-pub struct TypeUseF;
-impl TypeUseF { // New
-
-    /// decided to be internal new standard name
-    fn new_(actual: ActualTypeUse, strpos: Span) -> TypeUse { TypeUse{ actual, all_strpos: strpos } }
-    pub fn new_unit(strpos: Span) -> TypeUse { TypeUseF::new_(ActualTypeUse::Unit, strpos) }
-    pub fn new_simple(name: String, ident_strpos: Span) -> TypeUse { TypeUseF::new_(ActualTypeUse::Simple(name), ident_strpos) }
-    pub fn new_simple_test(name: &str, ident_strpos: Span) -> TypeUse { TypeUseF::new_(ActualTypeUse::Simple(name.to_owned()), ident_strpos) }
-    pub fn new_array(bracket_strpos: Span, inner: TypeUse) -> TypeUse { TypeUseF::new_(ActualTypeUse::Array(Box::new(inner)), bracket_strpos) }
-    pub fn new_tuple(paren_strpos: Span, items: Vec<TypeUse>) -> TypeUse { TypeUseF::new_(ActualTypeUse::Tuple(items), paren_strpos) }
+    pub fn new_template(base: SymbolID, base_span: Span, quote_span: Span, params: Vec<TypeUse>) -> TypeUse {
+        TypeUse{ all_span: base_span.merge(&quote_span), base, base_span, quote_span, params }
+    }
 }
 impl ISyntaxItemGrammar for TypeUse {
     fn is_first_final(sess: &ParseSession) -> bool {
@@ -117,23 +93,24 @@ impl ISyntaxItemParse for TypeUse {
         match (sess.tk, sess.pos) {
             (&Token::Ident(ref ident), ref ident_strpos) => {
                 sess.move_next();
-                return Ok(TypeUseF::new_simple(ident.clone(), *ident_strpos));
+                return Ok(TypeUse::new_simple(*ident, *ident_strpos));
             }
             (&Token::Keyword(keyword), ref keyword_strpos) if keyword.is_prim_type() => {
                 sess.move_next();
-                return Ok(TypeUseF::new_simple(format!("{}", keyword), *keyword_strpos));
+                return Ok(TypeUse::new_simple(sess.symbols.intern(format!("{}", keyword)), *keyword_strpos));
             }
             (&Token::Sep(SeperatorKind::LeftBracket), ref left_bracket_strpos) => {
                 sess.move_next();
                 let inner = TypeUse::parse(sess)?;
                 let right_bracket_strpos = sess.expect_sep(SeperatorKind::RightBracket)?;
-                return Ok(TypeUseF::new_array(left_bracket_strpos.merge(&right_bracket_strpos), inner));
+                let quote_span = left_bracket_strpos.merge(&right_bracket_strpos);
+                return Ok(TypeUse::new_template(sess.symbols.intern_str("array"), Span::default(), quote_span, vec![inner]));
             }
             (&Token::Sep(SeperatorKind::LeftParenthenes), ref left_paren_strpos) => {
                 sess.move_next();
                 if let (&Token::Sep(SeperatorKind::RightParenthenes), ref right_paren_strpos) = (sess.tk, sess.pos) { 
                     sess.move_next();
-                    return Ok(TypeUseF::new_unit(left_paren_strpos.merge(&right_paren_strpos)));
+                    return Ok(TypeUse::new_simple(sess.symbols.intern_str("unit"), left_paren_strpos.merge(&right_paren_strpos)));
                 }
 
                 let mut tuple_types = Vec::new();
@@ -164,12 +141,10 @@ impl ISyntaxItemParse for TypeUse {
                 }
                 
                 let paren_pair_strpos = left_paren_strpos.merge(&ending_strpos);
-                if tuple_types.len() == 1 && !end_by_comma {
+                if tuple_types.len() == 1 && !end_by_comma { // len() == 0 already rejected
                     sess.push_message(Message::new_by_str("Single item tuple type use", vec![(paren_pair_strpos, "type use here")]));
-                    return Ok(TypeUseF::new_tuple(paren_pair_strpos, tuple_types));
-                } else { // len() == 0 already rejected
-                    return Ok(TypeUseF::new_tuple(paren_pair_strpos, tuple_types));
                 }
+                return Ok(TypeUse::new_template(sess.symbols.intern_str("tuple"), Span::default(), paren_pair_strpos, tuple_types))
             }
             _ => return sess.push_unexpect("primitive type keyword, left bracket, left parenthenes, identifier"),
         }
@@ -178,29 +153,31 @@ impl ISyntaxItemParse for TypeUse {
 
 #[cfg(test)] #[test]
 fn type_use_parse() {
+    use codemap::SymbolCollection;
     use super::super::ISyntaxItemWithStr;
 
-    assert_eq!{ TypeUse::with_test_str("u8"), TypeUseF::new_simple("u8".to_owned(), make_span!(0, 1)) }
-    assert_eq!{ TypeUse::with_test_str("i32"), TypeUseF::new_simple("i32".to_owned(), make_span!(0, 2)) }
-    assert_eq!{ TypeUse::with_test_str("char"), TypeUseF::new_simple("char".to_owned(), make_span!(0, 3)) }
-    assert_eq!{ TypeUse::with_test_str("string"), TypeUseF::new_simple("string".to_owned(), make_span!(0, 5)) }
-    assert_eq!{ TypeUse::with_test_str("helloworld_t"), TypeUseF::new_simple("helloworld_t".to_owned(), make_span!(0, 11)) }
+    assert_eq!{ TypeUse::with_test_input("u8", &mut make_symbols!["u8"]), TypeUse::new_simple(make_id!(1), make_span!(0, 1)) }
+    assert_eq!{ TypeUse::with_test_input("i32", &mut make_symbols!["i32"]), TypeUse::new_simple(make_id!(1), make_span!(0, 2)) }
+    assert_eq!{ TypeUse::with_test_input("char", &mut make_symbols!["char"]), TypeUse::new_simple(make_id!(1), make_span!(0, 3)) }
+    assert_eq!{ TypeUse::with_test_input("string", &mut make_symbols!["string"]), TypeUse::new_simple(make_id!(1), make_span!(0, 5)) }
+    assert_eq!{ TypeUse::with_test_input("helloworld_t", &mut make_symbols!["helloworld_t"]), TypeUse::new_simple(make_id!(1), make_span!(0, 11)) }
 
-    assert_eq!{ TypeUse::with_test_str("()"), TypeUseF::new_unit(make_span!(0, 1)) }
+    assert_eq!{ TypeUse::with_test_input("()", &mut make_symbols!["unit"]), TypeUse::new_simple(make_id!(1), make_span!(0, 1)) }
 
-    assert_eq!{ TypeUse::with_test_str("[u8]"),
-        TypeUseF::new_array(make_span!(0, 3), 
-            TypeUseF::new_simple("u8".to_owned(), make_span!(1, 2))
-        )
+    assert_eq!{ TypeUse::with_test_input("[u8]", &mut make_symbols!["array", "u8"]),
+        TypeUse::new_template(make_id!(1), Span::default(), make_span!(0, 3), vec![
+                TypeUse::new_simple(make_id!(2), make_span!(1, 2))
+        ])
     }
-    assert_eq!{ TypeUse::with_test_str("[[he_t]]"),
-        TypeUseF::new_array(make_span!(0, 7),
-            TypeUseF::new_array(make_span!(1, 6), 
-                TypeUseF::new_simple("he_t".to_owned(), make_span!(2, 5))
-            )
-        )
+    assert_eq!{ TypeUse::with_test_input("[[he_t]]", &mut make_symbols!["array", "he_t"]),
+        TypeUse::new_template(make_id!(1), Span::default(), make_span!(0, 7), vec![
+            TypeUse::new_template(make_id!(1), Span::default(),make_span!(1, 6), vec![
+                TypeUse::new_simple(make_id!(2), make_span!(2, 5))
+            ])
+        ])
     }
 
+    // TODO TODO: finish them
     // // Tuple
     // (i32,)
     // //           1234567890123

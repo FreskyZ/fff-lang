@@ -207,7 +207,7 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                         value.push(ch);
                         return num_lit_to_v2!(value, strpos);
                     } else if ch.is_label_start() {
-                        return (V2Token::Label(sess.symbols.intern_str("@?")), strpos); // simple '@' is allowed, use @? to represent empty
+                        return (V2Token::Label(sess.symbols.intern_str("")), strpos); // simple '@' is allowed, use @? to represent empty
                     } else {
                         match SeperatorKind::try_from1(ch) {
                             Some((seperator, _)) => return (V2Token::Seperator(seperator), strpos),
@@ -229,7 +229,7 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                         state = State::InNumLit(value, strpos);
                     } else if ch.is_label_start() {
                         if !next_ch.is_label() {                // 17/5/8: TODO: same question as before, why this is needed
-                            return (V2Token::Label(sess.symbols.intern_str("@?")), strpos);
+                            return (V2Token::Label(sess.symbols.intern_str("")), strpos);
                         }
                         state = State::InLabel(String::new(), strpos);
                     } else {
@@ -696,7 +696,7 @@ fn v2_base() {
 
     //           0         1     
     //           0123456789012345678
-    test_case!{ "abc @abc @ @@ 1 @a", make_symbols!["abc", "@?", "@", "a"], vec![
+    test_case!{ "abc @abc @ @@ 1 @a", make_symbols!["abc", "", "@", "a"], vec![
         ident!(make_id!(1), 0, 2),  // yeah
         label!(make_id!(1), 4, 7),  // yeah
         label!(make_id!(2), 9, 9),
@@ -705,13 +705,13 @@ fn v2_base() {
         label!(make_id!(4), 16, 17),
     ]}
 
-    test_case!{ "@", make_symbols!["@?"], vec![label!(make_id!(1), 0, 0)] }
+    test_case!{ "@", make_symbols![""], vec![label!(make_id!(1), 0, 0)] }
 
     test_case!{ "a:", make_symbols!["a"], vec![
         ident!(make_id!(1), 0, 0),
         sep!(SeperatorKind::Colon, 1, 1),
     ]}
-    test_case!{ "@: {}", make_symbols!["@?"], vec![
+    test_case!{ "@: {}", make_symbols![""], vec![
         label!(make_id!(1), 0, 0),
         sep!(SeperatorKind::Colon, 1, 1),
         sep!(SeperatorKind::LeftBrace, 3, 3),

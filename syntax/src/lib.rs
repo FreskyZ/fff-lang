@@ -3,7 +3,7 @@
 ///! syntax, abstract syntax tree types and generation
 
 #[macro_use] extern crate messages as message;
-/* #[cfg_attr(test, macro_use)] */ extern crate util;
+#[cfg_attr(test, macro_use)] extern crate util;
 #[cfg_attr(test, macro_use)] extern crate codemap;
 extern crate lexical;
 
@@ -17,8 +17,6 @@ mod parse_sess;
 pub use self::items::FnParam;
 pub use self::items::FnDef;
 pub use self::items::TypeUse;
-pub use self::items::TypeUseF;
-pub use self::items::ActualTypeUse;
 pub use self::items::Block;
 pub use self::items::LabelDef;
 pub use self::items::NameSegment;

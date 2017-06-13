@@ -18,13 +18,13 @@ use super::super::Statement;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct Block {
-    items: Vec<Statement>,
-    all_strpos: Span,
+    pub items: Vec<Statement>,
+    pub all_span: Span,
 }
 impl ISyntaxItemFormat for Block {
     fn format(&self, indent: u32) -> String {
         format!("{}Block {}<{:?}>{}",
-            Block::indent_str(indent), if self.items.is_empty() { "(empty) " } else { "" }, self.all_strpos,
+            Block::indent_str(indent), if self.items.is_empty() { "(empty) " } else { "" }, self.all_span,
             self.items.iter().fold(String::new(), |mut buf, expr| { buf.push_str("\n"); buf.push_str(&expr.format(indent + 1)); buf })
         )
     }
@@ -34,10 +34,7 @@ impl fmt::Debug for Block {
 }
 impl Block {
 
-    pub fn new(all_strpos: Span, statements: Vec<Statement>) -> Block { Block{ all_strpos: all_strpos, items: statements } }
-
-    pub fn get_all_strpos(&self) -> Span { self.all_strpos }
-    pub fn get_statements(&self) -> &Vec<Statement> { &self.items }
+    pub fn new(all_span: Span, statements: Vec<Statement>) -> Block { Block{ all_span, items: statements } }
 }
 impl ISyntaxItemGrammar for Block {
     fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Sep(SeperatorKind::LeftBrace) }

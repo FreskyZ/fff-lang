@@ -7,6 +7,7 @@
 use std::fmt;
 
 use codemap::Span;
+use codemap::SymbolID;
 use lexical::Token;
 use lexical::SeperatorKind;
 
@@ -18,27 +19,20 @@ use super::super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct LabelDef {
-    m_name: String,
-    m_strpos: Span,
+    pub name: SymbolID,
+    pub all_span: Span,
 }
 impl ISyntaxItemFormat for LabelDef {
     fn format(&self, indent: u32) -> String {
-        format!("{}Label '@{}' <{:?}>", LabelDef::indent_str(indent), self.m_name, self.m_strpos)
+        format!("{}Label {:?} <{:?}>", LabelDef::indent_str(indent), self.name, self.all_span)
     }
 }
 impl fmt::Debug for LabelDef {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.format(0))
-    }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(0)) }
 }
 impl LabelDef {
     
-    pub fn new(name: String, strpos: Span) -> LabelDef { LabelDef{ m_name: name, m_strpos: strpos } }
-
-    pub fn get_all_strpos(&self) -> Span { self.m_strpos }
-    pub fn get_name(&self) -> &String { &self.m_name }
-
-    pub fn into(self) -> (String, Span) { (self.m_name, self.m_strpos) }
+    pub fn new(name: SymbolID, all_span: Span) -> LabelDef { LabelDef{ name, all_span } }
 }
 impl ISyntaxItemGrammar for LabelDef {
     fn is_first_final(sess: &ParseSession) -> bool { if let &Token::Label(_) = sess.tk { true } else { false } }
@@ -63,5 +57,5 @@ impl ISyntaxItemParse for LabelDef {
 fn label_def_parse() {
     use super::super::ISyntaxItemWithStr;
 
-    assert_eq!(LabelDef::with_test_str("@1:"), LabelDef::new("1".to_owned(), make_span!(0, 2)));
+    assert_eq!(LabelDef::with_test_str("@1:"), LabelDef::new(make_id!(1), make_span!(0, 2)));
 }

@@ -6,6 +6,7 @@
 use std::fmt;
 
 use codemap::Span;
+use codemap::SymbolCollection;
 use message::MessageCollection;
 use lexical::TokenStream;
 use lexical::Token;
@@ -18,13 +19,13 @@ use super::FnDef;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct SyntaxTree {
-    items: Vec<FnDef>,
-    all_strpos: Span,
+    pub items: Vec<FnDef>,
+    pub all_span: Span,
 }
 impl ISyntaxItemFormat for SyntaxTree {
     fn format(&self, indent: u32) -> String {
         format!("{}SyntaxTree {}<{:?}>{}", 
-            SyntaxTree::indent_str(indent), if self.items.is_empty() { "(empty) " } else { "" }, self.all_strpos, 
+            SyntaxTree::indent_str(indent), if self.items.is_empty() { "(empty) " } else { "" }, self.all_span, 
             self.items.iter().fold(String::new(), |mut buf, item| { buf.push_str("\n"); buf.push_str(&item.format(indent + 1)); buf }))
     }
 }
@@ -35,16 +36,14 @@ impl SyntaxTree {
     
     pub fn new_items(items: Vec<FnDef>) -> SyntaxTree {
         SyntaxTree{ 
-            all_strpos: match items.len() {
+            all_span: match items.len() {
                 0 => Span::default(),
-                1 => items[0].get_all_strpos(),
-                n => items[0].get_all_strpos().merge(&items[n - 1].get_all_strpos()),
+                1 => items[0].all_span,
+                n => items[0].all_span.merge(&items[n - 1].all_span),
             },
             items: items,
         }
     }
-    pub fn into_items(self) -> Vec<FnDef> { self.items }
-    pub fn get_all_strpos(&self) -> Span { self.all_strpos }
 }
 impl ISyntaxItemParse for SyntaxTree {
 
@@ -61,8 +60,8 @@ impl ISyntaxItemParse for SyntaxTree {
     }
 }
 impl SyntaxTree {
-    pub fn new(tokens: &mut TokenStream, messages: &mut MessageCollection) -> SyntaxTree {
-        let mut sess = ParseSession::new(tokens, messages);
+    pub fn new(tokens: &mut TokenStream, messages: &mut MessageCollection, symbols: &mut SymbolCollection) -> SyntaxTree {
+        let mut sess = ParseSession::new(tokens, messages, symbols);
         match SyntaxTree::parse(&mut sess) {
             Ok(tree) => tree,
             Err(_) => SyntaxTree::new_items(Vec::new()),

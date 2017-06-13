@@ -20,20 +20,21 @@ use super::super::LabelDef;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct BlockStatement {
-    m_label: Option<LabelDef>,
-    m_body: Block,
+    pub name: Option<LabelDef>,
+    pub body: Block,
+    pub all_span: Span,
 }
 impl ISyntaxItemFormat for BlockStatement {
     fn format(&self, indent: u32) -> String {
-        match self.m_label {
-            Some(ref label_def) => format!("BlockStmt <{:?}>\n{}\n{}", 
-                label_def.get_all_strpos().merge(&self.m_body.get_all_strpos()),
-                label_def.format(indent + 1),
-                self.m_body.format(indent + 1),
+        match self.name {
+            Some(ref name) => format!("BlockStmt <{:?}>\n{}\n{}", 
+                self.all_span,
+                name.format(indent + 1),
+                self.body.format(indent + 1),
             ),
             None => format!("BlockStmt <{:?}>\n{}", 
-                self.m_body.get_all_strpos(),
-                self.m_body.format(indent + 1)
+                self.all_span,
+                self.body.format(indent + 1)
             )
         }
     }
@@ -43,19 +44,16 @@ impl fmt::Debug for BlockStatement {
 }
 impl BlockStatement {
     
-    pub fn new_no_label(body: Block) -> BlockStatement { BlockStatement{ m_body: body, m_label: None } }
-    pub fn new_with_label(label: LabelDef, body: Block) -> BlockStatement { BlockStatement { m_body: body, m_label: Some(label) } }
-    fn new_some_label(label: Option<LabelDef>, body: Block) -> BlockStatement { BlockStatement{ m_body: body, m_label: label } }
+    pub fn new_no_label(body: Block) -> BlockStatement { BlockStatement{ all_span: body.all_span, body, name: None } }
+    pub fn new_with_label(name: LabelDef, body: Block) -> BlockStatement { 
+        BlockStatement { all_span: name.all_span.merge(&body.all_span), body, name: Some(name) } 
+    }
 
-    pub fn has_label(&self) -> bool { self.m_label.is_some() }
-    pub fn get_label(&self) -> Option<&LabelDef> { self.m_label.as_ref() }
-    pub fn get_body(&self) -> &Block { &self.m_body }
-
-    pub fn get_all_strpos(&self) -> Span {
-        match self.m_label {
-            Some(ref label_def) => label_def.get_all_strpos().merge(&self.m_body.get_all_strpos()),
-            None => self.m_body.get_all_strpos(),
-        }
+    fn new(name: Option<LabelDef>, body: Block) -> BlockStatement { 
+        BlockStatement{ 
+            all_span: match name { Some(ref name) => name.all_span.merge(&body.all_span), None => body.all_span },
+            body, name
+        } 
     }
 }
 impl ISyntaxItemGrammar for BlockStatement {
@@ -71,9 +69,9 @@ impl ISyntaxItemParse for BlockStatement {
 
     fn parse(sess: &mut ParseSession) -> ParseResult<BlockStatement> {
     
-        let maybe_label = LabelDef::try_parse(sess)?;
+        let maybe_name = LabelDef::try_parse(sess)?;
         let body = Block::parse(sess)?;
-        return Ok(BlockStatement::new_some_label(maybe_label, body));
+        return Ok(BlockStatement::new(maybe_name, body));
     }
 }
 
@@ -85,7 +83,7 @@ fn block_stmt_parse() {
     assert_eq!{ BlockStatement::with_test_str("{}"), BlockStatement::new_no_label(Block::new(make_span!(0, 1), vec![])) }
     assert_eq!{ BlockStatement::with_test_str_ret_messages("@: {}"), (
         Some(BlockStatement::new_with_label(
-            LabelDef::new("".to_owned(), make_span!(0, 1)),
+            LabelDef::new(make_id!(1), make_span!(0, 1)),
             Block::new(make_span!(3, 4), vec![])
         )),
         make_messages![],

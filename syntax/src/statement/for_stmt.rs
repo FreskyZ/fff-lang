@@ -7,6 +7,7 @@
 use std::fmt;
 
 use codemap::Span;
+use codemap::SymbolID;
 use lexical::Token;
 use lexical::KeywordKind;
 
@@ -21,23 +22,23 @@ use super::super::Block;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct ForStatement {
-    m_label: Option<LabelDef>,
-    m_iter_name: String,
-    m_iter_expr: BinaryExpr,
-    m_body: Block,
-    m_for_strpos: Span,
-    m_ident_strpos: Span,
-    m_all_strpos: Span,
+    pub loop_name: Option<LabelDef>,
+    pub for_span: Span,
+    pub iter_name: SymbolID,
+    pub iter_span: Span,
+    pub iter_expr: BinaryExpr,
+    pub body: Block,
+    pub all_span: Span,
 }
 impl ISyntaxItemFormat for ForStatement {
     fn format(&self, indent: u32) -> String {
-        format!("{}ForStmt <{:?}>{}\n{}'for' <{:?}>\n{}Ident '{}' <{:?}>\n{}\n{}", 
-            ForStatement::indent_str(indent), self.m_all_strpos,
-            match self.m_label { Some(ref label_def) => format!("\n{}", label_def.format(indent + 1)), None => "".to_owned() },
-            ForStatement::indent_str(indent + 1), self.m_for_strpos,
-            ForStatement::indent_str(indent + 1), self.m_iter_name, self.m_ident_strpos,
-            self.m_iter_expr.format(indent + 1),
-            self.m_body.format(indent + 1),
+        format!("{}ForStmt <{:?}>{}\n{}'for' <{:?}>\n{}Ident {:?} <{:?}>\n{}\n{}", 
+            ForStatement::indent_str(indent), self.all_span,
+            match self.loop_name { Some(ref label_def) => format!("\n{}", label_def.format(indent + 1)), None => "".to_owned() },
+            ForStatement::indent_str(indent + 1), self.for_span,
+            ForStatement::indent_str(indent + 1), self.iter_name, self.iter_span,
+            self.iter_expr.format(indent + 1),
+            self.body.format(indent + 1),
         )
     }
 }
@@ -46,65 +47,35 @@ impl fmt::Debug for ForStatement {
 }
 impl ForStatement {
 
-    pub fn new_no_label(
-        all_strpos: Span, 
-        for_strpos: Span, 
-        iter_name: String, iter_strpos: Span,
-        iter_expr: BinaryExpr, 
+    pub fn new_no_label(all_span: Span, for_span: Span, 
+        iter_name: SymbolID, iter_span: Span, iter_expr: BinaryExpr, 
         body: Block) -> ForStatement {
-        ForStatement {
-            m_label: None, 
-            m_iter_name: iter_name,
-            m_iter_expr: iter_expr,
-            m_body: body,
-            m_for_strpos: for_strpos,
-            m_ident_strpos: iter_strpos,
-            m_all_strpos: all_strpos
+        ForStatement { 
+            loop_name: None,
+            for_span,
+            iter_name, iter_span, iter_expr,
+            body, all_span
         }
     }
-    pub fn new_with_label(
-        all_strpos: Span, 
-        label: LabelDef,
-        for_strpos: Span,
-        iter_name: String, iter_strpos: Span,
-        iter_expr: BinaryExpr, 
+    pub fn new_with_label(all_span: Span, loop_name: LabelDef, for_span: Span, 
+        iter_name: SymbolID, iter_span: Span, iter_expr: BinaryExpr, 
         body: Block) -> ForStatement {
-        ForStatement {
-            m_label: Some(label), 
-            m_iter_name: iter_name,
-            m_iter_expr: iter_expr,
-            m_body: body,
-            m_for_strpos: for_strpos,
-            m_ident_strpos: iter_strpos,
-            m_all_strpos: all_strpos
+        ForStatement { 
+            loop_name: Some(loop_name),
+            for_span,
+            iter_name, iter_span, iter_expr,
+            body, all_span
         }
     }
 
-    fn new_some_label(
-        label: Option<LabelDef>,
-        for_strpos: Span,
-        iter_name: String, iter_strpos: Span,
-        iter_expr: BinaryExpr,
+    fn new(loop_name: Option<LabelDef>, for_span: Span,
+        iter_name: SymbolID, iter_span: Span, iter_expr: BinaryExpr,
         body: Block) -> ForStatement {
         ForStatement{
-            m_all_strpos: (match label { Some(ref label) => label.get_all_strpos(), None => for_strpos }).merge(&body.get_all_strpos()),
-            m_label: label,
-            m_for_strpos: for_strpos,
-            m_iter_name: iter_name,
-            m_iter_expr: iter_expr,
-            m_body: body,
-            m_ident_strpos: iter_strpos,
+            all_span: (match loop_name { Some(ref label) => label.all_span, None => for_span }).merge(&body.all_span),
+            loop_name, for_span, iter_name, iter_expr, iter_span, body,
         }
     }
-
-    pub fn get_label(&self) -> Option<&LabelDef> { self.m_label.as_ref() }
-    pub fn get_iter_name(&self) -> &String { &self.m_iter_name }
-    pub fn get_iter_expr(&self) -> &BinaryExpr { &self.m_iter_expr }
-    pub fn get_body(&self) -> &Block { &self.m_body }
-
-    pub fn get_iter_strpos(&self) -> Span { self.m_ident_strpos }
-    pub fn get_for_strpos(&self) -> Span { self.m_for_strpos }
-    pub fn get_all_strpos(&self) ->Span { self.m_all_strpos }
 }
 impl ISyntaxItemGrammar for ForStatement {
 
@@ -128,36 +99,71 @@ impl ISyntaxItemParse for ForStatement {
         let _in_strpos = sess.expect_keyword(KeywordKind::In)?;
         let iter_expr = BinaryExpr::parse(sess)?;
         let body = Block::parse(sess)?;
-        return Ok(ForStatement::new_some_label(maybe_label, for_strpos, iter_name, iter_strpos, iter_expr, body));
+        return Ok(ForStatement::new(maybe_label, for_strpos, iter_name, iter_strpos, iter_expr, body));
     }
 }
 
 #[cfg(test)] #[test]
 fn for_stmt_parse() {
-    use super::super::ISyntaxItemWithStr;
+    use codemap::SymbolCollection;
     use message::MessageCollection;
     use lexical::LitValue;
+    use super::super::PostfixExpr;
+    use super::super::PrimaryExpr;
+    use super::super::ExprStatement;
+    use super::super::Statement;
+    use super::super::ISyntaxItemWithStr;
 
     //                                       123456789012345678
-    assert_eq!{ ForStatement::with_test_str_ret_messages("@2: for i in 42 {}"), (
+    assert_eq!{ ForStatement::with_test_input_ret_messages("@2: for i in 42 {}", &mut make_symbols!["2", "i"]), (
         Some(ForStatement::new_with_label(make_span!(0, 17),
-            LabelDef::new("2".to_owned(), make_span!(0, 2)),
+            LabelDef::new(make_id!(1), make_span!(0, 2)),
             make_span!(4, 6),
-            "i".to_owned(), make_span!(8, 8),
+            make_id!(2), make_span!(8, 8),
             BinaryExpr::new_lit(LitValue::from(42), make_span!(13, 14)),
             Block::new(make_span!(16, 17), vec![])
         )),
         make_messages![],
     )}
 
-    // TODO: finish this
-    // assert_eq!{ ForStatement::with_test_str("@hello:  for _ in range(0, 10).enumerate().reverse() { writeln(\"helloworld\"); }"),
-    //     ForStatement::new_with_label(make_span!(0, 0), 
-    //         LabelDef::new("hello".to_owned(), make_span!(0, 0)),
-    //         make_span!(0, 0),
-    //         "_".to_owned(), make_span!(0, 0),
-    //         BinaryExpr::new_lit(LitValue::from(42), make_span!(0, 0)),
-    //         Block::new(make_span!(0, 0), vec![])
-    //     )
-    // }
+    assert_eq!{ //                     0         1         2         3         4         5         6         7         
+                //                     01234567890123456789012345678901234567890123456789012345678901 23456789012 34567
+        ForStatement::with_test_input("@hello: for _ in range(0, 10).enumerate().reverse() { writeln(\"helloworld\"); }", 
+            //                  1        2    3        4            5          6          7
+            &mut make_symbols!["hello", "_", "range", "enumerate", "reverse", "writeln", "helloworld"]),
+        ForStatement::new_with_label(make_span!(0, 77),
+            LabelDef::new(make_id!(1), make_span!(0, 6)),
+            make_span!(8, 10),
+            make_id!(2), make_span!(12, 12),
+            BinaryExpr::new_postfix(
+                PostfixExpr::new_member_function_call(
+                    PostfixExpr::new_member_function_call(
+                        PostfixExpr::new_function_call(
+                            PostfixExpr::new_primary(PrimaryExpr::new_ident(make_id!(3), make_span!(17, 21))),
+                            make_span!(22, 28), vec![
+                                BinaryExpr::new_lit(LitValue::from(0), make_span!(23, 23)),
+                                BinaryExpr::new_lit(LitValue::from(10), make_span!(26, 27))
+                        ]),
+                        make_span!(29, 29), 
+                        make_id!(4), make_span!(30, 38),
+                        make_span!(39, 40),
+                        vec![]
+                    ),
+                    make_span!(41, 41),
+                    make_id!(5), make_span!(42, 48),
+                    make_span!(49, 50),
+                    vec![]
+                )
+            ),
+            Block::new(make_span!(52, 77), vec![
+                Statement::Expr(ExprStatement::new_simple(make_span!(54, 75), 
+                    BinaryExpr::new_postfix(PostfixExpr::new_function_call(
+                        PostfixExpr::new_primary(PrimaryExpr::new_ident(make_id!(6), make_span!(54, 60))),
+                        make_span!(61, 74), vec![
+                            BinaryExpr::new_lit(LitValue::new_str_lit(make_id!(7)), make_span!(62, 73))
+                    ]))
+                ))
+            ])
+        )
+    }
 }

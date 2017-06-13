@@ -112,7 +112,7 @@ impl UnaryExpr { // Get
     }
     pub fn get_all_strpos(&self) -> Span {
         match self.0.as_ref() {
-            &UnaryExprImpl::Postfix(ref postfix_expr) => postfix_expr.get_all_strpos(),
+            &UnaryExprImpl::Postfix(ref postfix_expr) => postfix_expr.get_all_span(),
             &UnaryExprImpl::Unary(ActualUnaryExpr{ ref all_strpos, operator: ref _1, operator_strpos: ref _2, right: ref _3 }) => *all_strpos,
         }
     }

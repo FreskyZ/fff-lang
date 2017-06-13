@@ -147,7 +147,7 @@ impl LitValue {
     pub fn get_num(&self) -> &NumLitValue { match self { &LitValue::Num(Some(ref val)) => val, _ => &ERROR_NUM_LIT } }
 }
 
-impl From<SymbolID> for LitValue { fn from(val: SymbolID) -> LitValue { LitValue::Str(Some(val)) } }
+impl LitValue { pub fn new_str_lit(sid: SymbolID) -> LitValue { LitValue::Str(Some(sid)) } }
 impl From<char> for LitValue { fn from(val: char) -> LitValue { LitValue::Char(Some(val)) } }
 impl From<bool> for LitValue { fn from(val: bool) -> LitValue { LitValue::Bool(val) } }
 

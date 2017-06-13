@@ -140,22 +140,23 @@ impl ISyntaxItemParse for ExprStatement {
 
 #[cfg(test)] #[test]
 fn expr_stmt_parse() {
-    use super::super::ISyntaxItemWithStr;
+    use codemap::SymbolCollection;
+    use lexical::LitValue;
     use super::super::BinaryExpr;
     use super::super::PostfixExpr;
     use super::super::PrimaryExpr;
-    use lexical::LitValue;
+    use super::super::ISyntaxItemWithStr;
 
     //                                                 0         1          2
     //                                                 12345678 90123456789 012
-    assert_eq!{ ExprStatement::with_test_str_ret_size("writeln(\"helloworld\");"), (
+    assert_eq!{ ExprStatement::with_test_input_ret_size("writeln(\"helloworld\");", &mut make_symbols!["writeln", "helloworld"]), (
         Some(ExprStatement::new_simple(
             make_span!(0, 21),
             BinaryExpr::new_postfix(
                 PostfixExpr::new_function_call(
-                    PostfixExpr::new_primary(PrimaryExpr::new_ident("writeln".to_owned(), make_span!(0, 6))),
+                    PostfixExpr::new_primary(PrimaryExpr::new_ident(make_id!(1), make_span!(0, 6))),
                     make_span!(7, 20), vec![
-                    BinaryExpr::new_lit(LitValue::from("helloworld"), make_span!(8, 19))
+                    BinaryExpr::new_lit(LitValue::new_str_lit(make_id!(2)), make_span!(8, 19))
                 ])
             )
         )),

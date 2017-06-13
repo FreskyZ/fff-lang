@@ -6,6 +6,8 @@
 use std::cell::Cell;
 
 use codemap::Span;
+use codemap::SymbolID;
+use codemap::SymbolCollection;
 use message::Message;
 use message::MessageCollection;
 use lexical::Token;
@@ -15,9 +17,10 @@ use lexical::KeywordKind;
 
 pub type ParseResult<T> = Result<T, ()>;
 
-pub struct ParseSession<'tokens, 'msgs> {
+pub struct ParseSession<'tokens, 'msgs, 'syms> {
     tokens: &'tokens TokenStream,
     messages: &'msgs mut MessageCollection,
+    pub symbols: &'syms mut SymbolCollection,
     current_index: Cell<usize>,
     pub tk: &'tokens Token,
     pub next_tk: &'tokens Token,
@@ -26,12 +29,13 @@ pub struct ParseSession<'tokens, 'msgs> {
     pub next_pos: Span,
     pub nextnext_pos: Span,
 }
-impl<'a, 'b> ParseSession<'a, 'b> {
+impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
 
-    pub fn new(tokens: &'a TokenStream, messages: &'b mut MessageCollection) -> ParseSession<'a, 'b> {
+    pub fn new(tokens: &'a TokenStream, messages: &'b mut MessageCollection, symbols: &'c mut SymbolCollection) -> ParseSession<'a, 'b, 'c> {
         ParseSession{ 
             tokens, 
             messages, 
+            symbols,
             current_index: Cell::new(0),
             tk: tokens.nth_token(0),
             next_tk: tokens.nth_token(1),
@@ -93,13 +97,13 @@ impl<'a, 'b> ParseSession<'a, 'b> {
     /// Check current index is identifier, if so, move next and Ok((owned_ident_name, ident_strpos)),
     /// if not, push unexpect and Err(())
     /// use like `let (ident_name, ident_strpos) = sess.expect_ident()?;`
-    pub fn expect_ident(&mut self) -> Result<(String, Span), ()> {
+    pub fn expect_ident(&mut self) -> Result<(SymbolID, Span), ()> {
 
         let current_index = self.current_index.get();
         self.move_next();
         match (self.tokens.nth_token(current_index), self.tokens.nth_span(current_index)) {
-            (&Token::Ident(ref ident), ref ident_strpos) => Ok((ident.clone(), *ident_strpos)),
-            _ => self.push_unexpect::<(String, Span)>("identifier"),
+            (&Token::Ident(ref ident), ref ident_strpos) => Ok((*ident, *ident_strpos)),
+            _ => self.push_unexpect::<(SymbolID, Span)>("identifier"),
         }
     }
     // TODO: more info unexpect desc string
@@ -108,7 +112,7 @@ impl<'a, 'b> ParseSession<'a, 'b> {
     /// if so, move next and Ok((owned_ident_name, ident_strpos)),
     /// if not, push unexpect and Err(())
     /// use like `let (ident_name, ident_strpos) = sess.expect_ident_or(vec![KeywordKind::This, KeywordKind::Underscore])?;`
-    pub fn expect_ident_or(&mut self, accept_keywords: Vec<KeywordKind>) -> Result<(String, Span), ()> {
+    pub fn expect_ident_or(&mut self, accept_keywords: Vec<KeywordKind>) -> Result<(SymbolID, Span), ()> {
 
         let current_index = self.current_index.get();
         self.move_next();
@@ -116,12 +120,12 @@ impl<'a, 'b> ParseSession<'a, 'b> {
             (&Token::Ident(ref ident), ref ident_strpos) => Ok((ident.clone(), *ident_strpos)),
             (&Token::Keyword(ref actual_kw), ref kw_strpos) => {
                 if accept_keywords.iter().any(|accept_kw| actual_kw == accept_kw) {
-                    Ok((format!("{}", actual_kw), *kw_strpos))
+                    Ok((self.symbols.intern(format!("{}", actual_kw)), *kw_strpos))
                 } else {
-                    self.push_unexpect::<(String, Span)>("identifier")
+                    self.push_unexpect::<(SymbolID, Span)>("identifier")
                 }
             }
-            _ => self.push_unexpect::<(String, Span)>("identifier"),
+            _ => self.push_unexpect::<(SymbolID, Span)>("identifier"),
         }
     }
     // TODO: more info unexpect desc string
@@ -130,7 +134,7 @@ impl<'a, 'b> ParseSession<'a, 'b> {
     /// if so, move next and Ok((owned_ident_name, ident_strpos)),
     /// if not, push unexpect and Err(())
     /// use like `let (ident_name, ident_strpos) = sess.expect_ident_or_if(|kw| kw.is_prim_type())?;`
-    pub fn expect_ident_or_if<F>(&mut self, keyword_predict: F) -> Result<(String, Span), ()> where F: Fn(&KeywordKind) -> bool {
+    pub fn expect_ident_or_if<F>(&mut self, keyword_predict: F) -> Result<(SymbolID, Span), ()> where F: Fn(&KeywordKind) -> bool {
         
         let current_index = self.current_index.get();
         self.move_next();
@@ -138,9 +142,9 @@ impl<'a, 'b> ParseSession<'a, 'b> {
             (&Token::Ident(ref ident), ref ident_strpos) => 
                 Ok((ident.clone(), *ident_strpos)),
             (&Token::Keyword(ref actual_kw), ref kw_strpos) if keyword_predict(actual_kw) => 
-                Ok((format!("{}", actual_kw), *kw_strpos)),
+                Ok((self.symbols.intern(format!("{}", actual_kw)), *kw_strpos)),
             _ => 
-                self.push_unexpect::<(String, Span)>("identifier"),
+                self.push_unexpect::<(SymbolID, Span)>("identifier"),
         }
     }
 
@@ -161,7 +165,8 @@ fn parse_sess_usage() {
 
     let tokens = TokenStream::with_test_str("1 2 3 4 5 6 7 8 9 0");
     let mut messages = MessageCollection::new();
-    let mut sess = ParseSession::new(&tokens, &mut messages);
+    let mut symbols = SymbolCollection::new();
+    let mut sess = ParseSession::new(&tokens, &mut messages, &mut symbols);
 
     match (sess.tk, sess.next_tk) {
         (&Token::Lit(ref _lit1), &Token::Lit(ref _lit2)) => {

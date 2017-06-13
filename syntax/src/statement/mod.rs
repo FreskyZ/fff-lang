@@ -15,15 +15,16 @@ use super::ISyntaxItemParse;
 use super::ISyntaxItemFormat;
 use super::ISyntaxItemGrammar;
 
-mod var_decl;
+mod block_stmt;
 mod expr_stmt;
-mod if_stmt;
 mod for_stmt;
+mod if_stmt;
 mod jump_stmt;
-mod while_stmt;
 mod loop_stmt;
 mod ret_stmt;
-mod block_stmt;
+mod while_stmt;
+mod var_decl;
+
 pub use self::var_decl::VarDeclStatement;
 pub use self::jump_stmt::BreakStatement;
 pub use self::jump_stmt::ContinueStatement;

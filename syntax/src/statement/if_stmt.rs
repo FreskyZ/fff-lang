@@ -134,7 +134,7 @@ impl ISyntaxItemParse for IfStatement {
         let if_body = Block::parse(sess)?;
 
         let mut elseifs = Vec::new();
-        let mut ending_strpos = if_body.get_all_strpos();
+        let mut ending_strpos = if_body.all_span;
         let mut else_strpos = Span::default();
         let mut else_body = None;
         loop {
@@ -145,7 +145,7 @@ impl ISyntaxItemParse for IfStatement {
                     let elseif_strpos = else_strpos.merge(&if_strpos);
                     let elseif_expr = BinaryExpr::parse(sess)?;
                     let elseif_body = Block::parse(sess)?;
-                    ending_strpos = elseif_body.get_all_strpos();
+                    ending_strpos = elseif_body.all_span;
                     elseifs.push(IfConditionBody::new(elseif_strpos, elseif_expr, elseif_body));
                 }
                 (&Token::Keyword(KeywordKind::Else), ref this_else_strpos, _, _) => {
@@ -155,7 +155,7 @@ impl ISyntaxItemParse for IfStatement {
                     // // 16/12/1, we lost TWO `+1`s for current_length here ... fixed
                     else_strpos = *this_else_strpos;
                     let this_else_body = Block::parse(sess)?;
-                    ending_strpos = this_else_body.get_all_strpos();
+                    ending_strpos = this_else_body.all_span;
                     else_body = Some(this_else_body);
                 }
                 _ => break,

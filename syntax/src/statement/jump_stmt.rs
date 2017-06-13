@@ -7,6 +7,7 @@
 use std::fmt;
 
 use codemap::Span;
+use codemap::SymbolID;
 use lexical::Token;
 use lexical::SeperatorKind;
 use lexical::KeywordKind;
@@ -18,28 +19,28 @@ use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
-struct JumpStatement {
-    m_target: Option<String>,
-    m_target_strpos: Span,
-    m_all_strpos: Span,
+pub struct JumpStatement {
+    pub target: Option<SymbolID>,
+    pub target_span: Span,
+    pub all_span: Span,
 }
 impl JumpStatement {
 
-    fn new_no_target(all_strpos: Span) -> JumpStatement {
-        JumpStatement{ m_target: None, m_target_strpos: Span::default(), m_all_strpos: all_strpos }
+    fn new_no_target(all_span: Span) -> JumpStatement {
+        JumpStatement{ all_span, target: None, target_span: Span::default() }
     }
-    fn new_target(all_strpos: Span, target: String, target_strpos: Span) -> JumpStatement {
-        JumpStatement{ m_target: Some(target), m_target_strpos: target_strpos, m_all_strpos: all_strpos }
+    fn new_target(all_span: Span, target: SymbolID, target_span: Span) -> JumpStatement {
+        JumpStatement{ all_span, target_span, target: Some(target) }
     }
 
     fn format(&self, indent: u32, stmt_name: &str) -> String {
-        match self.m_target {
-            Some(ref target_name) => format!("{}{} <{:?}>\n{}To '@{}' <{:?}>", 
-                ContinueStatement::indent_str(indent), stmt_name, self.m_all_strpos,
-                ContinueStatement::indent_str(indent + 1), target_name, self.m_target_strpos
+        match self.target {
+            Some(ref target_name) => format!("{}{} <{:?}>\n{}To @{:?} <{:?}>", 
+                ContinueStatement::indent_str(indent), stmt_name, self.all_span,
+                ContinueStatement::indent_str(indent + 1), target_name, self.target_span
             ),
             None => format!("{}{} <{:?}>",
-                ContinueStatement::indent_str(indent), stmt_name, self.m_all_strpos
+                ContinueStatement::indent_str(indent), stmt_name, self.all_span
             )
         }
     }
@@ -52,7 +53,7 @@ impl JumpStatement {
         match (sess.tk, sess.pos, sess.next_tk, sess.next_pos) {
             (&Token::Label(ref target), target_strpos, 
                 &Token::Sep(SeperatorKind::SemiColon), ref semi_colon_strpos) => 
-                Ok(JumpStatement::new_target(starting_strpos.merge(semi_colon_strpos), target.clone(), target_strpos)),
+                Ok(JumpStatement::new_target(starting_strpos.merge(semi_colon_strpos), *target, target_strpos)),
             (&Token::Sep(SeperatorKind::SemiColon), ref semi_colon_strpos, _, _) => 
                 Ok(JumpStatement::new_no_target(starting_strpos.merge(semi_colon_strpos))),
             (&Token::Label(_), _, _, _) =>
@@ -64,9 +65,9 @@ impl JumpStatement {
 }
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
-pub struct ContinueStatement(JumpStatement);
+pub struct ContinueStatement(pub JumpStatement);
 #[cfg_attr(test, derive(Eq, PartialEq))]
-pub struct BreakStatement(JumpStatement);
+pub struct BreakStatement(pub JumpStatement);
 
 impl ISyntaxItemFormat for ContinueStatement {
     fn format(&self, indent: u32) -> String { self.0.format(indent, "ContinueStmt") }
@@ -83,27 +84,17 @@ impl fmt::Debug for BreakStatement {
 
 impl ContinueStatement {
 
-    pub fn new_no_target(all_strpos: Span) -> ContinueStatement { ContinueStatement(JumpStatement::new_no_target(all_strpos)) }
-    pub fn new_with_target(all_strpos: Span, target: String, target_strpos: Span) -> ContinueStatement {
-        ContinueStatement(JumpStatement::new_target(all_strpos, target, target_strpos))
+    pub fn new_no_target(all_span: Span) -> ContinueStatement { ContinueStatement(JumpStatement::new_no_target(all_span)) }
+    pub fn new_with_target(all_span: Span, target: SymbolID, target_span: Span) -> ContinueStatement {
+        ContinueStatement(JumpStatement::new_target(all_span, target, target_span))
     }
-
-    pub fn has_target(&self) -> bool { match self.0.m_target { Some(_) => true, None => false } }
-    pub fn get_all_strpos(&self) -> Span { self.0.m_all_strpos }
-    pub fn get_target(&self) -> Option<&String> { match self.0.m_target { Some(ref target) => Some(target), None => None } }
-    pub fn get_target_strpos(&self) -> Option<Span> { match self.0.m_target { Some(_) => Some(self.0.m_target_strpos), None => None } }
 }
 impl BreakStatement {
 
-    pub fn new_no_target(all_strpos: Span) -> BreakStatement { BreakStatement(JumpStatement::new_no_target(all_strpos)) }
-    pub fn new_with_target(all_strpos: Span, target: String, target_strpos: Span) -> BreakStatement {
-        BreakStatement(JumpStatement::new_target(all_strpos, target, target_strpos))
+    pub fn new_no_target(all_span: Span) -> BreakStatement { BreakStatement(JumpStatement::new_no_target(all_span)) }
+    pub fn new_with_target(all_span: Span, target: SymbolID, target_span: Span) -> BreakStatement {
+        BreakStatement(JumpStatement::new_target(all_span, target, target_span))
     }
-
-    pub fn has_target(&self) -> bool { match self.0.m_target { Some(_) => true, None => false } }
-    pub fn get_all_strpos(&self) -> Span { self.0.m_all_strpos }
-    pub fn get_target(&self) -> Option<&String> { match self.0.m_target { Some(ref target) => Some(target), None => None } }
-    pub fn get_target_strpos(&self) -> Option<Span> { match self.0.m_target { Some(_) => Some(self.0.m_target_strpos), None => None } }
 }
 
 impl ISyntaxItemGrammar for ContinueStatement {
@@ -130,11 +121,11 @@ fn jump_stmt_parse() {
     
     assert_eq!{ ContinueStatement::with_test_str("continue;"), ContinueStatement::new_no_target(make_span!(0, 8)) }
     assert_eq!{ ContinueStatement::with_test_str("continue @1;"), 
-        ContinueStatement::new_with_target(make_span!(0, 11), "1".to_owned(), make_span!(9, 10))
+        ContinueStatement::new_with_target(make_span!(0, 11), make_id!(1), make_span!(9, 10))
     }
     
     assert_eq!{ BreakStatement::with_test_str("break;"), BreakStatement::new_no_target(make_span!(0, 5)) }
     assert_eq!{ BreakStatement::with_test_str("break @1;"), 
-        BreakStatement::new_with_target(make_span!(0, 8), "1".to_owned(), make_span!(6, 7))
+        BreakStatement::new_with_target(make_span!(0, 8), make_id!(1), make_span!(6, 7))
     }
 }

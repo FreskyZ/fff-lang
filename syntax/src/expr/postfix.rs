@@ -1,4 +1,6 @@
-
+///! fff-lang
+///!
+///! syntax/postfix_expr
 // PostfixExpr = 
 //     PrimaryExpr [
 //             fLeftBracket [Expression [fComma Expression]*] fRightBracket
@@ -11,6 +13,7 @@
 use std::fmt;
 
 use codemap::Span;
+use codemap::SymbolID;
 use message::Message;
 use lexical::Token;
 use lexical::SeperatorKind;
@@ -26,10 +29,10 @@ use super::primary::PrimaryExpr;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 enum ActualPostfix {
-    MemberAccess(String, [Span; 2]),          // dot's position, xxx's position
+    MemberAccess(SymbolID, [Span; 2]),          // dot's position, xxx's position
     Subscription(Vec<BinaryExpr>, Span),      // []'s position
     FunctionCall(Vec<BinaryExpr>, Span),      // ()'s position
-    MemberFunctionCall(String, Vec<BinaryExpr>, [Span; 3]), // dot's position, xxx's position ()'s position
+    MemberFunctionCall(SymbolID, Vec<BinaryExpr>, [Span; 3]), // dot's position, xxx's position ()'s position
 }
 #[cfg_attr(test, derive(Eq, PartialEq))]
 enum PostfixExprImpl {
@@ -57,7 +60,7 @@ impl ISyntaxItemFormat for PostfixExpr {
                     exprs.iter().fold(String::new(), |mut buf, expr| { buf.push_str("\n"); buf.push_str(&expr.format(indent + 2)); buf })),
             &PostfixExprImpl::Postfix(ref postfix_expr, 
                 ActualPostfix::MemberFunctionCall(ref name, ref exprs, ref strposs), ref all_strpos) =>
-                format!("{}PostfixExpr <{:?}>\n{}\n{}MemberFunctionCall {}<{:?}>\n{}'.' <{:?}>\n{}Ident '{}' <{:?}>\n{}paren <{:?}>{}", 
+                format!("{}PostfixExpr <{:?}>\n{}\n{}MemberFunctionCall {}<{:?}>\n{}'.' <{:?}>\n{}Ident {:?} <{:?}>\n{}paren <{:?}>{}", 
                     PostfixExpr::indent_str(indent), all_strpos,
                     postfix_expr.format(indent + 1),
                     PostfixExpr::indent_str(indent + 1), if exprs.is_empty() { "(empty) " } else { "" }, strposs[0].merge(&strposs[2]),
@@ -67,7 +70,7 @@ impl ISyntaxItemFormat for PostfixExpr {
                     exprs.iter().fold(String::new(), |mut buf, expr| { buf.push_str("\n"); buf.push_str(&expr.format(indent + 2)); buf })), 
             &PostfixExprImpl::Postfix(ref postfix_expr, 
                 ActualPostfix::MemberAccess(ref name, ref strposs), ref all_strpos) => 
-                format!("{}PostfixExpr <{:?}>\n{}\n{}MemberAccess <{:?}>\n{}'.' <{:?}>\n{}Ident '{}' <{:?}>",
+                format!("{}PostfixExpr <{:?}>\n{}\n{}MemberAccess <{:?}>\n{}'.' <{:?}>\n{}Ident {:?} <{:?}>",
                     PostfixExpr::indent_str(indent), all_strpos,
                     postfix_expr.format(indent + 1), 
                     PostfixExpr::indent_str(indent + 1), strposs[0].merge(&strposs[1]),
@@ -88,21 +91,21 @@ impl PostfixExpr { // New
     }
 
     pub fn new_subscription(postfix_expr: PostfixExpr, bracket_strpos: Span, exprs: Vec<BinaryExpr>) -> PostfixExpr {
-        let all_strpos = postfix_expr.get_all_strpos().merge(&bracket_strpos);
+        let all_strpos = postfix_expr.get_all_span().merge(&bracket_strpos);
         PostfixExpr(Box::new(PostfixExprImpl::Postfix(postfix_expr, ActualPostfix::Subscription(exprs, bracket_strpos), all_strpos)))
     }
     pub fn new_function_call(postfix_expr: PostfixExpr, paren_strpos: Span, exprs: Vec<BinaryExpr>) -> PostfixExpr {
-        let all_strpos = postfix_expr.get_all_strpos().merge(&paren_strpos);
+        let all_strpos = postfix_expr.get_all_span().merge(&paren_strpos);
         PostfixExpr(Box::new(PostfixExprImpl::Postfix(postfix_expr, ActualPostfix::FunctionCall(exprs, paren_strpos), all_strpos)))
     }
     pub fn new_member_function_call(postfix_expr: PostfixExpr, 
-        dot_strpos: Span, name: String, ident_strpos: Span, paren_strpos: Span, exprs: Vec<BinaryExpr>) -> PostfixExpr {
-        let all_strpos = postfix_expr.get_all_strpos().merge(&paren_strpos);
+        dot_strpos: Span, name: SymbolID, ident_strpos: Span, paren_strpos: Span, exprs: Vec<BinaryExpr>) -> PostfixExpr {
+        let all_strpos = postfix_expr.get_all_span().merge(&paren_strpos);
         PostfixExpr(Box::new(PostfixExprImpl::Postfix(postfix_expr, 
             ActualPostfix::MemberFunctionCall(name, exprs, [dot_strpos, ident_strpos, paren_strpos]), all_strpos)))
     }
-    pub fn new_member_access(postfix_expr: PostfixExpr, dot_strpos: Span, name: String, name_strpos: Span) -> PostfixExpr {
-        let all_strpos = postfix_expr.get_all_strpos().merge(&name_strpos);
+    pub fn new_member_access(postfix_expr: PostfixExpr, dot_strpos: Span, name: SymbolID, name_strpos: Span) -> PostfixExpr {
+        let all_strpos = postfix_expr.get_all_span().merge(&name_strpos);
         PostfixExpr(Box::new(PostfixExprImpl::Postfix(postfix_expr, 
             ActualPostfix::MemberAccess(name, [dot_strpos, name_strpos]), all_strpos)))
     }
@@ -115,7 +118,7 @@ impl PostfixExpr { // New
                 PostfixExprImpl::Postfix(ref mut prev_prev_postfix_expr, ActualPostfix::MemberAccess(ref name, ref dot_and_name_strpos), _) => {
                     let mut owned_prev_prev_postfix_expr = mem::uninitialized();
                     mem::swap(prev_prev_postfix_expr, &mut owned_prev_prev_postfix_expr);
-                    return PostfixExpr::new_member_function_call(owned_prev_prev_postfix_expr, dot_and_name_strpos[0], name.clone(), dot_and_name_strpos[1], paren_strpos, exprs);
+                    return PostfixExpr::new_member_function_call(owned_prev_prev_postfix_expr, dot_and_name_strpos[0], *name, dot_and_name_strpos[1], paren_strpos, exprs);
                 }
                 ref mut other_impl => return PostfixExpr::new_function_call(PostfixExpr(Box::from_raw(other_impl as *mut PostfixExprImpl)), paren_strpos, exprs),
             }
@@ -124,91 +127,11 @@ impl PostfixExpr { // New
 }
 impl PostfixExpr { // Get
 
-    pub fn is_primary(&self) -> bool {
+    // TODO: remove it
+    pub fn get_all_span(&self) -> Span {
         match self.0.as_ref() {
-            &PostfixExprImpl::Primary(_) => true,
-            &PostfixExprImpl::Postfix(_, _, _) => false,
-        }
-    }
-    pub fn is_postfix(&self) -> bool {
-        match self.0.as_ref() {
-            &PostfixExprImpl::Primary(_) => false,
-            &PostfixExprImpl::Postfix(_, _, _) => true,
-        }
-    }
-
-    pub fn get_primary(&self) -> Option<&PrimaryExpr> {
-        match self.0.as_ref() {
-            &PostfixExprImpl::Primary(ref primary_expr) => Some(primary_expr),
-            &PostfixExprImpl::Postfix(_, _, _) => None,
-        }
-    }
-    pub fn get_postfix(&self) -> Option<&PostfixExpr> {
-        match self.0.as_ref() {
-            &PostfixExprImpl::Primary(_) => None,
-            &PostfixExprImpl::Postfix(ref postfix_expr, ref _2, ref _3) => Some(postfix_expr),
-        }
-    }
-    pub fn get_all_strpos(&self) -> Span {
-        match self.0.as_ref() {
-            &PostfixExprImpl::Primary(ref primary_expr) => primary_expr.get_all_strpos(),
+            &PostfixExprImpl::Primary(ref primary_expr) => primary_expr.get_all_span(),
             &PostfixExprImpl::Postfix(ref _1, ref _2, ref all_strpos) => *all_strpos,
-        }
-    }
-
-    pub fn is_subscription(&self) -> bool {
-        match self.0.as_ref() {
-            &PostfixExprImpl::Postfix(ref _1, ActualPostfix::Subscription(_, _), ref _2) => true,
-            _ => false,
-        }
-    }
-    pub fn is_function_call(&self) -> bool {
-        match self.0.as_ref() {
-            &PostfixExprImpl::Postfix(ref _1, ActualPostfix::FunctionCall(_, _), ref _2) => true,
-            _ => false,
-        }
-    }
-    pub fn is_member_function_call(&self) -> bool {
-        match self.0.as_ref() {
-            &PostfixExprImpl::Postfix(ref _1, ActualPostfix::MemberFunctionCall(_, _, _), ref _2) => true,
-            _ => false,
-        }
-    }
-    pub fn is_member_access(&self) -> bool {
-        match self.0.as_ref() {
-            &PostfixExprImpl::Postfix(ref _1, ActualPostfix::MemberAccess(_, _), ref _2) => true,
-            _ => false,
-        }
-    }
-
-    pub fn get_exprs(&self) -> Option<&Vec<BinaryExpr>> {
-        match self.0.as_ref() {
-            &PostfixExprImpl::Postfix(_, ActualPostfix::Subscription(ref exprs, _), _)
-            | &PostfixExprImpl::Postfix(_, ActualPostfix::FunctionCall(ref exprs, _), _) => Some(exprs),
-            &PostfixExprImpl::Postfix(_, ActualPostfix::MemberFunctionCall(_, ref exprs, _), _) => Some(exprs),
-            _ => None,
-        }
-    }
-    pub fn get_delimeter_strpos(&self) -> Span { // [] or ()'s position
-        match self.0.as_ref() {
-            &PostfixExprImpl::Postfix(_, ActualPostfix::Subscription(_, ref delimeter_strpos), _)
-            | &PostfixExprImpl::Postfix(_, ActualPostfix::FunctionCall(_, ref delimeter_strpos), _) => *delimeter_strpos,
-            &PostfixExprImpl::Postfix(_, ActualPostfix::MemberFunctionCall(_, _, ref strposs), _) => strposs[2],
-            _ => Span::default(),
-        }
-    }
-    pub fn get_name(&self) -> Option<&String> {
-        match self.0.as_ref() {
-            &PostfixExprImpl::Postfix(_, ActualPostfix::MemberAccess(ref name, _), _) => Some(name),
-            &PostfixExprImpl::Postfix(_, ActualPostfix::MemberFunctionCall(ref name, _, _), _) => Some(name),
-            _ => None,            
-        }
-    }
-    pub fn get_name_strpos(&self) -> Span {
-        match self.0.as_ref() {
-            &PostfixExprImpl::Postfix(_, ActualPostfix::MemberAccess(_, ref strposs), _) => strposs[1],
-            &PostfixExprImpl::Postfix(_, ActualPostfix::MemberFunctionCall(_, _, ref strposs), _) => strposs[1],
-            _ => Span::default(),
         }
     }
 }
@@ -232,7 +155,7 @@ impl ISyntaxItemParse for PostfixExpr {
             let (starting_strpos, expect_end_sep) = match (sess.tk, sess.pos, sess.next_tk, sess.next_pos) {
                 (&Token::Sep(SeperatorKind::Dot), ref dot_strpos, &Token::Ident(ref ident), ref ident_strpos) => {
                     sess.move_next2();
-                    current_retval = PostfixExpr::new_member_access(current_retval, *dot_strpos, ident.clone(), *ident_strpos);
+                    current_retval = PostfixExpr::new_member_access(current_retval, *dot_strpos, *ident, *ident_strpos);
                     trace!("after member access finished");
                     continue 'postfix;
                 }
@@ -336,6 +259,7 @@ impl ISyntaxItemParse for PostfixExpr {
     }
 }
 
+#[cfg(remove_this_after_expr_refactor)]
 #[cfg(test)] #[test]
 fn postfix_expr_format() {
     use super::super::ISyntaxItemWithStr;
@@ -359,7 +283,7 @@ fn postfix_expr_format() {
     // Attention that this source code line's LF is also the string literal (test oracle)'s LF
     //                                     0         1         2         3         4         5        
     //                                     0123456789012345678901234567890123456789012345678901234567
-    test_case!(PostfixExpr::with_test_str("a.b(c, d, e).f(g, h, i,)(u,).j[k].l().m[n, o, p][r, s, t,]").format(0), r#"PostfixExpr <<0>0-57>
+    test_case!(PostfixExpr::with_test_str("a.b(c, d, e).f(g, h, i,)(u,).j[k].l().m[n, o, p][r, s, t,]").format(0), r##"PostfixExpr <<0>0-57>
   PostfixExpr <<0>0-47>
     PostfixExpr <<0>0-38>
       PostfixExpr <<0>0-36>
@@ -368,43 +292,43 @@ fn postfix_expr_format() {
             PostfixExpr <<0>0-27>
               PostfixExpr <<0>0-23>
                 PostfixExpr <<0>0-11>
-                  Ident 'a' <<0>0-0>
+                  Ident #1 <<0>0-0>
                   MemberFunctionCall <<0>1-11>
                     '.' <<0>1-1>
-                    Ident 'b' <<0>2-2>
+                    Ident #2 <<0>2-2>
                     paren <<0>3-11>
-                    Ident 'c' <<0>4-4>
-                    Ident 'd' <<0>7-7>
-                    Ident 'e' <<0>10-10>
+                    Ident #3 <<0>4-4>
+                    Ident #4 <<0>7-7>
+                    Ident #5 <<0>10-10>
                 MemberFunctionCall <<0>12-23>
                   '.' <<0>12-12>
-                  Ident 'f' <<0>13-13>
+                  Ident '#6 <<0>13-13>
                   paren <<0>14-23>
-                  Ident 'g' <<0>15-15>
-                  Ident 'h' <<0>18-18>
-                  Ident 'i' <<0>21-21>
+                  Ident #7 <<0>15-15>
+                  Ident #8 <<0>18-18>
+                  Ident #9 <<0>21-21>
               FunctionCall <<0>24-27>
-                Ident 'u' <<0>25-25>
+                Ident #10 <<0>25-25>
             MemberAccess <<0>28-29>
               '.' <<0>28-28>
-              Ident 'j' <<0>29-29>
+              Ident #11 <<0>29-29>
           Subscription <<0>30-32>
-            Ident 'k' <<0>31-31>
+            Ident #12 <<0>31-31>
         MemberFunctionCall (empty) <<0>33-36>
           '.' <<0>33-33>
-          Ident 'l' <<0>34-34>
+          Ident #13 <<0>34-34>
           paren <<0>35-36>
       MemberAccess <<0>37-38>
         '.' <<0>37-37>
-        Ident 'm' <<0>38-38>
+        Ident #14 <<0>38-38>
     Subscription <<0>39-47>
-      Ident 'n' <<0>40-40>
-      Ident 'o' <<0>43-43>
-      Ident 'p' <<0>46-46>
+      Ident #15 <<0>40-40>
+      Ident #16 <<0>43-43>
+      Ident #17 <<0>46-46>
   Subscription <<0>48-57>
-    Ident 'r' <<0>49-49>
-    Ident 's' <<0>52-52>
-    Ident 't' <<0>55-55>"#
+    Ident #18 <<0>49-49>
+    Ident #19 <<0>52-52>
+    Ident #20 <<0>55-55>"##
     );
 }
 
@@ -414,8 +338,8 @@ fn postfix_expr_parse() {
     use message::MessageCollection;
 
     macro_rules! ident {
-        ($name: expr, $strpos: expr) => (BinaryExpr::new_primary(PrimaryExpr::new_ident($name.to_owned(), $strpos)));
-        (post, $name: expr, $strpos: expr) => (PostfixExpr::new_primary(PrimaryExpr::new_ident($name.to_owned(), $strpos)))
+        ($name: expr, $strpos: expr) => (BinaryExpr::new_primary(PrimaryExpr::new_ident($name, $strpos)));
+        (post, $name: expr, $strpos: expr) => (PostfixExpr::new_primary(PrimaryExpr::new_ident($name, $strpos)))
     }
 
     //                                      0        1         2         3         4         5     
@@ -430,59 +354,59 @@ fn postfix_expr_parse() {
                                 PostfixExpr::new_function_call(
                                     PostfixExpr::new_member_function_call(
                                         PostfixExpr::new_member_function_call(
-                                            ident!(post, "a", make_span!(0, 0)),
+                                            ident!(post, make_id!(1), make_span!(0, 0)),
                                             make_span!(1, 1),
-                                            "b".to_owned(), make_span!(2, 2),
+                                            make_id!(2), make_span!(2, 2),
                                             make_span!(3, 11), vec![
-                                                ident!("c", make_span!(4, 4)),
-                                                ident!("d", make_span!(7, 7)),
-                                                ident!("e", make_span!(10, 10)),
+                                                ident!(make_id!(3), make_span!(4, 4)),
+                                                ident!(make_id!(4), make_span!(7, 7)),
+                                                ident!(make_id!(5), make_span!(10, 10)),
                                             ]
                                         ),
                                         make_span!(12, 12),
-                                        "f".to_owned(), make_span!(13, 13),
+                                        make_id!(6), make_span!(13, 13),
                                         make_span!(14, 23), vec![
-                                            ident!("g", make_span!(15, 15)),
-                                            ident!("h", make_span!(18, 18)),
-                                            ident!("i", make_span!(21, 21)),
+                                            ident!(make_id!(7), make_span!(15, 15)),
+                                            ident!(make_id!(8), make_span!(18, 18)),
+                                            ident!(make_id!(9), make_span!(21, 21)),
                                         ]
                                     ),
                                     make_span!(24, 27), vec![
-                                        ident!("u", make_span!(25, 25))
+                                        ident!(make_id!(10), make_span!(25, 25))
                                     ]
                                 ),
                                 make_span!(28, 28),
-                                "j".to_owned(), make_span!(29, 29)
+                                make_id!(11), make_span!(29, 29)
                             ),
                             make_span!(30, 32), vec![
-                                ident!("k", make_span!(31, 31))
+                                ident!(make_id!(12), make_span!(31, 31))
                             ]
                         ),
                         make_span!(33, 33),
-                        "l".to_owned(), make_span!(34, 34),
+                        make_id!(13), make_span!(34, 34),
                         make_span!(35, 36),
                         vec![]
                     ),
                     make_span!(37, 37),
-                    "m".to_owned(), make_span!(38, 38)
+                    make_id!(14), make_span!(38, 38)
                 ),
                 make_span!(39, 47), vec![
-                    ident!("n", make_span!(40, 40)),
-                    ident!("o", make_span!(43, 43)),
-                    ident!("p", make_span!(46, 46))
+                    ident!(make_id!(15), make_span!(40, 40)),
+                    ident!(make_id!(16), make_span!(43, 43)),
+                    ident!(make_id!(17), make_span!(46, 46))
                 ]
             ),
             make_span!(48, 57), vec![
-                ident!("r", make_span!(49, 49)),
-                ident!("s", make_span!(52, 52)),
-                ident!("t", make_span!(55, 55))
+                ident!(make_id!(18), make_span!(49, 49)),
+                ident!(make_id!(19), make_span!(52, 52)),
+                ident!(make_id!(20), make_span!(55, 55))
             ]
         )
     }
     
     assert_eq!{ PostfixExpr::with_test_str_ret_size_messages("a[]"), (
         Some(PostfixExpr::new_subscription(
-            ident!(post, "a", make_span!(0, 0)), 
+            ident!(post, make_id!(1), make_span!(0, 0)), 
             make_span!(1, 2), vec![]
         )), 
         3,
@@ -493,7 +417,7 @@ fn postfix_expr_parse() {
     
     assert_eq!{ PostfixExpr::with_test_str_ret_size_messages("a[, ]"), (
         Some(PostfixExpr::new_subscription(
-            ident!(post, "a", make_span!(0, 0)), 
+            ident!(post, make_id!(1), make_span!(0, 0)), 
             make_span!(1, 4), vec![]
         )), 
         4,
@@ -504,7 +428,7 @@ fn postfix_expr_parse() {
     
     assert_eq!{ PostfixExpr::with_test_str_ret_size_messages("a(, )"), (
         Some(PostfixExpr::new_function_call(
-            ident!(post, "a", make_span!(0, 0)),
+            ident!(post, make_id!(1), make_span!(0, 0)),
             make_span!(1, 4), vec![]
         )), 
         4,

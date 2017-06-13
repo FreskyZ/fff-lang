@@ -21,24 +21,24 @@ use super::super::LabelDef;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct WhileStatement {
-    label_def: Option<LabelDef>,
-    loop_expr: BinaryExpr,
-    body: Block,
-    while_strpos: Span,
-    all_strpos: Span,
+    pub name: Option<LabelDef>,
+    pub loop_expr: BinaryExpr,
+    pub body: Block,
+    pub while_span: Span,
+    pub all_span: Span,
 }
 impl ISyntaxItemFormat for WhileStatement {
     fn format(&self, indent: u32) -> String {
-        match self.label_def {
-            Some(ref label_def) => format!("{}WhileStmt <{:?}>\n{}\n{}'while' <{:?}>\n{}\n{}", 
-                WhileStatement::indent_str(indent), self.all_strpos,
-                label_def.format(indent + 1),
-                WhileStatement::indent_str(indent + 1), self.while_strpos,
+        match self.name {
+            Some(ref name) => format!("{}WhileStmt <{:?}>\n{}\n{}'while' <{:?}>\n{}\n{}", 
+                WhileStatement::indent_str(indent), self.all_span,
+                name.format(indent + 1),
+                WhileStatement::indent_str(indent + 1), self.while_span,
                 self.loop_expr.format(indent + 1),
                 self.body.format(indent + 1)),
             None => format!("{}WhileStmt <{:?}>\n{}'while' <{:?}>\n{}\n{}", 
-                WhileStatement::indent_str(indent), self.all_strpos,
-                WhileStatement::indent_str(indent + 1), self.while_strpos,
+                WhileStatement::indent_str(indent), self.all_span,
+                WhileStatement::indent_str(indent + 1), self.while_span,
                 self.loop_expr.format(indent + 1),
                 self.body.format(indent + 1)),
         }
@@ -49,29 +49,25 @@ impl fmt::Debug for WhileStatement {
 }
 impl WhileStatement {
     
-    pub fn new_no_label(all_strpos: Span, while_strpos: Span, loop_expr: BinaryExpr, body: Block) -> WhileStatement {
-        WhileStatement{ label_def: None, loop_expr, body, while_strpos, all_strpos }
+    pub fn new_no_label(while_span: Span, loop_expr: BinaryExpr, body: Block) -> WhileStatement {
+        WhileStatement{ 
+            all_span: while_span.merge(&body.all_span),
+            name: None, loop_expr, body, while_span
+        }
     }
-    pub fn new_with_label(all_strpos: Span, label_def: LabelDef, while_strpos: Span, loop_expr: BinaryExpr, body: Block) -> WhileStatement {
-        WhileStatement{ label_def: Some(label_def), loop_expr, body, while_strpos, all_strpos }
-    }
-
-    fn new_some_label(maybe_label_def: Option<LabelDef>, while_strpos: Span, loop_expr: BinaryExpr, body: Block) -> WhileStatement {
-        WhileStatement{
-            all_strpos: 
-                (match maybe_label_def { Some(ref label_def) => label_def.get_all_strpos(), None => while_strpos })
-                .merge(&body.get_all_strpos()),
-            label_def: maybe_label_def,
-            loop_expr, body, while_strpos,
+    pub fn new_with_label(name: LabelDef, while_span: Span, loop_expr: BinaryExpr, body: Block) -> WhileStatement {
+        WhileStatement{ 
+            all_span: name.all_span.merge(&body.all_span),
+            name: Some(name), loop_expr, body, while_span,
         }
     }
 
-    pub fn get_label(&self) -> Option<&LabelDef> { self.label_def.as_ref() }
-    pub fn get_loop_expr(&self) -> &BinaryExpr { &self.loop_expr }
-    pub fn get_body(&self) -> &Block { &self.body }
-    pub fn get_while_strpos(&self) -> Span { self.while_strpos }
-
-    pub fn get_all_strpos(&self) -> Span { self.all_strpos }
+    fn new(maybe_name: Option<LabelDef>, while_span: Span, loop_expr: BinaryExpr, body: Block) -> WhileStatement {
+        WhileStatement{
+            all_span: match maybe_name { Some(ref name) => name.all_span.merge(&body.all_span), None => while_span.merge(&body.all_span) },
+            name: maybe_name, loop_expr, body, while_span,
+        }
+    }
 }
 impl ISyntaxItemGrammar for WhileStatement {
     fn is_first_final(sess: &ParseSession) -> bool {
@@ -85,38 +81,38 @@ impl ISyntaxItemParse for WhileStatement {
 
     fn parse(sess: &mut ParseSession) -> ParseResult<WhileStatement> {
         
-        let maybe_label = LabelDef::try_parse(sess)?;
-        let while_strpos = sess.expect_keyword(KeywordKind::While)?;
+        let maybe_name = LabelDef::try_parse(sess)?;
+        let while_span = sess.expect_keyword(KeywordKind::While)?;
         let expr = BinaryExpr::parse(sess)?;
         let body = Block::parse(sess)?;
-        return Ok(WhileStatement::new_some_label(maybe_label, while_strpos, expr, body));
+        return Ok(WhileStatement::new(maybe_name, while_span, expr, body));
     }
 }
 
 #[cfg(test)] #[test]
 fn while_stmt_parse() {
+    use codemap::SymbolCollection;
+    use lexical::LitValue;
     use super::super::ISyntaxItemWithStr;
     use super::super::Statement;
     use super::super::ExprStatement;
     use super::super::PostfixExpr;
     use super::super::PrimaryExpr;
-    use lexical::LitValue;
 
-    //                                         0        1         2         3         4        
-    //                                         1234567890123456789012345 67890123456789012 34567
-    assert_eq!{ WhileStatement::with_test_str("@2: while true { writeln(\"fresky hellooooo\"); }"),
+    //                                           0        1         2         3         4        
+    //                                           01234567890123456789012345 67890123456789012 3456
+    assert_eq!{ WhileStatement::with_test_input("@2: while true { writeln(\"fresky hellooooo\"); }", &mut make_symbols!["2", "writeln", "fresky hellooooo"]),
         WhileStatement::new_with_label(
-            make_span!(0, 46),
-            LabelDef::new("2".to_owned(), make_span!(0, 2)),
+            LabelDef::new(make_id!(1), make_span!(0, 2)),
             make_span!(4, 8),
             BinaryExpr::new_lit(LitValue::from(true), make_span!(10, 13)),
             Block::new(make_span!(15, 46), vec![
                 Statement::Expr(ExprStatement::new_simple(make_span!(17, 44), 
                     BinaryExpr::new_postfix(
                         PostfixExpr::new_function_call(
-                            PostfixExpr::new_primary(PrimaryExpr::new_ident("writeln".to_owned(), make_span!(17, 23))),
+                            PostfixExpr::new_primary(PrimaryExpr::new_ident(make_id!(2), make_span!(17, 23))),
                             make_span!(24, 43), vec![
-                                BinaryExpr::new_lit(LitValue::from("fresky hellooooo"), make_span!(25, 42))
+                                BinaryExpr::new_lit(LitValue::new_str_lit(make_id!(3)), make_span!(25, 42))
                             ]
                         )
                     )
