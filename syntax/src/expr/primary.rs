@@ -15,56 +15,50 @@
 use std::fmt;
 
 use codemap::Span;
-use codemap::SymbolID;
 
 use lexical::Token;
 use lexical::SeperatorKind;
 use lexical::KeywordKind;
 use lexical::LitValue;
-use lexical::NumLitValue;
+
+use super::LitExpr;
+use super::IdentExpr;
+use super::BinaryExpr;
 
 use super::super::ParseSession;
 use super::super::ParseResult;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
-use super::binary::BinaryExpr;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
-enum ActualPrimaryExpr {
-    Ident(SymbolID),
-    Lit(LitValue),
-    ParenExpr(BinaryExpr),
-    TupleDef(Vec<BinaryExpr>),
-    ArrayDef(Vec<BinaryExpr>),
-    ArrayDupDef(BinaryExpr, BinaryExpr),   // Now position of `;` is not recorded because I think I don't use it
+pub enum PrimaryExpr {
+    Lit(LitExpr),
+    Ident(IdentExpr),
+    ParenExpr(BinaryExpr, Span),
+    TupleDef(Vec<BinaryExpr>, Span),
+    ArrayDef(Vec<BinaryExpr>, Span),
+    ArrayDupDef(BinaryExpr, BinaryExpr, Span),
 }
-#[cfg_attr(test, derive(Eq, PartialEq))]
-pub struct PrimaryExpr(ActualPrimaryExpr, Span);
-
 impl ISyntaxItemFormat for PrimaryExpr {
     fn format(&self, indent: u32) -> String {
-        match (&self.0, self.1) {
-            (&ActualPrimaryExpr::Ident(ref ident_name), strpos) =>
-                format!("{}Ident {:?} <{:?}>", 
-                    PrimaryExpr::indent_str(indent), ident_name, strpos),
-            (&ActualPrimaryExpr::Lit(ref lit_value), strpos) => 
-                format!("{}Literal {:?} <{:?}>", 
-                    PrimaryExpr::indent_str(indent), lit_value, strpos),
-            (&ActualPrimaryExpr::ParenExpr(ref inner_expr), strpos) =>
+        match self {
+            &PrimaryExpr::Lit(ref litexpr) => litexpr.format(indent),
+            &PrimaryExpr::Ident(ref identexpr) => identexpr.format(indent),
+            &PrimaryExpr::ParenExpr(ref inner_expr, strpos) =>
                 format!("{}ParenExpr <{:?}>\n{}", 
                     PrimaryExpr::indent_str(indent), strpos, 
                     inner_expr.format(indent + 1)),
-            (&ActualPrimaryExpr::ArrayDupDef(ref expr1, ref expr2), strpos) =>
+            &PrimaryExpr::ArrayDupDef(ref expr1, ref expr2, strpos) =>
                 format!("{}DefineArrayDuply <{:?}>\n{}\n{}",
                     PrimaryExpr::indent_str(indent), strpos, 
                     expr1.format(indent + 1),
                     expr2.format(indent + 2)),
-            (&ActualPrimaryExpr::TupleDef(ref exprs), strpos) =>
+            &PrimaryExpr::TupleDef(ref exprs, strpos) =>
                 format!("{}DefineTuple <{:?}>{}", 
                     PrimaryExpr::indent_str(indent), strpos,
                     exprs.iter().fold(String::new(), |mut buf, expr| { buf.push_str("\n"); buf.push_str(&expr.format(indent + 1)); buf })),
-            (&ActualPrimaryExpr::ArrayDef(ref exprs), strpos) =>
+            &PrimaryExpr::ArrayDef(ref exprs, strpos) =>
                 format!("{}DefineArray {}<{:?}>{}", 
                     PrimaryExpr::indent_str(indent), if exprs.is_empty() { "(empty) " } else { "" }, strpos, 
                     exprs.iter().fold(String::new(), |mut buf, expr| { buf.push_str("\n"); buf.push_str(&expr.format(indent + 1)); buf })),
@@ -72,96 +66,38 @@ impl ISyntaxItemFormat for PrimaryExpr {
     }
 }
 impl fmt::Debug for PrimaryExpr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "\n{}", self.format(0))
-    }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
 }
 impl PrimaryExpr { // New
 
-    pub fn new_ident(ident_name: SymbolID, ident_span: Span) -> PrimaryExpr {
-        PrimaryExpr(ActualPrimaryExpr::Ident(ident_name), ident_span)
-    }
-    pub fn new_lit(lit_value: LitValue, lit_span: Span) -> PrimaryExpr {
-        PrimaryExpr(ActualPrimaryExpr::Lit(lit_value), lit_span)
-    }
-    pub fn new_lit_num(num_val: NumLitValue, num_val_span: Span) -> PrimaryExpr {
-        PrimaryExpr(ActualPrimaryExpr::Lit(LitValue::Num(Some(num_val))), num_val_span)
-    }
-    pub fn new_lit_str(value: SymbolID, str_span: Span) -> PrimaryExpr {
-        PrimaryExpr(ActualPrimaryExpr::Lit(LitValue::Str(Some(value))), str_span)
-    }
-    pub fn new_lit_char(ch: char, ch_span: Span) -> PrimaryExpr {
-        PrimaryExpr(ActualPrimaryExpr::Lit(LitValue::Char(Some(ch))), ch_span)
-    }
-    pub fn new_lit_bool(value: bool, bool_span: Span) -> PrimaryExpr {
-        PrimaryExpr(ActualPrimaryExpr::Lit(LitValue::Bool(value)), bool_span)
-    }
-    pub fn new_unit(unit_span: Span) -> PrimaryExpr {
-        PrimaryExpr(ActualPrimaryExpr::Lit(LitValue::Unit), unit_span)
-    }
     pub fn new_paren(paren_span: Span, inner: BinaryExpr) -> PrimaryExpr {
-        PrimaryExpr(ActualPrimaryExpr::ParenExpr(inner), paren_span)
+        PrimaryExpr::ParenExpr(inner, paren_span)
     }
     pub fn new_array_dup(bracket_span: Span, expr1: BinaryExpr, expr2: BinaryExpr) -> PrimaryExpr {
-        PrimaryExpr(ActualPrimaryExpr::ArrayDupDef(expr1, expr2), bracket_span)
+        PrimaryExpr::ArrayDupDef(expr1, expr2, bracket_span)
     }
     pub fn new_tuple(paren_span: Span, exprs: Vec<BinaryExpr>) -> PrimaryExpr {
-        PrimaryExpr(ActualPrimaryExpr::TupleDef(exprs), paren_span)
+        PrimaryExpr::TupleDef(exprs, paren_span)
     }
     pub fn new_array(bracket_span: Span, exprs: Vec<BinaryExpr>) -> PrimaryExpr {
-        PrimaryExpr(ActualPrimaryExpr::ArrayDef(exprs), bracket_span)
+        PrimaryExpr::ArrayDef(exprs, bracket_span)
     }
     
-    pub fn get_all_span(&self) -> Span { self.1 }
-}
-impl PrimaryExpr { // Get
-
-    // pub fn is_ident(&self) -> bool {
-    //     match self.0 { ActualPrimaryExpr::Ident(_) => true, _ => false }
-    // }    
-    // pub fn is_lit(&self) -> bool {
-    //     match self.0 { ActualPrimaryExpr::Lit(_) => true, _ => false }
-    // }    
-    // pub fn is_paren(&self) -> bool {
-    //     match self.0 { ActualPrimaryExpr::ParenExpr(_) => true, _ => false }
-    // }    
-    // pub fn is_tuple(&self) -> bool {
-    //     match self.0 { ActualPrimaryExpr::TupleDef(_) => true, _ => false }
-    // }
-    // pub fn is_array(&self) -> bool {
-    //     match self.0 { ActualPrimaryExpr::ArrayDef(_) => true, _ => false }
-    // }
-    // pub fn is_array_dup(&self) -> bool {
-    //     match self.0 { ActualPrimaryExpr::ArrayDupDef(_, _) => true, _ => false }
-    // }
-
-    // pub fn get_ident_name(&self) -> Option<&String> {
-    //     match self.0 { ActualPrimaryExpr::Ident(ref ident_name) => Some(ident_name), _ => None }
-    // }
-    // pub fn get_lit_value(&self) -> Option<&LitValue> {
-    //     match self.0 { ActualPrimaryExpr::Lit(ref lit_value) => Some(lit_value), _ => None }
-    // }
-    // pub fn get_paren_inner(&self) -> Option<&BinaryExpr> {
-    //     match self.0 { ActualPrimaryExpr::ParenExpr(ref inner) => Some(inner), _ => None }
-    // }
-    // pub fn get_tuple_inners(&self) -> Option<&Vec<BinaryExpr>> {
-    //     match self.0 { ActualPrimaryExpr::TupleDef(ref exprs) => Some(exprs), _ => None }
-    // }
-    // pub fn get_array_inners(&self) -> Option<&Vec<BinaryExpr>> {
-    //     match self.0 { ActualPrimaryExpr::ArrayDef(ref exprs) => Some(exprs), _ => None }
-    // }
-
-    // pub fn get_array_dup_element(&self) -> Option<&BinaryExpr> {
-    //     match self.0 { ActualPrimaryExpr::ArrayDupDef(ref expr1, _) => Some(expr1), _ => None }
-    // }
-    // pub fn get_array_dup_count(&self) -> Option<&BinaryExpr> {
-    //     match self.0 { ActualPrimaryExpr::ArrayDupDef(_, ref expr2) => Some(expr2), _ => None }
-    // }
+    pub fn get_all_span(&self) -> Span { 
+        match self {
+            &PrimaryExpr::Lit(ref litexpr) => litexpr.span,
+            &PrimaryExpr::Ident(ref identexpr) => identexpr.span,
+            &PrimaryExpr::ParenExpr(_, ref span) => *span,
+            &PrimaryExpr::ArrayDupDef(ref _1, ref _2, ref span) => *span,
+            &PrimaryExpr::TupleDef(_, ref span) => *span, 
+            &PrimaryExpr::ArrayDef(_, ref span) => *span,
+        }
+    }
 }
 impl ISyntaxItemGrammar for PrimaryExpr {
     fn is_first_final(sess: &ParseSession) -> bool {
         match sess.tk {
-            &Token::Ident(_) 
+            &Token::Ident(_)
             | &Token::Lit(_)
             | &Token::Sep(SeperatorKind::LeftParenthenes)
             | &Token::Sep(SeperatorKind::LeftBracket) => true,
@@ -170,6 +106,7 @@ impl ISyntaxItemGrammar for PrimaryExpr {
     }
 }
 impl ISyntaxItemParse for PrimaryExpr {
+    type Target = PrimaryExpr;
     
     fn parse(sess: &mut ParseSession) -> ParseResult<PrimaryExpr> {
         #[cfg(feature = "trace_primary_expr_parse")]
@@ -179,27 +116,23 @@ impl ISyntaxItemParse for PrimaryExpr {
 
         trace!("start parsing, current token: {:?}", sess.tk);
 
+        if LitExpr::is_first_final(sess) {
+            return LitExpr::parse(sess);
+        } else if IdentExpr::is_first_final(sess) {
+            return IdentExpr::parse(sess);
+        }
+
         match (sess.tk, sess.pos, sess.next_tk, sess.next_pos) {
-            (&Token::Lit(ref lit_val), ref lit_val_span, _, _) => {
-                sess.move_next();
-                trace!("returning literal {:?} at {:?}", lit_val, lit_val_span);
-                return Ok(PrimaryExpr::new_lit(lit_val.clone(), *lit_val_span));
-            }
-            (&Token::Ident(ref ident_name), ref ident_span, _, _) => {
-                sess.move_next();
-                trace!("returning identifier {:?} at {:?} ", ident_name, ident_span);
-                return Ok(PrimaryExpr::new_ident(*ident_name, *ident_span));
-            }
             (&Token::Keyword(KeywordKind::This), ref ident_span, _, _) => {
                 sess.move_next();
                 trace!("returning identifier this at {:?}", ident_span);
-                return Ok(PrimaryExpr::new_ident(sess.symbols.intern_str("this"), *ident_span));
+                return Ok(PrimaryExpr::Ident(IdentExpr::new(sess.symbols.intern_str("this"), *ident_span)));
             }
             (&Token::Sep(SeperatorKind::LeftParenthenes), ref left_paren_span, 
                 &Token::Sep(SeperatorKind::RightParenthenes), ref right_paren_span) => {
                 sess.move_next2();
                 trace!("returning unit at {:?}", left_paren_span);
-                return Ok(PrimaryExpr::new_unit(left_paren_span.merge(right_paren_span)));
+                return Ok(PrimaryExpr::Lit(LitExpr::new(LitValue::Unit, left_paren_span.merge(right_paren_span))));
             }
             (&Token::Sep(SeperatorKind::LeftParenthenes), ref left_paren_span, _, _) => {
                 sess.move_next();

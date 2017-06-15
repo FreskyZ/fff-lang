@@ -83,6 +83,7 @@ impl ISyntaxItemGrammar for TypeUse {
     }
 }
 impl ISyntaxItemParse for TypeUse {
+    type Target = TypeUse;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<TypeUse> {
         #[cfg(feature = "trace_type_use_parse")]

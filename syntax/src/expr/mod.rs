@@ -2,11 +2,15 @@
 ///!
 ///! syntax/expr
 
+mod lit_expr;
+mod ident_expr;
 mod primary;
 mod postfix;
 mod unary;
 mod binary;
 
+pub use self::lit_expr::LitExpr;
+pub use self::ident_expr::IdentExpr;
 pub use self::binary::BinaryExpr;
 pub use self::unary::UnaryExpr;
 pub use self::postfix::PostfixExpr;
@@ -19,7 +23,7 @@ pub use self::primary::PrimaryExpr;
 //     use super::ISyntaxItemFormat;
 
 //     // Quickly get lit and ident
-//     let actual_lit = BinaryExpr::new_lit(LitValue::from(42), make_span!(2, 3));
+//     let actual_lit = BinaryExpr::new_lit(LitExpr::new(LitValue::from(42), make_span!(2, 3)));
 
 //     println!("{:?}", 
 //         Some(&actual_lit)
@@ -38,24 +42,24 @@ fn expr_parse() {
     use super::ISyntaxItemWithStr;
 
     assert_eq!{ BinaryExpr::with_test_str("\"abc\""),
-        BinaryExpr::new_lit(LitValue::new_str_lit(make_id!(1)), make_span!(0, 4))
+        BinaryExpr::new_lit(LitExpr::new(LitValue::new_str_lit(make_id!(1)), make_span!(0, 4)))
     }
     assert_eq!{ BinaryExpr::with_test_str("0xfffu64"), 
-        BinaryExpr::new_lit(LitValue::from(0xFFFu64), make_span!(0, 7))
+        BinaryExpr::new_lit(LitExpr::new(LitValue::from(0xFFFu64), make_span!(0, 7)))
     }
     assert_eq!{ BinaryExpr::with_test_str("'f'"), 
-        BinaryExpr::new_lit(LitValue::from('f'), make_span!(0, 2))
+        BinaryExpr::new_lit(LitExpr::new(LitValue::from('f'), make_span!(0, 2)))
     }
     assert_eq!{ BinaryExpr::with_test_str("true"),
-        BinaryExpr::new_lit(LitValue::from(true), make_span!(0, 3))
+        BinaryExpr::new_lit(LitExpr::new(LitValue::from(true), make_span!(0, 3)))
     }
 
     assert_eq!{ BinaryExpr::with_test_str("binary_expr"),
-        BinaryExpr::new_ident(make_id!(1), make_span!(0, 10))
+        BinaryExpr::new_ident(IdentExpr::new(make_id!(1), make_span!(0, 10)))
     }
 
     assert_eq!{ BinaryExpr::with_test_str("(  )"),
-        BinaryExpr::new_unit(make_span!(0, 3))
+        BinaryExpr::new_lit(LitExpr::new(LitValue::Unit, make_span!(0, 3)))
     }
 }
 

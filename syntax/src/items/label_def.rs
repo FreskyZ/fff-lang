@@ -38,6 +38,7 @@ impl ISyntaxItemGrammar for LabelDef {
     fn is_first_final(sess: &ParseSession) -> bool { if let &Token::Label(_) = sess.tk { true } else { false } }
 }
 impl ISyntaxItemParse for LabelDef {
+    type Target = LabelDef;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<LabelDef> {
 

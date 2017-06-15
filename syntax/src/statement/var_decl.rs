@@ -65,6 +65,7 @@ impl ISyntaxItemGrammar for VarDeclStatement {
     fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(KeywordKind::Const) || sess.tk == &Token::Keyword(KeywordKind::Var) }
 }
 impl ISyntaxItemParse for VarDeclStatement {
+    type Target = VarDeclStatement;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<VarDeclStatement> {
 
@@ -97,6 +98,8 @@ fn var_decl_stmt_parse() {
     use codemap::SymbolCollection;
     use message::MessageCollection;
     use lexical::LitValue;
+    use super::super::IdentExpr;
+    use super::super::LitExpr;
     use super::super::TypeUse;
     use super::super::ISyntaxItemWithStr;
     
@@ -105,7 +108,7 @@ fn var_decl_stmt_parse() {
         VarDeclStatement::new_const(make_span!(0, 13),
             make_id!(1), make_span!(6, 8),
             None,
-            Some(BinaryExpr::new_lit(LitValue::from(0), make_span!(12, 12)))
+            Some(BinaryExpr::new_lit(LitExpr::new(LitValue::from(0), make_span!(12, 12))))
         )
     }
 
@@ -116,9 +119,9 @@ fn var_decl_stmt_parse() {
             make_id!(1), make_span!(4, 6),
             None,
             Some(BinaryExpr::new_array(make_span!(10, 18), vec![
-                BinaryExpr::new_lit(LitValue::from(1), make_span!(11, 11)),
-                BinaryExpr::new_lit(LitValue::from(3), make_span!(14, 14)),
-                BinaryExpr::new_lit(LitValue::from(5), make_span!(17, 17)),
+                BinaryExpr::new_lit(LitExpr::new(LitValue::from(1), make_span!(11, 11))),
+                BinaryExpr::new_lit(LitExpr::new(LitValue::from(3), make_span!(14, 14))),
+                BinaryExpr::new_lit(LitExpr::new(LitValue::from(5), make_span!(17, 17))),
             ]))
         )
     }
@@ -165,11 +168,11 @@ fn var_decl_stmt_parse() {
             ])),
             Some(BinaryExpr::new_tuple(make_span!(23, 46), vec![
                 BinaryExpr::new_array(make_span!(24, 40), vec![
-                    BinaryExpr::new_lit(LitValue::from(1u8), make_span!(25, 27)),
-                    BinaryExpr::new_lit(LitValue::from(5u8), make_span!(30, 32)),
-                    BinaryExpr::new_lit(LitValue::from(7u8), make_span!(35, 39))
+                    BinaryExpr::new_lit(LitExpr::new(LitValue::from(1u8), make_span!(25, 27))),
+                    BinaryExpr::new_lit(LitExpr::new(LitValue::from(5u8), make_span!(30, 32))),
+                    BinaryExpr::new_lit(LitExpr::new(LitValue::from(7u8), make_span!(35, 39)))
                 ]),
-                BinaryExpr::new_ident(make_id!(4), make_span!(43, 45))
+                BinaryExpr::new_ident(IdentExpr::new(make_id!(4), make_span!(43, 45)))
             ]))
         )
     }

@@ -87,6 +87,7 @@ impl ISyntaxItemGrammar for ForStatement {
     }
 }
 impl ISyntaxItemParse for ForStatement {
+    type Target = ForStatement;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<ForStatement> {
 
@@ -108,6 +109,8 @@ fn for_stmt_parse() {
     use codemap::SymbolCollection;
     use message::MessageCollection;
     use lexical::LitValue;
+    use super::super::IdentExpr;
+    use super::super::LitExpr;
     use super::super::PostfixExpr;
     use super::super::PrimaryExpr;
     use super::super::ExprStatement;
@@ -120,7 +123,7 @@ fn for_stmt_parse() {
             LabelDef::new(make_id!(1), make_span!(0, 2)),
             make_span!(4, 6),
             make_id!(2), make_span!(8, 8),
-            BinaryExpr::new_lit(LitValue::from(42), make_span!(13, 14)),
+            BinaryExpr::new_lit(LitExpr::new(LitValue::from(42), make_span!(13, 14))),
             Block::new(make_span!(16, 17), vec![])
         )),
         make_messages![],
@@ -139,10 +142,10 @@ fn for_stmt_parse() {
                 PostfixExpr::new_member_function_call(
                     PostfixExpr::new_member_function_call(
                         PostfixExpr::new_function_call(
-                            PostfixExpr::new_primary(PrimaryExpr::new_ident(make_id!(3), make_span!(17, 21))),
+                            PostfixExpr::new_primary(PrimaryExpr::Ident(IdentExpr::new(make_id!(3), make_span!(17, 21)))),
                             make_span!(22, 28), vec![
-                                BinaryExpr::new_lit(LitValue::from(0), make_span!(23, 23)),
-                                BinaryExpr::new_lit(LitValue::from(10), make_span!(26, 27))
+                                BinaryExpr::new_lit(LitExpr::new(LitValue::from(0), make_span!(23, 23))),
+                                BinaryExpr::new_lit(LitExpr::new(LitValue::from(10), make_span!(26, 27)))
                         ]),
                         make_span!(29, 29), 
                         make_id!(4), make_span!(30, 38),
@@ -158,9 +161,9 @@ fn for_stmt_parse() {
             Block::new(make_span!(52, 77), vec![
                 Statement::Expr(ExprStatement::new_simple(make_span!(54, 75), 
                     BinaryExpr::new_postfix(PostfixExpr::new_function_call(
-                        PostfixExpr::new_primary(PrimaryExpr::new_ident(make_id!(6), make_span!(54, 60))),
+                        PostfixExpr::new_primary(PrimaryExpr::Ident(IdentExpr::new(make_id!(6), make_span!(54, 60)))),
                         make_span!(61, 74), vec![
-                            BinaryExpr::new_lit(LitValue::new_str_lit(make_id!(7)), make_span!(62, 73))
+                            BinaryExpr::new_lit(LitExpr::new(LitValue::new_str_lit(make_id!(7)), make_span!(62, 73)))
                     ]))
                 ))
             ])

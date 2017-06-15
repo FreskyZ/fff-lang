@@ -53,6 +53,24 @@ macro_rules! dispatch_statement_impl {
         }
     )
 }
+// TODO: Change to
+// pub struct LabeledStmt<TStmt> { // to be considered
+//     pub name: LabelDef,
+//     pub stmt: TStmt,
+// }
+// pub enum Stmt {
+//     Block(BlockStmt),
+//     Break(ContinueStmt),
+//     Continue(BreakStmt),
+//     Expr(ExprStmt),
+//     If(IfStmt),
+//     For(ForStmt),
+//     While(WhileStmt),
+//     Loop(LoopStmt),
+//     Return(ReturnStmt),
+//     VarDecl(VarDeclStmt),
+//     Labeled(LabeledStmt),
+// }
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub enum Statement {
@@ -89,6 +107,7 @@ impl ISyntaxItemGrammar for Statement {
     }
 }
 impl ISyntaxItemParse for Statement {
+    type Target = Statement;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<Statement> {
 

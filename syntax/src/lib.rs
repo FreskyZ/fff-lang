@@ -21,6 +21,8 @@ pub use self::items::Block;
 pub use self::items::LabelDef;
 pub use self::items::NameSegment;
 pub use self::items::Name;
+pub use self::expr::LitExpr;
+pub use self::expr::IdentExpr;
 pub use self::expr::BinaryExpr;
 pub use self::expr::UnaryExpr;
 pub use self::expr::PostfixExpr;
@@ -44,3 +46,11 @@ use self::traits::ISyntaxItemFormat;
 use self::traits::ISyntaxItemGrammar;
 pub use self::traits::ISyntaxItemParse; // for semantic/traits
 pub use self::traits::ISyntaxItemWithStr;
+
+// TODO: continue seperate struct from PrimaryExpr enum members
+// finish these structs test
+// finish primary expr _format, _parse and _errors tests
+// replace proper place by IdentExpr and ExprList
+// prepare to merge postfix expr, unary expr and binary expr into primary expr enum
+// rename primary expr to expr and compliantly alias it
+// move (at that time a simple dispatcher) PrimaryExpr dispatcher to expr/mod.rs, and finish all expr integrate tests

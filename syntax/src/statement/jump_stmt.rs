@@ -105,11 +105,13 @@ impl ISyntaxItemGrammar for BreakStatement {
 }
 
 impl ISyntaxItemParse for ContinueStatement {
+    type Target = ContinueStatement;
     fn parse(sess: &mut ParseSession) -> ParseResult<ContinueStatement> { 
         Ok(ContinueStatement(JumpStatement::parse(sess, KeywordKind::Continue)?))
     }
 }
 impl ISyntaxItemParse for BreakStatement {
+    type Target = BreakStatement;
     fn parse(sess: &mut ParseSession) -> ParseResult<BreakStatement> {
         Ok(BreakStatement(JumpStatement::parse(sess, KeywordKind::Break)?))
     }

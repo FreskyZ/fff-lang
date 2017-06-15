@@ -66,6 +66,7 @@ impl ISyntaxItemGrammar for BlockStatement {
     }
 }
 impl ISyntaxItemParse for BlockStatement {
+    type Target = BlockStatement;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<BlockStatement> {
     

@@ -113,6 +113,7 @@ impl ISyntaxItemGrammar for ExprStatement {
     fn is_first_final(sess: &ParseSession) -> bool { BinaryExpr::is_first_final(sess) }
 }
 impl ISyntaxItemParse for ExprStatement {
+    type Target = ExprStatement;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<ExprStatement> {
 
@@ -142,6 +143,8 @@ impl ISyntaxItemParse for ExprStatement {
 fn expr_stmt_parse() {
     use codemap::SymbolCollection;
     use lexical::LitValue;
+    use super::super::LitExpr;
+    use super::super::IdentExpr;
     use super::super::BinaryExpr;
     use super::super::PostfixExpr;
     use super::super::PrimaryExpr;
@@ -154,9 +157,9 @@ fn expr_stmt_parse() {
             make_span!(0, 21),
             BinaryExpr::new_postfix(
                 PostfixExpr::new_function_call(
-                    PostfixExpr::new_primary(PrimaryExpr::new_ident(make_id!(1), make_span!(0, 6))),
+                    PostfixExpr::new_primary(PrimaryExpr::Ident(IdentExpr::new(make_id!(1), make_span!(0, 6)))),
                     make_span!(7, 20), vec![
-                    BinaryExpr::new_lit(LitValue::new_str_lit(make_id!(2)), make_span!(8, 19))
+                    BinaryExpr::new_lit(LitExpr::new(LitValue::new_str_lit(make_id!(2)), make_span!(8, 19)))
                 ])
             )
         )),
@@ -169,11 +172,11 @@ fn expr_stmt_parse() {
             make_span!(0, 11),
             SeperatorKind::ShiftLeftAssign, make_span!(6, 8),
             BinaryExpr::new_binary(
-                BinaryExpr::new_lit(LitValue::from(1), make_span!(0, 0)),
+                BinaryExpr::new_lit(LitExpr::new(LitValue::from(1), make_span!(0, 0))),
                 SeperatorKind::Add, make_span!(2, 2),
-                BinaryExpr::new_lit(LitValue::from(1), make_span!(4, 4)),
+                BinaryExpr::new_lit(LitExpr::new(LitValue::from(1), make_span!(4, 4))),
             ),
-            BinaryExpr::new_lit(LitValue::from(2), make_span!(10, 10))
+            BinaryExpr::new_lit(LitExpr::new(LitValue::from(2), make_span!(10, 10)))
         )),
         6
     )}

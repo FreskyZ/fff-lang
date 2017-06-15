@@ -16,11 +16,12 @@ pub trait ISyntaxItemGrammar {
 
 // Parse
 pub trait ISyntaxItemParse {
+    type Target;
     
-    fn parse(sess: &mut ParseSession) -> ParseResult<Self> where Self: Sized;
+    fn parse(sess: &mut ParseSession) -> ParseResult<Self::Target>;
 
     // check is_first_final, if pass, parse, return Ok(Some(T)) or Err(()), else return None
-    fn try_parse(sess: &mut ParseSession) -> ParseResult<Option<Self>> where Self: Sized + ISyntaxItemGrammar {
+    fn try_parse(sess: &mut ParseSession) -> ParseResult<Option<Self::Target>> where Self: ISyntaxItemGrammar {
         if Self::is_first_final(sess) { Ok(Some(Self::parse(sess)?)) } else { Ok(None) }
     }
 }
@@ -28,37 +29,51 @@ pub trait ISyntaxItemParse {
 // WithStr
 pub trait ISyntaxItemWithStr {
 
-    fn with_test_str(src: &str) -> Self where Self: Sized + ISyntaxItemParse {
+    fn with_test_str(src: &str) 
+        -> <Self as ISyntaxItemParse>::Target 
+        where Self: Sized + ISyntaxItemParse {
         let full = Self::with_test_input_ret_size_messages(src, &mut SymbolCollection::new());
         check_messages_continuable!(full.2);
         return full.0.unwrap();
     }
-    fn with_test_str_ret_size(src: &str) -> (Option<Self>, usize) where Self: Sized + ISyntaxItemParse {
+    fn with_test_str_ret_size(src: &str) 
+        -> (Option<<Self as ISyntaxItemParse>::Target>, usize) 
+        where Self: Sized + ISyntaxItemParse {
         let full = Self::with_test_input_ret_size_messages(src, &mut SymbolCollection::new());
         return (full.0, full.1);
     }
-    fn with_test_str_ret_messages(src: &str) -> (Option<Self>, MessageCollection) where Self: Sized + ISyntaxItemParse {
+    fn with_test_str_ret_messages(src: &str) 
+        -> (Option<<Self as ISyntaxItemParse>::Target>, MessageCollection) 
+        where Self: Sized + ISyntaxItemParse {
         let full = Self::with_test_input_ret_size_messages(src, &mut SymbolCollection::new());
         return (full.0, full.2);
     }
-    fn with_test_str_ret_size_messages(src: &str) -> (Option<Self>, usize, MessageCollection) where Self: Sized + ISyntaxItemParse {
+    fn with_test_str_ret_size_messages(src: &str) 
+        -> (Option<<Self as ISyntaxItemParse>::Target>, usize, MessageCollection) 
+        where Self: Sized + ISyntaxItemParse {
         Self::with_test_input_ret_size_messages(src, &mut SymbolCollection::new())
     }
 
-    fn with_test_input(src: &str, symbols: &mut SymbolCollection) -> Self where Self: Sized + ISyntaxItemParse {
+    fn with_test_input(src: &str, symbols: &mut SymbolCollection) -> <Self as ISyntaxItemParse>::Target where Self: Sized + ISyntaxItemParse {
         let full = Self::with_test_input_ret_size_messages(src, symbols);
         check_messages_continuable!(full.2);
         return full.0.unwrap();
     }
-    fn with_test_input_ret_size(src: &str, symbols: &mut SymbolCollection) -> (Option<Self>, usize) where Self: Sized + ISyntaxItemParse {
+    fn with_test_input_ret_size(src: &str, symbols: &mut SymbolCollection) 
+        -> (Option<<Self as ISyntaxItemParse>::Target>, usize) 
+        where Self: Sized + ISyntaxItemParse {
         let full = Self::with_test_input_ret_size_messages(src, symbols);
         return (full.0, full.1);
     }
-    fn with_test_input_ret_messages(src: &str, symbols: &mut SymbolCollection) -> (Option<Self>, MessageCollection) where Self: Sized + ISyntaxItemParse {
+    fn with_test_input_ret_messages(src: &str, symbols: &mut SymbolCollection) 
+        -> (Option<<Self as ISyntaxItemParse>::Target>, MessageCollection)
+        where Self: Sized + ISyntaxItemParse {
         let full = Self::with_test_input_ret_size_messages(src, symbols);
         return (full.0, full.2);
     }
-    fn with_test_input_ret_size_messages(src: &str, symbols: &mut SymbolCollection) -> (Option<Self>, usize, MessageCollection) where Self: Sized + ISyntaxItemParse {
+    fn with_test_input_ret_size_messages(src: &str, symbols: &mut SymbolCollection) 
+        -> (Option<<Self as ISyntaxItemParse>::Target>, usize, MessageCollection) 
+        where Self: Sized + ISyntaxItemParse {
         let tokens = TokenStream::with_test_input(src, symbols);
         let mut messages = MessageCollection::new();
         let ret_val = { // to satisfy liefetime checker

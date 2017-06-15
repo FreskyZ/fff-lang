@@ -53,6 +53,7 @@ impl ISyntaxItemGrammar for ReturnStatement {
     fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(KeywordKind::Return) }
 }
 impl ISyntaxItemParse for ReturnStatement {
+    type Target = ReturnStatement;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<ReturnStatement> {
 
@@ -71,6 +72,7 @@ impl ISyntaxItemParse for ReturnStatement {
 
 #[cfg(test)] #[test]
 fn ret_stmt_parse() {
+    use super::super::LitExpr;
     use super::super::ISyntaxItemWithStr;
     use lexical::LitValue;
     use lexical::SeperatorKind;
@@ -80,9 +82,9 @@ fn ret_stmt_parse() {
         ReturnStatement::new_expr(
             make_span!(0, 12), 
             BinaryExpr::new_binary(
-                BinaryExpr::new_lit(LitValue::from(1), make_span!(7, 7)),
+                BinaryExpr::new_lit(LitExpr::new(LitValue::from(1), make_span!(7, 7))),
                 SeperatorKind::Add, make_span!(9, 9),
-                BinaryExpr::new_lit(LitValue::from(1), make_span!(11, 11)),
+                BinaryExpr::new_lit(LitExpr::new(LitValue::from(1), make_span!(11, 11))),
             )
         )
     }

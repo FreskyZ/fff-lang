@@ -123,6 +123,7 @@ impl ISyntaxItemGrammar for IfStatement {
     fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(KeywordKind::If) }
 }
 impl ISyntaxItemParse for IfStatement {
+    type Target = IfStatement;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<IfStatement> {
         assert!(sess.tk == &Token::Keyword(KeywordKind::If));
@@ -173,6 +174,7 @@ impl ISyntaxItemParse for IfStatement {
 #[cfg(test)] #[test]
 fn if_stmt_parse() {
     use super::super::ISyntaxItemWithStr;
+    use super::super::LitExpr;
     use lexical::LitValue;
 
     //                                      0        1         2         3
@@ -180,11 +182,11 @@ fn if_stmt_parse() {
     assert_eq!{ IfStatement::with_test_str("if true { } else if false { } else {}"),
         IfStatement::new_ifelseifelse(make_span!(0, 36),
             make_span!(0, 1),
-            BinaryExpr::new_lit(LitValue::from(true), make_span!(3, 6)),
+            BinaryExpr::new_lit(LitExpr::new(LitValue::from(true), make_span!(3, 6))),
             Block::new(make_span!(8, 10), vec![]), vec![
                 IfConditionBody::new(
                     make_span!(12, 18),
-                    BinaryExpr::new_lit(LitValue::from(false), make_span!(20, 24)),
+                    BinaryExpr::new_lit(LitExpr::new(LitValue::from(false), make_span!(20, 24))),
                     Block::new(make_span!(26, 28), vec![])
                 )
             ],

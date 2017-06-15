@@ -46,6 +46,7 @@ impl SyntaxTree {
     }
 }
 impl ISyntaxItemParse for SyntaxTree {
+    type Target = SyntaxTree;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<SyntaxTree> {
         // TODO: meet EOF not break, meet EOFs to break

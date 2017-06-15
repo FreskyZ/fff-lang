@@ -51,6 +51,7 @@ impl ISyntaxItemGrammar for Name {
     fn is_first_final(sess: &ParseSession) -> bool { if let &Token::Ident(_) = sess.tk { true } else { false } }
 }
 impl ISyntaxItemParse for Name {
+    type Target = Name;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<Name> {
         

@@ -17,20 +17,21 @@
 use std::fmt;
 
 use codemap::Span;
-use codemap::SymbolID;
 use lexical::Token;
 use lexical::SeperatorKind;
 use lexical::SeperatorCategory;
+
+use super::LitExpr;
+use super::IdentExpr;
+use super::PrimaryExpr;
+use super::PostfixExpr;
+use super::UnaryExpr;
 
 use super::super::ParseSession;
 use super::super::ParseResult;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
-use super::unary::UnaryExpr;
-use super::postfix::PostfixExpr;
-use super::primary::PrimaryExpr;
-use lexical::LitValue;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 struct BinaryBinaryExpr {
@@ -91,21 +92,18 @@ impl BinaryExpr { // New
         BinaryExpr(Box::new(BinaryExprImpl::Unary(UnaryExpr::new_primary(primary_expr))))
     }
 
-    // Primary helpers
-    pub fn new_ident(ident: SymbolID, ident_strpos: Span) -> BinaryExpr {
-        BinaryExpr::new_primary(PrimaryExpr::new_ident(ident, ident_strpos))
+    // Primary helpers, TODO: remove after *Expr change to enum Expr
+    pub fn new_lit(litexpr: LitExpr) -> BinaryExpr {
+        BinaryExpr::new_primary(PrimaryExpr::Lit(litexpr))
+    }
+    pub fn new_ident(identexpr: IdentExpr) -> BinaryExpr {
+        BinaryExpr::new_primary(PrimaryExpr::Ident(identexpr))
     }
     pub fn new_tuple(paren_strpos: Span, exprs: Vec<BinaryExpr>) -> BinaryExpr {
         BinaryExpr::new_primary(PrimaryExpr::new_tuple(paren_strpos, exprs))
     }
     pub fn new_array(bracket_strpos: Span, exprs: Vec<BinaryExpr>) -> BinaryExpr {
         BinaryExpr::new_primary(PrimaryExpr::new_array(bracket_strpos, exprs))
-    }
-    pub fn new_lit(value: LitValue, lit_strpos: Span) -> BinaryExpr {
-        BinaryExpr::new_primary(PrimaryExpr::new_lit(value, lit_strpos))
-    }
-    pub fn new_unit(unit_strpos: Span) -> BinaryExpr {
-        BinaryExpr::new_primary(PrimaryExpr::new_unit(unit_strpos))
     }
     pub fn new_paren(paren_strpos: Span, inner: BinaryExpr) -> BinaryExpr {
         BinaryExpr::new_primary(PrimaryExpr::new_paren(paren_strpos, inner))
@@ -211,17 +209,20 @@ impl ISyntaxItemGrammar for BinaryExpr {
     fn is_first_final(sess: &ParseSession) -> bool { UnaryExpr::is_first_final(sess) }
 }
 impl ISyntaxItemParse for BinaryExpr {
+    type Target = BinaryExpr;
     fn parse(sess: &mut ParseSession) -> ParseResult<BinaryExpr> { parse_logical_or(sess) }
 }
 
 #[cfg(test)] #[test]
 fn binary_expr_format() {
+    use lexical::LitValue;
+    use super::LitExpr;
     
     let binary_expr = BinaryExpr::new_binary(
-        BinaryExpr::new_primary(PrimaryExpr::new_lit(LitValue::from(1), make_span!(0, 0))),
+        BinaryExpr::new_lit(LitExpr::new(LitValue::from(1), make_span!(0, 0))),
         SeperatorKind::Add,
         make_span!(2, 2),
-        BinaryExpr::new_primary(PrimaryExpr::new_lit(LitValue::from(2), make_span!(4, 4))),
+        BinaryExpr::new_lit(LitExpr::new(LitValue::from(2), make_span!(4, 4))),
     );
     assert_eq!(binary_expr.format(0), "BinaryExpr <<0>0-4>\n  Literal (i32)1 <<0>0-0>\n  + <<0>2-2>\n  Literal (i32)2 <<0>4-4>");
 }

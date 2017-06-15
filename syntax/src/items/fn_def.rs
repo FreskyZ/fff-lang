@@ -75,6 +75,7 @@ impl ISyntaxItemGrammar for FnDef {
     fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(KeywordKind::FnDef) }
 }
 impl ISyntaxItemParse for FnDef {
+    type Target = FnDef;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<FnDef> {
         
@@ -126,6 +127,7 @@ impl ISyntaxItemParse for FnDef {
 #[cfg(test)] #[test]
 fn fn_def_parse() {
     use codemap::SymbolCollection;
+    use super::super::IdentExpr;
     use super::super::ISyntaxItemWithStr;
     use super::super::TypeUse;
     use super::super::Statement;
@@ -186,9 +188,9 @@ fn fn_def_parse() {
             Block::new(make_span!(63, 80), vec![
                 Statement::Expr(ExprStatement::new_simple(make_span!(65, 78),
                     BinaryExpr::new_postfix(PostfixExpr::new_function_call(
-                        PostfixExpr::new_primary(PrimaryExpr::new_ident(make_id!(9), make_span!(65, 71))),
+                        PostfixExpr::new_primary(PrimaryExpr::Ident(IdentExpr::new(make_id!(9), make_span!(65, 71)))),
                         make_span!(72, 77), vec![
-                            BinaryExpr::new_ident(make_id!(5), make_span!(73, 76))
+                            BinaryExpr::new_ident(IdentExpr::new(make_id!(5), make_span!(73, 76)))
                         ]
                     ))
                 ))

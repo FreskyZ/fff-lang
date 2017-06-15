@@ -140,6 +140,7 @@ impl ISyntaxItemGrammar for PostfixExpr {
     fn is_first_final(sess: &ParseSession) -> bool { PrimaryExpr::is_first_final(sess) }
 }
 impl ISyntaxItemParse for PostfixExpr {
+    type Target = PostfixExpr;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<PostfixExpr> {   
         #[cfg(feature = "trace_postfix_expr_parse")]
@@ -336,10 +337,11 @@ fn postfix_expr_format() {
 fn postfix_expr_parse() {
     use super::super::ISyntaxItemWithStr;
     use message::MessageCollection;
+    use super::IdentExpr;
 
     macro_rules! ident {
-        ($name: expr, $strpos: expr) => (BinaryExpr::new_primary(PrimaryExpr::new_ident($name, $strpos)));
-        (post, $name: expr, $strpos: expr) => (PostfixExpr::new_primary(PrimaryExpr::new_ident($name, $strpos)))
+        ($name: expr, $strpos: expr) => (BinaryExpr::new_primary(PrimaryExpr::Ident(IdentExpr::new($name, $strpos))));
+        (post, $name: expr, $strpos: expr) => (PostfixExpr::new_primary(PrimaryExpr::Ident(IdentExpr::new($name, $strpos))))
     }
 
     //                                      0        1         2         3         4         5     

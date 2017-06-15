@@ -5,7 +5,7 @@
 use std::fmt;
 use codemap::SymbolID;
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub enum NumLitValue {
     I8(i8),
     U8(u8),
@@ -100,7 +100,7 @@ from_for_num_lit_value!{
 
 static ERROR_NUM_LIT: NumLitValue = NumLitValue::I32(0);
 
-#[derive(Clone, Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq, Copy)] // Copy because now it is all integral fields
 pub enum LitValue {
     Unit,                // unit is not generated here in v2 or some other, because for cases like `1.to_string()`, this is function call not unit
     Str(Option<SymbolID>),

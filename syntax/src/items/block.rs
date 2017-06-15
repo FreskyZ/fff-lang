@@ -40,6 +40,7 @@ impl ISyntaxItemGrammar for Block {
     fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Sep(SeperatorKind::LeftBrace) }
 }
 impl ISyntaxItemParse for Block {
+    type Target = Block;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<Block> {
 

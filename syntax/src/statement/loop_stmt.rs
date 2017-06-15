@@ -74,6 +74,7 @@ impl ISyntaxItemGrammar for LoopStatement {
     }
 }
 impl ISyntaxItemParse for LoopStatement {
+    type Target = LoopStatement;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<LoopStatement> {
 
@@ -108,6 +109,8 @@ fn loop_stmt_format() {
 fn loop_stmt_parse() {
     use codemap::SymbolCollection;
     use lexical::LitValue;
+    use super::super::LitExpr;
+    use super::super::IdentExpr;
     use super::super::ISyntaxItemWithStr;
     use super::super::Statement;
     use super::super::ExprStatement;
@@ -127,9 +130,9 @@ fn loop_stmt_parse() {
                 Statement::Expr(ExprStatement::new_simple(
                     make_span!(11, 25), 
                     BinaryExpr::new_postfix(PostfixExpr::new_function_call(
-                        PostfixExpr::new_primary(PrimaryExpr::new_ident(make_id!(2), make_span!(11, 17))),
+                        PostfixExpr::new_primary(PrimaryExpr::Ident(IdentExpr::new(make_id!(2), make_span!(11, 17)))),
                         make_span!(18, 24), vec![
-                            BinaryExpr::new_lit(LitValue::new_str_lit(make_id!(3)), make_span!(19, 23))
+                            BinaryExpr::new_lit(LitExpr::new(LitValue::new_str_lit(make_id!(3)), make_span!(19, 23)))
                         ]
                     ))
                 ))
