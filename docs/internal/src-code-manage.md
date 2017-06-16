@@ -49,10 +49,11 @@ actual steps:
     modified driver without compiling
   - merge codepos into codemap and make messages, lexical and syntax depend on codemap
   - change Position and StringPosition to CharPos and Span, pass messages, lexical and syntax all tests
+  - finish new lexical parser based on codemap.symbols, with string literals and identifiers interned
 
-  - currently at: finish message's format based on codemap
-                  finish new lexical interface based on codemap.symbols, with string literals and identifiers interned
-                  finish new syntax trees based on codemap.symbols, with all kind of strings interned
+  - currently at: finish new syntax trees based on codemap.symbols, with all kind of strings interned
+                      which is a very big all in one update!
                   add for and while statement's else clauses, split primary expr definitions and try refactor expr node physical structures
+                  finish message's format based on codemap
 
   - in future: new semantic!
