@@ -56,7 +56,9 @@ pub trait ISyntaxItemWithStr {
 
     fn with_test_input(src: &str, symbols: &mut SymbolCollection) -> <Self as ISyntaxItemParse>::Target where Self: Sized + ISyntaxItemParse {
         let full = Self::with_test_input_ret_size_messages(src, symbols);
-        check_messages_continuable!(full.2);
+        if full.0.is_none() {
+            panic!("with_test_input({}): trying to unwrap None result, messages: {:?}", src, full.2);
+        }
         return full.0.unwrap();
     }
     fn with_test_input_ret_size(src: &str, symbols: &mut SymbolCollection) 

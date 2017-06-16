@@ -21,196 +21,92 @@ use lexical::Token;
 use lexical::SeperatorKind;
 use lexical::SeperatorCategory;
 
-use super::LitExpr;
-use super::IdentExpr;
-use super::PrimaryExpr;
-use super::PostfixExpr;
 use super::UnaryExpr;
-use super::ParenExpr;
-use super::TupleDef;
-use super::ArrayDef;
+use super::Expr;
 
 use super::super::ParseSession;
 use super::super::ParseResult;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
-use super::super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
-struct ActualBinary {
-    left: Expr,
-    operator: SeperatorKind,            // this means every binary operator matches a binary expr
-    operator_strpos: Span, 
-    right: Expr,
-    all_strpos: Span,
+pub struct BinaryExpr {
+    pub left_expr: Box<Expr>,
+    pub right_expr: Box<Expr>,
+    pub operator: SeperatorKind,            // this means every binary operator matches a binary expr
+    pub operator_span: Span, 
+    pub all_span: Span,
 }
-#[cfg_attr(test, derive(Eq, PartialEq))]
-enum BinaryImpl {
-    Unary(UnaryExpr),
-    Binary(ActualBinary),
-}
-#[cfg_attr(test, derive(Eq, PartialEq))]
-pub struct Expr(Box<BinaryImpl>); // wrapper for make it not public
-
-impl ISyntaxItemFormat for Expr {
+impl ISyntaxItemFormat for BinaryExpr {
     fn format(&self, indent: u32) -> String {
-        match self.0.as_ref() {
-            &BinaryImpl::Unary(ref unary_expr) => unary_expr.format(indent),
-            &BinaryImpl::Binary(ActualBinary{ ref left, ref right, ref operator, ref operator_strpos, ref all_strpos }) => {
-                format!("{}Expr <{:?}>\n{}\n{}{} <{:?}>\n{}", 
-                    Expr::indent_str(indent), all_strpos,
-                    left.format(indent + 1),
-                    Expr::indent_str(indent + 1), operator, operator_strpos,
-                    right.format(indent + 1),
-                )
-            }
+        format!("{}BinaryExpr <{:?}>\n{}\n{}{} <{:?}>\n{}", 
+            Expr::indent_str(indent), self.all_span,
+            self.left_expr.format(indent + 1),
+            Expr::indent_str(indent + 1), self.operator, self.operator_span,
+            self.right_expr.format(indent + 1),
+        )
+    }
+}
+impl fmt::Debug for BinaryExpr {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
+}
+impl BinaryExpr {
+
+    pub fn new(left_expr: Expr, operator: SeperatorKind, operator_span: Span, right_expr: Expr) -> BinaryExpr {
+        BinaryExpr{
+            all_span: left_expr.get_all_span().merge(&right_expr.get_all_span()),
+            left_expr: Box::new(left_expr),
+            right_expr: Box::new(right_expr),
+            operator, operator_span
         }
     }
 }
-impl fmt::Debug for Expr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "\n{}", self.format(0))
-    }
-}
-impl Expr { // New
+// No grammar because Binary::is_first_final <=> Expr::is_first_final
+impl ISyntaxItemParse for BinaryExpr {
+    type Target = Expr;
 
-    pub fn new_binary(left: Expr, operator: SeperatorKind, operator_strpos: Span, right: Expr) -> Expr {
+    fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {  
+        #[cfg(feature = "trace_binary_expr_parse")]
+        macro_rules! trace { ($($arg:tt)*) => ({ print!("[PrimaryExpr] "); println!($($arg)*); }) }
+        #[cfg(not(feature = "trace_binary_expr_parse"))]
+        macro_rules! trace { ($($arg:tt)*) => () }
 
-        let all_strpos = left.get_all_strpos().merge(&right.get_all_strpos());
-        Expr(Box::new(BinaryImpl::Binary(ActualBinary{
-            left: left,
-            right: right,
-            operator: operator,
-            operator_strpos: operator_strpos,
-            all_strpos: all_strpos
-        })))
-    }
-    pub fn new_unary(unary_expr: UnaryExpr) -> Expr {
-        Expr(Box::new(BinaryImpl::Unary(unary_expr)))
-    }
-    pub fn new_postfix(postfix_expr: PostfixExpr) -> Expr {
-        Expr(Box::new(BinaryImpl::Unary(UnaryExpr::new_postfix(postfix_expr))))
-    }
-    pub fn new_primary(primary_expr: PrimaryExpr) -> Expr {
-        Expr(Box::new(BinaryImpl::Unary(UnaryExpr::new_primary(primary_expr))))
-    }
+        return parse_logical_or(sess);
 
-    // Primary helpers, TODO: remove after *Expr change to enum Expr
-    pub fn new_lit(lit_expr: LitExpr) -> Expr {
-        Expr::new_primary(PrimaryExpr::Lit(lit_expr))
-    }
-    pub fn new_ident(ident_expr: IdentExpr) -> Expr {
-        Expr::new_primary(PrimaryExpr::Ident(ident_expr))
-    }
-    pub fn new_paren(paren_expr: ParenExpr) -> Expr {
-        Expr::new_primary(PrimaryExpr::Paren(paren_expr))
-    }
-    pub fn new_tuple(tuple_def: TupleDef) -> Expr {
-        Expr::new_primary(PrimaryExpr::Tuple(tuple_def))
-    }
-    pub fn new_array(array_def: ArrayDef) -> Expr {
-        Expr::new_primary(PrimaryExpr::Array(array_def))
-    }
-}
-impl Expr { // get
+        macro_rules! impl_binary_parser {
+            ($parser_name: ident, $previous_parser: expr, $op_category: expr) => (
+                fn $parser_name(sess: &mut ParseSession) -> ParseResult<Expr> {
+                    trace!("parsing {}", stringify!($parser_name));
 
-    pub fn is_unary(&self) -> bool {
-        match self.0.as_ref() {
-            &BinaryImpl::Unary(_) => true,
-            &BinaryImpl::Binary(_) => false,
-        }
-    }
-    pub fn is_binary(&self) -> bool {
-        match self.0.as_ref() {
-            &BinaryImpl::Unary(_) => false,
-            &BinaryImpl::Binary(_) => true,
-        }
-    }
-
-    pub fn get_unary(&self) -> Option<&UnaryExpr> {
-        match self.0.as_ref() {
-            &BinaryImpl::Unary(ref unary_expr) => Some(unary_expr),
-            &BinaryImpl::Binary(_) => None,
-        }
-    }
-    pub fn get_left(&self) -> Option<&Expr> {
-        match self.0.as_ref() {
-            &BinaryImpl::Unary(_) => None,
-            &BinaryImpl::Binary(ActualBinary{ ref left, right: ref _1, operator: ref _2, operator_strpos: ref _3, all_strpos: ref _4 }) => Some(left),
-        }
-    }
-    pub fn get_right(&self) -> Option<&Expr> {
-        match self.0.as_ref() {
-            &BinaryImpl::Unary(_) => None,
-            &BinaryImpl::Binary(ActualBinary{ ref right, left: ref _1, operator: ref _2, operator_strpos: ref _3, all_strpos: ref _4 }) => Some(right),
-        }
-    }
-    pub fn get_operator(&self) -> Option<&SeperatorKind> {
-        match self.0.as_ref() {
-            &BinaryImpl::Unary(_) => None,
-            &BinaryImpl::Binary(ActualBinary{ ref operator, right: ref _1, left: ref _2, operator_strpos: ref _3, all_strpos: ref _4 }) => Some(operator),
-        }
-    }
-    pub fn get_operator_strpos(&self) -> Span {
-        match self.0.as_ref() {
-            &BinaryImpl::Unary(_) => Span::default(),
-            &BinaryImpl::Binary(ActualBinary{ ref operator_strpos, right: ref _1, operator: ref _2, left: ref _3, all_strpos: ref _4 }) => *operator_strpos,
-        }
-    }
-    pub fn get_all_strpos(&self) -> Span {
-        match self.0.as_ref() {
-            &BinaryImpl::Unary(ref unary_expr) => unary_expr.get_all_strpos(),
-            &BinaryImpl::Binary(ActualBinary{ ref all_strpos, right: ref _1, operator: ref _2, operator_strpos: ref _3, left: ref _4 }) => *all_strpos,
-        }
-    }
-}
-
-#[cfg(feature = "trace_binary_expr_parse")]
-macro_rules! trace { ($($arg:tt)*) => ({ print!("[PrimaryExpr] "); println!($($arg)*); }) }
-#[cfg(not(feature = "trace_binary_expr_parse"))]
-macro_rules! trace { ($($arg:tt)*) => () }
-
-fn parse_unary_wrapper(sess: &mut ParseSession) -> ParseResult<Expr> { Ok(Expr::new_unary(UnaryExpr::parse(sess)?)) }
-macro_rules! impl_binary_parser {
-    ($parser_name: ident, $previous_parser: ident, $op_category: expr) => (
-        fn $parser_name(sess: &mut ParseSession) -> ParseResult<Expr> {
-            trace!("parsing {}", stringify!($parser_name));
-
-            let mut current_retval = $previous_parser(sess)?;
-            loop {
-                match (sess.tk, sess.pos) {
-                    (&Token::Sep(operator), operator_strpos) if operator.is_category($op_category) => {
-                        sess.move_next();
-                        let right_expr = $previous_parser(sess)?;
-                        current_retval = Expr::new_binary(current_retval, operator, operator_strpos, right_expr);
-                        trace!("    changing current ret_val to {:?}", current_retval);
-                    }
-                    _ => {
-                        trace!("   operator or other not '{}', return left: {:?}", stringify!($op_category), current_ret_val);
-                        return Ok(current_retval);
+                    let mut current_retval = $previous_parser(sess)?;
+                    loop {
+                        match (sess.tk, sess.pos) {
+                            (&Token::Sep(operator), operator_strpos) if operator.is_category($op_category) => {
+                                sess.move_next();
+                                let right_expr = $previous_parser(sess)?;
+                                current_retval = Expr::Binary(BinaryExpr::new(current_retval, operator, operator_strpos, right_expr));
+                                trace!("    changing current ret_val to {:?}", current_retval);
+                            }
+                            _ => {
+                                trace!("   operator or other not '{}', return left: {:?}", stringify!($op_category), current_ret_val);
+                                return Ok(current_retval);
+                            }
+                        }
                     }
                 }
-            }
+            )
         }
-    )
-}
-impl_binary_parser! { parse_multiplicative, parse_unary_wrapper, SeperatorCategory::Multiplicative }
-impl_binary_parser! { parse_additive, parse_multiplicative, SeperatorCategory::Additive }
-impl_binary_parser! { parse_relational, parse_additive, SeperatorCategory::Relational }
-impl_binary_parser! { parse_shift, parse_relational, SeperatorCategory::Shift }
-impl_binary_parser! { parse_bitand, parse_shift, SeperatorCategory::BitAnd }
-impl_binary_parser! { parse_bitxor, parse_bitand, SeperatorCategory::BitXor }
-impl_binary_parser! { parse_bitor, parse_bitxor, SeperatorCategory::BitOr }
-impl_binary_parser! { parse_equality, parse_bitor, SeperatorCategory::Equality }
-impl_binary_parser! { parse_logical_and, parse_equality, SeperatorCategory::LogicalAnd }
-impl_binary_parser! { parse_logical_or, parse_logical_and, SeperatorCategory::LogicalOr }
-
-impl ISyntaxItemGrammar for Expr {
-    fn is_first_final(sess: &ParseSession) -> bool { UnaryExpr::is_first_final(sess) }
-}
-impl ISyntaxItemParse for Expr {
-    type Target = Expr;
-    fn parse(sess: &mut ParseSession) -> ParseResult<Expr> { parse_logical_or(sess) }
+        impl_binary_parser! { parse_multiplicative, UnaryExpr::parse, SeperatorCategory::Multiplicative }
+        impl_binary_parser! { parse_additive, parse_multiplicative, SeperatorCategory::Additive }
+        impl_binary_parser! { parse_relational, parse_additive, SeperatorCategory::Relational }
+        impl_binary_parser! { parse_shift, parse_relational, SeperatorCategory::Shift }
+        impl_binary_parser! { parse_bitand, parse_shift, SeperatorCategory::BitAnd }
+        impl_binary_parser! { parse_bitxor, parse_bitand, SeperatorCategory::BitXor }
+        impl_binary_parser! { parse_bitor, parse_bitxor, SeperatorCategory::BitOr }
+        impl_binary_parser! { parse_equality, parse_bitor, SeperatorCategory::Equality }
+        impl_binary_parser! { parse_logical_and, parse_equality, SeperatorCategory::LogicalAnd }
+        impl_binary_parser! { parse_logical_or, parse_logical_and, SeperatorCategory::LogicalOr }    
+    }
 }
 
 #[cfg(test)] #[test]
@@ -218,13 +114,13 @@ fn binary_expr_format() {
     use lexical::LitValue;
     use super::LitExpr;
     
-    let binary_expr = Expr::new_binary(
+    let binary_expr = Expr::Binary(BinaryExpr::new(
         Expr::new_lit(LitExpr::new(LitValue::from(1), make_span!(0, 0))),
         SeperatorKind::Add,
         make_span!(2, 2),
         Expr::new_lit(LitExpr::new(LitValue::from(2), make_span!(4, 4))),
-    );
-    assert_eq!(binary_expr.format(0), "Expr <<0>0-4>\n  Literal (i32)1 <<0>0-0>\n  + <<0>2-2>\n  Literal (i32)2 <<0>4-4>");
+    ));
+    assert_eq!(binary_expr.format(0), "BinaryExpr <<0>0-4>\n  Literal (i32)1 <<0>0-0>\n  + <<0>2-2>\n  Literal (i32)2 <<0>4-4>");
 }
 
 #[cfg(remove_this_after_expr_refactor)]

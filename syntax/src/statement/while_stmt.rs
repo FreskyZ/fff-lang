@@ -111,14 +111,12 @@ fn while_stmt_parse() {
             Expr::new_lit(LitExpr::new(LitValue::from(true), make_span!(10, 13))),
             Block::new(make_span!(15, 46), vec![
                 Statement::Expr(ExprStatement::new_simple(make_span!(17, 44), 
-                    Expr::new_postfix(
-                        PostfixExpr::new_function_call(
-                            PostfixExpr::new_primary(PrimaryExpr::Ident(IdentExpr::new(make_id!(2), make_span!(17, 23)))),
-                            make_span!(24, 43), vec![
-                                Expr::new_lit(LitExpr::new(LitValue::new_str_lit(make_id!(3)), make_span!(25, 42)))
-                            ]
-                        )
-                    )
+                    Expr::Postfix(PostfixExpr::new_function_call(
+                        PostfixExpr::new_primary(PrimaryExpr::Ident(IdentExpr::new(make_id!(2), make_span!(17, 23)))),
+                        make_span!(24, 43), vec![
+                            Expr::new_lit(LitExpr::new(LitValue::new_str_lit(make_id!(3)), make_span!(25, 42)))
+                        ]
+                    ))
                 ))
             ])
         )

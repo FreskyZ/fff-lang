@@ -63,6 +63,7 @@ fn array_def_parse() {
     use lexical::LitValue;
     use super::LitExpr;
     use super::Expr;
+    use super::BinaryExpr;
     use super::super::ISyntaxItemWithStr;
 
     //                                   01234567
@@ -75,11 +76,11 @@ fn array_def_parse() {
     //                                   01234567
     assert_eq!{ ArrayDef::with_test_str("[1 + 1,]"),
         PrimaryExpr::Array(ArrayDef::new(make_span!(0, 7), ExprList::new(vec![
-            Expr::new_binary(
+            Expr::Binary(BinaryExpr::new(
                 Expr::new_lit(LitExpr::new(LitValue::from(1), make_span!(1, 1))), 
                 SeperatorKind::Add, make_span!(3, 3),
                 Expr::new_lit(LitExpr::new(LitValue::from(1), make_span!(5, 5))),
-            )
+            ))
         ])))
     }
 }

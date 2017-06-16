@@ -78,10 +78,15 @@ impl ISyntaxItemParse for FnDef {
     type Target = FnDef;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<FnDef> {
+        #[cfg(feature = "trace_fn_def_parse")]
+        macro_rules! trace { ($($arg:tt)*) => ({ print!("[FnDef: {}]", line!()); println!($($arg)*); }) }
+        #[cfg(not(feature = "trace_fn_def_parse"))]
+        macro_rules! trace { ($($arg:tt)*) => () }
         
         let fn_strpos = sess.expect_keyword(KeywordKind::FnDef)?;
         let (fn_name, fn_name_strpos) = sess.expect_ident()?;
         let mut params_paren_strpos = sess.expect_sep(SeperatorKind::LeftParenthenes)?;
+        trace!("fndef name span: {:?}", fn_name_strpos);
 
         let mut params = Vec::new();
         loop {
@@ -187,7 +192,7 @@ fn fn_def_parse() {
             None,
             Block::new(make_span!(63, 80), vec![
                 Statement::Expr(ExprStatement::new_simple(make_span!(65, 78),
-                    Expr::new_postfix(PostfixExpr::new_function_call(
+                    Expr::Postfix(PostfixExpr::new_function_call(
                         PostfixExpr::new_primary(PrimaryExpr::Ident(IdentExpr::new(make_id!(9), make_span!(65, 71)))),
                         make_span!(72, 77), vec![
                             Expr::new_ident(IdentExpr::new(make_id!(5), make_span!(73, 76)))

@@ -146,6 +146,7 @@ fn expr_stmt_parse() {
     use super::super::LitExpr;
     use super::super::IdentExpr;
     use super::super::Expr;
+    use super::super::BinaryExpr;
     use super::super::PostfixExpr;
     use super::super::PrimaryExpr;
     use super::super::ISyntaxItemWithStr;
@@ -155,13 +156,11 @@ fn expr_stmt_parse() {
     assert_eq!{ ExprStatement::with_test_input_ret_size("writeln(\"helloworld\");", &mut make_symbols!["writeln", "helloworld"]), (
         Some(ExprStatement::new_simple(
             make_span!(0, 21),
-            Expr::new_postfix(
-                PostfixExpr::new_function_call(
-                    PostfixExpr::new_primary(PrimaryExpr::Ident(IdentExpr::new(make_id!(1), make_span!(0, 6)))),
-                    make_span!(7, 20), vec![
-                    Expr::new_lit(LitExpr::new(LitValue::new_str_lit(make_id!(2)), make_span!(8, 19)))
-                ])
-            )
+            Expr::Postfix(PostfixExpr::new_function_call(
+                PostfixExpr::new_primary(PrimaryExpr::Ident(IdentExpr::new(make_id!(1), make_span!(0, 6)))),
+                make_span!(7, 20), vec![
+                Expr::new_lit(LitExpr::new(LitValue::new_str_lit(make_id!(2)), make_span!(8, 19)))
+            ]))
         )),
         5
     )}
@@ -171,11 +170,11 @@ fn expr_stmt_parse() {
         Some(ExprStatement::new_assign(
             make_span!(0, 11),
             SeperatorKind::ShiftLeftAssign, make_span!(6, 8),
-            Expr::new_binary(
+            Expr::Binary(BinaryExpr::new(
                 Expr::new_lit(LitExpr::new(LitValue::from(1), make_span!(0, 0))),
                 SeperatorKind::Add, make_span!(2, 2),
                 Expr::new_lit(LitExpr::new(LitValue::from(1), make_span!(4, 4))),
-            ),
+            )),
             Expr::new_lit(LitExpr::new(LitValue::from(2), make_span!(10, 10)))
         )),
         6

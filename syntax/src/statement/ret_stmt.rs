@@ -72,20 +72,21 @@ impl ISyntaxItemParse for ReturnStatement {
 
 #[cfg(test)] #[test]
 fn ret_stmt_parse() {
-    use super::super::LitExpr;
-    use super::super::ISyntaxItemWithStr;
     use lexical::LitValue;
     use lexical::SeperatorKind;
+    use super::super::LitExpr;
+    use super::super::BinaryExpr;
+    use super::super::ISyntaxItemWithStr;
 
     assert_eq!{ ReturnStatement::with_test_str("return;"), ReturnStatement::new_unit(make_span!(0, 6)) }
     assert_eq!{ ReturnStatement::with_test_str("return 1 + 1;"), 
         ReturnStatement::new_expr(
             make_span!(0, 12), 
-            Expr::new_binary(
+            Expr::Binary(BinaryExpr::new(
                 Expr::new_lit(LitExpr::new(LitValue::from(1), make_span!(7, 7))),
                 SeperatorKind::Add, make_span!(9, 9),
                 Expr::new_lit(LitExpr::new(LitValue::from(1), make_span!(11, 11))),
-            )
+            ))
         )
     }
 }

@@ -129,7 +129,7 @@ fn loop_stmt_parse() {
             Block::new(make_span!(9, 27), vec![
                 Statement::Expr(ExprStatement::new_simple(
                     make_span!(11, 25), 
-                    Expr::new_postfix(PostfixExpr::new_function_call(
+                    Expr::Postfix(PostfixExpr::new_function_call(
                         PostfixExpr::new_primary(PrimaryExpr::Ident(IdentExpr::new(make_id!(2), make_span!(11, 17)))),
                         make_span!(18, 24), vec![
                             Expr::new_lit(LitExpr::new(LitValue::new_str_lit(make_id!(3)), make_span!(19, 23)))

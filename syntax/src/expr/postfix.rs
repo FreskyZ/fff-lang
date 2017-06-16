@@ -80,9 +80,7 @@ impl ISyntaxItemFormat for PostfixExpr {
     }
 }
 impl fmt::Debug for PostfixExpr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "\n{}", self.format(0))
-    }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
 }
 impl PostfixExpr { // New
 

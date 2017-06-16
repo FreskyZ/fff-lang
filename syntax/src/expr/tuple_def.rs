@@ -29,7 +29,7 @@ use super::super::ISyntaxItemGrammar;
 // Paren expr is a side effect of TupleDef
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct ParenExpr {
-    pub expr: Expr,
+    pub expr: Box<Expr>,
     pub span: Span,  // paren_span also all_span
 }
 impl ISyntaxItemFormat for ParenExpr {
@@ -41,7 +41,7 @@ impl fmt::Debug for ParenExpr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
 }
 impl ParenExpr {
-    pub fn new(span: Span, expr: Expr) -> ParenExpr { ParenExpr{ expr, span } }
+    pub fn new(span: Span, expr: Expr) -> ParenExpr { ParenExpr{ expr: Box::new(expr), span } }
 }
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
@@ -92,6 +92,7 @@ impl ISyntaxItemParse for TupleDef {
 
 #[cfg(test)] #[test]
 fn tuple_def_parse() {
+    use super::BinaryExpr;
     use super::super::ISyntaxItemWithStr;
 
     //                                   01234567
@@ -104,11 +105,11 @@ fn tuple_def_parse() {
     //                                   0123456
     assert_eq!{ TupleDef::with_test_str("(1 + 1)"),
         PrimaryExpr::Paren(ParenExpr::new(make_span!(0, 6), 
-            Expr::new_binary(
+            Expr::Binary(BinaryExpr::new(
                 Expr::new_lit(LitExpr::new(LitValue::from(1), make_span!(1, 1))), 
                 SeperatorKind::Add, make_span!(3, 3),
                 Expr::new_lit(LitExpr::new(LitValue::from(1), make_span!(5, 5))),
-            )
+            ))
         ))
     }
 }

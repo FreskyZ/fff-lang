@@ -24,6 +24,7 @@ pub use self::items::Name;
 pub use self::expr::LitExpr;
 pub use self::expr::IdentExpr;
 pub use self::expr::Expr;
+pub use self::expr::BinaryExpr;
 pub use self::expr::UnaryExpr;
 pub use self::expr::PostfixExpr;
 pub use self::expr::PrimaryExpr;
