@@ -10,13 +10,14 @@ use lexical::Token;
 use lexical::SeperatorKind;
 use lexical::SeperatorCategory;
 
+use super::PostfixExpr;
+use super::PrimaryExpr;
+
 use super::super::ParseSession;
 use super::super::ParseResult;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
-use super::postfix::PostfixExpr;
-use super::primary::PrimaryExpr;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 struct ActualUnaryExpr {

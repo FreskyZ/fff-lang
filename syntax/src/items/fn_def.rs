@@ -132,7 +132,7 @@ fn fn_def_parse() {
     use super::super::TypeUse;
     use super::super::Statement;
     use super::super::ExprStatement;
-    use super::super::BinaryExpr;
+    use super::super::Expr;
     use super::super::PostfixExpr;
     use super::super::PrimaryExpr;
 
@@ -145,7 +145,7 @@ fn fn_def_parse() {
             Block::new(make_span!(10, 11), vec![])
         )
     }
-    
+
     //                                  0        1
     //                                  0123456789012345678
     assert_eq!{ FnDef::with_test_input("fn main(ac: i32) {}", &mut make_symbols!["main", "ac", "i32"]),
@@ -187,10 +187,10 @@ fn fn_def_parse() {
             None,
             Block::new(make_span!(63, 80), vec![
                 Statement::Expr(ExprStatement::new_simple(make_span!(65, 78),
-                    BinaryExpr::new_postfix(PostfixExpr::new_function_call(
+                    Expr::new_postfix(PostfixExpr::new_function_call(
                         PostfixExpr::new_primary(PrimaryExpr::Ident(IdentExpr::new(make_id!(9), make_span!(65, 71)))),
                         make_span!(72, 77), vec![
-                            BinaryExpr::new_ident(IdentExpr::new(make_id!(5), make_span!(73, 76)))
+                            Expr::new_ident(IdentExpr::new(make_id!(5), make_span!(73, 76)))
                         ]
                     ))
                 ))

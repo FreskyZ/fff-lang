@@ -18,21 +18,21 @@ use message::Message;
 use lexical::Token;
 use lexical::SeperatorKind;
 
+use super::Expr;
+use super::PrimaryExpr;
+
 use super::super::ParseSession;
 use super::super::ParseResult;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
-use super::super::BinaryExpr;
-
-use super::primary::PrimaryExpr;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 enum ActualPostfix {
     MemberAccess(SymbolID, [Span; 2]),          // dot's position, xxx's position
-    Subscription(Vec<BinaryExpr>, Span),      // []'s position
-    FunctionCall(Vec<BinaryExpr>, Span),      // ()'s position
-    MemberFunctionCall(SymbolID, Vec<BinaryExpr>, [Span; 3]), // dot's position, xxx's position ()'s position
+    Subscription(Vec<Expr>, Span),      // []'s position
+    FunctionCall(Vec<Expr>, Span),      // ()'s position
+    MemberFunctionCall(SymbolID, Vec<Expr>, [Span; 3]), // dot's position, xxx's position ()'s position
 }
 #[cfg_attr(test, derive(Eq, PartialEq))]
 enum PostfixExprImpl {
@@ -90,16 +90,16 @@ impl PostfixExpr { // New
         PostfixExpr(Box::new(PostfixExprImpl::Primary(primary_expr)))
     }
 
-    pub fn new_subscription(postfix_expr: PostfixExpr, bracket_strpos: Span, exprs: Vec<BinaryExpr>) -> PostfixExpr {
+    pub fn new_subscription(postfix_expr: PostfixExpr, bracket_strpos: Span, exprs: Vec<Expr>) -> PostfixExpr {
         let all_strpos = postfix_expr.get_all_span().merge(&bracket_strpos);
         PostfixExpr(Box::new(PostfixExprImpl::Postfix(postfix_expr, ActualPostfix::Subscription(exprs, bracket_strpos), all_strpos)))
     }
-    pub fn new_function_call(postfix_expr: PostfixExpr, paren_strpos: Span, exprs: Vec<BinaryExpr>) -> PostfixExpr {
+    pub fn new_function_call(postfix_expr: PostfixExpr, paren_strpos: Span, exprs: Vec<Expr>) -> PostfixExpr {
         let all_strpos = postfix_expr.get_all_span().merge(&paren_strpos);
         PostfixExpr(Box::new(PostfixExprImpl::Postfix(postfix_expr, ActualPostfix::FunctionCall(exprs, paren_strpos), all_strpos)))
     }
     pub fn new_member_function_call(postfix_expr: PostfixExpr, 
-        dot_strpos: Span, name: SymbolID, ident_strpos: Span, paren_strpos: Span, exprs: Vec<BinaryExpr>) -> PostfixExpr {
+        dot_strpos: Span, name: SymbolID, ident_strpos: Span, paren_strpos: Span, exprs: Vec<Expr>) -> PostfixExpr {
         let all_strpos = postfix_expr.get_all_span().merge(&paren_strpos);
         PostfixExpr(Box::new(PostfixExprImpl::Postfix(postfix_expr, 
             ActualPostfix::MemberFunctionCall(name, exprs, [dot_strpos, ident_strpos, paren_strpos]), all_strpos)))
@@ -111,7 +111,7 @@ impl PostfixExpr { // New
     }
 
     // parse helper, don't want to handle this there
-    fn new_function_call_auto_merge_prev_member_access(postfix_expr: PostfixExpr, paren_strpos: Span, exprs: Vec<BinaryExpr>) -> PostfixExpr {
+    fn new_function_call_auto_merge_prev_member_access(postfix_expr: PostfixExpr, paren_strpos: Span, exprs: Vec<Expr>) -> PostfixExpr {
         use std::mem; // strange method to move boxed out from immutable ref self
         unsafe { 
             match *Box::into_raw(postfix_expr.0) {
@@ -212,7 +212,7 @@ impl ISyntaxItemParse for PostfixExpr {
 
             // Get the expression list
             sess.move_next();
-            let expr1 = BinaryExpr::parse(sess)?;
+            let expr1 = Expr::parse(sess)?;
             let mut exprs = vec![expr1];
             'expr: loop { 
                 match (&expect_end_sep, sess.tk, sess.pos, sess.next_tk, sess.next_pos) {
@@ -248,7 +248,7 @@ impl ISyntaxItemParse for PostfixExpr {
                     }
                     (_, &Token::Sep(SeperatorKind::Comma), _, _, _) => {
                         sess.move_next();
-                        exprs.push(BinaryExpr::parse(sess)?);
+                        exprs.push(Expr::parse(sess)?);
                     }
                     _ => (),
                 }
@@ -340,7 +340,7 @@ fn postfix_expr_parse() {
     use super::IdentExpr;
 
     macro_rules! ident {
-        ($name: expr, $strpos: expr) => (BinaryExpr::new_primary(PrimaryExpr::Ident(IdentExpr::new($name, $strpos))));
+        ($name: expr, $strpos: expr) => (Expr::new_primary(PrimaryExpr::Ident(IdentExpr::new($name, $strpos))));
         (post, $name: expr, $strpos: expr) => (PostfixExpr::new_primary(PrimaryExpr::Ident(IdentExpr::new($name, $strpos))))
     }
 

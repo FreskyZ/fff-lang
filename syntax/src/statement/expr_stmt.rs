@@ -1,7 +1,7 @@
 ///! fff-lang
 ///! 
 ///! syntax/expr_stmt
-///! ExprStatement = BinaryExpr [AssignOperator BinaryExpr] fSemiColon
+///! ExprStatement = Expr [AssignOperator Expr] fSemiColon
 
 use std::fmt;
 
@@ -15,17 +15,17 @@ use super::super::ParseResult;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
-use super::super::BinaryExpr;
+use super::super::Expr;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 struct SimpleExprStatement {
-    expr: BinaryExpr, 
+    expr: Expr, 
     all_strpos: Span, // include semicolon
 }
 #[cfg_attr(test, derive(Eq, PartialEq))]
 struct AssignExprStatement {
-    left: BinaryExpr,
-    right: BinaryExpr,
+    left: Expr,
+    right: Expr,
     assign_op: SeperatorKind,
     assign_op_strpos: Span,
     all_strpos: Span,
@@ -58,11 +58,11 @@ impl fmt::Debug for ExprStatement {
 }
 impl ExprStatement {
     
-    pub fn new_simple(all_strpos: Span, expr: BinaryExpr) -> ExprStatement { 
+    pub fn new_simple(all_strpos: Span, expr: Expr) -> ExprStatement { 
         ExprStatement(ActualExprStatement::Simple(SimpleExprStatement{ expr, all_strpos })) 
     }
     pub fn new_assign(all_strpos: Span, 
-        assign_op: SeperatorKind, assign_op_strpos: Span, left: BinaryExpr, right: BinaryExpr) -> ExprStatement {
+        assign_op: SeperatorKind, assign_op_strpos: Span, left: Expr, right: Expr) -> ExprStatement {
         ExprStatement(ActualExprStatement::Assign(AssignExprStatement{
             left: left, right: right, assign_op: assign_op, assign_op_strpos: assign_op_strpos, all_strpos: all_strpos
         }))
@@ -78,19 +78,19 @@ impl ExprStatement {
         }
     }
 
-    pub fn get_expr(&self) -> Option<&BinaryExpr> {
+    pub fn get_expr(&self) -> Option<&Expr> {
         match self.0 {
             ActualExprStatement::Simple(ref simple) => Some(&simple.expr),
             ActualExprStatement::Assign(_) => None,
         }
     }
-    pub fn get_left_expr(&self) -> Option<&BinaryExpr> {
+    pub fn get_left_expr(&self) -> Option<&Expr> {
         match self.0 {
             ActualExprStatement::Simple(_) => None,
             ActualExprStatement::Assign(ref assign) => Some(&assign.left),
         }
     }
-    pub fn get_right_expr(&self) -> Option<&BinaryExpr> {
+    pub fn get_right_expr(&self) -> Option<&Expr> {
         match self.0 {
             ActualExprStatement::Simple(_) => None,
             ActualExprStatement::Assign(ref assign) => Some(&assign.right),
@@ -110,7 +110,7 @@ impl ExprStatement {
     }
 }
 impl ISyntaxItemGrammar for ExprStatement {
-    fn is_first_final(sess: &ParseSession) -> bool { BinaryExpr::is_first_final(sess) }
+    fn is_first_final(sess: &ParseSession) -> bool { Expr::is_first_final(sess) }
 }
 impl ISyntaxItemParse for ExprStatement {
     type Target = ExprStatement;
@@ -118,7 +118,7 @@ impl ISyntaxItemParse for ExprStatement {
     fn parse(sess: &mut ParseSession) -> ParseResult<ExprStatement> {
 
         let starting_strpos = sess.pos;
-        let left_expr = BinaryExpr::parse(sess)?;
+        let left_expr = Expr::parse(sess)?;
 
         let (assign_op, assign_op_strpos) = match (sess.tk, sess.pos) {
             (&Token::Sep(SeperatorKind::SemiColon), ref semi_colon_strpos) => {
@@ -132,7 +132,7 @@ impl ISyntaxItemParse for ExprStatement {
             _ => return sess.push_unexpect("assignment operator, semicolon"),
         };
 
-        let right_expr = BinaryExpr::parse(sess)?;
+        let right_expr = Expr::parse(sess)?;
         let ending_strpos = sess.pos;
         sess.expect_sep(SeperatorKind::SemiColon)?;
         return Ok(ExprStatement::new_assign(starting_strpos.merge(&ending_strpos), assign_op, assign_op_strpos, left_expr, right_expr));
@@ -145,7 +145,7 @@ fn expr_stmt_parse() {
     use lexical::LitValue;
     use super::super::LitExpr;
     use super::super::IdentExpr;
-    use super::super::BinaryExpr;
+    use super::super::Expr;
     use super::super::PostfixExpr;
     use super::super::PrimaryExpr;
     use super::super::ISyntaxItemWithStr;
@@ -155,11 +155,11 @@ fn expr_stmt_parse() {
     assert_eq!{ ExprStatement::with_test_input_ret_size("writeln(\"helloworld\");", &mut make_symbols!["writeln", "helloworld"]), (
         Some(ExprStatement::new_simple(
             make_span!(0, 21),
-            BinaryExpr::new_postfix(
+            Expr::new_postfix(
                 PostfixExpr::new_function_call(
                     PostfixExpr::new_primary(PrimaryExpr::Ident(IdentExpr::new(make_id!(1), make_span!(0, 6)))),
                     make_span!(7, 20), vec![
-                    BinaryExpr::new_lit(LitExpr::new(LitValue::new_str_lit(make_id!(2)), make_span!(8, 19)))
+                    Expr::new_lit(LitExpr::new(LitValue::new_str_lit(make_id!(2)), make_span!(8, 19)))
                 ])
             )
         )),
@@ -171,12 +171,12 @@ fn expr_stmt_parse() {
         Some(ExprStatement::new_assign(
             make_span!(0, 11),
             SeperatorKind::ShiftLeftAssign, make_span!(6, 8),
-            BinaryExpr::new_binary(
-                BinaryExpr::new_lit(LitExpr::new(LitValue::from(1), make_span!(0, 0))),
+            Expr::new_binary(
+                Expr::new_lit(LitExpr::new(LitValue::from(1), make_span!(0, 0))),
                 SeperatorKind::Add, make_span!(2, 2),
-                BinaryExpr::new_lit(LitExpr::new(LitValue::from(1), make_span!(4, 4))),
+                Expr::new_lit(LitExpr::new(LitValue::from(1), make_span!(4, 4))),
             ),
-            BinaryExpr::new_lit(LitExpr::new(LitValue::from(2), make_span!(10, 10)))
+            Expr::new_lit(LitExpr::new(LitValue::from(2), make_span!(10, 10)))
         )),
         6
     )}

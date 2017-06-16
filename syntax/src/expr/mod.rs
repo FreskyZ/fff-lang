@@ -4,14 +4,22 @@
 
 mod lit_expr;
 mod ident_expr;
+mod expr_list;
+mod tuple_def;
+mod array_def;
 mod primary;
 mod postfix;
 mod unary;
-mod binary;
+mod binary_expr;
 
 pub use self::lit_expr::LitExpr;
 pub use self::ident_expr::IdentExpr;
-pub use self::binary::BinaryExpr;
+pub use self::expr_list::ExprList;
+pub use self::expr_list::ExprListParseResult;
+pub use self::tuple_def::ParenExpr;
+pub use self::tuple_def::TupleDef;
+pub use self::array_def::ArrayDef;
+pub use self::binary_expr::Expr;
 pub use self::unary::UnaryExpr;
 pub use self::postfix::PostfixExpr;
 pub use self::primary::PrimaryExpr;
@@ -23,11 +31,11 @@ pub use self::primary::PrimaryExpr;
 //     use super::ISyntaxItemFormat;
 
 //     // Quickly get lit and ident
-//     let actual_lit = BinaryExpr::new_lit(LitExpr::new(LitValue::from(42), make_span!(2, 3)));
+//     let actual_lit = Expr::new_lit(LitExpr::new(LitValue::from(42), make_span!(2, 3)));
 
 //     println!("{:?}", 
 //         Some(&actual_lit)
-//             .and_then(BinaryExpr::get_unary)
+//             .and_then(Expr::get_unary)
 //             .and_then(UnaryExpr::get_postfix)
 //             .and_then(PostfixExpr::get_primary)
 //             .map(|primary| primary.format(0))
@@ -41,25 +49,25 @@ fn expr_parse() {
     use lexical::LitValue;
     use super::ISyntaxItemWithStr;
 
-    assert_eq!{ BinaryExpr::with_test_str("\"abc\""),
-        BinaryExpr::new_lit(LitExpr::new(LitValue::new_str_lit(make_id!(1)), make_span!(0, 4)))
+    assert_eq!{ Expr::with_test_str("\"abc\""),
+        Expr::new_lit(LitExpr::new(LitValue::new_str_lit(make_id!(1)), make_span!(0, 4)))
     }
-    assert_eq!{ BinaryExpr::with_test_str("0xfffu64"), 
-        BinaryExpr::new_lit(LitExpr::new(LitValue::from(0xFFFu64), make_span!(0, 7)))
+    assert_eq!{ Expr::with_test_str("0xfffu64"), 
+        Expr::new_lit(LitExpr::new(LitValue::from(0xFFFu64), make_span!(0, 7)))
     }
-    assert_eq!{ BinaryExpr::with_test_str("'f'"), 
-        BinaryExpr::new_lit(LitExpr::new(LitValue::from('f'), make_span!(0, 2)))
+    assert_eq!{ Expr::with_test_str("'f'"), 
+        Expr::new_lit(LitExpr::new(LitValue::from('f'), make_span!(0, 2)))
     }
-    assert_eq!{ BinaryExpr::with_test_str("true"),
-        BinaryExpr::new_lit(LitExpr::new(LitValue::from(true), make_span!(0, 3)))
-    }
-
-    assert_eq!{ BinaryExpr::with_test_str("binary_expr"),
-        BinaryExpr::new_ident(IdentExpr::new(make_id!(1), make_span!(0, 10)))
+    assert_eq!{ Expr::with_test_str("true"),
+        Expr::new_lit(LitExpr::new(LitValue::from(true), make_span!(0, 3)))
     }
 
-    assert_eq!{ BinaryExpr::with_test_str("(  )"),
-        BinaryExpr::new_lit(LitExpr::new(LitValue::Unit, make_span!(0, 3)))
+    assert_eq!{ Expr::with_test_str("binary_expr"),
+        Expr::new_ident(IdentExpr::new(make_id!(1), make_span!(0, 10)))
+    }
+
+    assert_eq!{ Expr::with_test_str("(  )"),
+        Expr::new_lit(LitExpr::new(LitValue::Unit, make_span!(0, 3)))
     }
 }
 

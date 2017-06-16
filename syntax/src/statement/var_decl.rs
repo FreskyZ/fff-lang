@@ -1,8 +1,8 @@
 ///! fff-lang
 ///! 
 ///! syntax/var_decl
-///! ConstDecl = fConst fIdentifier [fColon TypeUse] [fAssign BinaryExpr] fSemiColon
-///! VarDecl = fVar fIdentifier [fColon TypeUse] [fAssign BinaryExpr] fSemiColon
+///! ConstDecl = fConst fIdentifier [fColon TypeUse] [fAssign Expr] fSemiColon
+///! VarDecl = fVar fIdentifier [fColon TypeUse] [fAssign Expr] fSemiColon
 
 use std::fmt;
 
@@ -18,7 +18,7 @@ use super::super::ParseResult;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
-use super::super::BinaryExpr;
+use super::super::Expr;
 use super::super::TypeUse;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
@@ -27,7 +27,7 @@ pub struct VarDeclStatement {
     pub name: SymbolID,
     pub name_span: Span,
     pub typeuse: Option<TypeUse>,
-    pub init_expr: Option<BinaryExpr>,
+    pub init_expr: Option<Expr>,
     pub all_span: Span,
 }
 impl ISyntaxItemFormat for VarDeclStatement {
@@ -47,17 +47,17 @@ impl VarDeclStatement {
 
     pub fn new(all_span: Span, 
         is_const: bool, name: SymbolID, name_span: Span, 
-        typeuse: Option<TypeUse>, init_expr: Option<BinaryExpr>) -> VarDeclStatement {
+        typeuse: Option<TypeUse>, init_expr: Option<Expr>) -> VarDeclStatement {
         VarDeclStatement{ all_span, is_const, name, name_span, typeuse, init_expr }
     }
     pub fn new_const(all_span: Span, 
         name: SymbolID, name_span: Span, 
-        typeuse: Option<TypeUse>, init_expr: Option<BinaryExpr>) -> VarDeclStatement {
+        typeuse: Option<TypeUse>, init_expr: Option<Expr>) -> VarDeclStatement {
         VarDeclStatement{ all_span, is_const: true, name, name_span, typeuse, init_expr }
     }
     pub fn new_var(all_span: Span, 
         name: SymbolID, name_span: Span, 
-        typeuse: Option<TypeUse>, init_expr: Option<BinaryExpr>) -> VarDeclStatement {
+        typeuse: Option<TypeUse>, init_expr: Option<Expr>) -> VarDeclStatement {
         VarDeclStatement{ all_span, is_const: false, name, name_span, typeuse, init_expr }
     }
 }
@@ -79,7 +79,7 @@ impl ISyntaxItemParse for VarDeclStatement {
 
         let (name, name_strpos) = sess.expect_ident_or(vec![KeywordKind::Underscore])?;
         let maybe_decltype = if sess.tk == &Token::Sep(SeperatorKind::Colon) { sess.move_next(); Some(TypeUse::parse(sess)?) } else { None };
-        let maybe_init_expr = if sess.tk == &Token::Sep(SeperatorKind::Assign) { sess.move_next(); Some(BinaryExpr::parse(sess)?) } else { None };
+        let maybe_init_expr = if sess.tk == &Token::Sep(SeperatorKind::Assign) { sess.move_next(); Some(Expr::parse(sess)?) } else { None };
         if maybe_decltype.is_none() && maybe_init_expr.is_none() {
             sess.push_message(Message::with_help_by_str("require type annotation", 
                 vec![(name_strpos, "variable declaration here")],
@@ -100,6 +100,9 @@ fn var_decl_stmt_parse() {
     use lexical::LitValue;
     use super::super::IdentExpr;
     use super::super::LitExpr;
+    use super::super::TupleDef;
+    use super::super::ArrayDef;
+    use super::super::ExprList;
     use super::super::TypeUse;
     use super::super::ISyntaxItemWithStr;
     
@@ -108,7 +111,7 @@ fn var_decl_stmt_parse() {
         VarDeclStatement::new_const(make_span!(0, 13),
             make_id!(1), make_span!(6, 8),
             None,
-            Some(BinaryExpr::new_lit(LitExpr::new(LitValue::from(0), make_span!(12, 12))))
+            Some(Expr::new_lit(LitExpr::new(LitValue::from(0), make_span!(12, 12))))
         )
     }
 
@@ -118,11 +121,11 @@ fn var_decl_stmt_parse() {
         VarDeclStatement::new_var(make_span!(0, 19),
             make_id!(1), make_span!(4, 6),
             None,
-            Some(BinaryExpr::new_array(make_span!(10, 18), vec![
-                BinaryExpr::new_lit(LitExpr::new(LitValue::from(1), make_span!(11, 11))),
-                BinaryExpr::new_lit(LitExpr::new(LitValue::from(3), make_span!(14, 14))),
-                BinaryExpr::new_lit(LitExpr::new(LitValue::from(5), make_span!(17, 17))),
-            ]))
+            Some(Expr::new_array(ArrayDef::new(make_span!(10, 18), ExprList::new(vec![
+                Expr::new_lit(LitExpr::new(LitValue::from(1), make_span!(11, 11))),
+                Expr::new_lit(LitExpr::new(LitValue::from(3), make_span!(14, 14))),
+                Expr::new_lit(LitExpr::new(LitValue::from(5), make_span!(17, 17))),
+            ]))))
         )
     }
     
@@ -166,14 +169,14 @@ fn var_decl_stmt_parse() {
                 ]),
                 TypeUse::new_simple(make_id!(3), make_span!(16, 18))
             ])),
-            Some(BinaryExpr::new_tuple(make_span!(23, 46), vec![
-                BinaryExpr::new_array(make_span!(24, 40), vec![
-                    BinaryExpr::new_lit(LitExpr::new(LitValue::from(1u8), make_span!(25, 27))),
-                    BinaryExpr::new_lit(LitExpr::new(LitValue::from(5u8), make_span!(30, 32))),
-                    BinaryExpr::new_lit(LitExpr::new(LitValue::from(7u8), make_span!(35, 39)))
-                ]),
-                BinaryExpr::new_ident(IdentExpr::new(make_id!(4), make_span!(43, 45)))
-            ]))
+            Some(Expr::new_tuple(TupleDef::new(make_span!(23, 46), ExprList::new(vec![
+                Expr::new_array(ArrayDef::new(make_span!(24, 40), ExprList::new(vec![
+                    Expr::new_lit(LitExpr::new(LitValue::from(1u8), make_span!(25, 27))),
+                    Expr::new_lit(LitExpr::new(LitValue::from(5u8), make_span!(30, 32))),
+                    Expr::new_lit(LitExpr::new(LitValue::from(7u8), make_span!(35, 39)))
+                ]))),
+                Expr::new_ident(IdentExpr::new(make_id!(4), make_span!(43, 45)))
+            ]))))
         )
     }
 

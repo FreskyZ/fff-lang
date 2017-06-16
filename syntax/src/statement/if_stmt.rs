@@ -1,7 +1,7 @@
 ///! fff-lang
 ///!
 ///! syntax/if_stmt
-///! IfStatement = fIf BinaryExpr Block [fElse fIf BinaryExpr Block]* [ fElse Block ]
+///! IfStatement = fIf Expr Block [fElse fIf Expr Block]* [ fElse Block ]
 
 use std::fmt;
 
@@ -14,19 +14,19 @@ use super::super::ParseResult;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
-use super::super::BinaryExpr;
+use super::super::Expr;
 use super::super::Block;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct IfConditionBody {
     if_strpos: Span, // or `else if`'s strpos
-    cond_expr: BinaryExpr,
+    cond_expr: Expr,
     body: Block,
 }
 impl IfConditionBody {
-    pub fn new(if_strpos: Span, cond_expr: BinaryExpr, body: Block) -> IfConditionBody { IfConditionBody{ if_strpos, cond_expr, body } }
+    pub fn new(if_strpos: Span, cond_expr: Expr, body: Block) -> IfConditionBody { IfConditionBody{ if_strpos, cond_expr, body } }
     pub fn get_if_strpos(&self) -> Span { self.if_strpos }
-    pub fn get_cond_expr(&self) -> &BinaryExpr { &self.cond_expr }
+    pub fn get_cond_expr(&self) -> &Expr { &self.cond_expr }
     pub fn get_body(&self) -> &Block { &self.body }
 }
 
@@ -67,7 +67,7 @@ impl fmt::Debug for IfStatement {
 }
 impl IfStatement {
 
-    pub fn new_if(all_strpos: Span, if_strpos: Span, cond_expr: BinaryExpr, body: Block) -> IfStatement {
+    pub fn new_if(all_strpos: Span, if_strpos: Span, cond_expr: Expr, body: Block) -> IfStatement {
         IfStatement {
             base: IfConditionBody::new(if_strpos, cond_expr, body),
             elseifs: Vec::new(),
@@ -77,7 +77,7 @@ impl IfStatement {
         }
     }
     pub fn new_ifelse(all_strpos: Span, 
-        if_strpos: Span, cond_expr: BinaryExpr, if_body: Block, 
+        if_strpos: Span, cond_expr: Expr, if_body: Block, 
         else_strpos: Span, else_body: Block) -> IfStatement {
         IfStatement {
             base: IfConditionBody::new(if_strpos, cond_expr, if_body),
@@ -88,7 +88,7 @@ impl IfStatement {
         }
     }
     pub fn new_ifelseif(all_strpos: Span,
-        if_strpos: Span, cond_expr: BinaryExpr, if_body: Block,
+        if_strpos: Span, cond_expr: Expr, if_body: Block,
         elseifs: Vec<IfConditionBody>) -> IfStatement {
         IfStatement {
             base: IfConditionBody::new(if_strpos, cond_expr, if_body),
@@ -99,7 +99,7 @@ impl IfStatement {
         }
     }
     pub fn new_ifelseifelse(all_strpos: Span, 
-        if_strpos: Span, cond_expr: BinaryExpr, if_body: Block, 
+        if_strpos: Span, cond_expr: Expr, if_body: Block, 
         elseifs: Vec<IfConditionBody>,
         else_strpos: Span, else_body: Block) -> IfStatement {
         IfStatement {
@@ -113,7 +113,7 @@ impl IfStatement {
 
     pub fn get_all_strpos(&self) -> Span { self.all_strpos }
     pub fn get_if_strpos(&self) -> Span { self.base.if_strpos }
-    pub fn get_if_expr(&self) -> &BinaryExpr { &self.base.cond_expr }
+    pub fn get_if_expr(&self) -> &Expr { &self.base.cond_expr }
     pub fn get_if_body(&self) -> &Block { &self.base.body }
     pub fn get_elseifs(&self) -> &Vec<IfConditionBody> { &self.elseifs }
     pub fn get_else_body(&self) -> Option<&Block> { self.else_body.as_ref() }
@@ -131,7 +131,7 @@ impl ISyntaxItemParse for IfStatement {
         let if_strpos = sess.pos;
         sess.move_next();
         
-        let if_expr = BinaryExpr::parse(sess)?;
+        let if_expr = Expr::parse(sess)?;
         let if_body = Block::parse(sess)?;
 
         let mut elseifs = Vec::new();
@@ -144,7 +144,7 @@ impl ISyntaxItemParse for IfStatement {
                     &Token::Keyword(KeywordKind::If), ref if_strpos) => {
                     sess.move_next2();
                     let elseif_strpos = else_strpos.merge(&if_strpos);
-                    let elseif_expr = BinaryExpr::parse(sess)?;
+                    let elseif_expr = Expr::parse(sess)?;
                     let elseif_body = Block::parse(sess)?;
                     ending_strpos = elseif_body.all_span;
                     elseifs.push(IfConditionBody::new(elseif_strpos, elseif_expr, elseif_body));
@@ -182,11 +182,11 @@ fn if_stmt_parse() {
     assert_eq!{ IfStatement::with_test_str("if true { } else if false { } else {}"),
         IfStatement::new_ifelseifelse(make_span!(0, 36),
             make_span!(0, 1),
-            BinaryExpr::new_lit(LitExpr::new(LitValue::from(true), make_span!(3, 6))),
+            Expr::new_lit(LitExpr::new(LitValue::from(true), make_span!(3, 6))),
             Block::new(make_span!(8, 10), vec![]), vec![
                 IfConditionBody::new(
                     make_span!(12, 18),
-                    BinaryExpr::new_lit(LitExpr::new(LitValue::from(false), make_span!(20, 24))),
+                    Expr::new_lit(LitExpr::new(LitValue::from(false), make_span!(20, 24))),
                     Block::new(make_span!(26, 28), vec![])
                 )
             ],

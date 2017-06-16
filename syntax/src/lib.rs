@@ -23,10 +23,14 @@ pub use self::items::NameSegment;
 pub use self::items::Name;
 pub use self::expr::LitExpr;
 pub use self::expr::IdentExpr;
-pub use self::expr::BinaryExpr;
+pub use self::expr::Expr;
 pub use self::expr::UnaryExpr;
 pub use self::expr::PostfixExpr;
 pub use self::expr::PrimaryExpr;
+pub use self::expr::ParenExpr;
+pub use self::expr::TupleDef;
+pub use self::expr::ExprList;
+pub use self::expr::ArrayDef;
 pub use self::statement::Statement;
 pub use self::statement::VarDeclStatement;
 pub use self::statement::ReturnStatement;
@@ -54,3 +58,4 @@ pub use self::traits::ISyntaxItemWithStr;
 // prepare to merge postfix expr, unary expr and binary expr into primary expr enum
 // rename primary expr to expr and compliantly alias it
 // move (at that time a simple dispatcher) PrimaryExpr dispatcher to expr/mod.rs, and finish all expr integrate tests
+// abort IdentExpr to use Name, check name should be single segment at many where
