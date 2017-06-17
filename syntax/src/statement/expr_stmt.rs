@@ -156,11 +156,12 @@ fn expr_stmt_parse() {
     assert_eq!{ ExprStatement::with_test_input_ret_size("writeln(\"helloworld\");", &mut make_symbols!["writeln", "helloworld"]), (
         Some(ExprStatement::new_simple(
             make_span!(0, 21),
-            Expr::Postfix(PostfixExpr::new_function_call(
-                PostfixExpr::new_primary(PrimaryExpr::Ident(IdentExpr::new(make_id!(1), make_span!(0, 6)))),
+            Expr::Postfix(PostfixExpr::FunctionCall(
+                Box::new(Expr::Primary(PrimaryExpr::Ident(IdentExpr::new(make_id!(1), make_span!(0, 6))))),
                 make_span!(7, 20), vec![
-                Expr::new_lit(LitExpr::new(LitValue::new_str_lit(make_id!(2)), make_span!(8, 19)))
-            ]))
+                    Expr::new_lit(LitExpr::new(LitValue::new_str_lit(make_id!(2)), make_span!(8, 19)))
+                ]
+            ))
         )),
         5
     )}

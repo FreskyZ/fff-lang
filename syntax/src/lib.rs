@@ -52,11 +52,10 @@ use self::traits::ISyntaxItemGrammar;
 pub use self::traits::ISyntaxItemParse; // for semantic/traits
 pub use self::traits::ISyntaxItemWithStr;
 
-// TODO: continue seperate struct from PrimaryExpr enum members
+// TODO: 
 // finish these structs test
 // finish primary expr _format, _parse and _errors tests
 // replace proper place by IdentExpr and ExprList
-// prepare to merge postfix expr, unary expr and binary expr into primary expr enum
-// rename primary expr to expr and compliantly alias it
-// move (at that time a simple dispatcher) PrimaryExpr dispatcher to expr/mod.rs, and finish all expr integrate tests
+// seperate PostfixExpr members, decide too remove member function call
+// merge postfix expr and primary expr enums into expr enum
 // abort IdentExpr to use Name, check name should be single segment at many where

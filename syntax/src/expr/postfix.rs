@@ -28,125 +28,60 @@ use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
-enum ActualPostfix {
-    MemberAccess(SymbolID, [Span; 2]),          // dot's position, xxx's position
-    Subscription(Vec<Expr>, Span),      // []'s position
-    FunctionCall(Vec<Expr>, Span),      // ()'s position
-    MemberFunctionCall(SymbolID, Vec<Expr>, [Span; 3]), // dot's position, xxx's position ()'s position
+pub enum PostfixExpr {
+    MemberAccess(Box<Expr>, Span, SymbolID, Span),
+    Subscription(Box<Expr>, Span, Vec<Expr>),
+    FunctionCall(Box<Expr>, Span, Vec<Expr>),
 }
-#[cfg_attr(test, derive(Eq, PartialEq))]
-enum PostfixExprImpl {
-    Primary(PrimaryExpr),
-    Postfix(PostfixExpr, ActualPostfix, Span), // all_strpos
-}
-#[cfg_attr(test, derive(Eq, PartialEq))]
-pub struct PostfixExpr(Box<PostfixExprImpl>);
-
 impl ISyntaxItemFormat for PostfixExpr {
     fn format(&self, indent: u32) -> String {
-        match self.0.as_ref() {
-            &PostfixExprImpl::Primary(ref primary_expr) => primary_expr.format(indent),
-            &PostfixExprImpl::Postfix(ref postfix_expr, ActualPostfix::Subscription(ref exprs, ref bracket_strpos), ref all_strpos) => 
-                format!("{}PostfixExpr <{:?}>\n{}\n{}Subscription {}<{:?}>{}", 
-                    PostfixExpr::indent_str(indent), all_strpos,
-                    postfix_expr.format(indent + 1),
-                    PostfixExpr::indent_str(indent + 1), if exprs.is_empty() { "(empty) " } else { "" }, bracket_strpos, 
-                    exprs.iter().fold(String::new(), |mut buf, expr| { buf.push_str("\n"); buf.push_str(&expr.format(indent + 2)); buf })),
-            &PostfixExprImpl::Postfix(ref postfix_expr, ActualPostfix::FunctionCall(ref exprs, ref paren_strpos), ref all_strpos) => 
-                format!("{}PostfixExpr <{:?}>\n{}\n{}FunctionCall {}<{:?}>{}", 
-                    PostfixExpr::indent_str(indent), all_strpos,
-                    postfix_expr.format(indent + 1),
-                    PostfixExpr::indent_str(indent + 1), if exprs.is_empty() { "(empty) " } else { "" }, paren_strpos, 
-                    exprs.iter().fold(String::new(), |mut buf, expr| { buf.push_str("\n"); buf.push_str(&expr.format(indent + 2)); buf })),
-            &PostfixExprImpl::Postfix(ref postfix_expr, 
-                ActualPostfix::MemberFunctionCall(ref name, ref exprs, ref strposs), ref all_strpos) =>
-                format!("{}PostfixExpr <{:?}>\n{}\n{}MemberFunctionCall {}<{:?}>\n{}'.' <{:?}>\n{}Ident {:?} <{:?}>\n{}paren <{:?}>{}", 
-                    PostfixExpr::indent_str(indent), all_strpos,
-                    postfix_expr.format(indent + 1),
-                    PostfixExpr::indent_str(indent + 1), if exprs.is_empty() { "(empty) " } else { "" }, strposs[0].merge(&strposs[2]),
-                    PostfixExpr::indent_str(indent + 2), strposs[0],
-                    PostfixExpr::indent_str(indent + 2), name, strposs[1],
-                    PostfixExpr::indent_str(indent + 2), strposs[2], 
-                    exprs.iter().fold(String::new(), |mut buf, expr| { buf.push_str("\n"); buf.push_str(&expr.format(indent + 2)); buf })), 
-            &PostfixExprImpl::Postfix(ref postfix_expr, 
-                ActualPostfix::MemberAccess(ref name, ref strposs), ref all_strpos) => 
-                format!("{}PostfixExpr <{:?}>\n{}\n{}MemberAccess <{:?}>\n{}'.' <{:?}>\n{}Ident {:?} <{:?}>",
-                    PostfixExpr::indent_str(indent), all_strpos,
-                    postfix_expr.format(indent + 1), 
-                    PostfixExpr::indent_str(indent + 1), strposs[0].merge(&strposs[1]),
-                    PostfixExpr::indent_str(indent + 2), strposs[0],
-                    PostfixExpr::indent_str(indent + 2), name, strposs[1]),
+        match self {
+            &PostfixExpr::Subscription(ref base, ref bracket_span, ref exprs) =>
+                format!("{}Subscription <{:?}>\n{}\n{}'[]' <{:?}>{}",
+                    PostfixExpr::indent_str(indent), base.get_all_span().merge(bracket_span),
+                    base.format(indent + 1),
+                    PostfixExpr::indent_str(indent + 1), bracket_span, 
+                    exprs.iter().fold(String::new(), |mut buf, expr| { buf.push_str("\n"); buf.push_str(&expr.format(indent + 1)); buf })),
+            &PostfixExpr::FunctionCall(ref base, ref paren_span, ref exprs) => 
+                format!("{}FunctionCall <{:?}>\n{}\n{}'()' <{:?}>{}", 
+                    PostfixExpr::indent_str(indent), base.get_all_span().merge(paren_span),
+                    base.format(indent + 1),
+                    PostfixExpr::indent_str(indent + 1), paren_span, 
+                    exprs.iter().fold(String::new(), |mut buf, expr| { buf.push_str("\n"); buf.push_str(&expr.format(indent + 1)); buf })),
+            &PostfixExpr::MemberAccess(ref base, ref dot_span, ref name, ref name_span) => 
+                format!("{}MemberAccess <{:?}>\n{}\n{}'.' <{:?}>\n{}Ident {:?} <{:?}>",
+                    PostfixExpr::indent_str(indent), base.get_all_span().merge(name_span),
+                    base.format(indent + 1),
+                    PostfixExpr::indent_str(indent + 1), dot_span,
+                    PostfixExpr::indent_str(indent + 1), name, name_span),
         }
     }
 }
 impl fmt::Debug for PostfixExpr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
 }
-impl PostfixExpr { // New
-
-    pub fn new_primary(primary_expr: PrimaryExpr) -> PostfixExpr {
-        PostfixExpr(Box::new(PostfixExprImpl::Primary(primary_expr)))
-    }
-
-    pub fn new_subscription(postfix_expr: PostfixExpr, bracket_strpos: Span, exprs: Vec<Expr>) -> PostfixExpr {
-        let all_strpos = postfix_expr.get_all_span().merge(&bracket_strpos);
-        PostfixExpr(Box::new(PostfixExprImpl::Postfix(postfix_expr, ActualPostfix::Subscription(exprs, bracket_strpos), all_strpos)))
-    }
-    pub fn new_function_call(postfix_expr: PostfixExpr, paren_strpos: Span, exprs: Vec<Expr>) -> PostfixExpr {
-        let all_strpos = postfix_expr.get_all_span().merge(&paren_strpos);
-        PostfixExpr(Box::new(PostfixExprImpl::Postfix(postfix_expr, ActualPostfix::FunctionCall(exprs, paren_strpos), all_strpos)))
-    }
-    pub fn new_member_function_call(postfix_expr: PostfixExpr, 
-        dot_strpos: Span, name: SymbolID, ident_strpos: Span, paren_strpos: Span, exprs: Vec<Expr>) -> PostfixExpr {
-        let all_strpos = postfix_expr.get_all_span().merge(&paren_strpos);
-        PostfixExpr(Box::new(PostfixExprImpl::Postfix(postfix_expr, 
-            ActualPostfix::MemberFunctionCall(name, exprs, [dot_strpos, ident_strpos, paren_strpos]), all_strpos)))
-    }
-    pub fn new_member_access(postfix_expr: PostfixExpr, dot_strpos: Span, name: SymbolID, name_strpos: Span) -> PostfixExpr {
-        let all_strpos = postfix_expr.get_all_span().merge(&name_strpos);
-        PostfixExpr(Box::new(PostfixExprImpl::Postfix(postfix_expr, 
-            ActualPostfix::MemberAccess(name, [dot_strpos, name_strpos]), all_strpos)))
-    }
-
-    // parse helper, don't want to handle this there
-    fn new_function_call_auto_merge_prev_member_access(postfix_expr: PostfixExpr, paren_strpos: Span, exprs: Vec<Expr>) -> PostfixExpr {
-        use std::mem; // strange method to move boxed out from immutable ref self
-        unsafe { 
-            match *Box::into_raw(postfix_expr.0) {
-                PostfixExprImpl::Postfix(ref mut prev_prev_postfix_expr, ActualPostfix::MemberAccess(ref name, ref dot_and_name_strpos), _) => {
-                    let mut owned_prev_prev_postfix_expr = mem::uninitialized();
-                    mem::swap(prev_prev_postfix_expr, &mut owned_prev_prev_postfix_expr);
-                    return PostfixExpr::new_member_function_call(owned_prev_prev_postfix_expr, dot_and_name_strpos[0], *name, dot_and_name_strpos[1], paren_strpos, exprs);
-                }
-                ref mut other_impl => return PostfixExpr::new_function_call(PostfixExpr(Box::from_raw(other_impl as *mut PostfixExprImpl)), paren_strpos, exprs),
-            }
+impl PostfixExpr {
+    pub fn get_all_span(&self) -> Span { 
+        match self {
+            &PostfixExpr::MemberAccess(ref base, _, _, ref ident_span) => base.get_all_span().merge(ident_span),
+            &PostfixExpr::FunctionCall(ref base, ref paren_span, _) => base.get_all_span().merge(paren_span),
+            &PostfixExpr::Subscription(ref base, ref bracket_span, _) => base.get_all_span().merge(bracket_span),
         }
     }
 }
-impl PostfixExpr { // Get
-
-    // TODO: remove it
-    pub fn get_all_span(&self) -> Span {
-        match self.0.as_ref() {
-            &PostfixExprImpl::Primary(ref primary_expr) => primary_expr.get_all_span(),
-            &PostfixExprImpl::Postfix(ref _1, ref _2, ref all_strpos) => *all_strpos,
-        }
-    }
-}
-
 impl ISyntaxItemGrammar for PostfixExpr {
     fn is_first_final(sess: &ParseSession) -> bool { PrimaryExpr::is_first_final(sess) }
 }
 impl ISyntaxItemParse for PostfixExpr {
-    type Target = PostfixExpr;
+    type Target = Expr;
 
-    fn parse(sess: &mut ParseSession) -> ParseResult<PostfixExpr> {   
+    fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {   
         #[cfg(feature = "trace_postfix_expr_parse")]
         macro_rules! trace { ($($arg:tt)*) => ({ perror!("    [PostfixExpr:{}] ", line!()); perrorln!($($arg)*); }) }
         #[cfg(not(feature = "trace_postfix_expr_parse"))]
         macro_rules! trace { ($($arg:tt)*) => () }
 
-        let mut current_retval = PostfixExpr::new_primary(PrimaryExpr::parse(sess)?);
+        let mut current_retval = Expr::Primary(PrimaryExpr::parse(sess)?);
         trace!("parsed primary, current is {:?}", current_retval);
 
         'postfix: loop {
@@ -154,7 +89,7 @@ impl ISyntaxItemParse for PostfixExpr {
             let (starting_strpos, expect_end_sep) = match (sess.tk, sess.pos, sess.next_tk, sess.next_pos) {
                 (&Token::Sep(SeperatorKind::Dot), ref dot_strpos, &Token::Ident(ref ident), ref ident_strpos) => {
                     sess.move_next2();
-                    current_retval = PostfixExpr::new_member_access(current_retval, *dot_strpos, *ident, *ident_strpos);
+                    current_retval = Expr::Postfix(PostfixExpr::MemberAccess(Box::new(current_retval), *dot_strpos, *ident, *ident_strpos));
                     trace!("after member access finished");
                     continue 'postfix;
                 }
@@ -165,9 +100,9 @@ impl ISyntaxItemParse for PostfixExpr {
                 (&Token::Sep(SeperatorKind::LeftParenthenes), ref left_paren_strpos, &Token::Sep(SeperatorKind::RightParenthenes), ref right_paren_strpos) => {
                     trace!("get one postfix, none parameter function call");
                     sess.move_next2();
-                    current_retval = PostfixExpr::new_function_call_auto_merge_prev_member_access(
-                        current_retval, left_paren_strpos.merge(right_paren_strpos), Vec::new()
-                    );
+                    current_retval = Expr::Postfix(PostfixExpr::FunctionCall(
+                        Box::new(current_retval), left_paren_strpos.merge(right_paren_strpos), Vec::new()
+                    ));
                     continue 'postfix;
                 }
                 (&Token::Sep(SeperatorKind::LeftParenthenes), ref left_paren_strpos, &Token::Sep(SeperatorKind::Comma), _) => {
@@ -175,7 +110,7 @@ impl ISyntaxItemParse for PostfixExpr {
                     if sess.tk == &Token::Sep(SeperatorKind::RightParenthenes) {
                         let paren_strpos = left_paren_strpos.merge(&sess.pos);
                         sess.push_message(Message::new_by_str("Single comma in function call", vec![(paren_strpos, "function call here")]));
-                        current_retval = PostfixExpr::new_function_call_auto_merge_prev_member_access(current_retval, paren_strpos, Vec::new());
+                        current_retval = Expr::Postfix(PostfixExpr::FunctionCall(Box::new(current_retval), paren_strpos, Vec::new()));
                         sess.move_next();
                         continue 'postfix;
                     }
@@ -188,7 +123,7 @@ impl ISyntaxItemParse for PostfixExpr {
                     sess.move_next2();
                     let bracket_strpos = left_bracket_strpos.merge(right_bracket_strpos);
                     sess.push_message(Message::new_by_str("Empty subscription", vec![(bracket_strpos, "subscription here")]));
-                    current_retval = PostfixExpr::new_subscription(current_retval, bracket_strpos, Vec::new());
+                    current_retval = Expr::Postfix(PostfixExpr::Subscription(Box::new(current_retval), bracket_strpos, Vec::new()));
                     continue 'postfix;
                 }
                 (&Token::Sep(SeperatorKind::LeftBracket), ref left_bracket_strpos, &Token::Sep(SeperatorKind::Comma), _) => {
@@ -196,7 +131,7 @@ impl ISyntaxItemParse for PostfixExpr {
                     if sess.tk == &Token::Sep(SeperatorKind::RightBracket) {
                         let bracket_strpos = left_bracket_strpos.merge(&sess.pos);
                         sess.push_message(Message::new_by_str("Empty subscription", vec![(bracket_strpos, "subscription here")]));
-                        current_retval = PostfixExpr::new_subscription(current_retval, bracket_strpos, Vec::new());
+                        current_retval = Expr::Postfix(PostfixExpr::Subscription(Box::new(current_retval), bracket_strpos, Vec::new()));
                         sess.move_next();
                         continue 'postfix;
                     }
@@ -218,30 +153,30 @@ impl ISyntaxItemParse for PostfixExpr {
                         &Token::Sep(SeperatorKind::Comma), _, 
                         &Token::Sep(SeperatorKind::RightParenthenes), ref right_paren_strpos) => {
                         sess.move_next2();
-                        current_retval = PostfixExpr::new_function_call_auto_merge_prev_member_access(
-                            current_retval, starting_strpos.merge(right_paren_strpos), exprs
-                        );
+                        current_retval = Expr::Postfix(PostfixExpr::FunctionCall(
+                            Box::new(current_retval), starting_strpos.merge(right_paren_strpos), exprs
+                        ));
                         continue 'postfix;
                     }
                     (&SeperatorKind::RightParenthenes, 
                         &Token::Sep(SeperatorKind::RightParenthenes), ref right_paren_strpos, _, _) => {
                         sess.move_next();
-                        current_retval = PostfixExpr::new_function_call_auto_merge_prev_member_access(
-                            current_retval, starting_strpos.merge(right_paren_strpos), exprs
-                        );
+                        current_retval = Expr::Postfix(PostfixExpr::FunctionCall(
+                            Box::new(current_retval), starting_strpos.merge(right_paren_strpos), exprs
+                        ));
                         continue 'postfix;
                     }
                     (&SeperatorKind::RightBracket, 
                         &Token::Sep(SeperatorKind::Comma), _, 
                         &Token::Sep(SeperatorKind::RightBracket), ref right_bracket_strpos) => {
                         sess.move_next2();
-                        current_retval = PostfixExpr::new_subscription(current_retval, starting_strpos.merge(right_bracket_strpos), exprs);
+                        current_retval = Expr::Postfix(PostfixExpr::Subscription(Box::new(current_retval), starting_strpos.merge(right_bracket_strpos), exprs));
                         continue 'postfix;
                     }
                     (&SeperatorKind::RightBracket, 
                         &Token::Sep(SeperatorKind::RightBracket), ref right_bracket_strpos, _, _) => {
                         sess.move_next();
-                        current_retval = PostfixExpr::new_subscription(current_retval, starting_strpos.merge(right_bracket_strpos), exprs);
+                        current_retval = Expr::Postfix(PostfixExpr::Subscription(Box::new(current_retval), starting_strpos.merge(right_bracket_strpos), exprs));
                         continue 'postfix;
                     }
                     (_, &Token::Sep(SeperatorKind::Comma), _, _, _) => {
@@ -331,6 +266,7 @@ fn postfix_expr_format() {
     );
 }
 
+#[cfg(remove_this_after_expr_refactor)]
 #[cfg(test)] #[test]
 fn postfix_expr_parse() {
     use super::super::ISyntaxItemWithStr;
@@ -338,7 +274,7 @@ fn postfix_expr_parse() {
     use super::IdentExpr;
 
     macro_rules! ident {
-        ($name: expr, $strpos: expr) => (Expr::new_primary(PrimaryExpr::Ident(IdentExpr::new($name, $strpos))));
+        ($name: expr, $strpos: expr) => (Expr::Primary(PrimaryExpr::Ident(IdentExpr::new($name, $strpos))));
         (post, $name: expr, $strpos: expr) => (PostfixExpr::new_primary(PrimaryExpr::Ident(IdentExpr::new($name, $strpos))))
     }
 

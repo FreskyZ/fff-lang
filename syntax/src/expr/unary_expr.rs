@@ -69,7 +69,7 @@ impl ISyntaxItemParse for UnaryExpr {
                     op_spans.push((operator, operator_strpos));
                 }
                 _ => {
-                    let base = Expr::Postfix(PostfixExpr::parse(sess)?);
+                    let base = PostfixExpr::parse(sess)?;
                     return Ok(op_spans.into_iter().rev().fold(base, |base, (op, span)| { Expr::Unary(UnaryExpr::new(op, span, base)) }));
                 }
             }
@@ -85,7 +85,7 @@ fn unary_expr_parse() {
     use super::super::ISyntaxItemWithStr;
     
     assert_eq!{ UnaryExpr::with_test_str("1"), 
-        Expr::new_primary(PrimaryExpr::Lit(LitExpr::new(LitValue::from(1), make_span!(0, 0)))) 
+        Expr::Primary(PrimaryExpr::Lit(LitExpr::new(LitValue::from(1), make_span!(0, 0)))) 
     }
 
     assert_eq!{ UnaryExpr::with_test_str("!~!1"),
@@ -95,7 +95,7 @@ fn unary_expr_parse() {
                 SeperatorKind::BitNot, make_span!(1, 1),            
                 Expr::Unary(UnaryExpr::new(
                     SeperatorKind::LogicalNot, make_span!(2, 2),
-                    Expr::new_primary(PrimaryExpr::Lit(LitExpr::new(LitValue::from(1), make_span!(3, 3)))),
+                    Expr::Primary(PrimaryExpr::Lit(LitExpr::new(LitValue::from(1), make_span!(3, 3)))),
                 ))
             ))
         ))

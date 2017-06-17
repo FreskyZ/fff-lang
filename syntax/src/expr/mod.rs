@@ -38,6 +38,7 @@ use super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub enum Expr {
+    Primary(PrimaryExpr),
     Postfix(PostfixExpr),
     Unary(UnaryExpr),
     Binary(BinaryExpr),
@@ -45,6 +46,7 @@ pub enum Expr {
 impl ISyntaxItemFormat for Expr {
     fn format(&self, indent: u32) -> String {
         match self {
+            &Expr::Primary(ref primary_expr) => primary_expr.format(indent),
             &Expr::Postfix(ref postfix_expr) => postfix_expr.format(indent),
             &Expr::Unary(ref unary_expr) => unary_expr.format(indent),
             &Expr::Binary(ref binary_expr) => binary_expr.format(indent),
@@ -54,38 +56,44 @@ impl ISyntaxItemFormat for Expr {
 impl fmt::Debug for Expr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
 }
+impl Default for Expr {
+    fn default() -> Expr {
+        use lexical::LitValue;
+        use lexical::NumLitValue;
+        Expr::Primary(PrimaryExpr::Lit(LitExpr::new(LitValue::Num(Some(NumLitValue::I32(0))), Span::default()))) // yes 6 left paren
+    }
+}
 impl Expr {
 
     pub fn get_all_span(&self) -> Span {
         match self {
+            &Expr::Primary(ref primary_expr) => primary_expr.get_all_span(),
             &Expr::Postfix(ref postfix_expr) => postfix_expr.get_all_span(),
             &Expr::Unary(ref unary_expr) => unary_expr.all_span,
             &Expr::Binary(ref binary_expr) => binary_expr.all_span,
         }
     }
-    
-    pub fn new_primary(primary_expr: PrimaryExpr) -> Expr {
-        Expr::Postfix(PostfixExpr::new_primary(primary_expr))
-    }
 
     pub fn new_lit(lit_expr: LitExpr) -> Expr {
-        Expr::new_primary(PrimaryExpr::Lit(lit_expr))
+        Expr::Primary(PrimaryExpr::Lit(lit_expr))
     }
     pub fn new_ident(ident_expr: IdentExpr) -> Expr {
-        Expr::new_primary(PrimaryExpr::Ident(ident_expr))
+        Expr::Primary(PrimaryExpr::Ident(ident_expr))
     }
     pub fn new_paren(paren_expr: ParenExpr) -> Expr {
-        Expr::new_primary(PrimaryExpr::Paren(paren_expr))
+        Expr::Primary(PrimaryExpr::Paren(paren_expr))
     }
     pub fn new_tuple(tuple_def: TupleDef) -> Expr {
-        Expr::new_primary(PrimaryExpr::Tuple(tuple_def))
+        Expr::Primary(PrimaryExpr::Tuple(tuple_def))
     }
     pub fn new_array(array_def: ArrayDef) -> Expr {
-        Expr::new_primary(PrimaryExpr::Array(array_def))
+        Expr::Primary(PrimaryExpr::Array(array_def))
     }
 }
 impl ISyntaxItemGrammar for Expr {
-    fn is_first_final(sess: &ParseSession) -> bool { PostfixExpr::is_first_final(sess)
+    fn is_first_final(sess: &ParseSession) -> bool { 
+        PrimaryExpr::is_first_final(sess)
+        || PostfixExpr::is_first_final(sess)
         || UnaryExpr::is_first_final(sess) 
         || sess.tk == &Token::Keyword(KeywordKind::This)
     }
@@ -147,8 +155,8 @@ fn expr_parse() {
     
     // Case from fn_def_parse
     assert_eq!{ Expr::with_test_input("println(this)", &mut make_symbols!["println", "this"]),
-        Expr::Postfix(PostfixExpr::new_function_call(
-            PostfixExpr::new_primary(PrimaryExpr::Ident(IdentExpr::new(make_id!(1), make_span!(0, 6)))),
+        Expr::Postfix(PostfixExpr::FunctionCall(
+            Box::new(Expr::Primary(PrimaryExpr::Ident(IdentExpr::new(make_id!(1), make_span!(0, 6))))),
             make_span!(7, 12), vec![
                 Expr::new_ident(IdentExpr::new(make_id!(2), make_span!(8, 11)))
             ]

@@ -93,20 +93,18 @@ pub trait ISyntaxItemWithStr {
 impl<T> ISyntaxItemWithStr for T where T: ISyntaxItemParse {
 }
 
-// Format
-// const INDENT_STRS: [&'static str; 16] = [
-//     "", "| ", "| | ", "| | | ", "| | | | ", "| | | | | ", "| | | | | | ", "| | | | | | | ", "| | | | | | | | ", "| | | | | | | | | ", "| | | | | | | | | | ",
-//     "| | | | | | | | | | | ", "| | | | | | | | | | | | ", "| | | | | | | | | | | | | ", "| | | | | | | | | | | | | | ", "| | | | | | | | | | | | | "
-// ];
-const INDENT_STRS: [&'static str; 16] = [
+const INDENTION_FILLERS: [[&'static str; 16]; 3] = [ [
+    "", "1 ", "2 | ", "3 | | ", "4 | | | ", "5 | | | | ", "6 | | | | | ", "7 | | | | | | ", "8 | | | | | | | ", "9 | | | | | | | | ", "10 | | | | | | | | | ",
+    "11| | | | | | | | | | ", "12| | | | | | | | | | | ", "13| | | | | | | | | | | | ", "14| | | | | | | | | | | | | ", "15| | | | | | | | | | | | "
+], [
+    "", "| ", "| | ", "| | | ", "| | | | ", "| | | | | ", "| | | | | | ", "| | | | | | | ", "| | | | | | | | ", "| | | | | | | | | ", "| | | | | | | | | | ",
+    "| | | | | | | | | | | ", "| | | | | | | | | | | | ", "| | | | | | | | | | | | | ", "| | | | | | | | | | | | | | ", "| | | | | | | | | | | | | "
+], [
     "", "  ", "    ", "      ", "        ", "          ", "            ", "              ", "                ", "                  ", "                    ",
     "                      ", "                        ", "                          ", "                            ", "                          "
-];
+]];
+
 pub trait ISyntaxItemFormat {
-
-    fn indent_str(indent: u32) -> &'static str {
-        INDENT_STRS[indent as usize]
-    }
-
+    fn indent_str(indent: u32) -> &'static str { INDENTION_FILLERS[2][indent as usize] }
     fn format(&self, indent: u32) -> String;
 }

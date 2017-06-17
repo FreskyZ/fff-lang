@@ -192,8 +192,8 @@ fn fn_def_parse() {
             None,
             Block::new(make_span!(63, 80), vec![
                 Statement::Expr(ExprStatement::new_simple(make_span!(65, 78),
-                    Expr::Postfix(PostfixExpr::new_function_call(
-                        PostfixExpr::new_primary(PrimaryExpr::Ident(IdentExpr::new(make_id!(9), make_span!(65, 71)))),
+                    Expr::Postfix(PostfixExpr::FunctionCall(
+                        Box::new(Expr::Primary(PrimaryExpr::Ident(IdentExpr::new(make_id!(9), make_span!(65, 71))))),
                         make_span!(72, 77), vec![
                             Expr::new_ident(IdentExpr::new(make_id!(5), make_span!(73, 76)))
                         ]

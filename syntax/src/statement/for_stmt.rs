@@ -138,28 +138,31 @@ fn for_stmt_parse() {
             LabelDef::new(make_id!(1), make_span!(0, 6)),
             make_span!(8, 10),
             make_id!(2), make_span!(12, 12),
-            Expr::Postfix(PostfixExpr::new_member_function_call(
-                PostfixExpr::new_member_function_call(
-                    PostfixExpr::new_function_call(
-                        PostfixExpr::new_primary(PrimaryExpr::Ident(IdentExpr::new(make_id!(3), make_span!(17, 21)))),
-                        make_span!(22, 28), vec![
-                            Expr::new_lit(LitExpr::new(LitValue::from(0), make_span!(23, 23))),
-                            Expr::new_lit(LitExpr::new(LitValue::from(10), make_span!(26, 27)))
-                    ]),
-                    make_span!(29, 29), 
-                    make_id!(4), make_span!(30, 38),
-                    make_span!(39, 40),
-                    vec![]
-                ),
-                make_span!(41, 41),
-                make_id!(5), make_span!(42, 48),
-                make_span!(49, 50),
-                vec![]
+            Expr::Postfix(PostfixExpr::FunctionCall(
+                Box::new(Expr::Postfix(PostfixExpr::MemberAccess(
+                    Box::new(Expr::Postfix(PostfixExpr::FunctionCall(
+                        Box::new(Expr::Postfix(PostfixExpr::MemberAccess(
+                            Box::new(Expr::Postfix(PostfixExpr::FunctionCall(
+                                Box::new(Expr::Primary(PrimaryExpr::Ident(IdentExpr::new(make_id!(3), make_span!(17, 21))))),
+                                make_span!(22, 28), vec![
+                                    Expr::new_lit(LitExpr::new(LitValue::from(0), make_span!(23, 23))),
+                                    Expr::new_lit(LitExpr::new(LitValue::from(10), make_span!(26, 27))),
+                                ]
+                            ))),
+                            make_span!(29, 29),
+                            make_id!(4), make_span!(30, 38)
+                        ))), 
+                        make_span!(39, 40), vec![]
+                    ))), 
+                    make_span!(41, 41),
+                    make_id!(5), make_span!(42, 48)
+                ))),
+                make_span!(49, 50), vec![]
             )),
             Block::new(make_span!(52, 77), vec![
                 Statement::Expr(ExprStatement::new_simple(make_span!(54, 75), 
-                    Expr::Postfix(PostfixExpr::new_function_call(
-                        PostfixExpr::new_primary(PrimaryExpr::Ident(IdentExpr::new(make_id!(6), make_span!(54, 60)))),
+                    Expr::Postfix(PostfixExpr::FunctionCall(
+                        Box::new(Expr::Primary(PrimaryExpr::Ident(IdentExpr::new(make_id!(6), make_span!(54, 60))))),
                         make_span!(61, 74), vec![
                             Expr::new_lit(LitExpr::new(LitValue::new_str_lit(make_id!(7)), make_span!(62, 73)))
                     ]))

@@ -97,10 +97,10 @@ fn loop_stmt_format() {
   'loop' <<0>4-7>
   Block <<0>9-27>
     ExprStmt <<0>11-25>
-      PostfixExpr <<0>11-24>
+      FunctionCall <<0>11-24>
         Ident #2 <<0>11-17>
-        FunctionCall <<0>18-24>
-          Literal #3 <<0>19-23>"#;
+        '()' <<0>18-24>
+        Literal #3 <<0>19-23>"#;
 
     if actual != expect { panic!("assertion failed: left: {}, right: {}", actual, expect) }
 }
@@ -129,8 +129,8 @@ fn loop_stmt_parse() {
             Block::new(make_span!(9, 27), vec![
                 Statement::Expr(ExprStatement::new_simple(
                     make_span!(11, 25), 
-                    Expr::Postfix(PostfixExpr::new_function_call(
-                        PostfixExpr::new_primary(PrimaryExpr::Ident(IdentExpr::new(make_id!(2), make_span!(11, 17)))),
+                    Expr::Postfix(PostfixExpr::FunctionCall(
+                        Box::new(Expr::Primary(PrimaryExpr::Ident(IdentExpr::new(make_id!(2), make_span!(11, 17))))),
                         make_span!(18, 24), vec![
                             Expr::new_lit(LitExpr::new(LitValue::new_str_lit(make_id!(3)), make_span!(19, 23)))
                         ]
