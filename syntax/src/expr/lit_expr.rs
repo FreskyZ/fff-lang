@@ -30,6 +30,9 @@ impl ISyntaxItemFormat for LitExpr {
 impl fmt::Debug for LitExpr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
 }
+impl From<LitExpr> for Expr {
+    fn from(lit_expr: LitExpr) -> Expr { Expr::Lit(lit_expr) }
+}
 impl LitExpr {
     pub fn new(value: LitValue, span: Span) -> LitExpr { LitExpr{ value, span } }
 }

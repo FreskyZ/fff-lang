@@ -19,6 +19,7 @@ use super::LitExpr;
 use super::ExprList;
 use super::ExprListParseResult;
 
+use super::super::error_strings;
 use super::super::ParseSession;
 use super::super::ParseResult;
 use super::super::ISyntaxItemParse;
@@ -33,14 +34,14 @@ pub struct ParenExpr {
 }
 impl ISyntaxItemFormat for ParenExpr {
     fn format(&self, indent: u32) -> String {
-        format!("{}ParenExpr <{:?}>\n{}", ParenExpr::indent_str(indent), self.span, self.expr.format(0))
+        format!("{}ParenExpr <{:?}>\n{}", ParenExpr::indent_str(indent), self.span, self.expr.format(indent + 1))
     }
 }
 impl fmt::Debug for ParenExpr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
 }
 impl ParenExpr {
-    pub fn new(span: Span, expr: Expr) -> ParenExpr { ParenExpr{ expr: Box::new(expr), span } }
+    pub fn new<T: Into<Expr>>(span: Span, expr: T) -> ParenExpr { ParenExpr{ expr: Box::new(expr.into()), span } }
 }
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
@@ -50,14 +51,16 @@ pub struct TupleDef {
 }
 impl ISyntaxItemFormat for TupleDef {
     fn format(&self, indent: u32) -> String {
-        format!("{}TupleDef <{:?}>\n{}", TupleDef::indent_str(indent), self.paren_span, self.items.format(0))
+        format!("{}TupleDef <{:?}>\n{}", TupleDef::indent_str(indent), self.paren_span, 
+            if self.items.items.len() == 0 { format!("{}(empty)", TupleDef::indent_str(indent + 1)) } else { self.items.format(indent + 1) }
+        )
     }
 }
 impl fmt::Debug for TupleDef {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(0)) }
 }
 impl TupleDef {
-    pub fn new(paren_span: Span, items: ExprList) -> TupleDef { TupleDef{ paren_span, items } }
+    pub fn new<T: Into<ExprList>>(paren_span: Span, items: T) -> TupleDef { TupleDef{ paren_span, items: items.into() } }
 }
 impl ISyntaxItemGrammar for TupleDef {
     fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Sep(SeperatorKind::LeftParenthenes) }
@@ -72,7 +75,7 @@ impl ISyntaxItemParse for TupleDef {
                 return Ok(Expr::Lit(LitExpr::new(LitValue::Unit, span)));
             }
             ExprListParseResult::SingleComma(span) => {
-                sess.push_message(Message::new_by_str("single comma in tuple def", vec![(span, "")]));
+                sess.push_message(Message::new_by_str(error_strings::UnexpectedSingleComma, vec![(span, error_strings::TupleDefHere)]));
                 return Ok(Expr::Tuple(TupleDef::new(span, ExprList::new(Vec::new()))));
             }
             ExprListParseResult::Normal(span, exprlist) => {
@@ -86,6 +89,26 @@ impl ISyntaxItemParse for TupleDef {
                 return Ok(Expr::Tuple(TupleDef::new(span, exprlist)));
             }
         }
+    }
+}
+
+#[cfg(test)] #[test]
+fn tuple_def_format() {
+    use lexical::LitValue;
+    use super::LitExpr;
+
+    assert_eq!{
+        TupleDef::new(make_span!(0, 42), vec![]).format(1),
+        "  TupleDef <<0>0-42>\n    (empty)"
+    }
+
+    assert_eq!{
+        TupleDef::new(make_span!(0, 42), vec![
+            Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(1, 2))),
+            Expr::Lit(LitExpr::new(LitValue::from(2), make_span!(3, 4))),
+            Expr::Lit(LitExpr::new(LitValue::from(48), make_span!(5, 6))),
+        ]).format(1),
+        "  TupleDef <<0>0-42>\n    Literal (i32)1 <<0>1-2>\n    Literal (i32)2 <<0>3-4>\n    Literal (i32)48 <<0>5-6>"
     }
 }
 
@@ -111,4 +134,17 @@ fn tuple_def_parse() {
             ))
         ))
     }
+}
+
+#[cfg(test)] #[test]
+fn tuple_def_errors() {
+    use message::MessageCollection;
+    use super::super::ISyntaxItemWithStr;
+    
+    assert_eq!{ TupleDef::with_test_str_ret_messages("( , )"), (
+        Some(Expr::Tuple(TupleDef::new(make_span!(0, 4), ExprList::new(Vec::new())))),
+        make_messages![
+            Message::new_by_str(error_strings::UnexpectedSingleComma, vec![(make_span!(0, 4), error_strings::TupleDefHere)])
+        ]
+    )}
 }

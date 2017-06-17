@@ -38,9 +38,13 @@ impl ISyntaxItemFormat for UnaryExpr {
 impl fmt::Debug for UnaryExpr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
 }
+impl From<UnaryExpr> for Expr {
+    fn from(unary_expr: UnaryExpr) -> Expr { Expr::Unary(unary_expr) }
+}
 impl UnaryExpr {
 
-    pub fn new(operator: SeperatorKind, operator_span: Span, base: Expr) -> UnaryExpr {
+    pub fn new<T: Into<Expr>>(operator: SeperatorKind, operator_span: Span, base: T) -> UnaryExpr {
+        let base = base.into();
         UnaryExpr{
             all_span: operator_span.merge(&base.get_all_span()),
             base: Box::new(base),

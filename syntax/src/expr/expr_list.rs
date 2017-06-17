@@ -29,6 +29,9 @@ impl ISyntaxItemFormat for ExprList {
 impl fmt::Debug for ExprList {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
 }
+impl From<Vec<Expr>> for ExprList {
+    fn from(items: Vec<Expr>) -> ExprList { ExprList{ items } }
+}
 impl ExprList {
     pub fn new(items: Vec<Expr>) -> ExprList { ExprList{ items } }
 }

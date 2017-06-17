@@ -27,7 +27,7 @@ pub struct MemberAccessExpr {
 }
 impl ISyntaxItemFormat for MemberAccessExpr {
     fn format(&self, indent: u32) -> String {
-        format!("{}MemberAccess <{:?}>\n{}\n{}'.' <{:?}>\n{}", 
+        format!("{}MemberAccess <{:?}>\n{}\n{}dot <{:?}>\n{}", 
             MemberAccessExpr::indent_str(indent), self.all_span,
             self.base.as_ref().format(indent + 1),
             MemberAccessExpr::indent_str(indent + 1), self.dot_span,
@@ -38,8 +38,12 @@ impl ISyntaxItemFormat for MemberAccessExpr {
 impl fmt::Debug for MemberAccessExpr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(0)) }
 }
+impl From<MemberAccessExpr> for Expr {
+    fn from(member_access_expr: MemberAccessExpr) -> Expr { Expr::MemberAccess(member_access_expr) }
+}
 impl MemberAccessExpr {
-    pub fn new(base: Expr, dot_span: Span, name: IdentExpr) -> MemberAccessExpr {
+    pub fn new<T: Into<Expr>>(base: T, dot_span: Span, name: IdentExpr) -> MemberAccessExpr {
+        let base = base.into();
         MemberAccessExpr{
             all_span: base.get_all_span().merge(&name.span),
             base: Box::new(base),

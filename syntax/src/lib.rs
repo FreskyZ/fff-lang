@@ -13,6 +13,7 @@ mod statement;
 mod expr;
 mod items;
 mod parse_sess;
+mod error_strings;
 
 pub use self::items::FnParam;
 pub use self::items::FnDef;

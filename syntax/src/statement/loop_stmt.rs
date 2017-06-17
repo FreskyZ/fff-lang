@@ -99,7 +99,7 @@ fn loop_stmt_format() {
     ExprStmt <<0>11-25>
       FnCall <<0>11-24>
         Ident #2 <<0>11-17>
-        Paren <<0>18-24>
+        paren <<0>18-24>
         Literal #3 <<0>19-23>"#;
 
     if actual != expect { panic!("assertion failed: left: {}, right: {}", actual, expect) }
