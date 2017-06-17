@@ -100,7 +100,8 @@ fn while_stmt_parse() {
     use super::super::Statement;
     use super::super::ExprStatement;
     use super::super::PostfixExpr;
-
+    use super::super::FnCallExpr;
+    use super::super::ExprList;
     //                                           0        1         2         3         4        
     //                                           01234567890123456789012345 67890123456789012 3456
     assert_eq!{ WhileStatement::with_test_input("@2: while true { writeln(\"fresky hellooooo\"); }", &mut make_symbols!["2", "writeln", "fresky hellooooo"]),
@@ -110,12 +111,12 @@ fn while_stmt_parse() {
             Expr::Lit(LitExpr::new(LitValue::from(true), make_span!(10, 13))),
             Block::new(make_span!(15, 46), vec![
                 Statement::Expr(ExprStatement::new_simple(make_span!(17, 44), 
-                    Expr::Postfix(PostfixExpr::FunctionCall(
-                        Box::new(Expr::Ident(IdentExpr::new(make_id!(2), make_span!(17, 23)))),
-                        make_span!(24, 43), vec![
+                    Expr::Postfix(PostfixExpr::FnCall(FnCallExpr::new(
+                        Expr::Ident(IdentExpr::new(make_id!(2), make_span!(17, 23))),
+                        make_span!(24, 43), ExprList::new(vec![
                             Expr::Lit(LitExpr::new(LitValue::new_str_lit(make_id!(3)), make_span!(25, 42)))
-                        ]
-                    ))
+                        ])
+                    )))
                 ))
             ])
         )

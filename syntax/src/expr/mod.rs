@@ -13,6 +13,9 @@ mod ident_expr;
 mod expr_list;
 mod tuple_def;
 mod array_def;
+mod member_access;
+mod fn_call;
+mod index_call;
 mod postfix;
 mod unary_expr;
 mod binary_expr;
@@ -25,6 +28,9 @@ pub use self::expr_list::ExprListParseResult;
 pub use self::tuple_def::ParenExpr;
 pub use self::tuple_def::TupleDef;
 pub use self::array_def::ArrayDef;
+pub use self::fn_call::FnCallExpr;
+pub use self::index_call::IndexCallExpr;
+pub use self::member_access::MemberAccessExpr;
 
 pub use self::binary_expr::BinaryExpr;
 pub use self::unary_expr::UnaryExpr;
@@ -154,15 +160,195 @@ fn expr_parse() {
     
     // Case from fn_def_parse
     assert_eq!{ Expr::with_test_input("println(this)", &mut make_symbols!["println", "this"]),
-        Expr::Postfix(PostfixExpr::FunctionCall(
-            Box::new(Expr::Ident(IdentExpr::new(make_id!(1), make_span!(0, 6)))),
-            make_span!(7, 12), vec![
+        Expr::Postfix(PostfixExpr::FnCall(FnCallExpr::new(
+            Expr::Ident(IdentExpr::new(make_id!(1), make_span!(0, 6))),
+            make_span!(7, 12), ExprList::new(vec![
                 Expr::Ident(IdentExpr::new(make_id!(2), make_span!(8, 11)))
-            ]
-        ))
+            ])
+        )))
     }
 }
 
+#[cfg(remove_this_after_expr_refactor)]
+#[cfg(test)] #[test]
+fn postfix_expr_format() {
+    use super::super::ISyntaxItemWithStr;
+
+    macro_rules! test_case {
+        ($left: expr, $right: expr) => {
+            if $left != $right {
+                let left_owned = $left.to_owned();
+                let left_lines = left_owned.lines();
+                let right_lines = $right.lines();
+                for (index, (left_line, right_line)) in left_lines.zip(right_lines).enumerate() {
+                    if left_line != right_line {
+                        panic!("assertion failed at index {}\nleft: {}\nright: {}", index, $left, $right);
+                    }
+                }
+                panic!("assertion failed, but cannot detected by compare each line\nleft: {}\nright: {}", $left, $right);
+            }
+        }
+    }
+
+    // Attention that this source code line's LF is also the string literal (test oracle)'s LF
+    //                                     0         1         2         3         4         5        
+    //                                     0123456789012345678901234567890123456789012345678901234567
+    test_case!(PostfixExpr::with_test_str("a.b(c, d, e).f(g, h, i,)(u,).j[k].l().m[n, o, p][r, s, t,]").format(0), r##"PostfixExpr <<0>0-57>
+  PostfixExpr <<0>0-47>
+    PostfixExpr <<0>0-38>
+      PostfixExpr <<0>0-36>
+        PostfixExpr <<0>0-32>
+          PostfixExpr <<0>0-29>
+            PostfixExpr <<0>0-27>
+              PostfixExpr <<0>0-23>
+                PostfixExpr <<0>0-11>
+                  Ident #1 <<0>0-0>
+                  MemberFunctionCall <<0>1-11>
+                    '.' <<0>1-1>
+                    Ident #2 <<0>2-2>
+                    paren <<0>3-11>
+                    Ident #3 <<0>4-4>
+                    Ident #4 <<0>7-7>
+                    Ident #5 <<0>10-10>
+                MemberFunctionCall <<0>12-23>
+                  '.' <<0>12-12>
+                  Ident '#6 <<0>13-13>
+                  paren <<0>14-23>
+                  Ident #7 <<0>15-15>
+                  Ident #8 <<0>18-18>
+                  Ident #9 <<0>21-21>
+              FunctionCall <<0>24-27>
+                Ident #10 <<0>25-25>
+            MemberAccess <<0>28-29>
+              '.' <<0>28-28>
+              Ident #11 <<0>29-29>
+          Subscription <<0>30-32>
+            Ident #12 <<0>31-31>
+        MemberFunctionCall (empty) <<0>33-36>
+          '.' <<0>33-33>
+          Ident #13 <<0>34-34>
+          paren <<0>35-36>
+      MemberAccess <<0>37-38>
+        '.' <<0>37-37>
+        Ident #14 <<0>38-38>
+    Subscription <<0>39-47>
+      Ident #15 <<0>40-40>
+      Ident #16 <<0>43-43>
+      Ident #17 <<0>46-46>
+  Subscription <<0>48-57>
+    Ident #18 <<0>49-49>
+    Ident #19 <<0>52-52>
+    Ident #20 <<0>55-55>"##
+    );
+}
+
+#[cfg(remove_this_after_expr_refactor)]
+#[cfg(test)] #[test]
+fn postfix_expr_parse() {
+    use super::super::ISyntaxItemWithStr;
+    use message::MessageCollection;
+    use super::IdentExpr;
+
+    macro_rules! ident {
+        ($name: expr, $strpos: expr) => (Expr::Primary(PrimaryExpr::Ident(IdentExpr::new($name, $strpos))));
+        (post, $name: expr, $strpos: expr) => (PostfixExpr::new_primary(PrimaryExpr::Ident(IdentExpr::new($name, $strpos))))
+    }
+
+    //                                      0        1         2         3         4         5     
+    // plain                                1234567890123456789012345678901234567890123456789012345678
+    assert_eq!{ PostfixExpr::with_test_str("a.b(c, d, e).f(g, h, i,)(u,).j[k].l().m[n, o, p][r, s, t,]"),
+        PostfixExpr::new_subscription(
+            PostfixExpr::new_subscription(
+                PostfixExpr::new_member_access(
+                    PostfixExpr::new_member_function_call(
+                        PostfixExpr::new_subscription(
+                            PostfixExpr::new_member_access(
+                                PostfixExpr::new_function_call(
+                                    PostfixExpr::new_member_function_call(
+                                        PostfixExpr::new_member_function_call(
+                                            ident!(post, make_id!(1), make_span!(0, 0)),
+                                            make_span!(1, 1),
+                                            make_id!(2), make_span!(2, 2),
+                                            make_span!(3, 11), vec![
+                                                ident!(make_id!(3), make_span!(4, 4)),
+                                                ident!(make_id!(4), make_span!(7, 7)),
+                                                ident!(make_id!(5), make_span!(10, 10)),
+                                            ]
+                                        ),
+                                        make_span!(12, 12),
+                                        make_id!(6), make_span!(13, 13),
+                                        make_span!(14, 23), vec![
+                                            ident!(make_id!(7), make_span!(15, 15)),
+                                            ident!(make_id!(8), make_span!(18, 18)),
+                                            ident!(make_id!(9), make_span!(21, 21)),
+                                        ]
+                                    ),
+                                    make_span!(24, 27), vec![
+                                        ident!(make_id!(10), make_span!(25, 25))
+                                    ]
+                                ),
+                                make_span!(28, 28),
+                                make_id!(11), make_span!(29, 29)
+                            ),
+                            make_span!(30, 32), vec![
+                                ident!(make_id!(12), make_span!(31, 31))
+                            ]
+                        ),
+                        make_span!(33, 33),
+                        make_id!(13), make_span!(34, 34),
+                        make_span!(35, 36),
+                        vec![]
+                    ),
+                    make_span!(37, 37),
+                    make_id!(14), make_span!(38, 38)
+                ),
+                make_span!(39, 47), vec![
+                    ident!(make_id!(15), make_span!(40, 40)),
+                    ident!(make_id!(16), make_span!(43, 43)),
+                    ident!(make_id!(17), make_span!(46, 46))
+                ]
+            ),
+            make_span!(48, 57), vec![
+                ident!(make_id!(18), make_span!(49, 49)),
+                ident!(make_id!(19), make_span!(52, 52)),
+                ident!(make_id!(20), make_span!(55, 55))
+            ]
+        )
+    }
+    
+    assert_eq!{ PostfixExpr::with_test_str_ret_size_messages("a[]"), (
+        Some(PostfixExpr::new_subscription(
+            ident!(post, make_id!(1), make_span!(0, 0)), 
+            make_span!(1, 2), vec![]
+        )), 
+        3,
+        make_messages![
+            Message::new_by_str("Empty subscription", vec![(make_span!(1, 2), "subscription here")])
+        ],
+    )}
+    
+    assert_eq!{ PostfixExpr::with_test_str_ret_size_messages("a[, ]"), (
+        Some(PostfixExpr::new_subscription(
+            ident!(post, make_id!(1), make_span!(0, 0)), 
+            make_span!(1, 4), vec![]
+        )), 
+        4,
+        make_messages![
+            Message::new_by_str("Empty subscription", vec![(make_span!(1, 4), "subscription here")])
+        ],
+    )}
+    
+    assert_eq!{ PostfixExpr::with_test_str_ret_size_messages("a(, )"), (
+        Some(PostfixExpr::new_function_call(
+            ident!(post, make_id!(1), make_span!(0, 0)),
+            make_span!(1, 4), vec![]
+        )), 
+        4,
+        make_messages![
+            Message::new_by_str("Single comma in function call", vec![(make_span!(1, 4), "function call here")])
+        ],
+    )}
+}
 //     // Paren expr
 //     //           1234567
 //     ast_test_case!{ "(1)", 3, make_span!(0, 2),
