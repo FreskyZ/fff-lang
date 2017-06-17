@@ -111,7 +111,7 @@ fn var_decl_stmt_parse() {
         VarDeclStatement::new_const(make_span!(0, 13),
             make_id!(1), make_span!(6, 8),
             None,
-            Some(Expr::new_lit(LitExpr::new(LitValue::from(0), make_span!(12, 12))))
+            Some(Expr::Lit(LitExpr::new(LitValue::from(0), make_span!(12, 12))))
         )
     }
 
@@ -121,10 +121,10 @@ fn var_decl_stmt_parse() {
         VarDeclStatement::new_var(make_span!(0, 19),
             make_id!(1), make_span!(4, 6),
             None,
-            Some(Expr::new_array(ArrayDef::new(make_span!(10, 18), ExprList::new(vec![
-                Expr::new_lit(LitExpr::new(LitValue::from(1), make_span!(11, 11))),
-                Expr::new_lit(LitExpr::new(LitValue::from(3), make_span!(14, 14))),
-                Expr::new_lit(LitExpr::new(LitValue::from(5), make_span!(17, 17))),
+            Some(Expr::Array(ArrayDef::new(make_span!(10, 18), ExprList::new(vec![
+                Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(11, 11))),
+                Expr::Lit(LitExpr::new(LitValue::from(3), make_span!(14, 14))),
+                Expr::Lit(LitExpr::new(LitValue::from(5), make_span!(17, 17))),
             ]))))
         )
     }
@@ -169,13 +169,13 @@ fn var_decl_stmt_parse() {
                 ]),
                 TypeUse::new_simple(make_id!(3), make_span!(16, 18))
             ])),
-            Some(Expr::new_tuple(TupleDef::new(make_span!(23, 46), ExprList::new(vec![
-                Expr::new_array(ArrayDef::new(make_span!(24, 40), ExprList::new(vec![
-                    Expr::new_lit(LitExpr::new(LitValue::from(1u8), make_span!(25, 27))),
-                    Expr::new_lit(LitExpr::new(LitValue::from(5u8), make_span!(30, 32))),
-                    Expr::new_lit(LitExpr::new(LitValue::from(7u8), make_span!(35, 39)))
+            Some(Expr::Tuple(TupleDef::new(make_span!(23, 46), ExprList::new(vec![
+                Expr::Array(ArrayDef::new(make_span!(24, 40), ExprList::new(vec![
+                    Expr::Lit(LitExpr::new(LitValue::from(1u8), make_span!(25, 27))),
+                    Expr::Lit(LitExpr::new(LitValue::from(5u8), make_span!(30, 32))),
+                    Expr::Lit(LitExpr::new(LitValue::from(7u8), make_span!(35, 39)))
                 ]))),
-                Expr::new_ident(IdentExpr::new(make_id!(4), make_span!(43, 45)))
+                Expr::Ident(IdentExpr::new(make_id!(4), make_span!(43, 45)))
             ]))))
         )
     }

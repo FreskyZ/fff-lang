@@ -13,10 +13,10 @@ mod ident_expr;
 mod expr_list;
 mod tuple_def;
 mod array_def;
-mod primary;
 mod postfix;
 mod unary_expr;
 mod binary_expr;
+mod priority_proxy;
 
 pub use self::lit_expr::LitExpr;
 pub use self::ident_expr::IdentExpr;
@@ -25,10 +25,11 @@ pub use self::expr_list::ExprListParseResult;
 pub use self::tuple_def::ParenExpr;
 pub use self::tuple_def::TupleDef;
 pub use self::array_def::ArrayDef;
+
 pub use self::binary_expr::BinaryExpr;
 pub use self::unary_expr::UnaryExpr;
 pub use self::postfix::PostfixExpr;
-pub use self::primary::PrimaryExpr;
+pub use self::priority_proxy::PrimaryExpr;
 
 use super::ParseSession;
 use super::ParseResult;
@@ -38,7 +39,11 @@ use super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub enum Expr {
-    Primary(PrimaryExpr),
+    Lit(LitExpr),
+    Ident(IdentExpr),
+    Paren(ParenExpr),
+    Tuple(TupleDef),
+    Array(ArrayDef),
     Postfix(PostfixExpr),
     Unary(UnaryExpr),
     Binary(BinaryExpr),
@@ -46,7 +51,11 @@ pub enum Expr {
 impl ISyntaxItemFormat for Expr {
     fn format(&self, indent: u32) -> String {
         match self {
-            &Expr::Primary(ref primary_expr) => primary_expr.format(indent),
+            &Expr::Lit(ref lit_expr) => lit_expr.format(indent),
+            &Expr::Ident(ref ident_expr) => ident_expr.format(indent),
+            &Expr::Paren(ref paren_expr) => paren_expr.format(indent),
+            &Expr::Tuple(ref tuple_def) => tuple_def.format(indent),
+            &Expr::Array(ref array_def) => array_def.format(indent),
             &Expr::Postfix(ref postfix_expr) => postfix_expr.format(indent),
             &Expr::Unary(ref unary_expr) => unary_expr.format(indent),
             &Expr::Binary(ref binary_expr) => binary_expr.format(indent),
@@ -59,50 +68,40 @@ impl fmt::Debug for Expr {
 impl Default for Expr {
     fn default() -> Expr {
         use lexical::LitValue;
-        use lexical::NumLitValue;
-        Expr::Primary(PrimaryExpr::Lit(LitExpr::new(LitValue::Num(Some(NumLitValue::I32(0))), Span::default()))) // yes 6 left paren
+        Expr::Lit(LitExpr::new(LitValue::from(0), Span::default()))
     }
 }
 impl Expr {
 
     pub fn get_all_span(&self) -> Span {
         match self {
-            &Expr::Primary(ref primary_expr) => primary_expr.get_all_span(),
+            &Expr::Lit(ref lit_expr) => lit_expr.span,
+            &Expr::Ident(ref ident_expr) => ident_expr.span,
+            &Expr::Paren(ref paren_expr) => paren_expr.span,
+            &Expr::Tuple(ref tuple_def) => tuple_def.paren_span, 
+            &Expr::Array(ref array_def) => array_def.bracket_span,
             &Expr::Postfix(ref postfix_expr) => postfix_expr.get_all_span(),
             &Expr::Unary(ref unary_expr) => unary_expr.all_span,
             &Expr::Binary(ref binary_expr) => binary_expr.all_span,
         }
     }
-
-    pub fn new_lit(lit_expr: LitExpr) -> Expr {
-        Expr::Primary(PrimaryExpr::Lit(lit_expr))
-    }
-    pub fn new_ident(ident_expr: IdentExpr) -> Expr {
-        Expr::Primary(PrimaryExpr::Ident(ident_expr))
-    }
-    pub fn new_paren(paren_expr: ParenExpr) -> Expr {
-        Expr::Primary(PrimaryExpr::Paren(paren_expr))
-    }
-    pub fn new_tuple(tuple_def: TupleDef) -> Expr {
-        Expr::Primary(PrimaryExpr::Tuple(tuple_def))
-    }
-    pub fn new_array(array_def: ArrayDef) -> Expr {
-        Expr::Primary(PrimaryExpr::Array(array_def))
-    }
 }
 impl ISyntaxItemGrammar for Expr {
     fn is_first_final(sess: &ParseSession) -> bool { 
-        PrimaryExpr::is_first_final(sess)
-        || PostfixExpr::is_first_final(sess)
-        || UnaryExpr::is_first_final(sess) 
+        LitExpr::is_first_final(sess)
+        || IdentExpr::is_first_final(sess)
+        || TupleDef::is_first_final(sess)
+        || ArrayDef::is_first_final(sess)
         || sess.tk == &Token::Keyword(KeywordKind::This)
+        || UnaryExpr::is_first_final(sess) 
+        // || PostfixExpr::is_first_final(sess) // same as Expr
+        // || BinaryExpr::is_first_final(sess)  // same as Expr
     }
 }
 impl ISyntaxItemParse for Expr {
     type Target = Expr;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {
-
         return BinaryExpr::parse(sess);
     }
 }
@@ -114,7 +113,7 @@ impl ISyntaxItemParse for Expr {
 //     use super::ISyntaxItemFormat;
 
 //     // Quickly get lit and ident
-//     let actual_lit = Expr::new_lit(LitExpr::new(LitValue::from(42), make_span!(2, 3)));
+//     let actual_lit = Expr::Lit(LitExpr::new(LitValue::from(42), make_span!(2, 3)));
 
 //     println!("{:?}", 
 //         Some(&actual_lit)
@@ -133,32 +132,32 @@ fn expr_parse() {
     use super::ISyntaxItemWithStr;
 
     assert_eq!{ Expr::with_test_str("\"abc\""),
-        Expr::new_lit(LitExpr::new(LitValue::new_str_lit(make_id!(1)), make_span!(0, 4)))
+        Expr::Lit(LitExpr::new(LitValue::new_str_lit(make_id!(1)), make_span!(0, 4)))
     }
     assert_eq!{ Expr::with_test_str("0xfffu64"), 
-        Expr::new_lit(LitExpr::new(LitValue::from(0xFFFu64), make_span!(0, 7)))
+        Expr::Lit(LitExpr::new(LitValue::from(0xFFFu64), make_span!(0, 7)))
     }
     assert_eq!{ Expr::with_test_str("'f'"), 
-        Expr::new_lit(LitExpr::new(LitValue::from('f'), make_span!(0, 2)))
+        Expr::Lit(LitExpr::new(LitValue::from('f'), make_span!(0, 2)))
     }
     assert_eq!{ Expr::with_test_str("true"),
-        Expr::new_lit(LitExpr::new(LitValue::from(true), make_span!(0, 3)))
+        Expr::Lit(LitExpr::new(LitValue::from(true), make_span!(0, 3)))
     }
 
     assert_eq!{ Expr::with_test_str("binary_expr"),
-        Expr::new_ident(IdentExpr::new(make_id!(1), make_span!(0, 10)))
+        Expr::Ident(IdentExpr::new(make_id!(1), make_span!(0, 10)))
     }
 
     assert_eq!{ Expr::with_test_str("(  )"),
-        Expr::new_lit(LitExpr::new(LitValue::Unit, make_span!(0, 3)))
+        Expr::Lit(LitExpr::new(LitValue::Unit, make_span!(0, 3)))
     }
     
     // Case from fn_def_parse
     assert_eq!{ Expr::with_test_input("println(this)", &mut make_symbols!["println", "this"]),
         Expr::Postfix(PostfixExpr::FunctionCall(
-            Box::new(Expr::Primary(PrimaryExpr::Ident(IdentExpr::new(make_id!(1), make_span!(0, 6))))),
+            Box::new(Expr::Ident(IdentExpr::new(make_id!(1), make_span!(0, 6)))),
             make_span!(7, 12), vec![
-                Expr::new_ident(IdentExpr::new(make_id!(2), make_span!(8, 11)))
+                Expr::Ident(IdentExpr::new(make_id!(2), make_span!(8, 11)))
             ]
         ))
     }
@@ -911,7 +910,7 @@ fn expr_parse_2() {
         //                  1       2         3       4         5
         &mut make_symbols!["IEfN", "atau8M", "fNAE", "cAeJN4", "nHG"]), 
         PrimaryExpr::new_tuple(make_span!(0, 46), vec![
-            Expr::new_primary(PrimaryExpr::new_lit(LitValue::from(463857), make_span!(1, 6))),
+            Expr::new_primary(PrimaryExpr::Lit(LitValue::from(463857), make_span!(1, 6))),
             Expr::new_primary(PrimaryExpr::new_ident(make_id!(1), make_span!(9, 12))),
             Expr::new_primary(PrimaryExpr::new_ident(make_id!(2), make_span!(15, 20))),
             Expr::new_primary(PrimaryExpr::new_tuple(make_span!(23, 45), vec![
@@ -926,7 +925,7 @@ fn expr_parse_2() {
         ])
     }
 
-    assert_eq!{ PrimaryExpr::with_test_str("10363"), PrimaryExpr::new_lit(LitValue::from(10363), make_span!(0, 4)) }
+    assert_eq!{ PrimaryExpr::with_test_str("10363"), PrimaryExpr::Lit(LitValue::from(10363), make_span!(0, 4)) }
 
     assert_eq!{ PrimaryExpr::with_test_str(
     //   0         1         2         3         4         5         6         7         8         9         0         1         2         3       
@@ -934,7 +933,7 @@ fn expr_parse_2() {
         "[(0x7E), FFGqfJe, I4, [(m7A, (41, ([(jL, rAn, K0FgLc7h, true), C, w]), (J3cEFDG, d, (j8h))), (), \neIuArjF), 400, 0o535147505, 0xDB747]]"),
         PrimaryExpr::new_array(make_span!(0, 134), vec![
             Expr::new_paren(make_span!(1, 6), 
-                Expr::new_lit(LitValue::from(0x7E), make_span!(2, 5))
+                Expr::Lit(LitValue::from(0x7E), make_span!(2, 5))
             ),
             Expr::new_ident("FFGqfJe".to_owned(), make_span!(9, 15)),
             Expr::new_ident("I4".to_owned(), make_span!(18, 19)), 
@@ -942,14 +941,14 @@ fn expr_parse_2() {
                 Expr::new_tuple(make_span!(23, 105), vec![
                     Expr::new_ident("m7A".to_owned(), make_span!(24, 26)),
                     Expr::new_tuple(make_span!(29, 90), vec![
-                        Expr::new_lit(LitValue::from(41), make_span!(30, 31)),
+                        Expr::Lit(LitValue::from(41), make_span!(30, 31)),
                         Expr::new_paren(make_span!(34, 68), 
                             Expr::new_array(make_span!(35, 67), vec![
                                 Expr::new_tuple(make_span!(36, 60), vec![
                                     Expr::new_ident("jL".to_owned(), make_span!(37, 38)), 
                                     Expr::new_ident("rAn".to_owned(), make_span!(41, 43)),
                                     Expr::new_ident("K0FgLc7h".to_owned(), make_span!(46, 53)),
-                                    Expr::new_lit(LitValue::from(true), make_span!(56, 59))
+                                    Expr::Lit(LitValue::from(true), make_span!(56, 59))
                                 ]),
                                 Expr::new_ident("C".to_owned(), make_span!(63, 63)),
                                 Expr::new_ident("w".to_owned(), make_span!(66, 66)),
@@ -966,15 +965,15 @@ fn expr_parse_2() {
                     Expr::new_unit(make_span!(93, 94)),
                     Expr::new_ident("eIuArjF".to_owned(), make_span!(98, 104))
                 ]),
-                Expr::new_lit(LitValue::from(400), make_span!(108, 110)),
-                Expr::new_lit(LitValue::from(0o535147505), make_span!(113, 123)),
-                Expr::new_lit(LitValue::from(0xDB747), make_span!(126, 132))
+                Expr::Lit(LitValue::from(400), make_span!(108, 110)),
+                Expr::Lit(LitValue::from(0o535147505), make_span!(113, 123)),
+                Expr::Lit(LitValue::from(0xDB747), make_span!(126, 132))
             ])
         ])
     }
 
     assert_eq!{ PrimaryExpr::with_test_str("CMDoF"), PrimaryExpr::new_ident(make_id!(1), make_span!(0, 4)) }
-    assert_eq!{ PrimaryExpr::with_test_str("false"), PrimaryExpr::new_lit(LitValue::from(false), make_span!(0, 4)) }
+    assert_eq!{ PrimaryExpr::with_test_str("false"), PrimaryExpr::Lit(LitValue::from(false), make_span!(0, 4)) }
 
     
     //                                      0        1         2         3         4         5         6          7          8         9         A
@@ -982,7 +981,7 @@ fn expr_parse_2() {
     assert_eq!{ PrimaryExpr::with_test_str("[uy6, 4373577, [(q, AJBN0n, MDEgKh5,), KG, (NsL, ((), D, false, d, ), \"H=\"), true, ((vvB3, true, 5))]]"), 
         PrimaryExpr::new_array(make_span!(0, 101), vec![
             Expr::new_ident("uy6".to_owned(), make_span!(1, 3)),
-            Expr::new_lit(LitValue::from(4373577), make_span!(6, 12)),
+            Expr::Lit(LitValue::from(4373577), make_span!(6, 12)),
             Expr::new_array(make_span!(15, 100), vec![
                 Expr::new_tuple(make_span!(16, 36), vec![
                     Expr::new_ident("q".to_owned(), make_span!(17, 17)),
@@ -995,17 +994,17 @@ fn expr_parse_2() {
                     Expr::new_tuple(make_span!(49, 67), vec![
                         Expr::new_unit(make_span!(50, 51)),
                         Expr::new_ident("D".to_owned(), make_span!(54, 54)),
-                        Expr::new_lit(LitValue::from(false), make_span!(57, 61)),
+                        Expr::Lit(LitValue::from(false), make_span!(57, 61)),
                         Expr::new_ident("d".to_owned(), make_span!(64, 64)),
                     ]),
-                    Expr::new_lit(LitValue::from("H="), make_span!(70, 73))
+                    Expr::Lit(LitValue::from("H="), make_span!(70, 73))
                 ]),
-                Expr::new_lit(LitValue::from(true), make_span!(77, 80)),
+                Expr::Lit(LitValue::from(true), make_span!(77, 80)),
                 Expr::new_paren(make_span!(83, 99), 
                     Expr::new_tuple(make_span!(84, 98), vec![
                         Expr::new_ident("vvB3".to_owned(), make_span!(85, 88)),
-                        Expr::new_lit(LitValue::from(true), make_span!(91, 94)),
-                        Expr::new_lit(LitValue::from(5), make_span!(97, 97))
+                        Expr::Lit(LitValue::from(true), make_span!(91, 94)),
+                        Expr::Lit(LitValue::from(5), make_span!(97, 97))
                     ])
                 )
             ])
@@ -1025,7 +1024,7 @@ fn expr_parse_2() {
 
     assert_eq!{ PrimaryExpr::with_test_str("(\"o5\")"), 
         PrimaryExpr::new_paren(make_span!(0, 5), 
-            Expr::new_lit(LitValue::from("o5"), make_span!(1, 4))
+            Expr::Lit(LitValue::from("o5"), make_span!(1, 4))
         )
     }
 
@@ -1036,11 +1035,11 @@ fn expr_parse_2() {
             Expr::new_ident("nn".to_owned(), make_span!(1, 2)),
             Expr::new_paren(make_span!(5, 18), 
                 Expr::new_array_dup(make_span!(6, 17), 
-                    Expr::new_lit(LitValue::from(false), make_span!(7, 11)),
-                    Expr::new_lit(LitValue::from(true), make_span!(13, 16))
+                    Expr::Lit(LitValue::from(false), make_span!(7, 11)),
+                    Expr::Lit(LitValue::from(true), make_span!(13, 16))
                 )
             ),
-            Expr::new_lit(LitValue::from(183455), make_span!(21, 26))
+            Expr::Lit(LitValue::from(183455), make_span!(21, 26))
         ])
     }
     
@@ -1049,7 +1048,7 @@ fn expr_parse_2() {
     assert_eq!{ PrimaryExpr::with_test_str("((true, (mO, [(q5k);a], (((KttG))), (K5DJ, r, ())), (McsaEdfdfalse,)), rIOKt,)"),
         PrimaryExpr::new_tuple(make_span!(0, 77), vec![
             Expr::new_tuple(make_span!(1, 68), vec![
-                Expr::new_lit(LitValue::from(true), make_span!(2, 5)),
+                Expr::Lit(LitValue::from(true), make_span!(2, 5)),
                 Expr::new_tuple(make_span!(8, 49), vec![
                     Expr::new_ident("mO".to_owned(), make_span!(9, 10)), 
                     Expr::new_array_dup(make_span!(13, 21), 
@@ -1083,15 +1082,15 @@ fn expr_parse_2() {
     //                                      12 345 67890123456789012
     assert_eq!{ PrimaryExpr::with_test_str("[\"il\", 0o52u32, sO04n]"),
         PrimaryExpr::new_array(make_span!(0, 21), vec![
-            Expr::new_lit(LitValue::from("il"), make_span!(1, 4)),
-            Expr::new_lit(LitValue::from(0o52u32), make_span!(7, 13)), 
+            Expr::Lit(LitValue::from("il"), make_span!(1, 4)),
+            Expr::Lit(LitValue::from(0o52u32), make_span!(7, 13)), 
             Expr::new_ident("sO04n".to_owned(), make_span!(16, 20))
         ])
     }
     //                                      12345678
     assert_eq!{ PrimaryExpr::with_test_str("['f';()]"), 
         PrimaryExpr::new_array_dup(make_span!(0, 7), 
-            Expr::new_lit(LitValue::from('f'), make_span!(1, 3)),
+            Expr::Lit(LitValue::from('f'), make_span!(1, 3)),
             Expr::new_unit(make_span!(5, 6))
         )
     }
@@ -1101,10 +1100,10 @@ fn expr_parse_2() {
     //                                      12345 678901 234567890123456789012345678901234
     assert_eq!{ PrimaryExpr::with_test_str("[8, \"@=?GF\", 87f32, 1340323.74f64, FKOxAvx5]"),
         PrimaryExpr::new_array(make_span!(0, 43), vec![
-            Expr::new_lit(LitValue::from(8), make_span!(1, 1)),
-            Expr::new_lit(LitValue::from("@=?GF"), make_span!(4, 10)), 
-            Expr::new_lit(LitValue::from(87f32), make_span!(13, 17)),
-            Expr::new_lit(LitValue::from(1340323.74f64), make_span!(20, 32)),
+            Expr::Lit(LitValue::from(8), make_span!(1, 1)),
+            Expr::Lit(LitValue::from("@=?GF"), make_span!(4, 10)), 
+            Expr::Lit(LitValue::from(87f32), make_span!(13, 17)),
+            Expr::Lit(LitValue::from(1340323.74f64), make_span!(20, 32)),
             Expr::new_ident("FKOxAvx5".to_owned(), make_span!(35, 42))
         ])
     }
@@ -1119,14 +1118,14 @@ fn expr_parse_2() {
                 Expr::new_ident("tJ".to_owned(), make_span!(19, 20))
             ]),
             Expr::new_array(make_span!(24, 48), vec![
-                Expr::new_lit(LitValue::from('\\'), make_span!(25, 28)), 
+                Expr::Lit(LitValue::from('\\'), make_span!(25, 28)), 
                 Expr::new_ident("p".to_owned(), make_span!(31, 31)),
                 Expr::new_tuple(make_span!(34, 43), vec![
                     Expr::new_ident("xGaBwiL".to_owned(), make_span!(35, 41))
                 ]),
                 Expr::new_ident("DE".to_owned(), make_span!(46, 47))
             ]),
-            Expr::new_lit(LitValue::from(true), make_span!(51, 54)),
+            Expr::Lit(LitValue::from(true), make_span!(51, 54)),
             Expr::new_ident("aB8aE".to_owned(), make_span!(57, 61))
         ])
     } 
@@ -1137,17 +1136,17 @@ fn expr_parse_2() {
     assert_eq!{ PrimaryExpr::with_test_str("[abc, 123u32, \"456\", '\\u0065', false, (), (a), (abc, \"hello\", ), ]"),
         PrimaryExpr::new_array(make_span!(0, 65), vec![
             Expr::new_ident("abc".to_owned(), make_span!(1, 3)),
-            Expr::new_lit(LitValue::from(123u32), make_span!(6, 11)),
-            Expr::new_lit(LitValue::from("456"), make_span!(14, 18)),
-            Expr::new_lit(LitValue::from('\u{0065}'), make_span!(21, 28)),
-            Expr::new_lit(LitValue::from(false), make_span!(31, 35)),
+            Expr::Lit(LitValue::from(123u32), make_span!(6, 11)),
+            Expr::Lit(LitValue::from("456"), make_span!(14, 18)),
+            Expr::Lit(LitValue::from('\u{0065}'), make_span!(21, 28)),
+            Expr::Lit(LitValue::from(false), make_span!(31, 35)),
             Expr::new_unit(make_span!(38, 39)),
             Expr::new_paren(make_span!(42, 44), 
                 Expr::new_ident("a".to_owned(), make_span!(43, 43))
             ),
             Expr::new_tuple(make_span!(47, 62), vec![
                 Expr::new_ident("abc".to_owned(), make_span!(48, 50)),
-                Expr::new_lit(LitValue::from("hello"), make_span!(53, 59)),
+                Expr::Lit(LitValue::from("hello"), make_span!(53, 59)),
             ])
         ])
     }       
@@ -1159,10 +1158,10 @@ fn expr_parse_2() {
     assert_eq!{ PrimaryExpr::with_test_str("[[123u32, abc]; 4567]"), 
         PrimaryExpr::new_array_dup(make_span!(0, 20), 
             Expr::new_array(make_span!(1, 13), vec![
-                Expr::new_lit(LitValue::from(123u32), make_span!(2, 7)), 
+                Expr::Lit(LitValue::from(123u32), make_span!(2, 7)), 
                 Expr::new_ident("abc".to_owned(), make_span!(10, 12))
             ]),
-            Expr::new_lit(LitValue::from(4567), make_span!(16, 19))
+            Expr::Lit(LitValue::from(4567), make_span!(16, 19))
         )
     }
 }

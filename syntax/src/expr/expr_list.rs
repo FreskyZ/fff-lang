@@ -107,9 +107,9 @@ fn expr_list_format() {
 
     assert_eq!{
         ExprList::new(vec![
-            Expr::new_lit(LitExpr::new(LitValue::from(1), make_span!(1, 2))),
-            Expr::new_lit(LitExpr::new(LitValue::from(2), make_span!(3, 4))),
-            Expr::new_lit(LitExpr::new(LitValue::from(3), make_span!(5, 6))),
+            Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(1, 2))),
+            Expr::Lit(LitExpr::new(LitValue::from(2), make_span!(3, 4))),
+            Expr::Lit(LitExpr::new(LitValue::from(3), make_span!(5, 6))),
         ]).format(1),
         "  Literal (i32)1 <<0>1-2>\n  Literal (i32)2 <<0>3-4>\n  Literal (i32)3 <<0>5-6>"
     }
@@ -123,17 +123,17 @@ fn expr_list_parse() {
 
     assert_eq!{ ExprList::with_test_str("[1, 2, 3]"), 
         ExprListParseResult::Normal(make_span!(0, 8), ExprList::new(vec![
-            Expr::new_lit(LitExpr::new(LitValue::from(1), make_span!(1, 1))),
-            Expr::new_lit(LitExpr::new(LitValue::from(2), make_span!(4, 4))),
-            Expr::new_lit(LitExpr::new(LitValue::from(3), make_span!(7, 7))),
+            Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(1, 1))),
+            Expr::Lit(LitExpr::new(LitValue::from(2), make_span!(4, 4))),
+            Expr::Lit(LitExpr::new(LitValue::from(3), make_span!(7, 7))),
         ]))
     }
     
     assert_eq!{ ExprList::with_test_str("(1, 2, 3,)"), 
         ExprListParseResult::EndWithComma(make_span!(0, 9), ExprList::new(vec![
-            Expr::new_lit(LitExpr::new(LitValue::from(1), make_span!(1, 1))),
-            Expr::new_lit(LitExpr::new(LitValue::from(2), make_span!(4, 4))),
-            Expr::new_lit(LitExpr::new(LitValue::from(3), make_span!(7, 7))),
+            Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(1, 1))),
+            Expr::Lit(LitExpr::new(LitValue::from(2), make_span!(4, 4))),
+            Expr::Lit(LitExpr::new(LitValue::from(3), make_span!(7, 7))),
         ]))
     }
 

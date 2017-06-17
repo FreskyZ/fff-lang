@@ -9,7 +9,7 @@ use codemap::Span;
 use lexical::Token;
 use lexical::LitValue;
 
-use super::PrimaryExpr;
+use super::Expr;
 
 use super::super::ParseResult;
 use super::super::ParseSession;
@@ -37,13 +37,13 @@ impl ISyntaxItemGrammar for LitExpr {
     fn is_first_final(sess: &ParseSession) -> bool { if let &Token::Lit(_) = sess.tk { true } else { false } }
 }
 impl ISyntaxItemParse for LitExpr {
-    type Target = PrimaryExpr;
+    type Target = Expr;
 
-    fn parse(sess: &mut ParseSession) -> ParseResult<PrimaryExpr> {
+    fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {
         
         if let (&Token::Lit(ref lit_val), ref lit_val_span) = (sess.tk, sess.pos) {
             sess.move_next();
-            Ok(PrimaryExpr::Lit(LitExpr::new(*lit_val, *lit_val_span)))
+            Ok(Expr::Lit(LitExpr::new(*lit_val, *lit_val_span)))
         } else {
             sess.push_unexpect("literal")
         }

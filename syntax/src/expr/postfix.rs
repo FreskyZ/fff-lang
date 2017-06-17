@@ -25,7 +25,6 @@ use super::super::ParseSession;
 use super::super::ParseResult;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
-use super::super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub enum PostfixExpr {
@@ -69,9 +68,6 @@ impl PostfixExpr {
         }
     }
 }
-impl ISyntaxItemGrammar for PostfixExpr {
-    fn is_first_final(sess: &ParseSession) -> bool { PrimaryExpr::is_first_final(sess) }
-}
 impl ISyntaxItemParse for PostfixExpr {
     type Target = Expr;
 
@@ -81,7 +77,7 @@ impl ISyntaxItemParse for PostfixExpr {
         #[cfg(not(feature = "trace_postfix_expr_parse"))]
         macro_rules! trace { ($($arg:tt)*) => () }
 
-        let mut current_retval = Expr::Primary(PrimaryExpr::parse(sess)?);
+        let mut current_retval = PrimaryExpr::parse(sess)?;
         trace!("parsed primary, current is {:?}", current_retval);
 
         'postfix: loop {

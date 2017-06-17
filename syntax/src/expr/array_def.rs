@@ -11,7 +11,7 @@ use lexical::SeperatorKind;
 
 use super::ExprList;
 use super::ExprListParseResult;
-use super::PrimaryExpr;
+use super::Expr;
 
 use super::super::ParseSession;
 use super::super::ParseResult;
@@ -32,6 +32,9 @@ impl ISyntaxItemFormat for ArrayDef {
 impl fmt::Debug for ArrayDef {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(0)) }
 }
+impl From<ArrayDef> for Expr {
+    fn from(array_def: ArrayDef) -> Expr { Expr::Array(array_def) }
+}
 impl ArrayDef {
     pub fn new(bracket_span: Span, items: ExprList) -> ArrayDef { ArrayDef{ bracket_span, items } }
 }
@@ -39,20 +42,20 @@ impl ISyntaxItemGrammar for ArrayDef {
     fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Sep(SeperatorKind::LeftBracket) }
 }
 impl ISyntaxItemParse for ArrayDef {
-    type Target = PrimaryExpr;
+    type Target = Expr;
 
-    fn parse(sess: &mut ParseSession) -> ParseResult<PrimaryExpr> {
+    fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {
 
         match ExprList::parse(sess)? {
             ExprListParseResult::Empty(span) => {
-                return Ok(PrimaryExpr::Array(ArrayDef::new(span, ExprList::new(Vec::new()))));
+                return Ok(Expr::Array(ArrayDef::new(span, ExprList::new(Vec::new()))));
             }
             ExprListParseResult::SingleComma(span) => {
                 sess.push_message(Message::new_by_str("single comma in array def", vec![(span, "")]));
-                return Ok(PrimaryExpr::Array(ArrayDef::new(span, ExprList::new(Vec::new()))));
+                return Ok(Expr::Array(ArrayDef::new(span, ExprList::new(Vec::new()))));
             }
             ExprListParseResult::Normal(span, exprlist) | ExprListParseResult::EndWithComma(span, exprlist) => {
-                return Ok(PrimaryExpr::Array(ArrayDef::new(span, exprlist)));
+                return Ok(Expr::Array(ArrayDef::new(span, exprlist)));
             }
         }
     }
@@ -68,18 +71,18 @@ fn array_def_parse() {
 
     //                                   01234567
     assert_eq!{ ArrayDef::with_test_str("[1, '2']"),
-        PrimaryExpr::Array(ArrayDef::new(make_span!(0, 7), ExprList::new(vec![
-            Expr::new_lit(LitExpr::new(LitValue::from(1), make_span!(1, 1))),
-            Expr::new_lit(LitExpr::new(LitValue::from('2'), make_span!(4, 6)))
+        Expr::Array(ArrayDef::new(make_span!(0, 7), ExprList::new(vec![
+            Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(1, 1))),
+            Expr::Lit(LitExpr::new(LitValue::from('2'), make_span!(4, 6)))
         ])))
     }
     //                                   01234567
     assert_eq!{ ArrayDef::with_test_str("[1 + 1,]"),
-        PrimaryExpr::Array(ArrayDef::new(make_span!(0, 7), ExprList::new(vec![
+        Expr::Array(ArrayDef::new(make_span!(0, 7), ExprList::new(vec![
             Expr::Binary(BinaryExpr::new(
-                Expr::new_lit(LitExpr::new(LitValue::from(1), make_span!(1, 1))), 
+                Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(1, 1))), 
                 SeperatorKind::Add, make_span!(3, 3),
-                Expr::new_lit(LitExpr::new(LitValue::from(1), make_span!(5, 5))),
+                Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(5, 5))),
             ))
         ])))
     }

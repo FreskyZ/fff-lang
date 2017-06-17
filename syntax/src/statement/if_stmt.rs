@@ -182,11 +182,11 @@ fn if_stmt_parse() {
     assert_eq!{ IfStatement::with_test_str("if true { } else if false { } else {}"),
         IfStatement::new_ifelseifelse(make_span!(0, 36),
             make_span!(0, 1),
-            Expr::new_lit(LitExpr::new(LitValue::from(true), make_span!(3, 6))),
+            Expr::Lit(LitExpr::new(LitValue::from(true), make_span!(3, 6))),
             Block::new(make_span!(8, 10), vec![]), vec![
                 IfConditionBody::new(
                     make_span!(12, 18),
-                    Expr::new_lit(LitExpr::new(LitValue::from(false), make_span!(20, 24))),
+                    Expr::Lit(LitExpr::new(LitValue::from(false), make_span!(20, 24))),
                     Block::new(make_span!(26, 28), vec![])
                 )
             ],

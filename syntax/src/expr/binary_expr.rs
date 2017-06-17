@@ -50,6 +50,9 @@ impl ISyntaxItemFormat for BinaryExpr {
 impl fmt::Debug for BinaryExpr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
 }
+impl From<BinaryExpr> for Expr {
+    fn from(binary_expr: BinaryExpr) -> Expr { Expr::Binary(binary_expr) }
+}
 impl BinaryExpr {
 
     pub fn new(left_expr: Expr, operator: SeperatorKind, operator_span: Span, right_expr: Expr) -> BinaryExpr {
@@ -115,10 +118,10 @@ fn binary_expr_format() {
     use super::LitExpr;
     
     let binary_expr = Expr::Binary(BinaryExpr::new(
-        Expr::new_lit(LitExpr::new(LitValue::from(1), make_span!(0, 0))),
+        Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(0, 0))),
         SeperatorKind::Add,
         make_span!(2, 2),
-        Expr::new_lit(LitExpr::new(LitValue::from(2), make_span!(4, 4))),
+        Expr::Lit(LitExpr::new(LitValue::from(2), make_span!(4, 4))),
     ));
     assert_eq!(binary_expr.format(0), "BinaryExpr <<0>0-4>\n  Literal (i32)1 <<0>0-0>\n  + <<0>2-2>\n  Literal (i32)2 <<0>4-4>");
 }
@@ -130,7 +133,7 @@ fn binary_expr_parse() {
     use super::super::ISyntaxItemWithStr;
     
     macro_rules! ident { ($ident_name: expr, $strpos: expr) => (Expr::new_primary(PrimaryExpr::new_ident($ident_name.to_owned(), $strpos))) }
-    macro_rules! int { ($value: expr, $strpos: expr) => (Expr::new_primary(PrimaryExpr::new_lit_num(NumLitValue::from($value), $strpos))) }
+    macro_rules! int { ($value: expr, $strpos: expr) => (Expr::new_primary(PrimaryExpr::Lit_num(NumLitValue::from($value), $strpos))) }
 
     let new_binary = Expr::new_binary;
 

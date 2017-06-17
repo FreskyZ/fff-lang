@@ -139,7 +139,6 @@ fn fn_def_parse() {
     use super::super::ExprStatement;
     use super::super::Expr;
     use super::super::PostfixExpr;
-    use super::super::PrimaryExpr;
 
     //                                012345678901
     assert_eq!{ FnDef::with_test_str("fn main() {}"),
@@ -193,9 +192,9 @@ fn fn_def_parse() {
             Block::new(make_span!(63, 80), vec![
                 Statement::Expr(ExprStatement::new_simple(make_span!(65, 78),
                     Expr::Postfix(PostfixExpr::FunctionCall(
-                        Box::new(Expr::Primary(PrimaryExpr::Ident(IdentExpr::new(make_id!(9), make_span!(65, 71))))),
+                        Box::new(Expr::Ident(IdentExpr::new(make_id!(9), make_span!(65, 71)))),
                         make_span!(72, 77), vec![
-                            Expr::new_ident(IdentExpr::new(make_id!(5), make_span!(73, 76)))
+                            Expr::Ident(IdentExpr::new(make_id!(5), make_span!(73, 76)))
                         ]
                     ))
                 ))

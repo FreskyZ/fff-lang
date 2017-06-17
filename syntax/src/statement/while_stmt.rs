@@ -100,7 +100,6 @@ fn while_stmt_parse() {
     use super::super::Statement;
     use super::super::ExprStatement;
     use super::super::PostfixExpr;
-    use super::super::PrimaryExpr;
 
     //                                           0        1         2         3         4        
     //                                           01234567890123456789012345 67890123456789012 3456
@@ -108,13 +107,13 @@ fn while_stmt_parse() {
         WhileStatement::new_with_label(
             LabelDef::new(make_id!(1), make_span!(0, 2)),
             make_span!(4, 8),
-            Expr::new_lit(LitExpr::new(LitValue::from(true), make_span!(10, 13))),
+            Expr::Lit(LitExpr::new(LitValue::from(true), make_span!(10, 13))),
             Block::new(make_span!(15, 46), vec![
                 Statement::Expr(ExprStatement::new_simple(make_span!(17, 44), 
                     Expr::Postfix(PostfixExpr::FunctionCall(
-                        Box::new(Expr::Primary(PrimaryExpr::Ident(IdentExpr::new(make_id!(2), make_span!(17, 23))))),
+                        Box::new(Expr::Ident(IdentExpr::new(make_id!(2), make_span!(17, 23)))),
                         make_span!(24, 43), vec![
-                            Expr::new_lit(LitExpr::new(LitValue::new_str_lit(make_id!(3)), make_span!(25, 42)))
+                            Expr::Lit(LitExpr::new(LitValue::new_str_lit(make_id!(3)), make_span!(25, 42)))
                         ]
                     ))
                 ))

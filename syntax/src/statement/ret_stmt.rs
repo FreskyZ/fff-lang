@@ -83,9 +83,9 @@ fn ret_stmt_parse() {
         ReturnStatement::new_expr(
             make_span!(0, 12), 
             Expr::Binary(BinaryExpr::new(
-                Expr::new_lit(LitExpr::new(LitValue::from(1), make_span!(7, 7))),
+                Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(7, 7))),
                 SeperatorKind::Add, make_span!(9, 9),
-                Expr::new_lit(LitExpr::new(LitValue::from(1), make_span!(11, 11))),
+                Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(11, 11))),
             ))
         )
     }

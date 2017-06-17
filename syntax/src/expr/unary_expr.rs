@@ -81,11 +81,10 @@ impl ISyntaxItemParse for UnaryExpr {
 fn unary_expr_parse() {
     use lexical::LitValue;
     use super::LitExpr;
-    use super::PrimaryExpr;
     use super::super::ISyntaxItemWithStr;
     
     assert_eq!{ UnaryExpr::with_test_str("1"), 
-        Expr::Primary(PrimaryExpr::Lit(LitExpr::new(LitValue::from(1), make_span!(0, 0)))) 
+        Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(0, 0))) 
     }
 
     assert_eq!{ UnaryExpr::with_test_str("!~!1"),
@@ -95,7 +94,7 @@ fn unary_expr_parse() {
                 SeperatorKind::BitNot, make_span!(1, 1),            
                 Expr::Unary(UnaryExpr::new(
                     SeperatorKind::LogicalNot, make_span!(2, 2),
-                    Expr::Primary(PrimaryExpr::Lit(LitExpr::new(LitValue::from(1), make_span!(3, 3)))),
+                    Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(3, 3))),
                 ))
             ))
         ))

@@ -14,11 +14,10 @@ use lexical::Token;
 use lexical::SeperatorKind;
 use lexical::LitValue;
 
+use super::Expr;
 use super::LitExpr;
 use super::ExprList;
 use super::ExprListParseResult;
-use super::PrimaryExpr;
-use super::Expr;
 
 use super::super::ParseSession;
 use super::super::ParseResult;
@@ -64,27 +63,27 @@ impl ISyntaxItemGrammar for TupleDef {
     fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Sep(SeperatorKind::LeftParenthenes) }
 }
 impl ISyntaxItemParse for TupleDef {
-    type Target = PrimaryExpr;
+    type Target = Expr;
 
-    fn parse(sess: &mut ParseSession) -> ParseResult<PrimaryExpr> {
+    fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {
 
         match ExprList::parse(sess)? {
             ExprListParseResult::Empty(span) => {
-                return Ok(PrimaryExpr::Lit(LitExpr::new(LitValue::Unit, span)));
+                return Ok(Expr::Lit(LitExpr::new(LitValue::Unit, span)));
             }
             ExprListParseResult::SingleComma(span) => {
                 sess.push_message(Message::new_by_str("single comma in tuple def", vec![(span, "")]));
-                return Ok(PrimaryExpr::Tuple(TupleDef::new(span, ExprList::new(Vec::new()))));
+                return Ok(Expr::Tuple(TupleDef::new(span, ExprList::new(Vec::new()))));
             }
             ExprListParseResult::Normal(span, exprlist) => {
                 if Vec::len(&exprlist.items) == 1 {
-                    return Ok(PrimaryExpr::Paren(ParenExpr::new(span, exprlist.items.into_iter().last().unwrap())));
+                    return Ok(Expr::Paren(ParenExpr::new(span, exprlist.items.into_iter().last().unwrap())));
                 } else {
-                    return Ok(PrimaryExpr::Tuple(TupleDef::new(span, exprlist)));
+                    return Ok(Expr::Tuple(TupleDef::new(span, exprlist)));
                 }
             }
             ExprListParseResult::EndWithComma(span, exprlist) => {
-                return Ok(PrimaryExpr::Tuple(TupleDef::new(span, exprlist)));
+                return Ok(Expr::Tuple(TupleDef::new(span, exprlist)));
             }
         }
     }
@@ -97,18 +96,18 @@ fn tuple_def_parse() {
 
     //                                   01234567
     assert_eq!{ TupleDef::with_test_str("(1, '2')"),
-        PrimaryExpr::Tuple(TupleDef::new(make_span!(0, 7), ExprList::new(vec![
-            Expr::new_lit(LitExpr::new(LitValue::from(1), make_span!(1, 1))),
-            Expr::new_lit(LitExpr::new(LitValue::from('2'), make_span!(4, 6)))
+        Expr::Tuple(TupleDef::new(make_span!(0, 7), ExprList::new(vec![
+            Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(1, 1))),
+            Expr::Lit(LitExpr::new(LitValue::from('2'), make_span!(4, 6)))
         ])))
     }
     //                                   0123456
     assert_eq!{ TupleDef::with_test_str("(1 + 1)"),
-        PrimaryExpr::Paren(ParenExpr::new(make_span!(0, 6), 
+        Expr::Paren(ParenExpr::new(make_span!(0, 6), 
             Expr::Binary(BinaryExpr::new(
-                Expr::new_lit(LitExpr::new(LitValue::from(1), make_span!(1, 1))), 
+                Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(1, 1))), 
                 SeperatorKind::Add, make_span!(3, 3),
-                Expr::new_lit(LitExpr::new(LitValue::from(1), make_span!(5, 5))),
+                Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(5, 5))),
             ))
         ))
     }

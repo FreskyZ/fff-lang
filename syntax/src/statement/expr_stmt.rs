@@ -148,7 +148,6 @@ fn expr_stmt_parse() {
     use super::super::Expr;
     use super::super::BinaryExpr;
     use super::super::PostfixExpr;
-    use super::super::PrimaryExpr;
     use super::super::ISyntaxItemWithStr;
 
     //                                                 0         1          2
@@ -157,9 +156,9 @@ fn expr_stmt_parse() {
         Some(ExprStatement::new_simple(
             make_span!(0, 21),
             Expr::Postfix(PostfixExpr::FunctionCall(
-                Box::new(Expr::Primary(PrimaryExpr::Ident(IdentExpr::new(make_id!(1), make_span!(0, 6))))),
+                Box::new(Expr::Ident(IdentExpr::new(make_id!(1), make_span!(0, 6)))),
                 make_span!(7, 20), vec![
-                    Expr::new_lit(LitExpr::new(LitValue::new_str_lit(make_id!(2)), make_span!(8, 19)))
+                    Expr::Lit(LitExpr::new(LitValue::new_str_lit(make_id!(2)), make_span!(8, 19)))
                 ]
             ))
         )),
@@ -172,11 +171,11 @@ fn expr_stmt_parse() {
             make_span!(0, 11),
             SeperatorKind::ShiftLeftAssign, make_span!(6, 8),
             Expr::Binary(BinaryExpr::new(
-                Expr::new_lit(LitExpr::new(LitValue::from(1), make_span!(0, 0))),
+                Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(0, 0))),
                 SeperatorKind::Add, make_span!(2, 2),
-                Expr::new_lit(LitExpr::new(LitValue::from(1), make_span!(4, 4))),
+                Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(4, 4))),
             )),
-            Expr::new_lit(LitExpr::new(LitValue::from(2), make_span!(10, 10)))
+            Expr::Lit(LitExpr::new(LitValue::from(2), make_span!(10, 10)))
         )),
         6
     )}

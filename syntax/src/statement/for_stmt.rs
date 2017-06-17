@@ -112,7 +112,6 @@ fn for_stmt_parse() {
     use super::super::IdentExpr;
     use super::super::LitExpr;
     use super::super::PostfixExpr;
-    use super::super::PrimaryExpr;
     use super::super::ExprStatement;
     use super::super::Statement;
     use super::super::ISyntaxItemWithStr;
@@ -123,7 +122,7 @@ fn for_stmt_parse() {
             LabelDef::new(make_id!(1), make_span!(0, 2)),
             make_span!(4, 6),
             make_id!(2), make_span!(8, 8),
-            Expr::new_lit(LitExpr::new(LitValue::from(42), make_span!(13, 14))),
+            Expr::Lit(LitExpr::new(LitValue::from(42), make_span!(13, 14))),
             Block::new(make_span!(16, 17), vec![])
         )),
         make_messages![],
@@ -143,10 +142,10 @@ fn for_stmt_parse() {
                     Box::new(Expr::Postfix(PostfixExpr::FunctionCall(
                         Box::new(Expr::Postfix(PostfixExpr::MemberAccess(
                             Box::new(Expr::Postfix(PostfixExpr::FunctionCall(
-                                Box::new(Expr::Primary(PrimaryExpr::Ident(IdentExpr::new(make_id!(3), make_span!(17, 21))))),
+                                Box::new(Expr::Ident(IdentExpr::new(make_id!(3), make_span!(17, 21)))),
                                 make_span!(22, 28), vec![
-                                    Expr::new_lit(LitExpr::new(LitValue::from(0), make_span!(23, 23))),
-                                    Expr::new_lit(LitExpr::new(LitValue::from(10), make_span!(26, 27))),
+                                    Expr::Lit(LitExpr::new(LitValue::from(0), make_span!(23, 23))),
+                                    Expr::Lit(LitExpr::new(LitValue::from(10), make_span!(26, 27))),
                                 ]
                             ))),
                             make_span!(29, 29),
@@ -162,9 +161,9 @@ fn for_stmt_parse() {
             Block::new(make_span!(52, 77), vec![
                 Statement::Expr(ExprStatement::new_simple(make_span!(54, 75), 
                     Expr::Postfix(PostfixExpr::FunctionCall(
-                        Box::new(Expr::Primary(PrimaryExpr::Ident(IdentExpr::new(make_id!(6), make_span!(54, 60))))),
+                        Box::new(Expr::Ident(IdentExpr::new(make_id!(6), make_span!(54, 60)))),
                         make_span!(61, 74), vec![
-                            Expr::new_lit(LitExpr::new(LitValue::new_str_lit(make_id!(7)), make_span!(62, 73)))
+                            Expr::Lit(LitExpr::new(LitValue::new_str_lit(make_id!(7)), make_span!(62, 73)))
                     ]))
                 ))
             ])
