@@ -6,11 +6,14 @@
 use lexical::Token;
 use lexical::KeywordKind;
 
+use super::Expr;
 use super::LitExpr;
 use super::IdentExpr;
 use super::TupleDef;
 use super::ArrayDef;
-use super::Expr;
+use super::FnCallExpr;
+use super::IndexCallExpr;
+use super::MemberAccessExpr;
 
 use super::super::ParseSession;
 use super::super::ParseResult;
@@ -45,5 +48,44 @@ impl ISyntaxItemParse for PrimaryExpr {
         } else {
             return sess.push_unexpect("primary expr");
         }
+    }
+}
+
+pub struct PostfixExpr;
+impl ISyntaxItemParse for PostfixExpr {
+    type Target = Expr;
+
+    fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {   
+        #[cfg(feature = "trace_postfix_expr_parse")]
+        macro_rules! trace { ($($arg:tt)*) => ({ perror!("    [PostfixExpr:{}] ", line!()); perrorln!($($arg)*); }) }
+        #[cfg(not(feature = "trace_postfix_expr_parse"))]
+        macro_rules! trace { ($($arg:tt)*) => () }
+
+        let mut current_retval = PrimaryExpr::parse(sess)?;
+        trace!("parsed primary, current is {:?}", current_retval);
+
+        loop {
+            if MemberAccessExpr::is_first_final(sess) {
+                let mut postfix = MemberAccessExpr::parse(sess)?;
+                postfix.all_span = current_retval.get_all_span().merge(&postfix.name.span);
+                postfix.base = Box::new(current_retval);
+                current_retval = Expr::MemberAccess(postfix);
+            } else if FnCallExpr::is_first_final(sess) {
+                let mut postfix = FnCallExpr::parse(sess)?;
+                postfix.all_span = current_retval.get_all_span().merge(&postfix.paren_span);
+                postfix.base = Box::new(current_retval);
+                current_retval = Expr::FnCall(postfix);
+            } else if IndexCallExpr::is_first_final(sess) {
+                let mut postfix = IndexCallExpr::parse(sess)?;
+                postfix.all_span = current_retval.get_all_span().merge(&postfix.bracket_span);
+                postfix.base = Box::new(current_retval);
+                current_retval = Expr::IndexCall(postfix);
+            } else {
+                break;
+            }
+        }
+
+        trace!("parsing postfix finished, get retval: {:?}", current_retval);
+        return Ok(current_retval);
     }
 }

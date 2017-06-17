@@ -26,7 +26,6 @@ pub use self::expr::IdentExpr;
 pub use self::expr::Expr;
 pub use self::expr::BinaryExpr;
 pub use self::expr::UnaryExpr;
-pub use self::expr::PostfixExpr;
 pub use self::expr::FnCallExpr;
 pub use self::expr::IndexCallExpr;
 pub use self::expr::MemberAccessExpr;

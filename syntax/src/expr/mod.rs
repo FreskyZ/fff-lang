@@ -6,6 +6,7 @@ use std::fmt;
 
 use codemap::Span;
 use lexical::Token;
+use lexical::LitValue;
 use lexical::KeywordKind;
 
 mod lit_expr;
@@ -16,7 +17,6 @@ mod array_def;
 mod member_access;
 mod fn_call;
 mod index_call;
-mod postfix;
 mod unary_expr;
 mod binary_expr;
 mod priority_proxy;
@@ -34,7 +34,7 @@ pub use self::member_access::MemberAccessExpr;
 
 pub use self::binary_expr::BinaryExpr;
 pub use self::unary_expr::UnaryExpr;
-pub use self::postfix::PostfixExpr;
+pub use self::priority_proxy::PostfixExpr;
 pub use self::priority_proxy::PrimaryExpr;
 
 use super::ParseSession;
@@ -50,7 +50,9 @@ pub enum Expr {
     Paren(ParenExpr),
     Tuple(TupleDef),
     Array(ArrayDef),
-    Postfix(PostfixExpr),
+    FnCall(FnCallExpr),
+    IndexCall(IndexCallExpr),
+    MemberAccess(MemberAccessExpr),
     Unary(UnaryExpr),
     Binary(BinaryExpr),
 }
@@ -62,7 +64,9 @@ impl ISyntaxItemFormat for Expr {
             &Expr::Paren(ref paren_expr) => paren_expr.format(indent),
             &Expr::Tuple(ref tuple_def) => tuple_def.format(indent),
             &Expr::Array(ref array_def) => array_def.format(indent),
-            &Expr::Postfix(ref postfix_expr) => postfix_expr.format(indent),
+            &Expr::FnCall(ref fn_call) => fn_call.format(indent),
+            &Expr::IndexCall(ref index_call) => index_call.format(indent),
+            &Expr::MemberAccess(ref member_access) => member_access.format(indent),
             &Expr::Unary(ref unary_expr) => unary_expr.format(indent),
             &Expr::Binary(ref binary_expr) => binary_expr.format(indent),
         }
@@ -72,10 +76,7 @@ impl fmt::Debug for Expr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
 }
 impl Default for Expr {
-    fn default() -> Expr {
-        use lexical::LitValue;
-        Expr::Lit(LitExpr::new(LitValue::from(0), Span::default()))
-    }
+    fn default() -> Expr { Expr::Lit(LitExpr::new(LitValue::from(0), Span::default())) }
 }
 impl Expr {
 
@@ -86,7 +87,9 @@ impl Expr {
             &Expr::Paren(ref paren_expr) => paren_expr.span,
             &Expr::Tuple(ref tuple_def) => tuple_def.paren_span, 
             &Expr::Array(ref array_def) => array_def.bracket_span,
-            &Expr::Postfix(ref postfix_expr) => postfix_expr.get_all_span(),
+            &Expr::FnCall(ref fn_call) => fn_call.all_span,
+            &Expr::IndexCall(ref index_call) => index_call.all_span,
+            &Expr::MemberAccess(ref member_access) => member_access.all_span,
             &Expr::Unary(ref unary_expr) => unary_expr.all_span,
             &Expr::Binary(ref binary_expr) => binary_expr.all_span,
         }
@@ -160,12 +163,12 @@ fn expr_parse() {
     
     // Case from fn_def_parse
     assert_eq!{ Expr::with_test_input("println(this)", &mut make_symbols!["println", "this"]),
-        Expr::Postfix(PostfixExpr::FnCall(FnCallExpr::new(
+        Expr::FnCall(FnCallExpr::new(
             Expr::Ident(IdentExpr::new(make_id!(1), make_span!(0, 6))),
             make_span!(7, 12), ExprList::new(vec![
                 Expr::Ident(IdentExpr::new(make_id!(2), make_span!(8, 11)))
             ])
-        )))
+        ))
     }
 }
 

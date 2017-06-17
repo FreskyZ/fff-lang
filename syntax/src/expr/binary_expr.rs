@@ -64,7 +64,6 @@ impl BinaryExpr {
         }
     }
 }
-// No grammar because Binary::is_first_final <=> Expr::is_first_final
 impl ISyntaxItemParse for BinaryExpr {
     type Target = Expr;
 
@@ -132,8 +131,8 @@ fn binary_expr_parse() {
     use lexical::NumLitValue;
     use super::super::ISyntaxItemWithStr;
     
-    macro_rules! ident { ($ident_name: expr, $strpos: expr) => (Expr::new_primary(PrimaryExpr::new_ident($ident_name.to_owned(), $strpos))) }
-    macro_rules! int { ($value: expr, $strpos: expr) => (Expr::new_primary(PrimaryExpr::Lit_num(NumLitValue::from($value), $strpos))) }
+    macro_rules! ident { ($ident_name: expr, $strpos: expr) => (Expr::Ident($ident_name.to_owned(), $strpos)) }
+    macro_rules! int { ($value: expr, $strpos: expr) => (Expr::Lit(LitValue::from($value), $strpos)) }
 
     let new_binary = Expr::new_binary;
 
