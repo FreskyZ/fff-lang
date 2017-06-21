@@ -1,0 +1,125 @@
+// std.ff version 2
+
+concept IEqualtable {
+    fn operator==(&this, rhs: &Self) -> bool;
+    fn operator!=(&this, rhs: &Self) -> bool;
+}
+// accept this when proved this is useful
+// concept IBoolean {
+//     fn operator&&(&this, rhs: &Self) -> bool; // what's the overloading meaning?
+//     fn operator||(&this, rhs: &Self) -> bool; // what's the overloading meaning?
+//     fn operator!(&this, rhs: &Self) -> bool;  // use `is_valid` or something clearer instead
+// }
+
+#[primitive]  // primitive attribute only on primitive types, cannot be on user types
+type unit: IEqualtable {
+
+    #[constructor]
+    fn new() -> unit;
+    public fn operator==(&this, rhs: &unit) -> bool;
+    public fn IEqualtable::operator not equal(&this, rhs: &unit) -> bool;
+}
+const unit = unsafe::uninitialized(0);
+
+#[primitive]
+type bool : IEqualtable {
+
+    #[constructor]
+    fn new() -> unit;
+
+    public fn operator==(&this, rhs: &bool) -> bool;
+    public fn operator!=(&this, rhs: &bool) -> bool;
+
+    // so IBoolean is not implemented here but internally
+}
+const true = unsafe::uninitialized(4);
+const false = unsafe::uninitialized(4);
+
+#[primitive]
+type i32 : IEqualtable, IComparable { // don't forget integral type do not have bits like operators
+
+}
+
+#[primitive]
+type r64: IEqualtable, IComparable {
+
+}
+
+#[primitive]
+type bits32: IEqualtable, IBitOperation {
+
+}
+
+#[primitive]
+type ref<T> {
+
+    public fn operator==(&this, rhs: &Self) -> bool where T: IEqualtable;
+
+    // also deref may not provide a trait
+}
+
+// Algebra data type? because it is very very very 爽
+enum Result<T, E> {
+    Ok(T),
+    Err(E),
+}
+enum Option<T> {
+    Some(T),
+    None
+}
+
+// primitive?
+type array_enumerator<T> : IEnumerator<T> {
+    private self: &array<T>,   // how to check this reference leak?
+    private index: u64,
+
+    // module internal or something
+    internal fn new(self: &array<T>) -> array_enumerator<T> {
+        this.self = self; 
+        this.index = 0;
+    }
+
+    public fn next() -> Option<T> {
+
+    }
+}
+
+#[primitive] // although array members are not builtin, auto inline the small members
+type array<T> : IEnumerable<T> { // concept template
+    private var data: ref<T>,
+    private var size: u64,
+    private var capacity: u64,
+
+    #[constructor] // or do not use this attribute and set `fn new() -> Self` as special name but not keyword
+    public fn new() -> array<T> {
+        this.data = ref<T>::new(16);
+        this.size = 0;      // which requires non prefix and postfix numeric literal to be {integer} not i32
+        this.capacity = 16;
+    }
+
+    public fn push_back(&this, T value) {
+        if this.size == this.capacity {
+            const new_capcity = (1.5 * this.capacity).to_u64();
+            var new_data = ref<T>::new(new_capcity);
+            unsafe::memcpy(this.data, new_data, unsafe::sizeof(T) * this.size);
+            this.data = new_data;
+            this.capcity = new_capcity;
+        }
+        this.data[size] = value;
+        this.size += 1;
+    }
+
+    // 'index' after operator is special, but also can be normal variable name
+    // it is also not duplicate define, because 'operator index' name contains 'operator ' and defined in array<T> scope, index: u64 defined in operator index scope
+    public fn operator index(&this, index: u64) -> &T { 
+        if index >= this.size {
+            throw IndexOutofRangeException(); // ??
+        }
+        return &this.data[T];
+    }
+
+    // auto define 'This' type?
+    public const get_enumerator: fn(&This) -> array_enumerator<T> = (&this) => {
+
+    }
+}

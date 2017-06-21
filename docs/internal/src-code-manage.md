@@ -50,10 +50,10 @@ actual steps:
   - merge codepos into codemap and make messages, lexical and syntax depend on codemap
   - change Position and StringPosition to CharPos and Span, pass messages, lexical and syntax all tests
   - finish new lexical parser based on codemap.symbols, with string literals and identifiers interned
+  - finish new syntax parser based on sess.symbols, with `this` and `_` and `tuple` and `array` interned
+  - refactored expr physical structure to more public and simple
 
-  - currently at: finish new syntax trees based on codemap.symbols, with all kind of strings interned
-                      which is a very big all in one update!
-                  add for and while statement's else clauses, split primary expr definitions and try refactor expr node physical structures
+  - currently at: add for and while statement's else clauses,
                   finish message's format based on codemap
 
   - in future: new semantic!
