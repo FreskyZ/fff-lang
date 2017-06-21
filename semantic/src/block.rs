@@ -1,17 +1,17 @@
 
 // Block
 
-use codepos::StringPosition;
+use codepos::Span;
 
 use syntax::Block as SyntaxBlock;
-use syntax::ISyntaxItemWithStr;
+use syntax::ISyntaxItem;
 
-use super::ItemID;
-use super::var_def::Var;
-use super::var_def::VarCollection;
-use super::statement::StatementGenerator;
-use super::session::GenerationSession;
-use super::Code;
+use codegen::ItemID;
+use codegen::var_def::Var;
+use codegen::var_def::VarCollection;
+use codegen::statement::StatementGenerator;
+use codegen::session::GenerationSession;
+use codegen::Code;
 
 pub struct Block {
     pub fn_id: usize,
@@ -52,9 +52,9 @@ impl Block {
 #[cfg(test)] #[test]
 fn gen_block_prepare_vars() {
     
-    use syntax::FnDef as SyntaxFunctionDef;
-    use super::var_def::VarOrScope;
-    use super::var_def::Var;
+    use syntax::FunctionDef as SyntaxFunctionDef;
+    use codegen::var_def::VarOrScope;
+    use codegen::var_def::Var;
 
     let gen_vars = |param_str: &str| -> VarCollection {
         //              12345678
@@ -69,16 +69,16 @@ fn gen_block_prepare_vars() {
     //                   901234567890
     let vars = gen_vars("i32 a, u32 b");
     assert_eq!(vars.len(), 2);
-    assert_eq!(vars.index(0), &VarOrScope::Some(Var::new_test("a", ItemID::new(5), false, make_str_pos!(1, 9, 1, 13), 1)));  // 4)));
-    assert_eq!(vars.index(1), &VarOrScope::Some(Var::new_test("b", ItemID::new(6), false, make_str_pos!(1, 16, 1, 20), 2))); // 8)));
+    assert_eq!(vars.index(0), &VarOrScope::Some(Var::new_test("a", ItemID::new(5), false, make_span!(8, 12), 1)));  // 4)));
+    assert_eq!(vars.index(1), &VarOrScope::Some(Var::new_test("b", ItemID::new(6), false, make_span!(15, 19), 2))); // 8)));
     assert_eq!(vars.get_type(vars.find_by_name("a")), ItemID::new(5));
     assert_eq!(vars.get_type(vars.find_by_name("b")), ItemID::new(6));
 
     //                   901234567890
     let vars = gen_vars("i32 a, u32 b, string a, ");
     assert_eq!(vars.len(), 2);
-    assert_eq!(vars.index(0), &VarOrScope::Some(Var::new_test("a", ItemID::new(5), false, make_str_pos!(1, 9, 1, 13), 1)));  // 4)));
-    assert_eq!(vars.index(1), &VarOrScope::Some(Var::new_test("b", ItemID::new(6), false, make_str_pos!(1, 16, 1, 20), 2))); // 8)));
+    assert_eq!(vars.index(0), &VarOrScope::Some(Var::new_test("a", ItemID::new(5), false, make_span!(8, 12), 1)));  // 4)));
+    assert_eq!(vars.index(1), &VarOrScope::Some(Var::new_test("b", ItemID::new(6), false, make_span!(15, 19), 2))); // 8)));
     assert_eq!(vars.get_type(vars.find_by_name("a")), ItemID::new(5));
     assert_eq!(vars.get_type(vars.find_by_name("b")), ItemID::new(6));
 }

@@ -6,7 +6,7 @@
 
 // generate vm code from AST
 
-// vm is a stack based virtual machine
+// vm is a stack based virtual machine  
 // expand each expression-statement to vm codes, every expression-statement is independent
 // other statements are all flow control statements, just add instructions include Goto, GotoIfTrue and GotoIfFalse
 // expressions are expanded according to ExpressionOperators
@@ -25,39 +25,28 @@
 // that is, move the operators and expr base to another statement and store the result in a generated local, and replace
 //     previous expression by this temp local
 
-#[cfg_attr(test, macro_use)] extern crate codepos;
-#[macro_use] extern crate messages as message;
+#[cfg_attr(test, macro_use)] extern crate codemap;
+/* #[macro_use] extern crate messages as message; */ mod message;
 #[macro_use] extern crate util;
 extern crate lexical;
 extern crate syntax;
 
-#[macro_use] mod symbols;
-mod iddef;
-mod vm_code;
-mod session;
-mod var_def;
-mod loop_def;
 mod block;
-mod statement;
 mod expression;
-mod items;
-mod traits;
-mod resolve_sess;
+mod fn_def;
+mod loop_def;
+mod session;
+mod statement;
+mod var_def;
+mod vm_code;
 
-use self::iddef::SymbolID;
-use self::iddef::DefID;
-use self::symbols::SymbolCollection;
-use self::traits::ISemanticItemFromSyntaxItem;
-use self::traits::ISemanticItemFormat;
-use self::resolve_sess::ResolveSession;
-use self::items::TypeUse;
-
-pub use self::items::Type;
-pub use self::items::TypeField;
-pub use self::items::TypeCollection;
-pub use self::items::FnParam;
-pub use self::items::FnDef;
-pub use self::items::FnCollection;
+pub use self::block::Block;
+pub use self::fn_def::FnArg;
+pub use self::fn_def::FnName;
+pub use self::fn_def::FnImpl;
+pub use self::fn_def::FnCollection;
+pub use self::var_def::Var;
+pub use self::var_def::VarCollection;
 pub use self::vm_code::Operand;
 pub use self::vm_code::Code;
 pub use self::session::Program;

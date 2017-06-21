@@ -1,18 +1,18 @@
 
 // Variable, const or var
 // Variable collection, mainly for variable shadowing
-// ATTENTION: (2016-12-15) Currently no type size so super::Type will assume all size to be 1 and 
+// ATTENTION: (2016-12-15) Currently no type size so codegen::Type will assume all size to be 1 and 
 //     so offset mechanism is used in varcollection to support future sized type
 
 use std::fmt;
 
-use codepos::StringPosition;
+use codepos::Span;
 
-use message::MessageCollection;
+use message::MessageEmitter;
 use message::CodegenMessage;
 
-use super::ItemID;
-use super::type_def::TypeCollection;
+use codegen::ItemID;
+use codegen::type_def::TypeCollection;
 
 // Variable collection
 #[derive(Debug, Eq, PartialEq)]
@@ -20,12 +20,12 @@ pub struct Var {
     pub name: String, 
     pub ty: ItemID,
     pub is_const: bool,
-    pub def_pos: StringPosition,
+    pub def_pos: Span,
     offset: usize, // rbp offset, 0 for some error, while any error won't go into vm
 }
 impl Var {
     
-    pub fn new(name: String, ty: ItemID, is_const: bool, def_pos: StringPosition) -> Var {
+    pub fn new(name: String, ty: ItemID, is_const: bool, def_pos: Span) -> Var {
         Var{ name: name, ty: ty, is_const: is_const, def_pos: def_pos, offset: 0 }
     }
     pub fn dump(&self, types: &TypeCollection) -> String {
@@ -36,7 +36,7 @@ impl Var {
     }
 
     #[cfg(test)]
-    pub fn new_test(name: &str, ty: ItemID, is_const: bool, def_pos: StringPosition, offset: usize) -> Var {
+    pub fn new_test(name: &str, ty: ItemID, is_const: bool, def_pos: Span, offset: usize) -> Var {
         Var{ name: name.to_owned(), ty: ty, is_const: is_const, def_pos: def_pos, offset: offset }
     } 
 }
@@ -88,7 +88,7 @@ impl VarCollection {
     //     still push the var and return valid id for furthur reference for the name, but as type is invalid, expression type eval will be invalidated, too
     // If next_offset had been None before, just do not add the item_size to the next_offset, 
     //     if the item pass before check, push it, not set offset and return valid id
-    pub fn try_push(&mut self, mut item: Var, types: &TypeCollection, messages: &mut MessageCollection) -> ItemID {
+    pub fn try_push(&mut self, mut item: Var, types: &TypeCollection, messages: &mut MessageEmitter) -> ItemID {
 
         for exist_item in self.items.iter().rev() {
             match exist_item {
@@ -219,10 +219,10 @@ impl VarCollection {
         }
     }
 
-    pub fn push_temp(&mut self, ty: ItemID, is_const: bool, types: &TypeCollection, messages: &mut MessageCollection) -> ItemID {
+    pub fn push_temp(&mut self, ty: ItemID, is_const: bool, types: &TypeCollection, messages: &mut MessageEmitter) -> ItemID {
         self.next_temp += 1; // do not worry about start from 0
         let next_temp = self.next_temp;
-        self.try_push(Var::new("?".to_owned() + &format!("{}", next_temp), ty, is_const, StringPosition::new()), types, messages)  // They are not gonna to redefined
+        self.try_push(Var::new("?".to_owned() + &format!("{}", next_temp), ty, is_const, Span::new()), types, messages)  // They are not gonna to redefined
     }  
 
     pub fn len(&self) -> usize { self.items.len() }
@@ -262,59 +262,59 @@ fn gen_vars_id() {
     assert_eq!(vars.items.len(), 0);
 
     // Normal no barrier no collision push
-    let messages = &mut MessageCollection::new();
-    assert_eq!(vars.try_push(new_var!("1", 1, false, make_str_pos!(1, 1, 1, 1)), types, messages), ItemID::new(0));
+    let messages = &mut MessageEmitter::new();
+    assert_eq!(vars.try_push(new_var!("1", 1, false, make_span!(0, 0)), types, messages), ItemID::new(0));
     assert_eq!(vars.items.len(), 1);
     assert_eq!(vars.find_by_name("1"), ItemID::new(0));
     assert_eq!(vars.find_by_name("2"), ItemID::new_invalid());
-    assert_eq!(messages, &MessageCollection::new());
+    assert_eq!(messages, &MessageEmitter::new());
 
-    let messages = &mut MessageCollection::new();
-    assert_eq!(vars.try_push(new_var!("3", 5, true, make_str_pos!(1, 2, 1, 2)), types, messages), ItemID::new(1));
+    let messages = &mut MessageEmitter::new();
+    assert_eq!(vars.try_push(new_var!("3", 5, true, make_span!(1, 1)), types, messages), ItemID::new(1));
     assert_eq!(vars.items.len(), 2);
     assert_eq!(vars.find_by_name("1"), ItemID::new(0));
     assert_eq!(vars.find_by_name("3"), ItemID::new(1));
-    assert_eq!(messages, &MessageCollection::new());
+    assert_eq!(messages, &MessageEmitter::new());
 
     // Normal no barrier but collision push
-    let messages = &mut MessageCollection::new();
-    assert_eq!(vars.try_push(new_var!("1", 5, false, make_str_pos!(1, 3, 1, 3)), types, messages), ItemID::new_invalid());
+    let messages = &mut MessageEmitter::new();
+    assert_eq!(vars.try_push(new_var!("1", 5, false, make_span!(2, 2)), types, messages), ItemID::new_invalid());
     assert_eq!(vars.items.len(), 2);
     assert_eq!(vars.find_by_name("1"), ItemID::new(0));
     assert_eq!(vars.find_by_name("3"), ItemID::new(1));
-    let expect_message = &mut MessageCollection::new();
-    expect_message.push(CodegenMessage::VariableDefined{ name: "1".to_owned(), predef: make_str_pos!(1, 1, 1, 1), curdef: make_str_pos!(1, 3, 1, 3) });
+    let expect_message = &mut MessageEmitter::new();
+    expect_message.push(CodegenMessage::VariableDefined{ name: "1".to_owned(), predef: make_span!(0, 0), curdef: make_span!(2, 2) });
     assert_eq!(messages, expect_message);
 
     // Push barrier
     vars.push_scope();
-    let messages = &mut MessageCollection::new();
-    assert_eq!(vars.try_push(new_var!("1", 13, false, make_str_pos!(1, 4, 1, 4)), types, messages), ItemID::new(3));
+    let messages = &mut MessageEmitter::new();
+    assert_eq!(vars.try_push(new_var!("1", 13, false, make_span!(3, 3)), types, messages), ItemID::new(3));
     assert_eq!(vars.items.len(), 4);
     assert_eq!(vars.find_by_name("1"), ItemID::new(3));  // 2 is the barrier
     assert_eq!(vars.find_by_name("3"), ItemID::new(1));
     assert_eq!(vars.find_by_name("42"), ItemID::new_invalid());
     assert_eq!(vars.find_by_name("1024"), ItemID::new_invalid());
-    assert_eq!(messages, &MessageCollection::new());
+    assert_eq!(messages, &MessageEmitter::new());
 
-    let messages = &mut MessageCollection::new();
-    assert_eq!(vars.try_push(new_var!("42", 5, true, make_str_pos!(1, 5, 1, 5)), types, messages), ItemID::new(4));
+    let messages = &mut MessageEmitter::new();
+    assert_eq!(vars.try_push(new_var!("42", 5, true, make_span!(4, 4)), types, messages), ItemID::new(4));
     assert_eq!(vars.items.len(), 5);
     assert_eq!(vars.find_by_name("1"), ItemID::new(3));
     assert_eq!(vars.find_by_name("3"), ItemID::new(1));
     assert_eq!(vars.find_by_name("42"), ItemID::new(4));
     assert_eq!(vars.find_by_name("1024"), ItemID::new_invalid());
-    assert_eq!(messages, &MessageCollection::new());
+    assert_eq!(messages, &MessageEmitter::new());
 
-    let messages = &mut MessageCollection::new();
-    assert_eq!(vars.try_push(new_var!("1", 16, false, make_str_pos!(1, 6, 1, 6)), types, messages), ItemID::new_invalid());
+    let messages = &mut MessageEmitter::new();
+    assert_eq!(vars.try_push(new_var!("1", 16, false, make_span!(5, 5)), types, messages), ItemID::new_invalid());
     assert_eq!(vars.items.len(), 5);
     assert_eq!(vars.find_by_name("1"), ItemID::new(3));
     assert_eq!(vars.find_by_name("3"), ItemID::new(1));
     assert_eq!(vars.find_by_name("42"), ItemID::new(4));
     assert_eq!(vars.find_by_name("1024"), ItemID::new_invalid());
-    let expect_message = &mut MessageCollection::new();
-    expect_message.push(CodegenMessage::VariableDefined{ name: "1".to_owned(), predef: make_str_pos!(1, 4, 1, 4), curdef: make_str_pos!(1, 6, 1, 6) });
+    let expect_message = &mut MessageEmitter::new();
+    expect_message.push(CodegenMessage::VariableDefined{ name: "1".to_owned(), predef: make_span!(3, 3), curdef: make_span!(5, 5) });
     assert_eq!(messages, expect_message);
 
     // Pop barrier
@@ -332,7 +332,7 @@ fn gen_vars_offset() {
 
     macro_rules! test_case {
         ($vars: expr, $types: expr, $name: expr, $typeid: expr, $var_id: expr, $offset: expr) => ({
-            assert_eq!($vars.try_push(Var::new($name.to_owned(), $typeid, false, StringPosition::new()), $types, &mut MessageCollection::new()), $var_id, "try push return unexpceted");
+            assert_eq!($vars.try_push(Var::new($name.to_owned(), $typeid, false, Span::new()), $types, &mut MessageEmitter::new()), $var_id, "try push return unexpceted");
             assert_eq!($vars.next_offset, Some($offset), "vars.next_offset unexpceted");
             if $var_id.is_valid() {
                 assert_eq!($vars.find_by_name($name), $var_id, "find by name return unexpected");
@@ -340,7 +340,7 @@ fn gen_vars_offset() {
             }
         });
         ($vars: expr, $types: expr, $name: expr, $typeid: expr, $var_id: expr) => ({
-            assert_eq!($vars.try_push(Var::new($name.to_owned(), $typeid, false, StringPosition::new()), $types, &mut MessageCollection::new()), $var_id, "try push return unexpceted");
+            assert_eq!($vars.try_push(Var::new($name.to_owned(), $typeid, false, Span::new()), $types, &mut MessageEmitter::new()), $var_id, "try push return unexpceted");
             assert_eq!($vars.next_offset, None, "vars.next_offset unexpceted");
             if $var_id.is_valid() {
                 assert_eq!($vars.find_by_name($name), $var_id, "find by name return unexpected");

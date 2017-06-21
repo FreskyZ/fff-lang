@@ -10,13 +10,13 @@ use message::MessageCollection;
 
 use syntax::SyntaxTree;
 
-use super::type_def::TypeCollection;
-use super::FnCollection;
-use super::Code;
-use super::vm_code::CodeCollection;
-use super::var_def::VarCollection;
-use super::block::Block;
-use super::loop_def::LoopCollection;
+use codegen::type_def::TypeCollection;
+use codegen::fn_def::FnCollection;
+use codegen::Code;
+use codegen::vm_code::CodeCollection;
+use codegen::var_def::VarCollection;
+use codegen::block::Block;
+use codegen::loop_def::LoopCollection;
 
 #[derive(Eq, PartialEq, Copy, Clone)]
 pub struct ItemID(Option<usize>);
@@ -92,7 +92,7 @@ impl GenerationSession {
 
         // such that function can declare in any order
         let mut blocks = Vec::new();
-        for func in program.into_items() {
+        for func in program.functions {
             let (its_id, its_block) = sess.fns.push_decl(func, &mut sess.types, &mut sess.msgs, &mut sess.vars);
             blocks.push(Block::new(its_id, its_block));
         }
@@ -104,4 +104,35 @@ impl GenerationSession {
 
         Program{ fns: sess.fns, types: sess.types, msgs: sess.msgs, codes: sess.codes.codes }
     }
+}
+
+
+#[cfg(test)] #[test] #[ignore]
+fn gen_program_inter() {
+    // use std::io::stdin;
+
+    // loop {
+    //     let mut buf = String::new();
+
+    //     perrorln!("Input:");
+    //     match stdin().read_line(&mut buf) {
+    //         Ok(_) => (),
+    //         Err(_) => break,
+    //     }
+
+    //     if buf != "break\r\n" {
+    //         match SyntaxTree::with_test_str(&buf) {
+    //             Ok(program) => {
+    //                 perrorln!("Syntax program: {}", program);
+    //                 let program = GenerationSession::dispatch(program); 
+    //                 perrorln!("Program: {:?}", program);
+    //             }
+    //             Err(errs) => {
+    //                 perrorln!("Unexpectedly syntax failed: {:?}", errs);
+    //             }
+    //         }
+    //     } else {
+    //         break;
+    //     }
+    // }
 }

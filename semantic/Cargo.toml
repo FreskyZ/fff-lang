@@ -5,6 +5,7 @@ authors = ["FreskyZ <fresky7@outlook.com>"]
 workspace = "../ffc"
 
 [dependencies]
+codemap = { path = "../codemap" }
 util = { path = "../util" }
 messages = { path = "../messages" }
 lexical = { path = "../lexical" }

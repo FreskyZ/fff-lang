@@ -1,11 +1,10 @@
-///! fff-lang
-///!
-///! semantic/typedef
 
+// Type info
+
+use std::cmp;
 use std::fmt;
 
-use codepos::StringPosition;
-use message::Message;
+use util::format_vector_debug;
 use message::CodegenMessage;
 use message::MessageCollection;
 
@@ -13,65 +12,96 @@ use lexical::SeperatorKind;
 use lexical::LitValue;
 use lexical::NumLitValue;
 
-use syntax;
+use syntax::SMType;
+use syntax::ISyntaxItem;
 
-use super::super::ItemID;
-use super::super::ISemanticItemFormat;
-use super::super::FnDef;
-use super::super::DefID;
-use super::super::SymbolID;
+use codegen::ItemID;
+use codegen::fn_def::FnCollection;
+use codegen::fn_def::FnArg;
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[derive(Eq, PartialEq, Debug, Clone)]
 pub struct TypeField {
-    pub name: SymbolID,
-    pub name_strpos: StringPosition,
-    pub decltype: TypeUse,
+    pub name: String,
+    pub typeid: ItemID,
     pub offset: usize,
-    pub all_strpos: StringPosition,
 }
+
+// Type declare is type's name and type parameter
 #[derive(Eq, PartialEq)]
-pub struct TypeDef {
-    pub name: SymbolID,
-    pub name_strpos: StringPosition,
-    pub params: Vec<TypeUse>,  // store them even after instantiated for static reflection; in phase 1 this is TypeUse
-    pub fields: Vec<TypeField>,
-    pub methods: Vec<FnDef>,
-    pub all_strpos: StringPosition,
-    pub size: usize,
-}
-impl ISemanticItemFormat for TypeDef {
-    fn format(&self, indent: u32) -> String {
-        format!("{}TypeDef <{:?}>{}\n{}{}{}{}", 
-            TypeDef::indent_str(indent), self.all_strpos,
-            match self.params.len() {
-                0 => String::new(),
-                _ => format!("\n{}Params:\n{}", TypeDef::indent_str(indent + 1), 
-                    self.params.iter().fold(String::new(), |mut buf, param| { buf.push_str("\n"); buf.push_str(&param.format(indent + 2)); buf })),
-                )
-            },
-            match self.fields.len() {
-                0 => String::new(),
-                _ => format!("\n{}Fields:\n{}", TypeDef::indent_str(indent + 1), 
-                    self.fields.iter().fold(String::new(), |mut buf, field| 
-                        format!("{}\n{}Field <{:?}>\n{}{:?} <{:?}>\n{}", buf, 
-                            TypeDef::indent_str(indent + 2), field.all_strpos, 
-                            field.name, field.name_strpos, field.decltype.format(indent + 3))
-                    )
-                ),
-            },
-            match self.methods.len() {
-                0 => String::new(),
-                _ => format!("\n{}Methods:\n{}", TypeDef::indent_str(indent + 1), 
-                    self.methods.iter().fold(String::new(), |mut buf, method| { buf.push_str("\n"); buf.push_str(&method.format(indent + 2)); buf })),
-                )
-            },
-        )
-    }
+pub enum Type {
+    Base(String),
+    Array(usize),
+    Tuple(Vec<usize>),
 }
 impl fmt::Debug for Type {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(0)) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Type::Base(ref name) => write!(f, "{}", name),
+            Type::Array(ref inner) => write!(f, "[{:?}]", inner),
+            Type::Tuple(ref items) => write!(f, "({})", format_vector_debug(items, ", ")),
+        }
+    }
+}
+impl Type {
+    pub fn get_size(&self) -> usize { 1 } // arbitraty implentation
+}
+impl Type {
+
+    // Currently, `item0` => 0 `item1` => 1, `item2` => 2
+    fn get_field_id_by_field_name(&self, field_name: &str) -> Option<usize> {
+        match *self {
+            Type::Base(_) | Type::Array(_) => None,
+            Type::Tuple(ref _item_types) => {
+                // Start with `item`
+                let mut field_name_chars = field_name.chars();
+                match (field_name_chars.next(), field_name_chars.next(), field_name_chars.next(), field_name_chars.next()) {
+                    (Some('i'), Some('t'), Some('e'), Some('m')) => (),
+                    _ => return None,
+                }
+
+                // follow with simple number
+                let mut maybe_field_id = 0usize;
+                let left_chars: Vec<_> = field_name_chars.collect();
+                let left_chars_len = left_chars.len();
+                if left_chars_len >= 8 {
+                    return None;
+                }
+                const TENS: [u32; 9] = [1, 10, 100, 1000, 1_0000, 10_0000, 100_0000, 1000_0000, 10000_0000]; // no 10_0000_0000 for more convenient way to prevent arithmetic overflow panic
+                for (index, ch) in left_chars.into_iter().enumerate() {
+                    if ch > '9' || ch < '0' { return None; } 
+                    maybe_field_id += TENS[left_chars_len - index - 1] as usize * (ch as usize - '0' as usize);
+                }
+                
+                // return 
+                return Some(maybe_field_id);
+            }
+        }
+    }
+
+    // Currently it returns value not ref because no where to ref
+    pub fn find_field(&self, field_name: &str) -> Option<TypeField> {
+        match self.get_field_id_by_field_name(field_name) {
+            None => None,
+            Some(field_id) => match *self {
+                Type::Base(_) | Type::Array(_) => unreachable!(),
+                Type::Tuple(ref item_types) => match field_id < item_types.len() {
+                    true => Some(TypeField{
+                        name: field_name.to_owned(),
+                        typeid: ItemID::new(item_types[field_id]),
+                        offset: field_id,
+                    }),
+                    false => None,
+                },
+            }
+        }
+    }
 }
 
+pub struct TypeCollection {
+    types: Vec<Type>,
+}
+
+// Type usage to ID
 impl TypeCollection {
 
     fn check_exist(&self, newtype: &Type) -> Option<usize> {
@@ -86,48 +116,63 @@ impl TypeCollection {
     // check base type existence, currently only primitive types, return the id of the primitive type
     // record processed array and tuple types, set their type params, return their type ids
     // position info are removed because messages are finally here, furthur errors will only report "variable with type" etc.
-    fn get_id_internal(&mut self, typeuse: TypeUse, messages: &mut MessageCollection, _fns: &mut FnCollection) -> Option<usize> {
+    fn get_id_internal(&mut self, ty: SMType, messages: &mut MessageCollection, fns: &mut FnCollection) -> Option<usize> {
 
-        if typeuse.is_unit() {
-            return Some(0);
-        } else if typeuse.is_simple() {
-            let ident_name = typeuse.get_simple().unwrap();
-            let ident_strpos = typeuse.get_all_strpos();
-            match self.check_exist(&Type::Base(ident_name.clone())) {
-                Some(id) => return Some(id),
-                None => {
-                    messages.push(Message::new(format!("Type `{}` not exist", ident_name), vec![(ident_strpos, "Type use here".to_owned())]));
-                    return None;
+        match ty {
+            SMType::Unit(_pos) => Some(0),
+            SMType::Base(name, pos) => {
+                match self.check_exist(&Type::Base(name.clone())){
+                    Some(id) => Some(id),
+                    None => {
+                        messages.push(CodegenMessage::TypeNotExist{ name: name, pos: pos });
+                        None
+                    }
                 }
             }
-        } else if typeuse.is_array() {
-            // match self.get_id_internal(typeuse.get_array_inner().unwrap().clone(), messages, fns) {
-            //     Some(item_typeid) => return self.push_builtin_template_type(Type::Array(item_typeid), fns).into_option(),
-            //     None => return None, // message emitted
-            // }
-            return None;
-        } else if typeuse.is_tuple() {
-            // let mut item_typeids = Vec::new();
-            // let mut has_failed = false;
-            // for typeuse in typeuse.get_tuple_items().unwrap() {
-            //     match self.get_id_internal(typeuse.clone(), messages, fns) {
-            //         Some(id) => item_typeids.push(id),
-            //         None => has_failed = true, // not returning here because want to check more failure
-            //     }
-            // }
-            // if has_failed {
-            //     return None;    // if has failed, just return none
-            // }
+            SMType::Array(boxed_base, _pos) => {
+                match self.get_id_internal(boxed_base.as_ref().clone(), messages, fns) {
+                    Some(item_typeid) => self.push_builtin_template_type(Type::Array(item_typeid), fns).into_option(),
+                    None => None, // message emitted
+                }
+            }
+            SMType::Tuple(smtypes, _pos) => {
+                let mut item_typeids = Vec::new();
+                let mut has_failed = false;
+                for smtype in smtypes {
+                    match self.get_id_internal(smtype, messages, fns) {
+                        Some(id) => item_typeids.push(id),
+                        None => has_failed = true, // message emitted
+                    }
+                }
+                if has_failed {
+                    return None;    // if has failed, just return none
+                }
 
-            // return self.push_builtin_template_type(Type::Tuple(item_typeids), fns).into_option();
-            return None;
-        } else {
-            unreachable!();
+                self.push_builtin_template_type(Type::Tuple(item_typeids), fns).into_option()
+            }
         }
     }
 
     pub fn get_id_by_lit(lit: &LitValue) -> ItemID {
-
+        // pub enum LitValue {
+        //     Unit,
+        //     Str(Option<String>),
+        //     Num(Option<NumLitValue>),
+        //     Char(Option<char>),
+        //     Bool(bool),
+        // }
+        // pub enum NumLitValue {
+        //     I8(i8),
+        //     U8(u8),
+        //     I16(i16),
+        //     U16(u16),
+        //     I32(i32),
+        //     U32(u32),
+        //     I64(i64),
+        //     U64(u64),
+        //     F32(f32),
+        //     F64(f64),
+        // }
         match lit {
             &LitValue::Num(None) => ItemID::new_invalid(),
             &LitValue::Str(None) => ItemID::new_invalid(),
@@ -151,7 +196,7 @@ impl TypeCollection {
         }
     }
     // wrap Option<usize> to ItemID
-    pub fn get_id_by_smtype(&mut self, ty: TypeUse, messages: &mut MessageCollection, fns: &mut FnCollection) -> ItemID {
+    pub fn get_id_by_smtype(&mut self, ty: SMType, messages: &mut MessageCollection, fns: &mut FnCollection) -> ItemID {
         match self.get_id_internal(ty, messages, fns) {
             Some(id) => ItemID::new(id),
             None => ItemID::new_invalid(),
@@ -163,7 +208,7 @@ macro_rules! push_builtin_fn {
     ($fns: expr, $name: expr, $ret_type: expr, $arg_types: expr) => (
         let mut args = Vec::new();
         for arg_type in &$arg_types {
-            args.push(FnParam::new_internal("arg", *arg_type));
+            args.push(FnArg::new_internal("arg", *arg_type));
         }
         $fns.push_builtin_fn($name, $ret_type, args);
     );
@@ -225,8 +270,8 @@ impl TypeCollection {
                 push_builtin_fn!($fns, SeperatorKind::Less, 12, [$typeid, $typeid]);
 
                 push_builtin_fn!($fns, SeperatorKind::BitNot, $typeid, [$typeid]);
-                // push_builtin_fn!($fns, SeperatorKind::Increase, 0, [$typeid]);
-                // push_builtin_fn!($fns, SeperatorKind::Decrease, 0, [$typeid]);
+                push_builtin_fn!($fns, SeperatorKind::Increase, 0, [$typeid]);
+                push_builtin_fn!($fns, SeperatorKind::Decrease, 0, [$typeid]);
 
                 push_builtin_fn!($fns, "is_odd", 12, [$typeid]);
                 push_builtin_fn!($fns, "to_string", 13, [$typeid]);
@@ -427,7 +472,7 @@ fn gen_types_find_field() {
 
 #[cfg(test)] #[test]
 fn gen_types_member_fn() {
-    use super::session::GenerationSession;
+    use codegen::session::GenerationSession;
 
     let mut sess = GenerationSession::new();
 
@@ -451,11 +496,11 @@ fn gen_types_member_fn() {
 
 #[cfg(test)] #[test]
 fn gen_types_by_smtype() {
-    use codepos::StringPosition;
+    use codepos::Span;
 
     macro_rules! test_case {
         ($types: expr, $ty_str: expr, $expect: expr) => (
-            match $types.get_id_by_smtype(TypeUse::with_test_str($ty_str), &mut MessageCollection::new(), &mut FnCollection::new()).as_option() {
+            match $types.get_id_by_smtype(SMType::with_test_str($ty_str), &mut MessageCollection::new(), &mut FnCollection::new()).as_option() {
                 Some(id) => assert_eq!(id, $expect),
                 None => panic!("Unexpectedly return None"),
             }
@@ -463,7 +508,7 @@ fn gen_types_by_smtype() {
         
         ($types: expr, $ty_str: expr => $($msg: expr)*) => (
             let messages = &mut MessageCollection::new();
-            match $types.get_id_by_smtype(TypeUse::with_test_str($ty_str), messages, &mut FnCollection::new()).as_option() {
+            match $types.get_id_by_smtype(SMType::with_test_str($ty_str), messages, &mut FnCollection::new()).as_option() {
                 Some(id) => panic!("Unexpectedly success, result: {:?}", id),
                 None => (),
             }
@@ -501,7 +546,7 @@ fn gen_types_by_smtype() {
     // Base
     test_case!{ types, "i32", 5 }
     test_case!{ types, "int" => 
-        CodegenMessage::TypeNotExist{ name: "int".to_owned(), pos: make_str_pos!(1, 1, 1, 3) }
+        CodegenMessage::TypeNotExist{ name: "int".to_owned(), pos: make_span!(0, 2) }
     }
 
     // Array only base
@@ -510,7 +555,7 @@ fn gen_types_by_smtype() {
     test_case!{ types, "[[string]]", 16 }
     // Array array not exist
     test_case!{ types, "[[u1024]]" =>
-        CodegenMessage::TypeNotExist{ name: "u1024".to_owned(), pos: make_str_pos!(1, 3, 1, 7) }
+        CodegenMessage::TypeNotExist{ name: "u1024".to_owned(), pos: make_span!(2, 6) }
     }
     test_case!{ types, "[u8]", 14 }
     {
@@ -527,9 +572,9 @@ fn gen_types_by_smtype() {
     //           0        1         2         3
     //           12345678901234567890123456789012345678
     test_case!{ types, "(i132, [ch], (u8, i32, [(str, bool)]))" => 
-        CodegenMessage::TypeNotExist{ name: "i132".to_owned(), pos: make_str_pos!(1, 2, 1, 5) }
-        CodegenMessage::TypeNotExist{ name: "ch".to_owned(), pos: make_str_pos!(1, 9, 1, 10) }
-        CodegenMessage::TypeNotExist{ name: "str".to_owned(), pos: make_str_pos!(1, 26, 1, 28) }
+        CodegenMessage::TypeNotExist{ name: "i132".to_owned(), pos: make_span!(1, 4) }
+        CodegenMessage::TypeNotExist{ name: "ch".to_owned(), pos: make_span!(8, 9) }
+        CodegenMessage::TypeNotExist{ name: "str".to_owned(), pos: make_span!(25, 27) }
     }
     {
         assert_eq!(types.types[17], Type::Tuple(vec![5, 8, 11]));   // (i32, u64, char), 4 + 8 + 4 = 16
