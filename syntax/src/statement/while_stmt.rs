@@ -98,7 +98,7 @@ fn while_stmt_parse() {
     use super::super::IdentExpr;
     use super::super::ISyntaxItemWithStr;
     use super::super::Statement;
-    use super::super::ExprStatement;
+    use super::super::SimpleExprStatement;
     use super::super::FnCallExpr;
     use super::super::ExprList;
     //                                           0        1         2         3         4        
@@ -109,13 +109,13 @@ fn while_stmt_parse() {
             make_span!(4, 8),
             Expr::Lit(LitExpr::new(LitValue::from(true), make_span!(10, 13))),
             Block::new(make_span!(15, 46), vec![
-                Statement::Expr(ExprStatement::new_simple(make_span!(17, 44), 
-                    Expr::FnCall(FnCallExpr::new(
+                Statement::SimpleExpr(SimpleExprStatement::new(make_span!(17, 44), 
+                    FnCallExpr::new(
                         Expr::Ident(IdentExpr::new(make_id!(2), make_span!(17, 23))),
-                        make_span!(24, 43), ExprList::new(vec![
-                            Expr::Lit(LitExpr::new(LitValue::new_str_lit(make_id!(3)), make_span!(25, 42)))
-                        ])
-                    ))
+                        make_span!(24, 43), make_exprs![
+                            LitExpr::new(LitValue::new_str_lit(make_id!(3)), make_span!(25, 42))
+                        ]
+                    )
                 ))
             ])
         )

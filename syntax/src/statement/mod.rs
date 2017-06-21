@@ -29,11 +29,14 @@ pub use self::var_decl::VarDeclStatement;
 pub use self::jump_stmt::BreakStatement;
 pub use self::jump_stmt::ContinueStatement;
 pub use self::ret_stmt::ReturnStatement;
-pub use self::expr_stmt::ExprStatement;
+pub use self::expr_stmt::SimpleExprStatement;
+pub use self::expr_stmt::AssignExprStatement;
 pub use self::loop_stmt::LoopStatement;
 pub use self::while_stmt::WhileStatement;
 pub use self::for_stmt::ForStatement;
-pub use self::if_stmt::IfConditionBody;
+pub use self::if_stmt::IfClause;
+pub use self::if_stmt::ElseIfClause;
+pub use self::if_stmt::ElseClause;
 pub use self::if_stmt::IfStatement;
 pub use self::block_stmt::BlockStatement;
 
@@ -44,7 +47,8 @@ macro_rules! dispatch_statement_impl {
             &Statement::Break(ref $inner) => $b,
             &Statement::Continue(ref $inner) => $b,
             &Statement::Return(ref $inner) => $b,
-            &Statement::Expr(ref $inner) => $b,
+            &Statement::SimpleExpr(ref $inner) => $b,
+            &Statement::AssignExpr(ref $inner) => $b,
             &Statement::If(ref $inner) => $b,
             &Statement::While(ref $inner) => $b,
             &Statement::For(ref $inner) => $b,
@@ -59,7 +63,8 @@ pub enum Statement {
     Block(BlockStatement),            // {
     Break(BreakStatement),            // break 
     Continue(ContinueStatement),      // continue
-    Expr(ExprStatement),        // _, (unary seperator, literal, identifier, left paren, left bracket)
+    SimpleExpr(SimpleExprStatement),  // same as before
+    AssignExpr(AssignExprStatement),  // _, (unary seperator, literal, identifier, left paren, left bracket)
     For(ForStatement),                // for
     If(IfStatement),                  // if
     Loop(LoopStatement),              // loop
@@ -80,7 +85,7 @@ impl ISyntaxItemGrammar for Statement {
         || BreakStatement::is_first_final(sess)
         || ContinueStatement::is_first_final(sess)
         || ReturnStatement::is_first_final(sess)
-        || ExprStatement::is_first_final(sess)
+        || AssignExprStatement::is_first_final(sess)
         || IfStatement::is_first_final(sess)
         || WhileStatement::is_first_final(sess)
         || ForStatement::is_first_final(sess)
@@ -111,8 +116,8 @@ impl ISyntaxItemParse for Statement {
             return Ok(Statement::If(IfStatement::parse(sess)?));
         } else if BlockStatement::is_first_final(sess) {
             return Ok(Statement::Block(BlockStatement::parse(sess)?));
-        } else if ExprStatement::is_first_final(sess) {
-            return Ok(Statement::Expr(ExprStatement::parse(sess)?));
+        } else if AssignExprStatement::is_first_final(sess) {
+            return AssignExprStatement::parse(sess);
         } else {
             return sess.push_unexpect("statement");
         }

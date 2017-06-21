@@ -136,7 +136,7 @@ fn fn_def_parse() {
     use super::super::ISyntaxItemWithStr;
     use super::super::TypeUse;
     use super::super::Statement;
-    use super::super::ExprStatement;
+    use super::super::SimpleExprStatement;
     use super::super::Expr;
     use super::super::FnCallExpr;
     use super::super::ExprList;
@@ -191,13 +191,13 @@ fn fn_def_parse() {
             ],
             None,
             Block::new(make_span!(63, 80), vec![
-                Statement::Expr(ExprStatement::new_simple(make_span!(65, 78),
-                    Expr::FnCall(FnCallExpr::new(
+                Statement::SimpleExpr(SimpleExprStatement::new(make_span!(65, 78),
+                    FnCallExpr::new(
                         Expr::Ident(IdentExpr::new(make_id!(9), make_span!(65, 71))),
-                        make_span!(72, 77), ExprList::new(vec![
-                            Expr::Ident(IdentExpr::new(make_id!(5), make_span!(73, 76)))
-                        ])
-                    ))
+                        make_span!(72, 77), make_exprs![
+                            IdentExpr::new(make_id!(5), make_span!(73, 76))
+                        ]
+                    )
                 ))
             ])
         )

@@ -1,7 +1,7 @@
 ///! fff-lang
 ///!
 ///! syntax/loop_stmt
-///! LoopStatement = [LabelDef] fLoop Block
+///! loop_stmt = [ label_def ] 'loop' block
 // TODO ATTENTION: no else for break here because if control flow come to else it is always breaked
 
 use std::fmt;
@@ -96,7 +96,7 @@ fn loop_stmt_format() {
   Label #1 <<0>0-2>
   'loop' <<0>4-7>
   Block <<0>9-27>
-    ExprStmt <<0>11-25>
+    SimpleExprStmt <<0>11-25>
       FnCall <<0>11-24>
         Ident #2 <<0>11-17>
         paren <<0>18-24>
@@ -113,8 +113,7 @@ fn loop_stmt_parse() {
     use super::super::IdentExpr;
     use super::super::ISyntaxItemWithStr;
     use super::super::Statement;
-    use super::super::ExprStatement;
-    use super::super::Expr;
+    use super::super::SimpleExprStatement;
     use super::super::FnCallExpr;
     use super::super::ExprList;
 
@@ -127,14 +126,13 @@ fn loop_stmt_parse() {
             LabelDef::new(make_id!(1), make_span!(0, 2)),
             make_span!(4, 7),
             Block::new(make_span!(9, 27), vec![
-                Statement::Expr(ExprStatement::new_simple(
-                    make_span!(11, 25), 
-                    Expr::FnCall(FnCallExpr::new(
+                Statement::SimpleExpr(SimpleExprStatement::new(make_span!(11, 25), 
+                    FnCallExpr::new(
                         IdentExpr::new(make_id!(2), make_span!(11, 17)),
-                        make_span!(18, 24), ExprList::new(vec![
-                            Expr::Lit(LitExpr::new(LitValue::new_str_lit(make_id!(3)), make_span!(19, 23)))
-                        ])
-                    ))
+                        make_span!(18, 24), make_exprs![
+                            LitExpr::new(LitValue::new_str_lit(make_id!(3)), make_span!(19, 23))
+                        ]
+                    )
                 ))
             ])
         )

@@ -39,11 +39,14 @@ pub use self::statement::VarDeclStatement;
 pub use self::statement::ReturnStatement;
 pub use self::statement::BreakStatement;
 pub use self::statement::ContinueStatement;
-pub use self::statement::ExprStatement;
+pub use self::statement::SimpleExprStatement;
+pub use self::statement::AssignExprStatement;
 pub use self::statement::LoopStatement;
 pub use self::statement::WhileStatement;
 pub use self::statement::ForStatement;
-pub use self::statement::IfConditionBody;
+pub use self::statement::IfClause;
+pub use self::statement::ElseIfClause;
+pub use self::statement::ElseClause;
 pub use self::statement::IfStatement;
 pub use self::syntax_tree::SyntaxTree;
 
