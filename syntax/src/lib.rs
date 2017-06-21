@@ -7,10 +7,10 @@
 #[cfg_attr(test, macro_use)] extern crate codemap;
 extern crate lexical;
 
+#[macro_use] mod expr;
 mod traits;
 mod syntax_tree;
 mod statement;
-mod expr;
 mod items;
 mod parse_sess;
 mod error_strings;
@@ -55,9 +55,5 @@ pub use self::traits::ISyntaxItemParse; // for semantic/traits
 pub use self::traits::ISyntaxItemWithStr;
 
 // TODO: 
-// finish these structs test
-// finish primary expr _format, _parse and _errors tests
-// replace proper place by IdentExpr and ExprList
-// seperate PostfixExpr members, decide too remove member function call
-// merge postfix expr and primary expr enums into expr enum
+// replace more proper place by IdentExpr and ExprList
 // abort IdentExpr to use Name, check name should be single segment at many where

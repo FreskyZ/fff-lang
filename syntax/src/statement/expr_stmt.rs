@@ -3,6 +3,8 @@
 ///! syntax/expr_stmt
 ///! ExprStatement = Expr [AssignOperator Expr] fSemiColon
 
+// TODO: update to public
+
 use std::fmt;
 
 use codemap::Span;

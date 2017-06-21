@@ -1,6 +1,7 @@
 ///! fff-lang
 ///!
 ///! syntax/if_stmt
+///! TODO: make it public, update next line grammar
 ///! IfStatement = fIf Expr Block [fElse fIf Expr Block]* [ fElse Block ]
 
 use std::fmt;
@@ -173,9 +174,17 @@ impl ISyntaxItemParse for IfStatement {
 
 #[cfg(test)] #[test]
 fn if_stmt_parse() {
-    use super::super::ISyntaxItemWithStr;
-    use super::super::LitExpr;
+    use codemap::SymbolCollection;
     use lexical::LitValue;
+    use super::super::ExprList;
+    use super::super::FnCallExpr;
+    use super::super::MemberAccessExpr;
+    use super::super::IdentExpr;
+    use super::super::ArrayDef;
+    use super::super::ExprStatement;
+    use super::super::LitExpr;
+    use super::super::Statement;
+    use super::super::ISyntaxItemWithStr;
 
     //                                      0        1         2         3
     //                                      1234567890123456789012345678901234567
@@ -195,20 +204,58 @@ fn if_stmt_parse() {
         )
     }
 
-//     perrorln!("{:?}", IfStatement::with_test_str("if 1 { fresky.love(zmj); zmj.love(fresky); }"));
-//     perrorln!("{:?}", IfStatement::with_test_str("if 1 { fresky.love(zmj); zmj.love(fresky); } else { writeln(\"hellworld\"); }"));
-//     perrorln!("{:?}", IfStatement::with_test_str(
-// r#"
-//         if 1 { 
-//             fresky.love(zmj); 
-//             zmj.love(fresky); 
-//         } else if false {
-//             1 + 1 = 2;
-//         } else if abc * defg == hij {
-//             keywords.remove("def");
-//             use_in_test("def");
-//         } else { 
-//             writeln("hellworld"); 
-//         }"#
-//     ));
+    //                                0         1         2         3         4         5         6         7
+    assert_eq!{ //                    012345678901234567890123456789012345678901234567890123456789012345678901
+        IfStatement::with_test_input("if 1 { sth.do_sth(a); other.do_other(b); } else { [1,2,3].map(writeln);}", 
+            &mut make_symbols!["sth", "do_sth", "a", "other", "do_other", "b", "writeln", "map"]),
+        IfStatement::new_ifelse(make_span!(0, 71),
+            make_span!(0, 1), 
+            Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(3, 3))),
+            Block::new(make_span!(5, 41), vec![
+                Statement::Expr(ExprStatement::new_simple(make_span!(7, 20),
+                    Expr::FnCall(FnCallExpr::new(
+                        MemberAccessExpr::new(
+                            IdentExpr::new(make_id!(1), make_span!(7, 9)),
+                            make_span!(10, 10),
+                            IdentExpr::new(make_id!(2), make_span!(11, 16))
+                        ),
+                        make_span!(17, 19), make_exprs![
+                            IdentExpr::new(make_id!(3), make_span!(18, 18))
+                        ]
+                    )),
+                )),
+                Statement::Expr(ExprStatement::new_simple(make_span!(22, 39),
+                    Expr::FnCall(FnCallExpr::new(
+                        MemberAccessExpr::new(
+                            IdentExpr::new(make_id!(4), make_span!(22, 26)),
+                            make_span!(27, 27),
+                            IdentExpr::new(make_id!(5), make_span!(28, 35))
+                        ),
+                        make_span!(36, 38), make_exprs![
+                            IdentExpr::new(make_id!(6), make_span!(37, 37))
+                        ]
+                    )),
+                ))
+            ]),
+            make_span!(43, 46),
+            Block::new(make_span!(48, 71), vec![
+                Statement::Expr(ExprStatement::new_simple(make_span!(50, 70),
+                    Expr::FnCall(FnCallExpr::new(
+                        MemberAccessExpr::new(
+                            ArrayDef::new(make_span!(50, 56), make_exprs![
+                                LitExpr::new(LitValue::from(1), make_span!(51, 51)),
+                                LitExpr::new(LitValue::from(2), make_span!(53, 53)),
+                                LitExpr::new(LitValue::from(3), make_span!(55, 55)),
+                            ]),
+                            make_span!(57, 57),
+                            IdentExpr::new(make_id!(8), make_span!(58, 60))
+                        ),
+                        make_span!(61, 69), make_exprs![
+                            IdentExpr::new(make_id!(7), make_span!(62, 68))
+                        ]
+                    ))
+                ))
+            ])
+        )
+    }
 }

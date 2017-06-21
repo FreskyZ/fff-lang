@@ -40,6 +40,9 @@ impl ISyntaxItemFormat for ParenExpr {
 impl fmt::Debug for ParenExpr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
 }
+impl From<ParenExpr> for Expr {
+    fn from(paren_expr: ParenExpr) -> Expr { Expr::Paren(paren_expr) }
+}
 impl ParenExpr {
     pub fn new<T: Into<Expr>>(span: Span, expr: T) -> ParenExpr { ParenExpr{ expr: Box::new(expr.into()), span } }
 }
@@ -59,8 +62,11 @@ impl ISyntaxItemFormat for TupleDef {
 impl fmt::Debug for TupleDef {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(0)) }
 }
+impl From<TupleDef> for Expr {
+    fn from(tuple_def: TupleDef) -> Expr { Expr::Tuple(tuple_def) }
+}
 impl TupleDef {
-    pub fn new<T: Into<ExprList>>(paren_span: Span, items: T) -> TupleDef { TupleDef{ paren_span, items: items.into() } }
+    pub fn new(paren_span: Span, items: ExprList) -> TupleDef { TupleDef{ paren_span, items } }
 }
 impl ISyntaxItemGrammar for TupleDef {
     fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Sep(SeperatorKind::LeftParenthenes) }
@@ -98,15 +104,15 @@ fn tuple_def_format() {
     use super::LitExpr;
 
     assert_eq!{
-        TupleDef::new(make_span!(0, 42), vec![]).format(1),
+        TupleDef::new(make_span!(0, 42), make_exprs![]).format(1),
         "  TupleDef <<0>0-42>\n    (empty)"
     }
 
     assert_eq!{
-        TupleDef::new(make_span!(0, 42), vec![
-            Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(1, 2))),
-            Expr::Lit(LitExpr::new(LitValue::from(2), make_span!(3, 4))),
-            Expr::Lit(LitExpr::new(LitValue::from(48), make_span!(5, 6))),
+        TupleDef::new(make_span!(0, 42), make_exprs![
+            LitExpr::new(LitValue::from(1), make_span!(1, 2)),
+            LitExpr::new(LitValue::from(2), make_span!(3, 4)),
+            LitExpr::new(LitValue::from(48), make_span!(5, 6)),
         ]).format(1),
         "  TupleDef <<0>0-42>\n    Literal (i32)1 <<0>1-2>\n    Literal (i32)2 <<0>3-4>\n    Literal (i32)48 <<0>5-6>"
     }
@@ -119,19 +125,19 @@ fn tuple_def_parse() {
 
     //                                   01234567
     assert_eq!{ TupleDef::with_test_str("(1, '2')"),
-        Expr::Tuple(TupleDef::new(make_span!(0, 7), ExprList::new(vec![
-            Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(1, 1))),
-            Expr::Lit(LitExpr::new(LitValue::from('2'), make_span!(4, 6)))
-        ])))
+        Expr::Tuple(TupleDef::new(make_span!(0, 7), make_exprs![
+            LitExpr::new(LitValue::from(1), make_span!(1, 1)),
+            LitExpr::new(LitValue::from('2'), make_span!(4, 6))
+        ]))
     }
     //                                   0123456
     assert_eq!{ TupleDef::with_test_str("(1 + 1)"),
         Expr::Paren(ParenExpr::new(make_span!(0, 6), 
-            Expr::Binary(BinaryExpr::new(
-                Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(1, 1))), 
+            BinaryExpr::new(
+                LitExpr::new(LitValue::from(1), make_span!(1, 1)), 
                 SeperatorKind::Add, make_span!(3, 3),
-                Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(5, 5))),
-            ))
+                LitExpr::new(LitValue::from(1), make_span!(5, 5)),
+            )
         ))
     }
 }
@@ -142,7 +148,7 @@ fn tuple_def_errors() {
     use super::super::ISyntaxItemWithStr;
     
     assert_eq!{ TupleDef::with_test_str_ret_messages("( , )"), (
-        Some(Expr::Tuple(TupleDef::new(make_span!(0, 4), ExprList::new(Vec::new())))),
+        Some(Expr::Tuple(TupleDef::new(make_span!(0, 4), make_exprs![]))),
         make_messages![
             Message::new_by_str(error_strings::UnexpectedSingleComma, vec![(make_span!(0, 4), error_strings::TupleDefHere)])
         ]

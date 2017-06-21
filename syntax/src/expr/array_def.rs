@@ -38,7 +38,7 @@ impl From<ArrayDef> for Expr {
     fn from(array_def: ArrayDef) -> Expr { Expr::Array(array_def) }
 }
 impl ArrayDef {
-    pub fn new<T: Into<ExprList>>(bracket_span: Span, items: T) -> ArrayDef { ArrayDef{ bracket_span, items: items.into() } }
+    pub fn new(bracket_span: Span, items: ExprList) -> ArrayDef { ArrayDef{ bracket_span, items: items } }
 }
 impl ISyntaxItemGrammar for ArrayDef {
     fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Sep(SeperatorKind::LeftBracket) }
@@ -69,15 +69,15 @@ fn array_def_format() {
     use super::LitExpr;
 
     assert_eq!{
-        ArrayDef::new(make_span!(0, 42), vec![]).format(1),
+        ArrayDef::new(make_span!(0, 42), make_exprs![]).format(1),
         "  ArrayDef <<0>0-42>\n    (empty)"
     }
 
     assert_eq!{
-        ArrayDef::new(make_span!(0, 42), vec![
-            Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(1, 2))),
-            Expr::Lit(LitExpr::new(LitValue::from(2), make_span!(3, 4))),
-            Expr::Lit(LitExpr::new(LitValue::from(48), make_span!(5, 6))),
+        ArrayDef::new(make_span!(0, 42), make_exprs![
+            LitExpr::new(LitValue::from(1), make_span!(1, 2)),
+            LitExpr::new(LitValue::from(2), make_span!(3, 4)),
+            LitExpr::new(LitValue::from(48), make_span!(5, 6)),
         ]).format(1),
         "  ArrayDef <<0>0-42>\n    Literal (i32)1 <<0>1-2>\n    Literal (i32)2 <<0>3-4>\n    Literal (i32)48 <<0>5-6>"
     }
@@ -92,27 +92,27 @@ fn array_def_parse() {
     use super::super::ISyntaxItemWithStr;
 
     assert_eq!{ ArrayDef::with_test_str("[a]"),
-        Expr::Array(ArrayDef::new(make_span!(0, 2), vec![
-            Expr::Ident(IdentExpr::new(make_id!(1), make_span!(1, 1)))
+        Expr::Array(ArrayDef::new(make_span!(0, 2), make_exprs![
+            IdentExpr::new(make_id!(1), make_span!(1, 1))
         ]))
     }
 
     //                                   01234567
     assert_eq!{ ArrayDef::with_test_str("[1, '2']"),
-        Expr::Array(ArrayDef::new(make_span!(0, 7), ExprList::new(vec![
-            Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(1, 1))),
-            Expr::Lit(LitExpr::new(LitValue::from('2'), make_span!(4, 6)))
-        ])))
+        Expr::Array(ArrayDef::new(make_span!(0, 7), make_exprs![
+            LitExpr::new(LitValue::from(1), make_span!(1, 1)),
+            LitExpr::new(LitValue::from('2'), make_span!(4, 6))
+        ]))
     }
     //                                   01234567
     assert_eq!{ ArrayDef::with_test_str("[1 + 1,]"),
-        Expr::Array(ArrayDef::new(make_span!(0, 7), ExprList::new(vec![
-            Expr::Binary(BinaryExpr::new(
-                Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(1, 1))), 
+        Expr::Array(ArrayDef::new(make_span!(0, 7), make_exprs![
+            BinaryExpr::new(
+                LitExpr::new(LitValue::from(1), make_span!(1, 1)), 
                 SeperatorKind::Add, make_span!(3, 3),
-                Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(5, 5))),
-            ))
-        ])))
+                LitExpr::new(LitValue::from(1), make_span!(5, 5)),
+            )
+        ]))
     }
 }
 
@@ -122,7 +122,7 @@ fn array_def_errors() {
     use super::super::ISyntaxItemWithStr;
     
     assert_eq!{ ArrayDef::with_test_str_ret_messages("[ , ]"), (
-        Some(Expr::Array(ArrayDef::new(make_span!(0, 4), ExprList::new(Vec::new())))),
+        Some(Expr::Array(ArrayDef::new(make_span!(0, 4), make_exprs![]))),
         make_messages![
             Message::new_by_str(error_strings::UnexpectedSingleComma, vec![(make_span!(0, 4), error_strings::ArrayDefHere)])
         ]

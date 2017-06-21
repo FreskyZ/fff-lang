@@ -29,9 +29,6 @@ impl ISyntaxItemFormat for ExprList {
 impl fmt::Debug for ExprList {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
 }
-impl From<Vec<Expr>> for ExprList {
-    fn from(items: Vec<Expr>) -> ExprList { ExprList{ items } }
-}
 impl ExprList {
     pub fn new(items: Vec<Expr>) -> ExprList { ExprList{ items } }
 }
@@ -101,6 +98,22 @@ impl ISyntaxItemParse for ExprList {
             }
         }
     }
+}
+
+// test helper
+#[macro_export]
+macro_rules! make_exprs {
+    ($($x:expr),*) => ({
+        let mut retval = Vec::new();
+        {
+            let _retval = &mut retval; // `&mut` for statisfy 'unused mut', `_` for statisfy unused var
+            $(
+                _retval.push(From::from($x));
+            )*
+        }
+        ExprList::new(retval)
+    });
+    ($($x:expr,)*) => (make_exprs![$($x),*])
 }
 
 #[cfg(test)] #[test]

@@ -97,14 +97,15 @@ fn primary_expr_parse() {
     use codemap::Span;
     use codemap::SymbolCollection;
     use lexical::LitValue;
+    use super::ExprList;
     use super::ParenExpr;
     use super::super::ISyntaxItemWithStr;
 
     // this is the loop of tokens.nth(current) is left bracket does not cover everything and infinite loop is here
     // update 2017/6/17: this was a bug, but I forget detail
     assert_eq!{ PrimaryExpr::with_test_str("[a]"),  
-        Expr::Array(ArrayDef::new(make_span!(0, 2), vec![
-            Expr::Ident(IdentExpr::new(make_id!(1), make_span!(1, 1)))
+        Expr::Array(ArrayDef::new(make_span!(0, 2), make_exprs![
+            IdentExpr::new(make_id!(1), make_span!(1, 1))
         ]))
     }
 
@@ -113,19 +114,19 @@ fn primary_expr_parse() {
     assert_eq!{ PrimaryExpr::with_test_input("(463857, IEfN, atau8M, [fNAE, ((cAeJN4)), nHg])", 
         //                  1       2         3       4         5
         &mut make_symbols!["IEfN", "atau8M", "fNAE", "cAeJN4", "nHg"]), 
-        Expr::Tuple(TupleDef::new(make_span!(0, 46), vec![
-            Expr::Lit(LitExpr::new(LitValue::from(463857), make_span!(1, 6))),
-            Expr::Ident(IdentExpr::new(make_id!(1), make_span!(9, 12))),
-            Expr::Ident(IdentExpr::new(make_id!(2), make_span!(15, 20))),
-            Expr::Array(ArrayDef::new(make_span!(23, 45), vec![
-                Expr::Ident(IdentExpr::new(make_id!(3), make_span!(24, 27))),
-                Expr::Paren(ParenExpr::new(make_span!(30, 39), 
-                    Expr::Paren(ParenExpr::new(make_span!(31, 38), 
-                        Expr::Ident(IdentExpr::new(make_id!(4), make_span!(32, 37)))
-                    ))
-                )),
-                Expr::Ident(IdentExpr::new(make_id!(5), make_span!(42, 44)))
-            ]))
+        Expr::Tuple(TupleDef::new(make_span!(0, 46), make_exprs![
+            LitExpr::new(LitValue::from(463857), make_span!(1, 6)),
+            IdentExpr::new(make_id!(1), make_span!(9, 12)),
+            IdentExpr::new(make_id!(2), make_span!(15, 20)),
+            ArrayDef::new(make_span!(23, 45), make_exprs![
+                IdentExpr::new(make_id!(3), make_span!(24, 27)),
+                ParenExpr::new(make_span!(30, 39), 
+                    ParenExpr::new(make_span!(31, 38), 
+                        IdentExpr::new(make_id!(4), make_span!(32, 37))
+                    )
+                ),
+                IdentExpr::new(make_id!(5), make_span!(42, 44))
+            ])
         ]))
     }
 
@@ -137,44 +138,44 @@ fn primary_expr_parse() {
     //   0         1         2         3         4         5         6         7         8         9         0         1         2         3       
     //   01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567 8901234567890123456789012345678901234
         "[(0x7E), FFGqfJe, I4, [(m7A, (41, ([(jL, rAn, K0FgLc7h, true), C, w]), (J3cEFDG, d, (j8h))), (), \neIuArjF), 400, 0o535147505, 0xDB747]]"),
-        Expr::Array(ArrayDef::new(make_span!(0, 134), vec![
-            Expr::Paren(ParenExpr::new(make_span!(1, 6), 
-                Expr::Lit(LitExpr::new(LitValue::from(0x7E), make_span!(2, 5)))
-            )),
-            Expr::Ident(IdentExpr::new(make_id!(1), make_span!(9, 15))),
-            Expr::Ident(IdentExpr::new(make_id!(2), make_span!(18, 19))), 
-            Expr::Array(ArrayDef::new(make_span!(22, 133), vec![
-                Expr::Tuple(TupleDef::new(make_span!(23, 105), vec![
-                    Expr::Ident(IdentExpr::new(make_id!(3), make_span!(24, 26))),
-                    Expr::Tuple(TupleDef::new(make_span!(29, 90), vec![
-                        Expr::Lit(LitExpr::new(LitValue::from(41), make_span!(30, 31))),
-                        Expr::Paren(ParenExpr::new(make_span!(34, 68), 
-                            Expr::Array(ArrayDef::new(make_span!(35, 67), vec![
-                                Expr::Tuple(TupleDef::new(make_span!(36, 60), vec![
-                                    Expr::Ident(IdentExpr::new(make_id!(4), make_span!(37, 38))), 
-                                    Expr::Ident(IdentExpr::new(make_id!(5), make_span!(41, 43))),
-                                    Expr::Ident(IdentExpr::new(make_id!(6), make_span!(46, 53))),
-                                    Expr::Lit(LitExpr::new(LitValue::from(true), make_span!(56, 59)))
-                                ])),
-                                Expr::Ident(IdentExpr::new(make_id!(7), make_span!(63, 63))),
-                                Expr::Ident(IdentExpr::new(make_id!(8), make_span!(66, 66))),
-                            ]))
-                        )),
-                        Expr::Tuple(TupleDef::new(make_span!(71, 89), vec![
-                            Expr::Ident(IdentExpr::new(make_id!(9), make_span!(72, 78))),
-                            Expr::Ident(IdentExpr::new(make_id!(10), make_span!(81, 81))),
-                            Expr::Paren(ParenExpr::new(make_span!(84, 88), 
-                                Expr::Ident(IdentExpr::new(make_id!(11), make_span!(85, 87)))
-                            ))
-                        ]))
-                    ])),
-                    Expr::Lit(LitExpr::new(LitValue::Unit, make_span!(93, 94))),
-                    Expr::Ident(IdentExpr::new(make_id!(12), make_span!(98, 104)))
-                ])),
-                Expr::Lit(LitExpr::new(LitValue::from(400), make_span!(108, 110))),
-                Expr::Lit(LitExpr::new(LitValue::from(0o535147505), make_span!(113, 123))),
-                Expr::Lit(LitExpr::new(LitValue::from(0xDB747), make_span!(126, 132)))
-            ]))
+        Expr::Array(ArrayDef::new(make_span!(0, 134), make_exprs![
+            ParenExpr::new(make_span!(1, 6), 
+               LitExpr::new(LitValue::from(0x7E), make_span!(2, 5))
+            ),
+            IdentExpr::new(make_id!(1), make_span!(9, 15)),
+            IdentExpr::new(make_id!(2), make_span!(18, 19)), 
+            ArrayDef::new(make_span!(22, 133), make_exprs![
+                TupleDef::new(make_span!(23, 105), make_exprs![
+                    IdentExpr::new(make_id!(3), make_span!(24, 26)),
+                    TupleDef::new(make_span!(29, 90), make_exprs![
+                        LitExpr::new(LitValue::from(41), make_span!(30, 31)),
+                        ParenExpr::new(make_span!(34, 68), 
+                            ArrayDef::new(make_span!(35, 67), make_exprs![
+                                TupleDef::new(make_span!(36, 60), make_exprs![
+                                    IdentExpr::new(make_id!(4), make_span!(37, 38)), 
+                                    IdentExpr::new(make_id!(5), make_span!(41, 43)),
+                                    IdentExpr::new(make_id!(6), make_span!(46, 53)),
+                                    LitExpr::new(LitValue::from(true), make_span!(56, 59))
+                                ]),
+                                IdentExpr::new(make_id!(7), make_span!(63, 63)),
+                                IdentExpr::new(make_id!(8), make_span!(66, 66)),
+                            ])
+                        ),
+                        TupleDef::new(make_span!(71, 89), make_exprs![
+                            IdentExpr::new(make_id!(9), make_span!(72, 78)),
+                            IdentExpr::new(make_id!(10), make_span!(81, 81)),
+                            ParenExpr::new(make_span!(84, 88), 
+                                IdentExpr::new(make_id!(11), make_span!(85, 87))
+                            )
+                        ])
+                    ]),
+                    LitExpr::new(LitValue::Unit, make_span!(93, 94)),
+                    IdentExpr::new(make_id!(12), make_span!(98, 104))
+                ]),
+                LitExpr::new(LitValue::from(400), make_span!(108, 110)),
+                LitExpr::new(LitValue::from(0o535147505), make_span!(113, 123)),
+                LitExpr::new(LitValue::from(0xDB747), make_span!(126, 132))
+            ])
         ]))
     }
 
@@ -185,35 +186,35 @@ fn primary_expr_parse() {
     //                                      0        1         2         3         4         5         6          7          8         9         A
     //                                      12345678901234567890123456789012345678901234567890123456789012345678901 234 5678901234567890123456789012
     assert_eq!{ PrimaryExpr::with_test_str("[uy6, 4373577, [(q, AJBN0n, MDEgKh5,), KG, (NsL, ((), D, false, d, ), \"H=\"), true, ((vvB3, true, 5))]]"), 
-        Expr::Array(ArrayDef::new(make_span!(0, 101), vec![
-            Expr::Ident(IdentExpr::new(make_id!(1), make_span!(1, 3))),
-            Expr::Lit(LitExpr::new(LitValue::from(4373577), make_span!(6, 12))),
-            Expr::Array(ArrayDef::new(make_span!(15, 100), vec![
-                Expr::Tuple(TupleDef::new(make_span!(16, 36), vec![
-                    Expr::Ident(IdentExpr::new(make_id!(2), make_span!(17, 17))),
-                    Expr::Ident(IdentExpr::new(make_id!(3), make_span!(20, 25))), 
-                    Expr::Ident(IdentExpr::new(make_id!(4), make_span!(28, 34)))
-                ])), 
-                Expr::Ident(IdentExpr::new(make_id!(5), make_span!(39, 40))),
-                Expr::Tuple(TupleDef::new(make_span!(43, 74), vec![
-                    Expr::Ident(IdentExpr::new(make_id!(6), make_span!(44, 46))),
-                    Expr::Tuple(TupleDef::new(make_span!(49, 67), vec![
-                        Expr::Lit(LitExpr::new(LitValue::Unit, make_span!(50, 51))),
-                        Expr::Ident(IdentExpr::new(make_id!(7), make_span!(54, 54))),
-                        Expr::Lit(LitExpr::new(LitValue::from(false), make_span!(57, 61))),
-                        Expr::Ident(IdentExpr::new(make_id!(8), make_span!(64, 64))),
-                    ])),
-                    Expr::Lit(LitExpr::new(LitValue::new_str_lit(make_id!(9)), make_span!(70, 73)))
-                ])),
-                Expr::Lit(LitExpr::new(LitValue::from(true), make_span!(77, 80))),
-                Expr::Paren(ParenExpr::new(make_span!(83, 99), 
-                    Expr::Tuple(TupleDef::new(make_span!(84, 98), vec![
-                        Expr::Ident(IdentExpr::new(make_id!(10), make_span!(85, 88))),
-                        Expr::Lit(LitExpr::new(LitValue::from(true), make_span!(91, 94))),
-                        Expr::Lit(LitExpr::new(LitValue::from(5), make_span!(97, 97)))
-                    ]))
-                ))
-            ]))
+        Expr::Array(ArrayDef::new(make_span!(0, 101), make_exprs![
+            IdentExpr::new(make_id!(1), make_span!(1, 3)),
+            LitExpr::new(LitValue::from(4373577), make_span!(6, 12)),
+            ArrayDef::new(make_span!(15, 100), make_exprs![
+                TupleDef::new(make_span!(16, 36), make_exprs![
+                    IdentExpr::new(make_id!(2), make_span!(17, 17)),
+                    IdentExpr::new(make_id!(3), make_span!(20, 25)), 
+                    IdentExpr::new(make_id!(4), make_span!(28, 34))
+                ]), 
+                IdentExpr::new(make_id!(5), make_span!(39, 40)),
+                TupleDef::new(make_span!(43, 74), make_exprs![
+                    IdentExpr::new(make_id!(6), make_span!(44, 46)),
+                    TupleDef::new(make_span!(49, 67), make_exprs![
+                        LitExpr::new(LitValue::Unit, make_span!(50, 51)),
+                        IdentExpr::new(make_id!(7), make_span!(54, 54)),
+                        LitExpr::new(LitValue::from(false), make_span!(57, 61)),
+                        IdentExpr::new(make_id!(8), make_span!(64, 64)),
+                    ]),
+                    LitExpr::new(LitValue::new_str_lit(make_id!(9)), make_span!(70, 73))
+                ]),
+                LitExpr::new(LitValue::from(true), make_span!(77, 80)),
+                ParenExpr::new(make_span!(83, 99), 
+                    TupleDef::new(make_span!(84, 98), make_exprs![
+                        IdentExpr::new(make_id!(10), make_span!(85, 88)),
+                        LitExpr::new(LitValue::from(true), make_span!(91, 94)),
+                        LitExpr::new(LitValue::from(5), make_span!(97, 97))
+                    ])
+                )
+            ])
         ]))
     }
 
@@ -221,114 +222,114 @@ fn primary_expr_parse() {
         Expr::Paren(ParenExpr::new(make_span!(0, 4), LitExpr::new(LitValue::Unit, make_span!(1, 2))))
     }
     assert_eq!{ PrimaryExpr::with_test_str("((),)"), 
-        Expr::Tuple(TupleDef::new(make_span!(0, 4), vec![Expr::Lit(LitExpr::new(LitValue::Unit, make_span!(1, 2)))]))
+        Expr::Tuple(TupleDef::new(make_span!(0, 4), make_exprs![LitExpr::new(LitValue::Unit, make_span!(1, 2))]))
     }
 
     assert_eq!{ PrimaryExpr::with_test_str("(\"o5\")"), 
         Expr::Paren(ParenExpr::new(make_span!(0, 5), 
-            Expr::Lit(LitExpr::new(LitValue::new_str_lit(make_id!(1)), make_span!(1, 4)))
+            LitExpr::new(LitValue::new_str_lit(make_id!(1)), make_span!(1, 4))
         ))
     }
 
     //                                      0        1         2        
     //                                      1234567890123456789012345678
     assert_eq!{ PrimaryExpr::with_test_str("(nn, ([false,true]), 183455)"),
-        Expr::Tuple(TupleDef::new(make_span!(0, 27), vec![
-            Expr::Ident(IdentExpr::new(make_id!(1), make_span!(1, 2))),
-            Expr::Paren(ParenExpr::new(make_span!(5, 18), 
-                Expr::Array(ArrayDef::new(make_span!(6, 17), vec![
-                    Expr::Lit(LitExpr::new(LitValue::from(false), make_span!(7, 11))),
-                    Expr::Lit(LitExpr::new(LitValue::from(true), make_span!(13, 16)))
-                ]))
-            )),
-            Expr::Lit(LitExpr::new(LitValue::from(183455), make_span!(21, 26)))
+        Expr::Tuple(TupleDef::new(make_span!(0, 27), make_exprs![
+            IdentExpr::new(make_id!(1), make_span!(1, 2)),
+            ParenExpr::new(make_span!(5, 18), 
+                ArrayDef::new(make_span!(6, 17), make_exprs![
+                    LitExpr::new(LitValue::from(false), make_span!(7, 11)),
+                    LitExpr::new(LitValue::from(true), make_span!(13, 16))
+                ])
+            ),
+            LitExpr::new(LitValue::from(183455), make_span!(21, 26))
         ]))
     }
     
     //                                      0        1         2         3         4         5         6         7       
     //                                      123456789012345678901234567890123456789012345678901234567890123456789012345678
     assert_eq!{ PrimaryExpr::with_test_str("((true, (mO, [(q5k),a], (((KttG))), (K5DJ, r, ())), (McsaEdfdfalse,)), rIOKt,)"),
-        Expr::Tuple(TupleDef::new(make_span!(0, 77), vec![
-            Expr::Tuple(TupleDef::new(make_span!(1, 68), vec![
-                Expr::Lit(LitExpr::new(LitValue::from(true), make_span!(2, 5))),
-                Expr::Tuple(TupleDef::new(make_span!(8, 49), vec![
-                    Expr::Ident(IdentExpr::new(make_id!(1), make_span!(9, 10))),
-                    Expr::Array(ArrayDef::new(make_span!(13, 21), vec![
-                        Expr::Paren(ParenExpr::new(make_span!(14, 18), 
-                            Expr::Ident(IdentExpr::new(make_id!(2), make_span!(15, 17)))
-                        )),
-                        Expr::Ident(IdentExpr::new(make_id!(3), make_span!(20, 20)))
-                    ])),
-                    Expr::Paren(ParenExpr::new(make_span!(24, 33), 
-                        Expr::Paren(ParenExpr::new(make_span!(25, 32), 
-                            Expr::Paren(ParenExpr::new(make_span!(26, 31), 
-                                Expr::Ident(IdentExpr::new(make_id!(4), make_span!(27, 30)))
-                            ))
-                        ))
-                    )),
-                    Expr::Tuple(TupleDef::new(make_span!(36, 48), vec![
-                        Expr::Ident(IdentExpr::new(make_id!(5), make_span!(37, 40))), 
-                        Expr::Ident(IdentExpr::new(make_id!(6), make_span!(43, 43))),
-                        Expr::Lit(LitExpr::new(LitValue::Unit, make_span!(46, 47)))
-                    ])),
-                ])),
-                Expr::Tuple(TupleDef::new(make_span!(52, 67), vec![
-                    Expr::Ident(IdentExpr::new(make_id!(7), make_span!(53, 65)))
-                ]))
-            ])),
-            Expr::Ident(IdentExpr::new(make_id!(8), make_span!(71, 75)))
+        Expr::Tuple(TupleDef::new(make_span!(0, 77), make_exprs![
+            TupleDef::new(make_span!(1, 68), make_exprs![
+                LitExpr::new(LitValue::from(true), make_span!(2, 5)),
+                TupleDef::new(make_span!(8, 49), make_exprs![
+                    IdentExpr::new(make_id!(1), make_span!(9, 10)),
+                    ArrayDef::new(make_span!(13, 21), make_exprs![
+                        ParenExpr::new(make_span!(14, 18), 
+                            IdentExpr::new(make_id!(2), make_span!(15, 17))
+                        ),
+                        IdentExpr::new(make_id!(3), make_span!(20, 20))
+                    ]),
+                    ParenExpr::new(make_span!(24, 33), 
+                        ParenExpr::new(make_span!(25, 32), 
+                            ParenExpr::new(make_span!(26, 31), 
+                                IdentExpr::new(make_id!(4), make_span!(27, 30))
+                            )
+                        )
+                    ),
+                    TupleDef::new(make_span!(36, 48), make_exprs![
+                        IdentExpr::new(make_id!(5), make_span!(37, 40)), 
+                        IdentExpr::new(make_id!(6), make_span!(43, 43)),
+                        LitExpr::new(LitValue::Unit, make_span!(46, 47))
+                    ]),
+                ]),
+                TupleDef::new(make_span!(52, 67), make_exprs![
+                    IdentExpr::new(make_id!(7), make_span!(53, 65))
+                ])
+            ]),
+            IdentExpr::new(make_id!(8), make_span!(71, 75))
         ]))
     }
 
     //                                      0          1         2      
     //                                      12 345 67890123456789012
     assert_eq!{ PrimaryExpr::with_test_str("[\"il\", 0o52u32, sO04n]"),
-        Expr::Array(ArrayDef::new(make_span!(0, 21), vec![
-            Expr::Lit(LitExpr::new(LitValue::new_str_lit(make_id!(1)), make_span!(1, 4))),
-            Expr::Lit(LitExpr::new(LitValue::from(0o52u32), make_span!(7, 13))), 
-            Expr::Ident(IdentExpr::new(make_id!(2), make_span!(16, 20)))
+        Expr::Array(ArrayDef::new(make_span!(0, 21), make_exprs![
+            LitExpr::new(LitValue::new_str_lit(make_id!(1)), make_span!(1, 4)),
+            LitExpr::new(LitValue::from(0o52u32), make_span!(7, 13)), 
+            IdentExpr::new(make_id!(2), make_span!(16, 20))
         ]))
     }
     //                                      12345678
     assert_eq!{ PrimaryExpr::with_test_str("['f',()]"), 
-        Expr::Array(ArrayDef::new(make_span!(0, 7), vec![
-            Expr::Lit(LitExpr::new(LitValue::from('f'), make_span!(1, 3))),
-            Expr::Lit(LitExpr::new(LitValue::Unit, make_span!(5, 6)))
+        Expr::Array(ArrayDef::new(make_span!(0, 7), make_exprs![
+            LitExpr::new(LitValue::from('f'), make_span!(1, 3)),
+            LitExpr::new(LitValue::Unit, make_span!(5, 6))
         ]))
     }
-    assert_eq!{ PrimaryExpr::with_test_str("[]"), Expr::Array(ArrayDef::new(make_span!(0, 1), vec![])) }
+    assert_eq!{ PrimaryExpr::with_test_str("[]"), Expr::Array(ArrayDef::new(make_span!(0, 1), make_exprs![])) }
 
     //                                      0        1           2         3         4      
     //                                      12345 678901 234567890123456789012345678901234
     assert_eq!{ PrimaryExpr::with_test_str("[8, \"@=?GF\", 87f32, 1340323.74f64, FKOxAvx5]"),
-        Expr::Array(ArrayDef::new(make_span!(0, 43), vec![
-            Expr::Lit(LitExpr::new(LitValue::from(8), make_span!(1, 1))),
-            Expr::Lit(LitExpr::new(LitValue::new_str_lit(make_id!(1)), make_span!(4, 10))), 
-            Expr::Lit(LitExpr::new(LitValue::from(87f32), make_span!(13, 17))),
-            Expr::Lit(LitExpr::new(LitValue::from(1340323.74f64), make_span!(20, 32))),
-            Expr::Ident(IdentExpr::new(make_id!(2), make_span!(35, 42)))
+        Expr::Array(ArrayDef::new(make_span!(0, 43), make_exprs![
+            LitExpr::new(LitValue::from(8), make_span!(1, 1)),
+            LitExpr::new(LitValue::new_str_lit(make_id!(1)), make_span!(4, 10)), 
+            LitExpr::new(LitValue::from(87f32), make_span!(13, 17)),
+            LitExpr::new(LitValue::from(1340323.74f64), make_span!(20, 32)),
+            IdentExpr::new(make_id!(2), make_span!(35, 42))
         ]))
     }
 
     //                                        0        1         2         3         4         5         6     
     //                                        123456789012345678901234567890123456789012345678901234567890123
     assert_eq!{ PrimaryExpr::with_test_str(r#"  [[dnr4, lGFd3yL, tJ], ['\\', p, (xGaBwiL,), DE], true, aB8aE]"#),
-        Expr::Array(ArrayDef::new(make_span!(2, 62), vec![
-            Expr::Array(ArrayDef::new(make_span!(3, 21), vec![
-                Expr::Ident(IdentExpr::new(make_id!(1), make_span!(4, 7))),
-                Expr::Ident(IdentExpr::new(make_id!(2), make_span!(10, 16))),
-                Expr::Ident(IdentExpr::new(make_id!(3), make_span!(19, 20)))
-            ])),
-            Expr::Array(ArrayDef::new(make_span!(24, 48), vec![
-                Expr::Lit(LitExpr::new(LitValue::from('\\'), make_span!(25, 28))), 
-                Expr::Ident(IdentExpr::new(make_id!(4), make_span!(31, 31))),
-                Expr::Tuple(TupleDef::new(make_span!(34, 43), vec![
-                    Expr::Ident(IdentExpr::new(make_id!(5), make_span!(35, 41)))
-                ])),
-                Expr::Ident(IdentExpr::new(make_id!(6), make_span!(46, 47)))
-            ])),
-            Expr::Lit(LitExpr::new(LitValue::from(true), make_span!(51, 54))),
-            Expr::Ident(IdentExpr::new(make_id!(7), make_span!(57, 61)))
+        Expr::Array(ArrayDef::new(make_span!(2, 62), make_exprs![
+            ArrayDef::new(make_span!(3, 21), make_exprs![
+                IdentExpr::new(make_id!(1), make_span!(4, 7)),
+                IdentExpr::new(make_id!(2), make_span!(10, 16)),
+                IdentExpr::new(make_id!(3), make_span!(19, 20))
+            ]),
+            ArrayDef::new(make_span!(24, 48), make_exprs![
+                LitExpr::new(LitValue::from('\\'), make_span!(25, 28)), 
+                IdentExpr::new(make_id!(4), make_span!(31, 31)),
+                TupleDef::new(make_span!(34, 43), make_exprs![
+                    IdentExpr::new(make_id!(5), make_span!(35, 41))
+                ]),
+                IdentExpr::new(make_id!(6), make_span!(46, 47))
+            ]),
+            LitExpr::new(LitValue::from(true), make_span!(51, 54)),
+            IdentExpr::new(make_id!(7), make_span!(57, 61))
         ]))
     } 
 
@@ -337,20 +338,20 @@ fn primary_expr_parse() {
     //                                      12345678901234 5678 9012 3456789012345678901234567890123 456789 0123456
     assert_eq!{ PrimaryExpr::with_test_input("[abc, 123u32, \"456\", '\\u0065', false, (), (a), (abc, \"hello\", ), ]",
         &mut make_symbols!["abc", "456", "hello", "a"]),
-        Expr::Array(ArrayDef::new(make_span!(0, 65), vec![
-            Expr::Ident(IdentExpr::new(make_id!(1), make_span!(1, 3))),
-            Expr::Lit(LitExpr::new(LitValue::from(123u32), make_span!(6, 11))),
-            Expr::Lit(LitExpr::new(LitValue::new_str_lit(make_id!(2)), make_span!(14, 18))),
-            Expr::Lit(LitExpr::new(LitValue::from('\u{0065}'), make_span!(21, 28))),
-            Expr::Lit(LitExpr::new(LitValue::from(false), make_span!(31, 35))),
-            Expr::Lit(LitExpr::new(LitValue::Unit, make_span!(38, 39))),
-            Expr::Paren(ParenExpr::new(make_span!(42, 44), 
-                Expr::Ident(IdentExpr::new(make_id!(4), make_span!(43, 43)))
-            )),
-            Expr::Tuple(TupleDef::new(make_span!(47, 62), vec![
-                Expr::Ident(IdentExpr::new(make_id!(1), make_span!(48, 50))),
-                Expr::Lit(LitExpr::new(LitValue::new_str_lit(make_id!(3)), make_span!(53, 59))),
-            ]))
+        Expr::Array(ArrayDef::new(make_span!(0, 65), make_exprs![
+            IdentExpr::new(make_id!(1), make_span!(1, 3)),
+            LitExpr::new(LitValue::from(123u32), make_span!(6, 11)),
+            LitExpr::new(LitValue::new_str_lit(make_id!(2)), make_span!(14, 18)),
+            LitExpr::new(LitValue::from('\u{0065}'), make_span!(21, 28)),
+            LitExpr::new(LitValue::from(false), make_span!(31, 35)),
+            LitExpr::new(LitValue::Unit, make_span!(38, 39)),
+            ParenExpr::new(make_span!(42, 44), 
+                IdentExpr::new(make_id!(4), make_span!(43, 43))
+            ),
+            TupleDef::new(make_span!(47, 62), make_exprs![
+                IdentExpr::new(make_id!(1), make_span!(48, 50)),
+                LitExpr::new(LitValue::new_str_lit(make_id!(3)), make_span!(53, 59)),
+            ])
         ]))
     }       
 
@@ -364,11 +365,12 @@ fn primary_expr_errors() {
     use codemap::Span;
     use message::Message;
     use message::MessageCollection;
+    use super::ExprList;
     use super::super::error_strings;
     use super::super::ISyntaxItemWithStr;
 
     assert_eq!{ PrimaryExpr::with_test_str_ret_messages("(,)"), (
-        Some(Expr::Tuple(TupleDef::new(make_span!(0, 2), vec![]))),
+        Some(Expr::Tuple(TupleDef::new(make_span!(0, 2), make_exprs![]))),
         make_messages![
             Message::new_by_str(error_strings::UnexpectedSingleComma, vec![(make_span!(0, 2), error_strings::TupleDefHere)])
         ]
@@ -451,6 +453,7 @@ IndexerCall <<0>0-57>
 #[cfg(test)] #[test]
 fn postfix_expr_parse() {
     use codemap::Span;
+    use super::ExprList;
     use super::IdentExpr;
     use super::super::ISyntaxItemWithStr;
 
@@ -473,51 +476,51 @@ fn postfix_expr_parse() {
                                                         make_span!(1, 1),
                                                         IdentExpr::new(make_id!(2), make_span!(2, 2))
                                                     ), 
-                                                    make_span!(3, 11), vec![
-                                                        Expr::Ident(IdentExpr::new(make_id!(3), make_span!(4, 4))),
-                                                        Expr::Ident(IdentExpr::new(make_id!(4), make_span!(7, 7))),
-                                                        Expr::Ident(IdentExpr::new(make_id!(5), make_span!(10, 10))),
+                                                    make_span!(3, 11), make_exprs![
+                                                        IdentExpr::new(make_id!(3), make_span!(4, 4)),
+                                                        IdentExpr::new(make_id!(4), make_span!(7, 7)),
+                                                        IdentExpr::new(make_id!(5), make_span!(10, 10)),
                                                     ]
                                                 ),
                                                 make_span!(12, 12),
                                                 IdentExpr::new(make_id!(6), make_span!(13, 13))
                                             ),
-                                            make_span!(14, 23), vec![
-                                                Expr::Ident(IdentExpr::new(make_id!(7), make_span!(15, 15))),
-                                                Expr::Ident(IdentExpr::new(make_id!(8), make_span!(18, 18))),
-                                                Expr::Ident(IdentExpr::new(make_id!(9), make_span!(21, 21))),
+                                            make_span!(14, 23), make_exprs![
+                                                IdentExpr::new(make_id!(7), make_span!(15, 15)),
+                                                IdentExpr::new(make_id!(8), make_span!(18, 18)),
+                                                IdentExpr::new(make_id!(9), make_span!(21, 21)),
                                             ]
                                         ),
-                                        make_span!(24, 27), vec![
-                                            Expr::Ident(IdentExpr::new(make_id!(10), make_span!(25, 25)))
+                                        make_span!(24, 27), make_exprs![
+                                            IdentExpr::new(make_id!(10), make_span!(25, 25))
                                         ]
                                     ),
                                     make_span!(28, 28),
                                     IdentExpr::new(make_id!(11), make_span!(29, 29))
                                 ),
-                                make_span!(30, 32), vec![
-                                    Expr::Ident(IdentExpr::new(make_id!(12), make_span!(31, 31)))
+                                make_span!(30, 32), make_exprs![
+                                    IdentExpr::new(make_id!(12), make_span!(31, 31))
                                 ]
                             ),
                             make_span!(33, 33),
                             IdentExpr::new(make_id!(13), make_span!(34, 34))
                         ),
                         make_span!(35, 36),
-                        vec![]
+                        make_exprs![]
                     ),
                     make_span!(37, 37),
                     IdentExpr::new(make_id!(14), make_span!(38, 38))
                 ),
-                make_span!(39, 47), vec![
-                    Expr::Ident(IdentExpr::new(make_id!(15), make_span!(40, 40))),
-                    Expr::Ident(IdentExpr::new(make_id!(16), make_span!(43, 43))),
-                    Expr::Ident(IdentExpr::new(make_id!(17), make_span!(46, 46)))
+                make_span!(39, 47), make_exprs![
+                    IdentExpr::new(make_id!(15), make_span!(40, 40)),
+                    IdentExpr::new(make_id!(16), make_span!(43, 43)),
+                    IdentExpr::new(make_id!(17), make_span!(46, 46))
                 ]
             ),
-            make_span!(48, 57), vec![
-                Expr::Ident(IdentExpr::new(make_id!(18), make_span!(49, 49))),
-                Expr::Ident(IdentExpr::new(make_id!(19), make_span!(52, 52))),
-                Expr::Ident(IdentExpr::new(make_id!(20), make_span!(55, 55)))
+            make_span!(48, 57), make_exprs![
+                IdentExpr::new(make_id!(18), make_span!(49, 49)),
+                IdentExpr::new(make_id!(19), make_span!(52, 52)),
+                IdentExpr::new(make_id!(20), make_span!(55, 55))
             ]
         ))
     }
@@ -528,13 +531,14 @@ fn postfix_expr_errors() {
     use codemap::Span;
     use message::Message;
     use message::MessageCollection;
+    use super::ExprList;
     use super::super::error_strings;
     use super::super::ISyntaxItemWithStr;
     
     assert_eq!{ PostfixExpr::with_test_str_ret_messages("a[]"), (
         Some(Expr::IndexCall(IndexCallExpr::new(
             IdentExpr::new(make_id!(1), make_span!(0, 0)), 
-            make_span!(1, 2), vec![]
+            make_span!(1, 2), make_exprs![]
         ))), 
         make_messages![
             Message::new_by_str(error_strings::EmptyIndexCall, vec![(make_span!(1, 2), error_strings::IndexCallHere)])
@@ -544,7 +548,7 @@ fn postfix_expr_errors() {
     assert_eq!{ PostfixExpr::with_test_str_ret_messages("a[, ]"), (
         Some(Expr::IndexCall(IndexCallExpr::new(
             IdentExpr::new(make_id!(1), make_span!(0, 0)), 
-            make_span!(1, 4), vec![]
+            make_span!(1, 4), make_exprs![]
         ))), 
         make_messages![
             Message::new_by_str(error_strings::EmptyIndexCall, vec![(make_span!(1, 4), error_strings::IndexCallHere)])
@@ -554,7 +558,7 @@ fn postfix_expr_errors() {
     assert_eq!{ PostfixExpr::with_test_str_ret_messages("a(, )"), (
         Some(Expr::FnCall(FnCallExpr::new(
             IdentExpr::new(make_id!(1), make_span!(0, 0)),
-            make_span!(1, 4), vec![]
+            make_span!(1, 4), make_exprs![]
         ))),
         make_messages![
             Message::new_by_str(error_strings::UnexpectedSingleComma, vec![(make_span!(1, 4), error_strings::FnCallHere)])

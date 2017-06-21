@@ -46,12 +46,12 @@ impl From<IndexCallExpr> for Expr {
 }
 impl IndexCallExpr {
 
-    pub fn new<T1: Into<Expr>, T2: Into<ExprList>>(base: T1, bracket_span: Span, params: T2) -> IndexCallExpr {
+    pub fn new<T: Into<Expr>>(base: T, bracket_span: Span, params: ExprList) -> IndexCallExpr {
         let base = base.into();
         IndexCallExpr{
             all_span: base.get_all_span().merge(&bracket_span),
             base: Box::new(base),
-            params: params.into(),
+            params,
             bracket_span
         }
     }

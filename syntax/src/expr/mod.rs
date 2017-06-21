@@ -9,9 +9,9 @@ use lexical::Token;
 use lexical::LitValue;
 use lexical::KeywordKind;
 
+#[macro_use] mod expr_list; // make_exprs
 mod lit_expr;
 mod ident_expr;
-mod expr_list;
 mod tuple_def;
 mod array_def;
 mod member_access;
@@ -172,33 +172,33 @@ fn expr_parse() {
 
     // Tuple def
     assert_eq!{ Expr::with_test_str("(a, b)"),
-        Expr::Tuple(TupleDef::new(make_span!(0, 5), vec![
-            Expr::Ident(IdentExpr::new(make_id!(1), make_span!(1, 1))),
-            Expr::Ident(IdentExpr::new(make_id!(2), make_span!(4, 4))),
+        Expr::Tuple(TupleDef::new(make_span!(0, 5), make_exprs![
+            IdentExpr::new(make_id!(1), make_span!(1, 1)),
+            IdentExpr::new(make_id!(2), make_span!(4, 4)),
         ]))
     }        //  12345678901
     assert_eq!{ Expr::with_test_str("(1, 2, 3, )"),
-        Expr::Tuple(TupleDef::new(make_span!(0, 10), vec![
-            Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(1, 1))),
-            Expr::Lit(LitExpr::new(LitValue::from(2), make_span!(4, 4))),
-            Expr::Lit(LitExpr::new(LitValue::from(3), make_span!(7, 7))),
+        Expr::Tuple(TupleDef::new(make_span!(0, 10), make_exprs![
+            LitExpr::new(LitValue::from(1), make_span!(1, 1)),
+            LitExpr::new(LitValue::from(2), make_span!(4, 4)),
+            LitExpr::new(LitValue::from(3), make_span!(7, 7)),
         ]))
     }
 
     // Array def
     assert_eq!{ Expr::with_test_str("[a]"),
-        Expr::Array(ArrayDef::new(make_span!(0, 2), vec![
-            Expr::Ident(IdentExpr::new(make_id!(1), make_span!(1, 1)))
+        Expr::Array(ArrayDef::new(make_span!(0, 2), make_exprs![
+            IdentExpr::new(make_id!(1), make_span!(1, 1))
         ]))
     }        //  12345678
     assert_eq!{ Expr::with_test_str("[1, 2, ]"),
-        Expr::Array(ArrayDef::new(make_span!(0, 7), vec![
-            Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(1, 1))),
-            Expr::Lit(LitExpr::new(LitValue::from(2), make_span!(4, 4)))
+        Expr::Array(ArrayDef::new(make_span!(0, 7), make_exprs![
+            LitExpr::new(LitValue::from(1), make_span!(1, 1)),
+            LitExpr::new(LitValue::from(2), make_span!(4, 4))
         ]))
     }
     assert_eq!{ Expr::with_test_str("[]"),
-        Expr::Array(ArrayDef::new(make_span!(0, 1), vec![]))
+        Expr::Array(ArrayDef::new(make_span!(0, 1), make_exprs![]))
     }
 
     // Member access
@@ -215,23 +215,23 @@ fn expr_parse() {
         Expr::FnCall(FnCallExpr::new(
             IdentExpr::new(make_id!(1), make_span!(0, 3)),
             make_span!(4, 5),
-            vec![]
+            make_exprs![]
         ))
     }
     assert_eq!{ Expr::with_test_str("deg(a)"),
         Expr::FnCall(FnCallExpr::new(
             IdentExpr::new(make_id!(1), make_span!(0, 2)),
-            make_span!(3, 5), vec![
-                Expr::Ident(IdentExpr::new(make_id!(2), make_span!(4, 4)))
+            make_span!(3, 5), make_exprs![
+                IdentExpr::new(make_id!(2), make_span!(4, 4))
             ]
         ))
     }
     assert_eq!{ Expr::with_test_str("degg(a, b, )"),
         Expr::FnCall(FnCallExpr::new(
             IdentExpr::new(make_id!(1), make_span!(0, 3)),
-            make_span!(4, 11), vec![
-                Expr::Ident(IdentExpr::new(make_id!(2), make_span!(5, 5))),
-                Expr::Ident(IdentExpr::new(make_id!(3), make_span!(8, 8)))
+            make_span!(4, 11), make_exprs![
+                IdentExpr::new(make_id!(2), make_span!(5, 5)),
+                IdentExpr::new(make_id!(3), make_span!(8, 8))
             ]
         ))
     }
@@ -244,7 +244,7 @@ fn expr_parse() {
                 IdentExpr::new(make_id!(2), make_span!(4, 7))
             ),
             make_span!(8, 9), 
-            vec![]
+            make_exprs![]
         ))
     }
     assert_eq!{ Expr::with_test_str("abc.deg(a)"),
@@ -254,8 +254,8 @@ fn expr_parse() {
                 make_span!(3, 3),
                 IdentExpr::new(make_id!(2), make_span!(4, 6))
             ),
-            make_span!(7, 9), vec![
-                Expr::Ident(IdentExpr::new(make_id!(3), make_span!(8, 8)))
+            make_span!(7, 9), make_exprs![
+                IdentExpr::new(make_id!(3), make_span!(8, 8))
             ]
         ))
     }        //  12345678901234
@@ -266,9 +266,9 @@ fn expr_parse() {
                 make_span!(1, 1),
                 IdentExpr::new(make_id!(1), make_span!(2, 5))
             ),
-            make_span!(6, 13), vec![
-                Expr::Ident(IdentExpr::new(make_id!(2), make_span!(7, 7))),
-                Expr::Ident(IdentExpr::new(make_id!(3), make_span!(10, 10)))
+            make_span!(6, 13), make_exprs![
+                IdentExpr::new(make_id!(2), make_span!(7, 7)),
+                IdentExpr::new(make_id!(3), make_span!(10, 10))
             ]
         ))
     }   
@@ -277,17 +277,17 @@ fn expr_parse() {
     assert_eq!{ Expr::with_test_str("deg[a]"),
         Expr::IndexCall(IndexCallExpr::new(
             IdentExpr::new(make_id!(1), make_span!(0, 2)),
-            make_span!(3, 5), vec![
-                Expr::Ident(IdentExpr::new(make_id!(2), make_span!(4, 4)))
+            make_span!(3, 5), make_exprs![
+                IdentExpr::new(make_id!(2), make_span!(4, 4))
             ]
         ))
     }        //  123456789012
     assert_eq!{ Expr::with_test_str("degg[a, b, ]"),
         Expr::IndexCall(IndexCallExpr::new(
             IdentExpr::new(make_id!(1), make_span!(0, 3)),
-            make_span!(4, 11), vec![
-                Expr::Ident(IdentExpr::new(make_id!(2), make_span!(5, 5))),
-                Expr::Ident(IdentExpr::new(make_id!(3), make_span!(8, 8)))
+            make_span!(4, 11), make_exprs![
+                IdentExpr::new(make_id!(2), make_span!(5, 5)),
+                IdentExpr::new(make_id!(3), make_span!(8, 8))
             ]
         ))
     }     
@@ -297,8 +297,8 @@ fn expr_parse() {
         Expr::MemberAccess(MemberAccessExpr::new(
             IndexCallExpr::new(
                 LitExpr::new(LitValue::from(2), make_span!(0, 0)),
-                make_span!(1, 3), vec![
-                    Expr::Lit(LitExpr::new(LitValue::from(3), make_span!(2, 2)))
+                make_span!(1, 3), make_exprs![
+                    LitExpr::new(LitValue::from(3), make_span!(2, 2))
                 ]
             ),
             make_span!(4, 4), 
@@ -309,8 +309,8 @@ fn expr_parse() {
         Expr::MemberAccess(MemberAccessExpr::new(
             Expr::FnCall(FnCallExpr::new(
                 IdentExpr::new(make_id!(1), make_span!(0, 4)),
-                make_span!(5, 11), vec![
-                    Expr::Lit(LitExpr::new(LitValue::from(233), make_span!(6, 8)))
+                make_span!(5, 11), make_exprs![
+                    LitExpr::new(LitValue::from(233), make_span!(6, 8))
                 ]
             )),
             make_span!(12, 12),
@@ -324,9 +324,9 @@ fn expr_parse() {
                 make_span!(1, 1),
                 IdentExpr::new(make_id!(1), make_span!(2, 5))
             ),
-            make_span!(6, 13), vec![
-                Expr::Ident(IdentExpr::new(make_id!(2), make_span!(7, 7))),
-                Expr::Ident(IdentExpr::new(make_id!(3), make_span!(10, 10))),
+            make_span!(6, 13), make_exprs![
+                IdentExpr::new(make_id!(2), make_span!(7, 7)),
+                IdentExpr::new(make_id!(3), make_span!(10, 10)),
             ]
         ))
     }        
@@ -340,8 +340,8 @@ fn expr_parse() {
                     SeperatorKind::LogicalNot, make_span!(2, 2),
                     IndexCallExpr::new(
                         LitExpr::new(LitValue::from(1), make_span!(3, 3)),
-                        make_span!(4, 6), vec![
-                            Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(5, 5)))
+                        make_span!(4, 6), make_exprs![
+                            LitExpr::new(LitValue::from(1), make_span!(5, 5))
                         ]
                     )
                 )
@@ -373,7 +373,7 @@ fn expr_errors() {
     assert_eq!{ Expr::with_test_str_ret_messages("de(, )"), (
         Some(Expr::FnCall(FnCallExpr::new(
             IdentExpr::new(make_id!(1), make_span!(0, 1)), 
-            make_span!(2, 5), vec![]
+            make_span!(2, 5), make_exprs![]
         ))),
         make_messages![
             Message::new_by_str(error_strings::UnexpectedSingleComma, vec![(make_span!(2, 5), error_strings::FnCallHere)])
@@ -386,7 +386,7 @@ fn expr_errors() {
                 make_span!(2, 2), 
                 IdentExpr::new(make_id!(2), make_span!(3, 4))
             ),
-            make_span!(5, 8), vec![]
+            make_span!(5, 8), make_exprs![]
         ))),
         make_messages![
             Message::new_by_str(error_strings::UnexpectedSingleComma, vec![(make_span!(5, 8), error_strings::FnCallHere)])
@@ -395,7 +395,7 @@ fn expr_errors() {
     assert_eq!{ Expr::with_test_str_ret_messages("defg[]"), (
         Some(Expr::IndexCall(IndexCallExpr::new(
             IdentExpr::new(make_id!(1), make_span!(0, 3)),
-            make_span!(4, 5), vec![]
+            make_span!(4, 5), make_exprs![]
         ))),
         make_messages![
             Message::new_by_str(error_strings::EmptyIndexCall, vec![(make_span!(4, 5), error_strings::IndexCallHere)])
@@ -404,7 +404,7 @@ fn expr_errors() {
     assert_eq!{ Expr::with_test_str_ret_messages("de[, ]"), (
         Some(Expr::IndexCall(IndexCallExpr::new(
             IdentExpr::new(make_id!(1), make_span!(0, 1)),
-            make_span!(2, 5), vec![]
+            make_span!(2, 5), make_exprs![]
         ))),
         make_messages![
             Message::new_by_str(error_strings::EmptyIndexCall, vec![(make_span!(2, 5), error_strings::IndexCallHere)])

@@ -1,6 +1,7 @@
 ///! fff-lang
 ///!
-///! syntax/ret_stmt for ReturnStatement
+///! syntax/ret_stmt
+///! ret_stmt = 'return' [ expr ] ';'
 
 use std::fmt;
 
@@ -9,45 +10,37 @@ use lexical::Token;
 use lexical::SeperatorKind;
 use lexical::KeywordKind;
 
+use super::super::Expr;
 use super::super::ParseSession;
 use super::super::ParseResult;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
-use super::super::Expr;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct ReturnStatement {
-    m_expr: Option<Expr>,
-    m_all_strpos: Span,
+    pub expr: Option<Expr>,
+    pub all_span: Span,
 }
 impl ISyntaxItemFormat for ReturnStatement {
     fn format(&self, indent: u32) -> String {
-        format!("{}ReturnStmt <{:?}>\n{:?}", 
-            ReturnStatement::indent_str(indent), self.m_all_strpos, self.m_expr)
+        match self.expr {
+            Some(ref expr) => format!("{}ReturnStmt some <{:?}>\n{}", ReturnStatement::indent_str(indent), self.all_span, expr.format(indent + 1)),
+            None => format!("{}ReturnStmt unit <{:?}>", ReturnStatement::indent_str(indent), self.all_span),
+        }
     }
 }
 impl fmt::Debug for ReturnStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.format(0))
-    }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
 }
 impl ReturnStatement {
 
-    pub fn new_unit(all_strpos: Span) -> ReturnStatement {
-        ReturnStatement{ m_expr: None, m_all_strpos: all_strpos }
+    pub fn new_unit(all_span: Span) -> ReturnStatement {
+        ReturnStatement{ all_span, expr: None }
     }
-    pub fn new_expr(all_strpos: Span, expr: Expr) -> ReturnStatement {
-        ReturnStatement{ m_expr: Some(expr), m_all_strpos: all_strpos }
+    pub fn new_expr(all_span: Span, expr: Expr) -> ReturnStatement {
+        ReturnStatement{ all_span, expr: Some(expr) }
     }
-}
-impl ReturnStatement {
-
-    pub fn get_expr(&self) -> Option<&Expr> { match self.m_expr { Some(ref expr) => Some(expr), None => None } }
-    pub fn get_all_strpos(&self) -> Span { self.m_all_strpos }
-
-    // TODO: maybe should remove this temp for make codegen compile
-    pub fn into_expr(self) -> Option<Expr> { self.m_expr }
 }
 impl ISyntaxItemGrammar for ReturnStatement {
     fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(KeywordKind::Return) }
@@ -60,7 +53,12 @@ impl ISyntaxItemParse for ReturnStatement {
         let return_strpos = sess.expect_keyword(KeywordKind::Return)?;
 
         if sess.tk == &Token::Sep(SeperatorKind::SemiColon) {
-            return Ok(ReturnStatement::new_unit(return_strpos.merge(&sess.pos)));
+            // 17/6/17: you forgot move_next here!
+            // but I have never write some test cases like following something after ret stmt
+            // so the bug is not propagated to be discovered
+            let ending_span = sess.pos;
+            sess.move_next();
+            return Ok(ReturnStatement::new_unit(return_strpos.merge(&ending_span)));
         }
 
         let expr = Expr::parse(sess)?;

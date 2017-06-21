@@ -132,23 +132,24 @@ fn binary_expr_parse() {
     use super::LitExpr;
     use super::ArrayDef;
     use super::IdentExpr;
+    use super::ExprList;
     use super::super::ISyntaxItemWithStr;
 
     //                                     123456789012345
     assert_eq!{ BinaryExpr::with_test_str("[1] * [2] / [3]"), 
         Expr::Binary(BinaryExpr::new(
             BinaryExpr::new(
-                ArrayDef::new(make_span!(0, 2), vec![
-                    Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(1, 1)))
+                ArrayDef::new(make_span!(0, 2), make_exprs![
+                    LitExpr::new(LitValue::from(1), make_span!(1, 1))
                 ]),
                 SeperatorKind::Mul, make_span!(4, 4),
-                ArrayDef::new(make_span!(6, 8), vec![
-                    Expr::Lit(LitExpr::new(LitValue::from(2), make_span!(7, 7))),
+                ArrayDef::new(make_span!(6, 8), make_exprs![
+                    LitExpr::new(LitValue::from(2), make_span!(7, 7)),
                 ]),
             ),
             SeperatorKind::Div, make_span!(10, 10),
-            ArrayDef::new(make_span!(12, 14), vec![
-                Expr::Lit(LitExpr::new(LitValue::from(3), make_span!(13, 13))),
+            ArrayDef::new(make_span!(12, 14), make_exprs![
+                LitExpr::new(LitValue::from(3), make_span!(13, 13)),
             ]),
         ))
     }           

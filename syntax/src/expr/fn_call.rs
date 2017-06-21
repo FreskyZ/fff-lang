@@ -45,12 +45,12 @@ impl From<FnCallExpr> for Expr {
 }
 impl FnCallExpr {
 
-    pub fn new<T1: Into<Expr>, T2: Into<ExprList>>(base: T1, paren_span: Span, params: T2) -> FnCallExpr {
+    pub fn new<T: Into<Expr>>(base: T, paren_span: Span, params: ExprList) -> FnCallExpr {
         let base = base.into();
         FnCallExpr{
             all_span: base.get_all_span().merge(&paren_span),
             base: Box::new(base),
-            params: params.into(),
+            params,
             paren_span,
         }
     }

@@ -91,6 +91,8 @@ impl ISyntaxItemParse for TypeUse {
         #[cfg(not(feature = "trace_type_use_parse"))]
         macro_rules! trace { ($($arg:tt)*) => () }
 
+        trace!{ "parsing" }
+
         match (sess.tk, sess.pos) {
             (&Token::Ident(ref ident), ref ident_strpos) => {
                 sess.move_next();

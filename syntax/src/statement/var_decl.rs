@@ -32,7 +32,7 @@ pub struct VarDeclStatement {
 }
 impl ISyntaxItemFormat for VarDeclStatement {
     fn format(&self, indent: u32) -> String {
-        format!("{}VarDecl {}<{:?}>\n{}{:?} <{:?}>{}{}", 
+        format!("{}VarDecl {} <{:?}>\n{}{:?} <{:?}>{}{}", 
             VarDeclStatement::indent_str(indent), if self.is_const { "const " } else { "var " }, self.all_span,
             VarDeclStatement::indent_str(indent + 1), self.name, self.name_span,
             match self.typeuse { Some(ref typeuse) => format!("\n{}", typeuse.format(indent + 1)), None => String::new() },
@@ -68,7 +68,7 @@ impl ISyntaxItemParse for VarDeclStatement {
     type Target = VarDeclStatement;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<VarDeclStatement> {
-
+        
         let starting_strpos = sess.pos;
         let is_const = match sess.tk {
             &Token::Keyword(KeywordKind::Const) => true, 
