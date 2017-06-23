@@ -8,7 +8,7 @@ import colorama
 colorama.init()
 pattern = re.compile(r'make_strpos!\(1, (\d*), 1, (\d*)\)')
 
-SYNTAX_SRC = r"..\syntax\src"
+SYNTAX_SRC = r"..\semantic\src"
 for src_file_path in [y for x in os.walk(SYNTAX_SRC) for y in glob(os.path.join(x[0], '*.rs'))]:
     new_src = ''
     with open(src_file_path) as src_file:
