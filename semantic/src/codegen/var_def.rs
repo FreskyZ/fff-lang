@@ -1,18 +1,18 @@
 
 // Variable, const or var
 // Variable collection, mainly for variable shadowing
-// ATTENTION: (2016-12-15) Currently no type size so codegen::Type will assume all size to be 1 and 
+// ATTENTION: (2016-12-15) Currently no type size so super::Type will assume all size to be 1 and 
 //     so offset mechanism is used in varcollection to support future sized type
 
 use std::fmt;
 
-use codepos::Span;
+use codemap::Span;
 
 use message::MessageEmitter;
 use message::CodegenMessage;
 
-use codegen::ItemID;
-use codegen::type_def::TypeCollection;
+use super::ItemID;
+use super::type_def::TypeCollection;
 
 // Variable collection
 #[derive(Debug, Eq, PartialEq)]
@@ -332,7 +332,7 @@ fn gen_vars_offset() {
 
     macro_rules! test_case {
         ($vars: expr, $types: expr, $name: expr, $typeid: expr, $var_id: expr, $offset: expr) => ({
-            assert_eq!($vars.try_push(Var::new($name.to_owned(), $typeid, false, Span::new()), $types, &mut MessageEmitter::new()), $var_id, "try push return unexpceted");
+            assert_eq!($vars.try_push(Var::new($name.to_owned(), $typeid, false, Span::default()), $types, &mut MessageEmitter::new()), $var_id, "try push return unexpceted");
             assert_eq!($vars.next_offset, Some($offset), "vars.next_offset unexpceted");
             if $var_id.is_valid() {
                 assert_eq!($vars.find_by_name($name), $var_id, "find by name return unexpected");
@@ -340,7 +340,7 @@ fn gen_vars_offset() {
             }
         });
         ($vars: expr, $types: expr, $name: expr, $typeid: expr, $var_id: expr) => ({
-            assert_eq!($vars.try_push(Var::new($name.to_owned(), $typeid, false, Span::new()), $types, &mut MessageEmitter::new()), $var_id, "try push return unexpceted");
+            assert_eq!($vars.try_push(Var::new($name.to_owned(), $typeid, false, Span::default()), $types, &mut MessageEmitter::new()), $var_id, "try push return unexpceted");
             assert_eq!($vars.next_offset, None, "vars.next_offset unexpceted");
             if $var_id.is_valid() {
                 assert_eq!($vars.find_by_name($name), $var_id, "find by name return unexpected");

@@ -1,31 +1,27 @@
 #![allow(unused_assignments)] // You don't see this line
-// Expression generator
+///! fff-lang
+///!
+///! semantic/expression
 
 use std::fmt;
 
-use codepos::Span;
-use util::format_vector_debug;
+use codemap::Span;
 use message::CodegenMessage;
 
 use lexical::LitValue;
 use lexical::SeperatorKind;
 
-use syntax::ExpressionBase as FullExpressionBase;
-use syntax::ExpressionOperator as FullExpressionOperator;
-use syntax::Expression as FullExpression;
-use syntax::ExpressionStatement as FullExpressionStatement;
-use syntax::SMType;
-use syntax::ISyntaxItem;
+use syntax;
 
-use codegen::var_def::VarCollection;
-use codegen::ItemID;
-use codegen::Type;
-use codegen::TypeCollection;
-use codegen::Operand;
-use codegen::Code;
-use codegen::FnName;
-use codegen::FnImpl;
-use codegen::session::GenerationSession;
+use super::var_def::VarCollection;
+use super::ItemID;
+use super::Type;
+use super::TypeCollection;
+use super::Operand;
+use super::Code;
+use super::FnName;
+use super::FnImpl;
+use super::session::GenerationSession;
 
 // About unit type
 // unit type is (), only one value, which is (),
@@ -39,10 +35,9 @@ use codegen::session::GenerationSession;
 #[derive(Eq, PartialEq)]
 pub enum SimpleBase {
     Lit(LitValue, ItemID, Span),
-    Ident(usize, ItemID, Span),                            // Paren is here
-    FunctionCall(ItemID, ItemID, Vec<SimpleBase>, [Span; 2]),  // fnid, ret type id
-    ArrayDef(ItemID, ItemID, usize, ItemID, Vec<SimpleBase>),            // ctor fnid, push fnid, temp var offset, ret typeid, init items
-    // array dup def and tuple def not here because tuple def only generates one code and a SimpleBase::FunctionCall is enough 
+    Ident(usize, ItemID, Span),                                 // Paren is here
+    FunctionCall(ItemID, ItemID, Vec<SimpleBase>, [Span; 2]),   // fnid, ret type id
+    ArrayDef(ItemID, ItemID, usize, ItemID, Vec<SimpleBase>),   // ctor fnid, push fnid, temp var offset, ret typeid, init items
 }
 impl fmt::Debug for SimpleBase {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -110,7 +105,7 @@ impl fmt::Debug for SimpleAssignment {
 // simplize_expr is a recursive call to convert syntax expression to codegen expression (simple expr)
 // while the recursion is complex and devided in 2, simplize_expr only calls process_nested_full_expr and process_nested_full_expr only calls simple_expr
 // while the recursion becomes more complex and simple_expr devided into 2, simplize_expr_base and simplize_expr_ops
-fn process_nested_full_expr(full_expr: FullExpression, sess: &mut GenerationSession, assigns: &mut Vec<SimpleAssignment>) -> Option<SimpleBase> {
+fn process_nested_full_expr(full_expr: syntax::Expr, sess: &mut GenerationSession, assigns: &mut Vec<SimpleAssignment>) -> Option<SimpleBase> {
 
    match (full_expr.base.as_ref().clone(), full_expr.ops.len()) {
         (FullExpressionBase::Lit(lit, pos), 0) => {
@@ -653,7 +648,7 @@ fn gen_expr_pure_simple_test() {
 
 #[cfg(test)] #[test]
 fn gen_expr_simple_test() {
-    use codegen::var_def::Var;
+    use super::var_def::Var;
     use message::MessageCollection;
 
     // function call not after ident
@@ -725,38 +720,6 @@ fn gen_expr_practice_test() {
     perrorln!("messages: \n{:?}", sess.msgs);
     perrorln!("assigns: \n{:?}", assigns);
     perrorln!("final expr: \n{:?}", final_expr);
-}
-
-#[cfg(test)] #[test] #[ignore]
-fn gen_expr_stmt_inter() {
-    use std::io::stdin;
-
-    let mut sess = GenerationSession::new();
-    loop {
-        let mut buf = String::new();
-
-        perrorln!("Input:");
-        match stdin().read_line(&mut buf) {
-            Ok(_) => (),
-            Err(_) => break,
-        }
-
-        if buf != "break\r\n" {
-            match FullExpressionStatement::with_test_str_ret_size(&buf).0 {
-                Some(expr_stmt) => {
-                    gen_expr_stmt(expr_stmt, &mut sess, false);
-                    perrorln!("Code: {}", sess.codes.dump());
-                    perrorln!("Messages: {:?}", sess.msgs);
-                }
-                None => {
-                    perrorln!("Unexpectedly failed");
-                    perrorln!("Messages: {:?}", sess.msgs);
-                }
-            }
-        } else {
-            break;
-        }
-    }
 }
 
 // Issues

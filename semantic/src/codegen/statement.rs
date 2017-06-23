@@ -1,7 +1,7 @@
 
 // Statement generation
 
-use codepos::Span;
+use codemap::Span;
 use message::CodegenMessage;
 
 use lexical::SeperatorKind;
@@ -10,28 +10,30 @@ use lexical::NumLitValue;
 
 use syntax::Block;
 use syntax::Statement;
-use syntax::Expression;
-use syntax::ExpressionBase;
+use syntax::Expr;
 
 use syntax::VarDeclStatement;
 use syntax::ReturnStatement;
 use syntax::BreakStatement;
 use syntax::ContinueStatement;
-use syntax::ExpressionStatement;
+use syntax::AssignExprStatement;
+use syntax::SimpleExprStatement;
 use syntax::LoopStatement;
 use syntax::WhileStatement;
 use syntax::ForStatement;
-use syntax::ElseIfBranch;
+use syntax::IfClause;
+use syntax::ElseIfClause;
+use syntax::ElseClause;
 use syntax::IfStatement;
 
-use codegen::var_def::Var;
-use codegen::session::GenerationSession;
-use codegen::expression::gen_expr;
-use codegen::expression::gen_expr_stmt;
-use codegen::Operand;
-use codegen::Code;
-use codegen::vm_code::CodeCollection;
-use codegen::ItemID;
+use super::Var;
+use super::session::GenerationSession;
+use super::expression::gen_expr;
+use super::expression::gen_expr_stmt;
+use super::Operand;
+use super::Code;
+use super::vm_code::CodeCollection;
+use super::ItemID;
 
 // Just a static dispatcher
 pub struct StatementGenerator{

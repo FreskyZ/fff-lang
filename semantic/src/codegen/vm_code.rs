@@ -8,7 +8,7 @@ use util::format_vector_debug;
 use lexical::LitValue;
 use lexical::SeperatorKind;
 
-use codegen::ItemID;
+use super::ItemID;
 
 #[derive(Eq, PartialEq, Clone)]
 pub enum Operand {
@@ -21,7 +21,7 @@ impl fmt::Debug for Operand {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Operand::Unknown => write!(f, "<unknown>"),
-            Operand::Lit(ref lit) => write!(f, "{}", lit),
+            Operand::Lit(ref lit) => write!(f, "{:?}", lit),
             Operand::Stack(ref offset) => write!(f, "[rbp - {}]", offset),
             Operand::Register => write!(f, "rax"),
         }

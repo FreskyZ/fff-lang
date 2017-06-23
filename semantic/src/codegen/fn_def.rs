@@ -1,29 +1,24 @@
 
-// FnDecl generater, provide FnDecl current generate state
-
 use std::fmt;
 use std::cmp;
 use std::ops;
 use std::slice;
 use std::collections::HashMap;
 
-use codepos::Span;
+use codemap::Span;
 use message::CodegenMessage;
 use message::MessageCollection;
 
 use lexical::SeperatorKind;
 
-use syntax::ISyntaxItem;
-use syntax::FunctionDef as SyntaxFunctionDef; 
-use syntax::Argument as SyntaxArgument;
-use syntax::Block as SyntaxBlock;
+use syntax;
 
-use codegen::ItemID;
-use codegen::type_def::Type;
-use codegen::type_def::TypeCollection;
-use codegen::var_def::VarCollection;
-use codegen::vm_code::CodeCollection;
-use codegen::session::GenerationSession;
+use super::ItemID;
+use super::type_def::Type;
+use super::type_def::TypeCollection;
+use super::var_def::VarCollection;
+use super::vm_code::CodeCollection;
+use super::session::GenerationSession;
 
 pub struct FnArg {
     pub name: String,
@@ -398,7 +393,7 @@ impl FnCollection {
 }
 
 #[cfg(test)]
-use syntax::Argument;
+use syntax::FnParam;
 
 #[cfg(test)]
 #[test]

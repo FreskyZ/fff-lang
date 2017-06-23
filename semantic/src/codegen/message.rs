@@ -1,6 +1,13 @@
 ///! legacy message definitions
 ///! leave here because want to completely update messages and this crate is not working currently
 
+use std::fmt;
+use codemap::Span;
+
+fn format_vector_debug<T>(items: &Vec<T>, sep: &str) -> String {
+    "<format-vector-debug>".to_owned()
+}
+
 #[derive(Eq, PartialEq)]
 pub enum CodegenMessage {
     FunctionHasSameName{ 
@@ -193,3 +200,22 @@ impl fmt::Debug for CodegenMessage {
         }
     }
 }
+
+#[derive(Debug, Eq, PartialEq)]
+pub struct MessageCollection {
+    pub items: Vec<CodegenMessage>,
+}
+
+impl MessageCollection {
+
+    pub fn new() -> MessageCollection {
+        MessageCollection{ items: Vec::new() }
+    }
+
+    pub fn push(&mut self, message: CodegenMessage) {
+        self.items.push(message)
+    }
+}
+
+pub type Message = CodegenMessage;
+pub type MessageEmitter = MessageCollection;

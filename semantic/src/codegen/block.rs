@@ -1,33 +1,31 @@
+///! fff-lang
+///!
+///! semantic/block
 
-// Block
+use codemap::Span;
 
-use codepos::Span;
+use syntax;
 
-use syntax::Block as SyntaxBlock;
-use syntax::ISyntaxItem;
-
-use codegen::ItemID;
-use codegen::var_def::Var;
-use codegen::var_def::VarCollection;
-use codegen::statement::StatementGenerator;
-use codegen::session::GenerationSession;
-use codegen::Code;
+use super::ItemID;
+use super::Var;
+use super::VarCollection;
+use super::statement::StatementGenerator;
+use super::session::GenerationSession;
+use super::Code;
 
 pub struct Block {
-    pub fn_id: usize,
-    pub block: SyntaxBlock,
+    pub id: usize,
+    pub all_span: Span,
+    pub items: syntax::Statement,
 }
-
 impl Block {
     
-    pub fn new(id: usize, block: SyntaxBlock) -> Block {
-        Block{ fn_id: id, block: block }
-    }
+    pub fn new(id: usize, block: syntax::Block) -> Block { Block{ id, all_span: block.all_span, items: block.items } }
 
     fn fn_id_to_vars(&self, sess: &mut GenerationSession) -> VarCollection {
 
         let mut ret_val = VarCollection::new();
-        let fn_decl = sess.fns.get_by_idx(self.fn_id);
+        let fn_decl = sess.fns.get_by_idx(self.id);
         for arg in &fn_decl.args {
             let _varid = ret_val.try_push(
                 Var::new(arg.name.clone(), arg.typeid, false, arg.pos), 
@@ -51,16 +49,15 @@ impl Block {
 
 #[cfg(test)] #[test]
 fn gen_block_prepare_vars() {
-    
-    use syntax::FunctionDef as SyntaxFunctionDef;
-    use codegen::var_def::VarOrScope;
-    use codegen::var_def::Var;
+    use syntax::ISyntaxItemWithStr;
+    use super::var_def::VarOrScope;
+    use super::var_def::Var;
 
     let gen_vars = |param_str: &str| -> VarCollection {
         //              12345678
         let program1 = "fn main(".to_owned();
         let program2 = ") { writeln(\"helloworld\"); }";
-        let syn_fn = SyntaxFunctionDef::with_test_str(&(program1 + param_str + program2));
+        let syn_fn = syntax::FnDef::with_test_str(&(program1 + param_str + program2));
         let mut sess = GenerationSession::new();
         let (id, block) = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
         let block = Block::new(id, block);
