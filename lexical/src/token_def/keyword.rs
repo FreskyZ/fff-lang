@@ -2,176 +2,216 @@
 ///! 
 ///! lexical/keyword
 
-macro_rules! define_keyword {
+macro_rules! define_keyword2 {
     (
-        $enum_name: ident, 
-        $($value: expr => $var_name: ident, $is_prim_type: expr, $is_reserved: expr,)*
+        $kw_type_name: ident,
+        inuse: $($inuse_value: expr => $inuse_name: ident),*;
+        primitive: $($primitive_value: expr => $primitive_name: ident),*;
+        reserved: $($reserved_value: expr => $reserved_name: ident),*;
     ) => (
 
-        #[derive(Copy, Clone, Eq, PartialEq)]
-        pub enum $enum_name {
-            $(
-                $var_name,
-            )*
+        #[derive(Eq, PartialEq, Clone, Copy)]
+        pub enum $kw_type_name {
+            $($inuse_name,)*
+            $($primitive_name,)*
+            $($reserved_name,)*
         }
 
-        use std::fmt;
-        impl fmt::Debug for $enum_name {
-            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                match *self {
-                    $(
-                        $enum_name::$var_name => 
-                            write!(f, "`{}`{}{}", 
-                                $value,
-                                if $is_prim_type { "(Primitive Type)".to_owned() } else { String::new() },
-                                if $is_reserved { "(Reserved)".to_owned() } else { String::new() }),
-                    )*
+        #[derive(Eq, PartialEq)] enum KeywordCategory { InUse, Primitive, Reserved, }
+        #[allow(dead_code)] struct KeywordInfo { kw: $kw_type_name, value: &'static str, category: KeywordCategory }
+
+        #[allow(dead_code)] const VALUE_TO_ID: &[&str] = &[
+            $($inuse_value,)*
+            $($primitive_value,)*
+            $($reserved_value,)*
+        ];
+        const KEYWORD_TO_INFO: &[KeywordInfo] = &[
+            $(KeywordInfo{ kw: $kw_type_name::$inuse_name, value: $inuse_value, category: KeywordCategory::InUse },)*
+            $(KeywordInfo{ kw: $kw_type_name::$primitive_name, value: $primitive_value, category: KeywordCategory::Primitive },)*
+            $(KeywordInfo{ kw: $kw_type_name::$reserved_name, value: $reserved_value, category: KeywordCategory::Reserved },)*
+        ];
+
+        impl ::std::fmt::Debug for $kw_type_name {
+            fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+                unsafe {
+                    write!(f, "{}", KEYWORD_TO_INFO[::std::mem::transmute_copy::<$kw_type_name, u8>(self) as usize].value)
                 }
             }
         }
-        impl fmt::Display for $enum_name {
-            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                match *self {
-                    $(
-                        $enum_name::$var_name => write!(f, "{}", $value),
-                    )*
-                }
-            }
-        }
+        impl $kw_type_name {
 
-        impl $enum_name {
-            
-            pub fn try_from(name: &str) -> Option<$enum_name> {
-                use self::$enum_name::*;
-                match name {
-                    $(
-                        $value => Some($var_name),
-                    )*
+            #[inline]
+            pub fn parse(v: &str) -> Option<$kw_type_name> {
+                // TODO! TODO! at 17/6/23
+                // want it to be mapped and O(1), failed, 
+                // want it to be sorted and binray searched and O(log n), failed,
+                // currently linear search, make it faster later
+                match v {
+                    $($inuse_value => Some($kw_type_name::$inuse_name),)*
+                    $($primitive_value => Some($kw_type_name::$primitive_name),)*
+                    $($reserved_value => Some($kw_type_name::$reserved_name),)*
                     _ => None,
                 }
             }
 
-            pub fn is_prim_type(&self) -> bool {
-                match *self {
-                    $(
-                        $enum_name::$var_name => $is_prim_type,
-                    )*
+            #[inline]
+            pub fn is_primitive(&self) -> bool {
+                unsafe {
+                    KEYWORD_TO_INFO[::std::mem::transmute_copy::<$kw_type_name, u8>(self) as usize].category == KeywordCategory::Primitive
                 }
             }
-
+            #[inline]
             pub fn is_reserved(&self) -> bool {
-                match *self {
-                    $(
-                        $enum_name::$var_name => $is_reserved,
-                    )*
+                unsafe {
+                    KEYWORD_TO_INFO[::std::mem::transmute_copy::<$kw_type_name, u8>(self) as usize].category == KeywordCategory::Reserved
                 }
             }
         }
-    );
+    )
 }
 
-define_keyword!{ KeywordKind, 
-//  value,          var_name,       is_prim_type,   is_reserved,
-    "fn" =>         FnDef,          false,          false,
-    "if" =>         If,             false,          false,
-    "else" =>       Else,           false,          false,
-    "while" =>      While,          false,          false,
-    "break" =>      Break,          false,          false,
-    "continue" =>   Continue,       false,          false,
-    "for" =>        For,            false,          false,
-    "return" =>     Return,         false,          false,
-    "var" =>        Var,            false,          false,
-    "const" =>      Const,          false,          false,
-    "loop" =>       Loop,           false,          false,
-    "this" =>       This,           false,          false,
-    "true" =>       True,           false,          false,
-    "false" =>      False,          false,          false,
+define_keyword2!{
+    Keyword, 
+    inuse:
+        "_" =>          Underscore,
+        "break" =>      Break,
+        "const" =>      Const,
+        "continue" =>   Continue,
+        "else" =>       Else,
+        "false" =>      False,
+        "fn" =>         Fn,
+        "for" =>        For,
+        "if" =>         If,
+        "in" =>         In,
+        "loop" =>       Loop,
+        "return" =>     Return,
+        "this" =>       This,
+        "true" =>       True,
+        "type" =>       Type,
+        "var" =>        Var,
+        "while" =>      While;
+    primitive:
+        "i8" =>         I8,
+        "u8" =>         U8,
+        "i16" =>        I16,
+        "u16" =>        U16,
+        "i32" =>        I32,
+        "u32" =>        U32,
+        "i64" =>        I64,
+        "u64" =>        U64,
+        "f32" =>        F32,
+        "f64" =>        F64,
+        "char" =>       Char,
+        "bool" =>       Bool,
+        "string" =>     String;
+    reserved:
+        "bits8" =>      Bits8, 
+        "bits16" =>     Bits16,
+        "bits32" =>     Bits32,
+        "bits64" =>     Bits64,
+        "u128" =>       U128,
+        "i128" =>       I128,
+        "f128" =>       F128,
+        "r32" =>        R32,
+        "r64" =>        R64,
+        "r128" =>       R128,
+        "and" =>        And,
+        "alias" =>      Alias,
+        "as" =>         As,
+        "async" =>      Async,
+        "auto" =>       Auto,
+        "await" =>      Await,
+        "base" =>       Base,
+        "catch" =>      Catch,
+        "class" =>      Class,
+        "closure" =>    Closure,
+        "concept" =>    Concept,
+        "constexpr" =>  ConstExpr,
+        "def" =>        Def,
+        "default" =>    Default,
+        "delete" =>     Delete,
+        "enum" =>       Enum,
+        "except" =>     Except,
+        "explicit" =>   Explicit,
+        "extern" =>     Extern,
+        "final" =>      Final,
+        "finally" =>    Finally,
+        "foreach" =>    Foreach,
+        "function" =>   Function,
+        "goto" =>       Goto,
+        "impl" =>       Impl,
+        "implicit" =>   Implicit,
+        "interface" =>  Interface,
+        "internal" =>   Internal,
+        "is" =>         Is,
+        "lambda" =>     Lambda,
+        "let" =>        Let,
+        "match" =>      Match,
+        "mod" =>        Mod,
+        "module" =>     Module,
+        "mut" =>        Mut,
+        "mutable" =>    Mutable,
+        "namespace" =>  Namespace,
+        "new" =>        New,
+        "nil" =>        Nil,
+        "none" =>       SMNone,
+        "null" =>       Null,
+        "nullptr" =>    Nullptr,
+        "object" =>     Object,
+        "or" =>         Or,
+        "out" =>        Out,
+        "override" =>   Override,
+        "params" =>     Params,
+        "priv" =>       Priv,
+        "private" =>    Private,
+        "protected" =>  Protected,
+        "pub" =>        Pub,
+        "public" =>     Public,
+        "ref" =>        Ref,
+        "ret" =>        Ret,
+        "sealed" =>     Sealed,
+        "select" =>     Select,
+        "self" =>       SMSelf,
+        "static" =>     Static,
+        "struct" =>     Struct,
+        "super" =>      Super,
+        "switch" =>     Switch,
+        "template" =>   Template,
+        "then" =>       Then,
+        "throw" =>      Throw,
+        "trait" =>      Trait,
+        "try" =>        Try,
+        "tuple" =>      Tuple,
+        "typedef" =>    TypeDef,
+        "typeof" =>     Typeof,
+        "undefined" =>  Undefined,
+        "unsafe" =>     Unsafe,
+        "use" =>        Use,
+        "using" =>      Using,
+        "volatile" =>   Volatile,
+        "where" =>      Where,
+        "virtual" =>    Virtual,
+        "yield" =>      Yield;
+    // removed
+    //     "array" =>      Array,
+    //     "unit" =>       Unit,
+    //     "sm" =>         "SM",
+}
 
-    "u8" =>         PrimTypeU8,     true,           false,
-    "i32" =>        PrimTypeI32,    true,           false,
-    "u32" =>        PrimTypeU32,    true,           false,
-    "u64" =>        PrimTypeU64,    true,           false,
-    "f32" =>        PrimTypeF32,    true,           false,
-    "f64" =>        PrimTypeF64,    true,           false,
-    "i8" =>         PrimTypeI8,     true,           false,
-    "u16" =>        PrimTypeU16,    true,           false,
-    "i16" =>        PrimTypeI16,    true,           false,
-    "i64" =>        PrimTypeI64,    true,           false,
-    "char" =>       PrimTypeChar,   true,           false,
-    "bool" =>       PrimTypeBool,   true,           false,
-    "string" =>     PrimTypeString, true,           false,
+#[cfg(test)] #[test]
+fn keyword_use() {
+    
+    assert_eq!{ Keyword::parse("fn"), Some(Keyword::Fn) }
+    assert_eq!{ Keyword::parse("await"), Some(Keyword::Await) }
 
-    "_" =>          Underscore,     false,          false,
+    assert_eq!{ format!("{:?}", Keyword::Def), "def" }
+    assert_eq!{ format!("{:?}", Keyword::R64), "r64" }
 
-    "as" =>         As,             false,          true,
-    "struct" =>     Struct,         false,          true,
-    "namespace" =>  Namespace,      false,          true,
-    "type" =>       Type,           false,          true,
-    "sm" =>         SM,             false,          true,
-    "await" =>      Await,          false,          true,
-    "async" =>      Async,          false,          true,
-    "yield" =>      Yield,          false,          true,
-    "public" =>     Public,         false,          true,
-    "protected" =>  Protected,      false,          true,
-    "internal" =>   Internal,       false,          true,
-    "private" =>    Private,        false,          true,
-    "module" =>     Module,         false,          true,
-    "mod" =>        Mod,            false,          true,
-    "use" =>        Use,            false,          true,
-    "using" =>      Using,          false,          true,
-    "extern" =>     Extern,         false,          true,
-    "default" =>    Default,        false,          true,
-    "new" =>        New,            false,          true,
-    "delete" =>     Delete,         false,          true,
-    "let" =>        Let,            false,          true,
-    "def" =>        Def,            false,          true,
-    "impl" =>       Impl,           false,          true,
-    "tuple" =>      Tuple,          false,          true,
-    "trait" =>      Trait,          false,          true,
-    "concept" =>    Concept,        false,          true,
-    "interface" =>  Interface,      false,          true,
-    "class" =>      Class,          false,          true,
-    "template" =>   Template,       false,          true,
-    "mutable" =>    Mutable,        false,          true,
-    "mut" =>        Mut,            false,          true,
-    "function" =>   Function,       false,          true,
-    "lambda" =>     Lambda,         false,          true,
-    "closure" =>    Closure,        false,          true,
-    "array" =>      Array,          false,          true,
-    "unit" =>       PrimTypeUnit,   true,           true,
-    "foreach" =>    Foreach,        false,          true,
-    "virtual" =>    Virtual,        false,          true,
-    "override" =>   Override,       false,          true,
-    "sealed" =>     Sealed,         false,          true,
-    "final" =>      Final,          false,          true,
-    "implicit" =>   Implicit,       false,          true,
-    "explicit" =>   Explicit,       false,          true,
-    "try" =>        Try,            false,          true,
-    "throw" =>      Throw,          false,          true,
-    "catch" =>      Catch,          false,          true,
-    "volatile" =>   Volatile,       false,          true,
-    "ref" =>        Ref,            false,          true,
-    "null" =>       Null,           false,          true,
-    "nil" =>        Nil,            false,          true,
-    "none" =>       SMNone,         false,          true,
-    "nullptr" =>    Nullptr,        false,          true,
-    "in" =>         In,             false,          true,
-    "is" =>         Is,             false,          true,
-    "unsafe" =>     Unsafe,         false,          true,
-    "switch" =>     Switch,         false,          true,
-    "match" =>      Match,          false,          true,
-    "static" =>     Static,         false,          true,
-    "goto" =>       Goto,           false,          true,
-    "enum" =>       Enum,           false,          true,
-    "typeof" =>     Typeof,         false,          true,
-    "ret" =>        Ret,            false,          true,
-    "object" =>     Object,         false,          true,
-    "except" =>     Except,         false,          true,
-    "out" =>        Out,            false,          true,
-    "params" =>     Params,         false,          true,
-    "base" =>       Base,           false,          true,
-    "super" =>      Super,          false,          true,
-    "auto" =>       Auto,           false,          true,
-    "finally" =>    Finally,        false,          true,
-    "self" =>       SMSelf,         false,          true,
+    assert_eq!{ Keyword::I32.is_primitive(), true }
+    assert_eq!{ Keyword::While.is_primitive(), false }
+    assert_eq!{ Keyword::Await.is_primitive(), false }
+
+    assert_eq!{ Keyword::Fn.is_reserved(), false }
+    assert_eq!{ Keyword::R64.is_reserved(), true }
+    assert_eq!{ Keyword::Await.is_reserved(), true }
 }

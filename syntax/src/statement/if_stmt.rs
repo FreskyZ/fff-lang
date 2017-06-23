@@ -7,7 +7,7 @@ use std::fmt;
 
 use codemap::Span;
 use lexical::Token;
-use lexical::KeywordKind;
+use lexical::Keyword;
 
 use super::super::Expr;
 use super::super::Block;
@@ -152,13 +152,13 @@ impl IfStatement {
     }
 }
 impl ISyntaxItemGrammar for IfStatement {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(KeywordKind::If) }
+    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(Keyword::If) }
 }
 impl ISyntaxItemParse for IfStatement {
     type Target = IfStatement;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<IfStatement> {
-        assert!(sess.tk == &Token::Keyword(KeywordKind::If));
+        assert!(sess.tk == &Token::Keyword(Keyword::If));
 
         let if_span = sess.pos;
         sess.move_next();
@@ -171,14 +171,14 @@ impl ISyntaxItemParse for IfStatement {
         let mut else_clause = None;
         loop {
             match (sess.tk, sess.pos, sess.next_tk, sess.next_pos) {
-                (&Token::Keyword(KeywordKind::Else), ref else_span, &Token::Keyword(KeywordKind::If), ref if_span) => {
+                (&Token::Keyword(Keyword::Else), ref else_span, &Token::Keyword(Keyword::If), ref if_span) => {
                     sess.move_next2();
                     let elseif_span = else_span.merge(&if_span);
                     let elseif_expr = Expr::parse(sess)?;
                     let elseif_body = Block::parse(sess)?;
                     elseif_clauses.push(ElseIfClause::new(elseif_span, elseif_expr, elseif_body));
                 }
-                (&Token::Keyword(KeywordKind::Else), ref else_span, _, _) => {
+                (&Token::Keyword(Keyword::Else), ref else_span, _, _) => {
                     sess.move_next();
                     // 16/12/1, we lost TWO `+1`s for current_length here ... fixed
                     // 17/5/6: When there is match Block::parse(tokens, messages, index + current_length), etc.

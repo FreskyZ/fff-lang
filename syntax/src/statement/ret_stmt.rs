@@ -8,7 +8,7 @@ use std::fmt;
 use codemap::Span;
 use lexical::Token;
 use lexical::SeperatorKind;
-use lexical::KeywordKind;
+use lexical::Keyword;
 
 use super::super::Expr;
 use super::super::ParseSession;
@@ -43,14 +43,14 @@ impl ReturnStatement {
     }
 }
 impl ISyntaxItemGrammar for ReturnStatement {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(KeywordKind::Return) }
+    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(Keyword::Return) }
 }
 impl ISyntaxItemParse for ReturnStatement {
     type Target = ReturnStatement;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<ReturnStatement> {
 
-        let return_strpos = sess.expect_keyword(KeywordKind::Return)?;
+        let return_strpos = sess.expect_keyword(Keyword::Return)?;
 
         if sess.tk == &Token::Sep(SeperatorKind::SemiColon) {
             // 17/6/17: you forgot move_next here!

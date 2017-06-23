@@ -11,7 +11,7 @@ use std::fmt;
 
 use codemap::Span;
 use lexical::Token;
-use lexical::KeywordKind;
+use lexical::Keyword;
 use lexical::SeperatorKind;
 
 use super::super::TypeUse;
@@ -65,14 +65,14 @@ impl TypeDef {
     }
 }
 impl ISyntaxItemGrammar for TypeDef {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(KeywordKind::Type) }
+    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(Keyword::Type) }
 }
 impl ISyntaxItemParse for TypeDef {
     type Target = Self;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<TypeDef> {
 
-        let starting_span = sess.expect_keyword(KeywordKind::Type)?;
+        let starting_span = sess.expect_keyword(Keyword::Type)?;
         let name = IdentExpr::parse(sess)?;
         let _left_brace_span = sess.expect_sep(SeperatorKind::LeftBrace)?;
 

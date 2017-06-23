@@ -20,7 +20,7 @@ use super::ILexer;
 use super::BufLexer;
 
 use super::LitValue;
-use super::KeywordKind;
+use super::Keyword;
 use super::SeperatorKind;
 use super::ParseSession;
 use self::num_lit_parser::parse_numeric_literal;
@@ -31,7 +31,7 @@ pub enum V2Token {
     Literal(LitValue),
     Identifier(SymbolID), // Anything of [_a-zA-Z][_a-zA-Z0-9]*
     Label(SymbolID),      // Anything of @[_a-zA-Z0-9@]*
-    Keyword(KeywordKind),
+    Keyword(Keyword),
     Seperator(SeperatorKind),
 }
 impl Default for V2Token { fn default() -> V2Token { V2Token::EOFs } }
@@ -120,9 +120,9 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
         #[cfg(not(feature = "trace_v2_parse"))] macro_rules! trace { ($($arg:tt)*) => () }
 
         macro_rules! ident_to_v2 { ($ident_value: expr, $ident_pos: expr) => ({
-            match KeywordKind::try_from(&$ident_value) { 
-                Some(KeywordKind::True) => V2Token::Literal(LitValue::from(true)),
-                Some(KeywordKind::False) => V2Token::Literal(LitValue::from(false)),
+            match Keyword::parse(&$ident_value) { 
+                Some(Keyword::True) => V2Token::Literal(LitValue::from(true)),
+                Some(Keyword::False) => V2Token::Literal(LitValue::from(false)),
                 Some(other_keyword) => {
                     if other_keyword.is_reserved() {
                         sess.messages.push(Message::new(
@@ -478,12 +478,12 @@ fn v2_base() {
     // byte      0         1          2         3   
     // byte      01234567890123 456789012345678901234 5678
     test_case!{ "var a = true;\nvar b = 789_123.456;\ndefg", make_symbols!["a", "b", "defg"], vec![      
-        kw!(KeywordKind::Var, 0, 2),
+        kw!(Keyword::Var, 0, 2),
         ident!(make_id!(1), 4, 4),
         sep!(SeperatorKind::Assign, 6, 6),
         lit!(true, 8, 11),
         sep!(SeperatorKind::SemiColon, 12, 12),
-        kw!(KeywordKind::Var, 14, 16),
+        kw!(Keyword::Var, 14, 16),
         ident!(make_id!(2), 18, 18),
         sep!(SeperatorKind::Assign, 20, 20),
         lit!(789123.4560000001, 22, 32),
@@ -507,7 +507,7 @@ fn v2_base() {
         lit!(1, 1, 1),
         sep!(SeperatorKind::Comma, 2, 2),
         lit!(123, 4, 6),
-        kw!(KeywordKind::Underscore, 8, 8),
+        kw!(Keyword::Underscore, 8, 8),
         lit!(1u64, 10, 13),
         sep!(SeperatorKind::LeftParenthenes, 14, 14),
         lit!(123.456, 16, 22),
@@ -677,9 +677,9 @@ fn v2_base() {
         sep!(SeperatorKind::RightParenthenes, 26, 26),
         sep!(SeperatorKind::LeftParenthenes, 27, 27),
         sep!(SeperatorKind::RightParenthenes, 28, 28),
-        kw!(KeywordKind::As, 30, 31),
+        kw!(Keyword::As, 30, 31),
         sep!(SeperatorKind::LeftBracket, 33, 33),
-        kw!(KeywordKind::PrimTypeI32, 34, 36),
+        kw!(Keyword::I32, 34, 36),
         sep!(SeperatorKind::RightBracket, 37, 37),
         sep!(SeperatorKind::Dot, 38, 38),
         ident!(make_id!(2), 39, 41),
@@ -691,7 +691,7 @@ fn v2_base() {
         lit!(12, 51, 52),
         sep!(SeperatorKind::RightBracket, 53, 53),
     ], make_messages![
-        Message::new(format!("{}: {:?}", error_strings::UseReservedKeyword, KeywordKind::As), vec![(make_span!(30, 31), String::new())]), // TODO: this feature added, add to error_strings
+        Message::new(format!("{}: {:?}", error_strings::UseReservedKeyword, Keyword::As), vec![(make_span!(30, 31), String::new())]), // TODO: this feature added, add to error_strings
     ]}
 
     //           0         1     

@@ -7,7 +7,7 @@ use std::fmt;
 use codemap::Span;
 use lexical::Token;
 use lexical::LitValue;
-use lexical::KeywordKind;
+use lexical::Keyword;
 
 #[macro_use] mod expr_list; // make_exprs
 mod lit_expr;
@@ -101,7 +101,7 @@ impl ISyntaxItemGrammar for Expr {
         || IdentExpr::is_first_final(sess)
         || TupleDef::is_first_final(sess)
         || ArrayDef::is_first_final(sess)
-        || sess.tk == &Token::Keyword(KeywordKind::This)
+        || sess.tk == &Token::Keyword(Keyword::This)
         || UnaryExpr::is_first_final(sess) 
         // || PostfixExpr::is_first_final(sess) // same as Expr
         // || BinaryExpr::is_first_final(sess)  // same as Expr

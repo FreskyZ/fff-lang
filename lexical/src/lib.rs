@@ -22,7 +22,7 @@ use self::parse_sess::ParseSession;
 
 pub use self::token_def::SeperatorKind;
 pub use self::token_def::SeperatorCategory;
-pub use self::token_def::KeywordKind;
+pub use self::token_def::Keyword;
 pub use self::token_def::NumLitValue;
 pub use self::token_def::LitValue;
 pub use self::token_def::Token;

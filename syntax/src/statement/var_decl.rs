@@ -10,7 +10,7 @@ use codemap::Span;
 use codemap::SymbolID;
 use message::Message;
 use lexical::Token;
-use lexical::KeywordKind;
+use lexical::Keyword;
 use lexical::SeperatorKind;
 
 use super::super::ParseSession;
@@ -62,7 +62,7 @@ impl VarDeclStatement {
     }
 }
 impl ISyntaxItemGrammar for VarDeclStatement {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(KeywordKind::Const) || sess.tk == &Token::Keyword(KeywordKind::Var) }
+    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(Keyword::Const) || sess.tk == &Token::Keyword(Keyword::Var) }
 }
 impl ISyntaxItemParse for VarDeclStatement {
     type Target = VarDeclStatement;
@@ -71,13 +71,13 @@ impl ISyntaxItemParse for VarDeclStatement {
         
         let starting_strpos = sess.pos;
         let is_const = match sess.tk {
-            &Token::Keyword(KeywordKind::Const) => true, 
-            &Token::Keyword(KeywordKind::Var) => false,
+            &Token::Keyword(Keyword::Const) => true, 
+            &Token::Keyword(Keyword::Var) => false,
             _ => unreachable!(), 
         };
         sess.move_next();
 
-        let (name, name_strpos) = sess.expect_ident_or(vec![KeywordKind::Underscore])?;
+        let (name, name_strpos) = sess.expect_ident_or(vec![Keyword::Underscore])?;
         let maybe_decltype = if sess.tk == &Token::Sep(SeperatorKind::Colon) { sess.move_next(); Some(TypeUse::parse(sess)?) } else { None };
         let maybe_init_expr = if sess.tk == &Token::Sep(SeperatorKind::Assign) { sess.move_next(); Some(Expr::parse(sess)?) } else { None };
         if maybe_decltype.is_none() && maybe_init_expr.is_none() {

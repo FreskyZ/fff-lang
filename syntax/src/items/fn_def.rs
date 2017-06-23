@@ -9,7 +9,7 @@ use codemap::Span;
 use codemap::SymbolID;
 use message::Message;
 use lexical::Token;
-use lexical::KeywordKind;
+use lexical::Keyword;
 use lexical::SeperatorKind;
 
 use super::super::ParseSession;
@@ -72,7 +72,7 @@ impl FnDef {
     }
 }
 impl ISyntaxItemGrammar for FnDef {   
-    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(KeywordKind::FnDef) }
+    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(Keyword::Fn) }
 }
 impl ISyntaxItemParse for FnDef {
     type Target = FnDef;
@@ -83,7 +83,7 @@ impl ISyntaxItemParse for FnDef {
         #[cfg(not(feature = "trace_fn_def_parse"))]
         macro_rules! trace { ($($arg:tt)*) => () }
         
-        let fn_strpos = sess.expect_keyword(KeywordKind::FnDef)?;
+        let fn_strpos = sess.expect_keyword(Keyword::Fn)?;
         let (fn_name, fn_name_strpos) = sess.expect_ident()?;
         let mut params_paren_strpos = sess.expect_sep(SeperatorKind::LeftParenthenes)?;
         trace!("fndef name span: {:?}", fn_name_strpos);
@@ -115,7 +115,7 @@ impl ISyntaxItemParse for FnDef {
                 _ => (),
             }
 
-            let (param_name, param_strpos) = sess.expect_ident_or(vec![KeywordKind::Underscore, KeywordKind::This])?;
+            let (param_name, param_strpos) = sess.expect_ident_or(vec![Keyword::Underscore, Keyword::This])?;
             let _ = sess.expect_sep(SeperatorKind::Colon)?;
             let decltype = TypeUse::parse(sess)?;
             params.push(FnParam::new(param_name, param_strpos, decltype));

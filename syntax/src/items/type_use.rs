@@ -73,7 +73,7 @@ impl ISyntaxItemGrammar for TypeUse {
             &Token::Ident(_) 
             | &Token::Sep(SeperatorKind::LeftBracket)
             | &Token::Sep(SeperatorKind::LeftParenthenes) => true,
-            &Token::Keyword(kw) => kw.is_prim_type(),
+            &Token::Keyword(kw) => kw.is_primitive(),
             _ => false,
         }
     }
@@ -94,9 +94,9 @@ impl ISyntaxItemParse for TypeUse {
                 sess.move_next();
                 return Ok(TypeUse::new_simple(*ident, *ident_strpos));
             }
-            (&Token::Keyword(keyword), ref keyword_strpos) if keyword.is_prim_type() => {
+            (&Token::Keyword(keyword), ref keyword_strpos) if keyword.is_primitive() => {
                 sess.move_next();
-                return Ok(TypeUse::new_simple(sess.symbols.intern(format!("{}", keyword)), *keyword_strpos));
+                return Ok(TypeUse::new_simple(sess.symbols.intern(format!("{:?}", keyword)), *keyword_strpos));
             }
             (&Token::Sep(SeperatorKind::LeftBracket), ref left_bracket_strpos) => {
                 sess.move_next();

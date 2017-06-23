@@ -6,7 +6,7 @@
 ///! postfix_expr = expr { ( member_access | fn_call | indexer_call ) }
 
 use lexical::Token;
-use lexical::KeywordKind;
+use lexical::Keyword;
 
 use super::Expr;
 use super::LitExpr;
@@ -44,7 +44,7 @@ impl ISyntaxItemParse for PrimaryExpr {
             return ArrayDef::parse(sess);
         }
 
-        if let (&Token::Keyword(KeywordKind::This), this_span) = (sess.tk, sess.pos) {
+        if let (&Token::Keyword(Keyword::This), this_span) = (sess.tk, sess.pos) {
             sess.move_next();
             return Ok(Expr::Ident(IdentExpr::new(sess.symbols.intern_str("this"), this_span)));
         } else {

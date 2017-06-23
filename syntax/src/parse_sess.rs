@@ -13,7 +13,7 @@ use message::MessageCollection;
 use lexical::Token;
 use lexical::TokenStream;
 use lexical::SeperatorKind;
-use lexical::KeywordKind;
+use lexical::Keyword;
 
 pub type ParseResult<T> = Result<T, ()>;
 
@@ -70,15 +70,15 @@ impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
 
     /// Check current index is keyword, if so, move next and Ok(keyword_strpos),
     /// if not, push unexpect and Err(())
-    /// use like `let kw_strpos = sess.expect_keyword(KeywordKind::In)?;`
-    pub fn expect_keyword(&mut self, expect_kw: KeywordKind) -> Result<Span, ()> {
+    /// use like `let kw_strpos = sess.expect_keyword(Keyword::In)?;`
+    pub fn expect_keyword(&mut self, expect_kw: Keyword) -> Result<Span, ()> {
 
         let current_index = self.current_index.get();
         self.move_next();
         match (self.tokens.nth_token(current_index), self.tokens.nth_span(current_index)) {
             (&Token::Keyword(ref actual_kw), ref kw_strpos) if actual_kw == &expect_kw => Ok(*kw_strpos),
-            (&Token::Keyword(_), _) => self.push_unexpect::<Span>(&format!("{}", expect_kw)),
-            _ => self.push_unexpect::<Span>(&format!("{}", expect_kw)),
+            (&Token::Keyword(_), _) => self.push_unexpect::<Span>(&format!("{:?}", expect_kw)),
+            _ => self.push_unexpect::<Span>(&format!("{:?}", expect_kw)),
         }
     }
     /// Check current index is seperator, if so, move next and Ok(seperator_strpos),
@@ -111,8 +111,8 @@ impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
     /// used for some where accept underscore and this
     /// if so, move next and Ok((owned_ident_name, ident_strpos)),
     /// if not, push unexpect and Err(())
-    /// use like `let (ident_name, ident_strpos) = sess.expect_ident_or(vec![KeywordKind::This, KeywordKind::Underscore])?;`
-    pub fn expect_ident_or(&mut self, accept_keywords: Vec<KeywordKind>) -> Result<(SymbolID, Span), ()> {
+    /// use like `let (ident_name, ident_strpos) = sess.expect_ident_or(vec![Keyword::This, Keyword::Underscore])?;`
+    pub fn expect_ident_or(&mut self, accept_keywords: Vec<Keyword>) -> Result<(SymbolID, Span), ()> {
 
         let current_index = self.current_index.get();
         self.move_next();
@@ -120,7 +120,7 @@ impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
             (&Token::Ident(ref ident), ref ident_strpos) => Ok((ident.clone(), *ident_strpos)),
             (&Token::Keyword(ref actual_kw), ref kw_strpos) => {
                 if accept_keywords.iter().any(|accept_kw| actual_kw == accept_kw) {
-                    Ok((self.symbols.intern(format!("{}", actual_kw)), *kw_strpos))
+                    Ok((self.symbols.intern(format!("{:?}", actual_kw)), *kw_strpos))
                 } else {
                     self.push_unexpect::<(SymbolID, Span)>("identifier")
                 }
@@ -134,7 +134,7 @@ impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
     /// if so, move next and Ok((owned_ident_name, ident_strpos)),
     /// if not, push unexpect and Err(())
     /// use like `let (ident_name, ident_strpos) = sess.expect_ident_or_if(|kw| kw.is_prim_type())?;`
-    pub fn expect_ident_or_if<F>(&mut self, keyword_predict: F) -> Result<(SymbolID, Span), ()> where F: Fn(&KeywordKind) -> bool {
+    pub fn expect_ident_or_if<F>(&mut self, keyword_predict: F) -> Result<(SymbolID, Span), ()> where F: Fn(&Keyword) -> bool {
         
         let current_index = self.current_index.get();
         self.move_next();
@@ -142,7 +142,7 @@ impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
             (&Token::Ident(ref ident), ref ident_strpos) => 
                 Ok((ident.clone(), *ident_strpos)),
             (&Token::Keyword(ref actual_kw), ref kw_strpos) if keyword_predict(actual_kw) => 
-                Ok((self.symbols.intern(format!("{}", actual_kw)), *kw_strpos)),
+                Ok((self.symbols.intern(format!("{:?}", actual_kw)), *kw_strpos)),
             _ => 
                 self.push_unexpect::<(SymbolID, Span)>("identifier"),
         }

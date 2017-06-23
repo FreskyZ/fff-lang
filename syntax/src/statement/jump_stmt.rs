@@ -10,7 +10,7 @@ use codemap::Span;
 use codemap::SymbolID;
 use lexical::Token;
 use lexical::SeperatorKind;
-use lexical::KeywordKind;
+use lexical::Keyword;
 
 use super::super::ParseSession;
 use super::super::ParseResult;
@@ -45,7 +45,7 @@ impl JumpStatement {
         }
     }
 
-    fn parse(sess: &mut ParseSession, expect_first_kw: KeywordKind) -> ParseResult<JumpStatement> {
+    fn parse(sess: &mut ParseSession, expect_first_kw: Keyword) -> ParseResult<JumpStatement> {
         assert!(sess.tk == &Token::Keyword(expect_first_kw));
 
         let starting_strpos = sess.pos;
@@ -98,22 +98,22 @@ impl BreakStatement {
 }
 
 impl ISyntaxItemGrammar for ContinueStatement {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(KeywordKind::Continue) }
+    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(Keyword::Continue) }
 }
 impl ISyntaxItemGrammar for BreakStatement {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(KeywordKind::Break) }
+    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(Keyword::Break) }
 }
 
 impl ISyntaxItemParse for ContinueStatement {
     type Target = ContinueStatement;
     fn parse(sess: &mut ParseSession) -> ParseResult<ContinueStatement> { 
-        Ok(ContinueStatement(JumpStatement::parse(sess, KeywordKind::Continue)?))
+        Ok(ContinueStatement(JumpStatement::parse(sess, Keyword::Continue)?))
     }
 }
 impl ISyntaxItemParse for BreakStatement {
     type Target = BreakStatement;
     fn parse(sess: &mut ParseSession) -> ParseResult<BreakStatement> {
-        Ok(BreakStatement(JumpStatement::parse(sess, KeywordKind::Break)?))
+        Ok(BreakStatement(JumpStatement::parse(sess, Keyword::Break)?))
     }
 }
 

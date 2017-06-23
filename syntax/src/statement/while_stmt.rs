@@ -8,7 +8,7 @@ use std::fmt;
 
 use codemap::Span;
 use lexical::Token;
-use lexical::KeywordKind;
+use lexical::Keyword;
 
 use super::super::ParseSession;
 use super::super::ParseResult;
@@ -72,7 +72,7 @@ impl WhileStatement {
 impl ISyntaxItemGrammar for WhileStatement {
     fn is_first_final(sess: &ParseSession) -> bool {
         match (sess.tk, sess.nextnext_tk) {
-            (&Token::Label(_), &Token::Keyword(KeywordKind::While)) | (&Token::Keyword(KeywordKind::While), _) => true,
+            (&Token::Label(_), &Token::Keyword(Keyword::While)) | (&Token::Keyword(Keyword::While), _) => true,
             _ => false
         }
     }
@@ -83,7 +83,7 @@ impl ISyntaxItemParse for WhileStatement {
     fn parse(sess: &mut ParseSession) -> ParseResult<WhileStatement> {
         
         let maybe_name = LabelDef::try_parse(sess)?;
-        let while_span = sess.expect_keyword(KeywordKind::While)?;
+        let while_span = sess.expect_keyword(Keyword::While)?;
         let expr = Expr::parse(sess)?;
         let body = Block::parse(sess)?;
         return Ok(WhileStatement::new(maybe_name, while_span, expr, body));

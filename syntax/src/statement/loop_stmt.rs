@@ -8,7 +8,7 @@ use std::fmt;
 
 use codemap::Span;
 use lexical::Token;
-use lexical::KeywordKind;
+use lexical::Keyword;
 
 use super::super::ParseSession;
 use super::super::ParseResult;
@@ -68,7 +68,7 @@ impl LoopStatement { // New
 impl ISyntaxItemGrammar for LoopStatement {
     fn is_first_final(sess: &ParseSession) -> bool {
         match (sess.tk, sess.nextnext_tk) {
-            (&Token::Label(_), &Token::Keyword(KeywordKind::Loop)) | (&Token::Keyword(KeywordKind::Loop), _) => true,
+            (&Token::Label(_), &Token::Keyword(Keyword::Loop)) | (&Token::Keyword(Keyword::Loop), _) => true,
             _ => false
         }
     }
@@ -79,7 +79,7 @@ impl ISyntaxItemParse for LoopStatement {
     fn parse(sess: &mut ParseSession) -> ParseResult<LoopStatement> {
 
         let maybe_name = LabelDef::try_parse(sess)?;
-        let loop_span = sess.expect_keyword(KeywordKind::Loop)?;
+        let loop_span = sess.expect_keyword(Keyword::Loop)?;
         let body = Block::parse(sess)?;
         return Ok(LoopStatement::new(maybe_name, loop_span, body));
     }

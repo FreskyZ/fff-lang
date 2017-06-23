@@ -10,7 +10,7 @@ use std::fmt;
 use codemap::Span;
 use codemap::SymbolID;
 use lexical::Token;
-use lexical::KeywordKind;
+use lexical::Keyword;
 
 use super::super::Expr;
 use super::super::Block;
@@ -86,7 +86,7 @@ impl ISyntaxItemGrammar for ForStatement {
 
     fn is_first_final(sess: &ParseSession) -> bool {
         match (sess.tk, sess.nextnext_tk) {
-            (&Token::Label(_), &Token::Keyword(KeywordKind::For)) | (&Token::Keyword(KeywordKind::For), _) => true,
+            (&Token::Label(_), &Token::Keyword(Keyword::For)) | (&Token::Keyword(Keyword::For), _) => true,
             _ => false
         }
     }
@@ -97,12 +97,12 @@ impl ISyntaxItemParse for ForStatement {
     fn parse(sess: &mut ParseSession) -> ParseResult<ForStatement> {
 
         let maybe_label = LabelDef::try_parse(sess)?;
-        let for_strpos = sess.expect_keyword(KeywordKind::For)?;
+        let for_strpos = sess.expect_keyword(Keyword::For)?;
 
         // Accept _ as iter_name, _ do not declare iter var
-        let (iter_name, iter_strpos) = sess.expect_ident_or(vec![KeywordKind::Underscore])?;
+        let (iter_name, iter_strpos) = sess.expect_ident_or(vec![Keyword::Underscore])?;
 
-        let _in_strpos = sess.expect_keyword(KeywordKind::In)?;
+        let _in_strpos = sess.expect_keyword(Keyword::In)?;
         let iter_expr = Expr::parse(sess)?;
         let body = Block::parse(sess)?;
         return Ok(ForStatement::new(maybe_label, for_strpos, iter_name, iter_strpos, iter_expr, body));

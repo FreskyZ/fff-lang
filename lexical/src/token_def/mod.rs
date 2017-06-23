@@ -9,7 +9,7 @@ mod keyword;
 mod seperator;
 mod lit_value;
 
-pub use self::keyword::KeywordKind;
+pub use self::keyword::Keyword;
 pub use self::seperator::SeperatorKind;
 pub use self::seperator::SeperatorCategory;
 pub use self::lit_value::LitValue;
@@ -23,7 +23,7 @@ pub enum Token {
     Ident(SymbolID),
     Label(SymbolID),
     Sep(SeperatorKind),
-    Keyword(KeywordKind),
+    Keyword(Keyword),
 }
 impl fmt::Debug for Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
