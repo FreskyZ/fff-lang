@@ -1,6 +1,6 @@
 ///! fff-lang
 ///!
-///! syntax, abstract syntax tree types and generation
+///! syntax, syntax tree types and generation
 
 #[macro_use] extern crate messages as message;
 #[cfg_attr(test, macro_use)] extern crate util;
@@ -15,13 +15,14 @@ mod items;
 mod parse_sess;
 mod error_strings;
 
-pub use self::items::FnParam;
-pub use self::items::FnDef;
-pub use self::items::TypeUse;
-pub use self::items::Block;
-pub use self::items::LabelDef;
-pub use self::items::NameSegment;
-pub use self::items::Name;
+pub use self::items::fn_def::FnParam;
+pub use self::items::fn_def::FnDef;
+pub use self::items::type_use::TypeUse;
+pub use self::items::block::Block;
+pub use self::items::label_def::LabelDef;
+pub use self::items::name::NameSegment;
+pub use self::items::name::Name;
+pub use self::items::type_def::TypeDef;
 pub use self::expr::LitExpr;
 pub use self::expr::IdentExpr;
 pub use self::expr::Expr;

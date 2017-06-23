@@ -37,7 +37,7 @@ impl ISyntaxItemParse for PrimaryExpr {
         if LitExpr::is_first_final(sess) {
             return LitExpr::parse(sess);
         } else if IdentExpr::is_first_final(sess) {
-            return IdentExpr::parse(sess);
+            return Ok(Expr::Ident(IdentExpr::parse(sess)?));
         } else if TupleDef::is_first_final(sess) {
             return TupleDef::parse(sess);
         } else if ArrayDef::is_first_final(sess) {

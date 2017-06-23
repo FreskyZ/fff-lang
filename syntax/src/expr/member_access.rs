@@ -72,9 +72,7 @@ impl ISyntaxItemParse for MemberAccessExpr {
     fn parse(sess: &mut ParseSession) -> ParseResult<MemberAccessExpr> {
         
         let dot_span = sess.expect_sep(SeperatorKind::Dot)?;
-        if let Expr::Ident(name) = IdentExpr::parse(sess)? {
-            return Ok(MemberAccessExpr::new_by_parse_result(dot_span, name));
-        }
-        unreachable!()
+        let name = IdentExpr::parse(sess)?;
+        Ok(MemberAccessExpr::new_by_parse_result(dot_span, name))
     }
 }

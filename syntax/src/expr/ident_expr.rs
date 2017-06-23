@@ -40,13 +40,13 @@ impl ISyntaxItemGrammar for IdentExpr {
     fn is_first_final(sess: &ParseSession) -> bool { if let &Token::Ident(_) = sess.tk { true } else { false } }
 }
 impl ISyntaxItemParse for IdentExpr {
-    type Target = Expr;
+    type Target = IdentExpr; // because many other things rely on it while they expect IdentExpr not Expr
 
-    fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {
+    fn parse(sess: &mut ParseSession) -> ParseResult<IdentExpr> {
         
         if let (&Token::Ident(ref sid), ref ident_span) = (sess.tk, sess.pos) {
             sess.move_next();
-            Ok(Expr::Ident(IdentExpr::new(*sid, *ident_span)))
+            Ok(IdentExpr::new(*sid, *ident_span))
         } else {
             sess.push_unexpect("identifier")
         }

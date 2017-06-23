@@ -1,6 +1,7 @@
 ///! fff-lang
 ///!
 ///! array_def = '[' [ expr_list ] ']'
+
 use std::fmt;
 
 use codemap::Span;
@@ -47,7 +48,7 @@ impl ISyntaxItemParse for ArrayDef {
     type Target = Expr;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {
-
+        
         match ExprList::parse(sess)? {
             ExprListParseResult::Empty(span) => {
                 return Ok(Expr::Array(ArrayDef::new(span, ExprList::new(Vec::new()))));

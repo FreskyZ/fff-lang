@@ -1,11 +1,7 @@
 ///! fff-lang
 ///! 
 ///! syntax/typeuse
-
-// TypeUse = fPrimitiveType 
-//           | fIdentifier 
-//           | fLeftBracket TypeUse fRightBracket 
-//           | fLeftParen TypeUse [[fComma Type]* | [fComma]] fRightParen 
+///! type_use = primitive_type | identifier | '[' type_use ']' | '(' type_use ',' { type_use ',' } [ type_use ] ')'
 
 // Some history, just for complain...
 // First, only primitive types and one level of array are supported, 
@@ -47,8 +43,8 @@ pub struct TypeUse {
 }
 impl ISyntaxItemFormat for TypeUse {
     fn format(&self, indent: u32) -> String {
-        format!("{}TypeUse <{:?}>\n{}{:?} <{:?}>{}", 
-            TypeUse::indent_str(indent), self.all_span,
+        format!("{}TypeUse {} <{:?}>\n{}{:?} <{:?}>{}", 
+            TypeUse::indent_str(indent), match self.params.len() { 0 => "simple", _ => "template" }, self.all_span, 
             TypeUse::indent_str(indent + 1), self.base, self.base_span,
             match self.params.len() {
                 0 => String::new(),
