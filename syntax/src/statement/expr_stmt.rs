@@ -9,7 +9,7 @@ use std::fmt;
 
 use codemap::Span;
 use lexical::Token;
-use lexical::SeperatorKind;
+use lexical::Seperator;
 use lexical::SeperatorCategory;
 
 use super::Statement;
@@ -43,7 +43,7 @@ impl SimpleExprStatement {
 pub struct AssignExprStatement {
     pub left_expr: Expr,
     pub right_expr: Expr,
-    pub assign_op: SeperatorKind,
+    pub assign_op: Seperator,
     pub assign_op_span: Span,
     pub all_span: Span,
 }
@@ -63,7 +63,7 @@ impl fmt::Debug for AssignExprStatement {
 impl AssignExprStatement {
     
     pub fn new<T1: Into<Expr>, T2: Into<Expr>>(all_span: Span, 
-        assign_op: SeperatorKind, assign_op_span: Span, left_expr: T1, right_expr: T2) -> AssignExprStatement {
+        assign_op: Seperator, assign_op_span: Span, left_expr: T1, right_expr: T2) -> AssignExprStatement {
         AssignExprStatement{
             left_expr: left_expr.into(),
             right_expr: right_expr.into(),
@@ -85,7 +85,7 @@ impl ISyntaxItemParse for AssignExprStatement {
         let left_expr = Expr::parse(sess)?;
 
         let (assign_op, assign_op_span) = match (sess.tk, sess.pos) {
-            (&Token::Sep(SeperatorKind::SemiColon), ref semicolon_span) => {
+            (&Token::Sep(Seperator::SemiColon), ref semicolon_span) => {
                 sess.move_next();
                 return Ok(Statement::SimpleExpr(SimpleExprStatement::new(starting_span.merge(semicolon_span), left_expr)));
             }
@@ -97,7 +97,7 @@ impl ISyntaxItemParse for AssignExprStatement {
         };
 
         let right_expr = Expr::parse(sess)?;
-        let semicolon_span = sess.expect_sep(SeperatorKind::SemiColon)?;
+        let semicolon_span = sess.expect_sep(Seperator::SemiColon)?;
 
         return Ok(Statement::AssignExpr(AssignExprStatement::new(
             starting_span.merge(&semicolon_span),
@@ -135,10 +135,10 @@ fn expr_stmt_parse() {
     //                                              012345678901
     assert_eq!{ AssignExprStatement::with_test_str("1 + 1 <<= 2;"),  // to show I have 3 char seperator available
         Statement::AssignExpr(AssignExprStatement::new(make_span!(0, 11),
-            SeperatorKind::ShiftLeftAssign, make_span!(6, 8),
+            Seperator::ShiftLeftAssign, make_span!(6, 8),
             BinaryExpr::new(
                 LitExpr::new(LitValue::from(1), make_span!(0, 0)),
-                SeperatorKind::Add, make_span!(2, 2),
+                Seperator::Add, make_span!(2, 2),
                 LitExpr::new(LitValue::from(1), make_span!(4, 4)),
             ),
             LitExpr::new(LitValue::from(2), make_span!(10, 10))

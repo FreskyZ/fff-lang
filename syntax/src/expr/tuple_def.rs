@@ -11,7 +11,7 @@ use codemap::Span;
 use message::Message;
 
 use lexical::Token;
-use lexical::SeperatorKind;
+use lexical::Seperator;
 use lexical::LitValue;
 
 use super::Expr;
@@ -69,7 +69,7 @@ impl TupleDef {
     pub fn new(paren_span: Span, items: ExprList) -> TupleDef { TupleDef{ paren_span, items } }
 }
 impl ISyntaxItemGrammar for TupleDef {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Sep(SeperatorKind::LeftParenthenes) }
+    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Sep(Seperator::LeftParenthenes) }
 }
 impl ISyntaxItemParse for TupleDef {
     type Target = Expr;
@@ -135,7 +135,7 @@ fn tuple_def_parse() {
         Expr::Paren(ParenExpr::new(make_span!(0, 6), 
             BinaryExpr::new(
                 LitExpr::new(LitValue::from(1), make_span!(1, 1)), 
-                SeperatorKind::Add, make_span!(3, 3),
+                Seperator::Add, make_span!(3, 3),
                 LitExpr::new(LitValue::from(1), make_span!(5, 5)),
             )
         ))

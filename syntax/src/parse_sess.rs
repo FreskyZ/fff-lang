@@ -12,7 +12,7 @@ use message::Message;
 use message::MessageCollection;
 use lexical::Token;
 use lexical::TokenStream;
-use lexical::SeperatorKind;
+use lexical::Seperator;
 use lexical::Keyword;
 
 pub type ParseResult<T> = Result<T, ()>;
@@ -83,15 +83,15 @@ impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
     }
     /// Check current index is seperator, if so, move next and Ok(seperator_strpos),
     /// if not, push unexpect and Err(())
-    /// use like `let sep_strpos = sess.expect_sep(SeperatorKind::Comma)?;`
-    pub fn expect_sep(&mut self, expect_sep: SeperatorKind) -> Result<Span, ()> {
+    /// use like `let sep_strpos = sess.expect_sep(Seperator::Comma)?;`
+    pub fn expect_sep(&mut self, expect_sep: Seperator) -> Result<Span, ()> {
 
         let current_index = self.current_index.get();
         self.move_next();
         match (self.tokens.nth_token(current_index), self.tokens.nth_span(current_index)) {
             (&Token::Sep(ref actual_sep), ref sep_strpos) if actual_sep == &expect_sep => Ok(*sep_strpos),
-            (&Token::Sep(_), _) => self.push_unexpect::<Span>(&format!("{}", expect_sep)),
-            _ => self.push_unexpect::<Span>(&format!("{}", expect_sep)),
+            (&Token::Sep(_), _) => self.push_unexpect::<Span>(&format!("{:?}", expect_sep)),
+            _ => self.push_unexpect::<Span>(&format!("{:?}", expect_sep)),
         }
     }
     /// Check current index is identifier, if so, move next and Ok((owned_ident_name, ident_strpos)),

@@ -7,7 +7,7 @@ use std::fmt;
 
 use codemap::Span;
 use lexical::Token;
-use lexical::SeperatorKind;
+use lexical::Seperator;
 use lexical::Keyword;
 
 use super::super::Expr;
@@ -52,7 +52,7 @@ impl ISyntaxItemParse for ReturnStatement {
 
         let return_strpos = sess.expect_keyword(Keyword::Return)?;
 
-        if sess.tk == &Token::Sep(SeperatorKind::SemiColon) {
+        if sess.tk == &Token::Sep(Seperator::SemiColon) {
             // 17/6/17: you forgot move_next here!
             // but I have never write some test cases like following something after ret stmt
             // so the bug is not propagated to be discovered
@@ -62,7 +62,7 @@ impl ISyntaxItemParse for ReturnStatement {
         }
 
         let expr = Expr::parse(sess)?;
-        let ending_strpos = sess.expect_sep(SeperatorKind::SemiColon)?;
+        let ending_strpos = sess.expect_sep(Seperator::SemiColon)?;
 
         return Ok(ReturnStatement::new_expr(return_strpos.merge(&ending_strpos), expr));
     }
@@ -71,7 +71,7 @@ impl ISyntaxItemParse for ReturnStatement {
 #[cfg(test)] #[test]
 fn ret_stmt_parse() {
     use lexical::LitValue;
-    use lexical::SeperatorKind;
+    use lexical::Seperator;
     use super::super::LitExpr;
     use super::super::BinaryExpr;
     use super::super::ISyntaxItemWithStr;
@@ -82,7 +82,7 @@ fn ret_stmt_parse() {
             make_span!(0, 12), 
             Expr::Binary(BinaryExpr::new(
                 Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(7, 7))),
-                SeperatorKind::Add, make_span!(9, 9),
+                Seperator::Add, make_span!(9, 9),
                 Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(11, 11))),
             ))
         )

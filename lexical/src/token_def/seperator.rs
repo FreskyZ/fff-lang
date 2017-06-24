@@ -2,222 +2,158 @@
 ///!
 ///! lexical/seperator
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
-pub enum SeperatorCategory {
-    Assign,     // =, +=, -=, *=, /=, %=, &=, ^=, |=
-    Unary,      // ++, --, -, !, ~
-    Multiplicative,  // *, /, %
-    Additive,   // +, -
-    Shift,      // >>, <<
-    Relational, // <, >, <=, >=
-    BitAnd,     // &
-    BitXor,     // ^
-    BitOr,      // |
-    Equality,   // ==, !=
-    LogicalAnd, // &&
-    LogicalOr,  // ||
-    Seperator,  // [], (), {}, ,, ;, ->
+#[allow(non_snake_case)]
+#[allow(non_upper_case_globals)]
+pub mod SeperatorCategory {
+    pub const         Assign: u16 = 0x0001; // =, +=, -=, *=, /=, %=, &=, ^=, |=
+    pub const          Unary: u16 = 0x0002; // -, !, ~
+    pub const Multiplicative: u16 = 0x0004; // *, /, %
+    pub const       Additive: u16 = 0x0008; // +, -
+    pub const          Shift: u16 = 0x0010; // >>, <<
+    pub const     Relational: u16 = 0x0020; // <, >, <=, >=
+    pub const         BitAnd: u16 = 0x0040; // &
+    pub const         BitXor: u16 = 0x0080; // ^
+    pub const          BitOr: u16 = 0x0100; // |
+    pub const       Equality: u16 = 0x0200; // ==, !=
+    pub const     LogicalAnd: u16 = 0x0400; // &&
+    pub const      LogicalOr: u16 = 0x0800; // ||
+    pub const      Seperator: u16 = 0x1000; // [], (), {}, ,, ;, ->
 }
+use self::SeperatorCategory as cat;
 
-macro_rules! define_seperator {
+macro_rules! define_seperator2 {
     (
-        $enum_name: ident,
-        [
-            $($ch1: expr => $name1: ident, $category1: expr,)*
-        ]
-        [
-            $($ch21: expr, $ch22: expr => $name2: ident, $category2: expr,)*
-        ]
-        [
-            $($ch31: expr, $ch32: expr, $ch33: expr => $name3: ident, $category3: expr, )*
-        ]
-        [
-            $($ch4: expr => $name4: ident, $category41: expr, $category42: expr, )*   // for multiple category...
-        ]
+        $sep_type_name: ident,
+        len1:
+            $($value1: expr => $name1: ident, $cat1: expr),*;
+        len2:
+            $($value2: expr => $name2: ident, $cat2: expr),*;
+        len3: 
+            $($value3: expr => $name3: ident, $cat3: expr),*;
     ) => (
-        #[derive(Copy, Clone, Eq, PartialEq)]
-        pub enum $enum_name {
-            $(
-                $name1, 
-            )*
-            $(
-                $name2,
-            )*
-            $(
-                $name3,
-            )*
-            $(
-                $name4,
-            )*
+
+        #[derive(Eq, PartialEq, Copy, Clone)]
+        pub enum $sep_type_name {
+            $($name1,)*
+            $($name2,)*
+            $($name3,)*
         }
 
-        use std::fmt;
-        impl fmt::Debug for $enum_name {
-            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result{
-                match *self {
-                    $(
-                        $enum_name::$name1 => write!(f, "`{}`({})", $ch1, stringify!($name1)),
-                    )*
-                    $(
-                        $enum_name::$name2 => write!(f, "`{}{}`({})", $ch21, $ch22, stringify!($name2)),
-                    )*
-                    $(
-                        $enum_name::$name3 => write!(f, "`{}{}{}`({})", $ch31, $ch32, $ch33, stringify!($name3)),
-                    )*
-                    $(
-                        $enum_name::$name4 => write!(f, "`{}`({})", $ch4, stringify!($name4)),
-                    )*
+        struct SepInfo { value: &'static [u8], cat: u16 }
+        const SEP_TO_INFO: &[SepInfo] = &[
+            $(SepInfo{ value: $value1, cat: $cat1 },)*
+            $(SepInfo{ value: $value2, cat: $cat2 },)*
+            $(SepInfo{ value: $value3, cat: $cat3 },)*
+        ];
+
+        impl ::std::fmt::Debug for $sep_type_name {
+            fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+                unsafe {
+                    write!(f, "{}", 
+                        ::std::mem::transmute::<&[u8], &str>(
+                            SEP_TO_INFO[::std::mem::transmute_copy::<$sep_type_name, u8>(self) as usize].value
+                        )
+                    )
                 }
             }
         }
-        impl fmt::Display for $enum_name {
-            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result{
-                match *self {
-                    $(
-                        $enum_name::$name1 => write!(f, "{}", $ch1),
-                    )*
-                    $(
-                        $enum_name::$name2 => write!(f, "{}{}", $ch21, $ch22),
-                    )*
-                    $(
-                        $enum_name::$name3 => write!(f, "{}{}{}", $ch32, $ch32, $ch33),
-                    )*
-                    $(
-                        $enum_name::$name4 => write!(f, "{}", $ch4),
-                    )*
-                }
-            }
-        }
+        impl $sep_type_name {
 
-        impl $enum_name {
-            pub fn try_from1(ch: char) -> Option<($enum_name, usize)> {
-                match ch {
-                    $(
-                        $ch1 => Some(($enum_name::$name1, 1)),
-                    )*
-                    $(
-                        $ch4 => Some(($enum_name::$name4, 1)),
-                    )*
+            pub fn parse1(ch: char) -> Option<$sep_type_name> {
+                match &[ch as u8] {
+                    $($value1 => Some($sep_type_name::$name1),)*
                     _ => None,
                 }
             }
-
-            pub fn try_from2(ch1: char, ch2: char) -> Option<($enum_name, usize)> {
-                match (ch1, ch2) {
-                    $(
-                        ($ch21, $ch22) => Some(($enum_name::$name2, 2)),
-                    )*
-                    (ch, _) => $enum_name::try_from1(ch),
+            pub fn parse3(ch1: char, ch2: char, ch3: char) -> Option<($sep_type_name, usize)> {
+                let (ch1, ch2, ch3) = (ch1 as u8, ch2 as u8, ch3 as u8);
+                match &[ch1, ch2, ch3] {
+                    $($value3 => Some(($sep_type_name::$name3, 3)),)*
+                    _ => match &[ch1, ch2] {
+                        $($value2 => Some(($sep_type_name::$name2, 2)),)*
+                        _ => match &[ch1] {
+                            $($value1 => Some(($sep_type_name::$name1, 1)),)*
+                            _ => None,
+                        }
+                    }
                 }
             }
 
-            pub fn try_from3(ch1: char, ch2: char, ch3: char) -> Option<($enum_name, usize)> {
-                match (ch1, ch2, ch3) {
-                    $(
-                        ($ch31, $ch32, $ch33) => Some(($enum_name::$name3, 3)),
-                    )*
-                    (ch1, ch2, _) => $enum_name::try_from2(ch1, ch2),
-                }
-            }
-        }
-
-        impl $enum_name {
-            pub fn len(&self) -> usize {
-                match *self {
-                    $(
-                        $enum_name::$name1 => 1,
-                    )*
-                    $(
-                        $enum_name::$name2 => 2,
-                    )*
-                    $(
-                        $enum_name::$name3 => 3,
-                    )*
-                    $(
-                        $enum_name::$name4 => 1,
-                    )*
-                }
-            }
-
-            pub fn is_category(&self, expect: SeperatorCategory) -> bool {
-                match *self {
-                    $(
-                        $enum_name::$name1 => $category1 == expect,
-                    )*
-                    $(
-                        $enum_name::$name2 => $category2 == expect,
-                    )*
-                    $(
-                        $enum_name::$name3 => $category3 == expect,
-                    )*
-                    $(
-                        $enum_name::$name4 => $category41 == expect || $category42 == expect, 
-                    )*
+            pub fn is_category(&self, cat: u16) -> bool {
+                unsafe {
+                    (SEP_TO_INFO[::std::mem::transmute_copy::<$sep_type_name, u8>(self) as usize].cat & cat) == cat
                 }
             }
         }
-    );
+    )
 }
 
-define_seperator!{ SeperatorKind,
-    [
-    //  ch  => var,                 category,
-        '=' => Assign,              SeperatorCategory::Assign,
-        '+' => Add,                 SeperatorCategory::Additive,
-        '*' => Mul,                 SeperatorCategory::Multiplicative,
-        '/' => Div,                 SeperatorCategory::Multiplicative,
-        '%' => Rem,                 SeperatorCategory::Multiplicative,
-        '~' => BitNot,              SeperatorCategory::Unary,
-        '&' => BitAnd,              SeperatorCategory::BitAnd,
-        '|' => BitOr,               SeperatorCategory::BitOr,
-        '^' => BitXor,              SeperatorCategory::BitXor,
-        '!' => LogicalNot,          SeperatorCategory::Unary,
-        '<' => Less,                SeperatorCategory::Relational,
-        '>' => Great,               SeperatorCategory::Relational,
-        '(' => LeftParenthenes,     SeperatorCategory::Seperator,
-        ')' => RightParenthenes,    SeperatorCategory::Seperator,
-        '[' => LeftBracket,         SeperatorCategory::Seperator,
-        ']' => RightBracket,        SeperatorCategory::Seperator,
-        '{' => LeftBrace,           SeperatorCategory::Seperator,
-        '}' => RightBrace,          SeperatorCategory::Seperator,
-        ',' => Comma,               SeperatorCategory::Seperator,
-        ':' => Colon,               SeperatorCategory::Seperator,           
-        ';' => SemiColon,           SeperatorCategory::Seperator,
-        '.' => Dot,                 SeperatorCategory::Seperator,
-        // '#' => AttributeSign,    SeperatorCategory::Seperator,
-    ]
-    [
-    //  ch1, ch2 => var,                    categray,
-        '=', '=' => Equal,                  SeperatorCategory::Equality,
-        '+', '=' => AddAssign,              SeperatorCategory::Assign,
-        '-', '=' => SubAssign,              SeperatorCategory::Assign,
-        '*', '=' => MulAssign,              SeperatorCategory::Assign,
-        '/', '=' => DivAssign,              SeperatorCategory::Assign,
-        '%', '=' => RemAssign,              SeperatorCategory::Assign,
-        '&', '=' => BitAndAssign,           SeperatorCategory::Assign,
-        '|', '=' => BitOrAssign,            SeperatorCategory::Assign,
-        '^', '=' => BitXorAssign,           SeperatorCategory::Assign,
-        '>', '>' => ShiftRight,             SeperatorCategory::Shift,
-        '<', '<' => ShiftLeft,              SeperatorCategory::Shift,
-        '&', '&' => LogicalAnd,             SeperatorCategory::LogicalAnd,
-        '|', '|' => LogicalOr,              SeperatorCategory::LogicalOr,
-        '<', '=' => LessEqual,              SeperatorCategory::Relational,
-        '>', '=' => GreatEqual,             SeperatorCategory::Relational,
-        '!', '=' => NotEqual,               SeperatorCategory::Equality,
-        '-', '>' => NarrowRightArrow,       SeperatorCategory::Seperator,
-        '.', '.' => Range,                  SeperatorCategory::Seperator,
-        // '+', '+' => Increase,               SeperatorCategory::Unary,  // removed, goodbye
-        // '-', '-' => Decrease,               SeperatorCategory::Unary,  // removed, goodbye
-        // '=', '>' => WideRightArrow,      SeperatorCategory::Seperator,
-        ':', ':' => NamespaceSeperator,     SeperatorCategory::Seperator,
-    ]
-    [
-    //  ch1, ch2, ch3 => var,               category
-        '>', '>', '=' => ShiftRightAssign,  SeperatorCategory::Assign,
-        '<', '<', '=' => ShiftLeftAssign,   SeperatorCategory::Assign,
-    ]
-    [
-    //  ch,    var,                 category1,                      category2
-        '-' => Sub,                 SeperatorCategory::Additive,    SeperatorCategory::Unary, 
-    ]
+define_seperator2! {
+    Seperator,
+    len1:
+        b"="   =>            Assign, cat::Assign,
+        b"+"   =>               Add, cat::Additive,
+        b"-"   =>               Sub, cat::Additive | cat::Unary, 
+        b"*"   =>               Mul, cat::Multiplicative,
+        b"/"   =>               Div, cat::Multiplicative,
+        b"%"   =>               Rem, cat::Multiplicative,
+        b"~"   =>            BitNot, cat::Unary,
+        b"&"   =>            BitAnd, cat::BitAnd,
+        b"|"   =>             BitOr, cat::BitOr,
+        b"^"   =>            BitXor, cat::BitXor,
+        b"!"   =>        LogicalNot, cat::Unary,
+        b"<"   =>              Less, cat::Relational,
+        b">"   =>             Great, cat::Relational,
+        b"("   =>   LeftParenthenes, cat::Seperator,
+        b")"   =>  RightParenthenes, cat::Seperator,
+        b"["   =>       LeftBracket, cat::Seperator,
+        b"]"   =>      RightBracket, cat::Seperator,
+        b"{"   =>         LeftBrace, cat::Seperator,
+        b"}"   =>        RightBrace, cat::Seperator,
+        b","   =>             Comma, cat::Seperator,
+        b":"   =>             Colon, cat::Seperator,           
+        b";"   =>         SemiColon, cat::Seperator,
+        b"."   =>               Dot, cat::Seperator;
+    len2:
+        b"=="  =>              Equal, cat::Equality,
+        b"+="  =>          AddAssign, cat::Assign,
+        b"-="  =>          SubAssign, cat::Assign,
+        b"*="  =>          MulAssign, cat::Assign,
+        b"/="  =>          DivAssign, cat::Assign,
+        b"%="  =>          RemAssign, cat::Assign,
+        b"&="  =>       BitAndAssign, cat::Assign,
+        b"|="  =>        BitOrAssign, cat::Assign,
+        b"^="  =>       BitXorAssign, cat::Assign,
+        b">>"  =>         ShiftRight, cat::Shift,
+        b"<<"  =>          ShiftLeft, cat::Shift,
+        b"&&"  =>         LogicalAnd, cat::LogicalAnd,
+        b"||"  =>          LogicalOr, cat::LogicalOr,
+        b"<="  =>          LessEqual, cat::Relational,
+        b">="  =>         GreatEqual, cat::Relational,
+        b"!="  =>           NotEqual, cat::Equality,
+        b"->"  =>   NarrowRightArrow, cat::Seperator,
+        b".."  =>              Range, cat::Seperator,
+        b"::"  => NamespaceSeperator, cat::Seperator;
+    len3:
+        b">>=" =>   ShiftRightAssign, cat::Assign,
+        b"<<=" =>    ShiftLeftAssign, cat::Assign;
+    // future:
+        // b"#"   =>   AttributeSign, cat::Seperator,
+        // b"=>"  =>  WideRightArrow, cat::Seperator,
+}
+
+#[cfg(to_satisfy_stupid_racer_or_rls)] pub enum Seperator { LeftParenthenes, RightParenthenes, LeftBracket, RightBracket, LeftBrace, RightBrace }
+
+#[cfg(test)] #[test]
+fn seperator_use() {
+
+    assert_eq!{ Seperator::parse3('<', '<', '='), Some((Seperator::ShiftLeftAssign, 3)) }
+    assert_eq!{ Seperator::parse3('+', ' ', '1'), Some((Seperator::Add, 1)) }
+    assert_eq!{ Seperator::parse3('{', ' ', 'a'), Some((Seperator::LeftBrace, 1)) }
+    assert_eq!{ Seperator::parse3('&', '&', ' '), Some((Seperator::LogicalAnd, 2)) }
+
+    assert_eq!{ Seperator::Add.is_category(SeperatorCategory::Additive), true }
+    assert_eq!{ Seperator::Sub.is_category(SeperatorCategory::Additive), true }
+    assert_eq!{ Seperator::Sub.is_category(SeperatorCategory::Unary), true }
+    assert_eq!{ Seperator::LeftBrace.is_category(SeperatorCategory::Seperator), true }
 }

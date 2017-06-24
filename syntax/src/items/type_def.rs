@@ -12,7 +12,7 @@ use std::fmt;
 use codemap::Span;
 use lexical::Token;
 use lexical::Keyword;
-use lexical::SeperatorKind;
+use lexical::Seperator;
 
 use super::super::TypeUse;
 use super::super::IdentExpr;
@@ -74,20 +74,20 @@ impl ISyntaxItemParse for TypeDef {
 
         let starting_span = sess.expect_keyword(Keyword::Type)?;
         let name = IdentExpr::parse(sess)?;
-        let _left_brace_span = sess.expect_sep(SeperatorKind::LeftBrace)?;
+        let _left_brace_span = sess.expect_sep(Seperator::LeftBrace)?;
 
         let mut fields = Vec::new();
         let right_brace_span: Span;
         loop {
-            if let (&Token::Sep(SeperatorKind::RightBrace), span) = (sess.tk, sess.pos) {
+            if let (&Token::Sep(Seperator::RightBrace), span) = (sess.tk, sess.pos) {
                 right_brace_span = span;
                 break;
             }
 
             let field_name = IdentExpr::parse(sess)?;
-            let colon_span = sess.expect_sep(SeperatorKind::Colon)?;
+            let colon_span = sess.expect_sep(Seperator::Colon)?;
             let field_type = TypeUse::parse(sess)?;
-            fields.push(if let (&Token::Sep(SeperatorKind::Comma), ref comma_span) = (sess.tk, sess.pos) {
+            fields.push(if let (&Token::Sep(Seperator::Comma), ref comma_span) = (sess.tk, sess.pos) {
                 sess.move_next();
                 TypeFieldDef::new(field_name.span.merge(comma_span), field_name, colon_span, field_type)
             } else {

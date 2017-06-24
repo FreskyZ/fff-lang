@@ -9,7 +9,7 @@ use std::fmt;
 use codemap::Span;
 use codemap::SymbolID;
 use lexical::Token;
-use lexical::SeperatorKind;
+use lexical::Seperator;
 use lexical::Keyword;
 
 use super::super::ParseSession;
@@ -52,9 +52,9 @@ impl JumpStatement {
         sess.move_next();
         match (sess.tk, sess.pos, sess.next_tk, sess.next_pos) {
             (&Token::Label(ref target), target_strpos, 
-                &Token::Sep(SeperatorKind::SemiColon), ref semi_colon_strpos) => 
+                &Token::Sep(Seperator::SemiColon), ref semi_colon_strpos) => 
                 Ok(JumpStatement::new_target(starting_strpos.merge(semi_colon_strpos), *target, target_strpos)),
-            (&Token::Sep(SeperatorKind::SemiColon), ref semi_colon_strpos, _, _) => 
+            (&Token::Sep(Seperator::SemiColon), ref semi_colon_strpos, _, _) => 
                 Ok(JumpStatement::new_no_target(starting_strpos.merge(semi_colon_strpos))),
             (&Token::Label(_), _, _, _) =>
                 sess.push_unexpect("semicolon"),

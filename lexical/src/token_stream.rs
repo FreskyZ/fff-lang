@@ -108,7 +108,7 @@ impl<'a> Iterator for TokenStreamIter<'a> {
 #[cfg(test)] #[test]
 fn v4_base() { // remain the name of v4 here for memory
     use super::LitValue;
-    use super::SeperatorKind;
+    use super::Seperator;
 
     // numeric, 123, 1:1-1:3
     // identifier, abc, 1:5-1:7
@@ -130,16 +130,16 @@ fn v4_base() { // remain the name of v4 here for memory
     assert_eq!(tokens.nth_token(2), &Token::Lit(LitValue::from('d')));
     assert_eq!(tokens.nth_span(2), make_span!(8, 10));
 
-    assert_eq!(tokens.nth_token(3), &Token::Sep(SeperatorKind::Comma));
+    assert_eq!(tokens.nth_token(3), &Token::Sep(Seperator::Comma));
     assert_eq!(tokens.nth_span(3), make_span!(11, 11));
 
-    assert_eq!(tokens.nth_token(4), &Token::Sep(SeperatorKind::LeftBracket));
+    assert_eq!(tokens.nth_token(4), &Token::Sep(Seperator::LeftBracket));
     assert_eq!(tokens.nth_span(4), make_span!(13, 13));
 
     assert_eq!(tokens.nth_token(5), &Token::Lit(LitValue::from(1)));
     assert_eq!(tokens.nth_span(5), make_span!(14, 14));
 
-    assert_eq!(tokens.nth_token(6), &Token::Sep(SeperatorKind::RightBracket));
+    assert_eq!(tokens.nth_token(6), &Token::Sep(Seperator::RightBracket));
     assert_eq!(tokens.nth_span(6), make_span!(15, 15));
 
     assert_eq!(tokens.nth_token(7), &Token::EOF);

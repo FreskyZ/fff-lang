@@ -10,7 +10,7 @@ mod seperator;
 mod lit_value;
 
 pub use self::keyword::Keyword;
-pub use self::seperator::SeperatorKind;
+pub use self::seperator::Seperator;
 pub use self::seperator::SeperatorCategory;
 pub use self::lit_value::LitValue;
 pub use self::lit_value::NumLitValue;
@@ -22,7 +22,7 @@ pub enum Token {
     Lit(LitValue),
     Ident(SymbolID),
     Label(SymbolID),
-    Sep(SeperatorKind),
+    Sep(Seperator),
     Keyword(Keyword),
 }
 impl fmt::Debug for Token {

@@ -120,7 +120,7 @@ fn expr_parse() {
     use codemap::Span;
     use codemap::SymbolCollection;
     use lexical::LitValue;
-    use lexical::SeperatorKind;
+    use lexical::Seperator;
     use super::ISyntaxItemWithStr;
 
     assert_eq!{ Expr::with_test_str("\"abc\""),
@@ -333,11 +333,11 @@ fn expr_parse() {
 
     assert_eq!{ Expr::with_test_str("!~!1[1]"),
         Expr::Unary(UnaryExpr::new(
-            SeperatorKind::LogicalNot, make_span!(0, 0),
+            Seperator::LogicalNot, make_span!(0, 0),
             UnaryExpr::new(
-                SeperatorKind::BitNot, make_span!(1, 1),
+                Seperator::BitNot, make_span!(1, 1),
                 UnaryExpr::new(
-                    SeperatorKind::LogicalNot, make_span!(2, 2),
+                    Seperator::LogicalNot, make_span!(2, 2),
                     IndexCallExpr::new(
                         LitExpr::new(LitValue::from(1), make_span!(3, 3)),
                         make_span!(4, 6), make_exprs![
@@ -353,9 +353,9 @@ fn expr_parse() {
     //           1234567
     assert_eq!{ Expr::with_test_str("!!1"),
         Expr::Unary(UnaryExpr::new(
-            SeperatorKind::LogicalNot, make_span!(0, 0), 
+            Seperator::LogicalNot, make_span!(0, 0), 
             UnaryExpr::new(
-                SeperatorKind::LogicalNot, make_span!(1, 1),
+                Seperator::LogicalNot, make_span!(1, 1),
                 LitExpr::new(LitValue::from(1), make_span!(2, 2))
             )
         ))

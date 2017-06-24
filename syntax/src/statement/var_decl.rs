@@ -11,7 +11,7 @@ use codemap::SymbolID;
 use message::Message;
 use lexical::Token;
 use lexical::Keyword;
-use lexical::SeperatorKind;
+use lexical::Seperator;
 
 use super::super::ParseSession;
 use super::super::ParseResult;
@@ -78,15 +78,15 @@ impl ISyntaxItemParse for VarDeclStatement {
         sess.move_next();
 
         let (name, name_strpos) = sess.expect_ident_or(vec![Keyword::Underscore])?;
-        let maybe_decltype = if sess.tk == &Token::Sep(SeperatorKind::Colon) { sess.move_next(); Some(TypeUse::parse(sess)?) } else { None };
-        let maybe_init_expr = if sess.tk == &Token::Sep(SeperatorKind::Assign) { sess.move_next(); Some(Expr::parse(sess)?) } else { None };
+        let maybe_decltype = if sess.tk == &Token::Sep(Seperator::Colon) { sess.move_next(); Some(TypeUse::parse(sess)?) } else { None };
+        let maybe_init_expr = if sess.tk == &Token::Sep(Seperator::Assign) { sess.move_next(); Some(Expr::parse(sess)?) } else { None };
         if maybe_decltype.is_none() && maybe_init_expr.is_none() {
             sess.push_message(Message::with_help_by_str("require type annotation", 
                 vec![(name_strpos, "variable declaration here")],
                 vec!["cannot infer type without both type annotation and initialization expression"]
             ));
         }
-        let ending_strpos = sess.expect_sep(SeperatorKind::SemiColon)?;
+        let ending_strpos = sess.expect_sep(Seperator::SemiColon)?;
 
         let all_strpos = starting_strpos.merge(&ending_strpos);
         return Ok(VarDeclStatement::new(all_strpos, is_const, name, name_strpos, maybe_decltype, maybe_init_expr));

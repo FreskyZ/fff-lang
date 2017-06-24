@@ -7,7 +7,7 @@ use std::fmt;
 
 use codemap::Span;
 use lexical::Token;
-use lexical::SeperatorKind;
+use lexical::Seperator;
 use lexical::SeperatorCategory;
 
 use super::PostfixExpr;
@@ -22,13 +22,13 @@ use super::super::ISyntaxItemGrammar;
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct UnaryExpr {
     pub base: Box<Expr>, 
-    pub operator: SeperatorKind, 
+    pub operator: Seperator, 
     pub operator_span: Span,
     pub all_span: Span,
 }
 impl ISyntaxItemFormat for UnaryExpr {
     fn format(&self, indent: u32) -> String {
-        format!("{}UnaryExpr <{:?}>\n{}{} <{:?}>\n{}", 
+        format!("{}UnaryExpr <{:?}>\n{}{:?} <{:?}>\n{}", 
             UnaryExpr::indent_str(indent), self.all_span,
             UnaryExpr::indent_str(indent + 1), self.operator, self.operator_span,
             self.base.format(indent + 1),
@@ -43,7 +43,7 @@ impl From<UnaryExpr> for Expr {
 }
 impl UnaryExpr {
 
-    pub fn new<T: Into<Expr>>(operator: SeperatorKind, operator_span: Span, base: T) -> UnaryExpr {
+    pub fn new<T: Into<Expr>>(operator: Seperator, operator_span: Span, base: T) -> UnaryExpr {
         let base = base.into();
         UnaryExpr{
             all_span: operator_span.merge(&base.get_all_span()),
@@ -93,11 +93,11 @@ fn unary_expr_parse() {
 
     assert_eq!{ UnaryExpr::with_test_str("!~!1"),
         Expr::Unary(UnaryExpr::new(
-            SeperatorKind::LogicalNot, make_span!(0, 0),
+            Seperator::LogicalNot, make_span!(0, 0),
             Expr::Unary(UnaryExpr::new(
-                SeperatorKind::BitNot, make_span!(1, 1),            
+                Seperator::BitNot, make_span!(1, 1),            
                 Expr::Unary(UnaryExpr::new(
-                    SeperatorKind::LogicalNot, make_span!(2, 2),
+                    Seperator::LogicalNot, make_span!(2, 2),
                     Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(3, 3))),
                 ))
             ))

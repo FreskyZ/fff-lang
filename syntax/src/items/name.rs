@@ -9,7 +9,7 @@ use std::fmt;
 use codemap::Span;
 use codemap::SymbolID;
 use lexical::Token;
-use lexical::SeperatorKind;
+use lexical::Seperator;
 
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -63,7 +63,7 @@ impl ISyntaxItemParse for Name {
         let mut ending_span = first_ident_span;
 
         loop {
-            if let &Token::Sep(SeperatorKind::NamespaceSeperator) = sess.tk {
+            if let &Token::Sep(Seperator::NamespaceSeperator) = sess.tk {
                 sess.move_next();
                 let (ident, ident_span) = sess.expect_ident()?;
                 segments.push(NameSegment::new(ident, ident_span));

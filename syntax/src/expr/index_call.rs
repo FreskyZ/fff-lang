@@ -9,7 +9,7 @@ use std::fmt;
 use codemap::Span;
 use message::Message;
 use lexical::Token;
-use lexical::SeperatorKind;
+use lexical::Seperator;
 
 use super::Expr;
 use super::ExprList;
@@ -65,7 +65,7 @@ impl IndexCallExpr {
     }
 }
 impl ISyntaxItemGrammar for IndexCallExpr {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Sep(SeperatorKind::LeftBracket) }
+    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Sep(Seperator::LeftBracket) }
 }
 impl ISyntaxItemParse for IndexCallExpr {
     type Target = IndexCallExpr;

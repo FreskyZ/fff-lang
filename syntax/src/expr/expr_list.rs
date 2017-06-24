@@ -7,7 +7,7 @@ use std::fmt;
 
 use codemap::Span;
 use lexical::Token;
-use lexical::SeperatorKind;
+use lexical::Seperator;
 
 use super::Expr;
 
@@ -35,9 +35,9 @@ impl ExprList {
 impl ISyntaxItemGrammar for ExprList {
     fn is_first_final(sess: &ParseSession) -> bool {
         match sess.tk {
-            &Token::Sep(SeperatorKind::LeftBrace)
-            | &Token::Sep(SeperatorKind::LeftBracket) 
-            | &Token::Sep(SeperatorKind::LeftParenthenes) => true,
+            &Token::Sep(Seperator::LeftBrace)
+            | &Token::Sep(Seperator::LeftBracket) 
+            | &Token::Sep(Seperator::LeftParenthenes) => true,
             _ => false,
         }
     }
@@ -58,9 +58,9 @@ impl ISyntaxItemParse for ExprList {
     fn parse(sess: &mut ParseSession) -> ParseResult<ExprListParseResult> {
 
         let (expect_end_token, starting_quote_span) = match (sess.tk, sess.pos) {
-            (&Token::Sep(SeperatorKind::LeftParenthenes), left_paren_span) => (Token::Sep(SeperatorKind::RightParenthenes), left_paren_span),
-            (&Token::Sep(SeperatorKind::LeftBracket), left_bracket_span) => (Token::Sep(SeperatorKind::RightBracket), left_bracket_span),
-            (&Token::Sep(SeperatorKind::LeftBrace), left_brace_span) => (Token::Sep(SeperatorKind::RightBrace), left_brace_span),
+            (&Token::Sep(Seperator::LeftParenthenes), left_paren_span) => (Token::Sep(Seperator::RightParenthenes), left_paren_span),
+            (&Token::Sep(Seperator::LeftBracket), left_bracket_span) => (Token::Sep(Seperator::RightBracket), left_bracket_span),
+            (&Token::Sep(Seperator::LeftBrace), left_brace_span) => (Token::Sep(Seperator::RightBrace), left_brace_span),
             _ => return sess.push_unexpect("left paired token"),
         };
         sess.move_next();
@@ -70,7 +70,7 @@ impl ISyntaxItemParse for ExprList {
             sess.move_next();
             return Ok(ExprListParseResult::Empty(starting_quote_span.merge(&ending_span)));
         }
-        if let (&Token::Sep(SeperatorKind::Comma), next_tk, next_span) = (sess.tk, sess.next_tk, sess.next_pos) {
+        if let (&Token::Sep(Seperator::Comma), next_tk, next_span) = (sess.tk, sess.next_tk, sess.next_pos) {
             if next_tk == &expect_end_token {
                 sess.move_next2();
                 return Ok(ExprListParseResult::SingleComma(starting_quote_span.merge(&next_span)));
@@ -82,7 +82,7 @@ impl ISyntaxItemParse for ExprList {
             items.push(Expr::parse(sess)?);
             
             match (sess.tk, sess.pos, sess.next_tk, sess.next_pos) {
-                (&Token::Sep(SeperatorKind::Comma), _, next_token, next_span) if next_token == &expect_end_token => {
+                (&Token::Sep(Seperator::Comma), _, next_token, next_span) if next_token == &expect_end_token => {
                     sess.move_next2();
                     return Ok(ExprListParseResult::EndWithComma(starting_quote_span.merge(&next_span), ExprList::new(items)));
                 }
@@ -90,7 +90,7 @@ impl ISyntaxItemParse for ExprList {
                     sess.move_next();
                     return Ok(ExprListParseResult::Normal(starting_quote_span.merge(&right_span), ExprList::new(items)));
                 }
-                (&Token::Sep(SeperatorKind::Comma), _, _, _) => { 
+                (&Token::Sep(Seperator::Comma), _, _, _) => { 
                     sess.move_next(); 
                     continue; 
                 }

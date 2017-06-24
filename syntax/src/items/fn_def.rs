@@ -10,7 +10,7 @@ use codemap::SymbolID;
 use message::Message;
 use lexical::Token;
 use lexical::Keyword;
-use lexical::SeperatorKind;
+use lexical::Seperator;
 
 use super::super::ParseSession;
 use super::super::ParseResult;
@@ -85,14 +85,14 @@ impl ISyntaxItemParse for FnDef {
         
         let fn_strpos = sess.expect_keyword(Keyword::Fn)?;
         let (fn_name, fn_name_strpos) = sess.expect_ident()?;
-        let mut params_paren_strpos = sess.expect_sep(SeperatorKind::LeftParenthenes)?;
+        let mut params_paren_strpos = sess.expect_sep(Seperator::LeftParenthenes)?;
         trace!("fndef name span: {:?}", fn_name_strpos);
 
         let mut params = Vec::new();
         loop {
             match (sess.tk, sess.pos, sess.next_tk, sess.next_pos) {
-                (&Token::Sep(SeperatorKind::Comma), _,
-                    &Token::Sep(SeperatorKind::RightParenthenes), ref right_paren_strpos) => {
+                (&Token::Sep(Seperator::Comma), _,
+                    &Token::Sep(Seperator::RightParenthenes), ref right_paren_strpos) => {
                     sess.move_next2();
                     params_paren_strpos = params_paren_strpos.merge(right_paren_strpos);
                     if params.is_empty() {
@@ -103,12 +103,12 @@ impl ISyntaxItemParse for FnDef {
                     }
                     break;
                 }
-                (&Token::Sep(SeperatorKind::RightParenthenes), ref right_paren_strpos, _, _) => {
+                (&Token::Sep(Seperator::RightParenthenes), ref right_paren_strpos, _, _) => {
                     sess.move_next();
                     params_paren_strpos = params_paren_strpos.merge(right_paren_strpos);
                     break;
                 }
-                (&Token::Sep(SeperatorKind::Comma), _, _, _) => {
+                (&Token::Sep(Seperator::Comma), _, _, _) => {
                     sess.move_next();
                     continue;
                 }
@@ -116,12 +116,12 @@ impl ISyntaxItemParse for FnDef {
             }
 
             let (param_name, param_strpos) = sess.expect_ident_or(vec![Keyword::Underscore, Keyword::This])?;
-            let _ = sess.expect_sep(SeperatorKind::Colon)?;
+            let _ = sess.expect_sep(Seperator::Colon)?;
             let decltype = TypeUse::parse(sess)?;
             params.push(FnParam::new(param_name, param_strpos, decltype));
         }
 
-        let maybe_ret_type = if sess.tk == &Token::Sep(SeperatorKind::NarrowRightArrow) { sess.move_next(); Some(TypeUse::parse(sess)?) } else { None };
+        let maybe_ret_type = if sess.tk == &Token::Sep(Seperator::NarrowRightArrow) { sess.move_next(); Some(TypeUse::parse(sess)?) } else { None };
         let body = Block::parse(sess)?;
 
         let all_strpos = fn_strpos.merge(&body.all_span);

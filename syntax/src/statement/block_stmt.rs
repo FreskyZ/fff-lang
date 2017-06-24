@@ -8,7 +8,7 @@ use std::fmt;
 
 use codemap::Span;
 use lexical::Token;
-use lexical::SeperatorKind;
+use lexical::Seperator;
 
 use super::super::ParseSession;
 use super::super::ParseResult;
@@ -59,8 +59,8 @@ impl BlockStatement {
 impl ISyntaxItemGrammar for BlockStatement {
     fn is_first_final(sess: &ParseSession) -> bool { 
         match (sess.tk, sess.nextnext_tk) {
-            (&Token::Label(_), &Token::Sep(SeperatorKind::LeftBrace)) 
-            | (&Token::Sep(SeperatorKind::LeftBrace), _) => true,
+            (&Token::Label(_), &Token::Sep(Seperator::LeftBrace)) 
+            | (&Token::Sep(Seperator::LeftBrace), _) => true,
             _ => false,
         }
     }

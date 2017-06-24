@@ -7,7 +7,7 @@ use std::fmt;
 
 use codemap::Span;
 use lexical::Token;
-use lexical::SeperatorKind;
+use lexical::Seperator;
 
 use super::Expr;
 use super::IdentExpr;
@@ -60,7 +60,7 @@ impl MemberAccessExpr {
     }
 }
 impl ISyntaxItemGrammar for MemberAccessExpr {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Sep(SeperatorKind::Dot) }
+    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Sep(Seperator::Dot) }
 }
 impl ISyntaxItemParse for MemberAccessExpr {
     type Target = MemberAccessExpr;
@@ -71,7 +71,7 @@ impl ISyntaxItemParse for MemberAccessExpr {
     // the postfix expr dispatcher is responsible for fullfilling the missing part
     fn parse(sess: &mut ParseSession) -> ParseResult<MemberAccessExpr> {
         
-        let dot_span = sess.expect_sep(SeperatorKind::Dot)?;
+        let dot_span = sess.expect_sep(Seperator::Dot)?;
         let name = IdentExpr::parse(sess)?;
         Ok(MemberAccessExpr::new_by_parse_result(dot_span, name))
     }

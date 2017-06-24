@@ -7,7 +7,7 @@ use std::fmt;
 use codemap::Span;
 use message::Message;
 use lexical::Token;
-use lexical::SeperatorKind;
+use lexical::Seperator;
 
 use super::Expr;
 use super::ExprList;
@@ -42,7 +42,7 @@ impl ArrayDef {
     pub fn new(bracket_span: Span, items: ExprList) -> ArrayDef { ArrayDef{ bracket_span, items: items } }
 }
 impl ISyntaxItemGrammar for ArrayDef {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Sep(SeperatorKind::LeftBracket) }
+    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Sep(Seperator::LeftBracket) }
 }
 impl ISyntaxItemParse for ArrayDef {
     type Target = Expr;
@@ -110,7 +110,7 @@ fn array_def_parse() {
         Expr::Array(ArrayDef::new(make_span!(0, 7), make_exprs![
             BinaryExpr::new(
                 LitExpr::new(LitValue::from(1), make_span!(1, 1)), 
-                SeperatorKind::Add, make_span!(3, 3),
+                Seperator::Add, make_span!(3, 3),
                 LitExpr::new(LitValue::from(1), make_span!(5, 5)),
             )
         ]))

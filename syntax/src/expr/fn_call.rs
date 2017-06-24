@@ -8,7 +8,7 @@ use std::fmt;
 use codemap::Span;
 use message::Message;
 use lexical::Token;
-use lexical::SeperatorKind;
+use lexical::Seperator;
 
 use super::Expr;
 use super::ExprList;
@@ -64,7 +64,7 @@ impl FnCallExpr {
     }
 }
 impl ISyntaxItemGrammar for FnCallExpr {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Sep(SeperatorKind::LeftParenthenes) }
+    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Sep(Seperator::LeftParenthenes) }
 }
 impl ISyntaxItemParse for FnCallExpr {
     type Target = FnCallExpr;

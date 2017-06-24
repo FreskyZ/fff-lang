@@ -20,7 +20,7 @@ use self::token_buf::ILexer;
 use self::token_buf::BufLexer;
 use self::parse_sess::ParseSession;
 
-pub use self::token_def::SeperatorKind;
+pub use self::token_def::Seperator;
 pub use self::token_def::SeperatorCategory;
 pub use self::token_def::Keyword;
 pub use self::token_def::NumLitValue;

@@ -9,7 +9,7 @@ use std::fmt;
 use codemap::Span;
 use codemap::SymbolID;
 use lexical::Token;
-use lexical::SeperatorKind;
+use lexical::Seperator;
 
 use super::super::ParseSession;
 use super::super::ParseResult;
@@ -44,7 +44,7 @@ impl ISyntaxItemParse for LabelDef {
 
         match (sess.tk, sess.pos, sess.next_tk, sess.next_pos) {
             (&Token::Label(ref label_name), ref label_name_strpos,
-                &Token::Sep(SeperatorKind::Colon), ref colon_strpos) => {
+                &Token::Sep(Seperator::Colon), ref colon_strpos) => {
                 sess.move_next2();
                 Ok(LabelDef::new(label_name.clone(), label_name_strpos.merge(colon_strpos)))
             }

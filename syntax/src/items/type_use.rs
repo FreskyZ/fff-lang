@@ -25,7 +25,7 @@ use codemap::Span;
 use codemap::SymbolID;
 use message::Message;
 use lexical::Token;
-use lexical::SeperatorKind;
+use lexical::Seperator;
 
 use super::super::ParseSession;
 use super::super::ParseResult;
@@ -71,8 +71,8 @@ impl ISyntaxItemGrammar for TypeUse {
     fn is_first_final(sess: &ParseSession) -> bool {
         match sess.tk {
             &Token::Ident(_) 
-            | &Token::Sep(SeperatorKind::LeftBracket)
-            | &Token::Sep(SeperatorKind::LeftParenthenes) => true,
+            | &Token::Sep(Seperator::LeftBracket)
+            | &Token::Sep(Seperator::LeftParenthenes) => true,
             &Token::Keyword(kw) => kw.is_primitive(),
             _ => false,
         }
@@ -98,16 +98,16 @@ impl ISyntaxItemParse for TypeUse {
                 sess.move_next();
                 return Ok(TypeUse::new_simple(sess.symbols.intern(format!("{:?}", keyword)), *keyword_strpos));
             }
-            (&Token::Sep(SeperatorKind::LeftBracket), ref left_bracket_strpos) => {
+            (&Token::Sep(Seperator::LeftBracket), ref left_bracket_strpos) => {
                 sess.move_next();
                 let inner = TypeUse::parse(sess)?;
-                let right_bracket_strpos = sess.expect_sep(SeperatorKind::RightBracket)?;
+                let right_bracket_strpos = sess.expect_sep(Seperator::RightBracket)?;
                 let quote_span = left_bracket_strpos.merge(&right_bracket_strpos);
                 return Ok(TypeUse::new_template(sess.symbols.intern_str("array"), Span::default(), quote_span, vec![inner]));
             }
-            (&Token::Sep(SeperatorKind::LeftParenthenes), ref left_paren_strpos) => {
+            (&Token::Sep(Seperator::LeftParenthenes), ref left_paren_strpos) => {
                 sess.move_next();
-                if let (&Token::Sep(SeperatorKind::RightParenthenes), ref right_paren_strpos) = (sess.tk, sess.pos) { 
+                if let (&Token::Sep(Seperator::RightParenthenes), ref right_paren_strpos) = (sess.tk, sess.pos) { 
                     sess.move_next();
                     return Ok(TypeUse::new_simple(sess.symbols.intern_str("unit"), left_paren_strpos.merge(&right_paren_strpos)));
                 }
@@ -118,20 +118,20 @@ impl ISyntaxItemParse for TypeUse {
                 tuple_types.push(TypeUse::parse(sess)?);
                 loop {
                     match (sess.tk, sess.pos, sess.next_tk, sess.next_pos) {
-                        (&Token::Sep(SeperatorKind::Comma), _, 
-                            &Token::Sep(SeperatorKind::RightParenthenes), ref right_paren_strpos) => {
+                        (&Token::Sep(Seperator::Comma), _, 
+                            &Token::Sep(Seperator::RightParenthenes), ref right_paren_strpos) => {
                             sess.move_next2();
                             ending_strpos = *right_paren_strpos;
                             end_by_comma = true;
                             break;        
                         }
-                        (&Token::Sep(SeperatorKind::RightParenthenes), ref right_paren_strpos, _, _) => {
+                        (&Token::Sep(Seperator::RightParenthenes), ref right_paren_strpos, _, _) => {
                             sess.move_next();
                             ending_strpos = *right_paren_strpos;
                             end_by_comma = false;
                             break;
                         }
-                        (&Token::Sep(SeperatorKind::Comma), _, _, _) => {
+                        (&Token::Sep(Seperator::Comma), _, _, _) => {
                             sess.move_next();
                             tuple_types.push(TypeUse::parse(sess)?);
                         }
