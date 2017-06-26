@@ -103,6 +103,7 @@ define_keyword2!{
         "f64" =>        F64,
         "char" =>       Char,
         "bool" =>       Bool,
+        "array" =>      Array,
         "string" =>     String;
     reserved:
         "bits8" =>      Bits8, 
@@ -193,7 +194,6 @@ define_keyword2!{
         "virtual" =>    Virtual,
         "yield" =>      Yield;
     // removed
-    //     "array" =>      Array,
     //     "unit" =>       Unit,
     //     "sm" =>         "SM",
 }

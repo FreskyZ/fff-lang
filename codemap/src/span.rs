@@ -8,14 +8,24 @@
 use std::fmt;
 use std::ops::Range;
 
+const DEFAULT_FILE_ID: usize = ::std::usize::MAX;
+
 /// Byte index of a char
-#[derive(Eq, PartialEq, Clone, Copy, Default)]
+#[derive(Eq, PartialEq, Clone, Copy)]
 pub struct CharPos {
     file_id: usize, // used to be u32, but even it is u32, this struct is still 16 byte size, then give it usize
     char_id: usize,
 }
+impl Default for CharPos {
+    fn default() -> CharPos { CharPos{ file_id: DEFAULT_FILE_ID, char_id: 0 } }
+}
 impl fmt::Debug for CharPos {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "<{}>{}", self.file_id, self.char_id) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { 
+        match self.file_id {
+            DEFAULT_FILE_ID => write!(f, "<xx>"),
+            _ => write!(f, "<{}>{}", self.file_id, self.char_id),
+        }
+    }
 }
 impl CharPos {
 
@@ -23,6 +33,7 @@ impl CharPos {
 
     pub fn get_file_id(&self) -> usize { self.file_id }
     pub fn get_char_id(&self) -> usize { self.char_id }
+    pub fn is_default(&self) -> bool { self.file_id == DEFAULT_FILE_ID }
 
     pub fn offset(&self, offset: isize) -> CharPos {
         CharPos{ 
@@ -34,7 +45,10 @@ impl CharPos {
         Span{ file_id: self.file_id, start_id: self.char_id, end_id: self.char_id } 
     }
     pub fn merge(&self, rhs: &CharPos) -> Span {
-        if self.file_id != rhs.file_id { panic!("trying to merge charpos from different source file") }
+        // ignore default
+        if self.file_id == DEFAULT_FILE_ID { return rhs.as_span() }
+        if rhs.file_id == DEFAULT_FILE_ID { return self.as_span() }
+        // normal
         Span{ file_id: self.file_id, start_id: self.char_id, end_id: rhs.char_id }
     }
 }
@@ -46,14 +60,22 @@ macro_rules! make_charpos {
 }
 
 /// Position of a string
-#[derive(Eq, PartialEq, Clone, Copy, Default)]
+#[derive(Eq, PartialEq, Clone, Copy)]
 pub struct Span {
     file_id: usize,
     start_id: usize,
     end_id: usize,
 }
+impl Default for Span {
+    fn default() -> Span { Span{ file_id: DEFAULT_FILE_ID, start_id: 0, end_id: 0 } }
+}
 impl fmt::Debug for Span {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "<{}>{}-{}", self.file_id, self.start_id, self.end_id) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { 
+        match self.file_id {
+            DEFAULT_FILE_ID => write!(f, "<xx>"),
+            _ => write!(f, "<{}>{}-{}", self.file_id, self.start_id, self.end_id),
+        }
+    }
 }
 impl Span {
     
@@ -65,8 +87,13 @@ impl Span {
     pub fn get_start_pos(&self) -> CharPos { CharPos::new(self.file_id, self.start_id) }
     pub fn get_end_pos(&self) -> CharPos { CharPos::new(self.file_id, self.end_id) }
 
+    pub fn is_default(&self) -> bool { self.file_id == DEFAULT_FILE_ID }
+
     pub fn merge(&self, rhs: &Span) -> Span {
-        if self.file_id != rhs.file_id { panic!("trying to merge span from different source file") }
+        // ignore default
+        if self.file_id == DEFAULT_FILE_ID { return *rhs }
+        if rhs.file_id == DEFAULT_FILE_ID { return *self }
+        // normal
         Span{ file_id: self.file_id, start_id: self.start_id, end_id: rhs.end_id }
     }
 

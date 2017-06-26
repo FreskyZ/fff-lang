@@ -2,7 +2,7 @@
 ///! 
 ///! syntax/type_def
 ///! required by removing hardcode macros in semantic typedef collection and fndef collections
-///! type_def = 'type' identifier '{' [ type_field_def { ',' type_field_def } [ ',' ] ] '}'
+///! type_def = 'type' (identifier | keyword_primitive_type)  '{' [ type_field_def { ',' type_field_def } [ ',' ] ] '}'
 ///! type_field_def = identifier ':' type_use
 
 // TODO: support Keyword::PrimType in type name, for primitive declarations
@@ -73,13 +73,24 @@ impl ISyntaxItemParse for TypeDef {
     fn parse(sess: &mut ParseSession) -> ParseResult<TypeDef> {
 
         let starting_span = sess.expect_keyword(Keyword::Type)?;
-        let name = IdentExpr::parse(sess)?;
+        let name = match (sess.tk, sess.pos) {
+            (&Token::Ident(ident), ref span) => { 
+                sess.move_next(); 
+                IdentExpr::new(ident, *span) 
+            }
+            (&Token::Keyword(kw), ref span) if kw.is_primitive() => { 
+                sess.move_next(); 
+                IdentExpr::new(sess.symbols.intern(format!("{:?}", kw)), *span)
+            }
+            _ => return sess.push_unexpect("identifier"),
+        };
         let _left_brace_span = sess.expect_sep(Seperator::LeftBrace)?;
 
         let mut fields = Vec::new();
         let right_brace_span: Span;
         loop {
             if let (&Token::Sep(Seperator::RightBrace), span) = (sess.tk, sess.pos) {
+                sess.move_next();
                 right_brace_span = span;
                 break;
             }
@@ -147,4 +158,20 @@ fn type_def_parse() {
             )
         ])
     }
+}
+
+#[cfg(feature = "test_stdlib_parse")]
+#[cfg(test)] #[test]
+fn type_def_stdlib() {
+    use std::io::Read;
+    use std::fs::File;
+    use super::super::ISyntaxItemWithStr;
+    use super::super::SyntaxTree;
+
+    let mut file = File::open("..\\tests\\syntax\\std.ff").expect("open std.ff failed");
+    let mut src = String::new();
+    file.read_to_string(&mut src).expect("read std.ff failed");
+
+    let (tree, symbols) = SyntaxTree::with_test_str_ret_symbols(&src);
+    panic!("result: {:?}{:?}", symbols, tree);
 }

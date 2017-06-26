@@ -93,14 +93,14 @@ fn loop_stmt_format() {
     //                                           1234567890123456789 0123 45678
     let actual = LoopStatement::with_test_input("@@: loop { println(\"233\"); }", &mut make_symbols!["@", "println", "233"]).format(0);
     let expect = r#"LoopStmt <<0>0-27>
-  Label #1 <<0>0-2>
+  Label str#1 <<0>0-2>
   'loop' <<0>4-7>
   Block <<0>9-27>
     SimpleExprStmt <<0>11-25>
       FnCall <<0>11-24>
-        Ident #2 <<0>11-17>
+        Ident str#2 <<0>11-17>
         paren <<0>18-24>
-        Literal #3 <<0>19-23>"#;
+        Literal str#3 <<0>19-23>"#;
 
     if actual != expect { panic!("assertion failed: left: {}, right: {}", actual, expect) }
 }

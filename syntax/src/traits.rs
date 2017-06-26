@@ -53,6 +53,14 @@ pub trait ISyntaxItemWithStr {
         where Self: Sized + ISyntaxItemParse {
         Self::with_test_input_ret_size_messages(src, &mut SymbolCollection::new())
     }
+    fn with_test_str_ret_symbols(src: &str)
+        -> (<Self as ISyntaxItemParse>::Target, SymbolCollection)
+        where Self: Sized + ISyntaxItemParse {
+        let mut symbols = SymbolCollection::new();
+        let full = Self::with_test_input_ret_size_messages(src, &mut symbols);
+        check_messages_continuable!(full.2);
+        return (full.0.unwrap(), symbols);
+    }
 
     fn with_test_input(src: &str, symbols: &mut SymbolCollection) -> <Self as ISyntaxItemParse>::Target where Self: Sized + ISyntaxItemParse {
         let full = Self::with_test_input_ret_size_messages(src, symbols);

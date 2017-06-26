@@ -10,10 +10,19 @@ use std::collections::HashMap;
 pub struct SymbolID(usize);
 impl SymbolID { pub fn new(value: usize) -> SymbolID { SymbolID(value) } }
 impl From<usize> for SymbolID { fn from(value: usize) -> SymbolID { SymbolID(value) } }
-impl fmt::Debug for SymbolID { fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "#{}", self.0) } }
+impl fmt::Debug for SymbolID { fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "str#{}", self.0) } }
 
 pub struct SymbolCollection {
     items: HashMap<String, SymbolID>,
+}
+impl fmt::Debug for SymbolCollection {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Symbols:")?;
+        for (ref symbol, ref id) in self.items.iter() {
+            write!(f, "\n  {:?} => {:?}", id, symbol)?;
+        }
+        write!(f, "\n")
+    }
 }
 impl SymbolCollection {
 
