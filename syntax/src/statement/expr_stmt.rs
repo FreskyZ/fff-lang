@@ -1,9 +1,7 @@
 ///! fff-lang
 ///! 
 ///! syntax/expr_stmt
-///! ExprStatement = Expr [AssignOperator Expr] fSemiColon
-
-// TODO: update to public
+///! expr_stmt = expr { assign_ops expr } ';'
 
 use std::fmt;
 

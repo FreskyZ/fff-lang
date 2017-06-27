@@ -58,6 +58,7 @@ macro_rules! dispatch_statement_impl {
     )
 }
 
+// 37 byte
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub enum Statement {
     Block(BlockStatement),            // {

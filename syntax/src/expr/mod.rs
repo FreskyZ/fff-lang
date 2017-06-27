@@ -43,6 +43,7 @@ use super::ISyntaxItemParse;
 use super::ISyntaxItemFormat;
 use super::ISyntaxItemGrammar;
 
+// 12 byte
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub enum Expr {
     Lit(LitExpr),
@@ -93,6 +94,13 @@ impl Expr {
             &Expr::Unary(ref unary_expr) => unary_expr.all_span,
             &Expr::Binary(ref binary_expr) => binary_expr.all_span,
         }
+    }
+
+    pub fn unbox(this: Box<Expr>) -> Self {
+        let mut this = this;
+        let mut temp = Expr::Lit(LitExpr::new(LitValue::from(42), Span::default()));
+        ::std::mem::swap(&mut *this, &mut temp);
+        temp
     }
 }
 impl ISyntaxItemGrammar for Expr {
@@ -410,4 +418,13 @@ fn expr_errors() {
             Message::new_by_str(error_strings::EmptyIndexCall, vec![(make_span!(2, 5), error_strings::IndexCallHere)])
         ]
     )}
+}
+
+#[cfg(test)] #[test]
+fn expr_unbox() {
+
+    assert_eq!{ 
+        Expr::unbox(Box::new(Expr::Ident(IdentExpr::new(make_id!(42), make_span!(30, 31))))), 
+        Expr::Ident(IdentExpr::new(make_id!(42), make_span!(30, 31)))
+    }
 }

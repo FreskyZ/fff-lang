@@ -22,7 +22,7 @@ impl Default for CharPos {
 impl fmt::Debug for CharPos {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { 
         match self.file_id {
-            DEFAULT_FILE_ID => write!(f, "<xx>"),
+            DEFAULT_FILE_ID => write!(f, "xx"),
             _ => write!(f, "<{}>{}", self.file_id, self.char_id),
         }
     }
@@ -72,7 +72,7 @@ impl Default for Span {
 impl fmt::Debug for Span {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { 
         match self.file_id {
-            DEFAULT_FILE_ID => write!(f, "<xx>"),
+            DEFAULT_FILE_ID => write!(f, "xx"),
             _ => write!(f, "<{}>{}-{}", self.file_id, self.start_id, self.end_id),
         }
     }
