@@ -1,0 +1,30 @@
+// fff-lang standard libraray
+// tuple and ref require complex syntax design and not here
+
+type unit {}
+
+type i8 {}
+type u8 {}
+type i16 {}
+type u16 {}
+type i32 {}
+type u32 {}
+type i64 {}
+type u64 {}
+
+type char {}
+type bool {}
+
+type array<T> {
+    data: &T,
+    length: u64,
+    capacity: u64,
+
+    fn get_length(&this) -> u64 { return this.length; }
+}
+
+type string {
+    chars: [u8],
+    length: u64,
+    capacity: u64,
+}

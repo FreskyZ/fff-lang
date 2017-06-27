@@ -61,7 +61,7 @@ principles:
     all compile errors ends here
     should have full information that a compile time reflector want
     simple format: only display IDs, full format: provide preview for id
-    try your best to make it can convert back to source code
+    try your best to make it can convert back to source code, update: only provide span info when message required
 ```
 // simple ; full
 package
@@ -153,3 +153,9 @@ package
     var-def a i32
     body 
 ```
+
+steps:
+
+  1. Copy all content, when child(ren) is node, convert to semantic::xxxnode, 
+     which actually is semantic::xxxnode{ node: syntax::xxxnode } currently, add more fields in future if need
+     discard all span information, add them back in `new(syntax::xxxnode)` when error message requires them
