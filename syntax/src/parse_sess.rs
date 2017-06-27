@@ -1,4 +1,3 @@
-#![allow(dead_code)] // leave it here
 ///! fff-lang
 ///!
 ///! syntax/parse_sess, to be ISyntaxItem::parse's parameter
@@ -17,6 +16,7 @@ use lexical::Keyword;
 
 pub type ParseResult<T> = Result<T, ()>;
 
+#[allow(dead_code)]
 pub struct ParseSession<'tokens, 'msgs, 'syms> {
     tokens: &'tokens TokenStream,
     messages: &'msgs mut MessageCollection,
@@ -29,6 +29,7 @@ pub struct ParseSession<'tokens, 'msgs, 'syms> {
     pub next_pos: Span,
     pub nextnext_pos: Span,
 }
+#[allow(dead_code)]
 impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
 
     pub fn new(tokens: &'a TokenStream, messages: &'b mut MessageCollection, symbols: &'c mut SymbolCollection) -> ParseSession<'a, 'b, 'c> {

@@ -1,14 +1,13 @@
 ///! fff-lang
 ///!
 ///! syntax/stmt
-// Statement = 
-//     ConstDecl | VarDecl 
-//     | IfStatement | WhileStatement | ForStatement | LoopStatement 
-//     | AssignStatement
-//     | JumpStatement
+///! stmt = const_decl | var_decl | if_stmt | while_stmt | for_stmt | loop_stmt 
+///!        | simple_expr_stmt | assign_expr_stmt | continue_stmt | break_stmt | fn_def | type_def
  
 use std::fmt;
 
+use super::FnDef;
+use super::TypeDef;
 use super::ParseSession;
 use super::ParseResult;
 use super::ISyntaxItemParse;
@@ -43,6 +42,8 @@ pub use self::block_stmt::BlockStatement;
 macro_rules! dispatch_statement_impl {
     ($this: expr, $inner: ident, $b: block) => (
         match $this {
+            &Statement::Type(ref $inner) => $b,
+            &Statement::Fn(ref $inner) => $b,
             &Statement::VarDecl(ref $inner) => $b,
             &Statement::Break(ref $inner) => $b,
             &Statement::Continue(ref $inner) => $b,
@@ -61,6 +62,8 @@ macro_rules! dispatch_statement_impl {
 // 37 byte
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub enum Statement {
+    Type(TypeDef),                    // type
+    Fn(FnDef),                        // fn
     Block(BlockStatement),            // {
     Break(BreakStatement),            // break 
     Continue(ContinueStatement),      // continue
@@ -82,7 +85,9 @@ impl fmt::Debug for Statement {
 impl ISyntaxItemGrammar for Statement {
 
     fn is_first_final(sess: &ParseSession) -> bool {
-        VarDeclStatement::is_first_final(sess)
+        FnDef::is_first_final(sess)
+        || TypeDef::is_first_final(sess)
+        || VarDeclStatement::is_first_final(sess)
         || BreakStatement::is_first_final(sess)
         || ContinueStatement::is_first_final(sess)
         || ReturnStatement::is_first_final(sess)
@@ -119,6 +124,10 @@ impl ISyntaxItemParse for Statement {
             return Ok(Statement::Block(BlockStatement::parse(sess)?));
         } else if AssignExprStatement::is_first_final(sess) {
             return AssignExprStatement::parse(sess);
+        } else if TypeDef::is_first_final(sess) {
+            return Ok(Statement::Type(TypeDef::parse(sess)?));
+        } else if FnDef::is_first_final(sess) {
+            return Ok(Statement::Fn(FnDef::parse(sess)?));
         } else {
             return sess.push_unexpect("statement");
         }

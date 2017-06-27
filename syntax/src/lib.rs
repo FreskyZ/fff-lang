@@ -9,7 +9,6 @@ extern crate lexical;
 
 #[macro_use] mod expr;
 mod traits;
-mod syntax_tree;
 mod statement;
 mod items;
 mod parse_sess;
@@ -24,6 +23,7 @@ pub use self::items::name::NameSegment;
 pub use self::items::name::Name;
 pub use self::items::type_def::TypeFieldDef;
 pub use self::items::type_def::TypeDef;
+pub use self::items::syntax_tree::SyntaxTree;
 pub use self::expr::LitExpr;
 pub use self::expr::IdentExpr;
 pub use self::expr::Expr;
@@ -51,7 +51,6 @@ pub use self::statement::IfClause;
 pub use self::statement::ElseIfClause;
 pub use self::statement::ElseClause;
 pub use self::statement::IfStatement;
-pub use self::syntax_tree::SyntaxTree;
 
 use self::parse_sess::ParseSession;
 use self::parse_sess::ParseResult;

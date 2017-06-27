@@ -4,19 +4,16 @@
 
 use syntax;
 
-use super::TypeDef;
-use super::FnDef;
+use super::super::Statement;
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct Package {
-    pub types: Vec<TypeDef>,   
-    pub fns: Vec<FnDef>,
+    pub items: Vec<Statement>,
 }
 impl From<syntax::SyntaxTree> for Package {
     fn from(root: syntax::SyntaxTree) -> Package {
         Package{
-            types: root.types.into_iter().map(Into::into).collect(),
-            fns: root.fns.into_iter().map(Into::into).collect(),
+            items: root.items.into_iter().map(Into::into).collect(),
         }
     }
 }

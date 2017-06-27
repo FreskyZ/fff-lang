@@ -11,15 +11,6 @@ extern crate syntax;
 mod expr;
 mod items;
 mod statement;
-// mod block;
-// mod expression;
-// mod fn_def;
-// mod loop_def;
-// mod type_def;
-// mod session;
-// mod statement;
-// mod var_def;
-// mod vm_code;
 
 pub use self::items::Block;
 pub use self::items::TypeUse;

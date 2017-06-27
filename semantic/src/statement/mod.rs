@@ -11,6 +11,8 @@ use super::Expr;
 use super::Block;
 use super::LabelDef;
 use super::TypeUse;
+use super::FnDef;
+use super::TypeDef;
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct BlockStatement {
@@ -207,6 +209,8 @@ pub enum Statement {
     Return(ReturnStatement),
     VarDecl(VarDecl),
     While(WhileStatement),
+    Type(TypeDef),
+    Fn(FnDef),
 }
 impl From<syntax::Statement> for Statement {
     fn from(node: syntax::Statement) -> Statement {
@@ -222,6 +226,8 @@ impl From<syntax::Statement> for Statement {
             syntax::Statement::Return(ret_stmt) => Statement::Return(ret_stmt.into()),
             syntax::Statement::VarDecl(var_decl) => Statement::VarDecl(var_decl.into()),
             syntax::Statement::While(while_stmt) => Statement::While(while_stmt.into()),
+            syntax::Statement::Fn(fn_def) => Statement::Fn(fn_def.into()),
+            syntax::Statement::Type(type_def) => Statement::Type(type_def.into()),
         }
     }
 }
