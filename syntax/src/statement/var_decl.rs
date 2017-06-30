@@ -33,7 +33,7 @@ pub struct VarDeclStatement {
 impl ISyntaxItemFormat for VarDeclStatement {
     fn format(&self, indent: u32) -> String {
         format!("{}VarDecl {} <{:?}>\n{}{:?} <{:?}>{}{}", 
-            VarDeclStatement::indent_str(indent), if self.is_const { "const " } else { "var " }, self.all_span,
+            VarDeclStatement::indent_str(indent), if self.is_const { "const" } else { "var" }, self.all_span,
             VarDeclStatement::indent_str(indent + 1), self.name, self.name_span,
             match self.typeuse { Some(ref typeuse) => format!("\n{}", typeuse.format(indent + 1)), None => String::new() },
             match self.init_expr { Some(ref init_expr) => format!("\n{}", init_expr.format(indent + 1)), None => String::new() },

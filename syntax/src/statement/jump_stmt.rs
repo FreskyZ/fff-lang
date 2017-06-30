@@ -52,10 +52,14 @@ impl JumpStatement {
         sess.move_next();
         match (sess.tk, sess.pos, sess.next_tk, sess.next_pos) {
             (&Token::Label(ref target), target_strpos, 
-                &Token::Sep(Seperator::SemiColon), ref semi_colon_strpos) => 
-                Ok(JumpStatement::new_target(starting_strpos.merge(semi_colon_strpos), *target, target_strpos)),
-            (&Token::Sep(Seperator::SemiColon), ref semi_colon_strpos, _, _) => 
-                Ok(JumpStatement::new_no_target(starting_strpos.merge(semi_colon_strpos))),
+                &Token::Sep(Seperator::SemiColon), ref semi_colon_strpos) => {
+                sess.move_next2();
+                Ok(JumpStatement::new_target(starting_strpos.merge(semi_colon_strpos), *target, target_strpos))
+            }
+            (&Token::Sep(Seperator::SemiColon), ref semi_colon_strpos, _, _) => {
+                sess.move_next();
+                Ok(JumpStatement::new_no_target(starting_strpos.merge(semi_colon_strpos)))
+            }
             (&Token::Label(_), _, _, _) =>
                 sess.push_unexpect("semicolon"),
             _ => 

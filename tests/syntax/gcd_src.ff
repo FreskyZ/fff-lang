@@ -3,20 +3,20 @@
 
 fn main() {
 
-    loop "main" {
+    @main: loop {
         writeln("Input 2 numbers");
-        var i32 a = read_i32();
-        var i32 b = read_i32();
+        var a = read_i32();
+        var b = read_i32();
 
         if a == 0 && b == 0 {
-            break "main";
+            break @main;
         }
 
         writeln("最大公约数(" + a.to_string() + ", " + b.to_string() + ") is " + 最大公约数(a, b).to_string());
     }
 }
 
-fn 最大公约数(i32 a, i32 b) -> i32 {
+fn 最大公约数(a: i32, b: i32) -> i32 {
     if b == 0 {
         return a;
     }

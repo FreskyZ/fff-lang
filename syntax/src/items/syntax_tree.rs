@@ -60,10 +60,42 @@ impl SyntaxTree {
     }
 }
 
+#[cfg(feature = "integration_test")]
 #[cfg(test)] #[test]
 fn syntax_tree_parse() {
+    use std::fs::File;
+    use std::io::Read;
+    use codemap::SymbolCollection;
+    use super::super::ISyntaxItemWithStr;
+
+    let mut index_file = File::open("../tests/syntax/index.txt").expect("cannot open index.txt");
+    let mut test_cases = String::new();
+    let _length = index_file.read_to_string(&mut test_cases).expect("cannot read index.txt");
+    for line in test_cases.lines() {
+        let src_path = "../tests/syntax/".to_owned() + line + "_src.ff";
+        let mut src_file = File::open(&src_path).expect(&format!("cannot open src file {}", src_path));
+        let mut src = String::new();
+        let _length = src_file.read_to_string(&mut src).expect(&format!("cannot read src file {}", src_path));
+        let result_path = "../tests/syntax/".to_owned() + line + "_result.txt";
+        let mut result_file = File::open(&result_path).expect(&format!("cannot open result file {}", result_path));
+        let mut expect = String::new();
+        let _length = result_file.read_to_string(&mut expect).expect(&format!("cannot read result file {}", result_path));
+        
+        let actual = SyntaxTree::with_test_input(&src, &mut make_symbols![]).format(0);
+        if actual != expect {
+            panic!("case {} failed, actual:\n`{}`\nexpect:\n`{}`", line, actual, expect)
+        }
+    }
+
     // test_case!("../tests/syntax/hello.sm");
     // test_case!("../tests/syntax/list.sm");
     // test_case!("../tests/syntax/prime.sm");
     // test_case!("../tests/syntax/string.sm");
 }
+
+// TODO: update format including format_with_codemap_symbols for these integration tests
+// in detail, use struct codemap::SourceSession{ symbols: Option<&SymbolCollection>, codemap: Option<&CodeMap>, indention: usize }
+// also a `human_friendly_eqer` for line:column compare instead of byte index compare, string compare instead of symid compare
+
+// TODO maybe not here:
+// a library that provides a format method that requires custom format argument and custom this argument may want `...` parameter pack and type pack

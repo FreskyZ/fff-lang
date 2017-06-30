@@ -428,3 +428,10 @@ fn expr_unbox() {
         Expr::Ident(IdentExpr::new(make_id!(42), make_span!(30, 31)))
     }
 }
+
+// TODO: range expr
+// maybe:
+// updates: expr = ... | range_full | range_left_unbound | range_right_unbound | range_both_bound
+// struct RangeLeftUnbound, as primary_expr, is_first_final => tk == Range, parse => '..' [ unary_expr ]
+// struct RangeLeftBound as postfix_expr, is_first_final => tk == Range, parse => [ expr ] '..' [ expr ], left expr is handled by 
+// check python and rust and haskell's design
