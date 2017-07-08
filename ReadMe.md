@@ -1,31 +1,26 @@
 # fff-lang
 
-## Fresky's Favorite Feature Language
+A small language for fun
 
-A small compiler that implements Fresky's favorite feature
+## Features (in design)
 
-Mainly include:
+  - based on C syntax
+  - and sweet modern syntax extensions learned from rust, python, C#, etc.
+  - type reference and concept based generic
+  - static reflection
+  - interpret or build to binary
+  - no 3rd party library dependency, no c library dependency
+  - implemented from source code file to target binary, no llvm, ld or link
 
-   - C style lexical rule, numeric literal, string literal,  
-     [_a-zA-Z][_a-zA-Z0-9]* identifier, +-*\%^!~|?<>= operator,  
-     ()[]{} seperator
-   - Modern numeric literal, include different radius and width postfix
-   - Modern string literal, raw string literal(looking at java),  
-     string interpolation like C# and python(unimplemented)
-   - C style basic syntax rule, expression, assignment, ifelse, while  
-     statement
-   - Haskell style array literal and tuple literal
-   - C++ style range for
-   - C++ style lambda expression
-   - Loop statement for infinite loop and modern loop name specifier
-   - Many kind of different width integral type and floating type, bool  
-     type, char type, prevention of integral type and bool type conversion  
-     prevention of assignment expression value usage
-   - Built from source string to executable binary(currently only PE64)  
-     AST generation, intermidate language generation, native code generation  
-     lib format, external lib linkage, optimization all included
-   - Bootstrap (unimplemented)
-   - (Maybe) interpret and compile execution both supported
-   - (Maybe) functional language style pattern matching supported
-   - (Maybe) functional language style type class supported
-   - (Maybe) functional language style function object supported
+## Build
+
+  it's in a huge refactor process and driver is broken currently...  
+  use `cargo test` in `codemap`, `lexical`, `syntax` and `semantic` crates  
+  or switch to tag v0.1.0 to view compiler course homework handin version
+
+## Other things
+
+  This is my first open source project!  
+  ~~It is not private because github does not support alipay~~  
+  'fff' means 'Fresky's Favorite Feature' ~~not a group name~~  
+  welcome your issues and pull requests
