@@ -6,7 +6,7 @@ use std::fmt;
 use codemap::SymbolID;
 
 mod keyword;
-mod seperator;
+#[path = "seperator2.rs"] mod seperator;
 mod lit_value;
 
 pub use self::keyword::Keyword;

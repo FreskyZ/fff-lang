@@ -1,159 +1,359 @@
 # fff-lang
-# token base type generator
+# seperator and keyword definition generateor
 
+# based on 'token.grammar' file, generate the enum definition source code
+# provide fast O(1) impl for their attribute getter, like `ATTR[(u8)keyword].Category` etc.
+# provide fast O(1) parse method, with a special static readonly on stack hashmap generator
+
+# this file replaces old `define_keyword` and `define_seperator` macros
+# because vscode's racer or rls both do not recognize types defined in macros, currently at lease
+
+from collections import namedtuple
 from functools import reduce
+from itertools import chain
+import random
 
-expecting_seperator = False
-seperators = []
-keywords = []
-for line in map(str.strip, open('token.grammar', 'r').readlines()):
-    if 'seperator:' in line:
-        expecting_seperator = True
-        continue
-    elif 'keyword:' in line:
-        expecting_seperator = False
-        continue
-    elif line.startswith('//') or len(line) == 0:
-        continue # ignore
-    value, rest = map(lambda x: x.strip(' \''), line.split(' => '))
-    name, category, _ = map(str.strip, rest.split(','))
-    if expecting_seperator:
-        categories = list(map(str.strip, category.split('|')))
-        seperators.append((value, name, categories))
-    else:
-        keywords.append((value, name, category))
+SEPERATOR_DEF_FILE = 'seperator.grammar'
+KEYWORD_DEF_FILE = 'keyword.grammar'
 
-seperators.sort(key = lambda x: x[0])
+def check_hasher_perform(values, hasher):
+    half_hash_values = list(map(hasher, values))
+    def get_bucket_size_and_number(moder):
+        hash_values = [half_hash_value % moder for half_hash_value in half_hash_values]
+        max_collision_count = max(len(list(filter(lambda x: x == hash_value, hash_values))) for hash_value in set(hash_values))
+        return moder, max_collision_count, moder * max_collision_count
+    return next(iter(sorted(map(get_bucket_size_and_number, range(len(values), 1000)), key = lambda x: x[2])), None)
 
-def format_all():
-    max_value_length = 0
-    max_name_length = 0
-    for keyword in keywords:
-        max_value_length = max(max_value_length, len(keyword[0]))
-        max_name_length = max(max_name_length, len(keyword[1]))
-    for seperator in seperators:
-        max_value_length = max(max_value_length, len(seperator[0]))
-        max_name_length = max(max_name_length, len(seperator[1]))
+class Seperator:
+    def __init__(self, value, name, index, cats):
+        self.value, self.name, self.index, self.cats = value, name, index, cats
+        self.cats_value = 0
+    def __str__(self):
+        return f'seperator({self.value}, {self.name}, {self.index}, ' + ' | '.join(self.cats) + f': {self.cats_value})'
+    def __lt__(self, rhs):
+        return self.value < rhs.value
+    def update_index(self, new_index):
+        self.index = new_index
+        return self
+    def update_cats(self, cats):
+        for (cat, value) in cats:
+            if cat in self.cats:
+                self.cats_value += value
+        return self
+class Seperators:
+    def __init__(self, filename):
+        self.filename = filename
+        self.comments = []
+        self.len1s, self.len2s, self.len3s = [], [], []
+        for line in map(str.strip, open(filename).readlines()):
+            if line.startswith('//'):
+                self.comments.append(line)
+            else:
+                value, rest = map(lambda x: x.strip(" '"), line.split(' => '))
+                name, categories, _ = rest.split(',')  # ignore last comma
+                [self.len1s, self.len2s, self.len3s][len(value) - 1].append(Seperator(    # auto panic len not in [1, 2, 3]
+                    value, name, 0, list(map(str.strip, categories.split('|')))
+                ))
+        _ = list(map(list.sort, [self.len1s, self.len2s, self.len3s]))
+        self.cats = [(cat, 2 ** index) for (index, cat) in 
+            enumerate(sorted(list(set(cat for sep in chain(self.len1s, self.len2s, self.len3s) for cat in sep.cats))))]
+        assert len(self.cats) < 16
+        self.len1s = [sep.update_index(index).update_cats(self.cats) for (index, sep) in enumerate(self.len1s)]
+        self.len2s = [sep.update_index(index + len(self.len1s)).update_cats(self.cats) for (index, sep) in enumerate(self.len2s)]
+        self.len3s = [sep.update_index(index + len(self.len1s) + len(self.len2s)).update_cats(self.cats) for (index, sep) in enumerate(self.len3s)]
 
-    retval = 'seperator:\n'
-    for seperator in seperators:
-        retval += "{space1}'{value}' => {space2}{name}, {cat},\n".format(
-                    value = seperator[0],
-                    space1 = ' ' * (max_value_length - len(seperator[0])),
-                    space2 = ' ' * (max_name_length - len(seperator[1])),
-                    name = seperator[1],
-                    cat = ' | '.join(seperator[2]))
-    retval += "\nkeyword:\n"
-    for keyword in keywords:
-        retval += "{space1}'{value}' => {space2}{name}, {cat},\n".format(
-                    value = keyword[0],
-                    space1 = ' ' * (max_value_length - len(keyword[0])),
-                    space2 = ' ' * (max_name_length - len(keyword[1])),
-                    name = keyword[1],
-                    cat = keyword[2])
-    return retval
+    def __str__(self):
+        return 'seperator in ' + self.filename                         \
+            + ':\n  comments:\n  ' + '\n  '.join(self.comments)        \
+            + ':\n  categories:\n    ' + '\n    '.join(map(str, self.cats)) \
+            + '\n  len1s:\n    ' + '\n    '.join(map(str, self.len1s)) \
+            + '\n  len2s:\n    ' + '\n    '.join(map(str, self.len2s)) \
+            + '\n  len3s:\n    ' + '\n    '.join(map(str, self.len3s))
+    
+    def format(self):
+        # format and write back
+        retval = '\n'.join(self.comments)
+        max_name_length = 0
+        for sep in chain(self.len1s, self.len2s, self.len3s):
+            max_name_length = max(max_name_length, len(sep.name))
+        for sep in chain(self.len1s, self.len2s, self.len3s):
+            retval += "\n{space1}'{value}' => {space2}{name}, {cats},".format(
+                space1 = ' ' * (4 - len(sep.value)), value = sep.value,
+                space2 = ' ' * (max_name_length - len(sep.name)), name = sep.name,
+                cats = ' | '.join(sep.cats)
+            )
+        with open(self.filename, 'w') as file:
+            file.write(retval)
 
-def about_hasher_something():
-    # values: list[T], hasher: f(T): int
-    def generate_hasher(values, hasher):
-        half_hash_values = list(map(hasher, values))
-        def get_bucket_size(moder):
-            hash_values = [half_hash_value % moder for half_hash_value in half_hash_values]
-            max_collision_count = max(len(list(filter(lambda x: x == hash_value, hash_values))) for hash_value in set(hash_values))
-            return moder, max_collision_count, moder * max_collision_count
-        return next(iter(sorted(map(get_bucket_size, range(len(values), 1000)), key = lambda x: x[2])), None)
+    def generate_hash_specs(self):
+        bucket_size, bucket_number, memory_use = check_hasher_perform(
+            list(map(lambda x: x.value, self.len1s)), 
+            lambda x: ord(x)
+        )
+        print(f'len1: bucket size: {bucket_size}, number: {bucket_number}, memory use: {memory_use}') # 37, 1
+        bucket_size, bucket_number, memory_use = check_hasher_perform(
+            list(map(lambda x: x.value, self.len2s)), 
+            lambda x: ord(x[0]) + ord(x[1]) * 256
+        )
+        print(f'len2: bucket size: {bucket_size}, number: {bucket_number}, memory use: {memory_use}') # 38, 1
+    
+    def generate_tests(self):
+        test_src = ''
 
-    moder, bucket_number, memory_use = generate_hasher(
-        list(map(lambda x: list(map(int, x[0].encode('ascii'))), seperators)),
-        lambda bs: bs[0] if len(bs) == 1 else (bs[0] * 256 + bs[1] if len(bs) == 2 else (bs[0] * 65536 + bs[1] * 256 + bs[2])))
-    print(f'seperator::parse3 best result: moder = {moder}, bucket_number = {bucket_number}, memory_use = {memory_use}')
+        # test_src += '\n// to make sure the ABI not changed'
+        # test_src += '#[cfg(test)] #[test]\n'
+        # test_src += 'fn seperator_into_u8() {\n'
+        # test_src += '    unsafe {\n'
+        # for sep in chain(self.len1s, self.len2s, self.len3s):
+        #     test_src += '        assert_eq!{ ::std::mem::transmute_copy::<Seperator, u8>(&Seperator::' + sep.name + ') as usize, ' + str(sep.index) + ' }\n'
+        # test_src += '    }\n'
+        # test_src += '}\n'
 
-    moder, bucket_number, memory_use = generate_hasher(
-        list(map(lambda x: x[0], filter(lambda x: len(x[0]) == 2, seperators))),
-        lambda x: ord(x[0]) * 256 + ord(x[1]))
-    print(f'seperator::parse2 best result: moder = {moder}, bucket_number = {bucket_number}, memory_use = {memory_use}')
+        items = list(chain(self.len1s, self.len2s, self.len3s))
 
-    moder, bucket_number, memory_use = generate_hasher(
-        list(map(lambda x: ord(x[0][0]), filter(lambda x: len(x[0]) == 1, seperators))), 
-        lambda x: x)
-    print(f'seperator::parse1 best result: moder = {moder}, bucket_number = {bucket_number}, memory_use = {memory_use}')
+        test_src += '#[cfg(test)] #[test]\n'
+        test_src += 'fn seperator_debug() {\n\n'
+        for _ in range(10):
+            sep = random.choice(items)
+            test_src += '    assert_eq!{ format!("{:?}", Seperator::' + sep.name + '), "' + sep.value + '" }\n'
+        test_src += '}\n'
 
-    from functools import reduce
-    moder, bucket_number, memory_use = generate_hasher(
-        list(map(lambda x: x[0], keywords)),
-        lambda value: reduce(lambda x, y: x * (ord(y) - 42) % 1800000000000001, value, 1)) # the 2 numbers are found by trials
-        # lambda value: reduce(lambda x, y: x * ord(y), value, 1))
-    print(f'keyword::parse best result, moder = {moder}, bucket_number = {bucket_number}, memory_use = {memory_use}')
+        test_src += '#[cfg(test)] #[test]\n'
+        test_src += 'fn seperator_is_cat() {\n\n'
+        for _ in range(10):
+            sep = random.choice(items)
+            true_cat = random.choice(sep.cats)
+            maybe_false_cat = random.choice(self.cats)[0]
+            test_src += '    assert_eq!{ Seperator::' + sep.name + '.is_category(SeperatorCategory::' + true_cat + '), true }\n'
+            test_src += '    assert_eq!{ Seperator::' + sep.name + '.is_category(SeperatorCategory::' + maybe_false_cat + '), ' + \
+                ('true' if maybe_false_cat in sep.cats else 'false') + ' }\n'
+        test_src += '}\n'
 
-def generate_seperator():
-    def extend_list(l, item):
-        l.extend(item)
-        return l
-    src = ''
-    src += '///! fff-lang\n'
-    src += '///!\n'
-    src += '///! lexical/seperator\n'
-    src += '///! Attention: contens are auto generated by token.py, do not modify this file\n\n'
+        # TODO: generate proper parse test cases
+        test_src += '#[cfg(test)] #[test]\n'
+        test_src += 'fn seperator_parse() {\n\n'
+        for _ in range(10):
+            sep = random.choice(items)
+            test_src += "    assert_eq!{"
 
-    src += '#[allow(non_snake_case)\n'
-    src += '#[allow(non_upper_case_globals)\n'
-    src += 'pub mod SeperatorCategory {\n    '
-    categories = set(reduce(extend_list, map(lambda s: s[2], seperators), []))
-    assert len(categories) < 16
-    max_categories_len = len(max(categories, key = len))
-    src += '\n    '.join('pub const {space}{name}: u16 = {value};'.format(
-            space = ' ' * (max_categories_len - len(category[1])),
-            name = category[1],
-            value = '0x%04x' % (2 ** category[0])
-    ) for category in enumerate(categories))
-    src += '\n}\n\n'
+        test_src += "    assert_eq!{ Seperator::parse3('<', '<', '='), Some((Seperator::ShiftLeftAssign, 3)) }\n"
+        test_src += "    assert_eq!{ Seperator::parse3('+', ' ', '1'), Some((Seperator::Add, 1)) }\n"
+        # !!!! 17/7/8, this case is very very interesting
+        # I created this case simply randomly manully, but it help me find the bug of current hash function and hash map design
+        # hash = ch1 as u32 + ch2 as u32 * 256, and hashmap's bucket size is 38, and, most interestingly
+        # ('{' as u32  + ' ' as u32 * 256) % 38 == ('!' as u32 + '=' as u32 * 256) % 38 == 31
+        # which help me understand why there is first hashmap then hashset just a hashmap<T, ()>
+        # because in this case if you do not have a key stored in hashmap to confirm equality then a bug happened
+        test_src += "    assert_eq!{ Seperator::parse3('{', ' ', 'a'), Some((Seperator::LeftBrace, 1)) }\n"
+        test_src += "    assert_eq!{ Seperator::parse3('&', '&', ' '), Some((Seperator::LogicalAnd, 2)) }\n"
+        test_src += '}\n'
 
-    src += '#[derive(Eq, PartialEq, Copy, Clone)]\n'
-    src += 'pub enum Seperator {\n    '
-    src += '\n    '.join('{},'.format(name) for name in map(lambda x: x[1], seperators))
-    src += '\n}\n\n'
+        return test_src
 
-    # parse1: hasher: lambda x: x, moder/bucket_size: 37, bucket_number: 1
-    # TODO: this may not pass test
-    single_char_to_name = [255] * 37
-    src += 'const SINGLE_CHAR_TO_NAME: &[u8] = &['
-    for index, seperator in filter(lambda x: len(x[1][0]) == 1, enumerate(seperators)):
-        single_char_to_name[ord(seperator[0][0]) % 37] = index
-    for index, item in enumerate(single_char_to_name):
-        if index % 16 == 0:
-            src += '\n    '
-        src += str(item) + ', '
-    src += '\n];\n'
+    def generate(self):
+        def extend_list(l, item):
+            l.extend(item)
+            return l
+        src = ''
+        src += '///! fff-lang\n'
+        src += '///!\n'
+        src += '///! lexical/seperator\n'
+        src += '///! Attention: contens are auto generated by token.py, do not modify this file\n\n'
 
-    # TODO: parse3
-    # first hash(ch1, ch2, ch3) to check for existence
-    # assume this require bucket_size, bucket_number = 3
-    # then generate ... it's very complex and do it later
+        src += '#[allow(non_snake_case)]\n'
+        src += '#[allow(non_upper_case_globals)]\n'
+        src += 'pub mod SeperatorCategory {\n    '
+        max_categories_len = len(max(self.cats, key = lambda cat: len(cat[0]))[0])
+        src += '\n    '.join('pub const {space}{name}: u16 = {value};'.format(
+                space = ' ' * (max_categories_len - len(cat_name)), name = cat_name,
+                value = '0x%04x' % cat_value
+        ) for (cat_name, cat_value) in self.cats)
+        src += '\n}\n\n'
 
-    src += 'impl Seperator {\n\n'
-    src += '    fn parse1(ch: char) -> Option<Seperator> {\n'
-    src += '        ::std::mem::transmute::<u8, Seperator>(SINGLE_CHAR_TO_NAME[ch as u32 % 37])\n'
-    src += '    }\n'
-    src += '}\n'
+        src += '#[derive(Eq, PartialEq, Copy, Clone)]\n'
+        src += 'pub enum Seperator {\n    '
+        src += '\n    '.join('{},'.format(name) for name in map(lambda x: x.name, chain(self.len1s, self.len2s, self.len3s)))
+        src += '\n}\n\n'
 
-    src += 'const SEP_NAMES: &[&str]: &['
-    src += ', '.join(map(
-        lambda x: '{opt_space}"{value}"'.format(value = x[1][0], opt_space = '\n    ' if x[0] % 12 == 0 else ''), enumerate(seperators)))
-    src += '\n];\n'
-    src += 'impl ::std::fmt::Debug for Seperator {\n'
-    src += '    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {\n'
-    src += '        unsafe { write!(f, "{{}}",\n'
-    src += '            ::std::mem::transmute::<&[u8], &str>(\n'
-    src += '                SEP_NAMES[::std::mem::transmute_copy::<Seperator, u8>(self) as usize]\n'
-    src += '            )\n'
-    src += '        ) }\n'
-    src += '    }\n'
-    src += '}\n'
+        src += 'const EMPTY_BUCKET: (u32, u32) = (0, 0);\n'  # 0 (or EOF) will not be passed here
+        name_from_1_char, name_from_2_char = [(0, 0)] * 37, [(0, 0)] * 38
+        for sep in self.len1s:
+            hashv = ord(sep.value)
+            name_from_1_char[hashv % 37] = (hashv, sep.index)
+        for sep in self.len2s:
+            hashv = ord(sep.value[0]) + ord(sep.value[1]) * 256
+            name_from_2_char[hashv % 38] = (hashv, sep.index - len(self.len1s))
+        src += 'const NAME_FROM_1_CHAR: &[(u32, u32)] = &['
+        for index, item in enumerate(name_from_1_char):
+            if index % 8 == 0:
+                src += '\n    '
+            if item != (0, 0):
+                key, value = item
+                src += f'({key}, {value}), '
+            else:
+                src += 'EMPTY_BUCKET, '
+        src += '\n];\n'
+        src += 'const NAME_FROM_2_CHAR: &[(u32, u32)] = &['
+        for index, item in enumerate(name_from_2_char):
+            if index % 8 == 0:
+                src += '\n    '
+            if item != (0, 0):
+                key, value = item
+                src += f'({key}, {value}), '
+            else:
+                src += 'EMPTY_BUCKET, '
+        src += '\n];\n'
+        src += 'impl Seperator {\n\n'
+        src += '    pub fn parse1(ch: char) -> Option<Seperator> {\n'
+        src += '        let hash = ch as u32;\n'
+        src += '        match NAME_FROM_1_CHAR[(hash % 37) as usize] {\n'
+        src += '            (key, _) if key != hash => None,\n'
+        src += '            (_, index) => unsafe { Some(::std::mem::transmute(index as u8)) },\n'
+        src += '        }\n'
+        src += '    }\n'
+        src += '    pub fn parse3(ch1: char, ch2: char, ch3: char) -> Option<(Seperator, usize)> {\n'
+        src += '        let hash2 = ch1 as u32 + ch2 as u32 * 256;\n'
+        src += '        let hash1 = ch1 as u32;\n'
+        src += '        match &[ch1 as u8, ch2 as u8, ch3 as u8] {\n'   # if len(self.len3s) is large than 10 or 100, make it into hashmap, too
+        for sep in self.len3s:
+            src += '            b"%s" => unsafe { Some((::std::mem::transmute(%du8), 3)) },\n' % (sep.value, sep.index)
+        src += '            _ => match NAME_FROM_2_CHAR[(hash2 % 38) as usize] {\n'
+        src += '                (key, _) if key != hash2 => match NAME_FROM_1_CHAR[(hash1 % 37) as usize] {\n'
+        src += '                    (key, _) if key != hash1 => None,\n'
+        src += '                    (_, index) => unsafe { Some((::std::mem::transmute(index as u8), 1)) },\n'
+        src += '                },\n'
+        src += '                (_, index) => unsafe { Some((::std::mem::transmute((index + %d) as u8), 2)) },\n' % len(self.len1s)
+        src += '            },\n'
+        src += '        }\n'
+        src += '    }\n'
+        src += '}\n'
 
-    # print(len(set(reduce(extend_list, map(lambda x: list(x[0]), seperators), []))))
+        src += 'impl ::std::fmt::Debug for Seperator {\n'
+        src += '    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {\n'
+        src += '        const SEP_VALUES: &[&str] = &['
+        src += ', '.join(map(
+            lambda x: '{opt_space}"{value}"'.format(value = x[1].value, opt_space = '\n            ' if x[0] % 12 == 0 else ''), enumerate(chain(self.len1s, self.len2s, self.len3s))))
+        src += '\n'
+        src += '        ];\n'
+        src += '        unsafe { write!(f, "{}",\n'
+        src += '            SEP_VALUES[::std::mem::transmute_copy::<Seperator, u8>(self) as usize]\n'
+        src += '        ) }\n'
+        src += '    }\n'
+        src += '}\n'
 
-    return src
+        src += 'impl Seperator {\n\n'
+        src += '    pub fn is_category(&self, cat: u16) -> bool {\n'
+        src += '        const SEP_CATS: &[u16] = &['
+        src += ', '.join(map(
+            lambda x: '{opt_space}{value}'.format(value = x[1].cats_value, opt_space = '\n            ' if x[0] % 12 == 0 else ''), enumerate(chain(self.len1s, self.len2s, self.len3s))
+        ))
+        src += '\n'
+        src += '        ];\n'
+        src += '        unsafe {\n'
+        src += '            (SEP_CATS[::std::mem::transmute_copy::<Seperator, u8>(self) as usize] & cat) == cat\n'
+        src += '        }\n'
+        src += '    }\n'
+        src += '}\n'
 
-# print(format_all())
-about_hasher_something()
-#print(generate_seperator())
+        src += self.generate_tests()
+
+        with open('seperator2.rs', 'w') as file:
+            file.write(src)
+
+class Keyword:
+    def __init__(self, value, name, index, cat):
+        self.value, self.name, self.index, self.cat = value, name, index, cat
+    def __str__(self):
+        return f'keyword({self.value}, {self.name}, {self.index}, {self.cat})'
+    def __lt__(self, rhs):
+        return self.value < rhs.value
+    def update_index(self, new_index):
+        self.index = new_index
+        return self
+class Keywords:
+    def __init__(self, filename):
+        self.filename = filename
+        self.comments = []
+        self.items = []
+        for line in map(str.strip, open(filename).readlines()):
+            if line.startswith('//'):
+                self.comments.append(line)
+            else:
+                value, rest = map(lambda x: x.strip(" '"), line.split('=>'))
+                name, category, _ = map(str.strip, rest.split(','))
+                self.items.append(Keyword(value, name, 0, category))
+        self.items.sort()
+        self.items = [keyword.update_index(index) for (index, keyword) in enumerate(self.items)]
+
+    def __str__(self):
+        return 'keyword in ' + self.filename + ':'          \
+            + '\n  comments:\n  ' + '\n  '.join(self.comments) \
+            + '\n  items:\n    ' + '\n    '.join(map(str, self.items))
+
+    # format and write back
+    def format(self):
+        retval = '\n'.join(self.comments)
+        max_value_length, max_name_length = 0, 0
+        for kw in self.items:
+            max_value_length = max(max_value_length, len(kw.value))
+            max_name_length = max(max_name_length, len(kw.name))
+        for kw in self.items:
+            retval += "\n {space1}'{value}' => {space2}{name}, {cat},".format(
+                space1 = ' ' * (max_value_length - len(kw.value)), value = kw.value,
+                space2 = ' ' * (max_name_length - len(kw.name)), name = kw.name,
+                cat = kw.cat
+            )
+        with open(self.filename, 'w') as file:
+            file.write(retval)
+
+    def generate_hash_specs(self):      
+        # (43, 18...1) => 137, 2, 274
+        bucket_size, bucket_number, memory_use = check_hasher_perform(
+            list(map(lambda x: x.value, self.items)),
+            lambda value: reduce(lambda x, y: x * (ord(y) - 43) % 1800000000000001, value, 1))
+        print(f'keyword all: bucket size: {bucket_size}, number: {bucket_number}, memory use: {memory_use}')
+
+    def generate(self):
+        src = ''
+        src += '///! fff-lang\n'
+        src += '///!\n'
+        src += '///! lexical/keyword\n'
+        src += '///! Attention: contens are auto generated by token.py, do not modify this file\n\n'
+
+        src += '#[derive(Eq, PartialEq, Clone, Copy)]\n'
+        src += 'pub enum Keyword {'
+        src += ''.join(f'\n    {kw.name},' for kw in self.items)
+        src += '\n}\n'
+
+        # parse
+
+        src += 'impl ::std::fmt::Debug for Keyword {\n'
+        src += '    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {\n'
+        src += '        const KEYWORD_VALUES: &[&str] = &['    # thanks for 1.18's const static default 'static
+        src += '        ]\n'
+        src += '    }\n'
+        src += '}\n\n'
+
+        src += 'const KEYWORD_CATS: &[u8] = &[\n'
+        src += '];\n'
+        src += 'impl Seperator {\n'
+        src += '    pub fn is_primitive(&self) -> bool {\n'
+        src += '    }\n'
+        src += '}\n'
+        src += '    pub fn is_reserved(&self) -> bool {\n'
+        src += '    }\n'
+        src += '}\n'
+
+        with open('keyword2.rs', 'w') as file:
+            file.write(src)
+
+# main
+seperators = Seperators(SEPERATOR_DEF_FILE)
+keywords = Keywords(KEYWORD_DEF_FILE)
+#print(seperators)
+#seperators.format()
+#keywords.format()
+#seperators.generate_hash_specs()
+#keywords.generate_hash_specs()
+#seperators.generate()
+keywords.generate()
