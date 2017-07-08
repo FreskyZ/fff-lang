@@ -1,0 +1,22 @@
+// Error count when refactoring String to codemap::SymbolID in syntax
+
+92
+91
+96
+102
+103
+119
+116, mainly updated BlockStmt
+99, mainly updated PostfixExpr,
+89, mainly updated LoopStmt
+82, misc
+78, mainly updated WhileStatement,
+78, mainly updated VarDecl
+75, mainly updated TypeUse
+121, mainly updated FnDef
+119, mainly updated SyntaxTree
+104, misc
+102, mainly updated Name
+97, misc
+13, misc and abandom primary expr and binary expr tests
+0, pass compile and most tests

@@ -1,0 +1,3524 @@
+    Finished debug [unoptimized + debuginfo] target(s) in 0.0 secs
+     Running `target\debug\smc.exe tests/syntax/gcd.sm`
+[DEBUG][3][vm/vm_impl.rs|VirtualMachine::execute] main fn local_size = 8
+[DEBUG][3][vm/runtime.rs|Runtime::reserve_stack][FnBegin] Param local_size = 8
+[DEBUG][3][vm/vm_impl.rs|VirtualMachine::execute] after reserve stack, rt.rbp = 2, rt.stack.len() = 10
+Current Code: (0, Call 1, "Input 2 numbers")
+Current State: 
+   RIP: 0
+   RBP: 2
+   RSP: 0
+   RAX: Nothing
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Nothing
+      Nothing
+      Nothing
+      Nothing
+      Nothing
+      Nothing
+      Nothing
+   Heap:
+      
+
+Current Code: (1, Call 2, )
+Current State: 
+   RIP: 1
+   RBP: 2
+   RSP: 0
+   RAX: Unit
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Nothing
+      Nothing
+      Nothing
+      Nothing
+      Nothing
+      Nothing
+      Nothing
+   Heap:
+      
+
+Current Code: (2, Store 1 rax)
+Current State: 
+   RIP: 2
+   RBP: 2
+   RSP: 0
+   RAX: Int(15)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Nothing
+      Nothing
+      Nothing
+      Nothing
+      Nothing
+      Nothing
+      Nothing
+   Heap:
+      
+
+Current Code: (3, Call 2, )
+Current State: 
+   RIP: 3
+   RBP: 2
+   RSP: 0
+   RAX: Int(15)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Nothing
+      Nothing
+      Nothing
+      Nothing
+      Nothing
+      Nothing
+   Heap:
+      
+
+Current Code: (4, Store 2 rax)
+Current State: 
+   RIP: 4
+   RBP: 2
+   RSP: 0
+   RAX: Int(25)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Nothing
+      Nothing
+      Nothing
+      Nothing
+      Nothing
+      Nothing
+   Heap:
+      
+
+Current Code: (5, Call 134, [rbp - 2], (i32)0)
+Current State: 
+   RIP: 5
+   RBP: 2
+   RSP: 0
+   RAX: Int(25)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Nothing
+      Nothing
+      Nothing
+      Nothing
+      Nothing
+   Heap:
+      
+
+Current Code: (6, Store 3 rax)
+Current State: 
+   RIP: 6
+   RBP: 2
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Nothing
+      Nothing
+      Nothing
+      Nothing
+      Nothing
+   Heap:
+      
+
+Current Code: (7, Call 134, [rbp - 1], (i32)0)
+Current State: 
+   RIP: 7
+   RBP: 2
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Nothing
+      Nothing
+      Nothing
+      Nothing
+   Heap:
+      
+
+Current Code: (8, Call 282, rax, [rbp - 3])
+Current State: 
+   RIP: 8
+   RBP: 2
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Nothing
+      Nothing
+      Nothing
+      Nothing
+   Heap:
+      
+
+Current Code: (9, Goto 11 if rax is false)
+Current State: 
+   RIP: 9
+   RBP: 2
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Nothing
+      Nothing
+      Nothing
+      Nothing
+   Heap:
+      
+
+Current Code: (11, Call 144, [rbp - 1])
+Current State: 
+   RIP: 11
+   RBP: 2
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Nothing
+      Nothing
+      Nothing
+      Nothing
+   Heap:
+      
+
+Current Code: (12, Store 4 rax)
+Current State: 
+   RIP: 12
+   RBP: 2
+   RSP: 0
+   RAX: Str("15")
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Nothing
+      Nothing
+      Nothing
+      Nothing
+   Heap:
+      
+
+Current Code: (13, Call 144, [rbp - 2])
+Current State: 
+   RIP: 13
+   RBP: 2
+   RSP: 0
+   RAX: Str("15")
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Nothing
+      Nothing
+      Nothing
+   Heap:
+      
+
+Current Code: (14, Store 5 rax)
+Current State: 
+   RIP: 14
+   RBP: 2
+   RSP: 0
+   RAX: Str("25")
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Nothing
+      Nothing
+      Nothing
+   Heap:
+      
+
+Current Code: (15, Call 292, [rbp - 1], [rbp - 2])
+Current State: 
+   RIP: 15
+   RBP: 2
+   RSP: 0
+   RAX: Str("25")
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+   Heap:
+      
+
+[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call(fnid: 292, operands: [[rbp - 1], [rbp - 2]])]
+[DEBUG][3][vm/runtime.rs|Runtime::reserve_stack][FnBegin] Param local_size = 4
+[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call] Iterating operand, current operand: (0, [rbp - 1]), stack index to be set: 3, value to be set: Int(15)
+[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call] Iterating operand, current operand: (1, [rbp - 2]), stack index to be set: 4, value to be set: Int(25)
+Current Code: (27, Call 134, [rbp - 2], (i32)0)
+Current State: 
+   RIP: 27
+   RBP: 12
+   RSP: 0
+   RAX: Str("25")
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(15)
+      Int(25)
+      Nothing
+   Heap:
+      
+
+Current Code: (28, Goto 30 if rax is false)
+Current State: 
+   RIP: 28
+   RBP: 12
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(15)
+      Int(25)
+      Nothing
+   Heap:
+      
+
+Current Code: (30, Call 139, [rbp - 1], [rbp - 2])
+Current State: 
+   RIP: 30
+   RBP: 12
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(15)
+      Int(25)
+      Nothing
+   Heap:
+      
+
+Current Code: (31, Goto 34 if rax is false)
+Current State: 
+   RIP: 31
+   RBP: 12
+   RSP: 0
+   RAX: Bool(true)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(15)
+      Int(25)
+      Nothing
+   Heap:
+      
+
+Current Code: (32, Call 292, [rbp - 2], [rbp - 1])
+Current State: 
+   RIP: 32
+   RBP: 12
+   RSP: 0
+   RAX: Bool(true)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(15)
+      Int(25)
+      Nothing
+   Heap:
+      
+
+[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call(fnid: 292, operands: [[rbp - 2], [rbp - 1]])]
+[DEBUG][3][vm/runtime.rs|Runtime::reserve_stack][FnBegin] Param local_size = 4
+[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call] Iterating operand, current operand: (0, [rbp - 2]), stack index to be set: 13, value to be set: Int(25)
+[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call] Iterating operand, current operand: (1, [rbp - 1]), stack index to be set: 14, value to be set: Int(15)
+Current Code: (27, Call 134, [rbp - 2], (i32)0)
+Current State: 
+   RIP: 27
+   RBP: 18
+   RSP: 0
+   RAX: Bool(true)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(15)
+      Int(25)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(25)
+      Int(15)
+      Nothing
+   Heap:
+      
+
+Current Code: (28, Goto 30 if rax is false)
+Current State: 
+   RIP: 28
+   RBP: 18
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(15)
+      Int(25)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(25)
+      Int(15)
+      Nothing
+   Heap:
+      
+
+Current Code: (30, Call 139, [rbp - 1], [rbp - 2])
+Current State: 
+   RIP: 30
+   RBP: 18
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(15)
+      Int(25)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(25)
+      Int(15)
+      Nothing
+   Heap:
+      
+
+Current Code: (31, Goto 34 if rax is false)
+Current State: 
+   RIP: 31
+   RBP: 18
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(15)
+      Int(25)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(25)
+      Int(15)
+      Nothing
+   Heap:
+      
+
+Current Code: (34, Call 128, [rbp - 1], [rbp - 2])
+Current State: 
+   RIP: 34
+   RBP: 18
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(15)
+      Int(25)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(25)
+      Int(15)
+      Nothing
+   Heap:
+      
+
+Current Code: (35, Store 3 rax)
+Current State: 
+   RIP: 35
+   RBP: 18
+   RSP: 0
+   RAX: Int(10)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(15)
+      Int(25)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(25)
+      Int(15)
+      Nothing
+   Heap:
+      
+
+Current Code: (36, Call 292, [rbp - 2], [rbp - 3])
+Current State: 
+   RIP: 36
+   RBP: 18
+   RSP: 0
+   RAX: Int(10)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(15)
+      Int(25)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(25)
+      Int(15)
+      Int(10)
+   Heap:
+      
+
+[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call(fnid: 292, operands: [[rbp - 2], [rbp - 3]])]
+[DEBUG][3][vm/runtime.rs|Runtime::reserve_stack][FnBegin] Param local_size = 4
+[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call] Iterating operand, current operand: (0, [rbp - 2]), stack index to be set: 19, value to be set: Int(15)
+[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call] Iterating operand, current operand: (1, [rbp - 3]), stack index to be set: 20, value to be set: Int(10)
+Current Code: (27, Call 134, [rbp - 2], (i32)0)
+Current State: 
+   RIP: 27
+   RBP: 24
+   RSP: 0
+   RAX: Int(10)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(15)
+      Int(25)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(25)
+      Int(15)
+      Int(10)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(15)
+      Int(10)
+      Nothing
+   Heap:
+      
+
+Current Code: (28, Goto 30 if rax is false)
+Current State: 
+   RIP: 28
+   RBP: 24
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(15)
+      Int(25)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(25)
+      Int(15)
+      Int(10)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(15)
+      Int(10)
+      Nothing
+   Heap:
+      
+
+Current Code: (30, Call 139, [rbp - 1], [rbp - 2])
+Current State: 
+   RIP: 30
+   RBP: 24
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(15)
+      Int(25)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(25)
+      Int(15)
+      Int(10)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(15)
+      Int(10)
+      Nothing
+   Heap:
+      
+
+Current Code: (31, Goto 34 if rax is false)
+Current State: 
+   RIP: 31
+   RBP: 24
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(15)
+      Int(25)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(25)
+      Int(15)
+      Int(10)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(15)
+      Int(10)
+      Nothing
+   Heap:
+      
+
+Current Code: (34, Call 128, [rbp - 1], [rbp - 2])
+Current State: 
+   RIP: 34
+   RBP: 24
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(15)
+      Int(25)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(25)
+      Int(15)
+      Int(10)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(15)
+      Int(10)
+      Nothing
+   Heap:
+      
+
+Current Code: (35, Store 3 rax)
+Current State: 
+   RIP: 35
+   RBP: 24
+   RSP: 0
+   RAX: Int(5)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(15)
+      Int(25)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(25)
+      Int(15)
+      Int(10)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(15)
+      Int(10)
+      Nothing
+   Heap:
+      
+
+Current Code: (36, Call 292, [rbp - 2], [rbp - 3])
+Current State: 
+   RIP: 36
+   RBP: 24
+   RSP: 0
+   RAX: Int(5)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(15)
+      Int(25)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(25)
+      Int(15)
+      Int(10)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(15)
+      Int(10)
+      Int(5)
+   Heap:
+      
+
+[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call(fnid: 292, operands: [[rbp - 2], [rbp - 3]])]
+[DEBUG][3][vm/runtime.rs|Runtime::reserve_stack][FnBegin] Param local_size = 4
+[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call] Iterating operand, current operand: (0, [rbp - 2]), stack index to be set: 25, value to be set: Int(10)
+[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call] Iterating operand, current operand: (1, [rbp - 3]), stack index to be set: 26, value to be set: Int(5)
+Current Code: (27, Call 134, [rbp - 2], (i32)0)
+Current State: 
+   RIP: 27
+   RBP: 30
+   RSP: 0
+   RAX: Int(5)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(15)
+      Int(25)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(25)
+      Int(15)
+      Int(10)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(15)
+      Int(10)
+      Int(5)
+      PrevRIP(37)
+      PrevRBP(24)
+      Nothing
+      Int(10)
+      Int(5)
+      Nothing
+   Heap:
+      
+
+Current Code: (28, Goto 30 if rax is false)
+Current State: 
+   RIP: 28
+   RBP: 30
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(15)
+      Int(25)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(25)
+      Int(15)
+      Int(10)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(15)
+      Int(10)
+      Int(5)
+      PrevRIP(37)
+      PrevRBP(24)
+      Nothing
+      Int(10)
+      Int(5)
+      Nothing
+   Heap:
+      
+
+Current Code: (30, Call 139, [rbp - 1], [rbp - 2])
+Current State: 
+   RIP: 30
+   RBP: 30
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(15)
+      Int(25)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(25)
+      Int(15)
+      Int(10)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(15)
+      Int(10)
+      Int(5)
+      PrevRIP(37)
+      PrevRBP(24)
+      Nothing
+      Int(10)
+      Int(5)
+      Nothing
+   Heap:
+      
+
+Current Code: (31, Goto 34 if rax is false)
+Current State: 
+   RIP: 31
+   RBP: 30
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(15)
+      Int(25)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(25)
+      Int(15)
+      Int(10)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(15)
+      Int(10)
+      Int(5)
+      PrevRIP(37)
+      PrevRBP(24)
+      Nothing
+      Int(10)
+      Int(5)
+      Nothing
+   Heap:
+      
+
+Current Code: (34, Call 128, [rbp - 1], [rbp - 2])
+Current State: 
+   RIP: 34
+   RBP: 30
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(15)
+      Int(25)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(25)
+      Int(15)
+      Int(10)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(15)
+      Int(10)
+      Int(5)
+      PrevRIP(37)
+      PrevRBP(24)
+      Nothing
+      Int(10)
+      Int(5)
+      Nothing
+   Heap:
+      
+
+Current Code: (35, Store 3 rax)
+Current State: 
+   RIP: 35
+   RBP: 30
+   RSP: 0
+   RAX: Int(0)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(15)
+      Int(25)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(25)
+      Int(15)
+      Int(10)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(15)
+      Int(10)
+      Int(5)
+      PrevRIP(37)
+      PrevRBP(24)
+      Nothing
+      Int(10)
+      Int(5)
+      Nothing
+   Heap:
+      
+
+Current Code: (36, Call 292, [rbp - 2], [rbp - 3])
+Current State: 
+   RIP: 36
+   RBP: 30
+   RSP: 0
+   RAX: Int(0)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(15)
+      Int(25)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(25)
+      Int(15)
+      Int(10)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(15)
+      Int(10)
+      Int(5)
+      PrevRIP(37)
+      PrevRBP(24)
+      Nothing
+      Int(10)
+      Int(5)
+      Int(0)
+   Heap:
+      
+
+[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call(fnid: 292, operands: [[rbp - 2], [rbp - 3]])]
+[DEBUG][3][vm/runtime.rs|Runtime::reserve_stack][FnBegin] Param local_size = 4
+[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call] Iterating operand, current operand: (0, [rbp - 2]), stack index to be set: 31, value to be set: Int(5)
+[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call] Iterating operand, current operand: (1, [rbp - 3]), stack index to be set: 32, value to be set: Int(0)
+Current Code: (27, Call 134, [rbp - 2], (i32)0)
+Current State: 
+   RIP: 27
+   RBP: 36
+   RSP: 0
+   RAX: Int(0)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(15)
+      Int(25)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(25)
+      Int(15)
+      Int(10)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(15)
+      Int(10)
+      Int(5)
+      PrevRIP(37)
+      PrevRBP(24)
+      Nothing
+      Int(10)
+      Int(5)
+      Int(0)
+      PrevRIP(37)
+      PrevRBP(30)
+      Nothing
+      Int(5)
+      Int(0)
+      Nothing
+   Heap:
+      
+
+Current Code: (28, Goto 30 if rax is false)
+Current State: 
+   RIP: 28
+   RBP: 36
+   RSP: 0
+   RAX: Bool(true)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(15)
+      Int(25)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(25)
+      Int(15)
+      Int(10)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(15)
+      Int(10)
+      Int(5)
+      PrevRIP(37)
+      PrevRBP(24)
+      Nothing
+      Int(10)
+      Int(5)
+      Int(0)
+      PrevRIP(37)
+      PrevRBP(30)
+      Nothing
+      Int(5)
+      Int(0)
+      Nothing
+   Heap:
+      
+
+Current Code: (29, Return [rbp - 1])
+Current State: 
+   RIP: 29
+   RBP: 36
+   RSP: 0
+   RAX: Bool(true)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(15)
+      Int(25)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(25)
+      Int(15)
+      Int(10)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(15)
+      Int(10)
+      Int(5)
+      PrevRIP(37)
+      PrevRBP(24)
+      Nothing
+      Int(10)
+      Int(5)
+      Int(0)
+      PrevRIP(37)
+      PrevRBP(30)
+      Nothing
+      Int(5)
+      Int(0)
+      Nothing
+   Heap:
+      
+
+Current Code: (37, Return rax)
+Current State: 
+   RIP: 37
+   RBP: 30
+   RSP: 0
+   RAX: Int(5)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(15)
+      Int(25)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(25)
+      Int(15)
+      Int(10)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(15)
+      Int(10)
+      Int(5)
+      PrevRIP(37)
+      PrevRBP(24)
+      Nothing
+      Int(10)
+      Int(5)
+      Int(0)
+   Heap:
+      
+
+Current Code: (37, Return rax)
+Current State: 
+   RIP: 37
+   RBP: 24
+   RSP: 0
+   RAX: Int(5)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(15)
+      Int(25)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(25)
+      Int(15)
+      Int(10)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(15)
+      Int(10)
+      Int(5)
+   Heap:
+      
+
+Current Code: (37, Return rax)
+Current State: 
+   RIP: 37
+   RBP: 18
+   RSP: 0
+   RAX: Int(5)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(15)
+      Int(25)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(25)
+      Int(15)
+      Int(10)
+   Heap:
+      
+
+Current Code: (33, Return rax)
+Current State: 
+   RIP: 33
+   RBP: 12
+   RSP: 0
+   RAX: Int(5)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(15)
+      Int(25)
+      Nothing
+   Heap:
+      
+
+Current Code: (16, Call 144, rax)
+Current State: 
+   RIP: 16
+   RBP: 2
+   RSP: 0
+   RAX: Int(5)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+   Heap:
+      
+
+Current Code: (17, Store 6 rax)
+Current State: 
+   RIP: 17
+   RBP: 2
+   RSP: 0
+   RAX: Str("5")
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Nothing
+      Nothing
+   Heap:
+      
+
+Current Code: (18, Call 285, "\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(", [rbp - 4])
+Current State: 
+   RIP: 18
+   RBP: 2
+   RSP: 0
+   RAX: Str("5")
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Str("5")
+      Nothing
+   Heap:
+      
+
+Current Code: (19, Call 285, rax, ", ")
+Current State: 
+   RIP: 19
+   RBP: 2
+   RSP: 0
+   RAX: Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15")
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Str("5")
+      Nothing
+   Heap:
+      
+
+Current Code: (20, Call 285, rax, [rbp - 5])
+Current State: 
+   RIP: 20
+   RBP: 2
+   RSP: 0
+   RAX: Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, ")
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Str("5")
+      Nothing
+   Heap:
+      
+
+Current Code: (21, Call 285, rax, ") is ")
+Current State: 
+   RIP: 21
+   RBP: 2
+   RSP: 0
+   RAX: Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25")
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Str("5")
+      Nothing
+   Heap:
+      
+
+Current Code: (22, Call 285, rax, [rbp - 6])
+Current State: 
+   RIP: 22
+   RBP: 2
+   RSP: 0
+   RAX: Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is ")
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Str("5")
+      Nothing
+   Heap:
+      
+
+Current Code: (23, Store 7 rax)
+Current State: 
+   RIP: 23
+   RBP: 2
+   RSP: 0
+   RAX: Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Str("5")
+      Nothing
+   Heap:
+      
+
+Current Code: (24, Call 1, [rbp - 7])
+Current State: 
+   RIP: 24
+   RBP: 2
+   RSP: 0
+   RAX: Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+   Heap:
+      
+
+Current Code: (25, Goto 0)
+Current State: 
+   RIP: 25
+   RBP: 2
+   RSP: 0
+   RAX: Unit
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+   Heap:
+      
+
+Current Code: (0, Call 1, "Input 2 numbers")
+Current State: 
+   RIP: 0
+   RBP: 2
+   RSP: 0
+   RAX: Unit
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+   Heap:
+      
+
+Current Code: (1, Call 2, )
+Current State: 
+   RIP: 1
+   RBP: 2
+   RSP: 0
+   RAX: Unit
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+   Heap:
+      
+
+Current Code: (2, Store 1 rax)
+Current State: 
+   RIP: 2
+   RBP: 2
+   RSP: 0
+   RAX: Int(30)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(15)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+   Heap:
+      
+
+Current Code: (3, Call 2, )
+Current State: 
+   RIP: 3
+   RBP: 2
+   RSP: 0
+   RAX: Int(30)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+   Heap:
+      
+
+Current Code: (4, Store 2 rax)
+Current State: 
+   RIP: 4
+   RBP: 2
+   RSP: 0
+   RAX: Int(72)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(25)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+   Heap:
+      
+
+Current Code: (5, Call 134, [rbp - 2], (i32)0)
+Current State: 
+   RIP: 5
+   RBP: 2
+   RSP: 0
+   RAX: Int(72)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+   Heap:
+      
+
+Current Code: (6, Store 3 rax)
+Current State: 
+   RIP: 6
+   RBP: 2
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+   Heap:
+      
+
+Current Code: (7, Call 134, [rbp - 1], (i32)0)
+Current State: 
+   RIP: 7
+   RBP: 2
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+   Heap:
+      
+
+Current Code: (8, Call 282, rax, [rbp - 3])
+Current State: 
+   RIP: 8
+   RBP: 2
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+   Heap:
+      
+
+Current Code: (9, Goto 11 if rax is false)
+Current State: 
+   RIP: 9
+   RBP: 2
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+   Heap:
+      
+
+Current Code: (11, Call 144, [rbp - 1])
+Current State: 
+   RIP: 11
+   RBP: 2
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+   Heap:
+      
+
+Current Code: (12, Store 4 rax)
+Current State: 
+   RIP: 12
+   RBP: 2
+   RSP: 0
+   RAX: Str("30")
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("15")
+      Str("25")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+   Heap:
+      
+
+Current Code: (13, Call 144, [rbp - 2])
+Current State: 
+   RIP: 13
+   RBP: 2
+   RSP: 0
+   RAX: Str("30")
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("25")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+   Heap:
+      
+
+Current Code: (14, Store 5 rax)
+Current State: 
+   RIP: 14
+   RBP: 2
+   RSP: 0
+   RAX: Str("72")
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("25")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+   Heap:
+      
+
+Current Code: (15, Call 292, [rbp - 1], [rbp - 2])
+Current State: 
+   RIP: 15
+   RBP: 2
+   RSP: 0
+   RAX: Str("72")
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+   Heap:
+      
+
+[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call(fnid: 292, operands: [[rbp - 1], [rbp - 2]])]
+[DEBUG][3][vm/runtime.rs|Runtime::reserve_stack][FnBegin] Param local_size = 4
+[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call] Iterating operand, current operand: (0, [rbp - 1]), stack index to be set: 3, value to be set: Int(30)
+[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call] Iterating operand, current operand: (1, [rbp - 2]), stack index to be set: 4, value to be set: Int(72)
+Current Code: (27, Call 134, [rbp - 2], (i32)0)
+Current State: 
+   RIP: 27
+   RBP: 12
+   RSP: 0
+   RAX: Str("72")
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(30)
+      Int(72)
+      Nothing
+   Heap:
+      
+
+Current Code: (28, Goto 30 if rax is false)
+Current State: 
+   RIP: 28
+   RBP: 12
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(30)
+      Int(72)
+      Nothing
+   Heap:
+      
+
+Current Code: (30, Call 139, [rbp - 1], [rbp - 2])
+Current State: 
+   RIP: 30
+   RBP: 12
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(30)
+      Int(72)
+      Nothing
+   Heap:
+      
+
+Current Code: (31, Goto 34 if rax is false)
+Current State: 
+   RIP: 31
+   RBP: 12
+   RSP: 0
+   RAX: Bool(true)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(30)
+      Int(72)
+      Nothing
+   Heap:
+      
+
+Current Code: (32, Call 292, [rbp - 2], [rbp - 1])
+Current State: 
+   RIP: 32
+   RBP: 12
+   RSP: 0
+   RAX: Bool(true)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(30)
+      Int(72)
+      Nothing
+   Heap:
+      
+
+[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call(fnid: 292, operands: [[rbp - 2], [rbp - 1]])]
+[DEBUG][3][vm/runtime.rs|Runtime::reserve_stack][FnBegin] Param local_size = 4
+[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call] Iterating operand, current operand: (0, [rbp - 2]), stack index to be set: 13, value to be set: Int(72)
+[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call] Iterating operand, current operand: (1, [rbp - 1]), stack index to be set: 14, value to be set: Int(30)
+Current Code: (27, Call 134, [rbp - 2], (i32)0)
+Current State: 
+   RIP: 27
+   RBP: 18
+   RSP: 0
+   RAX: Bool(true)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(30)
+      Int(72)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(72)
+      Int(30)
+      Nothing
+   Heap:
+      
+
+Current Code: (28, Goto 30 if rax is false)
+Current State: 
+   RIP: 28
+   RBP: 18
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(30)
+      Int(72)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(72)
+      Int(30)
+      Nothing
+   Heap:
+      
+
+Current Code: (30, Call 139, [rbp - 1], [rbp - 2])
+Current State: 
+   RIP: 30
+   RBP: 18
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(30)
+      Int(72)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(72)
+      Int(30)
+      Nothing
+   Heap:
+      
+
+Current Code: (31, Goto 34 if rax is false)
+Current State: 
+   RIP: 31
+   RBP: 18
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(30)
+      Int(72)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(72)
+      Int(30)
+      Nothing
+   Heap:
+      
+
+Current Code: (34, Call 128, [rbp - 1], [rbp - 2])
+Current State: 
+   RIP: 34
+   RBP: 18
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(30)
+      Int(72)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(72)
+      Int(30)
+      Nothing
+   Heap:
+      
+
+Current Code: (35, Store 3 rax)
+Current State: 
+   RIP: 35
+   RBP: 18
+   RSP: 0
+   RAX: Int(12)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(30)
+      Int(72)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(72)
+      Int(30)
+      Nothing
+   Heap:
+      
+
+Current Code: (36, Call 292, [rbp - 2], [rbp - 3])
+Current State: 
+   RIP: 36
+   RBP: 18
+   RSP: 0
+   RAX: Int(12)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(30)
+      Int(72)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(72)
+      Int(30)
+      Int(12)
+   Heap:
+      
+
+[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call(fnid: 292, operands: [[rbp - 2], [rbp - 3]])]
+[DEBUG][3][vm/runtime.rs|Runtime::reserve_stack][FnBegin] Param local_size = 4
+[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call] Iterating operand, current operand: (0, [rbp - 2]), stack index to be set: 19, value to be set: Int(30)
+[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call] Iterating operand, current operand: (1, [rbp - 3]), stack index to be set: 20, value to be set: Int(12)
+Current Code: (27, Call 134, [rbp - 2], (i32)0)
+Current State: 
+   RIP: 27
+   RBP: 24
+   RSP: 0
+   RAX: Int(12)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(30)
+      Int(72)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(72)
+      Int(30)
+      Int(12)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(30)
+      Int(12)
+      Nothing
+   Heap:
+      
+
+Current Code: (28, Goto 30 if rax is false)
+Current State: 
+   RIP: 28
+   RBP: 24
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(30)
+      Int(72)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(72)
+      Int(30)
+      Int(12)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(30)
+      Int(12)
+      Nothing
+   Heap:
+      
+
+Current Code: (30, Call 139, [rbp - 1], [rbp - 2])
+Current State: 
+   RIP: 30
+   RBP: 24
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(30)
+      Int(72)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(72)
+      Int(30)
+      Int(12)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(30)
+      Int(12)
+      Nothing
+   Heap:
+      
+
+Current Code: (31, Goto 34 if rax is false)
+Current State: 
+   RIP: 31
+   RBP: 24
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(30)
+      Int(72)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(72)
+      Int(30)
+      Int(12)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(30)
+      Int(12)
+      Nothing
+   Heap:
+      
+
+Current Code: (34, Call 128, [rbp - 1], [rbp - 2])
+Current State: 
+   RIP: 34
+   RBP: 24
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(30)
+      Int(72)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(72)
+      Int(30)
+      Int(12)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(30)
+      Int(12)
+      Nothing
+   Heap:
+      
+
+Current Code: (35, Store 3 rax)
+Current State: 
+   RIP: 35
+   RBP: 24
+   RSP: 0
+   RAX: Int(6)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(30)
+      Int(72)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(72)
+      Int(30)
+      Int(12)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(30)
+      Int(12)
+      Nothing
+   Heap:
+      
+
+Current Code: (36, Call 292, [rbp - 2], [rbp - 3])
+Current State: 
+   RIP: 36
+   RBP: 24
+   RSP: 0
+   RAX: Int(6)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(30)
+      Int(72)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(72)
+      Int(30)
+      Int(12)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(30)
+      Int(12)
+      Int(6)
+   Heap:
+      
+
+[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call(fnid: 292, operands: [[rbp - 2], [rbp - 3]])]
+[DEBUG][3][vm/runtime.rs|Runtime::reserve_stack][FnBegin] Param local_size = 4
+[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call] Iterating operand, current operand: (0, [rbp - 2]), stack index to be set: 25, value to be set: Int(12)
+[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call] Iterating operand, current operand: (1, [rbp - 3]), stack index to be set: 26, value to be set: Int(6)
+Current Code: (27, Call 134, [rbp - 2], (i32)0)
+Current State: 
+   RIP: 27
+   RBP: 30
+   RSP: 0
+   RAX: Int(6)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(30)
+      Int(72)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(72)
+      Int(30)
+      Int(12)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(30)
+      Int(12)
+      Int(6)
+      PrevRIP(37)
+      PrevRBP(24)
+      Nothing
+      Int(12)
+      Int(6)
+      Nothing
+   Heap:
+      
+
+Current Code: (28, Goto 30 if rax is false)
+Current State: 
+   RIP: 28
+   RBP: 30
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(30)
+      Int(72)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(72)
+      Int(30)
+      Int(12)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(30)
+      Int(12)
+      Int(6)
+      PrevRIP(37)
+      PrevRBP(24)
+      Nothing
+      Int(12)
+      Int(6)
+      Nothing
+   Heap:
+      
+
+Current Code: (30, Call 139, [rbp - 1], [rbp - 2])
+Current State: 
+   RIP: 30
+   RBP: 30
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(30)
+      Int(72)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(72)
+      Int(30)
+      Int(12)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(30)
+      Int(12)
+      Int(6)
+      PrevRIP(37)
+      PrevRBP(24)
+      Nothing
+      Int(12)
+      Int(6)
+      Nothing
+   Heap:
+      
+
+Current Code: (31, Goto 34 if rax is false)
+Current State: 
+   RIP: 31
+   RBP: 30
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(30)
+      Int(72)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(72)
+      Int(30)
+      Int(12)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(30)
+      Int(12)
+      Int(6)
+      PrevRIP(37)
+      PrevRBP(24)
+      Nothing
+      Int(12)
+      Int(6)
+      Nothing
+   Heap:
+      
+
+Current Code: (34, Call 128, [rbp - 1], [rbp - 2])
+Current State: 
+   RIP: 34
+   RBP: 30
+   RSP: 0
+   RAX: Bool(false)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(30)
+      Int(72)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(72)
+      Int(30)
+      Int(12)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(30)
+      Int(12)
+      Int(6)
+      PrevRIP(37)
+      PrevRBP(24)
+      Nothing
+      Int(12)
+      Int(6)
+      Nothing
+   Heap:
+      
+
+Current Code: (35, Store 3 rax)
+Current State: 
+   RIP: 35
+   RBP: 30
+   RSP: 0
+   RAX: Int(0)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(30)
+      Int(72)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(72)
+      Int(30)
+      Int(12)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(30)
+      Int(12)
+      Int(6)
+      PrevRIP(37)
+      PrevRBP(24)
+      Nothing
+      Int(12)
+      Int(6)
+      Nothing
+   Heap:
+      
+
+Current Code: (36, Call 292, [rbp - 2], [rbp - 3])
+Current State: 
+   RIP: 36
+   RBP: 30
+   RSP: 0
+   RAX: Int(0)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(30)
+      Int(72)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(72)
+      Int(30)
+      Int(12)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(30)
+      Int(12)
+      Int(6)
+      PrevRIP(37)
+      PrevRBP(24)
+      Nothing
+      Int(12)
+      Int(6)
+      Int(0)
+   Heap:
+      
+
+[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call(fnid: 292, operands: [[rbp - 2], [rbp - 3]])]
+[DEBUG][3][vm/runtime.rs|Runtime::reserve_stack][FnBegin] Param local_size = 4
+[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call] Iterating operand, current operand: (0, [rbp - 2]), stack index to be set: 31, value to be set: Int(6)
+[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call] Iterating operand, current operand: (1, [rbp - 3]), stack index to be set: 32, value to be set: Int(0)
+Current Code: (27, Call 134, [rbp - 2], (i32)0)
+Current State: 
+   RIP: 27
+   RBP: 36
+   RSP: 0
+   RAX: Int(0)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(30)
+      Int(72)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(72)
+      Int(30)
+      Int(12)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(30)
+      Int(12)
+      Int(6)
+      PrevRIP(37)
+      PrevRBP(24)
+      Nothing
+      Int(12)
+      Int(6)
+      Int(0)
+      PrevRIP(37)
+      PrevRBP(30)
+      Nothing
+      Int(6)
+      Int(0)
+      Nothing
+   Heap:
+      
+
+Current Code: (28, Goto 30 if rax is false)
+Current State: 
+   RIP: 28
+   RBP: 36
+   RSP: 0
+   RAX: Bool(true)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(30)
+      Int(72)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(72)
+      Int(30)
+      Int(12)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(30)
+      Int(12)
+      Int(6)
+      PrevRIP(37)
+      PrevRBP(24)
+      Nothing
+      Int(12)
+      Int(6)
+      Int(0)
+      PrevRIP(37)
+      PrevRBP(30)
+      Nothing
+      Int(6)
+      Int(0)
+      Nothing
+   Heap:
+      
+
+Current Code: (29, Return [rbp - 1])
+Current State: 
+   RIP: 29
+   RBP: 36
+   RSP: 0
+   RAX: Bool(true)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(30)
+      Int(72)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(72)
+      Int(30)
+      Int(12)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(30)
+      Int(12)
+      Int(6)
+      PrevRIP(37)
+      PrevRBP(24)
+      Nothing
+      Int(12)
+      Int(6)
+      Int(0)
+      PrevRIP(37)
+      PrevRBP(30)
+      Nothing
+      Int(6)
+      Int(0)
+      Nothing
+   Heap:
+      
+
+Current Code: (37, Return rax)
+Current State: 
+   RIP: 37
+   RBP: 30
+   RSP: 0
+   RAX: Int(6)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(30)
+      Int(72)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(72)
+      Int(30)
+      Int(12)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(30)
+      Int(12)
+      Int(6)
+      PrevRIP(37)
+      PrevRBP(24)
+      Nothing
+      Int(12)
+      Int(6)
+      Int(0)
+   Heap:
+      
+
+Current Code: (37, Return rax)
+Current State: 
+   RIP: 37
+   RBP: 24
+   RSP: 0
+   RAX: Int(6)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(30)
+      Int(72)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(72)
+      Int(30)
+      Int(12)
+      PrevRIP(37)
+      PrevRBP(18)
+      Nothing
+      Int(30)
+      Int(12)
+      Int(6)
+   Heap:
+      
+
+Current Code: (37, Return rax)
+Current State: 
+   RIP: 37
+   RBP: 18
+   RSP: 0
+   RAX: Int(6)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(30)
+      Int(72)
+      Nothing
+      PrevRIP(33)
+      PrevRBP(12)
+      Nothing
+      Int(72)
+      Int(30)
+      Int(12)
+   Heap:
+      
+
+Current Code: (33, Return rax)
+Current State: 
+   RIP: 33
+   RBP: 12
+   RSP: 0
+   RAX: Int(6)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+      PrevRIP(16)
+      PrevRBP(2)
+      Nothing
+      Int(30)
+      Int(72)
+      Nothing
+   Heap:
+      
+
+Current Code: (16, Call 144, rax)
+Current State: 
+   RIP: 16
+   RBP: 2
+   RSP: 0
+   RAX: Int(6)
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+   Heap:
+      
+
+Current Code: (17, Store 6 rax)
+Current State: 
+   RIP: 17
+   RBP: 2
+   RSP: 0
+   RAX: Str("6")
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("5")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+   Heap:
+      
+
+Current Code: (18, Call 285, "\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(", [rbp - 4])
+Current State: 
+   RIP: 18
+   RBP: 2
+   RSP: 0
+   RAX: Str("6")
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("6")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+   Heap:
+      
+
+Current Code: (19, Call 285, rax, ", ")
+Current State: 
+   RIP: 19
+   RBP: 2
+   RSP: 0
+   RAX: Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(30")
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("6")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+   Heap:
+      
+
+Current Code: (20, Call 285, rax, [rbp - 5])
+Current State: 
+   RIP: 20
+   RBP: 2
+   RSP: 0
+   RAX: Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(30, ")
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("6")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+   Heap:
+      
+
+Current Code: (21, Call 285, rax, ") is ")
+Current State: 
+   RIP: 21
+   RBP: 2
+   RSP: 0
+   RAX: Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(30, 72")
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("6")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+   Heap:
+      
+
+Current Code: (22, Call 285, rax, [rbp - 6])
+Current State: 
+   RIP: 22
+   RBP: 2
+   RSP: 0
+   RAX: Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(30, 72) is ")
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("6")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+   Heap:
+      
+
+Current Code: (23, Store 7 rax)
+Current State: 
+   RIP: 23
+   RBP: 2
+   RSP: 0
+   RAX: Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(30, 72) is 6")
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("6")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(15, 25) is 5")
+   Heap:
+      
+
+Current Code: (24, Call 1, [rbp - 7])
+Current State: 
+   RIP: 24
+   RBP: 2
+   RSP: 0
+   RAX: Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(30, 72) is 6")
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("6")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(30, 72) is 6")
+   Heap:
+      
+
+Current Code: (25, Goto 0)
+Current State: 
+   RIP: 25
+   RBP: 2
+   RSP: 0
+   RAX: Unit
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("6")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(30, 72) is 6")
+   Heap:
+      
+
+Current Code: (0, Call 1, "Input 2 numbers")
+Current State: 
+   RIP: 0
+   RBP: 2
+   RSP: 0
+   RAX: Unit
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("6")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(30, 72) is 6")
+   Heap:
+      
+
+Current Code: (1, Call 2, )
+Current State: 
+   RIP: 1
+   RBP: 2
+   RSP: 0
+   RAX: Unit
+   Stack:
+      PrevRIP(18446744073709551614)
+      PrevRBP(0)
+      Nothing
+      Int(30)
+      Int(72)
+      Bool(false)
+      Str("30")
+      Str("72")
+      Str("6")
+      Str("\u{6700}\u{5927}\u{516c}\u{7ea6}\u{6570}(30, 72) is 6")
+   Heap:
+      
+
+thread 'main' panicked at 'Wanted a number: ParseIntError { kind: InvalidDigit }', ../src/libcore\result.rs:788
+note: Run with `RUST_BACKTRACE=1` for a backtrace.
+error: Process didn't exit successfully: `target\debug\smc.exe tests/syntax/gcd.sm` (exit code: 101)

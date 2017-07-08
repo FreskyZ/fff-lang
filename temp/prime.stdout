@@ -1,0 +1,455 @@
+vm_program: Types:
+    0: unit
+    1: i8
+    2: u8
+    3: i16
+    4: u16
+    5: i32
+    6: u32
+    7: i64
+    8: u64
+    9: f32
+    10: f64
+    11: char
+    12: bool
+    13: string
+    14: [u64]
+    15: [bool]
+Fns:
+    <0> write(string) -> unit;
+    <1> writeln(string) -> unit;
+    <2> read_i32() -> i32;
+    <3> read_u64() -> u64;
+    <4> operator+(i8, i8) -> i8;
+    <5> operator-(i8, i8) -> i8;
+    <6> operator*(i8, i8) -> i8;
+    <7> operator/(i8, i8) -> i8;
+    <8> operator%(i8, i8) -> i8;
+    <9> operator<<(i8, i32) -> i8;
+    <10> operator>>(i8, i32) -> i8;
+    <11> operator&(i8, i8) -> i8;
+    <12> operator|(i8, i8) -> i8;
+    <13> operator^(i8, i8) -> i8;
+    <14> operator==(i8, i8) -> bool;
+    <15> operator!=(i8, i8) -> bool;
+    <16> operator>=(i8, i8) -> bool;
+    <17> operator<=(i8, i8) -> bool;
+    <18> operator>(i8, i8) -> bool;
+    <19> operator<(i8, i8) -> bool;
+    <20> operator~(i8) -> i8;
+    <21> operator++(i8) -> unit;
+    <22> operator--(i8) -> unit;
+    <23> is_odd(i8, i8) -> bool;
+    <24> to_string(i8) -> string;
+    <25> as i8(i8) -> i8;
+    <26> as u8(i8) -> u8;
+    <27> as i16(i8) -> i16;
+    <28> as u16(i8) -> u16;
+    <29> as i32(i8) -> i32;
+    <30> as u32(i8) -> u32;
+    <31> as i64(i8) -> i64;
+    <32> as u64(i8) -> u64;
+    <33> as f64(i8) -> f64;
+    <34> operator+(u8, u8) -> u8;
+    <35> operator-(u8, u8) -> u8;
+    <36> operator*(u8, u8) -> u8;
+    <37> operator/(u8, u8) -> u8;
+    <38> operator%(u8, u8) -> u8;
+    <39> operator<<(u8, i32) -> u8;
+    <40> operator>>(u8, i32) -> u8;
+    <41> operator&(u8, u8) -> u8;
+    <42> operator|(u8, u8) -> u8;
+    <43> operator^(u8, u8) -> u8;
+    <44> operator==(u8, u8) -> bool;
+    <45> operator!=(u8, u8) -> bool;
+    <46> operator>=(u8, u8) -> bool;
+    <47> operator<=(u8, u8) -> bool;
+    <48> operator>(u8, u8) -> bool;
+    <49> operator<(u8, u8) -> bool;
+    <50> operator~(u8) -> u8;
+    <51> operator++(u8) -> unit;
+    <52> operator--(u8) -> unit;
+    <53> is_odd(u8, u8) -> bool;
+    <54> to_string(u8) -> string;
+    <55> as i8(u8) -> i8;
+    <56> as u8(u8) -> u8;
+    <57> as i16(u8) -> i16;
+    <58> as u16(u8) -> u16;
+    <59> as i32(u8) -> i32;
+    <60> as u32(u8) -> u32;
+    <61> as i64(u8) -> i64;
+    <62> as u64(u8) -> u64;
+    <63> as f64(u8) -> f64;
+    <64> operator+(i16, i16) -> i16;
+    <65> operator-(i16, i16) -> i16;
+    <66> operator*(i16, i16) -> i16;
+    <67> operator/(i16, i16) -> i16;
+    <68> operator%(i16, i16) -> i16;
+    <69> operator<<(i16, i32) -> i16;
+    <70> operator>>(i16, i32) -> i16;
+    <71> operator&(i16, i16) -> i16;
+    <72> operator|(i16, i16) -> i16;
+    <73> operator^(i16, i16) -> i16;
+    <74> operator==(i16, i16) -> bool;
+    <75> operator!=(i16, i16) -> bool;
+    <76> operator>=(i16, i16) -> bool;
+    <77> operator<=(i16, i16) -> bool;
+    <78> operator>(i16, i16) -> bool;
+    <79> operator<(i16, i16) -> bool;
+    <80> operator~(i16) -> i16;
+    <81> operator++(i16) -> unit;
+    <82> operator--(i16) -> unit;
+    <83> is_odd(i16, i16) -> bool;
+    <84> to_string(i16) -> string;
+    <85> as i8(i16) -> i8;
+    <86> as u8(i16) -> u8;
+    <87> as i16(i16) -> i16;
+    <88> as u16(i16) -> u16;
+    <89> as i32(i16) -> i32;
+    <90> as u32(i16) -> u32;
+    <91> as i64(i16) -> i64;
+    <92> as u64(i16) -> u64;
+    <93> as f64(i16) -> f64;
+    <94> operator+(u16, u16) -> u16;
+    <95> operator-(u16, u16) -> u16;
+    <96> operator*(u16, u16) -> u16;
+    <97> operator/(u16, u16) -> u16;
+    <98> operator%(u16, u16) -> u16;
+    <99> operator<<(u16, i32) -> u16;
+    <100> operator>>(u16, i32) -> u16;
+    <101> operator&(u16, u16) -> u16;
+    <102> operator|(u16, u16) -> u16;
+    <103> operator^(u16, u16) -> u16;
+    <104> operator==(u16, u16) -> bool;
+    <105> operator!=(u16, u16) -> bool;
+    <106> operator>=(u16, u16) -> bool;
+    <107> operator<=(u16, u16) -> bool;
+    <108> operator>(u16, u16) -> bool;
+    <109> operator<(u16, u16) -> bool;
+    <110> operator~(u16) -> u16;
+    <111> operator++(u16) -> unit;
+    <112> operator--(u16) -> unit;
+    <113> is_odd(u16, u16) -> bool;
+    <114> to_string(u16) -> string;
+    <115> as i8(u16) -> i8;
+    <116> as u8(u16) -> u8;
+    <117> as i16(u16) -> i16;
+    <118> as u16(u16) -> u16;
+    <119> as i32(u16) -> i32;
+    <120> as u32(u16) -> u32;
+    <121> as i64(u16) -> i64;
+    <122> as u64(u16) -> u64;
+    <123> as f64(u16) -> f64;
+    <124> operator+(i32, i32) -> i32;
+    <125> operator-(i32, i32) -> i32;
+    <126> operator*(i32, i32) -> i32;
+    <127> operator/(i32, i32) -> i32;
+    <128> operator%(i32, i32) -> i32;
+    <129> operator<<(i32, i32) -> i32;
+    <130> operator>>(i32, i32) -> i32;
+    <131> operator&(i32, i32) -> i32;
+    <132> operator|(i32, i32) -> i32;
+    <133> operator^(i32, i32) -> i32;
+    <134> operator==(i32, i32) -> bool;
+    <135> operator!=(i32, i32) -> bool;
+    <136> operator>=(i32, i32) -> bool;
+    <137> operator<=(i32, i32) -> bool;
+    <138> operator>(i32, i32) -> bool;
+    <139> operator<(i32, i32) -> bool;
+    <140> operator~(i32) -> i32;
+    <141> operator++(i32) -> unit;
+    <142> operator--(i32) -> unit;
+    <143> is_odd(i32, i32) -> bool;
+    <144> to_string(i32) -> string;
+    <145> as i8(i32) -> i8;
+    <146> as u8(i32) -> u8;
+    <147> as i16(i32) -> i16;
+    <148> as u16(i32) -> u16;
+    <149> as i32(i32) -> i32;
+    <150> as u32(i32) -> u32;
+    <151> as i64(i32) -> i64;
+    <152> as u64(i32) -> u64;
+    <153> as f64(i32) -> f64;
+    <154> operator+(u32, u32) -> u32;
+    <155> operator-(u32, u32) -> u32;
+    <156> operator*(u32, u32) -> u32;
+    <157> operator/(u32, u32) -> u32;
+    <158> operator%(u32, u32) -> u32;
+    <159> operator<<(u32, i32) -> u32;
+    <160> operator>>(u32, i32) -> u32;
+    <161> operator&(u32, u32) -> u32;
+    <162> operator|(u32, u32) -> u32;
+    <163> operator^(u32, u32) -> u32;
+    <164> operator==(u32, u32) -> bool;
+    <165> operator!=(u32, u32) -> bool;
+    <166> operator>=(u32, u32) -> bool;
+    <167> operator<=(u32, u32) -> bool;
+    <168> operator>(u32, u32) -> bool;
+    <169> operator<(u32, u32) -> bool;
+    <170> operator~(u32) -> u32;
+    <171> operator++(u32) -> unit;
+    <172> operator--(u32) -> unit;
+    <173> is_odd(u32, u32) -> bool;
+    <174> to_string(u32) -> string;
+    <175> as i8(u32) -> i8;
+    <176> as u8(u32) -> u8;
+    <177> as i16(u32) -> i16;
+    <178> as u16(u32) -> u16;
+    <179> as i32(u32) -> i32;
+    <180> as u32(u32) -> u32;
+    <181> as i64(u32) -> i64;
+    <182> as u64(u32) -> u64;
+    <183> as f64(u32) -> f64;
+    <184> operator+(i64, i64) -> i64;
+    <185> operator-(i64, i64) -> i64;
+    <186> operator*(i64, i64) -> i64;
+    <187> operator/(i64, i64) -> i64;
+    <188> operator%(i64, i64) -> i64;
+    <189> operator<<(i64, i32) -> i64;
+    <190> operator>>(i64, i32) -> i64;
+    <191> operator&(i64, i64) -> i64;
+    <192> operator|(i64, i64) -> i64;
+    <193> operator^(i64, i64) -> i64;
+    <194> operator==(i64, i64) -> bool;
+    <195> operator!=(i64, i64) -> bool;
+    <196> operator>=(i64, i64) -> bool;
+    <197> operator<=(i64, i64) -> bool;
+    <198> operator>(i64, i64) -> bool;
+    <199> operator<(i64, i64) -> bool;
+    <200> operator~(i64) -> i64;
+    <201> operator++(i64) -> unit;
+    <202> operator--(i64) -> unit;
+    <203> is_odd(i64, i64) -> bool;
+    <204> to_string(i64) -> string;
+    <205> as i8(i64) -> i8;
+    <206> as u8(i64) -> u8;
+    <207> as i16(i64) -> i16;
+    <208> as u16(i64) -> u16;
+    <209> as i32(i64) -> i32;
+    <210> as u32(i64) -> u32;
+    <211> as i64(i64) -> i64;
+    <212> as u64(i64) -> u64;
+    <213> as f64(i64) -> f64;
+    <214> operator+(u64, u64) -> u64;
+    <215> operator-(u64, u64) -> u64;
+    <216> operator*(u64, u64) -> u64;
+    <217> operator/(u64, u64) -> u64;
+    <218> operator%(u64, u64) -> u64;
+    <219> operator<<(u64, i32) -> u64;
+    <220> operator>>(u64, i32) -> u64;
+    <221> operator&(u64, u64) -> u64;
+    <222> operator|(u64, u64) -> u64;
+    <223> operator^(u64, u64) -> u64;
+    <224> operator==(u64, u64) -> bool;
+    <225> operator!=(u64, u64) -> bool;
+    <226> operator>=(u64, u64) -> bool;
+    <227> operator<=(u64, u64) -> bool;
+    <228> operator>(u64, u64) -> bool;
+    <229> operator<(u64, u64) -> bool;
+    <230> operator~(u64) -> u64;
+    <231> operator++(u64) -> unit;
+    <232> operator--(u64) -> unit;
+    <233> is_odd(u64, u64) -> bool;
+    <234> to_string(u64) -> string;
+    <235> as i8(u64) -> i8;
+    <236> as u8(u64) -> u8;
+    <237> as i16(u64) -> i16;
+    <238> as u16(u64) -> u16;
+    <239> as i32(u64) -> i32;
+    <240> as u32(u64) -> u32;
+    <241> as i64(u64) -> i64;
+    <242> as u64(u64) -> u64;
+    <243> as f64(u64) -> f64;
+    <244> operator+(f32, f32) -> f32;
+    <245> operator-(f32, f32) -> f32;
+    <246> operator*(f32, f32) -> f32;
+    <247> operator/(f32, f32) -> f32;
+    <248> operator==(f32, f32) -> bool;
+    <249> operator!=(f32, f32) -> bool;
+    <250> operator>=(f32, f32) -> bool;
+    <251> operator<=(f32, f32) -> bool;
+    <252> operator>(f32, f32) -> bool;
+    <253> operator<(f32, f32) -> bool;
+    <254> to_string(f32) -> string;
+    <255> as u64(f32) -> u64;
+    <256> as f32(f32) -> f32;
+    <257> as f64(f32) -> f64;
+    <258> operator+(f64, f64) -> f64;
+    <259> operator-(f64, f64) -> f64;
+    <260> operator*(f64, f64) -> f64;
+    <261> operator/(f64, f64) -> f64;
+    <262> operator==(f64, f64) -> bool;
+    <263> operator!=(f64, f64) -> bool;
+    <264> operator>=(f64, f64) -> bool;
+    <265> operator<=(f64, f64) -> bool;
+    <266> operator>(f64, f64) -> bool;
+    <267> operator<(f64, f64) -> bool;
+    <268> to_string(f64) -> string;
+    <269> as u64(f64) -> u64;
+    <270> as f32(f64) -> f32;
+    <271> as f64(f64) -> f64;
+    <272> operator==(char, char) -> bool;
+    <273> operator!=(char, char) -> bool;
+    <274> operator>=(char, char) -> bool;
+    <275> operator<=(char, char) -> bool;
+    <276> operator>(char, char) -> bool;
+    <277> operator<(char, char) -> bool;
+    <278> as u32(char) -> u32;
+    <279> to_string(char) -> string;
+    <280> operator==(bool, bool) -> bool;
+    <281> operator!=(bool, bool) -> bool;
+    <282> operator&&(bool, bool) -> bool;
+    <283> operator||(bool, bool) -> bool;
+    <284> operator!(bool) -> bool;
+    <285> operator+(string, string) -> string;
+    <286> operator==(string, string) -> bool;
+    <287> operator!=(string, string) -> bool;
+    <288> length(string) -> u64;
+    <289> get_index(string, i32) -> char;
+    <290> get_index(string, u64) -> char;
+    <291> main() -> unit { local size = 2, code ptr = 0 };
+    <292> ?new_array_8() -> [u64];
+    <293> ?new_array(u64, i32) -> [u64];
+    <294> ?new_array(u64, u64) -> [u64];
+    <295> set_index([u64], i32, u64) -> unit;
+    <296> set_index([u64], u64, u64) -> unit;
+    <297> get_index([u64], i32) -> u64;
+    <298> get_index([u64], u64) -> u64;
+    <299> push([u64], u64) -> unit;
+    <300> pop([u64]) -> u64;
+    <301> length([u64]) -> u64;
+    <302> operator==([u64], [u64]) -> bool;
+    <303> operator!=([u64], [u64]) -> bool;
+    <304> get_primes(u64) -> [u64] { local size = 12, code ptr = 4 };
+    <305> write_array_8([u64]) -> unit { local size = 4, code ptr = 54 };
+    <306> ?new_array_12() -> [bool];
+    <307> ?new_array(bool, i32) -> [bool];
+    <308> ?new_array(bool, u64) -> [bool];
+    <309> set_index([bool], i32, bool) -> unit;
+    <310> set_index([bool], u64, bool) -> unit;
+    <311> get_index([bool], i32) -> bool;
+    <312> get_index([bool], u64) -> bool;
+    <313> push([bool], bool) -> unit;
+    <314> pop([bool]) -> bool;
+    <315> length([bool]) -> u64;
+    <316> operator==([bool], [bool]) -> bool;
+    <317> operator!=([bool], [bool]) -> bool;
+Messages: Codes:
+    (0, Call 304, (u64)18)
+    (1, Store 1 rax)
+    (2, Call 305, [rbp - 1])
+    (3, Return ())
+    (4, Call 234, [rbp - 1])
+    (5, Store 2 rax)
+    (6, Call 285, "[DEBUG] get primes called, high bound = ", [rbp - 2])
+    (7, Store 3 rax)
+    (8, Call 1, [rbp - 3])
+    (9, Call 308, true, [rbp - 1])
+    (10, Store 4 rax)
+    (11, Call 309, [rbp - 4], (i32)0, false)
+    (12, Call 309, [rbp - 4], (i32)1, false)
+    (13, Store 5 (u64)2)
+    (14, Call 229, [rbp - 5], [rbp - 1])
+    (15, Goto 41 if rax is false)
+    (16, Call 234, [rbp - 5])
+    (17, Store 6 rax)
+    (18, Call 285, "[DEBUG] Outter iteration, i = ", [rbp - 6])
+    (19, Store 7 rax)
+    (20, Call 1, [rbp - 7])
+    (21, Call 312, [rbp - 4], [rbp - 5])
+    (22, Goto 39 if rax is false)
+    (23, Call 1, "[DEBUG] this i is prime")
+    (24, Store 8 (u64)2)
+    (25, Call 217, [rbp - 1], [rbp - 5])
+    (26, Call 229, [rbp - 8], rax)
+    (27, Goto 39 if rax is false)
+    (28, Call 234, [rbp - 8])
+    (29, Store 9 rax)
+    (30, Call 285, "[DEBUG] inner iteration, j = ", [rbp - 9])
+    (31, Call 285, rax, ", unset it")
+    (32, Store 10 rax)
+    (33, Call 1, [rbp - 10])
+    (34, Call 216, [rbp - 8], [rbp - 5])
+    (35, Store 11 rax)
+    (36, Call 310, [rbp - 4], [rbp - 11], false)
+    (37, Call 231, [rbp - 8])
+    (38, Goto 25)
+    (39, Call 231, [rbp - 5])
+    (40, Goto 14)
+    (41, Call 1, "[DEBUG] main process ended")
+    (42, Call 293, (u64)0, (i32)0)
+    (43, Store 5 rax)
+    (44, Store 6 (u64)1)
+    (45, Call 229, [rbp - 6], [rbp - 1])
+    (46, Goto 52 if rax is false)
+    (47, Call 312, [rbp - 4], [rbp - 6])
+    (48, Goto 50 if rax is false)
+    (49, Call 299, [rbp - 5], [rbp - 6])
+    (50, Call 231, [rbp - 6])
+    (51, Goto 45)
+    (52, Return [rbp - 5])
+    (53, Return ())
+    (54, Call 0, "[")
+    (55, Store 2 (u64)0)
+    (56, Call 301, [rbp - 1])
+    (57, Call 215, rax, (u64)1)
+    (58, Call 229, [rbp - 2], rax)
+    (59, Goto 67 if rax is false)
+    (60, Call 298, [rbp - 1], [rbp - 2])
+    (61, Call 234, rax)
+    (62, Store 3 rax)
+    (63, Call 0, [rbp - 3])
+    (64, Call 0, ", ")
+    (65, Call 231, [rbp - 2])
+    (66, Goto 56)
+    (67, Call 301, [rbp - 1])
+    (68, Call 228, rax, (u64)1)
+    (69, Goto 77 if rax is false)
+    (70, Call 301, [rbp - 1])
+    (71, Call 215, rax, (u64)1)
+    (72, Store 2 rax)
+    (73, Call 298, [rbp - 1], [rbp - 2])
+    (74, Call 234, rax)
+    (75, Store 3 rax)
+    (76, Call 0, [rbp - 3])
+    (77, Call 0, "]")
+    (78, Return ())
+
+[DEBUG] get primes called, high bound = 18
+[DEBUG] Outter iteration, i = 2
+[DEBUG] this i is prime
+[DEBUG] inner iteration, j = 2, unset it
+[DEBUG] inner iteration, j = 3, unset it
+[DEBUG] inner iteration, j = 4, unset it
+[DEBUG] inner iteration, j = 5, unset it
+[DEBUG] inner iteration, j = 6, unset it
+[DEBUG] inner iteration, j = 7, unset it
+[DEBUG] inner iteration, j = 8, unset it
+[DEBUG] Outter iteration, i = 3
+[DEBUG] this i is prime
+[DEBUG] inner iteration, j = 2, unset it
+[DEBUG] inner iteration, j = 3, unset it
+[DEBUG] inner iteration, j = 4, unset it
+[DEBUG] inner iteration, j = 5, unset it
+[DEBUG] Outter iteration, i = 4
+[DEBUG] Outter iteration, i = 5
+[DEBUG] this i is prime
+[DEBUG] inner iteration, j = 2, unset it
+[DEBUG] Outter iteration, i = 6
+[DEBUG] Outter iteration, i = 7
+[DEBUG] this i is prime
+[DEBUG] Outter iteration, i = 8
+[DEBUG] Outter iteration, i = 9
+[DEBUG] Outter iteration, i = 10
+[DEBUG] Outter iteration, i = 11
+[DEBUG] this i is prime
+[DEBUG] Outter iteration, i = 12
+[DEBUG] Outter iteration, i = 13
+[DEBUG] this i is prime
+[DEBUG] Outter iteration, i = 14
+[DEBUG] Outter iteration, i = 15
+[DEBUG] Outter iteration, i = 16
+[DEBUG] Outter iteration, i = 17
+[DEBUG] this i is prime
+[DEBUG] main process ended
+[2, 3, 5, 7, 11, 13, 17]Byebye

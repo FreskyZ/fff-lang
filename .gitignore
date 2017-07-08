@@ -1,10 +1,6 @@
 target
 Cargo.lock
-*.stdout
-*.stderr
-temp
 .vscode
-temp_output
 *.exe
 tests/pefile/.vs
 *.obj
