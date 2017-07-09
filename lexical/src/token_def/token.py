@@ -212,7 +212,7 @@ class Seperators:
         src += '        }\n'
         src += '    }\n'
         src += '    pub fn parse3(ch1: char, ch2: char, ch3: char) -> Option<(Seperator, usize)> {\n'
-        src += '        let hash2 = ch1 as u32 + ch2 as u32 * 256;\n'
+        src += '        let hash2 = ch1 as u32 + ch2 as u32 * 256;\n'   # TODO: potential hash collision because char is actually u32 as UTF32
         src += '        let hash1 = ch1 as u32;\n'
         src += '        match &[ch1 as u8, ch2 as u8, ch3 as u8] {\n'   # if len(self.len3s) is large than 10 or 100, make it into hashmap, too
         for sep in self.len3s:
@@ -264,11 +264,14 @@ class Keyword:
     def __init__(self, value, name, index, cat):
         self.value, self.name, self.index, self.cat = value, name, index, cat
     def __str__(self):
-        return f'keyword({self.value}, {self.name}, {self.index}, {self.cat})'
+        return f'keyword({self.value}, {self.name}, {self.index}, {self.cat}: {self.cat_value})'
     def __lt__(self, rhs):
         return self.value < rhs.value
     def update_index(self, new_index):
         self.index = new_index
+        return self
+    def update_cat_value(self, cats):
+        self.cat_value = cats[self.cat]
         return self
 class Keywords:
     def __init__(self, filename):
@@ -282,8 +285,10 @@ class Keywords:
                 value, rest = map(lambda x: x.strip(" '"), line.split('=>'))
                 name, category, _ = map(str.strip, rest.split(','))
                 self.items.append(Keyword(value, name, 0, category))
+        assert len(self.items) < 255  # 255 is used in bucket to represent empty value
+        self.cats = { 'InUse': 1, 'Primitive': 2, 'Reserved': 3 }
         self.items.sort()
-        self.items = [keyword.update_index(index) for (index, keyword) in enumerate(self.items)]
+        self.items = [keyword.update_index(index).update_cat_value(self.cats) for (index, keyword) in enumerate(self.items)]
 
     def __str__(self):
         return 'keyword in ' + self.filename + ':'          \
@@ -313,6 +318,45 @@ class Keywords:
             lambda value: reduce(lambda x, y: x * (ord(y) - 43) % 1800000000000001, value, 1))
         print(f'keyword all: bucket size: {bucket_size}, number: {bucket_number}, memory use: {memory_use}')
 
+    def generate_tests(self):
+        test_src = ''
+
+        test_src += '\n#[cfg(test)] #[test]\n'
+        test_src += 'fn keyword_format() {\n\n'
+        for _ in range(10):
+            kw = random.choice(self.items)
+            test_src += '    assert_eq!{ format!("{:?}", Keyword::' + kw.name + '), "' + kw.value + '" }\n'
+        test_src += '}\n'
+
+        test_src += '#[cfg(test)] #[test]\n'
+        test_src += 'fn keyword_cat() {\n\n'
+        cases = []
+        for _ in range(10):
+            kw = { 
+                1: lambda: random.choice(list(filter(lambda x: x.cat in ['Primitive', 'InUse'], self.items))), 
+                2: lambda: random.choice(list(filter(lambda x: x.cat == 'Reserved', self.items)))
+            }[random.choice([1, 1, 1, 2])]()  # more primitive or inuse, less reserved
+            for cat in set([random.choice(['InUse', 'Primitive', 'Reserved']), random.choice(['InUse', 'Primitive', 'Reserved'])]):
+                if cat == 'Primitive':
+                    cases.append('    assert_eq!{ Keyword::' + kw.name + '.is_primitive(), ' + ('true' if cat == kw.cat else 'false') + ' }\n')
+                elif cat == 'Reserved':
+                    cases.append('    assert_eq!{ Keyword::' + kw.name + '.is_reserved(), ' + ('true' if cat == kw.cat else 'false') + ' }\n')
+                elif cat == 'InUse' and cat == kw.cat:
+                    cases.append('    assert_eq!{ Keyword::' + kw.name + '.is_primitive(), false }\n')
+                    cases.append('    assert_eq!{ Keyword::' + kw.name + '.is_reserved(), false }\n')
+        for case in set(cases):
+            test_src += case
+        test_src += '}\n'
+
+        # TODO: create a multiply overflow here because hash function moder is near u64::MAX
+        test_src += '#[cfg(test)] #[test]\n'
+        test_src += 'fn keyword_parse() {\n\n'
+        test_src += '    assert_eq!{ Keyword::parse("fn"), Some(Keyword::Fn) }'
+        test_src += '    assert_eq!{ Keyword::parse("await"), Some(Keyword::Await) }'
+        test_src += '}\n'
+
+        return test_src
+
     def generate(self):
         src = ''
         src += '///! fff-lang\n'
@@ -325,24 +369,76 @@ class Keywords:
         src += ''.join(f'\n    {kw.name},' for kw in self.items)
         src += '\n}\n'
 
-        # parse
+        src += '\nconst KEYWORD_VALUES: &[&str] = &['    # thanks for 1.18's const static default 'static
+        src += ''.join('{opt_space}"{value}", '.format(value = kw.value, opt_space = '\n    ' if kw.index % 7 == 0 else '') for kw in self.items)
+        src += '\n];\n'
+        # this comes back to only store values, but later use the value as index into VALUES array and then check key equality there
+        buckets = [[255, 255] for _ in range(137)]  # actually [(bucket1, bucket2)], but use array for mutablity
+        for kw in chain(
+            filter(lambda x: x.cat_value == self.cats['InUse'], self.items),
+            filter(lambda x: x.cat_value == self.cats['Primitive'], self.items),
+            filter(lambda x: x.cat_value == self.cats['Reserved'], self.items)):  # inuse in priority, then primitive, last reserved
+            hashv = reduce(lambda x, y: x * (ord(y) - 43) % 1800000000000001, kw.value, 1)
+            for char in kw.value:
+                assert ord(char) >= 43
+            # print(f'{kw}: {hashv}, {hashv % 137}')
+            if buckets[hashv % 137][0] == 255:
+                buckets[hashv % 137][0] = kw.index
+            elif buckets[hashv % 137][1] == 255:
+                buckets[hashv % 137][1] = kw.index
+            else:
+                assert not 'should not use more then 2 buckets'
+        src += '\nconst EMPTY: u8 = 255;\n'
+        src += 'const KEYWORD_BUCKET_1: &[u8] = &['
+        src += ''.join('{space}{value}, '.format(
+            value = bucket1 if bucket1 != 255 else 'EMPTY', 
+            space = '\n    ' if index % 16 == 0 else '') for (index, (bucket1, _)) in enumerate(buckets))
+        src += '\n];\n'
+        src += 'const KEYWORD_BUCKET_2: &[u8] = &['
+        src += ''.join('{space}{value}, '.format(
+            value = bucket2 if bucket2 != 255 else 'EMPTY', 
+            space = '\n    ' if index % 16 == 0 else '') for (index, (_, bucket2)) in enumerate(buckets))
+        src += '\n];\n'
+        src += 'impl Keyword {\n'
+        src += '    pub fn parse(v: &str) -> Option<Keyword> {\n'
+        src += '        let mut hash = 1u64;\n'
+        src += '        for ch in v.chars() {\n'
+        src += '            if ch as u32 <= 43 { return None; }\n'
+        src += '            hash = (hash * (ch as u32 - 43u32) as u64) % 1800000000000001;\n' # TODO: potential panic on u64 overflow
+        src += '        }\n'
+        src += '        match KEYWORD_BUCKET_1[(hash % 137) as usize] {\n'
+        src += '            EMPTY => match KEYWORD_BUCKET_2[(hash % 137) as usize] {\n'
+        src += '                EMPTY => None,\n'
+        src += '                index if KEYWORD_VALUES[index as usize] == v\n'
+        src += '                    => Some(unsafe { ::std::mem::transmute(index) }),\n'
+        src += '                _invalid_index => None,\n'
+        src += '            },\n'
+        src += '            index if KEYWORD_VALUES[index as usize] == v\n'
+        src += '                => Some(unsafe{ ::std::mem::transmute(index) }),\n'
+        src += '            _invalid_index => None,'
+        src += '        }\n'
+        src += '    }\n'
+        src += '}\n'
 
         src += 'impl ::std::fmt::Debug for Keyword {\n'
         src += '    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {\n'
-        src += '        const KEYWORD_VALUES: &[&str] = &['    # thanks for 1.18's const static default 'static
-        src += '        ]\n'
+        src += '        write!(f, "{}", unsafe{ KEYWORD_VALUES[::std::mem::transmute_copy::<Keyword, u8>(self) as usize] })\n'
         src += '    }\n'
         src += '}\n\n'
 
-        src += 'const KEYWORD_CATS: &[u8] = &[\n'
-        src += '];\n'
-        src += 'impl Seperator {\n'
+        src += 'const KEYWORD_CATS: &[u8] = &['
+        src += ''.join('{opt_space}{value}, '.format(value = kw.cat_value, opt_space = '\n    ' if kw.index % 16 == 0 else '') for kw in self.items)
+        src += '\n];\n'
+        src += 'impl Keyword {\n'
         src += '    pub fn is_primitive(&self) -> bool {\n'
+        src += '        KEYWORD_CATS[unsafe{ ::std::mem::transmute_copy::<Keyword, u8>(self) as usize }] == ' + str(self.cats['Primitive']) + '\n'
         src += '    }\n'
-        src += '}\n'
         src += '    pub fn is_reserved(&self) -> bool {\n'
+        src += '        KEYWORD_CATS[unsafe{ ::std::mem::transmute_copy::<Keyword, u8>(self) as usize }] == ' + str(self.cats['Reserved']) + '\n'
         src += '    }\n'
         src += '}\n'
+
+        src += self.generate_tests()
 
         with open('keyword2.rs', 'w') as file:
             file.write(src)
@@ -351,6 +447,7 @@ class Keywords:
 seperators = Seperators(SEPERATOR_DEF_FILE)
 keywords = Keywords(KEYWORD_DEF_FILE)
 #print(seperators)
+#print(keywords)
 #seperators.format()
 #keywords.format()
 #seperators.generate_hash_specs()
