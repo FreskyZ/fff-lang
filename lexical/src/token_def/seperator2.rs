@@ -73,42 +73,58 @@ pub enum Seperator {
     ShiftRightAssign,
 }
 
-const EMPTY_BUCKET: (u32, u32) = (0, 0);
-const NAME_FROM_1_CHAR: &[(u32, u32)] = &[
-    (37, 2), (38, 3), EMPTY_BUCKET, (40, 4), (41, 5), (42, 6), (43, 7), (44, 8), 
-    (45, 9), (46, 10), (47, 11), EMPTY_BUCKET, (123, 20), (124, 21), (125, 22), (126, 23), 
-    EMPTY_BUCKET, (91, 17), EMPTY_BUCKET, (93, 18), (94, 19), (58, 12), (59, 13), (60, 14), 
-    (61, 15), (62, 16), EMPTY_BUCKET, EMPTY_BUCKET, EMPTY_BUCKET, EMPTY_BUCKET, EMPTY_BUCKET, EMPTY_BUCKET, 
-    EMPTY_BUCKET, (33, 0), EMPTY_BUCKET, (35, 1), EMPTY_BUCKET, 
+const CHAR_MAX_CODEPOINT: u64 = 0x10FFFF;
+const LEN1_EMPTY: (u32, u8) = (37, 0);
+const LEN2_EMPTY: (u64, u8) = (1241244434433, 0);
+const LEN1_BUCKET: &[(u32, u8)] = &[
+    (37, 2), (38, 3), LEN1_EMPTY, (40, 4), (41, 5), (42, 6), 
+    (43, 7), (44, 8), (45, 9), (46, 10), (47, 11), LEN1_EMPTY, 
+    (123, 20), (124, 21), (125, 22), (126, 23), LEN1_EMPTY, (91, 17), 
+    LEN1_EMPTY, (93, 18), (94, 19), (58, 12), (59, 13), (60, 14), 
+    (61, 15), (62, 16), LEN1_EMPTY, LEN1_EMPTY, LEN1_EMPTY, LEN1_EMPTY, 
+    LEN1_EMPTY, LEN1_EMPTY, LEN1_EMPTY, (33, 0), LEN1_EMPTY, (35, 1), 
+    LEN1_EMPTY, 
 ];
-const NAME_FROM_2_CHAR: &[(u32, u32)] = &[
-    (9766, 2), EMPTY_BUCKET, (15658, 4), (15659, 5), (11822, 8), (15661, 6), EMPTY_BUCKET, (15663, 9), 
-    (15740, 18), EMPTY_BUCKET, (14906, 10), (15933, 14), (15934, 16), EMPTY_BUCKET, EMPTY_BUCKET, EMPTY_BUCKET, 
-    (15710, 17), EMPTY_BUCKET, EMPTY_BUCKET, EMPTY_BUCKET, (15676, 12), (15677, 13), (15678, 15), EMPTY_BUCKET, 
-    (31868, 19), EMPTY_BUCKET, EMPTY_BUCKET, EMPTY_BUCKET, EMPTY_BUCKET, EMPTY_BUCKET, (15420, 11), (15649, 0), 
-    EMPTY_BUCKET, (15917, 7), EMPTY_BUCKET, (15653, 1), (15654, 3), EMPTY_BUCKET, 
+const LEN2_BUCKET1: &[(u64, u8)] = &[
+    (67960816, 6), LEN2_EMPTY, (67960818, 9), (69074943, 14), 
+    (69074944, 16), (67960865, 17), (42336256, 2), LEN2_EMPTY, 
+    (64618496, 10), (69074927, 7), (67960804, 0), LEN2_EMPTY, 
+    LEN2_EMPTY, (67960895, 18), (67960808, 1), (67960809, 3), 
+    (67960832, 13), (67960833, 15), LEN2_EMPTY, (67960813, 4), 
+    (67960814, 5), LEN2_EMPTY, 
+];
+const LEN2_BUCKET2: &[(u64, u8)] = &[
+    LEN2_EMPTY, LEN2_EMPTY, LEN2_EMPTY, LEN2_EMPTY, 
+    LEN2_EMPTY, LEN2_EMPTY, (66846720, 11), LEN2_EMPTY, 
+    (138149888, 19), LEN2_EMPTY, LEN2_EMPTY, LEN2_EMPTY, 
+    LEN2_EMPTY, LEN2_EMPTY, LEN2_EMPTY, (67960831, 12), 
+    LEN2_EMPTY, LEN2_EMPTY, LEN2_EMPTY, LEN2_EMPTY, 
+    (51249152, 8), LEN2_EMPTY, 
 ];
 impl Seperator {
 
     pub fn parse1(ch: char) -> Option<Seperator> {
         let hash = ch as u32;
-        match NAME_FROM_1_CHAR[(hash % 37) as usize] {
+        match LEN1_BUCKET[(hash % 37) as usize] {
             (key, _) if key != hash => None,
             (_, index) => unsafe { Some(::std::mem::transmute(index as u8)) },
         }
     }
     pub fn parse3(ch1: char, ch2: char, ch3: char) -> Option<(Seperator, usize)> {
-        let hash2 = ch1 as u32 + ch2 as u32 *256;
+        let hash2 = ch1 as u64 + ch2 as u64 * CHAR_MAX_CODEPOINT;
         let hash1 = ch1 as u32;
         match &[ch1 as u8, ch2 as u8, ch3 as u8] {
             b"<<=" => unsafe { Some((::std::mem::transmute(44u8), 3)) },
             b">>=" => unsafe { Some((::std::mem::transmute(45u8), 3)) },
-            _ => match NAME_FROM_2_CHAR[(hash2 % 38) as usize] {
-                (key, _) if key != hash2 => match NAME_FROM_1_CHAR[(hash1 % 37) as usize] {
-                    (key, _) if key != hash1 => None,
-                    (_, index) => unsafe { Some((::std::mem::transmute(index as u8), 1)) },
+            _ => match LEN2_BUCKET1[(hash2 % 22) as usize] {
+                (key, _) if key != hash2 => match LEN2_BUCKET2[(hash2 % 22) as usize] {
+                    (key, _) if key != hash2 => match LEN1_BUCKET[(hash1 % 37) as usize] {
+                        (key, _) if key != hash1 => None,
+                        (_, index) => unsafe { Some((::std::mem::transmute(index), 1)) },
+                    },
+                    (_, index) => unsafe { Some((::std::mem::transmute(index + 24), 2)) },
                 },
-                (_, index) => unsafe { Some((::std::mem::transmute((index + 24) as u8), 2)) },
+                (_, index) => unsafe { Some((::std::mem::transmute(index + 24), 2)) },
             },
         }
     }
@@ -143,46 +159,47 @@ impl Seperator {
 #[cfg(test)] #[test]
 fn seperator_debug() {
 
-    assert_eq!{ format!("{:?}", Seperator::LogicalNot), "!" }
-    assert_eq!{ format!("{:?}", Seperator::Dot), "." }
-    assert_eq!{ format!("{:?}", Seperator::RemAssign), "%=" }
-    assert_eq!{ format!("{:?}", Seperator::RemAssign), "%=" }
-    assert_eq!{ format!("{:?}", Seperator::Equal), "==" }
+    assert_eq!{ format!("{:?}", Seperator::BitOr), "|" }
     assert_eq!{ format!("{:?}", Seperator::Range), ".." }
-    assert_eq!{ format!("{:?}", Seperator::GreatEqual), ">=" }
-    assert_eq!{ format!("{:?}", Seperator::BitOrAssign), "|=" }
-    assert_eq!{ format!("{:?}", Seperator::RemAssign), "%=" }
+    assert_eq!{ format!("{:?}", Seperator::RightBracket), "]" }
+    assert_eq!{ format!("{:?}", Seperator::WideRightArrow), "=>" }
+    assert_eq!{ format!("{:?}", Seperator::MulAssign), "*=" }
+    assert_eq!{ format!("{:?}", Seperator::BitAnd), "&" }
+    assert_eq!{ format!("{:?}", Seperator::WideRightArrow), "=>" }
+    assert_eq!{ format!("{:?}", Seperator::RightBracket), "]" }
+    assert_eq!{ format!("{:?}", Seperator::AttributeSign), "#" }
     assert_eq!{ format!("{:?}", Seperator::DivAssign), "/=" }
 }
 #[cfg(test)] #[test]
 fn seperator_is_cat() {
 
-    assert_eq!{ Seperator::LogicalNot.is_category(SeperatorCategory::Unary), true }
-    assert_eq!{ Seperator::LogicalNot.is_category(SeperatorCategory::BitXor), false }
-    assert_eq!{ Seperator::WideRightArrow.is_category(SeperatorCategory::Reserved), true }
-    assert_eq!{ Seperator::WideRightArrow.is_category(SeperatorCategory::Additive), false }
-    assert_eq!{ Seperator::Assign.is_category(SeperatorCategory::Assign), true }
-    assert_eq!{ Seperator::Assign.is_category(SeperatorCategory::Range), false }
     assert_eq!{ Seperator::ShiftLeftAssign.is_category(SeperatorCategory::Assign), true }
-    assert_eq!{ Seperator::ShiftLeftAssign.is_category(SeperatorCategory::Reserved), false }
+    assert_eq!{ Seperator::ShiftLeftAssign.is_category(SeperatorCategory::BitOr), false }
+    assert_eq!{ Seperator::RemAssign.is_category(SeperatorCategory::Assign), true }
+    assert_eq!{ Seperator::RemAssign.is_category(SeperatorCategory::Reserved), false }
+    assert_eq!{ Seperator::Sub.is_category(SeperatorCategory::Additive), true }
+    assert_eq!{ Seperator::Sub.is_category(SeperatorCategory::Seperator), false }
+    assert_eq!{ Seperator::LogicalOr.is_category(SeperatorCategory::LogicalOr), true }
+    assert_eq!{ Seperator::LogicalOr.is_category(SeperatorCategory::Relational), false }
+    assert_eq!{ Seperator::BitAndAssign.is_category(SeperatorCategory::Assign), true }
+    assert_eq!{ Seperator::BitAndAssign.is_category(SeperatorCategory::Multiplicative), false }
+    assert_eq!{ Seperator::DivAssign.is_category(SeperatorCategory::Assign), true }
+    assert_eq!{ Seperator::DivAssign.is_category(SeperatorCategory::BitOr), false }
+    assert_eq!{ Seperator::AddAssign.is_category(SeperatorCategory::Assign), true }
+    assert_eq!{ Seperator::AddAssign.is_category(SeperatorCategory::Assign), true }
     assert_eq!{ Seperator::Colon.is_category(SeperatorCategory::Seperator), true }
-    assert_eq!{ Seperator::Colon.is_category(SeperatorCategory::Seperator), true }
-    assert_eq!{ Seperator::Range.is_category(SeperatorCategory::Range), true }
-    assert_eq!{ Seperator::Range.is_category(SeperatorCategory::Equality), false }
-    assert_eq!{ Seperator::AttributeSign.is_category(SeperatorCategory::Reserved), true }
-    assert_eq!{ Seperator::AttributeSign.is_category(SeperatorCategory::BitOr), false }
-    assert_eq!{ Seperator::NamespaceSeperator.is_category(SeperatorCategory::Seperator), true }
-    assert_eq!{ Seperator::NamespaceSeperator.is_category(SeperatorCategory::Seperator), true }
-    assert_eq!{ Seperator::NotEqual.is_category(SeperatorCategory::Equality), true }
-    assert_eq!{ Seperator::NotEqual.is_category(SeperatorCategory::Reserved), false }
-    assert_eq!{ Seperator::NarrowRightArrow.is_category(SeperatorCategory::Seperator), true }
-    assert_eq!{ Seperator::NarrowRightArrow.is_category(SeperatorCategory::Multiplicative), false }
+    assert_eq!{ Seperator::Colon.is_category(SeperatorCategory::BitXor), false }
+    assert_eq!{ Seperator::ShiftRight.is_category(SeperatorCategory::Shift), true }
+    assert_eq!{ Seperator::ShiftRight.is_category(SeperatorCategory::LogicalOr), false }
+    assert_eq!{ Seperator::RemAssign.is_category(SeperatorCategory::Assign), true }
+    assert_eq!{ Seperator::RemAssign.is_category(SeperatorCategory::Shift), false }
 }
 #[cfg(test)] #[test]
-fn seperator_use() {
+fn seperator_parse() {
 
     assert_eq!{ Seperator::parse3('<', '<', '='), Some((Seperator::ShiftLeftAssign, 3)) }
     assert_eq!{ Seperator::parse3('+', ' ', '1'), Some((Seperator::Add, 1)) }
     assert_eq!{ Seperator::parse3('{', ' ', 'a'), Some((Seperator::LeftBrace, 1)) }
     assert_eq!{ Seperator::parse3('&', '&', ' '), Some((Seperator::LogicalAnd, 2)) }
+    assert_eq!{ Seperator::parse3('Х', '9', ' '), None }
 }

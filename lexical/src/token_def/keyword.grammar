@@ -7,7 +7,7 @@
 //
 // attention: rerun token.py after modify this file
 //
-//     value =>        name, category
+//     value =>       name, category
          '_' => Underscore, InUse,
      'alias' =>      Alias, Reserved,
        'and' =>        And, Reserved,

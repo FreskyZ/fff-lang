@@ -12,9 +12,14 @@ from collections import namedtuple
 from functools import reduce
 from itertools import chain
 import random
+import codecs
 
 SEPERATOR_DEF_FILE = 'seperator.grammar'
 KEYWORD_DEF_FILE = 'keyword.grammar'
+SEPERATOR_TARGET_FILE = 'seperator2.rs'
+KEYWORD_TARGET_FILE = 'keyword2.rs'
+
+UNICODE_MAX_CODEPOINT = 0x10FFFF
 
 def check_hasher_perform(values, hasher):
     half_hash_values = list(map(hasher, values))
@@ -22,7 +27,7 @@ def check_hasher_perform(values, hasher):
         hash_values = [half_hash_value % moder for half_hash_value in half_hash_values]
         max_collision_count = max(len(list(filter(lambda x: x == hash_value, hash_values))) for hash_value in set(hash_values))
         return moder, max_collision_count, moder * max_collision_count
-    return next(iter(sorted(map(get_bucket_size_and_number, range(len(values), 1000)), key = lambda x: x[2])), None)
+    return next(iter(sorted(map(get_bucket_size_and_number, range(len(values), 512)), key = lambda x: x[2])), None)
 
 class Seperator:
     def __init__(self, value, name, index, cats):
@@ -93,9 +98,9 @@ class Seperators:
         print(f'len1: bucket size: {bucket_size}, number: {bucket_number}, memory use: {memory_use}') # 37, 1
         bucket_size, bucket_number, memory_use = check_hasher_perform(
             list(map(lambda x: x.value, self.len2s)), 
-            lambda x: ord(x[0]) + ord(x[1]) * 256
+            lambda x: ord(x[0]) + ord(x[1]) * UNICODE_MAX_CODEPOINT
         )
-        print(f'len2: bucket size: {bucket_size}, number: {bucket_number}, memory use: {memory_use}') # 38, 1
+        print(f'len2: bucket size: {bucket_size}, number: {bucket_number}, memory use: {memory_use}') # 22, 2
     
     def generate_tests(self):
         test_src = ''
@@ -132,9 +137,9 @@ class Seperators:
         # TODO: generate proper parse test cases
         test_src += '#[cfg(test)] #[test]\n'
         test_src += 'fn seperator_parse() {\n\n'
-        for _ in range(10):
-            sep = random.choice(items)
-            test_src += "    assert_eq!{"
+        # for _ in range(10):
+        #     sep = random.choice(items)
+        #     test_src += "    assert_eq!{"
 
         test_src += "    assert_eq!{ Seperator::parse3('<', '<', '='), Some((Seperator::ShiftLeftAssign, 3)) }\n"
         test_src += "    assert_eq!{ Seperator::parse3('+', ' ', '1'), Some((Seperator::Add, 1)) }\n"
@@ -146,6 +151,10 @@ class Seperators:
         # because in this case if you do not have a key stored in hashmap to confirm equality then a bug happened
         test_src += "    assert_eq!{ Seperator::parse3('{', ' ', 'a'), Some((Seperator::LeftBrace, 1)) }\n"
         test_src += "    assert_eq!{ Seperator::parse3('&', '&', ' '), Some((Seperator::LogicalAnd, 2)) }\n"
+        # 17/7/11 this case is manually created to prove that the original hash function has bug
+        # original hash function is `lambda value: ord(value[0]) + ord(value[1]) * 256`
+        # or `|ch1, ch2| ch1 as u32 + ch2 as u32 * 256` where high probability of hash coliision exists
+        test_src += "    assert_eq!{ Seperator::parse3('Х', '9', ' '), None }\n"
         test_src += '}\n'
 
         return test_src
@@ -175,54 +184,72 @@ class Seperators:
         src += '\n    '.join('{},'.format(name) for name in map(lambda x: x.name, chain(self.len1s, self.len2s, self.len3s)))
         src += '\n}\n\n'
 
-        src += 'const EMPTY_BUCKET: (u32, u32) = (0, 0);\n'  # 0 (or EOF) will not be passed here
-        name_from_1_char, name_from_2_char = [(0, 0)] * 37, [(0, 0)] * 38
+        # because hashf = lambda value: ord(value) % 37, so 37 is an invalid key
+        LEN1_EMPTY_ENTRY = (37, 0)  
+        # because hashf = lambda value: ord(value[0]) + ord(value[1]) * MAX, so MAX + MAX * MAX + 1 is invalid key
+        LEN2_EMPTY_ENTRY = (UNICODE_MAX_CODEPOINT + UNICODE_MAX_CODEPOINT * UNICODE_MAX_CODEPOINT + 1, 0) # 
+        len1_bucket = [LEN1_EMPTY_ENTRY for _ in range(37)] 
+        len2_bucket1, len2_bucket2 = [LEN2_EMPTY_ENTRY for _ in range(22)], [LEN2_EMPTY_ENTRY for _ in range(22)]
         for sep in self.len1s:
             hashv = ord(sep.value)
-            name_from_1_char[hashv % 37] = (hashv, sep.index)
+            len1_bucket[hashv % 37] = (hashv, sep.index)
         for sep in self.len2s:
-            hashv = ord(sep.value[0]) + ord(sep.value[1]) * 256
-            name_from_2_char[hashv % 38] = (hashv, sep.index - len(self.len1s))
-        src += 'const NAME_FROM_1_CHAR: &[(u32, u32)] = &['
-        for index, item in enumerate(name_from_1_char):
-            if index % 8 == 0:
-                src += '\n    '
-            if item != (0, 0):
-                key, value = item
-                src += f'({key}, {value}), '
+            hashv = ord(sep.value[0]) + ord(sep.value[1]) * UNICODE_MAX_CODEPOINT
+            if len2_bucket1[hashv % 22] == LEN2_EMPTY_ENTRY:
+                len2_bucket1[hashv % 22] = (hashv, sep.index - len(self.len1s))
+            elif len2_bucket2[hashv % 22] == LEN2_EMPTY_ENTRY:
+                len2_bucket2[hashv % 22] = (hashv, sep.index - len(self.len1s))
             else:
-                src += 'EMPTY_BUCKET, '
+                assert not 'should not use more than 2 buckets'
+
+        def format_array(array): # already stringified array
+            array_src = ''
+            max_length = len(max(array, key = len))
+            item_per_line = int(76 / (max_length + 2)) # indent 4 char, not overwrite 80 char, each item follow with a comma and a space
+            for index, item in enumerate(array):
+                if index % item_per_line == 0:
+                    array_src += '\n    '
+                array_src += '{space}{item}, '.format(item = item, space = '') # used to make more beautiful format, but actually more ugly so abandoned
+            return array_src
+
+        src += 'const CHAR_MAX_CODEPOINT: u64 = 0x10FFFF;\n'
+        src += 'const LEN1_EMPTY: (u32, u8) = (37, 0);\n'
+        src += 'const LEN2_EMPTY: (u64, u8) = (' + str(LEN2_EMPTY_ENTRY[0]) + ', 0);\n'
+        src += 'const LEN1_BUCKET: &[(u32, u8)] = &['
+        len1_bucket_str = [str(entry) if entry != LEN1_EMPTY_ENTRY else 'LEN1_EMPTY' for entry in len1_bucket]
+        src += format_array(len1_bucket_str)
         src += '\n];\n'
-        src += 'const NAME_FROM_2_CHAR: &[(u32, u32)] = &['
-        for index, item in enumerate(name_from_2_char):
-            if index % 8 == 0:
-                src += '\n    '
-            if item != (0, 0):
-                key, value = item
-                src += f'({key}, {value}), '
-            else:
-                src += 'EMPTY_BUCKET, '
+        src += 'const LEN2_BUCKET1: &[(u64, u8)] = &['
+        len2_bucket1_str = [str(entry) if entry != LEN2_EMPTY_ENTRY else 'LEN2_EMPTY' for entry in len2_bucket1]
+        src += format_array(len2_bucket1_str)
+        src += '\n];\n'
+        src += 'const LEN2_BUCKET2: &[(u64, u8)] = &['
+        len2_bucket2_str = [str(entry) if entry != LEN2_EMPTY_ENTRY else 'LEN2_EMPTY' for entry in len2_bucket2]
+        src += format_array(len2_bucket2_str)
         src += '\n];\n'
         src += 'impl Seperator {\n\n'
         src += '    pub fn parse1(ch: char) -> Option<Seperator> {\n'
         src += '        let hash = ch as u32;\n'
-        src += '        match NAME_FROM_1_CHAR[(hash % 37) as usize] {\n'
+        src += '        match LEN1_BUCKET[(hash % 37) as usize] {\n'
         src += '            (key, _) if key != hash => None,\n'
         src += '            (_, index) => unsafe { Some(::std::mem::transmute(index as u8)) },\n'
         src += '        }\n'
         src += '    }\n'
         src += '    pub fn parse3(ch1: char, ch2: char, ch3: char) -> Option<(Seperator, usize)> {\n'
-        src += '        let hash2 = ch1 as u32 + ch2 as u32 * 256;\n'   # TODO: potential hash collision because char is actually u32 as UTF32
+        src += '        let hash2 = ch1 as u64 + ch2 as u64 * CHAR_MAX_CODEPOINT;\n'
         src += '        let hash1 = ch1 as u32;\n'
         src += '        match &[ch1 as u8, ch2 as u8, ch3 as u8] {\n'   # if len(self.len3s) is large than 10 or 100, make it into hashmap, too
         for sep in self.len3s:
             src += '            b"%s" => unsafe { Some((::std::mem::transmute(%du8), 3)) },\n' % (sep.value, sep.index)
-        src += '            _ => match NAME_FROM_2_CHAR[(hash2 % 38) as usize] {\n'
-        src += '                (key, _) if key != hash2 => match NAME_FROM_1_CHAR[(hash1 % 37) as usize] {\n'
-        src += '                    (key, _) if key != hash1 => None,\n'
-        src += '                    (_, index) => unsafe { Some((::std::mem::transmute(index as u8), 1)) },\n'
+        src += '            _ => match LEN2_BUCKET1[(hash2 % 22) as usize] {\n'
+        src += '                (key, _) if key != hash2 => match LEN2_BUCKET2[(hash2 % 22) as usize] {\n'
+        src += '                    (key, _) if key != hash2 => match LEN1_BUCKET[(hash1 % 37) as usize] {\n'
+        src += '                        (key, _) if key != hash1 => None,\n'
+        src += '                        (_, index) => unsafe { Some((::std::mem::transmute(index), 1)) },\n'
+        src += '                    },\n'
+        src += '                    (_, index) => unsafe { Some((::std::mem::transmute(index + %d), 2)) },\n' % len(self.len1s)
         src += '                },\n'
-        src += '                (_, index) => unsafe { Some((::std::mem::transmute((index + %d) as u8), 2)) },\n' % len(self.len1s)
+        src += '                (_, index) => unsafe { Some((::std::mem::transmute(index + %d), 2)) },\n' % len(self.len1s)
         src += '            },\n'
         src += '        }\n'
         src += '    }\n'
@@ -257,7 +284,7 @@ class Seperators:
 
         src += self.generate_tests()
 
-        with open('seperator2.rs', 'w') as file:
+        with codecs.open(SEPERATOR_TARGET_FILE, 'w', 'utf-8') as file:
             file.write(src)
 
 class Keyword:
@@ -311,11 +338,12 @@ class Keywords:
         with open(self.filename, 'w') as file:
             file.write(retval)
 
-    def generate_hash_specs(self):      
-        # (43, 18...1) => 137, 2, 274
+    def generate_hash_specs(self):
+        # 16557366432705, 43 => 137, 2
+        # 16557366432689, 43 => 137, 2
         bucket_size, bucket_number, memory_use = check_hasher_perform(
             list(map(lambda x: x.value, self.items)),
-            lambda value: reduce(lambda x, y: x * (ord(y) - 43) % 1800000000000001, value, 1))
+            lambda value: reduce(lambda x, y: x * (ord(y) - 43) % 16557366432705, value, 1))
         print(f'keyword all: bucket size: {bucket_size}, number: {bucket_number}, memory use: {memory_use}')
 
     def generate_tests(self):
@@ -348,11 +376,14 @@ class Keywords:
             test_src += case
         test_src += '}\n'
 
-        # TODO: create a multiply overflow here because hash function moder is near u64::MAX
         test_src += '#[cfg(test)] #[test]\n'
         test_src += 'fn keyword_parse() {\n\n'
-        test_src += '    assert_eq!{ Keyword::parse("fn"), Some(Keyword::Fn) }'
-        test_src += '    assert_eq!{ Keyword::parse("await"), Some(Keyword::Await) }'
+        test_src += '    assert_eq!{ Keyword::parse("fn"), Some(Keyword::Fn) }\n'
+        test_src += '    assert_eq!{ Keyword::parse("await"), Some(Keyword::Await) }\n'
+        test_src += '    assert_eq!{ Keyword::parse("一个chinese变量"), None }\n'
+        test_src += '    assert_eq!{ Keyword::parse("a_中文_var"), None }\n'
+        # this test case from v2_base help me find that if _invalid_key in BUCKET1 should still check BUCKET2
+        test_src += '    assert_eq!{ Keyword::parse("as"), Some(Keyword::As) }\n'
         test_src += '}\n'
 
         return test_src
@@ -372,13 +403,14 @@ class Keywords:
         src += '\nconst KEYWORD_VALUES: &[&str] = &['    # thanks for 1.18's const static default 'static
         src += ''.join('{opt_space}"{value}", '.format(value = kw.value, opt_space = '\n    ' if kw.index % 7 == 0 else '') for kw in self.items)
         src += '\n];\n'
+        HASH_MAGIC = 16557366432705
         # this comes back to only store values, but later use the value as index into VALUES array and then check key equality there
         buckets = [[255, 255] for _ in range(137)]  # actually [(bucket1, bucket2)], but use array for mutablity
         for kw in chain(
             filter(lambda x: x.cat_value == self.cats['InUse'], self.items),
             filter(lambda x: x.cat_value == self.cats['Primitive'], self.items),
             filter(lambda x: x.cat_value == self.cats['Reserved'], self.items)):  # inuse in priority, then primitive, last reserved
-            hashv = reduce(lambda x, y: x * (ord(y) - 43) % 1800000000000001, kw.value, 1)
+            hashv = reduce(lambda x, y: x * (ord(y) - 43) % HASH_MAGIC, kw.value, 1)
             for char in kw.value:
                 assert ord(char) >= 43
             # print(f'{kw}: {hashv}, {hashv % 137}')
@@ -389,12 +421,13 @@ class Keywords:
             else:
                 assert not 'should not use more then 2 buckets'
         src += '\nconst EMPTY: u8 = 255;\n'
-        src += 'const KEYWORD_BUCKET_1: &[u8] = &['
+        src += 'const HASH_MAGIC: u64 = ' + str(HASH_MAGIC) + ';\n'
+        src += 'const KEYWORD_BUCKET1: &[u8] = &['
         src += ''.join('{space}{value}, '.format(
             value = bucket1 if bucket1 != 255 else 'EMPTY', 
             space = '\n    ' if index % 16 == 0 else '') for (index, (bucket1, _)) in enumerate(buckets))
         src += '\n];\n'
-        src += 'const KEYWORD_BUCKET_2: &[u8] = &['
+        src += 'const KEYWORD_BUCKET2: &[u8] = &['
         src += ''.join('{space}{value}, '.format(
             value = bucket2 if bucket2 != 255 else 'EMPTY', 
             space = '\n    ' if index % 16 == 0 else '') for (index, (_, bucket2)) in enumerate(buckets))
@@ -404,18 +437,17 @@ class Keywords:
         src += '        let mut hash = 1u64;\n'
         src += '        for ch in v.chars() {\n'
         src += '            if ch as u32 <= 43 { return None; }\n'
-        src += '            hash = (hash * (ch as u32 - 43u32) as u64) % 1800000000000001;\n' # TODO: potential panic on u64 overflow
+        src += '            hash = (hash * (ch as u32 - 43u32) as u64) % HASH_MAGIC;\n'
         src += '        }\n'
-        src += '        match KEYWORD_BUCKET_1[(hash % 137) as usize] {\n'
-        src += '            EMPTY => match KEYWORD_BUCKET_2[(hash % 137) as usize] {\n'
+        src += '        match KEYWORD_BUCKET1[(hash % 137) as usize] {\n'
+        src += '            index if index != EMPTY && KEYWORD_VALUES[index as usize] == v\n'
+        src += '                => Some(unsafe{ ::std::mem::transmute(index) }),\n'
+        src += '            _empty_or_invalid_key => match KEYWORD_BUCKET2[(hash % 137) as usize] {\n'
         src += '                EMPTY => None,\n'
         src += '                index if KEYWORD_VALUES[index as usize] == v\n'
         src += '                    => Some(unsafe { ::std::mem::transmute(index) }),\n'
         src += '                _invalid_index => None,\n'
         src += '            },\n'
-        src += '            index if KEYWORD_VALUES[index as usize] == v\n'
-        src += '                => Some(unsafe{ ::std::mem::transmute(index) }),\n'
-        src += '            _invalid_index => None,'
         src += '        }\n'
         src += '    }\n'
         src += '}\n'
@@ -440,7 +472,7 @@ class Keywords:
 
         src += self.generate_tests()
 
-        with open('keyword2.rs', 'w') as file:
+        with codecs.open(KEYWORD_TARGET_FILE, 'w', 'utf-8') as file:
             file.write(src)
 
 # main
