@@ -2,8 +2,6 @@
 ///!
 ///! util/date_time for Readonly UTC date time
 
-// TODO: UTC now + now, time zone, format method
-
 use std::fmt;
 
 /// Readonly UTC date time
@@ -104,7 +102,7 @@ mod native {
             };
             let mut filetime = mem::uninitialized::<FileTime>();
             SystemTimeToFileTime(&systime as *const SystemTime, &mut filetime as *mut FileTime);
-            (filetime.low_part as u64 + ((filetime.high_part as u64) << 32)) / 10_000_000u64 - 11_644_473_600u64
+            (filetime.low_part as u64 + ((filetime.high_part as u64) << 32)) / 10_000_000u64 - FILETIME_TIMESTAMP_OFFSET
         }
     }
 }
@@ -114,12 +112,12 @@ mod native {
 
     #[repr(C, packed)]
     struct tm {
-        second: i32,        // 0-60
-        minute: i32,        // 0-59
-        hour: i32,          // 0-23
-        day_of_month: i32,  // 1-31
-        month: i32,         // 0-11
-        year: i32,          // 1900+
+        second: i32,         // 0-60
+        minute: i32,         // 0-59
+        hour: i32,           // 0-23
+        day_of_month: i32,   // 1-31
+        month: i32,          // 0-11
+        year: i32,           // 1900+
         _day_of_week: i32,   // Sunday as 0
         _day_of_year: i32,   // 0-365
         _is_daylight_saving_time: i32,
