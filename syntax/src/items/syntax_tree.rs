@@ -99,3 +99,16 @@ fn syntax_tree_parse() {
 
 // TODO maybe not here:
 // a library that provides a format method that requires custom format argument and custom this argument may want `...` parameter pack and type pack
+
+// TODO from old history:
+// yes they are legacy syntax interactive integration test cases, add them to this integration tests
+// fn fn1(u32 a, u32 b) -> u32 { return a + b; } fn main(u32 argc, [string] argv) -> u32 { var u32 i = 1; while(i != 0) { const u32 a = read_u32(); const u32 b = read_u32(); println(fn1(a, b)); } return 0; }
+
+// // var scope
+// fn main() { var i32 a = 0; { var i32 b = 0; var i32 a = 0; } var i32 c = a + b; }
+
+// // loop and name
+// fn main(u32 b) { const i32 a = read_i32(); loop "abc" { var i32 b = 0; loop "def" { if a == 0 { ++a; break "def"; } else { ++b; break "abc"; } } } }
+
+// // for and while
+// fn main() { const i32 a = read_i32(); while a != 0 { for i in 0 : a { printf("zmj"); } --a; } }
