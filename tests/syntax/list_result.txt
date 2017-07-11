@@ -1,0 +1,98 @@
+SyntaxTree
+  FnDef <<0>32-2692>
+    Name str#1 <<0>35-38>
+    Params <<0>39-40>
+    Block <<0>42-2692>
+      VarDecl var <<0>338-364>
+        str#2 <<0>342-345>
+        ArrayDef <<0>349-363>
+          Literal (i32)1 <<0>350-350>
+          Literal (i32)5 <<0>353-353>
+          Literal (i32)3 <<0>356-356>
+          Literal (i32)2 <<0>359-359>
+          Literal (i32)4 <<0>362-362>
+      SimpleExprStmt <<0>1354-1365>
+        FnCall <<0>1354-1364>
+          MemberAccess <<0>1354-1362>
+            Ident str#2 <<0>1354-1357>
+            dot <<0>1358-1358>
+            Ident str#3 <<0>1359-1362>
+          paren <<0>1363-1364>
+          (empty)
+      SimpleExprStmt <<0>1784-1797>
+        FnCall <<0>1784-1796>
+          Ident str#4 <<0>1784-1790>
+          paren <<0>1791-1796>
+          Ident str#2 <<0>1792-1795>
+      SimpleExprStmt <<0>2005-2022>
+        FnCall <<0>2005-2021>
+          MemberAccess <<0>2005-2018>
+            Ident str#2 <<0>2005-2008>
+            dot <<0>2009-2009>
+            Ident str#5 <<0>2010-2018>
+          paren <<0>2019-2021>
+          Literal (i32)8 <<0>2020-2020>
+      SimpleExprStmt <<0>2395-2412>
+        FnCall <<0>2395-2411>
+          MemberAccess <<0>2395-2408>
+            Ident str#2 <<0>2395-2398>
+            dot <<0>2399-2399>
+            Ident str#5 <<0>2400-2408>
+          paren <<0>2409-2411>
+          Literal (i32)6 <<0>2410-2410>
+      SimpleExprStmt <<0>2419-2436>
+        FnCall <<0>2419-2435>
+          MemberAccess <<0>2419-2432>
+            Ident str#2 <<0>2419-2422>
+            dot <<0>2423-2423>
+            Ident str#6 <<0>2424-2432>
+          paren <<0>2433-2435>
+          Literal (i32)3 <<0>2434-2434>
+      ForStmt <<0>2465-2519>
+        'for' <<0>2465-2467>
+        Ident str#7 <<0>2469-2469>
+        RangeBoth <<0>2474-2487>
+          Literal (i32)0 <<0>2474-2474>
+          '..' <<0>2475-2476>
+          MemberAccess <<0>2477-2487>
+            Ident str#2 <<0>2477-2480>
+            dot <<0>2481-2481>
+            Ident str#8 <<0>2482-2487>
+        Block <<0>2489-2519>
+          AssignExprStmt <<0>2500-2512>
+            *= <<0>2508-2509>
+            IndexerCall <<0>2500-2506>
+              Ident str#2 <<0>2500-2503>
+              bracket <<0>2504-2506>
+              Ident str#7 <<0>2505-2505>
+            Literal (i32)2 <<0>2511-2511>
+      ForStmt <<0>2526-2549>
+        'for' <<0>2526-2528>
+        Ident str#7 <<0>2530-2530>
+        Ident str#2 <<0>2535-2538>
+        Block <<0>2539-2549>
+          AssignExprStmt <<0>2541-2547>
+            *= <<0>2543-2544>
+            Ident str#7 <<0>2541-2541>
+            Literal (i32)3 <<0>2546-2546>
+      SimpleExprStmt <<0>2611-2622>
+        FnCall <<0>2611-2621>
+          MemberAccess <<0>2611-2619>
+            Ident str#2 <<0>2611-2614>
+            dot <<0>2615-2615>
+            Ident str#3 <<0>2616-2619>
+          paren <<0>2620-2621>
+          (empty)
+      SimpleExprStmt <<0>2629-2643>
+        FnCall <<0>2629-2642>
+          MemberAccess <<0>2629-2640>
+            Ident str#2 <<0>2629-2632>
+            dot <<0>2633-2633>
+            Ident str#9 <<0>2634-2640>
+          paren <<0>2641-2642>
+          (empty)
+      SimpleExprStmt <<0>2650-2663>
+        FnCall <<0>2650-2662>
+          Ident str#4 <<0>2650-2656>
+          paren <<0>2657-2662>
+          Ident str#2 <<0>2658-2661>

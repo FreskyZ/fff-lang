@@ -60,7 +60,6 @@ impl SyntaxTree {
     }
 }
 
-#[cfg(feature = "integration_test")]
 #[cfg(test)] #[test]
 fn syntax_tree_parse() {
     use std::fs::File;

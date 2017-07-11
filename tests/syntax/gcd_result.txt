@@ -1,0 +1,131 @@
+SyntaxTree
+  FnDef <<0>12-343>
+    Name str#1 <<0>15-18>
+    Params <<0>19-20>
+    Block <<0>22-343>
+      LoopStmt <<0>31-340>
+        Label str#1 <<0>31-36>
+        'loop' <<0>38-41>
+        Block <<0>43-340>
+          SimpleExprStmt <<0>54-80>
+            FnCall <<0>54-79>
+              Ident str#3 <<0>54-60>
+              paren <<0>61-79>
+              Literal str#2 <<0>62-78>
+          VarDecl var <<0>91-109>
+            str#4 <<0>95-95>
+            FnCall <<0>99-108>
+              Ident str#5 <<0>99-106>
+              paren <<0>107-108>
+              (empty)
+          VarDecl var <<0>120-138>
+            str#6 <<0>124-124>
+            FnCall <<0>128-137>
+              Ident str#5 <<0>128-135>
+              paren <<0>136-137>
+              (empty)
+          IfStmt <<0>151-208>
+            IfClause <<0>151-208>
+              BinaryExpr <<0>154-169>
+                BinaryExpr <<0>154-159>
+                  Ident str#4 <<0>154-154>
+                  == <<0>156-157>
+                  Literal (i32)0 <<0>159-159>
+                && <<0>161-162>
+                BinaryExpr <<0>164-169>
+                  Ident str#6 <<0>164-164>
+                  == <<0>166-167>
+                  Literal (i32)0 <<0>169-169>
+              Then
+              Block <<0>171-208>
+                BreakStmt <<0>186-197>
+                  To @str#1 <<0>192-196>
+          SimpleExprStmt <<0>221-333>
+            FnCall <<0>221-332>
+              Ident str#3 <<0>221-227>
+              paren <<0>228-332>
+              BinaryExpr <<0>229-331>
+                BinaryExpr <<0>229-295>
+                  BinaryExpr <<0>229-285>
+                    BinaryExpr <<0>229-269>
+                      BinaryExpr <<0>229-262>
+                        Literal str#7 <<0>229-246>
+                        + <<0>248-248>
+                        FnCall <<0>250-262>
+                          MemberAccess <<0>250-260>
+                            Ident str#4 <<0>250-250>
+                            dot <<0>251-251>
+                            Ident str#8 <<0>252-260>
+                          paren <<0>261-262>
+                          (empty)
+                      + <<0>264-264>
+                      Literal str#9 <<0>266-269>
+                    + <<0>271-271>
+                    FnCall <<0>273-285>
+                      MemberAccess <<0>273-283>
+                        Ident str#6 <<0>273-273>
+                        dot <<0>274-274>
+                        Ident str#8 <<0>275-283>
+                      paren <<0>284-285>
+                      (empty)
+                  + <<0>287-287>
+                  Literal str#10 <<0>289-295>
+                + <<0>297-297>
+                FnCall <<0>299-331>
+                  MemberAccess <<0>299-329>
+                    FnCall <<0>299-319>
+                      Ident str#11 <<0>299-311>
+                      paren <<0>314-319>
+                      Ident str#4 <<0>315-315>
+                      Ident str#6 <<0>318-318>
+                    dot <<0>320-320>
+                    Ident str#8 <<0>321-329>
+                  paren <<0>330-331>
+                  (empty)
+  FnDef <<0>348-555>
+    Name str#11 <<0>351-363>
+    TypeUse simple <<0>386-388>
+      str#12 <<0>386-388>
+    Params <<0>366-381>
+    Param str#4 <<0>367-367>
+      TypeUse simple <<0>370-372>
+        str#12 <<0>370-372>
+    Param str#6 <<0>375-375>
+      TypeUse simple <<0>378-380>
+        str#12 <<0>378-380>
+    Block <<0>390-555>
+      IfStmt <<0>397-433>
+        IfClause <<0>397-433>
+          BinaryExpr <<0>400-405>
+            Ident str#6 <<0>400-400>
+            == <<0>402-403>
+            Literal (i32)0 <<0>405-405>
+          Then
+          Block <<0>407-433>
+            ReturnStmt some <<0>418-426>
+              Ident str#4 <<0>425-425>
+      IfStmt <<0>440-552>
+        IfClause <<0>440-495>
+          BinaryExpr <<0>443-447>
+            Ident str#4 <<0>443-443>
+            < <<0>445-445>
+            Ident str#6 <<0>447-447>
+          Then
+          Block <<0>449-495>
+            ReturnStmt some <<0>460-488>
+              FnCall <<0>467-487>
+                Ident str#11 <<0>467-479>
+                paren <<0>482-487>
+                Ident str#6 <<0>483-483>
+                Ident str#4 <<0>486-486>
+        ElseClause <<0>497-552>
+          Block <<0>502-552>
+            ReturnStmt some <<0>513-545>
+              FnCall <<0>520-544>
+                Ident str#11 <<0>520-532>
+                paren <<0>535-544>
+                Ident str#6 <<0>536-536>
+                BinaryExpr <<0>539-543>
+                  Ident str#4 <<0>539-539>
+                  % <<0>541-541>
+                  Ident str#6 <<0>543-543>
