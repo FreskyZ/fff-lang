@@ -16,8 +16,8 @@ import codecs
 
 SEPERATOR_DEF_FILE = 'seperator.grammar'
 KEYWORD_DEF_FILE = 'keyword.grammar'
-SEPERATOR_TARGET_FILE = 'seperator2.rs'
-KEYWORD_TARGET_FILE = 'keyword2.rs'
+SEPERATOR_TARGET_FILE = 'seperator.rs'
+KEYWORD_TARGET_FILE = 'keyword.rs'
 
 UNICODE_MAX_CODEPOINT = 0x10FFFF
 
