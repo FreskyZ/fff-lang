@@ -2,6 +2,8 @@
 ///!
 ///! util/date_time for Readonly UTC date time
 
+// TODO: UTC now + now, time zone, format method
+
 use std::fmt;
 
 /// Readonly UTC date time
@@ -36,39 +38,43 @@ impl DateTime {
         format!("{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z", self.m_year, self.m_month, self.m_day, self.m_hour, self.m_minute, self.m_second)
     }
 }
-
-mod system {
-
-    #[repr(C, packed)]
-    pub struct SystemTime {
-        pub year: u16,
-        pub month: u16,
-        pub _day_of_week: u16, // not used here
-        pub day: u16,
-        pub hour: u16,
-        pub minute: u16,
-        pub second: u16,
-        pub _milli_second: u16, // not used here
+impl fmt::Debug for DateTime {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.format("iso8601"))
     }
+}
+
+#[cfg(windows)]
+mod native {
+    use std::mem;
+    use super::DateTime;
 
     #[repr(C, packed)]
-    pub struct FileTime {
-        pub low_part: u32,
-        pub high_part: u32,
+    struct SystemTime {
+        year: u16,
+        month: u16,
+        _day_of_week: u16, // not used here
+        day: u16,
+        hour: u16,
+        minute: u16,
+        second: u16,
+        _milli_second: u16, // not used here
+    }
+    #[repr(C, packed)]
+    struct FileTime {
+        low_part: u32,
+        high_part: u32,
     }
 
     #[link(name = "kernel32")] extern "stdcall" { 
-        pub fn GetSystemTime(retval: *mut SystemTime); 
-        pub fn SystemTimeToFileTime(systime: *const SystemTime, filetime: *mut FileTime);
-        pub fn FileTimeToSystemTime(filetime: *const FileTime, systime: *mut SystemTime);
+        fn GetSystemTime(retval: *mut SystemTime); 
+        fn SystemTimeToFileTime(systime: *const SystemTime, filetime: *mut FileTime);
+        fn FileTimeToSystemTime(filetime: *const FileTime, systime: *mut SystemTime);
     }
-}
-impl DateTime {
+
+    const FILETIME_TIMESTAMP_OFFSET: u64 = 11644473600u64;
 
     pub fn now() -> DateTime {
-        use std::mem;
-        use self::system::{ SystemTime, GetSystemTime };
-
         unsafe {
             let mut ret_val = mem::uninitialized::<SystemTime>();
             GetSystemTime(&mut ret_val as *mut SystemTime);
@@ -77,13 +83,9 @@ impl DateTime {
                 ret_val.hour as u32, ret_val.minute as u32, ret_val.second as u32)
         }
     }
-
-    pub fn with_timestamp(mut timestamp: u64) -> DateTime {
-        use std::mem;
-        use self::system::{ FileTime, SystemTime, FileTimeToSystemTime };
-
+    pub fn with_timestamp(timestamp: u64) -> DateTime {
         unsafe {
-            timestamp += 11_644_473_600u64;
+            timestamp += FILETIME_TIMESTAMP_OFFSET;
             timestamp *= 10_000_000u64;
             let filetime = FileTime{ low_part: (timestamp & 0xFFFFFFFF) as u32, high_part: (timestamp >> 32) as u32 };
             let mut systime = mem::uninitialized::<SystemTime>();
@@ -93,14 +95,11 @@ impl DateTime {
                 systime.hour as u32, systime.minute as u32, systime.second as u32)
         }
     }
-    pub fn as_timestamp(&self) -> u64 {
-        use std::mem;
-        use self::system::{ FileTime, SystemTime, SystemTimeToFileTime };
-
+    pub fn as_timestamp(this: &DateTime) -> u64 {
         unsafe {
             let systime = SystemTime{
-                year: self.m_year as u16, month: self.m_month as u16, day: self.m_day as u16,
-                hour: self.m_hour as u16, minute: self.m_minute as u16, second: self.m_second as u16,
+                year: this.m_year as u16, month: this.m_month as u16, day: this.m_day as u16,
+                hour: this.m_hour as u16, minute: this.m_minute as u16, second: this.m_second as u16,
                 _day_of_week: 0, _milli_second: 0
             };
             let mut filetime = mem::uninitialized::<FileTime>();
@@ -108,13 +107,69 @@ impl DateTime {
             (filetime.low_part as u64 + ((filetime.high_part as u64) << 32)) / 10_000_000u64 - 11_644_473_600u64
         }
     }
+}
+#[cfg(unix)]
+mod native {
+    use super::DateTime;
 
+    #[repr(C, packed)]
+    struct tm {
+        second: i32,        // 0-60
+        minute: i32,        // 0-59
+        hour: i32,          // 0-23
+        day_of_month: i32,  // 1-31
+        month: i32,         // 0-11
+        year: i32,          // 1900+
+        _day_of_week: i32,   // Sunday as 0
+        _day_of_year: i32,   // 0-365
+        _is_daylight_saving_time: i32,
+        _gmt_offset: i64,    // second from GMT   // currently only UTC so not used
+        _zone: *mut u8,                           // not used, too
+    }
+    impl tm {
+        fn into_datetime(&self) -> DateTime { // because you may not own a struct tm
+            DateTime::with6(
+                self.year as u32 + 1900, self.month as u32 + 1, self.day_of_month as u32,
+                self.hour as u32, self.minute as u32, self.second as u32,
+            )
+        }
+    }
+
+    #[link(name = "c")] extern "cdecl" {
+        fn time(stamp: *mut u64) -> u64;
+        fn gmtime(stamp: *const u64) -> *const tm;
+        fn timegm(t: *mut tm) -> u64;
+    }
+
+    pub fn now() -> DateTime {
+        unsafe { tm::into_datetime(&*gmtime(&time(0 as *mut u64) as *const u64)) }
+    }
+    pub fn with_timestamp(timestamp: u64) -> DateTime {
+        unsafe { tm::into_datetime(&*gmtime(&timestamp as *const u64)) }
+    }
+    pub fn as_timestamp(this: &DateTime) -> u64 {
+        let mut zone = ['G' as u32 as u8, 'M' as u32 as u8, 'T' as u32 as u8, 0u8]; // C style `"GMT"`, 0 for null terminate
+        unsafe { timegm(&mut tm {
+            second: this.m_second as i32,
+            minute: this.m_minute as i32,
+            hour: this.m_hour as i32,
+            day_of_month: this.m_day as i32,
+            month: this.m_month as i32 - 1,
+            year: this.m_year as i32 - 1900,
+            _day_of_week: 0,  // mktime says ignored
+            _day_of_year: 0,  // mktime says ignored
+            _is_daylight_saving_time: -1, // auto
+            _gmt_offset: 0,   // only UTC is used here
+            _zone: &mut zone[0] as *mut u8,
+        } as *mut tm)
+    } }
 }
 
-impl fmt::Debug for DateTime {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.format("iso8601"))
-    }
+impl DateTime {
+
+    pub fn now() -> DateTime { self::native::now() }
+    pub fn with_timestamp(timestamp: u64) -> DateTime { self::native::with_timestamp(timestamp) }
+    pub fn as_timestamp(&self) -> u64 { self::native::as_timestamp(self) }
 }
 
 #[cfg(test)] #[test]
