@@ -1,0 +1,50 @@
+fn fn1(a: u32, b: u32) -> u32 { 
+    return a + b; 
+} 
+fn main(argc: u32, argv: [string]) -> u32 { 
+    var i: u32 = 1; 
+    while(i != 0) { 
+        const a = read_u32(); 
+        const b: u32 = read_u32(); 
+        println(fn1(a, b)); 
+    } 
+    return 0; 
+}
+
+// var scope
+fn main() { 
+    var a = 0; 
+    { 
+        var b = 0; 
+        var a:i32 = 0; 
+    } 
+    var c = a + b; 
+}
+
+// loop and name
+fn main(b: u32) { 
+    const a = read_i32(); 
+    @abc: loop { 
+        var b = 0; 
+        @def: loop { 
+            if a == 0 { 
+                a += 1; 
+                break @def; 
+            } else { 
+                b += 1; 
+                break @abc; 
+            } 
+        } 
+    } 
+}
+
+// for and while
+fn main() { 
+    const a = read_i32(); 
+    while a != 0 { 
+        for i in [0, 1, 2, a + 1] { 
+            writeln("zmj" + i); 
+        } 
+        a -= 1; 
+    } 
+}
