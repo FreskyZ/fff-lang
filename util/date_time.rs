@@ -82,6 +82,7 @@ mod native {
         }
     }
     pub fn with_timestamp(timestamp: u64) -> DateTime {
+        let mut timestamp = timestamp;
         unsafe {
             timestamp += FILETIME_TIMESTAMP_OFFSET;
             timestamp *= 10_000_000u64;
