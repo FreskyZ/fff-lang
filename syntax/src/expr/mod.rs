@@ -20,6 +20,7 @@ mod index_call;
 mod unary_expr;
 mod binary_expr;
 mod priority_proxy;
+mod range_expr;
 
 pub use self::lit_expr::LitExpr;
 pub use self::ident_expr::IdentExpr;
@@ -31,7 +32,10 @@ pub use self::array_def::ArrayDef;
 pub use self::fn_call::FnCallExpr;
 pub use self::index_call::IndexCallExpr;
 pub use self::member_access::MemberAccessExpr;
-
+pub use self::range_expr::RangeFullExpr;
+pub use self::range_expr::RangeRightExpr;
+pub use self::range_expr::RangeLeftExpr;
+pub use self::range_expr::RangeBothExpr;
 pub use self::binary_expr::BinaryExpr;
 pub use self::unary_expr::UnaryExpr;
 pub use self::priority_proxy::PostfixExpr;
@@ -56,6 +60,10 @@ pub enum Expr {
     MemberAccess(MemberAccessExpr),
     Unary(UnaryExpr),
     Binary(BinaryExpr),
+    RangeFull(RangeFullExpr),
+    RangeRight(RangeRightExpr),
+    RangeLeft(RangeLeftExpr),
+    RangeBoth(RangeBothExpr),
 }
 impl ISyntaxItemFormat for Expr {
     fn format(&self, indent: u32) -> String {
@@ -70,6 +78,10 @@ impl ISyntaxItemFormat for Expr {
             &Expr::MemberAccess(ref member_access) => member_access.format(indent),
             &Expr::Unary(ref unary_expr) => unary_expr.format(indent),
             &Expr::Binary(ref binary_expr) => binary_expr.format(indent),
+            &Expr::RangeFull(ref range_full) => range_full.format(indent),
+            &Expr::RangeRight(ref range_right) => range_right.format(indent),
+            &Expr::RangeLeft(ref range_left) => range_left.format(indent),
+            &Expr::RangeBoth(ref range_both) => range_both.format(indent),
         }
     }
 }
@@ -93,6 +105,10 @@ impl Expr {
             &Expr::MemberAccess(ref member_access) => member_access.all_span,
             &Expr::Unary(ref unary_expr) => unary_expr.all_span,
             &Expr::Binary(ref binary_expr) => binary_expr.all_span,
+            &Expr::RangeFull(ref range_full) => range_full.all_span,
+            &Expr::RangeRight(ref range_right) => range_right.all_span,
+            &Expr::RangeLeft(ref range_left) => range_left.all_span,
+            &Expr::RangeBoth(ref range_both) => range_both.all_span,
         }
     }
 
@@ -109,8 +125,9 @@ impl ISyntaxItemGrammar for Expr {
         || IdentExpr::is_first_final(sess)
         || TupleDef::is_first_final(sess)
         || ArrayDef::is_first_final(sess)
-        || sess.tk == &Token::Keyword(Keyword::This)
         || UnaryExpr::is_first_final(sess) 
+        || RangeFullExpr::is_first_final(sess)
+        || sess.tk == &Token::Keyword(Keyword::This)
         // || PostfixExpr::is_first_final(sess) // same as Expr
         // || BinaryExpr::is_first_final(sess)  // same as Expr
     }
@@ -119,7 +136,7 @@ impl ISyntaxItemParse for Expr {
     type Target = Expr;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {
-        return BinaryExpr::parse(sess);
+        return RangeLeftExpr::parse(sess);
     }
 }
 
