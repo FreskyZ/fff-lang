@@ -152,6 +152,57 @@ impl From<syntax::UnaryExpr> for UnaryExpr {
     }
 }
 
+use std::marker::PhantomData;
+#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
+pub struct RangeFullExpr {
+    pub phantom: PhantomData<()>,
+}
+impl From<syntax::RangeFullExpr> for RangeFullExpr {
+    fn from(_node: syntax::RangeFullExpr) -> RangeFullExpr {
+        RangeFullExpr{
+            phantom: PhantomData,
+        }
+    }
+}
+
+#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
+pub struct RangeLeftExpr {
+    pub expr: Box<Expr>,
+}
+impl From<syntax::RangeLeftExpr> for RangeLeftExpr {
+    fn from(node: syntax::RangeLeftExpr) -> RangeLeftExpr {
+        RangeLeftExpr{
+            expr: Box::new(syntax::Expr::unbox(node.expr).into()),
+        }
+    }
+}
+
+#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
+pub struct RangeRightExpr {
+    pub expr: Box<Expr>,
+}
+impl From<syntax::RangeRightExpr> for RangeRightExpr {
+    fn from(node: syntax::RangeRightExpr) -> RangeRightExpr {
+        RangeRightExpr{
+            expr: Box::new(syntax::Expr::unbox(node.expr).into()),
+        }
+    }
+}
+
+#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
+pub struct RangeBothExpr {
+    pub left_expr: Box<Expr>,
+    pub right_expr: Box<Expr>,
+}
+impl From<syntax::RangeBothExpr> for RangeBothExpr {
+    fn from(node: syntax::RangeBothExpr) -> RangeBothExpr {
+        RangeBothExpr{
+            left_expr: Box::new(syntax::Expr::unbox(node.left_expr).into()),
+            right_expr: Box::new(syntax::Expr::unbox(node.right_expr).into()),
+        }
+    }
+}
+
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub enum Expr {
     Array(ArrayDef),
@@ -164,6 +215,10 @@ pub enum Expr {
     Paren(ParenExpr),
     Tuple(TupleDef),
     Unary(UnaryExpr),
+    RangeFull(RangeFullExpr),
+    RangeLeft(RangeLeftExpr),
+    RangeRight(RangeRightExpr),
+    RangeBoth(RangeBothExpr),
 }
 impl From<syntax::Expr> for Expr {
     fn from(node: syntax::Expr) -> Expr {
@@ -178,6 +233,10 @@ impl From<syntax::Expr> for Expr {
             syntax::Expr::Paren(paren_expr) => Expr::Paren(paren_expr.into()),
             syntax::Expr::Tuple(tuple_def) => Expr::Tuple(tuple_def.into()),
             syntax::Expr::Unary(unary_expr) => Expr::Unary(unary_expr.into()),
+            syntax::Expr::RangeBoth(range_both) => Expr::RangeBoth(range_both.into()),
+            syntax::Expr::RangeLeft(range_left) => Expr::RangeLeft(range_left.into()),
+            syntax::Expr::RangeRight(range_right) => Expr::RangeRight(range_right.into()),
+            syntax::Expr::RangeFull(range_full) => Expr::RangeFull(range_full.into()),
         }
     }
 }
