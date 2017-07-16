@@ -1,59 +1,82 @@
 # fff-lang Internal Document
 
-// TODO: it is a quicknote currently
+## Source code management designment
 
-todos:  
-for codemap, codepos, messages, lexical and syntax
-every step should make them pass compile, optionally pass test
+Currently, source code is managed by codemap crate, it stores source file names and contents, 
+provide iterators to iterate through srouce code chars and their positions, and provide infrastructure to store
+symbols/strings
 
-  - remove codepos::Position or consider better CharPos, should pass test
-    update: v1lexer and at least str lit parser relies on codepos::Position, do not remove it
-  - change codepos::StringPosition to Span which based on file id and 2 byte positions, which only takes 2 u32s
-    make sure `type StringPosition = Span` is given and old `make_strpos` and `make_str_pos` still working, may not pass test
-  - do not move codepos::Span to codemap::Span, continue not pass test, because messages rely on codepos
-    try change Message to Message<SpanInfo>
-  - provide span at previous v0lexer currently codemap_iter, pass previous broken test
-  - change lexical's interface's identifier and label to span, maynot pass syntax's compile
-  - provide symbol intern service in codemap, which accepts both span and owned string and raw string to be interned
-    also provide stringify methods on symbol id, change syntax dependency on string to symbol id, pass all tests
-  - finish message format in codemap because codemap relies on messages
-  - move `ISyntaxItemFormat` and `ISemanticItemFormat` to `util::IFormatWithIndent` which contains `fmt_with_indent`
+messages crate rely on codemap, a Message only stores description strings and source code locations,
+then it need source code manager to display very human friendly informations
+
+lexical and syntax crates rely on codemap and messages, they store very many kinds of structured information and 
+their location information to be used in later debug and message construction
+
+now I want to finish the format methods and I'm not clear how to design the new module drivers for program driver and 
+test driver to use. first, module drivers and test drivers:
+```rust
+// codemap::CodeMap:
+fn CodeMap::new() -> CodeMap;
+fn CodeMap::with_files(files: Vec<String>) -> Result<CodeMap, CodeMapError>;
+fn CodeMap::with_test_str(src: &str) -> CodeMap;
+fn CodeMap::input_files(&self, files: Vec<String>) -> Result<(), CodeMapError>;
+fn CodeMap::input_str(&self, src: &str);
+// codemap::SymbolCollection
+fn SymbolCollection::new() -> SymbolCollection;
+// messages::MessageCollection
+fn MessageCollection::new() -> MessageCollection;
+// lexical::TokenStream
+fn TokenStream::new(code_chars: CodeChars, messages: &mut MessageCollection, symbols: &mut SymbolCollection) -> TokenStream;
+fn TokenStream::with_test_str(src: &str) -> TokenStream;
+fn TokenStream::with_test_input(src: &str, symbols: &mut SymbolCollection) -> TokenStream;
+// syntax::SyntaxTree
+fn SyntaxTree::new(tokens: &TokenStream, messages: &mut MessageCollection, symbols: &mut SymbolCollection) -> SyntaxTree;
+fn ISyntaxItemParse::with_test_str(src: &str) -> <Self as ISyntaxItemParse>::Target;
+fn ISyntaxItemParse::with_test_input(src: &str, symbols: &mut SymbolCollection) -> <Self as ISyntaxItemParse>::Target;
+// semantic::Package (in design)
+fn Package::new(syntax_forest: &SyntaxForest, messages: &mut MessageCollection, symbols: &mut SymbolCollection) -> Package;
+```
+
+now syntax and message need human friendly format method, current is
+
+    fn Message::fmt(&self, f: &mut fmt::Formatter) -> fmt::Result;
+    fn ISyntaxItemFormat::format(&self, indent: u32) -> String;
+    
+it at least need these
+
+    fn Message::format_with(&self, f: (&SymbolCollection, &CodeMap)) -> String;
+    fn IFormatWith<(u32, &SymbolCollection, &CodeMap)>(&self, f: (u32, &SymbolCollection, &CodeMap)) -> String;
+
+and codemap need this
+
+    fn CodeMap::get_position_with_span(&self, span: &Span) -> (usize, usize);
+    fn CodeMap::get_line_with_position(&self, fileid: usize, row: u32) -> &str;
+
+you can see, every parse method needs messages and symbols, but leave them separated, because if you define something like 
+MessageCollectionAndSymbolCollection, it will be to complicated waste keyboard hit, something like
+
+    struct ParseSession {
+        tokens: &TokenStream,
+        messages_and_symbols: &mut MessageCollectionAndSymbolCollection
+    }
+
+will also seem strange and very hard to use
+
+and every format method need symbols and codemap, still leave them seperated, because syntax format need an extra indent
+but message format do not need it
+
+another problem, how to manage multi file input's syntax rule and semantic rule, 
+as in design, I support multi file input and they are parallel, type def and fn defs do not have to declare before use,
+but, current lexical's interface ignored EOFs and give syntax a EOF, then syntax know nothing about EOF and EOFs and stoped at EOF,
+which make it actually not usable at multi file occassions,
+and, new problem arises when I allow statements at global scope, which is the order of them, actually, which is the order of the files,
+do I have to follow exactly command line input order to decide file order, that means, commandline input will significantly impact semantic,
+although command line options will change many semantic in other language, like optimization level, error handling method, etc. but this 
+seems too strange, in fact, I will not feel happy if all the files have to be written in command line and order is strict
+
+and issue/6, I'd like to make lexical and syntax unaware of files, let them only facing one file in their complete process, 
+so codemap should at lease publify code file, or refactor its interface
+
   - try privatify ISyntaxItemGrammar
   - continue your semantic
   - name this change as v0.1.2 to v0.1.3
-
-consideration: what on earth is relationship between codemap, codepos and messages?
-
-currently, in v0.1.2, codepos declares StringPosition and relies on nothing
-messages declare StringPosition as field of Message and then relies on codepos
-codemap may through several kind of exception (actually only 2 file reader exception) so rely on messages
-
-new designment 1:
-move Span to codemap and declares Message as Message<SpanInfo>, which causes all following crates to reference messages and codemap both
-and, new Message<SpanInfo> actually relies on codemap::Span, and codemap::CodeMap an codemap::CodeMapIter relies on messages, 
-which is very strange
-
-new designment 2:
-because, Span is actually index in source code which is managed by CodeMap, Message relies on Span to report location, 
-which relies CodeMap for source code string, then, codemap should not rely on messages, because messages already rely on codemap
-for source code string, that is, codemap has its own simple message format, and messages rely on codemap for more info, 
-message's format is also implemented in messages itself
-
-Attention: Span cannot be identifier for an identifier or a label, different span can be same identifier
-so check same when interning, and use symbol id always
-
-actual steps:
-
-  - remove impl_display_for_debug in messages, which is also used in ffc, which should cause ffc's compile error, which I don't known why it not happened
-  - add codemap::error and remove all messages dependency in codemap, lexical and syntax do not rely on this part and pass compile directly,
-    modified driver without compiling
-  - merge codepos into codemap and make messages, lexical and syntax depend on codemap
-  - change Position and StringPosition to CharPos and Span, pass messages, lexical and syntax all tests
-  - finish new lexical parser based on codemap.symbols, with string literals and identifiers interned
-  - finish new syntax parser based on sess.symbols, with `this` and `_` and `tuple` and `array` interned
-  - refactored expr physical structure to more public and simple
-
-  - currently at: add for and while statement's else clauses,
-                  finish message's format based on codemap
-
-  - in future: new semantic!
