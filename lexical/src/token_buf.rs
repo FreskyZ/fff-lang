@@ -1,16 +1,17 @@
 ///! fff-lang
 ///!
 ///! lexical/buf_lexer
+
 // this module is named token_buf because in file explorer
-// buf_lexer.rs
-// lib.rs
-// token_stream.rs
+//  - buf_lexer.rs
+//  - lib.rs
+//  - token_stream.rs
 // looks ugly, so rename it to token_buf
 
 use std::cell::Cell;
 
-use codemap::CodeChars;
 use codemap::Span;
+use codemap::SourceCodeIter;
 
 use super::ParseSession;
 
@@ -22,7 +23,7 @@ pub trait ILexer<'chs, TToken> {
     // 5 minutes later: the messages is usable! because every ILexer contains a BufLexer
     // BufLexer needs a messages to call 3 times of next in advance
     // 1 hour later: now BufLexer use its skips and dummys mechanism to not call next in new, then sess is not used again
-    fn new(chars: CodeChars<'chs>) -> Self;
+    fn new(source: SourceCodeIter<'chs>) -> Self;
 
     // now position is out of token type
     // now token type provide EOF hint by itself
@@ -79,10 +80,10 @@ pub struct BufLexer<TLexer, TToken> {
 impl<'chs, TLexer, TToken> BufLexer<TLexer, TToken> 
     where TToken: Default, TLexer: ILexer<'chs, TToken> {
     
-    pub fn new(content_chars: CodeChars<'chs>) -> BufLexer<TLexer, TToken> {
+    pub fn new(source: SourceCodeIter<'chs>) -> BufLexer<TLexer, TToken> {
 
         BufLexer { 
-            lexer: TLexer::new(content_chars), 
+            lexer: TLexer::new(source), 
             current: (TToken::default(), Span::default()),
             next: (TToken::default(), Span::default()),
             nextnext: (TToken::default(), Span::default()),
@@ -140,7 +141,7 @@ impl<'chs, TLexer, TToken> BufLexer<TLexer, TToken>
 
 #[cfg(test)] #[test]
 fn buf_lexer_test() {
-    use codemap::CodeMap;
+    use codemap::SourceCode;
     use codemap::SymbolCollection;
     use message::MessageCollection;
 
@@ -148,7 +149,7 @@ fn buf_lexer_test() {
     struct TestLexer(usize);
     impl<'chs> ILexer<'chs, TestToken> for TestLexer {
 
-        fn new(_: CodeChars<'chs>) -> TestLexer {
+        fn new(_: SourceCodeIter<'chs>) -> TestLexer {
             TestLexer(0)
         }
         fn next(&mut self, _: &mut ParseSession) -> (TestToken, Span) {
@@ -161,7 +162,7 @@ fn buf_lexer_test() {
             ((&TestToken($c), make_span!($c, $c + 1), &TestToken($c + 1), make_span!($c + 1, $c + 2), &TestToken($c + 2), make_span!($c + 2, $c + 3)))
     }
     
-    let codemap = CodeMap::with_test_str("");
+    let codemap = SourceCode::with_test_str(0, "");
     let messages = &mut MessageCollection::new();
     let symbols = &mut SymbolCollection::new();
     let sess = &mut ParseSession::new(messages, symbols);

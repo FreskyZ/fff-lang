@@ -5,6 +5,7 @@ authors = ["FreskyZ <fresky7@outlook.com>"]
 workspace = "../ffc"
 
 [dependencies]
+util = { path = "../util" }
 
 [lib]
 name = "codemap"

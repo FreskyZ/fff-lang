@@ -7,7 +7,7 @@ extern crate codemap;
 
 use std::fmt;
 use codemap::Span;
-use codemap::CodeMap;
+use codemap::SourceMap;
 
 #[derive(Eq, PartialEq)]
 struct LocationAndDesc {
@@ -58,9 +58,10 @@ impl Message {
         Message{ main_desc: main_desc.to_owned(), details: Vec::new(), helps: Vec::new() }
     }
 
-    pub fn format(&self, _codemap: &CodeMap) -> String {
-        // TODO: think it is very complex and do it later, according to docs/internal/message-format.md
-        String::new()
+    pub fn format(&self, _sources: &SourceMap) -> String {
+        let mut retval = String::new();
+        retval += &format!("{}:", self.main_desc);
+        return retval;
     }
 }
 impl fmt::Debug for Message {

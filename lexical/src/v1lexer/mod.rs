@@ -15,9 +15,8 @@ mod string_lit_parser;
 
 use codemap::Span;
 use codemap::SymbolID;
-use codemap::CodeChars;
-use codemap::EOFCHAR;
-use codemap::EOFSCHAR;
+use codemap::SourceCodeIter;
+use codemap::EOF_CHAR;
 use message::Message;
 
 use super::ILexer;
@@ -31,10 +30,10 @@ use self::char_lit_parser::CharLiteralParser;
 use self::char_lit_parser::CharLiteralParserResult;
 use super::ParseSession;
 
-// CodeChars wrapper
-struct V0Lexer<'a>(CodeChars<'a>);
+// SourceCodeIter wrapper
+struct V0Lexer<'a>(SourceCodeIter<'a>);
 impl<'a> ILexer<'a, char> for V0Lexer<'a> {
-    fn new(chars: CodeChars<'a>) -> V0Lexer<'a> { V0Lexer(chars) }
+    fn new(source: SourceCodeIter<'a>) -> V0Lexer<'a> { V0Lexer(source) }
     fn next(&mut self, _: &mut ParseSession) -> (char, Span) {
         let ret_val = self.0.next();
         (ret_val.0, ret_val.1.as_span())
@@ -43,23 +42,21 @@ impl<'a> ILexer<'a, char> for V0Lexer<'a> {
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub enum V1Token {
-    EOFs, EOF,
+    EOF,
     StringLiteral(Option<SymbolID>),
     RawStringLiteral(Option<SymbolID>),
     CharLiteral(Option<char>),
     Other(char),
 }
-impl Default for V1Token { fn default() -> V1Token { V1Token::EOFs } }
+impl Default for V1Token { fn default() -> V1Token { V1Token::EOF } }
 
 pub struct V1Lexer<'chs> {
     v0: BufLexer<V0Lexer<'chs>, char>,
 }
 impl<'chs> ILexer<'chs, V1Token> for V1Lexer<'chs> {
 
-    fn new(content_chars: CodeChars<'chs>) -> V1Lexer<'chs> {
-        V1Lexer { 
-            v0: BufLexer::new(content_chars),
-        }
+    fn new(source: SourceCodeIter<'chs>) -> V1Lexer<'chs> {
+        V1Lexer { v0: BufLexer::new(source) }
     }
 
     fn next(&mut self, sess: &mut ParseSession) -> (V1Token, Span) {
@@ -95,11 +92,8 @@ impl<'chs> ILexer<'chs, V1Token> for V1Lexer<'chs> {
                 (State::Nothing, &'\'', start_span, _3, _4, _5, _6) => {              // C5: in nothing, meet '
                     state = State::InCharLiteral{ parser: CharLiteralParser::new(start_span.get_start_pos()) };
                 }
-                (State::Nothing, &EOFCHAR, eof_pos, _3, _4, _5, _6) => {                // C7: in nothing, meet EOF, return 
+                (State::Nothing, &EOF_CHAR, eof_pos, _3, _4, _5, _6) => {                // C7: in nothing, meet EOF, return 
                     return (V1Token::EOF, eof_pos);
-                }
-                (State::Nothing, &EOFSCHAR, eofs_pos, _3, _4, _5, _6) => {              // C13, directly redirect EOFs
-                    return (V1Token::EOFs, eofs_pos);
                 }
                 (State::Nothing, ch, strpos, _3, _4, _5, _6) => {                       // C6: in nothing, meet other, return
                     return (V1Token::Other(*ch), strpos);
@@ -108,7 +102,7 @@ impl<'chs> ILexer<'chs, V1Token> for V1Lexer<'chs> {
                     self.v0.prepare_skip1();
                     return (V1Token::Other(' '), start_span.merge(&end_pos));
                 }
-                (State::InBlockComment{ start_span }, &EOFCHAR, eof_pos, _3, _4, _5, _6) => {  // C10: in block, meet EOF, emit error, return
+                (State::InBlockComment{ start_span }, &EOF_CHAR, eof_pos, _3, _4, _5, _6) => {  // C10: in block, meet EOF, emit error, return
                     sess.messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
                         (start_span, error_strings::BlockCommentStartHere),
                         (eof_pos, error_strings::EOFHere),
@@ -121,7 +115,7 @@ impl<'chs> ILexer<'chs, V1Token> for V1Lexer<'chs> {
                 (State::InLineComment, &'\n', lf_pos, _3, _4, _5, _6) => {              // C11: in line, meet \n, return
                     return (V1Token::Other('\n'), lf_pos);
                 }
-                (State::InLineComment, &EOFCHAR, eof_pos, _3, _4, _5, _6) => {          // C13: in line, meet EOF, return
+                (State::InLineComment, &EOF_CHAR, eof_pos, _3, _4, _5, _6) => {          // C13: in line, meet EOF, return
                     return (V1Token::EOF, eof_pos);
                 }
                 (State::InLineComment, _1, _2, _3, _4, _5, _6) => {                     // C12: in line, continue line
@@ -138,7 +132,7 @@ impl<'chs> ILexer<'chs, V1Token> for V1Lexer<'chs> {
                             state = State::InStringLiteral{ parser: parser };
                         }
                         StringLiteralParserResult::Finished(value, pos) => {
-                            if *ch == EOFCHAR { // if EOFCHAR was consumed by str lit parser, it will not be returned as EOF, which is not designed by feature
+                            if *ch == EOF_CHAR { // if EOF_CHAR was consumed by str lit parser, it will not be returned as EOF, which is not designed by feature
                                 self.v0.prepare_dummy1();
                             }
                             return (V1Token::StringLiteral(value.map(|v| sess.symbols.intern(v))), pos);
@@ -151,7 +145,7 @@ impl<'chs> ILexer<'chs, V1Token> for V1Lexer<'chs> {
                             state = State::InRawStringLiteral{ parser: parser };
                         }
                         RawStringLiteralParserResult::Finished(value, pos) => {
-                            if *ch == EOFCHAR { // same as str lit parser
+                            if *ch == EOF_CHAR { // same as str lit parser
                                 self.v0.prepare_dummy1();
                             }
                             return (V1Token::RawStringLiteral(value.map(|v| sess.symbols.intern(v))), pos);
@@ -168,7 +162,7 @@ impl<'chs> ILexer<'chs, V1Token> for V1Lexer<'chs> {
                             state = State::InCharLiteral{ parser: parser };
                         }
                         CharLiteralParserResult::Finished(value, pos) => {
-                            if *ch == EOFCHAR { // same as str lit parser
+                            if *ch == EOF_CHAR { // same as str lit parser
                                 self.v0.prepare_dummy1();
                             }
                             return (V1Token::CharLiteral(value), pos);
@@ -183,7 +177,7 @@ impl<'chs> ILexer<'chs, V1Token> for V1Lexer<'chs> {
 #[cfg(test)]
 #[test]
 fn v1_base() {
-    use codemap::CodeMap;
+    use codemap::SourceCode;
     use codemap::SymbolCollection;
     use message::MessageCollection;
 
@@ -191,15 +185,13 @@ fn v1_base() {
         let mut actual_messages = MessageCollection::new();
         let mut symbols = symbols;
         let mut sess = ParseSession::new(&mut actual_messages, &mut symbols);
-        let codemap = CodeMap::with_test_str(src);
-        let mut v1lexer = V1Lexer::new(codemap.iter());
+        let source = SourceCode::with_test_str(0, src);
+        let mut v1lexer = V1Lexer::new(source.iter());
         for expect_token in expect_tokens {
             assert_eq!(v1lexer.next(&mut sess), expect_token);
         }
         let next = v1lexer.next(&mut sess);
         if next.0 != V1Token::EOF { panic!("next is not EOF but {:?}", next); }
-        let next = v1lexer.next(&mut sess);
-        if next.0 != V1Token::EOFs { panic!("nextnext is not EOFs but {:?}", next); }
 
         assert_eq!(sess.messages, &expect_messages);
     }

@@ -6,7 +6,7 @@ use codemap::CharPos;
 use codemap::Span;
 use message::Message;
 use message::MessageCollection;
-use codemap::EOFCHAR;
+use codemap::EOF_CHAR;
 
 use super::error_strings;
 
@@ -34,7 +34,7 @@ impl RawStringLiteralParser {
             ('"', pos) => {                                               // C1: in raw string, meet ", finish, return
                 return RawStringLiteralParserResult::Finished(Some(self.raw.clone()), self.start_pos.merge(&pos));
             }
-            (EOFCHAR, pos) => {                                                    // C3: in raw string, meet EOF, emit error, return  
+            (EOF_CHAR, pos) => {                                                    // C3: in raw string, meet EOF, emit error, return  
                 messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![ 
                     (self.start_pos.as_span(), error_strings::StringLiteralStartHere),
                     (pos.as_span(), error_strings::EOFHere),
@@ -83,7 +83,7 @@ fn raw_string_lit_parser() {
         let expect_messages = &mut MessageCollection::new();
         assert_eq!(parser.input('h', dummy_pos, messages), WantMore);
         assert_eq!(parser.input('e', dummy_pos, messages), WantMore);
-        assert_eq!(parser.input(EOFCHAR, spec_pos2, messages), 
+        assert_eq!(parser.input(EOF_CHAR, spec_pos2, messages), 
             Finished(None, spec_pos1.merge(&spec_pos2)));
 
         expect_messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![ 

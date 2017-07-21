@@ -1,9 +1,7 @@
 ///! fff-lang 
 ///! 
 ///! codemap/span
-///!
-///! Currently only provides 2 types, Position and StringPosition, 
-///! and make_charpos! and make_span! macro for convenience in test
+///! CharPosition and Span and make_span!
 
 use std::fmt;
 use std::ops::Range;
@@ -13,8 +11,8 @@ const DEFAULT_FILE_ID: usize = ::std::usize::MAX;
 /// Byte index of a char
 #[derive(Eq, PartialEq, Clone, Copy)]
 pub struct CharPos {
-    file_id: usize, // used to be u32, but even it is u32, this struct is still 16 byte size, then give it usize
-    char_id: usize,
+    pub(super) file_id: usize, // used to be u32, but even it is u32, this struct is still 16 byte size, then give it usize
+    pub(super) char_id: usize,
 }
 impl Default for CharPos {
     fn default() -> CharPos { CharPos{ file_id: DEFAULT_FILE_ID, char_id: 0 } }
@@ -62,9 +60,9 @@ macro_rules! make_charpos {
 /// Position of a string
 #[derive(Eq, PartialEq, Clone, Copy)]
 pub struct Span {
-    file_id: usize,
-    start_id: usize,
-    end_id: usize,
+    pub(super) file_id: usize,
+    pub(super) start_id: usize,
+    pub(super) end_id: usize,
 }
 impl Default for Span {
     fn default() -> Span { Span{ file_id: DEFAULT_FILE_ID, start_id: 0, end_id: 0 } }
@@ -120,37 +118,3 @@ fn span_index() {
     assert_eq!(make_span!(3, 4).slice(0..5), make_span!(3, 4));
     assert_eq!(make_span!(10, 15).slice(100..200), make_span!(15, 15));
 }
-
-// // Technically remain
-// #[allow(dead_code)]
-// fn utf8_char_next(bytes: &[u8]) -> char {
-//     use std::mem::transmute;
-
-//     unsafe { transmute(
-//         if bytes[0] <= 0b_1000_0000 {
-//             bytes[0] as u32
-//         } else if bytes[0] > 0b11110000u8 {
-//             (((bytes[0] as u32) & 0b00000111u32) << 18)
-//                 + (((bytes[1] as u32) & 0b00111111u32) << 12)
-//                 + (((bytes[2] as u32) & 0b00111111u32) << 6)
-//                 + ((bytes[3] as u32) & 0b00111111u32)
-//         } else if bytes[0] > 0b11100000u8 {
-//             (((bytes[0] as u32) & 0b00001111u32) << 12)
-//                 + (((bytes[1] as u32) & 0b00111111u32) << 6)
-//                 + (((bytes[2] as u32) & 0b00111111u32))
-//         } else if bytes[0] > 0b11000000u8 {
-//             (((bytes[0] as u32) & 0b00011111u32) << 6)
-//                 + ((bytes[1] as u32) & 0b00111111u32)
-//         } else {
-//             bytes[0] as u32
-//         }
-//     )}
-// }
-// #[cfg(test)] #[test]
-// fn utf8_char_next_test() {
-    
-//     let s = "12你34我5，6";
-//     for (pos, ch) in s.char_indices() {
-//         assert_eq!(ch, utf8_char_next(&s.as_bytes()[pos..]));
-//     }
-// }

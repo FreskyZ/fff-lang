@@ -6,7 +6,7 @@ use codemap::CharPos;
 use codemap::Span;
 use message::Message;
 use message::MessageCollection;
-use codemap::EOFCHAR;
+use codemap::EOF_CHAR;
 use super::escape_char_parser::EscapeCharParser;
 use super::escape_char_parser::EscapeCharSimpleCheckResult;
 use super::escape_char_parser::EscapeCharParserResult;
@@ -55,7 +55,7 @@ impl StringLiteralParser {
     pub fn input(&mut self, ch: char, pos: CharPos, next_ch: char, messages: &mut MessageCollection) -> StringLiteralParserResult {
 
         match (ch, pos, next_ch) {
-            ('\\', _1, EOFCHAR) => {                                                // C4, \EOF, ignore
+            ('\\', _1, EOF_CHAR) => {                                                // C4, \EOF, ignore
                 // Do nothing here, `"abc\udef$` reports EOF in string error, not end of string or EOF in escape error
                 return StringLiteralParserResult::WantMore;
             }
@@ -105,7 +105,7 @@ impl StringLiteralParser {
                     }
                 }
             }
-            (EOFCHAR, pos, _2) => {
+            (EOF_CHAR, pos, _2) => {
                 match self.last_escape_quote_pos {                                      // C12: in string, meet EOF, emit error, return 
                     Some(escaped_quote_pos_hint) => 
                         messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
@@ -177,8 +177,8 @@ fn str_lit_parse() {
         assert_eq!(parser.input('r', dummy_pos, 'r', messages), WantMore);
         assert_eq!(parser.input('l', dummy_pos, 'l', messages), WantMore);
         assert_eq!(parser.input('d', dummy_pos, 'd', messages), WantMore);
-        assert_eq!(parser.input('!', dummy_pos, EOFCHAR, messages), WantMore);
-        assert_eq!(parser.input('"', spec_pos2, EOFCHAR, messages), 
+        assert_eq!(parser.input('!', dummy_pos, EOF_CHAR, messages), WantMore);
+        assert_eq!(parser.input('"', spec_pos2, EOF_CHAR, messages), 
             Finished(Some("Hello, world!".to_owned()), spec_pos1.merge(&spec_pos2)));
 
         assert_eq!(messages, &MessageCollection::new());
@@ -189,7 +189,7 @@ fn str_lit_parse() {
         let messages = &mut MessageCollection::new();
         assert_eq!(parser.input('H', dummy_pos, 'e', messages), WantMore);
         assert_eq!(parser.input('e', dummy_pos, 'l', messages), WantMore);
-        assert_eq!(parser.input(EOFCHAR, spec_pos2, EOFCHAR, messages), 
+        assert_eq!(parser.input(EOF_CHAR, spec_pos2, EOF_CHAR, messages), 
             Finished(None, spec_pos1.merge(&spec_pos2)));
         
         assert_eq!(messages, &make_messages![
@@ -209,8 +209,8 @@ fn str_lit_parse() {
         assert_eq!(parser.input('l', dummy_pos, '\\', messages), WantMore);
         assert_eq!(parser.input('\\', spec_pos3, '"', messages), WantMoreWithSkip1);
         assert_eq!(parser.input('l', dummy_pos, 'o', messages), WantMore);
-        assert_eq!(parser.input('o', dummy_pos, EOFCHAR, messages), WantMore);
-        assert_eq!(parser.input(EOFCHAR, spec_pos4, EOFCHAR, messages), 
+        assert_eq!(parser.input('o', dummy_pos, EOF_CHAR, messages), WantMore);
+        assert_eq!(parser.input(EOF_CHAR, spec_pos4, EOF_CHAR, messages), 
             Finished(None, spec_pos1.merge(&spec_pos4)));
 
         assert_eq!(messages, &make_messages![
@@ -376,8 +376,8 @@ fn str_lit_parse() {
         assert_eq!(parser.input('\\', spec_pos2, 'U', messages), WantMoreWithSkip1);
         assert_eq!(parser.input('1', dummy_pos, '2', messages), WantMore);
         assert_eq!(parser.input('2', dummy_pos, '3', messages), WantMore);
-        assert_eq!(parser.input('3', dummy_pos, EOFCHAR, messages), WantMore);
-        assert_eq!(parser.input(EOFCHAR, spec_pos3, EOFCHAR, messages), 
+        assert_eq!(parser.input('3', dummy_pos, EOF_CHAR, messages), WantMore);
+        assert_eq!(parser.input(EOF_CHAR, spec_pos3, EOF_CHAR, messages), 
             Finished(None, spec_pos1.merge(&spec_pos3)));
         
         assert_eq!(messages, &make_messages![
@@ -393,8 +393,8 @@ fn str_lit_parse() {
         let messages = &mut MessageCollection::new();
         assert_eq!(parser.input('h', dummy_pos, 'e', messages), WantMore);
         assert_eq!(parser.input('e', dummy_pos, '\\', messages), WantMore);
-        assert_eq!(parser.input('\\', spec_pos2, EOFCHAR, messages), WantMore);
-        assert_eq!(parser.input(EOFCHAR, spec_pos3, EOFCHAR, messages), 
+        assert_eq!(parser.input('\\', spec_pos2, EOF_CHAR, messages), WantMore);
+        assert_eq!(parser.input(EOF_CHAR, spec_pos3, EOF_CHAR, messages), 
             Finished(None, spec_pos1.merge(&spec_pos3)));
         
         assert_eq!(messages, &make_messages![

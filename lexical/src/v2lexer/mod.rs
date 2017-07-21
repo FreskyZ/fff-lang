@@ -8,8 +8,8 @@ mod error_strings;
 
 use codemap::Span;
 use codemap::SymbolID;
-use codemap::CodeChars;
-use codemap::EOFCHAR;
+use codemap::SourceCodeIter;
+use codemap::EOF_CHAR;
 use message::Message;
 use message::MessageCollection;
 
@@ -27,14 +27,14 @@ use self::num_lit_parser::parse_numeric_literal;
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub enum V2Token {
-    EOFs, EOF,
+    EOF,
     Literal(LitValue),
     Identifier(SymbolID), // Anything of [_a-zA-Z][_a-zA-Z0-9]*
     Label(SymbolID),      // Anything of @[_a-zA-Z0-9@]*
     Keyword(Keyword),
     Seperator(Seperator),
 }
-impl Default for V2Token { fn default() -> V2Token { V2Token::EOFs } }
+impl Default for V2Token { fn default() -> V2Token { V2Token::EOF } }
 
 trait IdentifierChar {
 
@@ -107,9 +107,9 @@ pub struct V2Lexer<'chs> {
 }
 impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
 
-    fn new(content_chars: CodeChars<'chs>) -> V2Lexer<'chs> {
+    fn new(source: SourceCodeIter<'chs>) -> V2Lexer<'chs> {
         V2Lexer { 
-            v1: BufLexer::new(content_chars),
+            v1: BufLexer::new(source),
         }
     }
 
@@ -175,9 +175,6 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                     //     So, because not support preview2, preview nextch and return properly in InIdent, not here
                     return (V2Token::EOF, eof_pos);
                 }
-                (&V1Token::EOFs, eofs_pos, _2, _3, _4, _5) => {
-                    return (V2Token::EOFs, eofs_pos);
-                }
                 (&V1Token::Other(ch), strpos, &V1Token::Other(next_ch), next_strpos, &V1Token::Other(nextnext_ch), nextnext_strpos) => {
                     let ch = ch.pass_non_ascii_char(strpos, sess.messages); // not need check next_ch and nextnext_ch because they will be checked in next loops
                     V15Token(ch, strpos, next_ch, next_strpos, nextnext_ch, nextnext_strpos)
@@ -188,7 +185,7 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                 }
                 (&V1Token::Other(ch), strpos, &V1Token::EOF, eof_strpos, _4, nextnext_strpos) => {
                     let ch = ch.pass_non_ascii_char(strpos, sess.messages);
-                    V15Token(ch, strpos, EOFCHAR, eof_strpos, ' ', nextnext_strpos)
+                    V15Token(ch, strpos, EOF_CHAR, eof_strpos, ' ', nextnext_strpos)
                 } 
                 (&V1Token::Other(ch), strpos, _2, next_strpos, _4, nextnext_strpos) => { 
                     let ch = ch.pass_non_ascii_char(strpos, sess.messages);
@@ -197,7 +194,7 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
             };
 
             match (state, v15) {
-                (State::Nothing, V15Token(ch, strpos, EOFCHAR, _3, _4, _5)) => {
+                (State::Nothing, V15Token(ch, strpos, EOF_CHAR, _3, _4, _5)) => {
                     if ch.is_identifier_start() {
                         let mut value = String::new();
                         value.push(ch);
@@ -416,7 +413,7 @@ fn v2_non_ascii_ch() {
 #[test]
 fn v2_base() {
     use std::fmt;
-    use codemap::CodeMap;
+    use codemap::SourceCode;
     use codemap::SymbolCollection;
 
     // Only to make decltype(V2Lexer as BufLexer::next(...)) to display better
@@ -434,15 +431,13 @@ fn v2_base() {
         let mut actual_messages = MessageCollection::new();
         let mut symbols = symbols;
         let mut sess = ParseSession::new(&mut actual_messages, &mut symbols);
-        let codemap = CodeMap::with_test_str(src);
-        let mut v2lexer = V2Lexer::new(codemap.iter());
+        let source = SourceCode::with_test_str(0, src);
+        let mut v2lexer = V2Lexer::new(source.iter());
         for expect_token in expect_tokens {
             assert_eq!(v2lexer.next(&mut sess), expect_token);
         }
         let next = v2lexer.next(&mut sess);
         if next.0 != V2Token::EOF { panic!("next is not EOF but {:?}", next); }
-        let next = v2lexer.next(&mut sess);
-        if next.0 != V2Token::EOFs { panic!("nextnext is not EOFs but {:?}", next); }
 
         assert_eq!(sess.messages, &expect_messages);
     }

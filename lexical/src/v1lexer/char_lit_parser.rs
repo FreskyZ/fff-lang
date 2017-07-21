@@ -9,7 +9,7 @@ use codemap::Span;
 use message::Message;
 use message::MessageCollection;
 
-use codemap::EOFCHAR;
+use codemap::EOF_CHAR;
 
 use super::error_strings;
 use super::escape_char_parser::EscapeCharParser;
@@ -78,7 +78,7 @@ impl CharLiteralParser {
                 let mut need_set_parser = false;
                 let mut need_set_parser_value = None;
                 match (&mut self.escape_parser, ch, pos, next_ch) {
-                    (&mut Some(_), EOFCHAR, _2, _3) => {  // another 'u123$
+                    (&mut Some(_), EOF_CHAR, _2, _3) => {  // another 'u123$
                         trace!("expecting first but ch = EOF, current_span = {:?}", self.current_span);
                         self.coverage_recorder.insert(4);                        // C4, first char is EOF
                         messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
@@ -132,7 +132,7 @@ impl CharLiteralParser {
                         ]));
                         return CharLiteralParserResult::Finished(None, all_span);
                     }
-                    (&mut None, EOFCHAR, _2, _3) => {
+                    (&mut None, EOF_CHAR, _2, _3) => {
                         self.coverage_recorder.insert(6);                        // C6, '$, report EOF in char literal
                         messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
                             (self.current_span, error_strings::CharLiteralHere),
@@ -140,7 +140,7 @@ impl CharLiteralParser {
                         ]));
                         return CharLiteralParserResult::Finished(None, self.current_span);
                     }
-                    (&mut None, '\\', pos, EOFCHAR) => { 
+                    (&mut None, '\\', pos, EOF_CHAR) => { 
                         self.coverage_recorder.insert(10);               // C10, '\$
                         let all_span = self.current_span.merge(&pos.as_span());
                         let eof_pos = pos.offset(1); // in this case, `\` is always 1 byte wide
@@ -200,7 +200,7 @@ impl CharLiteralParser {
             ParserState::ExpectEnd(maybe_result) => {  // Already processed first char
                 // No possibility for a unicode parser here, just wait for a ', if not, report too long
                 match ch {
-                    EOFCHAR => {
+                    EOF_CHAR => {
                         trace!("meet EOF when expecting end, current_span = {:?}", self.current_span);
                         messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
                             (self.current_span, error_strings::CharLiteralHere),
@@ -469,7 +469,7 @@ fn char_lit_parser() {
         let messages = &mut MessageCollection::new();
         parser.coverage_recorder = HashSet::<i32>::new();
 
-        assert_eq!(parser.input(EOFCHAR, spec_pos3, EOFCHAR, messages),
+        assert_eq!(parser.input(EOF_CHAR, spec_pos3, EOF_CHAR, messages),
             Finished(None, spec_pos1.as_span()));
         
         assert_eq!(messages, &make_messages![Message::new_by_str(error_strings::UnexpectedEOF, vec![
@@ -484,7 +484,7 @@ fn char_lit_parser() {
         let messages = &mut MessageCollection::new();
         parser.coverage_recorder = HashSet::<i32>::new();
 
-        assert_eq!(parser.input('\\', spec_pos3, EOFCHAR, messages), 
+        assert_eq!(parser.input('\\', spec_pos3, EOF_CHAR, messages), 
             Finished(None, spec_pos1.merge(&spec_pos3)));
         
         assert_eq!(messages, &make_messages![Message::new_by_str(error_strings::UnexpectedEOF, vec![
@@ -500,7 +500,7 @@ fn char_lit_parser() {
         parser.coverage_recorder = HashSet::<i32>::new();
 
         assert_eq!(parser.input('\\', spec_pos3, 'u', messages), WantMoreWithSkip1);
-        assert_eq!(parser.input(EOFCHAR, spec_pos4, EOFCHAR, messages), 
+        assert_eq!(parser.input(EOF_CHAR, spec_pos4, EOF_CHAR, messages), 
             Finished(None, spec_pos1.merge(&spec_pos3.offset(1)))); // because `\` at spec_pos3, then the parser should guess `u` at spec_pos3.offset(1)
         
         assert_eq!(messages, &make_messages![Message::new_by_str(error_strings::UnexpectedEOF, vec![
@@ -515,8 +515,8 @@ fn char_lit_parser() {
         let messages = &mut MessageCollection::new();
         parser.coverage_recorder = HashSet::<i32>::new();
 
-        assert_eq!(parser.input('A', spec_pos3, EOFCHAR, messages), WantMore);
-        assert_eq!(parser.input(EOFCHAR, spec_pos4, EOFCHAR, messages), 
+        assert_eq!(parser.input('A', spec_pos3, EOF_CHAR, messages), WantMore);
+        assert_eq!(parser.input(EOF_CHAR, spec_pos4, EOF_CHAR, messages), 
             Finished(None, spec_pos1.merge(&spec_pos3)));
         
         assert_eq!(messages, &make_messages![Message::new_by_str(error_strings::UnexpectedEOF, vec![
@@ -533,8 +533,8 @@ fn char_lit_parser() {
 
         assert_eq!(parser.input('A', spec_pos3, 'B', messages), WantMore);
         assert_eq!(parser.input('B', spec_pos3, 'C', messages), WantMore);
-        assert_eq!(parser.input('C', spec_pos5, EOFCHAR, messages), WantMore);
-        assert_eq!(parser.input(EOFCHAR, spec_pos4, EOFCHAR, messages), 
+        assert_eq!(parser.input('C', spec_pos5, EOF_CHAR, messages), WantMore);
+        assert_eq!(parser.input(EOF_CHAR, spec_pos4, EOF_CHAR, messages), 
             Finished(None, spec_pos1.merge(&spec_pos5)));
         
         assert_eq!(messages, &make_messages![Message::new_by_str(error_strings::UnexpectedEOF, vec![
@@ -552,8 +552,8 @@ fn char_lit_parser() {
 
         assert_eq!(parser.input('\\', spec_pos3, '\'', messages), WantMoreWithSkip1);
         assert_eq!(parser.input('A', spec_pos3, 'B', messages), WantMore);
-        assert_eq!(parser.input('B', spec_pos4, EOFCHAR, messages), WantMore);
-        assert_eq!(parser.input(EOFCHAR, spec_pos5, EOFCHAR, messages),
+        assert_eq!(parser.input('B', spec_pos4, EOF_CHAR, messages), WantMore);
+        assert_eq!(parser.input(EOF_CHAR, spec_pos5, EOF_CHAR, messages),
             Finished(None, spec_pos1.merge(&spec_pos4)));
         
         assert_eq!(messages, &make_messages![Message::new_by_str(error_strings::UnexpectedEOF, vec![

@@ -3,11 +3,13 @@
 ///! token stream, vec<token> wrapper
 
 use codemap::Span;
-use codemap::CodeChars;
+use codemap::SourceCode;
 use codemap::SymbolCollection;
 use message::MessageCollection;
 
 use super::Token;
+use super::ILexer;
+use super::TestInput;
 use super::ParseSession;
 use super::v2lexer::V2Lexer;
 use super::v2lexer::V2Token;
@@ -15,7 +17,7 @@ use super::v2lexer::V2Token;
 impl From<V2Token> for Token {
     fn from(v2: V2Token) -> Token {
         match v2 {
-            V2Token::EOF | V2Token::EOFs => Token::EOF,
+            V2Token::EOF => Token::EOF,
             V2Token::Label(label) => Token::Label(label),
             V2Token::Literal(lit) => Token::Lit(lit),
             V2Token::Identifier(ident) => Token::Ident(ident),
@@ -26,84 +28,43 @@ impl From<V2Token> for Token {
 }
 
 pub struct TokenStream {
-    tokens: Vec<(Token, Span)>,
-    eofs_token: (Token, Span),
+    items: Vec<(Token, Span)>,
+    eof_token: (Token, Span),
 }
 impl TokenStream {
     
-    pub fn new<'a>(chars: CodeChars<'a>, messages: &mut MessageCollection, symbols: &mut SymbolCollection) -> TokenStream {
-        use super::ILexer;
+    /// main module driver
+    pub fn new(source: &SourceCode, messages: &mut MessageCollection, symbols: &mut SymbolCollection) -> TokenStream {
 
         let mut sess = ParseSession::new(messages, symbols);
-        let mut v2lexer = V2Lexer::new(chars);
-        let mut tokens = Vec::new();
-        let eofs_span: Span;
+        let mut v2lexer = V2Lexer::new(source.iter());
+        let mut items = Vec::new();
+        let eof_span: Span;
         loop {
             match v2lexer.next(&mut sess) {
-                (V2Token::EOFs, span) => { eofs_span = span; break; }
-                (v2, span) => tokens.push((v2.into(), span)),
+                (V2Token::EOF, span) => { eof_span = span; break; }
+                (v2, span) => items.push((v2.into(), span)),
             }
         }
 
-        TokenStream { 
-            tokens: tokens, 
-            eofs_token: (Token::EOF, eofs_span),
-        }
-    }
-    pub fn with_test_str(program: &str) -> TokenStream {
-        use codemap::CodeMap;
-        
-        let codemap = CodeMap::with_test_str(program);
-        let mut messages = MessageCollection::new();
-        let mut symbols = SymbolCollection::new();
-        let ret_val = TokenStream::new(codemap.iter(), &mut messages, &mut symbols);
-        check_messages_continuable!(messages);
-        return ret_val;
-    }
-    pub fn with_test_input(program: &str, symbols: &mut SymbolCollection) -> TokenStream {
-        use codemap::CodeMap;
-        
-        let codemap = CodeMap::with_test_str(program);
-        let mut messages = MessageCollection::new();
-        let mut symbols = symbols;
-        let ret_val = TokenStream::new(codemap.iter(), &mut messages, symbols);
-        check_messages_continuable!(messages);
-        return ret_val;
+        TokenStream { items, eof_token: (Token::EOF, eof_span) }
     }
 
-    // But after syntax, this method is not used.... no one cares about length, they only knows it is eof and report unexpected error
-    pub fn len(&self) -> usize { self.tokens.len() }
+    pub fn with_test_input(input: TestInput) -> TokenStream {
+        let mut msgs = if input.msgs.is_some() { input.msgs.unwrap() } else { MessageCollection::new() };
+        let mut syms = if input.syms.is_some() { input.syms.unwrap() } else { SymbolCollection::new() };
+        let retval = TokenStream::new(&SourceCode::with_test_str(input.src_id, input.src), &mut msgs, &mut syms);
+        if msgs.is_uncontinuable() { panic!("messages uncontinuable: {:?}", msgs); }
+        return retval;
+    }
 
     pub fn nth_token(&self, idx: usize) -> &Token {
-        if idx >= self.tokens.len() { &self.eofs_token.0 } else { &self.tokens[idx].0 }
+        if idx >= self.items.len() { &self.eof_token.0 } else { &self.items[idx].0 }
     }
     pub fn nth_span(&self, idx: usize) -> Span { 
-        if idx >= self.tokens.len() { self.eofs_token.1 } else { self.tokens[idx].1 }
-    }
-
-    pub fn iter<'a>(&'a self) -> TokenStreamIter<'a> {
-        TokenStreamIter{ stream: self, index: 0 }
+        if idx >= self.items.len() { self.eof_token.1 } else { self.items[idx].1 }
     }
 }
-
-pub struct TokenStreamIter<'a> {
-    stream: &'a TokenStream,
-    index: usize,
-}
-impl<'a> Iterator for TokenStreamIter<'a> {
-    type Item = &'a Token;
-
-    fn next(&mut self) -> Option<&'a Token> {
-        if self.index >= self.stream.len() {
-            return None;
-        } else {
-            let retval = Some(self.stream.nth_token(self.index));
-            self.index += 1;
-            return retval;
-        }
-    }
-}
-
 
 #[cfg(test)] #[test]
 fn v4_base() { // remain the name of v4 here for memory
@@ -119,7 +80,7 @@ fn v4_base() { // remain the name of v4 here for memory
     // seperator, rightbracket, 1:16-1:16
     // EOF, 1:17-1:17
     // EOFs, 1:17-1:17
-    let tokens = TokenStream::with_test_input("123 abc 'd', [1]", &mut make_symbols!["abc"]);
+    let tokens = TokenStream::with_test_input(TestInput::with_syms("123 abc 'd', [1]", make_symbols!["abc"]));
 
     assert_eq!(tokens.nth_token(0), &Token::Lit(LitValue::from(123)));
     assert_eq!(tokens.nth_span(0), make_span!(0, 2));
