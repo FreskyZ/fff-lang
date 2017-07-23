@@ -11,8 +11,9 @@ use lexical::Seperator;
 
 use super::Expr;
 
-use super::super::ParseSession;
+use super::super::Formatter;
 use super::super::ParseResult;
+use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -22,12 +23,12 @@ pub struct ExprList {
     pub items: Vec<Expr>,
 }
 impl ISyntaxItemFormat for ExprList {
-    fn format(&self, indent: u32) -> String {
-        self.items.iter().map(|expr| expr.format(indent)).collect::<Vec<String>>().join("\n")
+    fn format(&self, f: Formatter) -> String {
+        self.items.iter().map(|expr| f.apply(expr)).collect::<Vec<String>>().join("\n")
     }
 }
 impl fmt::Debug for ExprList {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
 }
 impl ExprList {
     pub fn new(items: Vec<Expr>) -> ExprList { ExprList{ items } }
@@ -126,7 +127,7 @@ fn expr_list_format() {
             Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(1, 2))),
             Expr::Lit(LitExpr::new(LitValue::from(2), make_span!(3, 4))),
             Expr::Lit(LitExpr::new(LitValue::from(3), make_span!(5, 6))),
-        ]).format(1),
+        ]).format(Formatter::with_test_indent(1)),
         "  Literal (i32)1 <<0>1-2>\n  Literal (i32)2 <<0>3-4>\n  Literal (i32)3 <<0>5-6>"
     }
 }

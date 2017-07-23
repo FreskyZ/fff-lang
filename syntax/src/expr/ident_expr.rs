@@ -11,6 +11,7 @@ use lexical::Token;
 
 use super::Expr;
 
+use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
@@ -23,12 +24,12 @@ pub struct IdentExpr {
     pub span: Span,
 }
 impl ISyntaxItemFormat for IdentExpr {
-    fn format(&self, indent: u32) -> String {
-        format!("{}Ident {:?} <{:?}>", IdentExpr::indent_str(indent), self.value, self.span)
+    fn format(&self, f: Formatter) -> String {
+        format!("{}Ident {} <{}>", f.indent(), f.sym(self.value), f.span(self.span))
     }
 }
 impl fmt::Debug for IdentExpr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
 }
 impl From<IdentExpr> for Expr {
     fn from(ident_expr: IdentExpr) -> Expr { Expr::Ident(ident_expr) }

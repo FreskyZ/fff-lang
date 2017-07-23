@@ -17,8 +17,8 @@ use super::FnCallExpr;
 use super::IndexCallExpr;
 use super::MemberAccessExpr;
 
-use super::super::ParseSession;
 use super::super::ParseResult;
+use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemGrammar;
 
@@ -386,6 +386,7 @@ fn primary_expr_errors() {
 fn postfix_expr_format() {
     use super::super::ISyntaxItemFormat;
     use super::super::WithTestInput;
+    use super::super::Formatter;
 
     macro_rules! test_case {
         ($left: expr, $right: expr) => {
@@ -406,7 +407,7 @@ fn postfix_expr_format() {
     // Attention that this source code line's LF is also the string literal (test oracle)'s LF
     //                                                     0         1         2         3         4         5        
     //                                                     0123456789012345678901234567890123456789012345678901234567
-    test_case!(format!("\n{}", PostfixExpr::with_test_str("a.b(c, d, e).f(g, h, i,)(u,).j[k].l().m[n, o, p][r, s, t,]").format(0)), r##"
+    test_case!(format!("\n{}", PostfixExpr::with_test_str("a.b(c, d, e).f(g, h, i,)(u,).j[k].l().m[n, o, p][r, s, t,]").format(Formatter::default())), r##"
 IndexerCall <<0>0-57>
   IndexerCall <<0>0-47>
     MemberAccess <<0>0-38>

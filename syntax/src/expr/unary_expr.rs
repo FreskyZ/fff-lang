@@ -10,11 +10,12 @@ use lexical::Token;
 use lexical::Seperator;
 use lexical::SeperatorCategory;
 
-use super::PostfixExpr;
 use super::Expr;
+use super::PostfixExpr;
 
-use super::super::ParseSession;
+use super::super::Formatter;
 use super::super::ParseResult;
+use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -27,16 +28,16 @@ pub struct UnaryExpr {
     pub all_span: Span,
 }
 impl ISyntaxItemFormat for UnaryExpr {
-    fn format(&self, indent: u32) -> String {
-        format!("{}UnaryExpr <{:?}>\n{}{:?} <{:?}>\n{}", 
-            UnaryExpr::indent_str(indent), self.all_span,
-            UnaryExpr::indent_str(indent + 1), self.operator, self.operator_span,
-            self.base.format(indent + 1),
+    fn format(&self, f: Formatter) -> String {
+        format!("{}UnaryExpr <{}>\n{}{:?} <{}>\n{}", 
+            f.indent(), f.span(self.all_span),
+            f.indent1(), self.operator, f.span(self.operator_span),
+            f.apply1(self.base.as_ref())
         )
     }
 }
 impl fmt::Debug for UnaryExpr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
 }
 impl From<UnaryExpr> for Expr {
     fn from(unary_expr: UnaryExpr) -> Expr { Expr::Unary(unary_expr) }

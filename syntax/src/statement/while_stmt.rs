@@ -10,14 +10,15 @@ use codemap::Span;
 use lexical::Token;
 use lexical::Keyword;
 
-use super::super::ParseSession;
-use super::super::ParseResult;
-use super::super::ISyntaxItemParse;
-use super::super::ISyntaxItemFormat;
-use super::super::ISyntaxItemGrammar;
 use super::super::Expr;
 use super::super::Block;
 use super::super::LabelDef;
+use super::super::Formatter;
+use super::super::ParseResult;
+use super::super::ParseSession;
+use super::super::ISyntaxItemParse;
+use super::super::ISyntaxItemFormat;
+use super::super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct WhileStatement {
@@ -28,24 +29,26 @@ pub struct WhileStatement {
     pub all_span: Span,
 }
 impl ISyntaxItemFormat for WhileStatement {
-    fn format(&self, indent: u32) -> String {
+    fn format(&self, f: Formatter) -> String {
         match self.name {
-            Some(ref name) => format!("{}WhileStmt <{:?}>\n{}\n{}'while' <{:?}>\n{}\n{}", 
-                WhileStatement::indent_str(indent), self.all_span,
-                name.format(indent + 1),
-                WhileStatement::indent_str(indent + 1), self.while_span,
-                self.loop_expr.format(indent + 1),
-                self.body.format(indent + 1)),
-            None => format!("{}WhileStmt <{:?}>\n{}'while' <{:?}>\n{}\n{}", 
-                WhileStatement::indent_str(indent), self.all_span,
-                WhileStatement::indent_str(indent + 1), self.while_span,
-                self.loop_expr.format(indent + 1),
-                self.body.format(indent + 1)),
+            Some(ref name) => format!("{}WhileStmt <{}>\n{}\n{}'while' <{}>\n{}\n{}", 
+                f.indent(), f.span(self.all_span),
+                f.apply1(name),
+                f.indent1(), f.span(self.while_span),
+                f.apply1(&self.loop_expr),
+                f.apply1(&self.body),
+            ),
+            None => format!("{}WhileStmt <{}>\n{}'while' <{}>\n{}\n{}", 
+                f.indent(), f.span(self.all_span),
+                f.indent1(), f.span(self.while_span),
+                f.apply1(&self.loop_expr),
+                f.apply1(&self.body),
+            ),
         }
     }
 }
 impl fmt::Debug for WhileStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
 }
 impl WhileStatement {
     

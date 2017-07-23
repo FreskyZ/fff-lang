@@ -9,12 +9,13 @@ use codemap::Span;
 use lexical::Token;
 use lexical::Seperator;
 
-use super::super::ParseSession;
+use super::super::Statement;
+use super::super::Formatter;
 use super::super::ParseResult;
+use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
-use super::super::Statement;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct Block {
@@ -22,15 +23,15 @@ pub struct Block {
     pub all_span: Span,
 }
 impl ISyntaxItemFormat for Block {
-    fn format(&self, indent: u32) -> String {
-        format!("{}Block {}<{:?}>{}",
-            Block::indent_str(indent), if self.items.is_empty() { "(empty) " } else { "" }, self.all_span,
-            self.items.iter().fold(String::new(), |mut buf, expr| { buf.push_str("\n"); buf.push_str(&expr.format(indent + 1)); buf })
+    fn format(&self, f: Formatter) -> String {
+        format!("{}Block {}<{}>{}",
+            f.indent(), if self.items.is_empty() { "(empty) " } else { "" }, f.span(self.all_span),
+            self.items.iter().fold(String::new(), |mut buf, expr| { buf.push_str("\n"); buf.push_str(&f.apply1(expr)); buf })
         )
     }
 }
 impl fmt::Debug for Block {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
 }
 impl Block {
 

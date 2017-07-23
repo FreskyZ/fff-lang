@@ -10,17 +10,17 @@ use lexical::LitValue;
 use lexical::Keyword;
 
 #[macro_use] mod expr_list; // make_exprs
-mod lit_expr;
-mod ident_expr;
-mod tuple_def;
 mod array_def;
-mod member_access;
-mod fn_call;
-mod index_call;
-mod unary_expr;
 mod binary_expr;
+mod fn_call;
+mod ident_expr;
+mod index_call;
+mod lit_expr;
+mod member_access;
 mod priority_proxy;
 mod range_expr;
+mod tuple_def;
+mod unary_expr;
 
 pub use self::lit_expr::LitExpr;
 pub use self::ident_expr::IdentExpr;
@@ -41,8 +41,9 @@ pub use self::unary_expr::UnaryExpr;
 pub use self::priority_proxy::PostfixExpr;
 pub use self::priority_proxy::PrimaryExpr;
 
-use super::ParseSession;
+use super::Formatter;
 use super::ParseResult;
+use super::ParseSession;
 use super::ISyntaxItemParse;
 use super::ISyntaxItemFormat;
 use super::ISyntaxItemGrammar;
@@ -66,27 +67,27 @@ pub enum Expr {
     RangeBoth(RangeBothExpr),
 }
 impl ISyntaxItemFormat for Expr {
-    fn format(&self, indent: u32) -> String {
+    fn format(&self, f: Formatter) -> String {
         match self {
-            &Expr::Lit(ref lit_expr) => lit_expr.format(indent),
-            &Expr::Ident(ref ident_expr) => ident_expr.format(indent),
-            &Expr::Paren(ref paren_expr) => paren_expr.format(indent),
-            &Expr::Tuple(ref tuple_def) => tuple_def.format(indent),
-            &Expr::Array(ref array_def) => array_def.format(indent),
-            &Expr::FnCall(ref fn_call) => fn_call.format(indent),
-            &Expr::IndexCall(ref index_call) => index_call.format(indent),
-            &Expr::MemberAccess(ref member_access) => member_access.format(indent),
-            &Expr::Unary(ref unary_expr) => unary_expr.format(indent),
-            &Expr::Binary(ref binary_expr) => binary_expr.format(indent),
-            &Expr::RangeFull(ref range_full) => range_full.format(indent),
-            &Expr::RangeRight(ref range_right) => range_right.format(indent),
-            &Expr::RangeLeft(ref range_left) => range_left.format(indent),
-            &Expr::RangeBoth(ref range_both) => range_both.format(indent),
+            &Expr::Lit(ref lit_expr) => f.apply(lit_expr),
+            &Expr::Ident(ref ident_expr) => f.apply(ident_expr),
+            &Expr::Paren(ref paren_expr) => f.apply(paren_expr),
+            &Expr::Tuple(ref tuple_def) => f.apply(tuple_def),
+            &Expr::Array(ref array_def) => f.apply(array_def),
+            &Expr::FnCall(ref fn_call) => f.apply(fn_call),
+            &Expr::IndexCall(ref index_call) => f.apply(index_call),
+            &Expr::MemberAccess(ref member_access) => f.apply(member_access),
+            &Expr::Unary(ref unary_expr) => f.apply(unary_expr),
+            &Expr::Binary(ref binary_expr) => f.apply(binary_expr),
+            &Expr::RangeFull(ref range_full) => f.apply(range_full),
+            &Expr::RangeRight(ref range_right) => f.apply(range_right),
+            &Expr::RangeLeft(ref range_left) => f.apply(range_left),
+            &Expr::RangeBoth(ref range_both) => f.apply(range_both),
         }
     }
 }
 impl fmt::Debug for Expr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
 }
 impl Default for Expr {
     fn default() -> Expr { Expr::Lit(LitExpr::new(LitValue::from(0), Span::default())) }

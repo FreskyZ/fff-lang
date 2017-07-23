@@ -11,8 +11,9 @@ use lexical::Token;
 use lexical::TokenStream;
 
 use super::Statement;
-use super::ParseSession;
+use super::Formatter;
 use super::ParseResult;
+use super::ParseSession;
 use super::ISyntaxItemParse;
 use super::ISyntaxItemFormat;
 use super::ISyntaxItemGrammar;
@@ -22,14 +23,14 @@ pub struct SyntaxTree {
     pub items: Vec<Statement>,
 }
 impl ISyntaxItemFormat for SyntaxTree {
-    fn format(&self, indent: u32) -> String {
+    fn format(&self, f: Formatter) -> String {
         format!("{}SyntaxTree{}", 
-            SyntaxTree::indent_str(indent),
-            self.items.iter().fold(String::new(), |mut buf, item| { buf.push_str("\n"); buf.push_str(&item.format(indent + 1)); buf }))
+            f.indent(),
+            self.items.iter().fold(String::new(), |mut buf, item| { buf.push_str("\n"); buf.push_str(&f.apply1(item)); buf }))
     }
 }
 impl fmt::Debug for SyntaxTree {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(0)) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::default())) }
 }
 impl SyntaxTree {
     pub fn new_items(items: Vec<Statement>) -> SyntaxTree { SyntaxTree{ items } }
@@ -81,7 +82,7 @@ fn syntax_tree_parse() {
         let mut expect = String::new();
         let _length = result_file.read_to_string(&mut expect).expect(&format!("cannot read result file {}", result_path));
         
-        let actual = SyntaxTree::with_test_str(&src).format(0);
+        let actual = SyntaxTree::with_test_str(&src).format(Formatter::default());
         if actual != expect {
             panic!("case {} failed, actual:\n`{}`\nexpect:\n`{}`", line, actual, expect)
         }

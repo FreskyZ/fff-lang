@@ -12,13 +12,14 @@ use lexical::Token;
 use lexical::Keyword;
 use lexical::Seperator;
 
-use super::super::ParseSession;
+use super::super::Block;
+use super::super::TypeUse;
+use super::super::Formatter;
 use super::super::ParseResult;
+use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
-use super::super::TypeUse;
-use super::super::Block;
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct FnParam {
@@ -41,26 +42,26 @@ pub struct FnDef {
     pub all_span: Span,   // fn_span = all_span.slice(0..2)
 }
 impl ISyntaxItemFormat for FnDef {
-    fn format(&self, indent: u32) -> String {
+    fn format(&self, f: Formatter) -> String {
 
         let mut retval = String::new();
-        retval.push_str(&format!("{}FnDef <{:?}>", FnDef::indent_str(indent), self.all_span));
-        retval.push_str(&format!("\n{}Name {:?} <{:?}>", FnDef::indent_str(indent + 1), self.name, self.name_span));
+        retval.push_str(&format!("{}FnDef <{}>", f.indent(), f.span(self.all_span)));
+        retval.push_str(&format!("\n{}Name {:?} <{}>", f.indent1(), self.name, f.span(self.name_span)));
 
         match self.ret_type { 
-            Some(ref ret_type) => retval.push_str(&format!("\n{}", ret_type.format(indent + 1))),
+            Some(ref ret_type) => retval.push_str(&format!("\n{}", f.apply1(ret_type))),
             None => (), 
         }
-        retval.push_str(&format!("\n{}Params <{:?}>", FnDef::indent_str(indent + 1), self.params_paren_span));
+        retval.push_str(&format!("\n{}Params <{}>", f.indent1(), f.span(self.params_paren_span)));
         for &FnParam{ ref decltype, ref name, ref name_span } in &self.params {
-            retval.push_str(&format!("\n{}Param {:?} <{:?}>\n{}", FnDef::indent_str(indent + 1), name, name_span, decltype.format(indent + 2)));
+            retval.push_str(&format!("\n{}Param {:?} <{}>\n{}", f.indent1(), name, f.span(*name_span), f.applyn(decltype, 2)));
         }
-        retval.push_str(&format!("\n{}", self.body.format(indent + 1)));
+        retval.push_str(&format!("\n{}", f.apply1(&self.body)));
         return retval;
     }
 }
 impl fmt::Debug for FnDef {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
 }
 impl FnDef {
 

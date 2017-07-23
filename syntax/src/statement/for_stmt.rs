@@ -15,8 +15,9 @@ use lexical::Keyword;
 use super::super::Expr;
 use super::super::Block;
 use super::super::LabelDef;
-use super::super::ParseSession;
+use super::super::Formatter;
 use super::super::ParseResult;
+use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -32,19 +33,19 @@ pub struct ForStatement {
     pub all_span: Span,
 }
 impl ISyntaxItemFormat for ForStatement {
-    fn format(&self, indent: u32) -> String {
-        format!("{}ForStmt <{:?}>{}\n{}'for' <{:?}>\n{}Ident {:?} <{:?}>\n{}\n{}", 
-            ForStatement::indent_str(indent), self.all_span,
-            match self.loop_name { Some(ref label_def) => format!("\n{}", label_def.format(indent + 1)), None => "".to_owned() },
-            ForStatement::indent_str(indent + 1), self.for_span,
-            ForStatement::indent_str(indent + 1), self.iter_name, self.iter_span,
-            self.iter_expr.format(indent + 1),
-            self.body.format(indent + 1),
+    fn format(&self, f: Formatter) -> String {
+        format!("{}ForStmt <{}>{}\n{}'for' <{}>\n{}Ident {:?} <{}>\n{}\n{}", 
+            f.indent(), f.span(self.all_span),
+            match self.loop_name { Some(ref label_def) => format!("\n{}", f.apply1(label_def)), None => "".to_owned() },
+            f.indent1(), f.span(self.for_span),
+            f.indent1(), self.iter_name, f.span(self.iter_span),
+            f.apply1(&self.iter_expr),
+            f.apply1(&self.body),
         )
     }
 }
 impl fmt::Debug for ForStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
 }
 impl ForStatement {
 

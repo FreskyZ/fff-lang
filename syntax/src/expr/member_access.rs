@@ -12,8 +12,9 @@ use lexical::Seperator;
 use super::Expr;
 use super::IdentExpr;
 
-use super::super::ParseSession;
+use super::super::Formatter;
 use super::super::ParseResult;
+use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -26,17 +27,17 @@ pub struct MemberAccessExpr {
     pub all_span: Span,
 }
 impl ISyntaxItemFormat for MemberAccessExpr {
-    fn format(&self, indent: u32) -> String {
-        format!("{}MemberAccess <{:?}>\n{}\n{}dot <{:?}>\n{}", 
-            MemberAccessExpr::indent_str(indent), self.all_span,
-            self.base.as_ref().format(indent + 1),
-            MemberAccessExpr::indent_str(indent + 1), self.dot_span,
-            self.name.format(indent + 1)
+    fn format(&self, f: Formatter) -> String {
+        format!("{}MemberAccess <{}>\n{}\n{}dot <{}>\n{}", 
+            f.indent(), f.span(self.all_span),
+            f.apply1(self.base.as_ref()),
+            f.indent1(), f.span(self.dot_span),
+            f.apply1(&self.name)
         )
     }
 }
 impl fmt::Debug for MemberAccessExpr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(0)) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::default())) }
 }
 impl From<MemberAccessExpr> for Expr {
     fn from(member_access_expr: MemberAccessExpr) -> Expr { Expr::MemberAccess(member_access_expr) }

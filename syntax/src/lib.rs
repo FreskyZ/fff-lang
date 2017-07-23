@@ -8,14 +8,14 @@
 extern crate lexical;
 
 #[macro_use] mod expr;
-mod traits;
-mod statement;
 mod items;
-mod parse_sess;
+mod statement;
 mod error_strings;
+mod format_helper;
+mod parse_sess;
 mod syntax_tree;
+mod test_helper;
 
-pub use self::syntax_tree::SyntaxTree;
 pub use self::items::fn_def::FnParam;
 pub use self::items::fn_def::FnDef;
 pub use self::items::type_use::TypeUse;
@@ -56,15 +56,17 @@ pub use self::statement::IfClause;
 pub use self::statement::ElseIfClause;
 pub use self::statement::ElseClause;
 pub use self::statement::IfStatement;
+pub use self::syntax_tree::SyntaxTree;
 
 use self::parse_sess::ParseSession;
 use self::parse_sess::ParseResult;
-use self::traits::ISyntaxItemFormat;
-use self::traits::ISyntaxItemGrammar;
-pub use self::traits::TestInput;
-pub use self::traits::WithTestInput;
-pub use self::traits::ISyntaxItemParse; // pub for semantic/traits
-// pub use self::traits::ISyntaxItemWithStr;
+use self::parse_sess::ISyntaxItemGrammar;
+pub use self::parse_sess::ISyntaxItemParse; // pub for semantic/traits
+
+use self::format_helper::Formatter;
+use self::format_helper::ISyntaxItemFormat;
+pub use self::test_helper::TestInput;
+pub use self::test_helper::WithTestInput;
 
 // TODO: 
 // replace more proper place by IdentExpr and ExprList

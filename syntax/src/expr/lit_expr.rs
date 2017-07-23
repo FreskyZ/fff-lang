@@ -11,6 +11,7 @@ use lexical::LitValue;
 
 use super::Expr;
 
+use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
@@ -23,12 +24,12 @@ pub struct LitExpr {
     pub span: Span,
 }
 impl ISyntaxItemFormat for LitExpr {
-    fn format(&self, indent: u32) -> String {
-        format!("{}Literal {:?} <{:?}>", LitExpr::indent_str(indent), self.value, self.span)
+    fn format(&self, f: Formatter) -> String {
+        format!("{}Literal {:?} <{}>", f.indent(), self.value, f.span(self.span))
     }
 }
 impl fmt::Debug for LitExpr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
 }
 impl From<LitExpr> for Expr {
     fn from(lit_expr: LitExpr) -> Expr { Expr::Lit(lit_expr) }

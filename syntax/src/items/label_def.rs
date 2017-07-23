@@ -11,8 +11,9 @@ use codemap::SymbolID;
 use lexical::Token;
 use lexical::Seperator;
 
-use super::super::ParseSession;
+use super::super::Formatter;
 use super::super::ParseResult;
+use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -23,12 +24,12 @@ pub struct LabelDef {
     pub all_span: Span,
 }
 impl ISyntaxItemFormat for LabelDef {
-    fn format(&self, indent: u32) -> String {
-        format!("{}Label {:?} <{:?}>", LabelDef::indent_str(indent), self.name, self.all_span)
+    fn format(&self, f: Formatter) -> String {
+        format!("{}Label {:?} <{}>", f.indent(), self.name, f.span(self.all_span))
     }
 }
 impl fmt::Debug for LabelDef {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(0)) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::default())) }
 }
 impl LabelDef {
     

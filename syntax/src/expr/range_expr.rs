@@ -12,8 +12,9 @@ use lexical::Seperator;
 use super::Expr;
 use super::BinaryExpr;
 
-use super::super::ParseSession;
+use super::super::Formatter;
 use super::super::ParseResult;
+use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -23,12 +24,12 @@ pub struct RangeFullExpr {
     pub all_span: Span,
 }
 impl ISyntaxItemFormat for RangeFullExpr {
-    fn format(&self, indent: u32) -> String {
-        format!("{}RangeFull <{:?}>", RangeFullExpr::indent_str(indent), self.all_span)
+    fn format(&self, f: Formatter) -> String {
+        format!("{}RangeFull <{}>", f.indent(), f.span(self.all_span))
     }
 }
 impl fmt::Debug for RangeFullExpr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
 }
 impl From<RangeFullExpr> for Expr {
     fn from(range_expr: RangeFullExpr) -> Expr { Expr::RangeFull(range_expr) }
@@ -43,14 +44,14 @@ pub struct RangeRightExpr {
     pub expr: Box<Expr>,
 }
 impl ISyntaxItemFormat for RangeRightExpr {
-    fn format(&self, indent: u32) -> String {
-        format!("{}RangeRight <{:?}>\n{}", 
-            RangeFullExpr::indent_str(indent), self.all_span, 
-            self.expr.format(indent + 1))
+    fn format(&self, f: Formatter) -> String {
+        format!("{}RangeRight <{}>\n{}", 
+            f.indent(), f.span(self.all_span),
+            f.apply1(self.expr.as_ref()))
     }
 }
 impl fmt::Debug for RangeRightExpr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
 }
 impl From<RangeRightExpr> for Expr {
     fn from(range_expr: RangeRightExpr) -> Expr { Expr::RangeRight(range_expr) }
@@ -83,14 +84,14 @@ pub struct RangeLeftExpr {
     pub all_span: Span, // all_span.slice(-2, 0) should get range_op_span
 }
 impl ISyntaxItemFormat for RangeLeftExpr {
-    fn format(&self, indent: u32) -> String {  
-        format!("{}RangeLeft <{:?}>\n{}",
-            RangeLeftExpr::indent_str(indent), self.all_span, 
-            self.expr.format(indent + 1))
+    fn format(&self, f: Formatter) -> String {  
+        format!("{}RangeLeft <{}>\n{}",
+            f.indent(), f.span(self.all_span), 
+            f.apply1(self.expr.as_ref()))
     }
 }
 impl fmt::Debug for RangeLeftExpr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
 }
 impl From<RangeLeftExpr> for Expr {
     fn from(range_expr: RangeLeftExpr) -> Expr { Expr::RangeLeft(range_expr) }
@@ -109,17 +110,17 @@ pub struct RangeBothExpr {
     pub all_span: Span,
 }
 impl ISyntaxItemFormat for RangeBothExpr {
-    fn format(&self, indent: u32) -> String {
-        format!("{}RangeBoth <{:?}>\n{}\n{}'..' <{:?}>\n{}", 
-            RangeBothExpr::indent_str(indent), self.all_span,
-            self.left_expr.format(indent + 1), 
-            RangeBothExpr::indent_str(indent + 1), self.op_span,
-            self.right_expr.format(indent + 1)
+    fn format(&self, f: Formatter) -> String {
+        format!("{}RangeBoth <{}>\n{}\n{}'..' <{}>\n{}", 
+            f.indent(), f.span(self.all_span),
+            f.apply1(self.left_expr.as_ref()),
+            f.indent1(), f.span(self.op_span),
+            f.apply1(self.right_expr.as_ref())
         )
     }
 }
 impl fmt::Debug for RangeBothExpr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
 }
 impl From<RangeBothExpr> for Expr {
     fn from(range_expr: RangeBothExpr) -> Expr { Expr::RangeBoth(range_expr) }

@@ -13,13 +13,14 @@ use lexical::Token;
 use lexical::Keyword;
 use lexical::Seperator;
 
-use super::super::ParseSession;
+use super::super::Expr;
+use super::super::TypeUse;
+use super::super::Formatter;
 use super::super::ParseResult;
+use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
-use super::super::Expr;
-use super::super::TypeUse;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct VarDeclStatement {
@@ -31,17 +32,17 @@ pub struct VarDeclStatement {
     pub all_span: Span,
 }
 impl ISyntaxItemFormat for VarDeclStatement {
-    fn format(&self, indent: u32) -> String {
-        format!("{}VarDecl {} <{:?}>\n{}{:?} <{:?}>{}{}", 
-            VarDeclStatement::indent_str(indent), if self.is_const { "const" } else { "var" }, self.all_span,
-            VarDeclStatement::indent_str(indent + 1), self.name, self.name_span,
-            match self.typeuse { Some(ref typeuse) => format!("\n{}", typeuse.format(indent + 1)), None => String::new() },
-            match self.init_expr { Some(ref init_expr) => format!("\n{}", init_expr.format(indent + 1)), None => String::new() },
+    fn format(&self, f: Formatter) -> String {
+        format!("{}VarDecl {} <{}>\n{}{:?} <{}>{}{}", 
+            f.indent(), if self.is_const { "const" } else { "var" }, f.span(self.all_span),
+            f.indent1(), self.name, f.span(self.name_span),
+            match self.typeuse { Some(ref typeuse) => format!("\n{}", f.apply1(typeuse)), None => String::new() },
+            match self.init_expr { Some(ref init_expr) => format!("\n{}", f.apply1(init_expr)), None => String::new() },
         )
     } 
 }
 impl fmt::Debug for VarDeclStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
 }
 impl VarDeclStatement {
 

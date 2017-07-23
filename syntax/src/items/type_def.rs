@@ -17,8 +17,9 @@ use lexical::Seperator;
 use super::super::TypeUse;
 use super::super::IdentExpr;
 
-use super::super::ParseSession;
+use super::super::Formatter;
 use super::super::ParseResult;
+use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -42,22 +43,22 @@ pub struct TypeDef {
     pub fields: Vec<TypeFieldDef>,
 }
 impl ISyntaxItemFormat for TypeDef {
-    fn format(&self, indent: u32) -> String {
+    fn format(&self, f: Formatter) -> String {
         
-        let mut retval = format!("{}TypeDef <{:?}>\n{}", TypeDef::indent_str(indent), self.all_span, self.name.format(indent + 1));
+        let mut retval = format!("{}TypeDef <{}>\n{}",f.indent(), f.span(self.all_span), f.apply1(&self.name));
         for &TypeFieldDef{ ref name, ref colon_span, ref typeuse, ref all_span } in &self.fields {
-            retval.push_str(&format!("\n{}Field <{:?}>\n{}\n{}colon <{:?}>\n{}", 
-                TypeDef::indent_str(indent + 1), all_span, 
-                name.format(indent + 2), 
-                TypeDef::indent_str(indent + 2), colon_span, 
-                typeuse.format(indent + 2)
+            retval.push_str(&format!("\n{}Field <{}>\n{}\n{}colon <{}>\n{}", 
+                f.indent1(), f.span(*all_span),
+                f.applyn(name, 2),
+                f.indentn(2), f.span(*colon_span),
+                f.applyn(typeuse, 2),
             ));
         }
         return retval;
     }
 }
 impl fmt::Debug for TypeDef {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
 }
 impl TypeDef {
     pub fn new(all_span: Span, name: IdentExpr, fields: Vec<TypeFieldDef>) -> TypeDef {

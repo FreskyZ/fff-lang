@@ -22,8 +22,9 @@ use lexical::SeperatorCategory;
 use super::Expr;
 use super::UnaryExpr;
 
-use super::super::ParseSession;
+use super::super::Formatter;
 use super::super::ParseResult;
+use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 
@@ -36,17 +37,17 @@ pub struct BinaryExpr {
     pub all_span: Span,
 }
 impl ISyntaxItemFormat for BinaryExpr {
-    fn format(&self, indent: u32) -> String {
-        format!("{}BinaryExpr <{:?}>\n{}\n{}{:?} <{:?}>\n{}", 
-            Expr::indent_str(indent), self.all_span,
-            self.left_expr.format(indent + 1),
-            Expr::indent_str(indent + 1), self.operator, self.operator_span,
-            self.right_expr.format(indent + 1),
+    fn format(&self, f: Formatter) -> String {
+        format!("{}BinaryExpr <{}>\n{}\n{}{:?} <{}>\n{}", 
+            f.indent(), f.span(self.all_span),
+            f.apply1(self.left_expr.as_ref()),
+            f.indent1(), self.operator, f.span(self.operator_span),
+            f.apply1(self.right_expr.as_ref()),
         )
     }
 }
 impl fmt::Debug for BinaryExpr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
 }
 impl From<BinaryExpr> for Expr {
     fn from(binary_expr: BinaryExpr) -> Expr { Expr::Binary(binary_expr) }
@@ -121,7 +122,7 @@ fn binary_expr_format() {
             LitExpr::new(LitValue::from(1), make_span!(0, 0)),
             Seperator::Add, make_span!(2, 2),
             LitExpr::new(LitValue::from(2), make_span!(4, 4))
-        ).format(1),
+        ).format(Formatter::with_test_indent(1)),
         "  BinaryExpr <<0>0-4>\n    Literal (i32)1 <<0>0-0>\n    + <<0>2-2>\n    Literal (i32)2 <<0>4-4>"
     }
 }

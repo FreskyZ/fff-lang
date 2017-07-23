@@ -76,7 +76,7 @@ SyntaxTree
       VarDecl var <<0>293-302>
         #2 <<0>297-297>
         Literal (i32)0 <<0>301-301>
-BlockStmt <<0>309-360>
+      BlockStmt <<0>309-360>
         Block <<0>309-360>
           VarDecl var <<0>320-329>
             #3 <<0>324-324>

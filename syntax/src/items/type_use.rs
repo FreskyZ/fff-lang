@@ -27,8 +27,9 @@ use message::Message;
 use lexical::Token;
 use lexical::Seperator;
 
-use super::super::ParseSession;
+use super::super::Formatter;
 use super::super::ParseResult;
+use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -42,21 +43,21 @@ pub struct TypeUse {
     pub all_span: Span, 
 }
 impl ISyntaxItemFormat for TypeUse {
-    fn format(&self, indent: u32) -> String {
-        format!("{}TypeUse {} <{:?}>\n{}{:?} <{:?}>{}", 
-            TypeUse::indent_str(indent), match self.params.len() { 0 => "simple", _ => "template" }, self.all_span, 
-            TypeUse::indent_str(indent + 1), self.base, self.base_span,
+    fn format(&self, f: Formatter) -> String {
+        format!("{}TypeUse {} <{}>\n{}{} <{}>{}", 
+            f.indent(), match self.params.len() { 0 => "simple", _ => "template" }, f.span(self.all_span),
+            f.indent1(), f.sym(self.base), f.span(self.base_span),
             match self.params.len() {
                 0 => String::new(),
-                _ => format!("\n{}Quote <{:?}>{}", TypeUse::indent_str(indent + 1), self.quote_span, 
-                    self.params.iter().fold(String::new(), |mut buf, typeuse| { buf.push_str("\n"); buf.push_str(&typeuse.format(indent + 2)); buf }),
+                _ => format!("\n{}Quote <{}>{}", f.indent1(), f.span(self.quote_span), 
+                    self.params.iter().fold(String::new(), |mut buf, typeuse| { buf.push_str("\n"); buf.push_str(&f.applyn(typeuse, 2)); buf }),
                 )
             }
         )
     }
 }
 impl fmt::Debug for TypeUse {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(0)) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::default())) }
 }
 impl TypeUse {
 

@@ -1,6 +1,6 @@
 ///! fff-lang
 ///!
-///! syntax/traits, for ISyntaxItem for various relevant staffs
+///! syntax/test_helper
 
 use std::fmt::Debug;
 
@@ -9,24 +9,7 @@ use message::MessageCollection;
 use lexical::TokenStream;
 
 use super::ParseSession;
-use super::ParseResult;
-
-// Grammar
-pub trait ISyntaxItemGrammar {
-    fn is_first_final(sess: &ParseSession) -> bool;
-}
-
-// Parse
-pub trait ISyntaxItemParse {
-    type Target;
-    
-    fn parse(sess: &mut ParseSession) -> ParseResult<Self::Target>;
-
-    // check is_first_final, if pass, parse, return Ok(Some(T)) or Err(()), else return None
-    fn try_parse(sess: &mut ParseSession) -> ParseResult<Option<Self::Target>> where Self: ISyntaxItemGrammar {
-        if Self::is_first_final(sess) { Ok(Some(Self::parse(sess)?)) } else { Ok(None) }
-    }
-}
+use super::ISyntaxItemParse;
 
 pub trait WithTestInput {
     type Output: Sized;
@@ -100,21 +83,7 @@ impl<T, U> WithTestInput for T where T: ISyntaxItemParse<Target = U> {
     }
 }
 
-const INDENTION_FILLERS: [[&'static str; 16]; 3] = [ [
-    "", "1 ", "2 | ", "3 | | ", "4 | | | ", "5 | | | | ", "6 | | | | | ", "7 | | | | | | ", "8 | | | | | | | ", "9 | | | | | | | | ", "10 | | | | | | | | | ",
-    "11| | | | | | | | | | ", "12| | | | | | | | | | | ", "13| | | | | | | | | | | | ", "14| | | | | | | | | | | | | ", "15| | | | | | | | | | | | "
-], [
-    "", "| ", "| | ", "| | | ", "| | | | ", "| | | | | ", "| | | | | | ", "| | | | | | | ", "| | | | | | | | ", "| | | | | | | | | ", "| | | | | | | | | | ",
-    "| | | | | | | | | | | ", "| | | | | | | | | | | | ", "| | | | | | | | | | | | | ", "| | | | | | | | | | | | | | ", "| | | | | | | | | | | | | "
-], [
-    "", "  ", "    ", "      ", "        ", "          ", "            ", "              ", "                ", "                  ", "                    ",
-    "                      ", "                        ", "                          ", "                            ", "                          "
-]];
 
-pub trait ISyntaxItemFormat {
-    fn indent_str(indent: u32) -> &'static str { INDENTION_FILLERS[2][indent as usize] }
-    fn format(&self, indent: u32) -> String;
-}
 
 #[cfg(test)] #[test]
 fn test_input_use() {

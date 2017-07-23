@@ -161,6 +161,21 @@ impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
     }
 }
 
+pub trait ISyntaxItemGrammar {
+    fn is_first_final(sess: &ParseSession) -> bool;
+}
+pub trait ISyntaxItemParse {
+    type Target;
+    
+    fn parse(sess: &mut ParseSession) -> ParseResult<Self::Target>;
+
+    // check is_first_final, if pass, parse, return Ok(Some(T)) or Err(()), else return None
+    fn try_parse(sess: &mut ParseSession) -> ParseResult<Option<Self::Target>> where Self: ISyntaxItemGrammar {
+        if Self::is_first_final(sess) { Ok(Some(Self::parse(sess)?)) } else { Ok(None) }
+    }
+}
+
+
 #[cfg(test)] #[test]
 fn parse_sess_usage() {
 

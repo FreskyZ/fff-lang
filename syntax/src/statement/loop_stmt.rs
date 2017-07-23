@@ -10,13 +10,14 @@ use codemap::Span;
 use lexical::Token;
 use lexical::Keyword;
 
-use super::super::ParseSession;
+use super::super::Block;
+use super::super::LabelDef;
+use super::super::Formatter;
 use super::super::ParseResult;
+use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
-use super::super::Block;
-use super::super::LabelDef;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct LoopStatement {
@@ -26,22 +27,24 @@ pub struct LoopStatement {
     pub all_span: Span,
 }
 impl ISyntaxItemFormat for LoopStatement {
-    fn format(&self, indent: u32) -> String {
+    fn format(&self, f: Formatter) -> String {
         match self.name {
-            Some(ref label_def) => format!("{}LoopStmt <{:?}>\n{}\n{}'loop' <{:?}>\n{}", 
-                LoopStatement::indent_str(indent), self.all_span,
-                label_def.format(indent + 1),
-                LoopStatement::indent_str(indent + 1), self.loop_span,
-                self.body.format(indent + 1)),
-            None => format!("{}LoopStmt <{:?}>\n{}'loop' <{:?}>\n{}", 
-                LoopStatement::indent_str(indent), self.all_span,
-                LoopStatement::indent_str(indent + 1), self.loop_span,
-                self.body.format(indent + 1)),
+            Some(ref label_def) => format!("{}LoopStmt <{}>\n{}\n{}'loop' <{}>\n{}", 
+                f.indent(), f.span(self.all_span),
+                f.apply1(label_def),
+                f.indent1(), f.span(self.loop_span),
+                f.apply1(&self.body),
+            ),
+            None => format!("{}LoopStmt <{}>\n{}'loop' <{}>\n{}", 
+                f.indent(), f.span(self.all_span),
+                f.indent1(), f.span(self.loop_span),
+                f.apply1(&self.body),
+            ),
         }
     }
 }
 impl fmt::Debug for LoopStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(0)) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::default())) }
 }
 impl LoopStatement { // New
     
@@ -93,7 +96,7 @@ fn loop_stmt_format() {
     
     //                  1234567890123456789 0123 45678
     let actual = LoopStatement::with_test_input(
-        TestInput::new("@@: loop { println(\"233\"); }").set_syms(make_symbols!["@", "println", "233"])).0.unwrap().format(0);
+        TestInput::new("@@: loop { println(\"233\"); }").set_syms(make_symbols!["@", "println", "233"])).0.unwrap().format(Formatter::default());
     let expect = r#"LoopStmt <<0>0-27>
   Label #1 <<0>0-2>
   'loop' <<0>4-7>

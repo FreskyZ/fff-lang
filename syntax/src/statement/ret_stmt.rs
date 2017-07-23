@@ -11,8 +11,9 @@ use lexical::Seperator;
 use lexical::Keyword;
 
 use super::super::Expr;
-use super::super::ParseSession;
+use super::super::Formatter;
 use super::super::ParseResult;
+use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
@@ -23,15 +24,15 @@ pub struct ReturnStatement {
     pub all_span: Span,
 }
 impl ISyntaxItemFormat for ReturnStatement {
-    fn format(&self, indent: u32) -> String {
+    fn format(&self, f: Formatter) -> String {
         match self.expr {
-            Some(ref expr) => format!("{}ReturnStmt some <{:?}>\n{}", ReturnStatement::indent_str(indent), self.all_span, expr.format(indent + 1)),
-            None => format!("{}ReturnStmt unit <{:?}>", ReturnStatement::indent_str(indent), self.all_span),
+            Some(ref expr) => format!("{}ReturnStmt some <{}>\n{}", f.indent(), f.span(self.all_span), f.apply1(expr)),
+            None => format!("{}ReturnStmt unit <{}>", f.indent(), f.span(self.all_span)),
         }
     }
 }
 impl fmt::Debug for ReturnStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(0)) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
 }
 impl ReturnStatement {
 

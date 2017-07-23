@@ -11,11 +11,12 @@ use codemap::SymbolID;
 use lexical::Token;
 use lexical::Seperator;
 
+use super::super::Formatter;
+use super::super::ParseResult;
+use super::super::ParseSession;
+use super::super::ISyntaxItemParse;
 use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
-use super::super::ISyntaxItemParse;
-use super::super::ParseSession;
-use super::super::ParseResult;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct NameSegment{
@@ -31,18 +32,18 @@ pub struct Name {
     pub all_span: Span,
 }
 impl ISyntaxItemFormat for Name {
-    fn format(&self, indent: u32) -> String {
-        format!("{}Name <{:?}>{}", 
-            Name::indent_str(indent), self.all_span,
+    fn format(&self, f: Formatter) -> String {
+        format!("{}Name <{}>{}", 
+            f.indent(), f.span(self.all_span),
             self.segments.iter().fold(String::new(), |mut buf, segment| { 
-                buf.push_str(&format!("\n{}Ident {:?} <{:?}>", Name::indent_str(indent + 1), segment.value, segment.span));
+                buf.push_str(&format!("\n{}Ident {:?} <{}>", f.indent1(), segment.value, f.span(segment.span)));
                 buf 
             }),
         )
     }
 }
 impl fmt::Debug for Name {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(0)) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::default())) }
 }
 impl Name {
     fn new(all_span: Span, segments: Vec<NameSegment>) -> Name { Name{ all_span, segments } }
