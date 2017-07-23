@@ -5,12 +5,11 @@ A small language for fun
 ## Features (in design)
 
   - based on C syntax
-  - and sweet modern syntax extensions learned from rust, python, C#, etc.
-  - type reference and concept based generic
+  - sweet modern syntax extensions learned from rust, python, C#, etc.
+  - type inference and concept based generic
   - static reflection
-  - interpret or build to binary
-  - no 3rd party library dependency, no c library dependency
-  - implemented from source code file to target binary, no llvm, ld or link
+  - no 3rd party library dependency, include c library, llvm, ld or link
+  - whole process from source code file to in memory IR or target binary
 
 ## Build
 
