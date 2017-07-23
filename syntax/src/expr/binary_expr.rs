@@ -38,7 +38,7 @@ pub struct BinaryExpr {
 }
 impl ISyntaxItemFormat for BinaryExpr {
     fn format(&self, f: Formatter) -> String {
-        format!("{}BinaryExpr <{}>\n{}\n{}{:?} <{}>\n{}", 
+        format!("{}BinaryExpr <{}>\n{}\n{}\"{:?}\" <{}>\n{}", 
             f.indent(), f.span(self.all_span),
             f.apply1(self.left_expr.as_ref()),
             f.indent1(), self.operator, f.span(self.operator_span),
@@ -123,7 +123,7 @@ fn binary_expr_format() {
             Seperator::Add, make_span!(2, 2),
             LitExpr::new(LitValue::from(2), make_span!(4, 4))
         ).format(Formatter::with_test_indent(1)),
-        "  BinaryExpr <<0>0-4>\n    Literal (i32)1 <<0>0-0>\n    + <<0>2-2>\n    Literal (i32)2 <<0>4-4>"
+        "  BinaryExpr <<0>0-4>\n    Literal (i32)1 <<0>0-0>\n    \"+\" <<0>2-2>\n    Literal (i32)2 <<0>4-4>"
     }
 }
 

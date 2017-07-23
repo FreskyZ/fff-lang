@@ -28,7 +28,7 @@ pub struct MemberAccessExpr {
 }
 impl ISyntaxItemFormat for MemberAccessExpr {
     fn format(&self, f: Formatter) -> String {
-        format!("{}MemberAccess <{}>\n{}\n{}dot <{}>\n{}", 
+        format!("{}MemberAccess <{}>\n{}\n{}\".\" <{}>\n{}", 
             f.indent(), f.span(self.all_span),
             f.apply1(self.base.as_ref()),
             f.indent1(), f.span(self.dot_span),

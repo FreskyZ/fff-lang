@@ -1,131 +1,133 @@
-SyntaxTree
-  FnDef <<0>12-343>
-    Name #1 <<0>15-18>
-    Params <<0>19-20>
-    Block <<0>22-343>
-      LoopStmt <<0>31-340>
-        Label #1 <<0>31-36>
-        'loop' <<0>38-41>
-        Block <<0>43-340>
-          SimpleExprStmt <<0>54-80>
-            FnCall <<0>54-79>
-              Ident #3 <<0>54-60>
-              paren <<0>61-79>
-              Literal #2 <<0>62-78>
-          VarDecl var <<0>91-109>
-            #4 <<0>95-95>
-            FnCall <<0>99-108>
-              Ident #5 <<0>99-106>
-              paren <<0>107-108>
+syntax-tree
+  fn-def <4:1-17:1>
+    "main" <4:4-4:7>
+    no-return-type
+    params-paren <4:8-4:9>
+    no-param
+    Block <4:11-17:1>
+      LoopStmt <6:5-16:5>
+        Label #1 <6:5-6:10>
+        'loop' <6:12-6:15>
+        Block <6:17-16:5>
+          SimpleExprStmt <7:9-7:35>
+            FnCall <7:9-7:34>
+              Ident "writeln" <7:9-7:15>
+              paren <7:16-7:34>
+              Literal #2 <7:17-7:33>
+          VarDecl var <8:9-8:27>
+            "a" <8:13-8:13>
+            FnCall <8:17-8:26>
+              Ident "read_i32" <8:17-8:24>
+              paren <8:25-8:26>
               (empty)
-          VarDecl var <<0>120-138>
-            #6 <<0>124-124>
-            FnCall <<0>128-137>
-              Ident #5 <<0>128-135>
-              paren <<0>136-137>
+          VarDecl var <9:9-9:27>
+            "b" <9:13-9:13>
+            FnCall <9:17-9:26>
+              Ident "read_i32" <9:17-9:24>
+              paren <9:25-9:26>
               (empty)
-          IfStmt <<0>151-208>
-            IfClause <<0>151-208>
-              BinaryExpr <<0>154-169>
-                BinaryExpr <<0>154-159>
-                  Ident #4 <<0>154-154>
-                  == <<0>156-157>
-                  Literal (i32)0 <<0>159-159>
-                && <<0>161-162>
-                BinaryExpr <<0>164-169>
-                  Ident #6 <<0>164-164>
-                  == <<0>166-167>
-                  Literal (i32)0 <<0>169-169>
+          IfStmt <11:9-13:9>
+            IfClause <11:9-13:9>
+              BinaryExpr <11:12-11:27>
+                BinaryExpr <11:12-11:17>
+                  Ident "a" <11:12-11:12>
+                  "==" <11:14-11:15>
+                  Literal (i32)0 <11:17-11:17>
+                "&&" <11:19-11:20>
+                BinaryExpr <11:22-11:27>
+                  Ident "b" <11:22-11:22>
+                  "==" <11:24-11:25>
+                  Literal (i32)0 <11:27-11:27>
               Then
-              Block <<0>171-208>
-                BreakStmt <<0>186-197>
-                  To @#1 <<0>192-196>
-          SimpleExprStmt <<0>221-333>
-            FnCall <<0>221-332>
-              Ident #3 <<0>221-227>
-              paren <<0>228-332>
-              BinaryExpr <<0>229-331>
-                BinaryExpr <<0>229-295>
-                  BinaryExpr <<0>229-285>
-                    BinaryExpr <<0>229-269>
-                      BinaryExpr <<0>229-262>
-                        Literal #7 <<0>229-246>
-                        + <<0>248-248>
-                        FnCall <<0>250-262>
-                          MemberAccess <<0>250-260>
-                            Ident #4 <<0>250-250>
-                            dot <<0>251-251>
-                            Ident #8 <<0>252-260>
-                          paren <<0>261-262>
+              Block <11:29-13:9>
+                BreakStmt <12:13-12:24>
+                  To @#1 <12:19-12:23>
+          SimpleExprStmt <15:9-15:101>
+            FnCall <15:9-15:100>
+              Ident "writeln" <15:9-15:15>
+              paren <15:16-15:100>
+              BinaryExpr <15:17-15:99>
+                BinaryExpr <15:17-15:73>
+                  BinaryExpr <15:17-15:63>
+                    BinaryExpr <15:17-15:47>
+                      BinaryExpr <15:17-15:40>
+                        Literal #7 <15:17-15:24>
+                        "+" <15:26-15:26>
+                        FnCall <15:28-15:40>
+                          MemberAccess <15:28-15:38>
+                            Ident "a" <15:28-15:28>
+                            "." <15:29-15:29>
+                            Ident "to_string" <15:30-15:38>
+                          paren <15:39-15:40>
                           (empty)
-                      + <<0>264-264>
-                      Literal #9 <<0>266-269>
-                    + <<0>271-271>
-                    FnCall <<0>273-285>
-                      MemberAccess <<0>273-283>
-                        Ident #6 <<0>273-273>
-                        dot <<0>274-274>
-                        Ident #8 <<0>275-283>
-                      paren <<0>284-285>
+                      "+" <15:42-15:42>
+                      Literal #9 <15:44-15:47>
+                    "+" <15:49-15:49>
+                    FnCall <15:51-15:63>
+                      MemberAccess <15:51-15:61>
+                        Ident "b" <15:51-15:51>
+                        "." <15:52-15:52>
+                        Ident "to_string" <15:53-15:61>
+                      paren <15:62-15:63>
                       (empty)
-                  + <<0>287-287>
-                  Literal #10 <<0>289-295>
-                + <<0>297-297>
-                FnCall <<0>299-331>
-                  MemberAccess <<0>299-329>
-                    FnCall <<0>299-319>
-                      Ident #11 <<0>299-311>
-                      paren <<0>314-319>
-                      Ident #4 <<0>315-315>
-                      Ident #6 <<0>318-318>
-                    dot <<0>320-320>
-                    Ident #8 <<0>321-329>
-                  paren <<0>330-331>
+                  "+" <15:65-15:65>
+                  Literal #10 <15:67-15:73>
+                "+" <15:75-15:75>
+                FnCall <15:77-15:99>
+                  MemberAccess <15:77-15:97>
+                    FnCall <15:77-15:87>
+                      Ident "最大公约数" <15:77-15:81>
+                      paren <15:82-15:87>
+                      Ident "a" <15:83-15:83>
+                      Ident "b" <15:86-15:86>
+                    "." <15:88-15:88>
+                    Ident "to_string" <15:89-15:97>
+                  paren <15:98-15:99>
                   (empty)
-  FnDef <<0>348-555>
-    Name #11 <<0>351-363>
-    TypeUse simple <<0>386-388>
-      #12 <<0>386-388>
-    Params <<0>366-381>
-    Param #4 <<0>367-367>
-      TypeUse simple <<0>370-372>
-        #12 <<0>370-372>
-    Param #6 <<0>375-375>
-      TypeUse simple <<0>378-380>
-        #12 <<0>378-380>
-    Block <<0>390-555>
-      IfStmt <<0>397-433>
-        IfClause <<0>397-433>
-          BinaryExpr <<0>400-405>
-            Ident #6 <<0>400-400>
-            == <<0>402-403>
-            Literal (i32)0 <<0>405-405>
+  fn-def <19:1-28:1>
+    "最大公约数" <19:4-19:8>
+return     TypeUse simple <19:29-19:31>
+      "i32" <19:29-19:31>
+    params-paren <19:9-19:24>
+    param #4 <19:10-19:10>
+      TypeUse simple <19:13-19:15>
+        "i32" <19:13-19:15>
+    param #6 <19:18-19:18>
+      TypeUse simple <19:21-19:23>
+        "i32" <19:21-19:23>
+    Block <19:33-28:1>
+      IfStmt <20:5-22:5>
+        IfClause <20:5-22:5>
+          BinaryExpr <20:8-20:13>
+            Ident "b" <20:8-20:8>
+            "==" <20:10-20:11>
+            Literal (i32)0 <20:13-20:13>
           Then
-          Block <<0>407-433>
-            ReturnStmt some <<0>418-426>
-              Ident #4 <<0>425-425>
-      IfStmt <<0>440-552>
-        IfClause <<0>440-495>
-          BinaryExpr <<0>443-447>
-            Ident #4 <<0>443-443>
-            < <<0>445-445>
-            Ident #6 <<0>447-447>
+          Block <20:15-22:5>
+            ReturnStmt some <21:9-21:17>
+              Ident "a" <21:16-21:16>
+      IfStmt <23:5-27:5>
+        IfClause <23:5-25:5>
+          BinaryExpr <23:8-23:12>
+            Ident "a" <23:8-23:8>
+            "<" <23:10-23:10>
+            Ident "b" <23:12-23:12>
           Then
-          Block <<0>449-495>
-            ReturnStmt some <<0>460-488>
-              FnCall <<0>467-487>
-                Ident #11 <<0>467-479>
-                paren <<0>482-487>
-                Ident #6 <<0>483-483>
-                Ident #4 <<0>486-486>
-        ElseClause <<0>497-552>
-          Block <<0>502-552>
-            ReturnStmt some <<0>513-545>
-              FnCall <<0>520-544>
-                Ident #11 <<0>520-532>
-                paren <<0>535-544>
-                Ident #6 <<0>536-536>
-                BinaryExpr <<0>539-543>
-                  Ident #4 <<0>539-539>
-                  % <<0>541-541>
-                  Ident #6 <<0>543-543>
+          Block <23:14-25:5>
+            ReturnStmt some <24:9-24:27>
+              FnCall <24:16-24:26>
+                Ident "最大公约数" <24:16-24:20>
+                paren <24:21-24:26>
+                Ident "b" <24:22-24:22>
+                Ident "a" <24:25-24:25>
+        ElseClause <25:7-27:5>
+          Block <25:12-27:5>
+            ReturnStmt some <26:9-26:31>
+              FnCall <26:16-26:30>
+                Ident "最大公约数" <26:16-26:20>
+                paren <26:21-26:30>
+                Ident "b" <26:22-26:22>
+                BinaryExpr <26:25-26:29>
+                  Ident "a" <26:25-26:25>
+                  "%" <26:27-26:27>
+                  Ident "b" <26:29-26:29>

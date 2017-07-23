@@ -1,123 +1,125 @@
-SyntaxTree
-  FnDef <<0>28-556>
-    Name #1 <<0>31-34>
-    Params <<0>35-36>
-    Block <<0>38-556>
-      VarDecl var <<0>47-72>
-        #2 <<0>51-55>
-        FnCall <<0>59-71>
-          Ident #3 <<0>59-69>
-          paren <<0>70-71>
+syntax-tree
+  fn-def <4:1-23:1>
+    "main" <4:4-4:7>
+    no-return-type
+    params-paren <4:8-4:9>
+    no-param
+    Block <4:11-23:1>
+      VarDecl var <6:5-6:30>
+        "input" <6:9-6:13>
+        FnCall <6:17-6:29>
+          Ident "read_string" <6:17-6:27>
+          paren <6:28-6:29>
           (empty)
-      SimpleExprStmt <<0>79-114>
-        FnCall <<0>79-113>
-          Ident #5 <<0>79-85>
-          paren <<0>86-113>
-          BinaryExpr <<0>87-112>
-            Literal #4 <<0>87-97>
-            + <<0>99-99>
-            MemberAccess <<0>101-112>
-              Ident #2 <<0>101-105>
-              dot <<0>106-106>
-              Ident #6 <<0>107-112>
-      VarDecl var <<0>121-155>
-        #7 <<0>125-130>
-        TypeUse simple <<0>133-138>
-          #20 <<0>133-138>
-        FnCall <<0>142-154>
-          Ident #3 <<0>142-152>
-          paren <<0>153-154>
+      SimpleExprStmt <7:5-7:40>
+        FnCall <7:5-7:39>
+          Ident "writeln" <7:5-7:11>
+          paren <7:12-7:39>
+          BinaryExpr <7:13-7:38>
+            Literal #4 <7:13-7:23>
+            "+" <7:25-7:25>
+            MemberAccess <7:27-7:38>
+              Ident "input" <7:27-7:31>
+              "." <7:32-7:32>
+              Ident "length" <7:33-7:38>
+      VarDecl var <8:5-8:39>
+        "input2" <8:9-8:14>
+        TypeUse simple <8:17-8:22>
+          "string" <8:17-8:22>
+        FnCall <8:26-8:38>
+          Ident "read_string" <8:26-8:36>
+          paren <8:37-8:38>
           (empty)
-      SimpleExprStmt <<0>162-186>
-        FnCall <<0>162-185>
-          Ident #8 <<0>162-168>
-          paren <<0>169-185>
-          BinaryExpr <<0>170-184>
-            Ident #2 <<0>170-174>
-            == <<0>176-177>
-            Ident #7 <<0>179-184>
-      SimpleExprStmt <<0>195-215>
-        FnCall <<0>195-214>
-          MemberAccess <<0>195-209>
-            Ident #2 <<0>195-199>
-            dot <<0>200-200>
-            Ident #9 <<0>201-209>
-          paren <<0>210-214>
-          Literal 'a' <<0>211-213>
-      SimpleExprStmt <<0>222-242>
-        FnCall <<0>222-241>
-          MemberAccess <<0>222-236>
-            Ident #2 <<0>222-226>
-            dot <<0>227-227>
-            Ident #9 <<0>228-236>
-          paren <<0>237-241>
-          Literal 'c' <<0>238-240>
-      SimpleExprStmt <<0>249-273>
-        FnCall <<0>249-272>
-          MemberAccess <<0>249-266>
-            Ident #7 <<0>249-254>
-            dot <<0>255-255>
-            Ident #11 <<0>256-266>
-          paren <<0>267-272>
-          Literal #10 <<0>268-271>
-      SimpleExprStmt <<0>280-304>
-        FnCall <<0>280-303>
-          Ident #8 <<0>280-286>
-          paren <<0>287-303>
-          BinaryExpr <<0>288-302>
-            Ident #2 <<0>288-292>
-            == <<0>294-295>
-            Ident #7 <<0>297-302>
-      SimpleExprStmt <<0>313-346>
-        FnCall <<0>313-345>
-          Ident #8 <<0>313-319>
-          paren <<0>320-345>
-          FnCall <<0>321-344>
-            MemberAccess <<0>321-337>
-              Ident #2 <<0>321-325>
-              dot <<0>326-326>
-              Ident #13 <<0>327-337>
-            paren <<0>338-344>
-            Literal #12 <<0>339-343>
-      SimpleExprStmt <<0>353-384>
-        FnCall <<0>353-383>
-          Ident #8 <<0>353-359>
-          paren <<0>360-383>
-          FnCall <<0>361-382>
-            MemberAccess <<0>361-376>
-              Ident #7 <<0>361-366>
-              dot <<0>367-367>
-              Ident #14 <<0>368-376>
-            paren <<0>377-382>
-            Literal #10 <<0>378-381>
-      VarDecl var <<0>393-419>
-        #15 <<0>397-402>
-        FnCall <<0>406-418>
-          Ident #3 <<0>406-416>
-          paren <<0>417-418>
+      SimpleExprStmt <9:5-9:29>
+        FnCall <9:5-9:28>
+          Ident "println" <9:5-9:11>
+          paren <9:12-9:28>
+          BinaryExpr <9:13-9:27>
+            Ident "input" <9:13-9:17>
+            "==" <9:19-9:20>
+            Ident "input2" <9:22-9:27>
+      SimpleExprStmt <11:5-11:25>
+        FnCall <11:5-11:24>
+          MemberAccess <11:5-11:19>
+            Ident "input" <11:5-11:9>
+            "." <11:10-11:10>
+            Ident "push_char" <11:11-11:19>
+          paren <11:20-11:24>
+          Literal 'a' <11:21-11:23>
+      SimpleExprStmt <12:5-12:25>
+        FnCall <12:5-12:24>
+          MemberAccess <12:5-12:19>
+            Ident "input" <12:5-12:9>
+            "." <12:10-12:10>
+            Ident "push_char" <12:11-12:19>
+          paren <12:20-12:24>
+          Literal 'c' <12:21-12:23>
+      SimpleExprStmt <13:5-13:29>
+        FnCall <13:5-13:28>
+          MemberAccess <13:5-13:22>
+            Ident "input2" <13:5-13:10>
+            "." <13:11-13:11>
+            Ident "push_string" <13:12-13:22>
+          paren <13:23-13:28>
+          Literal #10 <13:24-13:27>
+      SimpleExprStmt <14:5-14:29>
+        FnCall <14:5-14:28>
+          Ident "println" <14:5-14:11>
+          paren <14:12-14:28>
+          BinaryExpr <14:13-14:27>
+            Ident "input" <14:13-14:17>
+            "==" <14:19-14:20>
+            Ident "input2" <14:22-14:27>
+      SimpleExprStmt <16:5-16:38>
+        FnCall <16:5-16:37>
+          Ident "println" <16:5-16:11>
+          paren <16:12-16:37>
+          FnCall <16:13-16:36>
+            MemberAccess <16:13-16:29>
+              Ident "input" <16:13-16:17>
+              "." <16:18-16:18>
+              Ident "starts_with" <16:19-16:29>
+            paren <16:30-16:36>
+            Literal #12 <16:31-16:35>
+      SimpleExprStmt <17:5-17:36>
+        FnCall <17:5-17:35>
+          Ident "println" <17:5-17:11>
+          paren <17:12-17:35>
+          FnCall <17:13-17:34>
+            MemberAccess <17:13-17:28>
+              Ident "input2" <17:13-17:18>
+              "." <17:19-17:19>
+              Ident "ends_with" <17:20-17:28>
+            paren <17:29-17:34>
+            Literal #10 <17:30-17:33>
+      VarDecl var <19:5-19:31>
+        "input3" <19:9-19:14>
+        FnCall <19:18-19:30>
+          Ident "read_string" <19:18-19:28>
+          paren <19:29-19:30>
           (empty)
-      VarDecl const <<0>426-457>
-        #16 <<0>432-442>
-        Ident #16 <<0>446-456>
-      SimpleExprStmt <<0>464-506>
-        FnCall <<0>464-505>
-          Ident #8 <<0>464-470>
-          paren <<0>471-505>
-          BinaryExpr <<0>472-504>
-            Literal #17 <<0>472-488>
-            + <<0>490-490>
-            FnCall <<0>492-504>
-              MemberAccess <<0>492-502>
-                Ident #15 <<0>492-497>
-                dot <<0>498-498>
-                Ident #18 <<0>499-502>
-              paren <<0>503-504>
+      VarDecl const <20:5-20:36>
+        "input3_copy" <20:11-20:21>
+        Ident "input3_copy" <20:25-20:35>
+      SimpleExprStmt <21:5-21:47>
+        FnCall <21:5-21:46>
+          Ident "println" <21:5-21:11>
+          paren <21:12-21:46>
+          BinaryExpr <21:13-21:45>
+            Literal #17 <21:13-21:29>
+            "+" <21:31-21:31>
+            FnCall <21:33-21:45>
+              MemberAccess <21:33-21:43>
+                Ident "input3" <21:33-21:38>
+                "." <21:39-21:39>
+                Ident "trim" <21:40-21:43>
+              paren <21:44-21:45>
               (empty)
-      SimpleExprStmt <<0>513-553>
-        FnCall <<0>513-552>
-          Ident #8 <<0>513-519>
-          paren <<0>520-552>
-          BinaryExpr <<0>521-551>
-            Literal #19 <<0>521-537>
-            + <<0>539-539>
-            Ident #16 <<0>541-551>
+      SimpleExprStmt <22:5-22:45>
+        FnCall <22:5-22:44>
+          Ident "println" <22:5-22:11>
+          paren <22:12-22:44>
+          BinaryExpr <22:13-22:43>
+            Literal #19 <22:13-22:29>
+            "+" <22:31-22:31>
+            Ident "input3_copy" <22:33-22:43>

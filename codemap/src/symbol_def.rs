@@ -14,9 +14,9 @@ impl SymbolID {
     pub fn format(&self, symbols: Option<&SymbolCollection>) -> String { 
         match symbols {
             None => format!("#{}", self.0),
-            Some(symbols) => format!("{}", symbols.get(*self).unwrap_or("<no-sym>")),
+            Some(symbols) => format!("{:?}", symbols.get(*self).unwrap_or("<no-sym>")),
         }
-    } 
+    }
 }
 impl fmt::Debug for SymbolID { 
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(None)) } 

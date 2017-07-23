@@ -24,7 +24,7 @@ pub struct SyntaxTree {
 }
 impl ISyntaxItemFormat for SyntaxTree {
     fn format(&self, f: Formatter) -> String {
-        format!("{}SyntaxTree{}", 
+        format!("{}syntax-tree{}", 
             f.indent(),
             self.items.iter().fold(String::new(), |mut buf, item| { buf.push_str("\n"); buf.push_str(&f.apply1(item)); buf }))
     }
@@ -67,7 +67,7 @@ impl SyntaxTree {
 fn syntax_tree_parse() {
     use std::fs::File;
     use std::io::Read;
-    use super::WithTestInput;
+    use super::TestInput;
 
     let mut index_file = File::open("../tests/syntax/index.txt").expect("cannot open index.txt");
     let mut test_cases = String::new();
@@ -82,13 +82,13 @@ fn syntax_tree_parse() {
         let mut expect = String::new();
         let _length = result_file.read_to_string(&mut expect).expect(&format!("cannot read result file {}", result_path));
         
-        let actual = SyntaxTree::with_test_str(&src).format(Formatter::default());
+        let result = TestInput::new(&src).apply::<SyntaxTree, _>();
+        let actual = result.get_result().unwrap().format(Formatter::new(Some(result.get_source()), Some(result.get_symbols())));
+        // let actual = SyntaxTree::with_test_str(&src).format(Formatter::default());
         if actual != expect {
-            panic!("case {} failed, actual:\n`{}`\nexpect:\n`{}`", line, actual, expect)
+            panic!("case '{}' failed, actual:\n`{}`\nexpect:\n`{}`", line, actual, expect)
         }
     }
 }
 
 // TODO: update format including format_with_codemap_symbols for these integration tests
-// in detail, use struct codemap::SourceSession{ symbols: Option<&SymbolCollection>, codemap: Option<&CodeMap>, indention: usize }
-// also a `human_friendly_eqer` for line:column compare instead of byte index compare, string compare instead of symid compare

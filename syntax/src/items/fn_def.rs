@@ -45,16 +45,19 @@ impl ISyntaxItemFormat for FnDef {
     fn format(&self, f: Formatter) -> String {
 
         let mut retval = String::new();
-        retval.push_str(&format!("{}FnDef <{}>", f.indent(), f.span(self.all_span)));
-        retval.push_str(&format!("\n{}Name {:?} <{}>", f.indent1(), self.name, f.span(self.name_span)));
+        retval.push_str(&format!("{}fn-def <{}>", f.indent(), f.span(self.all_span)));
+        retval.push_str(&format!("\n{}{} <{}>", f.indent1(), f.sym(self.name), f.span(self.name_span)));
 
         match self.ret_type { 
-            Some(ref ret_type) => retval.push_str(&format!("\n{}", f.apply1(ret_type))),
-            None => (), 
+            Some(ref ret_type) => retval.push_str(&format!("\nreturn {}", f.apply1(ret_type))),
+            None => retval.push_str(&format!("\n{}no-return-type", f.indent1())), 
         }
-        retval.push_str(&format!("\n{}Params <{}>", f.indent1(), f.span(self.params_paren_span)));
+        retval.push_str(&format!("\n{}params-paren <{}>", f.indent1(), f.span(self.params_paren_span)));
+        if self.params.len() == 0 {
+            retval.push_str(&format!("\n{}no-param", f.indent1()));
+        }
         for &FnParam{ ref decltype, ref name, ref name_span } in &self.params {
-            retval.push_str(&format!("\n{}Param {:?} <{}>\n{}", f.indent1(), name, f.span(*name_span), f.applyn(decltype, 2)));
+            retval.push_str(&format!("\n{}param {:?} <{}>\n{}", f.indent1(), name, f.span(*name_span), f.applyn(decltype, 2)));
         }
         retval.push_str(&format!("\n{}", f.apply1(&self.body)));
         return retval;

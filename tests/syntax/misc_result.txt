@@ -1,181 +1,186 @@
-SyntaxTree
-  FnDef <<0>0-52>
-    Name #1 <<0>3-5>
-    TypeUse simple <<0>26-28>
-      #16 <<0>26-28>
-    Params <<0>6-21>
-    Param #2 <<0>7-7>
-      TypeUse simple <<0>10-12>
-        #16 <<0>10-12>
-    Param #3 <<0>15-15>
-      TypeUse simple <<0>18-20>
-        #16 <<0>18-20>
-    Block <<0>30-52>
-      ReturnStmt some <<0>37-49>
-        BinaryExpr <<0>44-48>
-          Ident #2 <<0>44-44>
-          + <<0>46-46>
-          Ident #3 <<0>48-48>
-  FnDef <<0>55-260>
-    Name #4 <<0>58-61>
-    TypeUse simple <<0>93-95>
-      #16 <<0>93-95>
-    Params <<0>62-88>
-    Param #5 <<0>63-66>
-      TypeUse simple <<0>69-71>
-        #16 <<0>69-71>
-    Param #6 <<0>74-77>
+syntax-tree
+  fn-def <1:1-3:1>
+    "fn1" <1:4-1:6>
+return     TypeUse simple <1:27-1:29>
+      "u32" <1:27-1:29>
+    params-paren <1:7-1:22>
+    param #2 <1:8-1:8>
+      TypeUse simple <1:11-1:13>
+        "u32" <1:11-1:13>
+    param #3 <1:16-1:16>
+      TypeUse simple <1:19-1:21>
+        "u32" <1:19-1:21>
+    Block <1:31-3:1>
+      ReturnStmt some <2:5-2:17>
+        BinaryExpr <2:12-2:16>
+          Ident "a" <2:12-2:12>
+          "+" <2:14-2:14>
+          Ident "b" <2:16-2:16>
+  fn-def <4:1-12:1>
+    "main" <4:4-4:7>
+return     TypeUse simple <4:39-4:41>
+      "u32" <4:39-4:41>
+    params-paren <4:8-4:34>
+    param #5 <4:9-4:12>
+      TypeUse simple <4:15-4:17>
+        "u32" <4:15-4:17>
+    param #6 <4:20-4:23>
       TypeUse template <no-span>
-        #18 <no-span>
-        Quote <<0>80-87>
-          TypeUse simple <<0>81-86>
-            #17 <<0>81-86>
-    Block <<0>97-260>
-      VarDecl var <<0>104-118>
-        #7 <<0>108-108>
-        TypeUse simple <<0>111-113>
-          #16 <<0>111-113>
-        Literal (i32)1 <<0>117-117>
-      WhileStmt <<0>125-242>
-        'while' <<0>125-129>
-        ParenExpr <<0>130-137>
-          BinaryExpr <<0>131-136>
-            Ident #7 <<0>131-131>
-            != <<0>133-134>
-            Literal (i32)0 <<0>136-136>
-        Block <<0>139-242>
-          VarDecl const <<0>150-170>
-            #2 <<0>156-156>
-            FnCall <<0>160-169>
-              Ident #8 <<0>160-167>
-              paren <<0>168-169>
+        "array" <no-span>
+        Quote <4:26-4:33>
+          TypeUse simple <4:27-4:32>
+            "string" <4:27-4:32>
+    Block <4:43-12:1>
+      VarDecl var <5:5-5:19>
+        "i" <5:9-5:9>
+        TypeUse simple <5:12-5:14>
+          "u32" <5:12-5:14>
+        Literal (i32)1 <5:18-5:18>
+      WhileStmt <6:5-10:5>
+        'while' <6:5-6:9>
+        ParenExpr <6:10-6:17>
+          BinaryExpr <6:11-6:16>
+            Ident "i" <6:11-6:11>
+            "!=" <6:13-6:14>
+            Literal (i32)0 <6:16-6:16>
+        Block <6:19-10:5>
+          VarDecl const <7:9-7:29>
+            "a" <7:15-7:15>
+            FnCall <7:19-7:28>
+              Ident "read_u32" <7:19-7:26>
+              paren <7:27-7:28>
               (empty)
-          VarDecl const <<0>181-206>
-            #3 <<0>187-187>
-            TypeUse simple <<0>190-192>
-              #16 <<0>190-192>
-            FnCall <<0>196-205>
-              Ident #8 <<0>196-203>
-              paren <<0>204-205>
+          VarDecl const <8:9-8:34>
+            "b" <8:15-8:15>
+            TypeUse simple <8:18-8:20>
+              "u32" <8:18-8:20>
+            FnCall <8:24-8:33>
+              Ident "read_u32" <8:24-8:31>
+              paren <8:32-8:33>
               (empty)
-          SimpleExprStmt <<0>217-235>
-            FnCall <<0>217-234>
-              Ident #9 <<0>217-223>
-              paren <<0>224-234>
-              FnCall <<0>225-233>
-                Ident #1 <<0>225-227>
-                paren <<0>228-233>
-                Ident #2 <<0>229-229>
-                Ident #3 <<0>232-232>
-      ReturnStmt some <<0>249-257>
-        Literal (i32)0 <<0>256-256>
-  FnDef <<0>276-383>
-    Name #4 <<0>279-282>
-    Params <<0>283-284>
-    Block <<0>286-383>
-      VarDecl var <<0>293-302>
-        #2 <<0>297-297>
-        Literal (i32)0 <<0>301-301>
-      BlockStmt <<0>309-360>
-        Block <<0>309-360>
-          VarDecl var <<0>320-329>
-            #3 <<0>324-324>
-            Literal (i32)0 <<0>328-328>
-          VarDecl var <<0>340-353>
-            #2 <<0>344-344>
-            TypeUse simple <<0>346-348>
-              #19 <<0>346-348>
-            Literal (i32)0 <<0>352-352>
-      VarDecl var <<0>367-380>
-        #10 <<0>371-371>
-        BinaryExpr <<0>375-379>
-          Ident #2 <<0>375-375>
-          + <<0>377-377>
-          Ident #3 <<0>379-379>
-  FnDef <<0>403-697>
-    Name #4 <<0>406-409>
-    Params <<0>410-417>
-    Param #3 <<0>411-411>
-      TypeUse simple <<0>414-416>
-        #16 <<0>414-416>
-    Block <<0>419-697>
-      VarDecl const <<0>426-446>
-        #2 <<0>432-432>
-        FnCall <<0>436-445>
-          Ident #11 <<0>436-443>
-          paren <<0>444-445>
+          SimpleExprStmt <9:9-9:27>
+            FnCall <9:9-9:26>
+              Ident "println" <9:9-9:15>
+              paren <9:16-9:26>
+              FnCall <9:17-9:25>
+                Ident "fn1" <9:17-9:19>
+                paren <9:20-9:25>
+                Ident "a" <9:21-9:21>
+                Ident "b" <9:24-9:24>
+      ReturnStmt some <11:5-11:13>
+        Literal (i32)0 <11:12-11:12>
+  fn-def <15:1-22:1>
+    "main" <15:4-15:7>
+    no-return-type
+    params-paren <15:8-15:9>
+    no-param
+    Block <15:11-22:1>
+      VarDecl var <16:5-16:14>
+        "a" <16:9-16:9>
+        Literal (i32)0 <16:13-16:13>
+      BlockStmt <17:5-20:5>
+        Block <17:5-20:5>
+          VarDecl var <18:9-18:18>
+            "b" <18:13-18:13>
+            Literal (i32)0 <18:17-18:17>
+          VarDecl var <19:9-19:22>
+            "a" <19:13-19:13>
+            TypeUse simple <19:15-19:17>
+              "i32" <19:15-19:17>
+            Literal (i32)0 <19:21-19:21>
+      VarDecl var <21:5-21:18>
+        "c" <21:9-21:9>
+        BinaryExpr <21:13-21:17>
+          Ident "a" <21:13-21:13>
+          "+" <21:15-21:15>
+          Ident "b" <21:17-21:17>
+  fn-def <25:1-39:1>
+    "main" <25:4-25:7>
+    no-return-type
+    params-paren <25:8-25:15>
+    param #3 <25:9-25:9>
+      TypeUse simple <25:12-25:14>
+        "u32" <25:12-25:14>
+    Block <25:17-39:1>
+      VarDecl const <26:5-26:25>
+        "a" <26:11-26:11>
+        FnCall <26:15-26:24>
+          Ident "read_i32" <26:15-26:22>
+          paren <26:23-26:24>
           (empty)
-      LoopStmt <<0>453-694>
-        Label #12 <<0>453-457>
-        'loop' <<0>459-462>
-        Block <<0>464-694>
-          VarDecl var <<0>475-484>
-            #3 <<0>479-479>
-            Literal (i32)0 <<0>483-483>
-          LoopStmt <<0>495-687>
-            Label #13 <<0>495-499>
-            'loop' <<0>501-504>
-            Block <<0>506-687>
-              IfStmt <<0>521-676>
-                IfClause <<0>521-600>
-                  BinaryExpr <<0>524-529>
-                    Ident #2 <<0>524-524>
-                    == <<0>526-527>
-                    Literal (i32)0 <<0>529-529>
+      LoopStmt <27:5-38:5>
+        Label #12 <27:5-27:9>
+        'loop' <27:11-27:14>
+        Block <27:16-38:5>
+          VarDecl var <28:9-28:18>
+            "b" <28:13-28:13>
+            Literal (i32)0 <28:17-28:17>
+          LoopStmt <29:9-37:9>
+            Label #13 <29:9-29:13>
+            'loop' <29:15-29:18>
+            Block <29:20-37:9>
+              IfStmt <30:13-36:13>
+                IfClause <30:13-33:13>
+                  BinaryExpr <30:16-30:21>
+                    Ident "a" <30:16-30:16>
+                    "==" <30:18-30:19>
+                    Literal (i32)0 <30:21-30:21>
                   Then
-                  Block <<0>531-600>
-                    AssignExprStmt <<0>550-556>
-                      += <<0>552-553>
-                      Ident #2 <<0>550-550>
-                      Literal (i32)1 <<0>555-555>
-                    BreakStmt <<0>575-585>
-                      To @#13 <<0>581-584>
-                ElseClause <<0>602-676>
-                  Block <<0>607-676>
-                    AssignExprStmt <<0>626-632>
-                      += <<0>628-629>
-                      Ident #3 <<0>626-626>
-                      Literal (i32)1 <<0>631-631>
-                    BreakStmt <<0>651-661>
-                      To @#12 <<0>657-660>
-  FnDef <<0>717-882>
-    Name #4 <<0>720-723>
-    Params <<0>724-725>
-    Block <<0>727-882>
-      VarDecl const <<0>734-754>
-        #2 <<0>740-740>
-        FnCall <<0>744-753>
-          Ident #11 <<0>744-751>
-          paren <<0>752-753>
+                  Block <30:23-33:13>
+                    AssignExprStmt <31:17-31:23>
+                      "+=" <31:19-31:20>
+                      Ident "a" <31:17-31:17>
+                      Literal (i32)1 <31:22-31:22>
+                    BreakStmt <32:17-32:27>
+                      To @#13 <32:23-32:26>
+                ElseClause <33:15-36:13>
+                  Block <33:20-36:13>
+                    AssignExprStmt <34:17-34:23>
+                      "+=" <34:19-34:20>
+                      Ident "b" <34:17-34:17>
+                      Literal (i32)1 <34:22-34:22>
+                    BreakStmt <35:17-35:27>
+                      To @#12 <35:23-35:26>
+  fn-def <42:1-50:1>
+    "main" <42:4-42:7>
+    no-return-type
+    params-paren <42:8-42:9>
+    no-param
+    Block <42:11-50:1>
+      VarDecl const <43:5-43:25>
+        "a" <43:11-43:11>
+        FnCall <43:15-43:24>
+          Ident "read_i32" <43:15-43:22>
+          paren <43:23-43:24>
           (empty)
-      WhileStmt <<0>761-879>
-        'while' <<0>761-765>
-        BinaryExpr <<0>767-772>
-          Ident #2 <<0>767-767>
-          != <<0>769-770>
-          Literal (i32)0 <<0>772-772>
-        Block <<0>774-879>
-          ForStmt <<0>785-855>
-            'for' <<0>785-787>
-            Ident #7 <<0>789-789>
-            ArrayDef <<0>794-809>
-              Literal (i32)0 <<0>795-795>
-              Literal (i32)1 <<0>798-798>
-              Literal (i32)2 <<0>801-801>
-              BinaryExpr <<0>804-808>
-                Ident #2 <<0>804-804>
-                + <<0>806-806>
-                Literal (i32)1 <<0>808-808>
-            Block <<0>811-855>
-              SimpleExprStmt <<0>826-844>
-                FnCall <<0>826-843>
-                  Ident #15 <<0>826-832>
-                  paren <<0>833-843>
-                  BinaryExpr <<0>834-842>
-                    Literal #14 <<0>834-838>
-                    + <<0>840-840>
-                    Ident #7 <<0>842-842>
-          AssignExprStmt <<0>866-872>
-            -= <<0>868-869>
-            Ident #2 <<0>866-866>
-            Literal (i32)1 <<0>871-871>
+      WhileStmt <44:5-49:5>
+        'while' <44:5-44:9>
+        BinaryExpr <44:11-44:16>
+          Ident "a" <44:11-44:11>
+          "!=" <44:13-44:14>
+          Literal (i32)0 <44:16-44:16>
+        Block <44:18-49:5>
+          ForStmt <45:9-47:9>
+            'for' <45:9-45:11>
+            Ident "i" <45:13-45:13>
+            ArrayDef <45:18-45:33>
+              Literal (i32)0 <45:19-45:19>
+              Literal (i32)1 <45:22-45:22>
+              Literal (i32)2 <45:25-45:25>
+              BinaryExpr <45:28-45:32>
+                Ident "a" <45:28-45:28>
+                "+" <45:30-45:30>
+                Literal (i32)1 <45:32-45:32>
+            Block <45:35-47:9>
+              SimpleExprStmt <46:13-46:31>
+                FnCall <46:13-46:30>
+                  Ident "writeln" <46:13-46:19>
+                  paren <46:20-46:30>
+                  BinaryExpr <46:21-46:29>
+                    Literal #14 <46:21-46:25>
+                    "+" <46:27-46:27>
+                    Ident "i" <46:29-46:29>
+          AssignExprStmt <48:9-48:15>
+            "-=" <48:11-48:12>
+            Ident "a" <48:9-48:9>
+            Literal (i32)1 <48:14-48:14>

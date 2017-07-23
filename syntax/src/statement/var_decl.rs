@@ -33,9 +33,9 @@ pub struct VarDeclStatement {
 }
 impl ISyntaxItemFormat for VarDeclStatement {
     fn format(&self, f: Formatter) -> String {
-        format!("{}VarDecl {} <{}>\n{}{:?} <{}>{}{}", 
+        format!("{}VarDecl {} <{}>\n{}{} <{}>{}{}", 
             f.indent(), if self.is_const { "const" } else { "var" }, f.span(self.all_span),
-            f.indent1(), self.name, f.span(self.name_span),
+            f.indent1(), f.sym(self.name), f.span(self.name_span),
             match self.typeuse { Some(ref typeuse) => format!("\n{}", f.apply1(typeuse)), None => String::new() },
             match self.init_expr { Some(ref init_expr) => format!("\n{}", f.apply1(init_expr)), None => String::new() },
         )

@@ -48,7 +48,7 @@ pub struct AssignExprStatement {
 }
 impl ISyntaxItemFormat for AssignExprStatement {
     fn format(&self, f: Formatter) -> String {
-        format!("{}AssignExprStmt <{}>\n{}{:?} <{}>\n{}\n{}",
+        format!("{}AssignExprStmt <{}>\n{}\"{:?}\" <{}>\n{}\n{}",
             f.indent(), f.span(self.all_span),
             f.indent1(), self.assign_op, f.span(self.assign_op_span),
             f.apply1(&self.left_expr),

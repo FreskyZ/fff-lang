@@ -34,11 +34,11 @@ pub struct ForStatement {
 }
 impl ISyntaxItemFormat for ForStatement {
     fn format(&self, f: Formatter) -> String {
-        format!("{}ForStmt <{}>{}\n{}'for' <{}>\n{}Ident {:?} <{}>\n{}\n{}", 
+        format!("{}ForStmt <{}>{}\n{}'for' <{}>\n{}Ident {} <{}>\n{}\n{}", 
             f.indent(), f.span(self.all_span),
             match self.loop_name { Some(ref label_def) => format!("\n{}", f.apply1(label_def)), None => "".to_owned() },
             f.indent1(), f.span(self.for_span),
-            f.indent1(), self.iter_name, f.span(self.iter_span),
+            f.indent1(), f.sym(self.iter_name), f.span(self.iter_span),
             f.apply1(&self.iter_expr),
             f.apply1(&self.body),
         )

@@ -56,11 +56,12 @@ impl TokenStream {
     }
 
     pub fn with_test_str(src: &str) -> TokenStream { TokenStream::with_test_input(src, None).0 }
-    pub fn with_test_input(src: &str, syms: Option<SymbolCollection>) -> (TokenStream, MessageCollection, SymbolCollection) {
+    pub fn with_test_input(src: &str, syms: Option<SymbolCollection>) -> (TokenStream, SourceCode, MessageCollection, SymbolCollection) {
         let mut msgs = MessageCollection::new();
         let mut syms = syms.unwrap_or_default();
-        let retval = TokenStream::new(&SourceCode::with_test_str(0, src), &mut msgs, &mut syms);
-        return (retval, msgs, syms);
+        let source = SourceCode::with_test_str(0, src);
+        let retval = TokenStream::new(&source, &mut msgs, &mut syms);
+        return (retval, source, msgs, syms);
     }
 }
 

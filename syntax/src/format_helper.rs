@@ -52,3 +52,5 @@ impl<'a, 'b> Add<usize> for Formatter<'a, 'b> {
 pub trait ISyntaxItemFormat {
     fn format(&self, f: Formatter) -> String;
 }
+
+// TODO: may require header text setter
