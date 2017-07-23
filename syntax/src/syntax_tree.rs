@@ -10,12 +10,12 @@ use message::MessageCollection;
 use lexical::Token;
 use lexical::TokenStream;
 
-use super::super::Statement;
-use super::super::ParseSession;
-use super::super::ParseResult;
-use super::super::ISyntaxItemParse;
-use super::super::ISyntaxItemFormat;
-use super::super::ISyntaxItemGrammar;
+use super::Statement;
+use super::ParseSession;
+use super::ParseResult;
+use super::ISyntaxItemParse;
+use super::ISyntaxItemFormat;
+use super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct SyntaxTree {
@@ -66,7 +66,7 @@ impl SyntaxTree {
 fn syntax_tree_parse() {
     use std::fs::File;
     use std::io::Read;
-    use super::super::WithTestInput;
+    use super::WithTestInput;
 
     let mut index_file = File::open("../tests/syntax/index.txt").expect("cannot open index.txt");
     let mut test_cases = String::new();

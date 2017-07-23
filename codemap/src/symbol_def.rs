@@ -10,7 +10,17 @@ use std::collections::HashMap;
 pub struct SymbolID(usize);
 impl SymbolID { pub fn new(value: usize) -> SymbolID { SymbolID(value) } }
 impl From<usize> for SymbolID { fn from(value: usize) -> SymbolID { SymbolID(value) } }
-impl fmt::Debug for SymbolID { fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "str#{}", self.0) } }
+impl SymbolID { 
+    pub fn format(&self, symbols: Option<&SymbolCollection>) -> String { 
+        match symbols {
+            None => format!("#{}", self.0),
+            Some(symbols) => format!("{}", symbols.get(*self).unwrap_or("<no-sym>")),
+        }
+    } 
+}
+impl fmt::Debug for SymbolID { 
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(None)) } 
+}
 
 pub struct SymbolCollection {
     items: HashMap<String, SymbolID>,
@@ -90,6 +100,13 @@ fn intern_symbols() {
     assert_eq!(symbols.get(id2), Some("123"));
     assert_eq!(symbols.get(id3), Some("abc"));
     assert_eq!(symbols.get(SymbolID(123)), None);
+
+    assert_eq!(id1.format(Some(&symbols)), "abc");
+    assert_eq!(id2.format(Some(&symbols)), "123");
+    assert_eq!(id3.format(Some(&symbols)), "abc");
+    assert_eq!(SymbolID::from(42).format(Some(&symbols)), "<no-sym>");
+    assert_eq!(id1.format(None), "1");
+    assert_eq!(id2.format(None), "2");
 
     let mut symbols = make_symbols!["abc", "123", "abc"];
     assert_eq!(symbols.intern_str("abc"), symbols.intern_str("abc"));

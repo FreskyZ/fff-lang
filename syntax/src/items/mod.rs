@@ -13,4 +13,3 @@ pub(super) mod label_def;
 pub(super) mod type_use;
 pub(super) mod name;
 pub(super) mod type_def;
-pub(super) mod syntax_tree;

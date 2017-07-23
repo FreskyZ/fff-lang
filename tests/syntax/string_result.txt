@@ -1,123 +1,123 @@
 SyntaxTree
   FnDef <<0>28-556>
-    Name str#1 <<0>31-34>
+    Name #1 <<0>31-34>
     Params <<0>35-36>
     Block <<0>38-556>
       VarDecl var <<0>47-72>
-        str#2 <<0>51-55>
+        #2 <<0>51-55>
         FnCall <<0>59-71>
-          Ident str#3 <<0>59-69>
+          Ident #3 <<0>59-69>
           paren <<0>70-71>
           (empty)
       SimpleExprStmt <<0>79-114>
         FnCall <<0>79-113>
-          Ident str#5 <<0>79-85>
+          Ident #5 <<0>79-85>
           paren <<0>86-113>
           BinaryExpr <<0>87-112>
-            Literal str#4 <<0>87-97>
+            Literal #4 <<0>87-97>
             + <<0>99-99>
             MemberAccess <<0>101-112>
-              Ident str#2 <<0>101-105>
+              Ident #2 <<0>101-105>
               dot <<0>106-106>
-              Ident str#6 <<0>107-112>
+              Ident #6 <<0>107-112>
       VarDecl var <<0>121-155>
-        str#7 <<0>125-130>
+        #7 <<0>125-130>
         TypeUse simple <<0>133-138>
-          str#20 <<0>133-138>
+          #20 <<0>133-138>
         FnCall <<0>142-154>
-          Ident str#3 <<0>142-152>
+          Ident #3 <<0>142-152>
           paren <<0>153-154>
           (empty)
       SimpleExprStmt <<0>162-186>
         FnCall <<0>162-185>
-          Ident str#8 <<0>162-168>
+          Ident #8 <<0>162-168>
           paren <<0>169-185>
           BinaryExpr <<0>170-184>
-            Ident str#2 <<0>170-174>
+            Ident #2 <<0>170-174>
             == <<0>176-177>
-            Ident str#7 <<0>179-184>
+            Ident #7 <<0>179-184>
       SimpleExprStmt <<0>195-215>
         FnCall <<0>195-214>
           MemberAccess <<0>195-209>
-            Ident str#2 <<0>195-199>
+            Ident #2 <<0>195-199>
             dot <<0>200-200>
-            Ident str#9 <<0>201-209>
+            Ident #9 <<0>201-209>
           paren <<0>210-214>
           Literal 'a' <<0>211-213>
       SimpleExprStmt <<0>222-242>
         FnCall <<0>222-241>
           MemberAccess <<0>222-236>
-            Ident str#2 <<0>222-226>
+            Ident #2 <<0>222-226>
             dot <<0>227-227>
-            Ident str#9 <<0>228-236>
+            Ident #9 <<0>228-236>
           paren <<0>237-241>
           Literal 'c' <<0>238-240>
       SimpleExprStmt <<0>249-273>
         FnCall <<0>249-272>
           MemberAccess <<0>249-266>
-            Ident str#7 <<0>249-254>
+            Ident #7 <<0>249-254>
             dot <<0>255-255>
-            Ident str#11 <<0>256-266>
+            Ident #11 <<0>256-266>
           paren <<0>267-272>
-          Literal str#10 <<0>268-271>
+          Literal #10 <<0>268-271>
       SimpleExprStmt <<0>280-304>
         FnCall <<0>280-303>
-          Ident str#8 <<0>280-286>
+          Ident #8 <<0>280-286>
           paren <<0>287-303>
           BinaryExpr <<0>288-302>
-            Ident str#2 <<0>288-292>
+            Ident #2 <<0>288-292>
             == <<0>294-295>
-            Ident str#7 <<0>297-302>
+            Ident #7 <<0>297-302>
       SimpleExprStmt <<0>313-346>
         FnCall <<0>313-345>
-          Ident str#8 <<0>313-319>
+          Ident #8 <<0>313-319>
           paren <<0>320-345>
           FnCall <<0>321-344>
             MemberAccess <<0>321-337>
-              Ident str#2 <<0>321-325>
+              Ident #2 <<0>321-325>
               dot <<0>326-326>
-              Ident str#13 <<0>327-337>
+              Ident #13 <<0>327-337>
             paren <<0>338-344>
-            Literal str#12 <<0>339-343>
+            Literal #12 <<0>339-343>
       SimpleExprStmt <<0>353-384>
         FnCall <<0>353-383>
-          Ident str#8 <<0>353-359>
+          Ident #8 <<0>353-359>
           paren <<0>360-383>
           FnCall <<0>361-382>
             MemberAccess <<0>361-376>
-              Ident str#7 <<0>361-366>
+              Ident #7 <<0>361-366>
               dot <<0>367-367>
-              Ident str#14 <<0>368-376>
+              Ident #14 <<0>368-376>
             paren <<0>377-382>
-            Literal str#10 <<0>378-381>
+            Literal #10 <<0>378-381>
       VarDecl var <<0>393-419>
-        str#15 <<0>397-402>
+        #15 <<0>397-402>
         FnCall <<0>406-418>
-          Ident str#3 <<0>406-416>
+          Ident #3 <<0>406-416>
           paren <<0>417-418>
           (empty)
       VarDecl const <<0>426-457>
-        str#16 <<0>432-442>
-        Ident str#16 <<0>446-456>
+        #16 <<0>432-442>
+        Ident #16 <<0>446-456>
       SimpleExprStmt <<0>464-506>
         FnCall <<0>464-505>
-          Ident str#8 <<0>464-470>
+          Ident #8 <<0>464-470>
           paren <<0>471-505>
           BinaryExpr <<0>472-504>
-            Literal str#17 <<0>472-488>
+            Literal #17 <<0>472-488>
             + <<0>490-490>
             FnCall <<0>492-504>
               MemberAccess <<0>492-502>
-                Ident str#15 <<0>492-497>
+                Ident #15 <<0>492-497>
                 dot <<0>498-498>
-                Ident str#18 <<0>499-502>
+                Ident #18 <<0>499-502>
               paren <<0>503-504>
               (empty)
       SimpleExprStmt <<0>513-553>
         FnCall <<0>513-552>
-          Ident str#8 <<0>513-519>
+          Ident #8 <<0>513-519>
           paren <<0>520-552>
           BinaryExpr <<0>521-551>
-            Literal str#19 <<0>521-537>
+            Literal #19 <<0>521-537>
             + <<0>539-539>
-            Ident str#16 <<0>541-551>
+            Ident #16 <<0>541-551>

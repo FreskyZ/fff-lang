@@ -13,7 +13,9 @@ mod statement;
 mod items;
 mod parse_sess;
 mod error_strings;
+mod syntax_tree;
 
+pub use self::syntax_tree::SyntaxTree;
 pub use self::items::fn_def::FnParam;
 pub use self::items::fn_def::FnDef;
 pub use self::items::type_use::TypeUse;
@@ -23,7 +25,6 @@ pub use self::items::name::NameSegment;
 pub use self::items::name::Name;
 pub use self::items::type_def::TypeFieldDef;
 pub use self::items::type_def::TypeDef;
-pub use self::items::syntax_tree::SyntaxTree;
 pub use self::expr::LitExpr;
 pub use self::expr::IdentExpr;
 pub use self::expr::Expr;
