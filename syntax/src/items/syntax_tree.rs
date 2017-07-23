@@ -45,13 +45,15 @@ impl ISyntaxItemParse for SyntaxTree {
                 items.push(Statement::parse(sess)?);
             } else if sess.tk == &Token::EOF {
                 break;
-            } // else if sess.tk == &Token::EOFs { break; }
+            } else {
+                return sess.push_unexpect("if, while, for, var, const, expr");
+            }
         }
         return Ok(SyntaxTree::new_items(items));
     }
 }
 impl SyntaxTree {
-    pub fn new(tokens: &mut TokenStream, messages: &mut MessageCollection, symbols: &mut SymbolCollection) -> SyntaxTree {
+    pub fn new(tokens: &TokenStream, messages: &mut MessageCollection, symbols: &mut SymbolCollection) -> SyntaxTree {
         let mut sess = ParseSession::new(tokens, messages, symbols);
         match SyntaxTree::parse(&mut sess) {
             Ok(tree) => tree,
@@ -64,8 +66,7 @@ impl SyntaxTree {
 fn syntax_tree_parse() {
     use std::fs::File;
     use std::io::Read;
-    use codemap::SymbolCollection;
-    use super::super::ISyntaxItemWithStr;
+    use super::super::WithTestInput;
 
     let mut index_file = File::open("../tests/syntax/index.txt").expect("cannot open index.txt");
     let mut test_cases = String::new();
@@ -80,16 +81,11 @@ fn syntax_tree_parse() {
         let mut expect = String::new();
         let _length = result_file.read_to_string(&mut expect).expect(&format!("cannot read result file {}", result_path));
         
-        let actual = SyntaxTree::with_test_input(&src, &mut make_symbols![]).format(0);
+        let actual = SyntaxTree::with_test_str(&src).format(0);
         if actual != expect {
             panic!("case {} failed, actual:\n`{}`\nexpect:\n`{}`", line, actual, expect)
         }
     }
-
-    // test_case!("../tests/syntax/hello.sm");
-    // test_case!("../tests/syntax/list.sm");
-    // test_case!("../tests/syntax/prime.sm");
-    // test_case!("../tests/syntax/string.sm");
 }
 
 // TODO: update format including format_with_codemap_symbols for these integration tests

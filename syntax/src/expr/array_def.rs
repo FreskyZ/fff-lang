@@ -90,7 +90,7 @@ fn array_def_parse() {
     use super::LitExpr;
     use super::BinaryExpr;
     use super::IdentExpr;
-    use super::super::ISyntaxItemWithStr;
+    use super::super::WithTestInput;
 
     assert_eq!{ ArrayDef::with_test_str("[a]"),
         Expr::Array(ArrayDef::new(make_span!(0, 2), make_exprs![
@@ -120,12 +120,13 @@ fn array_def_parse() {
 #[cfg(test)] #[test]
 fn array_def_errors() {
     use message::MessageCollection;
-    use super::super::ISyntaxItemWithStr;
+    use super::super::TestInput;
     
-    assert_eq!{ ArrayDef::with_test_str_ret_messages("[ , ]"), (
-        Some(Expr::Array(ArrayDef::new(make_span!(0, 4), make_exprs![]))),
-        make_messages![
+    TestInput::new("[ , ]")
+        .apply::<ArrayDef, _>()
+        .expect_result(Expr::Array(ArrayDef::new(make_span!(0, 4), make_exprs![])))
+        .expect_messages(make_messages![
             Message::new_by_str(error_strings::UnexpectedSingleComma, vec![(make_span!(0, 4), error_strings::ArrayDefHere)])
-        ]
-    )}
+        ])
+    .finish();
 }

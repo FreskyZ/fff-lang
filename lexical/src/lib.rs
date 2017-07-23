@@ -10,15 +10,13 @@
 
 mod token_def;
 mod token_buf;
-mod token_stream;
-mod parse_sess;
 mod v1lexer;
 mod v2lexer;
-mod test_helper;
+mod token_stream;
 
 use self::token_buf::ILexer;
 use self::token_buf::BufLexer;
-use self::parse_sess::ParseSession;
+use self::token_buf::ParseSession;
 
 pub use self::token_def::Seperator;
 pub use self::token_def::SeperatorCategory;
@@ -27,4 +25,3 @@ pub use self::token_def::NumLitValue;
 pub use self::token_def::LitValue;
 pub use self::token_def::Token;
 pub use self::token_stream::TokenStream;
-pub use self::test_helper::TestInput;

@@ -123,7 +123,7 @@ impl ISyntaxItemParse for BreakStatement {
 
 #[cfg(test)] #[test]
 fn jump_stmt_parse() {
-    use super::super::ISyntaxItemWithStr;
+    use super::super::WithTestInput;
     
     assert_eq!{ ContinueStatement::with_test_str("continue;"), ContinueStatement::new_no_target(make_span!(0, 8)) }
     assert_eq!{ ContinueStatement::with_test_str("continue @1;"), 

@@ -158,7 +158,7 @@ impl ISyntaxItemParse for RangeLeftExpr {
 fn range_expr_parse() {
     use lexical::LitValue;
     use super::LitExpr;
-    use super::super::ISyntaxItemWithStr;
+    use super::super::WithTestInput;
 
     assert_eq!{ RangeFullExpr::with_test_str(".."), Expr::RangeFull(RangeFullExpr::new(make_span!(0, 1))) }
 

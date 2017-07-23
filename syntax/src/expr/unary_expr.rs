@@ -85,7 +85,7 @@ impl ISyntaxItemParse for UnaryExpr {
 fn unary_expr_parse() {
     use lexical::LitValue;
     use super::LitExpr;
-    use super::super::ISyntaxItemWithStr;
+    use super::super::WithTestInput;
     
     assert_eq!{ UnaryExpr::with_test_str("1"), 
         Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(0, 0))) 

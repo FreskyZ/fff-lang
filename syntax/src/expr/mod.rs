@@ -146,7 +146,8 @@ fn expr_parse() {
     use codemap::SymbolCollection;
     use lexical::LitValue;
     use lexical::Seperator;
-    use super::ISyntaxItemWithStr;
+    use super::WithTestInput;
+    use super::TestInput;
 
     assert_eq!{ Expr::with_test_str("\"abc\""),
         Expr::Lit(LitExpr::new(LitValue::new_str_lit(make_id!(1)), make_span!(0, 4)))
@@ -170,14 +171,16 @@ fn expr_parse() {
     }
     
     // Case from fn_def_parse
-    assert_eq!{ Expr::with_test_input("println(this)", &mut make_symbols!["println", "this"]),
-        Expr::FnCall(FnCallExpr::new(
+    TestInput::new("println(this)").set_syms(make_symbols!["println", "this"])
+        .apply::<Expr, Expr>()
+        .expect_no_message()
+        .expect_result(Expr::FnCall(FnCallExpr::new(
             Expr::Ident(IdentExpr::new(make_id!(1), make_span!(0, 6))),
             make_span!(7, 12), ExprList::new(vec![
                 Expr::Ident(IdentExpr::new(make_id!(2), make_span!(8, 11)))
             ])
-        ))
-    }
+        )))
+        .finish();
 
     // Very very legacy expr tests which originally contains ExpressionBase and ExpressionOperator
     // update them to current syntax to help improve coverage and make me happy
@@ -393,48 +396,57 @@ fn expr_errors() {
     use message::Message;
     use message::MessageCollection;
     use super::error_strings;
-    use super::ISyntaxItemWithStr;
+    use super::TestInput;
 
-    assert_eq!{ Expr::with_test_str_ret_messages("de(, )"), (
-        Some(Expr::FnCall(FnCallExpr::new(
+    TestInput::new("de(, )")
+        .apply::<Expr, Expr>()
+        .expect_messages(make_messages![
+            Message::new_by_str(error_strings::UnexpectedSingleComma, vec![(make_span!(2, 5), error_strings::FnCallHere)])
+        ])
+        .expect_result(Expr::FnCall(FnCallExpr::new(
             IdentExpr::new(make_id!(1), make_span!(0, 1)), 
             make_span!(2, 5), make_exprs![]
-        ))),
-        make_messages![
-            Message::new_by_str(error_strings::UnexpectedSingleComma, vec![(make_span!(2, 5), error_strings::FnCallHere)])
-        ]
-    )} //                                          0 12345678
-    assert_eq!{ Expr::with_test_str_ret_messages("\"\".de(, )"), (
-        Some(Expr::FnCall(FnCallExpr::new(
+        )))
+        .finish();
+
+    //               0 12345678
+    TestInput::new("\"\".de(, )")
+        .apply::<Expr, Expr>()
+        .expect_messages(make_messages![
+            Message::new_by_str(error_strings::UnexpectedSingleComma, vec![(make_span!(5, 8), error_strings::FnCallHere)])
+        ])
+        .expect_result(Expr::FnCall(FnCallExpr::new(
             MemberAccessExpr::new(
                 LitExpr::new(LitValue::new_str_lit(make_id!(1)), make_span!(0, 1)),
                 make_span!(2, 2), 
                 IdentExpr::new(make_id!(2), make_span!(3, 4))
             ),
             make_span!(5, 8), make_exprs![]
-        ))),
-        make_messages![
-            Message::new_by_str(error_strings::UnexpectedSingleComma, vec![(make_span!(5, 8), error_strings::FnCallHere)])
-        ]
-    )}
-    assert_eq!{ Expr::with_test_str_ret_messages("defg[]"), (
-        Some(Expr::IndexCall(IndexCallExpr::new(
+        )))
+        .finish();
+
+    TestInput::new("defg[]")
+        .apply::<Expr, Expr>()
+        .expect_messages(make_messages![
+            Message::new_by_str(error_strings::EmptyIndexCall, vec![(make_span!(4, 5), error_strings::IndexCallHere)])
+        ])
+        .expect_result(Expr::IndexCall(IndexCallExpr::new(
             IdentExpr::new(make_id!(1), make_span!(0, 3)),
             make_span!(4, 5), make_exprs![]
-        ))),
-        make_messages![
-            Message::new_by_str(error_strings::EmptyIndexCall, vec![(make_span!(4, 5), error_strings::IndexCallHere)])
-        ]
-    )}    //  123456
-    assert_eq!{ Expr::with_test_str_ret_messages("de[, ]"), (
-        Some(Expr::IndexCall(IndexCallExpr::new(
+        )))
+        .finish();
+
+    //              123456
+    TestInput::new("de[, ]")
+        .apply::<Expr, Expr>()
+        .expect_messages(make_messages![
+            Message::new_by_str(error_strings::EmptyIndexCall, vec![(make_span!(2, 5), error_strings::IndexCallHere)])
+        ])
+        .expect_result(Expr::IndexCall(IndexCallExpr::new(
             IdentExpr::new(make_id!(1), make_span!(0, 1)),
             make_span!(2, 5), make_exprs![]
-        ))),
-        make_messages![
-            Message::new_by_str(error_strings::EmptyIndexCall, vec![(make_span!(2, 5), error_strings::IndexCallHere)])
-        ]
-    )}
+        )))
+        .finish();
 }
 
 #[cfg(test)] #[test]

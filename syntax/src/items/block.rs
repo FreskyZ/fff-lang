@@ -58,12 +58,9 @@ impl ISyntaxItemParse for Block {
 
 #[cfg(test)] #[test]
 fn block_parse() {
-    use super::super::ISyntaxItemWithStr;
-    use message::MessageCollection;
+    use super::super::WithTestInput;
     
-    assert_eq!{ Block::with_test_str_ret_size_messages("{}"), (
-        Some(Block::new(make_span!(0, 1), vec![])), 
-        2,
-        make_messages![],
-    )}
+    assert_eq!{ Block::with_test_str("{}"),
+        Block::new(make_span!(0, 1), vec![])
+    }
 }

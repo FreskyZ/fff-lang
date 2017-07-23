@@ -112,35 +112,38 @@ impl ISyntaxItemParse for ForStatement {
 #[cfg(test)] #[test]
 fn for_stmt_parse() {
     use codemap::SymbolCollection;
-    use message::MessageCollection;
     use lexical::LitValue;
     use super::super::IdentExpr;
     use super::super::LitExpr;
     use super::super::SimpleExprStatement;
     use super::super::Statement;
     use super::super::MemberAccessExpr;
-    use super::super::ISyntaxItemWithStr;
     use super::super::FnCallExpr;
     use super::super::ExprList;
+    use super::super::TestInput;
 
     //                                       123456789012345678
-    assert_eq!{ ForStatement::with_test_input_ret_messages("@2: for i in 42 {}", &mut make_symbols!["2", "i"]), (
-        Some(ForStatement::new_with_label(make_span!(0, 17),
+    TestInput::new("@2: for i in 42 {}")
+        .set_syms(make_symbols!["2", "i"])
+        .apply::<ForStatement, _>()
+        .expect_no_message()
+        .expect_result(ForStatement::new_with_label(make_span!(0, 17),
             LabelDef::new(make_id!(1), make_span!(0, 2)),
             make_span!(4, 6),
             make_id!(2), make_span!(8, 8),
             Expr::Lit(LitExpr::new(LitValue::from(42), make_span!(13, 14))),
             Block::new(make_span!(16, 17), vec![])
-        )),
-        make_messages![],
-    )}
+        ))
+    .finish();
 
-    assert_eq!{ //                     0         1         2         3         4         5         6         7         
-                //                     01234567890123456789012345678901234567890123456789012345678901 23456789012 34567
-        ForStatement::with_test_input("@hello: for _ in range(0, 10).enumerate().reverse() { writeln(\"helloworld\"); }", 
-            //                  1        2    3        4            5          6          7
-            &mut make_symbols!["hello", "_", "range", "enumerate", "reverse", "writeln", "helloworld"]),
-        ForStatement::new_with_label(make_span!(0, 77),
+    //              0         1         2         3         4         5         6         7         
+    //              01234567890123456789012345678901234567890123456789012345678901 23456789012 34567
+    TestInput::new("@hello: for _ in range(0, 10).enumerate().reverse() { writeln(\"helloworld\"); }")
+    //                           1        2    3        4            5          6          7
+        .set_syms(make_symbols!["hello", "_", "range", "enumerate", "reverse", "writeln", "helloworld"])
+        .apply::<ForStatement, _>()
+        .expect_no_message()
+        .expect_result(ForStatement::new_with_label(make_span!(0, 77),
             LabelDef::new(make_id!(1), make_span!(0, 6)),
             make_span!(8, 10),
             make_id!(2), make_span!(12, 12),
@@ -175,6 +178,6 @@ fn for_stmt_parse() {
                     )
                 ))
             ])
-        )
-    }
+        ))
+    .finish();
 }

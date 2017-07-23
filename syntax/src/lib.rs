@@ -2,7 +2,7 @@
 ///!
 ///! syntax, syntax tree types and generation
 
-#[macro_use] extern crate messages as message;
+#[cfg_attr(test, macro_use)] extern crate messages as message;
 #[cfg_attr(test, macro_use)] extern crate util;
 #[cfg_attr(test, macro_use)] extern crate codemap;
 extern crate lexical;
@@ -60,8 +60,10 @@ use self::parse_sess::ParseSession;
 use self::parse_sess::ParseResult;
 use self::traits::ISyntaxItemFormat;
 use self::traits::ISyntaxItemGrammar;
-pub use self::traits::ISyntaxItemParse; // for semantic/traits
-pub use self::traits::ISyntaxItemWithStr;
+pub use self::traits::TestInput;
+pub use self::traits::WithTestInput;
+pub use self::traits::ISyntaxItemParse; // pub for semantic/traits
+// pub use self::traits::ISyntaxItemWithStr;
 
 // TODO: 
 // replace more proper place by IdentExpr and ExprList

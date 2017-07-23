@@ -104,7 +104,8 @@ fn var_decl_stmt_parse() {
     use super::super::ArrayDef;
     use super::super::ExprList;
     use super::super::TypeUse;
-    use super::super::ISyntaxItemWithStr;
+    use super::super::TestInput;
+    use super::super::WithTestInput;
     
     //                                           12345678901234
     assert_eq!{ VarDeclStatement::with_test_str("const abc = 0;"),
@@ -138,9 +139,12 @@ fn var_decl_stmt_parse() {
         )
     }
     
-    //                                             0123456789012345678901
-    assert_eq!{ VarDeclStatement::with_test_input("var buf: [(u8, char)];", &mut make_symbols!["buf", "array", "tuple", "u8", "char"]),
-        VarDeclStatement::new_var(make_span!(0, 21), 
+    //              0123456789012345678901
+    TestInput::new("var buf: [(u8, char)];")
+        .set_syms(make_symbols!["buf", "array", "tuple", "u8", "char"])
+        .apply::<VarDeclStatement, _>()
+        .expect_no_message()
+        .expect_result(VarDeclStatement::new_var(make_span!(0, 21), 
             make_id!(1), make_span!(4, 6),
             Some(TypeUse::new_template(make_id!(2), Span::default(), make_span!(9, 20), vec![
                 TypeUse::new_template(make_id!(3), Span::default(), make_span!(10, 19), vec![
@@ -149,19 +153,21 @@ fn var_decl_stmt_parse() {
                 ])
             ])),
             None
-        )
-    }
+        ))
+    .finish();
 
     // Future Attention: after bits type added, the `0x7u8` will have different type as before, this is the Option::unwrap failure in test
     // and after advanced type infer, change the 0x7u8 to 7, and try to infer it as 7u8, which requires 2 major changes
     //     do not infer i32 in num lit if no postfix provided
     //     desugar array primary expr to call array_tid::new() and array.push, which infer 7's type as array_tid' push method's parameter
-    //                                             0        1         2         3         4
-    //                                             012345678901234567890123456789012345678901234567
-    assert_eq!{ VarDeclStatement::with_test_input("var buf: ([u8], u32) = ([1u8, 5u8, 0x7u8], abc);", 
-        //             1      2     3      4      5        6
-        &mut make_symbols!["buf", "u8", "u32", "abc", "tuple", "array"]),
-        VarDeclStatement::new_var(make_span!(0, 47),
+    //             0        1         2         3         4
+    //             012345678901234567890123456789012345678901234567
+    TestInput::new("var buf: ([u8], u32) = ([1u8, 5u8, 0x7u8], abc);")
+        //                       1      2     3      4      5        6
+        .set_syms(make_symbols!["buf", "u8", "u32", "abc", "tuple", "array"])
+        .apply::<VarDeclStatement, _>()
+        .expect_no_message()
+        .expect_result(VarDeclStatement::new_var(make_span!(0, 47),
             make_id!(1), make_span!(4, 6),
             Some(TypeUse::new_template(make_id!(5), Span::default(), make_span!(9, 19), vec![
                 TypeUse::new_template(make_id!(6), Span::default(), make_span!(10, 13), vec![
@@ -177,16 +183,17 @@ fn var_decl_stmt_parse() {
                 ]))),
                 Expr::Ident(IdentExpr::new(make_id!(4), make_span!(43, 45)))
             ]))))
-        )
-    }
+        ))
+    .finish();
 
-    assert_eq!{ VarDeclStatement::with_test_str_ret_messages("var a;"), (
-        Some(VarDeclStatement::new_var(make_span!(0, 5), make_id!(1), make_span!(4, 4), None, None)),
-        make_messages![
+    TestInput::new("var a;")
+        .apply::<VarDeclStatement, _>()
+        .expect_result(VarDeclStatement::new_var(make_span!(0, 5), make_id!(1), make_span!(4, 4), None, None))
+        .expect_messages(make_messages![
             Message::with_help_by_str("require type annotation", 
                 vec![(make_span!(4, 4), "variable declaration here")],
                 vec!["cannot infer type without both type annotation and initialization expression"]
             )
-        ]
-    )}
+        ])
+    .finish();
 }

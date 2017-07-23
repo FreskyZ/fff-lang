@@ -79,23 +79,26 @@ impl ISyntaxItemParse for Name {
 #[cfg(test)] #[test]
 fn name_parse() {
     use codemap::SymbolCollection;
-    use super::super::ISyntaxItemWithStr;
+    use super::super::WithTestInput;
+    use super::super::TestInput;
 
     assert_eq!{ Name::with_test_str("hello"), 
         Name::new(make_span!(0, 4), vec![
             NameSegment::new(make_id!(1), make_span!(0, 4))
         ]) 
     }
-    //                                 0        1         2         3         4
-    //                                 01234567890123456789012345678901234567890
-    assert_eq!{ Name::with_test_input("std::network::wlan::native::GetWLANHandle", 
-        &mut make_symbols!["std", "network", "wlan", "native", "GetWLANHandle"]),
-        Name::new(make_span!(0, 40), vec![
+    //              0        1         2         3         4
+    //              01234567890123456789012345678901234567890
+    TestInput::new("std::network::wlan::native::GetWLANHandle")
+        .set_syms(make_symbols!["std", "network", "wlan", "native", "GetWLANHandle"])
+        .apply::<Name, _>()
+        .expect_no_message()
+        .expect_result(Name::new(make_span!(0, 40), vec![
             NameSegment::new(make_id!(1), make_span!(0, 2)), 
             NameSegment::new(make_id!(2), make_span!(5, 11)),
             NameSegment::new(make_id!(3), make_span!(14, 17)),
             NameSegment::new(make_id!(4), make_span!(20, 25)),
             NameSegment::new(make_id!(5), make_span!(28, 40)),
-        ])
-    }
+        ]))
+    .finish();
 }

@@ -99,7 +99,8 @@ fn primary_expr_parse() {
     use lexical::LitValue;
     use super::ExprList;
     use super::ParenExpr;
-    use super::super::ISyntaxItemWithStr;
+    use super::super::TestInput;
+    use super::super::WithTestInput;
 
     // this is the loop of tokens.nth(current) is left bracket does not cover everything and infinite loop is here
     // update 2017/6/17: this was a bug, but I forget detail
@@ -109,12 +110,13 @@ fn primary_expr_parse() {
         ]))
     }
 
-    //                                        0        1         2         3         4
-    //                                        01234567890123456789012345678901234567890123456
-    assert_eq!{ PrimaryExpr::with_test_input("(463857, IEfN, atau8M, [fNAE, ((cAeJN4)), nHg])", 
-        //                  1       2         3       4         5
-        &mut make_symbols!["IEfN", "atau8M", "fNAE", "cAeJN4", "nHg"]), 
-        Expr::Tuple(TupleDef::new(make_span!(0, 46), make_exprs![
+    //             0        1         2         3         4
+    //             01234567890123456789012345678901234567890123456                  1       2         3       4         5
+   TestInput::new("(463857, IEfN, atau8M, [fNAE, ((cAeJN4)), nHg])")
+        .set_syms(make_symbols!["IEfN", "atau8M", "fNAE", "cAeJN4", "nHg"])
+        .apply::<PrimaryExpr, _>()
+        .expect_no_message()
+        .expect_result(Expr::Tuple(TupleDef::new(make_span!(0, 46), make_exprs![
             LitExpr::new(LitValue::from(463857), make_span!(1, 6)),
             IdentExpr::new(make_id!(1), make_span!(9, 12)),
             IdentExpr::new(make_id!(2), make_span!(15, 20)),
@@ -127,8 +129,8 @@ fn primary_expr_parse() {
                 ),
                 IdentExpr::new(make_id!(5), make_span!(42, 44))
             ])
-        ]))
-    }
+        ])))
+    .finish();
 
     assert_eq!{ PrimaryExpr::with_test_str("10363"), 
         Expr::Lit(LitExpr::new(LitValue::from(10363), make_span!(0, 4)))
@@ -334,11 +336,13 @@ fn primary_expr_parse() {
     } 
 
     // Previous manual tests
-    //                                      0        1           2          3         4         5           6
-    //                                      12345678901234 5678 9012 3456789012345678901234567890123 456789 0123456
-    assert_eq!{ PrimaryExpr::with_test_input("[abc, 123u32, \"456\", '\\u0065', false, (), (a), (abc, \"hello\", ), ]",
-        &mut make_symbols!["abc", "456", "hello", "a"]),
-        Expr::Array(ArrayDef::new(make_span!(0, 65), make_exprs![
+    //              0        1           2          3         4         5           6
+    //              12345678901234 5678 9012 3456789012345678901234567890123 456789 0123456
+    TestInput::new("[abc, 123u32, \"456\", '\\u0065', false, (), (a), (abc, \"hello\", ), ]")
+        .set_syms(make_symbols!["abc", "456", "hello", "a"])
+        .apply::<PrimaryExpr, _>()
+        .expect_no_message()
+        .expect_result(Expr::Array(ArrayDef::new(make_span!(0, 65), make_exprs![
             IdentExpr::new(make_id!(1), make_span!(1, 3)),
             LitExpr::new(LitValue::from(123u32), make_span!(6, 11)),
             LitExpr::new(LitValue::new_str_lit(make_id!(2)), make_span!(14, 18)),
@@ -352,8 +356,8 @@ fn primary_expr_parse() {
                 IdentExpr::new(make_id!(1), make_span!(48, 50)),
                 LitExpr::new(LitValue::new_str_lit(make_id!(3)), make_span!(53, 59)),
             ])
-        ]))
-    }       
+        ])))
+    .finish();
 
     assert_eq!{ PrimaryExpr::with_test_str("(                             )"), 
         Expr::Lit(LitExpr::new(LitValue::Unit, make_span!(0, 30)))
@@ -367,20 +371,21 @@ fn primary_expr_errors() {
     use message::MessageCollection;
     use super::ExprList;
     use super::super::error_strings;
-    use super::super::ISyntaxItemWithStr;
+    use super::super::TestInput;
 
-    assert_eq!{ PrimaryExpr::with_test_str_ret_messages("(,)"), (
-        Some(Expr::Tuple(TupleDef::new(make_span!(0, 2), make_exprs![]))),
-        make_messages![
+    TestInput::new("(,)")
+        .apply::<PrimaryExpr, _>()
+        .expect_result(Expr::Tuple(TupleDef::new(make_span!(0, 2), make_exprs![])))
+        .expect_messages(make_messages![
             Message::new_by_str(error_strings::UnexpectedSingleComma, vec![(make_span!(0, 2), error_strings::TupleDefHere)])
-        ]
-    )}
+        ])
+    .finish();
 }
 
 #[cfg(test)] #[test]
 fn postfix_expr_format() {
     use super::super::ISyntaxItemFormat;
-    use super::super::ISyntaxItemWithStr;
+    use super::super::WithTestInput;
 
     macro_rules! test_case {
         ($left: expr, $right: expr) => {
@@ -455,7 +460,7 @@ fn postfix_expr_parse() {
     use codemap::Span;
     use super::ExprList;
     use super::IdentExpr;
-    use super::super::ISyntaxItemWithStr;
+    use super::super::WithTestInput;
 
     //                                      0        1         2         3         4         5     
     // plain                                0123456789012345678901234567890123456789012345678901234567
@@ -533,35 +538,38 @@ fn postfix_expr_errors() {
     use message::MessageCollection;
     use super::ExprList;
     use super::super::error_strings;
-    use super::super::ISyntaxItemWithStr;
+    use super::super::TestInput;
     
-    assert_eq!{ PostfixExpr::with_test_str_ret_messages("a[]"), (
-        Some(Expr::IndexCall(IndexCallExpr::new(
+    TestInput::new("a[]")
+        .apply::<PostfixExpr, _>()
+        .expect_result(Expr::IndexCall(IndexCallExpr::new(
             IdentExpr::new(make_id!(1), make_span!(0, 0)), 
             make_span!(1, 2), make_exprs![]
-        ))), 
-        make_messages![
+        )))
+        .expect_messages(make_messages![
             Message::new_by_str(error_strings::EmptyIndexCall, vec![(make_span!(1, 2), error_strings::IndexCallHere)])
-        ],
-    )}
+        ])
+    .finish();
     
-    assert_eq!{ PostfixExpr::with_test_str_ret_messages("a[, ]"), (
-        Some(Expr::IndexCall(IndexCallExpr::new(
+    TestInput::new("a[, ]")
+        .apply::<PostfixExpr, _>()
+        .expect_result(Expr::IndexCall(IndexCallExpr::new(
             IdentExpr::new(make_id!(1), make_span!(0, 0)), 
             make_span!(1, 4), make_exprs![]
-        ))), 
-        make_messages![
+        )))
+        .expect_messages(make_messages![
             Message::new_by_str(error_strings::EmptyIndexCall, vec![(make_span!(1, 4), error_strings::IndexCallHere)])
-        ],
-    )}
+        ])
+    .finish();
     
-    assert_eq!{ PostfixExpr::with_test_str_ret_messages("a(, )"), (
-        Some(Expr::FnCall(FnCallExpr::new(
+    TestInput::new("a(, )")
+        .apply::<PostfixExpr, _>()
+        .expect_result(Expr::FnCall(FnCallExpr::new(
             IdentExpr::new(make_id!(1), make_span!(0, 0)),
             make_span!(1, 4), make_exprs![]
-        ))),
-        make_messages![
+        )))
+        .expect_messages(make_messages![
             Message::new_by_str(error_strings::UnexpectedSingleComma, vec![(make_span!(1, 4), error_strings::FnCallHere)])
-        ],
-    )}
+        ])
+    .finish();
 }

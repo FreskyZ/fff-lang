@@ -113,7 +113,8 @@ impl ISyntaxItemParse for TypeDef {
 #[cfg(test)] #[test]
 fn type_def_parse() {
     use codemap::SymbolCollection;
-    use super::super::ISyntaxItemWithStr;
+    use super::super::TestInput;
+    use super::super::WithTestInput;
 
     //                                  01234567890123456
     assert_eq!{ TypeDef::with_test_str("type x { x: i32 }"),
@@ -136,9 +137,11 @@ fn type_def_parse() {
     }
     //                                    0         1         2         3         4
     //                                    0123456789012345678901234567890123456789012345
-    assert_eq!{ TypeDef::with_test_input("type array { data: [u8], size: u64, cap: u64 }", 
-            &mut make_symbols!["array", "data", "size", "cap", "u64", "u8"]),
-        TypeDef::new(make_span!(0, 45), IdentExpr::new(make_id!(1), make_span!(5, 9)), vec![
+    TestInput::new("type array { data: [u8], size: u64, cap: u64 }")
+        .set_syms(make_symbols!["array", "data", "size", "cap", "u64", "u8"])
+        .apply::<TypeDef, _>()
+        .expect_no_message()
+        .expect_result(TypeDef::new(make_span!(0, 45), IdentExpr::new(make_id!(1), make_span!(5, 9)), vec![
             TypeFieldDef::new(make_span!(13, 23),
                 IdentExpr::new(make_id!(2), make_span!(13, 16)),
                 make_span!(17, 17),
@@ -156,8 +159,8 @@ fn type_def_parse() {
                 make_span!(39, 39),
                 TypeUse::new_simple(make_id!(5), make_span!(41, 43))
             )
-        ])
-    }
+        ]))
+    .finish();
 }
 
 #[cfg(feature = "test_stdlib_parse")]
@@ -165,7 +168,7 @@ fn type_def_parse() {
 fn type_def_stdlib() {
     use std::io::Read;
     use std::fs::File;
-    use super::super::ISyntaxItemWithStr;
+    use super::super::WithTestInput;
     use super::super::SyntaxTree;
 
     let mut file = File::open("..\\tests\\syntax\\std.ff").expect("open std.ff failed");

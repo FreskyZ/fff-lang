@@ -133,7 +133,7 @@ fn binary_expr_parse() {
     use super::ArrayDef;
     use super::IdentExpr;
     use super::ExprList;
-    use super::super::ISyntaxItemWithStr;
+    use super::super::WithTestInput;
 
     //                                     123456789012345
     assert_eq!{ BinaryExpr::with_test_str("[1] * [2] / [3]"), 

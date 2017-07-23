@@ -114,21 +114,24 @@ fn expr_stmt_parse() {
     use super::super::BinaryExpr;
     use super::super::FnCallExpr;
     use super::super::ExprList;
-    use super::super::ISyntaxItemWithStr;
+    use super::super::TestInput;
+    use super::super::WithTestInput;
 
     //                                                0         1          2
     //                                                012345678 90123456789 012
-    assert_eq!{ AssignExprStatement::with_test_input("writeln(\"helloworld\");", 
-            &mut make_symbols!["writeln", "helloworld"]), 
-        Statement::SimpleExpr(SimpleExprStatement::new(make_span!(0, 21),
+    TestInput::new("writeln(\"helloworld\");")
+        .set_syms(make_symbols!["writeln", "helloworld"]) 
+        .apply::<AssignExprStatement, _>()
+        .expect_no_message()
+        .expect_result(Statement::SimpleExpr(SimpleExprStatement::new(make_span!(0, 21),
             FnCallExpr::new(
                 IdentExpr::new(make_id!(1), make_span!(0, 6)),
                 make_span!(7, 20), make_exprs![
                     LitExpr::new(LitValue::new_str_lit(make_id!(2)), make_span!(8, 19))
                 ]
             )
-        ))
-    }
+        )))
+    .finish();
 
     //                                              012345678901
     assert_eq!{ AssignExprStatement::with_test_str("1 + 1 <<= 2;"),  // to show I have 3 char seperator available

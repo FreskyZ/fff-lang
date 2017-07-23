@@ -74,7 +74,7 @@ fn ret_stmt_parse() {
     use lexical::Seperator;
     use super::super::LitExpr;
     use super::super::BinaryExpr;
-    use super::super::ISyntaxItemWithStr;
+    use super::super::WithTestInput;
 
     assert_eq!{ ReturnStatement::with_test_str("return;"), ReturnStatement::new_unit(make_span!(0, 6)) }
     assert_eq!{ ReturnStatement::with_test_str("return 1 + 1;"), 

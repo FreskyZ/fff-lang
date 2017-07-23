@@ -96,15 +96,18 @@ fn while_stmt_parse() {
     use lexical::LitValue;
     use super::super::LitExpr;
     use super::super::IdentExpr;
-    use super::super::ISyntaxItemWithStr;
     use super::super::Statement;
     use super::super::SimpleExprStatement;
     use super::super::FnCallExpr;
     use super::super::ExprList;
+    use super::super::TestInput;
     //                                           0        1         2         3         4        
     //                                           01234567890123456789012345 67890123456789012 3456
-    assert_eq!{ WhileStatement::with_test_input("@2: while true { writeln(\"fresky hellooooo\"); }", &mut make_symbols!["2", "writeln", "fresky hellooooo"]),
-        WhileStatement::new_with_label(
+    TestInput::new("@2: while true { writeln(\"fresky hellooooo\"); }")
+        .set_syms(make_symbols!["2", "writeln", "fresky hellooooo"])
+        .apply::<WhileStatement, _>()
+        .expect_no_message()
+        .expect_result(WhileStatement::new_with_label(
             LabelDef::new(make_id!(1), make_span!(0, 2)),
             make_span!(4, 8),
             Expr::Lit(LitExpr::new(LitValue::from(true), make_span!(10, 13))),
@@ -118,6 +121,6 @@ fn while_stmt_parse() {
                     )
                 ))
             ])
-        )
-    }
+        ))
+    .finish();
 }

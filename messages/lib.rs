@@ -83,6 +83,9 @@ pub struct MessageCollection {
     items: Vec<Message>,
     m_uncontinuable: bool,
 }
+impl Default for MessageCollection {
+    fn default() -> MessageCollection { MessageCollection{ items: Vec::new(), m_uncontinuable: false } }
+}
 impl fmt::Debug for MessageCollection {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for message in &self.items {

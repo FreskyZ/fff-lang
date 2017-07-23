@@ -207,7 +207,8 @@ fn if_stmt_parse() {
     use super::super::SimpleExprStatement;
     use super::super::LitExpr;
     use super::super::Statement;
-    use super::super::ISyntaxItemWithStr;
+    use super::super::TestInput;
+    use super::super::WithTestInput;
 
     //                                      0        1         2         3
     //                                      0123456789012345678901234567890123456
@@ -228,11 +229,13 @@ fn if_stmt_parse() {
         )
     }
 
-    //                                0         1         2         3         4         5         6         7
-    assert_eq!{ //                    012345678901234567890123456789012345678901234567890123456789012345678901
-        IfStatement::with_test_input("if 1 { sth.do_sth(a); other.do_other(b); } else { [1,2,3].map(writeln);}", 
-            &mut make_symbols!["sth", "do_sth", "a", "other", "do_other", "b", "writeln", "map"]),
-        IfStatement::new_ifelse(
+    //              0         1         2         3         4         5         6         7
+    //              012345678901234567890123456789012345678901234567890123456789012345678901
+    TestInput::new("if 1 { sth.do_sth(a); other.do_other(b); } else { [1,2,3].map(writeln);}")
+        .set_syms(make_symbols!["sth", "do_sth", "a", "other", "do_other", "b", "writeln", "map"])
+        .apply::<IfStatement, _>()
+        .expect_no_message()
+        .expect_result(IfStatement::new_ifelse(
             IfClause::new(make_span!(0, 1), 
                 LitExpr::new(LitValue::from(1), make_span!(3, 3)),
                 Block::new(make_span!(5, 41), vec![
@@ -284,6 +287,6 @@ fn if_stmt_parse() {
                     ))
                 ])
             )
-        )
-    }
+        ))
+    .finish();
 }

@@ -88,10 +88,12 @@ impl ISyntaxItemParse for LoopStatement {
 #[cfg(test)] #[test]
 fn loop_stmt_format() {
     use codemap::SymbolCollection;
-    use super::super::ISyntaxItemWithStr;
+    use super::super::TestInput;
+    use super::super::WithTestInput;
     
-    //                                           1234567890123456789 0123 45678
-    let actual = LoopStatement::with_test_input("@@: loop { println(\"233\"); }", &mut make_symbols!["@", "println", "233"]).format(0);
+    //                  1234567890123456789 0123 45678
+    let actual = LoopStatement::with_test_input(
+        TestInput::new("@@: loop { println(\"233\"); }").set_syms(make_symbols!["@", "println", "233"])).0.unwrap().format(0);
     let expect = r#"LoopStmt <<0>0-27>
   Label str#1 <<0>0-2>
   'loop' <<0>4-7>
@@ -111,18 +113,22 @@ fn loop_stmt_parse() {
     use lexical::LitValue;
     use super::super::LitExpr;
     use super::super::IdentExpr;
-    use super::super::ISyntaxItemWithStr;
+    use super::super::WithTestInput;
     use super::super::Statement;
     use super::super::SimpleExprStatement;
     use super::super::FnCallExpr;
     use super::super::ExprList;
+    use super::super::TestInput;
 
     assert_eq!{ LoopStatement::with_test_str("loop {}"),
         LoopStatement::new_no_label(make_span!(0, 3), Block::new(make_span!(5, 6), vec![]))
     }
     //                                        1234567890123456789 0123 45678
-    assert_eq!{ LoopStatement::with_test_input("@@: loop { println(\"233\"); }", &mut make_symbols!["@", "println", "233"]),
-        LoopStatement::new_with_label(
+    TestInput::new("@@: loop { println(\"233\"); }")
+        .set_syms(make_symbols!["@", "println", "233"])
+        .apply::<LoopStatement, _>()
+        .expect_no_message()
+        .expect_result(LoopStatement::new_with_label(
             LabelDef::new(make_id!(1), make_span!(0, 2)),
             make_span!(4, 7),
             Block::new(make_span!(9, 27), vec![
@@ -135,6 +141,6 @@ fn loop_stmt_parse() {
                     )
                 ))
             ])
-        )
-    }
+        ))
+    .finish();
 }

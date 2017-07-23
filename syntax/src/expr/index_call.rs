@@ -88,7 +88,7 @@ impl ISyntaxItemParse for IndexCallExpr {
 #[cfg(test)] #[test]
 fn index_call_parse() {
     use lexical::LitValue;
-    use super::super::ISyntaxItemWithStr;
+    use super::super::WithTestInput;
     use super::LitExpr;
 
     assert_eq!{ IndexCallExpr::with_test_str("[1, 2, ]"),
@@ -108,12 +108,13 @@ fn index_call_parse() {
 #[cfg(test)] #[test]
 fn index_call_errors() {
     use message::MessageCollection;
-    use super::super::ISyntaxItemWithStr;
+    use super::super::TestInput;
 
-    assert_eq!{ IndexCallExpr::with_test_str_ret_messages("(,)"), (
-        Some(IndexCallExpr::new_with_parse_result(make_span!(0, 2), ExprList::new(Vec::new()))),
-        make_messages![
+    TestInput::new("[,]")
+        .apply::<IndexCallExpr, _>()
+        .expect_result(IndexCallExpr::new_with_parse_result(make_span!(0, 2), ExprList::new(vec![])))
+        .expect_messages(make_messages![
             Message::new_by_str(error_strings::EmptyIndexCall, vec![(make_span!(0, 2), error_strings::IndexCallHere)])
-        ]
-    )}
+        ])
+    .finish();
 }

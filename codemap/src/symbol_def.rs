@@ -24,6 +24,9 @@ impl fmt::Debug for SymbolCollection {
         write!(f, "\n")
     }
 }
+impl Default for SymbolCollection {
+    fn default() -> SymbolCollection { SymbolCollection{ items: HashMap::new() } }
+}
 impl SymbolCollection {
 
     pub fn new() -> SymbolCollection { 

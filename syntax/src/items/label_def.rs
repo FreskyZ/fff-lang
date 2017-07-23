@@ -56,7 +56,7 @@ impl ISyntaxItemParse for LabelDef {
 
 #[cfg(test)] #[test]
 fn label_def_parse() {
-    use super::super::ISyntaxItemWithStr;
+    use super::super::WithTestInput;
 
     assert_eq!(LabelDef::with_test_str("@1:"), LabelDef::new(make_id!(1), make_span!(0, 2)));
 }

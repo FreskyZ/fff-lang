@@ -133,13 +133,14 @@ impl ISyntaxItemParse for FnDef {
 fn fn_def_parse() {
     use codemap::SymbolCollection;
     use super::super::IdentExpr;
-    use super::super::ISyntaxItemWithStr;
+    use super::super::WithTestInput;
     use super::super::TypeUse;
     use super::super::Statement;
     use super::super::SimpleExprStatement;
     use super::super::Expr;
     use super::super::FnCallExpr;
     use super::super::ExprList;
+    use super::super::TestInput;
 
     //                                012345678901
     assert_eq!{ FnDef::with_test_str("fn main() {}"),
@@ -151,10 +152,13 @@ fn fn_def_parse() {
         )
     }
 
-    //                                  0        1
-    //                                  0123456789012345678
-    assert_eq!{ FnDef::with_test_input("fn main(ac: i32) {}", &mut make_symbols!["main", "ac", "i32"]),
-        FnDef::new(make_span!(0, 18), 
+    //              0        1
+    //              0123456789012345678
+    TestInput::new("fn main(ac: i32) {}")
+        .set_syms(make_symbols!["main", "ac", "i32"])
+        .apply::<FnDef, _>()
+        .expect_no_message()
+        .expect_result(FnDef::new(make_span!(0, 18), 
             make_id!(1), make_span!(3, 6), 
             make_span!(7, 15), vec![
                 FnParam::new(
@@ -164,15 +168,17 @@ fn fn_def_parse() {
             ],
             None,
             Block::new(make_span!(17, 18), vec![])
-        )
-    }
+        ))
+    .finish();
 
-    //                                  0        1         2         3         4         5         6         7         8
-    //                                  012345678901234567890123456789012345678901234567890123456789012345678901234567890
-    assert_eq!{ FnDef::with_test_input(" fn mainxxx(argv:[[string] ]   ,this:i32, some_other: char, )  { println(this); }", 
-        //             1          2       3        4         5       6      7             8       9
-        &mut make_symbols!["mainxxx", "argv", "array", "string", "this", "i32", "some_other", "char", "println"]), 
-        FnDef::new(make_span!(1, 80),
+    //              0        1         2         3         4         5         6         7         8
+    //              012345678901234567890123456789012345678901234567890123456789012345678901234567890
+    TestInput::new(" fn mainxxx(argv:[[string] ]   ,this:i32, some_other: char, )  { println(this); }")
+        //                       1          2       3        4         5       6      7             8       9
+        .set_syms(make_symbols!["mainxxx", "argv", "array", "string", "this", "i32", "some_other", "char", "println"])
+        .apply::<FnDef, _>()
+        .expect_no_message()
+        .expect_result(FnDef::new(make_span!(1, 80),
             make_id!(1), make_span!(4, 10), 
             make_span!(11, 60), vec![
                 FnParam::new(make_id!(2), make_span!(12, 15),
@@ -200,8 +206,9 @@ fn fn_def_parse() {
                     )
                 ))
             ])
-        )
-    }
+        ))
+    .finish();
+
     //                                0        1               
     //                                1234567890123456789
     assert_eq!{ FnDef::with_test_str("fn main() -> i32 {}"),
@@ -212,12 +219,14 @@ fn fn_def_parse() {
             Block::new(make_span!(17, 18), vec![])
         )
     }
-    //                                  0        1         2         3         4         5         6
-    //                                  01234567890123456789012345678901234567890123456789012345678901234567
-    assert_eq!{ FnDef::with_test_input("fn ffff(argc: i32, argv: [string], envv: [string],) -> [[string]] {}", 
+    //              0        1         2         3         4         5         6
+    //              01234567890123456789012345678901234567890123456789012345678901234567
+    TestInput::new("fn ffff(argc: i32, argv: [string], envv: [string],) -> [[string]] {}")
         //             1       2       3      4       5        6         7
-        &mut make_symbols!["ffff", "argc", "i32", "argv", "array", "string", "envv"]),
-        FnDef::new(make_span!(0, 67),
+        .set_syms(make_symbols!["ffff", "argc", "i32", "argv", "array", "string", "envv"])
+        .apply::<FnDef, _>()
+        .expect_no_message()
+        .expect_result(FnDef::new(make_span!(0, 67),
             make_id!(1), make_span!(3, 6), 
             make_span!(7, 50), vec![
                 FnParam::new(make_id!(2), make_span!(8, 11),
@@ -240,6 +249,6 @@ fn fn_def_parse() {
                 ])
             ])),
             Block::new(make_span!(66, 67), vec![])
-        )
-    }
+        ))
+    .finish();
 }

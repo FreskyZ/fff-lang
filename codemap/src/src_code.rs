@@ -22,7 +22,6 @@ fn char_len_at_index(bytes: &[u8], index: usize) -> usize {
 #[inline]
 fn char_at_index(bytes: &[u8], index: usize) -> (usize, char) { // char and its utf8 length at index
     let transmute = |v: u32| -> char { use std::mem::transmute; unsafe { transmute(v) } };
-    println!("char at index: bytes: {:?}, index: {}", bytes, index);
     match char_len_at_index(bytes, index) {
         1 => (1, transmute(bytes[index] as u32)),
         2 => (2, transmute((((bytes[index] as u32) & 0b00011111u32) << 6) + ((bytes[index + 1] as u32) & 0b00111111u32))),

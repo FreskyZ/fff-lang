@@ -78,15 +78,13 @@ impl ISyntaxItemParse for BlockStatement {
 
 #[cfg(test)] #[test]
 fn block_stmt_parse() {
-    use super::super::ISyntaxItemWithStr;
-    use message::MessageCollection;
+    use super::super::WithTestInput;
 
     assert_eq!{ BlockStatement::with_test_str("{}"), BlockStatement::new_no_label(Block::new(make_span!(0, 1), vec![])) }
-    assert_eq!{ BlockStatement::with_test_str_ret_messages("@: {}"), (
-        Some(BlockStatement::new_with_label(
+    assert_eq!{ BlockStatement::with_test_str("@: {}"), 
+        BlockStatement::new_with_label(
             LabelDef::new(make_id!(1), make_span!(0, 1)),
             Block::new(make_span!(3, 4), vec![])
-        )),
-        make_messages![],
-    )}
+        )
+    }
 }

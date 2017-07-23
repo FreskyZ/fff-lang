@@ -121,7 +121,7 @@ fn tuple_def_format() {
 #[cfg(test)] #[test]
 fn tuple_def_parse() {
     use super::BinaryExpr;
-    use super::super::ISyntaxItemWithStr;
+    use super::super::WithTestInput;
 
     //                                   01234567
     assert_eq!{ TupleDef::with_test_str("(1, '2')"),
@@ -145,12 +145,13 @@ fn tuple_def_parse() {
 #[cfg(test)] #[test]
 fn tuple_def_errors() {
     use message::MessageCollection;
-    use super::super::ISyntaxItemWithStr;
+    use super::super::TestInput;
     
-    assert_eq!{ TupleDef::with_test_str_ret_messages("( , )"), (
-        Some(Expr::Tuple(TupleDef::new(make_span!(0, 4), make_exprs![]))),
-        make_messages![
+    TestInput::new("( , )")
+        .apply::<TupleDef, _>()
+        .expect_result(Expr::Tuple(TupleDef::new(make_span!(0, 4), make_exprs![])))
+        .expect_messages(make_messages![
             Message::new_by_str(error_strings::UnexpectedSingleComma, vec![(make_span!(0, 4), error_strings::TupleDefHere)])
-        ]
-    )}
+        ])
+    .finish();
 }

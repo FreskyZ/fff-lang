@@ -153,28 +153,39 @@ impl ISyntaxItemParse for TypeUse {
 #[cfg(test)] #[test]
 fn type_use_parse() {
     use codemap::SymbolCollection;
-    use super::super::ISyntaxItemWithStr;
+    use super::super::TestInput;
+    use super::super::WithTestInput;
 
-    assert_eq!{ TypeUse::with_test_input("u8", &mut make_symbols!["u8"]), TypeUse::new_simple(make_id!(1), make_span!(0, 1)) }
-    assert_eq!{ TypeUse::with_test_input("i32", &mut make_symbols!["i32"]), TypeUse::new_simple(make_id!(1), make_span!(0, 2)) }
-    assert_eq!{ TypeUse::with_test_input("char", &mut make_symbols!["char"]), TypeUse::new_simple(make_id!(1), make_span!(0, 3)) }
-    assert_eq!{ TypeUse::with_test_input("string", &mut make_symbols!["string"]), TypeUse::new_simple(make_id!(1), make_span!(0, 5)) }
-    assert_eq!{ TypeUse::with_test_input("helloworld_t", &mut make_symbols!["helloworld_t"]), TypeUse::new_simple(make_id!(1), make_span!(0, 11)) }
+    assert_eq!{ TypeUse::with_test_str("u8"), TypeUse::new_simple(make_id!(1), make_span!(0, 1)) }
+    assert_eq!{ TypeUse::with_test_str("i32"), TypeUse::new_simple(make_id!(1), make_span!(0, 2)) }
+    assert_eq!{ TypeUse::with_test_str("char"), TypeUse::new_simple(make_id!(1), make_span!(0, 3)) }
+    assert_eq!{ TypeUse::with_test_str("string"), TypeUse::new_simple(make_id!(1), make_span!(0, 5)) }
+    assert_eq!{ TypeUse::with_test_str("helloworld_t"), TypeUse::new_simple(make_id!(1), make_span!(0, 11)) }
 
-    assert_eq!{ TypeUse::with_test_input("()", &mut make_symbols!["unit"]), TypeUse::new_simple(make_id!(1), make_span!(0, 1)) }
+    TestInput::new("()")
+        .set_syms(make_symbols!["unit"])
+        .apply::<TypeUse, _>()
+        .expect_result(TypeUse::new_simple(make_id!(1), make_span!(0, 1)))
+    .finish();
 
-    assert_eq!{ TypeUse::with_test_input("[u8]", &mut make_symbols!["array", "u8"]),
-        TypeUse::new_template(make_id!(1), Span::default(), make_span!(0, 3), vec![
+    TestInput::new("[u8]")
+        .set_syms(make_symbols!["array", "u8"])
+        .apply::<TypeUse, _>()
+        .expect_result(TypeUse::new_template(make_id!(1), Span::default(), make_span!(0, 3), vec![
                 TypeUse::new_simple(make_id!(2), make_span!(1, 2))
-        ])
-    }
-    assert_eq!{ TypeUse::with_test_input("[[he_t]]", &mut make_symbols!["array", "he_t"]),
-        TypeUse::new_template(make_id!(1), Span::default(), make_span!(0, 7), vec![
+        ]))
+    .finish();
+
+    TestInput::new("[[he_t]]")
+        .set_syms(make_symbols!["array", "he_t"])
+        .apply::<TypeUse, _>()
+        .expect_no_message()
+        .expect_result(TypeUse::new_template(make_id!(1), Span::default(), make_span!(0, 7), vec![
             TypeUse::new_template(make_id!(1), Span::default(),make_span!(1, 6), vec![
                 TypeUse::new_simple(make_id!(2), make_span!(2, 5))
             ])
-        ])
-    }
+        ]))
+    .finish();
 
     // TODO TODO: finish them
     // // Tuple

@@ -135,7 +135,7 @@ fn expr_list_format() {
 fn expr_list_parse() {
     use lexical::LitValue;
     use super::LitExpr;
-    use super::super::ISyntaxItemWithStr;
+    use super::super::WithTestInput;
 
     assert_eq!{ ExprList::with_test_str("[1, 2, 3]"), 
         ExprListParseResult::Normal(make_span!(0, 8), ExprList::new(vec![

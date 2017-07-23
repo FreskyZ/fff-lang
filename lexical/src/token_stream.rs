@@ -9,7 +9,6 @@ use message::MessageCollection;
 
 use super::Token;
 use super::ILexer;
-use super::TestInput;
 use super::ParseSession;
 use super::v2lexer::V2Lexer;
 use super::v2lexer::V2Token;
@@ -49,20 +48,19 @@ impl TokenStream {
 
         TokenStream { items, eof_token: (Token::EOF, eof_span) }
     }
-
-    pub fn with_test_input(input: TestInput) -> TokenStream {
-        let mut msgs = if input.msgs.is_some() { input.msgs.unwrap() } else { MessageCollection::new() };
-        let mut syms = if input.syms.is_some() { input.syms.unwrap() } else { SymbolCollection::new() };
-        let retval = TokenStream::new(&SourceCode::with_test_str(input.src_id, input.src), &mut msgs, &mut syms);
-        if msgs.is_uncontinuable() { panic!("messages uncontinuable: {:?}", msgs); }
-        return retval;
-    }
-
     pub fn nth_token(&self, idx: usize) -> &Token {
         if idx >= self.items.len() { &self.eof_token.0 } else { &self.items[idx].0 }
     }
     pub fn nth_span(&self, idx: usize) -> Span { 
         if idx >= self.items.len() { self.eof_token.1 } else { self.items[idx].1 }
+    }
+
+    pub fn with_test_str(src: &str) -> TokenStream { TokenStream::with_test_input(src, None).0 }
+    pub fn with_test_input(src: &str, syms: Option<SymbolCollection>) -> (TokenStream, MessageCollection, SymbolCollection) {
+        let mut msgs = MessageCollection::new();
+        let mut syms = syms.unwrap_or_default();
+        let retval = TokenStream::new(&SourceCode::with_test_str(0, src), &mut msgs, &mut syms);
+        return (retval, msgs, syms);
     }
 }
 
@@ -80,7 +78,7 @@ fn v4_base() { // remain the name of v4 here for memory
     // seperator, rightbracket, 1:16-1:16
     // EOF, 1:17-1:17
     // EOFs, 1:17-1:17
-    let tokens = TokenStream::with_test_input(TestInput::with_syms("123 abc 'd', [1]", make_symbols!["abc"]));
+    let tokens = TokenStream::with_test_input("123 abc 'd', [1]", None).0;
 
     assert_eq!(tokens.nth_token(0), &Token::Lit(LitValue::from(123)));
     assert_eq!(tokens.nth_span(0), make_span!(0, 2));

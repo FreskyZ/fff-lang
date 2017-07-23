@@ -13,21 +13,34 @@ use std::cell::Cell;
 use codemap::Span;
 use codemap::SourceCodeIter;
 
-use super::ParseSession;
+use codemap::SymbolCollection;
+use message::MessageCollection;
+
+pub struct ParseSession<'a, 'b> {
+    pub messages: &'a mut MessageCollection,
+    pub symbols: &'b mut SymbolCollection,
+}
+impl<'a, 'b> ParseSession<'a, 'b> {
+    pub fn new(messages: &'a mut MessageCollection, symbols: &'b mut SymbolCollection) -> Self { ParseSession{ messages, symbols } }
+}
 
 pub trait ILexer<'chs, TToken> {
 
     // 17/6/7: it used to be ILexer::new(chars, messages), but the messages is not used currently,
     // I think in some previous versions it has its usage, but I can't think up of one
-    // It is removed now, if future needed, add ParseSession back
+    // It is removed now, if future needed, add messages back
     // 5 minutes later: the messages is usable! because every ILexer contains a BufLexer
     // BufLexer needs a messages to call 3 times of next in advance
     // 1 hour later: now BufLexer use its skips and dummys mechanism to not call next in new, then sess is not used again
     fn new(source: SourceCodeIter<'chs>) -> Self;
 
-    // now position is out of token type
-    // now token type provide EOF hint by itself
-    // 17/6/7: now second parameter changes to ParseSession
+    // init
+    //     fn next(&mut self, messages: &mut MessageCollection) -> Option<TToken>;
+    // <unknown-time>: position is out of token type
+    //     fn next(&mut self, messages: &mut MessageCollection) -> Option<(TToken, StringPosition)>;
+    // <unknown-time>: token type provide EOF hint by itself
+    //     fn next(&mut self, messages: &mut MessageCollection) -> (TToken, StringPosition);
+    // 17/6/7: second parameter changes to ParseSession
     fn next(&mut self, sess: &mut ParseSession) -> (TToken, Span);
 }
 
@@ -51,31 +64,34 @@ pub struct BufLexer<TLexer, TToken> {
     nextnext: (TToken, Span),
 }
 // skips and dummys designment:
-    // 
-    // the initial skips = 2, dummys = 0, because, (token id: first return of TLexer::next is 0)
-    // explicit call to move_next, skips, dummys, current id,   next id, nextnext id,
-    //            after construct,     2,      0,    default,    default,    default,
-    //                 first call, i = 0,      0,    default,    default,          0,
-    //                             i = 1,      0,    default,          0,          1,
-    //                             i = 2,      0,          0,          1,          2,  
-    //          first call return, i = 0,  -- you can get_current_with_p2 happily!
-    //                second call,     0,      0,          1,          2,          3, 
-    //                        ...
-    // when skip is n  
-    //              previous call,     0,      0,         id,     id + 1,     id + 2,
-    //          prepare_skip1 * n,     n,      0,         id,     id + 1,     id + 2,
-    //               current call, i = 0,      0,     id + 1,     id + 2,     id + 3,
-    //                 next calls, i = n,      0, id + n + 1, id + n + 2, id + n + 3,  
-    //                  next call,     0,  -- as you expected, tokens[id + 1 .. id + n] is ignored, n tokens ignored
-    //                        ...
-    // when dummys is n
-    //              previous call,     0,      0,         id,     id + 1,     id + 2,
-    //          prepare_dummy * n,     0,      n,         id,     id + 1,     id + 2,
-    //                next call 1,     0,  n - 1,         id,     id + 1,     id + 2,
-    //                next call 2,     0,  n - 2,         id,     id + 1,     id + 2,
-    //                        ...
-    //                next call n,     0,      0,         id,     id + 1,     id + 2,   -- n calls ignored
-    //            next call n + 1,     0,      0,     id + 1,     id + 2,     id + 3
+// 
+// the initial skips = 2, dummys = 0, because, 
+//     (here id's int value means index of TLexer::next return value, start from 0)
+// explicit call to move_next, skips, dummys, current id,   next id, nextnext id,
+//            after construct,     2,      0,    default,    default,    default,
+//                 first call, i = 0,      0,    default,    default,          0,
+//                             i = 1,      0,    default,          0,          1,
+//                             i = 2,      0,          0,          1,          2,  
+//          first call return, i = 0,  -- you can get_current_with_p2 happily!
+//                second call,     0,      0,          1,          2,          3, 
+//                        ...
+// when skip is n  
+//              previous call,     0,      0,         id,     id + 1,     id + 2,
+//          prepare_skip1 * n,     n,      0,         id,     id + 1,     id + 2,
+//               current call, i = 0,      0,     id + 1,     id + 2,     id + 3,
+//                        ...
+//                 next calls, i = n,      0, id + n + 1, id + n + 2, id + n + 3,  
+//                  next call,     0,  -- as you expected, tokens[id + 1 .. id + n] is ignored, n tokens ignored
+//                        ...
+// when dummys is n
+//              previous call,     0,      0,         id,     id + 1,     id + 2,
+//          prepare_dummy * n,     0,      n,         id,     id + 1,     id + 2,
+//                next call 1,     0,  n - 1,         id,     id + 1,     id + 2,
+//                next call 2,     0,  n - 2,         id,     id + 1,     id + 2,
+//                        ...
+//                next call n,     0,      0,         id,     id + 1,     id + 2,   -- n calls ignored
+//            next call n + 1,     0,      0,     id + 1,     id + 2,     id + 3
+// review 17-07-22T16:06+8: it's kind of hard to understand but it not so hard and is good enough
 #[allow(dead_code)] // prepare skip, dummy, current, current_p1, current_p2 maybe not called
 impl<'chs, TLexer, TToken> BufLexer<TLexer, TToken> 
     where TToken: Default, TLexer: ILexer<'chs, TToken> {
@@ -137,7 +153,6 @@ impl<'chs, TLexer, TToken> BufLexer<TLexer, TToken>
         (state, &self.current.0, self.current.1, &self.next.0, self.next.1, &self.nextnext.0, self.nextnext.1)
     }
 }
-
 
 #[cfg(test)] #[test]
 fn buf_lexer_test() {
