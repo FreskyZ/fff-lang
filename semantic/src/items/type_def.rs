@@ -9,17 +9,18 @@ use codemap::SymbolID;
 use syntax;
 
 use super::TypeUse;
+use super::FromSyntax;
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct TypeFieldDef {
     pub name: SymbolID,
     pub typeuse: TypeUse,
 }
-impl From<syntax::TypeFieldDef> for TypeFieldDef {
-    fn from(node: syntax::TypeFieldDef) -> TypeFieldDef {
+impl FromSyntax<syntax::TypeFieldDef> for TypeFieldDef {
+    fn from_syntax(node: syntax::TypeFieldDef) -> TypeFieldDef {
         TypeFieldDef{
             name: node.name.value,
-            typeuse: node.typeuse.into(),
+            typeuse: FromSyntax::from_syntax(node.typeuse),
         }
     }
 }
@@ -29,11 +30,11 @@ pub struct TypeDef {
     pub name: SymbolID,
     pub fields: Vec<TypeFieldDef>,
 }
-impl From<syntax::TypeDef> for TypeDef {
-    fn from(node: syntax::TypeDef) -> TypeDef {
+impl FromSyntax<syntax::TypeDef> for TypeDef {
+    fn from_syntax(node: syntax::TypeDef) -> TypeDef {
         TypeDef{
             name: node.name.value,
-            fields: node.fields.into_iter().map(Into::into).collect(),
+            fields: node.fields.into_iter().map(FromSyntax::from_syntax).collect(),
         }
     }
 }

@@ -7,18 +7,19 @@ use syntax;
 
 use super::TypeUse;
 use super::Block;
+use super::FromSyntax;
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct FnParam {
     pub name: SymbolID,
     pub typeuse: TypeUse,
 }
-impl From<syntax::FnParam> for FnParam {
+impl FromSyntax<syntax::FnParam> for FnParam {
 
-    fn from(node: syntax::FnParam) -> FnParam {
+    fn from_syntax(node: syntax::FnParam) -> FnParam {
         FnParam{
             name: node.name,
-            typeuse: node.decltype.into(),
+            typeuse: FromSyntax::from_syntax(node.decltype),
         }
     }
 }
@@ -30,14 +31,14 @@ pub struct FnDef {
     pub rettype: Option<TypeUse>,
     pub body: Block,
 }
-impl From<syntax::FnDef> for FnDef {
+impl FromSyntax<syntax::FnDef> for FnDef {
 
-    fn from(node: syntax::FnDef) -> FnDef {
+    fn from_syntax(node: syntax::FnDef) -> FnDef {
         FnDef{
             name: node.name,
-            params: node.params.into_iter().map(Into::into).collect(),
-            rettype: node.ret_type.map(Into::into),
-            body: node.body.into(),
+            params: node.params.into_iter().map(FromSyntax::from_syntax).collect(),
+            rettype: node.ret_type.map(FromSyntax::from_syntax),
+            body: FromSyntax::from_syntax(node.body),
         }
     }
 }

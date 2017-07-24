@@ -13,17 +13,21 @@ use super::LabelDef;
 use super::TypeUse;
 use super::FnDef;
 use super::TypeDef;
+use super::FromSyntax;
+use super::SharedDefScope;
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct BlockStatement {
     pub name: Option<LabelDef>,
     pub body: Block,
+    pub parent_scope: SharedDefScope,
 }
-impl From<syntax::BlockStatement> for BlockStatement {
-    fn from(node: syntax::BlockStatement) -> BlockStatement {
+impl FromSyntax<syntax::BlockStatement> for BlockStatement {
+    fn from_syntax(node: syntax::BlockStatement, parent_scope: SharedDefScope) -> BlockStatement {
         BlockStatement{
-            name: node.name.map(Into::into),
-            body: node.body.into(),
+            name: node.name.map(|name| FromSyntax::from_syntax(name, parent_scope.clone())),
+            body: FromSyntax::from_syntax(node.body, parent_scope.clone()),
+            parent_scope,
         }
     }
 }
@@ -31,11 +35,13 @@ impl From<syntax::BlockStatement> for BlockStatement {
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct SimpleExprStatement {
     pub expr: Expr,
+    pub parent_scope: SharedDefScope,
 }
-impl From<syntax::SimpleExprStatement> for SimpleExprStatement {
-    fn from(node: syntax::SimpleExprStatement) -> SimpleExprStatement {
+impl FromSyntax<syntax::SimpleExprStatement> for SimpleExprStatement {
+    fn from_syntax(node: syntax::SimpleExprStatement, parent_scope: SharedDefScope) -> SimpleExprStatement {
         SimpleExprStatement{
-            expr: node.expr.into(),
+            expr: FromSyntax::from_syntax(node.expr, parent_scope.clone()),
+            parent_scope,
         }       
     }
 }
@@ -45,13 +51,15 @@ pub struct AssignExprStatement {
     pub left_expr: Expr,
     pub right_expr: Expr,
     pub assign_op: Seperator,
+    parent_scope: SharedDefScope,
 }
-impl From<syntax::AssignExprStatement> for AssignExprStatement {
-    fn from(node: syntax::AssignExprStatement) -> AssignExprStatement {
+impl FromSyntax<syntax::AssignExprStatement> for AssignExprStatement {
+    fn from_syntax(node: syntax::AssignExprStatement, parent_scope: SharedDefScope) -> AssignExprStatement {
         AssignExprStatement{
-            left_expr: node.left_expr.into(),
-            right_expr: node.right_expr.into(),
+            left_expr: FromSyntax::from_syntax(node.left_expr, parent_scope.clone()),
+            right_expr: FromSyntax::from_syntax(node.right_expr, parent_scope.clone()),
             assign_op: node.assign_op,
+            parent_scope,
         }
     }
 }
@@ -62,14 +70,16 @@ pub struct ForStatement {
     pub iter_name: SymbolID,
     pub iter_expr: Expr,
     pub body: Block,
+    parent_scope: SharedDefScope,
 }
-impl From<syntax::ForStatement> for ForStatement {
-    fn from(node: syntax::ForStatement) -> ForStatement {
+impl FromSyntax<syntax::ForStatement> for ForStatement {
+    fn from_syntax(node: syntax::ForStatement, parent_scope: SharedDefScope) -> ForStatement {
         ForStatement{
-            loop_name: node.loop_name.map(Into::into),
+            loop_name: node.loop_name.map(|name| FromSyntax::from_syntax(name, parent_scope.clone())),
             iter_name: node.iter_name,
-            iter_expr: node.iter_expr.into(),
-            body: node.body.into(),
+            iter_expr: FromSyntax::from_syntax(node.iter_expr, parent_scope.clone()),
+            body: FromSyntax::from_syntax(node.body, parent_scope.clone()),
+            parent_scope,
         }
     }
 }
@@ -93,21 +103,23 @@ pub struct IfStatement {
     pub if_clause: IfClause,
     pub elseif_clauses: Vec<ElseIfClause>,
     pub else_clause: Option<ElseClause>,
+    parent_scope: SharedDefScope
 }
-impl From<syntax::IfStatement> for IfStatement {
-    fn from(node: syntax::IfStatement) -> IfStatement {
+impl FromSyntax<syntax::IfStatement> for IfStatement {
+    fn from_syntax(node: syntax::IfStatement, parent_scope: SharedDefScope) -> IfStatement {
         IfStatement{
             if_clause: IfClause{ 
-                cond_expr: node.if_clause.cond_expr.into(),
-                body: node.if_clause.body.into(),
+                cond_expr: FromSyntax::from_syntax(node.if_clause.cond_expr, parent_scope.clone()),
+                body: FromSyntax::from_syntax(node.if_clause.body, parent_scope.clone()),
             },
             elseif_clauses: node.elseif_clauses.into_iter().map(|elseif| ElseIfClause{
-                cond_expr: elseif.cond_expr.into(),
-                body: elseif.body.into(),
+                cond_expr: FromSyntax::from_syntax(elseif.cond_expr, parent_scope.clone()),
+                body: FromSyntax::from_syntax(elseif.body, parent_scope.clone()),
             }).collect(),
             else_clause: node.else_clause.map(|else_clause| ElseClause{
-                body: else_clause.body.into(),
-            })
+                body: FromSyntax::from_syntax(else_clause.body, parent_scope.clone()),
+            }),
+            parent_scope,
         }
     }
 }
@@ -115,9 +127,10 @@ impl From<syntax::IfStatement> for IfStatement {
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct BreakStatement {
     pub target: Option<SymbolID>,
+    parent_scope: SharedDefScope,
 }
-impl From<syntax::BreakStatement> for BreakStatement {
-    fn from(node: syntax::BreakStatement) -> BreakStatement {
+impl FromSyntax<syntax::BreakStatement> for BreakStatement {
+    fn from_syntax(node: syntax::BreakStatement) -> BreakStatement {
         BreakStatement{
             target: node.0.target,
         }
@@ -128,8 +141,8 @@ impl From<syntax::BreakStatement> for BreakStatement {
 pub struct ContinueStatement {
     pub target: Option<SymbolID>,
 }
-impl From<syntax::ContinueStatement> for ContinueStatement {
-    fn from(node: syntax::ContinueStatement) -> ContinueStatement {
+impl FromSyntax<syntax::ContinueStatement> for ContinueStatement {
+    fn from_syntax(node: syntax::ContinueStatement) -> ContinueStatement {
         ContinueStatement{
             target: node.0.target,
         }
@@ -141,11 +154,11 @@ pub struct LoopStatement {
     pub name: Option<LabelDef>,
     pub body: Block,
 }
-impl From<syntax::LoopStatement> for LoopStatement {
-    fn from(node: syntax::LoopStatement) -> LoopStatement {
+impl FromSyntax<syntax::LoopStatement> for LoopStatement {
+    fn from_syntax(node: syntax::LoopStatement) -> LoopStatement {
         LoopStatement{
-            name: node.name.map(Into::into),
-            body: node.body.into(),
+            name: node.name.map(FromSyntax::from_syntax),
+            body: FromSyntax::from_syntax(node.body),
         }
     }
 }
@@ -154,10 +167,10 @@ impl From<syntax::LoopStatement> for LoopStatement {
 pub struct ReturnStatement {
     pub expr: Option<Expr>,
 }
-impl From<syntax::ReturnStatement> for ReturnStatement {
-    fn from(node: syntax::ReturnStatement) -> ReturnStatement {
+impl FromSyntax<syntax::ReturnStatement> for ReturnStatement {
+    fn from_syntax(node: syntax::ReturnStatement) -> ReturnStatement {
         ReturnStatement{
-            expr: node.expr.map(Into::into),
+            expr: node.expr.map(FromSyntax::from_syntax),
         }
     }
 }
@@ -169,13 +182,13 @@ pub struct VarDecl {
     pub typeuse: Option<TypeUse>,
     pub init_expr: Option<Expr>,
 }
-impl From<syntax::VarDeclStatement> for VarDecl {
-    fn from(node: syntax::VarDeclStatement) -> VarDecl {
+impl FromSyntax<syntax::VarDeclStatement> for VarDecl {
+    fn from_syntax(node: syntax::VarDeclStatement) -> VarDecl {
         VarDecl{
             is_const: node.is_const,
             name: node.name,
-            typeuse: node.typeuse.map(Into::into),
-            init_expr: node.init_expr.map(Into::into),
+            typeuse: node.typeuse.map(FromSyntax::from_syntax),
+            init_expr: node.init_expr.map(FromSyntax::from_syntax),
         }
     }
 }
@@ -186,12 +199,12 @@ pub struct WhileStatement {
     pub loop_expr: Expr,
     pub body: Block,
 }
-impl From<syntax::WhileStatement> for WhileStatement {
-    fn from(node: syntax::WhileStatement) -> WhileStatement {
+impl FromSyntax<syntax::WhileStatement> for WhileStatement {
+    fn from_syntax(node: syntax::WhileStatement) -> WhileStatement {
         WhileStatement{
-            name: node.name.map(Into::into),
-            loop_expr: node.loop_expr.into(),
-            body: node.body.into(),
+            name: node.name.map(FromSyntax::from_syntax),
+            loop_expr: FromSyntax::from_syntax(node.loop_expr),
+            body: FromSyntax::from_syntax(node.body),
         }
     }
 }
@@ -212,22 +225,22 @@ pub enum Statement {
     Type(TypeDef),
     Fn(FnDef),
 }
-impl From<syntax::Statement> for Statement {
-    fn from(node: syntax::Statement) -> Statement {
+impl FromSyntax<syntax::Statement> for Statement {
+    fn from_syntax(node: syntax::Statement) -> Statement {
         match node {
-            syntax::Statement::Block(block_stmt) => Statement::Block(block_stmt.into()),
-            syntax::Statement::SimpleExpr(simple_expr) => Statement::SimpleExpr(simple_expr.into()),
-            syntax::Statement::AssignExpr(assign_expr) => Statement::AssignExpr(assign_expr.into()),
-            syntax::Statement::For(for_stmt) => Statement::For(for_stmt.into()),
-            syntax::Statement::If(if_stmt) => Statement::If(if_stmt.into()),
-            syntax::Statement::Break(break_stmt) => Statement::Break(break_stmt.into()),
-            syntax::Statement::Continue(continue_stmt) => Statement::Continue(continue_stmt.into()),
-            syntax::Statement::Loop(loop_stmt) => Statement::Loop(loop_stmt.into()),
-            syntax::Statement::Return(ret_stmt) => Statement::Return(ret_stmt.into()),
-            syntax::Statement::VarDecl(var_decl) => Statement::VarDecl(var_decl.into()),
-            syntax::Statement::While(while_stmt) => Statement::While(while_stmt.into()),
-            syntax::Statement::Fn(fn_def) => Statement::Fn(fn_def.into()),
-            syntax::Statement::Type(type_def) => Statement::Type(type_def.into()),
+            syntax::Statement::Block(block_stmt) => Statement::Block(FromSyntax::from_syntax(block_stmt)),
+            syntax::Statement::SimpleExpr(simple_expr) => Statement::SimpleExpr(FromSyntax::from_syntax(simple_expr)),
+            syntax::Statement::AssignExpr(assign_expr) => Statement::AssignExpr(FromSyntax::from_syntax(assign_expr)),
+            syntax::Statement::For(for_stmt) => Statement::For(FromSyntax::from_syntax(for_stmt)),
+            syntax::Statement::If(if_stmt) => Statement::If(FromSyntax::from_syntax(if_stmt)),
+            syntax::Statement::Break(break_stmt) => Statement::Break(FromSyntax::from_syntax(break_stmt)),
+            syntax::Statement::Continue(continue_stmt) => Statement::Continue(FromSyntax::from_syntax(continue_stmt)),
+            syntax::Statement::Loop(loop_stmt) => Statement::Loop(FromSyntax::from_syntax(loop_stmt)),
+            syntax::Statement::Return(ret_stmt) => Statement::Return(FromSyntax::from_syntax(ret_stmt)),
+            syntax::Statement::VarDecl(var_decl) => Statement::VarDecl(FromSyntax::from_syntax(var_decl)),
+            syntax::Statement::While(while_stmt) => Statement::While(FromSyntax::from_syntax(while_stmt)),
+            syntax::Statement::Fn(fn_def) => Statement::Fn(FromSyntax::from_syntax(fn_def)),
+            syntax::Statement::Type(type_def) => Statement::Type(FromSyntax::from_syntax(type_def)),
         }
     }
 }

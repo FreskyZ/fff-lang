@@ -8,9 +8,11 @@
 extern crate lexical;
 extern crate syntax;
 
+mod traits;
 mod expr;
 mod items;
 mod statement;
+mod package;
 
 pub use self::items::Block;
 pub use self::items::TypeUse;
@@ -19,7 +21,6 @@ pub use self::items::FnParam;
 pub use self::items::FnDef;
 pub use self::items::TypeFieldDef;
 pub use self::items::TypeDef;
-pub use self::items::Package;
 pub use self::expr::ArrayDef;
 pub use self::expr::BinaryExpr;
 pub use self::expr::FnCall;
@@ -46,21 +47,12 @@ pub use self::statement::IfClause;
 pub use self::statement::ElseIfClause;
 pub use self::statement::ElseClause;
 pub use self::statement::IfStatement;
+pub use self::package::Package;
 
-// pub use self::block::Block;
-// pub use self::fn_def::FnArg;
-// pub use self::fn_def::FnName;
-// pub use self::fn_def::FnImpl;
-// pub use self::fn_def::FnCollection;
-// pub use self::var_def::Var;
-// pub use self::var_def::VarCollection;
-// pub use self::vm_code::Operand;
-// pub use self::vm_code::Code;
-// pub use self::type_def::Type;
-// pub use self::type_def::TypeCollection;
-// pub use self::type_def::TypeField;
-// pub use self::session::Program;
-// pub use self::session::ItemID;
+use self::traits::ISemanticAnalyze;
+use self::traits::FromSyntax;
+use self::traits::DefScope;
+use self::traits::SharedDefScope;
 
 #[cfg(test)] #[test]
 fn it_works() {

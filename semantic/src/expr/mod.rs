@@ -8,14 +8,16 @@ use lexical::Seperator;
 
 use syntax;
 
+use super::FromSyntax;
+
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct ArrayDef {
     pub items: ExprList,
 }
-impl From<syntax::ArrayDef> for ArrayDef {
-    fn from(node: syntax::ArrayDef) -> ArrayDef {
+impl FromSyntax<syntax::ArrayDef> for ArrayDef {
+    fn from_syntax(node: syntax::ArrayDef) -> ArrayDef {
         ArrayDef{
-            items: node.items.into(),
+            items: FromSyntax::from_syntax(node.items),
         }
     }
 }
@@ -26,11 +28,11 @@ pub struct BinaryExpr {
     pub right_expr: Box<Expr>,
     pub operator: Seperator,
 }
-impl From<syntax::BinaryExpr> for BinaryExpr {
-    fn from(node: syntax::BinaryExpr) -> BinaryExpr {
+impl FromSyntax<syntax::BinaryExpr> for BinaryExpr {
+    fn from_syntax(node: syntax::BinaryExpr) -> BinaryExpr {
         BinaryExpr{
-            left_expr: Box::new(syntax::Expr::unbox(node.left_expr).into()),
-            right_expr: Box::new(syntax::Expr::unbox(node.right_expr).into()),
+            left_expr: Box::new(FromSyntax::from_syntax(syntax::Expr::unbox(node.left_expr))),
+            right_expr: Box::new(FromSyntax::from_syntax(syntax::Expr::unbox(node.right_expr))),
             operator: node.operator,
         }
     }
@@ -40,10 +42,10 @@ impl From<syntax::BinaryExpr> for BinaryExpr {
 pub struct ExprList {
     pub items: Vec<Expr>,
 }
-impl From<syntax::ExprList> for ExprList {
-    fn from(node: syntax::ExprList) -> ExprList {
+impl FromSyntax<syntax::ExprList> for ExprList {
+    fn from_syntax(node: syntax::ExprList) -> ExprList {
         ExprList{
-            items: node.items.into_iter().map(Into::into).collect(),
+            items: node.items.into_iter().map(FromSyntax::from_syntax).collect(),
         }
     }
 }
@@ -53,11 +55,11 @@ pub struct FnCall {
     pub base: Box<Expr>,
     pub params: ExprList,
 }
-impl From<syntax::FnCallExpr> for FnCall {
-    fn from(node: syntax::FnCallExpr) -> FnCall {
+impl FromSyntax<syntax::FnCallExpr> for FnCall {
+    fn from_syntax(node: syntax::FnCallExpr) -> FnCall {
         FnCall{
-            base: Box::new(syntax::Expr::unbox(node.base).into()),
-            params: node.params.into(),
+            base: Box::new(FromSyntax::from_syntax(syntax::Expr::unbox(node.base))),
+            params: FromSyntax::from_syntax(node.params),
         }
     }
 }
@@ -66,8 +68,8 @@ impl From<syntax::FnCallExpr> for FnCall {
 pub struct IdentExpr {
     pub value: SymbolID,
 }
-impl From<syntax::IdentExpr> for IdentExpr {
-    fn from(node: syntax::IdentExpr) -> IdentExpr {
+impl FromSyntax<syntax::IdentExpr> for IdentExpr {
+    fn from_syntax(node: syntax::IdentExpr) -> IdentExpr {
         IdentExpr{
             value: node.value,
         }
@@ -79,11 +81,11 @@ pub struct IndexCall {
     pub base: Box<Expr>,
     pub params: ExprList,
 }
-impl From<syntax::IndexCallExpr> for IndexCall {
-    fn from(node: syntax::IndexCallExpr) -> IndexCall {
+impl FromSyntax<syntax::IndexCallExpr> for IndexCall {
+    fn from_syntax(node: syntax::IndexCallExpr) -> IndexCall {
         IndexCall{
-            base: Box::new(syntax::Expr::unbox(node.base).into()),
-            params: node.params.into(),
+            base: Box::new(FromSyntax::from_syntax(syntax::Expr::unbox(node.base))),
+            params: FromSyntax::from_syntax(node.params),
         }
     }
 }
@@ -92,8 +94,8 @@ impl From<syntax::IndexCallExpr> for IndexCall {
 pub struct LitExpr {
     pub value: LitValue,
 }
-impl From<syntax::LitExpr> for LitExpr {
-    fn from(node: syntax::LitExpr) -> LitExpr {
+impl FromSyntax<syntax::LitExpr> for LitExpr {
+    fn from_syntax(node: syntax::LitExpr) -> LitExpr {
         LitExpr{ 
             value: node.value,
         }
@@ -105,10 +107,10 @@ pub struct MemberAccess {
     pub base: Box<Expr>,
     pub name: SymbolID,
 }
-impl From<syntax::MemberAccessExpr> for MemberAccess {
-    fn from(node: syntax::MemberAccessExpr) -> MemberAccess {
+impl FromSyntax<syntax::MemberAccessExpr> for MemberAccess {
+    fn from_syntax(node: syntax::MemberAccessExpr) -> MemberAccess {
         MemberAccess{
-            base: Box::new(syntax::Expr::unbox(node.base).into()),
+            base: Box::new(FromSyntax::from_syntax(syntax::Expr::unbox(node.base))),
             name: node.name.value,
         }
     }
@@ -118,10 +120,10 @@ impl From<syntax::MemberAccessExpr> for MemberAccess {
 pub struct ParenExpr {
     pub expr: Box<Expr>,
 }
-impl From<syntax::ParenExpr> for ParenExpr {
-    fn from(node: syntax::ParenExpr) -> ParenExpr {
+impl FromSyntax<syntax::ParenExpr> for ParenExpr {
+    fn from_syntax(node: syntax::ParenExpr) -> ParenExpr {
         ParenExpr{
-            expr: Box::new(syntax::Expr::unbox(node.expr).into()),
+            expr: Box::new(FromSyntax::from_syntax(syntax::Expr::unbox(node.expr))),
         }
     }
 }
@@ -130,10 +132,10 @@ impl From<syntax::ParenExpr> for ParenExpr {
 pub struct TupleDef {
     pub items: ExprList,
 }
-impl From<syntax::TupleDef> for TupleDef {
-    fn from(node: syntax::TupleDef) -> TupleDef {
+impl FromSyntax<syntax::TupleDef> for TupleDef {
+    fn from_syntax(node: syntax::TupleDef) -> TupleDef {
         TupleDef{
-            items: node.items.into(),
+            items: FromSyntax::from_syntax(node.items),
         }
     }
 }
@@ -143,10 +145,10 @@ pub struct UnaryExpr {
     pub base: Box<Expr>,
     pub operator: Seperator,
 }
-impl From<syntax::UnaryExpr> for UnaryExpr {
-    fn from(node: syntax::UnaryExpr) -> UnaryExpr {
+impl FromSyntax<syntax::UnaryExpr> for UnaryExpr {
+    fn from_syntax(node: syntax::UnaryExpr) -> UnaryExpr {
         UnaryExpr{
-            base: Box::new(syntax::Expr::unbox(node.base).into()),
+            base: Box::new(FromSyntax::from_syntax(syntax::Expr::unbox(node.base))),
             operator: node.operator,
         }
     }
@@ -157,8 +159,8 @@ use std::marker::PhantomData;
 pub struct RangeFullExpr {
     pub phantom: PhantomData<()>,
 }
-impl From<syntax::RangeFullExpr> for RangeFullExpr {
-    fn from(_node: syntax::RangeFullExpr) -> RangeFullExpr {
+impl FromSyntax<syntax::RangeFullExpr> for RangeFullExpr {
+    fn from_syntax(_node: syntax::RangeFullExpr) -> RangeFullExpr {
         RangeFullExpr{
             phantom: PhantomData,
         }
@@ -169,10 +171,10 @@ impl From<syntax::RangeFullExpr> for RangeFullExpr {
 pub struct RangeLeftExpr {
     pub expr: Box<Expr>,
 }
-impl From<syntax::RangeLeftExpr> for RangeLeftExpr {
-    fn from(node: syntax::RangeLeftExpr) -> RangeLeftExpr {
+impl FromSyntax<syntax::RangeLeftExpr> for RangeLeftExpr {
+    fn from_syntax(node: syntax::RangeLeftExpr) -> RangeLeftExpr {
         RangeLeftExpr{
-            expr: Box::new(syntax::Expr::unbox(node.expr).into()),
+            expr: Box::new(FromSyntax::from_syntax(syntax::Expr::unbox(node.expr))),
         }
     }
 }
@@ -181,10 +183,10 @@ impl From<syntax::RangeLeftExpr> for RangeLeftExpr {
 pub struct RangeRightExpr {
     pub expr: Box<Expr>,
 }
-impl From<syntax::RangeRightExpr> for RangeRightExpr {
-    fn from(node: syntax::RangeRightExpr) -> RangeRightExpr {
+impl FromSyntax<syntax::RangeRightExpr> for RangeRightExpr {
+    fn from_syntax(node: syntax::RangeRightExpr) -> RangeRightExpr {
         RangeRightExpr{
-            expr: Box::new(syntax::Expr::unbox(node.expr).into()),
+            expr: Box::new(FromSyntax::from_syntax(syntax::Expr::unbox(node.expr))),
         }
     }
 }
@@ -194,11 +196,11 @@ pub struct RangeBothExpr {
     pub left_expr: Box<Expr>,
     pub right_expr: Box<Expr>,
 }
-impl From<syntax::RangeBothExpr> for RangeBothExpr {
-    fn from(node: syntax::RangeBothExpr) -> RangeBothExpr {
+impl FromSyntax<syntax::RangeBothExpr> for RangeBothExpr {
+    fn from_syntax(node: syntax::RangeBothExpr) -> RangeBothExpr {
         RangeBothExpr{
-            left_expr: Box::new(syntax::Expr::unbox(node.left_expr).into()),
-            right_expr: Box::new(syntax::Expr::unbox(node.right_expr).into()),
+            left_expr: Box::new(FromSyntax::from_syntax(syntax::Expr::unbox(node.left_expr))),
+            right_expr: Box::new(FromSyntax::from_syntax(syntax::Expr::unbox(node.right_expr))),
         }
     }
 }
@@ -220,23 +222,23 @@ pub enum Expr {
     RangeRight(RangeRightExpr),
     RangeBoth(RangeBothExpr),
 }
-impl From<syntax::Expr> for Expr {
-    fn from(node: syntax::Expr) -> Expr {
+impl FromSyntax<syntax::Expr> for Expr {
+    fn from_syntax(node: syntax::Expr) -> Expr {
         match node {
-            syntax::Expr::Array(array_def) => Expr::Array(array_def.into()),
-            syntax::Expr::Binary(binary_expr) => Expr::Binary(binary_expr.into()),
-            syntax::Expr::Ident(ident_expr) => Expr::Ident(ident_expr.into()),
-            syntax::Expr::Lit(lit_expr) => Expr::Lit(lit_expr.into()),
-            syntax::Expr::FnCall(fn_call) => Expr::FnCall(fn_call.into()),
-            syntax::Expr::IndexCall(index_call) => Expr::IndexCall(index_call.into()),
-            syntax::Expr::MemberAccess(member_access) => Expr::MemberAccess(member_access.into()),
-            syntax::Expr::Paren(paren_expr) => Expr::Paren(paren_expr.into()),
-            syntax::Expr::Tuple(tuple_def) => Expr::Tuple(tuple_def.into()),
-            syntax::Expr::Unary(unary_expr) => Expr::Unary(unary_expr.into()),
-            syntax::Expr::RangeBoth(range_both) => Expr::RangeBoth(range_both.into()),
-            syntax::Expr::RangeLeft(range_left) => Expr::RangeLeft(range_left.into()),
-            syntax::Expr::RangeRight(range_right) => Expr::RangeRight(range_right.into()),
-            syntax::Expr::RangeFull(range_full) => Expr::RangeFull(range_full.into()),
+            syntax::Expr::Array(array_def) => Expr::Array(FromSyntax::from_syntax(array_def)),
+            syntax::Expr::Binary(binary_expr) => Expr::Binary(FromSyntax::from_syntax(binary_expr)),
+            syntax::Expr::Ident(ident_expr) => Expr::Ident(FromSyntax::from_syntax(ident_expr)),
+            syntax::Expr::Lit(lit_expr) => Expr::Lit(FromSyntax::from_syntax(lit_expr)),
+            syntax::Expr::FnCall(fn_call) => Expr::FnCall(FromSyntax::from_syntax(fn_call)),
+            syntax::Expr::IndexCall(index_call) => Expr::IndexCall(FromSyntax::from_syntax(index_call)),
+            syntax::Expr::MemberAccess(member_access) => Expr::MemberAccess(FromSyntax::from_syntax(member_access)),
+            syntax::Expr::Paren(paren_expr) => Expr::Paren(FromSyntax::from_syntax(paren_expr)),
+            syntax::Expr::Tuple(tuple_def) => Expr::Tuple(FromSyntax::from_syntax(tuple_def)),
+            syntax::Expr::Unary(unary_expr) => Expr::Unary(FromSyntax::from_syntax(unary_expr)),
+            syntax::Expr::RangeBoth(range_both) => Expr::RangeBoth(FromSyntax::from_syntax(range_both)),
+            syntax::Expr::RangeLeft(range_left) => Expr::RangeLeft(FromSyntax::from_syntax(range_left)),
+            syntax::Expr::RangeRight(range_right) => Expr::RangeRight(FromSyntax::from_syntax(range_right)),
+            syntax::Expr::RangeFull(range_full) => Expr::RangeFull(FromSyntax::from_syntax(range_full)),
         }
     }
 }
