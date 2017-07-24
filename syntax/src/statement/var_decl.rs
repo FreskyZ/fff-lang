@@ -19,7 +19,7 @@ use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
-use super::super::ISyntaxItemFormat;
+use super::super::ISyntaxFormat;
 use super::super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
@@ -31,18 +31,23 @@ pub struct VarDeclStatement {
     pub init_expr: Option<Expr>,
     pub all_span: Span,
 }
-impl ISyntaxItemFormat for VarDeclStatement {
+impl ISyntaxFormat for VarDeclStatement {
     fn format(&self, f: Formatter) -> String {
-        format!("{}VarDecl {} <{}>\n{}{} <{}>{}{}", 
-            f.indent(), if self.is_const { "const" } else { "var" }, f.span(self.all_span),
-            f.indent1(), f.sym(self.name), f.span(self.name_span),
-            match self.typeuse { Some(ref typeuse) => format!("\n{}", f.apply1(typeuse)), None => String::new() },
-            match self.init_expr { Some(ref init_expr) => format!("\n{}", f.apply1(init_expr)), None => String::new() },
-        )
+        let f = f.indent().header_text_or(if self.is_const { "const-def" } else { "var-def" }).space().span(self.all_span).endl()
+            .indent1().sym(self.name).space().span(self.name_span);
+        let f = match self.typeuse { 
+            Some(ref ty) => f.endl().apply1(ty), 
+            None => f.endl().indent1().lit("auto-type"),
+        };
+        let f = match self.init_expr { 
+            Some(ref expr) => f.endl().set_prefix_text("init-as").apply1(expr), 
+            None => f.endl().indent1().lit("not-inited"),
+        };
+        f.finish()
     } 
 }
 impl fmt::Debug for VarDeclStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl VarDeclStatement {
 

@@ -1,186 +1,185 @@
 syntax-tree
   fn-def <1:1-3:1>
     "fn1" <1:4-1:6>
-return     TypeUse simple <1:27-1:29>
-      "u32" <1:27-1:29>
-    params-paren <1:7-1:22>
-    param #2 <1:8-1:8>
-      TypeUse simple <1:11-1:13>
-        "u32" <1:11-1:13>
-    param #3 <1:16-1:16>
-      TypeUse simple <1:19-1:21>
-        "u32" <1:19-1:21>
-    Block <1:31-3:1>
-      ReturnStmt some <2:5-2:17>
-        BinaryExpr <2:12-2:16>
-          Ident "a" <2:12-2:12>
+    return-type "u32" <1:27-1:29>
+    parenthenes <1:7-1:22>
+    param "a" <1:8-1:8>
+      type-use "u32" <1:11-1:13>
+    param "b" <1:16-1:16>
+      type-use "u32" <1:19-1:21>
+    body <1:31-3:1>
+      return-stmt <2:5-2:17>
+        ret-val-is binary-expr <2:12-2:16>
+          left-is ident-use "a" <2:12-2:12>
           "+" <2:14-2:14>
-          Ident "b" <2:16-2:16>
+          right-is ident-use "b" <2:16-2:16>
   fn-def <4:1-12:1>
     "main" <4:4-4:7>
-return     TypeUse simple <4:39-4:41>
-      "u32" <4:39-4:41>
-    params-paren <4:8-4:34>
-    param #5 <4:9-4:12>
-      TypeUse simple <4:15-4:17>
-        "u32" <4:15-4:17>
-    param #6 <4:20-4:23>
-      TypeUse template <no-span>
-        "array" <no-span>
-        Quote <4:26-4:33>
-          TypeUse simple <4:27-4:32>
-            "string" <4:27-4:32>
-    Block <4:43-12:1>
-      VarDecl var <5:5-5:19>
+    return-type "u32" <4:39-4:41>
+    parenthenes <4:8-4:34>
+    param "argc" <4:9-4:12>
+      type-use "u32" <4:15-4:17>
+    param "argv" <4:20-4:23>
+      type-use template <no-span>
+        base-is "array" <no-span>
+        quote <4:26-4:33>
+          type-use "string" <4:27-4:32>
+    body <4:43-12:1>
+      var-def <5:5-5:19>
         "i" <5:9-5:9>
-        TypeUse simple <5:12-5:14>
-          "u32" <5:12-5:14>
-        Literal (i32)1 <5:18-5:18>
-      WhileStmt <6:5-10:5>
-        'while' <6:5-6:9>
-        ParenExpr <6:10-6:17>
-          BinaryExpr <6:11-6:16>
-            Ident "i" <6:11-6:11>
+        type-use "u32" <5:12-5:14>
+        init-as literal (i32)1 <5:18-5:18>
+      while-stmt <6:5-10:5>
+        no-loop-name
+        "while" <6:5-6:9>
+        paren-expr <6:10-6:17>
+          binary-expr <6:11-6:16>
+            left-is ident-use "i" <6:11-6:11>
             "!=" <6:13-6:14>
-            Literal (i32)0 <6:16-6:16>
-        Block <6:19-10:5>
-          VarDecl const <7:9-7:29>
+            right-is literal (i32)0 <6:16-6:16>
+        body <6:19-10:5>
+          const-def <7:9-7:29>
             "a" <7:15-7:15>
-            FnCall <7:19-7:28>
-              Ident "read_u32" <7:19-7:26>
-              paren <7:27-7:28>
-              (empty)
-          VarDecl const <8:9-8:34>
+            auto-type
+            init-as fn-call <7:19-7:28>
+              base-is ident-use "read_u32" <7:19-7:26>
+              parenthenes <7:27-7:28>
+              no-argument
+          const-def <8:9-8:34>
             "b" <8:15-8:15>
-            TypeUse simple <8:18-8:20>
-              "u32" <8:18-8:20>
-            FnCall <8:24-8:33>
-              Ident "read_u32" <8:24-8:31>
-              paren <8:32-8:33>
-              (empty)
-          SimpleExprStmt <9:9-9:27>
-            FnCall <9:9-9:26>
-              Ident "println" <9:9-9:15>
-              paren <9:16-9:26>
-              FnCall <9:17-9:25>
-                Ident "fn1" <9:17-9:19>
-                paren <9:20-9:25>
-                Ident "a" <9:21-9:21>
-                Ident "b" <9:24-9:24>
-      ReturnStmt some <11:5-11:13>
-        Literal (i32)0 <11:12-11:12>
+            type-use "u32" <8:18-8:20>
+            init-as fn-call <8:24-8:33>
+              base-is ident-use "read_u32" <8:24-8:31>
+              parenthenes <8:32-8:33>
+              no-argument
+          expr-stmt simple <9:9-9:27>
+            fn-call <9:9-9:26>
+              base-is ident-use "println" <9:9-9:15>
+              parenthenes <9:16-9:26>
+              fn-call <9:17-9:25>
+                base-is ident-use "fn1" <9:17-9:19>
+                parenthenes <9:20-9:25>
+                ident-use "a" <9:21-9:21>
+                ident-use "b" <9:24-9:24>
+      return-stmt <11:5-11:13>
+        ret-val-is literal (i32)0 <11:12-11:12>
   fn-def <15:1-22:1>
     "main" <15:4-15:7>
     no-return-type
-    params-paren <15:8-15:9>
-    no-param
-    Block <15:11-22:1>
-      VarDecl var <16:5-16:14>
+    parenthenes <15:8-15:9>
+    no-parameter
+    body <15:11-22:1>
+      var-def <16:5-16:14>
         "a" <16:9-16:9>
-        Literal (i32)0 <16:13-16:13>
-      BlockStmt <17:5-20:5>
-        Block <17:5-20:5>
-          VarDecl var <18:9-18:18>
+        auto-type
+        init-as literal (i32)0 <16:13-16:13>
+      block-stmt <17:5-20:5>
+        body <17:5-20:5>
+          var-def <18:9-18:18>
             "b" <18:13-18:13>
-            Literal (i32)0 <18:17-18:17>
-          VarDecl var <19:9-19:22>
+            auto-type
+            init-as literal (i32)0 <18:17-18:17>
+          var-def <19:9-19:22>
             "a" <19:13-19:13>
-            TypeUse simple <19:15-19:17>
-              "i32" <19:15-19:17>
-            Literal (i32)0 <19:21-19:21>
-      VarDecl var <21:5-21:18>
+            type-use "i32" <19:15-19:17>
+            init-as literal (i32)0 <19:21-19:21>
+      var-def <21:5-21:18>
         "c" <21:9-21:9>
-        BinaryExpr <21:13-21:17>
-          Ident "a" <21:13-21:13>
+        auto-type
+        init-as binary-expr <21:13-21:17>
+          left-is ident-use "a" <21:13-21:13>
           "+" <21:15-21:15>
-          Ident "b" <21:17-21:17>
+          right-is ident-use "b" <21:17-21:17>
   fn-def <25:1-39:1>
     "main" <25:4-25:7>
     no-return-type
-    params-paren <25:8-25:15>
-    param #3 <25:9-25:9>
-      TypeUse simple <25:12-25:14>
-        "u32" <25:12-25:14>
-    Block <25:17-39:1>
-      VarDecl const <26:5-26:25>
+    parenthenes <25:8-25:15>
+    param "b" <25:9-25:9>
+      type-use "u32" <25:12-25:14>
+    body <25:17-39:1>
+      const-def <26:5-26:25>
         "a" <26:11-26:11>
-        FnCall <26:15-26:24>
-          Ident "read_i32" <26:15-26:22>
-          paren <26:23-26:24>
-          (empty)
-      LoopStmt <27:5-38:5>
-        Label #12 <27:5-27:9>
-        'loop' <27:11-27:14>
-        Block <27:16-38:5>
-          VarDecl var <28:9-28:18>
+        auto-type
+        init-as fn-call <26:15-26:24>
+          base-is ident-use "read_i32" <26:15-26:22>
+          parenthenes <26:23-26:24>
+          no-argument
+      loop-stmt <27:5-38:5>
+        loop-name "abc" <27:5-27:9>
+        "loop" <27:11-27:14>
+        body <27:16-38:5>
+          var-def <28:9-28:18>
             "b" <28:13-28:13>
-            Literal (i32)0 <28:17-28:17>
-          LoopStmt <29:9-37:9>
-            Label #13 <29:9-29:13>
-            'loop' <29:15-29:18>
-            Block <29:20-37:9>
-              IfStmt <30:13-36:13>
-                IfClause <30:13-33:13>
-                  BinaryExpr <30:16-30:21>
-                    Ident "a" <30:16-30:16>
+            auto-type
+            init-as literal (i32)0 <28:17-28:17>
+          loop-stmt <29:9-37:9>
+            loop-name "def" <29:9-29:13>
+            "loop" <29:15-29:18>
+            body <29:20-37:9>
+              if-stmt <30:13-36:13>
+                if-clause <30:13-33:13>
+                  cond-expr-is binary-expr <30:16-30:21>
+                    left-is ident-use "a" <30:16-30:16>
                     "==" <30:18-30:19>
-                    Literal (i32)0 <30:21-30:21>
-                  Then
-                  Block <30:23-33:13>
-                    AssignExprStmt <31:17-31:23>
+                    right-is literal (i32)0 <30:21-30:21>
+                  body <30:23-33:13>
+                    expr-stmt assign <31:17-31:23>
+                      left-is ident-use "a" <31:17-31:17>
                       "+=" <31:19-31:20>
-                      Ident "a" <31:17-31:17>
-                      Literal (i32)1 <31:22-31:22>
-                    BreakStmt <32:17-32:27>
-                      To @#13 <32:23-32:26>
-                ElseClause <33:15-36:13>
-                  Block <33:20-36:13>
-                    AssignExprStmt <34:17-34:23>
+                      right-is literal (i32)1 <31:22-31:22>
+                    break-stmt <32:17-32:27>
+                      to @"def" <32:23-32:26>
+                else-clause <33:15-36:13>
+                  body <33:20-36:13>
+                    expr-stmt assign <34:17-34:23>
+                      left-is ident-use "b" <34:17-34:17>
                       "+=" <34:19-34:20>
-                      Ident "b" <34:17-34:17>
-                      Literal (i32)1 <34:22-34:22>
-                    BreakStmt <35:17-35:27>
-                      To @#12 <35:23-35:26>
+                      right-is literal (i32)1 <34:22-34:22>
+                    break-stmt <35:17-35:27>
+                      to @"abc" <35:23-35:26>
   fn-def <42:1-50:1>
     "main" <42:4-42:7>
     no-return-type
-    params-paren <42:8-42:9>
-    no-param
-    Block <42:11-50:1>
-      VarDecl const <43:5-43:25>
+    parenthenes <42:8-42:9>
+    no-parameter
+    body <42:11-50:1>
+      const-def <43:5-43:25>
         "a" <43:11-43:11>
-        FnCall <43:15-43:24>
-          Ident "read_i32" <43:15-43:22>
-          paren <43:23-43:24>
-          (empty)
-      WhileStmt <44:5-49:5>
-        'while' <44:5-44:9>
-        BinaryExpr <44:11-44:16>
-          Ident "a" <44:11-44:11>
+        auto-type
+        init-as fn-call <43:15-43:24>
+          base-is ident-use "read_i32" <43:15-43:22>
+          parenthenes <43:23-43:24>
+          no-argument
+      while-stmt <44:5-49:5>
+        no-loop-name
+        "while" <44:5-44:9>
+        binary-expr <44:11-44:16>
+          left-is ident-use "a" <44:11-44:11>
           "!=" <44:13-44:14>
-          Literal (i32)0 <44:16-44:16>
-        Block <44:18-49:5>
-          ForStmt <45:9-47:9>
-            'for' <45:9-45:11>
-            Ident "i" <45:13-45:13>
-            ArrayDef <45:18-45:33>
-              Literal (i32)0 <45:19-45:19>
-              Literal (i32)1 <45:22-45:22>
-              Literal (i32)2 <45:25-45:25>
-              BinaryExpr <45:28-45:32>
-                Ident "a" <45:28-45:28>
+          right-is literal (i32)0 <44:16-44:16>
+        body <44:18-49:5>
+          for-stmt <45:9-47:9>
+            no-loop-name
+            "for" <45:9-45:11>
+            iter-var "i" <45:13-45:13>
+            iter-expr-is array-def <45:18-45:33>
+              literal (i32)0 <45:19-45:19>
+              literal (i32)1 <45:22-45:22>
+              literal (i32)2 <45:25-45:25>
+              binary-expr <45:28-45:32>
+                left-is ident-use "a" <45:28-45:28>
                 "+" <45:30-45:30>
-                Literal (i32)1 <45:32-45:32>
-            Block <45:35-47:9>
-              SimpleExprStmt <46:13-46:31>
-                FnCall <46:13-46:30>
-                  Ident "writeln" <46:13-46:19>
-                  paren <46:20-46:30>
-                  BinaryExpr <46:21-46:29>
-                    Literal #14 <46:21-46:25>
+                right-is literal (i32)1 <45:32-45:32>
+            body <45:35-47:9>
+              expr-stmt simple <46:13-46:31>
+                fn-call <46:13-46:30>
+                  base-is ident-use "writeln" <46:13-46:19>
+                  parenthenes <46:20-46:30>
+                  binary-expr <46:21-46:29>
+                    left-is literal "zmj" <46:21-46:25>
                     "+" <46:27-46:27>
-                    Ident "i" <46:29-46:29>
-          AssignExprStmt <48:9-48:15>
+                    right-is ident-use "i" <46:29-46:29>
+          expr-stmt assign <48:9-48:15>
+            left-is ident-use "a" <48:9-48:9>
             "-=" <48:11-48:12>
-            Ident "a" <48:9-48:9>
-            Literal (i32)1 <48:14-48:14>
+            right-is literal (i32)1 <48:14-48:14>

@@ -31,7 +31,7 @@ use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
-use super::super::ISyntaxItemFormat;
+use super::super::ISyntaxFormat;
 use super::super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
@@ -42,22 +42,22 @@ pub struct TypeUse {
     pub params: Vec<TypeUse>,
     pub all_span: Span, 
 }
-impl ISyntaxItemFormat for TypeUse {
+impl ISyntaxFormat for TypeUse {
     fn format(&self, f: Formatter) -> String {
-        format!("{}TypeUse {} <{}>\n{}{} <{}>{}", 
-            f.indent(), match self.params.len() { 0 => "simple", _ => "template" }, f.span(self.all_span),
-            f.indent1(), f.sym(self.base), f.span(self.base_span),
-            match self.params.len() {
-                0 => String::new(),
-                _ => format!("\n{}Quote <{}>{}", f.indent1(), f.span(self.quote_span), 
-                    self.params.iter().fold(String::new(), |mut buf, typeuse| { buf.push_str("\n"); buf.push_str(&f.applyn(typeuse, 2)); buf }),
-                )
-            }
-        )
+        let f = f.indent().header_text_or("type-use").space();
+        if self.params.len() == 0 { 
+            f.sym(self.base).space().span(self.base_span).finish() 
+        } else {
+            let mut f = f.lit("template").space().span(self.all_span).endl()
+                .indent1().lit("base-is").space().sym(self.base).space().span(self.base_span).endl()
+                .indent1().lit("quote").space().span(self.quote_span);
+            for typeuse in &self.params { f = f.endl().apply2(typeuse); }
+            f.finish()
+        }
     }
 }
 impl fmt::Debug for TypeUse {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::default())) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::empty())) }
 }
 impl TypeUse {
 

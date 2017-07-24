@@ -17,7 +17,7 @@ use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
-use super::super::ISyntaxItemFormat;
+use super::super::ISyntaxFormat;
 use super::super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
@@ -28,27 +28,21 @@ pub struct WhileStatement {
     pub while_span: Span,
     pub all_span: Span,
 }
-impl ISyntaxItemFormat for WhileStatement {
+impl ISyntaxFormat for WhileStatement {
     fn format(&self, f: Formatter) -> String {
-        match self.name {
-            Some(ref name) => format!("{}WhileStmt <{}>\n{}\n{}'while' <{}>\n{}\n{}", 
-                f.indent(), f.span(self.all_span),
-                f.apply1(name),
-                f.indent1(), f.span(self.while_span),
-                f.apply1(&self.loop_expr),
-                f.apply1(&self.body),
-            ),
-            None => format!("{}WhileStmt <{}>\n{}'while' <{}>\n{}\n{}", 
-                f.indent(), f.span(self.all_span),
-                f.indent1(), f.span(self.while_span),
-                f.apply1(&self.loop_expr),
-                f.apply1(&self.body),
-            ),
-        }
+        let f = f.indent().header_text_or("while-stmt").space().span(self.all_span).endl();
+        let f = match self.name { 
+            Some(ref name) => f.set_header_text("loop-name").apply1(name).unset_header_text().endl(), 
+            None => f.indent1().lit("no-loop-name").endl(),
+        };
+        f.indent1().lit("\"while\"").space().span(self.while_span).endl()
+            .apply1(&self.loop_expr).endl()
+            .set_header_text("body").apply1(&self.body)
+            .finish()
     }
 }
 impl fmt::Debug for WhileStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl WhileStatement {
     

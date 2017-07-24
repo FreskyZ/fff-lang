@@ -15,7 +15,7 @@ use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
-use super::super::ISyntaxItemFormat;
+use super::super::ISyntaxFormat;
 use super::super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
@@ -23,13 +23,13 @@ pub struct LabelDef {
     pub name: SymbolID,
     pub all_span: Span,
 }
-impl ISyntaxItemFormat for LabelDef {
+impl ISyntaxFormat for LabelDef {
     fn format(&self, f: Formatter) -> String {
-        format!("{}Label {:?} <{}>", f.indent(), self.name, f.span(self.all_span))
+        f.indent().header_text_or("label").space().sym(self.name).space().span(self.all_span).finish()
     }
 }
 impl fmt::Debug for LabelDef {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::default())) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::empty())) }
 }
 impl LabelDef {
     

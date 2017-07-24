@@ -15,7 +15,7 @@ use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
-use super::super::ISyntaxItemFormat;
+use super::super::ISyntaxFormat;
 use super::super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
@@ -64,43 +64,31 @@ pub struct IfStatement {
     pub else_clause: Option<ElseClause>,
     pub all_span: Span,
 }
-impl ISyntaxItemFormat for IfStatement {
+impl ISyntaxFormat for IfStatement {
     fn format(&self, f: Formatter) -> String {
 
-        let mut retval = String::new();
-        retval.push_str(&format!("{}IfStmt <{}>", f.indent(), f.span(self.all_span)));
-
+        let f = f.indent().header_text_or("if-stmt").space().span(self.all_span).endl();
         let IfClause{ all_span: ref if_all_span, cond_expr: ref if_cond_expr, body: ref if_body } = self.if_clause;
-        retval.push_str(&format!("\n{}IfClause <{}>\n{}\n{}Then\n{}", 
-            f.indent1(), f.span(*if_all_span), 
-            f.applyn(if_cond_expr, 2), 
-            f.indentn(2),
-            f.applyn(if_body, 2),
-        ));
-
+        let mut f = f.indent1().lit("if-clause").space().span(*if_all_span).endl()
+            .set_prefix_text("cond-expr-is").apply2(if_cond_expr).unset_prefix_text().endl()
+            .set_header_text("body").apply2(if_body).unset_header_text();
         for &ElseIfClause{ elseif_span: _, 
                 cond_expr: ref elseif_cond_expr, body: ref elseif_body, all_span: ref elseif_all_span } in &self.elseif_clauses {
-            retval.push_str(&format!("\n{}ElseIfClause <{}>\n{}\n{}Then\n{}", 
-                f.indent1(), f.span(*elseif_all_span), 
-                f.applyn(elseif_cond_expr, 2),
-                f.indentn(2),
-                f.applyn(elseif_body, 2),
-            ));
+            f = f.endl()
+                .indent1().lit("else-if-clause").space().span(*elseif_all_span).endl()
+                .set_prefix_text("cond-expr-is").apply2(elseif_cond_expr).unset_prefix_text().endl()
+                .set_header_text("body").apply2(elseif_body).unset_header_text();
         }
-        
         if let Some(ElseClause{ body: ref else_body, all_span: ref else_all_span }) = self.else_clause { 
-            retval.push_str(&format!("\n{}ElseClause <{}>\n{}", 
-                f.indent1(),
-                f.span(*else_all_span),
-                f.applyn(else_body, 2),
-            ))
+            f = f.endl()
+                .indent1().lit("else-clause").space().span(*else_all_span).endl()
+                .set_header_text("body").apply2(else_body);
         }
-
-        return retval;
+        f.finish()
     }
 }
 impl fmt::Debug for IfStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl IfStatement {
 

@@ -17,7 +17,7 @@ use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
-use super::super::ISyntaxItemFormat;
+use super::super::ISyntaxFormat;
 use super::super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
@@ -27,17 +27,16 @@ pub struct UnaryExpr {
     pub operator_span: Span,
     pub all_span: Span,
 }
-impl ISyntaxItemFormat for UnaryExpr {
+impl ISyntaxFormat for UnaryExpr {
     fn format(&self, f: Formatter) -> String {
-        format!("{}UnaryExpr <{}>\n{}{:?} <{}>\n{}", 
-            f.indent(), f.span(self.all_span),
-            f.indent1(), self.operator, f.span(self.operator_span),
-            f.apply1(self.base.as_ref())
-        )
+        f.indent().header_text_or("UnaryExpr").space().span(self.all_span).endl()
+            .indent1().debug(&self.operator).space().span(self.operator_span).endl()
+            .apply1(self.base.as_ref())
+            .finish()
     }
 }
 impl fmt::Debug for UnaryExpr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl From<UnaryExpr> for Expr {
     fn from(unary_expr: UnaryExpr) -> Expr { Expr::Unary(unary_expr) }

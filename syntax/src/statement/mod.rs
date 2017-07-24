@@ -12,7 +12,7 @@ use super::Formatter;
 use super::ParseResult;
 use super::ParseSession;
 use super::ISyntaxItemParse;
-use super::ISyntaxItemFormat;
+use super::ISyntaxFormat;
 use super::ISyntaxItemGrammar;
 
 mod block_stmt;
@@ -77,11 +77,11 @@ pub enum Statement {
     VarDecl(VarDeclStatement),        // const, var
     While(WhileStatement),            // while
 }
-impl ISyntaxItemFormat for Statement {
-    fn format(&self, f: Formatter) -> String { dispatch_statement_impl!(self, inner, { f.apply(inner) }) }
+impl ISyntaxFormat for Statement {
+    fn format(&self, f: Formatter) -> String { dispatch_statement_impl!(self, inner, { f.apply(inner).finish() }) }
 }
 impl fmt::Debug for Statement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::default())) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::empty())) }
 }
 impl ISyntaxItemGrammar for Statement {
 

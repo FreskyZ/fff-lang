@@ -113,7 +113,7 @@ impl fmt::Debug for LitValue {
         match *self {
             LitValue::Unit => write!(f, "unit"),
             LitValue::Str(Some(ref val)) => write!(f, "{:?}", val),
-            LitValue::Str(None) => write!(f, "#!1"),
+            LitValue::Str(None) => write!(f, "\"<invalid>\""),
             LitValue::Char(Some(ref val)) => write!(f, "{:?}", val),
             LitValue::Char(None) => write!(f, "'<invalid>'"),
             LitValue::Num(Some(ref val)) => write!(f, "{:?}", val),

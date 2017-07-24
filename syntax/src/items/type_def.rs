@@ -21,7 +21,7 @@ use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
-use super::super::ISyntaxItemFormat;
+use super::super::ISyntaxFormat;
 use super::super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
@@ -42,23 +42,21 @@ pub struct TypeDef {
     pub name: IdentExpr,
     pub fields: Vec<TypeFieldDef>,
 }
-impl ISyntaxItemFormat for TypeDef {
+impl ISyntaxFormat for TypeDef {
     fn format(&self, f: Formatter) -> String {
         
-        let mut retval = format!("{}TypeDef <{}>\n{}",f.indent(), f.span(self.all_span), f.apply1(&self.name));
+        let mut f = f.indent().header_text_or("TypeDef").space().span(self.all_span).endl().apply1(&self.name);
         for &TypeFieldDef{ ref name, ref colon_span, ref typeuse, ref all_span } in &self.fields {
-            retval.push_str(&format!("\n{}Field <{}>\n{}\n{}colon <{}>\n{}", 
-                f.indent1(), f.span(*all_span),
-                f.applyn(name, 2),
-                f.indentn(2), f.span(*colon_span),
-                f.applyn(typeuse, 2),
-            ));
+            f = f.indent1().lit("Field").space().span(*all_span).endl()
+                .apply2(name).endl()
+                .indent2().lit("\":\"").space().span(*colon_span).endl()
+                .apply2(typeuse);
         }
-        return retval;
+        f.finish()
     }
 }
 impl fmt::Debug for TypeDef {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl TypeDef {
     pub fn new(all_span: Span, name: IdentExpr, fields: Vec<TypeFieldDef>) -> TypeDef {

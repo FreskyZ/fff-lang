@@ -15,7 +15,7 @@ use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
-use super::super::ISyntaxItemFormat;
+use super::super::ISyntaxFormat;
 use super::super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
@@ -31,19 +31,17 @@ pub struct Name {
     pub segments: Vec<NameSegment>,
     pub all_span: Span,
 }
-impl ISyntaxItemFormat for Name {
+impl ISyntaxFormat for Name {
     fn format(&self, f: Formatter) -> String {
-        format!("{}Name <{}>{}", 
-            f.indent(), f.span(self.all_span),
-            self.segments.iter().fold(String::new(), |mut buf, segment| { 
-                buf.push_str(&format!("\n{}Ident {:?} <{}>", f.indent1(), segment.value, f.span(segment.span)));
-                buf 
-            }),
-        )
+        let mut f = f.indent().header_text_or("Name").space().span(self.all_span);
+        for &NameSegment{ ref value, ref span } in &self.segments {
+            f = f.endl().indent1().lit("Ident").space().debug(value).space().span(*span);
+        }
+        f.finish()
     }
 }
 impl fmt::Debug for Name {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::default())) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::empty())) }
 }
 impl Name {
     fn new(all_span: Span, segments: Vec<NameSegment>) -> Name { Name{ all_span, segments } }

@@ -101,12 +101,12 @@ fn intern_symbols() {
     assert_eq!(symbols.get(id3), Some("abc"));
     assert_eq!(symbols.get(SymbolID(123)), None);
 
-    assert_eq!(id1.format(Some(&symbols)), "abc");
-    assert_eq!(id2.format(Some(&symbols)), "123");
-    assert_eq!(id3.format(Some(&symbols)), "abc");
-    assert_eq!(SymbolID::from(42).format(Some(&symbols)), "<no-sym>");
-    assert_eq!(id1.format(None), "1");
-    assert_eq!(id2.format(None), "2");
+    assert_eq!(id1.format(Some(&symbols)), "\"abc\"");
+    assert_eq!(id2.format(Some(&symbols)), "\"123\"");
+    assert_eq!(id3.format(Some(&symbols)), "\"abc\"");
+    assert_eq!(SymbolID::from(42).format(Some(&symbols)), "\"<no-sym>\"");
+    assert_eq!(id1.format(None), "#1");
+    assert_eq!(id2.format(None), "#2");
 
     let mut symbols = make_symbols!["abc", "123", "abc"];
     assert_eq!(symbols.intern_str("abc"), symbols.intern_str("abc"));

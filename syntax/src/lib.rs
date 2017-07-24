@@ -64,7 +64,7 @@ use self::parse_sess::ISyntaxItemGrammar;
 pub use self::parse_sess::ISyntaxItemParse; // pub for semantic/traits
 
 use self::format_helper::Formatter;
-use self::format_helper::ISyntaxItemFormat;
+use self::format_helper::ISyntaxFormat;
 pub use self::test_helper::TestInput;
 pub use self::test_helper::WithTestInput;
 

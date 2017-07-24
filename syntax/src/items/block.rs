@@ -14,7 +14,7 @@ use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
-use super::super::ISyntaxItemFormat;
+use super::super::ISyntaxFormat;
 use super::super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
@@ -22,16 +22,19 @@ pub struct Block {
     pub items: Vec<Statement>,
     pub all_span: Span,
 }
-impl ISyntaxItemFormat for Block {
+impl ISyntaxFormat for Block {
     fn format(&self, f: Formatter) -> String {
-        format!("{}Block {}<{}>{}",
-            f.indent(), if self.items.is_empty() { "(empty) " } else { "" }, f.span(self.all_span),
-            self.items.iter().fold(String::new(), |mut buf, expr| { buf.push_str("\n"); buf.push_str(&f.apply1(expr)); buf })
-        )
+        let mut f = f.indent().header_text_or("block").space().span(self.all_span);
+        if self.items.is_empty() { 
+            f.endl().indent1().lit("no-item").finish()
+        } else {
+            for item in &self.items { f = f.endl().apply1(item); }
+            f.finish()
+        }
     }
 }
 impl fmt::Debug for Block {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl Block {
 

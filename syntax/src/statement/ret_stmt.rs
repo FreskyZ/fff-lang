@@ -15,7 +15,7 @@ use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
-use super::super::ISyntaxItemFormat;
+use super::super::ISyntaxFormat;
 use super::super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
@@ -23,16 +23,18 @@ pub struct ReturnStatement {
     pub expr: Option<Expr>,
     pub all_span: Span,
 }
-impl ISyntaxItemFormat for ReturnStatement {
+impl ISyntaxFormat for ReturnStatement {
     fn format(&self, f: Formatter) -> String {
         match self.expr {
-            Some(ref expr) => format!("{}ReturnStmt some <{}>\n{}", f.indent(), f.span(self.all_span), f.apply1(expr)),
-            None => format!("{}ReturnStmt unit <{}>", f.indent(), f.span(self.all_span)),
+            Some(ref expr) => 
+                f.indent().header_text_or("return-stmt").space().span(self.all_span).endl()
+                    .set_prefix_text("ret-val-is").apply1(expr).unset_prefix_text().finish(),
+            None => f.indent().header_text_or("return-stmt").space().span(self.all_span).finish(),
         }
     }
 }
 impl fmt::Debug for ReturnStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl ReturnStatement {
 

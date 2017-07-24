@@ -16,7 +16,7 @@ use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
-use super::super::ISyntaxItemFormat;
+use super::super::ISyntaxFormat;
 use super::super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
@@ -26,25 +26,20 @@ pub struct LoopStatement {
     pub loop_span: Span,
     pub all_span: Span,
 }
-impl ISyntaxItemFormat for LoopStatement {
+impl ISyntaxFormat for LoopStatement {
     fn format(&self, f: Formatter) -> String {
-        match self.name {
-            Some(ref label_def) => format!("{}LoopStmt <{}>\n{}\n{}'loop' <{}>\n{}", 
-                f.indent(), f.span(self.all_span),
-                f.apply1(label_def),
-                f.indent1(), f.span(self.loop_span),
-                f.apply1(&self.body),
-            ),
-            None => format!("{}LoopStmt <{}>\n{}'loop' <{}>\n{}", 
-                f.indent(), f.span(self.all_span),
-                f.indent1(), f.span(self.loop_span),
-                f.apply1(&self.body),
-            ),
-        }
+        let f = f.indent().header_text_or("loop-stmt").space().span(self.all_span).endl();
+        let f = match self.name { 
+            Some(ref name) => f.set_header_text("loop-name").apply1(name).unset_header_text().endl(), 
+            None => f.indent1().lit("no-loop-name").endl(),
+        };
+        f.indent1().lit("\"loop\"").space().span(self.loop_span).endl()
+            .set_header_text("body").apply1(&self.body)
+            .finish()
     }
 }
 impl fmt::Debug for LoopStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::default())) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::empty())) }
 }
 impl LoopStatement { // New
     
@@ -96,16 +91,16 @@ fn loop_stmt_format() {
     
     //                  1234567890123456789 0123 45678
     let actual = LoopStatement::with_test_input(
-        TestInput::new("@@: loop { println(\"233\"); }").set_syms(make_symbols!["@", "println", "233"])).0.unwrap().format(Formatter::default());
-    let expect = r#"LoopStmt <<0>0-27>
-  Label #1 <<0>0-2>
-  'loop' <<0>4-7>
-  Block <<0>9-27>
-    SimpleExprStmt <<0>11-25>
-      FnCall <<0>11-24>
-        Ident #2 <<0>11-17>
-        paren <<0>18-24>
-        Literal #3 <<0>19-23>"#;
+        TestInput::new("@@: loop { println(\"233\"); }").set_syms(make_symbols!["@", "println", "233"])).0.unwrap().format(Formatter::empty());
+    let expect = r#"loop-stmt <<0>0-27>
+  loop-name #1 <<0>0-2>
+  "loop" <<0>4-7>
+  body <<0>9-27>
+    expr-stmt simple <<0>11-25>
+      fn-call <<0>11-24>
+        base-is ident-use #2 <<0>11-17>
+        parenthenes <<0>18-24>
+        literal #3 <<0>19-23>"#;
 
     if actual != expect { panic!("assertion failed: left: {}, right: {}", actual, expect) }
 }

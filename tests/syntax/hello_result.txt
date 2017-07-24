@@ -1,6 +1,6 @@
 syntax-tree
-  SimpleExprStmt <4:1-4:23>
-    FnCall <4:1-4:22>
-      Ident "writeln" <4:1-4:7>
-      paren <4:8-4:22>
-      Literal #1 <4:9-4:21>
+  expr-stmt simple <4:1-4:23>
+    fn-call <4:1-4:22>
+      base-is ident-use "writeln" <4:1-4:7>
+      parenthenes <4:8-4:22>
+      literal "hello world" <4:9-4:21>

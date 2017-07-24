@@ -19,7 +19,7 @@ use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
-use super::super::ISyntaxItemFormat;
+use super::super::ISyntaxFormat;
 use super::super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
@@ -32,20 +32,22 @@ pub struct ForStatement {
     pub body: Block,
     pub all_span: Span,
 }
-impl ISyntaxItemFormat for ForStatement {
+impl ISyntaxFormat for ForStatement {
     fn format(&self, f: Formatter) -> String {
-        format!("{}ForStmt <{}>{}\n{}'for' <{}>\n{}Ident {} <{}>\n{}\n{}", 
-            f.indent(), f.span(self.all_span),
-            match self.loop_name { Some(ref label_def) => format!("\n{}", f.apply1(label_def)), None => "".to_owned() },
-            f.indent1(), f.span(self.for_span),
-            f.indent1(), f.sym(self.iter_name), f.span(self.iter_span),
-            f.apply1(&self.iter_expr),
-            f.apply1(&self.body),
-        )
+        let f = f.indent().header_text_or("for-stmt").space().span(self.all_span).endl();
+        let f = match self.loop_name { 
+            Some(ref name) => f.set_header_text("loop-name").apply1(name).unset_header_text().endl(), 
+            None => f.indent1().lit("no-loop-name").endl(),
+        };
+        f.indent1().lit("\"for\"").space().span(self.for_span).endl()
+            .indent1().lit("iter-var").space().sym(self.iter_name).space().span(self.iter_span).endl()
+            .set_prefix_text("iter-expr-is").apply1(&self.iter_expr).unset_prefix_text().endl()
+            .set_header_text("body").apply1(&self.body)
+            .finish()
     }
 }
 impl fmt::Debug for ForStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl ForStatement {
 

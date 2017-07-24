@@ -16,7 +16,7 @@ use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
-use super::super::ISyntaxItemFormat;
+use super::super::ISyntaxFormat;
 use super::super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
@@ -34,15 +34,11 @@ impl JumpStatement {
         JumpStatement{ all_span, target_span, target: Some(target) }
     }
 
-    fn format(&self, f: Formatter, stmt_name: &str) -> String {
+    fn format(&self, f: Formatter, stmt_name: &'static str) -> String {
+        let f = f.indent().header_text_or(stmt_name).space().span(self.all_span).endl();
         match self.target {
-            Some(ref target_name) => format!("{}{} <{}>\n{}To @{:?} <{}>", 
-                f.indent(), stmt_name, f.span(self.all_span),
-                f.indent1(), target_name, f.span(self.target_span),
-            ),
-            None => format!("{}{} <{}>",
-                f.indent(), stmt_name, f.span(self.all_span)
-            )
+            Some(ref target_name) => f.indent1().lit("to").space().lit("@").sym(*target_name).space().span(self.target_span).finish(),
+            None => f.finish(),
         }
     }
 
@@ -74,17 +70,17 @@ pub struct ContinueStatement(pub JumpStatement);
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct BreakStatement(pub JumpStatement);
 
-impl ISyntaxItemFormat for ContinueStatement {
-    fn format(&self, f: Formatter) -> String { self.0.format(f, "ContinueStmt") }
+impl ISyntaxFormat for ContinueStatement {
+    fn format(&self, f: Formatter) -> String { self.0.format(f, "continue-stmt") }
 }
-impl ISyntaxItemFormat for BreakStatement {
-    fn format(&self, f: Formatter) -> String { self.0.format(f, "BreakStmt") }
+impl ISyntaxFormat for BreakStatement {
+    fn format(&self, f: Formatter) -> String { self.0.format(f, "break-stmt") }
 }
 impl fmt::Debug for ContinueStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::default())) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::empty())) }
 }
 impl fmt::Debug for BreakStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::default())) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::empty())) }
 }
 
 impl ContinueStatement {

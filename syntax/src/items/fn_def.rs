@@ -18,7 +18,7 @@ use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
-use super::super::ISyntaxItemFormat;
+use super::super::ISyntaxFormat;
 use super::super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
@@ -41,30 +41,27 @@ pub struct FnDef {
     pub body: Block,
     pub all_span: Span,   // fn_span = all_span.slice(0..2)
 }
-impl ISyntaxItemFormat for FnDef {
+impl ISyntaxFormat for FnDef {
     fn format(&self, f: Formatter) -> String {
 
-        let mut retval = String::new();
-        retval.push_str(&format!("{}fn-def <{}>", f.indent(), f.span(self.all_span)));
-        retval.push_str(&format!("\n{}{} <{}>", f.indent1(), f.sym(self.name), f.span(self.name_span)));
-
-        match self.ret_type { 
-            Some(ref ret_type) => retval.push_str(&format!("\nreturn {}", f.apply1(ret_type))),
-            None => retval.push_str(&format!("\n{}no-return-type", f.indent1())), 
-        }
-        retval.push_str(&format!("\n{}params-paren <{}>", f.indent1(), f.span(self.params_paren_span)));
+        let f = f.indent().header_text_or("fn-def").space().span(self.all_span).endl()
+            .indent1().sym(self.name).space().span(self.name_span);
+        let f = match self.ret_type { 
+            Some(ref ret_type) => f.endl().set_header_text("return-type").apply1(ret_type).unset_header_text().endl(),
+            None => f.endl().indent1().lit("no-return-type").endl(),
+        };
+        let mut f = f.indent1().lit("parenthenes").space().span(self.params_paren_span);
         if self.params.len() == 0 {
-            retval.push_str(&format!("\n{}no-param", f.indent1()));
+            f = f.endl().indent1().lit("no-parameter");
         }
         for &FnParam{ ref decltype, ref name, ref name_span } in &self.params {
-            retval.push_str(&format!("\n{}param {:?} <{}>\n{}", f.indent1(), name, f.span(*name_span), f.applyn(decltype, 2)));
+            f = f.endl().indent1().lit("param").space().sym(*name).space().span(*name_span).endl().apply2(decltype)
         }
-        retval.push_str(&format!("\n{}", f.apply1(&self.body)));
-        return retval;
+        f.endl().set_header_text("body").apply1(&self.body).finish()
     }
 }
 impl fmt::Debug for FnDef {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl FnDef {
 

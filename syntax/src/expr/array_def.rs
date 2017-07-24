@@ -17,8 +17,8 @@ use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
 use super::super::error_strings;
+use super::super::ISyntaxFormat;
 use super::super::ISyntaxItemParse;
-use super::super::ISyntaxItemFormat;
 use super::super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
@@ -26,15 +26,14 @@ pub struct ArrayDef {
     pub items: ExprList,
     pub bracket_span: Span,
 }
-impl ISyntaxItemFormat for ArrayDef {
+impl ISyntaxFormat for ArrayDef {
     fn format(&self, f: Formatter) -> String {
-        format!("{}ArrayDef <{}>\n{}", f.indent(), f.span(self.bracket_span),
-            if self.items.items.len() == 0 { format!("{}(empty)", f.indent1()) } else { f.apply1(&self.items) }
-        )
+        let f = f.indent().header_text_or("array-def").space().span(self.bracket_span).endl();
+        (if self.items.items.len() == 0 { f.indent1().lit("no-init-item") } else { f.apply1(&self.items) }).finish()
     }
 }
 impl fmt::Debug for ArrayDef {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::default())) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::empty())) }
 }
 impl From<ArrayDef> for Expr {
     fn from(array_def: ArrayDef) -> Expr { Expr::Array(array_def) }
@@ -72,7 +71,7 @@ fn array_def_format() {
 
     assert_eq!{
         ArrayDef::new(make_span!(0, 42), make_exprs![]).format(Formatter::with_test_indent(1)),
-        "  ArrayDef <<0>0-42>\n    (empty)"
+        "  array-def <<0>0-42>\n    no-init-item"
     }
 
     assert_eq!{
@@ -81,7 +80,7 @@ fn array_def_format() {
             LitExpr::new(LitValue::from(2), make_span!(3, 4)),
             LitExpr::new(LitValue::from(48), make_span!(5, 6)),
         ]).format(Formatter::with_test_indent(1)),
-        "  ArrayDef <<0>0-42>\n    Literal (i32)1 <<0>1-2>\n    Literal (i32)2 <<0>3-4>\n    Literal (i32)48 <<0>5-6>"
+        "  array-def <<0>0-42>\n    literal (i32)1 <<0>1-2>\n    literal (i32)2 <<0>3-4>\n    literal (i32)48 <<0>5-6>"
     }
 }
 

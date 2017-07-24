@@ -45,7 +45,7 @@ use super::Formatter;
 use super::ParseResult;
 use super::ParseSession;
 use super::ISyntaxItemParse;
-use super::ISyntaxItemFormat;
+use super::ISyntaxFormat;
 use super::ISyntaxItemGrammar;
 
 // 12 byte
@@ -66,28 +66,28 @@ pub enum Expr {
     RangeLeft(RangeLeftExpr),
     RangeBoth(RangeBothExpr),
 }
-impl ISyntaxItemFormat for Expr {
+impl ISyntaxFormat for Expr {
     fn format(&self, f: Formatter) -> String {
         match self {
-            &Expr::Lit(ref lit_expr) => f.apply(lit_expr),
-            &Expr::Ident(ref ident_expr) => f.apply(ident_expr),
-            &Expr::Paren(ref paren_expr) => f.apply(paren_expr),
-            &Expr::Tuple(ref tuple_def) => f.apply(tuple_def),
-            &Expr::Array(ref array_def) => f.apply(array_def),
-            &Expr::FnCall(ref fn_call) => f.apply(fn_call),
-            &Expr::IndexCall(ref index_call) => f.apply(index_call),
-            &Expr::MemberAccess(ref member_access) => f.apply(member_access),
-            &Expr::Unary(ref unary_expr) => f.apply(unary_expr),
-            &Expr::Binary(ref binary_expr) => f.apply(binary_expr),
-            &Expr::RangeFull(ref range_full) => f.apply(range_full),
-            &Expr::RangeRight(ref range_right) => f.apply(range_right),
-            &Expr::RangeLeft(ref range_left) => f.apply(range_left),
-            &Expr::RangeBoth(ref range_both) => f.apply(range_both),
+            &Expr::Lit(ref lit_expr) => f.apply(lit_expr).finish(),
+            &Expr::Ident(ref ident_expr) => f.apply(ident_expr).finish(),
+            &Expr::Paren(ref paren_expr) => f.apply(paren_expr).finish(),
+            &Expr::Tuple(ref tuple_def) => f.apply(tuple_def).finish(),
+            &Expr::Array(ref array_def) => f.apply(array_def).finish(),
+            &Expr::FnCall(ref fn_call) => f.apply(fn_call).finish(),
+            &Expr::IndexCall(ref index_call) => f.apply(index_call).finish(),
+            &Expr::MemberAccess(ref member_access) => f.apply(member_access).finish(),
+            &Expr::Unary(ref unary_expr) => f.apply(unary_expr).finish(),
+            &Expr::Binary(ref binary_expr) => f.apply(binary_expr).finish(),
+            &Expr::RangeFull(ref range_full) => f.apply(range_full).finish(),
+            &Expr::RangeRight(ref range_right) => f.apply(range_right).finish(),
+            &Expr::RangeLeft(ref range_left) => f.apply(range_left).finish(),
+            &Expr::RangeBoth(ref range_both) => f.apply(range_both).finish(),
         }
     }
 }
 impl fmt::Debug for Expr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl Default for Expr {
     fn default() -> Expr { Expr::Lit(LitExpr::new(LitValue::from(0), Span::default())) }

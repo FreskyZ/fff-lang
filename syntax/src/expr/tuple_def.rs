@@ -24,7 +24,7 @@ use super::super::ParseResult;
 use super::super::ParseSession;
 use super::super::error_strings;
 use super::super::ISyntaxItemParse;
-use super::super::ISyntaxItemFormat;
+use super::super::ISyntaxFormat;
 use super::super::ISyntaxItemGrammar;
 
 // Paren expr is a side effect of TupleDef
@@ -33,13 +33,15 @@ pub struct ParenExpr {
     pub expr: Box<Expr>,
     pub span: Span,  // paren_span also all_span
 }
-impl ISyntaxItemFormat for ParenExpr {
+impl ISyntaxFormat for ParenExpr {
     fn format(&self, f: Formatter) -> String {
-        format!("{}ParenExpr <{}>\n{}", f.indent(), f.span(self.span), f.apply1(self.expr.as_ref()))
+        f.indent().header_text_or("paren-expr").space().span(self.span).endl()
+            .apply1(self.expr.as_ref())
+            .finish()
     }
 }
 impl fmt::Debug for ParenExpr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl From<ParenExpr> for Expr {
     fn from(paren_expr: ParenExpr) -> Expr { Expr::Paren(paren_expr) }
@@ -53,15 +55,18 @@ pub struct TupleDef {
     pub items: ExprList,
     pub paren_span: Span,
 }
-impl ISyntaxItemFormat for TupleDef {
+impl ISyntaxFormat for TupleDef {
     fn format(&self, f: Formatter) -> String {
-        format!("{}TupleDef <{}>\n{}", f.indent(), f.span(self.paren_span),
-            if self.items.items.len() == 0 { format!("{}(empty)", f.indent1()) } else { f.apply1(&self.items) }
-        )
+        let f = f.indent().header_text_or("tuple-def").space().span(self.paren_span).endl();
+        if self.items.items.len() == 0 {
+            f.indent1().lit("no-item").finish()
+        } else {
+            f.apply1(&self.items).finish()
+        }
     }
 }
 impl fmt::Debug for TupleDef {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::default())) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::empty())) }
 }
 impl From<TupleDef> for Expr {
     fn from(tuple_def: TupleDef) -> Expr { Expr::Tuple(tuple_def) }
@@ -106,7 +111,7 @@ fn tuple_def_format() {
 
     assert_eq!{
         TupleDef::new(make_span!(0, 42), make_exprs![]).format(Formatter::with_test_indent(1)),
-        "  TupleDef <<0>0-42>\n    (empty)"
+        "  tuple-def <<0>0-42>\n    no-item"
     }
 
     assert_eq!{
@@ -115,7 +120,7 @@ fn tuple_def_format() {
             LitExpr::new(LitValue::from(2), make_span!(3, 4)),
             LitExpr::new(LitValue::from(48), make_span!(5, 6)),
         ]).format(Formatter::with_test_indent(1)),
-        "  TupleDef <<0>0-42>\n    Literal (i32)1 <<0>1-2>\n    Literal (i32)2 <<0>3-4>\n    Literal (i32)48 <<0>5-6>"
+        "  tuple-def <<0>0-42>\n    literal (i32)1 <<0>1-2>\n    literal (i32)2 <<0>3-4>\n    literal (i32)48 <<0>5-6>"
     }
 }
 

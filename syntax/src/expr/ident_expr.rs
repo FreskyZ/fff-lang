@@ -15,7 +15,7 @@ use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
-use super::super::ISyntaxItemFormat;
+use super::super::ISyntaxFormat;
 use super::super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
@@ -23,13 +23,13 @@ pub struct IdentExpr {
     pub value: SymbolID,
     pub span: Span,
 }
-impl ISyntaxItemFormat for IdentExpr {
+impl ISyntaxFormat for IdentExpr {
     fn format(&self, f: Formatter) -> String {
-        format!("{}Ident {} <{}>", f.indent(), f.sym(self.value), f.span(self.span))
+        f.indent().header_text_or("ident-use").space().sym(self.value).space().span(self.span).finish()
     }
 }
 impl fmt::Debug for IdentExpr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl From<IdentExpr> for Expr {
     fn from(ident_expr: IdentExpr) -> Expr { Expr::Ident(ident_expr) }

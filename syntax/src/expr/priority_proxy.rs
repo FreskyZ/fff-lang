@@ -384,7 +384,7 @@ fn primary_expr_errors() {
 
 #[cfg(test)] #[test]
 fn postfix_expr_format() {
-    use super::super::ISyntaxItemFormat;
+    use super::super::ISyntaxFormat;
     use super::super::WithTestInput;
     use super::super::Formatter;
 
@@ -407,52 +407,52 @@ fn postfix_expr_format() {
     // Attention that this source code line's LF is also the string literal (test oracle)'s LF
     //                                                     0         1         2         3         4         5        
     //                                                     0123456789012345678901234567890123456789012345678901234567
-    test_case!(format!("\n{}", PostfixExpr::with_test_str("a.b(c, d, e).f(g, h, i,)(u,).j[k].l().m[n, o, p][r, s, t,]").format(Formatter::default())), r##"
-IndexerCall <<0>0-57>
-  IndexerCall <<0>0-47>
-    MemberAccess <<0>0-38>
-      FnCall <<0>0-36>
-        MemberAccess <<0>0-34>
-          IndexerCall <<0>0-32>
-            MemberAccess <<0>0-29>
-              FnCall <<0>0-27>
-                FnCall <<0>0-23>
-                  MemberAccess <<0>0-13>
-                    FnCall <<0>0-11>
-                      MemberAccess <<0>0-2>
-                        Ident #1 <<0>0-0>
+    test_case!(format!("\n{}", PostfixExpr::with_test_str("a.b(c, d, e).f(g, h, i,)(u,).j[k].l().m[n, o, p][r, s, t,]").format(Formatter::empty())), r##"
+indexer-call <<0>0-57>
+  base-is indexer-call <<0>0-47>
+    base-is member-access <<0>0-38>
+      base-is fn-call <<0>0-36>
+        base-is member-access <<0>0-34>
+          base-is indexer-call <<0>0-32>
+            base-is member-access <<0>0-29>
+              base-is fn-call <<0>0-27>
+                base-is fn-call <<0>0-23>
+                  base-is member-access <<0>0-13>
+                    base-is fn-call <<0>0-11>
+                      base-is member-access <<0>0-2>
+                        base-is ident-use #1 <<0>0-0>
                         "." <<0>1-1>
-                        Ident #2 <<0>2-2>
-                      paren <<0>3-11>
-                      Ident #3 <<0>4-4>
-                      Ident #4 <<0>7-7>
-                      Ident #5 <<0>10-10>
+                        member-name-is #2 <<0>2-2>
+                      parenthenes <<0>3-11>
+                      ident-use #3 <<0>4-4>
+                      ident-use #4 <<0>7-7>
+                      ident-use #5 <<0>10-10>
                     "." <<0>12-12>
-                    Ident #6 <<0>13-13>
-                  paren <<0>14-23>
-                  Ident #7 <<0>15-15>
-                  Ident #8 <<0>18-18>
-                  Ident #9 <<0>21-21>
-                paren <<0>24-27>
-                Ident #10 <<0>25-25>
+                    member-name-is #6 <<0>13-13>
+                  parenthenes <<0>14-23>
+                  ident-use #7 <<0>15-15>
+                  ident-use #8 <<0>18-18>
+                  ident-use #9 <<0>21-21>
+                parenthenes <<0>24-27>
+                ident-use #10 <<0>25-25>
               "." <<0>28-28>
-              Ident #11 <<0>29-29>
+              member-name-is #11 <<0>29-29>
             bracket <<0>30-32>
-            Ident #12 <<0>31-31>
+            ident-use #12 <<0>31-31>
           "." <<0>33-33>
-          Ident #13 <<0>34-34>
-        paren <<0>35-36>
-        (empty)
+          member-name-is #13 <<0>34-34>
+        parenthenes <<0>35-36>
+        no-argument
       "." <<0>37-37>
-      Ident #14 <<0>38-38>
+      member-name-is #14 <<0>38-38>
     bracket <<0>39-47>
-    Ident #15 <<0>40-40>
-    Ident #16 <<0>43-43>
-    Ident #17 <<0>46-46>
+    ident-use #15 <<0>40-40>
+    ident-use #16 <<0>43-43>
+    ident-use #17 <<0>46-46>
   bracket <<0>48-57>
-  Ident #18 <<0>49-49>
-  Ident #19 <<0>52-52>
-  Ident #20 <<0>55-55>"##
+  ident-use #18 <<0>49-49>
+  ident-use #19 <<0>52-52>
+  ident-use #20 <<0>55-55>"##
     );
 }
 

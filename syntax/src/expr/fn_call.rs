@@ -19,7 +19,7 @@ use super::super::ParseResult;
 use super::super::ParseSession;
 use super::super::error_strings;
 use super::super::ISyntaxItemParse;
-use super::super::ISyntaxItemFormat;
+use super::super::ISyntaxFormat;
 use super::super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
@@ -29,17 +29,16 @@ pub struct FnCallExpr {
     pub paren_span: Span,
     pub all_span: Span,
 }
-impl ISyntaxItemFormat for FnCallExpr {
+impl ISyntaxFormat for FnCallExpr {
     fn format(&self, f: Formatter) -> String {
-        format!("{}FnCall <{}>\n{}\n{}paren <{}>\n{}", 
-            f.indent(), f.span(self.all_span),
-            f.apply1(self.base.as_ref()),
-            f.indent1(), f.span(self.paren_span),
-            if self.params.items.len() == 0 { format!("{}(empty)", f.indent1()) } else { f.apply1(&self.params) })
+        let f = f.indent().header_text_or("fn-call").space().span(self.all_span).endl()
+            .set_prefix_text("base-is").apply1(self.base.as_ref()).unset_prefix_text().endl()
+            .indent1().lit("parenthenes").space().span(self.paren_span).endl();
+        (if self.params.items.len() == 0 { f.indent1().lit("no-argument") } else { f.apply1(&self.params) }).finish()
     }
 }
 impl fmt::Debug for FnCallExpr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl From<FnCallExpr> for Expr {
     fn from(fn_call_expr: FnCallExpr) -> Expr { Expr::FnCall(fn_call_expr) }

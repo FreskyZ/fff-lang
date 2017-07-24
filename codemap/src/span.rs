@@ -22,11 +22,11 @@ impl Default for CharPos {
 impl CharPos {
     pub fn format(&self, source: Option<&SourceCode>) -> String {
         match (source, self.file_id) {
-            (_, DEFAULT_FILE_ID) => format!("no-charpos"),
-            (None, _) => format!("<{}>{}", self.file_id, self.char_id),
+            (_, DEFAULT_FILE_ID) => format!("<no-charpos>"),
+            (None, _) => format!("<<{}>{}>", self.file_id, self.char_id),
             (Some(source), _) => {
                 let (row, column) = source.map_index(*self);
-                format!("{}:{}", row, column)
+                format!("<{}:{}>", row, column)
             }
         }
     }
@@ -79,12 +79,12 @@ impl Default for Span {
 impl Span {
     pub fn format(&self, source: Option<&SourceCode>) -> String {
         match (source, self.file_id) {
-            (_, DEFAULT_FILE_ID) => format!("no-span"),
-            (None, _) => format!("<{}>{}-{}", self.file_id, self.start_id, self.end_id),
+            (_, DEFAULT_FILE_ID) => format!("<no-span>"),
+            (None, _) => format!("<<{}>{}-{}>", self.file_id, self.start_id, self.end_id),
             (Some(source), _) => {
                 let (start_row, start_column) = source.map_index(self.get_start_pos());
                 let (end_row, end_column) = source.map_index(self.get_end_pos());
-                format!("{}:{}-{}:{}", start_row, start_column, end_row, end_column)
+                format!("<{}:{}-{}:{}>", start_row, start_column, end_row, end_column)
             }
         }
     }
@@ -145,7 +145,7 @@ fn charpos_format() {
         ($input: expr, $([$char_pos: expr => $format_result: expr, case $caseid: expr], )+) => (
             let source = SourceCode::with_test_str(0, $input);
             $(
-                assert_eq!{ make_charpos!($char_pos).format(Some(&source)), $format_result, "#{}", $caseid }
+                assert_eq!{ make_charpos!($char_pos).format(Some(&source)), format!("<{}>", $format_result), "#{}", $caseid }
             )+
         )
     }
@@ -213,8 +213,8 @@ fn charpos_format() {
         [29 => "6:7", case 33],
     }
 
-    assert_eq!{ CharPos::default().format(None), "no-charpos" }
-    assert_eq!{ CharPos::default().format(Some(&SourceCode::with_test_str(42, "helloworld"))), "no-charpos" }
+    assert_eq!{ CharPos::default().format(None), "<no-charpos>" }
+    assert_eq!{ CharPos::default().format(Some(&SourceCode::with_test_str(42, "helloworld"))), "<no-charpos>" }
 }
 #[cfg(test)] #[test]
 fn span_format() {
@@ -223,13 +223,13 @@ fn span_format() {
         ($input: expr, $([$start_id: expr, $end_id: expr => $format_result: expr, case $caseid: expr], )+) => (
             let source = SourceCode::with_test_str(0, $input);
             $(
-                assert_eq!{ make_span!($start_id, $end_id).format(Some(&source)), $format_result, "#{}", $caseid }
+                assert_eq!{ make_span!($start_id, $end_id).format(Some(&source)), format!("<{}>", $format_result), "#{}", $caseid }
             )+
         )
     }
 
-    assert_eq!{ Span::default().format(None), "no-span" }
-    assert_eq!{ Span::default().format(Some(&SourceCode::with_test_str(40, "helloworld"))), "no-span" }
+    assert_eq!{ Span::default().format(None), "<no-span>" }
+    assert_eq!{ Span::default().format(Some(&SourceCode::with_test_str(40, "helloworld"))), "<no-span>" }
 
     test_case!{ "0123\n56\r8\n01234567\n9", 
         [0, 2 => "1:1-1:3", case 0],

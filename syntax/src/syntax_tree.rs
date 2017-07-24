@@ -15,22 +15,24 @@ use super::Formatter;
 use super::ParseResult;
 use super::ParseSession;
 use super::ISyntaxItemParse;
-use super::ISyntaxItemFormat;
+use super::ISyntaxFormat;
 use super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct SyntaxTree {
     pub items: Vec<Statement>,
 }
-impl ISyntaxItemFormat for SyntaxTree {
+impl ISyntaxFormat for SyntaxTree {
     fn format(&self, f: Formatter) -> String {
-        format!("{}syntax-tree{}", 
-            f.indent(),
-            self.items.iter().fold(String::new(), |mut buf, item| { buf.push_str("\n"); buf.push_str(&f.apply1(item)); buf }))
+        let mut f = f.indent().lit("syntax-tree");
+        for item in &self.items {
+            f = f.endl().apply1(item);
+        }
+        f.finish()
     }
 }
 impl fmt::Debug for SyntaxTree {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::default())) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::empty())) }
 }
 impl SyntaxTree {
     pub fn new_items(items: Vec<Statement>) -> SyntaxTree { SyntaxTree{ items } }
@@ -84,7 +86,7 @@ fn syntax_tree_parse() {
         
         let result = TestInput::new(&src).apply::<SyntaxTree, _>();
         let actual = result.get_result().unwrap().format(Formatter::new(Some(result.get_source()), Some(result.get_symbols())));
-        // let actual = SyntaxTree::with_test_str(&src).format(Formatter::default());
+        // let actual = SyntaxTree::with_test_str(&src).format(Formatter::empty());
         if actual != expect {
             panic!("case '{}' failed, actual:\n`{}`\nexpect:\n`{}`", line, actual, expect)
         }

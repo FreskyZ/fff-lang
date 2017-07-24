@@ -16,7 +16,7 @@ use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
-use super::super::ISyntaxItemFormat;
+use super::super::ISyntaxFormat;
 use super::super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
@@ -25,23 +25,15 @@ pub struct BlockStatement {
     pub body: Block,
     pub all_span: Span,
 }
-impl ISyntaxItemFormat for BlockStatement {
+impl ISyntaxFormat for BlockStatement {
     fn format(&self, f: Formatter) -> String {
-        match self.name {
-            Some(ref name) => format!("{}BlockStmt <{}>\n{}\n{}", 
-                f.indent(), f.span(self.all_span),
-                f.apply1(name),
-                f.apply1(&self.body)
-            ),
-            None => format!("{}BlockStmt <{}>\n{}", 
-                f.indent(), f.span(self.all_span),
-                f.apply1(&self.body)
-            )
-        }
+        let mut f = f.indent().header_text_or("block-stmt").space().span(self.all_span).endl();
+        match self.name { Some(ref name) => f = f.apply1(name).endl(), None => () }
+        f.set_header_text("body").apply1(&self.body).finish()
     }
 }
 impl fmt::Debug for BlockStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::default())) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::empty())) }
 }
 impl BlockStatement {
     

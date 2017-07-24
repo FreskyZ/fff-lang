@@ -16,7 +16,7 @@ use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
-use super::super::ISyntaxItemFormat;
+use super::super::ISyntaxFormat;
 use super::super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
@@ -24,13 +24,15 @@ pub struct SimpleExprStatement {
     pub expr: Expr, 
     pub all_span: Span,  // this span = expr.all_span.merge(&semicolon_span)
 }
-impl ISyntaxItemFormat for SimpleExprStatement {
+impl ISyntaxFormat for SimpleExprStatement {
     fn format(&self, f: Formatter) -> String {
-        format!("{}SimpleExprStmt <{}>\n{}", f.indent(), f.span(self.all_span), f.apply1(&self.expr))
+        f.indent().header_text_or("expr-stmt simple").space().span(self.all_span).endl()
+            .apply1(&self.expr)
+            .finish()
     }
 }
 impl fmt::Debug for SimpleExprStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl SimpleExprStatement {
     pub fn new<T: Into<Expr>>(all_span: Span, expr: T) -> SimpleExprStatement { 
@@ -46,18 +48,17 @@ pub struct AssignExprStatement {
     pub assign_op_span: Span,
     pub all_span: Span,
 }
-impl ISyntaxItemFormat for AssignExprStatement {
+impl ISyntaxFormat for AssignExprStatement {
     fn format(&self, f: Formatter) -> String {
-        format!("{}AssignExprStmt <{}>\n{}\"{:?}\" <{}>\n{}\n{}",
-            f.indent(), f.span(self.all_span),
-            f.indent1(), self.assign_op, f.span(self.assign_op_span),
-            f.apply1(&self.left_expr),
-            f.apply1(&self.right_expr), 
-        )
+        f.indent().header_text_or("expr-stmt assign").space().span(self.all_span).endl()
+            .set_prefix_text("left-is").apply1(&self.left_expr).unset_prefix_text().endl()
+            .indent1().lit("\"").debug(&self.assign_op).lit("\"").space().span(self.assign_op_span).endl()
+            .set_prefix_text("right-is").apply1(&self.right_expr)
+            .finish()
     }
 }
 impl fmt::Debug for AssignExprStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl AssignExprStatement {
     

@@ -20,7 +20,7 @@ use super::super::ParseResult;
 use super::super::ParseSession;
 use super::super::error_strings;
 use super::super::ISyntaxItemParse;
-use super::super::ISyntaxItemFormat;
+use super::super::ISyntaxFormat;
 use super::super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
@@ -30,18 +30,17 @@ pub struct IndexCallExpr {
     pub bracket_span: Span,
     pub all_span: Span,
 }
-impl ISyntaxItemFormat for IndexCallExpr {
+impl ISyntaxFormat for IndexCallExpr {
     fn format(&self, f: Formatter) -> String {
-        format!("{}IndexerCall <{}>\n{}\n{}bracket <{}>\n{}", 
-            f.indent(), f.span(self.all_span),
-            f.apply1(self.base.as_ref()),
-            f.indent1(), f.span(self.bracket_span),
-            f.apply1(&self.params)
-        )
+        f.indent().header_text_or("indexer-call").space().span(self.all_span).endl()
+            .set_prefix_text("base-is").apply1(self.base.as_ref()).unset_prefix_text().endl()
+            .indent1().lit("bracket").space().span(self.bracket_span).endl()
+            .apply1(&self.params)
+            .finish()
     }
 }
 impl fmt::Debug for IndexCallExpr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl From<IndexCallExpr> for Expr {
     fn from(index_call_expr: IndexCallExpr) -> Expr { Expr::IndexCall(index_call_expr) }

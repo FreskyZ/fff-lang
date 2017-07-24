@@ -16,20 +16,20 @@ use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
 use super::super::ISyntaxItemParse;
-use super::super::ISyntaxItemFormat;
+use super::super::ISyntaxFormat;
 use super::super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct RangeFullExpr {
     pub all_span: Span,
 }
-impl ISyntaxItemFormat for RangeFullExpr {
+impl ISyntaxFormat for RangeFullExpr {
     fn format(&self, f: Formatter) -> String {
-        format!("{}RangeFull <{}>", f.indent(), f.span(self.all_span))
+        f.indent().header_text_or("RangeFull").space().span(self.all_span).finish()
     }
 }
 impl fmt::Debug for RangeFullExpr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl From<RangeFullExpr> for Expr {
     fn from(range_expr: RangeFullExpr) -> Expr { Expr::RangeFull(range_expr) }
@@ -43,15 +43,15 @@ pub struct RangeRightExpr {
     pub all_span: Span,  // all_span.slice(2) is range_op_span
     pub expr: Box<Expr>,
 }
-impl ISyntaxItemFormat for RangeRightExpr {
+impl ISyntaxFormat for RangeRightExpr {
     fn format(&self, f: Formatter) -> String {
-        format!("{}RangeRight <{}>\n{}", 
-            f.indent(), f.span(self.all_span),
-            f.apply1(self.expr.as_ref()))
+        f.indent().header_text_or("RangeRight").space().span(self.all_span).endl()
+            .apply1(self.expr.as_ref())
+            .finish()
     }
 }
 impl fmt::Debug for RangeRightExpr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl From<RangeRightExpr> for Expr {
     fn from(range_expr: RangeRightExpr) -> Expr { Expr::RangeRight(range_expr) }
@@ -83,15 +83,15 @@ pub struct RangeLeftExpr {
     pub expr: Box<Expr>,
     pub all_span: Span, // all_span.slice(-2, 0) should get range_op_span
 }
-impl ISyntaxItemFormat for RangeLeftExpr {
-    fn format(&self, f: Formatter) -> String {  
-        format!("{}RangeLeft <{}>\n{}",
-            f.indent(), f.span(self.all_span), 
-            f.apply1(self.expr.as_ref()))
+impl ISyntaxFormat for RangeLeftExpr {
+    fn format(&self, f: Formatter) -> String {
+        f.indent().header_text_or("RangeLeft").space().span(self.all_span).endl()
+            .apply1(self.expr.as_ref())
+            .finish()
     }
 }
 impl fmt::Debug for RangeLeftExpr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl From<RangeLeftExpr> for Expr {
     fn from(range_expr: RangeLeftExpr) -> Expr { Expr::RangeLeft(range_expr) }
@@ -109,18 +109,17 @@ pub struct RangeBothExpr {
     pub right_expr: Box<Expr>,
     pub all_span: Span,
 }
-impl ISyntaxItemFormat for RangeBothExpr {
+impl ISyntaxFormat for RangeBothExpr {
     fn format(&self, f: Formatter) -> String {
-        format!("{}RangeBoth <{}>\n{}\n{}\"..\" <{}>\n{}", 
-            f.indent(), f.span(self.all_span),
-            f.apply1(self.left_expr.as_ref()),
-            f.indent1(), f.span(self.op_span),
-            f.apply1(self.right_expr.as_ref())
-        )
+        f.indent().header_text_or("range-both").space().span(self.all_span).endl()
+            .set_prefix_text("left-is").apply1(self.left_expr.as_ref()).unset_prefix_text().endl()
+            .indent1().lit("\"..\"").space().span(self.op_span).endl()
+            .set_prefix_text("right-is").apply1(self.right_expr.as_ref())
+            .finish()
     }
 }
 impl fmt::Debug for RangeBothExpr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::default())) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl From<RangeBothExpr> for Expr {
     fn from(range_expr: RangeBothExpr) -> Expr { Expr::RangeBoth(range_expr) }
