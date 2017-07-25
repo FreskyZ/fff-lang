@@ -2,6 +2,7 @@
 ///!
 ///! semantic/statement
 
+use codemap::Span;
 use codemap::SymbolID;
 use lexical::Seperator;
 
@@ -14,20 +15,23 @@ use super::TypeUse;
 use super::FnDef;
 use super::TypeDef;
 use super::FromSyntax;
+use super::DefScope;
 use super::SharedDefScope;
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct BlockStatement {
     pub name: Option<LabelDef>,
     pub body: Block,
-    pub parent_scope: SharedDefScope,
+    pub all_span: Span,
+    pub this_scope: SharedDefScope,
 }
 impl FromSyntax<syntax::BlockStatement> for BlockStatement {
     fn from_syntax(node: syntax::BlockStatement, parent_scope: SharedDefScope) -> BlockStatement {
         BlockStatement{
             name: node.name.map(|name| FromSyntax::from_syntax(name, parent_scope.clone())),
             body: FromSyntax::from_syntax(node.body, parent_scope.clone()),
-            parent_scope,
+            all_span: node.all_span,
+            this_scope: DefScope::with_parent(format!("block-stmt"), parent_scope),
         }
     }
 }
@@ -130,9 +134,10 @@ pub struct BreakStatement {
     parent_scope: SharedDefScope,
 }
 impl FromSyntax<syntax::BreakStatement> for BreakStatement {
-    fn from_syntax(node: syntax::BreakStatement) -> BreakStatement {
+    fn from_syntax(node: syntax::BreakStatement, parent_scope: SharedDefScope) -> BreakStatement {
         BreakStatement{
             target: node.0.target,
+            parent_scope,
         }
     }
 }
@@ -142,7 +147,7 @@ pub struct ContinueStatement {
     pub target: Option<SymbolID>,
 }
 impl FromSyntax<syntax::ContinueStatement> for ContinueStatement {
-    fn from_syntax(node: syntax::ContinueStatement) -> ContinueStatement {
+    fn from_syntax(node: syntax::ContinueStatement, parent_scope: SharedDefScope) -> ContinueStatement {
         ContinueStatement{
             target: node.0.target,
         }
@@ -155,10 +160,10 @@ pub struct LoopStatement {
     pub body: Block,
 }
 impl FromSyntax<syntax::LoopStatement> for LoopStatement {
-    fn from_syntax(node: syntax::LoopStatement) -> LoopStatement {
+    fn from_syntax(node: syntax::LoopStatement, parent_scope: SharedDefScope) -> LoopStatement {
         LoopStatement{
-            name: node.name.map(FromSyntax::from_syntax),
-            body: FromSyntax::from_syntax(node.body),
+            name: node.name.map(|name| FromSyntax::from_syntax(name, parent_scope.clone())),
+            body: FromSyntax::from_syntax(node.body, parent_scope.clone()),
         }
     }
 }
@@ -168,9 +173,9 @@ pub struct ReturnStatement {
     pub expr: Option<Expr>,
 }
 impl FromSyntax<syntax::ReturnStatement> for ReturnStatement {
-    fn from_syntax(node: syntax::ReturnStatement) -> ReturnStatement {
+    fn from_syntax(node: syntax::ReturnStatement, parent_scope: SharedDefScope) -> ReturnStatement {
         ReturnStatement{
-            expr: node.expr.map(FromSyntax::from_syntax),
+            expr: node.expr.map(|expr| FromSyntax::from_syntax(expr, parent_scope.clone())),
         }
     }
 }
@@ -183,12 +188,12 @@ pub struct VarDecl {
     pub init_expr: Option<Expr>,
 }
 impl FromSyntax<syntax::VarDeclStatement> for VarDecl {
-    fn from_syntax(node: syntax::VarDeclStatement) -> VarDecl {
+    fn from_syntax(node: syntax::VarDeclStatement, parent_scope: SharedDefScope) -> VarDecl {
         VarDecl{
             is_const: node.is_const,
             name: node.name,
-            typeuse: node.typeuse.map(FromSyntax::from_syntax),
-            init_expr: node.init_expr.map(FromSyntax::from_syntax),
+            typeuse: node.typeuse.map(|ty| FromSyntax::from_syntax(ty, parent_scope.clone())),
+            init_expr: node.init_expr.map(|expr| FromSyntax::from_syntax(expr, parent_scope.clone())),
         }
     }
 }
@@ -200,11 +205,11 @@ pub struct WhileStatement {
     pub body: Block,
 }
 impl FromSyntax<syntax::WhileStatement> for WhileStatement {
-    fn from_syntax(node: syntax::WhileStatement) -> WhileStatement {
+    fn from_syntax(node: syntax::WhileStatement, parent_scope: SharedDefScope) -> WhileStatement {
         WhileStatement{
-            name: node.name.map(FromSyntax::from_syntax),
-            loop_expr: FromSyntax::from_syntax(node.loop_expr),
-            body: FromSyntax::from_syntax(node.body),
+            name: node.name.map(|name| FromSyntax::from_syntax(name, parent_scope.clone())),
+            loop_expr: FromSyntax::from_syntax(node.loop_expr, parent_scope.clone()),
+            body: FromSyntax::from_syntax(node.body, parent_scope.clone()),
         }
     }
 }
@@ -226,21 +231,21 @@ pub enum Statement {
     Fn(FnDef),
 }
 impl FromSyntax<syntax::Statement> for Statement {
-    fn from_syntax(node: syntax::Statement) -> Statement {
+    fn from_syntax(node: syntax::Statement, parent_scope: SharedDefScope) -> Statement {
         match node {
-            syntax::Statement::Block(block_stmt) => Statement::Block(FromSyntax::from_syntax(block_stmt)),
-            syntax::Statement::SimpleExpr(simple_expr) => Statement::SimpleExpr(FromSyntax::from_syntax(simple_expr)),
-            syntax::Statement::AssignExpr(assign_expr) => Statement::AssignExpr(FromSyntax::from_syntax(assign_expr)),
-            syntax::Statement::For(for_stmt) => Statement::For(FromSyntax::from_syntax(for_stmt)),
-            syntax::Statement::If(if_stmt) => Statement::If(FromSyntax::from_syntax(if_stmt)),
-            syntax::Statement::Break(break_stmt) => Statement::Break(FromSyntax::from_syntax(break_stmt)),
-            syntax::Statement::Continue(continue_stmt) => Statement::Continue(FromSyntax::from_syntax(continue_stmt)),
-            syntax::Statement::Loop(loop_stmt) => Statement::Loop(FromSyntax::from_syntax(loop_stmt)),
-            syntax::Statement::Return(ret_stmt) => Statement::Return(FromSyntax::from_syntax(ret_stmt)),
-            syntax::Statement::VarDecl(var_decl) => Statement::VarDecl(FromSyntax::from_syntax(var_decl)),
-            syntax::Statement::While(while_stmt) => Statement::While(FromSyntax::from_syntax(while_stmt)),
-            syntax::Statement::Fn(fn_def) => Statement::Fn(FromSyntax::from_syntax(fn_def)),
-            syntax::Statement::Type(type_def) => Statement::Type(FromSyntax::from_syntax(type_def)),
+            syntax::Statement::Block(block_stmt) => Statement::Block(FromSyntax::from_syntax(block_stmt, parent_scope)),
+            syntax::Statement::SimpleExpr(simple_expr) => Statement::SimpleExpr(FromSyntax::from_syntax(simple_expr, parent_scope)),
+            syntax::Statement::AssignExpr(assign_expr) => Statement::AssignExpr(FromSyntax::from_syntax(assign_expr, parent_scope)),
+            syntax::Statement::For(for_stmt) => Statement::For(FromSyntax::from_syntax(for_stmt, parent_scope)),
+            syntax::Statement::If(if_stmt) => Statement::If(FromSyntax::from_syntax(if_stmt, parent_scope)),
+            syntax::Statement::Break(break_stmt) => Statement::Break(FromSyntax::from_syntax(break_stmt, parent_scope)),
+            syntax::Statement::Continue(continue_stmt) => Statement::Continue(FromSyntax::from_syntax(continue_stmt, parent_scope)),
+            syntax::Statement::Loop(loop_stmt) => Statement::Loop(FromSyntax::from_syntax(loop_stmt, parent_scope)),
+            syntax::Statement::Return(ret_stmt) => Statement::Return(FromSyntax::from_syntax(ret_stmt, parent_scope)),
+            syntax::Statement::VarDecl(var_decl) => Statement::VarDecl(FromSyntax::from_syntax(var_decl, parent_scope)),
+            syntax::Statement::While(while_stmt) => Statement::While(FromSyntax::from_syntax(while_stmt, parent_scope)),
+            syntax::Statement::Fn(fn_def) => Statement::Fn(FromSyntax::from_syntax(fn_def, parent_scope)),
+            syntax::Statement::Type(type_def) => Statement::Type(FromSyntax::from_syntax(type_def, parent_scope)),
         }
     }
 }

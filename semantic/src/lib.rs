@@ -13,6 +13,7 @@ mod expr;
 mod items;
 mod statement;
 mod package;
+mod def_scope;
 
 pub use self::items::Block;
 pub use self::items::TypeUse;
@@ -49,10 +50,10 @@ pub use self::statement::ElseClause;
 pub use self::statement::IfStatement;
 pub use self::package::Package;
 
+use self::def_scope::DefScope;
+use self::def_scope::FromSyntax;
+use self::def_scope::SharedDefScope;
 use self::traits::ISemanticAnalyze;
-use self::traits::FromSyntax;
-use self::traits::DefScope;
-use self::traits::SharedDefScope;
 
 #[cfg(test)] #[test]
 fn it_works() {

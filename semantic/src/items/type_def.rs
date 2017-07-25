@@ -9,7 +9,8 @@ use codemap::SymbolID;
 use syntax;
 
 use super::TypeUse;
-use super::FromSyntax;
+use super::super::FromSyntax;
+use super::super::SharedDefScope;
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct TypeFieldDef {
@@ -17,10 +18,10 @@ pub struct TypeFieldDef {
     pub typeuse: TypeUse,
 }
 impl FromSyntax<syntax::TypeFieldDef> for TypeFieldDef {
-    fn from_syntax(node: syntax::TypeFieldDef) -> TypeFieldDef {
+    fn from_syntax(node: syntax::TypeFieldDef, parent_scope: SharedDefScope) -> TypeFieldDef {
         TypeFieldDef{
             name: node.name.value,
-            typeuse: FromSyntax::from_syntax(node.typeuse),
+            typeuse: FromSyntax::from_syntax(node.typeuse, parent_scope.clone()),
         }
     }
 }
@@ -31,10 +32,10 @@ pub struct TypeDef {
     pub fields: Vec<TypeFieldDef>,
 }
 impl FromSyntax<syntax::TypeDef> for TypeDef {
-    fn from_syntax(node: syntax::TypeDef) -> TypeDef {
+    fn from_syntax(node: syntax::TypeDef, parent_scope: SharedDefScope) -> TypeDef {
         TypeDef{
             name: node.name.value,
-            fields: node.fields.into_iter().map(FromSyntax::from_syntax).collect(),
+            fields: node.fields.into_iter().map(|field| FromSyntax::from_syntax(field, parent_scope.clone())).collect(),
         }
     }
 }

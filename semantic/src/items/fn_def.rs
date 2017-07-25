@@ -7,7 +7,8 @@ use syntax;
 
 use super::TypeUse;
 use super::Block;
-use super::FromSyntax;
+use super::super::FromSyntax;
+use super::super::SharedDefScope;
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct FnParam {
@@ -15,11 +16,10 @@ pub struct FnParam {
     pub typeuse: TypeUse,
 }
 impl FromSyntax<syntax::FnParam> for FnParam {
-
-    fn from_syntax(node: syntax::FnParam) -> FnParam {
+    fn from_syntax(node: syntax::FnParam, parent_scope: SharedDefScope) -> FnParam {
         FnParam{
             name: node.name,
-            typeuse: FromSyntax::from_syntax(node.decltype),
+            typeuse: FromSyntax::from_syntax(node.decltype, parent_scope.clone()),
         }
     }
 }
@@ -33,26 +33,12 @@ pub struct FnDef {
 }
 impl FromSyntax<syntax::FnDef> for FnDef {
 
-    fn from_syntax(node: syntax::FnDef) -> FnDef {
+    fn from_syntax(node: syntax::FnDef, parent_scope: SharedDefScope) -> FnDef {
         FnDef{
             name: node.name,
-            params: node.params.into_iter().map(FromSyntax::from_syntax).collect(),
-            rettype: node.ret_type.map(FromSyntax::from_syntax),
-            body: FromSyntax::from_syntax(node.body),
+            params: node.params.into_iter().map(|param| FromSyntax::from_syntax(param, parent_scope.clone())).collect(),
+            rettype: node.ret_type.map(|ty| FromSyntax::from_syntax(ty, parent_scope.clone())),
+            body: FromSyntax::from_syntax(node.body, parent_scope.clone()),
         }
     }
 }
-
-// pub struct FnParam {
-//     pub name: SymbolID,
-//     pub typeid: TypeID,
-// }
-// impl FnParam {
-//     pub fn new(name: SymbolID, typeid: TypeID) -> FnParam { FnParam{ name, typeid } }
-// }
-
-// pub struct FnDef {
-//     pub params: Vec<FnParam>,
-//     pub rettype: TypeID,
-//     pub body: syntax::Block,
-// }
