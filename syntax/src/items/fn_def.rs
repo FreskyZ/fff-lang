@@ -133,7 +133,7 @@ impl ISyntaxItemParse for FnDef {
 #[cfg(test)] #[test]
 fn fn_def_parse() {
     use codemap::SymbolCollection;
-    use super::super::IdentExpr;
+    use super::super::SimpleName;
     use super::super::WithTestInput;
     use super::super::TypeUse;
     use super::super::Statement;
@@ -200,9 +200,9 @@ fn fn_def_parse() {
             Block::new(make_span!(63, 80), vec![
                 Statement::SimpleExpr(SimpleExprStatement::new(make_span!(65, 78),
                     FnCallExpr::new(
-                        Expr::Ident(IdentExpr::new(make_id!(9), make_span!(65, 71))),
+                        Expr::SimpleName(SimpleName::new(make_id!(9), make_span!(65, 71))),
                         make_span!(72, 77), make_exprs![
-                            IdentExpr::new(make_id!(5), make_span!(73, 76))
+                            SimpleName::new(make_id!(5), make_span!(73, 76))
                         ]
                     )
                 ))

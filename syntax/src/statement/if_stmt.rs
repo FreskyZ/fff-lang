@@ -191,7 +191,7 @@ fn if_stmt_parse() {
     use super::super::ExprList;
     use super::super::FnCallExpr;
     use super::super::MemberAccessExpr;
-    use super::super::IdentExpr;
+    use super::super::SimpleName;
     use super::super::ArrayDef;
     use super::super::SimpleExprStatement;
     use super::super::LitExpr;
@@ -231,24 +231,24 @@ fn if_stmt_parse() {
                     Statement::SimpleExpr(SimpleExprStatement::new(make_span!(7, 20),
                         FnCallExpr::new(
                             MemberAccessExpr::new(
-                                IdentExpr::new(make_id!(1), make_span!(7, 9)),
+                                SimpleName::new(make_id!(1), make_span!(7, 9)),
                                 make_span!(10, 10),
-                                IdentExpr::new(make_id!(2), make_span!(11, 16))
+                                SimpleName::new(make_id!(2), make_span!(11, 16))
                             ),
                             make_span!(17, 19), make_exprs![
-                                IdentExpr::new(make_id!(3), make_span!(18, 18))
+                                SimpleName::new(make_id!(3), make_span!(18, 18))
                             ]
                         ),
                     )),
                     Statement::SimpleExpr(SimpleExprStatement::new(make_span!(22, 39),
                         FnCallExpr::new(
                             MemberAccessExpr::new(
-                                IdentExpr::new(make_id!(4), make_span!(22, 26)),
+                                SimpleName::new(make_id!(4), make_span!(22, 26)),
                                 make_span!(27, 27),
-                                IdentExpr::new(make_id!(5), make_span!(28, 35))
+                                SimpleName::new(make_id!(5), make_span!(28, 35))
                             ),
                             make_span!(36, 38), make_exprs![
-                                IdentExpr::new(make_id!(6), make_span!(37, 37))
+                                SimpleName::new(make_id!(6), make_span!(37, 37))
                             ]
                         ),
                     ))
@@ -267,10 +267,10 @@ fn if_stmt_parse() {
                                     LitExpr::new(LitValue::from(3), make_span!(55, 55)),
                                 ]),
                                 make_span!(57, 57),
-                                IdentExpr::new(make_id!(8), make_span!(58, 60))
+                                SimpleName::new(make_id!(8), make_span!(58, 60))
                             ),
                             make_span!(61, 69), make_exprs![
-                                IdentExpr::new(make_id!(7), make_span!(62, 68))
+                                SimpleName::new(make_id!(7), make_span!(62, 68))
                             ]
                         )
                     ))

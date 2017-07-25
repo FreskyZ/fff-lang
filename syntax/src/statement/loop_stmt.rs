@@ -110,7 +110,7 @@ fn loop_stmt_parse() {
     use codemap::SymbolCollection;
     use lexical::LitValue;
     use super::super::LitExpr;
-    use super::super::IdentExpr;
+    use super::super::SimpleName;
     use super::super::WithTestInput;
     use super::super::Statement;
     use super::super::SimpleExprStatement;
@@ -132,7 +132,7 @@ fn loop_stmt_parse() {
             Block::new(make_span!(9, 27), vec![
                 Statement::SimpleExpr(SimpleExprStatement::new(make_span!(11, 25), 
                     FnCallExpr::new(
-                        IdentExpr::new(make_id!(2), make_span!(11, 17)),
+                        SimpleName::new(make_id!(2), make_span!(11, 17)),
                         make_span!(18, 24), make_exprs![
                             LitExpr::new(LitValue::new_str_lit(make_id!(3)), make_span!(19, 23))
                         ]

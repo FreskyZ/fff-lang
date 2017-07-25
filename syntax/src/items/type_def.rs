@@ -15,7 +15,7 @@ use lexical::Keyword;
 use lexical::Seperator;
 
 use super::super::TypeUse;
-use super::super::IdentExpr;
+use super::super::SimpleName;
 
 use super::super::Formatter;
 use super::super::ParseResult;
@@ -26,20 +26,20 @@ use super::super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct TypeFieldDef {
-    pub name: IdentExpr,
+    pub name: SimpleName,
     pub colon_span: Span,
     pub typeuse: TypeUse,
     pub all_span: Span,   // ident to typeuse or ident to comma
 }
 impl TypeFieldDef {
-    pub fn new(all_span: Span, name: IdentExpr, colon_span: Span, typeuse: TypeUse) -> TypeFieldDef {
+    pub fn new(all_span: Span, name: SimpleName, colon_span: Span, typeuse: TypeUse) -> TypeFieldDef {
         TypeFieldDef{ all_span, name, colon_span, typeuse }
     }
 }
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct TypeDef {
     pub all_span: Span,
-    pub name: IdentExpr,
+    pub name: SimpleName,
     pub fields: Vec<TypeFieldDef>,
 }
 impl ISyntaxFormat for TypeDef {
@@ -59,7 +59,7 @@ impl fmt::Debug for TypeDef {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl TypeDef {
-    pub fn new(all_span: Span, name: IdentExpr, fields: Vec<TypeFieldDef>) -> TypeDef {
+    pub fn new(all_span: Span, name: SimpleName, fields: Vec<TypeFieldDef>) -> TypeDef {
         TypeDef{ all_span, name, fields }
     }
 }
@@ -75,11 +75,11 @@ impl ISyntaxItemParse for TypeDef {
         let name = match (sess.tk, sess.pos) {
             (&Token::Ident(ident), ref span) => { 
                 sess.move_next(); 
-                IdentExpr::new(ident, *span) 
+                SimpleName::new(ident, *span) 
             }
             (&Token::Keyword(kw), ref span) if kw.is_primitive() => { 
                 sess.move_next(); 
-                IdentExpr::new(sess.symbols.intern(format!("{:?}", kw)), *span)
+                SimpleName::new(sess.symbols.intern(format!("{:?}", kw)), *span)
             }
             _ => return sess.push_unexpect("identifier"),
         };
@@ -94,7 +94,7 @@ impl ISyntaxItemParse for TypeDef {
                 break;
             }
 
-            let field_name = IdentExpr::parse(sess)?;
+            let field_name = SimpleName::parse(sess)?;
             let colon_span = sess.expect_sep(Seperator::Colon)?;
             let field_type = TypeUse::parse(sess)?;
             fields.push(if let (&Token::Sep(Seperator::Comma), ref comma_span) = (sess.tk, sess.pos) {
@@ -117,18 +117,18 @@ fn type_def_parse() {
 
     //                                  01234567890123456
     assert_eq!{ TypeDef::with_test_str("type x { x: i32 }"),
-        TypeDef::new(make_span!(0, 16), IdentExpr::new(make_id!(1), make_span!(5, 5)), vec![
+        TypeDef::new(make_span!(0, 16), SimpleName::new(make_id!(1), make_span!(5, 5)), vec![
             TypeFieldDef::new(make_span!(9, 14), 
-                IdentExpr::new(make_id!(1), make_span!(9, 9)),
+                SimpleName::new(make_id!(1), make_span!(9, 9)),
                 make_span!(10, 10),
                 TypeUse::new_simple(make_id!(2), make_span!(12, 14))
             )
         ])
     }
     assert_eq!{ TypeDef::with_test_str("type x { x: i32,}"),
-        TypeDef::new(make_span!(0, 16), IdentExpr::new(make_id!(1), make_span!(5, 5)), vec![
+        TypeDef::new(make_span!(0, 16), SimpleName::new(make_id!(1), make_span!(5, 5)), vec![
             TypeFieldDef::new(make_span!(9, 15), 
-                IdentExpr::new(make_id!(1), make_span!(9, 9)),
+                SimpleName::new(make_id!(1), make_span!(9, 9)),
                 make_span!(10, 10),
                 TypeUse::new_simple(make_id!(2), make_span!(12, 14))
             )
@@ -140,21 +140,21 @@ fn type_def_parse() {
         .set_syms(make_symbols!["array", "data", "size", "cap", "u64", "u8"])
         .apply::<TypeDef, _>()
         .expect_no_message()
-        .expect_result(TypeDef::new(make_span!(0, 45), IdentExpr::new(make_id!(1), make_span!(5, 9)), vec![
+        .expect_result(TypeDef::new(make_span!(0, 45), SimpleName::new(make_id!(1), make_span!(5, 9)), vec![
             TypeFieldDef::new(make_span!(13, 23),
-                IdentExpr::new(make_id!(2), make_span!(13, 16)),
+                SimpleName::new(make_id!(2), make_span!(13, 16)),
                 make_span!(17, 17),
                 TypeUse::new_template(make_id!(1), Span::default(), make_span!(19, 22), vec![
                     TypeUse::new_simple(make_id!(6), make_span!(20, 21))
                 ])
             ),
             TypeFieldDef::new(make_span!(25, 34), 
-                IdentExpr::new(make_id!(3), make_span!(25, 28)),
+                SimpleName::new(make_id!(3), make_span!(25, 28)),
                 make_span!(29, 29),
                 TypeUse::new_simple(make_id!(5), make_span!(31, 33))
             ),
             TypeFieldDef::new(make_span!(36, 43), 
-                IdentExpr::new(make_id!(4), make_span!(36, 38)),
+                SimpleName::new(make_id!(4), make_span!(36, 38)),
                 make_span!(39, 39),
                 TypeUse::new_simple(make_id!(5), make_span!(41, 43))
             )

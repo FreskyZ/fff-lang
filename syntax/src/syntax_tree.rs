@@ -1,7 +1,7 @@
 ///! fff-lang
 ///!
 ///! syntax/root
-///! root = { stmt }
+///! root = { item }
 
 use std::fmt;
 

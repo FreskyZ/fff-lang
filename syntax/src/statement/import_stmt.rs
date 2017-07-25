@@ -10,7 +10,7 @@ use lexical::Token;
 use lexical::Seperator;
 use lexical::Keyword;
 
-use super::super::IdentExpr;
+use super::super::SimpleName;
 use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
@@ -20,9 +20,9 @@ use super::super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct ImportStatement {
-    pub name: IdentExpr,
+    pub name: SimpleName,
     pub as_span: Span,
-    pub target: Option<IdentExpr>,
+    pub target: Option<SimpleName>,
     pub all_span: Span,
 }
 impl ISyntaxFormat for ImportStatement {
@@ -41,14 +41,14 @@ impl fmt::Debug for ImportStatement {
 }
 impl ImportStatement {
     
-    pub fn new_default(all_span: Span, name: IdentExpr) -> ImportStatement {
+    pub fn new_default(all_span: Span, name: SimpleName) -> ImportStatement {
         ImportStatement{ name, all_span, as_span: Span::default(), target: None }
     }
-    pub fn new_target(all_span: Span, name: IdentExpr, as_span: Span, target: IdentExpr) -> ImportStatement {
+    pub fn new_target(all_span: Span, name: SimpleName, as_span: Span, target: SimpleName) -> ImportStatement {
         ImportStatement{ name, all_span, as_span, target: Some(target) }
     }
 
-    fn new_some(all_span: Span, name: IdentExpr, as_span: Span, target: Option<IdentExpr>) -> ImportStatement {
+    fn new_some(all_span: Span, name: SimpleName, as_span: Span, target: Option<SimpleName>) -> ImportStatement {
         ImportStatement{ name, all_span, as_span, target }
     }
 }
@@ -61,12 +61,12 @@ impl ISyntaxItemParse for ImportStatement {
     fn parse(sess: &mut ParseSession) -> ParseResult<ImportStatement> {
 
         let starting_span = sess.expect_keyword(Keyword::Import)?;
-        let name = IdentExpr::parse(sess)?;
+        let name = SimpleName::parse(sess)?;
 
         let (as_span, to_ident) = if let &Token::Keyword(Keyword::As) = sess.tk {
             let as_span = sess.pos;
             sess.move_next();
-            (as_span, Some(IdentExpr::parse(sess)?))
+            (as_span, Some(SimpleName::parse(sess)?))
         } else {
             (Span::default(), None)
         };
@@ -84,16 +84,16 @@ fn import_stmt_parse() {
     assert_eq!{
         ImportStatement::with_test_str("import a;"),
         ImportStatement::new_default(make_span!(0, 8),
-            IdentExpr::new(make_id!(1), make_span!(7, 7))
+            SimpleName::new(make_id!(1), make_span!(7, 7))
         )
     }
 
     assert_eq!{ //                   012345678901234567890
         ImportStatement::with_test_str("import windows as os;"),
         ImportStatement::new_target(make_span!(0, 20),
-            IdentExpr::new(make_id!(1), make_span!(7, 13)),
+            SimpleName::new(make_id!(1), make_span!(7, 13)),
             make_span!(15, 16),
-            IdentExpr::new(make_id!(2), make_span!(18, 19))
+            SimpleName::new(make_id!(2), make_span!(18, 19))
         )
     }
 }

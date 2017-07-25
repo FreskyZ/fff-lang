@@ -89,12 +89,12 @@ fn array_def_parse() {
     use lexical::LitValue;
     use super::LitExpr;
     use super::BinaryExpr;
-    use super::IdentExpr;
+    use super::SimpleName;
     use super::super::WithTestInput;
 
     assert_eq!{ ArrayDef::with_test_str("[a]"),
         Expr::Array(ArrayDef::new(make_span!(0, 2), make_exprs![
-            IdentExpr::new(make_id!(1), make_span!(1, 1))
+            SimpleName::new(make_id!(1), make_span!(1, 1))
         ]))
     }
 

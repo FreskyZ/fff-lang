@@ -104,7 +104,7 @@ fn var_decl_stmt_parse() {
     use codemap::SymbolCollection;
     use message::MessageCollection;
     use lexical::LitValue;
-    use super::super::IdentExpr;
+    use super::super::SimpleName;
     use super::super::LitExpr;
     use super::super::TupleDef;
     use super::super::ArrayDef;
@@ -181,14 +181,14 @@ fn var_decl_stmt_parse() {
                 ]),
                 TypeUse::new_simple(make_id!(3), make_span!(16, 18))
             ])),
-            Some(Expr::Tuple(TupleDef::new(make_span!(23, 46), ExprList::new(vec![
-                Expr::Array(ArrayDef::new(make_span!(24, 40), ExprList::new(vec![
-                    Expr::Lit(LitExpr::new(LitValue::from(1u8), make_span!(25, 27))),
-                    Expr::Lit(LitExpr::new(LitValue::from(5u8), make_span!(30, 32))),
-                    Expr::Lit(LitExpr::new(LitValue::from(7u8), make_span!(35, 39)))
-                ]))),
-                Expr::Ident(IdentExpr::new(make_id!(4), make_span!(43, 45)))
-            ]))))
+            Some(Expr::Tuple(TupleDef::new(make_span!(23, 46), make_exprs![
+                ArrayDef::new(make_span!(24, 40), make_exprs![
+                    LitExpr::new(LitValue::from(1u8), make_span!(25, 27)),
+                    LitExpr::new(LitValue::from(5u8), make_span!(30, 32)),
+                    LitExpr::new(LitValue::from(7u8), make_span!(35, 39))
+                ]),
+                SimpleName::new(make_id!(4), make_span!(43, 45))
+            ])))
         ))
     .finish();
 

@@ -120,7 +120,7 @@ fn expr_stmt_parse() {
     use codemap::SymbolCollection;
     use lexical::LitValue;
     use super::super::LitExpr;
-    use super::super::IdentExpr;
+    use super::super::SimpleName;
     use super::super::BinaryExpr;
     use super::super::FnCallExpr;
     use super::super::ExprList;
@@ -135,7 +135,7 @@ fn expr_stmt_parse() {
         .expect_no_message()
         .expect_result(Statement::SimpleExpr(SimpleExprStatement::new(make_span!(0, 21),
             FnCallExpr::new(
-                IdentExpr::new(make_id!(1), make_span!(0, 6)),
+                SimpleName::new(make_id!(1), make_span!(0, 6)),
                 make_span!(7, 20), make_exprs![
                     LitExpr::new(LitValue::new_str_lit(make_id!(2)), make_span!(8, 19))
                 ]

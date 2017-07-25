@@ -10,7 +10,7 @@ use lexical::Token;
 use lexical::Seperator;
 
 use super::Expr;
-use super::IdentExpr;
+use super::SimpleName;
 
 use super::super::Formatter;
 use super::super::ParseResult;
@@ -23,7 +23,7 @@ use super::super::ISyntaxItemGrammar;
 pub struct MemberAccessExpr {
     pub base: Box<Expr>,
     pub dot_span: Span,
-    pub name: IdentExpr,
+    pub name: SimpleName,
     pub all_span: Span,
 }
 impl ISyntaxFormat for MemberAccessExpr {
@@ -42,7 +42,7 @@ impl From<MemberAccessExpr> for Expr {
     fn from(member_access_expr: MemberAccessExpr) -> Expr { Expr::MemberAccess(member_access_expr) }
 }
 impl MemberAccessExpr {
-    pub fn new<T: Into<Expr>>(base: T, dot_span: Span, name: IdentExpr) -> MemberAccessExpr {
+    pub fn new<T: Into<Expr>>(base: T, dot_span: Span, name: SimpleName) -> MemberAccessExpr {
         let base = base.into();
         MemberAccessExpr{
             all_span: base.get_all_span().merge(&name.span),
@@ -51,7 +51,7 @@ impl MemberAccessExpr {
         }
     }
 
-    fn new_by_parse_result(dot_span: Span, name: IdentExpr) -> MemberAccessExpr {
+    fn new_by_parse_result(dot_span: Span, name: SimpleName) -> MemberAccessExpr {
         MemberAccessExpr{
             all_span: Span::default(),
             base: Box::new(Expr::default()),
@@ -72,7 +72,7 @@ impl ISyntaxItemParse for MemberAccessExpr {
     fn parse(sess: &mut ParseSession) -> ParseResult<MemberAccessExpr> {
         
         let dot_span = sess.expect_sep(Seperator::Dot)?;
-        let name = IdentExpr::parse(sess)?;
+        let name = SimpleName::parse(sess)?;
         Ok(MemberAccessExpr::new_by_parse_result(dot_span, name))
     }
 }

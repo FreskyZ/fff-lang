@@ -134,7 +134,7 @@ fn binary_expr_parse() {
     use lexical::LitValue;
     use super::LitExpr;
     use super::ArrayDef;
-    use super::IdentExpr;
+    use super::SimpleName;
     use super::ExprList;
     use super::super::WithTestInput;
 
@@ -163,22 +163,22 @@ fn binary_expr_parse() {
             BinaryExpr::new(
                 BinaryExpr::new(
                     BinaryExpr::new(
-                        IdentExpr::new(make_id!(1), make_span!(0, 0)),
+                        SimpleName::new(make_id!(1), make_span!(0, 0)),
                         Seperator::Mul, make_span!(2, 2), 
-                        IdentExpr::new(make_id!(2), make_span!(4, 4)),
+                        SimpleName::new(make_id!(2), make_span!(4, 4)),
                     ),
                     Seperator::Div, make_span!(6, 6),
-                    IdentExpr::new(make_id!(3), make_span!(8, 8)),
+                    SimpleName::new(make_id!(3), make_span!(8, 8)),
                 ),
                 Seperator::Add, make_span!(10, 10),
                 BinaryExpr::new(
-                    IdentExpr::new(make_id!(4), make_span!(12, 12)),
+                    SimpleName::new(make_id!(4), make_span!(12, 12)),
                     Seperator::Rem, make_span!(14, 14),
-                    IdentExpr::new(make_id!(5), make_span!(16, 16)),
+                    SimpleName::new(make_id!(5), make_span!(16, 16)),
                 )
             ),
             Seperator::Sub, make_span!(18, 18),
-            IdentExpr::new(make_id!(6), make_span!(20, 20)),
+            SimpleName::new(make_id!(6), make_span!(20, 20)),
         ))
     }           
     //                                     0        1         2         3
@@ -187,31 +187,31 @@ fn binary_expr_parse() {
         Expr::Binary(BinaryExpr::new(
             BinaryExpr::new(
                 BinaryExpr::new(
-                    IdentExpr::new(make_id!(1), make_span!(0, 0)),
+                    SimpleName::new(make_id!(1), make_span!(0, 0)),
                     Seperator::Mul, make_span!(2, 2),
-                    IdentExpr::new(make_id!(2), make_span!(4, 4))
+                    SimpleName::new(make_id!(2), make_span!(4, 4))
                 ),
                 Seperator::ShiftLeft, make_span!(6, 7),
                 BinaryExpr::new(
                     BinaryExpr::new(
                         BinaryExpr::new(
-                            IdentExpr::new(make_id!(3), make_span!(9, 9)),
+                            SimpleName::new(make_id!(3), make_span!(9, 9)),
                             Seperator::Div, make_span!(11, 11),
-                            IdentExpr::new(make_id!(4), make_span!(13, 13))
+                            SimpleName::new(make_id!(4), make_span!(13, 13))
                         ),
                         Seperator::Add, make_span!(15, 15),
                         BinaryExpr::new(
-                            IdentExpr::new(make_id!(5), make_span!(17, 17)),
+                            SimpleName::new(make_id!(5), make_span!(17, 17)),
                             Seperator::Rem, make_span!(19, 19),
-                            IdentExpr::new(make_id!(6), make_span!(21, 21))
+                            SimpleName::new(make_id!(6), make_span!(21, 21))
                         )
                     ),
                     Seperator::Sub, make_span!(23, 23),
-                    IdentExpr::new(make_id!(7), make_span!(25, 25))
+                    SimpleName::new(make_id!(7), make_span!(25, 25))
                 )
             ),
             Seperator::ShiftRight, make_span!(27, 28),
-            IdentExpr::new(make_id!(8), make_span!(30, 30)),
+            SimpleName::new(make_id!(8), make_span!(30, 30)),
         ))
     }          
 
@@ -233,75 +233,75 @@ fn binary_expr_parse() {
                     BinaryExpr::new(
                         BinaryExpr::new(
                             BinaryExpr::new(
-                                IdentExpr::new(make_id!(1), make_span!(0, 0)),
+                                SimpleName::new(make_id!(1), make_span!(0, 0)),
                                 Seperator::Mul, make_span!(2, 2),
-                                IdentExpr::new(make_id!(2), make_span!(4, 4)),
+                                SimpleName::new(make_id!(2), make_span!(4, 4)),
                             ),
                             Seperator::ShiftLeft, make_span!(6, 7),
                             BinaryExpr::new(
                                 BinaryExpr::new(
                                     BinaryExpr::new(
-                                        IdentExpr::new(make_id!(3), make_span!(9, 9)),
+                                        SimpleName::new(make_id!(3), make_span!(9, 9)),
                                         Seperator::Div, make_span!(11, 11),
-                                        IdentExpr::new(make_id!(4), make_span!(13, 13)),
+                                        SimpleName::new(make_id!(4), make_span!(13, 13)),
                                     ),
                                     Seperator::Add, make_span!(15, 15),
                                     BinaryExpr::new(
-                                        IdentExpr::new(make_id!(5), make_span!(17, 17)),
+                                        SimpleName::new(make_id!(5), make_span!(17, 17)),
                                         Seperator::Rem, make_span!(19, 19),
-                                        IdentExpr::new(make_id!(6), make_span!(21, 21)),
+                                        SimpleName::new(make_id!(6), make_span!(21, 21)),
                                     )
                                 ),
                                 Seperator::Sub, make_span!(23, 23),
-                                IdentExpr::new(make_id!(7), make_span!(25, 25))
+                                SimpleName::new(make_id!(7), make_span!(25, 25))
                             ),
                         ),
                         Seperator::ShiftRight, make_span!(27, 28),
                         BinaryExpr::new(
                             BinaryExpr::new(
-                                IdentExpr::new(make_id!(8), make_span!(30, 30)),
+                                SimpleName::new(make_id!(8), make_span!(30, 30)),
                                 Seperator::Great, make_span!(32, 32),
                                 BinaryExpr::new(
-                                    IdentExpr::new(make_id!(3), make_span!(34, 34)),
+                                    SimpleName::new(make_id!(3), make_span!(34, 34)),
                                     Seperator::Mul, make_span!(36, 36),
-                                    IdentExpr::new(make_id!(9), make_span!(38, 38)),
+                                    SimpleName::new(make_id!(9), make_span!(38, 38)),
                                 )
                             ),
                             Seperator::Less, make_span!(40, 40),
-                            IdentExpr::new(make_id!(10), make_span!(42, 42)),
+                            SimpleName::new(make_id!(10), make_span!(42, 42)),
                         )
                     ),
                     Seperator::ShiftLeft, make_span!(44, 45),
                     BinaryExpr::new(
-                        IdentExpr::new(make_id!(11), make_span!(47, 47)),
+                        SimpleName::new(make_id!(11), make_span!(47, 47)),
                         Seperator::GreatEqual, make_span!(49, 50),
-                        IdentExpr::new(make_id!(12), make_span!(52, 52)),
+                        SimpleName::new(make_id!(12), make_span!(52, 52)),
                     )
                 ),
                 Seperator::LogicalAnd, make_span!(54, 55),
-                IdentExpr::new(make_id!(13), make_span!(57, 57))
+                SimpleName::new(make_id!(13), make_span!(57, 57))
             ),
             Seperator::LogicalOr, make_span!(59, 60),
             BinaryExpr::new(
                 BinaryExpr::new(
                     BinaryExpr::new(
                         BinaryExpr::new(
-                            IdentExpr::new(make_id!(14), make_span!(62, 62)),
+                            SimpleName::new(make_id!(14), make_span!(62, 62)),
                             Seperator::BitAnd, make_span!(64, 64),
-                            IdentExpr::new(make_id!(15), make_span!(66, 66)),
+                            SimpleName::new(make_id!(15), make_span!(66, 66)),
                         ),
                         Seperator::BitOr, make_span!(68, 68),
                         BinaryExpr::new(
-                            IdentExpr::new(make_id!(16), make_span!(70, 70)),
+                            SimpleName::new(make_id!(16), make_span!(70, 70)),
                             Seperator::BitXor, make_span!(72, 72),
-                            IdentExpr::new(make_id!(17), make_span!(74, 74)),
+                            SimpleName::new(make_id!(17), make_span!(74, 74)),
                         )
                     ),
                     Seperator::NotEqual, make_span!(76, 77),
-                    IdentExpr::new(make_id!(18), make_span!(79, 79)),
+                    SimpleName::new(make_id!(18), make_span!(79, 79)),
                 ),
                 Seperator::Equal, make_span!(81, 82),
-                IdentExpr::new(make_id!(19), make_span!(84, 84))
+                SimpleName::new(make_id!(19), make_span!(84, 84))
             )
         ))
     }
@@ -309,12 +309,12 @@ fn binary_expr_parse() {
     assert_eq!{ Expr::with_test_str("a & b == c"), // ((a & b) == c)
         Expr::Binary(BinaryExpr::new(
             BinaryExpr::new(
-                IdentExpr::new(make_id!(1), make_span!(0, 0)),
+                SimpleName::new(make_id!(1), make_span!(0, 0)),
                 Seperator::BitAnd, make_span!(2, 2),
-                IdentExpr::new(make_id!(2), make_span!(4, 4)),
+                SimpleName::new(make_id!(2), make_span!(4, 4)),
             ),
             Seperator::Equal, make_span!(6, 7),
-            IdentExpr::new(make_id!(3), make_span!(9, 9)),
+            SimpleName::new(make_id!(3), make_span!(9, 9)),
         ))
     }
 

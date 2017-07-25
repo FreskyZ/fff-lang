@@ -1,0 +1,15 @@
+import itertools;
+import log;
+
+use log::new_logger;
+use log::error as log_error;
+use log::info as log_info;
+
+// very poor whne no lambda
+fn m2(a: i32) -> i32 {
+    return a * 2;
+}
+
+fn main() {
+    assert_eq(itertools::map([2, 3, 4], m2), [4, 6, 8]);
+}

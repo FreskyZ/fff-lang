@@ -11,7 +11,7 @@ use lexical::Seperator;
 use lexical::Keyword;
 
 use super::super::Name;
-use super::super::IdentExpr;
+use super::super::SimpleName;
 use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
@@ -23,7 +23,7 @@ use super::super::ISyntaxItemGrammar;
 pub struct UseStatement {
     pub name: Name,
     pub as_span: Span,
-    pub target: Option<IdentExpr>,
+    pub target: Option<SimpleName>,
     pub all_span: Span,
 }
 impl ISyntaxFormat for UseStatement {
@@ -46,11 +46,11 @@ impl UseStatement {
     pub fn new_default(all_span: Span, name: Name) -> UseStatement {
         UseStatement{ name, all_span, as_span: Span::default(), target: None }
     }
-    pub fn new_target(all_span: Span, name: Name, as_span: Span, target: IdentExpr) -> UseStatement {
+    pub fn new_target(all_span: Span, name: Name, as_span: Span, target: SimpleName) -> UseStatement {
         UseStatement{ name, all_span, as_span, target: Some(target) }
     }
 
-    fn new_some(all_span: Span, name: Name, as_span: Span, target: Option<IdentExpr>) -> UseStatement {
+    fn new_some(all_span: Span, name: Name, as_span: Span, target: Option<SimpleName>) -> UseStatement {
         UseStatement{ name, all_span, as_span, target }
     }
 }
@@ -63,12 +63,12 @@ impl ISyntaxItemParse for UseStatement {
     fn parse(sess: &mut ParseSession) -> ParseResult<UseStatement> {
 
         let starting_span = sess.expect_keyword(Keyword::Use)?;
-        let from_name = Name::parse(sess)?;
+        let from_name = Name::parse(sess)?.into_name();
 
         let (as_span, to_ident) = if let &Token::Keyword(Keyword::As) = sess.tk {
             let as_span = sess.pos;
             sess.move_next();
-            (as_span, Some(IdentExpr::parse(sess)?))
+            (as_span, Some(SimpleName::parse(sess)?))
         } else {
             (Span::default(), None)
         };
@@ -81,13 +81,12 @@ impl ISyntaxItemParse for UseStatement {
 
 #[cfg(test)] #[test]
 fn use_stmt_parse() {
-    use super::super::NameSegment;
     use super::super::WithTestInput;
 
     assert_eq!{
         UseStatement::with_test_str("use a;"),
         UseStatement::new_default(make_span!(0, 5),
-            Name::new(make_span!(4, 4), vec![NameSegment::new(make_id!(1), make_span!(4, 4))])
+            Name::new(make_span!(4, 4), vec![SimpleName::new(make_id!(1), make_span!(4, 4))])
         )
     }
 
@@ -95,12 +94,12 @@ fn use_stmt_parse() {
         UseStatement::with_test_str("use std::fmt::Debug as Display;"),
         UseStatement::new_target(make_span!(0, 30), 
             Name::new(make_span!(4, 18), vec![
-                NameSegment::new(make_id!(1), make_span!(4, 6)),
-                NameSegment::new(make_id!(2), make_span!(9, 11)),
-                NameSegment::new(make_id!(3), make_span!(14, 18))
+                SimpleName::new(make_id!(1), make_span!(4, 6)),
+                SimpleName::new(make_id!(2), make_span!(9, 11)),
+                SimpleName::new(make_id!(3), make_span!(14, 18))
             ]),
             make_span!(20, 21),
-            IdentExpr::new(make_id!(4), make_span!(23, 29))
+            SimpleName::new(make_id!(4), make_span!(23, 29))
         )
     }
 }

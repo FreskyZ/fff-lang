@@ -1,0 +1,57 @@
+syntax-tree
+  import-stmt <1:1-1:17>
+    ident-use "itertools" <1:8-1:16>
+  import-stmt <2:1-2:11>
+    ident-use "log" <2:8-2:10>
+  use-stmt <4:1-4:20>
+    alias-from name <4:5-4:19>
+      segment "log" <4:5-4:7>
+      segment "new_logger" <4:10-4:19>
+  use-stmt <5:1-5:28>
+    alias-from name <5:5-5:14>
+      segment "log" <5:5-5:7>
+      segment "error" <5:10-5:14>
+    "as" <5:16-5:17>
+    alias-to ident-use "log_error" <5:19-5:27>
+  use-stmt <6:1-6:26>
+    alias-from name <6:5-6:13>
+      segment "log" <6:5-6:7>
+      segment "info" <6:10-6:13>
+    "as" <6:15-6:16>
+    alias-to ident-use "log_info" <6:18-6:25>
+  fn-def <9:1-11:1>
+    "m2" <9:4-9:5>
+    return-type "i32" <9:18-9:20>
+    parenthenes <9:6-9:13>
+    param "a" <9:7-9:7>
+      type-use "i32" <9:10-9:12>
+    body <9:22-11:1>
+      return-stmt <10:5-10:17>
+        ret-val-is binary-expr <10:12-10:16>
+          left-is ident-use "a" <10:12-10:12>
+          "*" <10:14-10:14>
+          right-is literal (i32)2 <10:16-10:16>
+  fn-def <13:1-15:1>
+    "main" <13:4-13:7>
+    no-return-type
+    parenthenes <13:8-13:9>
+    no-parameter
+    body <13:11-15:1>
+      expr-stmt simple <14:5-14:56>
+        fn-call <14:5-14:55>
+          base-is ident-use "assert_eq" <14:5-14:13>
+          parenthenes <14:14-14:55>
+          fn-call <14:15-14:43>
+            base-is name <14:15-14:28>
+              segment "itertools" <14:15-14:23>
+              segment "map" <14:26-14:28>
+            parenthenes <14:29-14:43>
+            array-def <14:30-14:38>
+              literal (i32)2 <14:31-14:31>
+              literal (i32)3 <14:34-14:34>
+              literal (i32)4 <14:37-14:37>
+            ident-use "m2" <14:41-14:42>
+          array-def <14:46-14:54>
+            literal (i32)4 <14:47-14:47>
+            literal (i32)6 <14:50-14:50>
+            literal (i32)8 <14:53-14:53>

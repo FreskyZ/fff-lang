@@ -116,7 +116,7 @@ impl ISyntaxItemParse for ForStatement {
 fn for_stmt_parse() {
     use codemap::SymbolCollection;
     use lexical::LitValue;
-    use super::super::IdentExpr;
+    use super::super::SimpleName;
     use super::super::LitExpr;
     use super::super::SimpleExprStatement;
     use super::super::Statement;
@@ -155,29 +155,29 @@ fn for_stmt_parse() {
                     FnCallExpr::new(
                         MemberAccessExpr::new(
                             FnCallExpr::new(
-                                IdentExpr::new(make_id!(3), make_span!(17, 21)),
+                                SimpleName::new(make_id!(3), make_span!(17, 21)),
                                 make_span!(22, 28), make_exprs![
                                     LitExpr::new(LitValue::from(0), make_span!(23, 23)),
                                     LitExpr::new(LitValue::from(10), make_span!(26, 27)),
                                 ]
                             ),
                             make_span!(29, 29),
-                            IdentExpr::new(make_id!(4), make_span!(30, 38))
+                            SimpleName::new(make_id!(4), make_span!(30, 38))
                         ),
                         make_span!(39, 40), ExprList::new(vec![])
                     ), 
                     make_span!(41, 41),
-                    IdentExpr::new(make_id!(5), make_span!(42, 48))
+                    SimpleName::new(make_id!(5), make_span!(42, 48))
                 ),
                 make_span!(49, 50), ExprList::new(vec![])
             ),
             Block::new(make_span!(52, 77), vec![
                 Statement::SimpleExpr(SimpleExprStatement::new(make_span!(54, 75),
                     FnCallExpr::new(
-                        Expr::Ident(IdentExpr::new(make_id!(6), make_span!(54, 60))),
-                        make_span!(61, 74), ExprList::new(vec![
-                            Expr::Lit(LitExpr::new(LitValue::new_str_lit(make_id!(7)), make_span!(62, 73)))
-                        ])
+                        SimpleName::new(make_id!(6), make_span!(54, 60)),
+                        make_span!(61, 74), make_exprs![
+                            LitExpr::new(LitValue::new_str_lit(make_id!(7)), make_span!(62, 73))
+                        ]
                     )
                 ))
             ])
