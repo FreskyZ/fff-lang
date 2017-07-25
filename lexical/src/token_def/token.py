@@ -339,7 +339,9 @@ class Keywords:
             file.write(retval)
 
     def generate_hash_specs(self):
+        # this hash function requires moder be less then u64::MAX / char::MAX = 16557366432706.9
         # 16557366432705, 43 => 137, 2
+        # 16557366432696, 43 => 137, 2
         # 16557366432689, 43 => 137, 2
         bucket_size, bucket_number, memory_use = check_hasher_perform(
             list(map(lambda x: x.value, self.items)),
@@ -485,4 +487,4 @@ keywords = Keywords(KEYWORD_DEF_FILE)
 #seperators.generate_hash_specs()
 #keywords.generate_hash_specs()
 #seperators.generate()
-keywords.generate()
+#keywords.generate()

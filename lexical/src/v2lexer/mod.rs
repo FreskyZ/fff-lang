@@ -646,7 +646,7 @@ fn v2_base() {
     // bug from syntax::expr::postfix_expr
     //           0         1         2         3         4         5
     //           012345678901234567890123456789012345678901234567890123
-    test_case!{ "1.a[[3](4, [5, 6], )](7, 8)() as [i32].bcd[10, 11, 12]", make_symbols!["a", "bcd"], vec![
+    test_case!{ "1.a[[3](4, [5, 6], )](7, 8)() def[i32].bcd[10, 11, 12]", make_symbols!["a", "bcd"], vec![
         lit!(1, 0, 0),
         sep!(Seperator::Dot, 1, 1),
         ident!(make_id!(1), 2, 2),
@@ -672,7 +672,7 @@ fn v2_base() {
         sep!(Seperator::RightParenthenes, 26, 26),
         sep!(Seperator::LeftParenthenes, 27, 27),
         sep!(Seperator::RightParenthenes, 28, 28),
-        kw!(Keyword::As, 30, 31),
+        kw!(Keyword::Def, 30, 32),
         sep!(Seperator::LeftBracket, 33, 33),
         kw!(Keyword::I32, 34, 36),
         sep!(Seperator::RightBracket, 37, 37),
@@ -686,7 +686,7 @@ fn v2_base() {
         lit!(12, 51, 52),
         sep!(Seperator::RightBracket, 53, 53),
     ], make_messages![
-        Message::new(format!("{}: {:?}", error_strings::UseReservedKeyword, Keyword::As), vec![(make_span!(30, 31), String::new())]), // TODO: this feature added, add to error_strings
+        Message::new(format!("{}: {:?}", error_strings::UseReservedKeyword, Keyword::Def), vec![(make_span!(30, 32), String::new())]),
     ]}
 
     //           0         1     

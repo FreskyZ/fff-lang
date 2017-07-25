@@ -55,6 +55,7 @@ pub enum Keyword {
     If,
     Impl,
     Implicit,
+    Import,
     In,
     Interface,
     Internal,
@@ -133,41 +134,41 @@ const KEYWORD_VALUES: &[&str] = &[
     "except", "explicit", "extern", "f128", "f32", "f64", "false", 
     "final", "finally", "fn", "for", "foreach", "function", "goto", 
     "i128", "i16", "i32", "i64", "i8", "if", "impl", 
-    "implicit", "in", "interface", "internal", "is", "lambda", "let", 
-    "loop", "match", "mod", "module", "mut", "mutable", "namespace", 
-    "new", "nil", "none", "null", "nullptr", "object", "or", 
-    "out", "override", "params", "priv", "private", "protected", "pub", 
-    "public", "r128", "r32", "r64", "ref", "ret", "return", 
-    "sealed", "select", "self", "static", "string", "struct", "super", 
-    "switch", "template", "then", "this", "throw", "trait", "true", 
-    "try", "tuple", "type", "typedef", "typeof", "u128", "u16", 
-    "u32", "u64", "u8", "undefined", "unsafe", "use", "using", 
-    "var", "virtual", "volatile", "where", "while", "yield", 
+    "implicit", "import", "in", "interface", "internal", "is", "lambda", 
+    "let", "loop", "match", "mod", "module", "mut", "mutable", 
+    "namespace", "new", "nil", "none", "null", "nullptr", "object", 
+    "or", "out", "override", "params", "priv", "private", "protected", 
+    "pub", "public", "r128", "r32", "r64", "ref", "ret", 
+    "return", "sealed", "select", "self", "static", "string", "struct", 
+    "super", "switch", "template", "then", "this", "throw", "trait", 
+    "true", "try", "tuple", "type", "typedef", "typeof", "u128", 
+    "u16", "u32", "u64", "u8", "undefined", "unsafe", "use", 
+    "using", "var", "virtual", "volatile", "where", "while", "yield", 
 ];
 
 const EMPTY: u8 = 255;
 const HASH_MAGIC: u64 = 16557366432705;
 const KEYWORD_BUCKET1: &[u8] = &[
-    EMPTY, EMPTY, 67, 107, 11, 40, 15, 75, EMPTY, EMPTY, EMPTY, 83, EMPTY, 42, EMPTY, 116, 
-    32, EMPTY, 16, 31, 54, 95, 18, EMPTY, 7, 22, EMPTY, 39, 26, 38, EMPTY, EMPTY, 
-    EMPTY, 69, 105, EMPTY, 82, 58, 3, 70, 94, 100, 80, EMPTY, 50, 20, EMPTY, 44, 
-    EMPTY, EMPTY, EMPTY, 6, 0, EMPTY, 109, 24, 19, EMPTY, 60, 10, EMPTY, 97, EMPTY, EMPTY, 
-    EMPTY, 106, 27, 115, EMPTY, 85, EMPTY, 86, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, 14, EMPTY, EMPTY, 
-    53, EMPTY, 89, EMPTY, EMPTY, 17, 91, 33, EMPTY, 104, 35, EMPTY, 96, 30, 9, EMPTY, 
-    47, EMPTY, EMPTY, 62, 25, 63, EMPTY, 23, 88, EMPTY, 13, EMPTY, 99, 71, 45, EMPTY, 
-    29, 66, 12, EMPTY, EMPTY, 37, EMPTY, 43, 64, 46, EMPTY, EMPTY, 112, EMPTY, 103, 73, 
-    56, 52, 72, EMPTY, 59, EMPTY, EMPTY, 34, 41, 
+    EMPTY, EMPTY, 68, 108, 11, 40, 15, 76, EMPTY, EMPTY, EMPTY, 84, EMPTY, 42, EMPTY, 117, 
+    32, EMPTY, 16, 31, 55, 96, 18, EMPTY, 7, 22, EMPTY, 39, 26, 38, EMPTY, EMPTY, 
+    EMPTY, 70, 106, EMPTY, 83, 59, 3, 71, 95, 101, 81, EMPTY, 51, 20, EMPTY, 44, 
+    EMPTY, EMPTY, EMPTY, 6, 0, EMPTY, 110, 24, 19, EMPTY, 61, 10, EMPTY, 98, EMPTY, EMPTY, 
+    EMPTY, 107, 27, 116, EMPTY, 86, EMPTY, 87, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, 14, EMPTY, EMPTY, 
+    54, EMPTY, 90, EMPTY, EMPTY, 17, 92, 33, EMPTY, 111, 35, EMPTY, 97, 30, 9, EMPTY, 
+    47, EMPTY, EMPTY, 63, 25, 64, 50, 23, 89, EMPTY, 13, EMPTY, 100, 72, 45, EMPTY, 
+    29, 67, 12, EMPTY, EMPTY, 37, EMPTY, 43, 65, 46, EMPTY, EMPTY, 113, EMPTY, 104, 74, 
+    57, 53, 73, EMPTY, 60, EMPTY, EMPTY, 34, 41, 
 ];
 const KEYWORD_BUCKET2: &[u8] = &[
-    EMPTY, EMPTY, 77, 79, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, 84, EMPTY, EMPTY, EMPTY, 5, 
-    EMPTY, EMPTY, 28, EMPTY, 117, EMPTY, EMPTY, EMPTY, EMPTY, 93, EMPTY, EMPTY, 114, EMPTY, EMPTY, EMPTY, 
-    EMPTY, 74, 87, EMPTY, EMPTY, EMPTY, 68, 92, 1, 2, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, 21, 
-    EMPTY, EMPTY, EMPTY, EMPTY, 4, EMPTY, EMPTY, EMPTY, 57, EMPTY, EMPTY, 61, EMPTY, 81, EMPTY, EMPTY, 
-    EMPTY, 51, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, 90, EMPTY, EMPTY, 
-    EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, 49, EMPTY, 110, 36, EMPTY, 102, EMPTY, EMPTY, EMPTY, 
-    EMPTY, EMPTY, EMPTY, EMPTY, 48, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, 65, EMPTY, EMPTY, EMPTY, 8, EMPTY, 
-    EMPTY, 101, 55, EMPTY, EMPTY, 76, EMPTY, EMPTY, EMPTY, 113, EMPTY, EMPTY, 98, EMPTY, EMPTY, 108, 
-    EMPTY, EMPTY, 111, EMPTY, 78, EMPTY, EMPTY, EMPTY, EMPTY, 
+    EMPTY, EMPTY, 78, 80, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, 85, EMPTY, EMPTY, EMPTY, 5, 
+    EMPTY, EMPTY, 28, EMPTY, 118, EMPTY, EMPTY, EMPTY, EMPTY, 94, EMPTY, EMPTY, 115, EMPTY, EMPTY, EMPTY, 
+    EMPTY, 75, 88, EMPTY, EMPTY, EMPTY, 69, 93, 1, 2, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, 21, 
+    EMPTY, EMPTY, EMPTY, EMPTY, 4, EMPTY, EMPTY, EMPTY, 58, EMPTY, EMPTY, 62, EMPTY, 82, EMPTY, EMPTY, 
+    EMPTY, 52, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, 91, EMPTY, EMPTY, 
+    EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, 49, EMPTY, 105, 36, EMPTY, 103, EMPTY, EMPTY, EMPTY, 
+    EMPTY, EMPTY, EMPTY, EMPTY, 48, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, 66, EMPTY, EMPTY, EMPTY, 8, EMPTY, 
+    EMPTY, 102, 56, EMPTY, EMPTY, 77, EMPTY, EMPTY, EMPTY, 114, EMPTY, EMPTY, 99, EMPTY, EMPTY, 109, 
+    EMPTY, EMPTY, 112, EMPTY, 79, EMPTY, EMPTY, EMPTY, EMPTY, 
 ];
 impl Keyword {
     pub fn parse(v: &str) -> Option<Keyword> {
@@ -195,14 +196,14 @@ impl ::std::fmt::Debug for Keyword {
 }
 
 const KEYWORD_CATS: &[u8] = &[
-    1, 3, 3, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 1, 3, 
+    1, 3, 3, 2, 1, 3, 3, 3, 3, 3, 3, 3, 3, 2, 1, 3, 
     2, 3, 3, 3, 1, 3, 1, 3, 3, 3, 1, 3, 3, 3, 3, 3, 
     2, 2, 1, 3, 3, 1, 1, 3, 3, 3, 3, 2, 2, 2, 2, 1, 
-    3, 3, 1, 3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3, 3, 3, 
+    3, 3, 1, 1, 3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 3, 3, 
     3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 
-    3, 3, 3, 1, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 1, 3, 
-    3, 1, 3, 3, 1, 3, 3, 3, 2, 2, 2, 2, 3, 3, 3, 3, 
-    1, 3, 3, 3, 1, 3, 
+    3, 3, 3, 3, 1, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 1, 
+    3, 3, 1, 3, 3, 1, 3, 3, 3, 2, 2, 2, 2, 3, 3, 1, 
+    3, 1, 3, 3, 3, 1, 3, 
 ];
 impl Keyword {
     pub fn is_primitive(&self) -> bool {
@@ -216,31 +217,34 @@ impl Keyword {
 #[cfg(test)] #[test]
 fn keyword_format() {
 
-    assert_eq!{ format!("{:?}", Keyword::Delete), "delete" }
-    assert_eq!{ format!("{:?}", Keyword::Sealed), "sealed" }
-    assert_eq!{ format!("{:?}", Keyword::String), "string" }
-    assert_eq!{ format!("{:?}", Keyword::R32), "r32" }
-    assert_eq!{ format!("{:?}", Keyword::Sealed), "sealed" }
-    assert_eq!{ format!("{:?}", Keyword::Bits32), "bits32" }
-    assert_eq!{ format!("{:?}", Keyword::Except), "except" }
-    assert_eq!{ format!("{:?}", Keyword::Then), "then" }
+    assert_eq!{ format!("{:?}", Keyword::TypeDef), "typedef" }
+    assert_eq!{ format!("{:?}", Keyword::Where), "where" }
+    assert_eq!{ format!("{:?}", Keyword::Let), "let" }
     assert_eq!{ format!("{:?}", Keyword::Namespace), "namespace" }
-    assert_eq!{ format!("{:?}", Keyword::Await), "await" }
+    assert_eq!{ format!("{:?}", Keyword::Volatile), "volatile" }
+    assert_eq!{ format!("{:?}", Keyword::Out), "out" }
+    assert_eq!{ format!("{:?}", Keyword::Private), "private" }
+    assert_eq!{ format!("{:?}", Keyword::Break), "break" }
+    assert_eq!{ format!("{:?}", Keyword::False), "false" }
+    assert_eq!{ format!("{:?}", Keyword::Public), "public" }
 }
 #[cfg(test)] #[test]
 fn keyword_cat() {
 
-    assert_eq!{ Keyword::I32.is_primitive(), true }
-    assert_eq!{ Keyword::Continue.is_reserved(), false }
-    assert_eq!{ Keyword::U32.is_primitive(), true }
-    assert_eq!{ Keyword::Fn.is_primitive(), false }
-    assert_eq!{ Keyword::Fn.is_reserved(), false }
-    assert_eq!{ Keyword::String.is_primitive(), true }
+    assert_eq!{ Keyword::Virtual.is_primitive(), false }
+    assert_eq!{ Keyword::I16.is_reserved(), false }
+    assert_eq!{ Keyword::Use.is_reserved(), false }
+    assert_eq!{ Keyword::Break.is_reserved(), false }
+    assert_eq!{ Keyword::U16.is_reserved(), false }
+    assert_eq!{ Keyword::While.is_primitive(), false }
     assert_eq!{ Keyword::Continue.is_primitive(), false }
-    assert_eq!{ Keyword::R32.is_primitive(), false }
-    assert_eq!{ Keyword::U32.is_reserved(), false }
+    assert_eq!{ Keyword::Protected.is_reserved(), true }
+    assert_eq!{ Keyword::I8.is_reserved(), false }
+    assert_eq!{ Keyword::Continue.is_reserved(), false }
     assert_eq!{ Keyword::F64.is_reserved(), false }
-    assert_eq!{ Keyword::Namespace.is_reserved(), true }
+    assert_eq!{ Keyword::Break.is_primitive(), false }
+    assert_eq!{ Keyword::Use.is_primitive(), false }
+    assert_eq!{ Keyword::While.is_reserved(), false }
 }
 #[cfg(test)] #[test]
 fn keyword_parse() {
