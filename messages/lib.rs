@@ -7,7 +7,7 @@ extern crate codemap;
 
 use std::fmt;
 use codemap::Span;
-use codemap::SourceMap;
+use codemap::SourceCode;
 
 #[derive(Eq, PartialEq)]
 struct LocationAndDesc {
@@ -58,24 +58,19 @@ impl Message {
         Message{ main_desc: main_desc.to_owned(), details: Vec::new(), helps: Vec::new() }
     }
 
-    pub fn format(&self, _sources: &SourceMap) -> String {
-        let mut retval = String::new();
-        retval += &format!("{}:", self.main_desc);
+    pub fn format(&self, source: Option<&SourceCode>) -> String {
+        let mut retval = format!("{}:", self.main_desc);
+        for &LocationAndDesc{ ref loc, ref desc } in &self.details {
+            retval += &format!("\n   | At {}: {}", loc.format(source), desc);
+        }
+        for help in &self.helps {
+            retval += &format!("\n   = help: {}", help);
+        }
         return retval;
     }
 }
 impl fmt::Debug for Message {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        
-        write!(f, "{}:", self.main_desc)?;
-        for &LocationAndDesc{ ref loc, ref desc } in &self.details {
-            write!(f, "\n   | At {:?}: {}", loc, desc)?;
-        }
-        for help in &self.helps {
-            write!(f, "\n   = help: {}", help)?;
-        }
-        Ok(())
-    }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(None)) }
 }
 
 #[derive(Eq, PartialEq)]
@@ -86,13 +81,17 @@ pub struct MessageCollection {
 impl Default for MessageCollection {
     fn default() -> MessageCollection { MessageCollection{ items: Vec::new(), m_uncontinuable: false } }
 }
-impl fmt::Debug for MessageCollection {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl MessageCollection {
+    pub fn format(&self, source: Option<&SourceCode>) -> String {
+        let mut retval = String::new();
         for message in &self.items {
-            writeln!(f, "{:?}\n", message)?;
+            retval += &format!("{}\n", message.format(source));
         }
-        Ok(())
+        retval
     }
+}
+impl fmt::Debug for MessageCollection {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(None)) }
 }
 impl MessageCollection {
 
