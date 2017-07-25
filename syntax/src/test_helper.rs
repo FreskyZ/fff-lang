@@ -56,7 +56,7 @@ impl<T> TestInputResult<T> {
         self
     }
     pub fn expect_no_message(self) -> Self where T: Eq + Debug {
-        assert_eq!{ self.messages.is_empty(), true }
+        assert_eq!{ self.messages.is_empty(), true, "messages are {:?}", self.messages }
         self
     }
 

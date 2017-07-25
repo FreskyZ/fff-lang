@@ -39,6 +39,14 @@ impl SimpleExprStatement {
         SimpleExprStatement{ all_span, expr: expr.into() } 
     }
 }
+// dispatch them to convenience statement define macro
+impl ISyntaxItemGrammar for SimpleExprStatement {
+    fn is_first_final(sess: &ParseSession) -> bool { AssignExprStatement::is_first_final(sess) }
+}
+impl ISyntaxItemParse for SimpleExprStatement {
+    type Target = <AssignExprStatement as ISyntaxItemParse>::Target;
+    fn parse(sess: &mut ParseSession) -> ParseResult<Self::Target> { AssignExprStatement::parse(sess) }
+}
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct AssignExprStatement {

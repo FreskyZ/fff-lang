@@ -24,7 +24,7 @@ pub struct NameSegment{
     pub span: Span,
 }
 impl NameSegment {
-    fn new(value: SymbolID, span: Span) -> NameSegment { NameSegment{ value, span } }
+    pub fn new(value: SymbolID, span: Span) -> NameSegment { NameSegment{ value, span } }
 }
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct Name {
@@ -44,7 +44,7 @@ impl fmt::Debug for Name {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::empty())) }
 }
 impl Name {
-    fn new(all_span: Span, segments: Vec<NameSegment>) -> Name { Name{ all_span, segments } }
+    pub fn new(all_span: Span, segments: Vec<NameSegment>) -> Name { Name{ all_span, segments } }
 }
 impl ISyntaxItemGrammar for Name {
     fn is_first_final(sess: &ParseSession) -> bool { if let &Token::Ident(_) = sess.tk { true } else { false } }

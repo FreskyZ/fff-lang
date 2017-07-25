@@ -10,7 +10,7 @@ use message::MessageCollection;
 use lexical::Token;
 use lexical::TokenStream;
 
-use super::Statement;
+use super::Item;
 use super::Formatter;
 use super::ParseResult;
 use super::ParseSession;
@@ -20,11 +20,11 @@ use super::ISyntaxItemGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct SyntaxTree {
-    pub items: Vec<Statement>,
+    pub items: Vec<Item>,
 }
 impl ISyntaxFormat for SyntaxTree {
     fn format(&self, f: Formatter) -> String {
-        let mut f = f.indent().lit("syntax-tree");
+        let mut f = f.indent().header_text_or("syntax-tree");
         for item in &self.items {
             f = f.endl().apply1(item);
         }
@@ -35,7 +35,7 @@ impl fmt::Debug for SyntaxTree {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::empty())) }
 }
 impl SyntaxTree {
-    pub fn new_items(items: Vec<Statement>) -> SyntaxTree { SyntaxTree{ items } }
+    pub fn new_items(items: Vec<Item>) -> SyntaxTree { SyntaxTree{ items } }
 }
 impl ISyntaxItemParse for SyntaxTree {
     type Target = SyntaxTree;
@@ -44,8 +44,8 @@ impl ISyntaxItemParse for SyntaxTree {
 
         let mut items = Vec::new();
         loop {
-            if Statement::is_first_final(sess) {
-                items.push(Statement::parse(sess)?);
+            if Item::is_first_final(sess) {
+                items.push(Item::parse(sess)?);
             } else if sess.tk == &Token::EOF {
                 break;
             } else {
@@ -84,13 +84,15 @@ fn syntax_tree_parse() {
         let mut expect = String::new();
         let _length = result_file.read_to_string(&mut expect).expect(&format!("cannot read result file {}", result_path));
         
-        let result = TestInput::new(&src).apply::<SyntaxTree, _>();
+        let result = TestInput::new(&src).apply::<SyntaxTree, _>().expect_no_message();
         let actual = result.get_result().unwrap().format(Formatter::new(Some(result.get_source()), Some(result.get_symbols())));
-        // let actual = SyntaxTree::with_test_str(&src).format(Formatter::empty());
         if actual != expect {
             panic!("case '{}' failed, actual:\n`{}`\nexpect:\n`{}`", line, actual, expect)
         }
     }
 }
 
-// TODO: update format including format_with_codemap_symbols for these integration tests
+// TODO: case `fn main() { println("hello") }
+// current message: Unexpect symbol, meet }, expect assignment operator, semicolon
+// expect message: unexpect symbol, expect `;`, `.`, `(`, `+`, etc., meet `}`
+// and recover this case

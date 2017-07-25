@@ -56,6 +56,9 @@ pub use self::statement::IfClause;
 pub use self::statement::ElseIfClause;
 pub use self::statement::ElseClause;
 pub use self::statement::IfStatement;
+pub use self::statement::UseStatement;
+pub use self::statement::ImportStatement;
+pub use self::statement::Item;
 pub use self::syntax_tree::SyntaxTree;
 
 use self::parse_sess::ParseSession;
