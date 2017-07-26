@@ -1,4 +1,4 @@
-syntax-tree
+module
   import-stmt <1:1-1:17>
     ident-use "itertools" <1:8-1:16>
   import-stmt <2:1-2:11>

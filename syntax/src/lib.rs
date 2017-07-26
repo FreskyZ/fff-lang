@@ -23,6 +23,7 @@ pub use self::items::block::Block;
 pub use self::items::label_def::LabelDef;
 pub use self::items::type_def::TypeFieldDef;
 pub use self::items::type_def::TypeDef;
+pub use self::items::module::Module;
 pub use self::expr::LitExpr;
 pub use self::expr::Expr;
 pub use self::expr::BinaryExpr;

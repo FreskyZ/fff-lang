@@ -1,4 +1,4 @@
-syntax-tree
+module
   fn-def <4:1-23:1>
     "main" <4:4-4:7>
     no-return-type

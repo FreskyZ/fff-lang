@@ -53,3 +53,47 @@ statement = ...
 ```
 
 leave them all public currently, discuss access control after former is implemented
+
+another issue, about syntax driver implementation, there have to be some where holding the logic that recursively check current module's import declarations, according to import name to determine possible file to be parsed, check file existence, open and read file, lexical parse it and syntax parse it, record it somewhere and continue recursion
+
+in detail, first there is only one input file, say `main.ff`, give it to `SourceMap`, produce a `SourceCode`, call lexical module driver, get a `TokenStream`, construct a `ParseSession`, give it to `Module`'s parser, get a generated `Module`, then check its imports, say `import a;` and `import c;`, then search the same dir for `./a.ff` or `./a/module.ff` and `./c.ff` or `./c/module.ff`, recursion
+
+so, current `codemap::SourceCode` and `syntax::Module` should add some fields and allow some kind of mutable, source code should calculate current directory when constructing, module should add a file id to link to the source code, or Rc the source code, module also should contain information as module name, which add a segment to its defined names, here is a new issue, what happens to the names when
+
+```fff-lang
+// a.ff, main module
+import b;
+int a;    // full name is 'a'
+
+// b.ff
+import c;
+int b;    // full name is 'b::b'
+
+// c.ff
+int c;    // full name is 'b::c::c' or 'c::c' ?
+```
+
+rust's solution is forbid module declare in non (main.rs, lib.rs, mod.rs) files, this seems great and every thing seems like rust...
+
+let's learn more about C++ ts and haskell and go and javascript's module design
+
+in python, physical structure with
+
+\something
+  main.py
+  m1.py
+  m2.py
+  \m3
+    m4.py
+
+and content
+
+```py
+from m1 import M1Type;
+from m2 import M2Type;
+from m3.m4 import M34Type;
+```
+
+it works fine
+
+check [this tutorial](https://www.haskell.org/tutorial/modules.html) for information about haskell

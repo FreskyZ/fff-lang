@@ -1,4 +1,4 @@
-syntax-tree
+module
   expr-stmt simple <4:1-4:23>
     fn-call <4:1-4:22>
       base-is ident-use "writeln" <4:1-4:7>
