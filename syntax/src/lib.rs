@@ -8,11 +8,11 @@
 extern crate lexical;
 
 #[macro_use] mod expr;
+mod parse_sess;
 mod items;
 mod statement;
 mod error_strings;
 mod format_helper;
-mod parse_sess;
 mod syntax_tree;
 mod test_helper;
 

@@ -5,7 +5,6 @@
 ///! primary_expr = ident_expr | lit_expr | unit_lit | paren_expr | tuple_def | array_def
 ///! postfix_expr = expr { ( member_access | fn_call | indexer_call ) }
 
-use lexical::Token;
 use lexical::Keyword;
 
 use super::Expr;
@@ -45,12 +44,8 @@ impl ISyntaxItemParse for PrimaryExpr {
             return ArrayDef::parse(sess);
         }
 
-        if let (&Token::Keyword(Keyword::This), this_span) = (sess.tk, sess.pos) {
-            sess.move_next();
-            return Ok(Expr::SimpleName(SimpleName::new(sess.symbols.intern_str("this"), this_span)));
-        } else {
-            return sess.push_unexpect("primary expr");
-        }
+        let (this_id, this_span) = sess.expect_ident_or(vec![Keyword::This])?;  // actually identifier is processed by Name, not here
+        return Ok(Expr::SimpleName(SimpleName::new(this_id, this_span)));
     }
 }
 

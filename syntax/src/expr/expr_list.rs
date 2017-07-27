@@ -58,45 +58,31 @@ impl ISyntaxItemParse for ExprList {
     /// Then the parser will check end token to determine end of parsing process
     fn parse(sess: &mut ParseSession) -> ParseResult<ExprListParseResult> {
 
-        let (expect_end_token, starting_quote_span) = match (sess.tk, sess.pos) {
-            (&Token::Sep(Seperator::LeftParenthenes), left_paren_span) => (Token::Sep(Seperator::RightParenthenes), left_paren_span),
-            (&Token::Sep(Seperator::LeftBracket), left_bracket_span) => (Token::Sep(Seperator::RightBracket), left_bracket_span),
-            (&Token::Sep(Seperator::LeftBrace), left_brace_span) => (Token::Sep(Seperator::RightBrace), left_brace_span),
-            _ => return sess.push_unexpect("left paired token"),
+        let (starting_sep, starting_span) = sess.expect_seps(&[Seperator::LeftBrace, Seperator::LeftBracket, Seperator::LeftParenthenes])?;
+        let expect_end_sep = match starting_sep { 
+            Seperator::LeftBrace => Seperator::RightBrace, 
+            Seperator::LeftBracket => Seperator::RightBracket,
+            Seperator::LeftParenthenes => Seperator::RightParenthenes,
+            _ => unreachable!(),
         };
-        sess.move_next();
 
-        if sess.tk == &expect_end_token {
-            let ending_span = sess.pos;
-            sess.move_next();
-            return Ok(ExprListParseResult::Empty(starting_quote_span.merge(&ending_span)));
+        if let Some(ending_span) = sess.try_expect_sep(expect_end_sep) {
+            return Ok(ExprListParseResult::Empty(starting_span.merge(&ending_span)));
         }
-        if let (&Token::Sep(Seperator::Comma), next_tk, next_span) = (sess.tk, sess.next_tk, sess.next_pos) {
-            if next_tk == &expect_end_token {
-                sess.move_next2();
-                return Ok(ExprListParseResult::SingleComma(starting_quote_span.merge(&next_span)));
-            }
+        if let Some((_comma_span, ending_span)) = sess.try_expect_2_sep(Seperator::Comma, expect_end_sep) {
+            return Ok(ExprListParseResult::SingleComma(starting_span.merge(&ending_span)));
         }
 
         let mut items = Vec::new();
         loop {
             items.push(Expr::parse(sess)?);
             
-            match (sess.tk, sess.pos, sess.next_tk, sess.next_pos) {
-                (&Token::Sep(Seperator::Comma), _, next_token, next_span) if next_token == &expect_end_token => {
-                    sess.move_next2();
-                    return Ok(ExprListParseResult::EndWithComma(starting_quote_span.merge(&next_span), ExprList::new(items)));
-                }
-                (token, right_span, _, _) if token == &expect_end_token => {
-                    sess.move_next();
-                    return Ok(ExprListParseResult::Normal(starting_quote_span.merge(&right_span), ExprList::new(items)));
-                }
-                (&Token::Sep(Seperator::Comma), _, _, _) => { 
-                    sess.move_next(); 
-                    continue; 
-                }
-                _ => return sess.push_unexpect(&format!("comma, {:?}", expect_end_token)),
+            if let Some((_comma_span, ending_span)) = sess.try_expect_2_sep(Seperator::Comma, expect_end_sep) {
+                return Ok(ExprListParseResult::EndWithComma(starting_span.merge(&ending_span), ExprList::new(items)));
+            } else if let Some(ending_span) = sess.try_expect_sep(expect_end_sep) {
+                return Ok(ExprListParseResult::Normal(starting_span.merge(&ending_span), ExprList::new(items)));
             }
+            let _comma_span = sess.expect_sep(Seperator::Comma)?;
         }
     }
 }
