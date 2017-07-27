@@ -67,12 +67,9 @@ impl ISyntaxItemParse for UnaryExpr {
         
         let mut op_spans = Vec::new();
         loop {
-            match (sess.tk, sess.pos) {
-                (&Token::Sep(operator), operator_strpos) if operator.is_category(SeperatorCategory::Unary) => {
-                    sess.move_next();
-                    op_spans.push((operator, operator_strpos));
-                }
-                _ => {
+            match sess.try_expect_sep_cat(SeperatorCategory::Unary) {
+                Some((sep, sep_span)) => op_spans.push((sep, sep_span)),
+                None => {
                     let base = PostfixExpr::parse(sess)?;
                     return Ok(op_spans.into_iter().rev().fold(base, |base, (op, span)| { Expr::Unary(UnaryExpr::new(op, span, base)) }));
                 }

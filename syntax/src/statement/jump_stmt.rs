@@ -1,8 +1,8 @@
 ///! fff-lang
 ///! 
-///! syntax/jump_stmt for BreakStatement and ContinueStatement
-///! BreakStatement = fBreak [fLabel] fSemiColon        
-///! ContinueStatement = fContinue [fLabel] fSemiColon
+///! syntax/jump_stmt for break statement and continue statement
+///! break_stmt = 'break' [ label ] ';'
+///! continue_stmt = 'continue' [ label ] ';'
 
 use std::fmt;
 
@@ -43,24 +43,15 @@ impl JumpStatement {
     }
 
     fn parse(sess: &mut ParseSession, expect_first_kw: Keyword) -> ParseResult<JumpStatement> {
-        assert!(sess.tk == &Token::Keyword(expect_first_kw));
 
-        let starting_strpos = sess.pos;
-        sess.move_next();
-        match (sess.tk, sess.pos, sess.next_tk, sess.next_pos) {
-            (&Token::Label(ref target), target_strpos, 
-                &Token::Sep(Seperator::SemiColon), ref semi_colon_strpos) => {
-                sess.move_next2();
-                Ok(JumpStatement::new_target(starting_strpos.merge(semi_colon_strpos), *target, target_strpos))
-            }
-            (&Token::Sep(Seperator::SemiColon), ref semi_colon_strpos, _, _) => {
-                sess.move_next();
-                Ok(JumpStatement::new_no_target(starting_strpos.merge(semi_colon_strpos)))
-            }
-            (&Token::Label(_), _, _, _) =>
-                sess.push_unexpect("semicolon"),
-            _ => 
-                sess.push_unexpect("label, semicolo"),
+        let starting_span = sess.expect_keyword(expect_first_kw)?;
+
+        if let Some((label_id, label_span)) = sess.try_expect_label() {
+            let semicolon_span = sess.expect_sep(Seperator::SemiColon)?;
+            Ok(JumpStatement::new_target(starting_span.merge(&semicolon_span), label_id, label_span))
+        } else { 
+            let semicolon_span = sess.expect_sep(Seperator::SemiColon)?;
+            Ok(JumpStatement::new_no_target(starting_span.merge(&semicolon_span)))
         }
     }
 }

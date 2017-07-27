@@ -72,38 +72,25 @@ impl ISyntaxItemParse for TypeDef {
     fn parse(sess: &mut ParseSession) -> ParseResult<TypeDef> {
 
         let starting_span = sess.expect_keyword(Keyword::Type)?;
-        let name = match (sess.tk, sess.pos) {
-            (&Token::Ident(ident), ref span) => { 
-                sess.move_next(); 
-                SimpleName::new(ident, *span) 
-            }
-            (&Token::Keyword(kw), ref span) if kw.is_primitive() => { 
-                sess.move_next(); 
-                SimpleName::new(sess.symbols.intern(format!("{:?}", kw)), *span)
-            }
-            _ => return sess.push_unexpect("identifier"),
-        };
+        let (symid, name_span) = sess.expect_ident_or_if(Keyword::is_primitive)?;
+        let name = SimpleName::new(symid, name_span);
         let _left_brace_span = sess.expect_sep(Seperator::LeftBrace)?;
 
         let mut fields = Vec::new();
-        let right_brace_span: Span;
-        loop {
-            if let (&Token::Sep(Seperator::RightBrace), span) = (sess.tk, sess.pos) {
-                sess.move_next();
-                right_brace_span = span;
-                break;
+        let right_brace_span = loop { 
+            if let Some(right_brace_span) = sess.try_expect_sep(Seperator::RightBrace) {
+                break right_brace_span;     // rustc 1.19 stablize break-expr
             }
 
             let field_name = SimpleName::parse(sess)?;
             let colon_span = sess.expect_sep(Seperator::Colon)?;
             let field_type = TypeUse::parse(sess)?;
-            fields.push(if let (&Token::Sep(Seperator::Comma), ref comma_span) = (sess.tk, sess.pos) {
-                sess.move_next();
-                TypeFieldDef::new(field_name.span.merge(comma_span), field_name, colon_span, field_type)
+            fields.push(if let Some(comma_span) = sess.try_expect_sep(Seperator::Comma) {
+                TypeFieldDef::new(field_name.span.merge(&comma_span), field_name, colon_span, field_type)
             } else {
                 TypeFieldDef::new(field_name.span.merge(&field_type.all_span), field_name, colon_span, field_type)
             });
-        }
+        };
 
         Ok(TypeDef::new(starting_span.merge(&right_brace_span), name, fields))
     }

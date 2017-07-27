@@ -43,14 +43,11 @@ impl ISyntaxItemParse for LabelDef {
 
     fn parse(sess: &mut ParseSession) -> ParseResult<LabelDef> {
 
-        match (sess.tk, sess.pos, sess.next_tk, sess.next_pos) {
-            (&Token::Label(ref label_name), ref label_name_strpos,
-                &Token::Sep(Seperator::Colon), ref colon_strpos) => {
-                sess.move_next2();
-                Ok(LabelDef::new(label_name.clone(), label_name_strpos.merge(colon_strpos)))
-            }
-            (&Token::Label(_), _, _, _) => sess.push_unexpect("colon"),
-            _ => sess.push_unexpect("label"),
+        if let Some((label_id, label_span)) = sess.try_expect_label() {
+            let colon_span = sess.expect_sep(Seperator::Colon)?;
+            Ok(LabelDef::new(label_id, label_span.merge(&colon_span)))
+        } else {
+            sess.push_unexpect("label")
         }
     }
 }

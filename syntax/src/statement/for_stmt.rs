@@ -101,10 +101,7 @@ impl ISyntaxItemParse for ForStatement {
 
         let maybe_label = LabelDef::try_parse(sess)?;
         let for_strpos = sess.expect_keyword(Keyword::For)?;
-
-        // Accept _ as iter_name, _ do not declare iter var
-        let (iter_name, iter_strpos) = sess.expect_ident_or(vec![Keyword::Underscore])?;
-
+        let (iter_name, iter_strpos) = sess.expect_ident_or(vec![Keyword::Underscore])?; // Accept _ as iter_name, _ do not declare iter var
         let _in_strpos = sess.expect_keyword(Keyword::In)?;
         let iter_expr = Expr::parse(sess)?;
         let body = Block::parse(sess)?;

@@ -65,9 +65,7 @@ impl ISyntaxItemParse for UseStatement {
         let starting_span = sess.expect_keyword(Keyword::Use)?;
         let from_name = Name::parse(sess)?.into_name();
 
-        let (as_span, to_ident) = if let &Token::Keyword(Keyword::As) = sess.tk {
-            let as_span = sess.pos;
-            sess.move_next();
+        let (as_span, to_ident) = if let Some(as_span) = sess.try_expect_keyword(Keyword::As) {
             (as_span, Some(SimpleName::parse(sess)?))
         } else {
             (Span::default(), None)

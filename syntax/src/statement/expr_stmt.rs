@@ -6,7 +6,6 @@
 use std::fmt;
 
 use codemap::Span;
-use lexical::Token;
 use lexical::Seperator;
 use lexical::SeperatorCategory;
 
@@ -92,26 +91,16 @@ impl ISyntaxItemParse for AssignExprStatement {
         let starting_span = sess.pos;
         let left_expr = Expr::parse(sess)?;
 
-        let (assign_op, assign_op_span) = match (sess.tk, sess.pos) {
-            (&Token::Sep(Seperator::SemiColon), ref semicolon_span) => {
-                sess.move_next();
-                return Ok(Statement::SimpleExpr(SimpleExprStatement::new(starting_span.merge(semicolon_span), left_expr)));
-            }
-            (&Token::Sep(assign_op), assign_op_span) if assign_op.is_category(SeperatorCategory::Assign) => {
-                sess.move_next();
-                (assign_op, assign_op_span)
-            }
-            _ => return sess.push_unexpect("assignment operator, semicolon"),
-        };
-
-        let right_expr = Expr::parse(sess)?;
-        let semicolon_span = sess.expect_sep(Seperator::SemiColon)?;
-
-        return Ok(Statement::AssignExpr(AssignExprStatement::new(
-            starting_span.merge(&semicolon_span),
-            assign_op, assign_op_span, 
-            left_expr, right_expr
-        )));
+        if let Some(semicolon_span) = sess.try_expect_sep(Seperator::SemiColon) {
+            Ok(Statement::SimpleExpr(SimpleExprStatement::new(starting_span.merge(&semicolon_span), left_expr)))
+        } else if let Some((assign_op, assign_op_span)) = sess.try_expect_sep_cat(SeperatorCategory::Assign) {
+            let right_expr = Expr::parse(sess)?;
+            let semicolon_span = sess.expect_sep(Seperator::SemiColon)?;
+            Ok(Statement::AssignExpr(
+                AssignExprStatement::new(starting_span.merge(&semicolon_span), assign_op, assign_op_span, left_expr, right_expr)))
+        } else {
+            sess.push_unexpect("assign operators, semicolon")
+        }
     }
 }
 

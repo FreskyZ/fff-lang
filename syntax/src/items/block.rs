@@ -48,14 +48,13 @@ impl ISyntaxItemParse for Block {
 
     fn parse(sess: &mut ParseSession) -> ParseResult<Block> {
 
-        let starting_strpos = sess.expect_sep(Seperator::LeftBrace)?;
+        let starting_span = sess.expect_sep(Seperator::LeftBrace)?;
         let mut items = Vec::new();
         loop {
-            if let (&Token::Sep(Seperator::RightBrace), ref right_brace_strpos) = (sess.tk, sess.pos) {
-                sess.move_next();
-                return Ok(Block::new(starting_strpos.merge(right_brace_strpos), items));
+            if let Some(ending_span) = sess.try_expect_sep(Seperator::RightBrace) {
+                return Ok(Block::new(starting_span.merge(&ending_span), items));
             }
-            items.push(Statement::parse(sess)?); 
+            items.push(Statement::parse(sess)?);
         }
     }
 }

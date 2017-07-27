@@ -15,7 +15,6 @@
 use std::fmt;
 
 use codemap::Span;
-use lexical::Token;
 use lexical::Seperator;
 use lexical::SeperatorCategory;
 
@@ -82,15 +81,12 @@ impl ISyntaxItemParse for BinaryExpr {
 
                     let mut current_retval = $previous_parser(sess)?;
                     loop {
-                        match (sess.tk, sess.pos) {
-                            (&Token::Sep(operator), operator_strpos) if operator.is_category($op_category) => {
-                                sess.move_next();
+                        match sess.try_expect_sep_cat($op_category) {
+                            Some((sep, sep_span)) => {
                                 let right_expr = $previous_parser(sess)?;
-                                current_retval = Expr::Binary(BinaryExpr::new(current_retval, operator, operator_strpos, right_expr));
-                                trace!("    changing current ret_val to {:?}", current_retval);
+                                current_retval = Expr::Binary(BinaryExpr::new(current_retval, sep, sep_span, right_expr));
                             }
-                            _ => {
-                                trace!("   operator or other not '{}', return left: {:?}", stringify!($op_category), current_ret_val);
+                            None => {
                                 return Ok(current_retval);
                             }
                         }
