@@ -26,6 +26,7 @@ use codemap::SymbolID;
 use message::Message;
 use lexical::Token;
 use lexical::Seperator;
+use lexical::Keyword;
 
 use super::super::Formatter;
 use super::super::ParseResult;
@@ -83,70 +84,35 @@ impl ISyntaxItemParse for TypeUse {
     type Target = TypeUse;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<TypeUse> {
-        #[cfg(feature = "trace_type_use_parse")]
-        macro_rules! trace { ($($arg:tt)*) => ({ print!("[TypeUse]"); println!($($arg)*); }) }
-        #[cfg(not(feature = "trace_type_use_parse"))]
-        macro_rules! trace { ($($arg:tt)*) => () }
 
-        trace!{ "parsing" }
-
-        match (sess.tk, sess.pos) {
-            (&Token::Ident(ref ident), ref ident_strpos) => {
-                sess.move_next();
-                return Ok(TypeUse::new_simple(*ident, *ident_strpos));
+        if let Some(left_bracket_span) = sess.try_expect_sep(Seperator::LeftBracket) {
+            let inner = TypeUse::parse(sess)?;
+            let right_bracket_span = sess.expect_sep(Seperator::RightBracket)?;
+            Ok(TypeUse::new_template(sess.symbols.intern_str("array"), Span::default(), left_bracket_span.merge(&right_bracket_span), vec![inner]))
+        } else if let Some(left_paren_span) = sess.try_expect_sep(Seperator::LeftParenthenes) {
+            if let Some(right_paren_span) = sess.try_expect_sep(Seperator::RightParenthenes) {
+                return Ok(TypeUse::new_simple(sess.symbols.intern_str("unit"), left_paren_span.merge(&right_paren_span)));
             }
-            (&Token::Keyword(keyword), ref keyword_strpos) if keyword.is_primitive() => {
-                sess.move_next();
-                return Ok(TypeUse::new_simple(sess.symbols.intern(format!("{:?}", keyword)), *keyword_strpos));
-            }
-            (&Token::Sep(Seperator::LeftBracket), ref left_bracket_strpos) => {
-                sess.move_next();
-                let inner = TypeUse::parse(sess)?;
-                let right_bracket_strpos = sess.expect_sep(Seperator::RightBracket)?;
-                let quote_span = left_bracket_strpos.merge(&right_bracket_strpos);
-                return Ok(TypeUse::new_template(sess.symbols.intern_str("array"), Span::default(), quote_span, vec![inner]));
-            }
-            (&Token::Sep(Seperator::LeftParenthenes), ref left_paren_strpos) => {
-                sess.move_next();
-                if let (&Token::Sep(Seperator::RightParenthenes), ref right_paren_strpos) = (sess.tk, sess.pos) { 
-                    sess.move_next();
-                    return Ok(TypeUse::new_simple(sess.symbols.intern_str("unit"), left_paren_strpos.merge(&right_paren_strpos)));
+            
+            let mut tuple_types = vec![TypeUse::parse(sess)?];
+            let (ending_span, end_by_comma) = loop {
+                if let Some((_comma_span, right_paren_span)) = sess.try_expect_2_sep(Seperator::Comma, Seperator::RightParenthenes) {
+                    break (right_paren_span, true);
+                } else if let Some(right_paren_span) = sess.try_expect_sep(Seperator::RightParenthenes) {
+                    break (right_paren_span, false);
                 }
-
-                let mut tuple_types = Vec::new();
-                let ending_strpos: Span;
-                let end_by_comma: bool;
+                let _comma_span = sess.expect_sep(Seperator::Comma)?;
                 tuple_types.push(TypeUse::parse(sess)?);
-                loop {
-                    match (sess.tk, sess.pos, sess.next_tk, sess.next_pos) {
-                        (&Token::Sep(Seperator::Comma), _, 
-                            &Token::Sep(Seperator::RightParenthenes), ref right_paren_strpos) => {
-                            sess.move_next2();
-                            ending_strpos = *right_paren_strpos;
-                            end_by_comma = true;
-                            break;        
-                        }
-                        (&Token::Sep(Seperator::RightParenthenes), ref right_paren_strpos, _, _) => {
-                            sess.move_next();
-                            ending_strpos = *right_paren_strpos;
-                            end_by_comma = false;
-                            break;
-                        }
-                        (&Token::Sep(Seperator::Comma), _, _, _) => {
-                            sess.move_next();
-                            tuple_types.push(TypeUse::parse(sess)?);
-                        }
-                        _ => return sess.push_unexpect("comma, right parenthenes"),
-                    }
-                }
+            };
                 
-                let paren_pair_strpos = left_paren_strpos.merge(&ending_strpos);
-                if tuple_types.len() == 1 && !end_by_comma { // len() == 0 already rejected
-                    sess.push_message(Message::new_by_str("Single item tuple type use", vec![(paren_pair_strpos, "type use here")]));
-                }
-                return Ok(TypeUse::new_template(sess.symbols.intern_str("tuple"), Span::default(), paren_pair_strpos, tuple_types))
+            let paren_span = left_paren_span.merge(&ending_span);
+            if tuple_types.len() == 1 && !end_by_comma {            // len == 0 already rejected
+                sess.push_message(Message::new_by_str("Single item tuple type use", vec![(paren_span, "type use here")]));
             }
-            _ => return sess.push_unexpect("primitive type keyword, left bracket, left parenthenes, identifier"),
+            Ok(TypeUse::new_template(sess.symbols.intern_str("tuple"), Span::default(), paren_span, tuple_types))
+        } else {
+            let (symid, sym_span) = sess.expect_ident_or_if(Keyword::is_primitive)?;
+            Ok(TypeUse::new_simple(symid, sym_span))
         }
     }
 }

@@ -136,6 +136,21 @@ impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
         }
     }
 
+    /// Check current token is a label
+    /// 
+    /// if so, move next and Some((symid, sym_span)), 
+    /// if not, no move next and None
+    ///
+    /// example `if let Some((symid, label_span)) = sess.try_expect_label() { ... }`
+    pub fn try_expect_label(&mut self) -> Option<(SymbolID, Span)> {
+        
+        let current_index = self.current_index.get();
+        match (self.tokens.nth_token(current_index), self.tokens.nth_span(current_index)) {
+            (&Token::Label(ref id), ref label_span) => { self.move_next(); Some((*id, *label_span)) },
+            _ => None,
+        }
+    }
+
     /// Check current token is identifier or acceptable keywords
     /// 
     /// if so, move next and Ok((symbol_id, ident_span)),
@@ -190,6 +205,21 @@ impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
             _ => None,
         }
     }
+
+    /// Check current token is specified keyword
+    ///
+    /// if so, move next and Some(kw_span), 
+    /// if not, no move next and None
+    ///
+    /// example `if let Some(kw_span) == sess.try_expect_keyword(Keyword::If) { ... }`
+    pub fn try_expect_keyword(&mut self, expected_keyword: Keyword) -> Option<Span> {
+
+        let current_index = self.current_index.get();
+        match (self.tokens.nth_token(current_index), self.tokens.nth_span(current_index)) {
+            (&Token::Keyword(ref actual_kw), ref kw_span) if actual_kw == &expected_keyword => { self.move_next(); Some(*kw_span) },
+            _ => None,
+        }
+    }
     
     /// Check current and next token is specified seperators
     ///
@@ -204,6 +234,21 @@ impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
             self.tokens.nth_token(current_index + 1), self.tokens.nth_span(current_index + 1)) {
             (&Token::Sep(ref sep1), sep1_span, &Token::Sep(ref sep2), sep2_span) 
                 if sep1 == &expected_sep1 && sep2 == &expected_sep2 => { self.move_next2(); Some((sep1_span, sep2_span)) },
+            _ => None,
+        }
+    }
+
+    /// Check current token is of seperator category
+    ///
+    /// if so, move next and Some((sep, sep_span)), 
+    /// if not, no move next and None
+    ///
+    /// example `if let Some((sep, sep_span)) = sess.try_expect_sep_cat(Unary) { ... }`
+    pub fn try_expect_sep_cat(&mut self, expected_cat: u16) -> Option<(Seperator, Span)> {
+
+        let current_index = self.current_index.get();
+        match (self.tokens.nth_token(current_index), self.tokens.nth_span(current_index)) {
+            (&Token::Sep(ref sep), ref sep_span) if sep.is_category(expected_cat) => { self.move_next(); Some((*sep, *sep_span)) },
             _ => None,
         }
     }

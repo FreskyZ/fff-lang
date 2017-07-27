@@ -159,24 +159,23 @@ impl ISyntaxItemParse for IfStatement {
         let mut elseif_clauses = Vec::new();
         let mut else_clause = None;
         loop {
-            match (sess.tk, sess.pos, sess.next_tk, sess.next_pos) {
-                (&Token::Keyword(Keyword::Else), ref else_span, &Token::Keyword(Keyword::If), ref if_span) => {
-                    sess.move_next2();
+            if let Some(else_span) = sess.try_expect_keyword(Keyword::Else) {
+                if let Some(if_span) = sess.try_expect_keyword(Keyword::If) {
                     let elseif_span = else_span.merge(&if_span);
                     let elseif_expr = Expr::parse(sess)?;
                     let elseif_body = Block::parse(sess)?;
                     elseif_clauses.push(ElseIfClause::new(elseif_span, elseif_expr, elseif_body));
-                }
-                (&Token::Keyword(Keyword::Else), ref else_span, _, _) => {
-                    sess.move_next();
+                } else {
                     // 16/12/1, we lost TWO `+1`s for current_length here ... fixed
                     // 17/5/6: When there is match Block::parse(tokens, messages, index + current_length), etc.
                     // There was a bug fix here, now no more current_length handling!
                     // 17/6/21: a new physical structure update makes it much more simple
+                    // 17/7/28: a new small update of parse_sess makes things even more simple
                     let else_body = Block::parse(sess)?;
-                    else_clause = Some(ElseClause::new(*else_span, else_body));
+                    else_clause = Some(ElseClause::new(else_span, else_body));
                 }
-                _ => break,
+            } else {
+                break;
             }
         }
 

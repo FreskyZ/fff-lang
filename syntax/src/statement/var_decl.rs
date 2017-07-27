@@ -75,6 +75,7 @@ impl ISyntaxItemParse for VarDeclStatement {
 
     fn parse(sess: &mut ParseSession) -> ParseResult<VarDeclStatement> {
         
+        // let (starting_kw, starting_span) = sess.expect_keywords
         let starting_strpos = sess.pos;
         let is_const = match sess.tk {
             &Token::Keyword(Keyword::Const) => true, 

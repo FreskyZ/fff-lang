@@ -84,49 +84,39 @@ impl ISyntaxItemParse for FnDef {
         #[cfg(not(feature = "trace_fn_def_parse"))]
         macro_rules! trace { ($($arg:tt)*) => () }
         
-        let fn_strpos = sess.expect_keyword(Keyword::Fn)?;
-        let (fn_name, fn_name_strpos) = sess.expect_ident()?;
-        let mut params_paren_strpos = sess.expect_sep(Seperator::LeftParenthenes)?;
-        trace!("fndef name span: {:?}", fn_name_strpos);
+        let fn_span = sess.expect_keyword(Keyword::Fn)?;
+        let (fn_name, fn_name_span) = sess.expect_ident()?;
+        let mut params_paren_span = sess.expect_sep(Seperator::LeftParenthenes)?;
+        trace!("fndef name span: {:?}", fn_name_span);
 
         let mut params = Vec::new();
         loop {
-            match (sess.tk, sess.pos, sess.next_tk, sess.next_pos) {
-                (&Token::Sep(Seperator::Comma), _,
-                    &Token::Sep(Seperator::RightParenthenes), ref right_paren_strpos) => {
-                    sess.move_next2();
-                    params_paren_strpos = params_paren_strpos.merge(right_paren_strpos);
-                    if params.is_empty() {
-                        sess.push_message(Message::new_by_str("Single comma in function definition argument list", vec![
-                            (fn_name_strpos, "function definition here"),
-                            (params_paren_strpos, "param list here")
-                        ]));
-                    }
-                    break;
+            if let Some((_comma_span, right_paren_span)) = sess.try_expect_2_sep(Seperator::Comma, Seperator::RightParenthenes) {
+                params_paren_span = params_paren_span.merge(&right_paren_span);
+                if params.is_empty() {
+                    sess.push_message(Message::new_by_str("Single comma in function definition argument list", vec![
+                        (fn_name_span, "function definition here"),
+                        (params_paren_span, "param list here")
+                    ]));
                 }
-                (&Token::Sep(Seperator::RightParenthenes), ref right_paren_strpos, _, _) => {
-                    sess.move_next();
-                    params_paren_strpos = params_paren_strpos.merge(right_paren_strpos);
-                    break;
-                }
-                (&Token::Sep(Seperator::Comma), _, _, _) => {
-                    sess.move_next();
-                    continue;
-                }
-                _ => (),
+                break;
+            } else if let Some(right_paren_span) = sess.try_expect_sep(Seperator::RightParenthenes) {
+                params_paren_span = params_paren_span.merge(&right_paren_span);
+                break;
+            } else if let Some(_comma_span) = sess.try_expect_sep(Seperator::Comma) {
+                continue;
             }
 
-            let (param_name, param_strpos) = sess.expect_ident_or(vec![Keyword::Underscore, Keyword::This])?;
+            let (param_name, param_span) = sess.expect_ident_or(vec![Keyword::Underscore, Keyword::This])?;
             let _ = sess.expect_sep(Seperator::Colon)?;
             let decltype = TypeUse::parse(sess)?;
-            params.push(FnParam::new(param_name, param_strpos, decltype));
+            params.push(FnParam::new(param_name, param_span, decltype));
         }
 
-        let maybe_ret_type = if sess.tk == &Token::Sep(Seperator::NarrowRightArrow) { sess.move_next(); Some(TypeUse::parse(sess)?) } else { None };
+        let maybe_ret_type = if let Some(_right_arrow_span) = sess.try_expect_sep(Seperator::NarrowRightArrow) { Some(TypeUse::parse(sess)?) } else { None };
         let body = Block::parse(sess)?;
 
-        let all_strpos = fn_strpos.merge(&body.all_span);
-        return Ok(FnDef::new(all_strpos, fn_name, fn_name_strpos, params_paren_strpos, params, maybe_ret_type, body));
+        return Ok(FnDef::new(fn_span.merge(&body.all_span), fn_name, fn_name_span, params_paren_span, params, maybe_ret_type, body));
     }
 }
 
@@ -180,7 +170,7 @@ fn fn_def_parse() {
         .apply::<FnDef, _>()
         .expect_no_message()
         .expect_result(FnDef::new(make_span!(1, 80),
-            make_id!(1), make_span!(4, 10), 
+            make_id!(1), make_span!(4, 10),
             make_span!(11, 60), vec![
                 FnParam::new(make_id!(2), make_span!(12, 15),
                     TypeUse::new_template(make_id!(3), Span::default(), make_span!(17, 27), vec![
