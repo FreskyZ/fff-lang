@@ -91,7 +91,7 @@ impl ISyntaxItemParse for TupleDef {
                 return Ok(Expr::Tuple(TupleDef::new(span, ExprList::new(Vec::new()))));
             }
             ExprListParseResult::Normal(span, exprlist) => {
-                if Vec::len(&exprlist.items) == 1 {
+                if exprlist.items.len() == 1 {
                     return Ok(Expr::Paren(ParenExpr::new(span, exprlist.items.into_iter().last().unwrap())));
                 } else {
                     return Ok(Expr::Tuple(TupleDef::new(span, exprlist)));

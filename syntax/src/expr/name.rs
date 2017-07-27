@@ -85,13 +85,13 @@ impl ISyntaxItemParse for Name {
         if let &Token::Sep(Seperator::NamespaceSeperator) = sess.tk {
             let mut segments = vec![first_segment]; 
             loop {
-                if let &Token::Sep(Seperator::NamespaceSeperator) = sess.tk {
-                    sess.move_next();
-                    let segment = SimpleName::parse(sess)?;
-                    all_span = all_span.merge(&segment.span);
-                    segments.push(segment);
-                } else {
-                    break;
+                match sess.try_expect_sep(Seperator::NamespaceSeperator) {
+                    Some(_double_colon_span) => {
+                        let segment = SimpleName::parse(sess)?;
+                        all_span = all_span.merge(&segment.span);
+                        segments.push(segment);
+                    }
+                    None => break,
                 }
             }
             Ok(Expr::Name(Name::new(all_span, segments)))
