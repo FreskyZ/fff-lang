@@ -16,8 +16,8 @@ use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
 use super::super::ISyntaxFormat;
-use super::super::ISyntaxItemParse;
-use super::super::ISyntaxItemGrammar;
+use super::super::ISyntaxParse;
+use super::super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct UseStatement {
@@ -54,11 +54,11 @@ impl UseStatement {
         UseStatement{ name, all_span, as_span, target }
     }
 }
-impl ISyntaxItemGrammar for UseStatement {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.current_tokens()[0] == &Token::Keyword(Keyword::Use) }
+impl ISyntaxGrammar for UseStatement {
+    fn matches_first(tokens: &[&Token]) -> bool { tokens[0] == &Token::Keyword(Keyword::Use) }
 }
-impl ISyntaxItemParse for UseStatement {
-    type Target = UseStatement;
+impl ISyntaxParse for UseStatement {
+    type Output = UseStatement;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<UseStatement> {
 

@@ -23,9 +23,9 @@ use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
 use super::super::error_strings;
-use super::super::ISyntaxItemParse;
+use super::super::ISyntaxParse;
 use super::super::ISyntaxFormat;
-use super::super::ISyntaxItemGrammar;
+use super::super::ISyntaxGrammar;
 
 // Paren expr is a side effect of TupleDef
 #[cfg_attr(test, derive(Eq, PartialEq))]
@@ -74,11 +74,11 @@ impl From<TupleDef> for Expr {
 impl TupleDef {
     pub fn new(paren_span: Span, items: ExprList) -> TupleDef { TupleDef{ paren_span, items } }
 }
-impl ISyntaxItemGrammar for TupleDef {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.current_tokens()[0] == &Token::Sep(Seperator::LeftParenthenes) }
+impl ISyntaxGrammar for TupleDef {
+    fn matches_first(tokens: &[&Token]) -> bool { tokens[0] == &Token::Sep(Seperator::LeftParenthenes) }
 }
-impl ISyntaxItemParse for TupleDef {
-    type Target = Expr;
+impl ISyntaxParse for TupleDef {
+    type Output = Expr;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {
 

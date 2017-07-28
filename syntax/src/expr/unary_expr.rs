@@ -16,9 +16,9 @@ use super::PostfixExpr;
 use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
-use super::super::ISyntaxItemParse;
+use super::super::ISyntaxParse;
 use super::super::ISyntaxFormat;
-use super::super::ISyntaxItemGrammar;
+use super::super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct UnaryExpr {
@@ -52,16 +52,16 @@ impl UnaryExpr {
         }
     }
 }
-impl ISyntaxItemGrammar for UnaryExpr {
-    fn is_first_final(sess: &ParseSession) -> bool { 
-        match sess.current_tokens()[0] {
+impl ISyntaxGrammar for UnaryExpr {
+    fn matches_first(tokens: &[&Token]) -> bool { 
+        match tokens[0] {
             &Token::Sep(ref sep) if sep.is_category(SeperatorCategory::Unary) => true,
             _ => false,
         }
     }
 }
-impl ISyntaxItemParse for UnaryExpr {
-    type Target = Expr;
+impl ISyntaxParse for UnaryExpr {
+    type Output = Expr;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {
         

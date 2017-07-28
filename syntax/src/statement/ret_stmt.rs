@@ -14,9 +14,9 @@ use super::super::Expr;
 use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
-use super::super::ISyntaxItemParse;
+use super::super::ISyntaxParse;
 use super::super::ISyntaxFormat;
-use super::super::ISyntaxItemGrammar;
+use super::super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct ReturnStatement {
@@ -45,11 +45,11 @@ impl ReturnStatement {
         ReturnStatement{ all_span, expr: Some(expr) }
     }
 }
-impl ISyntaxItemGrammar for ReturnStatement {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.current_tokens()[0] == &Token::Keyword(Keyword::Return) }
+impl ISyntaxGrammar for ReturnStatement {
+    fn matches_first(tokens: &[&Token]) -> bool { tokens[0] == &Token::Keyword(Keyword::Return) }
 }
-impl ISyntaxItemParse for ReturnStatement {
-    type Target = ReturnStatement;
+impl ISyntaxParse for ReturnStatement {
+    type Output = ReturnStatement;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<ReturnStatement> {
 

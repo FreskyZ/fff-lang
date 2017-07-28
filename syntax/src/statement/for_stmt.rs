@@ -18,9 +18,9 @@ use super::super::LabelDef;
 use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
-use super::super::ISyntaxItemParse;
+use super::super::ISyntaxParse;
 use super::super::ISyntaxFormat;
-use super::super::ISyntaxItemGrammar;
+use super::super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct ForStatement {
@@ -85,17 +85,16 @@ impl ForStatement {
         }
     }
 }
-impl ISyntaxItemGrammar for ForStatement {
-
-    fn is_first_final(sess: &ParseSession) -> bool {
-        match (sess.current_tokens()[0], sess.current_tokens()[2]) {
+impl ISyntaxGrammar for ForStatement {
+    fn matches_first(tokens: &[&Token]) -> bool {
+        match (tokens[0], tokens[2]) {
             (&Token::Label(_), &Token::Keyword(Keyword::For)) | (&Token::Keyword(Keyword::For), _) => true,
             _ => false
         }
     }
 }
-impl ISyntaxItemParse for ForStatement {
-    type Target = ForStatement;
+impl ISyntaxParse for ForStatement {
+    type Output = ForStatement;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<ForStatement> {
 

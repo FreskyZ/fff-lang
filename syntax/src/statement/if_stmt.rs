@@ -14,9 +14,9 @@ use super::super::Block;
 use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
-use super::super::ISyntaxItemParse;
+use super::super::ISyntaxParse;
 use super::super::ISyntaxFormat;
-use super::super::ISyntaxItemGrammar;
+use super::super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct IfClause {
@@ -140,11 +140,11 @@ impl IfStatement {
         }
     }
 }
-impl ISyntaxItemGrammar for IfStatement {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.current_tokens()[0] == &Token::Keyword(Keyword::If) }
+impl ISyntaxGrammar for IfStatement {
+    fn matches_first(tokens: &[&Token]) -> bool { tokens[0] == &Token::Keyword(Keyword::If) }
 }
-impl ISyntaxItemParse for IfStatement {
-    type Target = IfStatement;
+impl ISyntaxParse for IfStatement {
+    type Output = IfStatement;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<IfStatement> {
 

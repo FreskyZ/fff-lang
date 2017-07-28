@@ -45,9 +45,9 @@ pub use self::name::Name;
 use super::Formatter;
 use super::ParseResult;
 use super::ParseSession;
-use super::ISyntaxItemParse;
+use super::ISyntaxParse;
 use super::ISyntaxFormat;
-use super::ISyntaxItemGrammar;
+use super::ISyntaxGrammar;
 
 // 12 byte
 #[cfg_attr(test, derive(Eq, PartialEq))]
@@ -124,21 +124,21 @@ impl Expr {
         temp
     }
 }
-impl ISyntaxItemGrammar for Expr {
-    fn is_first_final(sess: &ParseSession) -> bool { 
-        LitExpr::is_first_final(sess)
-        || Name::is_first_final(sess)
-        || TupleDef::is_first_final(sess)
-        || ArrayDef::is_first_final(sess)
-        || UnaryExpr::is_first_final(sess) 
-        || RangeFullExpr::is_first_final(sess)
-        || sess.current_tokens()[0] == &Token::Keyword(Keyword::This)
-        // || PostfixExpr::is_first_final(sess) // same as Expr
-        // || BinaryExpr::is_first_final(sess)  // same as Expr
+impl ISyntaxGrammar for Expr {
+    fn matches_first(tokens: &[&Token]) -> bool { 
+        LitExpr::matches_first(tokens)
+        || Name::matches_first(tokens)
+        || TupleDef::matches_first(tokens)
+        || ArrayDef::matches_first(tokens)
+        || UnaryExpr::matches_first(tokens) 
+        || RangeFullExpr::matches_first(tokens)
+        || tokens[0] == &Token::Keyword(Keyword::This)
+        // || PostfixExpr::matches_first(sess) // same as Expr
+        // || BinaryExpr::matches_first(sess)  // same as Expr
     }
 }
-impl ISyntaxItemParse for Expr {
-    type Target = Expr;
+impl ISyntaxParse for Expr {
+    type Output = Expr;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {
         return RangeLeftExpr::parse(sess);
@@ -462,10 +462,3 @@ fn expr_unbox() {
         Expr::SimpleName(SimpleName::new(make_id!(42), make_span!(30, 31)))
     }
 }
-
-// TODO: range expr
-// maybe:
-// updates: expr = ... | range_full | range_left_unbound | range_right_unbound | range_both_bound
-// struct RangeLeftUnbound, as primary_expr, is_first_final => tk == Range, parse => '..' [ unary_expr ]
-// struct RangeLeftBound as postfix_expr, is_first_final => tk == Range, parse => [ expr ] '..' [ expr ], left expr is handled by 
-// check python and rust and haskell's design

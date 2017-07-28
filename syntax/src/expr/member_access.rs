@@ -15,9 +15,9 @@ use super::SimpleName;
 use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
-use super::super::ISyntaxItemParse;
+use super::super::ISyntaxParse;
 use super::super::ISyntaxFormat;
-use super::super::ISyntaxItemGrammar;
+use super::super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct MemberAccessExpr {
@@ -59,11 +59,11 @@ impl MemberAccessExpr {
         }
     }
 }
-impl ISyntaxItemGrammar for MemberAccessExpr {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.current_tokens()[0] == &Token::Sep(Seperator::Dot) }
+impl ISyntaxGrammar for MemberAccessExpr {
+    fn matches_first(tokens: &[&Token]) -> bool { tokens[0] == &Token::Sep(Seperator::Dot) }
 }
-impl ISyntaxItemParse for MemberAccessExpr {
-    type Target = MemberAccessExpr;
+impl ISyntaxParse for MemberAccessExpr {
+    type Output = MemberAccessExpr;
 
     // these 3 postfix exprs are kind of different because
     // although their structure contains their base expr (which actually is primary expr)

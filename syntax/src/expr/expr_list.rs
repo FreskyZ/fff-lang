@@ -15,8 +15,8 @@ use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
 use super::super::ISyntaxFormat;
-use super::super::ISyntaxItemParse;
-use super::super::ISyntaxItemGrammar;
+use super::super::ISyntaxParse;
+use super::super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct ExprList {
@@ -33,12 +33,10 @@ impl fmt::Debug for ExprList {
 impl ExprList {
     pub fn new(items: Vec<Expr>) -> ExprList { ExprList{ items } }
 }
-impl ISyntaxItemGrammar for ExprList {
-    fn is_first_final(sess: &ParseSession) -> bool {
-        match sess.current_tokens()[0] {
-            &Token::Sep(Seperator::LeftBrace)
-            | &Token::Sep(Seperator::LeftBracket) 
-            | &Token::Sep(Seperator::LeftParenthenes) => true,
+impl ISyntaxGrammar for ExprList {
+    fn matches_first(tokens: &[&Token]) -> bool {
+        match tokens[0] {
+            &Token::Sep(Seperator::LeftBrace) | &Token::Sep(Seperator::LeftBracket) | &Token::Sep(Seperator::LeftParenthenes) => true,
             _ => false,
         }
     }
@@ -51,8 +49,8 @@ pub enum ExprListParseResult {
     Normal(Span, ExprList),         // and quote span
     EndWithComma(Span, ExprList),   // and quote span
 }
-impl ISyntaxItemParse for ExprList {
-    type Target = ExprListParseResult;
+impl ISyntaxParse for ExprList {
+    type Output = ExprListParseResult;
 
     /// This is special, when calling `parse`, `sess.tk` should point to the quote token
     /// Then the parser will check end token to determine end of parsing process

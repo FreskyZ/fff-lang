@@ -63,8 +63,8 @@ pub use self::syntax_tree::SyntaxTree;
 
 use self::parse_sess::ParseSession;
 use self::parse_sess::ParseResult;
-use self::parse_sess::ISyntaxItemGrammar;
-pub use self::parse_sess::ISyntaxItemParse; // pub for semantic/traits
+use self::parse_sess::ISyntaxGrammar;
+pub use self::parse_sess::ISyntaxParse;
 
 use self::format_helper::Formatter;
 use self::format_helper::ISyntaxFormat;

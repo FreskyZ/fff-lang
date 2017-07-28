@@ -15,9 +15,9 @@ use lexical::Keyword;
 use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
-use super::super::ISyntaxItemParse;
+use super::super::ISyntaxParse;
 use super::super::ISyntaxFormat;
-use super::super::ISyntaxItemGrammar;
+use super::super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct JumpStatement {
@@ -89,21 +89,21 @@ impl BreakStatement {
     }
 }
 
-impl ISyntaxItemGrammar for ContinueStatement {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.current_tokens()[0] == &Token::Keyword(Keyword::Continue) }
+impl ISyntaxGrammar for ContinueStatement {
+    fn matches_first(tokens: &[&Token]) -> bool { tokens[0] == &Token::Keyword(Keyword::Continue) }
 }
-impl ISyntaxItemGrammar for BreakStatement {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.current_tokens()[0] == &Token::Keyword(Keyword::Break) }
+impl ISyntaxGrammar for BreakStatement {
+    fn matches_first(tokens: &[&Token]) -> bool { tokens[0] == &Token::Keyword(Keyword::Break) }
 }
 
-impl ISyntaxItemParse for ContinueStatement {
-    type Target = ContinueStatement;
+impl ISyntaxParse for ContinueStatement {
+    type Output = ContinueStatement;
     fn parse(sess: &mut ParseSession) -> ParseResult<ContinueStatement> { 
         Ok(ContinueStatement(JumpStatement::parse(sess, Keyword::Continue)?))
     }
 }
-impl ISyntaxItemParse for BreakStatement {
-    type Target = BreakStatement;
+impl ISyntaxParse for BreakStatement {
+    type Output = BreakStatement;
     fn parse(sess: &mut ParseSession) -> ParseResult<BreakStatement> {
         Ok(BreakStatement(JumpStatement::parse(sess, Keyword::Break)?))
     }

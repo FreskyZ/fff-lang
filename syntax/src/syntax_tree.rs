@@ -14,9 +14,9 @@ use super::Item;
 use super::Formatter;
 use super::ParseResult;
 use super::ParseSession;
-use super::ISyntaxItemParse;
+use super::ISyntaxParse;
 use super::ISyntaxFormat;
-use super::ISyntaxItemGrammar;
+use super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct SyntaxTree {
@@ -37,13 +37,13 @@ impl fmt::Debug for SyntaxTree {
 impl SyntaxTree {
     pub fn new_items(items: Vec<Item>) -> SyntaxTree { SyntaxTree{ items } }
 }
-impl ISyntaxItemParse for SyntaxTree {
-    type Target = SyntaxTree;
+impl ISyntaxParse for SyntaxTree {
+    type Output = SyntaxTree;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<SyntaxTree> {
         let mut items = Vec::new();
         loop {
-            if Item::is_first_final(sess) {
+            if Item::matches_first(sess.current_tokens()) {
                 items.push(Item::parse(sess)?);
             } else if sess.current_tokens()[0] == &Token::EOF {
                 break;

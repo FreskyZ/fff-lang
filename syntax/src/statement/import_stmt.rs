@@ -14,9 +14,9 @@ use super::super::SimpleName;
 use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
+use super::super::ISyntaxParse;
 use super::super::ISyntaxFormat;
-use super::super::ISyntaxItemParse;
-use super::super::ISyntaxItemGrammar;
+use super::super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct ImportStatement {
@@ -52,11 +52,11 @@ impl ImportStatement {
         ImportStatement{ name, all_span, as_span, target }
     }
 }
-impl ISyntaxItemGrammar for ImportStatement {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.current_tokens()[0] == &Token::Keyword(Keyword::Import) }
+impl ISyntaxGrammar for ImportStatement {
+    fn matches_first(tokens: &[&Token]) -> bool { tokens[0] == &Token::Keyword(Keyword::Import) }
 }
-impl ISyntaxItemParse for ImportStatement {
-    type Target = ImportStatement;
+impl ISyntaxParse for ImportStatement {
+    type Output = ImportStatement;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<ImportStatement> {
 

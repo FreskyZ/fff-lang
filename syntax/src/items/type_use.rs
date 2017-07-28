@@ -31,9 +31,9 @@ use lexical::Keyword;
 use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
-use super::super::ISyntaxItemParse;
+use super::super::ISyntaxParse;
 use super::super::ISyntaxFormat;
-use super::super::ISyntaxItemGrammar;
+use super::super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct TypeUse {
@@ -69,9 +69,9 @@ impl TypeUse {
         TypeUse{ all_span: base_span.merge(&quote_span), base, base_span, quote_span, params }
     }
 }
-impl ISyntaxItemGrammar for TypeUse {
-    fn is_first_final(sess: &ParseSession) -> bool {
-        match sess.current_tokens()[0] {
+impl ISyntaxGrammar for TypeUse {
+    fn matches_first(tokens: &[&Token]) -> bool {
+        match tokens[0] {
             &Token::Ident(_) 
             | &Token::Sep(Seperator::LeftBracket)
             | &Token::Sep(Seperator::LeftParenthenes) => true,
@@ -80,8 +80,8 @@ impl ISyntaxItemGrammar for TypeUse {
         }
     }
 }
-impl ISyntaxItemParse for TypeUse {
-    type Target = TypeUse;
+impl ISyntaxParse for TypeUse {
+    type Output = TypeUse;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<TypeUse> {
 

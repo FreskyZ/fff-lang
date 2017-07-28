@@ -6,6 +6,7 @@
 use std::fmt;
 
 use codemap::Span;
+use lexical::Token;
 use lexical::Seperator;
 use lexical::SeperatorCategory;
 
@@ -14,9 +15,9 @@ use super::super::Expr;
 use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
-use super::super::ISyntaxItemParse;
+use super::super::ISyntaxParse;
 use super::super::ISyntaxFormat;
-use super::super::ISyntaxItemGrammar;
+use super::super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct SimpleExprStatement {
@@ -39,12 +40,12 @@ impl SimpleExprStatement {
     }
 }
 // dispatch them to convenience statement define macro
-impl ISyntaxItemGrammar for SimpleExprStatement {
-    fn is_first_final(sess: &ParseSession) -> bool { AssignExprStatement::is_first_final(sess) }
+impl ISyntaxGrammar for SimpleExprStatement {
+    fn matches_first(tokens: &[&Token]) -> bool { AssignExprStatement::matches_first(tokens) }
 }
-impl ISyntaxItemParse for SimpleExprStatement {
-    type Target = <AssignExprStatement as ISyntaxItemParse>::Target;
-    fn parse(sess: &mut ParseSession) -> ParseResult<Self::Target> { AssignExprStatement::parse(sess) }
+impl ISyntaxParse for SimpleExprStatement {
+    type Output = <AssignExprStatement as ISyntaxParse>::Output;
+    fn parse(sess: &mut ParseSession) -> ParseResult<Self::Output> { AssignExprStatement::parse(sess) }
 }
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
@@ -80,11 +81,11 @@ impl AssignExprStatement {
     }
 }
 
-impl ISyntaxItemGrammar for AssignExprStatement {
-    fn is_first_final(sess: &ParseSession) -> bool { Expr::is_first_final(sess) }
+impl ISyntaxGrammar for AssignExprStatement {
+    fn matches_first(tokens: &[&Token]) -> bool { Expr::matches_first(tokens) }
 }
-impl ISyntaxItemParse for AssignExprStatement {
-    type Target = Statement;
+impl ISyntaxParse for AssignExprStatement {
+    type Output = Statement;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<Statement> {
 

@@ -14,9 +14,9 @@ use lexical::Seperator;
 use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
-use super::super::ISyntaxItemParse;
+use super::super::ISyntaxParse;
 use super::super::ISyntaxFormat;
-use super::super::ISyntaxItemGrammar;
+use super::super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct LabelDef {
@@ -35,11 +35,11 @@ impl LabelDef {
     
     pub fn new(name: SymbolID, all_span: Span) -> LabelDef { LabelDef{ name, all_span } }
 }
-impl ISyntaxItemGrammar for LabelDef {
-    fn is_first_final(sess: &ParseSession) -> bool { if let &Token::Label(_) = sess.current_tokens()[0] { true } else { false } }
+impl ISyntaxGrammar for LabelDef {
+    fn matches_first(tokens: &[&Token]) -> bool { if let &Token::Label(_) = tokens[0] { true } else { false } }
 }
-impl ISyntaxItemParse for LabelDef {
-    type Target = LabelDef;
+impl ISyntaxParse for LabelDef {
+    type Output = LabelDef;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<LabelDef> {
 

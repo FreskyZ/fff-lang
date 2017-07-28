@@ -6,14 +6,16 @@
  
 use std::fmt;
 
+use lexical::Token;
+
 use super::FnDef;
 use super::TypeDef;
 use super::Formatter;
 use super::ParseResult;
 use super::ParseSession;
-use super::ISyntaxItemParse;
+use super::ISyntaxParse;
 use super::ISyntaxFormat;
-use super::ISyntaxItemGrammar;
+use super::ISyntaxGrammar;
 
 mod block_stmt;
 mod expr_stmt;
@@ -60,10 +62,10 @@ macro_rules! define_statement {
         impl fmt::Debug for $name {
             fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
         }
-        impl ISyntaxItemGrammar for $name {
-            fn is_first_final(sess: &ParseSession) -> bool {
+        impl ISyntaxGrammar for $name {
+            fn matches_first(tokens: &[&Token]) -> bool {
                 false 
-                $(|| <$subty as ISyntaxItemGrammar>::is_first_final(sess) )+
+                $(|| <$subty as ISyntaxGrammar>::matches_first(tokens) )+
             }
         }
 
@@ -71,12 +73,12 @@ macro_rules! define_statement {
                 fn from(s: $subty) -> $name { $name::$enum_name(s) }
         } )+
 
-        impl ISyntaxItemParse for $name {
-            type Target = $name;
+        impl ISyntaxParse for $name {
+            type Output = $name;
 
             fn parse(sess: &mut ParseSession) -> ParseResult<$name> {
-                $( if <$subty as ISyntaxItemGrammar>::is_first_final(sess) {
-                    return Ok($name::from(<$subty as ISyntaxItemParse>::parse(sess)?));
+                $( if <$subty as ISyntaxGrammar>::matches_first(sess.current_tokens()) {
+                    return Ok($name::from(<$subty as ISyntaxParse>::parse(sess)?));
                 } else )+ {
                     return sess.push_unexpect("statement");
                 } 
