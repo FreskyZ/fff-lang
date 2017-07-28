@@ -75,28 +75,21 @@ impl ISyntaxItemParse for VarDeclStatement {
 
     fn parse(sess: &mut ParseSession) -> ParseResult<VarDeclStatement> {
         
-        // let (starting_kw, starting_span) = sess.expect_keywords
-        let starting_strpos = sess.pos;
-        let is_const = match sess.tk {
-            &Token::Keyword(Keyword::Const) => true, 
-            &Token::Keyword(Keyword::Var) => false,
-            _ => unreachable!(), 
-        };
-        sess.move_next();
+        let (starting_kw, starting_span) = sess.expect_keywords(&[Keyword::Const, Keyword::Var])?;
+        let is_const = match starting_kw { Keyword::Const => true, Keyword::Var => false, _ => unreachable!() };
 
         let (name, name_strpos) = sess.expect_ident_or(vec![Keyword::Underscore])?;
-        let maybe_decltype = if sess.tk == &Token::Sep(Seperator::Colon) { sess.move_next(); Some(TypeUse::parse(sess)?) } else { None };
-        let maybe_init_expr = if sess.tk == &Token::Sep(Seperator::Assign) { sess.move_next(); Some(Expr::parse(sess)?) } else { None };
+        let maybe_decltype = if let Some(_) = sess.try_expect_sep(Seperator::Colon) { Some(TypeUse::parse(sess)?) } else { None };
+        let maybe_init_expr = if let Some(_) = sess.try_expect_sep(Seperator::Assign) { Some(Expr::parse(sess)?) } else { None };
         if maybe_decltype.is_none() && maybe_init_expr.is_none() {
             sess.push_message(Message::with_help_by_str("require type annotation", 
                 vec![(name_strpos, "variable declaration here")],
                 vec!["cannot infer type without both type annotation and initialization expression"]
             ));
         }
-        let ending_strpos = sess.expect_sep(Seperator::SemiColon)?;
+        let ending_span = sess.expect_sep(Seperator::SemiColon)?;
 
-        let all_strpos = starting_strpos.merge(&ending_strpos);
-        return Ok(VarDeclStatement::new(all_strpos, is_const, name, name_strpos, maybe_decltype, maybe_init_expr));
+        return Ok(VarDeclStatement::new(starting_span.merge(&ending_span), is_const, name, name_strpos, maybe_decltype, maybe_init_expr));
     }
 }
 

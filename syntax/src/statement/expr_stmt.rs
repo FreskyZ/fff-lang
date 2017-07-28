@@ -88,8 +88,8 @@ impl ISyntaxItemParse for AssignExprStatement {
 
     fn parse(sess: &mut ParseSession) -> ParseResult<Statement> {
 
-        let starting_span = sess.pos;
         let left_expr = Expr::parse(sess)?;
+        let starting_span = left_expr.get_all_span();
 
         if let Some(semicolon_span) = sess.try_expect_sep(Seperator::SemiColon) {
             Ok(Statement::SimpleExpr(SimpleExprStatement::new(starting_span.merge(&semicolon_span), left_expr)))

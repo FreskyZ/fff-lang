@@ -47,11 +47,7 @@ impl ISyntaxItemParse for LitExpr {
 
     fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {
         
-        if let (&Token::Lit(ref lit_val), ref lit_val_span) = (sess.tk, sess.pos) {
-            sess.move_next();
-            Ok(Expr::Lit(LitExpr::new(*lit_val, *lit_val_span)))
-        } else {
-            sess.push_unexpect("literal")
-        }
+        let (lit, lit_span) = sess.expect_lit()?;
+        Ok(Expr::Lit(LitExpr::new(lit, lit_span)))
     }
 }

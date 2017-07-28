@@ -13,6 +13,7 @@ use lexical::Token;
 use lexical::TokenStream;
 use lexical::Seperator;
 use lexical::Keyword;
+use lexical::LitValue;
 
 pub type ParseResult<T> = Result<T, ()>;
 
@@ -25,9 +26,6 @@ pub struct ParseSession<'tokens, 'msgs, 'syms> {
     pub tk: &'tokens Token,
     pub next_tk: &'tokens Token,
     pub nextnext_tk: &'tokens Token,
-    pub pos: Span,
-    pub next_pos: Span,
-    pub nextnext_pos: Span,
 }
 #[allow(dead_code)]
 impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
@@ -41,29 +39,20 @@ impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
             tk: tokens.nth_token(0),
             next_tk: tokens.nth_token(1),
             nextnext_tk: tokens.nth_token(2),
-            pos: tokens.nth_span(0),
-            next_pos: tokens.nth_span(1),
-            nextnext_pos: tokens.nth_span(2),
         }
     }
 
-    pub fn move_next(&mut self) { 
+     fn move_next(&mut self) { 
         self.current_index.set(self.current_index.get() + 1);
         self.tk = self.tokens.nth_token(self.current_index.get());
         self.next_tk = self.tokens.nth_token(self.current_index.get() + 1);
         self.nextnext_tk = self.tokens.nth_token(self.current_index.get() + 2);
-        self.pos = self.tokens.nth_span(self.current_index.get());
-        self.next_pos = self.tokens.nth_span(self.current_index.get() + 1);
-        self.nextnext_pos = self.tokens.nth_span(self.current_index.get() + 2);
     }
-    pub fn move_next2(&mut self) {
+     fn move_next2(&mut self) {
         self.current_index.set(self.current_index.get() + 2);
         self.tk = self.tokens.nth_token(self.current_index.get());
         self.next_tk = self.tokens.nth_token(self.current_index.get() + 1);
         self.nextnext_tk = self.tokens.nth_token(self.current_index.get() + 2);
-        self.pos = self.tokens.nth_span(self.current_index.get());
-        self.next_pos = self.tokens.nth_span(self.current_index.get() + 1);
-        self.nextnext_pos = self.tokens.nth_span(self.current_index.get() + 2);
     }
 
     /// Check current token is specified keyword
@@ -98,6 +87,22 @@ impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
         }
     }
 
+    /// Check current token is a literal
+    ///
+    /// if so, move next and Ok((lit_value, lit_span)),
+    /// if not, push unexpect and Err(())
+    ///
+    /// example `let (lit, lit_span) = sess.expect_lit()?;`
+    pub fn expect_lit(&mut self) -> Result<(LitValue, Span), ()> {
+
+        let current_index = self.current_index.get();
+        self.move_next();
+        match (self.tokens.nth_token(current_index), self.tokens.nth_span(current_index)) {
+            (&Token::Lit(ref lit), ref lit_span) => Ok((*lit, *lit_span)),
+            _ => self.push_unexpect("literal"),
+        }
+    }
+
     /// Check current token is one of the specified seperators
     ///
     /// if so, move next and Ok((sep, sep_span)),
@@ -117,6 +122,28 @@ impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
                 }
             }
             _ => self.push_unexpect("some seperators"),             // FIXME: format expected_seps
+        }
+    }
+
+    /// Check current token is one of the specified keywords
+    ///
+    /// if so, move next and Ok((kw, kw_span)), 
+    /// if not, push unexpect and Err(())
+    ///
+    /// example `let (kw, kw_span) = sess.expect_keywords(&[Const, Var])?;`
+    pub fn expect_keywords<'e, T: IntoIterator<Item = &'e Keyword>>(&mut self, expected_keywords: T) -> Result<(Keyword, Span), ()> {
+        
+        let current_index = self.current_index.get();
+        self.move_next();
+        match (self.tokens.nth_token(current_index), self.tokens.nth_span(current_index)) {
+            (&Token::Keyword(ref actual_kw), ref kw_span) => {
+                if expected_keywords.into_iter().any(|expected_kw| expected_kw == actual_kw) {
+                    Ok((*actual_kw, *kw_span))
+                } else {
+                    self.push_unexpect("some keywords")           // FIXME: format expected_keywords
+                }
+            }
+            _ => self.push_unexpect("some keywords"),             // FIXME: format expected_keywords
         }
     }
 
@@ -276,24 +303,5 @@ pub trait ISyntaxItemParse {
     // check is_first_final, if pass, parse, return Ok(Some(T)) or Err(()), else return None
     fn try_parse(sess: &mut ParseSession) -> ParseResult<Option<Self::Target>> where Self: ISyntaxItemGrammar {
         if Self::is_first_final(sess) { Ok(Some(Self::parse(sess)?)) } else { Ok(None) }
-    }
-}
-
-
-#[cfg(test)] #[test]
-fn parse_sess_usage() {
-
-    let tokens = TokenStream::with_test_str("1 2 3 4 5 6 7 8 9 0");
-    let mut messages = MessageCollection::new();
-    let mut symbols = SymbolCollection::new();
-    let mut sess = ParseSession::new(&tokens, &mut messages, &mut symbols);
-
-    match (sess.tk, sess.next_tk) {
-        (&Token::Lit(ref _lit1), &Token::Lit(ref _lit2)) => {
-            sess.move_next();
-            println!("{:?}", sess.pos);
-            let _ : ParseResult<i32> = sess.push_unexpect("abc, def");
-        }
-        _ => (),
     }
 }

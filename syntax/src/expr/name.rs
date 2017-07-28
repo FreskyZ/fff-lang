@@ -79,24 +79,24 @@ impl ISyntaxItemParse for Name {
 
     fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {
         
-        let mut all_span = sess.pos;
         let first_segment = SimpleName::parse(sess)?;
-
-        if let &Token::Sep(Seperator::NamespaceSeperator) = sess.tk {
-            let mut segments = vec![first_segment]; 
-            loop {
-                match sess.try_expect_sep(Seperator::NamespaceSeperator) {
-                    Some(_double_colon_span) => {
-                        let segment = SimpleName::parse(sess)?;
-                        all_span = all_span.merge(&segment.span);
-                        segments.push(segment);
-                    }
-                    None => break,
-                }
+        let mut all_span = first_segment.span;
+        let mut segments = vec![first_segment];
+        
+        loop {
+            if let Some(_) = sess.try_expect_sep(Seperator::NamespaceSeperator) {
+                let segment = SimpleName::parse(sess)?;
+                all_span = all_span.merge(&segment.span);
+                segments.push(segment);
+            } else {
+                break;
             }
+        }
+        
+        if segments.len() > 1 {
             Ok(Expr::Name(Name::new(all_span, segments)))
         } else {
-            Ok(Expr::SimpleName(first_segment))
+            Ok(Expr::SimpleName(segments.pop().unwrap()))
         }
     }
 }
