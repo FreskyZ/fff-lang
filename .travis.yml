@@ -1,0 +1,16 @@
+language: rust
+sudo: false
+dist: trusty
+rust:
+  - stable
+  - beta
+  - nightly
+script:
+  - cd codemap
+  - cargo test --verbose
+  - cd ../messages
+  - cargo test --verbose
+  - cd ../lexical
+  - cargo test --verbose
+  - cd ../syntax
+  - cargo test --verbose
