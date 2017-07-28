@@ -60,7 +60,7 @@ impl MemberAccessExpr {
     }
 }
 impl ISyntaxItemGrammar for MemberAccessExpr {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Sep(Seperator::Dot) }
+    fn is_first_final(sess: &ParseSession) -> bool { sess.current_tokens()[0] == &Token::Sep(Seperator::Dot) }
 }
 impl ISyntaxItemParse for MemberAccessExpr {
     type Target = MemberAccessExpr;

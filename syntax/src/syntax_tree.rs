@@ -45,7 +45,7 @@ impl ISyntaxItemParse for SyntaxTree {
         loop {
             if Item::is_first_final(sess) {
                 items.push(Item::parse(sess)?);
-            } else if sess.tk == &Token::EOF {
+            } else if sess.current_tokens()[0] == &Token::EOF {
                 break;
             } else {
                 return sess.push_unexpect("if, while, for, var, const, expr");

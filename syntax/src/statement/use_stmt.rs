@@ -55,7 +55,7 @@ impl UseStatement {
     }
 }
 impl ISyntaxItemGrammar for UseStatement {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(Keyword::Use) }
+    fn is_first_final(sess: &ParseSession) -> bool { sess.current_tokens()[0] == &Token::Keyword(Keyword::Use) }
 }
 impl ISyntaxItemParse for UseStatement {
     type Target = UseStatement;

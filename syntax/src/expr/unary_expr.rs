@@ -54,7 +54,7 @@ impl UnaryExpr {
 }
 impl ISyntaxItemGrammar for UnaryExpr {
     fn is_first_final(sess: &ParseSession) -> bool { 
-        match sess.tk {
+        match sess.current_tokens()[0] {
             &Token::Sep(ref sep) if sep.is_category(SeperatorCategory::Unary) => true,
             _ => false,
         }

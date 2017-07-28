@@ -32,7 +32,7 @@ impl ISyntaxItemParse for PrimaryExpr {
         #[cfg(not(feature = "trace_primary_expr_parse"))]
         macro_rules! trace { ($($arg:tt)*) => () }
 
-        trace!("start parsing, current token: {:?}", sess.tk);
+        trace!("start parsing, current token: {:?}", sess.current_tokens()[0]);
 
         if LitExpr::is_first_final(sess) {
             return LitExpr::parse(sess);

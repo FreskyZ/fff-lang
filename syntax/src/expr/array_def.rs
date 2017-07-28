@@ -42,7 +42,7 @@ impl ArrayDef {
     pub fn new(bracket_span: Span, items: ExprList) -> ArrayDef { ArrayDef{ bracket_span, items: items } }
 }
 impl ISyntaxItemGrammar for ArrayDef {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Sep(Seperator::LeftBracket) }
+    fn is_first_final(sess: &ParseSession) -> bool { sess.current_tokens()[0] == &Token::Sep(Seperator::LeftBracket) }
 }
 impl ISyntaxItemParse for ArrayDef {
     type Target = Expr;

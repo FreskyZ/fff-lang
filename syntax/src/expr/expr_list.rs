@@ -35,7 +35,7 @@ impl ExprList {
 }
 impl ISyntaxItemGrammar for ExprList {
     fn is_first_final(sess: &ParseSession) -> bool {
-        match sess.tk {
+        match sess.current_tokens()[0] {
             &Token::Sep(Seperator::LeftBrace)
             | &Token::Sep(Seperator::LeftBracket) 
             | &Token::Sep(Seperator::LeftParenthenes) => true,

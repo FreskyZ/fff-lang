@@ -132,7 +132,7 @@ impl ISyntaxItemGrammar for Expr {
         || ArrayDef::is_first_final(sess)
         || UnaryExpr::is_first_final(sess) 
         || RangeFullExpr::is_first_final(sess)
-        || sess.tk == &Token::Keyword(Keyword::This)
+        || sess.current_tokens()[0] == &Token::Keyword(Keyword::This)
         // || PostfixExpr::is_first_final(sess) // same as Expr
         // || BinaryExpr::is_first_final(sess)  // same as Expr
     }

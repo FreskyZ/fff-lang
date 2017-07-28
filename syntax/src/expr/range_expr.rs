@@ -63,7 +63,7 @@ impl RangeRightExpr {
 }
 
 impl ISyntaxItemGrammar for RangeFullExpr {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Sep(Seperator::Range) }
+    fn is_first_final(sess: &ParseSession) -> bool { sess.current_tokens()[0] == &Token::Sep(Seperator::Range) }
 }
 impl ISyntaxItemParse for RangeFullExpr {
     type Target = Expr;
@@ -140,8 +140,7 @@ impl ISyntaxItemParse for RangeLeftExpr {
     
     fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {
         let left_expr = BinaryExpr::parse(sess)?;
-        if sess.tk == &Token::Sep(Seperator::Range) {
-            let op_span = sess.expect_sep(Seperator::Range)?;
+        if let Some(op_span) = sess.try_expect_sep(Seperator::Range) {
             if Expr::is_first_final(sess) {
                 let right_expr = BinaryExpr::parse(sess)?;
                 return Ok(Expr::RangeBoth(RangeBothExpr::new(left_expr, op_span, right_expr)));

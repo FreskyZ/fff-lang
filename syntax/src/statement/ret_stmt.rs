@@ -46,7 +46,7 @@ impl ReturnStatement {
     }
 }
 impl ISyntaxItemGrammar for ReturnStatement {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(Keyword::Return) }
+    fn is_first_final(sess: &ParseSession) -> bool { sess.current_tokens()[0] == &Token::Keyword(Keyword::Return) }
 }
 impl ISyntaxItemParse for ReturnStatement {
     type Target = ReturnStatement;

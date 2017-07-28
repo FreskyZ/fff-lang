@@ -68,7 +68,7 @@ impl VarDeclStatement {
     }
 }
 impl ISyntaxItemGrammar for VarDeclStatement {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(Keyword::Const) || sess.tk == &Token::Keyword(Keyword::Var) }
+    fn is_first_final(sess: &ParseSession) -> bool { sess.current_tokens()[0] == &Token::Keyword(Keyword::Const) || sess.current_tokens()[0] == &Token::Keyword(Keyword::Var) }
 }
 impl ISyntaxItemParse for VarDeclStatement {
     type Target = VarDeclStatement;

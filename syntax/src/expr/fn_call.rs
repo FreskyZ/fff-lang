@@ -64,7 +64,7 @@ impl FnCallExpr {
     }
 }
 impl ISyntaxItemGrammar for FnCallExpr {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Sep(Seperator::LeftParenthenes) }
+    fn is_first_final(sess: &ParseSession) -> bool { sess.current_tokens()[0] == &Token::Sep(Seperator::LeftParenthenes) }
 }
 impl ISyntaxItemParse for FnCallExpr {
     type Target = FnCallExpr;

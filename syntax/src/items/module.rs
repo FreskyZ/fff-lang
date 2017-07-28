@@ -42,7 +42,7 @@ impl ISyntaxItemParse for Module {
         loop {
             if Item::is_first_final(sess) {
                 items.push(Item::parse(sess)?);
-            } else if sess.tk == &Token::EOF {
+            } else if sess.current_tokens()[0] == &Token::EOF { // as module is special, specially allow self.current_tokens in parse
                 break;
             } else {
                 return sess.push_unexpect("if, while, for, var, const, expr");

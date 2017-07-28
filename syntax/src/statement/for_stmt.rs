@@ -88,7 +88,7 @@ impl ForStatement {
 impl ISyntaxItemGrammar for ForStatement {
 
     fn is_first_final(sess: &ParseSession) -> bool {
-        match (sess.tk, sess.nextnext_tk) {
+        match (sess.current_tokens()[0], sess.current_tokens()[2]) {
             (&Token::Label(_), &Token::Keyword(Keyword::For)) | (&Token::Keyword(Keyword::For), _) => true,
             _ => false
         }
