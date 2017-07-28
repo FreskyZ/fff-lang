@@ -71,7 +71,7 @@ impl TypeUse {
 }
 impl ISyntaxItemGrammar for TypeUse {
     fn is_first_final(sess: &ParseSession) -> bool {
-        match sess.tk {
+        match sess.current_tokens()[0] {
             &Token::Ident(_) 
             | &Token::Sep(Seperator::LeftBracket)
             | &Token::Sep(Seperator::LeftParenthenes) => true,

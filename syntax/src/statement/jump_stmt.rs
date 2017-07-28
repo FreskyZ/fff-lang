@@ -90,10 +90,10 @@ impl BreakStatement {
 }
 
 impl ISyntaxItemGrammar for ContinueStatement {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(Keyword::Continue) }
+    fn is_first_final(sess: &ParseSession) -> bool { sess.current_tokens()[0] == &Token::Keyword(Keyword::Continue) }
 }
 impl ISyntaxItemGrammar for BreakStatement {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(Keyword::Break) }
+    fn is_first_final(sess: &ParseSession) -> bool { sess.current_tokens()[0] == &Token::Keyword(Keyword::Break) }
 }
 
 impl ISyntaxItemParse for ContinueStatement {

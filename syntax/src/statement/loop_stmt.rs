@@ -65,7 +65,7 @@ impl LoopStatement { // New
 }
 impl ISyntaxItemGrammar for LoopStatement {
     fn is_first_final(sess: &ParseSession) -> bool {
-        match (sess.tk, sess.nextnext_tk) {
+        match (sess.current_tokens()[0], sess.current_tokens()[2]) {
             (&Token::Label(_), &Token::Keyword(Keyword::Loop)) | (&Token::Keyword(Keyword::Loop), _) => true,
             _ => false
         }

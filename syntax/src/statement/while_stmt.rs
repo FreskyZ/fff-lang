@@ -68,7 +68,7 @@ impl WhileStatement {
 }
 impl ISyntaxItemGrammar for WhileStatement {
     fn is_first_final(sess: &ParseSession) -> bool {
-        match (sess.tk, sess.nextnext_tk) {
+        match (sess.current_tokens()[0], sess.current_tokens()[2]) {
             (&Token::Label(_), &Token::Keyword(Keyword::While)) | (&Token::Keyword(Keyword::While), _) => true,
             _ => false
         }

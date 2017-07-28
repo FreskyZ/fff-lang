@@ -41,7 +41,7 @@ impl Block {
     pub fn new(all_span: Span, statements: Vec<Statement>) -> Block { Block{ all_span, items: statements } }
 }
 impl ISyntaxItemGrammar for Block {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Sep(Seperator::LeftBrace) }
+    fn is_first_final(sess: &ParseSession) -> bool { sess.current_tokens()[0] == &Token::Sep(Seperator::LeftBrace) }
 }
 impl ISyntaxItemParse for Block {
     type Target = Block;

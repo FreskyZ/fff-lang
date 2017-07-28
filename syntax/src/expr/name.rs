@@ -72,7 +72,7 @@ impl Name {
     pub fn new(all_span: Span, segments: Vec<SimpleName>) -> Name { Name{ all_span, segments } }
 }
 impl ISyntaxItemGrammar for Name {
-    fn is_first_final(sess: &ParseSession) -> bool { if let &Token::Ident(_) = sess.tk { true } else { false } }
+    fn is_first_final(sess: &ParseSession) -> bool { if let &Token::Ident(_) = sess.current_tokens()[0] { true } else { false } }
 }
 impl ISyntaxItemParse for Name {
     type Target = Expr;

@@ -40,7 +40,7 @@ impl LitExpr {
     pub fn new(value: LitValue, span: Span) -> LitExpr { LitExpr{ value, span } }
 }
 impl ISyntaxItemGrammar for LitExpr {
-    fn is_first_final(sess: &ParseSession) -> bool { if let &Token::Lit(_) = sess.tk { true } else { false } }
+    fn is_first_final(sess: &ParseSession) -> bool { if let &Token::Lit(_) = sess.current_tokens()[0] { true } else { false } }
 }
 impl ISyntaxItemParse for LitExpr {
     type Target = Expr;

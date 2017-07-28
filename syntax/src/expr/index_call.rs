@@ -66,7 +66,7 @@ impl IndexCallExpr {
     }
 }
 impl ISyntaxItemGrammar for IndexCallExpr {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Sep(Seperator::LeftBracket) }
+    fn is_first_final(sess: &ParseSession) -> bool { sess.current_tokens()[0] == &Token::Sep(Seperator::LeftBracket) }
 }
 impl ISyntaxItemParse for IndexCallExpr {
     type Target = IndexCallExpr;

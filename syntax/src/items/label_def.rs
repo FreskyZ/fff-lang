@@ -36,7 +36,7 @@ impl LabelDef {
     pub fn new(name: SymbolID, all_span: Span) -> LabelDef { LabelDef{ name, all_span } }
 }
 impl ISyntaxItemGrammar for LabelDef {
-    fn is_first_final(sess: &ParseSession) -> bool { if let &Token::Label(_) = sess.tk { true } else { false } }
+    fn is_first_final(sess: &ParseSession) -> bool { if let &Token::Label(_) = sess.current_tokens()[0] { true } else { false } }
 }
 impl ISyntaxItemParse for LabelDef {
     type Target = LabelDef;

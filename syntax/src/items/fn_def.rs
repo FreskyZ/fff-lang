@@ -73,7 +73,7 @@ impl FnDef {
     }
 }
 impl ISyntaxItemGrammar for FnDef {   
-    fn is_first_final(sess: &ParseSession) -> bool { sess.tk == &Token::Keyword(Keyword::Fn) }
+    fn is_first_final(sess: &ParseSession) -> bool { sess.current_tokens()[0] == &Token::Keyword(Keyword::Fn) }
 }
 impl ISyntaxItemParse for FnDef {
     type Target = FnDef;
