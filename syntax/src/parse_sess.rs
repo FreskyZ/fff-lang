@@ -305,5 +305,4 @@ pub trait ISyntaxParse {
     }
 }
 
-// TODO: update ISyntaxItemGrammar to ISyntaxGrammar { fn matches_first(tokens: &[&Token]) -> bool; /* maybe */ fn follows() -> String; }
-// update ISyntaxItemParse to ISyntaxParse { type Output; fn parse, fn try_parse }
+// TODO: consider better unexpected descriptions
