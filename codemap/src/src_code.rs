@@ -9,6 +9,13 @@ use super::CodeMapError;
 
 pub const EOF_CHAR: char = 0u8 as char;
 
+// UTF8 string iterator, 
+// yes, an unchecked utf8 string iterator is like this short
+
+/// Get UTF8 char byte length at index of the bytes
+///
+/// no check bytes is valid UTF8 squence, no check index is valid index, 
+/// also don't know if the panic will happen or how will happen
 #[inline]
 fn char_len_at_index(bytes: &[u8], index: usize) -> usize {
     match bytes[index] {
@@ -19,9 +26,15 @@ fn char_len_at_index(bytes: &[u8], index: usize) -> usize {
         _ => panic!("impossible byte value, I think"),
     }
 }
+
+/// Get UTF8 char at index of the bytes
+///
+/// no check bytes is valid UTF8 sequence, no check index is valid index, 
+/// no check bytes length is enough if char length is more than 1, 
+/// use interpret cast, no check calculated code point value is valid code point
 #[inline]
 fn char_at_index(bytes: &[u8], index: usize) -> (usize, char) { // char and its utf8 length at index
-    let transmute = |v: u32| -> char { use std::mem::transmute; unsafe { transmute(v) } };
+    let transmute = |v: u32| -> char { unsafe { ::std::mem::transmute(v) } };
     match char_len_at_index(bytes, index) {
         1 => (1, transmute(bytes[index] as u32)),
         2 => (2, transmute((((bytes[index] as u32) & 0b00011111u32) << 6) + ((bytes[index + 1] as u32) & 0b00111111u32))),
@@ -41,6 +54,10 @@ impl<'a> SourceCodeIter<'a> {
 
     fn new(src: &'a SourceCode) -> SourceCodeIter<'a> { SourceCodeIter{ src, index: 0 } }
 
+    /// Iterate through source code string
+    ///
+    /// ignores all bare or not bare CR, 
+    /// return EOF_CHAR after EOF, fuse that
     pub fn next(&mut self) -> (char, CharPos) {
         loop {
             if self.index == self.src.src.len() {
@@ -58,12 +75,13 @@ impl<'a> SourceCodeIter<'a> {
     }
 }
 
+/// Represents a source code file
 #[cfg_attr(test, derive(Debug, Eq, PartialEq))]
 pub struct SourceCode {
     id: usize,
     name: String,
-    src: Box<[u8]>,
-    lf_offsets: Vec<usize>, // line feed offsets
+    src: Box<[u8]>,           // source code string, in form of owned byte slice, because no need of string methods, utf8 iterator also implemented here not depend on std
+    endl_indexes: Vec<usize>, // line end byte indexes
 }
 impl SourceCode {
 
@@ -78,7 +96,7 @@ impl SourceCode {
         Ok(SourceCode{ 
             id, 
             name: file_name, 
-            lf_offsets: src.char_indices().filter(|indice| indice.1 == '\n').map(|indice| indice.0).collect(),
+            endl_indexes: src.char_indices().filter(|indice| indice.1 == '\n').map(|indice| indice.0).collect(),
             src: src.into_bytes().into_boxed_slice(),
         })
     }
@@ -86,7 +104,7 @@ impl SourceCode {
         SourceCode{ 
             id, 
             name: format!("<anon#{}>", id),
-            lf_offsets: src.char_indices().filter(|indice| indice.1 == '\n').map(|indice| indice.0).collect(),
+            endl_indexes: src.char_indices().filter(|indice| indice.1 == '\n').map(|indice| indice.0).collect(),
             src: src.to_owned().into_bytes().into_boxed_slice(),
         }
     }
@@ -97,69 +115,58 @@ impl SourceCode {
     
     pub fn get_name(&self) -> &str { &self.name }
 
-    /// (row, column)
+    /// map byte index to (row, column)
     pub fn map_index(&self, charpos: CharPos) -> (usize, usize) {
         assert_eq!{ self.id, charpos.file_id, "incorrect file id" }
         
         let char_id = charpos.char_id;
         
-        // not prev LF id because first line has no prev LF
-        let (row_num, row_start_id) = if self.lf_offsets.len() == 0 {
+        // get row number and row start character's byte index
+        let (row_num, row_start_id) = if self.endl_indexes.len() == 0 {
             (1, 0)
-        } else if char_id <= self.lf_offsets[0] {
+        } else if char_id <= self.endl_indexes[0] {
             (1, 0)
         } else {
-            let mut retval = (1, 0);
-            for (row_num, lf_id) in (&self.lf_offsets).into_iter().enumerate() { // self.lf_offsets.as_ref().xxx cannot infer type...
-                if *lf_id < char_id {
-                    retval = (row_num + 2, lf_id + 1); // after lf_ids[0] is line 2; LF is always 1 byte width
-                }
-            }
-            retval
+            // rev iterate through lf_offsets to find input byte index's range
+            // `+2` for index = lf_ids[*0*] + 1 is line *2*
+            // `+1` for LF must be 1 byte width, lf_ids[xxx] + 1 is exactly first char of next line
+            // logically must find, so directly unwrap
+            self.endl_indexes.iter().enumerate().rev()
+                .find(|&(_, &endl_index)| char_id > endl_index).map(|(id, endl_index)| (id + 2, endl_index + 1)).unwrap()
         };
 
+        // then iterate through this line's chars to find column number
         let mut column_num = 1;
         let mut current_id = row_start_id;
         loop {
-            if current_id == char_id {
-                return (row_num, column_num);
-            }
-            if current_id >= self.src.len() {
-                return (row_num, column_num);
-            }
-            let current_char_width = char_len_at_index(&self.src, current_id);
-            if current_char_width == 1 && self.src[current_id] == '\n' as u8 {
-                panic!("invalid char pos when querying char position")
-            }
-            if !(current_char_width == 1 && self.src[current_id] == '\r' as u8) { // still ignore \r
-                column_num += 1;
-            }
-            current_id += current_char_width;
+            // exact match
+            if current_id == char_id { return (row_num, column_num); }         
+            // with assume that all char id is valid, this will not happen, but leave it here to make tests happy
+            if current_id >= self.src.len() { return (row_num, column_num); } 
+            // ignore \r, here you do not need `width == 1 and char == '\r'` because according to utf8, if width > 1 then char > ASCII::MAX also if char == '\r' then width == 1
+            if self.src[current_id] != b'\r' { column_num += 1; }               
+            current_id += char_len_at_index(&self.src, current_id);
         }
     }
+
+    /// map span to string
     pub fn map_span(&self, span: &Span) -> &str {
-        use std::mem::transmute;
         assert_eq!{ self.id, span.get_file_id(), "incorrect file id" }
 
-        let bytes = &self.src;
-        let start_index = span.get_start_id();
-        if start_index > bytes.len() { // e.g. eof_span
-            return "";
+        // previous 2 cases will not happen in real world, leave them here to satisfy tests
+        match (span.start_id >= self.src.len(), span.end_id >= self.src.len()) {
+            (true, _) => "",                                                                                // starting overflow
+            (false, true) => unsafe { ::std::mem::transmute(&self.src[span.start_id .. self.src.len()]) },  // ending overflow
+            (false, false) => unsafe { ::std::mem::transmute(&self.src[span.start_id .. (span.end_id + char_len_at_index(&self.src, span.end_id))]) },
         }
-        let end_index = if span.get_end_id() >= bytes.len() {
-            bytes.len()
-        } else {
-            let end_id = span.get_end_id();
-            end_id + char_len_at_index(bytes, end_id)
-        };
-        unsafe{ transmute(&bytes[start_index..end_index]) }
     }
-    /// row_num start from 1
+
+    /// get line by row number, row_num start from 1
     pub fn map_line_num(&self, row_num: usize) -> &str {
         use std::mem::transmute;
         const EOF_STRING: &str = "";
 
-        let lf_ids = &self.lf_offsets;
+        let lf_ids = &self.endl_indexes;
         if self.src.len() == 0 { return EOF_STRING; }                                       // empty file
         if row_num == 0 { return EOF_STRING; }                                              // downflow
         if row_num > lf_ids.len() + 1 { return EOF_STRING; }                                // normal overflow
@@ -192,7 +199,7 @@ fn src_code_from_file() {
             id: 42,
             name: "../tests/codemap/file1.ff".to_owned(),
             src: "abc\r\nde\r\nfgh".to_owned().into_bytes().into_boxed_slice(),
-            lf_offsets: vec![4, 8]
+            endl_indexes: vec![4, 8]
         })
     }
     assert_eq!{ 
@@ -201,7 +208,7 @@ fn src_code_from_file() {
             id: 43,
             name: "../tests/codemap/file2.ff".to_owned(),
             src: "ijk\r\nlm\r\n".to_owned().into_bytes().into_boxed_slice(),
-            lf_offsets: vec![4, 8]
+            endl_indexes: vec![4, 8]
         })
     }
 

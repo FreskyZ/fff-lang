@@ -1,9 +1,9 @@
 ///! fff-lang
 ///!
-///! codemap, manages source code strings, include
-///! providing source file string's iterator<(char, CharPos)>
-///! intern string
-///! source code location required by message
+///! codemap, source code manager
+///! 
+///! read input file, stores source code string, provide iterator through chars and their locations, string interner
+///! 
 
 #[macro_use] mod span;
 #[macro_use] mod symbol_def;

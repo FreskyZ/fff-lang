@@ -1,7 +1,7 @@
 ///! fff-lang 
 ///! 
 ///! codemap/span
-///! CharPosition and Span and make_span!
+///! CharPos and Span and make_span!
 
 use std::fmt;
 use std::ops::Range;
@@ -10,16 +10,17 @@ use super::SourceCode;
 
 const DEFAULT_FILE_ID: usize = ::std::usize::MAX;
 
-/// Byte index of a char
+/// Byte index of a char in a file
 #[derive(Eq, PartialEq, Clone, Copy)]
 pub struct CharPos {
-    pub(super) file_id: usize, // used to be u32, but even it is u32, this struct is still 16 byte size, then give it usize
-    pub(super) char_id: usize,
+    pub(crate) file_id: usize, // used to be u32, but even it is u32, this struct is still 16 byte size, then give it usize
+    pub(crate) char_id: usize,
 }
 impl Default for CharPos {
     fn default() -> CharPos { CharPos{ file_id: DEFAULT_FILE_ID, char_id: 0 } }
 }
 impl CharPos {
+    /// if source is some, format by row and column instead of byte index
     pub fn format(&self, source: Option<&SourceCode>) -> String {
         match (source, self.file_id) {
             (_, DEFAULT_FILE_ID) => format!("<no-charpos>"),
@@ -69,9 +70,9 @@ macro_rules! make_charpos {
 /// Position of a string
 #[derive(Eq, PartialEq, Clone, Copy)]
 pub struct Span {
-    pub(super) file_id: usize,
-    pub(super) start_id: usize,
-    pub(super) end_id: usize,
+    pub(crate) file_id: usize,
+    pub(crate) start_id: usize,
+    pub(crate) end_id: usize,
 }
 impl Default for Span {
     fn default() -> Span { Span{ file_id: DEFAULT_FILE_ID, start_id: 0, end_id: 0 } }
