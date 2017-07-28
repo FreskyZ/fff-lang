@@ -1,5 +1,7 @@
 # fff-lang
 
+[![Build Status](https://travis-ci.org/FreskyZ/fff-lang.svg?branch=master)](https://travis-ci.org/FreskyZ/fff-lang)
+
 A small language for fun
 
 ## Features (in design)
