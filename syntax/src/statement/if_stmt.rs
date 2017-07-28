@@ -147,11 +147,8 @@ impl ISyntaxItemParse for IfStatement {
     type Target = IfStatement;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<IfStatement> {
-        assert!(sess.tk == &Token::Keyword(Keyword::If));
 
-        let if_span = sess.pos;
-        sess.move_next();
-        
+        let if_span = sess.expect_keyword(Keyword::If)?;
         let if_expr = Expr::parse(sess)?;
         let if_body = Block::parse(sess)?;
         let if_clause = IfClause::new(if_span, if_expr, if_body);
