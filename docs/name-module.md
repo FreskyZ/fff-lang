@@ -96,5 +96,5 @@ from m3.m4 import M34Type;
 
 it works fine
 
-check [this tutorial](https://www.haskell.org/tutorial/modules.html) for information about haskell
+check for information about haskell
 also consider learning about COM's design

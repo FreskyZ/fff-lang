@@ -109,6 +109,6 @@ confusing, and the syntax is not of much use.
 
 - `as_*` for static cast between primitive numeric types,  
   consider remove implicit conversion at all
-- `std::mem::transmut` for reinterpret cast
+- `std::mem::transmute` for reinterpret cast
 - user provide `as_*` for user types
 - consider other approaches for dynamic cast

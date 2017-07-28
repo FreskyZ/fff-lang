@@ -2,6 +2,50 @@
 
 ## Name resolve pass
 
+### from `resolve-passes.md` earlier
+
+First, (optionally) move syntax tree to semantic tree, current tree is  
+exactly same as syntax tree, generate builtin types and fns, which means,  
+typedef and even type template def is added nearly added to syntax tree,  
+because stdlib in self dependent and already known, maybe add them later
+
+Then, move all strings into symbol collection, intern them, return symbol ID  
+
+Then, iterate through scopes, record definitions, currently 3 kind of  
+definitions
+
+  - typedef, currently only allowed in package level, future allowed  
+    everywhere, typedef can be used before definition, invisible after scope
+  - fndef, in package level or typedef level, fndef can be used before 
+    definition, invisible after scope
+  - type template def, for array and tuple currently, type template def can  
+    be used before definition, invisible after scope
+  - fn template def, for array and tuple methods currently, fn template def  
+    can be used before definition, invisible after scope
+  - variable def, for type field and function member, var def **cannot** be  
+    used before definition, type members maybe visible after scope,  
+    local vars is destructed (not deconstructed) after scope
+  - template var def, for template type fields and template fn locals
+  
+in this case, fndef still not merged into var, because fn donot consider  
+order, but vardef consider order, you cannot use it before definition
+
+discuse normal function def, captured function def (lambda), binded function  
+def (binded) and callable object in otherwhere
+
+so (template) type def and (template) function def only records definition  
+info, but (template) var def should record definition order to prevent use  
+before definition
+
+Then, iterate through tree leaves, analyze all identifiers (or symbols) to  
+definition use, also record use to definition info, to provide not used  
+warning after it.
+
+In theory, that's finished, provide public interfaces which can only retrieve  
+information after last pass, let previous info die in their enum member
+
+### something new
+
 Before v0.1.2 there is no special name resolve pass in ffc structure, because compiler principle tell me the passes should be lexical parse, syntax parse, semantic analyze and intermediat code generation, optimization and target code generation. Yes semantic analyze and IR generation is one pass and I do impl ffc according to that.
 
 That causes much more complexity and difficulty in designment and implementation, I spent much time figuring out function names, variable names and type definitions, put them in complex structures and impl complex functions to generate them, and at the same time, IR code is generated. Actually var use resolve is along with expression's code generation, the function consumes syntax::expr with identifier string, and IR code with var id is generated
