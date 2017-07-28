@@ -16,9 +16,9 @@ use super::Expr;
 use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
-use super::super::ISyntaxItemParse;
+use super::super::ISyntaxParse;
 use super::super::ISyntaxFormat;
-use super::super::ISyntaxItemGrammar;
+use super::super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct SimpleName {
@@ -39,8 +39,8 @@ impl From<SimpleName> for Expr {
 impl SimpleName {
     pub fn new(value: SymbolID, span: Span) -> SimpleName { SimpleName{ value, span } }
 }
-impl ISyntaxItemParse for SimpleName {
-    type Target = SimpleName; // out of expr depdendencies require direct parse and get a simple name
+impl ISyntaxParse for SimpleName {
+    type Output = SimpleName; // out of expr depdendencies require direct parse and get a simple name
 
     fn parse(sess: &mut ParseSession) -> ParseResult<SimpleName> {
         let (value, span) = sess.expect_ident()?;
@@ -71,11 +71,11 @@ impl From<Name> for Expr {
 impl Name {
     pub fn new(all_span: Span, segments: Vec<SimpleName>) -> Name { Name{ all_span, segments } }
 }
-impl ISyntaxItemGrammar for Name {
-    fn is_first_final(sess: &ParseSession) -> bool { if let &Token::Ident(_) = sess.current_tokens()[0] { true } else { false } }
+impl ISyntaxGrammar for Name {
+    fn matches_first(tokens: &[&Token]) -> bool { if let &Token::Ident(_) = tokens[0] { true } else { false } }
 }
-impl ISyntaxItemParse for Name {
-    type Target = Expr;
+impl ISyntaxParse for Name {
+    type Output = Expr;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {
         

@@ -18,9 +18,9 @@ use super::super::TypeUse;
 use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
-use super::super::ISyntaxItemParse;
+use super::super::ISyntaxParse;
 use super::super::ISyntaxFormat;
-use super::super::ISyntaxItemGrammar;
+use super::super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct VarDeclStatement {
@@ -67,11 +67,11 @@ impl VarDeclStatement {
         VarDeclStatement{ all_span, is_const: false, name, name_span, typeuse, init_expr }
     }
 }
-impl ISyntaxItemGrammar for VarDeclStatement {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.current_tokens()[0] == &Token::Keyword(Keyword::Const) || sess.current_tokens()[0] == &Token::Keyword(Keyword::Var) }
+impl ISyntaxGrammar for VarDeclStatement {
+    fn matches_first(tokens: &[&Token]) -> bool { tokens[0] == &Token::Keyword(Keyword::Const) || tokens[0] == &Token::Keyword(Keyword::Var) }
 }
-impl ISyntaxItemParse for VarDeclStatement {
-    type Target = VarDeclStatement;
+impl ISyntaxParse for VarDeclStatement {
+    type Output = VarDeclStatement;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<VarDeclStatement> {
         

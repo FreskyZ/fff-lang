@@ -14,9 +14,9 @@ use super::Expr;
 use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
-use super::super::ISyntaxItemParse;
+use super::super::ISyntaxParse;
 use super::super::ISyntaxFormat;
-use super::super::ISyntaxItemGrammar;
+use super::super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct LitExpr {
@@ -39,11 +39,11 @@ impl From<LitExpr> for Expr {
 impl LitExpr {
     pub fn new(value: LitValue, span: Span) -> LitExpr { LitExpr{ value, span } }
 }
-impl ISyntaxItemGrammar for LitExpr {
-    fn is_first_final(sess: &ParseSession) -> bool { if let &Token::Lit(_) = sess.current_tokens()[0] { true } else { false } }
+impl ISyntaxGrammar for LitExpr {
+    fn matches_first(tokens: &[&Token]) -> bool { if let &Token::Lit(_) = tokens[0] { true } else { false } }
 }
-impl ISyntaxItemParse for LitExpr {
-    type Target = Expr;
+impl ISyntaxParse for LitExpr {
+    type Output = Expr;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {
         

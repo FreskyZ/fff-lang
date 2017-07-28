@@ -17,9 +17,9 @@ use super::super::TypeUse;
 use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
-use super::super::ISyntaxItemParse;
+use super::super::ISyntaxParse;
 use super::super::ISyntaxFormat;
-use super::super::ISyntaxItemGrammar;
+use super::super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct FnParam {
@@ -72,11 +72,11 @@ impl FnDef {
         FnDef{ name, name_span, params, params_paren_span, ret_type, body, all_span }
     }
 }
-impl ISyntaxItemGrammar for FnDef {   
-    fn is_first_final(sess: &ParseSession) -> bool { sess.current_tokens()[0] == &Token::Keyword(Keyword::Fn) }
+impl ISyntaxGrammar for FnDef {   
+    fn matches_first(tokens: &[&Token]) -> bool { tokens[0] == &Token::Keyword(Keyword::Fn) }
 }
-impl ISyntaxItemParse for FnDef {
-    type Target = FnDef;
+impl ISyntaxParse for FnDef {
+    type Output = FnDef;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<FnDef> {
         #[cfg(feature = "trace_fn_def_parse")]

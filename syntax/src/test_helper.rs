@@ -10,7 +10,7 @@ use message::MessageCollection;
 use lexical::TokenStream;
 
 use super::ParseSession;
-use super::ISyntaxItemParse;
+use super::ISyntaxParse;
 
 pub trait WithTestInput {
     type Output: Sized;
@@ -83,7 +83,7 @@ impl<T> TestInputResult<T> {
     pub fn finish(self) { }
 }
 
-impl<T, U> WithTestInput for T where T: ISyntaxItemParse<Target = U> {
+impl<T, U> WithTestInput for T where T: ISyntaxParse<Output = U> {
     type Output = U;
 
     fn with_test_input(input: TestInput) -> (Option<U>, SourceCode, MessageCollection, SymbolCollection) {

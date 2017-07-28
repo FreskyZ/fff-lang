@@ -11,9 +11,9 @@ use super::super::Item;
 use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
-use super::super::ISyntaxItemParse;
+use super::super::ISyntaxParse;
 use super::super::ISyntaxFormat;
-use super::super::ISyntaxItemGrammar;
+use super::super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct Module {
@@ -34,13 +34,13 @@ impl fmt::Debug for Module {
 impl Module {
     pub fn new(items: Vec<Item>) -> Module { Module{ items } }
 }
-impl ISyntaxItemParse for Module {
-    type Target = Module;
+impl ISyntaxParse for Module {
+    type Output = Module;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<Module> {
         let mut items = Vec::new();
         loop {
-            if Item::is_first_final(sess) {
+            if Item::matches_first(sess.current_tokens()) {
                 items.push(Item::parse(sess)?);
             } else if sess.current_tokens()[0] == &Token::EOF { // as module is special, specially allow self.current_tokens in parse
                 break;

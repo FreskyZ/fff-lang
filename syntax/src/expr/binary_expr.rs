@@ -25,7 +25,7 @@ use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
 use super::super::ISyntaxFormat;
-use super::super::ISyntaxItemParse;
+use super::super::ISyntaxParse;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct BinaryExpr {
@@ -63,8 +63,8 @@ impl BinaryExpr {
         }
     }
 }
-impl ISyntaxItemParse for BinaryExpr {
-    type Target = Expr;
+impl ISyntaxParse for BinaryExpr {
+    type Output = Expr;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {  
         #[cfg(feature = "trace_binary_expr_parse")]

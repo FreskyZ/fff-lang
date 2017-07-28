@@ -18,8 +18,8 @@ use super::super::ParseResult;
 use super::super::ParseSession;
 use super::super::error_strings;
 use super::super::ISyntaxFormat;
-use super::super::ISyntaxItemParse;
-use super::super::ISyntaxItemGrammar;
+use super::super::ISyntaxParse;
+use super::super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct ArrayDef {
@@ -41,11 +41,11 @@ impl From<ArrayDef> for Expr {
 impl ArrayDef {
     pub fn new(bracket_span: Span, items: ExprList) -> ArrayDef { ArrayDef{ bracket_span, items: items } }
 }
-impl ISyntaxItemGrammar for ArrayDef {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.current_tokens()[0] == &Token::Sep(Seperator::LeftBracket) }
+impl ISyntaxGrammar for ArrayDef {
+    fn matches_first(tokens: &[&Token]) -> bool { tokens[0] == &Token::Sep(Seperator::LeftBracket) }
 }
-impl ISyntaxItemParse for ArrayDef {
-    type Target = Expr;
+impl ISyntaxParse for ArrayDef {
+    type Output = Expr;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {
         

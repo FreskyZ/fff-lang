@@ -15,9 +15,9 @@ use super::super::LabelDef;
 use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
-use super::super::ISyntaxItemParse;
+use super::super::ISyntaxParse;
 use super::super::ISyntaxFormat;
-use super::super::ISyntaxItemGrammar;
+use super::super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct LoopStatement {
@@ -63,16 +63,16 @@ impl LoopStatement { // New
         }
     }
 }
-impl ISyntaxItemGrammar for LoopStatement {
-    fn is_first_final(sess: &ParseSession) -> bool {
-        match (sess.current_tokens()[0], sess.current_tokens()[2]) {
+impl ISyntaxGrammar for LoopStatement {
+    fn matches_first(tokens: &[&Token]) -> bool {
+        match (tokens[0], tokens[2]) {
             (&Token::Label(_), &Token::Keyword(Keyword::Loop)) | (&Token::Keyword(Keyword::Loop), _) => true,
             _ => false
         }
     }
 }
-impl ISyntaxItemParse for LoopStatement {
-    type Target = LoopStatement;
+impl ISyntaxParse for LoopStatement {
+    type Output = LoopStatement;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<LoopStatement> {
 

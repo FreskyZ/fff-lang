@@ -20,9 +20,9 @@ use super::super::SimpleName;
 use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
-use super::super::ISyntaxItemParse;
+use super::super::ISyntaxParse;
 use super::super::ISyntaxFormat;
-use super::super::ISyntaxItemGrammar;
+use super::super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct TypeFieldDef {
@@ -63,11 +63,11 @@ impl TypeDef {
         TypeDef{ all_span, name, fields }
     }
 }
-impl ISyntaxItemGrammar for TypeDef {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.current_tokens()[0] == &Token::Keyword(Keyword::Type) }
+impl ISyntaxGrammar for TypeDef {
+    fn matches_first(tokens: &[&Token]) -> bool { tokens[0] == &Token::Keyword(Keyword::Type) }
 }
-impl ISyntaxItemParse for TypeDef {
-    type Target = Self;
+impl ISyntaxParse for TypeDef {
+    type Output = Self;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<TypeDef> {
 

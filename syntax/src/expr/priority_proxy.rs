@@ -19,28 +19,22 @@ use super::MemberAccessExpr;
 
 use super::super::ParseResult;
 use super::super::ParseSession;
-use super::super::ISyntaxItemParse;
-use super::super::ISyntaxItemGrammar;
+use super::super::ISyntaxParse;
+use super::super::ISyntaxGrammar;
 
 pub struct PrimaryExpr;
-impl ISyntaxItemParse for PrimaryExpr {
-    type Target = Expr;
+impl ISyntaxParse for PrimaryExpr {
+    type Output = Expr;
     
     fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {
-        #[cfg(feature = "trace_primary_expr_parse")]
-        macro_rules! trace { ($($arg:tt)*) => ({ print!("[PrimaryExpr: {}]", line!()); println!($($arg)*); }) }
-        #[cfg(not(feature = "trace_primary_expr_parse"))]
-        macro_rules! trace { ($($arg:tt)*) => () }
 
-        trace!("start parsing, current token: {:?}", sess.current_tokens()[0]);
-
-        if LitExpr::is_first_final(sess) {
+        if LitExpr::matches_first(sess.current_tokens()) {
             return LitExpr::parse(sess);
-        } else if Name::is_first_final(sess) {
+        } else if Name::matches_first(sess.current_tokens()) {
             return Name::parse(sess);
-        } else if TupleDef::is_first_final(sess) {
+        } else if TupleDef::matches_first(sess.current_tokens()) {
             return TupleDef::parse(sess);
-        } else if ArrayDef::is_first_final(sess) {
+        } else if ArrayDef::matches_first(sess.current_tokens()) {
             return ArrayDef::parse(sess);
         }
 
@@ -50,8 +44,8 @@ impl ISyntaxItemParse for PrimaryExpr {
 }
 
 pub struct PostfixExpr;
-impl ISyntaxItemParse for PostfixExpr {
-    type Target = Expr;
+impl ISyntaxParse for PostfixExpr {
+    type Output = Expr;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {   
         #[cfg(feature = "trace_postfix_expr_parse")]
@@ -63,17 +57,17 @@ impl ISyntaxItemParse for PostfixExpr {
         trace!("parsed primary, current is {:?}", current_retval);
 
         loop {
-            if MemberAccessExpr::is_first_final(sess) {
+            if MemberAccessExpr::matches_first(sess.current_tokens()) {
                 let mut postfix = MemberAccessExpr::parse(sess)?;
                 postfix.all_span = current_retval.get_all_span().merge(&postfix.name.span);
                 postfix.base = Box::new(current_retval);
                 current_retval = Expr::MemberAccess(postfix);
-            } else if FnCallExpr::is_first_final(sess) {
+            } else if FnCallExpr::matches_first(sess.current_tokens()) {
                 let mut postfix = FnCallExpr::parse(sess)?;
                 postfix.all_span = current_retval.get_all_span().merge(&postfix.paren_span);
                 postfix.base = Box::new(current_retval);
                 current_retval = Expr::FnCall(postfix);
-            } else if IndexCallExpr::is_first_final(sess) {
+            } else if IndexCallExpr::matches_first(sess.current_tokens()) {
                 let mut postfix = IndexCallExpr::parse(sess)?;
                 postfix.all_span = current_retval.get_all_span().merge(&postfix.bracket_span);
                 postfix.base = Box::new(current_retval);

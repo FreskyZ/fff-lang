@@ -18,9 +18,9 @@ use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
 use super::super::error_strings;
-use super::super::ISyntaxItemParse;
+use super::super::ISyntaxParse;
 use super::super::ISyntaxFormat;
-use super::super::ISyntaxItemGrammar;
+use super::super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct FnCallExpr {
@@ -63,11 +63,11 @@ impl FnCallExpr {
         }
     }
 }
-impl ISyntaxItemGrammar for FnCallExpr {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.current_tokens()[0] == &Token::Sep(Seperator::LeftParenthenes) }
+impl ISyntaxGrammar for FnCallExpr {
+    fn matches_first(tokens: &[&Token]) -> bool { tokens[0] == &Token::Sep(Seperator::LeftParenthenes) }
 }
-impl ISyntaxItemParse for FnCallExpr {
-    type Target = FnCallExpr;
+impl ISyntaxParse for FnCallExpr {
+    type Output = FnCallExpr;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<FnCallExpr> {
 

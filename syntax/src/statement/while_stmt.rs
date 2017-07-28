@@ -16,9 +16,9 @@ use super::super::LabelDef;
 use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
-use super::super::ISyntaxItemParse;
+use super::super::ISyntaxParse;
 use super::super::ISyntaxFormat;
-use super::super::ISyntaxItemGrammar;
+use super::super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct WhileStatement {
@@ -66,16 +66,16 @@ impl WhileStatement {
         }
     }
 }
-impl ISyntaxItemGrammar for WhileStatement {
-    fn is_first_final(sess: &ParseSession) -> bool {
-        match (sess.current_tokens()[0], sess.current_tokens()[2]) {
+impl ISyntaxGrammar for WhileStatement {
+    fn matches_first(tokens: &[&Token]) -> bool {
+        match (tokens[0], tokens[2]) {
             (&Token::Label(_), &Token::Keyword(Keyword::While)) | (&Token::Keyword(Keyword::While), _) => true,
             _ => false
         }
     }
 }
-impl ISyntaxItemParse for WhileStatement {
-    type Target = WhileStatement;
+impl ISyntaxParse for WhileStatement {
+    type Output = WhileStatement;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<WhileStatement> {
         

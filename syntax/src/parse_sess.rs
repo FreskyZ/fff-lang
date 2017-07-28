@@ -15,7 +15,6 @@ use lexical::LitValue;
 
 pub type ParseResult<T> = Result<T, ()>;
 
-#[allow(dead_code)]
 pub struct ParseSession<'tokens, 'msgs, 'syms> {
     tokens: &'tokens TokenStream,
     messages: &'msgs mut MessageCollection,
@@ -23,7 +22,7 @@ pub struct ParseSession<'tokens, 'msgs, 'syms> {
     current_index: usize,
     current_tokens: [&'tokens Token; 3],
 }
-#[allow(dead_code)]
+#[allow(dead_code)] // helper methods may not be used
 impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
 
     pub fn new(tokens: &'a TokenStream, messages: &'b mut MessageCollection, symbols: &'c mut SymbolCollection) -> ParseSession<'a, 'b, 'c> {
@@ -292,17 +291,17 @@ impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
     }
 }
 
-pub trait ISyntaxItemGrammar {
-    fn is_first_final(sess: &ParseSession) -> bool;
+pub trait ISyntaxGrammar {
+    fn matches_first(tokens: &[&Token]) -> bool;
 }
-pub trait ISyntaxItemParse {
-    type Target;
+pub trait ISyntaxParse {
+    type Output;
     
-    fn parse(sess: &mut ParseSession) -> ParseResult<Self::Target>;
+    fn parse(sess: &mut ParseSession) -> ParseResult<Self::Output>;
 
     // check is_first_final, if pass, parse, return Ok(Some(T)) or Err(()), else return None
-    fn try_parse(sess: &mut ParseSession) -> ParseResult<Option<Self::Target>> where Self: ISyntaxItemGrammar {
-        if Self::is_first_final(sess) { Ok(Some(Self::parse(sess)?)) } else { Ok(None) }
+    fn try_parse(sess: &mut ParseSession) -> ParseResult<Option<Self::Output>> where Self: ISyntaxGrammar {
+        if Self::matches_first(sess.current_tokens()) { Ok(Some(Self::parse(sess)?)) } else { Ok(None) }
     }
 }
 

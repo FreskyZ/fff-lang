@@ -13,9 +13,9 @@ use super::super::Statement;
 use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
-use super::super::ISyntaxItemParse;
+use super::super::ISyntaxParse;
 use super::super::ISyntaxFormat;
-use super::super::ISyntaxItemGrammar;
+use super::super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct Block {
@@ -40,11 +40,11 @@ impl Block {
 
     pub fn new(all_span: Span, statements: Vec<Statement>) -> Block { Block{ all_span, items: statements } }
 }
-impl ISyntaxItemGrammar for Block {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.current_tokens()[0] == &Token::Sep(Seperator::LeftBrace) }
+impl ISyntaxGrammar for Block {
+    fn matches_first(tokens: &[&Token]) -> bool { tokens[0] == &Token::Sep(Seperator::LeftBrace) }
 }
-impl ISyntaxItemParse for Block {
-    type Target = Block;
+impl ISyntaxParse for Block {
+    type Output = Block;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<Block> {
 

@@ -15,9 +15,9 @@ use super::BinaryExpr;
 use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
-use super::super::ISyntaxItemParse;
+use super::super::ISyntaxParse;
 use super::super::ISyntaxFormat;
-use super::super::ISyntaxItemGrammar;
+use super::super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct RangeFullExpr {
@@ -62,15 +62,15 @@ impl RangeRightExpr {
     }
 }
 
-impl ISyntaxItemGrammar for RangeFullExpr {
-    fn is_first_final(sess: &ParseSession) -> bool { sess.current_tokens()[0] == &Token::Sep(Seperator::Range) }
+impl ISyntaxGrammar for RangeFullExpr {
+    fn matches_first(tokens: &[&Token]) -> bool { tokens[0] == &Token::Sep(Seperator::Range) }
 }
-impl ISyntaxItemParse for RangeFullExpr {
-    type Target = Expr;
+impl ISyntaxParse for RangeFullExpr {
+    type Output = Expr;
 
     fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {
         let span = sess.expect_sep(Seperator::Range)?;
-        if Expr::is_first_final(sess) {
+        if Expr::matches_first(sess.current_tokens()) {
             let expr = BinaryExpr::parse(sess)?;
             return Ok(Expr::RangeRight(RangeRightExpr::new(span.merge(&expr.get_all_span()), expr)));
         }
@@ -135,13 +135,13 @@ impl RangeBothExpr {
     }
 }
 
-impl ISyntaxItemParse for RangeLeftExpr {
-    type Target = Expr;
+impl ISyntaxParse for RangeLeftExpr {
+    type Output = Expr;
     
     fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {
         let left_expr = BinaryExpr::parse(sess)?;
         if let Some(op_span) = sess.try_expect_sep(Seperator::Range) {
-            if Expr::is_first_final(sess) {
+            if Expr::matches_first(sess.current_tokens()) {
                 let right_expr = BinaryExpr::parse(sess)?;
                 return Ok(Expr::RangeBoth(RangeBothExpr::new(left_expr, op_span, right_expr)));
             } else {
