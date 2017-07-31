@@ -1,9 +1,13 @@
+#![deny(warnings)]
 ///! fff-lang
 ///!
 ///! codemap, source code manager
 ///! 
 ///! read input file, stores source code string, provide iterator through chars and their locations, string interner
 ///! 
+
+use std::path::Path;
+use std::path::PathBuf;
 
 #[macro_use] mod span;
 #[macro_use] mod symbol_def;
@@ -24,15 +28,13 @@ pub struct SourceMap {
 }
 impl SourceMap {
 
-    pub fn new() -> SourceMap { SourceMap{ items: Vec::new() } }
-    pub fn with_test_str(src: &str) -> SourceMap { SourceMap{ items: vec![SourceCode::with_test_str(0, src)] } }
-
-    pub fn add_file(&mut self, filename: String) -> Result<&SourceCode, CodeMapError> {
-        let id = self.items.len();
-        self.items.push(SourceCode::with_file_name(id, filename)?);
-        Ok(&self.items[id])
+    pub fn new<T>(main_file: T) -> Result<SourceMap, CodeMapError> where T: Into<PathBuf> + Clone, for<'a> &'a T: AsRef<Path> {
+        Ok(SourceMap {
+            items: vec![SourceCode::with_file_name(0, main_file)?],
+        })
     }
 
-    pub fn index(&self, index: usize) -> &SourceCode { &self.items[index] }
-    pub fn index_by_span(&self, index: Span) -> &SourceCode{ &self.items[index.file_id] }
+    pub fn index(&self, id: usize) -> &SourceCode {
+        &self.items[id]
+    }
 }

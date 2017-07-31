@@ -3,6 +3,9 @@
 ///! codemap/codefile
 ///! filename and file content owner, yield char and pos from file content
 
+use std::path::Path;
+use std::path::PathBuf;
+
 use super::Span;
 use super::CharPos;
 use super::CodeMapError;
@@ -79,16 +82,18 @@ impl<'a> SourceCodeIter<'a> {
 #[cfg_attr(test, derive(Debug, Eq, PartialEq))]
 pub struct SourceCode {
     id: usize,
-    name: String,
+    name: PathBuf,
     src: Box<[u8]>,           // source code string, in form of owned byte slice, because no need of string methods, utf8 iterator also implemented here not depend on std
     endl_indexes: Vec<usize>, // line end byte indexes
 }
 impl SourceCode {
 
-    pub fn with_file_name(id: usize, file_name: String) -> Result<SourceCode, CodeMapError> {
+    pub fn with_file_name<T>(id: usize, file_name: T) -> Result<SourceCode, CodeMapError> 
+        where T: Into<PathBuf> + Clone, for<'a> &'a T: AsRef<Path> { // into for adapt String, Clone for construct error, AsRef<Path> for file open
         use std::fs::File;
         use std::io::Read;
 
+        let file_name = file_name.into();
         let mut src = String::new();
         let mut file = File::open(&file_name).map_err(|e| CodeMapError::CannotOpenFile(file_name.clone(), e))?;
         let _ = file.read_to_string(&mut src).map_err(|e| CodeMapError::CannotReadFile(file_name.clone(), e))?;
@@ -103,7 +108,7 @@ impl SourceCode {
     pub fn with_test_str(id: usize, src: &str) -> SourceCode {
         SourceCode{ 
             id, 
-            name: format!("<anon#{}>", id),
+            name: format!("<anon#{}>", id).into(),
             endl_indexes: src.char_indices().filter(|indice| indice.1 == '\n').map(|indice| indice.0).collect(),
             src: src.to_owned().into_bytes().into_boxed_slice(),
         }
@@ -113,7 +118,7 @@ impl SourceCode {
 }
 impl SourceCode {
     
-    pub fn get_name(&self) -> &str { &self.name }
+    pub fn get_name(&self) -> &Path { &self.name }
 
     /// map byte index to (row, column)
     pub fn map_index(&self, charpos: CharPos) -> (usize, usize) {
@@ -194,27 +199,27 @@ fn src_code_from_file() {
     use std::fs::File;
 
     assert_eq!{ 
-        SourceCode::with_file_name(42, "../tests/codemap/file1.ff".to_owned()),
+        SourceCode::with_file_name(42, "../tests/codemap/file1.ff".to_owned()), 
         Ok(SourceCode{
             id: 42,
-            name: "../tests/codemap/file1.ff".to_owned(),
+            name: "../tests/codemap/file1.ff".to_owned().into(),
             src: "abc\r\nde\r\nfgh".to_owned().into_bytes().into_boxed_slice(),
             endl_indexes: vec![4, 8]
         })
     }
     assert_eq!{ 
-        SourceCode::with_file_name(43, "../tests/codemap/file2.ff".to_owned()), 
+        SourceCode::with_file_name(43, "../tests/codemap/file2.ff".to_owned()),
         Ok(SourceCode{
             id: 43,
-            name: "../tests/codemap/file2.ff".to_owned(),
+            name: "../tests/codemap/file2.ff".to_owned().into(),
             src: "ijk\r\nlm\r\n".to_owned().into_bytes().into_boxed_slice(),
             endl_indexes: vec![4, 8]
         })
     }
 
     assert_eq!{
-        SourceCode::with_file_name(0, "not_exist.ff".to_owned()), 
-        Err(CodeMapError::CannotOpenFile("not_exist.ff".to_owned(), File::open("not_exist.ff").unwrap_err()))
+        SourceCode::with_file_name(0, "not_exist.ff".to_owned()),
+        Err(CodeMapError::CannotOpenFile("not_exist.ff".to_owned().into(), File::open("not_exist.ff").unwrap_err()))
     }
 }
 
