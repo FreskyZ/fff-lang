@@ -72,10 +72,6 @@ no special module interface declaration syntax item or module interface file, be
 
 ### Module import
 
-use `'import' name` for declare a module import, support directly import sub directory's module, do not support import super directory module, do not support multiple time imported module, only support import declare in package main file or module main file
+use `'import' identifier` for declare a module import, do not support import super directory module, do not support multiple time imported module, only support import declare in package main file or module main file
 
 use `'use' name [ 'as' identifier ]` for name alias, used name conflict with module local name is error, `use some_local_name as another` to alias local name, while also export the name
-
-
-// TODO: continue clean up documents on module, name and name resolve
-// discuss syntax::SyntaxTree and codemap module driver in internal documents
