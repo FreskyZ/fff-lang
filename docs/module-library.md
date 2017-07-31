@@ -8,9 +8,14 @@ Very simply, a module is a collection of global items, maybe nestable, to make g
 a library is a collection of global items or collection of modules, and a basic 3rd party feature publish and distribute unit
 
 refs: 
+- [Rust document about module](https://doc.rust-lang.org/book/second-edition/ch07-00-modules.html)
+- [Python document about module](https://docs.python.org/3/tutorial/modules.html)
+- [Python document about module](https://docs.python.org/3/tutorial/modules.html)
 - [C++ module initial paper](http://open-std.org/JTC1/SC22/WG21/docs/papers/2014/n4047.pdf)
+- [C++ module paper r2](http://open-std.org/JTC1/SC22/WG21/docs/papers/2014/n4214.pdf)
 - [C++ module paper r3](http://www.open-std.org/JTC1/SC22/WG21/docs/papers/2015/n4465.pdf)
-- [C++ module paper r4](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/n4610.pdf)
+- [C++ module paper r4](http://open-std.org/JTC1/SC22/WG21/docs/papers/2016/p0142r0.pdf)
+- [C++ module paper newest](http://open-std.org/JTC1/SC22/WG21/docs/papers/2017/n4667.pdf)
 - [Clang document about module](https://clang.llvm.org/docs/Modules.html)
 - [GCC document about module](https://gcc.gnu.org/wiki/cxx-modules)
 - [VC++ blog about module](https://blogs.msdn.microsoft.com/vcblog/2015/12/03/c-modules-in-vs-2015-update-1/)
