@@ -272,4 +272,8 @@ switch (...)
 int __stdcall WinMain([[maybe_unused]] HINSTANCE, [[maybe_unused]HINSTANCE]);
 ```
 
-TODO: think about mine
+### fff-lang
+
+I like rust's `#[xxx]` syntax, start with special character makes parse easier, while C#'s surround with brackets, which, if used in fff-lang, will conflic with array construction expression, but I like C#'s attributes are all predefined types, which makes human read and tools easier, also, marker types in std is not strange at all
+
+// TODO: more detail

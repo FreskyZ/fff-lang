@@ -81,3 +81,8 @@ fn try_expect_item<T: ...>();
 this seems not good
 
 starting implement new expectors
+new issues:
+
+  - `LabelDef::parse` require check current token is Label
+  - `Module::parse` require check current token is EOF to break label
+  - `LitExpr::parse` require check current token is Literal
