@@ -5,3 +5,4 @@ Cargo.lock
 tests/pefile/.vs
 *.obj
 *.pyc
+.DS_Store

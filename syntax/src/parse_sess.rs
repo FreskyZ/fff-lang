@@ -1,9 +1,12 @@
 ///! fff-lang
 ///!
-///! syntax/parse_sess, to be ISyntaxItem::parse's parameter
+///! syntax/parse_sess, parse traits and helper struct
+
+use std::rc::Rc;
 
 use codemap::Span;
 use codemap::SymbolID;
+use codemap::SourceCode;
 use codemap::SymbolCollection;
 use message::Message;
 use message::MessageCollection;
@@ -16,6 +19,7 @@ use lexical::LitValue;
 pub type ParseResult<T> = Result<T, ()>;
 
 pub struct ParseSession<'tokens, 'msgs, 'syms> {
+    pub source: Rc<SourceCode>,
     tokens: &'tokens TokenStream,
     messages: &'msgs mut MessageCollection,
     pub symbols: &'syms mut SymbolCollection,
@@ -25,9 +29,9 @@ pub struct ParseSession<'tokens, 'msgs, 'syms> {
 #[allow(dead_code)] // helper methods may not be used
 impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
 
-    pub fn new(tokens: &'a TokenStream, messages: &'b mut MessageCollection, symbols: &'c mut SymbolCollection) -> ParseSession<'a, 'b, 'c> {
+    pub fn new(source: Rc<SourceCode>, tokens: &'a TokenStream, messages: &'b mut MessageCollection, symbols: &'c mut SymbolCollection) -> ParseSession<'a, 'b, 'c> {
         ParseSession{ 
-            tokens, messages, symbols,
+            source, tokens, messages, symbols,
             current_index: 0,
             current_tokens: [tokens.nth_token(0), tokens.nth_token(1), tokens.nth_token(2)],
         }

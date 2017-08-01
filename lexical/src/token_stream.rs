@@ -2,6 +2,8 @@
 ///!
 ///! token stream, vec<token> wrapper
 
+use std::rc::Rc;
+
 use codemap::Span;
 use codemap::SourceCode;
 use codemap::SymbolCollection;
@@ -56,11 +58,11 @@ impl TokenStream {
     }
 
     pub fn with_test_str(src: &str) -> TokenStream { TokenStream::with_test_input(src, None).0 }
-    pub fn with_test_input(src: &str, syms: Option<SymbolCollection>) -> (TokenStream, SourceCode, MessageCollection, SymbolCollection) {
+    pub fn with_test_input(src: &str, syms: Option<SymbolCollection>) -> (TokenStream, Rc<SourceCode>, MessageCollection, SymbolCollection) {
         let mut msgs = MessageCollection::new();
         let mut syms = syms.unwrap_or_default();
-        let source = SourceCode::with_test_str(0, src);
-        let retval = TokenStream::new(&source, &mut msgs, &mut syms);
+        let source = Rc::new(SourceCode::with_test_str(0, src));
+        let retval = TokenStream::new(source.as_ref(), &mut msgs, &mut syms);
         return (retval, source, msgs, syms);
     }
 }

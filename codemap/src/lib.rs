@@ -1,4 +1,4 @@
-#![deny(warnings)]
+#![cfg_attr(not(test), deny(warnings))]
 ///! fff-lang
 ///!
 ///! codemap, source code manager
@@ -6,8 +6,8 @@
 ///! read input file, stores source code string, provide iterator through chars and their locations, string interner
 ///! 
 
-use std::path::Path;
 use std::path::PathBuf;
+use std::rc::Rc;
 
 #[macro_use] mod span;
 #[macro_use] mod symbol_def;
@@ -24,17 +24,22 @@ pub use symbol_def::SymbolID;
 pub use symbol_def::SymbolCollection;
 
 pub struct SourceMap {
-    items: Vec<SourceCode>,
+    items: Vec<Rc<SourceCode>>, // because some syntax tree node want it
 }
 impl SourceMap {
 
-    pub fn new<T>(main_file: T) -> Result<SourceMap, CodeMapError> where T: Into<PathBuf> + Clone, for<'a> &'a T: AsRef<Path> {
+    pub fn new<T>(main_file: T) -> Result<SourceMap, CodeMapError> where T: Into<PathBuf> + Clone {
         Ok(SourceMap {
-            items: vec![SourceCode::with_file_name(0, main_file)?],
+            items: vec![Rc::new(SourceCode::with_file_name(0, main_file)?)],
         })
     }
+    pub fn add_file<T>(&mut self, path: T) -> Result<Rc<SourceCode>, CodeMapError> where T: Into<PathBuf> + Clone {
+        let new_id = self.items.len();
+        self.items.push(Rc::new(SourceCode::with_file_name(new_id, path)?));
+        Ok(self.items[new_id].clone())
+    }
 
-    pub fn index(&self, id: usize) -> &SourceCode {
-        &self.items[id]
+    pub fn index(&self, id: usize) -> Rc<SourceCode> {
+        self.items[id].clone()
     }
 }

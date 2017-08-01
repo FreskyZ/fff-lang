@@ -143,6 +143,3 @@ impl<'a, 'b> Formatter<'a, 'b> {
 pub trait ISyntaxFormat {
     fn format(&self, f: Formatter) -> String;
 }
-
-// TODO: move span's "<>" into span as Debug::fmt
-// add Formatter::space(), add Formatter::endl()

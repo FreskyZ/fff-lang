@@ -1,4 +1,5 @@
 module
+  source-code#0 <anon#0>
   expr-stmt simple <4:1-4:23>
     fn-call <4:1-4:22>
       base-is ident-use "writeln" <4:1-4:7>

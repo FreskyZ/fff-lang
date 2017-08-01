@@ -3,6 +3,7 @@
 ///! codemap/codefile
 ///! filename and file content owner, yield char and pos from file content
 
+use std::fmt;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -79,23 +80,27 @@ impl<'a> SourceCodeIter<'a> {
 }
 
 /// Represents a source code file
-#[cfg_attr(test, derive(Debug, Eq, PartialEq))]
+#[derive(Eq, PartialEq)]
 pub struct SourceCode {
     id: usize,
-    name: PathBuf,
+    name: PathBuf,            // absolute path
     src: Box<[u8]>,           // source code string, in form of owned byte slice, because no need of string methods, utf8 iterator also implemented here not depend on std
     endl_indexes: Vec<usize>, // line end byte indexes
 }
+impl fmt::Debug for SourceCode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "source-code#{} {}", self.id, self.name.display())
+    }
+}
 impl SourceCode {
 
-    pub fn with_file_name<T>(id: usize, file_name: T) -> Result<SourceCode, CodeMapError> 
-        where T: Into<PathBuf> + Clone, for<'a> &'a T: AsRef<Path> { // into for adapt String, Clone for construct error, AsRef<Path> for file open
-        use std::fs::File;
+    pub fn with_file_name<T>(id: usize, file_name: T) -> Result<SourceCode, CodeMapError> where T: Into<PathBuf> + Clone { // into for adapt String, Clone for construct error
         use std::io::Read;
 
         let file_name = file_name.into();
+        let file_name = file_name.clone().canonicalize().map_err(|e| CodeMapError::CannotOpenFile(file_name.clone(), e))?;
         let mut src = String::new();
-        let mut file = File::open(&file_name).map_err(|e| CodeMapError::CannotOpenFile(file_name.clone(), e))?;
+        let mut file = ::std::fs::File::open(&file_name).map_err(|e| CodeMapError::CannotOpenFile(file_name.clone(), e))?;
         let _ = file.read_to_string(&mut src).map_err(|e| CodeMapError::CannotReadFile(file_name.clone(), e))?;
 
         Ok(SourceCode{ 
@@ -118,7 +123,9 @@ impl SourceCode {
 }
 impl SourceCode {
     
-    pub fn get_name(&self) -> &Path { &self.name }
+    pub fn get_absolute_path(&self) -> &Path { &self.name }
+    pub fn get_relative_path(&self) -> &Path { &self.name } // FIXME: relative path
+    pub fn get_directory(&self) -> &Path { self.name.parent().unwrap() } // as self.name must be valid file, then unwrap must success
 
     /// map byte index to (row, column)
     pub fn map_index(&self, charpos: CharPos) -> (usize, usize) {
@@ -195,31 +202,60 @@ fn char_at_index_test() {
 }
 
 #[cfg(test)] #[test]
-fn src_code_from_file() {
+fn src_code_from_file_format_attr() {
     use std::fs::File;
+    use std::fs::canonicalize;
 
+    let file1 = "../tests/codemap/file1.ff";
+    let file1_full = canonicalize(file1).expect("canon 1 failed");
+    let source = SourceCode::with_file_name(42, file1).unwrap();
     assert_eq!{ 
-        SourceCode::with_file_name(42, "../tests/codemap/file1.ff".to_owned()), 
-        Ok(SourceCode{
+        source, 
+        SourceCode{
             id: 42,
-            name: "../tests/codemap/file1.ff".to_owned().into(),
+            name: file1_full.clone(),
             src: "abc\r\nde\r\nfgh".to_owned().into_bytes().into_boxed_slice(),
             endl_indexes: vec![4, 8]
-        })
+        } 
     }
+    assert_eq!{
+        format!("{:?}", source),
+        format!("source-code#42 {}", file1_full.display())
+    }
+    assert_eq!{
+        source.get_directory(),
+        file1_full.parent().unwrap()
+    }
+
+    let file2 = "../tests/codemap/file2.ff";
+    let file2_full = canonicalize(file2).expect("canon 2 failed");
+    let source = SourceCode::with_file_name(43, file2).unwrap();
     assert_eq!{ 
-        SourceCode::with_file_name(43, "../tests/codemap/file2.ff".to_owned()),
-        Ok(SourceCode{
+        source, 
+        SourceCode{
             id: 43,
-            name: "../tests/codemap/file2.ff".to_owned().into(),
+            name: file2_full.clone(),
             src: "ijk\r\nlm\r\n".to_owned().into_bytes().into_boxed_slice(),
             endl_indexes: vec![4, 8]
-        })
+        }
+    }
+    assert_eq!{
+        format!("{:?}", source),
+        format!("source-code#43 {}", file2_full.display())
+    }
+    assert_eq!{
+        source.get_directory(),
+        file2_full.parent().unwrap()
     }
 
     assert_eq!{
         SourceCode::with_file_name(0, "not_exist.ff".to_owned()),
-        Err(CodeMapError::CannotOpenFile("not_exist.ff".to_owned().into(), File::open("not_exist.ff").unwrap_err()))
+        Err(CodeMapError::CannotOpenFile("not_exist.ff".into(), File::open("not_exist.ff").unwrap_err()))
+    }
+    
+    assert_eq!{
+        format!("{:?}", SourceCode::with_test_str(43, "helloworld")),
+        "source-code#43 <anon#43>"
     }
 }
 

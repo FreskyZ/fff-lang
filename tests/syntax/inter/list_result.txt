@@ -1,4 +1,5 @@
 module
+  source-code#0 <anon#0>
   fn-def <4:1-39:1>
     "main" <4:4-4:7>
     no-return-type

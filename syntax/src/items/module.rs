@@ -4,10 +4,14 @@
 ///! module = { item }
 
 use std::fmt;
+use std::rc::Rc;
 
+use codemap::SourceCode;
 use lexical::Token;
 
 use super::super::Item;
+use super::super::ImportStatement;
+
 use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
@@ -18,10 +22,15 @@ use super::super::ISyntaxGrammar;
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct Module {
     pub items: Vec<Item>,
+    pub source: Rc<SourceCode>,
 }
 impl ISyntaxFormat for Module {
     fn format(&self, f: Formatter) -> String {
-        let mut f = f.indent().header_text_or("module");
+        let mut f = f.indent().header_text_or("module").endl()
+            .indent1().debug(self.source.as_ref());
+        if self.items.len() == 0 {
+            f = f.endl().indent1().lit("no-item");
+        }
         for item in &self.items {
             f = f.endl().apply1(item);
         }
@@ -32,7 +41,16 @@ impl fmt::Debug for Module {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl Module {
-    pub fn new(items: Vec<Item>) -> Module { Module{ items } }
+    pub fn new(source: Rc<SourceCode>, items: Vec<Item>) -> Module { Module{ source, items } }
+
+    // TODO: update to `impl Iterator<Item = Item>` and remove collect after stabilize
+    pub fn import_statements(&self) -> Vec<&ImportStatement> {
+        self.items.iter()
+            .map(|ref item| if let &&Item::Import(ref import_stmt) = item { Some(import_stmt) } else { None })
+            .filter(|maybe_import| maybe_import.is_some())
+            .map(|maybe_import| maybe_import.unwrap())
+            .collect()
+    }
 }
 impl ISyntaxParse for Module {
     type Output = Module;
@@ -48,7 +66,7 @@ impl ISyntaxParse for Module {
                 return sess.push_unexpect("if, while, for, var, const, expr");
             }
         }
-        return Ok(Module::new(items));
+        return Ok(Module::new(sess.source.clone(), items));
     }
 }
 
@@ -70,7 +88,8 @@ fn module_parse() {
         .set_syms(make_symbols!["a", "b"])
         .apply::<Module, _>()
         .expect_no_message()
-        .expect_result(Module::new(vec![
+        .expect_result(Module::new(
+            Rc::new(SourceCode::with_test_str(0, "use a; import b; 3; b; a;")), vec![
             Item::Use(UseStatement::new_default(make_span!(0, 5), 
                 Name::new(make_span!(4, 4), vec![
                     SimpleName::new(make_id!(1), make_span!(4, 4))
@@ -98,15 +117,15 @@ fn module_integration() {
     use std::io::Read;
     use super::super::TestInput;
 
-    let mut index_file = File::open("../tests/syntax/index.txt").expect("cannot open index.txt");
+    let mut index_file = File::open("../tests/syntax/inter/index.txt").expect("cannot open index.txt");
     let mut test_cases = String::new();
     let _length = index_file.read_to_string(&mut test_cases).expect("cannot read index.txt");
     for line in test_cases.lines() {
-        let src_path = "../tests/syntax/".to_owned() + line + "_src.ff";
+        let src_path = "../tests/syntax/inter/".to_owned() + line + "_src.ff";
         let mut src_file = File::open(&src_path).expect(&format!("cannot open src file {}", src_path));
         let mut src = String::new();
         let _length = src_file.read_to_string(&mut src).expect(&format!("cannot read src file {}", src_path));
-        let result_path = "../tests/syntax/".to_owned() + line + "_result.txt";
+        let result_path = "../tests/syntax/inter/".to_owned() + line + "_result.txt";
         let mut result_file = File::open(&result_path).expect(&format!("cannot open result file {}", result_path));
         let mut expect = String::new();
         let _length = result_file.read_to_string(&mut expect).expect(&format!("cannot read result file {}", result_path));

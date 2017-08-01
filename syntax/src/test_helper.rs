@@ -3,6 +3,7 @@
 ///! syntax/test_helper
 
 use std::fmt::Debug;
+use std::rc::Rc;
 
 use codemap::SourceCode;
 use codemap::SymbolCollection;
@@ -15,7 +16,7 @@ use super::ISyntaxParse;
 pub trait WithTestInput {
     type Output: Sized;
 
-    fn with_test_input(input: TestInput) -> (Option<Self::Output>, SourceCode, MessageCollection, SymbolCollection);
+    fn with_test_input(input: TestInput) -> (Option<Self::Output>, Rc<SourceCode>, MessageCollection, SymbolCollection);
 
     fn with_test_str(src: &str) -> Self::Output {
         Self::with_test_input(TestInput::new(src)).0.unwrap()
@@ -44,7 +45,7 @@ impl<'a> TestInput<'a> {
 #[allow(dead_code)] // test members may not be used
 pub struct TestInputResult<T> {
     result: Option<T>,
-    source: SourceCode,
+    source: Rc<SourceCode>,
     symbols: SymbolCollection,
     messages: MessageCollection,
 }
@@ -69,8 +70,8 @@ impl<T> TestInputResult<T> {
         self
     }
 
-    pub fn get_source(&self) -> &SourceCode {
-        &self.source
+    pub fn get_source(&self) -> &SourceCode { 
+        self.source.as_ref()
     }
     pub fn get_result(&self) -> Option<&T> {
         self.result.as_ref()
@@ -86,10 +87,10 @@ impl<T> TestInputResult<T> {
 impl<T, U> WithTestInput for T where T: ISyntaxParse<Output = U> {
     type Output = U;
 
-    fn with_test_input(input: TestInput) -> (Option<U>, SourceCode, MessageCollection, SymbolCollection) {
+    fn with_test_input(input: TestInput) -> (Option<U>, Rc<SourceCode>, MessageCollection, SymbolCollection) {
         let (tokens, source, mut msgs, mut syms) = TokenStream::with_test_input(input.src, input.syms);
         let retval = { 
-            let mut parse_sess = ParseSession::new(&tokens, &mut msgs, &mut syms);
+            let mut parse_sess = ParseSession::new(source.clone(), &tokens, &mut msgs, &mut syms);
             Self::parse(&mut parse_sess).ok()
         };
         (retval, source, msgs, syms)
@@ -119,10 +120,10 @@ fn test_input_use() {
     }
     impl WithTestInput for SyntaxTree {
         type Output = Self;
-        fn with_test_input(input: TestInput) -> (Option<Self>, SourceCode, MessageCollection, SymbolCollection) {
+        fn with_test_input(input: TestInput) -> (Option<Self>, Rc<SourceCode>, MessageCollection, SymbolCollection) {
             let mut messages = MessageCollection::new();
             let mut symbols = input.syms.unwrap_or_default();
-            (SyntaxTree::parse(input.src, &mut messages, &mut symbols).ok(), SourceCode::with_test_str(0, "1"), messages, symbols)
+            (SyntaxTree::parse(input.src, &mut messages, &mut symbols).ok(), Rc::new(SourceCode::with_test_str(0, "1")), messages, symbols)
         }
     }
 
