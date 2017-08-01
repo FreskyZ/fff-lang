@@ -4,7 +4,6 @@
 ///! codemap, source code manager
 ///! 
 ///! read input file, stores source code string, provide iterator through chars and their locations, string interner
-///! 
 
 use std::path::PathBuf;
 use std::rc::Rc;

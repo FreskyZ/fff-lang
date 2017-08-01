@@ -53,11 +53,18 @@ impl SyntaxTree {
         let previous_modules = vec![main_module];
         // let mut next_modules = Vec::new();
         loop {
+            // TODO: if previous moodules is empty, break
             for import in previous_modules.iter().flat_map(Module::import_statements) {
+                // TODO: get relative path from source code, try 3 versions: hyphen, underscore, /module.ff
+                // if find any, construct source code by source map, construct token stream, construct module
+                // move into next modules
                 println!("{:?}", import);
             }
+            // TODO: move previous modules into processed modules, move next modules into previous modules
+            // remove this break
             break;
         }
+        // TODO: construct with processed modules
         Ok(SyntaxTree{ modules: previous_modules })
     }
 }
@@ -73,5 +80,5 @@ fn syntax_tree_recursive() {
         Ok(tree) => println!("{:?}", tree),
         Err(()) => println!("unexpected failed: {:?}", messages),
     }
-    //panic!("no reason");
+    panic!("no reason");
 }

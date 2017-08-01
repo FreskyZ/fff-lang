@@ -50,6 +50,43 @@ fn char_at_index(bytes: &[u8], index: usize) -> (usize, char) { // char and its 
     }
 }
 
+/// input 2 absolute path, calculate p2's relative path to p1
+fn to_relative(path1: &Path, path2: &Path) -> PathBuf {
+    use std::path::Component;
+    use std::path::Prefix;
+    
+    let (mut path1_components, mut path2_components) = (path1.components(), path2.components());
+    let mut dotdot_count = 0;
+    let mut c2_mores = Vec::new();
+    // for each component pair (c1, c2)
+    //     if c1 == c2, continue,
+    //     for first c1 != c2, count dotdot = 0, start recording c2's component in c2_mores
+    //     then for next Some(c1)s, add dotdot_count 1, until c1 is none
+    //     and for next Some(c2)s, push c2_mores, until c2 is none
+    loop {
+        match (path1_components.next(), path2_components.next()) {
+            (None, None) => break,
+            (c1, c2) if c1 == c2 => continue,
+            // to make `\\?\C:\` same as `C:\`
+            // ... every time handling `\\?\` makes me think about life
+            (Some(Component::Prefix(prefix_component1)), Some(Component::Prefix(prefix_component2))) => {
+                match (prefix_component1.kind(), prefix_component2.kind()) {
+                    (Prefix::VerbatimDisk(volumn_name1), Prefix::Disk(volumn_name2))
+                    | (Prefix::Disk(volumn_name1), Prefix::VerbatimDisk(volumn_name2)) if volumn_name1 == volumn_name2 => continue,
+                    _ => (),
+                }
+                return path2.to_owned(); // even prefix is not same, then quick return
+            }
+            (Some(_), Some(c2)) => { dotdot_count += 1; c2_mores.push(c2); }
+            (Some(_), None) => { dotdot_count += 1; }
+            (None, Some(c2)) => { c2_mores.push(c2); }
+        }
+    }
+    let mut retval = vec![Component::ParentDir; dotdot_count]; // ... very rare `vec!` usage
+    retval.extend(c2_mores);
+    retval.into_iter().map(Component::as_os_str).collect()
+}
+
 pub struct SourceCodeIter<'a> {
     src: &'a SourceCode,
     index: usize,
@@ -89,7 +126,7 @@ pub struct SourceCode {
 }
 impl fmt::Debug for SourceCode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "source-code#{} {}", self.id, self.name.display())
+        write!(f, "source-code#{} {}", self.id, self.get_relative_path().display())
     }
 }
 impl SourceCode {
@@ -124,9 +161,22 @@ impl SourceCode {
 impl SourceCode {
     
     pub fn get_absolute_path(&self) -> &Path { &self.name }
-    pub fn get_relative_path(&self) -> &Path { &self.name } // FIXME: relative path
-    pub fn get_directory(&self) -> &Path { self.name.parent().unwrap() } // as self.name must be valid file, then unwrap must success
 
+    pub fn get_relative_path(&self) -> PathBuf { 
+        if &format!("{}", self.name.display()).as_bytes()[..5] == b"<anon" { 
+            self.name.clone()
+        } else {
+            // if getcwd failed, then let it go
+            to_relative(&::std::env::current_dir().unwrap(), &self.name) 
+        }
+    }
+    // as self.name must be valid file, then unwrap must success
+    // returns to_owneded result to be consist of latter `get_relative_path`
+    pub fn get_directory(&self) -> PathBuf { 
+        self.name.parent().unwrap().to_owned()
+    } 
+}
+impl SourceCode {
     /// map byte index to (row, column)
     pub fn map_index(&self, charpos: CharPos) -> (usize, usize) {
         assert_eq!{ self.id, charpos.file_id, "incorrect file id" }
@@ -202,57 +252,58 @@ fn char_at_index_test() {
 }
 
 #[cfg(test)] #[test]
-fn src_code_from_file_format_attr() {
+fn get_relative_test() {
+    // ... very complex to cross platform, acutally only 2 points: root and path separator
+    // 17/8/1: congratulations: first correct use of 'separator'!
+
+    macro_rules! test_case {
+        ([$($c1: expr),*], [$($c2: expr),*] => [$($expect: expr),+]) => (
+            let mut path1 = PathBuf::from(if cfg!(windows) { "C:\\" } else { "/" });
+            let mut path2 = PathBuf::from(if cfg!(windows) { "C:\\" } else { "/" });
+            path1.extend(vec![$($c1,)*]);
+            path2.extend(vec![$($c2,)*]);
+            assert_eq!{ to_relative(&path1, &path2), vec![$($expect,)+].into_iter().collect::<PathBuf>() }
+        )
+    }
+
+    test_case!(["Fresky", "fff-lang"], ["Fresky", "a", "b.txt"] => ["..", "a", "b.txt"]);
+    test_case!(["Fresky"], ["Fresky", "c", "ddd.eee"] => ["c", "ddd.eee"]);
+    test_case!(["Fresky", "a", "bcd", "efg"], ["d.ff"] => ["..", "..", "..", "..", "d.ff"]);
+}
+
+#[cfg(test)] #[test]
+fn src_code_prop() {
     use std::fs::File;
     use std::fs::canonicalize;
 
-    let file1 = "../tests/codemap/file1.ff";
-    let file1_full = canonicalize(file1).expect("canon 1 failed");
-    let source = SourceCode::with_file_name(42, file1).unwrap();
-    assert_eq!{ 
-        source, 
-        SourceCode{
-            id: 42,
-            name: file1_full.clone(),
-            src: "abc\r\nde\r\nfgh".to_owned().into_bytes().into_boxed_slice(),
-            endl_indexes: vec![4, 8]
-        } 
-    }
-    assert_eq!{
-        format!("{:?}", source),
-        format!("source-code#42 {}", file1_full.display())
-    }
-    assert_eq!{
-        source.get_directory(),
-        file1_full.parent().unwrap()
+    macro_rules! test_case {
+        ($filename: expr, $fileid: expr, $src: expr, $endls: expr) => (
+            let full_path = canonicalize($filename).expect("canon failed");
+            let source = SourceCode::with_file_name($fileid, $filename).expect("source code unexpected failed");
+            assert_eq!(source, SourceCode{ 
+                id: $fileid, 
+                endl_indexes: $endls,
+                name: full_path.clone(),
+                src: $src.to_owned().into_bytes().into_boxed_slice(),
+            });
+            assert_eq!(source.get_relative_path(), PathBuf::from($filename));
+            assert_eq!(source.get_directory(), full_path.parent().unwrap());
+            assert_eq!(format!("{:?}", source), format!("source-code#{} {}", $fileid, $filename));
+        )
     }
 
-    let file2 = "../tests/codemap/file2.ff";
-    let file2_full = canonicalize(file2).expect("canon 2 failed");
-    let source = SourceCode::with_file_name(43, file2).unwrap();
-    assert_eq!{ 
-        source, 
-        SourceCode{
-            id: 43,
-            name: file2_full.clone(),
-            src: "ijk\r\nlm\r\n".to_owned().into_bytes().into_boxed_slice(),
-            endl_indexes: vec![4, 8]
-        }
-    }
-    assert_eq!{
-        format!("{:?}", source),
-        format!("source-code#43 {}", file2_full.display())
-    }
-    assert_eq!{
-        source.get_directory(),
-        file2_full.parent().unwrap()
-    }
+    let (file1, file2) = if cfg!(windows) { 
+        (r"..\tests\codemap\file1.ff", r"..\tests\codemap\file2.ff")
+    } else {
+        ("../tests/codemap/file1.ff", "../tests/codemap/file2.ff") 
+    };
+    test_case!{ file1, 42, "abc\r\nde\r\nfgh", vec![4, 8] }
+    test_case!{ file2, 43, "ijk\r\nlm\r\n", vec![4, 8] }
 
     assert_eq!{
         SourceCode::with_file_name(0, "not_exist.ff".to_owned()),
         Err(CodeMapError::CannotOpenFile("not_exist.ff".into(), File::open("not_exist.ff").unwrap_err()))
     }
-    
     assert_eq!{
         format!("{:?}", SourceCode::with_test_str(43, "helloworld")),
         "source-code#43 <anon#43>"
