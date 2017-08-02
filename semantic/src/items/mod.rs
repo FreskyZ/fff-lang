@@ -7,11 +7,13 @@ use syntax;
 
 mod fn_def;
 mod type_def;
+mod module;
 
 pub use self::type_def::TypeFieldDef;
 pub use self::type_def::TypeDef;
 pub use self::fn_def::FnParam;
 pub use self::fn_def::FnDef;
+pub use self::module::Module;
 
 use super::Statement;
 use super::FromSyntax;

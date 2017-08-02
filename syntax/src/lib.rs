@@ -60,6 +60,7 @@ pub use self::statement::UseStatement;
 pub use self::statement::ImportStatement;
 pub use self::statement::Item;
 pub use self::syntax_tree::SyntaxTree;
+pub use self::syntax_tree::ImportMap;
 
 use self::parse_sess::ParseSession;
 use self::parse_sess::ParseResult;

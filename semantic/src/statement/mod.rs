@@ -16,6 +16,8 @@ use super::FnDef;
 use super::TypeDef;
 use super::FromSyntax;
 use super::DefScope;
+use super::Name;
+use super::SimpleName;
 use super::SharedDefScope;
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
@@ -215,6 +217,34 @@ impl FromSyntax<syntax::WhileStatement> for WhileStatement {
 }
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
+pub struct UseStatement {
+    pub name: Name, 
+    pub alias: Option<SimpleName>,
+}
+impl FromSyntax<syntax::UseStatement> for UseStatement {
+    fn from_syntax(node: syntax::UseStatement, parent_scope: SharedDefScope) -> UseStatement {
+        UseStatement{
+            name: FromSyntax::from_syntax(node.name, parent_scope.clone()),
+            alias: node.target.map(|target| FromSyntax::from_syntax(target, parent_scope)),
+        }
+    }
+}
+
+#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
+pub struct ImportStatement {
+    pub name: SimpleName,
+    pub alias: Option<SimpleName>,
+}
+impl FromSyntax<syntax::ImportStatement> for ImportStatement {
+    fn from_syntax(node: syntax::ImportStatement, parent_scope: SharedDefScope) -> ImportStatement {
+        ImportStatement{
+            name: FromSyntax::from_syntax(node.name, parent_scope.clone()),
+            alias: node.target.map(|target| FromSyntax::from_syntax(target, parent_scope)),
+        }
+    }
+}
+
+#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub enum Statement {
     AssignExpr(AssignExprStatement),
     Block(BlockStatement),
@@ -229,6 +259,7 @@ pub enum Statement {
     While(WhileStatement),
     Type(TypeDef),
     Fn(FnDef),
+    Use(UseStatement),
 }
 impl FromSyntax<syntax::Statement> for Statement {
     fn from_syntax(node: syntax::Statement, parent_scope: SharedDefScope) -> Statement {
@@ -246,6 +277,41 @@ impl FromSyntax<syntax::Statement> for Statement {
             syntax::Statement::While(while_stmt) => Statement::While(FromSyntax::from_syntax(while_stmt, parent_scope)),
             syntax::Statement::Fn(fn_def) => Statement::Fn(FromSyntax::from_syntax(fn_def, parent_scope)),
             syntax::Statement::Type(type_def) => Statement::Type(FromSyntax::from_syntax(type_def, parent_scope)),
+            syntax::Statement::Use(use_def) => Statement::Use(FromSyntax::from_syntax(use_def, parent_scope)),
+        }
+    }
+}
+
+#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
+pub enum Item {
+    Type(TypeDef),
+    Fn(FnDef),
+    Block(BlockStatement),
+    SimpleExpr(SimpleExprStatement),
+    AssignExpr(AssignExprStatement),
+    For(ForStatement),
+    If(IfStatement),
+    Loop(LoopStatement),
+    VarDecl(VarDecl),
+    While(WhileStatement),
+    Use(UseStatement),
+    Import(ImportStatement),
+}
+impl FromSyntax<syntax::Item> for Item {
+    fn from_syntax(node: syntax::Item, parent_scope: SharedDefScope) -> Item {
+        match node {
+            syntax::Item::Type(type_def) => Item::Type(FromSyntax::from_syntax(type_def, parent_scope)),
+            syntax::Item::Fn(fn_def) => Item::Fn(FromSyntax::from_syntax(fn_def, parent_scope)),
+            syntax::Item::Block(block) => Item::Block(FromSyntax::from_syntax(block, parent_scope)),
+            syntax::Item::SimpleExpr(simple_expr) => Item::SimpleExpr(FromSyntax::from_syntax(simple_expr, parent_scope)),
+            syntax::Item::AssignExpr(assign_expr) => Item::AssignExpr(FromSyntax::from_syntax(assign_expr, parent_scope)),
+            syntax::Item::For(for_stmt) => Item::For(FromSyntax::from_syntax(for_stmt, parent_scope)),
+            syntax::Item::If(if_stmt) => Item::If(FromSyntax::from_syntax(if_stmt, parent_scope)),
+            syntax::Item::Loop(loop_stmt) => Item::Loop(FromSyntax::from_syntax(loop_stmt, parent_scope)),
+            syntax::Item::VarDecl(var_decl) => Item::VarDecl(FromSyntax::from_syntax(var_decl, parent_scope)),
+            syntax::Item::While(while_stmt) => Item::While(FromSyntax::from_syntax(while_stmt, parent_scope)),
+            syntax::Item::Use(use_def) => Item::Use(FromSyntax::from_syntax(use_def, parent_scope)),
+            syntax::Item::Import(import_def) => Item::Import(FromSyntax::from_syntax(import_def, parent_scope)),
         }
     }
 }

@@ -19,8 +19,9 @@ impl DefScope {
         }
     }
     pub fn with_parent(ext_name: String, parent: SharedDefScope) -> SharedDefScope {
+        let new_name = format!("{}::{}", parent.as_ref().borrow().name.clone(), ext_name);
         Rc::new(RefCell::new(DefScope{
-            name: format!("{}::{}", parent.name.clone(), ext_name),
+            name: new_name,
             parent: Some(parent),
         }))
     }

@@ -1,3 +1,6 @@
+#![allow(unused_variables)]
+#![allow(unused_imports)]
+#![allow(dead_code)]
 ///! fff-lang
 ///!
 ///! semantic, semantic analyze
@@ -22,10 +25,10 @@ pub use self::items::FnParam;
 pub use self::items::FnDef;
 pub use self::items::TypeFieldDef;
 pub use self::items::TypeDef;
+pub use self::items::Module;
 pub use self::expr::ArrayDef;
 pub use self::expr::BinaryExpr;
 pub use self::expr::FnCall;
-pub use self::expr::IdentExpr;
 pub use self::expr::IndexCall;
 pub use self::expr::LitExpr;
 pub use self::expr::MemberAccess;
@@ -33,6 +36,8 @@ pub use self::expr::ParenExpr;
 pub use self::expr::TupleDef;
 pub use self::expr::UnaryExpr;
 pub use self::expr::Expr;
+pub use self::expr::Name;
+pub use self::expr::SimpleName;
 pub use self::statement::Statement;
 pub use self::statement::BlockStatement;
 pub use self::statement::VarDecl;
@@ -48,6 +53,7 @@ pub use self::statement::IfClause;
 pub use self::statement::ElseIfClause;
 pub use self::statement::ElseClause;
 pub use self::statement::IfStatement;
+pub use self::statement::Item;
 pub use self::package::Package;
 
 use self::def_scope::DefScope;

@@ -66,15 +66,27 @@ impl FromSyntax<syntax::FnCallExpr> for FnCall {
 }
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
-pub struct IdentExpr {
+pub struct SimpleName {
     pub value: SymbolID,
 }
-impl FromSyntax<syntax::IdentExpr> for IdentExpr {
-    fn from_syntax(node: syntax::IdentExpr, parent_scope: SharedDefScope) -> IdentExpr {
-        IdentExpr{
+impl FromSyntax<syntax::SimpleName> for SimpleName {
+    fn from_syntax(node: syntax::SimpleName, _parent_scope: SharedDefScope) -> SimpleName {
+        SimpleName{
             value: node.value,
         }
     }
+}
+
+#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
+pub struct Name {
+    pub segments: Vec<SimpleName>,
+}
+impl FromSyntax<syntax::Name> for Name {
+    fn from_syntax(node: syntax::Name, parent_scope: SharedDefScope) -> Name {
+        Name{
+            segments: node.segments.into_iter().map(|segment| FromSyntax::from_syntax(segment, parent_scope.clone())).collect(),
+        }
+    } 
 }
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
@@ -211,7 +223,8 @@ pub enum Expr {
     Array(ArrayDef),
     Binary(BinaryExpr),
     FnCall(FnCall),
-    Ident(IdentExpr),
+    Name(Name),
+    SimpleName(SimpleName),
     IndexCall(IndexCall),
     Lit(LitExpr),
     MemberAccess(MemberAccess),
@@ -228,7 +241,7 @@ impl FromSyntax<syntax::Expr> for Expr {
         match node {
             syntax::Expr::Array(array_def) => Expr::Array(FromSyntax::from_syntax(array_def, parent_scope)),
             syntax::Expr::Binary(binary_expr) => Expr::Binary(FromSyntax::from_syntax(binary_expr, parent_scope)),
-            syntax::Expr::Ident(ident_expr) => Expr::Ident(FromSyntax::from_syntax(ident_expr, parent_scope)),
+            syntax::Expr::Name(name) => Expr::Name(FromSyntax::from_syntax(name, parent_scope)),
             syntax::Expr::Lit(lit_expr) => Expr::Lit(FromSyntax::from_syntax(lit_expr, parent_scope)),
             syntax::Expr::FnCall(fn_call) => Expr::FnCall(FromSyntax::from_syntax(fn_call, parent_scope)),
             syntax::Expr::IndexCall(index_call) => Expr::IndexCall(FromSyntax::from_syntax(index_call, parent_scope)),
@@ -240,6 +253,7 @@ impl FromSyntax<syntax::Expr> for Expr {
             syntax::Expr::RangeLeft(range_left) => Expr::RangeLeft(FromSyntax::from_syntax(range_left, parent_scope)),
             syntax::Expr::RangeRight(range_right) => Expr::RangeRight(FromSyntax::from_syntax(range_right, parent_scope)),
             syntax::Expr::RangeFull(range_full) => Expr::RangeFull(FromSyntax::from_syntax(range_full, parent_scope)),
+            syntax::Expr::SimpleName(simple_name) => Expr::SimpleName(FromSyntax::from_syntax(simple_name, parent_scope)),
         }
     }
 }
