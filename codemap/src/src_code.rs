@@ -159,6 +159,8 @@ impl SourceCode {
     pub fn iter<'a>(&'a self) -> SourceCodeIter<'a> { SourceCodeIter::new(self) }
 }
 impl SourceCode {
+
+    pub fn get_file_id(&self) -> usize { self.id }
     
     pub fn get_absolute_path(&self) -> &Path { &self.name }
 

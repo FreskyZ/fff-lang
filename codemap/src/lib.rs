@@ -38,6 +38,7 @@ impl SourceMap {
         Ok(self.items[new_id].clone())
     }
 
+    // this is not ops::Index because I want to return rc'd source code
     pub fn index(&self, id: usize) -> Rc<SourceCode> {
         self.items[id].clone()
     }
