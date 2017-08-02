@@ -1,0 +1,15 @@
+[build]
+target-dir = "build"
+
+[workspace]
+members = [
+    "codemap",
+    "driver",
+    "lexical",
+    "messages",
+    "syntax",
+    "pefile",
+    "util",
+    "semantic", 
+    "ffc",
+]
