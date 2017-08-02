@@ -298,22 +298,26 @@ fn pefile_header_new() {
 }
 #[cfg(test)] #[test]
 fn pefile_header_load() {
-    use std::fs::File;
-    use std::io::Read;
-    use std::io::Seek;
-    use std::io::SeekFrom;
-    use super::dos_header::check_dos_header;
+    // ignored test because
+    // - test by print, not auto test
+    // - forget to deignore .exe file and test file is lost
+
+    // use std::fs::File;
+    // use std::io::Read;
+    // use std::io::Seek;
+    // use std::io::SeekFrom;
+    // use super::dos_header::check_dos_header;
     
-    let mut test_file = File::open(r"..\tests\pefile\hello.exe").expect("cannot open file");
-    let file_len = test_file.seek(SeekFrom::End(0)).expect("cannot seek end");
-    test_file.seek(SeekFrom::Start(0)).expect("seek back failed");
-    let file_bytes = {
-        let mut file_bytes = Vec::with_capacity(file_len as usize + 10);
-        test_file.read_to_end(&mut file_bytes).expect("read file failed");
-        file_bytes
-    }.into_boxed_slice();
-    println!("file bytes: {:?}", &file_bytes[0..10]);
-    let file_header_offset = check_dos_header(file_bytes.as_ref()).expect("cannot get dosheader");
-    let file_header = FileHeader::from_bytes(&file_bytes[(file_header_offset as usize)..]);
-    panic!("{:?}", file_header);
+    // let mut test_file = File::open(r"..\tests\pefile\hello.exe").expect("cannot open file");
+    // let file_len = test_file.seek(SeekFrom::End(0)).expect("cannot seek end");
+    // test_file.seek(SeekFrom::Start(0)).expect("seek back failed");
+    // let file_bytes = {
+    //     let mut file_bytes = Vec::with_capacity(file_len as usize + 10);
+    //     test_file.read_to_end(&mut file_bytes).expect("read file failed");
+    //     file_bytes
+    // }.into_boxed_slice();
+    // println!("file bytes: {:?}", &file_bytes[0..10]);
+    // let file_header_offset = check_dos_header(file_bytes.as_ref()).expect("cannot get dosheader");
+    // let file_header = FileHeader::from_bytes(&file_bytes[(file_header_offset as usize)..]);
+    // panic!("{:?}", file_header);
 }

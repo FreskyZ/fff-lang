@@ -32,7 +32,7 @@ fn returnable_main() {
         Ok(Config::Help) => print_usage(),
         Ok(Config::Version) => print_version(),
         Err(e @ ConfigError::UnexpectedArgument(..)) => {
-            perrorln!("Error: {:?}", e);
+            eprintln!("Error: {:?}", e);
         },
         Ok(Config::CompileFile(CompileFileConfig { file_name })) => {
             driver::compile_input(file_name);

@@ -1,53 +1,48 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
-
 ///! fff-lang
+///!
 ///! compiler driver
 
 #[macro_use] extern crate util;
-#[macro_use] extern crate codepos; 
-extern crate messages as message;  // TODO: this is for legacy compatibility, remove it
+extern crate messages as message;  // legacy remove
 extern crate codemap;
 extern crate lexical;
 extern crate syntax;
-extern crate semantic as codegen;
+extern crate semantic;
+// mod vm;
 
-mod vm;
-
+use codemap::SourceMap;
+use codemap::SymbolCollection;
 use message::MessageCollection;
-use codemap::CodeMap;
 use lexical::TokenStream;
 use syntax::SyntaxTree;
-use codegen::Program;
-use vm::VirtualMachine;
+use semantic::Package;
+// use vm::VirtualMachine;
 
-// Handle and print error here
-pub fn compile_input(file_name: String) {
+fn compile_input_result(file_name: String) -> Result<&'static str, String> {
 
     let mut messages = MessageCollection::new();
+    let mut symbols = SymbolCollection::new();
+    let mut sources = SourceMap::new(file_name).map_err(|e| format!("{:?}", e))?;
+    let _syntax_tree = SyntaxTree::new(&mut sources, &mut messages, &mut symbols).map_err(|_| format!("{:?}", messages));
 
-    let mut codemap = match CodeMap::with_files(vec![file_name]) {          // read file
-        Some(codemap) => codemap,
-        Err(e) => { println!("{:?}", e); return; }
-    };
-    let mut tokens = TokenStream::new(codemap.iter(), &mut messages);               // Lexical parse
-    if messages.is_uncontinuable() { println!("{:?}", messages); return; }          // although it will not happen currently
-    let syntax_tree = SyntaxTree::new(&mut tokens, &mut messages);                  // Syntax parse
-    if messages.is_uncontinuable() { println!("{:?}", messages); return; }    
-    let program = Program::new(syntax_tree, &mut messages);                         // Semantic parse
-    if !messages.is_empty() { println!("{:?}", messages); return; }    
-
-    let mut virtual_machine = VirtualMachine::new(program);
-    virtual_machine.execute(&mut messages);                                         // run!
-    if !messages.is_empty() { println!("{:?}", messages); return; }
+    // let package = Package::from(syntax_tree)?;
+    // let machine = VirtualMachine::new(package)?;
+    // let result = machine.execute()?;
     
-    println!("Byebye");
+    Ok("Bye bye")
+}
+
+pub fn compile_input(file_name: String) {
+
+    match compile_input_result(file_name) {
+        Ok(msg) => println!("{}", msg),
+        Err(msg) => println!("{}", msg),
+    }
 }
 
 // TODO: 
-// Move syntax out
 // Move codegen out
 // Create optimize
 // Move vm out
-// Move main out and change this to be a lib
- 

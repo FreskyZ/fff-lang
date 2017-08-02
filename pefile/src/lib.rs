@@ -52,7 +52,7 @@ fn gen_hello_world_test() {
     let _ = file.flush().expect("flush file failed");
 }
 
-#[cfg(test)] #[test] #[ignore]
+#[cfg(test)] #[test]
 fn it_works() {
     // first expect
 
