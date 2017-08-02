@@ -1,0 +1,5 @@
+// initial try of error message test
+
+fn main() { println("hello") }
+//# MESSAGE                 ^ unexpect symbol, expect `;`, `.`, `(`, `+`, etc., meet `}`
+//# RUN-STDOUT: hello

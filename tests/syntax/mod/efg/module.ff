@@ -1,0 +1,2 @@
+module this_name; // underscore version, sub dir underscore version
+module that_name; // underscore version, sub dir hyphen version, shadow underscore

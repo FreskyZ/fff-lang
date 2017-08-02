@@ -5,6 +5,9 @@
 
 use std::fmt;
 use std::rc::Rc;
+use std::path::Path;
+use std::path::PathBuf;
+use std::path::MAIN_SEPARATOR;
 
 use codemap::SourceMap;
 use codemap::SourceCode;
@@ -46,6 +49,27 @@ impl SyntaxTree {
         return Module::parse(&mut sess);
     }
 
+    // search module in dir
+    // 4 versions, for module 'xxx_yyy_zzz', in priority
+    // './xxx-yyy-zzz.ff', './xxx_yyy_zzz.ff', './xxx-yyy-zzz/module.ff', './xxx_yyy_zzz.module.ff'
+    fn _search_module(dir: &Path, module_name: &str) -> Option<PathBuf> {
+        let hypened_name: String = module_name.chars().map(|ch| if ch == '_' { '-' } else { ch }).collect();
+        let maybe_names: Vec<PathBuf> = if hypened_name != module_name {
+            vec![ // because Path API is hard to use in a simple expression, so complete format! it and convert back
+                format!("{}{}{}.ff", dir.display(), MAIN_SEPARATOR, hypened_name).into(),
+                format!("{}{}{}.ff", dir.display(), MAIN_SEPARATOR, module_name).into(),
+                format!("{}{}{}{}module.ff", dir.display(), MAIN_SEPARATOR, hypened_name, MAIN_SEPARATOR).into(),
+                format!("{}{}{}{}module.ff", dir.display(), MAIN_SEPARATOR, module_name, MAIN_SEPARATOR).into(),
+            ]
+        } else {
+            vec![
+                format!("{}{}{}.ff", dir.display(), MAIN_SEPARATOR, module_name).into(),
+                format!("{}{}{}{}module.ff", dir.display(), MAIN_SEPARATOR, module_name, MAIN_SEPARATOR).into(),
+            ]
+        };
+        return maybe_names.into_iter().find(|maybe_name| ::std::fs::metadata(&maybe_name).is_ok());
+    }
+
     /// require ref mut source code because will add more source code if imported
     pub fn new(sources: &mut SourceMap, messages: &mut MessageCollection, symbols: &mut SymbolCollection) -> Result<SyntaxTree, ()> {
         let main_module = SyntaxTree::new_module(sources.index(0), messages, symbols)?;
@@ -70,6 +94,13 @@ impl SyntaxTree {
 }
 
 #[cfg(test)] #[test]
+fn syntax_tree_search_module() {
+
+    // assert_eq!(SyntaxTree::search_module(&::std::env::current_dir().unwrap(), "some_name"), Some("".into()));
+    // assert_eq!(SyntaxTree::search_module(&::std::env::current_dir().unwrap(), "somename"), None);
+}
+
+#[cfg(test)] #[test]
 fn syntax_tree_recursive() {
 
     let mut sources = SourceMap::new("../tests/syntax/mod/main.ff").expect("open main file failed");
@@ -80,5 +111,5 @@ fn syntax_tree_recursive() {
         Ok(tree) => println!("{:?}", tree),
         Err(()) => println!("unexpected failed: {:?}", messages),
     }
-    panic!("no reason");
+    // panic!("no reason");
 }
