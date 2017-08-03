@@ -2,6 +2,3 @@
 user = "Fresky"
 email = "FreskyZ@outlook.com"
 vcs = "none"
-
-[build]
-target-dir = "build"
