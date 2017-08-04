@@ -129,11 +129,21 @@ fn module_integration() {
         let mut result_file = File::open(&result_path).expect(&format!("cannot open result file {}", result_path));
         let mut expect = String::new();
         let _length = result_file.read_to_string(&mut expect).expect(&format!("cannot read result file {}", result_path));
+        let expect = expect.replace("\r\n", "\n");
         
         let result = TestInput::new(&src).apply::<Module, _>().expect_no_message();
         let actual = result.get_result().unwrap().format(Formatter::new(Some(result.get_source()), Some(result.get_symbols())));
         if actual != expect {
-            panic!("case '{}' failed, actual:\n`{}`\nexpect:\n`{}`", line, actual, expect)
+            println!("case '{}' failed:", line);
+            for (linenum, (actual_line, expect_line)) in actual.split_terminator('\n').zip(expect.split_terminator('\n')).enumerate() {
+                if actual_line == expect_line {
+                    println!("={}) {}", linenum, actual_line);
+                } else {
+                    println!("x{}) {:?}", linenum, actual_line);
+                    println!("x{}) {:?}", linenum, expect_line);
+                }
+            }
+            panic!("case failed")
         }
     }
 }
