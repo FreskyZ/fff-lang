@@ -9,7 +9,6 @@ use std::cell::RefCell;
 
 use syntax;
 
-use super::FromSyntax;
 use super::Statement;
 use super::ISemanticAnalyze;
 use super::DefScope;
@@ -18,19 +17,15 @@ use super::Module;
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct Package {
-    main_module: Vec<Module>,
+    modules: Vec<Module>,
     global_scope: SharedDefScope,
 }
 impl Package {
     
-    pub fn from_syntax(root: syntax::SyntaxTree) -> Package {
+    pub fn new(tree: syntax::SyntaxTree) -> Package {
         let global_scope = Rc::new(RefCell::new(DefScope::new(String::new()))); // yes 4 news
-        let modules = root.modules.into_iter().map(|module| FromSyntax::from_syntax(module, global_scope.clone())).collect::<Vec<Module>>();
-        Package{ global_scope, main_module: modules }
-    }
-}
-impl ISemanticAnalyze for Package {
-    fn collect_type_declarations(&mut self) {
+        let modules = tree.modules.into_iter().map(|module| Module::from_syntax(module, global_scope.clone())).collect::<Vec<Module>>();
+        Package{ global_scope, modules }
     }
 }
 

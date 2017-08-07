@@ -14,11 +14,11 @@ use super::LabelDef;
 use super::TypeUse;
 use super::FnDef;
 use super::TypeDef;
-use super::FromSyntax;
 use super::DefScope;
 use super::Name;
 use super::SimpleName;
 use super::SharedDefScope;
+use super::ISemanticAnalyze;
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct BlockStatement {
@@ -27,11 +27,14 @@ pub struct BlockStatement {
     pub all_span: Span,
     pub this_scope: SharedDefScope,
 }
-impl FromSyntax<syntax::BlockStatement> for BlockStatement {
+impl ISemanticAnalyze for BlockStatement {
+
+    type SyntaxItem = syntax::BlockStatement;
+
     fn from_syntax(node: syntax::BlockStatement, parent_scope: SharedDefScope) -> BlockStatement {
         BlockStatement{
-            name: node.name.map(|name| FromSyntax::from_syntax(name, parent_scope.clone())),
-            body: FromSyntax::from_syntax(node.body, parent_scope.clone()),
+            name: node.name.map(|name| LabelDef::from_syntax(name, parent_scope.clone())),
+            body: Block::from_syntax(node.body, parent_scope.clone()),
             all_span: node.all_span,
             this_scope: DefScope::with_parent(format!("block-stmt"), parent_scope),
         }
@@ -43,10 +46,13 @@ pub struct SimpleExprStatement {
     pub expr: Expr,
     pub parent_scope: SharedDefScope,
 }
-impl FromSyntax<syntax::SimpleExprStatement> for SimpleExprStatement {
+impl ISemanticAnalyze for SimpleExprStatement {
+
+    type SyntaxItem = syntax::SimpleExprStatement;
+
     fn from_syntax(node: syntax::SimpleExprStatement, parent_scope: SharedDefScope) -> SimpleExprStatement {
         SimpleExprStatement{
-            expr: FromSyntax::from_syntax(node.expr, parent_scope.clone()),
+            expr: Expr::from_syntax(node.expr, parent_scope.clone()),
             parent_scope,
         }       
     }
@@ -59,11 +65,14 @@ pub struct AssignExprStatement {
     pub assign_op: Seperator,
     parent_scope: SharedDefScope,
 }
-impl FromSyntax<syntax::AssignExprStatement> for AssignExprStatement {
+impl ISemanticAnalyze for AssignExprStatement {
+
+    type SyntaxItem = syntax::AssignExprStatement;
+
     fn from_syntax(node: syntax::AssignExprStatement, parent_scope: SharedDefScope) -> AssignExprStatement {
         AssignExprStatement{
-            left_expr: FromSyntax::from_syntax(node.left_expr, parent_scope.clone()),
-            right_expr: FromSyntax::from_syntax(node.right_expr, parent_scope.clone()),
+            left_expr: Expr::from_syntax(node.left_expr, parent_scope.clone()),
+            right_expr: Expr::from_syntax(node.right_expr, parent_scope.clone()),
             assign_op: node.assign_op,
             parent_scope,
         }
@@ -78,13 +87,16 @@ pub struct ForStatement {
     pub body: Block,
     parent_scope: SharedDefScope,
 }
-impl FromSyntax<syntax::ForStatement> for ForStatement {
+impl ISemanticAnalyze for ForStatement {
+
+    type SyntaxItem = syntax::ForStatement;
+
     fn from_syntax(node: syntax::ForStatement, parent_scope: SharedDefScope) -> ForStatement {
         ForStatement{
-            loop_name: node.loop_name.map(|name| FromSyntax::from_syntax(name, parent_scope.clone())),
+            loop_name: node.loop_name.map(|name| LabelDef::from_syntax(name, parent_scope.clone())),
             iter_name: node.iter_name,
-            iter_expr: FromSyntax::from_syntax(node.iter_expr, parent_scope.clone()),
-            body: FromSyntax::from_syntax(node.body, parent_scope.clone()),
+            iter_expr: Expr::from_syntax(node.iter_expr, parent_scope.clone()),
+            body: Block::from_syntax(node.body, parent_scope.clone()),
             parent_scope,
         }
     }
@@ -111,19 +123,22 @@ pub struct IfStatement {
     pub else_clause: Option<ElseClause>,
     parent_scope: SharedDefScope
 }
-impl FromSyntax<syntax::IfStatement> for IfStatement {
+impl ISemanticAnalyze for IfStatement {
+
+    type SyntaxItem = syntax::IfStatement;
+
     fn from_syntax(node: syntax::IfStatement, parent_scope: SharedDefScope) -> IfStatement {
         IfStatement{
             if_clause: IfClause{ 
-                cond_expr: FromSyntax::from_syntax(node.if_clause.cond_expr, parent_scope.clone()),
-                body: FromSyntax::from_syntax(node.if_clause.body, parent_scope.clone()),
+                cond_expr: Expr::from_syntax(node.if_clause.cond_expr, parent_scope.clone()),
+                body: Block::from_syntax(node.if_clause.body, parent_scope.clone()),
             },
             elseif_clauses: node.elseif_clauses.into_iter().map(|elseif| ElseIfClause{
-                cond_expr: FromSyntax::from_syntax(elseif.cond_expr, parent_scope.clone()),
-                body: FromSyntax::from_syntax(elseif.body, parent_scope.clone()),
+                cond_expr: Expr::from_syntax(elseif.cond_expr, parent_scope.clone()),
+                body: Block::from_syntax(elseif.body, parent_scope.clone()),
             }).collect(),
             else_clause: node.else_clause.map(|else_clause| ElseClause{
-                body: FromSyntax::from_syntax(else_clause.body, parent_scope.clone()),
+                body: Block::from_syntax(else_clause.body, parent_scope.clone()),
             }),
             parent_scope,
         }
@@ -135,7 +150,10 @@ pub struct BreakStatement {
     pub target: Option<SymbolID>,
     parent_scope: SharedDefScope,
 }
-impl FromSyntax<syntax::BreakStatement> for BreakStatement {
+impl ISemanticAnalyze for BreakStatement {
+
+    type SyntaxItem = syntax::BreakStatement;
+
     fn from_syntax(node: syntax::BreakStatement, parent_scope: SharedDefScope) -> BreakStatement {
         BreakStatement{
             target: node.0.target,
@@ -148,7 +166,10 @@ impl FromSyntax<syntax::BreakStatement> for BreakStatement {
 pub struct ContinueStatement {
     pub target: Option<SymbolID>,
 }
-impl FromSyntax<syntax::ContinueStatement> for ContinueStatement {
+impl ISemanticAnalyze for ContinueStatement {
+
+    type SyntaxItem = syntax::ContinueStatement;
+
     fn from_syntax(node: syntax::ContinueStatement, parent_scope: SharedDefScope) -> ContinueStatement {
         ContinueStatement{
             target: node.0.target,
@@ -161,11 +182,14 @@ pub struct LoopStatement {
     pub name: Option<LabelDef>,
     pub body: Block,
 }
-impl FromSyntax<syntax::LoopStatement> for LoopStatement {
+impl ISemanticAnalyze for LoopStatement {
+
+    type SyntaxItem = syntax::LoopStatement;
+
     fn from_syntax(node: syntax::LoopStatement, parent_scope: SharedDefScope) -> LoopStatement {
         LoopStatement{
-            name: node.name.map(|name| FromSyntax::from_syntax(name, parent_scope.clone())),
-            body: FromSyntax::from_syntax(node.body, parent_scope.clone()),
+            name: node.name.map(|name| LabelDef::from_syntax(name, parent_scope.clone())),
+            body: Block::from_syntax(node.body, parent_scope.clone()),
         }
     }
 }
@@ -174,10 +198,13 @@ impl FromSyntax<syntax::LoopStatement> for LoopStatement {
 pub struct ReturnStatement {
     pub expr: Option<Expr>,
 }
-impl FromSyntax<syntax::ReturnStatement> for ReturnStatement {
+impl ISemanticAnalyze for ReturnStatement {
+
+    type SyntaxItem = syntax::ReturnStatement;
+
     fn from_syntax(node: syntax::ReturnStatement, parent_scope: SharedDefScope) -> ReturnStatement {
         ReturnStatement{
-            expr: node.expr.map(|expr| FromSyntax::from_syntax(expr, parent_scope.clone())),
+            expr: node.expr.map(|expr| Expr::from_syntax(expr, parent_scope.clone())),
         }
     }
 }
@@ -189,13 +216,16 @@ pub struct VarDecl {
     pub typeuse: Option<TypeUse>,
     pub init_expr: Option<Expr>,
 }
-impl FromSyntax<syntax::VarDeclStatement> for VarDecl {
+impl ISemanticAnalyze for VarDecl {
+
+    type SyntaxItem = syntax::VarDeclStatement;
+
     fn from_syntax(node: syntax::VarDeclStatement, parent_scope: SharedDefScope) -> VarDecl {
         VarDecl{
             is_const: node.is_const,
             name: node.name,
-            typeuse: node.typeuse.map(|ty| FromSyntax::from_syntax(ty, parent_scope.clone())),
-            init_expr: node.init_expr.map(|expr| FromSyntax::from_syntax(expr, parent_scope.clone())),
+            typeuse: node.typeuse.map(|ty| TypeUse::from_syntax(ty, parent_scope.clone())),
+            init_expr: node.init_expr.map(|expr| Expr::from_syntax(expr, parent_scope.clone())),
         }
     }
 }
@@ -206,12 +236,15 @@ pub struct WhileStatement {
     pub loop_expr: Expr,
     pub body: Block,
 }
-impl FromSyntax<syntax::WhileStatement> for WhileStatement {
+impl ISemanticAnalyze for WhileStatement {
+
+    type SyntaxItem = syntax::WhileStatement;
+
     fn from_syntax(node: syntax::WhileStatement, parent_scope: SharedDefScope) -> WhileStatement {
         WhileStatement{
-            name: node.name.map(|name| FromSyntax::from_syntax(name, parent_scope.clone())),
-            loop_expr: FromSyntax::from_syntax(node.loop_expr, parent_scope.clone()),
-            body: FromSyntax::from_syntax(node.body, parent_scope.clone()),
+            name: node.name.map(|name| LabelDef::from_syntax(name, parent_scope.clone())),
+            loop_expr: Expr::from_syntax(node.loop_expr, parent_scope.clone()),
+            body: Block::from_syntax(node.body, parent_scope.clone()),
         }
     }
 }
@@ -221,11 +254,14 @@ pub struct UseStatement {
     pub name: Name, 
     pub alias: Option<SimpleName>,
 }
-impl FromSyntax<syntax::UseStatement> for UseStatement {
+impl ISemanticAnalyze for UseStatement {
+
+    type SyntaxItem = syntax::UseStatement;
+
     fn from_syntax(node: syntax::UseStatement, parent_scope: SharedDefScope) -> UseStatement {
         UseStatement{
-            name: FromSyntax::from_syntax(node.name, parent_scope.clone()),
-            alias: node.target.map(|target| FromSyntax::from_syntax(target, parent_scope)),
+            name: Name::from_syntax(node.name, parent_scope.clone()),
+            alias: node.target.map(|target| SimpleName::from_syntax(target, parent_scope)),
         }
     }
 }
@@ -235,11 +271,14 @@ pub struct ImportStatement {
     pub name: SimpleName,
     pub alias: Option<SimpleName>,
 }
-impl FromSyntax<syntax::ImportStatement> for ImportStatement {
+impl ISemanticAnalyze for ImportStatement {
+
+    type SyntaxItem = syntax::ImportStatement;
+
     fn from_syntax(node: syntax::ImportStatement, parent_scope: SharedDefScope) -> ImportStatement {
         ImportStatement{
-            name: FromSyntax::from_syntax(node.name, parent_scope.clone()),
-            alias: node.target.map(|target| FromSyntax::from_syntax(target, parent_scope)),
+            name: SimpleName::from_syntax(node.name, parent_scope.clone()),
+            alias: node.target.map(|target| SimpleName::from_syntax(target, parent_scope)),
         }
     }
 }
@@ -261,23 +300,26 @@ pub enum Statement {
     Fn(FnDef),
     Use(UseStatement),
 }
-impl FromSyntax<syntax::Statement> for Statement {
+impl ISemanticAnalyze for Statement {
+
+    type SyntaxItem = syntax::Statement;
+
     fn from_syntax(node: syntax::Statement, parent_scope: SharedDefScope) -> Statement {
         match node {
-            syntax::Statement::Block(block_stmt) => Statement::Block(FromSyntax::from_syntax(block_stmt, parent_scope)),
-            syntax::Statement::SimpleExpr(simple_expr) => Statement::SimpleExpr(FromSyntax::from_syntax(simple_expr, parent_scope)),
-            syntax::Statement::AssignExpr(assign_expr) => Statement::AssignExpr(FromSyntax::from_syntax(assign_expr, parent_scope)),
-            syntax::Statement::For(for_stmt) => Statement::For(FromSyntax::from_syntax(for_stmt, parent_scope)),
-            syntax::Statement::If(if_stmt) => Statement::If(FromSyntax::from_syntax(if_stmt, parent_scope)),
-            syntax::Statement::Break(break_stmt) => Statement::Break(FromSyntax::from_syntax(break_stmt, parent_scope)),
-            syntax::Statement::Continue(continue_stmt) => Statement::Continue(FromSyntax::from_syntax(continue_stmt, parent_scope)),
-            syntax::Statement::Loop(loop_stmt) => Statement::Loop(FromSyntax::from_syntax(loop_stmt, parent_scope)),
-            syntax::Statement::Return(ret_stmt) => Statement::Return(FromSyntax::from_syntax(ret_stmt, parent_scope)),
-            syntax::Statement::VarDecl(var_decl) => Statement::VarDecl(FromSyntax::from_syntax(var_decl, parent_scope)),
-            syntax::Statement::While(while_stmt) => Statement::While(FromSyntax::from_syntax(while_stmt, parent_scope)),
-            syntax::Statement::Fn(fn_def) => Statement::Fn(FromSyntax::from_syntax(fn_def, parent_scope)),
-            syntax::Statement::Type(type_def) => Statement::Type(FromSyntax::from_syntax(type_def, parent_scope)),
-            syntax::Statement::Use(use_def) => Statement::Use(FromSyntax::from_syntax(use_def, parent_scope)),
+            syntax::Statement::Block(block_stmt) => Statement::Block(BlockStatement::from_syntax(block_stmt, parent_scope)),
+            syntax::Statement::SimpleExpr(simple_expr) => Statement::SimpleExpr(SimpleExprStatement::from_syntax(simple_expr, parent_scope)),
+            syntax::Statement::AssignExpr(assign_expr) => Statement::AssignExpr(AssignExprStatement::from_syntax(assign_expr, parent_scope)),
+            syntax::Statement::For(for_stmt) => Statement::For(ForStatement::from_syntax(for_stmt, parent_scope)),
+            syntax::Statement::If(if_stmt) => Statement::If(IfStatement::from_syntax(if_stmt, parent_scope)),
+            syntax::Statement::Break(break_stmt) => Statement::Break(BreakStatement::from_syntax(break_stmt, parent_scope)),
+            syntax::Statement::Continue(continue_stmt) => Statement::Continue(ContinueStatement::from_syntax(continue_stmt, parent_scope)),
+            syntax::Statement::Loop(loop_stmt) => Statement::Loop(LoopStatement::from_syntax(loop_stmt, parent_scope)),
+            syntax::Statement::Return(ret_stmt) => Statement::Return(ReturnStatement::from_syntax(ret_stmt, parent_scope)),
+            syntax::Statement::VarDecl(var_decl) => Statement::VarDecl(VarDecl::from_syntax(var_decl, parent_scope)),
+            syntax::Statement::While(while_stmt) => Statement::While(WhileStatement::from_syntax(while_stmt, parent_scope)),
+            syntax::Statement::Fn(fn_def) => Statement::Fn(FnDef::from_syntax(fn_def, parent_scope)),
+            syntax::Statement::Type(type_def) => Statement::Type(TypeDef::from_syntax(type_def, parent_scope)),
+            syntax::Statement::Use(use_def) => Statement::Use(UseStatement::from_syntax(use_def, parent_scope)),
         }
     }
 }
@@ -297,21 +339,24 @@ pub enum Item {
     Use(UseStatement),
     Import(ImportStatement),
 }
-impl FromSyntax<syntax::Item> for Item {
+impl ISemanticAnalyze for Item {
+
+    type SyntaxItem = syntax::Item;
+
     fn from_syntax(node: syntax::Item, parent_scope: SharedDefScope) -> Item {
         match node {
-            syntax::Item::Type(type_def) => Item::Type(FromSyntax::from_syntax(type_def, parent_scope)),
-            syntax::Item::Fn(fn_def) => Item::Fn(FromSyntax::from_syntax(fn_def, parent_scope)),
-            syntax::Item::Block(block) => Item::Block(FromSyntax::from_syntax(block, parent_scope)),
-            syntax::Item::SimpleExpr(simple_expr) => Item::SimpleExpr(FromSyntax::from_syntax(simple_expr, parent_scope)),
-            syntax::Item::AssignExpr(assign_expr) => Item::AssignExpr(FromSyntax::from_syntax(assign_expr, parent_scope)),
-            syntax::Item::For(for_stmt) => Item::For(FromSyntax::from_syntax(for_stmt, parent_scope)),
-            syntax::Item::If(if_stmt) => Item::If(FromSyntax::from_syntax(if_stmt, parent_scope)),
-            syntax::Item::Loop(loop_stmt) => Item::Loop(FromSyntax::from_syntax(loop_stmt, parent_scope)),
-            syntax::Item::VarDecl(var_decl) => Item::VarDecl(FromSyntax::from_syntax(var_decl, parent_scope)),
-            syntax::Item::While(while_stmt) => Item::While(FromSyntax::from_syntax(while_stmt, parent_scope)),
-            syntax::Item::Use(use_def) => Item::Use(FromSyntax::from_syntax(use_def, parent_scope)),
-            syntax::Item::Import(import_def) => Item::Import(FromSyntax::from_syntax(import_def, parent_scope)),
+            syntax::Item::Type(type_def) => Item::Type(TypeDef::from_syntax(type_def, parent_scope)),
+            syntax::Item::Fn(fn_def) => Item::Fn(FnDef::from_syntax(fn_def, parent_scope)),
+            syntax::Item::Block(block) => Item::Block(BlockStatement::from_syntax(block, parent_scope)),
+            syntax::Item::SimpleExpr(simple_expr) => Item::SimpleExpr(SimpleExprStatement::from_syntax(simple_expr, parent_scope)),
+            syntax::Item::AssignExpr(assign_expr) => Item::AssignExpr(AssignExprStatement::from_syntax(assign_expr, parent_scope)),
+            syntax::Item::For(for_stmt) => Item::For(ForStatement::from_syntax(for_stmt, parent_scope)),
+            syntax::Item::If(if_stmt) => Item::If(IfStatement::from_syntax(if_stmt, parent_scope)),
+            syntax::Item::Loop(loop_stmt) => Item::Loop(LoopStatement::from_syntax(loop_stmt, parent_scope)),
+            syntax::Item::VarDecl(var_decl) => Item::VarDecl(VarDecl::from_syntax(var_decl, parent_scope)),
+            syntax::Item::While(while_stmt) => Item::While(WhileStatement::from_syntax(while_stmt, parent_scope)),
+            syntax::Item::Use(use_def) => Item::Use(UseStatement::from_syntax(use_def, parent_scope)),
+            syntax::Item::Import(import_def) => Item::Import(ImportStatement::from_syntax(import_def, parent_scope)),
         }
     }
 }

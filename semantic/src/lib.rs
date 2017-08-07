@@ -11,7 +11,7 @@
 extern crate lexical;
 extern crate syntax;
 
-mod traits;
+mod analyze_helper;
 mod expr;
 mod items;
 mod statement;
@@ -57,9 +57,8 @@ pub use self::statement::Item;
 pub use self::package::Package;
 
 use self::def_scope::DefScope;
-use self::def_scope::FromSyntax;
 use self::def_scope::SharedDefScope;
-use self::traits::ISemanticAnalyze;
+use self::analyze_helper::ISemanticAnalyze;
 
 #[cfg(test)] #[test]
 fn it_works() {
