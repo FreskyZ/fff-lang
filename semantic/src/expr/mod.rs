@@ -8,17 +8,27 @@ use lexical::Seperator;
 
 use syntax;
 
-use super::FromSyntax;
+mod range_expr;
+
 use super::SharedDefScope;
+use super::ISemanticAnalyze;
+
+pub use self::range_expr::RangeBothExpr;
+pub use self::range_expr::RangeFullExpr;
+pub use self::range_expr::RangeLeftExpr;
+pub use self::range_expr::RangeRightExpr;
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct ArrayDef {
     pub items: ExprList,
 }
-impl FromSyntax<syntax::ArrayDef> for ArrayDef {
+impl ISemanticAnalyze for ArrayDef {
+
+    type SyntaxItem = syntax::ArrayDef;
+
     fn from_syntax(node: syntax::ArrayDef, parent_scope: SharedDefScope) -> ArrayDef {
         ArrayDef{
-            items: FromSyntax::from_syntax(node.items, parent_scope.clone()),
+            items: ExprList::from_syntax(node.items, parent_scope.clone()),
         }
     }
 }
@@ -29,11 +39,14 @@ pub struct BinaryExpr {
     pub right_expr: Box<Expr>,
     pub operator: Seperator,
 }
-impl FromSyntax<syntax::BinaryExpr> for BinaryExpr {
+impl ISemanticAnalyze for BinaryExpr {
+
+    type SyntaxItem = syntax::BinaryExpr;
+
     fn from_syntax(node: syntax::BinaryExpr, parent_scope: SharedDefScope) -> BinaryExpr {
         BinaryExpr{
-            left_expr: Box::new(FromSyntax::from_syntax(syntax::Expr::unbox(node.left_expr), parent_scope.clone())),
-            right_expr: Box::new(FromSyntax::from_syntax(syntax::Expr::unbox(node.right_expr), parent_scope.clone())),
+            left_expr: Box::new(Expr::from_syntax(syntax::Expr::unbox(node.left_expr), parent_scope.clone())),
+            right_expr: Box::new(Expr::from_syntax(syntax::Expr::unbox(node.right_expr), parent_scope.clone())),
             operator: node.operator,
         }
     }
@@ -43,10 +56,13 @@ impl FromSyntax<syntax::BinaryExpr> for BinaryExpr {
 pub struct ExprList {
     pub items: Vec<Expr>,
 }
-impl FromSyntax<syntax::ExprList> for ExprList {
+impl ISemanticAnalyze for ExprList {
+
+    type SyntaxItem = syntax::ExprList;
+
     fn from_syntax(node: syntax::ExprList, parent_scope: SharedDefScope) -> ExprList {
         ExprList{
-            items: node.items.into_iter().map(|item| FromSyntax::from_syntax(item, parent_scope.clone())).collect(),
+            items: node.items.into_iter().map(|item| Expr::from_syntax(item, parent_scope.clone())).collect(),
         }
     }
 }
@@ -56,11 +72,14 @@ pub struct FnCall {
     pub base: Box<Expr>,
     pub params: ExprList,
 }
-impl FromSyntax<syntax::FnCallExpr> for FnCall {
+impl ISemanticAnalyze for FnCall {
+
+    type SyntaxItem = syntax::FnCallExpr;
+
     fn from_syntax(node: syntax::FnCallExpr, parent_scope: SharedDefScope) -> FnCall {
         FnCall{
-            base: Box::new(FromSyntax::from_syntax(syntax::Expr::unbox(node.base), parent_scope.clone())),
-            params: FromSyntax::from_syntax(node.params, parent_scope.clone()),
+            base: Box::new(Expr::from_syntax(syntax::Expr::unbox(node.base), parent_scope.clone())),
+            params: ExprList::from_syntax(node.params, parent_scope.clone()),
         }
     }
 }
@@ -69,7 +88,10 @@ impl FromSyntax<syntax::FnCallExpr> for FnCall {
 pub struct SimpleName {
     pub value: SymbolID,
 }
-impl FromSyntax<syntax::SimpleName> for SimpleName {
+impl ISemanticAnalyze for SimpleName {
+
+    type SyntaxItem = syntax::SimpleName;
+
     fn from_syntax(node: syntax::SimpleName, _parent_scope: SharedDefScope) -> SimpleName {
         SimpleName{
             value: node.value,
@@ -81,10 +103,13 @@ impl FromSyntax<syntax::SimpleName> for SimpleName {
 pub struct Name {
     pub segments: Vec<SimpleName>,
 }
-impl FromSyntax<syntax::Name> for Name {
+impl ISemanticAnalyze for Name {
+
+    type SyntaxItem = syntax::Name;
+
     fn from_syntax(node: syntax::Name, parent_scope: SharedDefScope) -> Name {
         Name{
-            segments: node.segments.into_iter().map(|segment| FromSyntax::from_syntax(segment, parent_scope.clone())).collect(),
+            segments: node.segments.into_iter().map(|segment| SimpleName::from_syntax(segment, parent_scope.clone())).collect(),
         }
     } 
 }
@@ -94,11 +119,14 @@ pub struct IndexCall {
     pub base: Box<Expr>,
     pub params: ExprList,
 }
-impl FromSyntax<syntax::IndexCallExpr> for IndexCall {
+impl ISemanticAnalyze for IndexCall {
+
+    type SyntaxItem = syntax::IndexCallExpr;
+
     fn from_syntax(node: syntax::IndexCallExpr, parent_scope: SharedDefScope) -> IndexCall {
         IndexCall{
-            base: Box::new(FromSyntax::from_syntax(syntax::Expr::unbox(node.base), parent_scope.clone())),
-            params: FromSyntax::from_syntax(node.params, parent_scope.clone()),
+            base: Box::new(Expr::from_syntax(syntax::Expr::unbox(node.base), parent_scope.clone())),
+            params: ExprList::from_syntax(node.params, parent_scope.clone()),
         }
     }
 }
@@ -107,8 +135,11 @@ impl FromSyntax<syntax::IndexCallExpr> for IndexCall {
 pub struct LitExpr {
     pub value: LitValue,
 }
-impl FromSyntax<syntax::LitExpr> for LitExpr {
-    fn from_syntax(node: syntax::LitExpr, parent_scope: SharedDefScope) -> LitExpr {
+impl ISemanticAnalyze for LitExpr {
+
+    type SyntaxItem = syntax::LitExpr;
+
+    fn from_syntax(node: syntax::LitExpr, _parent_scope: SharedDefScope) -> LitExpr {
         LitExpr{ 
             value: node.value,
         }
@@ -120,10 +151,13 @@ pub struct MemberAccess {
     pub base: Box<Expr>,
     pub name: SymbolID,
 }
-impl FromSyntax<syntax::MemberAccessExpr> for MemberAccess {
+impl ISemanticAnalyze for MemberAccess {
+
+    type SyntaxItem = syntax::MemberAccessExpr;
+
     fn from_syntax(node: syntax::MemberAccessExpr, parent_scope: SharedDefScope) -> MemberAccess {
         MemberAccess{
-            base: Box::new(FromSyntax::from_syntax(syntax::Expr::unbox(node.base), parent_scope.clone())),
+            base: Box::new(Expr::from_syntax(syntax::Expr::unbox(node.base), parent_scope.clone())),
             name: node.name.value,
         }
     }
@@ -133,10 +167,13 @@ impl FromSyntax<syntax::MemberAccessExpr> for MemberAccess {
 pub struct ParenExpr {
     pub expr: Box<Expr>,
 }
-impl FromSyntax<syntax::ParenExpr> for ParenExpr {
+impl ISemanticAnalyze for ParenExpr {
+
+    type SyntaxItem = syntax::ParenExpr;
+
     fn from_syntax(node: syntax::ParenExpr, parent_scope: SharedDefScope) -> ParenExpr {
         ParenExpr{
-            expr: Box::new(FromSyntax::from_syntax(syntax::Expr::unbox(node.expr), parent_scope.clone())),
+            expr: Box::new(Expr::from_syntax(syntax::Expr::unbox(node.expr), parent_scope.clone())),
         }
     }
 }
@@ -145,10 +182,13 @@ impl FromSyntax<syntax::ParenExpr> for ParenExpr {
 pub struct TupleDef {
     pub items: ExprList,
 }
-impl FromSyntax<syntax::TupleDef> for TupleDef {
+impl ISemanticAnalyze for TupleDef {
+
+    type SyntaxItem = syntax::TupleDef;
+
     fn from_syntax(node: syntax::TupleDef, parent_scope: SharedDefScope) -> TupleDef {
         TupleDef{
-            items: FromSyntax::from_syntax(node.items, parent_scope.clone()),
+            items: ExprList::from_syntax(node.items, parent_scope.clone()),
         }
     }
 }
@@ -158,62 +198,14 @@ pub struct UnaryExpr {
     pub base: Box<Expr>,
     pub operator: Seperator,
 }
-impl FromSyntax<syntax::UnaryExpr> for UnaryExpr {
+impl ISemanticAnalyze for UnaryExpr {
+
+    type SyntaxItem = syntax::UnaryExpr;
+
     fn from_syntax(node: syntax::UnaryExpr, parent_scope: SharedDefScope) -> UnaryExpr {
         UnaryExpr{
-            base: Box::new(FromSyntax::from_syntax(syntax::Expr::unbox(node.base), parent_scope.clone())),
+            base: Box::new(Expr::from_syntax(syntax::Expr::unbox(node.base), parent_scope.clone())),
             operator: node.operator,
-        }
-    }
-}
-
-use std::marker::PhantomData;
-#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
-pub struct RangeFullExpr {
-    pub phantom: PhantomData<()>,
-}
-impl FromSyntax<syntax::RangeFullExpr> for RangeFullExpr {
-    fn from_syntax(_node: syntax::RangeFullExpr, parent_scope: SharedDefScope) -> RangeFullExpr {
-        RangeFullExpr{
-            phantom: PhantomData,
-        }
-    }
-}
-
-#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
-pub struct RangeLeftExpr {
-    pub expr: Box<Expr>,
-}
-impl FromSyntax<syntax::RangeLeftExpr> for RangeLeftExpr {
-    fn from_syntax(node: syntax::RangeLeftExpr, parent_scope: SharedDefScope) -> RangeLeftExpr {
-        RangeLeftExpr{
-            expr: Box::new(FromSyntax::from_syntax(syntax::Expr::unbox(node.expr), parent_scope.clone())),
-        }
-    }
-}
-
-#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
-pub struct RangeRightExpr {
-    pub expr: Box<Expr>,
-}
-impl FromSyntax<syntax::RangeRightExpr> for RangeRightExpr {
-    fn from_syntax(node: syntax::RangeRightExpr, parent_scope: SharedDefScope) -> RangeRightExpr {
-        RangeRightExpr{
-            expr: Box::new(FromSyntax::from_syntax(syntax::Expr::unbox(node.expr), parent_scope.clone())),
-        }
-    }
-}
-
-#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
-pub struct RangeBothExpr {
-    pub left_expr: Box<Expr>,
-    pub right_expr: Box<Expr>,
-}
-impl FromSyntax<syntax::RangeBothExpr> for RangeBothExpr {
-    fn from_syntax(node: syntax::RangeBothExpr, parent_scope: SharedDefScope) -> RangeBothExpr {
-        RangeBothExpr{
-            left_expr: Box::new(FromSyntax::from_syntax(syntax::Expr::unbox(node.left_expr), parent_scope.clone())),
-            right_expr: Box::new(FromSyntax::from_syntax(syntax::Expr::unbox(node.right_expr), parent_scope.clone())),
         }
     }
 }
@@ -236,24 +228,27 @@ pub enum Expr {
     RangeRight(RangeRightExpr),
     RangeBoth(RangeBothExpr),
 }
-impl FromSyntax<syntax::Expr> for Expr {
+impl ISemanticAnalyze for Expr {
+
+    type SyntaxItem = syntax::Expr;
+
     fn from_syntax(node: syntax::Expr, parent_scope: SharedDefScope) -> Expr {
         match node {
-            syntax::Expr::Array(array_def) => Expr::Array(FromSyntax::from_syntax(array_def, parent_scope)),
-            syntax::Expr::Binary(binary_expr) => Expr::Binary(FromSyntax::from_syntax(binary_expr, parent_scope)),
-            syntax::Expr::Name(name) => Expr::Name(FromSyntax::from_syntax(name, parent_scope)),
-            syntax::Expr::Lit(lit_expr) => Expr::Lit(FromSyntax::from_syntax(lit_expr, parent_scope)),
-            syntax::Expr::FnCall(fn_call) => Expr::FnCall(FromSyntax::from_syntax(fn_call, parent_scope)),
-            syntax::Expr::IndexCall(index_call) => Expr::IndexCall(FromSyntax::from_syntax(index_call, parent_scope)),
-            syntax::Expr::MemberAccess(member_access) => Expr::MemberAccess(FromSyntax::from_syntax(member_access, parent_scope)),
-            syntax::Expr::Paren(paren_expr) => Expr::Paren(FromSyntax::from_syntax(paren_expr, parent_scope)),
-            syntax::Expr::Tuple(tuple_def) => Expr::Tuple(FromSyntax::from_syntax(tuple_def, parent_scope)),
-            syntax::Expr::Unary(unary_expr) => Expr::Unary(FromSyntax::from_syntax(unary_expr, parent_scope)),
-            syntax::Expr::RangeBoth(range_both) => Expr::RangeBoth(FromSyntax::from_syntax(range_both, parent_scope)),
-            syntax::Expr::RangeLeft(range_left) => Expr::RangeLeft(FromSyntax::from_syntax(range_left, parent_scope)),
-            syntax::Expr::RangeRight(range_right) => Expr::RangeRight(FromSyntax::from_syntax(range_right, parent_scope)),
-            syntax::Expr::RangeFull(range_full) => Expr::RangeFull(FromSyntax::from_syntax(range_full, parent_scope)),
-            syntax::Expr::SimpleName(simple_name) => Expr::SimpleName(FromSyntax::from_syntax(simple_name, parent_scope)),
+            syntax::Expr::Array(array_def) => Expr::Array(ArrayDef::from_syntax(array_def, parent_scope)),
+            syntax::Expr::Binary(binary_expr) => Expr::Binary(BinaryExpr::from_syntax(binary_expr, parent_scope)),
+            syntax::Expr::Name(name) => Expr::Name(Name::from_syntax(name, parent_scope)),
+            syntax::Expr::Lit(lit_expr) => Expr::Lit(LitExpr::from_syntax(lit_expr, parent_scope)),
+            syntax::Expr::FnCall(fn_call) => Expr::FnCall(FnCall::from_syntax(fn_call, parent_scope)),
+            syntax::Expr::IndexCall(index_call) => Expr::IndexCall(IndexCall::from_syntax(index_call, parent_scope)),
+            syntax::Expr::MemberAccess(member_access) => Expr::MemberAccess(MemberAccess::from_syntax(member_access, parent_scope)),
+            syntax::Expr::Paren(paren_expr) => Expr::Paren(ParenExpr::from_syntax(paren_expr, parent_scope)),
+            syntax::Expr::Tuple(tuple_def) => Expr::Tuple(TupleDef::from_syntax(tuple_def, parent_scope)),
+            syntax::Expr::Unary(unary_expr) => Expr::Unary(UnaryExpr::from_syntax(unary_expr, parent_scope)),
+            syntax::Expr::RangeBoth(range_both) => Expr::RangeBoth(RangeBothExpr::from_syntax(range_both, parent_scope)),
+            syntax::Expr::RangeLeft(range_left) => Expr::RangeLeft(RangeLeftExpr::from_syntax(range_left, parent_scope)),
+            syntax::Expr::RangeRight(range_right) => Expr::RangeRight(RangeRightExpr::from_syntax(range_right, parent_scope)),
+            syntax::Expr::RangeFull(range_full) => Expr::RangeFull(RangeFullExpr::from_syntax(range_full, parent_scope)),
+            syntax::Expr::SimpleName(simple_name) => Expr::SimpleName(SimpleName::from_syntax(simple_name, parent_scope)),
         }
     }
 }

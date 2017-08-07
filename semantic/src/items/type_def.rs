@@ -9,21 +9,13 @@ use codemap::SymbolID;
 use syntax;
 
 use super::TypeUse;
-use super::super::FromSyntax;
 use super::super::SharedDefScope;
+use super::super::ISemanticAnalyze;
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct TypeFieldDef {
     pub name: SymbolID,
     pub typeuse: TypeUse,
-}
-impl FromSyntax<syntax::TypeFieldDef> for TypeFieldDef {
-    fn from_syntax(node: syntax::TypeFieldDef, parent_scope: SharedDefScope) -> TypeFieldDef {
-        TypeFieldDef{
-            name: node.name.value,
-            typeuse: FromSyntax::from_syntax(node.typeuse, parent_scope.clone()),
-        }
-    }
 }
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
@@ -31,11 +23,19 @@ pub struct TypeDef {
     pub name: SymbolID,
     pub fields: Vec<TypeFieldDef>,
 }
-impl FromSyntax<syntax::TypeDef> for TypeDef {
+impl ISemanticAnalyze for TypeDef {
+
+    type SyntaxItem = syntax::TypeDef;
+
     fn from_syntax(node: syntax::TypeDef, parent_scope: SharedDefScope) -> TypeDef {
         TypeDef{
             name: node.name.value,
-            fields: node.fields.into_iter().map(|field| FromSyntax::from_syntax(field, parent_scope.clone())).collect(),
+            fields: node.fields.into_iter().map(|field| {
+                TypeFieldDef{
+                    name: field.name.value,
+                    typeuse: TypeUse::from_syntax(field.typeuse, parent_scope.clone()),
+                }
+            }).collect(),
         }
     }
 }

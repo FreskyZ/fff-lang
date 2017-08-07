@@ -16,20 +16,22 @@ pub use self::fn_def::FnDef;
 pub use self::module::Module;
 
 use super::Statement;
-use super::FromSyntax;
 use super::SharedDefScope;
+use super::ISemanticAnalyze;
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct TypeUse {
     pub base_name: SymbolID,
     pub params: Vec<TypeUse>,
 }
-impl FromSyntax<syntax::TypeUse> for TypeUse {
+impl ISemanticAnalyze for TypeUse {
     
+    type SyntaxItem = syntax::TypeUse;
+
     fn from_syntax(node: syntax::TypeUse, parent_scope: SharedDefScope) -> TypeUse {
         TypeUse{
             base_name: node.base,
-            params: node.params.into_iter().map(|param| FromSyntax::from_syntax(param, parent_scope.clone())).collect(),
+            params: node.params.into_iter().map(|param| TypeUse::from_syntax(param, parent_scope.clone())).collect(),
         }
     }
 }
@@ -38,8 +40,11 @@ impl FromSyntax<syntax::TypeUse> for TypeUse {
 pub struct LabelDef {
     pub name: SymbolID,
 }
-impl FromSyntax<syntax::LabelDef> for LabelDef {
-    fn from_syntax(node: syntax::LabelDef, parent_scope: SharedDefScope) -> LabelDef {
+impl ISemanticAnalyze for LabelDef {
+
+    type SyntaxItem = syntax::LabelDef;
+
+    fn from_syntax(node: syntax::LabelDef, _parent_scope: SharedDefScope) -> LabelDef {
         LabelDef{
             name: node.name,
         }
@@ -50,10 +55,13 @@ impl FromSyntax<syntax::LabelDef> for LabelDef {
 pub struct Block {
     pub items: Vec<Statement>,
 }
-impl FromSyntax<syntax::Block> for Block {
+impl ISemanticAnalyze for Block {
+
+    type SyntaxItem = syntax::Block;
+    
     fn from_syntax(node: syntax::Block, parent_scope: SharedDefScope) -> Block {
         Block{
-            items: node.items.into_iter().map(|item| FromSyntax::from_syntax(item, parent_scope.clone())).collect(),
+            items: node.items.into_iter().map(|item| Statement::from_syntax(item, parent_scope.clone())).collect(),
         }
     }
 }

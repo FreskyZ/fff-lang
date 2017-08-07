@@ -29,6 +29,3 @@ impl DefScope {
 
 pub type SharedDefScope = Rc<RefCell<DefScope>>;
 
-pub trait FromSyntax<T> {
-    fn from_syntax(item: T, parent_scope: SharedDefScope) -> Self;
-}
