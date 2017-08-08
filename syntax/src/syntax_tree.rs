@@ -24,6 +24,8 @@ use super::ISyntaxParse;
 use super::Formatter;
 use super::ISyntaxFormat;
 
+#[allow(dead_code)] const SOURCE_FILE_EXT: &str = ".ff"; // don't known why rustc thinks SOURCE_FILE_EXT is never used
+
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct ImportMap {
     pub file_id: usize,
@@ -76,7 +78,6 @@ impl SyntaxTree {
     // './xxx-yyy-zzz.ff', './xxx_yyy_zzz.ff', './xxx-yyy-zzz/module.ff', './xxx_yyy_zzz.module.ff'
     // if success, return path of the module, if failed, return possible path of the module
     fn search_module(dir: &Path, module_name: &str) -> Result<PathBuf, Vec<PathBuf>> {
-        #[allow(dead_code)] const SOURCE_FILE_EXT: &str = ".ff"; // don't known why rustc thinks SOURCE_FILE_EXT is never used
         let hypened_name: String = module_name.chars().map(|ch| if ch == '_' { '-' } else { ch }).collect();
         let maybe_names: Vec<PathBuf> = if hypened_name != module_name {
             vec![ // because Path API is hard to use in a simple expression, so complete format! it and convert back
@@ -106,8 +107,17 @@ impl SyntaxTree {
         let mut next_modules = Vec::new();
         loop { 
             if previous_modules.is_empty() { break; }
-            for previous_module in &previous_modules {
-                for import in previous_module.import_statements() {
+            'modules: for previous_module in &previous_modules {
+                'imports: for import in previous_module.import_statements() {
+                    if previous_module.source.get_file_id() != 0 
+                        && previous_module.source.get_absolute_path().file_stem().map(::std::ffi::OsStr::to_str) != Some(Some("module")) {
+                        // if not root module or sub root module, is not allowed to import module
+                        messages.push(Message::with_help_by_str("cannot import module in this scope", 
+                            vec![(import.all_span, "import statement here")], 
+                            vec!["can only import modules in root module or sub root module"]
+                        ));
+                        continue 'modules;  // ignore this module all imports, continue next
+                    }
                      // unwrap for cannot fail on valid syntax nodes
                      // to_owned for next need to parse a module with mutable reference of symbols, logically you have to cancel one of the reference
                      // todo long: this may not be a problem after non lexical lifetime
@@ -173,7 +183,9 @@ fn syntax_tree_recursive() {
     let mut messages = make_messages![]; 
     let mut symbols = make_symbols!["abc", "efg", "some_name", "other_name", "this_name", "that_name"];
 
-    assert_eq!(SyntaxTree::new(&mut sources, &mut messages, &mut symbols).unwrap(), SyntaxTree::new_modules(vec![
+    let syntax_tree = SyntaxTree::new(&mut sources, &mut messages, &mut symbols).unwrap();
+    assert_eq!(messages.is_empty(), true, "{:?}", messages);
+    assert_eq!(syntax_tree, SyntaxTree::new_modules(vec![
         Module::new(sources.index(0).clone(), vec![
             Item::Import(ImportStatement::new_default(make_span!(0, 0, 10), SimpleName::new(make_id!(1), make_span!(0, 7, 9)))),
             Item::Import(ImportStatement::new_default(make_span!(0, 39, 49), SimpleName::new(make_id!(2), make_span!(0, 46, 48)))),
@@ -206,4 +218,9 @@ fn syntax_tree_recursive() {
     assert_eq!(sources.index(4).get_relative_path(), collect!["..", "tests", "syntax", "mod", "other_name.ff"]);
     assert_eq!(sources.index(5).get_relative_path(), collect!["..", "tests", "syntax", "mod", "efg", "this_name", "module.ff"]);
     assert_eq!(sources.index(6).get_relative_path(), collect!["..", "tests", "syntax", "mod", "efg", "that-name", "module.ff"]);
+}
+
+#[cfg(test)] #[test]
+fn syntax_tree_invalid_import() {
+    // IMPL THIS
 }
