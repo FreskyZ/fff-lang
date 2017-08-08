@@ -67,8 +67,8 @@ use self::parse_sess::ParseResult;
 use self::parse_sess::ISyntaxGrammar;
 pub use self::parse_sess::ISyntaxParse;
 
-use self::format_helper::Formatter;
-use self::format_helper::ISyntaxFormat;
+pub use self::format_helper::Formatter;
+pub use self::format_helper::ISyntaxFormat;
 pub use self::test_helper::TestInput;
 pub use self::test_helper::WithTestInput;
 
