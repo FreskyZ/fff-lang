@@ -5,7 +5,8 @@
 ///!
 ///! semantic, semantic analyze
 
-/* #[cfg_attr(test, macro_use)] */ extern crate codemap;
+#[cfg(test)] #[macro_use] extern crate util;      // difference is util is referenced only in test
+#[cfg_attr(test, macro_use)] extern crate codemap;
 // #[macro_use] extern crate messages as message;
 // #[macro_use] extern crate util;
 extern crate lexical;

@@ -19,6 +19,7 @@ use super::Name;
 use super::SimpleName;
 use super::SharedDefScope;
 use super::ISemanticAnalyze;
+use super::Module;
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct BlockStatement {
@@ -269,6 +270,7 @@ impl ISemanticAnalyze for UseStatement {
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct ImportStatement {
     pub name: SimpleName,
+    pub module: Option<Module>,
     pub alias: Option<SimpleName>,
 }
 impl ISemanticAnalyze for ImportStatement {
@@ -279,6 +281,7 @@ impl ISemanticAnalyze for ImportStatement {
         ImportStatement{
             name: SimpleName::from_syntax(node.name, parent_scope.clone()),
             alias: node.target.map(|target| SimpleName::from_syntax(target, parent_scope)),
+            module: None,
         }
     }
 }
