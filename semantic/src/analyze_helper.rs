@@ -54,6 +54,7 @@ impl<'a, 'b> Formatter<'a, 'b> {
 
     pub fn lit(mut self, v: &str) -> Self { self.buf.push_str(v); self }
     pub fn debug<T: fmt::Debug>(mut self, v: &T) -> Self { self.buf.push_str(&format!("{:?}", v)); self }
+    pub fn display<T: fmt::Display>(mut self, v: &T) -> Self { self.buf.push_str(&format!("{}", v)); self }
     pub fn space(mut self) -> Self { self.buf.push(' '); self }
     pub fn endl(mut self) -> Self { self.buf.push('\n'); self }
 
@@ -69,6 +70,7 @@ impl<'a, 'b> Formatter<'a, 'b> {
         self
     }
 
+    // NOTE: I'm suprised when I discoverd that I have to write indent exactly as first method in a format method, that is, it is not natural
     pub fn indent(mut self) -> Self { self.buf.push_str(INDENTION_FILLERS[CURRENT_INDEX_INDEX][self.indent_index]); self }
     pub fn indent1(mut self) -> Self { self.buf.push_str(INDENTION_FILLERS[CURRENT_INDEX_INDEX][self.indent_index + 1]); self }
     pub fn indent2(mut self) -> Self { self.buf.push_str(INDENTION_FILLERS[CURRENT_INDEX_INDEX][self.indent_index + 2]); self }

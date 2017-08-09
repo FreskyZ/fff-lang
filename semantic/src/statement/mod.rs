@@ -14,12 +14,12 @@ use super::LabelDef;
 use super::TypeUse;
 use super::FnDef;
 use super::TypeDef;
-use super::DefScope;
 use super::Name;
 use super::SimpleName;
 use super::SharedDefScope;
 use super::ISemanticAnalyze;
 use super::Module;
+use super::Formatter;
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct BlockStatement {
@@ -37,7 +37,7 @@ impl ISemanticAnalyze for BlockStatement {
             name: node.name.map(|name| LabelDef::from_syntax(name, parent_scope.clone())),
             body: Block::from_syntax(node.body, parent_scope.clone()),
             all_span: node.all_span,
-            this_scope: DefScope::with_parent(format!("block-stmt"), parent_scope),
+            this_scope: parent_scope.sub_with_span("block", node.all_span),
         }
     }
 }
@@ -275,6 +275,19 @@ pub struct ImportStatement {
 }
 impl ISemanticAnalyze for ImportStatement {
 
+    fn format(&self, f: Formatter) -> String {
+        let mut f = f.indent().header_text_or("import-stmt").endl()
+            .apply1(&self.name);
+        if let Some(ref alias) = self.alias {
+            f = f.endl().set_header_text("alias-as").apply1(alias).unset_header_text();
+        }
+        if let Some(ref module) = self.module {
+            f.endl().apply1(module).finish()
+        } else {
+            f.endl().indent1().lit("<no-module>").finish()
+        }
+    }
+
     type SyntaxItem = syntax::ImportStatement;
 
     fn from_syntax(node: syntax::ImportStatement, parent_scope: SharedDefScope) -> ImportStatement {
@@ -343,6 +356,16 @@ pub enum Item {
     Import(ImportStatement),
 }
 impl ISemanticAnalyze for Item {
+
+    fn format(&self, f: Formatter) -> String {
+        match self {
+            &Item::Type(ref type_def) => type_def.format(f),
+            &Item::Fn(ref fn_def) => fn_def.format(f),
+            &Item::Block(ref block_stmt) => block_stmt.format(f),
+            &Item::Import(ref import_stmt) => import_stmt.format(f),
+            _ => "<unknown-item>".to_owned(),
+        }
+    }
 
     type SyntaxItem = syntax::Item;
 

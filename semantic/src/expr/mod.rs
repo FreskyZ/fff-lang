@@ -12,6 +12,7 @@ mod range_expr;
 
 use super::SharedDefScope;
 use super::ISemanticAnalyze;
+use super::Formatter;
 
 pub use self::range_expr::RangeBothExpr;
 pub use self::range_expr::RangeFullExpr;
@@ -89,6 +90,10 @@ pub struct SimpleName {
     pub value: SymbolID,
 }
 impl ISemanticAnalyze for SimpleName {
+
+    fn format(&self, f: Formatter) -> String {
+        f.indent().header_text_or("simple-name").space().sym(self.value).finish()
+    }
 
     type SyntaxItem = syntax::SimpleName;
 

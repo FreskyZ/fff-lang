@@ -2,30 +2,106 @@
 ///!
 ///! semantic/def_scope
 
-//use std::fmt;
+use std::fmt;
 use std::rc::Rc;
 use std::cell::RefCell;
 
-#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
-pub struct DefScope {
-    pub name: String, // also definition prefix
-    pub parent: Option<SharedDefScope>,
+use codemap::Span;
+
+#[derive(Eq, PartialEq)]
+struct DefScope {
+    name: String,
+    parent: Option<SharedDefScope>,
 }
-impl DefScope {
-    pub fn new(name: String) -> DefScope {
-        DefScope{
-            name: name,
-            parent: None,
+
+#[derive(Eq, PartialEq, Clone)]
+pub struct SharedDefScope(Rc<RefCell<DefScope>>);
+
+impl fmt::Debug for SharedDefScope {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { 
+        write!(f, "<scope {}>", self.get_full_name())
+    }
+}
+impl SharedDefScope { // new
+
+    fn _new(name: String, parent: Option<SharedDefScope>) -> Self {  
+        SharedDefScope(Rc::new(RefCell::new(DefScope{ name, parent })))
+    }
+
+    pub fn new<T: Into<String>>(name: T) -> Self { Self::_new(name.into(), None) }
+    
+    /// Create sub scope
+    pub fn sub<T: Into<String>>(&self, name: T) -> Self { Self::_new(name.into(), Some(self.clone())) }
+
+    /// Create sub scope with not unique name like 'if', 'for', etc.
+    /// which need adding span information to make unique
+    pub fn sub_with_span<T: Into<String>>(&self, name: T, span: Span) -> Self { Self::_new(format!("<{}{:?}>", name.into(), span), Some(self.clone())) }
+}
+impl SharedDefScope { // get
+
+    pub fn get_this_name(&self) -> String { self.0.as_ref().borrow().name.clone() }
+    fn get_parent_scope(&self) -> Option<SharedDefScope> { self.0.as_ref().borrow().parent.clone() }
+
+    pub fn get_full_name(&self) -> String {
+        match self.get_parent_scope() {
+            None => self.get_this_name().to_owned(),
+            Some(ref parent_scope) => format!("{}::{}", parent_scope.get_full_name(), self.get_this_name()),
         }
     }
-    pub fn with_parent(ext_name: String, parent: SharedDefScope) -> SharedDefScope {
-        let new_name = format!("{}::{}", parent.as_ref().borrow().name.clone(), ext_name);
-        Rc::new(RefCell::new(DefScope{
-            name: new_name,
-            parent: Some(parent),
-        }))
-    }
 }
 
-pub type SharedDefScope = Rc<RefCell<DefScope>>;
+#[cfg(test)] #[test]
+fn def_scope_usage() {
 
+    macro_rules! test_case { ($scope: expr, $this: expr, $full: expr) => (assert_eq!(($scope.get_this_name(), $scope.get_full_name()), ($this.to_owned(), $full.to_owned())))  }
+
+    let scope1 = SharedDefScope::new("global");
+    test_case!(scope1, "global", "global");
+
+    let scope2 = scope1.sub("abc");
+    test_case!(scope2, "abc", "global::abc");
+    let scope3 = scope2.clone();
+    test_case!(scope3, "abc", "global::abc");
+
+    let scope4 = scope2.sub_with_span("if", make_span!(1, 2, 3));
+    test_case!(scope4, "<if<<1>2-3>>", "global::abc::<if<<1>2-3>>");
+}
+
+// scope def here is very abstract
+//                
+//               some-root{ scope, ... }
+//              / (1)      / (2) \ (2)
+//             |          |       -------_______
+//            /          /                      \
+//         some-node{ scope, ... }, other-node{ scope, uses, defs ... }, ...
+//          | (1)       \ (2)
+//          |            \
+//        another-node{ scope, uses, defs, ... }, ...
+// 
+// (1) not very clear relationship
+// (2) outer and inner scope
+//
+// for each def in node, every name definition itself is a simple name, but their full name ('qualified name') is prefixed with their scope's name
+// for each use in node, just query this node's scope, either cloned from parent's scope or create this scope on its own
+// if not found, then name not declared error
+//     some things: 'forget to use' suggestion here
+//
+//
+// in concrete
+//
+// main module              // <scope>
+//     def a                // def a
+//     def b                // def b
+//     module c             // <scope c>
+//         def d            // def c::d
+//     modele e             // <scope e>
+//         def f            // def e::f
+//         def g            // def e::G
+//         model h          // <scope e::h>
+//             def i        // def e::h::i
+//             fn j                     // <scope e::h::j>, def e::h::j
+//                 block <<3>100-200>   // <scope e::h::j::<block<<3>100-200>>>
+//                     var k            // def e::h::j::<block<<3>100-200>>::k
+//                 for <<3>300-400>     // <scope e::h::j::<for<<3>300-400>>>
+//                     if <<3>320-360>  // <scope e::h::j::<for<<3>300-400>>::<if<<3>320-360>>>
+//                         var l        // def e::h::j::<for<<3>300-400>>::<if<<3>320-360>>::l
