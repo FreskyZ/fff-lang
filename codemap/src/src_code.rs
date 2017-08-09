@@ -131,6 +131,10 @@ impl fmt::Debug for SourceCode {
 }
 impl SourceCode {
 
+    fn _get_endl_indexes(src: &str) -> Vec<usize> {
+        src.char_indices().filter(|indice| indice.1 == '\n').map(|indice| indice.0).collect()
+    }
+
     pub fn with_file_name<T>(id: usize, file_name: T) -> Result<SourceCode, CodeMapError> where T: Into<PathBuf> + Clone { // into for adapt String, Clone for construct error
         use std::io::Read;
 
@@ -143,15 +147,30 @@ impl SourceCode {
         Ok(SourceCode{ 
             id, 
             name: file_name, 
-            endl_indexes: src.char_indices().filter(|indice| indice.1 == '\n').map(|indice| indice.0).collect(),
+            endl_indexes: Self::_get_endl_indexes(&src),
             src: src.into_bytes().into_boxed_slice(),
         })
+    }
+
+    /// pretend to be a with_file_name'd source code in test
+    /// @param file_name: vector of path components start from cwd, use &str for &'static str in test oracle
+    pub fn pretend_with_file_name(id: usize, file_name: Vec<&str>, src: &str) -> SourceCode {
+
+        let mut file_path = ::std::env::current_dir().unwrap(); // if current dir fails, just go die
+        file_path.extend(file_name);
+
+        SourceCode{
+            id,
+            name: file_path,
+            endl_indexes: Self::_get_endl_indexes(src),
+            src: src.to_owned().into_bytes().into_boxed_slice(),
+        }
     }
     pub fn with_test_str(id: usize, src: &str) -> SourceCode {
         SourceCode{ 
             id, 
             name: format!("<anon#{}>", id).into(),
-            endl_indexes: src.char_indices().filter(|indice| indice.1 == '\n').map(|indice| indice.0).collect(),
+            endl_indexes: Self::_get_endl_indexes(src),
             src: src.to_owned().into_bytes().into_boxed_slice(),
         }
     }
@@ -163,6 +182,18 @@ impl SourceCode {
     pub fn get_file_id(&self) -> usize { self.id }
     
     pub fn get_absolute_path(&self) -> &Path { &self.name }
+    pub fn get_directory(&self) -> PathBuf { self.name.parent().unwrap().to_owned() /* unwrap because it must be a valid file */ } 
+    
+    pub fn get_file_stem(&self) -> Option<&str> { 
+        // flatten `Option<Option<str>` to `Option<String>`
+        match self.name.file_stem() {
+            Some(stem) => match stem.to_str() {
+                Some(stem) => Some(stem),
+                None => None,
+            }
+            None => None,
+        }
+    }
 
     pub fn get_relative_path(&self) -> PathBuf { 
         if &format!("{}", self.name.display()).as_bytes()[..5] == b"<anon" { 
@@ -172,11 +203,6 @@ impl SourceCode {
             to_relative(&::std::env::current_dir().unwrap(), &self.name) 
         }
     }
-    // as self.name must be valid file, then unwrap must success
-    // returns to_owneded result to be consist of latter `get_relative_path`
-    pub fn get_directory(&self) -> PathBuf { 
-        self.name.parent().unwrap().to_owned()
-    } 
 }
 impl SourceCode {
     /// map byte index to (row, column)
@@ -517,4 +543,14 @@ fn src_code_iter() {
     }
 
     test_case!{ "", }
+}
+
+#[cfg(test)] #[test]
+fn src_code_pretend() {
+    use std::iter::FromIterator;
+
+    assert_eq!{
+        SourceCode::pretend_with_file_name(0, vec!["a", "b", "c"], "source").get_relative_path(), 
+        PathBuf::from_iter(["a", "b", "c"].into_iter())
+    }
 }

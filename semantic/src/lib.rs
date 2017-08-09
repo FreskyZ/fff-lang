@@ -59,11 +59,6 @@ pub use self::statement::ImportStatement;
 pub use self::statement::UseStatement;
 pub use self::package::Package;
 
-use self::def_scope::DefScope;
 use self::def_scope::SharedDefScope;
+use self::analyze_helper::Formatter;
 use self::analyze_helper::ISemanticAnalyze;
-
-#[cfg(test)] #[test]
-fn it_works() {
-    println!("helloworld");
-}

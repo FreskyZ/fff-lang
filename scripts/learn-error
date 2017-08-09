@@ -51,3 +51,149 @@ rustc: unknown start of token: '\u{ff0c}', unicode character '，'(Fullwidth Com
 [17/3/14 14:42]
 Empty integral literal like '0x'
 rustc: no valid digits found for number
+
+[17/8/9 14:16]
+   Compiling semantic v0.1.3 (file:///C:/Users/fhan018/Any/Repos/fff-lang/semantic)
+error[E0308]: mismatched types
+  --> src\def_scope.rs:34:69
+   |
+34 |     pub fn sub(&self, name: String) -> Self { Self::_new(name, Some(self.0.clone())) }
+   |                                                                     ^^^^^^^^^^^^^^
+   |                                                                     |
+   |                                                                     expected struct `def_scope::SharedDefScope`, found struct `std::rc::Rc`
+   |                                                                     help: try using a variant of the expected type: `def_scope::SharedDefScope(self.0.clone
+())`
+   |
+   = note: expected type `def_scope::SharedDefScope`
+              found type `std::rc::Rc<std::cell::RefCell<def_scope::DefScope>>`
+   = help: here are some functions which might fulfill your needs:
+           - .into_inner()
+
+error[E0277]: the trait bound `codemap::Span: std::fmt::Display` is not satisfied
+  --> src\def_scope.rs:38:104
+   |
+38 |     pub fn sub_with_span(&self, name: String, span: Span) -> Self { Self::_new(format!("<{}{}>", name, span), Some(self.0.clone())) }
+   |                                                                                                        ^^^^ `codemap::Span` cannot be formatted with the de
+fault formatter; try using `:?` instead if you are using a format string
+   |
+   = help: the trait `std::fmt::Display` is not implemented for `codemap::Span`
+   = note: required by `std::fmt::Display::fmt`
+
+error[E0308]: mismatched types
+  --> src\def_scope.rs:38:116
+   |
+38 |     pub fn sub_with_span(&self, name: String, span: Span) -> Self { Self::_new(format!("<{}{}>", name, span), Some(self.0.clone())) }
+   |                                                                                                                    ^^^^^^^^^^^^^^
+   |                                                                                                                    |
+   |                                                                                                                    expected struct `def_scope::SharedDefSco
+pe`, found struct `std::rc::Rc`
+   |                                                                                                                    help: try using a variant of the expecte
+d type: `def_scope::SharedDefScope(self.0.clone())`
+   |
+   = note: expected type `def_scope::SharedDefScope`
+              found type `std::rc::Rc<std::cell::RefCell<def_scope::DefScope>>`
+   = help: here are some functions which might fulfill your needs:
+           - .into_inner()
+
+error: aborting due to 3 previous errors
+
+error: Could not compile `semantic`.
+
+To learn more, run the command again with --verbose.
+
+   Compiling semantic v0.1.3 (file:///C:/Users/fhan018/Any/Repos/fff-lang/semantic)
+error[E0597]: borrowed value does not live long enough
+  --> src\def_scope.rs:46:44
+   |
+46 |     pub fn get_this_name(&self) -> &str { &self.0.as_ref().borrow().name }
+   |                                            ^^^^^^^^^^^^^^^^^^^^^^^^      - temporary value only lives until here
+   |                                            |
+   |                                            does not live long enough
+   |
+note: borrowed value must be valid for the anonymous lifetime #1 defined on the method body at 46:5...
+  --> src\def_scope.rs:46:5
+   |
+46 |     pub fn get_this_name(&self) -> &str { &self.0.as_ref().borrow().name }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0597]: borrowed value does not live long enough
+  --> src\def_scope.rs:47:62
+   |
+47 |     fn get_parent_scope(&self) -> &Option<SharedDefScope> { &self.0.as_ref().borrow().parent }
+   |                                                              ^^^^^^^^^^^^^^^^^^^^^^^^        - temporary value only lives until here
+   |                                                              |
+   |                                                              does not live long enough
+   |
+note: borrowed value must be valid for the anonymous lifetime #1 defined on the method body at 47:5...
+  --> src\def_scope.rs:47:5
+   |
+47 |     fn get_parent_scope(&self) -> &Option<SharedDefScope> { &self.0.as_ref().borrow().parent }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: aborting due to 2 previous errors
+
+error: Could not compile `semantic`.
+
+To learn more, run the command again with --verbose.
+   Compiling semantic v0.1.3 (file:///C:/Users/fhan018/Any/Repos/fff-lang/semantic)
+error[E0277]: the trait bound `std::string::String: std::convert::From<&std::ffi::OsStr>` is not satisfied
+  --> src\items\module.rs:27:38
+   |
+27 |             this_scope: parent_scope.sub(node.source.get_absolute_path().file_stem().unwrap()),
+   |                                      ^^^ the trait `std::convert::From<&std::ffi::OsStr>` is not implemented for `std::string::String`
+   |
+   = help: the following implementations were found:
+             <std::string::String as std::convert::From<std::borrow::Cow<'a, str>>>
+             <std::string::String as std::convert::From<&'a str>>
+             <std::string::String as std::convert::From<std::boxed::Box<str>>>
+   = note: required because of the requirements on the impl of `std::convert::Into<std::string::String>` for `&std::ffi::OsStr`
+
+error[E0308]: mismatched types
+  --> src\items\module.rs:35:55
+   |
+35 |         let mut retval = Module{ items: Vec::new(), ..self };
+   |                                                       ^^^^ expected struct `items::module::Module`, found mutable reference
+   |
+   = note: expected type `items::module::Module`
+              found type `&mut items::module::Module`
+
+error[E0063]: missing field `this_scope` in initializer of `items::module::Module`
+  --> src\package.rs:78:54
+   |
+78 |                                         module: Some(Module{
+   |                                                      ^^^^^^ missing `this_scope`
+
+error[E0063]: missing field `this_scope` in initializer of `items::module::Module`
+  --> src\package.rs:72:42
+   |
+72 |                             module: Some(Module{
+   |                                          ^^^^^^ missing `this_scope`
+
+error[E0063]: missing field `this_scope` in initializer of `items::module::Module`
+  --> src\package.rs:66:30
+   |
+66 |                 module: Some(Module{
+   |                              ^^^^^^ missing `this_scope`
+
+error[E0063]: missing field `this_scope` in initializer of `items::module::Module`
+  --> src\package.rs:92:30
+   |
+92 |                 module: Some(Module{
+   |                              ^^^^^^ missing `this_scope`
+
+error[E0063]: missing field `this_scope` in initializer of `items::module::Module`
+  --> src\package.rs:60:18
+   |
+60 |     let expect = Module{
+   |                  ^^^^^^ missing `this_scope`
+
+error: aborting due to 7 previous errors
+
+error: Could not compile `semantic`.
+
+To learn more, run the command again with --verbose.
+error: unexpected token: `"import d;"`
+  --> src\package.rs:50:104
+   |
+50 |         syntax::Module::new(Rc::new(SourceCode::pretend_with_file_name(3, vec!["a", "c", "module.ff"]. "import d;")), vec![   // c
+   |                                                                                                        ^^^^^^^^^^^
