@@ -12,12 +12,12 @@
 extern crate lexical;
 extern crate syntax;
 
+#[macro_use] mod def_scope;
 mod analyze_helper;
 mod expr;
 mod items;
 mod statement;
 mod package;
-mod def_scope;
 
 pub use self::items::Block;
 pub use self::items::TypeUse;
