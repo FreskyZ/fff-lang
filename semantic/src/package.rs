@@ -2,6 +2,7 @@
 ///!
 ///! semantic/package, a compilation unit
 
+use codemap::SymbolCollection;
 use syntax;
 
 use super::Statement;
@@ -15,23 +16,24 @@ pub struct Package {
     global_scope: SharedDefScope,
 }
 impl Package {
-    
-    pub fn new(tree: syntax::SyntaxTree) -> Package {
 
-        // Phase 1: direct map, scope management
+    pub fn new(tree: syntax::SyntaxTree, symbols: &mut SymbolCollection) -> Package {
+
+        // Phase 1: direct map, scope management, dependent tree
         let global_scope = SharedDefScope::new("");
-        let mut modules = tree.modules.into_iter().map(|module| Module::from_syntax(module, global_scope.clone())).collect::<Vec<Module>>();
 
-        // Phase 1 special: build up module dependence tree
-        let mut main_module = modules[0].move_out();
-        main_module.buildup_imports(&tree.import_maps, &mut modules);
+        let mut tree = tree; // do not mut in parameter because I want to leave this driver beautiful
+        let mut main_module = Module::from_syntax(tree.modules[0].move_out(), global_scope.clone());
+        main_module.buildup_imports(&tree.import_maps, &mut tree.modules, symbols);
+
+        // Phase 2: collect type declares, not definitions
 
         Package{ global_scope, main_module }
     }
 }
 
 // TODO: beside `<anon#3>` should be `c`, `<scope #0>` should be `<scope >`
-#[cfg(test)] #[test]
+#[cfg(test)] #[test] 
 fn package_buildup_import_map() {
     use std::rc::Rc;
     use codemap::SourceCode;
@@ -56,7 +58,7 @@ fn package_buildup_import_map() {
         syntax::ImportMap::new(0, make_id!(2), 2),
         syntax::ImportMap::new(1, make_id!(3), 3),
         syntax::ImportMap::new(3, make_id!(4), 4),
-    ]));
+    ]), &mut make_symbols!["a", "b", "c", "d"]);
 
     let expect = Module{
         module_id: 0,
