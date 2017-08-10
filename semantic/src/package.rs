@@ -23,16 +23,16 @@ impl Package {
         let global_scope = SharedDefScope::new("");
 
         let mut tree = tree; // do not mut in parameter because I want to leave this driver beautiful
-        let mut main_module = Module::from_syntax(tree.modules[0].move_out(), global_scope.clone());
+        let mut main_module = Module::from_syntax(tree.modules[0].move_out(), global_scope.clone(), symbols);
         main_module.buildup_imports(&tree.import_maps, &mut tree.modules, symbols);
 
         // Phase 2: collect type declares, not definitions
+
 
         Package{ global_scope, main_module }
     }
 }
 
-// TODO: beside `<anon#3>` should be `c`, `<scope #0>` should be `<scope >`
 #[cfg(test)] #[test] 
 fn package_buildup_import_map() {
     use std::rc::Rc;
@@ -65,55 +65,67 @@ fn package_buildup_import_map() {
         this_scope: SharedDefScope::new(""),
         items: vec![
             Item::Import(ImportStatement{
-                name: SimpleName{ value: make_id!(1) },
+                name: SimpleName{ 
+                    value: make_id!(1),
+                    parent_scope: SharedDefScope::new(""),
+                },
                 alias: None,
                 module: Some(Module{
                     module_id: 1,
                     this_scope: SharedDefScope::new("").sub("a"),
                     items: vec![
                         Item::Import(ImportStatement{
-                            name: SimpleName{ value: make_id!(3) },
+                            name: SimpleName{ 
+                                value: make_id!(3),
+                                parent_scope: SharedDefScope::new("").sub("a"), 
+                            },
                             alias: None,
                             module: Some(Module{
                                 module_id: 3,
                                 this_scope: SharedDefScope::new("").sub("a").sub("c"),
                                 items: vec![
                                     Item::Import(ImportStatement{
-                                        name: SimpleName{ value: make_id!(4) },
+                                        name: SimpleName{ 
+                                            value: make_id!(4),
+                                            parent_scope: SharedDefScope::new("").sub("a").sub("c"),
+                                        },
                                         alias: None,
                                         module: Some(Module{
                                             module_id: 4,
                                             this_scope: SharedDefScope::new("").sub("a").sub("c").sub("d"),
                                             items: vec![],
                                         }),
+                                        parent_scope: SharedDefScope::new("").sub("a").sub("c"),
                                     }),
                                 ],
                             }),
+                            parent_scope: SharedDefScope::new(""),
                         }),
                     ],
                 }),
+                parent_scope: SharedDefScope::new(""),
             }),
             Item::Import(ImportStatement{
-                name: SimpleName{ value: make_id!(2) },
+                name: SimpleName{ 
+                    value: make_id!(2),
+                    parent_scope: SharedDefScope::new(""), 
+                },
                 alias: None,
                 module: Some(Module{
                     module_id: 2,
                     this_scope: SharedDefScope::new("").sub("b"),
                     items: vec![],
                 }),
+                parent_scope: SharedDefScope::new("").sub("b"),
             }),
         ],
     };
 
     if package.main_module != expect {
-        panic!("assertion failed, left: `{}`, right: `{}`", package.main_module.display(), expect.display());
+        let symbols = make_symbols!["a", "b", "c", "d"];
+        let formatter = Formatter::new(None, Some(&symbols));
+        panic!("assertion failed, left: `\n{}`, right: `\n{}`", package.main_module.format(formatter.clone()), expect.format(formatter));
     }
 }
 
-#[cfg(test)] #[test]
-fn package_module_scope() {
-    
-}
-
 // TODO: add scope name, where global is package name, fn main is package name + "::main", fn main for stmt is package name + "::main::<for-stmt<5:5-10:5>>"
-// add format method, maybe directly use syntax::ISyntaxFormat and syntax::Formatter

@@ -119,7 +119,8 @@ pub trait ISemanticAnalyze {
 
     // phase 1: direct map from syntax node
     type SyntaxItem;
-    fn from_syntax(item: Self::SyntaxItem, parent_scope: SharedDefScope) -> Self;
+    // @param symbols: because when contructing scope tree, many nodes (type, fn) need to convert id to string as its path segment, mut ref for future use
+    fn from_syntax(item: Self::SyntaxItem, parent_scope: SharedDefScope, symbols: &mut SymbolCollection) -> Self;
 
     // TODO: an empty implement for compatibility temporarily, remove it in future
     fn collect_type_declarations(&mut self) { }

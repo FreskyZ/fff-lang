@@ -65,8 +65,9 @@ fn def_scope_usage() {
 
     let scope4 = scope2.sub_with_span("if", make_span!(1, 2, 3));
     test_case!(scope4, "<if<<1>2-3>>", "global::abc::<if<<1>2-3>>");
-}
 
+    assert_eq!(SharedDefScope::new("").sub("a").sub("b"), SharedDefScope::new("").sub("a").sub("b"));
+}
 // scope def here is very abstract
 //                
 //               some-root{ scope, ... }

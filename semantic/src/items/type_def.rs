@@ -5,6 +5,7 @@
 // but every scope have their type id collection
 
 use codemap::SymbolID;
+use codemap::SymbolCollection;
 
 use syntax;
 
@@ -22,20 +23,23 @@ pub struct TypeFieldDef {
 pub struct TypeDef {
     pub name: SymbolID,
     pub fields: Vec<TypeFieldDef>,
+    pub this_scope: SharedDefScope,
 }
 impl ISemanticAnalyze for TypeDef {
 
     type SyntaxItem = syntax::TypeDef;
 
-    fn from_syntax(node: syntax::TypeDef, parent_scope: SharedDefScope) -> TypeDef {
+    fn from_syntax(node: syntax::TypeDef, parent_scope: SharedDefScope, symbols: &mut SymbolCollection) -> TypeDef {
+        let this_scope = parent_scope.sub(symbols.get(node.name.value).unwrap());
         TypeDef{
             name: node.name.value,
             fields: node.fields.into_iter().map(|field| {
                 TypeFieldDef{
                     name: field.name.value,
-                    typeuse: TypeUse::from_syntax(field.typeuse, parent_scope.clone()),
+                    typeuse: TypeUse::from_syntax(field.typeuse, this_scope.clone(), symbols),
                 }
             }).collect(),
+            this_scope: this_scope,
         }
     }
 }
