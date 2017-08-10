@@ -69,6 +69,7 @@ fn package_buildup_import_map() {
                     parent_scope: SharedDefScope::new(""),
                 },
                 alias: None,
+                parent_scope: SharedDefScope::new(""),
                 module: Some(Module{
                     module_id: 1,
                     this_scope: SharedDefScope::new("").sub("a"),
@@ -79,6 +80,7 @@ fn package_buildup_import_map() {
                                 parent_scope: SharedDefScope::new("").sub("a"), 
                             },
                             alias: None,
+                            parent_scope: SharedDefScope::new("").sub("a"),
                             module: Some(Module{
                                 module_id: 3,
                                 this_scope: SharedDefScope::new("").sub("a").sub("c"),
@@ -88,21 +90,19 @@ fn package_buildup_import_map() {
                                             value: make_id!(4),
                                             parent_scope: SharedDefScope::new("").sub("a").sub("c"),
                                         },
+                                        parent_scope: SharedDefScope::new("").sub("a").sub("c"),
                                         alias: None,
                                         module: Some(Module{
                                             module_id: 4,
                                             this_scope: SharedDefScope::new("").sub("a").sub("c").sub("d"),
                                             items: vec![],
                                         }),
-                                        parent_scope: SharedDefScope::new("").sub("a").sub("c"),
                                     }),
                                 ],
                             }),
-                            parent_scope: SharedDefScope::new(""),
                         }),
                     ],
                 }),
-                parent_scope: SharedDefScope::new(""),
             }),
             Item::Import(ImportStatement{
                 name: SimpleName{ 
@@ -110,18 +110,19 @@ fn package_buildup_import_map() {
                     parent_scope: SharedDefScope::new(""), 
                 },
                 alias: None,
+                parent_scope: SharedDefScope::new(""),
                 module: Some(Module{
                     module_id: 2,
                     this_scope: SharedDefScope::new("").sub("b"),
                     items: vec![],
                 }),
-                parent_scope: SharedDefScope::new("").sub("b"),
             }),
         ],
     };
 
     if package.main_module != expect {
         let symbols = make_symbols!["a", "b", "c", "d"];
+        // assert_eq!(package.main_module, expect);
         let formatter = Formatter::new(None, Some(&symbols));
         panic!("assertion failed, left: `\n{}`, right: `\n{}`", package.main_module.format(formatter.clone()), expect.format(formatter));
     }
