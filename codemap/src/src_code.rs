@@ -190,8 +190,7 @@ impl SourceCode {
             Some(stem) => match stem.to_str() {
                 Some(stem) => Some(stem),
                 None => None,
-            }, 
-        //   ^ small story here:
+            }, // < small story here, at 17/8/10:
             // in my 2e10e182, I added this method to be used in syntax and semantic's multiple file support,
             // I accidentally forget this comma
             // but it passes compile while I'm using the nightly build nightly-x86_64-pc-windows-msvc-17-8-1
