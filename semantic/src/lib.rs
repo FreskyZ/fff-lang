@@ -1,6 +1,3 @@
-#![allow(unused_variables)]
-#![allow(unused_imports)]
-#![allow(dead_code)]
 ///! fff-lang
 ///!
 ///! semantic, semantic analyze
@@ -13,6 +10,7 @@ extern crate lexical;
 extern crate syntax;
 
 #[macro_use] mod def_scope;
+mod format_helper;
 mod analyze_helper;
 mod expr;
 mod items;
@@ -60,5 +58,5 @@ pub use self::statement::UseStatement;
 pub use self::package::Package;
 
 use self::def_scope::SharedDefScope;
-use self::analyze_helper::Formatter;
+use self::format_helper::Formatter;
 use self::analyze_helper::ISemanticAnalyze;

@@ -4,7 +4,6 @@
 
 use syntax;
 
-use codemap::SymbolID;
 use codemap::SymbolCollection;
 
 use super::super::Item;
