@@ -190,7 +190,16 @@ impl SourceCode {
             Some(stem) => match stem.to_str() {
                 Some(stem) => Some(stem),
                 None => None,
-            }
+            }, 
+        //   ^ small story here:
+            // in my 2e10e182, I added this method to be used in syntax and semantic's multiple file support,
+            // I accidentally forget this comma
+            // but it passes compile while I'm using the nightly build nightly-x86_64-pc-windows-msvc-17-8-1
+            // in another environment I'm defaulting stable-x86_64-pc-windows-msvc-1.19.0, and this is a compile error, which is, I think should be the correct behaviour
+            // which also breaks my travis test
+            // digging into rustc's parser's history I found rust-lang/rust#40989, which allows no comma here, after block-like (not only block) expressions
+            // this feature is committed in a forked library at 17/4/1, and the pull request is merged at about 17/7/19, while stable-1.19.0 is released at 17/7/17
+            // I learned how to blame a code change and how rust's language feature is discussed and implemented and finally released, which is very interesting
             None => None,
         }
     }
