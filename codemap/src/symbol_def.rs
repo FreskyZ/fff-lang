@@ -83,7 +83,7 @@ macro_rules! make_symbols {
         }
         retval
     });
-    ($($x:expr,)*) => (make_messages![$($x),*])
+    ($($x:expr,)*) => (make_symbols![$($x),*])
 }
 
 #[cfg(test)] #[test]
