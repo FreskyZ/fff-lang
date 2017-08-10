@@ -5,15 +5,14 @@
 use codemap::SymbolCollection;
 use syntax;
 
-use super::Statement;
 use super::ISemanticAnalyze;
 use super::SharedDefScope;
 use super::Module;
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct Package {
-    main_module: Module,
-    global_scope: SharedDefScope,
+    pub main_module: Module,
+    pub global_scope: SharedDefScope,
 }
 impl Package {
 
