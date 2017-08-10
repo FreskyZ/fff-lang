@@ -43,6 +43,13 @@ impl fmt::Debug for Module {
 impl Module {
     pub fn new(source: Rc<SourceCode>, items: Vec<Item>) -> Module { Module{ source, items } }
 
+    // to move module out of vector
+    pub fn move_out(&mut self) -> Module {
+        let mut ret_items = Vec::new();
+        ret_items.append(&mut self.items);
+        Module{ source: self.source.clone(), items: ret_items }
+    }
+
     // TODO: update to `impl Iterator<Item = Item>` and remove collect after stabilize
     pub fn import_statements(&self) -> Vec<&ImportStatement> {
         self.items.iter()
