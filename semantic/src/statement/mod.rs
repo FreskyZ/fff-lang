@@ -310,7 +310,7 @@ pub struct ImportStatement {
 impl ISemanticAnalyze for ImportStatement {
 
     fn format(&self, f: Formatter) -> String {
-        let mut f = f.indent().header_text_or("import-stmt").endl()
+        let mut f = f.indent().header_text_or("import-stmt").space().debug(&self.parent_scope).endl()
             .apply1(&self.name);
         if let Some(ref alias) = self.alias {
             f = f.endl().set_header_text("alias-as").apply1(alias).unset_header_text();
