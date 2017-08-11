@@ -1,12 +1,14 @@
 ///! fff-lang
 ///!
 ///! syntax/range_expr
-///! range_expr = [ binary_expr ] '..' [ binary_expr ]
+///! range_full = '..'
+///! range_left = binary_expr '..'
+///! range_right = '..' binary_expr
+///! range_both = binary_expr '..' binary_expr
 
 use std::fmt;
 
 use codemap::Span;
-use lexical::Token;
 use lexical::Seperator;
 
 use super::Expr;
@@ -19,13 +21,14 @@ use super::super::ISyntaxParse;
 use super::super::ISyntaxFormat;
 use super::super::ISyntaxGrammar;
 
+// RangeFull
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct RangeFullExpr {
     pub all_span: Span,
 }
 impl ISyntaxFormat for RangeFullExpr {
     fn format(&self, f: Formatter) -> String {
-        f.indent().header_text_or("RangeFull").space().span(self.all_span).finish()
+        f.indent().header_text_or("range-full").space().span(self.all_span).finish()
     }
 }
 impl fmt::Debug for RangeFullExpr {
@@ -38,6 +41,7 @@ impl RangeFullExpr {
     pub fn new(all_span: Span) -> RangeFullExpr { RangeFullExpr{ all_span } }
 }
 
+// RangeRight
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct RangeRightExpr {
     pub all_span: Span,  // all_span.slice(2) is range_op_span
@@ -45,7 +49,7 @@ pub struct RangeRightExpr {
 }
 impl ISyntaxFormat for RangeRightExpr {
     fn format(&self, f: Formatter) -> String {
-        f.indent().header_text_or("RangeRight").space().span(self.all_span).endl()
+        f.indent().header_text_or("range-right").space().span(self.all_span).endl()
             .apply1(self.expr.as_ref())
             .finish()
     }
@@ -62,22 +66,7 @@ impl RangeRightExpr {
     }
 }
 
-impl ISyntaxGrammar for RangeFullExpr {
-    fn matches_first(tokens: &[&Token]) -> bool { tokens[0] == &Token::Sep(Seperator::Range) }
-}
-impl ISyntaxParse for RangeFullExpr {
-    type Output = Expr;
-
-    fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {
-        let span = sess.expect_sep(Seperator::Range)?;
-        if Expr::matches_first(sess.current_tokens()) {
-            let expr = BinaryExpr::parse(sess)?;
-            return Ok(Expr::RangeRight(RangeRightExpr::new(span.merge(&expr.get_all_span()), expr)));
-        }
-        return Ok(Expr::RangeFull(RangeFullExpr::new(span)));
-    }
-}
-
+// RangeLeft
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct RangeLeftExpr {
     pub expr: Box<Expr>,
@@ -85,7 +74,7 @@ pub struct RangeLeftExpr {
 }
 impl ISyntaxFormat for RangeLeftExpr {
     fn format(&self, f: Formatter) -> String {
-        f.indent().header_text_or("RangeLeft").space().span(self.all_span).endl()
+        f.indent().header_text_or("range-left").space().span(self.all_span).endl()
             .apply1(self.expr.as_ref())
             .finish()
     }
@@ -102,6 +91,7 @@ impl RangeLeftExpr {
     }
 }
 
+// RangeBoth
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct RangeBothExpr {
     pub left_expr: Box<Expr>,
@@ -135,20 +125,34 @@ impl RangeBothExpr {
     }
 }
 
-impl ISyntaxParse for RangeLeftExpr {
+// actually also a priority proxy
+pub(super) struct RangeExpr;
+impl ISyntaxParse for RangeExpr {
     type Output = Expr;
-    
+
     fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {
-        let left_expr = BinaryExpr::parse(sess)?;
-        if let Some(op_span) = sess.try_expect_sep(Seperator::Range) {
-            if Expr::matches_first(sess.current_tokens()) {
-                let right_expr = BinaryExpr::parse(sess)?;
-                return Ok(Expr::RangeBoth(RangeBothExpr::new(left_expr, op_span, right_expr)));
-            } else {
-                return Ok(Expr::RangeLeft(RangeLeftExpr::new(left_expr.get_all_span().merge(&op_span), left_expr)));
+        match sess.try_expect_sep(Seperator::Range) {
+            Some(range_op_span) => {
+                if Expr::matches_first(sess.current_tokens()) {
+                    let expr = BinaryExpr::parse(sess)?;
+                    Ok(Expr::RangeRight(RangeRightExpr::new(range_op_span.merge(&expr.get_all_span()), expr)))
+                } else {
+                    Ok(Expr::RangeFull(RangeFullExpr::new(range_op_span)))
+                }
             }
-        } else {
-            return Ok(left_expr);
+            None => {
+                let left_expr = BinaryExpr::parse(sess)?;
+                if let Some(op_span) = sess.try_expect_sep(Seperator::Range) {
+                    if Expr::matches_first(sess.current_tokens()) {
+                        let right_expr = BinaryExpr::parse(sess)?;
+                        Ok(Expr::RangeBoth(RangeBothExpr::new(left_expr, op_span, right_expr)))
+                    } else {
+                        Ok(Expr::RangeLeft(RangeLeftExpr::new(left_expr.get_all_span().merge(&op_span), left_expr)))
+                    }
+                } else {
+                    Ok(left_expr)
+                }
+            }
         }
     }
 }
@@ -159,13 +163,17 @@ fn range_expr_parse() {
     use super::LitExpr;
     use super::super::WithTestInput;
 
-    assert_eq!{ RangeFullExpr::with_test_str(".."), Expr::RangeFull(RangeFullExpr::new(make_span!(0, 1))) }
+    assert_eq!{ RangeExpr::with_test_str(".."), Expr::RangeFull(RangeFullExpr::new(make_span!(0, 1))) }
 
-    assert_eq!{ RangeFullExpr::with_test_str("..1 + 1"), 
+    assert_eq!{ RangeExpr::with_test_str("..1 + 1"), 
         Expr::RangeRight(RangeRightExpr::new(make_span!(0, 6), BinaryExpr::new(
             LitExpr::new(LitValue::from(1), make_span!(2, 2)),
             Seperator::Add, make_span!(4, 4),
             LitExpr::new(LitValue::from(1), make_span!(6, 6))
         )))
+    }
+
+    assert_eq!{ RangeExpr::with_test_str("1 .."),
+        Expr::RangeLeft(RangeLeftExpr::new(make_span!(0, 3), LitExpr::new(LitValue::from(1), make_span!(0, 0))))
     }
 }

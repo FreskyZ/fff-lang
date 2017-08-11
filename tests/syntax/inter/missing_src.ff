@@ -1,0 +1,14 @@
+// missed syntax nodes in syntax and semantic p1 integration tests
+
+const full = ..;
+const left = ..1 + 2;
+const right = 3 * 5 .. ;
+
+use a::b::c;
+var some_tuple = !("hello", 42);
+
+type string {
+    len: u64,
+    cap: u64,
+    data: u64,
+}

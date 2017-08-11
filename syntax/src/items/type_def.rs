@@ -45,9 +45,11 @@ pub struct TypeDef {
 impl ISyntaxFormat for TypeDef {
     fn format(&self, f: Formatter) -> String {
         
-        let mut f = f.indent().header_text_or("TypeDef").space().span(self.all_span).endl().apply1(&self.name);
+        let mut f = f.indent().header_text_or("type-def").space().span(self.all_span).endl()
+            .apply1(&self.name);
         for &TypeFieldDef{ ref name, ref colon_span, ref typeuse, ref all_span } in &self.fields {
-            f = f.indent1().lit("Field").space().span(*all_span).endl()
+            f = f.endl()
+                .indent1().lit("field").space().span(*all_span).endl()
                 .apply2(name).endl()
                 .indent2().lit("\":\"").space().span(*colon_span).endl()
                 .apply2(typeuse);

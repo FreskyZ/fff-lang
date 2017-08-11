@@ -8,6 +8,7 @@ use codemap::Span;
 use lexical::Token;
 use lexical::LitValue;
 use lexical::Keyword;
+use lexical::Seperator;
 
 #[macro_use] mod expr_list; // make_exprs
 mod array_def;
@@ -35,6 +36,7 @@ pub use self::range_expr::RangeFullExpr;
 pub use self::range_expr::RangeRightExpr;
 pub use self::range_expr::RangeLeftExpr;
 pub use self::range_expr::RangeBothExpr;
+use self::range_expr::RangeExpr;
 pub use self::binary_expr::BinaryExpr;
 pub use self::unary_expr::UnaryExpr;
 pub use self::priority_proxy::PostfixExpr;
@@ -131,18 +133,13 @@ impl ISyntaxGrammar for Expr {
         || TupleDef::matches_first(tokens)
         || ArrayDef::matches_first(tokens)
         || UnaryExpr::matches_first(tokens) 
-        || RangeFullExpr::matches_first(tokens)
+        || tokens[0] == &Token::Sep(Seperator::Range)
         || tokens[0] == &Token::Keyword(Keyword::This)
-        // || PostfixExpr::matches_first(sess) // same as Expr
-        // || BinaryExpr::matches_first(sess)  // same as Expr
     }
 }
 impl ISyntaxParse for Expr {
     type Output = Expr;
-
-    fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {
-        return RangeLeftExpr::parse(sess);
-    }
+    fn parse(sess: &mut ParseSession) -> ParseResult<Expr> { RangeExpr::parse(sess) }
 }
 
 #[cfg(test)] #[test]
@@ -390,6 +387,46 @@ fn expr_parse() {
             UnaryExpr::new(
                 Seperator::LogicalNot, make_span!(1, 1),
                 LitExpr::new(LitValue::from(1), make_span!(2, 2))
+            )
+        ))
+    }
+
+    // range
+    assert_eq!{ Expr::with_test_str(".."), 
+        Expr::RangeFull(RangeFullExpr::new(make_span!(0, 1)))
+    }
+
+    assert_eq!{ Expr::with_test_str("..1 + 2"),
+        Expr::RangeRight(RangeRightExpr::new(make_span!(0, 6), BinaryExpr::new(
+            LitExpr::new(LitValue::from(1), make_span!(2, 2)),
+            Seperator::Add, make_span!(4, 4),
+            LitExpr::new(LitValue::from(2), make_span!(6, 6))
+        )))
+    }
+
+    assert_eq!{ Expr::with_test_str("xxx .."),
+        Expr::RangeLeft(RangeLeftExpr::new(make_span!(0, 5), 
+            SimpleName::new(make_id!(1), make_span!(0, 2))
+        ))
+    }
+
+    assert_eq!{ Expr::with_test_str("1 + 2 .. [4, 5, 6][2]"),
+        Expr::RangeBoth(RangeBothExpr::new(
+            BinaryExpr::new(
+                LitExpr::new(LitValue::from(1), make_span!(0, 0)),
+                Seperator::Add, make_span!(2, 2),
+                LitExpr::new(LitValue::from(2), make_span!(4, 4))
+            ),
+            make_span!(6, 7),
+            IndexCallExpr::new(
+                ArrayDef::new(make_span!(9, 17), make_exprs![
+                    LitExpr::new(LitValue::from(4), make_span!(10, 10)),
+                    LitExpr::new(LitValue::from(5), make_span!(13, 13)),
+                    LitExpr::new(LitValue::from(6), make_span!(16, 16))
+                ]),
+                make_span!(18, 20), make_exprs![
+                    LitExpr::new(LitValue::from(2), make_span!(19, 19))
+                ]
             )
         ))
     }
