@@ -5,6 +5,7 @@
 use syntax;
 
 use super::Expr;
+use super::super::Formatter;
 use super::super::FromSession;
 use super::super::SharedDefScope;
 use super::super::ISemanticAnalyze;
@@ -62,6 +63,13 @@ pub struct RangeBothExpr {
     pub parent_scope: SharedDefScope,
 }
 impl ISemanticAnalyze for RangeBothExpr {
+
+    fn format(&self, f: Formatter) -> String {
+        f.indent().header_text_or("range-both").space().debug(&self.parent_scope).endl()
+            .apply1_with_prefix_text("left-is", self.left_expr.as_ref()).endl()
+            .apply1_with_prefix_text("right-is", self.right_expr.as_ref())
+            .finish()
+    }
 
     type SyntaxItem = syntax::RangeBothExpr;
 

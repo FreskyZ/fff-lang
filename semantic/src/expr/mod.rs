@@ -27,6 +27,11 @@ pub struct ArrayDef {
 }
 impl ISemanticAnalyze for ArrayDef {
 
+    fn format(&self, f: Formatter) -> String {
+        f.indent().header_text_or("array-def").space().debug(&self.parent_scope)
+            .foreach(&self.items, |f, expr| f.endl().apply1(expr)).finish()
+    }
+
     type SyntaxItem = syntax::ArrayDef;
 
     fn from_syntax(node: syntax::ArrayDef, sess: FromSession) -> ArrayDef {
@@ -45,6 +50,14 @@ pub struct BinaryExpr {
     pub parent_scope: SharedDefScope,
 }
 impl ISemanticAnalyze for BinaryExpr {
+
+    fn format(&self, f: Formatter) -> String {
+        f.indent().header_text_or("binary-expr").space().debug(&self.parent_scope).endl()
+            .apply1_with_prefix_text("left-is", self.left_expr.as_ref()).endl()
+            .indent1().lit("\"").debug(&self.operator).lit("\"").endl()
+            .apply1_with_prefix_text("right-is", self.right_expr.as_ref())
+            .finish()
+    }
 
     type SyntaxItem = syntax::BinaryExpr;
 
@@ -65,6 +78,13 @@ pub struct FnCall {
     pub parent_scope: SharedDefScope,
 }
 impl ISemanticAnalyze for FnCall {
+
+    fn format(&self, f: Formatter) -> String {
+        f.indent().header_text_or("fn-call").space().debug(&self.parent_scope).endl()
+            .apply1_with_prefix_text("base-is", self.base.as_ref())
+            .foreach_or_else(&self.params, |f, expr| f.endl().apply1(expr), |f| f.endl().indent1().lit("no-argument"))
+            .finish()
+    }
 
     type SyntaxItem = syntax::FnCallExpr;
 
@@ -123,6 +143,13 @@ pub struct IndexCall {
 }
 impl ISemanticAnalyze for IndexCall {
 
+    fn format(&self, f: Formatter) -> String {
+        f.indent().header_text_or("fn-call").space().debug(&self.parent_scope).endl()
+            .apply1_with_prefix_text("base-is", self.base.as_ref())
+            .foreach_or_else(&self.params, |f, expr| f.endl().apply1(expr), |f| f.endl().indent1().lit("no-argument"))
+            .finish()
+    }
+
     type SyntaxItem = syntax::IndexCallExpr;
 
     fn from_syntax(node: syntax::IndexCallExpr, sess: FromSession) -> IndexCall {
@@ -139,6 +166,12 @@ pub struct LitExpr {
     pub value: LitValue,
 }
 impl ISemanticAnalyze for LitExpr {
+
+    fn format(&self, f: Formatter) -> String {
+        let f = f.indent().header_text_or("literal").space();
+        let f = match self.value { LitValue::Str(Some(ref id)) => f.sym(*id), ref other => f.debug(other) };
+        f.finish()
+    }
 
     type SyntaxItem = syntax::LitExpr;
 
@@ -157,6 +190,13 @@ pub struct MemberAccess {
 }
 impl ISemanticAnalyze for MemberAccess {
 
+    fn format(&self, f: Formatter) -> String {
+        f.indent().header_text_or("member-access").space().debug(&self.parent_scope).endl()
+            .apply1_with_prefix_text("base-is", self.base.as_ref()).endl()
+            .apply1_with_header_text("member-name-is", &self.name)
+            .finish()
+    }
+
     type SyntaxItem = syntax::MemberAccessExpr;
 
     fn from_syntax(node: syntax::MemberAccessExpr, sess: FromSession) -> MemberAccess {
@@ -174,6 +214,12 @@ pub struct ParenExpr {
     pub parent_scope: SharedDefScope
 }
 impl ISemanticAnalyze for ParenExpr {
+
+    fn format(&self, f: Formatter) -> String {
+        f.indent().header_text_or("paren-expr").space().debug(&self.parent_scope).endl()
+            .apply1(self.expr.as_ref())
+            .finish()
+    }
 
     type SyntaxItem = syntax::ParenExpr;
 
@@ -240,6 +286,22 @@ pub enum Expr {
     RangeBoth(RangeBothExpr),
 }
 impl ISemanticAnalyze for Expr {
+
+    fn format(&self, f: Formatter) -> String {
+        match self {
+            &Expr::Array(ref array_def) => array_def.format(f),
+            &Expr::Lit(ref lit_expr) => lit_expr.format(f),
+            &Expr::SimpleName(ref name) => name.format(f),
+            &Expr::Name(ref name) => name.format(f),
+            &Expr::FnCall(ref fn_call) => fn_call.format(f),
+            &Expr::MemberAccess(ref access) => access.format(f),
+            &Expr::RangeBoth(ref range) => range.format(f),
+            &Expr::Binary(ref binary) => binary.format(f),
+            &Expr::IndexCall(ref index) => index.format(f),
+            &Expr::Paren(ref paren) => paren.format(f),
+            _ => "<unknown-expr>".to_owned(),
+        }
+    }
 
     type SyntaxItem = syntax::Expr;
 
