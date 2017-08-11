@@ -144,6 +144,4 @@ fn package_buildup_import_map() {
     }
 }
 
-// TODO: remove ISemanticAnalyze::format default implementation and check synatx integration tests' missing nodes
-// TODO: Check scope management in more precisely
-// consider use unique ids to replace unaccessible names (contains scope segment with span)
+// CONSIDER: use unique ids to replace unaccessible names (contains scope segment with span)
