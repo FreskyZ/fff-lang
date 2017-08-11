@@ -29,8 +29,8 @@ pub struct UnaryExpr {
 }
 impl ISyntaxFormat for UnaryExpr {
     fn format(&self, f: Formatter) -> String {
-        f.indent().header_text_or("UnaryExpr").space().span(self.all_span).endl()
-            .indent1().debug(&self.operator).space().span(self.operator_span).endl()
+        f.indent().header_text_or("unary-expr").space().span(self.all_span).endl()
+            .indent1().lit("\"").debug(&self.operator).lit("\"").space().span(self.operator_span).endl()
             .apply1(self.base.as_ref())
             .finish()
     }

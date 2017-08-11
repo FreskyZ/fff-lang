@@ -142,13 +142,28 @@ fn module_integration() {
         let actual = result.get_result().unwrap().format(Formatter::new(Some(result.get_source()), Some(result.get_symbols())));
         if actual != expect {
             println!("case '{}' failed:", line);
-            for (linenum, (actual_line, expect_line)) in actual.split_terminator('\n').zip(expect.split_terminator('\n')).enumerate() {
-                if actual_line == expect_line {
-                    println!("={}) {}", linenum, actual_line);
-                } else {
-                    println!("x{}) {:?}", linenum, actual_line);
-                    println!("x{}) {:?}", linenum, expect_line);
+            let (mut linenum, mut actual_iter, mut expect_iter) = (0, actual.split_terminator('\n'), expect.split_terminator('\n'));
+            loop {
+                match (actual_iter.next(), expect_iter.next()) {
+                    (Some(actual_line), Some(expect_line)) if actual_line == expect_line => {
+                        println!("={}) {}", linenum, actual_line);
+                    }
+                    (Some(actual_line), Some(expect_line)) if actual_line != expect_line => {
+                        println!("x{}) {:?}", linenum, actual_line);
+                        println!("x{}) {:?}", linenum, expect_line);
+                    }
+                    (Some(_actual_line), Some(_expect_line)) => {
+                        panic!("what's the case??");
+                    }
+                    (Some(actual_line), None) => {
+                        println!("^{}) {}", linenum, actual_line);
+                    }
+                    (None, Some(expect_line)) => {
+                        println!("v{}) {}", linenum, expect_line);
+                    }
+                    (None, None) => break,
                 }
+                linenum += 1;
             }
             panic!("case failed")
         }

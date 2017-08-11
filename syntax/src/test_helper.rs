@@ -19,7 +19,8 @@ pub trait WithTestInput {
     fn with_test_input(input: TestInput) -> (Option<Self::Output>, Rc<SourceCode>, MessageCollection, SymbolCollection);
 
     fn with_test_str(src: &str) -> Self::Output {
-        Self::with_test_input(TestInput::new(src)).0.unwrap()
+        let (maybe_output, _, messages, _) = Self::with_test_input(TestInput::new(src));
+        maybe_output.expect(&format!("parse fail: {:?}", messages))
     }
 }
 

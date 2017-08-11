@@ -1,0 +1,49 @@
+module
+  source-code#0 <anon#0>
+  const-def <3:1-3:16>
+    "full" <3:7-3:10>
+    auto-type
+    init-as range-full <3:14-3:15>
+  const-def <4:1-4:21>
+    "left" <4:7-4:10>
+    auto-type
+    init-as range-right <4:14-4:20>
+      binary-expr <4:16-4:20>
+        left-is literal (i32)1 <4:16-4:16>
+        "+" <4:18-4:18>
+        right-is literal (i32)2 <4:20-4:20>
+  const-def <5:1-5:24>
+    "right" <5:7-5:11>
+    auto-type
+    init-as range-left <5:15-5:22>
+      binary-expr <5:15-5:19>
+        left-is literal (i32)3 <5:15-5:15>
+        "*" <5:17-5:17>
+        right-is literal (i32)5 <5:19-5:19>
+  use-stmt <7:1-7:12>
+    alias-from name <7:5-7:11>
+      segment "a" <7:5-7:5>
+      segment "b" <7:8-7:8>
+      segment "c" <7:11-7:11>
+  var-def <8:1-8:32>
+    "some_tuple" <8:5-8:14>
+    auto-type
+    init-as unary-expr <8:18-8:31>
+      "!" <8:18-8:18>
+      tuple-def <8:19-8:31>
+        literal "hello" <8:20-8:26>
+        literal (i32)42 <8:29-8:30>
+  type-def <10:1-14:1>
+    ident-use "string" <10:6-10:11>
+    field <11:5-11:13>
+      ident-use "len" <11:5-11:7>
+      ":" <11:8-11:8>
+      type-use "u64" <11:10-11:12>
+    field <12:5-12:13>
+      ident-use "cap" <12:5-12:7>
+      ":" <12:8-12:8>
+      type-use "u64" <12:10-12:12>
+    field <13:5-13:14>
+      ident-use "data" <13:5-13:8>
+      ":" <13:9-13:9>
+      type-use "u64" <13:11-13:13>
