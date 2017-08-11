@@ -1,8 +1,8 @@
 ///! fff-lang
 ///!
 ///! syntax/block_stmt
-///! BlockStatement for explicit block definition in block and allow block label
-///! BlockStatement = [LabelDef] Block
+///! block-stmt = [ label-def ] block
+///! block-stmt for explicit block definition in block and allow block label
 
 use std::fmt;
 

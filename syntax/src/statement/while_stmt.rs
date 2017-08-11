@@ -1,7 +1,7 @@
 ///! fff-lang
 ///!
 ///! syntax/while_stmt
-///! WhileStatement = LabelDef fWhile Expr Block
+///! while-stmt = [ label-def ] 'while' expr block
 // TODO: add else for break, like python
 
 use std::fmt;

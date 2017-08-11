@@ -1,8 +1,8 @@
 ///! fff-lang
 ///! 
 ///! syntax/var_decl
-///! ConstDecl = fConst fIdentifier [fColon TypeUse] [fAssign Expr] fSemiColon
-///! VarDecl = fVar fIdentifier [fColon TypeUse] [fAssign Expr] fSemiColon
+///! const-decl = 'const' identifier [ ':' type-use ] [ '=' expr ] ';'
+///! var-decl = 'var' identifier [ ':' type-use ] [ '=' expr ] ';'
 
 use std::fmt;
 

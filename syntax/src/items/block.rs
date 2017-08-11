@@ -1,7 +1,7 @@
 ///! fff-lang
 ///!
 ///! syntax/block
-///! Block = fLeftBrace [Statement]* fRightBrace
+///! block = '{' { statement } '}'
 
 use std::fmt;
 

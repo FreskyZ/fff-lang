@@ -1,7 +1,7 @@
 ///! fff-lang
 ///!
 ///! syntax/label
-///! Label = fLabel fColon
+///! label-def = label ':'
 ///! it's here because for, while, loop and block all needs it
 
 use std::fmt;
