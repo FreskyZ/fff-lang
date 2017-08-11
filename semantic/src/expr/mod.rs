@@ -3,7 +3,6 @@
 ///! semantic/expr
 
 use codemap::SymbolID;
-use codemap::SymbolCollection;
 use lexical::LitValue;
 use lexical::Seperator;
 
@@ -11,9 +10,10 @@ use syntax;
 
 mod range_expr;
 
+use super::Formatter;
+use super::FromSession;
 use super::SharedDefScope;
 use super::ISemanticAnalyze;
-use super::Formatter;
 
 pub use self::range_expr::RangeBothExpr;
 pub use self::range_expr::RangeFullExpr;
@@ -29,10 +29,10 @@ impl ISemanticAnalyze for ArrayDef {
 
     type SyntaxItem = syntax::ArrayDef;
 
-    fn from_syntax(node: syntax::ArrayDef, parent_scope: SharedDefScope, symbols: &mut SymbolCollection) -> ArrayDef {
+    fn from_syntax(node: syntax::ArrayDef, sess: FromSession) -> ArrayDef {
         ArrayDef{
-            items: node.items.items.into_iter().map(|item| Expr::from_syntax(item, parent_scope.clone(), symbols)).collect(),
-            parent_scope: parent_scope,
+            items: node.items.items.into_iter().map(|item| Expr::from_syntax(item, sess.clone_scope())).collect(),
+            parent_scope: sess.into_scope(),
         }
     }
 }
@@ -48,12 +48,12 @@ impl ISemanticAnalyze for BinaryExpr {
 
     type SyntaxItem = syntax::BinaryExpr;
 
-    fn from_syntax(node: syntax::BinaryExpr, parent_scope: SharedDefScope, symbols: &mut SymbolCollection) -> BinaryExpr {
+    fn from_syntax(node: syntax::BinaryExpr, sess: FromSession) -> BinaryExpr {
         BinaryExpr{
-            left_expr: Box::new(Expr::from_syntax(syntax::Expr::unbox(node.left_expr), parent_scope.clone(), symbols)),
-            right_expr: Box::new(Expr::from_syntax(syntax::Expr::unbox(node.right_expr), parent_scope.clone(), symbols)),
+            left_expr: Box::new(Expr::from_syntax(syntax::Expr::unbox(node.left_expr), sess.clone_scope())),
+            right_expr: Box::new(Expr::from_syntax(syntax::Expr::unbox(node.right_expr), sess.clone_scope())),
             operator: node.operator,
-            parent_scope: parent_scope,
+            parent_scope: sess.into_scope(),
         }
     }
 }
@@ -68,11 +68,11 @@ impl ISemanticAnalyze for FnCall {
 
     type SyntaxItem = syntax::FnCallExpr;
 
-    fn from_syntax(node: syntax::FnCallExpr, parent_scope: SharedDefScope, symbols: &mut SymbolCollection) -> FnCall {
+    fn from_syntax(node: syntax::FnCallExpr, sess: FromSession) -> FnCall {
         FnCall{
-            base: Box::new(Expr::from_syntax(syntax::Expr::unbox(node.base), parent_scope.clone(), symbols)),
-            params: node.params.items.into_iter().map(|item| Expr::from_syntax(item, parent_scope.clone(), symbols)).collect(),
-            parent_scope: parent_scope,
+            base: Box::new(Expr::from_syntax(syntax::Expr::unbox(node.base), sess.clone_scope())),
+            params: node.params.items.into_iter().map(|item| Expr::from_syntax(item, sess.clone_scope())).collect(),
+            parent_scope: sess.into_scope(),
         }
     }
 }
@@ -90,10 +90,10 @@ impl ISemanticAnalyze for SimpleName {
 
     type SyntaxItem = syntax::SimpleName;
 
-    fn from_syntax(node: syntax::SimpleName, parent_scope: SharedDefScope, _symbols: &mut SymbolCollection) -> SimpleName {
+    fn from_syntax(node: syntax::SimpleName, sess: FromSession) -> SimpleName {
         SimpleName{
             value: node.value,
-            parent_scope: parent_scope,
+            parent_scope: sess.into_scope(),
         }
     }
 }
@@ -107,10 +107,10 @@ impl ISemanticAnalyze for Name {
 
     type SyntaxItem = syntax::Name;
 
-    fn from_syntax(node: syntax::Name, parent_scope: SharedDefScope, symbols: &mut SymbolCollection) -> Name {
+    fn from_syntax(node: syntax::Name, sess: FromSession) -> Name {
         Name{
-            segments: node.segments.into_iter().map(|segment| SimpleName::from_syntax(segment, parent_scope.clone(), symbols)).collect(),
-            parent_scope: parent_scope,
+            segments: node.segments.into_iter().map(|segment| SimpleName::from_syntax(segment, sess.clone_scope())).collect(),
+            parent_scope: sess.into_scope(),
         }
     } 
 }
@@ -125,11 +125,11 @@ impl ISemanticAnalyze for IndexCall {
 
     type SyntaxItem = syntax::IndexCallExpr;
 
-    fn from_syntax(node: syntax::IndexCallExpr, parent_scope: SharedDefScope, symbols: &mut SymbolCollection) -> IndexCall {
+    fn from_syntax(node: syntax::IndexCallExpr, sess: FromSession) -> IndexCall {
         IndexCall{
-            base: Box::new(Expr::from_syntax(syntax::Expr::unbox(node.base), parent_scope.clone(), symbols)),
-            params: node.params.items.into_iter().map(|item| Expr::from_syntax(item, parent_scope.clone(), symbols)).collect(),
-            parent_scope: parent_scope,
+            base: Box::new(Expr::from_syntax(syntax::Expr::unbox(node.base), sess.clone_scope())),
+            params: node.params.items.into_iter().map(|item| Expr::from_syntax(item, sess.clone_scope())).collect(),
+            parent_scope: sess.into_scope(),
         }
     }
 }
@@ -142,7 +142,7 @@ impl ISemanticAnalyze for LitExpr {
 
     type SyntaxItem = syntax::LitExpr;
 
-    fn from_syntax(node: syntax::LitExpr, _parent_scope: SharedDefScope, _symbols: &mut SymbolCollection) -> LitExpr {
+    fn from_syntax(node: syntax::LitExpr, _sess: FromSession) -> LitExpr {
         LitExpr{ 
             value: node.value,
         }
@@ -159,11 +159,11 @@ impl ISemanticAnalyze for MemberAccess {
 
     type SyntaxItem = syntax::MemberAccessExpr;
 
-    fn from_syntax(node: syntax::MemberAccessExpr, parent_scope: SharedDefScope, symbols: &mut SymbolCollection) -> MemberAccess {
+    fn from_syntax(node: syntax::MemberAccessExpr, sess: FromSession) -> MemberAccess {
         MemberAccess{
-            base: Box::new(Expr::from_syntax(syntax::Expr::unbox(node.base), parent_scope.clone(), symbols)),
-            name: SimpleName::from_syntax(node.name, parent_scope.clone(), symbols),
-            parent_scope: parent_scope,
+            base: Box::new(Expr::from_syntax(syntax::Expr::unbox(node.base), sess.clone_scope())),
+            name: SimpleName::from_syntax(node.name, sess.clone_scope()),
+            parent_scope: sess.into_scope(),
         }
     }
 }
@@ -177,10 +177,10 @@ impl ISemanticAnalyze for ParenExpr {
 
     type SyntaxItem = syntax::ParenExpr;
 
-    fn from_syntax(node: syntax::ParenExpr, parent_scope: SharedDefScope, symbols: &mut SymbolCollection) -> ParenExpr {
+    fn from_syntax(node: syntax::ParenExpr, sess: FromSession) -> ParenExpr {
         ParenExpr{
-            expr: Box::new(Expr::from_syntax(syntax::Expr::unbox(node.expr), parent_scope.clone(), symbols)),
-            parent_scope: parent_scope,
+            expr: Box::new(Expr::from_syntax(syntax::Expr::unbox(node.expr), sess.clone_scope())),
+            parent_scope: sess.into_scope(),
         }
     }
 }
@@ -194,10 +194,10 @@ impl ISemanticAnalyze for TupleDef {
 
     type SyntaxItem = syntax::TupleDef;
 
-    fn from_syntax(node: syntax::TupleDef, parent_scope: SharedDefScope, symbols: &mut SymbolCollection) -> TupleDef {
+    fn from_syntax(node: syntax::TupleDef, sess: FromSession) -> TupleDef {
         TupleDef{
-            items: node.items.items.into_iter().map(|item| Expr::from_syntax(item, parent_scope.clone(), symbols)).collect(),
-            parent_scope: parent_scope,
+            items: node.items.items.into_iter().map(|item| Expr::from_syntax(item, sess.clone_scope())).collect(),
+            parent_scope: sess.into_scope(),
         }
     }
 }
@@ -212,11 +212,11 @@ impl ISemanticAnalyze for UnaryExpr {
 
     type SyntaxItem = syntax::UnaryExpr;
 
-    fn from_syntax(node: syntax::UnaryExpr, parent_scope: SharedDefScope, symbols: &mut SymbolCollection) -> UnaryExpr {
+    fn from_syntax(node: syntax::UnaryExpr, sess: FromSession) -> UnaryExpr {
         UnaryExpr{
-            base: Box::new(Expr::from_syntax(syntax::Expr::unbox(node.base), parent_scope.clone(), symbols)),
+            base: Box::new(Expr::from_syntax(syntax::Expr::unbox(node.base), sess.clone_scope())),
             operator: node.operator,
-            parent_scope: parent_scope,
+            parent_scope: sess.into_scope(),
         }
     }
 }
@@ -243,23 +243,23 @@ impl ISemanticAnalyze for Expr {
 
     type SyntaxItem = syntax::Expr;
 
-    fn from_syntax(node: syntax::Expr, parent_scope: SharedDefScope, symbols: &mut SymbolCollection) -> Expr {
+    fn from_syntax(node: syntax::Expr, sess: FromSession) -> Expr {
         match node {
-            syntax::Expr::Array(array_def) => Expr::Array(ArrayDef::from_syntax(array_def, parent_scope, symbols)),
-            syntax::Expr::Binary(binary_expr) => Expr::Binary(BinaryExpr::from_syntax(binary_expr, parent_scope, symbols)),
-            syntax::Expr::Name(name) => Expr::Name(Name::from_syntax(name, parent_scope, symbols)),
-            syntax::Expr::Lit(lit_expr) => Expr::Lit(LitExpr::from_syntax(lit_expr, parent_scope, symbols)),
-            syntax::Expr::FnCall(fn_call) => Expr::FnCall(FnCall::from_syntax(fn_call, parent_scope, symbols)),
-            syntax::Expr::IndexCall(index_call) => Expr::IndexCall(IndexCall::from_syntax(index_call, parent_scope, symbols)),
-            syntax::Expr::MemberAccess(member_access) => Expr::MemberAccess(MemberAccess::from_syntax(member_access, parent_scope, symbols)),
-            syntax::Expr::Paren(paren_expr) => Expr::Paren(ParenExpr::from_syntax(paren_expr, parent_scope, symbols)),
-            syntax::Expr::Tuple(tuple_def) => Expr::Tuple(TupleDef::from_syntax(tuple_def, parent_scope, symbols)),
-            syntax::Expr::Unary(unary_expr) => Expr::Unary(UnaryExpr::from_syntax(unary_expr, parent_scope, symbols)),
-            syntax::Expr::RangeBoth(range_both) => Expr::RangeBoth(RangeBothExpr::from_syntax(range_both, parent_scope, symbols)),
-            syntax::Expr::RangeLeft(range_left) => Expr::RangeLeft(RangeLeftExpr::from_syntax(range_left, parent_scope, symbols)),
-            syntax::Expr::RangeRight(range_right) => Expr::RangeRight(RangeRightExpr::from_syntax(range_right, parent_scope, symbols)),
-            syntax::Expr::RangeFull(range_full) => Expr::RangeFull(RangeFullExpr::from_syntax(range_full, parent_scope, symbols)),
-            syntax::Expr::SimpleName(simple_name) => Expr::SimpleName(SimpleName::from_syntax(simple_name, parent_scope, symbols)),
+            syntax::Expr::Array(array_def) => Expr::Array(ArrayDef::from_syntax(array_def, sess)),
+            syntax::Expr::Binary(binary_expr) => Expr::Binary(BinaryExpr::from_syntax(binary_expr, sess)),
+            syntax::Expr::Name(name) => Expr::Name(Name::from_syntax(name, sess)),
+            syntax::Expr::Lit(lit_expr) => Expr::Lit(LitExpr::from_syntax(lit_expr, sess)),
+            syntax::Expr::FnCall(fn_call) => Expr::FnCall(FnCall::from_syntax(fn_call, sess)),
+            syntax::Expr::IndexCall(index_call) => Expr::IndexCall(IndexCall::from_syntax(index_call, sess)),
+            syntax::Expr::MemberAccess(member_access) => Expr::MemberAccess(MemberAccess::from_syntax(member_access, sess)),
+            syntax::Expr::Paren(paren_expr) => Expr::Paren(ParenExpr::from_syntax(paren_expr, sess)),
+            syntax::Expr::Tuple(tuple_def) => Expr::Tuple(TupleDef::from_syntax(tuple_def, sess)),
+            syntax::Expr::Unary(unary_expr) => Expr::Unary(UnaryExpr::from_syntax(unary_expr, sess)),
+            syntax::Expr::RangeBoth(range_both) => Expr::RangeBoth(RangeBothExpr::from_syntax(range_both, sess)),
+            syntax::Expr::RangeLeft(range_left) => Expr::RangeLeft(RangeLeftExpr::from_syntax(range_left, sess)),
+            syntax::Expr::RangeRight(range_right) => Expr::RangeRight(RangeRightExpr::from_syntax(range_right, sess)),
+            syntax::Expr::RangeFull(range_full) => Expr::RangeFull(RangeFullExpr::from_syntax(range_full, sess)),
+            syntax::Expr::SimpleName(simple_name) => Expr::SimpleName(SimpleName::from_syntax(simple_name, sess)),
         }
     }
 }

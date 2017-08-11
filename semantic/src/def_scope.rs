@@ -6,8 +6,6 @@ use std::fmt;
 use std::rc::Rc;
 use std::cell::RefCell;
 
-use codemap::Span;
-
 #[derive(Eq, PartialEq)]
 struct DefScope {
     name: String,
@@ -32,10 +30,6 @@ impl SharedDefScope { // new
     
     /// Create sub scope
     pub fn sub<T: Into<String>>(&self, name: T) -> Self { Self::_new(name.into(), Some(self.clone())) }
-
-    /// Create sub scope with not unique name like 'if', 'for', etc.
-    /// which need adding span information to make unique
-    pub fn sub_with_span<T: Into<String>>(&self, name: T, span: Span) -> Self { Self::_new(format!("<{}{:?}>", name.into(), span), Some(self.clone())) }
 }
 impl SharedDefScope { // get
 
@@ -62,9 +56,6 @@ fn def_scope_usage() {
     test_case!(scope2, "abc", "global::abc");
     let scope3 = scope2.clone();
     test_case!(scope3, "abc", "global::abc");
-
-    let scope4 = scope2.sub_with_span("if", make_span!(1, 2, 3));
-    test_case!(scope4, "<if<<1>2-3>>", "global::abc::<if<<1>2-3>>");
 
     assert_eq!(SharedDefScope::new("").sub("a").sub("b"), SharedDefScope::new("").sub("a").sub("b"));
 }

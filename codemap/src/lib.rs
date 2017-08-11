@@ -42,4 +42,23 @@ impl SourceMap {
     pub fn index(&self, id: usize) -> Rc<SourceCode> {
         self.items[id].clone()
     }
+
+    /// for following macro use
+    pub fn new_items(items: Vec<Rc<SourceCode>>) -> SourceMap { SourceMap{ items } }
+}
+
+/// for test
+#[macro_export]
+macro_rules! make_sources {
+    ($($x:expr),*) => ({
+        let mut retval = Vec::new();
+        {
+            let _retval = &mut retval; // `&mut` for statisfy 'unused mut', `_` for statisfy unused var
+            $(
+                _retval.push($x);
+            )*
+        }
+        SourceMap::new_items(retval)
+    });
+    ($($x:expr,)*) => (make_sources![$($x),*])
 }

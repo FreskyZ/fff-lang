@@ -83,8 +83,7 @@ impl Span {
             (_, DEFAULT_FILE_ID) => format!("<no-span>"),
             (None, _) => format!("<<{}>{}-{}>", self.file_id, self.start_id, self.end_id),
             (Some(source), _) => {
-                let (start_row, start_column) = source.map_index(self.get_start_pos());
-                let (end_row, end_column) = source.map_index(self.get_end_pos());
+                let (start_row, start_column, end_row, end_column) = self.get_start_end_row_column(source);
                 format!("<{}:{}-{}:{}>", start_row, start_column, end_row, end_column)
             }
         }
@@ -102,6 +101,16 @@ impl Span {
     pub fn get_end_id(&self) -> usize { self.end_id }
     pub fn get_start_pos(&self) -> CharPos { CharPos::new(self.file_id, self.start_id) }
     pub fn get_end_pos(&self) -> CharPos { CharPos::new(self.file_id, self.end_id) }
+
+    /// (start_row, start_column, end_row, end_column)
+    ///
+    /// 17/8/11: it is designed to be used in semantic's scope name, because I don't want file id to be added to scope segment, 
+    /// but actually I did do not add file id in that format method, so currently it is actually not used
+    pub fn get_start_end_row_column(&self, source: &SourceCode) -> (usize, usize, usize, usize) { 
+        let (start_row, start_column) = source.map_index(self.get_start_pos());
+        let (end_row, end_column) = source.map_index(self.get_end_pos());
+        (start_row, start_column, end_row, end_column)
+    }
 
     pub fn is_default(&self) -> bool { self.file_id == DEFAULT_FILE_ID }
 

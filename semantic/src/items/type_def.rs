@@ -5,11 +5,11 @@
 // but every scope have their type id collection
 
 use codemap::SymbolID;
-use codemap::SymbolCollection;
 
 use syntax;
 
 use super::TypeUse;
+use super::super::FromSession;
 use super::super::SharedDefScope;
 use super::super::ISemanticAnalyze;
 
@@ -29,17 +29,17 @@ impl ISemanticAnalyze for TypeDef {
 
     type SyntaxItem = syntax::TypeDef;
 
-    fn from_syntax(node: syntax::TypeDef, parent_scope: SharedDefScope, symbols: &mut SymbolCollection) -> TypeDef {
-        let this_scope = parent_scope.sub(symbols.get(node.name.value).unwrap());
+    fn from_syntax(node: syntax::TypeDef, sess: FromSession) -> TypeDef {
+        let this_sess = sess.sub_with_symbol(node.name.value);
         TypeDef{
             name: node.name.value,
             fields: node.fields.into_iter().map(|field| {
                 TypeFieldDef{
                     name: field.name.value,
-                    typeuse: TypeUse::from_syntax(field.typeuse, this_scope.clone(), symbols),
+                    typeuse: TypeUse::from_syntax(field.typeuse, this_sess.clone_scope()),
                 }
             }).collect(),
-            this_scope: this_scope,
+            this_scope: this_sess.into_scope(),
         }
     }
 }
