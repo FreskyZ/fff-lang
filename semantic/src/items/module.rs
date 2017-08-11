@@ -60,3 +60,47 @@ impl Module {
         }
     }
 }
+
+#[cfg(test)] #[test]
+fn scope_management_integration() {
+    use std::fs::File;
+    use std::io::Read;
+    use syntax::TestInput;
+    use syntax::WithTestInput;
+    use syntax::SyntaxTree;
+    use super::super::Package;
+
+    let mut index_file = File::open("../tests/syntax/inter/index.txt").expect("cannot open index.txt");
+    let mut test_cases = String::new();
+    let _length = index_file.read_to_string(&mut test_cases).expect("cannot read index.txt");
+    for line in test_cases.lines() {
+        let src_path = "../tests/syntax/inter/".to_owned() + line + "_src.ff";
+        let mut src_file = File::open(&src_path).expect(&format!("cannot open src file {}", src_path));
+        let mut src = String::new();
+        let _length = src_file.read_to_string(&mut src).expect(&format!("cannot read src file {}", src_path));
+        let result_path = "../tests/syntax/inter/".to_owned() + line + "_result.txt";
+        let mut result_file = File::open(&result_path).expect(&format!("cannot open result file {}", result_path));
+        let mut expect = String::new();
+        let _length = result_file.read_to_string(&mut expect).expect(&format!("cannot read result file {}", result_path));
+        let _expect = expect.replace("\r\n", "\n");
+        
+        let (maybe_result, _, _, mut symbols) = syntax::Module::with_test_input(TestInput::new(&src));
+        let package = Package::new(SyntaxTree::new_modules(vec![maybe_result.unwrap()], vec![]), &mut symbols);
+        println!("{}", package.main_module.display());
+        // let result = TestInput::new(&src).apply::<syntax::Module, _>().expect_no_message();
+        // let actual = result.get_result().unwrap().format(Formatter::new(Some(result.get_source()), Some(result.get_symbols())));
+        // if actual != expect {
+        //     println!("case '{}' failed:", line);
+        //     for (linenum, (actual_line, expect_line)) in actual.split_terminator('\n').zip(expect.split_terminator('\n')).enumerate() {
+        //         if actual_line == expect_line {
+        //             println!("={}) {}", linenum, actual_line);
+        //         } else {
+        //             println!("x{}) {:?}", linenum, actual_line);
+        //             println!("x{}) {:?}", linenum, expect_line);
+        //         }
+        //     }
+        //     panic!("case failed")
+        // }
+    }
+    panic!("no reason");
+}
