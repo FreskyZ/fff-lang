@@ -15,6 +15,7 @@ pub use self::fn_def::FnParam;
 pub use self::type_def::TypeDef;
 pub use self::type_def::TypeFieldDef;
 
+use super::Formatter;
 use super::Statement;
 use super::FromSession;
 use super::SharedDefScope;
@@ -27,6 +28,13 @@ pub struct TypeUse {
     pub parent_scope: SharedDefScope,
 }
 impl ISemanticAnalyze for TypeUse {
+
+    fn format(&self, f: Formatter) -> String {
+        f.indent().header_text_or("type-use").space().sym(self.base_name).space().debug(&self.parent_scope)
+            .foreach(&self.params, |f, typeuse| f.endl()
+                .apply1_with_header_text("type-param", typeuse))
+            .finish()
+    }
     
     type SyntaxItem = syntax::TypeUse;
 
@@ -46,6 +54,10 @@ pub struct LabelDef {
 }
 impl ISemanticAnalyze for LabelDef {
 
+    fn format(&self, f: Formatter) -> String {
+        f.indent().header_text_or("label-def").space().sym(self.name).space().debug(&self.parent_scope).finish()
+    }
+
     type SyntaxItem = syntax::LabelDef;
 
     fn from_syntax(node: syntax::LabelDef, sess: FromSession) -> LabelDef {
@@ -62,6 +74,12 @@ pub struct Block {
     pub parent_scope: SharedDefScope,
 }
 impl ISemanticAnalyze for Block {
+
+    fn format(&self, f: Formatter) -> String {
+        f.indent().header_text_or("block").space().debug(&self.parent_scope)
+            .foreach(&self.items, |f, item| f.endl().apply1(item))
+            .finish()
+    }
 
     type SyntaxItem = syntax::Block;
     

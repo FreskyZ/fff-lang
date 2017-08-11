@@ -7,6 +7,7 @@ use syntax;
 
 use super::TypeUse;
 use super::Block;
+use super::super::Formatter;
 use super::super::FromSession;
 use super::super::SharedDefScope;
 use super::super::ISemanticAnalyze;
@@ -26,6 +27,22 @@ pub struct FnDef {
     pub this_scope: SharedDefScope,
 }
 impl ISemanticAnalyze for FnDef {
+
+    fn format(&self, f: Formatter) -> String {
+        let f = f.indent().header_text_or("fn-def").space().debug(&self.this_scope).endl()
+            .indent1().lit("fn-name").space().sym(self.name);
+        let mut f = match self.rettype { 
+            Some(ref ret_type) => f.endl().set_header_text("return-type").apply1(ret_type).unset_header_text(),
+            None => f.endl().indent1().lit("return-type-unit"),
+        };
+        if self.params.len() == 0 {
+            f = f.endl().indent1().lit("no-parameter");
+        }
+        for &FnParam{ ref typeuse, ref name } in &self.params {
+            f = f.endl().indent1().lit("parameter").space().sym(*name).endl().apply2(typeuse)
+        }
+        f.endl().set_header_text("body").apply1(&self.body).finish()
+    }
 
     type SyntaxItem = syntax::FnDef;
 

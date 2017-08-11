@@ -1,6 +1,7 @@
 ///! fff-lang
 ///!
 ///! semantic/format_helper
+///! almost formatter DSL, or, in functional concept, format combinator
 
 use std::fmt;
 
@@ -99,6 +100,41 @@ impl<'a, 'b> Formatter<'a, 'b> {
             source: self.source, symbols: self.symbols,
             header_text: self.header_text, prefix_text: self.prefix_text, buf: String::new(),
         }));
+        self
+    }
+
+    pub fn apply1_with_header_text<T: ISemanticAnalyze>(self, text: &'static str, item: &T) -> Self {
+        self.set_header_text(text).apply1(item).unset_header_text()
+    }
+    pub fn apply1_with_prefix_text<T: ISemanticAnalyze>(self, text: &'static str, item: &T) -> Self {
+        self.set_prefix_text(text).apply1(item).unset_prefix_text()
+    }
+    pub fn apply2_with_header_text<T: ISemanticAnalyze>(self, text: &'static str, item: &T) -> Self {
+        self.set_header_text(text).apply2(item).unset_header_text()
+    }
+    pub fn apply2_with_prefix_text<T: ISemanticAnalyze>(self, text: &'static str, item: &T) -> Self {
+        self.set_prefix_text(text).apply2(item).unset_prefix_text()
+    }
+
+    pub fn map_or_else<T, F1: FnOnce(Self, &T) -> Self, F2: FnOnce(Self) -> Self>(self, maybe: &Option<T>, f1: F1, f2: F2) -> Self {
+        match maybe.as_ref() { Some(t) => f1(self, t), None => f2(self) }
+    }
+
+    pub fn foreach<T, U: IntoIterator<Item = T>, F: FnMut(Self, T) -> Self>(mut self, items: U, mut f: F) -> Self {
+        for item in items {
+            self = f(self, item);
+        }
+        self
+    }
+    pub fn foreach_or_else<T, U: IntoIterator<Item = T>, F1: FnMut(Self, T) -> Self, F2: FnOnce(Self) -> Self>(mut self, items: U, mut f1: F1, f2: F2) -> Self {
+        let mut iterated = false;  // require for-else statement
+        for item in items {
+            self = f1(self, item);
+            iterated = true;
+        }
+        if !iterated {
+            self = f2(self);
+        }
         self
     }
 

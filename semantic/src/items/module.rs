@@ -22,11 +22,8 @@ pub struct Module {
 impl ISemanticAnalyze for Module {
 
     fn format(&self, f: Formatter) -> String {
-        let mut f = f.indent().header_text_or("module").lit("#").debug(&self.module_id).space().debug(&self.this_scope).endl();
-        for item in &self.items {
-            f = f.apply1(item);
-        }
-        f.finish()
+        f.indent().header_text_or("module").lit("#").debug(&self.module_id).space().debug(&self.this_scope)
+            .foreach(&self.items, |f, item| f.endl().apply1(item)).finish()
     }
 
     type SyntaxItem = syntax::Module;
@@ -71,7 +68,7 @@ fn scope_management_integration() {
     use syntax::SyntaxTree;
     use super::super::Package;
 
-    let mut index_file = File::open("../tests/syntax/inter/index.txt").expect("cannot open index.txt");
+    let mut index_file = File::open("../tests/syntax/inter/index-semantic-p1.txt").expect("cannot open index.txt");
     let mut test_cases = String::new();
     let _length = index_file.read_to_string(&mut test_cases).expect("cannot read index.txt");
     for line in test_cases.lines() {
@@ -88,8 +85,7 @@ fn scope_management_integration() {
         let (maybe_result, source, mut messages, mut symbols) = syntax::Module::with_test_input(TestInput::new(&src));
         let sources = make_sources![source];
         let package = Package::new(SyntaxTree::new_modules(vec![maybe_result.unwrap()], vec![]), &sources, &mut symbols, &mut messages);
-        println!("{:?}", package);
-        println!("{}", package.main_module.display());
+        println!("{}", package.main_module.format(Formatter::new(Some(sources.index(0).as_ref()), Some(&symbols))));
 
         // let result = TestInput::new(&src).apply::<syntax::Module, _>().expect_no_message();
         // let actual = result.get_result().unwrap().format(Formatter::new(Some(result.get_source()), Some(result.get_symbols())));
@@ -106,5 +102,4 @@ fn scope_management_integration() {
         //     panic!("case failed")
         // }
     }
-    panic!("no reason");
 }

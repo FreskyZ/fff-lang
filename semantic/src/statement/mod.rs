@@ -2,7 +2,6 @@
 ///!
 ///! semantic/statement
 
-use codemap::Span;
 use codemap::SymbolID;
 use lexical::Seperator;
 
@@ -26,10 +25,16 @@ use super::ISemanticAnalyze;
 pub struct BlockStatement {
     pub name: Option<LabelDef>,
     pub body: Block,
-    pub all_span: Span,
     pub this_scope: SharedDefScope,
 }
 impl ISemanticAnalyze for BlockStatement {
+
+    fn format(&self, f: Formatter) -> String {
+        f.indent().header_text_or("block-stmt").space().debug(&self.this_scope).endl()
+            .map_or_else(&self.name, |f, name| f.apply1_with_header_text("loop-name", name), |f| f.indent1().lit("no-loop-name"))
+            .apply1_with_header_text("body", &self.body)
+            .finish()
+    }
 
     type SyntaxItem = syntax::BlockStatement;
 
@@ -38,7 +43,6 @@ impl ISemanticAnalyze for BlockStatement {
         BlockStatement{
             name: node.name.map(|name| LabelDef::from_syntax(name, this_sess.clone_scope())),
             body: Block::from_syntax(node.body, sess.clone_scope()),
-            all_span: node.all_span,
             this_scope: this_sess.into_scope(),
         }
     }
@@ -50,6 +54,10 @@ pub struct SimpleExprStatement {
     pub this_scope: SharedDefScope,
 }
 impl ISemanticAnalyze for SimpleExprStatement {
+
+    fn format(&self, f: Formatter) -> String {
+        f.indent().header_text_or("expr-stmt simple").space().debug(&self.this_scope).endl().apply1(&self.expr).finish()
+    }
 
     type SyntaxItem = syntax::SimpleExprStatement;
 
@@ -70,6 +78,14 @@ pub struct AssignExprStatement {
     pub this_scope: SharedDefScope,
 }
 impl ISemanticAnalyze for AssignExprStatement {
+
+    fn format(&self, f: Formatter) -> String {
+        f.indent().header_text_or("expr-stmt assign").space().debug(&self.this_scope).endl()
+            .apply1_with_prefix_text("left-is", &self.left_expr).endl()
+            .indent1().lit("\"").debug(&self.assign_op).lit("\"").endl()
+            .apply1_with_prefix_text("right-is", &self.right_expr)
+            .finish()
+    }
 
     type SyntaxItem = syntax::AssignExprStatement;
 
@@ -93,6 +109,15 @@ pub struct ForStatement {
     pub this_scope: SharedDefScope,
 }
 impl ISemanticAnalyze for ForStatement {
+
+    fn format(&self, f: Formatter) -> String {
+        f.indent().header_text_or("for-stmt").space().debug(&self.this_scope).endl()
+            .map_or_else(&self.loop_name, |f, name| f.apply1_with_header_text("loop-name", name), |f| f.indent1().lit("no-loop-name")).endl()
+            .indent1().lit("iter-var").space().sym(self.iter_name).endl()
+            .apply1_with_prefix_text("iter-expr-is", &self.iter_expr).endl()
+            .apply1_with_header_text("body", &self.body)
+            .finish()
+    }
 
     type SyntaxItem = syntax::ForStatement;
 
@@ -133,6 +158,22 @@ pub struct IfStatement {
 }
 impl ISemanticAnalyze for IfStatement {
 
+    fn format(&self, f: Formatter) -> String {
+
+        f.indent().header_text_or("if-stmt").endl()
+            .indent1().lit("if-clause").space().debug(&self.if_clause.this_scope).endl()
+            .apply2_with_prefix_text("cond-expr-is", &self.if_clause.cond_expr).endl()
+            .apply2_with_header_text("body", &self.if_clause.body)
+            .foreach(&self.elseif_clauses, |f, &ElseIfClause{ ref cond_expr, ref body, ref this_scope }| f.endl()
+                .indent1().lit("else-if-clause").space().debug(this_scope).endl()
+                .apply2_with_prefix_text("cond-expr-is", cond_expr)
+                .apply2_with_header_text("body", body))
+            .map_or_else(&self.else_clause, |f, &ElseClause{ ref body, ref this_scope }| f.endl()
+                .indent1().lit("else-clause").space().debug(this_scope).endl()
+                .apply2_with_header_text("body", body), |f| f)
+            .finish()
+    }
+
     type SyntaxItem = syntax::IfStatement;
 
     fn from_syntax(node: syntax::IfStatement, sess: FromSession) -> IfStatement {
@@ -172,6 +213,12 @@ pub struct BreakStatement {
 }
 impl ISemanticAnalyze for BreakStatement {
 
+    fn format(&self, f: Formatter) -> String {
+        f.indent().header_text_or("break-stmt").space().debug(&self.parent_scope).endl()
+            .map_or_else(&self.target, |f, target| f.indent1().lit("to").space().lit("@").sym(*target), |f| f.indent1().lit("default-target"))
+            .finish()
+    }
+
     type SyntaxItem = syntax::BreakStatement;
 
     fn from_syntax(node: syntax::BreakStatement, sess: FromSession) -> BreakStatement {
@@ -188,6 +235,12 @@ pub struct ContinueStatement {
     pub parent_scope: SharedDefScope,
 }
 impl ISemanticAnalyze for ContinueStatement {
+
+    fn format(&self, f: Formatter) -> String {
+        f.indent().header_text_or("continue-stmt").space().debug(&self.parent_scope).endl()
+            .map_or_else(&self.target, |f, target| f.indent1().lit("to").space().lit("@").sym(*target), |f| f.indent1().lit("default-target"))
+            .finish()
+    }
 
     type SyntaxItem = syntax::ContinueStatement;
 
@@ -206,6 +259,13 @@ pub struct LoopStatement {
     pub this_scope: SharedDefScope,
 }
 impl ISemanticAnalyze for LoopStatement {
+
+    fn format(&self, f: Formatter) -> String {
+        f.indent().header_text_or("loop-stmt").space().debug(&self.this_scope).endl()
+            .map_or_else(&self.name, |f, name| f.apply1_with_header_text("loop-name", name), |f| f.indent1().lit("no-loop-name")).endl()
+            .apply1_with_header_text("body", &self.body)
+            .finish()
+    }
 
     type SyntaxItem = syntax::LoopStatement;
 
@@ -226,6 +286,12 @@ pub struct ReturnStatement {
 }
 impl ISemanticAnalyze for ReturnStatement {
 
+    fn format(&self, f: Formatter) -> String {
+        f.indent().header_text_or("return-stmt").space().debug(&self.parent_scope)
+            .map_or_else(&self.expr, |f, expr| f.endl().apply1_with_prefix_text("return-value-is", expr), |f| f.indent1().lit("return-unit"))
+            .finish()
+    }
+
     type SyntaxItem = syntax::ReturnStatement;
 
     fn from_syntax(node: syntax::ReturnStatement, sess: FromSession) -> ReturnStatement {
@@ -245,6 +311,14 @@ pub struct VarDecl {
     pub parent_scope: SharedDefScope,  // if var decl has scope, then it will define variable in its own scope, that's, yes, you understand it
 }
 impl ISemanticAnalyze for VarDecl {
+
+    fn format(&self, f: Formatter) -> String {
+        f.indent().header_text_or("var-decl").space().debug(&self.parent_scope).endl()
+            .indent1().lit(if self.is_const { "const" } else { "var" }).space().sym(self.name).endl()
+            .map_or_else(&self.typeuse, |f, typeuse| f.apply1_with_header_text("declared-as", typeuse), |f| f.indent1().lit("declared-as-auto-type")).endl()
+            .map_or_else(&self.init_expr, |f, expr| f.apply1_with_prefix_text("init-as", expr), |f| f.indent1().lit("no-init-expr"))
+            .finish()
+    }
 
     type SyntaxItem = syntax::VarDeclStatement;
 
@@ -267,6 +341,14 @@ pub struct WhileStatement {
     pub this_scope: SharedDefScope,
 }
 impl ISemanticAnalyze for WhileStatement {
+    
+    fn format(&self, f: Formatter) -> String {
+        f.indent().header_text_or("while-stmt").space().debug(&self.this_scope).endl()
+            .map_or_else(&self.name, |f, name| f.apply1_with_header_text("loop-name", name), |f| f.indent1().lit("no-loop-name")).endl()
+            .apply1_with_prefix_text("loop-expr-is", &self.loop_expr).endl()
+            .apply1_with_header_text("body", &self.body)
+            .finish()
+    }
 
     type SyntaxItem = syntax::WhileStatement;
 
@@ -310,16 +392,11 @@ pub struct ImportStatement {
 impl ISemanticAnalyze for ImportStatement {
 
     fn format(&self, f: Formatter) -> String {
-        let mut f = f.indent().header_text_or("import-stmt").space().debug(&self.parent_scope).endl()
-            .apply1(&self.name);
-        if let Some(ref alias) = self.alias {
-            f = f.endl().set_header_text("alias-as").apply1(alias).unset_header_text();
-        }
-        if let Some(ref module) = self.module {
-            f.endl().apply1(module).finish()
-        } else {
-            f.endl().indent1().lit("<no-module>").finish()
-        }
+        f.indent().header_text_or("import-stmt").space().debug(&self.parent_scope).endl()
+            .apply1(&self.name)
+            .map_or_else(&self.alias, |f, alias| f.endl().apply1_with_header_text("alias-as", alias), |f| f)
+            .map_or_else(&self.module, |f, module| f.endl().apply1(module), |f| f.endl().indent1().lit("<no-module>"))
+            .finish()
     }
 
     type SyntaxItem = syntax::ImportStatement;
@@ -352,6 +429,23 @@ pub enum Statement {
     Use(UseStatement),
 }
 impl ISemanticAnalyze for Statement {
+
+    fn format(&self, f: Formatter) -> String {
+        match self {
+            &Statement::VarDecl(ref var_decl) => var_decl.format(f),
+            &Statement::SimpleExpr(ref simple_expr) => simple_expr.format(f),
+            &Statement::AssignExpr(ref assign_expr) => assign_expr.format(f),
+            &Statement::For(ref for_stmt) => for_stmt.format(f),
+            &Statement::Loop(ref loop_stmt) => loop_stmt.format(f),
+            &Statement::If(ref if_stmt) => if_stmt.format(f),
+            &Statement::Break(ref break_stmt) => break_stmt.format(f),
+            &Statement::Continue(ref continue_stmt) => continue_stmt.format(f),
+            &Statement::Return(ref ret_stmt) => ret_stmt.format(f),
+            &Statement::While(ref while_stmt) => while_stmt.format(f),
+            &Statement::Block(ref block_stmt) => block_stmt.format(f),
+            _ => "<unknown_stmt>".to_owned(),
+        }
+    }
 
     type SyntaxItem = syntax::Statement;
 
@@ -398,6 +492,10 @@ impl ISemanticAnalyze for Item {
             &Item::Fn(ref fn_def) => fn_def.format(f),
             &Item::Block(ref block_stmt) => block_stmt.format(f),
             &Item::Import(ref import_stmt) => import_stmt.format(f),
+            &Item::VarDecl(ref var_decl) => var_decl.format(f),
+            &Item::SimpleExpr(ref simple_expr) => simple_expr.format(f),
+            &Item::AssignExpr(ref assign_expr) => assign_expr.format(f),
+            &Item::For(ref for_stmt) => for_stmt.format(f),
             _ => "<unknown-item>".to_owned(),
         }
     }
