@@ -125,6 +125,12 @@ pub struct Name {
 }
 impl ISemanticAnalyze for Name {
 
+    fn format(&self, f: Formatter) -> String {
+        f.indent().header_text_or("name").space().debug(&self.parent_scope)
+            .foreach(&self.segments, |f, segment| f.endl().apply1_with_header_text("segment", segment))
+            .finish()
+    }
+
     type SyntaxItem = syntax::Name;
 
     fn from_syntax(node: syntax::Name, sess: FromSession) -> Name {
@@ -238,6 +244,11 @@ pub struct TupleDef {
 }
 impl ISemanticAnalyze for TupleDef {
 
+    fn format(&self, f: Formatter) -> String {
+        f.indent().header_text_or("tuple-def").space().debug(&self.parent_scope)
+            .foreach(&self.items, |f, expr| f.endl().apply1(expr)).finish()
+    }
+
     type SyntaxItem = syntax::TupleDef;
 
     fn from_syntax(node: syntax::TupleDef, sess: FromSession) -> TupleDef {
@@ -255,6 +266,13 @@ pub struct UnaryExpr {
     pub parent_scope: SharedDefScope,
 }
 impl ISemanticAnalyze for UnaryExpr {
+
+    fn format(&self, f: Formatter) -> String {
+        f.indent().header_text_or("unary-expr").space().debug(&self.parent_scope).endl()
+            .indent1().lit("\"").debug(&self.operator).lit("\"").endl()
+            .apply1_with_prefix_text("prefix-is", self.base.as_ref())
+            .finish()
+    }
 
     type SyntaxItem = syntax::UnaryExpr;
 
@@ -299,7 +317,11 @@ impl ISemanticAnalyze for Expr {
             &Expr::Binary(ref binary) => binary.format(f),
             &Expr::IndexCall(ref index) => index.format(f),
             &Expr::Paren(ref paren) => paren.format(f),
-            _ => "<unknown-expr>".to_owned(),
+            &Expr::RangeFull(ref full) => full.format(f),
+            &Expr::RangeLeft(ref left) => left.format(f),
+            &Expr::RangeRight(ref right) => right.format(f),
+            &Expr::Tuple(ref tuple) => tuple.format(f),
+            &Expr::Unary(ref unary) => unary.format(f),
         }
     }
 

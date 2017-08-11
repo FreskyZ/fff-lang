@@ -371,6 +371,13 @@ pub struct UseStatement {
 }
 impl ISemanticAnalyze for UseStatement {
 
+    fn format(&self, f: Formatter) -> String {
+        f.indent().header_text_or("use-stmt").space().debug(&self.parent_scope).endl()
+            .apply1(&self.name)
+            .map_or_else(&self.alias, |f, alias| f.endl().apply1_with_header_text("alias-as", alias), |f| f)
+            .finish()
+    }
+
     type SyntaxItem = syntax::UseStatement;
 
     fn from_syntax(node: syntax::UseStatement, sess: FromSession) -> UseStatement {
@@ -496,6 +503,7 @@ impl ISemanticAnalyze for Item {
             &Item::SimpleExpr(ref simple_expr) => simple_expr.format(f),
             &Item::AssignExpr(ref assign_expr) => assign_expr.format(f),
             &Item::For(ref for_stmt) => for_stmt.format(f),
+            &Item::Use(ref use_stmt) => use_stmt.format(f),
             _ => "<unknown-item>".to_owned(),
         }
     }

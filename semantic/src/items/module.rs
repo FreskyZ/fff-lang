@@ -83,8 +83,9 @@ fn scope_management_integration() {
         let _expect = expect.replace("\r\n", "\n");
         
         let (maybe_result, source, mut messages, mut symbols) = syntax::Module::with_test_input(TestInput::new(&src));
+        let syntax_module = maybe_result.expect(&format!("failed to syntax parse, messages: {:?}", messages));
         let sources = make_sources![source];
-        let package = Package::new(SyntaxTree::new_modules(vec![maybe_result.unwrap()], vec![]), &sources, &mut symbols, &mut messages);
+        let package = Package::new(SyntaxTree::new_modules(vec![syntax_module], vec![]), &sources, &mut symbols, &mut messages);
         println!("{}", package.main_module.format(Formatter::new(Some(sources.index(0).as_ref()), Some(&symbols))));
 
         // let result = TestInput::new(&src).apply::<syntax::Module, _>().expect_no_message();
@@ -102,4 +103,5 @@ fn scope_management_integration() {
         //     panic!("case failed")
         // }
     }
+    // panic!("no reason")
 }
