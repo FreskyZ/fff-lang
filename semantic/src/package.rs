@@ -128,4 +128,5 @@ fn package_buildup_import_map() {
     }
 }
 
-// TODO: add scope name, where global is package name, fn main is package name + "::main", fn main for stmt is package name + "::main::<for-stmt<5:5-10:5>>"
+// TODO: Add source to from_syntax ...
+// let's use FromSession

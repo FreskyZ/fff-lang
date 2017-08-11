@@ -4,13 +4,14 @@
 
 use std::fmt;
 
+use codemap::SourceCode;
 use codemap::SymbolCollection;
 
 use super::SharedDefScope;
 use super::Formatter;
 
 // public because it used in public API
-// allowed because this name is designed to used like `format!("{}", node.display())`
+// allowed because this name is designed to used not directly, only like `format!("{}", node.display())`
 #[allow(dead_code)]
 pub struct Wrapper<'a, T: 'a>(&'a T);
 impl<'a, T: ISemanticAnalyze> fmt::Display for Wrapper<'a, T> {
@@ -18,6 +19,12 @@ impl<'a, T: ISemanticAnalyze> fmt::Display for Wrapper<'a, T> {
         write!(f, "\n{}", self.0.format(Formatter::empty()))
     }
 }
+
+// pub struct FromSession {
+//     scope: SharedDefScope,
+//     source: &'a SourceCode,
+//     symbols: &'a SymbolCollection;
+// }
 
 pub trait ISemanticAnalyze {
 
