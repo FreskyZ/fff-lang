@@ -4,6 +4,8 @@
 
 use std::fmt;
 
+use codemap::Span;
+use codemap::SymbolID;
 use codemap::SourceCode;
 use codemap::SymbolCollection;
 
@@ -20,11 +22,33 @@ impl<'a, T: ISemanticAnalyze> fmt::Display for Wrapper<'a, T> {
     }
 }
 
-// pub struct FromSession {
-//     scope: SharedDefScope,
-//     source: &'a SourceCode,
-//     symbols: &'a SymbolCollection;
-// }
+pub struct FromSession<'a, 'b> {
+    scope: SharedDefScope,
+    source: &'a SourceCode,
+    symbols: &'b SymbolCollection,
+}
+impl<'a, 'b> FromSession<'a, 'b> {
+
+    pub fn new(scope: SharedDefScope, source: &'a SourceCode, symbols: &'b SymbolCollection) -> Self {
+        FromSession{ scope, source, symbols }
+    }
+    pub fn clone_scope(&self) -> Self {
+        FromSession{ scope: self.scope.clone(), source: self.source, symbols: self.symbols }
+    }
+
+    /// Create sub scope with id for name, 
+    /// May panic on invalid ID
+    pub fn sub_with_symbol(&self, id: SymbolID) -> Self {
+        FromSession{ scope: self.scope.sub(self.symbols.get(id).unwrap()), source: self.source, symbols: self.symbols }
+    } 
+    /// Create sub scope with not unique name like 'if', 'for', etc.
+    /// which need adding span information to make unique
+    pub fn sub_with_span(&self, name: &str, span: Span) -> Self {
+        FromSession{ scope: self.scope.sub(format!("<{}{}>", name, span.format(Some(self.source)))), source: self.source, symbols: self.symbols }
+    }
+
+    pub fn into_scope(self) -> SharedDefScope { self.scope }
+}
 
 pub trait ISemanticAnalyze {
 
@@ -37,7 +61,7 @@ pub trait ISemanticAnalyze {
     // phase 1: direct map from syntax node
     type SyntaxItem;
     // @param symbols: because when contructing scope tree, many nodes (type, fn) need to convert id to string as its path segment, mut ref for future use
-    fn from_syntax(item: Self::SyntaxItem, parent_scope: SharedDefScope, symbols: &mut SymbolCollection) -> Self;
+    fn from_syntax(item: Self::SyntaxItem, sess: FromSession) -> Self;
 
     // TODO: an empty implement for compatibility temporarily, remove it in future
     fn collect_type_declarations(&mut self) { }

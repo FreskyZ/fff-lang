@@ -197,3 +197,154 @@ error: unexpected token: `"import d;"`
    |
 50 |         syntax::Module::new(Rc::new(SourceCode::pretend_with_file_name(3, vec!["a", "c", "module.ff"]. "import d;")), vec![   // c
    |                                                                                                        ^^^^^^^^^^^
+   Compiling semantic v0.1.3 (file:///C:/Users/fhan018/Any/Repos/fff-lang/semantic)
+error: expected one of `!`, `(`, `+`, `::`, `;`, `<`, or `=`, found `.`
+   --> src\statement\mod.rs:148:33
+    |
+148 |         let elseif_clauses: node.elseif_clauses.into_iter().map(|elseif|
+    |                                 ^ expected one of 7 possible tokens here
+
+error: expected one of `!`, `(`, `+`, `::`, `<`, `=`, `const`, `default`, `extern`, `fn`, `pub`, `type`, `unsafe`, or `}`, found `.`
+   --> src\statement\mod.rs:148:33
+    |
+148 |         let elseif_clauses: node.elseif_clauses.into_iter().map(|elseif|
+    |                                 ^ expected one of 14 possible tokens here
+
+error: missing `fn`, `type`, or `const` for impl-item declaration
+   --> src\statement\mod.rs:149:94
+    |
+149 |               let elseif_clause_scope = parent_scope.sub_with_span("else-if", elseif.all_span);
+    |  ______________________________________________________________________________________________^
+150 | |             ElseIfClause{
+    | |____________^ missing `fn`, `type`, or `const`
+
+error: expected one of `const`, `default`, `extern`, `fn`, `pub`, `type`, `unsafe`, or `}`, found `)`
+   --> src\statement\mod.rs:155:9
+    |
+154 |             }
+    |              - expected one of 8 possible tokens here
+155 |         ).collect();
+    |         ^ unexpected token
+
+error: expected one of `const`, `default`, `extern`, `fn`, `pub`, `type`, `unsafe`, or `}`, found `let`
+   --> src\statement\mod.rs:157:9
+    |
+155 |         ).collect();
+    |                     - expected one of 8 possible tokens here
+156 |
+157 |         let else_clause = node.else_clause.map(|else_clause|
+    |         ^^^ unexpected token
+
+error: missing `fn`, `type`, or `const` for impl-item declaration
+   --> src\statement\mod.rs:158:94
+    |
+158 |               let else_clause_scope = parent_scope.sub_with_span("else", else_clause.all_span);
+    |  ______________________________________________________________________________________________^
+159 | |             ElseClause{
+    | |____________^ missing `fn`, `type`, or `const`
+
+error: expected one of `const`, `default`, `extern`, `fn`, `pub`, `type`, `unsafe`, or `}`, found `)`
+   --> src\statement\mod.rs:163:9
+    |
+162 |             }
+    |              - expected one of 8 possible tokens here
+163 |         );
+    |         ^ unexpected token
+
+error: missing `fn`, `type`, or `const` for impl-item declaration
+   --> src\statement\mod.rs:163:11
+    |
+163 |           );
+    |  ___________^
+164 | |
+165 | |         IfStatement{ if_clause, elseif_clauses, else_clause }
+    | |________^ missing `fn`, `type`, or `const`
+
+error: expected item, found `}`
+   --> src\statement\mod.rs:167:1
+    |
+167 | }
+    | ^
+
+    error[E0425]: cannot find value `module` in this scope
+  --> src\items\module.rs:56:67
+   |
+56 |                     FromSession::new_raw(self.this_scope.clone(), module.source.as_ref(), symbols).sub_with_symbol(import_stmt.name.value)
+   |                                                                   ^^^^^^ did you mean `modules`?
+
+error[E0425]: cannot find value `sources` in this scope
+  --> src\items\module.rs:58:71
+   |
+58 |                 imported_module.buildup_imports(import_maps, modules, sources, symbols);
+   |                                                                       ^^^^^^^ not found in this scope
+
+error[E0061]: this function takes 3 parameters but 4 parameters were supplied
+  --> src\items\module.rs:58:49
+   |
+46 | /     pub fn buildup_imports(&mut self, import_maps: &Vec<syntax::ImportMap>, modules: &mut Vec<syntax::Module>, symbols: &SymbolCollection) {
+47 | |
+48 | |         let module_id = self.module_id; // if use `self.module_id` in the for expr then rustc complains about mutably borrowed self in `&mut self.items`
+... hope non lexical lifetime solve this
+49 | |         for item in &mut self.items {
+...  |
+58 | |                 imported_module.buildup_imports(import_maps, modules, sources, symbols);
+   | |                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected 3 parameters
+...  |
+61 | |         }
+62 | |     }
+   | |_____- defined here
+
+error[E0599]: no method named `as_ref` found for type `messages::MessageCollection` in the current scope
+  --> src\items\module.rs:89:105
+   |
+89 |         let package = Package::new(SyntaxTree::new_modules(vec![maybe_result.unwrap()], vec![]), source.as_ref(), &symbols);
+   |                                                                                                         ^^^^^^
+
+error[E0308]: mismatched types
+  --> src\items\module.rs:89:115
+   |
+89 |         let package = Package::new(SyntaxTree::new_modules(vec![maybe_result.unwrap()], vec![]), source.as_ref(), &symbols);
+   |                                                                                                                   ^^^^^^^^ types differ in mutability
+   |
+   = note: expected type `&mut codemap::SymbolCollection`
+              found type `&codemap::SymbolCollection`
+
+error[E0061]: this function takes 3 parameters but 4 parameters were supplied
+  --> src\package.rs:28:37
+   |
+28 |           main_module.buildup_imports(&tree.import_maps, &mut tree.modules, sources, symbols);
+   |                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected 3 parameters
+   |
+  ::: src\items\module.rs
+   |
+46 | /     pub fn buildup_imports(&mut self, import_maps: &Vec<syntax::ImportMap>, modules: &mut Vec<syntax::Module>, symbols: &SymbolCollection) {
+47 | |
+48 | |         let module_id = self.module_id; // if use `self.module_id` in the for expr then rustc complains about mutably borrowed self in `&mut self.items`
+... hope non lexical lifetime solve this
+49 | |         for item in &mut self.items {
+...  |
+61 | |         }
+62 | |     }
+   | |_____- defined here
+
+error[E0061]: this function takes 3 parameters but 2 parameters were supplied
+  --> src\package.rs:43:32
+   |
+21 | /     pub fn new(tree: syntax::SyntaxTree, sources: &SourceMap, symbols: &mut SymbolCollection) -> Package {
+22 | |
+23 | |         let mut tree = tree; // do not mut in parameter because I want to leave this driver beautiful
+24 | |
+...  |
+32 | |         Package{ global_scope: global_sess.into_scope(), main_module }
+33 | |     }
+   | |_____- defined here
+...
+43 |       let package = Package::new(syntax::SyntaxTree::new_modules(vec![
+   |  ________________________________^
+44 | |         syntax::Module::new(Rc::new(SourceCode::pretend_with_file_name(0, vec!["main.ff"], "import a; import b;")), vec![
+45 | |             syntax::Item::Import(syntax::ImportStatement::new_default(make_span!(0, 1, 1), syntax::SimpleName::new(make_id!(1), make_span!(0, 2, 2)))),
+46 | |             syntax::Item::Import(syntax::ImportStatement::new_default(make_span!(0, 3, 3), syntax::SimpleName::new(make_id!(2), make_span!(0, 4, 4)))),
+...  |
+60 | |         syntax::ImportMap::new(3, make_id!(4), 4),
+61 | |     ]), &make_symbols!["a", "b", "c", "d"]);
+   | |__________________________________________^ expected 3 parameters

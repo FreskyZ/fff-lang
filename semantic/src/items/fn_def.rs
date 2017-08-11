@@ -3,13 +3,13 @@
 ///! semantic/fn_def
 
 use codemap::SymbolID;
-use codemap::SymbolCollection;
 use syntax;
 
 use super::TypeUse;
 use super::Block;
-use super::super::ISemanticAnalyze;
+use super::super::FromSession;
 use super::super::SharedDefScope;
+use super::super::ISemanticAnalyze;
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct FnParam {
@@ -29,19 +29,19 @@ impl ISemanticAnalyze for FnDef {
 
     type SyntaxItem = syntax::FnDef;
 
-    fn from_syntax(node: syntax::FnDef, parent_scope: SharedDefScope, symbols: &mut SymbolCollection) -> FnDef {
-        let this_scope = parent_scope.sub(symbols.get(node.name).unwrap());
+    fn from_syntax(node: syntax::FnDef, sess: FromSession) -> FnDef {
+        let this_sess = sess.sub_with_symbol(node.name);
         FnDef{
             name: node.name,
             params: node.params.into_iter().map(|param| {
                 FnParam{
                     name: param.name,
-                    typeuse: TypeUse::from_syntax(param.decltype, this_scope.clone(), symbols),
+                    typeuse: TypeUse::from_syntax(param.decltype, this_sess.clone_scope()),
                 }
             }).collect(),
-            rettype: node.ret_type.map(|ty| TypeUse::from_syntax(ty, this_scope.clone(), symbols)),
-            body: Block::from_syntax(node.body, this_scope.clone(), symbols),
-            this_scope: this_scope,
+            rettype: node.ret_type.map(|ty| TypeUse::from_syntax(ty, this_sess.clone_scope())),
+            body: Block::from_syntax(node.body, this_sess.clone_scope()),
+            this_scope: this_sess.into_scope(),
         }
     }
 }

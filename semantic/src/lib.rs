@@ -2,10 +2,9 @@
 ///!
 ///! semantic, semantic analyze
 
-#[cfg(test)] #[macro_use] extern crate util;      // difference is util is referenced only in test
+#[cfg(test)] #[macro_use] extern crate util;       // difference is util is referenced only in test
 #[cfg_attr(test, macro_use)] extern crate codemap;
-// #[macro_use] extern crate messages as message;
-// #[macro_use] extern crate util;
+#[cfg_attr(test, macro_use)] extern crate messages as message;
 extern crate lexical;
 extern crate syntax;
 
@@ -59,4 +58,5 @@ pub use self::package::Package;
 
 use self::def_scope::SharedDefScope;
 use self::format_helper::Formatter;
+use self::analyze_helper::FromSession;
 use self::analyze_helper::ISemanticAnalyze;
