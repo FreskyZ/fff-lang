@@ -56,7 +56,7 @@ pub trait ISemanticAnalyze {
     fn display<'a>(&'a self) -> Wrapper<'a, Self> where Self: Sized { Wrapper(self) }
     // format, should be implemented
     // TODO: legacy remove implementation
-    fn format(&self, f: Formatter) -> String { let _f = f; "<unknown>".to_owned() }
+    fn format(&self, f: Formatter) -> String;
 
     // phase 1: direct map from syntax node
     type SyntaxItem;

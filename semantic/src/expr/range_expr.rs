@@ -15,6 +15,10 @@ pub struct RangeFullExpr;
 
 impl ISemanticAnalyze for RangeFullExpr {
 
+    fn format(&self, f: Formatter) -> String {
+        f.indent().header_text_or("range-full").finish()
+    }
+
     type SyntaxItem = syntax::RangeFullExpr;
 
     fn from_syntax(_node: syntax::RangeFullExpr, _sess: FromSession) -> RangeFullExpr {
@@ -28,6 +32,12 @@ pub struct RangeLeftExpr {
     pub parent_scope: SharedDefScope,
 }
 impl ISemanticAnalyze for RangeLeftExpr {
+
+    fn format(&self, f: Formatter) -> String {
+        f.indent().header_text_or("range-left").space().debug(&self.parent_scope).endl()
+            .apply1(self.expr.as_ref())
+            .finish()
+    }
 
     type SyntaxItem = syntax::RangeLeftExpr;
 
@@ -45,6 +55,12 @@ pub struct RangeRightExpr {
     pub parent_scope: SharedDefScope,
 }
 impl ISemanticAnalyze for RangeRightExpr {
+
+    fn format(&self, f: Formatter) -> String {
+        f.indent().header_text_or("range-right").space().debug(&self.parent_scope).endl()
+            .apply1(self.expr.as_ref())
+            .finish()
+    }
 
     type SyntaxItem = syntax::RangeRightExpr;
 

@@ -9,6 +9,7 @@ use codemap::SymbolID;
 use syntax;
 
 use super::TypeUse;
+use super::super::Formatter;
 use super::super::FromSession;
 use super::super::SharedDefScope;
 use super::super::ISemanticAnalyze;
@@ -26,6 +27,16 @@ pub struct TypeDef {
     pub this_scope: SharedDefScope,
 }
 impl ISemanticAnalyze for TypeDef {
+
+    fn format(&self, f: Formatter) -> String {
+        
+        f.indent().header_text_or("type-def").space().debug(&self.this_scope).endl()
+            .indent1().lit("name").space().sym(self.name)
+            .foreach(&self.fields, |f, &TypeFieldDef{ ref name, ref typeuse }| f.endl()
+                .indent1().lit("field").space().sym(*name).endl()
+                .apply2_with_header_text("as-type", typeuse))
+            .finish()
+    }
 
     type SyntaxItem = syntax::TypeDef;
 
