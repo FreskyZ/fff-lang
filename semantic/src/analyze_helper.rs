@@ -22,6 +22,10 @@ impl<'a, T: ISemanticAnalyze> fmt::Display for Wrapper<'a, T> {
     }
 }
 
+/// Parameter for `ISyntaxAnalyze::from_syntax`
+///
+/// stores ref to symbols, to format namable scope like fn and type, 
+/// stores ref to source code, to format unnamable scope with span like for and if
 pub struct FromSession<'a, 'b> {
     scope: SharedDefScope,
     source: &'a SourceCode,
@@ -55,12 +59,10 @@ pub trait ISemanticAnalyze {
     // Display, which is actually Debug but I don't like `fn debug() -> String`, should not be implemented
     fn display<'a>(&'a self) -> Wrapper<'a, Self> where Self: Sized { Wrapper(self) }
     // format, should be implemented
-    // TODO: legacy remove implementation
     fn format(&self, f: Formatter) -> String;
 
     // phase 1: direct map from syntax node
     type SyntaxItem;
-    // @param symbols: because when contructing scope tree, many nodes (type, fn) need to convert id to string as its path segment, mut ref for future use
     fn from_syntax(item: Self::SyntaxItem, sess: FromSession) -> Self;
 
     // TODO: an empty implement for compatibility temporarily, remove it in future
