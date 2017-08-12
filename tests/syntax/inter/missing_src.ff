@@ -12,3 +12,23 @@ type string {
     cap: u64,
     data: u64,
 }
+
+if 1 != 1 {
+}
+loop {
+}
+while true {
+}
+
+fn main() {
+    type source {
+        id: u32,
+        src: string,
+    }
+
+    fn some_inner(a: i32) -> i32 {
+        return 2 * a;
+    } 
+
+    return some_inner(read_i32());
+}

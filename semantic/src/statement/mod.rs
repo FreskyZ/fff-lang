@@ -450,7 +450,9 @@ impl ISemanticAnalyze for Statement {
             &Statement::Return(ref ret_stmt) => ret_stmt.format(f),
             &Statement::While(ref while_stmt) => while_stmt.format(f),
             &Statement::Block(ref block_stmt) => block_stmt.format(f),
-            _ => "<unknown_stmt>".to_owned(),
+            &Statement::Type(ref type_def) => type_def.format(f),
+            &Statement::Fn(ref fn_def) => fn_def.format(f),
+            &Statement::Use(ref use_def) => use_def.format(f),
         }
     }
 
@@ -504,7 +506,9 @@ impl ISemanticAnalyze for Item {
             &Item::AssignExpr(ref assign_expr) => assign_expr.format(f),
             &Item::For(ref for_stmt) => for_stmt.format(f),
             &Item::Use(ref use_stmt) => use_stmt.format(f),
-            _ => "<unknown-item>".to_owned(),
+            &Item::If(ref if_stmt) => if_stmt.format(f),
+            &Item::Loop(ref loop_stmt) => loop_stmt.format(f),
+            &Item::While(ref while_stmt) => while_stmt.format(f),
         }
     }
 

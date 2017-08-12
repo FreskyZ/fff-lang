@@ -87,21 +87,6 @@ fn scope_management_integration() {
         let sources = make_sources![source];
         let package = Package::new(SyntaxTree::new_modules(vec![syntax_module], vec![]), &sources, &mut symbols, &mut messages);
         println!("{}", package.main_module.format(Formatter::new(Some(sources.index(0).as_ref()), Some(&symbols))));
-
-        // let result = TestInput::new(&src).apply::<syntax::Module, _>().expect_no_message();
-        // let actual = result.get_result().unwrap().format(Formatter::new(Some(result.get_source()), Some(result.get_symbols())));
-        // if actual != expect {
-        //     println!("case '{}' failed:", line);
-        //     for (linenum, (actual_line, expect_line)) in actual.split_terminator('\n').zip(expect.split_terminator('\n')).enumerate() {
-        //         if actual_line == expect_line {
-        //             println!("={}) {}", linenum, actual_line);
-        //         } else {
-        //             println!("x{}) {:?}", linenum, actual_line);
-        //             println!("x{}) {:?}", linenum, expect_line);
-        //         }
-        //     }
-        //     panic!("case failed")
-        // }
     }
-    // panic!("no reason")
+    panic!("no reason")
 }
