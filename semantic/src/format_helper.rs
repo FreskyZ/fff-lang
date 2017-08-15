@@ -11,6 +11,7 @@ use codemap::SourceCode;
 use codemap::SymbolCollection;
 
 use super::ISemanticAnalyze;
+use super::SharedDefScope;
 
 const INDENTION_FILLERS: [[&str; 16]; 3] = [ [
     "", "1 ", "2 | ", "3 | | ", "4 | | | ", "5 | | | | ", "6 | | | | | ", "7 | | | | | | ", "8 | | | | | | | ", "9 | | | | | | | | ", "10 | | | | | | | | | ",
@@ -101,6 +102,15 @@ impl<'a, 'b> Formatter<'a, 'b> {
             header_text: self.header_text, prefix_text: self.prefix_text, buf: String::new(),
         }));
         self
+    }
+
+    // helpers' helpers
+
+    pub fn this_scope1(self, scope: &SharedDefScope) -> Self {
+        self.indent1().lit("this-scope ").debug(scope)
+    }
+    pub fn parent_scope1(self, scope: &SharedDefScope) -> Self {
+        self.indent1().lit("parent-scope ").debug(scope)
     }
 
     pub fn apply1_with_header_text<T: ISemanticAnalyze>(self, text: &'static str, item: &T) -> Self {

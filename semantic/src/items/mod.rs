@@ -7,10 +7,8 @@ use syntax;
 
 mod fn_def;
 mod type_def;
-mod module;
 
 pub use self::fn_def::FnDef;
-pub use self::module::Module;
 pub use self::fn_def::FnParam;
 pub use self::type_def::TypeDef;
 pub use self::type_def::TypeFieldDef;
@@ -76,7 +74,8 @@ pub struct Block {
 impl ISemanticAnalyze for Block {
 
     fn format(&self, f: Formatter) -> String {
-        f.indent().header_text_or("block").space().debug(&self.parent_scope)
+        f.indent().header_text_or("block").endl()
+            .parent_scope1(&self.parent_scope)
             .foreach(&self.items, |f, item| f.endl().apply1(item))
             .finish()
     }

@@ -7,11 +7,11 @@ use syntax;
 use codemap::SourceMap;
 use codemap::SymbolCollection;
 
-use super::super::Item;
-use super::super::Formatter;
-use super::super::FromSession;
-use super::super::SharedDefScope;
-use super::super::ISemanticAnalyze;
+use super::Item;
+use super::Formatter;
+use super::FromSession;
+use super::SharedDefScope;
+use super::ISemanticAnalyze;
 
 #[cfg_attr(test, derive(Debug, Eq, PartialEq))]
 pub struct Module {
@@ -22,7 +22,8 @@ pub struct Module {
 impl ISemanticAnalyze for Module {
 
     fn format(&self, f: Formatter) -> String {
-        f.indent().header_text_or("module").lit("#").debug(&self.module_id).space().debug(&self.this_scope)
+        f.indent().header_text_or("module").lit("#").debug(&self.module_id).endl()
+            .this_scope1(&self.this_scope)
             .foreach(&self.items, |f, item| f.endl().apply1(item)).finish()
     }
 
@@ -36,6 +37,10 @@ impl ISemanticAnalyze for Module {
             items: node.items.into_iter().map(|item| Item::from_syntax(item, sess.clone_scope())).collect(),
             this_scope: sess.into_scope(),
         }
+    }
+
+    fn collect_type_declarations(&mut self) {
+
     }
 }
 impl Module {
@@ -66,7 +71,7 @@ fn scope_management_integration() {
     use syntax::TestInput;
     use syntax::WithTestInput;
     use syntax::SyntaxTree;
-    use super::super::Package;
+    use super::Package;
 
     let mut index_file = File::open("../tests/syntax/inter/index-semantic-p1.txt").expect("cannot open index.txt");
     let mut test_cases = String::new();
@@ -88,5 +93,5 @@ fn scope_management_integration() {
         let package = Package::new(SyntaxTree::new_modules(vec![syntax_module], vec![]), &sources, &mut symbols, &mut messages);
         println!("{}", package.main_module.format(Formatter::new(Some(sources.index(0).as_ref()), Some(&symbols))));
     }
-    panic!("no reason")
+    // panic!("no reason");
 }

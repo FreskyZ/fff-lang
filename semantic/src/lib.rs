@@ -14,6 +14,7 @@ mod analyze_helper;
 mod expr;
 mod items;
 mod statement;
+mod module;
 mod package;
 
 pub use self::items::Block;
@@ -23,7 +24,6 @@ pub use self::items::FnParam;
 pub use self::items::FnDef;
 pub use self::items::TypeFieldDef;
 pub use self::items::TypeDef;
-pub use self::items::Module;
 pub use self::expr::ArrayDef;
 pub use self::expr::BinaryExpr;
 pub use self::expr::FnCall;
@@ -54,6 +54,7 @@ pub use self::statement::IfStatement;
 pub use self::statement::Item;
 pub use self::statement::ImportStatement;
 pub use self::statement::UseStatement;
+pub use self::module::Module;
 pub use self::package::Package;
 
 use self::def_scope::SharedDefScope;

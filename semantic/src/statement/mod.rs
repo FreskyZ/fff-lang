@@ -313,7 +313,8 @@ pub struct VarDecl {
 impl ISemanticAnalyze for VarDecl {
 
     fn format(&self, f: Formatter) -> String {
-        f.indent().header_text_or("var-decl").space().debug(&self.parent_scope).endl()
+        f.indent().header_text_or("var-decl").space().endl()
+            .parent_scope1(&self.parent_scope).endl()
             .indent1().lit(if self.is_const { "const" } else { "var" }).space().sym(self.name).endl()
             .map_or_else(&self.typeuse, |f, typeuse| f.apply1_with_header_text("declared-as", typeuse), |f| f.indent1().lit("declared-as-auto-type")).endl()
             .map_or_else(&self.init_expr, |f, expr| f.apply1_with_prefix_text("init-as", expr), |f| f.indent1().lit("no-init-expr"))
@@ -450,13 +451,9 @@ impl ISemanticAnalyze for Statement {
             &Statement::Return(ref ret_stmt) => ret_stmt.format(f),
             &Statement::While(ref while_stmt) => while_stmt.format(f),
             &Statement::Block(ref block_stmt) => block_stmt.format(f),
-<<<<<<< HEAD
-            _ => "<unknown_stmt>".to_owned(),
-=======
             &Statement::Type(ref type_def) => type_def.format(f),
             &Statement::Fn(ref fn_def) => fn_def.format(f),
             &Statement::Use(ref use_def) => use_def.format(f),
->>>>>>> semantic_p1
         }
     }
 

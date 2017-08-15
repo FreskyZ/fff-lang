@@ -8,39 +8,21 @@ use lexical::Seperator;
 
 use syntax;
 
-mod range_expr;
+mod range;
+mod sugar;
 
 use super::Formatter;
 use super::FromSession;
 use super::SharedDefScope;
 use super::ISemanticAnalyze;
 
-pub use self::range_expr::RangeBothExpr;
-pub use self::range_expr::RangeFullExpr;
-pub use self::range_expr::RangeLeftExpr;
-pub use self::range_expr::RangeRightExpr;
-
-#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
-pub struct ArrayDef {
-    pub items: Vec<Expr>,
-    pub parent_scope: SharedDefScope,
-}
-impl ISemanticAnalyze for ArrayDef {
-
-    fn format(&self, f: Formatter) -> String {
-        f.indent().header_text_or("array-def").space().debug(&self.parent_scope)
-            .foreach(&self.items, |f, expr| f.endl().apply1(expr)).finish()
-    }
-
-    type SyntaxItem = syntax::ArrayDef;
-
-    fn from_syntax(node: syntax::ArrayDef, sess: FromSession) -> ArrayDef {
-        ArrayDef{
-            items: node.items.items.into_iter().map(|item| Expr::from_syntax(item, sess.clone_scope())).collect(),
-            parent_scope: sess.into_scope(),
-        }
-    }
-}
+pub use self::sugar::ArrayDef;
+pub use self::sugar::TupleDef;
+pub use self::sugar::IndexCall;
+pub use self::range::RangeBothExpr;
+pub use self::range::RangeFullExpr;
+pub use self::range::RangeLeftExpr;
+pub use self::range::RangeRightExpr;
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct BinaryExpr {
@@ -52,7 +34,8 @@ pub struct BinaryExpr {
 impl ISemanticAnalyze for BinaryExpr {
 
     fn format(&self, f: Formatter) -> String {
-        f.indent().header_text_or("binary-expr").space().debug(&self.parent_scope).endl()
+        f.indent().header_text_or("binary-expr").endl()
+            .parent_scope1(&self.parent_scope).endl()
             .apply1_with_prefix_text("left-is", self.left_expr.as_ref()).endl()
             .indent1().lit("\"").debug(&self.operator).lit("\"").endl()
             .apply1_with_prefix_text("right-is", self.right_expr.as_ref())
@@ -80,7 +63,8 @@ pub struct FnCall {
 impl ISemanticAnalyze for FnCall {
 
     fn format(&self, f: Formatter) -> String {
-        f.indent().header_text_or("fn-call").space().debug(&self.parent_scope).endl()
+        f.indent().header_text_or("fn-call").endl()
+            .parent_scope1(&self.parent_scope).endl()
             .apply1_with_prefix_text("base-is", self.base.as_ref())
             .foreach_or_else(&self.params, |f, expr| f.endl().apply1(expr), |f| f.endl().indent1().lit("no-argument"))
             .finish()
@@ -105,7 +89,8 @@ pub struct SimpleName {
 impl ISemanticAnalyze for SimpleName {
 
     fn format(&self, f: Formatter) -> String {
-        f.indent().header_text_or("simple-name").space().sym(self.value).space().debug(&self.parent_scope).finish()
+        f.indent().header_text_or("simple-name").space().sym(self.value).endl()
+            .parent_scope1(&self.parent_scope).finish()
     }
 
     type SyntaxItem = syntax::SimpleName;
@@ -126,7 +111,8 @@ pub struct Name {
 impl ISemanticAnalyze for Name {
 
     fn format(&self, f: Formatter) -> String {
-        f.indent().header_text_or("name").space().debug(&self.parent_scope)
+        f.indent().header_text_or("name").endl()
+            .parent_scope1(&self.parent_scope)
             .foreach(&self.segments, |f, segment| f.endl().apply1_with_header_text("segment", segment))
             .finish()
     }
@@ -139,32 +125,6 @@ impl ISemanticAnalyze for Name {
             parent_scope: sess.into_scope(),
         }
     } 
-}
-
-#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
-pub struct IndexCall {
-    pub base: Box<Expr>,
-    pub params: Vec<Expr>,
-    pub parent_scope: SharedDefScope,
-}
-impl ISemanticAnalyze for IndexCall {
-
-    fn format(&self, f: Formatter) -> String {
-        f.indent().header_text_or("fn-call").space().debug(&self.parent_scope).endl()
-            .apply1_with_prefix_text("base-is", self.base.as_ref())
-            .foreach_or_else(&self.params, |f, expr| f.endl().apply1(expr), |f| f.endl().indent1().lit("no-argument"))
-            .finish()
-    }
-
-    type SyntaxItem = syntax::IndexCallExpr;
-
-    fn from_syntax(node: syntax::IndexCallExpr, sess: FromSession) -> IndexCall {
-        IndexCall{
-            base: Box::new(Expr::from_syntax(syntax::Expr::unbox(node.base), sess.clone_scope())),
-            params: node.params.items.into_iter().map(|item| Expr::from_syntax(item, sess.clone_scope())).collect(),
-            parent_scope: sess.into_scope(),
-        }
-    }
 }
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
@@ -232,28 +192,6 @@ impl ISemanticAnalyze for ParenExpr {
     fn from_syntax(node: syntax::ParenExpr, sess: FromSession) -> ParenExpr {
         ParenExpr{
             expr: Box::new(Expr::from_syntax(syntax::Expr::unbox(node.expr), sess.clone_scope())),
-            parent_scope: sess.into_scope(),
-        }
-    }
-}
-
-#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
-pub struct TupleDef {
-    pub items: Vec<Expr>,
-    pub parent_scope: SharedDefScope,
-}
-impl ISemanticAnalyze for TupleDef {
-
-    fn format(&self, f: Formatter) -> String {
-        f.indent().header_text_or("tuple-def").space().debug(&self.parent_scope)
-            .foreach(&self.items, |f, expr| f.endl().apply1(expr)).finish()
-    }
-
-    type SyntaxItem = syntax::TupleDef;
-
-    fn from_syntax(node: syntax::TupleDef, sess: FromSession) -> TupleDef {
-        TupleDef{
-            items: node.items.items.into_iter().map(|item| Expr::from_syntax(item, sess.clone_scope())).collect(),
             parent_scope: sess.into_scope(),
         }
     }

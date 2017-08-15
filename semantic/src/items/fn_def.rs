@@ -29,19 +29,16 @@ pub struct FnDef {
 impl ISemanticAnalyze for FnDef {
 
     fn format(&self, f: Formatter) -> String {
-        let f = f.indent().header_text_or("fn-def").space().debug(&self.this_scope).endl()
-            .indent1().lit("fn-name").space().sym(self.name);
-        let mut f = match self.rettype { 
-            Some(ref ret_type) => f.endl().set_header_text("return-type").apply1(ret_type).unset_header_text(),
-            None => f.endl().indent1().lit("return-type-unit"),
-        };
-        if self.params.len() == 0 {
-            f = f.endl().indent1().lit("no-parameter");
-        }
-        for &FnParam{ ref typeuse, ref name } in &self.params {
-            f = f.endl().indent1().lit("parameter").space().sym(*name).endl().apply2(typeuse)
-        }
-        f.endl().set_header_text("body").apply1(&self.body).finish()
+        f.indent().header_text_or("fn-def").endl()
+            .this_scope1(&self.this_scope).endl()
+            .indent1().lit("fn-name").space().sym(self.name).endl()
+            .map_or_else(&self.rettype, |f, typeuse| f.apply1_with_header_text("return-type", typeuse), |f| f.indent1().lit("return-type-unit"))
+            .foreach_or_else(&self.params, |f, &FnParam{ ref typeuse, ref name }| f.endl()
+                .indent1().lit("parameter").space().sym(*name).endl()
+                .apply2(typeuse), |f| f.endl().indent1().lit("no-paramater"))
+            .endl()
+            .apply1_with_header_text("body", &self.body)
+            .finish()
     }
 
     type SyntaxItem = syntax::FnDef;
