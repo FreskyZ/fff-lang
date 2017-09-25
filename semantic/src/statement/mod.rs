@@ -15,6 +15,7 @@ use super::Module;
 use super::TypeUse;
 use super::TypeDef;
 use super::LabelDef;
+use super::ScopeType;
 use super::Formatter;
 use super::SimpleName;
 use super::FromSession;
@@ -39,7 +40,7 @@ impl ISemanticAnalyze for BlockStatement {
     type SyntaxItem = syntax::BlockStatement;
 
     fn from_syntax(node: syntax::BlockStatement, sess: FromSession) -> BlockStatement {
-        let this_sess = sess.sub_with_span("block", node.all_span);
+        let this_sess = sess.sub_with_span("block", node.all_span, ScopeType::Statement);
         BlockStatement{
             name: node.name.map(|name| LabelDef::from_syntax(name, this_sess.clone_scope())),
             body: Block::from_syntax(node.body, sess.clone_scope()),
@@ -62,7 +63,7 @@ impl ISemanticAnalyze for SimpleExprStatement {
     type SyntaxItem = syntax::SimpleExprStatement;
 
     fn from_syntax(node: syntax::SimpleExprStatement, sess: FromSession) -> SimpleExprStatement {
-        let this_sess = sess.sub_with_span("expr", node.all_span);
+        let this_sess = sess.sub_with_span("expr", node.all_span, ScopeType::Statement);
         SimpleExprStatement{
             expr: Expr::from_syntax(node.expr, this_sess.clone_scope()),
             this_scope: this_sess.into_scope(),
@@ -90,7 +91,7 @@ impl ISemanticAnalyze for AssignExprStatement {
     type SyntaxItem = syntax::AssignExprStatement;
 
     fn from_syntax(node: syntax::AssignExprStatement, sess: FromSession) -> AssignExprStatement {
-        let this_sess = sess.sub_with_span("expr", node.all_span);
+        let this_sess = sess.sub_with_span("expr", node.all_span, ScopeType::Statement);
         AssignExprStatement{
             left_expr: Expr::from_syntax(node.left_expr, this_sess.clone_scope()),
             right_expr: Expr::from_syntax(node.right_expr, this_sess.clone_scope()),
@@ -122,7 +123,7 @@ impl ISemanticAnalyze for ForStatement {
     type SyntaxItem = syntax::ForStatement;
 
     fn from_syntax(node: syntax::ForStatement, sess: FromSession) -> ForStatement {
-        let this_sess = sess.sub_with_span("for", node.all_span);
+        let this_sess = sess.sub_with_span("for", node.all_span, ScopeType::Statement);
         ForStatement{
             loop_name: node.loop_name.map(|name| LabelDef::from_syntax(name, this_sess.clone_scope())),
             iter_name: node.iter_name,
@@ -178,7 +179,7 @@ impl ISemanticAnalyze for IfStatement {
 
     fn from_syntax(node: syntax::IfStatement, sess: FromSession) -> IfStatement {
 
-        let if_clause_sess = sess.sub_with_span("if", node.if_clause.all_span);
+        let if_clause_sess = sess.sub_with_span("if", node.if_clause.all_span, ScopeType::Statement);
         let if_clause = IfClause{ 
             cond_expr: Expr::from_syntax(node.if_clause.cond_expr, if_clause_sess.clone_scope()),
             body: Block::from_syntax(node.if_clause.body, if_clause_sess.clone_scope()),
@@ -186,7 +187,7 @@ impl ISemanticAnalyze for IfStatement {
         };
 
         let elseif_clauses = node.elseif_clauses.into_iter().map(|elseif| {
-            let elseif_clause_sess = sess.sub_with_span("else-if", elseif.all_span);
+            let elseif_clause_sess = sess.sub_with_span("else-if", elseif.all_span, ScopeType::Statement);
             ElseIfClause{
                 cond_expr: Expr::from_syntax(elseif.cond_expr, elseif_clause_sess.clone_scope()),
                 body: Block::from_syntax(elseif.body, elseif_clause_sess.clone_scope()),
@@ -195,7 +196,7 @@ impl ISemanticAnalyze for IfStatement {
         }).collect();
 
         let else_clause = node.else_clause.map(|else_clause| {
-            let else_clause_sess = sess.sub_with_span("else", else_clause.all_span);
+            let else_clause_sess = sess.sub_with_span("else", else_clause.all_span, ScopeType::Statement);
             ElseClause{
                 body: Block::from_syntax(else_clause.body, else_clause_sess.clone_scope()),
                 this_scope: else_clause_sess.into_scope(),
@@ -270,7 +271,7 @@ impl ISemanticAnalyze for LoopStatement {
     type SyntaxItem = syntax::LoopStatement;
 
     fn from_syntax(node: syntax::LoopStatement, sess: FromSession) -> LoopStatement {
-        let this_sess = sess.sub_with_span("loop", node.all_span);
+        let this_sess = sess.sub_with_span("loop", node.all_span, ScopeType::Statement);
         LoopStatement{
             name: node.name.map(|name| LabelDef::from_syntax(name, this_sess.clone_scope())),
             body: Block::from_syntax(node.body, this_sess.clone_scope()),
@@ -354,7 +355,7 @@ impl ISemanticAnalyze for WhileStatement {
     type SyntaxItem = syntax::WhileStatement;
 
     fn from_syntax(node: syntax::WhileStatement, sess: FromSession) -> WhileStatement {
-        let this_sess = sess.sub_with_span("while", node.all_span);
+        let this_sess = sess.sub_with_span("while", node.all_span, ScopeType::Statement);
         WhileStatement{
             name: node.name.map(|name| LabelDef::from_syntax(name, this_sess.clone_scope())),
             loop_expr: Expr::from_syntax(node.loop_expr, this_sess.clone_scope()),

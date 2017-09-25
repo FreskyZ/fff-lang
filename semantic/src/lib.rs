@@ -17,47 +17,15 @@ mod statement;
 mod module;
 mod package;
 
-pub use self::items::Block;
-pub use self::items::TypeUse;
-pub use self::items::LabelDef;
-pub use self::items::FnParam;
-pub use self::items::FnDef;
-pub use self::items::TypeFieldDef;
-pub use self::items::TypeDef;
-pub use self::expr::ArrayDef;
-pub use self::expr::BinaryExpr;
-pub use self::expr::FnCall;
-pub use self::expr::IndexCall;
-pub use self::expr::LitExpr;
-pub use self::expr::MemberAccess;
-pub use self::expr::ParenExpr;
-pub use self::expr::TupleDef;
-pub use self::expr::UnaryExpr;
-pub use self::expr::Expr;
-pub use self::expr::Name;
-pub use self::expr::SimpleName;
-pub use self::statement::Statement;
-pub use self::statement::BlockStatement;
-pub use self::statement::VarDecl;
-pub use self::statement::ReturnStatement;
-pub use self::statement::BreakStatement;
-pub use self::statement::ContinueStatement;
-pub use self::statement::SimpleExprStatement;
-pub use self::statement::AssignExprStatement;
-pub use self::statement::LoopStatement;
-pub use self::statement::WhileStatement;
-pub use self::statement::ForStatement;
-pub use self::statement::IfClause;
-pub use self::statement::ElseIfClause;
-pub use self::statement::ElseClause;
-pub use self::statement::IfStatement;
-pub use self::statement::Item;
-pub use self::statement::ImportStatement;
-pub use self::statement::UseStatement;
 pub use self::module::Module;
 pub use self::package::Package;
+pub use self::items::{ Block, TypeUse, LabelDef, FnParam, FnDef, TypeFieldDef, TypeDef };
+pub use self::expr::{ ArrayDef, BinaryExpr, FnCall, IndexCall, LitExpr, MemberAccess, 
+    ParenExpr, TupleDef, UnaryExpr, Expr, Name, SimpleName };
+pub use self::statement::{ Statement, BlockStatement, VarDecl, ReturnStatement, BreakStatement,
+    ContinueStatement, SimpleExprStatement, AssignExprStatement, LoopStatement, WhileStatement, 
+    ForStatement, IfClause, ElseIfClause, ElseClause, IfStatement, Item ,ImportStatement, UseStatement };
 
-use self::def_scope::SharedDefScope;
 use self::format_helper::Formatter;
-use self::analyze_helper::FromSession;
-use self::analyze_helper::ISemanticAnalyze;
+use self::def_scope::{ SharedDefScope, ScopeType };
+use self::analyze_helper::{ FromSession, ISemanticAnalyze };

@@ -8,6 +8,7 @@ use codemap::SourceMap;
 use codemap::SymbolCollection;
 
 use super::Item;
+use super::ScopeType;
 use super::Formatter;
 use super::FromSession;
 use super::SharedDefScope;
@@ -35,7 +36,7 @@ impl ISemanticAnalyze for Module {
         Module{
             module_id: node.source.get_file_id(),
             items: node.items.into_iter().map(|item| Item::from_syntax(item, sess.clone_scope())).collect(),
-            this_scope: sess.into_scope(),
+            this_scope: sess.into_scope(), // module's scope is exactly global scope
         }
     }
 
@@ -55,7 +56,7 @@ impl Module {
                     .next().unwrap().imported_file_id;  // valid syntax tree will make sure this next and this unwrap is success
                 let mut imported_module = Module::from_syntax(
                     modules[imported_file_id].move_out(), 
-                    FromSession::new(self.this_scope.clone(), sources.index(imported_file_id).as_ref(), symbols).sub_with_symbol(import_stmt.name.value)
+                    FromSession::new(self.this_scope.clone(), sources.index(imported_file_id).as_ref(), symbols).sub_with_symbol(import_stmt.name.value, ScopeType::Global)
                 );
                 imported_module.buildup_imports(import_maps, modules, sources, symbols);
                 import_stmt.module = Some(imported_module);

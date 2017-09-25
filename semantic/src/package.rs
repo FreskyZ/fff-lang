@@ -8,6 +8,7 @@ use message::MessageCollection;
 use syntax;
 
 use super::Module;
+use super::ScopeType;
 use super::FromSession;
 use super::SharedDefScope;
 use super::ISemanticAnalyze;
@@ -27,7 +28,7 @@ impl Package {
 
         // Phase 1: direct map, scope management, dependent tree
         let main_source = sources.index(0);
-        let global_sess = FromSession::new(SharedDefScope::new(""), main_source.as_ref(), symbols);
+        let global_sess = FromSession::new(SharedDefScope::new("", ScopeType::Global), main_source.as_ref(), symbols);
         let mut main_module = Module::from_syntax(tree.modules[0].move_out(), global_sess.clone_scope());
         main_module.buildup_imports(&tree.import_maps, &mut tree.modules, sources, symbols);
 
@@ -76,41 +77,40 @@ fn package_buildup_import_map() {
 
     let expect = Module{
         module_id: 0,
-        this_scope: SharedDefScope::new(""),
+        this_scope: SharedDefScope::new("", ScopeType::Global),
         items: vec![
             Item::Import(ImportStatement{
                 name: SimpleName{ 
                     value: make_id!(1),
-                    parent_scope: SharedDefScope::new(""),
+                    parent_scope: SharedDefScope::new("", ScopeType::Global),
                 },
                 alias: None,
-                parent_scope: SharedDefScope::new(""),
+                parent_scope: SharedDefScope::new("", ScopeType::Global),
                 module: Some(Module{
-
                     module_id: 1,
-                    this_scope: SharedDefScope::new("").sub("a"),
+                    this_scope: SharedDefScope::new("", ScopeType::Global).sub("a", ScopeType::Global),
                     items: vec![
                         Item::Import(ImportStatement{
                             name: SimpleName{ 
                                 value: make_id!(3),
-                                parent_scope: SharedDefScope::new("").sub("a"), 
+                                parent_scope: SharedDefScope::new("", ScopeType::Global).sub("a", ScopeType::Global), 
                             },
                             alias: None,
-                            parent_scope: SharedDefScope::new("").sub("a"),
+                            parent_scope: SharedDefScope::new("", ScopeType::Global).sub("a", ScopeType::Global),
                             module: Some(Module{
                                 module_id: 3,
-                                this_scope: SharedDefScope::new("").sub("a").sub("c"),
+                                this_scope: SharedDefScope::new("", ScopeType::Global).sub("a", ScopeType::Global).sub("c", ScopeType::Global),
                                 items: vec![
                                     Item::Import(ImportStatement{
                                         name: SimpleName{ 
                                             value: make_id!(4),
-                                            parent_scope: SharedDefScope::new("").sub("a").sub("c"),
+                                            parent_scope: SharedDefScope::new("", ScopeType::Global).sub("a", ScopeType::Global).sub("c", ScopeType::Global),
                                         },
-                                        parent_scope: SharedDefScope::new("").sub("a").sub("c"),
+                                        parent_scope: SharedDefScope::new("", ScopeType::Global).sub("a", ScopeType::Global).sub("c", ScopeType::Global),
                                         alias: None,
                                         module: Some(Module{
                                             module_id: 4,
-                                            this_scope: SharedDefScope::new("").sub("a").sub("c").sub("d"),
+                                            this_scope: SharedDefScope::new("", ScopeType::Global).sub("a", ScopeType::Global).sub("c", ScopeType::Global).sub("d", ScopeType::Global),
                                             items: vec![],
                                         }),
                                     }),
@@ -123,13 +123,13 @@ fn package_buildup_import_map() {
             Item::Import(ImportStatement{
                 name: SimpleName{ 
                     value: make_id!(2),
-                    parent_scope: SharedDefScope::new(""), 
+                    parent_scope: SharedDefScope::new("", ScopeType::Global), 
                 },
                 alias: None,
-                parent_scope: SharedDefScope::new(""),
+                parent_scope: SharedDefScope::new("", ScopeType::Global),
                 module: Some(Module{
                     module_id: 2,
-                    this_scope: SharedDefScope::new("").sub("b"),
+                    this_scope: SharedDefScope::new("", ScopeType::Global).sub("b", ScopeType::Global),
                     items: vec![],
                 }),
             }),

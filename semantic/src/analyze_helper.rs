@@ -9,6 +9,7 @@ use codemap::SymbolID;
 use codemap::SourceCode;
 use codemap::SymbolCollection;
 
+use super::ScopeType;
 use super::SharedDefScope;
 use super::Formatter;
 
@@ -42,13 +43,13 @@ impl<'a, 'b> FromSession<'a, 'b> {
 
     /// Create sub scope with id for name, 
     /// May panic on invalid ID
-    pub fn sub_with_symbol(&self, id: SymbolID) -> Self {
-        FromSession{ scope: self.scope.sub(self.symbols.get(id).unwrap()), source: self.source, symbols: self.symbols }
+    pub fn sub_with_symbol(&self, id: SymbolID, scope_type: ScopeType) -> Self {
+        FromSession{ scope: self.scope.sub(self.symbols.get(id).unwrap(), scope_type), source: self.source, symbols: self.symbols }
     } 
     /// Create sub scope with not unique name like 'if', 'for', etc.
     /// which need adding span information to make unique
-    pub fn sub_with_span(&self, name: &str, span: Span) -> Self {
-        FromSession{ scope: self.scope.sub(format!("<{}{}>", name, span.format(Some(self.source)))), source: self.source, symbols: self.symbols }
+    pub fn sub_with_span(&self, name: &str, span: Span, scope_type: ScopeType) -> Self {
+        FromSession{ scope: self.scope.sub(format!("<{}{}>", name, span.format(Some(self.source))), scope_type), source: self.source, symbols: self.symbols }
     }
 
     pub fn into_scope(self) -> SharedDefScope { self.scope }

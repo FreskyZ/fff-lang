@@ -9,6 +9,7 @@ use codemap::SymbolID;
 use syntax;
 
 use super::TypeUse;
+use super::super::ScopeType;
 use super::super::Formatter;
 use super::super::FromSession;
 use super::super::SharedDefScope;
@@ -41,7 +42,7 @@ impl ISemanticAnalyze for TypeDef {
     type SyntaxItem = syntax::TypeDef;
 
     fn from_syntax(node: syntax::TypeDef, sess: FromSession) -> TypeDef {
-        let this_sess = sess.sub_with_symbol(node.name.value);
+        let this_sess = sess.sub_with_symbol(node.name.value, ScopeType::TypeDef);
         TypeDef{
             name: node.name.value,
             fields: node.fields.into_iter().map(|field| {

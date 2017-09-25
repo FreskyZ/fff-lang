@@ -7,6 +7,7 @@ use syntax;
 
 use super::TypeUse;
 use super::Block;
+use super::super::ScopeType;
 use super::super::Formatter;
 use super::super::FromSession;
 use super::super::SharedDefScope;
@@ -44,7 +45,7 @@ impl ISemanticAnalyze for FnDef {
     type SyntaxItem = syntax::FnDef;
 
     fn from_syntax(node: syntax::FnDef, sess: FromSession) -> FnDef {
-        let this_sess = sess.sub_with_symbol(node.name);
+        let this_sess = sess.sub_with_symbol(node.name, ScopeType::FnDef);
         FnDef{
             name: node.name,
             params: node.params.into_iter().map(|param| {
