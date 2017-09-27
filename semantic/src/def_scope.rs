@@ -6,6 +6,10 @@ use std::fmt;
 use std::rc::Rc;
 use std::cell::RefCell;
 
+use codemap::SymbolID;
+
+use super::DefID;
+
 #[derive(Eq, PartialEq, Copy, Clone)]
 pub enum ScopeType {
     Global,
@@ -24,15 +28,17 @@ impl fmt::Debug for ScopeType {
     }
 }
 
-#[derive(Eq, PartialEq)]
+#[cfg_attr(test, derive(Eq, PartialEq))]
 struct DefScope {
     name: String,
     scope_type: ScopeType,
+    defs: Vec<DefID>,
     parent: Option<SharedDefScope>,
 }
 
-#[derive(Eq, PartialEq, Clone)]
-pub struct SharedDefScope(Rc<RefCell<DefScope>>);
+#[cfg_attr(test, derive(Eq, PartialEq))]
+#[derive(Clone)]
+pub struct SharedDefScope(Rc<RefCell<DefScope>>); // shared_ptr<mutable<DefScode>>
 
 impl fmt::Debug for SharedDefScope {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { 
@@ -42,7 +48,7 @@ impl fmt::Debug for SharedDefScope {
 impl SharedDefScope { // new
 
     fn _new(name: String, scope_type: ScopeType, parent: Option<SharedDefScope>) -> Self {  
-        SharedDefScope(Rc::new(RefCell::new(DefScope{ name, scope_type, parent })))
+        SharedDefScope(Rc::new(RefCell::new(DefScope{ name, scope_type, parent, defs: Vec::new() })))
     }
 
     pub fn new<T: Into<String>>(name: T, scope_type: ScopeType) -> Self { Self::_new(name.into(), scope_type, None) }
@@ -61,6 +67,13 @@ impl SharedDefScope { // get
             None => self.get_this_name().to_owned(),
             Some(ref parent_scope) => format!("{}::{}", parent_scope.get_full_name(), self.get_this_name()),
         }
+    }
+
+    pub fn push_definition(&mut self, defid: DefID) {
+        self.0.as_ref().borrow_mut().defs.push(defid);
+    }
+    pub fn search_definition(&self, _name: SymbolID) -> Option<usize> {
+        unimplemented!()
     }
 }
 
@@ -81,41 +94,3 @@ fn def_scope_usage() {
         SharedDefScope::new("", ScopeType::Global).sub("a", ScopeType::Global).sub("b", ScopeType::Global), 
         SharedDefScope::new("", ScopeType::Global).sub("a", ScopeType::Global).sub("b", ScopeType::Global));
 }
-// scope def here is very abstract
-//                
-//               some-root{ scope, ... }
-//              / (1)      / (2) \ (2)
-//             |          |       -------_______
-//            /          /                      \
-//         some-node{ scope, ... }, other-node{ scope, uses, defs ... }, ...
-//          | (1)       \ (2)
-//          |            \
-//        another-node{ scope, uses, defs, ... }, ...
-// 
-// (1) not very clear relationship
-// (2) outer and inner scope
-//
-// for each def in node, every name definition itself is a simple name, but their full name ('qualified name') is prefixed with their scope's name
-// for each use in node, just query this node's scope, either cloned from parent's scope or create this scope on its own
-// if not found, then name not declared error
-//     some things: 'forget to use' suggestion here
-//
-//
-// in concrete
-//
-// main module              // <scope>
-//     def a                // def a
-//     def b                // def b
-//     module c             // <scope c>
-//         def d            // def c::d
-//     modele e             // <scope e>
-//         def f            // def e::f
-//         def g            // def e::G
-//         model h          // <scope e::h>
-//             def i        // def e::h::i
-//             fn j                     // <scope e::h::j>, def e::h::j
-//                 block <<3>100-200>   // <scope e::h::j::<block<<3>100-200>>>
-//                     var k            // def e::h::j::<block<<3>100-200>>::k
-//                 for <<3>300-400>     // <scope e::h::j::<for<<3>300-400>>>
-//                     if <<3>320-360>  // <scope e::h::j::<for<<3>300-400>>::<if<<3>320-360>>>
-//                         var l        // def e::h::j::<for<<3>300-400>>::<if<<3>320-360>>::l

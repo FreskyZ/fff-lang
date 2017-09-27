@@ -2,6 +2,7 @@
 ///!
 ///! semantic/statement
 
+use codemap::Span;
 use codemap::SymbolID;
 use lexical::Seperator;
 
@@ -19,6 +20,7 @@ use super::ScopeType;
 use super::Formatter;
 use super::SimpleName;
 use super::FromSession;
+use super::CollectSession;
 use super::SharedDefScope;
 use super::ISemanticAnalyze;
 
@@ -307,6 +309,7 @@ impl ISemanticAnalyze for ReturnStatement {
 pub struct VarDecl {
     pub is_const: bool,
     pub name: SymbolID,
+    pub name_span: Span,
     pub typeuse: Option<TypeUse>,
     pub init_expr: Option<Expr>,
     pub parent_scope: SharedDefScope,  // if var decl has scope, then it will define variable in its own scope, that's, yes, you understand it
@@ -328,6 +331,7 @@ impl ISemanticAnalyze for VarDecl {
         VarDecl{
             is_const: node.is_const,
             name: node.name,
+            name_span: node.name_span,
             typeuse: node.typeuse.map(|ty| TypeUse::from_syntax(ty, sess.clone_scope())),
             init_expr: node.init_expr.map(|expr| Expr::from_syntax(expr, sess.clone_scope())),
             parent_scope: sess.into_scope(),
@@ -478,6 +482,25 @@ impl ISemanticAnalyze for Statement {
             syntax::Statement::Use(use_def) => Statement::Use(UseStatement::from_syntax(use_def, sess)),
         }
     }
+
+    fn collect_definitions(&self, sess: &mut CollectSession) {
+        match self {
+            &Statement::VarDecl(ref var_decl) => var_decl.collect_definitions(sess),
+            &Statement::SimpleExpr(ref simple_expr) => simple_expr.collect_definitions(sess),
+            &Statement::AssignExpr(ref assign_expr) => assign_expr.collect_definitions(sess),
+            &Statement::For(ref for_stmt) => for_stmt.collect_definitions(sess),
+            &Statement::Loop(ref loop_stmt) => loop_stmt.collect_definitions(sess),
+            &Statement::If(ref if_stmt) => if_stmt.collect_definitions(sess),
+            &Statement::Break(ref break_stmt) => break_stmt.collect_definitions(sess),
+            &Statement::Continue(ref continue_stmt) => continue_stmt.collect_definitions(sess),
+            &Statement::Return(ref ret_stmt) => ret_stmt.collect_definitions(sess),
+            &Statement::While(ref while_stmt) => while_stmt.collect_definitions(sess),
+            &Statement::Block(ref block_stmt) => block_stmt.collect_definitions(sess),
+            &Statement::Type(ref type_def) => type_def.collect_definitions(sess),
+            &Statement::Fn(ref fn_def) => fn_def.collect_definitions(sess),
+            &Statement::Use(ref use_def) => use_def.collect_definitions(sess),
+        }
+    }
 }
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
@@ -530,6 +553,23 @@ impl ISemanticAnalyze for Item {
             syntax::Item::While(while_stmt) => Item::While(WhileStatement::from_syntax(while_stmt, sess)),
             syntax::Item::Use(use_def) => Item::Use(UseStatement::from_syntax(use_def, sess)),
             syntax::Item::Import(import_def) => Item::Import(ImportStatement::from_syntax(import_def, sess)),
+        }
+    }
+
+    fn collect_definitions(&self, sess: &mut CollectSession) {
+        match self {
+            &Item::Type(ref type_def) => type_def.collect_definitions(sess),
+            &Item::Fn(ref fn_def) => fn_def.collect_definitions(sess),
+            &Item::Block(ref block_stmt) => block_stmt.collect_definitions(sess),
+            &Item::Import(ref import_stmt) => import_stmt.collect_definitions(sess),
+            &Item::VarDecl(ref var_decl) => var_decl.collect_definitions(sess),
+            &Item::SimpleExpr(ref simple_expr) => simple_expr.collect_definitions(sess),
+            &Item::AssignExpr(ref assign_expr) => assign_expr.collect_definitions(sess),
+            &Item::For(ref for_stmt) => for_stmt.collect_definitions(sess),
+            &Item::Use(ref use_stmt) => use_stmt.collect_definitions(sess),
+            &Item::If(ref if_stmt) => if_stmt.collect_definitions(sess),
+            &Item::Loop(ref loop_stmt) => loop_stmt.collect_definitions(sess),
+            &Item::While(ref while_stmt) => while_stmt.collect_definitions(sess),
         }
     }
 }

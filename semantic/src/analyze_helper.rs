@@ -9,9 +9,14 @@ use codemap::SymbolID;
 use codemap::SourceCode;
 use codemap::SymbolCollection;
 
-use super::ScopeType;
-use super::SharedDefScope;
+use message::Message;
+use message::MessageCollection;
+
 use super::Formatter;
+use super::ScopeType;
+use super::Definition;
+use super::SharedDefScope;
+use super::DefinitionCollection;
 
 // public because it used in public API
 // allowed because this name is designed to used not directly, only like `format!("{}", node.display())`
@@ -55,6 +60,37 @@ impl<'a, 'b> FromSession<'a, 'b> {
     pub fn into_scope(self) -> SharedDefScope { self.scope }
 }
 
+/// Parameter for `ISemanticAnalyze::collect_definitions`
+pub struct CollectSession<'a, 'b> {
+    node_path: Vec<usize>,
+    defs: &'a mut DefinitionCollection,
+    messages: &'b mut MessageCollection,
+}
+impl<'a, 'b> CollectSession<'a, 'b> {
+
+    pub fn new(defs: &'a mut DefinitionCollection, messages: &'b mut MessageCollection) -> Self {
+        CollectSession{ defs, messages, node_path: Vec::new() }
+    }
+
+    pub fn push_path(&mut self, child_id: usize) {
+        self.node_path.push(child_id);
+    }
+    pub fn pop_path(&mut self) {
+        let _ = self.node_path.pop();
+    }
+
+    pub fn push_def(&mut self, name: SymbolID, name_span: Span, mut scope: SharedDefScope) {
+        match self.defs.push(Definition::new(name, self.node_path.clone())) {
+            Some(defid) => scope.push_definition(defid),
+            None => self.messages.push(Message::new_by_str("name already defined", vec![(name_span, "")])),
+        }
+    }
+    #[allow(dead_code)] // TODO: temp remove
+    pub fn push_message(&mut self, message: Message) {
+        self.messages.push(message);
+    }
+}
+
 pub trait ISemanticAnalyze {
 
     // Display, which is actually Debug but I don't like `fn debug() -> String`, should not be implemented
@@ -67,5 +103,6 @@ pub trait ISemanticAnalyze {
     fn from_syntax(item: Self::SyntaxItem, sess: FromSession) -> Self;
 
     // TODO: an empty implement for compatibility temporarily, remove it in future
-    fn collect_type_declarations(&mut self) { }
+    // currently, only nodes with `this_scope` can add definition, which contains child node id in the node's child node list
+    fn collect_definitions(&self, sess: &mut CollectSession) { let _ = sess; }
 }

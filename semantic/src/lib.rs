@@ -9,6 +9,7 @@ extern crate lexical;
 extern crate syntax;
 
 #[macro_use] mod def_scope;
+mod definition;
 mod format_helper;
 mod analyze_helper;
 mod expr;
@@ -27,5 +28,6 @@ pub use self::statement::{ Statement, BlockStatement, VarDecl, ReturnStatement, 
     ForStatement, IfClause, ElseIfClause, ElseClause, IfStatement, Item ,ImportStatement, UseStatement };
 
 use self::format_helper::Formatter;
+use self::definition::{ Definition, DefinitionCollection, DefID };
 use self::def_scope::{ SharedDefScope, ScopeType };
-use self::analyze_helper::{ FromSession, ISemanticAnalyze };
+use self::analyze_helper::{ FromSession, CollectSession, ISemanticAnalyze };

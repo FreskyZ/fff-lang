@@ -10,13 +10,16 @@ use syntax;
 use super::Module;
 use super::ScopeType;
 use super::FromSession;
+use super::CollectSession;
 use super::SharedDefScope;
 use super::ISemanticAnalyze;
+use super::DefinitionCollection;
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct Package {
     pub main_module: Module,
     pub global_scope: SharedDefScope,
+    pub defs: DefinitionCollection,   // type and fn defs are stored in package scope because they are finally very global scope, variables do not live here
 }
 impl Package {
 
@@ -33,8 +36,13 @@ impl Package {
         main_module.buildup_imports(&tree.import_maps, &mut tree.modules, sources, symbols);
 
         // Phase 2: collect type declares, not definitions
+        let mut defs = DefinitionCollection::new(); { // because def is mutable borrowed in this block... when NLL can be stable?
+            let mut messages = MessageCollection::new();
+            let mut collect_sess = CollectSession::new(&mut defs, &mut messages);
+            main_module.collect_definitions(&mut collect_sess);
+        }
 
-        Package{ global_scope: global_sess.into_scope(), main_module }
+        Package{ main_module, defs, global_scope: global_sess.into_scope() }
     }
 }
 

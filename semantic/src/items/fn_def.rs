@@ -2,6 +2,7 @@
 ///!
 ///! semantic/fn_def
 
+use codemap::Span;
 use codemap::SymbolID;
 use syntax;
 
@@ -22,6 +23,7 @@ pub struct FnParam {
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct FnDef {
     pub name: SymbolID,
+    pub name_span: Span,
     pub params: Vec<FnParam>,
     pub rettype: Option<TypeUse>,
     pub body: Block,
@@ -48,6 +50,7 @@ impl ISemanticAnalyze for FnDef {
         let this_sess = sess.sub_with_symbol(node.name, ScopeType::FnDef);
         FnDef{
             name: node.name,
+            name_span: node.name_span,
             params: node.params.into_iter().map(|param| {
                 FnParam{
                     name: param.name,

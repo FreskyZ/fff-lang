@@ -11,6 +11,7 @@ use super::Item;
 use super::ScopeType;
 use super::Formatter;
 use super::FromSession;
+use super::CollectSession;
 use super::SharedDefScope;
 use super::ISemanticAnalyze;
 
@@ -40,8 +41,18 @@ impl ISemanticAnalyze for Module {
         }
     }
 
-    fn collect_type_declarations(&mut self) {
-
+    fn collect_definitions(&self, sess: &mut CollectSession) {
+        for (item_id, item) in self.items.iter().enumerate() {
+            match item {
+                &Item::Fn(ref fn_def) => sess.push_def(fn_def.name, fn_def.name_span, self.this_scope.clone()), // function name overload feature is remvoed
+                &Item::Type(ref type_def) => sess.push_def(type_def.name, type_def.name_span, self.this_scope.clone()),   // type template's type parameter overload is not concerned currently
+                &Item::VarDecl(ref var_decl) => sess.push_def(var_decl.name, var_decl.name_span, self.this_scope.clone()),
+                _ => (),
+            }
+            sess.push_path(item_id);
+            item.collect_definitions(sess);
+            sess.pop_path();
+        }
     }
 }
 impl Module {

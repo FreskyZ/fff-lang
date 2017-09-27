@@ -4,6 +4,7 @@
 // all type defs are owned by type collection which is singleton owned by package
 // but every scope have their type id collection
 
+use codemap::Span;
 use codemap::SymbolID;
 
 use syntax;
@@ -24,6 +25,7 @@ pub struct TypeFieldDef {
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct TypeDef {
     pub name: SymbolID,
+    pub name_span: Span,
     pub fields: Vec<TypeFieldDef>,
     pub this_scope: SharedDefScope,
 }
@@ -45,6 +47,7 @@ impl ISemanticAnalyze for TypeDef {
         let this_sess = sess.sub_with_symbol(node.name.value, ScopeType::TypeDef);
         TypeDef{
             name: node.name.value,
+            name_span: node.name.span,
             fields: node.fields.into_iter().map(|field| {
                 TypeFieldDef{
                     name: field.name.value,
