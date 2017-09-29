@@ -3,6 +3,7 @@
 ///! semantic/traits
 
 use std::fmt;
+use std::cell::RefCell;
 
 use codemap::Span;
 use codemap::SymbolID;
@@ -60,6 +61,21 @@ impl<'a, 'b> FromSession<'a, 'b> {
     pub fn into_scope(self) -> SharedDefScope { self.scope }
 }
 
+#[allow(dead_code)]
+pub struct ConvertSession<'a, 'b> {
+    scope: SharedDefScope,
+    source: &'a SourceCode,
+    symbols: &'b SymbolCollection,
+    global_defs: RefCell<DefinitionCollection>,
+    messages: RefCell<MessageCollection>,
+}
+impl<'a, 'b> ConvertSession<'a, 'b> {
+    
+    pub fn new(scope: SharedDefScope, source: &'a SourceCode, symbols: &'b SymbolCollection, global_defs: DefinitionCollection, messages: MessageCollection) -> Self {
+        ConvertSession{ scope, source, symbols, global_defs: RefCell::new(global_defs), messages: RefCell::new(messages) }
+    }
+}
+
 /// Parameter for `ISemanticAnalyze::collect_definitions`
 pub struct CollectSession<'a, 'b> {
     node_path: Vec<usize>,
@@ -98,11 +114,18 @@ pub trait ISemanticAnalyze {
     // format, should be implemented
     fn format(&self, f: Formatter) -> String;
 
-    // phase 1: direct map from syntax node
+    // phase 1: convert syntax node and collect definitions
     type SyntaxItem;
+    // fn convert_collect(item: Self::SyntaxItem, sess: ConvertSession) -> Self;
+
     fn from_syntax(item: Self::SyntaxItem, sess: FromSession) -> Self;
 
     // TODO: an empty implement for compatibility temporarily, remove it in future
     // currently, only nodes with `this_scope` can add definition, which contains child node id in the node's child node list
     fn collect_definitions(&self, sess: &mut CollectSession) { let _ = sess; }
+}
+
+#[cfg(test)] #[test]
+fn p1_usage() {
+
 }
