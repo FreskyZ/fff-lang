@@ -134,7 +134,5 @@ fn p1_usage() {
         fn convert_from(sess: &ConvertSession) -> Self;
     }
 
-
-    let syntax_tree = syntax::SyntaxTree::new_modules(vec![syntax::Module::new])
-
+    // let syntax_tree = syntax::SyntaxTree::new_modules(vec![syntax::Module::new], vec![]);
 }
