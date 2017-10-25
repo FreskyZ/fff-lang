@@ -61,20 +61,6 @@ impl<'a, 'b> FromSession<'a, 'b> {
     pub fn into_scope(self) -> SharedDefScope { self.scope }
 }
 
-#[allow(dead_code)]
-pub struct ConvertSession<'a, 'b> {
-    scope: SharedDefScope,
-    source: &'a SourceCode,
-    symbols: &'b SymbolCollection,
-    global_defs: RefCell<DefinitionCollection>,
-    messages: RefCell<MessageCollection>,
-}
-impl<'a, 'b> ConvertSession<'a, 'b> {
-    
-    pub fn new(scope: SharedDefScope, source: &'a SourceCode, symbols: &'b SymbolCollection, global_defs: DefinitionCollection, messages: MessageCollection) -> Self {
-        ConvertSession{ scope, source, symbols, global_defs: RefCell::new(global_defs), messages: RefCell::new(messages) }
-    }
-}
 
 /// Parameter for `ISemanticAnalyze::collect_definitions`
 pub struct CollectSession<'a, 'b> {
@@ -125,7 +111,30 @@ pub trait ISemanticAnalyze {
     fn collect_definitions(&self, sess: &mut CollectSession) { let _ = sess; }
 }
 
+/// Parameter for `ISemanticAnalyze::convert_from`
+#[allow(dead_code)]
+pub struct ConvertSession<'a, 'b> {
+    scope: SharedDefScope,
+    source: &'a SourceCode,
+    symbols: &'b SymbolCollection,
+    global_defs: RefCell<DefinitionCollection>,
+    messages: RefCell<MessageCollection>,
+}
+impl<'a, 'b> ConvertSession<'a, 'b> {
+    
+    pub fn new(scope: SharedDefScope, source: &'a SourceCode, symbols: &'b SymbolCollection, global_defs: DefinitionCollection, messages: MessageCollection) -> Self {
+        ConvertSession{ scope, source, symbols, global_defs: RefCell::new(global_defs), messages: RefCell::new(messages) }
+    }
+}
+
 #[cfg(test)] #[test]
 fn p1_usage() {
+
+    trait ISemanticAnalyze2 {
+        fn convert_from(sess: &ConvertSession) -> Self;
+    }
+
+
+    let syntax_tree = syntax::SyntaxTree::new_modules(vec![syntax::Module::new])
 
 }

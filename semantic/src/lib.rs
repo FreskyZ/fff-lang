@@ -25,7 +25,7 @@ pub use self::expr::{ ArrayDef, BinaryExpr, FnCall, IndexCall, LitExpr, MemberAc
     ParenExpr, TupleDef, UnaryExpr, Expr, Name, SimpleName };
 pub use self::statement::{ Statement, BlockStatement, VarDecl, ReturnStatement, BreakStatement,
     ContinueStatement, SimpleExprStatement, AssignExprStatement, LoopStatement, WhileStatement, 
-    ForStatement, IfClause, ElseIfClause, ElseClause, IfStatement, Item ,ImportStatement, UseStatement };
+    ForStatement, IfClause, ElseIfClause, ElseClause, IfStatement, Item, ImportStatement, UseStatement };
 
 use self::format_helper::Formatter;
 use self::definition::{ Definition, DefinitionCollection, DefID };
