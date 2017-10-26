@@ -497,7 +497,7 @@ fn v2_base() {
     // different postfix\types of num lit, different types of sep
     //           0         1         2         3         4         5         6         7
     //           0123456789012345678901234567890123456789012345678901234567890123456789012345
-    test_case!{ "[1, 123 _ 1u64( 123.456,) -123_456{123u32}123f32 += 123.0 / 123u8 && 1024u8]", make_symbols![], vec![  
+    test_case!{ "[1, 123 _ 1u64( 123.456,) -123_456{123u32}123r32 += 123.0 / 123u8 && 1024u8]", make_symbols![], vec![  
         sep!(Seperator::LeftBracket, 0, 0),
         lit!(1, 1, 1),
         sep!(Seperator::Comma, 2, 2),
@@ -604,7 +604,7 @@ fn v2_base() {
     ]}
 
     //           012345678
-    test_case!{ "1..2.0f32", make_symbols![], vec![  // range operator special case
+    test_case!{ "1..2.0r32", make_symbols![], vec![  // range operator special case
         lit!(1, 0, 0),
         sep!(Seperator::Range, 1, 2),
         lit!(2f32, 3, 8),
@@ -620,7 +620,7 @@ fn v2_base() {
 
     //           0         1         2         
     //           012345678901234567890123456789
-    test_case!{ "1.is_odd(), 123f64.to_string()", make_symbols!["is_odd", "to_string"], vec![  //  another special case
+    test_case!{ "1.is_odd(), 123r64.to_string()", make_symbols!["is_odd", "to_string"], vec![  //  another special case
         lit!(1, 0, 0),
         sep!(Seperator::Dot, 1, 1),
         ident!(make_id!(1), 2, 7),

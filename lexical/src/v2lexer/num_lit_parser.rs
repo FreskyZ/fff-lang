@@ -1,31 +1,31 @@
 #![deny(overflowing_literals)]
 ///! fff-lang
+///!
 ///! numeric literal parser
-// TODO: ' as seperator, multi seperator not supported, full test
 
 // Syntax:
-// NumericLiteral => IntegralLiteral | FloatPointLiteral
+// num-lit = int-lit | rational-lit
 //
-// IntegralLiteral => ['-'] ['0d'] [Char0To9]+ [SignedIntegralPostfix]
-//                    | ['-'] '0b' [Char0Or1]+ [SignedIntegralPostifx]
-//                    | ['-'] '0o' [Char0To7]+ [SignedIntegralPostifx]
-//                    | ['-'] '0x' [Char0ToF]+ [SignedIntegralPostifx]
-//                    | ['0d'] [Char0To9]+ [UnsignedIntegralPostfix]
-//                    | '0b' [Char0Or1]+ [UnsignedIntegralPostfix]
-//                    | '0o' [Char0To7]+ [UnsignedIntegralPostfix]
-//                    | '0x' [Char0ToF]+ [UnsignedIntegralPostfix]
-// SignedIntegralPostfix = 'i8' | 'i16' | 'i32' | 'i64' 
-// UnsignedIntegralPostfix = 'u8' | 'u16' | 'u32' | 'u64'
+// int-lit = '-'? '0d'? dec-char+ signed-postfix
+//         | '-'? '0b'  bin-char+ signed-postfix
+//         | '-'? '0o'  oct-char+ signed-postfix
+//         | '-'? '0x'  hex-char+ signed-postfix
+//         |      '0d'? dec-char+ unsigned-postifx
+//         |      '0b'  bin-char+ unsigned-postfix
+//         |      '0o'  oct-char+ unsigned-postfix
+//         |      '0x'  hex-char+ unsigned-postfix
+// signed-postfix = 'i8' | 'i16' | 'i32' | 'i64' 
+// unsiged-postfix = 'u8' | 'u16' | 'u32' | 'u64'
 //
-// FloatPointLiteral => [-] [Char0To9]+ '.' [Char0To9]+ [FloatPointExponent] [FloatPointPostfix]
-//                         | [-] [Char0To9]+ [FloatPointExponent] FloatPointPostfix
-// FloatPointPostfix = 'f32' | 'f64'
-// FloatPointExponent => ['e' | 'E'] ['+' | '-'] [Char0To9]+
+// rational-lit = '-'? dec-char+ ('.' dec-char+) rational-exponent? rational-postfix?
+//              | '-'? dec-char+ rational-exponent? rational-postfix
+// rational-postfix = 'r32' | 'r64'
+// rational-exponent => ('e' | 'E') ('+' | '-') dec-char+
 // 
-// Char0To9 = '0'...'9'
-// Char0Or1 = '0' | '1'
-// Char0To7 = '0'...'7'
-// Char0ToF = '0'...'9' | 'A'...'F' | 'a'...'f'
+// dec-char = '0'...'9'
+// bin-char = '0' | '1'
+// oct-char = '0'...'7'
+// hex-char = '0'...'9' | 'A'...'F' | 'a'...'f'
 
 // Interestingly, currently numeric literal support `-` prefix to declare negative literals
 // while v2lexer do not use this feature and later unary expr recognize it as a operator negate
@@ -337,7 +337,7 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
 
             (State::Nothing(_), '0', 'i', _) => conv!(3, State::ExpectSignedIntPostfix(0i64)),
             (State::Nothing(_), '0', 'u', _) => conv!(4, State::ExpectUnsignedIntPostfix(0u64)),
-            (State::Nothing(_), '0', 'f', _) => conv!(5, State::ExpectFloatPostfix(0f64)),
+            (State::Nothing(_), '0', 'r', _) => conv!(5, State::ExpectFloatPostfix(0f64)),
 
             (State::Nothing(_), '0', 'b', EOF_CHAR)
             | (State::Nothing(_), '0', 'o', EOF_CHAR)
@@ -397,7 +397,7 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
                 conv!(13, State::ExpectUnsignedIntPostfix(value as u64));
             },
             (State::UnknownI32(_, false, _), 'u', _, _) => reterr!(13, error_strings::NegativeOperatorOnUnsignedInt),
-            (State::UnknownI32(value, _, _), 'f', _, _) => {
+            (State::UnknownI32(value, _, _), 'r', _, _) => {
                 chars.skip1();
                 conv!(14, State::ExpectFloatPostfix(value as f64));
             }
@@ -448,7 +448,7 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
                 chars.skip1();
                 conv!(26, State::ExpectUnsignedIntPostfix(value as u64));
             },
-            (State::UnknownU32(value, _), 'f', _, _) => {
+            (State::UnknownU32(value, _), 'r', _, _) => {
                 chars.skip1();
                 conv!(27, State::ExpectFloatPostfix(value as f64));
             }
@@ -484,7 +484,7 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
                 conv!(35, State::ExpectUnsignedIntPostfix(value as u64));
             },
             (State::UnknownI64(_, false, _), 'u', _, _) => reterr!(24, error_strings::NegativeOperatorOnUnsignedInt),
-            (State::UnknownI64(value, _, _), 'f', _, _) => {
+            (State::UnknownI64(value, _, _), 'r', _, _) => {
                 chars.skip1();
                 conv!(36, State::ExpectFloatPostfix(value as f64));
             }
@@ -545,7 +545,7 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
                 chars.skip1();
                 conv!(50, State::ExpectUnsignedIntPostfix(value));
             },
-            (State::UnknownU64(value, _), 'f', _, _) => {
+            (State::UnknownU64(value, _), 'r', _, _) => {
                 chars.skip1();
                 conv!(51, State::ExpectFloatPostfix(value as f64));
             }
@@ -574,7 +574,7 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
             (State::UnknownR64(value, _), EOF_CHAR, _, _) => retok!(6, NumLitValue::R64(value)),
             (State::UnknownR64(_, _), 'i', _, _) => reterr!(35, error_strings::IntegralOverflow),
             (State::UnknownR64(_, _), 'u', _, _) => reterr!(36, error_strings::IntegralOverflow),
-            (State::UnknownR64(value, _), 'f', _, _) => {
+            (State::UnknownR64(value, _), 'r', _, _) => {
                 chars.skip1();
                 conv!(58, State::ExpectFloatPostfix(value));
             }
@@ -604,8 +604,8 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
             | (State::IntPrefix(_, _, _), 'u', '1', '6')
             | (State::IntPrefix(_, _, _), 'u', '3', '2')
             | (State::IntPrefix(_, _, _), 'u', '6', '4') => reterr!(44, error_strings::EmptyIntLiteral),
-            (State::IntPrefix(_, _, _), 'f', '3', '2') 
-            | (State::IntPrefix(_, _, _), 'f', '6', '4') => reterr!(45, error_strings::EmptyIntLiteral,
+            (State::IntPrefix(_, _, _), 'r', '3', '2') 
+            | (State::IntPrefix(_, _, _), 'r', '6', '4') => reterr!(45, error_strings::EmptyIntLiteral,
                 vec![error_strings::AndFloatPostfixInIntLiteral.to_owned()]
             ),
             // u, i, f
@@ -672,7 +672,7 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
             (State::AfterDot(_, _, _, _), '.', _, _) => reterr!(56, error_strings::DotDouble),
             (State::AfterDot(_, _, _, _), 'i', _, _)
             | (State::AfterDot(_, _, _, _), 'u', _, _) => reterr!(57, error_strings::MaybeIntPostfixInFloatPoint),  
-            (State::AfterDot(value, _, _, _), 'f', _, _) => {
+            (State::AfterDot(value, _, _, _), 'r', _, _) => {
                 chars.skip1();
                 conv!(68, State::ExpectFloatPostfix(value));
             }
@@ -731,7 +731,7 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
             (State::AfterE(_, _, _, _), '.', _, _)
             | (State::AfterE(_, _, _, _), 'e', _, _)
             | (State::AfterE(_, _, _, _), 'E', _, _) => reterr!(74, error_strings::FloatExponentFloat),
-            (State::AfterE(value, exp, _, _), 'f', _, _) => match value.checked_mul(10f64.powi(exp)) {
+            (State::AfterE(value, exp, _, _), 'r', _, _) => match value.checked_mul(10f64.powi(exp)) {
                 FloatCheckedResult::Overflow => reterr!(75, error_strings::FloatPointOverflow),
                 FloatCheckedResult::Underflow => reterr!(76, error_strings::FloatPointUnderflow),
                 FloatCheckedResult::Ok(value) => {
@@ -866,7 +866,7 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
             (State::ExpectUnsignedIntPostfix(_), _, _, _) => reterr!(100, error_strings::UnexpectedValueAfterMaybeUnsignedIntPostfix),
 
             // ---- ExpectFloatPostfix(value) ----
-            (State::ExpectFloatPostfix(value), 'f', '3', '2') => {
+            (State::ExpectFloatPostfix(value), 'r', '3', '2') => {
                 if value > f32::MAX as f64 { 
                     reterr!(101, error_strings::FloatPointOverflow,
                         vec![error_strings::FloatPointOverflowHelpMaxValue[0].to_owned()]
@@ -893,12 +893,12 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
                     conv!(88, State::ExpectEOF(NumLitValue::R32(value as f32))); 
                 }
             }
-            (State::ExpectFloatPostfix(value), 'f', '6', '4') => {
+            (State::ExpectFloatPostfix(value), 'r', '6', '4') => {
                 chars.dummy1();
                 chars.dummy1();
                 conv!(89, State::ExpectEOF(NumLitValue::R64(value)));
             }
-            (State::ExpectFloatPostfix(_), 'f', EOF_CHAR, _) => 
+            (State::ExpectFloatPostfix(_), 'r', EOF_CHAR, _) => 
                 reterr!(105, error_strings::UnexpectedEOFInMaybeFloatingPostfix),
             (State::ExpectFloatPostfix(_), 'u', '_', _)
             | (State::ExpectFloatPostfix(_), 'u', _, '_') => reterr!(106, error_strings::UnderscoreInMaybeFloatPointPostfix),
@@ -1038,21 +1038,21 @@ fn num_lit_feature() {
     // 0s
     test_case!("0", NumLitValue::I32(0));                           // 6
     test_case!("0u32", NumLitValue::U32(0));                        // 7
-    test_case!("0f32", NumLitValue::R32(0f32));                     // 8
+    test_case!("0r32", NumLitValue::R32(0f32));                     // 8
     test_case!("0x0", NumLitValue::I32(0));                         // 9
     test_case!("0o0u8", NumLitValue::U8(0));                        // 10
     test_case!("0u", err, make_err!(
         error_strings::UnexpectedEOFInMaybeUnsignedIntPostfix));    // 11
-    test_case!("0f", err, make_err!(
+    test_case!("0r", err, make_err!(
         error_strings::UnexpectedEOFInMaybeFloatingPostfix));       // 12
     test_case!("0i888", err, make_err!(
         error_strings::UnexpectedValueAfterMaybeSignedIntPostfix)); // 13
-    test_case!("0f3210", err, make_err!(
+    test_case!("0r3210", err, make_err!(
         error_strings::UnexpectedNotEOF));                          // 14
     // 1s
     test_case!("1", NumLitValue::I32(1));                           // 15
     test_case!("1u32", NumLitValue::U32(1));                        // 16
-    test_case!("1f32", NumLitValue::R32(1f32));                     // 17
+    test_case!("1r32", NumLitValue::R32(1f32));                     // 17
     test_case!("0x1", NumLitValue::I32(1));                         // 18
     test_case!("0o1u8", NumLitValue::U8(1));                        // 19
 
@@ -1173,7 +1173,7 @@ fn num_lit_feature() {
         error_strings::FloatPointUnderflow,
         vec![error_strings::FloatPointUnderflowHelpMinValue[2].to_owned()]
     ));                                                             // 75
-    test_case!("1E200f32", err, make_err!(
+    test_case!("1E200r32", err, make_err!(
         error_strings::FloatPointOverflow,
         vec![error_strings::FloatPointOverflowHelpMaxValue[0].to_owned()]
     ));                                                             // 0
@@ -1189,11 +1189,11 @@ fn num_lit_feature() {
     test_case!("0.0000000123E3", NumLitValue::R64(0.0000123));      // 83
     test_case!("0.0001E-200", NumLitValue::R64(0.0001E-200));       // 84
     test_case!("-0.0001E-200", NumLitValue::R64(-0.0001E-200));     // 85
-    test_case!("123E5f32", NumLitValue::R32(123E5f32));             // 86
-    test_case!("0.123E-10f32", NumLitValue::R32(0.123E-10f32));     // 87 
-    test_case!("0.0000000123E3f64", NumLitValue::R64(0.0000123));   // 88
-    test_case!("0.0001E-200f64", NumLitValue::R64(0.0001E-200f64)); // 89
-    test_case!("-0.0001E-200f32", err, make_err!(
+    test_case!("123E5r32", NumLitValue::R32(123E5f32));             // 86
+    test_case!("0.123E-10r32", NumLitValue::R32(0.123E-10f32));     // 87 
+    test_case!("0.0000000123E3r64", NumLitValue::R64(0.0000123));   // 88
+    test_case!("0.0001E-200r64", NumLitValue::R64(0.0001E-200f64)); // 89
+    test_case!("-0.0001E-200r32", err, make_err!(
         error_strings::FloatPointUnderflow,
         vec![error_strings::FloatPointUnderflowHelpMinValue[1].to_owned()]
     ));                                                             // 90
@@ -1261,7 +1261,7 @@ fn num_lit_feature() {
     // empty
     test_case!("0xu64", err, make_err!(
         error_strings::EmptyIntLiteral));                           // 119
-    test_case!("0bf32", err, make_err!(
+    test_case!("0br32", err, make_err!(
         error_strings::EmptyIntLiteral,
         vec![error_strings::AndFloatPostfixInIntLiteral.to_owned()]
     ));                                                             // 120

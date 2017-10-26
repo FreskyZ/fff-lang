@@ -293,7 +293,7 @@ fn primary_expr_parse() {
 
     //                                      0        1           2         3         4      
     //                                      12345 678901 234567890123456789012345678901234
-    assert_eq!{ PrimaryExpr::with_test_str("[8, \"@=?GF\", 87f32, 1340323.74f64, FKOxAvx5]"),
+    assert_eq!{ PrimaryExpr::with_test_str("[8, \"@=?GF\", 87r32, 1340323.74r64, FKOxAvx5]"),
         Expr::Array(ArrayDef::new(make_span!(0, 43), make_exprs![
             LitExpr::new(LitValue::from(8), make_span!(1, 1)),
             LitExpr::new(make_lit!(str, 1), make_span!(4, 10)), 
