@@ -120,6 +120,7 @@ pub struct ConvertSession<'a, 'b> {
     global_defs: RefCell<DefinitionCollection>,
     messages: RefCell<MessageCollection>,
 }
+#[allow(dead_code)]
 impl<'a, 'b> ConvertSession<'a, 'b> {
     
     pub fn new(scope: SharedDefScope, source: &'a SourceCode, symbols: &'b SymbolCollection, global_defs: DefinitionCollection, messages: MessageCollection) -> Self {

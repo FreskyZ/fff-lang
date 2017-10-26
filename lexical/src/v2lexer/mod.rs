@@ -156,10 +156,10 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
             self.v1.move_next(sess);
             let v15 = match self.v1.current_with_preview2() {
                 (&V1Token::StringLiteral(ref value), pos, _2, _3, _4, _5) => {
-                    return (V2Token::Literal(LitValue::Str(*value)), pos);
+                    return (V2Token::Literal(LitValue::Str(value.clone())), pos);
                 }
                 (&V1Token::RawStringLiteral(ref value), pos, _2, _3, _4, _5) => {
-                    return (V2Token::Literal(LitValue::Str(*value)), pos);
+                    return (V2Token::Literal(LitValue::Str(value.clone())), pos);
                 }
                 (&V1Token::CharLiteral(ref value), pos, _2, _3, _4, _5) => {
                     return (V2Token::Literal(LitValue::Char(value.clone())), pos);
@@ -415,7 +415,7 @@ fn v2_base() {
     use std::fmt;
     use codemap::SourceCode;
     use codemap::SymbolCollection;
-
+    
     // Only to make decltype(V2Lexer as BufLexer::next(...)) to display better
     #[derive(Eq, PartialEq)]
     struct V2Span(V2Token, Span);
@@ -637,7 +637,7 @@ fn v2_base() {
     //           0           1          2
     //           01 234567 890 1234567890123456
     test_case!{ "r\"hello\" '\\u1234' 12/**/34 ", make_symbols!["hello"], vec![    // dispatch v1
-        (V2Token::Literal(LitValue::Str(Some(make_id!(1)))), make_span!(0, 7)), // because `lit!(make_id!(1), 0, 7)` is ambiguous
+        (V2Token::Literal(make_lit!(str, 1)), make_span!(0, 7)), // because `lit!(make_id!(1), 0, 7)` is ambiguous
         lit!('\u{1234}', 9, 16),
         lit!(12, 18, 19),
         lit!(34, 24, 25),

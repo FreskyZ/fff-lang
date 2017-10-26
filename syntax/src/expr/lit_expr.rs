@@ -8,6 +8,7 @@ use std::fmt;
 use codemap::Span;
 use lexical::Token;
 use lexical::LitValue;
+use lexical::StrLitValue;
 
 use super::Expr;
 
@@ -20,13 +21,13 @@ use super::super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct LitExpr {
-    pub value: LitValue,
+    pub value: LitValue, // FIXME: use syntax::LitValue instead of lexical::LitValue becasue they are different when format string
     pub span: Span,
 }
 impl ISyntaxFormat for LitExpr {
     fn format(&self, f: Formatter) -> String {
         let f = f.indent().header_text_or("literal").space();
-        let f = match self.value { LitValue::Str(Some(ref id)) => f.sym(*id), ref other => f.debug(other) };
+        let f = match self.value { LitValue::Str(Some(StrLitValue::Simple(ref id))) => f.sym(*id), ref other => f.debug(other) };
         f.space().span(self.span).finish()
     }
 }

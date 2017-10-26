@@ -101,7 +101,7 @@ fn index_call_parse() {
 
     assert_eq!{ IndexCallExpr::with_test_str("[\"hello\"]"),
         IndexCallExpr::new_with_parse_result(make_span!(0, 8), 
-            ExprList::new(vec![Expr::Lit(LitExpr::new(LitValue::new_str_lit(make_id!(1)), make_span!(1, 7)))])
+            ExprList::new(vec![Expr::Lit(LitExpr::new(make_lit!(str, 1), make_span!(1, 7)))])
         )
     }
 }

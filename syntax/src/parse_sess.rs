@@ -93,11 +93,11 @@ impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
     ///
     /// example `let (lit, lit_span) = sess.expect_lit()?;`
     pub fn expect_lit(&mut self) -> Result<(LitValue, Span), ()> {
-
+        // TODO: update to syntax::LitValue after implemented
         let current_index = self.current_index;
         self.move_next();
         match (self.tokens.nth_token(current_index), self.tokens.nth_span(current_index)) {
-            (&Token::Lit(ref lit), ref lit_span) => Ok((*lit, *lit_span)),
+            (&Token::Lit(ref lit), ref lit_span) => Ok((lit.clone(), *lit_span)),
             _ => self.push_unexpect("literal"),
         }
     }

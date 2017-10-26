@@ -237,7 +237,7 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
         UnknownU32(u32, bool),              // value, prev is underscore
         UnknownI64(i64, bool, bool),        // value (already with sign), is positive, prev is underscore
         UnknownU64(u64, bool),              // value, prev is underscore
-        UnknownF64(f64, bool),              // value, prev is underscore
+        UnknownR64(f64, bool),              // value, prev is underscore
         IntPrefix(u32, bool, bool),         // base, is positive, already a underscore
         AfterDot(f64, i32, bool, bool),     // value (already with sign), bits after dot, is positive, prev is underscore
         DirectAfterE(f64, bool),            // value, already a underscore, direct after e means expect char09 or + or -
@@ -502,11 +502,11 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
                         (None, true) => {       // positive i64 mul 10 overflow, that is (value <= 9223372036854775808 and value >= 922337203685477581)
                             match (value as u64).checked_mul(10u64) {
                                 None => {       // positive i64 as u64 mul 10 overflow, that is (value <= 9223372036854775808 and value >= 1844674407370955162)
-                                    conv!(40, State::UnknownF64(value as f64 * 10f64 + digit as f64, is_positive));
+                                    conv!(40, State::UnknownR64(value as f64 * 10f64 + digit as f64, is_positive));
                                 }
                                 Some(value) => match value.checked_add(digit as u64) {
                                     None => {   // positive i64 as u64 mul 10 not overflow add digit overflow, that is (value = 1844674407370955161 and digit >= 6)
-                                        conv!(41, State::UnknownF64(value as f64 + digit as f64, is_positive));
+                                        conv!(41, State::UnknownR64(value as f64 + digit as f64, is_positive));
                                     }
                                     Some(value) => conv!(42, State::UnknownU64(value, false)),
                                 },
@@ -515,11 +515,11 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
                         (None, false) => {      // negative i64 mul 10 overflow, that is (value >= -9223372036854775808 and value <= -922337203685477581)
                             match (value as u64).checked_mul(10u64) {
                                 None => {       // negative i64 as u64 mul 10 overflow, that is (value >= -9223372036854775808 and value <= -1844674407370955162)
-                                    conv!(43, State::UnknownF64(value as f64 * 10f64 - digit as f64, is_positive));
+                                    conv!(43, State::UnknownR64(value as f64 * 10f64 - digit as f64, is_positive));
                                 }
                                 Some(value) => match value.checked_sub(digit as u64) {
                                     None => {   // negative i64 as u64 mul 10 not overflow add digit overflow, that is (value = -1844674407370955161 and digit >= 7)
-                                        conv!(44, State::UnknownF64(value as f64 - digit as f64, is_positive));
+                                        conv!(44, State::UnknownR64(value as f64 - digit as f64, is_positive));
                                     }
                                     Some(value) => conv!(45, State::UnknownU64(value, false)), 
                                 },
@@ -530,7 +530,7 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
                             Some(value) => conv!(47, State::UnknownI64(value, true, false)), 
                         },
                         (Some(value), false) => match value.checked_sub(digit as i64) {
-                            None => conv!(48, State::UnknownF64(value as f64 - digit as f64, false)),
+                            None => conv!(48, State::UnknownR64(value as f64 - digit as f64, false)),
                             Some(value) => conv!(49, State::UnknownI64(value, false, false)),
                         },
                     },
@@ -560,32 +560,32 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
                 (_, false) => match ch.to_digit(10) {
                     None => reterr!(34, error_strings::InvalidChar),
                     Some(digit) => match value.checked_mul(10) { 
-                        None => conv!(55, State::UnknownF64(value as f64 * 10f64 + digit as f64, true)),    // u64 mul 10 overflow must be positive f64
+                        None => conv!(55, State::UnknownR64(value as f64 * 10f64 + digit as f64, true)),    // u64 mul 10 overflow must be positive f64
                         Some(value) => match value.checked_add(digit as u64) {
-                            None => conv!(56, State::UnknownF64(value as f64 + digit as f64, true)),        // u64 add digit overflow must be positive f64
+                            None => conv!(56, State::UnknownR64(value as f64 + digit as f64, true)),        // u64 add digit overflow must be positive f64
                             Some(value) => conv!(57, State::UnknownU64(value, false)),                      // not overflow continue u64
                         },
                     },
                 },
             },
 
-            // TODO: nned prev is underscore?
-            // ---- UnknownF64(value, is_positive) ----
-            (State::UnknownF64(value, _), EOF_CHAR, _, _) => retok!(6, NumLitValue::F64(value)),
-            (State::UnknownF64(_, _), 'i', _, _) => reterr!(35, error_strings::IntegralOverflow),
-            (State::UnknownF64(_, _), 'u', _, _) => reterr!(36, error_strings::IntegralOverflow),
-            (State::UnknownF64(value, _), 'f', _, _) => {
+            // TODO: need prev is underscore?
+            // ---- UnknownR64(value, is_positive) ----
+            (State::UnknownR64(value, _), EOF_CHAR, _, _) => retok!(6, NumLitValue::R64(value)),
+            (State::UnknownR64(_, _), 'i', _, _) => reterr!(35, error_strings::IntegralOverflow),
+            (State::UnknownR64(_, _), 'u', _, _) => reterr!(36, error_strings::IntegralOverflow),
+            (State::UnknownR64(value, _), 'f', _, _) => {
                 chars.skip1();
                 conv!(58, State::ExpectFloatPostfix(value));
             }
-            (State::UnknownF64(value, _), 'e', _, _) 
-            | (State::UnknownF64(value, _), 'E', _, _) => conv!(59, State::DirectAfterE(value, false)),
-            (State::UnknownF64(_, _), '.', '_', _) => reterr!(37, error_strings::UnderscoreArroundDot),
-            (State::UnknownF64(value, is_positive), '.', _, _) => conv!(60, State::AfterDot(value, 1, is_positive, false)),
-            (State::UnknownF64(value, is_positive), ch, _, _) => match ch.to_digit(10) {
+            (State::UnknownR64(value, _), 'e', _, _) 
+            | (State::UnknownR64(value, _), 'E', _, _) => conv!(59, State::DirectAfterE(value, false)),
+            (State::UnknownR64(_, _), '.', '_', _) => reterr!(37, error_strings::UnderscoreArroundDot),
+            (State::UnknownR64(value, is_positive), '.', _, _) => conv!(60, State::AfterDot(value, 1, is_positive, false)),
+            (State::UnknownR64(value, is_positive), ch, _, _) => match ch.to_digit(10) {
                 None => reterr!(38, error_strings::InvalidChar),
                 Some(digit) => match value.checked_mul_add(10, if is_positive { digit as i32 } else { -(digit as i32) }) {
-                    FloatCheckedResult::Ok(value) => conv!(61, State::UnknownF64(value, is_positive)),
+                    FloatCheckedResult::Ok(value) => conv!(61, State::UnknownR64(value, is_positive)),
                     FloatCheckedResult::Overflow => reterr!(39, error_strings::FloatPointOverflow),
                     FloatCheckedResult::Underflow => reterr!(40, error_strings::FloatPointUnderflow),
                 },
@@ -680,7 +680,7 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
             | (State::AfterDot(value, _, _, _), 'E', _, _) => conv!(69, State::DirectAfterE(value, false)),
             (State::AfterDot(_, 1, _, _), EOF_CHAR, _, _) => reterr!(58, error_strings::DotAtEnd),
             (State::AfterDot(_, _, _, true), EOF_CHAR, _, _) => reterr!(59, error_strings::UnderscoreAtEnd),
-            (State::AfterDot(value, _, _, false), EOF_CHAR, _, _) => retok!(8, NumLitValue::F64(value)),
+            (State::AfterDot(value, _, _, false), EOF_CHAR, _, _) => retok!(8, NumLitValue::R64(value)),
             (State::AfterDot(value, bits, is_positive, prev_is_underscore), ch, _, _) => match (prev_is_underscore, ch == '_') {
                 (true, true) => reterr!(60, error_strings::UnderscoreDouble),
                 (_, true) => conv!(70, State::AfterDot(value, bits, is_positive, true)),
@@ -741,7 +741,7 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
             },
             (State::AfterE(_, _, _, true), EOF_CHAR, _, _) => reterr!(77, error_strings::UnderscoreAtEnd),
             (State::AfterE(value, exp, _, false), EOF_CHAR, _, _) => match value.checked_mul(10f64.powi(exp)) {
-                FloatCheckedResult::Ok(value) => retok!(9, NumLitValue::F64(value)),
+                FloatCheckedResult::Ok(value) => retok!(9, NumLitValue::R64(value)),
                 FloatCheckedResult::Overflow => reterr!(78, error_strings::FloatPointOverflow,
                     vec![error_strings::FloatPointOverflowHelpMaxValue[if value > 0f64 { 2 } else { 3 }].to_owned()]
                 ),
@@ -878,7 +878,7 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
                 } else if value == 0f32 as f64 {
                     chars.dummy1();
                     chars.dummy1();
-                    conv!(87, State::ExpectEOF(NumLitValue::F32(0f32)));
+                    conv!(87, State::ExpectEOF(NumLitValue::R32(0f32)));
                 } else if value < f32::MIN_POSITIVE as f64 && value > 0f64 {
                     reterr!(103, error_strings::FloatPointUnderflow,
                         vec![error_strings::FloatPointUnderflowHelpMinValue[0].to_owned()]
@@ -890,13 +890,13 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
                 } else {
                     chars.dummy1();
                     chars.dummy1();
-                    conv!(88, State::ExpectEOF(NumLitValue::F32(value as f32))); 
+                    conv!(88, State::ExpectEOF(NumLitValue::R32(value as f32))); 
                 }
             }
             (State::ExpectFloatPostfix(value), 'f', '6', '4') => {
                 chars.dummy1();
                 chars.dummy1();
-                conv!(89, State::ExpectEOF(NumLitValue::F64(value)));
+                conv!(89, State::ExpectEOF(NumLitValue::R64(value)));
             }
             (State::ExpectFloatPostfix(_), 'f', EOF_CHAR, _) => 
                 reterr!(105, error_strings::UnexpectedEOFInMaybeFloatingPostfix),
@@ -970,7 +970,7 @@ fn num_lit_f64_checked() {
     
     if let FloatCheckedResult::Ok(myresult) = (-0.0001).checked_mul(10f64.powi(-200)) {
         let expect = -0.0001E-200;
-        assert_eq!(NumLitValue::F64(myresult), NumLitValue::F64(expect));
+        assert_eq!(NumLitValue::R64(myresult), NumLitValue::R64(expect));
     }
     // println!("{}", unsafe { mem::transmute::<f64, u64>(myresult) });
     // println!("{}", unsafe { mem::transmute::<f64, u64>(expect) });
@@ -1038,7 +1038,7 @@ fn num_lit_feature() {
     // 0s
     test_case!("0", NumLitValue::I32(0));                           // 6
     test_case!("0u32", NumLitValue::U32(0));                        // 7
-    test_case!("0f32", NumLitValue::F32(0f32));                     // 8
+    test_case!("0f32", NumLitValue::R32(0f32));                     // 8
     test_case!("0x0", NumLitValue::I32(0));                         // 9
     test_case!("0o0u8", NumLitValue::U8(0));                        // 10
     test_case!("0u", err, make_err!(
@@ -1052,17 +1052,17 @@ fn num_lit_feature() {
     // 1s
     test_case!("1", NumLitValue::I32(1));                           // 15
     test_case!("1u32", NumLitValue::U32(1));                        // 16
-    test_case!("1f32", NumLitValue::F32(1f32));                     // 17
+    test_case!("1f32", NumLitValue::R32(1f32));                     // 17
     test_case!("0x1", NumLitValue::I32(1));                         // 18
     test_case!("0o1u8", NumLitValue::U8(1));                        // 19
 
     // normal f64
-    test_case!("1.0", NumLitValue::F64(1.0));                       // 20
-    test_case!("1.234", NumLitValue::F64(1.234));                   // 21
+    test_case!("1.0", NumLitValue::R64(1.0));                       // 20
+    test_case!("1.234", NumLitValue::R64(1.234));                   // 21
     test_case!("12345678901234567890.0", 
-        NumLitValue::F64(12345678901234567890.0f64));               // 22
-    // test_case!("1.78E308", NumLitValue::F64(1.79E308));          // 23, too difficult to make it pass
-    // test_case!("1.78E-308", NumLitValue::F64(1.79E-308));        // 24, too difficult too
+        NumLitValue::R64(12345678901234567890.0f64));               // 22
+    // test_case!("1.78E308", NumLitValue::R64(1.79E308));          // 23, too difficult to make it pass
+    // test_case!("1.78E-308", NumLitValue::R64(1.79E-308));        // 24, too difficult too
     // smallflow
     test_case!("1.79E-2333", err, make_err!(
         error_strings::FloatPointUnderflow,
@@ -1102,7 +1102,7 @@ fn num_lit_feature() {
     test_case!("-0d123", NumLitValue::I32(-123));                   // 36
     test_case!("-123", NumLitValue::I32(-123));                     // 37
     test_case!("-30000i16", NumLitValue::I16(-30000));              // 38
-    test_case!("-123.456", NumLitValue::F64(-123.456));             // 39
+    test_case!("-123.456", NumLitValue::R64(-123.456));             // 39
     test_case!("-123u8", err, make_err!(
         error_strings::NegativeOperatorOnUnsignedInt));             // 40
     test_case!("-1u64", err, make_err!(
@@ -1142,21 +1142,21 @@ fn num_lit_feature() {
     test_case!("9223372036854775807", NumLitValue::I64(9223372036854775807));       // 56, 2^32..2^63 expand to i64
     test_case!("9223372036854775808", NumLitValue::U64(9223372036854775808));       // 57, 2^63..2^64 expand to u64
     test_case!("18446744073709551615", NumLitValue::U64(18446744073709551615));     // 58, 2^63..2^64 expand to u64
-    test_case!("18446744073709551616", NumLitValue::F64(18446744073709551616f64));  // 59, 2^64.. expand to f64
+    test_case!("18446744073709551616", NumLitValue::R64(18446744073709551616f64));  // 59, 2^64.. expand to f64
     // auto expansion for negative value
     test_case!("-2147483648", NumLitValue::I32(-2147483648));                       // 60
     test_case!("-2147483649", NumLitValue::I64(-2147483649));                       // 61
     test_case!("-9223372036854775808", NumLitValue::I64(-9223372036854775808i64));  // 62
-    test_case!("-9223372036854775809", NumLitValue::F64(-9223372036854775809f64));  // 63
+    test_case!("-9223372036854775809", NumLitValue::R64(-9223372036854775809f64));  // 63
 
     // int with e is float
-    test_case!("123e10", NumLitValue::F64(123E10));                 // 64
-    test_case!("123E10", NumLitValue::F64(123E10));                 // 65
-    test_case!("123E+10", NumLitValue::F64(123E10));                // 66
-    test_case!("123E-10", NumLitValue::F64(123E-10));               // 67
-    test_case!("123E-16", NumLitValue::F64(123E-16));               // 68
-    test_case!("123E+12", NumLitValue::F64(123E+12));               // 69
-    test_case!("123E17", NumLitValue::F64(123E17));                 // 70
+    test_case!("123e10", NumLitValue::R64(123E10));                 // 64
+    test_case!("123E10", NumLitValue::R64(123E10));                 // 65
+    test_case!("123E+10", NumLitValue::R64(123E10));                // 66
+    test_case!("123E-10", NumLitValue::R64(123E-10));               // 67
+    test_case!("123E-16", NumLitValue::R64(123E-16));               // 68
+    test_case!("123E+12", NumLitValue::R64(123E+12));               // 69
+    test_case!("123E17", NumLitValue::R64(123E17));                 // 70
     // e not with prefix or postfix, exp should be integer
     test_case!("0d123E-5", err, make_err!(
         error_strings::ExponentInIntLiteral));                   // 71
@@ -1179,20 +1179,20 @@ fn num_lit_feature() {
     ));                                                             // 0
 
     // decimal dot
-    test_case!("123.456", NumLitValue::F64(123.456));               // 76
-    test_case!("123456.0", NumLitValue::F64(123456f64));            // 77
-    test_case!("0.123", NumLitValue::F64(0.123));                   // 78
-    test_case!("0.0000000123", NumLitValue::F64(0.0000000123));     // 79
-    test_case!("123.456E0", NumLitValue::F64(123.456E0));           // 80, dddE0 is legal
-    test_case!("123456.0E5", NumLitValue::F64(123456E5f64));        // 81
-    test_case!("0.123E-10", NumLitValue::F64(0.123E-10));           // 82
-    test_case!("0.0000000123E3", NumLitValue::F64(0.0000123));      // 83
-    test_case!("0.0001E-200", NumLitValue::F64(0.0001E-200));       // 84
-    test_case!("-0.0001E-200", NumLitValue::F64(-0.0001E-200));     // 85
-    test_case!("123E5f32", NumLitValue::F32(123E5f32));             // 86
-    test_case!("0.123E-10f32", NumLitValue::F32(0.123E-10f32));     // 87 
-    test_case!("0.0000000123E3f64", NumLitValue::F64(0.0000123));   // 88
-    test_case!("0.0001E-200f64", NumLitValue::F64(0.0001E-200f64)); // 89
+    test_case!("123.456", NumLitValue::R64(123.456));               // 76
+    test_case!("123456.0", NumLitValue::R64(123456f64));            // 77
+    test_case!("0.123", NumLitValue::R64(0.123));                   // 78
+    test_case!("0.0000000123", NumLitValue::R64(0.0000000123));     // 79
+    test_case!("123.456E0", NumLitValue::R64(123.456E0));           // 80, dddE0 is legal
+    test_case!("123456.0E5", NumLitValue::R64(123456E5f64));        // 81
+    test_case!("0.123E-10", NumLitValue::R64(0.123E-10));           // 82
+    test_case!("0.0000000123E3", NumLitValue::R64(0.0000123));      // 83
+    test_case!("0.0001E-200", NumLitValue::R64(0.0001E-200));       // 84
+    test_case!("-0.0001E-200", NumLitValue::R64(-0.0001E-200));     // 85
+    test_case!("123E5f32", NumLitValue::R32(123E5f32));             // 86
+    test_case!("0.123E-10f32", NumLitValue::R32(0.123E-10f32));     // 87 
+    test_case!("0.0000000123E3f64", NumLitValue::R64(0.0000123));   // 88
+    test_case!("0.0001E-200f64", NumLitValue::R64(0.0001E-200f64)); // 89
     test_case!("-0.0001E-200f32", err, make_err!(
         error_strings::FloatPointUnderflow,
         vec![error_strings::FloatPointUnderflowHelpMinValue[1].to_owned()]
@@ -1225,9 +1225,9 @@ fn num_lit_feature() {
     test_case!("184_467_440_737_095_516_15_u64", 
         NumLitValue::U64(18446744073709551615u64));                 // 101
     test_case!("1_2_3_4", NumLitValue::I32(1234));                  // 102
-    test_case!("123_456_E_12", NumLitValue::F64(123456E12));        // 103
-    test_case!("123.4_5_6E1_23", NumLitValue::F64(123.456E123));    // 104
-    test_case!("0.1_2_3_4_5_6E0", NumLitValue::F64(0.123456));      // 105
+    test_case!("123_456_E_12", NumLitValue::R64(123456E12));        // 103
+    test_case!("123.4_5_6E1_23", NumLitValue::R64(123.456E123));    // 104
+    test_case!("0.1_2_3_4_5_6E0", NumLitValue::R64(0.123456));      // 105
     // underscore not at head, tail, not around dot
     test_case!("_1234", err, make_err!(
         error_strings::UnderscoreAtHead));                          // 106

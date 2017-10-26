@@ -127,7 +127,7 @@ fn expr_stmt_parse() {
             FnCallExpr::new(
                 SimpleName::new(make_id!(1), make_span!(0, 6)),
                 make_span!(7, 20), make_exprs![
-                    LitExpr::new(LitValue::new_str_lit(make_id!(2)), make_span!(8, 19))
+                    LitExpr::new(make_lit!(str, 2), make_span!(8, 19))
                 ]
             )
         )))

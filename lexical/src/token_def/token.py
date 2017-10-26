@@ -147,7 +147,7 @@ class Seperators:
         # I created this case simply randomly manully, but it help me find the bug of current hash function and hash map design
         # hash = ch1 as u32 + ch2 as u32 * 256, and hashmap's bucket size is 38, and, most interestingly
         # ('{' as u32  + ' ' as u32 * 256) % 38 == ('!' as u32 + '=' as u32 * 256) % 38 == 31
-        # which help me understand why there is first hashmap then hashset just a hashmap<T, ()>
+        # which help me understand why the common practice is implement hashmap first and implement hashset as hashmap<T, ()>,
         # because in this case if you do not have a key stored in hashmap to confirm equality then a bug happened
         test_src += "    assert_eq!{ Seperator::parse3('{', ' ', 'a'), Some((Seperator::LeftBrace, 1)) }\n"
         test_src += "    assert_eq!{ Seperator::parse3('&', '&', ' '), Some((Seperator::LogicalAnd, 2)) }\n"

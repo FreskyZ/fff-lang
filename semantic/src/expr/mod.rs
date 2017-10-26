@@ -3,8 +3,9 @@
 ///! semantic/expr
 
 use codemap::SymbolID;
-use lexical::LitValue;
+use lexical::LitValue;    // TODO: update to syntax::LitValue
 use lexical::Seperator;
+use lexical::StrLitValue;
 
 use syntax;
 
@@ -135,7 +136,7 @@ impl ISemanticAnalyze for LitExpr {
 
     fn format(&self, f: Formatter) -> String {
         let f = f.indent().header_text_or("literal").space();
-        let f = match self.value { LitValue::Str(Some(ref id)) => f.sym(*id), ref other => f.debug(other) };
+        let f = match self.value { LitValue::Str(Some(StrLitValue::Simple(ref id))) => f.sym(*id), ref other => f.debug(other) };
         f.finish()
     }
 

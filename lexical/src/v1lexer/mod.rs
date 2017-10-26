@@ -14,13 +14,14 @@ mod raw_string_lit_parser;
 mod string_lit_parser;
 
 use codemap::Span;
-use codemap::SymbolID;
 use codemap::SourceCodeIter;
 use codemap::EOF_CHAR;
 use message::Message;
 
 use super::ILexer;
 use super::BufLexer;
+use super::StrLitValue;
+use super::ParseSession;
 
 use self::string_lit_parser::StringLiteralParser;
 use self::string_lit_parser::StringLiteralParserResult;
@@ -28,7 +29,6 @@ use self::raw_string_lit_parser::RawStringLiteralParser;
 use self::raw_string_lit_parser::RawStringLiteralParserResult;
 use self::char_lit_parser::CharLiteralParser;
 use self::char_lit_parser::CharLiteralParserResult;
-use super::ParseSession;
 
 // SourceCodeIter wrapper
 struct V0Lexer<'a>(SourceCodeIter<'a>);
@@ -43,8 +43,8 @@ impl<'a> ILexer<'a, char> for V0Lexer<'a> {
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub enum V1Token {
     EOF,
-    StringLiteral(Option<SymbolID>),
-    RawStringLiteral(Option<SymbolID>),
+    StringLiteral(Option<StrLitValue>),
+    RawStringLiteral(Option<StrLitValue>),
     CharLiteral(Option<char>),
     Other(char),
 }
@@ -135,7 +135,7 @@ impl<'chs> ILexer<'chs, V1Token> for V1Lexer<'chs> {
                             if *ch == EOF_CHAR { // if EOF_CHAR was consumed by str lit parser, it will not be returned as EOF, which is not designed by feature
                                 self.v0.prepare_dummy1();
                             }
-                            return (V1Token::StringLiteral(value.map(|v| sess.symbols.intern(v))), pos);
+                            return (V1Token::StringLiteral(value.map(|v| StrLitValue::Simple(sess.symbols.intern(v)))), pos);
                         }
                     }
                 }
@@ -148,7 +148,7 @@ impl<'chs> ILexer<'chs, V1Token> for V1Lexer<'chs> {
                             if *ch == EOF_CHAR { // same as str lit parser
                                 self.v0.prepare_dummy1();
                             }
-                            return (V1Token::RawStringLiteral(value.map(|v| sess.symbols.intern(v))), pos);
+                            return (V1Token::RawStringLiteral(value.map(|v| StrLitValue::Simple(sess.symbols.intern(v)))), pos);
                         }
                     }
                 }
@@ -214,11 +214,11 @@ fn v1_base() {
     }
     macro_rules! str_lit {
         ($start_id: expr, $end_id: expr) => ((V1Token::StringLiteral(None), make_span!($start_id, $end_id)));
-        ($val: expr, $start_id: expr, $end_id: expr) => ((V1Token::StringLiteral(Some($val)), make_span!($start_id, $end_id)))
+        ($val: expr, $start_id: expr, $end_id: expr) => ((V1Token::StringLiteral(Some(StrLitValue::Simple($val))), make_span!($start_id, $end_id)))
     }
     macro_rules! rstr_lit {
         ($start_id: expr, $end_id: expr) => ((V1Token::RawStringLiteral(None), make_span!($start_id, $end_id)));
-        ($val: expr, $start_id: expr, $end_id: expr) => ((V1Token::RawStringLiteral(Some($val)), make_span!($start_id, $end_id)))
+        ($val: expr, $start_id: expr, $end_id: expr) => ((V1Token::RawStringLiteral(Some(StrLitValue::Simple($val))), make_span!($start_id, $end_id)))
     }
 
     // Line comment as \n

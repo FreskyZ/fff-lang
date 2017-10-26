@@ -196,7 +196,7 @@ fn primary_expr_parse() {
                         LitExpr::new(LitValue::from(false), make_span!(57, 61)),
                         SimpleName::new(make_id!(8), make_span!(64, 64)),
                     ]),
-                    LitExpr::new(LitValue::new_str_lit(make_id!(9)), make_span!(70, 73))
+                    LitExpr::new(make_lit!(str, 9), make_span!(70, 73))
                 ]),
                 LitExpr::new(LitValue::from(true), make_span!(77, 80)),
                 ParenExpr::new(make_span!(83, 99), 
@@ -219,7 +219,7 @@ fn primary_expr_parse() {
 
     assert_eq!{ PrimaryExpr::with_test_str("(\"o5\")"), 
         Expr::Paren(ParenExpr::new(make_span!(0, 5), 
-            LitExpr::new(LitValue::new_str_lit(make_id!(1)), make_span!(1, 4))
+            LitExpr::new(make_lit!(str, 1), make_span!(1, 4))
         ))
     }
 
@@ -277,7 +277,7 @@ fn primary_expr_parse() {
     //                                      12 345 67890123456789012
     assert_eq!{ PrimaryExpr::with_test_str("[\"il\", 0o52u32, sO04n]"),
         Expr::Array(ArrayDef::new(make_span!(0, 21), make_exprs![
-            LitExpr::new(LitValue::new_str_lit(make_id!(1)), make_span!(1, 4)),
+            LitExpr::new(make_lit!(str, 1), make_span!(1, 4)),
             LitExpr::new(LitValue::from(0o52u32), make_span!(7, 13)), 
             SimpleName::new(make_id!(2), make_span!(16, 20))
         ]))
@@ -296,7 +296,7 @@ fn primary_expr_parse() {
     assert_eq!{ PrimaryExpr::with_test_str("[8, \"@=?GF\", 87f32, 1340323.74f64, FKOxAvx5]"),
         Expr::Array(ArrayDef::new(make_span!(0, 43), make_exprs![
             LitExpr::new(LitValue::from(8), make_span!(1, 1)),
-            LitExpr::new(LitValue::new_str_lit(make_id!(1)), make_span!(4, 10)), 
+            LitExpr::new(make_lit!(str, 1), make_span!(4, 10)), 
             LitExpr::new(LitValue::from(87f32), make_span!(13, 17)),
             LitExpr::new(LitValue::from(1340323.74f64), make_span!(20, 32)),
             SimpleName::new(make_id!(2), make_span!(35, 42))
@@ -335,7 +335,7 @@ fn primary_expr_parse() {
         .expect_result(Expr::Array(ArrayDef::new(make_span!(0, 65), make_exprs![
             SimpleName::new(make_id!(1), make_span!(1, 3)),
             LitExpr::new(LitValue::from(123u32), make_span!(6, 11)),
-            LitExpr::new(LitValue::new_str_lit(make_id!(2)), make_span!(14, 18)),
+            LitExpr::new(make_lit!(str, 2), make_span!(14, 18)),
             LitExpr::new(LitValue::from('\u{0065}'), make_span!(21, 28)),
             LitExpr::new(LitValue::from(false), make_span!(31, 35)),
             LitExpr::new(LitValue::Unit, make_span!(38, 39)),
@@ -344,7 +344,7 @@ fn primary_expr_parse() {
             ),
             TupleDef::new(make_span!(47, 62), make_exprs![
                 SimpleName::new(make_id!(1), make_span!(48, 50)),
-                LitExpr::new(LitValue::new_str_lit(make_id!(3)), make_span!(53, 59)),
+                LitExpr::new(make_lit!(str, 3), make_span!(53, 59)),
             ])
         ])))
     .finish();

@@ -152,7 +152,7 @@ fn expr_parse() {
     use super::TestInput;
 
     assert_eq!{ Expr::with_test_str("\"abc\""),
-        Expr::Lit(LitExpr::new(LitValue::new_str_lit(make_id!(1)), make_span!(0, 4)))
+        Expr::Lit(LitExpr::new(make_lit!(str, 1), make_span!(0, 4)))
     }
     assert_eq!{ Expr::with_test_str("0xfffu64"), 
         Expr::Lit(LitExpr::new(LitValue::from(0xFFFu64), make_span!(0, 7)))
@@ -459,7 +459,7 @@ fn expr_errors() {
         ])
         .expect_result(Expr::FnCall(FnCallExpr::new(
             MemberAccessExpr::new(
-                LitExpr::new(LitValue::new_str_lit(make_id!(1)), make_span!(0, 1)),
+                LitExpr::new(make_lit!(str, 1), make_span!(0, 1)),
                 make_span!(2, 2), 
                 SimpleName::new(make_id!(2), make_span!(3, 4))
             ),
