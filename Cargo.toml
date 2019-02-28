@@ -1,6 +1,3 @@
-[build]
-target-dir = "build"
-
 [workspace]
 members = [
     "codemap",

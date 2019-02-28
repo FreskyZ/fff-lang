@@ -89,6 +89,7 @@ pub mod FileHeaderDirectoryIndex {
     pub const Dotnet: u32 = 14;
 }
 
+#[derive(Clone, Copy)]
 pub struct DataDirecotry{
     pub virtual_address: u32,
     pub size: u32,
@@ -230,10 +231,14 @@ impl FileHeader { // Set
 }
 impl fmt::Debug for FileHeader { // Format
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // NOTE: the brackes wrapping self fields because if you remove this,
+        // this will be a reference to a packed struct's field, it's a warning and future error
+        // wrap a bracket copies them because they are simple integral values and also avoids the
+        // issue properly
         write!(f, "PEFileHeader{{\n")?;
         write!(f, "   TimeStamp: {}\n", DateTime::with_timestamp(self.time_date_stamp as u64).format("iso8601"))?;
-        write!(f, "   ImageSize: {:x}\n", self.image_size)?;
-        write!(f, "   HeadersSize: {:x}\n", self.headers_size)?;
+        write!(f, "   ImageSize: {:x}\n", { self.image_size })?;
+        write!(f, "   HeadersSize: {:x}\n", { self.headers_size })?;
         write!(f, "   Attributes:\n")?; {
             if self.attributes & 0x2 != 0 { write!(f, "      Executable\n")?; }
             if self.attributes & 0x20 != 0 { write!(f, "      LargeAddressAware\n")?; }
@@ -248,15 +253,15 @@ impl fmt::Debug for FileHeader { // Format
             if self.dll_attributes & 0x8000 != 0 { write!(f, "      TerminalServerAware\n")?; }
         }
         if self.dll_attributes == 0 { write!(f, "      (empty)\n")?; }
-        write!(f, "   ImageBase: {:x}\n", self.image_base)?;
-        write!(f, "   CodeSectionSize: {:x}\n", self.code_size)?;
-        write!(f, "   DataSectionSize: {:x}\n", self.data_size)?;
-        write!(f, "   BSSSectionSize: {:x}\n", self.bss_size)?;
-        write!(f, "   CodeSectionStart: {:x}\n", self.code_base)?;
-        write!(f, "   EntryPoint: {:x}\n", self.entry_point)?;
+        write!(f, "   ImageBase: {:x}\n", { self.image_base })?;
+        write!(f, "   CodeSectionSize: {:x}\n", { self.code_size })?;
+        write!(f, "   DataSectionSize: {:x}\n", { self.data_size })?;
+        write!(f, "   BSSSectionSize: {:x}\n", { self.bss_size })?;
+        write!(f, "   CodeSectionStart: {:x}\n", { self.code_base })?;
+        write!(f, "   EntryPoint: {:x}\n", { self.entry_point })?;
         
         let mut has_sections = false;
-        write!(f, "   SectionCount: {:x}\n", self.section_count)?;
+        write!(f, "   SectionCount: {:x}\n", { self.section_count })?;
         write!(f, "   Sections: \n")?; for i in 0..16 {
             const DATA_DIRECTORY_NAMES: [&str; 15] = [
                 "Export", "Import", "Resource", "Exception", 
@@ -264,7 +269,7 @@ impl fmt::Debug for FileHeader { // Format
                 "GlobalPointer", "ThreadStorage", "LoadConfig", "BoundImport", 
                 "ImportAddress", "DelayImport", "Dotnet"
             ];
-            let current_dir = &self.data_directories[i];
+            let current_dir = self.data_directories[i]; // you can not borrow this field because similiar issue with other fields
             if current_dir.virtual_address != 0 && current_dir.size != 0 {
                 has_sections = true;
                 write!(f, "      {} from {:x} size {:x}\n", DATA_DIRECTORY_NAMES[i], current_dir.virtual_address, current_dir.size)?;
