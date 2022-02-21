@@ -5,15 +5,12 @@
 //                      RBP points to Local[0]
 
 use crate::message::RuntimeMessage;
+#[cfg(test)]
 use crate::message::MessageEmitter;
-
-use crate::lexical::LitValue;
-
 use crate::codegen::Operand;
 use crate::codegen::Code;
 use crate::codegen::Program;
 use crate::codegen::FnCollection;
-use crate::codegen::Type;
 use crate::codegen::ItemID;
 use crate::codegen::TypeCollection;
 

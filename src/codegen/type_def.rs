@@ -1,19 +1,14 @@
 
 // Type info
 
-use std::cmp;
 use std::fmt;
-
 use crate::common::format_vector_debug;
 use crate::message::CodegenMessage;
 use crate::message::MessageEmitter;
-
 use crate::lexical::SeperatorKind;
 use crate::lexical::LitValue;
 use crate::lexical::NumLitValue;
-
 use crate::syntax::SMType;
-
 use crate::codegen::ItemID;
 use crate::codegen::fn_def::FnCollection;
 use crate::codegen::fn_def::FnArg;

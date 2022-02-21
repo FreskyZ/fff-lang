@@ -7,23 +7,17 @@ use crate::common::From2;
 use crate::common::StringPosition;
 use crate::common::format_vector_debug;
 use crate::message::CodegenMessage;
-
 use crate::lexical::LitValue;
 use crate::lexical::SeperatorKind;
-
 use crate::syntax::ExpressionBase as FullExpressionBase;
 use crate::syntax::ExpressionOperator as FullExpressionOperator;
 use crate::syntax::Expression as FullExpression;
 use crate::syntax::ExpressionStatement as FullExpressionStatement;
-use crate::syntax::SMType;
-
-use crate::codegen::var_def::VarCollection;
 use crate::codegen::ItemID;
 use crate::codegen::Type;
 use crate::codegen::TypeCollection;
 use crate::codegen::Operand;
 use crate::codegen::Code;
-use crate::codegen::FnName;
 use crate::codegen::FnImpl;
 use crate::codegen::session::GenerationSession;
 

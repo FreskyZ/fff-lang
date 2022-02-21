@@ -2,15 +2,11 @@
 // ExpressionStatement = Expression [AssignOperator Expression] fSemiColon
 
 use std::fmt;
-
 use crate::common::From2;
 use crate::common::StringPosition;
-use crate::message::SyntaxMessage;
-
 use crate::lexical::Lexer;
 use crate::lexical::SeperatorKind;
 use crate::lexical::SeperatorCategory;
-
 use crate::syntax::ast_item::IASTItem;
 use crate::syntax::Expression;
 

@@ -1,8 +1,6 @@
 
 // FunctionDef = fFn fIdentifier fLeftParen [Type Identifier [fComma Type Identifier]* [fComma] ] fRightParen [fNarrowRightArrow Type] Block
 
-#[cfg(not(test))]
-use std::cmp;
 use std::fmt;
 
 use crate::common::From2;

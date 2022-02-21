@@ -1,13 +1,15 @@
 
 // ASTItem interface
 
+#[cfg(test)]
 use std::fmt;
+#[cfg(test)]
 use std::marker::PhantomData;
-
-use crate::common::StringPosition;
-use crate::message::Message;
+#[cfg(test)]
 use crate::message::MessageEmitter;
-
+use crate::common::StringPosition;
+#[cfg(test)]
+use crate::message::Message;
 use crate::lexical::Lexer;
 
 pub trait IASTItem {

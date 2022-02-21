@@ -1,18 +1,15 @@
 
 // Block
 
-use crate::common::From2;
+#[cfg(test)]
 use crate::common::StringPosition;
-
 use crate::syntax::Block as SyntaxBlock;
-// use syntax::Statement;
-
+#[cfg(test)]
 use crate::codegen::ItemID;
 use crate::codegen::var_def::Var;
 use crate::codegen::var_def::VarCollection;
 use crate::codegen::statement::StatementGenerator;
 use crate::codegen::session::GenerationSession;
-use crate::codegen::Code;
 
 pub struct Block {
     pub fn_id: usize,

@@ -6,23 +6,18 @@ use std::cmp;
 use std::ops;
 use std::slice;
 use std::collections::HashMap;
-
 use crate::common::From2;
 use crate::common::StringPosition;
 use crate::message::CodegenMessage;
 use crate::message::MessageEmitter;
-
 use crate::lexical::SeperatorKind;
-
 use crate::syntax::FunctionDef as SyntaxFunctionDef; 
 use crate::syntax::Argument as SyntaxArgument;
 use crate::syntax::Block as SyntaxBlock;
-
 use crate::codegen::ItemID;
-use crate::codegen::type_def::Type;
 use crate::codegen::type_def::TypeCollection;
 use crate::codegen::var_def::VarCollection;
-use crate::codegen::vm_code::CodeCollection;
+#[cfg(test)]
 use crate::codegen::session::GenerationSession;
 
 pub struct FnArg {

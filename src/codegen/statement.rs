@@ -4,16 +4,12 @@
 use crate::common::From2;
 use crate::common::StringPosition;
 use crate::message::CodegenMessage;
-
 use crate::lexical::SeperatorKind;
 use crate::lexical::LitValue;
-use crate::lexical::NumLitValue;
-
 use crate::syntax::Block;
 use crate::syntax::Statement;
 use crate::syntax::Expression;
 use crate::syntax::ExpressionBase;
-
 use crate::syntax::VarDeclStatement;
 use crate::syntax::ReturnStatement;
 use crate::syntax::BreakStatement;
@@ -22,9 +18,7 @@ use crate::syntax::ExpressionStatement;
 use crate::syntax::LoopStatement;
 use crate::syntax::WhileStatement;
 use crate::syntax::ForStatement;
-use crate::syntax::ElseIfBranch;
 use crate::syntax::IfStatement;
-
 use crate::codegen::var_def::Var;
 use crate::codegen::session::GenerationSession;
 use crate::codegen::expression::gen_expr;

@@ -1,5 +1,4 @@
 #![allow(dead_code)]
-#![allow(unused_imports)]
 
 #[macro_use]
 mod common;
@@ -26,8 +25,7 @@ fn print_version() {
     println!("{}", VERSION_STRING);
 }
 
-// For feel safe
-fn returnable_main() {
+fn main() {
     use std::env::args;
     use crate::config::Config;
     use crate::config::ConfigError;
@@ -42,20 +40,5 @@ fn returnable_main() {
         Ok(Config::CompileFile(CompileFileConfig { file_name })) => {
             driver::compile_input(file_name);
         }
-    }
-}
-
-fn main() {
-
-    returnable_main();
-}
-
-#[cfg(test)]
-mod tests {
-    
-    #[test]
-    #[ignore]
-    fn sometest() {
-        
     }
 }

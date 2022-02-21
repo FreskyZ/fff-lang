@@ -2,14 +2,9 @@
 // GenerationSession, collection of collections, beatifuler interfaces
 
 use std::fmt;
-
 use crate::common::format_vector_debug;
-
-use crate::message::Message;
 use crate::message::MessageEmitter;
-
 use crate::syntax::Program as SyntaxProgram;
-
 use crate::codegen::type_def::TypeCollection;
 use crate::codegen::fn_def::FnCollection;
 use crate::codegen::Code;

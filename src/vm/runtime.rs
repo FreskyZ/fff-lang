@@ -1,14 +1,9 @@
 
 // Runtime value, slot content in runtime heap and stack
 
-use std::ops;
 use crate::common::format_vector_debug;
-
 use crate::lexical::LitValue;
 use crate::lexical::NumLitValue;
-
-use crate::codegen::Type;
-use crate::codegen::TypeCollection;
 use crate::codegen::Operand;
 
 #[derive(Debug, PartialEq, Clone)]

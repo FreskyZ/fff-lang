@@ -2,12 +2,8 @@
 // VM Instruction design
 
 use std::fmt;
-
 use crate::common::format_vector_debug;
-
 use crate::lexical::LitValue;
-use crate::lexical::SeperatorKind;
-
 use crate::codegen::ItemID;
 
 #[derive(Eq, PartialEq, Clone)]

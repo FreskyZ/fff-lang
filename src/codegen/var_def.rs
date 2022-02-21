@@ -4,8 +4,6 @@
 // ATTENTION: (2016-12-15) Currently no type size so codegen::Type will assume all size to be 1 and 
 //     so offset mechanism is used in varcollection to support future sized type
 
-use std::fmt;
-
 use crate::common::StringPosition;
 
 use crate::message::MessageEmitter;
