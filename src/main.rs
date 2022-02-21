@@ -2,9 +2,6 @@
 #![allow(unused_imports)]
 
 #[macro_use]
-extern crate fsz_common;
-
-#[macro_use]
 mod common;
 mod message;
 mod config;

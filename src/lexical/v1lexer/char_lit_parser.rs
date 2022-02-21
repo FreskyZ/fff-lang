@@ -260,7 +260,7 @@ mod tests {
                     expect_counter.insert($c);
                 )*
                 assert!($current_counter.difference(&expect_counter).collect::<HashSet<&i32>>().is_empty(),
-                    format!("Current counter: {:?}, expect_counter: {:?}", $current_counter, expect_counter));
+                    "Current counter: {:?}, expect_counter: {:?}", $current_counter, expect_counter);
                 $all_counter = $all_counter.union(&expect_counter).map(|x| *x).collect::<HashSet<i32>>();
             })
         }

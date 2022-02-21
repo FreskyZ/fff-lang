@@ -392,7 +392,7 @@ impl TypeCollection {
 
                 for (index, item_typeid) in item_typeids.iter().enumerate() {
                     push_builtin_fn!(fns, format!("set_item{}", index), 0, [tuple_typeid, *item_typeid]);
-                    push_builtin_fn!(fns, format!("set_item{}", index), 0, [tuple_typeid, *item_typeid]);
+                    push_builtin_fn!(fns, format!("get_item{}", index), 0, [tuple_typeid, *item_typeid]);
                 }
                 push_builtin_fn!(fns, SeperatorKind::Equal, 12, [tuple_typeid, tuple_typeid]);
                 push_builtin_fn!(fns, SeperatorKind::NotEqual, 12, [tuple_typeid, tuple_typeid]);
@@ -475,10 +475,10 @@ fn gen_types_member_fn() {
 
     let mut sess = GenerationSession::new();
 
-    assert_eq!(sess.fns.find_by_sign(SeperatorKind::Add, &vec![ItemID::new(5), ItemID::new(5)]).is_valid(), true);
-    assert_eq!(sess.fns.find_by_sign(SeperatorKind::ShiftLeft, &vec![ItemID::new(8), ItemID::new(5)]).is_valid(), true);
-    assert_eq!(sess.fns.find_by_sign("length", &vec![ItemID::new(13)]).is_valid(), true);
-    assert_eq!(sess.fns.find_by_sign(12, &vec![ItemID::new(5)]).is_valid(), false); // proud about that
+    assert!(sess.fns.find_by_sign(SeperatorKind::Add, &vec![ItemID::new(5), ItemID::new(5)]).is_valid());
+    assert!(sess.fns.find_by_sign(SeperatorKind::ShiftLeft, &vec![ItemID::new(8), ItemID::new(5)]).is_valid());
+    assert!(sess.fns.find_by_sign("length", &vec![ItemID::new(13)]).is_valid());
+    assert!(!sess.fns.find_by_sign(12, &vec![ItemID::new(5)]).is_valid()); // proud about that
 
     sess.types.push_builtin_template_type(Type::Array(5), &mut sess.fns);
     sess.types.push_builtin_template_type(Type::Array(9), &mut sess.fns);

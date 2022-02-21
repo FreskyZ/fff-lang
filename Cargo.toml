@@ -1,6 +1,3 @@
 [package]
 name = "smallc"
 version = "0.1.0"
-
-[dependencies]
-fsz-common = { path = "../fsz-common" }
