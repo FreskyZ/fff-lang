@@ -1,12 +1,12 @@
 
 // Raw string literal parser
 
-use common::From2;
-use common::Position;
-use common::StringPosition;
-use message::LexicalMessage as Message;
-use message::MessageEmitter;
-use lexical::symbol_type::string_literal::StringLiteral;
+use crate::common::From2;
+use crate::common::Position;
+use crate::common::StringPosition;
+use crate::message::LexicalMessage as Message;
+use crate::message::MessageEmitter;
+use crate::lexical::symbol_type::string_literal::StringLiteral;
 
 pub struct RawStringLiteralParser {
     raw: String,
@@ -60,12 +60,12 @@ mod tests {
     
     #[test]
     fn raw_string_lit_parser_test() {
-        use common::From2;
-        use common::Position;
-        use common::StringPosition;
-        use message::LexicalMessage as Message;
-        use message::MessageEmitter;
-        use lexical::symbol_type::string_literal::StringLiteral;
+        use crate::common::From2;
+        use crate::common::Position;
+        use crate::common::StringPosition;
+        use crate::message::LexicalMessage as Message;
+        use crate::message::MessageEmitter;
+        use crate::lexical::symbol_type::string_literal::StringLiteral;
         use super::RawStringLiteralParser;
         use super::RawStringLiteralParserResult::*;
 

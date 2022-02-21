@@ -4,16 +4,16 @@
 
 use std::fmt;
 
-use common::From2;
-use common::StringPosition;
+use crate::common::From2;
+use crate::common::StringPosition;
 
-use lexical::Lexer;
-use lexical::KeywordKind;
-use lexical::SeperatorKind;
+use crate::lexical::Lexer;
+use crate::lexical::KeywordKind;
+use crate::lexical::SeperatorKind;
 
-use syntax::ast_item::IASTItem;
-use syntax::Expression;
-use syntax::SMType;
+use crate::syntax::ast_item::IASTItem;
+use crate::syntax::Expression;
+use crate::syntax::SMType;
 
 #[derive(Eq, PartialEq)]
 pub struct VarDeclStatement {
@@ -131,11 +131,11 @@ impl IASTItem for VarDeclStatement {
 #[cfg(test)]
 mod tests {
     use super::VarDeclStatement;
-    use lexical::Lexer;
-    use syntax::ast_item::IASTItem;
-    use syntax::SMType;
-    use syntax::Expression;
-    use common::StringPosition;
+    use crate::lexical::Lexer;
+    use crate::syntax::ast_item::IASTItem;
+    use crate::syntax::SMType;
+    use crate::syntax::Expression;
+    use crate::common::StringPosition;
 
     #[test]
     fn ast_stmt_var_decl() {

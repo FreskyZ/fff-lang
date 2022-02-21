@@ -75,26 +75,27 @@ macro_rules! define_seperator {
             }
         }
 
-        use common::TryFrom;
         impl TryFrom<char> for $enum_name {
-            fn try_from(ch: char) -> Option<$enum_name> {
+            type Error = ();
+            fn try_from(ch: char) -> Result<$enum_name, ()> {
                 match ch {
                     $(
-                        $ch => Some($enum_name::$name1),
+                        $ch => Ok($enum_name::$name1),
                     )*
                     $(
-                        $ch3 => Some($enum_name::$name3),
+                        $ch3 => Ok($enum_name::$name3),
                     )*
-                    _ => None,
+                    _ => Err(()),
                 }
             }
         }
 
         impl TryFrom<(char, char)> for $enum_name {
-            fn try_from(chs: (char, char)) -> Option<$enum_name> {
+            type Error = ();
+            fn try_from(chs: (char, char)) -> Result<$enum_name, ()> {
                 match chs {
                     $(
-                        ($ch1, $ch2) => Some($enum_name::$name2),
+                        ($ch1, $ch2) => Ok($enum_name::$name2),
                     )*
                     (ch, _) => $enum_name::try_from(ch),
                 }

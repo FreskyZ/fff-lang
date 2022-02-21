@@ -1,11 +1,11 @@
 
 // Compiler core driver 
 
-use file_map::InputReader;
-use lexical::Lexer;
-use syntax::parse;
-use codegen::generate;
-use vm::run;
+use crate::file_map::InputReader;
+use crate::lexical::Lexer;
+use crate::syntax::parse;
+use crate::codegen::generate;
+use crate::vm::run;
 
 // Handle and print error here
 pub fn compile_input(file_name: String) {

@@ -3,15 +3,15 @@
 
 use std::fmt;
 
-use common::From2;
-use common::StringPosition;
+use crate::common::From2;
+use crate::common::StringPosition;
 
-use lexical::Lexer;
-use lexical::SeperatorKind;
-use lexical::SeperatorCategory;
+use crate::lexical::Lexer;
+use crate::lexical::SeperatorKind;
+use crate::lexical::SeperatorCategory;
 
-use syntax::ast_item::IASTItem;
-use syntax::expression::postfix::PostfixExpression;
+use crate::syntax::ast_item::IASTItem;
+use crate::syntax::expression::postfix::PostfixExpression;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct UnaryOperator {

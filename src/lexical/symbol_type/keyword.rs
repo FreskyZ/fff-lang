@@ -37,16 +37,14 @@ macro_rules! define_keyword {
             }
         }
 
-        use common::TryFrom;
-        impl <'a> TryFrom<&'a str> for $enum_name {
-            
-            fn try_from(name: &'a str) -> Option<$enum_name> {
+        impl $enum_name {
+            pub fn try_from(name: &str) -> Result<$enum_name, ()> {
                 use self::$enum_name::*;
                 match name {
                     $(
-                        $value => Some($var_name),
+                        $value => Ok($var_name),
                     )*
-                    _ => None,
+                    _ => Err(()),
                 }
             }
         }

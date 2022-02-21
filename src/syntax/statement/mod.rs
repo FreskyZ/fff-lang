@@ -8,12 +8,12 @@
  
 use std::fmt;
 
-use common::StringPosition;
+use crate::common::StringPosition;
 
-use lexical::Lexer;
+use crate::lexical::Lexer;
 
-use syntax::ast_item::IASTItem;
-use syntax::Block;
+use crate::syntax::ast_item::IASTItem;
+use crate::syntax::Block;
 
 mod var_decl;
 mod expr_stmt;

@@ -6,10 +6,10 @@
 
 use std::fmt;
 
-use common::StringPosition;
+use crate::common::StringPosition;
 
-use lexical::Lexer;
-use syntax::ast_item::IASTItem;
+use crate::lexical::Lexer;
+use crate::syntax::ast_item::IASTItem;
 
 use super::binary::BinaryExpression;
 
@@ -46,23 +46,23 @@ impl IASTItem for D3Expression {
 
 #[cfg(test)]
 mod tests {
-    use syntax::ast_item::IASTItem;
-    use common::StringPosition;
+    use crate::syntax::ast_item::IASTItem;
+    use crate::common::StringPosition;
 
-    use lexical::Lexer;
-    use lexical::SeperatorKind;
-    use lexical::NumLitValue;
-    use lexical::LitValue;
+    use crate::lexical::Lexer;
+    use crate::lexical::SeperatorKind;
+    use crate::lexical::NumLitValue;
+    use crate::lexical::LitValue;
 
-    use syntax::SMType;
-    use syntax::expression::postfix::PostfixExpression;
-    use syntax::expression::primary::PrimaryExpression;
-    use syntax::expression::postfix::Postfix;
-    use syntax::expression::unary::UnaryOperator;
-    use syntax::expression::unary::UnaryExpression;
+    use crate::syntax::SMType;
+    use crate::syntax::expression::postfix::PostfixExpression;
+    use crate::syntax::expression::primary::PrimaryExpression;
+    use crate::syntax::expression::postfix::Postfix;
+    use crate::syntax::expression::unary::UnaryOperator;
+    use crate::syntax::expression::unary::UnaryExpression;
     // use syntax::expression::binary::BinaryOperator;
-    use syntax::expression::binary::BinaryExpression;
-    use syntax::expression::d3::D3Expression;
+    use crate::syntax::expression::binary::BinaryExpression;
+    use crate::syntax::expression::d3::D3Expression;
         
     // Helper macros
     // primary expression

@@ -15,16 +15,16 @@
 
 use std::fmt;
 
-use common::From2;
-use common::StringPosition;
-use common::format_vector_debug;
-use common::format_vector_display;
-use message::SyntaxMessage;
+use crate::common::From2;
+use crate::common::StringPosition;
+use crate::common::format_vector_debug;
+use crate::common::format_vector_display;
+use crate::message::SyntaxMessage;
 
-use lexical::Lexer;
-use lexical::SeperatorKind;
+use crate::lexical::Lexer;
+use crate::lexical::SeperatorKind;
 
-use syntax::ast_item::IASTItem;
+use crate::syntax::ast_item::IASTItem;
 
 #[derive(Eq, PartialEq, Clone)]
 pub enum SMType {
@@ -208,11 +208,11 @@ mod tests {
 
     #[test]
     fn ast_smtype_parse() {
-        use message::Message;
-        use message::SyntaxMessage;
+        use crate::message::Message;
+        use crate::message::SyntaxMessage;
         use super::SMType;
-        use common::StringPosition;
-        use syntax::ast_item::TestCase;
+        use crate::common::StringPosition;
+        use crate::syntax::ast_item::TestCase;
 
         // Primitive
         ast_test_case!{ "u8", 1, make_str_pos!(1, 1, 1, 2),

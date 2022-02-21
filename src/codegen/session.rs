@@ -3,20 +3,20 @@
 
 use std::fmt;
 
-use common::format_vector_debug;
+use crate::common::format_vector_debug;
 
-use message::Message;
-use message::MessageEmitter;
+use crate::message::Message;
+use crate::message::MessageEmitter;
 
-use syntax::Program as SyntaxProgram;
+use crate::syntax::Program as SyntaxProgram;
 
-use codegen::type_def::TypeCollection;
-use codegen::fn_def::FnCollection;
-use codegen::Code;
-use codegen::vm_code::CodeCollection;
-use codegen::var_def::VarCollection;
-use codegen::block::Block;
-use codegen::loop_def::LoopCollection;
+use crate::codegen::type_def::TypeCollection;
+use crate::codegen::fn_def::FnCollection;
+use crate::codegen::Code;
+use crate::codegen::vm_code::CodeCollection;
+use crate::codegen::var_def::VarCollection;
+use crate::codegen::block::Block;
+use crate::codegen::loop_def::LoopCollection;
 
 #[derive(Eq, PartialEq, Copy, Clone)]
 pub struct ItemID(Option<usize>);

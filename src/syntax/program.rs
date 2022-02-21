@@ -3,17 +3,17 @@
 
 use std::fmt;
 
-use common::From2;
-use common::StringPosition;
-use common::format_vector_debug;
-use common::format_vector_display;
+use crate::common::From2;
+use crate::common::StringPosition;
+use crate::common::format_vector_debug;
+use crate::common::format_vector_display;
 
-use message::MessageEmitter;
+use crate::message::MessageEmitter;
 
-use lexical::Lexer;
+use crate::lexical::Lexer;
 
-use syntax::ast_item::IASTItem;
-use syntax::FunctionDef;
+use crate::syntax::ast_item::IASTItem;
+use crate::syntax::FunctionDef;
 
 #[derive(Eq, PartialEq)]
 pub struct Program {
@@ -82,10 +82,10 @@ impl IASTItem for Program {
 
 #[cfg(test)]
 mod tests {
-    use file_map::InputReader;
-    use lexical::Lexer;
-    use syntax::ast_item::IASTItem;
-    use syntax::Program;
+    use crate::file_map::InputReader;
+    use crate::lexical::Lexer;
+    use crate::syntax::ast_item::IASTItem;
+    use crate::syntax::Program;
 
     #[test]
     fn ast_all() {

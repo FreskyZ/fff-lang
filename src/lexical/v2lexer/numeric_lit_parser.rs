@@ -2,12 +2,12 @@
 // numeric literal parser
 // TODO: ' as seperator, multi seperator not supported, full test
 
-use common::StringPosition;
-use message::LexicalMessage as Message;
-use message::MessageEmitter;
+use crate::common::StringPosition;
+use crate::message::LexicalMessage as Message;
+use crate::message::MessageEmitter;
 
-use lexical::symbol_type::numeric_literal::NumericLiteral;
-use lexical::NumLitValue;
+use crate::lexical::symbol_type::numeric_literal::NumericLiteral;
+use crate::lexical::NumLitValue;
 
 // Final to value, check too large
 macro_rules! values_to_integral {

@@ -11,24 +11,23 @@
 // May be final layer, --- not, 17/10/8
 
 use std::str::Chars;
-use common::From2;
-use common::TryFrom;
-use common::Position;
-use common::StringPosition;
-use message::LexicalMessage;
-use message::MessageEmitter;
+use crate::common::From2;
+use crate::common::Position;
+use crate::common::StringPosition;
+use crate::message::LexicalMessage;
+use crate::message::MessageEmitter;
 
-use lexical::v2lexer::V2Token;
-use lexical::v2lexer::BufV2Token;
-use lexical::v2lexer::BufV2Lexer;
+use crate::lexical::v2lexer::V2Token;
+use crate::lexical::v2lexer::BufV2Token;
+use crate::lexical::v2lexer::BufV2Lexer;
 
-use lexical::buf_lexer::IDetailLexer;
+use crate::lexical::buf_lexer::IDetailLexer;
 
-use lexical::symbol_type::string_literal::StringLiteral;
-use lexical::symbol_type::numeric_literal::NumericLiteral;
-use lexical::symbol_type::char_literal::CharLiteral;
-use lexical::KeywordKind;
-use lexical::SeperatorKind;
+use crate::lexical::symbol_type::string_literal::StringLiteral;
+use crate::lexical::symbol_type::numeric_literal::NumericLiteral;
+use crate::lexical::symbol_type::char_literal::CharLiteral;
+use crate::lexical::KeywordKind;
+use crate::lexical::SeperatorKind;
 
 mod unicode_char;
 
@@ -106,8 +105,8 @@ impl<'chs> IDetailLexer<'chs, V3Token> for V3Lexer<'chs> {
                 }
                 Some(BufV2Token{ token: V2Token::Identifier{ name, pos }, next: _1 }) => {
                     match KeywordKind::try_from(&name) {
-                        Some(keyword) => return Some(V3Token::Keyword(keyword, pos)),
-                        None => {
+                        Ok(keyword) => return Some(V3Token::Keyword(keyword, pos)),
+                        Err(_) => {
                             match &*name {
                                 "true" => return Some(V3Token::BooleanLiteral(true, pos)),
                                 "false" => return Some(V3Token::BooleanLiteral(false, pos)),
@@ -122,7 +121,7 @@ impl<'chs> IDetailLexer<'chs, V3Token> for V3Lexer<'chs> {
                     match msg { Some(msg) => messages.push(msg), None => () }
                     
                     match SeperatorKind::try_from((ch ,next_ch)) {
-                        Some(sep) => match sep.len() { 
+                        Ok(sep) => match sep.len() { 
                             1 => return Some(V3Token::Seperator(sep, StringPosition::from2(pos, pos))),
                             2 => {
                                 self.v2.skip1(messages);
@@ -132,7 +131,7 @@ impl<'chs> IDetailLexer<'chs, V3Token> for V3Lexer<'chs> {
                             }
                             _ => unreachable!(),
                         },
-                        None => continue,
+                        Err(_) => continue,
                     }
                 }
                 Some(BufV2Token{ token: V2Token::Other{ ch, pos }, next: _other }) => {
@@ -140,11 +139,11 @@ impl<'chs> IDetailLexer<'chs, V3Token> for V3Lexer<'chs> {
                     match msg { Some(msg) => messages.push(msg), None => () }
 
                     match SeperatorKind::try_from(ch) {
-                        Some(sep) => match sep.len() { 
+                        Ok(sep) => match sep.len() { 
                             1 => return Some(V3Token::Seperator(sep, StringPosition::from2(pos, pos))),
                             _ => unreachable!(),
                         },
-                        None => continue,
+                        Err(_) => continue,
                     }
                 }
                 None => {
@@ -157,14 +156,14 @@ impl<'chs> IDetailLexer<'chs, V3Token> for V3Lexer<'chs> {
 
 #[cfg(test)]
 mod tests {
-    use lexical::buf_lexer::IDetailLexer;
+    use crate::lexical::buf_lexer::IDetailLexer;
 
     #[test]
     fn v3_test1() {
         use std::fs::File;
         use std::io::Read;
         use super::V3Lexer;
-        use message::MessageEmitter;
+        use crate::message::MessageEmitter;
 
         let file_name = "tests/lexical/2.sm";
         let mut file: File = File::open(file_name).expect("Open file failed");
@@ -190,7 +189,7 @@ mod tests {
          use std::fs::File;
         use std::io::Read;
         use super::V3Lexer;
-        use message::MessageEmitter;
+        use crate::message::MessageEmitter;
 
         let file_name = "src/lexical/v2lexer/numeric_lit_parser.rs";
         let mut file: File = File::open(file_name).expect("Open file failed");

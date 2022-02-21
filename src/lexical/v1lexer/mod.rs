@@ -13,28 +13,28 @@ mod string_lit_parser;
 mod raw_string_lit_parser;
 
 use std::str::Chars;
-use common::Position;
-use message::LexicalMessage as Message;
-use message::MessageEmitter;
+use crate::common::Position;
+use crate::message::LexicalMessage as Message;
+use crate::message::MessageEmitter;
 
-use lexical::v0lexer::V0Token;
-use lexical::v0lexer::BufV0Token;
-use lexical::v0lexer::BufV0Lexer;
+use crate::lexical::v0lexer::V0Token;
+use crate::lexical::v0lexer::BufV0Token;
+use crate::lexical::v0lexer::BufV0Lexer;
 
-use lexical::buf_lexer::IDetailLexer;
-use lexical::buf_lexer::BufToken;
-use lexical::buf_lexer::BufLexer;
+use crate::lexical::buf_lexer::IDetailLexer;
+use crate::lexical::buf_lexer::BufToken;
+use crate::lexical::buf_lexer::BufLexer;
 
-use lexical::symbol_type::char_literal::CharLiteral;
-use lexical::symbol_type::string_literal::StringLiteral;
+use crate::lexical::symbol_type::char_literal::CharLiteral;
+use crate::lexical::symbol_type::string_literal::StringLiteral;
 
-use lexical::v1lexer::string_lit_parser::StringLiteralParser;
-use lexical::v1lexer::string_lit_parser::StringLiteralParserResult;
-use lexical::v1lexer::raw_string_lit_parser::RawStringLiteralParser;
-use lexical::v1lexer::raw_string_lit_parser::RawStringLiteralParserResult;
-use lexical::v1lexer::char_lit_parser::CharLiteralParser;
-use lexical::v1lexer::char_lit_parser::CoverageRecorder;
-use lexical::v1lexer::char_lit_parser::CharLiteralParserResult;
+use crate::lexical::v1lexer::string_lit_parser::StringLiteralParser;
+use crate::lexical::v1lexer::string_lit_parser::StringLiteralParserResult;
+use crate::lexical::v1lexer::raw_string_lit_parser::RawStringLiteralParser;
+use crate::lexical::v1lexer::raw_string_lit_parser::RawStringLiteralParserResult;
+use crate::lexical::v1lexer::char_lit_parser::CharLiteralParser;
+use crate::lexical::v1lexer::char_lit_parser::CoverageRecorder;
+use crate::lexical::v1lexer::char_lit_parser::CharLiteralParserResult;
 
 #[cfg(test)]
 #[derive(Clone, Eq, PartialEq)]
@@ -228,14 +228,14 @@ pub type BufV1Lexer<'chs> = BufLexer<V1Lexer<'chs>, V1Token>;
 mod tests {
     use super::V1Token;
     use super::V1Lexer;
-    use common::From2;
-    use common::Position;
-    use common::StringPosition;
-    use message::LexicalMessage as Message;
-    use message::MessageEmitter;
-    use lexical::buf_lexer::IDetailLexer;
-    use lexical::symbol_type::string_literal::StringLiteral;
-    use lexical::symbol_type::char_literal::CharLiteral;
+    use crate::common::From2;
+    use crate::common::Position;
+    use crate::common::StringPosition;
+    use crate::message::LexicalMessage as Message;
+    use crate::message::MessageEmitter;
+    use crate::lexical::buf_lexer::IDetailLexer;
+    use crate::lexical::symbol_type::string_literal::StringLiteral;
+    use crate::lexical::symbol_type::char_literal::CharLiteral;
 
     #[test]
     fn v1_base() {

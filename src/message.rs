@@ -2,9 +2,9 @@
 // Process messages
 
 use std::fmt;
-use common::Position;
-use common::StringPosition;
-use common::format_vector_debug;
+use crate::common::Position;
+use crate::common::StringPosition;
+use crate::common::format_vector_debug;
 
 // Lexical
 #[derive(Eq, PartialEq)]

@@ -6,24 +6,24 @@
 mod numeric_lit_parser;
 
 use std::str::Chars;
-use common::From2;
-use common::Position;
-use common::StringPosition;
-use message::MessageEmitter;
+use crate::common::From2;
+use crate::common::Position;
+use crate::common::StringPosition;
+use crate::message::MessageEmitter;
 
-use lexical::v1lexer::V1Token;
-use lexical::v1lexer::BufV1Token;
-use lexical::v1lexer::BufV1Lexer;
+use crate::lexical::v1lexer::V1Token;
+use crate::lexical::v1lexer::BufV1Token;
+use crate::lexical::v1lexer::BufV1Lexer;
 
-use lexical::buf_lexer::IDetailLexer;
-use lexical::buf_lexer::BufToken;
-use lexical::buf_lexer::BufLexer;
+use crate::lexical::buf_lexer::IDetailLexer;
+use crate::lexical::buf_lexer::BufToken;
+use crate::lexical::buf_lexer::BufLexer;
 
-use lexical::symbol_type::string_literal::StringLiteral;
-use lexical::symbol_type::numeric_literal::NumericLiteral;
-use lexical::symbol_type::char_literal::CharLiteral;
+use crate::lexical::symbol_type::string_literal::StringLiteral;
+use crate::lexical::symbol_type::numeric_literal::NumericLiteral;
+use crate::lexical::symbol_type::char_literal::CharLiteral;
 
-use lexical::v2lexer::numeric_lit_parser::parse_numeric_literal;
+use crate::lexical::v2lexer::numeric_lit_parser::parse_numeric_literal;
 
 #[cfg(test)]
 #[derive(Eq, PartialEq, Clone)]
@@ -217,13 +217,13 @@ pub type BufV2Lexer<'chs> = BufLexer<V2Lexer<'chs>, V2Token>;
 mod tests {
     use super::V2Token;
     use super::V2Lexer;
-    use lexical::buf_lexer::IDetailLexer;
-    use common::Position;
-    use common::StringPosition;
-    use message::MessageEmitter;
-    use lexical::symbol_type::string_literal::StringLiteral;
-    use lexical::symbol_type::numeric_literal::NumericLiteral;
-    use lexical::NumLitValue;
+    use crate::lexical::buf_lexer::IDetailLexer;
+    use crate::common::Position;
+    use crate::common::StringPosition;
+    use crate::message::MessageEmitter;
+    use crate::lexical::symbol_type::string_literal::StringLiteral;
+    use crate::lexical::symbol_type::numeric_literal::NumericLiteral;
+    use crate::lexical::NumLitValue;
     
     macro_rules! test_case {
         ($program: expr, $($expect: expr, )*) => ({

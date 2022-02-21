@@ -4,13 +4,13 @@
 use std::str::FromStr;
 use std::fmt;
 
-use lexical::SeperatorKind;
+use crate::lexical::SeperatorKind;
 
-use codegen::FnName;
-use codegen::ItemID;
-use codegen::Type;
-use codegen::Operand;
-use codegen::TypeCollection;
+use crate::codegen::FnName;
+use crate::codegen::ItemID;
+use crate::codegen::Type;
+use crate::codegen::Operand;
+use crate::codegen::TypeCollection;
 
 use super::runtime::Runtime;
 use super::runtime::RuntimeValue;

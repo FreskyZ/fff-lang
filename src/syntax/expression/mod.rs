@@ -4,16 +4,16 @@
 
 use std::fmt;
 
-use common::StringPosition;
-use common::format_vector_display;
-use common::format_vector_debug;
+use crate::common::StringPosition;
+use crate::common::format_vector_display;
+use crate::common::format_vector_debug;
 
-use lexical::Lexer;
-use lexical::SeperatorKind;
-use lexical::LitValue;
+use crate::lexical::Lexer;
+use crate::lexical::SeperatorKind;
+use crate::lexical::LitValue;
 
-use syntax::SMType;
-use syntax::ast_item::IASTItem;
+use crate::syntax::SMType;
+use crate::syntax::ast_item::IASTItem;
 
 mod primary;
 mod postfix;
@@ -342,15 +342,15 @@ mod tests {
     use super::ExpressionBase;
     use super::ExpressionOperator;
 
-    use common::StringPosition;
-    use message::SyntaxMessage;
-    use message::Message;
-    use lexical::Lexer;
-    use lexical::SeperatorKind;
-    use lexical::LitValue;
-    use syntax::ast_item::IASTItem;
-    use syntax::SMType;
-    use syntax::ast_item::TestCase;
+    use crate::common::StringPosition;
+    use crate::message::SyntaxMessage;
+    use crate::message::Message;
+    use crate::lexical::Lexer;
+    use crate::lexical::SeperatorKind;
+    use crate::lexical::LitValue;
+    use crate::syntax::ast_item::IASTItem;
+    use crate::syntax::SMType;
+    use crate::syntax::ast_item::TestCase;
 
     #[test]
     fn ast_expr_all() {

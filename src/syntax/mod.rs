@@ -11,29 +11,29 @@ mod statement;
 mod block;
 mod expression;
 
-pub use syntax::program::Program;
-pub use syntax::function_def::Argument;
-pub use syntax::function_def::FunctionDef;
-pub use syntax::expression::Expression;
-pub use syntax::expression::ExpressionBase;
-pub use syntax::expression::ExpressionOperator;
-pub use syntax::statement::Statement;
-pub use syntax::statement::VarDeclStatement;
-pub use syntax::statement::ReturnStatement;
-pub use syntax::statement::BreakStatement;
-pub use syntax::statement::ContinueStatement;
-pub use syntax::statement::ExpressionStatement;
-pub use syntax::statement::LoopStatement;
-pub use syntax::statement::WhileStatement;
-pub use syntax::statement::ForStatement;
-pub use syntax::statement::ElseIfBranch;
-pub use syntax::statement::IfStatement;
-pub use syntax::smtype::SMType;
-pub use syntax::block::Block;
+pub use crate::syntax::program::Program;
+pub use crate::syntax::function_def::Argument;
+pub use crate::syntax::function_def::FunctionDef;
+pub use crate::syntax::expression::Expression;
+pub use crate::syntax::expression::ExpressionBase;
+pub use crate::syntax::expression::ExpressionOperator;
+pub use crate::syntax::statement::Statement;
+pub use crate::syntax::statement::VarDeclStatement;
+pub use crate::syntax::statement::ReturnStatement;
+pub use crate::syntax::statement::BreakStatement;
+pub use crate::syntax::statement::ContinueStatement;
+pub use crate::syntax::statement::ExpressionStatement;
+pub use crate::syntax::statement::LoopStatement;
+pub use crate::syntax::statement::WhileStatement;
+pub use crate::syntax::statement::ForStatement;
+pub use crate::syntax::statement::ElseIfBranch;
+pub use crate::syntax::statement::IfStatement;
+pub use crate::syntax::smtype::SMType;
+pub use crate::syntax::block::Block;
 
-use lexical::Lexer;
+use crate::lexical::Lexer;
 pub fn parse(lexer: &mut Lexer) -> Option<Program> {
-    use syntax::ast_item::IASTItem;
+    use crate::syntax::ast_item::IASTItem;
 
     Program::parse(lexer, 0).0
 }
@@ -59,7 +59,7 @@ mod tests {
 
     #[test]
     fn ast_hello_world() {
-        use lexical::Lexer;
+        use crate::lexical::Lexer;
         use super::parse;
 
         let lexer = &mut Lexer::new(r#"fn main() { println("helloworld"); }"#);

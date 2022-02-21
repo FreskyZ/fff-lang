@@ -6,13 +6,13 @@
 
 use std::fmt;
 
-use common::StringPosition;
+use crate::common::StringPosition;
 
-use message::MessageEmitter;
-use message::CodegenMessage;
+use crate::message::MessageEmitter;
+use crate::message::CodegenMessage;
 
-use codegen::ItemID;
-use codegen::type_def::TypeCollection;
+use crate::codegen::ItemID;
+use crate::codegen::type_def::TypeCollection;
 
 // Variable collection
 #[derive(Debug, Eq, PartialEq)]

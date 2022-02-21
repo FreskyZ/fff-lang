@@ -4,18 +4,18 @@
 // StackFrame = RIP RBP [Local]*
 //                      RBP points to Local[0]
 
-use message::RuntimeMessage;
-use message::MessageEmitter;
+use crate::message::RuntimeMessage;
+use crate::message::MessageEmitter;
 
-use lexical::LitValue;
+use crate::lexical::LitValue;
 
-use codegen::Operand;
-use codegen::Code;
-use codegen::Program;
-use codegen::FnCollection;
-use codegen::Type;
-use codegen::ItemID;
-use codegen::TypeCollection;
+use crate::codegen::Operand;
+use crate::codegen::Code;
+use crate::codegen::Program;
+use crate::codegen::FnCollection;
+use crate::codegen::Type;
+use crate::codegen::ItemID;
+use crate::codegen::TypeCollection;
 
 use super::runtime::RuntimeValue;
 use super::runtime::Runtime;

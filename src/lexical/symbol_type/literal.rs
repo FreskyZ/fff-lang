@@ -2,8 +2,8 @@
 // lexical literal, for lexical and syntax parser convenience
 
 use std::fmt;
-use common::StringPosition;
-use lexical::NumLitValue;
+use crate::common::StringPosition;
+use crate::lexical::NumLitValue;
 
 #[derive(Clone, Eq, PartialEq)]
 pub enum LitValue {

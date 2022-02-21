@@ -3,12 +3,12 @@
 
 use std::fmt;
 
-use common::format_vector_debug;
+use crate::common::format_vector_debug;
 
-use lexical::LitValue;
-use lexical::SeperatorKind;
+use crate::lexical::LitValue;
+use crate::lexical::SeperatorKind;
 
-use codegen::ItemID;
+use crate::codegen::ItemID;
 
 #[derive(Eq, PartialEq, Clone)]
 pub enum Operand {

@@ -4,11 +4,11 @@
 use std::fmt;
 use std::marker::PhantomData;
 
-use common::StringPosition;
-use message::Message;
-use message::MessageEmitter;
+use crate::common::StringPosition;
+use crate::message::Message;
+use crate::message::MessageEmitter;
 
-use lexical::Lexer;
+use crate::lexical::Lexer;
 
 pub trait IASTItem {
 

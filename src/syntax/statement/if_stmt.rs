@@ -3,17 +3,17 @@
 
 use std::fmt;
 
-use common::From2;
-use common::StringPosition;
-use common::format_vector_display;
-use common::format_vector_debug;
+use crate::common::From2;
+use crate::common::StringPosition;
+use crate::common::format_vector_display;
+use crate::common::format_vector_debug;
 
-use lexical::Lexer;
-use lexical::KeywordKind;
+use crate::lexical::Lexer;
+use crate::lexical::KeywordKind;
 
-use syntax::ast_item::IASTItem;
-use syntax::Expression;
-use syntax::Block;
+use crate::syntax::ast_item::IASTItem;
+use crate::syntax::Expression;
+use crate::syntax::Block;
 
 #[derive(Eq, PartialEq)]
 pub struct ElseIfBranch {
@@ -162,8 +162,8 @@ impl IASTItem for IfStatement {
 #[cfg(test)]
 mod tests {
     use super::IfStatement;
-    use syntax::ast_item::IASTItem;
-    use lexical::Lexer;
+    use crate::syntax::ast_item::IASTItem;
+    use crate::lexical::Lexer;
 
     #[test]
     fn ast_stmt_if() {

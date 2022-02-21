@@ -7,12 +7,12 @@ mod vm_impl;
 mod runtime;
 mod builtin_impl;
 
-use message::RuntimeMessage;
-use codegen::Program;
+use crate::message::RuntimeMessage;
+use crate::codegen::Program;
 
 // Runtime exception will report immediately and abort
 pub fn run(vm_program: Program) -> Option<RuntimeMessage> {
-    use vm::vm_impl::VirtualMachine;
+    use crate::vm::vm_impl::VirtualMachine;
 
     let mut vm = VirtualMachine::new(vm_program);
     vm.execute()

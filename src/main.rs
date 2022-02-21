@@ -29,9 +29,9 @@ fn print_version() {
 // For feel safe
 fn returnable_main() {
     use std::env::args;
-    use config::Config;
-    use config::ConfigError;
-    use config::CompileFileConfig;
+    use crate::config::Config;
+    use crate::config::ConfigError;
+    use crate::config::CompileFileConfig;
 
     match Config::from_args(args()) {
         Ok(Config::Help) => print_usage(),

@@ -12,16 +12,16 @@
 
 use std::fmt;
 
-use common::From2;
-use common::StringPosition;
+use crate::common::From2;
+use crate::common::StringPosition;
 
-use lexical::Lexer;
-use lexical::SeperatorKind;
-use lexical::SeperatorCategory;
+use crate::lexical::Lexer;
+use crate::lexical::SeperatorKind;
+use crate::lexical::SeperatorCategory;
 
-use syntax::ast_item::IASTItem;
-use syntax::expression::d3::D3Expression;
-use syntax::expression::unary::UnaryExpression;
+use crate::syntax::ast_item::IASTItem;
+use crate::syntax::expression::d3::D3Expression;
+use crate::syntax::expression::unary::UnaryExpression;
 
 #[derive(Eq, PartialEq, Clone)]
 pub struct BinaryOperator {

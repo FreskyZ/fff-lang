@@ -1,9 +1,9 @@
 
 // Escape char parser
 
-use common::Position;
-use message::LexicalMessage as Message;
-use message::MessageEmitter;
+use crate::common::Position;
+use crate::message::LexicalMessage as Message;
+use crate::message::MessageEmitter;
 
 test_only_attr!{
     [derive(Debug, Eq, PartialEq)]
@@ -129,9 +129,9 @@ mod tests {
     fn escape_char_parser_test() {
         use super::escape_char_parser_new;
         use super::EscapeCharParserResult::*;
-        use common::Position;
-        use message::LexicalMessage as Message;
-        use message::MessageEmitter;
+        use crate::common::Position;
+        use crate::message::LexicalMessage as Message;
+        use crate::message::MessageEmitter;
 
         {   // \u2764      => '\u{2764}' | '❤'                          C3, C5, 4
             let mut parser = escape_char_parser_new(4);

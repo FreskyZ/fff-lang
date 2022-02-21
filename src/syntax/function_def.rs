@@ -5,19 +5,19 @@
 use std::cmp;
 use std::fmt;
 
-use common::From2;
-use common::StringPosition;
-use common::format_vector_debug;
-use common::format_vector_display;
-use message::SyntaxMessage as Message;
+use crate::common::From2;
+use crate::common::StringPosition;
+use crate::common::format_vector_debug;
+use crate::common::format_vector_display;
+use crate::message::SyntaxMessage as Message;
 
-use lexical::Lexer;
-use lexical::KeywordKind;
-use lexical::SeperatorKind;
+use crate::lexical::Lexer;
+use crate::lexical::KeywordKind;
+use crate::lexical::SeperatorKind;
 
-use syntax::ast_item::IASTItem;
-use syntax::SMType;
-use syntax::Block;
+use crate::syntax::ast_item::IASTItem;
+use crate::syntax::SMType;
+use crate::syntax::Block;
 
 #[derive(Eq, PartialEq)]
 pub struct Argument {
@@ -213,13 +213,13 @@ impl IASTItem for FunctionDef {
 
 #[cfg(test)]
 mod tests {
-    use lexical::Lexer;
-    use syntax::SMType;
-    use syntax::Block;
-    use syntax::ast_item::IASTItem;
+    use crate::lexical::Lexer;
+    use crate::syntax::SMType;
+    use crate::syntax::Block;
+    use crate::syntax::ast_item::IASTItem;
     use super::Argument;
     use super::FunctionDef;
-    use common::StringPosition;
+    use crate::common::StringPosition;
 
     #[test]
     fn ast_argument_parse() {

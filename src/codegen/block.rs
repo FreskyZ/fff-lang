@@ -1,18 +1,18 @@
 
 // Block
 
-use common::From2;
-use common::StringPosition;
+use crate::common::From2;
+use crate::common::StringPosition;
 
-use syntax::Block as SyntaxBlock;
+use crate::syntax::Block as SyntaxBlock;
 // use syntax::Statement;
 
-use codegen::ItemID;
-use codegen::var_def::Var;
-use codegen::var_def::VarCollection;
-use codegen::statement::StatementGenerator;
-use codegen::session::GenerationSession;
-use codegen::Code;
+use crate::codegen::ItemID;
+use crate::codegen::var_def::Var;
+use crate::codegen::var_def::VarCollection;
+use crate::codegen::statement::StatementGenerator;
+use crate::codegen::session::GenerationSession;
+use crate::codegen::Code;
 
 pub struct Block {
     pub fn_id: usize,
@@ -53,9 +53,9 @@ impl Block {
 #[cfg(test)] #[test]
 fn gen_block_prepare_vars() {
     
-    use syntax::FunctionDef as SyntaxFunctionDef;
-    use codegen::var_def::VarOrScope;
-    use codegen::var_def::Var;
+    use crate::syntax::FunctionDef as SyntaxFunctionDef;
+    use crate::codegen::var_def::VarOrScope;
+    use crate::codegen::var_def::Var;
 
     let gen_vars = |param_str: &str| -> VarCollection {
         //              12345678

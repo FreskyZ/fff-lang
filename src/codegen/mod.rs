@@ -30,22 +30,22 @@ mod block;
 mod statement;
 mod expression;
 
-pub use codegen::type_def::Type;
-pub use codegen::type_def::TypeField;
-pub use codegen::type_def::TypeCollection;
-pub use codegen::fn_def::FnArg;
-pub use codegen::fn_def::FnName;
-pub use codegen::fn_def::FnImpl;
-pub use codegen::fn_def::FnCollection;
-pub use codegen::vm_code::Operand;
-pub use codegen::vm_code::Code;
-pub use codegen::session::Program;
-pub use codegen::session::ItemID;
+pub use crate::codegen::type_def::Type;
+pub use crate::codegen::type_def::TypeField;
+pub use crate::codegen::type_def::TypeCollection;
+pub use crate::codegen::fn_def::FnArg;
+pub use crate::codegen::fn_def::FnName;
+pub use crate::codegen::fn_def::FnImpl;
+pub use crate::codegen::fn_def::FnCollection;
+pub use crate::codegen::vm_code::Operand;
+pub use crate::codegen::vm_code::Code;
+pub use crate::codegen::session::Program;
+pub use crate::codegen::session::ItemID;
 
-use syntax::Program as SyntaxProgram;
+use crate::syntax::Program as SyntaxProgram;
 
 pub fn generate(syntax_program: SyntaxProgram) -> Program {
-    use codegen::session::GenerationSession;
+    use crate::codegen::session::GenerationSession;
     GenerationSession::dispatch(syntax_program)
 }
 

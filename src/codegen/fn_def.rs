@@ -7,23 +7,23 @@ use std::ops;
 use std::slice;
 use std::collections::HashMap;
 
-use common::From2;
-use common::StringPosition;
-use message::CodegenMessage;
-use message::MessageEmitter;
+use crate::common::From2;
+use crate::common::StringPosition;
+use crate::message::CodegenMessage;
+use crate::message::MessageEmitter;
 
-use lexical::SeperatorKind;
+use crate::lexical::SeperatorKind;
 
-use syntax::FunctionDef as SyntaxFunctionDef; 
-use syntax::Argument as SyntaxArgument;
-use syntax::Block as SyntaxBlock;
+use crate::syntax::FunctionDef as SyntaxFunctionDef; 
+use crate::syntax::Argument as SyntaxArgument;
+use crate::syntax::Block as SyntaxBlock;
 
-use codegen::ItemID;
-use codegen::type_def::Type;
-use codegen::type_def::TypeCollection;
-use codegen::var_def::VarCollection;
-use codegen::vm_code::CodeCollection;
-use codegen::session::GenerationSession;
+use crate::codegen::ItemID;
+use crate::codegen::type_def::Type;
+use crate::codegen::type_def::TypeCollection;
+use crate::codegen::var_def::VarCollection;
+use crate::codegen::vm_code::CodeCollection;
+use crate::codegen::session::GenerationSession;
 
 pub struct FnArg {
     pub name: String,
@@ -398,7 +398,7 @@ impl FnCollection {
 }
 
 #[cfg(test)]
-use syntax::Argument;
+use crate::syntax::Argument;
 
 #[cfg(test)]
 #[test]

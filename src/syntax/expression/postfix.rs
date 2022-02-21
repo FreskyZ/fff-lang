@@ -10,19 +10,19 @@
 
 use std::fmt;
 
-use common::From2;
-use common::StringPosition;
-use common::format_vector_display;
-use common::format_vector_debug;
-use message::SyntaxMessage as Message;
+use crate::common::From2;
+use crate::common::StringPosition;
+use crate::common::format_vector_display;
+use crate::common::format_vector_debug;
+use crate::message::SyntaxMessage as Message;
 
-use lexical::Lexer;
-use lexical::SeperatorKind;
-use lexical::KeywordKind;
+use crate::lexical::Lexer;
+use crate::lexical::SeperatorKind;
+use crate::lexical::KeywordKind;
 
-use syntax::ast_item::IASTItem;
-use syntax::expression::d3::D3Expression;
-use syntax::SMType;
+use crate::syntax::ast_item::IASTItem;
+use crate::syntax::expression::d3::D3Expression;
+use crate::syntax::SMType;
 
 use super::primary::PrimaryExpression;
 

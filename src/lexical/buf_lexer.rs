@@ -4,8 +4,8 @@
 //     and TLexer: ILexer<TToken>
 
 use std::str::Chars;
-use common::Position;
-use message::MessageEmitter;
+use crate::common::Position;
+use crate::message::MessageEmitter;
 
 // detail compare with the public interface ILexer
 pub trait IDetailLexer<'chs, TToken> : From<Chars<'chs>> {

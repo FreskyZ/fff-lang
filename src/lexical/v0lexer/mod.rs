@@ -3,11 +3,11 @@
 // TODO: use chars instead of buf: String to index, this will support Chinese identifiers
 
 use std::str::Chars;
-use common::Position;
-use message::MessageEmitter;
-use lexical::buf_lexer::IDetailLexer;
-use lexical::buf_lexer::BufToken;
-use lexical::buf_lexer::BufLexer;
+use crate::common::Position;
+use crate::message::MessageEmitter;
+use crate::lexical::buf_lexer::IDetailLexer;
+use crate::lexical::buf_lexer::BufToken;
+use crate::lexical::buf_lexer::BufLexer;
 
 // V0 token is next char and postion
 #[cfg(test)]
@@ -144,9 +144,9 @@ mod tests {
     fn v0_test2() {
         use super::V0Lexer;
         use super::V0Token;
-        use common::Position;
-        use lexical::buf_lexer::IDetailLexer;
-        use message::MessageEmitter;
+        use crate::common::Position;
+        use crate::lexical::buf_lexer::IDetailLexer;
+        use crate::message::MessageEmitter;
 
         macro_rules! test_case {
             ($input: expr, $($ch: expr, $row: expr, $col: expr, )*) => (
@@ -232,7 +232,7 @@ mod tests {
     #[test]
     fn v0_buf() {
         use super::BufV0Lexer;
-        use message::MessageEmitter;
+        use crate::message::MessageEmitter;
         
         let mut bufv0 = BufV0Lexer::from("\r\rabc\ndef\r\r\nasdwe\r\r\rq1da\nawsedq\r\r\r".chars());
         let mut dummy = MessageEmitter::new();

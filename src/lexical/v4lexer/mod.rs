@@ -2,23 +2,23 @@
 // v4 lexer, input v3, act as lexer interface
 
 use std::fmt;
-use common::From2;
-use common::StringPosition;
-use message::SyntaxMessage;
-use message::Message;
-use message::MessageEmitter;
+use crate::common::From2;
+use crate::common::StringPosition;
+use crate::message::SyntaxMessage;
+use crate::message::Message;
+use crate::message::MessageEmitter;
 
-use lexical::symbol_type::string_literal::StringLiteral;
-use lexical::symbol_type::char_literal::CharLiteral;
-use lexical::symbol_type::numeric_literal::NumericLiteral;
-use lexical::KeywordKind;
-use lexical::SeperatorKind;
-use lexical::LitValue;
+use crate::lexical::symbol_type::string_literal::StringLiteral;
+use crate::lexical::symbol_type::char_literal::CharLiteral;
+use crate::lexical::symbol_type::numeric_literal::NumericLiteral;
+use crate::lexical::KeywordKind;
+use crate::lexical::SeperatorKind;
+use crate::lexical::LitValue;
 
-use lexical::v3lexer::V3Lexer;
-use lexical::v3lexer::V3Token;
+use crate::lexical::v3lexer::V3Lexer;
+use crate::lexical::v3lexer::V3Token;
 
-use lexical::IToken;
+use crate::lexical::IToken;
 
 // Token
 test_only_attr!{
@@ -179,7 +179,7 @@ pub struct V4Lexer {
 impl V4Lexer {
     
     pub fn new(content: &str) -> V4Lexer {
-        use lexical::buf_lexer::IDetailLexer;
+        use crate::lexical::buf_lexer::IDetailLexer;
 
         let mut messages = MessageEmitter::new();
         let mut v3lexer = V3Lexer::from(content.chars());
@@ -262,10 +262,10 @@ mod tests {
 
     #[test]
     fn v4_base() {
-        use common::StringPosition;
+        use crate::common::StringPosition;
         use super::V4Lexer;
-        use lexical::NumLitValue;
-        use lexical::SeperatorKind;
+        use crate::lexical::NumLitValue;
+        use crate::lexical::SeperatorKind;
 
         // numeric, 123, 1:1-1:3
         // identifier, abc, 1:5-1:7

@@ -3,15 +3,15 @@
 
 use std::fmt;
 
-use common::From2;
-use common::StringPosition;
+use crate::common::From2;
+use crate::common::StringPosition;
 
-use lexical::Lexer;
-use lexical::KeywordKind;
+use crate::lexical::Lexer;
+use crate::lexical::KeywordKind;
 
-use syntax::ast_item::IASTItem;
-use syntax::Expression;
-use syntax::Block;
+use crate::syntax::ast_item::IASTItem;
+use crate::syntax::Expression;
+use crate::syntax::Block;
 
 #[derive(Eq, PartialEq)]
 pub struct WhileStatement {
@@ -64,8 +64,8 @@ impl IASTItem for WhileStatement {
 #[cfg(test)]
 mod tests {
     use super::WhileStatement;
-    use syntax::ast_item::IASTItem;
-    use lexical::Lexer;
+    use crate::syntax::ast_item::IASTItem;
+    use crate::lexical::Lexer;
 
     #[test]
     fn ast_stmt_while () {

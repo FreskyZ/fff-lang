@@ -2,7 +2,7 @@
 // Lexer public interface
 
 use std::fmt;
-use common::StringPosition;
+use crate::common::StringPosition;
 
 mod symbol_type;
 mod buf_lexer;
@@ -12,13 +12,13 @@ mod v2lexer;
 mod v3lexer;
 mod v4lexer;
 
-pub use lexical::symbol_type::seperator::SeperatorKind;
-pub use lexical::symbol_type::seperator::SeperatorCategory;
-pub use lexical::symbol_type::keyword::KeywordKind;
-pub use lexical::symbol_type::numeric_literal::NumLitValue;
-pub use lexical::symbol_type::literal::LitValue;
+pub use crate::lexical::symbol_type::seperator::SeperatorKind;
+pub use crate::lexical::symbol_type::seperator::SeperatorCategory;
+pub use crate::lexical::symbol_type::keyword::KeywordKind;
+pub use crate::lexical::symbol_type::numeric_literal::NumLitValue;
+pub use crate::lexical::symbol_type::literal::LitValue;
 
-pub use lexical::v4lexer::V4Lexer as Lexer;
+pub use crate::lexical::v4lexer::V4Lexer as Lexer;
 
 // token interface definition
 pub trait IToken : fmt::Debug {

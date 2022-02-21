@@ -3,29 +3,29 @@
 
 use std::fmt;
 
-use common::From2;
-use common::StringPosition;
-use common::format_vector_debug;
-use message::CodegenMessage;
+use crate::common::From2;
+use crate::common::StringPosition;
+use crate::common::format_vector_debug;
+use crate::message::CodegenMessage;
 
-use lexical::LitValue;
-use lexical::SeperatorKind;
+use crate::lexical::LitValue;
+use crate::lexical::SeperatorKind;
 
-use syntax::ExpressionBase as FullExpressionBase;
-use syntax::ExpressionOperator as FullExpressionOperator;
-use syntax::Expression as FullExpression;
-use syntax::ExpressionStatement as FullExpressionStatement;
-use syntax::SMType;
+use crate::syntax::ExpressionBase as FullExpressionBase;
+use crate::syntax::ExpressionOperator as FullExpressionOperator;
+use crate::syntax::Expression as FullExpression;
+use crate::syntax::ExpressionStatement as FullExpressionStatement;
+use crate::syntax::SMType;
 
-use codegen::var_def::VarCollection;
-use codegen::ItemID;
-use codegen::Type;
-use codegen::TypeCollection;
-use codegen::Operand;
-use codegen::Code;
-use codegen::FnName;
-use codegen::FnImpl;
-use codegen::session::GenerationSession;
+use crate::codegen::var_def::VarCollection;
+use crate::codegen::ItemID;
+use crate::codegen::Type;
+use crate::codegen::TypeCollection;
+use crate::codegen::Operand;
+use crate::codegen::Code;
+use crate::codegen::FnName;
+use crate::codegen::FnImpl;
+use crate::codegen::session::GenerationSession;
 
 // About unit type
 // unit type is (), only one value, which is (),
@@ -650,8 +650,8 @@ fn gen_expr_pure_simple_test() {
 
 #[cfg(test)] #[test]
 fn gen_expr_simple_test() {
-    use codegen::var_def::Var;
-    use message::MessageEmitter;
+    use crate::codegen::var_def::Var;
+    use crate::message::MessageEmitter;
 
     // function call not after ident
     let expr = FullExpression::from_str("1()", 0);

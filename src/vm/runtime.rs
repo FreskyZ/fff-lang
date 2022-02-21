@@ -2,14 +2,14 @@
 // Runtime value, slot content in runtime heap and stack
 
 use std::ops;
-use common::format_vector_debug;
+use crate::common::format_vector_debug;
 
-use lexical::LitValue;
-use lexical::NumLitValue;
+use crate::lexical::LitValue;
+use crate::lexical::NumLitValue;
 
-use codegen::Type;
-use codegen::TypeCollection;
-use codegen::Operand;
+use crate::codegen::Type;
+use crate::codegen::TypeCollection;
+use crate::codegen::Operand;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum RuntimeValue {

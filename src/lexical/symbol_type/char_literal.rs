@@ -2,7 +2,7 @@
 // Character literal
 
 use std::fmt;
-use common::StringPosition;
+use crate::common::StringPosition;
 
 #[cfg(test)]
 #[derive(Eq, PartialEq, Clone)]

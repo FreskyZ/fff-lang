@@ -2,15 +2,15 @@
 // Char literal parser
 // TODO: optimize
 
-use common::From2;
-use common::Position;
-use common::StringPosition;
-use message::LexicalMessage as Message;
-use message::MessageEmitter;
-use lexical::symbol_type::char_literal::CharLiteral;
-use lexical::v1lexer::escape_char_parser::EscapeCharParser;
-use lexical::v1lexer::escape_char_parser::EscapeCharSimpleCheckResult;
-use lexical::v1lexer::escape_char_parser::EscapeCharParserResult;
+use crate::common::From2;
+use crate::common::Position;
+use crate::common::StringPosition;
+use crate::message::LexicalMessage as Message;
+use crate::message::MessageEmitter;
+use crate::lexical::symbol_type::char_literal::CharLiteral;
+use crate::lexical::v1lexer::escape_char_parser::EscapeCharParser;
+use crate::lexical::v1lexer::escape_char_parser::EscapeCharSimpleCheckResult;
+use crate::lexical::v1lexer::escape_char_parser::EscapeCharParserResult;
 
 #[cfg(test)]
 use std::collections::HashSet;
@@ -233,12 +233,12 @@ mod tests {
     #[test]
     #[allow(unused_mut)]
     fn char_lit_parser() {
-        use common::From2;
-        use common::Position;
-        use common::StringPosition;
-        use message::LexicalMessage as Message;
-        use message::MessageEmitter;
-        use lexical::symbol_type::char_literal::CharLiteral;
+        use crate::common::From2;
+        use crate::common::Position;
+        use crate::common::StringPosition;
+        use crate::message::LexicalMessage as Message;
+        use crate::message::MessageEmitter;
+        use crate::lexical::symbol_type::char_literal::CharLiteral;
         use super::CharLiteralParser;
         use super::CharLiteralParserResult::*;
 

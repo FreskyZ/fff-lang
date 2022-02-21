@@ -9,16 +9,16 @@
 
 use std::fmt;
 
-use common::From2;
-use common::StringPosition;
-use message::SyntaxMessage;
+use crate::common::From2;
+use crate::common::StringPosition;
+use crate::message::SyntaxMessage;
 
-use lexical::Lexer;
-use lexical::SeperatorKind;
-use lexical::KeywordKind;
+use crate::lexical::Lexer;
+use crate::lexical::SeperatorKind;
+use crate::lexical::KeywordKind;
 
-use syntax::ast_item::IASTItem;
-use syntax::Expression;
+use crate::syntax::ast_item::IASTItem;
+use crate::syntax::Expression;
 
 #[derive(Eq, PartialEq)]
 pub struct ReturnStatement {
@@ -217,11 +217,11 @@ mod tests {
     use super::ReturnStatement;
     use super::BreakStatement;
     use super::ContinueStatement;
-    use common::StringPosition;
-    use message::SyntaxMessage;
-    use message::Message;
-    use syntax::Expression;
-    use syntax::ast_item::TestCase;
+    use crate::common::StringPosition;
+    use crate::message::SyntaxMessage;
+    use crate::message::Message;
+    use crate::syntax::Expression;
+    use crate::syntax::ast_item::TestCase;
 
     #[test]
     fn ast_stmt_jump_parse() {

@@ -3,16 +3,16 @@
 
 use std::fmt;
 
-use common::From2;
-use common::StringPosition;
-use message::SyntaxMessage;
+use crate::common::From2;
+use crate::common::StringPosition;
+use crate::message::SyntaxMessage;
 
-use lexical::Lexer;
-use lexical::SeperatorKind;
-use lexical::SeperatorCategory;
+use crate::lexical::Lexer;
+use crate::lexical::SeperatorKind;
+use crate::lexical::SeperatorCategory;
 
-use syntax::ast_item::IASTItem;
-use syntax::Expression;
+use crate::syntax::ast_item::IASTItem;
+use crate::syntax::Expression;
 
 #[derive(Eq, PartialEq)]
 pub struct ExpressionStatement {
@@ -123,11 +123,11 @@ impl IASTItem for ExpressionStatement {
 #[cfg(test)]
 mod tests {
     use super::ExpressionStatement;
-    use common::StringPosition;
-    use lexical::Lexer;
-    use lexical::SeperatorKind;
-    use syntax::ast_item::IASTItem;
-    use syntax::Expression;
+    use crate::common::StringPosition;
+    use crate::lexical::Lexer;
+    use crate::lexical::SeperatorKind;
+    use crate::syntax::ast_item::IASTItem;
+    use crate::syntax::Expression;
 
     #[test]
     fn ast_stmt_expr() {

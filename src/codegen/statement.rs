@@ -1,38 +1,38 @@
 
 // Statement generation
 
-use common::From2;
-use common::StringPosition;
-use message::CodegenMessage;
+use crate::common::From2;
+use crate::common::StringPosition;
+use crate::message::CodegenMessage;
 
-use lexical::SeperatorKind;
-use lexical::LitValue;
-use lexical::NumLitValue;
+use crate::lexical::SeperatorKind;
+use crate::lexical::LitValue;
+use crate::lexical::NumLitValue;
 
-use syntax::Block;
-use syntax::Statement;
-use syntax::Expression;
-use syntax::ExpressionBase;
+use crate::syntax::Block;
+use crate::syntax::Statement;
+use crate::syntax::Expression;
+use crate::syntax::ExpressionBase;
 
-use syntax::VarDeclStatement;
-use syntax::ReturnStatement;
-use syntax::BreakStatement;
-use syntax::ContinueStatement;
-use syntax::ExpressionStatement;
-use syntax::LoopStatement;
-use syntax::WhileStatement;
-use syntax::ForStatement;
-use syntax::ElseIfBranch;
-use syntax::IfStatement;
+use crate::syntax::VarDeclStatement;
+use crate::syntax::ReturnStatement;
+use crate::syntax::BreakStatement;
+use crate::syntax::ContinueStatement;
+use crate::syntax::ExpressionStatement;
+use crate::syntax::LoopStatement;
+use crate::syntax::WhileStatement;
+use crate::syntax::ForStatement;
+use crate::syntax::ElseIfBranch;
+use crate::syntax::IfStatement;
 
-use codegen::var_def::Var;
-use codegen::session::GenerationSession;
-use codegen::expression::gen_expr;
-use codegen::expression::gen_expr_stmt;
-use codegen::Operand;
-use codegen::Code;
-use codegen::vm_code::CodeCollection;
-use codegen::ItemID;
+use crate::codegen::var_def::Var;
+use crate::codegen::session::GenerationSession;
+use crate::codegen::expression::gen_expr;
+use crate::codegen::expression::gen_expr_stmt;
+use crate::codegen::Operand;
+use crate::codegen::Code;
+use crate::codegen::vm_code::CodeCollection;
+use crate::codegen::ItemID;
 
 // Just a static dispatcher
 pub struct StatementGenerator{

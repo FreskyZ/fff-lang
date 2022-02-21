@@ -3,16 +3,16 @@
 
 use std::fmt;
 
-use common::From2;
-use common::StringPosition;
-use message::SyntaxMessage;
+use crate::common::From2;
+use crate::common::StringPosition;
+use crate::message::SyntaxMessage;
 
-use lexical::Lexer;
-use lexical::KeywordKind;
+use crate::lexical::Lexer;
+use crate::lexical::KeywordKind;
 
-use syntax::ast_item::IASTItem;
-use syntax::Block;
-use syntax::Expression;
+use crate::syntax::ast_item::IASTItem;
+use crate::syntax::Block;
+use crate::syntax::Expression;
 
 #[derive(Eq, PartialEq)]
 pub struct LoopStatement {
@@ -86,11 +86,11 @@ impl IASTItem for LoopStatement {
 #[cfg(test)]
 mod tests {
     use super::LoopStatement;
-    use syntax::Block;
-    use message::Message;
-    use message::SyntaxMessage;
-    use syntax::ast_item::TestCase;
-    use common::StringPosition;
+    use crate::syntax::Block;
+    use crate::message::Message;
+    use crate::message::SyntaxMessage;
+    use crate::syntax::ast_item::TestCase;
+    use crate::common::StringPosition;
 
     #[test]
     fn ast_stmt_loop_parse() {

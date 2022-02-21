@@ -9,18 +9,18 @@
 
 use std::fmt;
 
-use common::From2;
-use common::StringPosition;
-use common::format_vector_debug;
-use common::format_vector_display;
+use crate::common::From2;
+use crate::common::StringPosition;
+use crate::common::format_vector_debug;
+use crate::common::format_vector_display;
 
-use lexical::Lexer;
-use lexical::SeperatorKind;
-use lexical::KeywordKind;
-use lexical::LitValue;
+use crate::lexical::Lexer;
+use crate::lexical::SeperatorKind;
+use crate::lexical::KeywordKind;
+use crate::lexical::LitValue;
 
-use syntax::ast_item::IASTItem;
-use syntax::expression::d3::D3Expression;
+use crate::syntax::ast_item::IASTItem;
+use crate::syntax::expression::d3::D3Expression;
 
 #[derive(Eq, PartialEq, Clone)]
 pub enum PrimaryExpression {

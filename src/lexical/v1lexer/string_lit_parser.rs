@@ -1,15 +1,15 @@
 
 // String literal parser
 
-use common::From2;
-use common::Position;
-use common::StringPosition;
-use message::LexicalMessage as Message;
-use message::MessageEmitter;
-use lexical::symbol_type::string_literal::StringLiteral;
-use lexical::v1lexer::escape_char_parser::EscapeCharParser;
-use lexical::v1lexer::escape_char_parser::EscapeCharSimpleCheckResult;
-use lexical::v1lexer::escape_char_parser::EscapeCharParserResult;
+use crate::common::From2;
+use crate::common::Position;
+use crate::common::StringPosition;
+use crate::message::LexicalMessage as Message;
+use crate::message::MessageEmitter;
+use crate::lexical::symbol_type::string_literal::StringLiteral;
+use crate::lexical::v1lexer::escape_char_parser::EscapeCharParser;
+use crate::lexical::v1lexer::escape_char_parser::EscapeCharSimpleCheckResult;
+use crate::lexical::v1lexer::escape_char_parser::EscapeCharParserResult;
 
 #[cfg(test)]
 #[derive(Debug)]
@@ -163,12 +163,12 @@ mod tests {
 
     #[test]
     fn string_lit_parser_test() {
-        use common::From2;
-        use common::Position;
-        use common::StringPosition;
-        use message::LexicalMessage as Message;
-        use message::MessageEmitter;
-        use lexical::symbol_type::string_literal::StringLiteral;
+        use crate::common::From2;
+        use crate::common::Position;
+        use crate::common::StringPosition;
+        use crate::message::LexicalMessage as Message;
+        use crate::message::MessageEmitter;
+        use crate::lexical::symbol_type::string_literal::StringLiteral;
         use super::StringLiteralParser;
         use super::StringLiteralParserResult::*;
 

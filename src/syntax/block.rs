@@ -3,16 +3,16 @@
 
 use std::fmt;
 
-use common::From2;
-use common::StringPosition;
-use common::format_vector_display;
-use common::format_vector_debug;
+use crate::common::From2;
+use crate::common::StringPosition;
+use crate::common::format_vector_display;
+use crate::common::format_vector_debug;
 
-use lexical::Lexer;
-use lexical::SeperatorKind;
+use crate::lexical::Lexer;
+use crate::lexical::SeperatorKind;
 
-use syntax::ast_item::IASTItem;
-use syntax::Statement;
+use crate::syntax::ast_item::IASTItem;
+use crate::syntax::Statement;
 
 #[derive(Eq, PartialEq)]
 pub struct Block {
@@ -78,9 +78,9 @@ mod tests {
     #[test]
     fn ast_block_parse() {
         use super::Block;
-        use syntax::ast_item::IASTItem;
-        use lexical::Lexer;
-        use common::StringPosition;
+        use crate::syntax::ast_item::IASTItem;
+        use crate::lexical::Lexer;
+        use crate::common::StringPosition;
         
         assert_eq!(
             Block::parse(&mut Lexer::new("{}", ), 0), 

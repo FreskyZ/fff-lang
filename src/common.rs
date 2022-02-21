@@ -1,12 +1,6 @@
 
 // Some common
 
-/// Try convert from
-pub trait TryFrom<T>
-    where Self: Sized {
-    fn try_from(t: T) -> Option<Self>;
-}
-
 // From with 2 param
 pub trait From2<T1, T2> {
     fn from2(t1: T1, t2: T2) -> Self;

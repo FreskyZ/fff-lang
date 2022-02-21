@@ -4,19 +4,19 @@
 use std::cmp;
 use std::fmt;
 
-use common::format_vector_debug;
-use message::CodegenMessage;
-use message::MessageEmitter;
+use crate::common::format_vector_debug;
+use crate::message::CodegenMessage;
+use crate::message::MessageEmitter;
 
-use lexical::SeperatorKind;
-use lexical::LitValue;
-use lexical::NumLitValue;
+use crate::lexical::SeperatorKind;
+use crate::lexical::LitValue;
+use crate::lexical::NumLitValue;
 
-use syntax::SMType;
+use crate::syntax::SMType;
 
-use codegen::ItemID;
-use codegen::fn_def::FnCollection;
-use codegen::fn_def::FnArg;
+use crate::codegen::ItemID;
+use crate::codegen::fn_def::FnCollection;
+use crate::codegen::fn_def::FnArg;
 
 #[derive(Eq, PartialEq, Debug, Clone)]
 pub struct TypeField {
@@ -471,7 +471,7 @@ fn gen_types_find_field() {
 
 #[cfg(test)] #[test]
 fn gen_types_member_fn() {
-    use codegen::session::GenerationSession;
+    use crate::codegen::session::GenerationSession;
 
     let mut sess = GenerationSession::new();
 
@@ -495,7 +495,7 @@ fn gen_types_member_fn() {
 
 #[cfg(test)] #[test]
 fn gen_types_by_smtype() {
-    use common::StringPosition;
+    use crate::common::StringPosition;
 
     macro_rules! test_case {
         ($types: expr, $ty_str: expr, $expect: expr) => (
