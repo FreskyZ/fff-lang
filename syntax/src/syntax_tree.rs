@@ -108,7 +108,7 @@ impl SyntaxTree {
         loop { 
             if previous_modules.is_empty() { break; }
             'modules: for previous_module in &previous_modules {
-                'imports: for import in previous_module.import_statements() {
+                '_imports: for import in previous_module.import_statements() {
                     if previous_module.source.get_file_id() != 0 
                         && previous_module.source.get_file_stem() != Some("module") {
                         // if not root module or sub root module, is not allowed to import module

@@ -23,10 +23,10 @@ pub const EOF_CHAR: char = 0u8 as char;
 #[inline]
 fn char_len_at_index(bytes: &[u8], index: usize) -> usize {
     match bytes[index] {
-        0b_0000_0000...0b_1000_0000 => 1,
-        0b_1100_0000...0b_1110_0000 => 2,
-        0b_1110_0000...0b_1111_0000 => 3,
-        0b_1111_0000...0b_1111_1111 => 4,
+        0b_0000_0000..=0b_1000_0000 => 1,
+        0b_1100_0000..=0b_1101_1111 => 2,
+        0b_1110_0000..=0b_1110_1111 => 3,
+        0b_1111_0000..=0b_1111_1111 => 4,
         _ => panic!("impossible byte value, I think"),
     }
 }

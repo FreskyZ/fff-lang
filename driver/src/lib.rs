@@ -25,7 +25,8 @@ fn compile_input_result(file_name: String) -> Result<&'static str, String> {
     let mut messages = MessageCollection::new();
     let mut symbols = SymbolCollection::new();
     let mut sources = SourceMap::new(file_name).map_err(|e| format!("{:?}", e))?;
-    let _syntax_tree = SyntaxTree::new(&mut sources, &mut messages, &mut symbols).map_err(|_| format!("{:?}", messages));
+    let syntax_tree = SyntaxTree::new(&mut sources, &mut messages, &mut symbols).map_err(|_| format!("{:?}", messages));
+    println!("{:?}", syntax_tree);
 
     // let package = Package::from(syntax_tree)?;
     // let machine = VirtualMachine::new(package)?;
