@@ -321,10 +321,10 @@ fn get_content(raw: &str, pos: StringPosition, radix: u32, mut postfix: Postfix)
 
 fn delegate(raw: String, pos: StringPosition) -> Result<NumLitValue, Message> {
 
-    let prefix = try!(get_prefix(&*raw, pos));
+    let prefix = get_prefix(&*raw, pos)?;
 
     // prefix length != 0 means has prefix
-    let postfix = try!(get_postfix(&raw[prefix.len()..], pos, prefix.len() != 0));
+    let postfix = get_postfix(&raw[prefix.len()..], pos, prefix.len() != 0)?;
 
     match get_content(&raw[prefix.len()..(raw.len() - postfix.len())], pos, prefix.radix(), postfix) {
         Err(msg) => Err(msg),

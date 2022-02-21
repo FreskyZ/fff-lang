@@ -56,8 +56,8 @@ impl VirtualMachine {
         if rt.rip == !1 {
             return CircleResult::Exit;  // normal exit
         }
-        perrorln!("Current Code: ({}, {:?})", rt.rip, self.codes[rt.rip]);
-        perrorln!("Current State: {}", rt.dump());
+        //perrorln!("Current Code: ({}, {:?})", rt.rip, self.codes[rt.rip]);
+        //perrorln!("Current State: {}", rt.dump());
 
         match &self.codes[rt.rip] {
             &Code::PlaceHolder => unreachable!(),
@@ -81,10 +81,10 @@ impl VirtualMachine {
                     rt.stack.push(RuntimeValue::PrevRIP(rt.rip + 1));
                     rt.stack.push(RuntimeValue::PrevRBP(rt.rbp));
                     let new_rbp = rt.stack.len(); // Use new rbp because if set rbp here and use previous function Operand::Stack, they are invalid
-                    perrorln!("[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call(fnid: {:?}, operands: {:?})]", fnid, operands);
+                    //perrorln!("[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call(fnid: {:?}, operands: {:?})]", fnid, operands);
                     rt.reserve_stack(thefn.local_size);
                     for (index, operand) in operands.iter().enumerate() {
-                        perrorln!("[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call] Iterating operand, current operand: ({}, {:?}), stack index to be set: {}, value to be set: {:?}", index, operand, rt.rbp + index + 1, rt.index(operand));
+                        //perrorln!("[DEBUG][4][vm/vm_impl.rs|VirtualMachine::circle][branch Code::Call] Iterating operand, current operand: ({}, {:?}), stack index to be set: {}, value to be set: {:?}", index, operand, rt.rbp + index + 1, rt.index(operand));
                         rt.stack[new_rbp + index + 1] = rt.index(operand); // TODO FUTURE: this `+1` is also because of that feature in VarCollection offset
                     }
                     rt.rbp = new_rbp;
@@ -133,9 +133,9 @@ impl VirtualMachine {
         rt.stack.push(RuntimeValue::PrevRIP(!1));    // prev rip
         rt.stack.push(RuntimeValue::PrevRBP(0));     // prev rbp is not important
         rt.rbp = 2;
-        perrorln!("[DEBUG][3][vm/vm_impl.rs|VirtualMachine::execute] main fn local_size = {}", self.fns[main_fn_index].local_size);
+        //perrorln!("[DEBUG][3][vm/vm_impl.rs|VirtualMachine::execute] main fn local_size = {}", self.fns[main_fn_index].local_size);
         rt.reserve_stack(self.fns[main_fn_index].local_size);
-        perrorln!("[DEBUG][3][vm/vm_impl.rs|VirtualMachine::execute] after reserve stack, rt.rbp = {}, rt.stack.len() = {}", rt.rbp, rt.stack.len());
+        //perrorln!("[DEBUG][3][vm/vm_impl.rs|VirtualMachine::execute] after reserve stack, rt.rbp = {}, rt.stack.len() = {}", rt.rbp, rt.stack.len());
 
         loop {
             match self.circle(&mut rt) {

@@ -113,7 +113,7 @@ impl fmt::Debug for LexicalMessage {
                 write!(f, "Unexpected end of file at {} in block comment starts from {}", eof_pos, block_start)
             }
             UnexpectedEndofFileInStringLiteral { ref literal_start, ref eof_pos, ref hint_escaped_quote_pos } => {
-                try!(write!(f, "Unexpected end of file at {} in string literal starts from {}", eof_pos, literal_start));
+                write!(f, "Unexpected end of file at {} in string literal starts from {}", eof_pos, literal_start)?;
                 match hint_escaped_quote_pos {
                     &None => Ok(()),
                     &Some(ref hint) => write!(f, ", did you accidentally escape the quotation mark at {}?", hint),
@@ -514,7 +514,7 @@ pub struct MessageEmitter {
 impl fmt::Debug for MessageEmitter {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for message in &self.messages {
-            try!(writeln!(f, "{:?}", message));
+            writeln!(f, "{:?}", message)?;
         }
         Ok(())
     }

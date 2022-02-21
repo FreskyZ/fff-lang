@@ -137,7 +137,7 @@ impl FnImpl {
         let mut args = Vec::<FnArg>::new();
         let mut valid = true;
         'new_arg: for syn_arg in syn_args {
-            'exist_args: for arg in &args {
+            '_exist_args: for arg in &args {
                 if arg.name == syn_arg.name {
                     messages.push(CodegenMessage::FunctionArgumentNameConfilict{ 
                         func_pos: fn_pos,

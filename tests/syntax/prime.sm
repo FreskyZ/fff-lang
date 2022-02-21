@@ -17,7 +17,7 @@ fn get_primes(u64 high_bound) -> [u64] {
         if is_prime[i] {
             //writeln("[DEBUG] this i is prime");
             for j in 2u64 : high_bound / i {
-                writeln("[DEBUG] inner iteration, j = " + j.to_string() + ", unset it");
+                // writeln("[DEBUG] inner iteration, j = " + j.to_string() + ", unset it");
                 is_prime.set_index(j * i, false);
             }
         }

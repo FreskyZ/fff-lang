@@ -128,7 +128,7 @@ impl Runtime {
     }
 
     pub fn reserve_stack(&mut self, local_size: usize) {
-        perrorln!("[DEBUG][3][vm/runtime.rs|Runtime::reserve_stack][FnBegin] Param local_size = {}", local_size);
+        // perrorln!("[DEBUG][3][vm/runtime.rs|Runtime::reserve_stack][FnBegin] Param local_size = {}", local_size);
         for _ in 0..local_size {
             self.stack.push(RuntimeValue::Nothing);
         }

@@ -64,13 +64,13 @@ impl From<V3Token> for V4Token {
 
 impl fmt::Debug for V4Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        try!(match self.value {
-            TokenValue::Literal(ref lit) => write!(f, "{:?} at ", lit),
-            TokenValue::Identifier(ref name) => write!(f, "Identifier `{}` at ", name),
-            TokenValue::Keyword(ref kind) => write!(f, "Keyword {:?} at ", kind),
-            TokenValue::Seperator(ref kind) => write!(f, "Seperator {:?} at ", kind),
-            TokenValue::EndofFile => write!(f, "<EOF> at "), 
-        });
+        match self.value {
+            TokenValue::Literal(ref lit) => write!(f, "{:?} at ", lit)?,
+            TokenValue::Identifier(ref name) => write!(f, "Identifier `{}` at ", name)?,
+            TokenValue::Keyword(ref kind) => write!(f, "Keyword {:?} at ", kind)?,
+            TokenValue::Seperator(ref kind) => write!(f, "Seperator {:?} at ", kind)?,
+            TokenValue::EndofFile => write!(f, "<EOF> at ")?, 
+        }
         write!(f, "{:?}", self.pos)
     }
 }
@@ -209,7 +209,7 @@ impl V4Lexer {
             self.buf[idx].get_position()
         }
     }
-    pub fn nth(&self, idx: usize) -> &IToken {
+    pub fn nth(&self, idx: usize) -> &dyn IToken {
         if idx >= self.buf.len() { 
             &self.eof_token
         } else { 

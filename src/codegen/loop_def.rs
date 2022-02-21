@@ -64,11 +64,11 @@ impl LoopCollection {
         }
     }
     pub fn push_loop_break_addr(&mut self, name: &str, break_addr: usize) -> Option<()> {
-        for mut lp in &mut self.loops {
-            match lp.name {
-                Some(ref lp_name) => {
-                    if lp_name == name {
-                        lp.break_addrs.push(break_addr);
+        for r#loop in &mut self.loops {
+            match r#loop.name {
+                Some(ref loop_name) => {
+                    if loop_name == name {
+                        r#loop.break_addrs.push(break_addr);
                         return Some(());
                     }
                 }

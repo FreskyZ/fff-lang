@@ -40,12 +40,12 @@ impl InputReader {
         use std::fs::File;
         use std::io::Read;
 
-        let mut file = try!(File::open(file_name)
-            .map_err(|e| InputReaderError::CannotOpenFile { file_name: file_name.to_owned(), e: e }));
+        let mut file = File::open(file_name)
+            .map_err(|e| InputReaderError::CannotOpenFile { file_name: file_name.to_owned(), e: e })?;
         
         let mut content = String::new();
-        let _read_count = try!(file.read_to_string(&mut content) 
-            .map_err(|e| InputReaderError::CannotReadFile { file_name: file_name.to_owned(), e: e }));
+        let _read_count = file.read_to_string(&mut content) 
+            .map_err(|e| InputReaderError::CannotReadFile { file_name: file_name.to_owned(), e: e })?;
 
         Ok(content)
     }

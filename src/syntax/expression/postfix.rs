@@ -215,7 +215,7 @@ impl IASTItem for PostfixExpression {
                 (Some(expr1), expr1_len) => {
                     let mut exprs_len = expr1_len;
                     let mut exprs = vec![expr1];
-                    'expr: loop { 
+                    loop { 
                         match expect_end_sep {
                             SeperatorKind::RightParenthenes 
                                 if lexer.nth(index + current_len + exprs_len).is_seperator(SeperatorKind::RightParenthenes) 
