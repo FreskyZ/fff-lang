@@ -121,4 +121,4 @@ etc.
 ### Other things
 
 - record use count in definiton, warn on not used
-- consider fndef as variable and how handle pure function, captured or binded function and variable name resolve issues
+- consider fndef as variable and how handle pure function, captured or bound function and variable name resolve issues
