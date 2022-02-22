@@ -142,10 +142,10 @@ impl ISyntaxParse for Expr {
 
 #[cfg(test)] #[test]
 fn expr_parse() {
-    use codemap::Span;
-    use codemap::SymbolCollection;
-    use lexical::LitValue;
-    use lexical::Seperator;
+    use crate::codemap::Span;
+    use crate::codemap::SymbolCollection;
+    use crate::lexical::LitValue;
+    use crate::lexical::Seperator;
     use super::WithTestInput;
     use super::TestInput;
 
@@ -432,9 +432,9 @@ fn expr_parse() {
 
 #[cfg(test)] #[test]
 fn expr_errors() {
-    use codemap::Span;
-    use message::Message;
-    use message::MessageCollection;
+    use crate::codemap::Span;
+    use crate::message::Message;
+    use crate::message::MessageCollection;
     use super::error_strings;
     use super::TestInput;
 

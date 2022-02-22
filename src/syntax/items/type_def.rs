@@ -97,7 +97,7 @@ impl ISyntaxParse for TypeDef {
 
 #[cfg(test)] #[test]
 fn type_def_parse() {
-    use codemap::SymbolCollection;
+    use crate::codemap::SymbolCollection;
     use super::super::TestInput;
     use super::super::WithTestInput;
 

@@ -93,9 +93,9 @@ impl ISyntaxParse for VarDeclStatement {
 
 #[cfg(test)] #[test]
 fn var_decl_stmt_parse() {
-    use codemap::SymbolCollection;
-    use message::MessageCollection;
-    use lexical::LitValue;
+    use crate::codemap::SymbolCollection;
+    use crate::message::MessageCollection;
+    use crate::lexical::LitValue;
     use super::super::SimpleName;
     use super::super::LitExpr;
     use super::super::TupleDef;

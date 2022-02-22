@@ -167,9 +167,9 @@ impl<'chs> ILexer<'chs, V1Token> for V1Lexer<'chs> {
 #[cfg(test)]
 #[test]
 fn v1_base() {
-    use codemap::SourceCode;
-    use codemap::SymbolCollection;
-    use message::MessageCollection;
+    use crate::codemap::SourceCode;
+    use crate::codemap::SymbolCollection;
+    use crate::message::MessageCollection;
 
     fn test_case_full(src: &str, symbols: SymbolCollection, expect_tokens: Vec<(V1Token, Span)>, expect_messages: MessageCollection) {
         let mut actual_messages = MessageCollection::new();

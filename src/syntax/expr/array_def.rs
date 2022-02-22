@@ -63,7 +63,7 @@ impl ISyntaxParse for ArrayDef {
 
 #[cfg(test)] #[test]
 fn array_def_format() {
-    use lexical::LitValue;
+    use crate::lexical::LitValue;
     use super::LitExpr;
 
     assert_eq!{
@@ -83,7 +83,7 @@ fn array_def_format() {
 
 #[cfg(test)] #[test]
 fn array_def_parse() {
-    use lexical::LitValue;
+    use crate::lexical::LitValue;
     use super::LitExpr;
     use super::BinaryExpr;
     use super::SimpleName;
@@ -116,7 +116,7 @@ fn array_def_parse() {
 
 #[cfg(test)] #[test]
 fn array_def_errors() {
-    use message::MessageCollection;
+    use crate::message::MessageCollection;
     use super::super::TestInput;
     
     TestInput::new("[ , ]")

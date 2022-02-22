@@ -82,9 +82,9 @@ impl ISyntaxParse for PostfixExpr {
 
 #[cfg(test)] #[test]
 fn primary_expr_parse() {
-    use codemap::Span;
-    use codemap::SymbolCollection;
-    use lexical::LitValue;
+    use crate::codemap::Span;
+    use crate::codemap::SymbolCollection;
+    use crate::lexical::LitValue;
     use super::ExprList;
     use super::ParenExpr;
     use super::super::TestInput;
@@ -354,9 +354,9 @@ fn primary_expr_parse() {
 
 #[cfg(test)] #[test]
 fn primary_expr_errors() {
-    use codemap::Span;
-    use message::Message;
-    use message::MessageCollection;
+    use crate::codemap::Span;
+    use crate::message::Message;
+    use crate::message::MessageCollection;
     use super::ExprList;
     use super::super::error_strings;
     use super::super::TestInput;
@@ -446,7 +446,7 @@ indexer-call <<0>0-57>
 
 #[cfg(test)] #[test]
 fn postfix_expr_parse() {
-    use codemap::Span;
+    use crate::codemap::Span;
     use super::ExprList;
     use super::SimpleName;
     use super::super::WithTestInput;
@@ -522,9 +522,9 @@ fn postfix_expr_parse() {
 
 #[cfg(test)] #[test]
 fn postfix_expr_errors() {
-    use codemap::Span;
-    use message::Message;
-    use message::MessageCollection;
+    use crate::codemap::Span;
+    use crate::message::Message;
+    use crate::message::MessageCollection;
     use super::ExprList;
     use super::super::error_strings;
     use super::super::TestInput;

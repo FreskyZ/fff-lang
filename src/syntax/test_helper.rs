@@ -98,8 +98,8 @@ impl<T, U> WithTestInput for T where T: ISyntaxParse<Output = U> {
 
 #[cfg(test)] #[test]
 fn test_input_use() {
-    use codemap::Span;
-    use message::Message;
+    use crate::codemap::Span;
+    use crate::message::Message;
 
     #[derive(Eq, Debug, PartialEq)]
     struct SyntaxTree {

@@ -76,9 +76,9 @@ impl ISyntaxParse for Module {
 
 #[cfg(test)] #[test]
 fn module_parse() {
-    use codemap::Span;
-    use codemap::SymbolCollection;
-    use lexical::LitValue;
+    use crate::codemap::Span;
+    use crate::codemap::SymbolCollection;
+    use crate::lexical::LitValue;
     use super::super::TestInput;
     use super::super::UseStatement;
     use super::super::Name;
@@ -121,15 +121,15 @@ fn module_integration() {
     use std::io::Read;
     use super::super::TestInput;
 
-    let mut index_file = File::open("../tests/syntax/inter/index.txt").expect("cannot open index.txt");
+    let mut index_file = File::open("tests/syntax/inter/index.txt").expect("cannot open index.txt");
     let mut test_cases = String::new();
     let _length = index_file.read_to_string(&mut test_cases).expect("cannot read index.txt");
     for line in test_cases.lines() {
-        let src_path = "../tests/syntax/inter/".to_owned() + line + "_src.ff";
+        let src_path = "tests/syntax/inter/".to_owned() + line + "_src.ff";
         let mut src_file = File::open(&src_path).expect(&format!("cannot open src file {}", src_path));
         let mut src = String::new();
         let _length = src_file.read_to_string(&mut src).expect(&format!("cannot read src file {}", src_path));
-        let result_path = "../tests/syntax/inter/".to_owned() + line + "_result.txt";
+        let result_path = "tests/syntax/inter/".to_owned() + line + "_result.txt";
         let mut result_file = File::open(&result_path).expect(&format!("cannot open result file {}", result_path));
         let mut expect = String::new();
         let _length = result_file.read_to_string(&mut expect).expect(&format!("cannot read result file {}", result_path));

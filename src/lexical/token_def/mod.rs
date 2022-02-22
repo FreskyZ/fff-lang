@@ -41,8 +41,9 @@ impl fmt::Debug for LitValue {
 // from
 impl From<char> for LitValue { fn from(val: char) -> LitValue { LitValue::Char(Some(val)) } }
 impl From<bool> for LitValue { fn from(val: bool) -> LitValue { LitValue::Bool(val) } }
+
+#[cfg(test)]
 impl LitValue {
-    // for test
     pub fn new_str_lit_simple(sid: SymbolID) -> LitValue { LitValue::Str(Some(StrLitValue::Simple(sid))) }
     pub fn new_str_lit_simple_usize(sid: usize) -> LitValue { LitValue::Str(Some(StrLitValue::Simple(SymbolID::new(sid)))) }
     pub fn new_str_lit_format(segments: Vec<FormatStrLitSegment>) -> LitValue { LitValue::Str(Some(StrLitValue::Format(segments))) }
@@ -62,19 +63,6 @@ impl_from_num!{
     u64 => NumLitValue::U64,
     f32 => NumLitValue::R32,
     f64 => NumLitValue::R64,
-}
-
-// more from
-#[macro_export]
-macro_rules! make_lit {
-    ($val: expr) => (LitValue::from($val));
-    (str, $sid: expr) => (LitValue::new_str_lit_simple_usize($sid));
-    (fstr, $($seg: expr),+) => ({
-        let mut segs = Vec::new();
-        $(segs.push(From::from($x));)*
-        LitValue::new_str_lit_format(segs)
-    });
-    (fstr, $($seg: expr,)*) => (make_lit!(fstr, $($x),*));
 }
 
 impl LitValue {

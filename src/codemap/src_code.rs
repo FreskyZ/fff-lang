@@ -274,287 +274,288 @@ impl SourceCode {
     }
 }
 
-#[cfg(test)] #[test]
-fn char_at_index_test() {
-    
-    let s = "12你34我5，6";
-    for (pos, ch) in s.char_indices() {
-        assert_eq!(ch, char_at_index(s.as_bytes(), pos).1);
-    }
-}
-
-#[cfg(test)] #[test]
-fn get_relative_test() {
-    // ... very complex to cross platform, acutally only 2 points: root and path separator
-    // 17/8/1: congratulations: first correct use of 'separator'!
-
-    macro_rules! test_case {
-        ([$($c1: expr),*], [$($c2: expr),*] => [$($expect: expr),+]) => (
-            let mut path1 = PathBuf::from(if cfg!(windows) { "C:\\" } else { "/" });
-            let mut path2 = PathBuf::from(if cfg!(windows) { "C:\\" } else { "/" });
-            path1.extend(vec![$($c1,)*]);
-            path2.extend(vec![$($c2,)*]);
-            assert_eq!{ to_relative(&path1, &path2), vec![$($expect,)+].into_iter().collect::<PathBuf>() }
-        )
+#[cfg(test)]
+mod tests {
+    use super::*;
+        
+    #[test]
+    fn char_at_index_test() {
+        
+        let s = "12你34我5，6";
+        for (pos, ch) in s.char_indices() {
+            assert_eq!(ch, char_at_index(s.as_bytes(), pos).1);
+        }
     }
 
-    test_case!(["Fresky", "fff-lang"], ["Fresky", "a", "b.txt"] => ["..", "a", "b.txt"]);
-    test_case!(["Fresky"], ["Fresky", "c", "ddd.eee"] => ["c", "ddd.eee"]);
-    test_case!(["Fresky", "a", "bcd", "efg"], ["d.ff"] => ["..", "..", "..", "..", "d.ff"]);
-}
+    #[test]
+    fn get_relative_test() {
+        // ... very complex to cross platform, acutally only 2 points: root and path separator
+        // 17/8/1: congratulations: first correct use of 'separator'!
 
-#[cfg(test)] #[test]
-fn src_code_prop() {
-    use std::fs::File;
-    use std::fs::canonicalize;
+        macro_rules! test_case {
+            ([$($c1: expr),*], [$($c2: expr),*] => [$($expect: expr),+]) => (
+                let mut path1 = PathBuf::from(if cfg!(windows) { "C:\\" } else { "/" });
+                let mut path2 = PathBuf::from(if cfg!(windows) { "C:\\" } else { "/" });
+                path1.extend(vec![$($c1,)*]);
+                path2.extend(vec![$($c2,)*]);
+                assert_eq!{ to_relative(&path1, &path2), vec![$($expect,)+].into_iter().collect::<PathBuf>() }
+            )
+        }
 
-    macro_rules! test_case {
-        ($filename: expr, $fileid: expr, $src: expr, $endls: expr) => (
-            let full_path = canonicalize($filename).expect("canon failed");
-            let source = SourceCode::with_file_name($fileid, $filename).expect("source code unexpected failed");
-            assert_eq!(source, SourceCode{ 
-                id: $fileid, 
-                endl_indexes: $endls,
-                name: full_path.clone(),
-                src: $src.to_owned().into_bytes().into_boxed_slice(),
-            });
-            assert_eq!(source.get_relative_path(), PathBuf::from($filename));
-            assert_eq!(source.get_directory(), full_path.parent().unwrap());
-            assert_eq!(format!("{:?}", source), format!("source-code#{} {}", $fileid, $filename));
-        )
+        test_case!(["Fresky", "fff-lang"], ["Fresky", "a", "b.txt"] => ["..", "a", "b.txt"]);
+        test_case!(["Fresky"], ["Fresky", "c", "ddd.eee"] => ["c", "ddd.eee"]);
+        test_case!(["Fresky", "a", "bcd", "efg"], ["d.ff"] => ["..", "..", "..", "..", "d.ff"]);
     }
 
-    let (file1, file2) = if cfg!(windows) { 
-        (r"..\tests\codemap\file1.ff", r"..\tests\codemap\file2.ff")
-    } else {
-        ("../tests/codemap/file1.ff", "../tests/codemap/file2.ff") 
-    };
-    test_case!{ file1, 42, "abc\r\nde\r\nfgh", vec![4, 8] }
-    test_case!{ file2, 43, "ijk\r\nlm\r\n", vec![4, 8] }
+    #[test]
+    fn src_code_prop() {
+        use std::fs::File;
+        use std::fs::canonicalize;
 
-    assert_eq!{
-        SourceCode::with_file_name(0, "not_exist.ff".to_owned()),
-        Err(CodeMapError::CannotOpenFile("not_exist.ff".into(), File::open("not_exist.ff").unwrap_err()))
-    }
-    assert_eq!{
-        format!("{:?}", SourceCode::with_test_str(43, "helloworld")),
-        "source-code#43 <anon#43>"
-    }
-}
+        macro_rules! test_case {
+            ($filename: expr, $fileid: expr, $src: expr, $endls: expr) => (
+                let full_path = canonicalize($filename).expect("canon failed");
+                let source = SourceCode::with_file_name($fileid, $filename).expect("source code unexpected failed");
+                assert_eq!(source, SourceCode{ 
+                    id: $fileid, 
+                    endl_indexes: $endls,
+                    name: full_path.clone(),
+                    src: $src.to_owned().into_bytes().into_boxed_slice(),
+                });
+                assert_eq!(source.get_relative_path(), PathBuf::from($filename));
+                assert_eq!(source.get_directory(), full_path.parent().unwrap());
+                assert_eq!(format!("{:?}", source), format!("source-code#{} {}", $fileid, $filename));
+            )
+        }
 
-// old v0 finally seperated into these tests
-#[cfg(test)] #[test]
-fn src_code_index_to_line_column() {
+        let (file1, file2) = ("tests/codemap/file1.ff", "tests/codemap/file2.ff");
+        test_case!{ file1, 42, "abc\r\nde\r\nfgh", vec![4, 8] }
+        test_case!{ file2, 43, "ijk\r\nlm\r\n", vec![4, 8] }
 
-    macro_rules! test_case {
-        ($input: expr, $([$char_pos: expr => $row: expr, $col: expr, case $caseid: expr], )+) => (
-            let source = SourceCode::with_test_str(0, $input);
-            $(
-                assert_eq!{ source.map_index(make_charpos!($char_pos)), ($row, $col), "#{}", $caseid }
-            )+
-        )
-    }
-
-    test_case!{ "0123\n56\r8\n01234567\n9", 
-        [0 => 1, 1, case 0], 
-        [2 => 1, 3, case 1], 
-        [14 => 3, 5, case 2], 
-        [30 => 4, 2, case 3], // still, overflow(EOF) return next char of last char
-    }
-    test_case!{ "012345678901234567",
-        [0 => 1, 1, case 4],
-        [15 => 1, 16, case 5],
-        [100 => 1, 19, case 6],
-    }
-    test_case!{ "",
-        [0 => 1, 1, case 7], // both 'EOF is next char of last char' and 'first position is (1, 1)' requires this to be (1, 1)
-        [1 => 1, 1, case 8],
-        [2 => 1, 1, case 9],
-        [100 => 1, 1, case 10],
-    }
-    test_case!{ "var 你好 =\n 世界;",
-        //     src, row, col, byte
-        //       v,   1,   1,    0
-        //       a,   1,   2,    1
-        //       r,   1,   3,    2
-        //     ' ',   1,   4,    3,
-        //      你,   1,   5,    4, 5, 6
-        //      好,   1,   6,    7, 8, 9,
-        //     ' ',   1,   7,    10,
-        //       =,   1,   8,    11,
-        //      \n,   1,   9,    12,
-        //     ' ',   2,   1,    13
-        //      世,   2,   2,    14, 15, 16,
-        //      界,   2,   3,    17, 18, 19,
-        //       ;,   2,   4,    20
-        [0 => 1, 1, case 11],
-        [1 => 1, 2, case 12],
-        [4 => 1, 5, case 13],
-        [7 => 1, 6, case 14],
-        [14 => 2, 2, case 15],
-        [17 => 2, 3, case 16],
-        [20 => 2, 4, case 17],
-        [21 => 2, 5, case 18],
-        [22 => 2, 5, case 19],
-        [1024 => 2, 5, case 20],
+        assert_eq!{
+            SourceCode::with_file_name(0, "not_exist.ff".to_owned()),
+            Err(CodeMapError::CannotOpenFile("not_exist.ff".into(), File::open("not_exist.ff").unwrap_err()))
+        }
+        assert_eq!{
+            format!("{:?}", SourceCode::with_test_str(43, "helloworld")),
+            "source-code#43 <anon#43>"
+        }
     }
 
-    test_case!{ "\r\rabc\ndef\r\r\nasdwe\r\r\rq1da\nawsedq\r\r\r",
-        [2 => 1, 1, case 21],
-        [3 => 1, 2, case 22],
-        [4 => 1, 3, case 23],
-        [11 => 2, 4, case 24],
-        [26 => 4, 2, case 25],
-        [30 => 4, 6, case 26],
-        [10000 => 4, 7, case 27],
+    // old v0 finally seperated into these tests
+    #[test]
+    fn src_code_index_to_line_column() {
+
+        macro_rules! test_case {
+            ($input: expr, $([$char_pos: expr => $row: expr, $col: expr, case $caseid: expr], )+) => (
+                let source = SourceCode::with_test_str(0, $input);
+                $(
+                    assert_eq!{ source.map_index(make_charpos!($char_pos)), ($row, $col), "#{}", $caseid }
+                )+
+            )
+        }
+
+        test_case!{ "0123\n56\r8\n01234567\n9", 
+            [0 => 1, 1, case 0], 
+            [2 => 1, 3, case 1], 
+            [14 => 3, 5, case 2], 
+            [30 => 4, 2, case 3], // still, overflow(EOF) return next char of last char
+        }
+        test_case!{ "012345678901234567",
+            [0 => 1, 1, case 4],
+            [15 => 1, 16, case 5],
+            [100 => 1, 19, case 6],
+        }
+        test_case!{ "",
+            [0 => 1, 1, case 7], // both 'EOF is next char of last char' and 'first position is (1, 1)' requires this to be (1, 1)
+            [1 => 1, 1, case 8],
+            [2 => 1, 1, case 9],
+            [100 => 1, 1, case 10],
+        }
+        test_case!{ "var 你好 =\n 世界;",
+            //     src, row, col, byte
+            //       v,   1,   1,    0
+            //       a,   1,   2,    1
+            //       r,   1,   3,    2
+            //     ' ',   1,   4,    3,
+            //      你,   1,   5,    4, 5, 6
+            //      好,   1,   6,    7, 8, 9,
+            //     ' ',   1,   7,    10,
+            //       =,   1,   8,    11,
+            //      \n,   1,   9,    12,
+            //     ' ',   2,   1,    13
+            //      世,   2,   2,    14, 15, 16,
+            //      界,   2,   3,    17, 18, 19,
+            //       ;,   2,   4,    20
+            [0 => 1, 1, case 11],
+            [1 => 1, 2, case 12],
+            [4 => 1, 5, case 13],
+            [7 => 1, 6, case 14],
+            [14 => 2, 2, case 15],
+            [17 => 2, 3, case 16],
+            [20 => 2, 4, case 17],
+            [21 => 2, 5, case 18],
+            [22 => 2, 5, case 19],
+            [1024 => 2, 5, case 20],
+        }
+
+        test_case!{ "\r\rabc\ndef\r\r\nasdwe\r\r\rq1da\nawsedq\r\r\r",
+            [2 => 1, 1, case 21],
+            [3 => 1, 2, case 22],
+            [4 => 1, 3, case 23],
+            [11 => 2, 4, case 24],
+            [26 => 4, 2, case 25],
+            [30 => 4, 6, case 26],
+            [10000 => 4, 7, case 27],
+        }
+
+        test_case!{ "abc\ndef\r\r\n\nasd\nwe\rq1da\nawsedq\n",
+            [0 => 1, 1, case 28],
+            [6 => 2, 3, case 29],
+            [9 => 2, 4, case 30],
+            [10 => 3, 1, case 31],
+            [11 => 4, 1, case 32],
+            [29 => 6, 7, case 33],
+        }
+    }
+    #[test]
+    fn src_code_span_to_str() {
+        
+        macro_rules! test_case {
+            ($input: expr, $([$start_id: expr, $end_id: expr => $expect: expr, case $caseid: expr], )+) => (
+                let source = SourceCode::with_test_str(0, $input);
+                $(
+                    assert_eq!{ source.map_span(&Span::new(0, $start_id, $end_id)), $expect, "#{}", $caseid }
+                )+
+            )
+        }
+
+        test_case!{ "01234567890",
+            [0, 2 => "012", case 1],
+            [3, 5 => "345", case 2],
+            [8, 8 => "8", case 3],
+            [0, 10 => "01234567890", case 4],
+            [0, 100 => "01234567890", case 5],
+            [100, 100 => "", case 6],
+        }
+
+        test_case!{ "var 你好 =\n 世界;；",
+            //     src, row, col, byte
+            //       v,   1,   1,    0
+            //       a,   1,   2,    1
+            //       r,   1,   3,    2
+            //     ' ',   1,   4,    3,
+            //      你,   1,   5,    4, 5, 6
+            //      好,   1,   6,    7, 8, 9,
+            //     ' ',   1,   7,    10,
+            //       =,   1,   8,    11,
+            //      \n,   1,   9,    12,
+            //     ' ',   2,   1,    13
+            //      世,   2,   2,    14, 15, 16,
+            //      界,   2,   3,    17, 18, 19,
+            //       ;,   2,   4,    20
+            //      ；,   2,   5,    21, 22, 23
+            [0, 3 => "var ", case 7],
+            [3, 4 => " 你", case 8],
+            [4, 10 => "你好 ", case 9],
+            [4, 14 => "你好 =\n 世", case 10],
+            [14, 21 => "世界;；", case 11],
+        }
+    }
+    #[test]
+    fn src_code_get_row_str() {
+        
+        let source = SourceCode::with_test_str(0, "0123\n56\r8\n01234567\n9");
+        assert_eq!(source.map_line_num(1), "0123");
+        assert_eq!(source.map_line_num(2), "56\r8");
+        assert_eq!(source.map_line_num(3), "01234567");
+        assert_eq!(source.map_line_num(4), "9");
+        assert_eq!(source.map_line_num(5), "");
+        assert_eq!(source.map_line_num(0), "");
+
+        let source = SourceCode::with_test_str(0, "abc\ndef\r\r\n\nasd\nwe\rq1da\nawsedq\n");
+        assert_eq!(source.map_line_num(1), "abc");
+        assert_eq!(source.map_line_num(2), "def\r\r");
+        assert_eq!(source.map_line_num(3), "");
+        assert_eq!(source.map_line_num(4), "asd");
+        assert_eq!(source.map_line_num(5), "we\rq1da");
+        assert_eq!(source.map_line_num(6), "awsedq");
+        assert_eq!(source.map_line_num(7), "");
+
+        let source = SourceCode::with_test_str(0, "\nabc\ndef\n");
+        assert_eq!(source.map_line_num(0), "");
+        assert_eq!(source.map_line_num(1), "");
+        assert_eq!(source.map_line_num(2), "abc");
+        assert_eq!(source.map_line_num(3), "def");
+        assert_eq!(source.map_line_num(4), "");
+        
+        let source = SourceCode::with_test_str(0, "abcdef");
+        assert_eq!(source.map_line_num(1), "abcdef");
+        assert_eq!(source.map_line_num(0), "");
+        assert_eq!(source.map_line_num(2), "");
+
+        let source = SourceCode::with_test_str(0, "");
+        assert_eq!(source.map_line_num(0), "");
+        assert_eq!(source.map_line_num(1), "");
     }
 
-    test_case!{ "abc\ndef\r\r\n\nasd\nwe\rq1da\nawsedq\n",
-        [0 => 1, 1, case 28],
-        [6 => 2, 3, case 29],
-        [9 => 2, 4, case 30],
-        [10 => 3, 1, case 31],
-        [11 => 4, 1, case 32],
-        [29 => 6, 7, case 33],
-    }
-}
-#[cfg(test)] #[test]
-fn src_code_span_to_str() {
-    
-    macro_rules! test_case {
-        ($input: expr, $([$start_id: expr, $end_id: expr => $expect: expr, case $caseid: expr], )+) => (
-            let source = SourceCode::with_test_str(0, $input);
-            $(
-                assert_eq!{ source.map_span(&Span::new(0, $start_id, $end_id)), $expect, "#{}", $caseid }
-            )+
-        )
-    }
+    #[test]
+    fn src_code_iter() {
 
-    test_case!{ "01234567890",
-        [0, 2 => "012", case 1],
-        [3, 5 => "345", case 2],
-        [8, 8 => "8", case 3],
-        [0, 10 => "01234567890", case 4],
-        [0, 100 => "01234567890", case 5],
-        [100, 100 => "", case 6],
-    }
-
-    test_case!{ "var 你好 =\n 世界;；",
-        //     src, row, col, byte
-        //       v,   1,   1,    0
-        //       a,   1,   2,    1
-        //       r,   1,   3,    2
-        //     ' ',   1,   4,    3,
-        //      你,   1,   5,    4, 5, 6
-        //      好,   1,   6,    7, 8, 9,
-        //     ' ',   1,   7,    10,
-        //       =,   1,   8,    11,
-        //      \n,   1,   9,    12,
-        //     ' ',   2,   1,    13
-        //      世,   2,   2,    14, 15, 16,
-        //      界,   2,   3,    17, 18, 19,
-        //       ;,   2,   4,    20
-        //      ；,   2,   5,    21, 22, 23
-        [0, 3 => "var ", case 7],
-        [3, 4 => " 你", case 8],
-        [4, 10 => "你好 ", case 9],
-        [4, 14 => "你好 =\n 世", case 10],
-        [14, 21 => "世界;；", case 11],
-    }
-}
-#[cfg(test)] #[test]
-fn src_code_get_row_str() {
-    
-    let source = SourceCode::with_test_str(0, "0123\n56\r8\n01234567\n9");
-    assert_eq!(source.map_line_num(1), "0123");
-    assert_eq!(source.map_line_num(2), "56\r8");
-    assert_eq!(source.map_line_num(3), "01234567");
-    assert_eq!(source.map_line_num(4), "9");
-    assert_eq!(source.map_line_num(5), "");
-    assert_eq!(source.map_line_num(0), "");
-
-    let source = SourceCode::with_test_str(0, "abc\ndef\r\r\n\nasd\nwe\rq1da\nawsedq\n");
-    assert_eq!(source.map_line_num(1), "abc");
-    assert_eq!(source.map_line_num(2), "def\r\r");
-    assert_eq!(source.map_line_num(3), "");
-    assert_eq!(source.map_line_num(4), "asd");
-    assert_eq!(source.map_line_num(5), "we\rq1da");
-    assert_eq!(source.map_line_num(6), "awsedq");
-    assert_eq!(source.map_line_num(7), "");
-
-    let source = SourceCode::with_test_str(0, "\nabc\ndef\n");
-    assert_eq!(source.map_line_num(0), "");
-    assert_eq!(source.map_line_num(1), "");
-    assert_eq!(source.map_line_num(2), "abc");
-    assert_eq!(source.map_line_num(3), "def");
-    assert_eq!(source.map_line_num(4), "");
-    
-    let source = SourceCode::with_test_str(0, "abcdef");
-    assert_eq!(source.map_line_num(1), "abcdef");
-    assert_eq!(source.map_line_num(0), "");
-    assert_eq!(source.map_line_num(2), "");
-
-    let source = SourceCode::with_test_str(0, "");
-    assert_eq!(source.map_line_num(0), "");
-    assert_eq!(source.map_line_num(1), "");
-}
-
-#[cfg(test)] #[test]
-fn src_code_iter() {
-
-    macro_rules! test_case {
-        ($input: expr, $($ch: expr, $char_id: expr,)*) => (
-            let codefile = SourceCode::with_test_str(0, $input);
-            let mut iter = codefile.iter();
-            let mut ret_chars = Vec::new();
-            loop {
-                match iter.next() {
-                    (EOF_CHAR, _) => break,
-                    v0 => ret_chars.push(v0), // memory for v0
+        macro_rules! test_case {
+            ($input: expr, $($ch: expr, $char_id: expr,)*) => (
+                let codefile = SourceCode::with_test_str(0, $input);
+                let mut iter = codefile.iter();
+                let mut ret_chars = Vec::new();
+                loop {
+                    match iter.next() {
+                        (EOF_CHAR, _) => break,
+                        v0 => ret_chars.push(v0), // memory for v0
+                    }
                 }
-            }
 
-            let expect_chars = &mut Vec::new();
-            $(
-                expect_chars.push(($ch, make_charpos!(0, $char_id)));
-            )*
-            assert_eq!(&ret_chars, expect_chars);
-        )
+                let expect_chars = &mut Vec::new();
+                $(
+                    expect_chars.push(($ch, make_charpos!(0, $char_id)));
+                )*
+                assert_eq!(&ret_chars, expect_chars);
+            )
+        }
+
+        //           0             1              2          3
+        //           0 1 2345 6789 0 1 234567 8 9 01234 5678901 2 3 
+        test_case!{ "\r\rabc\ndef\r\r\nasdwe\r\r\rq1da\nawsedq\r\r\r",
+            'a', 2, 'b', 3, 'c', 4, '\n', 5,
+            'd', 6, 'e', 7, 'f', 8, '\n', 11,
+            'a', 12, 's', 13, 'd', 14, 'w', 15, 'e', 16, 'q', 20, '1', 21, 'd', 22, 'a', 23, '\n', 24,
+            'a', 25, 'w', 26, 's', 27, 'e', 28, 'd', 29, 'q', 30,
+        } //         0             1            2 
+        //           0123 4567 8 9 0 1234 567 89012 3456789
+        test_case!{ "abc\ndef\r\r\n\nasd\nwe\rq1da\nawsedq\n",
+            'a', 0, 'b', 1, 'c', 2, '\n', 3,
+            'd', 4, 'e', 5, 'f', 6, '\n', 9,
+            '\n', 10,
+            'a', 11, 's', 12, 'd', 13, '\n', 14,
+            'w', 15, 'e', 16, 'q', 18, '1', 19, 'd', 20, 'a', 21, '\n', 22,
+            'a', 23, 'w', 24, 's', 25, 'e', 26, 'd', 27, 'q', 28, '\n', 29,
+        }
+
+        test_case!{ "\nabc\ndef\n", 
+            '\n', 0,
+            'a', 1, 'b', 2, 'c', 3, '\n', 4,
+            'd', 5, 'e', 6, 'f', 7, '\n', 8,
+        }
+
+        test_case!{ "", }
     }
 
-    //           0             1              2          3
-    //           0 1 2345 6789 0 1 234567 8 9 01234 5678901 2 3 
-    test_case!{ "\r\rabc\ndef\r\r\nasdwe\r\r\rq1da\nawsedq\r\r\r",
-        'a', 2, 'b', 3, 'c', 4, '\n', 5,
-        'd', 6, 'e', 7, 'f', 8, '\n', 11,
-        'a', 12, 's', 13, 'd', 14, 'w', 15, 'e', 16, 'q', 20, '1', 21, 'd', 22, 'a', 23, '\n', 24,
-        'a', 25, 'w', 26, 's', 27, 'e', 28, 'd', 29, 'q', 30,
-    } //         0             1            2 
-    //           0123 4567 8 9 0 1234 567 89012 3456789
-    test_case!{ "abc\ndef\r\r\n\nasd\nwe\rq1da\nawsedq\n",
-        'a', 0, 'b', 1, 'c', 2, '\n', 3,
-        'd', 4, 'e', 5, 'f', 6, '\n', 9,
-        '\n', 10,
-        'a', 11, 's', 12, 'd', 13, '\n', 14,
-        'w', 15, 'e', 16, 'q', 18, '1', 19, 'd', 20, 'a', 21, '\n', 22,
-        'a', 23, 'w', 24, 's', 25, 'e', 26, 'd', 27, 'q', 28, '\n', 29,
-    }
+    #[test]
+    fn src_code_pretend() {
+        use std::iter::FromIterator;
 
-    test_case!{ "\nabc\ndef\n", 
-        '\n', 0,
-        'a', 1, 'b', 2, 'c', 3, '\n', 4,
-        'd', 5, 'e', 6, 'f', 7, '\n', 8,
-    }
-
-    test_case!{ "", }
-}
-
-#[cfg(test)] #[test]
-fn src_code_pretend() {
-    use std::iter::FromIterator;
-
-    assert_eq!{
-        SourceCode::pretend_with_file_name(0, vec!["a", "b", "c"], "source").get_relative_path(), 
-        PathBuf::from_iter(["a", "b", "c"].into_iter())
+        assert_eq!{
+            SourceCode::pretend_with_file_name(0, vec!["a", "b", "c"], "source").get_relative_path(), 
+            PathBuf::from_iter(["a", "b", "c"].into_iter())
+        }
     }
 }

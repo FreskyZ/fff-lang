@@ -156,7 +156,7 @@ impl ISyntaxParse for RangeExpr {
 
 #[cfg(test)] #[test]
 fn range_expr_parse() {
-    use lexical::LitValue;
+    use crate::lexical::LitValue;
     use super::LitExpr;
     use super::super::WithTestInput;
 

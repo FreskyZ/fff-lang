@@ -77,7 +77,7 @@ impl ISyntaxParse for UnaryExpr {
 
 #[cfg(test)] #[test]
 fn unary_expr_parse() {
-    use lexical::LitValue;
+    use crate::lexical::LitValue;
     use super::LitExpr;
     use super::super::WithTestInput;
     

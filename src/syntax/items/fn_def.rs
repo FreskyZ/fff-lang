@@ -120,7 +120,7 @@ impl ISyntaxParse for FnDef {
 
 #[cfg(test)] #[test]
 fn fn_def_parse() {
-    use codemap::SymbolCollection;
+    use crate::codemap::SymbolCollection;
     use super::super::SimpleName;
     use super::super::WithTestInput;
     use super::super::TypeUse;

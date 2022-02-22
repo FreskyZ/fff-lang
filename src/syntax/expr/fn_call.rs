@@ -83,7 +83,7 @@ impl ISyntaxParse for FnCallExpr {
 
 #[cfg(test)] #[test]
 fn fn_call_parse() {
-    use lexical::LitValue;
+    use crate::lexical::LitValue;
     use super::super::WithTestInput;
     use super::LitExpr;
 
@@ -100,7 +100,7 @@ fn fn_call_parse() {
 
 #[cfg(test)] #[test]
 fn fn_call_errors() {
-    use message::MessageCollection;
+    use crate::message::MessageCollection;
     use super::super::TestInput;
 
     TestInput::new("(,)")

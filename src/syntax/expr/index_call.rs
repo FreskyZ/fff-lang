@@ -85,14 +85,14 @@ impl ISyntaxParse for IndexCallExpr {
 
 #[cfg(test)] #[test]
 fn index_call_parse() {
-    use lexical::LitValue;
+    use crate::lexical::LitValue;
     use super::super::WithTestInput;
     use super::LitExpr;
 
     assert_eq!{ IndexCallExpr::with_test_str("[1, 2, ]"),
         IndexCallExpr::new_with_parse_result(make_span!(0, 7), ExprList::new(vec![
-            Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(1, 1))),
-            Expr::Lit(LitExpr::new(LitValue::from(2), make_span!(4, 4))),
+            Expr::Lit(LitExpr::new(LitValue::from(1i32), make_span!(1, 1))),
+            Expr::Lit(LitExpr::new(LitValue::from(2i32), make_span!(4, 4))),
         ]))
     }
 
@@ -105,7 +105,7 @@ fn index_call_parse() {
 
 #[cfg(test)] #[test]
 fn index_call_errors() {
-    use message::MessageCollection;
+    use crate::message::MessageCollection;
     use super::super::TestInput;
 
     TestInput::new("[,]")

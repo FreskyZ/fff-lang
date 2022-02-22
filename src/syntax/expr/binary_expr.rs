@@ -106,7 +106,7 @@ impl ISyntaxParse for BinaryExpr {
 
 #[cfg(test)] #[test]
 fn binary_expr_format() {
-    use lexical::LitValue;
+    use crate::lexical::LitValue;
     use super::LitExpr;
     
     assert_eq!{ 
@@ -124,7 +124,7 @@ fn binary_expr_format() {
 
 #[cfg(test)] #[test]
 fn binary_expr_parse() {
-    use lexical::LitValue;
+    use crate::lexical::LitValue;
     use super::LitExpr;
     use super::ArrayDef;
     use super::SimpleName;

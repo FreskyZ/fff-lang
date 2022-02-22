@@ -399,8 +399,8 @@ fn v2_non_ascii_ch() {
 #[test]
 fn v2_base() {
     use std::fmt;
-    use codemap::SourceCode;
-    use codemap::SymbolCollection;
+    use crate::codemap::SourceCode;
+    use crate::codemap::SymbolCollection;
     
     // Only to make decltype(V2Lexer as BufLexer::next(...)) to display better
     #[derive(Eq, PartialEq)]
@@ -435,14 +435,8 @@ fn v2_base() {
             (test_case_full($src, SymbolCollection::new(), $expect_tokens, $expect_messages, line!()));
     }
 
-    macro_rules! liti32 {
-        ($val: expr, $start_id: expr, $end_id: expr) => ((V2Token::Literal(From::<i32>::from($val)), make_span!($start_id, $end_id)))
-    }
-    macro_rules! litf64 {
-        ($val: expr, $start_id: expr, $end_id: expr) => ((V2Token::Literal(From::<f64>::from($val)), make_span!($start_id, $end_id)))
-    }
-    macro_rules! litu8 {
-        ($val: expr, $start_id: expr, $end_id: expr) => ((V2Token::Literal(From::<u8>::from($val)), make_span!($start_id, $end_id)))
+    macro_rules! lit {
+        ($val: expr, $start_id: expr, $end_id: expr) => ((V2Token::Literal(From::from($val)), make_span!($start_id, $end_id)))
     }
     macro_rules! lit_num_none {
         ($start_id: expr, $end_id: expr) => ((V2Token::Literal(LitValue::Num(None)), make_span!($start_id, $end_id)))
@@ -473,7 +467,7 @@ fn v2_base() {
         kw!(Keyword::Var, 14, 16),
         ident!(make_id!(2), 18, 18),
         sep!(Seperator::Assign, 20, 20),
-        lit!(789123.4560000001, 22, 32),
+        lit!(789123.4560000001f64, 22, 32),
         sep!(Seperator::SemiColon, 33, 33),
         ident!(make_id!(3), 35, 38),
     ]}
@@ -491,23 +485,23 @@ fn v2_base() {
     //           0123456789012345678901234567890123456789012345678901234567890123456789012345
     test_case!{ "[1, 123 _ 1u64( 123.456,) -123_456{123u32}123r32 += 123.0 / 123u8 && 1024u8]", make_symbols![], vec![  
         sep!(Seperator::LeftBracket, 0, 0),
-        lit!(1, 1, 1),
+        lit!(1i32, 1, 1),
         sep!(Seperator::Comma, 2, 2),
-        lit!(123, 4, 6),
+        lit!(123i32, 4, 6),
         kw!(Keyword::Underscore, 8, 8),
         lit!(1u64, 10, 13),
         sep!(Seperator::LeftParenthenes, 14, 14),
-        lit!(123.456, 16, 22),
+        lit!(123.456f64, 16, 22),
         sep!(Seperator::Comma, 23, 23),
         sep!(Seperator::RightParenthenes, 24, 24),
         sep!(Seperator::Sub, 26, 26),
-        lit!(123456, 27, 33),
+        lit!(123456i32, 27, 33),
         sep!(Seperator::LeftBrace, 34, 34),
         lit!(123u32, 35, 40),
         sep!(Seperator::RightBrace, 41, 41),
         lit!(123f32, 42, 47),
         sep!(Seperator::AddAssign, 49, 50),
-        lit!(123.0, 52, 56),
+        lit!(123.0f64, 52, 56),
         sep!(Seperator::Div, 58, 58),
         lit!(123u8, 60, 64),
         sep!(Seperator::LogicalAnd, 66, 67),
@@ -526,21 +520,21 @@ fn v2_base() {
     //           0123456789012345678901234567890123456789012345678901234567890123456789012345678901234
     test_case!{ "[123 * 0x123 - 0xAFF & 0o777 || 0oXXX != 0b101010 == 0b123456 -> 0d123.. 0dABC] .. -=", make_symbols![], vec![
         sep!(Seperator::LeftBracket, 0, 0),
-        lit!(123, 1, 3),
+        lit!(123i32, 1, 3),
         sep!(Seperator::Mul, 5, 5),
-        lit!(0x123, 7, 11),
+        lit!(0x123i32, 7, 11),
         sep!(Seperator::Sub, 13, 13),
-        lit!(0xAFF, 15, 19),
+        lit!(0xAFFi32, 15, 19),
         sep!(Seperator::BitAnd, 21, 21),
-        lit!(0o777, 23, 27),
+        lit!(0o777i32, 23, 27),
         sep!(Seperator::LogicalOr, 29, 30),
         lit_num_none!(32, 36),
         sep!(Seperator::NotEqual, 38, 39),
-        lit!(0b101010, 41, 48),
+        lit!(0b101010i32, 41, 48),
         sep!(Seperator::Equal, 50, 51),
         lit_num_none!(53, 60),
         sep!(Seperator::NarrowRightArrow, 62, 63),
-        lit!(123, 65, 69),
+        lit!(123i32, 65, 69),
         sep!(Seperator::Range, 70, 71),
         lit_num_none!(73, 77),
         sep!(Seperator::RightBracket, 78, 78),
@@ -568,13 +562,13 @@ fn v2_base() {
     //           012345 8901234578 123
     test_case!{ "[1, 2，3.5, 4。5】<<=", make_symbols![], vec![  // not ascii char hint and recover
         sep!(Seperator::LeftBracket, 0, 0),
-        lit!(1, 1, 1),
+        lit!(1i32, 1, 1),
         sep!(Seperator::Comma, 2, 2),
-        lit!(2, 4, 4),
+        lit!(2i32, 4, 4),
         sep!(Seperator::Comma, 5, 5),
-        lit!(3.5, 8, 10),
+        lit!(3.5f64, 8, 10),
         sep!(Seperator::Comma, 11, 11),
-        lit!(4.5, 13, 17),
+        lit!(4.5f64, 13, 17),
         sep!(Seperator::RightBracket, 18, 18),
         sep!(Seperator::ShiftLeftAssign, 21, 23),
     ], make_messages![
@@ -597,23 +591,23 @@ fn v2_base() {
 
     //           012345678
     test_case!{ "1..2.0r32", make_symbols![], vec![  // range operator special case
-        lit!(1, 0, 0),
+        lit!(1i32, 0, 0),
         sep!(Seperator::Range, 1, 2),
         lit!(2f32, 3, 8),
     ]}
 
     //           01234
     test_case!{ "2...3", make_symbols![], vec![  // range operator special case 2
-        lit!(2, 0, 0),
+        lit!(2i32, 0, 0),
         sep!(Seperator::Range, 1, 2),
         sep!(Seperator::Dot, 3, 3),
-        lit!(3, 4, 4),
+        lit!(3i32, 4, 4),
     ]}
 
     //           0         1         2         
     //           012345678901234567890123456789
     test_case!{ "1.is_odd(), 123r64.to_string()", make_symbols!["is_odd", "to_string"], vec![  //  another special case
-        lit!(1, 0, 0),
+        lit!(1i32, 0, 0),
         sep!(Seperator::Dot, 1, 1),
         ident!(make_id!(1), 2, 7),
         sep!(Seperator::LeftParenthenes, 8, 8),
@@ -639,28 +633,28 @@ fn v2_base() {
     //           0         1         2         3         4         5
     //           012345678901234567890123456789012345678901234567890123
     test_case!{ "1.a[[3](4, [5, 6], )](7, 8)() def[i32].bcd[10, 11, 12]", make_symbols!["a", "bcd"], vec![
-        lit!(1, 0, 0),
+        lit!(1i32, 0, 0),
         sep!(Seperator::Dot, 1, 1),
         ident!(make_id!(1), 2, 2),
         sep!(Seperator::LeftBracket, 3, 3),
         sep!(Seperator::LeftBracket, 4, 4),
-        lit!(3, 5, 5),
+        lit!(3i32, 5, 5),
         sep!(Seperator::RightBracket, 6, 6),
         sep!(Seperator::LeftParenthenes, 7, 7),
-        lit!(4, 8, 8),
+        lit!(4i32, 8, 8),
         sep!(Seperator::Comma, 9, 9),
         sep!(Seperator::LeftBracket, 11, 11),
-        lit!(5, 12, 12),
+        lit!(5i32, 12, 12),
         sep!(Seperator::Comma, 13, 13),
-        lit!(6, 15, 15),
+        lit!(6i32, 15, 15),
         sep!(Seperator::RightBracket, 16, 16),
         sep!(Seperator::Comma, 17, 17),
         sep!(Seperator::RightParenthenes, 19, 19),
         sep!(Seperator::RightBracket, 20, 20),
         sep!(Seperator::LeftParenthenes, 21, 21),
-        lit!(7, 22, 22),
+        lit!(7i32, 22, 22),
         sep!(Seperator::Comma, 23, 23),
-        lit!(8, 25, 25),
+        lit!(8i32, 25, 25),
         sep!(Seperator::RightParenthenes, 26, 26),
         sep!(Seperator::LeftParenthenes, 27, 27),
         sep!(Seperator::RightParenthenes, 28, 28),
@@ -671,11 +665,11 @@ fn v2_base() {
         sep!(Seperator::Dot, 38, 38),
         ident!(make_id!(2), 39, 41),
         sep!(Seperator::LeftBracket, 42, 42),
-        lit!(10, 43, 44),
+        lit!(10i32, 43, 44),
         sep!(Seperator::Comma, 45, 45),
-        lit!(11, 47, 48),
+        lit!(11i32, 47, 48),
         sep!(Seperator::Comma, 49, 49),
-        lit!(12, 51, 52),
+        lit!(12i32, 51, 52),
         sep!(Seperator::RightBracket, 53, 53),
     ], make_messages![
         Message::new(format!("{}: {:?}", error_strings::UseReservedKeyword, Keyword::Def), vec![(make_span!(30, 32), String::new())]),
@@ -688,7 +682,7 @@ fn v2_base() {
         label!(make_id!(1), 4, 7),  // yeah
         label!(make_id!(2), 9, 9),
         label!(make_id!(3), 11, 12),
-        lit!(1, 14, 14),
+        lit!(1i32, 14, 14),
         label!(make_id!(4), 16, 17),
     ]}
 

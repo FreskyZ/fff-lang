@@ -176,9 +176,9 @@ where
 #[cfg(test)]
 #[test]
 fn buf_lexer_test() {
-    use codemap::SourceCode;
-    use codemap::SymbolCollection;
-    use message::MessageCollection;
+    use crate::codemap::SourceCode;
+    use crate::codemap::SymbolCollection;
+    use crate::message::MessageCollection;
 
     #[derive(Eq, PartialEq, Debug, Default)]
     struct TestToken(usize);

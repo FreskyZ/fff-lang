@@ -1,10 +1,23 @@
+#![macro_use]
 ///! fff-lang
 ///! 
 ///! lexical parser
 ///! TokenStream::new(source, messages) for formal use
 ///! TokenStream::with_test_str(input) for test use
 
-#[cfg_attr(test, macro_use)] mod token_def;
+#[cfg(test)]
+macro_rules! make_lit {
+    ($val: expr) => (LitValue::from($val));
+    (str, $sid: expr) => (LitValue::new_str_lit_simple_usize($sid));
+    (fstr, $($seg: expr),+) => ({
+        let mut segs = Vec::new();
+        $(segs.push(From::from($x));)*
+        LitValue::new_str_lit_format(segs)
+    });
+    (fstr, $($seg: expr,)*) => (make_lit!(fstr, $($x),*));
+}
+
+mod token_def;
 mod token_buf;
 mod v1lexer;
 mod v2lexer;

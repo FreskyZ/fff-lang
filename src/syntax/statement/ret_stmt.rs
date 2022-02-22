@@ -69,8 +69,8 @@ impl ISyntaxParse for ReturnStatement {
 
 #[cfg(test)] #[test]
 fn ret_stmt_parse() {
-    use lexical::LitValue;
-    use lexical::Seperator;
+    use crate::lexical::LitValue;
+    use crate::lexical::Seperator;
     use super::super::LitExpr;
     use super::super::BinaryExpr;
     use super::super::WithTestInput;

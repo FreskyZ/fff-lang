@@ -112,7 +112,7 @@ impl Expr {
 
 #[cfg(test)] #[test]
 fn name_parse() {
-    use codemap::SymbolCollection;
+    use crate::codemap::SymbolCollection;
     use super::super::WithTestInput;
     use super::super::TestInput;
 

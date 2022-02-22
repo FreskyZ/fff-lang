@@ -1,3 +1,4 @@
+#![macro_use]
 //! fff-lang
 //!
 //! Every kind of messages

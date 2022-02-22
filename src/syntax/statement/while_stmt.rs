@@ -87,8 +87,8 @@ impl ISyntaxParse for WhileStatement {
 
 #[cfg(test)] #[test]
 fn while_stmt_parse() {
-    use codemap::SymbolCollection;
-    use lexical::LitValue;
+    use crate::codemap::SymbolCollection;
+    use crate::lexical::LitValue;
     use super::super::LitExpr;
     use super::super::SimpleName;
     use super::super::Statement;

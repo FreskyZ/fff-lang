@@ -180,8 +180,8 @@ impl ISyntaxParse for IfStatement {
 
 #[cfg(test)] #[test]
 fn if_stmt_parse() {
-    use codemap::SymbolCollection;
-    use lexical::LitValue;
+    use crate::codemap::SymbolCollection;
+    use crate::lexical::LitValue;
     use super::super::ExprList;
     use super::super::FnCallExpr;
     use super::super::MemberAccessExpr;

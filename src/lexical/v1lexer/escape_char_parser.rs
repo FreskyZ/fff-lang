@@ -134,7 +134,7 @@ impl EscapeCharParser {
 
 #[cfg(test)] #[test]
 fn escape_char_parser() {
-    use codemap::Span;
+    use crate::codemap::Span;
     use self::EscapeCharParserResult::*;
 
     {   // \u2764      => '\u{2764}' | '❤'                          C3, C5, 4

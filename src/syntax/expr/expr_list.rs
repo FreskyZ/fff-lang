@@ -100,7 +100,7 @@ macro_rules! make_exprs {
 
 #[cfg(test)] #[test]
 fn expr_list_format() {
-    use lexical::LitValue;
+    use crate::lexical::LitValue;
     use super::LitExpr;
 
     assert_eq!{
@@ -115,7 +115,7 @@ fn expr_list_format() {
 
 #[cfg(test)] #[test]
 fn expr_list_parse() {
-    use lexical::LitValue;
+    use crate::lexical::LitValue;
     use super::LitExpr;
     use super::super::WithTestInput;
 

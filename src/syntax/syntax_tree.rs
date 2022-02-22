@@ -150,34 +150,28 @@ fn syntax_tree_search_module() {
     let search_module = SyntaxTree::search_module;
     macro_rules! collect { ($($component: expr),*) => ([$($component),*].into_iter().collect::<PathBuf>()) }
 
-    assert_eq!(search_module(&collect!["..", "tests", "syntax", "mod"], "abc"), Ok(collect!["..", "tests", "syntax", "mod", "abc.ff"]));
-    assert_eq!(search_module(&collect!["..", "tests", "syntax", "mod"], "efg"), Ok(collect!["..", "tests", "syntax", "mod", "efg", "module.ff"]));
-    assert_eq!(search_module(&collect!["..", "tests", "syntax", "mod"], "other_name"), Ok(collect!["..", "tests", "syntax", "mod", "other_name.ff"]));
-    assert_eq!(search_module(&collect!["..", "tests", "syntax", "mod"], "some_name"), Ok(collect!["..", "tests", "syntax", "mod", "some-name.ff"]));
-    assert_eq!(search_module(&collect!["..", "tests", "syntax", "mod", "efg"], "this_name"), 
-        Ok(collect!["..", "tests", "syntax", "mod", "efg", "this_name", "module.ff"])
-    );
-    assert_eq!(search_module(&collect!["..", "tests", "syntax", "mod", "efg"], "that_name"), 
-        Ok(collect!["..", "tests", "syntax", "mod", "efg", "that-name", "module.ff"])
-    );
+    assert_eq!(search_module(&collect!["tests", "syntax", "mod"], "abc"), Ok(collect!["tests", "syntax", "mod", "abc.ff"]));
+    assert_eq!(search_module(&collect!["tests", "syntax", "mod"], "efg"), Ok(collect!["tests", "syntax", "mod", "efg", "module.ff"]));
+    assert_eq!(search_module(&collect!["tests", "syntax", "mod"], "other_name"), Ok(collect!["tests", "syntax", "mod", "other_name.ff"]));
+    assert_eq!(search_module(&collect!["tests", "syntax", "mod"], "some_name"), Ok(collect!["tests", "syntax", "mod", "some-name.ff"]));
+    assert_eq!(search_module(&collect!["tests", "syntax", "mod", "efg"], "this_name"), Ok(collect!["tests", "syntax", "mod", "efg", "this_name", "module.ff"]));
+    assert_eq!(search_module(&collect!["tests", "syntax", "mod", "efg"], "that_name"), Ok(collect!["tests", "syntax", "mod", "efg", "that-name", "module.ff"]));
 
-    assert_eq!(search_module(&collect![".."], "xxx"), Err(vec![
-        collect!["..", "xxx.ff"], collect!["..", "xxx", "module.ff"]
-    ]));
-    assert_eq!(search_module(&collect![".."], "xxx_yyy"), Err(vec![
-        collect!["..", "xxx-yyy.ff"], collect!["..", "xxx_yyy.ff"], collect!["..", "xxx-yyy", "module.ff"], collect!["..", "xxx_yyy", "module.ff"]
+    assert_eq!(search_module(&collect!["arb"], "xxx"), Err(vec![collect!["arb", "xxx.ff"], collect!["arb", "xxx", "module.ff"]]));
+    assert_eq!(search_module(&collect!["arb"], "xxx_yyy"), Err(vec![
+        collect!["arb", "xxx-yyy.ff"], collect!["arb", "xxx_yyy.ff"], collect!["arb", "xxx-yyy", "module.ff"], collect!["arb", "xxx_yyy", "module.ff"]
     ]));
 }
 
 #[cfg(test)] #[test]
 fn syntax_tree_recursive() {
-    use codemap::Span;
+    use crate::codemap::Span;
     use super::Item;
     use super::ImportStatement;
     use super::SimpleName;
     macro_rules! collect { ($($component: expr),*) => ([$($component),*].into_iter().collect::<PathBuf>()) }
 
-    let mut sources = SourceMap::new(collect!["..", "tests", "syntax", "mod", "main.ff"]).expect("open main file failed");
+    let mut sources = SourceMap::new(collect!["tests", "syntax", "mod", "main.ff"]).expect("open main file failed");
     let mut messages = make_messages![]; 
     let mut symbols = make_symbols!["abc", "efg", "some_name", "other_name", "this_name", "that_name"];
 
@@ -209,13 +203,13 @@ fn syntax_tree_recursive() {
     ]));
 
     // check source file name
-    assert_eq!(sources.index(0).get_relative_path(), collect!["..", "tests", "syntax", "mod", "main.ff"]);
-    assert_eq!(sources.index(1).get_relative_path(), collect!["..", "tests", "syntax", "mod", "abc.ff"]);
-    assert_eq!(sources.index(2).get_relative_path(), collect!["..", "tests", "syntax", "mod", "efg", "module.ff"]);
-    assert_eq!(sources.index(3).get_relative_path(), collect!["..", "tests", "syntax", "mod", "some-name.ff"]);
-    assert_eq!(sources.index(4).get_relative_path(), collect!["..", "tests", "syntax", "mod", "other_name.ff"]);
-    assert_eq!(sources.index(5).get_relative_path(), collect!["..", "tests", "syntax", "mod", "efg", "this_name", "module.ff"]);
-    assert_eq!(sources.index(6).get_relative_path(), collect!["..", "tests", "syntax", "mod", "efg", "that-name", "module.ff"]);
+    assert_eq!(sources.index(0).get_relative_path(), collect!["tests", "syntax", "mod", "main.ff"]);
+    assert_eq!(sources.index(1).get_relative_path(), collect!["tests", "syntax", "mod", "abc.ff"]);
+    assert_eq!(sources.index(2).get_relative_path(), collect!["tests", "syntax", "mod", "efg", "module.ff"]);
+    assert_eq!(sources.index(3).get_relative_path(), collect!["tests", "syntax", "mod", "some-name.ff"]);
+    assert_eq!(sources.index(4).get_relative_path(), collect!["tests", "syntax", "mod", "other_name.ff"]);
+    assert_eq!(sources.index(5).get_relative_path(), collect!["tests", "syntax", "mod", "efg", "this_name", "module.ff"]);
+    assert_eq!(sources.index(6).get_relative_path(), collect!["tests", "syntax", "mod", "efg", "that-name", "module.ff"]);
 }
 
 #[cfg(test)] #[test]

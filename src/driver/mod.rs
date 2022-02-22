@@ -1,4 +1,4 @@
-#![allow(dead_code)]
+#![allow(dead_code)] // 2022: there is really many many dead code, although some is true dead code, most is reserved and even must be used later
 
 use crate::codemap::SourceMap;
 use crate::codemap::SymbolCollection;
@@ -9,7 +9,7 @@ use crate::syntax::SyntaxTree;
 
 pub fn main() {
 
-    let file_name = "tests/syntax/inter/gcd_src.f3";
+    let file_name = "tests/syntax/inter/gcd_src.ff";
     let mut messages = MessageCollection::new();
     let mut symbols = SymbolCollection::new();
     let mut sources = SourceMap::new(file_name).map_err(|e| format!("{:?}", e)).unwrap();

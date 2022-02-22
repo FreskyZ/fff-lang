@@ -102,7 +102,7 @@ impl ISyntaxParse for TupleDef {
 
 #[cfg(test)] #[test]
 fn tuple_def_format() {
-    use lexical::LitValue;
+    use crate::lexical::LitValue;
     use super::LitExpr;
 
     assert_eq!{
@@ -146,7 +146,7 @@ fn tuple_def_parse() {
 
 #[cfg(test)] #[test]
 fn tuple_def_errors() {
-    use message::MessageCollection;
+    use crate::message::MessageCollection;
     use super::super::TestInput;
     
     TestInput::new("( , )")

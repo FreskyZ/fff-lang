@@ -117,7 +117,7 @@ impl ISyntaxParse for TypeUse {
 
 #[cfg(test)] #[test]
 fn type_use_parse() {
-    use codemap::SymbolCollection;
+    use crate::codemap::SymbolCollection;
     use super::super::TestInput;
     use super::super::WithTestInput;
 

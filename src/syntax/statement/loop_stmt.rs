@@ -83,7 +83,7 @@ impl ISyntaxParse for LoopStatement {
 
 #[cfg(test)] #[test]
 fn loop_stmt_format() {
-    use codemap::SymbolCollection;
+    use crate::codemap::SymbolCollection;
     use super::super::TestInput;
     use super::super::WithTestInput;
     
@@ -105,8 +105,8 @@ fn loop_stmt_format() {
 
 #[cfg(test)] #[test]
 fn loop_stmt_parse() {
-    use codemap::SymbolCollection;
-    use lexical::LitValue;
+    use crate::codemap::SymbolCollection;
+    use crate::lexical::LitValue;
     use super::super::LitExpr;
     use super::super::SimpleName;
     use super::super::WithTestInput;
