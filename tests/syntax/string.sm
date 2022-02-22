@@ -4,20 +4,20 @@
 fn main() {
 
     var string input = read_string();
-    println("length = " + input.length);
+    writeln("length = " + input.length);
     var string input2 = read_string();
-    println(input == input2);
+    writeln(input == input2);
 
     input.push_char('a');
     input.push_char('c');
     input2.push_string("ac");
-    println(input == input2);
+    writeln(input == input2);
 
-    println(input.starts_with("abc"));
-    println(input2.ends_with("ac"));
+    writeln(input.starts_with("abc"));
+    writeln(input2.ends_with("ac"));
 
     var string input3 = read_string();
     const string input3_copy = input3_copy;
-    println("input3.trim is " + input3.trim());
-    println("input3_copy is " + input3_copy);
+    writeln("input3.trim is " + input3.trim());
+    writeln("input3_copy is " + input3_copy);
 }

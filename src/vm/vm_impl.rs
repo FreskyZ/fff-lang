@@ -53,8 +53,9 @@ impl VirtualMachine {
         if rt.rip == !1 {
             return CircleResult::Exit;  // normal exit
         }
-        //perrorln!("Current Code: ({}, {:?})", rt.rip, self.codes[rt.rip]);
-        //perrorln!("Current State: {}", rt.dump());
+
+        // eprintln!("Current Code: ({}, {:?})", rt.rip, self.codes[rt.rip]);
+        // eprintln!("Current State: {}", rt.dump());
 
         match &self.codes[rt.rip] {
             &Code::PlaceHolder => unreachable!(),

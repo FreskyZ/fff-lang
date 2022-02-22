@@ -25,7 +25,7 @@ impl LoopCollection {
     }
 
     pub fn push_loop(&mut self, name: Option<String>, continue_addr: usize) {
-        self.loops.push(Loop{ name: name, continue_addr: continue_addr, break_addrs: Vec::new() })
+        self.loops.push(Loop{ name: name, continue_addr, break_addrs: Vec::new() })
     }
     // Panic on empty contents
     pub fn pop_and_refill(&mut self, refill_adder: usize, codes: &mut CodeCollection) {

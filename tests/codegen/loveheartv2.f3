@@ -1,0 +1,26 @@
+
+fn abs(f64 x) -> f64 { if x >= 0f64 { return x; } else { return 0f64 - x; } }
+
+fn main() {
+    // x^2 + (5y/4 + sqrt(abs(x)))^2 < 1
+    // scale 20 to
+    // x * x / 400 + (y / 16 + sqrt(abs(x / 20))) ^ 2 < 1
+
+    for y in 0 - 30 : 30 {
+        var f64 yf = y as f64;
+        for x in 0 - 20 : 20 {
+            var f64 xf = x as f64;
+
+            var f64 a = xf * xf / 400f64;
+            var f64 b = (yf / 16f64 + sqrt(abs(xf / 20f64)));
+            b = b * b;
+
+            if a + b < 1f64 {
+                write("*");
+            } else {
+                write(" ");
+            }
+        }
+        writeln("");
+    }
+}

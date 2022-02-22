@@ -14,7 +14,7 @@ use crate::codegen::block::Block;
 use crate::codegen::loop_def::LoopCollection;
 
 #[derive(Eq, PartialEq, Copy, Clone)]
-pub struct ItemID(Option<usize>);
+pub struct ItemID(pub Option<usize>);
 impl ItemID {
 
     pub fn new(value: usize) -> ItemID { ItemID(Some(value)) }

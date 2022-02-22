@@ -332,6 +332,9 @@ impl TypeCollection {
         push_floating_base_member!(fns, 10);
         push_char_base_member!(fns, 11);
 
+        // sqrt
+        push_builtin_fn!(fns, "sqrt", 10, [10]);
+
         // bool
         push_builtin_fn!(fns, SeperatorKind::Equal, 12, [12, 12]);
         push_builtin_fn!(fns, SeperatorKind::NotEqual, 12, [12, 12]);
