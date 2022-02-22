@@ -1,12 +1,14 @@
-[workspace]
-members = [
-    "codemap",
-    "driver",
-    "lexical",
-    "messages",
-    "syntax",
-    "pefile",
-    "util",
-    "semantic", 
-    "ffc",
-]
+[package]
+name = "ffc"
+version = "0.2.0"
+edition = "2021"
+
+[features]
+trace_num_lit_parse = []
+trace_v2_parse = []
+trace_char_lit_parse = []
+trace_primary_expr_parse = []
+trace_postfix_expr_parse = []
+trace_binary_expr_parse = []
+trace_fn_def_parse = []
+integration_test = []

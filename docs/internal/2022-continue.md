@@ -11,6 +11,8 @@ for at least variable definition use check and simple type check, and run them w
 
 Currently, master can only syntax parse a little test files, virtual machine does not follow new syntax parse libraries,
 and tags/v0.1.0, the homework handin version, can successfully run tests/syntax/prime.sm to a result (although all other test files failed to run).
+The original semantic try is defacto failed, because it stucked and paused because it is too large for human mind, and now I completely forget
+every related things in my mind (just like DRAM) and cannot continue from where I paused.
 
 Then a rough __road map__ will look like
 
