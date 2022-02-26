@@ -8,10 +8,10 @@ use std::rc::Rc;
 use std::path::Path;
 use std::path::PathBuf;
 use std::path::MAIN_SEPARATOR;
-use crate::codemap::SymbolID;
-use crate::codemap::SourceMap;
-use crate::codemap::SourceCode;
-use crate::codemap::SymbolCollection;
+use crate::source::SymbolID;
+use crate::source::SourceMap;
+use crate::source::SourceCode;
+use crate::source::SymbolCollection;
 use crate::diagnostics::Message;
 use crate::diagnostics::MessageCollection;
 use crate::lexical::TokenStream;
@@ -165,7 +165,7 @@ fn syntax_tree_search_module() {
 
 #[cfg(test)] #[test]
 fn syntax_tree_recursive() {
-    use crate::codemap::Span;
+    use crate::source::Span;
     use super::Item;
     use super::ImportStatement;
     use super::SimpleName;

@@ -5,7 +5,7 @@
 // TODO ATTENTION: no else for break here because if control flow come to else it is always breaked
 
 use std::fmt;
-use crate::codemap::Span;
+use crate::source::Span;
 use crate::lexical::Token;
 use crate::lexical::Keyword;
 use super::super::Block;
@@ -83,7 +83,7 @@ impl ISyntaxParse for LoopStatement {
 
 #[cfg(test)] #[test]
 fn loop_stmt_format() {
-    use crate::codemap::SymbolCollection;
+    use crate::source::SymbolCollection;
     use super::super::TestInput;
     use super::super::WithTestInput;
     
@@ -105,7 +105,7 @@ fn loop_stmt_format() {
 
 #[cfg(test)] #[test]
 fn loop_stmt_parse() {
-    use crate::codemap::SymbolCollection;
+    use crate::source::SymbolCollection;
     use crate::lexical::LitValue;
     use super::super::LitExpr;
     use super::super::SimpleName;

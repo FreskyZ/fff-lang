@@ -7,7 +7,7 @@
 ///! range_both = binary_expr '..' binary_expr
 
 use std::fmt;
-use crate::codemap::Span;
+use crate::source::Span;
 use crate::lexical::Seperator;
 use super::Expr;
 use super::BinaryExpr;

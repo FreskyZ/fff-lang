@@ -1,6 +1,6 @@
 
 mod util;
-mod codemap;
+mod source;
 mod diagnostics;
 mod lexical;
 mod syntax;

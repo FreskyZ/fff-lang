@@ -5,7 +5,7 @@
 ///! block-stmt for explicit block definition in block and allow block label
 
 use std::fmt;
-use crate::codemap::Span;
+use crate::source::Span;
 use crate::lexical::Token;
 use crate::lexical::Seperator;
 use super::super::Block;

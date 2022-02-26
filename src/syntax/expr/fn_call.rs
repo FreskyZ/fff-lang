@@ -4,7 +4,7 @@
 ///! fn_call_expr = expr '(' [ expr_list ] ')'
 
 use std::fmt;
-use crate::codemap::Span;
+use crate::source::Span;
 use crate::diagnostics::Message;
 use crate::lexical::Token;
 use crate::lexical::Seperator;

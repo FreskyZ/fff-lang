@@ -5,7 +5,7 @@
 // TODO: add else for break, like python
 
 use std::fmt;
-use crate::codemap::Span;
+use crate::source::Span;
 use crate::lexical::Token;
 use crate::lexical::Keyword;
 use super::super::Expr;
@@ -87,7 +87,7 @@ impl ISyntaxParse for WhileStatement {
 
 #[cfg(test)] #[test]
 fn while_stmt_parse() {
-    use crate::codemap::SymbolCollection;
+    use crate::source::SymbolCollection;
     use crate::lexical::LitValue;
     use super::super::LitExpr;
     use super::super::SimpleName;

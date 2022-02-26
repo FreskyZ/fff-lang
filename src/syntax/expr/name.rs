@@ -5,8 +5,8 @@
 // future may support something like `to_string::<i32>(a)`
 
 use std::fmt;
-use crate::codemap::Span;
-use crate::codemap::SymbolID;
+use crate::source::Span;
+use crate::source::SymbolID;
 use crate::lexical::Token;
 use crate::lexical::Seperator;
 use super::Expr;
@@ -112,7 +112,7 @@ impl Expr {
 
 #[cfg(test)] #[test]
 fn name_parse() {
-    use crate::codemap::SymbolCollection;
+    use crate::source::SymbolCollection;
     use super::super::WithTestInput;
     use super::super::TestInput;
 

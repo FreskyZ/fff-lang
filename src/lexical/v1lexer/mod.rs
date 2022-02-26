@@ -13,7 +13,7 @@ mod escape_char_parser;
 mod raw_string_lit_parser;
 mod string_lit_parser;
 
-use crate::codemap::{Span, SourceCodeIter, EOF_CHAR};
+use crate::source::{Span, SourceCodeIter, EOF_CHAR};
 use crate::diagnostics::Message;
 use super::{ILexer, BufLexer, StrLitValue, ParseSession};
 use string_lit_parser::{StringLiteralParser, StringLiteralParserResult};
@@ -167,8 +167,8 @@ impl<'chs> ILexer<'chs, V1Token> for V1Lexer<'chs> {
 #[cfg(test)]
 #[test]
 fn v1_base() {
-    use crate::codemap::SourceCode;
-    use crate::codemap::SymbolCollection;
+    use crate::source::SourceCode;
+    use crate::source::SymbolCollection;
     use crate::diagnostics::MessageCollection;
 
     fn test_case_full(src: &str, symbols: SymbolCollection, expect_tokens: Vec<(V1Token, Span)>, expect_messages: MessageCollection) {

@@ -4,7 +4,7 @@
 ///! use_stmt = 'use' name [ 'as' identifier ] ';'
 
 use std::fmt;
-use crate::codemap::Span;
+use crate::source::Span;
 use crate::lexical::Token;
 use crate::lexical::Seperator;
 use crate::lexical::Keyword;

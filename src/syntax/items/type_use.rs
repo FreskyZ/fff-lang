@@ -20,8 +20,8 @@
 // Then array and tuple enum members are removed and use template aware type use, 17/6/12                               // TypeUse
 
 use std::fmt;
-use crate::codemap::Span;
-use crate::codemap::SymbolID;
+use crate::source::Span;
+use crate::source::SymbolID;
 use crate::diagnostics::Message;
 use crate::lexical::Token;
 use crate::lexical::Seperator;
@@ -117,7 +117,7 @@ impl ISyntaxParse for TypeUse {
 
 #[cfg(test)] #[test]
 fn type_use_parse() {
-    use crate::codemap::SymbolCollection;
+    use crate::source::SymbolCollection;
     use super::super::TestInput;
     use super::super::WithTestInput;
 

@@ -6,8 +6,8 @@
 // TODO: add else for break, like python
 
 use std::fmt;
-use crate::codemap::Span;
-use crate::codemap::SymbolID;
+use crate::source::Span;
+use crate::source::SymbolID;
 use crate::lexical::Token;
 use crate::lexical::Keyword;
 use super::super::Expr;
@@ -108,7 +108,7 @@ impl ISyntaxParse for ForStatement {
 
 #[cfg(test)] #[test]
 fn for_stmt_parse() {
-    use crate::codemap::SymbolCollection;
+    use crate::source::SymbolCollection;
     use crate::lexical::LitValue;
     use super::super::SimpleName;
     use super::super::LitExpr;

@@ -5,7 +5,7 @@
 ///! renamed from postfix_expr::subscription to make it shorter
 
 use std::fmt;
-use crate::codemap::Span;
+use crate::source::Span;
 use crate::diagnostics::Message;
 use crate::lexical::Token;
 use crate::lexical::Seperator;

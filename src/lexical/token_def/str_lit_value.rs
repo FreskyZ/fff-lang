@@ -4,7 +4,7 @@
 
 use std::fmt;
 
-use crate::codemap::SymbolID;
+use crate::source::SymbolID;
 use super::Token;
 
 #[derive(Clone, Eq, PartialEq)]

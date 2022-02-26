@@ -4,7 +4,7 @@
 ///! if_stmt = 'if' expr block { 'else' 'if' expr block } [ 'else' block ]
 
 use std::fmt;
-use crate::codemap::Span;
+use crate::source::Span;
 use crate::lexical::Token;
 use crate::lexical::Keyword;
 use super::super::Expr;
@@ -180,7 +180,7 @@ impl ISyntaxParse for IfStatement {
 
 #[cfg(test)] #[test]
 fn if_stmt_parse() {
-    use crate::codemap::SymbolCollection;
+    use crate::source::SymbolCollection;
     use crate::lexical::LitValue;
     use super::super::ExprList;
     use super::super::FnCallExpr;

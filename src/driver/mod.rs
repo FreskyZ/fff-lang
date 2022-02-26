@@ -1,7 +1,7 @@
 #![allow(dead_code)] // 2022: there is really many many dead code, although some is true dead code, most is reserved and even must be used later
 
-use crate::codemap::SourceMap;
-use crate::codemap::SymbolCollection;
+use crate::source::SourceMap;
+use crate::source::SymbolCollection;
 use crate::diagnostics::MessageCollection;
 use crate::syntax::SyntaxTree;
 // use semantic::Package;

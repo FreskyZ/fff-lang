@@ -5,7 +5,7 @@
 mod num_lit_parser;
 mod unicode_char;
 mod error_strings;
-use crate::codemap::{Span, SymbolID, SourceCodeIter, EOF_CHAR};
+use crate::source::{Span, SymbolID, SourceCodeIter, EOF_CHAR};
 use crate::diagnostics::{Message, MessageCollection};
 use super::v1lexer::{V1Token, V1Lexer};
 use super::{ILexer, BufLexer, LitValue, Keyword, Seperator, ParseSession};
@@ -399,8 +399,8 @@ fn v2_non_ascii_ch() {
 #[test]
 fn v2_base() {
     use std::fmt;
-    use crate::codemap::SourceCode;
-    use crate::codemap::SymbolCollection;
+    use crate::source::SourceCode;
+    use crate::source::SymbolCollection;
     
     // Only to make decltype(V2Lexer as BufLexer::next(...)) to display better
     #[derive(Eq, PartialEq)]

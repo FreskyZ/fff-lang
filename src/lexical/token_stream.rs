@@ -3,7 +3,7 @@
 ///! token stream, vec<token> wrapper
 
 use std::rc::Rc;
-use crate::codemap::{Span, SourceCode, SymbolCollection};
+use crate::source::{Span, SourceCode, SymbolCollection};
 use crate::diagnostics::MessageCollection;
 use super::{Token, ILexer, ParseSession};
 use super::v2lexer::{V2Lexer, V2Token};

@@ -1,7 +1,7 @@
 #![macro_use]
 
 use std::fmt;
-use crate::codemap::{Span, SourceCode};
+use crate::source::{Span, SourceCode};
 
 #[derive(Eq, PartialEq)]
 struct LocationAndDesc {

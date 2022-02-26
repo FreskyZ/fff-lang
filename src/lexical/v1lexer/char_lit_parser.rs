@@ -3,7 +3,7 @@
 ///! Character literal parser
 
 use std::cell::Cell;
-use crate::codemap::{CharPos, Span, EOF_CHAR};
+use crate::source::{CharPos, Span, EOF_CHAR};
 use crate::diagnostics::{Message, MessageCollection};
 use super::error_strings;
 use super::escape_char_parser::{EscapeCharParser, EscapeCharSimpleCheckResult, EscapeCharParserResult};

@@ -5,8 +5,8 @@
 ///! continue_stmt = 'continue' [ label ] ';'
 
 use std::fmt;
-use crate::codemap::Span;
-use crate::codemap::SymbolID;
+use crate::source::Span;
+use crate::source::SymbolID;
 use crate::lexical::Token;
 use crate::lexical::Seperator;
 use crate::lexical::Keyword;

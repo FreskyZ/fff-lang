@@ -4,8 +4,8 @@
 ///! fn-def = 'fn' identifier '(' [ identifier ':' type-use { ',' identifier ':' type-use [ ',' ] } ] ')' [ '->' type-use ] block
 
 use std::fmt;
-use crate::codemap::Span;
-use crate::codemap::SymbolID;
+use crate::source::Span;
+use crate::source::SymbolID;
 use crate::diagnostics::Message;
 use crate::lexical::Token;
 use crate::lexical::Keyword;
@@ -120,7 +120,7 @@ impl ISyntaxParse for FnDef {
 
 #[cfg(test)] #[test]
 fn fn_def_parse() {
-    use crate::codemap::SymbolCollection;
+    use crate::source::SymbolCollection;
     use super::super::SimpleName;
     use super::super::WithTestInput;
     use super::super::TypeUse;

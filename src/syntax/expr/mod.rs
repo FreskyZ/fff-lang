@@ -3,7 +3,7 @@
 ///! syntax/expr
 
 use std::fmt;
-use crate::codemap::Span;
+use crate::source::Span;
 use crate::lexical::Token;
 use crate::lexical::LitValue;
 use crate::lexical::Keyword;
@@ -142,8 +142,8 @@ impl ISyntaxParse for Expr {
 
 #[cfg(test)] #[test]
 fn expr_parse() {
-    use crate::codemap::Span;
-    use crate::codemap::SymbolCollection;
+    use crate::source::Span;
+    use crate::source::SymbolCollection;
     use crate::lexical::LitValue;
     use crate::lexical::Seperator;
     use super::WithTestInput;
@@ -432,7 +432,7 @@ fn expr_parse() {
 
 #[cfg(test)] #[test]
 fn expr_errors() {
-    use crate::codemap::Span;
+    use crate::source::Span;
     use crate::diagnostics::Message;
     use crate::diagnostics::MessageCollection;
     use super::error_strings;

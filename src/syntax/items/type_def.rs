@@ -8,7 +8,7 @@
 // TODO: support Keyword::PrimType in type name, for primitive declarations
 
 use std::fmt;
-use crate::codemap::Span;
+use crate::source::Span;
 use crate::lexical::Token;
 use crate::lexical::Keyword;
 use crate::lexical::Seperator;
@@ -97,7 +97,7 @@ impl ISyntaxParse for TypeDef {
 
 #[cfg(test)] #[test]
 fn type_def_parse() {
-    use crate::codemap::SymbolCollection;
+    use crate::source::SymbolCollection;
     use super::super::TestInput;
     use super::super::WithTestInput;
 

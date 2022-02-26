@@ -4,10 +4,10 @@
 ///! syntax/format_helper
 
 use std::fmt::Debug;
-use crate::codemap::Span;
-use crate::codemap::SymbolID;
-use crate::codemap::SourceCode;
-use crate::codemap::SymbolCollection;
+use crate::source::Span;
+use crate::source::SymbolID;
+use crate::source::SourceCode;
+use crate::source::SymbolCollection;
 
 const INDENTION_FILLERS: [[&str; 16]; 3] = [ [
     "", "1 ", "2 | ", "3 | | ", "4 | | | ", "5 | | | | ", "6 | | | | | ", "7 | | | | | | ", "8 | | | | | | | ", "9 | | | | | | | | ", "10 | | | | | | | | | ",

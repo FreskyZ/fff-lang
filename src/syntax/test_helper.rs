@@ -4,8 +4,8 @@
 
 use std::fmt::Debug;
 use std::rc::Rc;
-use crate::codemap::SourceCode;
-use crate::codemap::SymbolCollection;
+use crate::source::SourceCode;
+use crate::source::SymbolCollection;
 use crate::diagnostics::MessageCollection;
 use crate::lexical::TokenStream;
 use super::ParseSession;
@@ -98,7 +98,7 @@ impl<T, U> WithTestInput for T where T: ISyntaxParse<Output = U> {
 
 #[cfg(test)] #[test]
 fn test_input_use() {
-    use crate::codemap::Span;
+    use crate::source::Span;
     use crate::diagnostics::Message;
 
     #[derive(Eq, Debug, PartialEq)]

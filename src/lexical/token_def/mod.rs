@@ -3,7 +3,7 @@
 ///! lexical/token
 
 use std::fmt;
-use crate::codemap::SymbolID;
+use crate::source::SymbolID;
 
 mod keyword;
 mod seperator;

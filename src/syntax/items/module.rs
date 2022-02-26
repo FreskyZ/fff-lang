@@ -5,7 +5,7 @@
 
 use std::fmt;
 use std::rc::Rc;
-use crate::codemap::SourceCode;
+use crate::source::SourceCode;
 use crate::lexical::Token;
 use super::super::Item;
 use super::super::ImportStatement;
@@ -76,8 +76,8 @@ impl ISyntaxParse for Module {
 
 #[cfg(test)] #[test]
 fn module_parse() {
-    use crate::codemap::Span;
-    use crate::codemap::SymbolCollection;
+    use crate::source::Span;
+    use crate::source::SymbolCollection;
     use crate::lexical::LitValue;
     use super::super::TestInput;
     use super::super::UseStatement;

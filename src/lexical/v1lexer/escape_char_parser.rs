@@ -3,7 +3,7 @@
 ///!
 ///! string and char literal's escape char parser
 
-use crate::codemap::CharPos;
+use crate::source::CharPos;
 use crate::diagnostics::{Message, MessageCollection};
 use super::error_strings;
 
@@ -134,7 +134,7 @@ impl EscapeCharParser {
 
 #[cfg(test)] #[test]
 fn escape_char_parser() {
-    use crate::codemap::Span;
+    use crate::source::Span;
     use self::EscapeCharParserResult::*;
 
     {   // \u2764      => '\u{2764}' | '❤'                          C3, C5, 4

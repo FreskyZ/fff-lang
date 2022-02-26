@@ -5,8 +5,8 @@
 ///! var-decl = 'var' identifier [ ':' type-use ] [ '=' expr ] ';'
 
 use std::fmt;
-use crate::codemap::Span;
-use crate::codemap::SymbolID;
+use crate::source::Span;
+use crate::source::SymbolID;
 use crate::diagnostics::Message;
 use crate::lexical::Token;
 use crate::lexical::Keyword;
@@ -93,7 +93,7 @@ impl ISyntaxParse for VarDeclStatement {
 
 #[cfg(test)] #[test]
 fn var_decl_stmt_parse() {
-    use crate::codemap::SymbolCollection;
+    use crate::source::SymbolCollection;
     use crate::diagnostics::MessageCollection;
     use crate::lexical::LitValue;
     use super::super::SimpleName;

@@ -4,7 +4,7 @@
 ///! expr_stmt = expr { assign_ops expr } ';'
 
 use std::fmt;
-use crate::codemap::Span;
+use crate::source::Span;
 use crate::lexical::Token;
 use crate::lexical::Seperator;
 use crate::lexical::SeperatorCategory;
@@ -105,7 +105,7 @@ impl ISyntaxParse for AssignExprStatement {
 
 #[cfg(test)] #[test]
 fn expr_stmt_parse() {
-    use crate::codemap::SymbolCollection;
+    use crate::source::SymbolCollection;
     use crate::lexical::LitValue;
     use super::super::LitExpr;
     use super::super::SimpleName;

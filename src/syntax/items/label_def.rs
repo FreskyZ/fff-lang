@@ -5,8 +5,8 @@
 ///! it's here because for, while, loop and block all needs it
 
 use std::fmt;
-use crate::codemap::Span;
-use crate::codemap::SymbolID;
+use crate::source::Span;
+use crate::source::SymbolID;
 use crate::lexical::Token;
 use crate::lexical::Seperator;
 use super::super::Formatter;

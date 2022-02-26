@@ -13,7 +13,7 @@
 // LogicalOrExpression = LogicalAndExpression | LogicalOrExpression LogicalOrOperator LogicalAndExpression
 
 use std::fmt;
-use crate::codemap::Span;
+use crate::source::Span;
 use crate::lexical::Seperator;
 use crate::lexical::SeperatorCategory;
 use super::Expr;
