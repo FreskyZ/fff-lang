@@ -7,7 +7,7 @@
 
 use std::fmt;
 use crate::codemap::Span;
-use crate::message::Message;
+use crate::diagnostics::Message;
 use crate::lexical::Token;
 use crate::lexical::Seperator;
 use crate::lexical::LitValue;
@@ -146,7 +146,7 @@ fn tuple_def_parse() {
 
 #[cfg(test)] #[test]
 fn tuple_def_errors() {
-    use crate::message::MessageCollection;
+    use crate::diagnostics::MessageCollection;
     use super::super::TestInput;
     
     TestInput::new("( , )")

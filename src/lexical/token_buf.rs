@@ -8,7 +8,7 @@
 // looks ugly, so rename it to token_buf
 use std::cell::Cell;
 use crate::codemap::{SourceCodeIter, Span, SymbolCollection};
-use crate::message::MessageCollection;
+use crate::diagnostics::MessageCollection;
 
 pub struct ParseSession<'a, 'b> {
     pub messages: &'a mut MessageCollection,
@@ -178,7 +178,7 @@ where
 fn buf_lexer_test() {
     use crate::codemap::SourceCode;
     use crate::codemap::SymbolCollection;
-    use crate::message::MessageCollection;
+    use crate::diagnostics::MessageCollection;
 
     #[derive(Eq, PartialEq, Debug, Default)]
     struct TestToken(usize);

@@ -1,7 +1,4 @@
 #![macro_use]
-//! fff-lang
-//!
-//! Every kind of messages
 
 use std::fmt;
 use crate::codemap::{Span, SourceCode};

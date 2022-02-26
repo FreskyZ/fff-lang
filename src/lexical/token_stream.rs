@@ -4,7 +4,7 @@
 
 use std::rc::Rc;
 use crate::codemap::{Span, SourceCode, SymbolCollection};
-use crate::message::MessageCollection;
+use crate::diagnostics::MessageCollection;
 use super::{Token, ILexer, ParseSession};
 use super::v2lexer::{V2Lexer, V2Token};
 

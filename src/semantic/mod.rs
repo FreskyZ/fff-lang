@@ -2,12 +2,6 @@
 ///!
 ///! semantic, semantic analyze
 
-#[cfg(test)] #[macro_use] extern crate util;       // difference is util is referenced only in test
-#[cfg_attr(test, macro_use)] extern crate codemap;
-#[cfg_attr(test, macro_use)] extern crate messages as message;
-extern crate lexical;
-extern crate syntax;
-
 #[macro_use] mod def_scope;
 mod definition;
 mod format_helper;

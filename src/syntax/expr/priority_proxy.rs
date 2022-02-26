@@ -355,8 +355,8 @@ fn primary_expr_parse() {
 #[cfg(test)] #[test]
 fn primary_expr_errors() {
     use crate::codemap::Span;
-    use crate::message::Message;
-    use crate::message::MessageCollection;
+    use crate::diagnostics::Message;
+    use crate::diagnostics::MessageCollection;
     use super::ExprList;
     use super::super::error_strings;
     use super::super::TestInput;
@@ -523,8 +523,8 @@ fn postfix_expr_parse() {
 #[cfg(test)] #[test]
 fn postfix_expr_errors() {
     use crate::codemap::Span;
-    use crate::message::Message;
-    use crate::message::MessageCollection;
+    use crate::diagnostics::Message;
+    use crate::diagnostics::MessageCollection;
     use super::ExprList;
     use super::super::error_strings;
     use super::super::TestInput;

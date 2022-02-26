@@ -1,7 +1,7 @@
 
 mod util;
 mod codemap;
-mod message;
+mod diagnostics;
 mod lexical;
 mod syntax;
 mod driver;

@@ -4,7 +4,7 @@
 ///! string and char literal's escape char parser
 
 use crate::codemap::CharPos;
-use crate::message::{Message, MessageCollection};
+use crate::diagnostics::{Message, MessageCollection};
 use super::error_strings;
 
 #[cfg(test)]

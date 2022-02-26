@@ -7,15 +7,14 @@
 
 use std::path::PathBuf;
 use std::rc::Rc;
+use crate::diagnostics::Message;
 
 mod span;
 mod symbol_def;
-mod error;
 mod src_code;
 
 pub use span::CharPos;
 pub use span::Span;
-pub use error::CodeMapError;
 pub use src_code::EOF_CHAR;
 pub use src_code::SourceCode;
 pub use src_code::SourceCodeIter;
@@ -27,12 +26,12 @@ pub struct SourceMap {
 }
 impl SourceMap {
 
-    pub fn new<T>(main_file: T) -> Result<SourceMap, CodeMapError> where T: Into<PathBuf> + Clone {
+    pub fn new<T>(main_file: T) -> Result<SourceMap, Message> where T: Into<PathBuf> {
         Ok(SourceMap {
             items: vec![Rc::new(SourceCode::with_file_name(0, main_file)?)],
         })
     }
-    pub fn add_file<T>(&mut self, path: T) -> Result<Rc<SourceCode>, CodeMapError> where T: Into<PathBuf> + Clone {
+    pub fn add_file<T>(&mut self, path: T) -> Result<Rc<SourceCode>, Message> where T: Into<PathBuf> {
         let new_id = self.items.len();
         self.items.push(Rc::new(SourceCode::with_file_name(new_id, path)?));
         Ok(self.items[new_id].clone())

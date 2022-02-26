@@ -22,7 +22,7 @@
 use std::fmt;
 use crate::codemap::Span;
 use crate::codemap::SymbolID;
-use crate::message::Message;
+use crate::diagnostics::Message;
 use crate::lexical::Token;
 use crate::lexical::Seperator;
 use crate::lexical::Keyword;

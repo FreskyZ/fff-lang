@@ -3,7 +3,7 @@
 ///! Raw string literal parser
 
 use crate::codemap::{CharPos, Span, EOF_CHAR};
-use crate::message::{Message, MessageCollection};
+use crate::diagnostics::{Message, MessageCollection};
 use super::error_strings;
 
 #[cfg_attr(test, derive(Debug, Eq, PartialEq))]

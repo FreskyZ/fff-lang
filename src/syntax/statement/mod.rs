@@ -99,23 +99,6 @@ define_statement!{ Statement,
     WhileStatement => While,
     UseStatement => Use,
 }
-#[cfg(remove_this_after_stupid_racer_and_rls_can_identify_type_defined_in_macro)]
-pub enum Statement {
-    Type(TypeDef),
-    Fn(FnDef),
-    Block(BlockStatement),
-    Break(BreakStatement),
-    Continue(ContinueStatement),
-    SimpleExpr(SimpleExprStatement),
-    AssignExpr(AssignExprStatement),
-    For(ForStatement),
-    If(IfStatement),
-    Loop(LoopStatement),
-    Return(ReturnStatement),
-    VarDecl(VarDeclStatement),
-    While(WhileStatement),
-    Use(UseStatement),
-}
 
 // global item
 define_statement!{ Item,
@@ -131,21 +114,6 @@ define_statement!{ Item,
     WhileStatement => While,
     UseStatement => Use,
     ImportStatement => Import,
-}
-#[cfg(remove_this_after_stupid_racer_and_rls_can_identify_type_defined_in_macro)]
-pub enum Item {
-    Type(TypeDef),
-    Fn(FnDef),
-    Block(BlockStatement),
-    SimpleExpr(SimpleExprStatement),
-    AssignExpr(AssignExprStatement),
-    For(ForStatement),
-    If(IfStatement),
-    Loop(LoopStatement),
-    VarDecl(VarDeclStatement),
-    While(WhileStatement),
-    Use(UseStatement),
-    Import(ImportStatement),
 }
  
 // hack

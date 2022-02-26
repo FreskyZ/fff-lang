@@ -6,7 +6,7 @@ mod num_lit_parser;
 mod unicode_char;
 mod error_strings;
 use crate::codemap::{Span, SymbolID, SourceCodeIter, EOF_CHAR};
-use crate::message::{Message, MessageCollection};
+use crate::diagnostics::{Message, MessageCollection};
 use super::v1lexer::{V1Token, V1Lexer};
 use super::{ILexer, BufLexer, LitValue, Keyword, Seperator, ParseSession};
 use num_lit_parser::parse_numeric_literal;

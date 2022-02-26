@@ -433,8 +433,8 @@ fn expr_parse() {
 #[cfg(test)] #[test]
 fn expr_errors() {
     use crate::codemap::Span;
-    use crate::message::Message;
-    use crate::message::MessageCollection;
+    use crate::diagnostics::Message;
+    use crate::diagnostics::MessageCollection;
     use super::error_strings;
     use super::TestInput;
 

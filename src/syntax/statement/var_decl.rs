@@ -7,7 +7,7 @@
 use std::fmt;
 use crate::codemap::Span;
 use crate::codemap::SymbolID;
-use crate::message::Message;
+use crate::diagnostics::Message;
 use crate::lexical::Token;
 use crate::lexical::Keyword;
 use crate::lexical::Seperator;
@@ -94,7 +94,7 @@ impl ISyntaxParse for VarDeclStatement {
 #[cfg(test)] #[test]
 fn var_decl_stmt_parse() {
     use crate::codemap::SymbolCollection;
-    use crate::message::MessageCollection;
+    use crate::diagnostics::MessageCollection;
     use crate::lexical::LitValue;
     use super::super::SimpleName;
     use super::super::LitExpr;

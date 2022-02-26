@@ -2,7 +2,7 @@
 
 use crate::codemap::SourceMap;
 use crate::codemap::SymbolCollection;
-use crate::message::MessageCollection;
+use crate::diagnostics::MessageCollection;
 use crate::syntax::SyntaxTree;
 // use semantic::Package;
 // use vm::VirtualMachine;

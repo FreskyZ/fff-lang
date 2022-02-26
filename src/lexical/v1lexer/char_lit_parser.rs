@@ -4,7 +4,7 @@
 
 use std::cell::Cell;
 use crate::codemap::{CharPos, Span, EOF_CHAR};
-use crate::message::{Message, MessageCollection};
+use crate::diagnostics::{Message, MessageCollection};
 use super::error_strings;
 use super::escape_char_parser::{EscapeCharParser, EscapeCharSimpleCheckResult, EscapeCharParserResult};
 

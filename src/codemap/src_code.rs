@@ -5,7 +5,8 @@
 
 use std::fmt;
 use std::path::{Path, PathBuf};
-use super::{Span, CharPos, CodeMapError};
+use crate::diagnostics::Message;
+use super::{Span, CharPos};
 
 pub const EOF_CHAR: char = 0u8 as char;
 
@@ -131,14 +132,14 @@ impl SourceCode {
         src.char_indices().filter(|indice| indice.1 == '\n').map(|indice| indice.0).collect()
     }
 
-    pub fn with_file_name<T>(id: usize, file_name: T) -> Result<SourceCode, CodeMapError> where T: Into<PathBuf> + Clone { // into for adapt String, Clone for construct error
+    pub fn with_file_name<T>(id: usize, file_name: T) -> Result<SourceCode, Message> where T: Into<PathBuf> { // into for adapt String, Clone for construct error
         use std::io::Read;
 
         let file_name = file_name.into();
-        let file_name = file_name.clone().canonicalize().map_err(|e| CodeMapError::CannotOpenFile(file_name.clone(), e))?;
+        let file_name = file_name.clone().canonicalize().map_err(|e| Message::new_simple(&format!("cannot open file {}: {}", file_name.display(), e)))?;
         let mut src = String::new();
-        let mut file = ::std::fs::File::open(&file_name).map_err(|e| CodeMapError::CannotOpenFile(file_name.clone(), e))?;
-        let _ = file.read_to_string(&mut src).map_err(|e| CodeMapError::CannotReadFile(file_name.clone(), e))?;
+        let mut file = ::std::fs::File::open(&file_name).map_err(|e| Message::new_simple(&format!("cannot open file {}: {}", file_name.display(), e)))?;
+        let _ = file.read_to_string(&mut src).map_err(|e| Message::new_simple(&format!("cannot read file {}: {}", file_name.display(), e)))?;
 
         Ok(SourceCode{ 
             id, 
@@ -334,7 +335,7 @@ mod tests {
 
         assert_eq!{
             SourceCode::with_file_name(0, "not_exist.ff".to_owned()),
-            Err(CodeMapError::CannotOpenFile("not_exist.ff".into(), File::open("not_exist.ff").unwrap_err()))
+            Err(Message::new_simple(&format!("cannot open file not_exist.ff: {}", File::open("not_exist.ff").unwrap_err()))),
         }
         assert_eq!{
             format!("{:?}", SourceCode::with_test_str(43, "helloworld")),
