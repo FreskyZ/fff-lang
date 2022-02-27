@@ -22,7 +22,7 @@ use super::ISyntaxParse;
 use super::Formatter;
 use super::ISyntaxFormat;
 
-#[allow(dead_code)] const SOURCE_FILE_EXT: &str = ".ff"; // don't known why rustc thinks SOURCE_FILE_EXT is never used
+const SOURCE_FILE_EXT: &str = ".ff";
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct ImportMap {
@@ -118,7 +118,7 @@ impl SyntaxTree {
                     }
                      // unwrap for cannot fail on valid syntax nodes
                      // to_owned for next need to parse a module with mutable reference of symbols, logically you have to cancel one of the reference
-                     // todo long: this may not be a problem after non lexical lifetime
+                     // todo long: this may not be a problem after non lexical lifetime // UPDATE 2022: was not expecting "long" for NLL
                     let module_name = symbols.get(import.name.value).unwrap().to_owned();
                     match SyntaxTree::search_module(&previous_module.source.get_directory(), &module_name) {
                         Ok(next_path) => {
