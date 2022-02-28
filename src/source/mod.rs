@@ -3,57 +3,18 @@
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
-pub use tests::VirtualFileSystem;
+pub use fs::VirtualFileSystem;
 
-use std::collections::HashMap;
 use std::path::{PathBuf, Path};
 
-/// Character location
-///
-/// - it is byte index accross all source files, e.g. second file's position starts from first file's byte length (+1)
-///   to reduce memory usage because location info is used extremely widely
-/// - it is u32 not usize because it is not reasonable to
-///   have a file size over 4GB or all source file total size over 4GB for this toy language (possibly for all languages)
-#[derive(Eq, PartialEq, Clone, Copy, Debug, Hash)]
-pub struct Position(u32);
-
-impl Position {
-    pub fn new(v: u32) -> Self {
-        Self(v)
-    }
-    pub fn into(self) -> u32 {
-        self.0
-    }
-    pub fn offset(self, offset: i32) -> Self {
-        Self(if offset >= 0 { self.0 + offset as u32 } else { self.0 - (-offset) as u32 })
-    }
-}
-impl From<u32> for Position {
-    fn from(v: u32) -> Self {
-        Self(v)
-    }
-}
-
-/// a handle to an interned string
-///
-/// it is u32 not usize because it is widely used
-/// and not reasonable to have more than u32::MAX symbols in all source files
-#[derive(Eq, PartialEq, Clone, Copy, Debug, Hash)]
-pub struct SymId(u32);
-
-impl SymId {
-    pub fn new(v: u32) -> Self {
-        Self(v)
-    }
-    pub fn into(self) -> u32 {
-        self.0
-    }
-}
-impl From<u32> for SymId {
-    fn from(v: u32) -> Self {
-        Self(v)
-    }
-}
+mod fs;
+pub use fs::{FileSystem, DefaultFileSystem};
+mod iter;
+use iter::get_char_width;
+pub use iter::{Position, Span, Chars, EOF};
+mod symbol;
+use symbol::{Symbols, ResolveResult};
+pub use symbol::SymId;
 
 /// a handle to a file
 #[derive(Eq, PartialEq, Clone, Copy, Debug, Hash)]
@@ -64,7 +25,7 @@ impl FileId {
     pub fn new(v: u32) -> Self {
         Self(v)
     }
-    pub fn into(self) -> u32 {
+    pub fn unwrap(self) -> u32 {
         self.0
     }
     pub fn is_entry(self) -> bool {
@@ -77,83 +38,9 @@ impl From<u32> for FileId {
     }
 }
 
-/// Character range location
-///
-/// construct from 2 Positions,
-/// while type name is Span, recommend variable name is `loc` or `location`
-#[derive(Eq, PartialEq, Clone, Copy, Debug, Hash)]
-pub struct Span {
-    pub start: Position,
-    pub end: Position,
-}
-impl Span {
-    // e.g. Span::new(position1, position2) or Span::new(42, 43)
-    pub fn new(start: impl Into<Position>, end: impl Into<Position>) -> Span {
-        Span{ start: start.into(), end: end.into() }
-    }
-}
-
-// use `span1 + span2` to merge them
-impl std::ops::Add for Span {
-    type Output = Span;
-    fn add(self, rhs: Span) -> Span {
-        Span{ start: self.start, end: rhs.end }
-    }
-}
-
-// e.g. `position.into()` in where span is expected
-impl From<Position> for Span {
-    fn from(position: Position) -> Span {
-        Span::new(position, position)
-    }
-}
-
-#[derive(Debug)]
-pub struct SourceFile {
-    path: PathBuf,         // absolute path
-    content: String,
-    namespace: Vec<SymId>, // empty for entry module
-    start_index: usize,    // starting byte index in span to this file, or total byte length before SourceContext.files this item
-    endlines: Vec<usize>,  // LF byte indexes
-    #[allow(dead_code)] // does not know where need it, but save it for now
-    request: Option<Span>, // module item location, file id also can be found by span
-}
-
-pub struct Chars<'a> {
-    index: usize,   // index of next character, initial value should be SourceFile.start_index
-    slice: &'a str, // advancing string slice of SourceFile.content
-}
-
-pub const EOF: char = 0u8 as char;
-
-impl<'a> Chars<'a> {
-    /// iterate return char and byte index
-    /// 
-    /// ignore all bare or not bare CR, return EOF after EOF, fuse
-    pub fn next(&mut self) -> (char, Position) {
-        loop {
-            if self.slice.len() == 0 {
-                return (EOF, Position::new(self.index as u32));
-            } else if self.slice.as_bytes()[0] == b'\r' {
-                self.slice = &self.slice[1..];
-                self.index += 1;
-                continue;
-            } else {
-                let bytes = self.slice.as_bytes();
-                let (char_length, r#char) = match get_char_length(self.slice, 0) {
-                    1 => (1, bytes[0] as u32),
-                    2 => (2, (((bytes[0] as u32) & 0b00011111u32) << 6) + ((bytes[1] as u32) & 0b00111111u32)),
-                    3 => (3, (((bytes[0] as u32) & 0b00001111u32) << 12) + (((bytes[1] as u32) & 0b00111111u32) << 6) + (((bytes[2] as u32) & 0b00111111u32))),
-                    4 => (4, (((bytes[0] as u32) & 0b00000111u32) << 18) + (((bytes[1] as u32) & 0b00111111u32) << 12) + (((bytes[2] as u32) & 0b00111111u32) << 6) + ((bytes[3] as u32) & 0b00111111u32)),
-                    _ => panic!("invalid utf-8 sequence"),
-                };
-                self.slice = &self.slice[char_length..];
-                self.index += char_length;
-                // SAFETY: invalid char should not cause severe issue in lexical parse and syntax parse
-                return (unsafe { char::from_u32_unchecked(r#char) }, Position::new((self.index - char_length) as u32));
-            }
-        }
-    }
+// get LF byte indexes
+fn get_endlines(content: &str) -> Vec<usize> {
+    content.char_indices().filter(|(_, c)| c == &'\n').map(|(i, _)| i).collect()
 }
 
 fn get_relative_path(base_path: &Path, module_path: &Path) -> PathBuf {
@@ -192,40 +79,22 @@ fn get_relative_path(base_path: &Path, module_path: &Path) -> PathBuf {
     result.into_iter().collect()
 }
 
-impl SourceFile {
-    pub fn chars(&self) -> Chars {
-        Chars{ index: self.start_index, slice: &self.content }
-    }
-
-    /// get relative path to current working directory
-    #[allow(dead_code)] // should be used in diagnostics formatter
-    pub fn get_relative_path(&self) -> PathBuf {
-        let cwd = std::env::current_dir().expect("cannot get current dir");
-        get_relative_path(&cwd, &self.path)
-    }
-}
-
-// allow virtual file system for test
-pub trait FileSystem {
-    fn canonicalize(&self, path: impl AsRef<Path>) -> std::io::Result<PathBuf>;
-    fn read_to_string(&self, path: impl AsRef<Path>) -> std::io::Result<String>;
-}
-
 #[derive(Debug)]
-pub struct DefaultFileSystem;
-
-impl Default for DefaultFileSystem {
-    fn default() -> Self { 
-        Self
-    }
+pub struct SourceFile {
+    path: PathBuf,         // absolute path
+    content: String,
+    namespace: Vec<SymId>, // empty for entry module
+    start_index: usize,    // starting byte index in span to this file, or total byte length before SourceContext.files this item
+    endlines: Vec<usize>,  // LF byte indexes
+    #[allow(dead_code)] // does not know where need it, but save it for now
+    request: Option<Span>, // module item location, file id also can be found by span
 }
-impl FileSystem for DefaultFileSystem {
-    fn canonicalize(&self, path: impl AsRef<Path>) -> std::io::Result<PathBuf> {
-        std::fs::canonicalize(path)
-    }
-    fn read_to_string(&self, path: impl AsRef<Path>) -> std::io::Result<String> {
-        std::fs::read_to_string(path)
-    }
+
+// see SourceContext::get_chars why this type exists
+#[derive(Debug)]
+struct SourceFiles {
+    // file id is item index + 1, so it starts from 1, 1 is the entry module, the entry module is 1
+    items: Vec<SourceFile>,
 }
 
 /// source context contains all things (data and operations) related with source code
@@ -235,42 +104,25 @@ impl FileSystem for DefaultFileSystem {
 #[derive(Debug)]
 pub struct SourceContext<F = DefaultFileSystem> {
     fs: F,
-    // file id starts from 1, 1 is entry module, entry module is 1
-    files: Vec<SourceFile>,
-    // map string content to symbol id, but cannot reference self.files[...].content, so key is already hashed
-    // symbol id starts from 1 for span and from 0x1000_0000 for value
-    symbols: HashMap<u64, SymId>,
-    // reverse map symbol id to span to symbol content, item 0 is dummy
-    span_symbols: Vec<Span>,
-    // reverse map symbol id to symbol content, clearing first bit of symbol id value
-    // // this vec string is the only thing to make it look like string intern facility compare to previous u64 and span
-    value_symbols: Vec<String>,
+    files: SourceFiles,
+    symbols: Symbols,
 }
 
 impl<F> SourceContext<F> where F: Default {
     pub fn new() -> Self {
-        Self { fs: Default::default(), files: Vec::new(), symbols: HashMap::new(), span_symbols: vec![Span::new(0, 0)], value_symbols: Vec::new() }
+        Self { fs: Default::default(), files: SourceFiles::new(), symbols: Symbols::new() }
     }
 }
 impl<F> SourceContext<F> {
     pub fn new_file_system(fs: F) -> Self {
-        Self{ fs, files: Vec::new(), symbols: HashMap::new(), span_symbols: vec![Span::new(0, 0)], value_symbols: Vec::new() }
+        Self{ fs, files: SourceFiles::new(), symbols: Symbols::new() }
     }
-}
-
-// get LF byte indexes
-fn get_endlines(content: &str) -> Vec<usize> {
-    content.char_indices().filter(|(_, c)| c == &'\n').map(|(i, _)| i).collect()
-}
-
-// get utf8 length of character at byte index
-fn get_char_length(content: &str, byte_index: usize) -> usize {
-    content[byte_index..].chars().next().unwrap().len_utf8()
 }
 
 const FILE_EXT: &str = ".f3";
 const INDEX_FILE: &str = "index.f3";
 
+// methods about source file itself
 impl<F> SourceContext<F> where F: FileSystem {
 
     pub fn entry(&mut self, path: PathBuf) {
@@ -278,12 +130,12 @@ impl<F> SourceContext<F> where F: FileSystem {
         let path = self.fs.canonicalize(&path).expect("cannot read entry");
         let content = self.fs.read_to_string(&path).expect("cannot read entry");
 
-        self.files.push(SourceFile{ path, endlines: get_endlines(&content), content, start_index: 0, namespace: Vec::new(), request: None });
+        self.files.items.push(SourceFile{ path, endlines: get_endlines(&content), content, start_index: 0, namespace: Vec::new(), request: None });
     }
 
     // return option not result: let syntax parse module declare raise error
     pub fn import(&mut self, request: Span, module_name_symbol_id: SymId) -> Option<FileId> {
-        let (request_file_id, request_file, _) = self.map_position_to_file_and_byte_index(request.start);
+        let (request_file_id, request_file, _) = self.files.map_position_to_file_and_byte_index(request.start);
         
         let module_name = self.resolve_symbol(module_name_symbol_id);
         let hyphened_module_name = module_name.replace('_', "-");
@@ -320,28 +172,54 @@ impl<F> SourceContext<F> where F: FileSystem {
         let mut namespace = request_file.namespace.clone();
         // RFINRE: read failure is not module resolution error, simply regard read/open error as not exist
         resolve_options.into_iter().filter_map(|p| self.fs.read_to_string(&p).map(|c| (p, c)).ok()).next().map(|(path, content)| {
-            let file_id = FileId::new(self.files.len() as u32 + 1);
+            let file_id = FileId::new(self.files.items.len() as u32 + 1);
             namespace.push(module_name_symbol_id);
-            let last_file = self.files.last().expect("unexpected empty files");
+            let last_file = self.files.items.last().expect("unexpected empty files");
             let start_index = last_file.start_index + last_file.content.len() + 1; // +1 for position for EOF
-            self.files.push(SourceFile{ path, endlines: get_endlines(&content), content, start_index, namespace, request: Some(request) });
+            self.files.items.push(SourceFile{ path, endlines: get_endlines(&content), content, start_index, namespace, request: Some(request) });
             file_id
         })
     }
-
+    
+    #[allow(dead_code)] // should be used in diagnostics formatter
     pub fn get_file(&self, file_id: FileId) -> &SourceFile {
         let file_id = file_id.0 as usize;
-        debug_assert!(file_id > 0 && file_id <= self.files.len(), "invalid file id");
-        &self.files[file_id - 1]
+        debug_assert!(file_id > 0 && file_id <= self.files.items.len(), "invalid file id");
+        &self.files.items[file_id - 1]
+    }
+
+    // it is not in SourceFile because it will use vfs
+    /// get relative path to current working directory
+    #[allow(dead_code)] // should be used in diagnostics formatter
+    pub fn get_relative_path(&self, file_id: FileId) -> PathBuf {
+        let file_id = file_id.0 as usize;
+        debug_assert!(file_id > 0 && file_id <= self.files.items.len(), "invalid file id");
+        let file = &self.files.items[file_id - 1];
+        // TODO: vfs
+        let cwd = std::env::current_dir().expect("cannot get current dir");
+        get_relative_path(&cwd, &file.path)
+    }
+
+    // it is not in SourceFile because it borrows a lot of self
+    pub fn get_chars(&mut self, file_id: FileId) -> Chars {
+        let file_id = file_id.0 as usize;
+        debug_assert!(file_id > 0 && file_id <= self.files.items.len(), "invalid file id");
+        let file = &self.files.items[file_id - 1];
+        // only split self into separate SourceFiles and Symbols type can borrowck understand that
+        Chars{ slice: &file.content, index: file.start_index, files: &self.files, symbols: &mut self.symbols }
     }
 }
 
-impl<F> SourceContext<F> {
+// these are also methods for giving numeric ids meaning while it is actually splitted from SourceContext so put them here
+impl SourceFiles {
+    fn new() -> Self {
+        Self{ items: Vec::new() }
+    }
 
     /// return (file id, file, byte index in current file)
     fn map_position_to_file_and_byte_index(&self, position: Position) -> (FileId, &SourceFile, usize) {
         let position = position.0 as usize;
-        for (index, file) in self.files.iter().enumerate() {
+        for (index, file) in self.items.iter().enumerate() {
             if file.start_index + file.content.len() + /* EOF position */ 1 > position {
                 return (FileId::new(index as u32 + 1), file, position - file.start_index);
             }
@@ -349,14 +227,41 @@ impl<F> SourceContext<F> {
         unreachable!("position overflow");
     }
 
+    fn map_span_to_content(&self, location: Span) -> &str {
+        debug_assert!(location.start.0 <= location.end.0, "invalid span");
+
+        let (start_file_id, file, start_byte_index) = self.map_position_to_file_and_byte_index(location.start);
+        let (end_file_id, _, end_byte_index) = self.map_position_to_file_and_byte_index(location.end);
+
+        debug_assert_eq!(start_file_id, end_file_id, "span cross file");
+        // these 2 will not happen because map_position_to_file_and_byte_index already rejected them
+        // debug_assert!(start_byte_index <= file.content.len(), "span overflow");
+        // debug_assert!(end_byte_index <= file.content.len(), "span overflow");
+        
+        if end_byte_index == file.content.len() {
+            // allow EOF position
+            if start_byte_index == file.content.len() {
+                ""
+            } else {
+                &file.content[start_byte_index..]
+            }
+        } else {
+            &file.content[start_byte_index..end_byte_index + get_char_width(&file.content, end_byte_index)]
+        }
+    }
+}
+
+// methods for giving numeric ids meaning
+impl<F> SourceContext<F> {
+
     #[allow(dead_code)]
     pub fn map_position_to_file(&self, position: Position) -> FileId {
-        self.map_position_to_file_and_byte_index(position).0
+        self.files.map_position_to_file_and_byte_index(position).0
     }
 
     /// line starts from 1, column starts from 1
     pub fn map_position_to_line_column(&self, position: Position) -> (FileId, usize, usize) {
-        let (file_id, file, byte_index) = self.map_position_to_file_and_byte_index(position);
+        let (file_id, file, byte_index) = self.files.map_position_to_file_and_byte_index(position);
 
         let (line, line_start_index) = if file.endlines.len() == 0 {
             (1, 0)
@@ -383,7 +288,7 @@ impl<F> SourceContext<F> {
             } else if file.content.as_bytes()[current_byte_index] != b'\r' { // ignore \r in column counting
                 column += 1;
             }
-            current_byte_index += get_char_length(&file.content, current_byte_index);
+            current_byte_index += get_char_width(&file.content, current_byte_index);
         }
     }
 
@@ -397,34 +302,15 @@ impl<F> SourceContext<F> {
     }
 
     pub fn map_span_to_content(&self, location: Span) -> &str {
-        debug_assert!(location.start.0 <= location.end.0, "invalid span");
-
-        let (start_file_id, file, start_byte_index) = self.map_position_to_file_and_byte_index(location.start);
-        let (end_file_id, _, end_byte_index) = self.map_position_to_file_and_byte_index(location.end);
-
-        debug_assert_eq!(start_file_id, end_file_id, "span cross file");
-        // these 2 will not happen because map_position_to_file_and_byte_index already rejected them
-        // debug_assert!(start_byte_index <= file.content.len(), "span overflow");
-        // debug_assert!(end_byte_index <= file.content.len(), "span overflow");
-        
-        if end_byte_index == file.content.len() {
-            // allow EOF position
-            if start_byte_index == file.content.len() {
-                ""
-            } else {
-                &file.content[start_byte_index..]
-            }
-        } else {
-            &file.content[start_byte_index..end_byte_index + get_char_length(&file.content, end_byte_index)]
-        }
+        self.files.map_span_to_content(location)
     }
 
     #[allow(dead_code)] // diagnostics formatting not implemented currently
     pub fn map_line_to_content(&self, file_id: FileId, line: usize) -> &str {
         let file_id = file_id.0 as usize;
-        debug_assert!(file_id > 0 && file_id <= self.files.len(), "invalid file id");
+        debug_assert!(file_id > 0 && file_id <= self.files.items.len(), "invalid file id");
 
-        let file = &self.files[file_id - 1];
+        let file = &self.files.items[file_id - 1];
         debug_assert!(line > 0 && line <= file.endlines.len() + 1, "line number overflow");
 
         if file.content.len() == 0 { // empty file
@@ -436,60 +322,14 @@ impl<F> SourceContext<F> {
         } else {
             let start_byte_index = if line == 1 { 0 } else { file.endlines[line - 2] + /* next char of LF */ 1 };
             let end_byte_index = if line == file.endlines.len() + 1 { file.content.len() - 1 } else { file.endlines[line - 1] - 1 };
-            &file.content[start_byte_index..end_byte_index + get_char_length(&file.content, end_byte_index)]
-        }
-    }
-}
-
-const SYMID_MASK: u32 = 0x1000_0000u32;
-
-fn get_hash(content: &str) -> u64 {
-    let mut hasher = std::collections::hash_map::DefaultHasher::new();
-    std::hash::Hash::hash(content, &mut hasher);
-    std::hash::Hasher::finish(&hasher)
-}
-
-impl<F> SourceContext<F> {
-
-    // intern symbol at location
-    pub fn intern_span(&mut self, location: Span) -> SymId {
-        debug_assert!(location.start.0 <= location.end.0, "invalid span");
-
-        let hash = get_hash(self.map_span_to_content(location));
-        if let Some(symbol_id) = self.symbols.get(&hash) {
-            *symbol_id
-        } else {
-            let symbol_id = SymId::new(self.span_symbols.len() as u32);
-            self.symbols.insert(hash, symbol_id);
-            self.span_symbols.push(location);
-            symbol_id
-        }
-    }
-
-    #[allow(dead_code)] // TODO intern string literal value
-    pub fn intern_value(&mut self, value: String) -> SymId {
-        let hash = get_hash(&value);
-        if let Some(symbol_id) = self.symbols.get(&hash) {
-            *symbol_id
-        } else {
-            let symbol_id = SymId::new(self.value_symbols.len() as u32 | SYMID_MASK);
-            self.symbols.insert(hash, symbol_id);
-            self.value_symbols.push(value);
-            symbol_id
+            &file.content[start_byte_index..end_byte_index + get_char_width(&file.content, end_byte_index)]
         }
     }
 
     pub fn resolve_symbol(&self, symbol_id: SymId) -> &str {
-        let symbol_id = symbol_id.0;
-        debug_assert!(symbol_id > 0, "invalid symbol id");
-
-        if (symbol_id & SYMID_MASK) == SYMID_MASK {
-            let index = (symbol_id & !SYMID_MASK) as usize;
-            debug_assert!(index < self.value_symbols.len(), "invalid symbol id");
-            &self.value_symbols[index]
-        } else {
-            debug_assert!((symbol_id as usize) < self.span_symbols.len(), "invalid symbol id");
-            self.map_span_to_content(self.span_symbols[symbol_id as usize])
+        match self.symbols.resolve(symbol_id) {
+            ResolveResult::Span(span) => self.files.map_span_to_content(span),
+            ResolveResult::Str(content) => content,
         }
     }
 }
