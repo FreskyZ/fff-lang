@@ -9,7 +9,7 @@ use crate::source::SourceContext;
 pub fn main() {
 
     let mut scx: SourceContext = SourceContext::new();
-    scx.entry("tests/syntax/inter/gcd_src.ff".into());
+    scx.entry("tests/syntax/inter/gcd_src.ff").finish();
     println!("{:?}", scx);
 
     // let mut messages = MessageCollection::new();

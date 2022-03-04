@@ -1,7 +1,10 @@
-///! source::iter: source content iterator, with forwarded interner
+///! source::iter: source code content iterator, with interner
 
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
+use std::path::PathBuf;
 use std::ops::{Add, AddAssign};
-use super::{SourceFiles, Symbols, SymId};
+use super::{FileSystem, DefaultFileSystem, SourceContext, SourceFile, FileId};
 
 pub const EOF: char = 0u8 as char;
 
@@ -99,55 +102,167 @@ impl From<Position> for Span {
     }
 }
 
-// this iterator is the exact first layer of processing above source code content, 
-// (except test) logically all span comes from position created by the next function
-//
-// this iterator also forwards the symbol interning interface, because lexical parser need iteration and 
-// intern at the same time, but you cannot call mutable borrow methods if source context is immutable borrowed by this
-pub struct Chars<'a> {
-    pub(super) slice: &'a str, // advancing string slice of SourceFile.content
-    pub(super) index: usize,   // index of next character, initial value should be SourceFile.start_index
-    pub(super) files: &'a SourceFiles,
-    pub(super) symbols: &'a mut Symbols,
+/// a handle to an interned string
+///
+/// its name is short because it is widely used,
+/// it is u32 not usize because it is widely used
+/// and not reasonable to have more than u32::MAX symbols in all source files
+#[derive(Eq, PartialEq, Clone, Copy, Debug, Hash)]
+pub struct Sym(u32);
+
+impl Sym {
+    pub(super) const MASK: u32 = 1 << 31; // string symbol mask
+
+    pub fn new(v: u32) -> Self {
+        Self(v)
+    }
+    pub fn unwrap(self) -> u32 {
+        self.0
+    }
+}
+impl From<u32> for Sym {
+    fn from(v: u32) -> Self {
+        Self(v)
+    }
 }
 
-impl<'a> Chars<'a> {
+fn get_hash(content: &str) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    Hash::hash(content, &mut hasher);
+    hasher.finish()
+}
+
+// get LF byte indexes
+fn get_endlines(content: &str) -> Vec<usize> {
+    content.char_indices().filter(|(_, c)| c == &'\n').map(|(i, _)| i).collect()
+}
+
+// this iterator is the exact first layer of processing above source code content, 
+// logically all location information comes from position created by the next function
+//
+// this iterator also includes the symbol intern interface, to make leixcal parser simpler
+//
+// from source context's perspective, this is also a source file builder which returns by 
+// entry and import function and when running, append to symbols and when finished, append to files
+pub struct SourceChars<'a, F = DefaultFileSystem> {
+    pub(super) content: String,
+    current_index: usize,  // current iterating byte index, content bytes[current_index] should be the next returned char
+    pub(super) start_index: usize,    // starting byte index for this file, or previous files's total byte length, will become SourceFile.start_index when finished
+    pub(super) path: PathBuf,         // copy to SourceFile
+    pub(super) namespace: Vec<Sym>,   // copy to SourceFile
+    pub(super) request: Option<Span>, // copy to SourceFile
+    context: &'a mut SourceContext<F>,
+}
+
+impl<'a, F> SourceChars<'a, F> where F: FileSystem {
+
+    pub(super) fn new(mut content: String, start_index: usize, path: PathBuf, namespace: Vec<Sym>, request: Option<Span>, context: &'a mut SourceContext<F>) -> Self {
+        // append 3 '\0' char to end of content for the branchless (less branch actually) iterator
+        content.push_str("\0\0\0");
+        Self{ content, start_index, current_index: 0, path, namespace, request, context }
+    }
+
     /// iterate return char and byte index
     /// 
-    /// ignore all bare or not bare CR, return EOF after EOF, fuse
+    /// ignore all bare or not bare CR, return EOF after EOF
     pub fn next(&mut self) -> (char, Position) {
         loop {
-            if self.slice.len() == 0 {
-                return (EOF, Position::new(self.index as u32));
-            } else if self.slice.as_bytes()[0] == b'\r' {
-                self.slice = &self.slice[1..];
-                self.index += 1;
-                continue;
-            } else {
-                let bytes = self.slice.as_bytes();
-                let (char_length, r#char) = match get_char_width(self.slice, 0) {
-                    1 => (1, bytes[0] as u32),
-                    2 => (2, (((bytes[0] as u32) & 0b00011111u32) << 6) + ((bytes[1] as u32) & 0b00111111u32)),
-                    3 => (3, (((bytes[0] as u32) & 0b00001111u32) << 12) + (((bytes[1] as u32) & 0b00111111u32) << 6) + (((bytes[2] as u32) & 0b00111111u32))),
-                    4 => (4, (((bytes[0] as u32) & 0b00000111u32) << 18) + (((bytes[1] as u32) & 0b00111111u32) << 12) + (((bytes[2] as u32) & 0b00111111u32) << 6) + ((bytes[3] as u32) & 0b00111111u32)),
-                    _ => panic!("invalid utf-8 sequence"),
-                };
-                self.slice = &self.slice[char_length..];
-                self.index += char_length;
-                // SAFETY: invalid char should not cause severe issue in lexical parse and syntax parse
-                return (unsafe { char::from_u32_unchecked(r#char) }, Position::new((self.index - char_length) as u32));
+            if self.current_index == self.content.len() - 3 {
+                return (EOF, Position::new((self.start_index + self.current_index) as u32));
+            }
+            let bytes = self.content.as_bytes();
+            match bytes[self.current_index] {
+                b'\r' => { // ignore \r
+                    self.current_index += 1;
+                    continue;
+                },
+                b @ 0..=128 => { // ascii fast path
+                    self.current_index += 1;
+                    return (b as char, Position::new((self.current_index - 1) as u32));
+                },
+                _ => {
+                    let width = get_char_width(&self.content, self.current_index);
+                    if self.current_index + width > self.content.len() - 3 {
+                        // TODO: this should be an error not panic, although unrecoverable
+                        panic!("invalid utf-8 sequence");
+                    }
+
+                    const MASKS: [u8; 5] = [0, 0, 0x1F, 0x0F, 0x07]; // byte 0 masks
+                    let bytes = &bytes[self.current_index..];
+                    let r#char = (((bytes[0] & MASKS[width]) as u32) << 18) | (((bytes[1] & 0x3F) as u32) << 12) | (((bytes[2] & 0x3F) as u32) << 6) | ((bytes[3] & 0x3F) as u32);
+
+                    // TODO: check more invalid utf8 sequence include following bytes not start with 0b10 and larger than 10FFFF and between D800 and E000
+                    self.current_index += width;
+                    // SAFETY: invalid char should not cause severe issue in lexical parse and syntax parse
+                    return (unsafe { char::from_u32_unchecked(r#char) }, Position::new((self.current_index - width) as u32));
+                },
             }
         }
     }
 
-    pub fn intern_span(&mut self, location: Span) -> SymId {
-        self.symbols.intern_span(location, self.files.map_span_to_content(location))
+    // intern symbol at location
+    pub fn intern_span(&mut self, location: Span) -> Sym {
+        let (start, end) = (location.start.0 as usize, location.end.0 as usize);
+
+        debug_assert!(start <= end, "invalid span");
+        debug_assert!(self.start_index <= start, "not this file span");
+        // does not check position for EOF because it is not expected to intern something include EOF
+        debug_assert!(end < self.content.len() - 3 && start< self.content.len() - 3, "position overflow");
+
+        let hash = get_hash(&self.content[start - self.start_index..end - self.start_index]);
+        if let Some(symbol) = self.context.symbols.get(&hash) {
+            *symbol
+        } else {
+            let symbol = Sym::new(self.context.rev_symbols.0.len() as u32);
+            self.context.symbols.insert(hash, symbol);
+            self.context.rev_symbols.0.push(location);
+            symbol
+        }
     }
-    pub fn intern_str(&mut self, value: &str) -> SymId {
-        self.symbols.intern_str(value)
+
+    // the advantage compare to intern_string is str is only copied when creating new symbol
+    // it is actually used in syntax parser
+    pub fn intern_str(&mut self, value: &str) -> Sym {
+        let hash = get_hash(&value);
+        if let Some(symbol) = self.context.symbols.get(&hash) {
+            *symbol
+        } else {
+            let symbol = Sym::new(self.context.rev_symbols.1.len() as u32 | Sym::MASK);
+            self.context.symbols.insert(hash, symbol);
+            self.context.rev_symbols.1.push(value.to_owned());
+            symbol
+        }
     }
-    pub fn intern_string(&mut self, value: String) -> SymId {
-        self.symbols.intern_string(value)
+
+    // the advantage compare to intern_str is no need to copy when creating new symbol
+    pub fn intern_string(&mut self, value: String) -> Sym {
+        let hash = get_hash(&value);
+        if let Some(symbol) = self.context.symbols.get(&hash) {
+            *symbol
+        } else {
+            let symbol = Sym::new(self.context.rev_symbols.1.len() as u32 | Sym::MASK);
+            self.context.symbols.insert(hash, symbol);
+            self.context.rev_symbols.1.push(value);
+            symbol
+        }
+    }
+
+    pub fn finish(mut self) -> FileId {
+        // // no, not this, cannot move self when self is borrowed (the self.context)
+        // // self.context.finish_build(self)
+        
+        let file_id = FileId((self.context.files.len() + 1) as u32);
+        let content_length = self.content.len();
+        self.content.truncate(content_length - 3);
+        self.context.files.push(SourceFile{
+            path: self.path,
+            endlines: get_endlines(&self.content),
+            content: self.content,
+            namespace: self.namespace,
+            start_index: self.start_index,
+            request: self.request,
+        });
+        file_id
     }
 }
 

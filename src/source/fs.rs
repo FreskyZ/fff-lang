@@ -1,22 +1,12 @@
-///! source::fs: abstract file system for test (and should also be useful for compiler api)
+///! source::fs: abstract file system
 
 use std::io;
 use std::path::{Path, PathBuf};
 
 pub trait FileSystem {
-    fn canonicalize(&self, path: impl AsRef<Path>) -> io::Result<PathBuf>;
-    fn read_to_string(&self, path: impl AsRef<Path>) -> io::Result<String>;
-}
-
-#[derive(Debug)]
-pub struct DefaultFileSystem;
-
-impl Default for DefaultFileSystem {
-    fn default() -> Self { 
-        Self
+    fn get_current_dir(&self) -> io::Result<PathBuf> {
+        std::env::current_dir()
     }
-}
-impl FileSystem for DefaultFileSystem {
     fn canonicalize(&self, path: impl AsRef<Path>) -> io::Result<PathBuf> {
         std::fs::canonicalize(path)
     }
@@ -25,15 +15,25 @@ impl FileSystem for DefaultFileSystem {
     }
 }
 
-// virtual file system for test
+#[derive(Debug, Default)]
+pub struct DefaultFileSystem;
+
+// trait default to use real file system
+impl FileSystem for DefaultFileSystem {}
+
+// virtual file system for test (and should also be useful for compiler api)
 #[cfg(test)]
 #[derive(Debug)]
 pub struct VirtualFileSystem {
+    pub cwd: PathBuf,
     pub files: std::collections::HashMap<PathBuf, String>,
 }
 
 #[cfg(test)]
 impl FileSystem for VirtualFileSystem {
+    fn get_current_dir(&self) -> io::Result<PathBuf> {
+        Ok(self.cwd.clone())
+    }
     fn canonicalize(&self, path: impl AsRef<Path>) -> io::Result<PathBuf> {
         Ok(path.as_ref().into())
     }
