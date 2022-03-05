@@ -42,7 +42,7 @@
 // ...let it go
 
 use std::cell::Cell;
-use crate::source::{Span, EOF_CHAR};
+use crate::source::{Span, EOF};
 use crate::diagnostics::{Message, MessageCollection};
 use super::error_strings;
 use super::super::NumLitValue;
@@ -59,18 +59,18 @@ impl<T> BufChars<T> where T : Iterator<Item = char> {
 
     fn new(mut chars: T) -> BufChars<T> {
 
-        macro_rules! some_char_to_char { ($ch: expr) => (if let Some(ch) = $ch { ch } else { EOF_CHAR }) }
+        macro_rules! some_char_to_char { ($ch: expr) => (if let Some(ch) = $ch { ch } else { EOF }) }
 
         let current = some_char_to_char!(chars.next());
-        let (next, nextnext) = if current != EOF_CHAR {
+        let (next, nextnext) = if current != EOF {
             let next = some_char_to_char!(chars.next());
-            (next, if next != EOF_CHAR {
+            (next, if next != EOF {
                 some_char_to_char!(chars.next())
             } else {
-                EOF_CHAR
+                EOF
             })
         } else {
-            (EOF_CHAR, EOF_CHAR)
+            (EOF, EOF)
         };
         
         BufChars{ 
@@ -83,12 +83,12 @@ impl<T> BufChars<T> where T : Iterator<Item = char> {
     }
     fn actual_move_next(&mut self) {
 
-        if self.m_current != EOF_CHAR {
+        if self.m_current != EOF {
             self.m_current = self.m_next;
-            if self.m_next != EOF_CHAR {
+            if self.m_next != EOF {
                 self.m_next = self.m_nextnext;
-                if self.m_nextnext != EOF_CHAR {
-                    self.m_nextnext = if let Some(nextnext) = self.chars.next() { nextnext } else { EOF_CHAR };
+                if self.m_nextnext != EOF {
+                    self.m_nextnext = if let Some(nextnext) = self.chars.next() { nextnext } else { EOF };
                 }
             }
         }
@@ -318,8 +318,8 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
         match chars.current_with_state(state) {
 
             // ---- ReallyNothing ----
-            (State::ReallyNothing, '-', EOF_CHAR, _) => reterr!(1, error_strings::EmptyLiteral),
-            (State::ReallyNothing, '_', EOF_CHAR, _) => reterr!(2, error_strings::EmptyLiteral),
+            (State::ReallyNothing, '-', EOF, _) => reterr!(1, error_strings::EmptyLiteral),
+            (State::ReallyNothing, '_', EOF, _) => reterr!(2, error_strings::EmptyLiteral),
             (State::ReallyNothing, '_', _, _) => reterr!(3, error_strings::UnderscoreAtHead),
             (State::ReallyNothing, '-', _, _) => conv!(1, State::Nothing(false)),
             (State::ReallyNothing, _, _, _) => {
@@ -328,20 +328,20 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
             }
 
             // ---- Nothing(is_positive) ----
-            (State::Nothing(_), '0', EOF_CHAR, _) => retok!(1, NumLitValue::I32(0)),
+            (State::Nothing(_), '0', EOF, _) => retok!(1, NumLitValue::I32(0)),
             (State::Nothing(_), '_', _, _) => reterr!(4, error_strings::UnderscoreAtHead),
 
             (State::Nothing(_), '0', 'i', _) => conv!(3, State::ExpectSignedIntPostfix(0i64)),
             (State::Nothing(_), '0', 'u', _) => conv!(4, State::ExpectUnsignedIntPostfix(0u64)),
             (State::Nothing(_), '0', 'r', _) => conv!(5, State::ExpectFloatPostfix(0f64)),
 
-            (State::Nothing(_), '0', 'b', EOF_CHAR)
-            | (State::Nothing(_), '0', 'o', EOF_CHAR)
-            | (State::Nothing(_), '0', 'd', EOF_CHAR)
-            | (State::Nothing(_), '0', 'B', EOF_CHAR) // although they are not int prefix, make it this error
-            | (State::Nothing(_), '0', 'O', EOF_CHAR)
-            | (State::Nothing(_), '0', 'D', EOF_CHAR)
-            | (State::Nothing(_), '0', 'X', EOF_CHAR) => reterr!(5, error_strings::EmptyIntLiteral),           
+            (State::Nothing(_), '0', 'b', EOF)
+            | (State::Nothing(_), '0', 'o', EOF)
+            | (State::Nothing(_), '0', 'd', EOF)
+            | (State::Nothing(_), '0', 'B', EOF) // although they are not int prefix, make it this error
+            | (State::Nothing(_), '0', 'O', EOF)
+            | (State::Nothing(_), '0', 'D', EOF)
+            | (State::Nothing(_), '0', 'X', EOF) => reterr!(5, error_strings::EmptyIntLiteral),           
 
             (State::Nothing(is_positive), '0', 'b', _) => {
                 chars.dummy1();
@@ -374,7 +374,7 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
             (State::Nothing(_), '0', _, _) => reterr!(8, error_strings::NumLitShouldNotStartWith0, 
                 vec![error_strings::CStyleOctNumLitHelp.to_owned()]
             ),
-            (State::Nothing(_), '.', EOF_CHAR, _) => reterr!(9, error_strings::EmptyLiteral),
+            (State::Nothing(_), '.', EOF, _) => reterr!(9, error_strings::EmptyLiteral),
             (State::Nothing(_), '.', _, _) => reterr!(10, error_strings::DotAtHead),
             (State::Nothing(is_positive), ch, _, _) => match ch.to_digit(10) {
                 Some(digit) => conv!(11, State::UnknownI32((digit as i32).merge_sign(is_positive), is_positive, false)),
@@ -382,8 +382,8 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
             },
 
             // ---- UnknownI32(value, is_positive, prev_is_underscore) ----
-            (State::UnknownI32(_, _, true), EOF_CHAR, _, _) => reterr!(12, error_strings::UnderscoreAtEnd),
-            (State::UnknownI32(value, _, false), EOF_CHAR, _, _) => retok!(2, NumLitValue::I32(value)),
+            (State::UnknownI32(_, _, true), EOF, _, _) => reterr!(12, error_strings::UnderscoreAtEnd),
+            (State::UnknownI32(value, _, false), EOF, _, _) => retok!(2, NumLitValue::I32(value)),
             (State::UnknownI32(value, _, _), 'i', _, _) => {
                 chars.skip1();
                 conv!(12, State::ExpectSignedIntPostfix(value as i64));
@@ -434,8 +434,8 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
             },
 
             // ---- UnknownU32(value, prev_is_underscore) ----
-            (State::UnknownU32(_, true), EOF_CHAR, _, _) => reterr!(18, error_strings::UnderscoreAtEnd),
-            (State::UnknownU32(value, false), EOF_CHAR, _, _) => retok!(3, NumLitValue::U32(value)),
+            (State::UnknownU32(_, true), EOF, _, _) => reterr!(18, error_strings::UnderscoreAtEnd),
+            (State::UnknownU32(value, false), EOF, _, _) => retok!(3, NumLitValue::U32(value)),
             (State::UnknownU32(value, _), 'i', _, _) => {
                 chars.skip1();
                 conv!(25, State::ExpectSignedIntPostfix(value as i64));
@@ -469,8 +469,8 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
             },
 
             // ---- UnknownI64(value, is_positive, prev is underscore) ----
-            (State::UnknownI64(_, _, true), EOF_CHAR, _, _) => reterr!(23, error_strings::UnderscoreAtEnd),
-            (State::UnknownI64(value, _, false), EOF_CHAR, _, _) => retok!(4, NumLitValue::I64(value)),
+            (State::UnknownI64(_, _, true), EOF, _, _) => reterr!(23, error_strings::UnderscoreAtEnd),
+            (State::UnknownI64(value, _, false), EOF, _, _) => retok!(4, NumLitValue::I64(value)),
             (State::UnknownI64(value, _, _), 'i', _, _) => {
                 chars.skip1();
                 conv!(34, State::ExpectSignedIntPostfix(value));
@@ -534,8 +534,8 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
             },
 
             // ---- UnknownU64(value, prev_is_underscore) ----
-            (State::UnknownU64(_, true), EOF_CHAR, _, _) => reterr!(29, error_strings::UnderscoreAtEnd),
-            (State::UnknownU64(value, false), EOF_CHAR, _, _) => retok!(5, NumLitValue::U64(value)),
+            (State::UnknownU64(_, true), EOF, _, _) => reterr!(29, error_strings::UnderscoreAtEnd),
+            (State::UnknownU64(value, false), EOF, _, _) => retok!(5, NumLitValue::U64(value)),
             (State::UnknownU64(_, _), 'i', _, _) => reterr!(30, error_strings::IntegralOverflow),
             (State::UnknownU64(value, _), 'u', _, _) => {
                 chars.skip1();
@@ -567,7 +567,7 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
 
             // TODO: need prev is underscore?
             // ---- UnknownR64(value, is_positive) ----
-            (State::UnknownR64(value, _), EOF_CHAR, _, _) => retok!(6, NumLitValue::R64(value)),
+            (State::UnknownR64(value, _), EOF, _, _) => retok!(6, NumLitValue::R64(value)),
             (State::UnknownR64(_, _), 'i', _, _) => reterr!(35, error_strings::IntegralOverflow),
             (State::UnknownR64(_, _), 'u', _, _) => reterr!(36, error_strings::IntegralOverflow),
             (State::UnknownR64(value, _), 'r', _, _) => {
@@ -592,11 +592,11 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
             | (State::IntPrefix(_, _, _), 'E', _, _) => reterr!(41, error_strings::ExponentInIntLiteral),
             (State::IntPrefix(_, _, _), '.', _, _) => reterr!(42, error_strings::DotAtHead),
             (State::IntPrefix(_, _, true), '_', _, _) => reterr!(43, error_strings::UnderscoreDouble),
-            (State::IntPrefix(_, _, _), 'i', '8', EOF_CHAR)
+            (State::IntPrefix(_, _, _), 'i', '8', EOF)
             | (State::IntPrefix(_, _, _), 'i', '1', '6')
             | (State::IntPrefix(_, _, _), 'i', '3', '2')
             | (State::IntPrefix(_, _, _), 'i', '6', '4')
-            | (State::IntPrefix(_, _, _), 'u', '8', EOF_CHAR)
+            | (State::IntPrefix(_, _, _), 'u', '8', EOF)
             | (State::IntPrefix(_, _, _), 'u', '1', '6')
             | (State::IntPrefix(_, _, _), 'u', '3', '2')
             | (State::IntPrefix(_, _, _), 'u', '6', '4') => reterr!(44, error_strings::EmptyIntLiteral),
@@ -617,7 +617,7 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
 
             // ---- ExpectInt(base, value, is_positive, prev_is_underscore) ----
             (State::ExpectInt(_, _, _, _), '.', _, _) => reterr!(47, error_strings::DotInIntLiteral),
-            (State::ExpectInt(_, value, is_positive, _), EOF_CHAR, _, _) => retok!(7, u64_final_value(value, is_positive)),
+            (State::ExpectInt(_, value, is_positive, _), EOF, _, _) => retok!(7, u64_final_value(value, is_positive)),
             (State::ExpectInt(_, value, is_positive, _), 'i', _, _) => if value > i64::MAX as u64 {
                 reterr!(48, error_strings::IntegralOverflow);
             } else {
@@ -674,9 +674,9 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
             }
             (State::AfterDot(value, _, _, _), 'e', _, _)
             | (State::AfterDot(value, _, _, _), 'E', _, _) => conv!(69, State::DirectAfterE(value, false)),
-            (State::AfterDot(_, 1, _, _), EOF_CHAR, _, _) => reterr!(58, error_strings::DotAtEnd),
-            (State::AfterDot(_, _, _, true), EOF_CHAR, _, _) => reterr!(59, error_strings::UnderscoreAtEnd),
-            (State::AfterDot(value, _, _, false), EOF_CHAR, _, _) => retok!(8, NumLitValue::R64(value)),
+            (State::AfterDot(_, 1, _, _), EOF, _, _) => reterr!(58, error_strings::DotAtEnd),
+            (State::AfterDot(_, _, _, true), EOF, _, _) => reterr!(59, error_strings::UnderscoreAtEnd),
+            (State::AfterDot(value, _, _, false), EOF, _, _) => retok!(8, NumLitValue::R64(value)),
             (State::AfterDot(value, bits, is_positive, prev_is_underscore), ch, _, _) => match (prev_is_underscore, ch == '_') {
                 (true, true) => reterr!(60, error_strings::UnderscoreDouble),
                 (_, true) => conv!(70, State::AfterDot(value, bits, is_positive, true)),
@@ -696,8 +696,8 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
             },
 
             // ---- DirectAfterE(value, prev_is_underscore) ----
-            (State::DirectAfterE(_, _), '+', EOF_CHAR, _)
-            | (State::DirectAfterE(_, _), '-', EOF_CHAR, _) => reterr!(66, error_strings::UnexpectedEOFInExponent),  
+            (State::DirectAfterE(_, _), '+', EOF, _)
+            | (State::DirectAfterE(_, _), '-', EOF, _) => reterr!(66, error_strings::UnexpectedEOFInExponent),  
             (State::DirectAfterE(_, _), '+', '_', _) => reterr!(67, error_strings::UnderscoreAtExponentHead),
             (State::DirectAfterE(_, _), '-', '_', _) => reterr!(68, error_strings::UnderscoreAtExponentHead),
             (State::DirectAfterE(value, _), '+', ch, _) => match ch.to_digit(10) {
@@ -735,8 +735,8 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
                     conv!(77, State::ExpectFloatPostfix(value));
                 }
             },
-            (State::AfterE(_, _, _, true), EOF_CHAR, _, _) => reterr!(77, error_strings::UnderscoreAtEnd),
-            (State::AfterE(value, exp, _, false), EOF_CHAR, _, _) => match value.checked_mul(10f64.powi(exp)) {
+            (State::AfterE(_, _, _, true), EOF, _, _) => reterr!(77, error_strings::UnderscoreAtEnd),
+            (State::AfterE(value, exp, _, false), EOF, _, _) => match value.checked_mul(10f64.powi(exp)) {
                 FloatCheckedResult::Ok(value) => retok!(9, NumLitValue::R64(value)),
                 FloatCheckedResult::Overflow => reterr!(78, error_strings::FloatPointOverflow,
                     vec![error_strings::FloatPointOverflowHelpMaxValue[if value > 0f64 { 2 } else { 3 }].to_owned()]
@@ -772,7 +772,7 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
             },
 
             // ---- ExpectSignedIntPostfix(value) ----
-            (State::ExpectSignedIntPostfix(value), 'i', '8', EOF_CHAR) => 
+            (State::ExpectSignedIntPostfix(value), 'i', '8', EOF) => 
                 if value > i8::MAX as i64 { 
                     reterr!(86, error_strings::IntegralOverflow,
                         vec![error_strings::IntegralOverflowHelpMaxValue[0].to_owned()]
@@ -817,13 +817,13 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
                 chars.dummy1();
                 conv!(83, State::ExpectEOF(NumLitValue::I64(value as i64)));
             }
-            (State::ExpectSignedIntPostfix(_), 'i', EOF_CHAR, _) => reterr!(92, error_strings::UnexpectedEOFInMaybeSignedIntPostfix),
+            (State::ExpectSignedIntPostfix(_), 'i', EOF, _) => reterr!(92, error_strings::UnexpectedEOFInMaybeSignedIntPostfix),
             (State::ExpectSignedIntPostfix(_), 'i', '_', _)
             | (State::ExpectSignedIntPostfix(_), 'i', _, '_') => reterr!(93, error_strings::UnderscoreInMaybeSignedIntPostfix),
             (State::ExpectSignedIntPostfix(_), _, _, _) => reterr!(94, error_strings::UnexpectedValueAfterMaybeSignedIntPostfix),
 
             // ---- ExpectUnsignedIntPostfix(value) ---- 
-            (State::ExpectUnsignedIntPostfix(value), 'u', '8', EOF_CHAR) => 
+            (State::ExpectUnsignedIntPostfix(value), 'u', '8', EOF) => 
                 if value > u8::max_value() as u64 { 
                     reterr!(95, error_strings::IntegralOverflow,
                         vec![error_strings::IntegralOverflowHelpMaxValue[1].to_owned()]
@@ -856,7 +856,7 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
                 chars.dummy1();
                 conv!(86, State::ExpectEOF(NumLitValue::U64(value))); 
             }
-            (State::ExpectUnsignedIntPostfix(_), 'u', EOF_CHAR, _) => reterr!(98, error_strings::UnexpectedEOFInMaybeUnsignedIntPostfix),
+            (State::ExpectUnsignedIntPostfix(_), 'u', EOF, _) => reterr!(98, error_strings::UnexpectedEOFInMaybeUnsignedIntPostfix),
             (State::ExpectUnsignedIntPostfix(_), 'u', '_', _)
             | (State::ExpectUnsignedIntPostfix(_), 'u', _, '_') => reterr!(99, error_strings::UnderscoreInMaybeUnsignedIntPostfix),
             (State::ExpectUnsignedIntPostfix(_), _, _, _) => reterr!(100, error_strings::UnexpectedValueAfterMaybeUnsignedIntPostfix),
@@ -894,7 +894,7 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
                 chars.dummy1();
                 conv!(89, State::ExpectEOF(NumLitValue::R64(value)));
             }
-            (State::ExpectFloatPostfix(_), 'r', EOF_CHAR, _) => 
+            (State::ExpectFloatPostfix(_), 'r', EOF, _) => 
                 reterr!(105, error_strings::UnexpectedEOFInMaybeFloatingPostfix),
             (State::ExpectFloatPostfix(_), 'u', '_', _)
             | (State::ExpectFloatPostfix(_), 'u', _, '_') => reterr!(106, error_strings::UnderscoreInMaybeFloatPointPostfix),
@@ -902,7 +902,7 @@ fn str_to_num_lit_impl(raw: String, strpos: Span) -> Result<NumLitValue, Message
                 reterr!(107, error_strings::UnexpectedValueAfterMaybeFloatingPostfix),
 
             // ---- ExpectEOF(value) ---- 
-            (State::ExpectEOF(ret_val), EOF_CHAR, _, _) => retok!(12, ret_val),
+            (State::ExpectEOF(ret_val), EOF, _, _) => retok!(12, ret_val),
             (State::ExpectEOF(_), _, _, _) => reterr!(108, error_strings::UnexpectedNotEOF),
         }
     }
@@ -949,14 +949,14 @@ fn num_lit_buf_char() {
     chars.dummy1();
     chars.dummy1();
     chars.move_next();
-    assert_eq!(chars.current_with_state(1), (1, EOF_CHAR, EOF_CHAR, EOF_CHAR));
+    assert_eq!(chars.current_with_state(1), (1, EOF, EOF, EOF));
     chars.move_next();
-    assert_eq!(chars.current_with_state(1), (1, EOF_CHAR, EOF_CHAR, EOF_CHAR));
+    assert_eq!(chars.current_with_state(1), (1, EOF, EOF, EOF));
     chars.move_next();
-    assert_eq!(chars.current_with_state(123), (123, EOF_CHAR, EOF_CHAR, EOF_CHAR));
+    assert_eq!(chars.current_with_state(123), (123, EOF, EOF, EOF));
     chars.move_next();
     chars.move_next();
-    assert_eq!(chars.current_with_state(1024), (1024, EOF_CHAR, EOF_CHAR, EOF_CHAR));
+    assert_eq!(chars.current_with_state(1024), (1024, EOF, EOF, EOF));
 }
 
 #[cfg(test)]
@@ -978,7 +978,7 @@ fn num_lit_f64_checked() {
 #[allow(unused_variables)]
 fn num_lit_feature() {
 
-    let strpos = make_span!(2, 4);
+    let strpos = Span::new(2, 4);
     let refposinfo = vec![(strpos, "")];
     let posinfo = vec![(strpos, String::new())];
 

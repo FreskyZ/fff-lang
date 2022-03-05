@@ -7,27 +7,26 @@
 //  - token_stream.rs
 // looks ugly, so rename it to token_buf
 use std::cell::Cell;
-use crate::source::{SourceCodeIter, Span, SymbolCollection};
+use crate::source::{SourceChars, FileSystem, Span};
 use crate::diagnostics::MessageCollection;
 
-pub struct ParseSession<'a, 'b> {
+pub struct ParseSession<'a> {
     pub messages: &'a mut MessageCollection,
-    pub symbols: &'b mut SymbolCollection,
 }
-impl<'a, 'b> ParseSession<'a, 'b> {
-    pub fn new(messages: &'a mut MessageCollection, symbols: &'b mut SymbolCollection) -> Self {
-        ParseSession { messages, symbols }
+impl<'a> ParseSession<'a> {
+    pub fn new(messages: &'a mut MessageCollection) -> Self {
+        ParseSession { messages }
     }
 }
 
-pub trait ILexer<'chs, TToken> {
+pub trait ILexer<'chs, F, TToken> {
     // 17/6/7: it used to be ILexer::new(chars, messages), but the messages is not used currently,
     // I think in some previous versions it has its usage, but I can't think up of one
     // It is removed now, if future needed, add messages back
     // 5 minutes later: the messages is usable! because every ILexer contains a BufLexer
     // BufLexer needs a messages to call 3 times of next in advance
     // 1 hour later: now BufLexer use its skips and dummys mechanism to not call next in new, then sess is not used again
-    fn new(source: SourceCodeIter<'chs>) -> Self;
+    fn new(source: SourceChars<'chs, F>) -> Self;
 
     // init
     //     fn next(&mut self, messages: &mut MessageCollection) -> Option<TToken>;
@@ -50,13 +49,14 @@ pub trait ILexer<'chs, TToken> {
 //        ...
 //    }
 // }
-pub struct BufLexer<TLexer, TToken> {
-    lexer: TLexer,
+pub struct BufLexer<TLexer, TToken, F> {
+    pub lexer: TLexer,
     skips: Cell<i32>,
     dummys: Cell<i32>,
     current: (TToken, Span),
     next: (TToken, Span),
     nextnext: (TToken, Span),
+    phantom: std::marker::PhantomData<F>,
 }
 // skips and dummys designment:
 //
@@ -88,19 +88,21 @@ pub struct BufLexer<TLexer, TToken> {
 //            next call n + 1,     0,      0,     id + 1,     id + 2,     id + 3
 // review 17-07-22T16:06+8: it's kind of hard to understand but it not so hard and is good enough
 #[allow(dead_code)] // prepare skip, dummy, current, current_p1, current_p2 maybe not called
-impl<'chs, TLexer, TToken> BufLexer<TLexer, TToken>
+impl<'chs, F, TLexer, TToken> BufLexer<TLexer, TToken, F>
 where
+    F: FileSystem,
     TToken: Default,
-    TLexer: ILexer<'chs, TToken>,
+    TLexer: ILexer<'chs, F, TToken>,
 {
-    pub fn new(source: SourceCodeIter<'chs>) -> BufLexer<TLexer, TToken> {
+    pub fn new(source: SourceChars<'chs, F>) -> BufLexer<TLexer, TToken, F> {
         BufLexer {
             lexer: TLexer::new(source),
-            current: (TToken::default(), Span::default()),
-            next: (TToken::default(), Span::default()),
-            nextnext: (TToken::default(), Span::default()),
+            current: (TToken::default(), Span::new(0, 0)),
+            next: (TToken::default(), Span::new(0, 0)),
+            nextnext: (TToken::default(), Span::new(0, 0)),
             skips: Cell::new(2),
             dummys: Cell::new(0),
+            phantom: std::marker::PhantomData,
         }
     }
 
@@ -176,40 +178,38 @@ where
 #[cfg(test)]
 #[test]
 fn buf_lexer_test() {
-    use crate::source::SourceCode;
-    use crate::source::SymbolCollection;
+    use crate::source::{VirtualFileSystem, make_source};
     use crate::diagnostics::MessageCollection;
 
     #[derive(Eq, PartialEq, Debug, Default)]
-    struct TestToken(usize);
-    struct TestLexer(usize);
-    impl<'chs> ILexer<'chs, TestToken> for TestLexer {
-        fn new(_: SourceCodeIter<'chs>) -> TestLexer {
+    struct TestToken(u32);
+    struct TestLexer(u32);
+    impl<'chs> ILexer<'chs, VirtualFileSystem, TestToken> for TestLexer {
+        fn new(_: SourceChars<'chs, VirtualFileSystem>) -> TestLexer {
             TestLexer(0)
         }
         fn next(&mut self, _: &mut ParseSession) -> (TestToken, Span) {
             self.0 += 1;
-            (TestToken(self.0), make_span!(self.0, self.0 + 1))
+            (TestToken(self.0), Span::new(self.0, self.0 + 1))
         }
     }
     macro_rules! make_test_token_p2 {
         ($c: expr) => {
             (
                 &TestToken($c),
-                make_span!($c, $c + 1),
+                Span::new($c, $c + 1),
                 &TestToken($c + 1),
-                make_span!($c + 1, $c + 2),
+                Span::new($c + 1, $c + 2),
                 &TestToken($c + 2),
-                make_span!($c + 2, $c + 3),
+                Span::new($c + 2, $c + 3),
             )
         };
     }
 
-    let codemap = SourceCode::with_test_str(0, "");
+    let mut scx = make_source!();
     let messages = &mut MessageCollection::new();
-    let symbols = &mut SymbolCollection::new();
-    let sess = &mut ParseSession::new(messages, symbols);
-    let mut buflexer = BufLexer::<TestLexer, TestToken>::new(codemap.iter());
+    let sess = &mut ParseSession::new(messages);
+    let mut buflexer = BufLexer::<TestLexer, TestToken, VirtualFileSystem>::new(scx.entry("1"));
     if sess.messages.is_uncontinuable() {
         panic!("messages unexpectedly uncontinuable")
     }

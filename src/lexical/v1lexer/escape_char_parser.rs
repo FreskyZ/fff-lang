@@ -3,7 +3,7 @@
 ///!
 ///! string and char literal's escape char parser
 
-use crate::source::CharPos;
+use crate::source::Position;
 use crate::diagnostics::{Message, MessageCollection};
 use super::error_strings;
 
@@ -80,7 +80,7 @@ impl EscapeCharParser {
 
     // pos for message: (escape_start_pos, current_pos)
     /// ATTENTION: if returned finished but continue input, may cause algorithm overflow panic
-    pub fn input(&mut self, ch: char, pos_for_message: (CharPos, CharPos), messages: &mut MessageCollection) -> EscapeCharParserResult {
+    pub fn input(&mut self, ch: char, pos_for_message: (Position, Position), messages: &mut MessageCollection) -> EscapeCharParserResult {
         
         self.buf.push(ch);   // because expect size check rely on buf length, so push regardless will happen
         if self.has_failed {
@@ -90,8 +90,8 @@ impl EscapeCharParser {
                 return EscapeCharParserResult::Failed;                                 // C2
             }
         }
-        let escape_start_span = pos_for_message.0.as_span();
-        let current_span = pos_for_message.1.as_span();
+        let escape_start_span = pos_for_message.0.into();
+        let current_span = pos_for_message.1.into();
 
         match ch.to_digit(16) {
             Some(digit) => {
@@ -102,7 +102,7 @@ impl EscapeCharParser {
                         Some(ch) => EscapeCharParserResult::Success(ch),               // C3
                         None => {
                             messages.push(Message::with_help(error_strings::InvalidUnicodeCharEscape.to_owned(), vec![
-                                (escape_start_span.merge(&current_span), error_strings::UnicodeCharEscapeHere.to_owned()),
+                                (escape_start_span + current_span, error_strings::UnicodeCharEscapeHere.to_owned()),
                             ], vec![
                                 format!("{}{}", error_strings::UnicodeCharEscapeCodePointValueIs, self.buf.clone()),
                                 error_strings::UnicodeCharEscapeHelpValue.to_owned(),
@@ -140,7 +140,7 @@ fn escape_char_parser() {
     {   // \u2764      => '\u{2764}' | '❤'                          C3, C5, 4
         let mut parser = EscapeCharParser::new(4);
         let messages = &mut MessageCollection::new();
-        let poss = (CharPos::default(), CharPos::default());
+        let poss = (Position::new(0), Position::new(0));
         assert_eq!(parser.input('2', poss, messages), WantMore);
         assert_eq!(parser.input('7', poss, messages), WantMore);
         assert_eq!(parser.input('6', poss, messages), WantMore);
@@ -150,7 +150,7 @@ fn escape_char_parser() {
     {   // \U00020E70 => 𠹰                                         C3, C5, 8
         let mut parser = EscapeCharParser::new(8);
         let messages = &mut MessageCollection::new();
-        let poss = (CharPos::default(), CharPos::default());
+        let poss = (Position::new(0), Position::new(0));
         assert_eq!(parser.input('0', poss, messages), WantMore);
         assert_eq!(parser.input('0', poss, messages), WantMore);
         assert_eq!(parser.input('0', poss, messages), WantMore);
@@ -164,7 +164,7 @@ fn escape_char_parser() {
     {   // \U0011ABCD => out of range                               C3, C4, C5
         let mut parser = EscapeCharParser::new(8);
         let messages = &mut MessageCollection::new();
-        let poss = (CharPos::default(), CharPos::default());
+        let poss = (Position::new(0), Position::new(0));
         assert_eq!(parser.input('0', poss, messages), WantMore);
         assert_eq!(parser.input('0', poss, messages), WantMore);
         assert_eq!(parser.input('1', poss, messages), WantMore);
@@ -172,11 +172,11 @@ fn escape_char_parser() {
         assert_eq!(parser.input('A', poss, messages), WantMore);
         assert_eq!(parser.input('B', poss, messages), WantMore);
         assert_eq!(parser.input('C', poss, messages), WantMore);
-        assert_eq!(parser.input('D', (make_charpos!(34), make_charpos!(56)), messages), Failed);
+        assert_eq!(parser.input('D', (Position::new(34), Position::new(56)), messages), Failed);
 
         assert_eq!(messages, &make_messages![
             Message::with_help(error_strings::InvalidUnicodeCharEscape.to_owned(), vec![
-                (make_span!(34, 56), error_strings::UnicodeCharEscapeHere.to_owned()),
+                (Span::new(34, 56), error_strings::UnicodeCharEscapeHere.to_owned()),
             ], vec![
                 format!("{}{}", error_strings::UnicodeCharEscapeCodePointValueIs, "0011ABCD".to_owned()),
                 error_strings::UnicodeCharEscapeHelpValue.to_owned(),
@@ -187,16 +187,16 @@ fn escape_char_parser() {
     {   // \uH123 => early error char                               C1, C2, C6
         let mut parser = EscapeCharParser::new(4);
         let messages = &mut MessageCollection::new();
-        let poss = (CharPos::default(), CharPos::default());
-        assert_eq!(parser.input('H', (make_charpos!(34), make_charpos!(78)), messages), WantMore);
+        let poss = (Position::new(0), Position::new(0));
+        assert_eq!(parser.input('H', (Position::new(34), Position::new(78)), messages), WantMore);
         assert_eq!(parser.input('1', poss, messages), WantMore);
         assert_eq!(parser.input('2', poss, messages), WantMore);
         assert_eq!(parser.input('3', poss, messages), Failed);
 
         assert_eq!(messages, &make_messages![
             Message::with_help_by_str(error_strings::InvalidUnicodeCharEscape, vec![
-                (make_span!(34, 34), error_strings::UnicodeCharEscapeStartHere),
-                (make_span!(78, 78), error_strings::UnicodeCharEscapeInvalidChar)
+                (Span::new(34, 34), error_strings::UnicodeCharEscapeStartHere),
+                (Span::new(78, 78), error_strings::UnicodeCharEscapeInvalidChar)
             ], vec![
                 error_strings::UnicodeCharEscapeHelpSyntax,
             ])
@@ -206,16 +206,16 @@ fn escape_char_parser() {
     {   // \u123g => last error char                                C3, C5, C7
         let mut parser = EscapeCharParser::new(4);
         let messages = &mut MessageCollection::new();
-        let poss = (CharPos::default(), CharPos::default());
+        let poss = (Position::new(0), Position::new(0));
         assert_eq!(parser.input('1', poss, messages), WantMore);
         assert_eq!(parser.input('2', poss, messages), WantMore);
         assert_eq!(parser.input('3', poss, messages), WantMore);
-        assert_eq!(parser.input('g', (make_charpos!(65), make_charpos!(21)), messages), Failed);
+        assert_eq!(parser.input('g', (Position::new(65), Position::new(21)), messages), Failed);
 
         assert_eq!(messages, &make_messages![
             Message::with_help_by_str(error_strings::InvalidUnicodeCharEscape, vec![
-                (make_span!(65, 65), error_strings::UnicodeCharEscapeStartHere),
-                (make_span!(21, 21), error_strings::UnicodeCharEscapeInvalidChar)
+                (Span::new(65, 65), error_strings::UnicodeCharEscapeStartHere),
+                (Span::new(21, 21), error_strings::UnicodeCharEscapeInvalidChar)
             ], vec![
                 error_strings::UnicodeCharEscapeHelpSyntax,
             ])

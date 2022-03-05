@@ -5,7 +5,7 @@
 mod num_lit_parser;
 mod unicode_char;
 mod error_strings;
-use crate::source::{Span, SymbolID, SourceCodeIter, EOF_CHAR};
+use crate::source::{Span, Sym, SourceChars, FileSystem, EOF};
 use crate::diagnostics::{Message, MessageCollection};
 use super::v1lexer::{V1Token, V1Lexer};
 use super::{ILexer, BufLexer, LitValue, Keyword, Seperator, ParseSession};
@@ -15,8 +15,8 @@ use num_lit_parser::parse_numeric_literal;
 pub enum V2Token {
     EOF,
     Literal(LitValue),
-    Identifier(SymbolID), // Anything of [_a-zA-Z][_a-zA-Z0-9]*
-    Label(SymbolID),      // Anything of @[_a-zA-Z0-9@]*
+    Identifier(Sym), // Anything of [_a-zA-Z][_a-zA-Z0-9]*
+    Label(Sym),      // Anything of @[_a-zA-Z0-9@]*
     Keyword(Keyword),
     Seperator(Seperator),
 }
@@ -88,12 +88,12 @@ impl IdentifierChar for char {
     }
 }
 
-pub struct V2Lexer<'chs> {
-    v1: BufLexer<V1Lexer<'chs>, V1Token>,
+pub struct V2Lexer<'chs, F> {
+    v1: BufLexer<V1Lexer<'chs, F>, V1Token, F>,
 }
-impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
+impl<'chs, F> ILexer<'chs, F, V2Token> for V2Lexer<'chs, F> where F: FileSystem {
 
-    fn new(source: SourceCodeIter<'chs>) -> V2Lexer<'chs> {
+    fn new(source: SourceChars<'chs, F>) -> V2Lexer<'chs, F> {
         V2Lexer { 
             v1: BufLexer::new(source),
         }
@@ -118,7 +118,7 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                     }
                     V2Token::Keyword(other_keyword)
                 }
-                None => V2Token::Identifier(sess.symbols.intern($ident_value)),
+                None => V2Token::Identifier(self.v1.lexer.v0.lexer.0.intern_string($ident_value)),
             }
         }) }
         macro_rules! num_lit_to_v2 { ($num_lit_value: expr, $num_lit_strpos: expr) => ({
@@ -171,7 +171,7 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                 }
                 (&V1Token::Other(ch), strpos, &V1Token::EOF, eof_strpos, _4, nextnext_strpos) => {
                     let ch = ch.pass_non_ascii_char(strpos, sess.messages);
-                    V15Token(ch, strpos, EOF_CHAR, eof_strpos, ' ', nextnext_strpos)
+                    V15Token(ch, strpos, EOF, eof_strpos, ' ', nextnext_strpos)
                 } 
                 (&V1Token::Other(ch), strpos, _2, next_strpos, _4, nextnext_strpos) => { 
                     let ch = ch.pass_non_ascii_char(strpos, sess.messages);
@@ -180,7 +180,7 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
             };
 
             match (state, v15) {
-                (State::Nothing, V15Token(ch, strpos, EOF_CHAR, _3, _4, _5)) => {
+                (State::Nothing, V15Token(ch, strpos, EOF, _3, _4, _5)) => {
                     if ch.is_identifier_start() {
                         let mut value = String::new();
                         value.push(ch);
@@ -190,7 +190,7 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                         value.push(ch);
                         return num_lit_to_v2!(value, strpos);
                     } else if ch.is_label_start() {
-                        return (V2Token::Label(sess.symbols.intern_str("")), strpos); // simple '@' is allowed, use @? to represent empty
+                        return (V2Token::Label(self.v1.lexer.v0.lexer.0.intern_str("")), strpos); // simple '@' is allowed, use @? to represent empty
                     } else {
                         match Seperator::parse1(ch) {
                             Some(seperator) => return (V2Token::Seperator(seperator), strpos),
@@ -212,7 +212,7 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                         state = State::InNumLit(value, strpos);
                     } else if ch.is_label_start() {
                         if !next_ch.is_label() {                // 17/5/8: TODO: same question as before, why this is needed
-                            return (V2Token::Label(sess.symbols.intern_str("")), strpos);
+                            return (V2Token::Label(self.v1.lexer.v0.lexer.0.intern_str("")), strpos);
                         }
                         state = State::InLabel(String::new(), strpos);
                     } else {
@@ -224,13 +224,13 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                             Some((seperator, 2)) => {
                                 trace!("ch is {:?} at {:?}, next_ch is {:?}, result is {:?}", ch, strpos, next_ch, seperator);
                                 self.v1.prepare_skip1();
-                                return (V2Token::Seperator(seperator), strpos.merge(&next_strpos));
+                                return (V2Token::Seperator(seperator), strpos + next_strpos);
                             }
                             Some((seperator, 3)) => {
                                 trace!("ch is {:?} at {:?}, next_ch is {:?}, nextnext_ch is {:?}, result is {:?}", ch, strpos, next_ch, nextnext_ch, seperator);
                                 self.v1.prepare_skip1();
                                 self.v1.prepare_skip1();
-                                return (V2Token::Seperator(seperator), strpos.merge(&nextnext_strpos));
+                                return (V2Token::Seperator(seperator), strpos + nextnext_strpos);
                             }
                             _ => state = State::Nothing,
                         }
@@ -241,24 +241,24 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                         return (ident_to_v2!(value, ident_strpos), ident_strpos);
                     } else if !next_ch.is_identifier() {
                         value.push(ch); 
-                        ident_strpos = ident_strpos.merge(&strpos);
+                        ident_strpos = ident_strpos + strpos;
                         return (ident_to_v2!(value, ident_strpos), ident_strpos);
                     } else {
                         value.push(ch);
-                        ident_strpos = ident_strpos.merge(&strpos);
+                        ident_strpos = ident_strpos + strpos;
                         state = State::InIdent(value, ident_strpos);
                     }
                 }
                 (State::InLabel(mut value, mut label_strpos), V15Token(ch, strpos, next_ch, _4, _5, _6)) => {
                     if !ch.is_label() {
-                        return (V2Token::Label(sess.symbols.intern(value)), label_strpos);
+                        return (V2Token::Label(self.v1.lexer.v0.lexer.0.intern_string(value)), label_strpos);
                     } else if !next_ch.is_label() {
                         value.push(ch);
-                        label_strpos = label_strpos.merge(&strpos);
-                        return (V2Token::Label(sess.symbols.intern(value)), label_strpos);
+                        label_strpos = label_strpos + strpos;
+                        return (V2Token::Label(self.v1.lexer.v0.lexer.0.intern_string(value)), label_strpos);
                     } else {
                         value.push(ch);
-                        label_strpos = label_strpos.merge(&strpos);
+                        label_strpos = label_strpos + strpos;
                         state = State::InLabel(value, label_strpos);
                     }
                 }
@@ -271,11 +271,11 @@ impl<'chs> ILexer<'chs, V2Token> for V2Lexer<'chs> {
                         return num_lit_to_v2!(value, num_lit_strpos);
                     } else if !next_ch.is_numeric_literal() {
                         value.push(ch);
-                        num_lit_strpos = num_lit_strpos.merge(&strpos);
+                        num_lit_strpos = num_lit_strpos + strpos;
                         return num_lit_to_v2!(value, num_lit_strpos);
                     } else {
                         value.push(ch);
-                        num_lit_strpos = num_lit_strpos.merge(&strpos);
+                        num_lit_strpos = num_lit_strpos + strpos;
                         state = State::InNumLit(value, num_lit_strpos);
                     }
                 }
@@ -333,7 +333,7 @@ fn v2_non_ascii_ch() {
     
     {
         let messages = &mut MessageCollection::new();
-        assert_eq!('.'.pass_non_ascii_char(make_span!(4, 6), messages), '.');
+        assert_eq!('.'.pass_non_ascii_char(Span::new(4, 6), messages), '.');
 
         let expect_messages = &mut MessageCollection::new();
         assert_eq!(messages, expect_messages);
@@ -341,7 +341,7 @@ fn v2_non_ascii_ch() {
     
     {
         let messages = &mut MessageCollection::new();
-        assert_eq!('\\'.pass_non_ascii_char(make_span!(4, 6), messages), '\\');
+        assert_eq!('\\'.pass_non_ascii_char(Span::new(4, 6), messages), '\\');
 
         let expect_messages = &mut MessageCollection::new();
         assert_eq!(messages, expect_messages);
@@ -349,7 +349,7 @@ fn v2_non_ascii_ch() {
     
     {
         let messages = &mut MessageCollection::new();
-        assert_eq!(';'.pass_non_ascii_char(make_span!(4, 6), messages), ';');
+        assert_eq!(';'.pass_non_ascii_char(Span::new(4, 6), messages), ';');
 
         let expect_messages = &mut MessageCollection::new();
         assert_eq!(messages, expect_messages);
@@ -357,11 +357,11 @@ fn v2_non_ascii_ch() {
 
     {
         let messages = &mut MessageCollection::new();
-        assert_eq!('。'.pass_non_ascii_char(make_span!(4, 6), messages), '.');
+        assert_eq!('。'.pass_non_ascii_char(Span::new(4, 6), messages), '.');
 
         let expect_messages = &mut MessageCollection::new();
         expect_messages.push(Message::with_help_by_str(error_strings::UnexpectedNonASCIIChar, vec![
-            (make_span!(4, 6), ""), 
+            (Span::new(4, 6), ""), 
         ], vec![
             &format!("Did you mean `{}`({}) by `{}`({})?", '.', "Period", '。', "Ideographic Full Stop"),
         ]));
@@ -370,11 +370,11 @@ fn v2_non_ascii_ch() {
 
     {
         let messages = &mut MessageCollection::new();
-        assert_eq!('⧹'.pass_non_ascii_char(make_span!(4, 6), messages), '\\');
+        assert_eq!('⧹'.pass_non_ascii_char(Span::new(4, 6), messages), '\\');
 
         let expect_messages = &mut MessageCollection::new();
         expect_messages.push(Message::with_help_by_str(error_strings::UnexpectedNonASCIIChar, vec![
-            (make_span!(4, 6), ""), 
+            (Span::new(4, 6), ""), 
         ], vec![
             &format!("Did you mean `{}`({}) by `{}`({})?", '\\', "Backslash", '⧹', "Big Reverse Solidus"),
         ]));
@@ -383,11 +383,11 @@ fn v2_non_ascii_ch() {
 
     {
         let messages = &mut MessageCollection::new();
-        assert_eq!('；'.pass_non_ascii_char(make_span!(4, 6), messages), ';');
+        assert_eq!('；'.pass_non_ascii_char(Span::new(4, 6), messages), ';');
 
         let expect_messages = &mut MessageCollection::new();
         expect_messages.push(Message::with_help_by_str(error_strings::UnexpectedNonASCIIChar, vec![
-            (make_span!(4, 6), ""), 
+            (Span::new(4, 6), ""), 
         ], vec![
             &format!("Did you mean `{}`({}) by `{}`({})?", ';', "Semicolon", '；', "Fullwidth Semicolon"),
         ]));
@@ -399,8 +399,7 @@ fn v2_non_ascii_ch() {
 #[test]
 fn v2_base() {
     use std::fmt;
-    use crate::source::SourceCode;
-    use crate::source::SymbolCollection;
+    use crate::source::{SourceContext, VirtualFileSystem, make_source};
     
     // Only to make decltype(V2Lexer as BufLexer::next(...)) to display better
     #[derive(Eq, PartialEq)]
@@ -412,13 +411,15 @@ fn v2_base() {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n({:?}, {:?})", self.0, self.1) }
     }
     
-    fn test_case_full(src: &str, symbols: SymbolCollection, expect_tokens: Vec<(V2Token, Span)>, expect_messages: MessageCollection, line: u32) {
+    fn test_case_full(mut scx: SourceContext<VirtualFileSystem>, symbols: &[&'static str], expect_tokens: Vec<(V2Token, Span)>, expect_messages: MessageCollection, line: u32) {
         println!("Case at {}", line);
         let mut actual_messages = MessageCollection::new();
-        let mut symbols = symbols;
-        let mut sess = ParseSession::new(&mut actual_messages, &mut symbols);
-        let source = SourceCode::with_test_str(0, src);
-        let mut v2lexer = V2Lexer::new(source.iter());
+        let mut sess = ParseSession::new(&mut actual_messages);
+        let mut chars = scx.entry("1");
+        for symbol in symbols {
+            chars.intern_str(*symbol);
+        }
+        let mut v2lexer = V2Lexer::new(chars);
         for expect_token in expect_tokens {
             assert_eq!(v2lexer.next(&mut sess), expect_token);
         }
@@ -429,61 +430,61 @@ fn v2_base() {
     }
 
     macro_rules! test_case {
-        ($src: expr, $symbols: expr, $expect_tokens: expr) => 
-            (test_case_full($src, $symbols, $expect_tokens, MessageCollection::new(), line!()));
-        ($src: expr, $symbols: expr, $expect_tokens: expr, $expect_messages: expr) => 
-            (test_case_full($src, SymbolCollection::new(), $expect_tokens, $expect_messages, line!()));
+        ($src:literal, [$($symbol:literal),*] expect $expect_tokens: expr) =>
+            (test_case_full(make_source!($src), &[$($symbol),*], $expect_tokens, MessageCollection::new(), line!()));
+        ($src:literal, [$($symbol:literal),*] expect $expect_tokens: expr, $expect_messages: expr) => 
+            (test_case_full(make_source!($src), &[$($symbol),*], $expect_tokens, $expect_messages, line!()));
     }
 
     macro_rules! lit {
-        ($val: expr, $start_id: expr, $end_id: expr) => ((V2Token::Literal(From::from($val)), make_span!($start_id, $end_id)))
+        ($val: expr, $start_id: expr, $end_id: expr) => ((V2Token::Literal(From::from($val)), Span::new($start_id, $end_id)))
     }
     macro_rules! lit_num_none {
-        ($start_id: expr, $end_id: expr) => ((V2Token::Literal(LitValue::Num(None)), make_span!($start_id, $end_id)))
+        ($start_id: expr, $end_id: expr) => ((V2Token::Literal(LitValue::Num(None)), Span::new($start_id, $end_id)))
     }
     macro_rules! label {
-        ($val: expr, $start_id: expr, $end_id: expr) => ((V2Token::Label($val), make_span!($start_id, $end_id)))
+        ($val: expr, $start_id: expr, $end_id: expr) => ((V2Token::Label($val), Span::new($start_id, $end_id)))
     }
     macro_rules! kw {
-        ($val: expr, $start_id: expr, $end_id: expr) => ((V2Token::Keyword($val), make_span!($start_id, $end_id)))
+        ($val: expr, $start_id: expr, $end_id: expr) => ((V2Token::Keyword($val), Span::new($start_id, $end_id)))
     }
     macro_rules! ident {
-        ($name: expr, $start_id: expr, $end_id: expr) => ((V2Token::Identifier($name), make_span!($start_id, $end_id)))
+        ($name: expr, $start_id: expr, $end_id: expr) => ((V2Token::Identifier($name), Span::new($start_id, $end_id)))
     }
     macro_rules! sep {
-        ($sep: expr, $start_id: expr, $end_id: expr) => ((V2Token::Seperator($sep), make_span!($start_id, $end_id)))
+        ($sep: expr, $start_id: expr, $end_id: expr) => ((V2Token::Seperator($sep), Span::new($start_id, $end_id)))
     }
 
 
     // keyword, identifier, bool lit, num lit, seperator
     // byte      0         1          2         3   
     // byte      01234567890123 456789012345678901234 5678
-    test_case!{ "var a = true;\nvar b = 789_123.456;\ndefg", make_symbols!["a", "b", "defg"], vec![      
+    test_case!{ "var a = true;\nvar b = 789_123.456;\ndefg", ["a", "b", "defg"] expect vec![      
         kw!(Keyword::Var, 0, 2),
-        ident!(make_id!(1), 4, 4),
+        ident!(Sym::new(1), 4, 4),
         sep!(Seperator::Assign, 6, 6),
         lit!(true, 8, 11),
         sep!(Seperator::SemiColon, 12, 12),
         kw!(Keyword::Var, 14, 16),
-        ident!(make_id!(2), 18, 18),
+        ident!(Sym::new(2), 18, 18),
         sep!(Seperator::Assign, 20, 20),
         lit!(789123.4560000001f64, 22, 32),
         sep!(Seperator::SemiColon, 33, 33),
-        ident!(make_id!(3), 35, 38),
+        ident!(Sym::new(3), 35, 38),
     ]}
 
     //           0       1      2       3
     //           0 3 67890123 690123 4 9012
-    test_case!{ "一个chinese变量, a_中文_var", make_symbols!["一个chinese变量", "a_中文_var"], vec![  // chinese ident
-        ident!(make_id!(1), 0, 16),
+    test_case!{ "一个chinese变量, a_中文_var", ["一个chinese变量", "a_中文_var"] expect vec![  // chinese ident
+        ident!(Sym::new(1), 0, 16),
         sep!(Seperator::Comma, 19, 19),
-        ident!(make_id!(2), 21, 32),
+        ident!(Sym::new(2), 21, 32),
     ]}
 
     // different postfix\types of num lit, different types of sep
     //           0         1         2         3         4         5         6         7
     //           0123456789012345678901234567890123456789012345678901234567890123456789012345
-    test_case!{ "[1, 123 _ 1u64( 123.456,) -123_456{123u32}123r32 += 123.0 / 123u8 && 1024u8]", make_symbols![], vec![  
+    test_case!{ "[1, 123 _ 1u64( 123.456,) -123_456{123u32}123r32 += 123.0 / 123u8 && 1024u8]", [] expect vec![  
         sep!(Seperator::LeftBracket, 0, 0),
         lit!(1i32, 1, 1),
         sep!(Seperator::Comma, 2, 2),
@@ -510,7 +511,7 @@ fn v2_base() {
     ], make_messages![
         Message::with_help(
             format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::IntegralOverflow),
-            vec![(make_span!(69, 74), String::new())],
+            vec![(Span::new(69, 74), String::new())],
             vec![error_strings::IntegralOverflowHelpMaxValue[1].to_owned()]
         ),
     ]}
@@ -518,7 +519,7 @@ fn v2_base() {
     // differnt prefix\base of num lit
     //           0         1         2         3         4         5         6         7         8
     //           0123456789012345678901234567890123456789012345678901234567890123456789012345678901234
-    test_case!{ "[123 * 0x123 - 0xAFF & 0o777 || 0oXXX != 0b101010 == 0b123456 -> 0d123.. 0dABC] .. -=", make_symbols![], vec![
+    test_case!{ "[123 * 0x123 - 0xAFF & 0o777 || 0oXXX != 0b101010 == 0b123456 -> 0d123.. 0dABC] .. -=", [] expect vec![
         sep!(Seperator::LeftBracket, 0, 0),
         lit!(123i32, 1, 3),
         sep!(Seperator::Mul, 5, 5),
@@ -543,24 +544,24 @@ fn v2_base() {
     ], make_messages![
         Message::with_help(
             format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::InvalidCharInIntLiteral),
-            vec![(make_span!(32, 36), String::new())],
+            vec![(Span::new(32, 36), String::new())],
             vec![error_strings::IntLiteralAllowedChars[1].to_owned()]
         ),
         Message::with_help(
             format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::InvalidCharInIntLiteral),
-            vec![(make_span!(53, 60), String::new())],
+            vec![(Span::new(53, 60), String::new())],
             vec![error_strings::IntLiteralAllowedChars[0].to_owned()]
         ),
         Message::with_help(
             format!("{}, {}", error_strings::InvalidNumericLiteral, error_strings::InvalidCharInIntLiteral),
-            vec![(make_span!(73, 77), String::new())],
+            vec![(Span::new(73, 77), String::new())],
             vec![error_strings::IntLiteralAllowedChars[2].to_owned()]
         ),
     ]}
 
     //           0       1        2
     //           012345 8901234578 123
-    test_case!{ "[1, 2，3.5, 4。5】<<=", make_symbols![], vec![  // not ascii char hint and recover
+    test_case!{ "[1, 2，3.5, 4。5】<<=", [] expect vec![  // not ascii char hint and recover
         sep!(Seperator::LeftBracket, 0, 0),
         lit!(1i32, 1, 1),
         sep!(Seperator::Comma, 2, 2),
@@ -573,31 +574,31 @@ fn v2_base() {
         sep!(Seperator::ShiftLeftAssign, 21, 23),
     ], make_messages![
         Message::with_help_by_str(error_strings::UnexpectedNonASCIIChar, vec![
-            (make_span!(5, 5), ""), 
+            (Span::new(5, 5), ""), 
         ], vec![
             &format!("Did you mean `{}`({}) by `{}`({})?", ',', "Comma", '，', "Fullwidth Comma"),
         ]),
         Message::with_help_by_str(error_strings::UnexpectedNonASCIIChar, vec![
-            (make_span!(14, 14), ""), 
+            (Span::new(14, 14), ""), 
         ], vec![
             &format!("Did you mean `{}`({}) by `{}`({})?", '.', "Period", '。', "Ideographic Full Stop"),
         ]),
         Message::with_help_by_str(error_strings::UnexpectedNonASCIIChar, vec![
-            (make_span!(18, 18), ""), 
+            (Span::new(18, 18), ""), 
         ], vec![
             &format!("Did you mean `{}`({}) by `{}`({})?", ']', "Right Square Bracket", '】', "Right Black Lenticular Bracket"),
         ]),
     ]}
 
     //           012345678
-    test_case!{ "1..2.0r32", make_symbols![], vec![  // range operator special case
+    test_case!{ "1..2.0r32", [] expect vec![  // range operator special case
         lit!(1i32, 0, 0),
         sep!(Seperator::Range, 1, 2),
         lit!(2f32, 3, 8),
     ]}
 
     //           01234
-    test_case!{ "2...3", make_symbols![], vec![  // range operator special case 2
+    test_case!{ "2...3", [] expect vec![  // range operator special case 2
         lit!(2i32, 0, 0),
         sep!(Seperator::Range, 1, 2),
         sep!(Seperator::Dot, 3, 3),
@@ -606,36 +607,36 @@ fn v2_base() {
 
     //           0         1         2         
     //           012345678901234567890123456789
-    test_case!{ "1.is_odd(), 123r64.to_string()", make_symbols!["is_odd", "to_string"], vec![  //  another special case
+    test_case!{ "1.is_odd(), 123r64.to_string()", ["is_odd", "to_string"] expect vec![  //  another special case
         lit!(1i32, 0, 0),
         sep!(Seperator::Dot, 1, 1),
-        ident!(make_id!(1), 2, 7),
+        ident!(Sym::new(1), 2, 7),
         sep!(Seperator::LeftParenthenes, 8, 8),
         sep!(Seperator::RightParenthenes, 9, 9),
         sep!(Seperator::Comma, 10, 10),
         lit!(123f64, 12, 17),
         sep!(Seperator::Dot, 18, 18),
-        ident!(make_id!(2), 19, 27),
+        ident!(Sym::new(2), 19, 27),
         sep!(Seperator::LeftParenthenes, 28, 28),
         sep!(Seperator::RightParenthenes, 29, 29),
     ]}
 
     //           0           1          2
     //           01 234567 890 1234567890123456
-    test_case!{ "r\"hello\" '\\u1234' 12/**/34 ", make_symbols!["hello"], vec![    // dispatch v1
-        (V2Token::Literal(make_lit!(str, 1)), make_span!(0, 7)), // because `lit!(make_id!(1), 0, 7)` is ambiguous
+    test_case!{ "r\"hello\" '\\u1234' 12/**/34 ", ["hello"] expect vec![    // dispatch v1
+        (V2Token::Literal(make_lit!(str, 1)), Span::new(0, 7)), // because `lit!(Sym::new(1), 0, 7)` is ambiguous
         lit!('\u{1234}', 9, 16),
-        lit!(12, 18, 19),
-        lit!(34, 24, 25),
+        lit!(12i32, 18, 19),
+        lit!(34i32, 24, 25),
     ]}
 
     // bug from syntax::expr::postfix_expr
     //           0         1         2         3         4         5
     //           012345678901234567890123456789012345678901234567890123
-    test_case!{ "1.a[[3](4, [5, 6], )](7, 8)() def[i32].bcd[10, 11, 12]", make_symbols!["a", "bcd"], vec![
+    test_case!{ "1.a[[3](4, [5, 6], )](7, 8)() def[i32].bcd[10, 11, 12]", ["a", "bcd"] expect vec![
         lit!(1i32, 0, 0),
         sep!(Seperator::Dot, 1, 1),
-        ident!(make_id!(1), 2, 2),
+        ident!(Sym::new(1), 2, 2),
         sep!(Seperator::LeftBracket, 3, 3),
         sep!(Seperator::LeftBracket, 4, 4),
         lit!(3i32, 5, 5),
@@ -663,7 +664,7 @@ fn v2_base() {
         kw!(Keyword::I32, 34, 36),
         sep!(Seperator::RightBracket, 37, 37),
         sep!(Seperator::Dot, 38, 38),
-        ident!(make_id!(2), 39, 41),
+        ident!(Sym::new(2), 39, 41),
         sep!(Seperator::LeftBracket, 42, 42),
         lit!(10i32, 43, 44),
         sep!(Seperator::Comma, 45, 45),
@@ -672,28 +673,28 @@ fn v2_base() {
         lit!(12i32, 51, 52),
         sep!(Seperator::RightBracket, 53, 53),
     ], make_messages![
-        Message::new(format!("{}: {:?}", error_strings::UseReservedKeyword, Keyword::Def), vec![(make_span!(30, 32), String::new())]),
+        Message::new(format!("{}: {:?}", error_strings::UseReservedKeyword, Keyword::Def), vec![(Span::new(30, 32), String::new())]),
     ]}
 
     //           0         1     
     //           0123456789012345678
-    test_case!{ "abc @abc @ @@ 1 @a", make_symbols!["abc", "", "@", "a"], vec![
-        ident!(make_id!(1), 0, 2),  // yeah
-        label!(make_id!(1), 4, 7),  // yeah
-        label!(make_id!(2), 9, 9),
-        label!(make_id!(3), 11, 12),
+    test_case!{ "abc @abc @ @@ 1 @a", ["abc", "", "@", "a"] expect vec![
+        ident!(Sym::new(1), 0, 2),  // yeah
+        label!(Sym::new(1), 4, 7),  // yeah
+        label!(Sym::new(2), 9, 9),
+        label!(Sym::new(3), 11, 12),
         lit!(1i32, 14, 14),
-        label!(make_id!(4), 16, 17),
+        label!(Sym::new(4), 16, 17),
     ]}
 
-    test_case!{ "@", make_symbols![""], vec![label!(make_id!(1), 0, 0)] }
+    test_case!{ "@", [""] expect vec![label!(Sym::new(1), 0, 0)] }
 
-    test_case!{ "a:", make_symbols!["a"], vec![
-        ident!(make_id!(1), 0, 0),
+    test_case!{ "a:", ["a"] expect vec![
+        ident!(Sym::new(1), 0, 0),
         sep!(Seperator::Colon, 1, 1),
     ]}
-    test_case!{ "@: {}", make_symbols![""], vec![
-        label!(make_id!(1), 0, 0),
+    test_case!{ "@: {}", [""] expect vec![
+        label!(Sym::new(1), 0, 0),
         sep!(Seperator::Colon, 1, 1),
         sep!(Seperator::LeftBrace, 3, 3),
         sep!(Seperator::RightBrace, 4, 4),

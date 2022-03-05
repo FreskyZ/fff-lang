@@ -1,7 +1,8 @@
 #![allow(dead_code)] // 2022: there is really many many dead code, although some is true dead code, most is reserved and even must be used later
 
 use crate::source::SourceContext;
-// use crate::diagnostics::MessageCollection;
+use crate::diagnostics::MessageCollection;
+use crate::lexical::{TokenStream, Token};
 // use crate::syntax::SyntaxTree;
 // use semantic::Package;
 // use vm::VirtualMachine;
@@ -9,10 +10,17 @@ use crate::source::SourceContext;
 pub fn main() {
 
     let mut scx: SourceContext = SourceContext::new();
-    scx.entry("tests/syntax/inter/gcd_src.ff").finish();
-    println!("{:?}", scx);
 
-    // let mut messages = MessageCollection::new();
+    let mut messages = MessageCollection::new();
+    let tokens = TokenStream::new(scx.entry("tests/syntax/inter/gcd_src.ff"), &mut messages);
+    for i in 0.. {
+        if let Token::EOF = tokens.nth_token(i) {
+            break;
+        } else {
+            println!("{:?} @ {:?}", tokens.nth_token(i), scx.map_span_to_line_column(tokens.nth_span(i)));
+        }
+    }
+
     // let syntax_tree = SyntaxTree::new(&mut sources, &mut messages, &mut symbols).map_err(|_| format!("{:?}", messages));
     // println!("{:?}", syntax_tree);
 

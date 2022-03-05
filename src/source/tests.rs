@@ -1,30 +1,28 @@
 use super::*;
 
-// only export this macro, not others
-mod macros {
-    #![macro_use]
-
-    macro_rules! make_source {
-        () => {
-            make_source!("" as "1")
-        };
-        ($content:literal) => {
-            make_source!($content as "1")
-        };
-        ($($content:literal as $name:literal),+$(,)?) => {{
-            let vfs = [$((PathBuf::from($name), String::from($content)),)*];
-            crate::source::SourceContext::new_file_system(
-                crate::source::VirtualFileSystem{ cwd: std::env::current_dir().unwrap(), files: vfs.into_iter().collect() })
-        }};
-        ($($content:literal as $name:literal,)+ $scx:ident in $init:block) => {{
-            let vfs = [$((PathBuf::from($name), String::from($content)),)*];
-            let mut $scx = crate::source::SourceContext::new_file_system(
-                crate::source::VirtualFileSystem{ cwd: std::env::current_dir().unwrap(), files: vfs.into_iter().collect() });
-            $init
-            $scx
-        }};
-    }
+macro_rules! make_source {
+    () => {
+        make_source!("" as "1")
+    };
+    ($content:literal) => {
+        make_source!($content as "1")
+    };
+    ($($content:literal as $name:literal),+$(,)?) => {{
+        let vfs = [$((std::path::PathBuf::from($name), String::from($content)),)*];
+        crate::source::SourceContext::new_file_system(
+            crate::source::VirtualFileSystem{ cwd: std::env::current_dir().unwrap(), files: vfs.into_iter().collect() })
+    }};
+    ($($content:literal as $name:literal,)+ $scx:ident in $init:block) => {{
+        let vfs = [$((std::path::PathBuf::from($name), String::from($content)),)*];
+        let mut $scx = crate::source::SourceContext::new_file_system(
+            crate::source::VirtualFileSystem{ cwd: std::env::current_dir().unwrap(), files: vfs.into_iter().collect() });
+        $init
+        $scx
+    }};
 }
+
+// // now it should be exported like this
+pub(crate) use make_source;
 
 #[test]
 fn intern_values() {

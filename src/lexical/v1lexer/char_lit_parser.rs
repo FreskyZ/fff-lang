@@ -3,7 +3,7 @@
 ///! Character literal parser
 
 use std::cell::Cell;
-use crate::source::{CharPos, Span, EOF_CHAR};
+use crate::source::{Position, Span, EOF};
 use crate::diagnostics::{Message, MessageCollection};
 use super::error_strings;
 use super::escape_char_parser::{EscapeCharParser, EscapeCharSimpleCheckResult, EscapeCharParserResult};
@@ -39,25 +39,25 @@ pub struct CharLiteralParser {
     has_failed: bool,
     prepare_to_too_long: bool,
     escape_parser: Option<EscapeCharParser>,
-    escape_start_pos: CharPos,
+    escape_start_pos: Position,
     coverage_recorder: CoverageRecorder,
 }
 impl CharLiteralParser {
 
-    pub fn new(start_pos: CharPos) -> CharLiteralParser {
+    pub fn new(start_pos: Position) -> CharLiteralParser {
         CharLiteralParser{ 
-            current_span: start_pos.as_span(),
+            current_span: start_pos.into(),
             state: Cell::new(ParserState::ExpectFirst),
             has_failed: false,
             prepare_to_too_long: false,
             escape_parser: None, 
-            escape_start_pos: CharPos::default(),
+            escape_start_pos: Position::new(0),
             coverage_recorder: CoverageRecorder::new(),
         }
     }
 
     //            self, current char, current char pos, next char preview
-    pub fn input(&mut self, ch: char, pos: CharPos, next_ch: char, messages: &mut MessageCollection) -> CharLiteralParserResult {
+    pub fn input(&mut self, ch: char, pos: Position, next_ch: char, messages: &mut MessageCollection) -> CharLiteralParserResult {
         #[cfg(feature = "trace_char_lit_parse")]
         macro_rules! trace { ($($arg:tt)*) => ({ print!("[CharLitParser: {}] ", line!()); println!($($arg)*); }) }
         #[cfg(not(feature = "trace_char_lit_parse"))]
@@ -70,18 +70,18 @@ impl CharLiteralParser {
                 let mut need_set_parser = false;
                 let mut need_set_parser_value = None;
                 match (&mut self.escape_parser, ch, pos, next_ch) {
-                    (&mut Some(_), EOF_CHAR, _2, _3) => {  // another 'u123$
+                    (&mut Some(_), EOF, _2, _3) => {  // another 'u123$
                         trace!("expecting first but ch = EOF, current_span = {:?}", self.current_span);
                         self.coverage_recorder.insert(4);                        // C4, first char is EOF
                         messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
                             (self.current_span, error_strings::CharLiteralHere),
-                            (pos.as_span(), error_strings::EOFHere)
+                            (pos.into(), error_strings::EOFHere)
                         ]));
                         return CharLiteralParserResult::Finished(None, self.current_span);
                     }
                     (&mut Some(ref mut parser), ch, _2, _3) => {
                         trace!("expecting first, ch = {:?}", ch);
-                        self.current_span = self.current_span.merge(&pos.as_span());
+                        self.current_span += pos;
                         if ch == '\'' { // '\'' should report unexpected EOL
                             self.coverage_recorder.insert(18);
                             messages.push(Message::with_help_by_str(error_strings::UnexpectedCharLiteralEnd, vec![
@@ -116,7 +116,7 @@ impl CharLiteralParser {
                     }
                     (&mut None, '\'', _2, _3) => { 
                         self.coverage_recorder.insert(5);                        // C5, empty
-                        let all_span = self.current_span.merge(&pos.as_span());
+                        let all_span = self.current_span + pos;
                         messages.push(Message::with_help_by_str(error_strings::EmptyCharLiteral, vec![
                             (all_span, error_strings::CharLiteralHere),
                         ], vec![
@@ -124,27 +124,26 @@ impl CharLiteralParser {
                         ]));
                         return CharLiteralParserResult::Finished(None, all_span);
                     }
-                    (&mut None, EOF_CHAR, _2, _3) => {
+                    (&mut None, EOF, _2, _3) => {
                         self.coverage_recorder.insert(6);                        // C6, '$, report EOF in char literal
                         messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
                             (self.current_span, error_strings::CharLiteralHere),
-                            (pos.as_span(), error_strings::EOFHere)
+                            (pos.into(), error_strings::EOFHere)
                         ]));
                         return CharLiteralParserResult::Finished(None, self.current_span);
                     }
-                    (&mut None, '\\', pos, EOF_CHAR) => { 
+                    (&mut None, '\\', pos, EOF) => { 
                         self.coverage_recorder.insert(10);               // C10, '\$
-                        let all_span = self.current_span.merge(&pos.as_span());
+                        let all_span = self.current_span + pos;
                         let eof_pos = pos.offset(1); // in this case, `\` is always 1 byte wide
                         messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
                             (all_span, error_strings::CharLiteralHere),
-                            (eof_pos.as_span(), error_strings::EOFHere)
+                            (eof_pos.into(), error_strings::EOFHere)
                         ]));
                         return CharLiteralParserResult::Finished(None, all_span);
                     }
                     (&mut None, '\\', slash_pos, next_ch) => {   // if is escape, try escape
-                        self.current_span = self.current_span.merge(
-                            &Span::new(self.current_span.get_file_id(), slash_pos.get_char_id() + 1, slash_pos.get_char_id() + 1)); // `\`
+                        self.current_span += slash_pos; // `\`
                         match EscapeCharParser::simple_check(next_ch) {
                             EscapeCharSimpleCheckResult::Normal(ch) => {
                                 self.state.set(ParserState::ExpectEnd(Some(ch)));
@@ -153,11 +152,11 @@ impl CharLiteralParser {
                             }
                             EscapeCharSimpleCheckResult::Invalid(ch) => {
                                 messages.push(Message::new(format!("{} '\\{}'", error_strings::UnknownCharEscape, ch), vec![
-                                    (self.current_span.get_start_pos().as_span(), error_strings::CharLiteralStartHere.to_owned()),
-                                    (slash_pos.as_span(), error_strings::UnknownCharEscapeHere.to_owned()),
+                                    (self.current_span.start.into(), error_strings::CharLiteralStartHere.to_owned()),
+                                    (slash_pos.into(), error_strings::UnknownCharEscapeHere.to_owned()),
                                 ]));
                                 self.state.set(ParserState::ExpectEnd(None));
-                                self.current_span = self.current_span.merge(&pos.as_span());
+                                self.current_span += pos;
                                 self.has_failed = true;
                                 self.coverage_recorder.insert(8);        // C8, invalid simple escape
                                 return CharLiteralParserResult::WantMoreWithSkip1;
@@ -173,7 +172,7 @@ impl CharLiteralParser {
                     (&mut None, ch, pos, _3) => {
                         trace!("experienced normal char, expecting end");
                         self.state.set(ParserState::ExpectEnd(Some(ch)));
-                        self.current_span = self.current_span.merge(&pos.as_span());
+                        self.current_span += pos;
                         self.coverage_recorder.insert(11);               // C11, most normal a char
                         return CharLiteralParserResult::WantMore;
                     }
@@ -192,18 +191,18 @@ impl CharLiteralParser {
             ParserState::ExpectEnd(maybe_result) => {  // Already processed first char
                 // No possibility for a unicode parser here, just wait for a ', if not, report too long
                 match ch {
-                    EOF_CHAR => {
+                    EOF => {
                         trace!("meet EOF when expecting end, current_span = {:?}", self.current_span);
                         messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
                             (self.current_span, error_strings::CharLiteralHere),
-                            (pos.as_span(), error_strings::EOFHere)
+                            (pos.into(), error_strings::EOFHere)
                         ]));
                         self.coverage_recorder.insert(14);                               // C14, 'ABCD$
                         return CharLiteralParserResult::Finished(None, self.current_span);
                     }
                     '\'' => { // Normally successed
                         self.coverage_recorder.insert(15);                           // C15, most normal finish
-                        let all_span = self.current_span.merge(&pos.as_span());
+                        let all_span = self.current_span + pos;
                         if self.prepare_to_too_long {
                             
                             self.coverage_recorder.insert(19);                       // C19, actual report too long
@@ -223,7 +222,7 @@ impl CharLiteralParser {
                             self.prepare_to_too_long = true;
                             self.has_failed = true;     // if too longed, devalidate the buffer
                         }
-                        self.current_span = self.current_span.merge(&pos.as_span());
+                        self.current_span += pos;
                         self.coverage_recorder.insert(17);                           // C17, too long and return
                         return CharLiteralParserResult::WantMore;
                     }
@@ -240,11 +239,11 @@ fn char_lit_parser() {
     use self::CharLiteralParserResult::*;
     // TODO: any failure about position according to v1_base
 
-    let spec_pos1 = make_charpos!(1);
-    let spec_pos2 = make_charpos!(11);
-    let spec_pos3 = make_charpos!(111);
-    let spec_pos4 = make_charpos!(1111);
-    let spec_pos5 = make_charpos!(11111);
+    let spec_pos1 = Position::new(1);
+    let spec_pos2 = Position::new(11);
+    let spec_pos3 = Position::new(111);
+    let spec_pos4 = Position::new(1111);
+    let spec_pos5 = Position::new(11111);
 
     let mut all_counter = HashSet::<i32>::new();
 
@@ -461,7 +460,7 @@ fn char_lit_parser() {
         let messages = &mut MessageCollection::new();
         parser.coverage_recorder = HashSet::<i32>::new();
 
-        assert_eq!(parser.input(EOF_CHAR, spec_pos3, EOF_CHAR, messages),
+        assert_eq!(parser.input(EOF, spec_pos3, EOF, messages),
             Finished(None, spec_pos1.as_span()));
         
         assert_eq!(messages, &make_messages![Message::new_by_str(error_strings::UnexpectedEOF, vec![
@@ -476,7 +475,7 @@ fn char_lit_parser() {
         let messages = &mut MessageCollection::new();
         parser.coverage_recorder = HashSet::<i32>::new();
 
-        assert_eq!(parser.input('\\', spec_pos3, EOF_CHAR, messages), 
+        assert_eq!(parser.input('\\', spec_pos3, EOF, messages), 
             Finished(None, spec_pos1.merge(&spec_pos3)));
         
         assert_eq!(messages, &make_messages![Message::new_by_str(error_strings::UnexpectedEOF, vec![
@@ -492,7 +491,7 @@ fn char_lit_parser() {
         parser.coverage_recorder = HashSet::<i32>::new();
 
         assert_eq!(parser.input('\\', spec_pos3, 'u', messages), WantMoreWithSkip1);
-        assert_eq!(parser.input(EOF_CHAR, spec_pos4, EOF_CHAR, messages), 
+        assert_eq!(parser.input(EOF, spec_pos4, EOF, messages), 
             Finished(None, spec_pos1.merge(&spec_pos3.offset(1)))); // because `\` at spec_pos3, then the parser should guess `u` at spec_pos3.offset(1)
         
         assert_eq!(messages, &make_messages![Message::new_by_str(error_strings::UnexpectedEOF, vec![
@@ -507,8 +506,8 @@ fn char_lit_parser() {
         let messages = &mut MessageCollection::new();
         parser.coverage_recorder = HashSet::<i32>::new();
 
-        assert_eq!(parser.input('A', spec_pos3, EOF_CHAR, messages), WantMore);
-        assert_eq!(parser.input(EOF_CHAR, spec_pos4, EOF_CHAR, messages), 
+        assert_eq!(parser.input('A', spec_pos3, EOF, messages), WantMore);
+        assert_eq!(parser.input(EOF, spec_pos4, EOF, messages), 
             Finished(None, spec_pos1.merge(&spec_pos3)));
         
         assert_eq!(messages, &make_messages![Message::new_by_str(error_strings::UnexpectedEOF, vec![
@@ -525,8 +524,8 @@ fn char_lit_parser() {
 
         assert_eq!(parser.input('A', spec_pos3, 'B', messages), WantMore);
         assert_eq!(parser.input('B', spec_pos3, 'C', messages), WantMore);
-        assert_eq!(parser.input('C', spec_pos5, EOF_CHAR, messages), WantMore);
-        assert_eq!(parser.input(EOF_CHAR, spec_pos4, EOF_CHAR, messages), 
+        assert_eq!(parser.input('C', spec_pos5, EOF, messages), WantMore);
+        assert_eq!(parser.input(EOF, spec_pos4, EOF, messages), 
             Finished(None, spec_pos1.merge(&spec_pos5)));
         
         assert_eq!(messages, &make_messages![Message::new_by_str(error_strings::UnexpectedEOF, vec![
@@ -544,8 +543,8 @@ fn char_lit_parser() {
 
         assert_eq!(parser.input('\\', spec_pos3, '\'', messages), WantMoreWithSkip1);
         assert_eq!(parser.input('A', spec_pos3, 'B', messages), WantMore);
-        assert_eq!(parser.input('B', spec_pos4, EOF_CHAR, messages), WantMore);
-        assert_eq!(parser.input(EOF_CHAR, spec_pos5, EOF_CHAR, messages),
+        assert_eq!(parser.input('B', spec_pos4, EOF, messages), WantMore);
+        assert_eq!(parser.input(EOF, spec_pos5, EOF, messages),
             Finished(None, spec_pos1.merge(&spec_pos4)));
         
         assert_eq!(messages, &make_messages![Message::new_by_str(error_strings::UnexpectedEOF, vec![

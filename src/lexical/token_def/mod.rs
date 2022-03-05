@@ -3,7 +3,7 @@
 ///! lexical/token
 
 use std::fmt;
-use crate::source::SymbolID;
+use crate::source::Sym;
 
 mod keyword;
 mod seperator;
@@ -44,8 +44,8 @@ impl From<bool> for LitValue { fn from(val: bool) -> LitValue { LitValue::Bool(v
 
 #[cfg(test)]
 impl LitValue {
-    pub fn new_str_lit_simple(sid: SymbolID) -> LitValue { LitValue::Str(Some(StrLitValue::Simple(sid))) }
-    pub fn new_str_lit_simple_usize(sid: usize) -> LitValue { LitValue::Str(Some(StrLitValue::Simple(SymbolID::new(sid)))) }
+    pub fn new_str_lit_simple(sid: Sym) -> LitValue { LitValue::Str(Some(StrLitValue::Simple(sid))) }
+    pub fn new_str_lit_simple_usize(sid: u32) -> LitValue { LitValue::Str(Some(StrLitValue::Simple(Sym::new(sid)))) }
     pub fn new_str_lit_format(segments: Vec<FormatStrLitSegment>) -> LitValue { LitValue::Str(Some(StrLitValue::Format(segments))) }
 }
 
@@ -86,7 +86,7 @@ impl LitValue {
 
     pub fn get_char(&self) -> char { match self { &LitValue::Char(Some(val)) => val, _ => '\0' } }
     pub fn get_bool(&self) -> bool { match self { &LitValue::Bool(val) => val, _ => false } }
-    pub fn get_str(&self) -> StrLitValue { match self { &LitValue::Str(Some(ref val)) => val.clone(), _ => StrLitValue::Simple(SymbolID::new(!1)) } }
+    pub fn get_str(&self) -> StrLitValue { match self { &LitValue::Str(Some(ref val)) => val.clone(), _ => StrLitValue::Simple(Sym::new(!1)) } }
     pub fn get_num(&self) -> NumLitValue { match self { &LitValue::Num(Some(val)) => val, _ => NumLitValue::I32(0) } }
 }
 
@@ -95,8 +95,8 @@ impl LitValue {
 pub enum Token {
     EOF,
     Lit(LitValue),
-    Ident(SymbolID),
-    Label(SymbolID),
+    Ident(Sym),
+    Label(Sym),
     Sep(Seperator),
     Keyword(Keyword),
 }

@@ -5,6 +5,8 @@ use std::path::{PathBuf, Path};
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+pub(crate) use tests::make_source;
 mod fs;
 pub use fs::{FileSystem, DefaultFileSystem};
 #[cfg(test)]

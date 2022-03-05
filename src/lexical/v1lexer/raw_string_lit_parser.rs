@@ -2,7 +2,7 @@
 ///!
 ///! Raw string literal parser
 
-use crate::source::{CharPos, Span, EOF_CHAR};
+use crate::source::{Position, Span, EOF};
 use crate::diagnostics::{Message, MessageCollection};
 use super::error_strings;
 
@@ -14,28 +14,28 @@ pub enum RawStringLiteralParserResult {
 
 pub struct RawStringLiteralParser {
     raw: String,
-    start_pos: CharPos,
+    start_pos: Position,
 }
 impl RawStringLiteralParser {
 
-    pub fn new(start_pos: CharPos) -> RawStringLiteralParser {
+    pub fn new(start_pos: Position) -> RawStringLiteralParser {
         RawStringLiteralParser {
             raw: String::new(),
             start_pos,
         }
     }
 
-    pub fn input(&mut self, ch: char, pos: CharPos, messages: &mut MessageCollection) -> RawStringLiteralParserResult {
+    pub fn input(&mut self, ch: char, pos: Position, messages: &mut MessageCollection) -> RawStringLiteralParserResult {
         match (ch, pos) {
             ('"', pos) => {                                               // C1: in raw string, meet ", finish, return
-                return RawStringLiteralParserResult::Finished(Some(self.raw.clone()), self.start_pos.merge(&pos));
+                return RawStringLiteralParserResult::Finished(Some(self.raw.clone()), self.start_pos + pos);
             }
-            (EOF_CHAR, pos) => {                                                    // C3: in raw string, meet EOF, emit error, return  
+            (EOF, pos) => {                                                    // C3: in raw string, meet EOF, emit error, return  
                 messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![ 
-                    (self.start_pos.as_span(), error_strings::StringLiteralStartHere),
-                    (pos.as_span(), error_strings::EOFHere),
+                    (self.start_pos.into(), error_strings::StringLiteralStartHere),
+                    (pos.into(), error_strings::EOFHere),
                 ]));
-                return RawStringLiteralParserResult::Finished(None, self.start_pos.merge(&pos));
+                return RawStringLiteralParserResult::Finished(None, self.start_pos + pos);
             }
             (ch, _1) => {                                                 // C2: in raw string, meet other, continue
                 self.raw.push(ch);
@@ -49,10 +49,10 @@ impl RawStringLiteralParser {
 fn raw_string_lit_parser() {
     use self::RawStringLiteralParserResult::*;
 
-    let dummy_pos = CharPos::default();
-    let spec_pos1 = make_charpos!(34);
-    let spec_pos2 = make_charpos!(78);
-    let spec_pos4 = make_charpos!(1516);
+    let dummy_pos = Position::new(0);
+    let spec_pos1 = Position::new(34);
+    let spec_pos2 = Position::new(78);
+    let spec_pos4 = Position::new(1516);
 
     {   // r"hell\u\no", normal, C1, C2
         let mut parser = RawStringLiteralParser::new(spec_pos1);
@@ -68,7 +68,7 @@ fn raw_string_lit_parser() {
         assert_eq!(parser.input('n', dummy_pos, messages), WantMore);
         assert_eq!(parser.input('o', dummy_pos, messages), WantMore);
         assert_eq!(parser.input('"', spec_pos4, messages), 
-            Finished(Some(r"hell\u\no".to_owned()), spec_pos1.merge(&spec_pos4)));
+            Finished(Some(r"hell\u\no".to_owned()), spec_pos1 + spec_pos4));
 
         assert_eq!(messages, expect_messages);
     }
@@ -79,12 +79,12 @@ fn raw_string_lit_parser() {
         let expect_messages = &mut MessageCollection::new();
         assert_eq!(parser.input('h', dummy_pos, messages), WantMore);
         assert_eq!(parser.input('e', dummy_pos, messages), WantMore);
-        assert_eq!(parser.input(EOF_CHAR, spec_pos2, messages), 
-            Finished(None, spec_pos1.merge(&spec_pos2)));
+        assert_eq!(parser.input(EOF, spec_pos2, messages), 
+            Finished(None, spec_pos1 + spec_pos2));
 
         expect_messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![ 
-                    (spec_pos1.as_span(), error_strings::StringLiteralStartHere),
-                    (spec_pos2.as_span(), error_strings::EOFHere),
+            (spec_pos1.into(), error_strings::StringLiteralStartHere),
+            (spec_pos2.into(), error_strings::EOFHere),
         ]));
         assert_eq!(messages, expect_messages);
     }

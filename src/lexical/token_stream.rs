@@ -2,8 +2,7 @@
 ///!
 ///! token stream, vec<token> wrapper
 
-use std::rc::Rc;
-use crate::source::{Span, SourceCode, SymbolCollection};
+use crate::source::{Span, SourceChars, FileSystem};
 use crate::diagnostics::MessageCollection;
 use super::{Token, ILexer, ParseSession};
 use super::v2lexer::{V2Lexer, V2Token};
@@ -28,10 +27,10 @@ pub struct TokenStream {
 impl TokenStream {
     
     /// main module driver
-    pub fn new(source: &SourceCode, messages: &mut MessageCollection, symbols: &mut SymbolCollection) -> TokenStream {
+    pub fn new<F>(chars: SourceChars<F>, messages: &mut MessageCollection) -> TokenStream where F: FileSystem {
 
-        let mut sess = ParseSession::new(messages, symbols);
-        let mut v2lexer = V2Lexer::new(source.iter());
+        let mut sess = ParseSession::new(messages);
+        let mut v2lexer = V2Lexer::new(chars);
         let mut items = Vec::new();
         let eof_span: Span;
         loop {
@@ -50,20 +49,20 @@ impl TokenStream {
         if idx >= self.items.len() { self.eof_token.1 } else { self.items[idx].1 }
     }
 
-    pub fn with_test_str(src: &str) -> TokenStream { TokenStream::with_test_input(src, None).0 }
-    pub fn with_test_input(src: &str, syms: Option<SymbolCollection>) -> (TokenStream, Rc<SourceCode>, MessageCollection, SymbolCollection) {
-        let mut msgs = MessageCollection::new();
-        let mut syms = syms.unwrap_or_default();
-        let source = Rc::new(SourceCode::with_test_str(0, src));
-        let retval = TokenStream::new(source.as_ref(), &mut msgs, &mut syms);
-        return (retval, source, msgs, syms);
-    }
+    // pub fn with_test_str(src: &str) -> TokenStream { TokenStream::with_test_input(src, None).0 }
+    // pub fn with_test_input(src: &str, syms: Option<SymbolCollection>) -> (TokenStream, Rc<SourceCode>, MessageCollection, SymbolCollection) {
+    //     let mut msgs = MessageCollection::new();
+    //     let mut syms = syms.unwrap_or_default();
+    //     let source = Rc::new(SourceCode::with_test_str(0, src));
+    //     let retval = TokenStream::new(source.as_ref(), &mut msgs, &mut syms);
+    //     return (retval, source, msgs, syms);
+    // }
 }
 
 #[cfg(test)] #[test]
 fn v4_base() { // remain the name of v4 here for memory
-    use super::LitValue;
-    use super::Seperator;
+    use crate::source::{Sym, make_source};
+    use super::*;
 
     // numeric, 123, 1:1-1:3
     // identifier, abc, 1:5-1:7
@@ -74,38 +73,41 @@ fn v4_base() { // remain the name of v4 here for memory
     // seperator, rightbracket, 1:16-1:16
     // EOF, 1:17-1:17
     // EOFs, 1:17-1:17
-    let tokens = TokenStream::with_test_input("123 abc 'd', [1]", None).0;
+    let mut scx = make_source!("123 abc 'd', [1]");
+    let chars = scx.entry("1");
+    let mut messages = MessageCollection::new();
+    let tokens = TokenStream::new(chars, &mut messages);
 
-    assert_eq!(tokens.nth_token(0), &Token::Lit(LitValue::from(123)));
-    assert_eq!(tokens.nth_span(0), make_span!(0, 2));
+    assert_eq!(tokens.nth_token(0), &Token::Lit(LitValue::Num(Some(NumLitValue::I32(123)))));
+    assert_eq!(tokens.nth_span(0), Span::new(0, 2));
 
-    assert_eq!(tokens.nth_token(1), &Token::Ident(make_id!(1)));
-    assert_eq!(tokens.nth_span(1), make_span!(4, 6));
+    assert_eq!(tokens.nth_token(1), &Token::Ident(Sym::new(1 << 31)));
+    assert_eq!(tokens.nth_span(1), Span::new(4, 6));
 
     assert_eq!(tokens.nth_token(2), &Token::Lit(LitValue::from('d')));
-    assert_eq!(tokens.nth_span(2), make_span!(8, 10));
+    assert_eq!(tokens.nth_span(2), Span::new(8, 10));
 
     assert_eq!(tokens.nth_token(3), &Token::Sep(Seperator::Comma));
-    assert_eq!(tokens.nth_span(3), make_span!(11, 11));
+    assert_eq!(tokens.nth_span(3), Span::new(11, 11));
 
     assert_eq!(tokens.nth_token(4), &Token::Sep(Seperator::LeftBracket));
-    assert_eq!(tokens.nth_span(4), make_span!(13, 13));
+    assert_eq!(tokens.nth_span(4), Span::new(13, 13));
 
-    assert_eq!(tokens.nth_token(5), &Token::Lit(LitValue::from(1)));
-    assert_eq!(tokens.nth_span(5), make_span!(14, 14));
+    assert_eq!(tokens.nth_token(5), &Token::Lit(LitValue::Num(Some(NumLitValue::I32(1)))));
+    assert_eq!(tokens.nth_span(5), Span::new(14, 14));
 
     assert_eq!(tokens.nth_token(6), &Token::Sep(Seperator::RightBracket));
-    assert_eq!(tokens.nth_span(6), make_span!(15, 15));
+    assert_eq!(tokens.nth_span(6), Span::new(15, 15));
 
     assert_eq!(tokens.nth_token(7), &Token::EOF);
-    assert_eq!(tokens.nth_span(7), make_span!(16, 16));
+    assert_eq!(tokens.nth_span(7), Span::new(16, 16));
 
     assert_eq!(tokens.nth_token(8), &Token::EOF);
-    assert_eq!(tokens.nth_span(8), make_span!(16, 16));
+    assert_eq!(tokens.nth_span(8), Span::new(16, 16));
 
     assert_eq!(tokens.nth_token(9), &Token::EOF);
-    assert_eq!(tokens.nth_span(9), make_span!(16, 16));
+    assert_eq!(tokens.nth_span(9), Span::new(16, 16));
 
     assert_eq!(tokens.nth_token(42), &Token::EOF);
-    assert_eq!(tokens.nth_span(42), make_span!(16, 16));
+    assert_eq!(tokens.nth_span(42), Span::new(16, 16));
 }
