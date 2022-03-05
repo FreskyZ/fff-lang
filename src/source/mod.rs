@@ -1,4 +1,4 @@
-///! source: read file and provide character iterator, manage locations and symbols
+///! source: read file and provide character iterator, manage locations and strings
 
 use std::collections::HashMap;
 use std::fmt;
@@ -14,9 +14,12 @@ pub use fs::{FileSystem, DefaultFileSystem};
 pub use fs::VirtualFileSystem;
 mod iter;
 use iter::get_char_width;
-pub use iter::{Position, Span, Sym, SourceChars, EOF};
+pub use iter::{Position, Span, IsId, SourceChars, EOF};
 
 /// a handle to a file
+/// 
+/// it is not named File (compare to Position and Span)
+/// because an object called File makes people think it is large but it is actually an ID
 #[derive(Eq, PartialEq, Clone, Copy, Hash)]
 pub struct FileId(u32);
 impl FileId {
@@ -82,7 +85,7 @@ fn get_relative_path(base_path: &Path, module_path: &Path) -> PathBuf {
 pub struct SourceFile {
     path: PathBuf,         // absolute path
     content: String,
-    namespace: Vec<Sym>,   // empty for entry module
+    namespace: Vec<IsId>,  // empty for entry module
     start_index: usize,    // starting byte index in span to this file, or total byte length before SourceContext.files this item
     endlines: Vec<usize>,  // LF (\n) byte indexes
     #[allow(dead_code)]    // does not know where need it, but save it for now
@@ -91,20 +94,32 @@ pub struct SourceFile {
 
 /// source context contains all things (data and operations) related with source code
 ///
-/// because all other types (Position, Span, SymId, FileId) contains contextless number value
+/// because all other types (Position, Span, S, FileId) contains contextless number value
 /// and only with SourceContext can you explain what they are and validate their usages
 #[derive(Debug)]
 pub struct SourceContext<F = DefaultFileSystem> {
     fs: F,
     // file id is item index + 1, so it starts from 1, 1 is the entry module, the entry module is 1
     files: Vec<SourceFile>,
-    // map string content to symbol, but cannot reference self.files[...].content, so key is already hashed
-    // symbol starts from 1 for span and from 0x1000_0000 for value
-    symbols: HashMap<u64, Sym>,
-    // .0: reverse map symbol to span to symbol content, item 0 is dummy
-    // .1: reverse map symbol to symbol content, clearing first bit of symbol value
-    // // this vec string is the only thing to make it look like string intern facility compare to previous u64 and span
-    rev_symbols: (Vec<Span>, Vec<String>),
+
+    // map string content to string id, but cannot ref self.files[].content so directly use hash value as key
+    // string id start from 1, string id 1 is the empty string, so it actually does not exist in this hashmap
+    string_hash_to_id: HashMap<u64, IsId>,
+    // map string id to string location
+    //   because string id start from 1, first item of this array is dummy,
+    //   because string id 1 is empty string, second item of this array is span 0,0
+    // although both span ref self.files and self.string_additional are stored in a span, they are different in
+    //   1. span ref self.string_additional is indicated by set first bit of start position
+    //   2. span ref self.files end position is the end char's byte index (e.g. a char at byte 16,17,18 stored as 16)
+    //      span ref self.string_additional end position is the end byte index + 1 (e.g. a char at byte 16,17,18 stored as 19)
+    //      because it makes both intern and resolve convenient (both add or minus 1 or char width wastes run time)
+    //      this type of span is never used outside of this module
+    // note that you cannot save u64 in this array or assume first bit of span.start is 
+    //   transmute<u64>'s first bit because normal struct's field order is not gauranteed
+    string_id_to_span: Vec<Span>,
+    // additional string for intern string literal value
+    // it uses 2/3 less memory than Vec<String>, and may save more if new interned string is part of already interned string
+    string_additional: String,
 }
 
 impl<F> SourceContext<F> {
@@ -113,7 +128,13 @@ impl<F> SourceContext<F> {
         Self::new_file_system(Default::default())
     }
     pub fn new_file_system(fs: F) -> Self {
-        Self{ fs, files: Vec::new(), symbols: HashMap::new(), rev_symbols: (vec![Span::new(0, 0)], Vec::new()) }
+        Self{ 
+            fs,
+            files: Vec::new(),
+            string_hash_to_id: HashMap::new(),
+            string_id_to_span: vec![Span::new(0, 0), Span::new(0, 0)],
+            string_additional: String::new(),
+        }
     }
 }
 
@@ -132,12 +153,12 @@ impl<F> SourceContext<F> where F: FileSystem {
     }
 
     // return option not result: let syntax parse module declare raise error
-    pub fn import(&mut self, request: Span, module_name_symbol: Sym) -> Option<SourceChars<F>> {
+    pub fn import(&mut self, request: Span, module_name_id: IsId) -> Option<SourceChars<F>> {
         debug_assert!(!self.files.is_empty(), "no entry");
         let (request_file_id, request_file, _) = self.map_position_to_file_and_byte_index(request.start);
         
         const FILE_EXT: &str = ".f3";
-        let module_name = self.resolve_symbol(module_name_symbol);
+        let module_name = self.resolve_string(module_name_id);
         let hyphened_module_name = module_name.replace('_', "-");
         let module_name_with_ext = format!("{}{}", module_name, FILE_EXT);
         let hyphened_module_name_with_ext = format!("{}{}", hyphened_module_name, FILE_EXT);
@@ -154,8 +175,8 @@ impl<F> SourceContext<F> where F: FileSystem {
                 [module_name, INDEX_FILE],
             }
         } else { 
-            let this_module_name_symbol = request_file.namespace.last().expect("namespace component missing");
-            let this_module_name = self.resolve_symbol(*this_module_name_symbol);
+            let this_module_name_id = request_file.namespace.last().expect("namespace component missing");
+            let this_module_name = self.resolve_string(*this_module_name_id);
             let hyphened_this_module_name = this_module_name.replace('_', "-");
             make_paths![
                 [&hyphened_this_module_name, &hyphened_module_name_with_ext],
@@ -173,7 +194,7 @@ impl<F> SourceContext<F> where F: FileSystem {
         let mut namespace = request_file.namespace.clone();
         // RFINRE: read failure is not module resolution error, simply regard read/open error as not exist
         resolve_options.into_iter().filter_map(|p| self.fs.read_to_string(&p).map(|c| (p, c)).ok()).next().map(|(path, content)| {
-            namespace.push(module_name_symbol);
+            namespace.push(module_name_id);
             let last_file = self.files.last().unwrap();
             let start_index = last_file.start_index + last_file.content.len() + 1; // +1 for position for EOF
             SourceChars::new(content, start_index, path, namespace, Some(request), self)
@@ -297,19 +318,19 @@ impl<F> SourceContext<F> {
         }
     }
 
-    // result does not option because symbol is only created by methods in SourceChars
+    // result does not option because string id is only created by methods in SourceChars
     // and should not have invalid value if no unexpected error happens
-    pub fn resolve_symbol(&self, symbol: Sym) -> &str {
-        let id = symbol.unwrap();
-        debug_assert!(id > 0, "invalid symbol");
+    pub fn resolve_string(&self, id: IsId) -> &str {
+        let id = id.unwrap() as usize;
+        debug_assert!(id > 0, "invalid string id");
+        debug_assert!(id < self.string_id_to_span.len(), "invalid string id");
 
-        if (id & Sym::MASK) == Sym::MASK {
-            let index = (id & !Sym::MASK) as usize;
-            debug_assert!(index < self.rev_symbols.1.len(), "invalid symbol");
-            &self.rev_symbols.1[index]
+        let span = self.string_id_to_span[id];
+        if span.start.unwrap() & IsId::POSITION_MASK == IsId::POSITION_MASK {
+            let actual_start = span.start.unwrap() & !IsId::POSITION_MASK;
+            &self.string_additional[actual_start as usize..span.end.unwrap() as usize]
         } else {
-            debug_assert!((id as usize) < self.rev_symbols.0.len(), "invalid symbol");
-            self.map_span_to_content(self.rev_symbols.0[id as usize])
+            self.map_span_to_content(span)
         }
     }
 }
@@ -345,5 +366,12 @@ impl<'a, F> fmt::Display for SpanDisplay<'a, F> where F: FileSystem {
 impl Span {
     pub fn display<F: FileSystem>(self, scx: &SourceContext<F>) -> SpanDisplay<F> {
         SpanDisplay(self, scx)
+    }
+}
+
+// string id does not need StringIdDisplay because it directly returns &str
+impl IsId {
+    pub fn display<F: FileSystem>(self, scx: &SourceContext<F>) -> &str {
+        scx.resolve_string(self)
     }
 }

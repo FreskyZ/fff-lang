@@ -5,7 +5,7 @@
 mod num_lit_parser;
 mod unicode_char;
 mod error_strings;
-use crate::source::{Span, Sym, SourceChars, FileSystem, EOF};
+use crate::source::{Span, IsId, SourceChars, FileSystem, EOF};
 use crate::diagnostics::{Message, MessageCollection};
 use super::v1lexer::{V1Token, V1Lexer};
 use super::{ILexer, BufLexer, LitValue, Keyword, Seperator, ParseSession};
@@ -15,8 +15,8 @@ use num_lit_parser::parse_numeric_literal;
 pub enum V2Token {
     EOF,
     Literal(LitValue),
-    Identifier(Sym), // Anything of [_a-zA-Z][_a-zA-Z0-9]*
-    Label(Sym),      // Anything of @[_a-zA-Z0-9@]*
+    Identifier(IsId), // Anything of [_a-zA-Z][_a-zA-Z0-9]*
+    Label(IsId),      // Anything of @[_a-zA-Z0-9@]*
     Keyword(Keyword),
     Seperator(Seperator),
 }
@@ -118,7 +118,7 @@ impl<'chs, F> ILexer<'chs, F, V2Token> for V2Lexer<'chs, F> where F: FileSystem 
                     }
                     V2Token::Keyword(other_keyword)
                 }
-                None => V2Token::Identifier(self.v1.lexer.v0.lexer.0.intern_string($ident_value)),
+                None => V2Token::Identifier(self.v1.lexer.v0.lexer.0.intern(&$ident_value)),
             }
         }) }
         macro_rules! num_lit_to_v2 { ($num_lit_value: expr, $num_lit_strpos: expr) => ({
@@ -190,7 +190,7 @@ impl<'chs, F> ILexer<'chs, F, V2Token> for V2Lexer<'chs, F> where F: FileSystem 
                         value.push(ch);
                         return num_lit_to_v2!(value, strpos);
                     } else if ch.is_label_start() {
-                        return (V2Token::Label(self.v1.lexer.v0.lexer.0.intern_str("")), strpos); // simple '@' is allowed, use @? to represent empty
+                        return (V2Token::Label(self.v1.lexer.v0.lexer.0.intern("")), strpos); // simple '@' is allowed, use @? to represent empty
                     } else {
                         match Seperator::parse1(ch) {
                             Some(seperator) => return (V2Token::Seperator(seperator), strpos),
@@ -212,7 +212,7 @@ impl<'chs, F> ILexer<'chs, F, V2Token> for V2Lexer<'chs, F> where F: FileSystem 
                         state = State::InNumLit(value, strpos);
                     } else if ch.is_label_start() {
                         if !next_ch.is_label() {                // 17/5/8: TODO: same question as before, why this is needed
-                            return (V2Token::Label(self.v1.lexer.v0.lexer.0.intern_str("")), strpos);
+                            return (V2Token::Label(self.v1.lexer.v0.lexer.0.intern("")), strpos);
                         }
                         state = State::InLabel(String::new(), strpos);
                     } else {
@@ -251,11 +251,11 @@ impl<'chs, F> ILexer<'chs, F, V2Token> for V2Lexer<'chs, F> where F: FileSystem 
                 }
                 (State::InLabel(mut value, mut label_strpos), V15Token(ch, strpos, next_ch, _4, _5, _6)) => {
                     if !ch.is_label() {
-                        return (V2Token::Label(self.v1.lexer.v0.lexer.0.intern_string(value)), label_strpos);
+                        return (V2Token::Label(self.v1.lexer.v0.lexer.0.intern(&value)), label_strpos);
                     } else if !next_ch.is_label() {
                         value.push(ch);
                         label_strpos = label_strpos + strpos;
-                        return (V2Token::Label(self.v1.lexer.v0.lexer.0.intern_string(value)), label_strpos);
+                        return (V2Token::Label(self.v1.lexer.v0.lexer.0.intern(&value)), label_strpos);
                     } else {
                         value.push(ch);
                         label_strpos = label_strpos + strpos;
@@ -419,7 +419,7 @@ fn v2_base() {
             chars.intern_span(*span);
         }
         for symbol in symbols {
-            chars.intern_str(*symbol);
+            chars.intern(*symbol);
         }
 
         let mut v2lexer = V2Lexer::new(chars);
@@ -468,24 +468,24 @@ fn v2_base() {
     // byte      01234567890123 456789012345678901234 5678
     test_case!{ "var a = true;\nvar b = 789_123.456;\ndefg", [Span::new(4, 4), Span::new(18, 18), Span::new(35, 38)] expect vec![      
         kw!(Keyword::Var, 0, 2),
-        ident!(Sym::new(1), 4, 4),
+        ident!(IsId::new(2), 4, 4),
         sep!(Seperator::Assign, 6, 6),
         lit!(true, 8, 11),
         sep!(Seperator::SemiColon, 12, 12),
         kw!(Keyword::Var, 14, 16),
-        ident!(Sym::new(2), 18, 18),
+        ident!(IsId::new(3), 18, 18),
         sep!(Seperator::Assign, 20, 20),
         lit!(789123.4560000001f64, 22, 32),
         sep!(Seperator::SemiColon, 33, 33),
-        ident!(Sym::new(3), 35, 38),
+        ident!(IsId::new(4), 35, 38),
     ]}
 
     //           0       1      2       3
     //           0 3 67890123 690123 4 9012
     test_case!{ "一个chinese变量, a_中文_var", [Span::new(0, 16), Span::new(21, 32)] expect vec![  // chinese ident
-        ident!(Sym::new(1), 0, 16),
+        ident!(IsId::new(2), 0, 16),
         sep!(Seperator::Comma, 19, 19),
-        ident!(Sym::new(2), 21, 32),
+        ident!(IsId::new(3), 21, 32),
     ]}
 
     // different postfix\types of num lit, different types of sep
@@ -617,13 +617,13 @@ fn v2_base() {
     test_case!{ "1.is_odd(), 123r64.to_string()", [Span::new(2, 7), Span::new(19, 27)] expect vec![  //  another special case
         lit!(1i32, 0, 0),
         sep!(Seperator::Dot, 1, 1),
-        ident!(Sym::new(1), 2, 7),
+        ident!(IsId::new(2), 2, 7),
         sep!(Seperator::LeftParenthenes, 8, 8),
         sep!(Seperator::RightParenthenes, 9, 9),
         sep!(Seperator::Comma, 10, 10),
         lit!(123f64, 12, 17),
         sep!(Seperator::Dot, 18, 18),
-        ident!(Sym::new(2), 19, 27),
+        ident!(IsId::new(3), 19, 27),
         sep!(Seperator::LeftParenthenes, 28, 28),
         sep!(Seperator::RightParenthenes, 29, 29),
     ]}
@@ -631,7 +631,7 @@ fn v2_base() {
     //           0           1          2
     //           01 234567 890 1234567890123456
     test_case!{ "r\"hello\" '\\u1234' 12/**/34 ", [], ["hello"] expect vec![    // dispatch v1
-        (V2Token::Literal(make_lit!(str, 1 << 31)), Span::new(0, 7)), // because `lit!(Sym::new(1), 0, 7)` is ambiguous
+        (V2Token::Literal(make_lit!(str, 2)), Span::new(0, 7)), // because `lit!(S::new(1), 0, 7)` is ambiguous
         lit!('\u{1234}', 9, 16),
         lit!(12i32, 18, 19),
         lit!(34i32, 24, 25),
@@ -643,7 +643,7 @@ fn v2_base() {
     test_case!{ "1.a[[3](4, [5, 6], )](7, 8)() def[i32].bcd[10, 11, 12]", [Span::new(2, 2), Span::new(39, 41)] expect vec![
         lit!(1i32, 0, 0),
         sep!(Seperator::Dot, 1, 1),
-        ident!(Sym::new(1), 2, 2),
+        ident!(IsId::new(2), 2, 2),
         sep!(Seperator::LeftBracket, 3, 3),
         sep!(Seperator::LeftBracket, 4, 4),
         lit!(3i32, 5, 5),
@@ -671,7 +671,7 @@ fn v2_base() {
         kw!(Keyword::I32, 34, 36),
         sep!(Seperator::RightBracket, 37, 37),
         sep!(Seperator::Dot, 38, 38),
-        ident!(Sym::new(2), 39, 41),
+        ident!(IsId::new(3), 39, 41),
         sep!(Seperator::LeftBracket, 42, 42),
         lit!(10i32, 43, 44),
         sep!(Seperator::Comma, 45, 45),
@@ -686,22 +686,24 @@ fn v2_base() {
     //           0         1     
     //           0123456789012345678
     test_case!{ "abc @abc @ @@ 1 @a", [Span::new(0, 2), Span::new(12, 12), Span::new(17, 17)], [""] expect vec![
-        ident!(Sym::new(1), 0, 2),  // yeah
-        label!(Sym::new(1), 4, 7),  // yeah
-        label!(Sym::new(1 << 31), 9, 9),
-        label!(Sym::new(2), 11, 12),
+        ident!(IsId::new(2), 0, 2),  // yeah
+        label!(IsId::new(2), 4, 7),  // yeah
+        label!(IsId::new(1), 9, 9),
+        label!(IsId::new(3), 11, 12),
         lit!(1i32, 14, 14),
-        label!(Sym::new(3), 16, 17),
+        label!(IsId::new(4), 16, 17),
     ]}
 
-    test_case!{ "@", [], [""] expect vec![label!(Sym::new(1 << 31), 0, 0)] }
+    test_case!{ "@", [] expect vec![
+        label!(IsId::new(1), 0, 0),
+    ]}
 
     test_case!{ "a:", [Span::new(0, 0)] expect vec![
-        ident!(Sym::new(1), 0, 0),
+        ident!(IsId::new(2), 0, 0),
         sep!(Seperator::Colon, 1, 1),
     ]}
-    test_case!{ "@: {}", [], [""] expect vec![
-        label!(Sym::new(1 << 31), 0, 0),
+    test_case!{ "@: {}", [] expect vec![
+        label!(IsId::new(1), 0, 0),
         sep!(Seperator::Colon, 1, 1),
         sep!(Seperator::LeftBrace, 3, 3),
         sep!(Seperator::RightBrace, 4, 4),

@@ -118,14 +118,21 @@ impl From<Position> for Span {
 
 /// a handle to an interned string
 ///
-/// its name is short because it is widely used,
-/// it is u32 not usize because it is widely used
-/// and not reasonable to have more than u32::MAX symbols in all source files
+/// - IsId means InternedStringID, it is short because it is widely used
+/// - it was named SymbolID or SymId or Sym but I found that 
+///   symbol (in symbol table) in compiler principle means a "name", a name to a variable, function, etc.
+///   although I will call that a "Name", or a "TypeId", "VarId" etc. in my semantic analysis, but this name
+///   may confuse reader or myself after, for example, 10 years (although I'm not confused after this 5 years)
+/// - SymbolID, StringID or InternedStringID is too long, 
+///   Str or String makes reader think it is kind of string (a ptr, cal, len structure)
+/// - it is u32 not usize because it is not reasonable to 
+///   have more than u32::MAX strings in a program, and it is widely used
+/// - recommend variable name `id` or `string_id`
 #[derive(Eq, PartialEq, Clone, Copy, Hash)]
-pub struct Sym(u32);
+pub struct IsId(u32);
 
-impl Sym {
-    pub(super) const MASK: u32 = 1 << 31; // string symbol mask
+impl IsId {
+    pub(super) const POSITION_MASK: u32 = 1 << 31;
 
     pub fn new(v: u32) -> Self {
         Self(v)
@@ -134,13 +141,13 @@ impl Sym {
         self.0
     }
 }
-impl From<u32> for Sym {
+impl From<u32> for IsId {
     fn from(v: u32) -> Self {
         Self(v)
     }
 }
 
-impl fmt::Debug for Sym {
+impl fmt::Debug for IsId {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.0)
     }
@@ -160,24 +167,24 @@ fn get_endlines(content: &str) -> Vec<usize> {
 // this iterator is the exact first layer of processing above source code content, 
 // logically all location information comes from position created by the next function
 //
-// this iterator also includes the symbol intern interface, to make leixcal parser simpler
+// this iterator also includes the string intern interface, to make leixcal parser simpler
 //
 // from source context's perspective, this is also a source file builder which returns by 
-// entry and import function and when running, append to symbols and when finished, append to files
+// entry and import function and when running, append to string table and when finished, append to files
 #[derive(Debug)]
 pub struct SourceChars<'a, F = DefaultFileSystem> {
     pub(super) content: String,
-    current_index: usize,  // current iterating byte index, content bytes[current_index] should be the next returned char
+    current_index: usize,             // current iterating byte index, content bytes[current_index] should be the next returned char
     pub(super) start_index: usize,    // starting byte index for this file, or previous files's total byte length, will become SourceFile.start_index when finished
     pub(super) path: PathBuf,         // copy to SourceFile
-    pub(super) namespace: Vec<Sym>,   // copy to SourceFile
+    pub(super) namespace: Vec<IsId>,  // copy to SourceFile
     pub(super) request: Option<Span>, // copy to SourceFile
     context: &'a mut SourceContext<F>,
 }
 
 impl<'a, F> SourceChars<'a, F> where F: FileSystem {
 
-    pub(super) fn new(mut content: String, start_index: usize, path: PathBuf, namespace: Vec<Sym>, request: Option<Span>, context: &'a mut SourceContext<F>) -> Self {
+    pub(super) fn new(mut content: String, start_index: usize, path: PathBuf, namespace: Vec<IsId>, request: Option<Span>, context: &'a mut SourceContext<F>) -> Self {
         // append 3 '\0' char to end of content for the branchless (less branch actually) iterator
         content.push_str("\0\0\0");
         Self{ content, start_index, current_index: 0, path, namespace, request, context }
@@ -222,8 +229,36 @@ impl<'a, F> SourceChars<'a, F> where F: FileSystem {
         }
     }
 
-    // intern symbol at location
-    pub fn intern_span(&mut self, location: Span) -> Sym {
+    pub fn intern(&mut self, value: &str) -> IsId {
+
+        // empty string is span 0,0, this span must exist because this function exists in this type
+        if value.is_empty() {
+            return IsId::new(1);
+        }
+
+        let hash = get_hash(value);
+        if let Some(id) = self.context.string_hash_to_id.get(&hash) {
+            *id
+        } else {
+            let new_id = IsId::new(self.context.string_id_to_span.len() as u32);
+            self.context.string_hash_to_id.insert(hash, new_id);
+
+            let start_position = if let Some(index) = self.context.string_additional.find(value) {
+                index
+            } else {
+                self.context.string_additional.push_str(value);
+                self.context.string_additional.len() - value.len()
+            } as u32;
+            // ATTENTION: this type of span's end is last byte index + 1 (exactly the one you use in str[begin..end], not last char
+            let span = Span::new(start_position | IsId::POSITION_MASK, start_position + value.len() as u32);
+
+            self.context.string_id_to_span.push(span);
+            new_id
+        }
+    }
+
+    // intern string at location
+    pub fn intern_span(&mut self, location: Span) -> IsId {
         let (start, end) = (location.start.0 as usize, location.end.0 as usize);
 
         debug_assert!(start <= end, "invalid span");
@@ -233,40 +268,13 @@ impl<'a, F> SourceChars<'a, F> where F: FileSystem {
 
         let end_width = get_char_width(&self.content, end - self.start_index);
         let hash = get_hash(&self.content[start - self.start_index..end - self.start_index + end_width]);
-        if let Some(symbol) = self.context.symbols.get(&hash) {
-            *symbol
+        if let Some(id) = self.context.string_hash_to_id.get(&hash) {
+            *id
         } else {
-            let symbol = Sym::new(self.context.rev_symbols.0.len() as u32);
-            self.context.symbols.insert(hash, symbol);
-            self.context.rev_symbols.0.push(location);
-            symbol
-        }
-    }
-
-    // the advantage compare to intern_string is str is only copied when creating new symbol
-    // it is actually used in syntax parser
-    pub fn intern_str(&mut self, value: &str) -> Sym {
-        let hash = get_hash(&value);
-        if let Some(symbol) = self.context.symbols.get(&hash) {
-            *symbol
-        } else {
-            let symbol = Sym::new(self.context.rev_symbols.1.len() as u32 | Sym::MASK);
-            self.context.symbols.insert(hash, symbol);
-            self.context.rev_symbols.1.push(value.to_owned());
-            symbol
-        }
-    }
-
-    // the advantage compare to intern_str is no need to copy when creating new symbol
-    pub fn intern_string(&mut self, value: String) -> Sym {
-        let hash = get_hash(&value);
-        if let Some(symbol) = self.context.symbols.get(&hash) {
-            *symbol
-        } else {
-            let symbol = Sym::new(self.context.rev_symbols.1.len() as u32 | Sym::MASK);
-            self.context.symbols.insert(hash, symbol);
-            self.context.rev_symbols.1.push(value);
-            symbol
+            let new_id = IsId::new(self.context.string_id_to_span.len() as u32);
+            self.context.string_hash_to_id.insert(hash, new_id);
+            self.context.string_id_to_span.push(location);
+            new_id
         }
     }
 

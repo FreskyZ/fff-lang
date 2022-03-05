@@ -29,16 +29,17 @@ fn intern_values() {
 
     let mut scx = make_source!();
     let mut chars = scx.entry("1");
-    let id1 = chars.intern_str("abc");
-    let id2 = chars.intern_str("123");
-    let id3 = chars.intern_str("abc");
+    let id1 = chars.intern("abc");
+    let id2 = chars.intern("123");
+    let id3 = chars.intern("abc");
     chars.finish();
     assert!(id1 != id2);
     assert!(id2 != id3);
     assert!(id1 == id3);
-    assert_eq!(scx.resolve_symbol(id1), "abc");
-    assert_eq!(scx.resolve_symbol(id2), "123");
-    assert_eq!(scx.resolve_symbol(id3), "abc");
+    println!("{:?}", scx);
+    assert_eq!(scx.resolve_string(id1), "abc");
+    assert_eq!(scx.resolve_string(id2), "123");
+    assert_eq!(scx.resolve_string(id3), "abc");
 }
 
 #[test]
@@ -53,9 +54,9 @@ fn intern_spans() {
     assert!(id1 != id2);
     assert!(id2 != id3);
     assert!(id1 == id3);
-    assert_eq!(scx.resolve_symbol(id1), "eiwu");
-    assert_eq!(scx.resolve_symbol(id2), "iwub");
-    assert_eq!(scx.resolve_symbol(id3), "eiwu");
+    assert_eq!(scx.resolve_string(id1), "eiwu");
+    assert_eq!(scx.resolve_string(id2), "iwub");
+    assert_eq!(scx.resolve_string(id3), "eiwu");
 }
 
 #[test]
@@ -72,9 +73,9 @@ fn intern_spans2() {
     assert!(id1 != id2);
     assert!(id1 != id3);
     assert!(id2 != id3);
-    assert_eq!(scx.resolve_symbol(id1), "a");
-    assert_eq!(scx.resolve_symbol(id2), "b");
-    assert_eq!(scx.resolve_symbol(id3), "defg");
+    assert_eq!(scx.resolve_string(id1), "a");
+    assert_eq!(scx.resolve_string(id2), "b");
+    assert_eq!(scx.resolve_string(id3), "defg");
 
     // and this
     
@@ -85,8 +86,8 @@ fn intern_spans2() {
     chars.finish();
     assert!(id1 != id2);
     assert!(id1 != id3);
-    assert_eq!(scx.resolve_symbol(id1), "一个chinese变量");
-    assert_eq!(scx.resolve_symbol(id2), "a_中文_var");
+    assert_eq!(scx.resolve_string(id1), "一个chinese变量");
+    assert_eq!(scx.resolve_string(id2), "a_中文_var");
 }
 
 #[test]
@@ -101,14 +102,14 @@ fn not_this_file_span() {
 }
 
 #[test]
-#[should_panic(expected = "invalid symbol")]
-fn invalid_symbol_id() {
+#[should_panic(expected = "invalid string id")]
+fn invalid_string_id() {
     let mut scx = make_source!();
     let mut chars = scx.entry("1");
-    chars.intern_str("abc");
+    chars.intern("abc");
     chars.finish();
-    assert_eq!(scx.resolve_symbol(Sym::new(1 << 31)), "abc");
-    let _ = scx.resolve_symbol(Sym::new(100));
+    assert_eq!(scx.resolve_string(IsId::new(2)), "abc");
+    let _ = scx.resolve_string(IsId::new(100));
 }
 
 #[test]
@@ -219,7 +220,7 @@ fn position_to_line_column2() {
     // this 2 empty file program should only allow 2 positions: 0 for EOF in file 1, 1 for EOF in file 2
     let mut scx = make_source!("" as "/1.f3", "" as "/2.f3");
     let mut chars = scx.entry("/1.f3");
-    let module_name = chars.intern_str("2");
+    let module_name = chars.intern("2");
     chars.finish();
     scx.import(Span::new(0, 0), module_name).unwrap().finish();
     ptlc_test_case!{ scx,
@@ -519,23 +520,23 @@ macro_rules! mr_test_case {
     ([$($content:literal as $name:literal),+$(,)?] import $module:literal from $span:expr => err) => {{
         let mut scx = make_source!($($content as $name),+);
         let mut chars = scx.entry("src/main.f3");
-        let symbol = chars.intern_str($module);
+        let module_name = chars.intern($module);
         chars.finish();
-        assert!(scx.import($span, symbol).is_none());
+        assert!(scx.import($span, module_name).is_none());
     }};
     ([$($content:literal as $name:literal),+$(,)?] import $module:literal from $span:expr => $path:expr) => {{
         let mut scx = make_source!($($content as $name),+);
         let mut chars = scx.entry("src/main.f3");
-        let symbol = chars.intern_str($module);
+        let module_name = chars.intern($module);
         chars.finish();
-        let file_id = scx.import($span, symbol).unwrap().finish();
+        let file_id = scx.import($span, module_name).unwrap().finish();
         assert_eq!(scx.files[file_id.0 as usize - 1].path, PathBuf::from($path));
     }};
     ([$($content:literal as $name:literal),+$(,)?] import $module1:literal from entry then import $module2:literal from $span:expr => err) => {{
         let mut scx = make_source!($($content as $name),+);
         let mut chars = scx.entry("src/main.f3");
-        let module_name1 = chars.intern_str($module1);
-        let module_name2 = chars.intern_str($module2);
+        let module_name1 = chars.intern($module1);
+        let module_name2 = chars.intern($module2);
         chars.finish();
         scx.import(Span::new(0, 0), module_name1).unwrap().finish();
         assert!(scx.import($span, module_name2).is_none());
@@ -543,8 +544,8 @@ macro_rules! mr_test_case {
     ([$($content:literal as $name:literal),+$(,)?] import $module1:literal from entry then import $module2:literal from $span:expr => $path:expr) => {{
         let mut scx = make_source!($($content as $name),+);
         let mut chars = scx.entry("src/main.f3");
-        let module_name1 = chars.intern_str($module1);
-        let module_name2 = chars.intern_str($module2);
+        let module_name1 = chars.intern($module1);
+        let module_name2 = chars.intern($module2);
         chars.finish();
         scx.import(Span::new(0, 0), module_name1).unwrap().finish();
         let file_id = scx.import($span, module_name2).unwrap().finish();

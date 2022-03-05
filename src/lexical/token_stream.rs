@@ -62,7 +62,7 @@ impl TokenStream {
 
 #[cfg(test)] #[test]
 fn v4_base() { // remain the name of v4 here for memory
-    use crate::source::{Sym, make_source};
+    use crate::source::{IsId, make_source};
     use super::*;
 
     // numeric, 123, 1:1-1:3
@@ -82,7 +82,7 @@ fn v4_base() { // remain the name of v4 here for memory
     assert_eq!(tokens.nth_token(0), &Token::Lit(LitValue::Num(Some(NumLitValue::I32(123)))));
     assert_eq!(tokens.nth_span(0), Span::new(0, 2));
 
-    assert_eq!(tokens.nth_token(1), &Token::Ident(Sym::new(1 << 31)));
+    assert_eq!(tokens.nth_token(1), &Token::Ident(IsId::new(2)));
     assert_eq!(tokens.nth_span(1), Span::new(4, 6));
 
     assert_eq!(tokens.nth_token(2), &Token::Lit(LitValue::from('d')));

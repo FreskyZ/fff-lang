@@ -4,7 +4,7 @@
 mod source;
 mod diagnostics;
 mod lexical;
-mod syntax;
+// mod syntax;
 mod driver;
 
 fn main() {

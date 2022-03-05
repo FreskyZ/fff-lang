@@ -4,12 +4,12 @@
 
 use std::fmt;
 
-use crate::source::Sym;
+use crate::source::IsId;
 use super::Token;
 
 #[derive(Clone, Eq, PartialEq)]
 pub enum FormatStrLitSegment {
-    Str(Sym),
+    Str(IsId),
     Other(Token),
 }
 impl fmt::Debug for FormatStrLitSegment {
@@ -20,13 +20,13 @@ impl fmt::Debug for FormatStrLitSegment {
         }
     }
 }
-impl From<u32> for FormatStrLitSegment { fn from(id: u32) -> FormatStrLitSegment { FormatStrLitSegment::Str(Sym::new(id)) } }
-impl From<Sym> for FormatStrLitSegment { fn from(id: Sym) -> FormatStrLitSegment { FormatStrLitSegment::Str(id) } }
+impl From<u32> for FormatStrLitSegment { fn from(id: u32) -> FormatStrLitSegment { FormatStrLitSegment::Str(IsId::new(id)) } }
+impl From<IsId> for FormatStrLitSegment { fn from(id: IsId) -> FormatStrLitSegment { FormatStrLitSegment::Str(id) } }
 impl From<Token> for FormatStrLitSegment { fn from(token: Token) -> FormatStrLitSegment { FormatStrLitSegment::Other(token) } }
 
 #[derive(Clone, Eq, PartialEq)]
 pub enum StrLitValue {
-    Simple(Sym),
+    Simple(IsId),
     Format(Vec<FormatStrLitSegment>),
 }
 impl fmt::Debug for StrLitValue {

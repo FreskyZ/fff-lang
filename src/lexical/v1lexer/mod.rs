@@ -125,7 +125,7 @@ impl<'chs, F> ILexer<'chs, F, V1Token> for V1Lexer<'chs, F> where F: FileSystem 
                             if *ch == EOF { // if EOF was consumed by str lit parser, it will not be returned as EOF, which is not designed by feature
                                 self.v0.prepare_dummy1();
                             }
-                            return (V1Token::StringLiteral(value.map(|v| StrLitValue::Simple(self.v0.lexer.0.intern_string(v)))), pos);
+                            return (V1Token::StringLiteral(value.map(|v| StrLitValue::Simple(self.v0.lexer.0.intern(&v)))), pos);
                         }
                     }
                 }
@@ -138,7 +138,7 @@ impl<'chs, F> ILexer<'chs, F, V1Token> for V1Lexer<'chs, F> where F: FileSystem 
                             if *ch == EOF { // same as str lit parser
                                 self.v0.prepare_dummy1();
                             }
-                            return (V1Token::RawStringLiteral(value.map(|v| StrLitValue::Simple(self.v0.lexer.0.intern_string(v)))), pos);
+                            return (V1Token::RawStringLiteral(value.map(|v| StrLitValue::Simple(self.v0.lexer.0.intern(&v)))), pos);
                         }
                     }
                 }
@@ -167,7 +167,7 @@ impl<'chs, F> ILexer<'chs, F, V1Token> for V1Lexer<'chs, F> where F: FileSystem 
 #[cfg(test)]
 #[test]
 fn v1_base() {
-    use crate::source::{SourceContext, VirtualFileSystem, Sym, make_source};
+    use crate::source::{SourceContext, VirtualFileSystem, IsId, make_source};
     use crate::diagnostics::MessageCollection;
 
     fn test_case_full(mut scx: SourceContext<VirtualFileSystem>, symbols: &[&'static str], expect_tokens: Vec<(V1Token, Span)>, expect_messages: MessageCollection) {
@@ -175,7 +175,7 @@ fn v1_base() {
         let mut sess = ParseSession::new(&mut actual_messages);
         let mut chars = scx.entry("1");
         for symbol in symbols {
-            chars.intern_str(*symbol);
+            chars.intern(*symbol);
         }
         let mut v1lexer = V1Lexer::new(chars);
         for expect_token in expect_tokens {
@@ -229,7 +229,7 @@ fn v1_base() {
 
     // String literal test cases
     test_case!{ with symbol, r#""Hello, world!""#, 
-        "Hello, world!", vec![str_lit!(Sym::new(1 << 31), 0, 14)] 
+        "Hello, world!", vec![str_lit!(IsId::new(2), 0, 14)] 
     }
     test_case!{ with message, r#""He"#, vec![str_lit!(0, 3)], make_messages![
         Message::new_by_str(error_strings::UnexpectedEOF, vec![
@@ -245,7 +245,7 @@ fn v1_base() {
         ])
     ]}
     test_case!{ with symbol, r#""H\t\n\0\'\"llo""#,
-        "H\t\n\0'\"llo", vec![str_lit!(Sym::new(1 << 31), 0, 15)]
+        "H\t\n\0'\"llo", vec![str_lit!(IsId::new(2), 0, 15)]
     }
     test_case!{ with message, r#""h\c\d\e\n\g""#, vec![str_lit!(0, 12)], make_messages![
         Message::new(format!("{} '\\{}'", error_strings::UnknownCharEscape, 'c'), vec![
@@ -266,7 +266,7 @@ fn v1_base() {
         ])
     ]}
     test_case!{ with symbol, r#""H\uABCDel""#, 
-        "H\u{ABCD}el", vec![str_lit!(Sym::new(1 << 31), 0, 10)]
+        "H\u{ABCD}el", vec![str_lit!(IsId::new(2), 0, 10)]
     } //                          0123456789012345
     test_case!{ with message, r#""H\uABCHel\uABgC""#, vec![str_lit!(0, 16)], make_messages![ // TODO: according to new char lit parser's policy, this should be str_lit!(0, 15)
         Message::with_help_by_str(error_strings::InvalidUnicodeCharEscape, vec![
@@ -314,7 +314,7 @@ fn v1_base() {
 
     // Raw string literal test cases
     test_case!{ with symbol, r#"r"hell\u\no""#, 
-        r"hell\u\no", vec![rstr_lit!(Sym::new(1 << 31), 0, 11)]
+        r"hell\u\no", vec![rstr_lit!(IsId::new(2), 0, 11)]
     }
     test_case!{ with message, r#"R"he"#, vec![rstr_lit!(0, 4)], make_messages![
         Message::new_by_str(error_strings::UnexpectedEOF, vec![
