@@ -1,6 +1,7 @@
 ///! source: read file and provide character iterator, manage locations and symbols
 
 use std::collections::HashMap;
+use std::fmt;
 use std::path::{PathBuf, Path};
 
 #[cfg(test)]
@@ -16,7 +17,7 @@ use iter::get_char_width;
 pub use iter::{Position, Span, Sym, SourceChars, EOF};
 
 /// a handle to a file
-#[derive(Eq, PartialEq, Clone, Copy, Debug, Hash)]
+#[derive(Eq, PartialEq, Clone, Copy, Hash)]
 pub struct FileId(u32);
 impl FileId {
     pub fn new(v: u32) -> Self {
@@ -32,6 +33,12 @@ impl FileId {
 impl From<u32> for FileId {
     fn from(v: u32) -> Self {
         Self(v)
+    }
+}
+
+impl fmt::Debug for FileId {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
@@ -177,7 +184,7 @@ impl<F> SourceContext<F> where F: FileSystem {
     /// get relative path to current working directory
     #[allow(dead_code)] // should be used in diagnostics formatter
     pub fn get_relative_path(&self, file_id: FileId) -> PathBuf {
-        let file_id = file_id.0 as usize;
+        let file_id = file_id.unwrap() as usize;
         debug_assert!(file_id > 0 && file_id <= self.files.len(), "invalid file id");
         let file = &self.files[file_id - 1];
         let cwd = self.fs.get_current_dir().expect("cannot get current dir");
@@ -190,7 +197,7 @@ impl<F> SourceContext<F> {
 
     /// return (file id, file, byte index in current file)
     fn map_position_to_file_and_byte_index(&self, position: Position) -> (FileId, &SourceFile, usize) {
-        let position = position.0 as usize;
+        let position = position.unwrap() as usize;
         for (index, file) in self.files.iter().enumerate() {
             if file.start_index + file.content.len() + /* EOF position */ 1 > position {
                 return (FileId::new(index as u32 + 1), file, position - file.start_index);
@@ -247,7 +254,7 @@ impl<F> SourceContext<F> {
     }
 
     pub fn map_span_to_content(&self, location: Span) -> &str {
-        debug_assert!(location.start.0 <= location.end.0, "invalid span");
+        debug_assert!(location.start.unwrap() <= location.end.unwrap(), "invalid span");
 
         let (start_file_id, file, start_byte_index) = self.map_position_to_file_and_byte_index(location.start);
         let (end_file_id, _, end_byte_index) = self.map_position_to_file_and_byte_index(location.end);
@@ -271,7 +278,7 @@ impl<F> SourceContext<F> {
 
     #[allow(dead_code)] // diagnostics formatting not implemented currently
     pub fn map_line_to_content(&self, file_id: FileId, line: usize) -> &str {
-        let file_id = file_id.0 as usize;
+        let file_id = file_id.unwrap() as usize;
         debug_assert!(file_id > 0 && file_id <= self.files.len(), "invalid file id");
 
         let file = &self.files[file_id - 1];
@@ -304,5 +311,39 @@ impl<F> SourceContext<F> {
             debug_assert!((id as usize) < self.rev_symbols.0.len(), "invalid symbol");
             self.map_span_to_content(self.rev_symbols.0[id as usize])
         }
+    }
+}
+
+// format helpers
+
+pub struct PositionDisplay<'a, F>(Position, &'a SourceContext<F>);
+
+impl<'a, F> fmt::Display for PositionDisplay<'a, F> where F: FileSystem {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let (file, line, column) = self.1.map_position_to_line_column(self.0);
+        let relative_path = self.1.get_relative_path(file);
+        write!(f, "{}:{}:{}", relative_path.display(), line, column)
+    }
+}
+
+impl Position {
+    pub fn display<F: FileSystem>(self, scx: &SourceContext<F>) -> PositionDisplay<F> {
+        PositionDisplay(self, scx)
+    }
+}
+
+pub struct SpanDisplay<'a, F>(Span, &'a SourceContext<F>);
+
+impl<'a, F> fmt::Display for SpanDisplay<'a, F> where F: FileSystem {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let (file, start_line, start_column, end_line, end_column) = self.1.map_span_to_line_column(self.0);
+        let relative_path = self.1.get_relative_path(file);
+        write!(f, "{}:{}:{}-{}:{}", relative_path.display(), start_line, start_column, end_line, end_column)
+    }
+}
+
+impl Span {
+    pub fn display<F: FileSystem>(self, scx: &SourceContext<F>) -> SpanDisplay<F> {
+        SpanDisplay(self, scx)
     }
 }

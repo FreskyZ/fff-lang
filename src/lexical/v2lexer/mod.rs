@@ -89,7 +89,7 @@ impl IdentifierChar for char {
 }
 
 pub struct V2Lexer<'chs, F> {
-    v1: BufLexer<V1Lexer<'chs, F>, V1Token, F>,
+    pub(super) v1: BufLexer<V1Lexer<'chs, F>, V1Token, F>,
 }
 impl<'chs, F> ILexer<'chs, F, V2Token> for V2Lexer<'chs, F> where F: FileSystem {
 
@@ -411,14 +411,17 @@ fn v2_base() {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n({:?}, {:?})", self.0, self.1) }
     }
     
-    fn test_case_full(mut scx: SourceContext<VirtualFileSystem>, symbols: &[&'static str], expect_tokens: Vec<(V2Token, Span)>, expect_messages: MessageCollection, line: u32) {
-        println!("Case at {}", line);
+    fn test_case_full(mut scx: SourceContext<VirtualFileSystem>, spans: &[Span], symbols: &[&'static str], expect_tokens: Vec<(V2Token, Span)>, expect_messages: MessageCollection) {
         let mut actual_messages = MessageCollection::new();
         let mut sess = ParseSession::new(&mut actual_messages);
         let mut chars = scx.entry("1");
+        for span in spans {
+            chars.intern_span(*span);
+        }
         for symbol in symbols {
             chars.intern_str(*symbol);
         }
+
         let mut v2lexer = V2Lexer::new(chars);
         for expect_token in expect_tokens {
             assert_eq!(v2lexer.next(&mut sess), expect_token);
@@ -430,10 +433,14 @@ fn v2_base() {
     }
 
     macro_rules! test_case {
-        ($src:literal, [$($symbol:literal),*] expect $expect_tokens: expr) =>
-            (test_case_full(make_source!($src), &[$($symbol),*], $expect_tokens, MessageCollection::new(), line!()));
-        ($src:literal, [$($symbol:literal),*] expect $expect_tokens: expr, $expect_messages: expr) => 
-            (test_case_full(make_source!($src), &[$($symbol),*], $expect_tokens, $expect_messages, line!()));
+        ($src:literal, [$($span:expr),*] expect $expect_tokens: expr) =>
+            (test_case_full(make_source!($src), &[$($span),*], &[], $expect_tokens, MessageCollection::new()));
+        ($src:literal, [$($span:expr),*] expect $expect_tokens: expr, $expect_messages: expr) => 
+            (test_case_full(make_source!($src), &[$($span),*], &[], $expect_tokens, $expect_messages));
+        ($src:literal, [$($span:expr),*], [$($string:literal),*] expect $expect_tokens: expr) =>
+            (test_case_full(make_source!($src), &[$($span),*], &[$($string),*], $expect_tokens, MessageCollection::new()));
+        ($src:literal, [$($span:expr),*], [$($string:literal),*] expect $expect_tokens: expr, $expect_messages: expr) => 
+            (test_case_full(make_source!($src), &[$($span),*], &[$($string),*], $expect_tokens, $expect_messages));
     }
 
     macro_rules! lit {
@@ -459,7 +466,7 @@ fn v2_base() {
     // keyword, identifier, bool lit, num lit, seperator
     // byte      0         1          2         3   
     // byte      01234567890123 456789012345678901234 5678
-    test_case!{ "var a = true;\nvar b = 789_123.456;\ndefg", ["a", "b", "defg"] expect vec![      
+    test_case!{ "var a = true;\nvar b = 789_123.456;\ndefg", [Span::new(4, 4), Span::new(18, 18), Span::new(35, 38)] expect vec![      
         kw!(Keyword::Var, 0, 2),
         ident!(Sym::new(1), 4, 4),
         sep!(Seperator::Assign, 6, 6),
@@ -475,7 +482,7 @@ fn v2_base() {
 
     //           0       1      2       3
     //           0 3 67890123 690123 4 9012
-    test_case!{ "一个chinese变量, a_中文_var", ["一个chinese变量", "a_中文_var"] expect vec![  // chinese ident
+    test_case!{ "一个chinese变量, a_中文_var", [Span::new(0, 16), Span::new(21, 32)] expect vec![  // chinese ident
         ident!(Sym::new(1), 0, 16),
         sep!(Seperator::Comma, 19, 19),
         ident!(Sym::new(2), 21, 32),
@@ -607,7 +614,7 @@ fn v2_base() {
 
     //           0         1         2         
     //           012345678901234567890123456789
-    test_case!{ "1.is_odd(), 123r64.to_string()", ["is_odd", "to_string"] expect vec![  //  another special case
+    test_case!{ "1.is_odd(), 123r64.to_string()", [Span::new(2, 7), Span::new(19, 27)] expect vec![  //  another special case
         lit!(1i32, 0, 0),
         sep!(Seperator::Dot, 1, 1),
         ident!(Sym::new(1), 2, 7),
@@ -623,8 +630,8 @@ fn v2_base() {
 
     //           0           1          2
     //           01 234567 890 1234567890123456
-    test_case!{ "r\"hello\" '\\u1234' 12/**/34 ", ["hello"] expect vec![    // dispatch v1
-        (V2Token::Literal(make_lit!(str, 1)), Span::new(0, 7)), // because `lit!(Sym::new(1), 0, 7)` is ambiguous
+    test_case!{ "r\"hello\" '\\u1234' 12/**/34 ", [], ["hello"] expect vec![    // dispatch v1
+        (V2Token::Literal(make_lit!(str, 1 << 31)), Span::new(0, 7)), // because `lit!(Sym::new(1), 0, 7)` is ambiguous
         lit!('\u{1234}', 9, 16),
         lit!(12i32, 18, 19),
         lit!(34i32, 24, 25),
@@ -633,7 +640,7 @@ fn v2_base() {
     // bug from syntax::expr::postfix_expr
     //           0         1         2         3         4         5
     //           012345678901234567890123456789012345678901234567890123
-    test_case!{ "1.a[[3](4, [5, 6], )](7, 8)() def[i32].bcd[10, 11, 12]", ["a", "bcd"] expect vec![
+    test_case!{ "1.a[[3](4, [5, 6], )](7, 8)() def[i32].bcd[10, 11, 12]", [Span::new(2, 2), Span::new(39, 41)] expect vec![
         lit!(1i32, 0, 0),
         sep!(Seperator::Dot, 1, 1),
         ident!(Sym::new(1), 2, 2),
@@ -678,23 +685,23 @@ fn v2_base() {
 
     //           0         1     
     //           0123456789012345678
-    test_case!{ "abc @abc @ @@ 1 @a", ["abc", "", "@", "a"] expect vec![
+    test_case!{ "abc @abc @ @@ 1 @a", [Span::new(0, 2), Span::new(12, 12), Span::new(17, 17)], [""] expect vec![
         ident!(Sym::new(1), 0, 2),  // yeah
         label!(Sym::new(1), 4, 7),  // yeah
-        label!(Sym::new(2), 9, 9),
-        label!(Sym::new(3), 11, 12),
+        label!(Sym::new(1 << 31), 9, 9),
+        label!(Sym::new(2), 11, 12),
         lit!(1i32, 14, 14),
-        label!(Sym::new(4), 16, 17),
+        label!(Sym::new(3), 16, 17),
     ]}
 
-    test_case!{ "@", [""] expect vec![label!(Sym::new(1), 0, 0)] }
+    test_case!{ "@", [], [""] expect vec![label!(Sym::new(1 << 31), 0, 0)] }
 
-    test_case!{ "a:", ["a"] expect vec![
+    test_case!{ "a:", [Span::new(0, 0)] expect vec![
         ident!(Sym::new(1), 0, 0),
         sep!(Seperator::Colon, 1, 1),
     ]}
-    test_case!{ "@: {}", [""] expect vec![
-        label!(Sym::new(1), 0, 0),
+    test_case!{ "@: {}", [], [""] expect vec![
+        label!(Sym::new(1 << 31), 0, 0),
         sep!(Seperator::Colon, 1, 1),
         sep!(Seperator::LeftBrace, 3, 3),
         sep!(Seperator::RightBrace, 4, 4),

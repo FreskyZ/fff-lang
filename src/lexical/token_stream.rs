@@ -40,6 +40,7 @@ impl TokenStream {
             }
         }
 
+        v2lexer.v1.lexer.v0.lexer.0.finish();
         TokenStream { items, eof_token: (Token::EOF, eof_span) }
     }
     pub fn nth_token(&self, idx: usize) -> &Token {

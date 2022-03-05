@@ -43,6 +43,7 @@ fn intern_values() {
 
 #[test]
 fn intern_spans() {
+    //                          012345678901234567890
     let mut scx = make_source!("eiwubvoqwincleiwubaslckhwoaihecbqvqvqwoliecn");
     let mut chars = scx.entry("1");
     let id1 = chars.intern_span(Span::new(0, 3));
@@ -55,6 +56,37 @@ fn intern_spans() {
     assert_eq!(scx.resolve_symbol(id1), "eiwu");
     assert_eq!(scx.resolve_symbol(id2), "iwub");
     assert_eq!(scx.resolve_symbol(id3), "eiwu");
+}
+
+#[test]
+fn intern_spans2() {
+    // bug from lexical v2_base
+    //                                    1          2         3   
+    //                          01234567890123 456789012345678901234 5678
+    let mut scx = make_source!("var a = true;\nvar b = 789_123.456;\ndefg");
+    let mut chars = scx.entry("1");
+    let id1 = chars.intern_span(Span::new(4, 4));
+    let id2 = chars.intern_span(Span::new(18, 18));
+    let id3 = chars.intern_span(Span::new(35, 38));
+    chars.finish();
+    assert!(id1 != id2);
+    assert!(id1 != id3);
+    assert!(id2 != id3);
+    assert_eq!(scx.resolve_symbol(id1), "a");
+    assert_eq!(scx.resolve_symbol(id2), "b");
+    assert_eq!(scx.resolve_symbol(id3), "defg");
+
+    // and this
+    
+    let mut scx = make_source!("一个chinese变量, a_中文_var");
+    let mut chars = scx.entry("1");
+    let id1 = chars.intern_span(Span::new(0, 16));
+    let id2 = chars.intern_span(Span::new(21, 32));
+    chars.finish();
+    assert!(id1 != id2);
+    assert!(id1 != id3);
+    assert_eq!(scx.resolve_symbol(id1), "一个chinese变量");
+    assert_eq!(scx.resolve_symbol(id2), "a_中文_var");
 }
 
 #[test]
@@ -410,6 +442,10 @@ fn v0() {
         'd', 5, 'e', 6, 'f', 7, '\n', 8,
     }
 
+    test_case!{ "一个chinese变量, a_中文_var",
+        '一', 0, '个', 3, 'c', 6, 'h', 7, 'i', 8, 'n', 9, 'e', 10, 's', 11, 'e', 12, '变', 13, '量', 16, ',', 19, ' ', 20, 
+        'a', 21, '_', 22, '中', 23, '文', 26, '_', 29, 'v', 30, 'a', 31, 'r', 32,
+    }
     test_case!{ "", }
 }
 

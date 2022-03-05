@@ -17,7 +17,7 @@ pub fn main() {
         if let Token::EOF = tokens.nth_token(i) {
             break;
         } else {
-            println!("{:?} @ {:?}", tokens.nth_token(i), scx.map_span_to_line_column(tokens.nth_span(i)));
+            println!("{}: {:?}", tokens.nth_span(i).display(&scx), tokens.nth_token(i));
         }
     }
 

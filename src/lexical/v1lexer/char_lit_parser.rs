@@ -143,7 +143,7 @@ impl CharLiteralParser {
                         return CharLiteralParserResult::Finished(None, all_span);
                     }
                     (&mut None, '\\', slash_pos, next_ch) => {   // if is escape, try escape
-                        self.current_span += slash_pos; // `\`
+                        self.current_span += slash_pos.offset(1); // `\`
                         match EscapeCharParser::simple_check(next_ch) {
                             EscapeCharSimpleCheckResult::Normal(ch) => {
                                 self.state.set(ParserState::ExpectEnd(Some(ch)));
@@ -156,7 +156,6 @@ impl CharLiteralParser {
                                     (slash_pos.into(), error_strings::UnknownCharEscapeHere.to_owned()),
                                 ]));
                                 self.state.set(ParserState::ExpectEnd(None));
-                                self.current_span += pos;
                                 self.has_failed = true;
                                 self.coverage_recorder.insert(8);        // C8, invalid simple escape
                                 return CharLiteralParserResult::WantMoreWithSkip1;

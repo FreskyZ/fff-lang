@@ -1,6 +1,7 @@
 ///! source::iter: source code content iterator, with interner
 
 use std::collections::hash_map::DefaultHasher;
+use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::path::PathBuf;
 use std::ops::{Add, AddAssign};
@@ -14,8 +15,8 @@ pub const EOF: char = 0u8 as char;
 ///   to reduce memory usage because location info is used extremely widely
 /// - it is u32 not usize because it is not reasonable to
 ///   have a file size over 4GB or all source file total size over 4GB for this toy language (possibly for all languages)
-#[derive(Eq, PartialEq, Clone, Copy, Debug, Hash)]
-pub struct Position(pub(super) u32);
+#[derive(Eq, PartialEq, Clone, Copy,  Hash)]
+pub struct Position(u32);
 
 impl Position {
     pub fn new(v: u32) -> Self {
@@ -28,6 +29,13 @@ impl Position {
         Self(if offset >= 0 { self.0 + offset as u32 } else { self.0 - (-offset) as u32 })
     }
 }
+
+impl fmt::Debug for Position {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 impl From<u32> for Position {
     fn from(v: u32) -> Self {
         Self(v)
@@ -47,7 +55,7 @@ impl Add for Position {
 ///
 /// construct from 2 Positions,
 /// while type name is Span, recommend variable name is `loc` or `location`
-#[derive(Eq, PartialEq, Clone, Copy, Debug, Hash)]
+#[derive(Eq, PartialEq, Clone, Copy, Hash)]
 pub struct Span {
     pub start: Position,
     pub end: Position,
@@ -56,6 +64,12 @@ impl Span {
     // e.g. Span::new(position1, position2) or Span::new(42, 43)
     pub fn new(start: impl Into<Position>, end: impl Into<Position>) -> Span {
         Span{ start: start.into(), end: end.into() }
+    }
+}
+
+impl fmt::Debug for Span {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}:{}", self.start.0, self.end.0)
     }
 }
 
@@ -107,7 +121,7 @@ impl From<Position> for Span {
 /// its name is short because it is widely used,
 /// it is u32 not usize because it is widely used
 /// and not reasonable to have more than u32::MAX symbols in all source files
-#[derive(Eq, PartialEq, Clone, Copy, Debug, Hash)]
+#[derive(Eq, PartialEq, Clone, Copy, Hash)]
 pub struct Sym(u32);
 
 impl Sym {
@@ -123,6 +137,12 @@ impl Sym {
 impl From<u32> for Sym {
     fn from(v: u32) -> Self {
         Self(v)
+    }
+}
+
+impl fmt::Debug for Sym {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
@@ -144,6 +164,7 @@ fn get_endlines(content: &str) -> Vec<usize> {
 //
 // from source context's perspective, this is also a source file builder which returns by 
 // entry and import function and when running, append to symbols and when finished, append to files
+#[derive(Debug)]
 pub struct SourceChars<'a, F = DefaultFileSystem> {
     pub(super) content: String,
     current_index: usize,  // current iterating byte index, content bytes[current_index] should be the next returned char
@@ -188,8 +209,9 @@ impl<'a, F> SourceChars<'a, F> where F: FileSystem {
                     }
 
                     const MASKS: [u8; 5] = [0, 0, 0x1F, 0x0F, 0x07]; // byte 0 masks
+                    const SHIFTS: [u8; 5] = [0, 0, 12, 6, 0]; // shift back for width 2 and width 3
                     let bytes = &bytes[self.current_index..];
-                    let r#char = (((bytes[0] & MASKS[width]) as u32) << 18) | (((bytes[1] & 0x3F) as u32) << 12) | (((bytes[2] & 0x3F) as u32) << 6) | ((bytes[3] & 0x3F) as u32);
+                    let r#char = ((((bytes[0] & MASKS[width]) as u32) << 18) | (((bytes[1] & 0x3F) as u32) << 12) | (((bytes[2] & 0x3F) as u32) << 6) | ((bytes[3] & 0x3F) as u32)) >> SHIFTS[width];
 
                     // TODO: check more invalid utf8 sequence include following bytes not start with 0b10 and larger than 10FFFF and between D800 and E000
                     self.current_index += width;
@@ -209,7 +231,8 @@ impl<'a, F> SourceChars<'a, F> where F: FileSystem {
         // does not check position for EOF because it is not expected to intern something include EOF
         debug_assert!(end < self.content.len() - 3 && start< self.content.len() - 3, "position overflow");
 
-        let hash = get_hash(&self.content[start - self.start_index..end - self.start_index]);
+        let end_width = get_char_width(&self.content, end - self.start_index);
+        let hash = get_hash(&self.content[start - self.start_index..end - self.start_index + end_width]);
         if let Some(symbol) = self.context.symbols.get(&hash) {
             *symbol
         } else {
