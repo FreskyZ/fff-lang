@@ -3,9 +3,7 @@
 ///! syntax/test_helper
 
 use std::fmt::Debug;
-use std::rc::Rc;
-use crate::source::SourceCode;
-use crate::source::SymbolCollection;
+use crate::source::{SourceContext};
 use crate::diagnostics::MessageCollection;
 use crate::lexical::TokenStream;
 use super::ParseSession;
@@ -14,7 +12,7 @@ use super::ISyntaxParse;
 pub trait WithTestInput {
     type Output: Sized;
 
-    fn with_test_input(input: TestInput) -> (Option<Self::Output>, Rc<SourceCode>, MessageCollection, SymbolCollection);
+    fn with_test_input(input: TestInput) -> (Option<Self::Output>, SourceContext, MessageCollection);
 
     fn with_test_str(src: &str) -> Self::Output {
         let (maybe_output, _, messages, _) = Self::with_test_input(TestInput::new(src));
@@ -108,7 +106,7 @@ fn test_input_use() {
     impl SyntaxTree {
         fn parse(src: &str, messages: &mut MessageCollection, _symbols: &mut SymbolCollection) -> Result<SyntaxTree, ()> {
             if src.as_bytes()[0] == b'1' {
-                messages.push(Message::new_by_str("some message", vec![(make_span!(1, 2), "here")]));
+                messages.push(Message::new_by_str("some message", vec![(Span::new(1, 2), "here")]));
             } else if src.as_bytes()[1] == b'2' {
                 return Err(());
             }
@@ -131,7 +129,7 @@ fn test_input_use() {
         .set_src_id(42)
         .apply::<SyntaxTree, SyntaxTree>()
         .expect_messages(make_messages![
-            Message::new_by_str("some message", vec![(make_span!(1, 2), "here")])
+            Message::new_by_str("some message", vec![(Span::new(1, 2), "here")])
         ])
         .expect_result(SyntaxTree::new_items("123"))
         .finish();

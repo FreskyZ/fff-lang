@@ -42,7 +42,7 @@ impl IfClause {
 impl ElseIfClause {
     pub fn new<T: Into<Expr>>(elseif_span: Span, cond_expr: T, body: Block) -> ElseIfClause {
         ElseIfClause{ 
-            all_span: body.all_span.merge(&elseif_span),
+            all_span: body.all_span + elseif_span,
             cond_expr: cond_expr.into(),
             elseif_span,
             body
@@ -156,7 +156,7 @@ impl ISyntaxParse for IfStatement {
         loop {
             if let Some(else_span) = sess.try_expect_keyword(Keyword::Else) {
                 if let Some(if_span) = sess.try_expect_keyword(Keyword::If) {
-                    let elseif_span = else_span.merge(&if_span);
+                    let elseif_span = else_span + if_span;
                     let elseif_expr = Expr::parse(sess)?;
                     let elseif_body = Block::parse(sess)?;
                     elseif_clauses.push(ElseIfClause::new(elseif_span, elseif_expr, elseif_body));
@@ -197,17 +197,17 @@ fn if_stmt_parse() {
     //                                      0123456789012345678901234567890123456
     assert_eq!{ IfStatement::with_test_str("if true { } else if false { } else {}"),
         IfStatement::new_ifelse(
-            IfClause::new(make_span!(0, 1), 
-                LitExpr::new(LitValue::from(true), make_span!(3, 6)),
-                Block::new(make_span!(8, 10), vec![])
+            IfClause::new(Span::new(0, 1), 
+                LitExpr::new(LitValue::from(true), Span::new(3, 6)),
+                Block::new(Span::new(8, 10), vec![])
             ), vec![
-                ElseIfClause::new(make_span!(12, 18), 
-                    LitExpr::new(LitValue::from(false), make_span!(20, 24)),
-                    Block::new(make_span!(26, 28), vec![])
+                ElseIfClause::new(Span::new(12, 18), 
+                    LitExpr::new(LitValue::from(false), Span::new(20, 24)),
+                    Block::new(Span::new(26, 28), vec![])
                 ),
             ],
-            ElseClause::new(make_span!(30, 33),
-                Block::new(make_span!(35, 36), vec![])
+            ElseClause::new(Span::new(30, 33),
+                Block::new(Span::new(35, 36), vec![])
             )
         )
     }
@@ -219,30 +219,30 @@ fn if_stmt_parse() {
         .apply::<IfStatement, _>()
         .expect_no_message()
         .expect_result(IfStatement::new_ifelse(
-            IfClause::new(make_span!(0, 1), 
-                LitExpr::new(LitValue::from(1), make_span!(3, 3)),
-                Block::new(make_span!(5, 41), vec![
-                    Statement::SimpleExpr(SimpleExprStatement::new(make_span!(7, 20),
+            IfClause::new(Span::new(0, 1), 
+                LitExpr::new(LitValue::from(1), Span::new(3, 3)),
+                Block::new(Span::new(5, 41), vec![
+                    Statement::SimpleExpr(SimpleExprStatement::new(Span::new(7, 20),
                         FnCallExpr::new(
                             MemberAccessExpr::new(
-                                SimpleName::new(make_id!(1), make_span!(7, 9)),
-                                make_span!(10, 10),
-                                SimpleName::new(make_id!(2), make_span!(11, 16))
+                                SimpleName::new(make_id!(1), Span::new(7, 9)),
+                                Span::new(10, 10),
+                                SimpleName::new(make_id!(2), Span::new(11, 16))
                             ),
-                            make_span!(17, 19), make_exprs![
-                                SimpleName::new(make_id!(3), make_span!(18, 18))
+                            Span::new(17, 19), make_exprs![
+                                SimpleName::new(make_id!(3), Span::new(18, 18))
                             ]
                         ),
                     )),
-                    Statement::SimpleExpr(SimpleExprStatement::new(make_span!(22, 39),
+                    Statement::SimpleExpr(SimpleExprStatement::new(Span::new(22, 39),
                         FnCallExpr::new(
                             MemberAccessExpr::new(
-                                SimpleName::new(make_id!(4), make_span!(22, 26)),
-                                make_span!(27, 27),
-                                SimpleName::new(make_id!(5), make_span!(28, 35))
+                                SimpleName::new(make_id!(4), Span::new(22, 26)),
+                                Span::new(27, 27),
+                                SimpleName::new(make_id!(5), Span::new(28, 35))
                             ),
-                            make_span!(36, 38), make_exprs![
-                                SimpleName::new(make_id!(6), make_span!(37, 37))
+                            Span::new(36, 38), make_exprs![
+                                SimpleName::new(make_id!(6), Span::new(37, 37))
                             ]
                         ),
                     ))
@@ -250,21 +250,21 @@ fn if_stmt_parse() {
             ),
             vec![],
             ElseClause::new(
-                make_span!(43, 46),
-                Block::new(make_span!(48, 71), vec![
-                    Statement::SimpleExpr(SimpleExprStatement::new(make_span!(50, 70),
+                Span::new(43, 46),
+                Block::new(Span::new(48, 71), vec![
+                    Statement::SimpleExpr(SimpleExprStatement::new(Span::new(50, 70),
                         FnCallExpr::new(
                             MemberAccessExpr::new(
-                                ArrayDef::new(make_span!(50, 56), make_exprs![
-                                    LitExpr::new(LitValue::from(1), make_span!(51, 51)),
-                                    LitExpr::new(LitValue::from(2), make_span!(53, 53)),
-                                    LitExpr::new(LitValue::from(3), make_span!(55, 55)),
+                                ArrayDef::new(Span::new(50, 56), make_exprs![
+                                    LitExpr::new(LitValue::from(1), Span::new(51, 51)),
+                                    LitExpr::new(LitValue::from(2), Span::new(53, 53)),
+                                    LitExpr::new(LitValue::from(3), Span::new(55, 55)),
                                 ]),
-                                make_span!(57, 57),
-                                SimpleName::new(make_id!(8), make_span!(58, 60))
+                                Span::new(57, 57),
+                                SimpleName::new(make_id!(8), Span::new(58, 60))
                             ),
-                            make_span!(61, 69), make_exprs![
-                                SimpleName::new(make_id!(7), make_span!(62, 68))
+                            Span::new(61, 69), make_exprs![
+                                SimpleName::new(make_id!(7), Span::new(62, 68))
                             ]
                         )
                     ))

@@ -85,13 +85,13 @@ impl ISyntaxParse for TypeDef {
             let colon_span = sess.expect_sep(Seperator::Colon)?;
             let field_type = TypeUse::parse(sess)?;
             fields.push(if let Some(comma_span) = sess.try_expect_sep(Seperator::Comma) {
-                TypeFieldDef::new(field_name.span.merge(&comma_span), field_name, colon_span, field_type)
+                TypeFieldDef::new(field_name.span + comma_span, field_name, colon_span, field_type)
             } else {
                 TypeFieldDef::new(field_name.span.merge(&field_type.all_span), field_name, colon_span, field_type)
             });
         };
 
-        Ok(TypeDef::new(starting_span.merge(&right_brace_span), name, fields))
+        Ok(TypeDef::new(starting_span + right_brace_span, name, fields))
     }
 }
 
@@ -103,20 +103,20 @@ fn type_def_parse() {
 
     //                                  01234567890123456
     assert_eq!{ TypeDef::with_test_str("type x { x: i32 }"),
-        TypeDef::new(make_span!(0, 16), SimpleName::new(make_id!(1), make_span!(5, 5)), vec![
-            TypeFieldDef::new(make_span!(9, 14), 
-                SimpleName::new(make_id!(1), make_span!(9, 9)),
-                make_span!(10, 10),
-                TypeUse::new_simple(make_id!(2), make_span!(12, 14))
+        TypeDef::new(Span::new(0, 16), SimpleName::new(make_id!(1), Span::new(5, 5)), vec![
+            TypeFieldDef::new(Span::new(9, 14), 
+                SimpleName::new(make_id!(1), Span::new(9, 9)),
+                Span::new(10, 10),
+                TypeUse::new_simple(make_id!(2), Span::new(12, 14))
             )
         ])
     }
     assert_eq!{ TypeDef::with_test_str("type x { x: i32,}"),
-        TypeDef::new(make_span!(0, 16), SimpleName::new(make_id!(1), make_span!(5, 5)), vec![
-            TypeFieldDef::new(make_span!(9, 15), 
-                SimpleName::new(make_id!(1), make_span!(9, 9)),
-                make_span!(10, 10),
-                TypeUse::new_simple(make_id!(2), make_span!(12, 14))
+        TypeDef::new(Span::new(0, 16), SimpleName::new(make_id!(1), Span::new(5, 5)), vec![
+            TypeFieldDef::new(Span::new(9, 15), 
+                SimpleName::new(make_id!(1), Span::new(9, 9)),
+                Span::new(10, 10),
+                TypeUse::new_simple(make_id!(2), Span::new(12, 14))
             )
         ])
     }
@@ -126,23 +126,23 @@ fn type_def_parse() {
         .set_syms(make_symbols!["array", "data", "size", "cap", "u64", "u8"])
         .apply::<TypeDef, _>()
         .expect_no_message()
-        .expect_result(TypeDef::new(make_span!(0, 45), SimpleName::new(make_id!(1), make_span!(5, 9)), vec![
-            TypeFieldDef::new(make_span!(13, 23),
-                SimpleName::new(make_id!(2), make_span!(13, 16)),
-                make_span!(17, 17),
-                TypeUse::new_template(make_id!(1), Span::default(), make_span!(19, 22), vec![
-                    TypeUse::new_simple(make_id!(6), make_span!(20, 21))
+        .expect_result(TypeDef::new(Span::new(0, 45), SimpleName::new(make_id!(1), Span::new(5, 9)), vec![
+            TypeFieldDef::new(Span::new(13, 23),
+                SimpleName::new(make_id!(2), Span::new(13, 16)),
+                Span::new(17, 17),
+                TypeUse::new_template(make_id!(1), Span::default(), Span::new(19, 22), vec![
+                    TypeUse::new_simple(make_id!(6), Span::new(20, 21))
                 ])
             ),
-            TypeFieldDef::new(make_span!(25, 34), 
-                SimpleName::new(make_id!(3), make_span!(25, 28)),
-                make_span!(29, 29),
-                TypeUse::new_simple(make_id!(5), make_span!(31, 33))
+            TypeFieldDef::new(Span::new(25, 34), 
+                SimpleName::new(make_id!(3), Span::new(25, 28)),
+                Span::new(29, 29),
+                TypeUse::new_simple(make_id!(5), Span::new(31, 33))
             ),
-            TypeFieldDef::new(make_span!(36, 43), 
-                SimpleName::new(make_id!(4), make_span!(36, 38)),
-                make_span!(39, 39),
-                TypeUse::new_simple(make_id!(5), make_span!(41, 43))
+            TypeFieldDef::new(Span::new(36, 43), 
+                SimpleName::new(make_id!(4), Span::new(36, 38)),
+                Span::new(39, 39),
+                TypeUse::new_simple(make_id!(5), Span::new(41, 43))
             )
         ]))
     .finish();

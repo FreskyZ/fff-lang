@@ -69,7 +69,7 @@ impl ISyntaxParse for UseStatement {
             (Span::default(), None)
         };
         let semicolon_span = sess.expect_sep(Seperator::SemiColon)?;
-        let all_span = starting_span.merge(&semicolon_span);
+        let all_span = starting_span + semicolon_span;
 
         Ok(UseStatement::new_some(all_span, from_name, as_span, to_ident))
     }
@@ -81,21 +81,21 @@ fn use_stmt_parse() {
 
     assert_eq!{
         UseStatement::with_test_str("use a;"),
-        UseStatement::new_default(make_span!(0, 5),
-            Name::new(make_span!(4, 4), vec![SimpleName::new(make_id!(1), make_span!(4, 4))])
+        UseStatement::new_default(Span::new(0, 5),
+            Name::new(Span::new(4, 4), vec![SimpleName::new(make_id!(1), Span::new(4, 4))])
         )
     }
 
     assert_eq!{ //                   0123456789012345678901234567890
         UseStatement::with_test_str("use std::fmt::Debug as Display;"),
-        UseStatement::new_target(make_span!(0, 30), 
-            Name::new(make_span!(4, 18), vec![
-                SimpleName::new(make_id!(1), make_span!(4, 6)),
-                SimpleName::new(make_id!(2), make_span!(9, 11)),
-                SimpleName::new(make_id!(3), make_span!(14, 18))
+        UseStatement::new_target(Span::new(0, 30), 
+            Name::new(Span::new(4, 18), vec![
+                SimpleName::new(make_id!(1), Span::new(4, 6)),
+                SimpleName::new(make_id!(2), Span::new(9, 11)),
+                SimpleName::new(make_id!(3), Span::new(14, 18))
             ]),
-            make_span!(20, 21),
-            SimpleName::new(make_id!(4), make_span!(23, 29))
+            Span::new(20, 21),
+            SimpleName::new(make_id!(4), Span::new(23, 29))
         )
     }
 }

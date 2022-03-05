@@ -20,7 +20,7 @@ use super::super::ISyntaxGrammar;
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct SimpleExprStatement {
     pub expr: Expr, 
-    pub all_span: Span,  // this span = expr.all_span.merge(&semicolon_span)
+    pub all_span: Span,  // this span = expr.all_span + semicolon_span
 }
 impl ISyntaxFormat for SimpleExprStatement {
     fn format(&self, f: Formatter) -> String {
@@ -91,12 +91,12 @@ impl ISyntaxParse for AssignExprStatement {
         let starting_span = left_expr.get_all_span();
 
         if let Some(semicolon_span) = sess.try_expect_sep(Seperator::SemiColon) {
-            Ok(Statement::SimpleExpr(SimpleExprStatement::new(starting_span.merge(&semicolon_span), left_expr)))
+            Ok(Statement::SimpleExpr(SimpleExprStatement::new(starting_span + semicolon_span, left_expr)))
         } else if let Some((assign_op, assign_op_span)) = sess.try_expect_sep_cat(SeperatorCategory::Assign) {
             let right_expr = Expr::parse(sess)?;
             let semicolon_span = sess.expect_sep(Seperator::SemiColon)?;
             Ok(Statement::AssignExpr(
-                AssignExprStatement::new(starting_span.merge(&semicolon_span), assign_op, assign_op_span, left_expr, right_expr)))
+                AssignExprStatement::new(starting_span + semicolon_span, assign_op, assign_op_span, left_expr, right_expr)))
         } else {
             sess.push_unexpect("assign operators, semicolon")
         }
@@ -121,11 +121,11 @@ fn expr_stmt_parse() {
         .set_syms(make_symbols!["writeln", "helloworld"]) 
         .apply::<AssignExprStatement, _>()
         .expect_no_message()
-        .expect_result(Statement::SimpleExpr(SimpleExprStatement::new(make_span!(0, 21),
+        .expect_result(Statement::SimpleExpr(SimpleExprStatement::new(Span::new(0, 21),
             FnCallExpr::new(
-                SimpleName::new(make_id!(1), make_span!(0, 6)),
-                make_span!(7, 20), make_exprs![
-                    LitExpr::new(make_lit!(str, 2), make_span!(8, 19))
+                SimpleName::new(make_id!(1), Span::new(0, 6)),
+                Span::new(7, 20), make_exprs![
+                    LitExpr::new(make_lit!(str, 2), Span::new(8, 19))
                 ]
             )
         )))
@@ -133,14 +133,14 @@ fn expr_stmt_parse() {
 
     //                                              012345678901
     assert_eq!{ AssignExprStatement::with_test_str("1 + 1 <<= 2;"),  // to show I have 3 char seperator available
-        Statement::AssignExpr(AssignExprStatement::new(make_span!(0, 11),
-            Seperator::ShiftLeftAssign, make_span!(6, 8),
+        Statement::AssignExpr(AssignExprStatement::new(Span::new(0, 11),
+            Seperator::ShiftLeftAssign, Span::new(6, 8),
             BinaryExpr::new(
-                LitExpr::new(LitValue::from(1), make_span!(0, 0)),
-                Seperator::Add, make_span!(2, 2),
-                LitExpr::new(LitValue::from(1), make_span!(4, 4)),
+                LitExpr::new(LitValue::from(1), Span::new(0, 0)),
+                Seperator::Add, Span::new(2, 2),
+                LitExpr::new(LitValue::from(1), Span::new(4, 4)),
             ),
-            LitExpr::new(LitValue::from(2), make_span!(10, 10))
+            LitExpr::new(LitValue::from(2), Span::new(10, 10))
         ))
     }
 }

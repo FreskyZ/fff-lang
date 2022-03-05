@@ -117,7 +117,7 @@ fn loop_stmt_parse() {
     use super::super::TestInput;
 
     assert_eq!{ LoopStatement::with_test_str("loop {}"),
-        LoopStatement::new_no_label(make_span!(0, 3), Block::new(make_span!(5, 6), vec![]))
+        LoopStatement::new_no_label(Span::new(0, 3), Block::new(Span::new(5, 6), vec![]))
     }
     //                                        1234567890123456789 0123 45678
     TestInput::new("@@: loop { println(\"233\"); }")
@@ -125,14 +125,14 @@ fn loop_stmt_parse() {
         .apply::<LoopStatement, _>()
         .expect_no_message()
         .expect_result(LoopStatement::new_with_label(
-            LabelDef::new(make_id!(1), make_span!(0, 2)),
-            make_span!(4, 7),
-            Block::new(make_span!(9, 27), vec![
-                Statement::SimpleExpr(SimpleExprStatement::new(make_span!(11, 25), 
+            LabelDef::new(make_id!(1), Span::new(0, 2)),
+            Span::new(4, 7),
+            Block::new(Span::new(9, 27), vec![
+                Statement::SimpleExpr(SimpleExprStatement::new(Span::new(11, 25), 
                     FnCallExpr::new(
-                        SimpleName::new(make_id!(2), make_span!(11, 17)),
-                        make_span!(18, 24), make_exprs![
-                            LitExpr::new(make_lit!(str, 3), make_span!(19, 23))
+                        SimpleName::new(make_id!(2), Span::new(11, 17)),
+                        Span::new(18, 24), make_exprs![
+                            LitExpr::new(make_lit!(str, 3), Span::new(19, 23))
                         ]
                     )
                 ))

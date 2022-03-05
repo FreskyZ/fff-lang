@@ -58,11 +58,11 @@ impl ISyntaxParse for ReturnStatement {
             // but I have never write some test cases like following something after ret stmt
             // so the bug is not propagated to be discovered
             // 17/7/28: now new features added to parse_sess and move_next is to be removed, no current position management bug any more!
-            Ok(ReturnStatement::new_unit(starting_span.merge(&semicolon_span)))
+            Ok(ReturnStatement::new_unit(starting_span + semicolon_span))
         } else {
             let expr = Expr::parse(sess)?;
             let semicolon_span = sess.expect_sep(Seperator::SemiColon)?;
-            Ok(ReturnStatement::new_expr(starting_span.merge(&semicolon_span), expr))
+            Ok(ReturnStatement::new_expr(starting_span + semicolon_span, expr))
         }
     }
 }
@@ -75,14 +75,14 @@ fn ret_stmt_parse() {
     use super::super::BinaryExpr;
     use super::super::WithTestInput;
 
-    assert_eq!{ ReturnStatement::with_test_str("return;"), ReturnStatement::new_unit(make_span!(0, 6)) }
+    assert_eq!{ ReturnStatement::with_test_str("return;"), ReturnStatement::new_unit(Span::new(0, 6)) }
     assert_eq!{ ReturnStatement::with_test_str("return 1 + 1;"), 
         ReturnStatement::new_expr(
-            make_span!(0, 12), 
+            Span::new(0, 12), 
             Expr::Binary(BinaryExpr::new(
-                Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(7, 7))),
-                Seperator::Add, make_span!(9, 9),
-                Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(11, 11))),
+                Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(7, 7))),
+                Seperator::Add, Span::new(9, 9),
+                Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(11, 11))),
             ))
         )
     }

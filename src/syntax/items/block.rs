@@ -50,7 +50,7 @@ impl ISyntaxParse for Block {
         let mut items = Vec::new();
         loop {
             if let Some(ending_span) = sess.try_expect_sep(Seperator::RightBrace) {
-                return Ok(Block::new(starting_span.merge(&ending_span), items));
+                return Ok(Block::new(starting_span + ending_span, items));
             }
             items.push(Statement::parse(sess)?);
         }
@@ -62,6 +62,6 @@ fn block_parse() {
     use super::super::WithTestInput;
     
     assert_eq!{ Block::with_test_str("{}"),
-        Block::new(make_span!(0, 1), vec![])
+        Block::new(Span::new(0, 1), vec![])
     }
 }

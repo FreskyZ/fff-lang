@@ -106,15 +106,15 @@ fn tuple_def_format() {
     use super::LitExpr;
 
     assert_eq!{
-        TupleDef::new(make_span!(0, 42), make_exprs![]).format(Formatter::with_test_indent(1)),
+        TupleDef::new(Span::new(0, 42), make_exprs![]).format(Formatter::with_test_indent(1)),
         "  tuple-def <<0>0-42>\n    no-item"
     }
 
     assert_eq!{
-        TupleDef::new(make_span!(0, 42), make_exprs![
-            LitExpr::new(LitValue::from(1), make_span!(1, 2)),
-            LitExpr::new(LitValue::from(2), make_span!(3, 4)),
-            LitExpr::new(LitValue::from(48), make_span!(5, 6)),
+        TupleDef::new(Span::new(0, 42), make_exprs![
+            LitExpr::new(LitValue::from(1), Span::new(1, 2)),
+            LitExpr::new(LitValue::from(2), Span::new(3, 4)),
+            LitExpr::new(LitValue::from(48), Span::new(5, 6)),
         ]).format(Formatter::with_test_indent(1)),
         "  tuple-def <<0>0-42>\n    literal (i32)1 <<0>1-2>\n    literal (i32)2 <<0>3-4>\n    literal (i32)48 <<0>5-6>"
     }
@@ -127,18 +127,18 @@ fn tuple_def_parse() {
 
     //                                   01234567
     assert_eq!{ TupleDef::with_test_str("(1, '2')"),
-        Expr::Tuple(TupleDef::new(make_span!(0, 7), make_exprs![
-            LitExpr::new(LitValue::from(1), make_span!(1, 1)),
-            LitExpr::new(LitValue::from('2'), make_span!(4, 6))
+        Expr::Tuple(TupleDef::new(Span::new(0, 7), make_exprs![
+            LitExpr::new(LitValue::from(1), Span::new(1, 1)),
+            LitExpr::new(LitValue::from('2'), Span::new(4, 6))
         ]))
     }
     //                                   0123456
     assert_eq!{ TupleDef::with_test_str("(1 + 1)"),
-        Expr::Paren(ParenExpr::new(make_span!(0, 6), 
+        Expr::Paren(ParenExpr::new(Span::new(0, 6), 
             BinaryExpr::new(
-                LitExpr::new(LitValue::from(1), make_span!(1, 1)), 
-                Seperator::Add, make_span!(3, 3),
-                LitExpr::new(LitValue::from(1), make_span!(5, 5)),
+                LitExpr::new(LitValue::from(1), Span::new(1, 1)), 
+                Seperator::Add, Span::new(3, 3),
+                LitExpr::new(LitValue::from(1), Span::new(5, 5)),
             )
         ))
     }
@@ -151,9 +151,9 @@ fn tuple_def_errors() {
     
     TestInput::new("( , )")
         .apply::<TupleDef, _>()
-        .expect_result(Expr::Tuple(TupleDef::new(make_span!(0, 4), make_exprs![])))
+        .expect_result(Expr::Tuple(TupleDef::new(Span::new(0, 4), make_exprs![])))
         .expect_messages(make_messages![
-            Message::new_by_str(error_strings::UnexpectedSingleComma, vec![(make_span!(0, 4), error_strings::TupleDefHere)])
+            Message::new_by_str(error_strings::UnexpectedSingleComma, vec![(Span::new(0, 4), error_strings::TupleDefHere)])
         ])
     .finish();
 }

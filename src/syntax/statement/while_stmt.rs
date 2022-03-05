@@ -103,15 +103,15 @@ fn while_stmt_parse() {
         .apply::<WhileStatement, _>()
         .expect_no_message()
         .expect_result(WhileStatement::new_with_label(
-            LabelDef::new(make_id!(1), make_span!(0, 2)),
-            make_span!(4, 8),
-            Expr::Lit(LitExpr::new(LitValue::from(true), make_span!(10, 13))),
-            Block::new(make_span!(15, 46), vec![
-                Statement::SimpleExpr(SimpleExprStatement::new(make_span!(17, 44), 
+            LabelDef::new(make_id!(1), Span::new(0, 2)),
+            Span::new(4, 8),
+            Expr::Lit(LitExpr::new(LitValue::from(true), Span::new(10, 13))),
+            Block::new(Span::new(15, 46), vec![
+                Statement::SimpleExpr(SimpleExprStatement::new(Span::new(17, 44), 
                     FnCallExpr::new(
-                        SimpleName::new(make_id!(2), make_span!(17, 23)),
-                        make_span!(24, 43), make_exprs![
-                            LitExpr::new(make_lit!(str, 3), make_span!(25, 42))
+                        SimpleName::new(make_id!(2), Span::new(17, 23)),
+                        Span::new(24, 43), make_exprs![
+                            LitExpr::new(make_lit!(str, 3), Span::new(25, 42))
                         ]
                     )
                 ))

@@ -6,7 +6,7 @@
 
 use std::fmt;
 use crate::source::Span;
-use crate::source::SymbolID;
+use crate::source::Sym;
 use crate::diagnostics::Message;
 use crate::lexical::Token;
 use crate::lexical::Keyword;
@@ -23,7 +23,7 @@ use super::super::ISyntaxGrammar;
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct VarDeclStatement {
     pub is_const: bool,
-    pub name: SymbolID,
+    pub name: Sym,
     pub name_span: Span,
     pub typeuse: Option<TypeUse>,
     pub init_expr: Option<Expr>,
@@ -50,17 +50,17 @@ impl fmt::Debug for VarDeclStatement {
 impl VarDeclStatement {
 
     pub fn new(all_span: Span, 
-        is_const: bool, name: SymbolID, name_span: Span, 
+        is_const: bool, name: Sym, name_span: Span, 
         typeuse: Option<TypeUse>, init_expr: Option<Expr>) -> VarDeclStatement {
         VarDeclStatement{ all_span, is_const, name, name_span, typeuse, init_expr }
     }
     pub fn new_const(all_span: Span, 
-        name: SymbolID, name_span: Span, 
+        name: Sym, name_span: Span, 
         typeuse: Option<TypeUse>, init_expr: Option<Expr>) -> VarDeclStatement {
         VarDeclStatement{ all_span, is_const: true, name, name_span, typeuse, init_expr }
     }
     pub fn new_var(all_span: Span, 
-        name: SymbolID, name_span: Span, 
+        name: Sym, name_span: Span, 
         typeuse: Option<TypeUse>, init_expr: Option<Expr>) -> VarDeclStatement {
         VarDeclStatement{ all_span, is_const: false, name, name_span, typeuse, init_expr }
     }
@@ -87,7 +87,7 @@ impl ISyntaxParse for VarDeclStatement {
         }
         let ending_span = sess.expect_sep(Seperator::SemiColon)?;
 
-        return Ok(VarDeclStatement::new(starting_span.merge(&ending_span), is_const, name, name_strpos, maybe_decltype, maybe_init_expr));
+        return Ok(VarDeclStatement::new(starting_span + ending_span, is_const, name, name_strpos, maybe_decltype, maybe_init_expr));
     }
 }
 
@@ -107,32 +107,32 @@ fn var_decl_stmt_parse() {
     
     //                                           12345678901234
     assert_eq!{ VarDeclStatement::with_test_str("const abc = 0;"),
-        VarDeclStatement::new_const(make_span!(0, 13),
-            make_id!(1), make_span!(6, 8),
+        VarDeclStatement::new_const(Span::new(0, 13),
+            make_id!(1), Span::new(6, 8),
             None,
-            Some(Expr::Lit(LitExpr::new(LitValue::from(0), make_span!(12, 12))))
+            Some(Expr::Lit(LitExpr::new(LitValue::from(0), Span::new(12, 12))))
         )
     }
 
     //                                           0        1         
     //                                           12345678901234567890
     assert_eq!{ VarDeclStatement::with_test_str("var hij = [1, 3, 5];"),
-        VarDeclStatement::new_var(make_span!(0, 19),
-            make_id!(1), make_span!(4, 6),
+        VarDeclStatement::new_var(Span::new(0, 19),
+            make_id!(1), Span::new(4, 6),
             None,
-            Some(Expr::Array(ArrayDef::new(make_span!(10, 18), ExprList::new(vec![
-                Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(11, 11))),
-                Expr::Lit(LitExpr::new(LitValue::from(3), make_span!(14, 14))),
-                Expr::Lit(LitExpr::new(LitValue::from(5), make_span!(17, 17))),
+            Some(Expr::Array(ArrayDef::new(Span::new(10, 18), ExprList::new(vec![
+                Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(11, 11))),
+                Expr::Lit(LitExpr::new(LitValue::from(3), Span::new(14, 14))),
+                Expr::Lit(LitExpr::new(LitValue::from(5), Span::new(17, 17))),
             ]))))
         )
     }
     
     //                                           1234567890123456789
     assert_eq!{ VarDeclStatement::with_test_str("const input: string;"),
-        VarDeclStatement::new_const(make_span!(0, 19),
-            make_id!(1), make_span!(6, 10),
-            Some(TypeUse::new_simple(make_id!(2), make_span!(13, 18))),
+        VarDeclStatement::new_const(Span::new(0, 19),
+            make_id!(1), Span::new(6, 10),
+            Some(TypeUse::new_simple(make_id!(2), Span::new(13, 18))),
             None
         )
     }
@@ -142,12 +142,12 @@ fn var_decl_stmt_parse() {
         .set_syms(make_symbols!["buf", "array", "tuple", "u8", "char"])
         .apply::<VarDeclStatement, _>()
         .expect_no_message()
-        .expect_result(VarDeclStatement::new_var(make_span!(0, 21), 
-            make_id!(1), make_span!(4, 6),
-            Some(TypeUse::new_template(make_id!(2), Span::default(), make_span!(9, 20), vec![
-                TypeUse::new_template(make_id!(3), Span::default(), make_span!(10, 19), vec![
-                    TypeUse::new_simple(make_id!(4), make_span!(11, 12)),
-                    TypeUse::new_simple(make_id!(5), make_span!(15, 18)),
+        .expect_result(VarDeclStatement::new_var(Span::new(0, 21), 
+            make_id!(1), Span::new(4, 6),
+            Some(TypeUse::new_template(make_id!(2), Span::default(), Span::new(9, 20), vec![
+                TypeUse::new_template(make_id!(3), Span::default(), Span::new(10, 19), vec![
+                    TypeUse::new_simple(make_id!(4), Span::new(11, 12)),
+                    TypeUse::new_simple(make_id!(5), Span::new(15, 18)),
                 ])
             ])),
             None
@@ -165,31 +165,31 @@ fn var_decl_stmt_parse() {
         .set_syms(make_symbols!["buf", "u8", "u32", "abc", "tuple", "array"])
         .apply::<VarDeclStatement, _>()
         .expect_no_message()
-        .expect_result(VarDeclStatement::new_var(make_span!(0, 47),
-            make_id!(1), make_span!(4, 6),
-            Some(TypeUse::new_template(make_id!(5), Span::default(), make_span!(9, 19), vec![
-                TypeUse::new_template(make_id!(6), Span::default(), make_span!(10, 13), vec![
-                    TypeUse::new_simple(make_id!(2), make_span!(11, 12))
+        .expect_result(VarDeclStatement::new_var(Span::new(0, 47),
+            make_id!(1), Span::new(4, 6),
+            Some(TypeUse::new_template(make_id!(5), Span::default(), Span::new(9, 19), vec![
+                TypeUse::new_template(make_id!(6), Span::default(), Span::new(10, 13), vec![
+                    TypeUse::new_simple(make_id!(2), Span::new(11, 12))
                 ]),
-                TypeUse::new_simple(make_id!(3), make_span!(16, 18))
+                TypeUse::new_simple(make_id!(3), Span::new(16, 18))
             ])),
-            Some(Expr::Tuple(TupleDef::new(make_span!(23, 46), make_exprs![
-                ArrayDef::new(make_span!(24, 40), make_exprs![
-                    LitExpr::new(LitValue::from(1u8), make_span!(25, 27)),
-                    LitExpr::new(LitValue::from(5u8), make_span!(30, 32)),
-                    LitExpr::new(LitValue::from(7u8), make_span!(35, 39))
+            Some(Expr::Tuple(TupleDef::new(Span::new(23, 46), make_exprs![
+                ArrayDef::new(Span::new(24, 40), make_exprs![
+                    LitExpr::new(LitValue::from(1u8), Span::new(25, 27)),
+                    LitExpr::new(LitValue::from(5u8), Span::new(30, 32)),
+                    LitExpr::new(LitValue::from(7u8), Span::new(35, 39))
                 ]),
-                SimpleName::new(make_id!(4), make_span!(43, 45))
+                SimpleName::new(make_id!(4), Span::new(43, 45))
             ])))
         ))
     .finish();
 
     TestInput::new("var a;")
         .apply::<VarDeclStatement, _>()
-        .expect_result(VarDeclStatement::new_var(make_span!(0, 5), make_id!(1), make_span!(4, 4), None, None))
+        .expect_result(VarDeclStatement::new_var(Span::new(0, 5), make_id!(1), Span::new(4, 4), None, None))
         .expect_messages(make_messages![
             Message::with_help_by_str("require type annotation", 
-                vec![(make_span!(4, 4), "variable declaration here")],
+                vec![(Span::new(4, 4), "variable declaration here")],
                 vec!["cannot infer type without both type annotation and initialization expression"]
             )
         ])

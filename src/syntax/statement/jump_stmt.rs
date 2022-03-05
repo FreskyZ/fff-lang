@@ -6,7 +6,7 @@
 
 use std::fmt;
 use crate::source::Span;
-use crate::source::SymbolID;
+use crate::source::Sym;
 use crate::lexical::Token;
 use crate::lexical::Seperator;
 use crate::lexical::Keyword;
@@ -19,7 +19,7 @@ use super::super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct JumpStatement {
-    pub target: Option<SymbolID>,
+    pub target: Option<Sym>,
     pub target_span: Span,
     pub all_span: Span,
 }
@@ -28,7 +28,7 @@ impl JumpStatement {
     fn new_no_target(all_span: Span) -> JumpStatement {
         JumpStatement{ all_span, target: None, target_span: Span::default() }
     }
-    fn new_target(all_span: Span, target: SymbolID, target_span: Span) -> JumpStatement {
+    fn new_target(all_span: Span, target: Sym, target_span: Span) -> JumpStatement {
         JumpStatement{ all_span, target_span, target: Some(target) }
     }
 
@@ -46,10 +46,10 @@ impl JumpStatement {
 
         if let Some((label_id, label_span)) = sess.try_expect_label() {
             let semicolon_span = sess.expect_sep(Seperator::SemiColon)?;
-            Ok(JumpStatement::new_target(starting_span.merge(&semicolon_span), label_id, label_span))
+            Ok(JumpStatement::new_target(starting_span + semicolon_span, label_id, label_span))
         } else { 
             let semicolon_span = sess.expect_sep(Seperator::SemiColon)?;
-            Ok(JumpStatement::new_no_target(starting_span.merge(&semicolon_span)))
+            Ok(JumpStatement::new_no_target(starting_span + semicolon_span))
         }
     }
 }
@@ -75,14 +75,14 @@ impl fmt::Debug for BreakStatement {
 impl ContinueStatement {
 
     pub fn new_no_target(all_span: Span) -> ContinueStatement { ContinueStatement(JumpStatement::new_no_target(all_span)) }
-    pub fn new_with_target(all_span: Span, target: SymbolID, target_span: Span) -> ContinueStatement {
+    pub fn new_with_target(all_span: Span, target: Sym, target_span: Span) -> ContinueStatement {
         ContinueStatement(JumpStatement::new_target(all_span, target, target_span))
     }
 }
 impl BreakStatement {
 
     pub fn new_no_target(all_span: Span) -> BreakStatement { BreakStatement(JumpStatement::new_no_target(all_span)) }
-    pub fn new_with_target(all_span: Span, target: SymbolID, target_span: Span) -> BreakStatement {
+    pub fn new_with_target(all_span: Span, target: Sym, target_span: Span) -> BreakStatement {
         BreakStatement(JumpStatement::new_target(all_span, target, target_span))
     }
 }
@@ -111,13 +111,13 @@ impl ISyntaxParse for BreakStatement {
 fn jump_stmt_parse() {
     use super::super::WithTestInput;
     
-    assert_eq!{ ContinueStatement::with_test_str("continue;"), ContinueStatement::new_no_target(make_span!(0, 8)) }
+    assert_eq!{ ContinueStatement::with_test_str("continue;"), ContinueStatement::new_no_target(Span::new(0, 8)) }
     assert_eq!{ ContinueStatement::with_test_str("continue @1;"), 
-        ContinueStatement::new_with_target(make_span!(0, 11), make_id!(1), make_span!(9, 10))
+        ContinueStatement::new_with_target(Span::new(0, 11), make_id!(1), Span::new(9, 10))
     }
     
-    assert_eq!{ BreakStatement::with_test_str("break;"), BreakStatement::new_no_target(make_span!(0, 5)) }
+    assert_eq!{ BreakStatement::with_test_str("break;"), BreakStatement::new_no_target(Span::new(0, 5)) }
     assert_eq!{ BreakStatement::with_test_str("break @1;"), 
-        BreakStatement::new_with_target(make_span!(0, 8), make_id!(1), make_span!(6, 7))
+        BreakStatement::new_with_target(Span::new(0, 8), make_id!(1), Span::new(6, 7))
     }
 }

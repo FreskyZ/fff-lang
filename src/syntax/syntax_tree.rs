@@ -8,10 +8,7 @@ use std::rc::Rc;
 use std::path::Path;
 use std::path::PathBuf;
 use std::path::MAIN_SEPARATOR;
-use crate::source::SymbolID;
-use crate::source::SourceMap;
-use crate::source::SourceCode;
-use crate::source::SymbolCollection;
+use crate::source::{SourceContext, Sym};
 use crate::diagnostics::Message;
 use crate::diagnostics::MessageCollection;
 use crate::lexical::TokenStream;
@@ -27,11 +24,11 @@ const SOURCE_FILE_EXT: &str = ".ff";
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct ImportMap {
     pub file_id: usize,
-    pub import_name: SymbolID,
+    pub import_name: Sym,
     pub imported_file_id: usize,
 }
 impl ImportMap {
-    pub fn new(file_id: usize, import_name: SymbolID, imported_file_id: usize) -> ImportMap { ImportMap{ file_id, import_name, imported_file_id } }
+    pub fn new(file_id: usize, import_name: Sym, imported_file_id: usize) -> ImportMap { ImportMap{ file_id, import_name, imported_file_id } }
 }
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
@@ -179,15 +176,15 @@ fn syntax_tree_recursive() {
     assert_eq!(messages.is_empty(), true, "{:?}", messages);
     assert_eq!(syntax_tree, SyntaxTree::new_modules(vec![
         Module::new(sources.index(0).clone(), vec![
-            Item::Import(ImportStatement::new_default(make_span!(0, 0, 10), SimpleName::new(make_id!(1), make_span!(0, 7, 9)))),
-            Item::Import(ImportStatement::new_default(make_span!(0, 39, 49), SimpleName::new(make_id!(2), make_span!(0, 46, 48)))),
-            Item::Import(ImportStatement::new_default(make_span!(0, 77, 93), SimpleName::new(make_id!(3), make_span!(0, 84, 92)))),
-            Item::Import(ImportStatement::new_default(make_span!(0, 163, 180), SimpleName::new(make_id!(4), make_span!(0, 170, 179)))),
+            Item::Import(ImportStatement::new_default(Span::new(0, 0, 10), SimpleName::new(make_id!(1), Span::new(0, 7, 9)))),
+            Item::Import(ImportStatement::new_default(Span::new(0, 39, 49), SimpleName::new(make_id!(2), Span::new(0, 46, 48)))),
+            Item::Import(ImportStatement::new_default(Span::new(0, 77, 93), SimpleName::new(make_id!(3), Span::new(0, 84, 92)))),
+            Item::Import(ImportStatement::new_default(Span::new(0, 163, 180), SimpleName::new(make_id!(4), Span::new(0, 170, 179)))),
         ]),
         Module::new(sources.index(1).clone(), vec![]),
         Module::new(sources.index(2).clone(), vec![
-            Item::Import(ImportStatement::new_default(make_span!(2, 0, 16), SimpleName::new(make_id!(5), make_span!(2, 7, 15)))),
-            Item::Import(ImportStatement::new_default(make_span!(2, 69, 85), SimpleName::new(make_id!(6), make_span!(2, 76, 84)))),
+            Item::Import(ImportStatement::new_default(Span::new(2, 0, 16), SimpleName::new(make_id!(5), Span::new(2, 7, 15)))),
+            Item::Import(ImportStatement::new_default(Span::new(2, 69, 85), SimpleName::new(make_id!(6), Span::new(2, 76, 84)))),
         ]),
         Module::new(sources.index(3).clone(), vec![]),
         Module::new(sources.index(4).clone(), vec![]),

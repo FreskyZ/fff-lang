@@ -4,10 +4,7 @@
 
 use std::rc::Rc;
 
-use crate::source::Span;
-use crate::source::SymbolID;
-use crate::source::SourceCode;
-use crate::source::SymbolCollection;
+use crate::source::{SourceContext, Span, Sym};
 use crate::diagnostics::Message;
 use crate::diagnostics::MessageCollection;
 use crate::lexical::Token;
@@ -18,20 +15,21 @@ use crate::lexical::LitValue;
 
 pub type ParseResult<T> = Result<T, ()>;
 
-pub struct ParseSession<'tokens, 'msgs, 'syms> {
-    pub source: Rc<SourceCode>,
+pub struct ParseSession<'tokens, 'msgs, 'scx> {
+    pub source: &'scx SourceContext,
     tokens: &'tokens TokenStream,
     messages: &'msgs mut MessageCollection,
-    pub symbols: &'syms mut SymbolCollection,
     current_index: usize,
     current_tokens: [&'tokens Token; 3],
 }
 #[allow(dead_code)] // helper methods may not be used
 impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
 
-    pub fn new(source: Rc<SourceCode>, tokens: &'a TokenStream, messages: &'b mut MessageCollection, symbols: &'c mut SymbolCollection) -> ParseSession<'a, 'b, 'c> {
+    pub fn new(source: &'c SourceContext, tokens: &'a TokenStream, messages: &'b mut MessageCollection) -> ParseSession<'a, 'b, 'c> {
         ParseSession{ 
-            source, tokens, messages, symbols,
+            source, 
+            tokens, 
+            messages,
             current_index: 0,
             current_tokens: [tokens.nth_token(0), tokens.nth_token(1), tokens.nth_token(2)],
         }
@@ -152,13 +150,13 @@ impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
     /// if not, push unexpect and Err(())
     ///
     /// example `let (ident_id, ident_span) = sess.expect_ident()?;`
-    pub fn expect_ident(&mut self) -> Result<(SymbolID, Span), ()> {
+    pub fn expect_ident(&mut self) -> Result<(Sym, Span), ()> {
 
         let current_index = self.current_index;
         self.move_next();
         match (self.tokens.nth_token(current_index), self.tokens.nth_span(current_index)) {
             (&Token::Ident(ref ident), ref ident_strpos) => Ok((*ident, *ident_strpos)),
-            _ => self.push_unexpect::<(SymbolID, Span)>("identifier"),
+            _ => self.push_unexpect::<(Sym, Span)>("identifier"),
         }
     }
 
@@ -168,7 +166,7 @@ impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
     /// if not, no move next and None
     ///
     /// example `if let Some((symid, label_span)) = sess.try_expect_label() { ... }`
-    pub fn try_expect_label(&mut self) -> Option<(SymbolID, Span)> {
+    pub fn try_expect_label(&mut self) -> Option<(Sym, Span)> {
         
         let current_index = self.current_index;
         match (self.tokens.nth_token(current_index), self.tokens.nth_span(current_index)) {
@@ -183,7 +181,7 @@ impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
     /// if not, push unexpect and Err(())
     ///
     /// example `let (symbol_id, ident_span) = sess.expect_ident_or([Keyword::This, Keyword::Underscore])?;`
-    pub fn expect_ident_or<T: IntoIterator<Item = Keyword>>(&mut self, acceptable_keywords: T) -> Result<(SymbolID, Span), ()> {
+    pub fn expect_ident_or<T: IntoIterator<Item = Keyword>>(&mut self, acceptable_keywords: T) -> Result<(Sym, Span), ()> {
 
         let current_index = self.current_index;
         self.move_next();
@@ -206,7 +204,7 @@ impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
     /// if not, push unexpect and Err(())
     ///
     /// example `let (symbold_id, ident_span) = sess.expect_ident_or_if(|kw| kw.is_primitive_type())?;`
-    pub fn expect_ident_or_if<P: Fn(&Keyword) -> bool>(&mut self, predict: P) -> Result<(SymbolID, Span), ()> {
+    pub fn expect_ident_or_if<P: Fn(&Keyword) -> bool>(&mut self, predict: P) -> Result<(Sym, Span), ()> {
         
         let current_index = self.current_index;
         self.move_next();

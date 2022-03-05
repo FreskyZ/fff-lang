@@ -7,7 +7,7 @@
 
 use std::fmt;
 use crate::source::Span;
-use crate::source::SymbolID;
+use crate::source::Sym;
 use crate::lexical::Token;
 use crate::lexical::Keyword;
 use super::super::Expr;
@@ -24,7 +24,7 @@ use super::super::ISyntaxGrammar;
 pub struct ForStatement {
     pub loop_name: Option<LabelDef>,
     pub for_span: Span,
-    pub iter_name: SymbolID,
+    pub iter_name: Sym,
     pub iter_span: Span,
     pub iter_expr: Expr,
     pub body: Block,
@@ -51,7 +51,7 @@ impl ForStatement {
 
     pub fn new_no_label<T: Into<Expr>>(
             all_span: Span, for_span: Span, 
-            iter_name: SymbolID, iter_span: Span, iter_expr: T, 
+            iter_name: Sym, iter_span: Span, iter_expr: T, 
             body: Block) -> ForStatement {
         ForStatement { 
             loop_name: None,
@@ -63,7 +63,7 @@ impl ForStatement {
     }
     pub fn new_with_label<T: Into<Expr>>(
             all_span: Span, loop_name: LabelDef, for_span: Span, 
-            iter_name: SymbolID, iter_span: Span, iter_expr: T, 
+            iter_name: Sym, iter_span: Span, iter_expr: T, 
             body: Block) -> ForStatement {
         ForStatement { 
             loop_name: Some(loop_name),
@@ -75,7 +75,7 @@ impl ForStatement {
     }
 
     fn new(loop_name: Option<LabelDef>, for_span: Span,
-        iter_name: SymbolID, iter_span: Span, iter_expr: Expr,
+        iter_name: Sym, iter_span: Span, iter_expr: Expr,
         body: Block) -> ForStatement {
         ForStatement{
             all_span: (match loop_name { Some(ref label) => label.all_span, None => for_span }).merge(&body.all_span),
@@ -124,12 +124,12 @@ fn for_stmt_parse() {
         .set_syms(make_symbols!["2", "i"])
         .apply::<ForStatement, _>()
         .expect_no_message()
-        .expect_result(ForStatement::new_with_label(make_span!(0, 17),
-            LabelDef::new(make_id!(1), make_span!(0, 2)),
-            make_span!(4, 6),
-            make_id!(2), make_span!(8, 8),
-            Expr::Lit(LitExpr::new(LitValue::from(42), make_span!(13, 14))),
-            Block::new(make_span!(16, 17), vec![])
+        .expect_result(ForStatement::new_with_label(Span::new(0, 17),
+            LabelDef::new(make_id!(1), Span::new(0, 2)),
+            Span::new(4, 6),
+            make_id!(2), Span::new(8, 8),
+            Expr::Lit(LitExpr::new(LitValue::from(42), Span::new(13, 14))),
+            Block::new(Span::new(16, 17), vec![])
         ))
     .finish();
 
@@ -140,37 +140,37 @@ fn for_stmt_parse() {
         .set_syms(make_symbols!["hello", "_", "range", "enumerate", "reverse", "writeln", "helloworld"])
         .apply::<ForStatement, _>()
         .expect_no_message()
-        .expect_result(ForStatement::new_with_label(make_span!(0, 77),
-            LabelDef::new(make_id!(1), make_span!(0, 6)),
-            make_span!(8, 10),
-            make_id!(2), make_span!(12, 12),
+        .expect_result(ForStatement::new_with_label(Span::new(0, 77),
+            LabelDef::new(make_id!(1), Span::new(0, 6)),
+            Span::new(8, 10),
+            make_id!(2), Span::new(12, 12),
             FnCallExpr::new(
                 MemberAccessExpr::new(
                     FnCallExpr::new(
                         MemberAccessExpr::new(
                             FnCallExpr::new(
-                                SimpleName::new(make_id!(3), make_span!(17, 21)),
-                                make_span!(22, 28), make_exprs![
-                                    LitExpr::new(LitValue::from(0), make_span!(23, 23)),
-                                    LitExpr::new(LitValue::from(10), make_span!(26, 27)),
+                                SimpleName::new(make_id!(3), Span::new(17, 21)),
+                                Span::new(22, 28), make_exprs![
+                                    LitExpr::new(LitValue::from(0), Span::new(23, 23)),
+                                    LitExpr::new(LitValue::from(10), Span::new(26, 27)),
                                 ]
                             ),
-                            make_span!(29, 29),
-                            SimpleName::new(make_id!(4), make_span!(30, 38))
+                            Span::new(29, 29),
+                            SimpleName::new(make_id!(4), Span::new(30, 38))
                         ),
-                        make_span!(39, 40), ExprList::new(vec![])
+                        Span::new(39, 40), ExprList::new(vec![])
                     ), 
-                    make_span!(41, 41),
-                    SimpleName::new(make_id!(5), make_span!(42, 48))
+                    Span::new(41, 41),
+                    SimpleName::new(make_id!(5), Span::new(42, 48))
                 ),
-                make_span!(49, 50), ExprList::new(vec![])
+                Span::new(49, 50), ExprList::new(vec![])
             ),
-            Block::new(make_span!(52, 77), vec![
-                Statement::SimpleExpr(SimpleExprStatement::new(make_span!(54, 75),
+            Block::new(Span::new(52, 77), vec![
+                Statement::SimpleExpr(SimpleExprStatement::new(Span::new(54, 75),
                     FnCallExpr::new(
-                        SimpleName::new(make_id!(6), make_span!(54, 60)),
-                        make_span!(61, 74), make_exprs![
-                            LitExpr::new(make_lit!(str, 7), make_span!(62, 73))
+                        SimpleName::new(make_id!(6), Span::new(54, 60)),
+                        Span::new(61, 74), make_exprs![
+                            LitExpr::new(make_lit!(str, 7), Span::new(62, 73))
                         ]
                     )
                 ))

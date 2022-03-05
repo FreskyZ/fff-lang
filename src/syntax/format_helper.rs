@@ -4,10 +4,7 @@
 ///! syntax/format_helper
 
 use std::fmt::Debug;
-use crate::source::Span;
-use crate::source::SymbolID;
-use crate::source::SourceCode;
-use crate::source::SymbolCollection;
+use crate::source::{SourceContext, Span, Sym};
 
 const INDENTION_FILLERS: [[&str; 16]; 3] = [ [
     "", "1 ", "2 | ", "3 | | ", "4 | | | ", "5 | | | | ", "6 | | | | | ", "7 | | | | | | ", "8 | | | | | | | ", "9 | | | | | | | | ", "10 | | | | | | | | | ",
@@ -21,24 +18,23 @@ const INDENTION_FILLERS: [[&str; 16]; 3] = [ [
 ]];
 
 #[derive(Clone)]
-pub struct Formatter<'a, 'b> {
+pub struct Formatter<'a> {
     indent_index: usize,
-    source: Option<&'a SourceCode>,
-    symbols: Option<&'b SymbolCollection>,
+    source: Option<&'a SourceContext>,
     header_text: Option<&'static str>, // lazy to add a 'c
     prefix_text: Option<&'static str>,
     buf: String,
 }
-impl<'a, 'b> Formatter<'a, 'b> {
+impl<'a> Formatter<'a> {
 
-    pub fn new(source: Option<&'a SourceCode>, symbols: Option<&'b SymbolCollection>) -> Self {
-        Formatter{ indent_index: 0, source, symbols, header_text: None, prefix_text: None, buf: String::new() }
+    pub fn new(source: Option<&'a SourceContext>) -> Self {
+        Formatter{ indent_index: 0, source, header_text: None, prefix_text: None, buf: String::new() }
     }
     pub fn with_test_indent(indent: usize) -> Self {
-        Formatter{ indent_index: indent, source: None, symbols: None, header_text: None, prefix_text: None, buf: String::new() }
+        Formatter{ indent_index: indent, source: None, header_text: None, prefix_text: None, buf: String::new() }
     }
     pub fn empty() -> Self {
-        Formatter{ indent_index: 0, source: None, symbols: None, header_text: None, prefix_text: None, buf: String::new() }
+        Formatter{ indent_index: 0, source: None, header_text: None, prefix_text: None, buf: String::new() }
     }
 
     // set only once
@@ -59,7 +55,7 @@ impl<'a, 'b> Formatter<'a, 'b> {
         self
     }
 }
-impl<'a, 'b> Formatter<'a, 'b> {
+impl<'a> Formatter<'a> {
 
     pub fn lit(mut self, v: &str) -> Self {
         self.buf.push_str(v);
@@ -79,11 +75,20 @@ impl<'a, 'b> Formatter<'a, 'b> {
     }
 
     pub fn span(mut self, span: Span) -> Self {
-        self.buf.push_str(&format!("{}", span.format(self.source)));
+        if let Some(source) = &self.source {
+            // TODO: use write!
+            self.buf.push_str(&format!("{}", span.display(source)));
+        } else {
+            self.buf.push_str(&format!("{:?}", span));
+        }
         self
     }
-    pub fn sym(mut self, id: SymbolID) -> Self {
-        self.buf.push_str(&format!("{}", id.format(self.symbols)));
+    pub fn sym(mut self, id: Sym) -> Self {
+        if let Some(source) = &self.source {
+            self.buf.push_str(&format!("{}", source.resolve_symbol(id)));
+        } else {
+            self.buf.push_str(&format!("{:?}", id));
+        }
         self
     }
     pub fn header_text_or(mut self, v: &'static str) -> Self {
@@ -112,7 +117,7 @@ impl<'a, 'b> Formatter<'a, 'b> {
     pub fn apply<T: ISyntaxFormat>(mut self, item: &T) -> Self {
         self.buf.push_str(&item.format(Formatter{        // a manual clone because lazy to add derive(Clone)
             indent_index: self.indent_index,
-            source: self.source, symbols: self.symbols,
+            source: self.source,
             header_text: self.header_text, prefix_text: self.prefix_text, buf: String::new(),
         }));
         self
@@ -120,7 +125,7 @@ impl<'a, 'b> Formatter<'a, 'b> {
     pub fn apply1<T: ISyntaxFormat>(mut self, item: &T) -> Self {
         self.buf.push_str(&item.format(Formatter{        // a manual clone because lazy to add derive(Clone)
             indent_index: self.indent_index + 1,
-            source: self.source, symbols: self.symbols,
+            source: self.source,
             header_text: self.header_text, prefix_text: self.prefix_text, buf: String::new(),
         }));
         self
@@ -128,7 +133,7 @@ impl<'a, 'b> Formatter<'a, 'b> {
     pub fn apply2<T: ISyntaxFormat>(mut self, item: &T) -> Self {
         self.buf.push_str(&item.format(Formatter{        // a manual clone because lazy to add derive(Clone)
             indent_index: self.indent_index + 2,
-            source: self.source, symbols: self.symbols,
+            source: self.source,
             header_text: self.header_text, prefix_text: self.prefix_text, buf: String::new(),
         }));
         self

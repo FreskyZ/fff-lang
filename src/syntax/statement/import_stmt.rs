@@ -68,7 +68,7 @@ impl ISyntaxParse for ImportStatement {
         };
         
         let semicolon_span = sess.expect_sep(Seperator::SemiColon)?;
-        let all_span = starting_span.merge(&semicolon_span);
+        let all_span = starting_span + semicolon_span;
 
         Ok(ImportStatement::new_some(all_span, name, as_span, to_ident))
     }
@@ -80,17 +80,17 @@ fn import_stmt_parse() {
 
     assert_eq!{
         ImportStatement::with_test_str("import a;"),
-        ImportStatement::new_default(make_span!(0, 8),
-            SimpleName::new(make_id!(1), make_span!(7, 7))
+        ImportStatement::new_default(Span::new(0, 8),
+            SimpleName::new(make_id!(1), Span::new(7, 7))
         )
     }
 
     assert_eq!{ //                   012345678901234567890
         ImportStatement::with_test_str("import windows as os;"),
-        ImportStatement::new_target(make_span!(0, 20),
-            SimpleName::new(make_id!(1), make_span!(7, 13)),
-            make_span!(15, 16),
-            SimpleName::new(make_id!(2), make_span!(18, 19))
+        ImportStatement::new_target(Span::new(0, 20),
+            SimpleName::new(make_id!(1), Span::new(7, 13)),
+            Span::new(15, 16),
+            SimpleName::new(make_id!(2), Span::new(18, 19))
         )
     }
 }

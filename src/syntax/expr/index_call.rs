@@ -47,7 +47,7 @@ impl IndexCallExpr {
     pub fn new<T: Into<Expr>>(base: T, bracket_span: Span, params: ExprList) -> IndexCallExpr {
         let base = base.into();
         IndexCallExpr{
-            all_span: base.get_all_span().merge(&bracket_span),
+            all_span: base.get_all_span() + bracket_span,
             base: Box::new(base),
             params,
             bracket_span
@@ -90,15 +90,15 @@ fn index_call_parse() {
     use super::LitExpr;
 
     assert_eq!{ IndexCallExpr::with_test_str("[1, 2, ]"),
-        IndexCallExpr::new_with_parse_result(make_span!(0, 7), ExprList::new(vec![
-            Expr::Lit(LitExpr::new(LitValue::from(1i32), make_span!(1, 1))),
-            Expr::Lit(LitExpr::new(LitValue::from(2i32), make_span!(4, 4))),
+        IndexCallExpr::new_with_parse_result(Span::new(0, 7), ExprList::new(vec![
+            Expr::Lit(LitExpr::new(LitValue::from(1i32), Span::new(1, 1))),
+            Expr::Lit(LitExpr::new(LitValue::from(2i32), Span::new(4, 4))),
         ]))
     }
 
     assert_eq!{ IndexCallExpr::with_test_str("[\"hello\"]"),
-        IndexCallExpr::new_with_parse_result(make_span!(0, 8), 
-            ExprList::new(vec![Expr::Lit(LitExpr::new(make_lit!(str, 1), make_span!(1, 7)))])
+        IndexCallExpr::new_with_parse_result(Span::new(0, 8), 
+            ExprList::new(vec![Expr::Lit(LitExpr::new(make_lit!(str, 1), Span::new(1, 7)))])
         )
     }
 }
@@ -110,9 +110,9 @@ fn index_call_errors() {
 
     TestInput::new("[,]")
         .apply::<IndexCallExpr, _>()
-        .expect_result(IndexCallExpr::new_with_parse_result(make_span!(0, 2), ExprList::new(vec![])))
+        .expect_result(IndexCallExpr::new_with_parse_result(Span::new(0, 2), ExprList::new(vec![])))
         .expect_messages(make_messages![
-            Message::new_by_str(error_strings::EmptyIndexCall, vec![(make_span!(0, 2), error_strings::IndexCallHere)])
+            Message::new_by_str(error_strings::EmptyIndexCall, vec![(Span::new(0, 2), error_strings::IndexCallHere)])
         ])
     .finish();
 }

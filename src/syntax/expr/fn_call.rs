@@ -45,7 +45,7 @@ impl FnCallExpr {
     pub fn new<T: Into<Expr>>(base: T, paren_span: Span, params: ExprList) -> FnCallExpr {
         let base = base.into();
         FnCallExpr{
-            all_span: base.get_all_span().merge(&paren_span),
+            all_span: base.get_all_span() + paren_span,
             base: Box::new(base),
             params,
             paren_span,
@@ -88,12 +88,12 @@ fn fn_call_parse() {
     use super::LitExpr;
 
     assert_eq!{ FnCallExpr::with_test_str("()"),
-        FnCallExpr::new_with_parse_result(make_span!(0, 1), ExprList::new(vec![]))
+        FnCallExpr::new_with_parse_result(Span::new(0, 1), ExprList::new(vec![]))
     }
 
     assert_eq!{ FnCallExpr::with_test_str("(\"hello\")"),
-        FnCallExpr::new_with_parse_result(make_span!(0, 8), 
-            ExprList::new(vec![Expr::Lit(LitExpr::new(make_lit!(str, 1), make_span!(1, 7)))])
+        FnCallExpr::new_with_parse_result(Span::new(0, 8), 
+            ExprList::new(vec![Expr::Lit(LitExpr::new(make_lit!(str, 1), Span::new(1, 7)))])
         )
     }
 }
@@ -105,9 +105,9 @@ fn fn_call_errors() {
 
     TestInput::new("(,)")
         .apply::<FnCallExpr, _>()
-        .expect_result(FnCallExpr::new_with_parse_result(make_span!(0, 2), ExprList::new(vec![])))
+        .expect_result(FnCallExpr::new_with_parse_result(Span::new(0, 2), ExprList::new(vec![])))
         .expect_messages(make_messages![
-            Message::new_by_str(error_strings::UnexpectedSingleComma, vec![(make_span!(0, 2), error_strings::FnCallHere)])
+            Message::new_by_str(error_strings::UnexpectedSingleComma, vec![(Span::new(0, 2), error_strings::FnCallHere)])
         ])
     .finish();
 }

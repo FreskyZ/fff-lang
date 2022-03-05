@@ -71,11 +71,11 @@ impl ISyntaxParse for BlockStatement {
 fn block_stmt_parse() {
     use super::super::WithTestInput;
 
-    assert_eq!{ BlockStatement::with_test_str("{}"), BlockStatement::new_no_label(Block::new(make_span!(0, 1), vec![])) }
+    assert_eq!{ BlockStatement::with_test_str("{}"), BlockStatement::new_no_label(Block::new(Span::new(0, 1), vec![])) }
     assert_eq!{ BlockStatement::with_test_str("@: {}"), 
         BlockStatement::new_with_label(
-            LabelDef::new(make_id!(1), make_span!(0, 1)),
-            Block::new(make_span!(3, 4), vec![])
+            LabelDef::new(make_id!(1), Span::new(0, 1)),
+            Block::new(Span::new(3, 4), vec![])
         )
     }
 }

@@ -6,7 +6,7 @@
 
 use std::fmt;
 use crate::source::Span;
-use crate::source::SymbolID;
+use crate::source::Sym;
 use crate::lexical::Token;
 use crate::lexical::Seperator;
 use super::Expr;
@@ -19,7 +19,7 @@ use super::super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct SimpleName {
-    pub value: SymbolID,
+    pub value: Sym,
     pub span: Span,
 }
 impl ISyntaxFormat for SimpleName {
@@ -34,7 +34,7 @@ impl From<SimpleName> for Expr {
     fn from(ident_expr: SimpleName) -> Expr { Expr::SimpleName(ident_expr) }
 }
 impl SimpleName {
-    pub fn new(value: SymbolID, span: Span) -> SimpleName { SimpleName{ value, span } }
+    pub fn new(value: Sym, span: Span) -> SimpleName { SimpleName{ value, span } }
 }
 impl ISyntaxParse for SimpleName {
     type Output = SimpleName; // out of expr depdendencies require direct parse and get a simple name
@@ -117,7 +117,7 @@ fn name_parse() {
     use super::super::TestInput;
 
     assert_eq!{ Name::with_test_str("hello"), 
-        Expr::SimpleName(SimpleName::new(make_id!(1), make_span!(0, 4)))
+        Expr::SimpleName(SimpleName::new(make_id!(1), Span::new(0, 4)))
     }
     //              0        1         2         3         4
     //              01234567890123456789012345678901234567890
@@ -125,12 +125,12 @@ fn name_parse() {
         .set_syms(make_symbols!["std", "network", "wlan", "native", "GetWLANHandle"])
         .apply::<Name, _>()
         .expect_no_message()
-        .expect_result(Expr::Name(Name::new(make_span!(0, 40), vec![
-            SimpleName::new(make_id!(1), make_span!(0, 2)), 
-            SimpleName::new(make_id!(2), make_span!(5, 11)),
-            SimpleName::new(make_id!(3), make_span!(14, 17)),
-            SimpleName::new(make_id!(4), make_span!(20, 25)),
-            SimpleName::new(make_id!(5), make_span!(28, 40)),
+        .expect_result(Expr::Name(Name::new(Span::new(0, 40), vec![
+            SimpleName::new(make_id!(1), Span::new(0, 2)), 
+            SimpleName::new(make_id!(2), Span::new(5, 11)),
+            SimpleName::new(make_id!(3), Span::new(14, 17)),
+            SimpleName::new(make_id!(4), Span::new(20, 25)),
+            SimpleName::new(make_id!(5), Span::new(28, 40)),
         ])))
     .finish();
 }

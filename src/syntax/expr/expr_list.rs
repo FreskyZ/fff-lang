@@ -62,10 +62,10 @@ impl ISyntaxParse for ExprList {
         };
 
         if let Some(ending_span) = sess.try_expect_sep(expect_end_sep) {
-            return Ok(ExprListParseResult::Empty(starting_span.merge(&ending_span)));
+            return Ok(ExprListParseResult::Empty(starting_span + ending_span));
         }
         if let Some((_comma_span, ending_span)) = sess.try_expect_2_sep(Seperator::Comma, expect_end_sep) {
-            return Ok(ExprListParseResult::SingleComma(starting_span.merge(&ending_span)));
+            return Ok(ExprListParseResult::SingleComma(starting_span + ending_span));
         }
 
         let mut items = Vec::new();
@@ -73,9 +73,9 @@ impl ISyntaxParse for ExprList {
             items.push(Expr::parse(sess)?);
             
             if let Some((_comma_span, ending_span)) = sess.try_expect_2_sep(Seperator::Comma, expect_end_sep) {
-                return Ok(ExprListParseResult::EndWithComma(starting_span.merge(&ending_span), ExprList::new(items)));
+                return Ok(ExprListParseResult::EndWithComma(starting_span + ending_span, ExprList::new(items)));
             } else if let Some(ending_span) = sess.try_expect_sep(expect_end_sep) {
-                return Ok(ExprListParseResult::Normal(starting_span.merge(&ending_span), ExprList::new(items)));
+                return Ok(ExprListParseResult::Normal(starting_span + ending_span, ExprList::new(items)));
             }
             let _comma_span = sess.expect_sep(Seperator::Comma)?;
         }
@@ -105,9 +105,9 @@ fn expr_list_format() {
 
     assert_eq!{
         ExprList::new(vec![
-            Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(1, 2))),
-            Expr::Lit(LitExpr::new(LitValue::from(2), make_span!(3, 4))),
-            Expr::Lit(LitExpr::new(LitValue::from(3), make_span!(5, 6))),
+            Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(1, 2))),
+            Expr::Lit(LitExpr::new(LitValue::from(2), Span::new(3, 4))),
+            Expr::Lit(LitExpr::new(LitValue::from(3), Span::new(5, 6))),
         ]).format(Formatter::with_test_indent(1)),
         "  literal (i32)1 <<0>1-2>\n  literal (i32)2 <<0>3-4>\n  literal (i32)3 <<0>5-6>"
     }
@@ -120,26 +120,26 @@ fn expr_list_parse() {
     use super::super::WithTestInput;
 
     assert_eq!{ ExprList::with_test_str("[1, 2, 3]"), 
-        ExprListParseResult::Normal(make_span!(0, 8), ExprList::new(vec![
-            Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(1, 1))),
-            Expr::Lit(LitExpr::new(LitValue::from(2), make_span!(4, 4))),
-            Expr::Lit(LitExpr::new(LitValue::from(3), make_span!(7, 7))),
+        ExprListParseResult::Normal(Span::new(0, 8), ExprList::new(vec![
+            Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(1, 1))),
+            Expr::Lit(LitExpr::new(LitValue::from(2), Span::new(4, 4))),
+            Expr::Lit(LitExpr::new(LitValue::from(3), Span::new(7, 7))),
         ]))
     }
     
     assert_eq!{ ExprList::with_test_str("(1, 2, 3,)"), 
-        ExprListParseResult::EndWithComma(make_span!(0, 9), ExprList::new(vec![
-            Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(1, 1))),
-            Expr::Lit(LitExpr::new(LitValue::from(2), make_span!(4, 4))),
-            Expr::Lit(LitExpr::new(LitValue::from(3), make_span!(7, 7))),
+        ExprListParseResult::EndWithComma(Span::new(0, 9), ExprList::new(vec![
+            Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(1, 1))),
+            Expr::Lit(LitExpr::new(LitValue::from(2), Span::new(4, 4))),
+            Expr::Lit(LitExpr::new(LitValue::from(3), Span::new(7, 7))),
         ]))
     }
 
     assert_eq!{ ExprList::with_test_str("[]"), 
-        ExprListParseResult::Empty(make_span!(0, 1))
+        ExprListParseResult::Empty(Span::new(0, 1))
     }
 
     assert_eq!{ ExprList::with_test_str("{,}"),
-        ExprListParseResult::SingleComma(make_span!(0, 2))
+        ExprListParseResult::SingleComma(Span::new(0, 2))
     }
 }

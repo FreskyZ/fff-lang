@@ -144,7 +144,7 @@ impl ISyntaxParse for RangeExpr {
                         let right_expr = BinaryExpr::parse(sess)?;
                         Ok(Expr::RangeBoth(RangeBothExpr::new(left_expr, op_span, right_expr)))
                     } else {
-                        Ok(Expr::RangeLeft(RangeLeftExpr::new(left_expr.get_all_span().merge(&op_span), left_expr)))
+                        Ok(Expr::RangeLeft(RangeLeftExpr::new(left_expr.get_all_span() + op_span, left_expr)))
                     }
                 } else {
                     Ok(left_expr)
@@ -160,17 +160,17 @@ fn range_expr_parse() {
     use super::LitExpr;
     use super::super::WithTestInput;
 
-    assert_eq!{ RangeExpr::with_test_str(".."), Expr::RangeFull(RangeFullExpr::new(make_span!(0, 1))) }
+    assert_eq!{ RangeExpr::with_test_str(".."), Expr::RangeFull(RangeFullExpr::new(Span::new(0, 1))) }
 
     assert_eq!{ RangeExpr::with_test_str("..1 + 1"), 
-        Expr::RangeRight(RangeRightExpr::new(make_span!(0, 6), BinaryExpr::new(
-            LitExpr::new(LitValue::from(1), make_span!(2, 2)),
-            Seperator::Add, make_span!(4, 4),
-            LitExpr::new(LitValue::from(1), make_span!(6, 6))
+        Expr::RangeRight(RangeRightExpr::new(Span::new(0, 6), BinaryExpr::new(
+            LitExpr::new(LitValue::from(1), Span::new(2, 2)),
+            Seperator::Add, Span::new(4, 4),
+            LitExpr::new(LitValue::from(1), Span::new(6, 6))
         )))
     }
 
     assert_eq!{ RangeExpr::with_test_str("1 .."),
-        Expr::RangeLeft(RangeLeftExpr::new(make_span!(0, 3), LitExpr::new(LitValue::from(1), make_span!(0, 0))))
+        Expr::RangeLeft(RangeLeftExpr::new(Span::new(0, 3), LitExpr::new(LitValue::from(1), Span::new(0, 0))))
     }
 }

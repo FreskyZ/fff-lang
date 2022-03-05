@@ -82,17 +82,17 @@ fn unary_expr_parse() {
     use super::super::WithTestInput;
     
     assert_eq!{ UnaryExpr::with_test_str("1"), 
-        Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(0, 0))) 
+        Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(0, 0))) 
     }
 
     assert_eq!{ UnaryExpr::with_test_str("!~!1"),
         Expr::Unary(UnaryExpr::new(
-            Seperator::LogicalNot, make_span!(0, 0),
+            Seperator::LogicalNot, Span::new(0, 0),
             Expr::Unary(UnaryExpr::new(
-                Seperator::BitNot, make_span!(1, 1),            
+                Seperator::BitNot, Span::new(1, 1),            
                 Expr::Unary(UnaryExpr::new(
-                    Seperator::LogicalNot, make_span!(2, 2),
-                    Expr::Lit(LitExpr::new(LitValue::from(1), make_span!(3, 3))),
+                    Seperator::LogicalNot, Span::new(2, 2),
+                    Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(3, 3))),
                 ))
             ))
         ))

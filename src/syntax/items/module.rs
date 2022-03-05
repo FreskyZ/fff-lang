@@ -94,22 +94,22 @@ fn module_parse() {
         .expect_no_message()
         .expect_result(Module::new(
             Rc::new(SourceCode::with_test_str(0, "use a; import b; 3; b; a;")), vec![
-            Item::Use(UseStatement::new_default(make_span!(0, 5), 
-                Name::new(make_span!(4, 4), vec![
-                    SimpleName::new(make_id!(1), make_span!(4, 4))
+            Item::Use(UseStatement::new_default(Span::new(0, 5), 
+                Name::new(Span::new(4, 4), vec![
+                    SimpleName::new(make_id!(1), Span::new(4, 4))
                 ])
             )),
-            Item::Import(ImportStatement::new_default(make_span!(7, 15), 
-                SimpleName::new(make_id!(2), make_span!(14, 14))
+            Item::Import(ImportStatement::new_default(Span::new(7, 15), 
+                SimpleName::new(make_id!(2), Span::new(14, 14))
             )),
-            Item::SimpleExpr(SimpleExprStatement::new(make_span!(17, 18), 
-                LitExpr::new(LitValue::from(3), make_span!(17, 17))
+            Item::SimpleExpr(SimpleExprStatement::new(Span::new(17, 18), 
+                LitExpr::new(LitValue::from(3), Span::new(17, 17))
             )),
-            Item::SimpleExpr(SimpleExprStatement::new(make_span!(20, 21), 
-                SimpleName::new(make_id!(2), make_span!(20, 20))
+            Item::SimpleExpr(SimpleExprStatement::new(Span::new(20, 21), 
+                SimpleName::new(make_id!(2), Span::new(20, 20))
             )),
-            Item::SimpleExpr(SimpleExprStatement::new(make_span!(23, 24), 
-                SimpleName::new(make_id!(1), make_span!(23, 23))
+            Item::SimpleExpr(SimpleExprStatement::new(Span::new(23, 24), 
+                SimpleName::new(make_id!(1), Span::new(23, 23))
             )),
         ]))
     .finish();
