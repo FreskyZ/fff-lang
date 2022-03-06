@@ -2,9 +2,9 @@
 ///!
 ///! token stream, vec<token> wrapper
 
-use crate::source::{Span, SourceChars, FileSystem};
+use crate::source::{Span, SourceChars, FileSystem, IsId};
 use crate::diagnostics::MessageCollection;
-use super::{Token, ILexer, ParseSession};
+use super::{Token, ILexer, ParseSession, LitValue, NumLitValue, Numeric, StringLiteralType};
 use super::v2lexer::{V2Lexer, V2Token};
 
 impl From<V2Token> for Token {
@@ -12,7 +12,22 @@ impl From<V2Token> for Token {
         match v2 {
             V2Token::EOF => Token::EOF,
             V2Token::Label(label) => Token::Label(label),
-            V2Token::Literal(lit) => Token::Lit(lit),
+            V2Token::Literal(LitValue::Bool(v)) => Token::Bool(v),
+            V2Token::Literal(LitValue::Char(Some(v))) => Token::Char(v),
+            V2Token::Literal(LitValue::Char(None)) => Token::Char('\0'),
+            V2Token::Literal(LitValue::Str(Some(id))) => Token::Str(id, StringLiteralType::Normal),
+            V2Token::Literal(LitValue::Str(None)) => Token::Str(IsId::new(1), StringLiteralType::Normal),
+            V2Token::Literal(LitValue::Num(Some(NumLitValue::I8(v)))) => Token::Num(Numeric::I8(v)),
+            V2Token::Literal(LitValue::Num(Some(NumLitValue::U8(v)))) => Token::Num(Numeric::U8(v)),
+            V2Token::Literal(LitValue::Num(Some(NumLitValue::I16(v)))) => Token::Num(Numeric::I16(v)),
+            V2Token::Literal(LitValue::Num(Some(NumLitValue::U16(v)))) => Token::Num(Numeric::U16(v)),
+            V2Token::Literal(LitValue::Num(Some(NumLitValue::I32(v)))) => Token::Num(Numeric::I32(v)),
+            V2Token::Literal(LitValue::Num(Some(NumLitValue::U32(v)))) => Token::Num(Numeric::U32(v)),
+            V2Token::Literal(LitValue::Num(Some(NumLitValue::I64(v)))) => Token::Num(Numeric::I64(v)),
+            V2Token::Literal(LitValue::Num(Some(NumLitValue::U64(v)))) => Token::Num(Numeric::U64(v)),
+            V2Token::Literal(LitValue::Num(Some(NumLitValue::R32(v)))) => Token::Num(Numeric::R32(v)),
+            V2Token::Literal(LitValue::Num(Some(NumLitValue::R64(v)))) => Token::Num(Numeric::R64(v)),
+            V2Token::Literal(LitValue::Num(None)) => Token::Num(Numeric::I32(0)),
             V2Token::Identifier(ident) => Token::Ident(ident),
             V2Token::Separator(sep) => Token::Sep(sep),
             V2Token::Keyword(kw) => Token::Keyword(kw),
@@ -54,7 +69,7 @@ impl TokenStream {
     // pub fn with_test_input(src: &str, syms: Option<SymbolCollection>) -> (TokenStream, Rc<SourceCode>, MessageCollection, SymbolCollection) {
     //     let mut msgs = MessageCollection::new();
     //     let mut syms = syms.unwrap_or_default();
-    //     let source = Rc::new(SourceCode::with_test_str(0, src));
+    //     let source = Rc::new(make_node!(0, src));
     //     let retval = TokenStream::new(source.as_ref(), &mut msgs, &mut syms);
     //     return (retval, source, msgs, syms);
     // }
@@ -79,13 +94,13 @@ fn v4_base() { // remain the name of v4 here for memory
     let mut messages = MessageCollection::new();
     let tokens = TokenStream::new(chars, &mut messages);
 
-    assert_eq!(tokens.nth_token(0), &Token::Lit(LitValue::Num(Some(NumLitValue::I32(123)))));
+    assert_eq!(tokens.nth_token(0), &Token::Num(Numeric::I32(123)));
     assert_eq!(tokens.nth_span(0), Span::new(0, 2));
 
     assert_eq!(tokens.nth_token(1), &Token::Ident(IsId::new(2)));
     assert_eq!(tokens.nth_span(1), Span::new(4, 6));
 
-    assert_eq!(tokens.nth_token(2), &Token::Lit(LitValue::from('d')));
+    assert_eq!(tokens.nth_token(2), &Token::Char('d'));
     assert_eq!(tokens.nth_span(2), Span::new(8, 10));
 
     assert_eq!(tokens.nth_token(3), &Token::Sep(Separator::Comma));
@@ -94,7 +109,7 @@ fn v4_base() { // remain the name of v4 here for memory
     assert_eq!(tokens.nth_token(4), &Token::Sep(Separator::LeftBracket));
     assert_eq!(tokens.nth_span(4), Span::new(13, 13));
 
-    assert_eq!(tokens.nth_token(5), &Token::Lit(LitValue::Num(Some(NumLitValue::I32(1)))));
+    assert_eq!(tokens.nth_token(5), &Token::Num(Numeric::I32(1)));
     assert_eq!(tokens.nth_span(5), Span::new(14, 14));
 
     assert_eq!(tokens.nth_token(6), &Token::Sep(Separator::RightBracket));

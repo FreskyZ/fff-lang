@@ -4,10 +4,7 @@
 
 use std::fmt;
 use crate::source::Span;
-use crate::lexical::Token;
-use crate::lexical::LitValue;
-use crate::lexical::Keyword;
-use crate::lexical::Seperator;
+use crate::lexical::{Token, Keyword, Separator};
 
 #[macro_use] mod expr_list; // make_exprs
 mod array_def;
@@ -22,6 +19,7 @@ mod range_expr;
 mod tuple_def;
 mod unary_expr;
 
+pub use lit_expr::LitValue;
 pub use lit_expr::LitExpr;
 pub use expr_list::ExprList;
 pub use expr_list::ExprListParseResult;
@@ -149,24 +147,24 @@ fn expr_parse() {
     use super::WithTestInput;
     use super::TestInput;
 
-    assert_eq!{ Expr::with_test_str("\"abc\""),
+    assert_eq!{ make_node!("\"abc\""),
         Expr::Lit(LitExpr::new(make_lit!(str, 1), Span::new(0, 4)))
     }
-    assert_eq!{ Expr::with_test_str("0xfffu64"), 
+    assert_eq!{ make_node!("0xfffu64"), 
         Expr::Lit(LitExpr::new(LitValue::from(0xFFFu64), Span::new(0, 7)))
     }
-    assert_eq!{ Expr::with_test_str("'f'"), 
+    assert_eq!{ make_node!("'f'"), 
         Expr::Lit(LitExpr::new(LitValue::from('f'), Span::new(0, 2)))
     }
-    assert_eq!{ Expr::with_test_str("true"),
+    assert_eq!{ make_node!("true"),
         Expr::Lit(LitExpr::new(LitValue::from(true), Span::new(0, 3)))
     }
 
-    assert_eq!{ Expr::with_test_str("binary_expr"),
-        Expr::SimpleName(SimpleName::new(make_id!(1), Span::new(0, 10)))
+    assert_eq!{ make_node!("binary_expr"),
+        Expr::SimpleName(SimpleName::new(1, Span::new(0, 10)))
     }
 
-    assert_eq!{ Expr::with_test_str("(  )"),
+    assert_eq!{ make_node!("(  )"),
         Expr::Lit(LitExpr::new(LitValue::Unit, Span::new(0, 3)))
     }
     
@@ -175,9 +173,9 @@ fn expr_parse() {
         .apply::<Expr, Expr>()
         .expect_no_message()
         .expect_result(Expr::FnCall(FnCallExpr::new(
-            Expr::SimpleName(SimpleName::new(make_id!(1), Span::new(0, 6))),
+            Expr::SimpleName(SimpleName::new(1, Span::new(0, 6))),
             Span::new(7, 12), ExprList::new(vec![
-                Expr::SimpleName(SimpleName::new(make_id!(2), Span::new(8, 11)))
+                Expr::SimpleName(SimpleName::new(2, Span::new(8, 11)))
             ])
         )))
         .finish();
@@ -186,26 +184,26 @@ fn expr_parse() {
     // update them to current syntax to help improve coverage and make me happy
 
     // Unit
-    assert_eq!{ Expr::with_test_str("(1)"),
+    assert_eq!{ make_node!("(1)"),
         Expr::Paren(ParenExpr::new(Span::new(0, 2), 
             LitExpr::new(LitValue::from(1), Span::new(1, 1))
         ))
     }
     // I can see future of Ok(())! 
-    assert_eq!{ Expr::with_test_str("(())"), 
+    assert_eq!{ make_node!("(())"), 
         Expr::Paren(ParenExpr::new(Span::new(0, 3), 
             LitExpr::new(LitValue::Unit, Span::new(1, 2))
         ))
     }
 
     // Tuple def
-    assert_eq!{ Expr::with_test_str("(a, b)"),
+    assert_eq!{ make_node!("(a, b)"),
         Expr::Tuple(TupleDef::new(Span::new(0, 5), make_exprs![
-            SimpleName::new(make_id!(1), Span::new(1, 1)),
-            SimpleName::new(make_id!(2), Span::new(4, 4)),
+            SimpleName::new(1, Span::new(1, 1)),
+            SimpleName::new(2, Span::new(4, 4)),
         ]))
     }        //  12345678901
-    assert_eq!{ Expr::with_test_str("(1, 2, 3, )"),
+    assert_eq!{ make_node!("(1, 2, 3, )"),
         Expr::Tuple(TupleDef::new(Span::new(0, 10), make_exprs![
             LitExpr::new(LitValue::from(1), Span::new(1, 1)),
             LitExpr::new(LitValue::from(2), Span::new(4, 4)),
@@ -214,114 +212,114 @@ fn expr_parse() {
     }
 
     // Array def
-    assert_eq!{ Expr::with_test_str("[a]"),
+    assert_eq!{ make_node!("[a]"),
         Expr::Array(ArrayDef::new(Span::new(0, 2), make_exprs![
-            SimpleName::new(make_id!(1), Span::new(1, 1))
+            SimpleName::new(1, Span::new(1, 1))
         ]))
     }        //  12345678
-    assert_eq!{ Expr::with_test_str("[1, 2, ]"),
+    assert_eq!{ make_node!("[1, 2, ]"),
         Expr::Array(ArrayDef::new(Span::new(0, 7), make_exprs![
             LitExpr::new(LitValue::from(1), Span::new(1, 1)),
             LitExpr::new(LitValue::from(2), Span::new(4, 4))
         ]))
     }
-    assert_eq!{ Expr::with_test_str("[]"),
+    assert_eq!{ make_node!("[]"),
         Expr::Array(ArrayDef::new(Span::new(0, 1), make_exprs![]))
     }
 
     // Member access
-    assert_eq!{ Expr::with_test_str("a.b"),
+    assert_eq!{ make_node!("a.b"),
         Expr::MemberAccess(MemberAccessExpr::new(
-            SimpleName::new(make_id!(1), Span::new(0, 0)),
+            SimpleName::new(1, Span::new(0, 0)),
             Span::new(1, 1),
-            SimpleName::new(make_id!(2), Span::new(2, 2))
+            SimpleName::new(2, Span::new(2, 2))
         ))
     }
 
     // function call
-    assert_eq!{ Expr::with_test_str("defg()"),
+    assert_eq!{ make_node!("defg()"),
         Expr::FnCall(FnCallExpr::new(
-            SimpleName::new(make_id!(1), Span::new(0, 3)),
+            SimpleName::new(1, Span::new(0, 3)),
             Span::new(4, 5),
             make_exprs![]
         ))
     }
-    assert_eq!{ Expr::with_test_str("deg(a)"),
+    assert_eq!{ make_node!("deg(a)"),
         Expr::FnCall(FnCallExpr::new(
-            SimpleName::new(make_id!(1), Span::new(0, 2)),
+            SimpleName::new(1, Span::new(0, 2)),
             Span::new(3, 5), make_exprs![
-                SimpleName::new(make_id!(2), Span::new(4, 4))
+                SimpleName::new(2, Span::new(4, 4))
             ]
         ))
     }
-    assert_eq!{ Expr::with_test_str("degg(a, b, )"),
+    assert_eq!{ make_node!("degg(a, b, )"),
         Expr::FnCall(FnCallExpr::new(
-            SimpleName::new(make_id!(1), Span::new(0, 3)),
+            SimpleName::new(1, Span::new(0, 3)),
             Span::new(4, 11), make_exprs![
-                SimpleName::new(make_id!(2), Span::new(5, 5)),
-                SimpleName::new(make_id!(3), Span::new(8, 8))
+                SimpleName::new(2, Span::new(5, 5)),
+                SimpleName::new(3, Span::new(8, 8))
             ]
         ))
     }
     //           0123456789
-    assert_eq!{ Expr::with_test_str("abc.defg()"),
+    assert_eq!{ make_node!("abc.defg()"),
         Expr::FnCall(FnCallExpr::new(
             MemberAccessExpr::new(
-                SimpleName::new(make_id!(1), Span::new(0, 2)),
+                SimpleName::new(1, Span::new(0, 2)),
                 Span::new(3, 3), 
-                SimpleName::new(make_id!(2), Span::new(4, 7))
+                SimpleName::new(2, Span::new(4, 7))
             ),
             Span::new(8, 9), 
             make_exprs![]
         ))
     }
-    assert_eq!{ Expr::with_test_str("abc.deg(a)"),
+    assert_eq!{ make_node!("abc.deg(a)"),
         Expr::FnCall(FnCallExpr::new(
             MemberAccessExpr::new(
-                SimpleName::new(make_id!(1), Span::new(0, 2)),
+                SimpleName::new(1, Span::new(0, 2)),
                 Span::new(3, 3),
-                SimpleName::new(make_id!(2), Span::new(4, 6))
+                SimpleName::new(2, Span::new(4, 6))
             ),
             Span::new(7, 9), make_exprs![
-                SimpleName::new(make_id!(3), Span::new(8, 8))
+                SimpleName::new(3, Span::new(8, 8))
             ]
         ))
     }        //  12345678901234
-    assert_eq!{ Expr::with_test_str("1.degg(a, b, )"),
+    assert_eq!{ make_node!("1.degg(a, b, )"),
         Expr::FnCall(FnCallExpr::new(
             MemberAccessExpr::new(
                 LitExpr::new(LitValue::from(1), Span::new(0, 0)),
                 Span::new(1, 1),
-                SimpleName::new(make_id!(1), Span::new(2, 5))
+                SimpleName::new(1, Span::new(2, 5))
             ),
             Span::new(6, 13), make_exprs![
-                SimpleName::new(make_id!(2), Span::new(7, 7)),
-                SimpleName::new(make_id!(3), Span::new(10, 10))
+                SimpleName::new(2, Span::new(7, 7)),
+                SimpleName::new(3, Span::new(10, 10))
             ]
         ))
     }   
 
     // get index       //  123456
-    assert_eq!{ Expr::with_test_str("deg[a]"),
+    assert_eq!{ make_node!("deg[a]"),
         Expr::IndexCall(IndexCallExpr::new(
-            SimpleName::new(make_id!(1), Span::new(0, 2)),
+            SimpleName::new(1, Span::new(0, 2)),
             Span::new(3, 5), make_exprs![
-                SimpleName::new(make_id!(2), Span::new(4, 4))
+                SimpleName::new(2, Span::new(4, 4))
             ]
         ))
     }        //  123456789012
-    assert_eq!{ Expr::with_test_str("degg[a, b, ]"),
+    assert_eq!{ make_node!("degg[a, b, ]"),
         Expr::IndexCall(IndexCallExpr::new(
-            SimpleName::new(make_id!(1), Span::new(0, 3)),
+            SimpleName::new(1, Span::new(0, 3)),
             Span::new(4, 11), make_exprs![
-                SimpleName::new(make_id!(2), Span::new(5, 5)),
-                SimpleName::new(make_id!(3), Span::new(8, 8))
+                SimpleName::new(2, Span::new(5, 5)),
+                SimpleName::new(3, Span::new(8, 8))
             ]
         ))
     }     
 
     //           123456
-    assert_eq!{ Expr::with_test_str("2[3].a"),
+    assert_eq!{ make_node!("2[3].a"),
         Expr::MemberAccess(MemberAccessExpr::new(
             IndexCallExpr::new(
                 LitExpr::new(LitValue::from(2), Span::new(0, 0)),
@@ -330,36 +328,36 @@ fn expr_parse() {
                 ]
             ),
             Span::new(4, 4), 
-            SimpleName::new(make_id!(1), Span::new(5, 5))
+            SimpleName::new(1, Span::new(5, 5))
         ))
     }   //  1234567890123456
-    assert_eq!{ Expr::with_test_str("print(233, ).bit"),
+    assert_eq!{ make_node!("print(233, ).bit"),
         Expr::MemberAccess(MemberAccessExpr::new(
             Expr::FnCall(FnCallExpr::new(
-                SimpleName::new(make_id!(1), Span::new(0, 4)),
+                SimpleName::new(1, Span::new(0, 4)),
                 Span::new(5, 11), make_exprs![
                     LitExpr::new(LitValue::from(233), Span::new(6, 8))
                 ]
             )),
             Span::new(12, 12),
-            SimpleName::new(make_id!(2), Span::new(13, 15))
+            SimpleName::new(2, Span::new(13, 15))
         ))
     }            //  12345678901234
-    assert_eq!{ Expr::with_test_str("1.degg[a, b, ]"),
+    assert_eq!{ make_node!("1.degg[a, b, ]"),
         Expr::IndexCall(IndexCallExpr::new(
             MemberAccessExpr::new(
                 LitExpr::new(LitValue::from(1), Span::new(0, 0)),
                 Span::new(1, 1),
-                SimpleName::new(make_id!(1), Span::new(2, 5))
+                SimpleName::new(1, Span::new(2, 5))
             ),
             Span::new(6, 13), make_exprs![
-                SimpleName::new(make_id!(2), Span::new(7, 7)),
-                SimpleName::new(make_id!(3), Span::new(10, 10)),
+                SimpleName::new(2, Span::new(7, 7)),
+                SimpleName::new(3, Span::new(10, 10)),
             ]
         ))
     }        
 
-    assert_eq!{ Expr::with_test_str("!~!1[1]"),
+    assert_eq!{ make_node!("!~!1[1]"),
         Expr::Unary(UnaryExpr::new(
             Seperator::LogicalNot, Span::new(0, 0),
             UnaryExpr::new(
@@ -379,7 +377,7 @@ fn expr_parse() {
 
     // increase and decrease
     //           1234567
-    assert_eq!{ Expr::with_test_str("!!1"),
+    assert_eq!{ make_node!("!!1"),
         Expr::Unary(UnaryExpr::new(
             Seperator::LogicalNot, Span::new(0, 0), 
             UnaryExpr::new(
@@ -390,11 +388,11 @@ fn expr_parse() {
     }
 
     // range
-    assert_eq!{ Expr::with_test_str(".."), 
+    assert_eq!{ make_node!(".."), 
         Expr::RangeFull(RangeFullExpr::new(Span::new(0, 1)))
     }
 
-    assert_eq!{ Expr::with_test_str("..1 + 2"),
+    assert_eq!{ make_node!("..1 + 2"),
         Expr::RangeRight(RangeRightExpr::new(Span::new(0, 6), BinaryExpr::new(
             LitExpr::new(LitValue::from(1), Span::new(2, 2)),
             Seperator::Add, Span::new(4, 4),
@@ -402,13 +400,13 @@ fn expr_parse() {
         )))
     }
 
-    assert_eq!{ Expr::with_test_str("xxx .."),
+    assert_eq!{ make_node!("xxx .."),
         Expr::RangeLeft(RangeLeftExpr::new(Span::new(0, 5), 
-            SimpleName::new(make_id!(1), Span::new(0, 2))
+            SimpleName::new(1, Span::new(0, 2))
         ))
     }
 
-    assert_eq!{ Expr::with_test_str("1 + 2 .. [4, 5, 6][2]"),
+    assert_eq!{ make_node!("1 + 2 .. [4, 5, 6][2]"),
         Expr::RangeBoth(RangeBothExpr::new(
             BinaryExpr::new(
                 LitExpr::new(LitValue::from(1), Span::new(0, 0)),
@@ -444,7 +442,7 @@ fn expr_errors() {
             Message::new_by_str(error_strings::UnexpectedSingleComma, vec![(Span::new(2, 5), error_strings::FnCallHere)])
         ])
         .expect_result(Expr::FnCall(FnCallExpr::new(
-            SimpleName::new(make_id!(1), Span::new(0, 1)), 
+            SimpleName::new(1, Span::new(0, 1)), 
             Span::new(2, 5), make_exprs![]
         )))
         .finish();
@@ -459,7 +457,7 @@ fn expr_errors() {
             MemberAccessExpr::new(
                 LitExpr::new(make_lit!(str, 1), Span::new(0, 1)),
                 Span::new(2, 2), 
-                SimpleName::new(make_id!(2), Span::new(3, 4))
+                SimpleName::new(2, Span::new(3, 4))
             ),
             Span::new(5, 8), make_exprs![]
         )))
@@ -471,7 +469,7 @@ fn expr_errors() {
             Message::new_by_str(error_strings::EmptyIndexCall, vec![(Span::new(4, 5), error_strings::IndexCallHere)])
         ])
         .expect_result(Expr::IndexCall(IndexCallExpr::new(
-            SimpleName::new(make_id!(1), Span::new(0, 3)),
+            SimpleName::new(1, Span::new(0, 3)),
             Span::new(4, 5), make_exprs![]
         )))
         .finish();
@@ -483,7 +481,7 @@ fn expr_errors() {
             Message::new_by_str(error_strings::EmptyIndexCall, vec![(Span::new(2, 5), error_strings::IndexCallHere)])
         ])
         .expect_result(Expr::IndexCall(IndexCallExpr::new(
-            SimpleName::new(make_id!(1), Span::new(0, 1)),
+            SimpleName::new(1, Span::new(0, 1)),
             Span::new(2, 5), make_exprs![]
         )))
         .finish();
@@ -493,7 +491,7 @@ fn expr_errors() {
 fn expr_unbox() {
 
     assert_eq!{ 
-        Expr::unbox(Box::new(Expr::SimpleName(SimpleName::new(make_id!(42), Span::new(30, 31))))), 
-        Expr::SimpleName(SimpleName::new(make_id!(42), Span::new(30, 31)))
+        Expr::unbox(Box::new(Expr::SimpleName(SimpleName::new(42, Span::new(30, 31))))), 
+        Expr::SimpleName(SimpleName::new(42, Span::new(30, 31)))
     }
 }

@@ -121,7 +121,7 @@ fn gen_program_inter() {
     //     }
 
     //     if buf != "break\r\n" {
-    //         match SyntaxTree::with_test_str(&buf) {
+    //         match make_node!(&buf) {
     //             Ok(program) => {
     //                 perrorln!("Syntax program: {}", program);
     //                 let program = GenerationSession::dispatch(program); 

@@ -4,7 +4,7 @@
 ///! syntax/format_helper
 
 use std::fmt::Debug;
-use crate::source::{SourceContext, Span, Sym};
+use crate::source::{SourceContext, Span, IsId};
 
 const INDENTION_FILLERS: [[&str; 16]; 3] = [ [
     "", "1 ", "2 | ", "3 | | ", "4 | | | ", "5 | | | | ", "6 | | | | | ", "7 | | | | | | ", "8 | | | | | | | ", "9 | | | | | | | | ", "10 | | | | | | | | | ",
@@ -33,7 +33,7 @@ impl<'a> Formatter<'a> {
     pub fn with_test_indent(indent: usize) -> Self {
         Formatter{ indent_index: indent, source: None, header_text: None, prefix_text: None, buf: String::new() }
     }
-    pub fn empty() -> Self {
+    pub const fn empty() -> Self {
         Formatter{ indent_index: 0, source: None, header_text: None, prefix_text: None, buf: String::new() }
     }
 
@@ -83,9 +83,9 @@ impl<'a> Formatter<'a> {
         }
         self
     }
-    pub fn sym(mut self, id: Sym) -> Self {
+    pub fn isid(mut self, id: IsId) -> Self {
         if let Some(source) = &self.source {
-            self.buf.push_str(&format!("{}", source.resolve_symbol(id)));
+            self.buf.push_str(&format!("{}", source.resolve_string(id)));
         } else {
             self.buf.push_str(&format!("{:?}", id));
         }

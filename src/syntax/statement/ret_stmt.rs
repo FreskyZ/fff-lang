@@ -75,8 +75,8 @@ fn ret_stmt_parse() {
     use super::super::BinaryExpr;
     use super::super::WithTestInput;
 
-    assert_eq!{ ReturnStatement::with_test_str("return;"), ReturnStatement::new_unit(Span::new(0, 6)) }
-    assert_eq!{ ReturnStatement::with_test_str("return 1 + 1;"), 
+    assert_eq!{ make_node!("return;"), ReturnStatement::new_unit(Span::new(0, 6)) }
+    assert_eq!{ make_node!("return 1 + 1;"), 
         ReturnStatement::new_expr(
             Span::new(0, 12), 
             Expr::Binary(BinaryExpr::new(

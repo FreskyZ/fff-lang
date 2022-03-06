@@ -2,13 +2,15 @@
 ///!
 ///! syntax, syntax tree types and generation
 
-#[macro_use] mod expr;
+#[macro_use] 
+mod expr;
 mod parse_sess;
 mod items;
 mod statement;
 mod error_strings;
 mod format_helper;
 mod syntax_tree;
+#[cfg(test)]
 mod test_helper;
 
 pub use items::fn_def::FnParam;
@@ -19,6 +21,7 @@ pub use items::label_def::LabelDef;
 pub use items::type_def::TypeFieldDef;
 pub use items::type_def::TypeDef;
 pub use items::module::Module;
+pub use expr::LitValue;
 pub use expr::LitExpr;
 pub use expr::Expr;
 pub use expr::BinaryExpr;
@@ -62,8 +65,8 @@ use parse_sess::ISyntaxGrammar;
 pub use parse_sess::ISyntaxParse;
 pub use format_helper::Formatter;
 pub use format_helper::ISyntaxFormat;
-pub use test_helper::TestInput;
-pub use test_helper::WithTestInput;
+#[cfg(test)]
+pub(crate) use test_helper::{make_node, try_make_node};
 
 // TODO: 
 // replace more proper place by IdentExpr and ExprList

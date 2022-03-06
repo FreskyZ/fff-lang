@@ -3,27 +3,17 @@
 ///! 
 ///! lexical parser
 ///! TokenStream::new(source, messages) for formal use
-///! TokenStream::with_test_str(input) for test use
-
-#[cfg(test)]
-macro_rules! make_lit {
-    ($val: expr) => (LitValue::from($val));
-    (str, $sid: expr) => (LitValue::new_str_lit_simple_usize($sid));
-    (fstr, $($seg: expr),+) => ({
-        let mut segs = Vec::new();
-        $(segs.push(From::from($x));)*
-        LitValue::new_str_lit_format(segs)
-    });
-    (fstr, $($seg: expr,)*) => (make_lit!(fstr, $($x),*));
-}
+///! make_node!(input) for test use
 
 mod token;
 mod token_buf;
 mod v1lexer;
 mod v2lexer;
 mod token_stream;
+mod new_token;
 
 use token_buf::{ILexer, BufLexer, ParseSession};
 
-pub use token::{Separator, SeparatorKind, Keyword, KeywordKind, NumLitValue, StrLitValue, FormatStrLitSegment, LitValue, Token};
+pub use token::{Separator, SeparatorKind, Keyword, KeywordKind, NumLitValue, LitValue};
+pub use new_token::{Token, TokenFormat, Numeric, StringLiteralType};
 pub use token_stream::TokenStream;

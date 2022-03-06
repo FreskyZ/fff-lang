@@ -123,7 +123,7 @@ fn expr_stmt_parse() {
         .expect_no_message()
         .expect_result(Statement::SimpleExpr(SimpleExprStatement::new(Span::new(0, 21),
             FnCallExpr::new(
-                SimpleName::new(make_id!(1), Span::new(0, 6)),
+                SimpleName::new(1, Span::new(0, 6)),
                 Span::new(7, 20), make_exprs![
                     LitExpr::new(make_lit!(str, 2), Span::new(8, 19))
                 ]
@@ -132,7 +132,7 @@ fn expr_stmt_parse() {
     .finish();
 
     //                                              012345678901
-    assert_eq!{ AssignExprStatement::with_test_str("1 + 1 <<= 2;"),  // to show I have 3 char seperator available
+    assert_eq!{ make_node!("1 + 1 <<= 2;"),  // to show I have 3 char seperator available
         Statement::AssignExpr(AssignExprStatement::new(Span::new(0, 11),
             Seperator::ShiftLeftAssign, Span::new(6, 8),
             BinaryExpr::new(

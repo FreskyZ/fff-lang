@@ -11,17 +11,14 @@ mod tests;
 mod keyword;
 mod separator;
 mod num_lit_value;
-mod str_lit_value;
 
 pub use keyword::{Keyword, KeywordKind};
 pub use separator::{Separator, SeparatorKind};
 pub use num_lit_value::NumLitValue;
-pub use str_lit_value::{StrLitValue, FormatStrLitSegment};
 
 #[derive(Clone, Eq, PartialEq)]
 pub enum LitValue {
-    Unit,                // unit is not generated here in v2 or some other, because for cases like `1.to_string()`, this is function call not unit
-    Str(Option<StrLitValue>),
+    Str(Option<IsId>),
     Num(Option<NumLitValue>),
     Char(Option<char>),
     Bool(bool),
@@ -29,7 +26,6 @@ pub enum LitValue {
 impl fmt::Debug for LitValue {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            LitValue::Unit => write!(f, "unit"),
             LitValue::Str(Some(ref val)) => write!(f, "{:?}", val),
             LitValue::Str(None) => write!(f, "\"<invalid>\""),
             LitValue::Char(Some(ref val)) => write!(f, "{:?}", val),
@@ -44,12 +40,12 @@ impl fmt::Debug for LitValue {
 // from
 impl From<char> for LitValue { fn from(val: char) -> LitValue { LitValue::Char(Some(val)) } }
 impl From<bool> for LitValue { fn from(val: bool) -> LitValue { LitValue::Bool(val) } }
+impl From<IsId> for LitValue { fn from(val: IsId) -> LitValue { LitValue::Str(Some(val)) } }
 
 #[cfg(test)]
 impl LitValue {
-    pub fn new_str_lit_simple(sid: IsId) -> LitValue { LitValue::Str(Some(StrLitValue::Simple(sid))) }
-    pub fn new_str_lit_simple_usize(sid: u32) -> LitValue { LitValue::Str(Some(StrLitValue::Simple(IsId::new(sid)))) }
-    pub fn new_str_lit_format(segments: Vec<FormatStrLitSegment>) -> LitValue { LitValue::Str(Some(StrLitValue::Format(segments))) }
+    pub fn new_str_lit_simple(sid: IsId) -> LitValue { LitValue::Str(Some(sid)) }
+    pub fn new_str_lit_simple_usize(sid: u32) -> LitValue { LitValue::Str(Some(IsId::new(sid))) }
 }
 
 macro_rules! impl_from_num {
@@ -70,7 +66,6 @@ impl_from_num!{
 
 impl LitValue {
 
-    pub fn is_unit(&self) -> bool { match self { &LitValue::Unit => true, _ => false } }
     pub fn is_str(&self) -> bool { match self { &LitValue::Str(_) => true, _ => false } }
     pub fn is_num(&self) -> bool { match self { &LitValue::Num(_) => true, _ => false } }
     pub fn is_char(&self) -> bool { match self { &LitValue::Char(_) => true, _ => false } }
@@ -78,7 +73,6 @@ impl LitValue {
 
     pub fn is_valid(&self) -> bool { 
         match self {
-            &LitValue::Unit
             | &LitValue::Bool(_)
             | &LitValue::Str(Some(_))
             | &LitValue::Num(Some(_))
@@ -89,29 +83,5 @@ impl LitValue {
 
     pub fn get_char(&self) -> char { match self { &LitValue::Char(Some(val)) => val, _ => '\0' } }
     pub fn get_bool(&self) -> bool { match self { &LitValue::Bool(val) => val, _ => false } }
-    pub fn get_str(&self) -> StrLitValue { match self { &LitValue::Str(Some(ref val)) => val.clone(), _ => StrLitValue::Simple(IsId::new(!1)) } }
     pub fn get_num(&self) -> NumLitValue { match self { &LitValue::Num(Some(val)) => val, _ => NumLitValue::I32(0) } }
-}
-
-/// Lexical token
-#[derive(Eq, PartialEq, Clone)]  
-pub enum Token {
-    EOF,
-    Lit(LitValue),
-    Ident(IsId),
-    Label(IsId),
-    Sep(Separator),
-    Keyword(Keyword),
-}
-impl fmt::Debug for Token {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            &Token::EOF => write!(f, "EOF"), 
-            &Token::Lit(ref lit) => write!(f, "{:?}", lit),
-            &Token::Ident(ref sid) => write!(f, "ident {:?}", sid),  // Ident #1
-            &Token::Label(ref sid) => write!(f, "label @{:?}", sid), // Label @#2
-            &Token::Sep(ref sep) => write!(f, "separator {:?}", sep),
-            &Token::Keyword(ref kw) => write!(f, "keyword {:?}", kw),
-        }
-    }
 }

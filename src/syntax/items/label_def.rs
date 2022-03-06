@@ -54,5 +54,5 @@ impl ISyntaxParse for LabelDef {
 fn label_def_parse() {
     use super::super::WithTestInput;
 
-    assert_eq!(LabelDef::with_test_str("@1:"), LabelDef::new(make_id!(1), Span::new(0, 2)));
+    assert_eq!(make_node!("@1:"), LabelDef::new(1, Span::new(0, 2)));
 }

@@ -160,9 +160,9 @@ fn range_expr_parse() {
     use super::LitExpr;
     use super::super::WithTestInput;
 
-    assert_eq!{ RangeExpr::with_test_str(".."), Expr::RangeFull(RangeFullExpr::new(Span::new(0, 1))) }
+    assert_eq!{ make_node!(".."), Expr::RangeFull(RangeFullExpr::new(Span::new(0, 1))) }
 
-    assert_eq!{ RangeExpr::with_test_str("..1 + 1"), 
+    assert_eq!{ make_node!("..1 + 1"), 
         Expr::RangeRight(RangeRightExpr::new(Span::new(0, 6), BinaryExpr::new(
             LitExpr::new(LitValue::from(1), Span::new(2, 2)),
             Seperator::Add, Span::new(4, 4),
@@ -170,7 +170,7 @@ fn range_expr_parse() {
         )))
     }
 
-    assert_eq!{ RangeExpr::with_test_str("1 .."),
+    assert_eq!{ make_node!("1 .."),
         Expr::RangeLeft(RangeLeftExpr::new(Span::new(0, 3), LitExpr::new(LitValue::from(1), Span::new(0, 0))))
     }
 }

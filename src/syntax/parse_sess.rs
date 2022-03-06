@@ -2,16 +2,11 @@
 ///!
 ///! syntax/parse_sess, parse traits and helper struct
 
-use std::rc::Rc;
-
-use crate::source::{SourceContext, Span, Sym};
+use crate::source::{SourceContext, Span, IsId};
 use crate::diagnostics::Message;
 use crate::diagnostics::MessageCollection;
-use crate::lexical::Token;
-use crate::lexical::TokenStream;
-use crate::lexical::Seperator;
-use crate::lexical::Keyword;
-use crate::lexical::LitValue;
+use crate::lexical::{Token, TokenStream, Separator, SeparatorKind, Keyword};
+use super::{LitValue};
 
 pub type ParseResult<T> = Result<T, ()>;
 
@@ -74,7 +69,7 @@ impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
     /// if not, push unexpect and Err(())
     ///
     /// example `let sep_span = sess.expect_sep(Seperator::Comma)?;`
-    pub fn expect_sep(&mut self, expected_sep: Seperator) -> Result<Span, ()> {
+    pub fn expect_sep(&mut self, expected_sep: Separator) -> Result<Span, ()> {
 
         let current_index = self.current_index;
         self.move_next();
@@ -95,7 +90,10 @@ impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
         let current_index = self.current_index;
         self.move_next();
         match (self.tokens.nth_token(current_index), self.tokens.nth_span(current_index)) {
-            (&Token::Lit(ref lit), ref lit_span) => Ok((lit.clone(), *lit_span)),
+            (&Token::Char(v), ref lit_span) => Ok((LitValue::Char(v), *lit_span)),
+            (&Token::Bool(v), ref lit_span) => Ok((LitValue::Bool(v), *lit_span)),
+            (&Token::Num(v), ref lit_span) => Ok((LitValue::Num(v), *lit_span)),
+            (&Token::Str(v, _), ref lit_span) => Ok((LitValue::Str(v), *lit_span)),
             _ => self.push_unexpect("literal"),
         }
     }
@@ -106,7 +104,7 @@ impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
     /// if not, push unexpect and Err(())
     ///
     /// example `let (sep, sep_span) = sess.expect_seps(&[Seperator::LeftBracket, Seperator::LeftBrace])?;`
-    pub fn expect_seps<'e, T: IntoIterator<Item = &'e Seperator>>(&mut self, expected_seps: T) -> Result<(Seperator, Span), ()> {
+    pub fn expect_seps<'e, T: IntoIterator<Item = &'e Separator>>(&mut self, expected_seps: T) -> Result<(Separator, Span), ()> {
         
         let current_index = self.current_index;
         self.move_next();
@@ -146,27 +144,27 @@ impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
 
     /// Check current token is an identifier
     ///
-    /// if so, move next and Ok((symbol_id, ident_span)),
+    /// if so, move next and Ok((isidbol_id, ident_span)),
     /// if not, push unexpect and Err(())
     ///
     /// example `let (ident_id, ident_span) = sess.expect_ident()?;`
-    pub fn expect_ident(&mut self) -> Result<(Sym, Span), ()> {
+    pub fn expect_ident(&mut self) -> Result<(IsId, Span), ()> {
 
         let current_index = self.current_index;
         self.move_next();
         match (self.tokens.nth_token(current_index), self.tokens.nth_span(current_index)) {
             (&Token::Ident(ref ident), ref ident_strpos) => Ok((*ident, *ident_strpos)),
-            _ => self.push_unexpect::<(Sym, Span)>("identifier"),
+            _ => self.push_unexpect::<(IsId, Span)>("identifier"),
         }
     }
 
     /// Check current token is a label
     /// 
-    /// if so, move next and Some((symid, sym_span)), 
+    /// if so, move next and Some((isidid, isid_span)), 
     /// if not, no move next and None
     ///
-    /// example `if let Some((symid, label_span)) = sess.try_expect_label() { ... }`
-    pub fn try_expect_label(&mut self) -> Option<(Sym, Span)> {
+    /// example `if let Some((isidid, label_span)) = sess.try_expect_label() { ... }`
+    pub fn try_expect_label(&mut self) -> Option<(IsId, Span)> {
         
         let current_index = self.current_index;
         match (self.tokens.nth_token(current_index), self.tokens.nth_span(current_index)) {
@@ -177,11 +175,11 @@ impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
 
     /// Check current token is identifier or acceptable keywords
     /// 
-    /// if so, move next and Ok((symbol_id, ident_span)),
+    /// if so, move next and Ok((isidbol_id, ident_span)),
     /// if not, push unexpect and Err(())
     ///
-    /// example `let (symbol_id, ident_span) = sess.expect_ident_or([Keyword::This, Keyword::Underscore])?;`
-    pub fn expect_ident_or<T: IntoIterator<Item = Keyword>>(&mut self, acceptable_keywords: T) -> Result<(Sym, Span), ()> {
+    /// example `let (isidbol_id, ident_span) = sess.expect_ident_or([Keyword::This, Keyword::Underscore])?;`
+    pub fn expect_ident_or<T: IntoIterator<Item = Keyword>>(&mut self, acceptable_keywords: T) -> Result<(IsId, Span), ()> {
 
         let current_index = self.current_index;
         self.move_next();
@@ -189,7 +187,7 @@ impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
             (&Token::Ident(ref ident), ref ident_span) => Ok((*ident, *ident_span)),
             (&Token::Keyword(ref actual_kw), ref kw_span) => {
                 if acceptable_keywords.into_iter().any(|accept_kw| actual_kw == &accept_kw) {
-                    Ok((self.symbols.intern(format!("{:?}", actual_kw)), *kw_span))
+                    Ok((self.isidbols.intern(format!("{:?}", actual_kw)), *kw_span))
                 } else {
                     self.push_unexpect("identifier")  // FIXME: add keywords desc here
                 }
@@ -200,17 +198,17 @@ impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
     
     /// Check current token is identifier or meet the predict
     /// 
-    /// if so, move next and Ok((symbol_id, ident_span)),
+    /// if so, move next and Ok((isidbol_id, ident_span)),
     /// if not, push unexpect and Err(())
     ///
-    /// example `let (symbold_id, ident_span) = sess.expect_ident_or_if(|kw| kw.is_primitive_type())?;`
-    pub fn expect_ident_or_if<P: Fn(&Keyword) -> bool>(&mut self, predict: P) -> Result<(Sym, Span), ()> {
+    /// example `let (isidbold_id, ident_span) = sess.expect_ident_or_if(|kw| kw.is_primitive_type())?;`
+    pub fn expect_ident_or_if<P: Fn(&Keyword) -> bool>(&mut self, predict: P) -> Result<(IsId, Span), ()> {
         
         let current_index = self.current_index;
         self.move_next();
         match (self.tokens.nth_token(current_index), self.tokens.nth_span(current_index)) {
             (&Token::Ident(ref ident), ref ident_span) => Ok((*ident, *ident_span)),
-            (&Token::Keyword(ref actual_kw), ref kw_span) if predict(actual_kw) => Ok((self.symbols.intern(format!("{:?}", actual_kw)), *kw_span)),
+            (&Token::Keyword(ref actual_kw), ref kw_span) if predict(actual_kw) => Ok((self.isidbols.intern(format!("{:?}", actual_kw)), *kw_span)),
             _ => self.push_unexpect("identifier"),  // TODO: may require Keywords::meet_predict(p: P) -> Vec<Keyword> or custom description
         }
     }
@@ -221,7 +219,7 @@ impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
     /// if not, no move next and None
     ///
     /// example `if let Some(sep_span) = sess.try_expect_sep(Seperator::Comma) { ... }`
-    pub fn try_expect_sep(&mut self, expected_sep: Seperator) -> Option<Span> {
+    pub fn try_expect_sep(&mut self, expected_sep: Separator) -> Option<Span> {
 
         let current_index = self.current_index;
         match (self.tokens.nth_token(current_index), self.tokens.nth_span(current_index)) {
@@ -251,7 +249,7 @@ impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
     /// if not, no move next and None
     ///
     /// example `if let Some((comma_span, ending_span)) = sess.try_expect_2_spe(Seperator::Comma, Seperator::RParen) { ... }`
-    pub fn try_expect_2_sep(&mut self, expected_sep1: Seperator, expected_sep2: Seperator) -> Option<(Span, Span)> {
+    pub fn try_expect_2_sep(&mut self, expected_sep1: Separator, expected_sep2: Separator) -> Option<(Span, Span)> {
 
         let current_index = self.current_index;
         match (self.tokens.nth_token(current_index), self.tokens.nth_span(current_index), 
@@ -268,11 +266,11 @@ impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
     /// if not, no move next and None
     ///
     /// example `if let Some((sep, sep_span)) = sess.try_expect_sep_cat(Unary) { ... }`
-    pub fn try_expect_sep_cat(&mut self, expected_cat: u16) -> Option<(Seperator, Span)> {
+    pub fn try_expect_sep_cat(&mut self, expected_cat: SeparatorKind) -> Option<(Separator, Span)> {
 
         let current_index = self.current_index;
         match (self.tokens.nth_token(current_index), self.tokens.nth_span(current_index)) {
-            (&Token::Sep(ref sep), ref sep_span) if sep.is_category(expected_cat) => { self.move_next(); Some((*sep, *sep_span)) },
+            (&Token::Sep(ref sep), ref sep_span) if sep.kind(expected_cat) => { self.move_next(); Some((*sep, *sep_span)) },
             _ => None,
         }
     }
@@ -280,7 +278,7 @@ impl<'a, 'b, 'c> ParseSession<'a, 'b, 'c> {
     pub fn push_message(&mut self, message: Message) { self.messages.push(message); }
     pub fn push_unexpect<T>(&mut self, expect_desc: &str) -> ParseResult<T> {
 
-        self.messages.push(Message::with_help("Unexpect symbol".to_owned(), 
+        self.messages.push(Message::with_help("Unexpect isidbol".to_owned(), 
             vec![(self.tokens.nth_span(self.current_index), format!("Meet {:?}", self.tokens.nth_token(self.current_index)))],
             vec![format!("Expect {}", expect_desc)]
         ));

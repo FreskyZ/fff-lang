@@ -119,7 +119,7 @@ fn expr_list_parse() {
     use super::LitExpr;
     use super::super::WithTestInput;
 
-    assert_eq!{ ExprList::with_test_str("[1, 2, 3]"), 
+    assert_eq!{ make_node!("[1, 2, 3]"), 
         ExprListParseResult::Normal(Span::new(0, 8), ExprList::new(vec![
             Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(1, 1))),
             Expr::Lit(LitExpr::new(LitValue::from(2), Span::new(4, 4))),
@@ -127,7 +127,7 @@ fn expr_list_parse() {
         ]))
     }
     
-    assert_eq!{ ExprList::with_test_str("(1, 2, 3,)"), 
+    assert_eq!{ make_node!("(1, 2, 3,)"), 
         ExprListParseResult::EndWithComma(Span::new(0, 9), ExprList::new(vec![
             Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(1, 1))),
             Expr::Lit(LitExpr::new(LitValue::from(2), Span::new(4, 4))),
@@ -135,11 +135,11 @@ fn expr_list_parse() {
         ]))
     }
 
-    assert_eq!{ ExprList::with_test_str("[]"), 
+    assert_eq!{ make_node!("[]"), 
         ExprListParseResult::Empty(Span::new(0, 1))
     }
 
-    assert_eq!{ ExprList::with_test_str("{,}"),
+    assert_eq!{ make_node!("{,}"),
         ExprListParseResult::SingleComma(Span::new(0, 2))
     }
 }

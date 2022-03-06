@@ -176,27 +176,27 @@ fn syntax_tree_recursive() {
     assert_eq!(messages.is_empty(), true, "{:?}", messages);
     assert_eq!(syntax_tree, SyntaxTree::new_modules(vec![
         Module::new(sources.index(0).clone(), vec![
-            Item::Import(ImportStatement::new_default(Span::new(0, 0, 10), SimpleName::new(make_id!(1), Span::new(0, 7, 9)))),
-            Item::Import(ImportStatement::new_default(Span::new(0, 39, 49), SimpleName::new(make_id!(2), Span::new(0, 46, 48)))),
-            Item::Import(ImportStatement::new_default(Span::new(0, 77, 93), SimpleName::new(make_id!(3), Span::new(0, 84, 92)))),
-            Item::Import(ImportStatement::new_default(Span::new(0, 163, 180), SimpleName::new(make_id!(4), Span::new(0, 170, 179)))),
+            Item::Import(ImportStatement::new_default(Span::new(0, 0, 10), SimpleName::new(1, Span::new(0, 7, 9)))),
+            Item::Import(ImportStatement::new_default(Span::new(0, 39, 49), SimpleName::new(2, Span::new(0, 46, 48)))),
+            Item::Import(ImportStatement::new_default(Span::new(0, 77, 93), SimpleName::new(3, Span::new(0, 84, 92)))),
+            Item::Import(ImportStatement::new_default(Span::new(0, 163, 180), SimpleName::new(4, Span::new(0, 170, 179)))),
         ]),
         Module::new(sources.index(1).clone(), vec![]),
         Module::new(sources.index(2).clone(), vec![
-            Item::Import(ImportStatement::new_default(Span::new(2, 0, 16), SimpleName::new(make_id!(5), Span::new(2, 7, 15)))),
-            Item::Import(ImportStatement::new_default(Span::new(2, 69, 85), SimpleName::new(make_id!(6), Span::new(2, 76, 84)))),
+            Item::Import(ImportStatement::new_default(Span::new(2, 0, 16), SimpleName::new(5, Span::new(2, 7, 15)))),
+            Item::Import(ImportStatement::new_default(Span::new(2, 69, 85), SimpleName::new(6, Span::new(2, 76, 84)))),
         ]),
         Module::new(sources.index(3).clone(), vec![]),
         Module::new(sources.index(4).clone(), vec![]),
         Module::new(sources.index(5).clone(), vec![]),
         Module::new(sources.index(6).clone(), vec![]),
     ], vec![ // here import name = imported id is an accident
-        ImportMap::new(0, make_id!(1), 1),
-        ImportMap::new(0, make_id!(2), 2), 
-        ImportMap::new(0, make_id!(3), 3),
-        ImportMap::new(0, make_id!(4), 4),
-        ImportMap::new(2, make_id!(5), 5),
-        ImportMap::new(2, make_id!(6), 6)
+        ImportMap::new(0, 1, 1),
+        ImportMap::new(0, 2, 2), 
+        ImportMap::new(0, 3, 3),
+        ImportMap::new(0, 4, 4),
+        ImportMap::new(2, 5, 5),
+        ImportMap::new(2, 6, 6)
     ]));
 
     // check source file name

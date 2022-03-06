@@ -81,11 +81,11 @@ fn unary_expr_parse() {
     use super::LitExpr;
     use super::super::WithTestInput;
     
-    assert_eq!{ UnaryExpr::with_test_str("1"), 
+    assert_eq!{ make_node!("1"), 
         Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(0, 0))) 
     }
 
-    assert_eq!{ UnaryExpr::with_test_str("!~!1"),
+    assert_eq!{ make_node!("!~!1"),
         Expr::Unary(UnaryExpr::new(
             Seperator::LogicalNot, Span::new(0, 0),
             Expr::Unary(UnaryExpr::new(

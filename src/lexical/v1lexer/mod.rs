@@ -13,9 +13,9 @@ mod escape_char_parser;
 mod raw_string_lit_parser;
 mod string_lit_parser;
 
-use crate::source::{Span, SourceChars, FileSystem, EOF};
+use crate::source::{Span, SourceChars, FileSystem, IsId, EOF};
 use crate::diagnostics::Message;
-use super::{ILexer, BufLexer, StrLitValue, ParseSession};
+use super::{ILexer, BufLexer, ParseSession};
 use string_lit_parser::{StringLiteralParser, StringLiteralParserResult};
 use raw_string_lit_parser::{RawStringLiteralParser, RawStringLiteralParserResult};
 use char_lit_parser::{CharLiteralParser, CharLiteralParserResult};
@@ -33,8 +33,8 @@ impl<'a, F> ILexer<'a, F, char> for V0Lexer<'a, F> where F: FileSystem {
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub enum V1Token {
     EOF,
-    StringLiteral(Option<StrLitValue>),
-    RawStringLiteral(Option<StrLitValue>),
+    StringLiteral(Option<IsId>),
+    RawStringLiteral(Option<IsId>),
     CharLiteral(Option<char>),
     Other(char),
 }
@@ -125,7 +125,7 @@ impl<'chs, F> ILexer<'chs, F, V1Token> for V1Lexer<'chs, F> where F: FileSystem 
                             if *ch == EOF { // if EOF was consumed by str lit parser, it will not be returned as EOF, which is not designed by feature
                                 self.v0.prepare_dummy1();
                             }
-                            return (V1Token::StringLiteral(value.map(|v| StrLitValue::Simple(self.v0.lexer.0.intern(&v)))), pos);
+                            return (V1Token::StringLiteral(value.map(|v| self.v0.lexer.0.intern(&v))), pos);
                         }
                     }
                 }
@@ -138,7 +138,7 @@ impl<'chs, F> ILexer<'chs, F, V1Token> for V1Lexer<'chs, F> where F: FileSystem 
                             if *ch == EOF { // same as str lit parser
                                 self.v0.prepare_dummy1();
                             }
-                            return (V1Token::RawStringLiteral(value.map(|v| StrLitValue::Simple(self.v0.lexer.0.intern(&v)))), pos);
+                            return (V1Token::RawStringLiteral(value.map(|v| self.v0.lexer.0.intern(&v))), pos);
                         }
                     }
                 }
@@ -205,11 +205,11 @@ fn v1_base() {
     }
     macro_rules! str_lit {
         ($start_id: expr, $end_id: expr) => ((V1Token::StringLiteral(None), Span::new($start_id, $end_id)));
-        ($val: expr, $start_id: expr, $end_id: expr) => ((V1Token::StringLiteral(Some(StrLitValue::Simple($val))), Span::new($start_id, $end_id)))
+        ($val: expr, $start_id: expr, $end_id: expr) => ((V1Token::StringLiteral(Some($val)), Span::new($start_id, $end_id)))
     }
     macro_rules! rstr_lit {
         ($start_id: expr, $end_id: expr) => ((V1Token::RawStringLiteral(None), Span::new($start_id, $end_id)));
-        ($val: expr, $start_id: expr, $end_id: expr) => ((V1Token::RawStringLiteral(Some(StrLitValue::Simple($val))), Span::new($start_id, $end_id)))
+        ($val: expr, $start_id: expr, $end_id: expr) => ((V1Token::RawStringLiteral(Some($val)), Span::new($start_id, $end_id)))
     }
 
     // Line comment as \n

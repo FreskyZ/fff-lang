@@ -102,21 +102,21 @@ fn type_def_parse() {
     use super::super::WithTestInput;
 
     //                                  01234567890123456
-    assert_eq!{ TypeDef::with_test_str("type x { x: i32 }"),
-        TypeDef::new(Span::new(0, 16), SimpleName::new(make_id!(1), Span::new(5, 5)), vec![
+    assert_eq!{ make_node!("type x { x: i32 }"),
+        TypeDef::new(Span::new(0, 16), SimpleName::new(1, Span::new(5, 5)), vec![
             TypeFieldDef::new(Span::new(9, 14), 
-                SimpleName::new(make_id!(1), Span::new(9, 9)),
+                SimpleName::new(1, Span::new(9, 9)),
                 Span::new(10, 10),
-                TypeUse::new_simple(make_id!(2), Span::new(12, 14))
+                TypeUse::new_simple(2, Span::new(12, 14))
             )
         ])
     }
-    assert_eq!{ TypeDef::with_test_str("type x { x: i32,}"),
-        TypeDef::new(Span::new(0, 16), SimpleName::new(make_id!(1), Span::new(5, 5)), vec![
+    assert_eq!{ make_node!("type x { x: i32,}"),
+        TypeDef::new(Span::new(0, 16), SimpleName::new(1, Span::new(5, 5)), vec![
             TypeFieldDef::new(Span::new(9, 15), 
-                SimpleName::new(make_id!(1), Span::new(9, 9)),
+                SimpleName::new(1, Span::new(9, 9)),
                 Span::new(10, 10),
-                TypeUse::new_simple(make_id!(2), Span::new(12, 14))
+                TypeUse::new_simple(2, Span::new(12, 14))
             )
         ])
     }
@@ -126,23 +126,23 @@ fn type_def_parse() {
         .set_syms(make_symbols!["array", "data", "size", "cap", "u64", "u8"])
         .apply::<TypeDef, _>()
         .expect_no_message()
-        .expect_result(TypeDef::new(Span::new(0, 45), SimpleName::new(make_id!(1), Span::new(5, 9)), vec![
+        .expect_result(TypeDef::new(Span::new(0, 45), SimpleName::new(1, Span::new(5, 9)), vec![
             TypeFieldDef::new(Span::new(13, 23),
-                SimpleName::new(make_id!(2), Span::new(13, 16)),
+                SimpleName::new(2, Span::new(13, 16)),
                 Span::new(17, 17),
-                TypeUse::new_template(make_id!(1), Span::default(), Span::new(19, 22), vec![
-                    TypeUse::new_simple(make_id!(6), Span::new(20, 21))
+                TypeUse::new_template(1, Span::default(), Span::new(19, 22), vec![
+                    TypeUse::new_simple(6, Span::new(20, 21))
                 ])
             ),
             TypeFieldDef::new(Span::new(25, 34), 
-                SimpleName::new(make_id!(3), Span::new(25, 28)),
+                SimpleName::new(3, Span::new(25, 28)),
                 Span::new(29, 29),
-                TypeUse::new_simple(make_id!(5), Span::new(31, 33))
+                TypeUse::new_simple(5, Span::new(31, 33))
             ),
             TypeFieldDef::new(Span::new(36, 43), 
-                SimpleName::new(make_id!(4), Span::new(36, 38)),
+                SimpleName::new(4, Span::new(36, 38)),
                 Span::new(39, 39),
-                TypeUse::new_simple(make_id!(5), Span::new(41, 43))
+                TypeUse::new_simple(5, Span::new(41, 43))
             )
         ]))
     .finish();

@@ -126,14 +126,14 @@ fn tuple_def_parse() {
     use super::super::WithTestInput;
 
     //                                   01234567
-    assert_eq!{ TupleDef::with_test_str("(1, '2')"),
+    assert_eq!{ make_node!("(1, '2')"),
         Expr::Tuple(TupleDef::new(Span::new(0, 7), make_exprs![
             LitExpr::new(LitValue::from(1), Span::new(1, 1)),
             LitExpr::new(LitValue::from('2'), Span::new(4, 6))
         ]))
     }
     //                                   0123456
-    assert_eq!{ TupleDef::with_test_str("(1 + 1)"),
+    assert_eq!{ make_node!("(1 + 1)"),
         Expr::Paren(ParenExpr::new(Span::new(0, 6), 
             BinaryExpr::new(
                 LitExpr::new(LitValue::from(1), Span::new(1, 1)), 

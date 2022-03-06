@@ -125,9 +125,9 @@ fn for_stmt_parse() {
         .apply::<ForStatement, _>()
         .expect_no_message()
         .expect_result(ForStatement::new_with_label(Span::new(0, 17),
-            LabelDef::new(make_id!(1), Span::new(0, 2)),
+            LabelDef::new(1, Span::new(0, 2)),
             Span::new(4, 6),
-            make_id!(2), Span::new(8, 8),
+            2, Span::new(8, 8),
             Expr::Lit(LitExpr::new(LitValue::from(42), Span::new(13, 14))),
             Block::new(Span::new(16, 17), vec![])
         ))
@@ -141,34 +141,34 @@ fn for_stmt_parse() {
         .apply::<ForStatement, _>()
         .expect_no_message()
         .expect_result(ForStatement::new_with_label(Span::new(0, 77),
-            LabelDef::new(make_id!(1), Span::new(0, 6)),
+            LabelDef::new(1, Span::new(0, 6)),
             Span::new(8, 10),
-            make_id!(2), Span::new(12, 12),
+            2, Span::new(12, 12),
             FnCallExpr::new(
                 MemberAccessExpr::new(
                     FnCallExpr::new(
                         MemberAccessExpr::new(
                             FnCallExpr::new(
-                                SimpleName::new(make_id!(3), Span::new(17, 21)),
+                                SimpleName::new(3, Span::new(17, 21)),
                                 Span::new(22, 28), make_exprs![
                                     LitExpr::new(LitValue::from(0), Span::new(23, 23)),
                                     LitExpr::new(LitValue::from(10), Span::new(26, 27)),
                                 ]
                             ),
                             Span::new(29, 29),
-                            SimpleName::new(make_id!(4), Span::new(30, 38))
+                            SimpleName::new(4, Span::new(30, 38))
                         ),
                         Span::new(39, 40), ExprList::new(vec![])
                     ), 
                     Span::new(41, 41),
-                    SimpleName::new(make_id!(5), Span::new(42, 48))
+                    SimpleName::new(5, Span::new(42, 48))
                 ),
                 Span::new(49, 50), ExprList::new(vec![])
             ),
             Block::new(Span::new(52, 77), vec![
                 Statement::SimpleExpr(SimpleExprStatement::new(Span::new(54, 75),
                     FnCallExpr::new(
-                        SimpleName::new(make_id!(6), Span::new(54, 60)),
+                        SimpleName::new(6, Span::new(54, 60)),
                         Span::new(61, 74), make_exprs![
                             LitExpr::new(make_lit!(str, 7), Span::new(62, 73))
                         ]

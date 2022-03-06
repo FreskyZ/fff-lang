@@ -195,7 +195,7 @@ fn if_stmt_parse() {
 
     //                                      0        1         2         3
     //                                      0123456789012345678901234567890123456
-    assert_eq!{ IfStatement::with_test_str("if true { } else if false { } else {}"),
+    assert_eq!{ make_node!("if true { } else if false { } else {}"),
         IfStatement::new_ifelse(
             IfClause::new(Span::new(0, 1), 
                 LitExpr::new(LitValue::from(true), Span::new(3, 6)),
@@ -225,24 +225,24 @@ fn if_stmt_parse() {
                     Statement::SimpleExpr(SimpleExprStatement::new(Span::new(7, 20),
                         FnCallExpr::new(
                             MemberAccessExpr::new(
-                                SimpleName::new(make_id!(1), Span::new(7, 9)),
+                                SimpleName::new(1, Span::new(7, 9)),
                                 Span::new(10, 10),
-                                SimpleName::new(make_id!(2), Span::new(11, 16))
+                                SimpleName::new(2, Span::new(11, 16))
                             ),
                             Span::new(17, 19), make_exprs![
-                                SimpleName::new(make_id!(3), Span::new(18, 18))
+                                SimpleName::new(3, Span::new(18, 18))
                             ]
                         ),
                     )),
                     Statement::SimpleExpr(SimpleExprStatement::new(Span::new(22, 39),
                         FnCallExpr::new(
                             MemberAccessExpr::new(
-                                SimpleName::new(make_id!(4), Span::new(22, 26)),
+                                SimpleName::new(4, Span::new(22, 26)),
                                 Span::new(27, 27),
-                                SimpleName::new(make_id!(5), Span::new(28, 35))
+                                SimpleName::new(5, Span::new(28, 35))
                             ),
                             Span::new(36, 38), make_exprs![
-                                SimpleName::new(make_id!(6), Span::new(37, 37))
+                                SimpleName::new(6, Span::new(37, 37))
                             ]
                         ),
                     ))
@@ -261,10 +261,10 @@ fn if_stmt_parse() {
                                     LitExpr::new(LitValue::from(3), Span::new(55, 55)),
                                 ]),
                                 Span::new(57, 57),
-                                SimpleName::new(make_id!(8), Span::new(58, 60))
+                                SimpleName::new(8, Span::new(58, 60))
                             ),
                             Span::new(61, 69), make_exprs![
-                                SimpleName::new(make_id!(7), Span::new(62, 68))
+                                SimpleName::new(7, Span::new(62, 68))
                             ]
                         )
                     ))

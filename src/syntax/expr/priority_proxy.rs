@@ -92,9 +92,9 @@ fn primary_expr_parse() {
 
     // this is the loop of tokens.nth(current) is left bracket does not cover everything and infinite loop is here
     // update 2017/6/17: this was a bug, but I forget detail
-    assert_eq!{ PrimaryExpr::with_test_str("[a]"),  
+    assert_eq!{ make_node!("[a]"),  
         Expr::Array(ArrayDef::new(Span::new(0, 2), make_exprs![
-            SimpleName::new(make_id!(1), Span::new(1, 1))
+            SimpleName::new(1, Span::new(1, 1))
         ]))
     }
 
@@ -106,25 +106,25 @@ fn primary_expr_parse() {
         .expect_no_message()
         .expect_result(Expr::Tuple(TupleDef::new(Span::new(0, 46), make_exprs![
             LitExpr::new(LitValue::from(463857), Span::new(1, 6)),
-            SimpleName::new(make_id!(1), Span::new(9, 12)),
-            SimpleName::new(make_id!(2), Span::new(15, 20)),
+            SimpleName::new(1, Span::new(9, 12)),
+            SimpleName::new(2, Span::new(15, 20)),
             ArrayDef::new(Span::new(23, 45), make_exprs![
-                SimpleName::new(make_id!(3), Span::new(24, 27)),
+                SimpleName::new(3, Span::new(24, 27)),
                 ParenExpr::new(Span::new(30, 39), 
                     ParenExpr::new(Span::new(31, 38), 
-                        SimpleName::new(make_id!(4), Span::new(32, 37))
+                        SimpleName::new(4, Span::new(32, 37))
                     )
                 ),
-                SimpleName::new(make_id!(5), Span::new(42, 44))
+                SimpleName::new(5, Span::new(42, 44))
             ])
         ])))
     .finish();
 
-    assert_eq!{ PrimaryExpr::with_test_str("10363"), 
+    assert_eq!{ make_node!("10363"), 
         Expr::Lit(LitExpr::new(LitValue::from(10363), Span::new(0, 4)))
     }
 
-    assert_eq!{ PrimaryExpr::with_test_str(
+    assert_eq!{ make_node!(
     //   0         1         2         3         4         5         6         7         8         9         0         1         2         3       
     //   01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567 8901234567890123456789012345678901234
         "[(0x7E), FFGqfJe, I4, [(m7A, (41, ([(jL, rAn, K0FgLc7h, true), C, w]), (J3cEFDG, d, (j8h))), (), \neIuArjF), 400, 0o535147505, 0xDB747]]"),
@@ -132,35 +132,35 @@ fn primary_expr_parse() {
             ParenExpr::new(Span::new(1, 6), 
                LitExpr::new(LitValue::from(0x7E), Span::new(2, 5))
             ),
-            SimpleName::new(make_id!(1), Span::new(9, 15)),
-            SimpleName::new(make_id!(2), Span::new(18, 19)), 
+            SimpleName::new(1, Span::new(9, 15)),
+            SimpleName::new(2, Span::new(18, 19)), 
             ArrayDef::new(Span::new(22, 133), make_exprs![
                 TupleDef::new(Span::new(23, 105), make_exprs![
-                    SimpleName::new(make_id!(3), Span::new(24, 26)),
+                    SimpleName::new(3, Span::new(24, 26)),
                     TupleDef::new(Span::new(29, 90), make_exprs![
                         LitExpr::new(LitValue::from(41), Span::new(30, 31)),
                         ParenExpr::new(Span::new(34, 68), 
                             ArrayDef::new(Span::new(35, 67), make_exprs![
                                 TupleDef::new(Span::new(36, 60), make_exprs![
-                                    SimpleName::new(make_id!(4), Span::new(37, 38)), 
-                                    SimpleName::new(make_id!(5), Span::new(41, 43)),
-                                    SimpleName::new(make_id!(6), Span::new(46, 53)),
+                                    SimpleName::new(4, Span::new(37, 38)), 
+                                    SimpleName::new(5, Span::new(41, 43)),
+                                    SimpleName::new(6, Span::new(46, 53)),
                                     LitExpr::new(LitValue::from(true), Span::new(56, 59))
                                 ]),
-                                SimpleName::new(make_id!(7), Span::new(63, 63)),
-                                SimpleName::new(make_id!(8), Span::new(66, 66)),
+                                SimpleName::new(7, Span::new(63, 63)),
+                                SimpleName::new(8, Span::new(66, 66)),
                             ])
                         ),
                         TupleDef::new(Span::new(71, 89), make_exprs![
-                            SimpleName::new(make_id!(9), Span::new(72, 78)),
-                            SimpleName::new(make_id!(10), Span::new(81, 81)),
+                            SimpleName::new(9, Span::new(72, 78)),
+                            SimpleName::new(10, Span::new(81, 81)),
                             ParenExpr::new(Span::new(84, 88), 
-                                SimpleName::new(make_id!(11), Span::new(85, 87))
+                                SimpleName::new(11, Span::new(85, 87))
                             )
                         ])
                     ]),
                     LitExpr::new(LitValue::Unit, Span::new(93, 94)),
-                    SimpleName::new(make_id!(12), Span::new(98, 104))
+                    SimpleName::new(12, Span::new(98, 104))
                 ]),
                 LitExpr::new(LitValue::from(400), Span::new(108, 110)),
                 LitExpr::new(LitValue::from(0o535147505), Span::new(113, 123)),
@@ -169,37 +169,37 @@ fn primary_expr_parse() {
         ]))
     }
 
-    assert_eq!{ PrimaryExpr::with_test_str("CMDoF"), Expr::SimpleName(SimpleName::new(make_id!(1), Span::new(0, 4))) }
-    assert_eq!{ PrimaryExpr::with_test_str("false"), Expr::Lit(LitExpr::new(LitValue::from(false), Span::new(0, 4))) }
+    assert_eq!{ make_node!("CMDoF"), Expr::SimpleName(SimpleName::new(1, Span::new(0, 4))) }
+    assert_eq!{ make_node!("false"), Expr::Lit(LitExpr::new(LitValue::from(false), Span::new(0, 4))) }
 
     
     //                                      0        1         2         3         4         5         6          7          8         9         A
     //                                      12345678901234567890123456789012345678901234567890123456789012345678901 234 5678901234567890123456789012
-    assert_eq!{ PrimaryExpr::with_test_str("[uy6, 4373577, [(q, AJBN0n, MDEgKh5,), KG, (NsL, ((), D, false, d, ), \"H=\"), true, ((vvB3, true, 5))]]"), 
+    assert_eq!{ make_node!("[uy6, 4373577, [(q, AJBN0n, MDEgKh5,), KG, (NsL, ((), D, false, d, ), \"H=\"), true, ((vvB3, true, 5))]]"), 
         Expr::Array(ArrayDef::new(Span::new(0, 101), make_exprs![
-            SimpleName::new(make_id!(1), Span::new(1, 3)),
+            SimpleName::new(1, Span::new(1, 3)),
             LitExpr::new(LitValue::from(4373577), Span::new(6, 12)),
             ArrayDef::new(Span::new(15, 100), make_exprs![
                 TupleDef::new(Span::new(16, 36), make_exprs![
-                    SimpleName::new(make_id!(2), Span::new(17, 17)),
-                    SimpleName::new(make_id!(3), Span::new(20, 25)), 
-                    SimpleName::new(make_id!(4), Span::new(28, 34))
+                    SimpleName::new(2, Span::new(17, 17)),
+                    SimpleName::new(3, Span::new(20, 25)), 
+                    SimpleName::new(4, Span::new(28, 34))
                 ]), 
-                SimpleName::new(make_id!(5), Span::new(39, 40)),
+                SimpleName::new(5, Span::new(39, 40)),
                 TupleDef::new(Span::new(43, 74), make_exprs![
-                    SimpleName::new(make_id!(6), Span::new(44, 46)),
+                    SimpleName::new(6, Span::new(44, 46)),
                     TupleDef::new(Span::new(49, 67), make_exprs![
                         LitExpr::new(LitValue::Unit, Span::new(50, 51)),
-                        SimpleName::new(make_id!(7), Span::new(54, 54)),
+                        SimpleName::new(7, Span::new(54, 54)),
                         LitExpr::new(LitValue::from(false), Span::new(57, 61)),
-                        SimpleName::new(make_id!(8), Span::new(64, 64)),
+                        SimpleName::new(8, Span::new(64, 64)),
                     ]),
                     LitExpr::new(make_lit!(str, 9), Span::new(70, 73))
                 ]),
                 LitExpr::new(LitValue::from(true), Span::new(77, 80)),
                 ParenExpr::new(Span::new(83, 99), 
                     TupleDef::new(Span::new(84, 98), make_exprs![
-                        SimpleName::new(make_id!(10), Span::new(85, 88)),
+                        SimpleName::new(10, Span::new(85, 88)),
                         LitExpr::new(LitValue::from(true), Span::new(91, 94)),
                         LitExpr::new(LitValue::from(5), Span::new(97, 97))
                     ])
@@ -208,14 +208,14 @@ fn primary_expr_parse() {
         ]))
     }
 
-    assert_eq!{ PrimaryExpr::with_test_str("(() )"), 
+    assert_eq!{ make_node!("(() )"), 
         Expr::Paren(ParenExpr::new(Span::new(0, 4), LitExpr::new(LitValue::Unit, Span::new(1, 2))))
     }
-    assert_eq!{ PrimaryExpr::with_test_str("((),)"), 
+    assert_eq!{ make_node!("((),)"), 
         Expr::Tuple(TupleDef::new(Span::new(0, 4), make_exprs![LitExpr::new(LitValue::Unit, Span::new(1, 2))]))
     }
 
-    assert_eq!{ PrimaryExpr::with_test_str("(\"o5\")"), 
+    assert_eq!{ make_node!("(\"o5\")"), 
         Expr::Paren(ParenExpr::new(Span::new(0, 5), 
             LitExpr::new(make_lit!(str, 1), Span::new(1, 4))
         ))
@@ -223,9 +223,9 @@ fn primary_expr_parse() {
 
     //                                      0        1         2        
     //                                      1234567890123456789012345678
-    assert_eq!{ PrimaryExpr::with_test_str("(nn, ([false,true]), 183455)"),
+    assert_eq!{ make_node!("(nn, ([false,true]), 183455)"),
         Expr::Tuple(TupleDef::new(Span::new(0, 27), make_exprs![
-            SimpleName::new(make_id!(1), Span::new(1, 2)),
+            SimpleName::new(1, Span::new(1, 2)),
             ParenExpr::new(Span::new(5, 18), 
                 ArrayDef::new(Span::new(6, 17), make_exprs![
                     LitExpr::new(LitValue::from(false), Span::new(7, 11)),
@@ -238,88 +238,88 @@ fn primary_expr_parse() {
     
     //                                      0        1         2         3         4         5         6         7       
     //                                      123456789012345678901234567890123456789012345678901234567890123456789012345678
-    assert_eq!{ PrimaryExpr::with_test_str("((true, (mO, [(q5k),a], (((KttG))), (K5DJ, r, ())), (McsaEdfdfalse,)), rIOKt,)"),
+    assert_eq!{ make_node!("((true, (mO, [(q5k),a], (((KttG))), (K5DJ, r, ())), (McsaEdfdfalse,)), rIOKt,)"),
         Expr::Tuple(TupleDef::new(Span::new(0, 77), make_exprs![
             TupleDef::new(Span::new(1, 68), make_exprs![
                 LitExpr::new(LitValue::from(true), Span::new(2, 5)),
                 TupleDef::new(Span::new(8, 49), make_exprs![
-                    SimpleName::new(make_id!(1), Span::new(9, 10)),
+                    SimpleName::new(1, Span::new(9, 10)),
                     ArrayDef::new(Span::new(13, 21), make_exprs![
                         ParenExpr::new(Span::new(14, 18), 
-                            SimpleName::new(make_id!(2), Span::new(15, 17))
+                            SimpleName::new(2, Span::new(15, 17))
                         ),
-                        SimpleName::new(make_id!(3), Span::new(20, 20))
+                        SimpleName::new(3, Span::new(20, 20))
                     ]),
                     ParenExpr::new(Span::new(24, 33), 
                         ParenExpr::new(Span::new(25, 32), 
                             ParenExpr::new(Span::new(26, 31), 
-                                SimpleName::new(make_id!(4), Span::new(27, 30))
+                                SimpleName::new(4, Span::new(27, 30))
                             )
                         )
                     ),
                     TupleDef::new(Span::new(36, 48), make_exprs![
-                        SimpleName::new(make_id!(5), Span::new(37, 40)), 
-                        SimpleName::new(make_id!(6), Span::new(43, 43)),
+                        SimpleName::new(5, Span::new(37, 40)), 
+                        SimpleName::new(6, Span::new(43, 43)),
                         LitExpr::new(LitValue::Unit, Span::new(46, 47))
                     ]),
                 ]),
                 TupleDef::new(Span::new(52, 67), make_exprs![
-                    SimpleName::new(make_id!(7), Span::new(53, 65))
+                    SimpleName::new(7, Span::new(53, 65))
                 ])
             ]),
-            SimpleName::new(make_id!(8), Span::new(71, 75))
+            SimpleName::new(8, Span::new(71, 75))
         ]))
     }
 
     //                                      0          1         2      
     //                                      12 345 67890123456789012
-    assert_eq!{ PrimaryExpr::with_test_str("[\"il\", 0o52u32, sO04n]"),
+    assert_eq!{ make_node!("[\"il\", 0o52u32, sO04n]"),
         Expr::Array(ArrayDef::new(Span::new(0, 21), make_exprs![
             LitExpr::new(make_lit!(str, 1), Span::new(1, 4)),
             LitExpr::new(LitValue::from(0o52u32), Span::new(7, 13)), 
-            SimpleName::new(make_id!(2), Span::new(16, 20))
+            SimpleName::new(2, Span::new(16, 20))
         ]))
     }
     //                                      12345678
-    assert_eq!{ PrimaryExpr::with_test_str("['f',()]"), 
+    assert_eq!{ make_node!("['f',()]"), 
         Expr::Array(ArrayDef::new(Span::new(0, 7), make_exprs![
             LitExpr::new(LitValue::from('f'), Span::new(1, 3)),
             LitExpr::new(LitValue::Unit, Span::new(5, 6))
         ]))
     }
-    assert_eq!{ PrimaryExpr::with_test_str("[]"), Expr::Array(ArrayDef::new(Span::new(0, 1), make_exprs![])) }
+    assert_eq!{ make_node!("[]"), Expr::Array(ArrayDef::new(Span::new(0, 1), make_exprs![])) }
 
     //                                      0        1           2         3         4      
     //                                      12345 678901 234567890123456789012345678901234
-    assert_eq!{ PrimaryExpr::with_test_str("[8, \"@=?GF\", 87r32, 1340323.74r64, FKOxAvx5]"),
+    assert_eq!{ make_node!("[8, \"@=?GF\", 87r32, 1340323.74r64, FKOxAvx5]"),
         Expr::Array(ArrayDef::new(Span::new(0, 43), make_exprs![
             LitExpr::new(LitValue::from(8), Span::new(1, 1)),
             LitExpr::new(make_lit!(str, 1), Span::new(4, 10)), 
             LitExpr::new(LitValue::from(87f32), Span::new(13, 17)),
             LitExpr::new(LitValue::from(1340323.74f64), Span::new(20, 32)),
-            SimpleName::new(make_id!(2), Span::new(35, 42))
+            SimpleName::new(2, Span::new(35, 42))
         ]))
     }
 
     //                                        0        1         2         3         4         5         6     
     //                                        123456789012345678901234567890123456789012345678901234567890123
-    assert_eq!{ PrimaryExpr::with_test_str(r#"  [[dnr4, lGFd3yL, tJ], ['\\', p, (xGaBwiL,), DE], true, aB8aE]"#),
+    assert_eq!{ make_node!(r#"  [[dnr4, lGFd3yL, tJ], ['\\', p, (xGaBwiL,), DE], true, aB8aE]"#),
         Expr::Array(ArrayDef::new(Span::new(2, 62), make_exprs![
             ArrayDef::new(Span::new(3, 21), make_exprs![
-                SimpleName::new(make_id!(1), Span::new(4, 7)),
-                SimpleName::new(make_id!(2), Span::new(10, 16)),
-                SimpleName::new(make_id!(3), Span::new(19, 20))
+                SimpleName::new(1, Span::new(4, 7)),
+                SimpleName::new(2, Span::new(10, 16)),
+                SimpleName::new(3, Span::new(19, 20))
             ]),
             ArrayDef::new(Span::new(24, 48), make_exprs![
                 LitExpr::new(LitValue::from('\\'), Span::new(25, 28)), 
-                SimpleName::new(make_id!(4), Span::new(31, 31)),
+                SimpleName::new(4, Span::new(31, 31)),
                 TupleDef::new(Span::new(34, 43), make_exprs![
-                    SimpleName::new(make_id!(5), Span::new(35, 41))
+                    SimpleName::new(5, Span::new(35, 41))
                 ]),
-                SimpleName::new(make_id!(6), Span::new(46, 47))
+                SimpleName::new(6, Span::new(46, 47))
             ]),
             LitExpr::new(LitValue::from(true), Span::new(51, 54)),
-            SimpleName::new(make_id!(7), Span::new(57, 61))
+            SimpleName::new(7, Span::new(57, 61))
         ]))
     } 
 
@@ -331,23 +331,23 @@ fn primary_expr_parse() {
         .apply::<PrimaryExpr, _>()
         .expect_no_message()
         .expect_result(Expr::Array(ArrayDef::new(Span::new(0, 65), make_exprs![
-            SimpleName::new(make_id!(1), Span::new(1, 3)),
+            SimpleName::new(1, Span::new(1, 3)),
             LitExpr::new(LitValue::from(123u32), Span::new(6, 11)),
             LitExpr::new(make_lit!(str, 2), Span::new(14, 18)),
             LitExpr::new(LitValue::from('\u{0065}'), Span::new(21, 28)),
             LitExpr::new(LitValue::from(false), Span::new(31, 35)),
             LitExpr::new(LitValue::Unit, Span::new(38, 39)),
             ParenExpr::new(Span::new(42, 44), 
-                SimpleName::new(make_id!(4), Span::new(43, 43))
+                SimpleName::new(4, Span::new(43, 43))
             ),
             TupleDef::new(Span::new(47, 62), make_exprs![
-                SimpleName::new(make_id!(1), Span::new(48, 50)),
+                SimpleName::new(1, Span::new(48, 50)),
                 LitExpr::new(make_lit!(str, 3), Span::new(53, 59)),
             ])
         ])))
     .finish();
 
-    assert_eq!{ PrimaryExpr::with_test_str("(                             )"), 
+    assert_eq!{ make_node!("(                             )"), 
         Expr::Lit(LitExpr::new(LitValue::Unit, Span::new(0, 30)))
     }
 }
@@ -395,7 +395,7 @@ fn postfix_expr_format() {
     // Attention that this source code line's LF is also the string literal (test oracle)'s LF
     //                                                     0         1         2         3         4         5        
     //                                                     0123456789012345678901234567890123456789012345678901234567
-    test_case!(format!("\n{}", PostfixExpr::with_test_str("a.b(c, d, e).f(g, h, i,)(u,).j[k].l().m[n, o, p][r, s, t,]").format(Formatter::empty())), r##"
+    test_case!(format!("\n{}", make_node!("a.b(c, d, e).f(g, h, i,)(u,).j[k].l().m[n, o, p][r, s, t,]").format(Formatter::empty())), r##"
 indexer-call <<0>0-57>
   base-is indexer-call <<0>0-47>
     base-is member-access <<0>0-38>
@@ -453,7 +453,7 @@ fn postfix_expr_parse() {
 
     //                                      0        1         2         3         4         5     
     // plain                                0123456789012345678901234567890123456789012345678901234567
-    assert_eq!{ PostfixExpr::with_test_str("a.b(c, d, e).f(g, h, i,)(u,).j[k].l().m[n, o, p][r, s, t,]"),
+    assert_eq!{ make_node!("a.b(c, d, e).f(g, h, i,)(u,).j[k].l().m[n, o, p][r, s, t,]"),
         Expr::IndexCall(IndexCallExpr::new(
             IndexCallExpr::new(
                 MemberAccessExpr::new(
@@ -466,55 +466,55 @@ fn postfix_expr_parse() {
                                             MemberAccessExpr::new(
                                                 FnCallExpr::new(
                                                     MemberAccessExpr::new(
-                                                        SimpleName::new(make_id!(1), Span::new(0, 0)),
+                                                        SimpleName::new(1, Span::new(0, 0)),
                                                         Span::new(1, 1),
-                                                        SimpleName::new(make_id!(2), Span::new(2, 2))
+                                                        SimpleName::new(2, Span::new(2, 2))
                                                     ), 
                                                     Span::new(3, 11), make_exprs![
-                                                        SimpleName::new(make_id!(3), Span::new(4, 4)),
-                                                        SimpleName::new(make_id!(4), Span::new(7, 7)),
-                                                        SimpleName::new(make_id!(5), Span::new(10, 10)),
+                                                        SimpleName::new(3, Span::new(4, 4)),
+                                                        SimpleName::new(4, Span::new(7, 7)),
+                                                        SimpleName::new(5, Span::new(10, 10)),
                                                     ]
                                                 ),
                                                 Span::new(12, 12),
-                                                SimpleName::new(make_id!(6), Span::new(13, 13))
+                                                SimpleName::new(6, Span::new(13, 13))
                                             ),
                                             Span::new(14, 23), make_exprs![
-                                                SimpleName::new(make_id!(7), Span::new(15, 15)),
-                                                SimpleName::new(make_id!(8), Span::new(18, 18)),
-                                                SimpleName::new(make_id!(9), Span::new(21, 21)),
+                                                SimpleName::new(7, Span::new(15, 15)),
+                                                SimpleName::new(8, Span::new(18, 18)),
+                                                SimpleName::new(9, Span::new(21, 21)),
                                             ]
                                         ),
                                         Span::new(24, 27), make_exprs![
-                                            SimpleName::new(make_id!(10), Span::new(25, 25))
+                                            SimpleName::new(10, Span::new(25, 25))
                                         ]
                                     ),
                                     Span::new(28, 28),
-                                    SimpleName::new(make_id!(11), Span::new(29, 29))
+                                    SimpleName::new(11, Span::new(29, 29))
                                 ),
                                 Span::new(30, 32), make_exprs![
-                                    SimpleName::new(make_id!(12), Span::new(31, 31))
+                                    SimpleName::new(12, Span::new(31, 31))
                                 ]
                             ),
                             Span::new(33, 33),
-                            SimpleName::new(make_id!(13), Span::new(34, 34))
+                            SimpleName::new(13, Span::new(34, 34))
                         ),
                         Span::new(35, 36),
                         make_exprs![]
                     ),
                     Span::new(37, 37),
-                    SimpleName::new(make_id!(14), Span::new(38, 38))
+                    SimpleName::new(14, Span::new(38, 38))
                 ),
                 Span::new(39, 47), make_exprs![
-                    SimpleName::new(make_id!(15), Span::new(40, 40)),
-                    SimpleName::new(make_id!(16), Span::new(43, 43)),
-                    SimpleName::new(make_id!(17), Span::new(46, 46))
+                    SimpleName::new(15, Span::new(40, 40)),
+                    SimpleName::new(16, Span::new(43, 43)),
+                    SimpleName::new(17, Span::new(46, 46))
                 ]
             ),
             Span::new(48, 57), make_exprs![
-                SimpleName::new(make_id!(18), Span::new(49, 49)),
-                SimpleName::new(make_id!(19), Span::new(52, 52)),
-                SimpleName::new(make_id!(20), Span::new(55, 55))
+                SimpleName::new(18, Span::new(49, 49)),
+                SimpleName::new(19, Span::new(52, 52)),
+                SimpleName::new(20, Span::new(55, 55))
             ]
         ))
     }
@@ -532,7 +532,7 @@ fn postfix_expr_errors() {
     TestInput::new("a[]")
         .apply::<PostfixExpr, _>()
         .expect_result(Expr::IndexCall(IndexCallExpr::new(
-            SimpleName::new(make_id!(1), Span::new(0, 0)), 
+            SimpleName::new(1, Span::new(0, 0)), 
             Span::new(1, 2), make_exprs![]
         )))
         .expect_messages(make_messages![
@@ -543,7 +543,7 @@ fn postfix_expr_errors() {
     TestInput::new("a[, ]")
         .apply::<PostfixExpr, _>()
         .expect_result(Expr::IndexCall(IndexCallExpr::new(
-            SimpleName::new(make_id!(1), Span::new(0, 0)), 
+            SimpleName::new(1, Span::new(0, 0)), 
             Span::new(1, 4), make_exprs![]
         )))
         .expect_messages(make_messages![
@@ -554,7 +554,7 @@ fn postfix_expr_errors() {
     TestInput::new("a(, )")
         .apply::<PostfixExpr, _>()
         .expect_result(Expr::FnCall(FnCallExpr::new(
-            SimpleName::new(make_id!(1), Span::new(0, 0)),
+            SimpleName::new(1, Span::new(0, 0)),
             Span::new(1, 4), make_exprs![]
         )))
         .expect_messages(make_messages![

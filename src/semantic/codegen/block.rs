@@ -57,7 +57,7 @@ fn gen_block_prepare_vars() {
         //              12345678
         let program1 = "fn main(".to_owned();
         let program2 = ") { writeln(\"helloworld\"); }";
-        let syn_fn = syntax::FnDef::with_test_str(&(program1 + param_str + program2));
+        let syn_fn = syntax::make_node!(&(program1 + param_str + program2));
         let mut sess = GenerationSession::new();
         let (id, block) = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
         let block = Block::new(id, block);

@@ -495,7 +495,7 @@ fn gen_types_by_smtype() {
 
     macro_rules! test_case {
         ($types: expr, $ty_str: expr, $expect: expr) => (
-            match $types.get_id_by_smtype(SMType::with_test_str($ty_str), &mut MessageCollection::new(), &mut FnCollection::new()).as_option() {
+            match $types.get_id_by_smtype(make_node!($ty_str), &mut MessageCollection::new(), &mut FnCollection::new()).as_option() {
                 Some(id) => assert_eq!(id, $expect),
                 None => panic!("Unexpectedly return None"),
             }
@@ -503,7 +503,7 @@ fn gen_types_by_smtype() {
         
         ($types: expr, $ty_str: expr => $($msg: expr)*) => (
             let messages = &mut MessageCollection::new();
-            match $types.get_id_by_smtype(SMType::with_test_str($ty_str), messages, &mut FnCollection::new()).as_option() {
+            match $types.get_id_by_smtype(make_node!($ty_str), messages, &mut FnCollection::new()).as_option() {
                 Some(id) => panic!("Unexpectedly success, result: {:?}", id),
                 None => (),
             }

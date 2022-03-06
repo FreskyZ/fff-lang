@@ -87,11 +87,11 @@ fn fn_call_parse() {
     use super::super::WithTestInput;
     use super::LitExpr;
 
-    assert_eq!{ FnCallExpr::with_test_str("()"),
+    assert_eq!{ make_node!("()"),
         FnCallExpr::new_with_parse_result(Span::new(0, 1), ExprList::new(vec![]))
     }
 
-    assert_eq!{ FnCallExpr::with_test_str("(\"hello\")"),
+    assert_eq!{ make_node!("(\"hello\")"),
         FnCallExpr::new_with_parse_result(Span::new(0, 8), 
             ExprList::new(vec![Expr::Lit(LitExpr::new(make_lit!(str, 1), Span::new(1, 7)))])
         )

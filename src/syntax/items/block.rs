@@ -61,7 +61,7 @@ impl ISyntaxParse for Block {
 fn block_parse() {
     use super::super::WithTestInput;
     
-    assert_eq!{ Block::with_test_str("{}"),
+    assert_eq!{ make_node!("{}"),
         Block::new(Span::new(0, 1), vec![])
     }
 }

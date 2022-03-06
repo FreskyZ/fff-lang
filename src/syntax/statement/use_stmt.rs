@@ -80,22 +80,22 @@ fn use_stmt_parse() {
     use super::super::WithTestInput;
 
     assert_eq!{
-        UseStatement::with_test_str("use a;"),
+        make_node!("use a;"),
         UseStatement::new_default(Span::new(0, 5),
-            Name::new(Span::new(4, 4), vec![SimpleName::new(make_id!(1), Span::new(4, 4))])
+            Name::new(Span::new(4, 4), vec![SimpleName::new(1, Span::new(4, 4))])
         )
     }
 
     assert_eq!{ //                   0123456789012345678901234567890
-        UseStatement::with_test_str("use std::fmt::Debug as Display;"),
+        make_node!("use std::fmt::Debug as Display;"),
         UseStatement::new_target(Span::new(0, 30), 
             Name::new(Span::new(4, 18), vec![
-                SimpleName::new(make_id!(1), Span::new(4, 6)),
-                SimpleName::new(make_id!(2), Span::new(9, 11)),
-                SimpleName::new(make_id!(3), Span::new(14, 18))
+                SimpleName::new(1, Span::new(4, 6)),
+                SimpleName::new(2, Span::new(9, 11)),
+                SimpleName::new(3, Span::new(14, 18))
             ]),
             Span::new(20, 21),
-            SimpleName::new(make_id!(4), Span::new(23, 29))
+            SimpleName::new(4, Span::new(23, 29))
         )
     }
 }

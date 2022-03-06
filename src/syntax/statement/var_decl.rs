@@ -106,9 +106,9 @@ fn var_decl_stmt_parse() {
     use super::super::WithTestInput;
     
     //                                           12345678901234
-    assert_eq!{ VarDeclStatement::with_test_str("const abc = 0;"),
+    assert_eq!{ make_node!("const abc = 0;"),
         VarDeclStatement::new_const(Span::new(0, 13),
-            make_id!(1), Span::new(6, 8),
+            1, Span::new(6, 8),
             None,
             Some(Expr::Lit(LitExpr::new(LitValue::from(0), Span::new(12, 12))))
         )
@@ -116,9 +116,9 @@ fn var_decl_stmt_parse() {
 
     //                                           0        1         
     //                                           12345678901234567890
-    assert_eq!{ VarDeclStatement::with_test_str("var hij = [1, 3, 5];"),
+    assert_eq!{ make_node!("var hij = [1, 3, 5];"),
         VarDeclStatement::new_var(Span::new(0, 19),
-            make_id!(1), Span::new(4, 6),
+            1, Span::new(4, 6),
             None,
             Some(Expr::Array(ArrayDef::new(Span::new(10, 18), ExprList::new(vec![
                 Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(11, 11))),
@@ -129,10 +129,10 @@ fn var_decl_stmt_parse() {
     }
     
     //                                           1234567890123456789
-    assert_eq!{ VarDeclStatement::with_test_str("const input: string;"),
+    assert_eq!{ make_node!("const input: string;"),
         VarDeclStatement::new_const(Span::new(0, 19),
-            make_id!(1), Span::new(6, 10),
-            Some(TypeUse::new_simple(make_id!(2), Span::new(13, 18))),
+            1, Span::new(6, 10),
+            Some(TypeUse::new_simple(2, Span::new(13, 18))),
             None
         )
     }
@@ -143,11 +143,11 @@ fn var_decl_stmt_parse() {
         .apply::<VarDeclStatement, _>()
         .expect_no_message()
         .expect_result(VarDeclStatement::new_var(Span::new(0, 21), 
-            make_id!(1), Span::new(4, 6),
-            Some(TypeUse::new_template(make_id!(2), Span::default(), Span::new(9, 20), vec![
-                TypeUse::new_template(make_id!(3), Span::default(), Span::new(10, 19), vec![
-                    TypeUse::new_simple(make_id!(4), Span::new(11, 12)),
-                    TypeUse::new_simple(make_id!(5), Span::new(15, 18)),
+            1, Span::new(4, 6),
+            Some(TypeUse::new_template(2, Span::default(), Span::new(9, 20), vec![
+                TypeUse::new_template(3, Span::default(), Span::new(10, 19), vec![
+                    TypeUse::new_simple(4, Span::new(11, 12)),
+                    TypeUse::new_simple(5, Span::new(15, 18)),
                 ])
             ])),
             None
@@ -166,12 +166,12 @@ fn var_decl_stmt_parse() {
         .apply::<VarDeclStatement, _>()
         .expect_no_message()
         .expect_result(VarDeclStatement::new_var(Span::new(0, 47),
-            make_id!(1), Span::new(4, 6),
-            Some(TypeUse::new_template(make_id!(5), Span::default(), Span::new(9, 19), vec![
-                TypeUse::new_template(make_id!(6), Span::default(), Span::new(10, 13), vec![
-                    TypeUse::new_simple(make_id!(2), Span::new(11, 12))
+            1, Span::new(4, 6),
+            Some(TypeUse::new_template(5, Span::default(), Span::new(9, 19), vec![
+                TypeUse::new_template(6, Span::default(), Span::new(10, 13), vec![
+                    TypeUse::new_simple(2, Span::new(11, 12))
                 ]),
-                TypeUse::new_simple(make_id!(3), Span::new(16, 18))
+                TypeUse::new_simple(3, Span::new(16, 18))
             ])),
             Some(Expr::Tuple(TupleDef::new(Span::new(23, 46), make_exprs![
                 ArrayDef::new(Span::new(24, 40), make_exprs![
@@ -179,14 +179,14 @@ fn var_decl_stmt_parse() {
                     LitExpr::new(LitValue::from(5u8), Span::new(30, 32)),
                     LitExpr::new(LitValue::from(7u8), Span::new(35, 39))
                 ]),
-                SimpleName::new(make_id!(4), Span::new(43, 45))
+                SimpleName::new(4, Span::new(43, 45))
             ])))
         ))
     .finish();
 
     TestInput::new("var a;")
         .apply::<VarDeclStatement, _>()
-        .expect_result(VarDeclStatement::new_var(Span::new(0, 5), make_id!(1), Span::new(4, 4), None, None))
+        .expect_result(VarDeclStatement::new_var(Span::new(0, 5), 1, Span::new(4, 4), None, None))
         .expect_messages(make_messages![
             Message::with_help_by_str("require type annotation", 
                 vec![(Span::new(4, 4), "variable declaration here")],

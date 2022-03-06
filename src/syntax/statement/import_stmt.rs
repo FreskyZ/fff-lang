@@ -79,18 +79,18 @@ fn import_stmt_parse() {
     use super::super::WithTestInput;
 
     assert_eq!{
-        ImportStatement::with_test_str("import a;"),
+        make_node!("import a;"),
         ImportStatement::new_default(Span::new(0, 8),
-            SimpleName::new(make_id!(1), Span::new(7, 7))
+            SimpleName::new(1, Span::new(7, 7))
         )
     }
 
     assert_eq!{ //                   012345678901234567890
-        ImportStatement::with_test_str("import windows as os;"),
+        make_node!("import windows as os;"),
         ImportStatement::new_target(Span::new(0, 20),
-            SimpleName::new(make_id!(1), Span::new(7, 13)),
+            SimpleName::new(1, Span::new(7, 13)),
             Span::new(15, 16),
-            SimpleName::new(make_id!(2), Span::new(18, 19))
+            SimpleName::new(2, Span::new(18, 19))
         )
     }
 }

@@ -1,143 +1,23 @@
-///! fff-lang
-///!
 ///! syntax/test_helper
 
-use std::fmt::Debug;
-use crate::source::{SourceContext};
+use crate::source::SourceContext;
 use crate::diagnostics::MessageCollection;
 use crate::lexical::TokenStream;
-use super::ParseSession;
-use super::ISyntaxParse;
+use super::{ParseSession, ISyntaxParse};
 
-pub trait WithTestInput {
-    type Output: Sized;
-
-    fn with_test_input(input: TestInput) -> (Option<Self::Output>, SourceContext, MessageCollection);
-
-    fn with_test_str(src: &str) -> Self::Output {
-        let (maybe_output, _, messages, _) = Self::with_test_input(TestInput::new(src));
-        maybe_output.expect(&format!("parse fail: {:?}", messages))
-    }
+pub fn try_make_node<U, T: ISyntaxParse<Output = U>>(scx: &SourceContext) -> Option<U> {
+    let mut messages = MessageCollection::new();
+    let tokens = TokenStream::new(scx.entry("1"), &mut messages);
+    let mut context = ParseSession::new(scx, &tokens, &mut messages);
+    T::parse(&mut context).ok()
 }
 
-#[allow(dead_code)] // test members may not be used
-pub struct TestInput<'a> {
-    pub src_id: usize,
-    pub src: &'a str,
-    pub syms: Option<SymbolCollection>,
+macro_rules! make_node {
+    ($code:literal) => {{
+        crate::syntax::try_make_node(crate::source::make_source!($code)).expect("failed to parse test input")
+    }};
+    ($code:literal as $ty:ty) => {{
+        crate::syntax::try_make_node::<_, $ty>(crate::source::make_source!($code)).expect("failed to parse test input")
+    }}
 }
-#[allow(dead_code)] // test members may not be used
-impl<'a> TestInput<'a> {
-
-    pub fn new(src: &'a str) -> Self { TestInput{ src, src_id: 0, syms: None } }
-    pub fn set_syms(mut self, syms: SymbolCollection) -> Self { self.syms = Some(syms); self }
-    pub fn set_src_id(mut self, id: usize) -> Self { self.src_id = id; self }
-
-    pub fn apply<T, U>(self) -> TestInputResult<U> where T: WithTestInput<Output = U> {
-        let (result, source, messages, symbols) = T::with_test_input(self);
-        TestInputResult{ result, source, messages, symbols }
-    }
-}
-
-#[allow(dead_code)] // test members may not be used
-pub struct TestInputResult<T> {
-    result: Option<T>,
-    source: Rc<SourceCode>,
-    symbols: SymbolCollection,
-    messages: MessageCollection,
-}
-#[allow(dead_code)] // test members may not be used
-impl<T> TestInputResult<T> {
-
-    pub fn expect_messages(self, expect_msgs: MessageCollection) -> Self where T: Eq + Debug {
-        assert_eq!{ self.messages, expect_msgs }
-        self
-    }
-    pub fn expect_no_message(self) -> Self where T: Eq + Debug {
-        assert_eq!{ self.messages.is_empty(), true, "messages are {}", self.messages.format(Some(&self.source)) }
-        self
-    }
-
-    pub fn expect_result(self, result: T) -> Self where T: Eq + Debug {
-        assert_eq!{ self.result, Some(result) }
-        self
-    }
-    pub fn expect_no_result(self) -> Self where T: Eq + Debug {
-        assert_eq!{ self.result, None }
-        self
-    }
-
-    pub fn get_source(&self) -> &SourceCode { 
-        self.source.as_ref()
-    }
-    pub fn get_result(&self) -> Option<&T> {
-        self.result.as_ref()
-    }
-    pub fn get_symbols(&self) -> &SymbolCollection {
-        &self.symbols
-    }
-
-    // drop return value
-    pub fn finish(self) { }
-}
-
-impl<T, U> WithTestInput for T where T: ISyntaxParse<Output = U> {
-    type Output = U;
-
-    fn with_test_input(input: TestInput) -> (Option<U>, Rc<SourceCode>, MessageCollection, SymbolCollection) {
-        let (tokens, source, mut msgs, mut syms) = TokenStream::with_test_input(input.src, input.syms);
-        let retval = { 
-            let mut parse_sess = ParseSession::new(source.clone(), &tokens, &mut msgs, &mut syms);
-            Self::parse(&mut parse_sess).ok()
-        };
-        (retval, source, msgs, syms)
-    }
-}
-
-#[cfg(test)] #[test]
-fn test_input_use() {
-    use crate::source::Span;
-    use crate::diagnostics::Message;
-
-    #[derive(Eq, Debug, PartialEq)]
-    struct SyntaxTree {
-        items: String,
-    }
-    impl SyntaxTree {
-        fn parse(src: &str, messages: &mut MessageCollection, _symbols: &mut SymbolCollection) -> Result<SyntaxTree, ()> {
-            if src.as_bytes()[0] == b'1' {
-                messages.push(Message::new_by_str("some message", vec![(Span::new(1, 2), "here")]));
-            } else if src.as_bytes()[1] == b'2' {
-                return Err(());
-            }
-            Ok(SyntaxTree{ items: src.to_owned() })
-        }
-
-        fn new_items(src: &str) -> Self { SyntaxTree{ items: src.to_owned() } }
-    }
-    impl WithTestInput for SyntaxTree {
-        type Output = Self;
-        fn with_test_input(input: TestInput) -> (Option<Self>, Rc<SourceCode>, MessageCollection, SymbolCollection) {
-            let mut messages = MessageCollection::new();
-            let mut symbols = input.syms.unwrap_or_default();
-            (SyntaxTree::parse(input.src, &mut messages, &mut symbols).ok(), Rc::new(SourceCode::with_test_str(0, "1")), messages, symbols)
-        }
-    }
-
-    TestInput::new("123")
-        .set_syms(make_symbols!["a", "b", "c"])
-        .set_src_id(42)
-        .apply::<SyntaxTree, SyntaxTree>()
-        .expect_messages(make_messages![
-            Message::new_by_str("some message", vec![(Span::new(1, 2), "here")])
-        ])
-        .expect_result(SyntaxTree::new_items("123"))
-        .finish();
-
-    TestInput::new("324")
-        .set_syms(make_symbols!["3", "2", "1"])
-        .apply::<SyntaxTree, SyntaxTree>()
-        .expect_no_message()
-        .expect_no_result()
-        .finish();
-}
+pub(crate) use make_node;

@@ -65,22 +65,22 @@ fn package_buildup_import_map() {
 
     let package = Package::new(syntax::SyntaxTree::new_modules(vec![
         syntax::Module::new(sources.index(0), vec![
-            syntax::Item::Import(syntax::ImportStatement::new_default(make_span!(0, 1, 1), syntax::SimpleName::new(make_id!(1), make_span!(0, 2, 2)))),
-            syntax::Item::Import(syntax::ImportStatement::new_default(make_span!(0, 3, 3), syntax::SimpleName::new(make_id!(2), make_span!(0, 4, 4)))),
+            syntax::Item::Import(syntax::ImportStatement::new_default(make_span!(0, 1, 1), syntax::SimpleName::new(1, make_span!(0, 2, 2)))),
+            syntax::Item::Import(syntax::ImportStatement::new_default(make_span!(0, 3, 3), syntax::SimpleName::new(2, make_span!(0, 4, 4)))),
         ]),
         syntax::Module::new(sources.index(1), vec![
-            syntax::Item::Import(syntax::ImportStatement::new_default(make_span!(1, 1, 1), syntax::SimpleName::new(make_id!(3), make_span!(1, 2, 2)))),
+            syntax::Item::Import(syntax::ImportStatement::new_default(make_span!(1, 1, 1), syntax::SimpleName::new(3, make_span!(1, 2, 2)))),
         ]),
         syntax::Module::new(sources.index(2), vec![]),
         syntax::Module::new(sources.index(3), vec![
-            syntax::Item::Import(syntax::ImportStatement::new_default(make_span!(3, 1, 1), syntax::SimpleName::new(make_id!(4), make_span!(3, 2, 2)))),
+            syntax::Item::Import(syntax::ImportStatement::new_default(make_span!(3, 1, 1), syntax::SimpleName::new(4, make_span!(3, 2, 2)))),
         ]),
         syntax::Module::new(sources.index(4), vec![]),
     ], vec![
-        syntax::ImportMap::new(0, make_id!(1), 1),
-        syntax::ImportMap::new(0, make_id!(2), 2),
-        syntax::ImportMap::new(1, make_id!(3), 3),
-        syntax::ImportMap::new(3, make_id!(4), 4),
+        syntax::ImportMap::new(0, 1, 1),
+        syntax::ImportMap::new(0, 2, 2),
+        syntax::ImportMap::new(1, 3, 3),
+        syntax::ImportMap::new(3, 4, 4),
     ]), &sources, &mut symbols, &mut messages);
 
     let expect = Module{
@@ -89,7 +89,7 @@ fn package_buildup_import_map() {
         items: vec![
             Item::Import(ImportStatement{
                 name: SimpleName{ 
-                    value: make_id!(1),
+                    value: 1,
                     parent_scope: SharedDefScope::new("", ScopeType::Global),
                 },
                 alias: None,
@@ -100,7 +100,7 @@ fn package_buildup_import_map() {
                     items: vec![
                         Item::Import(ImportStatement{
                             name: SimpleName{ 
-                                value: make_id!(3),
+                                value: 3,
                                 parent_scope: SharedDefScope::new("", ScopeType::Global).sub("a", ScopeType::Global), 
                             },
                             alias: None,
@@ -111,7 +111,7 @@ fn package_buildup_import_map() {
                                 items: vec![
                                     Item::Import(ImportStatement{
                                         name: SimpleName{ 
-                                            value: make_id!(4),
+                                            value: 4,
                                             parent_scope: SharedDefScope::new("", ScopeType::Global).sub("a", ScopeType::Global).sub("c", ScopeType::Global),
                                         },
                                         parent_scope: SharedDefScope::new("", ScopeType::Global).sub("a", ScopeType::Global).sub("c", ScopeType::Global),
@@ -130,7 +130,7 @@ fn package_buildup_import_map() {
             }),
             Item::Import(ImportStatement{
                 name: SimpleName{ 
-                    value: make_id!(2),
+                    value: 2,
                     parent_scope: SharedDefScope::new("", ScopeType::Global), 
                 },
                 alias: None,

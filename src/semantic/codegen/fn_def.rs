@@ -401,7 +401,7 @@ fn gen_fn_arg() {
 
     let mut sess = GenerationSession::new();
 
-    let arg = Argument::with_test_str("[i32] a");
+    let arg = make_node!("[i32] a");
     let arg = FnArg::new(arg, &mut sess.types, &mut sess.msgs, &mut sess.fns);
     assert_eq!(arg.name, "a");
     assert_eq!(arg.typeid, ItemID::new(14)); 
@@ -409,7 +409,7 @@ fn gen_fn_arg() {
     let expect_messages = &mut MessageCollection::new();
     assert_eq!(&sess.msgs, expect_messages);
 
-    let arg = Argument::with_test_str("int argc");
+    let arg = make_node!("int argc");
     let arg = FnArg::new(arg, &mut sess.types, &mut sess.msgs, &mut sess.fns);
     assert_eq!(arg.name, "argc");
     assert_eq!(arg.typeid, ItemID::new_invalid());
@@ -573,7 +573,7 @@ fn gen_fn_decl() {
     let program = "fn main() -> () { writeln(\"helloworld\"); }";
     //             1  2   34 5  67 8 9      A B            CD E
     let sess = &mut GenerationSession::new();
-    let syn_fn = SyntaxFunctionDef::with_test_str(program);
+    let syn_fn = make_node!(program);
     let (id, block) = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
     {
         let fndecl = sess.fns.get_by_idx(id);
@@ -587,23 +587,23 @@ fn gen_fn_decl() {
     }
 
     let program = "fn some(i32 a, u32 b, [string] c) -> [u8] {}";
-    let syn_fn = SyntaxFunctionDef::with_test_str(program);
+    let syn_fn = make_node!(program);
     let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
     let program = " fn some(i32 a, u32 b, [string] c) -> [u8] {}";
-    let syn_fn = SyntaxFunctionDef::with_test_str(program);
+    let syn_fn = make_node!(program);
     let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
     let program = "  fn some(i32 a, u32 b, string c) -> u8 {}";
-    let syn_fn = SyntaxFunctionDef::with_test_str(program);
+    let syn_fn = make_node!(program);
     let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
     let program = "   fn some(i32 a, u32 b, [string] c) -> [u8] {}";
-    let syn_fn = SyntaxFunctionDef::with_test_str(program);
+    let syn_fn = make_node!(program);
     let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
     let program = "    fn some(i32 a, u32 b) -> [u8] {}";
-    let syn_fn = SyntaxFunctionDef::with_test_str(program);
+    let syn_fn = make_node!(program);
     let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
 
     let program = "     fn some(i32 a, u32 b, string c) -> [u8] {}";
-    let syn_fn = SyntaxFunctionDef::with_test_str(program);
+    let syn_fn = make_node!(program);
     let _ = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
 
     sess.fns.check_sign_eq(&mut sess.types, &mut sess.msgs);
@@ -635,7 +635,7 @@ fn gen_fn_decl2() {
     {
     let program = "fn main(i32 a) -> () { ++a; }";
     let sess = &mut GenerationSession::new();
-    let syn_fn = SyntaxFunctionDef::with_test_str(program);
+    let syn_fn = make_node!(program);
     let (fnid, _syn_block) = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
     let thefn = sess.fns.get_by_idx(fnid);
     assert_eq!(thefn.args[0].name, "a");
@@ -644,7 +644,7 @@ fn gen_fn_decl2() {
     {
     let program = "fn main(i32 a) -> [u32] { ++a; }";
     let sess = &mut GenerationSession::new();
-    let syn_fn = SyntaxFunctionDef::with_test_str(program);
+    let syn_fn = make_node!(program);
     let (fnid, _syn_block) = sess.fns.push_decl(syn_fn, &mut sess.types, &mut sess.msgs, &mut sess.vars);
     let thefn = sess.fns.get_by_idx(fnid);
     assert_eq!(thefn.name, FnName::Ident("main".to_owned()));

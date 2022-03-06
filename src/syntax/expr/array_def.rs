@@ -5,8 +5,7 @@
 use std::fmt;
 use crate::source::Span;
 use crate::diagnostics::Message;
-use crate::lexical::Token;
-use crate::lexical::Seperator;
+use crate::lexical::{Token, Separator};
 use super::Expr;
 use super::ExprList;
 use super::ExprListParseResult;
@@ -63,8 +62,8 @@ impl ISyntaxParse for ArrayDef {
 
 #[cfg(test)] #[test]
 fn array_def_format() {
-    use crate::lexical::LitValue;
-    use super::LitExpr;
+    use crate::lexical::Numeric;
+    use super::{LitValue, LitExpr};
 
     assert_eq!{
         ArrayDef::new(Span::new(0, 42), make_exprs![]).format(Formatter::with_test_indent(1)),
@@ -73,9 +72,9 @@ fn array_def_format() {
 
     assert_eq!{
         ArrayDef::new(Span::new(0, 42), make_exprs![
-            LitExpr::new(LitValue::from(1), Span::new(1, 2)),
-            LitExpr::new(LitValue::from(2), Span::new(3, 4)),
-            LitExpr::new(LitValue::from(48), Span::new(5, 6)),
+            LitExpr::new(1, Span::new(1, 2)),
+            LitExpr::new(2, Span::new(3, 4)),
+            LitExpr::new(48, Span::new(5, 6)),
         ]).format(Formatter::with_test_indent(1)),
         "  array-def <<0>0-42>\n    literal (i32)1 <<0>1-2>\n    literal (i32)2 <<0>3-4>\n    literal (i32)48 <<0>5-6>"
     }
@@ -83,32 +82,30 @@ fn array_def_format() {
 
 #[cfg(test)] #[test]
 fn array_def_parse() {
-    use crate::lexical::LitValue;
-    use super::LitExpr;
-    use super::BinaryExpr;
-    use super::SimpleName;
-    use super::super::WithTestInput;
+    use crate::source::make_source;
+    use crate::lexical::Numeric;
+    use super::{LitValue, LitExpr, BinaryExpr, SimpleName};
 
-    assert_eq!{ ArrayDef::with_test_str("[a]"),
+    assert_eq!{ make_node!("[a]"),
         Expr::Array(ArrayDef::new(Span::new(0, 2), make_exprs![
-            SimpleName::new(make_id!(1), Span::new(1, 1))
+            SimpleName::new(1, Span::new(1, 1))
         ]))
     }
 
     //                                   01234567
-    assert_eq!{ ArrayDef::with_test_str("[1, '2']"),
+    assert_eq!{ make_node!("[1, '2']"),
         Expr::Array(ArrayDef::new(Span::new(0, 7), make_exprs![
-            LitExpr::new(LitValue::from(1), Span::new(1, 1)),
-            LitExpr::new(LitValue::from('2'), Span::new(4, 6))
+            LitExpr::new(1i32, Span::new(1, 1)),
+            LitExpr::new('2', Span::new(4, 6))
         ]))
     }
     //                                   01234567
-    assert_eq!{ ArrayDef::with_test_str("[1 + 1,]"),
+    assert_eq!{ make_node!("[1 + 1,]"),
         Expr::Array(ArrayDef::new(Span::new(0, 7), make_exprs![
             BinaryExpr::new(
-                LitExpr::new(LitValue::from(1), Span::new(1, 1)), 
-                Seperator::Add, Span::new(3, 3),
-                LitExpr::new(LitValue::from(1), Span::new(5, 5)),
+                LitExpr::new(1, Span::new(1, 1)), 
+                Separator::Add, Span::new(3, 3),
+                LitExpr::new(1, Span::new(5, 5)),
             )
         ]))
     }
@@ -117,7 +114,6 @@ fn array_def_parse() {
 #[cfg(test)] #[test]
 fn array_def_errors() {
     use crate::diagnostics::MessageCollection;
-    use super::super::TestInput;
     
     TestInput::new("[ , ]")
         .apply::<ArrayDef, _>()

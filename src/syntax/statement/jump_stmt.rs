@@ -111,13 +111,13 @@ impl ISyntaxParse for BreakStatement {
 fn jump_stmt_parse() {
     use super::super::WithTestInput;
     
-    assert_eq!{ ContinueStatement::with_test_str("continue;"), ContinueStatement::new_no_target(Span::new(0, 8)) }
-    assert_eq!{ ContinueStatement::with_test_str("continue @1;"), 
-        ContinueStatement::new_with_target(Span::new(0, 11), make_id!(1), Span::new(9, 10))
+    assert_eq!{ make_node!("continue;"), ContinueStatement::new_no_target(Span::new(0, 8)) }
+    assert_eq!{ make_node!("continue @1;"), 
+        ContinueStatement::new_with_target(Span::new(0, 11), 1, Span::new(9, 10))
     }
     
-    assert_eq!{ BreakStatement::with_test_str("break;"), BreakStatement::new_no_target(Span::new(0, 5)) }
-    assert_eq!{ BreakStatement::with_test_str("break @1;"), 
-        BreakStatement::new_with_target(Span::new(0, 8), make_id!(1), Span::new(6, 7))
+    assert_eq!{ make_node!("break;"), BreakStatement::new_no_target(Span::new(0, 5)) }
+    assert_eq!{ make_node!("break @1;"), 
+        BreakStatement::new_with_target(Span::new(0, 8), 1, Span::new(6, 7))
     }
 }

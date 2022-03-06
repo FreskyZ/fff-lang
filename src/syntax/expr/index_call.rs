@@ -89,14 +89,14 @@ fn index_call_parse() {
     use super::super::WithTestInput;
     use super::LitExpr;
 
-    assert_eq!{ IndexCallExpr::with_test_str("[1, 2, ]"),
+    assert_eq!{ make_node!("[1, 2, ]"),
         IndexCallExpr::new_with_parse_result(Span::new(0, 7), ExprList::new(vec![
             Expr::Lit(LitExpr::new(LitValue::from(1i32), Span::new(1, 1))),
             Expr::Lit(LitExpr::new(LitValue::from(2i32), Span::new(4, 4))),
         ]))
     }
 
-    assert_eq!{ IndexCallExpr::with_test_str("[\"hello\"]"),
+    assert_eq!{ make_node!("[\"hello\"]"),
         IndexCallExpr::new_with_parse_result(Span::new(0, 8), 
             ExprList::new(vec![Expr::Lit(LitExpr::new(make_lit!(str, 1), Span::new(1, 7)))])
         )

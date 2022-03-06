@@ -132,7 +132,7 @@ fn binary_expr_parse() {
     use super::super::WithTestInput;
 
     //                                     123456789012345
-    assert_eq!{ BinaryExpr::with_test_str("[1] * [2] / [3]"), 
+    assert_eq!{ make_node!("[1] * [2] / [3]"), 
         Expr::Binary(BinaryExpr::new(
             BinaryExpr::new(
                 ArrayDef::new(Span::new(0, 2), make_exprs![
@@ -151,60 +151,60 @@ fn binary_expr_parse() {
     }           
     //                                     0        1         2
     //                                     123456789012345678901
-    assert_eq!{ Expr::with_test_str("a * b / c + d % e - f"),  // ((((a * b) / c) + (d % e)) - f)
+    assert_eq!{ make_node!("a * b / c + d % e - f"),  // ((((a * b) / c) + (d % e)) - f)
         Expr::Binary(BinaryExpr::new(
             BinaryExpr::new(
                 BinaryExpr::new(
                     BinaryExpr::new(
-                        SimpleName::new(make_id!(1), Span::new(0, 0)),
+                        SimpleName::new(1, Span::new(0, 0)),
                         Seperator::Mul, Span::new(2, 2), 
-                        SimpleName::new(make_id!(2), Span::new(4, 4)),
+                        SimpleName::new(2, Span::new(4, 4)),
                     ),
                     Seperator::Div, Span::new(6, 6),
-                    SimpleName::new(make_id!(3), Span::new(8, 8)),
+                    SimpleName::new(3, Span::new(8, 8)),
                 ),
                 Seperator::Add, Span::new(10, 10),
                 BinaryExpr::new(
-                    SimpleName::new(make_id!(4), Span::new(12, 12)),
+                    SimpleName::new(4, Span::new(12, 12)),
                     Seperator::Rem, Span::new(14, 14),
-                    SimpleName::new(make_id!(5), Span::new(16, 16)),
+                    SimpleName::new(5, Span::new(16, 16)),
                 )
             ),
             Seperator::Sub, Span::new(18, 18),
-            SimpleName::new(make_id!(6), Span::new(20, 20)),
+            SimpleName::new(6, Span::new(20, 20)),
         ))
     }           
     //                                     0        1         2         3
     //                                     1234567890123456789012345678901
-    assert_eq!{ Expr::with_test_str("a * b << h / c + d % e - f >> g"), // (((a * b) << (((h / c) + (d % e)) - f)) >> g)
+    assert_eq!{ make_node!("a * b << h / c + d % e - f >> g"), // (((a * b) << (((h / c) + (d % e)) - f)) >> g)
         Expr::Binary(BinaryExpr::new(
             BinaryExpr::new(
                 BinaryExpr::new(
-                    SimpleName::new(make_id!(1), Span::new(0, 0)),
+                    SimpleName::new(1, Span::new(0, 0)),
                     Seperator::Mul, Span::new(2, 2),
-                    SimpleName::new(make_id!(2), Span::new(4, 4))
+                    SimpleName::new(2, Span::new(4, 4))
                 ),
                 Seperator::ShiftLeft, Span::new(6, 7),
                 BinaryExpr::new(
                     BinaryExpr::new(
                         BinaryExpr::new(
-                            SimpleName::new(make_id!(3), Span::new(9, 9)),
+                            SimpleName::new(3, Span::new(9, 9)),
                             Seperator::Div, Span::new(11, 11),
-                            SimpleName::new(make_id!(4), Span::new(13, 13))
+                            SimpleName::new(4, Span::new(13, 13))
                         ),
                         Seperator::Add, Span::new(15, 15),
                         BinaryExpr::new(
-                            SimpleName::new(make_id!(5), Span::new(17, 17)),
+                            SimpleName::new(5, Span::new(17, 17)),
                             Seperator::Rem, Span::new(19, 19),
-                            SimpleName::new(make_id!(6), Span::new(21, 21))
+                            SimpleName::new(6, Span::new(21, 21))
                         )
                     ),
                     Seperator::Sub, Span::new(23, 23),
-                    SimpleName::new(make_id!(7), Span::new(25, 25))
+                    SimpleName::new(7, Span::new(25, 25))
                 )
             ),
             Seperator::ShiftRight, Span::new(27, 28),
-            SimpleName::new(make_id!(8), Span::new(30, 30)),
+            SimpleName::new(8, Span::new(30, 30)),
         ))
     }          
 
@@ -217,7 +217,7 @@ fn binary_expr_parse() {
     //     only change that can I fix the bug
     //                                     0        1         2         3         4         5         6         7         8
     //                                     1234567890123456789012345678901234567890123456789012345678901234567890123456789012345
-    assert_eq!{ Expr::with_test_str("a * b << h / c + d % e - f >> g > h * i < j << k >= m && n || o & p | q ^ r != s == t"),
+    assert_eq!{ make_node!("a * b << h / c + d % e - f >> g > h * i < j << k >= m && n || o & p | q ^ r != s == t"),
         // */%, +-, <><=>=, <<>>, &, ^, |, ==!=, &&, ||
         // ((((((a * b) << (((h / c) + (d % e)) - f)) >> ((g > (h * i)) < j)) << (k >= m)) && n) || ((((o & p) | (q ^ r)) != s) == t))
         Expr::Binary(BinaryExpr::new(
@@ -226,88 +226,88 @@ fn binary_expr_parse() {
                     BinaryExpr::new(
                         BinaryExpr::new(
                             BinaryExpr::new(
-                                SimpleName::new(make_id!(1), Span::new(0, 0)),
+                                SimpleName::new(1, Span::new(0, 0)),
                                 Seperator::Mul, Span::new(2, 2),
-                                SimpleName::new(make_id!(2), Span::new(4, 4)),
+                                SimpleName::new(2, Span::new(4, 4)),
                             ),
                             Seperator::ShiftLeft, Span::new(6, 7),
                             BinaryExpr::new(
                                 BinaryExpr::new(
                                     BinaryExpr::new(
-                                        SimpleName::new(make_id!(3), Span::new(9, 9)),
+                                        SimpleName::new(3, Span::new(9, 9)),
                                         Seperator::Div, Span::new(11, 11),
-                                        SimpleName::new(make_id!(4), Span::new(13, 13)),
+                                        SimpleName::new(4, Span::new(13, 13)),
                                     ),
                                     Seperator::Add, Span::new(15, 15),
                                     BinaryExpr::new(
-                                        SimpleName::new(make_id!(5), Span::new(17, 17)),
+                                        SimpleName::new(5, Span::new(17, 17)),
                                         Seperator::Rem, Span::new(19, 19),
-                                        SimpleName::new(make_id!(6), Span::new(21, 21)),
+                                        SimpleName::new(6, Span::new(21, 21)),
                                     )
                                 ),
                                 Seperator::Sub, Span::new(23, 23),
-                                SimpleName::new(make_id!(7), Span::new(25, 25))
+                                SimpleName::new(7, Span::new(25, 25))
                             ),
                         ),
                         Seperator::ShiftRight, Span::new(27, 28),
                         BinaryExpr::new(
                             BinaryExpr::new(
-                                SimpleName::new(make_id!(8), Span::new(30, 30)),
+                                SimpleName::new(8, Span::new(30, 30)),
                                 Seperator::Great, Span::new(32, 32),
                                 BinaryExpr::new(
-                                    SimpleName::new(make_id!(3), Span::new(34, 34)),
+                                    SimpleName::new(3, Span::new(34, 34)),
                                     Seperator::Mul, Span::new(36, 36),
-                                    SimpleName::new(make_id!(9), Span::new(38, 38)),
+                                    SimpleName::new(9, Span::new(38, 38)),
                                 )
                             ),
                             Seperator::Less, Span::new(40, 40),
-                            SimpleName::new(make_id!(10), Span::new(42, 42)),
+                            SimpleName::new(10, Span::new(42, 42)),
                         )
                     ),
                     Seperator::ShiftLeft, Span::new(44, 45),
                     BinaryExpr::new(
-                        SimpleName::new(make_id!(11), Span::new(47, 47)),
+                        SimpleName::new(11, Span::new(47, 47)),
                         Seperator::GreatEqual, Span::new(49, 50),
-                        SimpleName::new(make_id!(12), Span::new(52, 52)),
+                        SimpleName::new(12, Span::new(52, 52)),
                     )
                 ),
                 Seperator::LogicalAnd, Span::new(54, 55),
-                SimpleName::new(make_id!(13), Span::new(57, 57))
+                SimpleName::new(13, Span::new(57, 57))
             ),
             Seperator::LogicalOr, Span::new(59, 60),
             BinaryExpr::new(
                 BinaryExpr::new(
                     BinaryExpr::new(
                         BinaryExpr::new(
-                            SimpleName::new(make_id!(14), Span::new(62, 62)),
+                            SimpleName::new(14, Span::new(62, 62)),
                             Seperator::BitAnd, Span::new(64, 64),
-                            SimpleName::new(make_id!(15), Span::new(66, 66)),
+                            SimpleName::new(15, Span::new(66, 66)),
                         ),
                         Seperator::BitOr, Span::new(68, 68),
                         BinaryExpr::new(
-                            SimpleName::new(make_id!(16), Span::new(70, 70)),
+                            SimpleName::new(16, Span::new(70, 70)),
                             Seperator::BitXor, Span::new(72, 72),
-                            SimpleName::new(make_id!(17), Span::new(74, 74)),
+                            SimpleName::new(17, Span::new(74, 74)),
                         )
                     ),
                     Seperator::NotEqual, Span::new(76, 77),
-                    SimpleName::new(make_id!(18), Span::new(79, 79)),
+                    SimpleName::new(18, Span::new(79, 79)),
                 ),
                 Seperator::Equal, Span::new(81, 82),
-                SimpleName::new(make_id!(19), Span::new(84, 84))
+                SimpleName::new(19, Span::new(84, 84))
             )
         ))
     }
     //                                     1234567890
-    assert_eq!{ Expr::with_test_str("a & b == c"), // ((a & b) == c)
+    assert_eq!{ make_node!("a & b == c"), // ((a & b) == c)
         Expr::Binary(BinaryExpr::new(
             BinaryExpr::new(
-                SimpleName::new(make_id!(1), Span::new(0, 0)),
+                SimpleName::new(1, Span::new(0, 0)),
                 Seperator::BitAnd, Span::new(2, 2),
-                SimpleName::new(make_id!(2), Span::new(4, 4)),
+                SimpleName::new(2, Span::new(4, 4)),
             ),
             Seperator::Equal, Span::new(6, 7),
-            SimpleName::new(make_id!(3), Span::new(9, 9)),
+            SimpleName::new(3, Span::new(9, 9)),
         ))
     }
 
@@ -317,7 +317,7 @@ fn binary_expr_parse() {
     // program generated random tests
     //                                     0        1         2         3    
     //                                     1234567890123456789012345678901234
-    assert_eq!{ Expr::with_test_str("0 + 6 ^ 3 & 3 / 3 - 8 && 2 & 0 + 6"), // (((0 + 6) ^ (3 & ((3 / 3) - 8))) && (2 & (0 + 6)))
+    assert_eq!{ make_node!("0 + 6 ^ 3 & 3 / 3 - 8 && 2 & 0 + 6"), // (((0 + 6) ^ (3 & ((3 / 3) - 8))) && (2 & (0 + 6)))
         Expr::Binary(BinaryExpr::new(
             BinaryExpr::new(
                 BinaryExpr::new(
@@ -354,7 +354,7 @@ fn binary_expr_parse() {
     }
     //                                     0        1         2         3         4         5         6         7
     //                                     1234567890123456789012345678901234567890123456789012345678901234567890
-    assert_eq!{ Expr::with_test_str("7 > 1 | 0 % 8 | 1 % 7 * 3 % 6 == 1 >> 8 % 3 ^ 6 << 0 ^ 2 >> 6 || 1 - 0"),
+    assert_eq!{ make_node!("7 > 1 | 0 % 8 | 1 % 7 * 3 % 6 == 1 >> 8 % 3 ^ 6 << 0 ^ 2 >> 6 || 1 - 0"),
         // (((((7 > 1) | (0 % 8)) | (((1 % 7) * 3) % 6)) == (((1 >> (8 % 3)) ^ (6 << 0)) ^ (2 >> 6))) || (1 - 0))
         Expr::Binary(BinaryExpr::new(
             BinaryExpr::new(
@@ -424,7 +424,7 @@ fn binary_expr_parse() {
     }
     //                                     0        1         2         3         4         5         6 
     //                                     1234567890123456789012345678901234567890123456789012345678901
-    assert_eq!{ Expr::with_test_str("7 >> 3 == 8 / 1 && 6 == 1 <= 3 % 6 ^ 3 - 1 - 2 >> 7 || 1 >= 1"),
+    assert_eq!{ make_node!("7 >> 3 == 8 / 1 && 6 == 1 <= 3 % 6 ^ 3 - 1 - 2 >> 7 || 1 >= 1"),
         // */%, +-, <><=>=, <<>>, &, ^, |, ==!=, &&, ||
         // ((((7 >> 3) == (8 / 1)) && (6 == ((1 <= (3 % 6)) ^ (((3 - 1) - 2) >> 7)))) || (1 >= 1))
         Expr::Binary(BinaryExpr::new(
@@ -483,7 +483,7 @@ fn binary_expr_parse() {
     }
     //                                     0     
     //                                     123456
-    assert_eq!{ Expr::with_test_str("4 >> 7"),
+    assert_eq!{ make_node!("4 >> 7"),
         Expr::Binary(BinaryExpr::new(
             Expr::Lit(LitExpr::new(LitValue::from(4), Span::new(0, 0))),
             Seperator::ShiftRight, Span::new(2, 3),
@@ -492,7 +492,7 @@ fn binary_expr_parse() {
     }
     //                                     0        1         2         3         4         5         6     
     //                                     12345678901234567890123456789012345678901234567890123456789012345
-    assert_eq!{ Expr::with_test_str("8 & 0 | 7 + 7 | 7 * 0 && 1 - 2 * 3 | 0 - 7 >= 6 >> 5 % 5 || 5 % 3"),
+    assert_eq!{ make_node!("8 & 0 | 7 + 7 | 7 * 0 && 1 - 2 * 3 | 0 - 7 >= 6 >> 5 % 5 || 5 % 3"),
         // (((((8 & 0) | (7 + 7)) | (7 * 0)) && ((1 - (2 * 3)) | (((0 - 7) >= 6) >> (5 % 5)))) || (5 % 3))
         Expr::Binary(BinaryExpr::new(
             BinaryExpr::new(
@@ -558,7 +558,7 @@ fn binary_expr_parse() {
     }
     //                                     0        1         2         3         4         5         6     
     //                                     12345678901234567890123456789012345678901234567890123456789012345678
-    assert_eq!{ Expr::with_test_str("3 <= 2 + 4 <= 5 && 3 < 3 + 2 >> 1 * 2 & 8 && 1 >= 1 < 0 || 6 < 4 * 4"),
+    assert_eq!{ make_node!("3 <= 2 + 4 <= 5 && 3 < 3 + 2 >> 1 * 2 & 8 && 1 >= 1 < 0 || 6 < 4 * 4"),
         // (((((3 <= (2 + 4)) <= 5) && (((3 < (3 + 2)) >> (1 * 2)) & 8)) && ((1 >= 1) < 0)) || (6 < (4 * 4)))
         Expr::Binary(BinaryExpr::new(
             BinaryExpr::new(
@@ -624,7 +624,7 @@ fn binary_expr_parse() {
     }
     //                                     0        1         2
     //                                     12345678901234567890
-    assert_eq!{ Expr::with_test_str("5 >= 6 | 3 == 4 && 3"),
+    assert_eq!{ make_node!("5 >= 6 | 3 == 4 && 3"),
         // ((((5 >= 6) | 3) == 4) && 3)
         Expr::Binary(BinaryExpr::new(
             BinaryExpr::new(
@@ -646,7 +646,7 @@ fn binary_expr_parse() {
     }
     //                                     0        1         2         3         4         5         6         7
     //                                     1234567890123456789012345678901234567890123456789012345678901234567890123456
-    assert_eq!{ Expr::with_test_str("6 && 7 >> 8 && 0 / 8 * 7 + 5 < 5 / 5 >> 5 - 1 >= 6 > 8 | 6 >> 5 > 2 + 1 || 0"),
+    assert_eq!{ make_node!("6 && 7 >> 8 && 0 / 8 * 7 + 5 < 5 / 5 >> 5 - 1 >= 6 > 8 | 6 >> 5 > 2 + 1 || 0"),
         // */%, +-, <><=>=, <<>>, &, ^, |, ==!=, &&, ||
         // (((6 && (7 >> 8)) && ((((((0 / 8) * 7) + 5) < (5 / 5)) >> (((5 - 1) >= 6) > 8)) | (6 >> (5 > (2 + 1))))) || 0)
         Expr::Binary(BinaryExpr::new(

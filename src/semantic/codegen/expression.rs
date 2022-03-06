@@ -652,7 +652,7 @@ fn gen_expr_simple_test() {
     use message::MessageCollection;
 
     // function call not after ident
-    let expr = FullExpression::with_test_str("1()");
+    let expr = make_node!("1()");
     let mut sess = GenerationSession::new();
     let mut assigns = Vec::new();
     let final_expr = simplize_expr(expr, &mut sess, &mut assigns);
@@ -662,7 +662,7 @@ fn gen_expr_simple_test() {
     assert_eq!(&sess.msgs, expect_message);
 
     // subscription 1 parameter          1234567
-    let expr = FullExpression::with_test_str("a[2, 3]");
+    let expr = make_node!("a[2, 3]");
     let mut sess = GenerationSession::new();
     let mut assigns = Vec::new();
     let _final_expr = simplize_expr(expr, &mut sess, &mut assigns);
@@ -670,7 +670,7 @@ fn gen_expr_simple_test() {
     // assert_eq!(final_expr, None);
     // assert_eq!(&sess.msgs, expect_message);
 
-    let expr = FullExpression::with_test_str("1[]");
+    let expr = make_node!("1[]");
     let mut sess = GenerationSession::new();
     let mut assigns = Vec::new();
     let _final_expr = simplize_expr(expr, &mut sess, &mut assigns);
@@ -687,7 +687,7 @@ fn gen_expr_simple_test() {
     }
 
     // Normal, lit, ident, fn call, array, array dup, tuple, bin, un, member fn call, member access, type cast, get index
-    let expr = FullExpression::with_test_str(
+    let expr = make_node!(
     //   0        1         2         3         4         5         6         7         8         9         A         B
     //   12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456
         "1 + 1.to_string()[abc(++defg) as u32 * (a - bcd)].substring((2, \"abc\") / global(hijk + lmn - [1, 2, [4 ; 5]])) - 1"
@@ -705,7 +705,7 @@ fn gen_expr_simple_test() {
 #[cfg(test)] #[test]
 fn gen_expr_practice_test() {
 
-    let right_expr = FullExpression::with_test_str("x * x + y * y - 1");
+    let right_expr = make_node!("x * x + y * y - 1");
     let mut assigns = Vec::new();
     let mut sess = GenerationSession::new();
     let final_expr = simplize_expr(right_expr, &mut sess, &mut assigns);
@@ -713,7 +713,7 @@ fn gen_expr_practice_test() {
     perrorln!("assigns: \n{:?}", assigns);
     perrorln!("final expr: \n{:?}", final_expr);
 
-    let right_expr = FullExpression::with_test_str("a * a * a - x * x * y * y * y <= 0f32");
+    let right_expr = make_node!("a * a * a - x * x * y * y * y <= 0f32");
     let mut assigns = Vec::new();
     let mut sess = GenerationSession::new();
     let final_expr = simplize_expr(right_expr, &mut sess, &mut assigns);

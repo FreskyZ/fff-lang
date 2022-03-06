@@ -631,7 +631,7 @@ fn v2_base() {
     //           0           1          2
     //           01 234567 890 1234567890123456
     test_case!{ "r\"hello\" '\\u1234' 12/**/34 ", [], ["hello"] expect vec![    // dispatch v1
-        (V2Token::Literal(make_lit!(str, 2)), Span::new(0, 7)), // because `lit!(S::new(1), 0, 7)` is ambiguous
+        lit!(IsId::new(2), 0, 7),
         lit!('\u{1234}', 9, 16),
         lit!(12i32, 18, 19),
         lit!(34i32, 24, 25),
