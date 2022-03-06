@@ -14,7 +14,7 @@ impl From<V2Token> for Token {
             V2Token::Label(label) => Token::Label(label),
             V2Token::Literal(lit) => Token::Lit(lit),
             V2Token::Identifier(ident) => Token::Ident(ident),
-            V2Token::Seperator(sep) => Token::Sep(sep),
+            V2Token::Separator(sep) => Token::Sep(sep),
             V2Token::Keyword(kw) => Token::Keyword(kw),
         }
     }
@@ -88,16 +88,16 @@ fn v4_base() { // remain the name of v4 here for memory
     assert_eq!(tokens.nth_token(2), &Token::Lit(LitValue::from('d')));
     assert_eq!(tokens.nth_span(2), Span::new(8, 10));
 
-    assert_eq!(tokens.nth_token(3), &Token::Sep(Seperator::Comma));
+    assert_eq!(tokens.nth_token(3), &Token::Sep(Separator::Comma));
     assert_eq!(tokens.nth_span(3), Span::new(11, 11));
 
-    assert_eq!(tokens.nth_token(4), &Token::Sep(Seperator::LeftBracket));
+    assert_eq!(tokens.nth_token(4), &Token::Sep(Separator::LeftBracket));
     assert_eq!(tokens.nth_span(4), Span::new(13, 13));
 
     assert_eq!(tokens.nth_token(5), &Token::Lit(LitValue::Num(Some(NumLitValue::I32(1)))));
     assert_eq!(tokens.nth_span(5), Span::new(14, 14));
 
-    assert_eq!(tokens.nth_token(6), &Token::Sep(Seperator::RightBracket));
+    assert_eq!(tokens.nth_token(6), &Token::Sep(Separator::RightBracket));
     assert_eq!(tokens.nth_span(6), Span::new(15, 15));
 
     assert_eq!(tokens.nth_token(7), &Token::EOF);

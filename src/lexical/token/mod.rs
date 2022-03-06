@@ -5,13 +5,16 @@
 use std::fmt;
 use crate::source::IsId;
 
+#[cfg(test)]
+mod tests;
+
 mod keyword;
-mod seperator;
+mod separator;
 mod num_lit_value;
 mod str_lit_value;
 
-pub use keyword::Keyword;
-pub use seperator::{Seperator, SeperatorCategory};
+pub use keyword::{Keyword, KeywordKind};
+pub use separator::{Separator, SeparatorKind};
 pub use num_lit_value::NumLitValue;
 pub use str_lit_value::{StrLitValue, FormatStrLitSegment};
 
@@ -97,7 +100,7 @@ pub enum Token {
     Lit(LitValue),
     Ident(IsId),
     Label(IsId),
-    Sep(Seperator),
+    Sep(Separator),
     Keyword(Keyword),
 }
 impl fmt::Debug for Token {
@@ -111,14 +114,4 @@ impl fmt::Debug for Token {
             &Token::Keyword(ref kw) => write!(f, "keyword {:?}", kw),
         }
     }
-}
-
-#[cfg(test)] #[test]
-fn token_use() {
-
-}
-
-#[cfg(test)] #[test]
-fn token_format() {
-
 }

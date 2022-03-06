@@ -17,7 +17,7 @@ macro_rules! make_lit {
     (fstr, $($seg: expr,)*) => (make_lit!(fstr, $($x),*));
 }
 
-mod token_def;
+mod token;
 mod token_buf;
 mod v1lexer;
 mod v2lexer;
@@ -25,5 +25,5 @@ mod token_stream;
 
 use token_buf::{ILexer, BufLexer, ParseSession};
 
-pub use token_def::{Seperator, SeperatorCategory, Keyword, NumLitValue, StrLitValue, FormatStrLitSegment, LitValue, Token};
+pub use token::{Separator, SeparatorKind, Keyword, KeywordKind, NumLitValue, StrLitValue, FormatStrLitSegment, LitValue, Token};
 pub use token_stream::TokenStream;
