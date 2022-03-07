@@ -3,9 +3,8 @@
 ///! string literal parser
 
 use crate::source::{Position, Span, EOF};
-use crate::diagnostics::{Message, MessageCollection};
-use super::escape_char_parser::{EscapeCharParser, EscapeCharSimpleCheckResult, EscapeCharParserResult};
-use super::error_strings;
+use crate::diagnostics::{Message, MessageCollection, strings};
+use super::escape::{EscapeCharParser, EscapeCharSimpleCheckResult, EscapeCharParserResult};
 
 #[cfg_attr(test, derive(Debug, Eq, PartialEq))]
 pub enum StringLiteralParserResult {
@@ -64,9 +63,9 @@ impl StringLiteralParser {
                         return StringLiteralParserResult::WantMoreWithSkip1;
                     } 
                     EscapeCharSimpleCheckResult::Invalid(ch) => {                   // C2, error normal escape, emit error and continue
-                        messages.push(Message::new(format!("{} '\\{}'", error_strings::UnknownCharEscape, ch), vec![
-                            (self.start_pos.into(), error_strings::StringLiteralStartHere.to_owned()),
-                            (slash_pos.into(), error_strings::UnknownCharEscapeHere.to_owned()),
+                        messages.push(Message::new(format!("{} '\\{}'", strings::UnknownCharEscape, ch), vec![
+                            (self.start_pos.into(), strings::StringLiteralStartHere.to_owned()),
+                            (slash_pos.into(), strings::UnknownCharEscapeHere.to_owned()),
                         ]));
                         self.has_failed = true;
                         return StringLiteralParserResult::WantMoreWithSkip1;
@@ -83,12 +82,12 @@ impl StringLiteralParser {
                 match self.escape_parser {
                     Some(ref _parser) => {                                           // C5, \uxxx\EOL, emit error and return
                         // If still parsing, it is absolutely failed
-                        messages.push(Message::with_help_by_str(error_strings::UnexpectedStringLiteralEnd, vec![
-                            (self.start_pos.into(), error_strings::StringLiteralStartHere),
-                            (self.escape_start_pos.into(), error_strings::UnicodeCharEscapeStartHere),
-                            (pos.into(), error_strings::StringLiteralEndHere),
+                        messages.push(Message::with_help_by_str(strings::UnexpectedStringLiteralEnd, vec![
+                            (self.start_pos.into(), strings::StringLiteralStartHere),
+                            (self.escape_start_pos.into(), strings::UnicodeCharEscapeStartHere),
+                            (pos.into(), strings::StringLiteralEndHere),
                         ], vec![
-                            error_strings::UnicodeCharEscapeHelpSyntax,
+                            strings::UnicodeCharEscapeHelpSyntax,
                         ]));
                         return StringLiteralParserResult::Finished(None, self.start_pos + pos);
                     }
@@ -103,15 +102,15 @@ impl StringLiteralParser {
             (EOF, pos, _2) => {
                 match self.last_escape_quote_pos {                                      // C12: in string, meet EOF, emit error, return 
                     Some(escaped_quote_pos_hint) => 
-                        messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
-                            (self.start_pos.into(), error_strings::StringLiteralStartHere),
-                            (pos.into(), error_strings::EOFHere),
-                            (escaped_quote_pos_hint.into(), error_strings::LastEscapedQuoteHere),
+                        messages.push(Message::new_by_str(strings::UnexpectedEOF, vec![
+                            (self.start_pos.into(), strings::StringLiteralStartHere),
+                            (pos.into(), strings::EOFHere),
+                            (escaped_quote_pos_hint.into(), strings::LastEscapedQuoteHere),
                         ])),
                     None => 
-                        messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
-                            (self.start_pos.into(), error_strings::StringLiteralStartHere),
-                            (pos.into(), error_strings::EOFHere),
+                        messages.push(Message::new_by_str(strings::UnexpectedEOF, vec![
+                            (self.start_pos.into(), strings::StringLiteralStartHere),
+                            (pos.into(), strings::EOFHere),
                         ]))
                 }
                 return StringLiteralParserResult::Finished(None, self.start_pos + pos);
@@ -188,9 +187,9 @@ fn str_lit_parse() {
             Finished(None, spec_pos1 + spec_pos2));
         
         assert_eq!(messages, &make_messages![
-            Message::new_by_str(error_strings::UnexpectedEOF, vec![
-                (spec_pos1.into(), error_strings::StringLiteralStartHere),
-                (spec_pos2.into(), error_strings::EOFHere),
+            Message::new_by_str(strings::UnexpectedEOF, vec![
+                (spec_pos1.into(), strings::StringLiteralStartHere),
+                (spec_pos2.into(), strings::EOFHere),
             ])
         ]);
     }
@@ -209,10 +208,10 @@ fn str_lit_parse() {
             Finished(None, spec_pos1 + spec_pos4));
 
         assert_eq!(messages, &make_messages![
-            Message::new_by_str(error_strings::UnexpectedEOF, vec![
-                (spec_pos1.into(), error_strings::StringLiteralStartHere),
-                (spec_pos4.into(), error_strings::EOFHere),
-                (spec_pos3.into(), error_strings::LastEscapedQuoteHere),
+            Message::new_by_str(strings::UnexpectedEOF, vec![
+                (spec_pos1.into(), strings::StringLiteralStartHere),
+                (spec_pos4.into(), strings::EOFHere),
+                (spec_pos3.into(), strings::LastEscapedQuoteHere),
             ])
         ]);
     }
@@ -248,21 +247,21 @@ fn str_lit_parse() {
             Finished(None, spec_pos1 + spec_pos4));
 
         assert_eq!(messages, &make_messages![
-            Message::new(format!("{} '\\{}'", error_strings::UnknownCharEscape, 'c'), vec![
-                (spec_pos1.into(), error_strings::StringLiteralStartHere.to_owned()),
-                (spec_pos2.into(), error_strings::UnknownCharEscapeHere.to_owned()),
+            Message::new(format!("{} '\\{}'", strings::UnknownCharEscape, 'c'), vec![
+                (spec_pos1.into(), strings::StringLiteralStartHere.to_owned()),
+                (spec_pos2.into(), strings::UnknownCharEscapeHere.to_owned()),
             ]),
-            Message::new(format!("{} '\\{}'", error_strings::UnknownCharEscape, 'd'), vec![
-                (spec_pos1.into(), error_strings::StringLiteralStartHere.to_owned()),
-                (spec_pos3.into(), error_strings::UnknownCharEscapeHere.to_owned()),
+            Message::new(format!("{} '\\{}'", strings::UnknownCharEscape, 'd'), vec![
+                (spec_pos1.into(), strings::StringLiteralStartHere.to_owned()),
+                (spec_pos3.into(), strings::UnknownCharEscapeHere.to_owned()),
             ]),
-            Message::new(format!("{} '\\{}'", error_strings::UnknownCharEscape, 'e'), vec![
-                (spec_pos1.into(), error_strings::StringLiteralStartHere.to_owned()),
-                (spec_pos2.into(), error_strings::UnknownCharEscapeHere.to_owned()),
+            Message::new(format!("{} '\\{}'", strings::UnknownCharEscape, 'e'), vec![
+                (spec_pos1.into(), strings::StringLiteralStartHere.to_owned()),
+                (spec_pos2.into(), strings::UnknownCharEscapeHere.to_owned()),
             ]),
-            Message::new(format!("{} '\\{}'", error_strings::UnknownCharEscape, 'g'), vec![
-                (spec_pos1.into(), error_strings::StringLiteralStartHere.to_owned()),
-                (spec_pos3.into(), error_strings::UnknownCharEscapeHere.to_owned()),
+            Message::new(format!("{} '\\{}'", strings::UnknownCharEscape, 'g'), vec![
+                (spec_pos1.into(), strings::StringLiteralStartHere.to_owned()),
+                (spec_pos3.into(), strings::UnknownCharEscapeHere.to_owned()),
             ])
         ]);
     }
@@ -304,17 +303,17 @@ fn str_lit_parse() {
             Finished(None, spec_pos1 + spec_pos4));
         
         assert_eq!(messages, &make_messages![
-            Message::with_help_by_str(error_strings::InvalidUnicodeCharEscape, vec![
-                (spec_pos2.into(), error_strings::UnicodeCharEscapeStartHere),
-                (spec_pos3.into(), error_strings::UnicodeCharEscapeInvalidChar)
+            Message::with_help_by_str(strings::InvalidUnicodeCharEscape, vec![
+                (spec_pos2.into(), strings::UnicodeCharEscapeStartHere),
+                (spec_pos3.into(), strings::UnicodeCharEscapeInvalidChar)
             ], vec![
-                error_strings::UnicodeCharEscapeHelpSyntax,
+                strings::UnicodeCharEscapeHelpSyntax,
             ]),
-            Message::with_help_by_str(error_strings::InvalidUnicodeCharEscape, vec![
-                (spec_pos3.into(), error_strings::UnicodeCharEscapeStartHere),
-                (spec_pos4.into(), error_strings::UnicodeCharEscapeInvalidChar)
+            Message::with_help_by_str(strings::InvalidUnicodeCharEscape, vec![
+                (spec_pos3.into(), strings::UnicodeCharEscapeStartHere),
+                (spec_pos4.into(), strings::UnicodeCharEscapeInvalidChar)
             ], vec![
-                error_strings::UnicodeCharEscapeHelpSyntax,
+                strings::UnicodeCharEscapeHelpSyntax,
             ])
         ]);
     }
@@ -336,11 +335,11 @@ fn str_lit_parse() {
             Finished(None, spec_pos1 + spec_pos3));
         
         assert_eq!(messages, &make_messages![
-            Message::with_help(error_strings::InvalidUnicodeCharEscape.to_owned(), vec![
-                (spec_pos2 + spec_pos4, error_strings::UnicodeCharEscapeHere.to_owned()),
+            Message::with_help(strings::InvalidUnicodeCharEscape.to_owned(), vec![
+                (spec_pos2 + spec_pos4, strings::UnicodeCharEscapeHere.to_owned()),
             ], vec![
-                format!("{}{}", error_strings::UnicodeCharEscapeCodePointValueIs, "0011ABCD"),
-                error_strings::UnicodeCharEscapeHelpValue.to_owned(),
+                format!("{}{}", strings::UnicodeCharEscapeCodePointValueIs, "0011ABCD"),
+                strings::UnicodeCharEscapeHelpValue.to_owned(),
             ])
         ]);
     }
@@ -354,12 +353,12 @@ fn str_lit_parse() {
             Finished(None, spec_pos1 + spec_pos3));
         
         assert_eq!(messages, &make_messages![
-            Message::with_help_by_str(error_strings::UnexpectedStringLiteralEnd, vec![
-                (spec_pos1.into(), error_strings::StringLiteralStartHere),
-                (spec_pos2.into(), error_strings::UnicodeCharEscapeStartHere),
-                (spec_pos3.into(), error_strings::StringLiteralEndHere),
+            Message::with_help_by_str(strings::UnexpectedStringLiteralEnd, vec![
+                (spec_pos1.into(), strings::StringLiteralStartHere),
+                (spec_pos2.into(), strings::UnicodeCharEscapeStartHere),
+                (spec_pos3.into(), strings::StringLiteralEndHere),
             ], vec![
-                error_strings::UnicodeCharEscapeHelpSyntax,
+                strings::UnicodeCharEscapeHelpSyntax,
             ])
         ]);
     }
@@ -376,9 +375,9 @@ fn str_lit_parse() {
             Finished(None, spec_pos1 + spec_pos3));
         
         assert_eq!(messages, &make_messages![
-            Message::new_by_str(error_strings::UnexpectedEOF, vec![
-                (spec_pos1.into(), error_strings::StringLiteralStartHere),
-                (spec_pos3.into(), error_strings::EOFHere),
+            Message::new_by_str(strings::UnexpectedEOF, vec![
+                (spec_pos1.into(), strings::StringLiteralStartHere),
+                (spec_pos3.into(), strings::EOFHere),
             ])
         ]);
     }
@@ -393,9 +392,9 @@ fn str_lit_parse() {
             Finished(None, spec_pos1 + spec_pos3));
         
         assert_eq!(messages, &make_messages![
-            Message::new_by_str(error_strings::UnexpectedEOF, vec![
-                (spec_pos1.into(), error_strings::StringLiteralStartHere),
-                (spec_pos3.into(), error_strings::EOFHere),
+            Message::new_by_str(strings::UnexpectedEOF, vec![
+                (spec_pos1.into(), strings::StringLiteralStartHere),
+                (spec_pos3.into(), strings::EOFHere),
             ])
         ]);
     }

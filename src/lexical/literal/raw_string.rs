@@ -3,8 +3,7 @@
 ///! Raw string literal parser
 
 use crate::source::{Position, Span, EOF};
-use crate::diagnostics::{Message, MessageCollection};
-use super::error_strings;
+use crate::diagnostics::{Message, MessageCollection, strings};
 
 #[cfg_attr(test, derive(Debug, Eq, PartialEq))]
 pub enum RawStringLiteralParserResult { 
@@ -31,9 +30,9 @@ impl RawStringLiteralParser {
                 return RawStringLiteralParserResult::Finished(Some(self.raw.clone()), self.start_pos + pos);
             }
             (EOF, pos) => {                                                    // C3: in raw string, meet EOF, emit error, return  
-                messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![ 
-                    (self.start_pos.into(), error_strings::StringLiteralStartHere),
-                    (pos.into(), error_strings::EOFHere),
+                messages.push(Message::new_by_str(strings::UnexpectedEOF, vec![ 
+                    (self.start_pos.into(), strings::StringLiteralStartHere),
+                    (pos.into(), strings::EOFHere),
                 ]));
                 return RawStringLiteralParserResult::Finished(None, self.start_pos + pos);
             }
@@ -82,9 +81,9 @@ fn raw_string_lit_parser() {
         assert_eq!(parser.input(EOF, spec_pos2, messages), 
             Finished(None, spec_pos1 + spec_pos2));
 
-        expect_messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![ 
-            (spec_pos1.into(), error_strings::StringLiteralStartHere),
-            (spec_pos2.into(), error_strings::EOFHere),
+        expect_messages.push(Message::new_by_str(strings::UnexpectedEOF, vec![ 
+            (spec_pos1.into(), strings::StringLiteralStartHere),
+            (spec_pos2.into(), strings::EOFHere),
         ]));
         assert_eq!(messages, expect_messages);
     }

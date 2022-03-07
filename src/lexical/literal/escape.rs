@@ -4,8 +4,7 @@
 ///! string and char literal's escape char parser
 
 use crate::source::Position;
-use crate::diagnostics::{Message, MessageCollection};
-use super::error_strings;
+use crate::diagnostics::{Message, MessageCollection, strings};
 
 #[cfg(test)]
 #[derive(Debug, Eq, PartialEq)]
@@ -101,11 +100,11 @@ impl EscapeCharParser {
                     match char::from_u32(self.value) {
                         Some(ch) => EscapeCharParserResult::Success(ch),               // C3
                         None => {
-                            messages.push(Message::with_help(error_strings::InvalidUnicodeCharEscape.to_owned(), vec![
-                                (escape_start_span + current_span, error_strings::UnicodeCharEscapeHere.to_owned()),
+                            messages.push(Message::with_help(strings::InvalidUnicodeCharEscape.to_owned(), vec![
+                                (escape_start_span + current_span, strings::UnicodeCharEscapeHere.to_owned()),
                             ], vec![
-                                format!("{}{}", error_strings::UnicodeCharEscapeCodePointValueIs, self.buf.clone()),
-                                error_strings::UnicodeCharEscapeHelpValue.to_owned(),
+                                format!("{}{}", strings::UnicodeCharEscapeCodePointValueIs, self.buf.clone()),
+                                strings::UnicodeCharEscapeHelpValue.to_owned(),
                             ]));
                             EscapeCharParserResult::Failed                             // C4
                         }
@@ -115,11 +114,11 @@ impl EscapeCharParser {
                 }
             }
             None => {
-                messages.push(Message::with_help_by_str(error_strings::InvalidUnicodeCharEscape, vec![
-                    (escape_start_span, error_strings::UnicodeCharEscapeStartHere),
-                    (current_span, error_strings::UnicodeCharEscapeInvalidChar)
+                messages.push(Message::with_help_by_str(strings::InvalidUnicodeCharEscape, vec![
+                    (escape_start_span, strings::UnicodeCharEscapeStartHere),
+                    (current_span, strings::UnicodeCharEscapeInvalidChar)
                 ], vec![
-                    error_strings::UnicodeCharEscapeHelpSyntax,
+                    strings::UnicodeCharEscapeHelpSyntax,
                 ]));
                 self.has_failed = true;
                 if self.buf.len() < self.expect_size {
@@ -175,11 +174,11 @@ fn escape_char_parser() {
         assert_eq!(parser.input('D', (Position::new(34), Position::new(56)), messages), Failed);
 
         assert_eq!(messages, &make_messages![
-            Message::with_help(error_strings::InvalidUnicodeCharEscape.to_owned(), vec![
-                (Span::new(34, 56), error_strings::UnicodeCharEscapeHere.to_owned()),
+            Message::with_help(strings::InvalidUnicodeCharEscape.to_owned(), vec![
+                (Span::new(34, 56), strings::UnicodeCharEscapeHere.to_owned()),
             ], vec![
-                format!("{}{}", error_strings::UnicodeCharEscapeCodePointValueIs, "0011ABCD".to_owned()),
-                error_strings::UnicodeCharEscapeHelpValue.to_owned(),
+                format!("{}{}", strings::UnicodeCharEscapeCodePointValueIs, "0011ABCD".to_owned()),
+                strings::UnicodeCharEscapeHelpValue.to_owned(),
             ])
         ]);
     }
@@ -194,11 +193,11 @@ fn escape_char_parser() {
         assert_eq!(parser.input('3', poss, messages), Failed);
 
         assert_eq!(messages, &make_messages![
-            Message::with_help_by_str(error_strings::InvalidUnicodeCharEscape, vec![
-                (Span::new(34, 34), error_strings::UnicodeCharEscapeStartHere),
-                (Span::new(78, 78), error_strings::UnicodeCharEscapeInvalidChar)
+            Message::with_help_by_str(strings::InvalidUnicodeCharEscape, vec![
+                (Span::new(34, 34), strings::UnicodeCharEscapeStartHere),
+                (Span::new(78, 78), strings::UnicodeCharEscapeInvalidChar)
             ], vec![
-                error_strings::UnicodeCharEscapeHelpSyntax,
+                strings::UnicodeCharEscapeHelpSyntax,
             ])
         ]);
     }
@@ -213,11 +212,11 @@ fn escape_char_parser() {
         assert_eq!(parser.input('g', (Position::new(65), Position::new(21)), messages), Failed);
 
         assert_eq!(messages, &make_messages![
-            Message::with_help_by_str(error_strings::InvalidUnicodeCharEscape, vec![
-                (Span::new(65, 65), error_strings::UnicodeCharEscapeStartHere),
-                (Span::new(21, 21), error_strings::UnicodeCharEscapeInvalidChar)
+            Message::with_help_by_str(strings::InvalidUnicodeCharEscape, vec![
+                (Span::new(65, 65), strings::UnicodeCharEscapeStartHere),
+                (Span::new(21, 21), strings::UnicodeCharEscapeInvalidChar)
             ], vec![
-                error_strings::UnicodeCharEscapeHelpSyntax,
+                strings::UnicodeCharEscapeHelpSyntax,
             ])
         ]);
     }

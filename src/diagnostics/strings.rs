@@ -1,10 +1,34 @@
 #![allow(non_upper_case_globals)]
-#![allow(dead_code)]
+///! all kinds of error strings
 
-///! fff-lang
-///!
-///! some error strings
+pub const Empty: &str = "";
 
+pub const UnexpectedEOF: &str = "Unexpected EOF";
+pub const BlockCommentStartHere: &str = "Block comment starts here";
+pub const EOFHere: &str = "EOF here";
+pub const UnexpectedCharLiteralEnd: &str = "Unexpected char literal end";
+pub const CharLiteralStartHere: &str = "Char literal start here";
+pub const CharLiteralEndHere: &str = "Char literal end here";
+pub const UnicodeCharEscapeHelpSyntax: &str = "Unicode char escape is like \\uxxxx or \\Uxxxxxxxx";
+pub const UnknownCharEscape: &str = "Unknown char escape";
+pub const UnknownCharEscapeHere: &str = "Unknown char escape here";
+pub const CharLiteralTooLong: &str = "Char literal too long";
+pub const StringLiteralSyntaxHelp: &str = "String literal should be surround with double quotation";
+pub const EmptyCharLiteral: &str = "Empty char literal";
+pub const CharLiteralSyntaxHelp1: &str = "Char literal should contain exactly one code point";
+pub const InvalidUnicodeCharEscape: &str = "Invalid unicode char escape";
+pub const UnicodeCharEscapeCodePointValueIs: &str = "The code point value is 0x";
+pub const UnicodeCharEscapeStartHere: &str = "Unicode escape start here";
+pub const UnicodeCharEscapeInvalidChar: &str = "Invalid hex char here";
+pub const UnicodeCharEscapeHelpValue: &str = "Currently max unicode code point is 0x10FFFF and most values are not used";
+pub const StringLiteralStartHere: &str = "String literal start here";
+pub const UnexpectedStringLiteralEnd: &str = "Unexpected string literal end";
+pub const StringLiteralEndHere: &str = "String literal end here";
+pub const LastEscapedQuoteHere: &str = "Last escaped quote here";
+pub const CharLiteralHere: &str = "Char literal here";
+pub const UnicodeCharEscapeHere: &str = "Unicode char escape here";
+
+// keep these 'static to indicate they are written at that age
 pub const UnexpectedNonASCIIChar: &'static str = "Unexpected non ASCII char";
 pub const InvalidNumericLiteral: &'static str = "Invalid numeric literal";
 pub const NumLitShouldNotStartWith0: &'static str = "numeric literal should not start with 0";

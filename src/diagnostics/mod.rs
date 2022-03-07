@@ -3,6 +3,8 @@
 use std::fmt;
 use crate::source::{Span, SourceContext};
 
+pub mod strings;
+
 #[derive(Eq, PartialEq)]
 struct LocationAndDesc {
     loc: Span, 

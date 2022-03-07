@@ -3,7 +3,14 @@
 
 use std::fmt;
 use crate::source::{SourceContext, IsId};
-use super::token::{Keyword, Separator};
+
+#[cfg(test)]
+mod tests;
+mod keyword;
+mod separator;
+
+pub use keyword::{Keyword, KeywordKind};
+pub use separator::{Separator, SeparatorKind};
 
 // numeric value for all integers and rational values
 // - it is designed to be used cross the whole program because
@@ -42,6 +49,7 @@ impl fmt::Display for Numeric {
     }
 }
 
+#[allow(dead_code)] // binary string literal and format string literal not implemented
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum StringLiteralType {
     Normal,

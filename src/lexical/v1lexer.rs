@@ -7,18 +7,13 @@
 ///! string literal is allowed to cross line, line end is regarded as \n
 ///! raw string literal supported, `r'C:\\abc'` or `R"C:\\abc"`
 
-mod char_lit_parser;
-mod error_strings;
-mod escape_char_parser;
-mod raw_string_lit_parser;
-mod string_lit_parser;
-
 use crate::source::{Span, SourceChars, FileSystem, IsId, EOF};
-use crate::diagnostics::Message;
+use crate::diagnostics::{Message, strings};
+
 use super::{ILexer, BufLexer, ParseSession};
-use string_lit_parser::{StringLiteralParser, StringLiteralParserResult};
-use raw_string_lit_parser::{RawStringLiteralParser, RawStringLiteralParserResult};
-use char_lit_parser::{CharLiteralParser, CharLiteralParserResult};
+use super::literal::string::{StringLiteralParser, StringLiteralParserResult};
+use super::literal::raw_string::{RawStringLiteralParser, RawStringLiteralParserResult};
+use super::literal::char::{CharLiteralParser, CharLiteralParserResult};
 
 // SourceCodeIter wrapper
 pub struct V0Lexer<'a, F>(pub SourceChars<'a, F>);
@@ -33,9 +28,9 @@ impl<'a, F> ILexer<'a, F, char> for V0Lexer<'a, F> where F: FileSystem {
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub enum V1Token {
     EOF,
-    StringLiteral(Option<IsId>),
-    RawStringLiteral(Option<IsId>),
-    CharLiteral(Option<char>),
+    StringLiteral(IsId),
+    RawStringLiteral(IsId),
+    CharLiteral(char),
     Other(char),
 }
 impl Default for V1Token { fn default() -> V1Token { V1Token::EOF } }
@@ -93,9 +88,9 @@ impl<'chs, F> ILexer<'chs, F, V1Token> for V1Lexer<'chs, F> where F: FileSystem 
                     return (V1Token::Other(' '), start_span + end_pos);
                 }
                 (State::InBlockComment{ start_span }, &EOF, eof_pos, _3, _4, _5, _6) => {  // C10: in block, meet EOF, emit error, return
-                    sess.messages.push(Message::new_by_str(error_strings::UnexpectedEOF, vec![
-                        (start_span, error_strings::BlockCommentStartHere),
-                        (eof_pos, error_strings::EOFHere),
+                    sess.messages.push(Message::new_by_str(strings::UnexpectedEOF, vec![
+                        (start_span, strings::BlockCommentStartHere),
+                        (eof_pos, strings::EOFHere),
                     ]));
                     return (V1Token::EOF, eof_pos);
                 }
@@ -125,7 +120,7 @@ impl<'chs, F> ILexer<'chs, F, V1Token> for V1Lexer<'chs, F> where F: FileSystem 
                             if *ch == EOF { // if EOF was consumed by str lit parser, it will not be returned as EOF, which is not designed by feature
                                 self.v0.prepare_dummy1();
                             }
-                            return (V1Token::StringLiteral(value.map(|v| self.v0.lexer.0.intern(&v))), pos);
+                            return (V1Token::StringLiteral(value.map(|v| self.v0.lexer.0.intern(&v)).unwrap_or(IsId::new(1))), pos);
                         }
                     }
                 }
@@ -138,7 +133,7 @@ impl<'chs, F> ILexer<'chs, F, V1Token> for V1Lexer<'chs, F> where F: FileSystem 
                             if *ch == EOF { // same as str lit parser
                                 self.v0.prepare_dummy1();
                             }
-                            return (V1Token::RawStringLiteral(value.map(|v| self.v0.lexer.0.intern(&v))), pos);
+                            return (V1Token::RawStringLiteral(value.map(|v| self.v0.lexer.0.intern(&v)).unwrap_or(IsId::new(1))), pos);
                         }
                     }
                 }
@@ -155,7 +150,7 @@ impl<'chs, F> ILexer<'chs, F, V1Token> for V1Lexer<'chs, F> where F: FileSystem 
                             if *ch == EOF { // same as str lit parser
                                 self.v0.prepare_dummy1();
                             }
-                            return (V1Token::CharLiteral(value), pos);
+                            return (V1Token::CharLiteral(value.unwrap_or_default()), pos);
                         }
                     }
                 }
@@ -200,16 +195,16 @@ fn v1_base() {
         ($ch: expr, $start_id: expr, $end_id: expr) => ((V1Token::Other($ch), Span::new($start_id, $end_id)))
     }
     macro_rules! ch_lit {
-        ($ch: expr, $start_id: expr, $end_id: expr) => ((V1Token::CharLiteral(Some($ch)), Span::new($start_id, $end_id)));
-        ($start_id: expr, $end_id: expr) => ((V1Token::CharLiteral(None), Span::new($start_id, $end_id)))
+        ($ch: expr, $start_id: expr, $end_id: expr) => ((V1Token::CharLiteral($ch), Span::new($start_id, $end_id)));
+        ($start_id: expr, $end_id: expr) => ((V1Token::CharLiteral('\0'), Span::new($start_id, $end_id)))
     }
     macro_rules! str_lit {
-        ($start_id: expr, $end_id: expr) => ((V1Token::StringLiteral(None), Span::new($start_id, $end_id)));
-        ($val: expr, $start_id: expr, $end_id: expr) => ((V1Token::StringLiteral(Some($val)), Span::new($start_id, $end_id)))
+        ($start_id: expr, $end_id: expr) => ((V1Token::StringLiteral(IsId::new(1)), Span::new($start_id, $end_id)));
+        ($val: expr, $start_id: expr, $end_id: expr) => ((V1Token::StringLiteral($val), Span::new($start_id, $end_id)))
     }
     macro_rules! rstr_lit {
-        ($start_id: expr, $end_id: expr) => ((V1Token::RawStringLiteral(None), Span::new($start_id, $end_id)));
-        ($val: expr, $start_id: expr, $end_id: expr) => ((V1Token::RawStringLiteral(Some($val)), Span::new($start_id, $end_id)))
+        ($start_id: expr, $end_id: expr) => ((V1Token::RawStringLiteral(IsId::new(1)), Span::new($start_id, $end_id)));
+        ($val: expr, $start_id: expr, $end_id: expr) => ((V1Token::RawStringLiteral($val), Span::new($start_id, $end_id)))
     }
 
     // Line comment as \n
@@ -221,9 +216,9 @@ fn v1_base() {
     test_case!{ "A/*D\nEF*/GH", vec![n!('A', 0), n!(' ', 1, 8), n!('G', 9), n!('H', 10)] }   // C6, C2, C9, C8
     // EOF in block comment is error 
     test_case!{ with message, "A/*BC", vec![n!('A', 0)], make_messages![                     // C6, C2, C9, C10
-        Message::new_by_str(error_strings::UnexpectedEOF, vec![
-            (Span::new(1, 1), error_strings::BlockCommentStartHere),
-            (Span::new(5, 5), error_strings::EOFHere),
+        Message::new_by_str(strings::UnexpectedEOF, vec![
+            (Span::new(1, 1), strings::BlockCommentStartHere),
+            (Span::new(5, 5), strings::EOFHere),
         ])
     ]}
 
@@ -232,83 +227,83 @@ fn v1_base() {
         "Hello, world!", vec![str_lit!(IsId::new(2), 0, 14)] 
     }
     test_case!{ with message, r#""He"#, vec![str_lit!(0, 3)], make_messages![
-        Message::new_by_str(error_strings::UnexpectedEOF, vec![
-            (Span::new(0, 0), error_strings::StringLiteralStartHere),
-            (Span::new(3, 3), error_strings::EOFHere)
+        Message::new_by_str(strings::UnexpectedEOF, vec![
+            (Span::new(0, 0), strings::StringLiteralStartHere),
+            (Span::new(3, 3), strings::EOFHere)
         ])
     ]}
     test_case!{ with message, r#""He\"l\"lo"#, vec![str_lit!(0, 10)], make_messages![
-        Message::new_by_str(error_strings::UnexpectedEOF, vec![
-            (Span::new(0, 0), error_strings::StringLiteralStartHere),
-            (Span::new(10, 10), error_strings::EOFHere),
-            (Span::new(6, 6), error_strings::LastEscapedQuoteHere),
+        Message::new_by_str(strings::UnexpectedEOF, vec![
+            (Span::new(0, 0), strings::StringLiteralStartHere),
+            (Span::new(10, 10), strings::EOFHere),
+            (Span::new(6, 6), strings::LastEscapedQuoteHere),
         ])
     ]}
     test_case!{ with symbol, r#""H\t\n\0\'\"llo""#,
         "H\t\n\0'\"llo", vec![str_lit!(IsId::new(2), 0, 15)]
     }
     test_case!{ with message, r#""h\c\d\e\n\g""#, vec![str_lit!(0, 12)], make_messages![
-        Message::new(format!("{} '\\{}'", error_strings::UnknownCharEscape, 'c'), vec![
-            (Span::new(0, 0), error_strings::StringLiteralStartHere.to_owned()),
-            (Span::new(2, 2), error_strings::UnknownCharEscapeHere.to_owned()),
+        Message::new(format!("{} '\\{}'", strings::UnknownCharEscape, 'c'), vec![
+            (Span::new(0, 0), strings::StringLiteralStartHere.to_owned()),
+            (Span::new(2, 2), strings::UnknownCharEscapeHere.to_owned()),
         ]),
-        Message::new(format!("{} '\\{}'", error_strings::UnknownCharEscape, 'd'), vec![
-            (Span::new(0, 0), error_strings::StringLiteralStartHere.to_owned()),
-            (Span::new(4, 4), error_strings::UnknownCharEscapeHere.to_owned()),
+        Message::new(format!("{} '\\{}'", strings::UnknownCharEscape, 'd'), vec![
+            (Span::new(0, 0), strings::StringLiteralStartHere.to_owned()),
+            (Span::new(4, 4), strings::UnknownCharEscapeHere.to_owned()),
         ]),
-        Message::new(format!("{} '\\{}'", error_strings::UnknownCharEscape, 'e'), vec![
-            (Span::new(0, 0), error_strings::StringLiteralStartHere.to_owned()),
-            (Span::new(6, 6), error_strings::UnknownCharEscapeHere.to_owned()),
+        Message::new(format!("{} '\\{}'", strings::UnknownCharEscape, 'e'), vec![
+            (Span::new(0, 0), strings::StringLiteralStartHere.to_owned()),
+            (Span::new(6, 6), strings::UnknownCharEscapeHere.to_owned()),
         ]),
-        Message::new(format!("{} '\\{}'", error_strings::UnknownCharEscape, 'g'), vec![
-            (Span::new(0, 0), error_strings::StringLiteralStartHere.to_owned()),
-            (Span::new(10, 10), error_strings::UnknownCharEscapeHere.to_owned()),
+        Message::new(format!("{} '\\{}'", strings::UnknownCharEscape, 'g'), vec![
+            (Span::new(0, 0), strings::StringLiteralStartHere.to_owned()),
+            (Span::new(10, 10), strings::UnknownCharEscapeHere.to_owned()),
         ])
     ]}
     test_case!{ with symbol, r#""H\uABCDel""#, 
         "H\u{ABCD}el", vec![str_lit!(IsId::new(2), 0, 10)]
     } //                          0123456789012345
     test_case!{ with message, r#""H\uABCHel\uABgC""#, vec![str_lit!(0, 16)], make_messages![ // TODO: according to new char lit parser's policy, this should be str_lit!(0, 15)
-        Message::with_help_by_str(error_strings::InvalidUnicodeCharEscape, vec![
-            (Span::new(2, 2), error_strings::UnicodeCharEscapeStartHere),
-            (Span::new(7, 7), error_strings::UnicodeCharEscapeInvalidChar)
+        Message::with_help_by_str(strings::InvalidUnicodeCharEscape, vec![
+            (Span::new(2, 2), strings::UnicodeCharEscapeStartHere),
+            (Span::new(7, 7), strings::UnicodeCharEscapeInvalidChar)
         ], vec![
-            error_strings::UnicodeCharEscapeHelpSyntax,
+            strings::UnicodeCharEscapeHelpSyntax,
         ]),
-        Message::with_help_by_str(error_strings::InvalidUnicodeCharEscape, vec![
-            (Span::new(10, 10), error_strings::UnicodeCharEscapeStartHere),
-            (Span::new(14, 14), error_strings::UnicodeCharEscapeInvalidChar)
+        Message::with_help_by_str(strings::InvalidUnicodeCharEscape, vec![
+            (Span::new(10, 10), strings::UnicodeCharEscapeStartHere),
+            (Span::new(14, 14), strings::UnicodeCharEscapeInvalidChar)
         ], vec![
-            error_strings::UnicodeCharEscapeHelpSyntax,
+            strings::UnicodeCharEscapeHelpSyntax,
         ])
     ]} //                         012345678901
     test_case!{ with message, r#""H\U0011ABCD""#, vec![str_lit!(0, 12)], make_messages![ // TODO: same as before, this should be str_lit!(0, 11)
-        Message::with_help(error_strings::InvalidUnicodeCharEscape.to_owned(), vec![
-            (Span::new(2, 11), error_strings::UnicodeCharEscapeHere.to_owned()),
+        Message::with_help(strings::InvalidUnicodeCharEscape.to_owned(), vec![
+            (Span::new(2, 11), strings::UnicodeCharEscapeHere.to_owned()),
         ], vec![
-            format!("{}{}", error_strings::UnicodeCharEscapeCodePointValueIs, "0011ABCD".to_owned()),
-            error_strings::UnicodeCharEscapeHelpValue.to_owned(),
+            format!("{}{}", strings::UnicodeCharEscapeCodePointValueIs, "0011ABCD".to_owned()),
+            strings::UnicodeCharEscapeHelpValue.to_owned(),
         ])
     ]}
     test_case!{ with message, r#""H\u""#, vec![str_lit!(0, 4)], make_messages![
-        Message::with_help_by_str(error_strings::UnexpectedStringLiteralEnd, vec![
-            (Span::new(0, 0), error_strings::StringLiteralStartHere),
-            (Span::new(2, 2), error_strings::UnicodeCharEscapeStartHere),
-            (Span::new(4, 4), error_strings::StringLiteralEndHere),
+        Message::with_help_by_str(strings::UnexpectedStringLiteralEnd, vec![
+            (Span::new(0, 0), strings::StringLiteralStartHere),
+            (Span::new(2, 2), strings::UnicodeCharEscapeStartHere),
+            (Span::new(4, 4), strings::StringLiteralEndHere),
         ], vec![
-            error_strings::UnicodeCharEscapeHelpSyntax,
+            strings::UnicodeCharEscapeHelpSyntax,
         ])
     ]}
     test_case!{ with message, r#""h\U123"#, vec![str_lit!(0, 7)], make_messages![
-        Message::new_by_str(error_strings::UnexpectedEOF, vec![
-            (Span::new(0, 0), error_strings::StringLiteralStartHere),
-            (Span::new(7, 7), error_strings::EOFHere)
+        Message::new_by_str(strings::UnexpectedEOF, vec![
+            (Span::new(0, 0), strings::StringLiteralStartHere),
+            (Span::new(7, 7), strings::EOFHere)
         ])
     ]}
     test_case!{ with message, r#""he\"#, vec![str_lit!(0, 4)], make_messages![
-        Message::new_by_str(error_strings::UnexpectedEOF, vec![
-            (Span::new(0, 0), error_strings::StringLiteralStartHere),
-            (Span::new(4, 4), error_strings::EOFHere)
+        Message::new_by_str(strings::UnexpectedEOF, vec![
+            (Span::new(0, 0), strings::StringLiteralStartHere),
+            (Span::new(4, 4), strings::EOFHere)
         ])
     ]}
 
@@ -317,9 +312,9 @@ fn v1_base() {
         r"hell\u\no", vec![rstr_lit!(IsId::new(2), 0, 11)]
     }
     test_case!{ with message, r#"R"he"#, vec![rstr_lit!(0, 4)], make_messages![
-        Message::new_by_str(error_strings::UnexpectedEOF, vec![
-            (Span::new(0, 0), error_strings::StringLiteralStartHere),
-            (Span::new(4, 4), error_strings::EOFHere)
+        Message::new_by_str(strings::UnexpectedEOF, vec![
+            (Span::new(0, 0), strings::StringLiteralStartHere),
+            (Span::new(4, 4), strings::EOFHere)
         ])
     ]}
 
@@ -328,88 +323,88 @@ fn v1_base() {
     test_case!{ r"'\t'", vec![ch_lit!('\t', 0, 3)] }
     test_case!{ r"'\uABCD'", vec![ch_lit!('\u{ABCD}', 0, 7)] }
     test_case!{ with message, "''", vec![ch_lit!(0, 1)], make_messages![
-        Message::with_help_by_str(error_strings::EmptyCharLiteral, vec![
-            (Span::new(0, 1), error_strings::CharLiteralHere), 
+        Message::with_help_by_str(strings::EmptyCharLiteral, vec![
+            (Span::new(0, 1), strings::CharLiteralHere), 
         ], vec![
-            error_strings::CharLiteralSyntaxHelp1
+            strings::CharLiteralSyntaxHelp1
         ])
     ]}
     test_case!{ with message, "'ABC'", vec![ch_lit!(0, 4)], make_messages![
-        Message::new_by_str(error_strings::CharLiteralTooLong, vec![
-            (Span::new(0, 4), error_strings::CharLiteralHere),
+        Message::new_by_str(strings::CharLiteralTooLong, vec![
+            (Span::new(0, 4), strings::CharLiteralHere),
         ])
     ]}
     test_case!{ with message, r"'\c'", vec![ch_lit!(0, 3)], make_messages![
-        Message::new(format!("{} '\\{}'", error_strings::UnknownCharEscape, 'c'), vec![
-            (Span::new(0, 0), error_strings::CharLiteralStartHere.to_owned()), 
-            (Span::new(1, 1), error_strings::UnknownCharEscapeHere.to_owned()),
+        Message::new(format!("{} '\\{}'", strings::UnknownCharEscape, 'c'), vec![
+            (Span::new(0, 0), strings::CharLiteralStartHere.to_owned()), 
+            (Span::new(1, 1), strings::UnknownCharEscapeHere.to_owned()),
         ])
     ]} //         012345
     test_case!{ with message, r"'\uBG'", vec![ch_lit!(0, 5)], make_messages![
-        Message::with_help_by_str(error_strings::InvalidUnicodeCharEscape, vec![
-            (Span::new(1, 1), error_strings::UnicodeCharEscapeStartHere), 
-            (Span::new(4, 4), error_strings::UnicodeCharEscapeInvalidChar)
+        Message::with_help_by_str(strings::InvalidUnicodeCharEscape, vec![
+            (Span::new(1, 1), strings::UnicodeCharEscapeStartHere), 
+            (Span::new(4, 4), strings::UnicodeCharEscapeInvalidChar)
         ], vec![
-            error_strings::UnicodeCharEscapeHelpSyntax,
+            strings::UnicodeCharEscapeHelpSyntax,
         ]),
-        Message::with_help_by_str(error_strings::UnexpectedCharLiteralEnd, vec![
-            (Span::new(0, 5), error_strings::CharLiteralHere),
+        Message::with_help_by_str(strings::UnexpectedCharLiteralEnd, vec![
+            (Span::new(0, 5), strings::CharLiteralHere),
         ], vec![
-            error_strings::UnicodeCharEscapeHelpSyntax
+            strings::UnicodeCharEscapeHelpSyntax
         ])
     ]}
     test_case!{ with message, r"'\U0011ABCD'", vec![ch_lit!(0, 11)], make_messages![
-        Message::with_help(error_strings::InvalidUnicodeCharEscape.to_owned(), vec![
-            (Span::new(1, 10), error_strings::UnicodeCharEscapeHere.to_owned()), 
+        Message::with_help(strings::InvalidUnicodeCharEscape.to_owned(), vec![
+            (Span::new(1, 10), strings::UnicodeCharEscapeHere.to_owned()), 
         ], vec![
-            format!("{}{}", error_strings::UnicodeCharEscapeCodePointValueIs, "0011ABCD".to_owned()),
-            error_strings::UnicodeCharEscapeHelpValue.to_owned(),
+            format!("{}{}", strings::UnicodeCharEscapeCodePointValueIs, "0011ABCD".to_owned()),
+            strings::UnicodeCharEscapeHelpValue.to_owned(),
         ])
     ]}
     test_case!{ with message, r"'\na'", vec![ch_lit!(0, 4)], make_messages![
-        Message::new_by_str(error_strings::CharLiteralTooLong, vec![
-            (Span::new(0, 4), error_strings::CharLiteralHere),   
+        Message::new_by_str(strings::CharLiteralTooLong, vec![
+            (Span::new(0, 4), strings::CharLiteralHere),   
         ])
     ]}
     test_case!{ with message, r"'\uABCDA'", vec![ch_lit!(0, 8)], make_messages![
-        Message::new_by_str(error_strings::CharLiteralTooLong, vec![
-            (Span::new(0, 8), error_strings::CharLiteralHere),      
+        Message::new_by_str(strings::CharLiteralTooLong, vec![
+            (Span::new(0, 8), strings::CharLiteralHere),      
         ])
     ]}
     test_case!{ with message, "'", vec![ch_lit!(0, 0)], make_messages![
-        Message::new_by_str(error_strings::UnexpectedEOF, vec![
-            (Span::new(0, 0), error_strings::CharLiteralHere),    
-            (Span::new(1, 1), error_strings::EOFHere)
+        Message::new_by_str(strings::UnexpectedEOF, vec![
+            (Span::new(0, 0), strings::CharLiteralHere),    
+            (Span::new(1, 1), strings::EOFHere)
         ])
     ]}
     test_case!{ with message, r"'\", vec![ch_lit!(0, 1)], make_messages![
-        Message::new_by_str(error_strings::UnexpectedEOF, vec![
-            (Span::new(0, 1), error_strings::CharLiteralHere),      
-            (Span::new(2, 2), error_strings::EOFHere)
+        Message::new_by_str(strings::UnexpectedEOF, vec![
+            (Span::new(0, 1), strings::CharLiteralHere),      
+            (Span::new(2, 2), strings::EOFHere)
         ])
     ]}
     test_case!{ with message, r"'\u", vec![ch_lit!(0, 2)], make_messages![
-        Message::new_by_str(error_strings::UnexpectedEOF, vec![
-            (Span::new(0, 2), error_strings::CharLiteralHere),
-            (Span::new(3, 3), error_strings::EOFHere)
+        Message::new_by_str(strings::UnexpectedEOF, vec![
+            (Span::new(0, 2), strings::CharLiteralHere),
+            (Span::new(3, 3), strings::EOFHere)
         ])
     ]}
     test_case! { with message, r"'A", vec![ch_lit!(0, 1)], make_messages![
-        Message::new_by_str(error_strings::UnexpectedEOF, vec![
-            (Span::new(0, 1), error_strings::CharLiteralHere),
-            (Span::new(2, 2), error_strings::EOFHere)
+        Message::new_by_str(strings::UnexpectedEOF, vec![
+            (Span::new(0, 1), strings::CharLiteralHere),
+            (Span::new(2, 2), strings::EOFHere)
         ])
     ]}
     test_case! { with message, "'ABC", vec![ch_lit!(0, 3)], make_messages![
-        Message::new_by_str(error_strings::UnexpectedEOF, vec![
-            (Span::new(0, 3), error_strings::CharLiteralHere),
-            (Span::new(4, 4), error_strings::EOFHere)
+        Message::new_by_str(strings::UnexpectedEOF, vec![
+            (Span::new(0, 3), strings::CharLiteralHere),
+            (Span::new(4, 4), strings::EOFHere)
         ])
     ]}
     test_case!{ with message, r"'\'AB", vec![ch_lit!(0, 4)], make_messages![
-        Message::new_by_str(error_strings::UnexpectedEOF, vec![
-            (Span::new(0, 4), error_strings::CharLiteralHere),
-            (Span::new(5, 5), error_strings::EOFHere),
+        Message::new_by_str(strings::UnexpectedEOF, vec![
+            (Span::new(0, 4), strings::CharLiteralHere),
+            (Span::new(5, 5), strings::EOFHere),
         ])
     ]}
 }
