@@ -4,6 +4,7 @@ version = "0.2.0"
 edition = "2021"
 
 [features]
+trace_xid = []
 trace_num_lit_parse = []
 trace_v2_parse = []
 trace_char_lit_parse = []

@@ -80,8 +80,8 @@ impl<'chs, F> ILexer<'chs, F, V1Token> for V1Lexer<'chs, F> where F: FileSystem 
                 (State::Nothing, &EOF, eof_pos, _3, _4, _5, _6) => {                // C7: in nothing, meet EOF, return 
                     return (V1Token::EOF, eof_pos);
                 }
-                (State::Nothing, ch, strpos, _3, _4, _5, _6) => {                       // C6: in nothing, meet other, return
-                    return (V1Token::Other(*ch), strpos);
+                (State::Nothing, ch, span, _3, _4, _5, _6) => {                       // C6: in nothing, meet other, return
+                    return (V1Token::Other(*ch), span);
                 }
                 (State::InBlockComment{ start_span }, &'*', _2, &'/', end_pos, _5, _6) => {   // C8: in block, meet */, return
                     self.v0.prepare_skip1();
@@ -124,8 +124,8 @@ impl<'chs, F> ILexer<'chs, F, V1Token> for V1Lexer<'chs, F> where F: FileSystem 
                         }
                     }
                 }
-                (State::InRawStringLiteral{ mut parser }, ch, strpos, _3, _4, _5, _6) => {     // Cx, anything inside r"" is none about this module
-                    match parser.input(*ch, strpos.start, sess.messages) {
+                (State::InRawStringLiteral{ mut parser }, ch, span, _3, _4, _5, _6) => {     // Cx, anything inside r"" is none about this module
+                    match parser.input(*ch, span.start, sess.messages) {
                         RawStringLiteralParserResult::WantMore => {
                             state = State::InRawStringLiteral{ parser: parser };
                         }
@@ -137,8 +137,8 @@ impl<'chs, F> ILexer<'chs, F, V1Token> for V1Lexer<'chs, F> where F: FileSystem 
                         }
                     }
                 }
-                (State::InCharLiteral{ mut parser }, ch, strpos, next_ch, _4, _5, _6) => {     // Cx: anything inside '' is none about this module
-                    match parser.input(*ch, strpos.start, *next_ch, sess.messages) {
+                (State::InCharLiteral{ mut parser }, ch, span, next_ch, _4, _5, _6) => {     // Cx: anything inside '' is none about this module
+                    match parser.input(*ch, span.start, *next_ch, sess.messages) {
                         CharLiteralParserResult::WantMore => {
                             state = State::InCharLiteral{ parser: parser };
                         },

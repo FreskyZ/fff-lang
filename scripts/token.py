@@ -1,5 +1,5 @@
 #!python3
-# fff-lang
+
 # separator and keyword definition generateor
 
 from functools import reduce
@@ -585,38 +585,38 @@ class Keywords(object):
 
         return b
 
-# main
-separators = Separators(SEPARATOR_DEF_FILE)
-keywords = Keywords(KEYWORD_DEF_FILE)
+if __name__ == '__main__':
+    separators = Separators(SEPARATOR_DEF_FILE)
+    keywords = Keywords(KEYWORD_DEF_FILE)
 
-separator_def = separators.format()
-keyword_def = keywords.format()
-with open(SEPARATOR_DEF_FILE, 'w') as file:
-    file.write(separator_def)
-with open(KEYWORD_DEF_FILE, 'w') as file:
-    file.write(keyword_def)
+    separator_def = separators.format()
+    keyword_def = keywords.format()
+    with open(SEPARATOR_DEF_FILE, 'w') as file:
+        file.write(separator_def)
+    with open(KEYWORD_DEF_FILE, 'w') as file:
+        file.write(keyword_def)
 
-if len(sys.argv) == 1:
-    print(separators)
-    print(keywords)
-    print("use $(token.py gen) to generate")
+    if len(sys.argv) == 1:
+        print(separators)
+        print(keywords)
+        print("use $(token.py gen) to generate")
 
-elif sys.argv[1] == 'check':
-    separators.check()
-    keywords.check()
+    elif sys.argv[1] == 'check':
+        separators.check()
+        keywords.check()
 
-else:
-    this_code = get_this_code(THIS_CODE_BASE)
-    separator_code = generate_header() + separators.generate_code()
-    keyword_code = generate_header() + keywords.generate_code()
-    test_code = generate_header() + 'use super::*;\n\n' + separators.generate_tests(this_code) + keywords.generate_tests(this_code)
+    else:
+        this_code = get_this_code(THIS_CODE_BASE)
+        separator_code = generate_header() + separators.generate_code()
+        keyword_code = generate_header() + keywords.generate_code()
+        test_code = generate_header() + 'use super::*;\n\n' + separators.generate_tests(this_code) + keywords.generate_tests(this_code)
 
-    print(f'write {SEPARATOR_OUTPUT_FILE} {len(separator_code.splitlines())} lines')
-    with open(SEPARATOR_OUTPUT_FILE, 'w') as file:
-        file.write(separator_code)
-    print(f'write {KEYWORD_OUTPUT_FILE} {len(keyword_code.splitlines())} lines')
-    with open(KEYWORD_OUTPUT_FILE, 'w') as file:
-        file.write(keyword_code)
-    print(f'write {TEST_OUTPUT_FILE} {len(test_code.splitlines())} lines')
-    with open(TEST_OUTPUT_FILE, 'w') as file:
-        file.write(test_code)
+        print(f'write {SEPARATOR_OUTPUT_FILE} {len(separator_code.splitlines())} lines')
+        with open(SEPARATOR_OUTPUT_FILE, 'w') as file:
+            file.write(separator_code)
+        print(f'write {KEYWORD_OUTPUT_FILE} {len(keyword_code.splitlines())} lines')
+        with open(KEYWORD_OUTPUT_FILE, 'w') as file:
+            file.write(keyword_code)
+        print(f'write {TEST_OUTPUT_FILE} {len(test_code.splitlines())} lines')
+        with open(TEST_OUTPUT_FILE, 'w') as file:
+            file.write(test_code)

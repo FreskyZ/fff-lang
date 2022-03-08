@@ -223,7 +223,7 @@ const ASCII_ARRAY: &'static [(char, &'static str)] = &[
     ('=', "Equals Sign"),
     ('>', "Greater-Than Sign"), ];
 
-pub fn check_unicode_char(maybe_unicode: char) -> Option<(char, &'static str, char, &'static str)> {
+pub fn check_confusable(maybe_unicode: char) -> Option<(char, &'static str, char, &'static str)> {
     
     let (unicode_ch, unicode_name, ascii_char) = match UNICODE_ARRAY.iter().find(|&&(c, _, _)| c == maybe_unicode) {
         Some(&(ch, name, asc)) => (ch, name, asc),
@@ -239,15 +239,22 @@ pub fn check_unicode_char(maybe_unicode: char) -> Option<(char, &'static str, ch
 }
 
 #[cfg(test)]
+mod tests;
+
+mod xid;
+
+pub use xid::{is_xid_continue, is_xid_start}; 
+
+#[cfg(test)]
 #[test]
 fn uni_sep() {
 
-    assert_eq!(check_unicode_char('。'), Some(('。', "Ideographic Full Stop", '.', "Period")));
-    assert_eq!(check_unicode_char('.'), None);
-    assert_eq!(check_unicode_char('⧹'), Some(('⧹', "Big Reverse Solidus", '\\', "Backslash")));
-    assert_eq!(check_unicode_char('\\'), None);
-    assert_eq!(check_unicode_char('；'), Some(('；', "Fullwidth Semicolon", ';', "Semicolon")));
-    assert_eq!(check_unicode_char(';'), None);
+    assert_eq!(check_confusable('。'), Some(('。', "Ideographic Full Stop", '.', "Period")));
+    assert_eq!(check_confusable('.'), None);
+    assert_eq!(check_confusable('⧹'), Some(('⧹', "Big Reverse Solidus", '\\', "Backslash")));
+    assert_eq!(check_confusable('\\'), None);
+    assert_eq!(check_confusable('；'), Some(('；', "Fullwidth Semicolon", ';', "Semicolon")));
+    assert_eq!(check_confusable(';'), None);
 }
 
 // this means unicode char hint should be exactly after v1 before identifier parser
