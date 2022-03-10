@@ -120,6 +120,46 @@ const XID_START_LOOKUP_OFFSETS: &[u64] = &[
     648820759333967374, 5278563121561147665, 2529636553714567168, 1127953195, 
 ];
 
+pub fn is_xid_start(c: char) -> bool {
+    let cp = c as u32;
+    if cp & 0xFFFF_FFC0 == 0x40 {
+        let test = 1 << (cp & 0x3F);
+        XID_START_ASCII_2 & test == test
+    } else if cp & 0xFFFF_FFC0 == 0 {
+        let test = 1 << cp;
+        XID_START_ASCII_1 & test == test
+    } else if cp > XID_START_NOT_LARGE_MAX {
+        XID_START_VERY_LARGE_RANGES.iter().any(|&(begin, end)| begin <= cp && end >= cp)
+    } else {
+        const RUN_INDEX_SHIFTS: &[i32] = &[0, 10, 20, 30, 40, 50];
+        macro_rules! run_byte { ($index:expr) => ((XID_START_RUNS[$index >> 3] >> (($index & 7) << 3)) & 0xFF); }
+        let lookup_index = (cp >> 7) as usize;
+        let run_index_packed = XID_START_LOOKUP_INDICES[lookup_index / 6];
+        let mut run_index = ((run_index_packed >> RUN_INDEX_SHIFTS[lookup_index % 6]) & 0x3FF) as usize;
+        let offset_packed = XID_START_LOOKUP_OFFSETS[lookup_index >> 3];
+        let offset_run_to_lookup = (offset_packed >> ((lookup_index & 7) << 3)) & 0xFF;
+        let offset_lookup_to_input = ((cp & 0x7F) >> 4) as u64;
+        let mut offset = offset_run_to_lookup + offset_lookup_to_input;
+        #[cfg(feature = "trace_xid")]
+        println!("XID_START char {c:?} point {cp} lookup index {lookup_index} offset1 {offset_run_to_lookup} offset2 {offset_lookup_to_input}");
+        loop {
+            let run_size = run_byte!(run_index * 3 + 2);
+            if run_size >= offset {
+                let run_value = run_byte!(run_index * 3) + (run_byte!(run_index * 3 + 1) << 8);
+                let test = 1 << (cp & 0xF);
+                #[cfg(feature = "trace_xid")]
+                println!("run index {}, run size {} run value {:x} test bit {}", run_index, run_size, run_value, test);
+                break run_value & test == test;
+            } else {
+                #[cfg(feature = "trace_xid")]
+                println!("run index {} run size {} not enough, check next", run_index, run_size);
+                offset -= run_size + 1;
+                run_index += 1;
+            }
+        }
+    }
+}
+
 const XID_CONTINUE_ASCII_1: u64 = 287948901175001088;
 const XID_CONTINUE_ASCII_2: u64 = 576460745995190270;
 const XID_CONTINUE_NOT_LARGE_MAX: u32 = 130041;
@@ -240,46 +280,6 @@ const XID_CONTINUE_LOOKUP_OFFSETS: &[u64] = &[
     576481690319324416, 5206222948723070992, 2457296380876556288, 865817029473088042, 5495583640075377684, 10125354701712284756,
     14755125763349191828, 
 ];
-
-pub fn is_xid_start(c: char) -> bool {
-    let cp = c as u32;
-    if cp & 0xFFFF_FFC0 == 0x40 {
-        let test = 1 << (cp & 0x3F);
-        XID_START_ASCII_2 & test == test
-    } else if cp & 0xFFFF_FFC0 == 0 {
-        let test = 1 << cp;
-        XID_START_ASCII_1 & test == test
-    } else if cp > XID_START_NOT_LARGE_MAX {
-        XID_START_VERY_LARGE_RANGES.iter().any(|&(begin, end)| begin <= cp && end >= cp)
-    } else {
-        const RUN_INDEX_SHIFTS: &[i32] = &[0, 10, 20, 30, 40, 50];
-        macro_rules! run_byte { ($index:expr) => ((XID_START_RUNS[$index >> 3] >> (($index & 7) << 3)) & 0xFF); }
-        let lookup_index = (cp >> 7) as usize;
-        let run_index_packed = XID_START_LOOKUP_INDICES[lookup_index / 6];
-        let mut run_index = ((run_index_packed >> RUN_INDEX_SHIFTS[lookup_index % 6]) & 0x3FF) as usize;
-        let offset_packed = XID_START_LOOKUP_OFFSETS[lookup_index >> 3];
-        let offset_run_to_lookup = (offset_packed >> ((lookup_index & 7) << 3)) & 0xFF;
-        let offset_lookup_to_input = ((cp & 0x7F) >> 4) as u64;
-        let mut offset = offset_run_to_lookup + offset_lookup_to_input;
-        #[cfg(feature = "trace_xid")]
-        println!("XID_START char {c:?} point {cp} lookup index {lookup_index} offset1 {offset_run_to_lookup} offset2 {offset_lookup_to_input}");
-        loop {
-            let run_size = run_byte!(run_index * 3 + 2);
-            if run_size >= offset {
-                let run_value = run_byte!(run_index * 3) + (run_byte!(run_index * 3 + 1) << 8);
-                let test = 1 << (cp & 0xF);
-                #[cfg(feature = "trace_xid")]
-                println!("run index {}, run size {} run value {:x} test bit {}", run_index, run_size, run_value, test);
-                break run_value & test == test;
-            } else {
-                #[cfg(feature = "trace_xid")]
-                println!("run index {} run size {} not enough, check next", run_index, run_size);
-                offset -= run_size + 1;
-                run_index += 1;
-            }
-        }
-    }
-}
 pub fn is_xid_continue(c: char) -> bool {
     let cp = c as u32;
     if cp & 0xFFFF_FFC0 == 0x40 {

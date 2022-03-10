@@ -50,13 +50,14 @@ def get_this_code(codebase):
 class HashChecker(object):
     def __init__(self, items):
         self.items = items
-        self.bucket_size, self.bucket_count = next(iter(sorted(map(self.get_bucket_size_and_number, range(len(items), 256)), key = lambda x: x[0] * x[1])), None)
+        self.bucket_size, self.bucket_count = next(iter(sorted(map(self.get_bucket_size_and_number, range(len(items), len(items) + 256)), key = lambda x: x[0] * x[1])))
+        self.score = self.bucket_count * self.bucket_size / len(self.items)
     def get_bucket_size_and_number(self, moder):
         hash_values = [hashed_value % moder for hashed_value in self.items]
         max_collision_count = max(len(list(filter(lambda x: x == y, hash_values))) for y in set(hash_values))
         return moder, max_collision_count
     def __str__(self):
-        return f'bucket {self.bucket_count} x {self.bucket_size} for {len(self.items)} items, score {self.bucket_count * self.bucket_size / len(self.items):.04}'
+        return f'bucket {self.bucket_count} x {self.bucket_size} for {len(self.items)} items, score {self.score:.04}'
 
 class Separator(object):
     def __init__(self, value, name, index, cats):

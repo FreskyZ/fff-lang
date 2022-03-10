@@ -2,73 +2,6 @@ use crate::source::{IsId, make_source};
 use super::*;
 
 #[test]
-fn v2_non_ascii_ch() {
-    
-    {
-        let messages = &mut MessageCollection::new();
-        assert_eq!('.'.pass_non_ascii_char(Span::new(4, 6), messages), '.');
-
-        let expect_messages = &mut MessageCollection::new();
-        assert_eq!(messages, expect_messages);
-    }
-    
-    {
-        let messages = &mut MessageCollection::new();
-        assert_eq!('\\'.pass_non_ascii_char(Span::new(4, 6), messages), '\\');
-
-        let expect_messages = &mut MessageCollection::new();
-        assert_eq!(messages, expect_messages);
-    }
-    
-    {
-        let messages = &mut MessageCollection::new();
-        assert_eq!(';'.pass_non_ascii_char(Span::new(4, 6), messages), ';');
-
-        let expect_messages = &mut MessageCollection::new();
-        assert_eq!(messages, expect_messages);
-    }
-
-    {
-        let messages = &mut MessageCollection::new();
-        assert_eq!('。'.pass_non_ascii_char(Span::new(4, 6), messages), '.');
-
-        let expect_messages = &mut MessageCollection::new();
-        expect_messages.push(Message::with_help_by_str(strings::UnexpectedNonASCIIChar, vec![
-            (Span::new(4, 6), ""), 
-        ], vec![
-            &format!("Did you mean `{}`({}) by `{}`({})?", '.', "Period", '。', "Ideographic Full Stop"),
-        ]));
-        assert_eq!(messages, expect_messages);
-    }
-
-    {
-        let messages = &mut MessageCollection::new();
-        assert_eq!('⧹'.pass_non_ascii_char(Span::new(4, 6), messages), '\\');
-
-        let expect_messages = &mut MessageCollection::new();
-        expect_messages.push(Message::with_help_by_str(strings::UnexpectedNonASCIIChar, vec![
-            (Span::new(4, 6), ""), 
-        ], vec![
-            &format!("Did you mean `{}`({}) by `{}`({})?", '\\', "Backslash", '⧹', "Big Reverse Solidus"),
-        ]));
-        assert_eq!(messages, expect_messages);
-    }
-
-    {
-        let messages = &mut MessageCollection::new();
-        assert_eq!('；'.pass_non_ascii_char(Span::new(4, 6), messages), ';');
-
-        let expect_messages = &mut MessageCollection::new();
-        expect_messages.push(Message::with_help_by_str(strings::UnexpectedNonASCIIChar, vec![
-            (Span::new(4, 6), ""), 
-        ], vec![
-            &format!("Did you mean `{}`({}) by `{}`({})?", ';', "Semicolon", '；', "Fullwidth Semicolon"),
-        ]));
-        assert_eq!(messages, expect_messages);
-    }
-}
-
-#[test]
 fn v2_base() {
     use crate::source::{SourceContext, VirtualFileSystem, IsId, make_source};
         
@@ -250,17 +183,17 @@ fn v2_base() {
         Message::with_help_by_str(strings::UnexpectedNonASCIIChar, vec![
             (Span::new(5, 5), ""), 
         ], vec![
-            &format!("Did you mean `{}`({}) by `{}`({})?", ',', "Comma", '，', "Fullwidth Comma"),
+            &format!("Did you mean `{}`({}) by `{}`({})?", ',', "COMMA", '，', "FULLWIDTH COMMA"),
         ]),
         Message::with_help_by_str(strings::UnexpectedNonASCIIChar, vec![
             (Span::new(14, 14), ""), 
         ], vec![
-            &format!("Did you mean `{}`({}) by `{}`({})?", '.', "Period", '。', "Ideographic Full Stop"),
+            &format!("Did you mean `{}`({}) by `{}`({})?", '.', "FULL STOP", '。', "IDEOGRAPHIC FULL STOP"),
         ]),
         Message::with_help_by_str(strings::UnexpectedNonASCIIChar, vec![
             (Span::new(18, 18), ""), 
         ], vec![
-            &format!("Did you mean `{}`({}) by `{}`({})?", ']', "Right Square Bracket", '】', "Right Black Lenticular Bracket"),
+            &format!("Did you mean `{}`({}) by `{}`({})?", ']', "RIGHT SQUARE BRACKET", '】', "RIGHT BLACK LENTICULAR BRACKET"),
         ]),
     ]}
 

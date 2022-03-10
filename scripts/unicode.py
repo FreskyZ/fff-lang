@@ -9,17 +9,36 @@ import random
 import re
 import sys
 
+from token import Separators, SEPARATOR_DEF_FILE, format_wrap, HashChecker
+
 # IDENTIFIER AND PATTERN SYNTAX
 # https://unicode.org/reports/tr31/
 # https://unicode.org/Public/UCD/latest/ucd/DerivedCoreProperties.txt
 DCP_FILE = '/tmp/DerivedCoreProperties.txt'
+# EMOJI
+# https://www.unicode.org/reports/tr51/
+# https://www.unicode.org/Public/UCD/latest/ucd/emoji/emoji-data.txt
+# additional acceptable identifier code points
+# tr31 does not include them, but support them is fucking interesting
+EMOJI_FILE = '/tmp/emoji-data.txt'
 # SECURITY CONSIDERATIONS
 # https://www.unicode.org/reports/tr36/
 # https://unicode.org/Public/security/latest/confusables.txt
-COFUSABLE_FILE = '/tmp/confusables.txt'
+CONFUSABLE_FILE = '/tmp/confusables.txt'
+# additional confusable included in this file
+# - it makes me confuse that confusables.txt does not include them
+#   e.g. CJK period in my original manual test
+# - it also makes me confuse that rust parser says its data comes from
+#   confusables.txt but included some of these but does not mention that
+# - this file claims it comes from UnicodeData.txt but these additional items
+#   seems to be added by human
+# - there are approximately more than 100 more additional items, so need to 
+#   parse this file, although this file claims it is not designed to be parsed
+# https://www.unicode.org/Public/UCD/latest/ucd/NamesList.txt
+NAME_FILE = '/tmp/NamesList.txt'
 
 XID_OUTPUT_FILE = 'src/lexical/unicode/xid.rs'
-CONFUSABLE_OUTPUT_FILE = 'src/lexical/unicode/confusable.rs'
+CONFUSABLE_OUTPUT_FILE = 'src/lexical/unicode/security.rs'
 TEST_OUTPUT_FILE = 'src/lexical/unicode/tests.rs'
 
 # use $(unicode.py detail 2> unicode-detail.txt) with $(cargo run --features=trace_xid) to debug xid
@@ -27,9 +46,13 @@ DETAIL = 'detail' in sys.argv
 
 RE_XID_START = re.compile('^(?P<begin>\w{4,5})(?:\.\.)?(?P<end>\w{4,5})?\s*;\sXID_Start')
 RE_XID_CONTINUE = re.compile('^(?P<begin>\w{4,5})(?:\.\.)?(?P<end>\w{4,5})?\s*;\sXID_Continue')
+RE_CONFUSABLE = re.compile('^(?P<from>\w{4,5}) ;\\t00(?P<to>\w{2}) ;.*\) (?P<fromname>[\w\s\-]+) ')
+RE_NAME_START = re.compile('^00(?P<point>\w\w)\t(?P<name>[\w\s\-<>]+)$')
+RE_NAME_CONFUSABLE = re.compile('^\tx \((?P<name>.*) - (?P<from>\w+)')
 
 Run = namedtuple('Run', 'start, value, size')
 Lookup = namedtuple('Lookup', 'start, run_index, offset')
+Confusable = namedtuple('Confusable', ['f', 't', 'name'])
 
 def collect_xid_points(header, dcp_file, expr):
     points = []
@@ -209,7 +232,7 @@ def generate_xid_arrays(ident, asciis, runs, lookups, boundary, vlranges):
 
     return b
 
-def generate_is_xid_fn(name, ident):
+def generate_xid_function(name, ident):
     b = ''
     
     b += f'pub fn {name}(c: char) -> bool {{\n'
@@ -325,11 +348,188 @@ def generate_xid_tests(name, points, vlranges):
 
     return b
 
-def generate_confusable():
+def collect_confusables(separator_file, names_file, confusable_file):
+    confusable_tos = [ord(c) for sep in Separators(separator_file).all_items for c in sep.value]
+    # these are not defined in separator but used in parser
+    confusable_tos.extend((ord(' '), ord('\\'), ord('_'), ord("'"), ord('"')))
+    confusable_tos = [[c, ''] for c in sorted(set(confusable_tos))]
+
+    current_to = 0
+    confusables = []
+    for line in open(names_file).readlines():
+        match = RE_NAME_START.match(line)
+        if match:
+            point = int('0x' + match.group('point'), 16)
+            if point >= 127:
+                break
+            confusable_to = next((t for t in confusable_tos if t[0] == point), None)
+            if confusable_to is not None:
+                current_to = point
+                confusable_to[1] = match.group('name').strip()
+            else:
+                current_to = 0
+        if current_to:
+            match = RE_NAME_CONFUSABLE.match(line)
+            if match:
+                confusables.append(Confusable(int('0x' + match.group('from'), 16), current_to, match.group('name').upper()))
+
+    
+
+    for match in (m for m in (RE_CONFUSABLE.match(line) for line in open(confusable_file).readlines()) if m):
+        from_point = int('0x' + match.group('from'), 16)
+        to_point = int('0x' + match.group('to'), 16)
+        if next((p for p in confusable_tos if p[0] == to_point), None):
+            confusables.append(Confusable(from_point, to_point, match.group('fromname')))
+
+    # it's more confuse that fullwidth comma is not in confusable.txt and NamesList.txt, which can be easily inputed in my environment
+    # after searching NamesList.txt, I found that the confusable list is recursive. I prefer manually add for them
+    # they are appended last to have highest priority
+    # confusables.append(Confusable(0xb7, ord('`'), 'MIDDLE DOT'))
+    confusables.append(Confusable(0x2014, ord('_'), 'EM DASH'))
+    confusables.append(Confusable(0x2018, ord('\''), 'LEFT SINGLE QUOTATION MARK'))
+    confusables.append(Confusable(0x2019, ord('\''), 'RIGHT SINGLE QUOTATION MARK'))
+    confusables.append(Confusable(0x201C, ord('"'), 'LEFT DOUBLE QUOTATION MARK'))
+    confusables.append(Confusable(0x201D, ord('"'), 'RIGHT DOUBLE QUOTATION MARK'))
+    confusables.append(Confusable(0x2026, ord('^'), 'HORIZONTAL ELLIPSIS'))
+    confusables.append(Confusable(0x3001, ord('\\'), 'IDEOGRAPHIC COMMA'))
+    confusables.append(Confusable(0x3002, ord('.'), 'IDEOGRAPHIC FULL STOP'))
+    confusables.append(Confusable(0x300A, ord('<'), 'LEFT DOUBLE ANGLE BRACKET'))
+    confusables.append(Confusable(0x300B, ord('>'), 'RIGHT DOUBLE ANGLE BRACKET'))
+    confusables.append(Confusable(0x3010, ord('['), 'LEFT BLACK LENTICULAR BRACKET'))
+    confusables.append(Confusable(0x3011, ord(']'), 'RIGHT BLACK LENTICULAR BRACKET'))
+    confusables.append(Confusable(0xFF1B, ord(';'), 'FULL WIDTH SEMICOLON'))
+    confusables.append(Confusable(0xFF01, ord('!'), 'FULLWIDTH EXCLAMATION MARK'))
+    confusables.append(Confusable(0xFF0C, ord(','), 'FULLWIDTH COMMA'))
+    confusables.append(Confusable(0xFF08, ord('('), 'FULLWIDTH LEFT PARENTHESIS'))
+    confusables.append(Confusable(0xFF09, ord(')'), 'FULLWIDTH RIGHT PARENTHESIS'))
+    confusables.append(Confusable(0xFF1A, ord(':'), 'FULLWIDTH COLON'))
+    # confusables.append(Confusable(0xFF1F, ord('?'), 'FULLWIDTH QUESTION MARK'))
+    # confusables.append(Confusable(0xFFE5, ord('$'), 'FULLWIDTH YEN SIGN'))
+
+    # reverse sort and dedup, which means newer items are kept
+    new_confusables = []
+    for c in list(sorted(confusables, key=lambda c: c.f)):
+        if next((e for e in new_confusables if e.f == c.f), None) is None:
+            new_confusables.append(c)
+    confusables = list(sorted(new_confusables, key=lambda r: (r.t, r.f)))
+
+    if DETAIL:
+        for to in confusable_tos:
+            print(f'confusable to U+{to[0]:04X} \'{chr(to[0])}\' {to[1]}')
+        for conf in confusables:
+            print(conf)
+    print(f'confusable target count {len(confusable_tos)}')
+    print(f'confusable count {len(confusables)}')
+    return confusable_tos, confusables
+
+def generate_confusable(confusable_tos, confusables):
     b = ''
 
+    # # try find mod to make only one bucket
+    # # result for v14.0 is % 547: 3 x 277 for 277 items, score 3.0
+    # best_score = 100
+    # best_score_moders = []
+    # for i in range(len(confusables) // 6, 166):
+    #     moder = i * 6 - 1
+    #     result = HashChecker([c.f % moder for c in confusables])
+    #     if result.score < best_score:
+    #         best_score = result.score
+    #         best_score_moders = [moder]
+    #     elif result.score == best_score:
+    #         best_score_moders.append(moder)
+    #     print(f'% {moder}: {result}')
+    #     moder = i * 6 + 1
+    #     result = HashChecker([c.f % moder for c in confusables])
+    #     if result.score < best_score:
+    #         best_score = result.score
+    #         best_score_moders = [moder]
+    #     elif result.score == best_score:
+    #         best_score_moders.append(moder)
+    #     print(f'% {moder}: {result}')
+    # print(f'best score {best_score} moders {best_score_moders}')
+    # return b
+
+    moder = 547
+    hash_config = HashChecker([c.f % moder for c in confusables])
+    assert hash_config.bucket_count == 3
+    print(f'confusable config % {moder} {hash_config}')
+
+    bucket1 = [0 for _ in range(0, hash_config.bucket_size)]
+    bucket2 = [0 for _ in range(0, hash_config.bucket_size)]
+    bucket3 = [0 for _ in range(0, hash_config.bucket_size)]
+    for (name_index, confusable) in enumerate(confusables):
+        subscription_index = next((i for i, t in enumerate(confusable_tos) if t[0] == confusable.t), None)
+        assert subscription_index is not None, f"subscription index is none for {confusable}"
+        hash_value = confusable.f % moder % hash_config.bucket_size
+        if bucket1[hash_value] != 0:
+            if bucket2[hash_value] != 0:
+                bucket3[hash_value] = (confusable.f, name_index, subscription_index)
+            else:
+                bucket2[hash_value] = (confusable.f, name_index, subscription_index)
+        else:
+            bucket1[hash_value] = (confusable.f, name_index, subscription_index)
+    b += '\n'
+    b += 'const EMPTY: (u32, u16, u8) = (0, 0, 0);\n'
+    b += 'const BUCKET1: &[(u32, u16, u8)] = &[\n'
+    b += format_wrap(1, [str(i) if i != 0 else 'EMPTY' for i in bucket1])
+    b += '\n'
+    b += '];\n'
+    b += 'const BUCKET2: &[(u32, u16, u8)] = &[\n'
+    b += format_wrap(1, [str(i) if i != 0 else 'EMPTY' for i in bucket2])
+    b += '\n'
+    b += '];\n'
+    b += 'const BUCKET3: &[(u32, u16, u8)] = &[\n'
+    b += format_wrap(1, [str(i) if i != 0 else 'EMPTY' for i in bucket3])
+    b += '\n'
+    b += '];\n'
+    b += 'const NAMES: &[&str] = &[\n'
+    b += format_wrap(1, [f'"{c.name}"' for c in confusables])
+    b += '\n'
+    b += '];\n'
+    b += 'const SUBSCRIPTIONS: &[(char, &str)] = &[\n'
+    b += format_wrap(1, [f'(\'' + ("\\'" if chr(t[0]) == "'" else "\\\\" if chr(t[0]) == "\\" else chr(t[0])) + f'\', "{t[1]}")' for t in confusable_tos])
+    b += '\n'
+    b += '];\n'
+
+    b += '\n'
     b += 'pub fn check_confusable(c: char) -> Option<(char, &\'static str, char, &\'static str)> {\n'
-    b += '    Some((c, "", c, ""))\n'
+    b += '    let cp = c as u32;\n'
+    b += f'    let index = (cp % {moder} % {hash_config.bucket_size}) as usize;\n'
+    b += '    let (match1, match2, match3) = (BUCKET1[index], BUCKET2[index], BUCKET3[index]);\n'
+    b += '    if match1.0 == cp {\n'
+    b += '        let name = NAMES[match1.1 as usize];\n'
+    b += '        let (subscription_char, subscription_name) = SUBSCRIPTIONS[match1.2 as usize];\n'
+    b += '        Some((c, name, subscription_char, subscription_name))\n'
+    b += '    } else if match2.0 == cp {\n'
+    b += '        let name = NAMES[match2.1 as usize];\n'
+    b += '        let (subscription_char, subscription_name) = SUBSCRIPTIONS[match2.2 as usize];\n'
+    b += '        Some((c, name, subscription_char, subscription_name))\n'
+    b += '    } else if match3.0 == cp {\n'
+    b += '        let name = NAMES[match3.1 as usize];\n'
+    b += '        let (subscription_char, subscription_name) = SUBSCRIPTIONS[match3.2 as usize];\n'
+    b += '        Some((c, name, subscription_char, subscription_name))\n'
+    b += '    } else {\n'
+    b += '        None\n'
+    b += '    }\n'
+    b += '}\n'
+
+    return b
+
+def generate_confusable_tests(confusable_tos, confusables):
+    b = ''
+
+    b += '\n'
+    b += '#[test]\n'
+    b += 'fn test_check_confusables() {\n'
+
+    def quote(c):
+        return f"\{c}" if c == "'" or c == '\\' else c
+
+    # full positive cover
+    for c in confusables:
+        to_name = next(t[1] for t in confusable_tos if t[0] == c.t)
+        b += f'    assert_eq!(check_confusable(\'{quote(chr(c.f))}\'), Some((\'{quote(chr(c.f))}\', "{c.name}", \'{quote(chr(c.t))}\', "{to_name}")));\n'
+
     b += '}\n'
 
     return b
@@ -340,21 +540,27 @@ if __name__ == '__main__':
     start_points.append(0x5F) # allow underline as id start, this is optional according to standard
     start_ascii, start_runs, start_lookups = process_xid_points_rle('start', start_points)
     start_arrays = generate_xid_arrays('XID_START', start_ascii, start_runs, start_lookups, max(start_points), start_vlranges)
-    start_is_xid_fn = generate_is_xid_fn('is_xid_start', 'XID_START')
-    start_test_code = generate_xid_tests('is_xid_start', start_points, start_vlranges)
+    start_function = generate_xid_function('is_xid_start', 'XID_START')
 
     continue_points, continue_vlranges = collect_xid_points('continue', DCP_FILE, RE_XID_CONTINUE)
     continue_ascii, continue_runs, continue_lookups = process_xid_points_rle('continue', continue_points)
     continue_arrays = generate_xid_arrays('XID_CONTINUE', continue_ascii, continue_runs, continue_lookups, max(continue_points), continue_vlranges)
-    continue_is_xid_fn = generate_is_xid_fn('is_xid_continue', 'XID_CONTINUE')
+    continue_function = generate_xid_function('is_xid_continue', 'XID_CONTINUE')
+
+    xid_code = generate_header() + start_arrays + '\n' + start_function + '\n' + continue_arrays + continue_function
+
+    confusable_tos, confusables = collect_confusables(SEPARATOR_DEF_FILE, NAME_FILE, CONFUSABLE_FILE)
+    confusable_code = generate_confusable(confusable_tos, confusables)
+
+    start_test_code = generate_xid_tests('is_xid_start', start_points, start_vlranges)
     continue_test_code = generate_xid_tests('is_xid_continue', continue_points, continue_vlranges)
-
-    total_code = generate_header() + start_arrays + '\n' + continue_arrays + '\n' + start_is_xid_fn + continue_is_xid_fn
-
-    total_test_code = generate_header() + 'use super::*;\n' + start_test_code + continue_test_code
+    confusable_test_code = generate_confusable_tests(confusable_tos, confusables)
+    test_code = generate_header() + 'use super::*;\n' + start_test_code + continue_test_code + confusable_test_code
 
     with open(XID_OUTPUT_FILE, 'w') as file:
-        file.write(total_code)
+        file.write(xid_code)
+    with open(CONFUSABLE_OUTPUT_FILE, 'w') as file:
+        file.write(confusable_code)
     if 'test' in sys.argv:
         with open(TEST_OUTPUT_FILE, 'w') as file:
-            file.write(total_test_code)
+            file.write(test_code)
