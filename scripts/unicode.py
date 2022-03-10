@@ -46,6 +46,7 @@ DETAIL = 'detail' in sys.argv
 
 RE_XID_START = re.compile('^(?P<begin>\w{4,5})(?:\.\.)?(?P<end>\w{4,5})?\s*;\sXID_Start')
 RE_XID_CONTINUE = re.compile('^(?P<begin>\w{4,5})(?:\.\.)?(?P<end>\w{4,5})?\s*;\sXID_Continue')
+RE_EMOJI = re.compile('^(?P<begin>\w{4,5})(?:\.\.(?P<end>\w{4,5}))?\s*;\sEmoji_Presentation')
 RE_CONFUSABLE = re.compile('^(?P<from>\w{4,5}) ;\\t00(?P<to>\w{2}) ;.*\) (?P<fromname>[\w\s\-]+) ')
 RE_NAME_START = re.compile('^00(?P<point>\w\w)\t(?P<name>[\w\s\-<>]+)$')
 RE_NAME_CONFUSABLE = re.compile('^\tx \((?P<name>.*) - (?P<from>\w+)')
@@ -72,6 +73,24 @@ def collect_xid_points(header, dcp_file, expr):
             points.append(begin)
     print(f'{header} points: {len(points)} very large ranges: {len(vlranges)}')
     return points, vlranges
+
+def collect_emoji_points(emoji_file):
+    points = []
+    for match in (m for m in (RE_EMOJI.match(line) for line in open(emoji_file).readlines()) if m):
+        begin = int('0x' + match.group('begin'), 16)
+        end = int('0x' + match.group('end'), 16) if match.group('end') else 0
+        assert begin < 0x20000 # no very large for emoji
+        if end:
+            for point in range(begin, end + 1):
+                points.append(point)
+        else:
+            points.append(begin)
+    if DETAIL:
+        for point in points:
+            print(chr(point), end='')
+    print()
+    print(f'emoji points: {len(points)}')
+    return points
 
 def process_xid_points_rle(header, points):
 
@@ -426,7 +445,7 @@ def generate_confusable(confusable_tos, confusables):
     b = ''
 
     # # try find mod to make only one bucket
-    # # result for v14.0 is % 547: 3 x 277 for 277 items, score 3.0
+    # # result for v14.0 is % 491: 3 x 273 for 273 items, score 3.0
     # best_score = 100
     # best_score_moders = []
     # for i in range(len(confusables) // 6, 166):
@@ -449,7 +468,7 @@ def generate_confusable(confusable_tos, confusables):
     # print(f'best score {best_score} moders {best_score_moders}')
     # return b
 
-    moder = 547
+    moder = 491
     hash_config = HashChecker([c.f % moder for c in confusables])
     assert hash_config.bucket_count == 3
     print(f'confusable config % {moder} {hash_config}')
@@ -517,18 +536,25 @@ def generate_confusable(confusable_tos, confusables):
 
 def generate_confusable_tests(confusable_tos, confusables):
     b = ''
+    def quote(c):
+        return f"\{c}" if c == "'" or c == '\\' else c
 
     b += '\n'
     b += '#[test]\n'
     b += 'fn test_check_confusables() {\n'
 
-    def quote(c):
-        return f"\{c}" if c == "'" or c == '\\' else c
-
     # full positive cover
     for c in confusables:
         to_name = next(t[1] for t in confusable_tos if t[0] == c.t)
         b += f'    assert_eq!(check_confusable(\'{quote(chr(c.f))}\'), Some((\'{quote(chr(c.f))}\', "{c.name}", \'{quote(chr(c.t))}\', "{to_name}")));\n'
+
+    # random negative
+    for _ in range(0, 100):
+        point = random.randint(0, 0x20000)
+        if 0xD800 <= point <= 0xE000:
+            continue
+        if next((t for t in confusables if t.f == point), None) is None:
+            b += f'    assert_eq!(check_confusable(\'{quote(chr(point))}\'), None);\n'
 
     b += '}\n'
 
@@ -536,13 +562,17 @@ def generate_confusable_tests(confusable_tos, confusables):
 
 if __name__ == '__main__':
 
+    emoji_points = collect_emoji_points(EMOJI_FILE)
+    
     start_points, start_vlranges = collect_xid_points('start', DCP_FILE, RE_XID_START)
     start_points.append(0x5F) # allow underline as id start, this is optional according to standard
+    start_points.extend(emoji_points)
     start_ascii, start_runs, start_lookups = process_xid_points_rle('start', start_points)
     start_arrays = generate_xid_arrays('XID_START', start_ascii, start_runs, start_lookups, max(start_points), start_vlranges)
     start_function = generate_xid_function('is_xid_start', 'XID_START')
 
     continue_points, continue_vlranges = collect_xid_points('continue', DCP_FILE, RE_XID_CONTINUE)
+    continue_points.extend(emoji_points)
     continue_ascii, continue_runs, continue_lookups = process_xid_points_rle('continue', continue_points)
     continue_arrays = generate_xid_arrays('XID_CONTINUE', continue_ascii, continue_runs, continue_lookups, max(continue_points), continue_vlranges)
     continue_function = generate_xid_function('is_xid_continue', 'XID_CONTINUE')
@@ -550,6 +580,7 @@ if __name__ == '__main__':
     xid_code = generate_header() + start_arrays + '\n' + start_function + '\n' + continue_arrays + continue_function
 
     confusable_tos, confusables = collect_confusables(SEPARATOR_DEF_FILE, NAME_FILE, CONFUSABLE_FILE)
+    confusables = [c for c in confusables if c.f not in emoji_points]
     confusable_code = generate_confusable(confusable_tos, confusables)
 
     start_test_code = generate_xid_tests('is_xid_start', start_points, start_vlranges)
