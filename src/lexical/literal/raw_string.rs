@@ -5,12 +5,14 @@
 use crate::source::{Position, Span, EOF};
 use crate::diagnostics::{Message, MessageCollection, strings};
 
-#[cfg_attr(test, derive(Debug, Eq, PartialEq))]
+#[cfg_attr(test, derive(Eq, PartialEq))]
+#[derive(Debug)]
 pub enum RawStringLiteralParserResult { 
     WantMore, 
     Finished(Option<String>, Span),
 }
 
+#[derive(Debug)]
 pub struct RawStringLiteralParser {
     raw: String,
     start_pos: Position,

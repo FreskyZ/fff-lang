@@ -337,8 +337,10 @@ impl<F> SourceContext<F> {
 
 // format helpers
 
+#[allow(dead_code)] // not used actually, because .display not used actually
 pub struct PositionDisplay<'a, F>(Position, &'a SourceContext<F>);
 
+#[allow(dead_code)] // not used actually, because .display not used actually
 impl<'a, F> fmt::Display for PositionDisplay<'a, F> where F: FileSystem {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let (file, line, column) = self.1.map_position_to_line_column(self.0);
@@ -347,6 +349,7 @@ impl<'a, F> fmt::Display for PositionDisplay<'a, F> where F: FileSystem {
     }
 }
 
+#[allow(dead_code)] // not used actually, because not used actually
 impl Position {
     pub fn display<F: FileSystem>(self, scx: &SourceContext<F>) -> PositionDisplay<F> {
         PositionDisplay(self, scx)

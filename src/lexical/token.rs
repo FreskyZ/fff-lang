@@ -114,14 +114,14 @@ impl<'a, 'scx> fmt::Display for TokenFormat<'a, 'scx> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.0 {
             Token::EOF => f.write_str("EOF"),
-            Token::Ident(id) => write!(f, "ident {}", self.1.resolve_string(*id)),
+            Token::Ident(id) => write!(f, "ident {}", id.display(self.1)),
             Token::Keyword(kw) => write!(f, "keyword {}", kw.display()),
-            Token::Label(id) => write!(f, "label @{}", self.1.resolve_string(*id)),
+            Token::Label(id) => write!(f, "label @{}", id.display(self.1)),
             Token::Sep(sep) => write!(f, "sep {}", sep.display()),
             Token::Bool(v) => write!(f, "bool {}", v),
             Token::Char(v) => write!(f, "char {:?}", v),
             Token::Num(v) => write!(f, "{}", v),
-            Token::Str(id, ty) => write!(f, "str{} {:?}", ty, self.1.resolve_string(*id)),
+            Token::Str(id, ty) => write!(f, "str{} {:?}", ty, id.display(self.1)),
         }
     }
 }

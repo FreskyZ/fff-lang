@@ -1,4 +1,5 @@
 #![allow(non_upper_case_globals)]
+#![allow(dead_code)]
 ///! all kinds of error strings
 
 pub const Empty: &str = "";
@@ -6,6 +7,7 @@ pub const Empty: &str = "";
 pub const UnexpectedEOF: &str = "Unexpected EOF";
 pub const BlockCommentStartHere: &str = "Block comment starts here";
 pub const EOFHere: &str = "EOF here";
+pub const UnknownCharactor: &str = "Unknown charactor";
 pub const UnexpectedCharLiteralEnd: &str = "Unexpected char literal end";
 pub const CharLiteralStartHere: &str = "Char literal start here";
 pub const CharLiteralEndHere: &str = "Char literal end here";

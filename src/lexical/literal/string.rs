@@ -6,7 +6,8 @@ use crate::source::{Position, Span, EOF};
 use crate::diagnostics::{Message, MessageCollection, strings};
 use super::escape::{EscapeCharParser, EscapeCharSimpleCheckResult, EscapeCharParserResult};
 
-#[cfg_attr(test, derive(Debug, Eq, PartialEq))]
+#[cfg_attr(test, derive(Eq, PartialEq))]
+#[derive(Debug)]
 pub enum StringLiteralParserResult {
     WantMore,
     WantMoreWithSkip1,
@@ -22,7 +23,7 @@ pub enum StringLiteralParserResult {
 //     '\', char parser will find next is not ' and immediately stop char parser and report a special error for this
 //     "\", string parser will record this escape position and this will most probably cause unexpected EOF in string and string parser will report it
 
-#[cfg_attr(test, derive(Debug))]
+#[derive(Debug)]
 pub struct StringLiteralParser {
     raw: String, 
     start_pos: Position,

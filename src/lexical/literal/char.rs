@@ -13,6 +13,7 @@ use std::collections::HashSet;
 type CoverageRecorder = HashSet<i32>;
 
 #[cfg(not(feature = "trace_char_lit_parse"))]
+#[derive(Debug)]
 struct CoverageRecorder(i32);
 #[cfg(not(feature = "trace_char_lit_parse"))]
 impl CoverageRecorder {
@@ -20,18 +21,20 @@ impl CoverageRecorder {
     pub fn insert(&mut self, v: i32) { self.0 = v } 
 }
 
-#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
+#[cfg_attr(test, derive(Eq, PartialEq))]
+#[derive(Debug)]
 pub enum CharLiteralParserResult {
     WantMore,
     WantMoreWithSkip1,
     Finished(Option<char>, Span),
 }
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 enum ParserState {
     ExpectFirst, 
     ExpectEnd(Option<char>),
 }
 
+#[derive(Debug)]
 pub struct CharLiteralParser {
     current_span: Span,
     state: Cell<ParserState>,

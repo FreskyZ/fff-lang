@@ -6,15 +6,8 @@
 use crate::source::Position;
 use crate::diagnostics::{Message, MessageCollection, strings};
 
-#[cfg(test)]
-#[derive(Debug, Eq, PartialEq)]
-pub struct EscapeCharParser {
-    expect_size: usize, // \u expect 4 hex, \U expect 8 hex
-    buf: String,
-    value: u32,
-    has_failed: bool
-}
-#[cfg(not(test))]
+#[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct EscapeCharParser {
     expect_size: usize, // \u expect 4 hex, \U expect 8 hex
     buf: String,
@@ -22,19 +15,14 @@ pub struct EscapeCharParser {
     has_failed: bool
 }
 
+#[derive(Debug)]
 pub enum EscapeCharSimpleCheckResult {
     Normal(char),
     Invalid(char),
     Unicode(EscapeCharParser),
 }
-#[cfg(test)]
-#[derive(Debug, Eq, PartialEq)]
-pub enum EscapeCharParserResult {
-    WantMore,               // Sucess and want more or unexpected char but keep until got 4 or 8 char
-    Failed,                 // Unexpected char fail, or, u32 value is not char fail, finished, error emitted
-    Success(char),          // Succeed and result
-}
-#[cfg(not(test))]
+#[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub enum EscapeCharParserResult {
     WantMore,               // Sucess and want more or unexpected char but keep until got 4 or 8 char
     Failed,                 // Unexpected char fail, or, u32 value is not char fail, finished, error emitted
