@@ -2,6 +2,314 @@ use crate::source::{IsId, make_source};
 use super::*;
 
 #[test]
+fn buf_lexer_test() {
+    use crate::source::{VirtualFileSystem, make_source};
+    use crate::diagnostics::MessageCollection;
+
+    #[derive(Eq, PartialEq, Debug, Default)]
+    struct TestToken(u32);
+    struct TestLexer(u32);
+    impl<'chs> ILexer<'chs, VirtualFileSystem, TestToken> for TestLexer {
+        fn new(_: SourceChars<'chs, VirtualFileSystem>) -> TestLexer {
+            TestLexer(0)
+        }
+        fn next(&mut self, _: &mut ParseSession) -> (TestToken, Span) {
+            self.0 += 1;
+            (TestToken(self.0), Span::new(self.0, self.0 + 1))
+        }
+    }
+    macro_rules! make_test_token_p2 {
+        ($c: expr) => {
+            (
+                &TestToken($c),
+                Span::new($c, $c + 1),
+                &TestToken($c + 1),
+                Span::new($c + 1, $c + 2),
+                &TestToken($c + 2),
+                Span::new($c + 2, $c + 3),
+            )
+        };
+    }
+
+    let mut scx = make_source!();
+    let messages = &mut MessageCollection::new();
+    let sess = &mut ParseSession::new(messages);
+    let mut buflexer = BufLexer::<TestLexer, TestToken, VirtualFileSystem>::new(scx.entry("1"));
+    if sess.messages.is_uncontinuable() {
+        panic!("messages unexpectedly uncontinuable")
+    }
+
+    buflexer.move_next(sess);
+    assert_eq!(buflexer.current_with_preview2(), make_test_token_p2!(1));
+    buflexer.move_next(sess);
+    assert_eq!(buflexer.current_with_preview2(), make_test_token_p2!(2));
+    buflexer.prepare_skip1();
+    buflexer.move_next(sess);
+    assert_eq!(buflexer.current_with_preview2(), make_test_token_p2!(4));
+    buflexer.prepare_skip1();
+    buflexer.prepare_skip1();
+    buflexer.move_next(sess);
+    assert_eq!(buflexer.current_with_preview2(), make_test_token_p2!(7));
+    buflexer.prepare_dummy1();
+    buflexer.move_next(sess);
+    assert_eq!(buflexer.current_with_preview2(), make_test_token_p2!(7));
+    buflexer.prepare_dummy1();
+    buflexer.prepare_dummy1();
+    buflexer.move_next(sess);
+    buflexer.move_next(sess);
+    assert_eq!(buflexer.current_with_preview2(), make_test_token_p2!(7));
+}
+
+#[test]
+fn v1_base() {
+    use crate::source::{SourceContext, VirtualFileSystem, IsId, make_source};
+    use crate::diagnostics::MessageCollection;
+
+    fn test_case_full(mut scx: SourceContext<VirtualFileSystem>, symbols: &[&'static str], expect_tokens: Vec<(V1Token, Span)>, expect_messages: MessageCollection) {
+        let mut actual_messages = MessageCollection::new();
+        let mut sess = ParseSession::new(&mut actual_messages);
+        let mut chars = scx.entry("1");
+        for symbol in symbols {
+            chars.intern(*symbol);
+        }
+        let mut v1lexer = V1Lexer::new(chars);
+        for expect_token in expect_tokens {
+            assert_eq!(v1lexer.next(&mut sess), expect_token);
+        }
+        let next = v1lexer.next(&mut sess);
+        if next.0 != V1Token::EOF { panic!("next is not EOF but {:?}", next); }
+
+        assert_eq!(sess.messages, &expect_messages);
+    }
+
+    macro_rules! test_case {
+        ($src:literal, $expect_tokens:expr) =>
+            (test_case_full(make_source!($src), &[], $expect_tokens, MessageCollection::new()));
+        (with symbol, $src:literal, $($symbol:literal,)+ $expect_tokens:expr) => 
+            (test_case_full(make_source!($src), &[$($symbol)+], $expect_tokens, MessageCollection::new()));
+        (with message, $src:expr, $expect_tokens:expr, $expect_messages:expr) => 
+            (test_case_full(make_source!($src), &[], $expect_tokens, $expect_messages));
+    }
+    macro_rules! n { // normal dispatch to next level
+        ($ch: expr, $char_id: expr) => ((V1Token::Other($ch), Span::new($char_id, $char_id)));
+        ($ch: expr, $start_id: expr, $end_id: expr) => ((V1Token::Other($ch), Span::new($start_id, $end_id)))
+    }
+    macro_rules! ch_lit {
+        ($ch: expr, $start_id: expr, $end_id: expr) => ((V1Token::CharLiteral($ch), Span::new($start_id, $end_id)));
+        ($start_id: expr, $end_id: expr) => ((V1Token::CharLiteral('\0'), Span::new($start_id, $end_id)))
+    }
+    macro_rules! str_lit {
+        ($start_id: expr, $end_id: expr) => ((V1Token::StringLiteral(IsId::new(1)), Span::new($start_id, $end_id)));
+        ($val: expr, $start_id: expr, $end_id: expr) => ((V1Token::StringLiteral($val), Span::new($start_id, $end_id)))
+    }
+    macro_rules! rstr_lit {
+        ($start_id: expr, $end_id: expr) => ((V1Token::RawStringLiteral(IsId::new(1)), Span::new($start_id, $end_id)));
+        ($val: expr, $start_id: expr, $end_id: expr) => ((V1Token::RawStringLiteral($val), Span::new($start_id, $end_id)))
+    }
+
+    // Line comment as \n
+    test_case!{ "ABC//DEF\n", vec![n!('A', 0), n!('B', 1), n!('C', 2), n!('\n', 8) ] }       // C6, C1, C12, C11, C7
+    // Line comment EOF is not error   
+    test_case!{ "ABC//DEF", vec![n!('A', 0), n!('B', 1), n!('C', 2) ] }                      // C6, C1, C12, C13
+
+    // Block comment is ' ', but has correct position
+    test_case!{ "A/*D\nEF*/GH", vec![n!('A', 0), n!(' ', 1, 8), n!('G', 9), n!('H', 10)] }   // C6, C2, C9, C8
+    // EOF in block comment is error 
+    test_case!{ with message, "A/*BC", vec![n!('A', 0)], make_messages![                     // C6, C2, C9, C10
+        Message::new_by_str(strings::UnexpectedEOF, vec![
+            (Span::new(1, 1), strings::BlockCommentStartHere),
+            (Span::new(5, 5), strings::EOFHere),
+        ])
+    ]}
+
+    // String literal test cases
+    test_case!{ with symbol, r#""Hello, world!""#, 
+        "Hello, world!", vec![str_lit!(IsId::new(2), 0, 14)] 
+    }
+    test_case!{ with message, r#""He"#, vec![str_lit!(0, 3)], make_messages![
+        Message::new_by_str(strings::UnexpectedEOF, vec![
+            (Span::new(0, 0), strings::StringLiteralStartHere),
+            (Span::new(3, 3), strings::EOFHere)
+        ])
+    ]}
+    test_case!{ with message, r#""He\"l\"lo"#, vec![str_lit!(0, 10)], make_messages![
+        Message::new_by_str(strings::UnexpectedEOF, vec![
+            (Span::new(0, 0), strings::StringLiteralStartHere),
+            (Span::new(10, 10), strings::EOFHere),
+            (Span::new(6, 6), strings::LastEscapedQuoteHere),
+        ])
+    ]}
+    test_case!{ with symbol, r#""H\t\n\0\'\"llo""#,
+        "H\t\n\0'\"llo", vec![str_lit!(IsId::new(2), 0, 15)]
+    }
+    test_case!{ with message, r#""h\c\d\e\n\g""#, vec![str_lit!(0, 12)], make_messages![
+        Message::new(format!("{} '\\{}'", strings::UnknownCharEscape, 'c'), vec![
+            (Span::new(0, 0), strings::StringLiteralStartHere.to_owned()),
+            (Span::new(2, 2), strings::UnknownCharEscapeHere.to_owned()),
+        ]),
+        Message::new(format!("{} '\\{}'", strings::UnknownCharEscape, 'd'), vec![
+            (Span::new(0, 0), strings::StringLiteralStartHere.to_owned()),
+            (Span::new(4, 4), strings::UnknownCharEscapeHere.to_owned()),
+        ]),
+        Message::new(format!("{} '\\{}'", strings::UnknownCharEscape, 'e'), vec![
+            (Span::new(0, 0), strings::StringLiteralStartHere.to_owned()),
+            (Span::new(6, 6), strings::UnknownCharEscapeHere.to_owned()),
+        ]),
+        Message::new(format!("{} '\\{}'", strings::UnknownCharEscape, 'g'), vec![
+            (Span::new(0, 0), strings::StringLiteralStartHere.to_owned()),
+            (Span::new(10, 10), strings::UnknownCharEscapeHere.to_owned()),
+        ])
+    ]}
+    test_case!{ with symbol, r#""H\uABCDel""#, 
+        "H\u{ABCD}el", vec![str_lit!(IsId::new(2), 0, 10)]
+    } //                          0123456789012345
+    test_case!{ with message, r#""H\uABCHel\uABgC""#, vec![str_lit!(0, 16)], make_messages![ // TODO: according to new char lit parser's policy, this should be str_lit!(0, 15)
+        Message::with_help_by_str(strings::InvalidUnicodeCharEscape, vec![
+            (Span::new(2, 2), strings::UnicodeCharEscapeStartHere),
+            (Span::new(7, 7), strings::UnicodeCharEscapeInvalidChar)
+        ], vec![
+            strings::UnicodeCharEscapeHelpSyntax,
+        ]),
+        Message::with_help_by_str(strings::InvalidUnicodeCharEscape, vec![
+            (Span::new(10, 10), strings::UnicodeCharEscapeStartHere),
+            (Span::new(14, 14), strings::UnicodeCharEscapeInvalidChar)
+        ], vec![
+            strings::UnicodeCharEscapeHelpSyntax,
+        ])
+    ]} //                         012345678901
+    test_case!{ with message, r#""H\U0011ABCD""#, vec![str_lit!(0, 12)], make_messages![ // TODO: same as before, this should be str_lit!(0, 11)
+        Message::with_help(strings::InvalidUnicodeCharEscape.to_owned(), vec![
+            (Span::new(2, 11), strings::UnicodeCharEscapeHere.to_owned()),
+        ], vec![
+            format!("{}{}", strings::UnicodeCharEscapeCodePointValueIs, "0011ABCD".to_owned()),
+            strings::UnicodeCharEscapeHelpValue.to_owned(),
+        ])
+    ]}
+    test_case!{ with message, r#""H\u""#, vec![str_lit!(0, 4)], make_messages![
+        Message::with_help_by_str(strings::UnexpectedStringLiteralEnd, vec![
+            (Span::new(0, 0), strings::StringLiteralStartHere),
+            (Span::new(2, 2), strings::UnicodeCharEscapeStartHere),
+            (Span::new(4, 4), strings::StringLiteralEndHere),
+        ], vec![
+            strings::UnicodeCharEscapeHelpSyntax,
+        ])
+    ]}
+    test_case!{ with message, r#""h\U123"#, vec![str_lit!(0, 7)], make_messages![
+        Message::new_by_str(strings::UnexpectedEOF, vec![
+            (Span::new(0, 0), strings::StringLiteralStartHere),
+            (Span::new(7, 7), strings::EOFHere)
+        ])
+    ]}
+    test_case!{ with message, r#""he\"#, vec![str_lit!(0, 4)], make_messages![
+        Message::new_by_str(strings::UnexpectedEOF, vec![
+            (Span::new(0, 0), strings::StringLiteralStartHere),
+            (Span::new(4, 4), strings::EOFHere)
+        ])
+    ]}
+
+    // Raw string literal test cases
+    test_case!{ with symbol, r#"r"hell\u\no""#, 
+        r"hell\u\no", vec![rstr_lit!(IsId::new(2), 0, 11)]
+    }
+    test_case!{ with message, r#"R"he"#, vec![rstr_lit!(0, 4)], make_messages![
+        Message::new_by_str(strings::UnexpectedEOF, vec![
+            (Span::new(0, 0), strings::StringLiteralStartHere),
+            (Span::new(4, 4), strings::EOFHere)
+        ])
+    ]}
+
+    // Char literal test cases
+    test_case!{ "'A'", vec![ch_lit!('A', 0, 2)] }
+    test_case!{ r"'\t'", vec![ch_lit!('\t', 0, 3)] }
+    test_case!{ r"'\uABCD'", vec![ch_lit!('\u{ABCD}', 0, 7)] }
+    test_case!{ with message, "''", vec![ch_lit!(0, 1)], make_messages![
+        Message::with_help_by_str(strings::EmptyCharLiteral, vec![
+            (Span::new(0, 1), strings::CharLiteralHere), 
+        ], vec![
+            strings::CharLiteralSyntaxHelp1
+        ])
+    ]}
+    test_case!{ with message, "'ABC'", vec![ch_lit!(0, 4)], make_messages![
+        Message::new_by_str(strings::CharLiteralTooLong, vec![
+            (Span::new(0, 4), strings::CharLiteralHere),
+        ])
+    ]}
+    test_case!{ with message, r"'\c'", vec![ch_lit!(0, 3)], make_messages![
+        Message::new(format!("{} '\\{}'", strings::UnknownCharEscape, 'c'), vec![
+            (Span::new(0, 0), strings::CharLiteralStartHere.to_owned()), 
+            (Span::new(1, 1), strings::UnknownCharEscapeHere.to_owned()),
+        ])
+    ]} //         012345
+    test_case!{ with message, r"'\uBG'", vec![ch_lit!(0, 5)], make_messages![
+        Message::with_help_by_str(strings::InvalidUnicodeCharEscape, vec![
+            (Span::new(1, 1), strings::UnicodeCharEscapeStartHere), 
+            (Span::new(4, 4), strings::UnicodeCharEscapeInvalidChar)
+        ], vec![
+            strings::UnicodeCharEscapeHelpSyntax,
+        ]),
+        Message::with_help_by_str(strings::UnexpectedCharLiteralEnd, vec![
+            (Span::new(0, 5), strings::CharLiteralHere),
+        ], vec![
+            strings::UnicodeCharEscapeHelpSyntax
+        ])
+    ]}
+    test_case!{ with message, r"'\U0011ABCD'", vec![ch_lit!(0, 11)], make_messages![
+        Message::with_help(strings::InvalidUnicodeCharEscape.to_owned(), vec![
+            (Span::new(1, 10), strings::UnicodeCharEscapeHere.to_owned()), 
+        ], vec![
+            format!("{}{}", strings::UnicodeCharEscapeCodePointValueIs, "0011ABCD".to_owned()),
+            strings::UnicodeCharEscapeHelpValue.to_owned(),
+        ])
+    ]}
+    test_case!{ with message, r"'\na'", vec![ch_lit!(0, 4)], make_messages![
+        Message::new_by_str(strings::CharLiteralTooLong, vec![
+            (Span::new(0, 4), strings::CharLiteralHere),   
+        ])
+    ]}
+    test_case!{ with message, r"'\uABCDA'", vec![ch_lit!(0, 8)], make_messages![
+        Message::new_by_str(strings::CharLiteralTooLong, vec![
+            (Span::new(0, 8), strings::CharLiteralHere),      
+        ])
+    ]}
+    test_case!{ with message, "'", vec![ch_lit!(0, 0)], make_messages![
+        Message::new_by_str(strings::UnexpectedEOF, vec![
+            (Span::new(0, 0), strings::CharLiteralHere),    
+            (Span::new(1, 1), strings::EOFHere)
+        ])
+    ]}
+    test_case!{ with message, r"'\", vec![ch_lit!(0, 1)], make_messages![
+        Message::new_by_str(strings::UnexpectedEOF, vec![
+            (Span::new(0, 1), strings::CharLiteralHere),      
+            (Span::new(2, 2), strings::EOFHere)
+        ])
+    ]}
+    test_case!{ with message, r"'\u", vec![ch_lit!(0, 2)], make_messages![
+        Message::new_by_str(strings::UnexpectedEOF, vec![
+            (Span::new(0, 2), strings::CharLiteralHere),
+            (Span::new(3, 3), strings::EOFHere)
+        ])
+    ]}
+    test_case! { with message, r"'A", vec![ch_lit!(0, 1)], make_messages![
+        Message::new_by_str(strings::UnexpectedEOF, vec![
+            (Span::new(0, 1), strings::CharLiteralHere),
+            (Span::new(2, 2), strings::EOFHere)
+        ])
+    ]}
+    test_case! { with message, "'ABC", vec![ch_lit!(0, 3)], make_messages![
+        Message::new_by_str(strings::UnexpectedEOF, vec![
+            (Span::new(0, 3), strings::CharLiteralHere),
+            (Span::new(4, 4), strings::EOFHere)
+        ])
+    ]}
+    test_case!{ with message, r"'\'AB", vec![ch_lit!(0, 4)], make_messages![
+        Message::new_by_str(strings::UnexpectedEOF, vec![
+            (Span::new(0, 4), strings::CharLiteralHere),
+            (Span::new(5, 5), strings::EOFHere),
+        ])
+    ]}
+}
+
+#[test]
 fn v2_base() {
     use crate::source::{SourceContext, VirtualFileSystem, IsId, make_source};
         
