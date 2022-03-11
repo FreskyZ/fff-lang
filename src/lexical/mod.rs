@@ -36,18 +36,41 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
     pub fn new(mut chars: SourceChars<'s, F>, diagnostics: &'e mut MessageCollection) -> Self {
         Self{ diagnostics, current: chars.next(), peek1: chars.next(), peek2: chars.next(), chars, }
     }
-    fn move_next(&mut self) {
+
+    // eat not care about whatever is next char, use in comment and string literal
+    fn eatnc(&mut self) {
         std::mem::swap(&mut self.current, &mut self.peek1);
         std::mem::swap(&mut self.peek1, &mut self.peek2);
         self.peek2 = self.chars.next();
     }
 
+    // eat and check confusable
+    fn eat(&mut self) {
+        std::mem::swap(&mut self.current, &mut self.peek1);
+        std::mem::swap(&mut self.peek1, &mut self.peek2);
+        self.peek2 = self.chars.next();
+
+        if self.current.0 != EOF {
+            if let Some((unicode_char, unicode_name, ascii_char, ascii_name)) = unicode::check_confusable(self.current.0) {
+                self.diagnostics.push(Message::with_help_by_str(strings::UnexpectedNonASCIIChar, vec![
+                    (self.current.1.into(), ""), 
+                ], vec![
+                    &format!("Did you mean `{}`({}) by `{}`({})?", ascii_char, ascii_name, unicode_char, unicode_name),
+                ]));
+                self.current.0 = ascii_char;
+            }
+        }
+    }
+
     fn skip_line_comment(&mut self) {
         if let ('/', '/') = (self.current.0, self.peek1.0) {
             loop {
-                self.move_next();
+                self.eatnc();
+                if self.current.0 == EOF {
+                    break;
+                }
                 if self.current.0 == '\n' {
-                    self.move_next();
+                    self.eatnc();
                     break;
                 }
             }
@@ -55,15 +78,25 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
     }
 
     fn skip_block_comment(&mut self) {
-        // TODO test recursive
         if let ('/', '*') = (self.current.0, self.peek1.0) {
+            let start_position = self.current.1;
             let mut level = 0;
             loop {
-                self.move_next();
+                self.eatnc();
+                if self.current.0 == EOF {
+                    self.diagnostics.push(Message::new_by_str(strings::UnexpectedEOF, vec![
+                        (start_position.into(), strings::BlockCommentStartHere),
+                        (self.current.1.into(), strings::EOFHere),
+                    ]));
+                    break;
+                }
                 if let ('/', '*') = (self.current.0, self.peek1.0) {
+                    self.eatnc();
                     level += 1;
                 } else if let ('*', '/') = (self.current.0, self.peek1.0) {
+                    self.eatnc();
                     if level == 0 {
+                        self.eatnc();
                         break;
                     } else {
                         level -= 1;
@@ -75,19 +108,18 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
 
     fn parse_char_literal(&mut self) -> (Token, Span) {
         let mut parser = CharLiteralParser::new(self.current.1);
+        self.eat();
         loop {
             match parser.input(self.current.0, self.current.1, self.peek1.0, self.diagnostics) {
                 CharLiteralParserResult::WantMore => {
-                    self.move_next();
+                    self.eatnc();
                 },
                 CharLiteralParserResult::WantMoreWithSkip1 => {
-                    self.move_next();
-                    self.move_next();
+                    self.eatnc();
+                    self.eatnc();
                 },
                 CharLiteralParserResult::Finished(value, span) => {
-                    if self.current.0 != EOF {
-                        self.move_next(); // should not consume EOF, or else EOF will not return
-                    }
+                    self.eatnc();
                     return (Token::Char(value.unwrap_or_default()), span);
                 },
             }
@@ -98,19 +130,18 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
         match literal_type {
             StringLiteralType::Normal => {
                 let mut parser = StringLiteralParser::new(self.current.1);
+                self.eat();
                 loop {
                     match parser.input(self.current.0, self.current.1, self.peek1.0, self.diagnostics) {
                         StringLiteralParserResult::WantMore => {
-                            self.move_next();
+                            self.eatnc();
                         },
                         StringLiteralParserResult::WantMoreWithSkip1 => {
-                            self.move_next();
-                            self.move_next();
+                            self.eatnc();
+                            self.eatnc();
                         }
                         StringLiteralParserResult::Finished(value, span) => {
-                            if self.current.0 != EOF {
-                                self.move_next(); // should not consume EOF, or else EOF will not return
-                            }
+                            self.eatnc();
                             return (Token::Str(value.map(|v| self.chars.intern(&v)).unwrap_or(IsId::new(1)), StringLiteralType::Normal), span);
                         }
                     }
@@ -118,16 +149,16 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
             },
             StringLiteralType::Raw => {
                 let mut parser = RawStringLiteralParser::new(self.current.1);
+                self.eat();
+                self.eat();
                 loop {
                     match parser.input(self.current.0, self.current.1, self.diagnostics) {
                         RawStringLiteralParserResult::WantMore => {
-                            self.move_next();
+                            self.eatnc();
                         },
                         RawStringLiteralParserResult::Finished(value, span) => {
-                            if self.current.0 != EOF {
-                                self.move_next(); // should not consume EOF, or else EOF will not return
-                            }
-                            return (Token::Str(value.map(|v| self.chars.intern(&v)).unwrap_or(IsId::new(1)), StringLiteralType::Normal), span);
+                            self.eatnc();
+                            return (Token::Str(value.map(|v| self.chars.intern(&v)).unwrap_or(IsId::new(1)), StringLiteralType::Raw), span);
                         }
                     }
                 }
@@ -136,24 +167,15 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
         }
     }
 
-    fn check_confusable(&mut self) {
-        if let Some((unicode_char, unicode_name, ascii_char, ascii_name)) = unicode::check_confusable(self.current.0) {
-            self.diagnostics.push(Message::with_help_by_str(strings::UnexpectedNonASCIIChar, vec![
-                (self.current.1.into(), ""), 
-            ], vec![
-                &format!("Did you mean `{}`({}) by `{}`({})?", ascii_char, ascii_name, unicode_char, unicode_name),
-            ]));
-            self.current.0 = ascii_char;
-        }
-    }
     fn skip_whitespace(&mut self) {
         while self.current.0.is_whitespace() {
-            self.move_next();
+            self.eat();
         }
     }
 
     pub fn next(&mut self) -> (Token, Span) {
 
+        self.skip_whitespace();
         self.skip_line_comment();
         self.skip_block_comment();
         
@@ -170,18 +192,13 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
             return self.parse_string_literal(StringLiteralType::Raw);
         }
 
-        // call after skip comment and parse string/char literals to ignore confusables inside them
-        self.check_confusable();
-        // call skip whitespace after string literal because should not skip whitespace inside string literal
-        self.skip_whitespace();
-
         if self.current.0.is_id_start() {
             let mut value = String::new();
             let mut span = self.current.1.into();
             while self.current.0.is_id_continue() {
                 value.push(self.current.0);
                 span += self.current.1;
-                self.move_next();
+                self.eat();
             }
             return match Keyword::parse(&value) {
                 Some(Keyword::True) => (Token::Bool(true), span),
@@ -200,11 +217,11 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
         } else if self.current.0.is_label_start() {
             let mut value = String::new();
             let mut span = self.current.1.into();
-            self.move_next(); // skip leading @
+            self.eat(); // skip leading @
             while self.current.0.is_label_continue() {
                 value.push(self.current.0);
                 span += self.current.1;
-                self.move_next();
+                self.eat();
             }
             return (Token::Label(self.chars.intern(&value)), span);
             // TODO: move CharExt::is_numeric_{start|continue} into literal::numeric
@@ -226,7 +243,7 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
                 }
                 string_value.push(self.current.0);
                 span += self.current.1;
-                self.move_next();
+                self.eat();
             }
             let (value, span) = parse_numeric_literal(string_value, span, self.diagnostics);
             return (Token::Num(value.unwrap_or(Numeric::I32(0))), span);
@@ -234,19 +251,22 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
         
         match Separator::parse3(self.current.0, self.peek1.0, self.peek2.0) {
             Some((separator, 1)) => {
-                self.move_next();
-                return (Token::Sep(separator), self.current.1.into());
+                let span = self.current.1.into();
+                self.eat();
+                return (Token::Sep(separator), span);
             },
             Some((separator, 2)) => {
-                self.move_next();
-                self.move_next();
-                return (Token::Sep(separator), self.current.1 + self.peek1.1);
+                let span = self.current.1 + self.peek1.1;
+                self.eat();
+                self.eat();
+                return (Token::Sep(separator), span);
             },
             Some((separator, 3)) => {
-                self.move_next();
-                self.move_next();
-                self.move_next();
-                return (Token::Sep(separator), self.current.1 + self.peek2.1);
+                let span = self.current.1 + self.peek2.1;
+                self.eat();
+                self.eat();
+                self.eat();
+                return (Token::Sep(separator), span);
             },
             _ => {
                 self.diagnostics.push(Message::new_by_str(strings::UnknownCharactor, vec![
