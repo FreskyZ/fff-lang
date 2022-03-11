@@ -16,7 +16,6 @@ mod literal {
 
 use unicode::CharExt;
 use literal::numeric::parse_numeric_literal;
-use literal::char::{CharLiteralParser, CharLiteralParserResult};
 pub use token::{Separator, SeparatorKind, Keyword, KeywordKind};
 pub use token::{Numeric, StringLiteralType, Token, TokenFormat};
 
@@ -99,26 +98,6 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
                         level -= 1;
                     }
                 }
-            }
-        }
-    }
-
-    fn parse_char_literal(&mut self) -> (Token, Span) {
-        let mut parser = CharLiteralParser::new(self.current.1);
-        self.eat();
-        loop {
-            match parser.input(self.current.0, self.current.1, self.peek1.0, self.diagnostics) {
-                CharLiteralParserResult::WantMore => {
-                    self.eatnc();
-                },
-                CharLiteralParserResult::WantMoreWithSkip1 => {
-                    self.eatnc();
-                    self.eatnc();
-                },
-                CharLiteralParserResult::Finished(value, span) => {
-                    self.eatnc();
-                    return (Token::Char(value.unwrap_or_default()), span);
-                },
             }
         }
     }

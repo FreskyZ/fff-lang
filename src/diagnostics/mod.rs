@@ -1,11 +1,10 @@
 #![macro_use]
 
-use std::fmt;
 use crate::source::{Span, SourceContext};
 
 pub mod strings;
 
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Debug)]
 struct LocationAndDesc {
     loc: Span, 
     desc: String,
@@ -15,7 +14,7 @@ impl From<(Span, String)> for LocationAndDesc {
         LocationAndDesc{ loc: loc_and_desc.0, desc: loc_and_desc.1 }
     }
 }
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Debug)]
 pub struct Message {
     main_desc: String, 
     details: Vec<LocationAndDesc>, // first is regarded as main
@@ -65,11 +64,8 @@ impl Message {
         return retval;
     }
 }
-impl fmt::Debug for Message {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(None)) }
-}
 
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Debug)]
 pub struct MessageCollection {
     items: Vec<Message>,
     m_uncontinuable: bool,
@@ -85,9 +81,6 @@ impl MessageCollection {
         }
         retval
     }
-}
-impl fmt::Debug for MessageCollection {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(None)) }
 }
 impl MessageCollection {
 
