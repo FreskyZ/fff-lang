@@ -12,13 +12,10 @@ mod literal {
     pub mod escape;
     pub mod numeric;
     pub mod string;
-    pub mod raw_string;
 }
 
 use unicode::CharExt;
 use literal::numeric::parse_numeric_literal;
-use literal::string::{StringLiteralParser, StringLiteralParserResult};
-use literal::raw_string::{RawStringLiteralParser, RawStringLiteralParserResult};
 use literal::char::{CharLiteralParser, CharLiteralParserResult};
 pub use token::{Separator, SeparatorKind, Keyword, KeywordKind};
 pub use token::{Numeric, StringLiteralType, Token, TokenFormat};
@@ -123,47 +120,6 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
                     return (Token::Char(value.unwrap_or_default()), span);
                 },
             }
-        }
-    }
-
-    fn parse_string_literal(&mut self, literal_type: StringLiteralType) -> (Token, Span) {
-        match literal_type {
-            StringLiteralType::Normal => {
-                let mut parser = StringLiteralParser::new(self.current.1);
-                self.eat();
-                loop {
-                    match parser.input(self.current.0, self.current.1, self.peek1.0, self.diagnostics) {
-                        StringLiteralParserResult::WantMore => {
-                            self.eatnc();
-                        },
-                        StringLiteralParserResult::WantMoreWithSkip1 => {
-                            self.eatnc();
-                            self.eatnc();
-                        }
-                        StringLiteralParserResult::Finished(value, span) => {
-                            self.eatnc();
-                            return (Token::Str(value.map(|v| self.chars.intern(&v)).unwrap_or(IsId::new(1)), StringLiteralType::Normal), span);
-                        }
-                    }
-                }
-            },
-            StringLiteralType::Raw => {
-                let mut parser = RawStringLiteralParser::new(self.current.1);
-                self.eat();
-                self.eat();
-                loop {
-                    match parser.input(self.current.0, self.current.1, self.diagnostics) {
-                        RawStringLiteralParserResult::WantMore => {
-                            self.eatnc();
-                        },
-                        RawStringLiteralParserResult::Finished(value, span) => {
-                            self.eatnc();
-                            return (Token::Str(value.map(|v| self.chars.intern(&v)).unwrap_or(IsId::new(1)), StringLiteralType::Raw), span);
-                        }
-                    }
-                }
-            },
-            _ => unreachable!(),
         }
     }
 
