@@ -48,11 +48,11 @@ impl fmt::Debug for TypeUse {
 }
 impl TypeUse {
 
-    pub fn new_simple(base: IsId, base_span: Span) -> TypeUse {
-        TypeUse{ all_span: base_span, params: Vec::new(), quote_span: Span::new(0, 0), base, base_span }
+    pub fn new_simple(base: impl Into<IsId>, base_span: Span) -> TypeUse {
+        TypeUse{ all_span: base_span, params: Vec::new(), quote_span: Span::new(0, 0), base: base.into(), base_span }
     }
-    pub fn new_template(base: IsId, base_span: Span, quote_span: Span, params: Vec<TypeUse>) -> TypeUse {
-        TypeUse{ all_span: base_span + quote_span, base, base_span, quote_span, params }
+    pub fn new_template(base: impl Into<IsId>, base_span: Span, quote_span: Span, params: Vec<TypeUse>) -> TypeUse {
+        TypeUse{ all_span: base_span + quote_span, base: base.into(), base_span, quote_span, params }
     }
 }
 impl ISyntaxGrammar for TypeUse {
@@ -105,40 +105,29 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for TypeUse where F: FileSystem 
 
 #[cfg(test)] #[test]
 fn type_use_parse() {
-    use crate::source::SymbolCollection;
-    use super::super::TestInput;
-    use super::super::WithTestInput;
+    use super::super::make_node;
 
-    assert_eq!{ make_node!("u8"), TypeUse::new_simple(1, Span::new(0, 1)) }
-    assert_eq!{ make_node!("i32"), TypeUse::new_simple(1, Span::new(0, 2)) }
-    assert_eq!{ make_node!("char"), TypeUse::new_simple(1, Span::new(0, 3)) }
-    assert_eq!{ make_node!("string"), TypeUse::new_simple(1, Span::new(0, 5)) }
-    assert_eq!{ make_node!("helloworld_t"), TypeUse::new_simple(1, Span::new(0, 11)) }
+    assert_eq!{ make_node!("u8" as TypeUse), TypeUse::new_simple(2, Span::new(0, 1)) }
+    assert_eq!{ make_node!("i32" as TypeUse), TypeUse::new_simple(2, Span::new(0, 2)) }
+    assert_eq!{ make_node!("char" as TypeUse), TypeUse::new_simple(2, Span::new(0, 3)) }
+    assert_eq!{ make_node!("string" as TypeUse), TypeUse::new_simple(2, Span::new(0, 5)) }
+    assert_eq!{ make_node!("helloworld_t" as TypeUse), TypeUse::new_simple(2, Span::new(0, 11)) }
 
-    TestInput::new("()")
-        .set_syms(make_symbols!["unit"])
-        .apply::<TypeUse, _>()
-        .expect_result(TypeUse::new_simple(1, Span::new(0, 1)))
-    .finish();
+    assert_eq!{ make_node!("()" as TypeUse, [], ["unit"]), TypeUse::new_simple(1, Span::new(0, 1)) };
 
-    TestInput::new("[u8]")
-        .set_syms(make_symbols!["array", "u8"])
-        .apply::<TypeUse, _>()
-        .expect_result(TypeUse::new_template(1, Span::new(0, 0), Span::new(0, 3), vec![
+    assert_eq!{ make_node!("[u8]" as TypeUse, [], ["array", "u8"]),
+        TypeUse::new_template(1, Span::new(0, 0), Span::new(0, 3), vec![
                 TypeUse::new_simple(2, Span::new(1, 2))
-        ]))
-    .finish();
+        ])
+    }
 
-    TestInput::new("[[he_t]]")
-        .set_syms(make_symbols!["array", "he_t"])
-        .apply::<TypeUse, _>()
-        .expect_no_message()
-        .expect_result(TypeUse::new_template(1, Span::new(0, 0), Span::new(0, 7), vec![
+    assert_eq!{ make_node!("[[he_t]]" as TypeUse, [Span::new(2, 5)], ["array"]),
+        TypeUse::new_template(1, Span::new(0, 0), Span::new(0, 7), vec![
             TypeUse::new_template(1, Span::new(0, 0),Span::new(1, 6), vec![
                 TypeUse::new_simple(2, Span::new(2, 5))
             ])
-        ]))
-    .finish();
+        ])
+    }
 
     // TODO TODO: finish them
     // // Tuple

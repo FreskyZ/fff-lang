@@ -94,36 +94,25 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for AssignExprStatement where F:
 
 #[cfg(test)] #[test]
 fn expr_stmt_parse() {
-    use crate::source::SymbolCollection;
-    use crate::lexical::LitValue;
-    use super::super::LitExpr;
-    use super::super::SimpleName;
-    use super::super::BinaryExpr;
-    use super::super::FnCallExpr;
-    use super::super::ExprList;
-    use super::super::TestInput;
-    use super::super::WithTestInput;
+    use super::super::{make_node, LitExpr, LitValue, SimpleName, BinaryExpr, FnCallExpr};
 
-    //                                                0         1          2
-    //                                                012345678 90123456789 012
-    TestInput::new("writeln(\"helloworld\");")
-        .set_syms(make_symbols!["writeln", "helloworld"]) 
-        .apply::<AssignExprStatement, _>()
-        .expect_no_message()
-        .expect_result(Statement::SimpleExpr(SimpleExprStatement::new(Span::new(0, 21),
+    //                      0          1          2
+    //                      012345678 90123456789 012
+    assert_eq!{ make_node!("writeln(\"helloworld\");" as AssignExprStatement, [Span::new(0, 6)], ["helloworld"]),
+        Statement::SimpleExpr(SimpleExprStatement::new(Span::new(0, 21),
             FnCallExpr::new(
                 SimpleName::new(1, Span::new(0, 6)),
                 Span::new(7, 20), make_exprs![
-                    LitExpr::new(make_lit!(str, 2), Span::new(8, 19))
+                    LitExpr::new(3u32, Span::new(8, 19))
                 ]
             )
-        )))
-    .finish();
+        ))
+    }
 
-    //                                              012345678901
-    assert_eq!{ make_node!("1 + 1 <<= 2;"),  // to show I have 3 char Separator available
+    //                      012345678901
+    assert_eq!{ make_node!("1 + 1 <<= 2;" as AssignExprStatement),  // to show I have 3 char Separator available
         Statement::AssignExpr(AssignExprStatement::new(Span::new(0, 11),
-            Separator::LtLtAssign, Span::new(6, 8),
+            Separator::LtLtEq, Span::new(6, 8),
             BinaryExpr::new(
                 LitExpr::new(LitValue::from(1i32), Span::new(0, 0)),
                 Separator::Add, Span::new(2, 2),

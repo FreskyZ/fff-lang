@@ -17,8 +17,8 @@ impl JumpStatement {
     fn new_no_target(all_span: Span) -> JumpStatement {
         JumpStatement{ all_span, target: None, target_span: Span::new(0, 0) }
     }
-    fn new_target(all_span: Span, target: IsId, target_span: Span) -> JumpStatement {
-        JumpStatement{ all_span, target_span, target: Some(target) }
+    fn new_target(all_span: Span, target: impl Into<IsId>, target_span: Span) -> JumpStatement {
+        JumpStatement{ all_span, target_span, target: Some(target.into()) }
     }
 
     fn format(&self, f: Formatter, stmt_name: &'static str) -> String {
@@ -64,15 +64,15 @@ impl fmt::Debug for BreakStatement {
 impl ContinueStatement {
 
     pub fn new_no_target(all_span: Span) -> ContinueStatement { ContinueStatement(JumpStatement::new_no_target(all_span)) }
-    pub fn new_with_target(all_span: Span, target: IsId, target_span: Span) -> ContinueStatement {
-        ContinueStatement(JumpStatement::new_target(all_span, target, target_span))
+    pub fn new_with_target(all_span: Span, target: impl Into<IsId>, target_span: Span) -> ContinueStatement {
+        ContinueStatement(JumpStatement::new_target(all_span, target.into(), target_span))
     }
 }
 impl BreakStatement {
 
     pub fn new_no_target(all_span: Span) -> BreakStatement { BreakStatement(JumpStatement::new_no_target(all_span)) }
-    pub fn new_with_target(all_span: Span, target: IsId, target_span: Span) -> BreakStatement {
-        BreakStatement(JumpStatement::new_target(all_span, target, target_span))
+    pub fn new_with_target(all_span: Span, target: impl Into<IsId>, target_span: Span) -> BreakStatement {
+        BreakStatement(JumpStatement::new_target(all_span, target.into(), target_span))
     }
 }
 
@@ -98,15 +98,15 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for BreakStatement where F: File
 
 #[cfg(test)] #[test]
 fn jump_stmt_parse() {
-    use super::super::WithTestInput;
+    use super::super::make_node;
     
-    assert_eq!{ make_node!("continue;"), ContinueStatement::new_no_target(Span::new(0, 8)) }
-    assert_eq!{ make_node!("continue @1;"), 
+    assert_eq!{ make_node!("continue;" as ContinueStatement), ContinueStatement::new_no_target(Span::new(0, 8)) }
+    assert_eq!{ make_node!("continue @1;" as ContinueStatement), 
         ContinueStatement::new_with_target(Span::new(0, 11), 1, Span::new(9, 10))
     }
     
-    assert_eq!{ make_node!("break;"), BreakStatement::new_no_target(Span::new(0, 5)) }
-    assert_eq!{ make_node!("break @1;"), 
+    assert_eq!{ make_node!("break;" as BreakStatement), BreakStatement::new_no_target(Span::new(0, 5)) }
+    assert_eq!{ make_node!("break @1;" as BreakStatement), 
         BreakStatement::new_with_target(Span::new(0, 8), 1, Span::new(6, 7))
     }
 }

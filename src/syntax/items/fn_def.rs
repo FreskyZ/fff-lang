@@ -13,7 +13,7 @@ pub struct FnParam {
     pub decltype: TypeUse,
 }
 impl FnParam {
-    pub fn new(name: IsId, name_span: Span, decltype: TypeUse) -> FnParam { FnParam{ decltype, name, name_span } }
+    pub fn new(name: impl Into<IsId>, name_span: Span, decltype: TypeUse) -> FnParam { FnParam{ decltype, name: name.into(), name_span } }
 }
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
@@ -51,10 +51,10 @@ impl fmt::Debug for FnDef {
 impl FnDef {
 
     pub fn new(all_span: Span, 
-        name: IsId, name_span: Span,
+        name: impl Into<IsId>, name_span: Span,
         params_paren_span: Span, params: Vec<FnParam>, 
         ret_type: Option<TypeUse>, body: Block) -> FnDef {
-        FnDef{ name, name_span, params, params_paren_span, ret_type, body, all_span }
+        FnDef{ name: name.into(), name_span, params, params_paren_span, ret_type, body, all_span }
     }
 }
 impl ISyntaxGrammar for FnDef {   
@@ -107,19 +107,10 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for FnDef where F: FileSystem {
 
 #[cfg(test)] #[test]
 fn fn_def_parse() {
-    use crate::source::SymbolCollection;
-    use super::super::SimpleName;
-    use super::super::WithTestInput;
-    use super::super::TypeUse;
-    use super::super::Statement;
-    use super::super::SimpleExprStatement;
-    use super::super::Expr;
-    use super::super::FnCallExpr;
-    use super::super::ExprList;
-    use super::super::TestInput;
+    use super::super::{make_node, SimpleName, TypeUse, Statement, SimpleExprStatement, Expr, FnCallExpr};
 
     //                                012345678901
-    assert_eq!{ make_node!("fn main() {}"),
+    assert_eq!{ make_node!("fn main() {}" as FnDef),
         FnDef::new(Span::new(0, 11),
             1, Span::new(3, 6), 
             Span::new(7, 8), vec![], 
@@ -128,33 +119,27 @@ fn fn_def_parse() {
         )
     }
 
-    //              0        1
-    //              0123456789012345678
-    TestInput::new("fn main(ac: i32) {}")
-        .set_syms(make_symbols!["main", "ac", "i32"])
-        .apply::<FnDef, _>()
-        .expect_no_message()
-        .expect_result(FnDef::new(Span::new(0, 18), 
-            1, Span::new(3, 6), 
+    //                      0        1
+    //                      0123456789012345678
+    assert_eq!{ make_node!("fn main(ac: i32) {}" as FnDef, [Span::new(3, 6), Span::new(8, 9)], ["i32"]),
+        FnDef::new(Span::new(0, 18), 
+            2, Span::new(3, 6), 
             Span::new(7, 15), vec![
                 FnParam::new(
-                    2, Span::new(8, 9),
-                    TypeUse::new_simple(3, Span::new(12, 14))
+                    3, Span::new(8, 9),
+                    TypeUse::new_simple(4, Span::new(12, 14))
                 ),
             ],
             None,
             Block::new(Span::new(17, 18), vec![])
-        ))
-    .finish();
+        )
+    }
 
-    //              0        1         2         3         4         5         6         7         8
-    //              012345678901234567890123456789012345678901234567890123456789012345678901234567890
-    TestInput::new(" fn mainxxx(argv:[[string] ]   ,this:i32, some_other: char, )  { println(this); }")
-        //                       1          2       3        4         5       6      7             8       9
-        .set_syms(make_symbols!["mainxxx", "argv", "array", "string", "this", "i32", "some_other", "char", "println"])
-        .apply::<FnDef, _>()
-        .expect_no_message()
-        .expect_result(FnDef::new(Span::new(1, 80),
+    //                      0         1         2         3         4         5         6         7         8
+    //                      012345678901234567890123456789012345678901234567890123456789012345678901234567890
+    assert_eq!{ make_node!(" fn mainxxx(argv:[[string] ]   ,this:i32, some_other: char, )  { println(this); }" as FnDef, 
+        [Span::new(4, 10), Span::new(12, 15), Span::new(19, 24), Span::new(42, 51), Span::new(65, 61)], ["this", "i32"]),
+        FnDef::new(Span::new(1, 80),
             1, Span::new(4, 10),
             Span::new(11, 60), vec![
                 FnParam::new(2, Span::new(12, 15),
@@ -182,12 +167,12 @@ fn fn_def_parse() {
                     )
                 ))
             ])
-        ))
-    .finish();
+        )
+    }
 
     //                                0        1               
     //                                1234567890123456789
-    assert_eq!{ make_node!("fn main() -> i32 {}"),
+    assert_eq!{ make_node!("fn main() -> i32 {}" as FnDef),
         FnDef::new(Span::new(0, 18),
             1, Span::new(3, 6), 
             Span::new(7, 8), vec![],
@@ -195,14 +180,10 @@ fn fn_def_parse() {
             Block::new(Span::new(17, 18), vec![])
         )
     }
-    //              0        1         2         3         4         5         6
-    //              01234567890123456789012345678901234567890123456789012345678901234567
-    TestInput::new("fn ffff(argc: i32, argv: [string], envv: [string],) -> [[string]] {}")
-        //             1       2       3      4       5        6         7
-        .set_syms(make_symbols!["ffff", "argc", "i32", "argv", "array", "string", "envv"])
-        .apply::<FnDef, _>()
-        .expect_no_message()
-        .expect_result(FnDef::new(Span::new(0, 67),
+    //                      0        1         2         3         4         5         6
+    //                      01234567890123456789012345678901234567890123456789012345678901234567
+    assert_eq!{ make_node!("fn ffff(argc: i32, argv: [string], envv: [string],) -> [[string]] {}" as FnDef, [],  ["ffff", "argc", "i32", "argv", "array", "string", "envv"]),
+        FnDef::new(Span::new(0, 67),
             1, Span::new(3, 6), 
             Span::new(7, 50), vec![
                 FnParam::new(2, Span::new(8, 11),
@@ -225,6 +206,6 @@ fn fn_def_parse() {
                 ])
             ])),
             Block::new(Span::new(66, 67), vec![])
-        ))
-    .finish();
+        )
+    }
 }

@@ -416,7 +416,7 @@ fn expr_parse() {
 fn expr_errors() {
     use super::make_node;
 
-    assert_eq!{ make_node!("de(, )" as Expr, [], [], and messages), 
+    assert_eq!{ make_node!("de(, )" as Expr, and messages), 
         (Expr::FnCall(FnCallExpr::new(
             SimpleName::new(1, Span::new(0, 1)), 
             Span::new(2, 5), make_exprs![]
@@ -426,7 +426,7 @@ fn expr_errors() {
     }
 
     //               0 12345678
-    assert_eq!{ make_node!("\"\".de(, )" as Expr, [], [], and messages),
+    assert_eq!{ make_node!("\"\".de(, )" as Expr, and messages),
         (Expr::FnCall(FnCallExpr::new(
             MemberAccessExpr::new(
                 LitExpr::new(2u32, Span::new(0, 1)),
@@ -439,7 +439,7 @@ fn expr_errors() {
         ])
     }
 
-    assert_eq!{ make_node!("defg[]" as Expr, [], [], and messages),
+    assert_eq!{ make_node!("defg[]" as Expr, and messages),
         (Expr::IndexCall(IndexCallExpr::new(
             SimpleName::new(1, Span::new(0, 3)),
             Span::new(4, 5), make_exprs![]
@@ -449,7 +449,7 @@ fn expr_errors() {
     }
 
     //              123456
-    assert_eq!{ make_node!("de[, ]" as Expr, [], [], and messages),
+    assert_eq!{ make_node!("de[, ]" as Expr, and messages),
         (Expr::IndexCall(IndexCallExpr::new(
             SimpleName::new(1, Span::new(0, 1)),
             Span::new(2, 5), make_exprs![]

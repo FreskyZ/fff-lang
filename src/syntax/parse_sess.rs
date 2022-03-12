@@ -123,7 +123,7 @@ impl<'ecx, 'scx, F> ParseSession<'ecx, 'scx, F> where F: FileSystem {
 
     /// Check current token is an identifier
     ///
-    /// if so, move next and Ok((isidbol_id, ident_span)),
+    /// if so, move next and Ok((id, ident_span)),
     /// if not, push unexpect and Err(())
     ///
     /// example `let (ident_id, ident_span) = sess.expect_ident()?;`
@@ -136,10 +136,10 @@ impl<'ecx, 'scx, F> ParseSession<'ecx, 'scx, F> where F: FileSystem {
 
     /// Check current token is a label
     /// 
-    /// if so, move next and Some((isidid, isid_span)), 
+    /// if so, move next and Some((id, id_span)), 
     /// if not, no move next and None
     ///
-    /// example `if let Some((isidid, label_span)) = sess.try_expect_label() { ... }`
+    /// example `if let Some((label_id, label_span)) = sess.try_expect_label() { ... }`
     pub fn try_expect_label(&mut self) -> Option<(IsId, Span)> {
         match self.current {
             Token::Label(id) => Some((id, self.move_next())),
@@ -149,10 +149,10 @@ impl<'ecx, 'scx, F> ParseSession<'ecx, 'scx, F> where F: FileSystem {
 
     /// Check current token is identifier or acceptable keywords
     /// 
-    /// if so, move next and Ok((isidbol_id, ident_span)),
+    /// if so, move next and Ok((id, ident_span)),
     /// if not, push unexpect and Err(())
     ///
-    /// example `let (isidbol_id, ident_span) = sess.expect_ident_or(&[Keyword::This, Keyword::Underscore])?;`
+    /// example `let (ident_id, ident_span) = sess.expect_ident_or(&[Keyword::This, Keyword::Underscore])?;`
     pub fn expect_ident_or(&mut self, acceptable_keywords: &[Keyword]) -> Result<(IsId, Span), ()> {
         match self.current {
             Token::Ident(id) => Ok((id, self.move_next())),
@@ -163,10 +163,10 @@ impl<'ecx, 'scx, F> ParseSession<'ecx, 'scx, F> where F: FileSystem {
     
     /// Check current token is identifier or meet the predict
     /// 
-    /// if so, move next and Ok((isidbol_id, ident_span)),
+    /// if so, move next and Ok((id, ident_span)),
     /// if not, push unexpect and Err(())
     ///
-    /// example `let (isidbold_id, ident_span) = sess.expect_ident_or_keyword_kind(KeywordKind::Primitive)?;`
+    /// example `let (ident_id, ident_span) = sess.expect_ident_or_keyword_kind(KeywordKind::Primitive)?;`
     pub fn expect_ident_or_keyword_kind(&mut self, kind: KeywordKind) -> Result<(IsId, Span), ()> {
         match self.current {
             Token::Ident(id) => Ok((id, self.move_next())),
@@ -232,7 +232,7 @@ impl<'ecx, 'scx, F> ParseSession<'ecx, 'scx, F> where F: FileSystem {
     }
 
     pub fn push_unexpect<T>(&mut self, expect_desc: &str) -> ParseResult<T> {
-        self.base.diagnostics.push(Message::with_help("Unexpect isidbol".to_owned(),
+        self.base.diagnostics.push(Message::with_help("Unexpect symbol".to_owned(),
             vec![(self.current_span, format!("Meet {:?}", self.current))],
             vec![format!("Expect {}", expect_desc)]
         ));
@@ -258,3 +258,76 @@ pub trait ISyntaxParse<'ecx, 'scx, F> {
         if Self::matches_first(sess.current_tokens()) { Ok(Some(Self::parse(sess)?)) } else { Ok(None) }
     }
 }
+
+#[cfg(test)]
+macro_rules! make_node {
+    ($code:literal) => {{
+        let mut ecx = crate::diagnostics::MessageCollection::new();
+        let mut scx = crate::source::make_source!($code);
+        let chars = scx.entry("1");
+        let lcx = crate::lexical::Parser::new(chars, &mut ecx);
+        let mut pcx = ParseSession::new(lcx);
+        let node = crate::syntax::Module::parse(&mut pcx).expect("failed to parse test input");
+        assert_eq!(ecx, make_messages![]);
+        node
+    }};
+    ($code:literal as $ty:ty) => {{
+        let mut ecx = crate::diagnostics::MessageCollection::new();
+        let mut scx = crate::source::make_source!($code);
+        let chars = scx.entry("1");
+        let lcx = crate::lexical::Parser::new(chars, &mut ecx);
+        let mut pcx = ParseSession::new(lcx);
+        let node = <$ty as ISyntaxParse<crate::source::VirtualFileSystem>>::parse(&mut pcx).expect("failed to parse test input");
+        assert_eq!(ecx, make_messages![]);
+        node
+    }};
+    // TODO change span string and value string to be expected value not prepare value
+    ($code:literal as $ty:ty, and messages) => {{
+        let mut ecx = crate::diagnostics::MessageCollection::new();
+        let mut scx = crate::source::make_source!($code);
+        let chars = scx.entry("1");
+        let lcx = crate::lexical::Parser::new(chars, &mut ecx);
+        let mut pcx = ParseSession::new(lcx);
+        let node = <$ty as ISyntaxParse<crate::source::VirtualFileSystem>>::parse(&mut pcx).expect("failed to parse test input");
+        (node, ecx)
+    }};
+    // TODO change span string and value string to be expected value not prepare value
+    ($code:literal as $ty:ty, [$($span_string:expr),*$(,)?]) => {{
+        let mut ecx = crate::diagnostics::MessageCollection::new();
+        let mut scx = crate::source::make_source!($code);
+        let mut chars = scx.entry("1");
+        $( chars.intern_span($span_string); )*
+        let lcx = crate::lexical::Parser::new(chars, &mut ecx);
+        let mut pcx = ParseSession::new(lcx);
+        let node = <$ty as ISyntaxParse<crate::source::VirtualFileSystem>>::parse(&mut pcx).expect("failed to parse test input");
+        assert_eq!(ecx, make_messages![]);
+        node
+    }};
+    // TODO change span string and value string to be expected value not prepare value
+    ($code:literal as $ty:ty, [$($span_string:expr),*$(,)?], [$($value_string:expr),*$(,)?]) => {{
+        let mut ecx = crate::diagnostics::MessageCollection::new();
+        let mut scx = crate::source::make_source!($code);
+        let mut chars = scx.entry("1");
+        $( chars.intern_span($span_string); )*
+        $( chars.intern($value_string); )*
+        let lcx = crate::lexical::Parser::new(chars, &mut ecx);
+        let mut pcx = ParseSession::new(lcx);
+        let node = <$ty as ISyntaxParse<crate::source::VirtualFileSystem>>::parse(&mut pcx).expect("failed to parse test input");
+        assert_eq!(ecx, make_messages![]);
+        node
+    }};
+    // TODO change span string and value string to be expected value not prepare value
+    ($code:literal as $ty:ty, [$($span_string:expr),*$(,)?], [$($value_string:expr),*$(,)?], and messages) => {{
+        let mut ecx = crate::diagnostics::MessageCollection::new();
+        let mut scx = crate::source::make_source!($code);
+        let mut chars = scx.entry("1");
+        $( chars.intern_span($span_string); )*
+        $( chars.intern($value_string); )*
+        let lcx = crate::lexical::Parser::new(chars, &mut ecx);
+        let mut pcx = ParseSession::new(lcx);
+        let node = <$ty as ISyntaxParse<crate::source::VirtualFileSystem>>::parse(&mut pcx).expect("failed to parse test input");
+        (node, ecx)
+    }};
+}
+#[cfg(test)]
+pub(crate) use make_node;

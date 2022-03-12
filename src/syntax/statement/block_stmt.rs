@@ -59,10 +59,10 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for BlockStatement where F: File
 
 #[cfg(test)] #[test]
 fn block_stmt_parse() {
-    use super::super::WithTestInput;
+    use super::super::make_node;
 
-    assert_eq!{ make_node!("{}"), BlockStatement::new_no_label(Block::new(Span::new(0, 1), vec![])) }
-    assert_eq!{ make_node!("@: {}"), 
+    assert_eq!{ make_node!("{}" as BlockStatement), BlockStatement::new_no_label(Block::new(Span::new(0, 1), vec![])) }
+    assert_eq!{ make_node!("@: {}" as BlockStatement), 
         BlockStatement::new_with_label(
             LabelDef::new(1, Span::new(0, 1)),
             Block::new(Span::new(3, 4), vec![])

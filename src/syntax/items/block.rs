@@ -50,9 +50,9 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for Block where F: FileSystem {
 
 #[cfg(test)] #[test]
 fn block_parse() {
-    use super::super::WithTestInput;
+    use super::super::make_node;
     
-    assert_eq!{ make_node!("{}"),
+    assert_eq!{ make_node!("{}" as Block),
         Block::new(Span::new(0, 1), vec![])
     }
 }

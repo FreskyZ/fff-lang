@@ -86,12 +86,10 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for TypeDef where F: FileSystem 
 
 #[cfg(test)] #[test]
 fn type_def_parse() {
-    use crate::source::SymbolCollection;
-    use super::super::TestInput;
-    use super::super::WithTestInput;
+    use super::super::make_node;
 
     //                                  01234567890123456
-    assert_eq!{ make_node!("type x { x: i32 }"),
+    assert_eq!{ make_node!("type x { x: i32 }" as TypeDef),
         TypeDef::new(Span::new(0, 16), SimpleName::new(1, Span::new(5, 5)), vec![
             TypeFieldDef::new(Span::new(9, 14), 
                 SimpleName::new(1, Span::new(9, 9)),
@@ -100,7 +98,7 @@ fn type_def_parse() {
             )
         ])
     }
-    assert_eq!{ make_node!("type x { x: i32,}"),
+    assert_eq!{ make_node!("type x { x: i32,}" as TypeDef),
         TypeDef::new(Span::new(0, 16), SimpleName::new(1, Span::new(5, 5)), vec![
             TypeFieldDef::new(Span::new(9, 15), 
                 SimpleName::new(1, Span::new(9, 9)),
@@ -111,11 +109,8 @@ fn type_def_parse() {
     }
     //                                    0         1         2         3         4
     //                                    0123456789012345678901234567890123456789012345
-    TestInput::new("type array { data: [u8], size: u64, cap: u64 }")
-        .set_syms(make_symbols!["array", "data", "size", "cap", "u64", "u8"])
-        .apply::<TypeDef, _>()
-        .expect_no_message()
-        .expect_result(TypeDef::new(Span::new(0, 45), SimpleName::new(1, Span::new(5, 9)), vec![
+    assert_eq!{ make_node!("type array { data: [u8], size: u64, cap: u64 }" as TypeDef, [], ["array", "data", "size", "cap", "u64", "u8"]),
+        TypeDef::new(Span::new(0, 45), SimpleName::new(1, Span::new(5, 9)), vec![
             TypeFieldDef::new(Span::new(13, 23),
                 SimpleName::new(2, Span::new(13, 16)),
                 Span::new(17, 17),
@@ -133,8 +128,8 @@ fn type_def_parse() {
                 Span::new(39, 39),
                 TypeUse::new_simple(5, Span::new(41, 43))
             )
-        ]))
-    .finish();
+        ])
+    }
 }
 
 #[cfg(feature = "test_stdlib_parse")]

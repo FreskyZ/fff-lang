@@ -37,19 +37,19 @@ impl fmt::Debug for VarDeclStatement {
 impl VarDeclStatement {
 
     pub fn new(all_span: Span, 
-        is_const: bool, name: IsId, name_span: Span, 
+        is_const: bool, name: impl Into<IsId>, name_span: Span, 
         typeuse: Option<TypeUse>, init_expr: Option<Expr>) -> VarDeclStatement {
-        VarDeclStatement{ all_span, is_const, name, name_span, typeuse, init_expr }
+        VarDeclStatement{ all_span, is_const, name: name.into(), name_span, typeuse, init_expr }
     }
     pub fn new_const(all_span: Span, 
-        name: IsId, name_span: Span, 
+        name: impl Into<IsId>, name_span: Span, 
         typeuse: Option<TypeUse>, init_expr: Option<Expr>) -> VarDeclStatement {
-        VarDeclStatement{ all_span, is_const: true, name, name_span, typeuse, init_expr }
+        VarDeclStatement{ all_span, is_const: true, name: name.into(), name_span, typeuse, init_expr }
     }
     pub fn new_var(all_span: Span, 
-        name: IsId, name_span: Span, 
+        name: impl Into<IsId>, name_span: Span, 
         typeuse: Option<TypeUse>, init_expr: Option<Expr>) -> VarDeclStatement {
-        VarDeclStatement{ all_span, is_const: false, name, name_span, typeuse, init_expr }
+        VarDeclStatement{ all_span, is_const: false, name: name.into(), name_span, typeuse, init_expr }
     }
 }
 impl ISyntaxGrammar for VarDeclStatement {
@@ -83,7 +83,7 @@ fn var_decl_stmt_parse() {
     use crate::syntax::*;
     
     //                                           12345678901234
-    assert_eq!{ make_node!("const abc = 0;"),
+    assert_eq!{ make_node!("const abc = 0;" as VarDeclStatement),
         VarDeclStatement::new_const(Span::new(0, 13),
             IsId::new(1), Span::new(6, 8),
             None,
@@ -93,7 +93,7 @@ fn var_decl_stmt_parse() {
 
     //                                           0        1         
     //                                           12345678901234567890
-    assert_eq!{ make_node!("var hij = [1, 3, 5];"),
+    assert_eq!{ make_node!("var hij = [1, 3, 5];" as VarDeclStatement),
         VarDeclStatement::new_var(Span::new(0, 19),
             1, Span::new(4, 6),
             None,
@@ -106,7 +106,7 @@ fn var_decl_stmt_parse() {
     }
     
     //                                           1234567890123456789
-    assert_eq!{ make_node!("const input: string;"),
+    assert_eq!{ make_node!("const input: string;" as VarDeclStatement),
         VarDeclStatement::new_const(Span::new(0, 19),
             1, Span::new(6, 10),
             Some(TypeUse::new_simple(2, Span::new(13, 18))),
@@ -115,11 +115,8 @@ fn var_decl_stmt_parse() {
     }
     
     //              0123456789012345678901
-    TestInput::new("var buf: [(u8, char)];")
-        .set_syms(make_symbols!["buf", "array", "tuple", "u8", "char"])
-        .apply::<VarDeclStatement, _>()
-        .expect_no_message()
-        .expect_result(VarDeclStatement::new_var(Span::new(0, 21), 
+    assert_eq!{ make_node!("var buf: [(u8, char)];" as VarDeclStatement, [], ["buf", "array", "tuple", "u8", "char"]),
+        VarDeclStatement::new_var(Span::new(0, 21), 
             1, Span::new(4, 6),
             Some(TypeUse::new_template(2, Span::new(0, 0), Span::new(9, 20), vec![
                 TypeUse::new_template(3, Span::new(0, 0), Span::new(10, 19), vec![
@@ -128,8 +125,8 @@ fn var_decl_stmt_parse() {
                 ])
             ])),
             None
-        ))
-    .finish();
+        )
+    }
 
     // Future Attention: after bits type added, the `0x7u8` will have different type as before, this is the Option::unwrap failure in test
     // and after advanced type infer, change the 0x7u8 to 7, and try to infer it as 7u8, which requires 2 major changes
@@ -137,12 +134,8 @@ fn var_decl_stmt_parse() {
     //     desugar array primary expr to call array_tid::new() and array.push, which infer 7's type as array_tid' push method's parameter
     //             0        1         2         3         4
     //             012345678901234567890123456789012345678901234567
-    TestInput::new("var buf: ([u8], u32) = ([1u8, 5u8, 0x7u8], abc);")
-        //                       1      2     3      4      5        6
-        .set_syms(make_symbols!["buf", "u8", "u32", "abc", "tuple", "array"])
-        .apply::<VarDeclStatement, _>()
-        .expect_no_message()
-        .expect_result(VarDeclStatement::new_var(Span::new(0, 47),
+    assert_eq!{ make_node!("var buf: ([u8], u32) = ([1u8, 5u8, 0x7u8], abc);" as VarDeclStatement, [], ["buf", "u8", "u32", "abc", "tuple", "array"]),
+        VarDeclStatement::new_var(Span::new(0, 47),
             1, Span::new(4, 6),
             Some(TypeUse::new_template(5, Span::new(0, 0), Span::new(9, 19), vec![
                 TypeUse::new_template(6, Span::new(0, 0), Span::new(10, 13), vec![
@@ -152,23 +145,21 @@ fn var_decl_stmt_parse() {
             ])),
             Some(Expr::Tuple(TupleDef::new(Span::new(23, 46), make_exprs![
                 ArrayDef::new(Span::new(24, 40), make_exprs![
-                    LitExpr::new(LitValue::from(1u8), Span::new(25, 27)),
-                    LitExpr::new(LitValue::from(5u8), Span::new(30, 32)),
-                    LitExpr::new(LitValue::from(7u8), Span::new(35, 39))
+                    LitExpr::new(LitValue::Num(Numeric::U8(1)), Span::new(25, 27)),
+                    LitExpr::new(LitValue::Num(Numeric::U8(5)), Span::new(30, 32)),
+                    LitExpr::new(LitValue::Num(Numeric::U8(7)), Span::new(35, 39))
                 ]),
                 SimpleName::new(4, Span::new(43, 45))
             ])))
-        ))
-    .finish();
+        )
+    }
 
-    TestInput::new("var a;")
-        .apply::<VarDeclStatement, _>()
-        .expect_result(VarDeclStatement::new_var(Span::new(0, 5), 1, Span::new(4, 4), None, None))
-        .expect_messages(make_messages![
+    assert_eq!{ make_node!("var a;" as VarDeclStatement, and messages),
+        (VarDeclStatement::new_var(Span::new(0, 5), 1, Span::new(4, 4), None, None), make_messages![
             Message::with_help_by_str("require type annotation", 
                 vec![(Span::new(4, 4), "variable declaration here")],
                 vec!["cannot infer type without both type annotation and initialization expression"]
             )
         ])
-    .finish();
+    }
 }

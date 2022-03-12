@@ -66,17 +66,17 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for ImportStatement where F: Fil
 
 #[cfg(test)] #[test]
 fn import_stmt_parse() {
-    use super::super::WithTestInput;
+    use super::super::make_node;
 
     assert_eq!{
-        make_node!("import a;"),
+        make_node!("import a;" as ImportStatement),
         ImportStatement::new_default(Span::new(0, 8),
             SimpleName::new(1, Span::new(7, 7))
         )
     }
 
     assert_eq!{ //                   012345678901234567890
-        make_node!("import windows as os;"),
+        make_node!("import windows as os;" as ImportStatement),
         ImportStatement::new_target(Span::new(0, 20),
             SimpleName::new(1, Span::new(7, 13)),
             Span::new(15, 16),

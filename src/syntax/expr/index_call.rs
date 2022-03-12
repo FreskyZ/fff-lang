@@ -93,7 +93,7 @@ fn index_call_parse() {
 fn index_call_errors() {
     use super::super::{make_node};
 
-    assert_eq!{ make_node!("[,]" as IndexCallExpr, [], [], and messages),
+    assert_eq!{ make_node!("[,]" as IndexCallExpr, and messages),
         (IndexCallExpr::new_with_parse_result(Span::new(0, 2), ExprList::new(Vec::new())), make_messages![
             Message::new_by_str(strings::EmptyIndexCall, vec![(Span::new(0, 2), strings::IndexCallHere)])
         ])

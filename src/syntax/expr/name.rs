@@ -104,7 +104,7 @@ impl Expr {
 fn name_parse() {
     use super::super::make_node;
 
-    assert_eq!{ make_node!("hello" as SimpleName), 
+    assert_eq!{ make_node!("hello" as Name), 
         Expr::SimpleName(SimpleName::new(1, Span::new(0, 4)))
     }
     //              0        1         2         3         4

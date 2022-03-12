@@ -1,11 +1,11 @@
 
 fn main() {
-    for y in 0f32 - 15f32 : 15f32 {
-        for x in 0f32 - 30f32 : 30f32 {
-            x = x / 20f32;
-            y = y / (0f32 - 10f32);
-            var f32 a = x * x + y * y - 1f32;
-            var bool is_star = a * a * a - x * x * y * y * y <= 0f32;
+    for y in 0r32 - 15r32 .. 15r32 {
+        for x in 0r32 - 30r32 .. 30r32 {
+            x = x / 20r32;
+            y = y / (0r32 - 10r32);
+            var a = x * x + y * y - 1r32;
+            var is_star = a * a * a - x * x * y * y * y <= 0r32;
             if is_star {
                 write("*");
             } else {

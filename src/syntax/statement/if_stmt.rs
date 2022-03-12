@@ -170,22 +170,11 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for IfStatement where F: FileSys
 
 #[cfg(test)] #[test]
 fn if_stmt_parse() {
-    use crate::source::SymbolCollection;
-    use crate::lexical::LitValue;
-    use super::super::ExprList;
-    use super::super::FnCallExpr;
-    use super::super::MemberAccessExpr;
-    use super::super::SimpleName;
-    use super::super::ArrayDef;
-    use super::super::SimpleExprStatement;
-    use super::super::LitExpr;
-    use super::super::Statement;
-    use super::super::TestInput;
-    use super::super::WithTestInput;
+    use super::super::{make_node, FnCallExpr, MemberAccessExpr, SimpleName, ArrayDef, SimpleExprStatement, LitExpr, LitValue, Statement};
 
     //                                      0        1         2         3
     //                                      0123456789012345678901234567890123456
-    assert_eq!{ make_node!("if true { } else if false { } else {}"),
+    assert_eq!{ make_node!("if true { } else if false { } else {}" as IfStatement),
         IfStatement::new_ifelse(
             IfClause::new(Span::new(0, 1), 
                 LitExpr::new(LitValue::from(true), Span::new(3, 6)),
@@ -204,11 +193,8 @@ fn if_stmt_parse() {
 
     //              0         1         2         3         4         5         6         7
     //              012345678901234567890123456789012345678901234567890123456789012345678901
-    TestInput::new("if 1 { sth.do_sth(a); other.do_other(b); } else { [1,2,3].map(writeln);}")
-        .set_syms(make_symbols!["sth", "do_sth", "a", "other", "do_other", "b", "writeln", "map"])
-        .apply::<IfStatement, _>()
-        .expect_no_message()
-        .expect_result(IfStatement::new_ifelse(
+    assert_eq!{ make_node!("if 1 { sth.do_sth(a); other.do_other(b); } else { [1,2,3].map(writeln);}" as IfStatement, [], ["sth", "do_sth", "a", "other", "do_other", "b", "writeln", "map"]),
+        IfStatement::new_ifelse(
             IfClause::new(Span::new(0, 1), 
                 LitExpr::new(LitValue::from(1i32), Span::new(3, 3)),
                 Block::new(Span::new(5, 41), vec![
@@ -260,6 +246,6 @@ fn if_stmt_parse() {
                     ))
                 ])
             )
-        ))
-    .finish();
+        )
+    }
 }

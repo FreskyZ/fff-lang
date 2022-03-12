@@ -115,7 +115,7 @@ fn binary_expr_format() {
 #[cfg(test)] #[test]
 fn binary_expr_parse() {
     use super::super::{make_node};
-    use super::{LitExpr, LitValue, ArrayDef, SimpleName, ExprList};
+    use super::{LitExpr, LitValue, ArrayDef, SimpleName};
 
     //                                     123456789012345
     assert_eq!{ make_node!("[1] * [2] / [3]" as BinaryExpr), 

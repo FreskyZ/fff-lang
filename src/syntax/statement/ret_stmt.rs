@@ -59,14 +59,10 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for ReturnStatement where F: Fil
 
 #[cfg(test)] #[test]
 fn ret_stmt_parse() {
-    use crate::lexical::LitValue;
-    use crate::lexical::Separator;
-    use super::super::LitExpr;
-    use super::super::BinaryExpr;
-    use super::super::WithTestInput;
+    use super::super::{make_node, LitExpr, LitValue, BinaryExpr};
 
-    assert_eq!{ make_node!("return;"), ReturnStatement::new_unit(Span::new(0, 6)) }
-    assert_eq!{ make_node!("return 1 + 1;"), 
+    assert_eq!{ make_node!("return;" as ReturnStatement), ReturnStatement::new_unit(Span::new(0, 6)) }
+    assert_eq!{ make_node!("return 1 + 1;" as ReturnStatement), 
         ReturnStatement::new_expr(
             Span::new(0, 12), 
             Expr::Binary(BinaryExpr::new(

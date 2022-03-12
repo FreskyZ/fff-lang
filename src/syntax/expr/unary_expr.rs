@@ -4,8 +4,7 @@
 ///! unary_expr = { unary_operator } postfix_expr
 
 use crate::syntax::prelude::*;
-use super::Expr;
-use super::PostfixExpr;
+use super::{Expr, PostfixExpr};
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct UnaryExpr {
@@ -64,21 +63,20 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for UnaryExpr where F: FileSyste
 
 #[cfg(test)] #[test]
 fn unary_expr_parse() {
-    use crate::lexical::LitValue;
-    use super::LitExpr;
-    use super::super::WithTestInput;
+    use super::super::make_node;
+    use super::{LitExpr, LitValue};
     
-    assert_eq!{ make_node!("1"), 
+    assert_eq!{ make_node!("1" as Expr), 
         Expr::Lit(LitExpr::new(LitValue::from(1i32), Span::new(0, 0))) 
     }
 
-    assert_eq!{ make_node!("!~!1"),
+    assert_eq!{ make_node!("!~!1" as UnaryExpr),
         Expr::Unary(UnaryExpr::new(
-            Separator::LogicalNot, Span::new(0, 0),
+            Separator::Not, Span::new(0, 0),
             Expr::Unary(UnaryExpr::new(
-                Separator::BitNot, Span::new(1, 1),            
+                Separator::Tilde, Span::new(1, 1),            
                 Expr::Unary(UnaryExpr::new(
-                    Separator::LogicalNot, Span::new(2, 2),
+                    Separator::Not, Span::new(2, 2),
                     Expr::Lit(LitExpr::new(LitValue::from(1i32), Span::new(3, 3))),
                 ))
             ))

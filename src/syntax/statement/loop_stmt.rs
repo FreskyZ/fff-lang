@@ -73,14 +73,10 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for LoopStatement where F: FileS
 
 #[cfg(test)] #[test]
 fn loop_stmt_format() {
-    use crate::source::SymbolCollection;
-    use super::super::TestInput;
-    use super::super::WithTestInput;
+    use super::super::make_node;
     
     //                  1234567890123456789 0123 45678
-    let actual = LoopStatement::with_test_input(
-        TestInput::new("@@: loop { println(\"233\"); }").set_syms(make_symbols!["@", "println", "233"])).0.unwrap().format(Formatter::empty());
-    let expect = r#"loop-stmt <<0>0-27>
+    assert_eq!{ make_node!("@@: loop { println(\"233\"); }" as LoopStatement, [], ["@", "println", "233"]).format(Formatter::empty()), r#"loop-stmt <<0>0-27>
   loop-name #1 <<0>0-2>
   "loop" <<0>4-7>
   body <<0>9-27>
@@ -88,33 +84,20 @@ fn loop_stmt_format() {
       fn-call <<0>11-24>
         base-is ident-use #2 <<0>11-17>
         parenthenes <<0>18-24>
-        literal #3 <<0>19-23>"#;
-
-    if actual != expect { panic!("assertion failed: left: {}, right: {}", actual, expect) }
+        literal #3 <<0>19-23>"#
+    }
 }
 
 #[cfg(test)] #[test]
 fn loop_stmt_parse() {
-    use crate::source::SymbolCollection;
-    use crate::lexical::LitValue;
-    use super::super::LitExpr;
-    use super::super::SimpleName;
-    use super::super::WithTestInput;
-    use super::super::Statement;
-    use super::super::SimpleExprStatement;
-    use super::super::FnCallExpr;
-    use super::super::ExprList;
-    use super::super::TestInput;
+    use super::super::{make_node, LitExpr, SimpleName, Statement, SimpleExprStatement, FnCallExpr};
 
-    assert_eq!{ make_node!("loop {}"),
+    assert_eq!{ make_node!("loop {}" as LoopStatement),
         LoopStatement::new_no_label(Span::new(0, 3), Block::new(Span::new(5, 6), vec![]))
     }
     //                                        1234567890123456789 0123 45678
-    TestInput::new("@@: loop { println(\"233\"); }")
-        .set_syms(make_symbols!["@", "println", "233"])
-        .apply::<LoopStatement, _>()
-        .expect_no_message()
-        .expect_result(LoopStatement::new_with_label(
+    assert_eq!{ make_node!("@@: loop { println(\"233\"); }" as LoopStatement, [], ["@", "println", "233"]),
+        LoopStatement::new_with_label(
             LabelDef::new(1, Span::new(0, 2)),
             Span::new(4, 7),
             Block::new(Span::new(9, 27), vec![
@@ -122,11 +105,11 @@ fn loop_stmt_parse() {
                     FnCallExpr::new(
                         SimpleName::new(2, Span::new(11, 17)),
                         Span::new(18, 24), make_exprs![
-                            LitExpr::new(make_lit!(str, 3), Span::new(19, 23))
+                            LitExpr::new(3u32, Span::new(19, 23))
                         ]
                     )
                 ))
             ])
-        ))
-    .finish();
+        )
+    }
 }

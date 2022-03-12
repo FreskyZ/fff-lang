@@ -76,35 +76,24 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for WhileStatement where F: File
 
 #[cfg(test)] #[test]
 fn while_stmt_parse() {
-    use crate::source::SymbolCollection;
-    use crate::lexical::LitValue;
-    use super::super::LitExpr;
-    use super::super::SimpleName;
-    use super::super::Statement;
-    use super::super::SimpleExprStatement;
-    use super::super::FnCallExpr;
-    use super::super::ExprList;
-    use super::super::TestInput;
+    use super::super::{make_node, LitExpr, SimpleName, Statement, SimpleExprStatement, FnCallExpr};
     //                                           0        1         2         3         4        
     //                                           01234567890123456789012345 67890123456789012 3456
-    TestInput::new("@2: while true { writeln(\"fresky hellooooo\"); }")
-        .set_syms(make_symbols!["2", "writeln", "fresky hellooooo"])
-        .apply::<WhileStatement, _>()
-        .expect_no_message()
-        .expect_result(WhileStatement::new_with_label(
+    assert_eq!{ make_node!("@2: while true { writeln(\"fresky hellooooo\"); }" as WhileStatement, [], ["2", "writeln", "fresky hellooooo"]),
+        WhileStatement::new_with_label(
             LabelDef::new(1, Span::new(0, 2)),
             Span::new(4, 8),
-            Expr::Lit(LitExpr::new(LitValue::from(true), Span::new(10, 13))),
+            Expr::Lit(LitExpr::new(true, Span::new(10, 13))),
             Block::new(Span::new(15, 46), vec![
                 Statement::SimpleExpr(SimpleExprStatement::new(Span::new(17, 44), 
                     FnCallExpr::new(
                         SimpleName::new(2, Span::new(17, 23)),
                         Span::new(24, 43), make_exprs![
-                            LitExpr::new(make_lit!(str, 3), Span::new(25, 42))
+                            LitExpr::new(4u32, Span::new(25, 42))
                         ]
                     )
                 ))
             ])
-        ))
-    .finish();
+        )
+    }
 }

@@ -5,12 +5,17 @@ type Span {
 }
 
 // without ADT or union, you have to do this, at least you must have a C style enum
-enum TokenType {
+/*enum TokenType {
     StringLiteral,
     NumericLiteral,
     Identifier,
     Operator,
-}
+}*/
+var StringLiteral = 1;
+var NumericLiteral = 2;
+var Identifier = 3;
+var Operator = 4;
+
 type Token {
     ty: TokenType,
     span: Span,
@@ -19,5 +24,31 @@ type Token {
 }
 
 fn lex(src: string) -> Token {
-    
+    var current_index = 0;
+    loop {
+        if src[current_index] == ' ' {
+            current_index += 1;
+        }
+    }
+    if src[current_index] == '/' && src[current_index + 1] == '/' {
+        loop {
+            if src[current_index] != '\n' {
+                break;
+            }
+            current_index += 1;
+        }
+    }
+
+    if src[current_index] == '"' {
+        var raw = "";
+        loop {
+            if src[current_index] != '"' {
+                raw.push(src[current_index]);
+            }
+            current_index += 1;
+        }
+        // TODO: object literal
+        // return Token{ ty: StringLiteral, span: Span{ row: 1, col: 2 }, str_val: raw, u64_val: 0 };
+        return Token(StringLiteral, Span(1, 2), raw, 0);
+    }
 }

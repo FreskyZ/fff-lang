@@ -21,7 +21,7 @@ impl fmt::Debug for LabelDef {
 }
 impl LabelDef {
     
-    pub fn new(name: IsId, all_span: Span) -> LabelDef { LabelDef{ name, all_span } }
+    pub fn new(name: impl Into<IsId>, all_span: Span) -> LabelDef { LabelDef{ name: name.into(), all_span } }
 }
 impl ISyntaxGrammar for LabelDef {
     fn matches_first(tokens: [&Token; 3]) -> bool { if let &Token::Label(_) = tokens[0] { true } else { false } }
@@ -42,7 +42,7 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for LabelDef where F: FileSystem
 
 #[cfg(test)] #[test]
 fn label_def_parse() {
-    use super::super::WithTestInput;
+    use super::super::make_node;
 
-    assert_eq!(make_node!("@1:"), LabelDef::new(1, Span::new(0, 2)));
+    assert_eq!(make_node!("@1:" as LabelDef), LabelDef::new(1, Span::new(0, 2)));
 }

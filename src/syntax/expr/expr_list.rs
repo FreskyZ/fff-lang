@@ -81,7 +81,7 @@ macro_rules! make_exprs {
                 _retval.push(From::from($x));
             )*
         }
-        ExprList::new(retval)
+        crate::syntax::ExprList::new(retval)
     });
     ($($x:expr,)*) => (make_exprs![$($x),*])
 }

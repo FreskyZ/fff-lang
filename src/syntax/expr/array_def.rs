@@ -100,7 +100,7 @@ fn array_def_parse() {
 fn array_def_errors() {
     use super::super::{make_node};
 
-    assert_eq!{ make_node!("[ , ]" as ArrayDef, [], [], and messages), (
+    assert_eq!{ make_node!("[ , ]" as ArrayDef, and messages), (
         Expr::Array(ArrayDef::new(Span::new(0, 4), make_exprs![])),
         make_messages![
             Message::new_by_str(strings::UnexpectedSingleComma, vec![(Span::new(0, 4), strings::ArrayDefHere)])

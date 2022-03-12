@@ -51,12 +51,12 @@ impl ForStatement {
     }
     pub fn new_with_label<T: Into<Expr>>(
             all_span: Span, loop_name: LabelDef, for_span: Span, 
-            iter_name: IsId, iter_span: Span, iter_expr: T, 
+            iter_name: impl Into<IsId>, iter_span: Span, iter_expr: T, 
             body: Block) -> ForStatement {
         ForStatement { 
             loop_name: Some(loop_name),
             for_span,
-            iter_name, iter_span, 
+            iter_name: iter_name.into(), iter_span, 
             iter_expr: iter_expr.into(),
             body, all_span
         }
@@ -96,39 +96,24 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for ForStatement where F: FileSy
 
 #[cfg(test)] #[test]
 fn for_stmt_parse() {
-    use crate::source::SymbolCollection;
-    use crate::lexical::LitValue;
-    use super::super::SimpleName;
-    use super::super::LitExpr;
-    use super::super::SimpleExprStatement;
-    use super::super::Statement;
-    use super::super::MemberAccessExpr;
-    use super::super::FnCallExpr;
-    use super::super::ExprList;
-    use super::super::TestInput;
+    use super::super::{make_node, SimpleName, LitExpr, LitValue, SimpleExprStatement, Statement, MemberAccessExpr, FnCallExpr, ExprList};
 
-    //                                       123456789012345678
-    TestInput::new("@2: for i in 42 {}")
-        .set_syms(make_symbols!["2", "i"])
-        .apply::<ForStatement, _>()
-        .expect_no_message()
-        .expect_result(ForStatement::new_with_label(Span::new(0, 17),
+    //                      0123456789012345678
+    assert_eq!{ make_node!("@2: for i in 42 {}" as ForStatement, [Span::new(1, 1), Span::new(8, 8)]),
+        ForStatement::new_with_label(Span::new(0, 17),
             LabelDef::new(1, Span::new(0, 2)),
             Span::new(4, 6),
             2, Span::new(8, 8),
-            Expr::Lit(LitExpr::new(LitValue::from(42), Span::new(13, 14))),
+            Expr::Lit(LitExpr::new(LitValue::from(42i32), Span::new(13, 14))),
             Block::new(Span::new(16, 17), vec![])
-        ))
-    .finish();
+        )
+    }
 
     //              0         1         2         3         4         5         6         7         
     //              01234567890123456789012345678901234567890123456789012345678901 23456789012 34567
-    TestInput::new("@hello: for _ in range(0, 10).enumerate().reverse() { writeln(\"helloworld\"); }")
-    //                           1        2    3        4            5          6          7
-        .set_syms(make_symbols!["hello", "_", "range", "enumerate", "reverse", "writeln", "helloworld"])
-        .apply::<ForStatement, _>()
-        .expect_no_message()
-        .expect_result(ForStatement::new_with_label(Span::new(0, 77),
+    assert_eq!{ make_node!("@hello: for _ in range(0, 10).enumerate().reverse() { writeln(\"helloworld\"); }" as ForStatement, 
+        [], ["hello", "_", "range", "enumerate", "reverse", "writeln", "helloworld"]),
+        ForStatement::new_with_label(Span::new(0, 77),
             LabelDef::new(1, Span::new(0, 6)),
             Span::new(8, 10),
             2, Span::new(12, 12),
@@ -140,7 +125,7 @@ fn for_stmt_parse() {
                                 SimpleName::new(3, Span::new(17, 21)),
                                 Span::new(22, 28), make_exprs![
                                     LitExpr::new(LitValue::from(0i32), Span::new(23, 23)),
-                                    LitExpr::new(LitValue::from(10), Span::new(26, 27)),
+                                    LitExpr::new(LitValue::from(10i32), Span::new(26, 27)),
                                 ]
                             ),
                             Span::new(29, 29),
@@ -158,11 +143,11 @@ fn for_stmt_parse() {
                     FnCallExpr::new(
                         SimpleName::new(6, Span::new(54, 60)),
                         Span::new(61, 74), make_exprs![
-                            LitExpr::new(make_lit!(str, 7), Span::new(62, 73))
+                            LitExpr::new(7u32, Span::new(62, 73))
                         ]
                     )
                 ))
             ])
-        ))
-    .finish();
+        )
+    }
 }

@@ -147,13 +147,12 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for RangeExpr where F: FileSyste
 
 #[cfg(test)] #[test]
 fn range_expr_parse() {
-    use crate::lexical::LitValue;
-    use super::LitExpr;
-    use super::super::WithTestInput;
+    use super::super::make_node;
+    use super::{LitExpr, LitValue};
 
-    assert_eq!{ make_node!(".."), Expr::RangeFull(RangeFullExpr::new(Span::new(0, 1))) }
+    assert_eq!{ make_node!(".." as RangeExpr), Expr::RangeFull(RangeFullExpr::new(Span::new(0, 1))) }
 
-    assert_eq!{ make_node!("..1 + 1"), 
+    assert_eq!{ make_node!("..1 + 1" as RangeExpr), 
         Expr::RangeRight(RangeRightExpr::new(Span::new(0, 6), BinaryExpr::new(
             LitExpr::new(LitValue::from(1i32), Span::new(2, 2)),
             Separator::Add, Span::new(4, 4),
@@ -161,7 +160,7 @@ fn range_expr_parse() {
         )))
     }
 
-    assert_eq!{ make_node!("1 .."),
+    assert_eq!{ make_node!("1 .." as RangeExpr),
         Expr::RangeLeft(RangeLeftExpr::new(Span::new(0, 3), LitExpr::new(LitValue::from(1i32), Span::new(0, 0))))
     }
 }

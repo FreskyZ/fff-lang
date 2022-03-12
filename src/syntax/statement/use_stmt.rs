@@ -66,17 +66,17 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for UseStatement where F: FileSy
 
 #[cfg(test)] #[test]
 fn use_stmt_parse() {
-    use super::super::WithTestInput;
+    use super::super::make_node;
 
     assert_eq!{
-        make_node!("use a;"),
+        make_node!("use a;" as UseStatement),
         UseStatement::new_default(Span::new(0, 5),
             Name::new(Span::new(4, 4), vec![SimpleName::new(1, Span::new(4, 4))])
         )
     }
 
     assert_eq!{ //                   0123456789012345678901234567890
-        make_node!("use std::fmt::Debug as Display;"),
+        make_node!("use std::fmt::Debug as Display;" as UseStatement),
         UseStatement::new_target(Span::new(0, 30), 
             Name::new(Span::new(4, 18), vec![
                 SimpleName::new(1, Span::new(4, 6)),

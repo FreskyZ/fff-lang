@@ -9,9 +9,6 @@ mod items;
 mod statement;
 mod format_helper;
 mod module;
-//mod syntax_tree;
-#[cfg(test)]
-mod test_helper;
 
 // common imports for syntax tree node parsers
 pub mod prelude {
@@ -69,17 +66,16 @@ pub use statement::Item;
 pub use module::Module;
 
 #[cfg(test)]
-pub(crate) use test_helper::{make_node, try_make_node};
+pub(crate) use parse_sess::make_node;
 
 // TODO: 
 // replace more proper place by IdentExpr and ExprList
 // abort IdentExpr to use Name, check name should be single segment at many where
 
-pub fn parse<'ecx, 'scx, F>(chars: crate::lexical::Parser<'ecx, 'scx, F>) -> Module where F: crate::source::FileSystem {
+pub fn parse<'ecx, 'scx, F>(chars: crate::lexical::Parser<'ecx, 'scx, F>) -> Result<Module, ()> where F: crate::source::FileSystem {
     use prelude::ISyntaxParse;
     let mut context = prelude::ParseSession::new(chars);
-    match Module::parse(&mut context) {
-        Ok(v) => { context.base.finish(); v },
-        Err(_) => { println!("{:?}", context.base.diagnostics.format(Some(context.base.chars.context))); context.base.finish(); Module::new(Vec::new()) }
-    }
+    let result = Module::parse(&mut context);
+    context.base.finish();
+    result
 }

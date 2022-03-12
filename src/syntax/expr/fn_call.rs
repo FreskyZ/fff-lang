@@ -88,7 +88,7 @@ fn fn_call_parse() {
 fn fn_call_errors() {
     use super::super::{make_node};
 
-    assert_eq!{ make_node!("(,)" as FnCallExpr, [], [], and messages),
+    assert_eq!{ make_node!("(,)" as FnCallExpr, and messages),
         (FnCallExpr::new_with_parse_result(Span::new(0, 2), ExprList::new(Vec::new())), make_messages![
             Message::new_by_str(strings::UnexpectedSingleComma, vec![(Span::new(0, 2), strings::FnCallHere)])
         ])

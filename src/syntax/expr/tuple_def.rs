@@ -87,8 +87,7 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for TupleDef where F: FileSystem
 
 #[cfg(test)] #[test]
 fn tuple_def_format() {
-    use crate::lexical::LitValue;
-    use super::LitExpr;
+    use super::{LitExpr, LitValue};
 
     assert_eq!{
         TupleDef::new(Span::new(0, 42), make_exprs![]).format(Formatter::with_test_indent(1)),
@@ -107,18 +106,18 @@ fn tuple_def_format() {
 
 #[cfg(test)] #[test]
 fn tuple_def_parse() {
+    use super::super::make_node;
     use super::BinaryExpr;
-    use super::super::WithTestInput;
 
     //                                   01234567
-    assert_eq!{ make_node!("(1, '2')"),
+    assert_eq!{ make_node!("(1, '2')" as TupleDef),
         Expr::Tuple(TupleDef::new(Span::new(0, 7), make_exprs![
             LitExpr::new(LitValue::from(1i32), Span::new(1, 1)),
             LitExpr::new(LitValue::from('2'), Span::new(4, 6))
         ]))
     }
     //                                   0123456
-    assert_eq!{ make_node!("(1 + 1)"),
+    assert_eq!{ make_node!("(1 + 1)" as TupleDef),
         Expr::Paren(ParenExpr::new(Span::new(0, 6), 
             BinaryExpr::new(
                 LitExpr::new(LitValue::from(1i32), Span::new(1, 1)), 
@@ -131,14 +130,11 @@ fn tuple_def_parse() {
 
 #[cfg(test)] #[test]
 fn tuple_def_errors() {
-    use crate::diagnostics::MessageCollection;
-    use super::super::TestInput;
+    use super::super::make_node;
     
-    TestInput::new("( , )")
-        .apply::<TupleDef, _>()
-        .expect_result(Expr::Tuple(TupleDef::new(Span::new(0, 4), make_exprs![])))
-        .expect_messages(make_messages![
+    assert_eq!{ make_node!("( , )" as TupleDef, and messages),
+        (Expr::Tuple(TupleDef::new(Span::new(0, 4), make_exprs![])), make_messages![
             Message::new_by_str(strings::UnexpectedSingleComma, vec![(Span::new(0, 4), strings::TupleDefHere)])
         ])
-    .finish();
+    }
 }
