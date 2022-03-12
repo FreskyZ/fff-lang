@@ -33,7 +33,7 @@ macro_rules! case {
     ($src:literal, [$($span:expr),*], [$($string:literal),*] expect [$($expect_token:expr),+$(,)?]) =>
         (testcase(make_source!($src), &[$($span),*], &[$($string),*], vec![$($expect_token),+], MessageCollection::new(), line!()));
     ($src:literal, [$($span:expr),*], [$($string:literal),*] expect [$($expect_token:expr),+$(,)?], $expect_messages: expr) => 
-        (v1234_testcase(make_source!($src), &[$($span),*], &[$($string),*], vec![$($expect_token),+], $expect_messages, line!()));
+        (testcase(make_source!($src), &[$($span),*], &[$($string),*], vec![$($expect_token),+], $expect_messages, line!()));
 }
 
 // make token
@@ -107,7 +107,7 @@ fn string_literal() {
     case!{ r#""Hello, world!""# expect [t!(2: str, 0, 14)] }
 
     // unexpected eof
-    case!{ r#""He"# expect [t!(1: str, 0, 3)], make_messages![
+    case!{ r#""He"# expect [t!(1: str, 0, 2)], make_messages![
         Message::new_by_str(strings::UnexpectedEOF, vec![
             (Span::new(0, 0), strings::StringLiteralStartHere),
             (Span::new(3, 3), strings::EOFHere)
@@ -116,11 +116,11 @@ fn string_literal() {
 
     // unexpected EOF, last escaped quote recorded
     //        0123456789
-    case!{ r#""He\"l\"lo"# expect [t!(1: str, 0, 10)], make_messages![
+    case!{ r#""He\"l\"lo"# expect [t!(1: str, 0, 9)], make_messages![
         Message::new_by_str(strings::UnexpectedEOF, vec![
             (Span::new(0, 0), strings::StringLiteralStartHere),
             (Span::new(10, 10), strings::EOFHere),
-            (Span::new(6, 6), strings::LastEscapedQuoteHere),
+            (Span::new(6, 7), strings::LastEscapedQuoteHere),
         ])
     ]}
 
@@ -128,31 +128,49 @@ fn string_literal() {
     case!{ r#""H\t\n\0\'\"llo""#, [], ["H\t\n\0'\"llo"] expect [t!(2: str, 0, 15)] }
 
     // error normal escape
-    case!{ r#""h\c\d\e\n\g""# expect [t!(1: str, 0, 12)], make_messages![
+    case!{ r#""h\c\d\e\n\g""#, [], ["h\n"] expect [t!(2: str, 0, 12)], make_messages![
         Message::new(format!("{} '\\{}'", strings::UnknownCharEscape, 'c'), vec![
             (Span::new(0, 0), strings::StringLiteralStartHere.to_owned()),
-            (Span::new(2, 2), strings::UnknownCharEscapeHere.to_owned()),
+            (Span::new(2, 3), strings::UnknownCharEscapeHere.to_owned()),
         ]),
         Message::new(format!("{} '\\{}'", strings::UnknownCharEscape, 'd'), vec![
             (Span::new(0, 0), strings::StringLiteralStartHere.to_owned()),
-            (Span::new(4, 4), strings::UnknownCharEscapeHere.to_owned()),
+            (Span::new(4, 5), strings::UnknownCharEscapeHere.to_owned()),
         ]),
         Message::new(format!("{} '\\{}'", strings::UnknownCharEscape, 'e'), vec![
             (Span::new(0, 0), strings::StringLiteralStartHere.to_owned()),
-            (Span::new(6, 6), strings::UnknownCharEscapeHere.to_owned()),
+            (Span::new(6, 7), strings::UnknownCharEscapeHere.to_owned()),
         ]),
         Message::new(format!("{} '\\{}'", strings::UnknownCharEscape, 'g'), vec![
             (Span::new(0, 0), strings::StringLiteralStartHere.to_owned()),
-            (Span::new(10, 10), strings::UnknownCharEscapeHere.to_owned()),
+            (Span::new(10, 11), strings::UnknownCharEscapeHere.to_owned()),
         ])
     ]}
 
     // unicode escape
     case!{ r#""H\uABCDel""#, [], ["H\u{ABCD}el"] expect [t!(2: str, 0, 10)] } 
     
-    // error unicode escape, TODO: old comment says this should be 0, 15, check after refactored char literal parser
+    // unsxpected char in unicode escape
+    case!{ "\"\\u123H\"" expect [t!(1: str, 0, 7)], make_messages![
+        Message::with_help_by_str(strings::InvalidUnicodeCharEscape, vec![
+            (Span::new(1, 1), strings::UnicodeCharEscapeStartHere), 
+            (Span::new(6, 6), strings::UnicodeCharEscapeInvalidChar)
+        ], vec![
+            strings::UnicodeCharEscapeHelpSyntax,
+        ]),
+    ]}
+
+    case!{ "\"\\uH123\"" expect [t!(1: str, 0, 7)], make_messages![
+        Message::with_help_by_str(strings::InvalidUnicodeCharEscape, vec![
+            (Span::new(1, 1), strings::UnicodeCharEscapeStartHere), 
+            (Span::new(3, 3), strings::UnicodeCharEscapeInvalidChar)
+        ], vec![
+            strings::UnicodeCharEscapeHelpSyntax,
+        ]),
+    ]}
+
     //        01234567890123456
-    case!{ r#""H\uABCHel\uABgC""# expect [t!(1: str, 0, 16)], make_messages![
+    case!{ r#""H\uABCHel\uABgC""#, [], ["Hel"] expect [t!(2: str, 0, 16)], make_messages![
         Message::with_help_by_str(strings::InvalidUnicodeCharEscape, vec![
             (Span::new(2, 2), strings::UnicodeCharEscapeStartHere),
             (Span::new(7, 7), strings::UnicodeCharEscapeInvalidChar)
@@ -169,7 +187,7 @@ fn string_literal() {
     
     // TODO: old comment says this should be 0, 11, check after refactored char literal parser
     //      0 12 3456789012
-    case!{ "\"H\\U0011ABCD\"" expect [t!(1: str, 0, 12)], make_messages![
+    case!{ "\"H\\U0011ABCD\"", [], ["H"] expect [t!(2: str, 0, 12)], make_messages![
         Message::with_help(strings::InvalidUnicodeCharEscape.to_owned(), vec![
             (Span::new(2, 11), strings::UnicodeCharEscapeHere.to_owned()),
         ], vec![
@@ -183,24 +201,23 @@ fn string_literal() {
         Message::with_help(strings::InvalidUnicodeCharEscape.to_owned(), vec![
             (Span::new(1, 6), strings::UnicodeCharEscapeHere.to_owned()),
         ], vec![
-            format!("{}{}", strings::UnicodeCharEscapeCodePointValueIs, "d900".to_owned()),
+            format!("{}{}", strings::UnicodeCharEscapeCodePointValueIs, "D900".to_owned()),
             strings::UnicodeCharEscapeHelpValue.to_owned(),
         ])
     ] }
 
-    // unexpected eof in unicode escape
-    case!{ r#""H\u""# expect [t!(1: str, 0, 4)], make_messages![
-        Message::with_help_by_str(strings::UnexpectedStringLiteralEnd, vec![
-            (Span::new(0, 0), strings::StringLiteralStartHere),
-            (Span::new(2, 2), strings::UnicodeCharEscapeStartHere),
-            (Span::new(4, 4), strings::StringLiteralEndHere),
+    // unexpected end in unicode escape
+    case!{ r#""H\u""#, [], ["H"] expect [t!(2: str, 0, 4)], make_messages![
+        Message::with_help_by_str(strings::InvalidUnicodeCharEscape, vec![
+            (Span::new(2, 3), strings::UnicodeCharEscapeHere),
         ], vec![
             strings::UnicodeCharEscapeHelpSyntax,
         ])
     ]}
 
     // unexpected eof in unicode escape
-    case!{ r#""h\U123"# expect [t!(1: str, 0, 7)], make_messages![
+    //        0123456
+    case!{ r#""h\U123"# expect [t!(1: str, 0, 6)], make_messages![
         Message::new_by_str(strings::UnexpectedEOF, vec![
             (Span::new(0, 0), strings::StringLiteralStartHere),
             (Span::new(7, 7), strings::EOFHere)
@@ -208,7 +225,7 @@ fn string_literal() {
     ]}
 
     // unexpected eof exactly after \
-    case!{ r#""he\"# expect [t!(1: str, 0, 4)], make_messages![
+    case!{ r#""he\"# expect [t!(1: str, 0, 3)], make_messages![
         Message::new_by_str(strings::UnexpectedEOF, vec![
             (Span::new(0, 0), strings::StringLiteralStartHere),
             (Span::new(4, 4), strings::EOFHere)
@@ -219,7 +236,8 @@ fn string_literal() {
     case!{ r#"r"hell\u\no""#, [], [r"hell\u\no"] expect [t!(2: rstr, 0, 11)] }
 
     // eof in raw string literal
-    case!{ r#"R"he"# expect [t!(1: rstr, 0, 4)], make_messages![
+    //        0123
+    case!{ r#"R"he"# expect [t!(1: rstr, 0, 3)], make_messages![
         Message::new_by_str(strings::UnexpectedEOF, vec![
             (Span::new(0, 0), strings::StringLiteralStartHere),
             (Span::new(4, 4), strings::EOFHere)
@@ -238,6 +256,10 @@ fn char_literal() {
     case!{ r"'\uABCD'" expect [t!('\u{ABCD}': char, 0, 7)] }
     // special normal escape
     case!{ r"'\''" expect [t!('\'': char, 0, 3)] }
+
+    // old cases from escape parser
+    case!{ r"'\u2764'" expect [t!('\u{2764}': char, 0, 7)] }
+    case!{ r"'\U00020E70'" expect [t!('\u{20E70}': char, 0, 11)] }
 
     // empty
     case!{ "''" expect [t!(0: char, 0, 1)], make_messages![
@@ -260,11 +282,38 @@ fn char_literal() {
     case!{ r"'\c'" expect [t!(0: char, 0, 3)], make_messages![
         Message::new(format!("{} '\\{}'", strings::UnknownCharEscape, 'c'), vec![
             (Span::new(0, 0), strings::CharLiteralStartHere.to_owned()), 
-            (Span::new(1, 1), strings::UnknownCharEscapeHere.to_owned()),
+            (Span::new(1, 2), strings::UnknownCharEscapeHere.to_owned()),
         ])
     ]}
 
     // unsxpected char in unicode escape
+    case!{ r"'\u123H'" expect [t!(0: char, 0, 7)], make_messages![
+        Message::with_help_by_str(strings::InvalidUnicodeCharEscape, vec![
+            (Span::new(1, 1), strings::UnicodeCharEscapeStartHere), 
+            (Span::new(6, 6), strings::UnicodeCharEscapeInvalidChar)
+        ], vec![
+            strings::UnicodeCharEscapeHelpSyntax,
+        ]),
+    ]}
+
+    case!{ r"'\uH123'" expect [t!(0: char, 0, 7)], make_messages![
+        Message::with_help_by_str(strings::InvalidUnicodeCharEscape, vec![
+            (Span::new(1, 1), strings::UnicodeCharEscapeStartHere), 
+            (Span::new(3, 3), strings::UnicodeCharEscapeInvalidChar)
+        ], vec![
+            strings::UnicodeCharEscapeHelpSyntax,
+        ]),
+    ]}
+    
+    // unexpected end in unicode escape
+    case!{ r"'\u'" expect [t!(0: char, 0, 3)], make_messages![
+        Message::with_help_by_str(strings::InvalidUnicodeCharEscape, vec![
+            (Span::new(1, 2), strings::UnicodeCharEscapeHere),
+        ], vec![
+            strings::UnicodeCharEscapeHelpSyntax,
+        ])
+    ]}
+
     //       012345
     case!{ r"'\uBG'" expect [t!(0: char, 0, 5)], make_messages![
         Message::with_help_by_str(strings::InvalidUnicodeCharEscape, vec![
@@ -273,8 +322,8 @@ fn char_literal() {
         ], vec![
             strings::UnicodeCharEscapeHelpSyntax,
         ]),
-        Message::with_help_by_str(strings::UnexpectedCharLiteralEnd, vec![
-            (Span::new(0, 5), strings::CharLiteralHere),
+        Message::with_help_by_str(strings::InvalidUnicodeCharEscape, vec![
+            (Span::new(1, 4), strings::UnicodeCharEscapeHere),
         ], vec![
             strings::UnicodeCharEscapeHelpSyntax
         ])
@@ -295,7 +344,7 @@ fn char_literal() {
         Message::with_help(strings::InvalidUnicodeCharEscape.to_owned(), vec![
             (Span::new(1, 6), strings::UnicodeCharEscapeHere.to_owned()), 
         ], vec![
-            format!("{}{}", strings::UnicodeCharEscapeCodePointValueIs, "da00".to_owned()),
+            format!("{}{}", strings::UnicodeCharEscapeCodePointValueIs, "DA00".to_owned()),
             strings::UnicodeCharEscapeHelpValue.to_owned(),
         ])
     ]}
@@ -317,7 +366,7 @@ fn char_literal() {
     // eof
     case!{ "'" expect [t!(0: char, 0, 0)], make_messages![
         Message::new_by_str(strings::UnexpectedEOF, vec![
-            (Span::new(0, 0), strings::CharLiteralHere),    
+            (Span::new(0, 0), strings::CharLiteralStartHere),    
             (Span::new(1, 1), strings::EOFHere)
         ])
     ]}
@@ -325,7 +374,7 @@ fn char_literal() {
     // eof after \
     case!{ r"'\" expect [t!(0: char, 0, 1)], make_messages![
         Message::new_by_str(strings::UnexpectedEOF, vec![
-            (Span::new(0, 1), strings::CharLiteralHere),      
+            (Span::new(0, 0), strings::CharLiteralStartHere),      
             (Span::new(2, 2), strings::EOFHere)
         ])
     ]}
@@ -333,7 +382,7 @@ fn char_literal() {
     // eof in unicode escape
     case!{ r"'\u" expect [t!(0: char, 0, 2)], make_messages![
         Message::new_by_str(strings::UnexpectedEOF, vec![
-            (Span::new(0, 2), strings::CharLiteralHere),
+            (Span::new(0, 0), strings::CharLiteralStartHere),
             (Span::new(3, 3), strings::EOFHere)
         ])
     ]}
@@ -341,26 +390,49 @@ fn char_literal() {
     // normal then eof
     case! { r"'A" expect [t!(0: char, 0, 1)], make_messages![
         Message::new_by_str(strings::UnexpectedEOF, vec![
-            (Span::new(0, 1), strings::CharLiteralHere),
+            (Span::new(0, 0), strings::CharLiteralStartHere),
             (Span::new(2, 2), strings::EOFHere)
         ])
     ]}
 
     // too long and eof
-    // TODO: try end the char literal at line end
     case! { "'ABC" expect [t!(0: char, 0, 3)], make_messages![
         Message::new_by_str(strings::UnexpectedEOF, vec![
-            (Span::new(0, 3), strings::CharLiteralHere),
+            (Span::new(0, 0), strings::CharLiteralStartHere),
             (Span::new(4, 4), strings::EOFHere)
+        ])
+    ]}
+
+    // \n in char literal, attention it is not \n escape
+    case! { "'\nascasdc" expect [t!(0: char, 0, 1), t!(2: ident, 2, 8)], make_messages![
+        Message::new_by_str(strings::UnexpectedEOL, vec![
+            (Span::new(0, 0), strings::CharLiteralStartHere),
+            (Span::new(1, 1), strings::EOLHere),
+        ])
+    ]}
+
+    // \n in char literal, already a valid code point
+    case! { "'A\n//\n" expect [t!(0: char, 0, 2)], make_messages![
+        Message::new_by_str(strings::UnexpectedEOL, vec![
+            (Span::new(0, 0), strings::CharLiteralStartHere),
+            (Span::new(2, 2), strings::EOLHere),
+        ])
+    ]}
+
+    // \n in char literal, too long
+    case! { "'ABCDE\ncqwedcqwdc" expect [t!(0: char, 0, 6), t!(2: ident, 7, 16)], make_messages![
+        Message::new_by_str(strings::UnexpectedEOL, vec![
+            (Span::new(0, 0), strings::CharLiteralStartHere),
+            (Span::new(6, 6), strings::EOLHere),
         ])
     ]}
 
     // special too long and eof
     // it was designed to let lexer revert and continue after last escape, but that's complex
-    // TODO add last escaped quote help like string
+    // now a new \n as char literal end mechanism added so no need for this
     case!{ r"'\'AB" expect [t!(0: char, 0, 4)], make_messages![
         Message::new_by_str(strings::UnexpectedEOF, vec![
-            (Span::new(0, 4), strings::CharLiteralHere),
+            (Span::new(0, 0), strings::CharLiteralStartHere),
             (Span::new(5, 5), strings::EOFHere),
         ])
     ]}

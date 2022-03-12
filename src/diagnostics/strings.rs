@@ -5,8 +5,10 @@
 pub const Empty: &str = "";
 
 pub const UnexpectedEOF: &str = "Unexpected EOF";
+pub const UnexpectedEOL: &str = "Unexpected end of line";
 pub const BlockCommentStartHere: &str = "Block comment starts here";
 pub const EOFHere: &str = "EOF here";
+pub const EOLHere: &str = "EOL here";
 pub const UnknownCharactor: &str = "Unknown charactor";
 pub const UnexpectedCharLiteralEnd: &str = "Unexpected char literal end";
 pub const CharLiteralStartHere: &str = "Char literal start here";

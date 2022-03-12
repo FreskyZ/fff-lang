@@ -25,6 +25,8 @@ impl Position {
     pub fn unwrap(self) -> u32 {
         self.0
     }
+
+    #[allow(dead_code)] // it is no longer used by literal parsers, but keep it
     pub fn offset(self, offset: i32) -> Self {
         Self(if offset >= 0 { self.0 + offset as u32 } else { self.0 - (-offset) as u32 })
     }

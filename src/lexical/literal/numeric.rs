@@ -1,7 +1,5 @@
 #![deny(overflowing_literals)]
-///! fff-lang
-///!
-///! numeric literal parser
+///! lexical::numeric: generic numeric parser
 
 // Syntax:
 // num-lit = int-lit | rational-lit
@@ -39,7 +37,6 @@
 //        '-' <1:4-1:4>
 //      '-' <1:11-1:11》
 //      Literal (i32)1 <1:12-1:12>
-// ...let it go
 
 use std::cell::Cell;
 use crate::source::{Span, EOF};

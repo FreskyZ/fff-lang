@@ -5,7 +5,9 @@ edition = "2021"
 
 [features]
 trace_xid = []
-trace_char_literal = []
+trace_lexical_str = []
+trace_lexical_char = []
+trace_lexical_escape = []
 trace_num_lit_parse = []
 trace_primary_expr_parse = []
 trace_postfix_expr_parse = []
