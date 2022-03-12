@@ -13,7 +13,6 @@ mod literal {
 }
 
 use unicode::CharExt;
-use literal::numeric::parse_numeric_literal;
 pub use token::{Separator, SeparatorKind, Keyword, KeywordKind};
 pub use token::{Numeric, StringLiteralType, Token, TokenFormat};
 
@@ -21,55 +20,67 @@ pub use token::{Numeric, StringLiteralType, Token, TokenFormat};
 pub struct Parser<'ecx, 'scx, F = DefaultFileSystem> {
     diagnostics: &'ecx mut MessageCollection,
     chars: SourceChars<'scx, F>,
-    current: (char, Position),
-    peek1: (char, Position),
-    peek2: (char, Position),
+    current: char,
+    current_position: Position,
+    peek: char,
+    peek_position: Position,
+    peek2: char,
+    peek2_position: Position,
     check_confusable: bool, // check confusable when consuming, off for comment/string/char (level 1), on for ident/label/numeric
 }
 
 impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
 
     pub fn new(mut chars: SourceChars<'s, F>, diagnostics: &'e mut MessageCollection) -> Self {
-        Self{ diagnostics, current: chars.next(), peek1: chars.next(), peek2: chars.next(), chars, check_confusable: false }
+        let (current, current_position) = chars.next();
+        let (peek, peek_position) = chars.next();
+        let (peek2, peek2_position) = chars.next();
+        Self{ diagnostics, current, current_position, peek, peek_position, peek2, peek2_position, chars, check_confusable: false }
     }
 
     // eat and check confusable
     fn eat(&mut self) {
-        std::mem::swap(&mut self.current, &mut self.peek1);
-        std::mem::swap(&mut self.peek1, &mut self.peek2);
-        self.peek2 = self.chars.next();
+        self.current = self.peek;
+        self.current_position = self.peek_position;
+        self.peek = self.peek2;
+        self.peek_position = self.peek2_position;
+        let (peek2, peek2_position) = self.chars.next();
+        self.peek2 = peek2;
+        self.peek2_position = peek2_position;
+        // destructuring assignment is unstable
+        // (self.peek2, self.peek2_position) = self.chars.next();
 
-        if self.check_confusable && self.current.0 != EOF {
-            if let Some((unicode_char, unicode_name, ascii_char, ascii_name)) = unicode::check_confusable(self.current.0) {
+        if self.check_confusable && self.current != EOF {
+            if let Some((unicode_char, unicode_name, ascii_char, ascii_name)) = unicode::check_confusable(self.current) {
                 self.diagnostics.push(Message::with_help_by_str(strings::UnexpectedNonASCIIChar, vec![
-                    (self.current.1.into(), ""), 
+                    (self.current_position.into(), ""), 
                 ], vec![
                     &format!("Did you mean `{}`({}) by `{}`({})?", ascii_char, ascii_name, unicode_char, unicode_name),
                 ]));
-                self.current.0 = ascii_char;
+                self.current = ascii_char;
             }
         }
     }
 
     // return true for actually skipped something
     fn skip_whitespace(&mut self) -> bool {
-        let start_position = self.current.1;
+        let start_position = self.current_position;
         // TODO: add this to unicode
-        while self.current.0.is_whitespace() {
+        while self.current.is_whitespace() {
             self.eat();
         }
-        self.current.1 != start_position
+        self.current_position != start_position
     }
 
     // return true for actually skipped something
     fn skip_line_comment(&mut self) -> bool {
-        if let ('/', '/') = (self.current.0, self.peek1.0) {
+        if let ('/', '/') = (self.current, self.peek) {
             loop {
                 self.eat();
-                if self.current.0 == EOF {
+                if self.current == EOF {
                     break true;
                 }
-                if self.current.0 == '\n' {
+                if self.current == '\n' {
                     self.eat();
                     break true;
                 }
@@ -81,22 +92,22 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
 
     // return true for actually skipped something
     fn skip_block_comment(&mut self) -> bool {
-        if let ('/', '*') = (self.current.0, self.peek1.0) {
-            let start_position = self.current.1;
+        if let ('/', '*') = (self.current, self.peek) {
+            let start_position = self.current_position;
             let mut level = 0;
             loop {
                 self.eat();
-                if self.current.0 == EOF {
+                if self.current == EOF {
                     self.diagnostics.push(Message::new_by_str(strings::UnexpectedEOF, vec![
                         (start_position.into(), strings::BlockCommentStartHere),
-                        (self.current.1.into(), strings::EOFHere),
+                        (self.current_position.into(), strings::EOFHere),
                     ]));
                     break true;
                 }
-                if let ('/', '*') = (self.current.0, self.peek1.0) {
+                if let ('/', '*') = (self.current, self.peek) {
                     self.eat();
                     level += 1;
-                } else if let ('*', '/') = (self.current.0, self.peek1.0) {
+                } else if let ('*', '/') = (self.current, self.peek) {
                     self.eat();
                     if level == 0 {
                         self.eat();
@@ -113,10 +124,10 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
 
     fn parse_ident(&mut self) -> (Token, Span) {
         let mut value = String::new();
-        let mut span = self.current.1.into();
-        while self.current.0.is_id_continue() {
-            value.push(self.current.0);
-            span += self.current.1;
+        let mut span = self.current_position.into();
+        while self.current.is_id_continue() {
+            value.push(self.current);
+            span += self.current_position;
             self.eat();
         }
         return match Keyword::parse(&value) {
@@ -137,11 +148,11 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
 
     fn parse_label(&mut self) -> (Token, Span) {
         let mut value = String::new();
-        let mut span = self.current.1.into();
+        let mut span = self.current_position.into();
         self.eat(); // skip leading @
-        while self.current.0.is_label_continue() {
-            value.push(self.current.0);
-            span += self.current.1;
+        while self.current.is_label_continue() {
+            value.push(self.current);
+            span += self.current_position;
             self.eat();
         }
         return (Token::Label(self.chars.intern(&value)), span);
@@ -149,20 +160,20 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
 
     fn parse_separator(&mut self) -> (Token, Span) {
 
-        match Separator::parse3(self.current.0, self.peek1.0, self.peek2.0) {
+        match Separator::parse3(self.current, self.peek, self.peek2) {
             Some((separator, 1)) => {
-                let span = self.current.1.into();
+                let span = self.current_position.into();
                 self.eat();
                 (Token::Sep(separator), span)
             },
             Some((separator, 2)) => {
-                let span = self.current.1 + self.peek1.1;
+                let span = self.current_position + self.peek_position;
                 self.eat();
                 self.eat();
                 (Token::Sep(separator), span)
             },
             Some((separator, 3)) => {
-                let span = self.current.1 + self.peek2.1;
+                let span = self.current_position + self.peek2_position;
                 self.eat();
                 self.eat();
                 self.eat();
@@ -170,10 +181,10 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
             },
             _ => {
                 self.diagnostics.push(Message::new_by_str(strings::UnknownCharactor, vec![
-                    (self.current.1.into(), ""), 
+                    (self.current_position.into(), ""), 
                 ]));
                 // return empty string ident (which will not be created by parse ident) for unknown charactor
-                (Token::Ident(IsId::new(1)), self.current.1.into())
+                (Token::Ident(IsId::new(1)), self.current_position.into())
             }
         }
     }
@@ -187,8 +198,8 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
             || self.skip_block_comment() {}
         
         // put eof after skip comment or else eof after line/block comment will report unknown charactor
-        if let EOF = self.current.0 {
-            return (Token::EOF, self.current.1.into()); // no move next when meet EOF makes this iterator fuse
+        if let EOF = self.current {
+            return (Token::EOF, self.current_position.into()); // no move next when meet EOF makes this iterator fuse
         }
 
         if self.is_char_literal_start() {
@@ -200,33 +211,12 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
         }
 
         self.check_confusable = true;
-        if self.current.0.is_id_start() {
+        if self.current.is_id_start() {
             return self.parse_ident();
-        } else if self.current.0.is_label_start() {
+        } else if self.current.is_label_start() {
             return self.parse_label();
-            // TODO: move CharExt::is_numeric_{start|continue} into literal::numeric
-            // this is_numeric_start rejects hyphen
-            // numeric parser supports that but not used in lexical parser,
-            // keep for generic numeric parser (e.g. the one in standard library)
-        } else if self.current.0.is_numeric_start() {
-            let mut string_value = String::new();
-            let mut span = self.current.1.into();
-            while self.current.0.is_numeric_continue() {
-                // exclude 1..2 for range expression
-                // numeric parser supports that but not used in lexical parser, keep for generic numeric parser
-                if (self.current.0 == '.' && self.peek1.0 == '.')
-                    // exclude 1.to_string()
-                    // this also rejects 1._123, which is recognized as an error in 
-                    // numeric parser but not used in lexical parser, keep for generic numeric parser
-                    || (self.current.0 == '.' && self.peek1.0.is_id_start()) {
-                    break;
-                }
-                string_value.push(self.current.0);
-                span += self.current.1;
-                self.eat();
-            }
-            let (value, span) = parse_numeric_literal(string_value, span, self.diagnostics);
-            return (Token::Num(value.unwrap_or(Numeric::I32(0))), span);
+        } else if self.is_numeric_start() {
+            return self.parse_numeric_literal();
         }
         
         self.parse_separator()

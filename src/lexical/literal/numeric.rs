@@ -39,9 +39,9 @@
 //      Literal (i32)1 <1:12-1:12>
 
 use std::cell::Cell;
-use crate::source::{Span, EOF};
-use crate::diagnostics::{Message, MessageCollection, strings};
-use super::super::Numeric;
+use crate::source::{FileSystem, Span, EOF};
+use crate::diagnostics::{Message, strings};
+use super::super::{Parser, Token, Numeric, CharExt};
 
 struct BufChars<T> {
     chars: T,
@@ -215,7 +215,7 @@ fn u64_final_value(value: u64, is_positive: bool) -> Numeric {
 }
 
 // Actual impl, huge state machine
-fn str_to_num_lit_impl(raw: String, span: Span) -> Result<Numeric, Message> {
+fn parse_impl(raw: String, span: Span) -> Result<Numeric, Message> {
     use std::{ i8, u8, i16, u16, i32, u32, i64, u64, f32, f64 };
 
     if cfg!(feature = "trace_num_lit_parse") {
@@ -760,7 +760,7 @@ fn str_to_num_lit_impl(raw: String, span: Span) -> Result<Numeric, Message> {
                             Some(exp) => conv!(79, State::AfterE(value, exp, true, false)),
                         },
                         (Some(exp), false) => match exp.checked_sub(digit as i32) {
-                            None => reterr!(85, strings::FloatPointUnderflow),                                                                                         // LAST RETERR
+                            None => reterr!(85, strings::FloatPointUnderflow),             // LAST RETERR
                             Some(exp) => conv!(80, State::AfterE(value, exp, false, false)),
                         }
                     }
@@ -904,13 +904,42 @@ fn str_to_num_lit_impl(raw: String, span: Span) -> Result<Numeric, Message> {
     }
 }
 
-pub fn parse_numeric_literal(raw: String, pos: Span, messages: &mut MessageCollection) -> (Option<Numeric>, Span) {
+impl<'ecx, 'scx, F> Parser<'ecx, 'scx, F> where F: FileSystem {
     
-    match str_to_num_lit_impl(raw, pos) {
-        Ok(value) => (Some(value), pos),
-        Err(msg) => {
-            messages.push(msg);
-            (None, pos)
+    // only digit, no dot, and no hyphen,
+    // numeric parser supports hyphen but not used in lexical parser,
+    // but keep for generic numeric parser (e.g. the one in standard library)
+    pub(in super::super) fn is_numeric_start(&self) -> bool {
+        self.current.is_digit(10)
+    }
+
+    // Only digit or ASCII letters or underscore
+    fn is_numeric_continue(&self) -> bool {
+        self.current == '_' || self.current.is_digit(36) || self.current == '.'
+    }
+
+    pub(in super::super) fn parse_numeric_literal(&mut self) -> (Token, Span) {
+        
+        let mut string_value = String::new();
+        let mut span = self.current_position.into();
+        while self.is_numeric_continue() {
+            // exclude 1..2 for range expression
+            // numeric parser supports that but not used in lexical parser, keep for generic numeric parser
+            if (self.current == '.' && self.peek == '.')
+                // exclude 1.to_string()
+                // this also rejects 1._123, which is recognized as an error in 
+                // numeric parser but not used in lexical parser, keep for generic numeric parser
+                || (self.current == '.' && self.peek.is_id_start()) {
+                break;
+            }
+            string_value.push(self.current);
+            span += self.current_position;
+            self.eat();
+        }
+        
+        match parse_impl(string_value, span) {
+            Ok(result) => (Token::Num(result), span),
+            Err(diagnostics) => { self.diagnostics.push(diagnostics); (Token::Num(Numeric::I32(0)), span) }
         }
     }
 }
@@ -1007,12 +1036,12 @@ mod tests {
             ($input:expr, $expect:expr) => {{
                 #[cfg(feature = "trace_num_lit_parse")]
                 print!("\ncase {:?} at {}:", $input, line!());
-                assert!(rational_eq!(str_to_num_lit_impl($input.to_owned(), span).unwrap(), $expect));
+                assert!(rational_eq!(parse_impl($input.to_owned(), span).unwrap(), $expect));
             }};
             ($input:expr, err, $expect:expr) => {{
                 #[cfg(feature = "trace_num_lit_parse")]
                 print!("\ncase {:?} at {}:", $input, line!());
-                assert_eq!(str_to_num_lit_impl($input.to_owned(), span), Err($expect));
+                assert_eq!(parse_impl($input.to_owned(), span), Err($expect));
             }};
         }
         
