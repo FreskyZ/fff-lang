@@ -61,6 +61,10 @@ fn line_comment() {
     case!{ "ABC//DEF\n" expect [t!(2: ident, 0, 2)] }
     // and not ends with lf
     case!{ "ABC//DEF" expect [t!(2: ident, 0, 2)] }
+
+    // multiple lines of line comment
+    //      01234 56789 01234 567890123
+    case!{ "// 1\n// 2\n//3 \nsomething" expect [t!(2: ident, 15, 23)] }
 }
 
 #[test]
@@ -73,6 +77,26 @@ fn block_comment() {
         Message::new_by_str(strings::UnexpectedEOF, vec![
             (Span::new(1, 1), strings::BlockCommentStartHere),
             (Span::new(5, 5), strings::EOFHere),
+        ])
+    ]}
+
+    // nested block comment
+    case!{ "a/* 1 /* 2 */ 3 */" expect [t!(2: ident, 0, 0)] }
+    // nested block comment
+    case!{ "a/* 1 /* 2 /* 3 */ 4 */ 5 */" expect [t!(2: ident, 0, 0)] }
+
+    // unexpected eof in nested block comment
+    case!{ "A/* 1 /* 2" expect [t!(2: ident, 0, 0)], make_messages![
+        Message::new_by_str(strings::UnexpectedEOF, vec![
+            (Span::new(1, 1), strings::BlockCommentStartHere),
+            (Span::new(10, 10), strings::EOFHere),
+        ])
+    ]}
+    // unexpected eof in nested block comment
+    case!{ "A/* 1 /* 2 /* 3 */ /*" expect [t!(2: ident, 0, 0)], make_messages![
+        Message::new_by_str(strings::UnexpectedEOF, vec![
+            (Span::new(1, 1), strings::BlockCommentStartHere),
+            (Span::new(21, 21), strings::EOFHere),
         ])
     ]}
 }
@@ -191,8 +215,10 @@ fn string_literal() {
         ])
     ]}
 
+    // raw string literal
     case!{ r#"r"hell\u\no""#, [], [r"hell\u\no"] expect [t!(2: rstr, 0, 11)] }
 
+    // eof in raw string literal
     case!{ r#"R"he"# expect [t!(1: rstr, 0, 4)], make_messages![
         Message::new_by_str(strings::UnexpectedEOF, vec![
             (Span::new(0, 0), strings::StringLiteralStartHere),

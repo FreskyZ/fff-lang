@@ -26,18 +26,12 @@ pub struct Parser<'ecx, 'scx, F = DefaultFileSystem> {
     current: (char, Position),
     peek1: (char, Position),
     peek2: (char, Position),
+    check_confusable: bool, // check confusable when consuming, off for comment/string/char (level 1), on for ident/label/numeric
 }
 impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
 
     pub fn new(mut chars: SourceChars<'s, F>, diagnostics: &'e mut MessageCollection) -> Self {
-        Self{ diagnostics, current: chars.next(), peek1: chars.next(), peek2: chars.next(), chars, }
-    }
-
-    // eat not care about whatever is next char, use in comment and string literal
-    fn eatnc(&mut self) {
-        std::mem::swap(&mut self.current, &mut self.peek1);
-        std::mem::swap(&mut self.peek1, &mut self.peek2);
-        self.peek2 = self.chars.next();
+        Self{ diagnostics, current: chars.next(), peek1: chars.next(), peek2: chars.next(), chars, check_confusable: false }
     }
 
     // eat and check confusable
@@ -46,7 +40,7 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
         std::mem::swap(&mut self.peek1, &mut self.peek2);
         self.peek2 = self.chars.next();
 
-        if self.current.0 != EOF {
+        if self.check_confusable && self.current.0 != EOF {
             if let Some((unicode_char, unicode_name, ascii_char, ascii_name)) = unicode::check_confusable(self.current.0) {
                 self.diagnostics.push(Message::with_help_by_str(strings::UnexpectedNonASCIIChar, vec![
                     (self.current.1.into(), ""), 
@@ -58,61 +52,73 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
         }
     }
 
-    fn skip_line_comment(&mut self) {
+    // return true for actually skipped something
+    fn skip_whitespace(&mut self) -> bool {
+        let start_position = self.current.1;
+        // TODO: add this to unicode
+        while self.current.0.is_whitespace() {
+            self.eat();
+        }
+        self.current.1 != start_position
+    }
+
+    // return true for actually skipped something
+    fn skip_line_comment(&mut self) -> bool {
         if let ('/', '/') = (self.current.0, self.peek1.0) {
             loop {
-                self.eatnc();
+                self.eat();
                 if self.current.0 == EOF {
-                    break;
+                    break true;
                 }
                 if self.current.0 == '\n' {
-                    self.eatnc();
-                    break;
+                    self.eat();
+                    break true;
                 }
             }
+        } else {
+            false
         }
     }
 
-    fn skip_block_comment(&mut self) {
+    // return true for actually skipped something
+    fn skip_block_comment(&mut self) -> bool {
         if let ('/', '*') = (self.current.0, self.peek1.0) {
             let start_position = self.current.1;
             let mut level = 0;
             loop {
-                self.eatnc();
+                self.eat();
                 if self.current.0 == EOF {
                     self.diagnostics.push(Message::new_by_str(strings::UnexpectedEOF, vec![
                         (start_position.into(), strings::BlockCommentStartHere),
                         (self.current.1.into(), strings::EOFHere),
                     ]));
-                    break;
+                    break true;
                 }
                 if let ('/', '*') = (self.current.0, self.peek1.0) {
-                    self.eatnc();
+                    self.eat();
                     level += 1;
                 } else if let ('*', '/') = (self.current.0, self.peek1.0) {
-                    self.eatnc();
+                    self.eat();
                     if level == 0 {
-                        self.eatnc();
-                        break;
+                        self.eat();
+                        break true;
                     } else {
                         level -= 1;
                     }
                 }
             }
-        }
-    }
-
-    fn skip_whitespace(&mut self) {
-        while self.current.0.is_whitespace() {
-            self.eat();
+        } else {
+            false
         }
     }
 
     pub fn next(&mut self) -> (Token, Span) {
 
-        self.skip_whitespace();
-        self.skip_line_comment();
-        self.skip_block_comment();
+        self.check_confusable = false;
+        // there may be multiple things to be skipped before an actual token
+        while self.skip_whitespace()
+            || self.skip_line_comment()
+            || self.skip_block_comment() {}
         
         // put eof after skip comment or else eof after line/block comment will report unknown charactor
         if let EOF = self.current.0 {
@@ -122,11 +128,12 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
         if let '\'' = self.current.0 { // TODO: change to self.is_char_start() after change CharLiteralParser to self.parse_char_literal
             return self.parse_char_literal();
         } else if let '"' = self.current.0 { // TODO: change to self.is_string_start after change StringLiteralParser to self.parse_string_literal 
-            return self.parse_string_literal(StringLiteralType::Normal);
+            return self.parse_normal_string_literal();
         } else if let ('r' | 'R', '"') = (self.current.0, self.peek1.0) {
-            return self.parse_string_literal(StringLiteralType::Raw);
+            return self.parse_raw_string_literal();
         }
 
+        self.check_confusable = true;
         if self.current.0.is_id_start() {
             let mut value = String::new();
             let mut span = self.current.1.into();

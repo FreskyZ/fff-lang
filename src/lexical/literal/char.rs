@@ -29,7 +29,7 @@ impl<'ecx, 'scx, F> Parser<'ecx, 'scx, F> where F: FileSystem {
                             (all_span, strings::CharLiteralHere),
                             (self.current.1.into(), strings::EOFHere)
                         ]));
-                        self.eatnc();
+                        self.eat();
                         return (Token::Char('\0'), all_span);
                     }
                     (&mut Some((ref mut escape_parser, escape_start_position)), ch, _3) => {
@@ -40,7 +40,7 @@ impl<'ecx, 'scx, F> Parser<'ecx, 'scx, F> where F: FileSystem {
                             ], vec![
                                 strings::UnicodeCharEscapeHelpSyntax
                             ]));
-                            self.eatnc();
+                            self.eat();
                             return (Token::Char('\0'), all_span);
                         }
 
@@ -66,7 +66,7 @@ impl<'ecx, 'scx, F> Parser<'ecx, 'scx, F> where F: FileSystem {
                         ], vec![
                             strings::CharLiteralSyntaxHelp1
                         ]));
-                        self.eatnc();
+                        self.eat();
                         return (Token::Char('\0'), all_span);
                     }
                     (&mut None, EOF, _3) => {  // C6, '$, report EOF in char literal
@@ -74,7 +74,7 @@ impl<'ecx, 'scx, F> Parser<'ecx, 'scx, F> where F: FileSystem {
                             (all_span, strings::CharLiteralHere),
                             (self.current.1.into(), strings::EOFHere)
                         ]));
-                        self.eatnc();
+                        self.eat();
                         return (Token::Char('\0'), all_span);
                     }
                     (&mut None, '\\', EOF) => {                // C10, '\$
@@ -84,7 +84,7 @@ impl<'ecx, 'scx, F> Parser<'ecx, 'scx, F> where F: FileSystem {
                             (all_span, strings::CharLiteralHere),
                             (eof_pos.into(), strings::EOFHere)
                         ]));
-                        self.eatnc();
+                        self.eat();
                         return (Token::Char('\0'), all_span);
                     }
                     (&mut None, '\\', next_ch) => {   // if is escape, try escape
@@ -92,8 +92,8 @@ impl<'ecx, 'scx, F> Parser<'ecx, 'scx, F> where F: FileSystem {
                         match EscapeCharParser::simple_check(next_ch) {
                             EscapeCharSimpleCheckResult::Normal(ch) => {
                                 raw.push(ch); // C7, normal simple escape
-                                self.eatnc();
-                                self.eatnc();
+                                self.eat();
+                                self.eat();
                                 continue;
                             }
                             EscapeCharSimpleCheckResult::Invalid(ch) => {
@@ -103,8 +103,8 @@ impl<'ecx, 'scx, F> Parser<'ecx, 'scx, F> where F: FileSystem {
                                 ]));
                                 raw.push('\0');
                                 has_failed = true; // C8, invalid simple escape
-                                self.eatnc();
-                                self.eatnc();
+                                self.eat();
+                                self.eat();
                                 continue;
                             }
                             EscapeCharSimpleCheckResult::Unicode(p) => {
@@ -116,7 +116,7 @@ impl<'ecx, 'scx, F> Parser<'ecx, 'scx, F> where F: FileSystem {
                     (&mut None, ch, _3) => {
                         raw.push(ch);
                         all_span += self.current.1;               // C11, most normal a char
-                        self.eatnc();
+                        self.eat();
                         continue;
                     }
                 }
@@ -125,10 +125,10 @@ impl<'ecx, 'scx, F> Parser<'ecx, 'scx, F> where F: FileSystem {
                 }
                 if need_set_parser {  // C9 fix 
                     escape_parser = need_set_parser_value;
-                    self.eatnc();
-                    self.eatnc();
+                    self.eat();
+                    self.eat();
                 } else {
-                    self.eatnc();
+                    self.eat();
                 }                                       // C13, only and must with C1, C2, C3
             } else {  // Already processed first char
                     // No possibility for a unicode parser here, just wait for a ', if not, report too long
@@ -138,7 +138,7 @@ impl<'ecx, 'scx, F> Parser<'ecx, 'scx, F> where F: FileSystem {
                             (all_span, strings::CharLiteralHere),
                             (self.current.1.into(), strings::EOFHere)
                         ]));                               // C14, 'ABCD$
-                        self.eatnc();
+                        self.eat();
                         return (Token::Char('\0'), all_span);
                     }
                     '\'' => { // Normally successed                           // C15, most normal finish
@@ -148,7 +148,7 @@ impl<'ecx, 'scx, F> Parser<'ecx, 'scx, F> where F: FileSystem {
                                 (all_span, strings::CharLiteralHere),
                             ]));
                         }
-                        self.eatnc();
+                        self.eat();
                         return (if !has_failed && !prepare_to_too_long { Token::Char(raw.chars().next().unwrap()) } else { Token::Char('\0') }, all_span);
                     }
                     _ => {
@@ -157,7 +157,7 @@ impl<'ecx, 'scx, F> Parser<'ecx, 'scx, F> where F: FileSystem {
                             has_failed = true;     // if too longed, devalidate the buffer
                         }
                         all_span += self.current.1;                           // C17, too long and return
-                        self.eatnc();
+                        self.eat();
                     }
                 }
             }

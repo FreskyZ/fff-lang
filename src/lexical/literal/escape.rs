@@ -29,11 +29,6 @@ pub enum EscapeCharParserResult {
     Success(char),          // Succeed and result
 }
 
-// 16(F plus 1) powered
-// 17/2/23: Now use shift left instead
-// const FP1_POWERED: [u32; 8] = [1_u32, 0x10_u32, 0x100_u32, 0x1000_u32, 0x1000_0_u32, 0x1000_00_u32, 0x1000_000_u32, 0x1000_0000_u32];
-
-use std::char;
 impl EscapeCharParser {
 
     fn new(expect_size: usize) -> EscapeCharParser {
