@@ -1,9 +1,9 @@
 ///! syntax/test_helper
 
-use crate::source::{SourceContext, FileSystem};
+use crate::source::{SourceContext};
 use crate::diagnostics::MessageCollection;
 use crate::lexical::Parser;
-use super::{ParseSession, ISyntaxParse};
+use crate::syntax::prelude::*;
 
 pub fn try_make_node<'scx, 'ecx, F: FileSystem, U, T: ISyntaxParse<'scx, 'ecx, F, Output = U>>(scx: &SourceContext) -> Option<U> {
     let mut messages = MessageCollection::new();

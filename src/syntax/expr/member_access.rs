@@ -3,18 +3,8 @@
 ///! syntax/member_access
 ///! member_access = expr '.' identifier
 
-use std::fmt;
-use crate::source::{FileSystem, Span};
-use crate::lexical::Token;
-use crate::lexical::Separator;
-use super::Expr;
-use super::SimpleName;
-use super::super::Formatter;
-use super::super::ParseResult;
-use super::super::ParseSession;
-use super::super::ISyntaxParse;
-use super::super::ISyntaxFormat;
-use super::super::ISyntaxGrammar;
+use crate::syntax::prelude::*;
+use super::{Expr, SimpleName};
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct MemberAccessExpr {

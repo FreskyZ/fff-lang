@@ -4,15 +4,7 @@
 ///! label-def = label ':'
 ///! it's here because for, while, loop and block all needs it
 
-use std::fmt;
-use crate::source::{FileSystem, Span, IsId};
-use crate::lexical::{Token, Separator};
-use super::super::Formatter;
-use super::super::ParseResult;
-use super::super::ParseSession;
-use super::super::ISyntaxParse;
-use super::super::ISyntaxFormat;
-use super::super::ISyntaxGrammar;
+use crate::syntax::prelude::*;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct LabelDef {

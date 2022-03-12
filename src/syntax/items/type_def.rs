@@ -7,17 +7,8 @@
 
 // TODO: support Keyword::PrimType in type name, for primitive declarations
 
-use std::fmt;
-use crate::source::{FileSystem, Span};
-use crate::lexical::{Token, Keyword, Separator, KeywordKind};
-use super::super::TypeUse;
-use super::super::SimpleName;
-use super::super::Formatter;
-use super::super::ParseResult;
-use super::super::ParseSession;
-use super::super::ISyntaxParse;
-use super::super::ISyntaxFormat;
-use super::super::ISyntaxGrammar;
+use crate::syntax::prelude::*;
+use super::super::{TypeUse, SimpleName};
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct TypeFieldDef {

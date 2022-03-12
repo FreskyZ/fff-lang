@@ -3,19 +3,8 @@
 ///! syntax/expr_stmt
 ///! expr_stmt = expr { assign_ops expr } ';'
 
-use std::fmt;
-use crate::source::{FileSystem, Span};
-use crate::lexical::Token;
-use crate::lexical::Separator;
-use crate::lexical::SeparatorKind;
-use super::Statement;
-use super::super::Expr;
-use super::super::Formatter;
-use super::super::ParseResult;
-use super::super::ParseSession;
-use super::super::ISyntaxParse;
-use super::super::ISyntaxFormat;
-use super::super::ISyntaxGrammar;
+use crate::syntax::prelude::*;
+use super::{Statement, super::Expr};
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct SimpleExprStatement {

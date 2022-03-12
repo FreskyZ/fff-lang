@@ -3,20 +3,8 @@
 ///! syntax/fn_call_expr
 ///! fn_call_expr = expr '(' [ expr_list ] ')'
 
-use std::fmt;
-use crate::source::{FileSystem, Span};
-use crate::diagnostics::Message;
-use crate::lexical::{Token, Separator};
-use super::Expr;
-use super::ExprList;
-use super::ExprListParseResult;
-use super::super::Formatter;
-use super::super::ParseResult;
-use super::super::ParseSession;
-use super::super::error_strings;
-use super::super::ISyntaxParse;
-use super::super::ISyntaxFormat;
-use super::super::ISyntaxGrammar;
+use crate::syntax::prelude::*;
+use super::{Expr, ExprList, ExprListParseResult};
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct FnCallExpr {
@@ -73,7 +61,7 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for FnCallExpr where F: FileSyst
             ExprListParseResult::Normal(span, expr_list) | ExprListParseResult::EndWithComma(span, expr_list) => 
                 return Ok(FnCallExpr::new_with_parse_result(span, expr_list)),
             ExprListParseResult::SingleComma(span) => {
-                sess.push_message(Message::new_by_str(error_strings::UnexpectedSingleComma, vec![(span, error_strings::FnCallHere)]));
+                sess.push_message(Message::new_by_str(strings::UnexpectedSingleComma, vec![(span, strings::FnCallHere)]));
                 return Ok(FnCallExpr::new_with_parse_result(span, ExprList::new(Vec::new())));
             }
         }
@@ -106,7 +94,7 @@ fn fn_call_errors() {
         .apply::<FnCallExpr, _>()
         .expect_result(FnCallExpr::new_with_parse_result(Span::new(0, 2), ExprList::new(vec![])))
         .expect_messages(make_messages![
-            Message::new_by_str(error_strings::UnexpectedSingleComma, vec![(Span::new(0, 2), error_strings::FnCallHere)])
+            Message::new_by_str(strings::UnexpectedSingleComma, vec![(Span::new(0, 2), strings::FnCallHere)])
         ])
     .finish();
 }

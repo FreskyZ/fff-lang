@@ -3,17 +3,8 @@
 ///! syntax/module, a source code file is a module
 ///! module = { item }
 
-use std::fmt;
-use crate::source::{FileSystem};
-use crate::lexical::Token;
-use super::Item;
-use super::ImportStatement;
-use super::Formatter;
-use super::ParseResult;
-use super::ParseSession;
-use super::ISyntaxParse;
-use super::ISyntaxFormat;
-use super::ISyntaxGrammar;
+use crate::syntax::prelude::*;
+use super::{Item, ImportStatement};
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct Module {

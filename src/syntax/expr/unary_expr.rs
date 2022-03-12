@@ -3,18 +3,9 @@
 ///! syntax/unary_expr
 ///! unary_expr = { unary_operator } postfix_expr
 
-use std::fmt;
-use crate::source::{FileSystem, Span};
-use crate::lexical::Token;
-use crate::lexical::{Separator, SeparatorKind};
+use crate::syntax::prelude::*;
 use super::Expr;
 use super::PostfixExpr;
-use super::super::Formatter;
-use super::super::ParseResult;
-use super::super::ParseSession;
-use super::super::ISyntaxParse;
-use super::super::ISyntaxFormat;
-use super::super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct UnaryExpr {

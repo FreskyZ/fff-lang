@@ -4,17 +4,9 @@
 ///! stmt = const_decl | var_decl | if_stmt | while_stmt | for_stmt | loop_stmt 
 ///!        | simple_expr_stmt | assign_expr_stmt | continue_stmt | break_stmt | fn_def | type_def
  
-use std::fmt;
-use crate::source::FileSystem;
-use crate::lexical::Token;
-use super::FnDef;
-use super::TypeDef;
-use super::Formatter;
-use super::ParseResult;
-use super::ParseSession;
-use super::ISyntaxParse;
-use super::ISyntaxFormat;
-use super::ISyntaxGrammar;
+use crate::syntax::prelude::*;
+use super::{FnDef, TypeDef};
+
 mod block_stmt;
 mod expr_stmt;
 mod for_stmt;

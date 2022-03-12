@@ -4,17 +4,8 @@
 ///! block-stmt = [ label-def ] block
 ///! block-stmt for explicit block definition in block and allow block label
 
-use std::fmt;
-use crate::source::{FileSystem, Span};
-use crate::lexical::{Token, Separator};
-use super::super::Block;
-use super::super::LabelDef;
-use super::super::Formatter;
-use super::super::ParseResult;
-use super::super::ParseSession;
-use super::super::ISyntaxParse;
-use super::super::ISyntaxFormat;
-use super::super::ISyntaxGrammar;
+use crate::syntax::prelude::*;
+use super::super::{Block, LabelDef};
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct BlockStatement {

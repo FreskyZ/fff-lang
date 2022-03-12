@@ -12,16 +12,8 @@
 // LogicalAndExpression = EqualityExpression | LogicalAndExpression LogicalAndOperator EqualityExpression 
 // LogicalOrExpression = LogicalAndExpression | LogicalOrExpression LogicalOrOperator LogicalAndExpression
 
-use std::fmt;
-use crate::source::{FileSystem, Span};
-use crate::lexical::{Separator, SeparatorKind};
-use super::Expr;
-use super::UnaryExpr;
-use super::super::Formatter;
-use super::super::ParseResult;
-use super::super::ParseSession;
-use super::super::ISyntaxFormat;
-use super::super::ISyntaxParse;
+use crate::syntax::prelude::*;
+use super::{Expr, UnaryExpr};
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct BinaryExpr {

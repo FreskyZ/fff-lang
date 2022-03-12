@@ -2,20 +2,8 @@
 ///!
 ///! array_def = '[' [ expr_list ] ']'
 
-use std::fmt;
-use crate::source::{FileSystem, Span};
-use crate::diagnostics::Message;
-use crate::lexical::{Token, Separator};
-use super::Expr;
-use super::ExprList;
-use super::ExprListParseResult;
-use super::super::Formatter;
-use super::super::ParseResult;
-use super::super::ParseSession;
-use super::super::error_strings;
-use super::super::ISyntaxFormat;
-use super::super::ISyntaxParse;
-use super::super::ISyntaxGrammar;
+use crate::syntax::prelude::*;
+use super::{Expr, ExprList, ExprListParseResult};
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct ArrayDef {
@@ -50,7 +38,7 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for ArrayDef where F: FileSystem
                 return Ok(Expr::Array(ArrayDef::new(span, ExprList::new(Vec::new()))));
             }
             ExprListParseResult::SingleComma(span) => {
-                sess.push_message(Message::new_by_str(error_strings::UnexpectedSingleComma, vec![(span, error_strings::ArrayDefHere)]));
+                sess.push_message(Message::new_by_str(strings::UnexpectedSingleComma, vec![(span, strings::ArrayDefHere)]));
                 return Ok(Expr::Array(ArrayDef::new(span, ExprList::new(Vec::new()))));
             }
             ExprListParseResult::Normal(span, exprlist) | ExprListParseResult::EndWithComma(span, exprlist) => {
@@ -119,7 +107,7 @@ fn array_def_errors() {
         .apply::<ArrayDef, _>()
         .expect_result(Expr::Array(ArrayDef::new(Span::new(0, 4), make_exprs![])))
         .expect_messages(make_messages![
-            Message::new_by_str(error_strings::UnexpectedSingleComma, vec![(Span::new(0, 4), error_strings::ArrayDefHere)])
+            Message::new_by_str(strings::UnexpectedSingleComma, vec![(Span::new(0, 4), strings::ArrayDefHere)])
         ])
     .finish();
 }

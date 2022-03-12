@@ -4,20 +4,8 @@
 ///! index_call_expr = expr '[' [ expr_list ] ']'
 ///! renamed from postfix_expr::subscription to make it shorter
 
-use std::fmt;
-use crate::source::{FileSystem, Span};
-use crate::diagnostics::Message;
-use crate::lexical::{Token, Separator};
-use super::Expr;
-use super::ExprList;
-use super::ExprListParseResult;
-use super::super::Formatter;
-use super::super::ParseResult;
-use super::super::ParseSession;
-use super::super::error_strings;
-use super::super::ISyntaxParse;
-use super::super::ISyntaxFormat;
-use super::super::ISyntaxGrammar;
+use crate::syntax::prelude::*;
+use super::{Expr, ExprList, ExprListParseResult};
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct IndexCallExpr {
@@ -75,7 +63,7 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for IndexCallExpr where F: FileS
             ExprListParseResult::Empty(span) | ExprListParseResult::SingleComma(span) => {
                 // empty subscription is meaningless, refuse it here
                 // update: but for trying to get more message in the rest program, make it not none
-                sess.push_message(Message::new_by_str(error_strings::EmptyIndexCall, vec![(span, error_strings::IndexCallHere)]));
+                sess.push_message(Message::new_by_str(strings::EmptyIndexCall, vec![(span, strings::IndexCallHere)]));
                 return Ok(IndexCallExpr::new_with_parse_result(span, ExprList::new(Vec::new())))
             }
         }
@@ -111,7 +99,7 @@ fn index_call_errors() {
         .apply::<IndexCallExpr, _>()
         .expect_result(IndexCallExpr::new_with_parse_result(Span::new(0, 2), ExprList::new(vec![])))
         .expect_messages(make_messages![
-            Message::new_by_str(error_strings::EmptyIndexCall, vec![(Span::new(0, 2), error_strings::IndexCallHere)])
+            Message::new_by_str(strings::EmptyIndexCall, vec![(Span::new(0, 2), strings::IndexCallHere)])
         ])
     .finish();
 }

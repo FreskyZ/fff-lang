@@ -5,21 +5,8 @@
 ///! primary_expr = ident_expr | lit_expr | unit_lit | paren_expr | tuple_def | array_def
 ///! postfix_expr = expr { ( member_access | fn_call | indexer_call ) }
 
-use crate::source::{FileSystem};
-use crate::lexical::Keyword;
-use super::Expr;
-use super::Name;
-use super::LitExpr;
-use super::SimpleName;
-use super::TupleDef;
-use super::ArrayDef;
-use super::FnCallExpr;
-use super::IndexCallExpr;
-use super::MemberAccessExpr;
-use super::super::ParseResult;
-use super::super::ParseSession;
-use super::super::ISyntaxParse;
-use super::super::ISyntaxGrammar;
+use crate::syntax::prelude::*;
+use super::{Expr, Name, LitExpr, SimpleName, TupleDef, ArrayDef, FnCallExpr, IndexCallExpr, MemberAccessExpr};
 
 pub struct PrimaryExpr;
 impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for PrimaryExpr where F: FileSystem {
@@ -356,17 +343,15 @@ fn primary_expr_parse() {
 #[cfg(test)] #[test]
 fn primary_expr_errors() {
     use crate::source::{FileSystem, Span};
-    use crate::diagnostics::Message;
-    use crate::diagnostics::MessageCollection;
+    use crate::diagnostics::{Message, MessageCollection, strings};
     use super::ExprList;
-    use super::super::error_strings;
     use super::super::TestInput;
 
     TestInput::new("(,)")
         .apply::<PrimaryExpr, _>()
         .expect_result(Expr::Tuple(TupleDef::new(Span::new(0, 2), make_exprs![])))
         .expect_messages(make_messages![
-            Message::new_by_str(error_strings::UnexpectedSingleComma, vec![(Span::new(0, 2), error_strings::TupleDefHere)])
+            Message::new_by_str(strings::UnexpectedSingleComma, vec![(Span::new(0, 2), strings::TupleDefHere)])
         ])
     .finish();
 }
@@ -524,10 +509,8 @@ fn postfix_expr_parse() {
 #[cfg(test)] #[test]
 fn postfix_expr_errors() {
     use crate::source::{FileSystem, Span};
-    use crate::diagnostics::Message;
-    use crate::diagnostics::MessageCollection;
+    use crate::diagnostics::{Message, MessageCollection, strings};
     use super::ExprList;
-    use super::super::error_strings;
     use super::super::TestInput;
     
     TestInput::new("a[]")
@@ -537,7 +520,7 @@ fn postfix_expr_errors() {
             Span::new(1, 2), make_exprs![]
         )))
         .expect_messages(make_messages![
-            Message::new_by_str(error_strings::EmptyIndexCall, vec![(Span::new(1, 2), error_strings::IndexCallHere)])
+            Message::new_by_str(strings::EmptyIndexCall, vec![(Span::new(1, 2), strings::IndexCallHere)])
         ])
     .finish();
     
@@ -548,7 +531,7 @@ fn postfix_expr_errors() {
             Span::new(1, 4), make_exprs![]
         )))
         .expect_messages(make_messages![
-            Message::new_by_str(error_strings::EmptyIndexCall, vec![(Span::new(1, 4), error_strings::IndexCallHere)])
+            Message::new_by_str(strings::EmptyIndexCall, vec![(Span::new(1, 4), strings::IndexCallHere)])
         ])
     .finish();
     
@@ -559,7 +542,7 @@ fn postfix_expr_errors() {
             Span::new(1, 4), make_exprs![]
         )))
         .expect_messages(make_messages![
-            Message::new_by_str(error_strings::UnexpectedSingleComma, vec![(Span::new(1, 4), error_strings::FnCallHere)])
+            Message::new_by_str(strings::UnexpectedSingleComma, vec![(Span::new(1, 4), strings::FnCallHere)])
         ])
     .finish();
 }

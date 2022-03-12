@@ -3,18 +3,8 @@
 ///! syntax/if_stmt
 ///! if_stmt = 'if' expr block { 'else' 'if' expr block } [ 'else' block ]
 
-use std::fmt;
-use crate::source::{FileSystem, Span};
-use crate::lexical::Token;
-use crate::lexical::Keyword;
-use super::super::Expr;
-use super::super::Block;
-use super::super::Formatter;
-use super::super::ParseResult;
-use super::super::ParseSession;
-use super::super::ISyntaxParse;
-use super::super::ISyntaxFormat;
-use super::super::ISyntaxGrammar;
+use crate::syntax::prelude::*;
+use super::super::{Expr, Block};
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct IfClause {

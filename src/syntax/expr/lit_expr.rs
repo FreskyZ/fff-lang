@@ -3,17 +3,8 @@
 ///! syntax/lit_expr
 ///! literal_expr = literal
 
-use std::fmt; 
-use crate::source::{FileSystem, Span, IsId};
-use crate::lexical::{Token, Numeric};
+use crate::syntax::prelude::*;
 use super::Expr;
-use super::super::Formatter;
-use super::super::ParseResult;
-use super::super::ParseSession;
-use super::super::ISyntaxParse;
-use super::super::ISyntaxFormat;
-use super::super::ISyntaxGrammar;
-
 
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]

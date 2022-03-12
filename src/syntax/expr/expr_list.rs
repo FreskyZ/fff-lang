@@ -3,16 +3,8 @@
 ///! syntax/tuple_def_expr, paren_expr
 ///! expr_list = expr { ',' expr } [ ',' ]
 
-use std::fmt;
-use crate::source::{FileSystem, Span};
-use crate::lexical::{Token, Separator};
+use crate::syntax::prelude::*;
 use super::Expr;
-use super::super::Formatter;
-use super::super::ParseResult;
-use super::super::ParseSession;
-use super::super::ISyntaxFormat;
-use super::super::ISyntaxParse;
-use super::super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct ExprList {

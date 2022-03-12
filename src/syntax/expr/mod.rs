@@ -2,9 +2,7 @@
 ///!
 ///! syntax/expr
 
-use std::fmt;
-use crate::source::{FileSystem, Span};
-use crate::lexical::{Token, Keyword, Separator};
+use crate::syntax::prelude::*;
 
 #[macro_use] mod expr_list; // make_exprs
 mod array_def;
@@ -40,12 +38,6 @@ pub use priority_proxy::PostfixExpr;
 pub use priority_proxy::PrimaryExpr;
 pub use name::SimpleName;
 pub use name::Name;
-use super::Formatter;
-use super::ParseResult;
-use super::ParseSession;
-use super::ISyntaxParse;
-use super::ISyntaxFormat;
-use super::ISyntaxGrammar;
 
 // 12 byte
 #[cfg_attr(test, derive(Eq, PartialEq))]
@@ -432,13 +424,12 @@ fn expr_errors() {
     use crate::source::{FileSystem, Span};
     use crate::diagnostics::Message;
     use crate::diagnostics::MessageCollection;
-    use super::error_strings;
     use super::TestInput;
 
     TestInput::new("de(, )")
         .apply::<Expr, Expr>()
         .expect_messages(make_messages![
-            Message::new_by_str(error_strings::UnexpectedSingleComma, vec![(Span::new(2, 5), error_strings::FnCallHere)])
+            Message::new_by_str(strings::UnexpectedSingleComma, vec![(Span::new(2, 5), strings::FnCallHere)])
         ])
         .expect_result(Expr::FnCall(FnCallExpr::new(
             SimpleName::new(1, Span::new(0, 1)), 
@@ -450,7 +441,7 @@ fn expr_errors() {
     TestInput::new("\"\".de(, )")
         .apply::<Expr, Expr>()
         .expect_messages(make_messages![
-            Message::new_by_str(error_strings::UnexpectedSingleComma, vec![(Span::new(5, 8), error_strings::FnCallHere)])
+            Message::new_by_str(strings::UnexpectedSingleComma, vec![(Span::new(5, 8), strings::FnCallHere)])
         ])
         .expect_result(Expr::FnCall(FnCallExpr::new(
             MemberAccessExpr::new(
@@ -465,7 +456,7 @@ fn expr_errors() {
     TestInput::new("defg[]")
         .apply::<Expr, Expr>()
         .expect_messages(make_messages![
-            Message::new_by_str(error_strings::EmptyIndexCall, vec![(Span::new(4, 5), error_strings::IndexCallHere)])
+            Message::new_by_str(strings::EmptyIndexCall, vec![(Span::new(4, 5), strings::IndexCallHere)])
         ])
         .expect_result(Expr::IndexCall(IndexCallExpr::new(
             SimpleName::new(1, Span::new(0, 3)),
@@ -477,7 +468,7 @@ fn expr_errors() {
     TestInput::new("de[, ]")
         .apply::<Expr, Expr>()
         .expect_messages(make_messages![
-            Message::new_by_str(error_strings::EmptyIndexCall, vec![(Span::new(2, 5), error_strings::IndexCallHere)])
+            Message::new_by_str(strings::EmptyIndexCall, vec![(Span::new(2, 5), strings::IndexCallHere)])
         ])
         .expect_result(Expr::IndexCall(IndexCallExpr::new(
             SimpleName::new(1, Span::new(0, 1)),

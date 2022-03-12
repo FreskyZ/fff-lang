@@ -5,19 +5,8 @@
 
 // TODO: add else for break, like python
 
-use std::fmt;
-use crate::source::{FileSystem, Span, IsId};
-use crate::lexical::Token;
-use crate::lexical::Keyword;
-use super::super::Expr;
-use super::super::Block;
-use super::super::LabelDef;
-use super::super::Formatter;
-use super::super::ParseResult;
-use super::super::ParseSession;
-use super::super::ISyntaxParse;
-use super::super::ISyntaxFormat;
-use super::super::ISyntaxGrammar;
+use crate::syntax::prelude::*;
+use super::super::{Expr, Block, LabelDef};
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct ForStatement {

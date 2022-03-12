@@ -3,7 +3,7 @@
 use crate::source::SourceContext;
 use crate::diagnostics::MessageCollection;
 use crate::lexical::Parser;
-use crate::syntax::{parse, Formatter, ISyntaxFormat};
+use crate::syntax::{parse, prelude::Formatter, prelude::ISyntaxFormat};
 // use semantic::Package;
 // use vm::VirtualMachine;
 

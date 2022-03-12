@@ -108,3 +108,10 @@ pub const DotAtEnd: &'static str = "decimal dot should not be after last digit o
 pub const DotDouble: &'static str = "multiple decimal dot";
 pub const MaybeIntPostfixInFloatPoint: &'static str = "maybe integral postfix not allowed in floating point literal";
 pub const UseReservedKeyword: &str = "Use of reserved keyword";
+
+pub const UnexpectedSingleComma: &str = "unexpected single comma";
+pub const ArrayDefHere: &str = "array definition here";
+pub const TupleDefHere: &str = "tuple definition here";
+pub const FnCallHere: &str = "function call here";
+pub const EmptyIndexCall: &str = "empty indexer call";
+pub const IndexCallHere: &str = "indexer call here";

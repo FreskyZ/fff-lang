@@ -4,20 +4,8 @@
 ///! const-decl = 'const' identifier [ ':' type-use ] [ '=' expr ] ';'
 ///! var-decl = 'var' identifier [ ':' type-use ] [ '=' expr ] ';'
 
-use std::fmt;
-use crate::source::{FileSystem, Span, IsId};
-use crate::diagnostics::Message;
-use crate::lexical::Token;
-use crate::lexical::Keyword;
-use crate::lexical::Separator;
-use super::super::Expr;
-use super::super::TypeUse;
-use super::super::Formatter;
-use super::super::ParseResult;
-use super::super::ParseSession;
-use super::super::ISyntaxParse;
-use super::super::ISyntaxFormat;
-use super::super::ISyntaxGrammar;
+use crate::syntax::prelude::*;
+use super::super::{Expr, TypeUse};
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct VarDeclStatement {

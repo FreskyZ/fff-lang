@@ -3,17 +3,8 @@
 ///! syntax/block
 ///! block = '{' { statement } '}'
 
-use std::fmt;
-use crate::source::{FileSystem, Span};
-use crate::lexical::Token;
-use crate::lexical::Separator;
+use crate::syntax::prelude::*;
 use super::super::Statement;
-use super::super::Formatter;
-use super::super::ParseResult;
-use super::super::ParseSession;
-use super::super::ISyntaxParse;
-use super::super::ISyntaxFormat;
-use super::super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct Block {

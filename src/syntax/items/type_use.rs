@@ -19,16 +19,7 @@
 // Then enum members are public, <unknown-time>                                                                         // TypeUse + ActualTypeUse
 // Then array and tuple enum members are removed and use template aware type use, 17/6/12                               // TypeUse
 
-use std::fmt;
-use crate::source::{FileSystem, Span, IsId};
-use crate::diagnostics::Message;
-use crate::lexical::{Token, Separator, KeywordKind};
-use super::super::Formatter;
-use super::super::ParseResult;
-use super::super::ParseSession;
-use super::super::ISyntaxParse;
-use super::super::ISyntaxFormat;
-use super::super::ISyntaxGrammar;
+use crate::syntax::prelude::*;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct TypeUse {

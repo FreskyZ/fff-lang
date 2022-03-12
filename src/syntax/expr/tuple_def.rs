@@ -5,21 +5,8 @@
 ///! paren_expr = '(' expr ')'
 ///! unit_lit = '(' ')'
 
-use std::fmt;
-use crate::source::{FileSystem, Span};
-use crate::diagnostics::Message;
-use crate::lexical::{Token, Separator};
-use super::Expr;
-use super::{LitExpr, LitValue};
-use super::ExprList;
-use super::ExprListParseResult;
-use super::super::Formatter;
-use super::super::ParseResult;
-use super::super::ParseSession;
-use super::super::error_strings;
-use super::super::ISyntaxParse;
-use super::super::ISyntaxFormat;
-use super::super::ISyntaxGrammar;
+use crate::syntax::prelude::*;
+use super::{Expr, LitExpr, LitValue, ExprList, ExprListParseResult};
 
 // Paren expr is a side effect of TupleDef
 #[cfg_attr(test, derive(Eq, PartialEq))]
@@ -81,7 +68,7 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for TupleDef where F: FileSystem
                 return Ok(Expr::Lit(LitExpr::new(LitValue::Unit, span)));
             }
             ExprListParseResult::SingleComma(span) => {
-                sess.push_message(Message::new_by_str(error_strings::UnexpectedSingleComma, vec![(span, error_strings::TupleDefHere)]));
+                sess.push_message(Message::new_by_str(strings::UnexpectedSingleComma, vec![(span, strings::TupleDefHere)]));
                 return Ok(Expr::Tuple(TupleDef::new(span, ExprList::new(Vec::new()))));
             }
             ExprListParseResult::Normal(span, exprlist) => {
@@ -151,7 +138,7 @@ fn tuple_def_errors() {
         .apply::<TupleDef, _>()
         .expect_result(Expr::Tuple(TupleDef::new(Span::new(0, 4), make_exprs![])))
         .expect_messages(make_messages![
-            Message::new_by_str(error_strings::UnexpectedSingleComma, vec![(Span::new(0, 4), error_strings::TupleDefHere)])
+            Message::new_by_str(strings::UnexpectedSingleComma, vec![(Span::new(0, 4), strings::TupleDefHere)])
         ])
     .finish();
 }

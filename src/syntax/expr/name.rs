@@ -4,16 +4,8 @@
 ///! name = identifier { '::' identifier }
 // future may support something like `to_string::<i32>(a)`
 
-use std::fmt;
-use crate::source::{FileSystem, Span, IsId};
-use crate::lexical::{Token, Separator};
+use crate::syntax::prelude::*;
 use super::Expr;
-use super::super::Formatter;
-use super::super::ParseResult;
-use super::super::ParseSession;
-use super::super::ISyntaxParse;
-use super::super::ISyntaxFormat;
-use super::super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct SimpleName {

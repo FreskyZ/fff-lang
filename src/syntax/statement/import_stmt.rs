@@ -3,16 +3,8 @@
 ///! syntax/import_stmt
 ///! import_stmt = 'import' identifier [ 'as' identifier ] ';'
 
-use std::fmt;
-use crate::source::{FileSystem, Span};
-use crate::lexical::{Token, Separator, Keyword};
-use super::super::SimpleName;
-use super::super::Formatter;
-use super::super::ParseResult;
-use super::super::ParseSession;
-use super::super::ISyntaxParse;
-use super::super::ISyntaxFormat;
-use super::super::ISyntaxGrammar;
+use crate::syntax::prelude::*;
+use super::super::{SimpleName};
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct ImportStatement {

@@ -3,19 +3,8 @@
 ///! syntax/use_stmt
 ///! use_stmt = 'use' name [ 'as' identifier ] ';'
 
-use std::fmt;
-use crate::source::{FileSystem, Span};
-use crate::lexical::Token;
-use crate::lexical::Separator;
-use crate::lexical::Keyword;
-use super::super::Name;
-use super::super::SimpleName;
-use super::super::Formatter;
-use super::super::ParseResult;
-use super::super::ParseSession;
-use super::super::ISyntaxFormat;
-use super::super::ISyntaxParse;
-use super::super::ISyntaxGrammar;
+use crate::syntax::prelude::*;
+use super::super::{Name, SimpleName};
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct UseStatement {

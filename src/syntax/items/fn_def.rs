@@ -3,18 +3,8 @@
 ///! syntax/fn_def
 ///! fn-def = 'fn' identifier '(' [ identifier ':' type-use { ',' identifier ':' type-use [ ',' ] } ] ')' [ '->' type-use ] block
 
-use std::fmt;
-use crate::source::{FileSystem, Span, IsId};
-use crate::diagnostics::Message;
-use crate::lexical::{Token, Keyword, Separator};
-use super::super::Block;
-use super::super::TypeUse;
-use super::super::Formatter;
-use super::super::ParseResult;
-use super::super::ParseSession;
-use super::super::ISyntaxParse;
-use super::super::ISyntaxFormat;
-use super::super::ISyntaxGrammar;
+use crate::syntax::prelude::*;
+use super::super::{Block, TypeUse};
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct FnParam {

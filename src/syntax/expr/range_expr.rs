@@ -6,17 +6,8 @@
 ///! range_right = '..' binary_expr
 ///! range_both = binary_expr '..' binary_expr
 
-use std::fmt;
-use crate::source::{FileSystem, Span};
-use crate::lexical::Separator;
-use super::Expr;
-use super::BinaryExpr;
-use super::super::Formatter;
-use super::super::ParseResult;
-use super::super::ParseSession;
-use super::super::ISyntaxParse;
-use super::super::ISyntaxFormat;
-use super::super::ISyntaxGrammar;
+use crate::syntax::prelude::*;
+use super::{Expr, BinaryExpr};
 
 // RangeFull
 #[cfg_attr(test, derive(Eq, PartialEq))]

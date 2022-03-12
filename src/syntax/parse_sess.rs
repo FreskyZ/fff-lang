@@ -2,10 +2,9 @@
 ///!
 ///! syntax/parse_sess, parse traits and helper struct
 
-use crate::source::{FileSystem, Span, IsId};
-use crate::diagnostics::Message;
-use crate::lexical::{Parser, Token, Separator, SeparatorKind, Keyword, KeywordKind};
-use super::{LitValue};
+use crate::syntax::prelude::*;
+use crate::lexical::Parser;
+use super::LitValue;
 
 pub type ParseResult<T> = Result<T, ()>;
 

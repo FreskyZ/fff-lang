@@ -3,18 +3,8 @@
 ///! syntax/ret_stmt
 ///! ret_stmt = 'return' [ expr ] ';'
 
-use std::fmt;
-use crate::source::{FileSystem, Span};
-use crate::lexical::Token;
-use crate::lexical::Separator;
-use crate::lexical::Keyword;
+use crate::syntax::prelude::*;
 use super::super::Expr;
-use super::super::Formatter;
-use super::super::ParseResult;
-use super::super::ParseSession;
-use super::super::ISyntaxParse;
-use super::super::ISyntaxFormat;
-use super::super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct ReturnStatement {
