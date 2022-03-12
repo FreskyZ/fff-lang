@@ -4,9 +4,9 @@
 ///! member_access = expr '.' identifier
 
 use std::fmt;
-use crate::source::Span;
+use crate::source::{FileSystem, Span};
 use crate::lexical::Token;
-use crate::lexical::Seperator;
+use crate::lexical::Separator;
 use super::Expr;
 use super::SimpleName;
 use super::super::Formatter;
@@ -42,7 +42,7 @@ impl MemberAccessExpr {
     pub fn new<T: Into<Expr>>(base: T, dot_span: Span, name: SimpleName) -> MemberAccessExpr {
         let base = base.into();
         MemberAccessExpr{
-            all_span: base.get_all_span().merge(&name.span),
+            all_span: base.get_all_span() + name.span,
             base: Box::new(base),
             dot_span, name
         }
@@ -50,25 +50,25 @@ impl MemberAccessExpr {
 
     fn new_by_parse_result(dot_span: Span, name: SimpleName) -> MemberAccessExpr {
         MemberAccessExpr{
-            all_span: Span::default(),
+            all_span: Span::new(0, 0),
             base: Box::new(Expr::default()),
             dot_span, name
         }
     }
 }
 impl ISyntaxGrammar for MemberAccessExpr {
-    fn matches_first(tokens: &[&Token]) -> bool { tokens[0] == &Token::Sep(Seperator::Dot) }
+    fn matches_first(tokens: [&Token; 3]) -> bool { matches!(tokens[0], &Token::Sep(Separator::Dot)) }
 }
-impl ISyntaxParse for MemberAccessExpr {
+impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for MemberAccessExpr where F: FileSystem {
     type Output = MemberAccessExpr;
 
     // these 3 postfix exprs are kind of different because
     // although their structure contains their base expr (which actually is primary expr)
     // but this parser only accept sess.tk after the first expr and return the structure without base and all_span set
     // the postfix expr dispatcher is responsible for fullfilling the missing part
-    fn parse(sess: &mut ParseSession) -> ParseResult<MemberAccessExpr> {
+    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<MemberAccessExpr> {
         
-        let dot_span = sess.expect_sep(Seperator::Dot)?;
+        let dot_span = sess.expect_sep(Separator::Dot)?;
         let name = SimpleName::parse(sess)?;
         Ok(MemberAccessExpr::new_by_parse_result(dot_span, name))
     }

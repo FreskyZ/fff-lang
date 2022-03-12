@@ -4,7 +4,7 @@
 ///! literal_expr = literal
 
 use std::fmt; 
-use crate::source::{Span, IsId};
+use crate::source::{FileSystem, Span, IsId};
 use crate::lexical::{Token, Numeric};
 use super::Expr;
 use super::super::Formatter;
@@ -18,6 +18,7 @@ use super::super::ISyntaxGrammar;
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
 pub enum LitValue {
+    Unit,
     Bool(bool),
     Char(char),
     Str(IsId),
@@ -62,8 +63,7 @@ impl ISyntaxFormat for LitExpr {
     fn format(&self, f: Formatter) -> String {
         let f = f.indent().header_text_or("literal").space();
         // TODO: isyntaxformat not implemented for syntax::LitValue
-        f.debug(&self.value);
-        f.space().span(self.span).finish()
+        f.debug(&self.value).space().span(self.span).finish()
     }
 }
 impl fmt::Debug for LitExpr {
@@ -76,12 +76,12 @@ impl LitExpr {
     pub fn new(value: impl Into<LitValue>, span: Span) -> LitExpr { LitExpr{ value: value.into(), span } }
 }
 impl ISyntaxGrammar for LitExpr {
-    fn matches_first(tokens: &[&Token]) -> bool { if let Token::Char(_) | Token::Bool(_) | Token::Str(..) | Token::Num(_) = tokens[0] { true } else { false } }
+    fn matches_first(tokens: [&Token; 3]) -> bool { matches!(tokens[0], Token::Char(_) | Token::Bool(_) | Token::Str(..) | Token::Num(_)) }
 }
-impl ISyntaxParse for LitExpr {
+impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for LitExpr where F: FileSystem {
     type Output = Expr;
 
-    fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {
+    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Expr> {
         
         let (lit, lit_span) = sess.expect_lit()?;
         Ok(Expr::Lit(LitExpr::new(lit, lit_span)))

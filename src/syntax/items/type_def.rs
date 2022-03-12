@@ -8,10 +8,8 @@
 // TODO: support Keyword::PrimType in type name, for primitive declarations
 
 use std::fmt;
-use crate::source::Span;
-use crate::lexical::Token;
-use crate::lexical::Keyword;
-use crate::lexical::Seperator;
+use crate::source::{FileSystem, Span};
+use crate::lexical::{Token, Keyword, Separator, KeywordKind};
 use super::super::TypeUse;
 use super::super::SimpleName;
 use super::super::Formatter;
@@ -63,31 +61,31 @@ impl TypeDef {
     }
 }
 impl ISyntaxGrammar for TypeDef {
-    fn matches_first(tokens: &[&Token]) -> bool { tokens[0] == &Token::Keyword(Keyword::Type) }
+    fn matches_first(tokens: [&Token; 3]) -> bool { matches!(tokens[0], &Token::Keyword(Keyword::Type)) }
 }
-impl ISyntaxParse for TypeDef {
+impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for TypeDef where F: FileSystem {
     type Output = Self;
 
-    fn parse(sess: &mut ParseSession) -> ParseResult<TypeDef> {
+    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<TypeDef> {
 
         let starting_span = sess.expect_keyword(Keyword::Type)?;
-        let (symid, name_span) = sess.expect_ident_or_if(Keyword::is_primitive)?;
+        let (symid, name_span) = sess.expect_ident_or_keyword_kind(KeywordKind::Primitive)?;
         let name = SimpleName::new(symid, name_span);
-        let _left_brace_span = sess.expect_sep(Seperator::LeftBrace)?;
+        let _left_brace_span = sess.expect_sep(Separator::LeftBrace)?;
 
         let mut fields = Vec::new();
         let right_brace_span = loop { 
-            if let Some(right_brace_span) = sess.try_expect_sep(Seperator::RightBrace) {
+            if let Some(right_brace_span) = sess.try_expect_sep(Separator::RightBrace) {
                 break right_brace_span;     // rustc 1.19 stablize break-expr
             }
 
             let field_name = SimpleName::parse(sess)?;
-            let colon_span = sess.expect_sep(Seperator::Colon)?;
+            let colon_span = sess.expect_sep(Separator::Colon)?;
             let field_type = TypeUse::parse(sess)?;
-            fields.push(if let Some(comma_span) = sess.try_expect_sep(Seperator::Comma) {
+            fields.push(if let Some(comma_span) = sess.try_expect_sep(Separator::Comma) {
                 TypeFieldDef::new(field_name.span + comma_span, field_name, colon_span, field_type)
             } else {
-                TypeFieldDef::new(field_name.span.merge(&field_type.all_span), field_name, colon_span, field_type)
+                TypeFieldDef::new(field_name.span + field_type.all_span, field_name, colon_span, field_type)
             });
         };
 
@@ -130,7 +128,7 @@ fn type_def_parse() {
             TypeFieldDef::new(Span::new(13, 23),
                 SimpleName::new(2, Span::new(13, 16)),
                 Span::new(17, 17),
-                TypeUse::new_template(1, Span::default(), Span::new(19, 22), vec![
+                TypeUse::new_template(1, Span::new(0, 0), Span::new(19, 22), vec![
                     TypeUse::new_simple(6, Span::new(20, 21))
                 ])
             ),

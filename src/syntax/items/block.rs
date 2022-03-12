@@ -4,9 +4,9 @@
 ///! block = '{' { statement } '}'
 
 use std::fmt;
-use crate::source::Span;
+use crate::source::{FileSystem, Span};
 use crate::lexical::Token;
-use crate::lexical::Seperator;
+use crate::lexical::Separator;
 use super::super::Statement;
 use super::super::Formatter;
 use super::super::ParseResult;
@@ -39,17 +39,17 @@ impl Block {
     pub fn new(all_span: Span, statements: Vec<Statement>) -> Block { Block{ all_span, items: statements } }
 }
 impl ISyntaxGrammar for Block {
-    fn matches_first(tokens: &[&Token]) -> bool { tokens[0] == &Token::Sep(Seperator::LeftBrace) }
+    fn matches_first(tokens: [&Token; 3]) -> bool { matches!(tokens[0], &Token::Sep(Separator::LeftBrace)) }
 }
-impl ISyntaxParse for Block {
+impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for Block where F: FileSystem {
     type Output = Block;
 
-    fn parse(sess: &mut ParseSession) -> ParseResult<Block> {
+    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Block> {
 
-        let starting_span = sess.expect_sep(Seperator::LeftBrace)?;
+        let starting_span = sess.expect_sep(Separator::LeftBrace)?;
         let mut items = Vec::new();
         loop {
-            if let Some(ending_span) = sess.try_expect_sep(Seperator::RightBrace) {
+            if let Some(ending_span) = sess.try_expect_sep(Separator::RightBrace) {
                 return Ok(Block::new(starting_span + ending_span, items));
             }
             items.push(Statement::parse(sess)?);

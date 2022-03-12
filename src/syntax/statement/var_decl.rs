@@ -5,12 +5,11 @@
 ///! var-decl = 'var' identifier [ ':' type-use ] [ '=' expr ] ';'
 
 use std::fmt;
-use crate::source::Span;
-use crate::source::Sym;
+use crate::source::{FileSystem, Span, IsId};
 use crate::diagnostics::Message;
 use crate::lexical::Token;
 use crate::lexical::Keyword;
-use crate::lexical::Seperator;
+use crate::lexical::Separator;
 use super::super::Expr;
 use super::super::TypeUse;
 use super::super::Formatter;
@@ -23,7 +22,7 @@ use super::super::ISyntaxGrammar;
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct VarDeclStatement {
     pub is_const: bool,
-    pub name: Sym,
+    pub name: IsId,
     pub name_span: Span,
     pub typeuse: Option<TypeUse>,
     pub init_expr: Option<Expr>,
@@ -32,7 +31,7 @@ pub struct VarDeclStatement {
 impl ISyntaxFormat for VarDeclStatement {
     fn format(&self, f: Formatter) -> String {
         let f = f.indent().header_text_or(if self.is_const { "const-def" } else { "var-def" }).space().span(self.all_span).endl()
-            .indent1().sym(self.name).space().span(self.name_span);
+            .indent1().isid(self.name).space().span(self.name_span);
         let f = match self.typeuse { 
             Some(ref ty) => f.endl().apply1(ty), 
             None => f.endl().indent1().lit("auto-type"),
@@ -50,42 +49,42 @@ impl fmt::Debug for VarDeclStatement {
 impl VarDeclStatement {
 
     pub fn new(all_span: Span, 
-        is_const: bool, name: Sym, name_span: Span, 
+        is_const: bool, name: IsId, name_span: Span, 
         typeuse: Option<TypeUse>, init_expr: Option<Expr>) -> VarDeclStatement {
         VarDeclStatement{ all_span, is_const, name, name_span, typeuse, init_expr }
     }
     pub fn new_const(all_span: Span, 
-        name: Sym, name_span: Span, 
+        name: IsId, name_span: Span, 
         typeuse: Option<TypeUse>, init_expr: Option<Expr>) -> VarDeclStatement {
         VarDeclStatement{ all_span, is_const: true, name, name_span, typeuse, init_expr }
     }
     pub fn new_var(all_span: Span, 
-        name: Sym, name_span: Span, 
+        name: IsId, name_span: Span, 
         typeuse: Option<TypeUse>, init_expr: Option<Expr>) -> VarDeclStatement {
         VarDeclStatement{ all_span, is_const: false, name, name_span, typeuse, init_expr }
     }
 }
 impl ISyntaxGrammar for VarDeclStatement {
-    fn matches_first(tokens: &[&Token]) -> bool { tokens[0] == &Token::Keyword(Keyword::Const) || tokens[0] == &Token::Keyword(Keyword::Var) }
+    fn matches_first(tokens: [&Token; 3]) -> bool { matches!(tokens[0], &Token::Keyword(Keyword::Const) | &Token::Keyword(Keyword::Var)) }
 }
-impl ISyntaxParse for VarDeclStatement {
+impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for VarDeclStatement where F: FileSystem {
     type Output = VarDeclStatement;
 
-    fn parse(sess: &mut ParseSession) -> ParseResult<VarDeclStatement> {
+    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<VarDeclStatement> {
         
         let (starting_kw, starting_span) = sess.expect_keywords(&[Keyword::Const, Keyword::Var])?;
         let is_const = match starting_kw { Keyword::Const => true, Keyword::Var => false, _ => unreachable!() };
 
-        let (name, name_strpos) = sess.expect_ident_or(vec![Keyword::Underscore])?;
-        let maybe_decltype = if let Some(_) = sess.try_expect_sep(Seperator::Colon) { Some(TypeUse::parse(sess)?) } else { None };
-        let maybe_init_expr = if let Some(_) = sess.try_expect_sep(Seperator::Assign) { Some(Expr::parse(sess)?) } else { None };
+        let (name, name_strpos) = sess.expect_ident_or(&[Keyword::Underscore])?;
+        let maybe_decltype = if let Some(_) = sess.try_expect_sep(Separator::Colon) { Some(TypeUse::parse(sess)?) } else { None };
+        let maybe_init_expr = if let Some(_) = sess.try_expect_sep(Separator::Eq) { Some(Expr::parse(sess)?) } else { None };
         if maybe_decltype.is_none() && maybe_init_expr.is_none() {
             sess.push_message(Message::with_help_by_str("require type annotation", 
                 vec![(name_strpos, "variable declaration here")],
                 vec!["cannot infer type without both type annotation and initialization expression"]
             ));
         }
-        let ending_span = sess.expect_sep(Seperator::SemiColon)?;
+        let ending_span = sess.expect_sep(Separator::SemiColon)?;
 
         return Ok(VarDeclStatement::new(starting_span + ending_span, is_const, name, name_strpos, maybe_decltype, maybe_init_expr));
     }
@@ -144,8 +143,8 @@ fn var_decl_stmt_parse() {
         .expect_no_message()
         .expect_result(VarDeclStatement::new_var(Span::new(0, 21), 
             1, Span::new(4, 6),
-            Some(TypeUse::new_template(2, Span::default(), Span::new(9, 20), vec![
-                TypeUse::new_template(3, Span::default(), Span::new(10, 19), vec![
+            Some(TypeUse::new_template(2, Span::new(0, 0), Span::new(9, 20), vec![
+                TypeUse::new_template(3, Span::new(0, 0), Span::new(10, 19), vec![
                     TypeUse::new_simple(4, Span::new(11, 12)),
                     TypeUse::new_simple(5, Span::new(15, 18)),
                 ])
@@ -167,8 +166,8 @@ fn var_decl_stmt_parse() {
         .expect_no_message()
         .expect_result(VarDeclStatement::new_var(Span::new(0, 47),
             1, Span::new(4, 6),
-            Some(TypeUse::new_template(5, Span::default(), Span::new(9, 19), vec![
-                TypeUse::new_template(6, Span::default(), Span::new(10, 13), vec![
+            Some(TypeUse::new_template(5, Span::new(0, 0), Span::new(9, 19), vec![
+                TypeUse::new_template(6, Span::new(0, 0), Span::new(10, 13), vec![
                     TypeUse::new_simple(2, Span::new(11, 12))
                 ]),
                 TypeUse::new_simple(3, Span::new(16, 18))

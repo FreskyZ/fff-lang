@@ -5,7 +5,7 @@
 // TODO ATTENTION: no else for break here because if control flow come to else it is always breaked
 
 use std::fmt;
-use crate::source::Span;
+use crate::source::{FileSystem, Span};
 use crate::lexical::Token;
 use crate::lexical::Keyword;
 use super::super::Block;
@@ -43,36 +43,36 @@ impl LoopStatement { // New
     
     pub fn new_no_label(loop_span: Span, body: Block) -> LoopStatement {
         LoopStatement {
-            all_span: loop_span.merge(&body.all_span),
+            all_span: loop_span + body.all_span,
             name: None, loop_span, body,
         }
     }
     pub fn new_with_label(name: LabelDef, loop_span: Span, body: Block) -> LoopStatement {
         LoopStatement {
-            all_span: name.all_span.merge(&body.all_span),
+            all_span: name.all_span + body.all_span,
             name: Some(name), loop_span, body,
         }
     }
 
     fn new(name: Option<LabelDef>, loop_span: Span, body: Block) -> LoopStatement {
         LoopStatement{
-            all_span: match name { Some(ref name) => name.all_span.merge(&body.all_span), None => loop_span.merge(&body.all_span) },
+            all_span: match name { Some(ref name) => name.all_span + body.all_span, None => loop_span + body.all_span },
             name, loop_span, body 
         }
     }
 }
 impl ISyntaxGrammar for LoopStatement {
-    fn matches_first(tokens: &[&Token]) -> bool {
+    fn matches_first(tokens: [&Token; 3]) -> bool {
         match (tokens[0], tokens[2]) {
             (&Token::Label(_), &Token::Keyword(Keyword::Loop)) | (&Token::Keyword(Keyword::Loop), _) => true,
             _ => false
         }
     }
 }
-impl ISyntaxParse for LoopStatement {
+impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for LoopStatement where F: FileSystem {
     type Output = LoopStatement;
 
-    fn parse(sess: &mut ParseSession) -> ParseResult<LoopStatement> {
+    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<LoopStatement> {
 
         let maybe_name = LabelDef::try_parse(sess)?;
         let loop_span = sess.expect_keyword(Keyword::Loop)?;

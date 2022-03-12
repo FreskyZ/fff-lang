@@ -75,7 +75,8 @@ impl fmt::Display for StringLiteralType {
     }
 }
 
-#[derive(PartialEq, Debug)]
+#[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub enum Token {
     EOF,
     // identifier, [_a-zA-Z][_a-zA-Z0-9]*

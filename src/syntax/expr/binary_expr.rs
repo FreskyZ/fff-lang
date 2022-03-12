@@ -13,9 +13,8 @@
 // LogicalOrExpression = LogicalAndExpression | LogicalOrExpression LogicalOrOperator LogicalAndExpression
 
 use std::fmt;
-use crate::source::Span;
-use crate::lexical::Seperator;
-use crate::lexical::SeperatorCategory;
+use crate::source::{FileSystem, Span};
+use crate::lexical::{Separator, SeparatorKind};
 use super::Expr;
 use super::UnaryExpr;
 use super::super::Formatter;
@@ -28,7 +27,7 @@ use super::super::ISyntaxParse;
 pub struct BinaryExpr {
     pub left_expr: Box<Expr>,
     pub right_expr: Box<Expr>,
-    pub operator: Seperator,            // this means every binary operator matches a binary expr
+    pub operator: Separator,            // this means every binary operator matches a binary expr
     pub operator_span: Span, 
     pub all_span: Span,
 }
@@ -49,21 +48,21 @@ impl From<BinaryExpr> for Expr {
 }
 impl BinaryExpr {
 
-    pub fn new<T1: Into<Expr>, T2: Into<Expr>>(left_expr: T1, operator: Seperator, operator_span: Span, right_expr: T2) -> BinaryExpr {
+    pub fn new<T1: Into<Expr>, T2: Into<Expr>>(left_expr: T1, operator: Separator, operator_span: Span, right_expr: T2) -> BinaryExpr {
         let left_expr = left_expr.into();
         let right_expr = right_expr.into();
         BinaryExpr{
-            all_span: left_expr.get_all_span().merge(&right_expr.get_all_span()),
+            all_span: left_expr.get_all_span() + right_expr.get_all_span(),
             left_expr: Box::new(left_expr),
             right_expr: Box::new(right_expr),
             operator, operator_span
         }
     }
 }
-impl ISyntaxParse for BinaryExpr {
+impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for BinaryExpr where F: FileSystem {
     type Output = Expr;
 
-    fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {  
+    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Expr> {  
         #[cfg(feature = "trace_binary_expr_parse")]
         macro_rules! trace { ($($arg:tt)*) => ({ print!("[PrimaryExpr] "); println!($($arg)*); }) }
         #[cfg(not(feature = "trace_binary_expr_parse"))]
@@ -73,12 +72,12 @@ impl ISyntaxParse for BinaryExpr {
 
         macro_rules! impl_binary_parser {
             ($parser_name: ident, $previous_parser: expr, $op_category: expr) => (
-                fn $parser_name(sess: &mut ParseSession) -> ParseResult<Expr> {
+                fn $parser_name<'ecx, 'scx, F>(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Expr> where F: FileSystem {
                     trace!("parsing {}", stringify!($parser_name));
 
                     let mut current_retval = $previous_parser(sess)?;
                     loop {
-                        match sess.try_expect_sep_cat($op_category) {
+                        match sess.try_expect_sep_kind($op_category) {
                             Some((sep, sep_span)) => {
                                 let right_expr = $previous_parser(sess)?;
                                 current_retval = Expr::Binary(BinaryExpr::new(current_retval, sep, sep_span, right_expr));
@@ -91,16 +90,16 @@ impl ISyntaxParse for BinaryExpr {
                 }
             )
         }
-        impl_binary_parser! { parse_multiplicative, UnaryExpr::parse, SeperatorCategory::Multiplicative }
-        impl_binary_parser! { parse_additive, parse_multiplicative, SeperatorCategory::Additive }
-        impl_binary_parser! { parse_relational, parse_additive, SeperatorCategory::Relational }
-        impl_binary_parser! { parse_shift, parse_relational, SeperatorCategory::Shift }
-        impl_binary_parser! { parse_bitand, parse_shift, SeperatorCategory::BitAnd }
-        impl_binary_parser! { parse_bitxor, parse_bitand, SeperatorCategory::BitXor }
-        impl_binary_parser! { parse_bitor, parse_bitxor, SeperatorCategory::BitOr }
-        impl_binary_parser! { parse_equality, parse_bitor, SeperatorCategory::Equality }
-        impl_binary_parser! { parse_logical_and, parse_equality, SeperatorCategory::LogicalAnd }
-        impl_binary_parser! { parse_logical_or, parse_logical_and, SeperatorCategory::LogicalOr }    
+        impl_binary_parser! { parse_multiplicative, UnaryExpr::parse, SeparatorKind::Multiplicative }
+        impl_binary_parser! { parse_additive, parse_multiplicative, SeparatorKind::Additive }
+        impl_binary_parser! { parse_relational, parse_additive, SeparatorKind::Relational }
+        impl_binary_parser! { parse_shift, parse_relational, SeparatorKind::Shift }
+        impl_binary_parser! { parse_bitand, parse_shift, SeparatorKind::BitAnd }
+        impl_binary_parser! { parse_bitxor, parse_bitand, SeparatorKind::BitXor }
+        impl_binary_parser! { parse_bitor, parse_bitxor, SeparatorKind::BitOr }
+        impl_binary_parser! { parse_equality, parse_bitor, SeparatorKind::Equality }
+        impl_binary_parser! { parse_logical_and, parse_equality, SeparatorKind::LogicalAnd }
+        impl_binary_parser! { parse_logical_or, parse_logical_and, SeparatorKind::LogicalOr }    
     }
 }
 
@@ -112,7 +111,7 @@ fn binary_expr_format() {
     assert_eq!{ 
         BinaryExpr::new(
             LitExpr::new(LitValue::from(1), Span::new(0, 0)),
-            Seperator::Add, Span::new(2, 2),
+            Separator::Add, Span::new(2, 2),
             LitExpr::new(LitValue::from(2), Span::new(4, 4))
         ).format(Formatter::with_test_indent(1)),
         r#"  binary-expr <<0>0-4>
@@ -138,12 +137,12 @@ fn binary_expr_parse() {
                 ArrayDef::new(Span::new(0, 2), make_exprs![
                     LitExpr::new(LitValue::from(1), Span::new(1, 1))
                 ]),
-                Seperator::Mul, Span::new(4, 4),
+                Separator::Mul, Span::new(4, 4),
                 ArrayDef::new(Span::new(6, 8), make_exprs![
                     LitExpr::new(LitValue::from(2), Span::new(7, 7)),
                 ]),
             ),
-            Seperator::Div, Span::new(10, 10),
+            Separator::Div, Span::new(10, 10),
             ArrayDef::new(Span::new(12, 14), make_exprs![
                 LitExpr::new(LitValue::from(3), Span::new(13, 13)),
             ]),
@@ -157,20 +156,20 @@ fn binary_expr_parse() {
                 BinaryExpr::new(
                     BinaryExpr::new(
                         SimpleName::new(1, Span::new(0, 0)),
-                        Seperator::Mul, Span::new(2, 2), 
+                        Separator::Mul, Span::new(2, 2), 
                         SimpleName::new(2, Span::new(4, 4)),
                     ),
-                    Seperator::Div, Span::new(6, 6),
+                    Separator::Div, Span::new(6, 6),
                     SimpleName::new(3, Span::new(8, 8)),
                 ),
-                Seperator::Add, Span::new(10, 10),
+                Separator::Add, Span::new(10, 10),
                 BinaryExpr::new(
                     SimpleName::new(4, Span::new(12, 12)),
-                    Seperator::Rem, Span::new(14, 14),
+                    Separator::Rem, Span::new(14, 14),
                     SimpleName::new(5, Span::new(16, 16)),
                 )
             ),
-            Seperator::Sub, Span::new(18, 18),
+            Separator::Sub, Span::new(18, 18),
             SimpleName::new(6, Span::new(20, 20)),
         ))
     }           
@@ -181,29 +180,29 @@ fn binary_expr_parse() {
             BinaryExpr::new(
                 BinaryExpr::new(
                     SimpleName::new(1, Span::new(0, 0)),
-                    Seperator::Mul, Span::new(2, 2),
+                    Separator::Mul, Span::new(2, 2),
                     SimpleName::new(2, Span::new(4, 4))
                 ),
-                Seperator::ShiftLeft, Span::new(6, 7),
+                Separator::ShiftLeft, Span::new(6, 7),
                 BinaryExpr::new(
                     BinaryExpr::new(
                         BinaryExpr::new(
                             SimpleName::new(3, Span::new(9, 9)),
-                            Seperator::Div, Span::new(11, 11),
+                            Separator::Div, Span::new(11, 11),
                             SimpleName::new(4, Span::new(13, 13))
                         ),
-                        Seperator::Add, Span::new(15, 15),
+                        Separator::Add, Span::new(15, 15),
                         BinaryExpr::new(
                             SimpleName::new(5, Span::new(17, 17)),
-                            Seperator::Rem, Span::new(19, 19),
+                            Separator::Rem, Span::new(19, 19),
                             SimpleName::new(6, Span::new(21, 21))
                         )
                     ),
-                    Seperator::Sub, Span::new(23, 23),
+                    Separator::Sub, Span::new(23, 23),
                     SimpleName::new(7, Span::new(25, 25))
                 )
             ),
-            Seperator::ShiftRight, Span::new(27, 28),
+            Separator::ShiftRight, Span::new(27, 28),
             SimpleName::new(8, Span::new(30, 30)),
         ))
     }          
@@ -227,73 +226,73 @@ fn binary_expr_parse() {
                         BinaryExpr::new(
                             BinaryExpr::new(
                                 SimpleName::new(1, Span::new(0, 0)),
-                                Seperator::Mul, Span::new(2, 2),
+                                Separator::Mul, Span::new(2, 2),
                                 SimpleName::new(2, Span::new(4, 4)),
                             ),
-                            Seperator::ShiftLeft, Span::new(6, 7),
+                            Separator::ShiftLeft, Span::new(6, 7),
                             BinaryExpr::new(
                                 BinaryExpr::new(
                                     BinaryExpr::new(
                                         SimpleName::new(3, Span::new(9, 9)),
-                                        Seperator::Div, Span::new(11, 11),
+                                        Separator::Div, Span::new(11, 11),
                                         SimpleName::new(4, Span::new(13, 13)),
                                     ),
-                                    Seperator::Add, Span::new(15, 15),
+                                    Separator::Add, Span::new(15, 15),
                                     BinaryExpr::new(
                                         SimpleName::new(5, Span::new(17, 17)),
-                                        Seperator::Rem, Span::new(19, 19),
+                                        Separator::Rem, Span::new(19, 19),
                                         SimpleName::new(6, Span::new(21, 21)),
                                     )
                                 ),
-                                Seperator::Sub, Span::new(23, 23),
+                                Separator::Sub, Span::new(23, 23),
                                 SimpleName::new(7, Span::new(25, 25))
                             ),
                         ),
-                        Seperator::ShiftRight, Span::new(27, 28),
+                        Separator::ShiftRight, Span::new(27, 28),
                         BinaryExpr::new(
                             BinaryExpr::new(
                                 SimpleName::new(8, Span::new(30, 30)),
-                                Seperator::Great, Span::new(32, 32),
+                                Separator::Great, Span::new(32, 32),
                                 BinaryExpr::new(
                                     SimpleName::new(3, Span::new(34, 34)),
-                                    Seperator::Mul, Span::new(36, 36),
+                                    Separator::Mul, Span::new(36, 36),
                                     SimpleName::new(9, Span::new(38, 38)),
                                 )
                             ),
-                            Seperator::Less, Span::new(40, 40),
+                            Separator::Less, Span::new(40, 40),
                             SimpleName::new(10, Span::new(42, 42)),
                         )
                     ),
-                    Seperator::ShiftLeft, Span::new(44, 45),
+                    Separator::ShiftLeft, Span::new(44, 45),
                     BinaryExpr::new(
                         SimpleName::new(11, Span::new(47, 47)),
-                        Seperator::GreatEqual, Span::new(49, 50),
+                        Separator::GreatEqual, Span::new(49, 50),
                         SimpleName::new(12, Span::new(52, 52)),
                     )
                 ),
-                Seperator::LogicalAnd, Span::new(54, 55),
+                Separator::LogicalAnd, Span::new(54, 55),
                 SimpleName::new(13, Span::new(57, 57))
             ),
-            Seperator::LogicalOr, Span::new(59, 60),
+            Separator::LogicalOr, Span::new(59, 60),
             BinaryExpr::new(
                 BinaryExpr::new(
                     BinaryExpr::new(
                         BinaryExpr::new(
                             SimpleName::new(14, Span::new(62, 62)),
-                            Seperator::BitAnd, Span::new(64, 64),
+                            Separator::BitAnd, Span::new(64, 64),
                             SimpleName::new(15, Span::new(66, 66)),
                         ),
-                        Seperator::BitOr, Span::new(68, 68),
+                        Separator::BitOr, Span::new(68, 68),
                         BinaryExpr::new(
                             SimpleName::new(16, Span::new(70, 70)),
-                            Seperator::BitXor, Span::new(72, 72),
+                            Separator::BitXor, Span::new(72, 72),
                             SimpleName::new(17, Span::new(74, 74)),
                         )
                     ),
-                    Seperator::NotEqual, Span::new(76, 77),
+                    Separator::NotEqual, Span::new(76, 77),
                     SimpleName::new(18, Span::new(79, 79)),
                 ),
-                Seperator::Equal, Span::new(81, 82),
+                Separator::Equal, Span::new(81, 82),
                 SimpleName::new(19, Span::new(84, 84))
             )
         ))
@@ -303,10 +302,10 @@ fn binary_expr_parse() {
         Expr::Binary(BinaryExpr::new(
             BinaryExpr::new(
                 SimpleName::new(1, Span::new(0, 0)),
-                Seperator::BitAnd, Span::new(2, 2),
+                Separator::BitAnd, Span::new(2, 2),
                 SimpleName::new(2, Span::new(4, 4)),
             ),
-            Seperator::Equal, Span::new(6, 7),
+            Separator::Equal, Span::new(6, 7),
             SimpleName::new(3, Span::new(9, 9)),
         ))
     }
@@ -322,31 +321,31 @@ fn binary_expr_parse() {
             BinaryExpr::new(
                 BinaryExpr::new(
                     Expr::Lit(LitExpr::new(LitValue::from(0), Span::new(0, 0))),
-                    Seperator::Add, Span::new(2, 2),
+                    Separator::Add, Span::new(2, 2),
                     Expr::Lit(LitExpr::new(LitValue::from(6), Span::new(4, 4)))
                 ),
-                Seperator::BitXor, Span::new(6, 6),
+                Separator::BitXor, Span::new(6, 6),
                 BinaryExpr::new(
                     Expr::Lit(LitExpr::new(LitValue::from(3), Span::new(8, 8))),
-                    Seperator::BitAnd, Span::new(10, 10),
+                    Separator::BitAnd, Span::new(10, 10),
                     BinaryExpr::new(
                         BinaryExpr::new(
                             Expr::Lit(LitExpr::new(LitValue::from(3), Span::new(12, 12))),
-                            Seperator::Div, Span::new(14, 14),
+                            Separator::Div, Span::new(14, 14),
                             Expr::Lit(LitExpr::new(LitValue::from(3), Span::new(16, 16)))
                         ),
-                        Seperator::Sub, Span::new(18, 18),
+                        Separator::Sub, Span::new(18, 18),
                         Expr::Lit(LitExpr::new(LitValue::from(8), Span::new(20, 20)))
                     )
                 )
             ),
-            Seperator::LogicalAnd, Span::new(22, 23),
+            Separator::LogicalAnd, Span::new(22, 23),
             BinaryExpr::new(
                 Expr::Lit(LitExpr::new(LitValue::from(2), Span::new(25, 25))),
-                Seperator::BitAnd, Span::new(27, 27),
+                Separator::BitAnd, Span::new(27, 27),
                 BinaryExpr::new(
                     Expr::Lit(LitExpr::new(LitValue::from(0), Span::new(29, 29))),
-                    Seperator::Add, Span::new(31, 31),
+                    Separator::Add, Span::new(31, 31),
                     Expr::Lit(LitExpr::new(LitValue::from(6), Span::new(33, 33)))
                 )
             )
@@ -362,62 +361,62 @@ fn binary_expr_parse() {
                     BinaryExpr::new(
                         BinaryExpr::new(
                             Expr::Lit(LitExpr::new(LitValue::from(7), Span::new(0, 0))),
-                            Seperator::Great, Span::new(2, 2),
+                            Separator::Great, Span::new(2, 2),
                             Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(4, 4))),
                         ),
-                        Seperator::BitOr, Span::new(6, 6),
+                        Separator::BitOr, Span::new(6, 6),
                         BinaryExpr::new(
                             Expr::Lit(LitExpr::new(LitValue::from(0), Span::new(8, 8))),
-                            Seperator::Rem, Span::new(10, 10),
+                            Separator::Rem, Span::new(10, 10),
                             Expr::Lit(LitExpr::new(LitValue::from(8), Span::new(12, 12)))
                         )
                     ), 
-                    Seperator::BitOr, Span::new(14, 14),
+                    Separator::BitOr, Span::new(14, 14),
                     BinaryExpr::new(
                         BinaryExpr::new(
                             BinaryExpr::new(
                                 Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(16, 16))),
-                                Seperator::Rem, Span::new(18, 18),
+                                Separator::Rem, Span::new(18, 18),
                                 Expr::Lit(LitExpr::new(LitValue::from(7), Span::new(20, 20))),
                             ),
-                            Seperator::Mul, Span::new(22, 22),
+                            Separator::Mul, Span::new(22, 22),
                             Expr::Lit(LitExpr::new(LitValue::from(3), Span::new(24, 24))),
                         ),
-                        Seperator::Rem, Span::new(26, 26),
+                        Separator::Rem, Span::new(26, 26),
                         Expr::Lit(LitExpr::new(LitValue::from(6), Span::new(28, 28)))
                     )
                 ),
-                Seperator::Equal, Span::new(30, 31),
+                Separator::Equal, Span::new(30, 31),
                 BinaryExpr::new(
                     BinaryExpr::new(
                         BinaryExpr::new(
                             Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(33, 33))),
-                            Seperator::ShiftRight, Span::new(35, 36),
+                            Separator::ShiftRight, Span::new(35, 36),
                             BinaryExpr::new(
                                 Expr::Lit(LitExpr::new(LitValue::from(8), Span::new(38, 38))),
-                                Seperator::Rem, Span::new(40, 40),
+                                Separator::Rem, Span::new(40, 40),
                                 Expr::Lit(LitExpr::new(LitValue::from(3), Span::new(42, 42))),
                             )
                         ),
-                        Seperator::BitXor, Span::new(44, 44),
+                        Separator::BitXor, Span::new(44, 44),
                         BinaryExpr::new(
                             Expr::Lit(LitExpr::new(LitValue::from(6), Span::new(46, 46))),
-                            Seperator::ShiftLeft, Span::new(48, 49),
+                            Separator::ShiftLeft, Span::new(48, 49),
                             Expr::Lit(LitExpr::new(LitValue::from(0), Span::new(51, 51))),
                         )
                     ),
-                    Seperator::BitXor, Span::new(53, 53),
+                    Separator::BitXor, Span::new(53, 53),
                     BinaryExpr::new(
                         Expr::Lit(LitExpr::new(LitValue::from(2), Span::new(55, 55))),
-                        Seperator::ShiftRight, Span::new(57, 58),
+                        Separator::ShiftRight, Span::new(57, 58),
                         Expr::Lit(LitExpr::new(LitValue::from(6), Span::new(60, 60))),
                     )
                 )
             ),
-            Seperator::LogicalOr, Span::new(62, 63),
+            Separator::LogicalOr, Span::new(62, 63),
             BinaryExpr::new(
                 Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(65, 65))),
-                Seperator::Sub, Span::new(67, 67),
+                Separator::Sub, Span::new(67, 67),
                 Expr::Lit(LitExpr::new(LitValue::from(0), Span::new(69, 69)))
             )
         ))
@@ -432,51 +431,51 @@ fn binary_expr_parse() {
                 BinaryExpr::new(
                     BinaryExpr::new(
                         Expr::Lit(LitExpr::new(LitValue::from(7), Span::new(0, 0))),
-                        Seperator::ShiftRight, Span::new(2, 3),
+                        Separator::ShiftRight, Span::new(2, 3),
                         Expr::Lit(LitExpr::new(LitValue::from(3), Span::new(5, 5))),
                     ),
-                    Seperator::Equal, Span::new(7, 8),
+                    Separator::Equal, Span::new(7, 8),
                     BinaryExpr::new(
                         Expr::Lit(LitExpr::new(LitValue::from(8), Span::new(10, 10))),
-                        Seperator::Div, Span::new(12, 12),
+                        Separator::Div, Span::new(12, 12),
                         Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(14, 14))),
                     )
                 ),
-                Seperator::LogicalAnd, Span::new(16, 17),
+                Separator::LogicalAnd, Span::new(16, 17),
                 BinaryExpr::new(
                     Expr::Lit(LitExpr::new(LitValue::from(6), Span::new(19, 19))),
-                    Seperator::Equal, Span::new(21, 22),
+                    Separator::Equal, Span::new(21, 22),
                     BinaryExpr::new(
                         BinaryExpr::new(
                             Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(24, 24))),
-                            Seperator::LessEqual, Span::new(26, 27),
+                            Separator::LessEqual, Span::new(26, 27),
                             BinaryExpr::new(
                                 Expr::Lit(LitExpr::new(LitValue::from(3), Span::new(29, 29))),
-                                Seperator::Rem, Span::new(31, 31),
+                                Separator::Rem, Span::new(31, 31),
                                 Expr::Lit(LitExpr::new(LitValue::from(6), Span::new(33, 33)))
                             )
                         ),
-                        Seperator::BitXor, Span::new(35, 35),
+                        Separator::BitXor, Span::new(35, 35),
                         BinaryExpr::new(
                             BinaryExpr::new(
                                 BinaryExpr::new(
                                     Expr::Lit(LitExpr::new(LitValue::from(3), Span::new(37, 37))),
-                                    Seperator::Sub, Span::new(39, 39),
+                                    Separator::Sub, Span::new(39, 39),
                                     Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(41, 41))),
                                 ),
-                                Seperator::Sub, Span::new(43, 43),
+                                Separator::Sub, Span::new(43, 43),
                                 Expr::Lit(LitExpr::new(LitValue::from(2), Span::new(45, 45))),
                             ),
-                            Seperator::ShiftRight, Span::new(47, 48),
+                            Separator::ShiftRight, Span::new(47, 48),
                             Expr::Lit(LitExpr::new(LitValue::from(7), Span::new(50, 50)))
                         )
                     )
                 )
             ),
-            Seperator::LogicalOr, Span::new(52, 53),
+            Separator::LogicalOr, Span::new(52, 53),
             BinaryExpr::new(
                 Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(55, 55))),
-                Seperator::GreatEqual, Span::new(57, 58),
+                Separator::GreatEqual, Span::new(57, 58),
                 Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(60, 60)))
             )
         ))
@@ -486,7 +485,7 @@ fn binary_expr_parse() {
     assert_eq!{ make_node!("4 >> 7"),
         Expr::Binary(BinaryExpr::new(
             Expr::Lit(LitExpr::new(LitValue::from(4), Span::new(0, 0))),
-            Seperator::ShiftRight, Span::new(2, 3),
+            Separator::ShiftRight, Span::new(2, 3),
             Expr::Lit(LitExpr::new(LitValue::from(7), Span::new(5, 5)))
         ))
     }
@@ -500,58 +499,58 @@ fn binary_expr_parse() {
                     BinaryExpr::new(
                         BinaryExpr::new(
                             Expr::Lit(LitExpr::new(LitValue::from(8), Span::new(0, 0))),
-                            Seperator::BitAnd, Span::new(2, 2),
+                            Separator::BitAnd, Span::new(2, 2),
                             Expr::Lit(LitExpr::new(LitValue::from(0), Span::new(4, 4)))
                         ),
-                        Seperator::BitOr, Span::new(6, 6),
+                        Separator::BitOr, Span::new(6, 6),
                         BinaryExpr::new(
                             Expr::Lit(LitExpr::new(LitValue::from(7), Span::new(8, 8))),
-                            Seperator::Add, Span::new(10, 10),
+                            Separator::Add, Span::new(10, 10),
                             Expr::Lit(LitExpr::new(LitValue::from(7), Span::new(12, 12)))
                         )
                     ),
-                    Seperator::BitOr, Span::new(14, 14),
+                    Separator::BitOr, Span::new(14, 14),
                     BinaryExpr::new(
                         Expr::Lit(LitExpr::new(LitValue::from(7), Span::new(16, 16))),
-                        Seperator::Mul, Span::new(18, 18),
+                        Separator::Mul, Span::new(18, 18),
                         Expr::Lit(LitExpr::new(LitValue::from(0), Span::new(20, 20)))
                     )
                 ),
-                Seperator::LogicalAnd, Span::new(22, 23),
+                Separator::LogicalAnd, Span::new(22, 23),
                 BinaryExpr::new(
                     BinaryExpr::new(
                         Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(25, 25))),
-                        Seperator::Sub, Span::new(27, 27),
+                        Separator::Sub, Span::new(27, 27),
                         BinaryExpr::new(
                             Expr::Lit(LitExpr::new(LitValue::from(2), Span::new(29, 29))),
-                            Seperator::Mul, Span::new(31, 31),
+                            Separator::Mul, Span::new(31, 31),
                             Expr::Lit(LitExpr::new(LitValue::from(3), Span::new(33, 33)))
                         )
                     ),
-                    Seperator::BitOr, Span::new(35, 35),
+                    Separator::BitOr, Span::new(35, 35),
                     BinaryExpr::new(
                         BinaryExpr::new(
                             BinaryExpr::new(
                                 Expr::Lit(LitExpr::new(LitValue::from(0), Span::new(37, 37))),
-                                Seperator::Sub, Span::new(39, 39),
+                                Separator::Sub, Span::new(39, 39),
                                 Expr::Lit(LitExpr::new(LitValue::from(7), Span::new(41, 41)))
                             ),
-                            Seperator::GreatEqual, Span::new(43, 44),
+                            Separator::GreatEqual, Span::new(43, 44),
                             Expr::Lit(LitExpr::new(LitValue::from(6), Span::new(46, 46)))
                         ),
-                        Seperator::ShiftRight, Span::new(48, 49),
+                        Separator::ShiftRight, Span::new(48, 49),
                         BinaryExpr::new(
                             Expr::Lit(LitExpr::new(LitValue::from(5), Span::new(51, 51))),
-                            Seperator::Rem, Span::new(53, 53),
+                            Separator::Rem, Span::new(53, 53),
                             Expr::Lit(LitExpr::new(LitValue::from(5), Span::new(55, 55)))
                         )
                     )
                 )
             ),
-            Seperator::LogicalOr, Span::new(57, 58),
+            Separator::LogicalOr, Span::new(57, 58),
             BinaryExpr::new(
                 Expr::Lit(LitExpr::new(LitValue::from(5), Span::new(60, 60))),
-                Seperator::Rem, Span::new(62, 62),
+                Separator::Rem, Span::new(62, 62),
                 Expr::Lit(LitExpr::new(LitValue::from(3), Span::new(64, 64)))
             )
         ))
@@ -566,57 +565,57 @@ fn binary_expr_parse() {
                     BinaryExpr::new(
                         BinaryExpr::new(
                             Expr::Lit(LitExpr::new(LitValue::from(3), Span::new(0, 0))),
-                            Seperator::LessEqual, Span::new(2, 3),
+                            Separator::LessEqual, Span::new(2, 3),
                             BinaryExpr::new(
                                 Expr::Lit(LitExpr::new(LitValue::from(2), Span::new(5, 5))),
-                                Seperator::Add, Span::new(7, 7),
+                                Separator::Add, Span::new(7, 7),
                                 Expr::Lit(LitExpr::new(LitValue::from(4), Span::new(9, 9)))
                             )
                         ),
-                        Seperator::LessEqual, Span::new(11, 12),
+                        Separator::LessEqual, Span::new(11, 12),
                         Expr::Lit(LitExpr::new(LitValue::from(5), Span::new(14, 14)))
                     ),
-                    Seperator::LogicalAnd, Span::new(16, 17),
+                    Separator::LogicalAnd, Span::new(16, 17),
                     BinaryExpr::new(
                         BinaryExpr::new(
                             BinaryExpr::new(
                                 Expr::Lit(LitExpr::new(LitValue::from(3), Span::new(19, 19))),
-                                Seperator::Less, Span::new(21, 21),
+                                Separator::Less, Span::new(21, 21),
                                 BinaryExpr::new(
                                     Expr::Lit(LitExpr::new(LitValue::from(3), Span::new(23, 23))),
-                                    Seperator::Add, Span::new(25, 25),
+                                    Separator::Add, Span::new(25, 25),
                                     Expr::Lit(LitExpr::new(LitValue::from(2), Span::new(27, 27)))
                                 )
                             ),
-                            Seperator::ShiftRight, Span::new(29, 30),
+                            Separator::ShiftRight, Span::new(29, 30),
                             BinaryExpr::new(
                                 Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(32, 32))),
-                                Seperator::Mul, Span::new(34, 34),
+                                Separator::Mul, Span::new(34, 34),
                                 Expr::Lit(LitExpr::new(LitValue::from(2), Span::new(36, 36)))
                             )
                         ),
-                        Seperator::BitAnd, Span::new(38, 38),
+                        Separator::BitAnd, Span::new(38, 38),
                         Expr::Lit(LitExpr::new(LitValue::from(8), Span::new(40, 40)))
                     )
                 ),
-                Seperator::LogicalAnd, Span::new(42, 43),
+                Separator::LogicalAnd, Span::new(42, 43),
                 BinaryExpr::new(
                     BinaryExpr::new(
                         Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(45, 45))),
-                        Seperator::GreatEqual, Span::new(47, 48),
+                        Separator::GreatEqual, Span::new(47, 48),
                         Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(50, 50)))
                     ),
-                    Seperator::Less, Span::new(52, 52),
+                    Separator::Less, Span::new(52, 52),
                     Expr::Lit(LitExpr::new(LitValue::from(0), Span::new(54, 54)))
                 )
             ),
-            Seperator::LogicalOr, Span::new(56, 57),
+            Separator::LogicalOr, Span::new(56, 57),
             BinaryExpr::new(
                 Expr::Lit(LitExpr::new(LitValue::from(6), Span::new(59, 59))),
-                Seperator::Less, Span::new(61, 61),
+                Separator::Less, Span::new(61, 61),
                 BinaryExpr::new(
                     Expr::Lit(LitExpr::new(LitValue::from(4), Span::new(63, 63))),
-                    Seperator::Mul, Span::new(65, 65),
+                    Separator::Mul, Span::new(65, 65),
                     Expr::Lit(LitExpr::new(LitValue::from(4), Span::new(67, 67)))
                 )
             )
@@ -631,16 +630,16 @@ fn binary_expr_parse() {
                 BinaryExpr::new(
                     BinaryExpr::new(
                         Expr::Lit(LitExpr::new(LitValue::from(5), Span::new(0, 0))),
-                        Seperator::GreatEqual, Span::new(2, 3),
+                        Separator::GreatEqual, Span::new(2, 3),
                         Expr::Lit(LitExpr::new(LitValue::from(6), Span::new(5, 5)))
                     ),
-                    Seperator::BitOr, Span::new(7, 7),
+                    Separator::BitOr, Span::new(7, 7),
                     Expr::Lit(LitExpr::new(LitValue::from(3), Span::new(9, 9)))
                 ),
-                Seperator::Equal, Span::new(11, 12),
+                Separator::Equal, Span::new(11, 12),
                 Expr::Lit(LitExpr::new(LitValue::from(4), Span::new(14, 14)))
             ),
-            Seperator::LogicalAnd, Span::new(16, 17),
+            Separator::LogicalAnd, Span::new(16, 17),
             Expr::Lit(LitExpr::new(LitValue::from(3), Span::new(19, 19)))
         ))
     }
@@ -653,14 +652,14 @@ fn binary_expr_parse() {
             BinaryExpr::new(
                 BinaryExpr::new(
                     Expr::Lit(LitExpr::new(LitValue::from(6), Span::new(0, 0))),
-                    Seperator::LogicalAnd, Span::new(2, 3),
+                    Separator::LogicalAnd, Span::new(2, 3),
                     BinaryExpr::new(
                         Expr::Lit(LitExpr::new(LitValue::from(7), Span::new(5, 5))),
-                        Seperator::ShiftRight, Span::new(7, 8),
+                        Separator::ShiftRight, Span::new(7, 8),
                         Expr::Lit(LitExpr::new(LitValue::from(8), Span::new(10, 10)))
                     )
                 ),
-                Seperator::LogicalAnd, Span::new(12, 13),
+                Separator::LogicalAnd, Span::new(12, 13),
                 BinaryExpr::new(
                     BinaryExpr::new(
                         BinaryExpr::new(
@@ -668,54 +667,54 @@ fn binary_expr_parse() {
                                 BinaryExpr::new(
                                     BinaryExpr::new(
                                         Expr::Lit(LitExpr::new(LitValue::from(0), Span::new(15, 15))),
-                                        Seperator::Div, Span::new(17, 17),
+                                        Separator::Div, Span::new(17, 17),
                                         Expr::Lit(LitExpr::new(LitValue::from(8), Span::new(19, 19)))
                                     ), 
-                                    Seperator::Mul, Span::new(21, 21),
+                                    Separator::Mul, Span::new(21, 21),
                                     Expr::Lit(LitExpr::new(LitValue::from(7), Span::new(23, 23)))
                                 ), 
-                                Seperator::Add, Span::new(25, 25),
+                                Separator::Add, Span::new(25, 25),
                                 Expr::Lit(LitExpr::new(LitValue::from(5), Span::new(27, 27)))
                             ),
-                            Seperator::Less, Span::new(29, 29),
+                            Separator::Less, Span::new(29, 29),
                             BinaryExpr::new(
                                 Expr::Lit(LitExpr::new(LitValue::from(5), Span::new(31, 31))),
-                                Seperator::Div, Span::new(33, 33),
+                                Separator::Div, Span::new(33, 33),
                                 Expr::Lit(LitExpr::new(LitValue::from(5), Span::new(35, 35)))
                             )
                         ),
-                        Seperator::ShiftRight, Span::new(37, 38),
+                        Separator::ShiftRight, Span::new(37, 38),
                         BinaryExpr::new(
                             BinaryExpr::new(
                                 BinaryExpr::new(
                                     Expr::Lit(LitExpr::new(LitValue::from(5), Span::new(40, 40))),
-                                    Seperator::Sub, Span::new(42, 42),
+                                    Separator::Sub, Span::new(42, 42),
                                     Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(44, 44)))
                                 ), 
-                                Seperator::GreatEqual, Span::new(46, 47),
+                                Separator::GreatEqual, Span::new(46, 47),
                                 Expr::Lit(LitExpr::new(LitValue::from(6), Span::new(49, 49)))
                             ), 
-                            Seperator::Great, Span::new(51, 51),
+                            Separator::Great, Span::new(51, 51),
                             Expr::Lit(LitExpr::new(LitValue::from(8), Span::new(53, 53)))
                         )
                     ),
-                    Seperator::BitOr, Span::new(55, 55),
+                    Separator::BitOr, Span::new(55, 55),
                     BinaryExpr::new(
                         Expr::Lit(LitExpr::new(LitValue::from(6), Span::new(57, 57))),
-                        Seperator::ShiftRight, Span::new(59, 60),
+                        Separator::ShiftRight, Span::new(59, 60),
                         BinaryExpr::new(
                             Expr::Lit(LitExpr::new(LitValue::from(5), Span::new(62, 62))),
-                            Seperator::Great, Span::new(64, 64),
+                            Separator::Great, Span::new(64, 64),
                             BinaryExpr::new(
                                 Expr::Lit(LitExpr::new(LitValue::from(2), Span::new(66, 66))),
-                                Seperator::Add, Span::new(68, 68),
+                                Separator::Add, Span::new(68, 68),
                                 Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(70, 70)))
                             )
                         )
                     )
                 )
             ),
-            Seperator::LogicalOr, Span::new(72, 73),
+            Separator::LogicalOr, Span::new(72, 73),
             Expr::Lit(LitExpr::new(LitValue::from(0), Span::new(75, 75)))
         ))
     }

@@ -5,6 +5,7 @@
 ///!        | simple_expr_stmt | assign_expr_stmt | continue_stmt | break_stmt | fn_def | type_def
  
 use std::fmt;
+use crate::source::FileSystem;
 use crate::lexical::Token;
 use super::FnDef;
 use super::TypeDef;
@@ -59,7 +60,7 @@ macro_rules! define_statement {
             fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
         }
         impl ISyntaxGrammar for $name {
-            fn matches_first(tokens: &[&Token]) -> bool {
+            fn matches_first(tokens: [&Token; 3]) -> bool {
                 false 
                 $(|| <$subty as ISyntaxGrammar>::matches_first(tokens) )+
             }
@@ -69,12 +70,12 @@ macro_rules! define_statement {
                 fn from(s: $subty) -> $name { $name::$enum_name(s) }
         } )+
 
-        impl ISyntaxParse for $name {
+        impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for $name where F: FileSystem {
             type Output = $name;
 
-            fn parse(sess: &mut ParseSession) -> ParseResult<$name> {
+            fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<$name> {
                 $( if <$subty as ISyntaxGrammar>::matches_first(sess.current_tokens()) {
-                    return Ok($name::from(<$subty as ISyntaxParse>::parse(sess)?));
+                    return Ok($name::from(<$subty as ISyntaxParse<'ecx, 'scx, F>>::parse(sess)?));
                 } else )+ {
                     return sess.push_unexpect("statement");
                 } 

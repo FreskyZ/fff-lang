@@ -18,8 +18,8 @@ pub use token::{Numeric, StringLiteralType, Token, TokenFormat};
 
 #[derive(Debug)]
 pub struct Parser<'ecx, 'scx, F = DefaultFileSystem> {
-    diagnostics: &'ecx mut MessageCollection,
-    chars: SourceChars<'scx, F>,
+    pub diagnostics: &'ecx mut MessageCollection,
+    pub /* attention: temp pub for syntax */ chars: SourceChars<'scx, F>,
     current: char,
     current_position: Position,
     peek: char,

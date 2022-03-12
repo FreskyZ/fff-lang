@@ -10,4 +10,3 @@ pub(super) mod fn_def;
 pub(super) mod label_def;
 pub(super) mod type_use;
 pub(super) mod type_def;
-pub(super) mod module;

@@ -4,10 +4,8 @@
 ///! import_stmt = 'import' identifier [ 'as' identifier ] ';'
 
 use std::fmt;
-use crate::source::Span;
-use crate::lexical::Token;
-use crate::lexical::Seperator;
-use crate::lexical::Keyword;
+use crate::source::{FileSystem, Span};
+use crate::lexical::{Token, Separator, Keyword};
 use super::super::SimpleName;
 use super::super::Formatter;
 use super::super::ParseResult;
@@ -40,7 +38,7 @@ impl fmt::Debug for ImportStatement {
 impl ImportStatement {
     
     pub fn new_default(all_span: Span, name: SimpleName) -> ImportStatement {
-        ImportStatement{ name, all_span, as_span: Span::default(), target: None }
+        ImportStatement{ name, all_span, as_span: Span::new(0, 0), target: None }
     }
     pub fn new_target(all_span: Span, name: SimpleName, as_span: Span, target: SimpleName) -> ImportStatement {
         ImportStatement{ name, all_span, as_span, target: Some(target) }
@@ -51,12 +49,12 @@ impl ImportStatement {
     }
 }
 impl ISyntaxGrammar for ImportStatement {
-    fn matches_first(tokens: &[&Token]) -> bool { tokens[0] == &Token::Keyword(Keyword::Import) }
+    fn matches_first(tokens: [&Token; 3]) -> bool { matches!(tokens[0], &Token::Keyword(Keyword::Import)) }
 }
-impl ISyntaxParse for ImportStatement {
+impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for ImportStatement where F: FileSystem {
     type Output = ImportStatement;
 
-    fn parse(sess: &mut ParseSession) -> ParseResult<ImportStatement> {
+    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<ImportStatement> {
 
         let starting_span = sess.expect_keyword(Keyword::Import)?;
         let name = SimpleName::parse(sess)?;
@@ -64,10 +62,10 @@ impl ISyntaxParse for ImportStatement {
         let (as_span, to_ident) = if let Some(as_span) = sess.try_expect_keyword(Keyword::As) {
             (as_span, Some(SimpleName::parse(sess)?))
         } else {
-            (Span::default(), None)
+            (Span::new(0, 0), None)
         };
         
-        let semicolon_span = sess.expect_sep(Seperator::SemiColon)?;
+        let semicolon_span = sess.expect_sep(Separator::SemiColon)?;
         let all_span = starting_span + semicolon_span;
 
         Ok(ImportStatement::new_some(all_span, name, as_span, to_ident))

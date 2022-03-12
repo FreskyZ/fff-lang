@@ -4,10 +4,9 @@
 ///! fn_call_expr = expr '(' [ expr_list ] ')'
 
 use std::fmt;
-use crate::source::Span;
+use crate::source::{FileSystem, Span};
 use crate::diagnostics::Message;
-use crate::lexical::Token;
-use crate::lexical::Seperator;
+use crate::lexical::{Token, Separator};
 use super::Expr;
 use super::ExprList;
 use super::ExprListParseResult;
@@ -54,19 +53,19 @@ impl FnCallExpr {
 
     fn new_with_parse_result(paren_span: Span, params: ExprList) -> FnCallExpr {
         FnCallExpr{
-            all_span: Span::default(), 
+            all_span: Span::new(0, 0), 
             base: Box::new(Expr::default()),
             paren_span, params
         }
     }
 }
 impl ISyntaxGrammar for FnCallExpr {
-    fn matches_first(tokens: &[&Token]) -> bool { tokens[0] == &Token::Sep(Seperator::LeftParenthenes) }
+    fn matches_first(tokens: [&Token; 3]) -> bool { matches!(tokens[0], &Token::Sep(Separator::LeftParen)) }
 }
-impl ISyntaxParse for FnCallExpr {
+impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for FnCallExpr where F: FileSystem {
     type Output = FnCallExpr;
 
-    fn parse(sess: &mut ParseSession) -> ParseResult<FnCallExpr> {
+    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<FnCallExpr> {
 
         match ExprList::parse(sess)? {
             ExprListParseResult::Empty(span) => 

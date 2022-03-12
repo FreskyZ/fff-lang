@@ -3,7 +3,7 @@
 ///! syntax/expr
 
 use std::fmt;
-use crate::source::Span;
+use crate::source::{FileSystem, Span};
 use crate::lexical::{Token, Keyword, Separator};
 
 #[macro_use] mod expr_list; // make_exprs
@@ -91,7 +91,7 @@ impl fmt::Debug for Expr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl Default for Expr {
-    fn default() -> Expr { Expr::Lit(LitExpr::new(LitValue::from(0), Span::default())) }
+    fn default() -> Expr { Expr::Lit(LitExpr::new(LitValue::from(0), Span::new(0, 0))) }
 }
 impl Expr {
 
@@ -117,33 +117,32 @@ impl Expr {
 
     pub fn unbox(this: Box<Expr>) -> Self {
         let mut this = this;
-        let mut temp = Expr::Lit(LitExpr::new(LitValue::from(42), Span::default()));
+        let mut temp = Expr::Lit(LitExpr::new(LitValue::from(42), Span::new(0, 0)));
         ::std::mem::swap(&mut *this, &mut temp);
         temp
     }
 }
 impl ISyntaxGrammar for Expr {
-    fn matches_first(tokens: &[&Token]) -> bool { 
+    fn matches_first(tokens: [&Token; 3]) -> bool { 
         LitExpr::matches_first(tokens)
         || Name::matches_first(tokens)
         || TupleDef::matches_first(tokens)
         || ArrayDef::matches_first(tokens)
         || UnaryExpr::matches_first(tokens) 
-        || tokens[0] == &Token::Sep(Seperator::Range)
-        || tokens[0] == &Token::Keyword(Keyword::This)
+        || matches!(tokens[0], &Token::Sep(Separator::DotDot) | &Token::Keyword(Keyword::This))
     }
 }
-impl ISyntaxParse for Expr {
+impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for Expr where F: FileSystem {
     type Output = Expr;
-    fn parse(sess: &mut ParseSession) -> ParseResult<Expr> { RangeExpr::parse(sess) }
+    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Expr> { RangeExpr::parse(sess) }
 }
 
 #[cfg(test)] #[test]
 fn expr_parse() {
-    use crate::source::Span;
+    use crate::source::{FileSystem, Span};
     use crate::source::SymbolCollection;
     use crate::lexical::LitValue;
-    use crate::lexical::Seperator;
+    use crate::lexical::Separator;
     use super::WithTestInput;
     use super::TestInput;
 
@@ -359,11 +358,11 @@ fn expr_parse() {
 
     assert_eq!{ make_node!("!~!1[1]"),
         Expr::Unary(UnaryExpr::new(
-            Seperator::LogicalNot, Span::new(0, 0),
+            Separator::LogicalNot, Span::new(0, 0),
             UnaryExpr::new(
-                Seperator::BitNot, Span::new(1, 1),
+                Separator::BitNot, Span::new(1, 1),
                 UnaryExpr::new(
-                    Seperator::LogicalNot, Span::new(2, 2),
+                    Separator::LogicalNot, Span::new(2, 2),
                     IndexCallExpr::new(
                         LitExpr::new(LitValue::from(1), Span::new(3, 3)),
                         Span::new(4, 6), make_exprs![
@@ -379,9 +378,9 @@ fn expr_parse() {
     //           1234567
     assert_eq!{ make_node!("!!1"),
         Expr::Unary(UnaryExpr::new(
-            Seperator::LogicalNot, Span::new(0, 0), 
+            Separator::LogicalNot, Span::new(0, 0), 
             UnaryExpr::new(
-                Seperator::LogicalNot, Span::new(1, 1),
+                Separator::LogicalNot, Span::new(1, 1),
                 LitExpr::new(LitValue::from(1), Span::new(2, 2))
             )
         ))
@@ -395,7 +394,7 @@ fn expr_parse() {
     assert_eq!{ make_node!("..1 + 2"),
         Expr::RangeRight(RangeRightExpr::new(Span::new(0, 6), BinaryExpr::new(
             LitExpr::new(LitValue::from(1), Span::new(2, 2)),
-            Seperator::Add, Span::new(4, 4),
+            Separator::Add, Span::new(4, 4),
             LitExpr::new(LitValue::from(2), Span::new(6, 6))
         )))
     }
@@ -410,7 +409,7 @@ fn expr_parse() {
         Expr::RangeBoth(RangeBothExpr::new(
             BinaryExpr::new(
                 LitExpr::new(LitValue::from(1), Span::new(0, 0)),
-                Seperator::Add, Span::new(2, 2),
+                Separator::Add, Span::new(2, 2),
                 LitExpr::new(LitValue::from(2), Span::new(4, 4))
             ),
             Span::new(6, 7),
@@ -430,7 +429,7 @@ fn expr_parse() {
 
 #[cfg(test)] #[test]
 fn expr_errors() {
-    use crate::source::Span;
+    use crate::source::{FileSystem, Span};
     use crate::diagnostics::Message;
     use crate::diagnostics::MessageCollection;
     use super::error_strings;

@@ -6,8 +6,7 @@
 // TODO: add else for break, like python
 
 use std::fmt;
-use crate::source::Span;
-use crate::source::Sym;
+use crate::source::{FileSystem, Span, IsId};
 use crate::lexical::Token;
 use crate::lexical::Keyword;
 use super::super::Expr;
@@ -24,7 +23,7 @@ use super::super::ISyntaxGrammar;
 pub struct ForStatement {
     pub loop_name: Option<LabelDef>,
     pub for_span: Span,
-    pub iter_name: Sym,
+    pub iter_name: IsId,
     pub iter_span: Span,
     pub iter_expr: Expr,
     pub body: Block,
@@ -38,7 +37,7 @@ impl ISyntaxFormat for ForStatement {
             None => f.indent1().lit("no-loop-name").endl(),
         };
         f.indent1().lit("\"for\"").space().span(self.for_span).endl()
-            .indent1().lit("iter-var").space().sym(self.iter_name).space().span(self.iter_span).endl()
+            .indent1().lit("iter-var").space().isid(self.iter_name).space().span(self.iter_span).endl()
             .set_prefix_text("iter-expr-is").apply1(&self.iter_expr).unset_prefix_text().endl()
             .set_header_text("body").apply1(&self.body)
             .finish()
@@ -51,7 +50,7 @@ impl ForStatement {
 
     pub fn new_no_label<T: Into<Expr>>(
             all_span: Span, for_span: Span, 
-            iter_name: Sym, iter_span: Span, iter_expr: T, 
+            iter_name: IsId, iter_span: Span, iter_expr: T, 
             body: Block) -> ForStatement {
         ForStatement { 
             loop_name: None,
@@ -63,7 +62,7 @@ impl ForStatement {
     }
     pub fn new_with_label<T: Into<Expr>>(
             all_span: Span, loop_name: LabelDef, for_span: Span, 
-            iter_name: Sym, iter_span: Span, iter_expr: T, 
+            iter_name: IsId, iter_span: Span, iter_expr: T, 
             body: Block) -> ForStatement {
         ForStatement { 
             loop_name: Some(loop_name),
@@ -75,30 +74,30 @@ impl ForStatement {
     }
 
     fn new(loop_name: Option<LabelDef>, for_span: Span,
-        iter_name: Sym, iter_span: Span, iter_expr: Expr,
+        iter_name: IsId, iter_span: Span, iter_expr: Expr,
         body: Block) -> ForStatement {
         ForStatement{
-            all_span: (match loop_name { Some(ref label) => label.all_span, None => for_span }).merge(&body.all_span),
+            all_span: loop_name.as_ref().map(|n| n.all_span).unwrap_or(for_span) + body.all_span,
             loop_name, for_span, iter_name, iter_expr, iter_span, body,
         }
     }
 }
 impl ISyntaxGrammar for ForStatement {
-    fn matches_first(tokens: &[&Token]) -> bool {
+    fn matches_first(tokens: [&Token; 3]) -> bool {
         match (tokens[0], tokens[2]) {
             (&Token::Label(_), &Token::Keyword(Keyword::For)) | (&Token::Keyword(Keyword::For), _) => true,
             _ => false
         }
     }
 }
-impl ISyntaxParse for ForStatement {
+impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for ForStatement where F: FileSystem {
     type Output = ForStatement;
 
-    fn parse(sess: &mut ParseSession) -> ParseResult<ForStatement> {
+    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<ForStatement> {
 
         let maybe_label = LabelDef::try_parse(sess)?;
         let for_strpos = sess.expect_keyword(Keyword::For)?;
-        let (iter_name, iter_strpos) = sess.expect_ident_or(vec![Keyword::Underscore])?; // Accept _ as iter_name, _ do not declare iter var
+        let (iter_name, iter_strpos) = sess.expect_ident_or(&[Keyword::Underscore])?; // Accept _ as iter_name, _ do not declare iter var
         let _in_strpos = sess.expect_keyword(Keyword::In)?;
         let iter_expr = Expr::parse(sess)?;
         let body = Block::parse(sess)?;

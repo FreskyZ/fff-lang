@@ -5,10 +5,9 @@
 ///! renamed from postfix_expr::subscription to make it shorter
 
 use std::fmt;
-use crate::source::Span;
+use crate::source::{FileSystem, Span};
 use crate::diagnostics::Message;
-use crate::lexical::Token;
-use crate::lexical::Seperator;
+use crate::lexical::{Token, Separator};
 use super::Expr;
 use super::ExprList;
 use super::ExprListParseResult;
@@ -56,19 +55,19 @@ impl IndexCallExpr {
 
     fn new_with_parse_result(bracket_span: Span, params: ExprList) -> IndexCallExpr {
         IndexCallExpr{
-            all_span: Span::default(), 
+            all_span: Span::new(0, 0), 
             base: Box::new(Expr::default()),
             bracket_span, params
         }
     }
 }
 impl ISyntaxGrammar for IndexCallExpr {
-    fn matches_first(tokens: &[&Token]) -> bool { tokens[0] == &Token::Sep(Seperator::LeftBracket) }
+    fn matches_first(tokens: [&Token; 3]) -> bool { matches!(tokens[0], &Token::Sep(Separator::LeftBracket)) }
 }
-impl ISyntaxParse for IndexCallExpr {
+impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for IndexCallExpr where F: FileSystem {
     type Output = IndexCallExpr;
 
-    fn parse(sess: &mut ParseSession) -> ParseResult<IndexCallExpr> {
+    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<IndexCallExpr> {
 
         match ExprList::parse(sess)? {
             ExprListParseResult::Normal(span, expr_list) | ExprListParseResult::EndWithComma(span, expr_list) => 

@@ -5,7 +5,7 @@
 // TODO: add else for break, like python
 
 use std::fmt;
-use crate::source::Span;
+use crate::source::{FileSystem, Span};
 use crate::lexical::Token;
 use crate::lexical::Keyword;
 use super::super::Expr;
@@ -46,36 +46,36 @@ impl WhileStatement {
     
     pub fn new_no_label(while_span: Span, loop_expr: Expr, body: Block) -> WhileStatement {
         WhileStatement{ 
-            all_span: while_span.merge(&body.all_span),
+            all_span: while_span + body.all_span,
             name: None, loop_expr, body, while_span
         }
     }
     pub fn new_with_label(name: LabelDef, while_span: Span, loop_expr: Expr, body: Block) -> WhileStatement {
         WhileStatement{ 
-            all_span: name.all_span.merge(&body.all_span),
+            all_span: name.all_span + body.all_span,
             name: Some(name), loop_expr, body, while_span,
         }
     }
 
     fn new(maybe_name: Option<LabelDef>, while_span: Span, loop_expr: Expr, body: Block) -> WhileStatement {
         WhileStatement{
-            all_span: match maybe_name { Some(ref name) => name.all_span.merge(&body.all_span), None => while_span.merge(&body.all_span) },
+            all_span: match maybe_name { Some(ref name) => name.all_span + body.all_span, None => while_span + body.all_span },
             name: maybe_name, loop_expr, body, while_span,
         }
     }
 }
 impl ISyntaxGrammar for WhileStatement {
-    fn matches_first(tokens: &[&Token]) -> bool {
+    fn matches_first(tokens: [&Token; 3]) -> bool {
         match (tokens[0], tokens[2]) {
             (&Token::Label(_), &Token::Keyword(Keyword::While)) | (&Token::Keyword(Keyword::While), _) => true,
             _ => false
         }
     }
 }
-impl ISyntaxParse for WhileStatement {
+impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for WhileStatement where F: FileSystem {
     type Output = WhileStatement;
 
-    fn parse(sess: &mut ParseSession) -> ParseResult<WhileStatement> {
+    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<WhileStatement> {
         
         let maybe_name = LabelDef::try_parse(sess)?;
         let while_span = sess.expect_keyword(Keyword::While)?;

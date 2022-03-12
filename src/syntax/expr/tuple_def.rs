@@ -6,13 +6,11 @@
 ///! unit_lit = '(' ')'
 
 use std::fmt;
-use crate::source::Span;
+use crate::source::{FileSystem, Span};
 use crate::diagnostics::Message;
-use crate::lexical::Token;
-use crate::lexical::Seperator;
-use crate::lexical::LitValue;
+use crate::lexical::{Token, Separator};
 use super::Expr;
-use super::LitExpr;
+use super::{LitExpr, LitValue};
 use super::ExprList;
 use super::ExprListParseResult;
 use super::super::Formatter;
@@ -71,12 +69,12 @@ impl TupleDef {
     pub fn new(paren_span: Span, items: ExprList) -> TupleDef { TupleDef{ paren_span, items } }
 }
 impl ISyntaxGrammar for TupleDef {
-    fn matches_first(tokens: &[&Token]) -> bool { tokens[0] == &Token::Sep(Seperator::LeftParenthenes) }
+    fn matches_first(tokens: [&Token; 3]) -> bool { matches!(tokens[0], &Token::Sep(Separator::LeftParen)) }
 }
-impl ISyntaxParse for TupleDef {
+impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for TupleDef where F: FileSystem {
     type Output = Expr;
 
-    fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {
+    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Expr> {
 
         match ExprList::parse(sess)? {
             ExprListParseResult::Empty(span) => {
@@ -137,7 +135,7 @@ fn tuple_def_parse() {
         Expr::Paren(ParenExpr::new(Span::new(0, 6), 
             BinaryExpr::new(
                 LitExpr::new(LitValue::from(1), Span::new(1, 1)), 
-                Seperator::Add, Span::new(3, 3),
+                Separator::Add, Span::new(3, 3),
                 LitExpr::new(LitValue::from(1), Span::new(5, 5)),
             )
         ))

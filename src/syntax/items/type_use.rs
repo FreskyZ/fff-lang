@@ -20,12 +20,9 @@
 // Then array and tuple enum members are removed and use template aware type use, 17/6/12                               // TypeUse
 
 use std::fmt;
-use crate::source::Span;
-use crate::source::Sym;
+use crate::source::{FileSystem, Span, IsId};
 use crate::diagnostics::Message;
-use crate::lexical::Token;
-use crate::lexical::Seperator;
-use crate::lexical::Keyword;
+use crate::lexical::{Token, Separator, KeywordKind};
 use super::super::Formatter;
 use super::super::ParseResult;
 use super::super::ParseSession;
@@ -35,7 +32,7 @@ use super::super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct TypeUse {
-    pub base: Sym,
+    pub base: IsId,
     pub base_span: Span,        // maybe default for array and tuple
     pub quote_span: Span,       // span of `()` or `[]` or (unimplemented)`<>`
     pub params: Vec<TypeUse>,
@@ -45,10 +42,10 @@ impl ISyntaxFormat for TypeUse {
     fn format(&self, f: Formatter) -> String {
         let f = f.indent().header_text_or("type-use").space();
         if self.params.len() == 0 { 
-            f.sym(self.base).space().span(self.base_span).finish() 
+            f.isid(self.base).space().span(self.base_span).finish() 
         } else {
             let mut f = f.lit("template").space().span(self.all_span).endl()
-                .indent1().lit("base-is").space().sym(self.base).space().span(self.base_span).endl()
+                .indent1().lit("base-is").space().isid(self.base).space().span(self.base_span).endl()
                 .indent1().lit("quote").space().span(self.quote_span);
             for typeuse in &self.params { f = f.endl().apply2(typeuse); }
             f.finish()
@@ -60,46 +57,46 @@ impl fmt::Debug for TypeUse {
 }
 impl TypeUse {
 
-    pub fn new_simple(base: Sym, base_span: Span) -> TypeUse {
-        TypeUse{ all_span: base_span, params: Vec::new(), quote_span: Span::default(), base, base_span }
+    pub fn new_simple(base: IsId, base_span: Span) -> TypeUse {
+        TypeUse{ all_span: base_span, params: Vec::new(), quote_span: Span::new(0, 0), base, base_span }
     }
-    pub fn new_template(base: Sym, base_span: Span, quote_span: Span, params: Vec<TypeUse>) -> TypeUse {
+    pub fn new_template(base: IsId, base_span: Span, quote_span: Span, params: Vec<TypeUse>) -> TypeUse {
         TypeUse{ all_span: base_span + quote_span, base, base_span, quote_span, params }
     }
 }
 impl ISyntaxGrammar for TypeUse {
-    fn matches_first(tokens: &[&Token]) -> bool {
+    fn matches_first(tokens: [&Token; 3]) -> bool {
         match tokens[0] {
             &Token::Ident(_) 
-            | &Token::Sep(Seperator::LeftBracket)
-            | &Token::Sep(Seperator::LeftParenthenes) => true,
-            &Token::Keyword(kw) => kw.is_primitive(),
+            | &Token::Sep(Separator::LeftBracket)
+            | &Token::Sep(Separator::LeftParen) => true,
+            &Token::Keyword(kw) => kw.kind(KeywordKind::Primitive),
             _ => false,
         }
     }
 }
-impl ISyntaxParse for TypeUse {
+impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for TypeUse where F: FileSystem {
     type Output = TypeUse;
 
-    fn parse(sess: &mut ParseSession) -> ParseResult<TypeUse> {
+    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<TypeUse> {
 
-        if let Some(left_bracket_span) = sess.try_expect_sep(Seperator::LeftBracket) {
+        if let Some(left_bracket_span) = sess.try_expect_sep(Separator::LeftBracket) {
             let inner = TypeUse::parse(sess)?;
-            let right_bracket_span = sess.expect_sep(Seperator::RightBracket)?;
-            Ok(TypeUse::new_template(sess.symbols.intern_str("array"), Span::default(), left_bracket_span + right_bracket_span, vec![inner]))
-        } else if let Some(left_paren_span) = sess.try_expect_sep(Seperator::LeftParenthenes) {
-            if let Some(right_paren_span) = sess.try_expect_sep(Seperator::RightParenthenes) {
-                return Ok(TypeUse::new_simple(sess.symbols.intern_str("unit"), left_paren_span + right_paren_span));
+            let right_bracket_span = sess.expect_sep(Separator::RightBracket)?;
+            Ok(TypeUse::new_template(sess.base.chars.intern("array"), Span::new(0, 0), left_bracket_span + right_bracket_span, vec![inner]))
+        } else if let Some(left_paren_span) = sess.try_expect_sep(Separator::LeftParen) {
+            if let Some(right_paren_span) = sess.try_expect_sep(Separator::RightParen) {
+                return Ok(TypeUse::new_simple(sess.base.chars.intern("unit"), left_paren_span + right_paren_span));
             }
             
             let mut tuple_types = vec![TypeUse::parse(sess)?];
             let (ending_span, end_by_comma) = loop {
-                if let Some((_comma_span, right_paren_span)) = sess.try_expect_2_sep(Seperator::Comma, Seperator::RightParenthenes) {
+                if let Some((_comma_span, right_paren_span)) = sess.try_expect_2_sep(Separator::Comma, Separator::RightParen) {
                     break (right_paren_span, true);
-                } else if let Some(right_paren_span) = sess.try_expect_sep(Seperator::RightParenthenes) {
+                } else if let Some(right_paren_span) = sess.try_expect_sep(Separator::RightParen) {
                     break (right_paren_span, false);
                 }
-                let _comma_span = sess.expect_sep(Seperator::Comma)?;
+                let _comma_span = sess.expect_sep(Separator::Comma)?;
                 tuple_types.push(TypeUse::parse(sess)?);
             };
                 
@@ -107,9 +104,9 @@ impl ISyntaxParse for TypeUse {
             if tuple_types.len() == 1 && !end_by_comma {            // len == 0 already rejected
                 sess.push_message(Message::new_by_str("Single item tuple type use", vec![(paren_span, "type use here")]));
             }
-            Ok(TypeUse::new_template(sess.symbols.intern_str("tuple"), Span::default(), paren_span, tuple_types))
+            Ok(TypeUse::new_template(sess.base.chars.intern("tuple"), Span::new(0, 0), paren_span, tuple_types))
         } else {
-            let (symid, sym_span) = sess.expect_ident_or_if(Keyword::is_primitive)?;
+            let (symid, sym_span) = sess.expect_ident_or_keyword_kind(KeywordKind::Primitive)?;
             Ok(TypeUse::new_simple(symid, sym_span))
         }
     }
@@ -136,7 +133,7 @@ fn type_use_parse() {
     TestInput::new("[u8]")
         .set_syms(make_symbols!["array", "u8"])
         .apply::<TypeUse, _>()
-        .expect_result(TypeUse::new_template(1, Span::default(), Span::new(0, 3), vec![
+        .expect_result(TypeUse::new_template(1, Span::new(0, 0), Span::new(0, 3), vec![
                 TypeUse::new_simple(2, Span::new(1, 2))
         ]))
     .finish();
@@ -145,8 +142,8 @@ fn type_use_parse() {
         .set_syms(make_symbols!["array", "he_t"])
         .apply::<TypeUse, _>()
         .expect_no_message()
-        .expect_result(TypeUse::new_template(1, Span::default(), Span::new(0, 7), vec![
-            TypeUse::new_template(1, Span::default(),Span::new(1, 6), vec![
+        .expect_result(TypeUse::new_template(1, Span::new(0, 0), Span::new(0, 7), vec![
+            TypeUse::new_template(1, Span::new(0, 0),Span::new(1, 6), vec![
                 TypeUse::new_simple(2, Span::new(2, 5))
             ])
         ]))

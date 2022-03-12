@@ -5,7 +5,7 @@
 // future may support something like `to_string::<i32>(a)`
 
 use std::fmt;
-use crate::source::{Span, IsId};
+use crate::source::{FileSystem, Span, IsId};
 use crate::lexical::{Token, Separator};
 use super::Expr;
 use super::super::Formatter;
@@ -22,7 +22,7 @@ pub struct SimpleName {
 }
 impl ISyntaxFormat for SimpleName {
     fn format(&self, f: Formatter) -> String {
-        f.indent().header_text_or("ident-use").space().sym(self.value).space().span(self.span).finish()
+        f.indent().header_text_or("ident-use").space().isid(self.value).space().span(self.span).finish()
     }
 }
 impl fmt::Debug for SimpleName {
@@ -34,10 +34,10 @@ impl From<SimpleName> for Expr {
 impl SimpleName {
     pub fn new(value: impl Into<IsId>, span: Span) -> SimpleName { SimpleName{ value: value.into(), span } }
 }
-impl ISyntaxParse for SimpleName {
+impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for SimpleName where F: FileSystem {
     type Output = SimpleName; // out of expr depdendencies require direct parse and get a simple name
 
-    fn parse(sess: &mut ParseSession) -> ParseResult<SimpleName> {
+    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<SimpleName> {
         let (value, span) = sess.expect_ident()?;
         Ok(SimpleName::new(value, span))
     }
@@ -52,7 +52,7 @@ impl ISyntaxFormat for Name {
     fn format(&self, f: Formatter) -> String {
         let mut f = f.indent().header_text_or("name").space().span(self.all_span);
         for &SimpleName{ ref value, ref span } in &self.segments {
-            f = f.endl().indent1().lit("segment").space().sym(*value).space().span(*span);
+            f = f.endl().indent1().lit("segment").space().isid(*value).space().span(*span);
         }
         f.finish()
     }
@@ -67,21 +67,21 @@ impl Name {
     pub fn new(all_span: Span, segments: Vec<SimpleName>) -> Name { Name{ all_span, segments } }
 }
 impl ISyntaxGrammar for Name {
-    fn matches_first(tokens: &[&Token]) -> bool { if let &Token::Ident(_) = tokens[0] { true } else { false } }
+    fn matches_first(tokens: [&Token; 3]) -> bool { matches!(tokens[0], &Token::Ident(_)) }
 }
-impl ISyntaxParse for Name {
+impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for Name where F: FileSystem {
     type Output = Expr;
 
-    fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {
+    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Expr> {
         
         let first_segment = SimpleName::parse(sess)?;
         let mut all_span = first_segment.span;
         let mut segments = vec![first_segment];
         
         loop {
-            if let Some(_) = sess.try_expect_sep(Seperator::NamespaceSeperator) {
+            if let Some(_) = sess.try_expect_sep(Separator::ColonColon) {
                 let segment = SimpleName::parse(sess)?;
-                all_span = all_span.merge(&segment.span);
+                all_span = all_span + segment.span;
                 segments.push(segment);
             } else {
                 break;

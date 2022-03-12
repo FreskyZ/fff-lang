@@ -7,8 +7,8 @@
 ///! range_both = binary_expr '..' binary_expr
 
 use std::fmt;
-use crate::source::Span;
-use crate::lexical::Seperator;
+use crate::source::{FileSystem, Span};
+use crate::lexical::Separator;
 use super::Expr;
 use super::BinaryExpr;
 use super::super::Formatter;
@@ -116,7 +116,7 @@ impl RangeBothExpr {
         let (left_expr, right_expr) = (left_expr.into(), right_expr.into());
         RangeBothExpr{
             op_span,
-            all_span: left_expr.get_all_span().merge(&right_expr.get_all_span()),
+            all_span: left_expr.get_all_span() + right_expr.get_all_span(),
             left_expr: Box::new(left_expr), right_expr: Box::new(right_expr),
         }
     }
@@ -124,22 +124,22 @@ impl RangeBothExpr {
 
 // actually also a priority proxy
 pub(super) struct RangeExpr;
-impl ISyntaxParse for RangeExpr {
+impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for RangeExpr where F: FileSystem {
     type Output = Expr;
 
-    fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {
-        match sess.try_expect_sep(Seperator::Range) {
+    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Expr> {
+        match sess.try_expect_sep(Separator::DotDot) {
             Some(range_op_span) => {
                 if Expr::matches_first(sess.current_tokens()) {
                     let expr = BinaryExpr::parse(sess)?;
-                    Ok(Expr::RangeRight(RangeRightExpr::new(range_op_span.merge(&expr.get_all_span()), expr)))
+                    Ok(Expr::RangeRight(RangeRightExpr::new(range_op_span + expr.get_all_span(), expr)))
                 } else {
                     Ok(Expr::RangeFull(RangeFullExpr::new(range_op_span)))
                 }
             }
             None => {
                 let left_expr = BinaryExpr::parse(sess)?;
-                if let Some(op_span) = sess.try_expect_sep(Seperator::Range) {
+                if let Some(op_span) = sess.try_expect_sep(Separator::DotDot) {
                     if Expr::matches_first(sess.current_tokens()) {
                         let right_expr = BinaryExpr::parse(sess)?;
                         Ok(Expr::RangeBoth(RangeBothExpr::new(left_expr, op_span, right_expr)))
@@ -165,7 +165,7 @@ fn range_expr_parse() {
     assert_eq!{ make_node!("..1 + 1"), 
         Expr::RangeRight(RangeRightExpr::new(Span::new(0, 6), BinaryExpr::new(
             LitExpr::new(LitValue::from(1), Span::new(2, 2)),
-            Seperator::Add, Span::new(4, 4),
+            Separator::Add, Span::new(4, 4),
             LitExpr::new(LitValue::from(1), Span::new(6, 6))
         )))
     }

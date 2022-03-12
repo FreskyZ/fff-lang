@@ -4,12 +4,9 @@
 ///! fn-def = 'fn' identifier '(' [ identifier ':' type-use { ',' identifier ':' type-use [ ',' ] } ] ')' [ '->' type-use ] block
 
 use std::fmt;
-use crate::source::Span;
-use crate::source::Sym;
+use crate::source::{FileSystem, Span, IsId};
 use crate::diagnostics::Message;
-use crate::lexical::Token;
-use crate::lexical::Keyword;
-use crate::lexical::Seperator;
+use crate::lexical::{Token, Keyword, Separator};
 use super::super::Block;
 use super::super::TypeUse;
 use super::super::Formatter;
@@ -21,17 +18,17 @@ use super::super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct FnParam {
-    pub name: Sym,
+    pub name: IsId,
     pub name_span: Span,
     pub decltype: TypeUse,
 }
 impl FnParam {
-    pub fn new(name: Sym, name_span: Span, decltype: TypeUse) -> FnParam { FnParam{ decltype, name, name_span } }
+    pub fn new(name: IsId, name_span: Span, decltype: TypeUse) -> FnParam { FnParam{ decltype, name, name_span } }
 }
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct FnDef {
-    pub name: Sym,
+    pub name: IsId,
     pub name_span: Span,
     pub params: Vec<FnParam>,
     pub params_paren_span: Span,
@@ -43,7 +40,7 @@ impl ISyntaxFormat for FnDef {
     fn format(&self, f: Formatter) -> String {
 
         let f = f.indent().header_text_or("fn-def").space().span(self.all_span).endl()
-            .indent1().sym(self.name).space().span(self.name_span);
+            .indent1().isid(self.name).space().span(self.name_span);
         let f = match self.ret_type { 
             Some(ref ret_type) => f.endl().set_header_text("return-type").apply1(ret_type).unset_header_text().endl(),
             None => f.endl().indent1().lit("no-return-type").endl(),
@@ -53,7 +50,7 @@ impl ISyntaxFormat for FnDef {
             f = f.endl().indent1().lit("no-parameter");
         }
         for &FnParam{ ref decltype, ref name, ref name_span } in &self.params {
-            f = f.endl().indent1().lit("param").space().sym(*name).space().span(*name_span).endl().apply2(decltype)
+            f = f.endl().indent1().lit("param").space().isid(*name).space().span(*name_span).endl().apply2(decltype)
         }
         f.endl().set_header_text("body").apply1(&self.body).finish()
     }
@@ -64,19 +61,19 @@ impl fmt::Debug for FnDef {
 impl FnDef {
 
     pub fn new(all_span: Span, 
-        name: Sym, name_span: Span,
+        name: IsId, name_span: Span,
         params_paren_span: Span, params: Vec<FnParam>, 
         ret_type: Option<TypeUse>, body: Block) -> FnDef {
         FnDef{ name, name_span, params, params_paren_span, ret_type, body, all_span }
     }
 }
 impl ISyntaxGrammar for FnDef {   
-    fn matches_first(tokens: &[&Token]) -> bool { tokens[0] == &Token::Keyword(Keyword::Fn) }
+    fn matches_first(tokens: [&Token; 3]) -> bool { matches!(tokens[0], &Token::Keyword(Keyword::Fn)) }
 }
-impl ISyntaxParse for FnDef {
+impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for FnDef where F: FileSystem {
     type Output = FnDef;
 
-    fn parse(sess: &mut ParseSession) -> ParseResult<FnDef> {
+    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<FnDef> {
         #[cfg(feature = "trace_fn_def_parse")]
         macro_rules! trace { ($($arg:tt)*) => ({ print!("[FnDef: {}]", line!()); println!($($arg)*); }) }
         #[cfg(not(feature = "trace_fn_def_parse"))]
@@ -84,12 +81,12 @@ impl ISyntaxParse for FnDef {
         
         let fn_span = sess.expect_keyword(Keyword::Fn)?;
         let (fn_name, fn_name_span) = sess.expect_ident()?;
-        let mut params_paren_span = sess.expect_sep(Seperator::LeftParenthenes)?;
+        let mut params_paren_span = sess.expect_sep(Separator::LeftParen)?;
         trace!("fndef name span: {:?}", fn_name_span);
 
         let mut params = Vec::new();
         loop {
-            if let Some((_comma_span, right_paren_span)) = sess.try_expect_2_sep(Seperator::Comma, Seperator::RightParenthenes) {
+            if let Some((_comma_span, right_paren_span)) = sess.try_expect_2_sep(Separator::Comma, Separator::RightParen) {
                 params_paren_span = params_paren_span + right_paren_span;
                 if params.is_empty() {
                     sess.push_message(Message::new_by_str("Single comma in function definition argument list", vec![
@@ -98,23 +95,23 @@ impl ISyntaxParse for FnDef {
                     ]));
                 }
                 break;
-            } else if let Some(right_paren_span) = sess.try_expect_sep(Seperator::RightParenthenes) {
+            } else if let Some(right_paren_span) = sess.try_expect_sep(Separator::RightParen) {
                 params_paren_span = params_paren_span + right_paren_span;
                 break;
-            } else if let Some(_comma_span) = sess.try_expect_sep(Seperator::Comma) {
+            } else if let Some(_comma_span) = sess.try_expect_sep(Separator::Comma) {
                 continue;
             }
 
-            let (param_name, param_span) = sess.expect_ident_or(vec![Keyword::Underscore, Keyword::This])?;
-            let _ = sess.expect_sep(Seperator::Colon)?;
+            let (param_name, param_span) = sess.expect_ident_or(&[Keyword::Underscore, Keyword::This])?;
+            let _ = sess.expect_sep(Separator::Colon)?;
             let decltype = TypeUse::parse(sess)?;
             params.push(FnParam::new(param_name, param_span, decltype));
         }
 
-        let maybe_ret_type = if let Some(_right_arrow_span) = sess.try_expect_sep(Seperator::NarrowRightArrow) { Some(TypeUse::parse(sess)?) } else { None };
+        let maybe_ret_type = if let Some(_right_arrow_span) = sess.try_expect_sep(Separator::Arrow) { Some(TypeUse::parse(sess)?) } else { None };
         let body = Block::parse(sess)?;
 
-        return Ok(FnDef::new(fn_span.merge(&body.all_span), fn_name, fn_name_span, params_paren_span, params, maybe_ret_type, body));
+        return Ok(FnDef::new(fn_span + body.all_span, fn_name, fn_name_span, params_paren_span, params, maybe_ret_type, body));
     }
 }
 
@@ -171,8 +168,8 @@ fn fn_def_parse() {
             1, Span::new(4, 10),
             Span::new(11, 60), vec![
                 FnParam::new(2, Span::new(12, 15),
-                    TypeUse::new_template(3, Span::default(), Span::new(17, 27), vec![
-                        TypeUse::new_template(3, Span::default(), Span::new(18, 25), vec![
+                    TypeUse::new_template(3, Span::new(0, 0), Span::new(17, 27), vec![
+                        TypeUse::new_template(3, Span::new(0, 0), Span::new(18, 25), vec![
                             TypeUse::new_simple(4, Span::new(19, 24))
                         ])
                     ])
@@ -222,18 +219,18 @@ fn fn_def_parse() {
                     TypeUse::new_simple(3, Span::new(14, 16))
                 ),
                 FnParam::new(4, Span::new(19, 22),
-                    TypeUse::new_template(5, Span::default(), Span::new(25, 32), vec![
+                    TypeUse::new_template(5, Span::new(0, 0), Span::new(25, 32), vec![
                         TypeUse::new_simple(6, Span::new(26, 31))
                     ])
                 ),
                 FnParam::new(7, Span::new(35, 38),
-                    TypeUse::new_template(5, Span::default(), Span::new(41, 48), vec![
+                    TypeUse::new_template(5, Span::new(0, 0), Span::new(41, 48), vec![
                         TypeUse::new_simple(6, Span::new(42, 47))
                     ])
                 )
             ],
-            Some(TypeUse::new_template(5, Span::default(), Span::new(55, 64), vec![   
-                TypeUse::new_template(5, Span::default(), Span::new(56, 63), vec![
+            Some(TypeUse::new_template(5, Span::new(0, 0), Span::new(55, 64), vec![   
+                TypeUse::new_template(5, Span::new(0, 0), Span::new(56, 63), vec![
                     TypeUse::new_simple(6, Span::new(57, 62))
                 ])
             ])),

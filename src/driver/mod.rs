@@ -2,8 +2,8 @@
 
 use crate::source::SourceContext;
 use crate::diagnostics::MessageCollection;
-use crate::lexical::{self, Token};
-// use crate::syntax::SyntaxTree;
+use crate::lexical::Parser;
+use crate::syntax::{parse, Formatter, ISyntaxFormat};
 // use semantic::Package;
 // use vm::VirtualMachine;
 
@@ -12,19 +12,10 @@ pub fn main() {
     let mut scx: SourceContext = SourceContext::new();
     let mut messages = MessageCollection::new();
 
-    let mut parser = lexical::Parser::new(scx.entry("tests/syntax/inter/misc_src.ff"), &mut messages);
-    let mut tokens = Vec::new();
-    loop {
-        let (token, span) = parser.next();
-        if token == Token::EOF {
-            break;
-        }
-        tokens.push((token, span));
-    }
-    parser.finish();
-    for (token, span) in tokens {
-        println!("{}: {}", span.display(&scx), token.display(&scx));
-    }
+    let args = std::env::args().collect::<Vec<_>>();
+    let chars = scx.entry(&args[1]);
+    let tree = parse(Parser::new(chars, &mut messages));
+    println!("{}", tree.format(Formatter::new(Some(&scx))));
 
     // let syntax_tree = SyntaxTree::new(&mut sources, &mut messages, &mut symbols).map_err(|_| format!("{:?}", messages));
     // println!("{:?}", syntax_tree);

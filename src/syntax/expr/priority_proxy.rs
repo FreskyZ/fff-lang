@@ -5,6 +5,7 @@
 ///! primary_expr = ident_expr | lit_expr | unit_lit | paren_expr | tuple_def | array_def
 ///! postfix_expr = expr { ( member_access | fn_call | indexer_call ) }
 
+use crate::source::{FileSystem};
 use crate::lexical::Keyword;
 use super::Expr;
 use super::Name;
@@ -21,10 +22,10 @@ use super::super::ISyntaxParse;
 use super::super::ISyntaxGrammar;
 
 pub struct PrimaryExpr;
-impl ISyntaxParse for PrimaryExpr {
+impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for PrimaryExpr where F: FileSystem {
     type Output = Expr;
     
-    fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {
+    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Expr> {
 
         if LitExpr::matches_first(sess.current_tokens()) {
             return LitExpr::parse(sess);
@@ -36,16 +37,16 @@ impl ISyntaxParse for PrimaryExpr {
             return ArrayDef::parse(sess);
         }
 
-        let (this_id, this_span) = sess.expect_ident_or(vec![Keyword::This])?;  // actually identifier is processed by Name, not here
+        let (this_id, this_span) = sess.expect_ident_or(&[Keyword::This])?;  // actually identifier is processed by Name, not here
         return Ok(Expr::SimpleName(SimpleName::new(this_id, this_span)));
     }
 }
 
 pub struct PostfixExpr;
-impl ISyntaxParse for PostfixExpr {
+impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for PostfixExpr where F: FileSystem {
     type Output = Expr;
 
-    fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {   
+    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Expr> {   
         #[cfg(feature = "trace_postfix_expr_parse")]
         macro_rules! trace { ($($arg:tt)*) => ({ perror!("    [PostfixExpr:{}] ", line!()); perrorln!($($arg)*); }) }
         #[cfg(not(feature = "trace_postfix_expr_parse"))]
@@ -57,17 +58,17 @@ impl ISyntaxParse for PostfixExpr {
         loop {
             if MemberAccessExpr::matches_first(sess.current_tokens()) {
                 let mut postfix = MemberAccessExpr::parse(sess)?;
-                postfix.all_span = current_retval.get_all_span().merge(&postfix.name.span);
+                postfix.all_span = current_retval.get_all_span() + postfix.name.span;
                 postfix.base = Box::new(current_retval);
                 current_retval = Expr::MemberAccess(postfix);
             } else if FnCallExpr::matches_first(sess.current_tokens()) {
                 let mut postfix = FnCallExpr::parse(sess)?;
-                postfix.all_span = current_retval.get_all_span().merge(&postfix.paren_span);
+                postfix.all_span = current_retval.get_all_span() + postfix.paren_span;
                 postfix.base = Box::new(current_retval);
                 current_retval = Expr::FnCall(postfix);
             } else if IndexCallExpr::matches_first(sess.current_tokens()) {
                 let mut postfix = IndexCallExpr::parse(sess)?;
-                postfix.all_span = current_retval.get_all_span().merge(&postfix.bracket_span);
+                postfix.all_span = current_retval.get_all_span() + postfix.bracket_span;
                 postfix.base = Box::new(current_retval);
                 current_retval = Expr::IndexCall(postfix);
             } else {
@@ -82,7 +83,7 @@ impl ISyntaxParse for PostfixExpr {
 
 #[cfg(test)] #[test]
 fn primary_expr_parse() {
-    use crate::source::Span;
+    use crate::source::{FileSystem, Span};
     use crate::source::SymbolCollection;
     use crate::lexical::LitValue;
     use super::ExprList;
@@ -354,7 +355,7 @@ fn primary_expr_parse() {
 
 #[cfg(test)] #[test]
 fn primary_expr_errors() {
-    use crate::source::Span;
+    use crate::source::{FileSystem, Span};
     use crate::diagnostics::Message;
     use crate::diagnostics::MessageCollection;
     use super::ExprList;
@@ -446,7 +447,7 @@ indexer-call <<0>0-57>
 
 #[cfg(test)] #[test]
 fn postfix_expr_parse() {
-    use crate::source::Span;
+    use crate::source::{FileSystem, Span};
     use super::ExprList;
     use super::SimpleName;
     use super::super::WithTestInput;
@@ -522,7 +523,7 @@ fn postfix_expr_parse() {
 
 #[cfg(test)] #[test]
 fn postfix_expr_errors() {
-    use crate::source::Span;
+    use crate::source::{FileSystem, Span};
     use crate::diagnostics::Message;
     use crate::diagnostics::MessageCollection;
     use super::ExprList;

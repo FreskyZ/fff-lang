@@ -4,10 +4,9 @@
 ///! unary_expr = { unary_operator } postfix_expr
 
 use std::fmt;
-use crate::source::Span;
+use crate::source::{FileSystem, Span};
 use crate::lexical::Token;
-use crate::lexical::Seperator;
-use crate::lexical::SeperatorCategory;
+use crate::lexical::{Separator, SeparatorKind};
 use super::Expr;
 use super::PostfixExpr;
 use super::super::Formatter;
@@ -20,7 +19,7 @@ use super::super::ISyntaxGrammar;
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct UnaryExpr {
     pub base: Box<Expr>, 
-    pub operator: Seperator, 
+    pub operator: Separator, 
     pub operator_span: Span,
     pub all_span: Span,
 }
@@ -40,31 +39,28 @@ impl From<UnaryExpr> for Expr {
 }
 impl UnaryExpr {
 
-    pub fn new<T: Into<Expr>>(operator: Seperator, operator_span: Span, base: T) -> UnaryExpr {
+    pub fn new<T: Into<Expr>>(operator: Separator, operator_span: Span, base: T) -> UnaryExpr {
         let base = base.into();
         UnaryExpr{
-            all_span: operator_span.merge(&base.get_all_span()),
+            all_span: operator_span + base.get_all_span(),
             base: Box::new(base),
             operator, operator_span,
         }
     }
 }
 impl ISyntaxGrammar for UnaryExpr {
-    fn matches_first(tokens: &[&Token]) -> bool { 
-        match tokens[0] {
-            &Token::Sep(ref sep) if sep.is_category(SeperatorCategory::Unary) => true,
-            _ => false,
-        }
+    fn matches_first(tokens: [&Token; 3]) -> bool { 
+        matches!(tokens[0], &Token::Sep(ref sep) if sep.kind(SeparatorKind::Unary))
     }
 }
-impl ISyntaxParse for UnaryExpr {
+impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for UnaryExpr where F: FileSystem {
     type Output = Expr;
 
-    fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {
+    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Expr> {
         
         let mut op_spans = Vec::new();
         loop {
-            match sess.try_expect_sep_cat(SeperatorCategory::Unary) {
+            match sess.try_expect_sep_kind(SeparatorKind::Unary) {
                 Some((sep, sep_span)) => op_spans.push((sep, sep_span)),
                 None => {
                     let base = PostfixExpr::parse(sess)?;
@@ -87,11 +83,11 @@ fn unary_expr_parse() {
 
     assert_eq!{ make_node!("!~!1"),
         Expr::Unary(UnaryExpr::new(
-            Seperator::LogicalNot, Span::new(0, 0),
+            Separator::LogicalNot, Span::new(0, 0),
             Expr::Unary(UnaryExpr::new(
-                Seperator::BitNot, Span::new(1, 1),            
+                Separator::BitNot, Span::new(1, 1),            
                 Expr::Unary(UnaryExpr::new(
-                    Seperator::LogicalNot, Span::new(2, 2),
+                    Separator::LogicalNot, Span::new(2, 2),
                     Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(3, 3))),
                 ))
             ))

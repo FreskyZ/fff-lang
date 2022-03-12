@@ -53,7 +53,7 @@ impl Message {
         Message{ main_desc: main_desc.to_owned(), details: Vec::new(), helps: Vec::new() }
     }
 
-    pub fn format(&self, scx: Option<&SourceContext>) -> String {
+    pub fn format<F>(&self, scx: Option<&SourceContext<F>>) -> String where F: crate::source::FileSystem {
         let mut retval = format!("{}:", self.main_desc);
         for LocationAndDesc{ loc, desc } in &self.details {
             retval += &format!("\n   | At {}: {}", scx.map(|scx| format!("{:?}", scx.map_span_to_line_column(*loc))).unwrap_or(String::new()), desc);
@@ -74,7 +74,7 @@ impl Default for MessageCollection {
     fn default() -> MessageCollection { MessageCollection{ items: Vec::new(), m_uncontinuable: false } }
 }
 impl MessageCollection {
-    pub fn format(&self, source: Option<&SourceContext>) -> String {
+    pub fn format<F>(&self, source: Option<&SourceContext<F>>) -> String where F: crate::source::FileSystem {
         let mut retval = String::new();
         for message in &self.items {
             retval += &format!("{}\n", message.format(source));

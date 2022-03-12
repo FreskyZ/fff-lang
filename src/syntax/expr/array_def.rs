@@ -3,7 +3,7 @@
 ///! array_def = '[' [ expr_list ] ']'
 
 use std::fmt;
-use crate::source::Span;
+use crate::source::{FileSystem, Span};
 use crate::diagnostics::Message;
 use crate::lexical::{Token, Separator};
 use super::Expr;
@@ -38,12 +38,12 @@ impl ArrayDef {
     pub fn new(bracket_span: Span, items: ExprList) -> ArrayDef { ArrayDef{ bracket_span, items: items } }
 }
 impl ISyntaxGrammar for ArrayDef {
-    fn matches_first(tokens: &[&Token]) -> bool { tokens[0] == &Token::Sep(Seperator::LeftBracket) }
+    fn matches_first(tokens: [&Token; 3]) -> bool { matches!(tokens[0], &Token::Sep(Separator::LeftBracket)) }
 }
-impl ISyntaxParse for ArrayDef {
+impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for ArrayDef where F: FileSystem {
     type Output = Expr;
 
-    fn parse(sess: &mut ParseSession) -> ParseResult<Expr> {
+    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Expr> {
         
         match ExprList::parse(sess)? {
             ExprListParseResult::Empty(span) => {

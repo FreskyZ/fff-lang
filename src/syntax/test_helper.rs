@@ -1,14 +1,13 @@
 ///! syntax/test_helper
 
-use crate::source::SourceContext;
+use crate::source::{SourceContext, FileSystem};
 use crate::diagnostics::MessageCollection;
-use crate::lexical::TokenStream;
+use crate::lexical::Parser;
 use super::{ParseSession, ISyntaxParse};
 
-pub fn try_make_node<U, T: ISyntaxParse<Output = U>>(scx: &SourceContext) -> Option<U> {
+pub fn try_make_node<'scx, 'ecx, F: FileSystem, U, T: ISyntaxParse<'scx, 'ecx, F, Output = U>>(scx: &SourceContext) -> Option<U> {
     let mut messages = MessageCollection::new();
-    let tokens = TokenStream::new(scx.entry("1"), &mut messages);
-    let mut context = ParseSession::new(scx, &tokens, &mut messages);
+    let mut context = ParseSession::new(Parser::new(scx.entry("1"), &mut messages));
     T::parse(&mut context).ok()
 }
 

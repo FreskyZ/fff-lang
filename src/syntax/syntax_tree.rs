@@ -48,7 +48,7 @@ impl ISyntaxFormat for SyntaxTree {
 
         f = f.endl().indent1().lit(if self.import_maps.is_empty() { "no-import" } else { "import-maps" });
         for map in &self.import_maps {
-            f = f.endl().indent2().debug(&map.file_id).lit(", ").sym(map.import_name).lit(" => ").debug(&map.imported_file_id);
+            f = f.endl().indent2().debug(&map.file_id).lit(", ").isid(map.import_name).lit(" => ").debug(&map.imported_file_id);
         }
         f.finish()
     }
@@ -162,7 +162,7 @@ fn syntax_tree_search_module() {
 
 #[cfg(test)] #[test]
 fn syntax_tree_recursive() {
-    use crate::source::Span;
+    use crate::source::{FileSystem, Span};
     use super::Item;
     use super::ImportStatement;
     use super::SimpleName;

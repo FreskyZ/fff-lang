@@ -181,7 +181,7 @@ pub struct SourceChars<'a, F = DefaultFileSystem> {
     pub(super) path: PathBuf,         // copy to SourceFile
     pub(super) namespace: Vec<IsId>,  // copy to SourceFile
     pub(super) request: Option<Span>, // copy to SourceFile
-    context: &'a mut SourceContext<F>,
+    pub/* attention: temp pub for syntax */ context: &'a mut SourceContext<F>,
 }
 
 impl<'a, F> SourceChars<'a, F> where F: FileSystem {

@@ -4,7 +4,7 @@
 ///! if_stmt = 'if' expr block { 'else' 'if' expr block } [ 'else' block ]
 
 use std::fmt;
-use crate::source::Span;
+use crate::source::{FileSystem, Span};
 use crate::lexical::Token;
 use crate::lexical::Keyword;
 use super::super::Expr;
@@ -36,7 +36,7 @@ pub struct ElseClause {
 }
 impl IfClause {
     pub fn new<T: Into<Expr>>(if_span: Span, cond_expr: T, body: Block) -> IfClause { 
-        IfClause{ all_span: if_span.merge(&body.all_span), cond_expr: cond_expr.into(), body } 
+        IfClause{ all_span: if_span + body.all_span, cond_expr: cond_expr.into(), body } 
     }
 }
 impl ElseIfClause {
@@ -51,7 +51,7 @@ impl ElseIfClause {
 }
 impl ElseClause {
     pub fn new(else_span: Span, body: Block) -> ElseClause {
-        ElseClause{ all_span: else_span.merge(&body.all_span), body }
+        ElseClause{ all_span: else_span + body.all_span, body }
     }
 }
 
@@ -99,7 +99,7 @@ impl IfStatement {
                 else_clause: None,
             },
             n => IfStatement{
-                all_span: if_clause.all_span.merge(&elseif_clauses[n - 1].all_span),
+                all_span: if_clause.all_span + elseif_clauses[n - 1].all_span,
                 if_clause,
                 elseif_clauses,
                 else_clause: None,
@@ -108,7 +108,7 @@ impl IfStatement {
     }
     pub fn new_ifelse(if_clause: IfClause, elseif_clauses: Vec<ElseIfClause>, else_clause: ElseClause) -> IfStatement {
         IfStatement{
-            all_span: if_clause.all_span.merge(&else_clause.all_span),
+            all_span: if_clause.all_span + else_clause.all_span,
             if_clause, 
             elseif_clauses,
             else_clause: Some(else_clause),
@@ -118,7 +118,7 @@ impl IfStatement {
     fn new(if_clause: IfClause, elseif_clauses: Vec<ElseIfClause>, else_clause: Option<ElseClause>) -> IfStatement {
         match (else_clause, elseif_clauses.len()) {
             (Some(else_clause), _) => IfStatement{
-                all_span: if_clause.all_span.merge(&else_clause.all_span),
+                all_span: if_clause.all_span + else_clause.all_span,
                 if_clause, 
                 elseif_clauses,
                 else_clause: Some(else_clause),
@@ -130,7 +130,7 @@ impl IfStatement {
                 else_clause: None,
             },
             (None, n) => IfStatement{
-                all_span: if_clause.all_span.merge(&elseif_clauses[n - 1].all_span),
+                all_span: if_clause.all_span + elseif_clauses[n - 1].all_span,
                 if_clause, 
                 elseif_clauses,
                 else_clause: None,
@@ -139,12 +139,12 @@ impl IfStatement {
     }
 }
 impl ISyntaxGrammar for IfStatement {
-    fn matches_first(tokens: &[&Token]) -> bool { tokens[0] == &Token::Keyword(Keyword::If) }
+    fn matches_first(tokens: [&Token; 3]) -> bool { matches!(tokens[0], &Token::Keyword(Keyword::If)) }
 }
-impl ISyntaxParse for IfStatement {
+impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for IfStatement where F: FileSystem {
     type Output = IfStatement;
 
-    fn parse(sess: &mut ParseSession) -> ParseResult<IfStatement> {
+    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<IfStatement> {
 
         let if_span = sess.expect_keyword(Keyword::If)?;
         let if_expr = Expr::parse(sess)?;

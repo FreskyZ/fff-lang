@@ -5,10 +5,9 @@
 ///! continue_stmt = 'continue' [ label ] ';'
 
 use std::fmt;
-use crate::source::Span;
-use crate::source::Sym;
+use crate::source::{FileSystem, Span, IsId};
 use crate::lexical::Token;
-use crate::lexical::Seperator;
+use crate::lexical::Separator;
 use crate::lexical::Keyword;
 use super::super::Formatter;
 use super::super::ParseResult;
@@ -19,36 +18,36 @@ use super::super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct JumpStatement {
-    pub target: Option<Sym>,
+    pub target: Option<IsId>,
     pub target_span: Span,
     pub all_span: Span,
 }
 impl JumpStatement {
 
     fn new_no_target(all_span: Span) -> JumpStatement {
-        JumpStatement{ all_span, target: None, target_span: Span::default() }
+        JumpStatement{ all_span, target: None, target_span: Span::new(0, 0) }
     }
-    fn new_target(all_span: Span, target: Sym, target_span: Span) -> JumpStatement {
+    fn new_target(all_span: Span, target: IsId, target_span: Span) -> JumpStatement {
         JumpStatement{ all_span, target_span, target: Some(target) }
     }
 
     fn format(&self, f: Formatter, stmt_name: &'static str) -> String {
         let f = f.indent().header_text_or(stmt_name).space().span(self.all_span).endl();
         match self.target {
-            Some(ref target_name) => f.indent1().lit("to").space().lit("@").sym(*target_name).space().span(self.target_span).finish(),
+            Some(ref target_name) => f.indent1().lit("to").space().lit("@").isid(*target_name).space().span(self.target_span).finish(),
             None => f.finish(),
         }
     }
 
-    fn parse(sess: &mut ParseSession, expect_first_kw: Keyword) -> ParseResult<JumpStatement> {
+    fn parse<'ecx, 'scx, F>(sess: &mut ParseSession<'ecx, 'scx, F>, expect_first_kw: Keyword) -> ParseResult<JumpStatement> where F: FileSystem {
 
         let starting_span = sess.expect_keyword(expect_first_kw)?;
 
         if let Some((label_id, label_span)) = sess.try_expect_label() {
-            let semicolon_span = sess.expect_sep(Seperator::SemiColon)?;
+            let semicolon_span = sess.expect_sep(Separator::SemiColon)?;
             Ok(JumpStatement::new_target(starting_span + semicolon_span, label_id, label_span))
         } else { 
-            let semicolon_span = sess.expect_sep(Seperator::SemiColon)?;
+            let semicolon_span = sess.expect_sep(Separator::SemiColon)?;
             Ok(JumpStatement::new_no_target(starting_span + semicolon_span))
         }
     }
@@ -75,34 +74,34 @@ impl fmt::Debug for BreakStatement {
 impl ContinueStatement {
 
     pub fn new_no_target(all_span: Span) -> ContinueStatement { ContinueStatement(JumpStatement::new_no_target(all_span)) }
-    pub fn new_with_target(all_span: Span, target: Sym, target_span: Span) -> ContinueStatement {
+    pub fn new_with_target(all_span: Span, target: IsId, target_span: Span) -> ContinueStatement {
         ContinueStatement(JumpStatement::new_target(all_span, target, target_span))
     }
 }
 impl BreakStatement {
 
     pub fn new_no_target(all_span: Span) -> BreakStatement { BreakStatement(JumpStatement::new_no_target(all_span)) }
-    pub fn new_with_target(all_span: Span, target: Sym, target_span: Span) -> BreakStatement {
+    pub fn new_with_target(all_span: Span, target: IsId, target_span: Span) -> BreakStatement {
         BreakStatement(JumpStatement::new_target(all_span, target, target_span))
     }
 }
 
 impl ISyntaxGrammar for ContinueStatement {
-    fn matches_first(tokens: &[&Token]) -> bool { tokens[0] == &Token::Keyword(Keyword::Continue) }
+    fn matches_first(tokens: [&Token; 3]) -> bool { matches!(tokens[0], &Token::Keyword(Keyword::Continue)) }
 }
 impl ISyntaxGrammar for BreakStatement {
-    fn matches_first(tokens: &[&Token]) -> bool { tokens[0] == &Token::Keyword(Keyword::Break) }
+    fn matches_first(tokens: [&Token; 3]) -> bool { matches!(tokens[0], &Token::Keyword(Keyword::Break)) }
 }
 
-impl ISyntaxParse for ContinueStatement {
+impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for ContinueStatement where F: FileSystem {
     type Output = ContinueStatement;
-    fn parse(sess: &mut ParseSession) -> ParseResult<ContinueStatement> { 
+    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<ContinueStatement> { 
         Ok(ContinueStatement(JumpStatement::parse(sess, Keyword::Continue)?))
     }
 }
-impl ISyntaxParse for BreakStatement {
+impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for BreakStatement where F: FileSystem {
     type Output = BreakStatement;
-    fn parse(sess: &mut ParseSession) -> ParseResult<BreakStatement> {
+    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<BreakStatement> {
         Ok(BreakStatement(JumpStatement::parse(sess, Keyword::Break)?))
     }
 }

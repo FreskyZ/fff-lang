@@ -4,9 +4,8 @@
 ///! expr_list = expr { ',' expr } [ ',' ]
 
 use std::fmt;
-use crate::source::Span;
-use crate::lexical::Token;
-use crate::lexical::Seperator;
+use crate::source::{FileSystem, Span};
+use crate::lexical::{Token, Separator};
 use super::Expr;
 use super::super::Formatter;
 use super::super::ParseResult;
@@ -31,11 +30,8 @@ impl ExprList {
     pub fn new(items: Vec<Expr>) -> ExprList { ExprList{ items } }
 }
 impl ISyntaxGrammar for ExprList {
-    fn matches_first(tokens: &[&Token]) -> bool {
-        match tokens[0] {
-            &Token::Sep(Seperator::LeftBrace) | &Token::Sep(Seperator::LeftBracket) | &Token::Sep(Seperator::LeftParenthenes) => true,
-            _ => false,
-        }
+    fn matches_first(tokens: [&Token; 3]) -> bool {
+        matches!(tokens[0], &Token::Sep(Separator::LeftBrace) | &Token::Sep(Separator::LeftBracket) | &Token::Sep(Separator::LeftParen))
     }
 }
 
@@ -46,25 +42,25 @@ pub enum ExprListParseResult {
     Normal(Span, ExprList),         // and quote span
     EndWithComma(Span, ExprList),   // and quote span
 }
-impl ISyntaxParse for ExprList {
+impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for ExprList where F: FileSystem {
     type Output = ExprListParseResult;
 
     /// This is special, when calling `parse`, `sess.tk` should point to the quote token
     /// Then the parser will check end token to determine end of parsing process
-    fn parse(sess: &mut ParseSession) -> ParseResult<ExprListParseResult> {
+    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<ExprListParseResult> {
 
-        let (starting_sep, starting_span) = sess.expect_seps(&[Seperator::LeftBrace, Seperator::LeftBracket, Seperator::LeftParenthenes])?;
+        let (starting_sep, starting_span) = sess.expect_seps(&[Separator::LeftBrace, Separator::LeftBracket, Separator::LeftParen])?;
         let expect_end_sep = match starting_sep { 
-            Seperator::LeftBrace => Seperator::RightBrace, 
-            Seperator::LeftBracket => Seperator::RightBracket,
-            Seperator::LeftParenthenes => Seperator::RightParenthenes,
+            Separator::LeftBrace => Separator::RightBrace, 
+            Separator::LeftBracket => Separator::RightBracket,
+            Separator::LeftParen => Separator::RightParen,
             _ => unreachable!(),
         };
 
         if let Some(ending_span) = sess.try_expect_sep(expect_end_sep) {
             return Ok(ExprListParseResult::Empty(starting_span + ending_span));
         }
-        if let Some((_comma_span, ending_span)) = sess.try_expect_2_sep(Seperator::Comma, expect_end_sep) {
+        if let Some((_, ending_span)) = sess.try_expect_2_sep(Separator::Comma, expect_end_sep) {
             return Ok(ExprListParseResult::SingleComma(starting_span + ending_span));
         }
 
@@ -72,12 +68,12 @@ impl ISyntaxParse for ExprList {
         loop {
             items.push(Expr::parse(sess)?);
             
-            if let Some((_comma_span, ending_span)) = sess.try_expect_2_sep(Seperator::Comma, expect_end_sep) {
+            if let Some((_, ending_span)) = sess.try_expect_2_sep(Separator::Comma, expect_end_sep) {
                 return Ok(ExprListParseResult::EndWithComma(starting_span + ending_span, ExprList::new(items)));
             } else if let Some(ending_span) = sess.try_expect_sep(expect_end_sep) {
                 return Ok(ExprListParseResult::Normal(starting_span + ending_span, ExprList::new(items)));
             }
-            let _comma_span = sess.expect_sep(Seperator::Comma)?;
+            let _comma_span = sess.expect_sep(Separator::Comma)?;
         }
     }
 }

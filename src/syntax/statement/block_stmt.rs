@@ -5,9 +5,8 @@
 ///! block-stmt for explicit block definition in block and allow block label
 
 use std::fmt;
-use crate::source::Span;
-use crate::lexical::Token;
-use crate::lexical::Seperator;
+use crate::source::{FileSystem, Span};
+use crate::lexical::{Token, Separator};
 use super::super::Block;
 use super::super::LabelDef;
 use super::super::Formatter;
@@ -37,29 +36,29 @@ impl BlockStatement {
     
     pub fn new_no_label(body: Block) -> BlockStatement { BlockStatement{ all_span: body.all_span, body, name: None } }
     pub fn new_with_label(name: LabelDef, body: Block) -> BlockStatement { 
-        BlockStatement { all_span: name.all_span.merge(&body.all_span), body, name: Some(name) } 
+        BlockStatement { all_span: name.all_span + body.all_span, body, name: Some(name) } 
     }
 
     fn new(name: Option<LabelDef>, body: Block) -> BlockStatement { 
         BlockStatement{ 
-            all_span: match name { Some(ref name) => name.all_span.merge(&body.all_span), None => body.all_span },
+            all_span: match name { Some(ref name) => name.all_span + body.all_span, None => body.all_span },
             body, name
         } 
     }
 }
 impl ISyntaxGrammar for BlockStatement {
-    fn matches_first(tokens: &[&Token]) -> bool { 
+    fn matches_first(tokens: [&Token; 3]) -> bool { 
         match (tokens[0], tokens[2]) {
-            (&Token::Label(_), &Token::Sep(Seperator::LeftBrace)) 
-            | (&Token::Sep(Seperator::LeftBrace), _) => true,
+            (&Token::Label(_), &Token::Sep(Separator::LeftBrace)) 
+            | (&Token::Sep(Separator::LeftBrace), _) => true,
             _ => false,
         }
     }
 }
-impl ISyntaxParse for BlockStatement {
+impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for BlockStatement where F: FileSystem {
     type Output = BlockStatement;
 
-    fn parse(sess: &mut ParseSession) -> ParseResult<BlockStatement> {
+    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<BlockStatement> {
     
         let maybe_name = LabelDef::try_parse(sess)?;
         let body = Block::parse(sess)?;

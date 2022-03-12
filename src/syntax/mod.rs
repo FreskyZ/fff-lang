@@ -9,7 +9,8 @@ mod items;
 mod statement;
 mod error_strings;
 mod format_helper;
-mod syntax_tree;
+mod module;
+//mod syntax_tree;
 #[cfg(test)]
 mod test_helper;
 
@@ -20,7 +21,6 @@ pub use items::block::Block;
 pub use items::label_def::LabelDef;
 pub use items::type_def::TypeFieldDef;
 pub use items::type_def::TypeDef;
-pub use items::module::Module;
 pub use expr::LitValue;
 pub use expr::LitExpr;
 pub use expr::Expr;
@@ -57,8 +57,9 @@ pub use statement::IfStatement;
 pub use statement::UseStatement;
 pub use statement::ImportStatement;
 pub use statement::Item;
-pub use syntax_tree::SyntaxTree;
-pub use syntax_tree::ImportMap;
+pub use module::Module;
+// pub use syntax_tree::SyntaxTree;
+// pub use syntax_tree::ImportMap;
 use parse_sess::ParseSession;
 use parse_sess::ParseResult;
 use parse_sess::ISyntaxGrammar;
@@ -71,3 +72,11 @@ pub(crate) use test_helper::{make_node, try_make_node};
 // TODO: 
 // replace more proper place by IdentExpr and ExprList
 // abort IdentExpr to use Name, check name should be single segment at many where
+
+pub fn parse<'ecx, 'scx, F>(chars: crate::lexical::Parser<'ecx, 'scx, F>) -> Module where F: crate::source::FileSystem {
+    let mut context = ParseSession::new(chars);
+    match Module::parse(&mut context) {
+        Ok(v) => { context.base.finish(); v },
+        Err(_) => { println!("{:?}", context.base.diagnostics.format(Some(context.base.chars.context))); context.base.finish(); Module::new(Vec::new()) }
+    }
+}

@@ -4,27 +4,24 @@
 ///! module = { item }
 
 use std::fmt;
-use std::rc::Rc;
-use crate::source::SourceCode;
+use crate::source::{FileSystem};
 use crate::lexical::Token;
-use super::super::Item;
-use super::super::ImportStatement;
-use super::super::Formatter;
-use super::super::ParseResult;
-use super::super::ParseSession;
-use super::super::ISyntaxParse;
-use super::super::ISyntaxFormat;
-use super::super::ISyntaxGrammar;
+use super::Item;
+use super::ImportStatement;
+use super::Formatter;
+use super::ParseResult;
+use super::ParseSession;
+use super::ISyntaxParse;
+use super::ISyntaxFormat;
+use super::ISyntaxGrammar;
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct Module {
     pub items: Vec<Item>,
-    pub source: Rc<SourceCode>,
 }
 impl ISyntaxFormat for Module {
     fn format(&self, f: Formatter) -> String {
-        let mut f = f.indent().header_text_or("module").endl()
-            .indent1().debug(self.source.as_ref());
+        let mut f = f.indent().header_text_or("module").endl();
         if self.items.len() == 0 {
             f = f.endl().indent1().lit("no-item");
         }
@@ -38,14 +35,7 @@ impl fmt::Debug for Module {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl Module {
-    pub fn new(source: Rc<SourceCode>, items: Vec<Item>) -> Module { Module{ source, items } }
-
-    // to move module out of vector
-    pub fn move_out(&mut self) -> Module {
-        let mut ret_items = Vec::new();
-        ret_items.append(&mut self.items);
-        Module{ source: self.source.clone(), items: ret_items }
-    }
+    pub fn new(items: Vec<Item>) -> Module { Module{ items } }
 
     // TODO: update to `impl Iterator<Item = Item>` and remove collect after stabilize
     pub fn import_statements(&self) -> Vec<&ImportStatement> {
@@ -56,27 +46,27 @@ impl Module {
             .collect()
     }
 }
-impl ISyntaxParse for Module {
+impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for Module where F: FileSystem {
     type Output = Module;
 
-    fn parse(sess: &mut ParseSession) -> ParseResult<Module> {
+    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Module> {
         let mut items = Vec::new();
         loop {
             if Item::matches_first(sess.current_tokens()) {
                 items.push(Item::parse(sess)?);
-            } else if sess.current_tokens()[0] == &Token::EOF { // as module is special, specially allow self.current_tokens in parse
+            } else if matches!(sess.current_tokens()[0], &Token::EOF) { // as module is special, specially allow self.current_tokens in parse
                 break;
             } else {
                 return sess.push_unexpect("if, while, for, var, const, expr");
             }
         }
-        return Ok(Module::new(sess.source.clone(), items));
+        return Ok(Module::new(items));
     }
 }
 
 #[cfg(test)] #[test]
 fn module_parse() {
-    use crate::source::Span;
+    use crate::source::{FileSystem, Span};
     use crate::source::SymbolCollection;
     use crate::lexical::LitValue;
     use super::super::TestInput;

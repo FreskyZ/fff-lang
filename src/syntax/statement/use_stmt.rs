@@ -4,9 +4,9 @@
 ///! use_stmt = 'use' name [ 'as' identifier ] ';'
 
 use std::fmt;
-use crate::source::Span;
+use crate::source::{FileSystem, Span};
 use crate::lexical::Token;
-use crate::lexical::Seperator;
+use crate::lexical::Separator;
 use crate::lexical::Keyword;
 use super::super::Name;
 use super::super::SimpleName;
@@ -42,7 +42,7 @@ impl fmt::Debug for UseStatement {
 impl UseStatement {
     
     pub fn new_default(all_span: Span, name: Name) -> UseStatement {
-        UseStatement{ name, all_span, as_span: Span::default(), target: None }
+        UseStatement{ name, all_span, as_span: Span::new(0, 0), target: None }
     }
     pub fn new_target(all_span: Span, name: Name, as_span: Span, target: SimpleName) -> UseStatement {
         UseStatement{ name, all_span, as_span, target: Some(target) }
@@ -53,12 +53,12 @@ impl UseStatement {
     }
 }
 impl ISyntaxGrammar for UseStatement {
-    fn matches_first(tokens: &[&Token]) -> bool { tokens[0] == &Token::Keyword(Keyword::Use) }
+    fn matches_first(tokens: [&Token; 3]) -> bool { matches!(tokens[0], &Token::Keyword(Keyword::Use)) }
 }
-impl ISyntaxParse for UseStatement {
+impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for UseStatement where F: FileSystem {
     type Output = UseStatement;
 
-    fn parse(sess: &mut ParseSession) -> ParseResult<UseStatement> {
+    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<UseStatement> {
 
         let starting_span = sess.expect_keyword(Keyword::Use)?;
         let from_name = Name::parse(sess)?.into_name();
@@ -66,9 +66,9 @@ impl ISyntaxParse for UseStatement {
         let (as_span, to_ident) = if let Some(as_span) = sess.try_expect_keyword(Keyword::As) {
             (as_span, Some(SimpleName::parse(sess)?))
         } else {
-            (Span::default(), None)
+            (Span::new(0, 0), None)
         };
-        let semicolon_span = sess.expect_sep(Seperator::SemiColon)?;
+        let semicolon_span = sess.expect_sep(Separator::SemiColon)?;
         let all_span = starting_span + semicolon_span;
 
         Ok(UseStatement::new_some(all_span, from_name, as_span, to_ident))

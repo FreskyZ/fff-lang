@@ -4,9 +4,9 @@
 ///! ret_stmt = 'return' [ expr ] ';'
 
 use std::fmt;
-use crate::source::Span;
+use crate::source::{FileSystem, Span};
 use crate::lexical::Token;
-use crate::lexical::Seperator;
+use crate::lexical::Separator;
 use crate::lexical::Keyword;
 use super::super::Expr;
 use super::super::Formatter;
@@ -44,16 +44,16 @@ impl ReturnStatement {
     }
 }
 impl ISyntaxGrammar for ReturnStatement {
-    fn matches_first(tokens: &[&Token]) -> bool { tokens[0] == &Token::Keyword(Keyword::Return) }
+    fn matches_first(tokens: [&Token; 3]) -> bool { matches!(tokens[0], &Token::Keyword(Keyword::Return)) }
 }
-impl ISyntaxParse for ReturnStatement {
+impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for ReturnStatement where F: FileSystem {
     type Output = ReturnStatement;
 
-    fn parse(sess: &mut ParseSession) -> ParseResult<ReturnStatement> {
+    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<ReturnStatement> {
 
         let starting_span = sess.expect_keyword(Keyword::Return)?;
 
-        if let Some(semicolon_span) = sess.try_expect_sep(Seperator::SemiColon) {
+        if let Some(semicolon_span) = sess.try_expect_sep(Separator::SemiColon) {
             // 17/6/17: you forgot move_next here!
             // but I have never write some test cases like following something after ret stmt
             // so the bug is not propagated to be discovered
@@ -61,7 +61,7 @@ impl ISyntaxParse for ReturnStatement {
             Ok(ReturnStatement::new_unit(starting_span + semicolon_span))
         } else {
             let expr = Expr::parse(sess)?;
-            let semicolon_span = sess.expect_sep(Seperator::SemiColon)?;
+            let semicolon_span = sess.expect_sep(Separator::SemiColon)?;
             Ok(ReturnStatement::new_expr(starting_span + semicolon_span, expr))
         }
     }
@@ -70,7 +70,7 @@ impl ISyntaxParse for ReturnStatement {
 #[cfg(test)] #[test]
 fn ret_stmt_parse() {
     use crate::lexical::LitValue;
-    use crate::lexical::Seperator;
+    use crate::lexical::Separator;
     use super::super::LitExpr;
     use super::super::BinaryExpr;
     use super::super::WithTestInput;
@@ -81,7 +81,7 @@ fn ret_stmt_parse() {
             Span::new(0, 12), 
             Expr::Binary(BinaryExpr::new(
                 Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(7, 7))),
-                Seperator::Add, Span::new(9, 9),
+                Separator::Add, Span::new(9, 9),
                 Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(11, 11))),
             ))
         )

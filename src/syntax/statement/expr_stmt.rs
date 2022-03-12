@@ -4,10 +4,10 @@
 ///! expr_stmt = expr { assign_ops expr } ';'
 
 use std::fmt;
-use crate::source::Span;
+use crate::source::{FileSystem, Span};
 use crate::lexical::Token;
-use crate::lexical::Seperator;
-use crate::lexical::SeperatorCategory;
+use crate::lexical::Separator;
+use crate::lexical::SeparatorKind;
 use super::Statement;
 use super::super::Expr;
 use super::super::Formatter;
@@ -39,18 +39,18 @@ impl SimpleExprStatement {
 }
 // dispatch them to convenience statement define macro
 impl ISyntaxGrammar for SimpleExprStatement {
-    fn matches_first(tokens: &[&Token]) -> bool { AssignExprStatement::matches_first(tokens) }
+    fn matches_first(tokens: [&Token; 3]) -> bool { AssignExprStatement::matches_first(tokens) }
 }
-impl ISyntaxParse for SimpleExprStatement {
-    type Output = <AssignExprStatement as ISyntaxParse>::Output;
-    fn parse(sess: &mut ParseSession) -> ParseResult<Self::Output> { AssignExprStatement::parse(sess) }
+impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for SimpleExprStatement where F: FileSystem {
+    type Output = <AssignExprStatement as ISyntaxParse<'ecx, 'scx, F>>::Output;
+    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Self::Output> { AssignExprStatement::parse(sess) }
 }
 
 #[cfg_attr(test, derive(Eq, PartialEq))]
 pub struct AssignExprStatement {
     pub left_expr: Expr,
     pub right_expr: Expr,
-    pub assign_op: Seperator,
+    pub assign_op: Separator,
     pub assign_op_span: Span,
     pub all_span: Span,
 }
@@ -69,7 +69,7 @@ impl fmt::Debug for AssignExprStatement {
 impl AssignExprStatement {
     
     pub fn new<T1: Into<Expr>, T2: Into<Expr>>(all_span: Span, 
-        assign_op: Seperator, assign_op_span: Span, left_expr: T1, right_expr: T2) -> AssignExprStatement {
+        assign_op: Separator, assign_op_span: Span, left_expr: T1, right_expr: T2) -> AssignExprStatement {
         AssignExprStatement{
             left_expr: left_expr.into(),
             right_expr: right_expr.into(),
@@ -80,21 +80,21 @@ impl AssignExprStatement {
 }
 
 impl ISyntaxGrammar for AssignExprStatement {
-    fn matches_first(tokens: &[&Token]) -> bool { Expr::matches_first(tokens) }
+    fn matches_first(tokens: [&Token; 3]) -> bool { Expr::matches_first(tokens) }
 }
-impl ISyntaxParse for AssignExprStatement {
+impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for AssignExprStatement where F: FileSystem {
     type Output = Statement;
 
-    fn parse(sess: &mut ParseSession) -> ParseResult<Statement> {
+    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Statement> {
 
         let left_expr = Expr::parse(sess)?;
         let starting_span = left_expr.get_all_span();
 
-        if let Some(semicolon_span) = sess.try_expect_sep(Seperator::SemiColon) {
+        if let Some(semicolon_span) = sess.try_expect_sep(Separator::SemiColon) {
             Ok(Statement::SimpleExpr(SimpleExprStatement::new(starting_span + semicolon_span, left_expr)))
-        } else if let Some((assign_op, assign_op_span)) = sess.try_expect_sep_cat(SeperatorCategory::Assign) {
+        } else if let Some((assign_op, assign_op_span)) = sess.try_expect_sep_kind(SeparatorKind::Assign) {
             let right_expr = Expr::parse(sess)?;
-            let semicolon_span = sess.expect_sep(Seperator::SemiColon)?;
+            let semicolon_span = sess.expect_sep(Separator::SemiColon)?;
             Ok(Statement::AssignExpr(
                 AssignExprStatement::new(starting_span + semicolon_span, assign_op, assign_op_span, left_expr, right_expr)))
         } else {
@@ -132,12 +132,12 @@ fn expr_stmt_parse() {
     .finish();
 
     //                                              012345678901
-    assert_eq!{ make_node!("1 + 1 <<= 2;"),  // to show I have 3 char seperator available
+    assert_eq!{ make_node!("1 + 1 <<= 2;"),  // to show I have 3 char Separator available
         Statement::AssignExpr(AssignExprStatement::new(Span::new(0, 11),
-            Seperator::ShiftLeftAssign, Span::new(6, 8),
+            Separator::ShiftLeftAssign, Span::new(6, 8),
             BinaryExpr::new(
                 LitExpr::new(LitValue::from(1), Span::new(0, 0)),
-                Seperator::Add, Span::new(2, 2),
+                Separator::Add, Span::new(2, 2),
                 LitExpr::new(LitValue::from(1), Span::new(4, 4)),
             ),
             LitExpr::new(LitValue::from(2), Span::new(10, 10))

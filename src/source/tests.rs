@@ -2,10 +2,10 @@ use super::*;
 
 macro_rules! make_source {
     () => {
-        make_source!("" as "1")
+        crate::source::make_source!("" as "1")
     };
     ($content:literal) => {
-        make_source!($content as "1")
+        crate::source::make_source!($content as "1")
     };
     ($($content:literal as $name:literal),+$(,)?) => {{
         let vfs = [$((std::path::PathBuf::from($name), String::from($content)),)*];
