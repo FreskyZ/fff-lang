@@ -104,21 +104,18 @@ impl Expr {
 fn name_parse() {
     use super::super::make_node;
 
-    assert_eq!{ make_node!("hello"), 
+    assert_eq!{ make_node!("hello" as SimpleName), 
         Expr::SimpleName(SimpleName::new(1, Span::new(0, 4)))
     }
     //              0        1         2         3         4
     //              01234567890123456789012345678901234567890
-    TestInput::new("std::network::wlan::native::GetWLANHandle")
-        .set_syms(make_symbols!["std", "network", "wlan", "native", "GetWLANHandle"])
-        .apply::<Name, _>()
-        .expect_no_message()
-        .expect_result(Expr::Name(Name::new(Span::new(0, 40), vec![
+    assert_eq!{ make_node!("std::network::wlan::native::GetWLANHandle" as Name, [], ["std", "network", "wlan", "native", "GetWLANHandle"]),
+        Expr::Name(Name::new(Span::new(0, 40), vec![
             SimpleName::new(1, Span::new(0, 2)), 
             SimpleName::new(2, Span::new(5, 11)),
             SimpleName::new(3, Span::new(14, 17)),
             SimpleName::new(4, Span::new(20, 25)),
             SimpleName::new(5, Span::new(28, 40)),
-        ])))
-    .finish();
+        ]))
+    }
 }

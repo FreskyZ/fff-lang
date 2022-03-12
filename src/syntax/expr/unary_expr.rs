@@ -69,7 +69,7 @@ fn unary_expr_parse() {
     use super::super::WithTestInput;
     
     assert_eq!{ make_node!("1"), 
-        Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(0, 0))) 
+        Expr::Lit(LitExpr::new(LitValue::from(1i32), Span::new(0, 0))) 
     }
 
     assert_eq!{ make_node!("!~!1"),
@@ -79,7 +79,7 @@ fn unary_expr_parse() {
                 Separator::BitNot, Span::new(1, 1),            
                 Expr::Unary(UnaryExpr::new(
                     Separator::LogicalNot, Span::new(2, 2),
-                    Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(3, 3))),
+                    Expr::Lit(LitExpr::new(LitValue::from(1i32), Span::new(3, 3))),
                 ))
             ))
         ))

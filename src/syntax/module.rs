@@ -84,7 +84,7 @@ fn module_parse() {
                 SimpleName::new(2, Span::new(14, 14))
             )),
             Item::SimpleExpr(SimpleExprStatement::new(Span::new(17, 18), 
-                LitExpr::new(LitValue::from(3), Span::new(17, 17))
+                LitExpr::new(LitValue::from(3i32), Span::new(17, 17))
             )),
             Item::SimpleExpr(SimpleExprStatement::new(Span::new(20, 21), 
                 SimpleName::new(2, Span::new(20, 20))

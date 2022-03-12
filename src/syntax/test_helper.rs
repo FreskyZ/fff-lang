@@ -1,22 +1,49 @@
 ///! syntax/test_helper
 
-use crate::source::{SourceContext};
-use crate::diagnostics::MessageCollection;
-use crate::lexical::Parser;
-use crate::syntax::prelude::*;
-
-pub fn try_make_node<'scx, 'ecx, F: FileSystem, U, T: ISyntaxParse<'scx, 'ecx, F, Output = U>>(scx: &SourceContext) -> Option<U> {
-    let mut messages = MessageCollection::new();
-    let mut context = ParseSession::new(Parser::new(scx.entry("1"), &mut messages));
-    T::parse(&mut context).ok()
-}
-
 macro_rules! make_node {
-    ($code:literal) => {{
-        crate::syntax::try_make_node(crate::source::make_source!($code)).expect("failed to parse test input")
-    }};
     ($code:literal as $ty:ty) => {{
-        crate::syntax::try_make_node::<_, $ty>(crate::source::make_source!($code)).expect("failed to parse test input")
-    }}
+        let mut ecx = crate::diagnostics::MessageCollection::new();
+        let mut scx = crate::source::make_source!($code);
+        let chars = scx.entry("1");
+        let lcx = crate::lexical::Parser::new(chars, &mut ecx);
+        let mut pcx = ParseSession::new(lcx);
+        let node = <$ty as ISyntaxParse<crate::source::VirtualFileSystem>>::parse(&mut pcx).expect("failed to parse test input");
+        assert_eq!(ecx, make_messages![]);
+        node
+    }};
+    ($code:literal as $ty:ty, [$($span_string:expr),*$(,)?]) => {{
+        let mut ecx = crate::diagnostics::MessageCollection::new();
+        let mut scx = crate::source::make_source!($code);
+        let chars = scx.entry("1");
+        $( chars.intern_span($span_string); )*
+        let lcx = crate::lexical::Parser::new(chars, &mut ecx);
+        let mut pcx = ParseSession::new(lcx);
+        let node = <$ty as ISyntaxParse<crate::source::VirtualFileSystem>>::parse(&mut pcx).expect("failed to parse test input");
+        assert_eq!(ecx, make_messages![]);
+        node
+    }};
+    ($code:literal as $ty:ty, [$($span_string:expr),*$(,)?], [$($value_string:expr),*$(,)?]) => {{
+        let mut ecx = crate::diagnostics::MessageCollection::new();
+        let mut scx = crate::source::make_source!($code);
+        let chars = scx.entry("1");
+        $( chars.intern_span($span_string); )*
+        $( chars.intern($value_string); )*
+        let lcx = crate::lexical::Parser::new(chars, &mut ecx);
+        let mut pcx = ParseSession::new(lcx);
+        let node = <$ty as ISyntaxParse<crate::source::VirtualFileSystem>>::parse(&mut pcx).expect("failed to parse test input");
+        assert_eq!(ecx, make_messages![]);
+        node
+    }};
+    ($code:literal as $ty:ty, [$($span_string:expr),*$(,)?], [$($value_string:expr),*$(,)?], and messages) => {{
+        let mut ecx = crate::diagnostics::MessageCollection::new();
+        let mut scx = crate::source::make_source!($code);
+        let chars = scx.entry("1");
+        $( chars.intern_span($span_string); )*
+        $( chars.intern($value_string); )*
+        let lcx = crate::lexical::Parser::new(chars, &mut ecx);
+        let mut pcx = ParseSession::new(lcx);
+        let node = <$ty as ISyntaxParse<crate::source::VirtualFileSystem>>::parse(&mut pcx).expect("failed to parse test input");
+        (node, ecx)
+    }};
 }
 pub(crate) use make_node;

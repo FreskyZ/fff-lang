@@ -108,7 +108,7 @@ macro_rules! check_messages_continuable {
 #[macro_export]
 macro_rules! make_messages {
     ($($x:expr),*) => ({
-        let mut retval = MessageCollection::new();
+        let mut retval = crate::diagnostics::MessageCollection::new();
         {
             let _retval = &mut retval; // `&mut` for statisfy 'unused mut', `_` for statisfy unused var
             $(

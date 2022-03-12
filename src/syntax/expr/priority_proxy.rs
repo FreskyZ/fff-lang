@@ -189,7 +189,7 @@ fn primary_expr_parse() {
                     TupleDef::new(Span::new(84, 98), make_exprs![
                         SimpleName::new(10, Span::new(85, 88)),
                         LitExpr::new(LitValue::from(true), Span::new(91, 94)),
-                        LitExpr::new(LitValue::from(5), Span::new(97, 97))
+                        LitExpr::new(LitValue::from(5i32), Span::new(97, 97))
                     ])
                 )
             ])
@@ -281,7 +281,7 @@ fn primary_expr_parse() {
     //                                      12345 678901 234567890123456789012345678901234
     assert_eq!{ make_node!("[8, \"@=?GF\", 87r32, 1340323.74r64, FKOxAvx5]"),
         Expr::Array(ArrayDef::new(Span::new(0, 43), make_exprs![
-            LitExpr::new(LitValue::from(8), Span::new(1, 1)),
+            LitExpr::new(LitValue::from(8i32), Span::new(1, 1)),
             LitExpr::new(make_lit!(str, 1), Span::new(4, 10)), 
             LitExpr::new(LitValue::from(87f32), Span::new(13, 17)),
             LitExpr::new(LitValue::from(1340323.74f64), Span::new(20, 32)),

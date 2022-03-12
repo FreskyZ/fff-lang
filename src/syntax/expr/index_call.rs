@@ -72,34 +72,30 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for IndexCallExpr where F: FileS
 
 #[cfg(test)] #[test]
 fn index_call_parse() {
-    use crate::lexical::LitValue;
-    use super::super::WithTestInput;
-    use super::LitExpr;
+    use super::super::{make_node};
+    use super::{LitExpr, LitValue};
 
-    assert_eq!{ make_node!("[1, 2, ]"),
+    assert_eq!{ make_node!("[1, 2, ]" as IndexCallExpr),
         IndexCallExpr::new_with_parse_result(Span::new(0, 7), ExprList::new(vec![
             Expr::Lit(LitExpr::new(LitValue::from(1i32), Span::new(1, 1))),
             Expr::Lit(LitExpr::new(LitValue::from(2i32), Span::new(4, 4))),
         ]))
     }
 
-    assert_eq!{ make_node!("[\"hello\"]"),
+    assert_eq!{ make_node!("[\"hello\"]" as IndexCallExpr),
         IndexCallExpr::new_with_parse_result(Span::new(0, 8), 
-            ExprList::new(vec![Expr::Lit(LitExpr::new(make_lit!(str, 1), Span::new(1, 7)))])
+            ExprList::new(vec![Expr::Lit(LitExpr::new(2u32, Span::new(1, 7)))])
         )
     }
 }
 
 #[cfg(test)] #[test]
 fn index_call_errors() {
-    use crate::diagnostics::MessageCollection;
-    use super::super::TestInput;
+    use super::super::{make_node};
 
-    TestInput::new("[,]")
-        .apply::<IndexCallExpr, _>()
-        .expect_result(IndexCallExpr::new_with_parse_result(Span::new(0, 2), ExprList::new(vec![])))
-        .expect_messages(make_messages![
+    assert_eq!{ make_node!("[,]" as IndexCallExpr, [], [], and messages),
+        (IndexCallExpr::new_with_parse_result(Span::new(0, 2), ExprList::new(Vec::new())), make_messages![
             Message::new_by_str(strings::EmptyIndexCall, vec![(Span::new(0, 2), strings::IndexCallHere)])
         ])
-    .finish();
+    }
 }

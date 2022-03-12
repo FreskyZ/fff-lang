@@ -210,7 +210,7 @@ fn if_stmt_parse() {
         .expect_no_message()
         .expect_result(IfStatement::new_ifelse(
             IfClause::new(Span::new(0, 1), 
-                LitExpr::new(LitValue::from(1), Span::new(3, 3)),
+                LitExpr::new(LitValue::from(1i32), Span::new(3, 3)),
                 Block::new(Span::new(5, 41), vec![
                     Statement::SimpleExpr(SimpleExprStatement::new(Span::new(7, 20),
                         FnCallExpr::new(
@@ -246,9 +246,9 @@ fn if_stmt_parse() {
                         FnCallExpr::new(
                             MemberAccessExpr::new(
                                 ArrayDef::new(Span::new(50, 56), make_exprs![
-                                    LitExpr::new(LitValue::from(1), Span::new(51, 51)),
-                                    LitExpr::new(LitValue::from(2), Span::new(53, 53)),
-                                    LitExpr::new(LitValue::from(3), Span::new(55, 55)),
+                                    LitExpr::new(LitValue::from(1i32), Span::new(51, 51)),
+                                    LitExpr::new(LitValue::from(2i32), Span::new(53, 53)),
+                                    LitExpr::new(LitValue::from(3i32), Span::new(55, 55)),
                                 ]),
                                 Span::new(57, 57),
                                 SimpleName::new(8, Span::new(58, 60))

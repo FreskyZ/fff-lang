@@ -155,13 +155,13 @@ fn range_expr_parse() {
 
     assert_eq!{ make_node!("..1 + 1"), 
         Expr::RangeRight(RangeRightExpr::new(Span::new(0, 6), BinaryExpr::new(
-            LitExpr::new(LitValue::from(1), Span::new(2, 2)),
+            LitExpr::new(LitValue::from(1i32), Span::new(2, 2)),
             Separator::Add, Span::new(4, 4),
-            LitExpr::new(LitValue::from(1), Span::new(6, 6))
+            LitExpr::new(LitValue::from(1i32), Span::new(6, 6))
         )))
     }
 
     assert_eq!{ make_node!("1 .."),
-        Expr::RangeLeft(RangeLeftExpr::new(Span::new(0, 3), LitExpr::new(LitValue::from(1), Span::new(0, 0))))
+        Expr::RangeLeft(RangeLeftExpr::new(Span::new(0, 3), LitExpr::new(LitValue::from(1i32), Span::new(0, 0))))
     }
 }

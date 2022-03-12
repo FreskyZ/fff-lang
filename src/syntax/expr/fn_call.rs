@@ -70,31 +70,27 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for FnCallExpr where F: FileSyst
 
 #[cfg(test)] #[test]
 fn fn_call_parse() {
-    use crate::lexical::LitValue;
-    use super::super::WithTestInput;
-    use super::LitExpr;
+    use super::super::{make_node};
+    use super::{LitExpr};
 
-    assert_eq!{ make_node!("()"),
+    assert_eq!{ make_node!("()" as FnCallExpr),
         FnCallExpr::new_with_parse_result(Span::new(0, 1), ExprList::new(vec![]))
     }
 
-    assert_eq!{ make_node!("(\"hello\")"),
+    assert_eq!{ make_node!("(\"hello\")" as FnCallExpr),
         FnCallExpr::new_with_parse_result(Span::new(0, 8), 
-            ExprList::new(vec![Expr::Lit(LitExpr::new(make_lit!(str, 1), Span::new(1, 7)))])
+            ExprList::new(vec![Expr::Lit(LitExpr::new(2u32, Span::new(1, 7)))])
         )
     }
 }
 
 #[cfg(test)] #[test]
 fn fn_call_errors() {
-    use crate::diagnostics::MessageCollection;
-    use super::super::TestInput;
+    use super::super::{make_node};
 
-    TestInput::new("(,)")
-        .apply::<FnCallExpr, _>()
-        .expect_result(FnCallExpr::new_with_parse_result(Span::new(0, 2), ExprList::new(vec![])))
-        .expect_messages(make_messages![
+    assert_eq!{ make_node!("(,)" as FnCallExpr, [], [], and messages),
+        (FnCallExpr::new_with_parse_result(Span::new(0, 2), ExprList::new(Vec::new())), make_messages![
             Message::new_by_str(strings::UnexpectedSingleComma, vec![(Span::new(0, 2), strings::FnCallHere)])
         ])
-    .finish();
+    }
 }

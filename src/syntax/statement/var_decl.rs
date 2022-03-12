@@ -80,24 +80,14 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for VarDeclStatement where F: Fi
 
 #[cfg(test)] #[test]
 fn var_decl_stmt_parse() {
-    use crate::source::SymbolCollection;
-    use crate::diagnostics::MessageCollection;
-    use crate::lexical::LitValue;
-    use super::super::SimpleName;
-    use super::super::LitExpr;
-    use super::super::TupleDef;
-    use super::super::ArrayDef;
-    use super::super::ExprList;
-    use super::super::TypeUse;
-    use super::super::TestInput;
-    use super::super::WithTestInput;
+    use crate::syntax::*;
     
     //                                           12345678901234
     assert_eq!{ make_node!("const abc = 0;"),
         VarDeclStatement::new_const(Span::new(0, 13),
-            1, Span::new(6, 8),
+            IsId::new(1), Span::new(6, 8),
             None,
-            Some(Expr::Lit(LitExpr::new(LitValue::from(0), Span::new(12, 12))))
+            Some(Expr::Lit(LitExpr::new(LitValue::from(0i32), Span::new(12, 12))))
         )
     }
 
@@ -108,9 +98,9 @@ fn var_decl_stmt_parse() {
             1, Span::new(4, 6),
             None,
             Some(Expr::Array(ArrayDef::new(Span::new(10, 18), ExprList::new(vec![
-                Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(11, 11))),
-                Expr::Lit(LitExpr::new(LitValue::from(3), Span::new(14, 14))),
-                Expr::Lit(LitExpr::new(LitValue::from(5), Span::new(17, 17))),
+                Expr::Lit(LitExpr::new(LitValue::from(1i32), Span::new(11, 11))),
+                Expr::Lit(LitExpr::new(LitValue::from(3i32), Span::new(14, 14))),
+                Expr::Lit(LitExpr::new(LitValue::from(5i32), Span::new(17, 17))),
             ]))))
         )
     }

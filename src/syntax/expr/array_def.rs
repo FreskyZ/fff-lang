@@ -50,8 +50,7 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for ArrayDef where F: FileSystem
 
 #[cfg(test)] #[test]
 fn array_def_format() {
-    use crate::lexical::Numeric;
-    use super::{LitValue, LitExpr};
+    use super::super::LitExpr;
 
     assert_eq!{
         ArrayDef::new(Span::new(0, 42), make_exprs![]).format(Formatter::with_test_indent(1)),
@@ -70,30 +69,28 @@ fn array_def_format() {
 
 #[cfg(test)] #[test]
 fn array_def_parse() {
-    use crate::source::make_source;
-    use crate::lexical::Numeric;
-    use super::{LitValue, LitExpr, BinaryExpr, SimpleName};
+    use super::super::{make_node, LitExpr, BinaryExpr, SimpleName};
 
-    assert_eq!{ make_node!("[a]"),
+    assert_eq!{ make_node!("[a]" as ArrayDef),
         Expr::Array(ArrayDef::new(Span::new(0, 2), make_exprs![
             SimpleName::new(1, Span::new(1, 1))
         ]))
     }
 
     //                                   01234567
-    assert_eq!{ make_node!("[1, '2']"),
+    assert_eq!{ make_node!("[1, '2']" as ArrayDef),
         Expr::Array(ArrayDef::new(Span::new(0, 7), make_exprs![
             LitExpr::new(1i32, Span::new(1, 1)),
             LitExpr::new('2', Span::new(4, 6))
         ]))
     }
     //                                   01234567
-    assert_eq!{ make_node!("[1 + 1,]"),
+    assert_eq!{ make_node!("[1 + 1,]" as ArrayDef),
         Expr::Array(ArrayDef::new(Span::new(0, 7), make_exprs![
             BinaryExpr::new(
-                LitExpr::new(1, Span::new(1, 1)), 
+                LitExpr::new(1i32, Span::new(1, 1)), 
                 Separator::Add, Span::new(3, 3),
-                LitExpr::new(1, Span::new(5, 5)),
+                LitExpr::new(1i32, Span::new(5, 5)),
             )
         ]))
     }
@@ -101,13 +98,12 @@ fn array_def_parse() {
 
 #[cfg(test)] #[test]
 fn array_def_errors() {
-    use crate::diagnostics::MessageCollection;
-    
-    TestInput::new("[ , ]")
-        .apply::<ArrayDef, _>()
-        .expect_result(Expr::Array(ArrayDef::new(Span::new(0, 4), make_exprs![])))
-        .expect_messages(make_messages![
+    use super::super::{make_node};
+
+    assert_eq!{ make_node!("[ , ]" as ArrayDef, [], [], and messages), (
+        Expr::Array(ArrayDef::new(Span::new(0, 4), make_exprs![])),
+        make_messages![
             Message::new_by_str(strings::UnexpectedSingleComma, vec![(Span::new(0, 4), strings::ArrayDefHere)])
-        ])
-    .finish();
+        ],
+    )}
 }

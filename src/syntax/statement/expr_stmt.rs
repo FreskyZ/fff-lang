@@ -123,13 +123,13 @@ fn expr_stmt_parse() {
     //                                              012345678901
     assert_eq!{ make_node!("1 + 1 <<= 2;"),  // to show I have 3 char Separator available
         Statement::AssignExpr(AssignExprStatement::new(Span::new(0, 11),
-            Separator::ShiftLeftAssign, Span::new(6, 8),
+            Separator::LtLtAssign, Span::new(6, 8),
             BinaryExpr::new(
-                LitExpr::new(LitValue::from(1), Span::new(0, 0)),
+                LitExpr::new(LitValue::from(1i32), Span::new(0, 0)),
                 Separator::Add, Span::new(2, 2),
-                LitExpr::new(LitValue::from(1), Span::new(4, 4)),
+                LitExpr::new(LitValue::from(1i32), Span::new(4, 4)),
             ),
-            LitExpr::new(LitValue::from(2), Span::new(10, 10))
+            LitExpr::new(LitValue::from(2i32), Span::new(10, 10))
         ))
     }
 }

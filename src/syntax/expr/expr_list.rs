@@ -88,14 +88,13 @@ macro_rules! make_exprs {
 
 #[cfg(test)] #[test]
 fn expr_list_format() {
-    use crate::lexical::LitValue;
-    use super::LitExpr;
+    use super::{LitExpr, LitValue};
 
     assert_eq!{
         ExprList::new(vec![
-            Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(1, 2))),
-            Expr::Lit(LitExpr::new(LitValue::from(2), Span::new(3, 4))),
-            Expr::Lit(LitExpr::new(LitValue::from(3), Span::new(5, 6))),
+            Expr::Lit(LitExpr::new(LitValue::from(1i32), Span::new(1, 2))),
+            Expr::Lit(LitExpr::new(LitValue::from(2i32), Span::new(3, 4))),
+            Expr::Lit(LitExpr::new(LitValue::from(3i32), Span::new(5, 6))),
         ]).format(Formatter::with_test_indent(1)),
         "  literal (i32)1 <<0>1-2>\n  literal (i32)2 <<0>3-4>\n  literal (i32)3 <<0>5-6>"
     }
@@ -103,31 +102,30 @@ fn expr_list_format() {
 
 #[cfg(test)] #[test]
 fn expr_list_parse() {
-    use crate::lexical::LitValue;
-    use super::LitExpr;
-    use super::super::WithTestInput;
+    use super::super::{make_node};
+    use super::{LitExpr, LitValue};
 
-    assert_eq!{ make_node!("[1, 2, 3]"), 
+    assert_eq!{ make_node!("[1, 2, 3]" as ExprList), 
         ExprListParseResult::Normal(Span::new(0, 8), ExprList::new(vec![
-            Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(1, 1))),
-            Expr::Lit(LitExpr::new(LitValue::from(2), Span::new(4, 4))),
-            Expr::Lit(LitExpr::new(LitValue::from(3), Span::new(7, 7))),
+            Expr::Lit(LitExpr::new(LitValue::from(1i32), Span::new(1, 1))),
+            Expr::Lit(LitExpr::new(LitValue::from(2i32), Span::new(4, 4))),
+            Expr::Lit(LitExpr::new(LitValue::from(3i32), Span::new(7, 7))),
         ]))
     }
     
-    assert_eq!{ make_node!("(1, 2, 3,)"), 
+    assert_eq!{ make_node!("(1, 2, 3,)" as ExprList), 
         ExprListParseResult::EndWithComma(Span::new(0, 9), ExprList::new(vec![
-            Expr::Lit(LitExpr::new(LitValue::from(1), Span::new(1, 1))),
-            Expr::Lit(LitExpr::new(LitValue::from(2), Span::new(4, 4))),
-            Expr::Lit(LitExpr::new(LitValue::from(3), Span::new(7, 7))),
+            Expr::Lit(LitExpr::new(LitValue::from(1i32), Span::new(1, 1))),
+            Expr::Lit(LitExpr::new(LitValue::from(2i32), Span::new(4, 4))),
+            Expr::Lit(LitExpr::new(LitValue::from(3i32), Span::new(7, 7))),
         ]))
     }
 
-    assert_eq!{ make_node!("[]"), 
+    assert_eq!{ make_node!("[]" as ExprList), 
         ExprListParseResult::Empty(Span::new(0, 1))
     }
 
-    assert_eq!{ make_node!("{,}"),
+    assert_eq!{ make_node!("{,}" as ExprList),
         ExprListParseResult::SingleComma(Span::new(0, 2))
     }
 }
