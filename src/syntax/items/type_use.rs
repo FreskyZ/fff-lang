@@ -21,7 +21,7 @@
 
 use crate::syntax::prelude::*;
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct TypeUse {
     pub base: IsId,
     pub base_span: Span,        // maybe default for array and tuple

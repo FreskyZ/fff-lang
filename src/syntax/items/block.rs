@@ -6,7 +6,7 @@
 use crate::syntax::prelude::*;
 use super::super::Statement;
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct Block {
     pub items: Vec<Statement>,
     pub all_span: Span,

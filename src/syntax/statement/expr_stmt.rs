@@ -6,7 +6,7 @@
 use crate::syntax::prelude::*;
 use super::{Statement, super::Expr};
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct SimpleExprStatement {
     pub expr: Expr, 
     pub all_span: Span,  // this span = expr.all_span + semicolon_span
@@ -35,7 +35,7 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for SimpleExprStatement where F:
     fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Self::Output> { AssignExprStatement::parse(sess) }
 }
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct AssignExprStatement {
     pub left_expr: Expr,
     pub right_expr: Expr,

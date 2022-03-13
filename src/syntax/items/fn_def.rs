@@ -6,7 +6,7 @@
 use crate::syntax::prelude::*;
 use super::super::{Block, TypeUse};
 
-#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
+#[cfg_attr(test, derive(PartialEq, Debug))]
 pub struct FnParam {
     pub name: IsId,
     pub name_span: Span,
@@ -16,7 +16,7 @@ impl FnParam {
     pub fn new(name: impl Into<IsId>, name_span: Span, decltype: TypeUse) -> FnParam { FnParam{ decltype, name: name.into(), name_span } }
 }
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct FnDef {
     pub name: IsId,
     pub name_span: Span,

@@ -10,7 +10,7 @@ use crate::syntax::prelude::*;
 use super::{Expr, BinaryExpr};
 
 // RangeFull
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct RangeFullExpr {
     pub all_span: Span,
 }
@@ -30,7 +30,7 @@ impl RangeFullExpr {
 }
 
 // RangeRight
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct RangeRightExpr {
     pub all_span: Span,  // all_span.slice(2) is range_op_span
     pub expr: Box<Expr>,
@@ -55,7 +55,7 @@ impl RangeRightExpr {
 }
 
 // RangeLeft
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct RangeLeftExpr {
     pub expr: Box<Expr>,
     pub all_span: Span, // all_span.slice(-2, 0) should get range_op_span
@@ -80,7 +80,7 @@ impl RangeLeftExpr {
 }
 
 // RangeBoth
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct RangeBothExpr {
     pub left_expr: Box<Expr>,
     pub op_span: Span,

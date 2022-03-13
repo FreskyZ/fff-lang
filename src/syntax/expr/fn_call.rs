@@ -6,7 +6,7 @@
 use crate::syntax::prelude::*;
 use super::{Expr, ExprList, ExprListParseResult};
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct FnCallExpr {
     pub base: Box<Expr>,
     pub params: ExprList,

@@ -8,7 +8,7 @@
 use crate::syntax::prelude::*;
 use super::super::{Expr, Block, LabelDef};
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct ForStatement {
     pub loop_name: Option<LabelDef>,
     pub for_span: Span,

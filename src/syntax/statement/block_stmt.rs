@@ -7,7 +7,7 @@
 use crate::syntax::prelude::*;
 use super::super::{Block, LabelDef};
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct BlockStatement {
     pub name: Option<LabelDef>,
     pub body: Block,

@@ -6,7 +6,7 @@
 
 use crate::syntax::prelude::*;
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct JumpStatement {
     pub target: Option<IsId>,
     pub target_span: Span,
@@ -43,9 +43,9 @@ impl JumpStatement {
     }
 }
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct ContinueStatement(pub JumpStatement);
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct BreakStatement(pub JumpStatement);
 
 impl ISyntaxFormat for ContinueStatement {

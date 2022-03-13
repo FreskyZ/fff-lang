@@ -9,7 +9,7 @@ use crate::syntax::prelude::*;
 use super::{Expr, LitExpr, LitValue, ExprList, ExprListParseResult};
 
 // Paren expr is a side effect of TupleDef
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct ParenExpr {
     pub expr: Box<Expr>,
     pub span: Span,  // paren_span also all_span
@@ -31,7 +31,7 @@ impl ParenExpr {
     pub fn new<T: Into<Expr>>(span: Span, expr: T) -> ParenExpr { ParenExpr{ expr: Box::new(expr.into()), span } }
 }
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct TupleDef {
     pub items: ExprList,
     pub paren_span: Span,

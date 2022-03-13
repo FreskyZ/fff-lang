@@ -10,7 +10,7 @@
 use crate::syntax::prelude::*;
 use super::super::{TypeUse, SimpleName};
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct TypeFieldDef {
     pub name: SimpleName,
     pub colon_span: Span,
@@ -22,7 +22,7 @@ impl TypeFieldDef {
         TypeFieldDef{ all_span, name, colon_span, typeuse }
     }
 }
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct TypeDef {
     pub all_span: Span,
     pub name: SimpleName,

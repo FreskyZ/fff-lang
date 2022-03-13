@@ -6,7 +6,7 @@
 use crate::syntax::prelude::*;
 use super::{Expr, SimpleName};
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct MemberAccessExpr {
     pub base: Box<Expr>,
     pub dot_span: Span,

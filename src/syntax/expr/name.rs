@@ -7,7 +7,7 @@
 use crate::syntax::prelude::*;
 use super::Expr;
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct SimpleName {
     pub value: IsId,
     pub span: Span,
@@ -35,7 +35,7 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for SimpleName where F: FileSyst
     }
 }
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct Name {
     pub segments: Vec<SimpleName>,
     pub all_span: Span,

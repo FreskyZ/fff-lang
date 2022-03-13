@@ -37,7 +37,7 @@ pub use import_stmt::ImportStatement;
 
 macro_rules! define_statement {
     ($name: ident, $($subty: ty => $enum_name: ident,)+) => (
-        #[cfg_attr(test, derive(Eq, PartialEq))]
+        #[cfg_attr(test, derive(PartialEq))]
         pub enum $name {
             $($enum_name($subty),)+
         }

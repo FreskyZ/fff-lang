@@ -7,7 +7,7 @@
 use crate::syntax::prelude::*;
 use super::{Expr, ExprList, ExprListParseResult};
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct IndexCallExpr {
     pub base: Box<Expr>,
     pub params: ExprList,

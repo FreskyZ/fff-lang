@@ -6,7 +6,7 @@
 use crate::syntax::prelude::*;
 use super::super::Expr;
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct ReturnStatement {
     pub expr: Option<Expr>,
     pub all_span: Span,

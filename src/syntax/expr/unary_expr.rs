@@ -6,7 +6,7 @@
 use crate::syntax::prelude::*;
 use super::{Expr, PostfixExpr};
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct UnaryExpr {
     pub base: Box<Expr>, 
     pub operator: Separator, 

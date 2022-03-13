@@ -6,7 +6,7 @@
 use crate::syntax::prelude::*;
 use super::Expr;
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct ExprList {
     pub items: Vec<Expr>,
 }
@@ -27,7 +27,7 @@ impl ISyntaxGrammar for ExprList {
     }
 }
 
-#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
+#[cfg_attr(test, derive(PartialEq, Debug))]
 pub enum ExprListParseResult {
     Empty(Span),
     SingleComma(Span),              // and quote span

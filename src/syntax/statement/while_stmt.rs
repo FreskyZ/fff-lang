@@ -7,7 +7,7 @@
 use crate::syntax::prelude::*;
 use super::super::{Expr, Block, LabelDef};
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct WhileStatement {
     pub name: Option<LabelDef>,
     pub loop_expr: Expr,

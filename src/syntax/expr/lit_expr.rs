@@ -45,7 +45,7 @@ impl From<i32> for LitValue {
 impl std::cmp::Eq for LitValue {
 }
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct LitExpr {
     pub value: LitValue,
     pub span: Span,

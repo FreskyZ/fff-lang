@@ -6,7 +6,7 @@
 use crate::syntax::prelude::*;
 use super::super::{SimpleName};
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct ImportStatement {
     pub name: SimpleName,
     pub as_span: Span,

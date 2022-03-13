@@ -6,7 +6,7 @@
 use crate::syntax::prelude::*;
 use super::{Item, ImportStatement};
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct Module {
     pub items: Vec<Item>,
 }

@@ -21,7 +21,7 @@ use super::ISyntaxFormat;
 
 const SOURCE_FILE_EXT: &str = ".ff";
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct ImportMap {
     pub file_id: usize,
     pub import_name: Sym,
@@ -31,7 +31,7 @@ impl ImportMap {
     pub fn new(file_id: usize, import_name: Sym, imported_file_id: usize) -> ImportMap { ImportMap{ file_id, import_name, imported_file_id } }
 }
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct SyntaxTree {
     pub modules: Vec<Module>, 
     pub import_maps: Vec<ImportMap>, 

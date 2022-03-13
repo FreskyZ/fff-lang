@@ -6,7 +6,7 @@
 
 use crate::syntax::prelude::*;
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct LabelDef {
     pub name: IsId,
     pub all_span: Span,

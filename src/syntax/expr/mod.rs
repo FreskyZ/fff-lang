@@ -40,7 +40,7 @@ pub use name::SimpleName;
 pub use name::Name;
 
 // 12 byte
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub enum Expr {
     Lit(LitExpr),
     SimpleName(SimpleName),

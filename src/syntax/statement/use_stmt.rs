@@ -6,7 +6,7 @@
 use crate::syntax::prelude::*;
 use super::super::{Name, SimpleName};
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct UseStatement {
     pub name: Name,
     pub as_span: Span,

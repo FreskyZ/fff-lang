@@ -6,20 +6,20 @@
 use crate::syntax::prelude::*;
 use super::super::{Expr, Block};
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct IfClause {
     pub cond_expr: Expr,
     pub body: Block,
     pub all_span: Span, // if_span = all_span.slice(0..1)
 }
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct ElseIfClause {
     pub elseif_span: Span, // else_span = elseif_span.slice(0..3), if_span = elseif_span.slice(-2..0)  // TODO: that slice(-2..0)
     pub cond_expr: Expr,
     pub body: Block,
     pub all_span: Span,
 }
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct ElseClause {
     pub body: Block,
     pub all_span: Span, // else_span = all_span.slice(0..3)
@@ -45,7 +45,7 @@ impl ElseClause {
     }
 }
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct IfStatement {
     pub if_clause: IfClause,
     pub elseif_clauses: Vec<ElseIfClause>,

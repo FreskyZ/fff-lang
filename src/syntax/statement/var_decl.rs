@@ -7,7 +7,7 @@
 use crate::syntax::prelude::*;
 use super::super::{Expr, TypeUse};
 
-#[cfg_attr(test, derive(Eq, PartialEq))]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct VarDeclStatement {
     pub is_const: bool,
     pub name: IsId,
