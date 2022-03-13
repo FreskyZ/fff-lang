@@ -29,14 +29,14 @@ impl Block {
 
     pub fn new(all_span: Span, statements: Vec<Statement>) -> Block { Block{ all_span, items: statements } }
 }
-impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for Block where F: FileSystem {
+impl Node for Block {
     type ParseOutput = Block;
 
     fn matches(current: &Token) -> bool { 
         matches!(current, Token::Sep(Separator::LeftBrace)) 
     }
 
-    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Block> {
+    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<Block> where F: FileSystem {
 
         let starting_span = sess.expect_sep(Separator::LeftBrace)?;
         let mut items = Vec::new();

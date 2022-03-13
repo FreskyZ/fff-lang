@@ -46,7 +46,7 @@ impl MemberAccessExpr {
         }
     }
 }
-impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for MemberAccessExpr where F: FileSystem {
+impl Node for MemberAccessExpr {
     type ParseOutput = MemberAccessExpr;
 
     fn matches(current: &Token) -> bool { 
@@ -57,7 +57,7 @@ impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for MemberAccessExpr where F: FileSystem
     // although their structure contains their base expr (which actually is primary expr)
     // but this parser only accept sess.tk after the first expr and return the structure without base and all_span set
     // the postfix expr dispatcher is responsible for fullfilling the missing part
-    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<MemberAccessExpr> {
+    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<MemberAccessExpr> where F: FileSystem {
         
         let dot_span = sess.expect_sep(Separator::Dot)?;
         let name = SimpleName::parse(sess)?;

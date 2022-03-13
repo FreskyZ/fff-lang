@@ -37,14 +37,14 @@ impl BlockStatement {
         } 
     }
 }
-impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for BlockStatement where F: FileSystem {
+impl Node for BlockStatement {
     type ParseOutput = BlockStatement;
 
     fn matches3(current: &Token, _peek: &Token, peek2: &Token) -> bool { 
         matches!((current, peek2), (Token::Label(_), Token::Sep(Separator::LeftBrace)) | (Token::Sep(Separator::LeftBrace), _))
     }
 
-    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<BlockStatement> {
+    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<BlockStatement> where F: FileSystem {
     
         let maybe_name = LabelDef::try_parse(sess)?;
         let body = Block::parse(sess)?;

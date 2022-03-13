@@ -33,14 +33,14 @@ impl ReturnStatement {
         ReturnStatement{ all_span, expr: Some(expr) }
     }
 }
-impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for ReturnStatement where F: FileSystem {
+impl Node for ReturnStatement {
     type ParseOutput = ReturnStatement;
 
     fn matches(current: &Token) -> bool { 
         matches!(current, Token::Keyword(Keyword::Return))
     }
 
-    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<ReturnStatement> {
+    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<ReturnStatement> where F: FileSystem {
 
         let starting_span = sess.expect_keyword(Keyword::Return)?;
 

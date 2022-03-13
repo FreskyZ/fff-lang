@@ -40,14 +40,14 @@ impl ImportStatement {
         ImportStatement{ name, all_span, as_span, target }
     }
 }
-impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for ImportStatement where F: FileSystem {
+impl Node for ImportStatement {
     type ParseOutput = ImportStatement;
 
     fn matches(current: &Token) -> bool { 
         matches!(current, Token::Keyword(Keyword::Import)) 
     }
 
-    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<ImportStatement> {
+    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<ImportStatement> where F: FileSystem {
 
         let starting_span = sess.expect_keyword(Keyword::Import)?;
         let name = SimpleName::parse(sess)?;

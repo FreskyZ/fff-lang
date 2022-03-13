@@ -49,14 +49,14 @@ impl IndexCallExpr {
         }
     }
 }
-impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for IndexCallExpr where F: FileSystem {
+impl Node for IndexCallExpr {
     type ParseOutput = IndexCallExpr;
 
     fn matches(current: &Token) -> bool { 
         matches!(current, Token::Sep(Separator::LeftBracket)) 
     }
 
-    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<IndexCallExpr> {
+    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<IndexCallExpr> where F: FileSystem {
 
         match ExprList::parse(sess)? {
             ExprListParseResult::Normal(span, expr_list) | ExprListParseResult::EndWithComma(span, expr_list) => 

@@ -72,14 +72,14 @@ impl ForStatement {
     }
 }
 
-impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for ForStatement where F: FileSystem {
+impl Node for ForStatement {
     type ParseOutput = ForStatement;
 
     fn matches3(current: &Token, _peek: &Token, peek2: &Token) -> bool {
         matches!((current, peek2), (Token::Label(_), Token::Keyword(Keyword::For)) | (Token::Keyword(Keyword::For), _))
     }
 
-    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<ForStatement> {
+    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<ForStatement> where F: FileSystem {
 
         let maybe_label = LabelDef::try_parse(sess)?;
         let for_span = sess.expect_keyword(Keyword::For)?;

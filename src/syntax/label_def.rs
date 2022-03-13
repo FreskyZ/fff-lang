@@ -23,14 +23,14 @@ impl LabelDef {
     
     pub fn new(name: impl Into<IsId>, all_span: Span) -> LabelDef { LabelDef{ name: name.into(), all_span } }
 }
-impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for LabelDef where F: FileSystem {
+impl Node for LabelDef {
     type ParseOutput = LabelDef;
 
     fn matches(current: &Token) -> bool {
         matches!(current, Token::Label(_))
     }
 
-    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<LabelDef> {
+    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<LabelDef> where F: FileSystem {
 
         if let Some((label_id, label_span)) = sess.try_expect_label() {
             let colon_span = sess.expect_sep(Separator::Colon)?;

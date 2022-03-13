@@ -114,11 +114,11 @@ impl RangeBothExpr {
 }
 
 // actually also a priority proxy
-pub(super) struct RangeExpr;
-impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for RangeExpr where F: FileSystem {
+pub struct RangeExpr;
+impl Node for RangeExpr {
     type ParseOutput = Expr;
 
-    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Expr> {
+    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<Expr> where F: FileSystem {
         match sess.try_expect_sep(Separator::DotDot) {
             Some(range_op_span) => {
                 if sess.matches::<Expr>() {

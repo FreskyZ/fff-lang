@@ -25,14 +25,14 @@ impl From<ArrayDef> for Expr {
 impl ArrayDef {
     pub fn new(bracket_span: Span, items: ExprList) -> ArrayDef { ArrayDef{ bracket_span, items: items } }
 }
-impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for ArrayDef where F: FileSystem {
+impl Node for ArrayDef {
     type ParseOutput = Expr;
 
     fn matches(current: &Token) -> bool { 
         matches!(current, Token::Sep(Separator::LeftBracket)) 
     }
 
-    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Expr> {
+    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<Expr> where F: FileSystem {
         
         match ExprList::parse(sess)? {
             ExprListParseResult::Empty(span) => {

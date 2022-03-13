@@ -51,14 +51,14 @@ impl TypeDef {
         TypeDef{ all_span, name, fields }
     }
 }
-impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for TypeDef where F: FileSystem {
+impl Node for TypeDef {
     type ParseOutput = Self;
 
     fn matches(current: &Token) -> bool { 
         matches!(current, Token::Keyword(Keyword::Type)) 
     }
 
-    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<TypeDef> {
+    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<TypeDef> where F: FileSystem {
 
         let starting_span = sess.expect_keyword(Keyword::Type)?;
         let (symid, name_span) = sess.expect_ident_or_keyword_kind(KeywordKind::Primitive)?;

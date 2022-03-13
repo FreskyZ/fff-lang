@@ -37,10 +37,10 @@ impl Module {
             .collect()
     }
 }
-impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for Module where F: FileSystem {
+impl Node for Module {
     type ParseOutput = Module;
 
-    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Module> {
+    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<Module> where F: FileSystem {
         let mut items = Vec::new();
         loop {
             if sess.matches::<Item>() {

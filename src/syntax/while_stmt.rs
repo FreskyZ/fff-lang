@@ -53,14 +53,14 @@ impl WhileStatement {
         }
     }
 }
-impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for WhileStatement where F: FileSystem {
+impl Node for WhileStatement {
     type ParseOutput = WhileStatement;
 
     fn matches3(current: &Token, _peek: &Token, peek2: &Token) -> bool {
         matches!((current, peek2), (Token::Label(_), Token::Keyword(Keyword::While)) | (Token::Keyword(Keyword::While), _))
     }
 
-    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<WhileStatement> {
+    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<WhileStatement> where F: FileSystem {
         
         let maybe_name = LabelDef::try_parse(sess)?;
         let while_span = sess.expect_keyword(Keyword::While)?;

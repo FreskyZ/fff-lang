@@ -8,11 +8,11 @@
 use super::prelude::*;
 use super::{Expr, Name, LitExpr, SimpleName, TupleDef, ArrayDef, FnCallExpr, IndexCallExpr, MemberAccessExpr};
 
-pub struct PrimaryExpr;
-impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for PrimaryExpr where F: FileSystem {
+struct PrimaryExpr;
+impl Node for PrimaryExpr {
     type ParseOutput = Expr;
     
-    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Expr> {
+    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<Expr> where F: FileSystem {
 
         if sess.matches::<LitExpr>() {
             return LitExpr::parse(sess);
@@ -30,10 +30,10 @@ impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for PrimaryExpr where F: FileSystem {
 }
 
 pub struct PostfixExpr;
-impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for PostfixExpr where F: FileSystem {
+impl Node for PostfixExpr {
     type ParseOutput = Expr;
 
-    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Expr> {   
+    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<Expr> where F: FileSystem {   
         #[cfg(feature = "trace_postfix_expr_parse")]
         macro_rules! trace { ($($arg:tt)*) => ({ perror!("    [PostfixExpr:{}] ", line!()); perrorln!($($arg)*); }) }
         #[cfg(not(feature = "trace_postfix_expr_parse"))]

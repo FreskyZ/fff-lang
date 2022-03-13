@@ -27,17 +27,17 @@ impl SimpleExprStatement {
     }
 }
 // dispatch them to convenience statement define macro
-impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for SimpleExprStatement where F: FileSystem {
-    type ParseOutput = <AssignExprStatement as Node<'ecx, 'scx, F>>::ParseOutput;
+impl Node for SimpleExprStatement {
+    type ParseOutput = <AssignExprStatement as Node>::ParseOutput;
 
     fn matches(current: &Token) -> bool { 
-        <AssignExprStatement as Node<F>>::matches(current)
+        AssignExprStatement::matches(current)
     }
     fn matches3(current: &Token, peek: &Token, peek2: &Token) -> bool {
-        <AssignExprStatement as Node<F>>::matches3(current, peek, peek2)
+        AssignExprStatement::matches3(current, peek, peek2)
     }
 
-    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Self::ParseOutput> { 
+    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<Self::ParseOutput> where F: FileSystem { 
         AssignExprStatement::parse(sess) 
     }
 }
@@ -75,17 +75,17 @@ impl AssignExprStatement {
     }
 }
 
-impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for AssignExprStatement where F: FileSystem {
+impl Node for AssignExprStatement {
     type ParseOutput = Statement;
 
     fn matches(current: &Token) -> bool { 
-        <Expr as Node<F>>::matches(current)
+        Expr::matches(current)
     }
     fn matches3(current: &Token, peek: &Token, peek2: &Token) -> bool {
-        <Expr as Node<F>>::matches3(current, peek, peek2)
+        Expr::matches3(current, peek, peek2)
     }
 
-    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Statement> {
+    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<Statement> where F: FileSystem {
 
         let left_expr = Expr::parse(sess)?;
         let starting_span = left_expr.get_all_span();

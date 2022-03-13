@@ -27,7 +27,7 @@ pub enum ExprListParseResult {
     Normal(Span, ExprList),         // and quote span
     EndWithComma(Span, ExprList),   // and quote span
 }
-impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for ExprList where F: FileSystem {
+impl Node for ExprList {
     type ParseOutput = ExprListParseResult;
 
     fn matches(current: &Token) -> bool {
@@ -36,7 +36,7 @@ impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for ExprList where F: FileSystem {
 
     /// This is special, when calling `parse`, `sess.tk` should point to the quote token
     /// Then the parser will check end token to determine end of parsing process
-    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<ExprListParseResult> {
+    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<ExprListParseResult> where F: FileSystem {
 
         let (starting_sep, starting_span) = sess.expect_seps(&[Separator::LeftBrace, Separator::LeftBracket, Separator::LeftParen])?;
         let expect_end_sep = match starting_sep { 

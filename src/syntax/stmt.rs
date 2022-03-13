@@ -29,21 +29,21 @@ macro_rules! define_statement {
                 fn from(s: $subty) -> $name { $name::$enum_name(s) }
         } )+
 
-        impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for $name where F: FileSystem {
+        impl Node for $name {
             type ParseOutput = $name;
             
             fn matches(current: &Token) -> bool {
                 false 
-                $(|| <$subty as Node<F>>::matches(current) )+
+                $(|| <$subty>::matches(current) )+
             }
             fn matches3(current: &Token, peek: &Token, peek2: &Token) -> bool {
                 false 
-                $(|| <$subty as Node<F>>::matches3(current, peek, peek2) )+
+                $(|| <$subty>::matches3(current, peek, peek2) )+
             }
 
-            fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<$name> {
+            fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<$name> where F: FileSystem {
                 $( if sess.matches::<$subty>() {
-                    Ok($name::from(<$subty as Node<'ecx, 'scx, F>>::parse(sess)?))
+                    Ok($name::from(<$subty>::parse(sess)?))
                 } else )+ {
                     sess.push_unexpect("statement")
                 }

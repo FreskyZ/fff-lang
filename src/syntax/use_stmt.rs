@@ -41,14 +41,14 @@ impl UseStatement {
         UseStatement{ name, all_span, as_span, target }
     }
 }
-impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for UseStatement where F: FileSystem {
+impl Node for UseStatement {
     type ParseOutput = UseStatement;
 
     fn matches(current: &Token) -> bool { 
         matches!(current, Token::Keyword(Keyword::Use)) 
     }
 
-    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<UseStatement> {
+    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<UseStatement> where F: FileSystem {
 
         let starting_span = sess.expect_keyword(Keyword::Use)?;
         let from_name = Name::parse(sess)?.into_name();

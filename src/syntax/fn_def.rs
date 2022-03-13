@@ -57,14 +57,14 @@ impl FnDef {
         FnDef{ name: name.into(), name_span, params, params_paren_span, ret_type, body, all_span }
     }
 }
-impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for FnDef where F: FileSystem {
+impl Node for FnDef {
     type ParseOutput = FnDef;
 
     fn matches(current: &Token) -> bool {
         matches!(current, Token::Keyword(Keyword::Fn))
     }
 
-    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<FnDef> {
+    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<FnDef> where F: FileSystem {
         #[cfg(feature = "trace_fn_def_parse")]
         macro_rules! trace { ($($arg:tt)*) => ({ print!("[FnDef: {}]", line!()); println!($($arg)*); }) }
         #[cfg(not(feature = "trace_fn_def_parse"))]

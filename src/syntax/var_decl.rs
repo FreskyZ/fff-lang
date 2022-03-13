@@ -52,14 +52,14 @@ impl VarDeclStatement {
         VarDeclStatement{ all_span, is_const: false, name: name.into(), name_span, typeuse, init_expr }
     }
 }
-impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for VarDeclStatement where F: FileSystem {
+impl Node for VarDeclStatement {
     type ParseOutput = VarDeclStatement;
 
     fn matches(current: &Token) -> bool { 
         matches!(current, Token::Keyword(Keyword::Const | Keyword::Var)) 
     }
 
-    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<VarDeclStatement> {
+    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<VarDeclStatement> where F: FileSystem {
         
         let (starting_kw, starting_span) = sess.expect_keywords(&[Keyword::Const, Keyword::Var])?;
         let is_const = match starting_kw { Keyword::Const => true, Keyword::Var => false, _ => unreachable!() };

@@ -39,14 +39,14 @@ impl UnaryExpr {
     }
 }
 
-impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for UnaryExpr where F: FileSystem {
+impl Node for UnaryExpr {
     type ParseOutput = Expr;
 
     fn matches(current: &Token) -> bool { 
         matches!(current, Token::Sep(sep) if sep.kind(SeparatorKind::Unary))
     }
 
-    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Expr> {
+    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<Expr> where F: FileSystem {
         
         let mut op_spans = Vec::new();
         loop {

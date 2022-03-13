@@ -56,7 +56,7 @@ impl TypeUse {
     }
 }
 
-impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for TypeUse where F: FileSystem {
+impl Node for TypeUse {
     type ParseOutput = TypeUse;
 
     fn matches(current: &Token) -> bool {
@@ -67,7 +67,7 @@ impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for TypeUse where F: FileSystem {
         }
     }
 
-    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<TypeUse> {
+    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<TypeUse> where F: FileSystem {
 
         if let Some(left_bracket_span) = sess.try_expect_sep(Separator::LeftBracket) {
             let inner = TypeUse::parse(sess)?;

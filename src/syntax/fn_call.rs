@@ -47,14 +47,14 @@ impl FnCallExpr {
         }
     }
 }
-impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for FnCallExpr where F: FileSystem {
+impl Node for FnCallExpr {
     type ParseOutput = FnCallExpr;
 
     fn matches(current: &Token) -> bool { 
         matches!(current, Token::Sep(Separator::LeftParen)) 
     }
 
-    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<FnCallExpr> {
+    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<FnCallExpr> where F: FileSystem {
 
         match ExprList::parse(sess)? {
             ExprListParseResult::Empty(span) => 

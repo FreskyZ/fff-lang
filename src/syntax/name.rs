@@ -26,10 +26,10 @@ impl From<SimpleName> for Expr {
 impl SimpleName {
     pub fn new(value: impl Into<IsId>, span: Span) -> SimpleName { SimpleName{ value: value.into(), span } }
 }
-impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for SimpleName where F: FileSystem {
+impl Node for SimpleName {
     type ParseOutput = SimpleName; // out of expr depdendencies require direct parse and get a simple name
 
-    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<SimpleName> {
+    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<SimpleName> where F: FileSystem {
         let (value, span) = sess.expect_ident()?;
         Ok(SimpleName::new(value, span))
     }
@@ -58,14 +58,14 @@ impl From<Name> for Expr {
 impl Name {
     pub fn new(all_span: Span, segments: Vec<SimpleName>) -> Name { Name{ all_span, segments } }
 }
-impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for Name where F: FileSystem {
+impl Node for Name {
     type ParseOutput = Expr;
 
     fn matches(current: &Token) -> bool { 
         matches!(current, Token::Ident(_)) 
     }
 
-    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Expr> {
+    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<Expr> where F: FileSystem {
         
         let first_segment = SimpleName::parse(sess)?;
         let mut all_span = first_segment.span;

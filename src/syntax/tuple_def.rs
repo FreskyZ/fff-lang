@@ -55,14 +55,14 @@ impl From<TupleDef> for Expr {
 impl TupleDef {
     pub fn new(paren_span: Span, items: ExprList) -> TupleDef { TupleDef{ paren_span, items } }
 }
-impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for TupleDef where F: FileSystem {
+impl Node for TupleDef {
     type ParseOutput = Expr;
 
     fn matches(current: &Token) -> bool { 
         matches!(current, Token::Sep(Separator::LeftParen)) 
     }
 
-    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Expr> {
+    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<Expr> where F: FileSystem {
 
         match ExprList::parse(sess)? {
             ExprListParseResult::Empty(span) => {

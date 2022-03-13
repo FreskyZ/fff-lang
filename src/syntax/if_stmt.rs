@@ -128,14 +128,14 @@ impl IfStatement {
         }
     }
 }
-impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for IfStatement where F: FileSystem {
+impl Node for IfStatement {
     type ParseOutput = IfStatement;
 
     fn matches(current: &Token) -> bool {
         matches!(current, Token::Keyword(Keyword::If)) 
     }
 
-    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<IfStatement> {
+    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<IfStatement> where F: FileSystem {
 
         let if_span = sess.expect_keyword(Keyword::If)?;
         let if_expr = Expr::parse(sess)?;

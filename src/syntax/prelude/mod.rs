@@ -8,6 +8,7 @@
 // 4. functions in this module is used by nearly all node modules (not node_modules),
 //    so this module is directly called prelude and included other common imports from source/diagnostics/lexical
 
+mod node;
 mod parse_sess;
 mod format_helper;
 
@@ -16,7 +17,8 @@ pub use crate::source::{FileSystem, Span, IsId};
 pub use crate::diagnostics::strings;
 pub use crate::lexical::{Token, Numeric, Separator, SeparatorKind, Keyword, KeywordKind};
 
-pub use parse_sess::{ParseSession, ParseResult, Node};
+pub use node::Node;
 #[cfg(test)]
-pub(crate) use parse_sess::make_node;
+pub(crate) use node::make_node;
+pub use parse_sess::{ParseSession, ParseResult};
 pub use format_helper::{Formatter, ISyntaxFormat};

@@ -66,14 +66,14 @@ impl From<LitExpr> for Expr {
 impl LitExpr {
     pub fn new(value: impl Into<LitValue>, span: Span) -> LitExpr { LitExpr{ value: value.into(), span } }
 }
-impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for LitExpr where F: FileSystem {
+impl Node for LitExpr {
     type ParseOutput = Expr;
 
     fn matches(current: &Token) -> bool { 
         matches!(current, Token::Char(_) | Token::Bool(_) | Token::Str(..) | Token::Num(_)) 
     }
 
-    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Expr> {
+    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<Expr> where F: FileSystem {
         
         let (lit, lit_span) = sess.expect_lit()?;
         Ok(Expr::Lit(LitExpr::new(lit, lit_span)))

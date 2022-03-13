@@ -80,27 +80,27 @@ impl Expr {
     }
 }
 
-impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for Expr where F: FileSystem {
+impl Node for Expr {
     type ParseOutput = Expr;
 
     fn matches(current: &Token) -> bool { 
-        <LitExpr as Node<F>>::matches(current)
-        || <Name as Node<F>>::matches(current)
-        || <TupleDef as Node<F>>::matches(current)
-        || <ArrayDef as Node<F>>::matches(current)
-        || <UnaryExpr as Node<F>>::matches(current)
+        LitExpr::matches(current)
+        || Name::matches(current)
+        || TupleDef::matches(current)
+        || ArrayDef::matches(current)
+        || UnaryExpr::matches(current)
         || matches!(current, Token::Sep(Separator::DotDot) | Token::Keyword(Keyword::This))
     }
 
     fn matches3(current: &Token, peek: &Token, peek2: &Token) -> bool { 
-        <LitExpr as Node<F>>::matches3(current, peek, peek2)
-        || <Name as Node<F>>::matches3(current, peek, peek2)
-        || <TupleDef as Node<F>>::matches3(current, peek, peek2)
-        || <ArrayDef as Node<F>>::matches3(current, peek, peek2)
-        || <UnaryExpr as Node<F>>::matches3(current, peek, peek2)
+        LitExpr::matches3(current, peek, peek2)
+        || Name::matches3(current, peek, peek2)
+        || TupleDef::matches3(current, peek, peek2)
+        || ArrayDef::matches3(current, peek, peek2)
+        || UnaryExpr::matches3(current, peek, peek2)
         || matches!(current, Token::Sep(Separator::DotDot) | Token::Keyword(Keyword::This))
     }
-    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Expr> { 
+    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<Expr> where F: FileSystem { 
         RangeExpr::parse(sess)
     }
 }
