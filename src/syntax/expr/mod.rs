@@ -414,15 +414,16 @@ fn expr_parse() {
 
 #[cfg(test)] #[test]
 fn expr_errors() {
+    use crate::diagnostics::make_errors;
     use super::make_node;
 
     assert_eq!{ make_node!("de(, )" as Expr, and messages), 
         (Expr::FnCall(FnCallExpr::new(
             SimpleName::new(1, Span::new(0, 1)), 
             Span::new(2, 5), make_exprs![]
-        )), make_messages![
-            Message::new_by_str(strings::UnexpectedSingleComma, vec![(Span::new(2, 5), strings::FnCallHere)])
-        ])
+        )), make_errors!(
+            e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(2, 5), strings::FnCallHere)
+        ))
     }
 
     //               0 12345678
@@ -434,18 +435,18 @@ fn expr_errors() {
                 SimpleName::new(2, Span::new(3, 4))
             ),
             Span::new(5, 8), make_exprs![]
-        )), make_messages![
-            Message::new_by_str(strings::UnexpectedSingleComma, vec![(Span::new(5, 8), strings::FnCallHere)])
-        ])
+        )), make_errors!(
+            e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(5, 8), strings::FnCallHere)
+        ))
     }
 
     assert_eq!{ make_node!("defg[]" as Expr, and messages),
         (Expr::IndexCall(IndexCallExpr::new(
             SimpleName::new(1, Span::new(0, 3)),
             Span::new(4, 5), make_exprs![]
-        )), make_messages![
-            Message::new_by_str(strings::EmptyIndexCall, vec![(Span::new(4, 5), strings::IndexCallHere)])
-        ])
+        )), make_errors!(
+            e: e.emit(strings::EmptyIndexCall).detail(Span::new(4, 5), strings::IndexCallHere)
+        ))
     }
 
     //              123456
@@ -453,9 +454,9 @@ fn expr_errors() {
         (Expr::IndexCall(IndexCallExpr::new(
             SimpleName::new(1, Span::new(0, 1)),
             Span::new(2, 5), make_exprs![]
-        )), make_messages![
-            Message::new_by_str(strings::EmptyIndexCall, vec![(Span::new(2, 5), strings::IndexCallHere)])
-        ])
+        )), make_errors!(
+            e: e.emit(strings::EmptyIndexCall).detail(Span::new(2, 5), strings::IndexCallHere)
+        ))
     }
 }
 

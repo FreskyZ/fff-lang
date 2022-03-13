@@ -63,23 +63,23 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for VarDeclStatement where F: Fi
         let (starting_kw, starting_span) = sess.expect_keywords(&[Keyword::Const, Keyword::Var])?;
         let is_const = match starting_kw { Keyword::Const => true, Keyword::Var => false, _ => unreachable!() };
 
-        let (name, name_strpos) = sess.expect_ident_or(&[Keyword::Underscore])?;
+        let (name, name_span) = sess.expect_ident_or(&[Keyword::Underscore])?;
         let maybe_decltype = if let Some(_) = sess.try_expect_sep(Separator::Colon) { Some(TypeUse::parse(sess)?) } else { None };
         let maybe_init_expr = if let Some(_) = sess.try_expect_sep(Separator::Eq) { Some(Expr::parse(sess)?) } else { None };
         if maybe_decltype.is_none() && maybe_init_expr.is_none() {
-            sess.push_message(Message::with_help_by_str("require type annotation", 
-                vec![(name_strpos, "variable declaration here")],
-                vec!["cannot infer type without both type annotation and initialization expression"]
-            ));
+            sess.emit("require type annotation")
+                .detail(name_span, "variable declaration here")
+                .help("cannot infer type without both type annotation and initialization expression");
         }
         let ending_span = sess.expect_sep(Separator::SemiColon)?;
 
-        return Ok(VarDeclStatement::new(starting_span + ending_span, is_const, name, name_strpos, maybe_decltype, maybe_init_expr));
+        return Ok(VarDeclStatement::new(starting_span + ending_span, is_const, name, name_span, maybe_decltype, maybe_init_expr));
     }
 }
 
 #[cfg(test)] #[test]
 fn var_decl_stmt_parse() {
+    use crate::diagnostics::*;
     use crate::syntax::*;
     
     //                                           12345678901234
@@ -155,11 +155,9 @@ fn var_decl_stmt_parse() {
     }
 
     assert_eq!{ make_node!("var a;" as VarDeclStatement, and messages),
-        (VarDeclStatement::new_var(Span::new(0, 5), 1, Span::new(4, 4), None, None), make_messages![
-            Message::with_help_by_str("require type annotation", 
-                vec![(Span::new(4, 4), "variable declaration here")],
-                vec!["cannot infer type without both type annotation and initialization expression"]
-            )
-        ])
+        (VarDeclStatement::new_var(Span::new(0, 5), 1, Span::new(4, 4), None, None), make_errors!(
+            e: e.emit("require type annotation")
+                .detail(Span::new(4, 4), "variable declaration here")
+                .help("cannot infer type without both type annotation and initialization expression")))
     }
 }

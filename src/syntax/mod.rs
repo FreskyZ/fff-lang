@@ -14,7 +14,7 @@ mod module;
 pub mod prelude {
     pub use std::fmt;
     pub use crate::source::{FileSystem, Span, IsId};
-    pub use crate::diagnostics::{Message, strings};
+    pub use crate::diagnostics::strings;
     pub use crate::lexical::{Token, Numeric, Separator, SeparatorKind, Keyword, KeywordKind};
     pub use super::parse_sess::{ParseSession, ParseResult, ISyntaxGrammar, ISyntaxParse};
     pub use super::format_helper::{Formatter, ISyntaxFormat};

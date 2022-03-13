@@ -1,7 +1,7 @@
 ///! lexical: the lexical parser
 
 use crate::source::{SourceChars, FileSystem, DefaultFileSystem, EOF, Position, Span, IsId};
-use crate::diagnostics::{Message, MessageCollection, strings};
+use crate::diagnostics::{Diagnostics, strings};
 
 #[cfg(test)]
 mod tests;
@@ -18,7 +18,7 @@ pub use token::{Numeric, StringLiteralType, Token, TokenFormat};
 
 #[derive(Debug)]
 pub struct Parser<'ecx, 'scx, F = DefaultFileSystem> {
-    pub diagnostics: &'ecx mut MessageCollection,
+    pub diagnostics: &'ecx mut Diagnostics,
     pub /* attention: temp pub for syntax */ chars: SourceChars<'scx, F>,
     current: char,
     current_position: Position,
@@ -31,7 +31,7 @@ pub struct Parser<'ecx, 'scx, F = DefaultFileSystem> {
 
 impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
 
-    pub fn new(mut chars: SourceChars<'s, F>, diagnostics: &'e mut MessageCollection) -> Self {
+    pub fn new(mut chars: SourceChars<'s, F>, diagnostics: &'e mut Diagnostics) -> Self {
         let (current, current_position) = chars.next();
         let (peek, peek_position) = chars.next();
         let (peek2, peek2_position) = chars.next();
@@ -52,11 +52,9 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
 
         if self.check_confusable && self.current != EOF {
             if let Some((unicode_char, unicode_name, ascii_char, ascii_name)) = unicode::check_confusable(self.current) {
-                self.diagnostics.push(Message::with_help_by_str(strings::UnexpectedNonASCIIChar, vec![
-                    (self.current_position.into(), ""), 
-                ], vec![
-                    &format!("Did you mean `{}`({}) by `{}`({})?", ascii_char, ascii_name, unicode_char, unicode_name),
-                ]));
+                self.diagnostics.emit(strings::UnexpectedNonASCIIChar)
+                    .span(self.current_position)
+                    .help(format!("Did you mean `{}`({}) by `{}`({})?", ascii_char, ascii_name, unicode_char, unicode_name));
                 self.current = ascii_char;
             }
         }
@@ -98,10 +96,9 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
             loop {
                 self.eat();
                 if self.current == EOF {
-                    self.diagnostics.push(Message::new_by_str(strings::UnexpectedEOF, vec![
-                        (start_position.into(), strings::BlockCommentStartHere),
-                        (self.current_position.into(), strings::EOFHere),
-                    ]));
+                    self.diagnostics.emit(strings::UnexpectedEOF)
+                        .detail(start_position, strings::BlockCommentStartHere)
+                        .detail(self.current_position, strings::EOFHere);
                     break true;
                 }
                 if let ('/', '*') = (self.current, self.peek) {
@@ -135,10 +132,7 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
             Some(Keyword::False) => (Token::Bool(false), span),
             Some(keyword) => {
                 if keyword.kind(KeywordKind::Reserved) {
-                    self.diagnostics.push(Message::new(
-                        format!("{}: {:?}", strings::UseReservedKeyword, keyword), 
-                        vec![(span, String::new())]
-                    ));
+                    self.diagnostics.emit(format!("{}: {:?}", strings::UseReservedKeyword, keyword)).span(span);
                 }
                 (Token::Keyword(keyword), span)
             },
@@ -180,9 +174,7 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
                 (Token::Sep(separator), span)
             },
             _ => {
-                self.diagnostics.push(Message::new_by_str(strings::UnknownCharactor, vec![
-                    (self.current_position.into(), ""), 
-                ]));
+                self.diagnostics.emit(strings::UnknownCharactor).span(self.current_position);
                 // return empty string ident (which will not be created by parse ident) for unknown charactor
                 (Token::Ident(IsId::new(1)), self.current_position.into())
             }

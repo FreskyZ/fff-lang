@@ -79,10 +79,9 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for FnDef where F: FileSystem {
             if let Some((_comma_span, right_paren_span)) = sess.try_expect_2_sep(Separator::Comma, Separator::RightParen) {
                 params_paren_span = params_paren_span + right_paren_span;
                 if params.is_empty() {
-                    sess.push_message(Message::new_by_str("Single comma in function definition argument list", vec![
-                        (fn_name_span, "function definition here"),
-                        (params_paren_span, "param list here")
-                    ]));
+                    sess.emit("Single comma in function definition argument list")
+                        .detail(fn_name_span, "function definition here")
+                        .detail(params_paren_span, "param list here");
                 }
                 break;
             } else if let Some(right_paren_span) = sess.try_expect_sep(Separator::RightParen) {

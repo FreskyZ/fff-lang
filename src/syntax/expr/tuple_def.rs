@@ -68,7 +68,7 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for TupleDef where F: FileSystem
                 return Ok(Expr::Lit(LitExpr::new(LitValue::Unit, span)));
             }
             ExprListParseResult::SingleComma(span) => {
-                sess.push_message(Message::new_by_str(strings::UnexpectedSingleComma, vec![(span, strings::TupleDefHere)]));
+                sess.emit(strings::UnexpectedSingleComma).detail(span, strings::TupleDefHere);
                 return Ok(Expr::Tuple(TupleDef::new(span, ExprList::new(Vec::new()))));
             }
             ExprListParseResult::Normal(span, exprlist) => {
@@ -130,11 +130,11 @@ fn tuple_def_parse() {
 
 #[cfg(test)] #[test]
 fn tuple_def_errors() {
+    use crate::diagnostics::make_errors;
     use super::super::make_node;
     
-    assert_eq!{ make_node!("( , )" as TupleDef, and messages),
-        (Expr::Tuple(TupleDef::new(Span::new(0, 4), make_exprs![])), make_messages![
-            Message::new_by_str(strings::UnexpectedSingleComma, vec![(Span::new(0, 4), strings::TupleDefHere)])
-        ])
-    }
+    assert_eq!{ make_node!("( , )" as TupleDef, and messages), (
+        Expr::Tuple(TupleDef::new(Span::new(0, 4), make_exprs![])), 
+        make_errors!(e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(0, 4), strings::TupleDefHere))
+    )}
 }

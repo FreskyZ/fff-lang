@@ -93,7 +93,7 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for TypeUse where F: FileSystem 
                 
             let paren_span = left_paren_span + ending_span;
             if tuple_types.len() == 1 && !end_by_comma {            // len == 0 already rejected
-                sess.push_message(Message::new_by_str("Single item tuple type use", vec![(paren_span, "type use here")]));
+                sess.emit("Single item tuple type use").detail(paren_span, "type use here");
             }
             Ok(TypeUse::new_template(sess.base.chars.intern("tuple"), Span::new(0, 0), paren_span, tuple_types))
         } else {

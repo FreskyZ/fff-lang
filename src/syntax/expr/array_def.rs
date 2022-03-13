@@ -38,7 +38,7 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for ArrayDef where F: FileSystem
                 return Ok(Expr::Array(ArrayDef::new(span, ExprList::new(Vec::new()))));
             }
             ExprListParseResult::SingleComma(span) => {
-                sess.push_message(Message::new_by_str(strings::UnexpectedSingleComma, vec![(span, strings::ArrayDefHere)]));
+                sess.emit(strings::UnexpectedSingleComma).detail(span, strings::ArrayDefHere);
                 return Ok(Expr::Array(ArrayDef::new(span, ExprList::new(Vec::new()))));
             }
             ExprListParseResult::Normal(span, exprlist) | ExprListParseResult::EndWithComma(span, exprlist) => {
@@ -98,12 +98,11 @@ fn array_def_parse() {
 
 #[cfg(test)] #[test]
 fn array_def_errors() {
+    use crate::diagnostics::{make_errors};
     use super::super::{make_node};
 
     assert_eq!{ make_node!("[ , ]" as ArrayDef, and messages), (
         Expr::Array(ArrayDef::new(Span::new(0, 4), make_exprs![])),
-        make_messages![
-            Message::new_by_str(strings::UnexpectedSingleComma, vec![(Span::new(0, 4), strings::ArrayDefHere)])
-        ],
+        make_errors!(e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(0, 4), strings::ArrayDefHere)),
     )}
 }

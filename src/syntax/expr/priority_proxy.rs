@@ -331,13 +331,13 @@ fn primary_expr_parse() {
 
 #[cfg(test)] #[test]
 fn primary_expr_errors() {
+    use crate::diagnostics::make_errors;
     use super::super::make_node;
 
-    assert_eq!{ make_node!("(,)" as Expr, and messages),
-        (Expr::Tuple(TupleDef::new(Span::new(0, 2), make_exprs![])), make_messages![
-            Message::new_by_str(strings::UnexpectedSingleComma, vec![(Span::new(0, 2), strings::TupleDefHere)])
-        ])
-    }
+    assert_eq!{ make_node!("(,)" as Expr, and messages), (
+        Expr::Tuple(TupleDef::new(Span::new(0, 2), make_exprs![])), 
+        make_errors!(e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(0, 2), strings::TupleDefHere)),
+    )}
 }
 
 #[cfg(test)] #[test]
@@ -488,32 +488,33 @@ fn postfix_expr_parse() {
 
 #[cfg(test)] #[test]
 fn postfix_expr_errors() {
+    use crate::diagnostics::make_errors;
     use super::super::make_node;
     
     assert_eq!{ make_node!("a[]" as PostfixExpr, and messages),
         (Expr::IndexCall(IndexCallExpr::new(
             SimpleName::new(1, Span::new(0, 0)), 
             Span::new(1, 2), make_exprs![]
-        )), make_messages![
-            Message::new_by_str(strings::EmptyIndexCall, vec![(Span::new(1, 2), strings::IndexCallHere)])
-        ])
+        )), make_errors!(
+            e: e.emit(strings::EmptyIndexCall).detail(Span::new(1, 2), strings::IndexCallHere)
+        ))
     }
     
     assert_eq!{ make_node!("a[, ]" as PostfixExpr, and messages),
         (Expr::IndexCall(IndexCallExpr::new(
             SimpleName::new(1, Span::new(0, 0)), 
             Span::new(1, 4), make_exprs![]
-        )), make_messages![
-            Message::new_by_str(strings::EmptyIndexCall, vec![(Span::new(1, 4), strings::IndexCallHere)])
-        ])
+        )), make_errors!(
+            e: e.emit(strings::EmptyIndexCall).detail(Span::new(1, 4), strings::IndexCallHere)
+        ))
     }
     
     assert_eq!{ make_node!("a(, )" as PostfixExpr, and messages),
         (Expr::FnCall(FnCallExpr::new(
             SimpleName::new(1, Span::new(0, 0)),
             Span::new(1, 4), make_exprs![]
-        )), make_messages![
-            Message::new_by_str(strings::UnexpectedSingleComma, vec![(Span::new(1, 4), strings::FnCallHere)])
-        ])
+        )), make_errors!(
+            e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(1, 4), strings::FnCallHere)
+        ))
     }
 }

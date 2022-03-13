@@ -85,12 +85,12 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for ForStatement where F: FileSy
     fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<ForStatement> {
 
         let maybe_label = LabelDef::try_parse(sess)?;
-        let for_strpos = sess.expect_keyword(Keyword::For)?;
-        let (iter_name, iter_strpos) = sess.expect_ident_or(&[Keyword::Underscore])?; // Accept _ as iter_name, _ do not declare iter var
-        let _in_strpos = sess.expect_keyword(Keyword::In)?;
+        let for_span = sess.expect_keyword(Keyword::For)?;
+        let (iter_name, iter_span) = sess.expect_ident_or(&[Keyword::Underscore])?; // Accept _ as iter_name, _ do not declare iter var
+        let _in_span = sess.expect_keyword(Keyword::In)?;
         let iter_expr = Expr::parse(sess)?;
         let body = Block::parse(sess)?;
-        return Ok(ForStatement::new(maybe_label, for_strpos, iter_name, iter_strpos, iter_expr, body));
+        return Ok(ForStatement::new(maybe_label, for_span, iter_name, iter_span, iter_expr, body));
     }
 }
 

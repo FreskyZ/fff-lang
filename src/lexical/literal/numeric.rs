@@ -40,7 +40,7 @@
 
 use std::cell::Cell;
 use crate::source::{FileSystem, Span, EOF};
-use crate::diagnostics::{Message, strings};
+use crate::diagnostics::{strings};
 use super::super::{Parser, Token, Numeric, CharExt};
 
 struct BufChars<T> {
@@ -215,11 +215,12 @@ fn u64_final_value(value: u64, is_positive: bool) -> Numeric {
 }
 
 // Actual impl, huge state machine
-fn parse_impl(raw: String, span: Span) -> Result<Numeric, Message> {
+// error is (message, location, optional help)
+fn parse_impl(raw: String) -> Result<Numeric, (String, Option<String>)> {
     use std::{ i8, u8, i16, u16, i32, u32, i64, u64, f32, f64 };
 
     if cfg!(feature = "trace_num_lit_parse") {
-        println!("\nnum lit parsing: \"{}\" at {:?}", raw, span);
+        println!("\nnum lit parsing: \"{}\"", raw);
     }
 
     enum State {
@@ -245,67 +246,53 @@ fn parse_impl(raw: String, span: Span) -> Result<Numeric, Message> {
     let mut chars = BufChars::new(raw.chars());
     
     // use with --features trace_num_lit_parse
-    #[cfg(feature = "trace_num_lit_parse")] macro_rules! conv { ($id: expr, $new_state: expr) => ({ println!("    conv {}", $id); state = $new_state; }) }
-    #[cfg(feature = "trace_num_lit_parse")] macro_rules! retok { ($id: expr, $ret_val: expr) => ({ println!("    retok {}", $id); return Ok($ret_val); }) }
+    #[cfg(feature = "trace_num_lit_parse")] 
+    macro_rules! conv { ($id: expr, $new_state: expr) => ({ println!("    conv {}", $id); state = $new_state; }) }
+    #[cfg(feature = "trace_num_lit_parse")] 
+    macro_rules! retok { ($id: expr, $ret_val: expr) => ({ println!("    retok {}", $id); return Ok($ret_val); }) }
     #[cfg(feature = "trace_num_lit_parse")] 
     macro_rules! reterr { 
-        ($id: expr) => ({ 
+        ($id:expr) => ({ 
             println!("    reterr {}", $id); 
-            return Err(Message::new_by_str(strings::InvalidNumericLiteral, vec![(span, "")])); 
+            return Err((strings::InvalidNumericLiteral.to_owned(), None)); 
         });
-        ($id: expr, $extra_msg: expr) => ({ 
+        ($id:expr, $extra_msg:expr) => ({ 
             println!("    reterr {}", $id); 
-            return Err(Message::new(
-                format!("{}, {}", strings::InvalidNumericLiteral, $extra_msg),
-                vec![(span, String::new())]
-            )); 
+            return Err((format!("{}, {}", strings::InvalidNumericLiteral, $extra_msg), None)); 
         });
-        ($id: expr, $extra_msg: expr, $help: expr) => ({ 
+        ($id:expr, $extra_msg:expr, $help:expr) => ({ 
             println!("    reterr {}", $id); 
-            return Err(Message::with_help(
-                format!("{}, {}", strings::InvalidNumericLiteral, $extra_msg),
-                vec![(span, String::new())],
-                $help,
-            )); 
+            return Err((format!("{}, {}", strings::InvalidNumericLiteral, $extra_msg), Some($help.into()))); 
         });
     }
     #[cfg(feature = "trace_num_lit_parse")] 
     macro_rules! reterr_internal {
         ($id: expr) => ({
             println!("    reterr_internal {}", $id);
-            return Err(Message::new(
-                format!("{}, {} {}", strings::InvalidNumericLiteral, strings::InternalErrorAt, line!()),
-                vec![(span, String::new())],
-            ))
+            return Err((format!("{}, {} {}", strings::InvalidNumericLiteral, strings::InternalErrorAt, line!()), None));
         });
     }
 
-    #[cfg(not(feature = "trace_num_lit_parse"))] macro_rules! conv { ($id: expr, $new_state: expr) => ({ state = $new_state; }) }
-    #[cfg(not(feature = "trace_num_lit_parse"))] macro_rules! retok { ($id: expr, $ret_val: expr) => ({ return Ok($ret_val); }) }
+    #[cfg(not(feature = "trace_num_lit_parse"))] 
+    macro_rules! conv { ($id: expr, $new_state: expr) => ({ state = $new_state; }) }
+    #[cfg(not(feature = "trace_num_lit_parse"))] 
+    macro_rules! retok { ($id: expr, $ret_val: expr) => ({ return Ok($ret_val); }) }
     #[cfg(not(feature = "trace_num_lit_parse"))] 
     macro_rules! reterr { 
-        ($id: expr) => ({ return Err(Message::new_by_str(strings::InvalidNumericLiteral, vec![(span, "")])); });
-        ($id: expr, $extra_msg: expr) => ({
-            return Err(Message::new(
-                format!("{}, {}", strings::InvalidNumericLiteral, $extra_msg),
-                vec![(span, String::new())]
-            ));  
+        ($id:expr) => ({ 
+            return Err((strings::InvalidNumericLiteral.to_owned(), None)); 
         });
-        ($id: expr, $extra_msg: expr, $help: expr) => ({ 
-            return Err(Message::with_help(
-                format!("{}, {}", strings::InvalidNumericLiteral, $extra_msg),
-                vec![(span, String::new())],
-                $help,
-            )); 
+        ($id:expr, $extra_msg:expr) => ({
+            return Err((format!("{}, {}", strings::InvalidNumericLiteral, $extra_msg), None)); 
+        });
+        ($id:expr, $extra_msg:expr, $help:expr) => ({ 
+            return Err((format!("{}, {}", strings::InvalidNumericLiteral, $extra_msg), Some($help.into())));
         });
     }
     #[cfg(not(feature = "trace_num_lit_parse"))] 
     macro_rules! reterr_internal {
         ($id: expr) => ({
-            return Err(Message::new(
-                format!("{}, {} {}", strings::InvalidNumericLiteral, strings::InternalErrorAt, line!()),
-                vec![(span, String::new())],
-            ))
+            return Err((format!("{}, {} {}", strings::InvalidNumericLiteral, strings::InternalErrorAt, line!()), None));
         });
     }
 
@@ -358,18 +345,14 @@ fn parse_impl(raw: String, span: Span) -> Result<Numeric, Message> {
             (State::Nothing(_), '0', 'B', _)
             | (State::Nothing(_), '0', 'O', _)
             | (State::Nothing(_), '0', 'D', _)
-            | (State::Nothing(_), '0', 'X', _) => reterr!(6, strings::NumLitShouldNotStartWith0, 
-                vec![strings::IntegralPrefixIsLowerCase.to_owned()]
-            ),
+            | (State::Nothing(_), '0', 'X', _) => reterr!(6, strings::NumLitShouldNotStartWith0, strings::IntegralPrefixIsLowerCase),
             
             (State::Nothing(_), '0', '.', '_') => reterr!(7, strings::UnderscoreArroundDot),
             (State::Nothing(is_positive), '0', '.', _) => {
                 chars.dummy1();
                 conv!(10, State::AfterDot(0f64, 1, is_positive, false));                       
             }
-            (State::Nothing(_), '0', _, _) => reterr!(8, strings::NumLitShouldNotStartWith0, 
-                vec![strings::CStyleOctNumLitHelp.to_owned()]
-            ),
+            (State::Nothing(_), '0', _, _) => reterr!(8, strings::NumLitShouldNotStartWith0, strings::CStyleOctNumLitHelp),
             (State::Nothing(_), '.', EOF, _) => reterr!(9, strings::EmptyLiteral),
             (State::Nothing(_), '.', _, _) => reterr!(10, strings::DotAtHead),
             (State::Nothing(is_positive), ch, _, _) => match ch.to_digit(10) {
@@ -597,18 +580,12 @@ fn parse_impl(raw: String, span: Span) -> Result<Numeric, Message> {
             | (State::IntPrefix(_, _, _), 'u', '3', '2')
             | (State::IntPrefix(_, _, _), 'u', '6', '4') => reterr!(44, strings::EmptyIntLiteral),
             (State::IntPrefix(_, _, _), 'r', '3', '2') 
-            | (State::IntPrefix(_, _, _), 'r', '6', '4') => reterr!(45, strings::EmptyIntLiteral,
-                vec![strings::AndFloatPostfixInIntLiteral.to_owned()]
-            ),
+            | (State::IntPrefix(_, _, _), 'r', '6', '4') => reterr!(45, strings::EmptyIntLiteral, strings::AndFloatPostfixInIntLiteral),
             // u, i, f
             (State::IntPrefix(base, is_positive, false), '_', _, _) => conv!(62, State::IntPrefix(base, is_positive, true)),
             (State::IntPrefix(base, is_positive, _), ch, _, _) => match ch.to_digit(base) {
                 Some(digit) => conv!(63, State::ExpectInt(base, digit as u64, is_positive, false)),
-                None => reterr!(46, strings::InvalidCharInIntLiteral,
-                    vec![strings::IntLiteralAllowedChars[
-                        match base { 2 => 0, 8 => 1, 10 => 2, 16 => 3, _ => reterr_internal!(2) }
-                    ].to_owned()]
-                ),
+                None => reterr!(46, strings::InvalidCharInIntLiteral, strings::IntLiteralAllowedChars[match base { 2 => 0, 8 => 1, 10 => 2, 16 => 3, _ => reterr_internal!(2) }]),
             },
 
             // ---- ExpectInt(base, value, is_positive, prev_is_underscore) ----
@@ -639,11 +616,7 @@ fn parse_impl(raw: String, span: Span) -> Result<Numeric, Message> {
                 (true, true) => reterr!(51, strings::UnderscoreDouble),
                 (_, true) => conv!(66, State::ExpectInt(base, value, is_positive, true)),
                 (_, false) => match ch.to_digit(base) {
-                    None => reterr!(52, strings::InvalidCharInIntLiteral,
-                        vec![strings::IntLiteralAllowedChars[
-                            match base { 2 => 0, 8 => 1, 10 => 2, 16 => 3, _ => reterr_internal!(1) }
-                        ].to_owned()]
-                    ),
+                    None => reterr!(52, strings::InvalidCharInIntLiteral, strings::IntLiteralAllowedChars[match base { 2 => 0, 8 => 1, 10 => 2, 16 => 3, _ => reterr_internal!(1) }]),
                     Some(digit) => match value.checked_mul(base as u64) {
                         None => reterr!(53, strings::IntegralOverflow), 
                         Some(value) => match value.checked_add(digit as u64) {
@@ -735,11 +708,9 @@ fn parse_impl(raw: String, span: Span) -> Result<Numeric, Message> {
             (State::AfterE(value, exp, _, false), EOF, _, _) => match value.checked_mul(10f64.powi(exp)) {
                 FloatCheckedResult::Ok(value) => retok!(9, Numeric::R64(value)),
                 FloatCheckedResult::Overflow => reterr!(78, strings::FloatPointOverflow,
-                    vec![strings::FloatPointOverflowHelpMaxValue[if value > 0f64 { 2 } else { 3 }].to_owned()]
-                ),
+                    strings::FloatPointOverflowHelpMaxValue[if value > 0f64 { 2 } else { 3 }]),
                 FloatCheckedResult::Underflow => reterr!(79, strings::FloatPointUnderflow, 
-                    vec![strings::FloatPointUnderflowHelpMinValue[if value > 0f64 { 2 } else { 3 }].to_owned()]
-                ),
+                    strings::FloatPointUnderflowHelpMinValue[if value > 0f64 { 2 } else { 3 }]),
             },
             (State::AfterE(value, exp, exp_is_positive, prev_is_underscore), ch, _, _) => match (prev_is_underscore, ch == '_') {
                 (true, true) => reterr!(80, strings::UnderscoreDouble),
@@ -747,14 +718,8 @@ fn parse_impl(raw: String, span: Span) -> Result<Numeric, Message> {
                 (_, false) => match ch.to_digit(10) {
                     None => reterr!(81, strings::InvalidChar),               
                     Some(digit) => match (exp.checked_mul(10), exp_is_positive) {
-                        (None, true) => reterr!(82, 
-                            strings::FloatPointOverflow,
-                            vec![strings::FloatPointOverflowHelpMaxValue[if value > 0f64 { 2 } else { 3 }].to_owned()]
-                        ),
-                        (None, false) => reterr!(83, 
-                            strings::FloatPointUnderflow,
-                            vec![strings::FloatPointUnderflowHelpMinValue[if value > 0f64 { 2 } else { 3 }].to_owned()]
-                        ),
+                        (None, true) => reterr!(82, strings::FloatPointOverflow, strings::FloatPointOverflowHelpMaxValue[if value > 0f64 { 2 } else { 3 }]),
+                        (None, false) => reterr!(83, strings::FloatPointUnderflow, strings::FloatPointUnderflowHelpMinValue[if value > 0f64 { 2 } else { 3 }]),
                         (Some(exp), true) => match exp.checked_add(digit as i32) {
                             None => reterr!(84, strings::FloatPointUnderflow),
                             Some(exp) => conv!(79, State::AfterE(value, exp, true, false)),
@@ -770,25 +735,17 @@ fn parse_impl(raw: String, span: Span) -> Result<Numeric, Message> {
             // ---- ExpectSignedIntPostfix(value) ----
             (State::ExpectSignedIntPostfix(value), 'i', '8', EOF) => 
                 if value > i8::MAX as i64 { 
-                    reterr!(86, strings::IntegralOverflow,
-                        vec![strings::IntegralOverflowHelpMaxValue[0].to_owned()]
-                    );
+                    reterr!(86, strings::IntegralOverflow, strings::IntegralOverflowHelpMaxValue[0]);
                 } else if value < i8::MIN as i64 {
-                    reterr!(87, strings::IntegralUnderflow,
-                        vec![strings::IntegralUnderflowHelpMinValue[0].to_owned()]
-                    );
+                    reterr!(87, strings::IntegralUnderflow, strings::IntegralUnderflowHelpMinValue[0]);
                 } else {
                     retok!(10, Numeric::I8(value as i8));
                 },
             (State::ExpectSignedIntPostfix(value), 'i', '1', '6') => 
                 if value > i16::MAX as i64 { 
-                    reterr!(88, strings::IntegralOverflow,
-                        vec![strings::IntegralOverflowHelpMaxValue[2].to_owned()]
-                    );
+                    reterr!(88, strings::IntegralOverflow, strings::IntegralOverflowHelpMaxValue[2]);
                 } else if value < i64::MIN as i64 {
-                    reterr!(89, strings::IntegralUnderflow,
-                        vec![strings::IntegralUnderflowHelpMinValue[1].to_owned()]
-                    );
+                    reterr!(89, strings::IntegralUnderflow, strings::IntegralUnderflowHelpMinValue[1]);
                 } else {
                     chars.dummy1();
                     chars.dummy1();
@@ -796,13 +753,9 @@ fn parse_impl(raw: String, span: Span) -> Result<Numeric, Message> {
                 },
             (State::ExpectSignedIntPostfix(value), 'i', '3', '2') => 
                 if value > i32::MAX as i64 { 
-                    reterr!(90, strings::IntegralOverflow,
-                        vec![strings::IntegralOverflowHelpMaxValue[5].to_owned()]
-                    );
+                    reterr!(90, strings::IntegralOverflow, strings::IntegralOverflowHelpMaxValue[5]);
                 } else if value < i32::MIN as i64 {
-                    reterr!(91, strings::IntegralUnderflow,
-                        vec![strings::IntegralUnderflowHelpMinValue[1].to_owned()]
-                    );
+                    reterr!(91, strings::IntegralUnderflow, strings::IntegralUnderflowHelpMinValue[1]);
                 } else {
                     chars.dummy1();
                     chars.dummy1();
@@ -821,17 +774,13 @@ fn parse_impl(raw: String, span: Span) -> Result<Numeric, Message> {
             // ---- ExpectUnsignedIntPostfix(value) ---- 
             (State::ExpectUnsignedIntPostfix(value), 'u', '8', EOF) => 
                 if value > u8::max_value() as u64 { 
-                    reterr!(95, strings::IntegralOverflow,
-                        vec![strings::IntegralOverflowHelpMaxValue[1].to_owned()]
-                    ); 
+                    reterr!(95, strings::IntegralOverflow, strings::IntegralOverflowHelpMaxValue[1]); 
                 } else {
                     retok!(11, Numeric::U8(value as u8));
                 },
             (State::ExpectUnsignedIntPostfix(value), 'u', '1', '6') => 
                 if value > u16::max_value() as u64 { 
-                    reterr!(96, strings::IntegralOverflow,
-                        vec![strings::IntegralOverflowHelpMaxValue[3].to_owned()]
-                    );
+                    reterr!(96, strings::IntegralOverflow, strings::IntegralOverflowHelpMaxValue[3]);
                 } else {
                     chars.dummy1();
                     chars.dummy1();
@@ -839,9 +788,7 @@ fn parse_impl(raw: String, span: Span) -> Result<Numeric, Message> {
                 },
             (State::ExpectUnsignedIntPostfix(value), 'u', '3', '2') => 
                 if value > u32::max_value() as u64 { 
-                    reterr!(97, strings::IntegralOverflow,
-                        vec![strings::IntegralOverflowHelpMaxValue[5].to_owned()]
-                    );
+                    reterr!(97, strings::IntegralOverflow, strings::IntegralOverflowHelpMaxValue[5]);
                 } else { 
                     chars.dummy1();
                     chars.dummy1();
@@ -860,25 +807,17 @@ fn parse_impl(raw: String, span: Span) -> Result<Numeric, Message> {
             // ---- ExpectFloatPostfix(value) ----
             (State::ExpectFloatPostfix(value), 'r', '3', '2') => {
                 if value > f32::MAX as f64 { 
-                    reterr!(101, strings::FloatPointOverflow,
-                        vec![strings::FloatPointOverflowHelpMaxValue[0].to_owned()]
-                    );
+                    reterr!(101, strings::FloatPointOverflow, strings::FloatPointOverflowHelpMaxValue[0]);
                 } else if value < -f32::MAX as f64 {
-                    reterr!(102, strings::FloatPointOverflow,
-                        vec![strings::FloatPointOverflowHelpMaxValue[1].to_owned()]
-                    );
+                    reterr!(102, strings::FloatPointOverflow, strings::FloatPointOverflowHelpMaxValue[1]);
                 } else if value == 0f32 as f64 {
                     chars.dummy1();
                     chars.dummy1();
                     conv!(87, State::ExpectEOF(Numeric::R32(0f32)));
                 } else if value < f32::MIN_POSITIVE as f64 && value > 0f64 {
-                    reterr!(103, strings::FloatPointUnderflow,
-                        vec![strings::FloatPointUnderflowHelpMinValue[0].to_owned()]
-                    );
+                    reterr!(103, strings::FloatPointUnderflow, strings::FloatPointUnderflowHelpMinValue[0]);
                 } else if value > -f32::MIN_POSITIVE as f64 && value < 0f64 {
-                    reterr!(104, strings::FloatPointUnderflow,
-                        vec![strings::FloatPointUnderflowHelpMinValue[1].to_owned()]
-                    );
+                    reterr!(104, strings::FloatPointUnderflow, strings::FloatPointUnderflowHelpMinValue[1]);
                 } else {
                     chars.dummy1();
                     chars.dummy1();
@@ -937,9 +876,10 @@ impl<'ecx, 'scx, F> Parser<'ecx, 'scx, F> where F: FileSystem {
             self.eat();
         }
         
-        match parse_impl(string_value, span) {
+        match parse_impl(string_value) {
             Ok(result) => (Token::Num(result), span),
-            Err(diagnostics) => { self.diagnostics.push(diagnostics); (Token::Num(Numeric::I32(0)), span) }
+            Err((name, None)) => { self.diagnostics.emit(name).span(span); (Token::Num(Numeric::I32(0)), span) },
+            Err((name, Some(help))) => { self.diagnostics.emit(name).span(span).help(help); (Token::Num(Numeric::I32(0)), span) },
         }
     }
 }
@@ -1018,30 +958,22 @@ mod tests {
 
     #[test]
     fn num_lit_feature() {
-        let span = Span::new(2, 4);
 
         macro_rules! make_err { 
-            ($msg:expr) => (Message::new(
-                format!("{}, {}", strings::InvalidNumericLiteral, $msg), 
-                vec![(span, String::new())],
-            ));
-            ($msg:expr, $helps:expr) => (Message::with_help(
-                format!("{}, {}", strings::InvalidNumericLiteral, $msg), 
-                vec![(span, String::new())],
-                $helps,
-            ));
+            ($msg:expr) => ((format!("{}, {}", strings::InvalidNumericLiteral, $msg), None));
+            ($msg:expr, $help:expr) => ((format!("{}, {}", strings::InvalidNumericLiteral, $msg), Some($help.into())));
         }
 
         macro_rules! test_case {
             ($input:expr, $expect:expr) => {{
                 #[cfg(feature = "trace_num_lit_parse")]
                 print!("\ncase {:?} at {}:", $input, line!());
-                assert!(rational_eq!(parse_impl($input.to_owned(), span).unwrap(), $expect));
+                assert!(rational_eq!(parse_impl($input.to_owned()).unwrap(), $expect));
             }};
             ($input:expr, err, $expect:expr) => {{
                 #[cfg(feature = "trace_num_lit_parse")]
                 print!("\ncase {:?} at {}:", $input, line!());
-                assert_eq!(parse_impl($input.to_owned(), span), Err($expect));
+                assert_eq!(parse_impl($input.to_owned()), Err($expect));
             }};
         }
         
@@ -1049,264 +981,228 @@ mod tests {
         // 18/45 make_err to be done, that means, many error not tested
 
         // normal i32
-        test_case!("123", Numeric::I32(123));                       // 1
-        test_case!("1", Numeric::I32(1));                           // 2
-        test_case!("123456789", Numeric::I32(123456789));           // 3
-        test_case!("2147483647", Numeric::I32(2147483647));         // 4
+        test_case!("123", Numeric::I32(123));                                  // 1
+        test_case!("1", Numeric::I32(1));                                      // 2
+        test_case!("123456789", Numeric::I32(123456789));                      // 3
+        test_case!("2147483647", Numeric::I32(2147483647));                    // 4
         // should not start with 0
         test_case!("0123", err, make_err!(
             strings::NumLitShouldNotStartWith0, 
-            vec![strings::CStyleOctNumLitHelp.to_owned()]
-        ));                                                             // 5
+            strings::CStyleOctNumLitHelp));                                    // 5
 
         // 0s
-        test_case!("0", Numeric::I32(0));                           // 6
-        test_case!("0u32", Numeric::U32(0));                        // 7
-        test_case!("0r32", Numeric::R32(0f32));                     // 8
-        test_case!("0x0", Numeric::I32(0));                         // 9
-        test_case!("0o0u8", Numeric::U8(0));                        // 10
+        test_case!("0", Numeric::I32(0));                                      // 6
+        test_case!("0u32", Numeric::U32(0));                                   // 7
+        test_case!("0r32", Numeric::R32(0f32));                                // 8
+        test_case!("0x0", Numeric::I32(0));                                    // 9
+        test_case!("0o0u8", Numeric::U8(0));                                   // 10
         test_case!("0u", err, make_err!(
-            strings::UnexpectedEOFInMaybeUnsignedIntPostfix));    // 11
+            strings::UnexpectedEOFInMaybeUnsignedIntPostfix));                 // 11
         test_case!("0r", err, make_err!(
-            strings::UnexpectedEOFInMaybeFloatingPostfix));       // 12
+            strings::UnexpectedEOFInMaybeFloatingPostfix));                    // 12
         test_case!("0i888", err, make_err!(
-            strings::UnexpectedValueAfterMaybeSignedIntPostfix)); // 13
-        test_case!("0r3210", err, make_err!(
-            strings::UnexpectedNotEOF));                          // 14
+            strings::UnexpectedValueAfterMaybeSignedIntPostfix));              // 13
+        test_case!("0r3210", err, make_err!(strings::UnexpectedNotEOF));       // 14
         // 1s
-        test_case!("1", Numeric::I32(1));                           // 15
-        test_case!("1u32", Numeric::U32(1));                        // 16
-        test_case!("1r32", Numeric::R32(1f32));                     // 17
-        test_case!("0x1", Numeric::I32(1));                         // 18
-        test_case!("0o1u8", Numeric::U8(1));                        // 19
+        test_case!("1", Numeric::I32(1));                                      // 15
+        test_case!("1u32", Numeric::U32(1));                                   // 16
+        test_case!("1r32", Numeric::R32(1f32));                                // 17
+        test_case!("0x1", Numeric::I32(1));                                    // 18
+        test_case!("0o1u8", Numeric::U8(1));                                   // 19
 
         // normal f64
-        test_case!("1.0", Numeric::R64(1.0));                       // 20
-        test_case!("1.234", Numeric::R64(1.234));                   // 21
+        test_case!("1.0", Numeric::R64(1.0));                                  // 20
+        test_case!("1.234", Numeric::R64(1.234));                              // 21
         test_case!("12345678901234567890.0", 
-            Numeric::R64(12345678901234567890.0f64));               // 22
-        // test_case!("1.78E308", Numeric::R64(1.79E308));          // 23, too difficult to make it pass
-        // test_case!("1.78E-308", Numeric::R64(1.79E-308));        // 24, too difficult too
-        // smallflow
+            Numeric::R64(12345678901234567890.0f64));                          // 22
+        // test_case!("1.78E308", Numeric::R64(1.79E308));                     // 23, too difficult to make it pass
+        // test_case!("1.78E-308", Numeric::R64(1.79E-308));                   // 24, too difficult too
+        // underflow
         test_case!("1.79E-2333", err, make_err!(
             strings::FloatPointUnderflow,
-            vec![strings::FloatPointUnderflowHelpMinValue[2].to_owned()]
-        ));                                                             // 25
+            strings::FloatPointUnderflowHelpMinValue[2]));                     // 25
         test_case!("1.79E2333", err, make_err!(
             strings::FloatPointOverflow, 
-            vec![strings::FloatPointOverflowHelpMaxValue[2].to_owned()]
-        ));                                                             // 26
+            strings::FloatPointOverflowHelpMaxValue[2]));                      // 26
 
         // postfix for other integral
-        test_case!("1u8", Numeric::U8(1));                          // 27
-        test_case!("234i16", Numeric::I16(234));                    // 28
+        test_case!("1u8", Numeric::U8(1));                                     // 27
+        test_case!("234i16", Numeric::I16(234));                               // 28
         test_case!("18446744073709551615u64", 
-            Numeric::U64(18446744073709551615));                    // 29
-        test_case!("100i8", Numeric::I8(100));                      // 30
-        test_case!("61234u16", Numeric::U16(61234));                // 31
+            Numeric::U64(18446744073709551615));                               // 29
+        test_case!("100i8", Numeric::I8(100));                                 // 30
+        test_case!("61234u16", Numeric::U16(61234));                           // 31
         test_case!("9223372036854775807i64", 
-            Numeric::I64(9223372036854775807));                     // 32
+            Numeric::I64(9223372036854775807));                                // 32
         test_case!("10223372036854775807i64", err, make_err!(
-            strings::IntegralOverflow));                          // 0, this overflow do not include help
+            strings::IntegralOverflow));                                       // 0, this overflow do not include help
         // overflow and downflow is error
         test_case!("256u8", err, make_err!(
             strings::IntegralOverflow,
-            vec![strings::IntegralOverflowHelpMaxValue[1].to_owned()]
-        ));                                                             // 33
+            strings::IntegralOverflowHelpMaxValue[1]));                        // 33
         test_case!("100000i16", err, make_err!(
             strings::IntegralOverflow,
-            vec![strings::IntegralOverflowHelpMaxValue[2].to_owned()]
-        ));                                                             // 34
+            strings::IntegralOverflowHelpMaxValue[2]));                        // 34
         test_case!("-800i8", err, make_err!(
             strings::IntegralUnderflow,
-            vec![strings::IntegralUnderflowHelpMinValue[0].to_owned()]
-        ));                                                             // 35
+            strings::IntegralUnderflowHelpMinValue[0]));                       // 35
 
         // negative value
-        test_case!("-0d123", Numeric::I32(-123));                   // 36
-        test_case!("-123", Numeric::I32(-123));                     // 37
-        test_case!("-30000i16", Numeric::I16(-30000));              // 38
-        test_case!("-123.456", Numeric::R64(-123.456));             // 39
+        test_case!("-0d123", Numeric::I32(-123));                              // 36
+        test_case!("-123", Numeric::I32(-123));                                // 37
+        test_case!("-30000i16", Numeric::I16(-30000));                         // 38
+        test_case!("-123.456", Numeric::R64(-123.456));                        // 39
         test_case!("-123u8", err, make_err!(
-            strings::NegativeOperatorOnUnsignedInt));             // 40
+            strings::NegativeOperatorOnUnsignedInt));                          // 40
         test_case!("-1u64", err, make_err!(
-            strings::NegativeOperatorOnUnsignedInt));             // 41
+            strings::NegativeOperatorOnUnsignedInt));                          // 41
         
         // integral prefix
-        test_case!("0xABCD", Numeric::I32(0xABCD));                 // 42
-        test_case!("0xfedc", Numeric::I32(0xFEDC));                 // 43
-        test_case!("0b101010", Numeric::I32(0b101010));             // 44
-        test_case!("-0o777", Numeric::I32(-0o777));                 // 44
+        test_case!("0xABCD", Numeric::I32(0xABCD));                            // 42
+        test_case!("0xfedc", Numeric::I32(0xFEDC));                            // 43
+        test_case!("0b101010", Numeric::I32(0b101010));                        // 44
+        test_case!("-0o777", Numeric::I32(-0o777));                            // 44
         // invalid char
         test_case!("0xXXXX", err, make_err!(
             strings::InvalidCharInIntLiteral,
-            vec![strings::IntLiteralAllowedChars[3].to_owned()]
-        ));                                                             // 46
+            strings::IntLiteralAllowedChars[3]));                              // 46
         test_case!("0b1234", err, make_err!(
             strings::InvalidCharInIntLiteral,
-            vec![strings::IntLiteralAllowedChars[0].to_owned()]
-        ));                                                             // 47
+            strings::IntLiteralAllowedChars[0]));                              // 47
         test_case!("0daaaa", err, make_err!(
             strings::InvalidCharInIntLiteral,
-            vec![strings::IntLiteralAllowedChars[2].to_owned()]
-        ));                                                             // 48
+            strings::IntLiteralAllowedChars[2]));                              // 48
 
         // floating point no prefix 
-        test_case!("0x123.0", err, make_err!(
-            strings::DotInIntLiteral));                           // 49
-        test_case!("0b111.01", err, make_err!(
-            strings::DotInIntLiteral));                           // 50
+        test_case!("0x123.0", err, make_err!(strings::DotInIntLiteral));       // 49
+        test_case!("0b111.01", err, make_err!(strings::DotInIntLiteral));      // 50
 
         // auto expansion for no postfix
-        test_case!("2147483645", Numeric::I32(2147483645));                         // 51
-        test_case!("2147483648", Numeric::U32(2147483648));                         // 52, 2^31 - 1..2^32 expand to u32
-        test_case!("4294967295", Numeric::U32(4294967295u32));                      // 53, 2^31 - 1..2^32 expand to u32,
-        test_case!("4294967296", Numeric::I64(4294967296i64));                      // 54, 2^32..2^63 expand to i64
-        test_case!("4333333333", Numeric::I64(4333333333i64));                      // 55, 2^32..2^63 expand to i64
-        test_case!("9223372036854775807", Numeric::I64(9223372036854775807));       // 56, 2^32..2^63 expand to i64
-        test_case!("9223372036854775808", Numeric::U64(9223372036854775808));       // 57, 2^63..2^64 expand to u64
-        test_case!("18446744073709551615", Numeric::U64(18446744073709551615));     // 58, 2^63..2^64 expand to u64
-        test_case!("18446744073709551616", Numeric::R64(18446744073709551616f64));  // 59, 2^64.. expand to f64
+        test_case!("2147483645", Numeric::I32(2147483645));                    // 51
+        test_case!("2147483648", Numeric::U32(2147483648));                    // 52, 2^31 - 1..2^32 expand to u32
+        test_case!("4294967295", Numeric::U32(4294967295u32));                 // 53, 2^31 - 1..2^32 expand to u32,
+        test_case!("4294967296", Numeric::I64(4294967296i64));                 // 54, 2^32..2^63 expand to i64
+        test_case!("4333333333", Numeric::I64(4333333333i64));                 // 55, 2^32..2^63 expand to i64
+        test_case!("9223372036854775807", Numeric::I64(9223372036854775807));  // 56, 2^32..2^63 expand to i64
+        test_case!("9223372036854775808", Numeric::U64(9223372036854775808));  // 57, 2^63..2^64 expand to u64
+        test_case!("18446744073709551615", 
+            Numeric::U64(18446744073709551615));                               // 58, 2^63..2^64 expand to u64
+        test_case!("18446744073709551616", 
+            Numeric::R64(18446744073709551616f64));                            // 59, 2^64.. expand to f64
         // auto expansion for negative value
-        test_case!("-2147483648", Numeric::I32(-2147483648));                       // 60
-        test_case!("-2147483649", Numeric::I64(-2147483649));                       // 61
-        test_case!("-9223372036854775808", Numeric::I64(-9223372036854775808i64));  // 62
-        test_case!("-9223372036854775809", Numeric::R64(-9223372036854775809f64));  // 63
+        test_case!("-2147483648", Numeric::I32(-2147483648));                  // 60
+        test_case!("-2147483649", Numeric::I64(-2147483649));                  // 61
+        test_case!("-9223372036854775808", 
+            Numeric::I64(-9223372036854775808));                               // 62
+        test_case!("-9223372036854775809", 
+            Numeric::R64(-9223372036854775809f64));                            // 63
 
         // int with e is float
-        test_case!("123e10", Numeric::R64(123E10));                 // 64
-        test_case!("123E10", Numeric::R64(123E10));                 // 65
-        test_case!("123E+10", Numeric::R64(123E10));                // 66
-        test_case!("123E-10", Numeric::R64(123E-10));               // 67
-        test_case!("123E-16", Numeric::R64(123E-16));               // 68
-        test_case!("123E+12", Numeric::R64(123E+12));               // 69
-        test_case!("123E17", Numeric::R64(123E17));                 // 70
+        test_case!("123e10", Numeric::R64(123E10));                            // 64
+        test_case!("123E10", Numeric::R64(123E10));                            // 65
+        test_case!("123E+10", Numeric::R64(123E10));                           // 66
+        test_case!("123E-10", Numeric::R64(123E-10));                          // 67
+        test_case!("123E-16", Numeric::R64(123E-16));                          // 68
+        test_case!("123E+12", Numeric::R64(123E+12));                          // 69
+        test_case!("123E17", Numeric::R64(123E17));                            // 70
         // e not with prefix or postfix, exp should be integer
-        test_case!("0d123E-5", err, make_err!(
-            strings::ExponentInIntLiteral));                   // 71
-        test_case!("0x123E-5", err, make_err!(
-            strings::ExponentInIntLiteral));                   // 72
+        test_case!("0d123E-5", err, make_err!(strings::ExponentInIntLiteral)); // 71
+        test_case!("0x123E-5", err, make_err!(strings::ExponentInIntLiteral)); // 72
         test_case!("123.456E789.0", err, make_err!(
-            strings::FloatExponentFloat));                     // 73
+            strings::FloatExponentFloat));                                     // 73
         // after e is a i32
         test_case!("123E12345678901", err, make_err!(
             strings::FloatPointOverflow, 
-            vec![strings::FloatPointOverflowHelpMaxValue[2].to_owned()]
-        ));                                                             // 74
+            strings::FloatPointOverflowHelpMaxValue[2]));                      // 74
         test_case!("123E-12345678901", err, make_err!(
             strings::FloatPointUnderflow,
-            vec![strings::FloatPointUnderflowHelpMinValue[2].to_owned()]
-        ));                                                             // 75
+            strings::FloatPointUnderflowHelpMinValue[2]));                     // 75
         test_case!("1E200r32", err, make_err!(
             strings::FloatPointOverflow,
-            vec![strings::FloatPointOverflowHelpMaxValue[0].to_owned()]
-        ));                                                             // 0
+            strings::FloatPointOverflowHelpMaxValue[0]));                      // 0
 
         // decimal dot
-        test_case!("123.456", Numeric::R64(123.456));               // 76
-        test_case!("123456.0", Numeric::R64(123456f64));            // 77
-        test_case!("0.123", Numeric::R64(0.123));                   // 78
-        test_case!("0.0000000123", Numeric::R64(0.0000000123));     // 79
-        test_case!("123.456E0", Numeric::R64(123.456E0));           // 80, dddE0 is legal
-        test_case!("123456.0E5", Numeric::R64(123456E5f64));        // 81
-        test_case!("0.123E-10", Numeric::R64(0.123E-10));           // 82
-        test_case!("0.0000000123E3", Numeric::R64(0.0000123));      // 83
-        test_case!("0.0001E-200", Numeric::R64(0.0001E-200));       // 84
-        test_case!("-0.0001E-200", Numeric::R64(-0.0001E-200));     // 85
-        test_case!("123E5r32", Numeric::R32(123E5f32));             // 86
-        test_case!("0.123E-10r32", Numeric::R32(0.123E-10f32));     // 87 
-        test_case!("0.0000000123E3r64", Numeric::R64(0.0000123));   // 88
-        test_case!("0.0001E-200r64", Numeric::R64(0.0001E-200f64)); // 89
+        test_case!("123.456", Numeric::R64(123.456));                          // 76
+        test_case!("123456.0", Numeric::R64(123456f64));                       // 77
+        test_case!("0.123", Numeric::R64(0.123));                              // 78
+        test_case!("0.0000000123", Numeric::R64(0.0000000123));                // 79
+        test_case!("123.456E0", Numeric::R64(123.456E0));                      // 80, dddE0 is legal
+        test_case!("123456.0E5", Numeric::R64(123456E5f64));                   // 81
+        test_case!("0.123E-10", Numeric::R64(0.123E-10));                      // 82
+        test_case!("0.0000000123E3", Numeric::R64(0.0000123));                 // 83
+        test_case!("0.0001E-200", Numeric::R64(0.0001E-200));                  // 84
+        test_case!("-0.0001E-200", Numeric::R64(-0.0001E-200));                // 85
+        test_case!("123E5r32", Numeric::R32(123E5f32));                        // 86
+        test_case!("0.123E-10r32", Numeric::R32(0.123E-10f32));                // 87 
+        test_case!("0.0000000123E3r64", Numeric::R64(0.0000123));              // 88
+        test_case!("0.0001E-200r64", Numeric::R64(0.0001E-200f64));            // 89
         test_case!("-0.0001E-200r32", err, make_err!(
             strings::FloatPointUnderflow,
-            vec![strings::FloatPointUnderflowHelpMinValue[1].to_owned()]
-        ));                                                             // 90
+            strings::FloatPointUnderflowHelpMinValue[1]));                     // 90
 
         // cannot first or last char is dot
-        test_case!(".123", err, make_err!(
-            strings::DotAtHead));                                 // 91
-        test_case!("0x.123", err, make_err!(
-            strings::DotAtHead));                                 // 92
-        test_case!("123.", err, make_err!(
-            strings::DotAtEnd));                                  // 93
-        test_case!(".", err, make_err!(
-            strings::EmptyLiteral));                              // 94
+        test_case!(".123", err, make_err!(strings::DotAtHead));                // 91
+        test_case!("0x.123", err, make_err!( strings::DotAtHead));             // 92
+        test_case!("123.", err, make_err!(strings::DotAtEnd));                 // 93
+        test_case!(".", err, make_err!(strings::EmptyLiteral));                // 94
 
         // multi dot
-        test_case!("123.456.789", err, make_err!(
-            strings::DotDouble));                                 // 95
-        test_case!("123..456", err, make_err!(
-            strings::DotDouble));                                 // 96
+        test_case!("123.456.789", err, make_err!(strings::DotDouble));         // 95
+        test_case!("123..456", err, make_err!(strings::DotDouble));            // 96
 
         test_case!("-0x8FFF_FFFF_FFFF_FFFF", err, make_err!(
-            strings::IntegralOverflow));                          // 97
+            strings::IntegralOverflow));                                       // 97
 
-        // underscore as sepreator, can before or after E
-        test_case!("0b110_111_000_001u16", 
-            Numeric::U16(0b110111000001));                          // 98
-        test_case!("123_456_789u64", Numeric::U64(123456789));      // 99
-        test_case!("2147483651_u32", Numeric::U32(2147483651));     // 100
+        // underscore as separator, can before or after E
+        test_case!("0b110_111_000_001u16", Numeric::U16(0b110111000001));      // 98
+        test_case!("123_456_789u64", Numeric::U64(123456789));                 // 99
+        test_case!("2147483651_u32", Numeric::U32(2147483651));                // 100
         test_case!("184_467_440_737_095_516_15_u64", 
-            Numeric::U64(18446744073709551615u64));                 // 101
-        test_case!("1_2_3_4", Numeric::I32(1234));                  // 102
-        test_case!("123_456_E_12", Numeric::R64(123456E12));        // 103
-        test_case!("123.4_5_6E1_23", Numeric::R64(123.456E123));    // 104
-        test_case!("0.1_2_3_4_5_6E0", Numeric::R64(0.123456));      // 105
+            Numeric::U64(18446744073709551615u64));                            // 101
+        test_case!("1_2_3_4", Numeric::I32(1234));                             // 102
+        test_case!("123_456_E_12", Numeric::R64(123456E12));                   // 103
+        test_case!("123.4_5_6E1_23", Numeric::R64(123.456E123));               // 104
+        test_case!("0.1_2_3_4_5_6E0", Numeric::R64(0.123456));                 // 105
         // underscore not at head, tail, not around dot
-        test_case!("_1234", err, make_err!(
-            strings::UnderscoreAtHead));                          // 106
-        test_case!("1_", err, make_err!(
-            strings::UnderscoreAtEnd));                           // 107
-        test_case!("_", err, make_err!(
-            strings::EmptyLiteral));                              // 108
-        test_case!("123_.5", err, make_err!(
-            strings::UnderscoreArroundDot));                      // 109
-        test_case!("0._456", err, make_err!(
-            strings::UnderscoreArroundDot));                      // 110
-        test_case!("0.123_", err, make_err!(
-            strings::UnderscoreAtEnd));                           // 111
-        test_case!("0b_1110_1001", Numeric::I32(0b11101001));       // 112
-        test_case!("0x_1234_i64", Numeric::I64(0x1234));            // 113
+        test_case!("_1234", err, make_err!(strings::UnderscoreAtHead));        // 106
+        test_case!("1_", err, make_err!(strings::UnderscoreAtEnd));            // 107
+        test_case!("_", err, make_err!(strings::EmptyLiteral));                // 108
+        test_case!("123_.5", err, make_err!(strings::UnderscoreArroundDot));   // 109
+        test_case!("0._456", err, make_err!(strings::UnderscoreArroundDot));   // 110
+        test_case!("0.123_", err, make_err!(strings::UnderscoreAtEnd));        // 111
+        test_case!("0b_1110_1001", Numeric::I32(0b11101001));                  // 112
+        test_case!("0x_1234_i64", Numeric::I64(0x1234));                       // 113
         // underscore not in postfix or prefix
         test_case!("0_xABCD", err, make_err!(
             strings::NumLitShouldNotStartWith0, 
-            vec![strings::CStyleOctNumLitHelp.to_owned()]
-        ));                                                             // 114
+            strings::CStyleOctNumLitHelp));                                    // 114
         test_case!("0xABCDu6_4", err, make_err!(
-            strings::UnderscoreInMaybeUnsignedIntPostfix));       // 115
+            strings::UnderscoreInMaybeUnsignedIntPostfix));                    // 115
         test_case!("123i_32", err, make_err!(
-            strings::UnderscoreInMaybeSignedIntPostfix));         // 116
+            strings::UnderscoreInMaybeSignedIntPostfix));                      // 116
         // underscore no double
-        test_case!("123__456", err, make_err!(
-            strings::UnderscoreDouble));                          // 117
-        test_case!("0b__101100", err, make_err!(
-            strings::UnderscoreDouble));                          // 118
+        test_case!("123__456", err, make_err!(strings::UnderscoreDouble));     // 117
+        test_case!("0b__101100", err, make_err!(strings::UnderscoreDouble));   // 118
 
         // empty
-        test_case!("0xu64", err, make_err!(
-            strings::EmptyIntLiteral));                           // 119
+        test_case!("0xu64", err, make_err!(strings::EmptyIntLiteral));         // 119
         test_case!("0br32", err, make_err!(
             strings::EmptyIntLiteral,
-            vec![strings::AndFloatPostfixInIntLiteral.to_owned()]
-        ));                                                             // 120
+            strings::AndFloatPostfixInIntLiteral));                            // 120
 
         // strange postfix and prefix
         test_case!("0X123", err, make_err!(
             strings::NumLitShouldNotStartWith0, 
-            vec![strings::IntegralPrefixIsLowerCase.to_owned()]
-        ));                                                             // 121
+            strings::IntegralPrefixIsLowerCase));                              // 121
         test_case!("001", err, make_err!(
             strings::NumLitShouldNotStartWith0,
-            vec![strings::CStyleOctNumLitHelp.to_owned()]
-        ));                                                             // 122
+            strings::CStyleOctNumLitHelp));                                    // 122
         test_case!("0u123", err, make_err!(
-            strings::UnexpectedValueAfterMaybeUnsignedIntPostfix
-        ));                                                             // 123
+            strings::UnexpectedValueAfterMaybeUnsignedIntPostfix));            // 123
         test_case!("123u18", err, make_err!(
-            strings::UnexpectedValueAfterMaybeUnsignedIntPostfix
-        ));                                                             // 124
+            strings::UnexpectedValueAfterMaybeUnsignedIntPostfix));            // 124
         test_case!("654321i1024", err, make_err!(
-            strings::UnexpectedValueAfterMaybeSignedIntPostfix)); // 126
-        test_case!("0x3f2048", Numeric::I32(0x3F2048));             // 127
+            strings::UnexpectedValueAfterMaybeSignedIntPostfix));              // 126
+        test_case!("0x3f2048", Numeric::I32(0x3F2048));                        // 127
     }
 }

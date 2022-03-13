@@ -203,7 +203,6 @@ impl<F> SourceContext<F> where F: FileSystem {
     
     // it is not in SourceFile because it will use vfs
     /// get relative path to current working directory
-    #[allow(dead_code)] // should be used in diagnostics formatter
     pub fn get_relative_path(&self, file_id: FileId) -> PathBuf {
         let file_id = file_id.unwrap() as usize;
         debug_assert!(file_id > 0 && file_id <= self.files.len(), "invalid file id");
@@ -297,7 +296,6 @@ impl<F> SourceContext<F> {
         }
     }
 
-    #[allow(dead_code)] // diagnostics formatting not implemented currently
     pub fn map_line_to_content(&self, file_id: FileId, line: usize) -> &str {
         let file_id = file_id.unwrap() as usize;
         debug_assert!(file_id > 0 && file_id <= self.files.len(), "invalid file id");

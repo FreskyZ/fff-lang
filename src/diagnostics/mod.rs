@@ -1,165 +1,172 @@
-#![macro_use]
+///! diagnostics: diagnostics collecting and formatting
 
-use crate::source::{Span, SourceContext};
+use std::fmt;
+use crate::source::{SourceContext, FileSystem, Span};
 
 pub mod strings;
 
-#[derive(Eq, PartialEq, Debug)]
-struct LocationAndDesc {
-    loc: Span, 
-    desc: String,
-}
-impl From<(Span, String)> for LocationAndDesc {
-    fn from(loc_and_desc: (Span, String)) -> LocationAndDesc {
-        LocationAndDesc{ loc: loc_and_desc.0, desc: loc_and_desc.1 }
-    }
-}
-#[derive(Eq, PartialEq, Debug)]
-pub struct Message {
-    main_desc: String, 
-    details: Vec<LocationAndDesc>, // first is regarded as main
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
+pub struct Diagnostic {
+    name: String,
+    details: Vec<(Span, String)>,
     helps: Vec<String>,
 }
-impl Message {    
-    pub fn new(main_desc: String, pos_and_descs: Vec<(Span, String)>) -> Message {
-        Message{ 
-            main_desc: main_desc, 
-            details: pos_and_descs.into_iter().map(|pos_and_desc| pos_and_desc.into()).collect(), 
-            helps: Vec::new() 
-        }
-    }
-    pub fn new_by_str(main_desc: &str, pos_and_descs: Vec<(Span, &str)>) -> Message {
-        Message{ 
-            main_desc: main_desc.to_owned(), 
-            details: pos_and_descs.into_iter().map(|pos_and_desc| match pos_and_desc { (pos, desc) => (pos, desc.to_owned()).into() }).collect(),
-            helps: Vec::new(),
-        }
-    }
-    pub fn with_help(main_desc: String, pos_and_descs: Vec<(Span, String)>, helps: Vec<String>) -> Message {
-        Message{ 
-            main_desc: main_desc, 
-            details: pos_and_descs.into_iter().map(|pos_and_desc| pos_and_desc.into()).collect(), 
-            helps: helps 
-        }
-    }
-    pub fn with_help_by_str(main_desc: &str, pos_and_descs: Vec<(Span, &str)>, helps: Vec<&str>) -> Message {
-        Message{ 
-            main_desc: main_desc.to_owned(), 
-            details: pos_and_descs.into_iter().map(|pos_and_desc| match pos_and_desc { (pos, desc) => (pos, desc.to_owned()).into() }).collect(),
-            helps: helps.into_iter().map(|help| help.to_owned()).collect(),
-        }
-    }
-    pub fn new_simple(main_desc: &str) -> Message {
-        Message{ main_desc: main_desc.to_owned(), details: Vec::new(), helps: Vec::new() }
-    }
 
-    pub fn format<F>(&self, scx: Option<&SourceContext<F>>) -> String where F: crate::source::FileSystem {
-        let mut retval = format!("{}:", self.main_desc);
-        for LocationAndDesc{ loc, desc } in &self.details {
-            retval += &format!("\n   | At {}: {}", scx.map(|scx| format!("{:?}", scx.map_span_to_line_column(*loc))).unwrap_or(String::new()), desc);
-        }
-        for help in &self.helps {
-            retval += &format!("\n   = help: {}", help);
-        }
-        return retval;
+impl Diagnostic {
+
+    pub fn span(&mut self, span: impl Into<Span>) -> &mut Self {
+        self.details.push((span.into(), String::new()));
+        self
+    }
+    pub fn detail(&mut self, span: impl Into<Span>, description: impl Into<String>) -> &mut Self {
+        self.details.push((span.into(), description.into()));
+        self
+    }
+    pub fn help(&mut self, help: impl Into<String>) -> &mut Self {
+        self.helps.push(help.into());
+        self
     }
 }
 
-#[derive(Eq, PartialEq, Debug)]
-pub struct MessageCollection {
-    items: Vec<Message>,
-    m_uncontinuable: bool,
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
+pub struct Diagnostics {
+    items: Vec<Diagnostic>,
 }
-impl Default for MessageCollection {
-    fn default() -> MessageCollection { MessageCollection{ items: Vec::new(), m_uncontinuable: false } }
-}
-impl MessageCollection {
-    pub fn format<F>(&self, source: Option<&SourceContext<F>>) -> String where F: crate::source::FileSystem {
-        let mut retval = String::new();
-        for message in &self.items {
-            retval += &format!("{}\n", message.format(source));
-        }
-        retval
-    }
-}
-impl MessageCollection {
 
-    pub fn new() -> MessageCollection { MessageCollection{ items: Vec::new(), m_uncontinuable: false } }
-    pub fn is_empty(&self) -> bool { self.items.is_empty() }
+impl Diagnostics {
 
-    pub fn push(&mut self, message: Message) {
-        
-        // Not repeat report error
-        // Used in lexical/v2lexer/char::pass_non_ascii_char
-        if self.items.len() == 0 || (self.items.len() > 0 && message != self.items[self.items.len() - 1]) {
-            self.items.push(message);
-        }
+    pub fn new() -> Self {
+        Self{ items: Vec::new() }
     }
 
-    pub fn pop(&mut self) { let _ = self.items.pop(); }
-    pub fn set_uncontinuable(&mut self) { self.m_uncontinuable = true; }
-    pub fn is_uncontinuable(&self) -> bool { self.m_uncontinuable }
+    pub fn emit(&mut self, name: impl Into<String>) -> &mut Diagnostic {
+        self.items.push(Diagnostic{ name: name.into(), details: Vec::new(), helps: Vec::new() });
+        self.items.last_mut().unwrap()
+    }
 }
 
-#[macro_export]
-macro_rules! check_messages_continuable {
-    ($msgs: expr) => (if $msgs.is_uncontinuable() { panic!("messages is uncontinuable: {:?}", $msgs) })
+pub struct DiagnosticsDisplay<'a, 'b, F>(&'a Diagnostics, &'b SourceContext<F>);
+
+impl Diagnostics {
+
+    pub fn display<'a, 'b, F>(&'a self, ctx: &'b SourceContext<F>) -> DiagnosticsDisplay<'a, 'b, F> {
+        DiagnosticsDisplay(self, ctx)
+    }
 }
-#[macro_export]
-macro_rules! make_messages {
-    ($($x:expr),*) => ({
-        let mut retval = crate::diagnostics::MessageCollection::new();
-        {
-            let _retval = &mut retval; // `&mut` for statisfy 'unused mut', `_` for statisfy unused var
-            $(
-                _retval.push($x);
-            )*
+
+static SPACES: [&str; 10] = ["", " ", "  ", "   ", "    ", "     ", "      ", "       ", "        ", "         "];
+
+impl<'a, 'b, F> fmt::Display for DiagnosticsDisplay<'a, 'b, F> where F: FileSystem {
+
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use std::fmt::Write;
+
+        for item in &self.0.items {
+            write!(f, "error: {}\n", item.name)?;
+
+            let mut last_start_line_length = 1;
+            for (span, detail) in &item.details {
+                let (file, start_line, start_column, _end_line, end_column) = self.1.map_span_to_line_column(*span);
+                let path = self.1.get_relative_path(file);
+                let start_line_length = format!("{}", start_line).len(); // length of the start line numeric value, to indent
+                let start_line_content = self.1.map_line_to_content(file, start_line);
+                last_start_line_length = start_line_length;
+
+                f.write_str(SPACES[start_line_length])?;
+                f.write_str("--> ")?;
+                write!(f, "{}:{}:{}\n", path.display(), start_line, start_column)?;
+                f.write_str(SPACES[start_line_length + 1])?;
+                write!(f, "|\n{} | {}\n", start_line, start_line_content)?;
+                f.write_str(SPACES[start_line_length + 1])?;
+                f.write_char('|')?;
+                for _ in 0..start_column {
+                    f.write_char(' ')?;
+                }
+                for _ in start_column..end_column + 1 {
+                    f.write_char('^')?;
+                }
+                write!(f, " {}\n", detail)?;
+            }
+            for help in &item.helps {
+                f.write_str(SPACES[last_start_line_length + 1])?;
+                write!(f, "= help: {}\n", help)?;
+            }
+            f.write_char('\n')?;
         }
-        retval
-    });
-    ($($x:expr,)*) => (make_messages![$($x),*])
+        Ok(())
+    }
 }
 
-#[cfg(test)] #[test]
-fn messages_format() {
-
+#[cfg(test)]
+macro_rules! make_errors {
+    () => { 
+        crate::diagnostics::Diagnostics::new() 
+    };
+    ($e:ident: $($init:expr),+$(,)?) => {{
+        let mut $e = crate::diagnostics::Diagnostics::new();
+        $(
+            $init;
+        )*
+        $e
+    }}
 }
+#[cfg(test)]
+pub(crate) use make_errors;
 
-#[cfg(test)] #[test]
-fn message_complex_new() {
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    assert_eq!(
-        Message::new_by_str("123", vec![
-            (Span::new(0, 0), "456"),
-            (Span::new(0, 0), "789"),
-        ]), 
-        Message::new("123".to_owned(), vec![
-            (Span::new(0, 0), "456".to_owned()),
-            (Span::new(0, 0), "789".to_owned()),
-        ])
-    );
-}
+    #[test]
+    fn basic_usage() {
 
-#[cfg(test)] #[test]
-fn message_by_macro() {
+        let mut diagnostics = Diagnostics::new();
+        diagnostics.emit("error name 1");
+        diagnostics.emit("Error name 2").detail(Span::new(1, 2), "description 1").detail(Span::new(2, 3), "description 2").help("help 1");
 
-    let mut messages = MessageCollection::new();
-    assert_eq!(messages, make_messages![]);
+        assert_eq!{ diagnostics, Diagnostics{
+            items: vec![
+                Diagnostic{ name: "error name 1".to_owned(), details: Vec::new(), helps: Vec::new() },
+                Diagnostic{ name: "Error name 2".to_owned(), details: vec![(Span::new(1, 2), "description 1".to_owned()), (Span::new(2, 3), "description 2".to_owned())], helps: vec!["help 1".to_owned()] }
+            ]
+        }}
 
-    messages.push(Message::new_by_str("a", vec![(Span::new(1, 1), "b")]));
-    assert_eq!(messages, make_messages![Message::new_by_str("a", vec![(Span::new(1, 1), "b")])]);
-    assert_eq!(messages, make_messages![Message::new_by_str("a", vec![(Span::new(1, 1), "b")]), ]);
+        assert_eq!{ make_errors!{
+            e: e.emit("error name 1"),
+            e.emit("Error name 2").detail(Span::new(1, 2), "description 1").detail(Span::new(2, 3), "description 2").help("help 1"),
+        }, Diagnostics{
+            items: vec![
+                Diagnostic{ name: "error name 1".to_owned(), details: Vec::new(), helps: Vec::new() },
+                Diagnostic{ name: "Error name 2".to_owned(), details: vec![(Span::new(1, 2), "description 1".to_owned()), (Span::new(2, 3), "description 2".to_owned())], helps: vec!["help 1".to_owned()] }
+            ]
+        }}
+    }
 
-    messages.push(Message::new_by_str("c", vec![(Span::new(2, 3), "d")]));
-    messages.push(Message::new_by_str("e", vec![(Span::new(2, 8), "f")]));
-    assert_eq!(messages, make_messages![
-        Message::new_by_str("a", vec![(Span::new(1, 1), "b")]), 
-        Message::new_by_str("c", vec![(Span::new(2, 3), "d")]),
-        Message::new_by_str("e", vec![(Span::new(2, 8), "f")])
-    ]);
-    assert_eq!(messages, make_messages![
-        Message::new_by_str("a", vec![(Span::new(1, 1), "b")]), 
-        Message::new_by_str("c", vec![(Span::new(2, 3), "d")]),
-        Message::new_by_str("e", vec![(Span::new(2, 8), "f")]),
-    ]);
+    #[test]
+    fn display() {
+        //                                         0123456789 01234567890
+        let mut scx = crate::source::make_source!("var a = '\\u12345678';" as "relative/path/name");
+        let mut ecx = Diagnostics::new();
+        scx.entry("relative/path/name").finish();
+        ecx.emit("invalid unicode escape")
+            .detail(Span::new(8, 8), "char literal start here")
+            .detail(Span::new(9, 18), "unicode escape here")
+            .help("0x12345678 is not valid unicode code point");
+        assert_eq!{ ecx.display(&scx).to_string(),
+        "error: invalid unicode escape
+ --> ../../../../../relative/path/name:1:9
+  |
+1 | var a = '\\u12345678';
+  |         ^ char literal start here
+ --> ../../../../../relative/path/name:1:10
+  |
+1 | var a = '\\u12345678';
+  |          ^^^^^^^^^^ unicode escape here
+  = help: 0x12345678 is not valid unicode code point
+
+"
+        }
+    }
 }

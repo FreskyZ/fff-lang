@@ -61,7 +61,7 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for FnCallExpr where F: FileSyst
             ExprListParseResult::Normal(span, expr_list) | ExprListParseResult::EndWithComma(span, expr_list) => 
                 return Ok(FnCallExpr::new_with_parse_result(span, expr_list)),
             ExprListParseResult::SingleComma(span) => {
-                sess.push_message(Message::new_by_str(strings::UnexpectedSingleComma, vec![(span, strings::FnCallHere)]));
+                sess.emit(strings::UnexpectedSingleComma).detail(span, strings::FnCallHere);
                 return Ok(FnCallExpr::new_with_parse_result(span, ExprList::new(Vec::new())));
             }
         }
@@ -86,11 +86,11 @@ fn fn_call_parse() {
 
 #[cfg(test)] #[test]
 fn fn_call_errors() {
+    use crate::diagnostics::make_errors;
     use super::super::{make_node};
 
-    assert_eq!{ make_node!("(,)" as FnCallExpr, and messages),
-        (FnCallExpr::new_with_parse_result(Span::new(0, 2), ExprList::new(Vec::new())), make_messages![
-            Message::new_by_str(strings::UnexpectedSingleComma, vec![(Span::new(0, 2), strings::FnCallHere)])
-        ])
-    }
+    assert_eq!{ make_node!("(,)" as FnCallExpr, and messages), (
+        FnCallExpr::new_with_parse_result(Span::new(0, 2), ExprList::new(Vec::new())),
+        make_errors!(e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(0, 2), strings::FnCallHere)),
+    )}
 }

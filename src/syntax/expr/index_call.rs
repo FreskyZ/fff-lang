@@ -63,7 +63,7 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for IndexCallExpr where F: FileS
             ExprListParseResult::Empty(span) | ExprListParseResult::SingleComma(span) => {
                 // empty subscription is meaningless, refuse it here
                 // update: but for trying to get more message in the rest program, make it not none
-                sess.push_message(Message::new_by_str(strings::EmptyIndexCall, vec![(span, strings::IndexCallHere)]));
+                sess.emit(strings::EmptyIndexCall).detail(span, strings::IndexCallHere);
                 return Ok(IndexCallExpr::new_with_parse_result(span, ExprList::new(Vec::new())))
             }
         }
@@ -91,11 +91,11 @@ fn index_call_parse() {
 
 #[cfg(test)] #[test]
 fn index_call_errors() {
+    use crate::diagnostics::make_errors;
     use super::super::{make_node};
 
-    assert_eq!{ make_node!("[,]" as IndexCallExpr, and messages),
-        (IndexCallExpr::new_with_parse_result(Span::new(0, 2), ExprList::new(Vec::new())), make_messages![
-            Message::new_by_str(strings::EmptyIndexCall, vec![(Span::new(0, 2), strings::IndexCallHere)])
-        ])
-    }
+    assert_eq!{ make_node!("[,]" as IndexCallExpr, and messages), (
+        IndexCallExpr::new_with_parse_result(Span::new(0, 2), ExprList::new(Vec::new())), 
+        make_errors!(e: e.emit(strings::EmptyIndexCall).detail(Span::new(0, 2), strings::IndexCallHere))
+    )}
 }

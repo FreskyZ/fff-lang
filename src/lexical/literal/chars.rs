@@ -1,7 +1,7 @@
 ///! lexical::literal::chars: char and string literal parsers, also shared escape parser
 
 use crate::source::{FileSystem, Span, Position, IsId, EOF};
-use crate::diagnostics::{Message, strings};
+use crate::diagnostics::{strings};
 use super::super::{Parser, Token, StringLiteralType};
 
 enum EscapeResult {
@@ -43,18 +43,16 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
             'u' => { all_span += self.current_position; self.eat(); 4 },
             'U' => { all_span += self.current_position; self.eat(); 8 },
             EOF => {
-                self.diagnostics.push(Message::new_by_str(strings::UnexpectedEOF, vec![
-                    (literal_start.0.into(), literal_start.1),
-                    (self.current_position.into(), strings::EOFHere),
-                ]));
+                self.diagnostics.emit(strings::UnexpectedEOF)
+                    .detail(literal_start.0, literal_start.1)
+                    .detail(self.current_position, strings::EOFHere);
                 #[cfg(feature = "trace_lexical_escape")] println!("[parse_escape] return None because meet EOF in simple escape");
                 return EscapeResult::EOF(all_span);
             },
             other => {
-                self.diagnostics.push(Message::new(format!("{} '\\{}'", strings::UnknownCharEscape, other), vec![
-                    (literal_start.0.into(), literal_start.1.to_owned()),
-                    (all_span + self.current_position, strings::UnknownCharEscapeHere.to_owned()),
-                ]));
+                self.diagnostics.emit(format!("{} '\\{}'", strings::UnknownCharEscape, other))
+                    .detail(literal_start.0, literal_start.1)
+                    .detail(all_span + self.current_position, strings::UnknownCharEscapeHere);
                 self.eat();
                 #[cfg(feature = "trace_lexical_escape")] println!("[parse_escape] return None because unknown simple escape");
                 return EscapeResult::UnknownSimpleEscape;
@@ -74,16 +72,14 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
                         #[cfg(feature = "trace_lexical_escape")] println!("[parse_escape] return (Some({:x}), {:?})", c as u32, all_span);
                         return EscapeResult::Ok(c, all_span);
                     } else {
-                        self.diagnostics.push(Message::with_help(strings::InvalidUnicodeCharEscape.to_owned(), vec![
-                            (all_span, strings::UnicodeCharEscapeHere.to_owned()),
-                        ], vec![
-                            if expect_size == 4 {
+                        self.diagnostics.emit(strings::InvalidUnicodeCharEscape)
+                            .detail(all_span, strings::UnicodeCharEscapeHere)
+                            .help(if expect_size == 4 {
                                 format!("{}{:04X}", strings::UnicodeCharEscapeCodePointValueIs, code_point)
                             } else {
                                 format!("{}{:08X}", strings::UnicodeCharEscapeCodePointValueIs, code_point)
-                            },
-                            strings::UnicodeCharEscapeHelpValue.to_owned(),
-                        ]));
+                            })
+                            .help(strings::UnicodeCharEscapeHelpValue);
                         self.eat();
                         #[cfg(feature = "trace_lexical_escape")] println!("[parse_escape] return None because not a valid unicode code point");
                         return EscapeResult::InvalidCodePoint;
@@ -99,30 +95,25 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
                 match self.current {
                     // it seems the unicode ecsape is intended to be end, although incorrectly, do not consume and return
                     '\\' | '"' | '\'' => {
-                        self.diagnostics.push(Message::with_help_by_str(strings::InvalidUnicodeCharEscape, vec![
-                            (all_span, strings::UnicodeCharEscapeHere),
-                        ], vec![
-                            strings::UnicodeCharEscapeHelpSyntax,
-                        ]));
+                        self.diagnostics.emit(strings::InvalidUnicodeCharEscape)
+                            .detail(all_span, strings::UnicodeCharEscapeHere)
+                            .help(strings::UnicodeCharEscapeHelpSyntax);
                         #[cfg(feature = "trace_lexical_escape")] println!("[parse_escape] return None because meet something like end in unicode escape");
                         return EscapeResult::UnexpectedUnicodeEscapeEnd(self.current);
                     },
                     EOF => {
-                        self.diagnostics.push(Message::new_by_str(strings::UnexpectedEOF, vec![
-                            (literal_start.0.into(), literal_start.1),
-                            (self.current_position.into(), strings::EOFHere),
-                        ]));
+                        self.diagnostics.emit(strings::UnexpectedEOF)
+                            .detail(literal_start.0, literal_start.1)
+                            .detail(self.current_position, strings::EOFHere);
                         #[cfg(feature = "trace_lexical_escape")] println!("[parse_escape] return None because meet EOF in unicode escape");
                         return EscapeResult::EOF(all_span);
                     },
                     _ => {
                         if !already_invalid_char {
-                            self.diagnostics.push(Message::with_help_by_str(strings::InvalidUnicodeCharEscape, vec![
-                                (all_span.start.into(), strings::UnicodeCharEscapeStartHere),
-                                (self.current_position.into(), strings::UnicodeCharEscapeInvalidChar),
-                            ], vec![
-                                strings::UnicodeCharEscapeHelpSyntax,
-                            ]));
+                            self.diagnostics.emit(strings::InvalidUnicodeCharEscape)
+                                .detail(all_span.start, strings::UnicodeCharEscapeStartHere)
+                                .detail(self.current_position, strings::UnicodeCharEscapeInvalidChar)
+                                .help(strings::UnicodeCharEscapeHelpSyntax);
                         }
                         all_span += self.current_position;
                         already_invalid_char = true;
@@ -147,10 +138,9 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
         self.eat(); // eat initial quote
         loop {
             if let EOF = self.current {
-                self.diagnostics.push(Message::new_by_str(strings::UnexpectedEOF, vec![
-                    (all_span.start.into(), strings::CharLiteralStartHere),
-                    (self.current_position.into(), strings::EOFHere),
-                ]));
+                self.diagnostics.emit(strings::UnexpectedEOF)
+                    .detail(all_span.start, strings::CharLiteralStartHere)
+                    .detail(self.current_position, strings::EOFHere);
                 #[cfg(feature = "trace_lexical_char")] println!("[parse_char_literal] return invalid because meet EOF");
                 return (Token::Char('\0'), all_span);
             }
@@ -200,26 +190,23 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
                     // normal end
                     return (Token::Char(raw[0]), all_span);
                 } else if raw.is_empty() {
-                    self.diagnostics.push(Message::with_help_by_str(strings::EmptyCharLiteral, vec![
-                        (all_span, strings::CharLiteralHere),
-                    ], vec![
-                        strings::CharLiteralSyntaxHelp1
-                    ]));
+                    self.diagnostics.emit(strings::EmptyCharLiteral)
+                        .detail(all_span, strings::CharLiteralHere)
+                        .help(strings::CharLiteralSyntaxHelp1);
                     #[cfg(feature = "trace_lexical_char")] println!("[parse_char_literal] return invalid because empty");
                     return (Token::Char('\0'), all_span);
                 } else {
-                    self.diagnostics.push(Message::new_by_str(strings::CharLiteralTooLong, vec![
-                        (all_span, strings::CharLiteralHere),
-                    ]));
+                    self.diagnostics.emit(strings::CharLiteralTooLong)
+                        .detail(all_span, strings::CharLiteralHere)
+                        .help(strings::CharLiteralSyntaxHelp1);
                     #[cfg(feature = "trace_lexical_char")] println!("[parse_char_literal] return invalid because too long {:?}", raw);
                     return (Token::Char('\0'), all_span);
                 }
             } else if self.current == '\n' {
                 // \n in char literal (source code \n, not escape \n) is always error regardless of empty, one code point or too long
-                self.diagnostics.push(Message::new_by_str(strings::UnexpectedEOL, vec![
-                    (all_span.start.into(), strings::CharLiteralStartHere),
-                    (self.current_position.into(), strings::EOLHere),
-                ]));
+                self.diagnostics.emit(strings::UnexpectedEOL)
+                    .detail(all_span.start, strings::CharLiteralStartHere)
+                    .detail(self.current_position, strings::EOLHere);
                 all_span += self.current_position;
                 self.eat();
                 #[cfg(feature = "trace_lexical_char")] println!("[parse_char_literal] return invalid because meet EOL");
@@ -248,16 +235,14 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
         loop {
             if let EOF = self.current {
                 if let Some(last_escape_quote_position) = last_escape_quote_position {
-                    self.diagnostics.push(Message::new_by_str(strings::UnexpectedEOF, vec![
-                        (all_span.start.into(), strings::StringLiteralStartHere),
-                        (self.current_position.into(), strings::EOFHere),
-                        (last_escape_quote_position, strings::LastEscapedQuoteHere),
-                    ]));
+                    self.diagnostics.emit(strings::UnexpectedEOF)
+                        .detail(all_span.start, strings::StringLiteralStartHere)
+                        .detail(self.current_position, strings::EOFHere)
+                        .detail(last_escape_quote_position, strings::LastEscapedQuoteHere);
                 } else {
-                    self.diagnostics.push(Message::new_by_str(strings::UnexpectedEOF, vec![
-                        (all_span.start.into(), strings::StringLiteralStartHere),
-                        (self.current_position.into(), strings::EOFHere),
-                    ]));
+                    self.diagnostics.emit(strings::UnexpectedEOF)
+                        .detail(all_span.start, strings::StringLiteralStartHere)
+                        .detail(self.current_position, strings::EOFHere);
                 }
                 return (Token::Str(IsId::new(1), StringLiteralType::Normal), all_span);
             }
@@ -330,10 +315,9 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
                     return (Token::Str(self.chars.intern(&raw), StringLiteralType::Raw), all_span);
                 }
                 EOF => {
-                    self.diagnostics.push(Message::new_by_str(strings::UnexpectedEOF, vec![ 
-                        (all_span.start.into(), strings::StringLiteralStartHere),
-                        (self.current_position.into(), strings::EOFHere),
-                    ]));
+                    self.diagnostics.emit(strings::UnexpectedEOF)
+                        .detail(all_span.start, strings::StringLiteralStartHere)
+                        .detail(self.current_position, strings::EOFHere);
                     self.eat();
                     return (Token::Str(IsId::new(1), StringLiteralType::Raw), all_span);
                 }
