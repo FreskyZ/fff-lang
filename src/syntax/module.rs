@@ -3,7 +3,7 @@
 ///! syntax/module, a source code file is a module
 ///! module = { item }
 
-use crate::syntax::prelude::*;
+use super::prelude::*;
 use super::{Item, ImportStatement};
 
 #[cfg_attr(test, derive(PartialEq))]
