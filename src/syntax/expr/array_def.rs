@@ -25,11 +25,12 @@ impl From<ArrayDef> for Expr {
 impl ArrayDef {
     pub fn new(bracket_span: Span, items: ExprList) -> ArrayDef { ArrayDef{ bracket_span, items: items } }
 }
-impl ISyntaxGrammar for ArrayDef {
-    fn matches_first(tokens: [&Token; 3]) -> bool { matches!(tokens[0], &Token::Sep(Separator::LeftBracket)) }
-}
-impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for ArrayDef where F: FileSystem {
-    type Output = Expr;
+impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for ArrayDef where F: FileSystem {
+    type ParseOutput = Expr;
+
+    fn matches(current: &Token) -> bool { 
+        matches!(current, Token::Sep(Separator::LeftBracket)) 
+    }
 
     fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Expr> {
         

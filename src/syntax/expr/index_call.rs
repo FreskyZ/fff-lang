@@ -49,11 +49,12 @@ impl IndexCallExpr {
         }
     }
 }
-impl ISyntaxGrammar for IndexCallExpr {
-    fn matches_first(tokens: [&Token; 3]) -> bool { matches!(tokens[0], &Token::Sep(Separator::LeftBracket)) }
-}
-impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for IndexCallExpr where F: FileSystem {
-    type Output = IndexCallExpr;
+impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for IndexCallExpr where F: FileSystem {
+    type ParseOutput = IndexCallExpr;
+
+    fn matches(current: &Token) -> bool { 
+        matches!(current, Token::Sep(Separator::LeftBracket)) 
+    }
 
     fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<IndexCallExpr> {
 

@@ -37,15 +37,15 @@ impl Module {
             .collect()
     }
 }
-impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for Module where F: FileSystem {
-    type Output = Module;
+impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for Module where F: FileSystem {
+    type ParseOutput = Module;
 
     fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Module> {
         let mut items = Vec::new();
         loop {
-            if Item::matches_first(sess.current_tokens()) {
+            if sess.matches::<Item>() {
                 items.push(Item::parse(sess)?);
-            } else if matches!(sess.current_tokens()[0], &Token::EOF) { // as module is special, specially allow self.current_tokens in parse
+            } else if sess.eof() { // as module is special, specially allow self.current_tokens in parse
                 break;
             } else {
                 return sess.push_unexpect("if, while, for, var, const, expr");

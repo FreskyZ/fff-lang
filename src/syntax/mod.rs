@@ -16,7 +16,7 @@ pub mod prelude {
     pub use crate::source::{FileSystem, Span, IsId};
     pub use crate::diagnostics::strings;
     pub use crate::lexical::{Token, Numeric, Separator, SeparatorKind, Keyword, KeywordKind};
-    pub use super::parse_sess::{ParseSession, ParseResult, ISyntaxGrammar, ISyntaxParse};
+    pub use super::parse_sess::{ParseSession, ParseResult, Node};
     pub use super::format_helper::{Formatter, ISyntaxFormat};
 }
 
@@ -38,7 +38,7 @@ pub(crate) use parse_sess::make_node;
 // abort IdentExpr to use Name, check name should be single segment at many where
 
 pub fn parse<'ecx, 'scx, F>(chars: crate::lexical::Parser<'ecx, 'scx, F>) -> Result<Module, ()> where F: crate::source::FileSystem {
-    use prelude::ISyntaxParse;
+    use prelude::Node;
     let mut context = prelude::ParseSession::new(chars);
     let result = Module::parse(&mut context);
     context.base.finish();

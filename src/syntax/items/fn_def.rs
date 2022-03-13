@@ -57,11 +57,12 @@ impl FnDef {
         FnDef{ name: name.into(), name_span, params, params_paren_span, ret_type, body, all_span }
     }
 }
-impl ISyntaxGrammar for FnDef {   
-    fn matches_first(tokens: [&Token; 3]) -> bool { matches!(tokens[0], &Token::Keyword(Keyword::Fn)) }
-}
-impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for FnDef where F: FileSystem {
-    type Output = FnDef;
+impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for FnDef where F: FileSystem {
+    type ParseOutput = FnDef;
+
+    fn matches(current: &Token) -> bool {
+        matches!(current, Token::Keyword(Keyword::Fn))
+    }
 
     fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<FnDef> {
         #[cfg(feature = "trace_fn_def_parse")]

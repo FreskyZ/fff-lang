@@ -9,18 +9,18 @@ use crate::syntax::prelude::*;
 use super::{Expr, Name, LitExpr, SimpleName, TupleDef, ArrayDef, FnCallExpr, IndexCallExpr, MemberAccessExpr};
 
 pub struct PrimaryExpr;
-impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for PrimaryExpr where F: FileSystem {
-    type Output = Expr;
+impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for PrimaryExpr where F: FileSystem {
+    type ParseOutput = Expr;
     
     fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Expr> {
 
-        if LitExpr::matches_first(sess.current_tokens()) {
+        if sess.matches::<LitExpr>() {
             return LitExpr::parse(sess);
-        } else if Name::matches_first(sess.current_tokens()) {
+        } else if sess.matches::<Name>() {
             return Name::parse(sess);
-        } else if TupleDef::matches_first(sess.current_tokens()) {
+        } else if sess.matches::<TupleDef>() {
             return TupleDef::parse(sess);
-        } else if ArrayDef::matches_first(sess.current_tokens()) {
+        } else if sess.matches::<ArrayDef>() {
             return ArrayDef::parse(sess);
         }
 
@@ -30,8 +30,8 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for PrimaryExpr where F: FileSys
 }
 
 pub struct PostfixExpr;
-impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for PostfixExpr where F: FileSystem {
-    type Output = Expr;
+impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for PostfixExpr where F: FileSystem {
+    type ParseOutput = Expr;
 
     fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Expr> {   
         #[cfg(feature = "trace_postfix_expr_parse")]
@@ -43,17 +43,17 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for PostfixExpr where F: FileSys
         trace!("parsed primary, current is {:?}", current_retval);
 
         loop {
-            if MemberAccessExpr::matches_first(sess.current_tokens()) {
+            if sess.matches::<MemberAccessExpr>() {
                 let mut postfix = MemberAccessExpr::parse(sess)?;
                 postfix.all_span = current_retval.get_all_span() + postfix.name.span;
                 postfix.base = Box::new(current_retval);
                 current_retval = Expr::MemberAccess(postfix);
-            } else if FnCallExpr::matches_first(sess.current_tokens()) {
+            } else if sess.matches::<FnCallExpr>() {
                 let mut postfix = FnCallExpr::parse(sess)?;
                 postfix.all_span = current_retval.get_all_span() + postfix.paren_span;
                 postfix.base = Box::new(current_retval);
                 current_retval = Expr::FnCall(postfix);
-            } else if IndexCallExpr::matches_first(sess.current_tokens()) {
+            } else if sess.matches::<IndexCallExpr>() {
                 let mut postfix = IndexCallExpr::parse(sess)?;
                 postfix.all_span = current_retval.get_all_span() + postfix.bracket_span;
                 postfix.base = Box::new(current_retval);

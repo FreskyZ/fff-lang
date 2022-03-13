@@ -55,19 +55,17 @@ impl TypeUse {
         TypeUse{ all_span: base_span + quote_span, base: base.into(), base_span, quote_span, params }
     }
 }
-impl ISyntaxGrammar for TypeUse {
-    fn matches_first(tokens: [&Token; 3]) -> bool {
-        match tokens[0] {
-            &Token::Ident(_) 
-            | &Token::Sep(Separator::LeftBracket)
-            | &Token::Sep(Separator::LeftParen) => true,
+
+impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for TypeUse where F: FileSystem {
+    type ParseOutput = TypeUse;
+
+    fn matches(current: &Token) -> bool {
+        match current {
+            &Token::Ident(_) | &Token::Sep(Separator::LeftBracket) | &Token::Sep(Separator::LeftParen) => true,
             &Token::Keyword(kw) => kw.kind(KeywordKind::Primitive),
             _ => false,
         }
     }
-}
-impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for TypeUse where F: FileSystem {
-    type Output = TypeUse;
 
     fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<TypeUse> {
 

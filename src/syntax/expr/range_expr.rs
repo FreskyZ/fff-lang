@@ -115,13 +115,13 @@ impl RangeBothExpr {
 
 // actually also a priority proxy
 pub(super) struct RangeExpr;
-impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for RangeExpr where F: FileSystem {
-    type Output = Expr;
+impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for RangeExpr where F: FileSystem {
+    type ParseOutput = Expr;
 
     fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Expr> {
         match sess.try_expect_sep(Separator::DotDot) {
             Some(range_op_span) => {
-                if Expr::matches_first(sess.current_tokens()) {
+                if sess.matches::<Expr>() {
                     let expr = BinaryExpr::parse(sess)?;
                     Ok(Expr::RangeRight(RangeRightExpr::new(range_op_span + expr.get_all_span(), expr)))
                 } else {
@@ -131,7 +131,7 @@ impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for RangeExpr where F: FileSyste
             None => {
                 let left_expr = BinaryExpr::parse(sess)?;
                 if let Some(op_span) = sess.try_expect_sep(Separator::DotDot) {
-                    if Expr::matches_first(sess.current_tokens()) {
+                    if sess.matches::<Expr>() {
                         let right_expr = BinaryExpr::parse(sess)?;
                         Ok(Expr::RangeBoth(RangeBothExpr::new(left_expr, op_span, right_expr)))
                     } else {

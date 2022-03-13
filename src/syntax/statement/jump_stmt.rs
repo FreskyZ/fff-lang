@@ -76,21 +76,20 @@ impl BreakStatement {
     }
 }
 
-impl ISyntaxGrammar for ContinueStatement {
-    fn matches_first(tokens: [&Token; 3]) -> bool { matches!(tokens[0], &Token::Keyword(Keyword::Continue)) }
-}
-impl ISyntaxGrammar for BreakStatement {
-    fn matches_first(tokens: [&Token; 3]) -> bool { matches!(tokens[0], &Token::Keyword(Keyword::Break)) }
-}
-
-impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for ContinueStatement where F: FileSystem {
-    type Output = ContinueStatement;
+impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for ContinueStatement where F: FileSystem {
+    type ParseOutput = ContinueStatement;
+    fn matches(current: &Token) -> bool { 
+        matches!(current, Token::Keyword(Keyword::Continue)) 
+    }
     fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<ContinueStatement> { 
         Ok(ContinueStatement(JumpStatement::parse(sess, Keyword::Continue)?))
     }
 }
-impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for BreakStatement where F: FileSystem {
-    type Output = BreakStatement;
+impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for BreakStatement where F: FileSystem {
+    type ParseOutput = BreakStatement;
+    fn matches(current: &Token) -> bool { 
+        matches!(current, Token::Keyword(Keyword::Break)) 
+    }
     fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<BreakStatement> {
         Ok(BreakStatement(JumpStatement::parse(sess, Keyword::Break)?))
     }

@@ -27,12 +27,19 @@ impl SimpleExprStatement {
     }
 }
 // dispatch them to convenience statement define macro
-impl ISyntaxGrammar for SimpleExprStatement {
-    fn matches_first(tokens: [&Token; 3]) -> bool { AssignExprStatement::matches_first(tokens) }
-}
-impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for SimpleExprStatement where F: FileSystem {
-    type Output = <AssignExprStatement as ISyntaxParse<'ecx, 'scx, F>>::Output;
-    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Self::Output> { AssignExprStatement::parse(sess) }
+impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for SimpleExprStatement where F: FileSystem {
+    type ParseOutput = <AssignExprStatement as Node<'ecx, 'scx, F>>::ParseOutput;
+
+    fn matches(current: &Token) -> bool { 
+        <AssignExprStatement as Node<F>>::matches(current)
+    }
+    fn matches3(current: &Token, peek: &Token, peek2: &Token) -> bool {
+        <AssignExprStatement as Node<F>>::matches3(current, peek, peek2)
+    }
+
+    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Self::ParseOutput> { 
+        AssignExprStatement::parse(sess) 
+    }
 }
 
 #[cfg_attr(test, derive(PartialEq))]
@@ -68,11 +75,15 @@ impl AssignExprStatement {
     }
 }
 
-impl ISyntaxGrammar for AssignExprStatement {
-    fn matches_first(tokens: [&Token; 3]) -> bool { Expr::matches_first(tokens) }
-}
-impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for AssignExprStatement where F: FileSystem {
-    type Output = Statement;
+impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for AssignExprStatement where F: FileSystem {
+    type ParseOutput = Statement;
+
+    fn matches(current: &Token) -> bool { 
+        <Expr as Node<F>>::matches(current)
+    }
+    fn matches3(current: &Token, peek: &Token, peek2: &Token) -> bool {
+        <Expr as Node<F>>::matches3(current, peek, peek2)
+    }
 
     fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Statement> {
 

@@ -71,16 +71,13 @@ impl ForStatement {
         }
     }
 }
-impl ISyntaxGrammar for ForStatement {
-    fn matches_first(tokens: [&Token; 3]) -> bool {
-        match (tokens[0], tokens[2]) {
-            (&Token::Label(_), &Token::Keyword(Keyword::For)) | (&Token::Keyword(Keyword::For), _) => true,
-            _ => false
-        }
+
+impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for ForStatement where F: FileSystem {
+    type ParseOutput = ForStatement;
+
+    fn matches3(current: &Token, _peek: &Token, peek2: &Token) -> bool {
+        matches!((current, peek2), (Token::Label(_), Token::Keyword(Keyword::For)) | (Token::Keyword(Keyword::For), _))
     }
-}
-impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for ForStatement where F: FileSystem {
-    type Output = ForStatement;
 
     fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<ForStatement> {
 

@@ -41,11 +41,12 @@ impl UseStatement {
         UseStatement{ name, all_span, as_span, target }
     }
 }
-impl ISyntaxGrammar for UseStatement {
-    fn matches_first(tokens: [&Token; 3]) -> bool { matches!(tokens[0], &Token::Keyword(Keyword::Use)) }
-}
-impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for UseStatement where F: FileSystem {
-    type Output = UseStatement;
+impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for UseStatement where F: FileSystem {
+    type ParseOutput = UseStatement;
+
+    fn matches(current: &Token) -> bool { 
+        matches!(current, Token::Keyword(Keyword::Use)) 
+    }
 
     fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<UseStatement> {
 

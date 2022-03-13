@@ -37,17 +37,12 @@ impl BlockStatement {
         } 
     }
 }
-impl ISyntaxGrammar for BlockStatement {
-    fn matches_first(tokens: [&Token; 3]) -> bool { 
-        match (tokens[0], tokens[2]) {
-            (&Token::Label(_), &Token::Sep(Separator::LeftBrace)) 
-            | (&Token::Sep(Separator::LeftBrace), _) => true,
-            _ => false,
-        }
+impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for BlockStatement where F: FileSystem {
+    type ParseOutput = BlockStatement;
+
+    fn matches3(current: &Token, _peek: &Token, peek2: &Token) -> bool { 
+        matches!((current, peek2), (Token::Label(_), Token::Sep(Separator::LeftBrace)) | (Token::Sep(Separator::LeftBrace), _))
     }
-}
-impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for BlockStatement where F: FileSystem {
-    type Output = BlockStatement;
 
     fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<BlockStatement> {
     

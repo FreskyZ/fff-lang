@@ -66,11 +66,12 @@ impl From<LitExpr> for Expr {
 impl LitExpr {
     pub fn new(value: impl Into<LitValue>, span: Span) -> LitExpr { LitExpr{ value: value.into(), span } }
 }
-impl ISyntaxGrammar for LitExpr {
-    fn matches_first(tokens: [&Token; 3]) -> bool { matches!(tokens[0], Token::Char(_) | Token::Bool(_) | Token::Str(..) | Token::Num(_)) }
-}
-impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for LitExpr where F: FileSystem {
-    type Output = Expr;
+impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for LitExpr where F: FileSystem {
+    type ParseOutput = Expr;
+
+    fn matches(current: &Token) -> bool { 
+        matches!(current, Token::Char(_) | Token::Bool(_) | Token::Str(..) | Token::Num(_)) 
+    }
 
     fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Expr> {
         

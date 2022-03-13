@@ -29,11 +29,12 @@ impl Block {
 
     pub fn new(all_span: Span, statements: Vec<Statement>) -> Block { Block{ all_span, items: statements } }
 }
-impl ISyntaxGrammar for Block {
-    fn matches_first(tokens: [&Token; 3]) -> bool { matches!(tokens[0], &Token::Sep(Separator::LeftBrace)) }
-}
-impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for Block where F: FileSystem {
-    type Output = Block;
+impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for Block where F: FileSystem {
+    type ParseOutput = Block;
+
+    fn matches(current: &Token) -> bool { 
+        matches!(current, Token::Sep(Separator::LeftBrace)) 
+    }
 
     fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Block> {
 

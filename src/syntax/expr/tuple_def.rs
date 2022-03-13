@@ -55,11 +55,12 @@ impl From<TupleDef> for Expr {
 impl TupleDef {
     pub fn new(paren_span: Span, items: ExprList) -> TupleDef { TupleDef{ paren_span, items } }
 }
-impl ISyntaxGrammar for TupleDef {
-    fn matches_first(tokens: [&Token; 3]) -> bool { matches!(tokens[0], &Token::Sep(Separator::LeftParen)) }
-}
-impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for TupleDef where F: FileSystem {
-    type Output = Expr;
+impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for TupleDef where F: FileSystem {
+    type ParseOutput = Expr;
+
+    fn matches(current: &Token) -> bool { 
+        matches!(current, Token::Sep(Separator::LeftParen)) 
+    }
 
     fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Expr> {
 

@@ -51,11 +51,12 @@ impl TypeDef {
         TypeDef{ all_span, name, fields }
     }
 }
-impl ISyntaxGrammar for TypeDef {
-    fn matches_first(tokens: [&Token; 3]) -> bool { matches!(tokens[0], &Token::Keyword(Keyword::Type)) }
-}
-impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for TypeDef where F: FileSystem {
-    type Output = Self;
+impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for TypeDef where F: FileSystem {
+    type ParseOutput = Self;
+
+    fn matches(current: &Token) -> bool { 
+        matches!(current, Token::Keyword(Keyword::Type)) 
+    }
 
     fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<TypeDef> {
 

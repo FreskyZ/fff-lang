@@ -53,16 +53,12 @@ impl WhileStatement {
         }
     }
 }
-impl ISyntaxGrammar for WhileStatement {
-    fn matches_first(tokens: [&Token; 3]) -> bool {
-        match (tokens[0], tokens[2]) {
-            (&Token::Label(_), &Token::Keyword(Keyword::While)) | (&Token::Keyword(Keyword::While), _) => true,
-            _ => false
-        }
+impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for WhileStatement where F: FileSystem {
+    type ParseOutput = WhileStatement;
+
+    fn matches3(current: &Token, _peek: &Token, peek2: &Token) -> bool {
+        matches!((current, peek2), (Token::Label(_), Token::Keyword(Keyword::While)) | (Token::Keyword(Keyword::While), _))
     }
-}
-impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for WhileStatement where F: FileSystem {
-    type Output = WhileStatement;
 
     fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<WhileStatement> {
         

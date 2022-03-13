@@ -33,11 +33,12 @@ impl ReturnStatement {
         ReturnStatement{ all_span, expr: Some(expr) }
     }
 }
-impl ISyntaxGrammar for ReturnStatement {
-    fn matches_first(tokens: [&Token; 3]) -> bool { matches!(tokens[0], &Token::Keyword(Keyword::Return)) }
-}
-impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for ReturnStatement where F: FileSystem {
-    type Output = ReturnStatement;
+impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for ReturnStatement where F: FileSystem {
+    type ParseOutput = ReturnStatement;
+
+    fn matches(current: &Token) -> bool { 
+        matches!(current, Token::Keyword(Keyword::Return))
+    }
 
     fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<ReturnStatement> {
 

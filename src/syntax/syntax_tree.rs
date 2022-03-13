@@ -15,7 +15,7 @@ use crate::lexical::TokenStream;
 use super::Module;
 use super::ParseResult;
 use super::ParseSession;
-use super::ISyntaxParse;
+use super::Node;
 use super::Formatter;
 use super::ISyntaxFormat;
 

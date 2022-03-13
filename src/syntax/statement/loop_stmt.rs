@@ -51,16 +51,12 @@ impl LoopStatement { // New
         }
     }
 }
-impl ISyntaxGrammar for LoopStatement {
-    fn matches_first(tokens: [&Token; 3]) -> bool {
-        match (tokens[0], tokens[2]) {
-            (&Token::Label(_), &Token::Keyword(Keyword::Loop)) | (&Token::Keyword(Keyword::Loop), _) => true,
-            _ => false
-        }
+impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for LoopStatement where F: FileSystem {
+    type ParseOutput = LoopStatement;
+
+    fn matches3(current: &Token, _peek: &Token, peek2: &Token) -> bool {
+        matches!((current, peek2), (Token::Label(_), Token::Keyword(Keyword::Loop)) | (Token::Keyword(Keyword::Loop), _))
     }
-}
-impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for LoopStatement where F: FileSystem {
-    type Output = LoopStatement;
 
     fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<LoopStatement> {
 

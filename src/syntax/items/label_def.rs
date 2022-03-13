@@ -23,11 +23,12 @@ impl LabelDef {
     
     pub fn new(name: impl Into<IsId>, all_span: Span) -> LabelDef { LabelDef{ name: name.into(), all_span } }
 }
-impl ISyntaxGrammar for LabelDef {
-    fn matches_first(tokens: [&Token; 3]) -> bool { if let &Token::Label(_) = tokens[0] { true } else { false } }
-}
-impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for LabelDef where F: FileSystem {
-    type Output = LabelDef;
+impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for LabelDef where F: FileSystem {
+    type ParseOutput = LabelDef;
+
+    fn matches(current: &Token) -> bool {
+        matches!(current, Token::Label(_))
+    }
 
     fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<LabelDef> {
 

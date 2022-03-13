@@ -51,8 +51,8 @@ impl BinaryExpr {
         }
     }
 }
-impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for BinaryExpr where F: FileSystem {
-    type Output = Expr;
+impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for BinaryExpr where F: FileSystem {
+    type ParseOutput = Expr;
 
     fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Expr> {  
         #[cfg(feature = "trace_binary_expr_parse")]

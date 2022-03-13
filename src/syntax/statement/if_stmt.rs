@@ -128,11 +128,12 @@ impl IfStatement {
         }
     }
 }
-impl ISyntaxGrammar for IfStatement {
-    fn matches_first(tokens: [&Token; 3]) -> bool { matches!(tokens[0], &Token::Keyword(Keyword::If)) }
-}
-impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for IfStatement where F: FileSystem {
-    type Output = IfStatement;
+impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for IfStatement where F: FileSystem {
+    type ParseOutput = IfStatement;
+
+    fn matches(current: &Token) -> bool {
+        matches!(current, Token::Keyword(Keyword::If)) 
+    }
 
     fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<IfStatement> {
 

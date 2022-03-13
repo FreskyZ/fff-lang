@@ -46,11 +46,12 @@ impl MemberAccessExpr {
         }
     }
 }
-impl ISyntaxGrammar for MemberAccessExpr {
-    fn matches_first(tokens: [&Token; 3]) -> bool { matches!(tokens[0], &Token::Sep(Separator::Dot)) }
-}
-impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for MemberAccessExpr where F: FileSystem {
-    type Output = MemberAccessExpr;
+impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for MemberAccessExpr where F: FileSystem {
+    type ParseOutput = MemberAccessExpr;
+
+    fn matches(current: &Token) -> bool { 
+        matches!(current, Token::Sep(Separator::Dot)) 
+    }
 
     // these 3 postfix exprs are kind of different because
     // although their structure contains their base expr (which actually is primary expr)

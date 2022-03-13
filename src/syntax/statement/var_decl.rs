@@ -52,11 +52,12 @@ impl VarDeclStatement {
         VarDeclStatement{ all_span, is_const: false, name: name.into(), name_span, typeuse, init_expr }
     }
 }
-impl ISyntaxGrammar for VarDeclStatement {
-    fn matches_first(tokens: [&Token; 3]) -> bool { matches!(tokens[0], &Token::Keyword(Keyword::Const) | &Token::Keyword(Keyword::Var)) }
-}
-impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for VarDeclStatement where F: FileSystem {
-    type Output = VarDeclStatement;
+impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for VarDeclStatement where F: FileSystem {
+    type ParseOutput = VarDeclStatement;
+
+    fn matches(current: &Token) -> bool { 
+        matches!(current, Token::Keyword(Keyword::Const | Keyword::Var)) 
+    }
 
     fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<VarDeclStatement> {
         

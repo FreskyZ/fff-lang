@@ -38,13 +38,13 @@ impl UnaryExpr {
         }
     }
 }
-impl ISyntaxGrammar for UnaryExpr {
-    fn matches_first(tokens: [&Token; 3]) -> bool { 
-        matches!(tokens[0], &Token::Sep(ref sep) if sep.kind(SeparatorKind::Unary))
+
+impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for UnaryExpr where F: FileSystem {
+    type ParseOutput = Expr;
+
+    fn matches(current: &Token) -> bool { 
+        matches!(current, Token::Sep(sep) if sep.kind(SeparatorKind::Unary))
     }
-}
-impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for UnaryExpr where F: FileSystem {
-    type Output = Expr;
 
     fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Expr> {
         

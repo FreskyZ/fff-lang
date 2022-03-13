@@ -51,26 +51,29 @@ macro_rules! define_statement {
         impl fmt::Debug for $name {
             fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
         }
-        impl ISyntaxGrammar for $name {
-            fn matches_first(tokens: [&Token; 3]) -> bool {
-                false 
-                $(|| <$subty as ISyntaxGrammar>::matches_first(tokens) )+
-            }
-        }
 
         $( impl From<$subty> for $name { // impl from to flatten difference between return detail XXXStatement or return Statement
                 fn from(s: $subty) -> $name { $name::$enum_name(s) }
         } )+
 
-        impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for $name where F: FileSystem {
-            type Output = $name;
+        impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for $name where F: FileSystem {
+            type ParseOutput = $name;
+            
+            fn matches(current: &Token) -> bool {
+                false 
+                $(|| <$subty as Node<F>>::matches(current) )+
+            }
+            fn matches3(current: &Token, peek: &Token, peek2: &Token) -> bool {
+                false 
+                $(|| <$subty as Node<F>>::matches3(current, peek, peek2) )+
+            }
 
             fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<$name> {
-                $( if <$subty as ISyntaxGrammar>::matches_first(sess.current_tokens()) {
-                    return Ok($name::from(<$subty as ISyntaxParse<'ecx, 'scx, F>>::parse(sess)?));
+                $( if sess.matches::<$subty>() {
+                    Ok($name::from(<$subty as Node<'ecx, 'scx, F>>::parse(sess)?))
                 } else )+ {
-                    return sess.push_unexpect("statement");
-                } 
+                    sess.push_unexpect("statement")
+                }
             }
         }
     )

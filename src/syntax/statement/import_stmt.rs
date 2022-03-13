@@ -40,11 +40,12 @@ impl ImportStatement {
         ImportStatement{ name, all_span, as_span, target }
     }
 }
-impl ISyntaxGrammar for ImportStatement {
-    fn matches_first(tokens: [&Token; 3]) -> bool { matches!(tokens[0], &Token::Keyword(Keyword::Import)) }
-}
-impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for ImportStatement where F: FileSystem {
-    type Output = ImportStatement;
+impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for ImportStatement where F: FileSystem {
+    type ParseOutput = ImportStatement;
+
+    fn matches(current: &Token) -> bool { 
+        matches!(current, Token::Keyword(Keyword::Import)) 
+    }
 
     fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<ImportStatement> {
 

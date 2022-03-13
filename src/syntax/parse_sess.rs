@@ -28,6 +28,10 @@ impl<'ecx, 'scx, F> ParseSession<'ecx, 'scx, F> where F: FileSystem {
         ParseSession{ base, current, current_span, peek, peek_span, peek2, peek2_span }
     }
 
+    pub fn eof(&self) -> bool {
+        matches!(self.current, Token::EOF)
+    }
+
     // return previous current span
     fn move_next(&mut self) -> Span {
         let original_current_span = self.current_span;
@@ -239,22 +243,26 @@ impl<'ecx, 'scx, F> ParseSession<'ecx, 'scx, F> where F: FileSystem {
         return Err(());
     }
 
-    pub fn current_tokens(&self) -> [&Token; 3] {
-        [&self.current, &self.peek, &self.peek2]
-    }
+    pub fn matches<N: Node<'ecx, 'scx, F>>(&self) -> bool {
+        N::matches(&self.current) || N::matches3(&self.current, &self.peek, &self.peek2)
+    } 
 }
 
-pub trait ISyntaxGrammar {
-    fn matches_first(tokens: [&Token; 3]) -> bool;
-}
-pub trait ISyntaxParse<'ecx, 'scx, F> {
-    type Output;
+pub trait Node<'ecx, 'scx, F> {
+    type ParseOutput;
     
-    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Self::Output>;
+    fn matches(_current: &Token) -> bool {
+        return false;
+    }
+    fn matches3(_current: &Token, _peek1: &Token, _peek2: &Token) -> bool {
+        return false;
+    }
 
-    // check is_first_final, if pass, parse, return Ok(Some(T)) or Err(()), else return None
-    fn try_parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Option<Self::Output>> where Self: ISyntaxGrammar, F: FileSystem {
-        if Self::matches_first(sess.current_tokens()) { Ok(Some(Self::parse(sess)?)) } else { Ok(None) }
+    fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Self::ParseOutput>;
+
+    // check matches_first, if pass, parse, return Ok(Some(T)) or Err(()), else return None
+    fn try_parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Option<Self::ParseOutput>> {
+        Ok(if Self::matches(&sess.current) || Self::matches3(&sess.current, &sess.peek, &sess.peek2) { Some(Self::parse(sess)?) } else { None })
     }
 }
 
@@ -276,7 +284,7 @@ macro_rules! make_node {
         let chars = scx.entry("1");
         let lcx = crate::lexical::Parser::new(chars, &mut ecx);
         let mut pcx = ParseSession::new(lcx);
-        let node = <$ty as ISyntaxParse<crate::source::VirtualFileSystem>>::parse(&mut pcx).expect("failed to parse test input");
+        let node = <$ty as Node<crate::source::VirtualFileSystem>>::parse(&mut pcx).expect("failed to parse test input");
         assert_eq!(ecx, crate::diagnostics::make_errors!());
         node
     }};
@@ -287,7 +295,7 @@ macro_rules! make_node {
         let chars = scx.entry("1");
         let lcx = crate::lexical::Parser::new(chars, &mut ecx);
         let mut pcx = ParseSession::new(lcx);
-        let node = <$ty as ISyntaxParse<crate::source::VirtualFileSystem>>::parse(&mut pcx).expect("failed to parse test input");
+        let node = <$ty as Node<crate::source::VirtualFileSystem>>::parse(&mut pcx).expect("failed to parse test input");
         (node, ecx)
     }};
     // TODO change span string and value string to be expected value not prepare value
@@ -298,7 +306,7 @@ macro_rules! make_node {
         $( chars.intern_span($span_string); )*
         let lcx = crate::lexical::Parser::new(chars, &mut ecx);
         let mut pcx = ParseSession::new(lcx);
-        let node = <$ty as ISyntaxParse<crate::source::VirtualFileSystem>>::parse(&mut pcx).expect("failed to parse test input");
+        let node = <$ty as Node<crate::source::VirtualFileSystem>>::parse(&mut pcx).expect("failed to parse test input");
         assert_eq!(ecx, crate::diagnostics::make_errors!());
         node
     }};
@@ -311,7 +319,7 @@ macro_rules! make_node {
         $( chars.intern($value_string); )*
         let lcx = crate::lexical::Parser::new(chars, &mut ecx);
         let mut pcx = ParseSession::new(lcx);
-        let node = <$ty as ISyntaxParse<crate::source::VirtualFileSystem>>::parse(&mut pcx).expect("failed to parse test input");
+        let node = <$ty as Node<crate::source::VirtualFileSystem>>::parse(&mut pcx).expect("failed to parse test input");
         assert_eq!(ecx, crate::diagnostics::make_errors!());
         node
     }};
@@ -324,7 +332,7 @@ macro_rules! make_node {
         $( chars.intern($value_string); )*
         let lcx = crate::lexical::Parser::new(chars, &mut ecx);
         let mut pcx = ParseSession::new(lcx);
-        let node = <$ty as ISyntaxParse<crate::source::VirtualFileSystem>>::parse(&mut pcx).expect("failed to parse test input");
+        let node = <$ty as Node<crate::source::VirtualFileSystem>>::parse(&mut pcx).expect("failed to parse test input");
         (node, ecx)
     }};
 }

@@ -26,8 +26,8 @@ impl From<SimpleName> for Expr {
 impl SimpleName {
     pub fn new(value: impl Into<IsId>, span: Span) -> SimpleName { SimpleName{ value: value.into(), span } }
 }
-impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for SimpleName where F: FileSystem {
-    type Output = SimpleName; // out of expr depdendencies require direct parse and get a simple name
+impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for SimpleName where F: FileSystem {
+    type ParseOutput = SimpleName; // out of expr depdendencies require direct parse and get a simple name
 
     fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<SimpleName> {
         let (value, span) = sess.expect_ident()?;
@@ -58,11 +58,12 @@ impl From<Name> for Expr {
 impl Name {
     pub fn new(all_span: Span, segments: Vec<SimpleName>) -> Name { Name{ all_span, segments } }
 }
-impl ISyntaxGrammar for Name {
-    fn matches_first(tokens: [&Token; 3]) -> bool { matches!(tokens[0], &Token::Ident(_)) }
-}
-impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for Name where F: FileSystem {
-    type Output = Expr;
+impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for Name where F: FileSystem {
+    type ParseOutput = Expr;
+
+    fn matches(current: &Token) -> bool { 
+        matches!(current, Token::Ident(_)) 
+    }
 
     fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<Expr> {
         

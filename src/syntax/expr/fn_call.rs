@@ -47,11 +47,12 @@ impl FnCallExpr {
         }
     }
 }
-impl ISyntaxGrammar for FnCallExpr {
-    fn matches_first(tokens: [&Token; 3]) -> bool { matches!(tokens[0], &Token::Sep(Separator::LeftParen)) }
-}
-impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for FnCallExpr where F: FileSystem {
-    type Output = FnCallExpr;
+impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for FnCallExpr where F: FileSystem {
+    type ParseOutput = FnCallExpr;
+
+    fn matches(current: &Token) -> bool { 
+        matches!(current, Token::Sep(Separator::LeftParen)) 
+    }
 
     fn parse(sess: &mut ParseSession<'ecx, 'scx, F>) -> ParseResult<FnCallExpr> {
 

@@ -21,11 +21,6 @@ impl fmt::Debug for ExprList {
 impl ExprList {
     pub fn new(items: Vec<Expr>) -> ExprList { ExprList{ items } }
 }
-impl ISyntaxGrammar for ExprList {
-    fn matches_first(tokens: [&Token; 3]) -> bool {
-        matches!(tokens[0], &Token::Sep(Separator::LeftBrace) | &Token::Sep(Separator::LeftBracket) | &Token::Sep(Separator::LeftParen))
-    }
-}
 
 #[cfg_attr(test, derive(PartialEq, Debug))]
 pub enum ExprListParseResult {
@@ -34,8 +29,12 @@ pub enum ExprListParseResult {
     Normal(Span, ExprList),         // and quote span
     EndWithComma(Span, ExprList),   // and quote span
 }
-impl<'ecx, 'scx, F> ISyntaxParse<'ecx, 'scx, F> for ExprList where F: FileSystem {
-    type Output = ExprListParseResult;
+impl<'ecx, 'scx, F> Node<'ecx, 'scx, F> for ExprList where F: FileSystem {
+    type ParseOutput = ExprListParseResult;
+
+    fn matches(current: &Token) -> bool {
+        matches!(current, Token::Sep(Separator::LeftBrace | Separator::LeftBracket | Separator::LeftParen))
+    }
 
     /// This is special, when calling `parse`, `sess.tk` should point to the quote token
     /// Then the parser will check end token to determine end of parsing process
