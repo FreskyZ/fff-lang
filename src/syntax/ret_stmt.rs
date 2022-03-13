@@ -56,6 +56,10 @@ impl Node for ReturnStatement {
             Ok(ReturnStatement::new_expr(starting_span + semicolon_span, expr))
         }
     }
+
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_ret_stmt(self)
+    }
 }
 
 #[cfg(test)] #[test]

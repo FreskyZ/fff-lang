@@ -167,6 +167,10 @@ impl Node for IfStatement {
 
         Ok(IfStatement::new(if_clause, elseif_clauses, else_clause))
     }
+
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_if_stmt(self)
+    }
 }
 
 #[cfg(test)] #[test]

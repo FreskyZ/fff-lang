@@ -84,6 +84,9 @@ impl Node for ContinueStatement {
     fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<ContinueStatement> { 
         Ok(ContinueStatement(JumpStatement::parse(sess, Keyword::Continue)?))
     }
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_continue_stmt(self)
+    }
 }
 impl Node for BreakStatement {
     type ParseOutput = BreakStatement;
@@ -92,6 +95,9 @@ impl Node for BreakStatement {
     }
     fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<BreakStatement> {
         Ok(BreakStatement(JumpStatement::parse(sess, Keyword::Break)?))
+    }
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_break_stmt(self)
     }
 }
 

@@ -3,12 +3,14 @@
 ///! syntax, syntax tree types and generation
 
 mod prelude;
-// pub use prelude::{Node, Visitor, parse};
+pub use prelude::{Node, Visitor};
 pub use prelude::{Formatter, ISyntaxFormat};
 #[cfg(test)]
 pub(crate) use prelude::make_node;
 #[cfg(test)]
 use crate::diagnostics::make_errors;
+#[cfg(test)]
+use crate::source::make_source;
 
 mod array_def;
 mod binary_expr;
@@ -83,7 +85,6 @@ pub use while_stmt::WhileStatement;
 // abort IdentExpr to use Name, check name should be single segment at many where
 
 pub fn parse<F: crate::source::FileSystem>(chars: crate::lexical::Parser<F>) -> Result<Module, ()> {
-    use prelude::Node;
     let mut context = prelude::ParseSession::new(chars);
     let result = Module::parse(&mut context);
     context.base.finish();

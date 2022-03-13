@@ -83,6 +83,10 @@ impl Node for TypeDef {
 
         Ok(TypeDef::new(starting_span + right_brace_span, name, fields))
     }
+
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_type_def(self)
+    }
 }
 
 #[cfg(test)] #[test]

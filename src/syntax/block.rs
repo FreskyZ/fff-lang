@@ -47,6 +47,10 @@ impl Node for Block {
             items.push(Statement::parse(sess)?);
         }
     }
+
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_block(self)
+    }
 }
 
 #[cfg(test)] #[test]

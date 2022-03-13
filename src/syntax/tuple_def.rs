@@ -35,6 +35,9 @@ impl Node for ParenExpr {
     fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Expr> {
         TupleDef::parse(sess)
     }
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_paren_expr(self)
+    }
 }
 
 #[cfg_attr(test, derive(PartialEq))]
@@ -89,6 +92,10 @@ impl Node for TupleDef {
                 return Ok(Expr::Tuple(TupleDef::new(span, exprlist)));
             }
         }
+    }
+
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_tuple_def(self)
     }
 }
 

@@ -9,7 +9,7 @@ use super::{FnDef, TypeDef, VarDeclStatement, BreakStatement, ContinueStatement,
     AssignExprStatement, LoopStatement, WhileStatement, ForStatement, IfStatement, BlockStatement, UseStatement, ImportStatement};
 
 macro_rules! define_statement {
-    ($name: ident, $($subty: ty => $enum_name: ident,)+) => (
+    ($name:ident, $visit:ident, $($subty:ty => $enum_name:ident,)+) => (
         #[cfg_attr(test, derive(PartialEq))]
         pub enum $name {
             $($enum_name($subty),)+
@@ -48,11 +48,15 @@ macro_rules! define_statement {
                     sess.push_unexpect("statement")
                 }
             }
+            
+            fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+                v.$visit(self)
+            }
         }
     )
 }
 
-define_statement!{ Statement,
+define_statement!{ Statement, visit_stmt,
     TypeDef => Type,
     FnDef => Fn,
     BlockStatement => Block,
@@ -70,7 +74,7 @@ define_statement!{ Statement,
 }
 
 // global item
-define_statement!{ Item,
+define_statement!{ Item, visit_item,
     TypeDef => Type,
     FnDef => Fn,
     BlockStatement => Block,

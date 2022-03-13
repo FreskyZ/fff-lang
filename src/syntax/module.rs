@@ -53,6 +53,10 @@ impl Node for Module {
         }
         return Ok(Module::new(items));
     }
+
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_module(self)
+    }
 }
 
 #[cfg(test)] #[test]

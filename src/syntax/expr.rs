@@ -103,6 +103,10 @@ impl Node for Expr {
     fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Expr> { 
         RangeExpr::parse(sess)
     }
+
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_expr(self)
+    }
 }
 
 #[cfg(test)] #[test]

@@ -89,6 +89,10 @@ impl Node for ForStatement {
         let body = Block::parse(sess)?;
         return Ok(ForStatement::new(maybe_label, for_span, iter_name, iter_span, iter_expr, body));
     }
+
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_for_stmt(self)
+    }
 }
 
 #[cfg(test)] #[test]

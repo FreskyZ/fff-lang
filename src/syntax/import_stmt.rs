@@ -63,6 +63,10 @@ impl Node for ImportStatement {
 
         Ok(ImportStatement::new_some(all_span, name, as_span, to_ident))
     }
+
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_import_stmt(self)
+    }
 }
 
 #[cfg(test)] #[test]

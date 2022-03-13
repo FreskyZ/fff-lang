@@ -39,6 +39,10 @@ impl Node for LabelDef {
             sess.push_unexpect("label")
         }
     }
+
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_label_def(self)
+    }
 }
 
 #[cfg(test)] #[test]

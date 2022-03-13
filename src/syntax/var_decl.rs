@@ -76,6 +76,10 @@ impl Node for VarDeclStatement {
 
         return Ok(VarDeclStatement::new(starting_span + ending_span, is_const, name, name_span, maybe_decltype, maybe_init_expr));
     }
+    
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_var_decl(self)
+    }
 }
 
 #[cfg(test)] #[test]

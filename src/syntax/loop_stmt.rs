@@ -65,6 +65,10 @@ impl Node for LoopStatement {
         let body = Block::parse(sess)?;
         return Ok(LoopStatement::new(maybe_name, loop_span, body));
     }
+
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_loop_stmt(self)
+    }
 }
 
 #[cfg(test)] #[test]

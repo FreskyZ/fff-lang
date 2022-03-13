@@ -63,4 +63,8 @@ impl Node for MemberAccessExpr {
         let name = SimpleName::parse(sess)?;
         Ok(MemberAccessExpr::new_by_parse_result(dot_span, name))
     }
+
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_member_access(self)
+    }
 }

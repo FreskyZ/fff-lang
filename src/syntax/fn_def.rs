@@ -103,6 +103,10 @@ impl Node for FnDef {
 
         return Ok(FnDef::new(fn_span + body.all_span, fn_name, fn_name_span, params_paren_span, params, maybe_ret_type, body));
     }
+
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_fn_def(self)
+    }
 }
 
 #[cfg(test)] #[test]

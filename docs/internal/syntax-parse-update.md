@@ -1,6 +1,9 @@
+
+[x] merge ISyntaxParse and ISyntaxGrammar to Node, provide default return false implementation for matches_first
+[ ] remove make_exprs and use Into<Vec<Expr>>
+[ ] add make_lit for making LitExpr node, macro syntax similar to lexical t!
 [ ] pass test
 [ ] change ISyntaxFormat to Visitor
-[ ] merge ISyntaxParse and ISyntaxGrammar to Node, provide default return false implementation for matches_first
 [ ] add object literal syntax
 [ ] move multiple file operations from syntaxtree.rs into driver
 [ ] add simple enum type

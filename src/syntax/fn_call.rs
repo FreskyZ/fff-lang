@@ -67,6 +67,10 @@ impl Node for FnCallExpr {
             }
         }
     }
+
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_fn_call_expr(self)
+    }
 }
 
 #[cfg(test)] #[test]

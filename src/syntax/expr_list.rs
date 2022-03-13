@@ -65,6 +65,10 @@ impl Node for ExprList {
             let _comma_span = sess.expect_sep(Separator::Comma)?;
         }
     }
+
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_expr_list(self)
+    }
 }
 
 // test helper

@@ -16,6 +16,7 @@ use super::prelude::*;
 use super::{Expr, UnaryExpr};
 
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct BinaryExpr {
     pub left_expr: Box<Expr>,
     pub right_expr: Box<Expr>,
@@ -31,9 +32,6 @@ impl ISyntaxFormat for BinaryExpr {
             .set_prefix_text("right-is").apply1(self.right_expr.as_ref()).unset_prefix_text()
             .finish()
     }
-}
-impl fmt::Debug for BinaryExpr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl From<BinaryExpr> for Expr {
     fn from(binary_expr: BinaryExpr) -> Expr { Expr::Binary(binary_expr) }
@@ -93,11 +91,19 @@ impl Node for BinaryExpr {
         impl_binary_parser! { parse_logical_and, parse_equality, SeparatorKind::LogicalAnd }
         impl_binary_parser! { parse_logical_or, parse_logical_and, SeparatorKind::LogicalOr }    
     }
+
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_binary_expr(self)
+    }
+    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_expr(&self.left_expr)?;
+        v.visit_expr(&self.right_expr)
+    }
 }
 
 #[cfg(test)] #[test]
 fn binary_expr_format() {
-    use super::{LitExpr, LitValue};
+    use super::{make_source, LitExpr, LitValue};
     
     assert_eq!{ 
         BinaryExpr::new(
@@ -109,6 +115,19 @@ fn binary_expr_format() {
     left-is literal (i32)1 <<0>0-0>
     "+" <<0>2-2>
     right-is literal (i32)2 <<0>4-4>"#
+    }
+
+    let scx = make_source!("ascasconwoeicnqw");
+    assert_eq!{ 
+        BinaryExpr::new(
+            LitExpr::new(LitValue::from(1i32), Span::new(0, 0)),
+            Separator::Add, Span::new(2, 2),
+            LitExpr::new(LitValue::from(2i32), Span::new(4, 4))
+        ).display(&scx).to_string(),
+        r#"binary-expr 1:1-1:5
+  literal (i32)1 1:1-1:1
+  separator + 1:3-1:3
+  literal (i32)2 1:5-1:5"#
     }
 }
 

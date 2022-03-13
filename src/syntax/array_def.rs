@@ -6,6 +6,7 @@ use super::prelude::*;
 use super::{Expr, ExprList, ExprListParseResult};
 
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct ArrayDef {
     pub items: ExprList,
     pub bracket_span: Span,
@@ -15,9 +16,6 @@ impl ISyntaxFormat for ArrayDef {
         let f = f.indent().header_text_or("array-def").space().span(self.bracket_span).endl();
         (if self.items.items.len() == 0 { f.indent1().lit("no-init-item") } else { f.apply1(&self.items) }).finish()
     }
-}
-impl fmt::Debug for ArrayDef {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::empty())) }
 }
 impl From<ArrayDef> for Expr {
     fn from(array_def: ArrayDef) -> Expr { Expr::Array(array_def) }
@@ -47,11 +45,18 @@ impl Node for ArrayDef {
             }
         }
     }
+
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_array_def(self)
+    }
+    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_expr_list(&self.items)
+    }
 }
 
 #[cfg(test)] #[test]
 fn array_def_format() {
-    use super::{make_exprs, LitExpr};
+    use super::{make_source, make_exprs, LitExpr};
 
     assert_eq!{
         ArrayDef::new(Span::new(0, 42), make_exprs![]).format(Formatter::with_test_indent(1)),
@@ -60,11 +65,27 @@ fn array_def_format() {
 
     assert_eq!{
         ArrayDef::new(Span::new(0, 42), make_exprs![
-            LitExpr::new(1, Span::new(1, 2)),
-            LitExpr::new(2, Span::new(3, 4)),
-            LitExpr::new(48, Span::new(5, 6)),
+            LitExpr::new(1i32, Span::new(1, 2)),
+            LitExpr::new(2i32, Span::new(3, 4)),
+            LitExpr::new(48i32, Span::new(5, 6)),
         ]).format(Formatter::with_test_indent(1)),
         "  array-def <<0>0-42>\n    literal (i32)1 <<0>1-2>\n    literal (i32)2 <<0>3-4>\n    literal (i32)48 <<0>5-6>"
+    }
+
+    let scx = make_source!("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz");
+    assert_eq!{
+        ArrayDef::new(Span::new(0, 42), make_exprs![]).display(&scx).to_string(),
+        "array-def 1:1-1:42\n"
+    }
+
+    let scx = make_source!("abcde\nfg\nhi\njklm");
+    assert_eq!{
+        ArrayDef::new(Span::new(0, 9), make_exprs![
+            LitExpr::new(1i32, Span::new(1, 1)),
+            LitExpr::new(2i32, Span::new(4, 4)),
+            LitExpr::new(48i32, Span::new(7, 8)),
+        ]).display(&scx).to_string(),
+        "array-def 1:1-1:10\n  literal (i32)1 1:2-1:2\n  literal (i32)2 1:5-1:5\n  literal (i32)48 1:8-1:9"
     }
 }
 

@@ -1,18 +1,75 @@
 ///! syntax::display: default display implementation
 
-use std::fmt::Debug;
-use crate::source::{SourceContext, Span, IsId};
+use std::fmt::{self, Write};
+use crate::source::{SourceContext, FileSystem, Span, IsId};
+use super::node::Visitor;
+use super::super::*;
 
-const INDENTION_FILLERS: [[&str; 16]; 3] = [ [
-    "", "1 ", "2 | ", "3 | | ", "4 | | | ", "5 | | | | ", "6 | | | | | ", "7 | | | | | | ", "8 | | | | | | | ", "9 | | | | | | | | ", "10 | | | | | | | | | ",
-    "11| | | | | | | | | | ", "12| | | | | | | | | | | ", "13| | | | | | | | | | | | ", "14| | | | | | | | | | | | | ", "15| | | | | | | | | | | | "
-], [
-    "", "| ", "| | ", "| | | ", "| | | | ", "| | | | | ", "| | | | | | ", "| | | | | | | ", "| | | | | | | | ", "| | | | | | | | | ", "| | | | | | | | | | ",
-    "| | | | | | | | | | | ", "| | | | | | | | | | | | ", "| | | | | | | | | | | | | ", "| | | | | | | | | | | | | | ", "| | | | | | | | | | | | | "
-], [
-    "", "  ", "    ", "      ", "        ", "          ", "            ", "              ", "                ", "                  ", "                    ",
-    "                      ", "                        ", "                          ", "                            ", "                          "
-]];
+static INDENTIONS: [[&str; 16]; 3] = [
+    [
+        "", "1 ", "2 | ", "3 | | ", "4 | | | ", "5 | | | | ", "6 | | | | | ", "7 | | | | | | ", "8 | | | | | | | ", "9 | | | | | | | | ", "10 | | | | | | | | | ",
+        "11| | | | | | | | | | ", "12| | | | | | | | | | | ", "13| | | | | | | | | | | | ", "14| | | | | | | | | | | | | ", "15| | | | | | | | | | | | "
+    ], [
+        "", "| ", "| | ", "| | | ", "| | | | ", "| | | | | ", "| | | | | | ", "| | | | | | | ", "| | | | | | | | ", "| | | | | | | | | ", "| | | | | | | | | | ",
+        "| | | | | | | | | | | ", "| | | | | | | | | | | | ", "| | | | | | | | | | | | | ", "| | | | | | | | | | | | | | ", "| | | | | | | | | | | | | "
+    ], [
+        "", "  ", "    ", "      ", "        ", "          ", "            ", "              ", "                ", "                  ", "                    ",
+        "                      ", "                        ", "                          ", "                            ", "                          "
+    ]
+];
+
+pub struct FormatVisitor<'scx, 'f1, 'f2, F> {
+    level: usize,
+    scx: &'scx SourceContext<F>,
+    f: &'f1 mut fmt::Formatter<'f2>,
+}
+impl<'scx, 'f1, 'f2, F> FormatVisitor<'scx, 'f1, 'f2, F> where F: FileSystem {
+
+    pub fn new(scx: &'scx SourceContext<F>, f: &'f1 mut fmt::Formatter<'f2>) -> Self {
+        Self{ level: 0, scx, f }
+    }
+
+    fn indent(&mut self) -> fmt::Result { 
+        self.f.write_str(INDENTIONS[2][self.level])
+    }
+    fn indent1(&mut self) -> fmt::Result { 
+        self.f.write_str(INDENTIONS[2][self.level + 1])
+    }
+    fn indent2(&mut self) -> fmt::Result { 
+        self.f.write_str(INDENTIONS[2][self.level + 2])
+    }
+
+    pub fn span(&mut self, span: Span) -> fmt::Result {
+        let (_, start_line, end_line, start_column, end_column) = self.scx.map_span_to_line_column(span);
+        write!(self.f, "{}:{}-{}:{}", start_line, end_line, start_column, end_column)
+    }
+    pub fn string(&mut self, id: IsId) -> fmt::Result {
+        self.f.write_str(self.scx.resolve_string(id))
+    }
+}
+
+impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2, F> where F: FileSystem {
+
+    fn visit_array_def(&mut self, node: &ArrayDef) -> fmt::Result {
+        self.indent()?;
+        self.f.write_str("array-def ")?;
+        self.span(node.bracket_span)?;
+        self.f.write_char('\n')?;
+        self.level += 1;
+        let result = node.walk(self);
+        self.level -= 1;
+        result
+    }
+}
+
+pub struct NodeDisplay<'n, 'scx, N, F>(pub (in super)&'n N, pub (in super) &'scx SourceContext<F>);
+
+impl<'n, 'scx, N: Node, F: FileSystem> fmt::Display for NodeDisplay<'n, 'scx, N, F> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut visitor = FormatVisitor::new(self.1, f);
+        self.0.accept(&mut visitor)
+    }
+}
 
 #[derive(Clone)]
 pub struct Formatter<'a> {
@@ -58,7 +115,7 @@ impl<'a> Formatter<'a> {
         self.buf.push_str(v);
         self
     }
-    pub fn debug<T: Debug>(mut self, v: &T) -> Self {
+    pub fn debug<T: fmt::Debug>(mut self, v: &T) -> Self {
         self.buf.push_str(&format!("{:?}", v));
         self
     }
@@ -99,15 +156,15 @@ impl<'a> Formatter<'a> {
     }
 
     pub fn indent(mut self) -> Self { 
-        self.buf.push_str(INDENTION_FILLERS[2][self.indent_index]);
+        self.buf.push_str(INDENTIONS[2][self.indent_index]);
         self
     }
     pub fn indent1(mut self) -> Self { 
-        self.buf.push_str(INDENTION_FILLERS[2][self.indent_index + 1]);
+        self.buf.push_str(INDENTIONS[2][self.indent_index + 1]);
         self
     }
     pub fn indent2(mut self) -> Self { 
-        self.buf.push_str(INDENTION_FILLERS[2][self.indent_index + 2]);
+        self.buf.push_str(INDENTIONS[2][self.indent_index + 2]);
         self
     }
 
@@ -136,7 +193,6 @@ impl<'a> Formatter<'a> {
         self
     }
 
-    // TODO: try deref to String!
     pub fn finish(self) -> String {
         self.buf
     }

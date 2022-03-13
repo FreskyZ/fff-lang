@@ -33,6 +33,10 @@ impl Node for SimpleName {
         let (value, span) = sess.expect_ident()?;
         Ok(SimpleName::new(value, span))
     }
+
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_simple_name(self)
+    }
 }
 
 #[cfg_attr(test, derive(PartialEq))]
@@ -86,6 +90,10 @@ impl Node for Name {
         } else {
             Ok(Expr::SimpleName(segments.pop().unwrap()))
         }
+    }
+
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_name(self)
     }
 }
 

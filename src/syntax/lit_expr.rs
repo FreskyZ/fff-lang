@@ -40,11 +40,6 @@ impl From<i32> for LitValue {
     }
 }
 
-// TODO: remove this when all Eq removed from cfg_attr(test)
-#[cfg(test)]
-impl std::cmp::Eq for LitValue {
-}
-
 #[cfg_attr(test, derive(PartialEq))]
 pub struct LitExpr {
     pub value: LitValue,
@@ -77,5 +72,9 @@ impl Node for LitExpr {
         
         let (lit, lit_span) = sess.expect_lit()?;
         Ok(Expr::Lit(LitExpr::new(lit, lit_span)))
+    }
+
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_lit_expr(self)
     }
 }

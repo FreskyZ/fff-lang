@@ -40,6 +40,10 @@ impl Node for SimpleExprStatement {
     fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Self::ParseOutput> { 
         AssignExprStatement::parse(sess) 
     }
+    
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_simple_expr_stmt(self)
+    }
 }
 
 #[cfg_attr(test, derive(PartialEq))]
@@ -100,6 +104,10 @@ impl Node for AssignExprStatement {
         } else {
             sess.push_unexpect("assign operators, semicolon")
         }
+    }
+    
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_assign_expr_stmt(self)
     }
 }
 

@@ -50,6 +50,10 @@ impl Node for BlockStatement {
         let body = Block::parse(sess)?;
         return Ok(BlockStatement::new(maybe_name, body));
     }
+
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_block_stmt(self)
+    }
 }
 
 #[cfg(test)] #[test]

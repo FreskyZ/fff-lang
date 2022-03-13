@@ -63,6 +63,10 @@ impl Node for UseStatement {
 
         Ok(UseStatement::new_some(all_span, from_name, as_span, to_ident))
     }
+    
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_use_stmt(self)
+    }
 }
 
 #[cfg(test)] #[test]

@@ -99,6 +99,10 @@ impl Node for TypeUse {
             Ok(TypeUse::new_simple(symid, sym_span))
         }
     }
+
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_type_use(self)
+    }
 }
 
 #[cfg(test)] #[test]

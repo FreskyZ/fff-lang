@@ -68,6 +68,10 @@ impl Node for WhileStatement {
         let body = Block::parse(sess)?;
         return Ok(WhileStatement::new(maybe_name, while_span, expr, body));
     }
+
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_while_stmt(self)
+    }
 }
 
 #[cfg(test)] #[test]
