@@ -40,7 +40,7 @@ impl Module {
 impl Node for Module {
     type ParseOutput = Module;
 
-    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<Module> where F: FileSystem {
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Module> {
         let mut items = Vec::new();
         loop {
             if sess.matches::<Item>() {

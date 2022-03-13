@@ -40,7 +40,7 @@ impl Node for ReturnStatement {
         matches!(current, Token::Keyword(Keyword::Return))
     }
 
-    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<ReturnStatement> where F: FileSystem {
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<ReturnStatement> {
 
         let starting_span = sess.expect_keyword(Keyword::Return)?;
 

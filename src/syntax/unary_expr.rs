@@ -46,7 +46,7 @@ impl Node for UnaryExpr {
         matches!(current, Token::Sep(sep) if sep.kind(SeparatorKind::Unary))
     }
 
-    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<Expr> where F: FileSystem {
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Expr> {
         
         let mut op_spans = Vec::new();
         loop {

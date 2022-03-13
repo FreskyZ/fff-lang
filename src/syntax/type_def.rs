@@ -58,7 +58,7 @@ impl Node for TypeDef {
         matches!(current, Token::Keyword(Keyword::Type)) 
     }
 
-    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<TypeDef> where F: FileSystem {
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<TypeDef> {
 
         let starting_span = sess.expect_keyword(Keyword::Type)?;
         let (symid, name_span) = sess.expect_ident_or_keyword_kind(KeywordKind::Primitive)?;

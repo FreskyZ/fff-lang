@@ -48,7 +48,7 @@ impl Node for UseStatement {
         matches!(current, Token::Keyword(Keyword::Use)) 
     }
 
-    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<UseStatement> where F: FileSystem {
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<UseStatement> {
 
         let starting_span = sess.expect_keyword(Keyword::Use)?;
         let from_name = Name::parse(sess)?.into_name();

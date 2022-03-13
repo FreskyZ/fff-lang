@@ -44,7 +44,7 @@ impl Node for BlockStatement {
         matches!((current, peek2), (Token::Label(_), Token::Sep(Separator::LeftBrace)) | (Token::Sep(Separator::LeftBrace), _))
     }
 
-    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<BlockStatement> where F: FileSystem {
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<BlockStatement> {
     
         let maybe_name = LabelDef::try_parse(sess)?;
         let body = Block::parse(sess)?;

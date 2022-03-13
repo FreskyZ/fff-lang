@@ -28,6 +28,12 @@ impl From<RangeFullExpr> for Expr {
 impl RangeFullExpr {
     pub fn new(all_span: Span) -> RangeFullExpr { RangeFullExpr{ all_span } }
 }
+impl Node for RangeFullExpr {
+    type ParseOutput = Expr;
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Expr> {
+        RangeExpr::parse(sess)
+    }
+}
 
 // RangeRight
 #[cfg_attr(test, derive(PartialEq))]
@@ -53,6 +59,12 @@ impl RangeRightExpr {
         RangeRightExpr{ all_span, expr: Box::new(expr.into()) }
     }
 }
+impl Node for RangeRightExpr {
+    type ParseOutput = Expr;
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Expr> {
+        RangeExpr::parse(sess)
+    }
+}
 
 // RangeLeft
 #[cfg_attr(test, derive(PartialEq))]
@@ -76,6 +88,12 @@ impl From<RangeLeftExpr> for Expr {
 impl RangeLeftExpr {
     pub fn new<T: Into<Expr>>(all_span: Span, expr: T) -> RangeLeftExpr {
         RangeLeftExpr{ all_span, expr: Box::new(expr.into()) }
+    }
+}
+impl Node for RangeLeftExpr {
+    type ParseOutput = Expr;
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Expr> {
+        RangeExpr::parse(sess)
     }
 }
 
@@ -112,13 +130,19 @@ impl RangeBothExpr {
         }
     }
 }
+impl Node for RangeBothExpr {
+    type ParseOutput = Expr;
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Expr> {
+        RangeExpr::parse(sess)
+    }
+}
 
 // actually also a priority proxy
 pub struct RangeExpr;
 impl Node for RangeExpr {
     type ParseOutput = Expr;
 
-    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<Expr> where F: FileSystem {
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Expr> {
         match sess.try_expect_sep(Separator::DotDot) {
             Some(range_op_span) => {
                 if sess.matches::<Expr>() {

@@ -29,7 +29,7 @@ impl SimpleName {
 impl Node for SimpleName {
     type ParseOutput = SimpleName; // out of expr depdendencies require direct parse and get a simple name
 
-    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<SimpleName> where F: FileSystem {
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<SimpleName> {
         let (value, span) = sess.expect_ident()?;
         Ok(SimpleName::new(value, span))
     }
@@ -65,7 +65,7 @@ impl Node for Name {
         matches!(current, Token::Ident(_)) 
     }
 
-    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<Expr> where F: FileSystem {
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Expr> {
         
         let first_segment = SimpleName::parse(sess)?;
         let mut all_span = first_segment.span;

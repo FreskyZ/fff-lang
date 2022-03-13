@@ -54,7 +54,7 @@ impl BinaryExpr {
 impl Node for BinaryExpr {
     type ParseOutput = Expr;
 
-    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<Expr> where F: FileSystem {  
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Expr> {  
         #[cfg(feature = "trace_binary_expr_parse")]
         macro_rules! trace { ($($arg:tt)*) => ({ print!("[PrimaryExpr] "); println!($($arg)*); }) }
         #[cfg(not(feature = "trace_binary_expr_parse"))]
@@ -64,7 +64,7 @@ impl Node for BinaryExpr {
 
         macro_rules! impl_binary_parser {
             ($parser_name: ident, $previous_parser: expr, $op_category: expr) => (
-                fn $parser_name<F>(sess: &mut ParseSession<F>) -> ParseResult<Expr> where F: FileSystem {
+                fn $parser_name<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Expr> {
                     trace!("parsing {}", stringify!($parser_name));
 
                     let mut current_retval = $previous_parser(sess)?;

@@ -135,7 +135,7 @@ impl Node for IfStatement {
         matches!(current, Token::Keyword(Keyword::If)) 
     }
 
-    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<IfStatement> where F: FileSystem {
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<IfStatement> {
 
         let if_span = sess.expect_keyword(Keyword::If)?;
         let if_expr = Expr::parse(sess)?;

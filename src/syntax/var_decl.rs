@@ -59,7 +59,7 @@ impl Node for VarDeclStatement {
         matches!(current, Token::Keyword(Keyword::Const | Keyword::Var)) 
     }
 
-    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<VarDeclStatement> where F: FileSystem {
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<VarDeclStatement> {
         
         let (starting_kw, starting_span) = sess.expect_keywords(&[Keyword::Const, Keyword::Var])?;
         let is_const = match starting_kw { Keyword::Const => true, Keyword::Var => false, _ => unreachable!() };

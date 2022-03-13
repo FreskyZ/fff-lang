@@ -82,7 +82,7 @@ pub use while_stmt::WhileStatement;
 // replace more proper place by IdentExpr and ExprList
 // abort IdentExpr to use Name, check name should be single segment at many where
 
-pub fn parse<F>(chars: crate::lexical::Parser<F>) -> Result<Module, ()> where F: crate::source::FileSystem {
+pub fn parse<F: crate::source::FileSystem>(chars: crate::lexical::Parser<F>) -> Result<Module, ()> {
     use prelude::Node;
     let mut context = prelude::ParseSession::new(chars);
     let result = Module::parse(&mut context);

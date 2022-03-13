@@ -30,7 +30,7 @@ impl Node for LabelDef {
         matches!(current, Token::Label(_))
     }
 
-    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<LabelDef> where F: FileSystem {
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<LabelDef> {
 
         if let Some((label_id, label_span)) = sess.try_expect_label() {
             let colon_span = sess.expect_sep(Separator::Colon)?;

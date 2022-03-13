@@ -30,6 +30,12 @@ impl From<ParenExpr> for Expr {
 impl ParenExpr {
     pub fn new<T: Into<Expr>>(span: Span, expr: T) -> ParenExpr { ParenExpr{ expr: Box::new(expr.into()), span } }
 }
+impl Node for ParenExpr {
+    type ParseOutput = Expr;
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Expr> {
+        TupleDef::parse(sess)
+    }
+}
 
 #[cfg_attr(test, derive(PartialEq))]
 pub struct TupleDef {
@@ -62,7 +68,7 @@ impl Node for TupleDef {
         matches!(current, Token::Sep(Separator::LeftParen)) 
     }
 
-    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<Expr> where F: FileSystem {
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Expr> {
 
         match ExprList::parse(sess)? {
             ExprListParseResult::Empty(span) => {

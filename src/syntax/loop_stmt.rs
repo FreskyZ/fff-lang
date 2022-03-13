@@ -58,7 +58,7 @@ impl Node for LoopStatement {
         matches!((current, peek2), (Token::Label(_), Token::Keyword(Keyword::Loop)) | (Token::Keyword(Keyword::Loop), _))
     }
 
-    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<LoopStatement> where F: FileSystem {
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<LoopStatement> {
 
         let maybe_name = LabelDef::try_parse(sess)?;
         let loop_span = sess.expect_keyword(Keyword::Loop)?;

@@ -56,7 +56,7 @@ impl Node for IndexCallExpr {
         matches!(current, Token::Sep(Separator::LeftBracket)) 
     }
 
-    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<IndexCallExpr> where F: FileSystem {
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<IndexCallExpr> {
 
         match ExprList::parse(sess)? {
             ExprListParseResult::Normal(span, expr_list) | ExprListParseResult::EndWithComma(span, expr_list) => 

@@ -36,7 +36,7 @@ impl Node for Block {
         matches!(current, Token::Sep(Separator::LeftBrace)) 
     }
 
-    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<Block> where F: FileSystem {
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Block> {
 
         let starting_span = sess.expect_sep(Separator::LeftBrace)?;
         let mut items = Vec::new();

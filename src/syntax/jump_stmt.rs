@@ -29,7 +29,7 @@ impl JumpStatement {
         }
     }
 
-    fn parse<F>(sess: &mut ParseSession<F>, expect_first_kw: Keyword) -> ParseResult<JumpStatement> where F: FileSystem {
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>, expect_first_kw: Keyword) -> ParseResult<JumpStatement> {
 
         let starting_span = sess.expect_keyword(expect_first_kw)?;
 
@@ -81,7 +81,7 @@ impl Node for ContinueStatement {
     fn matches(current: &Token) -> bool { 
         matches!(current, Token::Keyword(Keyword::Continue)) 
     }
-    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<ContinueStatement> where F: FileSystem { 
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<ContinueStatement> { 
         Ok(ContinueStatement(JumpStatement::parse(sess, Keyword::Continue)?))
     }
 }
@@ -90,7 +90,7 @@ impl Node for BreakStatement {
     fn matches(current: &Token) -> bool { 
         matches!(current, Token::Keyword(Keyword::Break)) 
     }
-    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<BreakStatement> where F: FileSystem {
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<BreakStatement> {
         Ok(BreakStatement(JumpStatement::parse(sess, Keyword::Break)?))
     }
 }

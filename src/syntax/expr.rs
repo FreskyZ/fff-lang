@@ -100,7 +100,7 @@ impl Node for Expr {
         || UnaryExpr::matches3(current, peek, peek2)
         || matches!(current, Token::Sep(Separator::DotDot) | Token::Keyword(Keyword::This))
     }
-    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<Expr> where F: FileSystem { 
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Expr> { 
         RangeExpr::parse(sess)
     }
 }

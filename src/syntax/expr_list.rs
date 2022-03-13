@@ -36,7 +36,7 @@ impl Node for ExprList {
 
     /// This is special, when calling `parse`, `sess.tk` should point to the quote token
     /// Then the parser will check end token to determine end of parsing process
-    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<ExprListParseResult> where F: FileSystem {
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<ExprListParseResult> {
 
         let (starting_sep, starting_span) = sess.expect_seps(&[Separator::LeftBrace, Separator::LeftBracket, Separator::LeftParen])?;
         let expect_end_sep = match starting_sep { 

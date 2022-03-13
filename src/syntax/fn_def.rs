@@ -64,7 +64,7 @@ impl Node for FnDef {
         matches!(current, Token::Keyword(Keyword::Fn))
     }
 
-    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<FnDef> where F: FileSystem {
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<FnDef> {
         #[cfg(feature = "trace_fn_def_parse")]
         macro_rules! trace { ($($arg:tt)*) => ({ print!("[FnDef: {}]", line!()); println!($($arg)*); }) }
         #[cfg(not(feature = "trace_fn_def_parse"))]

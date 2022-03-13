@@ -79,7 +79,7 @@ impl Node for ForStatement {
         matches!((current, peek2), (Token::Label(_), Token::Keyword(Keyword::For)) | (Token::Keyword(Keyword::For), _))
     }
 
-    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<ForStatement> where F: FileSystem {
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<ForStatement> {
 
         let maybe_label = LabelDef::try_parse(sess)?;
         let for_span = sess.expect_keyword(Keyword::For)?;

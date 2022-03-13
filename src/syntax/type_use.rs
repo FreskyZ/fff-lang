@@ -67,7 +67,7 @@ impl Node for TypeUse {
         }
     }
 
-    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<TypeUse> where F: FileSystem {
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<TypeUse> {
 
         if let Some(left_bracket_span) = sess.try_expect_sep(Separator::LeftBracket) {
             let inner = TypeUse::parse(sess)?;

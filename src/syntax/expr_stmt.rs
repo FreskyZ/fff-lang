@@ -37,7 +37,7 @@ impl Node for SimpleExprStatement {
         AssignExprStatement::matches3(current, peek, peek2)
     }
 
-    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<Self::ParseOutput> where F: FileSystem { 
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Self::ParseOutput> { 
         AssignExprStatement::parse(sess) 
     }
 }
@@ -85,7 +85,7 @@ impl Node for AssignExprStatement {
         Expr::matches3(current, peek, peek2)
     }
 
-    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<Statement> where F: FileSystem {
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Statement> {
 
         let left_expr = Expr::parse(sess)?;
         let starting_span = left_expr.get_all_span();

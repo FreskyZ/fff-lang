@@ -12,7 +12,7 @@ struct PrimaryExpr;
 impl Node for PrimaryExpr {
     type ParseOutput = Expr;
     
-    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<Expr> where F: FileSystem {
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Expr> {
 
         if sess.matches::<LitExpr>() {
             return LitExpr::parse(sess);
@@ -33,7 +33,7 @@ pub struct PostfixExpr;
 impl Node for PostfixExpr {
     type ParseOutput = Expr;
 
-    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<Expr> where F: FileSystem {   
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Expr> {   
         #[cfg(feature = "trace_postfix_expr_parse")]
         macro_rules! trace { ($($arg:tt)*) => ({ perror!("    [PostfixExpr:{}] ", line!()); perrorln!($($arg)*); }) }
         #[cfg(not(feature = "trace_postfix_expr_parse"))]

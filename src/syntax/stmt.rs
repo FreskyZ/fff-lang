@@ -41,7 +41,7 @@ macro_rules! define_statement {
                 $(|| <$subty>::matches3(current, peek, peek2) )+
             }
 
-            fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<$name> where F: FileSystem {
+            fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<$name> {
                 $( if sess.matches::<$subty>() {
                     Ok($name::from(<$subty>::parse(sess)?))
                 } else )+ {

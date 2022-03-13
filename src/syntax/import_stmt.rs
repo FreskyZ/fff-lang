@@ -47,7 +47,7 @@ impl Node for ImportStatement {
         matches!(current, Token::Keyword(Keyword::Import)) 
     }
 
-    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<ImportStatement> where F: FileSystem {
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<ImportStatement> {
 
         let starting_span = sess.expect_keyword(Keyword::Import)?;
         let name = SimpleName::parse(sess)?;

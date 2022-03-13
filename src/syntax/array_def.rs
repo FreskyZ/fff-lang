@@ -32,7 +32,7 @@ impl Node for ArrayDef {
         matches!(current, Token::Sep(Separator::LeftBracket)) 
     }
 
-    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<Expr> where F: FileSystem {
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Expr> {
         
         match ExprList::parse(sess)? {
             ExprListParseResult::Empty(span) => {

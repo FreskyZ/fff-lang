@@ -60,7 +60,7 @@ impl Node for WhileStatement {
         matches!((current, peek2), (Token::Label(_), Token::Keyword(Keyword::While)) | (Token::Keyword(Keyword::While), _))
     }
 
-    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<WhileStatement> where F: FileSystem {
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<WhileStatement> {
         
         let maybe_name = LabelDef::try_parse(sess)?;
         let while_span = sess.expect_keyword(Keyword::While)?;

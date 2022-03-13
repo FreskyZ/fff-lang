@@ -1,7 +1,4 @@
-#![allow(dead_code)] // temp remove
-///! fff-lang
-///!
-///! syntax/format_helper
+///! syntax::display: default display implementation
 
 use std::fmt::Debug;
 use crate::source::{SourceContext, Span, IsId};

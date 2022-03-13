@@ -54,7 +54,7 @@ impl Node for FnCallExpr {
         matches!(current, Token::Sep(Separator::LeftParen)) 
     }
 
-    fn parse<F>(sess: &mut ParseSession<F>) -> ParseResult<FnCallExpr> where F: FileSystem {
+    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<FnCallExpr> {
 
         match ExprList::parse(sess)? {
             ExprListParseResult::Empty(span) => 
