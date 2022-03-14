@@ -9,7 +9,7 @@
 // val =>         name, categories
    '!' =>          Not, Unary,
    '%' =>          Rem, Multiplicative,
-   '&' =>          And, BitAnd,
+   '&' =>          And, BitAnd | Unary,
    '(' =>    LeftParen, Separator,
    ')' =>   RightParen, Separator,
    '*' =>          Mul, Multiplicative,

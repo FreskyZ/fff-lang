@@ -60,7 +60,7 @@ impl Node for UnaryExpr {
 
 #[cfg(test)] #[test]
 fn unary_expr_parse() {
-    use super::{make_node, make_lit};
+    use super::{make_node, make_lit, make_exprs, FnCallExpr, SimpleName};
     
     assert_eq!{ make_node!("1" as Expr), 
         Expr::Lit(make_lit!(1, 0, 0)) 
@@ -75,6 +75,21 @@ fn unary_expr_parse() {
                     Separator::Not, Span::new(2, 2),
                     Expr::Lit(make_lit!(1, 3, 3)),
                 ))
+            ))
+        ))
+    }
+
+    assert_node_eq!{ make_node!("&a(&b)" as UnaryExpr), 
+        Expr::Unary(UnaryExpr::new(
+            Separator::And, Span::new(0, 0),
+            Expr::FnCall(FnCallExpr::new(
+                SimpleName::new(2, Span::new(1, 1)),
+                Span::new(2, 5), make_exprs![
+                    UnaryExpr::new(
+                        Separator::And, Span::new(3, 3),
+                        SimpleName::new(3, Span::new(4, 4)),
+                    )
+                ]
             ))
         ))
     }

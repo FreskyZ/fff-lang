@@ -44,16 +44,16 @@ impl Node for Module {
 
 #[cfg(test)] #[test]
 fn module_parse() {
-    use super::{make_node, make_lit, Name, SimpleName, ImportStatement, SimpleExprStatement, UseStatement};
+    use super::{make_node, make_lit, Name, SimpleName, ModuleStatement, SimpleExprStatement, UseStatement};
     //              0123456789012345678901234
-    assert_eq!{ make_node!("use a; import b; 3; b; a;" as Module, [], ["a", "b"]),
+    assert_eq!{ make_node!("use a; module b; 3; b; a;" as Module, [], ["a", "b"]),
         Module::new(vec![
             Item::Use(UseStatement::new_default(Span::new(0, 5), 
                 Name::new(Span::new(4, 4), vec![
                     SimpleName::new(2, Span::new(4, 4))
                 ])
             )),
-            Item::Import(ImportStatement::new_default(Span::new(7, 15), 
+            Item::Import(ModuleStatement::new_default(Span::new(7, 15), 
                 SimpleName::new(3, Span::new(14, 14))
             )),
             Item::SimpleExpr(SimpleExprStatement::new(Span::new(17, 18), 

@@ -7,8 +7,6 @@ pub use prelude::{Node, Visitor};
 #[cfg(test)]
 pub(crate) use prelude::make_node;
 #[cfg(test)]
-use prelude::assert_node_eq;
-#[cfg(test)]
 use crate::diagnostics::make_errors;
 #[cfg(test)]
 use crate::source::make_source;
@@ -24,7 +22,6 @@ mod fn_call;
 mod fn_def;
 mod for_stmt;
 mod if_stmt;
-mod import_stmt;
 mod index_call;
 mod jump_stmt;
 mod label_def;
@@ -32,6 +29,7 @@ mod lit_expr;
 mod loop_stmt;
 mod member_access;
 mod module;
+mod module_stmt;
 mod name;
 mod priority_proxy;
 mod range_expr;
@@ -59,7 +57,6 @@ pub use fn_call::FnCallExpr;
 pub use fn_def::{FnDef, FnParam};
 pub use for_stmt::ForStatement;
 pub use if_stmt::{IfStatement, IfClause, ElseIfClause, ElseClause};
-pub use import_stmt::ImportStatement;
 pub use index_call::IndexCallExpr;
 pub use jump_stmt::{BreakStatement, ContinueStatement};
 pub use label_def::LabelDef;
@@ -69,6 +66,7 @@ use lit_expr::make_lit;
 pub use loop_stmt::LoopStatement;
 pub use member_access::MemberAccessExpr;
 pub use module::Module;
+pub use module_stmt::ModuleStatement;
 pub use name::{Name, SimpleName};
 use priority_proxy::PostfixExpr;
 pub use range_expr::{RangeBothExpr, RangeFullExpr, RangeLeftExpr, RangeRightExpr};
@@ -82,10 +80,6 @@ pub use unary_expr::UnaryExpr;
 pub use use_stmt::UseStatement;
 pub use var_decl::VarDeclStatement;
 pub use while_stmt::WhileStatement;
-
-// TODO: 
-// replace more proper place by IdentExpr and ExprList
-// abort IdentExpr to use Name, check name should be single segment at many where
 
 pub fn parse<F: crate::source::FileSystem>(chars: crate::lexical::Parser<F>) -> Result<Module, ()> {
     let mut context = prelude::ParseSession::new(chars);

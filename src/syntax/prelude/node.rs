@@ -37,7 +37,6 @@ pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_if_clause(&mut self, node: &IfClause) -> Result<T, E> { node.walk(self) }
     fn visit_else_if_clause(&mut self, node: &ElseIfClause) -> Result<T, E> { node.walk(self) }
     fn visit_else_clause(&mut self, node: &ElseClause) -> Result<T, E> { node.walk(self) }
-    fn visit_import_stmt(&mut self, node: &ImportStatement) -> Result<T, E> { node.walk(self) }
     fn visit_index_call_expr(&mut self, node: &IndexCallExpr) -> Result<T, E> { node.walk(self) }
     fn visit_break_stmt(&mut self, node: &BreakStatement) -> Result<T, E> { node.walk(self) }
     fn visit_continue_stmt(&mut self, node: &ContinueStatement) -> Result<T, E> { node.walk(self) }
@@ -46,6 +45,7 @@ pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_loop_stmt(&mut self, node: &LoopStatement) -> Result<T, E> { node.walk(self) }
     fn visit_member_access(&mut self, node: &MemberAccessExpr) -> Result<T, E> { node.walk(self) }
     fn visit_module(&mut self, node: &Module) -> Result<T, E> { node.walk(self) }
+    fn visit_module_stmt(&mut self, node: &ModuleStatement) -> Result<T, E> { node.walk(self) }
     fn visit_name(&mut self, node: &Name) -> Result<T, E> { node.walk(self) }
     fn visit_simple_name(&mut self, node: &SimpleName) -> Result<T, E> { node.walk(self) }
     fn visit_range_both_expr(&mut self, node: &RangeBothExpr) -> Result<T, E> { node.walk(self) }

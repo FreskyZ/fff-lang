@@ -217,17 +217,6 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
         self.invoke_walk(node)
     }
 
-    fn visit_import_stmt(&mut self, node: &ImportStatement) -> fmt::Result {
-        self.write_indent()?;
-        self.write_str("import-stmt ")?;
-        self.write_span(node.all_span)?;
-        if node.target.is_some() {
-            self.write_str(" as ")?;
-            self.write_span(node.as_span)?;
-        }
-        self.invoke_walk(node)
-    }
-
     fn visit_index_call_expr(&mut self, node: &IndexCallExpr) -> fmt::Result {
         self.write_indent()?;
         self.write_str("index-call ")?;
@@ -283,6 +272,17 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
         self.write_indent()?;
         self.write_str("module ")?;
         self.write_str("<TODO FILE NAME>")?;
+        self.invoke_walk(node)
+    }
+
+    fn visit_module_stmt(&mut self, node: &ModuleStatement) -> fmt::Result {
+        self.write_indent()?;
+        self.write_str("import-stmt ")?;
+        self.write_span(node.all_span)?;
+        if node.target.is_some() {
+            self.write_str(" as ")?;
+            self.write_span(node.as_span)?;
+        }
         self.invoke_walk(node)
     }
 

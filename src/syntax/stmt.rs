@@ -6,7 +6,7 @@
  
 use super::prelude::*;
 use super::{FnDef, TypeDef, VarDeclStatement, BreakStatement, ContinueStatement, ReturnStatement, SimpleExprStatement, 
-    AssignExprStatement, LoopStatement, WhileStatement, ForStatement, IfStatement, BlockStatement, UseStatement, ImportStatement};
+    AssignExprStatement, LoopStatement, WhileStatement, ForStatement, IfStatement, BlockStatement, UseStatement, ModuleStatement};
 
 macro_rules! define_statement {
     ($name:ident, $visit_this:ident, $($subty:ty => $variant:ident, $visit:ident,)+) => (
@@ -84,7 +84,7 @@ define_statement!{ Item, visit_item,
     VarDeclStatement => VarDecl, visit_var_decl,
     WhileStatement => While, visit_while_stmt,
     UseStatement => Use, visit_use_stmt,
-    ImportStatement => Import, visit_import_stmt,
+    ModuleStatement => Import, visit_module_stmt,
 }
  
 // hack
