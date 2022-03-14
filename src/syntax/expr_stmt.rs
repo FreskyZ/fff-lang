@@ -107,7 +107,7 @@ fn expr_stmt_parse() {
     assert_eq!{ make_node!("writeln(\"helloworld\");" as AssignExprStatement, [Span::new(0, 6)], ["helloworld"]),
         Statement::SimpleExpr(SimpleExprStatement::new(Span::new(0, 21),
             FnCallExpr::new(
-                SimpleName::new(1, Span::new(0, 6)),
+                SimpleName::new(2, Span::new(0, 6)),
                 Span::new(7, 20), make_exprs![
                     make_lit!(3: str, 8, 19)
                 ]

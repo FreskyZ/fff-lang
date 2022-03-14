@@ -22,3 +22,5 @@ pub use node::{Node, Visitor};
 pub(crate) use node::make_node;
 pub use context::{ParseSession, ParseResult};
 pub use display::{FormatVisitor, NodeDisplay};
+#[cfg(test)]
+pub(crate) use display::{print_diff, assert_node_eq};

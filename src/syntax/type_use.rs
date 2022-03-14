@@ -105,17 +105,17 @@ fn type_use_parse() {
     assert_eq!{ make_node!("string" as TypeUse), TypeUse::new_simple(2, Span::new(0, 5)) }
     assert_eq!{ make_node!("helloworld_t" as TypeUse), TypeUse::new_simple(2, Span::new(0, 11)) }
 
-    assert_eq!{ make_node!("()" as TypeUse, [], ["unit"]), TypeUse::new_simple(1, Span::new(0, 1)) };
+    assert_eq!{ make_node!("()" as TypeUse, [], ["unit"]), TypeUse::new_simple(2, Span::new(0, 1)) };
 
     assert_eq!{ make_node!("[u8]" as TypeUse, [], ["array", "u8"]),
-        TypeUse::new_template(1, Span::new(0, 0), Span::new(0, 3), vec![
-                TypeUse::new_simple(2, Span::new(1, 2))
+        TypeUse::new_template(2, Span::new(0, 0), Span::new(0, 3), vec![
+                TypeUse::new_simple(3, Span::new(1, 2))
         ])
     }
 
-    assert_eq!{ make_node!("[[he_t]]" as TypeUse, [Span::new(2, 5)], ["array"]),
-        TypeUse::new_template(1, Span::new(0, 0), Span::new(0, 7), vec![
-            TypeUse::new_template(1, Span::new(0, 0),Span::new(1, 6), vec![
+    assert_node_eq!{ make_node!("[[he_t]]" as TypeUse, [Span::new(2, 5)], ["array"]),
+        TypeUse::new_template(3, Span::new(0, 0), Span::new(0, 7), vec![
+            TypeUse::new_template(3, Span::new(0, 0), Span::new(1, 6), vec![
                 TypeUse::new_simple(2, Span::new(2, 5))
             ])
         ])

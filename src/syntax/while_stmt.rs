@@ -65,15 +65,15 @@ fn while_stmt_parse() {
     use super::{make_node, make_exprs, make_lit, SimpleName, Statement, SimpleExprStatement, FnCallExpr};
     //                                           0        1         2         3         4        
     //                                           01234567890123456789012345 67890123456789012 3456
-    assert_eq!{ make_node!("@2: while true { writeln(\"fresky hellooooo\"); }" as WhileStatement, [], ["2", "writeln", "fresky hellooooo"]),
+    assert_node_eq!{ make_node!("@2: while true { writeln(\"fresky hellooooo\"); }" as WhileStatement, [], ["2", "writeln", "fresky hellooooo"]),
         WhileStatement::new_with_label(
-            LabelDef::new(1, Span::new(0, 2)),
+            LabelDef::new(2, Span::new(0, 2)),
             Span::new(4, 8),
             Expr::Lit(make_lit!(true, 10, 13)),
             Block::new(Span::new(15, 46), vec![
                 Statement::SimpleExpr(SimpleExprStatement::new(Span::new(17, 44), 
                     FnCallExpr::new(
-                        SimpleName::new(2, Span::new(17, 23)),
+                        SimpleName::new(3, Span::new(17, 23)),
                         Span::new(24, 43), make_exprs![
                             make_lit!(4: str, 25, 42)
                         ]

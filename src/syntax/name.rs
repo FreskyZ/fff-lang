@@ -102,17 +102,17 @@ fn name_parse() {
     use super::make_node;
 
     assert_eq!{ make_node!("hello" as Name), 
-        Expr::SimpleName(SimpleName::new(1, Span::new(0, 4)))
+        Expr::SimpleName(SimpleName::new(2, Span::new(0, 4)))
     }
     //              0        1         2         3         4
     //              01234567890123456789012345678901234567890
     assert_eq!{ make_node!("std::network::wlan::native::GetWLANHandle" as Name, [], ["std", "network", "wlan", "native", "GetWLANHandle"]),
         Expr::Name(Name::new(Span::new(0, 40), vec![
-            SimpleName::new(1, Span::new(0, 2)), 
-            SimpleName::new(2, Span::new(5, 11)),
-            SimpleName::new(3, Span::new(14, 17)),
-            SimpleName::new(4, Span::new(20, 25)),
-            SimpleName::new(5, Span::new(28, 40)),
+            SimpleName::new(2, Span::new(0, 2)), 
+            SimpleName::new(3, Span::new(5, 11)),
+            SimpleName::new(4, Span::new(14, 17)),
+            SimpleName::new(5, Span::new(20, 25)),
+            SimpleName::new(6, Span::new(28, 40)),
         ]))
     }
 }

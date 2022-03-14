@@ -50,20 +50,20 @@ fn module_parse() {
         Module::new(vec![
             Item::Use(UseStatement::new_default(Span::new(0, 5), 
                 Name::new(Span::new(4, 4), vec![
-                    SimpleName::new(1, Span::new(4, 4))
+                    SimpleName::new(2, Span::new(4, 4))
                 ])
             )),
             Item::Import(ImportStatement::new_default(Span::new(7, 15), 
-                SimpleName::new(2, Span::new(14, 14))
+                SimpleName::new(3, Span::new(14, 14))
             )),
             Item::SimpleExpr(SimpleExprStatement::new(Span::new(17, 18), 
                 make_lit!(3, 17, 17)
             )),
             Item::SimpleExpr(SimpleExprStatement::new(Span::new(20, 21), 
-                SimpleName::new(2, Span::new(20, 20))
+                SimpleName::new(3, Span::new(20, 20))
             )),
             Item::SimpleExpr(SimpleExprStatement::new(Span::new(23, 24), 
-                SimpleName::new(1, Span::new(23, 23))
+                SimpleName::new(2, Span::new(23, 23))
             )),
         ])
     }

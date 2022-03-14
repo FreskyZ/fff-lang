@@ -35,7 +35,7 @@ impl IfClause {
 impl ElseIfClause {
     pub fn new<T: Into<Expr>>(elseif_span: Span, cond_expr: T, body: Block) -> ElseIfClause {
         ElseIfClause{ 
-            all_span: body.all_span + elseif_span,
+            all_span: elseif_span + body.all_span,
             cond_expr: cond_expr.into(),
             elseif_span,
             body
@@ -182,10 +182,10 @@ fn if_stmt_parse() {
 
     //                                      0        1         2         3
     //                                      0123456789012345678901234567890123456
-    assert_eq!{ make_node!("if true { } else if false { } else {}" as IfStatement),
+    assert_node_eq!{ make_node!("if true { } else if false { } else {}" as IfStatement),
         IfStatement::new_ifelse(
             IfClause::new(Span::new(0, 1), 
-                make_lit!(false, 3, 6),
+                make_lit!(true, 3, 6),
                 Block::new(Span::new(8, 10), vec![])
             ), vec![
                 ElseIfClause::new(Span::new(12, 18), 
@@ -201,7 +201,7 @@ fn if_stmt_parse() {
 
     //              0         1         2         3         4         5         6         7
     //              012345678901234567890123456789012345678901234567890123456789012345678901
-    assert_eq!{ make_node!("if 1 { sth.do_sth(a); other.do_other(b); } else { [1,2,3].map(writeln);}" as IfStatement, [], ["sth", "do_sth", "a", "other", "do_other", "b", "writeln", "map"]),
+    assert_node_eq!{ make_node!("if 1 { sth.do_sth(a); other.do_other(b); } else { [1,2,3].map(writeln);}" as IfStatement, [], ["sth", "do_sth", "a", "other", "do_other", "b", "writeln", "map"]),
         IfStatement::new_ifelse(
             IfClause::new(Span::new(0, 1), 
                 make_lit!(1, 3, 3),
@@ -209,24 +209,24 @@ fn if_stmt_parse() {
                     Statement::SimpleExpr(SimpleExprStatement::new(Span::new(7, 20),
                         FnCallExpr::new(
                             MemberAccessExpr::new(
-                                SimpleName::new(1, Span::new(7, 9)),
+                                SimpleName::new(2, Span::new(7, 9)),
                                 Span::new(10, 10),
-                                SimpleName::new(2, Span::new(11, 16))
+                                SimpleName::new(3, Span::new(11, 16))
                             ),
                             Span::new(17, 19), make_exprs![
-                                SimpleName::new(3, Span::new(18, 18))
+                                SimpleName::new(4, Span::new(18, 18))
                             ]
                         ),
                     )),
                     Statement::SimpleExpr(SimpleExprStatement::new(Span::new(22, 39),
                         FnCallExpr::new(
                             MemberAccessExpr::new(
-                                SimpleName::new(4, Span::new(22, 26)),
+                                SimpleName::new(5, Span::new(22, 26)),
                                 Span::new(27, 27),
-                                SimpleName::new(5, Span::new(28, 35))
+                                SimpleName::new(6, Span::new(28, 35))
                             ),
                             Span::new(36, 38), make_exprs![
-                                SimpleName::new(6, Span::new(37, 37))
+                                SimpleName::new(7, Span::new(37, 37))
                             ]
                         ),
                     ))
@@ -245,10 +245,10 @@ fn if_stmt_parse() {
                                     make_lit!(3, 55, 55),
                                 ]),
                                 Span::new(57, 57),
-                                SimpleName::new(8, Span::new(58, 60))
+                                SimpleName::new(9, Span::new(58, 60))
                             ),
                             Span::new(61, 69), make_exprs![
-                                SimpleName::new(7, Span::new(62, 68))
+                                SimpleName::new(8, Span::new(62, 68))
                             ]
                         )
                     ))

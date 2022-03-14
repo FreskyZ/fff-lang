@@ -19,11 +19,6 @@ impl FnParam {
 impl Node for FnParam {
     type ParseOutput = FnParam;
     
-    // not an actual parsable node
-    fn parse<F: FileSystem>(_sess: &mut ParseSession<F>) -> ParseResult<FnParam> {
-        Err(())
-    }
-
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_fn_param(self)
     }
@@ -120,7 +115,7 @@ fn fn_def_parse() {
     //                                012345678901
     assert_eq!{ make_node!("fn main() {}" as FnDef),
         FnDef::new(Span::new(0, 11),
-            1, Span::new(3, 6), 
+            2, Span::new(3, 6), 
             Span::new(7, 8), vec![], 
             None,
             Block::new(Span::new(10, 11), vec![])
@@ -129,7 +124,7 @@ fn fn_def_parse() {
 
     //                      0        1
     //                      0123456789012345678
-    assert_eq!{ make_node!("fn main(ac: i32) {}" as FnDef, [Span::new(3, 6), Span::new(8, 9)], ["i32"]),
+    assert_node_eq!{ make_node!("fn main(ac: i32) {}" as FnDef, [Span::new(3, 6), Span::new(8, 9)], ["i32"]),
         FnDef::new(Span::new(0, 18), 
             2, Span::new(3, 6), 
             Span::new(7, 15), vec![
@@ -145,32 +140,32 @@ fn fn_def_parse() {
 
     //                      0         1         2         3         4         5         6         7         8
     //                      012345678901234567890123456789012345678901234567890123456789012345678901234567890
-    assert_eq!{ make_node!(" fn mainxxx(argv:[[string] ]   ,this:i32, some_other: char, )  { println(this); }" as FnDef, 
-        [Span::new(4, 10), Span::new(12, 15), Span::new(19, 24), Span::new(42, 51), Span::new(65, 61)], ["this", "i32"]),
+    assert_node_eq!{ make_node!(" fn mainxxx(argv:[[string] ]   ,this:i32, some_other: char, )  { println(this); }" as FnDef, 
+        [Span::new(4, 10), Span::new(12, 15), Span::new(19, 24), Span::new(42, 51), Span::new(65, 71)], ["this", "i32"]),
         FnDef::new(Span::new(1, 80),
-            1, Span::new(4, 10),
+            2, Span::new(4, 10),
             Span::new(11, 60), vec![
-                FnParam::new(2, Span::new(12, 15),
-                    TypeUse::new_template(3, Span::new(0, 0), Span::new(17, 27), vec![
-                        TypeUse::new_template(3, Span::new(0, 0), Span::new(18, 25), vec![
+                FnParam::new(3, Span::new(12, 15),
+                    TypeUse::new_template(9, Span::new(0, 0), Span::new(17, 27), vec![
+                        TypeUse::new_template(9, Span::new(0, 0), Span::new(18, 25), vec![
                             TypeUse::new_simple(4, Span::new(19, 24))
                         ])
                     ])
                 ),
-                FnParam::new(5, Span::new(32, 35),
-                    TypeUse::new_simple(6, Span::new(37, 39))
+                FnParam::new(7, Span::new(32, 35),
+                    TypeUse::new_simple(8, Span::new(37, 39))
                 ),
-                FnParam::new(7, Span::new(42, 51),
-                    TypeUse::new_simple(8, Span::new(54, 57))
+                FnParam::new(5, Span::new(42, 51),
+                    TypeUse::new_simple(10, Span::new(54, 57))
                 )
             ],
             None,
             Block::new(Span::new(63, 80), vec![
                 Statement::SimpleExpr(SimpleExprStatement::new(Span::new(65, 78),
                     FnCallExpr::new(
-                        Expr::SimpleName(SimpleName::new(9, Span::new(65, 71))),
+                        Expr::SimpleName(SimpleName::new(6, Span::new(65, 71))),
                         Span::new(72, 77), make_exprs![
-                            SimpleName::new(5, Span::new(73, 76))
+                            SimpleName::new(7, Span::new(73, 76))
                         ]
                     )
                 ))
@@ -180,37 +175,37 @@ fn fn_def_parse() {
 
     //                                0        1               
     //                                1234567890123456789
-    assert_eq!{ make_node!("fn main() -> i32 {}" as FnDef),
+    assert_node_eq!{ make_node!("fn main() -> i32 {}" as FnDef),
         FnDef::new(Span::new(0, 18),
-            1, Span::new(3, 6), 
+            2, Span::new(3, 6), 
             Span::new(7, 8), vec![],
-            Some(TypeUse::new_simple(2, Span::new(13, 15))),
+            Some(TypeUse::new_simple(3, Span::new(13, 15))),
             Block::new(Span::new(17, 18), vec![])
         )
     }
     //                      0        1         2         3         4         5         6
     //                      01234567890123456789012345678901234567890123456789012345678901234567
-    assert_eq!{ make_node!("fn ffff(argc: i32, argv: [string], envv: [string],) -> [[string]] {}" as FnDef, [],  ["ffff", "argc", "i32", "argv", "array", "string", "envv"]),
+    assert_node_eq!{ make_node!("fn ffff(argc: i32, argv: [string], envv: [string],) -> [[string]] {}" as FnDef, [],  ["ffff", "argc", "i32", "argv", "array", "string", "envv"]),
         FnDef::new(Span::new(0, 67),
-            1, Span::new(3, 6), 
+            2, Span::new(3, 6), 
             Span::new(7, 50), vec![
-                FnParam::new(2, Span::new(8, 11),
-                    TypeUse::new_simple(3, Span::new(14, 16))
+                FnParam::new(3, Span::new(8, 11),
+                    TypeUse::new_simple(4, Span::new(14, 16))
                 ),
-                FnParam::new(4, Span::new(19, 22),
-                    TypeUse::new_template(5, Span::new(0, 0), Span::new(25, 32), vec![
-                        TypeUse::new_simple(6, Span::new(26, 31))
+                FnParam::new(5, Span::new(19, 22),
+                    TypeUse::new_template(6, Span::new(0, 0), Span::new(25, 32), vec![
+                        TypeUse::new_simple(7, Span::new(26, 31))
                     ])
                 ),
-                FnParam::new(7, Span::new(35, 38),
-                    TypeUse::new_template(5, Span::new(0, 0), Span::new(41, 48), vec![
-                        TypeUse::new_simple(6, Span::new(42, 47))
+                FnParam::new(8, Span::new(35, 38),
+                    TypeUse::new_template(6, Span::new(0, 0), Span::new(41, 48), vec![
+                        TypeUse::new_simple(7, Span::new(42, 47))
                     ])
                 )
             ],
-            Some(TypeUse::new_template(5, Span::new(0, 0), Span::new(55, 64), vec![   
-                TypeUse::new_template(5, Span::new(0, 0), Span::new(56, 63), vec![
-                    TypeUse::new_simple(6, Span::new(57, 62))
+            Some(TypeUse::new_template(6, Span::new(0, 0), Span::new(55, 64), vec![   
+                TypeUse::new_template(6, Span::new(0, 0), Span::new(56, 63), vec![
+                    TypeUse::new_simple(7, Span::new(57, 62))
                 ])
             ])),
             Block::new(Span::new(66, 67), vec![])

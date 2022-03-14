@@ -446,6 +446,57 @@ impl<'n, 'scx, N: Node, F: FileSystem> fmt::Display for NodeDisplay<'n, 'scx, N,
     }
 }
 
+// check node equal by PartialEq, if not, compare display text, or else I'll blind comparing them by human eyes
+#[cfg(test)]
+pub fn print_diff<N: Node>(actual: &N, expect: &N, backtrace: u32) {
+    let mut scx = SourceContext::new_file_system(crate::source::VirtualFileSystem{
+        cwd: "1".into(),
+        files: [("1".into(), std::iter::repeat(' ').take(10000).collect())].into_iter().collect(),
+    });
+    let mut chars = scx.entry("1");
+    for i in 2..100 {
+        chars.intern(&format!("#{i}")); // this maps string id to #id
+    }
+    chars.finish();
+
+    let mut buf = format!("line {backtrace} node not same\n");
+    let (actual_display, expect_display) = (actual.display(&scx).to_string(), expect.display(&scx).to_string());
+    let (actual_lines, expect_lines) = (actual_display.lines().collect::<Vec<_>>(), expect_display.lines().collect::<Vec<_>>());
+
+    let common_line_count = std::cmp::min(actual_lines.len(), expect_lines.len());
+    for line in 0..common_line_count {
+        if actual_lines[line] != expect_lines[line] {
+            write!(buf, "{: >3} |- {}\n", line + 1, actual_lines[line]).unwrap();
+            write!(buf, "    |+ {}\n", expect_lines[line]).unwrap();
+        } else {
+            write!(buf, "{: >3} |  {}\n", line + 1, actual_lines[line]).unwrap();
+        }
+    }
+    if actual_lines.len() > common_line_count {
+        for line in common_line_count..actual_lines.len() {
+            write!(buf, "{: >3} |- {}\n", line + 1, actual_lines[line]).unwrap();
+        }
+    }
+    if expect_lines.len() > common_line_count {
+        for line in common_line_count..expect_lines.len() {
+            write!(buf, "{: >3} |+ {}\n", line + 1, expect_lines[line]).unwrap();
+        }
+    }
+    assert!(false, "{}", buf);
+}
+
+#[cfg(test)]
+macro_rules! assert_node_eq {
+    ($actual:expr, $expect:expr) => {{
+        let (actual, expect) = ($actual, $expect);
+        if actual != expect {
+            print_diff(&actual, &expect, line!());
+        }
+    }}
+}
+#[cfg(test)]
+pub(crate) use assert_node_eq;
+
 #[cfg(test)]
 mod tests {
     use crate::source::Span;

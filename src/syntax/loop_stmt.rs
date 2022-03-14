@@ -71,16 +71,16 @@ fn loop_stmt_parse() {
         LoopStatement::new_no_label(Span::new(0, 3), Block::new(Span::new(5, 6), vec![]))
     }
     //                                        1234567890123456789 0123 45678
-    assert_eq!{ make_node!("@@: loop { println(\"233\"); }" as LoopStatement, [], ["@", "println", "233"]),
+    assert_node_eq!{ make_node!("@@: loop { println(\"233\"); }" as LoopStatement, [], ["@", "println", "233"]),
         LoopStatement::new_with_label(
-            LabelDef::new(1, Span::new(0, 2)),
+            LabelDef::new(2, Span::new(0, 2)),
             Span::new(4, 7),
             Block::new(Span::new(9, 27), vec![
                 Statement::SimpleExpr(SimpleExprStatement::new(Span::new(11, 25), 
                     FnCallExpr::new(
-                        SimpleName::new(2, Span::new(11, 17)),
+                        SimpleName::new(3, Span::new(11, 17)),
                         Span::new(18, 24), make_exprs![
-                            make_lit!(3: str, 19, 23),
+                            make_lit!(4: str, 19, 23),
                         ]
                     )
                 ))

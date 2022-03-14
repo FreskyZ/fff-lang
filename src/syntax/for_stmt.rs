@@ -79,11 +79,11 @@ fn for_stmt_parse() {
     use super::{make_node, make_exprs, make_lit, SimpleName, SimpleExprStatement, Statement, MemberAccessExpr, FnCallExpr, ExprList};
 
     //                      0123456789012345678
-    assert_eq!{ make_node!("@2: for i in 42 {}" as ForStatement, [Span::new(1, 1), Span::new(8, 8)]),
+    assert_node_eq!{ make_node!("@2: for i in 42 {}" as ForStatement, [Span::new(1, 1), Span::new(8, 8)]),
         ForStatement::new_with_label(Span::new(0, 17),
-            LabelDef::new(1, Span::new(0, 2)),
+            LabelDef::new(2, Span::new(0, 2)),
             Span::new(4, 6),
-            2, Span::new(8, 8),
+            3, Span::new(8, 8),
             Expr::Lit(make_lit!(42, 13, 14)),
             Block::new(Span::new(16, 17), vec![])
         )
@@ -91,39 +91,39 @@ fn for_stmt_parse() {
 
     //              0         1         2         3         4         5         6         7         
     //              01234567890123456789012345678901234567890123456789012345678901 23456789012 34567
-    assert_eq!{ make_node!("@hello: for _ in range(0, 10).enumerate().reverse() { writeln(\"helloworld\"); }" as ForStatement, 
+    assert_node_eq!{ make_node!("@hello: for _ in range(0, 10).enumerate().reverse() { writeln(\"helloworld\"); }" as ForStatement, 
         [], ["hello", "_", "range", "enumerate", "reverse", "writeln", "helloworld"]),
         ForStatement::new_with_label(Span::new(0, 77),
-            LabelDef::new(1, Span::new(0, 6)),
+            LabelDef::new(2, Span::new(0, 6)),
             Span::new(8, 10),
-            2, Span::new(12, 12),
+            3, Span::new(12, 12),
             FnCallExpr::new(
                 MemberAccessExpr::new(
                     FnCallExpr::new(
                         MemberAccessExpr::new(
                             FnCallExpr::new(
-                                SimpleName::new(3, Span::new(17, 21)),
+                                SimpleName::new(4, Span::new(17, 21)),
                                 Span::new(22, 28), make_exprs![
                                     make_lit!(0, 23, 23),
                                     make_lit!(10, 26, 27),
                                 ]
                             ),
                             Span::new(29, 29),
-                            SimpleName::new(4, Span::new(30, 38))
+                            SimpleName::new(5, Span::new(30, 38))
                         ),
                         Span::new(39, 40), ExprList::new(vec![])
                     ), 
                     Span::new(41, 41),
-                    SimpleName::new(5, Span::new(42, 48))
+                    SimpleName::new(6, Span::new(42, 48))
                 ),
                 Span::new(49, 50), ExprList::new(vec![])
             ),
             Block::new(Span::new(52, 77), vec![
                 Statement::SimpleExpr(SimpleExprStatement::new(Span::new(54, 75),
                     FnCallExpr::new(
-                        SimpleName::new(6, Span::new(54, 60)),
+                        SimpleName::new(7, Span::new(54, 60)),
                         Span::new(61, 74), make_exprs![
-                            make_lit!(7: str, 62, 73)
+                            make_lit!(8: str, 62, 73)
                         ]
                     )
                 ))

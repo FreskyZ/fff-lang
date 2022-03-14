@@ -121,55 +121,55 @@ fn binary_expr_parse() {
             BinaryExpr::new(
                 BinaryExpr::new(
                     BinaryExpr::new(
-                        SimpleName::new(1, Span::new(0, 0)),
+                        SimpleName::new(2, Span::new(0, 0)),
                         Separator::Mul, Span::new(2, 2), 
-                        SimpleName::new(2, Span::new(4, 4)),
+                        SimpleName::new(3, Span::new(4, 4)),
                     ),
                     Separator::Div, Span::new(6, 6),
-                    SimpleName::new(3, Span::new(8, 8)),
+                    SimpleName::new(4, Span::new(8, 8)),
                 ),
                 Separator::Add, Span::new(10, 10),
                 BinaryExpr::new(
-                    SimpleName::new(4, Span::new(12, 12)),
+                    SimpleName::new(5, Span::new(12, 12)),
                     Separator::Rem, Span::new(14, 14),
-                    SimpleName::new(5, Span::new(16, 16)),
+                    SimpleName::new(6, Span::new(16, 16)),
                 )
             ),
             Separator::Sub, Span::new(18, 18),
-            SimpleName::new(6, Span::new(20, 20)),
+            SimpleName::new(7, Span::new(20, 20)),
         ))
     }           
     //                                     0        1         2         3
     //                                     1234567890123456789012345678901
-    assert_eq!{ make_node!("a * b << h / c + d % e - f >> g" as BinaryExpr), // (((a * b) << (((h / c) + (d % e)) - f)) >> g)
+    assert_node_eq!{ make_node!("a * b << h / c + d % e - f >> g" as BinaryExpr), // (((a * b) << (((h / c) + (d % e)) - f)) >> g)
         Expr::Binary(BinaryExpr::new(
             BinaryExpr::new(
                 BinaryExpr::new(
-                    SimpleName::new(1, Span::new(0, 0)),
+                    SimpleName::new(2, Span::new(0, 0)),
                     Separator::Mul, Span::new(2, 2),
-                    SimpleName::new(2, Span::new(4, 4))
+                    SimpleName::new(3, Span::new(4, 4))
                 ),
                 Separator::LtLt, Span::new(6, 7),
                 BinaryExpr::new(
                     BinaryExpr::new(
                         BinaryExpr::new(
-                            SimpleName::new(3, Span::new(9, 9)),
+                            SimpleName::new(4, Span::new(9, 9)),
                             Separator::Div, Span::new(11, 11),
-                            SimpleName::new(4, Span::new(13, 13))
+                            SimpleName::new(5, Span::new(13, 13))
                         ),
                         Separator::Add, Span::new(15, 15),
                         BinaryExpr::new(
-                            SimpleName::new(5, Span::new(17, 17)),
+                            SimpleName::new(6, Span::new(17, 17)),
                             Separator::Rem, Span::new(19, 19),
-                            SimpleName::new(6, Span::new(21, 21))
+                            SimpleName::new(7, Span::new(21, 21))
                         )
                     ),
                     Separator::Sub, Span::new(23, 23),
-                    SimpleName::new(7, Span::new(25, 25))
+                    SimpleName::new(8, Span::new(25, 25))
                 )
             ),
             Separator::GtGt, Span::new(27, 28),
-            SimpleName::new(8, Span::new(30, 30)),
+            SimpleName::new(9, Span::new(30, 30)),
         ))
     }          
 
@@ -182,7 +182,7 @@ fn binary_expr_parse() {
     //     only change that can I fix the bug
     //                                     0        1         2         3         4         5         6         7         8
     //                                     1234567890123456789012345678901234567890123456789012345678901234567890123456789012345
-    assert_eq!{ make_node!("a * b << h / c + d % e - f >> g > h * i < j << k >= m && n || o & p | q ^ r != s == t" as BinaryExpr),
+    assert_node_eq!{ make_node!("a * b << h / c + d % e - f >> g > h * i < j << k >= m && n || o & p | q ^ r != s == t" as BinaryExpr),
         // */%, +-, <><=>=, <<>>, &, ^, |, ==!=, &&, ||
         // ((((((a * b) << (((h / c) + (d % e)) - f)) >> ((g > (h * i)) < j)) << (k >= m)) && n) || ((((o & p) | (q ^ r)) != s) == t))
         Expr::Binary(BinaryExpr::new(
@@ -191,88 +191,88 @@ fn binary_expr_parse() {
                     BinaryExpr::new(
                         BinaryExpr::new(
                             BinaryExpr::new(
-                                SimpleName::new(1, Span::new(0, 0)),
+                                SimpleName::new(2, Span::new(0, 0)),
                                 Separator::Mul, Span::new(2, 2),
-                                SimpleName::new(2, Span::new(4, 4)),
+                                SimpleName::new(3, Span::new(4, 4)),
                             ),
                             Separator::LtLt, Span::new(6, 7),
                             BinaryExpr::new(
                                 BinaryExpr::new(
                                     BinaryExpr::new(
-                                        SimpleName::new(3, Span::new(9, 9)),
+                                        SimpleName::new(4, Span::new(9, 9)),
                                         Separator::Div, Span::new(11, 11),
-                                        SimpleName::new(4, Span::new(13, 13)),
+                                        SimpleName::new(5, Span::new(13, 13)),
                                     ),
                                     Separator::Add, Span::new(15, 15),
                                     BinaryExpr::new(
-                                        SimpleName::new(5, Span::new(17, 17)),
+                                        SimpleName::new(6, Span::new(17, 17)),
                                         Separator::Rem, Span::new(19, 19),
-                                        SimpleName::new(6, Span::new(21, 21)),
+                                        SimpleName::new(7, Span::new(21, 21)),
                                     )
                                 ),
                                 Separator::Sub, Span::new(23, 23),
-                                SimpleName::new(7, Span::new(25, 25))
+                                SimpleName::new(8, Span::new(25, 25))
                             ),
                         ),
                         Separator::GtGt, Span::new(27, 28),
                         BinaryExpr::new(
                             BinaryExpr::new(
-                                SimpleName::new(8, Span::new(30, 30)),
+                                SimpleName::new(9, Span::new(30, 30)),
                                 Separator::Gt, Span::new(32, 32),
                                 BinaryExpr::new(
-                                    SimpleName::new(3, Span::new(34, 34)),
+                                    SimpleName::new(4, Span::new(34, 34)),
                                     Separator::Mul, Span::new(36, 36),
-                                    SimpleName::new(9, Span::new(38, 38)),
+                                    SimpleName::new(10, Span::new(38, 38)),
                                 )
                             ),
                             Separator::Lt, Span::new(40, 40),
-                            SimpleName::new(10, Span::new(42, 42)),
+                            SimpleName::new(11, Span::new(42, 42)),
                         )
                     ),
                     Separator::LtLt, Span::new(44, 45),
                     BinaryExpr::new(
-                        SimpleName::new(11, Span::new(47, 47)),
+                        SimpleName::new(12, Span::new(47, 47)),
                         Separator::GtEq, Span::new(49, 50),
-                        SimpleName::new(12, Span::new(52, 52)),
+                        SimpleName::new(13, Span::new(52, 52)),
                     )
                 ),
                 Separator::AndAnd, Span::new(54, 55),
-                SimpleName::new(13, Span::new(57, 57))
+                SimpleName::new(14, Span::new(57, 57))
             ),
             Separator::OrOr, Span::new(59, 60),
             BinaryExpr::new(
                 BinaryExpr::new(
                     BinaryExpr::new(
                         BinaryExpr::new(
-                            SimpleName::new(14, Span::new(62, 62)),
+                            SimpleName::new(15, Span::new(62, 62)),
                             Separator::And, Span::new(64, 64),
-                            SimpleName::new(15, Span::new(66, 66)),
+                            SimpleName::new(16, Span::new(66, 66)),
                         ),
                         Separator::Or, Span::new(68, 68),
                         BinaryExpr::new(
-                            SimpleName::new(16, Span::new(70, 70)),
+                            SimpleName::new(17, Span::new(70, 70)),
                             Separator::Caret, Span::new(72, 72),
-                            SimpleName::new(17, Span::new(74, 74)),
+                            SimpleName::new(18, Span::new(74, 74)),
                         )
                     ),
                     Separator::NotEq, Span::new(76, 77),
-                    SimpleName::new(18, Span::new(79, 79)),
+                    SimpleName::new(19, Span::new(79, 79)),
                 ),
                 Separator::EqEq, Span::new(81, 82),
-                SimpleName::new(19, Span::new(84, 84))
+                SimpleName::new(20, Span::new(84, 84))
             )
         ))
     }
     //                                     1234567890
-    assert_eq!{ make_node!("a & b == c" as BinaryExpr), // ((a & b) == c)
+    assert_node_eq!{ make_node!("a & b == c" as BinaryExpr), // ((a & b) == c)
         Expr::Binary(BinaryExpr::new(
             BinaryExpr::new(
-                SimpleName::new(1, Span::new(0, 0)),
+                SimpleName::new(2, Span::new(0, 0)),
                 Separator::And, Span::new(2, 2),
-                SimpleName::new(2, Span::new(4, 4)),
+                SimpleName::new(3, Span::new(4, 4)),
             ),
             Separator::EqEq, Span::new(6, 7),
-            SimpleName::new(3, Span::new(9, 9)),
+            SimpleName::new(4, Span::new(9, 9)),
         ))
     }
 

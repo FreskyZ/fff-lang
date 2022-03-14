@@ -89,11 +89,11 @@ fn jump_stmt_parse() {
     
     assert_eq!{ make_node!("continue;" as ContinueStatement), ContinueStatement::new_no_target(Span::new(0, 8)) }
     assert_eq!{ make_node!("continue @1;" as ContinueStatement), 
-        ContinueStatement::new_with_target(Span::new(0, 11), 1, Span::new(9, 10))
+        ContinueStatement::new_with_target(Span::new(0, 11), 2, Span::new(9, 10))
     }
     
     assert_eq!{ make_node!("break;" as BreakStatement), BreakStatement::new_no_target(Span::new(0, 5)) }
     assert_eq!{ make_node!("break @1;" as BreakStatement), 
-        BreakStatement::new_with_target(Span::new(0, 8), 1, Span::new(6, 7))
+        BreakStatement::new_with_target(Span::new(0, 8), 2, Span::new(6, 7))
     }
 }

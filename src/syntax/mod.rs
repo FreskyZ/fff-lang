@@ -7,6 +7,8 @@ pub use prelude::{Node, Visitor};
 #[cfg(test)]
 pub(crate) use prelude::make_node;
 #[cfg(test)]
+use prelude::assert_node_eq;
+#[cfg(test)]
 use crate::diagnostics::make_errors;
 #[cfg(test)]
 use crate::source::make_source;

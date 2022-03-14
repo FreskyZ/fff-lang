@@ -55,7 +55,7 @@ fn array_def_parse() {
 
     assert_eq!{ make_node!("[a]" as ArrayDef),
         Expr::Array(ArrayDef::new(Span::new(0, 2), make_exprs![
-            SimpleName::new(1, Span::new(1, 1))
+            SimpleName::new(2, Span::new(1, 1))
         ]))
     }
 

@@ -69,7 +69,7 @@ fn use_stmt_parse() {
     assert_eq!{
         make_node!("use a;" as UseStatement),
         UseStatement::new_default(Span::new(0, 5),
-            Name::new(Span::new(4, 4), vec![SimpleName::new(1, Span::new(4, 4))])
+            Name::new(Span::new(4, 4), vec![SimpleName::new(2, Span::new(4, 4))])
         )
     }
 
@@ -77,12 +77,12 @@ fn use_stmt_parse() {
         make_node!("use std::fmt::Debug as Display;" as UseStatement),
         UseStatement::new_target(Span::new(0, 30), 
             Name::new(Span::new(4, 18), vec![
-                SimpleName::new(1, Span::new(4, 6)),
-                SimpleName::new(2, Span::new(9, 11)),
-                SimpleName::new(3, Span::new(14, 18))
+                SimpleName::new(2, Span::new(4, 6)),
+                SimpleName::new(3, Span::new(9, 11)),
+                SimpleName::new(4, Span::new(14, 18))
             ]),
             Span::new(20, 21),
-            SimpleName::new(4, Span::new(23, 29))
+            SimpleName::new(5, Span::new(23, 29))
         )
     }
 }
