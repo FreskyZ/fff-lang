@@ -14,17 +14,6 @@ pub struct ImportStatement {
     pub target: Option<SimpleName>,
     pub all_span: Span,
 }
-impl ISyntaxFormat for ImportStatement {
-    fn format(&self, f: Formatter) -> String {
-        let f = f.indent().header_text_or("import-stmt").space().span(self.all_span).endl().apply1(&self.name);
-        match self.target {
-            None => f.finish(),
-            Some(ref ident) => 
-                f.endl().indent1().lit("\"as\"").space().span(self.as_span).endl()
-                    .set_prefix_text("alias-as").apply1(ident).unset_prefix_text().finish(),
-        }
-    }
-}
 impl ImportStatement {
     
     pub fn new_default(all_span: Span, name: SimpleName) -> ImportStatement {

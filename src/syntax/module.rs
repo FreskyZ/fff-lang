@@ -4,36 +4,15 @@
 ///! module = { item }
 
 use super::prelude::*;
-use super::{Item, ImportStatement};
+use super::{Item};
 
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
 pub struct Module {
     pub items: Vec<Item>,
 }
-impl ISyntaxFormat for Module {
-    fn format(&self, f: Formatter) -> String {
-        let mut f = f.indent().header_text_or("module");
-        if self.items.len() == 0 {
-            f = f.endl().indent1().lit("no-item");
-        }
-        for item in &self.items {
-            f = f.endl().apply1(item);
-        }
-        f.finish()
-    }
-}
 impl Module {
     pub fn new(items: Vec<Item>) -> Module { Module{ items } }
-
-    // TODO: update to `impl Iterator<Item = Item>` and remove collect after stabilize
-    pub fn import_statements(&self) -> Vec<&ImportStatement> {
-        self.items.iter()
-            .map(|ref item| if let &&Item::Import(ref import_stmt) = item { Some(import_stmt) } else { None })
-            .filter(|maybe_import| maybe_import.is_some())
-            .map(|maybe_import| maybe_import.unwrap())
-            .collect()
-    }
 }
 impl Node for Module {
     type ParseOutput = Module;

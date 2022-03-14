@@ -16,27 +16,8 @@ pub struct WhileStatement {
     pub while_span: Span,
     pub all_span: Span,
 }
-impl ISyntaxFormat for WhileStatement {
-    fn format(&self, f: Formatter) -> String {
-        let f = f.indent().header_text_or("while-stmt").space().span(self.all_span).endl();
-        let f = match self.name { 
-            Some(ref name) => f.set_header_text("loop-name").apply1(name).unset_header_text().endl(), 
-            None => f.indent1().lit("no-loop-name").endl(),
-        };
-        f.indent1().lit("\"while\"").space().span(self.while_span).endl()
-            .apply1(&self.loop_expr).endl()
-            .set_header_text("body").apply1(&self.body)
-            .finish()
-    }
-}
 impl WhileStatement {
     
-    pub fn new_no_label(while_span: Span, loop_expr: Expr, body: Block) -> WhileStatement {
-        WhileStatement{ 
-            all_span: while_span + body.all_span,
-            name: None, loop_expr, body, while_span
-        }
-    }
     pub fn new_with_label(name: LabelDef, while_span: Span, loop_expr: Expr, body: Block) -> WhileStatement {
         WhileStatement{ 
             all_span: name.all_span + body.all_span,

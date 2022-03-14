@@ -21,4 +21,4 @@ pub use node::{Node, Visitor};
 #[cfg(test)]
 pub(crate) use node::make_node;
 pub use context::{ParseSession, ParseResult};
-pub use display::{FormatVisitor, NodeDisplay, Formatter, ISyntaxFormat};
+pub use display::{FormatVisitor, NodeDisplay};

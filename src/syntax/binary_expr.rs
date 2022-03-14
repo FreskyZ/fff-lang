@@ -24,15 +24,6 @@ pub struct BinaryExpr {
     pub operator_span: Span, 
     pub all_span: Span,
 }
-impl ISyntaxFormat for BinaryExpr {
-    fn format(&self, f: Formatter) -> String {
-        f.indent().header_text_or("binary-expr").space().span(self.all_span).endl()
-            .set_prefix_text("left-is").apply1(self.left_expr.as_ref()).unset_prefix_text().endl()
-            .indent1().lit("\"").debug(&self.operator).lit("\"").space().span(self.operator_span).endl()
-            .set_prefix_text("right-is").apply1(self.right_expr.as_ref()).unset_prefix_text()
-            .finish()
-    }
-}
 impl From<BinaryExpr> for Expr {
     fn from(binary_expr: BinaryExpr) -> Expr { Expr::Binary(binary_expr) }
 }

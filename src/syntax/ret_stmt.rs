@@ -12,16 +12,6 @@ pub struct ReturnStatement {
     pub expr: Option<Expr>,
     pub all_span: Span,
 }
-impl ISyntaxFormat for ReturnStatement {
-    fn format(&self, f: Formatter) -> String {
-        match self.expr {
-            Some(ref expr) => 
-                f.indent().header_text_or("return-stmt").space().span(self.all_span).endl()
-                    .set_prefix_text("ret-val-is").apply1(expr).unset_prefix_text().finish(),
-            None => f.indent().header_text_or("return-stmt").space().span(self.all_span).finish(),
-        }
-    }
-}
 impl ReturnStatement {
 
     pub fn new_unit(all_span: Span) -> ReturnStatement {

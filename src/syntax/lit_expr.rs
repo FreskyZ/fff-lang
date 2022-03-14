@@ -22,12 +22,6 @@ pub struct LitExpr {
     pub value: LitValue,
     pub span: Span,
 }
-impl ISyntaxFormat for LitExpr {
-    fn format(&self, f: Formatter) -> String {
-        let f = f.indent().header_text_or("literal").space();
-        f.debug(&self.value).space().span(self.span).finish()
-    }
-}
 impl From<LitExpr> for Expr {
     fn from(lit_expr: LitExpr) -> Expr { Expr::Lit(lit_expr) }
 }

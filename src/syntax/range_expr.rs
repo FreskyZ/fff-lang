@@ -15,11 +15,6 @@ use super::{Expr, BinaryExpr};
 pub struct RangeFullExpr {
     pub all_span: Span,
 }
-impl ISyntaxFormat for RangeFullExpr {
-    fn format(&self, f: Formatter) -> String {
-        f.indent().header_text_or("range-full").space().span(self.all_span).finish()
-    }
-}
 impl From<RangeFullExpr> for Expr {
     fn from(range_expr: RangeFullExpr) -> Expr { Expr::RangeFull(range_expr) }
 }
@@ -39,13 +34,6 @@ impl Node for RangeFullExpr {
 pub struct RangeRightExpr {
     pub all_span: Span,  // all_span.slice(2) is range_op_span
     pub expr: Box<Expr>,
-}
-impl ISyntaxFormat for RangeRightExpr {
-    fn format(&self, f: Formatter) -> String {
-        f.indent().header_text_or("range-right").space().span(self.all_span).endl()
-            .apply1(self.expr.as_ref())
-            .finish()
-    }
 }
 impl From<RangeRightExpr> for Expr {
     fn from(range_expr: RangeRightExpr) -> Expr { Expr::RangeRight(range_expr) }
@@ -71,13 +59,6 @@ impl Node for RangeRightExpr {
 pub struct RangeLeftExpr {
     pub expr: Box<Expr>,
     pub all_span: Span, // all_span.slice(-2, 0) should get range_op_span
-}
-impl ISyntaxFormat for RangeLeftExpr {
-    fn format(&self, f: Formatter) -> String {
-        f.indent().header_text_or("range-left").space().span(self.all_span).endl()
-            .apply1(self.expr.as_ref())
-            .finish()
-    }
 }
 impl From<RangeLeftExpr> for Expr {
     fn from(range_expr: RangeLeftExpr) -> Expr { Expr::RangeLeft(range_expr) }
@@ -105,15 +86,6 @@ pub struct RangeBothExpr {
     pub op_span: Span,
     pub right_expr: Box<Expr>,
     pub all_span: Span,
-}
-impl ISyntaxFormat for RangeBothExpr {
-    fn format(&self, f: Formatter) -> String {
-        f.indent().header_text_or("range-both").space().span(self.all_span).endl()
-            .set_prefix_text("left-is").apply1(self.left_expr.as_ref()).unset_prefix_text().endl()
-            .indent1().lit("\"..\"").space().span(self.op_span).endl()
-            .set_prefix_text("right-is").apply1(self.right_expr.as_ref())
-            .finish()
-    }
 }
 impl From<RangeBothExpr> for Expr {
     fn from(range_expr: RangeBothExpr) -> Expr { Expr::RangeBoth(range_expr) }

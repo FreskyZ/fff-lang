@@ -138,6 +138,7 @@ macro_rules! make_node {
         let mut scx = crate::source::make_source!($code);
         let mut chars = scx.entry("1");
         $( chars.intern_span($span_string); )*
+        chars.intern(""); // this changes nothing and suppresses mut warning
         let lcx = crate::lexical::Parser::new(chars, &mut ecx);
         let mut pcx = crate::syntax::prelude::ParseSession::new(lcx);
         let node = <$ty>::parse(&mut pcx).expect("failed to parse test input");
@@ -151,6 +152,7 @@ macro_rules! make_node {
         let mut chars = scx.entry("1");
         $( chars.intern_span($span_string); )*
         $( chars.intern($value_string); )*
+        chars.intern(""); // this changes nothing and suppresses mut warning
         let lcx = crate::lexical::Parser::new(chars, &mut ecx);
         let mut pcx = crate::syntax::prelude::ParseSession::new(lcx);
         let node = <$ty>::parse(&mut pcx).expect("failed to parse test input");
@@ -164,6 +166,7 @@ macro_rules! make_node {
         let mut chars = scx.entry("1");
         $( chars.intern_span($span_string); )*
         $( chars.intern($value_string); )*
+        chars.intern(""); // this changes nothing and suppresses mut warning
         let lcx = crate::lexical::Parser::new(chars, &mut ecx);
         let mut pcx = crate::syntax::prelude::ParseSession::new(lcx);
         let node = <$ty>::parse(&mut pcx).expect("failed to parse test input");
@@ -178,6 +181,7 @@ macro_rules! make_node {
         let mut chars = scx.entry("1");
         $( chars.intern_span($span_string); )*
         $( chars.intern($value_string); )*
+        chars.intern(""); // this changes nothing and suppresses mut warning
         let lcx = crate::lexical::Parser::new(chars, &mut ecx);
         let mut pcx = crate::syntax::prelude::ParseSession::new(lcx);
         let node = <$ty>::parse(&mut pcx).expect("failed to parse test input");

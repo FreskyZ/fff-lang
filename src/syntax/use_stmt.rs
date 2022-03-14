@@ -14,18 +14,6 @@ pub struct UseStatement {
     pub target: Option<SimpleName>,
     pub all_span: Span,
 }
-impl ISyntaxFormat for UseStatement {
-    fn format(&self, f: Formatter) -> String {
-        let f = f.indent().header_text_or("use-stmt").space().span(self.all_span).endl()
-            .set_prefix_text("alias-from").apply1(&self.name).unset_prefix_text();
-        match self.target {
-            None => f.finish(),
-            Some(ref ident) => 
-                f.endl().indent1().lit("\"as\"").space().span(self.as_span).endl()
-                    .set_prefix_text("alias-to").apply1(ident).unset_prefix_text().finish(),
-        }
-    }
-}
 impl UseStatement {
     
     pub fn new_default(all_span: Span, name: Name) -> UseStatement {

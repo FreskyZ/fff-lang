@@ -9,11 +9,6 @@ use super::Expr;
 pub struct ExprList {
     pub items: Vec<Expr>,
 }
-impl ISyntaxFormat for ExprList {
-    fn format(&self, f: Formatter) -> String {
-        self.items.iter().map(|expr| f.clone().apply(expr).finish()).collect::<Vec<String>>().join("\n")
-    }
-}
 impl ExprList {
     pub fn new(items: Vec<Expr>) -> ExprList { ExprList{ items } }
 }

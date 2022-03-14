@@ -15,13 +15,6 @@ pub struct ParenExpr {
     pub expr: Box<Expr>,
     pub span: Span,  // paren_span also all_span
 }
-impl ISyntaxFormat for ParenExpr {
-    fn format(&self, f: Formatter) -> String {
-        f.indent().header_text_or("paren-expr").space().span(self.span).endl()
-            .apply1(self.expr.as_ref())
-            .finish()
-    }
-}
 impl From<ParenExpr> for Expr {
     fn from(paren_expr: ParenExpr) -> Expr { Expr::Paren(paren_expr) }
 }
@@ -46,16 +39,6 @@ impl Node for ParenExpr {
 pub struct TupleDef {
     pub items: ExprList,
     pub paren_span: Span,
-}
-impl ISyntaxFormat for TupleDef {
-    fn format(&self, f: Formatter) -> String {
-        let f = f.indent().header_text_or("tuple-def").space().span(self.paren_span).endl();
-        if self.items.items.len() == 0 {
-            f.indent1().lit("no-item").finish()
-        } else {
-            f.apply1(&self.items).finish()
-        }
-    }
 }
 impl From<TupleDef> for Expr {
     fn from(tuple_def: TupleDef) -> Expr { Expr::Tuple(tuple_def) }

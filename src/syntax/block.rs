@@ -12,17 +12,6 @@ pub struct Block {
     pub items: Vec<Statement>,
     pub all_span: Span,
 }
-impl ISyntaxFormat for Block {
-    fn format(&self, f: Formatter) -> String {
-        let mut f = f.indent().header_text_or("block").space().span(self.all_span);
-        if self.items.is_empty() { 
-            f.endl().indent1().lit("no-item").finish()
-        } else {
-            for item in &self.items { f = f.endl().apply1(item); }
-            f.finish()
-        }
-    }
-}
 impl Block {
 
     pub fn new(all_span: Span, statements: Vec<Statement>) -> Block { Block{ all_span, items: statements } }

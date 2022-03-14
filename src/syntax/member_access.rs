@@ -14,15 +14,6 @@ pub struct MemberAccessExpr {
     pub name: SimpleName,
     pub all_span: Span,
 }
-impl ISyntaxFormat for MemberAccessExpr {
-    fn format(&self, f: Formatter) -> String {
-        f.indent().header_text_or("member-access").space().span(self.all_span).endl()
-            .set_prefix_text("base-is").apply1(self.base.as_ref()).unset_prefix_text().endl()
-            .indent1().lit("\".\"").space().span(self.dot_span).endl()
-            .set_header_text("member-name-is").apply1(&self.name)
-            .finish()
-    }
-}
 impl From<MemberAccessExpr> for Expr {
     fn from(member_access_expr: MemberAccessExpr) -> Expr { Expr::MemberAccess(member_access_expr) }
 }

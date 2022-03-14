@@ -13,11 +13,6 @@ pub struct SimpleName {
     pub value: IsId,
     pub span: Span,
 }
-impl ISyntaxFormat for SimpleName {
-    fn format(&self, f: Formatter) -> String {
-        f.indent().header_text_or("ident-use").space().isid(self.value).space().span(self.span).finish()
-    }
-}
 impl From<SimpleName> for Expr {
     fn from(ident_expr: SimpleName) -> Expr { Expr::SimpleName(ident_expr) }
 }
@@ -42,15 +37,6 @@ impl Node for SimpleName {
 pub struct Name {
     pub segments: Vec<SimpleName>,
     pub all_span: Span,
-}
-impl ISyntaxFormat for Name {
-    fn format(&self, f: Formatter) -> String {
-        let mut f = f.indent().header_text_or("name").space().span(self.all_span);
-        for &SimpleName{ ref value, ref span } in &self.segments {
-            f = f.endl().indent1().lit("segment").space().isid(*value).space().span(*span);
-        }
-        f.finish()
-    }
 }
 impl From<Name> for Expr {
     fn from(name: Name) -> Expr { Expr::Name(name) }

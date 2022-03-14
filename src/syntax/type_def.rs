@@ -42,21 +42,6 @@ pub struct TypeDef {
     pub name: SimpleName,
     pub fields: Vec<TypeFieldDef>,
 }
-impl ISyntaxFormat for TypeDef {
-    fn format(&self, f: Formatter) -> String {
-        
-        let mut f = f.indent().header_text_or("type-def").space().span(self.all_span).endl()
-            .apply1(&self.name);
-        for &TypeFieldDef{ ref name, ref colon_span, ref typeuse, ref all_span } in &self.fields {
-            f = f.endl()
-                .indent1().lit("field").space().span(*all_span).endl()
-                .apply2(name).endl()
-                .indent2().lit("\":\"").space().span(*colon_span).endl()
-                .apply2(typeuse);
-        }
-        f.finish()
-    }
-}
 impl TypeDef {
     pub fn new(all_span: Span, name: SimpleName, fields: Vec<TypeFieldDef>) -> TypeDef {
         TypeDef{ all_span, name, fields }

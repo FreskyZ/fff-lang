@@ -4,7 +4,6 @@
 
 mod prelude;
 pub use prelude::{Node, Visitor};
-pub use prelude::{Formatter, ISyntaxFormat};
 #[cfg(test)]
 pub(crate) use prelude::make_node;
 #[cfg(test)]

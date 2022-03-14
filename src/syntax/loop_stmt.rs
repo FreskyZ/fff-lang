@@ -15,18 +15,6 @@ pub struct LoopStatement {
     pub loop_span: Span,
     pub all_span: Span,
 }
-impl ISyntaxFormat for LoopStatement {
-    fn format(&self, f: Formatter) -> String {
-        let f = f.indent().header_text_or("loop-stmt").space().span(self.all_span).endl();
-        let f = match self.name { 
-            Some(ref name) => f.set_header_text("loop-name").apply1(name).unset_header_text().endl(), 
-            None => f.indent1().lit("no-loop-name").endl(),
-        };
-        f.indent1().lit("\"loop\"").space().span(self.loop_span).endl()
-            .set_header_text("body").apply1(&self.body)
-            .finish()
-    }
-}
 impl LoopStatement { // New
     
     pub fn new_no_label(loop_span: Span, body: Block) -> LoopStatement {

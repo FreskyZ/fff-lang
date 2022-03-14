@@ -354,6 +354,7 @@ impl Position {
     }
 }
 
+#[allow(dead_code)] // not used currently, syntax tree is formatting by calling map_span_to_line_column
 pub struct SpanDisplay<'a, F>(Span, &'a SourceContext<F>);
 
 impl<'a, F> fmt::Display for SpanDisplay<'a, F> where F: FileSystem {
@@ -364,6 +365,7 @@ impl<'a, F> fmt::Display for SpanDisplay<'a, F> where F: FileSystem {
     }
 }
 
+#[allow(dead_code)] // not used currently, syntax tree is formatting by calling map_span_to_line_column
 impl Span {
     pub fn display<F: FileSystem>(self, scx: &SourceContext<F>) -> SpanDisplay<F> {
         SpanDisplay(self, scx)

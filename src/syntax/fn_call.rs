@@ -14,14 +14,6 @@ pub struct FnCallExpr {
     pub paren_span: Span,
     pub all_span: Span,
 }
-impl ISyntaxFormat for FnCallExpr {
-    fn format(&self, f: Formatter) -> String {
-        let f = f.indent().header_text_or("fn-call").space().span(self.all_span).endl()
-            .set_prefix_text("base-is").apply1(self.base.as_ref()).unset_prefix_text().endl()
-            .indent1().lit("parenthenes").space().span(self.paren_span).endl();
-        (if self.params.items.len() == 0 { f.indent1().lit("no-argument") } else { f.apply1(&self.params) }).finish()
-    }
-}
 impl From<FnCallExpr> for Expr {
     fn from(fn_call_expr: FnCallExpr) -> Expr { Expr::FnCall(fn_call_expr) }
 }

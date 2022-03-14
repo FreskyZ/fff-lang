@@ -19,20 +19,6 @@ pub struct ForStatement {
     pub body: Block,
     pub all_span: Span,
 }
-impl ISyntaxFormat for ForStatement {
-    fn format(&self, f: Formatter) -> String {
-        let f = f.indent().header_text_or("for-stmt").space().span(self.all_span).endl();
-        let f = match self.loop_name { 
-            Some(ref name) => f.set_header_text("loop-name").apply1(name).unset_header_text().endl(), 
-            None => f.indent1().lit("no-loop-name").endl(),
-        };
-        f.indent1().lit("\"for\"").space().span(self.for_span).endl()
-            .indent1().lit("iter-var").space().isid(self.iter_name).space().span(self.iter_span).endl()
-            .set_prefix_text("iter-expr-is").apply1(&self.iter_expr).unset_prefix_text().endl()
-            .set_header_text("body").apply1(&self.body)
-            .finish()
-    }
-}
 impl ForStatement {
 
     pub fn new_with_label<T: Into<Expr>>(

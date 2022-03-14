@@ -17,21 +17,6 @@ pub struct VarDeclStatement {
     pub init_expr: Option<Expr>,
     pub all_span: Span,
 }
-impl ISyntaxFormat for VarDeclStatement {
-    fn format(&self, f: Formatter) -> String {
-        let f = f.indent().header_text_or(if self.is_const { "const-def" } else { "var-def" }).space().span(self.all_span).endl()
-            .indent1().isid(self.name).space().span(self.name_span);
-        let f = match self.typeuse { 
-            Some(ref ty) => f.endl().apply1(ty), 
-            None => f.endl().indent1().lit("auto-type"),
-        };
-        let f = match self.init_expr { 
-            Some(ref expr) => f.endl().set_prefix_text("init-as").apply1(expr), 
-            None => f.endl().indent1().lit("not-inited"),
-        };
-        f.finish()
-    } 
-}
 impl VarDeclStatement {
 
     pub fn new(all_span: Span, 

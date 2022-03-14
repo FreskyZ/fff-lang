@@ -14,13 +14,6 @@ pub struct BlockStatement {
     pub body: Block,
     pub all_span: Span,
 }
-impl ISyntaxFormat for BlockStatement {
-    fn format(&self, f: Formatter) -> String {
-        let mut f = f.indent().header_text_or("block-stmt").space().span(self.all_span).endl();
-        match self.name { Some(ref name) => f = f.apply1(name).endl(), None => () }
-        f.set_header_text("body").apply1(&self.body).finish()
-    }
-}
 impl BlockStatement {
     
     pub fn new_no_label(body: Block) -> BlockStatement { BlockStatement{ all_span: body.all_span, body, name: None } }

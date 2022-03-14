@@ -87,47 +87,8 @@ pub struct IfStatement {
     pub else_clause: Option<ElseClause>,
     pub all_span: Span,
 }
-impl ISyntaxFormat for IfStatement {
-    fn format(&self, f: Formatter) -> String {
-
-        let f = f.indent().header_text_or("if-stmt").space().span(self.all_span).endl();
-        let IfClause{ all_span: ref if_all_span, cond_expr: ref if_cond_expr, body: ref if_body } = self.if_clause;
-        let mut f = f.indent1().lit("if-clause").space().span(*if_all_span).endl()
-            .set_prefix_text("cond-expr-is").apply2(if_cond_expr).unset_prefix_text().endl()
-            .set_header_text("body").apply2(if_body).unset_header_text();
-        for &ElseIfClause{ elseif_span: _, 
-                cond_expr: ref elseif_cond_expr, body: ref elseif_body, all_span: ref elseif_all_span } in &self.elseif_clauses {
-            f = f.endl()
-                .indent1().lit("else-if-clause").space().span(*elseif_all_span).endl()
-                .set_prefix_text("cond-expr-is").apply2(elseif_cond_expr).unset_prefix_text().endl()
-                .set_header_text("body").apply2(elseif_body).unset_header_text();
-        }
-        if let Some(ElseClause{ body: ref else_body, all_span: ref else_all_span }) = self.else_clause { 
-            f = f.endl()
-                .indent1().lit("else-clause").space().span(*else_all_span).endl()
-                .set_header_text("body").apply2(else_body);
-        }
-        f.finish()
-    }
-}
 impl IfStatement {
 
-    pub fn new_if(if_clause: IfClause, elseif_clauses: Vec<ElseIfClause>) -> IfStatement {
-        match elseif_clauses.len() {
-            0 => IfStatement{
-                all_span: if_clause.all_span,
-                if_clause, 
-                elseif_clauses,
-                else_clause: None,
-            },
-            n => IfStatement{
-                all_span: if_clause.all_span + elseif_clauses[n - 1].all_span,
-                if_clause,
-                elseif_clauses,
-                else_clause: None,
-            }
-        }
-    }
     pub fn new_ifelse(if_clause: IfClause, elseif_clauses: Vec<ElseIfClause>, else_clause: ElseClause) -> IfStatement {
         IfStatement{
             all_span: if_clause.all_span + else_clause.all_span,

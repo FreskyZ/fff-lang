@@ -12,13 +12,6 @@ pub struct SimpleExprStatement {
     pub expr: Expr, 
     pub all_span: Span,  // this span = expr.all_span + semicolon_span
 }
-impl ISyntaxFormat for SimpleExprStatement {
-    fn format(&self, f: Formatter) -> String {
-        f.indent().header_text_or("expr-stmt simple").space().span(self.all_span).endl()
-            .apply1(&self.expr)
-            .finish()
-    }
-}
 impl SimpleExprStatement {
     pub fn new<T: Into<Expr>>(all_span: Span, expr: T) -> SimpleExprStatement { 
         SimpleExprStatement{ all_span, expr: expr.into() } 
@@ -55,15 +48,6 @@ pub struct AssignExprStatement {
     pub assign_op: Separator,
     pub assign_op_span: Span,
     pub all_span: Span,
-}
-impl ISyntaxFormat for AssignExprStatement {
-    fn format(&self, f: Formatter) -> String {
-        f.indent().header_text_or("expr-stmt assign").space().span(self.all_span).endl()
-            .set_prefix_text("left-is").apply1(&self.left_expr).unset_prefix_text().endl()
-            .indent1().lit("\"").debug(&self.assign_op).lit("\"").space().span(self.assign_op_span).endl()
-            .set_prefix_text("right-is").apply1(&self.right_expr)
-            .finish()
-    }
 }
 impl AssignExprStatement {
     

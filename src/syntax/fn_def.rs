@@ -43,25 +43,6 @@ pub struct FnDef {
     pub body: Block,
     pub all_span: Span,   // fn_span = all_span.slice(0..2)
 }
-impl ISyntaxFormat for FnDef {
-    fn format(&self, f: Formatter) -> String {
-
-        let f = f.indent().header_text_or("fn-def").space().span(self.all_span).endl()
-            .indent1().isid(self.name).space().span(self.name_span);
-        let f = match self.ret_type { 
-            Some(ref ret_type) => f.endl().set_header_text("return-type").apply1(ret_type).unset_header_text().endl(),
-            None => f.endl().indent1().lit("no-return-type").endl(),
-        };
-        let mut f = f.indent1().lit("parenthenes").space().span(self.params_paren_span);
-        if self.params.len() == 0 {
-            f = f.endl().indent1().lit("no-parameter");
-        }
-        for &FnParam{ ref decltype, ref name, ref name_span } in &self.params {
-            f = f.endl().indent1().lit("param").space().isid(*name).space().span(*name_span).endl().apply2(decltype)
-        }
-        f.endl().set_header_text("body").apply1(&self.body).finish()
-    }
-}
 impl FnDef {
 
     pub fn new(all_span: Span, 

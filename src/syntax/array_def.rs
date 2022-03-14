@@ -11,12 +11,6 @@ pub struct ArrayDef {
     pub items: ExprList,
     pub bracket_span: Span,
 }
-impl ISyntaxFormat for ArrayDef {
-    fn format(&self, f: Formatter) -> String {
-        let f = f.indent().header_text_or("array-def").space().span(self.bracket_span).endl();
-        (if self.items.items.len() == 0 { f.indent1().lit("no-init-item") } else { f.apply1(&self.items) }).finish()
-    }
-}
 impl From<ArrayDef> for Expr {
     fn from(array_def: ArrayDef) -> Expr { Expr::Array(array_def) }
 }

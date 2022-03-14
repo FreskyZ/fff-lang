@@ -30,20 +30,6 @@ pub struct TypeUse {
     pub params: Vec<TypeUse>,
     pub all_span: Span, 
 }
-impl ISyntaxFormat for TypeUse {
-    fn format(&self, f: Formatter) -> String {
-        let f = f.indent().header_text_or("type-use").space();
-        if self.params.len() == 0 { 
-            f.isid(self.base).space().span(self.base_span).finish() 
-        } else {
-            let mut f = f.lit("template").space().span(self.all_span).endl()
-                .indent1().lit("base-is").space().isid(self.base).space().span(self.base_span).endl()
-                .indent1().lit("quote").space().span(self.quote_span);
-            for typeuse in &self.params { f = f.endl().apply2(typeuse); }
-            f.finish()
-        }
-    }
-}
 impl TypeUse {
 
     pub fn new_simple(base: impl Into<IsId>, base_span: Span) -> TypeUse {

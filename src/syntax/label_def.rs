@@ -12,11 +12,6 @@ pub struct LabelDef {
     pub name: IsId,
     pub all_span: Span,
 }
-impl ISyntaxFormat for LabelDef {
-    fn format(&self, f: Formatter) -> String {
-        f.indent().header_text_or("label").space().isid(self.name).space().span(self.all_span).finish()
-    }
-}
 impl LabelDef {
     
     pub fn new(name: impl Into<IsId>, all_span: Span) -> LabelDef { LabelDef{ name: name.into(), all_span } }

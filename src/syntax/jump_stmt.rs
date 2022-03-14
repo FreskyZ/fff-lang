@@ -22,14 +22,6 @@ impl JumpStatement {
         JumpStatement{ all_span, target_span, target: Some(target.into()) }
     }
 
-    fn format(&self, f: Formatter, stmt_name: &'static str) -> String {
-        let f = f.indent().header_text_or(stmt_name).space().span(self.all_span).endl();
-        match self.target {
-            Some(ref target_name) => f.indent1().lit("to").space().lit("@").isid(*target_name).space().span(self.target_span).finish(),
-            None => f.finish(),
-        }
-    }
-
     fn parse<F: FileSystem>(sess: &mut ParseSession<F>, expect_first_kw: Keyword) -> ParseResult<JumpStatement> {
 
         let starting_span = sess.expect_keyword(expect_first_kw)?;
@@ -50,13 +42,6 @@ pub struct ContinueStatement(pub JumpStatement);
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
 pub struct BreakStatement(pub JumpStatement);
-
-impl ISyntaxFormat for ContinueStatement {
-    fn format(&self, f: Formatter) -> String { self.0.format(f, "continue-stmt") }
-}
-impl ISyntaxFormat for BreakStatement {
-    fn format(&self, f: Formatter) -> String { self.0.format(f, "break-stmt") }
-}
 
 impl ContinueStatement {
 

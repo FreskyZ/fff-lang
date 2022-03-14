@@ -15,13 +15,6 @@ macro_rules! define_statement {
         pub enum $name {
             $($variant($subty),)+
         }
-        impl ISyntaxFormat for $name {
-            fn format(&self, f: Formatter) -> String {
-                match self {
-                    $(&$name::$variant(ref inner) => f.apply(inner).finish(),)+
-                }
-            }
-        }
 
         $( impl From<$subty> for $name { // impl from to flatten difference between return detail XXXStatement or return Statement
                 fn from(s: $subty) -> $name { $name::$variant(s) }

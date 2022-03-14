@@ -15,15 +15,6 @@ pub struct IndexCallExpr {
     pub bracket_span: Span,
     pub all_span: Span,
 }
-impl ISyntaxFormat for IndexCallExpr {
-    fn format(&self, f: Formatter) -> String {
-        f.indent().header_text_or("indexer-call").space().span(self.all_span).endl()
-            .set_prefix_text("base-is").apply1(self.base.as_ref()).unset_prefix_text().endl()
-            .indent1().lit("bracket").space().span(self.bracket_span).endl()
-            .apply1(&self.params)
-            .finish()
-    }
-}
 impl From<IndexCallExpr> for Expr {
     fn from(index_call_expr: IndexCallExpr) -> Expr { Expr::IndexCall(index_call_expr) }
 }
