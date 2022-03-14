@@ -61,7 +61,7 @@ impl Node for Module {
 
 #[cfg(test)] #[test]
 fn module_parse() {
-    use super::{make_node, LitValue, LitExpr, Name, SimpleName, ImportStatement, SimpleExprStatement, UseStatement};
+    use super::{make_node, make_lit, Name, SimpleName, ImportStatement, SimpleExprStatement, UseStatement};
     //              0123456789012345678901234
     assert_eq!{ make_node!("use a; import b; 3; b; a;" as Module, [], ["a", "b"]),
         Module::new(vec![
@@ -74,7 +74,7 @@ fn module_parse() {
                 SimpleName::new(2, Span::new(14, 14))
             )),
             Item::SimpleExpr(SimpleExprStatement::new(Span::new(17, 18), 
-                LitExpr::new(LitValue::from(3i32), Span::new(17, 17))
+                make_lit!(3, 17, 17)
             )),
             Item::SimpleExpr(SimpleExprStatement::new(Span::new(20, 21), 
                 SimpleName::new(2, Span::new(20, 20))

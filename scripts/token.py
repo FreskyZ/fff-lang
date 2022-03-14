@@ -152,6 +152,7 @@ class Separators(object):
         b = ''
 
         b += '#[repr(u16)]\n'
+        b += '#[allow(dead_code)]\n'
         b += '#[derive(Eq, PartialEq, Copy, Clone, Debug)]\n'
         b += 'pub enum SeparatorKind {\n'
         b += '\n'.join(f'    {cat_name} = 0x{cat_value:x},' for (cat_name, cat_value) in self.cats)

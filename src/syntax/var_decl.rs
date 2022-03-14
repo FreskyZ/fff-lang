@@ -92,7 +92,7 @@ fn var_decl_stmt_parse() {
         VarDeclStatement::new_const(Span::new(0, 13),
             IsId::new(1), Span::new(6, 8),
             None,
-            Some(Expr::Lit(LitExpr::new(LitValue::from(0i32), Span::new(12, 12))))
+            Some(Expr::Lit(make_lit!(0, 12, 12)))
         )
     }
 
@@ -103,9 +103,9 @@ fn var_decl_stmt_parse() {
             1, Span::new(4, 6),
             None,
             Some(Expr::Array(ArrayDef::new(Span::new(10, 18), ExprList::new(vec![
-                Expr::Lit(LitExpr::new(LitValue::from(1i32), Span::new(11, 11))),
-                Expr::Lit(LitExpr::new(LitValue::from(3i32), Span::new(14, 14))),
-                Expr::Lit(LitExpr::new(LitValue::from(5i32), Span::new(17, 17))),
+                Expr::Lit(make_lit!(1, 11, 11)),
+                Expr::Lit(make_lit!(3, 14, 14)),
+                Expr::Lit(make_lit!(5, 17, 17)),
             ]))))
         )
     }
@@ -150,9 +150,9 @@ fn var_decl_stmt_parse() {
             ])),
             Some(Expr::Tuple(TupleDef::new(Span::new(23, 46), make_exprs![
                 ArrayDef::new(Span::new(24, 40), make_exprs![
-                    LitExpr::new(LitValue::Num(Numeric::U8(1)), Span::new(25, 27)),
-                    LitExpr::new(LitValue::Num(Numeric::U8(5)), Span::new(30, 32)),
-                    LitExpr::new(LitValue::Num(Numeric::U8(7)), Span::new(35, 39))
+                    make_lit!(1: u8, 25, 27),
+                    make_lit!(5: u8, 30, 32),
+                    make_lit!(7: u8, 35, 39),
                 ]),
                 SimpleName::new(4, Span::new(43, 45))
             ])))

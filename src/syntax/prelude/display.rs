@@ -23,42 +23,188 @@ pub struct FormatVisitor<'scx, 'f1, 'f2, F> {
     scx: &'scx SourceContext<F>,
     f: &'f1 mut fmt::Formatter<'f2>,
 }
+
 impl<'scx, 'f1, 'f2, F> FormatVisitor<'scx, 'f1, 'f2, F> where F: FileSystem {
 
     pub fn new(scx: &'scx SourceContext<F>, f: &'f1 mut fmt::Formatter<'f2>) -> Self {
         Self{ level: 0, scx, f }
     }
 
-    fn indent(&mut self) -> fmt::Result { 
-        self.f.write_str(INDENTIONS[2][self.level])
+    fn write_str(&mut self, v: &str) -> fmt::Result {
+        self.f.write_str(v)
     }
-    fn indent1(&mut self) -> fmt::Result { 
-        self.f.write_str(INDENTIONS[2][self.level + 1])
+    fn write_char(&mut self, c: char) -> fmt::Result {
+        self.f.write_char(c)
     }
-    fn indent2(&mut self) -> fmt::Result { 
-        self.f.write_str(INDENTIONS[2][self.level + 2])
+    fn write_endl(&mut self) -> fmt::Result {
+        self.f.write_char('\n')
+    }
+    fn write_space(&mut self) -> fmt::Result {
+        self.f.write_char(' ')
     }
 
-    pub fn span(&mut self, span: Span) -> fmt::Result {
-        let (_, start_line, end_line, start_column, end_column) = self.scx.map_span_to_line_column(span);
-        write!(self.f, "{}:{}-{}:{}", start_line, end_line, start_column, end_column)
+    fn write_indent(&mut self) -> fmt::Result { 
+        self.f.write_str(INDENTIONS[2][self.level])
     }
-    pub fn string(&mut self, id: IsId) -> fmt::Result {
-        self.f.write_str(self.scx.resolve_string(id))
+    fn write_next_indent(&mut self) -> fmt::Result { 
+        self.f.write_str(INDENTIONS[2][self.level + 1])
+    }
+
+    fn write_span(&mut self, span: Span) -> fmt::Result {
+        let (_, start_line, end_line, start_column, end_column) = self.scx.map_span_to_line_column(span);
+        write!(self.f, "<{}:{}-{}:{}>", start_line, end_line, start_column, end_column)
+    }
+    fn write_isid(&mut self, id: IsId) -> fmt::Result {
+        if id.unwrap() == 1 {
+            self.f.write_str("<empty>")
+        } else {
+            let content = self.scx.resolve_string(id);
+            self.f.write_str(if content.len() > 24 { &content[..24] } else { content })
+        }
+    }
+
+    fn invoke_walk<N: Node>(&mut self, node: &N) -> fmt::Result {
+        self.level += 1;
+        let result = node.walk(self);
+        self.level -= 1;
+        result
     }
 }
 
 impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2, F> where F: FileSystem {
 
     fn visit_array_def(&mut self, node: &ArrayDef) -> fmt::Result {
-        self.indent()?;
-        self.f.write_str("array-def ")?;
-        self.span(node.bracket_span)?;
-        self.f.write_char('\n')?;
-        self.level += 1;
-        let result = node.walk(self);
-        self.level -= 1;
-        result
+        self.write_indent()?;
+        self.write_str("array-def ")?;
+        self.write_span(node.bracket_span)?;
+        self.write_endl()?;
+        self.invoke_walk(node)
+    }
+
+    fn visit_binary_expr(&mut self, node: &BinaryExpr) -> fmt::Result {
+
+        self.write_indent()?;
+        self.write_str("binary-expr ")?;
+        self.write_span(node.all_span)?;
+        self.write_char('\n')?;
+        self.write_next_indent()?;
+        self.write_str("operator ")?;
+        self.write_str(node.operator.display())?;
+        self.write_space()?;
+        self.write_span(node.operator_span)?;
+        self.write_char('\n')?;
+        self.invoke_walk(node)
+    }
+    
+    fn visit_lit_expr(&mut self, node: &LitExpr) -> fmt::Result {
+        self.write_indent()?;
+        self.write_str("literal ")?;
+        match node.value {
+            LitValue::Unit => self.f.write_str("unit")?,
+            LitValue::Bool(v) => write!(self.f, "bool {v}")?,
+            LitValue::Char(v) => write!(self.f, "char {v:?}")?,
+            LitValue::Str(id) => { self.write_str("str ")?; self.write_isid(id)? },
+            LitValue::Num(v) => write!(self.f, "{v}")?,
+        }
+        self.write_space()?;
+        self.write_span(node.span)?;
+        self.write_endl()?;
+        self.invoke_walk(node)
+    }
+
+    // use default implementation correctly transparents this type of node
+    // fn visit_expr_list(&mut self, node: &ExprList) -> fmt::Result;
+
+    fn visit_loop_stmt(&mut self, node: &LoopStatement) -> fmt::Result {
+        self.write_indent()?;
+        self.write_str("loop-stmt ")?;
+        self.write_span(node.all_span)?;
+        self.write_endl()?;
+        self.write_next_indent()?;
+        self.write_str("loop ")?;
+        self.write_span(node.loop_span)?;
+        self.write_endl()?;
+        self.invoke_walk(node)
+    }
+
+    fn visit_label_def(&mut self, node: &LabelDef) -> fmt::Result {
+        self.write_indent()?;
+        self.write_str("label @")?;
+        self.write_isid(node.name)?;
+        self.write_space()?;
+        self.write_span(node.all_span)?;
+        self.write_endl()?;
+        self.invoke_walk(node)
+    }
+
+    fn visit_block(&mut self, node: &Block) -> fmt::Result {
+        self.write_indent()?;
+        self.write_str("block ")?;
+        self.write_span(node.all_span)?;
+        self.write_endl()?;
+        self.invoke_walk(node)
+    }
+    
+    fn visit_simple_expr_stmt(&mut self, node: &SimpleExprStatement) -> fmt::Result {
+        self.write_indent()?;
+        self.write_str("simple-expr-stmt ")?;
+        self.write_span(node.all_span)?;
+        self.write_endl()?;
+        self.invoke_walk(node)
+    }
+
+    fn visit_fn_call_expr(&mut self, node: &FnCallExpr) -> fmt::Result {
+        self.write_indent()?;
+        self.write_str("fn-call ")?;
+        self.write_span(node.all_span)?;
+        self.write_endl()?;
+        self.write_next_indent()?;
+        self.write_str("paren ")?;
+        self.write_span(node.paren_span)?;
+        self.write_endl()?;
+        self.invoke_walk(node)
+    }
+
+    fn visit_simple_name(&mut self, node: &SimpleName) -> fmt::Result {
+        self.write_indent()?;
+        self.write_str("simple-name ")?;
+        self.write_isid(node.value)?;
+        self.write_space()?;
+        self.write_span(node.span)?;
+        self.write_endl()?;
+        self.invoke_walk(node)
+    }
+
+    fn visit_tuple_def(&mut self, node: &TupleDef) -> fmt::Result {
+        self.write_indent()?;
+        self.write_str("tuple-def ")?;
+        self.write_span(node.paren_span)?;
+        self.write_endl()?;
+        self.invoke_walk(node)
+    }
+
+    fn visit_index_call_expr(&mut self, node: &IndexCallExpr) -> fmt::Result {
+        self.write_indent()?;
+        self.write_str("index-call ")?;
+        self.write_span(node.all_span)?;
+        self.write_endl()?;
+        self.write_next_indent()?;
+        self.write_str("bracket ")?;
+        self.write_span(node.bracket_span)?;
+        self.write_endl()?;
+        self.invoke_walk(node)
+    }
+
+    fn visit_member_access(&mut self, node: &MemberAccessExpr) -> fmt::Result {
+        self.write_indent()?;
+        self.write_str("member-access ")?;
+        self.write_span(node.all_span)?;
+        self.write_endl()?;
+        self.write_next_indent()?;
+        self.write_str("dot ")?;
+        self.write_span(node.dot_span)?;
+        self.write_endl()?;
+        self.invoke_walk(node)
     }
 }
 

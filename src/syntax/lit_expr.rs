@@ -16,31 +16,8 @@ pub enum LitValue {
     Num(Numeric),
 }
 
-impl From<bool> for LitValue {
-    fn from(v: bool) -> Self {
-        Self::Bool(v)
-    }
-}
-impl From<char> for LitValue {
-    fn from(v: char) -> Self {
-        Self::Char(v)
-    }
-}
-
-// specially include u32 for string id for test
-impl From<u32> for LitValue {
-    fn from(v: u32) -> Self {
-        Self::Str(IsId::new(v))
-    }
-}
-// specially i32 for most case in test
-impl From<i32> for LitValue {
-    fn from(v: i32) -> Self {
-        Self::Num(Numeric::I32(v))
-    }
-}
-
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct LitExpr {
     pub value: LitValue,
     pub span: Span,
@@ -48,19 +25,16 @@ pub struct LitExpr {
 impl ISyntaxFormat for LitExpr {
     fn format(&self, f: Formatter) -> String {
         let f = f.indent().header_text_or("literal").space();
-        // TODO: isyntaxformat not implemented for syntax::LitValue
         f.debug(&self.value).space().span(self.span).finish()
     }
-}
-impl fmt::Debug for LitExpr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl From<LitExpr> for Expr {
     fn from(lit_expr: LitExpr) -> Expr { Expr::Lit(lit_expr) }
 }
 impl LitExpr {
-    pub fn new(value: impl Into<LitValue>, span: Span) -> LitExpr { LitExpr{ value: value.into(), span } }
+    pub fn new(value: LitValue, span: Span) -> LitExpr { LitExpr{ value, span } }
 }
+
 impl Node for LitExpr {
     type ParseOutput = Expr;
 
@@ -78,3 +52,21 @@ impl Node for LitExpr {
         v.visit_lit_expr(self)
     }
 }
+
+#[cfg(test)]
+macro_rules! make_lit {
+    (unit, $start:expr, $end:expr) => (crate::syntax::LitExpr{ value: crate::syntax::LitValue::Unit, span: Span::new($start, $end) });
+    (true, $start:expr, $end:expr) => (crate::syntax::LitExpr{ value: crate::syntax::LitValue::Bool(true), span: Span::new($start, $end) });
+    (false, $start:expr, $end:expr) => (crate::syntax::LitExpr{ value: crate::syntax::LitValue::Bool(false), span: Span::new($start, $end) });
+    ($v:literal: char, $start:expr, $end:expr) => (crate::syntax::LitExpr{ value: crate::syntax::LitValue::Char($v), span: Span::new($start, $end) });
+    ($v:literal: str, $start:expr, $end:expr) => (crate::syntax::LitExpr{ value: crate::syntax::LitValue::Str(IsId::new($v)), span: Span::new($start, $end) });
+    // only i32 can omit type
+    ($v:literal, $start:expr, $end:expr) => (crate::syntax::LitExpr{ value: crate::syntax::LitValue::Num(Numeric::I32($v)), span: Span::new($start, $end) });
+    ($v:literal: u8, $start:expr, $end:expr) => (crate::syntax::LitExpr{ value: crate::syntax::LitValue::Num(Numeric::U8($v)), span: Span::new($start, $end) });
+    ($v:literal: u32, $start:expr, $end:expr) => (crate::syntax::LitExpr{ value: crate::syntax::LitValue::Num(Numeric::U32($v)), span: Span::new($start, $end) });
+    ($v:literal: u64, $start:expr, $end:expr) => (crate::syntax::LitExpr{ value: crate::syntax::LitValue::Num(Numeric::U64($v)), span: Span::new($start, $end) });
+    ($v:literal: r32, $start:expr, $end:expr) => (crate::syntax::LitExpr{ value: crate::syntax::LitValue::Num(Numeric::R32($v)), span: Span::new($start, $end) });
+    ($v:literal: r64, $start:expr, $end:expr) => (crate::syntax::LitExpr{ value: crate::syntax::LitValue::Num(Numeric::R64($v)), span: Span::new($start, $end) });
+}
+#[cfg(test)]
+pub(crate) use make_lit;

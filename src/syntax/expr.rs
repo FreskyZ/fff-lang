@@ -48,7 +48,7 @@ impl fmt::Debug for Expr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl Default for Expr {
-    fn default() -> Expr { Expr::Lit(LitExpr::new(LitValue::from(0i32), Span::new(0, 0))) }
+    fn default() -> Expr { Expr::Lit(LitExpr::new(LitValue::Num(Numeric::I32(0)), Span::new(0, 0))) }
 }
 impl Expr {
 
@@ -74,7 +74,7 @@ impl Expr {
 
     pub fn unbox(this: Box<Expr>) -> Self {
         let mut this = this;
-        let mut temp = Expr::Lit(LitExpr::new(LitValue::from(42), Span::new(0, 0)));
+        let mut temp = Expr::Lit(LitExpr::new(LitValue::Num(Numeric::I32(42)), Span::new(0, 0)));
         ::std::mem::swap(&mut *this, &mut temp);
         temp
     }
@@ -107,23 +107,42 @@ impl Node for Expr {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_expr(self)
     }
+    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        match self {
+            Expr::Lit(e) => v.visit_lit_expr(e),
+            Expr::SimpleName(e) => v.visit_simple_name(e),
+            Expr::Name(e) => v.visit_name(e),
+            Expr::Paren(e) => v.visit_paren_expr(e),
+            Expr::Tuple(e) => v.visit_tuple_def(e),
+            Expr::Array(e) => v.visit_array_def(e),
+            Expr::FnCall(e) => v.visit_fn_call_expr(e),
+            Expr::IndexCall(e) => v.visit_index_call_expr(e),
+            Expr::MemberAccess(e) => v.visit_member_access(e),
+            Expr::Unary(e) => v.visit_unary_expr(e),
+            Expr::Binary(e) => v.visit_binary_expr(e),
+            Expr::RangeFull(e) => v.visit_range_full_expr(e),
+            Expr::RangeRight(e) => v.visit_range_right_expr(e),
+            Expr::RangeLeft(e) => v.visit_range_left_expr(e),
+            Expr::RangeBoth(e) => v.visit_range_both_expr(e),
+        }
+    }
 }
 
 #[cfg(test)] #[test]
 fn expr_parse() {
-    use super::{make_node, make_exprs, ExprList};
+    use super::{make_node, make_exprs, make_lit, ExprList};
 
     assert_eq!{ make_node!("\"abc\"" as Expr),
-        Expr::Lit(LitExpr::new(2u32, Span::new(0, 4)))
+        Expr::Lit(make_lit!(2: str, 0, 4))
     }
     assert_eq!{ make_node!("0xfffu64" as Expr), 
-        Expr::Lit(LitExpr::new(LitValue::Num(Numeric::U64(0xFFFu64)), Span::new(0, 7)))
+        Expr::Lit(make_lit!(0xFFF: u64, 0, 7))
     }
     assert_eq!{ make_node!("'f'" as Expr), 
-        Expr::Lit(LitExpr::new(LitValue::from('f'), Span::new(0, 2)))
+        Expr::Lit(make_lit!('f': char, 0, 2))
     }
     assert_eq!{ make_node!("true" as Expr),
-        Expr::Lit(LitExpr::new(LitValue::from(true), Span::new(0, 3)))
+        Expr::Lit(make_lit!(false, 0, 3))
     }
 
     assert_eq!{ make_node!("binary_expr" as Expr),
@@ -131,7 +150,7 @@ fn expr_parse() {
     }
 
     assert_eq!{ make_node!("(  )" as Expr),
-        Expr::Lit(LitExpr::new(LitValue::Unit, Span::new(0, 3)))
+        Expr::Lit(make_lit!(unit, 0, 3))
     }
     
     // Case from fn_def_parse
@@ -150,13 +169,13 @@ fn expr_parse() {
     // Unit
     assert_eq!{ make_node!("(1)" as Expr),
         Expr::Paren(ParenExpr::new(Span::new(0, 2), 
-            LitExpr::new(LitValue::from(1i32), Span::new(1, 1))
+            make_lit!(1, 1, 1)
         ))
     }
     // I can see future of Ok(())! 
     assert_eq!{ make_node!("(())" as Expr), 
         Expr::Paren(ParenExpr::new(Span::new(0, 3), 
-            LitExpr::new(LitValue::Unit, Span::new(1, 2))
+            make_lit!(unit, 1, 2)
         ))
     }
 
@@ -169,9 +188,9 @@ fn expr_parse() {
     }        //  12345678901
     assert_eq!{ make_node!("(1, 2, 3, )" as Expr),
         Expr::Tuple(TupleDef::new(Span::new(0, 10), make_exprs![
-            LitExpr::new(LitValue::from(1i32), Span::new(1, 1)),
-            LitExpr::new(LitValue::from(2i32), Span::new(4, 4)),
-            LitExpr::new(LitValue::from(3i32), Span::new(7, 7)),
+            make_lit!(1, 1, 1),
+            make_lit!(2, 4, 4),
+            make_lit!(3, 7, 7),
         ]))
     }
 
@@ -183,8 +202,8 @@ fn expr_parse() {
     }        //  12345678
     assert_eq!{ make_node!("[1, 2, ]" as Expr),
         Expr::Array(ArrayDef::new(Span::new(0, 7), make_exprs![
-            LitExpr::new(LitValue::from(1i32), Span::new(1, 1)),
-            LitExpr::new(LitValue::from(2i32), Span::new(4, 4))
+            make_lit!(1, 1, 1),
+            make_lit!(2, 4, 4)
         ]))
     }
     assert_eq!{ make_node!("[]" as Expr),
@@ -252,7 +271,7 @@ fn expr_parse() {
     assert_eq!{ make_node!("1.degg(a, b, )" as Expr),
         Expr::FnCall(FnCallExpr::new(
             MemberAccessExpr::new(
-                LitExpr::new(LitValue::from(1i32), Span::new(0, 0)),
+                make_lit!(1, 0, 0),
                 Span::new(1, 1),
                 SimpleName::new(1, Span::new(2, 5))
             ),
@@ -286,9 +305,9 @@ fn expr_parse() {
     assert_eq!{ make_node!("2[3].a" as Expr),
         Expr::MemberAccess(MemberAccessExpr::new(
             IndexCallExpr::new(
-                LitExpr::new(LitValue::from(2i32), Span::new(0, 0)),
+                make_lit!(2, 0, 0),
                 Span::new(1, 3), make_exprs![
-                    LitExpr::new(LitValue::from(3i32), Span::new(2, 2))
+                    make_lit!(3, 2, 2)
                 ]
             ),
             Span::new(4, 4), 
@@ -300,7 +319,7 @@ fn expr_parse() {
             Expr::FnCall(FnCallExpr::new(
                 SimpleName::new(1, Span::new(0, 4)),
                 Span::new(5, 11), make_exprs![
-                    LitExpr::new(LitValue::from(233i32), Span::new(6, 8))
+                    make_lit!(233, 6, 8)
                 ]
             )),
             Span::new(12, 12),
@@ -310,7 +329,7 @@ fn expr_parse() {
     assert_eq!{ make_node!("1.degg[a, b, ]" as Expr),
         Expr::IndexCall(IndexCallExpr::new(
             MemberAccessExpr::new(
-                LitExpr::new(LitValue::from(1i32), Span::new(0, 0)),
+                make_lit!(1, 0, 0),
                 Span::new(1, 1),
                 SimpleName::new(1, Span::new(2, 5))
             ),
@@ -329,9 +348,9 @@ fn expr_parse() {
                 UnaryExpr::new(
                     Separator::Not, Span::new(2, 2),
                     IndexCallExpr::new(
-                        LitExpr::new(LitValue::from(1i32), Span::new(3, 3)),
+                        make_lit!(1, 3, 3),
                         Span::new(4, 6), make_exprs![
-                            LitExpr::new(LitValue::from(1i32), Span::new(5, 5))
+                            make_lit!(1, 5, 5)
                         ]
                     )
                 )
@@ -346,7 +365,7 @@ fn expr_parse() {
             Separator::Not, Span::new(0, 0), 
             UnaryExpr::new(
                 Separator::Not, Span::new(1, 1),
-                LitExpr::new(LitValue::from(1i32), Span::new(2, 2))
+                make_lit!(1, 2, 2)
             )
         ))
     }
@@ -358,9 +377,9 @@ fn expr_parse() {
 
     assert_eq!{ make_node!("..1 + 2" as Expr),
         Expr::RangeRight(RangeRightExpr::new(Span::new(0, 6), BinaryExpr::new(
-            LitExpr::new(LitValue::from(1i32), Span::new(2, 2)),
+            make_lit!(1, 2, 2),
             Separator::Add, Span::new(4, 4),
-            LitExpr::new(LitValue::from(2i32), Span::new(6, 6))
+            make_lit!(2, 6, 6)
         )))
     }
 
@@ -373,19 +392,19 @@ fn expr_parse() {
     assert_eq!{ make_node!("1 + 2 .. [4, 5, 6][2]" as Expr),
         Expr::RangeBoth(RangeBothExpr::new(
             BinaryExpr::new(
-                LitExpr::new(LitValue::from(1i32), Span::new(0, 0)),
+                make_lit!(1, 0, 0),
                 Separator::Add, Span::new(2, 2),
-                LitExpr::new(LitValue::from(2i32), Span::new(4, 4))
+                make_lit!(2, 4, 4)
             ),
             Span::new(6, 7),
             IndexCallExpr::new(
                 ArrayDef::new(Span::new(9, 17), make_exprs![
-                    LitExpr::new(LitValue::from(4i32), Span::new(10, 10)),
-                    LitExpr::new(LitValue::from(5i32), Span::new(13, 13)),
-                    LitExpr::new(LitValue::from(6i32), Span::new(16, 16))
+                    make_lit!(4, 10, 10),
+                    make_lit!(5, 13, 13),
+                    make_lit!(6, 16, 16)
                 ]),
                 Span::new(18, 20), make_exprs![
-                    LitExpr::new(LitValue::from(2i32), Span::new(19, 19))
+                    make_lit!(2, 19, 19)
                 ]
             )
         ))
@@ -394,7 +413,7 @@ fn expr_parse() {
 
 #[cfg(test)] #[test]
 fn expr_errors() {
-    use super::{make_node, make_exprs, make_errors};
+    use super::{make_node, make_exprs, make_errors, make_lit};
 
     assert_eq!{ make_node!("de(, )" as Expr, and messages), 
         (Expr::FnCall(FnCallExpr::new(
@@ -409,7 +428,7 @@ fn expr_errors() {
     assert_eq!{ make_node!("\"\".de(, )" as Expr, and messages),
         (Expr::FnCall(FnCallExpr::new(
             MemberAccessExpr::new(
-                LitExpr::new(2u32, Span::new(0, 1)),
+                make_lit!(1: str, 0, 1),
                 Span::new(2, 2), 
                 SimpleName::new(2, Span::new(3, 4))
             ),

@@ -147,6 +147,20 @@ macro_rules! make_node {
         node
     }};
     // TODO change span string and value string to be expected value not prepare value
+    ($code:literal as $ty:ty, [$($span_string:expr),*$(,)?], [$($value_string:expr),*$(,)?], and source) => {{
+        let mut ecx = crate::diagnostics::make_errors!();
+        let mut scx = crate::source::make_source!($code);
+        let mut chars = scx.entry("1");
+        $( chars.intern_span($span_string); )*
+        $( chars.intern($value_string); )*
+        let lcx = crate::lexical::Parser::new(chars, &mut ecx);
+        let mut pcx = ParseSession::new(lcx);
+        let node = <$ty>::parse(&mut pcx).expect("failed to parse test input");
+        pcx.base.finish();
+        assert_eq!(ecx, crate::diagnostics::make_errors!());
+        (node, scx)
+    }};
+    // TODO change span string and value string to be expected value not prepare value
     ($code:literal as $ty:ty, [$($span_string:expr),*$(,)?], [$($value_string:expr),*$(,)?], and messages) => {{
         let mut ecx = crate::diagnostics::MessageCollection::new();
         let mut scx = crate::source::make_source!($code);

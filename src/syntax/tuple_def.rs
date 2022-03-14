@@ -97,45 +97,52 @@ impl Node for TupleDef {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_tuple_def(self)
     }
+    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_expr_list(&self.items)
+    }
 }
 
 #[cfg(test)] #[test]
-fn tuple_def_format() {
-    use super::{make_exprs, LitExpr, LitValue};
+fn tuple_def_display() {
+    use super::{make_exprs, make_lit, make_source};
 
+    let mut scx = make_source!("1231241241231412341234");
+    scx.entry("1").finish();
     assert_eq!{
-        TupleDef::new(Span::new(0, 42), make_exprs![]).format(Formatter::with_test_indent(1)),
-        "  tuple-def <<0>0-42>\n    no-item"
+        TupleDef::new(Span::new(0, 21), make_exprs![]).display(&scx).to_string(),
+        "tuple-def <1:1-1:22>\n"
     }
 
+    let mut scx = make_source!("1231241241231412341234");
+    scx.entry("1").finish();
     assert_eq!{
-        TupleDef::new(Span::new(0, 42), make_exprs![
-            LitExpr::new(LitValue::from(1i32), Span::new(1, 2)),
-            LitExpr::new(LitValue::from(2i32), Span::new(3, 4)),
-            LitExpr::new(LitValue::from(48), Span::new(5, 6)),
-        ]).format(Formatter::with_test_indent(1)),
-        "  tuple-def <<0>0-42>\n    literal (i32)1 <<0>1-2>\n    literal (i32)2 <<0>3-4>\n    literal (i32)48 <<0>5-6>"
+        TupleDef::new(Span::new(0, 8), make_exprs![
+            make_lit!(1, 1, 2),
+            make_lit!(2, 3, 4),
+            make_lit!(48, 5, 6),
+        ]).display(&scx).to_string(),
+        "tuple-def <1:1-1:9>\n  literal i32 1 <1:2-1:3>\n  literal i32 2 <1:4-1:5>\n  literal i32 48 <1:6-1:7>\n"
     }
 }
 
 #[cfg(test)] #[test]
 fn tuple_def_parse() {
-    use super::{make_node, make_exprs, BinaryExpr};
+    use super::{make_node, make_exprs, make_lit, BinaryExpr};
 
     //                                   01234567
     assert_eq!{ make_node!("(1, '2')" as TupleDef),
         Expr::Tuple(TupleDef::new(Span::new(0, 7), make_exprs![
-            LitExpr::new(LitValue::from(1i32), Span::new(1, 1)),
-            LitExpr::new(LitValue::from('2'), Span::new(4, 6))
+            make_lit!(1, 1, 1),
+            make_lit!('2': char, 4, 6),
         ]))
     }
     //                                   0123456
     assert_eq!{ make_node!("(1 + 1)" as TupleDef),
         Expr::Paren(ParenExpr::new(Span::new(0, 6), 
             BinaryExpr::new(
-                LitExpr::new(LitValue::from(1i32), Span::new(1, 1)), 
+                make_lit!(1, 1, 1), 
                 Separator::Add, Span::new(3, 3),
-                LitExpr::new(LitValue::from(1i32), Span::new(5, 5)),
+                make_lit!(1, 5, 5),
             )
         ))
     }

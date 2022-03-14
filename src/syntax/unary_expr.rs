@@ -67,11 +67,10 @@ impl Node for UnaryExpr {
 
 #[cfg(test)] #[test]
 fn unary_expr_parse() {
-    use super::make_node;
-    use super::{LitExpr, LitValue};
+    use super::{make_node, make_lit};
     
     assert_eq!{ make_node!("1" as Expr), 
-        Expr::Lit(LitExpr::new(LitValue::from(1i32), Span::new(0, 0))) 
+        Expr::Lit(make_lit!(1, 0, 0)) 
     }
 
     assert_eq!{ make_node!("!~!1" as UnaryExpr),
@@ -81,7 +80,7 @@ fn unary_expr_parse() {
                 Separator::Tilde, Span::new(1, 1),            
                 Expr::Unary(UnaryExpr::new(
                     Separator::Not, Span::new(2, 2),
-                    Expr::Lit(LitExpr::new(LitValue::from(1i32), Span::new(3, 3))),
+                    Expr::Lit(make_lit!(1, 3, 3)),
                 ))
             ))
         ))

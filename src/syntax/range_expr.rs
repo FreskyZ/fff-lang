@@ -187,20 +187,19 @@ impl Node for RangeExpr {
 
 #[cfg(test)] #[test]
 fn range_expr_parse() {
-    use super::make_node;
-    use super::{LitExpr, LitValue};
+    use super::{make_node, make_lit};
 
     assert_eq!{ make_node!(".." as RangeExpr), Expr::RangeFull(RangeFullExpr::new(Span::new(0, 1))) }
 
     assert_eq!{ make_node!("..1 + 1" as RangeExpr), 
         Expr::RangeRight(RangeRightExpr::new(Span::new(0, 6), BinaryExpr::new(
-            LitExpr::new(LitValue::from(1i32), Span::new(2, 2)),
+            make_lit!(1, 2, 2),
             Separator::Add, Span::new(4, 4),
-            LitExpr::new(LitValue::from(1i32), Span::new(6, 6))
+            make_lit!(1, 6, 6)
         )))
     }
 
     assert_eq!{ make_node!("1 .." as RangeExpr),
-        Expr::RangeLeft(RangeLeftExpr::new(Span::new(0, 3), LitExpr::new(LitValue::from(1i32), Span::new(0, 0))))
+        Expr::RangeLeft(RangeLeftExpr::new(Span::new(0, 3), make_lit!(1, 0, 0)))
     }
 }

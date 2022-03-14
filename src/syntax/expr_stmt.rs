@@ -44,6 +44,9 @@ impl Node for SimpleExprStatement {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_simple_expr_stmt(self)
     }
+    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_expr(&self.expr)
+    }
 }
 
 #[cfg_attr(test, derive(PartialEq))]
@@ -113,7 +116,7 @@ impl Node for AssignExprStatement {
 
 #[cfg(test)] #[test]
 fn expr_stmt_parse() {
-    use super::{make_node, make_exprs, LitExpr, LitValue, SimpleName, BinaryExpr, FnCallExpr};
+    use super::{make_node, make_exprs, make_lit, SimpleName, BinaryExpr, FnCallExpr};
 
     //                      0          1          2
     //                      012345678 90123456789 012
@@ -122,7 +125,7 @@ fn expr_stmt_parse() {
             FnCallExpr::new(
                 SimpleName::new(1, Span::new(0, 6)),
                 Span::new(7, 20), make_exprs![
-                    LitExpr::new(3u32, Span::new(8, 19))
+                    make_lit!(3: str, 8, 19)
                 ]
             )
         ))
@@ -133,11 +136,11 @@ fn expr_stmt_parse() {
         Statement::AssignExpr(AssignExprStatement::new(Span::new(0, 11),
             Separator::LtLtEq, Span::new(6, 8),
             BinaryExpr::new(
-                LitExpr::new(LitValue::from(1i32), Span::new(0, 0)),
+                make_lit!(1, 0, 0),
                 Separator::Add, Span::new(2, 2),
-                LitExpr::new(LitValue::from(1i32), Span::new(4, 4)),
+                make_lit!(1, 4, 4),
             ),
-            LitExpr::new(LitValue::from(2i32), Span::new(10, 10))
+            make_lit!(2, 10, 10)
         ))
     }
 }

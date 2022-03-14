@@ -67,4 +67,9 @@ impl Node for MemberAccessExpr {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_member_access(self)
     }
+
+    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_expr(self.base.as_ref())?;
+        v.visit_simple_name(&self.name)
+    }
 }

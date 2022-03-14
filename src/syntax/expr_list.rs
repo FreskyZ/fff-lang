@@ -5,6 +5,7 @@ use super::prelude::*;
 use super::Expr;
 
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct ExprList {
     pub items: Vec<Expr>,
 }
@@ -13,20 +14,19 @@ impl ISyntaxFormat for ExprList {
         self.items.iter().map(|expr| f.clone().apply(expr).finish()).collect::<Vec<String>>().join("\n")
     }
 }
-impl fmt::Debug for ExprList {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
-}
 impl ExprList {
     pub fn new(items: Vec<Expr>) -> ExprList { ExprList{ items } }
 }
 
-#[cfg_attr(test, derive(PartialEq, Debug))]
+#[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub enum ExprListParseResult {
     Empty(Span),
     SingleComma(Span),              // and quote span
     Normal(Span, ExprList),         // and quote span
     EndWithComma(Span, ExprList),   // and quote span
 }
+
 impl Node for ExprList {
     type ParseOutput = ExprListParseResult;
 
@@ -69,6 +69,12 @@ impl Node for ExprList {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_expr_list(self)
     }
+    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        for item in &self.items {
+            v.visit_expr(item)?;
+        }
+        Ok(Default::default())
+    }
 }
 
 // test helper
@@ -89,38 +95,40 @@ macro_rules! make_exprs {
 #[cfg(test)]
 pub(crate) use make_exprs;
 
-#[cfg(test)] #[test]
-fn expr_list_format() {
-    use super::{LitExpr, LitValue};
+#[cfg(test)]
+#[test]
+fn expr_list_display() {
+    use super::{make_lit, make_source};
 
+    let mut scx = make_source!("123123234123");
+    scx.entry("1").finish();
     assert_eq!{
         ExprList::new(vec![
-            Expr::Lit(LitExpr::new(LitValue::from(1i32), Span::new(1, 2))),
-            Expr::Lit(LitExpr::new(LitValue::from(2i32), Span::new(3, 4))),
-            Expr::Lit(LitExpr::new(LitValue::from(3i32), Span::new(5, 6))),
-        ]).format(Formatter::with_test_indent(1)),
-        "  literal (i32)1 <<0>1-2>\n  literal (i32)2 <<0>3-4>\n  literal (i32)3 <<0>5-6>"
+            Expr::Lit(make_lit!(1, 1, 2)),
+            Expr::Lit(make_lit!(2, 3, 4)),
+            Expr::Lit(make_lit!(3, 5, 6)),
+        ]).display(&scx).to_string(),
+        "literal i32 1 <1:2-1:3>\nliteral i32 2 <1:4-1:5>\nliteral i32 3 <1:6-1:7>\n"
     }
 }
 
 #[cfg(test)] #[test]
 fn expr_list_parse() {
-    use super::{make_node};
-    use super::{LitExpr, LitValue};
+    use super::{make_node, make_lit};
 
     assert_eq!{ make_node!("[1, 2, 3]" as ExprList), 
         ExprListParseResult::Normal(Span::new(0, 8), ExprList::new(vec![
-            Expr::Lit(LitExpr::new(LitValue::from(1i32), Span::new(1, 1))),
-            Expr::Lit(LitExpr::new(LitValue::from(2i32), Span::new(4, 4))),
-            Expr::Lit(LitExpr::new(LitValue::from(3i32), Span::new(7, 7))),
+            Expr::Lit(make_lit!(1, 1, 1)),
+            Expr::Lit(make_lit!(2, 4, 4)),
+            Expr::Lit(make_lit!(3, 7, 7)),
         ]))
     }
     
     assert_eq!{ make_node!("(1, 2, 3,)" as ExprList), 
         ExprListParseResult::EndWithComma(Span::new(0, 9), ExprList::new(vec![
-            Expr::Lit(LitExpr::new(LitValue::from(1i32), Span::new(1, 1))),
-            Expr::Lit(LitExpr::new(LitValue::from(2i32), Span::new(4, 4))),
-            Expr::Lit(LitExpr::new(LitValue::from(3i32), Span::new(7, 7))),
+            Expr::Lit(make_lit!(1, 1, 1)),
+            Expr::Lit(make_lit!(2, 4, 4)),
+            Expr::Lit(make_lit!(3, 7, 7)),
         ]))
     }
 

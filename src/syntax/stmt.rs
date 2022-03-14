@@ -9,15 +9,15 @@ use super::{FnDef, TypeDef, VarDeclStatement, BreakStatement, ContinueStatement,
     AssignExprStatement, LoopStatement, WhileStatement, ForStatement, IfStatement, BlockStatement, UseStatement, ImportStatement};
 
 macro_rules! define_statement {
-    ($name:ident, $visit:ident, $($subty:ty => $enum_name:ident,)+) => (
+    ($name:ident, $visit_this:ident, $($subty:ty => $variant:ident, $visit:ident,)+) => (
         #[cfg_attr(test, derive(PartialEq))]
         pub enum $name {
-            $($enum_name($subty),)+
+            $($variant($subty),)+
         }
         impl ISyntaxFormat for $name {
             fn format(&self, f: Formatter) -> String {
                 match self {
-                    $(&$name::$enum_name(ref inner) => f.apply(inner).finish(),)+
+                    $(&$name::$variant(ref inner) => f.apply(inner).finish(),)+
                 }
             }
         }
@@ -26,7 +26,7 @@ macro_rules! define_statement {
         }
 
         $( impl From<$subty> for $name { // impl from to flatten difference between return detail XXXStatement or return Statement
-                fn from(s: $subty) -> $name { $name::$enum_name(s) }
+                fn from(s: $subty) -> $name { $name::$variant(s) }
         } )+
 
         impl Node for $name {
@@ -50,43 +50,50 @@ macro_rules! define_statement {
             }
             
             fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-                v.$visit(self)
+                v.$visit_this(self)
+            }
+            fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+                match self {
+                $(
+                    $name::$variant(e) => v.$visit(e),
+                )+
+                }
             }
         }
     )
 }
 
 define_statement!{ Statement, visit_stmt,
-    TypeDef => Type,
-    FnDef => Fn,
-    BlockStatement => Block,
-    BreakStatement => Break,
-    ContinueStatement => Continue,
-    SimpleExprStatement => SimpleExpr,
-    AssignExprStatement => AssignExpr,
-    ForStatement => For,
-    IfStatement => If,
-    LoopStatement => Loop,
-    ReturnStatement => Return,
-    VarDeclStatement => VarDecl,
-    WhileStatement => While,
-    UseStatement => Use,
+    TypeDef => Type, visit_type_def,
+    FnDef => Fn, visit_fn_def,
+    BlockStatement => Block, visit_block_stmt,
+    BreakStatement => Break, visit_break_stmt,
+    ContinueStatement => Continue, visit_continue_stmt,
+    SimpleExprStatement => SimpleExpr, visit_simple_expr_stmt,
+    AssignExprStatement => AssignExpr, visit_assign_expr_stmt,
+    ForStatement => For, visit_for_stmt,
+    IfStatement => If, visit_if_stmt,
+    LoopStatement => Loop, visit_loop_stmt,
+    ReturnStatement => Return, visit_ret_stmt,
+    VarDeclStatement => VarDecl, visit_var_decl,
+    WhileStatement => While, visit_while_stmt,
+    UseStatement => Use, visit_use_stmt,
 }
 
 // global item
 define_statement!{ Item, visit_item,
-    TypeDef => Type,
-    FnDef => Fn,
-    BlockStatement => Block,
-    SimpleExprStatement => SimpleExpr,
-    AssignExprStatement => AssignExpr,
-    ForStatement => For,
-    IfStatement => If,
-    LoopStatement => Loop,
-    VarDeclStatement => VarDecl,
-    WhileStatement => While,
-    UseStatement => Use,
-    ImportStatement => Import,
+    TypeDef => Type, visit_type_def,
+    FnDef => Fn, visit_fn_def,
+    BlockStatement => Block, visit_block_stmt,
+    SimpleExprStatement => SimpleExpr, visit_simple_expr_stmt,
+    AssignExprStatement => AssignExpr, visit_assign_expr_stmt,
+    ForStatement => For, visit_for_stmt,
+    IfStatement => If, visit_if_stmt,
+    LoopStatement => Loop, visit_loop_stmt,
+    VarDeclStatement => VarDecl, visit_var_decl,
+    WhileStatement => While, visit_while_stmt,
+    UseStatement => Use, visit_use_stmt,
+    ImportStatement => Import, visit_import_stmt,
 }
  
 // hack

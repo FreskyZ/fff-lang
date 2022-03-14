@@ -97,7 +97,7 @@ impl Node for ForStatement {
 
 #[cfg(test)] #[test]
 fn for_stmt_parse() {
-    use super::{make_node, make_exprs, SimpleName, LitExpr, LitValue, SimpleExprStatement, Statement, MemberAccessExpr, FnCallExpr, ExprList};
+    use super::{make_node, make_exprs, make_lit, SimpleName, SimpleExprStatement, Statement, MemberAccessExpr, FnCallExpr, ExprList};
 
     //                      0123456789012345678
     assert_eq!{ make_node!("@2: for i in 42 {}" as ForStatement, [Span::new(1, 1), Span::new(8, 8)]),
@@ -105,7 +105,7 @@ fn for_stmt_parse() {
             LabelDef::new(1, Span::new(0, 2)),
             Span::new(4, 6),
             2, Span::new(8, 8),
-            Expr::Lit(LitExpr::new(LitValue::from(42i32), Span::new(13, 14))),
+            Expr::Lit(make_lit!(42, 13, 14)),
             Block::new(Span::new(16, 17), vec![])
         )
     }
@@ -125,8 +125,8 @@ fn for_stmt_parse() {
                             FnCallExpr::new(
                                 SimpleName::new(3, Span::new(17, 21)),
                                 Span::new(22, 28), make_exprs![
-                                    LitExpr::new(LitValue::from(0i32), Span::new(23, 23)),
-                                    LitExpr::new(LitValue::from(10i32), Span::new(26, 27)),
+                                    make_lit!(0, 23, 23),
+                                    make_lit!(10, 26, 27),
                                 ]
                             ),
                             Span::new(29, 29),
@@ -144,7 +144,7 @@ fn for_stmt_parse() {
                     FnCallExpr::new(
                         SimpleName::new(6, Span::new(54, 60)),
                         Span::new(61, 74), make_exprs![
-                            LitExpr::new(7u32, Span::new(62, 73))
+                            make_lit!(7: str, 62, 73)
                         ]
                     )
                 ))

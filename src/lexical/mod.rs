@@ -14,7 +14,7 @@ mod literal {
 
 use unicode::CharExt;
 pub use token::{Separator, SeparatorKind, Keyword, KeywordKind};
-pub use token::{Numeric, StringLiteralType, Token, TokenFormat};
+pub use token::{Numeric, StringLiteralType, Token, TokenDisplay};
 
 #[derive(Debug)]
 pub struct Parser<'ecx, 'scx, F = DefaultFileSystem> {

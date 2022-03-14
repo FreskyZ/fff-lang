@@ -103,15 +103,16 @@ pub enum Token {
 }
 
 // pretty print replace symbol id with string content
-pub struct TokenFormat<'t, 'scx>(&'t Token, &'scx SourceContext);
+pub struct TokenDisplay<'t, 'scx>(&'t Token, &'scx SourceContext);
 
 impl Token {
-    pub fn display<'t, 'scx>(&'t self, scx: &'scx SourceContext) -> TokenFormat<'t, 'scx> {
-        TokenFormat(&self, scx)
+    #[allow(dead_code)] // after syntax add back, before --print tokens argument added, this is dead code
+    pub fn display<'t, 'scx>(&'t self, scx: &'scx SourceContext) -> TokenDisplay<'t, 'scx> {
+        TokenDisplay(&self, scx)
     }
 }
 
-impl<'a, 'scx> fmt::Display for TokenFormat<'a, 'scx> {
+impl<'a, 'scx> fmt::Display for TokenDisplay<'a, 'scx> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.0 {
             Token::EOF => f.write_str("EOF"),

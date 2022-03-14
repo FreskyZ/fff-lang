@@ -73,31 +73,33 @@ impl Node for IndexCallExpr {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_index_call_expr(self)
     }
+    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_expr(&self.base)?;
+        v.visit_expr_list(&self.params)
+    }
 }
 
 #[cfg(test)] #[test]
 fn index_call_parse() {
-    use super::{make_node};
-    use super::{LitExpr, LitValue};
+    use super::{make_node, make_lit, make_exprs};
 
     assert_eq!{ make_node!("[1, 2, ]" as IndexCallExpr),
-        IndexCallExpr::new_with_parse_result(Span::new(0, 7), ExprList::new(vec![
-            Expr::Lit(LitExpr::new(LitValue::from(1i32), Span::new(1, 1))),
-            Expr::Lit(LitExpr::new(LitValue::from(2i32), Span::new(4, 4))),
-        ]))
+        IndexCallExpr::new_with_parse_result(Span::new(0, 7), make_exprs![
+            make_lit!(1, 1, 1),
+            make_lit!(2, 4, 4),
+        ])
     }
 
     assert_eq!{ make_node!("[\"hello\"]" as IndexCallExpr),
-        IndexCallExpr::new_with_parse_result(Span::new(0, 8), 
-            ExprList::new(vec![Expr::Lit(LitExpr::new(2u32, Span::new(1, 7)))])
-        )
+        IndexCallExpr::new_with_parse_result(Span::new(0, 8), make_exprs![
+            make_lit!(2: str, 1, 7)
+        ])
     }
 }
 
 #[cfg(test)] #[test]
 fn index_call_errors() {
-    use crate::diagnostics::make_errors;
-    use super::{make_node};
+    use super::{make_node, make_errors};
 
     assert_eq!{ make_node!("[,]" as IndexCallExpr, and messages), (
         IndexCallExpr::new_with_parse_result(Span::new(0, 2), ExprList::new(Vec::new())), 

@@ -64,16 +64,16 @@ impl Node for ReturnStatement {
 
 #[cfg(test)] #[test]
 fn ret_stmt_parse() {
-    use super::{make_node, LitExpr, LitValue, BinaryExpr};
+    use super::{make_node, make_lit, BinaryExpr};
 
     assert_eq!{ make_node!("return;" as ReturnStatement), ReturnStatement::new_unit(Span::new(0, 6)) }
     assert_eq!{ make_node!("return 1 + 1;" as ReturnStatement), 
         ReturnStatement::new_expr(
             Span::new(0, 12), 
             Expr::Binary(BinaryExpr::new(
-                Expr::Lit(LitExpr::new(LitValue::from(1i32), Span::new(7, 7))),
+                Expr::Lit(make_lit!(1, 7, 7)),
                 Separator::Add, Span::new(9, 9),
-                Expr::Lit(LitExpr::new(LitValue::from(1i32), Span::new(11, 11))),
+                Expr::Lit(make_lit!(1, 11, 11)),
             ))
         )
     }

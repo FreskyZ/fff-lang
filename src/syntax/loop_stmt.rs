@@ -69,28 +69,37 @@ impl Node for LoopStatement {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_loop_stmt(self)
     }
+    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        if let Some(name) = &self.name {
+            v.visit_label_def(name)?;
+        }
+        v.visit_block(&self.body)
+    }
 }
 
-#[cfg(test)] #[test]
-fn loop_stmt_format() {
-    use super::make_node;
+#[cfg(test)]
+#[test]
+fn loop_stmt_display() {
+    use super::{make_node};
     
     //                  1234567890123456789 0123 45678
-    assert_eq!{ make_node!("@@: loop { println(\"233\"); }" as LoopStatement, [], ["@", "println", "233"]).format(Formatter::empty()), r#"loop-stmt <<0>0-27>
-  loop-name #1 <<0>0-2>
-  "loop" <<0>4-7>
-  body <<0>9-27>
-    expr-stmt simple <<0>11-25>
-      fn-call <<0>11-24>
-        base-is ident-use #2 <<0>11-17>
-        parenthenes <<0>18-24>
-        literal #3 <<0>19-23>"#
+    let (node, scx) = make_node!("@@: loop { println(\"233\"); }" as LoopStatement, [], ["@", "println", "233"], and source);
+    assert_eq!{ node.display(&scx).to_string(), r#"loop-stmt <1:1-1:28>
+  loop <1:5-1:8>
+  label @@ <1:1-1:3>
+  block <1:10-1:28>
+    simple-expr-stmt <1:12-1:26>
+      fn-call <1:12-1:25>
+        paren <1:19-1:25>
+        simple-name println <1:12-1:18>
+        literal str 233 <1:20-1:24>
+"#
     }
 }
 
 #[cfg(test)] #[test]
 fn loop_stmt_parse() {
-    use super::{make_node, make_exprs, LitExpr, SimpleName, Statement, SimpleExprStatement, FnCallExpr};
+    use super::{make_node, make_exprs, make_lit, SimpleName, Statement, SimpleExprStatement, FnCallExpr};
 
     assert_eq!{ make_node!("loop {}" as LoopStatement),
         LoopStatement::new_no_label(Span::new(0, 3), Block::new(Span::new(5, 6), vec![]))
@@ -105,7 +114,7 @@ fn loop_stmt_parse() {
                     FnCallExpr::new(
                         SimpleName::new(2, Span::new(11, 17)),
                         Span::new(18, 24), make_exprs![
-                            LitExpr::new(3u32, Span::new(19, 23))
+                            make_lit!(3: str, 19, 23),
                         ]
                     )
                 ))

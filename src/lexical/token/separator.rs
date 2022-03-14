@@ -4,6 +4,7 @@
 ///! --------------------------------------------------------------------------------
 
 #[repr(u16)]
+#[allow(dead_code)]
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub enum SeparatorKind {
     Additive = 0x1,

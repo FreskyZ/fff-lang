@@ -63,6 +63,8 @@ pub use index_call::IndexCallExpr;
 pub use jump_stmt::{BreakStatement, ContinueStatement};
 pub use label_def::LabelDef;
 pub use lit_expr::{LitExpr, LitValue};
+#[cfg(test)]
+use lit_expr::make_lit;
 pub use loop_stmt::LoopStatement;
 pub use member_access::MemberAccessExpr;
 pub use module::Module;

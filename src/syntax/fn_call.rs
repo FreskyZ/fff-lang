@@ -71,21 +71,24 @@ impl Node for FnCallExpr {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_fn_call_expr(self)
     }
+    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_expr(&self.base)?;
+        v.visit_expr_list(&self.params)
+    }
 }
 
 #[cfg(test)] #[test]
 fn fn_call_parse() {
-    use super::{make_node};
-    use super::{LitExpr};
+    use super::{make_node, make_exprs, make_lit};
 
     assert_eq!{ make_node!("()" as FnCallExpr),
-        FnCallExpr::new_with_parse_result(Span::new(0, 1), ExprList::new(vec![]))
+        FnCallExpr::new_with_parse_result(Span::new(0, 1), make_exprs![])
     }
 
     assert_eq!{ make_node!("(\"hello\")" as FnCallExpr),
-        FnCallExpr::new_with_parse_result(Span::new(0, 8), 
-            ExprList::new(vec![Expr::Lit(LitExpr::new(2u32, Span::new(1, 7)))])
-        )
+        FnCallExpr::new_with_parse_result(Span::new(0, 8), make_exprs![
+            make_lit!(2: str, 1, 7),
+        ])
     }
 }
 

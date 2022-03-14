@@ -175,18 +175,18 @@ impl Node for IfStatement {
 
 #[cfg(test)] #[test]
 fn if_stmt_parse() {
-    use super::{make_node, make_exprs, FnCallExpr, MemberAccessExpr, SimpleName, ArrayDef, SimpleExprStatement, LitExpr, LitValue, Statement};
+    use super::{make_node, make_exprs, make_lit, FnCallExpr, MemberAccessExpr, SimpleName, ArrayDef, SimpleExprStatement, Statement};
 
     //                                      0        1         2         3
     //                                      0123456789012345678901234567890123456
     assert_eq!{ make_node!("if true { } else if false { } else {}" as IfStatement),
         IfStatement::new_ifelse(
             IfClause::new(Span::new(0, 1), 
-                LitExpr::new(LitValue::from(true), Span::new(3, 6)),
+                make_lit!(false, 3, 6),
                 Block::new(Span::new(8, 10), vec![])
             ), vec![
                 ElseIfClause::new(Span::new(12, 18), 
-                    LitExpr::new(LitValue::from(false), Span::new(20, 24)),
+                    make_lit!(false, 20, 24),
                     Block::new(Span::new(26, 28), vec![])
                 ),
             ],
@@ -201,7 +201,7 @@ fn if_stmt_parse() {
     assert_eq!{ make_node!("if 1 { sth.do_sth(a); other.do_other(b); } else { [1,2,3].map(writeln);}" as IfStatement, [], ["sth", "do_sth", "a", "other", "do_other", "b", "writeln", "map"]),
         IfStatement::new_ifelse(
             IfClause::new(Span::new(0, 1), 
-                LitExpr::new(LitValue::from(1i32), Span::new(3, 3)),
+                make_lit!(1, 3, 3),
                 Block::new(Span::new(5, 41), vec![
                     Statement::SimpleExpr(SimpleExprStatement::new(Span::new(7, 20),
                         FnCallExpr::new(
@@ -237,9 +237,9 @@ fn if_stmt_parse() {
                         FnCallExpr::new(
                             MemberAccessExpr::new(
                                 ArrayDef::new(Span::new(50, 56), make_exprs![
-                                    LitExpr::new(LitValue::from(1i32), Span::new(51, 51)),
-                                    LitExpr::new(LitValue::from(2i32), Span::new(53, 53)),
-                                    LitExpr::new(LitValue::from(3i32), Span::new(55, 55)),
+                                    make_lit!(1, 51, 51),
+                                    make_lit!(2, 53, 53),
+                                    make_lit!(3, 55, 55),
                                 ]),
                                 Span::new(57, 57),
                                 SimpleName::new(8, Span::new(58, 60))

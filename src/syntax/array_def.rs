@@ -55,43 +55,35 @@ impl Node for ArrayDef {
 }
 
 #[cfg(test)] #[test]
-fn array_def_format() {
-    use super::{make_source, make_exprs, LitExpr};
+fn array_def_display() {
+    use super::{make_source, make_exprs, make_lit};
 
-    assert_eq!{
-        ArrayDef::new(Span::new(0, 42), make_exprs![]).format(Formatter::with_test_indent(1)),
-        "  array-def <<0>0-42>\n    no-init-item"
-    }
-
-    assert_eq!{
-        ArrayDef::new(Span::new(0, 42), make_exprs![
-            LitExpr::new(1i32, Span::new(1, 2)),
-            LitExpr::new(2i32, Span::new(3, 4)),
-            LitExpr::new(48i32, Span::new(5, 6)),
-        ]).format(Formatter::with_test_indent(1)),
-        "  array-def <<0>0-42>\n    literal (i32)1 <<0>1-2>\n    literal (i32)2 <<0>3-4>\n    literal (i32)48 <<0>5-6>"
-    }
-
-    let scx = make_source!("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz");
+    let mut scx = make_source!("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz");
+    scx.entry("1").finish();
     assert_eq!{
         ArrayDef::new(Span::new(0, 42), make_exprs![]).display(&scx).to_string(),
-        "array-def 1:1-1:42\n"
+        "array-def <1:1-1:43>\n"
     }
 
-    let scx = make_source!("abcde\nfg\nhi\njklm");
+    let mut scx = make_source!("abcde\nfg\nhi\njklm");
+    scx.entry("1").finish();
     assert_eq!{
         ArrayDef::new(Span::new(0, 9), make_exprs![
-            LitExpr::new(1i32, Span::new(1, 1)),
-            LitExpr::new(2i32, Span::new(4, 4)),
-            LitExpr::new(48i32, Span::new(7, 8)),
+            make_lit!(1, 1, 1),
+            make_lit!(2, 4, 4),
+            make_lit!(48, 7, 8),
         ]).display(&scx).to_string(),
-        "array-def 1:1-1:10\n  literal (i32)1 1:2-1:2\n  literal (i32)2 1:5-1:5\n  literal (i32)48 1:8-1:9"
+        "array-def <1:1-3:1>
+  literal i32 1 <1:2-1:2>
+  literal i32 2 <1:5-1:5>
+  literal i32 48 <2:2-2:3>
+"
     }
 }
 
 #[cfg(test)] #[test]
 fn array_def_parse() {
-    use super::{make_node, make_exprs, LitExpr, BinaryExpr, SimpleName};
+    use super::{make_node, make_exprs, make_lit, BinaryExpr, SimpleName};
 
     assert_eq!{ make_node!("[a]" as ArrayDef),
         Expr::Array(ArrayDef::new(Span::new(0, 2), make_exprs![
@@ -102,17 +94,17 @@ fn array_def_parse() {
     //                                   01234567
     assert_eq!{ make_node!("[1, '2']" as ArrayDef),
         Expr::Array(ArrayDef::new(Span::new(0, 7), make_exprs![
-            LitExpr::new(1i32, Span::new(1, 1)),
-            LitExpr::new('2', Span::new(4, 6))
+            make_lit!(1, 1, 1),
+            make_lit!('2': char, 4, 6),
         ]))
     }
     //                                   01234567
     assert_eq!{ make_node!("[1 + 1,]" as ArrayDef),
         Expr::Array(ArrayDef::new(Span::new(0, 7), make_exprs![
             BinaryExpr::new(
-                LitExpr::new(1i32, Span::new(1, 1)), 
+                make_lit!(1, 1, 1),
                 Separator::Add, Span::new(3, 3),
-                LitExpr::new(1i32, Span::new(5, 5)),
+                make_lit!(1, 5, 5),
             )
         ]))
     }
