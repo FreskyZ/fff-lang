@@ -78,6 +78,15 @@ impl Node for VarDeclStatement {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_var_decl(self)
     }
+    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        if let Some(typeuse) = &self.typeuse {
+            v.visit_type_use(typeuse)?;
+        }
+        if let Some(init_expr) = &self.init_expr {
+            v.visit_expr(init_expr)?;
+        }
+        Ok(Default::default())
+    }
 }
 
 #[cfg(test)] #[test]

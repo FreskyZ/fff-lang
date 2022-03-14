@@ -91,6 +91,12 @@ impl Node for Name {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_name(self)
     }
+    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        for segment in &self.segments {
+            v.visit_simple_name(segment)?;
+        }
+        Ok(Default::default())
+    }
 }
 
 impl Expr {

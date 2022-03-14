@@ -23,6 +23,18 @@ impl TypeFieldDef {
         TypeFieldDef{ all_span, name, colon_span, typeuse }
     }
 }
+impl Node for TypeFieldDef {
+    type ParseOutput = TypeDef;
+
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_type_field_def(self)
+    }
+    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_simple_name(&self.name)?;
+        v.visit_type_use(&self.typeuse)
+    }
+}
+
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
 pub struct TypeDef {
@@ -85,6 +97,13 @@ impl Node for TypeDef {
 
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_type_def(self)
+    }
+    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_simple_name(&self.name)?;
+        for field in &self.fields {
+            v.visit_type_field_def(field)?;
+        }
+        Ok(Default::default())
     }
 }
 

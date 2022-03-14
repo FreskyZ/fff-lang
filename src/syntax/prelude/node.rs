@@ -31,8 +31,12 @@ pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_simple_expr_stmt(&mut self, node: &SimpleExprStatement) -> Result<T, E> { node.walk(self) }
     fn visit_fn_call_expr(&mut self, node: &FnCallExpr) -> Result<T, E> { node.walk(self) }
     fn visit_fn_def(&mut self, node: &FnDef) -> Result<T, E> { node.walk(self) }
+    fn visit_fn_param(&mut self, node: &FnParam) -> Result<T, E> { node.walk(self) }
     fn visit_for_stmt(&mut self, node: &ForStatement) -> Result<T, E> { node.walk(self) }
     fn visit_if_stmt(&mut self, node: &IfStatement) -> Result<T, E> { node.walk(self) }
+    fn visit_if_clause(&mut self, node: &IfClause) -> Result<T, E> { node.walk(self) }
+    fn visit_else_if_clause(&mut self, node: &ElseIfClause) -> Result<T, E> { node.walk(self) }
+    fn visit_else_clause(&mut self, node: &ElseClause) -> Result<T, E> { node.walk(self) }
     fn visit_import_stmt(&mut self, node: &ImportStatement) -> Result<T, E> { node.walk(self) }
     fn visit_index_call_expr(&mut self, node: &IndexCallExpr) -> Result<T, E> { node.walk(self) }
     fn visit_break_stmt(&mut self, node: &BreakStatement) -> Result<T, E> { node.walk(self) }
@@ -54,6 +58,7 @@ pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_paren_expr(&mut self, node: &ParenExpr) -> Result<T, E> { node.walk(self) }
     fn visit_tuple_def(&mut self, node: &TupleDef) -> Result<T, E> { node.walk(self) }
     fn visit_type_def(&mut self, node: &TypeDef) -> Result<T, E> { node.walk(self) }
+    fn visit_type_field_def(&mut self, node: &TypeFieldDef) -> Result<T, E> { node.walk(self) }
     fn visit_type_use(&mut self, node: &TypeUse) -> Result<T, E> { node.walk(self) }
     fn visit_unary_expr(&mut self, node: &UnaryExpr) -> Result<T, E> { node.walk(self) }
     fn visit_use_stmt(&mut self, node: &UseStatement) -> Result<T, E> { node.walk(self) }
@@ -71,14 +76,20 @@ pub trait Node: Sized {
         return false;
     }
 
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Self::ParseOutput>;
+    // some nodes are parsed by other nodes not self
+    fn parse<F: FileSystem>(_sess: &mut ParseSession<F>) -> ParseResult<Self::ParseOutput> {
+        Err(())
+    }
 
     // check matches_first, if pass, parse, return Ok(Some(T)) or Err(()), else return None
     fn try_parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Option<Self::ParseOutput>> {
         Ok(if Self::matches(&sess.current) || Self::matches3(&sess.current, &sess.peek, &sess.peek2) { Some(Self::parse(sess)?) } else { None })
     }
 
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, visitor: &mut V) -> Result<T, E>;
+    // some nodes are only parsing proxy and not actually on result tree
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, _visitor: &mut V) -> Result<T, E> {
+        Ok(Default::default())
+    }
 
     fn walk<T: Default, E, V: Visitor<T, E>>(&self, _visitor: &mut V) -> Result<T, E> { 
         Ok(Default::default())

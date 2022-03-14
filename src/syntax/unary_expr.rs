@@ -61,6 +61,9 @@ impl Node for UnaryExpr {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_unary_expr(self)
     }
+    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_expr(self.base.as_ref())
+    }
 }
 
 #[cfg(test)] #[test]

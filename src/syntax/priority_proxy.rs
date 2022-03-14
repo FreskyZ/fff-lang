@@ -27,11 +27,6 @@ impl Node for PrimaryExpr {
         let (this_id, this_span) = sess.expect_ident_or(&[Keyword::This])?;  // actually identifier is processed by Name, not here
         return Ok(Expr::SimpleName(SimpleName::new(this_id, this_span)));
     }
-
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, _: &mut V) -> Result<T, E> {
-        // not an actual node
-        Ok(Default::default())
-    }
 }
 
 pub struct PostfixExpr;
@@ -70,10 +65,6 @@ impl Node for PostfixExpr {
 
         trace!("parsing postfix finished, get retval: {:?}", current_retval);
         return Ok(current_retval);
-    }
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, _: &mut V) -> Result<T, E> {
-        // not an actual node
-        Ok(Default::default())
     }
 }
 

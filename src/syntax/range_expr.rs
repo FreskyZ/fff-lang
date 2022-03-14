@@ -28,9 +28,6 @@ impl RangeFullExpr {
 }
 impl Node for RangeFullExpr {
     type ParseOutput = Expr;
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Expr> {
-        RangeExpr::parse(sess)
-    }
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_range_full_expr(self)
     }
@@ -60,11 +57,11 @@ impl RangeRightExpr {
 }
 impl Node for RangeRightExpr {
     type ParseOutput = Expr;
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Expr> {
-        RangeExpr::parse(sess)
-    }
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_range_right_expr(self)
+    }
+    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_expr(self.expr.as_ref())
     }
 }
 
@@ -92,11 +89,11 @@ impl RangeLeftExpr {
 }
 impl Node for RangeLeftExpr {
     type ParseOutput = Expr;
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Expr> {
-        RangeExpr::parse(sess)
-    }
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_range_left_expr(self)
+    }
+    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_expr(self.expr.as_ref())
     }
 }
 
@@ -139,6 +136,10 @@ impl Node for RangeBothExpr {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_range_both_expr(self)
     }
+    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_expr(self.left_expr.as_ref())?;
+        v.visit_expr(self.right_expr.as_ref())
+    }
 }
 
 // actually also a priority proxy
@@ -170,10 +171,6 @@ impl Node for RangeExpr {
                 }
             }
         }
-    }
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, _: &mut V) -> Result<T, E> {
-        // not an actual node
-        Ok(Default::default())
     }
 }
 

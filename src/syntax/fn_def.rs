@@ -16,6 +16,21 @@ pub struct FnParam {
 impl FnParam {
     pub fn new(name: impl Into<IsId>, name_span: Span, decltype: TypeUse) -> FnParam { FnParam{ decltype, name: name.into(), name_span } }
 }
+impl Node for FnParam {
+    type ParseOutput = FnParam;
+    
+    // not an actual parsable node
+    fn parse<F: FileSystem>(_sess: &mut ParseSession<F>) -> ParseResult<FnParam> {
+        Err(())
+    }
+
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_fn_param(self)
+    }
+    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_type_use(&self.decltype)
+    }
+}
 
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
@@ -105,6 +120,15 @@ impl Node for FnDef {
 
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_fn_def(self)
+    }
+    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        for param in &self.params {
+            v.visit_fn_param(param)?;
+        }
+        if let Some(ret_type) = &self.ret_type {
+            v.visit_type_use(ret_type)?;
+        }
+        v.visit_block(&self.body)
     }
 }
 

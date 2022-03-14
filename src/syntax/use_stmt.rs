@@ -65,6 +65,13 @@ impl Node for UseStatement {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_use_stmt(self)
     }
+    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_name(&self.name)?;
+        if let Some(alias) = &self.target {
+            v.visit_simple_name(alias)?;
+        }
+        Ok(Default::default())
+    }
 }
 
 #[cfg(test)] #[test]

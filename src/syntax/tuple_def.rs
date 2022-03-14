@@ -36,6 +36,9 @@ impl Node for ParenExpr {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_paren_expr(self)
     }
+    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_expr(self.expr.as_ref())
+    }
 }
 
 #[cfg_attr(test, derive(PartialEq))]

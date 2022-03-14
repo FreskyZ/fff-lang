@@ -3,7 +3,7 @@
 use crate::source::SourceContext;
 use crate::diagnostics::Diagnostics;
 use crate::lexical::Parser;
-use crate::syntax::{parse, Formatter, ISyntaxFormat};
+use crate::syntax::{parse, Node};
 // use semantic::Package;
 // use vm::VirtualMachine;
 
@@ -16,7 +16,7 @@ pub fn main() {
     if args.len() > 1 {
         let chars = scx.entry(&args[1]);
         match parse(Parser::new(chars, &mut diagnostics)) {
-            Ok(tree) => println!("{}", tree.format(Formatter::new(Some(&scx)))),
+            Ok(tree) => println!("{}", tree.display(&scx)),
             Err(_) => println!("{}", diagnostics.display(&scx)),
         }
     } else {

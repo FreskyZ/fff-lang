@@ -35,18 +35,6 @@ impl ISyntaxFormat for ForStatement {
 }
 impl ForStatement {
 
-    pub fn new_no_label<T: Into<Expr>>(
-            all_span: Span, for_span: Span, 
-            iter_name: IsId, iter_span: Span, iter_expr: T, 
-            body: Block) -> ForStatement {
-        ForStatement { 
-            loop_name: None,
-            for_span,
-            iter_name, iter_span, 
-            iter_expr: iter_expr.into(),
-            body, all_span
-        }
-    }
     pub fn new_with_label<T: Into<Expr>>(
             all_span: Span, loop_name: LabelDef, for_span: Span, 
             iter_name: impl Into<IsId>, iter_span: Span, iter_expr: T, 
@@ -90,6 +78,13 @@ impl Node for ForStatement {
 
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_for_stmt(self)
+    }
+    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        if let Some(name) = &self.loop_name {
+            v.visit_label_def(name)?;
+        }
+        v.visit_expr(&self.iter_expr)?;
+        v.visit_block(&self.body)
     }
 }
 

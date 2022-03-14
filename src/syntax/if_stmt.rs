@@ -48,6 +48,37 @@ impl ElseClause {
     }
 }
 
+// TODO: try change if stmt to vec<(if part, option<else part>)> to prevent 4 types
+impl Node for IfClause {
+    type ParseOutput = IfStatement;
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_if_clause(self)
+    }
+    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_expr(&self.cond_expr)?;
+        v.visit_block(&self.body)
+    }
+}
+impl Node for ElseIfClause {
+    type ParseOutput = IfStatement;
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_else_if_clause(self)
+    }
+    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_expr(&self.cond_expr)?;
+        v.visit_block(&self.body)
+    }
+}
+impl Node for ElseClause {
+    type ParseOutput = IfStatement;
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_else_clause(self)
+    }
+    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_block(&self.body)
+    }
+}
+
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
 pub struct IfStatement {
@@ -171,6 +202,16 @@ impl Node for IfStatement {
 
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_if_stmt(self)
+    }
+    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_if_clause(&self.if_clause)?;
+        for elseif in &self.elseif_clauses {
+            v.visit_else_if_clause(elseif)?;
+        }
+        if let Some(r#else) = &self.else_clause {
+            v.visit_else_clause(r#else)?;
+        }
+        Ok(Default::default())
     }
 }
 

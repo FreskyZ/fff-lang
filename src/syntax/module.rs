@@ -55,6 +55,12 @@ impl Node for Module {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_module(self)
     }
+    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        for item in &self.items {
+            v.visit_item(item)?;
+        }
+        Ok(Default::default())
+    }
 }
 
 #[cfg(test)] #[test]

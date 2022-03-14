@@ -101,6 +101,12 @@ impl Node for TypeUse {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_type_use(self)
     }
+    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        for child in &self.params {
+            v.visit_type_use(child)?;
+        }
+        Ok(Default::default())
+    }
 }
 
 #[cfg(test)] #[test]
