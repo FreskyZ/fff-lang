@@ -9,6 +9,7 @@ use super::prelude::*;
 use super::{Expr, Block, LabelDef};
 
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct ForStatement {
     pub loop_name: Option<LabelDef>,
     pub for_span: Span,
@@ -31,9 +32,6 @@ impl ISyntaxFormat for ForStatement {
             .set_header_text("body").apply1(&self.body)
             .finish()
     }
-}
-impl fmt::Debug for ForStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl ForStatement {
 

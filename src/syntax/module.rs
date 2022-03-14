@@ -7,6 +7,7 @@ use super::prelude::*;
 use super::{Item, ImportStatement};
 
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct Module {
     pub items: Vec<Item>,
 }
@@ -21,9 +22,6 @@ impl ISyntaxFormat for Module {
         }
         f.finish()
     }
-}
-impl fmt::Debug for Module {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl Module {
     pub fn new(items: Vec<Item>) -> Module { Module{ items } }

@@ -117,7 +117,7 @@ macro_rules! make_node {
         let mut scx = crate::source::make_source!($code);
         let chars = scx.entry("1");
         let lcx = crate::lexical::Parser::new(chars, &mut ecx);
-        let mut pcx = ParseSession::new(lcx);
+        let mut pcx = crate::syntax::prelude::ParseSession::new(lcx);
         let node = <$ty>::parse(&mut pcx).expect("failed to parse test input");
         (node, ecx)
     }};
@@ -128,7 +128,7 @@ macro_rules! make_node {
         let mut chars = scx.entry("1");
         $( chars.intern_span($span_string); )*
         let lcx = crate::lexical::Parser::new(chars, &mut ecx);
-        let mut pcx = ParseSession::new(lcx);
+        let mut pcx = crate::syntax::prelude::ParseSession::new(lcx);
         let node = <$ty>::parse(&mut pcx).expect("failed to parse test input");
         assert_eq!(ecx, crate::diagnostics::make_errors!());
         node
@@ -141,7 +141,7 @@ macro_rules! make_node {
         $( chars.intern_span($span_string); )*
         $( chars.intern($value_string); )*
         let lcx = crate::lexical::Parser::new(chars, &mut ecx);
-        let mut pcx = ParseSession::new(lcx);
+        let mut pcx = crate::syntax::prelude::ParseSession::new(lcx);
         let node = <$ty>::parse(&mut pcx).expect("failed to parse test input");
         assert_eq!(ecx, crate::diagnostics::make_errors!());
         node
@@ -154,7 +154,7 @@ macro_rules! make_node {
         $( chars.intern_span($span_string); )*
         $( chars.intern($value_string); )*
         let lcx = crate::lexical::Parser::new(chars, &mut ecx);
-        let mut pcx = ParseSession::new(lcx);
+        let mut pcx = crate::syntax::prelude::ParseSession::new(lcx);
         let node = <$ty>::parse(&mut pcx).expect("failed to parse test input");
         pcx.base.finish();
         assert_eq!(ecx, crate::diagnostics::make_errors!());
@@ -168,7 +168,7 @@ macro_rules! make_node {
         $( chars.intern_span($span_string); )*
         $( chars.intern($value_string); )*
         let lcx = crate::lexical::Parser::new(chars, &mut ecx);
-        let mut pcx = ParseSession::new(lcx);
+        let mut pcx = crate::syntax::prelude::ParseSession::new(lcx);
         let node = <$ty>::parse(&mut pcx).expect("failed to parse test input");
         (node, ecx)
     }};

@@ -54,34 +54,8 @@ impl Node for ArrayDef {
     }
 }
 
-#[cfg(test)] #[test]
-fn array_def_display() {
-    use super::{make_source, make_exprs, make_lit};
-
-    let mut scx = make_source!("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz");
-    scx.entry("1").finish();
-    assert_eq!{
-        ArrayDef::new(Span::new(0, 42), make_exprs![]).display(&scx).to_string(),
-        "array-def <1:1-1:43>\n"
-    }
-
-    let mut scx = make_source!("abcde\nfg\nhi\njklm");
-    scx.entry("1").finish();
-    assert_eq!{
-        ArrayDef::new(Span::new(0, 9), make_exprs![
-            make_lit!(1, 1, 1),
-            make_lit!(2, 4, 4),
-            make_lit!(48, 7, 8),
-        ]).display(&scx).to_string(),
-        "array-def <1:1-3:1>
-  literal i32 1 <1:2-1:2>
-  literal i32 2 <1:5-1:5>
-  literal i32 48 <2:2-2:3>
-"
-    }
-}
-
-#[cfg(test)] #[test]
+#[cfg(test)]
+#[test]
 fn array_def_parse() {
     use super::{make_node, make_exprs, make_lit, BinaryExpr, SimpleName};
 

@@ -8,6 +8,7 @@ use super::prelude::*;
 use super::{Expr, Block, LabelDef};
 
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct WhileStatement {
     pub name: Option<LabelDef>,
     pub loop_expr: Expr,
@@ -27,9 +28,6 @@ impl ISyntaxFormat for WhileStatement {
             .set_header_text("body").apply1(&self.body)
             .finish()
     }
-}
-impl fmt::Debug for WhileStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl WhileStatement {
     
@@ -71,6 +69,13 @@ impl Node for WhileStatement {
 
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_while_stmt(self)
+    }
+    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        if let Some(name) = &self.name {
+            v.visit_label_def(name)?;
+        }
+        v.visit_expr(&self.loop_expr)?;
+        v.visit_block(&self.body)
     }
 }
 

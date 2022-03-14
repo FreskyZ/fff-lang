@@ -7,6 +7,7 @@
 use super::prelude::*;
 
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct LabelDef {
     pub name: IsId,
     pub all_span: Span,
@@ -15,9 +16,6 @@ impl ISyntaxFormat for LabelDef {
     fn format(&self, f: Formatter) -> String {
         f.indent().header_text_or("label").space().isid(self.name).space().span(self.all_span).finish()
     }
-}
-impl fmt::Debug for LabelDef {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::empty())) }
 }
 impl LabelDef {
     

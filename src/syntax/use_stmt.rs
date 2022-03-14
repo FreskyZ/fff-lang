@@ -7,6 +7,7 @@ use super::prelude::*;
 use super::{Name, SimpleName};
 
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct UseStatement {
     pub name: Name,
     pub as_span: Span,
@@ -24,9 +25,6 @@ impl ISyntaxFormat for UseStatement {
                     .set_prefix_text("alias-to").apply1(ident).unset_prefix_text().finish(),
         }
     }
-}
-impl fmt::Debug for UseStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl UseStatement {
     

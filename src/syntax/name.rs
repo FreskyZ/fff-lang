@@ -8,6 +8,7 @@ use super::prelude::*;
 use super::Expr;
 
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct SimpleName {
     pub value: IsId,
     pub span: Span,
@@ -16,9 +17,6 @@ impl ISyntaxFormat for SimpleName {
     fn format(&self, f: Formatter) -> String {
         f.indent().header_text_or("ident-use").space().isid(self.value).space().span(self.span).finish()
     }
-}
-impl fmt::Debug for SimpleName {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl From<SimpleName> for Expr {
     fn from(ident_expr: SimpleName) -> Expr { Expr::SimpleName(ident_expr) }
@@ -40,6 +38,7 @@ impl Node for SimpleName {
 }
 
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct Name {
     pub segments: Vec<SimpleName>,
     pub all_span: Span,
@@ -52,9 +51,6 @@ impl ISyntaxFormat for Name {
         }
         f.finish()
     }
-}
-impl fmt::Debug for Name {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::empty())) }
 }
 impl From<Name> for Expr {
     fn from(name: Name) -> Expr { Expr::Name(name) }

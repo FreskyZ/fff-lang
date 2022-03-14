@@ -7,6 +7,7 @@ use super::prelude::*;
 use super::{SimpleName};
 
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct ImportStatement {
     pub name: SimpleName,
     pub as_span: Span,
@@ -23,9 +24,6 @@ impl ISyntaxFormat for ImportStatement {
                     .set_prefix_text("alias-as").apply1(ident).unset_prefix_text().finish(),
         }
     }
-}
-impl fmt::Debug for ImportStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl ImportStatement {
     

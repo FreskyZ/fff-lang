@@ -8,6 +8,7 @@ use super::prelude::*;
 use super::{Block, LabelDef};
 
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct BlockStatement {
     pub name: Option<LabelDef>,
     pub body: Block,
@@ -19,9 +20,6 @@ impl ISyntaxFormat for BlockStatement {
         match self.name { Some(ref name) => f = f.apply1(name).endl(), None => () }
         f.set_header_text("body").apply1(&self.body).finish()
     }
-}
-impl fmt::Debug for BlockStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::empty())) }
 }
 impl BlockStatement {
     

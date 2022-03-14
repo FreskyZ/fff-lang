@@ -7,12 +7,14 @@ use super::prelude::*;
 use super::{Expr, Block};
 
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct IfClause {
     pub cond_expr: Expr,
     pub body: Block,
     pub all_span: Span, // if_span = all_span.slice(0..1)
 }
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct ElseIfClause {
     pub elseif_span: Span, // else_span = elseif_span.slice(0..3), if_span = elseif_span.slice(-2..0)  // TODO: that slice(-2..0)
     pub cond_expr: Expr,
@@ -20,6 +22,7 @@ pub struct ElseIfClause {
     pub all_span: Span,
 }
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct ElseClause {
     pub body: Block,
     pub all_span: Span, // else_span = all_span.slice(0..3)
@@ -46,6 +49,7 @@ impl ElseClause {
 }
 
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct IfStatement {
     pub if_clause: IfClause,
     pub elseif_clauses: Vec<ElseIfClause>,
@@ -74,9 +78,6 @@ impl ISyntaxFormat for IfStatement {
         }
         f.finish()
     }
-}
-impl fmt::Debug for IfStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl IfStatement {
 

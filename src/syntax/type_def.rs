@@ -11,6 +11,7 @@ use super::prelude::*;
 use super::{TypeUse, SimpleName};
 
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct TypeFieldDef {
     pub name: SimpleName,
     pub colon_span: Span,
@@ -23,6 +24,7 @@ impl TypeFieldDef {
     }
 }
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct TypeDef {
     pub all_span: Span,
     pub name: SimpleName,
@@ -42,9 +44,6 @@ impl ISyntaxFormat for TypeDef {
         }
         f.finish()
     }
-}
-impl fmt::Debug for TypeDef {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl TypeDef {
     pub fn new(all_span: Span, name: SimpleName, fields: Vec<TypeFieldDef>) -> TypeDef {

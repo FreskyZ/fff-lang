@@ -11,6 +11,7 @@ use super::{FnDef, TypeDef, VarDeclStatement, BreakStatement, ContinueStatement,
 macro_rules! define_statement {
     ($name:ident, $visit_this:ident, $($subty:ty => $variant:ident, $visit:ident,)+) => (
         #[cfg_attr(test, derive(PartialEq))]
+        #[derive(Debug)]
         pub enum $name {
             $($variant($subty),)+
         }
@@ -20,9 +21,6 @@ macro_rules! define_statement {
                     $(&$name::$variant(ref inner) => f.apply(inner).finish(),)+
                 }
             }
-        }
-        impl fmt::Debug for $name {
-            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
         }
 
         $( impl From<$subty> for $name { // impl from to flatten difference between return detail XXXStatement or return Statement

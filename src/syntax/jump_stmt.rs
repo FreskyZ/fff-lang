@@ -7,6 +7,7 @@
 use super::prelude::*;
 
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct JumpStatement {
     pub target: Option<IsId>,
     pub target_span: Span,
@@ -44,8 +45,10 @@ impl JumpStatement {
 }
 
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct ContinueStatement(pub JumpStatement);
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct BreakStatement(pub JumpStatement);
 
 impl ISyntaxFormat for ContinueStatement {
@@ -53,12 +56,6 @@ impl ISyntaxFormat for ContinueStatement {
 }
 impl ISyntaxFormat for BreakStatement {
     fn format(&self, f: Formatter) -> String { self.0.format(f, "break-stmt") }
-}
-impl fmt::Debug for ContinueStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::empty())) }
-}
-impl fmt::Debug for BreakStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::empty())) }
 }
 
 impl ContinueStatement {

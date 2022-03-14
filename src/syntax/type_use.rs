@@ -22,6 +22,7 @@
 use super::prelude::*;
 
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct TypeUse {
     pub base: IsId,
     pub base_span: Span,        // maybe default for array and tuple
@@ -42,9 +43,6 @@ impl ISyntaxFormat for TypeUse {
             f.finish()
         }
     }
-}
-impl fmt::Debug for TypeUse {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::empty())) }
 }
 impl TypeUse {
 

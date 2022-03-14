@@ -7,6 +7,7 @@ use super::prelude::*;
 use super::{Expr, ExprList, ExprListParseResult};
 
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct FnCallExpr {
     pub base: Box<Expr>,
     pub params: ExprList,
@@ -20,9 +21,6 @@ impl ISyntaxFormat for FnCallExpr {
             .indent1().lit("parenthenes").space().span(self.paren_span).endl();
         (if self.params.items.len() == 0 { f.indent1().lit("no-argument") } else { f.apply1(&self.params) }).finish()
     }
-}
-impl fmt::Debug for FnCallExpr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl From<FnCallExpr> for Expr {
     fn from(fn_call_expr: FnCallExpr) -> Expr { Expr::FnCall(fn_call_expr) }

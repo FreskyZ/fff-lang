@@ -7,6 +7,7 @@ use super::prelude::*;
 use super::{Expr, PostfixExpr};
 
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct UnaryExpr {
     pub base: Box<Expr>, 
     pub operator: Separator, 
@@ -20,9 +21,6 @@ impl ISyntaxFormat for UnaryExpr {
             .apply1(self.base.as_ref())
             .finish()
     }
-}
-impl fmt::Debug for UnaryExpr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl From<UnaryExpr> for Expr {
     fn from(unary_expr: UnaryExpr) -> Expr { Expr::Unary(unary_expr) }

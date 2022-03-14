@@ -10,6 +10,7 @@ use super::{Expr, LitExpr, LitValue, ExprList, ExprListParseResult};
 
 // Paren expr is a side effect of TupleDef
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct ParenExpr {
     pub expr: Box<Expr>,
     pub span: Span,  // paren_span also all_span
@@ -20,9 +21,6 @@ impl ISyntaxFormat for ParenExpr {
             .apply1(self.expr.as_ref())
             .finish()
     }
-}
-impl fmt::Debug for ParenExpr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl From<ParenExpr> for Expr {
     fn from(paren_expr: ParenExpr) -> Expr { Expr::Paren(paren_expr) }
@@ -41,6 +39,7 @@ impl Node for ParenExpr {
 }
 
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct TupleDef {
     pub items: ExprList,
     pub paren_span: Span,
@@ -54,9 +53,6 @@ impl ISyntaxFormat for TupleDef {
             f.apply1(&self.items).finish()
         }
     }
-}
-impl fmt::Debug for TupleDef {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::empty())) }
 }
 impl From<TupleDef> for Expr {
     fn from(tuple_def: TupleDef) -> Expr { Expr::Tuple(tuple_def) }
@@ -99,29 +95,6 @@ impl Node for TupleDef {
     }
     fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_expr_list(&self.items)
-    }
-}
-
-#[cfg(test)] #[test]
-fn tuple_def_display() {
-    use super::{make_exprs, make_lit, make_source};
-
-    let mut scx = make_source!("1231241241231412341234");
-    scx.entry("1").finish();
-    assert_eq!{
-        TupleDef::new(Span::new(0, 21), make_exprs![]).display(&scx).to_string(),
-        "tuple-def <1:1-1:22>\n"
-    }
-
-    let mut scx = make_source!("1231241241231412341234");
-    scx.entry("1").finish();
-    assert_eq!{
-        TupleDef::new(Span::new(0, 8), make_exprs![
-            make_lit!(1, 1, 2),
-            make_lit!(2, 3, 4),
-            make_lit!(48, 5, 6),
-        ]).display(&scx).to_string(),
-        "tuple-def <1:1-1:9>\n  literal i32 1 <1:2-1:3>\n  literal i32 2 <1:4-1:5>\n  literal i32 48 <1:6-1:7>\n"
     }
 }
 

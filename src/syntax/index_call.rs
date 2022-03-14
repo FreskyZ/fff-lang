@@ -8,6 +8,7 @@ use super::prelude::*;
 use super::{Expr, ExprList, ExprListParseResult};
 
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct IndexCallExpr {
     pub base: Box<Expr>,
     pub params: ExprList,
@@ -22,9 +23,6 @@ impl ISyntaxFormat for IndexCallExpr {
             .apply1(&self.params)
             .finish()
     }
-}
-impl fmt::Debug for IndexCallExpr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl From<IndexCallExpr> for Expr {
     fn from(index_call_expr: IndexCallExpr) -> Expr { Expr::IndexCall(index_call_expr) }

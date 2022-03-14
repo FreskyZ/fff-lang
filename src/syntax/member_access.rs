@@ -7,6 +7,7 @@ use super::prelude::*;
 use super::{Expr, SimpleName};
 
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct MemberAccessExpr {
     pub base: Box<Expr>,
     pub dot_span: Span,
@@ -21,9 +22,6 @@ impl ISyntaxFormat for MemberAccessExpr {
             .set_header_text("member-name-is").apply1(&self.name)
             .finish()
     }
-}
-impl fmt::Debug for MemberAccessExpr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl From<MemberAccessExpr> for Expr {
     fn from(member_access_expr: MemberAccessExpr) -> Expr { Expr::MemberAccess(member_access_expr) }

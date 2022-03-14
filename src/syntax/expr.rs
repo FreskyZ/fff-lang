@@ -6,6 +6,7 @@ use super::{LitExpr, LitValue, SimpleName, Name, ParenExpr, TupleDef, ArrayDef, 
 
 // 12 byte
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub enum Expr {
     Lit(LitExpr),
     SimpleName(SimpleName),
@@ -43,9 +44,6 @@ impl ISyntaxFormat for Expr {
             &Expr::RangeBoth(ref range_both) => f.apply(range_both).finish(),
         }
     }
-}
-impl fmt::Debug for Expr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl Default for Expr {
     fn default() -> Expr { Expr::Lit(LitExpr::new(LitValue::Num(Numeric::I32(0)), Span::new(0, 0))) }

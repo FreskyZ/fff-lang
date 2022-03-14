@@ -6,7 +6,8 @@
 use super::prelude::*;
 use super::{Block, TypeUse};
 
-#[cfg_attr(test, derive(PartialEq, Debug))]
+#[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct FnParam {
     pub name: IsId,
     pub name_span: Span,
@@ -17,6 +18,7 @@ impl FnParam {
 }
 
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct FnDef {
     pub name: IsId,
     pub name_span: Span,
@@ -44,9 +46,6 @@ impl ISyntaxFormat for FnDef {
         }
         f.endl().set_header_text("body").apply1(&self.body).finish()
     }
-}
-impl fmt::Debug for FnDef {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl FnDef {
 

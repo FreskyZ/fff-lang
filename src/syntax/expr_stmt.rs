@@ -7,6 +7,7 @@ use super::prelude::*;
 use super::{Statement, Expr};
 
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct SimpleExprStatement {
     pub expr: Expr, 
     pub all_span: Span,  // this span = expr.all_span + semicolon_span
@@ -17,9 +18,6 @@ impl ISyntaxFormat for SimpleExprStatement {
             .apply1(&self.expr)
             .finish()
     }
-}
-impl fmt::Debug for SimpleExprStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl SimpleExprStatement {
     pub fn new<T: Into<Expr>>(all_span: Span, expr: T) -> SimpleExprStatement { 
@@ -50,6 +48,7 @@ impl Node for SimpleExprStatement {
 }
 
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct AssignExprStatement {
     pub left_expr: Expr,
     pub right_expr: Expr,
@@ -65,9 +64,6 @@ impl ISyntaxFormat for AssignExprStatement {
             .set_prefix_text("right-is").apply1(&self.right_expr)
             .finish()
     }
-}
-impl fmt::Debug for AssignExprStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl AssignExprStatement {
     

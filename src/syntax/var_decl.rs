@@ -8,6 +8,7 @@ use super::prelude::*;
 use super::{Expr, TypeUse};
 
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct VarDeclStatement {
     pub is_const: bool,
     pub name: IsId,
@@ -30,9 +31,6 @@ impl ISyntaxFormat for VarDeclStatement {
         };
         f.finish()
     } 
-}
-impl fmt::Debug for VarDeclStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl VarDeclStatement {
 

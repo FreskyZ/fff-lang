@@ -8,6 +8,7 @@ use super::prelude::*;
 use super::{Block, LabelDef};
 
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct LoopStatement {
     pub name: Option<LabelDef>,
     pub body: Block,
@@ -25,9 +26,6 @@ impl ISyntaxFormat for LoopStatement {
             .set_header_text("body").apply1(&self.body)
             .finish()
     }
-}
-impl fmt::Debug for LoopStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.format(Formatter::empty())) }
 }
 impl LoopStatement { // New
     
@@ -74,26 +72,6 @@ impl Node for LoopStatement {
             v.visit_label_def(name)?;
         }
         v.visit_block(&self.body)
-    }
-}
-
-#[cfg(test)]
-#[test]
-fn loop_stmt_display() {
-    use super::{make_node};
-    
-    //                  1234567890123456789 0123 45678
-    let (node, scx) = make_node!("@@: loop { println(\"233\"); }" as LoopStatement, [], ["@", "println", "233"], and source);
-    assert_eq!{ node.display(&scx).to_string(), r#"loop-stmt <1:1-1:28>
-  loop <1:5-1:8>
-  label @@ <1:1-1:3>
-  block <1:10-1:28>
-    simple-expr-stmt <1:12-1:26>
-      fn-call <1:12-1:25>
-        paren <1:19-1:25>
-        simple-name println <1:12-1:18>
-        literal str 233 <1:20-1:24>
-"#
     }
 }
 

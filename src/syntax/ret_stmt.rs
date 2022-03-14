@@ -7,6 +7,7 @@ use super::prelude::*;
 use super::Expr;
 
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct ReturnStatement {
     pub expr: Option<Expr>,
     pub all_span: Span,
@@ -20,9 +21,6 @@ impl ISyntaxFormat for ReturnStatement {
             None => f.indent().header_text_or("return-stmt").space().span(self.all_span).finish(),
         }
     }
-}
-impl fmt::Debug for ReturnStatement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl ReturnStatement {
 

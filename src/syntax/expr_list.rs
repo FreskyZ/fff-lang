@@ -95,23 +95,6 @@ macro_rules! make_exprs {
 #[cfg(test)]
 pub(crate) use make_exprs;
 
-#[cfg(test)]
-#[test]
-fn expr_list_display() {
-    use super::{make_lit, make_source};
-
-    let mut scx = make_source!("123123234123");
-    scx.entry("1").finish();
-    assert_eq!{
-        ExprList::new(vec![
-            Expr::Lit(make_lit!(1, 1, 2)),
-            Expr::Lit(make_lit!(2, 3, 4)),
-            Expr::Lit(make_lit!(3, 5, 6)),
-        ]).display(&scx).to_string(),
-        "literal i32 1 <1:2-1:3>\nliteral i32 2 <1:4-1:5>\nliteral i32 3 <1:6-1:7>\n"
-    }
-}
-
 #[cfg(test)] #[test]
 fn expr_list_parse() {
     use super::{make_node, make_lit};

@@ -7,6 +7,7 @@ use super::prelude::*;
 use super::Statement;
 
 #[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
 pub struct Block {
     pub items: Vec<Statement>,
     pub all_span: Span,
@@ -21,9 +22,6 @@ impl ISyntaxFormat for Block {
             f.finish()
         }
     }
-}
-impl fmt::Debug for Block {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "\n{}", self.format(Formatter::empty())) }
 }
 impl Block {
 

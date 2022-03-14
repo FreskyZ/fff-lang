@@ -102,26 +102,6 @@ impl Node for BinaryExpr {
 }
 
 #[cfg(test)] #[test]
-fn binary_expr_display() {
-    use super::{make_source, make_lit};
-    
-    let mut scx = make_source!("ascasconwoeicnqw");
-    scx.entry("1").finish();
-    assert_eq!{ 
-        BinaryExpr::new(
-            make_lit!(1, 0, 0),
-            Separator::Add, Span::new(2, 2),
-            make_lit!(2, 4, 4)
-        ).display(&scx).to_string(),
-        "binary-expr <1:1-1:5>
-  operator + <1:3-1:3>
-  literal i32 1 <1:1-1:1>
-  literal i32 2 <1:5-1:5>
-"
-    }
-}
-
-#[cfg(test)] #[test]
 fn binary_expr_parse() {
     use super::{make_node, make_exprs, make_lit, ArrayDef, SimpleName};
 
