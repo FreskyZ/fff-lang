@@ -1,11 +1,10 @@
-#![allow(dead_code)] // 2022: there is really many many dead code, although some is true dead code, most is reserved and even must be used later
 
 use crate::source::SourceContext;
 use crate::diagnostics::Diagnostics;
 use crate::lexical::Parser;
 use crate::syntax::{parse, Node};
-// use semantic::Package;
-// use vm::VirtualMachine;
+// use crate::analysis::Program;
+// use crate::vm::{VirtualMachine, CodeGenerator};
 
 pub fn main() {
 
@@ -23,7 +22,7 @@ pub fn main() {
         println!("input file name")
     }
 
-    // let package = Package::from(syntax_tree)?;
-    // let machine = VirtualMachine::new(package)?;
-    // let result = machine.execute()?;
+    // let program = Program::new(modules)?;
+    // let code = CodeGenerator::new(program)?;
+    // VirtualMachine::new(code).execute()
 }

@@ -78,68 +78,84 @@ impl Node for TypeRef {
 }
 
 #[cfg(test)] #[test]
-fn type_use_parse() {
-    use super::make_node;
+fn type_ref_parse() {
 
-    assert_eq!{ make_node!("u8" as TypeRef), TypeRef::new_simple(2, Span::new(0, 1)) }
-    assert_eq!{ make_node!("i32" as TypeRef), TypeRef::new_simple(2, Span::new(0, 2)) }
-    assert_eq!{ make_node!("char" as TypeRef), TypeRef::new_simple(2, Span::new(0, 3)) }
-    assert_eq!{ make_node!("string" as TypeRef), TypeRef::new_simple(2, Span::new(0, 5)) }
-    assert_eq!{ make_node!("helloworld_t" as TypeRef), TypeRef::new_simple(2, Span::new(0, 11)) }
+    case!{ "u8" as TypeRef, TypeRef::new_simple(2, Span::new(0, 1)) }
+    case!{ "i32" as TypeRef, TypeRef::new_simple(2, Span::new(0, 2)) }
+    case!{ "char" as TypeRef, TypeRef::new_simple(2, Span::new(0, 3)) }
+    case!{ "string" as TypeRef, TypeRef::new_simple(2, Span::new(0, 5)) }
+    case!{ "helloworld_t" as TypeRef, TypeRef::new_simple(2, Span::new(0, 11)) }
 
-    assert_eq!{ make_node!("()" as TypeRef, [], ["unit"]), TypeRef::new_simple(2, Span::new(0, 1)) };
+    case!{"()" as TypeRef, TypeRef::new_simple(2, Span::new(0, 1)) };
 
-    assert_eq!{ make_node!("[u8]" as TypeRef, [], ["array", "u8"]),
-        TypeRef::new_template(2, Span::new(0, 0), Span::new(0, 3), vec![
-                TypeRef::new_simple(3, Span::new(1, 2))
+    case!{ "[u8]" as TypeRef,
+        TypeRef::new_template(3, Span::new(0, 0), Span::new(0, 3), vec![
+                TypeRef::new_simple(2, Span::new(1, 2))
         ])
     }
 
-    assert_node_eq!{ make_node!("[[he_t]]" as TypeRef, [Span::new(2, 5)], ["array"]),
+    case!{ "[[he_t]]" as TypeRef,
         TypeRef::new_template(3, Span::new(0, 0), Span::new(0, 7), vec![
             TypeRef::new_template(3, Span::new(0, 0), Span::new(1, 6), vec![
                 TypeRef::new_simple(2, Span::new(2, 5))
             ])
+        ]), strings ["he_t", "array"]
+    }
+
+    case!{ "(i32,)" as TypeRef, 
+        TypeRef::new_template(3, Span::new(0, 0), Span::new(0, 5), vec![
+            TypeRef::new_simple(2, Span::new(1, 3)),
         ])
     }
 
-    // TODO TODO: finish them
-    // // Tuple
-    // (i32,)
-    // //           1234567890123
-    // ast_test_case!{ "(i32, string)", 5, Span::new(0, 12),
-    //     TypeRefF::new_tuple(Span::new(0, 12), vec![
-    //         simple!("i32", Span::new(1, 3)),
-    //         simple!("string", Span::new(6, 11)),
-    //     ])
-    // }        //  12345678901234
-    // ast_test_case!{ "(char, hw_t, )", 6, Span::new(0, 13),
-    //     TypeRefF::new_tuple(Span::new(0, 13), vec![
-    //         simple!("char", Span::new(1, 4)),
-    //         simple!("hw_t", Span::new(7, 10)),
-    //     ])   //  0        1         2         3
-    // }        //  123456789012345678901234567890123456
-    // ast_test_case!{ "([char], i32, u17, [((), u8, f128)])", 20, Span::new(0, 35), 
-    //     TypeRefF::new_tuple(Span::new(0, 35), vec![
-    //         TypeRefF::new_array(Span::new(1, 6),
-    //             simple!("char", Span::new(2, 5))
-    //         ),
-    //         simple!("i32", Span::new(9, 11)),
-    //         simple!("u17", Span::new(14, 16)),
-    //         TypeRefF::new_array(Span::new(19, 34),
-    //             TypeRefF::new_tuple(Span::new(20, 33), vec![
-    //                 TypeRefF::new_unit(Span::new(21, 22)),
-    //                 simple!("u8", Span::new(25, 26)),
-    //                 simple!("f128", Span::new(29, 32)),
-    //             ])
-    //         ), 
-    //     ])
-    // } //             1234567
-    // ast_test_case!{ "(i233,)", 4, Span::new(0, 6), 
-    //     TypeRefF::new_tuple(Span::new(0, 6), vec![
-    //         simple!("i233", Span::new(1, 4))
-    //     ])
-    // }
+    case!{ "(i32, string)" as TypeRef,
+        TypeRef::new_template(4, Span::new(0, 0), Span::new(0, 12), vec![
+            TypeRef::new_simple(2, Span::new(1, 3)),
+            TypeRef::new_simple(3, Span::new(6, 11)),
+        ])
+    }
+
+    //  12345678901234
+    case!{ "(char, hw_t, )" as TypeRef,
+        TypeRef::new_template(4, Span::new(0, 0), Span::new(0, 13), vec![
+            TypeRef::new_simple(3, Span::new(1, 4)),
+            TypeRef::new_simple(2, Span::new(7, 10)),
+        ]) 
+    }
+
+    // 123456789012345678901234567890123456
+    case!{ "([char], i32, u17, [((), u8, f129)])" as TypeRef,
+        TypeRef::new_template(9, Span::new(0, 0), Span::new(0, 35), vec![
+            TypeRef::new_template(3, Span::new(0, 0), Span::new(1, 6), vec![
+                TypeRef::new_simple(2, Span::new(2, 5)),
+            ]),
+            TypeRef::new_simple(5, Span::new(9, 11)),
+            TypeRef::new_simple(4, Span::new(14, 16)),
+            TypeRef::new_template(3, Span::new(0, 0), Span::new(19, 34), vec![
+                TypeRef::new_template(9, Span::new(0, 0), Span::new(20, 33), vec![
+                    TypeRef::new_simple(6, Span::new(21, 22)),
+                    TypeRef::new_simple(8, Span::new(25, 26)),
+                    TypeRef::new_simple(7, Span::new(29, 32)),
+                ]),
+            ]),
+        ]), strings ["char", "array", "u17", "i32", "unit", "f129", "u8", "tuple"]
+    }
+
+    //             1234567
+    case!{ "(i233,)" as TypeRef,
+        TypeRef::new_template(3, Span::new(0, 0), Span::new(0, 6), vec![
+            TypeRef::new_simple(2, Span::new(1, 4))
+        ])
+    }
+
+    case!{ "(i32)" as TypeRef,
+        TypeRef::new_template(3, Span::new(0, 0), Span::new(0, 4), vec![
+            TypeRef::new_simple(2, Span::new(1, 3)),
+        ]), errors make_errors!{
+            e: e.emit("Single item tuple type use").detail(Span::new(0, 4), "type use here"),
+        }
+    }
+
     // ast_test_case!{ "(i32)", 3, Span::new(0, 4),
     //     TypeRefF::new_tuple(Span::new(0, 4), vec![
     //         simple!("i32", Span::new(1, 3)),

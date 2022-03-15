@@ -69,13 +69,12 @@ impl Node for FnCallExpr {
 
 #[cfg(test)] #[test]
 fn fn_call_parse() {
-    use super::{make_node, make_exprs, make_lit};
 
-    assert_eq!{ make_node!("()" as FnCallExpr),
+    case!{ "()" as FnCallExpr,
         FnCallExpr::new_with_parse_result(Span::new(0, 1), make_exprs![])
     }
 
-    assert_eq!{ make_node!("(\"hello\")" as FnCallExpr),
+    case!{ "(\"hello\")" as FnCallExpr,
         FnCallExpr::new_with_parse_result(Span::new(0, 8), make_exprs![
             make_lit!(2: str, 1, 7),
         ])
@@ -84,11 +83,9 @@ fn fn_call_parse() {
 
 #[cfg(test)] #[test]
 fn fn_call_errors() {
-    use crate::diagnostics::make_errors;
-    use super::{make_node};
 
-    assert_eq!{ make_node!("(,)" as FnCallExpr, and messages), (
+    case!{ "(,)" as FnCallExpr,
         FnCallExpr::new_with_parse_result(Span::new(0, 2), ExprList::new(Vec::new())),
-        make_errors!(e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(0, 2), strings::FnCallHere)),
-    )}
+        errors make_errors!(e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(0, 2), strings::FnCallHere))
+    }
 }

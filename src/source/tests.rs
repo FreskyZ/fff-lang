@@ -2,10 +2,11 @@ use super::*;
 
 macro_rules! make_source {
     () => {
-        crate::source::make_source!("" as "1")
+        crate::source::make_source!("")
     };
     ($content:literal) => {
-        crate::source::make_source!($content as "1")
+        crate::source::SourceContext::new_file_system(
+            crate::source::VirtualFileSystem{ cwd: "/".into(), files: [("1".into(), $content.into())].into_iter().collect() })
     };
     ($($content:literal as $name:literal),+$(,)?) => {{
         let vfs = [$((std::path::PathBuf::from($name), String::from($content)),)*];

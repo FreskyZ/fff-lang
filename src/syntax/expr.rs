@@ -107,31 +107,31 @@ impl Node for Expr {
 
 #[cfg(test)] #[test]
 fn expr_parse() {
-    use super::{make_node, make_exprs, make_lit, ExprList};
+    use super::{ExprList};
 
-    assert_eq!{ make_node!("\"abc\"" as Expr),
+    case!{ "\"abc\"" as Expr,
         Expr::Lit(make_lit!(2: str, 0, 4))
     }
-    assert_eq!{ make_node!("0xfffu64" as Expr), 
+    case!{ "0xfffu64" as Expr, 
         Expr::Lit(make_lit!(0xFFF: u64, 0, 7))
     }
-    assert_eq!{ make_node!("'f'" as Expr), 
+    case!{ "'f'" as Expr, 
         Expr::Lit(make_lit!('f': char, 0, 2))
     }
-    assert_node_eq!{ make_node!("true" as Expr),
+    case!{ "true" as Expr,
         Expr::Lit(make_lit!(true, 0, 3))
     }
 
-    assert_eq!{ make_node!("binary_expr" as Expr),
+    case!{ "binary_expr" as Expr,
         Expr::SimpleName(SimpleName::new(2, Span::new(0, 10)))
     }
 
-    assert_eq!{ make_node!("(  )" as Expr),
+    case!{ "(  )" as Expr,
         Expr::Lit(make_lit!(unit, 0, 3))
     }
     
     // Case from fn_def_parse
-    assert_eq!{ make_node!("println(this)" as Expr, [Span::new(0, 6)], ["this"]), 
+    case!{ "println(this)" as Expr, 
         Expr::FnCall(FnCallExpr::new(
             Expr::SimpleName(SimpleName::new(2, Span::new(0, 6))),
             Span::new(7, 12), ExprList::new(vec![
@@ -144,26 +144,26 @@ fn expr_parse() {
     // update them to current syntax to help improve coverage and make me happy
 
     // Unit
-    assert_eq!{ make_node!("(1)" as Expr),
+    case!{ "(1)" as Expr,
         Expr::Paren(ParenExpr::new(Span::new(0, 2), 
             make_lit!(1, 1, 1)
         ))
     }
     // I can see future of Ok(())! 
-    assert_eq!{ make_node!("(())" as Expr), 
+    case!{ "(())" as Expr, 
         Expr::Paren(ParenExpr::new(Span::new(0, 3), 
             make_lit!(unit, 1, 2)
         ))
     }
 
     // Tuple def
-    assert_eq!{ make_node!("(a, b)" as Expr),
+    case!{ "(a, b)" as Expr,
         Expr::Tuple(TupleDef::new(Span::new(0, 5), make_exprs![
             SimpleName::new(2, Span::new(1, 1)),
             SimpleName::new(3, Span::new(4, 4)),
         ]))
     }        //  12345678901
-    assert_eq!{ make_node!("(1, 2, 3, )" as Expr),
+    case!{ "(1, 2, 3, )" as Expr,
         Expr::Tuple(TupleDef::new(Span::new(0, 10), make_exprs![
             make_lit!(1, 1, 1),
             make_lit!(2, 4, 4),
@@ -172,23 +172,23 @@ fn expr_parse() {
     }
 
     // Array def
-    assert_node_eq!{ make_node!("[a]" as Expr),
+    case!{ "[a]" as Expr,
         Expr::Array(ArrayDef::new(Span::new(0, 2), make_exprs![
             SimpleName::new(2, Span::new(1, 1))
         ]))
     }        //  12345678
-    assert_eq!{ make_node!("[1, 2, ]" as Expr),
+    case!{ "[1, 2, ]" as Expr,
         Expr::Array(ArrayDef::new(Span::new(0, 7), make_exprs![
             make_lit!(1, 1, 1),
             make_lit!(2, 4, 4)
         ]))
     }
-    assert_eq!{ make_node!("[]" as Expr),
+    case!{ "[]" as Expr,
         Expr::Array(ArrayDef::new(Span::new(0, 1), make_exprs![]))
     }
 
     // Member access
-    assert_eq!{ make_node!("a.b" as Expr),
+    case!{ "a.b" as Expr,
         Expr::MemberAccess(MemberAccessExpr::new(
             SimpleName::new(2, Span::new(0, 0)),
             Span::new(1, 1),
@@ -197,14 +197,14 @@ fn expr_parse() {
     }
 
     // function call
-    assert_eq!{ make_node!("defg()" as Expr),
+    case!{ "defg()" as Expr,
         Expr::FnCall(FnCallExpr::new(
             SimpleName::new(2, Span::new(0, 3)),
             Span::new(4, 5),
             make_exprs![]
         ))
     }
-    assert_eq!{ make_node!("deg(a)" as Expr),
+    case!{ "deg(a)" as Expr,
         Expr::FnCall(FnCallExpr::new(
             SimpleName::new(2, Span::new(0, 2)),
             Span::new(3, 5), make_exprs![
@@ -212,7 +212,7 @@ fn expr_parse() {
             ]
         ))
     }
-    assert_eq!{ make_node!("degg(a, b, )" as Expr),
+    case!{ "degg(a, b, )" as Expr,
         Expr::FnCall(FnCallExpr::new(
             SimpleName::new(2, Span::new(0, 3)),
             Span::new(4, 11), make_exprs![
@@ -222,7 +222,7 @@ fn expr_parse() {
         ))
     }
     //           0123456789
-    assert_eq!{ make_node!("abc.defg()" as Expr),
+    case!{ "abc.defg()" as Expr,
         Expr::FnCall(FnCallExpr::new(
             MemberAccessExpr::new(
                 SimpleName::new(2, Span::new(0, 2)),
@@ -233,7 +233,7 @@ fn expr_parse() {
             make_exprs![]
         ))
     }
-    assert_eq!{ make_node!("abc.deg(a)" as Expr),
+    case!{ "abc.deg(a)" as Expr,
         Expr::FnCall(FnCallExpr::new(
             MemberAccessExpr::new(
                 SimpleName::new(2, Span::new(0, 2)),
@@ -245,7 +245,7 @@ fn expr_parse() {
             ]
         ))
     }        //  12345678901234
-    assert_eq!{ make_node!("1.degg(a, b, )" as Expr),
+    case!{ "1.degg(a, b, )" as Expr,
         Expr::FnCall(FnCallExpr::new(
             MemberAccessExpr::new(
                 make_lit!(1, 0, 0),
@@ -260,7 +260,7 @@ fn expr_parse() {
     }   
 
     // get index       //  123456
-    assert_eq!{ make_node!("deg[a]" as Expr),
+    case!{ "deg[a]" as Expr,
         Expr::IndexCall(IndexCallExpr::new(
             SimpleName::new(2, Span::new(0, 2)),
             Span::new(3, 5), make_exprs![
@@ -268,7 +268,7 @@ fn expr_parse() {
             ]
         ))
     }        //  123456789012
-    assert_eq!{ make_node!("degg[a, b, ]" as Expr),
+    case!{ "degg[a, b, ]" as Expr,
         Expr::IndexCall(IndexCallExpr::new(
             SimpleName::new(2, Span::new(0, 3)),
             Span::new(4, 11), make_exprs![
@@ -279,7 +279,7 @@ fn expr_parse() {
     }     
 
     //           123456
-    assert_eq!{ make_node!("2[3].a" as Expr),
+    case!{ "2[3].a" as Expr,
         Expr::MemberAccess(MemberAccessExpr::new(
             IndexCallExpr::new(
                 make_lit!(2, 0, 0),
@@ -291,7 +291,7 @@ fn expr_parse() {
             SimpleName::new(2, Span::new(5, 5))
         ))
     }   //  1234567890123456
-    assert_eq!{ make_node!("print(233, ).bit" as Expr),
+    case!{ "print(233, ).bit" as Expr,
         Expr::MemberAccess(MemberAccessExpr::new(
             Expr::FnCall(FnCallExpr::new(
                 SimpleName::new(2, Span::new(0, 4)),
@@ -303,7 +303,7 @@ fn expr_parse() {
             SimpleName::new(3, Span::new(13, 15))
         ))
     }            //  12345678901234
-    assert_eq!{ make_node!("1.degg[a, b, ]" as Expr),
+    case!{ "1.degg[a, b, ]" as Expr,
         Expr::IndexCall(IndexCallExpr::new(
             MemberAccessExpr::new(
                 make_lit!(1, 0, 0),
@@ -317,7 +317,7 @@ fn expr_parse() {
         ))
     }        
 
-    assert_eq!{ make_node!("!~!1[1]" as Expr),
+    case!{ "!~!1[1]" as Expr,
         Expr::Unary(UnaryExpr::new(
             Separator::Not, Span::new(0, 0),
             UnaryExpr::new(
@@ -337,7 +337,7 @@ fn expr_parse() {
 
     // increase and decrease
     //           1234567
-    assert_eq!{ make_node!("!!1" as Expr),
+    case!{ "!!1" as Expr,
         Expr::Unary(UnaryExpr::new(
             Separator::Not, Span::new(0, 0), 
             UnaryExpr::new(
@@ -348,11 +348,11 @@ fn expr_parse() {
     }
 
     // range
-    assert_eq!{ make_node!(".." as Expr), 
+    case!{ ".." as Expr, 
         Expr::RangeFull(RangeFullExpr::new(Span::new(0, 1)))
     }
 
-    assert_eq!{ make_node!("..1 + 2" as Expr),
+    case!{ "..1 + 2" as Expr,
         Expr::RangeRight(RangeRightExpr::new(Span::new(0, 6), BinaryExpr::new(
             make_lit!(1, 2, 2),
             Separator::Add, Span::new(4, 4),
@@ -360,13 +360,13 @@ fn expr_parse() {
         )))
     }
 
-    assert_eq!{ make_node!("xxx .." as Expr),
+    case!{ "xxx .." as Expr,
         Expr::RangeLeft(RangeLeftExpr::new(Span::new(0, 5), 
             SimpleName::new(2, Span::new(0, 2))
         ))
     }
 
-    assert_eq!{ make_node!("1 + 2 .. [4, 5, 6][2]" as Expr),
+    case!{ "1 + 2 .. [4, 5, 6][2]" as Expr,
         Expr::RangeBoth(RangeBothExpr::new(
             BinaryExpr::new(
                 make_lit!(1, 0, 0),
@@ -390,48 +390,47 @@ fn expr_parse() {
 
 #[cfg(test)] #[test]
 fn expr_errors() {
-    use super::{make_node, make_exprs, make_errors, make_lit};
 
-    assert_eq!{ make_node!("de(, )" as Expr, and messages), 
-        (Expr::FnCall(FnCallExpr::new(
+    case!{ "de(, )" as Expr,
+        Expr::FnCall(FnCallExpr::new(
             SimpleName::new(2, Span::new(0, 1)), 
             Span::new(2, 5), make_exprs![]
-        )), make_errors!(
+        )), errors make_errors!(
             e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(2, 5), strings::FnCallHere)
-        ))
+        )
     }
 
     //               0 12345678
-    assert_eq!{ make_node!("\"\".de(, )" as Expr, and messages),
-        (Expr::FnCall(FnCallExpr::new(
+    case!{ "\"\".de(, )" as Expr,
+        Expr::FnCall(FnCallExpr::new(
             MemberAccessExpr::new(
                 make_lit!(1: str, 0, 1),
                 Span::new(2, 2), 
                 SimpleName::new(2, Span::new(3, 4))
             ),
             Span::new(5, 8), make_exprs![]
-        )), make_errors!(
+        )), errors make_errors!(
             e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(5, 8), strings::FnCallHere)
-        ))
+        )
     }
 
-    assert_eq!{ make_node!("defg[]" as Expr, and messages),
-        (Expr::IndexCall(IndexCallExpr::new(
+    case!{ "defg[]" as Expr,
+        Expr::IndexCall(IndexCallExpr::new(
             SimpleName::new(2, Span::new(0, 3)),
             Span::new(4, 5), make_exprs![]
-        )), make_errors!(
+        )), errors make_errors!(
             e: e.emit(strings::EmptyIndexCall).detail(Span::new(4, 5), strings::IndexCallHere)
-        ))
+        )
     }
 
     //              123456
-    assert_eq!{ make_node!("de[, ]" as Expr, and messages),
-        (Expr::IndexCall(IndexCallExpr::new(
+    case!{ "de[, ]" as Expr,
+        Expr::IndexCall(IndexCallExpr::new(
             SimpleName::new(2, Span::new(0, 1)),
             Span::new(2, 5), make_exprs![]
-        )), make_errors!(
+        )), errors make_errors!(
             e: e.emit(strings::EmptyIndexCall).detail(Span::new(2, 5), strings::IndexCallHere)
-        ))
+        )
     }
 }
 

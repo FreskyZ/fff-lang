@@ -70,11 +70,11 @@ impl Node for PostfixExpr {
 
 #[cfg(test)] #[test]
 fn primary_expr_parse() {
-    use super::{make_node, make_exprs, make_lit, ParenExpr};
+    use super::{ParenExpr};
 
     // this is the loop of tokens.nth(current) is left bracket does not cover everything and infinite loop is here
     // update 2017/6/17: this was a bug, but I forget detail
-    assert_eq!{ make_node!("[a]" as Expr),  
+    case!{ "[a]" as Expr,  
         Expr::Array(ArrayDef::new(Span::new(0, 2), make_exprs![
             SimpleName::new(2, Span::new(1, 1))
         ]))
@@ -82,7 +82,7 @@ fn primary_expr_parse() {
 
     //                      0        1         2         3         4
     //                      01234567890123456789012345678901234567890123456     
-    assert_eq!{ make_node!("(463857, IEfN, atau8M, [fNAE, ((cAeJN4)), nHg])" as Expr),
+    case!{ "(463857, IEfN, atau8M, [fNAE, ((cAeJN4)), nHg])" as Expr,
         Expr::Tuple(TupleDef::new(Span::new(0, 46), make_exprs![
             make_lit!(463857, 1, 6),
             SimpleName::new(2, Span::new(9, 12)),
@@ -99,14 +99,14 @@ fn primary_expr_parse() {
         ]))
     }
 
-    assert_eq!{ make_node!("10363" as Expr),
+    case!{ "10363" as Expr,
         Expr::Lit(make_lit!(10363, 0, 4))
     }
 
-    assert_eq!{ make_node!(
+    case!{
     //   0         1         2         3         4         5         6         7         8         9         0         1         2         3       
     //   01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567 8901234567890123456789012345678901234
-        "[(0x7E), FFGqfJe, I4, [(m7A, (41, ([(jL, rAn, K0FgLc7h, true), C, w]), (J3cEFDG, d, (j8h))), (), \neIuArjF), 400, 0o535147505, 0xDB747]]" as Expr),
+        "[(0x7E), FFGqfJe, I4, [(m7A, (41, ([(jL, rAn, K0FgLc7h, true), C, w]), (J3cEFDG, d, (j8h))), (), \neIuArjF), 400, 0o535147505, 0xDB747]]" as Expr,
         Expr::Array(ArrayDef::new(Span::new(0, 134), make_exprs![
             ParenExpr::new(Span::new(1, 6), 
                make_lit!(0x7E, 2, 5),
@@ -148,13 +148,13 @@ fn primary_expr_parse() {
         ]))
     }
 
-    assert_eq!{ make_node!("CMDoF" as Expr), Expr::SimpleName(SimpleName::new(2, Span::new(0, 4))) }
-    assert_eq!{ make_node!("false" as Expr), Expr::Lit(make_lit!(false, 0, 4)) }
+    case!{ "CMDoF" as Expr, Expr::SimpleName(SimpleName::new(2, Span::new(0, 4))) }
+    case!{ "false" as Expr, Expr::Lit(make_lit!(false, 0, 4)) }
 
     
     //                      0        1         2         3         4         5         6          7          8         9         A
     //                      12345678901234567890123456789012345678901234567890123456789012345678901 234 5678901234567890123456789012
-    assert_node_eq!{ make_node!("[uy6, 4373577, [(q, AJBN0n, MDEgKh5,), KG, (NsL, ((), D, false, d, ), \"H=\"), true, ((vvB3, true, 5))]]" as Expr), 
+    case!{ "[uy6, 4373577, [(q, AJBN0n, MDEgKh5,), KG, (NsL, ((), D, false, d, ), \"H=\"), true, ((vvB3, true, 5))]]" as Expr, 
         Expr::Array(ArrayDef::new(Span::new(0, 101), make_exprs![
             SimpleName::new(2, Span::new(1, 3)),
             make_lit!(4373577, 6, 12),
@@ -187,14 +187,14 @@ fn primary_expr_parse() {
         ]))
     }
 
-    assert_eq!{ make_node!("(() )" as Expr), 
+    case!{ "(() )" as Expr, 
         Expr::Paren(ParenExpr::new(Span::new(0, 4), make_lit!(unit, 1, 2)))
     }
-    assert_eq!{ make_node!("((),)" as Expr), 
+    case!{ "((),)" as Expr, 
         Expr::Tuple(TupleDef::new(Span::new(0, 4), make_exprs![make_lit!(unit, 1, 2)]))
     }
 
-    assert_eq!{ make_node!("(\"o5\")" as Expr), 
+    case!{ "(\"o5\")" as Expr, 
         Expr::Paren(ParenExpr::new(Span::new(0, 5), 
             make_lit!(2: str, 1, 4),
         ))
@@ -202,7 +202,7 @@ fn primary_expr_parse() {
 
     //                      0        1         2        
     //                      1234567890123456789012345678
-    assert_node_eq!{ make_node!("(nn, ([false,true]), 183455)" as Expr),
+    case!{ "(nn, ([false,true]), 183455)" as Expr,
         Expr::Tuple(TupleDef::new(Span::new(0, 27), make_exprs![
             SimpleName::new(2, Span::new(1, 2)),
             ParenExpr::new(Span::new(5, 18), 
@@ -217,7 +217,7 @@ fn primary_expr_parse() {
     
     //                      0        1         2         3         4         5         6         7       
     //                      123456789012345678901234567890123456789012345678901234567890123456789012345678
-    assert_node_eq!{ make_node!("((true, (mO, [(q5k),a], (((KttG))), (K5DJ, r, ())), (McsaEdfdfalse,)), rIOKt,)" as Expr),
+    case!{ "((true, (mO, [(q5k),a], (((KttG))), (K5DJ, r, ())), (McsaEdfdfalse,)), rIOKt,)" as Expr,
         Expr::Tuple(TupleDef::new(Span::new(0, 77), make_exprs![
             TupleDef::new(Span::new(1, 68), make_exprs![
                 make_lit!(true, 2, 5),
@@ -252,7 +252,7 @@ fn primary_expr_parse() {
 
     //                                      0          1         2      
     //                                      12 345 67890123456789012
-    assert_eq!{ make_node!("[\"il\", 0o52u32, sO04n]" as Expr),
+    case!{ "[\"il\", 0o52u32, sO04n]" as Expr,
         Expr::Array(ArrayDef::new(Span::new(0, 21), make_exprs![
             make_lit!(2: str, 1, 4),
             make_lit!(0o52: u32, 7, 13), 
@@ -260,17 +260,17 @@ fn primary_expr_parse() {
         ]))
     }
     //                                      12345678
-    assert_eq!{ make_node!("['f',()]" as Expr), 
+    case!{ "['f',()]" as Expr, 
         Expr::Array(ArrayDef::new(Span::new(0, 7), make_exprs![
             make_lit!('f': char, 1, 3),
             make_lit!(unit, 5, 6)
         ]))
     }
-    assert_eq!{ make_node!("[]" as Expr), Expr::Array(ArrayDef::new(Span::new(0, 1), make_exprs![])) }
+    case!{ "[]" as Expr, Expr::Array(ArrayDef::new(Span::new(0, 1), make_exprs![])) }
 
     //                                      0        1           2         3         4      
     //                                      12345 678901 234567890123456789012345678901234
-    assert_eq!{ make_node!("[8, \"@=?GF\", 87r32, 1340323.74r64, FKOxAvx5]" as Expr),
+    case!{ "[8, \"@=?GF\", 87r32, 1340323.74r64, FKOxAvx5]" as Expr,
         Expr::Array(ArrayDef::new(Span::new(0, 43), make_exprs![
             make_lit!(8, 1, 1),
             make_lit!(2: str, 4, 10),
@@ -282,7 +282,7 @@ fn primary_expr_parse() {
 
     //                                        0        1         2         3         4         5         6     
     //                                        123456789012345678901234567890123456789012345678901234567890123
-    assert_node_eq!{ make_node!(r#"  [[dnr4, lGFd3yL, tJ], ['\\', p, (xGaBwiL,), DE], true, aB8aE]"# as Expr),
+    case!{ r#"  [[dnr4, lGFd3yL, tJ], ['\\', p, (xGaBwiL,), DE], true, aB8aE]"# as Expr,
         Expr::Array(ArrayDef::new(Span::new(2, 62), make_exprs![
             ArrayDef::new(Span::new(3, 21), make_exprs![
                 SimpleName::new(2, Span::new(4, 7)),
@@ -305,16 +305,16 @@ fn primary_expr_parse() {
     // Previous manual tests
     //                      0         1           2          3         4         5           6
     //                      012345678901234 5678 9012 3456789012345678901234567890123 456789 0123456
-    assert_node_eq!{ make_node!("[abc, 123u32, \"456\", '\\u0065', false, (), (a), (abc, \"hello\", ), ]" as Expr, [Span::new(1, 3), Span::new(43, 43), Span::new(48, 50)], ["456", "hello"]),
+    case!{ "[abc, 123u32, \"456\", '\\u0065', false, (), (a), (abc, \"hello\", ), ]" as Expr,
         Expr::Array(ArrayDef::new(Span::new(0, 65), make_exprs![
             SimpleName::new(2, Span::new(1, 3)),
             make_lit!(123: u32, 6, 11),
-            make_lit!(4: str, 14, 18),
+            make_lit!(3: str, 14, 18),
             make_lit!('\u{0065}': char, 21, 28),
             make_lit!(false, 31, 35),
             make_lit!(unit, 38, 39),
             ParenExpr::new(Span::new(42, 44), 
-                SimpleName::new(3, Span::new(43, 43))
+                SimpleName::new(4, Span::new(43, 43))
             ),
             TupleDef::new(Span::new(47, 62), make_exprs![
                 SimpleName::new(2, Span::new(48, 50)),
@@ -323,28 +323,27 @@ fn primary_expr_parse() {
         ]))
     }
 
-    assert_eq!{ make_node!("(                             )" as Expr), 
+    case!{ "(                             )" as Expr, 
         Expr::Lit(make_lit!(unit, 0, 30))
     }
 }
 
 #[cfg(test)] #[test]
 fn primary_expr_errors() {
-    use super::{make_node, make_exprs, make_errors};
 
-    assert_eq!{ make_node!("(,)" as Expr, and messages), (
+    case!{ "(,)" as Expr,
         Expr::Tuple(TupleDef::new(Span::new(0, 2), make_exprs![])), 
-        make_errors!(e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(0, 2), strings::TupleDefHere)),
-    )}
+        errors make_errors!(e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(0, 2), strings::TupleDefHere)),
+    }
 }
 
 #[cfg(test)] #[test]
 fn postfix_expr_parse() {
-    use super::{make_node, make_exprs, SimpleName};
+    use super::{SimpleName};
 
     //                                      0        1         2         3         4         5     
     // plain                                0123456789012345678901234567890123456789012345678901234567
-    assert_node_eq!{ make_node!("a.b(c, d, e).f(g, h, i,)(u,).j[k].l().m[n, o, p][r, s, t,]" as Expr),
+    case!{ "a.b(c, d, e).f(g, h, i,)(u,).j[k].l().m[n, o, p][r, s, t,]" as Expr,
         Expr::IndexCall(IndexCallExpr::new(
             IndexCallExpr::new(
                 MemberAccessExpr::new(
@@ -413,32 +412,31 @@ fn postfix_expr_parse() {
 
 #[cfg(test)] #[test]
 fn postfix_expr_errors() {
-    use super::{make_node, make_exprs, make_errors};
     
-    assert_eq!{ make_node!("a[]" as PostfixExpr, and messages),
-        (Expr::IndexCall(IndexCallExpr::new(
+    case!{ "a[]" as PostfixExpr,
+        Expr::IndexCall(IndexCallExpr::new(
             SimpleName::new(2, Span::new(0, 0)), 
             Span::new(1, 2), make_exprs![]
-        )), make_errors!(
+        )), errors make_errors!(
             e: e.emit(strings::EmptyIndexCall).detail(Span::new(1, 2), strings::IndexCallHere)
-        ))
+        )
     }
     
-    assert_eq!{ make_node!("a[, ]" as PostfixExpr, and messages),
-        (Expr::IndexCall(IndexCallExpr::new(
+    case!{ "a[, ]" as PostfixExpr,
+        Expr::IndexCall(IndexCallExpr::new(
             SimpleName::new(2, Span::new(0, 0)), 
             Span::new(1, 4), make_exprs![]
-        )), make_errors!(
+        )), errors make_errors!(
             e: e.emit(strings::EmptyIndexCall).detail(Span::new(1, 4), strings::IndexCallHere)
-        ))
+        )
     }
     
-    assert_eq!{ make_node!("a(, )" as PostfixExpr, and messages),
-        (Expr::FnCall(FnCallExpr::new(
+    case!{ "a(, )" as PostfixExpr,
+        Expr::FnCall(FnCallExpr::new(
             SimpleName::new(2, Span::new(0, 0)),
             Span::new(1, 4), make_exprs![]
-        )), make_errors!(
+        )), errors make_errors!(
             e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(1, 4), strings::FnCallHere)
-        ))
+        )
     }
 }

@@ -99,14 +99,13 @@ impl Expr {
 
 #[cfg(test)] #[test]
 fn name_parse() {
-    use super::make_node;
 
-    assert_eq!{ make_node!("hello" as Name), 
+    case!{ "hello" as Name, 
         Expr::SimpleName(SimpleName::new(2, Span::new(0, 4)))
     }
     //              0        1         2         3         4
     //              01234567890123456789012345678901234567890
-    assert_eq!{ make_node!("std::network::wlan::native::GetWLANHandle" as Name, [], ["std", "network", "wlan", "native", "GetWLANHandle"]),
+    case!{ "std::network::wlan::native::GetWLANHandle" as Name,
         Expr::Name(Name::new(Span::new(0, 40), vec![
             SimpleName::new(2, Span::new(0, 2)), 
             SimpleName::new(3, Span::new(5, 11)),

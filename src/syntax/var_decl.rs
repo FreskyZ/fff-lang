@@ -80,7 +80,7 @@ fn var_decl_stmt_parse() {
     use crate::syntax::*;
     
     //                                           12345678901234
-    assert_eq!{ make_node!("const abc = 0;" as VarDeclStatement),
+    case!{ "const abc = 0;" as VarDeclStatement,
         VarDeclStatement::new_const(Span::new(0, 13),
             2, Span::new(6, 8),
             None,
@@ -90,7 +90,7 @@ fn var_decl_stmt_parse() {
 
     //                                           0        1         
     //                                           12345678901234567890
-    assert_eq!{ make_node!("var hij = [1, 3, 5];" as VarDeclStatement),
+    case!{ "var hij = [1, 3, 5];" as VarDeclStatement,
         VarDeclStatement::new_var(Span::new(0, 19),
             2, Span::new(4, 6),
             None,
@@ -103,7 +103,7 @@ fn var_decl_stmt_parse() {
     }
     
     //                                           1234567890123456789
-    assert_eq!{ make_node!("const input: string;" as VarDeclStatement),
+    case!{ "const input: string;" as VarDeclStatement,
         VarDeclStatement::new_const(Span::new(0, 19),
             2, Span::new(6, 10),
             Some(TypeRef::new_simple(3, Span::new(13, 18))),
@@ -112,17 +112,17 @@ fn var_decl_stmt_parse() {
     }
     
     //              0123456789012345678901
-    assert_node_eq!{ make_node!("var buf: [(u8, char)];" as VarDeclStatement, [], ["buf", "array", "tuple", "u8", "char"]),
+    case!{ "var buf: [(u8, char)];" as VarDeclStatement,
         VarDeclStatement::new_var(Span::new(0, 21), 
             2, Span::new(4, 6),
-            Some(TypeRef::new_template(3, Span::new(0, 0), Span::new(9, 20), vec![
-                TypeRef::new_template(4, Span::new(0, 0), Span::new(10, 19), vec![
-                    TypeRef::new_simple(5, Span::new(11, 12)),
-                    TypeRef::new_simple(6, Span::new(15, 18)),
+            Some(TypeRef::new_template(6, Span::new(0, 0), Span::new(9, 20), vec![
+                TypeRef::new_template(5, Span::new(0, 0), Span::new(10, 19), vec![
+                    TypeRef::new_simple(3, Span::new(11, 12)),
+                    TypeRef::new_simple(4, Span::new(15, 18)),
                 ])
             ])),
             None
-        )
+        ), strings ["buf", "u8", "char", "tuple", "array"]
     }
 
     // Future Attention: after bits type added, the `0x7u8` will have different type as before, this is the Option::unwrap failure in test
@@ -131,14 +131,14 @@ fn var_decl_stmt_parse() {
     //     desugar array primary expr to call array_tid::new() and array.push, which infer 7's type as array_tid' push method's parameter
     //             0        1         2         3         4
     //             012345678901234567890123456789012345678901234567
-    assert_node_eq!{ make_node!("var buf: ([u8], u32) = ([1u8, 5u8, 0x7u8], abc);" as VarDeclStatement, [], ["buf", "u8", "u32", "abc", "tuple", "array"]),
+    case!{ "var buf: ([u8], u32) = ([1u8, 5u8, 0x7u8], abc);" as VarDeclStatement,
         VarDeclStatement::new_var(Span::new(0, 47),
             2, Span::new(4, 6),
             Some(TypeRef::new_template(6, Span::new(0, 0), Span::new(9, 19), vec![
-                TypeRef::new_template(7, Span::new(0, 0), Span::new(10, 13), vec![
+                TypeRef::new_template(4, Span::new(0, 0), Span::new(10, 13), vec![
                     TypeRef::new_simple(3, Span::new(11, 12))
                 ]),
-                TypeRef::new_simple(4, Span::new(16, 18))
+                TypeRef::new_simple(5, Span::new(16, 18))
             ])),
             Some(Expr::Tuple(TupleDef::new(Span::new(23, 46), make_exprs![
                 ArrayDef::new(Span::new(24, 40), make_exprs![
@@ -146,15 +146,15 @@ fn var_decl_stmt_parse() {
                     make_lit!(5: u8, 30, 32),
                     make_lit!(7: u8, 35, 39),
                 ]),
-                SimpleName::new(5, Span::new(43, 45))
+                SimpleName::new(7, Span::new(43, 45))
             ])))
-        )
+        ), strings ["buf", "u8", "array", "u32", "tuple", "abc"]
     }
 
-    assert_eq!{ make_node!("var a;" as VarDeclStatement, and messages),
-        (VarDeclStatement::new_var(Span::new(0, 5), 2, Span::new(4, 4), None, None), make_errors!(
+    case!{ "var a;" as VarDeclStatement,
+        VarDeclStatement::new_var(Span::new(0, 5), 2, Span::new(4, 4), None, None), errors make_errors!(
             e: e.emit("require type annotation")
                 .detail(Span::new(4, 4), "variable declaration here")
-                .help("cannot infer type without both type annotation and initialization expression")))
+                .help("cannot infer type without both type annotation and initialization expression")),
     }
 }

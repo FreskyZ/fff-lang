@@ -3,32 +3,25 @@
 ///! syntax/module, a source code file is a module
 ///! module = { item }
 
+use crate::source::FileId;
 use super::prelude::*;
 use super::{Item};
 
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
 pub struct Module {
+    pub file: FileId,
     pub items: Vec<Item>,
-}
-impl Module {
-    pub fn new(items: Vec<Item>) -> Module { Module{ items } }
 }
 impl Node for Module {
     type ParseOutput = Module;
 
     fn parse(cx: &mut ParseContext) -> ParseResult<Module> {
         let mut items = Vec::new();
-        loop {
-            if cx.matches::<Item>() {
-                items.push(cx.expect_node::<Item>()?);
-            } else if cx.eof() { // as module is special, specially allow self.current_tokens in parse
-                break;
-            } else {
-                return cx.push_unexpect("if, while, for, var, const, expr");
-            }
+        while !cx.eof() {
+            items.push(cx.expect_node::<Item>()?);
         }
-        return Ok(Module::new(items));
+        Ok(Module{ items, file: FileId::new(0) })
     }
 
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
@@ -44,10 +37,10 @@ impl Node for Module {
 
 #[cfg(test)] #[test]
 fn module_parse() {
-    use super::{make_node, make_lit, Name, SimpleName, ModuleStatement, SimpleExprStatement, UseStatement};
-    //              0123456789012345678901234
-    assert_eq!{ make_node!("use a; module b; 3; b; a;" as Module, [], ["a", "b"]),
-        Module::new(vec![
+    use super::{Name, SimpleName, ModuleStatement, SimpleExprStatement, UseStatement};
+    //                      0123456789012345678901234
+    case!{ "use a; module b; 3; b; a;" as Module,
+        Module{ file: FileId::new(0), items: vec![
             Item::Use(UseStatement::new_default(Span::new(0, 5), 
                 Name::new(Span::new(4, 4), vec![
                     SimpleName::new(2, Span::new(4, 4))
@@ -65,7 +58,7 @@ fn module_parse() {
             Item::SimpleExpr(SimpleExprStatement::new(Span::new(23, 24), 
                 SimpleName::new(2, Span::new(23, 23))
             )),
-        ])
+        ] }
     }
 }
 

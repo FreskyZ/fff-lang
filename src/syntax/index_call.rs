@@ -70,16 +70,15 @@ impl Node for IndexCallExpr {
 
 #[cfg(test)] #[test]
 fn index_call_parse() {
-    use super::{make_node, make_lit, make_exprs};
 
-    assert_eq!{ make_node!("[1, 2, ]" as IndexCallExpr),
+    case!{ "[1, 2, ]" as IndexCallExpr,
         IndexCallExpr::new_with_parse_result(Span::new(0, 7), make_exprs![
             make_lit!(1, 1, 1),
             make_lit!(2, 4, 4),
         ])
     }
 
-    assert_eq!{ make_node!("[\"hello\"]" as IndexCallExpr),
+    case!{ "[\"hello\"]" as IndexCallExpr,
         IndexCallExpr::new_with_parse_result(Span::new(0, 8), make_exprs![
             make_lit!(2: str, 1, 7)
         ])
@@ -88,10 +87,9 @@ fn index_call_parse() {
 
 #[cfg(test)] #[test]
 fn index_call_errors() {
-    use super::{make_node, make_errors};
 
-    assert_eq!{ make_node!("[,]" as IndexCallExpr, and messages), (
+    case!{ "[,]" as IndexCallExpr,
         IndexCallExpr::new_with_parse_result(Span::new(0, 2), ExprList::new(Vec::new())), 
-        make_errors!(e: e.emit(strings::EmptyIndexCall).detail(Span::new(0, 2), strings::IndexCallHere))
-    )}
+        errors make_errors!(e: e.emit(strings::EmptyIndexCall).detail(Span::new(0, 2), strings::IndexCallHere)),
+    }
 }

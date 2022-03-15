@@ -2,7 +2,7 @@
 
 use std::fmt::{self, Write};
 use crate::source::{SourceContext, FileSystem, Span, IsId};
-use super::node::Visitor;
+use super::Visitor;
 use super::super::*;
 
 static INDENTIONS: [[&str; 16]; 3] = [
@@ -242,7 +242,7 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
             LitValue::Unit => self.f.write_str("unit")?,
             LitValue::Bool(v) => write!(self.f, "bool {v}")?,
             LitValue::Char(v) => write!(self.f, "char {v:?}")?,
-            LitValue::Str(id) => { self.write_str("str ")?; self.write_isid(id)? },
+            LitValue::Str(id) => { self.write_str("str \"")?; self.write_isid(id)?; self.write_str("\"")? },
             LitValue::Num(v) => write!(self.f, "{v}")?,
         }
         self.write_space()?;
@@ -446,64 +446,12 @@ impl<'n, 'scx, N: Node, F: FileSystem> fmt::Display for NodeDisplay<'n, 'scx, N,
     }
 }
 
-// check node equal by PartialEq, if not, compare display text, or else I'll blind comparing them by human eyes
-#[cfg(test)]
-pub fn print_diff<N: Node>(actual: &N, expect: &N, backtrace: u32) {
-    let mut scx = SourceContext::new_file_system(crate::source::VirtualFileSystem{
-        cwd: "1".into(),
-        files: [("1".into(), std::iter::repeat(' ').take(10000).collect())].into_iter().collect(),
-    });
-    let mut chars = scx.entry("1");
-    for i in 2..100 {
-        chars.intern(&format!("#{i}")); // this maps string id to #id
-    }
-    chars.finish();
-
-    let mut buf = format!("line {backtrace} node not same\n");
-    let (actual_display, expect_display) = (actual.display(&scx).to_string(), expect.display(&scx).to_string());
-    let (actual_lines, expect_lines) = (actual_display.lines().collect::<Vec<_>>(), expect_display.lines().collect::<Vec<_>>());
-
-    let common_line_count = std::cmp::min(actual_lines.len(), expect_lines.len());
-    for line in 0..common_line_count {
-        if actual_lines[line] != expect_lines[line] {
-            write!(buf, "{: >3} |- {}\n", line + 1, actual_lines[line]).unwrap();
-            write!(buf, "    |+ {}\n", expect_lines[line]).unwrap();
-        } else {
-            write!(buf, "{: >3} |  {}\n", line + 1, actual_lines[line]).unwrap();
-        }
-    }
-    if actual_lines.len() > common_line_count {
-        for line in common_line_count..actual_lines.len() {
-            write!(buf, "{: >3} |- {}\n", line + 1, actual_lines[line]).unwrap();
-        }
-    }
-    if expect_lines.len() > common_line_count {
-        for line in common_line_count..expect_lines.len() {
-            write!(buf, "{: >3} |+ {}\n", line + 1, expect_lines[line]).unwrap();
-        }
-    }
-    assert!(false, "{}", buf);
-}
-
-#[cfg(test)]
-macro_rules! assert_node_eq {
-    ($actual:expr, $expect:expr) => {{
-        let (actual, expect) = ($actual, $expect);
-        if actual != expect {
-            print_diff(&actual, &expect, line!());
-        }
-    }}
-}
-#[cfg(test)]
-pub(crate) use assert_node_eq;
-
 #[cfg(test)]
 mod tests {
-    use crate::source::Span;
+    use crate::source::{Span, make_source};
     use crate::lexical::{Numeric, Separator};
     // 3 supers are too long, note that macro export is not in star
-    use crate::syntax::{make_source, make_exprs, make_lit};
-    use crate::syntax::*;
+    use super::super::*;
 
     macro_rules! assert_text_eq {
         ($left:expr, $right:expr) => {
@@ -604,24 +552,31 @@ mod tests {
     #[test]
     fn loop_stmt() {
         //                  1234567890123456789 0123 45678
-        let (node, scx) = make_node!("@@: loop { println(\"233\"); }" as LoopStatement, [], ["@", "println", "233"], and source);
+        let mut scx = make_source!("@@: loop { println(\"233\"); }");
+        let mut ecx = crate::diagnostics::make_errors!();
+        let mut context = ParseContext::new(crate::lexical::Parser::new(scx.entry("1"), &mut ecx));
+        let node = LoopStatement::parse(&mut context).unwrap();
+        context.finish();
         assert_eq!{ node.display(&scx).to_string(), r#"loop-stmt <1:1-1:28> loop <1:5-1:8>
   label @@ <1:1-1:3>
   block <1:10-1:28>
     simple-expr-stmt <1:12-1:26>
       fn-call <1:12-1:25> paren <1:19-1:25>
         simple-name println <1:12-1:18>
-        literal str 233 <1:20-1:24>
+        literal str "233" <1:20-1:24>
 "#
         }
     }
 
     #[test]
     fn postfix_expr() {
-        // Attention that this source code line's LF is also the string literal (test oracle)'s LF
         //                           0         1         2         3         4         5        
         //                           0123456789012345678901234567890123456789012345678901234567
-        let (node, scx) = make_node!("a.b(c, d, e).f(g, h, i,)(u,).j[k].l().m[n, o, p][r, s, t,]" as Expr, [], [], and source);
+        let mut scx = make_source!("a.b(c, d, e).f(g, h, i,)(u,).j[k].l().m[n, o, p][r, s, t,]");
+        let mut ecx = crate::diagnostics::make_errors!();
+        let mut context = ParseContext::new(crate::lexical::Parser::new(scx.entry("1"), &mut ecx));
+        let node = PostfixExpr::parse(&mut context).unwrap();
+        context.finish();
         let actual = node.display(&scx).to_string();
         assert_text_eq!{ actual, "index-call <1:1-1:58> bracket <1:49-1:58>
   index-call <1:1-1:48> bracket <1:40-1:48>

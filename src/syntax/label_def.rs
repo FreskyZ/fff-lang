@@ -40,7 +40,5 @@ impl Node for LabelDef {
 
 #[cfg(test)] #[test]
 fn label_def_parse() {
-    use super::make_node;
-
-    assert_eq!(make_node!("@1:" as LabelDef), LabelDef::new(2, Span::new(0, 2)));
+    case!{ "@1:" as LabelDef, LabelDef::new(2, Span::new(0, 2)) }
 }

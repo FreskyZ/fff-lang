@@ -62,10 +62,10 @@ impl Node for WhileStatement {
 
 #[cfg(test)] #[test]
 fn while_stmt_parse() {
-    use super::{make_node, make_exprs, make_lit, SimpleName, Statement, SimpleExprStatement, FnCallExpr};
-    //                                           0        1         2         3         4        
-    //                                           01234567890123456789012345 67890123456789012 3456
-    assert_node_eq!{ make_node!("@2: while true { writeln(\"fresky hellooooo\"); }" as WhileStatement, [], ["2", "writeln", "fresky hellooooo"]),
+    use super::{SimpleName, Statement, SimpleExprStatement, FnCallExpr};
+    //      0        1         2         3         4        
+    //      01234567890123456789012345 67890123456789012 3456
+    case!{ "@2: while true { writeln(\"fresky hellooooo\"); }" as WhileStatement,
         WhileStatement::new_with_label(
             LabelDef::new(2, Span::new(0, 2)),
             Span::new(4, 8),
@@ -80,6 +80,6 @@ fn while_stmt_parse() {
                     )
                 ))
             ])
-        )
+        ), strings ["2", "writeln", "fresky hellooooo"]
     }
 }

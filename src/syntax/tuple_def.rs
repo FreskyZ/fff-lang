@@ -86,17 +86,17 @@ impl Node for TupleDef {
 
 #[cfg(test)] #[test]
 fn tuple_def_parse() {
-    use super::{make_node, make_exprs, make_lit, BinaryExpr};
+    use super::{BinaryExpr};
 
     //                                   01234567
-    assert_eq!{ make_node!("(1, '2')" as TupleDef),
+    case!{ "(1, '2')" as TupleDef,
         Expr::Tuple(TupleDef::new(Span::new(0, 7), make_exprs![
             make_lit!(1, 1, 1),
             make_lit!('2': char, 4, 6),
         ]))
     }
     //                                   0123456
-    assert_eq!{ make_node!("(1 + 1)" as TupleDef),
+    case!{ "(1 + 1)" as TupleDef,
         Expr::Paren(ParenExpr::new(Span::new(0, 6), 
             BinaryExpr::new(
                 make_lit!(1, 1, 1), 
@@ -109,10 +109,9 @@ fn tuple_def_parse() {
 
 #[cfg(test)] #[test]
 fn tuple_def_errors() {
-    use super::{make_node, make_exprs, make_errors};
     
-    assert_eq!{ make_node!("( , )" as TupleDef, and messages), (
+    case!{ "( , )" as TupleDef,
         Expr::Tuple(TupleDef::new(Span::new(0, 4), make_exprs![])), 
-        make_errors!(e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(0, 4), strings::TupleDefHere))
-    )}
+        errors make_errors!(e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(0, 4), strings::TupleDefHere)),
+    }
 }

@@ -64,17 +64,14 @@ impl Node for UseStatement {
 
 #[cfg(test)] #[test]
 fn use_stmt_parse() {
-    use super::make_node;
 
-    assert_eq!{
-        make_node!("use a;" as UseStatement),
+    case!{ "use a;" as UseStatement,
         UseStatement::new_default(Span::new(0, 5),
             Name::new(Span::new(4, 4), vec![SimpleName::new(2, Span::new(4, 4))])
         )
     }
-
-    assert_eq!{ //                   0123456789012345678901234567890
-        make_node!("use std::fmt::Debug as Display;" as UseStatement),
+    //                   0123456789012345678901234567890
+    case!{ "use std::fmt::Debug as Display;" as UseStatement,
         UseStatement::new_target(Span::new(0, 30), 
             Name::new(Span::new(4, 18), vec![
                 SimpleName::new(2, Span::new(4, 6)),

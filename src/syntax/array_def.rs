@@ -51,23 +51,23 @@ impl Node for ArrayDef {
 #[cfg(test)]
 #[test]
 fn array_def_parse() {
-    use super::{make_node, make_exprs, make_lit, BinaryExpr, SimpleName};
+    use super::{BinaryExpr, SimpleName};
 
-    assert_eq!{ make_node!("[a]" as ArrayDef),
+    case!{ "[a]" as ArrayDef,
         Expr::Array(ArrayDef::new(Span::new(0, 2), make_exprs![
             SimpleName::new(2, Span::new(1, 1))
         ]))
     }
 
     //                                   01234567
-    assert_eq!{ make_node!("[1, '2']" as ArrayDef),
+    case!{ "[1, '2']" as ArrayDef,
         Expr::Array(ArrayDef::new(Span::new(0, 7), make_exprs![
             make_lit!(1, 1, 1),
             make_lit!('2': char, 4, 6),
         ]))
     }
     //                                   01234567
-    assert_eq!{ make_node!("[1 + 1,]" as ArrayDef),
+    case!{ "[1 + 1,]" as ArrayDef,
         Expr::Array(ArrayDef::new(Span::new(0, 7), make_exprs![
             BinaryExpr::new(
                 make_lit!(1, 1, 1),
@@ -80,10 +80,9 @@ fn array_def_parse() {
 
 #[cfg(test)] #[test]
 fn array_def_errors() {
-    use super::{make_node, make_exprs, make_errors};
 
-    assert_eq!{ make_node!("[ , ]" as ArrayDef, and messages), (
+    case!{ "[ , ]" as ArrayDef,
         Expr::Array(ArrayDef::new(Span::new(0, 4), make_exprs![])),
-        make_errors!(e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(0, 4), strings::ArrayDefHere)),
-    )}
+        errors make_errors!(e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(0, 4), strings::ArrayDefHere))
+    }
 }

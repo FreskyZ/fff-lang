@@ -65,13 +65,13 @@ impl Node for LoopStatement {
 
 #[cfg(test)] #[test]
 fn loop_stmt_parse() {
-    use super::{make_node, make_exprs, make_lit, SimpleName, Statement, SimpleExprStatement, FnCallExpr};
+    use super::{SimpleName, Statement, SimpleExprStatement, FnCallExpr};
 
-    assert_eq!{ make_node!("loop {}" as LoopStatement),
+    case!{ "loop {}" as LoopStatement,
         LoopStatement::new_no_label(Span::new(0, 3), Block::new(Span::new(5, 6), vec![]))
     }
     //                                        1234567890123456789 0123 45678
-    assert_node_eq!{ make_node!("@@: loop { println(\"233\"); }" as LoopStatement, [], ["@", "println", "233"]),
+    case!{ "@@: loop { println(\"233\"); }" as LoopStatement,
         LoopStatement::new_with_label(
             LabelDef::new(2, Span::new(0, 2)),
             Span::new(4, 7),
@@ -85,6 +85,6 @@ fn loop_stmt_parse() {
                     )
                 ))
             ])
-        )
+        ), strings ["@", "println", "233"]
     }
 }

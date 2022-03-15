@@ -94,10 +94,10 @@ impl Node for BinaryExpr {
 
 #[cfg(test)] #[test]
 fn binary_expr_parse() {
-    use super::{make_node, make_exprs, make_lit, ArrayDef, SimpleName};
+    use super::{ArrayDef, SimpleName};
 
     //                                     123456789012345
-    assert_eq!{ make_node!("[1] * [2] / [3]" as BinaryExpr), 
+    case!{ "[1] * [2] / [3]" as BinaryExpr, 
         Expr::Binary(BinaryExpr::new(
             BinaryExpr::new(
                 ArrayDef::new(Span::new(0, 2), make_exprs![
@@ -116,7 +116,7 @@ fn binary_expr_parse() {
     }           
     //                                     0        1         2
     //                                     123456789012345678901
-    assert_eq!{ make_node!("a * b / c + d % e - f" as BinaryExpr),  // ((((a * b) / c) + (d % e)) - f)
+    case!{ "a * b / c + d % e - f" as BinaryExpr,  // ((((a * b) / c) + (d % e)) - f)
         Expr::Binary(BinaryExpr::new(
             BinaryExpr::new(
                 BinaryExpr::new(
@@ -141,7 +141,7 @@ fn binary_expr_parse() {
     }           
     //                                     0        1         2         3
     //                                     1234567890123456789012345678901
-    assert_node_eq!{ make_node!("a * b << h / c + d % e - f >> g" as BinaryExpr), // (((a * b) << (((h / c) + (d % e)) - f)) >> g)
+    case!{ "a * b << h / c + d % e - f >> g" as BinaryExpr, // (((a * b) << (((h / c) + (d % e)) - f)) >> g)
         Expr::Binary(BinaryExpr::new(
             BinaryExpr::new(
                 BinaryExpr::new(
@@ -182,7 +182,7 @@ fn binary_expr_parse() {
     //     only change that can I fix the bug
     //                                     0        1         2         3         4         5         6         7         8
     //                                     1234567890123456789012345678901234567890123456789012345678901234567890123456789012345
-    assert_node_eq!{ make_node!("a * b << h / c + d % e - f >> g > h * i < j << k >= m && n || o & p | q ^ r != s == t" as BinaryExpr),
+    case!{ "a * b << h / c + d % e - f >> g > h * i < j << k >= m && n || o & p | q ^ r != s == t" as BinaryExpr,
         // */%, +-, <><=>=, <<>>, &, ^, |, ==!=, &&, ||
         // ((((((a * b) << (((h / c) + (d % e)) - f)) >> ((g > (h * i)) < j)) << (k >= m)) && n) || ((((o & p) | (q ^ r)) != s) == t))
         Expr::Binary(BinaryExpr::new(
@@ -264,7 +264,7 @@ fn binary_expr_parse() {
         ))
     }
     //                                     1234567890
-    assert_node_eq!{ make_node!("a & b == c" as BinaryExpr), // ((a & b) == c)
+    case!{ "a & b == c" as BinaryExpr, // ((a & b) == c)
         Expr::Binary(BinaryExpr::new(
             BinaryExpr::new(
                 SimpleName::new(2, Span::new(0, 0)),
@@ -282,7 +282,7 @@ fn binary_expr_parse() {
     // program generated random tests
     //                                     0        1         2         3    
     //                                     1234567890123456789012345678901234
-    assert_eq!{ make_node!("0 + 6 ^ 3 & 3 / 3 - 8 && 2 & 0 + 6" as BinaryExpr), // (((0 + 6) ^ (3 & ((3 / 3) - 8))) && (2 & (0 + 6)))
+    case!{ "0 + 6 ^ 3 & 3 / 3 - 8 && 2 & 0 + 6" as BinaryExpr, // (((0 + 6) ^ (3 & ((3 / 3) - 8))) && (2 & (0 + 6)))
         Expr::Binary(BinaryExpr::new(
             BinaryExpr::new(
                 BinaryExpr::new(
@@ -319,7 +319,7 @@ fn binary_expr_parse() {
     }
     //                                     0        1         2         3         4         5         6         7
     //                                     1234567890123456789012345678901234567890123456789012345678901234567890
-    assert_eq!{ make_node!("7 > 1 | 0 % 8 | 1 % 7 * 3 % 6 == 1 >> 8 % 3 ^ 6 << 0 ^ 2 >> 6 || 1 - 0" as BinaryExpr),
+    case!{ "7 > 1 | 0 % 8 | 1 % 7 * 3 % 6 == 1 >> 8 % 3 ^ 6 << 0 ^ 2 >> 6 || 1 - 0" as BinaryExpr,
         // (((((7 > 1) | (0 % 8)) | (((1 % 7) * 3) % 6)) == (((1 >> (8 % 3)) ^ (6 << 0)) ^ (2 >> 6))) || (1 - 0))
         Expr::Binary(BinaryExpr::new(
             BinaryExpr::new(
@@ -389,7 +389,7 @@ fn binary_expr_parse() {
     }
     //                                     0        1         2         3         4         5         6 
     //                                     1234567890123456789012345678901234567890123456789012345678901
-    assert_eq!{ make_node!("7 >> 3 == 8 / 1 && 6 == 1 <= 3 % 6 ^ 3 - 1 - 2 >> 7 || 1 >= 1" as BinaryExpr),
+    case!{ "7 >> 3 == 8 / 1 && 6 == 1 <= 3 % 6 ^ 3 - 1 - 2 >> 7 || 1 >= 1" as BinaryExpr,
         // */%, +-, <><=>=, <<>>, &, ^, |, ==!=, &&, ||
         // ((((7 >> 3) == (8 / 1)) && (6 == ((1 <= (3 % 6)) ^ (((3 - 1) - 2) >> 7)))) || (1 >= 1))
         Expr::Binary(BinaryExpr::new(
@@ -448,7 +448,7 @@ fn binary_expr_parse() {
     }
     //                                     0     
     //                                     123456
-    assert_eq!{ make_node!("4 >> 7" as BinaryExpr),
+    case!{ "4 >> 7" as BinaryExpr,
         Expr::Binary(BinaryExpr::new(
             Expr::Lit(make_lit!(4, 0, 0)),
             Separator::GtGt, Span::new(2, 3),
@@ -457,7 +457,7 @@ fn binary_expr_parse() {
     }
     //                                     0        1         2         3         4         5         6     
     //                                     12345678901234567890123456789012345678901234567890123456789012345
-    assert_eq!{ make_node!("8 & 0 | 7 + 7 | 7 * 0 && 1 - 2 * 3 | 0 - 7 >= 6 >> 5 % 5 || 5 % 3" as BinaryExpr),
+    case!{ "8 & 0 | 7 + 7 | 7 * 0 && 1 - 2 * 3 | 0 - 7 >= 6 >> 5 % 5 || 5 % 3" as BinaryExpr,
         // (((((8 & 0) | (7 + 7)) | (7 * 0)) && ((1 - (2 * 3)) | (((0 - 7) >= 6) >> (5 % 5)))) || (5 % 3))
         Expr::Binary(BinaryExpr::new(
             BinaryExpr::new(
@@ -523,7 +523,7 @@ fn binary_expr_parse() {
     }
     //                                     0        1         2         3         4         5         6     
     //                                     12345678901234567890123456789012345678901234567890123456789012345678
-    assert_eq!{ make_node!("3 <= 2 + 4 <= 5 && 3 < 3 + 2 >> 1 * 2 & 8 && 1 >= 1 < 0 || 6 < 4 * 4" as BinaryExpr),
+    case!{ "3 <= 2 + 4 <= 5 && 3 < 3 + 2 >> 1 * 2 & 8 && 1 >= 1 < 0 || 6 < 4 * 4" as BinaryExpr,
         // (((((3 <= (2 + 4)) <= 5) && (((3 < (3 + 2)) >> (1 * 2)) & 8)) && ((1 >= 1) < 0)) || (6 < (4 * 4)))
         Expr::Binary(BinaryExpr::new(
             BinaryExpr::new(
@@ -589,7 +589,7 @@ fn binary_expr_parse() {
     }
     //                                     0        1         2
     //                                     12345678901234567890
-    assert_eq!{ make_node!("5 >= 6 | 3 == 4 && 3" as BinaryExpr),
+    case!{ "5 >= 6 | 3 == 4 && 3" as BinaryExpr,
         // ((((5 >= 6) | 3) == 4) && 3)
         Expr::Binary(BinaryExpr::new(
             BinaryExpr::new(
@@ -611,7 +611,7 @@ fn binary_expr_parse() {
     }
     //                                     0        1         2         3         4         5         6         7
     //                                     1234567890123456789012345678901234567890123456789012345678901234567890123456
-    assert_eq!{ make_node!("6 && 7 >> 8 && 0 / 8 * 7 + 5 < 5 / 5 >> 5 - 1 >= 6 > 8 | 6 >> 5 > 2 + 1 || 0" as BinaryExpr),
+    case!{ "6 && 7 >> 8 && 0 / 8 * 7 + 5 < 5 / 5 >> 5 - 1 >= 6 > 8 | 6 >> 5 > 2 + 1 || 0" as BinaryExpr,
         // */%, +-, <><=>=, <<>>, &, ^, |, ==!=, &&, ||
         // (((6 && (7 >> 8)) && ((((((0 / 8) * 7) + 5) < (5 / 5)) >> (((5 - 1) >= 6) > 8)) | (6 >> (5 > (2 + 1))))) || 0)
         Expr::Binary(BinaryExpr::new(

@@ -178,11 +178,11 @@ impl Node for IfStatement {
 
 #[cfg(test)] #[test]
 fn if_stmt_parse() {
-    use super::{make_node, make_exprs, make_lit, FnCallExpr, MemberAccessExpr, SimpleName, ArrayDef, SimpleExprStatement, Statement};
+    use super::{FnCallExpr, MemberAccessExpr, SimpleName, ArrayDef, SimpleExprStatement, Statement};
 
     //                                      0        1         2         3
     //                                      0123456789012345678901234567890123456
-    assert_node_eq!{ make_node!("if true { } else if false { } else {}" as IfStatement),
+    case!{ "if true { } else if false { } else {}" as IfStatement,
         IfStatement::new_ifelse(
             IfClause::new(Span::new(0, 1), 
                 make_lit!(true, 3, 6),
@@ -201,7 +201,7 @@ fn if_stmt_parse() {
 
     //              0         1         2         3         4         5         6         7
     //              012345678901234567890123456789012345678901234567890123456789012345678901
-    assert_node_eq!{ make_node!("if 1 { sth.do_sth(a); other.do_other(b); } else { [1,2,3].map(writeln);}" as IfStatement, [], ["sth", "do_sth", "a", "other", "do_other", "b", "writeln", "map"]),
+    case!{ "if 1 { sth.do_sth(a); other.do_other(b); } else { [1,2,3].map(writeln);}" as IfStatement,
         IfStatement::new_ifelse(
             IfClause::new(Span::new(0, 1), 
                 make_lit!(1, 3, 3),
@@ -245,15 +245,15 @@ fn if_stmt_parse() {
                                     make_lit!(3, 55, 55),
                                 ]),
                                 Span::new(57, 57),
-                                SimpleName::new(9, Span::new(58, 60))
+                                SimpleName::new(8, Span::new(58, 60))
                             ),
                             Span::new(61, 69), make_exprs![
-                                SimpleName::new(8, Span::new(62, 68))
+                                SimpleName::new(9, Span::new(62, 68))
                             ]
                         )
                     ))
                 ])
             )
-        )
+        ), strings ["sth", "do_sth", "a", "other", "do_other", "b", "map", "writeln"]
     }
 }

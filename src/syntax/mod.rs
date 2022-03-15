@@ -4,12 +4,6 @@
 
 mod prelude;
 pub use prelude::{Node, Visitor};
-#[cfg(test)]
-pub(crate) use prelude::make_node;
-#[cfg(test)]
-use crate::diagnostics::make_errors;
-#[cfg(test)]
-use crate::source::make_source;
 
 mod array_def;
 mod binary_expr;
@@ -49,8 +43,6 @@ pub use block_stmt::BlockStatement;
 pub use block::Block;
 pub use expr_list::ExprList;
 use expr_list::ExprListParseResult;
-#[cfg(test)]
-use expr_list::make_exprs;
 pub use expr::Expr;
 pub use expr_stmt::{SimpleExprStatement, AssignExprStatement};
 pub use fn_call::FnCallExpr;
@@ -61,8 +53,6 @@ pub use index_call::IndexCallExpr;
 pub use jump_stmt::{BreakStatement, ContinueStatement};
 pub use label_def::LabelDef;
 pub use lit_expr::{LitExpr, LitValue};
-#[cfg(test)]
-use lit_expr::make_lit;
 pub use loop_stmt::LoopStatement;
 pub use member_access::MemberAccessExpr;
 pub use module::Module;
@@ -81,9 +71,30 @@ pub use use_stmt::UseStatement;
 pub use var_decl::VarDeclStatement;
 pub use while_stmt::WhileStatement;
 
-pub fn parse(chars: crate::lexical::Parser) -> Result<Module, ()> {
+// parse any types of node for test
+pub fn parse_any<O, N: Node<ParseOutput = O>>(chars: crate::lexical::Parser) -> Result<O, ()> {
     let mut context = prelude::ParseContext::new(chars);
-    let result = Module::parse(&mut context);
+    let result = N::parse(&mut context);
     context.finish();
     result
 }
+// formal public api only parses module
+pub fn parse(chars: crate::lexical::Parser) -> Result<Module, ()> {
+    parse_any::<_, Module>(chars)
+}
+
+#[cfg(test)]
+#[allow(unused_macros)]
+macro_rules! make_node {
+    ($code:literal as $ty:ty) => {{
+        let mut ecx = crate::diagnostics::make_errors!();
+        let mut scx = crate::source::make_source!($code);
+        match parse_any::<_, $ty>(scx.entry("1")) {
+            Ok(node) => { assert_eq!(ecx, crate::diagnostics::make_errors!()); node },
+            Err(_) => { panic!("{}", ecx.display(&scx)) },
+        }
+    }};
+}
+#[cfg(test)]
+#[allow(unused_imports)]
+pub(crate) use make_node;

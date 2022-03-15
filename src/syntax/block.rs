@@ -48,9 +48,8 @@ impl Node for Block {
 
 #[cfg(test)] #[test]
 fn block_parse() {
-    use super::make_node;
     
-    assert_eq!{ make_node!("{}" as Block),
+    case!{ "{}" as Block,
         Block::new(Span::new(0, 1), vec![])
     }
 }

@@ -22,6 +22,20 @@ pub enum ExprListParseResult {
     EndWithComma(Span, ExprList),   // and quote span
 }
 
+// ast_test_case require that
+#[cfg(test)]
+impl Node for ExprListParseResult {
+    type ParseOutput = ExprListParseResult;
+
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        match self {
+            Self::Empty(_) | Self::SingleComma(_) => Ok(Default::default()),
+            // go visit expr list not this
+            Self::Normal(_, e) | Self::EndWithComma(_, e) => v.visit_expr_list(e),
+        }
+    }
+}
+
 impl Node for ExprList {
     type ParseOutput = ExprListParseResult;
 
@@ -92,9 +106,8 @@ pub(crate) use make_exprs;
 
 #[cfg(test)] #[test]
 fn expr_list_parse() {
-    use super::{make_node, make_lit};
 
-    assert_eq!{ make_node!("[1, 2, 3]" as ExprList), 
+    case!{ "[1, 2, 3]" as ExprList, 
         ExprListParseResult::Normal(Span::new(0, 8), ExprList::new(vec![
             Expr::Lit(make_lit!(1, 1, 1)),
             Expr::Lit(make_lit!(2, 4, 4)),
@@ -102,7 +115,7 @@ fn expr_list_parse() {
         ]))
     }
     
-    assert_eq!{ make_node!("(1, 2, 3,)" as ExprList), 
+    case!{ "(1, 2, 3,)" as ExprList, 
         ExprListParseResult::EndWithComma(Span::new(0, 9), ExprList::new(vec![
             Expr::Lit(make_lit!(1, 1, 1)),
             Expr::Lit(make_lit!(2, 4, 4)),
@@ -110,11 +123,11 @@ fn expr_list_parse() {
         ]))
     }
 
-    assert_eq!{ make_node!("[]" as ExprList), 
+    case!{ "[]" as ExprList, 
         ExprListParseResult::Empty(Span::new(0, 1))
     }
 
-    assert_eq!{ make_node!("{,}" as ExprList),
+    case!{ "{,}" as ExprList,
         ExprListParseResult::SingleComma(Span::new(0, 2))
     }
 }

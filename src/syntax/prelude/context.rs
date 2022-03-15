@@ -5,7 +5,7 @@
 use crate::source::{Span, IsId, FileId};
 use crate::diagnostics::Diagnostic;
 use crate::lexical::{Parser, Token, Separator, SeparatorKind, Keyword, KeywordKind};
-use super::node::Node;
+use super::Node;
 use super::super::LitValue;
 
 pub type ParseResult<T> = Result<T, ()>;
@@ -302,9 +302,9 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
     }
 
     pub fn push_unexpect<T>(&mut self, expect_desc: &str) -> ParseResult<T> {
-        self.base.emit("Unexpect symbol")
-            .detail(self.current_span, format!("Meet {:?}", self.current))
-            .help(format!("Expect {}", expect_desc));
+        self.base.emit("unexpected token")
+            .detail(self.current_span, format!("meet {:?}", self.current))
+            .help(format!("expected {}", expect_desc));
         return Err(());
     }
 }

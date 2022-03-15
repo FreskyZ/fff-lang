@@ -100,11 +100,11 @@ impl Node for AssignExprStatement {
 
 #[cfg(test)] #[test]
 fn expr_stmt_parse() {
-    use super::{make_node, make_exprs, make_lit, SimpleName, BinaryExpr, FnCallExpr};
+    use super::{SimpleName, BinaryExpr, FnCallExpr};
 
     //                      0          1          2
     //                      012345678 90123456789 012
-    assert_eq!{ make_node!("writeln(\"helloworld\");" as AssignExprStatement, [Span::new(0, 6)], ["helloworld"]),
+    case!{ "writeln(\"helloworld\");" as AssignExprStatement,
         Statement::SimpleExpr(SimpleExprStatement::new(Span::new(0, 21),
             FnCallExpr::new(
                 SimpleName::new(2, Span::new(0, 6)),
@@ -116,7 +116,7 @@ fn expr_stmt_parse() {
     }
 
     //                      012345678901
-    assert_eq!{ make_node!("1 + 1 <<= 2;" as AssignExprStatement),  // to show I have 3 char Separator available
+    case!{ "1 + 1 <<= 2;" as AssignExprStatement,  // to show I have 3 char Separator available
         Statement::AssignExpr(AssignExprStatement::new(Span::new(0, 11),
             Separator::LtLtEq, Span::new(6, 8),
             BinaryExpr::new(

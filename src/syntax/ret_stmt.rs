@@ -58,10 +58,10 @@ impl Node for ReturnStatement {
 
 #[cfg(test)] #[test]
 fn ret_stmt_parse() {
-    use super::{make_node, make_lit, BinaryExpr};
+    use super::{BinaryExpr};
 
-    assert_eq!{ make_node!("return;" as ReturnStatement), ReturnStatement::new_unit(Span::new(0, 6)) }
-    assert_eq!{ make_node!("return 1 + 1;" as ReturnStatement), 
+    case!{ "return;" as ReturnStatement, ReturnStatement::new_unit(Span::new(0, 6)) }
+    case!{ "return 1 + 1;" as ReturnStatement, 
         ReturnStatement::new_expr(
             Span::new(0, 12), 
             Expr::Binary(BinaryExpr::new(

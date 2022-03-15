@@ -148,11 +148,10 @@ impl Node for RangeExpr {
 
 #[cfg(test)] #[test]
 fn range_expr_parse() {
-    use super::{make_node, make_lit};
 
-    assert_eq!{ make_node!(".." as RangeExpr), Expr::RangeFull(RangeFullExpr::new(Span::new(0, 1))) }
+    case!{ ".." as RangeExpr, Expr::RangeFull(RangeFullExpr::new(Span::new(0, 1))) }
 
-    assert_eq!{ make_node!("..1 + 1" as RangeExpr), 
+    case!{ "..1 + 1" as RangeExpr, 
         Expr::RangeRight(RangeRightExpr::new(Span::new(0, 6), BinaryExpr::new(
             make_lit!(1, 2, 2),
             Separator::Add, Span::new(4, 4),
@@ -160,7 +159,7 @@ fn range_expr_parse() {
         )))
     }
 
-    assert_eq!{ make_node!("1 .." as RangeExpr),
+    case!{ "1 .." as RangeExpr,
         Expr::RangeLeft(RangeLeftExpr::new(Span::new(0, 3), make_lit!(1, 0, 0)))
     }
 }

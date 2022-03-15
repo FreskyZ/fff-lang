@@ -92,10 +92,8 @@ impl Node for TypeDef {
 
 #[cfg(test)] #[test]
 fn type_def_parse() {
-    use super::make_node;
-
     //                                  01234567890123456
-    assert_node_eq!{ make_node!("type x { x: i32 }" as TypeDef),
+    case!{ "type x { x: i32 }" as TypeDef,
         TypeDef::new(Span::new(0, 16), SimpleName::new(2, Span::new(5, 5)), vec![
             TypeFieldDef::new(Span::new(9, 14), 
                 SimpleName::new(2, Span::new(9, 9)),
@@ -104,7 +102,7 @@ fn type_def_parse() {
             )
         ])
     }
-    assert_node_eq!{ make_node!("type x { x: i32,}" as TypeDef),
+    case!{ "type x { x: i32,}" as TypeDef,
         TypeDef::new(Span::new(0, 16), SimpleName::new(2, Span::new(5, 5)), vec![
             TypeFieldDef::new(Span::new(9, 15), 
                 SimpleName::new(2, Span::new(9, 9)),
@@ -115,26 +113,26 @@ fn type_def_parse() {
     }
     //                                    0         1         2         3         4
     //                                    0123456789012345678901234567890123456789012345
-    assert_node_eq!{ make_node!("type array { data: [u8], size: u64, cap: u64 }" as TypeDef, [], ["array", "data", "size", "cap", "u64", "u8"]),
+    case!{ "type array { data: [u8], size: u64, cap: u64 }" as TypeDef,
         TypeDef::new(Span::new(0, 45), SimpleName::new(2, Span::new(5, 9)), vec![
             TypeFieldDef::new(Span::new(13, 23),
                 SimpleName::new(3, Span::new(13, 16)),
                 Span::new(17, 17),
                 TypeRef::new_template(2, Span::new(0, 0), Span::new(19, 22), vec![
-                    TypeRef::new_simple(7, Span::new(20, 21))
+                    TypeRef::new_simple(4, Span::new(20, 21))
                 ])
             ),
             TypeFieldDef::new(Span::new(25, 34), 
-                SimpleName::new(4, Span::new(25, 28)),
+                SimpleName::new(5, Span::new(25, 28)),
                 Span::new(29, 29),
-                TypeRef::new_simple(6, Span::new(31, 33))
+                TypeRef::new_simple(7, Span::new(31, 33))
             ),
             TypeFieldDef::new(Span::new(36, 43), 
-                SimpleName::new(5, Span::new(36, 38)),
+                SimpleName::new(6, Span::new(36, 38)),
                 Span::new(39, 39),
-                TypeRef::new_simple(6, Span::new(41, 43))
+                TypeRef::new_simple(7, Span::new(41, 43))
             )
-        ])
+        ]), strings ["array", "data", "u8", "size", "cap", "u64"]
     }
 }
 

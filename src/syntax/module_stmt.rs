@@ -64,17 +64,14 @@ impl Node for ModuleStatement {
 #[cfg(test)] 
 #[test]
 fn module_stmt_parse() {
-    use super::make_node;
 
-    assert_eq!{
-        make_node!("module a;" as ModuleStatement),
+    case!{ "module a;" as ModuleStatement,
         ModuleStatement::new_default(Span::new(0, 8),
             SimpleName::new(2, Span::new(7, 7))
         )
     }
-
-    assert_eq!{ //                   012345678901234567890
-        make_node!("module windows as os;" as ModuleStatement),
+    //                   012345678901234567890
+    case!{ "module windows as os;" as ModuleStatement,
         ModuleStatement::new_target(Span::new(0, 20),
             SimpleName::new(2, Span::new(7, 13)),
             Span::new(15, 16),
