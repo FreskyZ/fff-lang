@@ -42,20 +42,20 @@ impl Node for VarDeclStatement {
         matches!(current, Token::Keyword(Keyword::Const | Keyword::Var)) 
     }
 
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<VarDeclStatement> {
+    fn parse(cx: &mut ParseContext) -> ParseResult<VarDeclStatement> {
         
-        let (starting_kw, starting_span) = sess.expect_keywords(&[Keyword::Const, Keyword::Var])?;
+        let (starting_kw, starting_span) = cx.expect_keywords(&[Keyword::Const, Keyword::Var])?;
         let is_const = match starting_kw { Keyword::Const => true, Keyword::Var => false, _ => unreachable!() };
 
-        let (name, name_span) = sess.expect_ident_or(&[Keyword::Underscore])?;
-        let maybe_decltype = if let Some(_) = sess.try_expect_sep(Separator::Colon) { Some(TypeRef::parse(sess)?) } else { None };
-        let maybe_init_expr = if let Some(_) = sess.try_expect_sep(Separator::Eq) { Some(Expr::parse(sess)?) } else { None };
+        let (name, name_span) = cx.expect_ident_or(&[Keyword::Underscore])?;
+        let maybe_decltype = if let Some(_) = cx.try_expect_sep(Separator::Colon) { Some(cx.expect_node::<TypeRef>()?) } else { None };
+        let maybe_init_expr = if let Some(_) = cx.try_expect_sep(Separator::Eq) { Some(cx.expect_node::<Expr>()?) } else { None };
         if maybe_decltype.is_none() && maybe_init_expr.is_none() {
-            sess.emit("require type annotation")
+            cx.emit("require type annotation")
                 .detail(name_span, "variable declaration here")
                 .help("cannot infer type without both type annotation and initialization expression");
         }
-        let ending_span = sess.expect_sep(Separator::SemiColon)?;
+        let ending_span = cx.expect_sep(Separator::SemiColon)?;
 
         return Ok(VarDeclStatement::new(starting_span + ending_span, is_const, name, name_span, maybe_decltype, maybe_init_expr));
     }

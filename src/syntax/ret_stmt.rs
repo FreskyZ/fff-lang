@@ -28,19 +28,19 @@ impl Node for ReturnStatement {
         matches!(current, Token::Keyword(Keyword::Return))
     }
 
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<ReturnStatement> {
+    fn parse(cx: &mut ParseContext) -> ParseResult<ReturnStatement> {
 
-        let starting_span = sess.expect_keyword(Keyword::Return)?;
+        let starting_span = cx.expect_keyword(Keyword::Return)?;
 
-        if let Some(semicolon_span) = sess.try_expect_sep(Separator::SemiColon) {
+        if let Some(semicolon_span) = cx.try_expect_sep(Separator::SemiColon) {
             // 17/6/17: you forgot move_next here!
             // but I have never write some test cases like following something after ret stmt
             // so the bug is not propagated to be discovered
-            // 17/7/28: now new features added to parse_sess and move_next is to be removed, no current position management bug any more!
+            // 17/7/28: now new features added to parse_cx and move_next is to be removed, no current position management bug any more!
             Ok(ReturnStatement::new_unit(starting_span + semicolon_span))
         } else {
-            let expr = Expr::parse(sess)?;
-            let semicolon_span = sess.expect_sep(Separator::SemiColon)?;
+            let expr = cx.expect_node::<Expr>()?;
+            let semicolon_span = cx.expect_sep(Separator::SemiColon)?;
             Ok(ReturnStatement::new_expr(starting_span + semicolon_span, expr))
         }
     }

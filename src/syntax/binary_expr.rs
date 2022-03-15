@@ -43,24 +43,24 @@ impl BinaryExpr {
 impl Node for BinaryExpr {
     type ParseOutput = Expr;
 
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Expr> {  
+    fn parse(cx: &mut ParseContext) -> ParseResult<Expr> {  
         #[cfg(feature = "trace_binary_expr_parse")]
         macro_rules! trace { ($($arg:tt)*) => ({ print!("[PrimaryExpr] "); println!($($arg)*); }) }
         #[cfg(not(feature = "trace_binary_expr_parse"))]
         macro_rules! trace { ($($arg:tt)*) => () }
 
-        return parse_logical_or(sess);
+        return parse_logical_or(cx);
 
         macro_rules! impl_binary_parser {
             ($parser_name: ident, $previous_parser: expr, $op_category: expr) => (
-                fn $parser_name<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Expr> {
+                fn $parser_name(cx: &mut ParseContext) -> ParseResult<Expr> {
                     trace!("parsing {}", stringify!($parser_name));
 
-                    let mut current_retval = $previous_parser(sess)?;
+                    let mut current_retval = $previous_parser(cx)?;
                     loop {
-                        match sess.try_expect_sep_kind($op_category) {
+                        match cx.try_expect_sep_kind($op_category) {
                             Some((sep, sep_span)) => {
-                                let right_expr = $previous_parser(sess)?;
+                                let right_expr = $previous_parser(cx)?;
                                 current_retval = Expr::Binary(BinaryExpr::new(current_retval, sep, sep_span, right_expr));
                             }
                             None => {

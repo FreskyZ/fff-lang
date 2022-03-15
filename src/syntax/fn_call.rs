@@ -44,15 +44,15 @@ impl Node for FnCallExpr {
         matches!(current, Token::Sep(Separator::LeftParen)) 
     }
 
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<FnCallExpr> {
+    fn parse(cx: &mut ParseContext) -> ParseResult<FnCallExpr> {
 
-        match ExprList::parse(sess)? {
+        match cx.expect_node::<ExprList>()? {
             ExprListParseResult::Empty(span) => 
                 return Ok(FnCallExpr::new_with_parse_result(span, ExprList::new(Vec::new()))),
             ExprListParseResult::Normal(span, expr_list) | ExprListParseResult::EndWithComma(span, expr_list) => 
                 return Ok(FnCallExpr::new_with_parse_result(span, expr_list)),
             ExprListParseResult::SingleComma(span) => {
-                sess.emit(strings::UnexpectedSingleComma).detail(span, strings::FnCallHere);
+                cx.emit(strings::UnexpectedSingleComma).detail(span, strings::FnCallHere);
                 return Ok(FnCallExpr::new_with_parse_result(span, ExprList::new(Vec::new())));
             }
         }

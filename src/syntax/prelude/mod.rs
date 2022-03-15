@@ -9,18 +9,18 @@
 //    so this module is directly called prelude and included other common imports from source/diagnostics/lexical
 
 mod context;
-mod display;
 mod node;
+mod node_display;
 
 pub use std::fmt;
-pub use crate::source::{FileSystem, Span, IsId};
+pub use crate::source::{Span, IsId};
 pub use crate::diagnostics::strings;
 pub use crate::lexical::{Token, Numeric, Separator, SeparatorKind, Keyword, KeywordKind};
 
 pub use node::{Node, Visitor};
 #[cfg(test)]
 pub(crate) use node::make_node;
-pub use context::{ParseSession, ParseResult};
-pub use display::{FormatVisitor, NodeDisplay};
+pub use context::{ParseContext, ParseResult};
+pub use node_display::{FormatVisitor, NodeDisplay};
 #[cfg(test)]
-pub(crate) use display::{print_diff, assert_node_eq};
+pub(crate) use node_display::{print_diff, assert_node_eq};

@@ -56,42 +56,42 @@ impl Node for FnDef {
         matches!(current, Token::Keyword(Keyword::Fn))
     }
 
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<FnDef> {
+    fn parse(cx: &mut ParseContext) -> ParseResult<FnDef> {
         #[cfg(feature = "trace_fn_def_parse")]
         macro_rules! trace { ($($arg:tt)*) => ({ print!("[FnDef: {}]", line!()); println!($($arg)*); }) }
         #[cfg(not(feature = "trace_fn_def_parse"))]
         macro_rules! trace { ($($arg:tt)*) => () }
         
-        let fn_span = sess.expect_keyword(Keyword::Fn)?;
-        let (fn_name, fn_name_span) = sess.expect_ident()?;
-        let mut params_paren_span = sess.expect_sep(Separator::LeftParen)?;
+        let fn_span = cx.expect_keyword(Keyword::Fn)?;
+        let (fn_name, fn_name_span) = cx.expect_ident()?;
+        let mut params_paren_span = cx.expect_sep(Separator::LeftParen)?;
         trace!("fndef name span: {:?}", fn_name_span);
 
         let mut params = Vec::new();
         loop {
-            if let Some((_comma_span, right_paren_span)) = sess.try_expect_2_sep(Separator::Comma, Separator::RightParen) {
+            if let Some((_comma_span, right_paren_span)) = cx.try_expect_2_sep(Separator::Comma, Separator::RightParen) {
                 params_paren_span = params_paren_span + right_paren_span;
                 if params.is_empty() {
-                    sess.emit("Single comma in function definition argument list")
+                    cx.emit("Single comma in function definition argument list")
                         .detail(fn_name_span, "function definition here")
                         .detail(params_paren_span, "param list here");
                 }
                 break;
-            } else if let Some(right_paren_span) = sess.try_expect_sep(Separator::RightParen) {
+            } else if let Some(right_paren_span) = cx.try_expect_sep(Separator::RightParen) {
                 params_paren_span = params_paren_span + right_paren_span;
                 break;
-            } else if let Some(_comma_span) = sess.try_expect_sep(Separator::Comma) {
+            } else if let Some(_comma_span) = cx.try_expect_sep(Separator::Comma) {
                 continue;
             }
 
-            let (param_name, param_span) = sess.expect_ident_or(&[Keyword::Underscore, Keyword::This])?;
-            let _ = sess.expect_sep(Separator::Colon)?;
-            let decltype = TypeRef::parse(sess)?;
+            let (param_name, param_span) = cx.expect_ident_or(&[Keyword::Underscore, Keyword::This])?;
+            let _ = cx.expect_sep(Separator::Colon)?;
+            let decltype = cx.expect_node::<TypeRef>()?;
             params.push(FnParam::new(param_name, param_span, decltype));
         }
 
-        let maybe_ret_type = if let Some(_right_arrow_span) = sess.try_expect_sep(Separator::Arrow) { Some(TypeRef::parse(sess)?) } else { None };
-        let body = Block::parse(sess)?;
+        let maybe_ret_type = if let Some(_right_arrow_span) = cx.try_expect_sep(Separator::Arrow) { Some(cx.expect_node::<TypeRef>()?) } else { None };
+        let body = cx.expect_node::<Block>()?;
 
         return Ok(FnDef::new(fn_span + body.all_span, fn_name, fn_name_span, params_paren_span, params, maybe_ret_type, body));
     }

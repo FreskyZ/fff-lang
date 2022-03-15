@@ -102,8 +102,8 @@ impl RangeBothExpr {
 }
 impl Node for RangeBothExpr {
     type ParseOutput = Expr;
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Expr> {
-        RangeExpr::parse(sess)
+    fn parse(cx: &mut ParseContext) -> ParseResult<Expr> {
+        cx.expect_node::<RangeExpr>()
     }
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_range_both_expr(self)
@@ -119,21 +119,21 @@ pub struct RangeExpr;
 impl Node for RangeExpr {
     type ParseOutput = Expr;
 
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Expr> {
-        match sess.try_expect_sep(Separator::DotDot) {
+    fn parse(cx: &mut ParseContext) -> ParseResult<Expr> {
+        match cx.try_expect_sep(Separator::DotDot) {
             Some(range_op_span) => {
-                if sess.matches::<Expr>() {
-                    let expr = BinaryExpr::parse(sess)?;
+                if cx.matches::<Expr>() {
+                    let expr = cx.expect_node::<BinaryExpr>()?;
                     Ok(Expr::RangeRight(RangeRightExpr::new(range_op_span + expr.get_all_span(), expr)))
                 } else {
                     Ok(Expr::RangeFull(RangeFullExpr::new(range_op_span)))
                 }
             }
             None => {
-                let left_expr = BinaryExpr::parse(sess)?;
-                if let Some(op_span) = sess.try_expect_sep(Separator::DotDot) {
-                    if sess.matches::<Expr>() {
-                        let right_expr = BinaryExpr::parse(sess)?;
+                let left_expr = cx.expect_node::<BinaryExpr>()?;
+                if let Some(op_span) = cx.try_expect_sep(Separator::DotDot) {
+                    if cx.matches::<Expr>() {
+                        let right_expr = cx.expect_node::<BinaryExpr>()?;
                         Ok(Expr::RangeBoth(RangeBothExpr::new(left_expr, op_span, right_expr)))
                     } else {
                         Ok(Expr::RangeLeft(RangeLeftExpr::new(left_expr.get_all_span() + op_span, left_expr)))

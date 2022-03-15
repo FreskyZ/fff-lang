@@ -32,11 +32,11 @@ macro_rules! define_statement {
                 $(|| <$subty>::matches3(current, peek, peek2) )+
             }
 
-            fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<$name> {
-                $( if sess.matches::<$subty>() {
-                    Ok($name::from(<$subty>::parse(sess)?))
+            fn parse(cx: &mut ParseContext) -> ParseResult<$name> {
+                $( if cx.matches::<$subty>() {
+                    Ok($name::from(<$subty>::parse(cx)?))
                 } else )+ {
-                    sess.push_unexpect("statement")
+                    cx.push_unexpect("statement")
                 }
             }
             

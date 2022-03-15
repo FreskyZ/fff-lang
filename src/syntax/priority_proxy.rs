@@ -12,19 +12,19 @@ struct PrimaryExpr;
 impl Node for PrimaryExpr {
     type ParseOutput = Expr;
     
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Expr> {
+    fn parse(cx: &mut ParseContext) -> ParseResult<Expr> {
 
-        if sess.matches::<LitExpr>() {
-            return LitExpr::parse(sess);
-        } else if sess.matches::<Name>() {
-            return Name::parse(sess);
-        } else if sess.matches::<TupleDef>() {
-            return TupleDef::parse(sess);
-        } else if sess.matches::<ArrayDef>() {
-            return ArrayDef::parse(sess);
+        if cx.matches::<LitExpr>() {
+            return cx.expect_node::<LitExpr>();
+        } else if cx.matches::<Name>() {
+            return cx.expect_node::<Name>();
+        } else if cx.matches::<TupleDef>() {
+            return cx.expect_node::<TupleDef>();
+        } else if cx.matches::<ArrayDef>() {
+            return cx.expect_node::<ArrayDef>();
         }
 
-        let (this_id, this_span) = sess.expect_ident_or(&[Keyword::This])?;  // actually identifier is processed by Name, not here
+        let (this_id, this_span) = cx.expect_ident_or(&[Keyword::This])?;  // actually identifier is processed by Name, not here
         return Ok(Expr::SimpleName(SimpleName::new(this_id, this_span)));
     }
 }
@@ -33,28 +33,28 @@ pub struct PostfixExpr;
 impl Node for PostfixExpr {
     type ParseOutput = Expr;
 
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Expr> {   
+    fn parse(cx: &mut ParseContext) -> ParseResult<Expr> {   
         #[cfg(feature = "trace_postfix_expr_parse")]
         macro_rules! trace { ($($arg:tt)*) => ({ perror!("    [PostfixExpr:{}] ", line!()); perrorln!($($arg)*); }) }
         #[cfg(not(feature = "trace_postfix_expr_parse"))]
         macro_rules! trace { ($($arg:tt)*) => () }
 
-        let mut current_retval = PrimaryExpr::parse(sess)?;
+        let mut current_retval = cx.expect_node::<PrimaryExpr>()?;
         trace!("parsed primary, current is {:?}", current_retval);
 
         loop {
-            if sess.matches::<MemberAccessExpr>() {
-                let mut postfix = MemberAccessExpr::parse(sess)?;
+            if cx.matches::<MemberAccessExpr>() {
+                let mut postfix = cx.expect_node::<MemberAccessExpr>()?;
                 postfix.all_span = current_retval.get_all_span() + postfix.name.span;
                 postfix.base = Box::new(current_retval);
                 current_retval = Expr::MemberAccess(postfix);
-            } else if sess.matches::<FnCallExpr>() {
-                let mut postfix = FnCallExpr::parse(sess)?;
+            } else if cx.matches::<FnCallExpr>() {
+                let mut postfix = cx.expect_node::<FnCallExpr>()?;
                 postfix.all_span = current_retval.get_all_span() + postfix.paren_span;
                 postfix.base = Box::new(current_retval);
                 current_retval = Expr::FnCall(postfix);
-            } else if sess.matches::<IndexCallExpr>() {
-                let mut postfix = IndexCallExpr::parse(sess)?;
+            } else if cx.matches::<IndexCallExpr>() {
+                let mut postfix = cx.expect_node::<IndexCallExpr>()?;
                 postfix.all_span = current_retval.get_all_span() + postfix.bracket_span;
                 postfix.base = Box::new(current_retval);
                 current_retval = Expr::IndexCall(postfix);

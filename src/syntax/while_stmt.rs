@@ -39,12 +39,12 @@ impl Node for WhileStatement {
         matches!((current, peek2), (Token::Label(_), Token::Keyword(Keyword::While)) | (Token::Keyword(Keyword::While), _))
     }
 
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<WhileStatement> {
+    fn parse(cx: &mut ParseContext) -> ParseResult<WhileStatement> {
         
-        let maybe_name = LabelDef::try_parse(sess)?;
-        let while_span = sess.expect_keyword(Keyword::While)?;
-        let expr = Expr::parse(sess)?;
-        let body = Block::parse(sess)?;
+        let maybe_name = cx.try_expect_node::<LabelDef>()?;
+        let while_span = cx.expect_keyword(Keyword::While)?;
+        let expr = cx.expect_node::<Expr>()?;
+        let body = cx.expect_node::<Block>()?;
         return Ok(WhileStatement::new(maybe_name, while_span, expr, body));
     }
 

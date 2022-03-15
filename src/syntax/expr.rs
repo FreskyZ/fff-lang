@@ -77,8 +77,8 @@ impl Node for Expr {
         || UnaryExpr::matches3(current, peek, peek2)
         || matches!(current, Token::Sep(Separator::DotDot) | Token::Keyword(Keyword::This))
     }
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Expr> { 
-        RangeExpr::parse(sess)
+    fn parse(cx: &mut ParseContext) -> ParseResult<Expr> { 
+        cx.expect_node::<RangeExpr>()
     }
 
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {

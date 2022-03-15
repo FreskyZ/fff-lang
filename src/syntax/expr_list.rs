@@ -29,11 +29,11 @@ impl Node for ExprList {
         matches!(current, Token::Sep(Separator::LeftBrace | Separator::LeftBracket | Separator::LeftParen))
     }
 
-    /// This is special, when calling `parse`, `sess.tk` should point to the quote token
+    /// This is special, when calling `parse`, `cx.current` should point to the quote token
     /// Then the parser will check end token to determine end of parsing process
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<ExprListParseResult> {
+    fn parse(cx: &mut ParseContext) -> ParseResult<ExprListParseResult> {
 
-        let (starting_sep, starting_span) = sess.expect_seps(&[Separator::LeftBrace, Separator::LeftBracket, Separator::LeftParen])?;
+        let (starting_sep, starting_span) = cx.expect_seps(&[Separator::LeftBrace, Separator::LeftBracket, Separator::LeftParen])?;
         let expect_end_sep = match starting_sep { 
             Separator::LeftBrace => Separator::RightBrace, 
             Separator::LeftBracket => Separator::RightBracket,
@@ -41,23 +41,23 @@ impl Node for ExprList {
             _ => unreachable!(),
         };
 
-        if let Some(ending_span) = sess.try_expect_sep(expect_end_sep) {
+        if let Some(ending_span) = cx.try_expect_sep(expect_end_sep) {
             return Ok(ExprListParseResult::Empty(starting_span + ending_span));
         }
-        if let Some((_, ending_span)) = sess.try_expect_2_sep(Separator::Comma, expect_end_sep) {
+        if let Some((_, ending_span)) = cx.try_expect_2_sep(Separator::Comma, expect_end_sep) {
             return Ok(ExprListParseResult::SingleComma(starting_span + ending_span));
         }
 
         let mut items = Vec::new();
         loop {
-            items.push(Expr::parse(sess)?);
+            items.push(cx.expect_node::<Expr>()?);
             
-            if let Some((_, ending_span)) = sess.try_expect_2_sep(Separator::Comma, expect_end_sep) {
+            if let Some((_, ending_span)) = cx.try_expect_2_sep(Separator::Comma, expect_end_sep) {
                 return Ok(ExprListParseResult::EndWithComma(starting_span + ending_span, ExprList::new(items)));
-            } else if let Some(ending_span) = sess.try_expect_sep(expect_end_sep) {
+            } else if let Some(ending_span) = cx.try_expect_sep(expect_end_sep) {
                 return Ok(ExprListParseResult::Normal(starting_span + ending_span, ExprList::new(items)));
             }
-            let _comma_span = sess.expect_sep(Separator::Comma)?;
+            let _comma_span = cx.expect_sep(Separator::Comma)?;
         }
     }
 

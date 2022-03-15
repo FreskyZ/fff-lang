@@ -34,17 +34,17 @@ impl Node for UseStatement {
         matches!(current, Token::Keyword(Keyword::Use)) 
     }
 
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<UseStatement> {
+    fn parse(cx: &mut ParseContext) -> ParseResult<UseStatement> {
 
-        let starting_span = sess.expect_keyword(Keyword::Use)?;
-        let from_name = Name::parse(sess)?.into_name();
+        let starting_span = cx.expect_keyword(Keyword::Use)?;
+        let from_name = cx.expect_node::<Name>()?.into_name();
 
-        let (as_span, to_ident) = if let Some(as_span) = sess.try_expect_keyword(Keyword::As) {
-            (as_span, Some(SimpleName::parse(sess)?))
+        let (as_span, to_ident) = if let Some(as_span) = cx.try_expect_keyword(Keyword::As) {
+            (as_span, Some(cx.expect_node::<SimpleName>()?))
         } else {
             (Span::new(0, 0), None)
         };
-        let semicolon_span = sess.expect_sep(Separator::SemiColon)?;
+        let semicolon_span = cx.expect_sep(Separator::SemiColon)?;
         let all_span = starting_span + semicolon_span;
 
         Ok(UseStatement::new_some(all_span, from_name, as_span, to_ident))

@@ -51,14 +51,14 @@ impl Node for ForStatement {
         matches!((current, peek2), (Token::Label(_), Token::Keyword(Keyword::For)) | (Token::Keyword(Keyword::For), _))
     }
 
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<ForStatement> {
+    fn parse(cx: &mut ParseContext) -> ParseResult<ForStatement> {
 
-        let maybe_label = LabelDef::try_parse(sess)?;
-        let for_span = sess.expect_keyword(Keyword::For)?;
-        let (iter_name, iter_span) = sess.expect_ident_or(&[Keyword::Underscore])?; // Accept _ as iter_name, _ do not declare iter var
-        let _in_span = sess.expect_keyword(Keyword::In)?;
-        let iter_expr = Expr::parse(sess)?;
-        let body = Block::parse(sess)?;
+        let maybe_label = cx.try_expect_node::<LabelDef>()?;
+        let for_span = cx.expect_keyword(Keyword::For)?;
+        let (iter_name, iter_span) = cx.expect_ident_or(&[Keyword::Underscore])?; // Accept _ as iter_name, _ do not declare iter var
+        let _in_span = cx.expect_keyword(Keyword::In)?;
+        let iter_expr = cx.expect_node::<Expr>()?;
+        let body = cx.expect_node::<Block>()?;
         return Ok(ForStatement::new(maybe_label, for_span, iter_name, iter_span, iter_expr, body));
     }
 

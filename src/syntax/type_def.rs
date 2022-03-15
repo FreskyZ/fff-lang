@@ -52,23 +52,23 @@ impl Node for TypeDef {
         matches!(current, Token::Keyword(Keyword::Type)) 
     }
 
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<TypeDef> {
+    fn parse(cx: &mut ParseContext) -> ParseResult<TypeDef> {
 
-        let starting_span = sess.expect_keyword(Keyword::Type)?;
-        let (symid, name_span) = sess.expect_ident_or_keyword_kind(KeywordKind::Primitive)?;
+        let starting_span = cx.expect_keyword(Keyword::Type)?;
+        let (symid, name_span) = cx.expect_ident_or_keyword_kind(KeywordKind::Primitive)?;
         let name = SimpleName::new(symid, name_span);
-        let _left_brace_span = sess.expect_sep(Separator::LeftBrace)?;
+        let _left_brace_span = cx.expect_sep(Separator::LeftBrace)?;
 
         let mut fields = Vec::new();
         let right_brace_span = loop { 
-            if let Some(right_brace_span) = sess.try_expect_sep(Separator::RightBrace) {
+            if let Some(right_brace_span) = cx.try_expect_sep(Separator::RightBrace) {
                 break right_brace_span;     // rustc 1.19 stablize break-expr
             }
 
-            let field_name = SimpleName::parse(sess)?;
-            let colon_span = sess.expect_sep(Separator::Colon)?;
-            let field_type = TypeRef::parse(sess)?;
-            fields.push(if let Some(comma_span) = sess.try_expect_sep(Separator::Comma) {
+            let field_name = cx.expect_node::<SimpleName>()?;
+            let colon_span = cx.expect_sep(Separator::Colon)?;
+            let field_type = cx.expect_node::<TypeRef>()?;
+            fields.push(if let Some(comma_span) = cx.try_expect_sep(Separator::Comma) {
                 TypeFieldDef::new(field_name.span + comma_span, field_name, colon_span, field_type)
             } else {
                 TypeFieldDef::new(field_name.span + field_type.all_span, field_name, colon_span, field_type)

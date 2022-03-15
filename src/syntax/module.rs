@@ -17,15 +17,15 @@ impl Module {
 impl Node for Module {
     type ParseOutput = Module;
 
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Module> {
+    fn parse(cx: &mut ParseContext) -> ParseResult<Module> {
         let mut items = Vec::new();
         loop {
-            if sess.matches::<Item>() {
-                items.push(Item::parse(sess)?);
-            } else if sess.eof() { // as module is special, specially allow self.current_tokens in parse
+            if cx.matches::<Item>() {
+                items.push(cx.expect_node::<Item>()?);
+            } else if cx.eof() { // as module is special, specially allow self.current_tokens in parse
                 break;
             } else {
-                return sess.push_unexpect("if, while, for, var, const, expr");
+                return cx.push_unexpect("if, while, for, var, const, expr");
             }
         }
         return Ok(Module::new(items));

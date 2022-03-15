@@ -45,15 +45,15 @@ impl Node for IndexCallExpr {
         matches!(current, Token::Sep(Separator::LeftBracket)) 
     }
 
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<IndexCallExpr> {
+    fn parse(cx: &mut ParseContext) -> ParseResult<IndexCallExpr> {
 
-        match ExprList::parse(sess)? {
+        match cx.expect_node::<ExprList>()? {
             ExprListParseResult::Normal(span, expr_list) | ExprListParseResult::EndWithComma(span, expr_list) => 
                 return Ok(IndexCallExpr::new_with_parse_result(span, expr_list)),
             ExprListParseResult::Empty(span) | ExprListParseResult::SingleComma(span) => {
                 // empty subscription is meaningless, refuse it here
                 // update: but for trying to get more message in the rest program, make it not none
-                sess.emit(strings::EmptyIndexCall).detail(span, strings::IndexCallHere);
+                cx.emit(strings::EmptyIndexCall).detail(span, strings::IndexCallHere);
                 return Ok(IndexCallExpr::new_with_parse_result(span, ExprList::new(Vec::new())))
             }
         }

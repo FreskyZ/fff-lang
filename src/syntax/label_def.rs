@@ -23,13 +23,13 @@ impl Node for LabelDef {
         matches!(current, Token::Label(_))
     }
 
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<LabelDef> {
+    fn parse(cx: &mut ParseContext) -> ParseResult<LabelDef> {
 
-        if let Some((label_id, label_span)) = sess.try_expect_label() {
-            let colon_span = sess.expect_sep(Separator::Colon)?;
+        if let Some((label_id, label_span)) = cx.try_expect_label() {
+            let colon_span = cx.expect_sep(Separator::Colon)?;
             Ok(LabelDef::new(label_id, label_span + colon_span))
         } else {
-            sess.push_unexpect("label")
+            cx.push_unexpect("label")
         }
     }
 

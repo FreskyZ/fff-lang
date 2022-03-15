@@ -128,29 +128,29 @@ impl Node for IfStatement {
         matches!(current, Token::Keyword(Keyword::If)) 
     }
 
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<IfStatement> {
+    fn parse(cx: &mut ParseContext) -> ParseResult<IfStatement> {
 
-        let if_span = sess.expect_keyword(Keyword::If)?;
-        let if_expr = Expr::parse(sess)?;
-        let if_body = Block::parse(sess)?;
+        let if_span = cx.expect_keyword(Keyword::If)?;
+        let if_expr = cx.expect_node::<Expr>()?;
+        let if_body = cx.expect_node::<Block>()?;
         let if_clause = IfClause::new(if_span, if_expr, if_body);
 
         let mut elseif_clauses = Vec::new();
         let mut else_clause = None;
         loop {
-            if let Some(else_span) = sess.try_expect_keyword(Keyword::Else) {
-                if let Some(if_span) = sess.try_expect_keyword(Keyword::If) {
+            if let Some(else_span) = cx.try_expect_keyword(Keyword::Else) {
+                if let Some(if_span) = cx.try_expect_keyword(Keyword::If) {
                     let elseif_span = else_span + if_span;
-                    let elseif_expr = Expr::parse(sess)?;
-                    let elseif_body = Block::parse(sess)?;
+                    let elseif_expr = cx.expect_node::<Expr>()?;
+                    let elseif_body = cx.expect_node::<Block>()?;
                     elseif_clauses.push(ElseIfClause::new(elseif_span, elseif_expr, elseif_body));
                 } else {
                     // 16/12/1, we lost TWO `+1`s for current_length here ... fixed
                     // 17/5/6: When there is match Block::parse(tokens, messages, index + current_length), etc.
                     // There was a bug fix here, now no more current_length handling!
                     // 17/6/21: a new physical structure update makes it much more simple
-                    // 17/7/28: a new small update of parse_sess makes things even more simple
-                    let else_body = Block::parse(sess)?;
+                    // 17/7/28: a new small update of parse_cx makes things even more simple
+                    let else_body = cx.expect_node::<Block>()?;
                     else_clause = Some(ElseClause::new(else_span, else_body));
                 }
             } else {

@@ -1,11 +1,11 @@
 ///! source::iter: source code content iterator, with interner
 
-use std::collections::hash_map::DefaultHasher;
+use std::collections::{HashMap, hash_map::DefaultHasher};
 use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::path::PathBuf;
 use std::ops::{Add, AddAssign};
-use super::{FileSystem, DefaultFileSystem, SourceContext, SourceFile, FileId};
+use super::{SourceContext, SourceFile, FileId};
 
 pub const EOF: char = 0u8 as char;
 
@@ -26,7 +26,6 @@ impl Position {
         self.0
     }
 
-    #[allow(dead_code)] // it is no longer used by literal parsers, but keep it
     pub fn offset(self, offset: i32) -> Self {
         Self(if offset >= 0 { self.0 + offset as u32 } else { self.0 - (-offset) as u32 })
     }
@@ -174,22 +173,45 @@ fn get_endlines(content: &str) -> Vec<usize> {
 // from source context's perspective, this is also a source file builder which returns by 
 // entry and import function and when running, append to string table and when finished, append to files
 #[derive(Debug)]
-pub struct SourceChars<'a, F = DefaultFileSystem> {
-    pub(super) content: String,
-    current_index: usize,             // current iterating byte index, content bytes[current_index] should be the next returned char
-    pub(super) start_index: usize,    // starting byte index for this file, or previous files's total byte length, will become SourceFile.start_index when finished
-    pub(super) path: PathBuf,         // copy to SourceFile
-    pub(super) namespace: Vec<IsId>,  // copy to SourceFile
-    pub(super) request: Option<Span>, // copy to SourceFile
-    pub/* attention: temp pub for syntax */ context: &'a mut SourceContext<F>,
+pub struct SourceChars<'a> {
+    content: String,
+    current_index: usize,  // current iterating byte index, content bytes[current_index] should be the next returned char
+    start_index: usize,    // starting byte index for this file, or previous files's total byte length, will copy to SourceFile.start_index when finished
+    // copy to SourceFile
+    path: PathBuf,
+    namespace: Vec<IsId>,
+    request: Option<Span>,
+    // borrow other part of SourceContext except fs to prevent <F> propagation 
+    files: &'a mut Vec<SourceFile>,
+    string_hash_to_id: &'a mut HashMap<u64, IsId>,
+    string_id_to_span: &'a mut Vec<Span>,
+    string_additional: &'a mut String,
 }
 
-impl<'a, F> SourceChars<'a, F> where F: FileSystem {
+impl<'a> SourceChars<'a> {
 
-    pub(super) fn new(mut content: String, start_index: usize, path: PathBuf, namespace: Vec<IsId>, request: Option<Span>, context: &'a mut SourceContext<F>) -> Self {
+    pub(super) fn new<F>(
+        mut content: String, 
+        start_index: usize, 
+        path: PathBuf, 
+        namespace: Vec<IsId>, 
+        request: Option<Span>,
+        context: &'a mut SourceContext<F>,
+    ) -> Self {
         // append 3 '\0' char to end of content for the branchless (less branch actually) iterator
         content.push_str("\0\0\0");
-        Self{ content, start_index, current_index: 0, path, namespace, request, context }
+        Self{ 
+            content, 
+            start_index, 
+            current_index: 0, 
+            path, 
+            namespace, 
+            request,
+            files: &mut context.files,
+            string_hash_to_id: &mut context.string_hash_to_id,
+            string_id_to_span: &mut context.string_id_to_span,
+            string_additional: &mut context.string_additional,
+        }
     }
 
     /// iterate return char and byte index
@@ -239,22 +261,22 @@ impl<'a, F> SourceChars<'a, F> where F: FileSystem {
         }
 
         let hash = get_hash(value);
-        if let Some(id) = self.context.string_hash_to_id.get(&hash) {
+        if let Some(id) = self.string_hash_to_id.get(&hash) {
             *id
         } else {
-            let new_id = IsId::new(self.context.string_id_to_span.len() as u32);
-            self.context.string_hash_to_id.insert(hash, new_id);
+            let new_id = IsId::new(self.string_id_to_span.len() as u32);
+            self.string_hash_to_id.insert(hash, new_id);
 
-            let start_position = if let Some(index) = self.context.string_additional.find(value) {
+            let start_position = if let Some(index) = self.string_additional.find(value) {
                 index
             } else {
-                self.context.string_additional.push_str(value);
-                self.context.string_additional.len() - value.len()
+                self.string_additional.push_str(value);
+                self.string_additional.len() - value.len()
             } as u32;
             // ATTENTION: this type of span's end is last byte index + 1 (exactly the one you use in str[begin..end], not last char
             let span = Span::new(start_position | IsId::POSITION_MASK, start_position + value.len() as u32);
 
-            self.context.string_id_to_span.push(span);
+            self.string_id_to_span.push(span);
             new_id
         }
     }
@@ -270,12 +292,12 @@ impl<'a, F> SourceChars<'a, F> where F: FileSystem {
 
         let end_width = get_char_width(&self.content, end - self.start_index);
         let hash = get_hash(&self.content[start - self.start_index..end - self.start_index + end_width]);
-        if let Some(id) = self.context.string_hash_to_id.get(&hash) {
+        if let Some(id) = self.string_hash_to_id.get(&hash) {
             *id
         } else {
-            let new_id = IsId::new(self.context.string_id_to_span.len() as u32);
-            self.context.string_hash_to_id.insert(hash, new_id);
-            self.context.string_id_to_span.push(location);
+            let new_id = IsId::new(self.string_id_to_span.len() as u32);
+            self.string_hash_to_id.insert(hash, new_id);
+            self.string_id_to_span.push(location);
             new_id
         }
     }
@@ -284,10 +306,10 @@ impl<'a, F> SourceChars<'a, F> where F: FileSystem {
         // // no, not this, cannot move self when self is borrowed (the self.context)
         // // self.context.finish_build(self)
         
-        let file_id = FileId((self.context.files.len() + 1) as u32);
+        let file_id = FileId((self.files.len() + 1) as u32);
         let content_length = self.content.len();
         self.content.truncate(content_length - 3);
-        self.context.files.push(SourceFile{
+        self.files.push(SourceFile{
             path: self.path,
             endlines: get_endlines(&self.content),
             content: self.content,

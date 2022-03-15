@@ -33,35 +33,35 @@ impl Node for TypeRef {
         }
     }
 
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Self> {
+    fn parse(cx: &mut ParseContext) -> ParseResult<Self> {
 
-        if let Some(left_bracket_span) = sess.try_expect_sep(Separator::LeftBracket) {
-            let inner = TypeRef::parse(sess)?;
-            let right_bracket_span = sess.expect_sep(Separator::RightBracket)?;
-            Ok(Self::new_template(sess.base.chars.intern("array"), Span::new(0, 0), left_bracket_span + right_bracket_span, vec![inner]))
-        } else if let Some(left_paren_span) = sess.try_expect_sep(Separator::LeftParen) {
-            if let Some(right_paren_span) = sess.try_expect_sep(Separator::RightParen) {
-                return Ok(Self::new_simple(sess.base.chars.intern("unit"), left_paren_span + right_paren_span));
+        if let Some(left_bracket_span) = cx.try_expect_sep(Separator::LeftBracket) {
+            let inner = cx.expect_node::<TypeRef>()?;
+            let right_bracket_span = cx.expect_sep(Separator::RightBracket)?;
+            Ok(Self::new_template(cx.intern("array"), Span::new(0, 0), left_bracket_span + right_bracket_span, vec![inner]))
+        } else if let Some(left_paren_span) = cx.try_expect_sep(Separator::LeftParen) {
+            if let Some(right_paren_span) = cx.try_expect_sep(Separator::RightParen) {
+                return Ok(Self::new_simple(cx.intern("unit"), left_paren_span + right_paren_span));
             }
             
-            let mut tuple_types = vec![TypeRef::parse(sess)?];
+            let mut tuple_types = vec![cx.expect_node::<TypeRef>()?];
             let (ending_span, end_by_comma) = loop {
-                if let Some((_comma_span, right_paren_span)) = sess.try_expect_2_sep(Separator::Comma, Separator::RightParen) {
+                if let Some((_comma_span, right_paren_span)) = cx.try_expect_2_sep(Separator::Comma, Separator::RightParen) {
                     break (right_paren_span, true);
-                } else if let Some(right_paren_span) = sess.try_expect_sep(Separator::RightParen) {
+                } else if let Some(right_paren_span) = cx.try_expect_sep(Separator::RightParen) {
                     break (right_paren_span, false);
                 }
-                let _comma_span = sess.expect_sep(Separator::Comma)?;
-                tuple_types.push(TypeRef::parse(sess)?);
+                let _comma_span = cx.expect_sep(Separator::Comma)?;
+                tuple_types.push(cx.expect_node::<TypeRef>()?);
             };
                 
             let paren_span = left_paren_span + ending_span;
             if tuple_types.len() == 1 && !end_by_comma {            // len == 0 already rejected
-                sess.emit("Single item tuple type use").detail(paren_span, "type use here");
+                cx.emit("Single item tuple type use").detail(paren_span, "type use here");
             }
-            Ok(Self::new_template(sess.base.chars.intern("tuple"), Span::new(0, 0), paren_span, tuple_types))
+            Ok(Self::new_template(cx.intern("tuple"), Span::new(0, 0), paren_span, tuple_types))
         } else {
-            let (symid, sym_span) = sess.expect_ident_or_keyword_kind(KeywordKind::Primitive)?;
+            let (symid, sym_span) = cx.expect_ident_or_keyword_kind(KeywordKind::Primitive)?;
             Ok(Self::new_simple(symid, sym_span))
         }
     }

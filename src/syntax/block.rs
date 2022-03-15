@@ -23,15 +23,15 @@ impl Node for Block {
         matches!(current, Token::Sep(Separator::LeftBrace)) 
     }
 
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Block> {
+    fn parse(cx: &mut ParseContext) -> ParseResult<Block> {
 
-        let starting_span = sess.expect_sep(Separator::LeftBrace)?;
+        let starting_span = cx.expect_sep(Separator::LeftBrace)?;
         let mut items = Vec::new();
         loop {
-            if let Some(ending_span) = sess.try_expect_sep(Separator::RightBrace) {
+            if let Some(ending_span) = cx.try_expect_sep(Separator::RightBrace) {
                 return Ok(Block::new(starting_span + ending_span, items));
             }
-            items.push(Statement::parse(sess)?);
+            items.push(cx.expect_node::<Statement>()?);
         }
     }
 

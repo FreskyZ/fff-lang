@@ -141,7 +141,7 @@ impl<F> SourceContext<F> {
 // methods about source files
 impl<F> SourceContext<F> where F: FileSystem {
 
-    pub fn entry(&mut self, path: impl Into<PathBuf>) -> SourceChars<F> {
+    pub fn entry(&mut self, path: impl Into<PathBuf>) -> SourceChars {
         debug_assert!(self.files.is_empty(), "multiple entry");
 
         let path = path.into();
@@ -153,7 +153,7 @@ impl<F> SourceContext<F> where F: FileSystem {
     }
 
     // return option not result: let syntax parse module declare raise error
-    pub fn import(&mut self, request: Span, module_name_id: IsId) -> Option<SourceChars<F>> {
+    pub fn import(&mut self, request: Span, module_name_id: IsId) -> Option<SourceChars> {
         debug_assert!(!self.files.is_empty(), "no entry");
         let (request_file_id, request_file, _) = self.map_position_to_file_and_byte_index(request.start);
         

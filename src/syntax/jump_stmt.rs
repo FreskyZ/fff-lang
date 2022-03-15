@@ -22,15 +22,15 @@ impl JumpStatement {
         JumpStatement{ all_span, target_span, target: Some(target.into()) }
     }
 
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>, expect_first_kw: Keyword) -> ParseResult<JumpStatement> {
+    fn parse(cx: &mut ParseContext, expect_first_kw: Keyword) -> ParseResult<JumpStatement> {
 
-        let starting_span = sess.expect_keyword(expect_first_kw)?;
+        let starting_span = cx.expect_keyword(expect_first_kw)?;
 
-        if let Some((label_id, label_span)) = sess.try_expect_label() {
-            let semicolon_span = sess.expect_sep(Separator::SemiColon)?;
+        if let Some((label_id, label_span)) = cx.try_expect_label() {
+            let semicolon_span = cx.expect_sep(Separator::SemiColon)?;
             Ok(JumpStatement::new_target(starting_span + semicolon_span, label_id, label_span))
         } else { 
-            let semicolon_span = sess.expect_sep(Separator::SemiColon)?;
+            let semicolon_span = cx.expect_sep(Separator::SemiColon)?;
             Ok(JumpStatement::new_no_target(starting_span + semicolon_span))
         }
     }
@@ -63,8 +63,8 @@ impl Node for ContinueStatement {
     fn matches(current: &Token) -> bool { 
         matches!(current, Token::Keyword(Keyword::Continue)) 
     }
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<ContinueStatement> { 
-        Ok(ContinueStatement(JumpStatement::parse(sess, Keyword::Continue)?))
+    fn parse(cx: &mut ParseContext) -> ParseResult<ContinueStatement> { 
+        Ok(ContinueStatement(JumpStatement::parse(cx, Keyword::Continue)?))
     }
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_continue_stmt(self)
@@ -75,8 +75,8 @@ impl Node for BreakStatement {
     fn matches(current: &Token) -> bool { 
         matches!(current, Token::Keyword(Keyword::Break)) 
     }
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<BreakStatement> {
-        Ok(BreakStatement(JumpStatement::parse(sess, Keyword::Break)?))
+    fn parse(cx: &mut ParseContext) -> ParseResult<BreakStatement> {
+        Ok(BreakStatement(JumpStatement::parse(cx, Keyword::Break)?))
     }
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_break_stmt(self)

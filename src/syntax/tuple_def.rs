@@ -23,8 +23,8 @@ impl ParenExpr {
 }
 impl Node for ParenExpr {
     type ParseOutput = Expr;
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Expr> {
-        TupleDef::parse(sess)
+    fn parse(cx: &mut ParseContext) -> ParseResult<Expr> {
+        cx.expect_node::<TupleDef>()
     }
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_paren_expr(self)
@@ -53,14 +53,14 @@ impl Node for TupleDef {
         matches!(current, Token::Sep(Separator::LeftParen)) 
     }
 
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Expr> {
+    fn parse(cx: &mut ParseContext) -> ParseResult<Expr> {
 
-        match ExprList::parse(sess)? {
+        match cx.expect_node::<ExprList>()? {
             ExprListParseResult::Empty(span) => {
                 return Ok(Expr::Lit(LitExpr::new(LitValue::Unit, span)));
             }
             ExprListParseResult::SingleComma(span) => {
-                sess.emit(strings::UnexpectedSingleComma).detail(span, strings::TupleDefHere);
+                cx.emit(strings::UnexpectedSingleComma).detail(span, strings::TupleDefHere);
                 return Ok(Expr::Tuple(TupleDef::new(span, ExprList::new(Vec::new()))));
             }
             ExprListParseResult::Normal(span, exprlist) => {

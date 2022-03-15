@@ -24,14 +24,14 @@ impl Node for ArrayDef {
         matches!(current, Token::Sep(Separator::LeftBracket)) 
     }
 
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Expr> {
+    fn parse(cx: &mut ParseContext) -> ParseResult<Expr> {
         
-        match ExprList::parse(sess)? {
+        match cx.expect_node::<ExprList>()? {
             ExprListParseResult::Empty(span) => {
                 return Ok(Expr::Array(ArrayDef::new(span, ExprList::new(Vec::new()))));
             }
             ExprListParseResult::SingleComma(span) => {
-                sess.emit(strings::UnexpectedSingleComma).detail(span, strings::ArrayDefHere);
+                cx.emit(strings::UnexpectedSingleComma).detail(span, strings::ArrayDefHere);
                 return Ok(Expr::Array(ArrayDef::new(span, ExprList::new(Vec::new()))));
             }
             ExprListParseResult::Normal(span, exprlist) | ExprListParseResult::EndWithComma(span, exprlist) => {

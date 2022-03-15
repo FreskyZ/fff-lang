@@ -36,14 +36,14 @@ impl Node for UnaryExpr {
         matches!(current, Token::Sep(sep) if sep.kind(SeparatorKind::Unary))
     }
 
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Expr> {
+    fn parse(cx: &mut ParseContext) -> ParseResult<Expr> {
         
         let mut op_spans = Vec::new();
         loop {
-            match sess.try_expect_sep_kind(SeparatorKind::Unary) {
+            match cx.try_expect_sep_kind(SeparatorKind::Unary) {
                 Some((sep, sep_span)) => op_spans.push((sep, sep_span)),
                 None => {
-                    let base = PostfixExpr::parse(sess)?;
+                    let base = cx.expect_node::<PostfixExpr>()?;
                     return Ok(op_spans.into_iter().rev().fold(base, |base, (op, span)| { Expr::Unary(UnaryExpr::new(op, span, base)) }));
                 }
             }

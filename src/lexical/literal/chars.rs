@@ -1,6 +1,6 @@
 ///! lexical::literal::chars: char and string literal parsers, also shared escape parser
 
-use crate::source::{FileSystem, Span, Position, IsId, EOF};
+use crate::source::{Span, Position, IsId, EOF};
 use crate::diagnostics::{strings};
 use super::super::{Parser, Token, StringLiteralType};
 
@@ -14,7 +14,7 @@ enum EscapeResult {
 }
 
 // char literal and string literal
-impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
+impl<'ecx, 'scx> Parser<'ecx, 'scx> {
 
     // literal start: start position and error message for some error
     fn parse_escape(&mut self, literal_start: (Position, &'static str)) -> EscapeResult {
@@ -288,7 +288,7 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
                 all_span += self.current_position;
                 self.eat();
                 #[cfg(feature = "trace_lexical_str")] println!("[parse_string_literal] return ({:?}, {:?})", raw.chars().map(|c| format!("{:x}", c as u32)).collect::<Vec<_>>().join(","), all_span);
-                return (Token::Str(self.chars.intern(&raw), StringLiteralType::Normal), all_span);
+                return (Token::Str(self.intern(&raw), StringLiteralType::Normal), all_span);
             } else {
                 // normal char in string
                 raw.push(self.current);
@@ -312,7 +312,7 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
                 '"' => {
                     all_span += self.current_position;
                     self.eat();
-                    return (Token::Str(self.chars.intern(&raw), StringLiteralType::Raw), all_span);
+                    return (Token::Str(self.intern(&raw), StringLiteralType::Raw), all_span);
                 }
                 EOF => {
                     self.diagnostics.emit(strings::UnexpectedEOF)

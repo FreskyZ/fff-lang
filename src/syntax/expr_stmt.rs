@@ -28,8 +28,8 @@ impl Node for SimpleExprStatement {
         AssignExprStatement::matches3(current, peek, peek2)
     }
 
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Self::ParseOutput> { 
-        AssignExprStatement::parse(sess) 
+    fn parse(cx: &mut ParseContext) -> ParseResult<Self::ParseOutput> { 
+        cx.expect_node::<AssignExprStatement>() 
     }
     
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
@@ -72,20 +72,20 @@ impl Node for AssignExprStatement {
         Expr::matches3(current, peek, peek2)
     }
 
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Statement> {
+    fn parse(cx: &mut ParseContext) -> ParseResult<Statement> {
 
-        let left_expr = Expr::parse(sess)?;
+        let left_expr = cx.expect_node::<Expr>()?;
         let starting_span = left_expr.get_all_span();
 
-        if let Some(semicolon_span) = sess.try_expect_sep(Separator::SemiColon) {
+        if let Some(semicolon_span) = cx.try_expect_sep(Separator::SemiColon) {
             Ok(Statement::SimpleExpr(SimpleExprStatement::new(starting_span + semicolon_span, left_expr)))
-        } else if let Some((assign_op, assign_op_span)) = sess.try_expect_sep_kind(SeparatorKind::Assign) {
-            let right_expr = Expr::parse(sess)?;
-            let semicolon_span = sess.expect_sep(Separator::SemiColon)?;
+        } else if let Some((assign_op, assign_op_span)) = cx.try_expect_sep_kind(SeparatorKind::Assign) {
+            let right_expr = cx.expect_node::<Expr>()?;
+            let semicolon_span = cx.expect_sep(Separator::SemiColon)?;
             Ok(Statement::AssignExpr(
                 AssignExprStatement::new(starting_span + semicolon_span, assign_op, assign_op_span, left_expr, right_expr)))
         } else {
-            sess.push_unexpect("assign operators, semicolon")
+            cx.push_unexpect("assign operators, semicolon")
         }
     }
     

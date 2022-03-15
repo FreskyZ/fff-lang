@@ -81,9 +81,9 @@ pub use use_stmt::UseStatement;
 pub use var_decl::VarDeclStatement;
 pub use while_stmt::WhileStatement;
 
-pub fn parse<F: crate::source::FileSystem>(chars: crate::lexical::Parser<F>) -> Result<Module, ()> {
-    let mut context = prelude::ParseSession::new(chars);
+pub fn parse(chars: crate::lexical::Parser) -> Result<Module, ()> {
+    let mut context = prelude::ParseContext::new(chars);
     let result = Module::parse(&mut context);
-    context.base.finish();
+    context.finish();
     result
 }

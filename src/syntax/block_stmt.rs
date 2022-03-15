@@ -35,10 +35,10 @@ impl Node for BlockStatement {
         matches!((current, peek2), (Token::Label(_), Token::Sep(Separator::LeftBrace)) | (Token::Sep(Separator::LeftBrace), _))
     }
 
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<BlockStatement> {
+    fn parse(cx: &mut ParseContext) -> ParseResult<BlockStatement> {
     
-        let maybe_name = LabelDef::try_parse(sess)?;
-        let body = Block::parse(sess)?;
+        let maybe_name = cx.try_expect_node::<LabelDef>()?;
+        let body = cx.expect_node::<Block>()?;
         return Ok(BlockStatement::new(maybe_name, body));
     }
 

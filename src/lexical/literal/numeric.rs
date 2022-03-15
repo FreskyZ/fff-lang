@@ -39,8 +39,8 @@
 //      Literal (i32)1 <1:12-1:12>
 
 use std::cell::Cell;
-use crate::source::{FileSystem, Span, EOF};
-use crate::diagnostics::{strings};
+use crate::source::{Span, EOF};
+use crate::diagnostics::strings;
 use super::super::{Parser, Token, Numeric, CharExt};
 
 struct BufChars<T> {
@@ -843,7 +843,7 @@ fn parse_impl(raw: String) -> Result<Numeric, (String, Option<String>)> {
     }
 }
 
-impl<'ecx, 'scx, F> Parser<'ecx, 'scx, F> where F: FileSystem {
+impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     
     // only digit, no dot, and no hyphen,
     // numeric parser supports hyphen but not used in lexical parser,

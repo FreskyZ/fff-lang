@@ -1,7 +1,7 @@
 ///! lexical: the lexical parser
 
-use crate::source::{SourceChars, FileSystem, DefaultFileSystem, EOF, Position, Span, IsId};
-use crate::diagnostics::{Diagnostics, strings};
+use crate::source::{SourceChars, EOF, Position, Span, IsId, FileId};
+use crate::diagnostics::{Diagnostics, Diagnostic, strings};
 
 #[cfg(test)]
 mod tests;
@@ -13,13 +13,13 @@ mod literal {
 }
 
 use unicode::CharExt;
-pub use token::{Separator, SeparatorKind, Keyword, KeywordKind};
-pub use token::{Numeric, StringLiteralType, Token, TokenDisplay};
+pub use token::{Separator, SeparatorKind,
+    Keyword, KeywordKind, Numeric, StringLiteralType, Token, TokenDisplay};
 
 #[derive(Debug)]
-pub struct Parser<'ecx, 'scx, F = DefaultFileSystem> {
-    pub diagnostics: &'ecx mut Diagnostics,
-    pub /* attention: temp pub for syntax */ chars: SourceChars<'scx, F>,
+pub struct Parser<'ecx, 'scx> {
+    diagnostics: &'ecx mut Diagnostics,
+    base: SourceChars<'scx>,
     current: char,
     current_position: Position,
     peek: char,
@@ -29,13 +29,13 @@ pub struct Parser<'ecx, 'scx, F = DefaultFileSystem> {
     check_confusable: bool, // check confusable when consuming, off for comment/string/char (level 1), on for ident/label/numeric
 }
 
-impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
+impl<'ecx, 'scx> Parser<'ecx, 'scx> {
 
-    pub fn new(mut chars: SourceChars<'s, F>, diagnostics: &'e mut Diagnostics) -> Self {
-        let (current, current_position) = chars.next();
-        let (peek, peek_position) = chars.next();
-        let (peek2, peek2_position) = chars.next();
-        Self{ diagnostics, current, current_position, peek, peek_position, peek2, peek2_position, chars, check_confusable: false }
+    pub fn new(mut base: SourceChars<'scx>, diagnostics: &'ecx mut Diagnostics) -> Self {
+        let (current, current_position) = base.next();
+        let (peek, peek_position) = base.next();
+        let (peek2, peek2_position) = base.next();
+        Self{ diagnostics, base, current, current_position, peek, peek_position, peek2, peek2_position, check_confusable: false }
     }
 
     // eat and check confusable
@@ -44,7 +44,7 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
         self.current_position = self.peek_position;
         self.peek = self.peek2;
         self.peek_position = self.peek2_position;
-        let (peek2, peek2_position) = self.chars.next();
+        let (peek2, peek2_position) = self.base.next();
         self.peek2 = peek2;
         self.peek2_position = peek2_position;
         // destructuring assignment is unstable
@@ -136,20 +136,26 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
                 }
                 (Token::Keyword(keyword), span)
             },
-            None => (Token::Ident(self.chars.intern(&value)), span),
+            None => (Token::Ident(self.intern_span(span)), span),
         };
     }
 
     fn parse_label(&mut self) -> (Token, Span) {
         let mut value = String::new();
-        let mut span = self.current_position.into();
+        let mut span: Span = self.current_position.into();
         self.eat(); // skip leading @
         while self.current.is_label_continue() {
             value.push(self.current);
             span += self.current_position;
             self.eat();
         }
-        return (Token::Label(self.chars.intern(&value)), span);
+        // valid span always points to non empty slice, 
+        // if label is empy, like `@: loop {}`, start.offset(1) + end will panic invalid position + position
+        if span.start == span.end { 
+            (Token::Label(self.intern("")), span)
+        } else {
+            (Token::Label(self.intern_span(span.start.offset(1) + span.end)), span)
+        }
     }
 
     fn parse_separator(&mut self) -> (Token, Span) {
@@ -213,9 +219,24 @@ impl<'e, 's, F> Parser<'e, 's, F> where F: FileSystem {
         
         self.parse_separator()
     }
+}
+
+// forward methods for syntax parser
+impl<'ecx, 'scx> Parser<'ecx, 'scx> {
+
+    pub fn emit(&mut self, name: impl Into<String>) -> &mut Diagnostic {
+        self.diagnostics.emit(name)
+    }
+
+    pub fn intern(&mut self, v: &str) -> IsId {
+        self.base.intern(v)
+    }
+    pub fn intern_span(&mut self, span: Span) -> IsId {
+        self.base.intern_span(span)
+    }
 
     // finish self to return scx
-    pub fn finish(self) {
-        self.chars.finish();
+    pub fn finish(self) -> FileId {
+        self.base.finish()
     }
 }

@@ -44,11 +44,11 @@ impl Node for LoopStatement {
         matches!((current, peek2), (Token::Label(_), Token::Keyword(Keyword::Loop)) | (Token::Keyword(Keyword::Loop), _))
     }
 
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<LoopStatement> {
+    fn parse(cx: &mut ParseContext) -> ParseResult<LoopStatement> {
 
-        let maybe_name = LabelDef::try_parse(sess)?;
-        let loop_span = sess.expect_keyword(Keyword::Loop)?;
-        let body = Block::parse(sess)?;
+        let maybe_name = cx.try_expect_node::<LabelDef>()?;
+        let loop_span = cx.expect_keyword(Keyword::Loop)?;
+        let body = cx.expect_node::<Block>()?;
         return Ok(LoopStatement::new(maybe_name, loop_span, body));
     }
 

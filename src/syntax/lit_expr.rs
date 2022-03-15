@@ -36,9 +36,9 @@ impl Node for LitExpr {
         matches!(current, Token::Char(_) | Token::Bool(_) | Token::Str(..) | Token::Num(_)) 
     }
 
-    fn parse<F: FileSystem>(sess: &mut ParseSession<F>) -> ParseResult<Expr> {
+    fn parse(cx: &mut ParseContext) -> ParseResult<Expr> {
         
-        let (lit, lit_span) = sess.expect_lit()?;
+        let (lit, lit_span) = cx.expect_lit()?;
         Ok(Expr::Lit(LitExpr::new(lit, lit_span)))
     }
 

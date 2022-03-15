@@ -5,12 +5,12 @@ use super::*;
 fn testcase(mut scx: SourceContext<VirtualFileSystem>, spans: &[Span], symbols: &[&'static str], expect_tokens: Vec<(Token, Span)>, expect_diagnostics: Diagnostics, line: u32) {
     let mut actual_diagnostics = Diagnostics::new();
     let chars = scx.entry("1");
-    let mut parser = Parser::<VirtualFileSystem>::new(chars, &mut actual_diagnostics);
+    let mut parser = Parser::new(chars, &mut actual_diagnostics);
     for span in spans {
-        parser.chars.intern_span(*span);
+        parser.base.intern_span(*span);
     }
     for symbol in symbols {
-        parser.chars.intern(*symbol);
+        parser.base.intern(*symbol);
     }
     for expect_token in expect_tokens {
         assert_eq!(parser.next(), expect_token, "line {line}");
