@@ -1,6 +1,4 @@
-///! fff-lang
-///!
-///! syntax, syntax tree types and generation
+///! syntax: syntax parse
 
 mod prelude;
 pub use prelude::{Node, Visitor};

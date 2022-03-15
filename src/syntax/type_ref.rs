@@ -1,5 +1,8 @@
 ///! syntax::type_ref:
-///! type_ref = primitive_type | identifier | '[' type_ref ']' | '(' type_ref ',' { type_use ',' } [ type_ref ] ')'
+///! type_ref = primitive_type | identifier | '[' type_ref ']' | '(' type_ref ',' { type_ref ',' } [ type_ref ] ')'
+///! should be
+///! type_ref = primitive_type | type_ref_segment
+///! type_ref_segment = identifier | '[' type_ref ';' expr ']' | '(' type_ref ',' { type_ref ',' } [ type_ref ] ')' | type_ref '<' type_ref { ',' type_ref } '>'
 
 use super::prelude::*;
 
@@ -156,82 +159,83 @@ fn type_ref_parse() {
         }
     }
 
-    // ast_test_case!{ "(i32)", 3, Span::new(0, 4),
-    //     TypeRefF::new_tuple(Span::new(0, 4), vec![
-    //         simple!("i32", Span::new(1, 3)),
-    //     ]),
-    //     [ Message::new_by_str("Single item tuple type use", vec![(Span::new(0, 4), "type use here")]) ]
-    // }
-
-    // // Auto generated mixed
-    // //               0        1         2
-    // //               12345678901234567890123
-    // ast_test_case!{ "((i8, clL, Kopu), f64,)", 12, Span::new(0, 22),
-    //     TypeRefF::new_tuple(Span::new(0, 22), vec![
-    //         TypeRefF::new_tuple(Span::new(1, 15), vec![
-    //             simple!("i8", Span::new(2, 3)),
-    //             simple!("clL", Span::new(6, 8)),
-    //             simple!("Kopu", Span::new(11, 14))
-    //         ]), 
-    //         simple!("f64", Span::new(18, 20))
-    //     ])
-    // } //             12345678
-    // ast_test_case!{ "[BJlbk4]", 3, Span::new(0, 7),
-    //     TypeRefF::new_array(Span::new(0, 7), 
-    //         simple!("BJlbk4", Span::new(1, 6)),
-    //     ) //         0        1         2         3         4         5         6         7         8         9
-    // } //             1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234
-    // ast_test_case!{ "((char, jq, ((u8, [([o2fcd], [CKw], ([eCDn2I], u16,))], i16), [pxplh], u32),), [vrud2vC], u64)", 49, Span::new(0, 93),
-    //     TypeRefF::new_tuple(Span::new(0, 93), vec![
-    //         TypeRefF::new_tuple(Span::new(1, 76), vec![
-    //             simple!("char", Span::new(2, 5)), 
-    //             simple!("jq", Span::new(8, 9)),
-    //             TypeRefF::new_tuple(Span::new(12, 74), vec![
-    //                 TypeRefF::new_tuple(Span::new(13, 59), vec![
-    //                     simple!("u8", Span::new(14, 15)),
-    //                     TypeRefF::new_array(Span::new(18, 53), 
-    //                         TypeRefF::new_tuple(Span::new(19, 52), vec![
-    //                             TypeRefF::new_array(Span::new(20, 26), 
-    //                                 simple!("o2fcd", Span::new(21, 25))
-    //                             ),
-    //                             TypeRefF::new_array(Span::new(29, 33), 
-    //                                 simple!("CKw", Span::new(30, 32))
-    //                             ),
-    //                             TypeRefF::new_tuple(Span::new(36, 51), vec![
-    //                                 TypeRefF::new_array(Span::new(37, 44), 
-    //                                     simple!("eCDn2I", Span::new(38, 43))
-    //                                 ), 
-    //                                 simple!("u16", Span::new(47, 49))
-    //                             ])
-    //                         ])
-    //                     ),
-    //                     simple!("i16", Span::new(56, 58))
-    //                 ]),
-    //                 TypeRefF::new_array(Span::new(62, 68), 
-    //                     simple!("pxplh", Span::new(63, 67))
-    //                 ),
-    //                 simple!("u32", Span::new(71, 73))
-    //             ])
-    //         ]),
-    //         TypeRefF::new_array(Span::new(79, 87), 
-    //             simple!("vrud2vC", Span::new(80, 86))
-    //         ),
-    //         simple!("u64", Span::new(90, 92))
-    //     ])
-    // }
-    // ast_test_case!{ "sxM4", 1, Span::new(0, 3), simple!("sxM4", Span::new(0, 3)) }
-    // //               0        1         2
-    // //               12345678901234567890123
-    // ast_test_case!{ "([pwi], [u64], i33, i8)", 13, Span::new(0, 22), 
-    //     TypeRefF::new_tuple(Span::new(0, 22), vec![
-    //         TypeRefF::new_array(Span::new(1, 5), 
-    //             simple!("pwi", Span::new(2, 4))
-    //         ), 
-    //         TypeRefF::new_array(Span::new(8, 12),
-    //             simple!("u64", Span::new(9, 11))
-    //         ),
-    //         simple!("i33", Span::new(15, 17)),
-    //         simple!("i8", Span::new(20, 21))
-    //     ])
-    // }
+    // Auto generated mixed
+    //               0        1         2
+    //               12345678901234567890123
+    case!{ "((i8, clL, Kopu), f64,)" as TypeRef,
+        TypeRef::new_template(5, Span::new(0, 0), Span::new(0, 22), vec![
+            TypeRef::new_template(5, Span::new(0, 0), Span::new(1, 15), vec![
+                TypeRef::new_simple(3, Span::new(2, 3)),
+                TypeRef::new_simple(2, Span::new(6, 8)),
+                TypeRef::new_simple(4, Span::new(11, 14))
+            ]), 
+            TypeRef::new_simple(6, Span::new(18, 20))
+        ]), strings ["clL", "i8", "Kopu", "tuple", "f64"]
+    } 
+    
+    //             12345678
+    case!{ "[BJlbk4]" as TypeRef,
+        TypeRef::new_template(3, Span::new(0, 0), Span::new(0, 7), vec![
+            TypeRef::new_simple(2, Span::new(1, 6)),
+        ])
+    }
+            
+    //         0        1         2         3         4         5         6         7         8         9
+    //             1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234
+    case!{ "((char, jq, ((u8, [([o2fcd], [CKw], ([eCDn2I], u16,))], i16), [pxplh], u32),), [vrud2vC], u64)" as TypeRef,
+        TypeRef::new_template(10, Span::new(0, 0), Span::new(0, 93), vec![
+            TypeRef::new_template(10, Span::new(0, 0), Span::new(1, 76), vec![
+                TypeRef::new_simple(3, Span::new(2, 5)), 
+                TypeRef::new_simple(2, Span::new(8, 9)),
+                TypeRef::new_template(10, Span::new(0, 0), Span::new(12, 74), vec![
+                    TypeRef::new_template(10, Span::new(0, 0), Span::new(13, 59), vec![
+                        TypeRef::new_simple(4, Span::new(14, 15)),
+                       TypeRef::new_template(7, Span::new(0, 0), Span::new(18, 53), vec![
+                            TypeRef::new_template(10, Span::new(0, 0), Span::new(19, 52), vec![
+                                TypeRef::new_template(7, Span::new(0, 0), Span::new(20, 26), vec![
+                                    TypeRef::new_simple(5, Span::new(21, 25))
+                                ]),
+                                TypeRef::new_template(7, Span::new(0, 0), Span::new(29, 33), vec![
+                                    TypeRef::new_simple(6, Span::new(30, 32))
+                                ]),
+                                TypeRef::new_template(10, Span::new(0, 0), Span::new(36, 51), vec![
+                                    TypeRef::new_template(7, Span::new(0, 0), Span::new(37, 44), vec![
+                                        TypeRef::new_simple(8, Span::new(38, 43))
+                                    ]), 
+                                    TypeRef::new_simple(9, Span::new(47, 49))
+                                ])
+                            ])
+                        ]),
+                        TypeRef::new_simple(11, Span::new(56, 58))
+                    ]),
+                    TypeRef::new_template(7, Span::new(0, 0), Span::new(62, 68), vec![
+                        TypeRef::new_simple(12, Span::new(63, 67))
+                    ]),
+                    TypeRef::new_simple(13, Span::new(71, 73))
+                ])
+            ]),
+            TypeRef::new_template(7, Span::new(0, 0), Span::new(79, 87), vec![
+                TypeRef::new_simple(14, Span::new(80, 86))
+            ]),
+            TypeRef::new_simple(15, Span::new(90, 92)),
+            //        2     3       4     5        6      7        8         9      10       11     12       13     14         15
+        ]), strings ["jq", "char", "u8", "o2fcd", "CKw", "array", "eCDn2I", "u16", "tuple", "i16", "pxplh", "u32", "vrud2vC", "u64"]
+    }
+    
+    case!{ "sxM4" as TypeRef, TypeRef::new_simple(2, Span::new(0, 3)) }
+    
+    //               0        1         2
+    //               12345678901234567890123
+    case!{ "([pwi], [u64], i33, i8)" as TypeRef,
+        TypeRef::new_template(7, Span::new(0, 0), Span::new(0, 22), vec![
+            TypeRef::new_template(3, Span::new(0, 0), Span::new(1, 5), vec![
+                TypeRef::new_simple(2, Span::new(2, 4))
+            ]), 
+            TypeRef::new_template(3, Span::new(0, 0), Span::new(8, 12), vec![
+                TypeRef::new_simple(4, Span::new(9, 11))
+            ]),
+            TypeRef::new_simple(5, Span::new(15, 17)),
+            TypeRef::new_simple(6, Span::new(20, 21))
+        ]), strings ["pwi", "array", "u64", "i33", "i8", "tuple"]
+    }
 }

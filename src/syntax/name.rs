@@ -1,8 +1,8 @@
-///! fff-lang
-///!
-///! syntax/name, currently is
+///! syntax::name:
 ///! name = identifier { '::' identifier }
-// future may support something like `to_string::<i32>(a)`
+///! should be
+///! name = name_segment { '::' name_segment }
+///! name_segment = identifier | '<' type_ref { ',' type_ref } '>'
 
 use super::prelude::*;
 use super::Expr;
