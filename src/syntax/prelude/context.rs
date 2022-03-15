@@ -194,6 +194,19 @@ impl<'ecx, 'scx, F> ParseSession<'ecx, 'scx, F> where F: FileSystem {
         }
     }
 
+    /// Check current token is one of the specified Separators
+    ///
+    /// if so, move next and Some((sep, sep_span)),
+    /// if not, no move next and None
+    ///
+    /// example `if let Some((sep, sep_span)) = sess.try_expect_seps(&[Separator::LeftBracket, Separator::LeftBrace])?;`
+    pub fn try_expect_seps(&mut self, expected_seps: &[Separator]) -> Option<(Separator, Span)> {
+        match self.current {
+            Token::Sep(sep) if expected_seps.iter().any(|e| e == &sep) => Some((sep, self.move_next())),
+            _ => None,
+        }
+    }
+
     /// Check current token is specified keyword
     ///
     /// if so, move next and Some(kw_span), 
@@ -203,6 +216,19 @@ impl<'ecx, 'scx, F> ParseSession<'ecx, 'scx, F> where F: FileSystem {
     pub fn try_expect_keyword(&mut self, expected_keyword: Keyword) -> Option<Span> {
         match self.current {
             Token::Keyword(kw) if kw == expected_keyword => Some(self.move_next()),
+            _ => None,
+        }
+    }
+
+    /// Check current token is of Keyword kind
+    ///
+    /// if so, move next and Some((kw, kw_span)), 
+    /// if not, no move next and None
+    ///
+    /// example `if let Some((kw, kw_span)) = sess.try_expect_keyword_kind(Primitive) { ... }`
+    pub fn try_expect_keyword_kind(&mut self, kind: KeywordKind) -> Option<(Keyword, Span)> {
+        match self.current {
+            Token::Keyword(keyword) if keyword.kind(kind) => Some((keyword, self.move_next())),
             _ => None,
         }
     }
@@ -220,7 +246,7 @@ impl<'ecx, 'scx, F> ParseSession<'ecx, 'scx, F> where F: FileSystem {
         }
     }
 
-    /// Check current token is of Separator category
+    /// Check current token is of Separator kind
     ///
     /// if so, move next and Some((sep, sep_span)), 
     /// if not, no move next and None
@@ -231,6 +257,26 @@ impl<'ecx, 'scx, F> ParseSession<'ecx, 'scx, F> where F: FileSystem {
             Token::Sep(sep) if sep.kind(kind) => Some((sep, self.move_next())),
             _ => None,
         }
+    }
+
+    /// if current token is shift right, regard it as 2 right angle brackets
+    /// return location of first right angle bracket, and change current token to the second right angle bracket
+    // is the shift right/double right angle bracket issue this simple?
+    pub fn split_shift_right(&mut self) -> Option<Span> {
+        match self.current {
+            Token::Sep(Separator::GtGt) => {
+                let first_location = self.current_span.start.into();
+                self.current = Token::Sep(Separator::Gt);
+                self.current_span = self.current_span.end.into();
+                Some(first_location)
+            },
+            _ => None,
+        }
+    }
+
+    // TODO: decide how to intern in syntax parser
+    pub fn intern(&mut self, v: &str) -> IsId {
+        self.base.chars.intern(v)
     }
 
     pub fn emit(&mut self, name: impl Into<String>) -> &mut Diagnostic { 

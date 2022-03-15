@@ -59,7 +59,7 @@ pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_tuple_def(&mut self, node: &TupleDef) -> Result<T, E> { node.walk(self) }
     fn visit_type_def(&mut self, node: &TypeDef) -> Result<T, E> { node.walk(self) }
     fn visit_type_field_def(&mut self, node: &TypeFieldDef) -> Result<T, E> { node.walk(self) }
-    fn visit_type_use(&mut self, node: &TypeUse) -> Result<T, E> { node.walk(self) }
+    fn visit_type_ref(&mut self, node: &TypeRef) -> Result<T, E> { node.walk(self) }
     fn visit_unary_expr(&mut self, node: &UnaryExpr) -> Result<T, E> { node.walk(self) }
     fn visit_use_stmt(&mut self, node: &UseStatement) -> Result<T, E> { node.walk(self) }
     fn visit_var_decl(&mut self, node: &VarDeclStatement) -> Result<T, E> { node.walk(self) }

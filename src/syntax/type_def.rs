@@ -5,22 +5,20 @@
 ///! type_def = 'type' (identifier | keyword_primitive_type)  '{' [ type_field_def { ',' type_field_def } [ ',' ] ] '}'
 ///! type_field_def = identifier ':' type_use
 
-// TODO: support Keyword::PrimType in type name, for primitive declarations
-
 use super::prelude::*;
-use super::{TypeUse, SimpleName};
+use super::{TypeRef, SimpleName};
 
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
 pub struct TypeFieldDef {
     pub name: SimpleName,
     pub colon_span: Span,
-    pub typeuse: TypeUse,
-    pub all_span: Span,   // ident to typeuse or ident to comma
+    pub r#type: TypeRef,
+    pub all_span: Span,   // ident to TypeRef or ident to comma
 }
 impl TypeFieldDef {
-    pub fn new(all_span: Span, name: SimpleName, colon_span: Span, typeuse: TypeUse) -> TypeFieldDef {
-        TypeFieldDef{ all_span, name, colon_span, typeuse }
+    pub fn new(all_span: Span, name: SimpleName, colon_span: Span, r#type: TypeRef) -> TypeFieldDef {
+        TypeFieldDef{ all_span, name, colon_span, r#type }
     }
 }
 impl Node for TypeFieldDef {
@@ -31,7 +29,7 @@ impl Node for TypeFieldDef {
     }
     fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_simple_name(&self.name)?;
-        v.visit_type_use(&self.typeuse)
+        v.visit_type_ref(&self.r#type)
     }
 }
 
@@ -69,7 +67,7 @@ impl Node for TypeDef {
 
             let field_name = SimpleName::parse(sess)?;
             let colon_span = sess.expect_sep(Separator::Colon)?;
-            let field_type = TypeUse::parse(sess)?;
+            let field_type = TypeRef::parse(sess)?;
             fields.push(if let Some(comma_span) = sess.try_expect_sep(Separator::Comma) {
                 TypeFieldDef::new(field_name.span + comma_span, field_name, colon_span, field_type)
             } else {
@@ -102,7 +100,7 @@ fn type_def_parse() {
             TypeFieldDef::new(Span::new(9, 14), 
                 SimpleName::new(2, Span::new(9, 9)),
                 Span::new(10, 10),
-                TypeUse::new_simple(3, Span::new(12, 14))
+                TypeRef::new_simple(3, Span::new(12, 14))
             )
         ])
     }
@@ -111,7 +109,7 @@ fn type_def_parse() {
             TypeFieldDef::new(Span::new(9, 15), 
                 SimpleName::new(2, Span::new(9, 9)),
                 Span::new(10, 10),
-                TypeUse::new_simple(3, Span::new(12, 14))
+                TypeRef::new_simple(3, Span::new(12, 14))
             )
         ])
     }
@@ -122,19 +120,19 @@ fn type_def_parse() {
             TypeFieldDef::new(Span::new(13, 23),
                 SimpleName::new(3, Span::new(13, 16)),
                 Span::new(17, 17),
-                TypeUse::new_template(2, Span::new(0, 0), Span::new(19, 22), vec![
-                    TypeUse::new_simple(7, Span::new(20, 21))
+                TypeRef::new_template(2, Span::new(0, 0), Span::new(19, 22), vec![
+                    TypeRef::new_simple(7, Span::new(20, 21))
                 ])
             ),
             TypeFieldDef::new(Span::new(25, 34), 
                 SimpleName::new(4, Span::new(25, 28)),
                 Span::new(29, 29),
-                TypeUse::new_simple(6, Span::new(31, 33))
+                TypeRef::new_simple(6, Span::new(31, 33))
             ),
             TypeFieldDef::new(Span::new(36, 43), 
                 SimpleName::new(5, Span::new(36, 38)),
                 Span::new(39, 39),
-                TypeUse::new_simple(6, Span::new(41, 43))
+                TypeRef::new_simple(6, Span::new(41, 43))
             )
         ])
     }

@@ -5,7 +5,7 @@
 ///! var-decl = 'var' identifier [ ':' type-use ] [ '=' expr ] ';'
 
 use super::prelude::*;
-use super::{Expr, TypeUse};
+use super::{Expr, TypeRef};
 
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
@@ -13,7 +13,7 @@ pub struct VarDeclStatement {
     pub is_const: bool,
     pub name: IsId,
     pub name_span: Span,
-    pub typeuse: Option<TypeUse>,
+    pub r#type: Option<TypeRef>,
     pub init_expr: Option<Expr>,
     pub all_span: Span,
 }
@@ -21,18 +21,18 @@ impl VarDeclStatement {
 
     pub fn new(all_span: Span, 
         is_const: bool, name: impl Into<IsId>, name_span: Span, 
-        typeuse: Option<TypeUse>, init_expr: Option<Expr>) -> VarDeclStatement {
-        VarDeclStatement{ all_span, is_const, name: name.into(), name_span, typeuse, init_expr }
+        r#type: Option<TypeRef>, init_expr: Option<Expr>) -> VarDeclStatement {
+        VarDeclStatement{ all_span, is_const, name: name.into(), name_span, r#type, init_expr }
     }
     pub fn new_const(all_span: Span, 
         name: impl Into<IsId>, name_span: Span, 
-        typeuse: Option<TypeUse>, init_expr: Option<Expr>) -> VarDeclStatement {
-        VarDeclStatement{ all_span, is_const: true, name: name.into(), name_span, typeuse, init_expr }
+        r#type: Option<TypeRef>, init_expr: Option<Expr>) -> VarDeclStatement {
+        VarDeclStatement{ all_span, is_const: true, name: name.into(), name_span, r#type, init_expr }
     }
     pub fn new_var(all_span: Span, 
         name: impl Into<IsId>, name_span: Span, 
-        typeuse: Option<TypeUse>, init_expr: Option<Expr>) -> VarDeclStatement {
-        VarDeclStatement{ all_span, is_const: false, name: name.into(), name_span, typeuse, init_expr }
+        r#type: Option<TypeRef>, init_expr: Option<Expr>) -> VarDeclStatement {
+        VarDeclStatement{ all_span, is_const: false, name: name.into(), name_span, r#type, init_expr }
     }
 }
 impl Node for VarDeclStatement {
@@ -48,7 +48,7 @@ impl Node for VarDeclStatement {
         let is_const = match starting_kw { Keyword::Const => true, Keyword::Var => false, _ => unreachable!() };
 
         let (name, name_span) = sess.expect_ident_or(&[Keyword::Underscore])?;
-        let maybe_decltype = if let Some(_) = sess.try_expect_sep(Separator::Colon) { Some(TypeUse::parse(sess)?) } else { None };
+        let maybe_decltype = if let Some(_) = sess.try_expect_sep(Separator::Colon) { Some(TypeRef::parse(sess)?) } else { None };
         let maybe_init_expr = if let Some(_) = sess.try_expect_sep(Separator::Eq) { Some(Expr::parse(sess)?) } else { None };
         if maybe_decltype.is_none() && maybe_init_expr.is_none() {
             sess.emit("require type annotation")
@@ -64,8 +64,8 @@ impl Node for VarDeclStatement {
         v.visit_var_decl(self)
     }
     fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        if let Some(typeuse) = &self.typeuse {
-            v.visit_type_use(typeuse)?;
+        if let Some(r#type) = &self.r#type {
+            v.visit_type_ref(r#type)?;
         }
         if let Some(init_expr) = &self.init_expr {
             v.visit_expr(init_expr)?;
@@ -106,7 +106,7 @@ fn var_decl_stmt_parse() {
     assert_eq!{ make_node!("const input: string;" as VarDeclStatement),
         VarDeclStatement::new_const(Span::new(0, 19),
             2, Span::new(6, 10),
-            Some(TypeUse::new_simple(3, Span::new(13, 18))),
+            Some(TypeRef::new_simple(3, Span::new(13, 18))),
             None
         )
     }
@@ -115,10 +115,10 @@ fn var_decl_stmt_parse() {
     assert_node_eq!{ make_node!("var buf: [(u8, char)];" as VarDeclStatement, [], ["buf", "array", "tuple", "u8", "char"]),
         VarDeclStatement::new_var(Span::new(0, 21), 
             2, Span::new(4, 6),
-            Some(TypeUse::new_template(3, Span::new(0, 0), Span::new(9, 20), vec![
-                TypeUse::new_template(4, Span::new(0, 0), Span::new(10, 19), vec![
-                    TypeUse::new_simple(5, Span::new(11, 12)),
-                    TypeUse::new_simple(6, Span::new(15, 18)),
+            Some(TypeRef::new_template(3, Span::new(0, 0), Span::new(9, 20), vec![
+                TypeRef::new_template(4, Span::new(0, 0), Span::new(10, 19), vec![
+                    TypeRef::new_simple(5, Span::new(11, 12)),
+                    TypeRef::new_simple(6, Span::new(15, 18)),
                 ])
             ])),
             None
@@ -134,11 +134,11 @@ fn var_decl_stmt_parse() {
     assert_node_eq!{ make_node!("var buf: ([u8], u32) = ([1u8, 5u8, 0x7u8], abc);" as VarDeclStatement, [], ["buf", "u8", "u32", "abc", "tuple", "array"]),
         VarDeclStatement::new_var(Span::new(0, 47),
             2, Span::new(4, 6),
-            Some(TypeUse::new_template(6, Span::new(0, 0), Span::new(9, 19), vec![
-                TypeUse::new_template(7, Span::new(0, 0), Span::new(10, 13), vec![
-                    TypeUse::new_simple(3, Span::new(11, 12))
+            Some(TypeRef::new_template(6, Span::new(0, 0), Span::new(9, 19), vec![
+                TypeRef::new_template(7, Span::new(0, 0), Span::new(10, 13), vec![
+                    TypeRef::new_simple(3, Span::new(11, 12))
                 ]),
-                TypeUse::new_simple(4, Span::new(16, 18))
+                TypeRef::new_simple(4, Span::new(16, 18))
             ])),
             Some(Expr::Tuple(TupleDef::new(Span::new(23, 46), make_exprs![
                 ArrayDef::new(Span::new(24, 40), make_exprs![

@@ -4,17 +4,19 @@
 ///! fn-def = 'fn' identifier '(' [ identifier ':' type-use { ',' identifier ':' type-use [ ',' ] } ] ')' [ '->' type-use ] block
 
 use super::prelude::*;
-use super::{Block, TypeUse};
+use super::{Block, TypeRef};
 
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
 pub struct FnParam {
     pub name: IsId,
     pub name_span: Span,
-    pub decltype: TypeUse,
+    pub r#type: TypeRef,
 }
 impl FnParam {
-    pub fn new(name: impl Into<IsId>, name_span: Span, decltype: TypeUse) -> FnParam { FnParam{ decltype, name: name.into(), name_span } }
+    pub fn new(name: impl Into<IsId>, name_span: Span, r#type: TypeRef) -> Self { 
+        Self{ r#type, name: name.into(), name_span } 
+    }
 }
 impl Node for FnParam {
     type ParseOutput = FnParam;
@@ -23,7 +25,7 @@ impl Node for FnParam {
         v.visit_fn_param(self)
     }
     fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_type_use(&self.decltype)
+        v.visit_type_ref(&self.r#type)
     }
 }
 
@@ -34,7 +36,7 @@ pub struct FnDef {
     pub name_span: Span,
     pub params: Vec<FnParam>,
     pub params_paren_span: Span,
-    pub ret_type: Option<TypeUse>,
+    pub ret_type: Option<TypeRef>,
     pub body: Block,
     pub all_span: Span,   // fn_span = all_span.slice(0..2)
 }
@@ -43,7 +45,7 @@ impl FnDef {
     pub fn new(all_span: Span, 
         name: impl Into<IsId>, name_span: Span,
         params_paren_span: Span, params: Vec<FnParam>, 
-        ret_type: Option<TypeUse>, body: Block) -> FnDef {
+        ret_type: Option<TypeRef>, body: Block) -> FnDef {
         FnDef{ name: name.into(), name_span, params, params_paren_span, ret_type, body, all_span }
     }
 }
@@ -84,11 +86,11 @@ impl Node for FnDef {
 
             let (param_name, param_span) = sess.expect_ident_or(&[Keyword::Underscore, Keyword::This])?;
             let _ = sess.expect_sep(Separator::Colon)?;
-            let decltype = TypeUse::parse(sess)?;
+            let decltype = TypeRef::parse(sess)?;
             params.push(FnParam::new(param_name, param_span, decltype));
         }
 
-        let maybe_ret_type = if let Some(_right_arrow_span) = sess.try_expect_sep(Separator::Arrow) { Some(TypeUse::parse(sess)?) } else { None };
+        let maybe_ret_type = if let Some(_right_arrow_span) = sess.try_expect_sep(Separator::Arrow) { Some(TypeRef::parse(sess)?) } else { None };
         let body = Block::parse(sess)?;
 
         return Ok(FnDef::new(fn_span + body.all_span, fn_name, fn_name_span, params_paren_span, params, maybe_ret_type, body));
@@ -102,7 +104,7 @@ impl Node for FnDef {
             v.visit_fn_param(param)?;
         }
         if let Some(ret_type) = &self.ret_type {
-            v.visit_type_use(ret_type)?;
+            v.visit_type_ref(ret_type)?;
         }
         v.visit_block(&self.body)
     }
@@ -110,7 +112,7 @@ impl Node for FnDef {
 
 #[cfg(test)] #[test]
 fn fn_def_parse() {
-    use super::{make_node, make_exprs, SimpleName, TypeUse, Statement, SimpleExprStatement, Expr, FnCallExpr};
+    use super::{make_node, make_exprs, SimpleName, Statement, SimpleExprStatement, Expr, FnCallExpr};
 
     //                                012345678901
     assert_eq!{ make_node!("fn main() {}" as FnDef),
@@ -130,7 +132,7 @@ fn fn_def_parse() {
             Span::new(7, 15), vec![
                 FnParam::new(
                     3, Span::new(8, 9),
-                    TypeUse::new_simple(4, Span::new(12, 14))
+                    TypeRef::new_simple(4, Span::new(12, 14))
                 ),
             ],
             None,
@@ -146,17 +148,17 @@ fn fn_def_parse() {
             2, Span::new(4, 10),
             Span::new(11, 60), vec![
                 FnParam::new(3, Span::new(12, 15),
-                    TypeUse::new_template(9, Span::new(0, 0), Span::new(17, 27), vec![
-                        TypeUse::new_template(9, Span::new(0, 0), Span::new(18, 25), vec![
-                            TypeUse::new_simple(4, Span::new(19, 24))
+                    TypeRef::new_template(9, Span::new(0, 0), Span::new(17, 27), vec![
+                        TypeRef::new_template(9, Span::new(0, 0), Span::new(18, 25), vec![
+                            TypeRef::new_simple(4, Span::new(19, 24))
                         ])
                     ])
                 ),
                 FnParam::new(7, Span::new(32, 35),
-                    TypeUse::new_simple(8, Span::new(37, 39))
+                    TypeRef::new_simple(8, Span::new(37, 39))
                 ),
                 FnParam::new(5, Span::new(42, 51),
-                    TypeUse::new_simple(10, Span::new(54, 57))
+                    TypeRef::new_simple(10, Span::new(54, 57))
                 )
             ],
             None,
@@ -179,7 +181,7 @@ fn fn_def_parse() {
         FnDef::new(Span::new(0, 18),
             2, Span::new(3, 6), 
             Span::new(7, 8), vec![],
-            Some(TypeUse::new_simple(3, Span::new(13, 15))),
+            Some(TypeRef::new_simple(3, Span::new(13, 15))),
             Block::new(Span::new(17, 18), vec![])
         )
     }
@@ -190,22 +192,22 @@ fn fn_def_parse() {
             2, Span::new(3, 6), 
             Span::new(7, 50), vec![
                 FnParam::new(3, Span::new(8, 11),
-                    TypeUse::new_simple(4, Span::new(14, 16))
+                    TypeRef::new_simple(4, Span::new(14, 16))
                 ),
                 FnParam::new(5, Span::new(19, 22),
-                    TypeUse::new_template(6, Span::new(0, 0), Span::new(25, 32), vec![
-                        TypeUse::new_simple(7, Span::new(26, 31))
+                    TypeRef::new_template(6, Span::new(0, 0), Span::new(25, 32), vec![
+                        TypeRef::new_simple(7, Span::new(26, 31))
                     ])
                 ),
                 FnParam::new(8, Span::new(35, 38),
-                    TypeUse::new_template(6, Span::new(0, 0), Span::new(41, 48), vec![
-                        TypeUse::new_simple(7, Span::new(42, 47))
+                    TypeRef::new_template(6, Span::new(0, 0), Span::new(41, 48), vec![
+                        TypeRef::new_simple(7, Span::new(42, 47))
                     ])
                 )
             ],
-            Some(TypeUse::new_template(6, Span::new(0, 0), Span::new(55, 64), vec![   
-                TypeUse::new_template(6, Span::new(0, 0), Span::new(56, 63), vec![
-                    TypeUse::new_simple(7, Span::new(57, 62))
+            Some(TypeRef::new_template(6, Span::new(0, 0), Span::new(55, 64), vec![   
+                TypeRef::new_template(6, Span::new(0, 0), Span::new(56, 63), vec![
+                    TypeRef::new_simple(7, Span::new(57, 62))
                 ])
             ])),
             Block::new(Span::new(66, 67), vec![])

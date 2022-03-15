@@ -376,9 +376,9 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
         self.invoke_walk(node)
     }
 
-    fn visit_type_use(&mut self, node: &TypeUse) -> fmt::Result {
+    fn visit_type_ref(&mut self, node: &TypeRef) -> fmt::Result {
         self.write_indent()?;
-        self.write_str("type-use ")?;
+        self.write_str("type-ref ")?;
         self.write_span(node.all_span)?;
         self.write_space()?;
         self.write_isid(node.base)?;
