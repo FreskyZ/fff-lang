@@ -6,8 +6,8 @@
 [x] add take address expression
 [x] rename type use to type ref
 [x] rename session to context, rename sess to cx, remove <F> from SourceChars, lexical::Parser and ParseContext
-[ ] merge simple name into name
 [ ] redesign builtin array type, should include size, the dynamic array type should be in standard library based on pointer
+[ ] merge simple name into name
 [ ] support generic type in type ref and name, like rust, use ::< for generic parameter in expr
 [ ] add object literal syntax
 [ ] move multiple file operations from syntaxtree.rs into driver

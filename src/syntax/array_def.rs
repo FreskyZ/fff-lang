@@ -11,9 +11,6 @@ pub struct ArrayDef {
     pub items: ExprList,
     pub bracket_span: Span,
 }
-impl From<ArrayDef> for Expr {
-    fn from(array_def: ArrayDef) -> Expr { Expr::Array(array_def) }
-}
 impl ArrayDef {
     pub fn new(bracket_span: Span, items: ExprList) -> ArrayDef { ArrayDef{ bracket_span, items: items } }
 }

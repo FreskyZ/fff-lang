@@ -22,9 +22,7 @@ pub struct LitExpr {
     pub value: LitValue,
     pub span: Span,
 }
-impl From<LitExpr> for Expr {
-    fn from(lit_expr: LitExpr) -> Expr { Expr::Lit(lit_expr) }
-}
+
 impl LitExpr {
     pub fn new(value: LitValue, span: Span) -> LitExpr { LitExpr{ value, span } }
 }

@@ -15,12 +15,11 @@ pub struct ParenExpr {
     pub expr: Box<Expr>,
     pub span: Span,  // paren_span also all_span
 }
-impl From<ParenExpr> for Expr {
-    fn from(paren_expr: ParenExpr) -> Expr { Expr::Paren(paren_expr) }
-}
+
 impl ParenExpr {
     pub fn new<T: Into<Expr>>(span: Span, expr: T) -> ParenExpr { ParenExpr{ expr: Box::new(expr.into()), span } }
 }
+
 impl Node for ParenExpr {
     type ParseOutput = Expr;
     fn parse(cx: &mut ParseContext) -> ParseResult<Expr> {
@@ -40,12 +39,11 @@ pub struct TupleDef {
     pub items: ExprList,
     pub paren_span: Span,
 }
-impl From<TupleDef> for Expr {
-    fn from(tuple_def: TupleDef) -> Expr { Expr::Tuple(tuple_def) }
-}
+
 impl TupleDef {
     pub fn new(paren_span: Span, items: ExprList) -> TupleDef { TupleDef{ paren_span, items } }
 }
+
 impl Node for TupleDef {
     type ParseOutput = Expr;
 

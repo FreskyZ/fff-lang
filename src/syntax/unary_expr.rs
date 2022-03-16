@@ -14,9 +14,7 @@ pub struct UnaryExpr {
     pub operator_span: Span,
     pub all_span: Span,
 }
-impl From<UnaryExpr> for Expr {
-    fn from(unary_expr: UnaryExpr) -> Expr { Expr::Unary(unary_expr) }
-}
+
 impl UnaryExpr {
 
     pub fn new<T: Into<Expr>>(operator: Separator, operator_span: Span, base: T) -> UnaryExpr {

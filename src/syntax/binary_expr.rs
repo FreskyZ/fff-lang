@@ -24,9 +24,7 @@ pub struct BinaryExpr {
     pub operator_span: Span, 
     pub all_span: Span,
 }
-impl From<BinaryExpr> for Expr {
-    fn from(binary_expr: BinaryExpr) -> Expr { Expr::Binary(binary_expr) }
-}
+
 impl BinaryExpr {
 
     pub fn new<T1: Into<Expr>, T2: Into<Expr>>(left_expr: T1, operator: Separator, operator_span: Span, right_expr: T2) -> BinaryExpr {
@@ -40,6 +38,7 @@ impl BinaryExpr {
         }
     }
 }
+
 impl Node for BinaryExpr {
     type ParseOutput = Expr;
 

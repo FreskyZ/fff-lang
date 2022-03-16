@@ -3,6 +3,7 @@
 mod prelude;
 pub use prelude::{Node, Visitor};
 
+mod abc;
 mod array_def;
 mod binary_expr;
 mod block_stmt;
@@ -26,7 +27,6 @@ mod name;
 mod priority_proxy;
 mod range_expr;
 mod ret_stmt;
-mod stmt;
 mod tuple_def;
 mod type_def;
 mod type_ref;
@@ -35,6 +35,7 @@ mod use_stmt;
 mod var_decl;
 mod while_stmt;
 
+pub use abc::{Statement, Item};
 pub use array_def::ArrayDef;
 pub use binary_expr::BinaryExpr;
 pub use block_stmt::BlockStatement;
@@ -60,7 +61,6 @@ use priority_proxy::PostfixExpr;
 pub use range_expr::{RangeBothExpr, RangeFullExpr, RangeLeftExpr, RangeRightExpr};
 use range_expr::RangeExpr;
 pub use ret_stmt::ReturnStatement;
-pub use stmt::{Statement, Item};
 pub use tuple_def::{ParenExpr, TupleDef};
 pub use type_def::{TypeDef, TypeFieldDef};
 pub use type_ref::TypeRef;

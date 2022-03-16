@@ -1,65 +1,60 @@
 ///! syntax::expr
 
 use super::prelude::*;
-use super::{LitExpr, LitValue, SimpleName, Name, ParenExpr, TupleDef, ArrayDef, FnCallExpr, IndexCallExpr, 
-    MemberAccessExpr, UnaryExpr, BinaryExpr, RangeExpr, RangeFullExpr, RangeRightExpr, RangeLeftExpr, RangeBothExpr};
+use super::*;
 
-// 12 byte
+macro_rules! define_expr {
+    ($($ty:ty => $variant:ident, $visit:ident,)+ ; $matches_impl:item $matches3_impl:item $parse_impl:item) => (
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
 pub enum Expr {
-    Lit(LitExpr),
-    SimpleName(SimpleName),
-    Name(Name),
-    Paren(ParenExpr),
-    Tuple(TupleDef),
-    Array(ArrayDef),
-    FnCall(FnCallExpr),
-    IndexCall(IndexCallExpr),
-    MemberAccess(MemberAccessExpr),
-    Unary(UnaryExpr),
-    Binary(BinaryExpr),
-    RangeFull(RangeFullExpr),
-    RangeRight(RangeRightExpr),
-    RangeLeft(RangeLeftExpr),
-    RangeBoth(RangeBothExpr),
+$(
+    $variant($ty),
+)+
 }
-impl Default for Expr {
-    fn default() -> Expr { Expr::Lit(LitExpr::new(LitValue::Num(Numeric::I32(0)), Span::new(0, 0))) }
-}
-impl Expr {
 
-    pub fn get_all_span(&self) -> Span {
-        match self {
-            &Expr::Lit(ref lit_expr) => lit_expr.span,
-            &Expr::SimpleName(ref ident_expr) => ident_expr.span,
-            &Expr::Name(ref name) => name.all_span,
-            &Expr::Paren(ref paren_expr) => paren_expr.span,
-            &Expr::Tuple(ref tuple_def) => tuple_def.paren_span, 
-            &Expr::Array(ref array_def) => array_def.bracket_span,
-            &Expr::FnCall(ref fn_call) => fn_call.all_span,
-            &Expr::IndexCall(ref index_call) => index_call.all_span,
-            &Expr::MemberAccess(ref member_access) => member_access.all_span,
-            &Expr::Unary(ref unary_expr) => unary_expr.all_span,
-            &Expr::Binary(ref binary_expr) => binary_expr.all_span,
-            &Expr::RangeFull(ref range_full) => range_full.all_span,
-            &Expr::RangeRight(ref range_right) => range_right.all_span,
-            &Expr::RangeLeft(ref range_left) => range_left.all_span,
-            &Expr::RangeBoth(ref range_both) => range_both.all_span,
-        }
-    }
-
-    pub fn unbox(this: Box<Expr>) -> Self {
-        let mut this = this;
-        let mut temp = Expr::Lit(LitExpr::new(LitValue::Num(Numeric::I32(42)), Span::new(0, 0)));
-        ::std::mem::swap(&mut *this, &mut temp);
-        temp
-    }
-}
+$( impl From<$ty> for Expr {
+    fn from(s: $ty) -> Expr { Expr::$variant(s) }
+} )+
 
 impl Node for Expr {
     type ParseOutput = Expr;
 
+    $matches_impl
+    $matches3_impl
+    $parse_impl
+
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_expr(self)
+    }
+    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        match self {
+        $(
+            Expr::$variant(e) => v.$visit(e),
+        )+
+        }
+    }
+}
+    )
+}
+
+define_expr! {
+    LitExpr => Lit, visit_lit_expr,
+    SimpleName => SimpleName, visit_simple_name,
+    Name => Name, visit_name,
+    ParenExpr => Paren, visit_paren_expr,
+    TupleDef => Tuple, visit_tuple_def,
+    ArrayDef => Array, visit_array_def,
+    FnCallExpr => FnCall, visit_fn_call_expr,
+    IndexCallExpr => IndexCall, visit_index_call_expr,
+    MemberAccessExpr => MemberAccess, visit_member_access,
+    UnaryExpr => Unary, visit_unary_expr,
+    BinaryExpr => Binary, visit_binary_expr,
+    RangeBothExpr => RangeBoth, visit_range_both_expr,
+    RangeFullExpr => RangeFull, visit_range_full_expr,
+    RangeLeftExpr => RangeLeft, visit_range_left_expr,
+    RangeRightExpr => RangeRight, visit_range_right_expr,
+    ;
     fn matches(current: &Token) -> bool { 
         LitExpr::matches(current)
         || Name::matches(current)
@@ -80,27 +75,31 @@ impl Node for Expr {
     fn parse(cx: &mut ParseContext) -> ParseResult<Expr> { 
         cx.expect_node::<RangeExpr>()
     }
+}
 
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_expr(self)
-    }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+impl Default for Expr {
+    fn default() -> Expr { Expr::Lit(LitExpr::new(LitValue::Num(Numeric::I32(0)), Span::new(0, 0))) }
+}
+
+impl Expr {
+
+    pub fn get_all_span(&self) -> Span {
         match self {
-            Expr::Lit(e) => v.visit_lit_expr(e),
-            Expr::SimpleName(e) => v.visit_simple_name(e),
-            Expr::Name(e) => v.visit_name(e),
-            Expr::Paren(e) => v.visit_paren_expr(e),
-            Expr::Tuple(e) => v.visit_tuple_def(e),
-            Expr::Array(e) => v.visit_array_def(e),
-            Expr::FnCall(e) => v.visit_fn_call_expr(e),
-            Expr::IndexCall(e) => v.visit_index_call_expr(e),
-            Expr::MemberAccess(e) => v.visit_member_access(e),
-            Expr::Unary(e) => v.visit_unary_expr(e),
-            Expr::Binary(e) => v.visit_binary_expr(e),
-            Expr::RangeFull(e) => v.visit_range_full_expr(e),
-            Expr::RangeRight(e) => v.visit_range_right_expr(e),
-            Expr::RangeLeft(e) => v.visit_range_left_expr(e),
-            Expr::RangeBoth(e) => v.visit_range_both_expr(e),
+            &Expr::Lit(ref lit_expr) => lit_expr.span,
+            &Expr::SimpleName(ref ident_expr) => ident_expr.span,
+            &Expr::Name(ref name) => name.all_span,
+            &Expr::Paren(ref paren_expr) => paren_expr.span,
+            &Expr::Tuple(ref tuple_def) => tuple_def.paren_span, 
+            &Expr::Array(ref array_def) => array_def.bracket_span,
+            &Expr::FnCall(ref fn_call) => fn_call.all_span,
+            &Expr::IndexCall(ref index_call) => index_call.all_span,
+            &Expr::MemberAccess(ref member_access) => member_access.all_span,
+            &Expr::Unary(ref unary_expr) => unary_expr.all_span,
+            &Expr::Binary(ref binary_expr) => binary_expr.all_span,
+            &Expr::RangeFull(ref range_full) => range_full.all_span,
+            &Expr::RangeRight(ref range_right) => range_right.all_span,
+            &Expr::RangeLeft(ref range_left) => range_left.all_span,
+            &Expr::RangeBoth(ref range_both) => range_both.all_span,
         }
     }
 }
@@ -431,14 +430,5 @@ fn expr_errors() {
         )), errors make_errors!(
             e: e.emit(strings::EmptyIndexCall).detail(Span::new(2, 5), strings::IndexCallHere)
         )
-    }
-}
-
-#[cfg(test)] #[test]
-fn expr_unbox() {
-
-    assert_eq!{ 
-        Expr::unbox(Box::new(Expr::SimpleName(SimpleName::new(42, Span::new(30, 31))))), 
-        Expr::SimpleName(SimpleName::new(42, Span::new(30, 31)))
     }
 }

@@ -14,9 +14,7 @@ pub struct MemberAccessExpr {
     pub name: SimpleName,
     pub all_span: Span,
 }
-impl From<MemberAccessExpr> for Expr {
-    fn from(member_access_expr: MemberAccessExpr) -> Expr { Expr::MemberAccess(member_access_expr) }
-}
+
 impl MemberAccessExpr {
     pub fn new<T: Into<Expr>>(base: T, dot_span: Span, name: SimpleName) -> MemberAccessExpr {
         let base = base.into();
@@ -35,6 +33,7 @@ impl MemberAccessExpr {
         }
     }
 }
+
 impl Node for MemberAccessExpr {
     type ParseOutput = MemberAccessExpr;
 

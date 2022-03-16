@@ -13,12 +13,11 @@ pub struct SimpleName {
     pub value: IsId,
     pub span: Span,
 }
-impl From<SimpleName> for Expr {
-    fn from(ident_expr: SimpleName) -> Expr { Expr::SimpleName(ident_expr) }
-}
+
 impl SimpleName {
     pub fn new(value: impl Into<IsId>, span: Span) -> SimpleName { SimpleName{ value: value.into(), span } }
 }
+
 impl Node for SimpleName {
     type ParseOutput = SimpleName; // out of expr depdendencies require direct parse and get a simple name
 
@@ -38,12 +37,11 @@ pub struct Name {
     pub segments: Vec<SimpleName>,
     pub all_span: Span,
 }
-impl From<Name> for Expr {
-    fn from(name: Name) -> Expr { Expr::Name(name) }
-}
+
 impl Name {
     pub fn new(all_span: Span, segments: Vec<SimpleName>) -> Name { Name{ all_span, segments } }
 }
+
 impl Node for Name {
     type ParseOutput = Expr;
 

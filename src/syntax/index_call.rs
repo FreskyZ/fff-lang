@@ -15,9 +15,7 @@ pub struct IndexCallExpr {
     pub bracket_span: Span,
     pub all_span: Span,
 }
-impl From<IndexCallExpr> for Expr {
-    fn from(index_call_expr: IndexCallExpr) -> Expr { Expr::IndexCall(index_call_expr) }
-}
+
 impl IndexCallExpr {
 
     pub fn new<T: Into<Expr>>(base: T, bracket_span: Span, params: ExprList) -> IndexCallExpr {
@@ -38,6 +36,7 @@ impl IndexCallExpr {
         }
     }
 }
+
 impl Node for IndexCallExpr {
     type ParseOutput = IndexCallExpr;
 

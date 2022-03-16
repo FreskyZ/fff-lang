@@ -15,12 +15,11 @@ use super::{Expr, BinaryExpr};
 pub struct RangeFullExpr {
     pub all_span: Span,
 }
-impl From<RangeFullExpr> for Expr {
-    fn from(range_expr: RangeFullExpr) -> Expr { Expr::RangeFull(range_expr) }
-}
+
 impl RangeFullExpr {
     pub fn new(all_span: Span) -> RangeFullExpr { RangeFullExpr{ all_span } }
 }
+
 impl Node for RangeFullExpr {
     type ParseOutput = Expr;
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
@@ -35,14 +34,13 @@ pub struct RangeRightExpr {
     pub all_span: Span,  // all_span.slice(2) is range_op_span
     pub expr: Box<Expr>,
 }
-impl From<RangeRightExpr> for Expr {
-    fn from(range_expr: RangeRightExpr) -> Expr { Expr::RangeRight(range_expr) }
-}
+
 impl RangeRightExpr {
     pub fn new<T: Into<Expr>>(all_span: Span, expr: T) -> RangeRightExpr { 
         RangeRightExpr{ all_span, expr: Box::new(expr.into()) }
     }
 }
+
 impl Node for RangeRightExpr {
     type ParseOutput = Expr;
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
@@ -60,14 +58,13 @@ pub struct RangeLeftExpr {
     pub expr: Box<Expr>,
     pub all_span: Span, // all_span.slice(-2, 0) should get range_op_span
 }
-impl From<RangeLeftExpr> for Expr {
-    fn from(range_expr: RangeLeftExpr) -> Expr { Expr::RangeLeft(range_expr) }
-}
+
 impl RangeLeftExpr {
     pub fn new<T: Into<Expr>>(all_span: Span, expr: T) -> RangeLeftExpr {
         RangeLeftExpr{ all_span, expr: Box::new(expr.into()) }
     }
 }
+
 impl Node for RangeLeftExpr {
     type ParseOutput = Expr;
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
@@ -87,9 +84,7 @@ pub struct RangeBothExpr {
     pub right_expr: Box<Expr>,
     pub all_span: Span,
 }
-impl From<RangeBothExpr> for Expr {
-    fn from(range_expr: RangeBothExpr) -> Expr { Expr::RangeBoth(range_expr) }
-}
+
 impl RangeBothExpr {
     pub fn new<T1: Into<Expr>, T2: Into<Expr>>(left_expr: T1, op_span: Span, right_expr: T2) -> RangeBothExpr {
         let (left_expr, right_expr) = (left_expr.into(), right_expr.into());
@@ -100,6 +95,7 @@ impl RangeBothExpr {
         }
     }
 }
+
 impl Node for RangeBothExpr {
     type ParseOutput = Expr;
     fn parse(cx: &mut ParseContext) -> ParseResult<Expr> {

@@ -14,9 +14,7 @@ pub struct FnCallExpr {
     pub paren_span: Span,
     pub all_span: Span,
 }
-impl From<FnCallExpr> for Expr {
-    fn from(fn_call_expr: FnCallExpr) -> Expr { Expr::FnCall(fn_call_expr) }
-}
+
 impl FnCallExpr {
 
     pub fn new<T: Into<Expr>>(base: T, paren_span: Span, params: ExprList) -> FnCallExpr {
@@ -37,6 +35,7 @@ impl FnCallExpr {
         }
     }
 }
+
 impl Node for FnCallExpr {
     type ParseOutput = FnCallExpr;
 
