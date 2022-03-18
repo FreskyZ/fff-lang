@@ -39,10 +39,10 @@ impl BinaryExpr {
     }
 }
 
-impl Node for BinaryExpr {
-    type ParseOutput = Expr;
+impl Parser for BinaryExpr {
+    type Output = Expr;
 
-    fn parse(cx: &mut ParseContext) -> ParseResult<Expr> {  
+    fn parse(cx: &mut ParseContext) -> Result<Expr, Unexpected> {  
         #[cfg(feature = "trace_binary_expr_parse")]
         macro_rules! trace { ($($arg:tt)*) => ({ print!("[PrimaryExpr] "); println!($($arg)*); }) }
         #[cfg(not(feature = "trace_binary_expr_parse"))]
@@ -52,7 +52,7 @@ impl Node for BinaryExpr {
 
         macro_rules! impl_binary_parser {
             ($parser_name: ident, $previous_parser: expr, $op_category: expr) => (
-                fn $parser_name(cx: &mut ParseContext) -> ParseResult<Expr> {
+                fn $parser_name(cx: &mut ParseContext) -> Result<Expr, Unexpected> {
                     trace!("parsing {}", stringify!($parser_name));
 
                     let mut current_retval = $previous_parser(cx)?;
@@ -81,6 +81,9 @@ impl Node for BinaryExpr {
         impl_binary_parser! { parse_logical_and, parse_equality, SeparatorKind::LogicalAnd }
         impl_binary_parser! { parse_logical_or, parse_logical_and, SeparatorKind::LogicalOr }    
     }
+}
+
+impl Node for BinaryExpr {
 
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_binary_expr(self)

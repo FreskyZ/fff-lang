@@ -27,20 +27,20 @@ impl UseStatement {
         UseStatement{ name, all_span, as_span, target }
     }
 }
-impl Node for UseStatement {
-    type ParseOutput = UseStatement;
+impl Parser for UseStatement {
+    type Output = UseStatement;
 
     fn matches(current: &Token) -> bool { 
         matches!(current, Token::Keyword(Keyword::Use)) 
     }
 
-    fn parse(cx: &mut ParseContext) -> ParseResult<UseStatement> {
+    fn parse(cx: &mut ParseContext) -> Result<UseStatement, Unexpected> {
 
         let starting_span = cx.expect_keyword(Keyword::Use)?;
-        let from_name = cx.expect_node::<Name>()?.into_name();
+        let from_name = cx.expect::<Name>()?.into_name();
 
         let (as_span, to_ident) = if let Some(as_span) = cx.try_expect_keyword(Keyword::As) {
-            (as_span, Some(cx.expect_node::<SimpleName>()?))
+            (as_span, Some(cx.expect::<SimpleName>()?))
         } else {
             (Span::new(0, 0), None)
         };
@@ -49,7 +49,9 @@ impl Node for UseStatement {
 
         Ok(UseStatement::new_some(all_span, from_name, as_span, to_ident))
     }
-    
+}
+
+impl Node for UseStatement {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_use_stmt(self)
     }

@@ -21,14 +21,14 @@ impl ReturnStatement {
         ReturnStatement{ all_span, expr: Some(expr) }
     }
 }
-impl Node for ReturnStatement {
-    type ParseOutput = ReturnStatement;
+impl Parser for ReturnStatement {
+    type Output = ReturnStatement;
 
     fn matches(current: &Token) -> bool { 
         matches!(current, Token::Keyword(Keyword::Return))
     }
 
-    fn parse(cx: &mut ParseContext) -> ParseResult<ReturnStatement> {
+    fn parse(cx: &mut ParseContext) -> Result<ReturnStatement, Unexpected> {
 
         let starting_span = cx.expect_keyword(Keyword::Return)?;
 
@@ -39,12 +39,14 @@ impl Node for ReturnStatement {
             // 17/7/28: now new features added to parse_cx and move_next is to be removed, no current position management bug any more!
             Ok(ReturnStatement::new_unit(starting_span + semicolon_span))
         } else {
-            let expr = cx.expect_node::<Expr>()?;
+            let expr = cx.expect::<Expr>()?;
             let semicolon_span = cx.expect_sep(Separator::SemiColon)?;
             Ok(ReturnStatement::new_expr(starting_span + semicolon_span, expr))
         }
     }
+}
 
+impl Node for ReturnStatement {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_ret_stmt(self)
     }

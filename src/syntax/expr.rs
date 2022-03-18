@@ -17,13 +17,15 @@ $( impl From<$ty> for Expr {
     fn from(s: $ty) -> Expr { Expr::$variant(s) }
 } )+
 
-impl Node for Expr {
-    type ParseOutput = Expr;
+impl Parser for Expr {
+    type Output = Expr;
 
     $matches_impl
     $matches3_impl
     $parse_impl
+}
 
+impl Node for Expr {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_expr(self)
     }
@@ -72,8 +74,8 @@ define_expr! {
         || UnaryExpr::matches3(current, peek, peek2)
         || matches!(current, Token::Sep(Separator::DotDot) | Token::Keyword(Keyword::This))
     }
-    fn parse(cx: &mut ParseContext) -> ParseResult<Expr> { 
-        cx.expect_node::<RangeExpr>()
+    fn parse(cx: &mut ParseContext) -> Result<Expr, Unexpected> { 
+        cx.expect::<RangeExpr>()
     }
 }
 

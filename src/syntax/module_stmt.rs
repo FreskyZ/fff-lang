@@ -25,20 +25,20 @@ impl ModuleStatement {
         Self{ name, all_span, as_span, target }
     }
 }
-impl Node for ModuleStatement {
-    type ParseOutput = ModuleStatement;
+impl Parser for ModuleStatement {
+    type Output = ModuleStatement;
 
     fn matches(current: &Token) -> bool { 
         matches!(current, Token::Keyword(Keyword::Module)) 
     }
 
-    fn parse(cx: &mut ParseContext) -> ParseResult<ModuleStatement> {
+    fn parse(cx: &mut ParseContext) -> Result<ModuleStatement, Unexpected> {
 
         let starting_span = cx.expect_keyword(Keyword::Module)?;
-        let name = cx.expect_node::<SimpleName>()?;
+        let name = cx.expect::<SimpleName>()?;
 
         let (as_span, to_ident) = if let Some(as_span) = cx.try_expect_keyword(Keyword::As) {
-            (as_span, Some(cx.expect_node::<SimpleName>()?))
+            (as_span, Some(cx.expect::<SimpleName>()?))
         } else {
             (Span::new(0, 0), None)
         };
@@ -48,6 +48,9 @@ impl Node for ModuleStatement {
 
         Ok(ModuleStatement::new_some(all_span, name, as_span, to_ident))
     }
+}
+
+impl Node for ModuleStatement {
 
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_module_stmt(self)

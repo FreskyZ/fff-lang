@@ -112,7 +112,7 @@ use super::prelude::*;
 //         }
 //     }
 
-//     fn parse(cx: &mut ParseContext) -> ParseResult<Self> {
+//     fn parse(cx: &mut ParseContext) -> Result<Self, Unexpected> {
         
 //         if let Some(left_bracket_span) = cx.try_expect_sep(Separator::LeftBracket) {
 //             let inner = cx.expect_node::<TypeRef>()?;
@@ -175,8 +175,8 @@ impl TypeRef {
     }
 }
 
-impl Node for TypeRef {
-    type ParseOutput = Self;
+impl Parser for TypeRef {
+    type Output = Self;
 
     fn matches(current: &Token) -> bool {
         match current {
@@ -186,10 +186,10 @@ impl Node for TypeRef {
         }
     }
 
-    fn parse(cx: &mut ParseContext) -> ParseResult<Self> {
+    fn parse(cx: &mut ParseContext) -> Result<Self, Unexpected> {
 
         if let Some(left_bracket_span) = cx.try_expect_sep(Separator::LeftBracket) {
-            let inner = cx.expect_node::<TypeRef>()?;
+            let inner = cx.expect::<TypeRef>()?;
             let right_bracket_span = cx.expect_sep(Separator::RightBracket)?;
             Ok(Self::new_template(cx.intern("array"), Span::new(0, 0), left_bracket_span + right_bracket_span, vec![inner]))
         } else if let Some(left_paren_span) = cx.try_expect_sep(Separator::LeftParen) {
@@ -197,7 +197,7 @@ impl Node for TypeRef {
                 return Ok(Self::new_simple(cx.intern("unit"), left_paren_span + right_paren_span));
             }
             
-            let mut tuple_types = vec![cx.expect_node::<TypeRef>()?];
+            let mut tuple_types = vec![cx.expect::<TypeRef>()?];
             let (ending_span, end_by_comma) = loop {
                 if let Some((_comma_span, right_paren_span)) = cx.try_expect_2_sep(Separator::Comma, Separator::RightParen) {
                     break (right_paren_span, true);
@@ -205,7 +205,7 @@ impl Node for TypeRef {
                     break (right_paren_span, false);
                 }
                 let _comma_span = cx.expect_sep(Separator::Comma)?;
-                tuple_types.push(cx.expect_node::<TypeRef>()?);
+                tuple_types.push(cx.expect::<TypeRef>()?);
             };
                 
             let paren_span = left_paren_span + ending_span;
@@ -218,6 +218,9 @@ impl Node for TypeRef {
             Ok(Self::new_simple(symid, sym_span))
         }
     }
+}
+
+impl Node for TypeRef {
 
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_type_ref(self)

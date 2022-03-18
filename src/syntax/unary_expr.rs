@@ -27,26 +27,29 @@ impl UnaryExpr {
     }
 }
 
-impl Node for UnaryExpr {
-    type ParseOutput = Expr;
+impl Parser for UnaryExpr {
+    type Output = Expr;
 
     fn matches(current: &Token) -> bool { 
         matches!(current, Token::Sep(sep) if sep.kind(SeparatorKind::Unary))
     }
 
-    fn parse(cx: &mut ParseContext) -> ParseResult<Expr> {
+    fn parse(cx: &mut ParseContext) -> Result<Expr, Unexpected> {
         
         let mut op_spans = Vec::new();
         loop {
             match cx.try_expect_sep_kind(SeparatorKind::Unary) {
                 Some((sep, sep_span)) => op_spans.push((sep, sep_span)),
                 None => {
-                    let base = cx.expect_node::<PostfixExpr>()?;
+                    let base = cx.expect::<PostfixExpr>()?;
                     return Ok(op_spans.into_iter().rev().fold(base, |base, (op, span)| { Expr::Unary(UnaryExpr::new(op, span, base)) }));
                 }
             }
         }
     }
+}
+
+impl Node for UnaryExpr {
 
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_unary_expr(self)

@@ -1,7 +1,7 @@
 ///! syntax: syntax parse
 
 mod prelude;
-pub use prelude::{Node, Visitor};
+pub use prelude::{Node, Parser, Visitor};
 
 mod abc;
 mod array_def;
@@ -74,15 +74,15 @@ pub use var_decl::VarDeclStatement;
 pub use while_stmt::WhileStatement;
 
 // parse any types of node for test
-pub fn parse_any<O, N: Node<ParseOutput = O>>(chars: crate::lexical::Parser) -> Result<O, ()> {
+pub fn parse_any<P: Parser>(chars: crate::lexical::Parser) -> Result<P::Output, ()> {
     let mut context = prelude::ParseContext::new(chars);
-    let result = N::parse(&mut context);
+    let result = P::parse(&mut context);
     context.finish();
-    result
+    result.map_err(|_| ())
 }
 // formal public api only parses module
 pub fn parse(chars: crate::lexical::Parser) -> Result<Module, ()> {
-    parse_any::<_, Module>(chars)
+    parse_any::<Module>(chars)
 }
 
 #[cfg(test)]

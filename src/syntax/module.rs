@@ -13,17 +13,20 @@ pub struct Module {
     pub file: FileId,
     pub items: Vec<Item>,
 }
-impl Node for Module {
-    type ParseOutput = Module;
 
-    fn parse(cx: &mut ParseContext) -> ParseResult<Module> {
+impl Parser for Module {
+    type Output = Module;
+
+    fn parse(cx: &mut ParseContext) -> Result<Module, Unexpected> {
         let mut items = Vec::new();
         while !cx.eof() {
-            items.push(cx.expect_node::<Item>()?);
+            items.push(cx.expect::<Item>()?);
         }
         Ok(Module{ items, file: FileId::new(0) })
     }
+}
 
+impl Node for Module {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_module(self)
     }

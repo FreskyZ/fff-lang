@@ -19,7 +19,6 @@ impl FnParam {
     }
 }
 impl Node for FnParam {
-    type ParseOutput = FnParam;
     
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_fn_param(self)
@@ -40,6 +39,7 @@ pub struct FnDef {
     pub body: Block,
     pub all_span: Span,   // fn_span = all_span.slice(0..2)
 }
+
 impl FnDef {
 
     pub fn new(all_span: Span, 
@@ -49,14 +49,15 @@ impl FnDef {
         FnDef{ name: name.into(), name_span, params, params_paren_span, ret_type, body, all_span }
     }
 }
-impl Node for FnDef {
-    type ParseOutput = FnDef;
+
+impl Parser for FnDef {
+    type Output = FnDef;
 
     fn matches(current: &Token) -> bool {
         matches!(current, Token::Keyword(Keyword::Fn))
     }
 
-    fn parse(cx: &mut ParseContext) -> ParseResult<FnDef> {
+    fn parse(cx: &mut ParseContext) -> Result<FnDef, Unexpected> {
         #[cfg(feature = "trace_fn_def_parse")]
         macro_rules! trace { ($($arg:tt)*) => ({ print!("[FnDef: {}]", line!()); println!($($arg)*); }) }
         #[cfg(not(feature = "trace_fn_def_parse"))]
@@ -86,16 +87,18 @@ impl Node for FnDef {
 
             let (param_name, param_span) = cx.expect_ident_or(&[Keyword::Underscore, Keyword::This])?;
             let _ = cx.expect_sep(Separator::Colon)?;
-            let decltype = cx.expect_node::<TypeRef>()?;
+            let decltype = cx.expect::<TypeRef>()?;
             params.push(FnParam::new(param_name, param_span, decltype));
         }
 
-        let maybe_ret_type = if let Some(_right_arrow_span) = cx.try_expect_sep(Separator::Arrow) { Some(cx.expect_node::<TypeRef>()?) } else { None };
-        let body = cx.expect_node::<Block>()?;
+        let maybe_ret_type = if let Some(_right_arrow_span) = cx.try_expect_sep(Separator::Arrow) { Some(cx.expect::<TypeRef>()?) } else { None };
+        let body = cx.expect::<Block>()?;
 
         return Ok(FnDef::new(fn_span + body.all_span, fn_name, fn_name_span, params_paren_span, params, maybe_ret_type, body));
     }
+}
 
+impl Node for FnDef {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_fn_def(self)
     }

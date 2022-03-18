@@ -36,16 +36,16 @@ impl FnCallExpr {
     }
 }
 
-impl Node for FnCallExpr {
-    type ParseOutput = FnCallExpr;
+impl Parser for FnCallExpr {
+    type Output = FnCallExpr;
 
     fn matches(current: &Token) -> bool { 
         matches!(current, Token::Sep(Separator::LeftParen)) 
     }
 
-    fn parse(cx: &mut ParseContext) -> ParseResult<FnCallExpr> {
+    fn parse(cx: &mut ParseContext) -> Result<FnCallExpr, Unexpected> {
 
-        match cx.expect_node::<ExprList>()? {
+        match cx.expect::<ExprList>()? {
             ExprListParseResult::Empty(span) => 
                 return Ok(FnCallExpr::new_with_parse_result(span, ExprList::new(Vec::new()))),
             ExprListParseResult::Normal(span, expr_list) | ExprListParseResult::EndWithComma(span, expr_list) => 
@@ -56,7 +56,9 @@ impl Node for FnCallExpr {
             }
         }
     }
+}
 
+impl Node for FnCallExpr {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_fn_call_expr(self)
     }

@@ -17,6 +17,7 @@ pub struct VarDeclStatement {
     pub init_expr: Option<Expr>,
     pub all_span: Span,
 }
+
 impl VarDeclStatement {
 
     pub fn new(all_span: Span, 
@@ -35,21 +36,22 @@ impl VarDeclStatement {
         VarDeclStatement{ all_span, is_const: false, name: name.into(), name_span, r#type, init_expr }
     }
 }
-impl Node for VarDeclStatement {
-    type ParseOutput = VarDeclStatement;
+
+impl Parser for VarDeclStatement {
+    type Output = VarDeclStatement;
 
     fn matches(current: &Token) -> bool { 
         matches!(current, Token::Keyword(Keyword::Const | Keyword::Var)) 
     }
 
-    fn parse(cx: &mut ParseContext) -> ParseResult<VarDeclStatement> {
+    fn parse(cx: &mut ParseContext) -> Result<VarDeclStatement, Unexpected> {
         
         let (starting_kw, starting_span) = cx.expect_keywords(&[Keyword::Const, Keyword::Var])?;
         let is_const = match starting_kw { Keyword::Const => true, Keyword::Var => false, _ => unreachable!() };
 
         let (name, name_span) = cx.expect_ident_or(&[Keyword::Underscore])?;
-        let maybe_decltype = if let Some(_) = cx.try_expect_sep(Separator::Colon) { Some(cx.expect_node::<TypeRef>()?) } else { None };
-        let maybe_init_expr = if let Some(_) = cx.try_expect_sep(Separator::Eq) { Some(cx.expect_node::<Expr>()?) } else { None };
+        let maybe_decltype = if let Some(_) = cx.try_expect_sep(Separator::Colon) { Some(cx.expect::<TypeRef>()?) } else { None };
+        let maybe_init_expr = if let Some(_) = cx.try_expect_sep(Separator::Eq) { Some(cx.expect::<Expr>()?) } else { None };
         if maybe_decltype.is_none() && maybe_init_expr.is_none() {
             cx.emit("require type annotation")
                 .detail(name_span, "variable declaration here")
@@ -59,7 +61,9 @@ impl Node for VarDeclStatement {
 
         return Ok(VarDeclStatement::new(starting_span + ending_span, is_const, name, name_span, maybe_decltype, maybe_init_expr));
     }
-    
+}
+
+impl Node for VarDeclStatement {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_var_decl(self)
     }

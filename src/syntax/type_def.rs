@@ -22,8 +22,6 @@ impl TypeFieldDef {
     }
 }
 impl Node for TypeFieldDef {
-    type ParseOutput = TypeDef;
-
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_type_field_def(self)
     }
@@ -40,19 +38,21 @@ pub struct TypeDef {
     pub name: SimpleName,
     pub fields: Vec<TypeFieldDef>,
 }
+
 impl TypeDef {
     pub fn new(all_span: Span, name: SimpleName, fields: Vec<TypeFieldDef>) -> TypeDef {
         TypeDef{ all_span, name, fields }
     }
 }
-impl Node for TypeDef {
-    type ParseOutput = Self;
+
+impl Parser for TypeDef {
+    type Output = Self;
 
     fn matches(current: &Token) -> bool { 
         matches!(current, Token::Keyword(Keyword::Type)) 
     }
 
-    fn parse(cx: &mut ParseContext) -> ParseResult<TypeDef> {
+    fn parse(cx: &mut ParseContext) -> Result<TypeDef, Unexpected> {
 
         let starting_span = cx.expect_keyword(Keyword::Type)?;
         let (symid, name_span) = cx.expect_ident_or_keyword_kind(KeywordKind::Primitive)?;
@@ -65,9 +65,9 @@ impl Node for TypeDef {
                 break right_brace_span;     // rustc 1.19 stablize break-expr
             }
 
-            let field_name = cx.expect_node::<SimpleName>()?;
+            let field_name = cx.expect::<SimpleName>()?;
             let colon_span = cx.expect_sep(Separator::Colon)?;
-            let field_type = cx.expect_node::<TypeRef>()?;
+            let field_type = cx.expect::<TypeRef>()?;
             fields.push(if let Some(comma_span) = cx.try_expect_sep(Separator::Comma) {
                 TypeFieldDef::new(field_name.span + comma_span, field_name, colon_span, field_type)
             } else {
@@ -77,7 +77,9 @@ impl Node for TypeDef {
 
         Ok(TypeDef::new(starting_span + right_brace_span, name, fields))
     }
+}
 
+impl Node for TypeDef {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_type_def(self)
     }

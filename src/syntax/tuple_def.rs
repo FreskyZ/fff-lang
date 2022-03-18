@@ -21,10 +21,6 @@ impl ParenExpr {
 }
 
 impl Node for ParenExpr {
-    type ParseOutput = Expr;
-    fn parse(cx: &mut ParseContext) -> ParseResult<Expr> {
-        cx.expect_node::<TupleDef>()
-    }
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_paren_expr(self)
     }
@@ -41,19 +37,21 @@ pub struct TupleDef {
 }
 
 impl TupleDef {
-    pub fn new(paren_span: Span, items: ExprList) -> TupleDef { TupleDef{ paren_span, items } }
+    pub fn new(paren_span: Span, items: ExprList) -> TupleDef { 
+        TupleDef{ paren_span, items } 
+    }
 }
 
-impl Node for TupleDef {
-    type ParseOutput = Expr;
+impl Parser for TupleDef {
+    type Output = Expr;
 
     fn matches(current: &Token) -> bool { 
         matches!(current, Token::Sep(Separator::LeftParen)) 
     }
 
-    fn parse(cx: &mut ParseContext) -> ParseResult<Expr> {
+    fn parse(cx: &mut ParseContext) -> Result<Expr, Unexpected> {
 
-        match cx.expect_node::<ExprList>()? {
+        match cx.expect::<ExprList>()? {
             ExprListParseResult::Empty(span) => {
                 return Ok(Expr::Lit(LitExpr::new(LitValue::Unit, span)));
             }
@@ -73,6 +71,9 @@ impl Node for TupleDef {
             }
         }
     }
+}
+
+impl Node for TupleDef {
 
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_tuple_def(self)

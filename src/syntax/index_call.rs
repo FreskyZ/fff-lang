@@ -37,16 +37,16 @@ impl IndexCallExpr {
     }
 }
 
-impl Node for IndexCallExpr {
-    type ParseOutput = IndexCallExpr;
+impl Parser for IndexCallExpr {
+    type Output = IndexCallExpr;
 
     fn matches(current: &Token) -> bool { 
         matches!(current, Token::Sep(Separator::LeftBracket)) 
     }
 
-    fn parse(cx: &mut ParseContext) -> ParseResult<IndexCallExpr> {
+    fn parse(cx: &mut ParseContext) -> Result<IndexCallExpr, Unexpected> {
 
-        match cx.expect_node::<ExprList>()? {
+        match cx.expect::<ExprList>()? {
             ExprListParseResult::Normal(span, expr_list) | ExprListParseResult::EndWithComma(span, expr_list) => 
                 return Ok(IndexCallExpr::new_with_parse_result(span, expr_list)),
             ExprListParseResult::Empty(span) | ExprListParseResult::SingleComma(span) => {
@@ -57,6 +57,9 @@ impl Node for IndexCallExpr {
             }
         }
     }
+}
+
+impl Node for IndexCallExpr {
 
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_index_call_expr(self)

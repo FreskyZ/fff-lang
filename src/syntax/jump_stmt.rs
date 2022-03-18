@@ -22,7 +22,7 @@ impl JumpStatement {
         JumpStatement{ all_span, target_span, target: Some(target.into()) }
     }
 
-    fn parse(cx: &mut ParseContext, expect_first_kw: Keyword) -> ParseResult<JumpStatement> {
+    fn parse(cx: &mut ParseContext, expect_first_kw: Keyword) -> Result<JumpStatement, Unexpected> {
 
         let starting_span = cx.expect_keyword(expect_first_kw)?;
 
@@ -58,26 +58,32 @@ impl BreakStatement {
     }
 }
 
-impl Node for ContinueStatement {
-    type ParseOutput = ContinueStatement;
+impl Parser for ContinueStatement {
+    type Output = ContinueStatement;
     fn matches(current: &Token) -> bool { 
         matches!(current, Token::Keyword(Keyword::Continue)) 
     }
-    fn parse(cx: &mut ParseContext) -> ParseResult<ContinueStatement> { 
+    fn parse(cx: &mut ParseContext) -> Result<ContinueStatement, Unexpected> { 
         Ok(ContinueStatement(JumpStatement::parse(cx, Keyword::Continue)?))
     }
+}
+
+impl Node for ContinueStatement {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_continue_stmt(self)
     }
 }
-impl Node for BreakStatement {
-    type ParseOutput = BreakStatement;
+impl Parser for BreakStatement {
+    type Output = BreakStatement;
     fn matches(current: &Token) -> bool { 
         matches!(current, Token::Keyword(Keyword::Break)) 
     }
-    fn parse(cx: &mut ParseContext) -> ParseResult<BreakStatement> {
+    fn parse(cx: &mut ParseContext) -> Result<BreakStatement, Unexpected> {
         Ok(BreakStatement(JumpStatement::parse(cx, Keyword::Break)?))
     }
+}
+
+impl Node for BreakStatement {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_break_stmt(self)
     }

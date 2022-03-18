@@ -10,18 +10,20 @@ pub struct PrimitiveType {
     pub span: Span,
 }
 
-impl Node for PrimitiveType {
-    type ParseOutput = PrimitiveType;
+impl Parser for PrimitiveType {
+    type Output = PrimitiveType;
 
     fn matches(current: &Token) -> bool {
         matches!(current, Token::Keyword(kw) if kw.kind(KeywordKind::Primitive))
     }
 
-    fn parse(cx: &mut ParseContext) -> ParseResult<PrimitiveType> {
+    fn parse(cx: &mut ParseContext) -> Result<PrimitiveType, Unexpected> {
         let (name, span) = cx.expect_keyword_kind(KeywordKind::Primitive)?;
         Ok(PrimitiveType{ name, span })
     }
+}
 
+impl Node for PrimitiveType {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_primitive_type(self)
     }

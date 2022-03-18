@@ -44,24 +44,26 @@ impl ForStatement {
     }
 }
 
-impl Node for ForStatement {
-    type ParseOutput = ForStatement;
+impl Parser for ForStatement {
+    type Output = ForStatement;
 
     fn matches3(current: &Token, _peek: &Token, peek2: &Token) -> bool {
         matches!((current, peek2), (Token::Label(_), Token::Keyword(Keyword::For)) | (Token::Keyword(Keyword::For), _))
     }
 
-    fn parse(cx: &mut ParseContext) -> ParseResult<ForStatement> {
+    fn parse(cx: &mut ParseContext) -> Result<ForStatement, Unexpected> {
 
-        let maybe_label = cx.try_expect_node::<LabelDef>()?;
+        let maybe_label = cx.try_expect::<LabelDef>()?;
         let for_span = cx.expect_keyword(Keyword::For)?;
         let (iter_name, iter_span) = cx.expect_ident_or(&[Keyword::Underscore])?; // Accept _ as iter_name, _ do not declare iter var
         let _in_span = cx.expect_keyword(Keyword::In)?;
-        let iter_expr = cx.expect_node::<Expr>()?;
-        let body = cx.expect_node::<Block>()?;
+        let iter_expr = cx.expect::<Expr>()?;
+        let body = cx.expect::<Block>()?;
         return Ok(ForStatement::new(maybe_label, for_span, iter_name, iter_span, iter_expr, body));
     }
+}
 
+impl Node for ForStatement {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_for_stmt(self)
     }

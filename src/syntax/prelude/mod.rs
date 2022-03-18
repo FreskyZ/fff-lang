@@ -18,34 +18,12 @@ use super::*;
 mod context;
 mod node_display;
 
-pub use context::{ParseContext, ParseResult};
+pub use context::{ParseContext};
 pub use node_display::{FormatVisitor, NodeDisplay};
 
-// a syntax node, include parsable and visitable
 pub trait Node: Sized {
-    type ParseOutput;
-    
-    fn matches(_current: &Token) -> bool {
-        return false;
-    }
-    fn matches3(_current: &Token, _peek1: &Token, _peek2: &Token) -> bool {
-        return false;
-    }
 
-    // some nodes are parsed by other nodes not self
-    fn parse(_cx: &mut ParseContext) -> ParseResult<Self::ParseOutput> {
-        Err(())
-    }
-
-    // check matches_first, if pass, parse, return Ok(Some(T)) or Err(()), else return None
-    fn try_parse(cx: &mut ParseContext) -> ParseResult<Option<Self::ParseOutput>> {
-        Ok(if Self::matches(&cx.current) || Self::matches3(&cx.current, &cx.peek, &cx.peek2) { Some(cx.expect_node::<Self>()?) } else { None })
-    }
-
-    // some nodes are only parsing proxy and not actually on result tree
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, _visitor: &mut V) -> Result<T, E> {
-        Ok(Default::default())
-    }
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, _visitor: &mut V) -> Result<T, E>;
 
     fn walk<T: Default, E, V: Visitor<T, E>>(&self, _visitor: &mut V) -> Result<T, E> { 
         Ok(Default::default())
@@ -53,6 +31,29 @@ pub trait Node: Sized {
 
     fn display<'n, 'scx, F>(&'n self, scx: &'scx SourceContext<F>) -> NodeDisplay<'n, 'scx, Self, F> {
         NodeDisplay(self, scx)
+    }
+}
+
+/// unrecoverable unexpected for this parser, detail in diagnostics
+// this should be more readable than previous Result<Self::Output, ()>
+#[derive(Debug)]
+pub struct Unexpected;
+
+pub trait Parser: Sized {
+    type Output: Node;
+
+    fn matches(_current: &Token) -> bool {
+        return false;
+    }
+    fn matches3(_current: &Token, _peek1: &Token, _peek2: &Token) -> bool {
+        return false;
+    }
+
+    fn parse(_cx: &mut ParseContext) -> Result<Self::Output, Unexpected>;
+
+    // check matches_first, if pass, parse, return Ok(Some(T)) or Err(Unexpected), else return None
+    fn try_parse(cx: &mut ParseContext) -> Result<Option<Self::Output>, Unexpected> {
+        Ok(if Self::matches(&cx.current) || Self::matches3(&cx.current, &cx.peek, &cx.peek2) { Some(cx.expect::<Self>()?) } else { None })
     }
 }
 
@@ -121,7 +122,7 @@ pub trait Visitor<T: Default = (), E = ()>: Sized {
 #[cfg(test)]
 pub fn ast_test_case<
     O: PartialEq + Node,
-    N: Node<ParseOutput = O>,
+    N: Parser<Output = O>,
 >(
     input: &'static str,
     expect_node: O, 

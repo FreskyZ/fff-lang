@@ -13,17 +13,19 @@ pub struct LabelDef {
     pub all_span: Span,
 }
 impl LabelDef {
-    
-    pub fn new(name: impl Into<IsId>, all_span: Span) -> LabelDef { LabelDef{ name: name.into(), all_span } }
+    pub fn new(name: impl Into<IsId>, all_span: Span) -> LabelDef { 
+        LabelDef{ name: name.into(), all_span } 
+    }
 }
-impl Node for LabelDef {
-    type ParseOutput = LabelDef;
+
+impl Parser for LabelDef {
+    type Output = LabelDef;
 
     fn matches(current: &Token) -> bool {
         matches!(current, Token::Label(_))
     }
 
-    fn parse(cx: &mut ParseContext) -> ParseResult<LabelDef> {
+    fn parse(cx: &mut ParseContext) -> Result<LabelDef, Unexpected> {
 
         if let Some((label_id, label_span)) = cx.try_expect_label() {
             let colon_span = cx.expect_sep(Separator::Colon)?;
@@ -32,7 +34,9 @@ impl Node for LabelDef {
             cx.push_unexpect("label")
         }
     }
+}
 
+impl Node for LabelDef {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_label_def(self)
     }

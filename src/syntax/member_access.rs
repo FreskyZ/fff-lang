@@ -34,8 +34,8 @@ impl MemberAccessExpr {
     }
 }
 
-impl Node for MemberAccessExpr {
-    type ParseOutput = MemberAccessExpr;
+impl Parser for MemberAccessExpr {
+    type Output = MemberAccessExpr;
 
     fn matches(current: &Token) -> bool { 
         matches!(current, Token::Sep(Separator::Dot)) 
@@ -45,13 +45,15 @@ impl Node for MemberAccessExpr {
     // although their structure contains their base expr (which actually is primary expr)
     // but this parser only accept cx.tk after the first expr and return the structure without base and all_span set
     // the postfix expr dispatcher is responsible for fullfilling the missing part
-    fn parse(cx: &mut ParseContext) -> ParseResult<MemberAccessExpr> {
+    fn parse(cx: &mut ParseContext) -> Result<MemberAccessExpr, Unexpected> {
         
         let dot_span = cx.expect_sep(Separator::Dot)?;
-        let name = cx.expect_node::<SimpleName>()?;
+        let name = cx.expect::<SimpleName>()?;
         Ok(MemberAccessExpr::new_by_parse_result(dot_span, name))
     }
+}
 
+impl Node for MemberAccessExpr {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_member_access(self)
     }

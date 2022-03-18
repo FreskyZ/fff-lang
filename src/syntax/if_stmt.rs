@@ -50,7 +50,6 @@ impl ElseClause {
 
 // TODO: try change if stmt to vec<(if part, option<else part>)> to prevent 4 types
 impl Node for IfClause {
-    type ParseOutput = IfStatement;
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_if_clause(self)
     }
@@ -60,7 +59,6 @@ impl Node for IfClause {
     }
 }
 impl Node for ElseIfClause {
-    type ParseOutput = IfStatement;
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_else_if_clause(self)
     }
@@ -70,7 +68,6 @@ impl Node for ElseIfClause {
     }
 }
 impl Node for ElseClause {
-    type ParseOutput = IfStatement;
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_else_clause(self)
     }
@@ -121,18 +118,18 @@ impl IfStatement {
         }
     }
 }
-impl Node for IfStatement {
-    type ParseOutput = IfStatement;
+impl Parser for IfStatement {
+    type Output = IfStatement;
 
     fn matches(current: &Token) -> bool {
         matches!(current, Token::Keyword(Keyword::If)) 
     }
 
-    fn parse(cx: &mut ParseContext) -> ParseResult<IfStatement> {
+    fn parse(cx: &mut ParseContext) -> Result<IfStatement, Unexpected> {
 
         let if_span = cx.expect_keyword(Keyword::If)?;
-        let if_expr = cx.expect_node::<Expr>()?;
-        let if_body = cx.expect_node::<Block>()?;
+        let if_expr = cx.expect::<Expr>()?;
+        let if_body = cx.expect::<Block>()?;
         let if_clause = IfClause::new(if_span, if_expr, if_body);
 
         let mut elseif_clauses = Vec::new();
@@ -141,8 +138,8 @@ impl Node for IfStatement {
             if let Some(else_span) = cx.try_expect_keyword(Keyword::Else) {
                 if let Some(if_span) = cx.try_expect_keyword(Keyword::If) {
                     let elseif_span = else_span + if_span;
-                    let elseif_expr = cx.expect_node::<Expr>()?;
-                    let elseif_body = cx.expect_node::<Block>()?;
+                    let elseif_expr = cx.expect::<Expr>()?;
+                    let elseif_body = cx.expect::<Block>()?;
                     elseif_clauses.push(ElseIfClause::new(elseif_span, elseif_expr, elseif_body));
                 } else {
                     // 16/12/1, we lost TWO `+1`s for current_length here ... fixed
@@ -150,7 +147,7 @@ impl Node for IfStatement {
                     // There was a bug fix here, now no more current_length handling!
                     // 17/6/21: a new physical structure update makes it much more simple
                     // 17/7/28: a new small update of parse_cx makes things even more simple
-                    let else_body = cx.expect_node::<Block>()?;
+                    let else_body = cx.expect::<Block>()?;
                     else_clause = Some(ElseClause::new(else_span, else_body));
                 }
             } else {
@@ -160,7 +157,9 @@ impl Node for IfStatement {
 
         Ok(IfStatement::new(if_clause, elseif_clauses, else_clause))
     }
+}
 
+impl Node for IfStatement {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_if_stmt(self)
     }

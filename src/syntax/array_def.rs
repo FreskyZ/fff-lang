@@ -11,19 +11,21 @@ pub struct ArrayDef {
     pub items: ExprList,
     pub bracket_span: Span,
 }
+
 impl ArrayDef {
     pub fn new(bracket_span: Span, items: ExprList) -> ArrayDef { ArrayDef{ bracket_span, items: items } }
 }
-impl Node for ArrayDef {
-    type ParseOutput = Expr;
+
+impl Parser for ArrayDef {
+    type Output = Expr;
 
     fn matches(current: &Token) -> bool { 
         matches!(current, Token::Sep(Separator::LeftBracket)) 
     }
 
-    fn parse(cx: &mut ParseContext) -> ParseResult<Expr> {
+    fn parse(cx: &mut ParseContext) -> Result<Expr, Unexpected> {
         
-        match cx.expect_node::<ExprList>()? {
+        match cx.expect::<ExprList>()? {
             ExprListParseResult::Empty(span) => {
                 return Ok(Expr::Array(ArrayDef::new(span, ExprList::new(Vec::new()))));
             }
@@ -36,7 +38,9 @@ impl Node for ArrayDef {
             }
         }
     }
+}
 
+impl Node for ArrayDef {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_array_def(self)
     }

@@ -12,17 +12,17 @@ pub struct ArrayType {
     pub span: Span, // all span
 }
 
-impl Node for ArrayType {
-    type ParseOutput = ArrayType;
+impl Parser for ArrayType {
+    type Output = ArrayType;
 
     fn matches(current: &Token) -> bool {
         matches!(current, Token::Sep(Separator::LeftBracket))
     }
 
-    fn parse(cx: &mut ParseContext) -> ParseResult<ArrayType> {
+    fn parse(cx: &mut ParseContext) -> Result<ArrayType, Unexpected> {
 
         let left_bracket_span = cx.expect_sep(Separator::LeftBracket)?;
-        let base = cx.expect_node::<TypeRef>()?;
+        let base = cx.expect::<TypeRef>()?;
 
         if let Some(right_bracket_span) = cx.try_expect_sep(Separator::RightBracket) {
             cx.emit(strings::InvalidArrayType)
@@ -40,10 +40,13 @@ impl Node for ArrayType {
             return Ok(ArrayType{ base, size: Default::default(), span: left_bracket_span + right_bracket_span });
         }
 
-        let size = cx.expect_node::<Expr>()?;
+        let size = cx.expect::<Expr>()?;
         let right_bracket_span = cx.expect_sep(Separator::RightBracket)?;
         Ok(ArrayType{ base, size, span: left_bracket_span + right_bracket_span })
     }
+}
+
+impl Node for ArrayType {
 
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_array_type(self)

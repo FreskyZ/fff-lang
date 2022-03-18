@@ -12,18 +12,21 @@ pub struct Block {
     pub items: Vec<Statement>,
     pub all_span: Span,
 }
-impl Block {
 
-    pub fn new(all_span: Span, statements: Vec<Statement>) -> Block { Block{ all_span, items: statements } }
+impl Block {
+    pub fn new(all_span: Span, statements: Vec<Statement>) -> Block { 
+        Block{ all_span, items: statements } 
+    }
 }
-impl Node for Block {
-    type ParseOutput = Block;
+
+impl Parser for Block {
+    type Output = Block;
 
     fn matches(current: &Token) -> bool { 
         matches!(current, Token::Sep(Separator::LeftBrace)) 
     }
 
-    fn parse(cx: &mut ParseContext) -> ParseResult<Block> {
+    fn parse(cx: &mut ParseContext) -> Result<Block, Unexpected> {
 
         let starting_span = cx.expect_sep(Separator::LeftBrace)?;
         let mut items = Vec::new();
@@ -31,10 +34,12 @@ impl Node for Block {
             if let Some(ending_span) = cx.try_expect_sep(Separator::RightBrace) {
                 return Ok(Block::new(starting_span + ending_span, items));
             }
-            items.push(cx.expect_node::<Statement>()?);
+            items.push(cx.expect::<Statement>()?);
         }
     }
+}
 
+impl Node for Block {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_block(self)
     }

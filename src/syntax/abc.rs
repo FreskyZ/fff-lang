@@ -22,8 +22,8 @@ $( impl From<$subty> for $name {
     fn from(s: $subty) -> $name { $name::$variant(s) }
 } )+
 
-impl Node for $name {
-    type ParseOutput = $name;
+impl Parser for $name {
+    type Output = $name;
     
     fn matches(current: &Token) -> bool {
         false 
@@ -34,14 +34,16 @@ impl Node for $name {
         $(|| <$subty>::matches3(current, peek, peek2) )+
     }
 
-    fn parse(cx: &mut ParseContext) -> ParseResult<$name> {
+    fn parse(cx: &mut ParseContext) -> Result<$name, Unexpected> {
         $( if cx.matches::<$subty>() {
-            Ok($name::from(<$subty>::parse(cx)?))
+            Ok($name::from(cx.expect::<$subty>()?))
         } else )+ {
             cx.push_unexpect($desc)
         }
     }
-    
+}
+
+impl Node for $name {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.$visit_this(self)
     }

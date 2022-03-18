@@ -28,20 +28,23 @@ impl BlockStatement {
         } 
     }
 }
-impl Node for BlockStatement {
-    type ParseOutput = BlockStatement;
+
+impl Parser for BlockStatement {
+    type Output = BlockStatement;
 
     fn matches3(current: &Token, _peek: &Token, peek2: &Token) -> bool { 
         matches!((current, peek2), (Token::Label(_), Token::Sep(Separator::LeftBrace)) | (Token::Sep(Separator::LeftBrace), _))
     }
 
-    fn parse(cx: &mut ParseContext) -> ParseResult<BlockStatement> {
+    fn parse(cx: &mut ParseContext) -> Result<BlockStatement, Unexpected> {
     
-        let maybe_name = cx.try_expect_node::<LabelDef>()?;
-        let body = cx.expect_node::<Block>()?;
+        let maybe_name = cx.try_expect::<LabelDef>()?;
+        let body = cx.expect::<Block>()?;
         return Ok(BlockStatement::new(maybe_name, body));
     }
+}
 
+impl Node for BlockStatement {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_block_stmt(self)
     }

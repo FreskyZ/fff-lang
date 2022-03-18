@@ -15,16 +15,21 @@ pub struct SimpleName {
 }
 
 impl SimpleName {
-    pub fn new(value: impl Into<IsId>, span: Span) -> SimpleName { SimpleName{ value: value.into(), span } }
+    pub fn new(value: impl Into<IsId>, span: Span) -> SimpleName { 
+        SimpleName{ value: value.into(), span } 
+    }
 }
 
-impl Node for SimpleName {
-    type ParseOutput = SimpleName; // out of expr depdendencies require direct parse and get a simple name
+impl Parser for SimpleName {
+    type Output = SimpleName; // out of expr depdendencies require direct parse and get a simple name
 
-    fn parse(cx: &mut ParseContext) -> ParseResult<SimpleName> {
+    fn parse(cx: &mut ParseContext) -> Result<SimpleName, Unexpected> {
         let (value, span) = cx.expect_ident()?;
         Ok(SimpleName::new(value, span))
     }
+}
+
+impl Node for SimpleName {
 
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_simple_name(self)
@@ -39,25 +44,27 @@ pub struct Name {
 }
 
 impl Name {
-    pub fn new(all_span: Span, segments: Vec<SimpleName>) -> Name { Name{ all_span, segments } }
+    pub fn new(all_span: Span, segments: Vec<SimpleName>) -> Name { 
+        Name{ all_span, segments } 
+    }
 }
 
-impl Node for Name {
-    type ParseOutput = Expr;
+impl Parser for Name {
+    type Output = Expr;
 
     fn matches(current: &Token) -> bool { 
         matches!(current, Token::Ident(_)) 
     }
 
-    fn parse(cx: &mut ParseContext) -> ParseResult<Expr> {
+    fn parse(cx: &mut ParseContext) -> Result<Expr, Unexpected> {
         
-        let first_segment = cx.expect_node::<SimpleName>()?;
+        let first_segment = cx.expect::<SimpleName>()?;
         let mut all_span = first_segment.span;
         let mut segments = vec![first_segment];
         
         loop {
             if let Some(_) = cx.try_expect_sep(Separator::ColonColon) {
-                let segment = cx.expect_node::<SimpleName>()?;
+                let segment = cx.expect::<SimpleName>()?;
                 all_span = all_span + segment.span;
                 segments.push(segment);
             } else {
@@ -71,7 +78,9 @@ impl Node for Name {
             Ok(Expr::SimpleName(segments.pop().unwrap()))
         }
     }
+}
 
+impl Node for Name {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_name(self)
     }

@@ -22,10 +22,7 @@ pub enum ExprListParseResult {
     EndWithComma(Span, ExprList),   // and quote span
 }
 
-// ast_test_case require that
-#[cfg(test)]
 impl Node for ExprListParseResult {
-    type ParseOutput = ExprListParseResult;
 
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         match self {
@@ -36,8 +33,8 @@ impl Node for ExprListParseResult {
     }
 }
 
-impl Node for ExprList {
-    type ParseOutput = ExprListParseResult;
+impl Parser for ExprList {
+    type Output = ExprListParseResult;
 
     fn matches(current: &Token) -> bool {
         matches!(current, Token::Sep(Separator::LeftBrace | Separator::LeftBracket | Separator::LeftParen))
@@ -45,7 +42,7 @@ impl Node for ExprList {
 
     /// This is special, when calling `parse`, `cx.current` should point to the quote token
     /// Then the parser will check end token to determine end of parsing process
-    fn parse(cx: &mut ParseContext) -> ParseResult<ExprListParseResult> {
+    fn parse(cx: &mut ParseContext) -> Result<ExprListParseResult, Unexpected> {
 
         let (starting_sep, starting_span) = cx.expect_seps(&[Separator::LeftBrace, Separator::LeftBracket, Separator::LeftParen])?;
         let expect_end_sep = match starting_sep { 
@@ -64,7 +61,7 @@ impl Node for ExprList {
 
         let mut items = Vec::new();
         loop {
-            items.push(cx.expect_node::<Expr>()?);
+            items.push(cx.expect::<Expr>()?);
             
             if let Some((_, ending_span)) = cx.try_expect_2_sep(Separator::Comma, expect_end_sep) {
                 return Ok(ExprListParseResult::EndWithComma(starting_span + ending_span, ExprList::new(items)));
@@ -74,6 +71,9 @@ impl Node for ExprList {
             let _comma_span = cx.expect_sep(Separator::Comma)?;
         }
     }
+}
+
+impl Node for ExprList {
 
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_expr_list(self)

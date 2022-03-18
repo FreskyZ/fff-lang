@@ -16,6 +16,7 @@ pub struct WhileStatement {
     pub while_span: Span,
     pub all_span: Span,
 }
+
 impl WhileStatement {
     
     pub fn new_with_label(name: LabelDef, while_span: Span, loop_expr: Expr, body: Block) -> WhileStatement {
@@ -32,22 +33,24 @@ impl WhileStatement {
         }
     }
 }
-impl Node for WhileStatement {
-    type ParseOutput = WhileStatement;
+impl Parser for WhileStatement {
+    type Output = WhileStatement;
 
     fn matches3(current: &Token, _peek: &Token, peek2: &Token) -> bool {
         matches!((current, peek2), (Token::Label(_), Token::Keyword(Keyword::While)) | (Token::Keyword(Keyword::While), _))
     }
 
-    fn parse(cx: &mut ParseContext) -> ParseResult<WhileStatement> {
+    fn parse(cx: &mut ParseContext) -> Result<WhileStatement, Unexpected> {
         
-        let maybe_name = cx.try_expect_node::<LabelDef>()?;
+        let maybe_name = cx.try_expect::<LabelDef>()?;
         let while_span = cx.expect_keyword(Keyword::While)?;
-        let expr = cx.expect_node::<Expr>()?;
-        let body = cx.expect_node::<Block>()?;
+        let expr = cx.expect::<Expr>()?;
+        let body = cx.expect::<Block>()?;
         return Ok(WhileStatement::new(maybe_name, while_span, expr, body));
     }
+}
 
+impl Node for WhileStatement {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_while_stmt(self)
     }

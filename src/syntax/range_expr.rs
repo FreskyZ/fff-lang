@@ -21,7 +21,6 @@ impl RangeFullExpr {
 }
 
 impl Node for RangeFullExpr {
-    type ParseOutput = Expr;
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_range_full_expr(self)
     }
@@ -42,7 +41,6 @@ impl RangeRightExpr {
 }
 
 impl Node for RangeRightExpr {
-    type ParseOutput = Expr;
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_range_right_expr(self)
     }
@@ -66,7 +64,6 @@ impl RangeLeftExpr {
 }
 
 impl Node for RangeLeftExpr {
-    type ParseOutput = Expr;
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_range_left_expr(self)
     }
@@ -97,10 +94,6 @@ impl RangeBothExpr {
 }
 
 impl Node for RangeBothExpr {
-    type ParseOutput = Expr;
-    fn parse(cx: &mut ParseContext) -> ParseResult<Expr> {
-        cx.expect_node::<RangeExpr>()
-    }
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_range_both_expr(self)
     }
@@ -112,24 +105,24 @@ impl Node for RangeBothExpr {
 
 // actually also a priority proxy
 pub struct RangeExpr;
-impl Node for RangeExpr {
-    type ParseOutput = Expr;
+impl Parser for RangeExpr {
+    type Output = Expr;
 
-    fn parse(cx: &mut ParseContext) -> ParseResult<Expr> {
+    fn parse(cx: &mut ParseContext) -> Result<Expr, Unexpected> {
         match cx.try_expect_sep(Separator::DotDot) {
             Some(range_op_span) => {
                 if cx.matches::<Expr>() {
-                    let expr = cx.expect_node::<BinaryExpr>()?;
+                    let expr = cx.expect::<BinaryExpr>()?;
                     Ok(Expr::RangeRight(RangeRightExpr::new(range_op_span + expr.get_all_span(), expr)))
                 } else {
                     Ok(Expr::RangeFull(RangeFullExpr::new(range_op_span)))
                 }
             }
             None => {
-                let left_expr = cx.expect_node::<BinaryExpr>()?;
+                let left_expr = cx.expect::<BinaryExpr>()?;
                 if let Some(op_span) = cx.try_expect_sep(Separator::DotDot) {
                     if cx.matches::<Expr>() {
-                        let right_expr = cx.expect_node::<BinaryExpr>()?;
+                        let right_expr = cx.expect::<BinaryExpr>()?;
                         Ok(Expr::RangeBoth(RangeBothExpr::new(left_expr, op_span, right_expr)))
                     } else {
                         Ok(Expr::RangeLeft(RangeLeftExpr::new(left_expr.get_all_span() + op_span, left_expr)))

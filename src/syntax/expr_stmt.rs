@@ -17,9 +17,10 @@ impl SimpleExprStatement {
         SimpleExprStatement{ all_span, expr: expr.into() } 
     }
 }
+
 // dispatch them to convenience statement define macro
-impl Node for SimpleExprStatement {
-    type ParseOutput = <AssignExprStatement as Node>::ParseOutput;
+impl Parser for SimpleExprStatement {
+    type Output = <AssignExprStatement as Parser>::Output;
 
     fn matches(current: &Token) -> bool { 
         AssignExprStatement::matches(current)
@@ -28,10 +29,12 @@ impl Node for SimpleExprStatement {
         AssignExprStatement::matches3(current, peek, peek2)
     }
 
-    fn parse(cx: &mut ParseContext) -> ParseResult<Self::ParseOutput> { 
-        cx.expect_node::<AssignExprStatement>() 
+    fn parse(cx: &mut ParseContext) -> Result<Self::Output, Unexpected> { 
+        cx.expect::<AssignExprStatement>() 
     }
-    
+}
+
+impl Node for SimpleExprStatement {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_simple_expr_stmt(self)
     }
@@ -62,8 +65,8 @@ impl AssignExprStatement {
     }
 }
 
-impl Node for AssignExprStatement {
-    type ParseOutput = Statement;
+impl Parser for AssignExprStatement {
+    type Output = Statement;
 
     fn matches(current: &Token) -> bool { 
         Expr::matches(current)
@@ -72,15 +75,15 @@ impl Node for AssignExprStatement {
         Expr::matches3(current, peek, peek2)
     }
 
-    fn parse(cx: &mut ParseContext) -> ParseResult<Statement> {
+    fn parse(cx: &mut ParseContext) -> Result<Statement, Unexpected> {
 
-        let left_expr = cx.expect_node::<Expr>()?;
+        let left_expr = cx.expect::<Expr>()?;
         let starting_span = left_expr.get_all_span();
 
         if let Some(semicolon_span) = cx.try_expect_sep(Separator::SemiColon) {
             Ok(Statement::SimpleExpr(SimpleExprStatement::new(starting_span + semicolon_span, left_expr)))
         } else if let Some((assign_op, assign_op_span)) = cx.try_expect_sep_kind(SeparatorKind::Assign) {
-            let right_expr = cx.expect_node::<Expr>()?;
+            let right_expr = cx.expect::<Expr>()?;
             let semicolon_span = cx.expect_sep(Separator::SemiColon)?;
             Ok(Statement::AssignExpr(
                 AssignExprStatement::new(starting_span + semicolon_span, assign_op, assign_op_span, left_expr, right_expr)))
@@ -88,7 +91,9 @@ impl Node for AssignExprStatement {
             cx.push_unexpect("assign operators, semicolon")
         }
     }
-    
+}
+
+impl Node for AssignExprStatement {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_assign_expr_stmt(self)
     }
