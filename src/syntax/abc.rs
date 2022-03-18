@@ -102,3 +102,23 @@ impl From<Statement> for Item {
         }
     }
 }
+
+define_abc!{ TypeRef, "type ref", visit_type_ref,
+    ArrayType => Array, visit_array_type,
+    FnType => Fn, visit_fn_type,
+    RefType => Ref, visit_ref_type,
+    TupleType => Tuple, visit_tuple_type,
+    PlainType => Plain, visit_plain_type,
+}
+
+impl TypeRef {
+    pub fn get_all_span(&self) -> Span {
+        match self {
+            Self::Array(t) => t.span,
+            Self::Fn(t) => t.all_span,
+            Self::Ref(t) => t.span,
+            Self::Tuple(t) => t.span,
+            Self::Plain(t) => t.all_span,
+        }
+    }
+}

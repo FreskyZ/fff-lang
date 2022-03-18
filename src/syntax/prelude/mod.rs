@@ -84,6 +84,8 @@ pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_fn_call_expr(&mut self, node: &FnCallExpr) -> Result<T, E> { node.walk(self) }
     fn visit_fn_def(&mut self, node: &FnDef) -> Result<T, E> { node.walk(self) }
     fn visit_fn_param(&mut self, node: &FnParam) -> Result<T, E> { node.walk(self) }
+    fn visit_fn_type(&mut self, node: &FnType) -> Result<T, E> { node.walk(self) }
+    fn visit_fn_type_param(&mut self, node: &FnTypeParam) -> Result<T, E> { node.walk(self) }
     fn visit_for_stmt(&mut self, node: &ForStatement) -> Result<T, E> { node.walk(self) }
     fn visit_if_stmt(&mut self, node: &IfStatement) -> Result<T, E> { node.walk(self) }
     fn visit_if_clause(&mut self, node: &IfClause) -> Result<T, E> { node.walk(self) }
@@ -100,16 +102,21 @@ pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_module_stmt(&mut self, node: &ModuleStatement) -> Result<T, E> { node.walk(self) }
     fn visit_name(&mut self, node: &Name) -> Result<T, E> { node.walk(self) }
     fn visit_simple_name(&mut self, node: &SimpleName) -> Result<T, E> { node.walk(self) }
+    fn visit_plain_type(&mut self, node: &PlainType) -> Result<T, E> { node.walk(self) }
+    fn visit_type_segment(&mut self, node: &TypeSegment) -> Result<T, E> { node.walk(self) }
+    fn visit_type_as_segment(&mut self, node: &TypeAsSegment) -> Result<T, E> { node.walk(self) }
     fn visit_range_both_expr(&mut self, node: &RangeBothExpr) -> Result<T, E> { node.walk(self) }
     fn visit_range_full_expr(&mut self, node: &RangeFullExpr) -> Result<T, E> { node.walk(self) }
     fn visit_range_left_expr(&mut self, node: &RangeLeftExpr) -> Result<T, E> { node.walk(self) }
     fn visit_range_right_expr(&mut self, node: &RangeRightExpr) -> Result<T, E> { node.walk(self) }
+    fn visit_ref_type(&mut self, node: &RefType) -> Result<T, E> { node.walk(self) }
     fn visit_ret_stmt(&mut self, node: &ReturnStatement) -> Result<T, E> { node.walk(self) }
     fn visit_stmt(&mut self, node: &Statement) -> Result<T, E> { node.walk(self) }
     fn visit_item(&mut self, node: &Item) -> Result<T, E> { node.walk(self) } 
     fn visit_paren_expr(&mut self, node: &ParenExpr) -> Result<T, E> { node.walk(self) }
     fn visit_primitive_type(&mut self, node: &PrimitiveType) -> Result<T, E> { node.walk(self) }
     fn visit_tuple_def(&mut self, node: &TupleDef) -> Result<T, E> { node.walk(self) }
+    fn visit_tuple_type(&mut self, node: &TupleType) -> Result<T, E> { node.walk(self) }
     fn visit_type_def(&mut self, node: &TypeDef) -> Result<T, E> { node.walk(self) }
     fn visit_type_field_def(&mut self, node: &TypeFieldDef) -> Result<T, E> { node.walk(self) }
     fn visit_type_ref(&mut self, node: &TypeRef) -> Result<T, E> { node.walk(self) }

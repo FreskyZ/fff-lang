@@ -78,6 +78,7 @@ impl Node for VarDeclStatement {
     }
 }
 
+#[cfg(feature = "todo")]
 #[cfg(test)] #[test]
 fn var_decl_stmt_parse() {
     use crate::diagnostics::*;

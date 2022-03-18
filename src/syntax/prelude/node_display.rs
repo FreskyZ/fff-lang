@@ -67,9 +67,10 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
 
     // default implementation correctly transparents this type of node
     // fn visit_expr_list(&mut self, node: &ExprList) -> fmt::Result;
-    // fn visit_expr(&mut self, node: &ExprList) -> fmt::Result;
-    // fn visit_stmt(&mut self, node: &ExprList) -> fmt::Result;
-    // fn visit_item(&mut self, node: &ExprList) -> fmt::Result;
+    // fn visit_expr(&mut self, node: &Expr) -> fmt::Result;
+    // fn visit_stmt(&mut self, node: &Statement) -> fmt::Result;
+    // fn visit_item(&mut self, node: &Item) -> fmt::Result;
+    // fn visit_type_ref(&mut self, node: &TypeRef) -> fmt::Result;
 
     fn visit_array_def(&mut self, node: &ArrayDef) -> fmt::Result {
         self.write_indent()?;
@@ -177,6 +178,28 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
         self.write_isid(node.name)?;
         self.write_space()?;
         self.write_span(node.name_span)?;
+        self.invoke_walk(node)
+    }
+
+    fn visit_fn_type(&mut self, node: &FnType) -> fmt::Result {
+        self.write_indent()?;
+        self.write_str("fn-type ")?;
+        self.write_span(node.all_span)?;
+        self.write_str(" paren ")?;
+        self.write_span(node.paren_span)?;
+        self.invoke_walk(node)
+    }
+
+    fn visit_fn_type_param(&mut self, node: &FnTypeParam) -> fmt::Result {
+        self.write_indent()?;
+        self.write_str("fn-type-param ")?;
+        self.write_span(node.all_span)?;
+        if let Some((parameter_id, parameter_span)) = node.name {
+            self.write_space()?;
+            self.write_isid(parameter_id)?;
+            self.write_space()?;
+            self.write_span(parameter_span)?;
+        }
         self.invoke_walk(node)
     }
 
@@ -300,6 +323,35 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
         self.invoke_walk(node)
     }
 
+    fn visit_plain_type(&mut self, node: &PlainType) -> fmt::Result {
+        self.write_indent()?;
+        self.write_str("plain-type ")?;
+        self.write_span(node.all_span)?;
+        self.invoke_walk(node)
+    }
+
+    fn visit_type_segment(&mut self, node: &TypeSegment) -> fmt::Result {
+        self.write_indent()?;
+        self.write_str("type-segment ")?;
+        self.write_span(node.all_span)?;
+        self.write_space()?;
+        self.write_isid(node.ident)?;
+        self.write_space()?;
+        self.write_span(node.ident_span)?;
+        if !node.parameters.is_empty() {
+            self.write_str(" quote ")?;
+            self.write_span(node.quote_span)?;
+        }
+        self.invoke_walk(node)
+    }
+
+    fn visit_type_as_segment(&mut self, node: &TypeAsSegment) -> fmt::Result {
+        self.write_indent()?;
+        self.write_str("type-as-segment ")?;
+        self.write_span(node.span)?;
+        self.invoke_walk(node)
+    }
+
     fn visit_paren_expr(&mut self, node: &ParenExpr) -> fmt::Result {
         self.write_indent()?;
         self.write_str("paren-expr ")?;
@@ -344,6 +396,13 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
         self.invoke_walk(node)
     }
 
+    fn visit_ref_type(&mut self, node: &RefType) -> fmt::Result {
+        self.write_indent()?;
+        self.write_str("ref-type ")?;
+        self.write_span(node.span)?;
+        self.invoke_walk(node)
+    }
+
     fn visit_ret_stmt(&mut self, node: &ReturnStatement) -> fmt::Result {
         self.write_indent()?;
         self.write_str("ret-stmt ")?;
@@ -381,27 +440,19 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
         self.invoke_walk(node)
     }
 
+    fn visit_tuple_type(&mut self, node: &TupleType) -> fmt::Result {
+        self.write_indent()?;
+        self.write_str("tuple-type ")?;
+        self.write_span(node.span)?;
+        self.invoke_walk(node)
+    }
+
     fn visit_type_field_def(&mut self, node: &TypeFieldDef) -> fmt::Result {
         self.write_indent()?;
         self.write_str("field ")?;
         self.write_span(node.all_span)?;
         self.write_str(" colon ")?;
         self.write_span(node.colon_span)?;
-        self.invoke_walk(node)
-    }
-
-    fn visit_type_ref(&mut self, node: &TypeRef) -> fmt::Result {
-        self.write_indent()?;
-        self.write_str("type-ref ")?;
-        self.write_span(node.all_span)?;
-        self.write_space()?;
-        self.write_isid(node.base)?;
-        self.write_space()?;
-        self.write_span(node.base_span)?;
-        if !node.params.is_empty() {
-            self.write_str(" bracket ")?;
-            self.write_span(node.quote_span)?;
-        }
         self.invoke_walk(node)
     }
 

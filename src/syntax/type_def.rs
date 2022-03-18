@@ -71,7 +71,7 @@ impl Parser for TypeDef {
             fields.push(if let Some(comma_span) = cx.try_expect_sep(Separator::Comma) {
                 TypeFieldDef::new(field_name.span + comma_span, field_name, colon_span, field_type)
             } else {
-                TypeFieldDef::new(field_name.span + field_type.all_span, field_name, colon_span, field_type)
+                TypeFieldDef::new(field_name.span + field_type.get_all_span(), field_name, colon_span, field_type)
             });
         };
 
@@ -92,6 +92,7 @@ impl Node for TypeDef {
     }
 }
 
+#[cfg(feature = "todo")]
 #[cfg(test)] #[test]
 fn type_def_parse() {
     //                                  01234567890123456

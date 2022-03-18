@@ -117,3 +117,7 @@ pub const EmptyIndexCall: &str = "empty indexer call";
 pub const IndexCallHere: &str = "indexer call here";
 pub const InvalidArrayType: &str = "invalid array type";
 pub const ArrayTypeSyntaxHelp: &str = "array type syntax is [type; size]";
+pub const SingleItemTupleType: &str = "single item tuple type should ends with comma";
+pub const TupleTypeExpectCommaMeetRightParen: &str = "expected comma, meet right paren";
+pub const FunctionReturnTypeShouldUseArrow: &str = "function return type should use arrow `->`";
+pub const FunctionReturnTypeExpectArrowMeetColon: &str = "expected arrow `->`, meet colon";

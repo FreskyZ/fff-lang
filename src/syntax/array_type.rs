@@ -1,5 +1,7 @@
 ///! syntax::array_type:
 ///! array_type = '[' type_ref ';' expr ']'
+///!
+///! type template name will be `array` when analysis, so user type `array` should be rejected by analysis
 
 use super::prelude::*;
 use super::{TypeRef, Expr};
@@ -7,7 +9,7 @@ use super::{TypeRef, Expr};
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
 pub struct ArrayType {
-    pub base: TypeRef,
+    pub base: Box<TypeRef>,
     pub size: Expr,
     pub span: Span, // all span
 }
@@ -22,7 +24,7 @@ impl Parser for ArrayType {
     fn parse(cx: &mut ParseContext) -> Result<ArrayType, Unexpected> {
 
         let left_bracket_span = cx.expect_sep(Separator::LeftBracket)?;
-        let base = cx.expect::<TypeRef>()?;
+        let base = Box::new(cx.expect::<TypeRef>()?);
 
         if let Some(right_bracket_span) = cx.try_expect_sep(Separator::RightBracket) {
             cx.emit(strings::InvalidArrayType)
@@ -55,19 +57,4 @@ impl Node for ArrayType {
         v.visit_type_ref(&self.base)?;
         v.visit_expr(&self.size)
     }
-}
-
-#[cfg(test)]
-#[test]
-fn array_type_parse() {
-
-    case!{ "[i32; 5]" as ArrayType, ArrayType{
-        base: TypeRef::new_simple(2, Span::new(1, 3)),
-        size: make_lit!(5, 6, 6).into(),
-        span: Span::new(0, 7),
-    }}
-
-    // case!{ "[[a;1]; 1 + 1 * 1 - 1 / 1]" as ArrayType, ArrayType{
-    //     span: Span::new()
-    // }}
 }

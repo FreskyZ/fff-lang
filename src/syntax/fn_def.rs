@@ -91,10 +91,15 @@ impl Parser for FnDef {
             params.push(FnParam::new(param_name, param_span, decltype));
         }
 
-        let maybe_ret_type = if let Some(_right_arrow_span) = cx.try_expect_sep(Separator::Arrow) { Some(cx.expect::<TypeRef>()?) } else { None };
+        let ret_type = cx.try_expect_seps(&[Separator::Arrow, Separator::Colon]).map(|(sep, span)| {
+            if sep == Separator::Colon {
+                cx.emit(strings::FunctionReturnTypeShouldUseArrow).detail(span, strings::FunctionReturnTypeExpectArrowMeetColon);
+            }
+            cx.try_expect::<TypeRef>()
+        }).transpose()?.flatten();
         let body = cx.expect::<Block>()?;
 
-        return Ok(FnDef::new(fn_span + body.all_span, fn_name, fn_name_span, params_paren_span, params, maybe_ret_type, body));
+        return Ok(FnDef::new(fn_span + body.all_span, fn_name, fn_name_span, params_paren_span, params, ret_type, body));
     }
 }
 
@@ -113,9 +118,10 @@ impl Node for FnDef {
     }
 }
 
+#[cfg(feature = "todo")]
 #[cfg(test)] #[test]
 fn fn_def_parse() {
-    use super::{SimpleName, Statement, SimpleExprStatement, Expr, FnCallExpr};
+    use super::{SimpleName, Statement, SimpleExprStatement, Expr, FnCallExpr, PlainType, TypeSegment};
 
     //                                012345678901
     case!{ "fn main() {}" as FnDef,
@@ -130,12 +136,14 @@ fn fn_def_parse() {
     //                      0        1
     //                      0123456789012345678
     case!{ "fn main(ac: i32) {}" as FnDef,
-        FnDef::new(Span::new(0, 18), 
-            2, Span::new(3, 6), 
+        FnDef::new(Span::new(0, 18), 2, Span::new(3, 6), 
             Span::new(7, 15), vec![
-                FnParam::new(
-                    3, Span::new(8, 9),
-                    TypeRef::new_simple(4, Span::new(12, 14))
+                FnParam::new(3, Span::new(8, 9),
+                    TypeRef::Plain(PlainType{ all_span: Span::new(12, 14),
+                        type_as_segment: None, segments: vec![
+                            TypeSegment{ ident: IsId::new(4), ident_span: Span::new(12, 14), quote_span: Span::new(0, 0), parameters: vec![], all_span: Span::new(12, 14) }
+                        ]
+                    }),
                 ),
             ],
             None,

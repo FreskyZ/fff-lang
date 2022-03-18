@@ -165,7 +165,17 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
         }
     }
 
-    /// Check current token is specified Separator
+    /// split current shift right token to 2 greater than tokens
+    /// caller to check current is shift right
+    /// return span for first greater than and logically move to next greater than by directly changing cached current token
+    fn split_shift_right(&mut self) -> Span {
+        let result = self.current_span.start.into();
+        self.current = Token::Sep(Separator::Gt);
+        self.current_span = self.current_span.end.into();
+        result
+    }
+
+    /// Check current token is specified Separator, handles split shift right
     ///
     /// if so, move next and Ok(sep_span),
     /// if not, push unexpect and Err(())
@@ -174,6 +184,8 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
     pub fn expect_sep(&mut self, expected_sep: Separator) -> Result<Span, Unexpected> {
         match self.current {
             Token::Sep(sep) if sep == expected_sep => Ok(self.move_next()),
+            Token::Sep(Separator::GtGt) if expected_sep == Separator::Gt => Ok(self.split_shift_right()),
+            // if it is GtGtEq, you need to split into Gt+Gt+Eq, but will that hapen?
             _ => self.push_unexpect(expected_sep.display()),
         }
     }
@@ -191,7 +203,7 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
         }
     }
 
-    /// Check current token is specified Separator
+    /// Check current token is specified Separator, handles split shift right
     ///
     /// if so, move next and Some(sep_span), 
     /// if not, no move next and None
@@ -200,6 +212,7 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
     pub fn try_expect_sep(&mut self, expected_sep: Separator) -> Option<Span> {
         match self.current {
             Token::Sep(sep) if sep == expected_sep => Some(self.move_next()),
+            Token::Sep(Separator::GtGt) if expected_sep == Separator::Gt => Some(self.split_shift_right()),
             _ => None,
         }
     }
@@ -217,7 +230,7 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
         }
     }
     
-    /// Check current and next token is specified Separators
+    /// Check current and next token is specified Separators, handles split shift right
     ///
     /// if so, move next and Some((sep1_span, sep2_span)),
     /// if not, no move next and None
@@ -226,6 +239,7 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
     pub fn try_expect_2_sep(&mut self, expected_sep1: Separator, expected_sep2: Separator) -> Option<(Span, Span)> {
         match (&self.current, &self.peek) {
             (Token::Sep(sep1), Token::Sep(sep2)) if sep1 == &expected_sep1 && sep2 == &expected_sep2 => { Some((self.move_next(), self.move_next())) },
+            (Token::Sep(sep1), Token::Sep(Separator::GtGt)) if sep1 == &expected_sep1 && expected_sep2 == Separator::Gt => Some((self.move_next(), self.split_shift_right())),
             _ => None,
         }
     }
@@ -253,6 +267,19 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
         match self.current {
             Token::Ident(id) => Ok((id, self.move_next())),
             _ => self.push_unexpect("identifier"),
+        }
+    }
+
+    /// Check current token is a identifier
+    /// 
+    /// if so, move next and Some((id, id_span)), 
+    /// if not, no move next and None
+    ///
+    /// example `if let Some((ident_id, ident_span)) = cx.try_expect_ident() { ... }`
+    pub fn try_expect_ident(&mut self) -> Option<(IsId, Span)> {
+        match self.current {
+            Token::Ident(id) => Some((id, self.move_next())),
+            _ => None,
         }
     }
 
@@ -297,25 +324,10 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
         }
     }
 
-    /// if current token is shift right, regard it as 2 right angle brackets
-    /// return location of first right angle bracket, and change current token to the second right angle bracket
-    // is the shift right/double right angle bracket issue this simple?
-    pub fn split_shift_right(&mut self) -> Option<Span> {
-        match self.current {
-            Token::Sep(Separator::GtGt) => {
-                let first_location = self.current_span.start.into();
-                self.current = Token::Sep(Separator::Gt);
-                self.current_span = self.current_span.end.into();
-                Some(first_location)
-            },
-            _ => None,
-        }
-    }
-
     pub fn push_unexpect<T>(&mut self, expect_desc: &str) -> Result<T, Unexpected> {
         self.base.emit("unexpected token")
             .detail(self.current_span, format!("meet {:?}", self.current))
             .help(format!("expected {}", expect_desc));
-        return Err(Unexpected);
+        Err(Unexpected)
     }
 }
