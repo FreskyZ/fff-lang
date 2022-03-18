@@ -99,6 +99,19 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
         }
     }
 
+    /// Check current token is of specified keyword kind
+    /// 
+    /// if so, move next and Ok(keyword, keyword_span),
+    /// if not, push unexpect and Err(())
+    ///
+    /// example `let kw_span = cx.expect_keyword(Keyword::In)?;`
+    pub fn expect_keyword_kind(&mut self, kind: KeywordKind) -> Result<(Keyword, Span), ()> {
+        match self.current {
+            Token::Keyword(kw) if kw.kind(kind) => Ok((kw, self.move_next())),
+            _ => self.push_unexpect(&format!("{:?}", kind)),
+        }
+    }
+
     /// Check current token is specified Separator
     ///
     /// if so, move next and Ok(sep_span),

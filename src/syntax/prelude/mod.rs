@@ -72,6 +72,7 @@ pub trait Node: Sized {
 // TODO: use Try when stablized // will I still work on this project at that time?
 pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_array_def(&mut self, node: &ArrayDef) -> Result<T, E> { node.walk(self) }
+    fn visit_array_type(&mut self, node: &ArrayType) -> Result<T, E> { node.walk(self) }
     fn visit_binary_expr(&mut self, node: &BinaryExpr) -> Result<T, E> { node.walk(self) }
     fn visit_block_stmt(&mut self, node: &BlockStatement) -> Result<T, E> { node.walk(self) }
     fn visit_block(&mut self, node: &Block) -> Result<T, E> { node.walk(self) }
@@ -106,6 +107,7 @@ pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_stmt(&mut self, node: &Statement) -> Result<T, E> { node.walk(self) }
     fn visit_item(&mut self, node: &Item) -> Result<T, E> { node.walk(self) } 
     fn visit_paren_expr(&mut self, node: &ParenExpr) -> Result<T, E> { node.walk(self) }
+    fn visit_primitive_type(&mut self, node: &PrimitiveType) -> Result<T, E> { node.walk(self) }
     fn visit_tuple_def(&mut self, node: &TupleDef) -> Result<T, E> { node.walk(self) }
     fn visit_type_def(&mut self, node: &TypeDef) -> Result<T, E> { node.walk(self) }
     fn visit_type_field_def(&mut self, node: &TypeFieldDef) -> Result<T, E> { node.walk(self) }

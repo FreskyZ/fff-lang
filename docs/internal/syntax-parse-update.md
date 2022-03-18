@@ -5,11 +5,11 @@
 [x] pass test
 [x] add take address expression
 [x] rename type use to type ref
-[x] rename session to context, rename sess to cx, remove <F> from SourceChars, lexical::Parser and ParseContext
-[ ] redesign builtin array type, should include size, the dynamic array type should be in standard library based on pointer
-[ ] merge simple name into name
-[ ] support generic type in type ref and name, like rust, use ::< for generic parameter in expr
+[x] rename session to context, rename sess to cx, remove `<F>` from SourceChars, lexical::Parser and ParseContext
+[ ] split Node into Node and Parser, and ParserOutput can be trait Parser { type Output: Node }, remove default implementation for parse and accept
+[ ] change array type ref to rust style `[type; size]` syntax, add function type ref, reference type ref and change type ref to an abc
+[ ] merge simple name into name, accept generic part in name segment
 [ ] add object literal syntax
-[ ] move multiple file operations from syntaxtree.rs into driver
-[ ] add simple enum type
+[ ] move multiple file operations from syntaxtree.rs into driver, add file id to module
+[ ] add simple enum type, works as typed namespaced constant
 [ ] try connect to old semantic analysis virtual machine?

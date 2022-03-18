@@ -115,3 +115,5 @@ pub const TupleDefHere: &str = "tuple definition here";
 pub const FnCallHere: &str = "function call here";
 pub const EmptyIndexCall: &str = "empty indexer call";
 pub const IndexCallHere: &str = "indexer call here";
+pub const InvalidArrayType: &str = "invalid array type";
+pub const ArrayTypeSyntaxHelp: &str = "array type syntax is [type; size]";

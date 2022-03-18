@@ -78,6 +78,13 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
         self.invoke_walk(node)
     }
 
+    fn visit_array_type(&mut self, node: &ArrayType) -> fmt::Result {
+        self.write_indent()?;
+        self.write_str("array-type ")?;
+        self.write_span(node.span)?;
+        self.invoke_walk(node)
+    }
+
     fn visit_assign_expr_stmt(&mut self, node: &AssignExprStatement) -> fmt::Result {
         self.write_indent()?;
         self.write_str("assign-expr-stmt ")?;
@@ -296,6 +303,13 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
     fn visit_paren_expr(&mut self, node: &ParenExpr) -> fmt::Result {
         self.write_indent()?;
         self.write_str("paren-expr ")?;
+        self.write_span(node.span)?;
+        self.invoke_walk(node)
+    }
+
+    fn visit_primitive_type(&mut self, node: &PrimitiveType) -> fmt::Result {
+        self.write_indent()?;
+        self.write_str("primitive-type ")?;
         self.write_span(node.span)?;
         self.invoke_walk(node)
     }

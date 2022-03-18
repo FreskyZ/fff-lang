@@ -1,10 +1,160 @@
 ///! syntax::type_ref:
 ///! type_ref = primitive_type | identifier | '[' type_ref ']' | '(' type_ref ',' { type_ref ',' } [ type_ref ] ')'
 ///! should be
-///! type_ref = primitive_type | type_ref_segment
-///! type_ref_segment = identifier | '[' type_ref ';' expr ']' | '(' type_ref ',' { type_ref ',' } [ type_ref ] ')' | type_ref '<' type_ref { ',' type_ref } '>'
+///! type_ref = 
+///!    | primitive_type 
+///!    | '[' type_ref ';' expr ']' 
+///!    | '(' type_ref ',' { type_ref ',' } [ type_ref ] ')' 
+///!    | 'fn' '(' [ ident ':' ] type_ref { ',' [ ident ':' ] type_ref } [ ',' ] ')' [ '->' type_ref ]
+///!    | type_ref_segment { '::' type_ref_segment }
+///!    | '&' type_ref
+///! type_ref_segment = identifier | identifier '<' type_parameter { ',' type_parameter } '>'
+///! type_parameter = type_ref | expr
+///!
+///! - this means primitive type, array and tuple special syntax will not be part of path,
+///!   only identifier or type-parameterized identifier can be part of double colon separated path
+///! - according to current implementation,
+///!   - fn syntax and `fn<paramtype1, paramtype2, rettype>` is exactly same
+///!   - tuple syntax and `tuple<type1, type2>` is exactly same,
+///!     without making `tuple` a keyword, which also mean a custom type cannot be called tuple
+///!   - array syntax and `array<itemtype, size>` is exactly same,
+///!     without making `array` a keyword, which also mean plain numeric value should be allowed in type list
 
 use super::prelude::*;
+// use super::{Expr, LitExpr, LitValue};
+
+// pub struct PrimitiveTypeRef {
+//     pub keyword: Keyword,
+//     pub span: Span,
+// }
+
+// pub struct ArrayTypeRef {
+//     pub item: Box<TypeRef>,
+//     pub size: Expr,
+//     pub span: Span,
+// }
+
+// pub struct TupleTypeRef {
+//     pub items: Vec<TypeRef>,
+//     pub span: Span,
+// }
+
+// pub struct FunctionTypeRefParam {
+//     pub name: Option<IsId>,
+//     pub name_span: Span,
+//     pub r#type: TypeRef,
+// }
+
+// pub struct FunctionTypeRef {
+//     pub parameters: Vec<FunctionTypeRefParam>,
+//     pub ret_type: Option<Box<TypeRef>>,
+//     pub span: Span,
+// }
+
+// pub struct ReferenceTypeRef {
+//     pub base: Box<TypeRef>,
+//     pub span: Span,
+// }
+
+// pub struct TypeRefSegment {
+//     pub base: IsId,
+//     pub parameters: Vec<TypeRef>,
+//     pub span: Span,
+// }
+
+// pub struct TypeRefSegments {
+//     pub segments: Vec<TypeRefSegment>,
+//     pub span: Span,
+// }
+
+// pub enum TypeRef {
+//     Primitive(PrimitiveTypeRef),
+//     Array(ArrayTypeRef),
+//     Tuple(TupleTypeRef),
+//     Function(FunctionTypeRef),
+//     Reference(ReferenceTypeRef),
+//     Segments(TypeRefSegments),
+// }
+
+// #[cfg_attr(test, derive(PartialEq))]
+// #[derive(Debug)]
+// pub struct TypeRefSegment {
+//     // primitive is interned as isid and no type parameter and one segment
+//     pub base: IsId,
+//     // all span = base span + quote span, 
+//     // so base span for array and tuple is quote span start
+//     pub base_span: Span,
+//     // and quote span is end of base span if non generic segment
+//     pub quote_span: Span,
+//     pub parameters: Vec<TypeRef>,
+// }
+
+// impl TypeRefSegment {
+
+//     pub fn new_simple(name: impl Into<IsId>, span: Span) -> Self {
+//         Self{ base: name.into(), base_span: span, quote_span: span.end.into(), parameters: Vec::new() }
+//     }
+//     pub fn new_generic(base: impl Into<IsId>, base_span: Span, quote_span: Span, parameters: Vec<TypeRef>) -> Self {
+//         Self{ base: base.into(), base_span, quote_span, parameters }
+//     }
+// }
+
+// impl Node for TypeRefSegment {
+//     type ParseOutput = TypeRefSegment;
+
+//     fn matches(current: &Token) -> bool {
+//         match current {
+//             &Token::Ident(_) 
+//             | &Token::Sep(Separator::LeftBracket) 
+//             | &Token::Sep(Separator::LeftParen) => true,
+//             &Token::Keyword(kw) => kw.kind(KeywordKind::Primitive),
+//             _ => false,
+//         }
+//     }
+
+//     fn parse(cx: &mut ParseContext) -> ParseResult<Self> {
+        
+//         if let Some(left_bracket_span) = cx.try_expect_sep(Separator::LeftBracket) {
+//             let inner = cx.expect_node::<TypeRef>()?;
+//             let _semicolon_span = cx.expect_sep(Separator::SemiColon)?;
+//             let expr = cx.expect_node::<Expr>()?;
+//             let size_type = if let Expr::Lit(LitExpr{ value: LitValue::Num(Numeric::I32(size)), span: size_span }) = &expr {
+//                 let size_id = cx.intern(&format!("{}", size));
+//                 TypeRef{ all_span: *size_span, segments: vec![TypeRefSegment::new_simple(size_id, *size_span)] }
+//             } else {
+//                 let expr_span = expr.get_all_span();
+//                 cx.emit(strings::InvalidArraySize).span(expr_span).help(strings::ArraySizeHelp);
+//                 TypeRef{ all_span: expr_span, segments: vec![TypeRefSegment::new_simple(IsId::from(1), expr_span)] }
+//             };
+//             let right_bracket_span = cx.expect_sep(Separator::RightBracket)?;
+//             TypeRefSegment::new_generic(cx.intern("array"), left_bracket_span, left_bracket_span, vec![inner, size_type])
+//         } else if let Some(left_paren_span) = cx.try_expect_sep(Separator::LeftParen) {
+            
+//             if let Some(right_paren_span) = cx.try_expect_sep(Separator::RightParen) {
+//                 return Ok(Self::new_simple(cx.intern("unit"), left_paren_span + right_paren_span));
+//             }
+            
+//             let mut tuple_types = vec![cx.expect_node::<TypeRef>()?];
+//             let (ending_span, end_by_comma) = loop {
+//                 if let Some((_comma_span, right_paren_span)) = cx.try_expect_2_sep(Separator::Comma, Separator::RightParen) {
+//                     break (right_paren_span, true);
+//                 } else if let Some(right_paren_span) = cx.try_expect_sep(Separator::RightParen) {
+//                     break (right_paren_span, false);
+//                 }
+//                 let _comma_span = cx.expect_sep(Separator::Comma)?;
+//                 tuple_types.push(cx.expect_node::<TypeRef>()?);
+//             };
+                
+//             let paren_span = left_paren_span + ending_span;
+//             if tuple_types.len() == 1 && !end_by_comma {            // len == 0 already rejected
+//                 cx.emit("Single item tuple type use").detail(paren_span, "type use here");
+//             }
+//             Ok(Self::new_template(cx.intern("tuple"), Span::new(0, 0), paren_span, tuple_types))
+//         }
+
+//         Err(())
+//     }
+// }
 
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
