@@ -223,7 +223,7 @@ impl<F> SourceContext<F> {
                 return (FileId::new(index as u32 + 1), file, position - file.start_index);
             }
         }
-        unreachable!("position overflow");
+        unreachable!("position overflow {} {:?}", position, self.files);
     }
 
     #[allow(dead_code)]
@@ -256,7 +256,7 @@ impl<F> SourceContext<F> {
             } else if current_byte_index == file.content.len() {
                 return (file_id, line, column);   // allow position for EOF char 
             } else if current_byte_index > file.content.len() {
-                panic!("position overflow");
+                panic!("position overflow {} in map_position_to_line_column", current_byte_index);
             } else if file.content.as_bytes()[current_byte_index] != b'\r' { // ignore \r in column counting
                 column += 1;
             }

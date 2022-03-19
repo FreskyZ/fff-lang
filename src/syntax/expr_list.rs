@@ -52,23 +52,25 @@ impl Parser for ExprList {
             _ => unreachable!(),
         };
 
-        if let Some(ending_span) = cx.try_expect_sep(expect_end_sep) {
-            return Ok(ExprListParseResult::Empty(starting_span + ending_span));
-        }
-        if let Some((_, ending_span)) = cx.try_expect_2_sep(Separator::Comma, expect_end_sep) {
-            return Ok(ExprListParseResult::SingleComma(starting_span + ending_span));
+        if let Some((ending_span, skipped_comma)) = cx.try_expect_closing_bracket(expect_end_sep) {
+            return if skipped_comma {
+                Ok(ExprListParseResult::SingleComma(starting_span + ending_span))
+            } else {
+                Ok(ExprListParseResult::Empty(starting_span + ending_span))
+            };
         }
 
         let mut items = Vec::new();
         loop {
             items.push(cx.expect::<Expr>()?);
-            
-            if let Some((_, ending_span)) = cx.try_expect_2_sep(Separator::Comma, expect_end_sep) {
-                return Ok(ExprListParseResult::EndWithComma(starting_span + ending_span, ExprList::new(items)));
-            } else if let Some(ending_span) = cx.try_expect_sep(expect_end_sep) {
-                return Ok(ExprListParseResult::Normal(starting_span + ending_span, ExprList::new(items)));
+            if let Some((ending_span, skipped_comma)) = cx.try_expect_closing_bracket(expect_end_sep) {
+                return if skipped_comma {
+                    Ok(ExprListParseResult::EndWithComma(starting_span + ending_span, ExprList::new(items)))
+                } else {
+                    Ok(ExprListParseResult::Normal(starting_span + ending_span, ExprList::new(items)))
+                };
             }
-            let _comma_span = cx.expect_sep(Separator::Comma)?;
+            cx.expect_sep(Separator::Comma)?;
         }
     }
 }

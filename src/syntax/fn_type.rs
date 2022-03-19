@@ -1,11 +1,14 @@
 ///! syntax::fn_type:
 ///! fn_type = 'fn' '(' [ ident ':' ] type_ref { ',' [ ident ':' ] type_ref } [ ',' ] ')' [ '->' type_ref ]
 ///!
-///! parameter name is optional and does not affect type identity
-///! return type in fn type and fn def is not colon but arrow: https://mail.mozilla.org/pipermail/rust-dev/2013-July/005042.html
+///! - return type in fn type and fn def is not colon but arrow: https://mail.mozilla.org/pipermail/rust-dev/2013-July/005042.html
+///! - parameter name is optional and does not affect type identity
+///!   type ref may start with ident, actually most common type refs start with ident, 
+///!   so it is ambiguous and that may be the reason rust does not support that, but I always want to add parameter name to make function type more clear,
+///!   so they are distinguished by always parseing type ref and very simple result (only one identifier) followed with colon is regarded as parameter name
 
 use super::prelude::*;
-use super::{TypeRef};
+use super::{TypeRef, PlainType};
 
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
@@ -47,26 +50,33 @@ impl Parser for FnType {
         let left_paren_span = cx.expect_sep(Separator::LeftParen)?;
 
         let mut parameters = Vec::new();
-        let right_paren_span = if let Some(right_paren_span) = cx.try_expect_sep(Separator::RightParen) {
-            right_paren_span
-        } else {
-            loop {
-                let name = cx.try_expect_ident_or_keywords(&[Keyword::This, Keyword::Self_, Keyword::Underscore]);
-                if name.is_some() {
-                    cx.expect_sep(Separator::Colon)?;
+        let right_paren_span = loop {
+            if let Some((right_paren_span, skipped_comma)) = cx.try_expect_closing_bracket(Separator::RightParen) {
+                if skipped_comma && parameters.is_empty() {
+                    // TODO: need comma span
+                    cx.emit("unexpected token").detail(right_paren_span, "expected ident, type or right paren, meet comma");
                 }
-                let r#type = cx.expect::<TypeRef>()?;
-                let span = name.map(|(_, s)| s).unwrap_or(r#type.get_all_span()) + r#type.get_all_span();
-                parameters.push(FnTypeParam{ name, r#type, all_span: span });
-
-                if let Some((_, right_paren_span)) = cx.try_expect_2_sep(Separator::Comma, Separator::RightParen) {
-                    break right_paren_span;
-                } else if let Some(right_paren_span) = cx.try_expect_sep(Separator::RightParen) {
-                    break right_paren_span;
-                } else {
-                    cx.expect_sep(Separator::Comma)?;
-                }
+                break right_paren_span;
+            } else if !parameters.is_empty() {
+                cx.expect_sep(Separator::Comma)?;
             }
+            // these can-regard-as-variable keywords are not expected by type ref, they are definitely parameter name
+            let name = cx.try_expect_keywords(&[Keyword::This, Keyword::Self_, Keyword::Underscore]);
+            if name.is_some() {
+                cx.expect_sep(Separator::Colon)?;
+            }
+            let r#type = cx.expect::<TypeRef>()?;
+            let (name, r#type) = if let TypeRef::Plain(PlainType{ type_as_segment: None, global: false, segments, .. }) = &r#type {
+                if name.is_none() // this one should be before previous let r#type but that will make it 3 ifs are too more (None, r#type)s
+                    && segments.len() == 1 && segments[0].parameters.is_empty() && cx.try_expect_sep(Separator::Colon).is_some() {
+                    (Some((segments[0].ident, segments[0].ident_span)), cx.expect::<TypeRef>()?)
+                } else {
+                    (name.map(|(kw, span)| (cx.intern(kw.display()), span)), r#type)
+                }
+            } else {
+                (name.map(|(kw, span)| (cx.intern(kw.display()), span)), r#type)
+            };
+            parameters.push(FnTypeParam{ name, all_span: name.map(|(_, name_span)| name_span).unwrap_or_else(|| r#type.get_all_span()) + r#type.get_all_span(), r#type });
         };
 
         let ret_type = cx.try_expect_seps(&[Separator::Arrow, Separator::Colon]).map(|(sep, span)| {

@@ -30,14 +30,12 @@ impl Parser for TupleType {
         
         let mut items = vec![cx.expect::<TypeRef>()?];
         let span = left_paren_span + loop {
-            if let Some((_, right_paren_span)) = cx.try_expect_2_sep(Separator::Comma, Separator::RightParen) {
-                break right_paren_span;
-            } else if let Some(right_paren_span) = cx.try_expect_sep(Separator::RightParen) {
-                if items.len() == 1 {
+            if let Some((right_paren_span, skipped_comma)) = cx.try_expect_closing_bracket(Separator::RightParen) {
+                if !skipped_comma && items.len() == 1 {
                     cx.emit(strings::SingleItemTupleType)
                         .detail(right_paren_span, strings::TupleTypeExpectCommaMeetRightParen);
                 }
-                break right_paren_span
+                break right_paren_span;
             } else {
                 cx.expect_sep(Separator::Comma)?;
                 items.push(cx.expect::<TypeRef>()?);

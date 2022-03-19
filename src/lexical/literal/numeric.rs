@@ -852,9 +852,9 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         self.current.is_digit(10)
     }
 
-    // Only digit or ASCII letters or underscore
+    // Only digit or ASCII letters or underscore, or hyphen or plus for exponent
     fn is_numeric_continue(&self) -> bool {
-        self.current == '_' || self.current.is_digit(36) || self.current == '.'
+        self.current.is_digit(36) || matches!(self.current, '_' | '.' | '-' | '+')
     }
 
     pub(in super::super) fn parse_numeric_literal(&mut self) -> (Token, Span) {
@@ -1204,5 +1204,8 @@ mod tests {
         test_case!("654321i1024", err, make_err!(
             strings::UnexpectedValueAfterMaybeSignedIntPostfix));              // 126
         test_case!("0x3f2048", Numeric::I32(0x3F2048));                        // 127
+
+        // from some auto generated
+        test_case!("22.58387167E-6", Numeric::R64(22.58387167E-6));
     }
 }

@@ -28,6 +28,9 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
     }
 
     // forward base methods
+    pub fn intern(&mut self, v: &str) -> IsId {
+        self.base.intern(v)
+    }
     pub fn emit(&mut self, name: impl Into<String>) -> &mut Diagnostic { 
         self.base.emit(name)
     }
@@ -135,6 +138,19 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
         }
     }
 
+    /// Check current token is one of the specified keywords
+    ///
+    /// if so, move next and Ok((kw, kw_span)), 
+    /// if not, no move next and None
+    ///
+    /// example `let (kw, kw_span) = cx.expect_keywords(&[Const, Var])?;`
+    pub fn try_expect_keywords(&mut self, expected_keywords: &[Keyword]) -> Option<(Keyword, Span)> {
+        match self.current {
+            Token::Keyword(kw) if expected_keywords.iter().any(|e| e == &kw) => Some((kw, self.move_next())),
+            _ => None,
+        }
+    }
+
     /// Check current token is of Keyword kind
     ///
     /// if so, move next and Some((kw, kw_span)), 
@@ -212,7 +228,7 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
 
     /// Check current token is specified Separator, handles split shift right
     ///
-    /// if so, move next and Some(sep_span), 
+    /// if so, move next and Some(sep_span)
     /// if not, no move next and None
     ///
     /// example `if let Some(sep_span) = cx.try_expect_sep(Separator::Comma) { ... }`
@@ -220,6 +236,23 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
         match self.current {
             Token::Sep(sep) if sep == expected_sep => Some(self.move_next()),
             Token::Sep(Separator::GtGt) if expected_sep == Separator::Gt => Some(self.split_shift_right()),
+            _ => None,
+        }
+    }
+
+    /// Check current token is specified closing bracket, allows optional comma, handles split shift right
+    ///
+    /// if so, move next and Some((sep_span, skipped comma))
+    /// if not, no move next and None
+    ///
+    /// example `if let Some(sep_span) = cx.try_expect_sep(Separator::Comma) { ... }`
+    pub fn try_expect_closing_bracket(&mut self, expected_sep: Separator) -> Option<(Span, bool)> {
+        debug_assert!(matches!(expected_sep, Separator::RightBrace | Separator::RightParen | Separator::RightBracket | Separator::Gt), "not a closing bracket");
+        match (&self.current, &self.peek) {
+            (Token::Sep(sep), _) if *sep == expected_sep => Some((self.move_next(), false)),
+            (Token::Sep(Separator::GtGt), _) if expected_sep == Separator::Gt => Some((self.split_shift_right(), false)),
+            (Token::Sep(Separator::Comma), Token::Sep(sep)) if *sep == expected_sep => { self.move_next(); Some((self.move_next(), true)) },
+            (Token::Sep(Separator::Comma), Token::Sep(Separator::GtGt)) if expected_sep == Separator::Gt => { self.move_next(); Some((self.split_shift_right(), true)) },
             _ => None,
         }
     }
@@ -237,20 +270,6 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
         }
     }
     
-    /// Check current and next token is specified Separators, handles split shift right
-    ///
-    /// if so, move next and Some((sep1_span, sep2_span)),
-    /// if not, no move next and None
-    ///
-    /// example `if let Some((comma_span, ending_span)) = cx.try_expect_2_spe(Separator::Comma, Separator::RParen) { ... }`
-    pub fn try_expect_2_sep(&mut self, expected_sep1: Separator, expected_sep2: Separator) -> Option<(Span, Span)> {
-        match (&self.current, &self.peek) {
-            (Token::Sep(sep1), Token::Sep(sep2)) if sep1 == &expected_sep1 && sep2 == &expected_sep2 => { Some((self.move_next(), self.move_next())) },
-            (Token::Sep(sep1), Token::Sep(Separator::GtGt)) if sep1 == &expected_sep1 && expected_sep2 == Separator::Gt => Some((self.move_next(), self.split_shift_right())),
-            _ => None,
-        }
-    }
-
     /// Check current token is of Separator kind
     ///
     /// if so, move next and Some((sep, sep_span)), 

@@ -600,6 +600,26 @@ fn v2() {
         t!(1: label, 0, 0),
     ]}
 
+    // '-' is not numeric start, but should be numeric literal, or else negative exponent is rejected
+    // // found by auto generated test input
+    case!{ "1E-1" expect [
+        t!(0.1: r64, 0, 3),
+    ]}
+
+    // 2.5: numeric floating compare service is not here, use precise value
+    case!{ "2.5e-1" expect [
+        t!(0.25: r64, 0, 5),
+    ]}
+
+    // and '+'
+    case!{ "1E+1" expect [
+        t!(10.0: r64, 0, 3),
+    ]}
+
+    case!{ "1.1e+1" expect [
+        t!(11.0: r64, 0, 5),
+    ]}
+
     //      0         1     
     //      0123456789012345678
     case!{ "abc @abc @ @@ 1 @a", [Span::new(0, 2), Span::new(12, 12), Span::new(17, 17)], [""] expect [

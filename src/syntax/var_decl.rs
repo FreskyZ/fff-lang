@@ -116,10 +116,10 @@ fn var_decl_stmt_parse() {
     //      012345678901234567890123
     case!{ "var buf: [(u8, char);1];" as VarDeclStatement,
         VarDeclStatement::new_var(Span::new(0, 23), 2, Span::new(4, 6),
-            Some(make_type!(array 9, 22,
-                make_type!(tuple 10, 19, [
-                    make_type!(prim U8, 11, 12),
-                    make_type!(prim Char, 15, 18),
+            Some(make_type!(array 9:22
+                make_type!(tuple 10:19 [
+                    make_type!(prim 11:12 U8),
+                    make_type!(prim 15:18 Char),
                 ]),
                 make_lit!(1, 21, 21).into())),
             None
@@ -134,7 +134,7 @@ fn var_decl_stmt_parse() {
     //      01234567890123456789012345678901234567890123456789
     case!{ "var buf: ([u8;3], u32) = ([1u8, 5u8, 0x7u8], abc);" as VarDeclStatement,
         VarDeclStatement::new_var(Span::new(0, 49), 2, Span::new(4, 6),
-            Some(make_type!(tuple 9, 21, [make_type!(array 10, 15, make_type!(prim U8, 11, 12), make_lit!(3, 14, 14).into()), make_type!(prim U32, 18, 20)])),
+            Some(make_type!(tuple 9:21 [make_type!(array 10:15 make_type!(prim 11:12 U8), make_lit!(3, 14, 14).into()), make_type!(prim 18:20 U32)])),
             Some(Expr::Tuple(TupleDef::new(Span::new(25, 48), make_exprs![
                 ArrayDef::new(Span::new(26, 42), make_exprs![
                     make_lit!(1: u8, 27, 29),

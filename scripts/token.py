@@ -162,7 +162,7 @@ class Separators(object):
         b += '#[derive(Eq, PartialEq, Copy, Clone, Debug)]\n'
         b += 'pub enum Separator {\n'
         for item in self.all_items:
-            b += f'    /* {item.value} */ {item.name} = {item.index},\n'
+            b += f'    /** `{item.value}` */ {item.name} = {item.index},\n'
         b += '}\n'
         b += '\n'
         b += 'const VALUES: &[&str] = &[\n'

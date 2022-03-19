@@ -100,7 +100,7 @@ fn type_def_parse() {
             TypeFieldDef::new(Span::new(9, 14), 
                 SimpleName::new(2, Span::new(9, 9)),
                 Span::new(10, 10),
-                make_type!(prim I32, 12, 14),
+                make_type!(prim 12:14 I32),
             )
         ])
     }
@@ -109,7 +109,7 @@ fn type_def_parse() {
             TypeFieldDef::new(Span::new(9, 15), 
                 SimpleName::new(2, Span::new(9, 9)),
                 Span::new(10, 10),
-                make_type!(prim I32, 12, 14),
+                make_type!(prim 12:14 I32),
             )
         ])
     }
@@ -120,17 +120,17 @@ fn type_def_parse() {
             TypeFieldDef::new(Span::new(13, 23),
                 SimpleName::new(3, Span::new(13, 16)),
                 Span::new(17, 17),
-                make_type!(ref 20:22 make_type!(prim U8, 21, 22)),
+                make_type!(ref 20:22 make_type!(prim 21:22 U8)),
             ),
             TypeFieldDef::new(Span::new(25, 34), 
                 SimpleName::new(4, Span::new(25, 28)),
                 Span::new(29, 29),
-                make_type!(prim U64, 31, 33),
+                make_type!(prim 31:33 U64),
             ),
             TypeFieldDef::new(Span::new(36, 43), 
                 SimpleName::new(5, Span::new(36, 38)),
                 Span::new(39, 39),
-                make_type!(prim U64, 41, 43),
+                make_type!(prim 41:43 U64),
             )
         ]), strings ["array", "data", "size", "cap"]
     }

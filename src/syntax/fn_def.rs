@@ -70,16 +70,13 @@ impl Parser for FnDef {
 
         let mut params = Vec::new();
         loop {
-            if let Some((_comma_span, right_paren_span)) = cx.try_expect_2_sep(Separator::Comma, Separator::RightParen) {
+            if let Some((right_paren_span, skipped_comma)) = cx.try_expect_closing_bracket(Separator::RightParen) {
                 params_paren_span = params_paren_span + right_paren_span;
-                if params.is_empty() {
+                if skipped_comma && params.is_empty() {
                     cx.emit("Single comma in function definition argument list")
                         .detail(fn_name_span, "function definition here")
                         .detail(params_paren_span, "param list here");
                 }
-                break;
-            } else if let Some(right_paren_span) = cx.try_expect_sep(Separator::RightParen) {
-                params_paren_span = params_paren_span + right_paren_span;
                 break;
             } else if let Some(_comma_span) = cx.try_expect_sep(Separator::Comma) {
                 continue;
@@ -137,7 +134,7 @@ fn fn_def_parse() {
     case!{ "fn main(ac: i32) {}" as FnDef,
         FnDef::new(Span::new(0, 18), 2, Span::new(3, 6), Span::new(7, 15), 
             vec![
-                FnParam::new(3, Span::new(8, 9), make_type!(prim I32, 12, 14)),
+                FnParam::new(3, Span::new(8, 9), make_type!(prim 12:14 I32)),
             ],
             None,
             Block::new(Span::new(17, 18), vec![])
@@ -150,8 +147,8 @@ fn fn_def_parse() {
         FnDef::new(Span::new(1, 80), 2, Span::new(4, 10), Span::new(11, 60), 
             vec![
                 FnParam::new(3, Span::new(12, 15), make_type!(ref 17:27 make_type!(simple 22:27 4))),
-                FnParam::new(5, Span::new(32, 35), make_type!(prim I32, 37, 39)),
-                FnParam::new(6, Span::new(42, 51), make_type!(prim Char, 54, 57)),
+                FnParam::new(5, Span::new(32, 35), make_type!(prim 37:39 I32)),
+                FnParam::new(6, Span::new(42, 51), make_type!(prim 54:57 Char)),
             ],
             None,
             Block::new(Span::new(63, 80), vec![
@@ -173,7 +170,7 @@ fn fn_def_parse() {
         FnDef::new(Span::new(0, 18),
             2, Span::new(3, 6), 
             Span::new(7, 8), vec![],
-            Some(make_type!(prim I32, 13, 15)),
+            Some(make_type!(prim 13:15 I32)),
             Block::new(Span::new(17, 18), vec![])
         )
     }
@@ -181,11 +178,11 @@ fn fn_def_parse() {
     //      0123456789012345678901234567890123456789012345678901234567890
     case!{ "fn ffff(argc: i32, argv: &&byte,   envv:  &string,) -> i32 {}" as FnDef,
         FnDef::new(Span::new(0, 60), 2, Span::new(3, 6), Span::new(7, 50), vec![
-            FnParam::new(3, Span::new(8, 11), make_type!(prim I32, 14, 16)),
+            FnParam::new(3, Span::new(8, 11), make_type!(prim 14:16 I32)),
             FnParam::new(4, Span::new(19, 22), make_type!(ref 25:30 make_type!(ref 26:30 make_type!(simple 27:30 5)))),
             FnParam::new(6, Span::new(35, 38), make_type!(ref 42:48 make_type!(simple 43:48 7))),
         ], 
-            Some(make_type!(prim I32, 55, 57)), 
+            Some(make_type!(prim 55:57 I32)), 
             Block::new(Span::new(59, 60), vec![])
             //       2       3       4       5      6         7
         ), strings ["ffff", "argc", "argv", "byte", "envv", "string"]
