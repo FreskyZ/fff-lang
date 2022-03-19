@@ -128,7 +128,7 @@ pub trait Visitor<T: Default = (), E = ()>: Sized {
 
 #[cfg(test)]
 pub fn ast_test_case<
-    O: PartialEq + Node,
+    O: PartialEq + Node + fmt::Debug,
     N: Parser<Output = O>,
 >(
     input: &'static str,
@@ -163,10 +163,13 @@ pub fn ast_test_case<
                 panic!("{}", buf)
             }
         } else {
-            let mut buf = format!("line {} node not same\n", backtrace);
             let (actual_display, expect_display) = (actual_node.display(&source).to_string(), expect_node.display(&source).to_string());
+            if actual_display == expect_display {
+                panic!("line {} node not same while display is same\n{}\n{:?}\n{:?}\n", backtrace, actual_display, actual_node, expect_node);
+            }
+
+            let mut buf = format!("line {} node not same\n", backtrace);
             let (actual_lines, expect_lines) = (actual_display.lines().collect::<Vec<_>>(), expect_display.lines().collect::<Vec<_>>());
-        
             let common_line_count = std::cmp::min(actual_lines.len(), expect_lines.len());
             for line in 0..common_line_count {
                 if actual_lines[line] != expect_lines[line] {
@@ -215,6 +218,8 @@ pub(crate) use case;
 #[cfg(test)]
 pub(crate) use crate::diagnostics::make_errors;
 #[cfg(test)]
-pub(crate) use super::lit_expr::make_lit;
+pub(crate) use super::expr::{make_lit, make_expr};
 #[cfg(test)]
 pub(crate) use super::expr_list::make_exprs;
+#[cfg(test)]
+pub(crate) use super::plain_type::make_type;

@@ -327,6 +327,9 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
         self.write_indent()?;
         self.write_str("plain-type ")?;
         self.write_span(node.all_span)?;
+        if node.global {
+            self.write_str(" global")?;
+        }
         self.invoke_walk(node)
     }
 
@@ -362,6 +365,8 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
     fn visit_primitive_type(&mut self, node: &PrimitiveType) -> fmt::Result {
         self.write_indent()?;
         self.write_str("primitive-type ")?;
+        self.write_str(node.name.display())?;
+        self.write_space()?;
         self.write_span(node.span)?;
         self.invoke_walk(node)
     }

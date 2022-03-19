@@ -28,10 +28,6 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
     }
 
     // forward base methods
-    pub fn intern(&mut self, v: &str) -> IsId {
-        self.base.intern(v)
-    }
-
     pub fn emit(&mut self, name: impl Into<String>) -> &mut Diagnostic { 
         self.base.emit(name)
     }
@@ -87,7 +83,7 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
     /// Check current token is a literal
     ///
     /// if so, move next and Ok((lit_value, lit_span)),
-    /// if not, push unexpect and Err(())
+    /// if not, push unexpect and Err(Unexpected)
     ///
     /// example `let (lit, lit_span) = cx.expect_lit()?;`
     pub fn expect_lit(&mut self) -> Result<(LitValue, Span), Unexpected> {
@@ -103,7 +99,7 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
     /// Check current token is specified keyword
     /// 
     /// if so, move next and Ok(keyword_span),
-    /// if not, push unexpect and Err(())
+    /// if not, push unexpect and Err(Unexpected)
     ///
     /// example `let kw_span = cx.expect_keyword(Keyword::In)?;`
     pub fn expect_keyword(&mut self, expected_kw: Keyword) -> Result<Span, Unexpected> {
@@ -116,7 +112,7 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
     /// Check current token is one of the specified keywords
     ///
     /// if so, move next and Ok((kw, kw_span)), 
-    /// if not, push unexpect and Err(())
+    /// if not, push unexpect and Err(Unexpected)
     ///
     /// example `let (kw, kw_span) = cx.expect_keywords(&[Const, Var])?;`
     pub fn expect_keywords(&mut self, expected_keywords: &[Keyword]) -> Result<(Keyword, Span), Unexpected> {
@@ -155,7 +151,7 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
     /// Check current token is of specified keyword kind
     /// 
     /// if so, move next and Ok(keyword, keyword_span),
-    /// if not, push unexpect and Err(())
+    /// if not, push unexpect and Err(Unexpected)
     ///
     /// example `let kw_span = cx.expect_keyword(Keyword::In)?;`
     pub fn expect_keyword_kind(&mut self, kind: KeywordKind) -> Result<(Keyword, Span), Unexpected> {
@@ -175,16 +171,27 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
         result
     }
 
-    /// Check current token is specified Separator, handles split shift right
+    /// split current logical and token to 2 bit and tokens
+    /// caller to check current is logical and
+    /// return span for first bit and than and logically move to next bit and by directly changing cached current token
+    fn split_logical_and(&mut self) -> Span {
+        let result = self.current_span.start.into();
+        self.current = Token::Sep(Separator::And);
+        self.current_span = self.current_span.end.into();
+        result
+    }
+
+    /// Check current token is specified Separator, handles split shift right, logical and
     ///
     /// if so, move next and Ok(sep_span),
-    /// if not, push unexpect and Err(())
+    /// if not, push unexpect and Err(Unexpected)
     ///
     /// example `let sep_span = cx.expect_sep(Separator::Comma)?;`
     pub fn expect_sep(&mut self, expected_sep: Separator) -> Result<Span, Unexpected> {
         match self.current {
             Token::Sep(sep) if sep == expected_sep => Ok(self.move_next()),
             Token::Sep(Separator::GtGt) if expected_sep == Separator::Gt => Ok(self.split_shift_right()),
+            Token::Sep(Separator::AndAnd) if expected_sep == Separator::And => Ok(self.split_logical_and()),
             // if it is GtGtEq, you need to split into Gt+Gt+Eq, but will that hapen?
             _ => self.push_unexpect(expected_sep.display()),
         }
@@ -193,7 +200,7 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
     /// Check current token is one of the specified Separators
     ///
     /// if so, move next and Ok((sep, sep_span)),
-    /// if not, push unexpect and Err(())
+    /// if not, push unexpect and Err(Unexpected)
     ///
     /// example `let (sep, sep_span) = cx.expect_seps(&[Separator::LeftBracket, Separator::LeftBrace])?;`
     pub fn expect_seps(&mut self, expected_seps: &[Separator]) -> Result<(Separator, Span), Unexpected> {
@@ -260,7 +267,7 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
     /// Check current token is an identifier
     ///
     /// if so, move next and Ok((id, ident_span)),
-    /// if not, push unexpect and Err(())
+    /// if not, push unexpect and Err(Unexpected)
     ///
     /// example `let (ident_id, ident_span) = cx.expect_ident()?;`
     pub fn expect_ident(&mut self) -> Result<(IsId, Span), Unexpected> {
@@ -299,21 +306,35 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
     /// Check current token is identifier or acceptable keywords
     /// 
     /// if so, move next and Ok((id, ident_span)),
-    /// if not, push unexpect and Err(())
+    /// if not, push unexpect and Err(Unexpected)
     ///
     /// example `let (ident_id, ident_span) = cx.expect_ident_or(&[Keyword::This, Keyword::Underscore])?;`
-    pub fn expect_ident_or(&mut self, acceptable_keywords: &[Keyword]) -> Result<(IsId, Span), Unexpected> {
+    pub fn expect_ident_or_keywords(&mut self, acceptable_keywords: &[Keyword]) -> Result<(IsId, Span), Unexpected> {
         match self.current {
             Token::Ident(id) => Ok((id, self.move_next())),
             Token::Keyword(kw) if acceptable_keywords.iter().any(|a| a == &kw) => Ok((self.base.intern(kw.display()), self.move_next())),
             _ => self.push_unexpect(&format!("identifier or {}", acceptable_keywords.iter().map(|a| a.display()).collect::<Vec<_>>().join(", "))),
         }
     }
+
+    /// Check current token is identifier or acceptable keywords
+    /// 
+    /// if so, move next and Ok((id, ident_span)),
+    /// if not, no move next and None
+    ///
+    /// example `if let Some((ident_id, ident_span)) = cx.try_expect_ident_or(&[Keyword::This, Keyword::Underscore]) { ... }`
+    pub fn try_expect_ident_or_keywords(&mut self, acceptable_keywords: &[Keyword]) -> Option<(IsId, Span)> {
+        match self.current {
+            Token::Ident(id) => Some((id, self.move_next())),
+            Token::Keyword(kw) if acceptable_keywords.iter().any(|a| a == &kw) => Some((self.base.intern(kw.display()), self.move_next())),
+            _ => None,
+        }
+    }
     
     /// Check current token is identifier or meet the predict
     /// 
     /// if so, move next and Ok((id, ident_span)),
-    /// if not, push unexpect and Err(())
+    /// if not, push unexpect and Err(Unexpected)
     ///
     /// example `let (ident_id, ident_span) = cx.expect_ident_or_keyword_kind(KeywordKind::Primitive)?;`
     pub fn expect_ident_or_keyword_kind(&mut self, kind: KeywordKind) -> Result<(IsId, Span), Unexpected> {

@@ -85,7 +85,7 @@ impl Parser for FnDef {
                 continue;
             }
 
-            let (param_name, param_span) = cx.expect_ident_or(&[Keyword::Underscore, Keyword::This])?;
+            let (param_name, param_span) = cx.expect_ident_or_keywords(&[Keyword::Underscore, Keyword::This, Keyword::Self_])?;
             let _ = cx.expect_sep(Separator::Colon)?;
             let decltype = cx.expect::<TypeRef>()?;
             params.push(FnParam::new(param_name, param_span, decltype));
@@ -118,16 +118,15 @@ impl Node for FnDef {
     }
 }
 
-#[cfg(feature = "todo")]
-#[cfg(test)] #[test]
+#[cfg(test)]
+#[test]
 fn fn_def_parse() {
-    use super::{SimpleName, Statement, SimpleExprStatement, Expr, FnCallExpr, PlainType, TypeSegment};
+    use super::{SimpleName, Statement, SimpleExprStatement, Expr, FnCallExpr};
 
     //                                012345678901
     case!{ "fn main() {}" as FnDef,
-        FnDef::new(Span::new(0, 11),
-            2, Span::new(3, 6), 
-            Span::new(7, 8), vec![], 
+        FnDef::new(Span::new(0, 11), 2, Span::new(3, 6), Span::new(7, 8), 
+            vec![], 
             None,
             Block::new(Span::new(10, 11), vec![])
         )
@@ -136,53 +135,36 @@ fn fn_def_parse() {
     //                      0        1
     //                      0123456789012345678
     case!{ "fn main(ac: i32) {}" as FnDef,
-        FnDef::new(Span::new(0, 18), 2, Span::new(3, 6), 
-            Span::new(7, 15), vec![
-                FnParam::new(3, Span::new(8, 9),
-                    TypeRef::Plain(PlainType{ all_span: Span::new(12, 14),
-                        type_as_segment: None, segments: vec![
-                            TypeSegment{ ident: IsId::new(4), ident_span: Span::new(12, 14), quote_span: Span::new(0, 0), parameters: vec![], all_span: Span::new(12, 14) }
-                        ]
-                    }),
-                ),
+        FnDef::new(Span::new(0, 18), 2, Span::new(3, 6), Span::new(7, 15), 
+            vec![
+                FnParam::new(3, Span::new(8, 9), make_type!(prim I32, 12, 14)),
             ],
             None,
             Block::new(Span::new(17, 18), vec![])
-        ), strings ["main", "ac", "i32"]
+        ), strings ["main", "ac"]
     }
 
-    //                      0         1         2         3         4         5         6         7         8
-    //                      012345678901234567890123456789012345678901234567890123456789012345678901234567890
-    case!{ " fn mainxxx(argv:[[string] ]   ,this:i32, some_other: char, )  { println(this); }" as FnDef,
-        FnDef::new(Span::new(1, 80),
-            2, Span::new(4, 10),
-            Span::new(11, 60), vec![
-                FnParam::new(3, Span::new(12, 15),
-                    TypeRef::new_template(5, Span::new(0, 0), Span::new(17, 27), vec![
-                        TypeRef::new_template(5, Span::new(0, 0), Span::new(18, 25), vec![
-                            TypeRef::new_simple(4, Span::new(19, 24))
-                        ])
-                    ])
-                ),
-                FnParam::new(6, Span::new(32, 35),
-                    TypeRef::new_simple(8, Span::new(37, 39))
-                ),
-                FnParam::new(7, Span::new(42, 51),
-                    TypeRef::new_simple(9, Span::new(54, 57))
-                )
+    //      0         1         2         3         4         5         6         7         8
+    //      012345678901234567890123456789012345678901234567890123456789012345678901234567890
+    case!{ " fn mainxxx(argv:&    string   ,this:i32, some_other: char, )  { println(this); }" as FnDef,
+        FnDef::new(Span::new(1, 80), 2, Span::new(4, 10), Span::new(11, 60), 
+            vec![
+                FnParam::new(3, Span::new(12, 15), make_type!(ref 17:27 make_type!(simple 22:27 4))),
+                FnParam::new(5, Span::new(32, 35), make_type!(prim I32, 37, 39)),
+                FnParam::new(6, Span::new(42, 51), make_type!(prim Char, 54, 57)),
             ],
             None,
             Block::new(Span::new(63, 80), vec![
                 Statement::SimpleExpr(SimpleExprStatement::new(Span::new(65, 78),
                     FnCallExpr::new(
-                        Expr::SimpleName(SimpleName::new(10, Span::new(65, 71))),
+                        Expr::SimpleName(SimpleName::new(7, Span::new(65, 71))),
                         Span::new(72, 77), make_exprs![
-                            SimpleName::new(6, Span::new(73, 76))
+                            SimpleName::new(5, Span::new(73, 76))
                         ]
                     )
                 ))
-            ])
-        ), strings ["mainxxx", "argv", "string", "array", "this", "some_other", "i32", "char", "println"]
+            ]) //    2          3       4         5       6             7
+        ), strings ["mainxxx", "argv", "string", "this", "some_other", "println"]
     }
 
     //                                0        1               
@@ -191,33 +173,21 @@ fn fn_def_parse() {
         FnDef::new(Span::new(0, 18),
             2, Span::new(3, 6), 
             Span::new(7, 8), vec![],
-            Some(TypeRef::new_simple(3, Span::new(13, 15))),
+            Some(make_type!(prim I32, 13, 15)),
             Block::new(Span::new(17, 18), vec![])
         )
     }
-    //      0        1         2         3         4         5         6
-    //      01234567890123456789012345678901234567890123456789012345678901234567
-    case!{ "fn ffff(argc: i32, argv: [string], envv: [string],) -> [[string]] {}" as FnDef,
-        FnDef::new(Span::new(0, 67), 2, Span::new(3, 6), Span::new(7, 50), vec![
-            FnParam::new(3, Span::new(8, 11),
-                TypeRef::new_simple(5, Span::new(14, 16))
-            ),
-            FnParam::new(4, Span::new(19, 22),
-                TypeRef::new_template(8, Span::new(0, 0), Span::new(25, 32), vec![
-                    TypeRef::new_simple(6, Span::new(26, 31))
-                ])
-            ),
-            FnParam::new(7, Span::new(35, 38),
-                TypeRef::new_template(8, Span::new(0, 0), Span::new(41, 48), vec![
-                    TypeRef::new_simple(6, Span::new(42, 47))
-                ])
-            )
-        ], Some(TypeRef::new_template(8, Span::new(0, 0), Span::new(55, 64), vec![   
-            TypeRef::new_template(8, Span::new(0, 0), Span::new(56, 63), vec![
-                TypeRef::new_simple(6, Span::new(57, 62))
-            ])
-        ])), Block::new(Span::new(66, 67), vec![])
-            //       2       3       4       5      6         7       8
-        ), strings ["ffff", "argc", "argv", "i32", "string", "envv", "array"]
+    //      0         1         2         3         4         5         6
+    //      0123456789012345678901234567890123456789012345678901234567890
+    case!{ "fn ffff(argc: i32, argv: &&byte,   envv:  &string,) -> i32 {}" as FnDef,
+        FnDef::new(Span::new(0, 60), 2, Span::new(3, 6), Span::new(7, 50), vec![
+            FnParam::new(3, Span::new(8, 11), make_type!(prim I32, 14, 16)),
+            FnParam::new(4, Span::new(19, 22), make_type!(ref 25:30 make_type!(ref 26:30 make_type!(simple 27:30 5)))),
+            FnParam::new(6, Span::new(35, 38), make_type!(ref 42:48 make_type!(simple 43:48 7))),
+        ], 
+            Some(make_type!(prim I32, 55, 57)), 
+            Block::new(Span::new(59, 60), vec![])
+            //       2       3       4       5      6         7
+        ), strings ["ffff", "argc", "argv", "byte", "envv", "string"]
     }
 }

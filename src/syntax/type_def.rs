@@ -92,7 +92,6 @@ impl Node for TypeDef {
     }
 }
 
-#[cfg(feature = "todo")]
 #[cfg(test)] #[test]
 fn type_def_parse() {
     //                                  01234567890123456
@@ -101,7 +100,7 @@ fn type_def_parse() {
             TypeFieldDef::new(Span::new(9, 14), 
                 SimpleName::new(2, Span::new(9, 9)),
                 Span::new(10, 10),
-                TypeRef::new_simple(3, Span::new(12, 14))
+                make_type!(prim I32, 12, 14),
             )
         ])
     }
@@ -110,47 +109,29 @@ fn type_def_parse() {
             TypeFieldDef::new(Span::new(9, 15), 
                 SimpleName::new(2, Span::new(9, 9)),
                 Span::new(10, 10),
-                TypeRef::new_simple(3, Span::new(12, 14))
+                make_type!(prim I32, 12, 14),
             )
         ])
     }
     //                                    0         1         2         3         4
     //                                    0123456789012345678901234567890123456789012345
-    case!{ "type array { data: [u8], size: u64, cap: u64 }" as TypeDef,
+    case!{ "type array { data:  &u8, size: u64, cap: u64 }" as TypeDef,
         TypeDef::new(Span::new(0, 45), SimpleName::new(2, Span::new(5, 9)), vec![
             TypeFieldDef::new(Span::new(13, 23),
                 SimpleName::new(3, Span::new(13, 16)),
                 Span::new(17, 17),
-                TypeRef::new_template(2, Span::new(0, 0), Span::new(19, 22), vec![
-                    TypeRef::new_simple(4, Span::new(20, 21))
-                ])
+                make_type!(ref 20:22 make_type!(prim U8, 21, 22)),
             ),
             TypeFieldDef::new(Span::new(25, 34), 
-                SimpleName::new(5, Span::new(25, 28)),
+                SimpleName::new(4, Span::new(25, 28)),
                 Span::new(29, 29),
-                TypeRef::new_simple(7, Span::new(31, 33))
+                make_type!(prim U64, 31, 33),
             ),
             TypeFieldDef::new(Span::new(36, 43), 
-                SimpleName::new(6, Span::new(36, 38)),
+                SimpleName::new(5, Span::new(36, 38)),
                 Span::new(39, 39),
-                TypeRef::new_simple(7, Span::new(41, 43))
+                make_type!(prim U64, 41, 43),
             )
-        ]), strings ["array", "data", "u8", "size", "cap", "u64"]
+        ]), strings ["array", "data", "size", "cap"]
     }
-}
-
-#[cfg(feature = "test_stdlib_parse")]
-#[cfg(test)] #[test]
-fn type_def_stdlib() {
-    use std::io::Read;
-    use std::fs::File;
-    use super::WithTestInput;
-    use super::SyntaxTree;
-
-    let mut file = File::open("..\\tests\\syntax\\std.ff").expect("open std.ff failed");
-    let mut src = String::new();
-    file.read_to_string(&mut src).expect("read std.ff failed");
-
-    let (tree, symbols) = SyntaxTree::with_test_str_ret_symbols(&src);
-    panic!("result: {:?}{:?}", symbols, tree);
 }

@@ -15,7 +15,7 @@ impl Parser for RefType {
     type Output = RefType;
 
     fn matches(current: &Token) -> bool {
-        matches!(current, Token::Sep(Separator::And))
+        matches!(current, Token::Sep(Separator::And | Separator::AndAnd))
     }
 
     fn parse(cx: &mut ParseContext) -> Result<RefType, Unexpected> {

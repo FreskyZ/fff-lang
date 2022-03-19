@@ -24,7 +24,7 @@ impl Parser for PrimaryExpr {
             return cx.expect::<ArrayDef>();
         }
 
-        let (this_id, this_span) = cx.expect_ident_or(&[Keyword::This])?;  // actually identifier is processed by Name, not here
+        let (this_id, this_span) = cx.expect_ident_or_keywords(&[Keyword::This, Keyword::Self_])?;  // actually identifier is processed by Name, not here
         return Ok(Expr::SimpleName(SimpleName::new(this_id, this_span)));
     }
 }

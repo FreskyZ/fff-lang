@@ -47,18 +47,26 @@ impl Parser for FnType {
         let left_paren_span = cx.expect_sep(Separator::LeftParen)?;
 
         let mut parameters = Vec::new();
-        let right_paren_span = loop {
-            if let Some(right_paren_span) = cx.try_expect_sep(Separator::RightParen) {
-                break right_paren_span;
-            }
+        let right_paren_span = if let Some(right_paren_span) = cx.try_expect_sep(Separator::RightParen) {
+            right_paren_span
+        } else {
+            loop {
+                let name = cx.try_expect_ident_or_keywords(&[Keyword::This, Keyword::Self_, Keyword::Underscore]);
+                if name.is_some() {
+                    cx.expect_sep(Separator::Colon)?;
+                }
+                let r#type = cx.expect::<TypeRef>()?;
+                let span = name.map(|(_, s)| s).unwrap_or(r#type.get_all_span()) + r#type.get_all_span();
+                parameters.push(FnTypeParam{ name, r#type, all_span: span });
 
-            let name = cx.try_expect_ident();
-            if name.is_some() {
-                cx.expect_sep(Separator::Colon)?;
+                if let Some((_, right_paren_span)) = cx.try_expect_2_sep(Separator::Comma, Separator::RightParen) {
+                    break right_paren_span;
+                } else if let Some(right_paren_span) = cx.try_expect_sep(Separator::RightParen) {
+                    break right_paren_span;
+                } else {
+                    cx.expect_sep(Separator::Comma)?;
+                }
             }
-            let r#type = cx.expect::<TypeRef>()?;
-            let span = name.map(|(_, s)| s).unwrap_or(r#type.get_all_span()) + r#type.get_all_span();
-            parameters.push(FnTypeParam{ name, r#type, all_span: span });
         };
 
         let ret_type = cx.try_expect_seps(&[Separator::Arrow, Separator::Colon]).map(|(sep, span)| {
@@ -80,6 +88,9 @@ impl Node for FnType {
     fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         for parameter in &self.parameters {
             v.visit_fn_type_param(parameter)?;
+        }
+        if let Some(ret_type) = &self.ret_type {
+            v.visit_type_ref(ret_type.as_ref())?;
         }
         Ok(Default::default())
     }

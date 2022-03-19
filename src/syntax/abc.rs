@@ -104,6 +104,7 @@ impl From<Statement> for Item {
 }
 
 define_abc!{ TypeRef, "type ref", visit_type_ref,
+    PrimitiveType => Primitive, visit_primitive_type,
     ArrayType => Array, visit_array_type,
     FnType => Fn, visit_fn_type,
     RefType => Ref, visit_ref_type,
@@ -114,6 +115,7 @@ define_abc!{ TypeRef, "type ref", visit_type_ref,
 impl TypeRef {
     pub fn get_all_span(&self) -> Span {
         match self {
+            Self::Primitive(t) => t.span,
             Self::Array(t) => t.span,
             Self::Fn(t) => t.all_span,
             Self::Ref(t) => t.span,

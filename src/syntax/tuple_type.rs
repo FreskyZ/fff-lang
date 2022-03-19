@@ -39,6 +39,7 @@ impl Parser for TupleType {
                 }
                 break right_paren_span
             } else {
+                cx.expect_sep(Separator::Comma)?;
                 items.push(cx.expect::<TypeRef>()?);
             }
         };

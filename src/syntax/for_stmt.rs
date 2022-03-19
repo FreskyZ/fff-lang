@@ -55,7 +55,7 @@ impl Parser for ForStatement {
 
         let maybe_label = cx.try_expect::<LabelDef>()?;
         let for_span = cx.expect_keyword(Keyword::For)?;
-        let (iter_name, iter_span) = cx.expect_ident_or(&[Keyword::Underscore])?; // Accept _ as iter_name, _ do not declare iter var
+        let (iter_name, iter_span) = cx.expect_ident_or_keywords(&[Keyword::Underscore])?; // Accept _ as iter_name, _ do not declare iter var
         let _in_span = cx.expect_keyword(Keyword::In)?;
         let iter_expr = cx.expect::<Expr>()?;
         let body = cx.expect::<Block>()?;

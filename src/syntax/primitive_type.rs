@@ -28,11 +28,3 @@ impl Node for PrimitiveType {
         v.visit_primitive_type(self)
     }
 }
-
-#[cfg(test)]
-#[test]
-fn primitive_type_parse() {
-
-    case!{ "u8" as PrimitiveType, PrimitiveType{ name: Keyword::U8, span: Span::new(0, 1) } }
-    case!{ "i32" as PrimitiveType, PrimitiveType{ name: Keyword::I32, span: Span::new(0, 2) } }
-}

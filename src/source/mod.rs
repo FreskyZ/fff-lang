@@ -320,8 +320,8 @@ impl<F> SourceContext<F> {
     // and should not have invalid value if no unexpected error happens
     pub fn resolve_string(&self, id: IsId) -> &str {
         let id = id.unwrap() as usize;
-        debug_assert!(id > 0, "invalid string id");
-        debug_assert!(id < self.string_id_to_span.len(), "invalid string id");
+        debug_assert!(id > 0, "invalid string id {}", id);
+        debug_assert!(id < self.string_id_to_span.len(), "invalid string id {} {:?}", id, self.string_id_to_span);
 
         let span = self.string_id_to_span[id];
         if span.start.unwrap() & IsId::POSITION_MASK == IsId::POSITION_MASK {

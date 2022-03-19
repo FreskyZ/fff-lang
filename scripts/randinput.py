@@ -1,3 +1,7 @@
+#!python3
+
+# random syntax parse test input generator
+
 import random
 from random import choice
 import os
