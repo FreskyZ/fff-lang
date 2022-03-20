@@ -5,7 +5,29 @@
 ///! name_segment = identifier | '<' type_ref { ',' type_ref } '>'
 
 use super::prelude::*;
-use super::Expr;
+
+// #[cfg_attr(test, derive(PartialEq))]
+// #[derive(Debug)]
+// pub enum NameSegment {
+//     Normal(IsId, Span),
+//     Generic(Vec<TypeRef>, Span),
+// }
+
+// impl Node for NameSegment {
+
+//     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+//         v.visit_name_segment(self)
+//     }
+//     fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+//         match self {
+//             Self::Generic(types, _) => for r#type in types {
+//                 v.visit_type_ref(r#type)?;
+//             },
+//             _ => {},
+//         }
+//         Ok(Default::default())
+//     }
+// }
 
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
@@ -14,18 +36,12 @@ pub struct SimpleName {
     pub span: Span,
 }
 
-impl SimpleName {
-    pub fn new(value: impl Into<IsId>, span: Span) -> SimpleName { 
-        SimpleName{ value: value.into(), span } 
-    }
-}
-
 impl Parser for SimpleName {
     type Output = SimpleName; // out of expr depdendencies require direct parse and get a simple name
 
     fn parse(cx: &mut ParseContext) -> Result<SimpleName, Unexpected> {
         let (value, span) = cx.expect_ident()?;
-        Ok(SimpleName::new(value, span))
+        Ok(SimpleName{ value, span })
     }
 }
 
@@ -50,13 +66,13 @@ impl Name {
 }
 
 impl Parser for Name {
-    type Output = Expr;
+    type Output = Self;
 
     fn matches(current: &Token) -> bool { 
         matches!(current, Token::Ident(_)) 
     }
 
-    fn parse(cx: &mut ParseContext) -> Result<Expr, Unexpected> {
+    fn parse(cx: &mut ParseContext) -> Result<Self, Unexpected> {
         
         let first_segment = cx.expect::<SimpleName>()?;
         let mut all_span = first_segment.span;
@@ -72,11 +88,7 @@ impl Parser for Name {
             }
         }
         
-        if segments.len() > 1 {
-            Ok(Expr::Name(Name::new(all_span, segments)))
-        } else {
-            Ok(Expr::SimpleName(segments.pop().unwrap()))
-        }
+        Ok(Name::new(all_span, segments))
     }
 }
 
@@ -92,33 +104,40 @@ impl Node for Name {
     }
 }
 
-impl Expr {
-
-    /// into name from result of Name::parse, panic when not Name neither SimpleName, crate internal
-    pub(crate) fn into_name(self) -> Name {
-        match self {
-            Expr::Name(name) => name,
-            Expr::SimpleName(simple_name) => Name::new(simple_name.span, vec![simple_name]),
-            _ => unreachable!(),
-        }
-    }
+#[cfg(test)]
+macro_rules! make_name {
+    (simple $start:literal:$end:literal #$id:literal) => (
+        make_name!($start:$end make_name!(segment $start:$end #$id)));
+    ($start:literal:$end:literal $($segment:expr),+$(,)?) => (
+        crate::syntax::Expr::Name(crate::syntax::Name{ all_span: Span::new($start, $end), segments: vec![$($segment,)+] }));
+    (segment $start:literal:$end:literal #$id:literal) => (
+        crate::syntax::SimpleName{ value: IsId::new($id), span: Span::new($start, $end) });
+    (segment generic $start:literal:$end:literal #$id:literal) => (
+        crate::syntax::SimpleName{ value: IsId::new($id), span: Span::new($start, $end) /* TODO */ });
+    // bare version for use outside of expr
+    (bare $start:literal:$end:literal $($segment:expr),+$(,)?) => (
+        crate::syntax::Name{ all_span: Span::new($start, $end), segments: vec![$($segment,)+] });
+    (simple bare $start:literal:$end:literal #$id:literal) => (
+        make_name!(bare $start:$end make_name!(segment $start:$end #$id)));
 }
+#[cfg(test)]
+pub(crate) use make_name;
 
-#[cfg(test)] #[test]
+#[cfg(test)]
+#[test]
 fn name_parse() {
 
     case!{ "hello" as Name, 
-        Expr::SimpleName(SimpleName::new(2, Span::new(0, 4)))
+        make_name!(bare 0:4 make_name!(segment 0:4 #2)),
     }
     //              0        1         2         3         4
     //              01234567890123456789012345678901234567890
     case!{ "std::network::wlan::native::GetWLANHandle" as Name,
-        Expr::Name(Name::new(Span::new(0, 40), vec![
-            SimpleName::new(2, Span::new(0, 2)), 
-            SimpleName::new(3, Span::new(5, 11)),
-            SimpleName::new(4, Span::new(14, 17)),
-            SimpleName::new(5, Span::new(20, 25)),
-            SimpleName::new(6, Span::new(28, 40)),
-        ]))
+        make_name!(bare 0:40
+            make_name!(segment 0:2 #2), 
+            make_name!(segment 5:11 #3),
+            make_name!(segment 14:17 #4),
+            make_name!(segment 20:25 #5),
+            make_name!(segment 28:40 #6))
     }
 }

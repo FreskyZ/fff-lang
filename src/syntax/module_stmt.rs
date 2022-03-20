@@ -1,30 +1,17 @@
-///! syntax::import_stmt
-///! module_stmt = 'module' identifier [ 'as' identifier ] ';'
+///! syntax::module_stmt
+///! module_stmt = 'module' identifier [ str_lit ] ';'
 
 use super::prelude::*;
-use super::{SimpleName};
 
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
 pub struct ModuleStatement {
-    pub name: SimpleName,
-    pub as_span: Span,
-    pub target: Option<SimpleName>,
+    pub name: IsId,
+    pub name_span: Span,
+    pub path: Option<(IsId, Span)>,
     pub all_span: Span,
 }
-impl ModuleStatement {
-    
-    pub fn new_default(all_span: Span, name: SimpleName) -> Self {
-        Self{ name, all_span, as_span: Span::new(0, 0), target: None }
-    }
-    pub fn new_target(all_span: Span, name: SimpleName, as_span: Span, target: SimpleName) -> Self {
-        Self{ name, all_span, as_span, target: Some(target) }
-    }
 
-    fn new_some(all_span: Span, name: SimpleName, as_span: Span, target: Option<SimpleName>) -> Self {
-        Self{ name, all_span, as_span, target }
-    }
-}
 impl Parser for ModuleStatement {
     type Output = ModuleStatement;
 
@@ -35,18 +22,13 @@ impl Parser for ModuleStatement {
     fn parse(cx: &mut ParseContext) -> Result<ModuleStatement, Unexpected> {
 
         let starting_span = cx.expect_keyword(Keyword::Module)?;
-        let name = cx.expect::<SimpleName>()?;
+        let (name, name_span) = cx.expect_ident()?;
 
-        let (as_span, to_ident) = if let Some(as_span) = cx.try_expect_keyword(Keyword::As) {
-            (as_span, Some(cx.expect::<SimpleName>()?))
-        } else {
-            (Span::new(0, 0), None)
-        };
-        
+        let path = cx.try_expect_str_lit();        
         let semicolon_span = cx.expect_sep(Separator::SemiColon)?;
         let all_span = starting_span + semicolon_span;
 
-        Ok(ModuleStatement::new_some(all_span, name, as_span, to_ident))
+        Ok(ModuleStatement{ all_span, name, name_span, path })
     }
 }
 
@@ -55,13 +37,6 @@ impl Node for ModuleStatement {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_module_stmt(self)
     }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_simple_name(&self.name)?;
-        if let Some(alias) = &self.target {
-            v.visit_simple_name(alias)?;
-        }
-        Ok(Default::default())
-    }
 }
 
 #[cfg(test)] 
@@ -69,16 +44,16 @@ impl Node for ModuleStatement {
 fn module_stmt_parse() {
 
     case!{ "module a;" as ModuleStatement,
-        ModuleStatement::new_default(Span::new(0, 8),
-            SimpleName::new(2, Span::new(7, 7))
-        )
+        ModuleStatement{ name: IsId::new(2), name_span: Span::new(7, 7), path: None, all_span: Span::new(0, 8) },
     }
     //                   012345678901234567890
-    case!{ "module windows as os;" as ModuleStatement,
-        ModuleStatement::new_target(Span::new(0, 20),
-            SimpleName::new(2, Span::new(7, 13)),
-            Span::new(15, 16),
-            SimpleName::new(3, Span::new(18, 19))
-        )
+    case!{ "module os \"windows\";" as ModuleStatement,
+        ModuleStatement{ name: IsId::new(2), name_span: Span::new(7, 8), path: Some((IsId::new(3), Span::new(10, 18))), all_span: Span::new(0, 19) },
+    }
+
+    //      0         1          2
+    //      012345678901234567 89012345 6
+    case!{ "module otherdir r\"ab/c.f3\";" as ModuleStatement,
+        ModuleStatement{ name: IsId::new(2), name_span: Span::new(7, 14), path: Some((IsId::new(3), Span::new(16, 25))), all_span: Span::new(0, 26) },
     }
 }

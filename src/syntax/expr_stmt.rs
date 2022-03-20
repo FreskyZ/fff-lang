@@ -105,14 +105,14 @@ impl Node for AssignExprStatement {
 
 #[cfg(test)] #[test]
 fn expr_stmt_parse() {
-    use super::{SimpleName, BinaryExpr, FnCallExpr};
+    use super::{BinaryExpr, FnCallExpr};
 
     //                      0          1          2
     //                      012345678 90123456789 012
     case!{ "writeln(\"helloworld\");" as AssignExprStatement,
         Statement::SimpleExpr(SimpleExprStatement::new(Span::new(0, 21),
             FnCallExpr::new(
-                SimpleName::new(2, Span::new(0, 6)),
+                make_name!(simple 0:6 #2),
                 Span::new(7, 20), make_exprs![
                     make_lit!(3: str, 8, 19)
                 ]

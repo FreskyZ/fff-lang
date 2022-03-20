@@ -177,7 +177,7 @@ impl Node for IfStatement {
 
 #[cfg(test)] #[test]
 fn if_stmt_parse() {
-    use super::{FnCallExpr, MemberAccessExpr, SimpleName, ArrayDef, SimpleExprStatement, Statement};
+    use super::{FnCallExpr, ArrayDef, SimpleExprStatement, Statement};
 
     //                                      0        1         2         3
     //                                      0123456789012345678901234567890123456
@@ -207,25 +207,19 @@ fn if_stmt_parse() {
                 Block::new(Span::new(5, 41), vec![
                     Statement::SimpleExpr(SimpleExprStatement::new(Span::new(7, 20),
                         FnCallExpr::new(
-                            MemberAccessExpr::new(
-                                SimpleName::new(2, Span::new(7, 9)),
-                                Span::new(10, 10),
-                                SimpleName::new(3, Span::new(11, 16))
-                            ),
+                            make_expr!(member 7:16 dot 10:10 #3 11:16
+                                make_name!(simple 7:9 #2)),
                             Span::new(17, 19), make_exprs![
-                                SimpleName::new(4, Span::new(18, 18))
+                                make_name!(simple 18:18 #4)
                             ]
                         ),
                     )),
                     Statement::SimpleExpr(SimpleExprStatement::new(Span::new(22, 39),
                         FnCallExpr::new(
-                            MemberAccessExpr::new(
-                                SimpleName::new(5, Span::new(22, 26)),
-                                Span::new(27, 27),
-                                SimpleName::new(6, Span::new(28, 35))
-                            ),
+                            make_expr!(member 22:35 dot 27:27 #6 28:35
+                                make_name!(simple 22:26 #5)),
                             Span::new(36, 38), make_exprs![
-                                SimpleName::new(7, Span::new(37, 37))
+                                make_name!(simple 37:37 #7)
                             ]
                         ),
                     ))
@@ -237,17 +231,14 @@ fn if_stmt_parse() {
                 Block::new(Span::new(48, 71), vec![
                     Statement::SimpleExpr(SimpleExprStatement::new(Span::new(50, 70),
                         FnCallExpr::new(
-                            MemberAccessExpr::new(
+                            make_expr!(member 50:60 dot 57:57 #8 58:60
                                 ArrayDef::new(Span::new(50, 56), make_exprs![
                                     make_lit!(1, 51, 51),
                                     make_lit!(2, 53, 53),
                                     make_lit!(3, 55, 55),
-                                ]),
-                                Span::new(57, 57),
-                                SimpleName::new(8, Span::new(58, 60))
-                            ),
+                                ])),
                             Span::new(61, 69), make_exprs![
-                                SimpleName::new(9, Span::new(62, 68))
+                                make_name!(simple 62:68 #9)
                             ]
                         )
                     ))

@@ -4,7 +4,7 @@ use super::prelude::*;
 use super::*;
 
 macro_rules! define_expr {
-    ($($ty:ty => $variant:ident, $visit:ident,)+ ; $matches_impl:item $matches3_impl:item $parse_impl:item) => (
+    ($($ty:ty => $variant:ident, $visit:ident,)+) => (
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
 pub enum Expr {
@@ -16,14 +16,6 @@ $(
 $( impl From<$ty> for Expr {
     fn from(s: $ty) -> Expr { Expr::$variant(s) }
 } )+
-
-impl Parser for Expr {
-    type Output = Expr;
-
-    $matches_impl
-    $matches3_impl
-    $parse_impl
-}
 
 impl Node for Expr {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
@@ -42,7 +34,6 @@ impl Node for Expr {
 
 define_expr! {
     LitExpr => Lit, visit_lit_expr,
-    SimpleName => SimpleName, visit_simple_name,
     Name => Name, visit_name,
     ParenExpr => Paren, visit_paren_expr,
     TupleDef => Tuple, visit_tuple_def,
@@ -56,7 +47,11 @@ define_expr! {
     RangeFullExpr => RangeFull, visit_range_full_expr,
     RangeLeftExpr => RangeLeft, visit_range_left_expr,
     RangeRightExpr => RangeRight, visit_range_right_expr,
-    ;
+}
+
+impl Parser for Expr {
+    type Output = Expr;
+
     fn matches(current: &Token) -> bool { 
         LitExpr::matches(current)
         || Name::matches(current)
@@ -88,7 +83,6 @@ impl Expr {
     pub fn get_all_span(&self) -> Span {
         match self {
             &Expr::Lit(ref lit_expr) => lit_expr.span,
-            &Expr::SimpleName(ref ident_expr) => ident_expr.span,
             &Expr::Name(ref name) => name.all_span,
             &Expr::Paren(ref paren_expr) => paren_expr.span,
             &Expr::Tuple(ref tuple_def) => tuple_def.paren_span, 
@@ -156,6 +150,16 @@ macro_rules! make_expr {
         operator_span: Span::new($op_start, $op_end),
         all_span: Span::new($start, $end),
     }));
+    (member $start:literal:$end:literal dot $dot_start:literal:$dot_end:literal #$name:literal $name_start:literal:$name_end:literal $base:expr) => (
+        crate::syntax::Expr::MemberAccess(crate::syntax::MemberAccessExpr{
+            // TODO: remove the into when all expr variants change to this macro
+            base: Box::new($base.into()),
+            dot_span: Span::new($dot_start, $dot_end),
+            name: IsId::new($name),
+            name_span: Span::new($name_start, $name_end),
+            all_span: Span::new($start, $end),
+        })
+    );
 }
 #[cfg(test)]
 pub(crate) use make_expr;
@@ -178,7 +182,7 @@ fn expr_parse() {
     }
 
     case!{ "binary_expr" as Expr,
-        Expr::SimpleName(SimpleName::new(2, Span::new(0, 10)))
+        make_name!(simple 0:10 #2),
     }
 
     case!{ "(  )" as Expr,
@@ -188,9 +192,9 @@ fn expr_parse() {
     // Case from fn_def_parse
     case!{ "println(this)" as Expr, 
         Expr::FnCall(FnCallExpr::new(
-            Expr::SimpleName(SimpleName::new(2, Span::new(0, 6))),
+            make_name!(simple 0:6 #2),
             Span::new(7, 12), ExprList::new(vec![
-                Expr::SimpleName(SimpleName::new(3, Span::new(8, 11)))
+                make_name!(simple 8:11 #3)
             ])
         ))
     }
@@ -214,8 +218,8 @@ fn expr_parse() {
     // Tuple def
     case!{ "(a, b)" as Expr,
         Expr::Tuple(TupleDef::new(Span::new(0, 5), make_exprs![
-            SimpleName::new(2, Span::new(1, 1)),
-            SimpleName::new(3, Span::new(4, 4)),
+            make_name!(simple 1:1 #2),
+            make_name!(simple 4:4 #3),
         ]))
     }        //  12345678901
     case!{ "(1, 2, 3, )" as Expr,
@@ -229,7 +233,7 @@ fn expr_parse() {
     // Array def
     case!{ "[a]" as Expr,
         Expr::Array(ArrayDef::new(Span::new(0, 2), make_exprs![
-            SimpleName::new(2, Span::new(1, 1))
+            make_name!(simple 1:1 #2)
         ]))
     }        //  12345678
     case!{ "[1, 2, ]" as Expr,
@@ -244,72 +248,60 @@ fn expr_parse() {
 
     // Member access
     case!{ "a.b" as Expr,
-        Expr::MemberAccess(MemberAccessExpr::new(
-            SimpleName::new(2, Span::new(0, 0)),
-            Span::new(1, 1),
-            SimpleName::new(3, Span::new(2, 2))
-        ))
+        make_expr!(member 0:2 dot 1:1 #3 2:2
+            make_name!(simple 0:0 #2)),
     }
 
     // function call
     case!{ "defg()" as Expr,
         Expr::FnCall(FnCallExpr::new(
-            SimpleName::new(2, Span::new(0, 3)),
+            make_name!(simple 0:3 #2),
             Span::new(4, 5),
             make_exprs![]
         ))
     }
     case!{ "deg(a)" as Expr,
         Expr::FnCall(FnCallExpr::new(
-            SimpleName::new(2, Span::new(0, 2)),
+            make_name!(simple 0:2 #2),
             Span::new(3, 5), make_exprs![
-                SimpleName::new(3, Span::new(4, 4))
+                make_name!(simple 4:4 #3)
             ]
         ))
     }
     case!{ "degg(a, b, )" as Expr,
         Expr::FnCall(FnCallExpr::new(
-            SimpleName::new(2, Span::new(0, 3)),
+            make_name!(simple 0:3 #2),
             Span::new(4, 11), make_exprs![
-                SimpleName::new(3, Span::new(5, 5)),
-                SimpleName::new(4, Span::new(8, 8))
+                make_name!(simple 5:5 #3),
+                make_name!(simple 8:8 #4)
             ]
         ))
     }
     //           0123456789
     case!{ "abc.defg()" as Expr,
         Expr::FnCall(FnCallExpr::new(
-            MemberAccessExpr::new(
-                SimpleName::new(2, Span::new(0, 2)),
-                Span::new(3, 3), 
-                SimpleName::new(3, Span::new(4, 7))
-            ),
+            make_expr!(member 0:7 dot 3:3 #3 4:7
+                make_name!(simple 0:2 #2)),
             Span::new(8, 9), 
             make_exprs![]
         ))
     }
     case!{ "abc.deg(a)" as Expr,
         Expr::FnCall(FnCallExpr::new(
-            MemberAccessExpr::new(
-                SimpleName::new(2, Span::new(0, 2)),
-                Span::new(3, 3),
-                SimpleName::new(3, Span::new(4, 6))
-            ),
+            make_expr!(member 0:6 dot 3:3 #3 4:6
+                make_name!(simple 0:2 #2)),
             Span::new(7, 9), make_exprs![
-                SimpleName::new(4, Span::new(8, 8))
+                make_name!(simple 8:8 #4)
             ]
         ))
     }        //  12345678901234
     case!{ "1.degg(a, b, )" as Expr,
         Expr::FnCall(FnCallExpr::new(
-            MemberAccessExpr::new(
-                make_lit!(1, 0, 0),
-                Span::new(1, 1),
-                SimpleName::new(2, Span::new(2, 5))
-            ),
+            make_expr!(member 0:5 dot 1:1 #2 2:5
+                make_expr!(1: i32, 0, 0)),
             Span::new(6, 13), make_exprs![
-                SimpleName::new(3, Span::new(7, 7)),
-                SimpleName::new(4, Span::new(10, 10))
+                make_name!(simple 7:7 #3),
+                make_name!(simple 10:10 #4)
             ]
         ))
     }   
@@ -317,57 +309,48 @@ fn expr_parse() {
     // get index       //  123456
     case!{ "deg[a]" as Expr,
         Expr::IndexCall(IndexCallExpr::new(
-            SimpleName::new(2, Span::new(0, 2)),
+            make_name!(simple 0:2 #2),
             Span::new(3, 5), make_exprs![
-                SimpleName::new(3, Span::new(4, 4))
+                make_name!(simple 4:4 #3)
             ]
         ))
     }        //  123456789012
     case!{ "degg[a, b, ]" as Expr,
         Expr::IndexCall(IndexCallExpr::new(
-            SimpleName::new(2, Span::new(0, 3)),
+            make_name!(simple 0:3 #2),
             Span::new(4, 11), make_exprs![
-                SimpleName::new(3, Span::new(5, 5)),
-                SimpleName::new(4, Span::new(8, 8))
+                make_name!(simple 5:5 #3),
+                make_name!(simple 8:8 #4)
             ]
         ))
     }     
 
     //           123456
     case!{ "2[3].a" as Expr,
-        Expr::MemberAccess(MemberAccessExpr::new(
+        make_expr!(member 0:5 dot 4:4 #2 5:5
             IndexCallExpr::new(
                 make_lit!(2, 0, 0),
                 Span::new(1, 3), make_exprs![
                     make_lit!(3, 2, 2)
                 ]
-            ),
-            Span::new(4, 4), 
-            SimpleName::new(2, Span::new(5, 5))
-        ))
+            ))
     }   //  1234567890123456
     case!{ "print(233, ).bit" as Expr,
-        Expr::MemberAccess(MemberAccessExpr::new(
+        make_expr!(member 0:15 dot 12:12 #3 13:15
             Expr::FnCall(FnCallExpr::new(
-                SimpleName::new(2, Span::new(0, 4)),
+                make_name!(simple 0:4 #2),
                 Span::new(5, 11), make_exprs![
                     make_lit!(233, 6, 8)
                 ]
-            )),
-            Span::new(12, 12),
-            SimpleName::new(3, Span::new(13, 15))
-        ))
+            )))
     }            //  12345678901234
     case!{ "1.degg[a, b, ]" as Expr,
         Expr::IndexCall(IndexCallExpr::new(
-            MemberAccessExpr::new(
-                make_lit!(1, 0, 0),
-                Span::new(1, 1),
-                SimpleName::new(2, Span::new(2, 5))
-            ),
+            make_expr!(member 0:5 dot 1:1 #2 2:5
+                make_expr!(1: i32, 0, 0)),
             Span::new(6, 13), make_exprs![
-                SimpleName::new(3, Span::new(7, 7)),
-                SimpleName::new(4, Span::new(10, 10)),
+                make_name!(simple 7:7 #3),
+                make_name!(simple 10:10 #4),
             ]
         ))
     }        
@@ -417,7 +400,7 @@ fn expr_parse() {
 
     case!{ "xxx .." as Expr,
         Expr::RangeLeft(RangeLeftExpr::new(Span::new(0, 5), 
-            SimpleName::new(2, Span::new(0, 2))
+            make_name!(simple 0:2 #2)
         ))
     }
 
@@ -448,7 +431,7 @@ fn expr_errors() {
 
     case!{ "de(, )" as Expr,
         Expr::FnCall(FnCallExpr::new(
-            SimpleName::new(2, Span::new(0, 1)), 
+            make_name!(simple 0:1 #2), 
             Span::new(2, 5), make_exprs![]
         )), errors make_errors!(
             e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(2, 5), strings::FnCallHere)
@@ -458,11 +441,8 @@ fn expr_errors() {
     //               0 12345678
     case!{ "\"\".de(, )" as Expr,
         Expr::FnCall(FnCallExpr::new(
-            MemberAccessExpr::new(
-                make_lit!(1: str, 0, 1),
-                Span::new(2, 2), 
-                SimpleName::new(2, Span::new(3, 4))
-            ),
+            make_expr!(member 0:4 dot 2:2 #2 3:4
+                make_expr!(1: str, 0, 1)),
             Span::new(5, 8), make_exprs![]
         )), errors make_errors!(
             e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(5, 8), strings::FnCallHere)
@@ -471,7 +451,7 @@ fn expr_errors() {
 
     case!{ "defg[]" as Expr,
         Expr::IndexCall(IndexCallExpr::new(
-            SimpleName::new(2, Span::new(0, 3)),
+            make_name!(simple 0:3 #2),
             Span::new(4, 5), make_exprs![]
         )), errors make_errors!(
             e: e.emit(strings::EmptyIndexCall).detail(Span::new(4, 5), strings::IndexCallHere)
@@ -481,7 +461,7 @@ fn expr_errors() {
     //              123456
     case!{ "de[, ]" as Expr,
         Expr::IndexCall(IndexCallExpr::new(
-            SimpleName::new(2, Span::new(0, 1)),
+            make_name!(simple 0:1 #2),
             Span::new(2, 5), make_exprs![]
         )), errors make_errors!(
             e: e.emit(strings::EmptyIndexCall).detail(Span::new(2, 5), strings::IndexCallHere)

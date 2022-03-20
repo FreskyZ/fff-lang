@@ -78,7 +78,7 @@ impl Node for ForStatement {
 
 #[cfg(test)] #[test]
 fn for_stmt_parse() {
-    use super::{SimpleName, SimpleExprStatement, Statement, MemberAccessExpr, FnCallExpr, ExprList};
+    use super::{SimpleExprStatement, Statement, FnCallExpr, ExprList};
 
     //                      0123456789012345678
     case!{ "@2: for i in 42 {}" as ForStatement,
@@ -99,30 +99,24 @@ fn for_stmt_parse() {
             Span::new(8, 10),
             4, Span::new(12, 12),
             FnCallExpr::new(
-                MemberAccessExpr::new(
+                make_expr!(member 17:48 dot 41:41 #6 42:48
                     FnCallExpr::new(
-                        MemberAccessExpr::new(
+                        make_expr!(member 17:38 dot 29:29 #5 30:38
                             FnCallExpr::new(
-                                SimpleName::new(3, Span::new(17, 21)),
+                                make_name!(simple 17:21 #3),
                                 Span::new(22, 28), make_exprs![
                                     make_lit!(0, 23, 23),
                                     make_lit!(10, 26, 27),
                                 ]
-                            ),
-                            Span::new(29, 29),
-                            SimpleName::new(5, Span::new(30, 38))
-                        ),
+                            )),
                         Span::new(39, 40), ExprList::new(vec![])
-                    ), 
-                    Span::new(41, 41),
-                    SimpleName::new(6, Span::new(42, 48))
-                ),
+                    )),
                 Span::new(49, 50), ExprList::new(vec![])
             ),
             Block::new(Span::new(52, 77), vec![
                 Statement::SimpleExpr(SimpleExprStatement::new(Span::new(54, 75),
                     FnCallExpr::new(
-                        SimpleName::new(7, Span::new(54, 60)),
+                        make_name!(simple 54:60 #7),
                         Span::new(61, 74), make_exprs![
                             make_lit!(8: str, 62, 73)
                         ]

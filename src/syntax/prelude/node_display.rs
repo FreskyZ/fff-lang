@@ -295,6 +295,10 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
         self.write_span(node.all_span)?;
         self.write_str(" dot ")?;
         self.write_span(node.dot_span)?;
+        self.write_space()?;
+        self.write_isid(node.name)?;
+        self.write_space()?;
+        self.write_span(node.name_span)?;
         self.invoke_walk(node)
     }
 
@@ -307,11 +311,17 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
 
     fn visit_module_stmt(&mut self, node: &ModuleStatement) -> fmt::Result {
         self.write_indent()?;
-        self.write_str("import-stmt ")?;
+        self.write_str("module-stmt ")?;
         self.write_span(node.all_span)?;
-        if node.target.is_some() {
-            self.write_str(" as ")?;
-            self.write_span(node.as_span)?;
+        self.write_space()?;
+        self.write_isid(node.name)?;
+        self.write_space()?;
+        self.write_span(node.name_span)?;
+        if let Some((path, path_span)) = node.path {
+            self.write_space()?;
+            self.write_isid(path)?;
+            self.write_space()?;
+            self.write_span(path_span)?;
         }
         self.invoke_walk(node)
     }
@@ -442,6 +452,10 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
         self.write_indent()?;
         self.write_str("type ")?;
         self.write_span(node.all_span)?;
+        self.write_space()?;
+        self.write_isid(node.name)?;
+        self.write_space()?;
+        self.write_span(node.name_span)?;
         self.invoke_walk(node)
     }
 
@@ -454,8 +468,12 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
 
     fn visit_type_field_def(&mut self, node: &TypeFieldDef) -> fmt::Result {
         self.write_indent()?;
-        self.write_str("field ")?;
+        self.write_str("type-field-def ")?;
         self.write_span(node.all_span)?;
+        self.write_space()?;
+        self.write_isid(node.name)?;
+        self.write_space()?;
+        self.write_span(node.name_span)?;
         self.write_str(" colon ")?;
         self.write_span(node.colon_span)?;
         self.invoke_walk(node)
@@ -476,9 +494,11 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
         self.write_indent()?;
         self.write_str("use-stmt ")?;
         self.write_span(node.all_span)?;
-        if node.target.is_some() {
-            self.write_str(" as ")?;
-            self.write_span(node.as_span)?;
+        if let Some((alias, alias_span)) = node.alias {
+            self.write_str(" alias ")?;
+            self.write_isid(alias)?;
+            self.write_space()?;
+            self.write_span(alias_span)?;
         }
         self.invoke_walk(node)
     }
@@ -632,7 +652,8 @@ mod tests {
   block <1:10-1:28>
     simple-expr-stmt <1:12-1:26>
       fn-call <1:12-1:25> paren <1:19-1:25>
-        simple-name println <1:12-1:18>
+        name <1:12-1:18>
+          simple-name println <1:12-1:18>
         literal str "233" <1:20-1:24>
 "#
         }
@@ -650,36 +671,46 @@ mod tests {
         let actual = node.display(&scx).to_string();
         assert_text_eq!{ actual, "index-call <1:1-1:58> bracket <1:49-1:58>
   index-call <1:1-1:48> bracket <1:40-1:48>
-    member-access <1:1-1:39> dot <1:38-1:38>
+    member-access <1:1-1:39> dot <1:38-1:38> m <1:39-1:39>
       fn-call <1:1-1:37> paren <1:36-1:37>
-        member-access <1:1-1:35> dot <1:34-1:34>
+        member-access <1:1-1:35> dot <1:34-1:34> l <1:35-1:35>
           index-call <1:1-1:33> bracket <1:31-1:33>
-            member-access <1:1-1:30> dot <1:29-1:29>
+            member-access <1:1-1:30> dot <1:29-1:29> j <1:30-1:30>
               fn-call <1:1-1:28> paren <1:25-1:28>
                 fn-call <1:1-1:24> paren <1:15-1:24>
-                  member-access <1:1-1:14> dot <1:13-1:13>
+                  member-access <1:1-1:14> dot <1:13-1:13> f <1:14-1:14>
                     fn-call <1:1-1:12> paren <1:4-1:12>
-                      member-access <1:1-1:3> dot <1:2-1:2>
-                        simple-name a <1:1-1:1>
-                        simple-name b <1:3-1:3>
-                      simple-name c <1:5-1:5>
-                      simple-name d <1:8-1:8>
-                      simple-name e <1:11-1:11>
-                    simple-name f <1:14-1:14>
-                  simple-name g <1:16-1:16>
-                  simple-name h <1:19-1:19>
-                  simple-name i <1:22-1:22>
-                simple-name u <1:26-1:26>
-              simple-name j <1:30-1:30>
-            simple-name k <1:32-1:32>
-          simple-name l <1:35-1:35>
-      simple-name m <1:39-1:39>
-    simple-name n <1:41-1:41>
-    simple-name o <1:44-1:44>
-    simple-name p <1:47-1:47>
-  simple-name r <1:50-1:50>
-  simple-name s <1:53-1:53>
-  simple-name t <1:56-1:56>
+                      member-access <1:1-1:3> dot <1:2-1:2> b <1:3-1:3>
+                        name <1:1-1:1>
+                          simple-name a <1:1-1:1>
+                      name <1:5-1:5>
+                        simple-name c <1:5-1:5>
+                      name <1:8-1:8>
+                        simple-name d <1:8-1:8>
+                      name <1:11-1:11>
+                        simple-name e <1:11-1:11>
+                  name <1:16-1:16>
+                    simple-name g <1:16-1:16>
+                  name <1:19-1:19>
+                    simple-name h <1:19-1:19>
+                  name <1:22-1:22>
+                    simple-name i <1:22-1:22>
+                name <1:26-1:26>
+                  simple-name u <1:26-1:26>
+            name <1:32-1:32>
+              simple-name k <1:32-1:32>
+    name <1:41-1:41>
+      simple-name n <1:41-1:41>
+    name <1:44-1:44>
+      simple-name o <1:44-1:44>
+    name <1:47-1:47>
+      simple-name p <1:47-1:47>
+  name <1:50-1:50>
+    simple-name r <1:50-1:50>
+  name <1:53-1:53>
+    simple-name s <1:53-1:53>
+  name <1:56-1:56>
+    simple-name t <1:56-1:56>
 "
         }
     }

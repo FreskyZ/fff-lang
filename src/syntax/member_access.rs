@@ -4,52 +4,33 @@
 ///! member_access = expr '.' identifier
 
 use super::prelude::*;
-use super::{Expr, SimpleName};
+use super::{Expr};
 
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
 pub struct MemberAccessExpr {
     pub base: Box<Expr>,
     pub dot_span: Span,
-    pub name: SimpleName,
+    pub name: IsId,
+    pub name_span: Span,
     pub all_span: Span,
 }
 
-impl MemberAccessExpr {
-    pub fn new<T: Into<Expr>>(base: T, dot_span: Span, name: SimpleName) -> MemberAccessExpr {
-        let base = base.into();
-        MemberAccessExpr{
-            all_span: base.get_all_span() + name.span,
-            base: Box::new(base),
-            dot_span, name
-        }
-    }
-
-    fn new_by_parse_result(dot_span: Span, name: SimpleName) -> MemberAccessExpr {
-        MemberAccessExpr{
-            all_span: Span::new(0, 0),
-            base: Box::new(Expr::default()),
-            dot_span, name
-        }
-    }
-}
-
 impl Parser for MemberAccessExpr {
-    type Output = MemberAccessExpr;
+    type Output = Self;
 
     fn matches(current: &Token) -> bool { 
         matches!(current, Token::Sep(Separator::Dot)) 
     }
 
-    // these 3 postfix exprs are kind of different because
-    // although their structure contains their base expr (which actually is primary expr)
-    // but this parser only accept cx.tk after the first expr and return the structure without base and all_span set
+    // these 3 postfix exprs are special because
+    // their node contains base expr, but their parser only expects token after that (dot for member access expr)
     // the postfix expr dispatcher is responsible for fullfilling the missing part
     fn parse(cx: &mut ParseContext) -> Result<MemberAccessExpr, Unexpected> {
         
         let dot_span = cx.expect_sep(Separator::Dot)?;
-        let name = cx.expect::<SimpleName>()?;
-        Ok(MemberAccessExpr::new_by_parse_result(dot_span, name))
+        let (name, name_span) = cx.expect_ident()?;
+        Ok(MemberAccessExpr{ base: Box::new(Expr::default()), dot_span, name, name_span, all_span: Span::new(0, 0) })
     }
 }
 
@@ -59,7 +40,6 @@ impl Node for MemberAccessExpr {
     }
 
     fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_expr(self.base.as_ref())?;
-        v.visit_simple_name(&self.name)
+        v.visit_expr(self.base.as_ref())
     }
 }

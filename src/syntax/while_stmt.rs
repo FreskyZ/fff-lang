@@ -65,7 +65,7 @@ impl Node for WhileStatement {
 
 #[cfg(test)] #[test]
 fn while_stmt_parse() {
-    use super::{SimpleName, Statement, SimpleExprStatement, FnCallExpr};
+    use super::{Statement, SimpleExprStatement, FnCallExpr};
     //      0        1         2         3         4        
     //      01234567890123456789012345 67890123456789012 3456
     case!{ "@2: while true { writeln(\"fresky hellooooo\"); }" as WhileStatement,
@@ -76,7 +76,7 @@ fn while_stmt_parse() {
             Block::new(Span::new(15, 46), vec![
                 Statement::SimpleExpr(SimpleExprStatement::new(Span::new(17, 44), 
                     FnCallExpr::new(
-                        SimpleName::new(3, Span::new(17, 23)),
+                        make_name!(simple 17:23 #3),
                         Span::new(24, 43), make_exprs![
                             make_lit!(4: str, 25, 42)
                         ]

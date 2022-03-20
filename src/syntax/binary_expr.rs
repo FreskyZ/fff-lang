@@ -96,7 +96,7 @@ impl Node for BinaryExpr {
 
 #[cfg(test)] #[test]
 fn binary_expr_parse() {
-    use super::{ArrayDef, SimpleName};
+    use super::{ArrayDef};
 
     //                                     123456789012345
     case!{ "[1] * [2] / [3]" as BinaryExpr, 
@@ -123,22 +123,22 @@ fn binary_expr_parse() {
             BinaryExpr::new(
                 BinaryExpr::new(
                     BinaryExpr::new(
-                        SimpleName::new(2, Span::new(0, 0)),
+                        make_name!(simple 0:0 #2),
                         Separator::Mul, Span::new(2, 2), 
-                        SimpleName::new(3, Span::new(4, 4)),
+                        make_name!(simple 4:4 #3),
                     ),
                     Separator::Div, Span::new(6, 6),
-                    SimpleName::new(4, Span::new(8, 8)),
+                    make_name!(simple 8:8 #4),
                 ),
                 Separator::Add, Span::new(10, 10),
                 BinaryExpr::new(
-                    SimpleName::new(5, Span::new(12, 12)),
+                    make_name!(simple 12:12 #5),
                     Separator::Rem, Span::new(14, 14),
-                    SimpleName::new(6, Span::new(16, 16)),
+                    make_name!(simple 16:16 #6),
                 )
             ),
             Separator::Sub, Span::new(18, 18),
-            SimpleName::new(7, Span::new(20, 20)),
+            make_name!(simple 20:20 #7),
         ))
     }           
     //                                     0        1         2         3
@@ -147,31 +147,31 @@ fn binary_expr_parse() {
         Expr::Binary(BinaryExpr::new(
             BinaryExpr::new(
                 BinaryExpr::new(
-                    SimpleName::new(2, Span::new(0, 0)),
+                    make_name!(simple 0:0 #2),
                     Separator::Mul, Span::new(2, 2),
-                    SimpleName::new(3, Span::new(4, 4))
+                    make_name!(simple 4:4 #3)
                 ),
                 Separator::LtLt, Span::new(6, 7),
                 BinaryExpr::new(
                     BinaryExpr::new(
                         BinaryExpr::new(
-                            SimpleName::new(4, Span::new(9, 9)),
+                            make_name!(simple 9:9 #4),
                             Separator::Div, Span::new(11, 11),
-                            SimpleName::new(5, Span::new(13, 13))
+                            make_name!(simple 13:13 #5)
                         ),
                         Separator::Add, Span::new(15, 15),
                         BinaryExpr::new(
-                            SimpleName::new(6, Span::new(17, 17)),
+                            make_name!(simple 17:17 #6),
                             Separator::Rem, Span::new(19, 19),
-                            SimpleName::new(7, Span::new(21, 21))
+                            make_name!(simple 21:21 #7)
                         )
                     ),
                     Separator::Sub, Span::new(23, 23),
-                    SimpleName::new(8, Span::new(25, 25))
+                    make_name!(simple 25:25 #8)
                 )
             ),
             Separator::GtGt, Span::new(27, 28),
-            SimpleName::new(9, Span::new(30, 30)),
+            make_name!(simple 30:30 #9),
         ))
     }          
 
@@ -193,75 +193,75 @@ fn binary_expr_parse() {
                     BinaryExpr::new(
                         BinaryExpr::new(
                             BinaryExpr::new(
-                                SimpleName::new(2, Span::new(0, 0)),
+                                make_name!(simple 0:0 #2),
                                 Separator::Mul, Span::new(2, 2),
-                                SimpleName::new(3, Span::new(4, 4)),
+                                make_name!(simple 4:4 #3),
                             ),
                             Separator::LtLt, Span::new(6, 7),
                             BinaryExpr::new(
                                 BinaryExpr::new(
                                     BinaryExpr::new(
-                                        SimpleName::new(4, Span::new(9, 9)),
+                                        make_name!(simple 9:9 #4),
                                         Separator::Div, Span::new(11, 11),
-                                        SimpleName::new(5, Span::new(13, 13)),
+                                        make_name!(simple 13:13 #5),
                                     ),
                                     Separator::Add, Span::new(15, 15),
                                     BinaryExpr::new(
-                                        SimpleName::new(6, Span::new(17, 17)),
+                                        make_name!(simple 17:17 #6),
                                         Separator::Rem, Span::new(19, 19),
-                                        SimpleName::new(7, Span::new(21, 21)),
+                                        make_name!(simple 21:21 #7),
                                     )
                                 ),
                                 Separator::Sub, Span::new(23, 23),
-                                SimpleName::new(8, Span::new(25, 25))
+                                make_name!(simple 25:25 #8)
                             ),
                         ),
                         Separator::GtGt, Span::new(27, 28),
                         BinaryExpr::new(
                             BinaryExpr::new(
-                                SimpleName::new(9, Span::new(30, 30)),
+                                make_name!(simple 30:30 #9),
                                 Separator::Gt, Span::new(32, 32),
                                 BinaryExpr::new(
-                                    SimpleName::new(4, Span::new(34, 34)),
+                                    make_name!(simple 34:34 #4),
                                     Separator::Mul, Span::new(36, 36),
-                                    SimpleName::new(10, Span::new(38, 38)),
+                                    make_name!(simple 38:38 #10),
                                 )
                             ),
                             Separator::Lt, Span::new(40, 40),
-                            SimpleName::new(11, Span::new(42, 42)),
+                            make_name!(simple 42:42 #11),
                         )
                     ),
                     Separator::LtLt, Span::new(44, 45),
                     BinaryExpr::new(
-                        SimpleName::new(12, Span::new(47, 47)),
+                        make_name!(simple 47:47 #12),
                         Separator::GtEq, Span::new(49, 50),
-                        SimpleName::new(13, Span::new(52, 52)),
+                        make_name!(simple 52:52 #13),
                     )
                 ),
                 Separator::AndAnd, Span::new(54, 55),
-                SimpleName::new(14, Span::new(57, 57))
+                make_name!(simple 57:57 #14)
             ),
             Separator::OrOr, Span::new(59, 60),
             BinaryExpr::new(
                 BinaryExpr::new(
                     BinaryExpr::new(
                         BinaryExpr::new(
-                            SimpleName::new(15, Span::new(62, 62)),
+                            make_name!(simple 62:62 #15),
                             Separator::And, Span::new(64, 64),
-                            SimpleName::new(16, Span::new(66, 66)),
+                            make_name!(simple 66:66 #16),
                         ),
                         Separator::Or, Span::new(68, 68),
                         BinaryExpr::new(
-                            SimpleName::new(17, Span::new(70, 70)),
+                            make_name!(simple 70:70 #17),
                             Separator::Caret, Span::new(72, 72),
-                            SimpleName::new(18, Span::new(74, 74)),
+                            make_name!(simple 74:74 #18),
                         )
                     ),
                     Separator::NotEq, Span::new(76, 77),
-                    SimpleName::new(19, Span::new(79, 79)),
+                    make_name!(simple 79:79 #19),
                 ),
                 Separator::EqEq, Span::new(81, 82),
-                SimpleName::new(20, Span::new(84, 84))
+                make_name!(simple 84:84 #20)
             )
         ))
     }
@@ -269,12 +269,12 @@ fn binary_expr_parse() {
     case!{ "a & b == c" as BinaryExpr, // ((a & b) == c)
         Expr::Binary(BinaryExpr::new(
             BinaryExpr::new(
-                SimpleName::new(2, Span::new(0, 0)),
+                make_name!(simple 0:0 #2),
                 Separator::And, Span::new(2, 2),
-                SimpleName::new(3, Span::new(4, 4)),
+                make_name!(simple 4:4 #3),
             ),
             Separator::EqEq, Span::new(6, 7),
-            SimpleName::new(4, Span::new(9, 9)),
+            make_name!(simple 9:9 #4),
         ))
     }
 

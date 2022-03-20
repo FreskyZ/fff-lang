@@ -99,6 +99,19 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
         }
     }
 
+    /// Check current token is a literal, used for import module path
+    ///
+    /// if so, move next and Some((lit_value, lit_span)),
+    /// if not, no move next and None
+    ///
+    /// example `let (id, id_span) = cx.try_expect_str_lit()?;`
+    pub fn try_expect_str_lit(&mut self) -> Option<(IsId, Span)> {
+        match self.current {
+            Token::Str(v, _) => Some((v, self.move_next())),
+            _ => None,
+        }
+    }
+
     /// Check current token is specified keyword
     /// 
     /// if so, move next and Ok(keyword_span),

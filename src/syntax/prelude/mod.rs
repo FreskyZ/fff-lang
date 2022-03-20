@@ -222,4 +222,6 @@ pub(crate) use super::expr::{make_lit, make_expr};
 #[cfg(test)]
 pub(crate) use super::expr_list::make_exprs;
 #[cfg(test)]
+pub(crate) use super::name::make_name;
+#[cfg(test)]
 pub(crate) use super::plain_type::make_type;

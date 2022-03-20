@@ -1,32 +1,25 @@
-///! fff-lang
-///! 
-///! syntax/type_def
-///! required by removing hardcode macros in semantic typedef collection and fndef collections
+///! syntax::type_def
 ///! type_def = 'type' (identifier | keyword_primitive_type)  '{' [ type_field_def { ',' type_field_def } [ ',' ] ] '}'
-///! type_field_def = identifier ':' type_use
+///! type_field_def = identifier ':' type_ref
 
 use super::prelude::*;
-use super::{TypeRef, SimpleName};
+use super::{TypeRef};
 
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
 pub struct TypeFieldDef {
-    pub name: SimpleName,
+    pub name: IsId,
+    pub name_span: Span,
     pub colon_span: Span,
     pub r#type: TypeRef,
     pub all_span: Span,   // ident to TypeRef or ident to comma
 }
-impl TypeFieldDef {
-    pub fn new(all_span: Span, name: SimpleName, colon_span: Span, r#type: TypeRef) -> TypeFieldDef {
-        TypeFieldDef{ all_span, name, colon_span, r#type }
-    }
-}
+
 impl Node for TypeFieldDef {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_type_field_def(self)
     }
     fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_simple_name(&self.name)?;
         v.visit_type_ref(&self.r#type)
     }
 }
@@ -35,14 +28,9 @@ impl Node for TypeFieldDef {
 #[derive(Debug)]
 pub struct TypeDef {
     pub all_span: Span,
-    pub name: SimpleName,
+    pub name: IsId,
+    pub name_span: Span,
     pub fields: Vec<TypeFieldDef>,
-}
-
-impl TypeDef {
-    pub fn new(all_span: Span, name: SimpleName, fields: Vec<TypeFieldDef>) -> TypeDef {
-        TypeDef{ all_span, name, fields }
-    }
 }
 
 impl Parser for TypeDef {
@@ -55,8 +43,7 @@ impl Parser for TypeDef {
     fn parse(cx: &mut ParseContext) -> Result<TypeDef, Unexpected> {
 
         let starting_span = cx.expect_keyword(Keyword::Type)?;
-        let (symid, name_span) = cx.expect_ident_or_keyword_kind(KeywordKind::Primitive)?;
-        let name = SimpleName::new(symid, name_span);
+        let (name, name_span) = cx.expect_ident_or_keyword_kind(KeywordKind::Primitive)?;
         let _left_brace_span = cx.expect_sep(Separator::LeftBrace)?;
 
         let mut fields = Vec::new();
@@ -65,17 +52,17 @@ impl Parser for TypeDef {
                 break right_brace_span;     // rustc 1.19 stablize break-expr
             }
 
-            let field_name = cx.expect::<SimpleName>()?;
+            let (field_name, field_name_span) = cx.expect_ident()?;
             let colon_span = cx.expect_sep(Separator::Colon)?;
             let field_type = cx.expect::<TypeRef>()?;
             fields.push(if let Some(comma_span) = cx.try_expect_sep(Separator::Comma) {
-                TypeFieldDef::new(field_name.span + comma_span, field_name, colon_span, field_type)
+                TypeFieldDef{ all_span: field_name_span + comma_span, name: field_name, name_span: field_name_span, colon_span, r#type: field_type }
             } else {
-                TypeFieldDef::new(field_name.span + field_type.get_all_span(), field_name, colon_span, field_type)
+                TypeFieldDef{ all_span: field_name_span + field_type.get_all_span(), name: field_name, name_span: field_name_span, colon_span, r#type: field_type }
             });
         };
 
-        Ok(TypeDef::new(starting_span + right_brace_span, name, fields))
+        Ok(TypeDef{ all_span: starting_span + right_brace_span, name, name_span, fields })
     }
 }
 
@@ -84,7 +71,6 @@ impl Node for TypeDef {
         v.visit_type_def(self)
     }
     fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_simple_name(&self.name)?;
         for field in &self.fields {
             v.visit_type_field_def(field)?;
         }
@@ -96,42 +82,25 @@ impl Node for TypeDef {
 fn type_def_parse() {
     //                                  01234567890123456
     case!{ "type x { x: i32 }" as TypeDef,
-        TypeDef::new(Span::new(0, 16), SimpleName::new(2, Span::new(5, 5)), vec![
-            TypeFieldDef::new(Span::new(9, 14), 
-                SimpleName::new(2, Span::new(9, 9)),
-                Span::new(10, 10),
-                make_type!(prim 12:14 I32),
-            )
-        ])
+        TypeDef{ all_span: Span::new(0, 16), name: IsId::new(2), name_span: Span::new(5, 5), fields: vec![
+            TypeFieldDef{ all_span: Span::new(9, 14), name: IsId::new(2), name_span: Span::new(9, 9), colon_span: Span::new(10, 10),
+                r#type: make_type!(prim 12:14 I32) }] }
     }
     case!{ "type x { x: i32,}" as TypeDef,
-        TypeDef::new(Span::new(0, 16), SimpleName::new(2, Span::new(5, 5)), vec![
-            TypeFieldDef::new(Span::new(9, 15), 
-                SimpleName::new(2, Span::new(9, 9)),
-                Span::new(10, 10),
-                make_type!(prim 12:14 I32),
-            )
-        ])
+        TypeDef{ all_span: Span::new(0, 16), name: IsId::new(2), name_span: Span::new(5, 5), fields: vec![
+            TypeFieldDef{ all_span:Span::new(9, 15), name: IsId::new(2), name_span: Span::new(9, 9), colon_span: Span::new(10, 10),
+                r#type: make_type!(prim 12:14 I32) }] }
     }
     //                                    0         1         2         3         4
     //                                    0123456789012345678901234567890123456789012345
     case!{ "type array { data:  &u8, size: u64, cap: u64 }" as TypeDef,
-        TypeDef::new(Span::new(0, 45), SimpleName::new(2, Span::new(5, 9)), vec![
-            TypeFieldDef::new(Span::new(13, 23),
-                SimpleName::new(3, Span::new(13, 16)),
-                Span::new(17, 17),
-                make_type!(ref 20:22 make_type!(prim 21:22 U8)),
-            ),
-            TypeFieldDef::new(Span::new(25, 34), 
-                SimpleName::new(4, Span::new(25, 28)),
-                Span::new(29, 29),
-                make_type!(prim 31:33 U64),
-            ),
-            TypeFieldDef::new(Span::new(36, 43), 
-                SimpleName::new(5, Span::new(36, 38)),
-                Span::new(39, 39),
-                make_type!(prim 41:43 U64),
-            )
-        ]), strings ["array", "data", "size", "cap"]
+        TypeDef{ all_span: Span::new(0, 45), name: IsId::new(2), name_span: Span::new(5, 9), fields: vec![
+            TypeFieldDef{ all_span: Span::new(13, 23), name: IsId::new(3), name_span: Span::new(13, 16), colon_span: Span::new(17, 17),
+                r#type: make_type!(ref 20:22 make_type!(prim 21:22 U8)) },
+            TypeFieldDef{ all_span: Span::new(25, 34), name: IsId::new(4), name_span: Span::new(25, 28), colon_span: Span::new(29, 29),
+                r#type: make_type!(prim 31:33 U64) },
+            TypeFieldDef{ all_span: Span::new(36, 43), name: IsId::new(5), name_span: Span::new(36, 38), colon_span: Span::new(39, 39),
+                r#type: make_type!(prim 41:43 U64) },
+        ] }, strings ["array", "data", "size", "cap"]
     }
 }

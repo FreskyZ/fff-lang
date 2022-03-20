@@ -68,7 +68,7 @@ impl Node for LoopStatement {
 
 #[cfg(test)] #[test]
 fn loop_stmt_parse() {
-    use super::{SimpleName, Statement, SimpleExprStatement, FnCallExpr};
+    use super::{Statement, SimpleExprStatement, FnCallExpr};
 
     case!{ "loop {}" as LoopStatement,
         LoopStatement::new_no_label(Span::new(0, 3), Block::new(Span::new(5, 6), vec![]))
@@ -81,7 +81,7 @@ fn loop_stmt_parse() {
             Block::new(Span::new(9, 27), vec![
                 Statement::SimpleExpr(SimpleExprStatement::new(Span::new(11, 25), 
                     FnCallExpr::new(
-                        SimpleName::new(3, Span::new(11, 17)),
+                        make_name!(simple 11:17 #3),
                         Span::new(18, 24), make_exprs![
                             make_lit!(4: str, 19, 23),
                         ]

@@ -118,7 +118,7 @@ impl Node for FnDef {
 #[cfg(test)]
 #[test]
 fn fn_def_parse() {
-    use super::{SimpleName, Statement, SimpleExprStatement, Expr, FnCallExpr};
+    use super::{Statement, SimpleExprStatement, FnCallExpr};
 
     //                                012345678901
     case!{ "fn main() {}" as FnDef,
@@ -154,9 +154,9 @@ fn fn_def_parse() {
             Block::new(Span::new(63, 80), vec![
                 Statement::SimpleExpr(SimpleExprStatement::new(Span::new(65, 78),
                     FnCallExpr::new(
-                        Expr::SimpleName(SimpleName::new(7, Span::new(65, 71))),
+                        make_name!(simple 65:71 #7),
                         Span::new(72, 77), make_exprs![
-                            SimpleName::new(5, Span::new(73, 76))
+                            make_name!(simple 73:76 #5)
                         ]
                     )
                 ))

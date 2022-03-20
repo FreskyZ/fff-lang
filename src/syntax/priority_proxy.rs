@@ -17,7 +17,7 @@ impl Parser for PrimaryExpr {
         if cx.matches::<LitExpr>() {
             return cx.expect::<LitExpr>();
         } else if cx.matches::<Name>() {
-            return cx.expect::<Name>();
+            return cx.expect::<Name>().map(|n| Expr::Name(n));
         } else if cx.matches::<TupleDef>() {
             return cx.expect::<TupleDef>();
         } else if cx.matches::<ArrayDef>() {
@@ -25,7 +25,7 @@ impl Parser for PrimaryExpr {
         }
 
         let (this_id, this_span) = cx.expect_ident_or_keywords(&[Keyword::This, Keyword::Self_])?;  // actually identifier is processed by Name, not here
-        return Ok(Expr::SimpleName(SimpleName::new(this_id, this_span)));
+        Ok(Expr::Name(Name{ all_span: this_span, segments: vec![SimpleName{ value: this_id, span: this_span }] }))
     }
 }
 
@@ -45,7 +45,7 @@ impl Parser for PostfixExpr {
         loop {
             if cx.matches::<MemberAccessExpr>() {
                 let mut postfix = cx.expect::<MemberAccessExpr>()?;
-                postfix.all_span = current_retval.get_all_span() + postfix.name.span;
+                postfix.all_span = current_retval.get_all_span() + postfix.name_span;
                 postfix.base = Box::new(current_retval);
                 current_retval = Expr::MemberAccess(postfix);
             } else if cx.matches::<FnCallExpr>() {
@@ -76,7 +76,7 @@ fn primary_expr_parse() {
     // update 2017/6/17: this was a bug, but I forget detail
     case!{ "[a]" as Expr,  
         Expr::Array(ArrayDef::new(Span::new(0, 2), make_exprs![
-            SimpleName::new(2, Span::new(1, 1))
+            make_name!(simple 1:1 #2)
         ]))
     }
 
@@ -85,16 +85,16 @@ fn primary_expr_parse() {
     case!{ "(463857, IEfN, atau8M, [fNAE, ((cAeJN4)), nHg])" as Expr,
         Expr::Tuple(TupleDef::new(Span::new(0, 46), make_exprs![
             make_lit!(463857, 1, 6),
-            SimpleName::new(2, Span::new(9, 12)),
-            SimpleName::new(3, Span::new(15, 20)),
+            make_name!(simple 9:12 #2),
+            make_name!(simple 15:20 #3),
             ArrayDef::new(Span::new(23, 45), make_exprs![
-                SimpleName::new(4, Span::new(24, 27)),
+                make_name!(simple 24:27 #4),
                 ParenExpr::new(Span::new(30, 39), 
                     ParenExpr::new(Span::new(31, 38), 
-                        SimpleName::new(5, Span::new(32, 37))
+                        make_name!(simple 32:37 #5)
                     )
                 ),
-                SimpleName::new(6, Span::new(42, 44))
+                make_name!(simple 42:44 #6)
             ])
         ]))
     }
@@ -111,35 +111,35 @@ fn primary_expr_parse() {
             ParenExpr::new(Span::new(1, 6), 
                make_lit!(0x7E, 2, 5),
             ),
-            SimpleName::new(2, Span::new(9, 15)),
-            SimpleName::new(3, Span::new(18, 19)), 
+            make_name!(simple 9:15 #2),
+            make_name!(simple 18:19 #3), 
             ArrayDef::new(Span::new(22, 133), make_exprs![
                 TupleDef::new(Span::new(23, 105), make_exprs![
-                    SimpleName::new(4, Span::new(24, 26)),
+                    make_name!(simple 24:26 #4),
                     TupleDef::new(Span::new(29, 90), make_exprs![
                         make_lit!(41, 30, 31),
                         ParenExpr::new(Span::new(34, 68), 
                             ArrayDef::new(Span::new(35, 67), make_exprs![
                                 TupleDef::new(Span::new(36, 60), make_exprs![
-                                    SimpleName::new(5, Span::new(37, 38)), 
-                                    SimpleName::new(6, Span::new(41, 43)),
-                                    SimpleName::new(7, Span::new(46, 53)),
+                                    make_name!(simple 37:38 #5), 
+                                    make_name!(simple 41:43 #6),
+                                    make_name!(simple 46:53 #7),
                                     make_lit!(true, 56, 59)
                                 ]),
-                                SimpleName::new(8, Span::new(63, 63)),
-                                SimpleName::new(9, Span::new(66, 66)),
+                                make_name!(simple 63:63 #8),
+                                make_name!(simple 66:66 #9),
                             ])
                         ),
                         TupleDef::new(Span::new(71, 89), make_exprs![
-                            SimpleName::new(10, Span::new(72, 78)),
-                            SimpleName::new(11, Span::new(81, 81)),
+                            make_name!(simple 72:78 #10),
+                            make_name!(simple 81:81 #11),
                             ParenExpr::new(Span::new(84, 88), 
-                                SimpleName::new(12, Span::new(85, 87))
+                                make_name!(simple 85:87 #12)
                             )
                         ])
                     ]),
                     make_lit!(unit, 93, 94),
-                    SimpleName::new(13, Span::new(98, 104))
+                    make_name!(simple 98:104 #13)
                 ]),
                 make_lit!(400, 108, 110),
                 make_lit!(0o535147505, 113, 123),
@@ -148,37 +148,37 @@ fn primary_expr_parse() {
         ]))
     }
 
-    case!{ "CMDoF" as Expr, Expr::SimpleName(SimpleName::new(2, Span::new(0, 4))) }
-    case!{ "false" as Expr, Expr::Lit(make_lit!(false, 0, 4)) }
+    case!{ "CMDoF" as Expr, make_name!(simple 0:4 #2) }
+    case!{ "false" as Expr, make_expr!(false, 0, 4) }
 
     
     //                      0        1         2         3         4         5         6          7          8         9         A
     //                      12345678901234567890123456789012345678901234567890123456789012345678901 234 5678901234567890123456789012
     case!{ "[uy6, 4373577, [(q, AJBN0n, MDEgKh5,), KG, (NsL, ((), D, false, d, ), \"H=\"), true, ((vvB3, true, 5))]]" as Expr, 
         Expr::Array(ArrayDef::new(Span::new(0, 101), make_exprs![
-            SimpleName::new(2, Span::new(1, 3)),
+            make_name!(simple 1:3 #2),
             make_lit!(4373577, 6, 12),
             ArrayDef::new(Span::new(15, 100), make_exprs![
                 TupleDef::new(Span::new(16, 36), make_exprs![
-                    SimpleName::new(3, Span::new(17, 17)),
-                    SimpleName::new(4, Span::new(20, 25)), 
-                    SimpleName::new(5, Span::new(28, 34))
+                    make_name!(simple 17:17 #3),
+                    make_name!(simple 20:25 #4), 
+                    make_name!(simple 28:34 #5)
                 ]), 
-                SimpleName::new(6, Span::new(39, 40)),
+                make_name!(simple 39:40 #6),
                 TupleDef::new(Span::new(43, 74), make_exprs![
-                    SimpleName::new(7, Span::new(44, 46)),
+                    make_name!(simple 44:46 #7),
                     TupleDef::new(Span::new(49, 67), make_exprs![
                         make_lit!(unit, 50, 51),
-                        SimpleName::new(8, Span::new(54, 54)),
+                        make_name!(simple 54:54 #8),
                         make_lit!(false, 57, 61),
-                        SimpleName::new(9, Span::new(64, 64)),
+                        make_name!(simple 64:64 #9),
                     ]),
                     make_lit!(10: str, 70, 73)
                 ]),
                 make_lit!(true, 77, 80),
                 ParenExpr::new(Span::new(83, 99), 
                     TupleDef::new(Span::new(84, 98), make_exprs![
-                        SimpleName::new(11, Span::new(85, 88)),
+                        make_name!(simple 85:88 #11),
                         make_lit!(true, 91, 94),
                         make_lit!(5, 97, 97)
                     ])
@@ -204,7 +204,7 @@ fn primary_expr_parse() {
     //                      1234567890123456789012345678
     case!{ "(nn, ([false,true]), 183455)" as Expr,
         Expr::Tuple(TupleDef::new(Span::new(0, 27), make_exprs![
-            SimpleName::new(2, Span::new(1, 2)),
+            make_name!(simple 1:2 #2),
             ParenExpr::new(Span::new(5, 18), 
                 ArrayDef::new(Span::new(6, 17), make_exprs![
                     make_lit!(false, 7, 11),
@@ -222,31 +222,31 @@ fn primary_expr_parse() {
             TupleDef::new(Span::new(1, 68), make_exprs![
                 make_lit!(true, 2, 5),
                 TupleDef::new(Span::new(8, 49), make_exprs![
-                    SimpleName::new(2, Span::new(9, 10)),
+                    make_name!(simple 9:10 #2),
                     ArrayDef::new(Span::new(13, 21), make_exprs![
                         ParenExpr::new(Span::new(14, 18), 
-                            SimpleName::new(3, Span::new(15, 17))
+                            make_name!(simple 15:17 #3)
                         ),
-                        SimpleName::new(4, Span::new(20, 20))
+                        make_name!(simple 20:20 #4)
                     ]),
                     ParenExpr::new(Span::new(24, 33), 
                         ParenExpr::new(Span::new(25, 32), 
                             ParenExpr::new(Span::new(26, 31), 
-                                SimpleName::new(5, Span::new(27, 30))
+                                make_name!(simple 27:30 #5)
                             )
                         )
                     ),
                     TupleDef::new(Span::new(36, 48), make_exprs![
-                        SimpleName::new(6, Span::new(37, 40)), 
-                        SimpleName::new(7, Span::new(43, 43)),
+                        make_name!(simple 37:40 #6), 
+                        make_name!(simple 43:43 #7),
                         make_lit!(unit, 46, 47)
                     ]),
                 ]),
                 TupleDef::new(Span::new(52, 67), make_exprs![
-                    SimpleName::new(8, Span::new(53, 65))
+                    make_name!(simple 53:65 #8)
                 ])
             ]),
-            SimpleName::new(9, Span::new(71, 75))
+            make_name!(simple 71:75 #9)
         ]))
     }
 
@@ -256,7 +256,7 @@ fn primary_expr_parse() {
         Expr::Array(ArrayDef::new(Span::new(0, 21), make_exprs![
             make_lit!(2: str, 1, 4),
             make_lit!(0o52: u32, 7, 13), 
-            SimpleName::new(3, Span::new(16, 20))
+            make_name!(simple 16:20 #3)
         ]))
     }
     //                                      12345678
@@ -276,7 +276,7 @@ fn primary_expr_parse() {
             make_lit!(2: str, 4, 10),
             make_lit!(87f32: r32, 13, 17),
             make_lit!(1340323.74: r64, 20, 32),
-            SimpleName::new(3, Span::new(35, 42))
+            make_name!(simple 35:42 #3)
         ]))
     }
 
@@ -285,20 +285,20 @@ fn primary_expr_parse() {
     case!{ r#"  [[dnr4, lGFd3yL, tJ], ['\\', p, (xGaBwiL,), DE], true, aB8aE]"# as Expr,
         Expr::Array(ArrayDef::new(Span::new(2, 62), make_exprs![
             ArrayDef::new(Span::new(3, 21), make_exprs![
-                SimpleName::new(2, Span::new(4, 7)),
-                SimpleName::new(3, Span::new(10, 16)),
-                SimpleName::new(4, Span::new(19, 20))
+                make_name!(simple 4:7 #2),
+                make_name!(simple 10:16 #3),
+                make_name!(simple 19:20 #4)
             ]),
             ArrayDef::new(Span::new(24, 48), make_exprs![
                 make_lit!('\\': char, 25, 28),
-                SimpleName::new(5, Span::new(31, 31)),
+                make_name!(simple 31:31 #5),
                 TupleDef::new(Span::new(34, 43), make_exprs![
-                    SimpleName::new(6, Span::new(35, 41))
+                    make_name!(simple 35:41 #6)
                 ]),
-                SimpleName::new(7, Span::new(46, 47))
+                make_name!(simple 46:47 #7)
             ]),
             make_lit!(true, 51, 54),
-            SimpleName::new(8, Span::new(57, 61))
+            make_name!(simple 57:61 #8)
         ]))
     } 
 
@@ -307,17 +307,17 @@ fn primary_expr_parse() {
     //                      012345678901234 5678 9012 3456789012345678901234567890123 456789 0123456
     case!{ "[abc, 123u32, \"456\", '\\u0065', false, (), (a), (abc, \"hello\", ), ]" as Expr,
         Expr::Array(ArrayDef::new(Span::new(0, 65), make_exprs![
-            SimpleName::new(2, Span::new(1, 3)),
+            make_name!(simple 1:3 #2),
             make_lit!(123: u32, 6, 11),
             make_lit!(3: str, 14, 18),
             make_lit!('\u{0065}': char, 21, 28),
             make_lit!(false, 31, 35),
             make_lit!(unit, 38, 39),
             ParenExpr::new(Span::new(42, 44), 
-                SimpleName::new(4, Span::new(43, 43))
+                make_name!(simple 43:43 #4)
             ),
             TupleDef::new(Span::new(47, 62), make_exprs![
-                SimpleName::new(2, Span::new(48, 50)),
+                make_name!(simple 48:50 #2),
                 make_lit!(5: str, 53, 59),
             ])
         ]))
@@ -339,72 +339,56 @@ fn primary_expr_errors() {
 
 #[cfg(test)] #[test]
 fn postfix_expr_parse() {
-    use super::{SimpleName};
 
-    //                                      0        1         2         3         4         5     
-    // plain                                0123456789012345678901234567890123456789012345678901234567
+    //      0        1         2         3         4         5     
+    //      0123456789012345678901234567890123456789012345678901234567
     case!{ "a.b(c, d, e).f(g, h, i,)(u,).j[k].l().m[n, o, p][r, s, t,]" as Expr,
         Expr::IndexCall(IndexCallExpr::new(
             IndexCallExpr::new(
-                MemberAccessExpr::new(
+                make_expr!(member 0:38 dot 37:37 #15 38:38
                     FnCallExpr::new(
-                        MemberAccessExpr::new(
+                        make_expr!(member 0:34 dot 33:33 #14 34:34
                             IndexCallExpr::new(
-                                MemberAccessExpr::new(
+                                make_expr!(member 0:29 dot 28:28 #12 29:29
                                     FnCallExpr::new(
                                         FnCallExpr::new(
-                                            MemberAccessExpr::new(
+                                            make_expr!(member 0:13 dot 12:12 #7 13:13
                                                 FnCallExpr::new(
-                                                    MemberAccessExpr::new(
-                                                        SimpleName::new(2, Span::new(0, 0)),
-                                                        Span::new(1, 1),
-                                                        SimpleName::new(3, Span::new(2, 2))
-                                                    ), 
+                                                    make_expr!(member 0:2 dot 1:1 #3 2:2
+                                                        make_name!(simple 0:0 #2)), 
                                                     Span::new(3, 11), make_exprs![
-                                                        SimpleName::new(4, Span::new(4, 4)),
-                                                        SimpleName::new(5, Span::new(7, 7)),
-                                                        SimpleName::new(6, Span::new(10, 10)),
+                                                        make_name!(simple 4:4 #4),
+                                                        make_name!(simple 7:7 #5),
+                                                        make_name!(simple 10:10 #6),
                                                     ]
-                                                ),
-                                                Span::new(12, 12),
-                                                SimpleName::new(7, Span::new(13, 13))
-                                            ),
+                                                )),
                                             Span::new(14, 23), make_exprs![
-                                                SimpleName::new(8, Span::new(15, 15)),
-                                                SimpleName::new(9, Span::new(18, 18)),
-                                                SimpleName::new(10, Span::new(21, 21)),
+                                                make_name!(simple 15:15 #8),
+                                                make_name!(simple 18:18 #9),
+                                                make_name!(simple 21:21 #10),
                                             ]
                                         ),
                                         Span::new(24, 27), make_exprs![
-                                            SimpleName::new(11, Span::new(25, 25))
+                                            make_name!(simple 25:25 #11)
                                         ]
-                                    ),
-                                    Span::new(28, 28),
-                                    SimpleName::new(12, Span::new(29, 29))
-                                ),
+                                    )),
                                 Span::new(30, 32), make_exprs![
-                                    SimpleName::new(13, Span::new(31, 31))
+                                    make_name!(simple 31:31 #13)
                                 ]
-                            ),
-                            Span::new(33, 33),
-                            SimpleName::new(14, Span::new(34, 34))
-                        ),
+                            )),
                         Span::new(35, 36),
                         make_exprs![]
-                    ),
-                    Span::new(37, 37),
-                    SimpleName::new(15, Span::new(38, 38))
-                ),
+                    )),
                 Span::new(39, 47), make_exprs![
-                    SimpleName::new(16, Span::new(40, 40)),
-                    SimpleName::new(17, Span::new(43, 43)),
-                    SimpleName::new(18, Span::new(46, 46))
+                    make_name!(simple 40:40 #16),
+                    make_name!(simple 43:43 #17),
+                    make_name!(simple 46:46 #18)
                 ]
             ),
             Span::new(48, 57), make_exprs![
-                SimpleName::new(19, Span::new(49, 49)),
-                SimpleName::new(20, Span::new(52, 52)),
-                SimpleName::new(21, Span::new(55, 55))
+                make_name!(simple 49:49 #19),
+                make_name!(simple 52:52 #20),
+                make_name!(simple 55:55 #21)
             ]
         ))
     }
@@ -415,7 +399,7 @@ fn postfix_expr_errors() {
     
     case!{ "a[]" as PostfixExpr,
         Expr::IndexCall(IndexCallExpr::new(
-            SimpleName::new(2, Span::new(0, 0)), 
+            make_name!(simple 0:0 #2), 
             Span::new(1, 2), make_exprs![]
         )), errors make_errors!(
             e: e.emit(strings::EmptyIndexCall).detail(Span::new(1, 2), strings::IndexCallHere)
@@ -424,7 +408,7 @@ fn postfix_expr_errors() {
     
     case!{ "a[, ]" as PostfixExpr,
         Expr::IndexCall(IndexCallExpr::new(
-            SimpleName::new(2, Span::new(0, 0)), 
+            make_name!(simple 0:0 #2), 
             Span::new(1, 4), make_exprs![]
         )), errors make_errors!(
             e: e.emit(strings::EmptyIndexCall).detail(Span::new(1, 4), strings::IndexCallHere)
@@ -433,7 +417,7 @@ fn postfix_expr_errors() {
     
     case!{ "a(, )" as PostfixExpr,
         Expr::FnCall(FnCallExpr::new(
-            SimpleName::new(2, Span::new(0, 0)),
+            make_name!(simple 0:0 #2),
             Span::new(1, 4), make_exprs![]
         )), errors make_errors!(
             e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(1, 4), strings::FnCallHere)

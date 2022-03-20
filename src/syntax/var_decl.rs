@@ -141,7 +141,7 @@ fn var_decl_stmt_parse() {
                     make_lit!(5: u8, 32, 34),
                     make_lit!(7: u8, 37, 41),
                 ]),
-                SimpleName::new(3, Span::new(45, 47))
+                make_name!(simple 45:47 #3)
             ])))
         ), strings ["buf", "abc"]
     }

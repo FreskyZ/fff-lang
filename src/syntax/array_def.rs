@@ -52,11 +52,11 @@ impl Node for ArrayDef {
 #[cfg(test)]
 #[test]
 fn array_def_parse() {
-    use super::{BinaryExpr, SimpleName};
+    use super::{BinaryExpr};
 
     case!{ "[a]" as ArrayDef,
         Expr::Array(ArrayDef::new(Span::new(0, 2), make_exprs![
-            SimpleName::new(2, Span::new(1, 1))
+            make_name!(simple 1:1 #2)
         ]))
     }
 

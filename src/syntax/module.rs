@@ -40,26 +40,21 @@ impl Node for Module {
 
 #[cfg(test)] #[test]
 fn module_parse() {
-    use super::{Name, SimpleName, ModuleStatement, SimpleExprStatement, UseStatement};
+    use super::{ModuleStatement, SimpleExprStatement, UseStatement};
     //                      0123456789012345678901234
     case!{ "use a; module b; 3; b; a;" as Module,
         Module{ file: FileId::new(0), items: vec![
-            Item::Use(UseStatement::new_default(Span::new(0, 5), 
-                Name::new(Span::new(4, 4), vec![
-                    SimpleName::new(2, Span::new(4, 4))
-                ])
-            )),
-            Item::Import(ModuleStatement::new_default(Span::new(7, 15), 
-                SimpleName::new(3, Span::new(14, 14))
-            )),
+            Item::Use(UseStatement{ all_span: Span::new(0, 5), alias: None,
+                name: make_name!(simple bare 4:4 #2) }),
+            Item::Import(ModuleStatement{ name: IsId::new(3), name_span: Span::new(14, 14), path: None, all_span: Span::new(7, 15) }),
             Item::SimpleExpr(SimpleExprStatement::new(Span::new(17, 18), 
                 make_lit!(3, 17, 17)
             )),
             Item::SimpleExpr(SimpleExprStatement::new(Span::new(20, 21), 
-                SimpleName::new(3, Span::new(20, 20))
+                make_name!(simple 20:20 #3)
             )),
             Item::SimpleExpr(SimpleExprStatement::new(Span::new(23, 24), 
-                SimpleName::new(2, Span::new(23, 23))
+                make_name!(simple 23:23 #2)
             )),
         ] }
     }
