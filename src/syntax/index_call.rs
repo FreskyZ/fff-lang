@@ -70,7 +70,8 @@ impl Node for IndexCallExpr {
     }
 }
 
-#[cfg(test)] #[test]
+#[cfg(test)]
+#[test]
 fn index_call_parse() {
 
     case!{ "[1, 2, ]" as IndexCallExpr,
@@ -85,10 +86,6 @@ fn index_call_parse() {
             make_lit!(2: str, 1, 7)
         ])
     }
-}
-
-#[cfg(test)] #[test]
-fn index_call_errors() {
 
     case!{ "[,]" as IndexCallExpr,
         IndexCallExpr::new_with_parse_result(Span::new(0, 2), ExprList::new(Vec::new())), 

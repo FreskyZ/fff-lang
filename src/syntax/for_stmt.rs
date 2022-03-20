@@ -97,13 +97,13 @@ fn for_stmt_parse() {
         ForStatement::new_with_label(Span::new(0, 77),
             LabelDef::new(2, Span::new(0, 6)),
             Span::new(8, 10),
-            4, Span::new(12, 12),
+            3, Span::new(12, 12),
             FnCallExpr::new(
                 make_expr!(member 17:48 dot 41:41
                     FnCallExpr::new(
                         make_expr!(member 17:38 dot 29:29
                             FnCallExpr::new(
-                                make_name!(simple 17:21 #3),
+                                make_name!(simple 17:21 #4),
                                 Span::new(22, 28), make_exprs![
                                     make_lit!(0, 23, 23),
                                     make_lit!(10, 26, 27),
@@ -125,6 +125,6 @@ fn for_stmt_parse() {
                     )
                 ))
             ])
-        )
+        ), strings ["hello", "_", "range", "enumerate", "reverse", "writeln", "helloworld"]
     }
 }

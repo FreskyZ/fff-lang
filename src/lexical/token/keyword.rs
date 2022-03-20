@@ -7,9 +7,10 @@
 #[allow(dead_code)]
 #[derive(Eq, PartialEq, Clone, Copy, Debug)]
 pub enum KeywordKind {
-    Normal = 1,
-    Primitive = 2,
-    Reserved = 3,
+    Reserved = 0,
+    Primitive = 1,
+    MaybeIdentifier = 2,
+    Normal = 3,
 }
 
 #[repr(u8)]
@@ -111,10 +112,10 @@ const VALUES: &[&str] = &[
     "unsafe", "use", "var", "virtual", "volatile", "while", "yield",
 ];
 const KINDS: &[u8] = &[
-    0, 1, 3, 1, 3, 3, 3, 3, 3, 3, 2, 1, 3, 2, 3, 1, 1, 1, 3, 3, 3, 2, 2, 1, 3, 1,
-    1, 3, 3, 2, 2, 2, 2, 1, 3, 1, 3, 3, 3, 3, 1, 3, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-    3, 3, 3, 3, 3, 1, 1, 3, 3, 3, 3, 1, 3, 3, 1, 3, 1, 3, 3, 3, 2, 2, 2, 2, 3, 1,
-    1, 3, 3, 1, 3,
+    0, 2, 0, 3, 0, 0, 0, 0, 0, 0, 1, 3, 0, 1, 0, 3, 3, 3, 0, 0, 0, 1, 1, 2, 0, 3,
+    3, 0, 0, 1, 1, 1, 1, 3, 0, 3, 0, 0, 0, 0, 3, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 3, 2, 0, 0, 0, 0, 2, 0, 0, 2, 0, 3, 0, 0, 0, 1, 1, 1, 1, 0, 3,
+    3, 0, 0, 3, 0,
 ];
 
 impl Keyword {

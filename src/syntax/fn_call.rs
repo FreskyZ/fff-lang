@@ -68,7 +68,8 @@ impl Node for FnCallExpr {
     }
 }
 
-#[cfg(test)] #[test]
+#[cfg(test)]
+#[test]
 fn fn_call_parse() {
 
     case!{ "()" as FnCallExpr,
@@ -80,10 +81,6 @@ fn fn_call_parse() {
             make_lit!(2: str, 1, 7),
         ])
     }
-}
-
-#[cfg(test)] #[test]
-fn fn_call_errors() {
 
     case!{ "(,)" as FnCallExpr,
         FnCallExpr::new_with_parse_result(Span::new(0, 2), ExprList::new(Vec::new())),

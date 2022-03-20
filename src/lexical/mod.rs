@@ -134,6 +134,11 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
                 if keyword.kind(KeywordKind::Reserved) {
                     self.diagnostics.emit(format!("{}: {:?}", strings::UseReservedKeyword, keyword)).span(span);
                 }
+                if keyword.kind(KeywordKind::MaybeIdentifier) {
+                    // intern maybe identifier keywords because 
+                    // syntax parser may get string id from them, this makes string id more consist with appear order in source code
+                    self.base.intern(keyword.display());
+                }
                 (Token::Keyword(keyword), span)
             },
             None => (Token::Ident(self.intern_span(span)), span),

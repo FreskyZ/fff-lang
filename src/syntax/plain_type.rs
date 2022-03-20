@@ -282,10 +282,10 @@ fn type_ref_parse() {
     //      0123 456789012345 678901234567 89012345678 9
     case!{ "fn(\nthis: This,\nself: Self,\nthat: That,\n)" as TypeRef, 
         make_type!(fn 0:40 paren 2:40 [
-            make_type!(param named 4:13 3 4:7 make_type!(simple 10:13 2)),
-            make_type!(param named 16:25 6 16:19 make_type!(simple 22:25 4)),
-            make_type!(param named 28:37 5 28:31 make_type!(simple 34:37 7)),
-        ]), strings ["This", "this", "Self", "that", "self", "That"],
+            make_type!(param named 4:13 2 4:7 make_type!(simple 10:13 3)),
+            make_type!(param named 16:25 4 16:19 make_type!(simple 22:25 5)),
+            make_type!(param named 28:37 6 28:31 make_type!(simple 34:37 7)),
+        ]), strings ["this", "This", "self", "Self", "that", "That"],
     }
 
     //      0         1         2         3

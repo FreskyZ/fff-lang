@@ -381,7 +381,7 @@ class Keywords(object):
                 name, category, _ = map(str.strip, rest.split(','))
                 self.items.append(Keyword(value, name, 0, category))
         assert len(self.items) < 255  # 255 is used in bucket to represent empty value
-        self.cats = { 'Normal': 1, 'Primitive': 2, 'Reserved': 3 }
+        self.cats = { 'Reserved': 0, 'Primitive': 1, 'MaybeIdentifier': 2, 'Normal': 3 }
         self.items.sort()
         self.items = [keyword.update_index(index + 1).update_cat_value(self.cats) for (index, keyword) in enumerate(self.items)]
 
@@ -482,8 +482,9 @@ class Keywords(object):
         bucket_groups = []
         ordered_items = \
             [kw for kw in self.items if kw.cat_value == self.cats['Normal']] \
+            + [kw for kw in self.items if kw.cat_value == self.cats['MaybeIdentifier']] \
             + [kw for kw in self.items if kw.cat_value == self.cats['Primitive']] \
-            + [kw for kw in self.items if kw.cat_value == self.cats['Reserved']]  # normal in priority, then primitive, last reserved
+            + [kw for kw in self.items if kw.cat_value == self.cats['Reserved']]  # normal in priority, then maybeident, then primitive, last reserved
 
         hashf = lambda value: reduce(lambda acc, x: acc * (ord(x) - 96 if ord(x) > 96 else ord(x) - 48) % 173, value, 1)
         configs = [(length, HashChecker([hashf(kw.value) for kw in self.items if len(kw.value) == length])) for length in range(2, max(len(kw.value) for kw in self.items) + 1)]
