@@ -296,6 +296,28 @@ fn type_ref_parse() {
             make_type!(param named 14:26 3 14:17 make_type!(ref 20:26 make_type!(simple 21:26 4)))],
             make_type!(prim 32:34 I32)),
     }
+
+    //      0         1         2         3         4         5         6         7         8         9         0         1
+    //      0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567
+    case!{ "fn(this: &This, node: &/*dyn*/Node, title: string, span: Span, then: fn() -> Result<&This, fmt::Error>) -> fmt::Result" as TypeRef,
+        make_type!(fn ret 0:117 paren 2:102 [
+            make_type!(param named 3:13 2 3:6 make_type!(ref 9:13 make_type!(simple 10:13 3))),
+            make_type!(param named 16:33 4 16:19 make_type!(ref 22:33 make_type!(simple 30:33 5))),
+            make_type!(param named 36:48 6 36:40 make_type!(simple 43:48 7)),
+            make_type!(param named 51:60 8 51:54 make_type!(simple 57:60 9)),
+            make_type!(param named 63:101 10 63:66 make_type!(fn ret 69:101 paren 71:72 [],
+                make_type!(plain 77:101 false, None,
+                    make_type!(segment generic 77:101 11 77:82 quote 83:101
+                        make_type!(ref 84:88 make_type!(simple 85:88 3)),
+                        make_type!(plain 91:100 false, None,
+                            make_type!(segment 91:93 12),
+                            make_type!(segment 96:100 13)))))),
+        ], make_type!(plain 107:117 false, None, 
+            make_type!(segment 107:109 12),
+            make_type!(segment 112:117 11))
+        //           2       3       4       5       6        7         8       9       10      11        12     13
+        ), strings ["this", "This", "node", "Node", "title", "string", "span", "Span", "then", "Result", "fmt", "Error"]
+    }
     
     // bare ident followed by comma is type
     //      0         1         2         3
