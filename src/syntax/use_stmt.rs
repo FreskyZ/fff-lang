@@ -54,10 +54,10 @@ fn use_stmt_parse() {
     //                   0123456789012345678901234567890
     case!{ "use std::fmt::Debug as Display;" as UseStatement,
         UseStatement{ all_span: Span::new(0, 30), alias: Some((IsId::new(5), Span::new(23, 29))),
-            name: Name::new(Span::new(4, 18), vec![
+            name: make_name!(bare 4:18 false, None,
                 make_name!(segment 4:6 #2),
                 make_name!(segment 9:11 #3),
-                make_name!(segment 14:18 #4)
-            ]) },
+                make_name!(segment 14:18 #4),
+            ) },
     }
 }

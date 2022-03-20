@@ -99,18 +99,20 @@ fn for_stmt_parse() {
             Span::new(8, 10),
             4, Span::new(12, 12),
             FnCallExpr::new(
-                make_expr!(member 17:48 dot 41:41 #6 42:48
+                make_expr!(member 17:48 dot 41:41
                     FnCallExpr::new(
-                        make_expr!(member 17:38 dot 29:29 #5 30:38
+                        make_expr!(member 17:38 dot 29:29
                             FnCallExpr::new(
                                 make_name!(simple 17:21 #3),
                                 Span::new(22, 28), make_exprs![
                                     make_lit!(0, 23, 23),
                                     make_lit!(10, 26, 27),
                                 ]
-                            )),
+                            ),
+                            make_name!(simple bare 30:38 #5)),
                         Span::new(39, 40), ExprList::new(vec![])
-                    )),
+                    ),
+                    make_name!(simple bare 42:48 #6)),
                 Span::new(49, 50), ExprList::new(vec![])
             ),
             Block::new(Span::new(52, 77), vec![

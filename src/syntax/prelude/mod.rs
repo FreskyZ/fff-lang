@@ -101,7 +101,7 @@ pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_module(&mut self, node: &Module) -> Result<T, E> { node.walk(self) }
     fn visit_module_stmt(&mut self, node: &ModuleStatement) -> Result<T, E> { node.walk(self) }
     fn visit_name(&mut self, node: &Name) -> Result<T, E> { node.walk(self) }
-    fn visit_simple_name(&mut self, node: &SimpleName) -> Result<T, E> { node.walk(self) }
+    fn visit_name_segment(&mut self, node: &NameSegment) -> Result<T, E> { node.walk(self) }
     fn visit_plain_type(&mut self, node: &PlainType) -> Result<T, E> { node.walk(self) }
     fn visit_type_segment(&mut self, node: &TypeSegment) -> Result<T, E> { node.walk(self) }
     fn visit_type_as_segment(&mut self, node: &TypeAsSegment) -> Result<T, E> { node.walk(self) }

@@ -1,14 +1,12 @@
-///! fff-lang
-///!
-///! syntax/priority level proxy
-///! they are here because they are dispatcher not containing data
+///! syntax::priority level proxy
 ///! primary_expr = ident_expr | lit_expr | unit_lit | paren_expr | tuple_def | array_def
 ///! postfix_expr = expr { ( member_access | fn_call | indexer_call ) }
 
 use super::prelude::*;
-use super::{Expr, Name, LitExpr, SimpleName, TupleDef, ArrayDef, FnCallExpr, IndexCallExpr, MemberAccessExpr};
+use super::{Expr, Name, NameSegment, LitExpr, TupleDef, ArrayDef, FnCallExpr, IndexCallExpr, MemberAccessExpr};
 
 struct PrimaryExpr;
+
 impl Parser for PrimaryExpr {
     type Output = Expr;
     
@@ -25,11 +23,12 @@ impl Parser for PrimaryExpr {
         }
 
         let (this_id, this_span) = cx.expect_ident_or_keywords(&[Keyword::This, Keyword::Self_])?;  // actually identifier is processed by Name, not here
-        Ok(Expr::Name(Name{ all_span: this_span, segments: vec![SimpleName{ value: this_id, span: this_span }] }))
+        Ok(Expr::Name(Name{ type_as_segment: None, global: false, all_span: this_span, segments: vec![NameSegment::Normal(this_id, this_span)] }))
     }
 }
 
 pub struct PostfixExpr;
+
 impl Parser for PostfixExpr {
     type Output = Expr;
 
@@ -45,7 +44,7 @@ impl Parser for PostfixExpr {
         loop {
             if cx.matches::<MemberAccessExpr>() {
                 let mut postfix = cx.expect::<MemberAccessExpr>()?;
-                postfix.all_span = current_retval.get_all_span() + postfix.name_span;
+                postfix.all_span = current_retval.get_all_span() + postfix.name.all_span;
                 postfix.base = Box::new(current_retval);
                 current_retval = Expr::MemberAccess(postfix);
             } else if cx.matches::<FnCallExpr>() {
@@ -68,7 +67,8 @@ impl Parser for PostfixExpr {
     }
 }
 
-#[cfg(test)] #[test]
+#[cfg(test)]
+#[test]
 fn primary_expr_parse() {
     use super::{ParenExpr};
 
@@ -326,10 +326,6 @@ fn primary_expr_parse() {
     case!{ "(                             )" as Expr, 
         Expr::Lit(make_lit!(unit, 0, 30))
     }
-}
-
-#[cfg(test)] #[test]
-fn primary_expr_errors() {
 
     case!{ "(,)" as Expr,
         Expr::Tuple(TupleDef::new(Span::new(0, 2), make_exprs![])), 
@@ -337,7 +333,8 @@ fn primary_expr_errors() {
     }
 }
 
-#[cfg(test)] #[test]
+#[cfg(test)]
+#[test]
 fn postfix_expr_parse() {
 
     //      0        1         2         3         4         5     
@@ -345,23 +342,25 @@ fn postfix_expr_parse() {
     case!{ "a.b(c, d, e).f(g, h, i,)(u,).j[k].l().m[n, o, p][r, s, t,]" as Expr,
         Expr::IndexCall(IndexCallExpr::new(
             IndexCallExpr::new(
-                make_expr!(member 0:38 dot 37:37 #15 38:38
+                make_expr!(member 0:38 dot 37:37
                     FnCallExpr::new(
-                        make_expr!(member 0:34 dot 33:33 #14 34:34
+                        make_expr!(member 0:34 dot 33:33
                             IndexCallExpr::new(
-                                make_expr!(member 0:29 dot 28:28 #12 29:29
+                                make_expr!(member 0:29 dot 28:28
                                     FnCallExpr::new(
                                         FnCallExpr::new(
-                                            make_expr!(member 0:13 dot 12:12 #7 13:13
+                                            make_expr!(member 0:13 dot 12:12
                                                 FnCallExpr::new(
-                                                    make_expr!(member 0:2 dot 1:1 #3 2:2
-                                                        make_name!(simple 0:0 #2)), 
+                                                    make_expr!(member 0:2 dot 1:1
+                                                        make_name!(simple 0:0 #2),
+                                                        make_name!(simple bare 2:2 #3)), 
                                                     Span::new(3, 11), make_exprs![
                                                         make_name!(simple 4:4 #4),
                                                         make_name!(simple 7:7 #5),
                                                         make_name!(simple 10:10 #6),
                                                     ]
-                                                )),
+                                                ),
+                                                make_name!(simple bare 13:13 #7)),
                                             Span::new(14, 23), make_exprs![
                                                 make_name!(simple 15:15 #8),
                                                 make_name!(simple 18:18 #9),
@@ -371,14 +370,17 @@ fn postfix_expr_parse() {
                                         Span::new(24, 27), make_exprs![
                                             make_name!(simple 25:25 #11)
                                         ]
-                                    )),
+                                    ),
+                                    make_name!(simple bare 29:29 #12)),
                                 Span::new(30, 32), make_exprs![
                                     make_name!(simple 31:31 #13)
                                 ]
-                            )),
+                            ),
+                            make_name!(simple bare 34:34 #14)),
                         Span::new(35, 36),
                         make_exprs![]
-                    )),
+                    ),
+                    make_name!(simple bare 38:38 #15)),
                 Span::new(39, 47), make_exprs![
                     make_name!(simple 40:40 #16),
                     make_name!(simple 43:43 #17),
@@ -392,11 +394,29 @@ fn postfix_expr_parse() {
             ]
         ))
     }
-}
 
-#[cfg(test)] #[test]
-fn postfix_expr_errors() {
-    
+    //      012345678901234567890
+    case!{ "i.collect::<Vec<i32>>" as Expr,
+        make_expr!(member 0:20 dot 1:1
+            make_name!(simple 0:0 #2),
+            make_name!(bare 2:20 false, None,
+                make_name!(segment 2:8 #3),
+                make_name!(segment generic 11:20
+                    make_type!(plain 12:19 false, None,
+                        make_type!(segment generic 12:19 4 12:14 quote 15:19
+                            make_type!(prim 16:18 I32)))))),
+    }
+
+    //      01234567
+    case!{ "(0, 0).0" as Expr,
+        make_expr!(member 0:7 dot 6:6
+            make_expr!(tuple 0:5
+                make_expr!(0: i32, 1, 1),
+                make_expr!(0: i32, 4, 4)),
+            make_name!(bare 7:7 false, None,
+                make_name!(segment 7:7 #2))),
+    }
+
     case!{ "a[]" as PostfixExpr,
         Expr::IndexCall(IndexCallExpr::new(
             make_name!(simple 0:0 #2), 
@@ -422,5 +442,53 @@ fn postfix_expr_errors() {
         )), errors make_errors!(
             e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(1, 4), strings::FnCallHere)
         )
+    }
+
+    //      01234
+    case!{ "a.0i8" as Expr,
+        make_expr!(member 0:4 dot 1:1
+            make_name!(simple 0:0 #2),
+            make_name!(bare 2:4 false, None,)
+        ), errors make_errors!(
+            e: e.emit(strings::InvalidTupleIndex).span(Span::new(2, 4)).help(strings::TupleIndexSyntaxHelp)
+        )
+    }
+
+    //      01234567890123456789012
+    case!{ "a.0xFFFF_FFFF_FFFF_FFFF" as Expr,
+        make_expr!(member 0:22 dot 1:1
+            make_name!(simple 0:0 #2),
+            make_name!(bare 2:22 false, None,)
+        ), errors make_errors!(
+            e: e.emit(strings::InvalidTupleIndex).span(Span::new(2, 22)).help(strings::TupleIndexSyntaxHelp)
+        )
+    }
+
+    //      0123456789
+    case!{ "a.abc::def" as Expr,
+        make_expr!(member 0:9 dot 1:1
+            make_name!(simple 0:0 #2),
+            make_name!(bare 2:9 false, None,
+                make_name!(segment 2:4 #3),
+                make_name!(segment 7:9 #4))
+        ), errors make_errors!(
+            e: e.emit(strings::InvalidMemberAccess).span(Span::new(7, 9)).help(strings::GenericMemberAccessSyntaxHelp)
+        )
+    }
+
+    //      0123456789012345678
+    case!{ "a.abc::<def>::<ghi>" as Expr,
+        make_expr!(member 0:18 dot 1:1
+            make_name!(simple 0:0 #2),
+            make_name!(bare 2:18 false, None,
+                make_name!(segment 2:4 #3),
+                make_name!(segment generic 7:11
+                    make_type!(simple 8:10 4)),
+                make_name!(segment generic 14:18
+                    make_type!(simple 15:17 5)))
+        ), errors make_errors!(e: {
+            e.emit(strings::InvalidNameSegment).detail(Span::new(14, 14), strings::NameSegmentExpect);
+            e.emit(strings::InvalidMemberAccess).span(Span::new(7, 18)).help(strings::GenericMemberAccessSyntaxHelp);
+        })
     }
 }

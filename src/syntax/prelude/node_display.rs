@@ -295,10 +295,6 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
         self.write_span(node.all_span)?;
         self.write_str(" dot ")?;
         self.write_span(node.dot_span)?;
-        self.write_space()?;
-        self.write_isid(node.name)?;
-        self.write_space()?;
-        self.write_span(node.name_span)?;
         self.invoke_walk(node)
     }
 
@@ -432,12 +428,14 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
         self.invoke_walk(node)
     }
 
-    fn visit_simple_name(&mut self, node: &SimpleName) -> fmt::Result {
+    fn visit_name_segment(&mut self, node: &NameSegment) -> fmt::Result {
         self.write_indent()?;
-        self.write_str("simple-name ")?;
-        self.write_isid(node.value)?;
-        self.write_space()?;
-        self.write_span(node.span)?;
+        self.write_str("name-segment ")?;
+        self.write_span(node.get_span())?;
+        match node {
+            NameSegment::Normal(name, _) => { self.write_space()?; self.write_isid(*name)?; },
+            NameSegment::Generic(..) => self.write_str(" generic ")?,
+        }
         self.invoke_walk(node)
     }
 
@@ -653,7 +651,7 @@ mod tests {
     simple-expr-stmt <1:12-1:26>
       fn-call <1:12-1:25> paren <1:19-1:25>
         name <1:12-1:18>
-          simple-name println <1:12-1:18>
+          name-segment <1:12-1:18> println
         literal str "233" <1:20-1:24>
 "#
         }
@@ -671,46 +669,56 @@ mod tests {
         let actual = node.display(&scx).to_string();
         assert_text_eq!{ actual, "index-call <1:1-1:58> bracket <1:49-1:58>
   index-call <1:1-1:48> bracket <1:40-1:48>
-    member-access <1:1-1:39> dot <1:38-1:38> m <1:39-1:39>
+    member-access <1:1-1:39> dot <1:38-1:38>
       fn-call <1:1-1:37> paren <1:36-1:37>
-        member-access <1:1-1:35> dot <1:34-1:34> l <1:35-1:35>
+        member-access <1:1-1:35> dot <1:34-1:34>
           index-call <1:1-1:33> bracket <1:31-1:33>
-            member-access <1:1-1:30> dot <1:29-1:29> j <1:30-1:30>
+            member-access <1:1-1:30> dot <1:29-1:29>
               fn-call <1:1-1:28> paren <1:25-1:28>
                 fn-call <1:1-1:24> paren <1:15-1:24>
-                  member-access <1:1-1:14> dot <1:13-1:13> f <1:14-1:14>
+                  member-access <1:1-1:14> dot <1:13-1:13>
                     fn-call <1:1-1:12> paren <1:4-1:12>
-                      member-access <1:1-1:3> dot <1:2-1:2> b <1:3-1:3>
+                      member-access <1:1-1:3> dot <1:2-1:2>
                         name <1:1-1:1>
-                          simple-name a <1:1-1:1>
+                          name-segment <1:1-1:1> a
+                        name <1:3-1:3>
+                          name-segment <1:3-1:3> b
                       name <1:5-1:5>
-                        simple-name c <1:5-1:5>
+                        name-segment <1:5-1:5> c
                       name <1:8-1:8>
-                        simple-name d <1:8-1:8>
+                        name-segment <1:8-1:8> d
                       name <1:11-1:11>
-                        simple-name e <1:11-1:11>
+                        name-segment <1:11-1:11> e
+                    name <1:14-1:14>
+                      name-segment <1:14-1:14> f
                   name <1:16-1:16>
-                    simple-name g <1:16-1:16>
+                    name-segment <1:16-1:16> g
                   name <1:19-1:19>
-                    simple-name h <1:19-1:19>
+                    name-segment <1:19-1:19> h
                   name <1:22-1:22>
-                    simple-name i <1:22-1:22>
+                    name-segment <1:22-1:22> i
                 name <1:26-1:26>
-                  simple-name u <1:26-1:26>
+                  name-segment <1:26-1:26> u
+              name <1:30-1:30>
+                name-segment <1:30-1:30> j
             name <1:32-1:32>
-              simple-name k <1:32-1:32>
+              name-segment <1:32-1:32> k
+          name <1:35-1:35>
+            name-segment <1:35-1:35> l
+      name <1:39-1:39>
+        name-segment <1:39-1:39> m
     name <1:41-1:41>
-      simple-name n <1:41-1:41>
+      name-segment <1:41-1:41> n
     name <1:44-1:44>
-      simple-name o <1:44-1:44>
+      name-segment <1:44-1:44> o
     name <1:47-1:47>
-      simple-name p <1:47-1:47>
+      name-segment <1:47-1:47> p
   name <1:50-1:50>
-    simple-name r <1:50-1:50>
+    name-segment <1:50-1:50> r
   name <1:53-1:53>
-    simple-name s <1:53-1:53>
+    name-segment <1:53-1:53> s
   name <1:56-1:56>
-    simple-name t <1:56-1:56>
+    name-segment <1:56-1:56> t
 "
         }
     }

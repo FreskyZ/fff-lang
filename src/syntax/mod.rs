@@ -63,7 +63,7 @@ pub use loop_stmt::LoopStatement;
 pub use member_access::MemberAccessExpr;
 pub use module::Module;
 pub use module_stmt::ModuleStatement;
-pub use name::{Name, SimpleName};
+pub use name::{Name, NameSegment};
 pub use plain_type::{TypeAsSegment, TypeSegment, PlainType};
 pub use primitive_type::PrimitiveType;
 use priority_proxy::PostfixExpr;

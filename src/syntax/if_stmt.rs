@@ -207,8 +207,9 @@ fn if_stmt_parse() {
                 Block::new(Span::new(5, 41), vec![
                     Statement::SimpleExpr(SimpleExprStatement::new(Span::new(7, 20),
                         FnCallExpr::new(
-                            make_expr!(member 7:16 dot 10:10 #3 11:16
-                                make_name!(simple 7:9 #2)),
+                            make_expr!(member 7:16 dot 10:10
+                                make_name!(simple 7:9 #2),
+                                make_name!(simple bare 11:16 #3)),
                             Span::new(17, 19), make_exprs![
                                 make_name!(simple 18:18 #4)
                             ]
@@ -216,8 +217,9 @@ fn if_stmt_parse() {
                     )),
                     Statement::SimpleExpr(SimpleExprStatement::new(Span::new(22, 39),
                         FnCallExpr::new(
-                            make_expr!(member 22:35 dot 27:27 #6 28:35
-                                make_name!(simple 22:26 #5)),
+                            make_expr!(member 22:35 dot 27:27
+                                make_name!(simple 22:26 #5),
+                                make_name!(simple bare 28:35 #6)),
                             Span::new(36, 38), make_exprs![
                                 make_name!(simple 37:37 #7)
                             ]
@@ -231,12 +233,13 @@ fn if_stmt_parse() {
                 Block::new(Span::new(48, 71), vec![
                     Statement::SimpleExpr(SimpleExprStatement::new(Span::new(50, 70),
                         FnCallExpr::new(
-                            make_expr!(member 50:60 dot 57:57 #8 58:60
+                            make_expr!(member 50:60 dot 57:57
                                 ArrayDef::new(Span::new(50, 56), make_exprs![
                                     make_lit!(1, 51, 51),
                                     make_lit!(2, 53, 53),
                                     make_lit!(3, 55, 55),
-                                ])),
+                                ]),
+                                make_name!(simple bare 58:60 #8)),
                             Span::new(61, 69), make_exprs![
                                 make_name!(simple 62:68 #9)
                             ]

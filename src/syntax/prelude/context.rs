@@ -4,7 +4,7 @@
 
 use crate::source::{Span, IsId, FileId};
 use crate::diagnostics::Diagnostic;
-use crate::lexical::{Parser as LexicalParser, Token, Separator, SeparatorKind, Keyword, KeywordKind};
+use crate::lexical::{Parser as LexicalParser, Token, Numeric, Separator, SeparatorKind, Keyword, KeywordKind};
 use super::{Parser, Unexpected};
 use super::super::LitValue;
 
@@ -108,6 +108,19 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
     pub fn try_expect_str_lit(&mut self) -> Option<(IsId, Span)> {
         match self.current {
             Token::Str(v, _) => Some((v, self.move_next())),
+            _ => None,
+        }
+    }
+
+    /// Check current token is a literal, used for member access number
+    ///
+    /// if so, move next and Some((lit_value, lit_span)),
+    /// if not, no move next and None
+    ///
+    /// example `let (value, span) = cx.try_expect_num_lit()?;`
+    pub fn try_expect_numeric(&mut self) -> Option<(Numeric, Span)> {
+        match self.current {
+            Token::Num(v) => Some((v, self.move_next())),
             _ => None,
         }
     }
@@ -307,6 +320,11 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
             Token::Ident(id) => Ok((id, self.move_next())),
             _ => self.push_unexpect("identifier"),
         }
+    }
+
+    /// Check current token is an identifier
+    pub fn is_ident(&mut self) -> bool {
+        matches!(self.current, Token::Ident(_))
     }
 
     /// Check current token is a identifier
