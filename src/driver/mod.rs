@@ -15,7 +15,7 @@ pub fn main() {
     if args.len() > 1 {
         let chars = scx.entry(&args[1]);
         match parse(Parser::new(chars, &mut diagnostics)) {
-            Ok(tree) => println!("{}", tree.display(&scx)),
+            Ok(tree) => { println!("{}", diagnostics.display(&scx)); println!("{}", tree.display(&scx)); },
             Err(_) => println!("{}", diagnostics.display(&scx)),
         }
     } else {

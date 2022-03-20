@@ -50,36 +50,42 @@ impl Parser for BinaryExpr {
 
         return parse_logical_or(cx);
 
+        fn check_relational_expr(cx: &mut ParseContext, expr: &Expr) {
+            if let Expr::Binary(BinaryExpr{ operator: Separator::Gt, operator_span: gt_span, left_expr, .. }) = expr {
+                if let Expr::Binary(BinaryExpr{ operator: Separator::Lt, operator_span: lt_span, .. }) = left_expr.as_ref() {
+                    cx.emit(strings::MaybeGeneric).span(*lt_span).span(*gt_span).help(strings::MaybeGenericHelp);
+                }
+            }
+        }
+
         macro_rules! impl_binary_parser {
-            ($parser_name: ident, $previous_parser: expr, $op_category: expr) => (
+            ($parser_name:ident, $previous_parser_name:path, $kind:ident $(,$check:path)?) => (
                 fn $parser_name(cx: &mut ParseContext) -> Result<Expr, Unexpected> {
                     trace!("parsing {}", stringify!($parser_name));
 
-                    let mut current_retval = $previous_parser(cx)?;
+                    let mut current_expr = $previous_parser_name(cx)?;
                     loop {
-                        match cx.try_expect_sep_kind($op_category) {
-                            Some((sep, sep_span)) => {
-                                let right_expr = $previous_parser(cx)?;
-                                current_retval = Expr::Binary(BinaryExpr::new(current_retval, sep, sep_span, right_expr));
-                            }
-                            None => {
-                                return Ok(current_retval);
-                            }
+                        if let Some((sep, sep_span)) = cx.try_expect_sep_kind(SeparatorKind::$kind) {
+                            let right_expr = $previous_parser_name(cx)?;
+                            current_expr = Expr::Binary(BinaryExpr::new(current_expr, sep, sep_span, right_expr));
+                            $($check(cx, &current_expr))?
+                        } else {
+                            return Ok(current_expr);
                         }
                     }
                 }
             )
         }
-        impl_binary_parser! { parse_multiplicative, UnaryExpr::parse, SeparatorKind::Multiplicative }
-        impl_binary_parser! { parse_additive, parse_multiplicative, SeparatorKind::Additive }
-        impl_binary_parser! { parse_relational, parse_additive, SeparatorKind::Relational }
-        impl_binary_parser! { parse_shift, parse_relational, SeparatorKind::Shift }
-        impl_binary_parser! { parse_bitand, parse_shift, SeparatorKind::BitAnd }
-        impl_binary_parser! { parse_bitxor, parse_bitand, SeparatorKind::BitXor }
-        impl_binary_parser! { parse_bitor, parse_bitxor, SeparatorKind::BitOr }
-        impl_binary_parser! { parse_equality, parse_bitor, SeparatorKind::Equality }
-        impl_binary_parser! { parse_logical_and, parse_equality, SeparatorKind::LogicalAnd }
-        impl_binary_parser! { parse_logical_or, parse_logical_and, SeparatorKind::LogicalOr }    
+        impl_binary_parser! { parse_multiplicative, UnaryExpr::parse, Multiplicative }
+        impl_binary_parser! { parse_additive, parse_multiplicative, Additive }
+        impl_binary_parser! { parse_relational, parse_additive, Relational, check_relational_expr }
+        impl_binary_parser! { parse_shift, parse_relational, Shift }
+        impl_binary_parser! { parse_bitand, parse_shift, BitAnd }
+        impl_binary_parser! { parse_bitxor, parse_bitand, BitXor }
+        impl_binary_parser! { parse_bitor, parse_bitxor, BitOr }
+        impl_binary_parser! { parse_equality, parse_bitor, Equality }
+        impl_binary_parser! { parse_logical_and, parse_equality, LogicalAnd }
+        impl_binary_parser! { parse_logical_or, parse_logical_and, LogicalOr }    
     }
 }
 
@@ -685,5 +691,14 @@ fn binary_expr_parse() {
             Separator::OrOr, Span::new(72, 73),
             Expr::Lit(make_lit!(0, 75, 75))
         ))
+    }
+
+    case!{ "1<2>3" as BinaryExpr,
+        make_expr!(binary 0, 4, Gt, 3, 3, 
+            make_expr!(binary 0, 2, Lt, 1, 1,
+                make_expr!(1: i32, 0, 0),
+                make_expr!(2: i32, 2, 2)),
+            make_expr!(3: i32, 4, 4)
+        ), errors make_errors!(e: e.emit(strings::MaybeGeneric).span(Span::new(1, 1)).span(Span::new(3, 3)).help(strings::MaybeGenericHelp))
     }
 }

@@ -127,3 +127,5 @@ pub const InvalidMemberAccess: &str = "invalid member access";
 pub const GenericMemberAccessSyntaxHelp: &str = "generic parameter should be inside angle bracket";
 pub const InvalidNameSegment: &str = "invalid name segment";
 pub const NameSegmentExpect: &str = "expect identifier, meet less-than `<`";
+pub const MaybeGeneric: &str = "relational operators cannot be chained, did you mean generic parameters?";
+pub const MaybeGenericHelp: &str = "use `::<...>` instead of `<...>` in expressions";
