@@ -379,6 +379,12 @@ fn line_to_content() {
     let mut scx = make_source!();
     let file_id = scx.entry("1").finish();
     assert_eq!(scx.map_line_to_content(file_id, 1), "");
+
+    // if last charater is non ascii,
+    // ending byte index was not correct, found by auto generated test
+    let mut scx = make_source!("var a: abc::def\n绦");
+    let file_id = scx.entry("1").finish();
+    assert_eq!(scx.map_line_to_content(file_id, 2), "绦");
 }
 
 #[test]
@@ -449,6 +455,17 @@ fn v0() {
         'a', 21, '_', 22, '中', 23, '文', 26, '_', 29, 'v', 30, 'a', 31, 'r', 32,
     }
     test_case!{ "", }
+}
+
+#[test]
+fn v0_last_non_ascii() {
+    // when last char is not ascii, eof position is not last position + 1
+
+    let mut scx = make_source!("我");
+    let mut chars = scx.entry("1");
+
+    assert_eq!(chars.next(), ('我', Position::new(0)));
+    assert_eq!(chars.next(), (EOF, Position::new(3)));
 }
 
 #[test]

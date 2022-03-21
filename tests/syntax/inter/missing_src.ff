@@ -10,7 +10,7 @@ var some_tuple = !("hello", 42);
 type string {
     len: u64,
     cap: u64,
-    data: u64,
+    data: &u8,
 }
 
 if 1 != 1 {

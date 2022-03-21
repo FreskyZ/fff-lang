@@ -302,7 +302,7 @@ impl<F> SourceContext<F> {
 
         let file = &self.files[file_id - 1];
         debug_assert!(line > 0 && line <= file.endlines.len() + 1, "line number overflow");
-
+        
         if file.content.len() == 0 { // empty file
             ""
         } else if file.endlines.is_empty() { // only one line
@@ -311,8 +311,12 @@ impl<F> SourceContext<F> {
             ""
         } else {
             let start_byte_index = if line == 1 { 0 } else { file.endlines[line - 2] + /* next char of LF */ 1 };
-            let end_byte_index = if line == file.endlines.len() + 1 { file.content.len() - 1 } else { file.endlines[line - 1] - 1 };
-            &file.content[start_byte_index..end_byte_index + get_char_width(&file.content, end_byte_index)]
+            if line == file.endlines.len() + 1 { // last line
+                &file.content[start_byte_index..]
+            } else {
+                let end_byte_index = file.endlines[line - 1] - 1;
+                &file.content[start_byte_index..end_byte_index + get_char_width(&file.content, end_byte_index)]
+            }
         }
     }
 
