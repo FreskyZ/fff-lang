@@ -110,12 +110,12 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
 
     fn visit_assign_expr_stmt(&mut self, node: &AssignExprStatement) -> fmt::Result {
         self.impl_visit(node, "assign-expr-stmt", node.all_span, |f|
-            f.write_str(" operator ")?.write_str(node.assign_op.display())?.write_space()?.write_span(node.assign_op_span))
+            f.write_str(node.assign_op.display())?.write_space()?.write_span(node.assign_op_span))
     }
 
     fn visit_binary_expr(&mut self, node: &BinaryExpr) -> fmt::Result {
         self.impl_visit(node, "binary-expr", node.all_span, |f|
-            f.write_str(" operator ")?.write_str(node.operator.display())?.write_space()?.write_span(node.operator_span))
+            f.write_space()?.write_str(node.operator.display())?.write_space()?.write_span(node.operator_span))
     }
 
     fn visit_block_stmt(&mut self, node: &BlockStatement) -> fmt::Result {
@@ -146,13 +146,13 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
 
     fn visit_fn_call_expr(&mut self, node: &FnCallExpr) -> fmt::Result {
         self.impl_visit(node, "fn-call", node.all_span, |f|
-            f.write_str(" paren ")?.write_span(node.paren_span))
+            f.write_str(" () ")?.write_span(node.paren_span))
     }
 
     fn visit_fn_def(&mut self, node: &FnDef) -> fmt::Result {
         self.impl_visit(node, "fn", node.all_span, |f| f.write_space()?
             .write_isid(node.name)?.write_space()?.write_span(node.name_span)?
-            .write_str(" paren ")?.write_span(node.params_paren_span))
+            .write_str(" () ")?.write_span(node.params_paren_span))
     }
 
     fn visit_fn_param(&mut self, node: &FnParam) -> fmt::Result {
@@ -162,7 +162,7 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
 
     fn visit_fn_type(&mut self, node: &FnType) -> fmt::Result {
         self.impl_visit(node, "fn-type", node.all_span, |f|
-            f.write_str(" paren ")?.write_span(node.paren_span))
+            f.write_str(" () ")?.write_span(node.paren_span))
     }
 
     fn visit_fn_type_param(&mut self, node: &FnTypeParam) -> fmt::Result {
@@ -199,7 +199,7 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
 
     fn visit_index_call_expr(&mut self, node: &IndexCallExpr) -> fmt::Result {
         self.impl_visit(node, "index-call", node.all_span, |f|
-            f.write_str(" bracket ")?.write_span(node.bracket_span))
+            f.write_str(" [] ")?.write_span(node.bracket_span))
     }
 
     fn visit_label_def(&mut self, node: &LabelDef) -> fmt::Result {
@@ -214,7 +214,7 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
                 LitValue::Unit => { f.write_str("unit")?; },
                 LitValue::Bool(v) => { write!(f.f, "bool {v}")?; },
                 LitValue::Char(v) => { write!(f.f, "char {v:?}")?; },
-                LitValue::Str(id) => { f.write_str("str \"")?; f.write_isid(id)?; f.write_str("\"")?; },
+                LitValue::Str(id) => { f.write_str("str \"")?.write_isid(id)?.write_str("\"")?; },
                 LitValue::Num(v) => { write!(f.f, "{v}")?; },
             }
             f.write_space()?.write_span(node.span)
@@ -228,7 +228,7 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
 
     fn visit_member_access(&mut self, node: &MemberAccessExpr) -> fmt::Result {
         self.impl_visit(node, "member-access", node.all_span, |f| f
-            .write_str(" dot ")?.write_span(node.dot_span))
+            .write_str(" . ")?.write_span(node.dot_span))
     }
 
     fn visit_module(&mut self, node: &Module) -> fmt::Result {
@@ -255,6 +255,17 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
         })
     }
 
+    fn visit_object_literal(&mut self, node: &ObjectLiteral) -> fmt::Result {
+        self.impl_visit(node, "object", node.all_span, |f|
+            f.write_str(" {} ")?.write_span(node.quote_span))
+    }
+
+    fn visit_object_literal_field(&mut self, node: &ObjectLiteralField) -> fmt::Result {
+        self.impl_visit(node, "object-field", node.all_span, |f| f.write_space()?
+            .write_isid(node.name)?.write_space()?.write_span(node.name_span)?
+            .write_str(" : ")?.write_span(node.colon_span))
+    }
+
     fn visit_plain_type(&mut self, node: &PlainType) -> fmt::Result {
         self.impl_visit(node, "plain-type", node.all_span, |f| {
             if node.global {
@@ -268,7 +279,7 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
         self.impl_visit(node, "type-segment", node.all_span, |f| {
             f.write_space()?.write_isid(node.ident)?.write_space()?.write_span(node.ident_span)?;
             if !node.parameters.is_empty() {
-                f.write_str(" quote ")?.write_span(node.quote_span)?;
+                f.write_str(" <> ")?.write_span(node.quote_span)?;
             }
             Ok(f)
         })
@@ -318,9 +329,8 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
 
     fn visit_name_segment(&mut self, node: &NameSegment) -> fmt::Result {
         self.impl_visit(node, "name-segment", node.get_span(), |f| {
-            match node {
-                NameSegment::Normal(name, _) => { f.write_space()?; f.write_isid(*name)?; },
-                NameSegment::Generic(..) => { f.write_str(" generic ")?; },
+            if let NameSegment::Normal(name, _) = node {
+                f.write_space()?.write_isid(*name)?;
             }
             Ok(f)
         })
@@ -342,7 +352,7 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
     fn visit_type_field_def(&mut self, node: &TypeFieldDef) -> fmt::Result {
         self.impl_visit(node, "type-field-def", node.all_span, |f| f.write_space()?
             .write_isid(node.name)?.write_space()?.write_span(node.name_span)?
-            .write_str(" colon ")?.write_span(node.colon_span))
+            .write_str(" : ")?.write_span(node.colon_span))
     }
 
     fn visit_unary_expr(&mut self, node: &UnaryExpr) -> fmt::Result {
@@ -439,7 +449,7 @@ mod tests {
                 Separator::Add, Span::new(2, 2),
                 make_lit!(2, 4, 4)
             ).display(&scx).to_string(),
-            "binary-expr <1:1-1:5> operator + <1:3-1:3>
+            "binary-expr <1:1-1:5> + <1:3-1:3>
   literal i32 1 <1:1-1:1>
   literal i32 2 <1:5-1:5>
 "
@@ -495,7 +505,7 @@ mod tests {
   label @@ <1:1-1:3>
   block <1:10-1:28>
     simple-expr-stmt <1:12-1:26>
-      fn-call <1:12-1:25> paren <1:19-1:25>
+      fn-call <1:12-1:25> () <1:19-1:25>
         name <1:12-1:18>
           name-segment <1:12-1:18> println
         literal str "233" <1:20-1:24>
@@ -513,18 +523,18 @@ mod tests {
         let node = PostfixExpr::parse(&mut context).unwrap();
         context.finish();
         let actual = node.display(&scx).to_string();
-        assert_text_eq!{ actual, "index-call <1:1-1:58> bracket <1:49-1:58>
-  index-call <1:1-1:48> bracket <1:40-1:48>
-    member-access <1:1-1:39> dot <1:38-1:38>
-      fn-call <1:1-1:37> paren <1:36-1:37>
-        member-access <1:1-1:35> dot <1:34-1:34>
-          index-call <1:1-1:33> bracket <1:31-1:33>
-            member-access <1:1-1:30> dot <1:29-1:29>
-              fn-call <1:1-1:28> paren <1:25-1:28>
-                fn-call <1:1-1:24> paren <1:15-1:24>
-                  member-access <1:1-1:14> dot <1:13-1:13>
-                    fn-call <1:1-1:12> paren <1:4-1:12>
-                      member-access <1:1-1:3> dot <1:2-1:2>
+        assert_text_eq!{ actual, "index-call <1:1-1:58> [] <1:49-1:58>
+  index-call <1:1-1:48> [] <1:40-1:48>
+    member-access <1:1-1:39> . <1:38-1:38>
+      fn-call <1:1-1:37> () <1:36-1:37>
+        member-access <1:1-1:35> . <1:34-1:34>
+          index-call <1:1-1:33> [] <1:31-1:33>
+            member-access <1:1-1:30> . <1:29-1:29>
+              fn-call <1:1-1:28> () <1:25-1:28>
+                fn-call <1:1-1:24> () <1:15-1:24>
+                  member-access <1:1-1:14> . <1:13-1:13>
+                    fn-call <1:1-1:12> () <1:4-1:12>
+                      member-access <1:1-1:3> . <1:2-1:2>
                         name <1:1-1:1>
                           name-segment <1:1-1:1> a
                         name <1:3-1:3>

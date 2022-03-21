@@ -47,8 +47,6 @@ fn lex(src: string) -> Token {
             }
             current_index += 1;
         }
-        // TODO: object literal
-        // return Token{ ty: StringLiteral, span: Span{ row: 1, col: 2 }, str_val: raw, u64_val: 0 };
-        return Token(StringLiteral, Span(1, 2), raw, 0);
+        return Token{ ty: StringLiteral, span: Span{ row: 1, col: 2 }, str_val: raw, u64_val: 0 };
     }
 }

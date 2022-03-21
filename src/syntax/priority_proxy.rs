@@ -3,7 +3,7 @@
 ///! postfix_expr = expr { ( member_access | fn_call | indexer_call ) }
 
 use super::prelude::*;
-use super::{Expr, Name, NameSegment, LitExpr, TupleDef, ArrayDef, FnCallExpr, IndexCallExpr, MemberAccessExpr};
+use super::{Expr, Name, NameSegment, LitExpr, TupleDef, ArrayDef, FnCallExpr, IndexCallExpr, MemberAccessExpr, ObjectLiteral};
 
 struct PrimaryExpr;
 
@@ -38,32 +38,37 @@ impl Parser for PostfixExpr {
         #[cfg(not(feature = "trace_postfix_expr_parse"))]
         macro_rules! trace { ($($arg:tt)*) => () }
 
-        let mut current_retval = cx.expect::<PrimaryExpr>()?;
-        trace!("parsed primary, current is {:?}", current_retval);
+        let mut current_expr = cx.expect::<PrimaryExpr>()?;
+        trace!("parsed primary, current is {:?}", current_expr);
 
         loop {
             if cx.matches::<MemberAccessExpr>() {
                 let mut postfix = cx.expect::<MemberAccessExpr>()?;
-                postfix.all_span = current_retval.get_all_span() + postfix.name.all_span;
-                postfix.base = Box::new(current_retval);
-                current_retval = Expr::MemberAccess(postfix);
+                postfix.all_span = current_expr.get_all_span() + postfix.name.all_span;
+                postfix.base = Box::new(current_expr);
+                current_expr = Expr::MemberAccess(postfix);
             } else if cx.matches::<FnCallExpr>() {
                 let mut postfix = cx.expect::<FnCallExpr>()?;
-                postfix.all_span = current_retval.get_all_span() + postfix.paren_span;
-                postfix.base = Box::new(current_retval);
-                current_retval = Expr::FnCall(postfix);
+                postfix.all_span = current_expr.get_all_span() + postfix.paren_span;
+                postfix.base = Box::new(current_expr);
+                current_expr = Expr::FnCall(postfix);
             } else if cx.matches::<IndexCallExpr>() {
                 let mut postfix = cx.expect::<IndexCallExpr>()?;
-                postfix.all_span = current_retval.get_all_span() + postfix.bracket_span;
-                postfix.base = Box::new(current_retval);
-                current_retval = Expr::IndexCall(postfix);
+                postfix.all_span = current_expr.get_all_span() + postfix.bracket_span;
+                postfix.base = Box::new(current_expr);
+                current_expr = Expr::IndexCall(postfix);
+            } else if matches!(current_expr, Expr::Name(_)) && cx.matches::<ObjectLiteral>() {
+                let mut postfix = cx.expect::<ObjectLiteral>()?;
+                postfix.all_span = current_expr.get_all_span() + postfix.quote_span;
+                postfix.base = Box::new(current_expr);
+                current_expr = Expr::Object(postfix);
             } else {
                 break;
             }
         }
 
-        trace!("parsing postfix finished, get retval: {:?}", current_retval);
-        return Ok(current_retval);
+        trace!("parsing postfix finished, get retval: {:?}", current_expr);
+        Ok(current_expr)
     }
 }
 
@@ -415,6 +420,23 @@ fn postfix_expr_parse() {
                 make_expr!(0: i32, 4, 4)),
             make_name!(bare 7:7 false, None,
                 make_name!(segment 7:7 #2))),
+    }
+
+    //      0         1         2         3         4         5
+    //      012345678901234567890123456789012345678901234567890123456
+    case!{ "string::<wchar>{ size: 0, cap: 0, data: uninitialized() }" as Expr,
+        make_expr!(object 0:56 quote 15:56
+            make_name!(0:14 false, None,
+                make_name!(segment 0:5 #2),
+                make_name!(segment generic 8:14
+                    make_type!(simple 9:13 3))),
+            make_expr!(object field 17:23 #4 17:20 colon 21:21
+                make_expr!(0: i32, 23, 23)),
+            make_expr!(object field 26:31 #5 26:28 colon 29:29
+                make_expr!(0: i32, 31, 31)),
+            make_expr!(object field 34:54 #6 34:37 colon 38:38
+                make_expr!(fn 40:54 paren 53:54
+                    make_name!(simple 40:52 #7),))),
     }
 
     case!{ "a[]" as PostfixExpr,

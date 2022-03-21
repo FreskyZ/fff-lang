@@ -4,7 +4,7 @@ use super::prelude::*;
 use super::*;
 
 macro_rules! define_expr {
-    ($($ty:ty => $variant:ident, $visit:ident,)+) => (
+    ($($ty:ty => $variant:ident, $visit:ident, $span:ident,)+) => (
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
 pub enum Expr {
@@ -29,24 +29,35 @@ impl Node for Expr {
         }
     }
 }
+
+impl Expr {
+    pub fn get_all_span(&self) -> Span {
+        match self {
+            $(
+                Expr::$variant(e) => e.$span,
+            )+
+        }
+    }
+}
     )
 }
 
 define_expr! {
-    LitExpr => Lit, visit_lit_expr,
-    Name => Name, visit_name,
-    ParenExpr => Paren, visit_paren_expr,
-    TupleDef => Tuple, visit_tuple_def,
-    ArrayDef => Array, visit_array_def,
-    FnCallExpr => FnCall, visit_fn_call_expr,
-    IndexCallExpr => IndexCall, visit_index_call_expr,
-    MemberAccessExpr => MemberAccess, visit_member_access,
-    UnaryExpr => Unary, visit_unary_expr,
-    BinaryExpr => Binary, visit_binary_expr,
-    RangeBothExpr => RangeBoth, visit_range_both_expr,
-    RangeFullExpr => RangeFull, visit_range_full_expr,
-    RangeLeftExpr => RangeLeft, visit_range_left_expr,
-    RangeRightExpr => RangeRight, visit_range_right_expr,
+    LitExpr => Lit, visit_lit_expr, span,
+    Name => Name, visit_name, all_span,
+    ParenExpr => Paren, visit_paren_expr, span,
+    TupleDef => Tuple, visit_tuple_def, paren_span,
+    ArrayDef => Array, visit_array_def, bracket_span,
+    FnCallExpr => FnCall, visit_fn_call_expr, all_span,
+    IndexCallExpr => IndexCall, visit_index_call_expr, all_span,
+    MemberAccessExpr => MemberAccess, visit_member_access, all_span,
+    ObjectLiteral => Object, visit_object_literal, all_span,
+    UnaryExpr => Unary, visit_unary_expr, all_span,
+    BinaryExpr => Binary, visit_binary_expr, all_span,
+    RangeBothExpr => RangeBoth, visit_range_both_expr, all_span,
+    RangeFullExpr => RangeFull, visit_range_full_expr, all_span,
+    RangeLeftExpr => RangeLeft, visit_range_left_expr, all_span,
+    RangeRightExpr => RangeRight, visit_range_right_expr, all_span,
 }
 
 impl Parser for Expr {
@@ -76,28 +87,6 @@ impl Parser for Expr {
 
 impl Default for Expr {
     fn default() -> Expr { Expr::Lit(LitExpr::new(LitValue::Num(Numeric::I32(0)), Span::new(0, 0))) }
-}
-
-impl Expr {
-
-    pub fn get_all_span(&self) -> Span {
-        match self {
-            &Expr::Lit(ref lit_expr) => lit_expr.span,
-            &Expr::Name(ref name) => name.all_span,
-            &Expr::Paren(ref paren_expr) => paren_expr.span,
-            &Expr::Tuple(ref tuple_def) => tuple_def.paren_span, 
-            &Expr::Array(ref array_def) => array_def.bracket_span,
-            &Expr::FnCall(ref fn_call) => fn_call.all_span,
-            &Expr::IndexCall(ref index_call) => index_call.all_span,
-            &Expr::MemberAccess(ref member_access) => member_access.all_span,
-            &Expr::Unary(ref unary_expr) => unary_expr.all_span,
-            &Expr::Binary(ref binary_expr) => binary_expr.all_span,
-            &Expr::RangeFull(ref range_full) => range_full.all_span,
-            &Expr::RangeRight(ref range_right) => range_right.all_span,
-            &Expr::RangeLeft(ref range_left) => range_left.all_span,
-            &Expr::RangeBoth(ref range_both) => range_both.all_span,
-        }
-    }
 }
 
 #[cfg(test)]
@@ -165,7 +154,34 @@ macro_rules! make_expr {
             // TODO: remove the into when all expr variants change to this macro
             items: vec![$($item.into(),)*],
         }
-    }))
+    }));
+    (object $start:literal:$end:literal quote $quote_start:literal:$quote_end:literal $base:expr, $($field:expr),*$(,)?) => (
+        crate::syntax::Expr::Object(crate::syntax::ObjectLiteral{
+            base: Box::new($base.into()),
+            quote_span: Span::new($quote_start, $quote_end),
+            all_span: Span::new($start, $end),
+            fields: vec![$($field,)*],
+        })
+    );
+    (object field $start:literal:$end:literal #$name:literal $name_start:literal:$name_end:literal colon $colon_start:literal:$colon_end:literal $value:expr$(,)?) => (
+        crate::syntax::ObjectLiteralField{
+            name: IsId::new($name),
+            name_span: Span::new($name_start, $name_end),
+            colon_span: Span::new($colon_start, $colon_end),
+            all_span: Span::new($start, $end),
+            value: $value,
+        }
+    );
+    (fn $start:literal:$end:literal paren $paren_start:literal:$paren_end:literal $base:expr, $($parameter:expr),*$(,)?) => (
+        crate::syntax::Expr::FnCall(crate::syntax::FnCallExpr{
+            base: Box::new($base),
+            paren_span: Span::new($paren_start, $paren_end),
+            all_span: Span::new($start, $end),
+            params: crate::syntax::ExprList{
+                items: vec![$($parameter.into(),)*],
+            }
+        })
+    )
 }
 #[cfg(test)]
 pub(crate) use make_expr;

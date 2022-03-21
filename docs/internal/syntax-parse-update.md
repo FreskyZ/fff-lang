@@ -14,7 +14,7 @@
 [x] add bin-expr { op: >, left: bin-expr { op: < }} error in binary parser, boolean definitely returns bool which does not have operator> so that is a generic segment mistake
 [-] fix random test input generator for num_lit/expr/type_ref
 [-] discard test constructors and use make_xxxx macros, upgrade existing make macros to use `at $start:lit + $end:lit` instead of plain $start,$end, change make_exprs to new make_expr
-[ ] add object literal syntax, it can fits in postfix expr with require base expr is an name
+[x] add object literal syntax, it can fits in postfix expr with require base expr is an name
 [ ] add numeric literal type as suffixed/unsuffixed and bin/oct/dec/hex, member access require unsuffixed and decimal
 [ ] add simple enum type, works as typed namespaced constant
 [ ] move multiple file operations from syntaxtree.rs into driver, add file id to module
