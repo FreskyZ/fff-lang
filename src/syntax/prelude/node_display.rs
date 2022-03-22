@@ -144,6 +144,17 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
         })
     }
 
+    fn visit_enum_def(&mut self, node: &EnumDef) -> fmt::Result {
+        self.impl_visit(node, "enum-def", node.all_span, |f| f.write_space()?
+            .write_isid(node.name)?.write_space()?.write_span(node.name_span)?
+            .write_str(" {} ")?.write_span(node.quote_span))
+    }
+
+    fn visit_enum_variant(&mut self, node: &EnumVariant) -> fmt::Result {
+        self.impl_visit(node, "enum-variant", node.all_span, |f|
+            f.write_space()?.write_isid(node.name)?.write_space()?.write_span(node.name_span))
+    }
+
     fn visit_fn_call_expr(&mut self, node: &FnCallExpr) -> fmt::Result {
         self.impl_visit(node, "fn-call", node.all_span, |f|
             f.write_str(" () ")?.write_span(node.paren_span))

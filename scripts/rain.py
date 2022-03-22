@@ -1,5 +1,5 @@
 #!python3
-# random syntax parse test input generator
+# RAIN: RAndom syntax parse test INput generator
 
 import os
 import random

@@ -18,7 +18,7 @@
      'const' =>      Const, Normal,
   'continue' =>   Continue, Normal,
       'else' =>       Else, Normal,
-      'enum' =>       Enum, Reserved,
+      'enum' =>       Enum, Normal,
     'extern' =>     Extern, Reserved,
       'f128' =>       F128, Reserved,
        'f32' =>        F32, Primitive,

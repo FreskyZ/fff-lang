@@ -60,6 +60,7 @@ impl Node for $name {
 
 define_abc!{ Statement, "statement", visit_stmt,
     TypeDef => Type, visit_type_def,
+    EnumDef => Enum, visit_enum_def,
     FnDef => Fn, visit_fn_def,
     BlockStatement => Block, visit_block_stmt,
     BreakStatement => Break, visit_break_stmt,
@@ -78,6 +79,7 @@ define_abc!{ Statement, "statement", visit_stmt,
 // global item
 define_abc!{ Item, "item", visit_item, 
     TypeDef => Type, visit_type_def,
+    EnumDef => Enum, visit_enum_def,
     FnDef => Fn, visit_fn_def,
     BlockStatement => Block, visit_block_stmt,
     SimpleExprStatement => SimpleExpr, visit_simple_expr_stmt,

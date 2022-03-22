@@ -70,13 +70,15 @@ pub trait Parser: Sized {
 //   so there should be some way to "aggregate" them, and Result (Try) is one confortable way to do that
 //   if result is some other type and use other aggregate method, like adding numeric value, use only T for that
 //   if result is not care, just use default (unit) for type parameter T and E
-// TODO: use Try when stablized // will I still work on this project at that time?
+// TODO: use Try when stablized, see branch try-v2 // will I still work on this project at that time?
 pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_array_def(&mut self, node: &ArrayDef) -> Result<T, E> { node.walk(self) }
     fn visit_array_type(&mut self, node: &ArrayType) -> Result<T, E> { node.walk(self) }
     fn visit_binary_expr(&mut self, node: &BinaryExpr) -> Result<T, E> { node.walk(self) }
     fn visit_block_stmt(&mut self, node: &BlockStatement) -> Result<T, E> { node.walk(self) }
     fn visit_block(&mut self, node: &Block) -> Result<T, E> { node.walk(self) }
+    fn visit_enum_def(&mut self, node: &EnumDef) -> Result<T, E> { node.walk(self) }
+    fn visit_enum_variant(&mut self, node: &EnumVariant) -> Result<T, E> { node.walk(self) }
     fn visit_expr_list(&mut self, node: &ExprList) -> Result<T, E> { node.walk(self) }
     fn visit_expr(&mut self, node: &Expr) -> Result<T, E> { node.walk(self) }
     fn visit_assign_expr_stmt(&mut self, node: &AssignExprStatement) -> Result<T, E> { node.walk(self) }

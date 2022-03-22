@@ -5,16 +5,12 @@ type Span {
 }
 
 // without ADT or union, you have to do this, at least you must have a C style enum
-/*enum TokenType {
+enum TokenType {
     StringLiteral,
     NumericLiteral,
     Identifier,
     Operator,
-}*/
-var StringLiteral = 1;
-var NumericLiteral = 2;
-var Identifier = 3;
-var Operator = 4;
+}
 
 type Token {
     ty: TokenType,
