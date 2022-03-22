@@ -1,128 +1,115 @@
-module
-  source-code#0 <anon#0>
-  fn-def <4:1-23:1>
-    "main" <4:4-4:7>
-    no-return-type
-    parenthenes <4:8-4:9>
-    no-parameter
-    body <4:11-23:1>
-      var-def <6:5-6:30>
-        "input" <6:9-6:13>
-        auto-type
-        init-as fn-call <6:17-6:29>
-          base-is ident-use "read_string" <6:17-6:27>
-          parenthenes <6:28-6:29>
-          no-argument
-      expr-stmt simple <7:5-7:40>
-        fn-call <7:5-7:39>
-          base-is ident-use "writeln" <7:5-7:11>
-          parenthenes <7:12-7:39>
-          binary-expr <7:13-7:38>
-            left-is literal "length = " <7:13-7:23>
-            "+" <7:25-7:25>
-            right-is member-access <7:27-7:38>
-              base-is ident-use "input" <7:27-7:31>
-              "." <7:32-7:32>
-              member-name-is "length" <7:33-7:38>
-      var-def <8:5-8:39>
-        "input2" <8:9-8:14>
-        type-use "string" <8:17-8:22>
-        init-as fn-call <8:26-8:38>
-          base-is ident-use "read_string" <8:26-8:36>
-          parenthenes <8:37-8:38>
-          no-argument
-      expr-stmt simple <9:5-9:29>
-        fn-call <9:5-9:28>
-          base-is ident-use "println" <9:5-9:11>
-          parenthenes <9:12-9:28>
-          binary-expr <9:13-9:27>
-            left-is ident-use "input" <9:13-9:17>
-            "==" <9:19-9:20>
-            right-is ident-use "input2" <9:22-9:27>
-      expr-stmt simple <11:5-11:25>
-        fn-call <11:5-11:24>
-          base-is member-access <11:5-11:19>
-            base-is ident-use "input" <11:5-11:9>
-            "." <11:10-11:10>
-            member-name-is "push_char" <11:11-11:19>
-          parenthenes <11:20-11:24>
-          literal 'a' <11:21-11:23>
-      expr-stmt simple <12:5-12:25>
-        fn-call <12:5-12:24>
-          base-is member-access <12:5-12:19>
-            base-is ident-use "input" <12:5-12:9>
-            "." <12:10-12:10>
-            member-name-is "push_char" <12:11-12:19>
-          parenthenes <12:20-12:24>
-          literal 'c' <12:21-12:23>
-      expr-stmt simple <13:5-13:29>
-        fn-call <13:5-13:28>
-          base-is member-access <13:5-13:22>
-            base-is ident-use "input2" <13:5-13:10>
-            "." <13:11-13:11>
-            member-name-is "push_string" <13:12-13:22>
-          parenthenes <13:23-13:28>
-          literal "ac" <13:24-13:27>
-      expr-stmt simple <14:5-14:29>
-        fn-call <14:5-14:28>
-          base-is ident-use "println" <14:5-14:11>
-          parenthenes <14:12-14:28>
-          binary-expr <14:13-14:27>
-            left-is ident-use "input" <14:13-14:17>
-            "==" <14:19-14:20>
-            right-is ident-use "input2" <14:22-14:27>
-      expr-stmt simple <16:5-16:38>
-        fn-call <16:5-16:37>
-          base-is ident-use "println" <16:5-16:11>
-          parenthenes <16:12-16:37>
-          fn-call <16:13-16:36>
-            base-is member-access <16:13-16:29>
-              base-is ident-use "input" <16:13-16:17>
-              "." <16:18-16:18>
-              member-name-is "starts_with" <16:19-16:29>
-            parenthenes <16:30-16:36>
-            literal "abc" <16:31-16:35>
-      expr-stmt simple <17:5-17:36>
-        fn-call <17:5-17:35>
-          base-is ident-use "println" <17:5-17:11>
-          parenthenes <17:12-17:35>
-          fn-call <17:13-17:34>
-            base-is member-access <17:13-17:28>
-              base-is ident-use "input2" <17:13-17:18>
-              "." <17:19-17:19>
-              member-name-is "ends_with" <17:20-17:28>
-            parenthenes <17:29-17:34>
-            literal "ac" <17:30-17:33>
-      var-def <19:5-19:31>
-        "input3" <19:9-19:14>
-        auto-type
-        init-as fn-call <19:18-19:30>
-          base-is ident-use "read_string" <19:18-19:28>
-          parenthenes <19:29-19:30>
-          no-argument
-      const-def <20:5-20:36>
-        "input3_copy" <20:11-20:21>
-        auto-type
-        init-as ident-use "input3_copy" <20:25-20:35>
-      expr-stmt simple <21:5-21:47>
-        fn-call <21:5-21:46>
-          base-is ident-use "println" <21:5-21:11>
-          parenthenes <21:12-21:46>
-          binary-expr <21:13-21:45>
-            left-is literal "input3.trim is " <21:13-21:29>
-            "+" <21:31-21:31>
-            right-is fn-call <21:33-21:45>
-              base-is member-access <21:33-21:43>
-                base-is ident-use "input3" <21:33-21:38>
-                "." <21:39-21:39>
-                member-name-is "trim" <21:40-21:43>
-              parenthenes <21:44-21:45>
-              no-argument
-      expr-stmt simple <22:5-22:45>
-        fn-call <22:5-22:44>
-          base-is ident-use "println" <22:5-22:11>
-          parenthenes <22:12-22:44>
-          binary-expr <22:13-22:43>
-            left-is literal "input3_copy is " <22:13-22:29>
-            "+" <22:31-22:31>
-            right-is ident-use "input3_copy" <22:33-22:43>
+module tests/syntax/inter/string.f3
+  fn <4:1-23:1> main <4:4-4:7> () <4:8-4:9>
+    block <4:11-23:1>
+      var-def <6:5-6:30> mutable input <6:9-6:13>
+        fn-call <6:17-6:29> () <6:28-6:29>
+          name <6:17-6:27>
+            name-segment <6:17-6:27> read_string
+      simple-expr-stmt <7:5-7:40>
+        fn-call <7:5-7:39> () <7:12-7:39>
+          name <7:5-7:11>
+            name-segment <7:5-7:11> writeln
+          binary-expr <7:13-7:38> + <7:25-7:25>
+            literal str "length = " <7:13-7:23>
+            member-access <7:27-7:38> . <7:32-7:32>
+              name <7:27-7:31>
+                name-segment <7:27-7:31> input
+              name <7:33-7:38>
+                name-segment <7:33-7:38> length
+      var-def <8:5-8:39> mutable input2 <8:9-8:14>
+        plain-type <8:17-8:22>
+          type-segment <8:17-8:22> string <8:17-8:22>
+        fn-call <8:26-8:38> () <8:37-8:38>
+          name <8:26-8:36>
+            name-segment <8:26-8:36> read_string
+      simple-expr-stmt <9:5-9:29>
+        fn-call <9:5-9:28> () <9:12-9:28>
+          name <9:5-9:11>
+            name-segment <9:5-9:11> println
+          binary-expr <9:13-9:27> == <9:19-9:20>
+            name <9:13-9:17>
+              name-segment <9:13-9:17> input
+            name <9:22-9:27>
+              name-segment <9:22-9:27> input2
+      simple-expr-stmt <11:5-11:25>
+        fn-call <11:5-11:24> () <11:20-11:24>
+          member-access <11:5-11:19> . <11:10-11:10>
+            name <11:5-11:9>
+              name-segment <11:5-11:9> input
+            name <11:11-11:19>
+              name-segment <11:11-11:19> push_char
+          literal char 'a' <11:21-11:23>
+      simple-expr-stmt <12:5-12:25>
+        fn-call <12:5-12:24> () <12:20-12:24>
+          member-access <12:5-12:19> . <12:10-12:10>
+            name <12:5-12:9>
+              name-segment <12:5-12:9> input
+            name <12:11-12:19>
+              name-segment <12:11-12:19> push_char
+          literal char 'c' <12:21-12:23>
+      simple-expr-stmt <13:5-13:29>
+        fn-call <13:5-13:28> () <13:23-13:28>
+          member-access <13:5-13:22> . <13:11-13:11>
+            name <13:5-13:10>
+              name-segment <13:5-13:10> input2
+            name <13:12-13:22>
+              name-segment <13:12-13:22> push_string
+          literal str "ac" <13:24-13:27>
+      simple-expr-stmt <14:5-14:29>
+        fn-call <14:5-14:28> () <14:12-14:28>
+          name <14:5-14:11>
+            name-segment <14:5-14:11> println
+          binary-expr <14:13-14:27> == <14:19-14:20>
+            name <14:13-14:17>
+              name-segment <14:13-14:17> input
+            name <14:22-14:27>
+              name-segment <14:22-14:27> input2
+      simple-expr-stmt <16:5-16:38>
+        fn-call <16:5-16:37> () <16:12-16:37>
+          name <16:5-16:11>
+            name-segment <16:5-16:11> println
+          fn-call <16:13-16:36> () <16:30-16:36>
+            member-access <16:13-16:29> . <16:18-16:18>
+              name <16:13-16:17>
+                name-segment <16:13-16:17> input
+              name <16:19-16:29>
+                name-segment <16:19-16:29> starts_with
+            literal str "abc" <16:31-16:35>
+      simple-expr-stmt <17:5-17:36>
+        fn-call <17:5-17:35> () <17:12-17:35>
+          name <17:5-17:11>
+            name-segment <17:5-17:11> println
+          fn-call <17:13-17:34> () <17:29-17:34>
+            member-access <17:13-17:28> . <17:19-17:19>
+              name <17:13-17:18>
+                name-segment <17:13-17:18> input2
+              name <17:20-17:28>
+                name-segment <17:20-17:28> ends_with
+            literal str "ac" <17:30-17:33>
+      var-def <19:5-19:31> mutable input3 <19:9-19:14>
+        fn-call <19:18-19:30> () <19:29-19:30>
+          name <19:18-19:28>
+            name-segment <19:18-19:28> read_string
+      var-def <20:5-20:36> const input3_copy <20:11-20:21>
+        name <20:25-20:35>
+          name-segment <20:25-20:35> input3_copy
+      simple-expr-stmt <21:5-21:47>
+        fn-call <21:5-21:46> () <21:12-21:46>
+          name <21:5-21:11>
+            name-segment <21:5-21:11> println
+          binary-expr <21:13-21:45> + <21:31-21:31>
+            literal str "input3.trim is " <21:13-21:29>
+            fn-call <21:33-21:45> () <21:44-21:45>
+              member-access <21:33-21:43> . <21:39-21:39>
+                name <21:33-21:38>
+                  name-segment <21:33-21:38> input3
+                name <21:40-21:43>
+                  name-segment <21:40-21:43> trim
+      simple-expr-stmt <22:5-22:45>
+        fn-call <22:5-22:44> () <22:12-22:44>
+          name <22:5-22:11>
+            name-segment <22:5-22:11> println
+          binary-expr <22:13-22:43> + <22:31-22:31>
+            literal str "input3_copy is " <22:13-22:29>
+            name <22:33-22:43>
+              name-segment <22:33-22:43> input3_copy

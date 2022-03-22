@@ -1,104 +1,67 @@
-module
-  source-code#0 <anon#0>
-  const-def <3:1-3:16>
-    "full" <3:7-3:10>
-    auto-type
-    init-as range-full <3:14-3:15>
-  const-def <4:1-4:21>
-    "left" <4:7-4:10>
-    auto-type
-    init-as range-right <4:14-4:20>
-      binary-expr <4:16-4:20>
-        left-is literal (i32)1 <4:16-4:16>
-        "+" <4:18-4:18>
-        right-is literal (i32)2 <4:20-4:20>
-  const-def <5:1-5:24>
-    "right" <5:7-5:11>
-    auto-type
-    init-as range-left <5:15-5:22>
-      binary-expr <5:15-5:19>
-        left-is literal (i32)3 <5:15-5:15>
-        "*" <5:17-5:17>
-        right-is literal (i32)5 <5:19-5:19>
+module tests/syntax/inter/missing.f3
+  var-def <3:1-3:16> const full <3:7-3:10>
+    range-full-expr <3:14-3:15>
+  var-def <4:1-4:21> const left <4:7-4:10>
+    range-right-expr <4:14-4:20>
+      binary-expr <4:16-4:20> + <4:18-4:18>
+        literal i32 1 <4:16-4:16>
+        literal i32 2 <4:20-4:20>
+  var-def <5:1-5:24> const right <5:7-5:11>
+    range-left-expr <5:15-5:22>
+      binary-expr <5:15-5:19> * <5:17-5:17>
+        literal i32 3 <5:15-5:15>
+        literal i32 5 <5:19-5:19>
   use-stmt <7:1-7:12>
-    alias-from name <7:5-7:11>
-      segment "a" <7:5-7:5>
-      segment "b" <7:8-7:8>
-      segment "c" <7:11-7:11>
-  var-def <8:1-8:32>
-    "some_tuple" <8:5-8:14>
-    auto-type
-    init-as unary-expr <8:18-8:31>
-      "!" <8:18-8:18>
+    name <7:5-7:11>
+      name-segment <7:5-7:5> a
+      name-segment <7:8-7:8> b
+      name-segment <7:11-7:11> c
+  var-def <8:1-8:32> mutable some_tuple <8:5-8:14>
+    unary-expr <8:18-8:31> ! <8:18-8:18>
       tuple-def <8:19-8:31>
-        literal "hello" <8:20-8:26>
-        literal (i32)42 <8:29-8:30>
-  type-def <10:1-14:1>
-    ident-use "string" <10:6-10:11>
-    field <11:5-11:13>
-      ident-use "len" <11:5-11:7>
-      ":" <11:8-11:8>
-      type-use "u64" <11:10-11:12>
-    field <12:5-12:13>
-      ident-use "cap" <12:5-12:7>
-      ":" <12:8-12:8>
-      type-use "u64" <12:10-12:12>
-    field <13:5-13:14>
-      ident-use "data" <13:5-13:8>
-      ":" <13:9-13:9>
-      type-use "u64" <13:11-13:13>
+        literal str "hello" <8:20-8:26>
+        literal i32 42 <8:29-8:30>
+  type <10:1-14:1> string <10:6-10:11>
+    type-field-def <11:5-11:13> len <11:5-11:7> : <11:8-11:8>
+      primitive-type u64 <11:10-11:12>
+    type-field-def <12:5-12:13> cap <12:5-12:7> : <12:8-12:8>
+      primitive-type u64 <12:10-12:12>
+    type-field-def <13:5-13:14> data <13:5-13:8> : <13:9-13:9>
+      ref-type <13:11-13:13>
+        primitive-type u8 <13:12-13:13>
   if-stmt <16:1-17:1>
     if-clause <16:1-17:1>
-      cond-expr-is binary-expr <16:4-16:9>
-        left-is literal (i32)1 <16:4-16:4>
-        "!=" <16:6-16:7>
-        right-is literal (i32)1 <16:9-16:9>
-      body <16:11-17:1>
-        no-item
-  loop-stmt <18:1-19:1>
-    no-loop-name
-    "loop" <18:1-18:4>
-    body <18:6-19:1>
-      no-item
-  while-stmt <20:1-21:1>
-    no-loop-name
-    "while" <20:1-20:5>
-    literal true <20:7-20:10>
-    body <20:12-21:1>
-      no-item
-  fn-def <23:1-34:1>
-    "main" <23:4-23:7>
-    no-return-type
-    parenthenes <23:8-23:9>
-    no-parameter
-    body <23:11-34:1>
-      type-def <24:5-27:5>
-        ident-use "source" <24:10-24:15>
-        field <25:9-25:16>
-          ident-use "id" <25:9-25:10>
-          ":" <25:11-25:11>
-          type-use "u32" <25:13-25:15>
-        field <26:9-26:20>
-          ident-use "src" <26:9-26:11>
-          ":" <26:12-26:12>
-          type-use "string" <26:14-26:19>
-      fn-def <29:5-31:5>
-        "some_inner" <29:8-29:17>
-        return-type "i32" <29:30-29:32>
-        parenthenes <29:18-29:25>
-        param "a" <29:19-29:19>
-          type-use "i32" <29:22-29:24>
-        body <29:34-31:5>
-          return-stmt <30:9-30:21>
-            ret-val-is binary-expr <30:16-30:20>
-              left-is literal (i32)2 <30:16-30:16>
-              "*" <30:18-30:18>
-              right-is ident-use "a" <30:20-30:20>
-      return-stmt <33:5-33:34>
-        ret-val-is fn-call <33:12-33:33>
-          base-is ident-use "some_inner" <33:12-33:21>
-          parenthenes <33:22-33:33>
-          fn-call <33:23-33:32>
-            base-is ident-use "read_i32" <33:23-33:30>
-            parenthenes <33:31-33:32>
-            no-argument
+      binary-expr <16:4-16:9> != <16:6-16:7>
+        literal i32 1 <16:4-16:4>
+        literal i32 1 <16:9-16:9>
+      block <16:11-17:1>
+  loop-stmt <18:1-19:1> loop <18:1-18:4>
+    block <18:6-19:1>
+  while-stmt <20:1-21:1> while <20:1-20:5>
+    literal bool true <20:7-20:10>
+    block <20:12-21:1>
+  fn <23:1-34:1> main <23:4-23:7> () <23:8-23:9>
+    block <23:11-34:1>
+      type <24:5-27:5> source <24:10-24:15>
+        type-field-def <25:9-25:16> id <25:9-25:10> : <25:11-25:11>
+          primitive-type u32 <25:13-25:15>
+        type-field-def <26:9-26:20> src <26:9-26:11> : <26:12-26:12>
+          plain-type <26:14-26:19>
+            type-segment <26:14-26:19> string <26:14-26:19>
+      fn <29:5-31:5> some_inner <29:8-29:17> () <29:18-29:25>
+        fn-param <29:19-29:24> a <29:19-29:19>
+          primitive-type i32 <29:22-29:24>
+        primitive-type i32 <29:30-29:32>
+        block <29:34-31:5>
+          ret-stmt <30:9-30:21>
+            binary-expr <30:16-30:20> * <30:18-30:18>
+              literal i32 2 <30:16-30:16>
+              name <30:20-30:20>
+                name-segment <30:20-30:20> a
+      ret-stmt <33:5-33:34>
+        fn-call <33:12-33:33> () <33:22-33:33>
+          name <33:12-33:21>
+            name-segment <33:12-33:21> some_inner
+          fn-call <33:23-33:32> () <33:31-33:32>
+            name <33:23-33:30>
+              name-segment <33:23-33:30> read_i32

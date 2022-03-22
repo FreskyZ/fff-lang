@@ -1,130 +1,113 @@
-module
-  source-code#0 <anon#0>
-  fn-def <4:1-17:1>
-    "main" <4:4-4:7>
-    no-return-type
-    parenthenes <4:8-4:9>
-    no-parameter
-    body <4:11-17:1>
-      loop-stmt <6:5-16:5>
-        loop-name "main" <6:5-6:10>
-        "loop" <6:12-6:15>
-        body <6:17-16:5>
-          expr-stmt simple <7:9-7:35>
-            fn-call <7:9-7:34>
-              base-is ident-use "writeln" <7:9-7:15>
-              parenthenes <7:16-7:34>
-              literal "Input 2 numbers" <7:17-7:33>
-          var-def <8:9-8:27>
-            "a" <8:13-8:13>
-            auto-type
-            init-as fn-call <8:17-8:26>
-              base-is ident-use "read_i32" <8:17-8:24>
-              parenthenes <8:25-8:26>
-              no-argument
-          var-def <9:9-9:27>
-            "b" <9:13-9:13>
-            auto-type
-            init-as fn-call <9:17-9:26>
-              base-is ident-use "read_i32" <9:17-9:24>
-              parenthenes <9:25-9:26>
-              no-argument
+module tests/syntax/inter/gcd.f3
+  fn <4:1-17:1> main <4:4-4:7> () <4:8-4:9>
+    block <4:11-17:1>
+      loop-stmt <6:5-16:5> loop <6:12-6:15>
+        label @main <6:5-6:10>
+        block <6:17-16:5>
+          simple-expr-stmt <7:9-7:35>
+            fn-call <7:9-7:34> () <7:16-7:34>
+              name <7:9-7:15>
+                name-segment <7:9-7:15> writeln
+              literal str "Input 2 numbers" <7:17-7:33>
+          var-def <8:9-8:27> mutable a <8:13-8:13>
+            fn-call <8:17-8:26> () <8:25-8:26>
+              name <8:17-8:24>
+                name-segment <8:17-8:24> read_i32
+          var-def <9:9-9:27> mutable b <9:13-9:13>
+            fn-call <9:17-9:26> () <9:25-9:26>
+              name <9:17-9:24>
+                name-segment <9:17-9:24> read_i32
           if-stmt <11:9-13:9>
             if-clause <11:9-13:9>
-              cond-expr-is binary-expr <11:12-11:27>
-                left-is binary-expr <11:12-11:17>
-                  left-is ident-use "a" <11:12-11:12>
-                  "==" <11:14-11:15>
-                  right-is literal (i32)0 <11:17-11:17>
-                "&&" <11:19-11:20>
-                right-is binary-expr <11:22-11:27>
-                  left-is ident-use "b" <11:22-11:22>
-                  "==" <11:24-11:25>
-                  right-is literal (i32)0 <11:27-11:27>
-              body <11:29-13:9>
-                break-stmt <12:13-12:24>
-                  to @"main" <12:19-12:23>
-          expr-stmt simple <15:9-15:101>
-            fn-call <15:9-15:100>
-              base-is ident-use "writeln" <15:9-15:15>
-              parenthenes <15:16-15:100>
-              binary-expr <15:17-15:99>
-                left-is binary-expr <15:17-15:73>
-                  left-is binary-expr <15:17-15:63>
-                    left-is binary-expr <15:17-15:47>
-                      left-is binary-expr <15:17-15:40>
-                        left-is literal "最大公约数(" <15:17-15:24>
-                        "+" <15:26-15:26>
-                        right-is fn-call <15:28-15:40>
-                          base-is member-access <15:28-15:38>
-                            base-is ident-use "a" <15:28-15:28>
-                            "." <15:29-15:29>
-                            member-name-is "to_string" <15:30-15:38>
-                          parenthenes <15:39-15:40>
-                          no-argument
-                      "+" <15:42-15:42>
-                      right-is literal ", " <15:44-15:47>
-                    "+" <15:49-15:49>
-                    right-is fn-call <15:51-15:63>
-                      base-is member-access <15:51-15:61>
-                        base-is ident-use "b" <15:51-15:51>
-                        "." <15:52-15:52>
-                        member-name-is "to_string" <15:53-15:61>
-                      parenthenes <15:62-15:63>
-                      no-argument
-                  "+" <15:65-15:65>
-                  right-is literal ") is " <15:67-15:73>
-                "+" <15:75-15:75>
-                right-is fn-call <15:77-15:99>
-                  base-is member-access <15:77-15:97>
-                    base-is fn-call <15:77-15:87>
-                      base-is ident-use "最大公约数" <15:77-15:81>
-                      parenthenes <15:82-15:87>
-                      ident-use "a" <15:83-15:83>
-                      ident-use "b" <15:86-15:86>
-                    "." <15:88-15:88>
-                    member-name-is "to_string" <15:89-15:97>
-                  parenthenes <15:98-15:99>
-                  no-argument
-  fn-def <19:1-28:1>
-    "最大公约数" <19:4-19:8>
-    return-type "i32" <19:29-19:31>
-    parenthenes <19:9-19:24>
-    param "a" <19:10-19:10>
-      type-use "i32" <19:13-19:15>
-    param "b" <19:18-19:18>
-      type-use "i32" <19:21-19:23>
-    body <19:33-28:1>
+              binary-expr <11:12-11:27> && <11:19-11:20>
+                binary-expr <11:12-11:17> == <11:14-11:15>
+                  name <11:12-11:12>
+                    name-segment <11:12-11:12> a
+                  literal i32 0 <11:17-11:17>
+                binary-expr <11:22-11:27> == <11:24-11:25>
+                  name <11:22-11:22>
+                    name-segment <11:22-11:22> b
+                  literal i32 0 <11:27-11:27>
+              block <11:29-13:9>
+                break-stmt <12:13-12:24> @main <12:19-12:23>
+          simple-expr-stmt <15:9-15:101>
+            fn-call <15:9-15:100> () <15:16-15:100>
+              name <15:9-15:15>
+                name-segment <15:9-15:15> writeln
+              binary-expr <15:17-15:99> + <15:75-15:75>
+                binary-expr <15:17-15:73> + <15:65-15:65>
+                  binary-expr <15:17-15:63> + <15:49-15:49>
+                    binary-expr <15:17-15:47> + <15:42-15:42>
+                      binary-expr <15:17-15:40> + <15:26-15:26>
+                        literal str "最大公约数(" <15:17-15:24>
+                        fn-call <15:28-15:40> () <15:39-15:40>
+                          member-access <15:28-15:38> . <15:29-15:29>
+                            name <15:28-15:28>
+                          name-segment <15:28-15:28> a
+                            name <15:30-15:38>
+                          name-segment <15:30-15:38> to_string
+                      literal str ", " <15:44-15:47>
+                    fn-call <15:51-15:63> () <15:62-15:63>
+                      member-access <15:51-15:61> . <15:52-15:52>
+                        name <15:51-15:51>
+                          name-segment <15:51-15:51> b
+                        name <15:53-15:61>
+                          name-segment <15:53-15:61> to_string
+                  literal str ") is " <15:67-15:73>
+                fn-call <15:77-15:99> () <15:98-15:99>
+                  member-access <15:77-15:97> . <15:88-15:88>
+                    fn-call <15:77-15:87> () <15:82-15:87>
+                      name <15:77-15:81>
+                        name-segment <15:77-15:81> 最大公约数
+                      name <15:83-15:83>
+                        name-segment <15:83-15:83> a
+                      name <15:86-15:86>
+                        name-segment <15:86-15:86> b
+                    name <15:89-15:97>
+                      name-segment <15:89-15:97> to_string
+  fn <19:1-28:1> 最大公约数 <19:4-19:8> () <19:9-19:24>
+    fn-param <19:10-19:15> a <19:10-19:10>
+      primitive-type i32 <19:13-19:15>
+    fn-param <19:18-19:23> b <19:18-19:18>
+      primitive-type i32 <19:21-19:23>
+    primitive-type i32 <19:29-19:31>
+    block <19:33-28:1>
       if-stmt <20:5-22:5>
         if-clause <20:5-22:5>
-          cond-expr-is binary-expr <20:8-20:13>
-            left-is ident-use "b" <20:8-20:8>
-            "==" <20:10-20:11>
-            right-is literal (i32)0 <20:13-20:13>
-          body <20:15-22:5>
-            return-stmt <21:9-21:17>
-              ret-val-is ident-use "a" <21:16-21:16>
+          binary-expr <20:8-20:13> == <20:10-20:11>
+            name <20:8-20:8>
+              name-segment <20:8-20:8> b
+            literal i32 0 <20:13-20:13>
+          block <20:15-22:5>
+            ret-stmt <21:9-21:17>
+              name <21:16-21:16>
+                name-segment <21:16-21:16> a
       if-stmt <23:5-27:5>
         if-clause <23:5-25:5>
-          cond-expr-is binary-expr <23:8-23:12>
-            left-is ident-use "a" <23:8-23:8>
-            "<" <23:10-23:10>
-            right-is ident-use "b" <23:12-23:12>
-          body <23:14-25:5>
-            return-stmt <24:9-24:27>
-              ret-val-is fn-call <24:16-24:26>
-                base-is ident-use "最大公约数" <24:16-24:20>
-                parenthenes <24:21-24:26>
-                ident-use "b" <24:22-24:22>
-                ident-use "a" <24:25-24:25>
+          binary-expr <23:8-23:12> < <23:10-23:10>
+            name <23:8-23:8>
+              name-segment <23:8-23:8> a
+            name <23:12-23:12>
+              name-segment <23:12-23:12> b
+          block <23:14-25:5>
+            ret-stmt <24:9-24:27>
+              fn-call <24:16-24:26> () <24:21-24:26>
+                name <24:16-24:20>
+                  name-segment <24:16-24:20> 最大公约数
+                name <24:22-24:22>
+                  name-segment <24:22-24:22> b
+                name <24:25-24:25>
+                  name-segment <24:25-24:25> a
         else-clause <25:7-27:5>
-          body <25:12-27:5>
-            return-stmt <26:9-26:31>
-              ret-val-is fn-call <26:16-26:30>
-                base-is ident-use "最大公约数" <26:16-26:20>
-                parenthenes <26:21-26:30>
-                ident-use "b" <26:22-26:22>
-                binary-expr <26:25-26:29>
-                  left-is ident-use "a" <26:25-26:25>
-                  "%" <26:27-26:27>
-                  right-is ident-use "b" <26:29-26:29>
+          block <25:12-27:5>
+            ret-stmt <26:9-26:31>
+              fn-call <26:16-26:30> () <26:21-26:30>
+                name <26:16-26:20>
+                  name-segment <26:16-26:20> 最大公约数
+                name <26:22-26:22>
+                  name-segment <26:22-26:22> b
+                binary-expr <26:25-26:29> % <26:27-26:27>
+                  name <26:25-26:25>
+                    name-segment <26:25-26:25> a
+                  name <26:29-26:29>
+                    name-segment <26:29-26:29> b

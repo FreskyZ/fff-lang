@@ -1,7 +1,6 @@
-module
-  source-code#0 <anon#0>
-  expr-stmt simple <4:1-4:23>
-    fn-call <4:1-4:22>
-      base-is ident-use "writeln" <4:1-4:7>
-      parenthenes <4:8-4:22>
-      literal "hello world" <4:9-4:21>
+module tests/syntax/inter/hello.f3
+  simple-expr-stmt <4:1-4:23>
+    fn-call <4:1-4:22> () <4:8-4:22>
+      name <4:1-4:7>
+        name-segment <4:1-4:7> writeln
+      literal str "hello world" <4:9-4:21>

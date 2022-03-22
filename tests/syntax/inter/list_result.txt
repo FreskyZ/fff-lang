@@ -1,104 +1,92 @@
-module
-  source-code#0 <anon#0>
-  fn-def <4:1-39:1>
-    "main" <4:4-4:7>
-    no-return-type
-    parenthenes <4:8-4:9>
-    no-parameter
-    body <4:11-39:1>
-      var-def <7:5-7:32>
-        "list" <7:9-7:12>
-        auto-type
-        init-as array-def <7:16-7:31>
-          literal (i32)1 <7:17-7:17>
-          literal (i32)5 <7:20-7:20>
-          literal (i32)3 <7:23-7:23>
-          literal (i32)2 <7:26-7:26>
-          ident-use "x4" <7:29-7:30>
-      expr-stmt simple <16:5-16:16>
-        fn-call <16:5-16:15>
-          base-is member-access <16:5-16:13>
-            base-is ident-use "list" <16:5-16:8>
-            "." <16:9-16:9>
-            member-name-is "sort" <16:10-16:13>
-          parenthenes <16:14-16:15>
-          no-argument
-      expr-stmt simple <20:5-20:18>
-        fn-call <20:5-20:17>
-          base-is ident-use "writeln" <20:5-20:11>
-          parenthenes <20:12-20:17>
-          ident-use "list" <20:13-20:16>
-      expr-stmt simple <24:5-24:22>
-        fn-call <24:5-24:21>
-          base-is member-access <24:5-24:18>
-            base-is ident-use "list" <24:5-24:8>
-            "." <24:9-24:9>
-            member-name-is "push_back" <24:10-24:18>
-          parenthenes <24:19-24:21>
-          literal (i32)8 <24:20-24:20>
-      expr-stmt simple <28:5-28:22>
-        fn-call <28:5-28:21>
-          base-is member-access <28:5-28:18>
-            base-is ident-use "list" <28:5-28:8>
-            "." <28:9-28:9>
-            member-name-is "push_back" <28:10-28:18>
-          parenthenes <28:19-28:21>
-          literal (i32)6 <28:20-28:20>
-      expr-stmt simple <29:5-29:22>
-        fn-call <29:5-29:21>
-          base-is member-access <29:5-29:18>
-            base-is ident-use "list" <29:5-29:8>
-            "." <29:9-29:9>
-            member-name-is "remove_at" <29:10-29:18>
-          parenthenes <29:19-29:21>
-          literal (i32)3 <29:20-29:20>
-      for-stmt <30:5-32:5>
-        no-loop-name
-        "for" <30:5-30:7>
-        iter-var "i" <30:9-30:9>
-        iter-expr-is range-both <30:14-30:27>
-          left-is literal (i32)0 <30:14-30:14>
-          ".." <30:15-30:16>
-          right-is member-access <30:17-30:27>
-            base-is ident-use "list" <30:17-30:20>
-            "." <30:21-30:21>
-            member-name-is "length" <30:22-30:27>
-        body <30:29-32:5>
-          expr-stmt assign <31:9-31:21>
-            left-is indexer-call <31:9-31:15>
-              base-is ident-use "list" <31:9-31:12>
-              bracket <31:13-31:15>
-              ident-use "i" <31:14-31:14>
-            "*=" <31:17-31:18>
-            right-is literal (i32)2 <31:20-31:20>
-      for-stmt <33:5-33:28>
-        no-loop-name
-        "for" <33:5-33:7>
-        iter-var "i" <33:9-33:9>
-        iter-expr-is ident-use "list" <33:14-33:17>
-        body <33:18-33:28>
-          expr-stmt assign <33:20-33:26>
-            left-is ident-use "i" <33:20-33:20>
-            "*=" <33:22-33:23>
-            right-is literal (i32)3 <33:25-33:25>
-      expr-stmt simple <36:5-36:16>
-        fn-call <36:5-36:15>
-          base-is member-access <36:5-36:13>
-            base-is ident-use "list" <36:5-36:8>
-            "." <36:9-36:9>
-            member-name-is "sort" <36:10-36:13>
-          parenthenes <36:14-36:15>
-          no-argument
-      expr-stmt simple <37:5-37:19>
-        fn-call <37:5-37:18>
-          base-is member-access <37:5-37:16>
-            base-is ident-use "list" <37:5-37:8>
-            "." <37:9-37:9>
-            member-name-is "reverse" <37:10-37:16>
-          parenthenes <37:17-37:18>
-          no-argument
-      expr-stmt simple <38:5-38:18>
-        fn-call <38:5-38:17>
-          base-is ident-use "writeln" <38:5-38:11>
-          parenthenes <38:12-38:17>
-          ident-use "list" <38:13-38:16>
+module tests/syntax/inter/list.f3
+  fn <4:1-39:1> main <4:4-4:7> () <4:8-4:9>
+    block <4:11-39:1>
+      var-def <7:5-7:32> mutable list <7:9-7:12>
+        array-def <7:16-7:31>
+          literal i32 1 <7:17-7:17>
+          literal i32 5 <7:20-7:20>
+          literal i32 3 <7:23-7:23>
+          literal i32 2 <7:26-7:26>
+          name <7:29-7:30>
+            name-segment <7:29-7:30> x4
+      simple-expr-stmt <16:5-16:16>
+        fn-call <16:5-16:15> () <16:14-16:15>
+          member-access <16:5-16:13> . <16:9-16:9>
+            name <16:5-16:8>
+              name-segment <16:5-16:8> list
+            name <16:10-16:13>
+              name-segment <16:10-16:13> sort
+      simple-expr-stmt <20:5-20:18>
+        fn-call <20:5-20:17> () <20:12-20:17>
+          name <20:5-20:11>
+            name-segment <20:5-20:11> writeln
+          name <20:13-20:16>
+            name-segment <20:13-20:16> list
+      simple-expr-stmt <24:5-24:22>
+        fn-call <24:5-24:21> () <24:19-24:21>
+          member-access <24:5-24:18> . <24:9-24:9>
+            name <24:5-24:8>
+              name-segment <24:5-24:8> list
+            name <24:10-24:18>
+              name-segment <24:10-24:18> push_back
+          literal i32 8 <24:20-24:20>
+      simple-expr-stmt <28:5-28:22>
+        fn-call <28:5-28:21> () <28:19-28:21>
+          member-access <28:5-28:18> . <28:9-28:9>
+            name <28:5-28:8>
+              name-segment <28:5-28:8> list
+            name <28:10-28:18>
+              name-segment <28:10-28:18> push_back
+          literal i32 6 <28:20-28:20>
+      simple-expr-stmt <29:5-29:22>
+        fn-call <29:5-29:21> () <29:19-29:21>
+          member-access <29:5-29:18> . <29:9-29:9>
+            name <29:5-29:8>
+              name-segment <29:5-29:8> list
+            name <29:10-29:18>
+              name-segment <29:10-29:18> remove_at
+          literal i32 3 <29:20-29:20>
+      for-stmt <30:5-32:5> for <30:5-30:7> iter-var i <30:9-30:9>
+        range-both-expr <30:14-30:27> dotdot <30:15-30:16>
+          literal i32 0 <30:14-30:14>
+          member-access <30:17-30:27> . <30:21-30:21>
+            name <30:17-30:20>
+              name-segment <30:17-30:20> list
+            name <30:22-30:27>
+              name-segment <30:22-30:27> length
+        block <30:29-32:5>
+          assign-expr-stmt <31:9-31:21>*= <31:17-31:18>
+            index-call <31:9-31:15> [] <31:13-31:15>
+              name <31:9-31:12>
+                name-segment <31:9-31:12> list
+              name <31:14-31:14>
+                name-segment <31:14-31:14> i
+            literal i32 2 <31:20-31:20>
+      for-stmt <33:5-33:28> for <33:5-33:7> iter-var i <33:9-33:9>
+        name <33:14-33:17>
+          name-segment <33:14-33:17> list
+        block <33:18-33:28>
+          assign-expr-stmt <33:20-33:26>*= <33:22-33:23>
+            name <33:20-33:20>
+              name-segment <33:20-33:20> i
+            literal i32 3 <33:25-33:25>
+      simple-expr-stmt <36:5-36:16>
+        fn-call <36:5-36:15> () <36:14-36:15>
+          member-access <36:5-36:13> . <36:9-36:9>
+            name <36:5-36:8>
+              name-segment <36:5-36:8> list
+            name <36:10-36:13>
+              name-segment <36:10-36:13> sort
+      simple-expr-stmt <37:5-37:19>
+        fn-call <37:5-37:18> () <37:17-37:18>
+          member-access <37:5-37:16> . <37:9-37:9>
+            name <37:5-37:8>
+              name-segment <37:5-37:8> list
+            name <37:10-37:16>
+              name-segment <37:10-37:16> reverse
+      simple-expr-stmt <38:5-38:18>
+        fn-call <38:5-38:17> () <38:12-38:17>
+          name <38:5-38:11>
+            name-segment <38:5-38:11> writeln
+          name <38:13-38:16>
+            name-segment <38:13-38:16> list

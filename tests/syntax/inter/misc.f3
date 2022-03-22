@@ -40,7 +40,7 @@ fn main(b: u32) {
 
 // for and while
 fn main() { 
-    const a = read<i33>(); 
+    const a = read::<i33>(); 
     while a != 0 { 
         for i in [0, 1, 2, a + 1] { 
             writeln("zmj" + i); 
