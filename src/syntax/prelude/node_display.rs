@@ -243,8 +243,11 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
     }
 
     fn visit_module(&mut self, node: &Module) -> fmt::Result {
-        self.impl_visit_no_primary_span(node, "module", |f|
-            f.write_space()?.write_str("<TODO FILE NAME>"))
+        self.impl_visit_no_primary_span(node, "module", |f| {
+            f.write_space()?;
+            write!(f.f, "{}", self.scx.get_relative_path(node.file).display())?;
+            Ok(f)
+        })
     }
 
     fn visit_module_stmt(&mut self, node: &ModuleStatement) -> fmt::Result {

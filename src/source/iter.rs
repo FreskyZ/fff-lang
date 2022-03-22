@@ -200,7 +200,7 @@ impl<'a> SourceChars<'a> {
     ) -> Self {
         // append 3 '\0' char to end of content for the branchless (less branch actually) iterator
         content.push_str("\0\0\0");
-        Self{ 
+        Self{
             content, 
             start_index, 
             current_index: 0, 
@@ -302,11 +302,13 @@ impl<'a> SourceChars<'a> {
         }
     }
 
-    pub fn finish(mut self) -> FileId {
+    pub fn get_file_id(&self) -> FileId {
+        FileId::new(self.files.len() as u32 + 1)
+    }
+    pub fn finish(mut self) {
         // // no, not this, cannot move self when self is borrowed (the self.context)
         // // self.context.finish_build(self)
-        
-        let file_id = FileId((self.files.len() + 1) as u32);
+
         let content_length = self.content.len();
         self.content.truncate(content_length - 3);
         self.files.push(SourceFile{
@@ -317,7 +319,6 @@ impl<'a> SourceChars<'a> {
             start_index: self.start_index,
             request: self.request,
         });
-        file_id
     }
 }
 

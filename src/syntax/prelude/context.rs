@@ -35,7 +35,10 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
         self.base.emit(name)
     }
 
-    pub fn finish(self) -> FileId {
+    pub fn get_file_id(&self) -> FileId {
+        self.base.get_file_id()
+    }
+    pub fn finish(self) {
         self.base.finish()
     }
 

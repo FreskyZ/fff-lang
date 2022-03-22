@@ -240,8 +240,11 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         self.base.intern_span(span)
     }
 
-    // finish self to return scx
-    pub fn finish(self) -> FileId {
+    pub fn get_file_id(&self) -> FileId {
+        self.base.get_file_id()
+    }
+
+    pub fn finish(self) {
         self.base.finish()
     }
 }

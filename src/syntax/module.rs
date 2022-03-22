@@ -22,7 +22,7 @@ impl Parser for Module {
         while !cx.eof() {
             items.push(cx.expect::<Item>()?);
         }
-        Ok(Module{ items, file: FileId::new(0) })
+        Ok(Module{ items, file: cx.get_file_id() })
     }
 }
 
@@ -43,7 +43,7 @@ fn module_parse() {
     use super::{ModuleStatement, SimpleExprStatement, UseStatement};
     //                      0123456789012345678901234
     case!{ "use a; module b; 3; b; a;" as Module,
-        Module{ file: FileId::new(0), items: vec![
+        Module{ file: FileId::new(1), items: vec![
             Item::Use(UseStatement{ all_span: Span::new(0, 5), alias: None,
                 name: make_name!(simple bare 4:4 #2) }),
             Item::Import(ModuleStatement{ name: IsId::new(3), name_span: Span::new(14, 14), path: None, all_span: Span::new(7, 15) }),

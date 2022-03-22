@@ -350,14 +350,18 @@ fn span_overflow() {
 fn line_to_content() {
 
     let mut scx = make_source!("0123\n56\r8\n01234567\n9");
-    let file_id = scx.entry("1").finish();
+    let chars = scx.entry("1");
+    let file_id = chars.get_file_id();
+    chars.finish();
     assert_eq!(scx.map_line_to_content(file_id, 1), "0123");
     assert_eq!(scx.map_line_to_content(file_id, 2), "56\r8");
     assert_eq!(scx.map_line_to_content(file_id, 3), "01234567");
     assert_eq!(scx.map_line_to_content(file_id, 4), "9");
 
     let mut scx = make_source!("abc\ndef\r\r\n\nasd\nwe\rq1da\nawsedq\n");
-    let file_id = scx.entry("1").finish();
+    let chars = scx.entry("1");
+    let file_id = chars.get_file_id();
+    chars.finish();
     assert_eq!(scx.map_line_to_content(file_id, 1), "abc");
     assert_eq!(scx.map_line_to_content(file_id, 2), "def\r\r");
     assert_eq!(scx.map_line_to_content(file_id, 3), "");
@@ -366,24 +370,32 @@ fn line_to_content() {
     assert_eq!(scx.map_line_to_content(file_id, 6), "awsedq");
 
     let mut scx = make_source!("\nabc\ndef\n");
-    let file_id = scx.entry("1").finish();
+    let chars = scx.entry("1");
+    let file_id = chars.get_file_id();
+    chars.finish();
     assert_eq!(scx.map_line_to_content(file_id, 1), "");
     assert_eq!(scx.map_line_to_content(file_id, 2), "abc");
     assert_eq!(scx.map_line_to_content(file_id, 3), "def");
     assert_eq!(scx.map_line_to_content(file_id, 4), "");
 
     let mut scx = make_source!("abcdef");
-    let file_id = scx.entry("1").finish();
+    let chars = scx.entry("1");
+    let file_id = chars.get_file_id();
+    chars.finish();
     assert_eq!(scx.map_line_to_content(file_id, 1), "abcdef");
 
     let mut scx = make_source!();
-    let file_id = scx.entry("1").finish();
+    let chars = scx.entry("1");
+    let file_id = chars.get_file_id();
+    chars.finish();
     assert_eq!(scx.map_line_to_content(file_id, 1), "");
 
     // if last charater is non ascii,
     // ending byte index was not correct, found by auto generated test
     let mut scx = make_source!("var a: abc::def\n绦");
-    let file_id = scx.entry("1").finish();
+    let chars = scx.entry("1");
+    let file_id = chars.get_file_id();
+    chars.finish();
     assert_eq!(scx.map_line_to_content(file_id, 2), "绦");
 }
 
@@ -391,7 +403,9 @@ fn line_to_content() {
 #[should_panic(expected = "line number overflow")]
 fn line_number_overflow1() {
     let mut scx = make_source!("abc");
-    let file_id = scx.entry("1").finish();
+    let chars = scx.entry("1");
+    let file_id = chars.get_file_id();
+    chars.finish();
     scx.map_line_to_content(file_id, 0);
 }
 
@@ -399,7 +413,9 @@ fn line_number_overflow1() {
 #[should_panic(expected = "line number overflow")]
 fn line_number_overflow2() {
     let mut scx = make_source!();
-    let file_id = scx.entry("1").finish();
+    let chars = scx.entry("1");
+    let file_id = chars.get_file_id();
+    chars.finish();
     scx.map_line_to_content(file_id, 2);
 }
 
@@ -547,7 +563,9 @@ macro_rules! mr_test_case {
         let mut chars = scx.entry("src/main.f3");
         let module_name = chars.intern($module);
         chars.finish();
-        let file_id = scx.import($span, module_name).unwrap().finish();
+        let import_chars = scx.import($span, module_name).unwrap();
+        let file_id = import_chars.get_file_id();
+        import_chars.finish();
         assert_eq!(scx.files[file_id.0 as usize - 1].path, PathBuf::from($path));
     }};
     ([$($content:literal as $name:literal),+$(,)?] import $module1:literal from entry then import $module2:literal from $span:expr => err) => {{
@@ -566,7 +584,9 @@ macro_rules! mr_test_case {
         let module_name2 = chars.intern($module2);
         chars.finish();
         scx.import(Span::new(0, 0), module_name1).unwrap().finish();
-        let file_id = scx.import($span, module_name2).unwrap().finish();
+        let import_chars2 = scx.import($span, module_name2).unwrap();
+        let file_id = import_chars2.get_file_id();
+        import_chars2.finish();
         assert_eq!(scx.files[file_id.0 as usize - 1].path, PathBuf::from($path));
     }}
 }
