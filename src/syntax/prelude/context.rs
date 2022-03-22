@@ -233,6 +233,16 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
         }
     }
 
+    /// split current shift left token to 2 less than tokens
+    /// caller to check current is shift left
+    /// return span for first less than and logically move to next less than by directly changing cached current token
+    fn split_shift_left(&mut self) -> Span {
+        let result = self.current_span.start.into();
+        self.current = Token::Sep(Separator::Lt);
+        self.current_span = self.current_span.end.into();
+        result
+    }
+
     /// split current shift right token to 2 greater than tokens
     /// caller to check current is shift right
     /// return span for first greater than and logically move to next greater than by directly changing cached current token
@@ -242,6 +252,7 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
         self.current_span = self.current_span.end.into();
         result
     }
+
 
     /// split current logical and token to 2 bit and tokens
     /// caller to check current is logical and
@@ -253,7 +264,7 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
         result
     }
 
-    /// Check current token is specified Separator, handles split shift right, logical and
+    /// Check current token is specified Separator, handles split shift left, shift right, logical and
     ///
     /// if so, move next and Ok(sep_span),
     /// if not, push unexpect and Err(Unexpected)
@@ -263,6 +274,7 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
         match self.current {
             Token::Sep(sep) if sep == expected_sep => Ok(self.move_next()),
             Token::Sep(Separator::GtGt) if expected_sep == Separator::Gt => Ok(self.split_shift_right()),
+            Token::Sep(Separator::LtLt) if expected_sep == Separator::Lt => Ok(self.split_shift_left()),
             Token::Sep(Separator::AndAnd) if expected_sep == Separator::And => Ok(self.split_logical_and()),
             // if it is GtGtEq, you need to split into Gt+Gt+Eq, but will that hapen?
             _ => self.push_unexpect(expected_sep.display()),
@@ -292,6 +304,7 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
         match self.current {
             Token::Sep(sep) if sep == expected_sep => Some(self.move_next()),
             Token::Sep(Separator::GtGt) if expected_sep == Separator::Gt => Some(self.split_shift_right()),
+            Token::Sep(Separator::LtLt) if expected_sep == Separator::Lt => Some(self.split_shift_left()),
             _ => None,
         }
     }

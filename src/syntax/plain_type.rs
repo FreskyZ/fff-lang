@@ -485,4 +485,16 @@ fn type_ref_parse() {
         //           2       3     4             5      6         7           8         9        10        11    12    13
         ), strings ["x3Kv", "Mc", "t6絩ru卒oLy", "Ak", "o7k81A6", "OmNaGmqc", "g63凈N", "bOars", "c6eFq8M", "b", "f3", "HrH70sp"]
     }
+
+    // type as segment in front of angle bracket quoted type list requires split shift left
+    //      01234567890123
+    case!{ "a<<a as a>::a>" as TypeRef,
+        make_type!(plain 0:13 false, None,
+            make_type!(segment generic 0:13 #2 0:0 quote 1:13
+                make_type!(plain 2:12 false,
+                    make_type!(segment as 2:9
+                        make_type!(simple 3:3 #2),
+                        make_type!(simple 8:8 #2)),
+                    make_type!(segment 12:12 #2)))),
+    }
 }
