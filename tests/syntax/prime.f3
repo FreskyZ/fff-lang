@@ -6,17 +6,17 @@ fn main() {
     writeln(""); // TODO: no parameter writeln for simple line end
 }
 
-fn get_primes(u64 high_bound) -> [u64] {
+fn get_primes(high_bound: u64) -> &u64 {
     
     //writeln("[DEBUG] get primes called, high bound = " + high_bound.to_string());
-    var [bool] is_prime = [true; high_bound]; 
+    // var is_prime = [true; high_bound]; 
     is_prime.set_index(0, false);
     is_prime.set_index(1, false);
-    for i in 2u64 : high_bound {
+    for i in 2u64..high_bound {
         //writeln("[DEBUG] Outter iteration, i = " + i.to_string());
         if is_prime[i] {
             //writeln("[DEBUG] this i is prime");
-            for j in 2u64 : high_bound / i {
+            for j in 2u64..high_bound / i {
                 writeln("[DEBUG] inner iteration, j = " + j.to_string() + ", unset it");
                 is_prime.set_index(j * i, false);
             }
@@ -24,8 +24,8 @@ fn get_primes(u64 high_bound) -> [u64] {
     }
 
     //writeln("[DEBUG] main process ended");
-    var [u64] ret_val = [0u64; 0]; // because no type infer, should provide type for empty array def
-    for i in 1u64 : high_bound {
+    // var ret_val = [0u64; 0]; // because no type infer, should provide type for empty array def
+    for i in 1u64..high_bound {
         if is_prime[i] {
             ret_val.push(i);
         }
@@ -33,9 +33,9 @@ fn get_primes(u64 high_bound) -> [u64] {
     return ret_val;
 }
 
-fn write_array_8([u64] thearray) {
+fn write_array_8(thearray: &u64) {
     write("[");
-    for i in 0u64 : thearray.length() - 1u64 {
+    for i in 0u64..thearray.length() - 1u64 {
         write(thearray[i].to_string());
         write(", ");
     }

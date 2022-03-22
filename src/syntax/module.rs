@@ -5,13 +5,26 @@
 
 use crate::source::FileId;
 use super::prelude::*;
-use super::{Item};
+use super::{Item, ModuleStatement};
 
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
 pub struct Module {
     pub file: FileId,
     pub items: Vec<Item>,
+}
+
+impl Node for Module {
+    
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        v.visit_module(self)
+    }
+    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        for item in &self.items {
+            v.visit_item(item)?;
+        }
+        Ok(Default::default())
+    }
 }
 
 impl Parser for Module {
@@ -26,15 +39,22 @@ impl Parser for Module {
     }
 }
 
-impl Node for Module {
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_module(self)
+struct CollectImportVisitor {
+    requests: Vec<(Span, IsId)>,
+}
+impl Visitor for CollectImportVisitor {
+    fn visit_module_stmt(&mut self, node: &ModuleStatement) -> Result<(), ()> {
+        self.requests.push((node.all_span, node.path.map(|(path, _)| path).unwrap_or(node.name)));
+        Ok(())
     }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        for item in &self.items {
-            v.visit_item(item)?;
-        }
-        Ok(Default::default())
+}
+
+impl Module {
+
+    pub fn collect_imports(&self) -> Vec<(Span, IsId)> {
+        let mut collector = CollectImportVisitor{ requests: Vec::new() };
+        self.accept(&mut collector).unwrap();
+        collector.requests
     }
 }
 

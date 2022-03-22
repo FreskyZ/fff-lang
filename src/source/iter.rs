@@ -230,7 +230,7 @@ impl<'a> SourceChars<'a> {
                 },
                 b @ 0..=128 => { // ascii fast path
                     self.current_index += 1;
-                    return (b as char, Position::new((self.current_index - 1) as u32));
+                    return (b as char, Position::new((self.current_index - 1 + self.start_index) as u32));
                 },
                 _ => {
                     let width = get_char_width(&self.content, self.current_index);
@@ -247,7 +247,7 @@ impl<'a> SourceChars<'a> {
                     // TODO: check more invalid utf8 sequence include following bytes not start with 0b10 and larger than 10FFFF and between D800 and E000
                     self.current_index += width;
                     // SAFETY: invalid char should not cause severe issue in lexical parse and syntax parse
-                    return (unsafe { char::from_u32_unchecked(r#char) }, Position::new((self.current_index - width) as u32));
+                    return (unsafe { char::from_u32_unchecked(r#char) }, Position::new((self.current_index - width + self.start_index) as u32));
                 },
             }
         }
@@ -288,7 +288,7 @@ impl<'a> SourceChars<'a> {
         debug_assert!(start <= end, "invalid span");
         debug_assert!(self.start_index <= start, "not this file span");
         // does not check position for EOF because it is not expected to intern something include EOF
-        debug_assert!(end < self.content.len() - 3 && start< self.content.len() - 3, "position overflow");
+        debug_assert!(end - self.start_index < self.content.len() - 3 && start - self.start_index < self.content.len() - 3, "position overflow");
 
         let end_width = get_char_width(&self.content, end - self.start_index);
         let hash = get_hash(&self.content[start - self.start_index..end - self.start_index + end_width]);

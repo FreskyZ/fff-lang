@@ -1,4 +1,0 @@
-import abc; // no underscore, same dir
-import efg; // no underscore, sub dir
-import some_name; // underscore, same dir hyphened version, shadow underscore version
-import other_name; // underscore, same dir underscore version

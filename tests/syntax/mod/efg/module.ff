@@ -1,2 +1,0 @@
-import this_name; // underscore version, sub dir underscore version
-import that_name; // underscore version, sub dir hyphen version, shadow underscore

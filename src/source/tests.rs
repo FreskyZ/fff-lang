@@ -221,7 +221,7 @@ fn position_to_line_column2() {
     // this 2 empty file program should only allow 2 positions: 0 for EOF in file 1, 1 for EOF in file 2
     let mut scx = make_source!("" as "/1.f3", "" as "/2.f3");
     let mut chars = scx.entry("/1.f3");
-    let module_name = chars.intern("2");
+    let module_name = chars.intern("2.f3");
     chars.finish();
     scx.import(Span::new(0, 0), module_name).unwrap().finish();
     ptlc_test_case!{ scx,
@@ -551,14 +551,32 @@ fn span_to_line_column() {
 
 // module resolve test case
 macro_rules! mr_test_case {
-    ([$($content:literal as $name:literal),+$(,)?] import $module:literal from $span:expr => err) => {{
+    ([$($content:literal as $name:literal),+$(,)?] import $module:expr; from $span:expr => err) => {{
+        let mut scx = make_source!($($content as $name),+);
+        let mut chars = scx.entry("src/main.f3");
+        let module_name = chars.intern_span($module);
+        chars.finish();
+        assert!(scx.import($span, module_name).is_none());
+    }};
+    ([$($content:literal as $name:literal),+$(,)?] import $module:expr; from $span:expr => $path:expr) => {{
+        let mut scx = make_source!($($content as $name),+);
+        let mut chars = scx.entry("src/main.f3");
+        let module_name = chars.intern_span($module);
+        chars.finish();
+        let import_chars = scx.import($span, module_name).unwrap();
+        let file_id = import_chars.get_file_id();
+        import_chars.finish();
+        assert_eq!(scx.files[file_id.0 as usize - 1].path, PathBuf::from($path));
+    }};
+
+    ([$($content:literal as $name:literal),+$(,)?] import explicit $module:literal from $span:expr => err) => {{
         let mut scx = make_source!($($content as $name),+);
         let mut chars = scx.entry("src/main.f3");
         let module_name = chars.intern($module);
         chars.finish();
         assert!(scx.import($span, module_name).is_none());
     }};
-    ([$($content:literal as $name:literal),+$(,)?] import $module:literal from $span:expr => $path:expr) => {{
+    ([$($content:literal as $name:literal),+$(,)?] import explicit $module:literal from $span:expr => $path:expr) => {{
         let mut scx = make_source!($($content as $name),+);
         let mut chars = scx.entry("src/main.f3");
         let module_name = chars.intern($module);
@@ -568,25 +586,32 @@ macro_rules! mr_test_case {
         import_chars.finish();
         assert_eq!(scx.files[file_id.0 as usize - 1].path, PathBuf::from($path));
     }};
-    ([$($content:literal as $name:literal),+$(,)?] import $module1:literal from entry then import $module2:literal from $span:expr => err) => {{
+
+    ([$($content:literal as $name:literal),+$(,)?] import $module1:expr; from entry then import $module2:expr; from $span:expr => err) => {{
         let mut scx = make_source!($($content as $name),+);
         let mut chars = scx.entry("src/main.f3");
-        let module_name1 = chars.intern($module1);
-        let module_name2 = chars.intern($module2);
+        println!("before intern span 1");
+        let module_name1 = chars.intern_span($module1);
         chars.finish();
-        scx.import(Span::new(0, 0), module_name1).unwrap().finish();
+        let mut chars2 = scx.import(Span::new(0, 0), module_name1).unwrap();
+        println!("before intern span 2");
+        let module_name2 = chars2.intern_span($module2);
+        chars2.finish();
         assert!(scx.import($span, module_name2).is_none());
     }};
-    ([$($content:literal as $name:literal),+$(,)?] import $module1:literal from entry then import $module2:literal from $span:expr => $path:expr) => {{
+    ([$($content:literal as $name:literal),+$(,)?] import $module1:expr; from entry then import $module2:expr; from $span:expr => $path:expr) => {{
         let mut scx = make_source!($($content as $name),+);
         let mut chars = scx.entry("src/main.f3");
-        let module_name1 = chars.intern($module1);
-        let module_name2 = chars.intern($module2);
+        println!("before intern span 3");
+        let module_name1 = chars.intern_span($module1);
         chars.finish();
-        scx.import(Span::new(0, 0), module_name1).unwrap().finish();
-        let import_chars2 = scx.import($span, module_name2).unwrap();
-        let file_id = import_chars2.get_file_id();
-        import_chars2.finish();
+        let mut chars2 = scx.import(Span::new(0, 0), module_name1).unwrap();
+        println!("before intern span 4");
+        let module_name2 = chars2.intern_span($module2);
+        chars2.finish();
+        let chars3 = scx.import($span, module_name2).unwrap();
+        let file_id = chars3.get_file_id();
+        chars3.finish();
         assert_eq!(scx.files[file_id.0 as usize - 1].path, PathBuf::from($path));
     }}
 }
@@ -600,29 +625,43 @@ fn resolve_entry() {
         "" as "src/module-name/index.f3",
         "" as "src/module_name.f3",
         "" as "src/module_name/index.f3",
-    ] import "module_name" from Span::new(0, 0) => "src/module-name.f3");
+    ] import Span::new(7, 17); from Span::new(0, 0) => "src/module-name.f3");
 
     mr_test_case!([
         "module module_name;" as "src/main.f3",
         "" as "src/module-name/index.f3",
         "" as "src/module_name.f3",
         "" as "src/module_name/index.f3",
-    ] import "module_name" from Span::new(0, 0) => "src/module-name/index.f3");
+    ] import Span::new(7, 17); from Span::new(0, 0) => "src/module-name/index.f3");
 
     mr_test_case!([
         "module module_name;" as "src/main.f3",
         "" as "src/module_name.f3",
         "" as "src/module_name/index.f3",
-    ] import "module_name" from Span::new(0, 0) => "src/module_name.f3");
+    ] import Span::new(7, 17); from Span::new(0, 0) => "src/module_name.f3");
 
     mr_test_case!([
         "module module_name;" as "src/main.f3",
         "" as "src/module_name/index.f3",
-    ] import "module_name" from Span::new(0, 0) => "src/module_name/index.f3");
+    ] import Span::new(7, 17); from Span::new(0, 0) => "src/module_name/index.f3");
 
     mr_test_case!([
         "module module_name;" as "src/main.f3",
-    ] import "module_name" from Span::new(0, 0) => err);
+    ] import Span::new(7, 17); from Span::new(0, 0) => err);
+}
+
+#[test]
+fn resolve_explicit() {
+
+    mr_test_case!([
+        "module some_module;" as "src/main.f3",
+        "" as "src/strange file name.strange ext",
+    ] import explicit "strange file name.strange ext" from Span::new(0, 0) => "src/strange file name.strange ext");
+
+    mr_test_case!([
+        "module some_module;" as "src/main.f3",
+        "" as "src/../abc/def/ghi/f3", // because vfs does not have real canonicalize
+    ] import explicit "../abc/def/ghi/f3" from Span::new(0, 0) => "src/../abc/def/ghi/f3");
 }
 
 #[test]
@@ -635,7 +674,7 @@ fn resolve_index() {
         "" as "src/some-module/module-name/index.f3",
         "" as "src/some-module/module_name.f3",
         "" as "src/some-module/module_name/index.f3",
-    ] import "some_module" from entry then import "module_name" from Span::new(30, 30) => "src/some-module/module-name.f3");
+    ] import Span::new(7, 17); from entry then import Span::new(27, 37); from Span::new(30, 30) => "src/some-module/module-name.f3");
     
     mr_test_case!([
         "module some_module;" as "src/main.f3",
@@ -643,25 +682,25 @@ fn resolve_index() {
         "" as "src/some-module/module-name/index.f3",
         "" as "src/some-module/module_name.f3",
         "" as "src/some-module/module_name/index.f3"
-    ] import "some_module" from entry then import "module_name" from Span::new(30, 30) => "src/some-module/module-name/index.f3");
+    ] import Span::new(7, 17); from entry then import Span::new(27, 37); from Span::new(30, 30) => "src/some-module/module-name/index.f3");
     
     mr_test_case!([
         "module some_module;" as "src/main.f3",
         "module module_name;" as "src/some-module/index.f3",
         "" as "src/some-module/module_name.f3",
         "" as "src/some-module/module_name/index.f3",
-    ] import "some_module" from entry then import "module_name" from Span::new(30, 30) => "src/some-module/module_name.f3");
+    ] import Span::new(7, 17); from entry then import Span::new(27, 37); from Span::new(30, 30) => "src/some-module/module_name.f3");
     
     mr_test_case!([
         "module some_module;" as "src/main.f3",
         "module module_name;" as "src/some-module/index.f3",
         "" as "src/some-module/module_name/index.f3",
-    ] import "some_module" from entry then import "module_name" from Span::new(30, 30) => "src/some-module/module_name/index.f3");
+    ] import Span::new(7, 17); from entry then import Span::new(27, 37); from Span::new(30, 30) => "src/some-module/module_name/index.f3");
     
     mr_test_case!([
         "module some_module;" as "src/main.f3",
         "module module_name;" as "src/some-module/index.f3",
-    ] import "some_module" from entry then import "module_name" from Span::new(30, 30) => err);
+    ] import Span::new(7, 17); from entry then import Span::new(27, 37); from Span::new(30, 30) => err);
 }
 
 #[test]
@@ -678,7 +717,7 @@ fn resolve_other() {
         "" as "src/some_module/module-name/index.f3",
         "" as "src/some_module/module_name.f3",
         "" as "src/some_module/module_name/index.f3",
-    ] import "some_module" from entry then import "module_name" from Span::new(30, 30) => "src/some-module/module-name.f3");
+    ] import Span::new(7, 17); from entry then import Span::new(27, 37); from Span::new(30, 30) => "src/some-module/module-name.f3");
     
     mr_test_case!([
         "module some_module;" as "src/main.f3",
@@ -690,7 +729,7 @@ fn resolve_other() {
         "" as "src/some_module/module-name/index.f3",
         "" as "src/some_module/module_name.f3",
         "" as "src/some_module/module_name/index.f3",
-    ] import "some_module" from entry then import "module_name" from Span::new(30, 30) => "src/some-module/module-name/index.f3");
+    ] import Span::new(7, 17); from entry then import Span::new(27, 37); from Span::new(30, 30) => "src/some-module/module-name/index.f3");
     
     mr_test_case!([
         "module some_module;" as "src/main.f3",
@@ -701,7 +740,7 @@ fn resolve_other() {
         "" as "src/some_module/module-name/index.f3",
         "" as "src/some_module/module_name.f3",
         "" as "src/some_module/module_name/index.f3",
-    ] import "some_module" from entry then import "module_name" from Span::new(30, 30) => "src/some-module/module_name.f3");
+    ] import Span::new(7, 17); from entry then import Span::new(27, 37); from Span::new(30, 30) => "src/some-module/module_name.f3");
 
     mr_test_case!([
         "module some_module;" as "src/main.f3",
@@ -711,7 +750,7 @@ fn resolve_other() {
         "" as "src/some_module/module-name/index.f3",
         "" as "src/some_module/module_name.f3",
         "" as "src/some_module/module_name/index.f3",
-    ] import "some_module" from entry then import "module_name" from Span::new(30, 30) => "src/some-module/module_name/index.f3");
+    ] import Span::new(7, 17); from entry then import Span::new(27, 37); from Span::new(30, 30) => "src/some-module/module_name/index.f3");
 
     mr_test_case!([
         "module some_module;" as "src/main.f3",
@@ -720,7 +759,7 @@ fn resolve_other() {
         "" as "src/some_module/module-name/index.f3",
         "" as "src/some_module/module_name.f3",
         "" as "src/some_module/module_name/index.f3",
-    ] import "some_module" from entry then import "module_name" from Span::new(30, 30) => "src/some_module/module-name.f3");
+    ] import Span::new(7, 17); from entry then import Span::new(27, 37); from Span::new(30, 30) => "src/some_module/module-name.f3");
 
     mr_test_case!([
         "module some_module;" as "src/main.f3",
@@ -728,23 +767,23 @@ fn resolve_other() {
         "" as "src/some_module/module-name/index.f3",
         "" as "src/some_module/module_name.f3",
         "" as "src/some_module/module_name/index.f3",
-    ] import "some_module" from entry then import "module_name" from Span::new(30, 30) => "src/some_module/module-name/index.f3");
+    ] import Span::new(7, 17); from entry then import Span::new(27, 37); from Span::new(30, 30) => "src/some_module/module-name/index.f3");
 
     mr_test_case!([
         "module some_module;" as "src/main.f3",
         "module module_name;" as "src/some-module.f3",
         "" as "src/some_module/module_name.f3",
         "" as "src/some_module/module_name/index.f3",
-    ] import "some_module" from entry then import "module_name" from Span::new(30, 30) => "src/some_module/module_name.f3");
+    ] import Span::new(7, 17); from entry then import Span::new(27, 37); from Span::new(30, 30) => "src/some_module/module_name.f3");
 
     mr_test_case!([
         "module some_module;" as "src/main.f3",
         "module module_name;" as "src/some-module.f3",
         "" as "src/some_module/module_name/index.f3",
-    ] import "some_module" from entry then import "module_name" from Span::new(30, 30) => "src/some_module/module_name/index.f3");
+    ] import Span::new(7, 17); from entry then import Span::new(27, 37); from Span::new(30, 30) => "src/some_module/module_name/index.f3");
 
     mr_test_case!([
         "module some_module;" as "src/main.f3",
         "module module_name;" as "src/some-module.f3",
-    ] import "some_module" from entry then import "module_name" from Span::new(30, 30) => err);
+    ] import Span::new(7, 17); from entry then import Span::new(27, 37); from Span::new(30, 30) => err);
 }

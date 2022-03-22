@@ -1,23 +1,4 @@
-
-type Span {
-    row: u32,
-    col: u32,
-}
-
-// without ADT or union, you have to do this, at least you must have a C style enum
-enum TokenType {
-    StringLiteral,
-    NumericLiteral,
-    Identifier,
-    Operator,
-}
-
-type Token {
-    ty: TokenType,
-    span: Span,
-    str_val: string,
-    u64_val: u64,
-}
+module token;
 
 fn lex(src: string) -> Token {
     var current_index = 0;

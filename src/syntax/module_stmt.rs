@@ -24,7 +24,7 @@ impl Parser for ModuleStatement {
         let starting_span = cx.expect_keyword(Keyword::Module)?;
         let (name, name_span) = cx.expect_ident()?;
 
-        let path = cx.try_expect_str_lit();        
+        let path = cx.try_expect_str_lit(); 
         let semicolon_span = cx.expect_sep(Separator::SemiColon)?;
         let all_span = starting_span + semicolon_span;
 

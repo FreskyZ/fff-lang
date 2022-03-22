@@ -153,54 +153,58 @@ impl<F> SourceContext<F> where F: FileSystem {
     }
 
     // return option not result: let syntax parse module declare raise error
-    pub fn import(&mut self, request: Span, module_name_id: IsId) -> Option<SourceChars> {
+    pub fn import(&mut self, location: Span, request: IsId) -> Option<SourceChars> {
         debug_assert!(!self.files.is_empty(), "no entry");
-        let (request_file_id, request_file, _) = self.map_position_to_file_and_byte_index(request.start);
-        
-        const FILE_EXT: &str = ".f3";
-        let module_name = self.resolve_string(module_name_id);
-        let hyphened_module_name = module_name.replace('_', "-");
-        let module_name_with_ext = format!("{}{}", module_name, FILE_EXT);
-        let hyphened_module_name_with_ext = format!("{}{}", hyphened_module_name, FILE_EXT);
-        
+        let (request_file_id, request_file, _) = self.map_position_to_file_and_byte_index(location.start);
+        let (request_name, explicit) = self.resolve_string_content_and_type(request);
+
         let parent_path = request_file.path.parent().expect("request file is root");
         macro_rules! make_paths { ($([$($c:expr),+],)+) => { vec![$( parent_path.join([$($c,)+].into_iter().collect::<PathBuf>()), )+] } }
+        let resolve_options = if explicit {
+            vec![self.fs.canonicalize(parent_path.join(request_name)).ok()?]
+        } else {
+            const FILE_EXT: &str = ".f3";
+            let module_name = request_name;
+            let hyphened_module_name = module_name.replace('_', "-");
+            let module_name_with_ext = format!("{}{}", module_name, FILE_EXT);
+            let hyphened_module_name_with_ext = format!("{}{}", hyphened_module_name, FILE_EXT);
 
-        const INDEX_FILE: &str = "index.f3";
-        let resolve_options = if request_file_id.is_entry() || request_file.path.ends_with("index.f3") { // path.ends_with checks last *component* not string content
-            make_paths!{   
-                [&hyphened_module_name_with_ext],
-                [&hyphened_module_name, INDEX_FILE],
-                [module_name_with_ext],
-                [module_name, INDEX_FILE],
+            const INDEX_FILE: &str = "index.f3";
+            if request_file_id.is_entry() || request_file.path.ends_with("index.f3") { // path.ends_with checks last *component* not string content
+                make_paths!{
+                    [&hyphened_module_name_with_ext],
+                    [&hyphened_module_name, INDEX_FILE],
+                    [module_name_with_ext],
+                    [module_name, INDEX_FILE],
+                }
+            } else {
+                let this_module_name_id = request_file.namespace.last().expect("namespace component missing");
+                let this_module_name = self.resolve_string(*this_module_name_id);
+                let hyphened_this_module_name = this_module_name.replace('_', "-");
+                make_paths![
+                    [&hyphened_this_module_name, &hyphened_module_name_with_ext],
+                    [&hyphened_this_module_name, &hyphened_module_name, INDEX_FILE],
+                    [&hyphened_this_module_name, &module_name_with_ext],
+                    [&hyphened_this_module_name, module_name, INDEX_FILE],
+                    [this_module_name, &hyphened_module_name_with_ext],
+                    [this_module_name, &hyphened_module_name, INDEX_FILE],
+                    [this_module_name, &module_name_with_ext],
+                    [this_module_name, module_name, INDEX_FILE],
+                ]
             }
-        } else { 
-            let this_module_name_id = request_file.namespace.last().expect("namespace component missing");
-            let this_module_name = self.resolve_string(*this_module_name_id);
-            let hyphened_this_module_name = this_module_name.replace('_', "-");
-            make_paths![
-                [&hyphened_this_module_name, &hyphened_module_name_with_ext],
-                [&hyphened_this_module_name, &hyphened_module_name, INDEX_FILE],
-                [&hyphened_this_module_name, &module_name_with_ext],
-                [&hyphened_this_module_name, module_name, INDEX_FILE],
-                [this_module_name, &hyphened_module_name_with_ext],
-                [this_module_name, &hyphened_module_name, INDEX_FILE],
-                [this_module_name, &module_name_with_ext],
-                [this_module_name, module_name, INDEX_FILE],
-            ]
         };
 
         // borrowck says if put this sentence in closure then it borrows self.files so cannot borrow self.files mutably (to insert)
         let mut namespace = request_file.namespace.clone();
         // RFINRE: read failure is not module resolution error, simply regard read/open error as not exist
         resolve_options.into_iter().filter_map(|p| self.fs.read_to_string(&p).map(|c| (p, c)).ok()).next().map(|(path, content)| {
-            namespace.push(module_name_id);
+            namespace.push(request);
             let last_file = self.files.last().unwrap();
             let start_index = last_file.start_index + last_file.content.len() + 1; // +1 for position for EOF
-            SourceChars::new(content, start_index, path, namespace, Some(request), self)
+            SourceChars::new(content, start_index, path, namespace, Some(location), self)
         })
     }
-    
+
     // it is not in SourceFile because it will use vfs
     /// get relative path to current working directory
     pub fn get_relative_path(&self, file_id: FileId) -> PathBuf {
@@ -320,9 +324,10 @@ impl<F> SourceContext<F> {
         }
     }
 
+    // true for string lit, false for ident
     // result does not option because string id is only created by methods in SourceChars
     // and should not have invalid value if no unexpected error happens
-    pub fn resolve_string(&self, id: IsId) -> &str {
+    fn resolve_string_content_and_type(&self, id: IsId) -> (&str, bool) {
         let id = id.unwrap() as usize;
         debug_assert!(id > 0, "invalid string id {}", id);
         debug_assert!(id < self.string_id_to_span.len(), "invalid string id {} {:?}", id, self.string_id_to_span);
@@ -330,10 +335,14 @@ impl<F> SourceContext<F> {
         let span = self.string_id_to_span[id];
         if span.start.unwrap() & IsId::POSITION_MASK == IsId::POSITION_MASK {
             let actual_start = span.start.unwrap() & !IsId::POSITION_MASK;
-            &self.string_additional[actual_start as usize..span.end.unwrap() as usize]
+            (&self.string_additional[actual_start as usize..span.end.unwrap() as usize], true)
         } else {
-            self.map_span_to_content(span)
+            (self.map_span_to_content(span), false)
         }
+    }
+
+    pub fn resolve_string(&self, id: IsId) -> &str {
+        self.resolve_string_content_and_type(id).0
     }
 }
 

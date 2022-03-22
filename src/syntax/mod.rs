@@ -84,14 +84,14 @@ pub use var_decl::VarDeclStatement;
 pub use while_stmt::WhileStatement;
 
 // parse any types of node for test
-pub fn parse_any<P: Parser>(chars: crate::lexical::Parser) -> Result<P::Output, ()> {
+pub fn parse_any<P: Parser>(chars: crate::lexical::Parser) -> Option<P::Output> {
     let mut context = prelude::ParseContext::new(chars);
-    let result = P::parse(&mut context);
+    let result = P::parse(&mut context).ok();
     context.finish();
-    result.map_err(|_| ())
+    result
 }
 // formal public api only parses module
-pub fn parse(chars: crate::lexical::Parser) -> Result<Module, ()> {
+pub fn parse(chars: crate::lexical::Parser) -> Option<Module> {
     parse_any::<Module>(chars)
 }
 
