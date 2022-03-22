@@ -60,10 +60,12 @@ impl Parser for ExprList {
             };
         }
 
+        cx.no_object_literals.push(false);
         let mut items = Vec::new();
         loop {
             items.push(cx.expect::<Expr>()?);
             if let Some((ending_span, skipped_comma)) = cx.try_expect_closing_bracket(expect_end_sep) {
+                cx.no_object_literals.pop();
                 return if skipped_comma {
                     Ok(ExprListParseResult::EndWithComma(starting_span + ending_span, ExprList::new(items)))
                 } else {

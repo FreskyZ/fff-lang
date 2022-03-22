@@ -58,16 +58,19 @@ impl Parser for ObjectLiteral {
         
         let left_brace_span = cx.expect_sep(Separator::LeftBrace)?;
         let mut fields = Vec::new();
-        let right_brace_span = loop {
-            let (field_name, field_name_span) = cx.expect_ident()?;
-            let colon_span = cx.expect_sep(Separator::Colon)?;
-            let value = cx.expect::<Expr>()?;
-            fields.push(ObjectLiteralField{ all_span: field_name_span + value.get_all_span(), name: field_name, name_span: field_name_span, colon_span, value });
+        let right_brace_span = if let Some(right_brace_span) = cx.try_expect_sep(Separator::RightBrace) {
+            right_brace_span
+        } else { loop {
+                let (field_name, field_name_span) = cx.expect_ident()?;
+                let colon_span = cx.expect_sep(Separator::Colon)?;
+                let value = cx.expect::<Expr>()?;
+                fields.push(ObjectLiteralField{ all_span: field_name_span + value.get_all_span(), name: field_name, name_span: field_name_span, colon_span, value });
 
-            if let Some((right_brace_span, _)) = cx.try_expect_closing_bracket(Separator::RightBrace) {
-                break right_brace_span;
-            } else {
-                cx.expect_sep(Separator::Comma)?;
+                if let Some((right_brace_span, _)) = cx.try_expect_closing_bracket(Separator::RightBrace) {
+                    break right_brace_span;
+                } else {
+                    cx.expect_sep(Separator::Comma)?;
+                }
             }
         };
 

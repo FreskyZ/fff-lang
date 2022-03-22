@@ -110,29 +110,29 @@ pub(crate) use make_lit;
 #[cfg(test)]
 macro_rules! make_expr {
     // literals does not have (lit prefix because they are used frequently
-    (unit, $start:expr, $end:expr) => (
+    (unit, $start:literal:$end:literal) => (
         crate::syntax::Expr::Lit(crate::syntax::LitExpr{ value: crate::syntax::LitValue::Unit, span: Span::new($start, $end) }));
-    (true, $start:expr, $end:expr) => (
+    (true, $start:literal:$end:literal) => (
         crate::syntax::Expr::Lit(crate::syntax::LitExpr{ value: crate::syntax::LitValue::Bool(true), span: Span::new($start, $end) }));
-    (false, $start:expr, $end:expr) => (
+    (false, $start:literal:$end:literal) => (
         crate::syntax::Expr::Lit(crate::syntax::LitExpr{ value: crate::syntax::LitValue::Bool(false), span: Span::new($start, $end) }));
-    ($v:literal: char, $start:expr, $end:expr) => (
+    ($v:literal: char, $start:literal:$end:literal) => (
         crate::syntax::Expr::Lit(crate::syntax::LitExpr{ value: crate::syntax::LitValue::Char($v), span: Span::new($start, $end) }));
-    ($v:literal: str, $start:expr, $end:expr) => (
+    (#$v:literal: str, $start:literal:$end:literal) => (
         crate::syntax::Expr::Lit(crate::syntax::LitExpr{ value: crate::syntax::LitValue::Str(IsId::new($v)), span: Span::new($start, $end) }));
-    ($v:literal: i32, $start:expr, $end:expr) => (
+    ($v:literal: i32, $start:literal:$end:literal) => (
         crate::syntax::Expr::Lit(crate::syntax::LitExpr{ value: crate::syntax::LitValue::Num(Numeric::I32($v)), span: Span::new($start, $end) }));
-    ($v:literal: u8, $start:expr, $end:expr) => (
+    ($v:literal: u8, $start:literal:$end:literal) => (
         crate::syntax::Expr::Lit(crate::syntax::LitExpr{ value: crate::syntax::LitValue::Num(Numeric::U8($v)), span: Span::new($start, $end) }));
-    ($v:literal: u32, $start:expr, $end:expr) => (
+    ($v:literal: u32, $start:literal:$end:literal) => (
         crate::syntax::Expr::Lit(crate::syntax::LitExpr{ value: crate::syntax::LitValue::Num(Numeric::U32($v)), span: Span::new($start, $end) }));
-    ($v:literal: u64, $start:expr, $end:expr) => (
+    ($v:literal: u64, $start:literal:$end:literal) => (
         crate::syntax::Expr::Lit(crate::syntax::LitExpr{value: crate::syntax::LitValue::Num(Numeric::U64($v)), span: Span::new($start, $end) }));
-    ($v:literal: r32, $start:expr, $end:expr) => (
+    ($v:literal: r32, $start:literal:$end:literal) => (
         crate::syntax::Expr::Lit(crate::syntax::LitExpr{ value: crate::syntax::LitValue::Num(Numeric::R32($v)), span: Span::new($start, $end) }));
-    ($v:literal: r64, $start:expr, $end:expr) => (
+    ($v:literal: r64, $start:literal:$end:literal) => (
         crate::syntax::Expr::Lit(crate::syntax::LitExpr{ value: crate::syntax::LitValue::Num(Numeric::R64($v)), span: Span::new($start, $end) }));
-    (binary $start:expr, $end:expr, $op:ident, $op_start:expr, $op_end:expr, $left:expr, $right:expr) => (crate::syntax::Expr::Binary(crate::syntax::BinaryExpr{
+    (binary $start:literal:$end:literal $op:ident $op_start:literal:$op_end:literal $left:expr, $right:expr) => (crate::syntax::Expr::Binary(crate::syntax::BinaryExpr{
         left_expr: Box::new($left),
         right_expr: Box::new($right),
         operator: Separator::$op,
@@ -148,12 +148,23 @@ macro_rules! make_expr {
             all_span: Span::new($start, $end),
         })
     );
+    (array $start:literal:$end:literal $($item:expr),*$(,)?) => (crate::syntax::Expr::Array(crate::syntax::ArrayDef{
+        bracket_span: Span::new($start, $end),
+        items: crate::syntax::ExprList {
+            // TODO: remove the into when all expr variants change to this macro
+            items: vec![$($item.into(),)*],
+        }
+    }));
     (tuple $start:literal:$end:literal $($item:expr),*$(,)?) => (crate::syntax::Expr::Tuple(crate::syntax::TupleDef{
         paren_span: Span::new($start, $end),
         items: crate::syntax::ExprList {
             // TODO: remove the into when all expr variants change to this macro
             items: vec![$($item.into(),)*],
         }
+    }));
+    (paren $start:literal:$end:literal $base:expr) => (crate::syntax::Expr::Paren(crate::syntax::ParenExpr{
+        expr: Box::new($base.into()),
+        span: Span::new($start, $end),
     }));
     (object $start:literal:$end:literal quote $quote_start:literal:$quote_end:literal $base:expr, $($field:expr),*$(,)?) => (
         crate::syntax::Expr::Object(crate::syntax::ObjectLiteral{
@@ -323,7 +334,7 @@ fn expr_parse() {
     case!{ "1.degg(a, b, )" as Expr,
         Expr::FnCall(FnCallExpr::new(
             make_expr!(member 0:5 dot 1:1
-                make_expr!(1: i32, 0, 0),
+                make_expr!(1: i32, 0:0),
                 make_name!(simple bare 2:5 #2)),
             Span::new(6, 13), make_exprs![
                 make_name!(simple 7:7 #3),
@@ -375,7 +386,7 @@ fn expr_parse() {
     case!{ "1.degg[a, b, ]" as Expr,
         Expr::IndexCall(IndexCallExpr::new(
             make_expr!(member 0:5 dot 1:1
-                make_expr!(1: i32, 0, 0),
+                make_expr!(1: i32, 0:0),
                 make_name!(simple bare 2:5 #2)),
             Span::new(6, 13), make_exprs![
                 make_name!(simple 7:7 #3),
@@ -471,7 +482,7 @@ fn expr_errors() {
     case!{ "\"\".de(, )" as Expr,
         Expr::FnCall(FnCallExpr::new(
             make_expr!(member 0:4 dot 2:2
-                make_expr!(1: str, 0, 1),
+                make_expr!(#1: str, 0:1),
                 make_name!(simple bare 3:4 #2)),
             Span::new(5, 8), make_exprs![]
         )), errors make_errors!(

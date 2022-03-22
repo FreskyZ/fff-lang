@@ -96,18 +96,17 @@ fn var_decl_stmt_parse() {
     case!{ "var hij = [1, 3, 5];" as VarDeclStatement,
         VarDeclStatement::new_var(Span::new(0, 19), 2, Span::new(4, 6),
             None,
-            Some(Expr::Array(ArrayDef::new(Span::new(10, 18), ExprList::new(vec![
-                Expr::Lit(make_lit!(1, 11, 11)),
-                Expr::Lit(make_lit!(3, 14, 14)),
-                Expr::Lit(make_lit!(5, 17, 17)),
-            ]))))
+            Some(make_expr!(array 10:18
+                make_expr!(1: i32, 11:11),
+                make_expr!(3: i32, 14:14),
+                make_expr!(5: i32, 17:17)))
         )
     }
     
     //       1234567890123456789
     case!{ "const input: string;" as VarDeclStatement,
         VarDeclStatement::new_const(Span::new(0, 19), 2, Span::new(6, 10),
-            Some(make_type!(simple 13:18 3)),
+            Some(make_type!(simple 13:18 #3)),
             None
         )
     }

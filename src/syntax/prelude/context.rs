@@ -16,6 +16,24 @@ pub struct ParseContext<'ecx, 'scx> {
     peek_span: Span,
     pub(in super) peek2: Token,
     peek2_span: Span,
+
+    // special parser global states
+    // // these states will make this parser non-context-free according to textbooks, but that's not important
+
+    // 1. when expr is followed with block, e.g. if/for/while/swich,
+    //    when meeting `{`, e.g. `if a < b { print(a); }` it should not expect an object literal
+    //    only this can `if a < (b{ c: 1 }) {}`, or this `if (a < b{ c: 1 }) {}`
+    // 2. that is, when expecting expr which is followed by block, a restriction flag should be pushed,
+    //    while when expecting any expr, not lower level expr/higher priority expr, inside an expr node, a non restriction should be pushed
+    // 3. currently the any-expr-expectations only include fn-call, index-call, array-def and tuple-def (the parened list or bracketed list)
+    //    which is exactly same as ExprList usages // was not expecting ExprList have this kind of functionality
+    // 4. actual object literal itself also expects any expr, but, 
+    //    when you are parsing object literal, it is already allowed, so no need to push again
+    // 5. currently there will not be push(true) after any push(false) is not popped, because if/for/while/switch is not inside expr
+    //    but if future they will, it will happen so keep this a stack
+    pub no_object_literals: Vec<bool>,
+    // if allow format string inside format string, this is also a stack of flag not a single flag
+    // pub inside_string_literal: Vec<bool>,
 }
 #[allow(dead_code)] // helper methods may not be used
 impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
@@ -24,7 +42,16 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
         let (current, current_span) = base.next();
         let (peek, peek_span) = base.next();
         let (peek2, peek2_span) = base.next();
-        ParseContext{ base, current, current_span, peek, peek_span, peek2, peek2_span }
+        ParseContext{ 
+            base, 
+            current, 
+            current_span, 
+            peek, 
+            peek_span, 
+            peek2, 
+            peek2_span, 
+            no_object_literals: Vec::with_capacity(128), // 128: arbitray value for max expression depth
+        }
     }
 
     // forward base methods

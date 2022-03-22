@@ -44,7 +44,9 @@ impl Parser for WhileStatement {
         
         let maybe_name = cx.try_expect::<LabelDef>()?;
         let while_span = cx.expect_keyword(Keyword::While)?;
+        cx.no_object_literals.push(true);
         let expr = cx.expect::<Expr>()?;
+        cx.no_object_literals.pop();
         let body = cx.expect::<Block>()?;
         return Ok(WhileStatement::new(maybe_name, while_span, expr, body));
     }

@@ -16,7 +16,7 @@
 [-] discard test constructors and use make_xxxx macros, upgrade existing make macros to use `at $start:lit + $end:lit` instead of plain $start,$end, change make_exprs to new make_expr
 [x] add object literal syntax, it can fits in postfix expr with require base expr is an name
 [ ] add numeric literal type as suffixed/unsuffixed and bin/oct/dec/hex/unprefixed, member access require unsuffixed and unprefixed
-[ ] add simple enum type, works as typed namespaced constant
+[x] add simple enum type, works as typed namespaced constant
 [ ] move multiple file operations from syntaxtree.rs into driver, add file id to module
 [ ] format string
 [ ] try try for visitor and parse result

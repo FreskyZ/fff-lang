@@ -57,7 +57,7 @@ impl Parser for PostfixExpr {
                 postfix.all_span = current_expr.get_all_span() + postfix.bracket_span;
                 postfix.base = Box::new(current_expr);
                 current_expr = Expr::IndexCall(postfix);
-            } else if matches!(current_expr, Expr::Name(_)) && cx.matches::<ObjectLiteral>() {
+            } else if matches!(cx.no_object_literals.last(), None | Some(false)) && matches!(current_expr, Expr::Name(_)) && cx.matches::<ObjectLiteral>() {
                 let mut postfix = cx.expect::<ObjectLiteral>()?;
                 postfix.all_span = current_expr.get_all_span() + postfix.quote_span;
                 postfix.base = Box::new(current_expr);
@@ -154,7 +154,7 @@ fn primary_expr_parse() {
     }
 
     case!{ "CMDoF" as Expr, make_name!(simple 0:4 #2) }
-    case!{ "false" as Expr, make_expr!(false, 0, 4) }
+    case!{ "false" as Expr, make_expr!(false, 0:4) }
 
     
     //                      0        1         2         3         4         5         6          7          8         9         A
@@ -408,7 +408,7 @@ fn postfix_expr_parse() {
                 make_name!(segment 2:8 #3),
                 make_name!(segment generic 11:20
                     make_type!(plain 12:19 false, None,
-                        make_type!(segment generic 12:19 4 12:14 quote 15:19
+                        make_type!(segment generic 12:19 #4 12:14 quote 15:19
                             make_type!(prim 16:18 I32)))))),
     }
 
@@ -416,8 +416,8 @@ fn postfix_expr_parse() {
     case!{ "(0, 0).0" as Expr,
         make_expr!(member 0:7 dot 6:6
             make_expr!(tuple 0:5
-                make_expr!(0: i32, 1, 1),
-                make_expr!(0: i32, 4, 4)),
+                make_expr!(0: i32, 1:1),
+                make_expr!(0: i32, 4:4)),
             make_name!(bare 7:7 false, None,
                 make_name!(segment 7:7 #2))),
     }
@@ -429,11 +429,11 @@ fn postfix_expr_parse() {
             make_name!(0:14 false, None,
                 make_name!(segment 0:5 #2),
                 make_name!(segment generic 8:14
-                    make_type!(simple 9:13 3))),
+                    make_type!(simple 9:13 #3))),
             make_expr!(object field 17:23 #4 17:20 colon 21:21
-                make_expr!(0: i32, 23, 23)),
+                make_expr!(0: i32, 23:23)),
             make_expr!(object field 26:31 #5 26:28 colon 29:29
-                make_expr!(0: i32, 31, 31)),
+                make_expr!(0: i32, 31:31)),
             make_expr!(object field 34:54 #6 34:37 colon 38:38
                 make_expr!(fn 40:54 paren 53:54
                     make_name!(simple 40:52 #7),))),
@@ -505,9 +505,9 @@ fn postfix_expr_parse() {
             make_name!(bare 2:18 false, None,
                 make_name!(segment 2:4 #3),
                 make_name!(segment generic 7:11
-                    make_type!(simple 8:10 4)),
+                    make_type!(simple 8:10 #4)),
                 make_name!(segment generic 14:18
-                    make_type!(simple 15:17 5)))
+                    make_type!(simple 15:17 #5)))
         ), errors make_errors!(e: {
             e.emit(strings::InvalidNameSegment).detail(Span::new(14, 14), strings::NameSegmentExpect);
             e.emit(strings::InvalidMemberAccess).span(Span::new(7, 18)).help(strings::GenericMemberAccessSyntaxHelp);

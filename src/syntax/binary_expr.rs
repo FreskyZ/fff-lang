@@ -694,11 +694,11 @@ fn binary_expr_parse() {
     }
 
     case!{ "1<2>3" as BinaryExpr,
-        make_expr!(binary 0, 4, Gt, 3, 3, 
-            make_expr!(binary 0, 2, Lt, 1, 1,
-                make_expr!(1: i32, 0, 0),
-                make_expr!(2: i32, 2, 2)),
-            make_expr!(3: i32, 4, 4)
+        make_expr!(binary 0:4 Gt 3:3 
+            make_expr!(binary 0:2 Lt 1:1
+                make_expr!(1: i32, 0:0),
+                make_expr!(2: i32, 2:2)),
+            make_expr!(3: i32, 4:4)
         ), errors make_errors!(e: e.emit(strings::MaybeGeneric).span(Span::new(1, 1)).span(Span::new(3, 3)).help(strings::MaybeGenericHelp))
     }
 }

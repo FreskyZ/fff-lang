@@ -198,12 +198,7 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
     fn visit_if_clause(&mut self, node: &IfClause) -> fmt::Result {
         self.impl_visit_simple(node, "if-clause", node.all_span)
     }
-
-    fn visit_else_if_clause(&mut self, node: &ElseIfClause) -> fmt::Result {
-        self.impl_visit(node, "else-if-clause", node.all_span, |f| 
-            f.write_str(" else if ")?.write_span(node.elseif_span))
-    }
-
+    
     fn visit_else_clause(&mut self, node: &ElseClause) -> fmt::Result {
         self.impl_visit_simple(node, "else-clause", node.all_span)
     }

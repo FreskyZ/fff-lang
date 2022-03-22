@@ -57,7 +57,7 @@ pub use fn_call::FnCallExpr;
 pub use fn_def::{FnDef, FnParam};
 pub use fn_type::{FnType, FnTypeParam};
 pub use for_stmt::ForStatement;
-pub use if_stmt::{IfStatement, IfClause, ElseIfClause, ElseClause};
+pub use if_stmt::{IfStatement, IfClause, ElseClause};
 pub use index_call::IndexCallExpr;
 pub use jump_stmt::{BreakStatement, ContinueStatement};
 pub use label_def::LabelDef;

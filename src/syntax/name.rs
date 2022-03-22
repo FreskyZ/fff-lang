@@ -164,8 +164,8 @@ fn name_parse() {
             make_name!(segment 2:4 #2),
             make_name!(segment 7:9 #3),
             make_name!(segment generic 12:21
-                make_type!(simple 13:15 4),
-                make_type!(simple 18:20 5)),
+                make_type!(simple 13:15 #4),
+                make_type!(simple 18:20 #5)),
             make_name!(segment 24:26 #6))
     }
 
@@ -174,8 +174,8 @@ fn name_parse() {
     case!{ "<Name as Parser>::parse" as Name,
         make_name!(bare 0:22 false,
             make_type!(segment as 0:15
-                make_type!(simple 1:4 2),
-                make_type!(simple 9:14 3)),
+                make_type!(simple 1:4 #2),
+                make_type!(simple 9:14 #3)),
             make_name!(segment 18:22 #4)),
     }
 
@@ -184,9 +184,9 @@ fn name_parse() {
         make_name!(bare 0:13 false, None,
             make_name!(segment 0:0 #2),
             make_name!(segment generic 3:5
-                make_type!(simple 4:4 3)),
+                make_type!(simple 4:4 #3)),
             make_name!(segment generic 8:10
-                make_type!(simple 9:9 4)),
+                make_type!(simple 9:9 #4)),
             make_name!(segment 13:13 #5)
         ), errors make_errors!(e: e.emit(strings::InvalidNameSegment).detail(Span::new(8, 8), strings::NameSegmentExpect)),
     }

@@ -91,7 +91,6 @@ pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_for_stmt(&mut self, node: &ForStatement) -> Result<T, E> { node.walk(self) }
     fn visit_if_stmt(&mut self, node: &IfStatement) -> Result<T, E> { node.walk(self) }
     fn visit_if_clause(&mut self, node: &IfClause) -> Result<T, E> { node.walk(self) }
-    fn visit_else_if_clause(&mut self, node: &ElseIfClause) -> Result<T, E> { node.walk(self) }
     fn visit_else_clause(&mut self, node: &ElseClause) -> Result<T, E> { node.walk(self) }
     fn visit_index_call_expr(&mut self, node: &IndexCallExpr) -> Result<T, E> { node.walk(self) }
     fn visit_break_stmt(&mut self, node: &BreakStatement) -> Result<T, E> { node.walk(self) }
