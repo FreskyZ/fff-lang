@@ -27,11 +27,10 @@ impl Node for NameSegment {
         v.visit_name_segment(self)
     }
     fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        match self {
-            Self::Generic(types, _) => for r#type in types {
+        if let Self::Generic(types, _) = self {
+            for r#type in types {
                 v.visit_type_ref(r#type)?;
-            },
-            _ => {},
+            }
         }
         Ok(Default::default())
     }
@@ -97,8 +96,7 @@ impl Parser for Name {
         }
 
         let global = type_as_segment.is_none() && beginning_separator_span.is_some();
-        let all_span = type_as_segment.as_ref().map(|s| s.span)
-            .or_else(|| beginning_separator_span)
+        let all_span = type_as_segment.as_ref().map(|s| s.span).or(beginning_separator_span)
             .unwrap_or_else(|| segments[0].get_span()) + segments.last().unwrap().get_span(); // [0] and last().unwrap(): matches() guarantees segments are not empty
         Ok(Name{ type_as_segment, global, segments, all_span })
     }

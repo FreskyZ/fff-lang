@@ -70,7 +70,7 @@ impl<T> BufChars<T> where T : Iterator<Item = char> {
         };
         
         BufChars{ 
-            chars: chars,
+            chars,
             m_current: current,
             m_next: next,
             m_nextnext: nextnext,
@@ -204,13 +204,13 @@ impl FloatCheckedAlgorithm for f64 {
 fn u64_final_value(value: u64, is_positive: bool) -> Numeric {
     use std::{ i32, u32, i64, u64 };
     if value <= i32::MAX as u64 {
-        return Numeric::I32(if is_positive { value as i32 } else { -(value as i32) });
+        Numeric::I32(if is_positive { value as i32 } else { -(value as i32) })
     } else if value <= u32::MAX as u64 && is_positive {
-        return Numeric::U32(value as u32);
+        Numeric::U32(value as u32)
     } else if value <= i64::MAX as u64 {
-        return Numeric::I64(if is_positive { value as i64 } else { -(value as i64) });
+        Numeric::I64(if is_positive { value as i64 } else { -(value as i64) })
     } else {
-        return Numeric::U64(value);
+        Numeric::U64(value)
     }
 }
 
@@ -862,13 +862,9 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         let mut string_value = String::new();
         let mut span = self.current_position.into();
         while self.is_numeric_continue() {
-            // exclude 1..2 for range expression
-            // numeric parser supports that but not used in lexical parser, keep for generic numeric parser
-            if (self.current == '.' && self.peek == '.')
-                // exclude 1.to_string()
-                // this also rejects 1._123, which is recognized as an error in 
-                // numeric parser but not used in lexical parser, keep for generic numeric parser
-                || (self.current == '.' && self.peek.is_id_start()) {
+            // 1. exclude 1..2 for range expression, parse_impl checks for that but not used in lexical parser, keep for generic numeric parser
+            // 2. exclude 1.to_string(), parse_impl checks for that but not used in lexical parser, keep for generic numeric parser
+            if self.current == '.' && (self.peek == '.' || self.peek.is_id_start()) {
                 break;
             }
             string_value.push(self.current);

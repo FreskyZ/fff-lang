@@ -67,28 +67,24 @@ impl Parser for IfStatement {
 
         let mut elseif_clauses = Vec::new();
         let mut else_clause = None;
-        loop {
-            if let Some(else_span) = cx.try_expect_keyword(Keyword::Else) {
-                if let Some(if_span) = cx.try_expect_keyword(Keyword::If) {
-                    let elseif_span = else_span + if_span;
-                    cx.no_object_literals.push(true);
-                    let elseif_expr = cx.expect::<Expr>()?;
-                    cx.no_object_literals.pop();
-                    let elseif_body = cx.expect::<Block>()?;
-                    all_span += elseif_body.all_span;
-                    elseif_clauses.push(IfClause{ all_span: elseif_span + elseif_body.all_span, condition: elseif_expr, body: elseif_body });
-                } else {
-                    // 16/12/1, we lost TWO `+1`s for current_length here ... fixed
-                    // 17/5/6: When there is match Block::parse(tokens, messages, index + current_length), etc.
-                    // There was a bug fix here, now no more current_length handling!
-                    // 17/6/21: a new physical structure update makes it much more simple
-                    // 17/7/28: a new small update of parse_cx makes things even more simple
-                    let else_body = cx.expect::<Block>()?;
-                    all_span += else_body.all_span;
-                    else_clause = Some(ElseClause{ all_span: else_span + else_body.all_span, body: else_body });
-                }
+        while let Some(else_span) = cx.try_expect_keyword(Keyword::Else) {
+            if let Some(if_span) = cx.try_expect_keyword(Keyword::If) {
+                let elseif_span = else_span + if_span;
+                cx.no_object_literals.push(true);
+                let elseif_expr = cx.expect::<Expr>()?;
+                cx.no_object_literals.pop();
+                let elseif_body = cx.expect::<Block>()?;
+                all_span += elseif_body.all_span;
+                elseif_clauses.push(IfClause{ all_span: elseif_span + elseif_body.all_span, condition: elseif_expr, body: elseif_body });
             } else {
-                break;
+                // 16/12/1, we lost TWO `+1`s for current_length here ... fixed
+                // 17/5/6: When there is match Block::parse(tokens, messages, index + current_length), etc.
+                // There was a bug fix here, now no more current_length handling!
+                // 17/6/21: a new physical structure update makes it much more simple
+                // 17/7/28: a new small update of parse_cx makes things even more simple
+                let else_body = cx.expect::<Block>()?;
+                all_span += else_body.all_span;
+                else_clause = Some(ElseClause{ all_span: else_span + else_body.all_span, body: else_body });
             }
         }
 

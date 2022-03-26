@@ -64,7 +64,7 @@ impl<'a, 'b, F> fmt::Display for DiagnosticsDisplay<'a, 'b, F> where F: FileSyst
         use std::fmt::Write;
 
         for item in &self.0.items {
-            write!(f, "error: {}\n", item.name)?;
+            writeln!(f, "error: {}", item.name)?;
 
             let mut last_start_line_length = 1;
             for (span, detail) in &item.details {
@@ -76,9 +76,9 @@ impl<'a, 'b, F> fmt::Display for DiagnosticsDisplay<'a, 'b, F> where F: FileSyst
 
                 f.write_str(SPACES[start_line_length])?;
                 f.write_str("--> ")?;
-                write!(f, "{}:{}:{}\n", path.display(), start_line, start_column)?;
+                writeln!(f, "{}:{}:{}", path.display(), start_line, start_column)?;
                 f.write_str(SPACES[start_line_length + 1])?;
-                write!(f, "|\n{} | {}\n", start_line, start_line_content)?;
+                writeln!(f, "|\n{} | {}", start_line, start_line_content)?;
                 f.write_str(SPACES[start_line_length + 1])?;
                 f.write_char('|')?;
                 for _ in 0..start_column {
@@ -87,11 +87,11 @@ impl<'a, 'b, F> fmt::Display for DiagnosticsDisplay<'a, 'b, F> where F: FileSyst
                 for _ in start_column..end_column + 1 {
                     f.write_char('^')?;
                 }
-                write!(f, " {}\n", detail)?;
+                writeln!(f, " {}", detail)?;
             }
             for help in &item.helps {
                 f.write_str(SPACES[last_start_line_length + 1])?;
-                write!(f, "= help: {}\n", help)?;
+                writeln!(f, "= help: {}", help)?;
             }
             f.write_char('\n')?;
         }

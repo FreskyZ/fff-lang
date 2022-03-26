@@ -71,7 +71,7 @@ impl Parser for FnDef {
         let mut params = Vec::new();
         loop {
             if let Some((right_paren_span, skipped_comma)) = cx.try_expect_closing_bracket(Separator::RightParen) {
-                params_paren_span = params_paren_span + right_paren_span;
+                params_paren_span += right_paren_span;
                 if skipped_comma && params.is_empty() {
                     cx.emit("Single comma in function definition argument list")
                         .detail(fn_name_span, "function definition here")
@@ -96,7 +96,7 @@ impl Parser for FnDef {
         }).transpose()?.flatten();
         let body = cx.expect::<Block>()?;
 
-        return Ok(FnDef::new(fn_span + body.all_span, fn_name, fn_name_span, params_paren_span, params, ret_type, body));
+        Ok(FnDef::new(fn_span + body.all_span, fn_name, fn_name_span, params_paren_span, params, ret_type, body))
     }
 }
 

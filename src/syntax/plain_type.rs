@@ -104,8 +104,7 @@ impl Parser for PlainType {
         }
 
         let global = type_as_segment.is_none() && beginning_separator_span.is_some();
-        let all_span = type_as_segment.as_ref().map(|s| s.span)
-            .or_else(|| beginning_separator_span)
+        let all_span = type_as_segment.as_ref().map(|s| s.span).or(beginning_separator_span)
             .unwrap_or_else(|| segments[0].all_span) + segments.last().unwrap().all_span; // [0] and last().unwrap(): matches() guarantees segments are not empty
         Ok(PlainType{ type_as_segment, global, segments, all_span })
     }

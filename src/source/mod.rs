@@ -239,9 +239,9 @@ impl<F> SourceContext<F> {
     pub fn map_position_to_line_column(&self, position: Position) -> (FileId, usize, usize) {
         let (file_id, file, byte_index) = self.map_position_to_file_and_byte_index(position);
 
-        let (line, line_start_index) = if file.endlines.len() == 0 {
+        let (line, line_start_index) = if file.endlines.is_empty() { // one line file
             (1, 0)
-        } else if byte_index <= file.endlines[0] {
+        } else if byte_index <= file.endlines[0] { // first line
             (1, 0)
         } else {
             // rev iterate through endlines to find input byte index's range
@@ -257,8 +257,8 @@ impl<F> SourceContext<F> {
         loop {
             if current_byte_index == byte_index { // exact match
                 return (file_id, line, column);
-            } else if current_byte_index == file.content.len() {
-                return (file_id, line, column);   // allow position for EOF char 
+            } else if current_byte_index == file.content.len() { // the EOF position
+                return (file_id, line, column);  
             } else if current_byte_index > file.content.len() {
                 panic!("position overflow {} in map_position_to_line_column", current_byte_index);
             } else if file.content.as_bytes()[current_byte_index] != b'\r' { // ignore \r in column counting
@@ -307,7 +307,7 @@ impl<F> SourceContext<F> {
         let file = &self.files[file_id - 1];
         debug_assert!(line > 0 && line <= file.endlines.len() + 1, "line number overflow");
         
-        if file.content.len() == 0 { // empty file
+        if file.content.is_empty() { // empty file
             ""
         } else if file.endlines.is_empty() { // only one line
             &file.content

@@ -16,7 +16,7 @@ pub use self::module::Module;
 pub use self::package::Package;
 pub use self::items::{ Block, TypeUse, LabelDef, FnParam, FnDef, TypeFieldDef, TypeDef };
 pub use self::expr::{ ArrayDef, BinaryExpr, FnCall, IndexCall, LitExpr, MemberAccess, 
-    ParenExpr, TupleDef, UnaryExpr, Expr, Name, SimpleName };
+    ParenExpr, TupleDef, UnaryExpr, Expr, Name };
 pub use self::statement::{ Statement, BlockStatement, VarDecl, ReturnStatement, BreakStatement,
     ContinueStatement, SimpleExprStatement, AssignExprStatement, LoopStatement, WhileStatement, 
     ForStatement, IfClause, ElseIfClause, ElseClause, IfStatement, Item, ImportStatement, UseStatement };

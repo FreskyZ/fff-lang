@@ -48,7 +48,7 @@ impl Parser for WhileStatement {
         let expr = cx.expect::<Expr>()?;
         cx.no_object_literals.pop();
         let body = cx.expect::<Block>()?;
-        return Ok(WhileStatement::new(maybe_name, while_span, expr, body));
+        Ok(WhileStatement::new(maybe_name, while_span, expr, body))
     }
 }
 

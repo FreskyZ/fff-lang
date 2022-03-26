@@ -15,7 +15,7 @@ impl Parser for PrimaryExpr {
         if cx.matches::<LitExpr>() {
             return cx.expect::<LitExpr>();
         } else if cx.matches::<Name>() {
-            return cx.expect::<Name>().map(|n| Expr::Name(n));
+            return cx.expect::<Name>().map(Expr::Name);
         } else if cx.matches::<TupleDef>() {
             return cx.expect::<TupleDef>();
         } else if cx.matches::<ArrayDef>() {

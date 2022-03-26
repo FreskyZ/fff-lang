@@ -50,8 +50,8 @@ impl Parser for VarDeclStatement {
         let is_const = match starting_kw { Keyword::Const => true, Keyword::Var => false, _ => unreachable!() };
 
         let (name, name_span) = cx.expect_ident_or_keywords(&[Keyword::Underscore])?;
-        let maybe_decltype = if let Some(_) = cx.try_expect_sep(Separator::Colon) { Some(cx.expect::<TypeRef>()?) } else { None };
-        let maybe_init_expr = if let Some(_) = cx.try_expect_sep(Separator::Eq) { Some(cx.expect::<Expr>()?) } else { None };
+        let maybe_decltype = cx.try_expect_sep(Separator::Colon).map(|_| cx.expect::<TypeRef>()).transpose()?;
+        let maybe_init_expr = cx.try_expect_sep(Separator::Eq).map(|_| cx.expect::<Expr>()).transpose()?;
         if maybe_decltype.is_none() && maybe_init_expr.is_none() {
             cx.emit("require type annotation")
                 .detail(name_span, "variable declaration here")
@@ -59,7 +59,7 @@ impl Parser for VarDeclStatement {
         }
         let ending_span = cx.expect_sep(Separator::SemiColon)?;
 
-        return Ok(VarDeclStatement::new(starting_span + ending_span, is_const, name, name_span, maybe_decltype, maybe_init_expr));
+        Ok(VarDeclStatement::new(starting_span + ending_span, is_const, name, name_span, maybe_decltype, maybe_init_expr))
     }
 }
 

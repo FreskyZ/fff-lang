@@ -47,13 +47,15 @@ impl Parser for IndexCallExpr {
     fn parse(cx: &mut ParseContext) -> Result<IndexCallExpr, Unexpected> {
 
         match cx.expect::<ExprList>()? {
-            ExprListParseResult::Normal(span, expr_list) | ExprListParseResult::EndWithComma(span, expr_list) => 
-                return Ok(IndexCallExpr::new_with_parse_result(span, expr_list)),
-            ExprListParseResult::Empty(span) | ExprListParseResult::SingleComma(span) => {
+            ExprListParseResult::Normal(span, expr_list) 
+            | ExprListParseResult::EndWithComma(span, expr_list) => 
+                Ok(IndexCallExpr::new_with_parse_result(span, expr_list)),
+            ExprListParseResult::Empty(span) 
+            | ExprListParseResult::SingleComma(span) => {
                 // empty subscription is meaningless, refuse it here
                 // update: but for trying to get more message in the rest program, make it not none
                 cx.emit(strings::EmptyIndexCall).detail(span, strings::IndexCallHere);
-                return Ok(IndexCallExpr::new_with_parse_result(span, ExprList::new(Vec::new())))
+                Ok(IndexCallExpr::new_with_parse_result(span, ExprList::new(Vec::new())))
             }
         }
     }

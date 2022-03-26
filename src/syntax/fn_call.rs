@@ -47,12 +47,12 @@ impl Parser for FnCallExpr {
 
         match cx.expect::<ExprList>()? {
             ExprListParseResult::Empty(span) => 
-                return Ok(FnCallExpr::new_with_parse_result(span, ExprList::new(Vec::new()))),
+                Ok(FnCallExpr::new_with_parse_result(span, ExprList::new(Vec::new()))),
             ExprListParseResult::Normal(span, expr_list) | ExprListParseResult::EndWithComma(span, expr_list) => 
-                return Ok(FnCallExpr::new_with_parse_result(span, expr_list)),
+                Ok(FnCallExpr::new_with_parse_result(span, expr_list)),
             ExprListParseResult::SingleComma(span) => {
                 cx.emit(strings::UnexpectedSingleComma).detail(span, strings::FnCallHere);
-                return Ok(FnCallExpr::new_with_parse_result(span, ExprList::new(Vec::new())));
+                Ok(FnCallExpr::new_with_parse_result(span, ExprList::new(Vec::new())))
             }
         }
     }

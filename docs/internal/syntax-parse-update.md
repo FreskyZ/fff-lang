@@ -11,13 +11,14 @@
 [x] add keyword kind identifierable, and intern them when meet in lexical parser, that will make string list consistent (same as appear in source code)
 [x] add FormatVisitor::impl_visit(name, all_span)
 [x] discard all other use of simple name, merge simple name into name, accept generic part in name segment
-[x] add bin-expr { op: >, left: bin-expr { op: < }} error in binary parser, boolean definitely returns bool which does not have operator> so that is a generic segment mistake
 [-] fix random test input generator for num_lit/expr/type_ref
 [-] discard test constructors and use make_xxxx macros, upgrade existing make macros to use `at $start:lit + $end:lit` instead of plain $start,$end, change make_exprs to new make_expr
 [x] add object literal syntax, it can fits in postfix expr with require base expr is an name
 [ ] add numeric literal type as suffixed/unsuffixed and bin/oct/dec/hex/unprefixed, member access require unsuffixed and unprefixed
 [x] add simple enum type, works as typed namespaced constant
-[ ] move multiple file operations from syntaxtree.rs into driver, add file id to module
+[x] move multiple file operations from syntaxtree.rs into driver, add file id to module
 [ ] format string
-[ ] try try for visitor and parse result
+[ ] add missing array dup def
+[ ] add generic parameters to type, add impl type and impl trait for type
+[ ] add generic parameters to function, add generic constraints to function, impl type and impl trait
 [ ] try connect to old semantic analysis virtual machine?

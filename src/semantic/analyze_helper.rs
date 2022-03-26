@@ -4,14 +4,8 @@
 
 use std::fmt;
 use std::cell::RefCell;
-
-use codemap::Span;
-use codemap::SymbolID;
-use codemap::SourceCode;
-use codemap::SymbolCollection;
-
-use message::Message;
-use message::MessageCollection;
+use crate::source::{Span, IsId, SourceContext};
+use crate::diagnostics::{Diagnostics};
 
 use super::Formatter;
 use super::ScopeType;

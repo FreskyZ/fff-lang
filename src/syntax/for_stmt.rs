@@ -65,7 +65,7 @@ impl Parser for ForStatement {
         cx.no_object_literals.pop();
         let body = cx.expect::<Block>()?;
         
-        return Ok(ForStatement::new(maybe_label, for_span, iter_name, iter_span, iter_expr, body));
+        Ok(ForStatement::new(maybe_label, for_span, iter_name, iter_span, iter_expr, body))
     }
 }
 

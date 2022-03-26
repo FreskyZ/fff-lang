@@ -203,6 +203,6 @@ impl Keyword {
         let hash = v.as_bytes().iter().fold(1usize, |acc, &b| acc * if b > 96 { b as usize - 96 } else if b > 48 { b as usize - 48 } else { b as usize } % 173);
         let buckets = &BUCKETS[v.len()];
         let hash = hash as usize % buckets[0].len();
-        buckets.iter().filter_map(|bucket| bucket[hash].map(|i| if i.display() == v { Some(i) } else { None }).flatten()).next()
+        buckets.iter().filter_map(|bucket| bucket[hash].and_then(|i| if i.display() == v { Some(i) } else { None })).next()
     }
 }

@@ -40,7 +40,7 @@ impl Parser for BlockStatement {
     
         let maybe_name = cx.try_expect::<LabelDef>()?;
         let body = cx.expect::<Block>()?;
-        return Ok(BlockStatement::new(maybe_name, body));
+        Ok(BlockStatement::new(maybe_name, body))
     }
 }
 

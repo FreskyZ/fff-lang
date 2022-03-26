@@ -84,15 +84,16 @@ pub use var_decl::VarDeclStatement;
 pub use while_stmt::WhileStatement;
 
 // parse any types of node for test
-pub fn parse_any<P: Parser>(chars: crate::lexical::Parser) -> Option<P::Output> {
-    let mut context = prelude::ParseContext::new(chars);
+pub fn parse_any<P: Parser>(source: crate::source::SourceChars, diagnostics: &mut crate::diagnostics::Diagnostics) -> Option<P::Output> {
+    let parser = crate::lexical::Parser::new(source, diagnostics);
+    let mut context = prelude::ParseContext::new(parser);
     let result = P::parse(&mut context).ok();
     context.finish();
     result
 }
 // formal public api only parses module
-pub fn parse(chars: crate::lexical::Parser) -> Option<Module> {
-    parse_any::<Module>(chars)
+pub fn parse(source: crate::source::SourceChars, diagnostics: &mut crate::diagnostics::Diagnostics) -> Option<Module> {
+    parse_any::<Module>(source, diagnostics)
 }
 
 #[cfg(test)]
@@ -101,7 +102,7 @@ macro_rules! make_node {
     ($code:literal as $ty:ty) => {{
         let mut ecx = crate::diagnostics::make_errors!();
         let mut scx = crate::source::make_source!($code);
-        match parse_any::<_, $ty>(scx.entry("1")) {
+        match parse_any::<_, $ty>(scx.entry("1"), &mut ecx) {
             Ok(node) => { assert_eq!(ecx, crate::diagnostics::make_errors!()); node },
             Err(_) => { panic!("{}", ecx.display(&scx)) },
         }

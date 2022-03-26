@@ -122,24 +122,24 @@ fn hash(c: char) -> u32 {
 impl Separator {
     pub fn parse1(c: char) -> Option<Separator> {
         BUCKET1[(hash(c) % 27) as usize]
-             .map(|s| if s.display().as_bytes()[0] == c as u8 { Some(s) } else { None }).flatten()
+             .and_then(|s| if s.display().as_bytes()[0] == c as u8 { Some(s) } else { None })
     }
 
     pub fn parse3(c1: char, c2: char, c3: char) -> Option<(Separator, usize)> {
-        match &[c1, c2, c3] {
-            &['<', '<', '='] => Some((LtLtEq, 3)),
-            &['>', '>', '='] => Some((GtGtEq, 3)),
-            &[c1, '=', _] => {
+        match [c1, c2, c3] {
+            ['<', '<', '='] => Some((LtLtEq, 3)),
+            ['>', '>', '='] => Some((GtGtEq, 3)),
+            [c1, '=', _] => {
                 BUCKET2[(hash(c1) % 22) as usize]
-                    .map(|s| if s.display().as_bytes()[0] == c1 as u8 { Some((s, 2)) } else { None }).flatten()
+                    .and_then(|s| if s.display().as_bytes()[0] == c1 as u8 { Some((s, 2)) } else { None })
                     .or_else(|| BUCKET1[(hash(c1) % 27) as usize]
-                    .map(|s| if s.display().as_bytes()[0] == c1 as u8 { Some((s, 1)) } else { None }).flatten())
+                    .and_then(|s| if s.display().as_bytes()[0] == c1 as u8 { Some((s, 1)) } else { None }))
             },
-            &[c1, c2, _] => {
+            [c1, c2, _] => {
                 BUCKET3[((hash(c1) + hash(c2)) % 13) as usize]
-                    .map(|s| if &s.display().as_bytes()[0..2] == &[c1 as u8, c2 as u8] { Some((s, 2)) } else { None }).flatten()
+                    .and_then(|s| if s.display().as_bytes()[0..2] == [c1 as u8, c2 as u8] { Some((s, 2)) } else { None })
                     .or_else(|| BUCKET1[(hash(c1) % 27) as usize]
-                    .map(|s| if s.display().as_bytes()[0] == c1 as u8 { Some((s, 1)) } else { None }).flatten())
+                    .and_then(|s| if s.display().as_bytes()[0] == c1 as u8 { Some((s, 1)) } else { None }))
             },
         }
     }

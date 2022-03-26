@@ -2,12 +2,9 @@
 ///!
 ///! semantic/expr
 
-use codemap::SymbolID;
-use lexical::LitValue;    // TODO: update to syntax::LitValue
-use lexical::Seperator;
-use lexical::StrLitValue;
-
-use syntax;
+use crate::source::IsId;
+use crate::lexical::{Separator, Token};
+use crate::syntax;
 
 mod range;
 mod sugar;
@@ -25,11 +22,11 @@ pub use self::range::RangeFullExpr;
 pub use self::range::RangeLeftExpr;
 pub use self::range::RangeRightExpr;
 
-#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
+#[cfg_attr(test, derive(PartialEq, Debug))]
 pub struct BinaryExpr {
     pub left_expr: Box<Expr>,
     pub right_expr: Box<Expr>,
-    pub operator: Seperator,
+    pub operator: Separator,
     pub parent_scope: SharedDefScope,
 }
 impl ISemanticAnalyze for BinaryExpr {
@@ -55,7 +52,7 @@ impl ISemanticAnalyze for BinaryExpr {
     }
 }
 
-#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
+#[cfg_attr(test, derive(PartialEq, Debug))]
 pub struct FnCall {
     pub base: Box<Expr>,
     pub params: Vec<Expr>,
@@ -82,31 +79,31 @@ impl ISemanticAnalyze for FnCall {
     }
 }
 
-#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
-pub struct SimpleName {
-    pub value: SymbolID,
+#[cfg_attr(test, derive(PartialEq, Debug))]
+pub struct NameSegment {
+    pub value: IsId,
     pub parent_scope: SharedDefScope,
 }
-impl ISemanticAnalyze for SimpleName {
+impl ISemanticAnalyze for NameSegment {
 
     fn format(&self, f: Formatter) -> String {
         f.indent().header_text_or("simple-name").space().sym(self.value).endl()
             .parent_scope1(&self.parent_scope).finish()
     }
 
-    type SyntaxItem = syntax::SimpleName;
+    type SyntaxItem = syntax::NameSegment;
 
-    fn from_syntax(node: syntax::SimpleName, sess: FromSession) -> SimpleName {
-        SimpleName{
+    fn from_syntax(node: syntax::NameSegment, sess: FromSession) -> NameSegment {
+        NameSegment{
             value: node.value,
             parent_scope: sess.into_scope(),
         }
     }
 }
 
-#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
+#[cfg_attr(test, derive(PartialEq, Debug))]
 pub struct Name {
-    pub segments: Vec<SimpleName>,
+    pub segments: Vec<NameSegment>,
     pub parent_scope: SharedDefScope,
 }
 impl ISemanticAnalyze for Name {
@@ -122,15 +119,15 @@ impl ISemanticAnalyze for Name {
 
     fn from_syntax(node: syntax::Name, sess: FromSession) -> Name {
         Name{
-            segments: node.segments.into_iter().map(|segment| SimpleName::from_syntax(segment, sess.clone_scope())).collect(),
+            segments: node.segments.into_iter().map(|segment| NameSegment::from_syntax(segment, sess.clone_scope())).collect(),
             parent_scope: sess.into_scope(),
         }
     } 
 }
 
-#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
+#[cfg_attr(test, derive(PartialEq, Debug))]
 pub struct LitExpr {
-    pub value: LitValue,
+    pub value: syntax::LitValue,
 }
 impl ISemanticAnalyze for LitExpr {
 
@@ -149,10 +146,10 @@ impl ISemanticAnalyze for LitExpr {
     }
 }
 
-#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
+#[cfg_attr(test, derive(PartialEq, Debug))]
 pub struct MemberAccess {
     pub base: Box<Expr>,
-    pub name: SimpleName,
+    pub name: Name,
     pub parent_scope: SharedDefScope,
 }
 impl ISemanticAnalyze for MemberAccess {
@@ -169,13 +166,13 @@ impl ISemanticAnalyze for MemberAccess {
     fn from_syntax(node: syntax::MemberAccessExpr, sess: FromSession) -> MemberAccess {
         MemberAccess{
             base: Box::new(Expr::from_syntax(syntax::Expr::unbox(node.base), sess.clone_scope())),
-            name: SimpleName::from_syntax(node.name, sess.clone_scope()),
+            name: Name::from_syntax(node.name, sess.clone_scope()),
             parent_scope: sess.into_scope(),
         }
     }
 }
 
-#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
+#[cfg_attr(test, derive(PartialEq, Debug))]
 pub struct ParenExpr {
     pub expr: Box<Expr>,
     pub parent_scope: SharedDefScope
@@ -192,16 +189,16 @@ impl ISemanticAnalyze for ParenExpr {
 
     fn from_syntax(node: syntax::ParenExpr, sess: FromSession) -> ParenExpr {
         ParenExpr{
-            expr: Box::new(Expr::from_syntax(syntax::Expr::unbox(node.expr), sess.clone_scope())),
+            expr: Box::new(Expr::from_syntax(node.expr.take(), sess.clone_scope())),
             parent_scope: sess.into_scope(),
         }
     }
 }
 
-#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
+#[cfg_attr(test, derive(PartialEq, Debug))]
 pub struct UnaryExpr {
     pub base: Box<Expr>,
-    pub operator: Seperator,
+    pub operator: Separator,
     pub parent_scope: SharedDefScope,
 }
 impl ISemanticAnalyze for UnaryExpr {
@@ -224,13 +221,12 @@ impl ISemanticAnalyze for UnaryExpr {
     }
 }
 
-#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
+#[cfg_attr(test, derive(PartialEq, Debug))]
 pub enum Expr {
     Array(ArrayDef),
     Binary(BinaryExpr),
     FnCall(FnCall),
     Name(Name),
-    SimpleName(SimpleName),
     IndexCall(IndexCall),
     Lit(LitExpr),
     MemberAccess(MemberAccess),
@@ -248,7 +244,6 @@ impl ISemanticAnalyze for Expr {
         match self {
             &Expr::Array(ref array_def) => array_def.format(f),
             &Expr::Lit(ref lit_expr) => lit_expr.format(f),
-            &Expr::SimpleName(ref name) => name.format(f),
             &Expr::Name(ref name) => name.format(f),
             &Expr::FnCall(ref fn_call) => fn_call.format(f),
             &Expr::MemberAccess(ref access) => access.format(f),
@@ -282,7 +277,6 @@ impl ISemanticAnalyze for Expr {
             syntax::Expr::RangeLeft(range_left) => Expr::RangeLeft(RangeLeftExpr::from_syntax(range_left, sess)),
             syntax::Expr::RangeRight(range_right) => Expr::RangeRight(RangeRightExpr::from_syntax(range_right, sess)),
             syntax::Expr::RangeFull(range_full) => Expr::RangeFull(RangeFullExpr::from_syntax(range_full, sess)),
-            syntax::Expr::SimpleName(simple_name) => Expr::SimpleName(SimpleName::from_syntax(simple_name, sess)),
         }
     }
 }

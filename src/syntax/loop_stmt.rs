@@ -50,7 +50,7 @@ impl Parser for LoopStatement {
         let maybe_name = cx.try_expect::<LabelDef>()?;
         let loop_span = cx.expect_keyword(Keyword::Loop)?;
         let body = cx.expect::<Block>()?;
-        return Ok(LoopStatement::new(maybe_name, loop_span, body));
+        Ok(LoopStatement::new(maybe_name, loop_span, body))
     }
 }
 

@@ -108,7 +108,7 @@ pub struct TokenDisplay<'t, 'scx>(&'t Token, &'scx SourceContext);
 impl Token {
     #[allow(dead_code)] // after syntax add back, before --print tokens argument added, this is dead code
     pub fn display<'t, 'scx>(&'t self, scx: &'scx SourceContext) -> TokenDisplay<'t, 'scx> {
-        TokenDisplay(&self, scx)
+        TokenDisplay(self, scx)
     }
 }
 

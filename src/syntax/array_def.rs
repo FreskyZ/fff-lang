@@ -13,7 +13,7 @@ pub struct ArrayDef {
 }
 
 impl ArrayDef {
-    pub fn new(bracket_span: Span, items: ExprList) -> ArrayDef { ArrayDef{ bracket_span, items: items } }
+    pub fn new(bracket_span: Span, items: ExprList) -> ArrayDef { ArrayDef{ bracket_span, items } }
 }
 
 impl Parser for ArrayDef {
@@ -26,15 +26,14 @@ impl Parser for ArrayDef {
     fn parse(cx: &mut ParseContext) -> Result<Expr, Unexpected> {
         
         match cx.expect::<ExprList>()? {
-            ExprListParseResult::Empty(span) => {
-                return Ok(Expr::Array(ArrayDef::new(span, ExprList::new(Vec::new()))));
-            }
+            ExprListParseResult::Empty(span) =>
+                Ok(Expr::Array(ArrayDef::new(span, ExprList::new(Vec::new())))),
+            ExprListParseResult::Normal(span, exprlist) 
+            | ExprListParseResult::EndWithComma(span, exprlist) =>
+                Ok(Expr::Array(ArrayDef::new(span, exprlist))),
             ExprListParseResult::SingleComma(span) => {
                 cx.emit(strings::UnexpectedSingleComma).detail(span, strings::ArrayDefHere);
-                return Ok(Expr::Array(ArrayDef::new(span, ExprList::new(Vec::new()))));
-            }
-            ExprListParseResult::Normal(span, exprlist) | ExprListParseResult::EndWithComma(span, exprlist) => {
-                return Ok(Expr::Array(ArrayDef::new(span, exprlist)));
+                Ok(Expr::Array(ArrayDef::new(span, ExprList::new(Vec::new()))))
             }
         }
     }

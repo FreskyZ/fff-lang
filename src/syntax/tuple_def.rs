@@ -53,21 +53,21 @@ impl Parser for TupleDef {
 
         match cx.expect::<ExprList>()? {
             ExprListParseResult::Empty(span) => {
-                return Ok(Expr::Lit(LitExpr::new(LitValue::Unit, span)));
+                Ok(Expr::Lit(LitExpr::new(LitValue::Unit, span)))
             }
             ExprListParseResult::SingleComma(span) => {
                 cx.emit(strings::UnexpectedSingleComma).detail(span, strings::TupleDefHere);
-                return Ok(Expr::Tuple(TupleDef::new(span, ExprList::new(Vec::new()))));
+                Ok(Expr::Tuple(TupleDef::new(span, ExprList::new(Vec::new()))))
             }
             ExprListParseResult::Normal(span, exprlist) => {
                 if exprlist.items.len() == 1 {
-                    return Ok(Expr::Paren(ParenExpr::new(span, exprlist.items.into_iter().last().unwrap())));
+                    Ok(Expr::Paren(ParenExpr::new(span, exprlist.items.into_iter().last().unwrap())))
                 } else {
-                    return Ok(Expr::Tuple(TupleDef::new(span, exprlist)));
+                    Ok(Expr::Tuple(TupleDef::new(span, exprlist)))
                 }
             }
             ExprListParseResult::EndWithComma(span, exprlist) => {
-                return Ok(Expr::Tuple(TupleDef::new(span, exprlist)));
+                Ok(Expr::Tuple(TupleDef::new(span, exprlist)))
             }
         }
     }

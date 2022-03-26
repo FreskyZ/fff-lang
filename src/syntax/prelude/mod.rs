@@ -43,10 +43,10 @@ pub trait Parser: Sized {
     type Output: Node;
 
     fn matches(_current: &Token) -> bool {
-        return false;
+        false
     }
     fn matches3(_current: &Token, _peek1: &Token, _peek2: &Token) -> bool {
-        return false;
+        false
     }
 
     fn parse(_cx: &mut ParseContext) -> Result<Self::Output, Unexpected>;
@@ -176,20 +176,20 @@ pub fn ast_test_case<
             let common_line_count = std::cmp::min(actual_lines.len(), expect_lines.len());
             for line in 0..common_line_count {
                 if actual_lines[line] != expect_lines[line] {
-                    write!(buf, "{: >3} |- {}\n", line + 1, actual_lines[line]).unwrap();
-                    write!(buf, "    |+ {}\n", expect_lines[line]).unwrap();
+                    writeln!(buf, "{: >3} |- {}", line + 1, actual_lines[line]).unwrap();
+                    writeln!(buf, "    |+ {}", expect_lines[line]).unwrap();
                 } else {
-                    write!(buf, "{: >3} |  {}\n", line + 1, actual_lines[line]).unwrap();
+                    writeln!(buf, "{: >3} |  {}", line + 1, actual_lines[line]).unwrap();
                 }
             }
             if actual_lines.len() > common_line_count {
                 for line in common_line_count..actual_lines.len() {
-                    write!(buf, "{: >3} |- {}\n", line + 1, actual_lines[line]).unwrap();
+                    writeln!(buf, "{: >3} |- {}", line + 1, actual_lines[line]).unwrap();
                 }
             }
             if expect_lines.len() > common_line_count {
                 for line in common_line_count..expect_lines.len() {
-                    write!(buf, "{: >3} |+ {}\n", line + 1, expect_lines[line]).unwrap();
+                    writeln!(buf, "{: >3} |+ {}", line + 1, expect_lines[line]).unwrap();
                 }
             }
             panic!("{}", buf)
