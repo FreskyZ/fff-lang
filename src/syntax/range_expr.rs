@@ -16,10 +16,6 @@ pub struct RangeFullExpr {
     pub all_span: Span,
 }
 
-impl RangeFullExpr {
-    pub fn new(all_span: Span) -> RangeFullExpr { RangeFullExpr{ all_span } }
-}
-
 impl Node for RangeFullExpr {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_range_full_expr(self)
@@ -32,12 +28,6 @@ impl Node for RangeFullExpr {
 pub struct RangeRightExpr {
     pub all_span: Span,  // all_span.slice(2) is range_op_span
     pub expr: Box<Expr>,
-}
-
-impl RangeRightExpr {
-    pub fn new<T: Into<Expr>>(all_span: Span, expr: T) -> RangeRightExpr { 
-        RangeRightExpr{ all_span, expr: Box::new(expr.into()) }
-    }
 }
 
 impl Node for RangeRightExpr {
@@ -57,12 +47,6 @@ pub struct RangeLeftExpr {
     pub all_span: Span, // all_span.slice(-2, 0) should get range_op_span
 }
 
-impl RangeLeftExpr {
-    pub fn new<T: Into<Expr>>(all_span: Span, expr: T) -> RangeLeftExpr {
-        RangeLeftExpr{ all_span, expr: Box::new(expr.into()) }
-    }
-}
-
 impl Node for RangeLeftExpr {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_range_left_expr(self)
@@ -80,17 +64,6 @@ pub struct RangeBothExpr {
     pub op_span: Span,
     pub right_expr: Box<Expr>,
     pub all_span: Span,
-}
-
-impl RangeBothExpr {
-    pub fn new<T1: Into<Expr>, T2: Into<Expr>>(left_expr: T1, op_span: Span, right_expr: T2) -> RangeBothExpr {
-        let (left_expr, right_expr) = (left_expr.into(), right_expr.into());
-        RangeBothExpr{
-            op_span,
-            all_span: left_expr.get_all_span() + right_expr.get_all_span(),
-            left_expr: Box::new(left_expr), right_expr: Box::new(right_expr),
-        }
-    }
 }
 
 impl Node for RangeBothExpr {
@@ -113,9 +86,9 @@ impl Parser for RangeExpr {
             Some(range_op_span) => {
                 if cx.matches::<Expr>() {
                     let expr = cx.expect::<BinaryExpr>()?;
-                    Ok(Expr::RangeRight(RangeRightExpr::new(range_op_span + expr.get_all_span(), expr)))
+                    Ok(Expr::RangeRight(RangeRightExpr{ all_span: range_op_span + expr.get_all_span(), expr: Box::new(expr) }))
                 } else {
-                    Ok(Expr::RangeFull(RangeFullExpr::new(range_op_span)))
+                    Ok(Expr::RangeFull(RangeFullExpr{ all_span: range_op_span }))
                 }
             }
             None => {
@@ -123,9 +96,10 @@ impl Parser for RangeExpr {
                 if let Some(op_span) = cx.try_expect_sep(Separator::DotDot) {
                     if cx.matches::<Expr>() {
                         let right_expr = cx.expect::<BinaryExpr>()?;
-                        Ok(Expr::RangeBoth(RangeBothExpr::new(left_expr, op_span, right_expr)))
+                        let all_span = left_expr.get_all_span() + right_expr.get_all_span();
+                        Ok(Expr::RangeBoth(RangeBothExpr{ all_span, op_span, left_expr: Box::new(left_expr), right_expr: Box::new(right_expr) }))
                     } else {
-                        Ok(Expr::RangeLeft(RangeLeftExpr::new(left_expr.get_all_span() + op_span, left_expr)))
+                        Ok(Expr::RangeLeft(RangeLeftExpr{ all_span: left_expr.get_all_span() + op_span, expr: Box::new(left_expr) }))
                     }
                 } else {
                     Ok(left_expr)
@@ -138,17 +112,19 @@ impl Parser for RangeExpr {
 #[cfg(test)] #[test]
 fn range_expr_parse() {
 
-    case!{ ".." as RangeExpr, Expr::RangeFull(RangeFullExpr::new(Span::new(0, 1))) }
+    case!{ ".." as RangeExpr, 
+        make_expr!(range full 0:1)
+    }
 
-    case!{ "..1 + 1" as RangeExpr, 
-        Expr::RangeRight(RangeRightExpr::new(Span::new(0, 6), BinaryExpr::new(
-            make_lit!(1, 2, 2),
-            Separator::Add, Span::new(4, 4),
-            make_lit!(1, 6, 6)
-        )))
+    case!{ "..1 + 1" as RangeExpr,
+        make_expr!(range right 0:6
+            make_expr!(binary 2:6 Add 4:4
+                make_expr!(i32 1 2:2),
+                make_expr!(i32 1 6:6)))
     }
 
     case!{ "1 .." as RangeExpr,
-        Expr::RangeLeft(RangeLeftExpr::new(Span::new(0, 3), make_lit!(1, 0, 0)))
+        make_expr!(range left 0:3
+            make_expr!(i32 1 0:0))
     }
 }

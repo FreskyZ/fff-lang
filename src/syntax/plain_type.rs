@@ -204,7 +204,7 @@ fn type_ref_parse() {
     case!{ "[i32; 5]" as TypeRef, 
         make_type!(array 0:7
             make_type!(prim 1:3 I32), 
-            make_lit!(5, 6, 6).into()),
+            make_expr!(i32 5 6:6).into()),
     }
 
     //      0         1         2
@@ -213,16 +213,16 @@ fn type_ref_parse() {
         make_type!(array 0:25 
             make_type!(array 1:5
                 make_type!(simple 2:2 #2),
-                make_expr!(1: i32, 4:4)),
+                make_expr!(i32 1 4:4)),
             make_expr!(binary 8:24 Sub 18:18 
                 make_expr!(binary 8:16 Add 10:10
-                    make_expr!(1: i32, 8:8),
+                    make_expr!(i32 1 8:8),
                     make_expr!(binary 12:16 Mul 14:14
-                        make_expr!(1: i32, 12:12),
-                        make_expr!(1: i32, 16:16))),
+                        make_expr!(i32 1 12:12),
+                        make_expr!(i32 1 16:16))),
                 make_expr!(binary 20:24 Div 22:22
-                    make_expr!(1: i32, 20:20),
-                    make_expr!(1: i32, 24:24)))),
+                    make_expr!(i32 1 20:20),
+                    make_expr!(i32 1 24:24)))),
     }
 
     case!{ "()" as TypeRef, 
@@ -436,7 +436,7 @@ fn type_ref_parse() {
         make_type!(ref 0:9
             make_type!(array 1:9
                 make_type!(simple 2:3 #2),
-                make_expr!(207: i32, 6:8))),
+                make_expr!(i32 207 6:8))),
     }
 
     //      0         1         2        3       4         5         6         7         8         9         0        1         2         3         4         5         6         7        8
@@ -446,7 +446,7 @@ fn type_ref_parse() {
             make_type!(param named 3:18 #2 3:6
                 make_type!(array 9:18 
                     make_type!(simple 10:11 #3),
-                    make_expr!(6326: i32, 14:17))),
+                    make_expr!(i32 6326 14:17))),
             make_type!(param 21:153
                 make_type!(ref 21:153 make_type!(tuple 22:153 [
                     make_type!(tuple 23:54 [
@@ -461,26 +461,26 @@ fn type_ref_parse() {
                         make_type!(param named 60:82 #5 60:61
                             make_type!(array 64:82
                                 make_type!(simple 65:71 #6),
-                                make_expr!(0x5Ad0Cc: i32, 74:81))),
+                                make_expr!(i32 0x5Ad0Cc 74:81))),
                         make_type!(param named 85:109 #7 85:92
                             make_type!(array 95:109
                                 make_type!(simple 96:102 #8),
-                                make_expr!(223: i32, 106:108))),
+                                make_expr!(i32 223 106:108))),
                         make_type!(param 112:116
                             make_type!(simple 112:116 #9)),
                     ]),
                     make_type!(array 121:142
                         make_type!(simple 122:128 #10),
-                        make_expr!(636353.4560000001: r64, 132:141)),
+                        make_expr!(r64 636353.4560000001 132:141)),
                     make_type!(array 145:152
                         make_type!(simple 146:146 #11),
-                        make_expr!(271: i32, 149:151)),
+                        make_expr!(i32 271 149:151)),
                 ]))),
             make_type!(param 156:157
                 make_type!(simple 156:157 #12)),
         ], make_type!(array 164:182
             make_type!(simple 165:171 #13),
-            make_expr!(447231: i32, 174:181))
+            make_expr!(i32 447231 174:181))
         //           2       3     4             5      6         7           8         9        10        11    12    13
         ), strings ["x3Kv", "Mc", "t6絩ru卒oLy", "Ak", "o7k81A6", "OmNaGmqc", "g63凈N", "bOars", "c6eFq8M", "b", "f3", "HrH70sp"]
     }

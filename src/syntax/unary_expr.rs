@@ -15,18 +15,6 @@ pub struct UnaryExpr {
     pub all_span: Span,
 }
 
-impl UnaryExpr {
-
-    pub fn new<T: Into<Expr>>(operator: Separator, operator_span: Span, base: T) -> UnaryExpr {
-        let base = base.into();
-        UnaryExpr{
-            all_span: operator_span + base.get_all_span(),
-            base: Box::new(base),
-            operator, operator_span,
-        }
-    }
-}
-
 impl Parser for UnaryExpr {
     type Output = Expr;
 
@@ -42,7 +30,9 @@ impl Parser for UnaryExpr {
                 Some((sep, sep_span)) => op_spans.push((sep, sep_span)),
                 None => {
                     let base = cx.expect::<PostfixExpr>()?;
-                    return Ok(op_spans.into_iter().rev().fold(base, |base, (op, span)| { Expr::Unary(UnaryExpr::new(op, span, base)) }));
+                    return Ok(op_spans.into_iter().rev().fold(base, |base, (op, span)| { 
+                        Expr::Unary(UnaryExpr{ all_span: span + base.get_all_span(), base: Box::new(base), operator: op, operator_span: span }) 
+                    }));
                 }
             }
         }
@@ -61,37 +51,23 @@ impl Node for UnaryExpr {
 
 #[cfg(test)] #[test]
 fn unary_expr_parse() {
-    use super::{FnCallExpr};
     
     case!{ "1" as Expr, 
-        Expr::Lit(make_lit!(1, 0, 0)) 
+        make_expr!(i32 1 0:0)
     }
 
     case!{ "!~!1" as UnaryExpr,
-        Expr::Unary(UnaryExpr::new(
-            Separator::Not, Span::new(0, 0),
-            Expr::Unary(UnaryExpr::new(
-                Separator::Tilde, Span::new(1, 1),            
-                Expr::Unary(UnaryExpr::new(
-                    Separator::Not, Span::new(2, 2),
-                    Expr::Lit(make_lit!(1, 3, 3)),
-                ))
-            ))
-        ))
+        make_expr!(unary 0:3 Not 0:0
+            make_expr!(unary 1:3 Tilde 1:1
+                make_expr!(unary 2:3 Not 2:2
+                    make_expr!(i32 1 3:3))))
     }
 
-    case!{ "&a(&b)" as UnaryExpr, 
-        Expr::Unary(UnaryExpr::new(
-            Separator::And, Span::new(0, 0),
-            Expr::FnCall(FnCallExpr::new(
+    case!{ "&a(&b)" as UnaryExpr,
+        make_expr!(unary 0:5 And 0:0
+            make_expr!(fn 1:5 paren 2:5
                 make_name!(simple 1:1 #2),
-                Span::new(2, 5), make_exprs![
-                    UnaryExpr::new(
-                        Separator::And, Span::new(3, 3),
-                        make_name!(simple 4:4 #3),
-                    )
-                ]
-            ))
-        ))
+                make_expr!(unary 3:4 And 3:3
+                    make_name!(simple 4:4 #3))))
     }
 }

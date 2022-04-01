@@ -60,17 +60,13 @@ impl Node for ReturnStatement {
 
 #[cfg(test)] #[test]
 fn ret_stmt_parse() {
-    use super::{BinaryExpr};
-
     case!{ "return;" as ReturnStatement, ReturnStatement::new_unit(Span::new(0, 6)) }
     case!{ "return 1 + 1;" as ReturnStatement, 
         ReturnStatement::new_expr(
-            Span::new(0, 12), 
-            Expr::Binary(BinaryExpr::new(
-                Expr::Lit(make_lit!(1, 7, 7)),
-                Separator::Add, Span::new(9, 9),
-                Expr::Lit(make_lit!(1, 11, 11)),
-            ))
+            Span::new(0, 12),
+            make_expr!(binary 7:11 Add 9:9
+                make_expr!(i32 1 7:7),
+                make_expr!(i32 1 11:11))
         )
     }
 }

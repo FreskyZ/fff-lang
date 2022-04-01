@@ -84,7 +84,7 @@ impl Node for ForStatement {
 
 #[cfg(test)] #[test]
 fn for_stmt_parse() {
-    use super::{SimpleExprStatement, Statement, FnCallExpr, ExprList};
+    use super::{SimpleExprStatement, Statement};
 
     //                      0123456789012345678
     case!{ "@2: for i in 42 {}" as ForStatement,
@@ -92,7 +92,7 @@ fn for_stmt_parse() {
             LabelDef::new(2, Span::new(0, 2)),
             Span::new(4, 6),
             3, Span::new(8, 8),
-            Expr::Lit(make_lit!(42, 13, 14)),
+            make_expr!(i32 42 13:14),
             Block::new(Span::new(16, 17), vec![])
         )
     }
@@ -104,31 +104,21 @@ fn for_stmt_parse() {
             LabelDef::new(2, Span::new(0, 6)),
             Span::new(8, 10),
             3, Span::new(12, 12),
-            FnCallExpr::new(
+            make_expr!(fn 17:50 paren 49:50
                 make_expr!(member 17:48 dot 41:41
-                    FnCallExpr::new(
+                    make_expr!(fn 17:40 paren 39:40
                         make_expr!(member 17:38 dot 29:29
-                            FnCallExpr::new(
+                            make_expr!(fn 17:28 paren 22:28
                                 make_name!(simple 17:21 #4),
-                                Span::new(22, 28), make_exprs![
-                                    make_lit!(0, 23, 23),
-                                    make_lit!(10, 26, 27),
-                                ]
-                            ),
-                            make_name!(simple bare 30:38 #5)),
-                        Span::new(39, 40), ExprList::new(vec![])
-                    ),
-                    make_name!(simple bare 42:48 #6)),
-                Span::new(49, 50), ExprList::new(vec![])
-            ),
+                                make_expr!(i32 0 23:23),
+                                make_expr!(i32 10 26:27)),
+                            make_name!(simple bare 30:38 #5)),),
+                    make_name!(simple bare 42:48 #6)),),
             Block::new(Span::new(52, 77), vec![
                 Statement::SimpleExpr(SimpleExprStatement::new(Span::new(54, 75),
-                    FnCallExpr::new(
+                    make_expr!(fn 54:74 paren 61:74
                         make_name!(simple 54:60 #7),
-                        Span::new(61, 74), make_exprs![
-                            make_lit!(8: str, 62, 73)
-                        ]
-                    )
+                        make_expr!(str #8 62:73))
                 ))
             ])
         ), strings ["hello", "_", "range", "enumerate", "reverse", "writeln", "helloworld"]

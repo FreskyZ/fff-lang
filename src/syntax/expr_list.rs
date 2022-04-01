@@ -9,9 +9,6 @@ use super::Expr;
 pub struct ExprList {
     pub items: Vec<Expr>,
 }
-impl ExprList {
-    pub fn new(items: Vec<Expr>) -> ExprList { ExprList{ items } }
-}
 
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
@@ -67,9 +64,9 @@ impl Parser for ExprList {
             if let Some((ending_span, skipped_comma)) = cx.try_expect_closing_bracket(expect_end_sep) {
                 cx.no_object_literals.pop();
                 return if skipped_comma {
-                    Ok(ExprListParseResult::EndWithComma(starting_span + ending_span, ExprList::new(items)))
+                    Ok(ExprListParseResult::EndWithComma(starting_span + ending_span, ExprList{ items }))
                 } else {
-                    Ok(ExprListParseResult::Normal(starting_span + ending_span, ExprList::new(items)))
+                    Ok(ExprListParseResult::Normal(starting_span + ending_span, ExprList{ items }))
                 };
             }
             cx.expect_sep(Separator::Comma)?;
@@ -90,41 +87,23 @@ impl Node for ExprList {
     }
 }
 
-// test helper
-#[cfg(test)]
-macro_rules! make_exprs {
-    ($($x:expr),*) => ({
-        let mut retval = Vec::new();
-        {
-            let _retval = &mut retval; // `&mut` for statisfy 'unused mut', `_` for statisfy unused var
-            $(
-                _retval.push(From::from($x));
-            )*
-        }
-        crate::syntax::ExprList::new(retval)
-    });
-    ($($x:expr,)*) => (make_exprs![$($x),*])
-}
-#[cfg(test)]
-pub(crate) use make_exprs;
-
 #[cfg(test)] #[test]
 fn expr_list_parse() {
 
     case!{ "[1, 2, 3]" as ExprList, 
-        ExprListParseResult::Normal(Span::new(0, 8), ExprList::new(vec![
-            Expr::Lit(make_lit!(1, 1, 1)),
-            Expr::Lit(make_lit!(2, 4, 4)),
-            Expr::Lit(make_lit!(3, 7, 7)),
-        ]))
+        ExprListParseResult::Normal(Span::new(0, 8), ExprList{ items: vec![
+            make_expr!(i32 1 1:1),
+            make_expr!(i32 2 4:4),
+            make_expr!(i32 3 7:7),
+        ] })
     }
     
     case!{ "(1, 2, 3,)" as ExprList, 
-        ExprListParseResult::EndWithComma(Span::new(0, 9), ExprList::new(vec![
-            Expr::Lit(make_lit!(1, 1, 1)),
-            Expr::Lit(make_lit!(2, 4, 4)),
-            Expr::Lit(make_lit!(3, 7, 7)),
-        ]))
+        ExprListParseResult::EndWithComma(Span::new(0, 9), ExprList{ items: vec![
+            make_expr!(i32 1 1:1),
+            make_expr!(i32 2 4:4),
+            make_expr!(i32 3 7:7),
+        ] })
     }
 
     case!{ "[]" as ExprList, 

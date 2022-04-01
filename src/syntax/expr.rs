@@ -90,47 +90,29 @@ impl Default for Expr {
 }
 
 #[cfg(test)]
-macro_rules! make_lit {
-    (unit, $start:expr, $end:expr) => (crate::syntax::LitExpr{ value: crate::syntax::LitValue::Unit, span: Span::new($start, $end) });
-    (true, $start:expr, $end:expr) => (crate::syntax::LitExpr{ value: crate::syntax::LitValue::Bool(true), span: Span::new($start, $end) });
-    (false, $start:expr, $end:expr) => (crate::syntax::LitExpr{ value: crate::syntax::LitValue::Bool(false), span: Span::new($start, $end) });
-    ($v:literal: char, $start:expr, $end:expr) => (crate::syntax::LitExpr{ value: crate::syntax::LitValue::Char($v), span: Span::new($start, $end) });
-    ($v:literal: str, $start:expr, $end:expr) => (crate::syntax::LitExpr{ value: crate::syntax::LitValue::Str(IsId::new($v)), span: Span::new($start, $end) });
-    // only i32 can omit type
-    ($v:literal, $start:expr, $end:expr) => (crate::syntax::LitExpr{ value: crate::syntax::LitValue::Num(Numeric::I32($v)), span: Span::new($start, $end) });
-    ($v:literal: u8, $start:expr, $end:expr) => (crate::syntax::LitExpr{ value: crate::syntax::LitValue::Num(Numeric::U8($v)), span: Span::new($start, $end) });
-    ($v:literal: u32, $start:expr, $end:expr) => (crate::syntax::LitExpr{ value: crate::syntax::LitValue::Num(Numeric::U32($v)), span: Span::new($start, $end) });
-    ($v:literal: u64, $start:expr, $end:expr) => (crate::syntax::LitExpr{ value: crate::syntax::LitValue::Num(Numeric::U64($v)), span: Span::new($start, $end) });
-    ($v:literal: r32, $start:expr, $end:expr) => (crate::syntax::LitExpr{ value: crate::syntax::LitValue::Num(Numeric::R32($v)), span: Span::new($start, $end) });
-    ($v:literal: r64, $start:expr, $end:expr) => (crate::syntax::LitExpr{ value: crate::syntax::LitValue::Num(Numeric::R64($v)), span: Span::new($start, $end) });
-}
-#[cfg(test)]
-pub(crate) use make_lit;
-
-#[cfg(test)]
 macro_rules! make_expr {
     // literals does not have (lit prefix because they are used frequently
-    (unit, $start:literal:$end:literal) => (
+    (unit $start:literal:$end:literal) => (
         crate::syntax::Expr::Lit(crate::syntax::LitExpr{ value: crate::syntax::LitValue::Unit, span: Span::new($start, $end) }));
-    (true, $start:literal:$end:literal) => (
+    (true $start:literal:$end:literal) => (
         crate::syntax::Expr::Lit(crate::syntax::LitExpr{ value: crate::syntax::LitValue::Bool(true), span: Span::new($start, $end) }));
-    (false, $start:literal:$end:literal) => (
+    (false $start:literal:$end:literal) => (
         crate::syntax::Expr::Lit(crate::syntax::LitExpr{ value: crate::syntax::LitValue::Bool(false), span: Span::new($start, $end) }));
-    ($v:literal: char, $start:literal:$end:literal) => (
+    (char $start:literal:$end:literal $v:literal) => (
         crate::syntax::Expr::Lit(crate::syntax::LitExpr{ value: crate::syntax::LitValue::Char($v), span: Span::new($start, $end) }));
-    (#$v:literal: str, $start:literal:$end:literal) => (
+    (str #$v:literal $start:literal:$end:literal) => (
         crate::syntax::Expr::Lit(crate::syntax::LitExpr{ value: crate::syntax::LitValue::Str(IsId::new($v)), span: Span::new($start, $end) }));
-    ($v:literal: i32, $start:literal:$end:literal) => (
+    (i32 $v:literal $start:literal:$end:literal) => (
         crate::syntax::Expr::Lit(crate::syntax::LitExpr{ value: crate::syntax::LitValue::Num(Numeric::I32($v)), span: Span::new($start, $end) }));
-    ($v:literal: u8, $start:literal:$end:literal) => (
+    (u8 $v:literal $start:literal:$end:literal) => (
         crate::syntax::Expr::Lit(crate::syntax::LitExpr{ value: crate::syntax::LitValue::Num(Numeric::U8($v)), span: Span::new($start, $end) }));
-    ($v:literal: u32, $start:literal:$end:literal) => (
+    (u32 $v:literal $start:literal:$end:literal) => (
         crate::syntax::Expr::Lit(crate::syntax::LitExpr{ value: crate::syntax::LitValue::Num(Numeric::U32($v)), span: Span::new($start, $end) }));
-    ($v:literal: u64, $start:literal:$end:literal) => (
+    (u64 $v:literal $start:literal:$end:literal) => (
         crate::syntax::Expr::Lit(crate::syntax::LitExpr{value: crate::syntax::LitValue::Num(Numeric::U64($v)), span: Span::new($start, $end) }));
-    ($v:literal: r32, $start:literal:$end:literal) => (
+    (r32 $v:literal $start:literal:$end:literal) => (
         crate::syntax::Expr::Lit(crate::syntax::LitExpr{ value: crate::syntax::LitValue::Num(Numeric::R32($v)), span: Span::new($start, $end) }));
-    ($v:literal: r64, $start:literal:$end:literal) => (
+    (r64 $v:literal $start:literal:$end:literal) => (
         crate::syntax::Expr::Lit(crate::syntax::LitExpr{ value: crate::syntax::LitValue::Num(Numeric::R64($v)), span: Span::new($start, $end) }));
     (binary $start:literal:$end:literal $op:ident $op_start:literal:$op_end:literal $left:expr, $right:expr) => (crate::syntax::Expr::Binary(crate::syntax::BinaryExpr{
         left_expr: Box::new($left),
@@ -139,10 +121,15 @@ macro_rules! make_expr {
         operator_span: Span::new($op_start, $op_end),
         all_span: Span::new($start, $end),
     }));
+    (unary $start:literal:$end:literal $op:ident $op_start:literal:$op_end:literal $base:expr) => (crate::syntax::Expr::Unary(crate::syntax::UnaryExpr{
+        base: Box::new($base),
+        operator: Separator::$op,
+        operator_span: Span::new($op_start, $op_end),
+        all_span: Span::new($start, $end),
+    }));
     (member $start:literal:$end:literal dot $dot_start:literal:$dot_end:literal $base:expr, $name:expr) => (
         crate::syntax::Expr::MemberAccess(crate::syntax::MemberAccessExpr{
-            // TODO: remove the into when all expr variants change to this macro
-            base: Box::new($base.into()),
+            base: Box::new($base),
             dot_span: Span::new($dot_start, $dot_end),
             name: $name,
             all_span: Span::new($start, $end),
@@ -151,24 +138,22 @@ macro_rules! make_expr {
     (array $start:literal:$end:literal $($item:expr),*$(,)?) => (crate::syntax::Expr::Array(crate::syntax::ArrayDef{
         bracket_span: Span::new($start, $end),
         items: crate::syntax::ExprList {
-            // TODO: remove the into when all expr variants change to this macro
-            items: vec![$($item.into(),)*],
+            items: vec![$($item,)*],
         }
     }));
     (tuple $start:literal:$end:literal $($item:expr),*$(,)?) => (crate::syntax::Expr::Tuple(crate::syntax::TupleDef{
         paren_span: Span::new($start, $end),
         items: crate::syntax::ExprList {
-            // TODO: remove the into when all expr variants change to this macro
-            items: vec![$($item.into(),)*],
+            items: vec![$($item,)*],
         }
     }));
     (paren $start:literal:$end:literal $base:expr) => (crate::syntax::Expr::Paren(crate::syntax::ParenExpr{
-        expr: Box::new($base.into()),
+        expr: Box::new($base),
         span: Span::new($start, $end),
     }));
     (object $start:literal:$end:literal quote $quote_start:literal:$quote_end:literal $base:expr, $($field:expr),*$(,)?) => (
         crate::syntax::Expr::Object(crate::syntax::ObjectLiteral{
-            base: Box::new($base.into()),
+            base: Box::new($base),
             quote_span: Span::new($quote_start, $quote_end),
             all_span: Span::new($start, $end),
             fields: vec![$($field,)*],
@@ -189,47 +174,58 @@ macro_rules! make_expr {
             paren_span: Span::new($paren_start, $paren_end),
             all_span: Span::new($start, $end),
             params: crate::syntax::ExprList{
-                items: vec![$($parameter.into(),)*],
+                items: vec![$($parameter,)*],
             }
         })
-    )
+    );
+    (index $start:literal:$end:literal bracket $bracket_start:literal:$bracket_end:literal $base:expr, $($parameter:expr),*$(,)?) => (
+        crate::syntax::Expr::IndexCall(crate::syntax::IndexCallExpr{
+            base: Box::new($base),
+            bracket_span: Span::new($bracket_start, $bracket_end),
+            all_span: Span::new($start, $end),
+            params: crate::syntax::ExprList{
+                items: vec![$($parameter,)*],
+            }
+        })
+    );
+    (range full $start:literal:$end:literal) => (crate::syntax::Expr::RangeFull(crate::syntax::RangeFullExpr{
+        all_span: Span::new($start, $end),
+    }));
+    (range left $start:literal:$end:literal $base:expr) => (crate::syntax::Expr::RangeLeft(crate::syntax::RangeLeftExpr{
+        all_span: Span::new($start, $end),
+        expr: Box::new($base),
+    }));
+    (range right $start:literal:$end:literal $base:expr) => (crate::syntax::Expr::RangeRight(crate::syntax::RangeRightExpr{
+        all_span: Span::new($start, $end),
+        expr: Box::new($base),
+    }));
+    (range both $start:literal:$end:literal dotdot $dotdot_start:literal:$dotdot_end:literal $left:expr, $right:expr) => (
+        crate::syntax::Expr::RangeBoth(crate::syntax::RangeBothExpr{
+            all_span: Span::new($start, $end),
+            op_span: Span::new($dotdot_start, $dotdot_end),
+            left_expr: Box::new($left),
+            right_expr: Box::new($right),
+        })
+    );
 }
 #[cfg(test)]
 pub(crate) use make_expr;
 
 #[cfg(test)] #[test]
 fn expr_parse() {
-    use super::{ExprList};
 
-    case!{ "\"abc\"" as Expr,
-        Expr::Lit(make_lit!(2: str, 0, 4))
-    }
-    case!{ "0xfffu64" as Expr, 
-        Expr::Lit(make_lit!(0xFFF: u64, 0, 7))
-    }
-    case!{ "'f'" as Expr, 
-        Expr::Lit(make_lit!('f': char, 0, 2))
-    }
-    case!{ "true" as Expr,
-        Expr::Lit(make_lit!(true, 0, 3))
-    }
-
-    case!{ "binary_expr" as Expr,
-        make_name!(simple 0:10 #2),
-    }
-
-    case!{ "(  )" as Expr,
-        Expr::Lit(make_lit!(unit, 0, 3))
-    }
+    case!{ "\"abc\"" as Expr, make_expr!(str #2 0:4) }
+    case!{ "0xfffu64" as Expr, make_expr!(u64 0xFFF 0:7) }
+    case!{ "'f'" as Expr, make_expr!(char 0:2 'f') }
+    case!{ "true" as Expr, make_expr!(true 0:3) }
+    case!{ "binary_expr" as Expr, make_name!(simple 0:10 #2) }
+    case!{ "(  )" as Expr, make_expr!(unit 0:3) }
     
     // Case from fn_def_parse
     case!{ "println(this)" as Expr, 
-        Expr::FnCall(FnCallExpr::new(
+        make_expr!(fn 0:12 paren 7:12
             make_name!(simple 0:6 #2),
-            Span::new(7, 12), ExprList::new(vec![
-                make_name!(simple 8:11 #3)
-            ])
-        ))
+            make_name!(simple 8:11 #3))
     }
 
     // Very very legacy expr tests which originally contains ExpressionBase and ExpressionOperator
@@ -237,47 +233,39 @@ fn expr_parse() {
 
     // Unit
     case!{ "(1)" as Expr,
-        Expr::Paren(ParenExpr::new(Span::new(0, 2), 
-            make_lit!(1, 1, 1)
-        ))
+        make_expr!(paren 0:2
+            make_expr!(i32 1 1:1))
     }
     // I can see future of Ok(())! 
-    case!{ "(())" as Expr, 
-        Expr::Paren(ParenExpr::new(Span::new(0, 3), 
-            make_lit!(unit, 1, 2)
-        ))
+    case!{ "(())" as Expr,
+        make_expr!(paren 0:3
+            make_expr!(unit 1:2))
     }
 
     // Tuple def
     case!{ "(a, b)" as Expr,
-        Expr::Tuple(TupleDef::new(Span::new(0, 5), make_exprs![
+        make_expr!(tuple 0:5
             make_name!(simple 1:1 #2),
-            make_name!(simple 4:4 #3),
-        ]))
+            make_name!(simple 4:4 #3))
     }        //  12345678901
     case!{ "(1, 2, 3, )" as Expr,
-        Expr::Tuple(TupleDef::new(Span::new(0, 10), make_exprs![
-            make_lit!(1, 1, 1),
-            make_lit!(2, 4, 4),
-            make_lit!(3, 7, 7),
-        ]))
+        make_expr!(tuple 0:10
+            make_expr!(i32 1 1:1),
+            make_expr!(i32 2 4:4),
+            make_expr!(i32 3 7:7))
     }
 
     // Array def
     case!{ "[a]" as Expr,
-        Expr::Array(ArrayDef::new(Span::new(0, 2), make_exprs![
-            make_name!(simple 1:1 #2)
-        ]))
+        make_expr!(array 0:2
+            make_name!(simple 1:1 #2))
     }        //  12345678
     case!{ "[1, 2, ]" as Expr,
-        Expr::Array(ArrayDef::new(Span::new(0, 7), make_exprs![
-            make_lit!(1, 1, 1),
-            make_lit!(2, 4, 4)
-        ]))
+        make_expr!(array 0:7
+            make_expr!(i32 1 1:1),
+            make_expr!(i32 2 4:4))
     }
-    case!{ "[]" as Expr,
-        Expr::Array(ArrayDef::new(Span::new(0, 1), make_exprs![]))
-    }
+    case!{ "[]" as Expr, make_expr!(array 0:1) }
 
     // Member access
     case!{ "a.b" as Expr,
@@ -288,223 +276,158 @@ fn expr_parse() {
 
     // function call
     case!{ "defg()" as Expr,
-        Expr::FnCall(FnCallExpr::new(
-            make_name!(simple 0:3 #2),
-            Span::new(4, 5),
-            make_exprs![]
-        ))
+        make_expr!(fn 0:5 paren 4:5
+            make_name!(simple 0:3 #2),)
     }
     case!{ "deg(a)" as Expr,
-        Expr::FnCall(FnCallExpr::new(
+        make_expr!(fn 0:5 paren 3:5
             make_name!(simple 0:2 #2),
-            Span::new(3, 5), make_exprs![
-                make_name!(simple 4:4 #3)
-            ]
-        ))
+            make_name!(simple 4:4 #3))
     }
     case!{ "degg(a, b, )" as Expr,
-        Expr::FnCall(FnCallExpr::new(
+        make_expr!(fn 0:11 paren 4:11
             make_name!(simple 0:3 #2),
-            Span::new(4, 11), make_exprs![
-                make_name!(simple 5:5 #3),
-                make_name!(simple 8:8 #4)
-            ]
-        ))
+            make_name!(simple 5:5 #3),
+            make_name!(simple 8:8 #4))
     }
     //           0123456789
     case!{ "abc.defg()" as Expr,
-        Expr::FnCall(FnCallExpr::new(
+        make_expr!(fn 0:9 paren 8:9
             make_expr!(member 0:7 dot 3:3
                 make_name!(simple 0:2 #2),
-                make_name!(simple bare 4:7 #3)),
-            Span::new(8, 9), 
-            make_exprs![]
-        ))
+                make_name!(simple bare 4:7 #3)),)
     }
     case!{ "abc.deg(a)" as Expr,
-        Expr::FnCall(FnCallExpr::new(
+        make_expr!(fn 0:9 paren 7:9
             make_expr!(member 0:6 dot 3:3
                 make_name!(simple 0:2 #2),
                 make_name!(simple bare 4:6 #3)),
-            Span::new(7, 9), make_exprs![
-                make_name!(simple 8:8 #4)
-            ]
-        ))
+            make_name!(simple 8:8 #4))
     }        //  12345678901234
     case!{ "1.degg(a, b, )" as Expr,
-        Expr::FnCall(FnCallExpr::new(
+        make_expr!(fn 0:13 paren 6:13
             make_expr!(member 0:5 dot 1:1
-                make_expr!(1: i32, 0:0),
+                make_expr!(i32 1 0:0),
                 make_name!(simple bare 2:5 #2)),
-            Span::new(6, 13), make_exprs![
-                make_name!(simple 7:7 #3),
-                make_name!(simple 10:10 #4)
-            ]
-        ))
+            make_name!(simple 7:7 #3),
+            make_name!(simple 10:10 #4))
     }   
 
     // get index       //  123456
     case!{ "deg[a]" as Expr,
-        Expr::IndexCall(IndexCallExpr::new(
+        make_expr!(index 0:5 bracket 3:5
             make_name!(simple 0:2 #2),
-            Span::new(3, 5), make_exprs![
-                make_name!(simple 4:4 #3)
-            ]
-        ))
+            make_name!(simple 4:4 #3))
     }        //  123456789012
     case!{ "degg[a, b, ]" as Expr,
-        Expr::IndexCall(IndexCallExpr::new(
+        make_expr!(index 0:11 bracket 4:11
             make_name!(simple 0:3 #2),
-            Span::new(4, 11), make_exprs![
-                make_name!(simple 5:5 #3),
-                make_name!(simple 8:8 #4)
-            ]
-        ))
+            make_name!(simple 5:5 #3),
+            make_name!(simple 8:8 #4))
     }     
 
     //           123456
     case!{ "2[3].a" as Expr,
         make_expr!(member 0:5 dot 4:4
-            IndexCallExpr::new(
-                make_lit!(2, 0, 0),
-                Span::new(1, 3), make_exprs![
-                    make_lit!(3, 2, 2)
-                ]
-            ),
+            make_expr!(index 0:3 bracket 1:3
+                make_expr!(i32 2 0:0),
+                make_expr!(i32 3 2:2)),
             make_name!(simple bare 5:5 #2))
     }   //  1234567890123456
     case!{ "print(233, ).bit" as Expr,
         make_expr!(member 0:15 dot 12:12
-            Expr::FnCall(FnCallExpr::new(
+            make_expr!(fn 0:11 paren 5:11
                 make_name!(simple 0:4 #2),
-                Span::new(5, 11), make_exprs![
-                    make_lit!(233, 6, 8)
-                ]
-            )),
+                make_expr!(i32 233 6:8)),
             make_name!(simple bare 13:15 #3))
     }            //  12345678901234
     case!{ "1.degg[a, b, ]" as Expr,
-        Expr::IndexCall(IndexCallExpr::new(
+        make_expr!(index 0:13 bracket 6:13
             make_expr!(member 0:5 dot 1:1
-                make_expr!(1: i32, 0:0),
+                make_expr!(i32 1 0:0),
                 make_name!(simple bare 2:5 #2)),
-            Span::new(6, 13), make_exprs![
-                make_name!(simple 7:7 #3),
-                make_name!(simple 10:10 #4),
-            ]
-        ))
+            make_name!(simple 7:7 #3),
+            make_name!(simple 10:10 #4))
     }        
 
     case!{ "!~!1[1]" as Expr,
-        Expr::Unary(UnaryExpr::new(
-            Separator::Not, Span::new(0, 0),
-            UnaryExpr::new(
-                Separator::Tilde, Span::new(1, 1),
-                UnaryExpr::new(
-                    Separator::Not, Span::new(2, 2),
-                    IndexCallExpr::new(
-                        make_lit!(1, 3, 3),
-                        Span::new(4, 6), make_exprs![
-                            make_lit!(1, 5, 5)
-                        ]
-                    )
-                )
-            )
-        ))
+        make_expr!(unary 0:6 Not 0:0
+            make_expr!(unary 1:6 Tilde 1:1
+                make_expr!(unary 2:6 Not 2:2
+                    make_expr!(index 3:6 bracket 4:6
+                        make_expr!(i32 1 3:3),
+                        make_expr!(i32 1 5:5)))))
     }
 
-    // increase and decrease
     //           1234567
     case!{ "!!1" as Expr,
-        Expr::Unary(UnaryExpr::new(
-            Separator::Not, Span::new(0, 0), 
-            UnaryExpr::new(
-                Separator::Not, Span::new(1, 1),
-                make_lit!(1, 2, 2)
-            )
-        ))
+        make_expr!(unary 0:2 Not 0:0
+            make_expr!(unary 1:2 Not 1:1
+                make_expr!(i32 1 2:2)))
     }
 
     // range
-    case!{ ".." as Expr, 
-        Expr::RangeFull(RangeFullExpr::new(Span::new(0, 1)))
+    case!{ ".." as Expr,
+        make_expr!(range full 0:1)
     }
 
     case!{ "..1 + 2" as Expr,
-        Expr::RangeRight(RangeRightExpr::new(Span::new(0, 6), BinaryExpr::new(
-            make_lit!(1, 2, 2),
-            Separator::Add, Span::new(4, 4),
-            make_lit!(2, 6, 6)
-        )))
+        make_expr!(range right 0:6
+            make_expr!(binary 2:6 Add 4:4
+                make_expr!(i32 1 2:2),
+                make_expr!(i32 2 6:6)))
     }
 
     case!{ "xxx .." as Expr,
-        Expr::RangeLeft(RangeLeftExpr::new(Span::new(0, 5), 
-            make_name!(simple 0:2 #2)
-        ))
+        make_expr!(range left 0:5
+            make_name!(simple 0:2 #2))
     }
 
     case!{ "1 + 2 .. [4, 5, 6][2]" as Expr,
-        Expr::RangeBoth(RangeBothExpr::new(
-            BinaryExpr::new(
-                make_lit!(1, 0, 0),
-                Separator::Add, Span::new(2, 2),
-                make_lit!(2, 4, 4)
-            ),
-            Span::new(6, 7),
-            IndexCallExpr::new(
-                ArrayDef::new(Span::new(9, 17), make_exprs![
-                    make_lit!(4, 10, 10),
-                    make_lit!(5, 13, 13),
-                    make_lit!(6, 16, 16)
-                ]),
-                Span::new(18, 20), make_exprs![
-                    make_lit!(2, 19, 19)
-                ]
-            )
-        ))
+        make_expr!(range both 0:20 dotdot 6:7
+            make_expr!(binary 0:4 Add 2:2
+                make_expr!(i32 1 0:0),
+                make_expr!(i32 2 4:4)),
+            make_expr!(index 9:20 bracket 18:20
+                make_expr!(array 9:17
+                    make_expr!(i32 4 10:10),
+                    make_expr!(i32 5 13:13),
+                    make_expr!(i32 6 16:16)),
+                make_expr!(i32 2 19:19)))
     }
-}
-
-#[cfg(test)] #[test]
-fn expr_errors() {
 
     case!{ "de(, )" as Expr,
-        Expr::FnCall(FnCallExpr::new(
-            make_name!(simple 0:1 #2), 
-            Span::new(2, 5), make_exprs![]
-        )), errors make_errors!(
+        make_expr!(fn 0:5 paren 2:5
+            make_name!(simple 0:1 #2),
+        ), errors make_errors!(
             e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(2, 5), strings::FnCallHere)
         )
     }
 
     //               0 12345678
     case!{ "\"\".de(, )" as Expr,
-        Expr::FnCall(FnCallExpr::new(
+        make_expr!(fn 0:8 paren 5:8
             make_expr!(member 0:4 dot 2:2
-                make_expr!(#1: str, 0:1),
+                make_expr!(str #1 0:1),
                 make_name!(simple bare 3:4 #2)),
-            Span::new(5, 8), make_exprs![]
-        )), errors make_errors!(
+        ), errors make_errors!(
             e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(5, 8), strings::FnCallHere)
         )
     }
 
     case!{ "defg[]" as Expr,
-        Expr::IndexCall(IndexCallExpr::new(
+        make_expr!(index 0:5 bracket 4:5
             make_name!(simple 0:3 #2),
-            Span::new(4, 5), make_exprs![]
-        )), errors make_errors!(
+        ), errors make_errors!(
             e: e.emit(strings::EmptyIndexCall).detail(Span::new(4, 5), strings::IndexCallHere)
         )
     }
 
     //              123456
     case!{ "de[, ]" as Expr,
-        Expr::IndexCall(IndexCallExpr::new(
+        make_expr!(index 0:5 bracket 2:5
             make_name!(simple 0:1 #2),
-            Span::new(2, 5), make_exprs![]
-        )), errors make_errors!(
+        ), errors make_errors!(
             e: e.emit(strings::EmptyIndexCall).detail(Span::new(2, 5), strings::IndexCallHere)
         )
     }

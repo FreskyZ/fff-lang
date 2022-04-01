@@ -16,10 +16,6 @@ pub struct ParenExpr {
     pub span: Span,  // paren_span also all_span
 }
 
-impl ParenExpr {
-    pub fn new<T: Into<Expr>>(span: Span, expr: T) -> ParenExpr { ParenExpr{ expr: Box::new(expr.into()), span } }
-}
-
 impl Node for ParenExpr {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_paren_expr(self)
@@ -34,12 +30,6 @@ impl Node for ParenExpr {
 pub struct TupleDef {
     pub items: ExprList,
     pub paren_span: Span,
-}
-
-impl TupleDef {
-    pub fn new(paren_span: Span, items: ExprList) -> TupleDef { 
-        TupleDef{ paren_span, items } 
-    }
 }
 
 impl Parser for TupleDef {
@@ -57,17 +47,17 @@ impl Parser for TupleDef {
             }
             ExprListParseResult::SingleComma(span) => {
                 cx.emit(strings::UnexpectedSingleComma).detail(span, strings::TupleDefHere);
-                Ok(Expr::Tuple(TupleDef::new(span, ExprList::new(Vec::new()))))
+                Ok(Expr::Tuple(TupleDef{ paren_span: span, items: ExprList{ items: Vec::new() } }))
             }
             ExprListParseResult::Normal(span, exprlist) => {
                 if exprlist.items.len() == 1 {
-                    Ok(Expr::Paren(ParenExpr::new(span, exprlist.items.into_iter().last().unwrap())))
+                    Ok(Expr::Paren(ParenExpr{ span, expr: Box::new(exprlist.items.into_iter().last().unwrap()) }))
                 } else {
-                    Ok(Expr::Tuple(TupleDef::new(span, exprlist)))
+                    Ok(Expr::Tuple(TupleDef{ paren_span: span, items: exprlist }))
                 }
             }
             ExprListParseResult::EndWithComma(span, exprlist) => {
-                Ok(Expr::Tuple(TupleDef::new(span, exprlist)))
+                Ok(Expr::Tuple(TupleDef{ paren_span: span, items: exprlist }))
             }
         }
     }
@@ -85,32 +75,22 @@ impl Node for TupleDef {
 
 #[cfg(test)] #[test]
 fn tuple_def_parse() {
-    use super::{BinaryExpr};
-
     //                                   01234567
     case!{ "(1, '2')" as TupleDef,
-        Expr::Tuple(TupleDef::new(Span::new(0, 7), make_exprs![
-            make_lit!(1, 1, 1),
-            make_lit!('2': char, 4, 6),
-        ]))
+        make_expr!(tuple 0:7
+            make_expr!(i32 1 1:1),
+            make_expr!(char 4:6 '2'))
     }
     //                                   0123456
     case!{ "(1 + 1)" as TupleDef,
-        Expr::Paren(ParenExpr::new(Span::new(0, 6), 
-            BinaryExpr::new(
-                make_lit!(1, 1, 1), 
-                Separator::Add, Span::new(3, 3),
-                make_lit!(1, 5, 5),
-            )
-        ))
+        make_expr!(paren 0:6
+            make_expr!(binary 1:5 Add 3:3
+                make_expr!(i32 1 1:1),
+                make_expr!(i32 1 5:5)))
     }
-}
-
-#[cfg(test)] #[test]
-fn tuple_def_errors() {
     
     case!{ "( , )" as TupleDef,
-        Expr::Tuple(TupleDef::new(Span::new(0, 4), make_exprs![])), 
+        make_expr!(tuple 0: 4),
         errors make_errors!(e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(0, 4), strings::TupleDefHere)),
     }
 }

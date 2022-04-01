@@ -87,7 +87,7 @@ fn var_decl_stmt_parse() {
         VarDeclStatement::new_const(Span::new(0, 13),
             2, Span::new(6, 8),
             None,
-            Some(Expr::Lit(make_lit!(0, 12, 12)))
+            Some(make_expr!(i32 0 12:12))
         )
     }
 
@@ -97,9 +97,9 @@ fn var_decl_stmt_parse() {
         VarDeclStatement::new_var(Span::new(0, 19), 2, Span::new(4, 6),
             None,
             Some(make_expr!(array 10:18
-                make_expr!(1: i32, 11:11),
-                make_expr!(3: i32, 14:14),
-                make_expr!(5: i32, 17:17)))
+                make_expr!(i32 1 11:11),
+                make_expr!(i32 3 14:14),
+                make_expr!(i32 5 17:17)))
         )
     }
     
@@ -120,7 +120,7 @@ fn var_decl_stmt_parse() {
                     make_type!(prim 11:12 U8),
                     make_type!(prim 15:18 Char),
                 ]),
-                make_lit!(1, 21, 21).into())),
+                make_expr!(i32 1 21:21).into())),
             None
         ), strings ["buf"]
     }
@@ -133,15 +133,17 @@ fn var_decl_stmt_parse() {
     //      01234567890123456789012345678901234567890123456789
     case!{ "var buf: ([u8;3], u32) = ([1u8, 5u8, 0x7u8], abc);" as VarDeclStatement,
         VarDeclStatement::new_var(Span::new(0, 49), 2, Span::new(4, 6),
-            Some(make_type!(tuple 9:21 [make_type!(array 10:15 make_type!(prim 11:12 U8), make_lit!(3, 14, 14).into()), make_type!(prim 18:20 U32)])),
-            Some(Expr::Tuple(TupleDef::new(Span::new(25, 48), make_exprs![
-                ArrayDef::new(Span::new(26, 42), make_exprs![
-                    make_lit!(1: u8, 27, 29),
-                    make_lit!(5: u8, 32, 34),
-                    make_lit!(7: u8, 37, 41),
-                ]),
-                make_name!(simple 45:47 #3)
-            ])))
+            Some(make_type!(tuple 9:21 [
+                make_type!(array 10:15 
+                    make_type!(prim 11:12 U8), 
+                    make_expr!(i32 3 14:14).into()), 
+                make_type!(prim 18:20 U32)])),
+            Some(make_expr!(tuple 25:48
+                make_expr!(array 26:42
+                    make_expr!(u8 1 27:29),
+                    make_expr!(u8 5 32:34),
+                    make_expr!(u8 7 37:41)),
+                make_name!(simple 45:47 #3)))
         ), strings ["buf", "abc"]
     }
 

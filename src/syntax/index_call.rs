@@ -1,6 +1,4 @@
-///! fff-lang
-///!
-///! syntax/index_call_expr
+///! syntax::index_call_expr:
 ///! index_call_expr = expr '[' [ expr_list ] ']'
 ///! renamed from postfix_expr::subscription to make it shorter
 
@@ -16,27 +14,6 @@ pub struct IndexCallExpr {
     pub all_span: Span,
 }
 
-impl IndexCallExpr {
-
-    pub fn new<T: Into<Expr>>(base: T, bracket_span: Span, params: ExprList) -> IndexCallExpr {
-        let base = base.into();
-        IndexCallExpr{
-            all_span: base.get_all_span() + bracket_span,
-            base: Box::new(base),
-            params,
-            bracket_span
-        }
-    }
-
-    fn new_with_parse_result(bracket_span: Span, params: ExprList) -> IndexCallExpr {
-        IndexCallExpr{
-            all_span: Span::new(0, 0), 
-            base: Box::new(Expr::default()),
-            bracket_span, params
-        }
-    }
-}
-
 impl Parser for IndexCallExpr {
     type Output = IndexCallExpr;
 
@@ -49,13 +26,13 @@ impl Parser for IndexCallExpr {
         match cx.expect::<ExprList>()? {
             ExprListParseResult::Normal(span, expr_list) 
             | ExprListParseResult::EndWithComma(span, expr_list) => 
-                Ok(IndexCallExpr::new_with_parse_result(span, expr_list)),
+                Ok(IndexCallExpr{ all_span: Span::new(0, 0), base: Box::new(Expr::default()), bracket_span: span, params: expr_list }),
             ExprListParseResult::Empty(span) 
             | ExprListParseResult::SingleComma(span) => {
                 // empty subscription is meaningless, refuse it here
                 // update: but for trying to get more message in the rest program, make it not none
                 cx.emit(strings::EmptyIndexCall).detail(span, strings::IndexCallHere);
-                Ok(IndexCallExpr::new_with_parse_result(span, ExprList::new(Vec::new())))
+                Ok(IndexCallExpr{ all_span: Span::new(0, 0), base: Box::new(Expr::default()), bracket_span: span, params: ExprList{ items: Vec::new() } })
             }
         }
     }
@@ -77,20 +54,20 @@ impl Node for IndexCallExpr {
 fn index_call_parse() {
 
     case!{ "[1, 2, ]" as IndexCallExpr,
-        IndexCallExpr::new_with_parse_result(Span::new(0, 7), make_exprs![
-            make_lit!(1, 1, 1),
-            make_lit!(2, 4, 4),
-        ])
+        IndexCallExpr{ all_span: Span::new(0, 0), base: Box::new(Expr::default()), bracket_span: Span::new(0, 7), params: ExprList{ items: vec![
+            make_expr!(i32 1 1:1),
+            make_expr!(i32 2 4:4),
+        ] } }
     }
 
     case!{ "[\"hello\"]" as IndexCallExpr,
-        IndexCallExpr::new_with_parse_result(Span::new(0, 8), make_exprs![
-            make_lit!(2: str, 1, 7)
-        ])
+        IndexCallExpr{ all_span: Span::new(0, 0), base: Box::new(Expr::default()), bracket_span: Span::new(0, 8), params: ExprList{ items: vec![
+            make_expr!(str #2 1:7)
+        ] } }
     }
 
     case!{ "[,]" as IndexCallExpr,
-        IndexCallExpr::new_with_parse_result(Span::new(0, 2), ExprList::new(Vec::new())), 
+        IndexCallExpr{ all_span: Span::new(0, 0), base: Box::new(Expr::default()), bracket_span: Span::new(0, 2), params: ExprList{ items: Vec::new() } }, 
         errors make_errors!(e: e.emit(strings::EmptyIndexCall).detail(Span::new(0, 2), strings::IndexCallHere)),
     }
 }

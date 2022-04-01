@@ -14,20 +14,6 @@ pub struct BlockStatement {
     pub body: Block,
     pub all_span: Span,
 }
-impl BlockStatement {
-    
-    pub fn new_no_label(body: Block) -> BlockStatement { BlockStatement{ all_span: body.all_span, body, name: None } }
-    pub fn new_with_label(name: LabelDef, body: Block) -> BlockStatement { 
-        BlockStatement { all_span: name.all_span + body.all_span, body, name: Some(name) } 
-    }
-
-    fn new(name: Option<LabelDef>, body: Block) -> BlockStatement { 
-        BlockStatement{ 
-            all_span: match name { Some(ref name) => name.all_span + body.all_span, None => body.all_span },
-            body, name
-        } 
-    }
-}
 
 impl Parser for BlockStatement {
     type Output = BlockStatement;
@@ -38,9 +24,10 @@ impl Parser for BlockStatement {
 
     fn parse(cx: &mut ParseContext) -> Result<BlockStatement, Unexpected> {
     
-        let maybe_name = cx.try_expect::<LabelDef>()?;
+        let name = cx.try_expect::<LabelDef>()?;
         let body = cx.expect::<Block>()?;
-        Ok(BlockStatement::new(maybe_name, body))
+        let all_span = name.as_ref().map(|n| n.all_span).unwrap_or(body.all_span) + body.all_span;
+        Ok(BlockStatement{ all_span, name, body })
     }
 }
 
@@ -59,11 +46,14 @@ impl Node for BlockStatement {
 #[cfg(test)] #[test]
 fn block_stmt_parse() {
 
-    case!{ "{}" as BlockStatement, BlockStatement::new_no_label(Block::new(Span::new(0, 1), vec![])) }
-    case!{ "@: {}" as BlockStatement, 
-        BlockStatement::new_with_label(
-            LabelDef::new(1, Span::new(0, 1)),
-            Block::new(Span::new(3, 4), vec![])
-        )
+    case!{ "{}" as BlockStatement, 
+        BlockStatement{ name: None, all_span: Span::new(0, 1), 
+            body: Block::new(Span::new(0, 1), vec![]) }
+    }
+
+    case!{ "@: {}" as BlockStatement,
+        BlockStatement{ all_span: Span::new(0, 4),
+            name: Some(LabelDef::new(1, Span::new(0, 1))),
+            body: Block::new(Span::new(3, 4), vec![]) }
     }
 }

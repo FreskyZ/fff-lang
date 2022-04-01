@@ -117,10 +117,10 @@ fn if_stmt_parse() {
     case!{ "if true { } else if false { } else {}" as IfStatement,
         IfStatement{ all_span: Span::new(0, 36),
             if_clause: IfClause{ all_span: Span::new(0, 10), 
-                condition: make_expr!(true, 3:6),
+                condition: make_expr!(true 3:6),
                 body: Block::new(Span::new(8, 10), vec![]) }, 
             elseif_clauses: vec![IfClause{ all_span: Span::new(12, 28), 
-                condition: make_expr!(false, 20:24),
+                condition: make_expr!(false 20:24),
                 body: Block::new(Span::new(26, 28), vec![]) }],
             else_clause: Some(ElseClause{ all_span: Span::new(30, 36),
                 body: Block::new(Span::new(35, 36), vec![]) }) }
@@ -131,7 +131,7 @@ fn if_stmt_parse() {
     case!{ "if 1 { sth.do_sth(a); other.do_other(b); } else { [1,2,3].map(writeln);}" as IfStatement,
         IfStatement{ all_span: Span::new(0, 71),
             if_clause: IfClause{ all_span: Span::new(0, 41), 
-                condition: make_expr!(1: i32, 3:3),
+                condition: make_expr!(i32 1 3:3),
                 body: Block::new(Span::new(5, 41), vec![
                     Statement::SimpleExpr(SimpleExprStatement::new(Span::new(7, 20),
                         make_expr!(fn 7:19 paren 17:19
@@ -152,9 +152,9 @@ fn if_stmt_parse() {
                         make_expr!(fn 50:69 paren 61:69
                             make_expr!(member 50:60 dot 57:57
                                 make_expr!(array 50:56
-                                    make_expr!(1: i32, 51:51),
-                                    make_expr!(2: i32, 53:53),
-                                    make_expr!(3: i32, 55:55)),
+                                    make_expr!(i32 1 51:51),
+                                    make_expr!(i32 2 53:53),
+                                    make_expr!(i32 3 55:55)),
                                 make_name!(simple bare 58:60 #8)),
                             make_name!(simple 62:68 #9))))]) }),
         }, strings ["sth", "do_sth", "a", "other", "do_other", "b", "map", "writeln"]

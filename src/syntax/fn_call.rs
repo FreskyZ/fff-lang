@@ -1,6 +1,4 @@
-///! fff-lang
-///!
-///! syntax/fn_call_expr
+///! syntax::fn_call_expr:
 ///! fn_call_expr = expr '(' [ expr_list ] ')'
 
 use super::prelude::*;
@@ -15,27 +13,6 @@ pub struct FnCallExpr {
     pub all_span: Span,
 }
 
-impl FnCallExpr {
-
-    pub fn new<T: Into<Expr>>(base: T, paren_span: Span, params: ExprList) -> FnCallExpr {
-        let base = base.into();
-        FnCallExpr{
-            all_span: base.get_all_span() + paren_span,
-            base: Box::new(base),
-            params,
-            paren_span,
-        }
-    }
-
-    fn new_with_parse_result(paren_span: Span, params: ExprList) -> FnCallExpr {
-        FnCallExpr{
-            all_span: Span::new(0, 0), 
-            base: Box::new(Expr::default()),
-            paren_span, params
-        }
-    }
-}
-
 impl Parser for FnCallExpr {
     type Output = FnCallExpr;
 
@@ -45,14 +22,17 @@ impl Parser for FnCallExpr {
 
     fn parse(cx: &mut ParseContext) -> Result<FnCallExpr, Unexpected> {
 
+        // this parse method return partial and priority proxy will fill base
+        macro_rules! make_partial { ($span:expr, $params:expr) => (
+            Ok(FnCallExpr{ all_span: Span::new(0, 0), base: Box::new(Expr::default()), paren_span: $span, params: $params })) }
+
         match cx.expect::<ExprList>()? {
-            ExprListParseResult::Empty(span) => 
-                Ok(FnCallExpr::new_with_parse_result(span, ExprList::new(Vec::new()))),
-            ExprListParseResult::Normal(span, expr_list) | ExprListParseResult::EndWithComma(span, expr_list) => 
-                Ok(FnCallExpr::new_with_parse_result(span, expr_list)),
+            | ExprListParseResult::Normal(span, expr_list) 
+            | ExprListParseResult::EndWithComma(span, expr_list) => make_partial!(span, expr_list),
+            ExprListParseResult::Empty(span) => make_partial!(span, ExprList{ items: Vec::new() }),
             ExprListParseResult::SingleComma(span) => {
                 cx.emit(strings::UnexpectedSingleComma).detail(span, strings::FnCallHere);
-                Ok(FnCallExpr::new_with_parse_result(span, ExprList::new(Vec::new())))
+                make_partial!(span, ExprList{ items: Vec::new() })
             }
         }
     }
@@ -73,17 +53,17 @@ impl Node for FnCallExpr {
 fn fn_call_parse() {
 
     case!{ "()" as FnCallExpr,
-        FnCallExpr::new_with_parse_result(Span::new(0, 1), make_exprs![])
+        FnCallExpr{ all_span: Span::new(0, 0), base: Box::new(Expr::default()), paren_span: Span::new(0, 1), params: ExprList{ items: Vec::new() } }
     }
 
     case!{ "(\"hello\")" as FnCallExpr,
-        FnCallExpr::new_with_parse_result(Span::new(0, 8), make_exprs![
-            make_lit!(2: str, 1, 7),
-        ])
+        FnCallExpr{ all_span: Span::new(0, 0), base: Box::new(Expr::default()), paren_span: Span::new(0, 8), params: ExprList{ items: vec![
+            make_expr!(str #2 1:7),
+        ] } }
     }
 
     case!{ "(,)" as FnCallExpr,
-        FnCallExpr::new_with_parse_result(Span::new(0, 2), ExprList::new(Vec::new())),
+        FnCallExpr{ all_span: Span::new(0, 0), base: Box::new(Expr::default()), paren_span: Span::new(0, 2), params: ExprList{ items: Vec::new() } },
         errors make_errors!(e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(0, 2), strings::FnCallHere))
     }
 }

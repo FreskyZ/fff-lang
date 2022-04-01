@@ -97,7 +97,7 @@ fn enum_def_parse() {
     case!{ "enum E { M1, M2 = 1,}" as EnumDef, 
         EnumDef{ name: IsId::new(2), name_span: Span::new(5, 5), quote_span: Span::new(7, 20), all_span: Span::new(0, 20), base_type: None, variants: vec![
             EnumVariant{ name: IsId::new(3), name_span: Span::new(9, 10), value: None, all_span: Span::new(9, 10) },
-            EnumVariant{ name: IsId::new(4), name_span: Span::new(13, 14), value: Some(make_expr!(1: i32, 18:18)), all_span: Span::new(13, 18) }]}
+            EnumVariant{ name: IsId::new(4), name_span: Span::new(13, 14), value: Some(make_expr!(i32 1 18:18)), all_span: Span::new(13, 18) }]}
     }
 
     //      0123456789012

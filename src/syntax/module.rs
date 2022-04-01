@@ -68,7 +68,7 @@ fn module_parse() {
                 name: make_name!(simple bare 4:4 #2) }),
             Item::Import(ModuleStatement{ name: IsId::new(3), name_span: Span::new(14, 14), path: None, all_span: Span::new(7, 15) }),
             Item::SimpleExpr(SimpleExprStatement::new(Span::new(17, 18), 
-                make_lit!(3, 17, 17)
+                make_expr!(i32 3 17:17)
             )),
             Item::SimpleExpr(SimpleExprStatement::new(Span::new(20, 21), 
                 make_name!(simple 20:20 #3)

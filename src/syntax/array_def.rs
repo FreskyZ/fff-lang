@@ -12,10 +12,6 @@ pub struct ArrayDef {
     pub bracket_span: Span,
 }
 
-impl ArrayDef {
-    pub fn new(bracket_span: Span, items: ExprList) -> ArrayDef { ArrayDef{ bracket_span, items } }
-}
-
 impl Parser for ArrayDef {
     type Output = Expr;
 
@@ -27,13 +23,13 @@ impl Parser for ArrayDef {
         
         match cx.expect::<ExprList>()? {
             ExprListParseResult::Empty(span) =>
-                Ok(Expr::Array(ArrayDef::new(span, ExprList::new(Vec::new())))),
+                Ok(Expr::Array(ArrayDef{ bracket_span: span, items: ExprList{ items: Vec::new() } })),
             ExprListParseResult::Normal(span, exprlist) 
             | ExprListParseResult::EndWithComma(span, exprlist) =>
-                Ok(Expr::Array(ArrayDef::new(span, exprlist))),
+                Ok(Expr::Array(ArrayDef{ bracket_span: span, items: exprlist })),
             ExprListParseResult::SingleComma(span) => {
                 cx.emit(strings::UnexpectedSingleComma).detail(span, strings::ArrayDefHere);
-                Ok(Expr::Array(ArrayDef::new(span, ExprList::new(Vec::new()))))
+                Ok(Expr::Array(ArrayDef{ bracket_span: span, items: ExprList{ items: Vec::new() } }))
             }
         }
     }
@@ -51,30 +47,23 @@ impl Node for ArrayDef {
 #[cfg(test)]
 #[test]
 fn array_def_parse() {
-    use super::{BinaryExpr};
-
     case!{ "[a]" as ArrayDef,
-        Expr::Array(ArrayDef::new(Span::new(0, 2), make_exprs![
-            make_name!(simple 1:1 #2)
-        ]))
+        make_expr!(array 0:2
+            make_name!(simple 1:1 #2)),
     }
 
     //                                   01234567
     case!{ "[1, '2']" as ArrayDef,
-        Expr::Array(ArrayDef::new(Span::new(0, 7), make_exprs![
-            make_lit!(1, 1, 1),
-            make_lit!('2': char, 4, 6),
-        ]))
+        make_expr!(array 0:7
+            make_expr!(i32 1 1:1),
+            make_expr!(char 4:6 '2')),
     }
     //                                   01234567
     case!{ "[1 + 1,]" as ArrayDef,
-        Expr::Array(ArrayDef::new(Span::new(0, 7), make_exprs![
-            BinaryExpr::new(
-                make_lit!(1, 1, 1),
-                Separator::Add, Span::new(3, 3),
-                make_lit!(1, 5, 5),
-            )
-        ]))
+        make_expr!(array 0:7
+            make_expr!(binary 1:5 Add 3:3
+                make_expr!(i32 1 1:1),
+                make_expr!(i32 1 5:5))),
     }
 }
 
@@ -82,7 +71,7 @@ fn array_def_parse() {
 fn array_def_errors() {
 
     case!{ "[ , ]" as ArrayDef,
-        Expr::Array(ArrayDef::new(Span::new(0, 4), make_exprs![])),
+        make_expr!(array 0:4),
         errors make_errors!(e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(0, 4), strings::ArrayDefHere))
     }
 }
