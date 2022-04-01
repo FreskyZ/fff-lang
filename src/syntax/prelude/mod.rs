@@ -16,10 +16,7 @@ pub use super::ast::*;
 pub use super::visit::{Node, Visitor};
 
 mod context;
-mod node_display;
-
 pub use context::{ParseContext};
-pub use node_display::{FormatVisitor, NodeDisplay};
 
 /// unrecoverable unexpected for this parser, detail in diagnostics
 // this should be more readable than previous Result<Self::Output, ()>

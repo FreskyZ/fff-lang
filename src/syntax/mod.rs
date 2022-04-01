@@ -7,6 +7,10 @@ pub mod ast;
 
 mod visit;
 mod visit_impl;
+mod pretty;
+
+#[cfg(test)]
+mod tests;
 
 pub use visit::{Node, Visitor};
 

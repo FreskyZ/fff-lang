@@ -1,6 +1,6 @@
 
 use crate::source::SourceContext;
-use super::prelude::NodeDisplay;
+use super::pretty::NodeDisplay;
 use super::ast::*;
 
 pub trait Node: Sized {
@@ -11,8 +11,9 @@ pub trait Node: Sized {
         Ok(Default::default())
     }
 
-    fn display<'n, 'scx, F>(&'n self, scx: &'scx SourceContext<F>) -> NodeDisplay<'n, 'scx, Self, F> {
-        NodeDisplay(self, scx)
+    // this should be some trait NodeDisplay: Node in theory but directly put this here is convenient
+    fn display<'n, 'scx, F>(&'n self, context: &'scx SourceContext<F>) -> NodeDisplay<'n, 'scx, Self, F> {
+        NodeDisplay{ node: self, context }
     }
 }
 
