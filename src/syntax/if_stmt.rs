@@ -3,25 +3,6 @@
 
 use super::prelude::*;
 
-impl Node for IfClause {
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_if_clause(self)
-    }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_expr(&self.condition)?;
-        v.visit_block(&self.body)
-    }
-}
-
-
-impl Node for ElseClause {
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_else_clause(self)
-    }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_block(&self.body)
-    }
-}
 
 impl Parser for IfStatement {
     type Output = IfStatement;
@@ -65,22 +46,6 @@ impl Parser for IfStatement {
         }
 
         Ok(IfStatement{ all_span, if_clause, elseif_clauses, else_clause })
-    }
-}
-
-impl Node for IfStatement {
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_if_stmt(self)
-    }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_if_clause(&self.if_clause)?;
-        for elseif in &self.elseif_clauses {
-            v.visit_if_clause(elseif)?;
-        }
-        if let Some(r#else) = &self.else_clause {
-            v.visit_else_clause(r#else)?;
-        }
-        Ok(Default::default())
     }
 }
 

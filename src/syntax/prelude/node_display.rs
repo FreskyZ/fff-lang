@@ -391,7 +391,7 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
     }
 }
 
-pub struct NodeDisplay<'n, 'scx, N, F>(pub (in super)&'n N, pub (in super) &'scx SourceContext<F>);
+pub struct NodeDisplay<'n, 'scx, N, F>(pub (in super::super)&'n N, pub (in super::super) &'scx SourceContext<F>);
 
 impl<'n, 'scx, N: Node, F: FileSystem> fmt::Display for NodeDisplay<'n, 'scx, N, F> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

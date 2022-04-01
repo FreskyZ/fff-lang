@@ -15,22 +15,6 @@ impl Node for EnumVariant {
     }
 }
 
-
-impl Node for EnumDef {
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_enum_def(self)
-    }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        if let Some(base_type) = &self.base_type {
-            v.visit_primitive_type(base_type)?;
-        }
-        for variant in &self.variants {
-            v.visit_enum_variant(variant)?;
-        }
-        Ok(Default::default())
-    }
-}
-
 impl Parser for EnumDef {
     type Output = Self;
 

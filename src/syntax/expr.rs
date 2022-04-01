@@ -3,42 +3,6 @@
 use super::prelude::*;
 use super::*;
 
-macro_rules! define_expr {
-    ($($ty:ty => $variant:ident, $visit:ident, $span:ident,)+) => (
-impl Node for Expr {
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_expr(self)
-    }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        match self {
-        $(
-            Expr::$variant(e) => v.$visit(e),
-        )+
-        }
-    }
-}
-    )
-}
-
-define_expr! {
-    LitExpr => Lit, visit_lit_expr, span,
-    Name => Name, visit_name, all_span,
-    ParenExpr => Paren, visit_paren_expr, span,
-    TupleDef => Tuple, visit_tuple_def, paren_span,
-    ArrayDef => Array, visit_array_def, bracket_span,
-    FnCallExpr => FnCall, visit_fn_call_expr, all_span,
-    IndexCallExpr => IndexCall, visit_index_call_expr, all_span,
-    MemberAccessExpr => MemberAccess, visit_member_access, all_span,
-    ObjectLiteral => Object, visit_object_literal, all_span,
-    UnaryExpr => Unary, visit_unary_expr, all_span,
-    BinaryExpr => Binary, visit_binary_expr, all_span,
-    RangeBothExpr => RangeBoth, visit_range_both_expr, all_span,
-    RangeFullExpr => RangeFull, visit_range_full_expr, all_span,
-    RangeLeftExpr => RangeLeft, visit_range_left_expr, all_span,
-    RangeRightExpr => RangeRight, visit_range_right_expr, all_span,
-}
-
-
 impl Parser for Expr {
     type Output = Expr;
 

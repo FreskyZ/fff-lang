@@ -28,17 +28,6 @@ impl Parser for IndexCallExpr {
     }
 }
 
-impl Node for IndexCallExpr {
-
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_index_call_expr(self)
-    }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_expr(&self.base)?;
-        v.visit_expr_list(&self.params)
-    }
-}
-
 #[cfg(test)]
 #[test]
 fn index_call_parse() {

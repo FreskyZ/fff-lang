@@ -23,13 +23,6 @@ impl Parser for ModuleStatement {
     }
 }
 
-impl Node for ModuleStatement {
-
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_module_stmt(self)
-    }
-}
-
 #[cfg(test)] 
 #[test]
 fn module_stmt_parse() {

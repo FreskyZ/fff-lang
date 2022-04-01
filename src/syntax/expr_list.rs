@@ -58,19 +58,6 @@ impl Parser for ExprList {
     }
 }
 
-impl Node for ExprList {
-
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_expr_list(self)
-    }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        for item in &self.items {
-            v.visit_expr(item)?;
-        }
-        Ok(Default::default())
-    }
-}
-
 #[cfg(test)] #[test]
 fn expr_list_parse() {
 

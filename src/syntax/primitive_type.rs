@@ -15,9 +15,3 @@ impl Parser for PrimitiveType {
         Ok(PrimitiveType{ name, span })
     }
 }
-
-impl Node for PrimitiveType {
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_primitive_type(self)
-    }
-}

@@ -22,7 +22,6 @@ impl JumpStatement {
     }
 }
 
-
 impl Parser for ContinueStatement {
     type Output = ContinueStatement;
     fn matches(current: &Token) -> bool { 
@@ -33,11 +32,6 @@ impl Parser for ContinueStatement {
     }
 }
 
-impl Node for ContinueStatement {
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_continue_stmt(self)
-    }
-}
 impl Parser for BreakStatement {
     type Output = BreakStatement;
     fn matches(current: &Token) -> bool { 
@@ -45,12 +39,6 @@ impl Parser for BreakStatement {
     }
     fn parse(cx: &mut ParseContext) -> Result<BreakStatement, Unexpected> {
         Ok(BreakStatement(JumpStatement::parse(cx, Keyword::Break)?))
-    }
-}
-
-impl Node for BreakStatement {
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_break_stmt(self)
     }
 }
 

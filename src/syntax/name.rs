@@ -4,21 +4,6 @@
 
 use super::prelude::*;
 
-impl Node for NameSegment {
-
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_name_segment(self)
-    }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        if let Self::Generic(types, _) = self {
-            for r#type in types {
-                v.visit_type_ref(r#type)?;
-            }
-        }
-        Ok(Default::default())
-    }
-}
-
 impl Parser for Name {
     type Output = Self;
 
@@ -73,21 +58,6 @@ impl Parser for Name {
         let all_span = type_as_segment.as_ref().map(|s| s.span).or(beginning_separator_span)
             .unwrap_or_else(|| segments[0].get_span()) + segments.last().unwrap().get_span(); // [0] and last().unwrap(): matches() guarantees segments are not empty
         Ok(Name{ type_as_segment, global, segments, all_span })
-    }
-}
-
-impl Node for Name {
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_name(self)
-    }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        if let Some(type_as_segment) = &self.type_as_segment {
-            v.visit_type_as_segment(type_as_segment)?;
-        }
-        for segment in &self.segments {
-            v.visit_name_segment(segment)?;
-        }
-        Ok(Default::default())
     }
 }
 

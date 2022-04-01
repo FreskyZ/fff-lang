@@ -38,14 +38,3 @@ impl Parser for ArrayType {
         Ok(ArrayType{ base, size, span: left_bracket_span + right_bracket_span })
     }
 }
-
-impl Node for ArrayType {
-
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_array_type(self)
-    }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_type_ref(&self.base)?;
-        v.visit_expr(&self.size)
-    }
-}

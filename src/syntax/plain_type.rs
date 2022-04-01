@@ -10,28 +10,6 @@
 
 use super::prelude::*;
 
-impl Node for TypeAsSegment {
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_type_as_segment(self)
-    }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_type_ref(self.from.as_ref())?;
-        v.visit_type_ref(self.to.as_ref())
-    }
-}
-
-impl Node for TypeSegment {
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_type_segment(self)
-    }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        for parameter in &self.parameters {
-            v.visit_type_ref(parameter)?;
-        }
-        Ok(Default::default())
-    }
-}
-
 impl Parser for PlainType {
     type Output = Self;
 
@@ -79,22 +57,6 @@ impl Parser for PlainType {
         let all_span = type_as_segment.as_ref().map(|s| s.span).or(beginning_separator_span)
             .unwrap_or_else(|| segments[0].all_span) + segments.last().unwrap().all_span; // [0] and last().unwrap(): matches() guarantees segments are not empty
         Ok(PlainType{ type_as_segment, global, segments, all_span })
-    }
-}
-
-impl Node for PlainType {
-
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_plain_type(self)
-    }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        if let Some(type_as_segment) = &self.type_as_segment {
-            v.visit_type_as_segment(type_as_segment)?;
-        }
-        for segment in &self.segments {
-            v.visit_type_segment(segment)?;
-        }
-        Ok(Default::default())
     }
 }
 

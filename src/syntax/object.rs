@@ -14,20 +14,6 @@ impl Node for ObjectLiteralField {
     }
 }
 
-
-impl Node for ObjectLiteral {
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_object_literal(self)
-    }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_expr(self.base.as_ref())?;
-        for field in &self.fields {
-            v.visit_object_literal_field(field)?;
-        }
-        Ok(Default::default())
-    }
-}
-
 impl Parser for ObjectLiteral {
     type Output = Self;
     

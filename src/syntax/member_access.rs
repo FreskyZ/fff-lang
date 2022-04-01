@@ -43,14 +43,3 @@ impl Parser for MemberAccessExpr {
         Ok(MemberAccessExpr{ base: Box::new(Expr::default()), dot_span, name, all_span: Span::new(0, 0) })
     }
 }
-
-impl Node for MemberAccessExpr {
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_member_access(self)
-    }
-
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_expr(self.base.as_ref())?;
-        v.visit_name(&self.name)
-    }
-}

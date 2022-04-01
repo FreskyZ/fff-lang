@@ -4,15 +4,6 @@
 
 use super::prelude::*;
 
-impl Node for TypeFieldDef {
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_type_field_def(self)
-    }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_type_ref(&self.r#type)
-    }
-}
-
 
 impl Parser for TypeDef {
     type Output = Self;
@@ -47,17 +38,6 @@ impl Parser for TypeDef {
     }
 }
 
-impl Node for TypeDef {
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_type_def(self)
-    }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        for field in &self.fields {
-            v.visit_type_field_def(field)?;
-        }
-        Ok(Default::default())
-    }
-}
 
 #[cfg(test)] #[test]
 fn type_def_parse() {

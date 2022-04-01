@@ -17,13 +17,3 @@ impl Parser for RefType {
         Ok(RefType{ span: and_span + base.get_all_span(), base: Box::new(base) })
     }
 }
-
-impl Node for RefType {
-
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_ref_type(self)
-    }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_type_ref(&self.base)
-    }
-}

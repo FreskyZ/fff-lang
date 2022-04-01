@@ -2,7 +2,6 @@
 use crate::source::{Span, IsId, FileId};
 use crate::lexical::{Separator, Keyword, Numeric};
 
-// TODO reverse derive PartialEq and Debug by find and replace
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct ArrayDef {
@@ -23,7 +22,7 @@ pub struct ArrayType {
 pub struct BinaryExpr {
     pub left_expr: Box<Expr>,
     pub right_expr: Box<Expr>,
-    pub operator: Separator,            // this means every binary operator matches a binary expr
+    pub operator: Separator,
     pub operator_span: Span,
     pub all_span: Span,
 }

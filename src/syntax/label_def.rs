@@ -24,12 +24,6 @@ impl Parser for LabelDef {
     }
 }
 
-impl Node for LabelDef {
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_label_def(self)
-    }
-}
-
 #[cfg(test)] #[test]
 fn label_def_parse() {
     case!{ "@1:" as LabelDef, LabelDef::new(2, Span::new(0, 2)) }

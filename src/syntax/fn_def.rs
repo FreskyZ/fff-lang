@@ -67,21 +67,6 @@ impl Parser for FnDef {
     }
 }
 
-impl Node for FnDef {
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_fn_def(self)
-    }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        for param in &self.params {
-            v.visit_fn_param(param)?;
-        }
-        if let Some(ret_type) = &self.ret_type {
-            v.visit_type_ref(ret_type)?;
-        }
-        v.visit_block(&self.body)
-    }
-}
-
 #[cfg(test)]
 #[test]
 fn fn_def_parse() {

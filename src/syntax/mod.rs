@@ -1,9 +1,14 @@
 ///! syntax: syntax parse
 
 mod prelude;
-pub use prelude::{Node, Parser, Visitor};
+pub use prelude::{Parser};
 
 pub mod ast;
+
+mod visit;
+mod visit_impl;
+
+pub use visit::{Node, Visitor};
 
 mod abc;
 mod array_def;

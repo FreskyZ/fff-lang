@@ -30,17 +30,6 @@ impl Parser for ReturnStatement {
     }
 }
 
-impl Node for ReturnStatement {
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_ret_stmt(self)
-    }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        if let Some(expr) = &self.expr {
-            v.visit_expr(expr)?;
-        }
-        Ok(Default::default())
-    }
-}
 
 #[cfg(test)] #[test]
 fn ret_stmt_parse() {

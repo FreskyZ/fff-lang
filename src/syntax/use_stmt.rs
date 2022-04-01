@@ -25,16 +25,6 @@ impl Parser for UseStatement {
     }
 }
 
-impl Node for UseStatement {
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_use_stmt(self)
-    }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_name(&self.name)?;
-        Ok(Default::default())
-    }
-}
-
 #[cfg(test)] #[test]
 fn use_stmt_parse() {
 

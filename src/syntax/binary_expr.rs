@@ -68,17 +68,6 @@ impl Parser for BinaryExpr {
     }
 }
 
-impl Node for BinaryExpr {
-
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_binary_expr(self)
-    }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_expr(&self.left_expr)?;
-        v.visit_expr(&self.right_expr)
-    }
-}
-
 #[cfg(test)] #[test]
 fn binary_expr_parse() {
 

@@ -8,42 +8,6 @@
 
 use super::prelude::*;
 
-impl Node for RangeFullExpr {
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_range_full_expr(self)
-    }
-}
-
-
-impl Node for RangeRightExpr {
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_range_right_expr(self)
-    }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_expr(self.expr.as_ref())
-    }
-}
-
-
-impl Node for RangeLeftExpr {
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_range_left_expr(self)
-    }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_expr(self.expr.as_ref())
-    }
-}
-
-impl Node for RangeBothExpr {
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_range_both_expr(self)
-    }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_expr(self.left_expr.as_ref())?;
-        v.visit_expr(self.right_expr.as_ref())
-    }
-}
-
 // actually also a priority proxy
 pub struct RangeExpr;
 impl Parser for RangeExpr {

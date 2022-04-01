@@ -33,18 +33,6 @@ impl Parser for ForStatement {
     }
 }
 
-impl Node for ForStatement {
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_for_stmt(self)
-    }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        if let Some(name) = &self.loop_name {
-            v.visit_label_def(name)?;
-        }
-        v.visit_expr(&self.iter_expr)?;
-        v.visit_block(&self.body)
-    }
-}
 
 #[cfg(test)] #[test]
 fn for_stmt_parse() {

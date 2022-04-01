@@ -21,16 +21,6 @@ impl Parser for SimpleExprStatement {
     }
 }
 
-impl Node for SimpleExprStatement {
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_simple_expr_stmt(self)
-    }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_expr(&self.expr)
-    }
-}
-
-
 impl Parser for AssignExprStatement {
     type Output = Statement;
 
@@ -59,15 +49,6 @@ impl Parser for AssignExprStatement {
     }
 }
 
-impl Node for AssignExprStatement {
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_assign_expr_stmt(self)
-    }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_expr(&self.left_expr)?;
-        v.visit_expr(&self.right_expr)
-    }
-}
 
 #[cfg(test)] #[test]
 fn expr_stmt_parse() {

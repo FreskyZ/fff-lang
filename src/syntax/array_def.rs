@@ -27,15 +27,6 @@ impl Parser for ArrayDef {
     }
 }
 
-impl Node for ArrayDef {
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_array_def(self)
-    }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_expr_list(&self.items)
-    }
-}
-
 #[cfg(test)]
 #[test]
 fn array_def_parse() {

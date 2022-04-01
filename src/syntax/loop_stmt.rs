@@ -21,18 +21,6 @@ impl Parser for LoopStatement {
     }
 }
 
-impl Node for LoopStatement {
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_loop_stmt(self)
-    }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        if let Some(name) = &self.name {
-            v.visit_label_def(name)?;
-        }
-        v.visit_block(&self.body)
-    }
-}
-
 #[cfg(test)] #[test]
 fn loop_stmt_parse() {
     use super::{ast::Statement, ast::SimpleExprStatement};

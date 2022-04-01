@@ -25,18 +25,6 @@ impl Parser for Block {
     }
 }
 
-impl Node for Block {
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_block(self)
-    }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        for item in &self.items {
-            v.visit_stmt(item)?;
-        }
-        Ok(Default::default())
-    }
-}
-
 #[cfg(test)] #[test]
 fn block_parse() {
     

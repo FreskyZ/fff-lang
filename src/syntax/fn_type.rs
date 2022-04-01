@@ -9,15 +9,6 @@
 
 use super::prelude::*;
 
-impl Node for FnTypeParam {
-
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_fn_type_param(self)
-    }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_type_ref(&self.r#type)
-    }
-}
 
 impl Parser for FnType {
     type Output = FnType;
@@ -73,17 +64,3 @@ impl Parser for FnType {
     }
 }
 
-impl Node for FnType {
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_fn_type(self)
-    }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        for parameter in &self.parameters {
-            v.visit_fn_type_param(parameter)?;
-        }
-        if let Some(ret_type) = &self.ret_type {
-            v.visit_type_ref(ret_type.as_ref())?;
-        }
-        Ok(Default::default())
-    }
-}

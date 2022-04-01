@@ -24,9 +24,3 @@ impl Parser for LitExpr {
         Ok(Expr::Lit(LitExpr::new(lit, lit_span)))
     }
 }
-
-impl Node for LitExpr {
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_lit_expr(self)
-    }
-}

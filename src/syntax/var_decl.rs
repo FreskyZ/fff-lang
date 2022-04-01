@@ -32,21 +32,6 @@ impl Parser for VarDeclStatement {
     }
 }
 
-impl Node for VarDeclStatement {
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_var_decl(self)
-    }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        if let Some(r#type) = &self.r#type {
-            v.visit_type_ref(r#type)?;
-        }
-        if let Some(init_expr) = &self.init_expr {
-            v.visit_expr(init_expr)?;
-        }
-        Ok(Default::default())
-    }
-}
-
 #[cfg(test)] #[test]
 fn var_decl_stmt_parse() {    
     //                                           12345678901234
