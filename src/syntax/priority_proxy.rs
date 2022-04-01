@@ -3,7 +3,6 @@
 ///! postfix_expr = expr { ( member_access | fn_call | indexer_call ) }
 
 use super::prelude::*;
-use super::{Expr, Name, NameSegment, LitExpr, TupleDef, ArrayDef, FnCallExpr, IndexCallExpr, MemberAccessExpr, ObjectLiteral};
 
 struct PrimaryExpr;
 

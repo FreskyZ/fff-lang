@@ -14,8 +14,8 @@
 - [x] add object literal syntax, it can fits in postfix expr with require base expr is an name
 - [x] add simple enum type, works as typed namespaced constant
 - [x] move multiple file operations from syntaxtree.rs into driver, add file id to module
-- [x] discard test constructors and use make_xxxx macros, merge make_lit into make_expr, remove make_exprs
-- [ ] try add make_stmt, try merge all of them into make_node, rename previous make_node to make_ast
+- [x] discard test constructors and use make_xxxx macros, merge make_lit into make_expr, remove make_exprs, try add make_stmt
+- [ ] try merge all of them into make_node, rename previous make_node to make_ast
 - [ ] move node definitions to one file, move node implementations (impl Node) to one file, move parse tests to several dedicated files
 - [ ] move parse functions to several dedicated files, then ParseContext's context (allow object literal, is in format string literal, etc.) may can be pass by parameter not save in ParseContext
 - [-] fix random test input generator

@@ -4,19 +4,6 @@
 ///! expr_stmt = expr { assign_ops expr } ';'
 
 use super::prelude::*;
-use super::{Statement, Expr};
-
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct SimpleExprStatement {
-    pub expr: Expr, 
-    pub all_span: Span,  // this span = expr.all_span + semicolon_span
-}
-impl SimpleExprStatement {
-    pub fn new<T: Into<Expr>>(all_span: Span, expr: T) -> SimpleExprStatement { 
-        SimpleExprStatement{ all_span, expr: expr.into() } 
-    }
-}
 
 // dispatch them to convenience statement define macro
 impl Parser for SimpleExprStatement {
@@ -43,27 +30,6 @@ impl Node for SimpleExprStatement {
     }
 }
 
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct AssignExprStatement {
-    pub left_expr: Expr,
-    pub right_expr: Expr,
-    pub assign_op: Separator,
-    pub assign_op_span: Span,
-    pub all_span: Span,
-}
-impl AssignExprStatement {
-    
-    pub fn new<T1: Into<Expr>, T2: Into<Expr>>(all_span: Span, 
-        assign_op: Separator, assign_op_span: Span, left_expr: T1, right_expr: T2) -> AssignExprStatement {
-        AssignExprStatement{
-            left_expr: left_expr.into(),
-            right_expr: right_expr.into(),
-            all_span,
-            assign_op, assign_op_span,
-        }
-    }
-}
 
 impl Parser for AssignExprStatement {
     type Output = Statement;

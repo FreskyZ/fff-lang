@@ -5,17 +5,6 @@
 // TODO: add else for break, like python
 
 use super::prelude::*;
-use super::{Expr, Block, LabelDef};
-
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct WhileStatement {
-    pub name: Option<LabelDef>,
-    pub loop_expr: Expr,
-    pub body: Block,
-    pub while_span: Span,
-    pub all_span: Span,
-}
 
 impl Parser for WhileStatement {
     type Output = WhileStatement;
@@ -52,7 +41,7 @@ impl Node for WhileStatement {
 
 #[cfg(test)] #[test]
 fn while_stmt_parse() {
-    use super::{Statement, SimpleExprStatement};
+    use super::{ast::Statement, ast::SimpleExprStatement};
     //      0        1         2         3         4        
     //      01234567890123456789012345 67890123456789012 3456
     case!{ "@2: while true { writeln(\"fresky hellooooo\"); }" as WhileStatement,

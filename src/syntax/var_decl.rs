@@ -5,18 +5,6 @@
 ///! var-decl = 'var' identifier [ ':' type-use ] [ '=' expr ] ';'
 
 use super::prelude::*;
-use super::{Expr, TypeRef};
-
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct VarDeclStatement {
-    pub is_const: bool,
-    pub name: IsId,
-    pub name_span: Span,
-    pub r#type: Option<TypeRef>,
-    pub init_expr: Option<Expr>,
-    pub all_span: Span,
-}
 
 impl Parser for VarDeclStatement {
     type Output = VarDeclStatement;
@@ -60,9 +48,7 @@ impl Node for VarDeclStatement {
 }
 
 #[cfg(test)] #[test]
-fn var_decl_stmt_parse() {
-    use crate::syntax::*;
-    
+fn var_decl_stmt_parse() {    
     //                                           12345678901234
     case!{ "const abc = 0;" as VarDeclStatement,
         make_stmt!(const 0:13 #2 6:8

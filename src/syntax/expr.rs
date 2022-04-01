@@ -5,18 +5,6 @@ use super::*;
 
 macro_rules! define_expr {
     ($($ty:ty => $variant:ident, $visit:ident, $span:ident,)+) => (
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub enum Expr {
-$(
-    $variant($ty),
-)+
-}
-
-$( impl From<$ty> for Expr {
-    fn from(s: $ty) -> Expr { Expr::$variant(s) }
-} )+
-
 impl Node for Expr {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_expr(self)
@@ -26,16 +14,6 @@ impl Node for Expr {
         $(
             Expr::$variant(e) => v.$visit(e),
         )+
-        }
-    }
-}
-
-impl Expr {
-    pub fn get_all_span(&self) -> Span {
-        match self {
-            $(
-                Expr::$variant(e) => e.$span,
-            )+
         }
     }
 }
@@ -59,6 +37,7 @@ define_expr! {
     RangeLeftExpr => RangeLeft, visit_range_left_expr, all_span,
     RangeRightExpr => RangeRight, visit_range_right_expr, all_span,
 }
+
 
 impl Parser for Expr {
     type Output = Expr;
@@ -93,66 +72,66 @@ impl Default for Expr {
 macro_rules! make_expr {
     // literals does not have (lit prefix because they are used frequently
     (unit $start:literal:$end:literal) => (
-        crate::syntax::Expr::Lit(crate::syntax::LitExpr{ value: crate::syntax::LitValue::Unit, span: Span::new($start, $end) }));
+        crate::syntax::ast::Expr::Lit(crate::syntax::ast::LitExpr{ value: crate::syntax::ast::LitValue::Unit, span: Span::new($start, $end) }));
     (true $start:literal:$end:literal) => (
-        crate::syntax::Expr::Lit(crate::syntax::LitExpr{ value: crate::syntax::LitValue::Bool(true), span: Span::new($start, $end) }));
+        crate::syntax::ast::Expr::Lit(crate::syntax::ast::LitExpr{ value: crate::syntax::ast::LitValue::Bool(true), span: Span::new($start, $end) }));
     (false $start:literal:$end:literal) => (
-        crate::syntax::Expr::Lit(crate::syntax::LitExpr{ value: crate::syntax::LitValue::Bool(false), span: Span::new($start, $end) }));
+        crate::syntax::ast::Expr::Lit(crate::syntax::ast::LitExpr{ value: crate::syntax::ast::LitValue::Bool(false), span: Span::new($start, $end) }));
     (char $start:literal:$end:literal $v:literal) => (
-        crate::syntax::Expr::Lit(crate::syntax::LitExpr{ value: crate::syntax::LitValue::Char($v), span: Span::new($start, $end) }));
+        crate::syntax::ast::Expr::Lit(crate::syntax::ast::LitExpr{ value: crate::syntax::ast::LitValue::Char($v), span: Span::new($start, $end) }));
     (str #$v:literal $start:literal:$end:literal) => (
-        crate::syntax::Expr::Lit(crate::syntax::LitExpr{ value: crate::syntax::LitValue::Str(IsId::new($v)), span: Span::new($start, $end) }));
+        crate::syntax::ast::Expr::Lit(crate::syntax::ast::LitExpr{ value: crate::syntax::ast::LitValue::Str(IsId::new($v)), span: Span::new($start, $end) }));
     (i32 $v:literal $start:literal:$end:literal) => (
-        crate::syntax::Expr::Lit(crate::syntax::LitExpr{ value: crate::syntax::LitValue::Num(Numeric::I32($v)), span: Span::new($start, $end) }));
+        crate::syntax::ast::Expr::Lit(crate::syntax::ast::LitExpr{ value: crate::syntax::ast::LitValue::Num(Numeric::I32($v)), span: Span::new($start, $end) }));
     (u8 $v:literal $start:literal:$end:literal) => (
-        crate::syntax::Expr::Lit(crate::syntax::LitExpr{ value: crate::syntax::LitValue::Num(Numeric::U8($v)), span: Span::new($start, $end) }));
+        crate::syntax::ast::Expr::Lit(crate::syntax::ast::LitExpr{ value: crate::syntax::ast::LitValue::Num(Numeric::U8($v)), span: Span::new($start, $end) }));
     (u32 $v:literal $start:literal:$end:literal) => (
-        crate::syntax::Expr::Lit(crate::syntax::LitExpr{ value: crate::syntax::LitValue::Num(Numeric::U32($v)), span: Span::new($start, $end) }));
+        crate::syntax::ast::Expr::Lit(crate::syntax::ast::LitExpr{ value: crate::syntax::ast::LitValue::Num(Numeric::U32($v)), span: Span::new($start, $end) }));
     (u64 $v:literal $start:literal:$end:literal) => (
-        crate::syntax::Expr::Lit(crate::syntax::LitExpr{value: crate::syntax::LitValue::Num(Numeric::U64($v)), span: Span::new($start, $end) }));
+        crate::syntax::ast::Expr::Lit(crate::syntax::ast::LitExpr{value: crate::syntax::ast::LitValue::Num(Numeric::U64($v)), span: Span::new($start, $end) }));
     (r32 $v:literal $start:literal:$end:literal) => (
-        crate::syntax::Expr::Lit(crate::syntax::LitExpr{ value: crate::syntax::LitValue::Num(Numeric::R32($v)), span: Span::new($start, $end) }));
+        crate::syntax::ast::Expr::Lit(crate::syntax::ast::LitExpr{ value: crate::syntax::ast::LitValue::Num(Numeric::R32($v)), span: Span::new($start, $end) }));
     (r64 $v:literal $start:literal:$end:literal) => (
-        crate::syntax::Expr::Lit(crate::syntax::LitExpr{ value: crate::syntax::LitValue::Num(Numeric::R64($v)), span: Span::new($start, $end) }));
-    (binary $start:literal:$end:literal $op:ident $op_start:literal:$op_end:literal $left:expr, $right:expr) => (crate::syntax::Expr::Binary(crate::syntax::BinaryExpr{
+        crate::syntax::ast::Expr::Lit(crate::syntax::ast::LitExpr{ value: crate::syntax::ast::LitValue::Num(Numeric::R64($v)), span: Span::new($start, $end) }));
+    (binary $start:literal:$end:literal $op:ident $op_start:literal:$op_end:literal $left:expr, $right:expr) => (crate::syntax::ast::Expr::Binary(crate::syntax::ast::BinaryExpr{
         left_expr: Box::new($left),
         right_expr: Box::new($right),
         operator: Separator::$op,
         operator_span: Span::new($op_start, $op_end),
         all_span: Span::new($start, $end),
     }));
-    (unary $start:literal:$end:literal $op:ident $op_start:literal:$op_end:literal $base:expr) => (crate::syntax::Expr::Unary(crate::syntax::UnaryExpr{
+    (unary $start:literal:$end:literal $op:ident $op_start:literal:$op_end:literal $base:expr) => (crate::syntax::ast::Expr::Unary(crate::syntax::ast::UnaryExpr{
         base: Box::new($base),
         operator: Separator::$op,
         operator_span: Span::new($op_start, $op_end),
         all_span: Span::new($start, $end),
     }));
     (member $start:literal:$end:literal dot $dot_start:literal:$dot_end:literal $base:expr, $name:expr) => (
-        crate::syntax::Expr::MemberAccess(crate::syntax::MemberAccessExpr{
+        crate::syntax::ast::Expr::MemberAccess(crate::syntax::ast::MemberAccessExpr{
             base: Box::new($base),
             dot_span: Span::new($dot_start, $dot_end),
             name: $name,
             all_span: Span::new($start, $end),
         })
     );
-    (array $start:literal:$end:literal $($item:expr),*$(,)?) => (crate::syntax::Expr::Array(crate::syntax::ArrayDef{
+    (array $start:literal:$end:literal $($item:expr),*$(,)?) => (crate::syntax::ast::Expr::Array(crate::syntax::ast::ArrayDef{
         bracket_span: Span::new($start, $end),
-        items: crate::syntax::ExprList {
+        items: crate::syntax::ast::ExprList {
             items: vec![$($item,)*],
         }
     }));
-    (tuple $start:literal:$end:literal $($item:expr),*$(,)?) => (crate::syntax::Expr::Tuple(crate::syntax::TupleDef{
+    (tuple $start:literal:$end:literal $($item:expr),*$(,)?) => (crate::syntax::ast::Expr::Tuple(crate::syntax::ast::TupleDef{
         paren_span: Span::new($start, $end),
-        items: crate::syntax::ExprList {
+        items: crate::syntax::ast::ExprList {
             items: vec![$($item,)*],
         }
     }));
-    (paren $start:literal:$end:literal $base:expr) => (crate::syntax::Expr::Paren(crate::syntax::ParenExpr{
+    (paren $start:literal:$end:literal $base:expr) => (crate::syntax::ast::Expr::Paren(crate::syntax::ast::ParenExpr{
         expr: Box::new($base),
         span: Span::new($start, $end),
     }));
     (object $start:literal:$end:literal quote $quote_start:literal:$quote_end:literal $base:expr, $($field:expr),*$(,)?) => (
-        crate::syntax::Expr::Object(crate::syntax::ObjectLiteral{
+        crate::syntax::ast::Expr::Object(crate::syntax::ast::ObjectLiteral{
             base: Box::new($base),
             quote_span: Span::new($quote_start, $quote_end),
             all_span: Span::new($start, $end),
@@ -160,7 +139,7 @@ macro_rules! make_expr {
         })
     );
     (object field $start:literal:$end:literal #$name:literal $name_start:literal:$name_end:literal colon $colon_start:literal:$colon_end:literal $value:expr$(,)?) => (
-        crate::syntax::ObjectLiteralField{
+        crate::syntax::ast::ObjectLiteralField{
             name: IsId::new($name),
             name_span: Span::new($name_start, $name_end),
             colon_span: Span::new($colon_start, $colon_end),
@@ -169,38 +148,38 @@ macro_rules! make_expr {
         }
     );
     (fn $start:literal:$end:literal paren $paren_start:literal:$paren_end:literal $base:expr, $($parameter:expr),*$(,)?) => (
-        crate::syntax::Expr::FnCall(crate::syntax::FnCallExpr{
+        crate::syntax::ast::Expr::FnCall(crate::syntax::ast::FnCallExpr{
             base: Box::new($base),
             paren_span: Span::new($paren_start, $paren_end),
             all_span: Span::new($start, $end),
-            params: crate::syntax::ExprList{
+            params: crate::syntax::ast::ExprList{
                 items: vec![$($parameter,)*],
             }
         })
     );
     (index $start:literal:$end:literal bracket $bracket_start:literal:$bracket_end:literal $base:expr, $($parameter:expr),*$(,)?) => (
-        crate::syntax::Expr::IndexCall(crate::syntax::IndexCallExpr{
+        crate::syntax::ast::Expr::IndexCall(crate::syntax::ast::IndexCallExpr{
             base: Box::new($base),
             bracket_span: Span::new($bracket_start, $bracket_end),
             all_span: Span::new($start, $end),
-            params: crate::syntax::ExprList{
+            params: crate::syntax::ast::ExprList{
                 items: vec![$($parameter,)*],
             }
         })
     );
-    (range full $start:literal:$end:literal) => (crate::syntax::Expr::RangeFull(crate::syntax::RangeFullExpr{
+    (range full $start:literal:$end:literal) => (crate::syntax::ast::Expr::RangeFull(crate::syntax::ast::RangeFullExpr{
         all_span: Span::new($start, $end),
     }));
-    (range left $start:literal:$end:literal $base:expr) => (crate::syntax::Expr::RangeLeft(crate::syntax::RangeLeftExpr{
+    (range left $start:literal:$end:literal $base:expr) => (crate::syntax::ast::Expr::RangeLeft(crate::syntax::ast::RangeLeftExpr{
         all_span: Span::new($start, $end),
         expr: Box::new($base),
     }));
-    (range right $start:literal:$end:literal $base:expr) => (crate::syntax::Expr::RangeRight(crate::syntax::RangeRightExpr{
+    (range right $start:literal:$end:literal $base:expr) => (crate::syntax::ast::Expr::RangeRight(crate::syntax::ast::RangeRightExpr{
         all_span: Span::new($start, $end),
         expr: Box::new($base),
     }));
     (range both $start:literal:$end:literal dotdot $dotdot_start:literal:$dotdot_end:literal $left:expr, $right:expr) => (
-        crate::syntax::Expr::RangeBoth(crate::syntax::RangeBothExpr{
+        crate::syntax::ast::Expr::RangeBoth(crate::syntax::ast::RangeBothExpr{
             all_span: Span::new($start, $end),
             op_span: Span::new($dotdot_start, $dotdot_end),
             left_expr: Box::new($left),

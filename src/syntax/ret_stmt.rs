@@ -4,23 +4,7 @@
 ///! ret_stmt = 'return' [ expr ] ';'
 
 use super::prelude::*;
-use super::Expr;
 
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct ReturnStatement {
-    pub expr: Option<Expr>,
-    pub all_span: Span,
-}
-impl ReturnStatement {
-
-    pub fn new_unit(all_span: Span) -> ReturnStatement {
-        ReturnStatement{ all_span, expr: None }
-    }
-    pub fn new_expr(all_span: Span, expr: Expr) -> ReturnStatement {
-        ReturnStatement{ all_span, expr: Some(expr) }
-    }
-}
 impl Parser for ReturnStatement {
     type Output = ReturnStatement;
 

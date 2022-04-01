@@ -4,16 +4,7 @@
 ///! unary_expr = { unary_operator } postfix_expr
 
 use super::prelude::*;
-use super::{Expr, PostfixExpr};
-
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct UnaryExpr {
-    pub base: Box<Expr>, 
-    pub operator: Separator, 
-    pub operator_span: Span,
-    pub all_span: Span,
-}
+use super::{PostfixExpr};
 
 impl Parser for UnaryExpr {
     type Output = Expr;

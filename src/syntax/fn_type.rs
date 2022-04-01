@@ -8,15 +8,6 @@
 ///!   so they are distinguished by always parseing type ref and very simple result (only one identifier) followed with colon is regarded as parameter name
 
 use super::prelude::*;
-use super::{TypeRef, PlainType};
-
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct FnTypeParam {
-    pub name: Option<(IsId, Span)>,
-    pub r#type: TypeRef,
-    pub all_span: Span,
-}
 
 impl Node for FnTypeParam {
 
@@ -26,15 +17,6 @@ impl Node for FnTypeParam {
     fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_type_ref(&self.r#type)
     }
-}
-
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct FnType {
-    pub paren_span: Span,
-    pub parameters: Vec<FnTypeParam>,
-    pub ret_type: Option<Box<TypeRef>>,
-    pub all_span: Span,
 }
 
 impl Parser for FnType {

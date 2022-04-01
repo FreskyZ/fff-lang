@@ -6,18 +6,6 @@
 
 use super::prelude::*;
 
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct LabelDef {
-    pub name: IsId,
-    pub all_span: Span,
-}
-impl LabelDef {
-    pub fn new(name: impl Into<IsId>, all_span: Span) -> LabelDef { 
-        LabelDef{ name: name.into(), all_span } 
-    }
-}
-
 impl Parser for LabelDef {
     type Output = LabelDef;
 

@@ -6,15 +6,6 @@
 ///! unit_lit = '(' ')'
 
 use super::prelude::*;
-use super::{Expr, LitExpr, LitValue, ExprList, ExprListParseResult};
-
-// Paren expr is a side effect of TupleDef
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct ParenExpr {
-    pub expr: Box<Expr>,
-    pub span: Span,  // paren_span also all_span
-}
 
 impl Node for ParenExpr {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
@@ -23,13 +14,6 @@ impl Node for ParenExpr {
     fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_expr(self.expr.as_ref())
     }
-}
-
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct TupleDef {
-    pub items: ExprList,
-    pub paren_span: Span,
 }
 
 impl Parser for TupleDef {

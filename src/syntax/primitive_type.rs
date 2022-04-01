@@ -3,13 +3,6 @@
 
 use super::prelude::*;
 
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct PrimitiveType {
-    pub name: Keyword,
-    pub span: Span,
-}
-
 impl Parser for PrimitiveType {
     type Output = PrimitiveType;
 

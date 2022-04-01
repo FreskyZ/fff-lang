@@ -5,14 +5,6 @@
 ///! type template name will be `tuple` when analysis, so user type `tuple` should be rejected by analysis
 
 use super::prelude::*;
-use super::{TypeRef};
-
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct TupleType {
-    pub items: Vec<TypeRef>,
-    pub span: Span,
-}
 
 impl Parser for TupleType {
     type Output = TupleType;

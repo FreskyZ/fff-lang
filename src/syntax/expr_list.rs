@@ -2,22 +2,6 @@
 ///! expr_list = expr { ',' expr } [ ',' ]
 
 use super::prelude::*;
-use super::Expr;
-
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct ExprList {
-    pub items: Vec<Expr>,
-}
-
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub enum ExprListParseResult {
-    Empty(Span),
-    SingleComma(Span),              // and quote span
-    Normal(Span, ExprList),         // and quote span
-    EndWithComma(Span, ExprList),   // and quote span
-}
 
 impl Node for ExprListParseResult {
 

@@ -4,17 +4,6 @@
 ///! last comma may omit
 
 use super::prelude::*;
-use super::Expr;
-
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct ObjectLiteralField {
-    pub name: IsId,
-    pub name_span: Span,
-    pub colon_span: Span,
-    pub value: Expr,
-    pub all_span: Span,
-}
 
 impl Node for ObjectLiteralField {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
@@ -25,14 +14,6 @@ impl Node for ObjectLiteralField {
     }
 }
 
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct ObjectLiteral {
-    pub base: Box<Expr>,
-    pub quote_span: Span,
-    pub fields: Vec<ObjectLiteralField>,
-    pub all_span: Span,
-}
 
 impl Node for ObjectLiteral {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {

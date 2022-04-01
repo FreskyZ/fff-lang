@@ -13,7 +13,7 @@ use crate::source::SourceContext;
 pub use crate::source::{Span, IsId};
 pub use crate::diagnostics::strings;
 pub use crate::lexical::{Token, Numeric, Separator, SeparatorKind, Keyword, KeywordKind};
-use super::*;
+pub use super::ast::*;
 
 mod context;
 mod node_display;

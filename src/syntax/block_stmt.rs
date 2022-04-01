@@ -5,15 +5,6 @@
 ///! block-stmt for explicit block definition in block and allow block label
 
 use super::prelude::*;
-use super::{Block, LabelDef};
-
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct BlockStatement {
-    pub name: Option<LabelDef>,
-    pub body: Block,
-    pub all_span: Span,
-}
 
 impl Parser for BlockStatement {
     type Output = BlockStatement;

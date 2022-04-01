@@ -3,23 +3,6 @@
 ///! name_segment = identifier | '<' type_ref { ',' type_ref } '>'
 
 use super::prelude::*;
-use super::{TypeRef, TypeAsSegment};
-
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub enum NameSegment {
-    Normal(IsId, Span),
-    Generic(Vec<TypeRef>, Span),
-}
-
-impl NameSegment {
-    pub fn get_span(&self) -> Span {
-        match self {
-            Self::Normal(_, span) => *span,
-            Self::Generic(_, span) => *span,
-        }
-    }
-}
 
 impl Node for NameSegment {
 
@@ -34,15 +17,6 @@ impl Node for NameSegment {
         }
         Ok(Default::default())
     }
-}
-
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct Name {
-    pub type_as_segment: Option<TypeAsSegment>,
-    pub global: bool,
-    pub segments: Vec<NameSegment>,
-    pub all_span: Span,
 }
 
 impl Parser for Name {
@@ -122,16 +96,16 @@ macro_rules! make_name {
     (simple $start:literal:$end:literal #$id:literal) => (
         make_name!($start:$end false, None, make_name!(segment $start:$end #$id)));
     ($start:literal:$end:literal $global:expr, $as:expr, $($segment:expr),*$(,)?) => (
-        crate::syntax::Expr::Name(crate::syntax::Name{ type_as_segment: $as, global: $global, all_span: Span::new($start, $end), segments: vec![$($segment,)*] }));
+        crate::syntax::ast::Expr::Name(crate::syntax::ast::Name{ type_as_segment: $as, global: $global, all_span: Span::new($start, $end), segments: vec![$($segment,)*] }));
     (segment $start:literal:$end:literal #$id:literal) => (
-        crate::syntax::NameSegment::Normal(IsId::new($id), Span::new($start, $end)));
+        crate::syntax::ast::NameSegment::Normal(IsId::new($id), Span::new($start, $end)));
     (segment generic $start:literal:$end:literal $($ty:expr),*$(,)?) => (
-        crate::syntax::NameSegment::Generic(vec![$($ty,)*], Span::new($start, $end)));
+        crate::syntax::ast::NameSegment::Generic(vec![$($ty,)*], Span::new($start, $end)));
     // bare version for use outside of expr
     (simple bare $start:literal:$end:literal #$id:literal) => (
         make_name!(bare $start:$end false, None, make_name!(segment $start:$end #$id)));
     (bare $start:literal:$end:literal $global:expr, $as:expr, $($segment:expr),*$(,)?) => (
-        crate::syntax::Name{ type_as_segment: $as, global: $global, all_span: Span::new($start, $end), segments: vec![$($segment,)*] });
+        crate::syntax::ast::Name{ type_as_segment: $as, global: $global, all_span: Span::new($start, $end), segments: vec![$($segment,)*] });
 }
 #[cfg(test)]
 pub(crate) use make_name;

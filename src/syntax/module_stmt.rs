@@ -3,15 +3,6 @@
 
 use super::prelude::*;
 
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct ModuleStatement {
-    pub name: IsId,
-    pub name_span: Span,
-    pub path: Option<(IsId, Span)>,
-    pub all_span: Span,
-}
-
 impl Parser for ModuleStatement {
     type Output = ModuleStatement;
 

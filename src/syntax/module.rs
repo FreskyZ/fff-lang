@@ -3,16 +3,7 @@
 ///! syntax/module, a source code file is a module
 ///! module = { item }
 
-use crate::source::FileId;
 use super::prelude::*;
-use super::{Item, ModuleStatement};
-
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct Module {
-    pub file: FileId,
-    pub items: Vec<Item>,
-}
 
 impl Node for Module {
     
@@ -60,10 +51,9 @@ impl Module {
 
 #[cfg(test)] #[test]
 fn module_parse() {
-    use super::{ModuleStatement, SimpleExprStatement, UseStatement};
     //                      0123456789012345678901234
     case!{ "use a; module b; 3; b; a;" as Module,
-        Module{ file: FileId::new(1), items: vec![
+        Module{ file: crate::source::FileId::new(1), items: vec![
             Item::Use(UseStatement{ all_span: Span::new(0, 5), alias: None,
                 name: make_name!(simple bare 4:4 #2) }),
             Item::Import(ModuleStatement{ name: IsId::new(3), name_span: Span::new(14, 14), path: None, all_span: Span::new(7, 15) }),

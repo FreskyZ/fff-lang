@@ -3,14 +3,6 @@
 ///! array_def = '[' [ expr_list ] ']'
 
 use super::prelude::*;
-use super::{Expr, ExprList, ExprListParseResult};
-
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct ArrayDef {
-    pub items: ExprList,
-    pub bracket_span: Span,
-}
 
 impl Parser for ArrayDef {
     type Output = Expr;

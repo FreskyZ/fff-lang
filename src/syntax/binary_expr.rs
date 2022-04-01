@@ -11,17 +11,6 @@
 // LogicalOrExpression = LogicalAndExpression | LogicalOrExpression LogicalOrOperator LogicalAndExpression
 
 use super::prelude::*;
-use super::{Expr, UnaryExpr};
-
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct BinaryExpr {
-    pub left_expr: Box<Expr>,
-    pub right_expr: Box<Expr>,
-    pub operator: Separator,            // this means every binary operator matches a binary expr
-    pub operator_span: Span,
-    pub all_span: Span,
-}
 
 impl Parser for BinaryExpr {
     type Output = Expr;

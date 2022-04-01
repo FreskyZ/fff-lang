@@ -4,6 +4,7 @@ use std::fmt::{self, Write};
 use crate::source::{SourceContext, FileSystem, Span, IsId};
 use super::Visitor;
 use super::super::*;
+use super::super::ast::*;
 
 static INDENTIONS: [[&str; 16]; 3] = [
     [
@@ -527,7 +528,7 @@ mod tests {
         let mut scx = make_source!("a.b(c, d, e).f(g, h, i,)(u,).j[k].l().m[n, o, p][r, s, t,]");
         let mut ecx = crate::diagnostics::make_errors!();
         let mut context = ParseContext::new(crate::lexical::Parser::new(scx.entry("1"), &mut ecx));
-        let node = PostfixExpr::parse(&mut context).unwrap();
+        let node = super::super::super::PostfixExpr::parse(&mut context).unwrap();
         context.finish();
         let actual = node.display(&scx).to_string();
         assert_text_eq!{ actual, "index-call <1:1-1:58> [] <1:49-1:58>

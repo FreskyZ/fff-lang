@@ -4,15 +4,6 @@
 ///! use_stmt = 'use' name [ 'as' identifier ] ';'
 
 use super::prelude::*;
-use super::{Name};
-
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct UseStatement {
-    pub name: Name,
-    pub alias: Option<(IsId, Span)>,
-    pub all_span: Span,
-}
 
 impl Parser for UseStatement {
     type Output = UseStatement;

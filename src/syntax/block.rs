@@ -4,20 +4,6 @@
 ///! block = '{' { statement } '}'
 
 use super::prelude::*;
-use super::Statement;
-
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct Block {
-    pub items: Vec<Statement>,
-    pub all_span: Span,
-}
-
-impl Block {
-    pub fn new(all_span: Span, statements: Vec<Statement>) -> Block { 
-        Block{ all_span, items: statements } 
-    }
-}
 
 impl Parser for Block {
     type Output = Block;

@@ -3,17 +3,6 @@
 ///! type_field_def = identifier ':' type_ref
 
 use super::prelude::*;
-use super::{TypeRef};
-
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct TypeFieldDef {
-    pub name: IsId,
-    pub name_span: Span,
-    pub colon_span: Span,
-    pub r#type: TypeRef,
-    pub all_span: Span,   // ident to TypeRef or ident to comma
-}
 
 impl Node for TypeFieldDef {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
@@ -24,14 +13,6 @@ impl Node for TypeFieldDef {
     }
 }
 
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct TypeDef {
-    pub all_span: Span,
-    pub name: IsId,
-    pub name_span: Span,
-    pub fields: Vec<TypeFieldDef>,
-}
 
 impl Parser for TypeDef {
     type Output = Self;

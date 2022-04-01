@@ -4,15 +4,6 @@
 ///! type template name will be `array` when analysis, so user type `array` should be rejected by analysis
 
 use super::prelude::*;
-use super::{TypeRef, Expr};
-
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct ArrayType {
-    pub base: Box<TypeRef>,
-    pub size: Expr,
-    pub span: Span, // all span
-}
 
 impl Parser for ArrayType {
     type Output = ArrayType;

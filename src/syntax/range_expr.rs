@@ -7,14 +7,6 @@
 ///! range_both = binary_expr '..' binary_expr
 
 use super::prelude::*;
-use super::{Expr, BinaryExpr};
-
-// RangeFull
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct RangeFullExpr {
-    pub all_span: Span,
-}
 
 impl Node for RangeFullExpr {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
@@ -22,13 +14,6 @@ impl Node for RangeFullExpr {
     }
 }
 
-// RangeRight
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct RangeRightExpr {
-    pub all_span: Span,  // all_span.slice(2) is range_op_span
-    pub expr: Box<Expr>,
-}
 
 impl Node for RangeRightExpr {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
@@ -39,13 +24,6 @@ impl Node for RangeRightExpr {
     }
 }
 
-// RangeLeft
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct RangeLeftExpr {
-    pub expr: Box<Expr>,
-    pub all_span: Span, // all_span.slice(-2, 0) should get range_op_span
-}
 
 impl Node for RangeLeftExpr {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
@@ -54,16 +32,6 @@ impl Node for RangeLeftExpr {
     fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_expr(self.expr.as_ref())
     }
-}
-
-// RangeBoth
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct RangeBothExpr {
-    pub left_expr: Box<Expr>,
-    pub op_span: Span,
-    pub right_expr: Box<Expr>,
-    pub all_span: Span,
 }
 
 impl Node for RangeBothExpr {

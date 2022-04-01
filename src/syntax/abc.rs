@@ -1,7 +1,6 @@
 ///! syntax::abc: abstract base class for stmt/item/type_ref, not expr
  
 use super::prelude::*;
-use super::*;
 
 // all variants has same priority
 // nearly all variants are N == <N as Node>::ParseOutput
@@ -12,15 +11,6 @@ use super::*;
 
 macro_rules! define_abc {
     ($name:ident, $desc:literal, $visit_this:ident, $($subty:ty => $variant:ident, $visit:ident,)+) => (
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub enum $name {
-    $($variant($subty),)+
-}
-
-$( impl From<$subty> for $name {
-    fn from(s: $subty) -> $name { $name::$variant(s) }
-} )+
 
 impl Parser for $name {
     type Output = $name;
@@ -114,23 +104,10 @@ define_abc!{ TypeRef, "type ref", visit_type_ref,
     PlainType => Plain, visit_plain_type,
 }
 
-impl TypeRef {
-    pub fn get_all_span(&self) -> Span {
-        match self {
-            Self::Primitive(t) => t.span,
-            Self::Array(t) => t.span,
-            Self::Fn(t) => t.all_span,
-            Self::Ref(t) => t.span,
-            Self::Tuple(t) => t.span,
-            Self::Plain(t) => t.all_span,
-        }
-    }
-}
-
 #[cfg(test)]
 macro_rules! make_stmt {
     (for $start:literal:$end:literal for $for_start:literal:$for_end:literal var #$iter_var:literal $iter_var_start:literal:$iter_var_end:literal $iter_expr:expr, $body:expr) => (
-        crate::syntax::ForStatement{
+        crate::syntax::ast::ForStatement{
             loop_name: None,
             for_span: Span::new($for_start, $for_end),
             iter_name: IsId::new($iter_var),
@@ -141,8 +118,8 @@ macro_rules! make_stmt {
         }
     );
     (for $start:literal:$end:literal label #$label:literal $label_start:literal:$label_end:literal for $for_start:literal:$for_end:literal var #$iter_var:literal $iter_var_start:literal:$iter_var_end:literal $iter_expr:expr, $body:expr) => (
-        crate::syntax::ForStatement{
-            loop_name: Some(crate::syntax::LabelDef{ name: IsId::new($label), all_span: Span::new($label_start, $label_end) }),
+        crate::syntax::ast::ForStatement{
+            loop_name: Some(crate::syntax::ast::LabelDef{ name: IsId::new($label), all_span: Span::new($label_start, $label_end) }),
             for_span: Span::new($for_start, $for_end),
             iter_name: IsId::new($iter_var),
             iter_span: Span::new($iter_var_start, $iter_var_end),
@@ -152,7 +129,7 @@ macro_rules! make_stmt {
         }
     );
     (loop $start:literal:$end:literal loop $loop_start:literal:$loop_end:literal $body:expr) => (
-        crate::syntax::LoopStatement{
+        crate::syntax::ast::LoopStatement{
             name: None,
             body: $body,
             loop_span: Span::new($loop_start, $loop_end),
@@ -160,15 +137,15 @@ macro_rules! make_stmt {
         }
     );
     (loop $start:literal:$end:literal label #$label:literal $label_start:literal:$label_end:literal loop $loop_start:literal:$loop_end:literal $body:expr) => (
-        crate::syntax::LoopStatement{
-            name: Some(crate::syntax::LabelDef{ name: IsId::new($label), all_span: Span::new($label_start, $label_end) }),
+        crate::syntax::ast::LoopStatement{
+            name: Some(crate::syntax::ast::LabelDef{ name: IsId::new($label), all_span: Span::new($label_start, $label_end) }),
             body: $body,
             loop_span: Span::new($loop_start, $loop_end),
             all_span: Span::new($start, $end),
         }
     );
     (while $start:literal:$end:literal while $while_start:literal:$while_end:literal $expr:expr, $body:expr) => (
-        crate::syntax::WhileStatement{
+        crate::syntax::ast::WhileStatement{
             name: None,
             loop_expr: $expr,
             body: $body,
@@ -177,8 +154,8 @@ macro_rules! make_stmt {
         }
     );
     (while $start:literal:$end:literal label #$label:literal $label_start:literal:$label_end:literal while $while_start:literal:$while_end:literal $expr:expr, $body:expr) => (
-        crate::syntax::WhileStatement{
-            name: Some(crate::syntax::LabelDef{ name: IsId::new($label), all_span: Span::new($label_start, $label_end) }),
+        crate::syntax::ast::WhileStatement{
+            name: Some(crate::syntax::ast::LabelDef{ name: IsId::new($label), all_span: Span::new($label_start, $label_end) }),
             loop_expr: $expr,
             body: $body,
             while_span: Span::new($while_start, $while_end),
@@ -186,31 +163,31 @@ macro_rules! make_stmt {
         }
     );
     (break $start:literal:$end:literal) => (
-        crate::syntax::BreakStatement(crate::syntax::JumpStatement{
+        crate::syntax::ast::BreakStatement(crate::syntax::ast::JumpStatement{
             target: None,
             all_span: Span::new($start, $end),
         })
     );
     (break $start:literal:$end:literal label #$label:literal $label_start:literal:$label_end:literal) => (
-        crate::syntax::BreakStatement(crate::syntax::JumpStatement{
+        crate::syntax::ast::BreakStatement(crate::syntax::ast::JumpStatement{
             target: Some((IsId::new($label), Span::new($label_start, $label_end))),
             all_span: Span::new($start, $end),
         })
     );
     (continue $start:literal:$end:literal) => (
-        crate::syntax::ContinueStatement(crate::syntax::JumpStatement{
+        crate::syntax::ast::ContinueStatement(crate::syntax::ast::JumpStatement{
             target: None,
             all_span: Span::new($start, $end),
         })
     );
     (continue $start:literal:$end:literal label #$label:literal $label_start:literal:$label_end:literal) => (
-        crate::syntax::ContinueStatement(crate::syntax::JumpStatement{
+        crate::syntax::ast::ContinueStatement(crate::syntax::ast::JumpStatement{
             target: Some((IsId::new($label), Span::new($label_start, $label_end))),
             all_span: Span::new($start, $end),
         })
     );
     (var $start:literal:$end:literal #$name:literal $name_start:literal:$name_end:literal $type:expr, $init:expr) => (
-        crate::syntax::VarDeclStatement{
+        crate::syntax::ast::VarDeclStatement{
             is_const: false,
             name: IsId::new($name),
             name_span: Span::new($name_start, $name_end),
@@ -220,7 +197,7 @@ macro_rules! make_stmt {
         }
     );
     (const $start:literal:$end:literal #$name:literal $name_start:literal:$name_end:literal $type:expr, $init:expr) => (
-        crate::syntax::VarDeclStatement{
+        crate::syntax::ast::VarDeclStatement{
             is_const: true,
             name: IsId::new($name),
             name_span: Span::new($name_start, $name_end),

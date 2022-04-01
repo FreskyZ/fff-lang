@@ -2,16 +2,6 @@
 ///! fn_call_expr = expr '(' [ expr_list ] ')'
 
 use super::prelude::*;
-use super::{Expr, ExprList, ExprListParseResult};
-
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct FnCallExpr {
-    pub base: Box<Expr>,
-    pub params: ExprList,
-    pub paren_span: Span,
-    pub all_span: Span,
-}
 
 impl Parser for FnCallExpr {
     type Output = FnCallExpr;

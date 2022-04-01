@@ -2,15 +2,6 @@
 ///! if_stmt = 'if' expr block { 'else' 'if' expr block } [ 'else' block ]
 
 use super::prelude::*;
-use super::{Expr, Block};
-
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct IfClause {
-    pub condition: Expr,
-    pub body: Block,
-    pub all_span: Span, // start from `if` or `else`
-}
 
 impl Node for IfClause {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
@@ -22,12 +13,6 @@ impl Node for IfClause {
     }
 }
 
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct ElseClause {
-    pub body: Block,
-    pub all_span: Span, // else_span = all_span.slice(0..3)
-}
 
 impl Node for ElseClause {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
@@ -36,15 +21,6 @@ impl Node for ElseClause {
     fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
         v.visit_block(&self.body)
     }
-}
-
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct IfStatement {
-    pub if_clause: IfClause,
-    pub elseif_clauses: Vec<IfClause>,
-    pub else_clause: Option<ElseClause>,
-    pub all_span: Span,
 }
 
 impl Parser for IfStatement {
@@ -110,8 +86,6 @@ impl Node for IfStatement {
 
 #[cfg(test)] #[test]
 fn if_stmt_parse() {
-    use super::{SimpleExprStatement, Statement};
-
     //                                      0        1         2         3
     //                                      0123456789012345678901234567890123456
     case!{ "if true { } else if false { } else {}" as IfStatement,

@@ -4,20 +4,7 @@
 ///! fn-def = 'fn' identifier '(' [ identifier ':' type-use { ',' identifier ':' type-use [ ',' ] } ] ')' [ '->' type-use ] block
 
 use super::prelude::*;
-use super::{Block, TypeRef};
 
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct FnParam {
-    pub name: IsId,
-    pub name_span: Span,
-    pub r#type: TypeRef,
-}
-impl FnParam {
-    pub fn new(name: impl Into<IsId>, name_span: Span, r#type: TypeRef) -> Self { 
-        Self{ r#type, name: name.into(), name_span } 
-    }
-}
 impl Node for FnParam {
     
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
@@ -28,27 +15,7 @@ impl Node for FnParam {
     }
 }
 
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct FnDef {
-    pub name: IsId,
-    pub name_span: Span,
-    pub params: Vec<FnParam>,
-    pub params_paren_span: Span,
-    pub ret_type: Option<TypeRef>,
-    pub body: Block,
-    pub all_span: Span,   // fn_span = all_span.slice(0..2)
-}
 
-impl FnDef {
-
-    pub fn new(all_span: Span, 
-        name: impl Into<IsId>, name_span: Span,
-        params_paren_span: Span, params: Vec<FnParam>, 
-        ret_type: Option<TypeRef>, body: Block) -> FnDef {
-        FnDef{ name: name.into(), name_span, params, params_paren_span, ret_type, body, all_span }
-    }
-}
 
 impl Parser for FnDef {
     type Output = FnDef;
@@ -118,8 +85,6 @@ impl Node for FnDef {
 #[cfg(test)]
 #[test]
 fn fn_def_parse() {
-    use super::{Statement, SimpleExprStatement};
-
     //                                012345678901
     case!{ "fn main() {}" as FnDef,
         FnDef::new(Span::new(0, 11), 2, Span::new(3, 6), Span::new(7, 8), 

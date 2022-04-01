@@ -6,19 +6,6 @@
 // TODO: add else for break, like python
 
 use super::prelude::*;
-use super::{Expr, Block, LabelDef};
-
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct ForStatement {
-    pub loop_name: Option<LabelDef>,
-    pub for_span: Span,
-    pub iter_name: IsId,
-    pub iter_span: Span,
-    pub iter_expr: Expr,
-    pub body: Block,
-    pub all_span: Span,
-}
 
 impl Parser for ForStatement {
     type Output = ForStatement;
@@ -61,8 +48,6 @@ impl Node for ForStatement {
 
 #[cfg(test)] #[test]
 fn for_stmt_parse() {
-    use super::{SimpleExprStatement, Statement};
-
     //                      0123456789012345678
     case!{ "@2: for i in 42 {}" as ForStatement,
         make_stmt!(for 0:17 label #2 0:2 for 4:6 var #3 8:8

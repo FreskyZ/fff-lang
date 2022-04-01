@@ -6,12 +6,6 @@
 
 use super::prelude::*;
 
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct JumpStatement {
-    pub target: Option<(IsId, Span)>,
-    pub all_span: Span,
-}
 impl JumpStatement {
 
     fn parse(cx: &mut ParseContext, expect_first_kw: Keyword) -> Result<JumpStatement, Unexpected> {
@@ -28,12 +22,6 @@ impl JumpStatement {
     }
 }
 
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct ContinueStatement(pub JumpStatement);
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct BreakStatement(pub JumpStatement);
 
 impl Parser for ContinueStatement {
     type Output = ContinueStatement;

@@ -2,16 +2,6 @@
 ///! enum_def = 'enum' ident [ ':' primitive_type ] '{' { ident [ '=' expr ] ',' } '}'
 
 use super::prelude::*;
-use super::{PrimitiveType, Expr};
-
-#[derive(Debug)]
-#[cfg_attr(test, derive(PartialEq))]
-pub struct EnumVariant {
-    pub name: IsId,
-    pub name_span: Span,
-    pub value: Option<Expr>,
-    pub all_span: Span,
-}
 
 impl Node for EnumVariant {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
@@ -25,16 +15,6 @@ impl Node for EnumVariant {
     }
 }
 
-#[derive(Debug)]
-#[cfg_attr(test, derive(PartialEq))]
-pub struct EnumDef {
-    pub name: IsId,
-    pub name_span: Span,
-    pub base_type: Option<PrimitiveType>,
-    pub quote_span: Span,
-    pub variants: Vec<EnumVariant>,
-    pub all_span: Span,
-}
 
 impl Node for EnumDef {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {

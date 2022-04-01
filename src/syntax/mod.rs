@@ -3,6 +3,8 @@
 mod prelude;
 pub use prelude::{Node, Parser, Visitor};
 
+pub mod ast;
+
 mod abc;
 mod array_def;
 mod array_type;
@@ -42,46 +44,8 @@ mod use_stmt;
 mod var_decl;
 mod while_stmt;
 
-pub use abc::{Statement, Item, TypeRef};
-pub use array_def::ArrayDef;
-pub use array_type::ArrayType;
-pub use binary_expr::BinaryExpr;
-pub use block_stmt::BlockStatement;
-pub use block::Block;
-pub use enum_def::{EnumDef, EnumVariant};
-pub use expr_list::ExprList;
-use expr_list::ExprListParseResult;
-pub use expr::Expr;
-pub use expr_stmt::{SimpleExprStatement, AssignExprStatement};
-pub use fn_call::FnCallExpr;
-pub use fn_def::{FnDef, FnParam};
-pub use fn_type::{FnType, FnTypeParam};
-pub use for_stmt::ForStatement;
-pub use if_stmt::{IfStatement, IfClause, ElseClause};
-pub use index_call::IndexCallExpr;
-pub use jump_stmt::{BreakStatement, ContinueStatement, JumpStatement};
-pub use label_def::LabelDef;
-pub use lit_expr::{LitExpr, LitValue};
-pub use loop_stmt::LoopStatement;
-pub use member_access::MemberAccessExpr;
-pub use module::Module;
-pub use module_stmt::ModuleStatement;
-pub use name::{Name, NameSegment};
-pub use object::{ObjectLiteral, ObjectLiteralField};
-pub use plain_type::{TypeAsSegment, TypeSegment, PlainType};
-pub use primitive_type::PrimitiveType;
 use priority_proxy::PostfixExpr;
-pub use range_expr::{RangeBothExpr, RangeFullExpr, RangeLeftExpr, RangeRightExpr};
 use range_expr::RangeExpr;
-pub use ref_type::RefType;
-pub use ret_stmt::ReturnStatement;
-pub use tuple_def::{ParenExpr, TupleDef};
-pub use type_def::{TypeDef, TypeFieldDef};
-pub use tuple_type::TupleType;
-pub use unary_expr::UnaryExpr;
-pub use use_stmt::UseStatement;
-pub use var_decl::VarDeclStatement;
-pub use while_stmt::WhileStatement;
 
 // parse any types of node for test
 pub fn parse_any<P: Parser>(source: crate::source::SourceChars, diagnostics: &mut crate::diagnostics::Diagnostics) -> Option<P::Output> {
@@ -92,8 +56,8 @@ pub fn parse_any<P: Parser>(source: crate::source::SourceChars, diagnostics: &mu
     result
 }
 // formal public api only parses module
-pub fn parse(source: crate::source::SourceChars, diagnostics: &mut crate::diagnostics::Diagnostics) -> Option<Module> {
-    parse_any::<Module>(source, diagnostics)
+pub fn parse(source: crate::source::SourceChars, diagnostics: &mut crate::diagnostics::Diagnostics) -> Option<ast::Module> {
+    parse_any::<ast::Module>(source, diagnostics)
 }
 
 #[cfg(test)]

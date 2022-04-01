@@ -6,16 +6,6 @@
 ///! that is, type_as_segment or global (start with ::) is not allowed and first segment must be normal
 
 use super::prelude::*;
-use super::{Expr, Name, NameSegment};
-
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct MemberAccessExpr {
-    pub base: Box<Expr>,
-    pub dot_span: Span,
-    pub name: Name,
-    pub all_span: Span,
-}
 
 impl Parser for MemberAccessExpr {
     type Output = Self;

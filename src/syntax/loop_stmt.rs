@@ -3,16 +3,6 @@
 // TODO ATTENTION: no else for break here because if control flow come to else it is always breaked
 
 use super::prelude::*;
-use super::{Block, LabelDef};
-
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct LoopStatement {
-    pub name: Option<LabelDef>,
-    pub body: Block,
-    pub loop_span: Span,
-    pub all_span: Span,
-}
 
 impl Parser for LoopStatement {
     type Output = LoopStatement;
@@ -45,7 +35,7 @@ impl Node for LoopStatement {
 
 #[cfg(test)] #[test]
 fn loop_stmt_parse() {
-    use super::{Statement, SimpleExprStatement};
+    use super::{ast::Statement, ast::SimpleExprStatement};
 
     case!{ "loop {}" as LoopStatement,
         make_stmt!(loop 0:6 loop 0:3

@@ -6,7 +6,7 @@ use crate::source::{Span, IsId, FileId};
 use crate::diagnostics::Diagnostic;
 use crate::lexical::{Parser as LexicalParser, Token, Numeric, Separator, SeparatorKind, Keyword, KeywordKind};
 use super::{Parser, Unexpected};
-use super::super::LitValue;
+use super::super::ast::LitValue;
 
 pub struct ParseContext<'ecx, 'scx> {
     base: LexicalParser<'ecx, 'scx>,

@@ -3,16 +3,6 @@
 ///! renamed from postfix_expr::subscription to make it shorter
 
 use super::prelude::*;
-use super::{Expr, ExprList, ExprListParseResult};
-
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct IndexCallExpr {
-    pub base: Box<Expr>,
-    pub params: ExprList,
-    pub bracket_span: Span,
-    pub all_span: Span,
-}
 
 impl Parser for IndexCallExpr {
     type Output = IndexCallExpr;

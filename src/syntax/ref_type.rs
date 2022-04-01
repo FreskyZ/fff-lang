@@ -2,14 +2,6 @@
 ///! ref_type = '&' type_ref
 
 use super::prelude::*;
-use super::{TypeRef};
-
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct RefType {
-    pub base: Box<TypeRef>,
-    pub span: Span, // all span
-}
 
 impl Parser for RefType {
     type Output = RefType;

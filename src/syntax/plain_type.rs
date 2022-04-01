@@ -9,15 +9,6 @@
 ///! may contain a namespace separator at beginning, for referencing global items
 
 use super::prelude::*;
-use super::{TypeRef};
-
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct TypeAsSegment {
-    pub from: Box<TypeRef>,
-    pub to: Box<TypeRef>,
-    pub span: Span,
-}
 
 impl Node for TypeAsSegment {
     fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
@@ -27,16 +18,6 @@ impl Node for TypeAsSegment {
         v.visit_type_ref(self.from.as_ref())?;
         v.visit_type_ref(self.to.as_ref())
     }
-}
-
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct TypeSegment {
-    pub ident: IsId,
-    pub ident_span: Span,
-    pub quote_span: Span,
-    pub parameters: Vec<TypeRef>,
-    pub all_span: Span,
 }
 
 impl Node for TypeSegment {
@@ -49,15 +30,6 @@ impl Node for TypeSegment {
         }
         Ok(Default::default())
     }
-}
-
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct PlainType {
-    pub type_as_segment: Option<TypeAsSegment>,
-    pub global: bool,
-    pub segments: Vec<TypeSegment>,
-    pub all_span: Span,
 }
 
 impl Parser for PlainType {
@@ -129,33 +101,35 @@ impl Node for PlainType {
 #[cfg(test)]
 macro_rules! make_type {
     (prim $start:literal:$end:literal $kw:ident) => (
-        crate::syntax::TypeRef::Primitive(crate::syntax::PrimitiveType{ name: Keyword::$kw, span: Span::new($start, $end) }));
+        crate::syntax::ast::TypeRef::Primitive(crate::syntax::ast::PrimitiveType{ name: Keyword::$kw, span: Span::new($start, $end) }));
     (ref $start:literal:$end:literal $inner:expr) => (
-        crate::syntax::TypeRef::Ref(crate::syntax::RefType{ span: Span::new($start, $end), base: Box::new($inner) }));
+        crate::syntax::ast::TypeRef::Ref(crate::syntax::ast::RefType{ span: Span::new($start, $end), base: Box::new($inner) }));
     (array $start:literal:$end:literal $base:expr, $size:expr) => (
-        crate::syntax::TypeRef::Array(crate::syntax::ArrayType{ base: Box::new($base), size: $size, span: Span::new($start, $end) }));
+        crate::syntax::ast::TypeRef::Array(crate::syntax::ast::ArrayType{ base: Box::new($base), size: $size, span: Span::new($start, $end) }));
     (tuple $start:literal:$end:literal [$($item:expr),*$(,)?]) => (
-        crate::syntax::TypeRef::Tuple(crate::syntax::TupleType{ items: vec![$($item,)*], span: Span::new($start, $end) }));
-    (segment $start:literal:$end:literal #$ident:literal) => (crate::syntax::TypeSegment{ 
+        crate::syntax::ast::TypeRef::Tuple(crate::syntax::ast::TupleType{ items: vec![$($item,)*], span: Span::new($start, $end) }));
+    (segment $start:literal:$end:literal #$ident:literal) => (crate::syntax::ast::TypeSegment{ 
         ident: IsId::new($ident), 
         ident_span: Span::new($start, $end), 
         quote_span: Span::new(0, 0),
         parameters: Vec::new(),
         all_span: Span::new($start, $end),
     });
-    (segment generic $start:literal:$end:literal #$ident:literal $ident_start:literal:$ident_end:literal quote $quote_start:literal:$quote_end:literal $($parameter:expr),*$(,)?) => (crate::syntax::TypeSegment{
-        ident: IsId::new($ident),
-        ident_span: Span::new($ident_start, $ident_end),
-        quote_span: Span::new($quote_start, $quote_end),
-        parameters: vec![$($parameter,)*],
-        all_span: Span::new($start, $end),
-    });
-    (segment as $start:literal:$end:literal $from:expr, $to:expr) => (Some(crate::syntax::TypeAsSegment{
+    (segment generic $start:literal:$end:literal #$ident:literal $ident_start:literal:$ident_end:literal quote $quote_start:literal:$quote_end:literal $($parameter:expr),*$(,)?) => (
+        crate::syntax::ast::TypeSegment{
+            ident: IsId::new($ident),
+            ident_span: Span::new($ident_start, $ident_end),
+            quote_span: Span::new($quote_start, $quote_end),
+            parameters: vec![$($parameter,)*],
+            all_span: Span::new($start, $end),
+        }
+    );
+    (segment as $start:literal:$end:literal $from:expr, $to:expr) => (Some(crate::syntax::ast::TypeAsSegment{
         from: Box::new($from),
         to: Box::new($to),
         span: Span::new($start, $end),
     }));
-    (plain $start:literal:$end:literal $global:expr, $as:expr, $($segment:expr),*$(,)?) => (crate::syntax::TypeRef::Plain(crate::syntax::PlainType{
+    (plain $start:literal:$end:literal $global:expr, $as:expr, $($segment:expr),*$(,)?) => (crate::syntax::ast::TypeRef::Plain(crate::syntax::ast::PlainType{
         type_as_segment: $as,
         global: $global,
         segments: vec![$($segment,)*],
@@ -163,24 +137,24 @@ macro_rules! make_type {
     }));
     (simple $start:literal:$end:literal #$id:literal) => (
         make_type!(plain $start:$end false, None, make_type!(segment $start:$end #$id)));
-    (fn $start:literal:$end:literal paren $paren_start:literal:$paren_end:literal [$($parameter:expr),*$(,)?]) => (crate::syntax::TypeRef::Fn(crate::syntax::FnType{
+    (fn $start:literal:$end:literal paren $paren_start:literal:$paren_end:literal [$($parameter:expr),*$(,)?]) => (crate::syntax::ast::TypeRef::Fn(crate::syntax::ast::FnType{
         paren_span: Span::new($paren_start, $paren_end),
         parameters: vec![$($parameter,)*],
         ret_type: None,
         all_span: Span::new($start, $end),
     }));
-    (fn ret $start:literal:$end:literal paren $paren_start:literal:$paren_end:literal [$($parameter:expr),*$(,)?], $ret:expr) => (crate::syntax::TypeRef::Fn(crate::syntax::FnType{
+    (fn ret $start:literal:$end:literal paren $paren_start:literal:$paren_end:literal [$($parameter:expr),*$(,)?], $ret:expr) => (crate::syntax::ast::TypeRef::Fn(crate::syntax::ast::FnType{
         paren_span: Span::new($paren_start, $paren_end),
         parameters: vec![$($parameter,)*],
         ret_type: Some(Box::new($ret)),
         all_span: Span::new($start, $end),
     }));
-    (param $start:literal:$end:literal $ty:expr) => (crate::syntax::FnTypeParam{
+    (param $start:literal:$end:literal $ty:expr) => (crate::syntax::ast::FnTypeParam{
         name: None,
         r#type: $ty,
         all_span: Span::new($start, $end),
     });
-    (param named $start:literal:$end:literal #$name:literal $name_start:literal:$name_end:literal $ty:expr) => (crate::syntax::FnTypeParam{
+    (param named $start:literal:$end:literal #$name:literal $name_start:literal:$name_end:literal $ty:expr) => (crate::syntax::ast::FnTypeParam{
         name: Some((IsId::new($name), Span::new($name_start, $name_end))),
         r#type: $ty,
         all_span: Span::new($start, $end),

@@ -4,24 +4,6 @@
 ///! literal_expr = literal
 
 use super::prelude::*;
-use super::Expr;
-
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub enum LitValue {
-    Unit,
-    Bool(bool),
-    Char(char),
-    Str(IsId),
-    Num(Numeric),
-}
-
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug)]
-pub struct LitExpr {
-    pub value: LitValue,
-    pub span: Span,
-}
 
 impl LitExpr {
     pub fn new(value: LitValue, span: Span) -> LitExpr { 
