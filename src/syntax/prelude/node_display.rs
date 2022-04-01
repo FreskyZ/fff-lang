@@ -128,8 +128,8 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
 
     fn visit_break_stmt(&mut self, node: &BreakStatement) -> fmt::Result {
         self.impl_visit(node, "break-stmt", node.0.all_span, |f| {
-            if let Some(label) = node.0.target {
-                f.write_str(" @")?.write_isid(label)?.write_space()?.write_span(node.0.target_span)?;
+            if let Some((label, label_span)) = node.0.target {
+                f.write_str(" @")?.write_isid(label)?.write_space()?.write_span(label_span)?;
             }
             Ok(f)
         })
@@ -137,8 +137,8 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
 
     fn visit_continue_stmt(&mut self, node: &ContinueStatement) -> fmt::Result {
         self.impl_visit(node, "continue-stmt", node.0.all_span, |f| {
-            if let Some(label) = node.0.target {
-                f.write_str(" @")?.write_isid(label)?.write_space()?.write_span(node.0.target_span)?;
+            if let Some((label, label_span)) = node.0.target {
+                f.write_str(" @")?.write_isid(label)?.write_space()?.write_span(label_span)?;
             }
             Ok(f)
         })

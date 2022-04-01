@@ -1,6 +1,4 @@
-///! fff-lang
-///!
-///! syntax/loop_stmt
+///! syntax::loop_stmt:
 ///! loop_stmt = [ label_def ] 'loop' block
 // TODO ATTENTION: no else for break here because if control flow come to else it is always breaked
 
@@ -15,28 +13,6 @@ pub struct LoopStatement {
     pub loop_span: Span,
     pub all_span: Span,
 }
-impl LoopStatement { // New
-    
-    pub fn new_no_label(loop_span: Span, body: Block) -> LoopStatement {
-        LoopStatement {
-            all_span: loop_span + body.all_span,
-            name: None, loop_span, body,
-        }
-    }
-    pub fn new_with_label(name: LabelDef, loop_span: Span, body: Block) -> LoopStatement {
-        LoopStatement {
-            all_span: name.all_span + body.all_span,
-            name: Some(name), loop_span, body,
-        }
-    }
-
-    fn new(name: Option<LabelDef>, loop_span: Span, body: Block) -> LoopStatement {
-        LoopStatement{
-            all_span: match name { Some(ref name) => name.all_span + body.all_span, None => loop_span + body.all_span },
-            name, loop_span, body 
-        }
-    }
-}
 
 impl Parser for LoopStatement {
     type Output = LoopStatement;
@@ -47,10 +23,11 @@ impl Parser for LoopStatement {
 
     fn parse(cx: &mut ParseContext) -> Result<LoopStatement, Unexpected> {
 
-        let maybe_name = cx.try_expect::<LabelDef>()?;
+        let name = cx.try_expect::<LabelDef>()?;
         let loop_span = cx.expect_keyword(Keyword::Loop)?;
         let body = cx.expect::<Block>()?;
-        Ok(LoopStatement::new(maybe_name, loop_span, body))
+        let all_span = name.as_ref().map(|n| n.all_span).unwrap_or(loop_span) + body.all_span;
+        Ok(LoopStatement{ all_span, name, loop_span, body })
     }
 }
 
@@ -71,13 +48,12 @@ fn loop_stmt_parse() {
     use super::{Statement, SimpleExprStatement};
 
     case!{ "loop {}" as LoopStatement,
-        LoopStatement::new_no_label(Span::new(0, 3), Block::new(Span::new(5, 6), vec![]))
+        make_stmt!(loop 0:6 loop 0:3
+            Block::new(Span::new(5, 6), vec![]))
     }
     //                                        1234567890123456789 0123 45678
     case!{ "@@: loop { println(\"233\"); }" as LoopStatement,
-        LoopStatement::new_with_label(
-            LabelDef::new(2, Span::new(0, 2)),
-            Span::new(4, 7),
+        make_stmt!(loop 0:27 label #2 0:2 loop 4:7
             Block::new(Span::new(9, 27), vec![
                 Statement::SimpleExpr(SimpleExprStatement::new(Span::new(11, 25), 
                     make_expr!(fn 11:24 paren 18:24

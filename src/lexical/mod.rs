@@ -165,7 +165,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
 
     fn parse_separator(&mut self) -> (Token, Span) {
 
-        match Separator::parse3(self.current, self.peek, self.peek2) {
+        match Separator::parse(self.current, self.peek, self.peek2) {
             Some((separator, 1)) => {
                 let span = self.current_position.into();
                 self.eat();

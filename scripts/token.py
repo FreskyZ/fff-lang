@@ -236,12 +236,7 @@ class Separators(object):
         b += '}\n'
         b += '\n'
         b += 'impl Separator {\n'
-        b += '    pub fn parse1(c: char) -> Option<Separator> {\n'
-        b += f'        BUCKET1[(hash(c) % {len1_config.bucket_size}) as usize]\n'
-        b += '             .and_then(|s| if s.display().as_bytes()[0] == c as u8 { Some(s) } else { None })\n'
-        b += '    }\n'
-        b += '\n'
-        b += '    pub fn parse3(c1: char, c2: char, c3: char) -> Option<(Separator, usize)> {\n'
+        b += '    pub fn parse(c1: char, c2: char, c3: char) -> Option<(Separator, usize)> {\n'
         b += '        match [c1, c2, c3] {\n'
         for sep in self.len3s:
             b += f'            [\'{sep.value[0]}\', \'{sep.value[1]}\', \'{sep.value[2]}\'] => Some(({sep.name}, 3)),\n'
@@ -288,10 +283,10 @@ class Separators(object):
         b += '#[test]\n'
         b += 'fn separator_parse() {\n\n'
 
-        b += "    assert_eq!(Separator::parse3('<', '<', '='), Some((Separator::LtLtEq, 3)));\n"
-        b += "    assert_eq!(Separator::parse3('>', '>', '='), Some((Separator::GtGtEq, 3)));\n"
-        b += "    assert_eq!(Separator::parse3('+', ' ', '1'), Some((Separator::Add, 1)));\n"
-        b += "    assert_eq!(Separator::parse3('!', '[', '('), Some((Separator::Not, 1)));\n"
+        b += "    assert_eq!(Separator::parse('<', '<', '='), Some((Separator::LtLtEq, 3)));\n"
+        b += "    assert_eq!(Separator::parse('>', '>', '='), Some((Separator::GtGtEq, 3)));\n"
+        b += "    assert_eq!(Separator::parse('+', ' ', '1'), Some((Separator::Add, 1)));\n"
+        b += "    assert_eq!(Separator::parse('!', '[', '('), Some((Separator::Not, 1)));\n"
         # !!!! 17/7/8, this case is very very interesting
         # I created this case simply randomly manully, but it help me find the bug of current hash function and hash map design
         # hash = ch1 as u32 + ch2 as u32 * 256, and hashmap's bucket size is 38, and, most interestingly
@@ -299,13 +294,13 @@ class Separators(object):
         # which help me understand why the common practice is implement hashmap first and implement hashset as hashmap<T, ()>,
         # because in this case if you do not have a key stored in hashmap to confirm equality then a bug happened
         # update 2022/3/6: that's the old hash function, if you are concerned
-        b += "    assert_eq!(Separator::parse3('{', ' ', 'a'), Some((Separator::LeftBrace, 1)));\n"
-        b += "    assert_eq!(Separator::parse3('&', '&', ' '), Some((Separator::AndAnd, 2)));\n"
+        b += "    assert_eq!(Separator::parse('{', ' ', 'a'), Some((Separator::LeftBrace, 1)));\n"
+        b += "    assert_eq!(Separator::parse('&', '&', ' '), Some((Separator::AndAnd, 2)));\n"
         # 17/7/11 this case is manually created to prove that the original hash function has bug
         # original hash function is `lambda value: ord(value[0]) + ord(value[1]) * 256`
         # or `|ch1, ch2| ch1 as u32 + ch2 as u32 * 256` where high probability of hash coliision exists
         # update 2022/3/6: that's the old hash function, if you are concerned
-        b += "    assert_eq!(Separator::parse3('Х', '9', ' '), None);\n"
+        b += "    assert_eq!(Separator::parse('Х', '9', ' '), None);\n"
 
         def quote(c):
             return f"\{c}" if c == "'" or c == '\\' else c
@@ -319,37 +314,26 @@ class Separators(object):
                 next((sep for sep in self.len2s if sep.value == f'{char1}{char2}'), \
                 next((sep for sep in self.len1s if sep.value == char1), None)))
             if expect is None:
-                b += f'    assert_eq!(Separator::parse3(\'{quote(char1)}\', \'{quote(char2)}\', \'{quote(char3)}\'), None);\n'
+                b += f'    assert_eq!(Separator::parse(\'{quote(char1)}\', \'{quote(char2)}\', \'{quote(char3)}\'), None);\n'
             else:
-                b += f'    assert_eq!(Separator::parse3(\'{quote(char1)}\', \'{quote(char2)}\', \'{quote(char3)}\'), Some((Separator::{expect.name}, {len(expect.value)})));\n'
+                b += f'    assert_eq!(Separator::parse(\'{quote(char1)}\', \'{quote(char2)}\', \'{quote(char3)}\'), Some((Separator::{expect.name}, {len(expect.value)})));\n'
 
         # result says this hit rate is kind of low
         for _ in range(0, 100):
-            if random.randint(0, 100) < 33:
-                index = random.randint(0, len(seed) - 1)
-                char = seed[index:index + 1]
-                if char.isspace():
-                    continue
-                expect = next((sep for sep in self.len1s if sep.value == char), None)
-                if expect is None:
-                    b += f'    assert_eq!(Separator::parse1(\'{quote(char)}\'), None);\n'
-                else:
-                    b += f'    assert_eq!(Separator::parse1(\'{quote(char)}\'), Some(Separator::{expect.name}));\n'
+            index = random.randint(0, len(seed) - 3)
+            chars = seed[index:index+3]
+            if chars[0].isspace() or chars[1].isspace() or chars[2].isspace():
+                continue
+            if chars[0].isalpha() and chars[1].isalpha() and chars[2].isalpha():
+                continue
+            # no, there is not any <<= or >>= in current source code, but put it here
+            expect = next((sep for sep in self.len3s if sep.value == chars), \
+                next((sep for sep in self.len2s if sep.value == chars[:2]), \
+                next((sep for sep in self.len1s if sep.value == chars[0]), None)))
+            if expect is None:
+                b += f'    assert_eq!(Separator::parse(\'{quote(chars[0])}\', \'{quote(chars[1])}\', \'{quote(chars[2])}\'), None);\n'
             else:
-                index = random.randint(0, len(seed) - 3)
-                chars = seed[index:index+3]
-                if chars[0].isspace() or chars[1].isspace() or chars[2].isspace():
-                    continue
-                if chars[0].isalpha() and chars[1].isalpha() and chars[2].isalpha():
-                    continue
-                # no, there is not any <<= or >>= in current source code, but put it here
-                expect = next((sep for sep in self.len3s if sep.value == chars), \
-                    next((sep for sep in self.len2s if sep.value == chars[:2]), \
-                    next((sep for sep in self.len1s if sep.value == chars[0]), None)))
-                if expect is None:
-                    b += f'    assert_eq!(Separator::parse3(\'{quote(chars[0])}\', \'{quote(chars[1])}\', \'{quote(chars[2])}\'), None);\n'
-                else:
-                    b += f'    assert_eq!(Separator::parse3(\'{quote(chars[0])}\', \'{quote(chars[1])}\', \'{quote(chars[2])}\'), Some((Separator::{expect.name}, {len(expect.value)})));\n'
+                b += f'    assert_eq!(Separator::parse(\'{quote(chars[0])}\', \'{quote(chars[1])}\', \'{quote(chars[2])}\'), Some((Separator::{expect.name}, {len(expect.value)})));\n'
 
         b += '}\n'
 

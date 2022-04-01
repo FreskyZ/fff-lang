@@ -19,30 +19,6 @@ pub struct ForStatement {
     pub body: Block,
     pub all_span: Span,
 }
-impl ForStatement {
-
-    pub fn new_with_label<T: Into<Expr>>(
-            all_span: Span, loop_name: LabelDef, for_span: Span, 
-            iter_name: impl Into<IsId>, iter_span: Span, iter_expr: T, 
-            body: Block) -> ForStatement {
-        ForStatement { 
-            loop_name: Some(loop_name),
-            for_span,
-            iter_name: iter_name.into(), iter_span, 
-            iter_expr: iter_expr.into(),
-            body, all_span
-        }
-    }
-
-    fn new(loop_name: Option<LabelDef>, for_span: Span,
-        iter_name: IsId, iter_span: Span, iter_expr: Expr,
-        body: Block) -> ForStatement {
-        ForStatement{
-            all_span: loop_name.as_ref().map(|n| n.all_span).unwrap_or(for_span) + body.all_span,
-            loop_name, for_span, iter_name, iter_expr, iter_span, body,
-        }
-    }
-}
 
 impl Parser for ForStatement {
     type Output = ForStatement;
@@ -53,7 +29,7 @@ impl Parser for ForStatement {
 
     fn parse(cx: &mut ParseContext) -> Result<ForStatement, Unexpected> {
 
-        let maybe_label = cx.try_expect::<LabelDef>()?;
+        let loop_name = cx.try_expect::<LabelDef>()?;
         let for_span = cx.expect_keyword(Keyword::For)?;
 
         // Accept _ as iter_name, _ do not declare iter var
@@ -65,7 +41,8 @@ impl Parser for ForStatement {
         cx.no_object_literals.pop();
         let body = cx.expect::<Block>()?;
         
-        Ok(ForStatement::new(maybe_label, for_span, iter_name, iter_span, iter_expr, body))
+        let all_span = loop_name.as_ref().map(|n| n.all_span).unwrap_or(for_span) + body.all_span;
+        Ok(ForStatement{ loop_name, for_span, iter_name, iter_span, iter_expr, body, all_span })
     }
 }
 
@@ -88,22 +65,15 @@ fn for_stmt_parse() {
 
     //                      0123456789012345678
     case!{ "@2: for i in 42 {}" as ForStatement,
-        ForStatement::new_with_label(Span::new(0, 17),
-            LabelDef::new(2, Span::new(0, 2)),
-            Span::new(4, 6),
-            3, Span::new(8, 8),
+        make_stmt!(for 0:17 label #2 0:2 for 4:6 var #3 8:8
             make_expr!(i32 42 13:14),
-            Block::new(Span::new(16, 17), vec![])
-        )
+            Block::new(Span::new(16, 17), vec![]))
     }
 
     //              0         1         2         3         4         5         6         7         
     //              01234567890123456789012345678901234567890123456789012345678901 23456789012 34567
     case!{ "@hello: for _ in range(0, 10).enumerate().reverse() { writeln(\"helloworld\"); }" as ForStatement,
-        ForStatement::new_with_label(Span::new(0, 77),
-            LabelDef::new(2, Span::new(0, 6)),
-            Span::new(8, 10),
-            3, Span::new(12, 12),
+        make_stmt!(for 0:77 label #2 0:6 for 8:10 var #3 12:12
             make_expr!(fn 17:50 paren 49:50
                 make_expr!(member 17:48 dot 41:41
                     make_expr!(fn 17:40 paren 39:40

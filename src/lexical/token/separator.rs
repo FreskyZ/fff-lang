@@ -120,12 +120,7 @@ fn hash(c: char) -> u32 {
 }
 
 impl Separator {
-    pub fn parse1(c: char) -> Option<Separator> {
-        BUCKET1[(hash(c) % 27) as usize]
-             .and_then(|s| if s.display().as_bytes()[0] == c as u8 { Some(s) } else { None })
-    }
-
-    pub fn parse3(c1: char, c2: char, c3: char) -> Option<(Separator, usize)> {
+    pub fn parse(c1: char, c2: char, c3: char) -> Option<(Separator, usize)> {
         match [c1, c2, c3] {
             ['<', '<', '='] => Some((LtLtEq, 3)),
             ['>', '>', '='] => Some((GtGtEq, 3)),

@@ -9,29 +9,21 @@ use super::prelude::*;
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
 pub struct JumpStatement {
-    pub target: Option<IsId>,
-    pub target_span: Span,
+    pub target: Option<(IsId, Span)>,
     pub all_span: Span,
 }
 impl JumpStatement {
-
-    fn new_no_target(all_span: Span) -> JumpStatement {
-        JumpStatement{ all_span, target: None, target_span: Span::new(0, 0) }
-    }
-    fn new_target(all_span: Span, target: impl Into<IsId>, target_span: Span) -> JumpStatement {
-        JumpStatement{ all_span, target_span, target: Some(target.into()) }
-    }
 
     fn parse(cx: &mut ParseContext, expect_first_kw: Keyword) -> Result<JumpStatement, Unexpected> {
 
         let starting_span = cx.expect_keyword(expect_first_kw)?;
 
-        if let Some((label_id, label_span)) = cx.try_expect_label() {
+        if let Some(label) = cx.try_expect_label() {
             let semicolon_span = cx.expect_sep(Separator::SemiColon)?;
-            Ok(JumpStatement::new_target(starting_span + semicolon_span, label_id, label_span))
+            Ok(JumpStatement{ all_span: starting_span + semicolon_span, target: Some(label) })
         } else { 
             let semicolon_span = cx.expect_sep(Separator::SemiColon)?;
-            Ok(JumpStatement::new_no_target(starting_span + semicolon_span))
+            Ok(JumpStatement{ all_span: starting_span + semicolon_span, target: None })
         }
     }
 }
@@ -42,21 +34,6 @@ pub struct ContinueStatement(pub JumpStatement);
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
 pub struct BreakStatement(pub JumpStatement);
-
-impl ContinueStatement {
-
-    pub fn new_no_target(all_span: Span) -> ContinueStatement { ContinueStatement(JumpStatement::new_no_target(all_span)) }
-    pub fn new_with_target(all_span: Span, target: impl Into<IsId>, target_span: Span) -> ContinueStatement {
-        ContinueStatement(JumpStatement::new_target(all_span, target.into(), target_span))
-    }
-}
-impl BreakStatement {
-
-    pub fn new_no_target(all_span: Span) -> BreakStatement { BreakStatement(JumpStatement::new_no_target(all_span)) }
-    pub fn new_with_target(all_span: Span, target: impl Into<IsId>, target_span: Span) -> BreakStatement {
-        BreakStatement(JumpStatement::new_target(all_span, target.into(), target_span))
-    }
-}
 
 impl Parser for ContinueStatement {
     type Output = ContinueStatement;
@@ -92,13 +69,17 @@ impl Node for BreakStatement {
 #[cfg(test)] #[test]
 fn jump_stmt_parse() {
     
-    case!{ "continue;" as ContinueStatement, ContinueStatement::new_no_target(Span::new(0, 8)) }
-    case!{ "continue @1;" as ContinueStatement, 
-        ContinueStatement::new_with_target(Span::new(0, 11), 2, Span::new(9, 10))
+    case!{ "continue;" as ContinueStatement, 
+        make_stmt!(continue 0:8)
+    }
+    case!{ "continue @1;" as ContinueStatement,
+        make_stmt!(continue 0:11 label #2 9:10)
     }
     
-    case!{ "break;" as BreakStatement, BreakStatement::new_no_target(Span::new(0, 5)) }
-    case!{ "break @1;" as BreakStatement, 
-        BreakStatement::new_with_target(Span::new(0, 8), 2, Span::new(6, 7))
+    case!{ "break;" as BreakStatement,
+        make_stmt!(break 0:5)
+    }
+    case!{ "break @1;" as BreakStatement,
+        make_stmt!(break 0:8 label #2 6:7)
     }
 }

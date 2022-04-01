@@ -18,25 +18,6 @@ pub struct VarDeclStatement {
     pub all_span: Span,
 }
 
-impl VarDeclStatement {
-
-    pub fn new(all_span: Span, 
-        is_const: bool, name: impl Into<IsId>, name_span: Span, 
-        r#type: Option<TypeRef>, init_expr: Option<Expr>) -> VarDeclStatement {
-        VarDeclStatement{ all_span, is_const, name: name.into(), name_span, r#type, init_expr }
-    }
-    pub fn new_const(all_span: Span, 
-        name: impl Into<IsId>, name_span: Span, 
-        r#type: Option<TypeRef>, init_expr: Option<Expr>) -> VarDeclStatement {
-        VarDeclStatement{ all_span, is_const: true, name: name.into(), name_span, r#type, init_expr }
-    }
-    pub fn new_var(all_span: Span, 
-        name: impl Into<IsId>, name_span: Span, 
-        r#type: Option<TypeRef>, init_expr: Option<Expr>) -> VarDeclStatement {
-        VarDeclStatement{ all_span, is_const: false, name: name.into(), name_span, r#type, init_expr }
-    }
-}
-
 impl Parser for VarDeclStatement {
     type Output = VarDeclStatement;
 
@@ -50,16 +31,16 @@ impl Parser for VarDeclStatement {
         let is_const = match starting_kw { Keyword::Const => true, Keyword::Var => false, _ => unreachable!() };
 
         let (name, name_span) = cx.expect_ident_or_keywords(&[Keyword::Underscore])?;
-        let maybe_decltype = cx.try_expect_sep(Separator::Colon).map(|_| cx.expect::<TypeRef>()).transpose()?;
-        let maybe_init_expr = cx.try_expect_sep(Separator::Eq).map(|_| cx.expect::<Expr>()).transpose()?;
-        if maybe_decltype.is_none() && maybe_init_expr.is_none() {
+        let r#type = cx.try_expect_sep(Separator::Colon).map(|_| cx.expect::<TypeRef>()).transpose()?;
+        let init_expr = cx.try_expect_sep(Separator::Eq).map(|_| cx.expect::<Expr>()).transpose()?;
+        if r#type.is_none() && init_expr.is_none() {
             cx.emit("require type annotation")
                 .detail(name_span, "variable declaration here")
                 .help("cannot infer type without both type annotation and initialization expression");
         }
         let ending_span = cx.expect_sep(Separator::SemiColon)?;
 
-        Ok(VarDeclStatement::new(starting_span + ending_span, is_const, name, name_span, maybe_decltype, maybe_init_expr))
+        Ok(VarDeclStatement{ all_span: starting_span + ending_span, is_const, name, name_span, r#type, init_expr })
     }
 }
 
@@ -84,45 +65,40 @@ fn var_decl_stmt_parse() {
     
     //                                           12345678901234
     case!{ "const abc = 0;" as VarDeclStatement,
-        VarDeclStatement::new_const(Span::new(0, 13),
-            2, Span::new(6, 8),
+        make_stmt!(const 0:13 #2 6:8
             None,
-            Some(make_expr!(i32 0 12:12))
-        )
+            Some(make_expr!(i32 0 12:12)))
     }
 
     //                                           0        1         
     //                                           12345678901234567890
     case!{ "var hij = [1, 3, 5];" as VarDeclStatement,
-        VarDeclStatement::new_var(Span::new(0, 19), 2, Span::new(4, 6),
+        make_stmt!(var 0:19 #2 4:6
             None,
             Some(make_expr!(array 10:18
                 make_expr!(i32 1 11:11),
                 make_expr!(i32 3 14:14),
-                make_expr!(i32 5 17:17)))
-        )
+                make_expr!(i32 5 17:17))))
     }
     
     //       1234567890123456789
     case!{ "const input: string;" as VarDeclStatement,
-        VarDeclStatement::new_const(Span::new(0, 19), 2, Span::new(6, 10),
+        make_stmt!(const 0:19 #2 6:10
             Some(make_type!(simple 13:18 #3)),
-            None
-        )
+            None)
     }
     
     //      0         1         2
     //      012345678901234567890123
     case!{ "var buf: [(u8, char);1];" as VarDeclStatement,
-        VarDeclStatement::new_var(Span::new(0, 23), 2, Span::new(4, 6),
+        make_stmt!(var 0:23 #2 4:6
             Some(make_type!(array 9:22
                 make_type!(tuple 10:19 [
                     make_type!(prim 11:12 U8),
                     make_type!(prim 15:18 Char),
                 ]),
                 make_expr!(i32 1 21:21).into())),
-            None
-        ), strings ["buf"]
+            None)
     }
 
     // Future Attention: after bits type added, the `0x7u8` will have different type as before, this is the Option::unwrap failure in test
@@ -132,7 +108,7 @@ fn var_decl_stmt_parse() {
     //      0         1         2         3         4
     //      01234567890123456789012345678901234567890123456789
     case!{ "var buf: ([u8;3], u32) = ([1u8, 5u8, 0x7u8], abc);" as VarDeclStatement,
-        VarDeclStatement::new_var(Span::new(0, 49), 2, Span::new(4, 6),
+        make_stmt!(var 0:49 #2 4:6
             Some(make_type!(tuple 9:21 [
                 make_type!(array 10:15 
                     make_type!(prim 11:12 U8), 
@@ -148,7 +124,7 @@ fn var_decl_stmt_parse() {
     }
 
     case!{ "var a;" as VarDeclStatement,
-        VarDeclStatement::new_var(Span::new(0, 5), 2, Span::new(4, 4), None, None), errors make_errors!(
+        make_stmt!(var 0:5 #2 4:4 None, None), errors make_errors!(
             e: e.emit("require type annotation")
                 .detail(Span::new(4, 4), "variable declaration here")
                 .help("cannot infer type without both type annotation and initialization expression")),

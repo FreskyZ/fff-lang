@@ -17,22 +17,6 @@ pub struct WhileStatement {
     pub all_span: Span,
 }
 
-impl WhileStatement {
-    
-    pub fn new_with_label(name: LabelDef, while_span: Span, loop_expr: Expr, body: Block) -> WhileStatement {
-        WhileStatement{ 
-            all_span: name.all_span + body.all_span,
-            name: Some(name), loop_expr, body, while_span,
-        }
-    }
-
-    fn new(maybe_name: Option<LabelDef>, while_span: Span, loop_expr: Expr, body: Block) -> WhileStatement {
-        WhileStatement{
-            all_span: match maybe_name { Some(ref name) => name.all_span + body.all_span, None => while_span + body.all_span },
-            name: maybe_name, loop_expr, body, while_span,
-        }
-    }
-}
 impl Parser for WhileStatement {
     type Output = WhileStatement;
 
@@ -42,13 +26,14 @@ impl Parser for WhileStatement {
 
     fn parse(cx: &mut ParseContext) -> Result<WhileStatement, Unexpected> {
         
-        let maybe_name = cx.try_expect::<LabelDef>()?;
+        let name = cx.try_expect::<LabelDef>()?;
         let while_span = cx.expect_keyword(Keyword::While)?;
         cx.no_object_literals.push(true);
         let expr = cx.expect::<Expr>()?;
         cx.no_object_literals.pop();
         let body = cx.expect::<Block>()?;
-        Ok(WhileStatement::new(maybe_name, while_span, expr, body))
+        let all_span = name.as_ref().map(|n| n.all_span).unwrap_or(while_span) + body.all_span;
+        Ok(WhileStatement{ name, while_span, loop_expr: expr, body, all_span })
     }
 }
 
@@ -71,9 +56,7 @@ fn while_stmt_parse() {
     //      0        1         2         3         4        
     //      01234567890123456789012345 67890123456789012 3456
     case!{ "@2: while true { writeln(\"fresky hellooooo\"); }" as WhileStatement,
-        WhileStatement::new_with_label(
-            LabelDef::new(2, Span::new(0, 2)),
-            Span::new(4, 8),
+        make_stmt!(while 0:46 label #2 0:2 while 4:8
             make_expr!(true 10:13),
             Block::new(Span::new(15, 46), vec![
                 Statement::SimpleExpr(SimpleExprStatement::new(Span::new(17, 44),

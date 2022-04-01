@@ -221,6 +221,8 @@ pub(crate) use case;
 #[cfg(test)]
 pub(crate) use crate::diagnostics::make_errors;
 #[cfg(test)]
+pub(crate) use super::abc::make_stmt;
+#[cfg(test)]
 pub(crate) use super::expr::make_expr;
 #[cfg(test)]
 pub(crate) use super::name::make_name;

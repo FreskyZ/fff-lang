@@ -59,7 +59,7 @@ pub use fn_type::{FnType, FnTypeParam};
 pub use for_stmt::ForStatement;
 pub use if_stmt::{IfStatement, IfClause, ElseClause};
 pub use index_call::IndexCallExpr;
-pub use jump_stmt::{BreakStatement, ContinueStatement};
+pub use jump_stmt::{BreakStatement, ContinueStatement, JumpStatement};
 pub use label_def::LabelDef;
 pub use lit_expr::{LitExpr, LitValue};
 pub use loop_stmt::LoopStatement;
