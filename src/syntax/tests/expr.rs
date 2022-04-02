@@ -408,15 +408,15 @@ fn expr_list_parse() {
 #[test]
 fn expr_parse() {
 
-    case!{ "\"abc\"" as Expr, make_expr!(str #2 0:4) }
-    case!{ "0xfffu64" as Expr, make_expr!(u64 0xFFF 0:7) }
-    case!{ "'f'" as Expr, make_expr!(char 0:2 'f') }
-    case!{ "true" as Expr, make_expr!(true 0:3) }
-    case!{ "binary_expr" as Expr, make_name!(simple 0:10 #2) }
-    case!{ "(  )" as Expr, make_expr!(unit 0:3) }
+    case!{ parse_expr "\"abc\"", make_expr!(str #2 0:4) }
+    case!{ parse_expr "0xfffu64", make_expr!(u64 0xFFF 0:7) }
+    case!{ parse_expr "'f'", make_expr!(char 0:2 'f') }
+    case!{ parse_expr "true", make_expr!(true 0:3) }
+    case!{ parse_expr "binary_expr", make_name!(simple 0:10 #2) }
+    case!{ parse_expr "(  )", make_expr!(unit 0:3) }
     
     // Case from fn_def_parse
-    case!{ "println(this)" as Expr, 
+    case!{ parse_expr "println(this)", 
         make_expr!(fn 0:12 paren 7:12
             make_name!(simple 0:6 #2),
             make_name!(simple 8:11 #3))
@@ -426,23 +426,23 @@ fn expr_parse() {
     // update them to current syntax to help improve coverage and make me happy
 
     // Unit
-    case!{ "(1)" as Expr,
+    case!{ parse_expr "(1)",
         make_expr!(paren 0:2
             make_expr!(i32 1 1:1))
     }
     // I can see future of Ok(())! 
-    case!{ "(())" as Expr,
+    case!{ parse_expr "(())",
         make_expr!(paren 0:3
             make_expr!(unit 1:2))
     }
 
     // Tuple def
-    case!{ "(a, b)" as Expr,
+    case!{ parse_expr "(a, b)",
         make_expr!(tuple 0:5
             make_name!(simple 1:1 #2),
             make_name!(simple 4:4 #3))
     }        //  12345678901
-    case!{ "(1, 2, 3, )" as Expr,
+    case!{ parse_expr "(1, 2, 3, )",
         make_expr!(tuple 0:10
             make_expr!(i32 1 1:1),
             make_expr!(i32 2 4:4),
@@ -450,55 +450,55 @@ fn expr_parse() {
     }
 
     // Array def
-    case!{ "[a]" as Expr,
+    case!{ parse_expr "[a]",
         make_expr!(array 0:2
             make_name!(simple 1:1 #2))
     }        //  12345678
-    case!{ "[1, 2, ]" as Expr,
+    case!{ parse_expr "[1, 2, ]",
         make_expr!(array 0:7
             make_expr!(i32 1 1:1),
             make_expr!(i32 2 4:4))
     }
-    case!{ "[]" as Expr, make_expr!(array 0:1) }
+    case!{ parse_expr "[]", make_expr!(array 0:1) }
 
     // Member access
-    case!{ "a.b" as Expr,
+    case!{ parse_expr "a.b",
         make_expr!(member 0:2 dot 1:1
             make_name!(simple 0:0 #2),
             make_name!(simple bare 2:2 #3)),
     }
 
     // function call
-    case!{ "defg()" as Expr,
+    case!{ parse_expr "defg()",
         make_expr!(fn 0:5 paren 4:5
             make_name!(simple 0:3 #2),)
     }
-    case!{ "deg(a)" as Expr,
+    case!{ parse_expr "deg(a)",
         make_expr!(fn 0:5 paren 3:5
             make_name!(simple 0:2 #2),
             make_name!(simple 4:4 #3))
     }
-    case!{ "degg(a, b, )" as Expr,
+    case!{ parse_expr "degg(a, b, )",
         make_expr!(fn 0:11 paren 4:11
             make_name!(simple 0:3 #2),
             make_name!(simple 5:5 #3),
             make_name!(simple 8:8 #4))
     }
     //           0123456789
-    case!{ "abc.defg()" as Expr,
+    case!{ parse_expr "abc.defg()",
         make_expr!(fn 0:9 paren 8:9
             make_expr!(member 0:7 dot 3:3
                 make_name!(simple 0:2 #2),
                 make_name!(simple bare 4:7 #3)),)
     }
-    case!{ "abc.deg(a)" as Expr,
+    case!{ parse_expr "abc.deg(a)",
         make_expr!(fn 0:9 paren 7:9
             make_expr!(member 0:6 dot 3:3
                 make_name!(simple 0:2 #2),
                 make_name!(simple bare 4:6 #3)),
             make_name!(simple 8:8 #4))
     }        //  12345678901234
-    case!{ "1.degg(a, b, )" as Expr,
+    case!{ parse_expr "1.degg(a, b, )",
         make_expr!(fn 0:13 paren 6:13
             make_expr!(member 0:5 dot 1:1
                 make_expr!(i32 1 0:0),
@@ -508,12 +508,12 @@ fn expr_parse() {
     }   
 
     // get index       //  123456
-    case!{ "deg[a]" as Expr,
+    case!{ parse_expr "deg[a]",
         make_expr!(index 0:5 bracket 3:5
             make_name!(simple 0:2 #2),
             make_name!(simple 4:4 #3))
     }        //  123456789012
-    case!{ "degg[a, b, ]" as Expr,
+    case!{ parse_expr "degg[a, b, ]",
         make_expr!(index 0:11 bracket 4:11
             make_name!(simple 0:3 #2),
             make_name!(simple 5:5 #3),
@@ -521,21 +521,21 @@ fn expr_parse() {
     }     
 
     //           123456
-    case!{ "2[3].a" as Expr,
+    case!{ parse_expr "2[3].a",
         make_expr!(member 0:5 dot 4:4
             make_expr!(index 0:3 bracket 1:3
                 make_expr!(i32 2 0:0),
                 make_expr!(i32 3 2:2)),
             make_name!(simple bare 5:5 #2))
     }   //  1234567890123456
-    case!{ "print(233, ).bit" as Expr,
+    case!{ parse_expr "print(233, ).bit",
         make_expr!(member 0:15 dot 12:12
             make_expr!(fn 0:11 paren 5:11
                 make_name!(simple 0:4 #2),
                 make_expr!(i32 233 6:8)),
             make_name!(simple bare 13:15 #3))
     }            //  12345678901234
-    case!{ "1.degg[a, b, ]" as Expr,
+    case!{ parse_expr "1.degg[a, b, ]",
         make_expr!(index 0:13 bracket 6:13
             make_expr!(member 0:5 dot 1:1
                 make_expr!(i32 1 0:0),
@@ -544,7 +544,7 @@ fn expr_parse() {
             make_name!(simple 10:10 #4))
     }        
 
-    case!{ "!~!1[1]" as Expr,
+    case!{ parse_expr "!~!1[1]",
         make_expr!(unary 0:6 Not 0:0
             make_expr!(unary 1:6 Tilde 1:1
                 make_expr!(unary 2:6 Not 2:2
@@ -554,30 +554,30 @@ fn expr_parse() {
     }
 
     //           1234567
-    case!{ "!!1" as Expr,
+    case!{ parse_expr "!!1",
         make_expr!(unary 0:2 Not 0:0
             make_expr!(unary 1:2 Not 1:1
                 make_expr!(i32 1 2:2)))
     }
 
     // range
-    case!{ ".." as Expr,
+    case!{ parse_expr "..",
         make_expr!(range full 0:1)
     }
 
-    case!{ "..1 + 2" as Expr,
+    case!{ parse_expr "..1 + 2",
         make_expr!(range right 0:6
             make_expr!(binary 2:6 Add 4:4
                 make_expr!(i32 1 2:2),
                 make_expr!(i32 2 6:6)))
     }
 
-    case!{ "xxx .." as Expr,
+    case!{ parse_expr "xxx ..",
         make_expr!(range left 0:5
             make_name!(simple 0:2 #2))
     }
 
-    case!{ "1 + 2 .. [4, 5, 6][2]" as Expr,
+    case!{ parse_expr "1 + 2 .. [4, 5, 6][2]",
         make_expr!(range both 0:20 dotdot 6:7
             make_expr!(binary 0:4 Add 2:2
                 make_expr!(i32 1 0:0),
@@ -590,7 +590,7 @@ fn expr_parse() {
                 make_expr!(i32 2 19:19)))
     }
 
-    case!{ "de(, )" as Expr,
+    case!{ parse_expr "de(, )",
         make_expr!(fn 0:5 paren 2:5
             make_name!(simple 0:1 #2),
         ), errors make_errors!(
@@ -599,7 +599,7 @@ fn expr_parse() {
     }
 
     //               0 12345678
-    case!{ "\"\".de(, )" as Expr,
+    case!{ parse_expr "\"\".de(, )",
         make_expr!(fn 0:8 paren 5:8
             make_expr!(member 0:4 dot 2:2
                 make_expr!(str #1 0:1),
@@ -609,7 +609,7 @@ fn expr_parse() {
         )
     }
 
-    case!{ "defg[]" as Expr,
+    case!{ parse_expr "defg[]",
         make_expr!(index 0:5 bracket 4:5
             make_name!(simple 0:3 #2),
         ), errors make_errors!(
@@ -618,7 +618,7 @@ fn expr_parse() {
     }
 
     //              123456
-    case!{ "de[, ]" as Expr,
+    case!{ parse_expr "de[, ]",
         make_expr!(index 0:5 bracket 2:5
             make_name!(simple 0:1 #2),
         ), errors make_errors!(
@@ -726,14 +726,14 @@ fn primary_expr_parse() {
 
     // this is the loop of tokens.nth(current) is left bracket does not cover everything and infinite loop is here
     // update 2017/6/17: this was a bug, but I forget detail
-    case!{ "[a]" as Expr,
+    case!{ parse_primary_expr "[a]",
         make_expr!(array 0:2
             make_name!(simple 1:1 #2))
     }
 
     //                      0        1         2         3         4
     //                      01234567890123456789012345678901234567890123456     
-    case!{ "(463857, IEfN, atau8M, [fNAE, ((cAeJN4)), nHg])" as Expr,
+    case!{ parse_primary_expr "(463857, IEfN, atau8M, [fNAE, ((cAeJN4)), nHg])",
         make_expr!(tuple 0:46
             make_expr!(i32 463857 1:6),
             make_name!(simple 9:12 #2),
@@ -746,14 +746,14 @@ fn primary_expr_parse() {
                 make_name!(simple 42:44 #6)))
     }
 
-    case!{ "10363" as Expr,
+    case!{ parse_primary_expr "10363",
         make_expr!(i32 10363 0:4)
     }
 
     case!{
     //   0         1         2         3         4         5         6         7         8         9         0         1         2         3       
     //   01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567 8901234567890123456789012345678901234
-        "[(0x7E), FFGqfJe, I4, [(m7A, (41, ([(jL, rAn, K0FgLc7h, true), C, w]), (J3cEFDG, d, (j8h))), (), \neIuArjF), 400, 0o535147505, 0xDB747]]" as Expr,
+    parse_primary_expr "[(0x7E), FFGqfJe, I4, [(m7A, (41, ([(jL, rAn, K0FgLc7h, true), C, w]), (J3cEFDG, d, (j8h))), (), \neIuArjF), 400, 0o535147505, 0xDB747]]" ,
         make_expr!(array 0:134
             make_expr!(paren 1:6
                make_expr!(i32 0x7E 2:5)),
@@ -785,13 +785,13 @@ fn primary_expr_parse() {
                 make_expr!(i32 0xDB747 126:132))),
     }
 
-    case!{ "CMDoF" as Expr, make_name!(simple 0:4 #2) }
-    case!{ "false" as Expr, make_expr!(false 0:4) }
+    case!{ parse_primary_expr "CMDoF", make_name!(simple 0:4 #2) }
+    case!{ parse_primary_expr "false", make_expr!(false 0:4) }
 
     
     //                      0        1         2         3         4         5         6          7          8         9         A
     //                      12345678901234567890123456789012345678901234567890123456789012345678901 234 5678901234567890123456789012
-    case!{ "[uy6, 4373577, [(q, AJBN0n, MDEgKh5,), KG, (NsL, ((), D, false, d, ), \"H=\"), true, ((vvB3, true, 5))]]" as Expr, 
+    case!{ parse_primary_expr "[uy6, 4373577, [(q, AJBN0n, MDEgKh5,), KG, (NsL, ((), D, false, d, ), \"H=\"), true, ((vvB3, true, 5))]]", 
         make_expr!(array 0:101
             make_name!(simple 1:3 #2),
             make_expr!(i32 4373577 6:12),
@@ -817,23 +817,23 @@ fn primary_expr_parse() {
                         make_expr!(i32 5 97:97)))))
     }
 
-    case!{ "(() )" as Expr,
+    case!{ parse_primary_expr "(() )",
         make_expr!(paren 0:4
             make_expr!(unit 1:2))
     }
-    case!{ "((),)" as Expr, 
+    case!{ parse_primary_expr "((),)", 
         make_expr!(tuple 0:4
             make_expr!(unit 1:2))
     }
 
-    case!{ "(\"o5\")" as Expr,
+    case!{ parse_primary_expr "(\"o5\")",
         make_expr!(paren 0:5
             make_expr!(str #2 1:4))
     }
 
     //                      0        1         2        
     //                      1234567890123456789012345678
-    case!{ "(nn, ([false,true]), 183455)" as Expr,
+    case!{ parse_primary_expr "(nn, ([false,true]), 183455)",
         make_expr!(tuple 0:27
             make_name!(simple 1:2 #2),
             make_expr!(paren 5:18
@@ -845,7 +845,7 @@ fn primary_expr_parse() {
     
     //                      0        1         2         3         4         5         6         7       
     //                      123456789012345678901234567890123456789012345678901234567890123456789012345678
-    case!{ "((true, (mO, [(q5k),a], (((KttG))), (K5DJ, r, ())), (McsaEdfdfalse,)), rIOKt,)" as Expr,
+    case!{ parse_primary_expr "((true, (mO, [(q5k),a], (((KttG))), (K5DJ, r, ())), (McsaEdfdfalse,)), rIOKt,)",
         make_expr!(tuple 0:77
             make_expr!(tuple 1:68
                 make_expr!(true 2:5),
@@ -870,23 +870,23 @@ fn primary_expr_parse() {
 
     //                                      0          1         2      
     //                                      12 345 67890123456789012
-    case!{ "[\"il\", 0o52u32, sO04n]" as Expr,
+    case!{ parse_primary_expr "[\"il\", 0o52u32, sO04n]",
         make_expr!(array 0:21
             make_expr!(str #2 1:4),
             make_expr!(u32 0o52 7:13), 
             make_name!(simple 16:20 #3))
     }
     //                                      12345678
-    case!{ "['f',()]" as Expr, 
+    case!{ parse_primary_expr "['f',()]", 
         make_expr!(array 0:7
             make_expr!(char 1:3 'f'),
             make_expr!(unit 5:6))
     }
-    case!{ "[]" as Expr, make_expr!(array 0:1) }
+    case!{ parse_primary_expr "[]", make_expr!(array 0:1) }
 
     //                                      0        1           2         3         4      
     //                                      12345 678901 234567890123456789012345678901234
-    case!{ "[8, \"@=?GF\", 87r32, 1340323.74r64, FKOxAvx5]" as Expr,
+    case!{ parse_primary_expr "[8, \"@=?GF\", 87r32, 1340323.74r64, FKOxAvx5]",
         make_expr!(array 0:43
             make_expr!(i32 8 1:1),
             make_expr!(str #2 4:10),
@@ -897,7 +897,7 @@ fn primary_expr_parse() {
 
     //                                        0        1         2         3         4         5         6     
     //                                        123456789012345678901234567890123456789012345678901234567890123
-    case!{ r#"  [[dnr4, lGFd3yL, tJ], ['\\', p, (xGaBwiL,), DE], true, aB8aE]"# as Expr,
+    case!{ parse_primary_expr r#"  [[dnr4, lGFd3yL, tJ], ['\\', p, (xGaBwiL,), DE], true, aB8aE]"#,
         make_expr!(array 2:62
             make_expr!(array 3:21
                 make_name!(simple 4:7 #2),
@@ -916,7 +916,7 @@ fn primary_expr_parse() {
     // Previous manual tests
     //                      0         1           2          3         4         5           6
     //                      012345678901234 5678 9012 3456789012345678901234567890123 456789 0123456
-    case!{ "[abc, 123u32, \"456\", '\\u0065', false, (), (a), (abc, \"hello\", ), ]" as Expr,
+    case!{ parse_primary_expr "[abc, 123u32, \"456\", '\\u0065', false, (), (a), (abc, \"hello\", ), ]",
         make_expr!(array 0:65
             make_name!(simple 1:3 #2),
             make_expr!(u32 123 6:11),
@@ -931,11 +931,11 @@ fn primary_expr_parse() {
                 make_expr!(str #5 53:59)))
     }
 
-    case!{ "(                             )" as Expr, 
+    case!{ parse_primary_expr "(                             )", 
         make_expr!(unit 0:30)
     }
 
-    case!{ "(,)" as Expr,
+    case!{ parse_primary_expr "(,)",
         make_expr!(tuple 0:2),
         errors make_errors!(e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(0, 2), strings::TupleDefHere)),
     }
@@ -946,7 +946,7 @@ fn postfix_expr_parse() {
 
     //      0        1         2         3         4         5     
     //      0123456789012345678901234567890123456789012345678901234567
-    case!{ "a.b(c, d, e).f(g, h, i,)(u,).j[k].l().m[n, o, p][r, s, t,]" as Expr,
+    case!{ parse_postfix_expr "a.b(c, d, e).f(g, h, i,)(u,).j[k].l().m[n, o, p][r, s, t,]",
         make_expr!(index 0:57 bracket 48:57
             make_expr!(index 0:47 bracket 39:47
                 make_expr!(member 0:38 dot 37:37
@@ -982,7 +982,7 @@ fn postfix_expr_parse() {
     }
 
     //      012345678901234567890
-    case!{ "i.collect::<Vec<i32>>" as Expr,
+    case!{ parse_postfix_expr "i.collect::<Vec<i32>>",
         make_expr!(member 0:20 dot 1:1
             make_name!(simple 0:0 #2),
             make_name!(bare 2:20 false, None,
@@ -994,7 +994,7 @@ fn postfix_expr_parse() {
     }
 
     //      01234567
-    case!{ "(0, 0).0" as Expr,
+    case!{ parse_postfix_expr "(0, 0).0",
         make_expr!(member 0:7 dot 6:6
             make_expr!(tuple 0:5
                 make_expr!(i32 0 1:1),
@@ -1005,7 +1005,7 @@ fn postfix_expr_parse() {
 
     //      0         1         2         3         4         5
     //      012345678901234567890123456789012345678901234567890123456
-    case!{ "string::<wchar>{ size: 0, cap: 0, data: uninitialized() }" as Expr,
+    case!{ parse_postfix_expr "string::<wchar>{ size: 0, cap: 0, data: uninitialized() }",
         make_expr!(object 0:56 quote 15:56
             make_name!(0:14 false, None,
                 make_name!(segment 0:5 #2),
@@ -1020,7 +1020,7 @@ fn postfix_expr_parse() {
                     make_name!(simple 40:52 #7),))),
     }
 
-    case!{ "a[]" as PostfixExpr,
+    case!{ parse_postfix_expr "a[]",
         make_expr!(index 0:2 bracket 1:2
             make_name!(simple 0:0 #2),
         ), errors make_errors!(
@@ -1028,7 +1028,7 @@ fn postfix_expr_parse() {
         )
     }
     
-    case!{ "a[, ]" as PostfixExpr,
+    case!{ parse_postfix_expr "a[, ]",
         make_expr!(index 0:4 bracket 1:4
             make_name!(simple 0:0 #2),
         ), errors make_errors!(
@@ -1036,7 +1036,7 @@ fn postfix_expr_parse() {
         )
     }
     
-    case!{ "a(, )" as PostfixExpr,
+    case!{ parse_postfix_expr "a(, )",
         make_expr!(fn 0:4 paren 1:4
             make_name!(simple 0:0 #2),
         ), errors make_errors!(
@@ -1045,7 +1045,7 @@ fn postfix_expr_parse() {
     }
 
     //      01234
-    case!{ "a.0i8" as Expr,
+    case!{ parse_postfix_expr "a.0i8",
         make_expr!(member 0:4 dot 1:1
             make_name!(simple 0:0 #2),
             make_name!(bare 2:4 false, None,)
@@ -1055,7 +1055,7 @@ fn postfix_expr_parse() {
     }
 
     //      01234567890123456789012
-    case!{ "a.0xFFFF_FFFF_FFFF_FFFF" as Expr,
+    case!{ parse_postfix_expr "a.0xFFFF_FFFF_FFFF_FFFF",
         make_expr!(member 0:22 dot 1:1
             make_name!(simple 0:0 #2),
             make_name!(bare 2:22 false, None,)
@@ -1065,7 +1065,7 @@ fn postfix_expr_parse() {
     }
 
     //      0123456789
-    case!{ "a.abc::def" as Expr,
+    case!{ parse_postfix_expr "a.abc::def",
         make_expr!(member 0:9 dot 1:1
             make_name!(simple 0:0 #2),
             make_name!(bare 2:9 false, None,
@@ -1077,7 +1077,7 @@ fn postfix_expr_parse() {
     }
 
     //      0123456789012345678
-    case!{ "a.abc::<def>::<ghi>" as Expr,
+    case!{ parse_postfix_expr "a.abc::<def>::<ghi>",
         make_expr!(member 0:18 dot 1:1
             make_name!(simple 0:0 #2),
             make_name!(bare 2:18 false, None,
@@ -1096,18 +1096,18 @@ fn postfix_expr_parse() {
 #[test]
 fn range_expr_parse() {
 
-    case!{ ".." as RangeExpr, 
+    case!{ parse_range_expr "..", 
         make_expr!(range full 0:1)
     }
 
-    case!{ "..1 + 1" as RangeExpr,
+    case!{ parse_range_expr "..1 + 1",
         make_expr!(range right 0:6
             make_expr!(binary 2:6 Add 4:4
                 make_expr!(i32 1 2:2),
                 make_expr!(i32 1 6:6)))
     }
 
-    case!{ "1 .." as RangeExpr,
+    case!{ parse_range_expr "1 ..",
         make_expr!(range left 0:3
             make_expr!(i32 1 0:0))
     }
@@ -1116,20 +1116,20 @@ fn range_expr_parse() {
 #[test]
 fn tuple_def_parse() {
     //                                   01234567
-    case!{ "(1, '2')" as TupleDef,
+    case!{ parse_tuple_def "(1, '2')",
         make_expr!(tuple 0:7
             make_expr!(i32 1 1:1),
             make_expr!(char 4:6 '2'))
     }
     //                                   0123456
-    case!{ "(1 + 1)" as TupleDef,
+    case!{ parse_tuple_def "(1 + 1)",
         make_expr!(paren 0:6
             make_expr!(binary 1:5 Add 3:3
                 make_expr!(i32 1 1:1),
                 make_expr!(i32 1 5:5)))
     }
     
-    case!{ "( , )" as TupleDef,
+    case!{ parse_tuple_def "( , )",
         make_expr!(tuple 0: 4),
         errors make_errors!(e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(0, 4), strings::TupleDefHere)),
     }
@@ -1138,18 +1138,18 @@ fn tuple_def_parse() {
 #[test]
 fn unary_expr_parse() {
     
-    case!{ "1" as Expr, 
+    case!{ parse_unary_expr "1", 
         make_expr!(i32 1 0:0)
     }
 
-    case!{ "!~!1" as UnaryExpr,
+    case!{ parse_unary_expr "!~!1",
         make_expr!(unary 0:3 Not 0:0
             make_expr!(unary 1:3 Tilde 1:1
                 make_expr!(unary 2:3 Not 2:2
                     make_expr!(i32 1 3:3))))
     }
 
-    case!{ "&a(&b)" as UnaryExpr,
+    case!{ parse_unary_expr "&a(&b)",
         make_expr!(unary 0:5 And 0:0
             make_expr!(fn 1:5 paren 2:5
                 make_name!(simple 1:1 #2),

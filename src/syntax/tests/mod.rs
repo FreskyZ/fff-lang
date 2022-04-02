@@ -5,7 +5,7 @@ use crate::source::{SourceContext, VirtualFileSystem, Span, IsId, make_source};
 use crate::diagnostics::{strings, make_errors};
 use crate::lexical::{Numeric, Separator, Keyword};
 use super::visit::Node;
-use super::parser::{Parser, ParseContext, Unexpected, PostfixExpr, RangeExpr};
+use super::parser::{Parser, ParseContext, Unexpected};
 use super::ast::*;
 
 struct DiffDisplay<'a, 'b>(&'a str, &'b str);
@@ -172,6 +172,9 @@ macro_rules! case {
         notast_case($code, |cx| cx.$parser(), $expect, $expect_diagnostics, &$expect_strings, line!());
     );
 }
+
+// ATTENTION: these macros, make_name, make_expr, make_stmt,
+//            should be same structure as pretty print in principle, this makes test case expect results look like pretty and looks pretty    
 
 macro_rules! make_name {
     (simple $start:literal:$end:literal #$id:literal) => (

@@ -116,7 +116,7 @@ fn postfix_expr() {
     let mut scx = make_source!("a.b(c, d, e).f(g, h, i,)(u,).j[k].l().m[n, o, p][r, s, t,]");
     let mut ecx = crate::diagnostics::make_errors!();
     let mut context = ParseContext::new(crate::lexical::Parser::new(scx.entry("1"), &mut ecx));
-    let node = PostfixExpr::parse(&mut context).unwrap();
+    let node = context.parse_postfix_expr().unwrap();
     context.finish();
     ppcase!{ node.display(&scx), "index-call <1:1-1:58> [] <1:49-1:58>
   index-call <1:1-1:48> [] <1:40-1:48>

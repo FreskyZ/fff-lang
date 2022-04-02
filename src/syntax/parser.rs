@@ -110,6 +110,11 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
         original_current_span
     }
 
+    /// check current token is a literal
+    fn is_lit(&self) -> bool {
+        matches!(self.current, Token::Char(_) | Token::Bool(_) | Token::Str(..) | Token::Num(_)) 
+    }
+
     /// Check current token is a literal
     ///
     /// if so, move next and Ok((lit_value, lit_span)),
@@ -429,25 +434,8 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
         matches!(self.current, Token::Sep(Separator::LeftBracket))
     }
 
-    fn maybe_block_stmt(&self) -> bool {
-        matches!((&self.current, &self.peek2), (Token::Label(_), Token::Sep(Separator::LeftBrace)) | (Token::Sep(Separator::LeftBrace), _))
-    }
-
     fn maybe_enum_def(&self) -> bool {
         matches!(self.current, Token::Keyword(Keyword::Enum))
-    }
-
-    fn maybe_expr(&self) -> bool {
-        self.maybe_lit()
-        || self.maybe_name()
-        || self.maybe_tuple_def()
-        || self.maybe_array_def()
-        || self.maybe_unary_expr()
-        || matches!(self.current, Token::Sep(Separator::DotDot) | Token::Keyword(Keyword::This))
-    }
-
-    fn maybe_fn_call(&self) -> bool {
-        matches!(self.current, Token::Sep(Separator::LeftParen)) 
     }
 
     fn maybe_fn_def(&self) -> bool {
@@ -466,10 +454,6 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
         matches!(self.current, Token::Keyword(Keyword::If)) 
     }
 
-    fn maybe_index_call(&self) -> bool {
-        matches!(self.current, Token::Sep(Separator::LeftBracket))
-    }
-
     fn maybe_continue_stmt(&self) -> bool {
         matches!(self.current, Token::Keyword(Keyword::Continue)) 
     }
@@ -482,28 +466,12 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
         matches!(self.current, Token::Label(_))
     }
 
-    fn maybe_lit(&self) -> bool {
-        matches!(self.current, Token::Char(_) | Token::Bool(_) | Token::Str(..) | Token::Num(_)) 
-    }
-
     fn maybe_loop_stmt(&self) -> bool {
         matches!((&self.current, &self.peek2), (Token::Label(_), Token::Keyword(Keyword::Loop)) | (Token::Keyword(Keyword::Loop), _))
     }
 
-    fn maybe_member_access(&self) -> bool {
-        matches!((&self.current, &self.peek), (Token::Sep(Separator::Dot), Token::Num(_) | Token::Ident(_))) 
-    }
-
     fn maybe_module_stmt(&self) -> bool {
         matches!(self.current, Token::Keyword(Keyword::Module)) 
-    }
-
-    fn maybe_name(&self) -> bool {
-        matches!(self.current, Token::Ident(_) | Token::Sep(Separator::Lt | Separator::ColonColon)) 
-    }
-
-    fn maybe_object_lit(&self) -> bool {
-        matches!(self.current, Token::Sep(Separator::LeftBrace))
     }
 
     fn maybe_plain_type(&self) -> bool {
@@ -522,20 +490,12 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
         matches!(self.current, Token::Keyword(Keyword::Return))
     }
 
-    fn maybe_tuple_def(&self) -> bool {
-        matches!(self.current, Token::Sep(Separator::LeftParen)) 
-    }
-
     fn maybe_tuple_type(&self) -> bool {
         matches!(self.current, Token::Sep(Separator::LeftParen))
     }
 
     fn maybe_type_def(&self) -> bool {
         matches!(self.current, Token::Keyword(Keyword::Type)) 
-    }
-
-    fn maybe_unary_expr(&self) -> bool {
-        matches!(self.current, Token::Sep(sep) if sep.kind(SeparatorKind::Unary))
     }
 
     fn maybe_use_stmt(&self) -> bool {
@@ -576,23 +536,9 @@ impl Parser for ArrayType {
             return Ok(ArrayType{ base, size: Default::default(), span: left_bracket_span + right_bracket_span });
         }
 
-        let size = cx.expect::<Expr>()?;
+        let size = cx.parse_expr()?;
         let right_bracket_span = cx.expect_sep(Separator::RightBracket)?;
         Ok(ArrayType{ base, size, span: left_bracket_span + right_bracket_span })
-    }
-}
-
-// block-stmt = [ label-def ] block
-// block-stmt for explicit block definition in block and allow block label
-impl Parser for BlockStatement {
-    type Output = BlockStatement;
-
-    fn parse(cx: &mut ParseContext) -> Result<BlockStatement, Unexpected> {
-    
-        let name = cx.maybe_label().then_try(|| cx.expect::<LabelDef>())?;
-        let body = cx.expect::<Block>()?;
-        let all_span = name.as_ref().map(|n| n.all_span).unwrap_or(body.all_span) + body.all_span;
-        Ok(BlockStatement{ all_span, name, body })
     }
 }
 
@@ -630,7 +576,7 @@ impl Parser for EnumDef {
         } else {
             loop {
                 let (variant_name, variant_name_span) = cx.expect_ident()?;
-                let init_value = cx.try_expect_sep(Separator::Eq).map(|_| cx.expect::<Expr>()).transpose()?;
+                let init_value = cx.try_expect_sep(Separator::Eq).map(|_| cx.parse_expr()).transpose()?;
                 let variant_all_span = variant_name_span + init_value.as_ref().map(|e| e.get_all_span()).unwrap_or(variant_name_span);
                 variants.push(EnumVariant{ name: variant_name, name_span: variant_name_span, value: init_value, all_span: variant_all_span });
 
@@ -663,13 +609,13 @@ impl Parser for AssignExprStatement {
 
     fn parse(cx: &mut ParseContext) -> Result<Statement, Unexpected> {
 
-        let left_expr = cx.expect::<Expr>()?;
+        let left_expr = cx.parse_expr()?;
         let starting_span = left_expr.get_all_span();
 
         if let Some(semicolon_span) = cx.try_expect_sep(Separator::SemiColon) {
             Ok(Statement::SimpleExpr(SimpleExprStatement::new(starting_span + semicolon_span, left_expr)))
         } else if let Some((assign_op, assign_op_span)) = cx.try_expect_sep_kind(SeparatorKind::Assign) {
-            let right_expr = cx.expect::<Expr>()?;
+            let right_expr = cx.parse_expr()?;
             let semicolon_span = cx.expect_sep(Separator::SemiColon)?;
             Ok(Statement::AssignExpr(
                 AssignExprStatement::new(starting_span + semicolon_span, assign_op, assign_op_span, left_expr, right_expr)))
@@ -679,15 +625,6 @@ impl Parser for AssignExprStatement {
     }
 }
 
-impl Parser for Expr {
-    type Output = Expr;
-
-    fn parse(cx: &mut ParseContext) -> Result<Expr, Unexpected> { 
-        cx.expect::<RangeExpr>()
-    }
-}
-
-// TODO: remove after change all postfix expr parsers to notast
 impl Default for Expr {
     fn default() -> Expr { 
         Expr::Lit(LitExpr{ value: LitValue::Num(Numeric::I32(0)), span: Span::new(0, 0) }) 
@@ -813,7 +750,7 @@ impl Parser for ForStatement {
         cx.expect_keyword(Keyword::In)?;
 
         cx.no_object_literals.push(true);
-        let iter_expr = cx.expect::<Expr>()?;
+        let iter_expr = cx.parse_expr()?;
         cx.no_object_literals.pop();
         let body = cx.expect::<Block>()?;
         
@@ -831,7 +768,7 @@ impl Parser for IfStatement {
         let mut all_span = cx.expect_keyword(Keyword::If)?;
 
         cx.no_object_literals.push(true);
-        let if_expr = cx.expect::<Expr>()?;
+        let if_expr = cx.parse_expr()?;
         cx.no_object_literals.pop();
         let if_body = cx.expect::<Block>()?;
         all_span += if_body.all_span;
@@ -843,7 +780,7 @@ impl Parser for IfStatement {
             if let Some(if_span) = cx.try_expect_keyword(Keyword::If) {
                 let elseif_span = else_span + if_span;
                 cx.no_object_literals.push(true);
-                let elseif_expr = cx.expect::<Expr>()?;
+                let elseif_expr = cx.parse_expr()?;
                 cx.no_object_literals.pop();
                 let elseif_body = cx.expect::<Block>()?;
                 all_span += elseif_body.all_span;
@@ -1019,115 +956,6 @@ impl Parser for PrimitiveType {
     }
 }
 
-// primary_expr = ident_expr | lit_expr | unit_lit | paren_expr | tuple_def | array_def
-struct PrimaryExpr;
-
-impl Parser for PrimaryExpr {
-    type Output = Expr;
-    
-    fn parse(cx: &mut ParseContext) -> Result<Expr, Unexpected> {
-
-        if cx.maybe_lit() {
-            // this is too short to put in one parse method
-            // while it is actually tested more than hundred times in syntax test cases worldwide
-            let (value, span) = cx.expect_lit()?;
-            return Ok(Expr::Lit(LitExpr{ value, span }));
-        } else if cx.maybe_name() {
-            return cx.parse_name().map(Expr::Name);
-        } else if cx.maybe_tuple_def() {
-            return cx.expect::<TupleDef>();
-        } else if cx.maybe_array_def() {
-            return cx.parse_array_def();
-        }
-
-        let (this_id, this_span) = cx.expect_ident_or_keywords(&[Keyword::This, Keyword::Self_])?;  // actually identifier is processed by Name, not here
-        Ok(Expr::Name(Name{ type_as_segment: None, global: false, all_span: this_span, segments: vec![NameSegment::Normal(this_id, this_span)] }))
-    }
-}
-
-// postfix_expr = expr { ( member_access | fn_call | indexer_call ) }
-pub struct PostfixExpr;
-
-impl Parser for PostfixExpr {
-    type Output = Expr;
-
-    fn parse(cx: &mut ParseContext) -> Result<Expr, Unexpected> {   
-        #[cfg(feature = "trace_postfix_expr_parse")]
-        macro_rules! trace { ($($arg:tt)*) => ({ perror!("    [PostfixExpr:{}] ", line!()); perrorln!($($arg)*); }) }
-        #[cfg(not(feature = "trace_postfix_expr_parse"))]
-        macro_rules! trace { ($($arg:tt)*) => () }
-
-        let mut current_expr = cx.expect::<PrimaryExpr>()?;
-        trace!("parsed primary, current is {:?}", current_expr);
-
-        loop {
-            if cx.maybe_member_access() {
-                let (dot_span, name) = cx.parse_member_access()?;
-                let all_span = current_expr.get_all_span() + name.all_span;
-                let base = Box::new(current_expr);
-                current_expr = Expr::MemberAccess(MemberAccessExpr{ all_span, base, dot_span, name });
-            } else if cx.maybe_fn_call() {
-                let (paren_span, params) = cx.parse_fn_call()?;
-                let all_span = current_expr.get_all_span() + paren_span;
-                let base = Box::new(current_expr);
-                current_expr = Expr::FnCall(FnCallExpr{ all_span, base, paren_span, params });
-            } else if cx.maybe_index_call() {
-                let (bracket_span, params) = cx.parse_index_call()?;
-                let all_span = current_expr.get_all_span() + bracket_span;
-                let base = Box::new(current_expr);
-                current_expr = Expr::IndexCall(IndexCallExpr{ all_span, base, bracket_span, params });
-            } else if matches!(cx.no_object_literals.last(), None | Some(false)) && matches!(current_expr, Expr::Name(_)) && cx.maybe_object_lit() {
-                let (quote_span, fields) = cx.parse_object_literal()?;
-                let all_span = current_expr.get_all_span() + quote_span;
-                let base = Box::new(current_expr);
-                current_expr = Expr::Object(ObjectLiteral{ all_span, base, quote_span, fields });
-            } else {
-                break;
-            }
-        }
-
-        trace!("parsing postfix finished, get retval: {:?}", current_expr);
-        Ok(current_expr)
-    }
-}
-
-// range_full = '..'
-// range_left = binary_expr '..'
-// range_right = '..' binary_expr
-// range_both = binary_expr '..' binary_expr
-pub struct RangeExpr;
-
-impl Parser for RangeExpr {
-    type Output = Expr;
-
-    fn parse(cx: &mut ParseContext) -> Result<Expr, Unexpected> {
-        match cx.try_expect_sep(Separator::DotDot) {
-            Some(range_op_span) => {
-                if cx.maybe_expr() {
-                    let expr = cx.parse_binary_expr()?;
-                    Ok(Expr::RangeRight(RangeRightExpr{ all_span: range_op_span + expr.get_all_span(), expr: Box::new(expr) }))
-                } else {
-                    Ok(Expr::RangeFull(RangeFullExpr{ all_span: range_op_span }))
-                }
-            }
-            None => {
-                let left_expr = cx.parse_binary_expr()?;
-                if let Some(op_span) = cx.try_expect_sep(Separator::DotDot) {
-                    if cx.maybe_expr() {
-                        let right_expr = cx.parse_binary_expr()?;
-                        let all_span = left_expr.get_all_span() + right_expr.get_all_span();
-                        Ok(Expr::RangeBoth(RangeBothExpr{ all_span, op_span, left_expr: Box::new(left_expr), right_expr: Box::new(right_expr) }))
-                    } else {
-                        Ok(Expr::RangeLeft(RangeLeftExpr{ all_span: left_expr.get_all_span() + op_span, expr: Box::new(left_expr) }))
-                    }
-                } else {
-                    Ok(left_expr)
-                }
-            }
-        }
-    }
-}
-
 // ref_type = '&' type_ref
 impl Parser for RefType {
     type Output = RefType;
@@ -1155,39 +983,9 @@ impl Parser for ReturnStatement {
             // 17/7/28: now new features added to parse_cx and move_next is to be removed, no current position management bug any more!
             Ok(ReturnStatement::new_unit(starting_span + semicolon_span))
         } else {
-            let expr = cx.expect::<Expr>()?;
+            let expr = cx.parse_expr()?;
             let semicolon_span = cx.expect_sep(Separator::SemiColon)?;
             Ok(ReturnStatement::new_expr(starting_span + semicolon_span, expr))
-        }
-    }
-}
-
-// tuple_def = '(' expr_list ')'
-// paren_expr = '(' expr ')'
-// unit_lit = '(' ')'
-impl Parser for TupleDef {
-    type Output = Expr;
-
-    fn parse(cx: &mut ParseContext) -> Result<Expr, Unexpected> {
-
-        match cx.parse_expr_list()? {
-            ExprListParseResult::Empty(span) => {
-                Ok(Expr::Lit(LitExpr{ value: LitValue::Unit, span }))
-            }
-            ExprListParseResult::SingleComma(span) => {
-                cx.emit(strings::UnexpectedSingleComma).detail(span, strings::TupleDefHere);
-                Ok(Expr::Tuple(TupleDef{ paren_span: span, items: ExprList{ items: Vec::new() } }))
-            }
-            ExprListParseResult::Normal(span, exprlist) => {
-                if exprlist.items.len() == 1 {
-                    Ok(Expr::Paren(ParenExpr{ span, expr: Box::new(exprlist.items.into_iter().last().unwrap()) }))
-                } else {
-                    Ok(Expr::Tuple(TupleDef{ paren_span: span, items: exprlist }))
-                }
-            }
-            ExprListParseResult::EndWithComma(span, exprlist) => {
-                Ok(Expr::Tuple(TupleDef{ paren_span: span, items: exprlist }))
-            }
         }
     }
 }
@@ -1255,27 +1053,6 @@ impl Parser for TypeDef {
     }
 }
 
-// unary_expr = { unary_operator } postfix_expr
-impl Parser for UnaryExpr {
-    type Output = Expr;
-
-    fn parse(cx: &mut ParseContext) -> Result<Expr, Unexpected> {
-        
-        let mut op_spans = Vec::new();
-        loop {
-            match cx.try_expect_sep_kind(SeparatorKind::Unary) {
-                Some((sep, sep_span)) => op_spans.push((sep, sep_span)),
-                None => {
-                    let base = cx.expect::<PostfixExpr>()?;
-                    return Ok(op_spans.into_iter().rev().fold(base, |base, (op, span)| { 
-                        Expr::Unary(UnaryExpr{ all_span: span + base.get_all_span(), base: Box::new(base), operator: op, operator_span: span }) 
-                    }));
-                }
-            }
-        }
-    }
-}
-
 // use_stmt = 'use' name [ 'as' identifier ] ';'
 impl Parser for UseStatement {
     type Output = UseStatement;
@@ -1305,7 +1082,7 @@ impl Parser for VarDeclStatement {
 
         let (name, name_span) = cx.expect_ident_or_keywords(&[Keyword::Underscore])?;
         let r#type = cx.try_expect_sep(Separator::Colon).map(|_| cx.expect::<TypeRef>()).transpose()?;
-        let init_expr = cx.try_expect_sep(Separator::Eq).map(|_| cx.expect::<Expr>()).transpose()?;
+        let init_expr = cx.try_expect_sep(Separator::Eq).map(|_| cx.parse_expr()).transpose()?;
         if r#type.is_none() && init_expr.is_none() {
             cx.emit("require type annotation")
                 .detail(name_span, "variable declaration here")
@@ -1327,7 +1104,7 @@ impl Parser for WhileStatement {
         let name = cx.maybe_label().then_try(|| cx.expect::<LabelDef>())?;
         let while_span = cx.expect_keyword(Keyword::While)?;
         cx.no_object_literals.push(true);
-        let expr = cx.expect::<Expr>()?;
+        let expr = cx.parse_expr()?;
         cx.no_object_literals.pop();
         let body = cx.expect::<Block>()?;
         let all_span = name.as_ref().map(|n| n.all_span).unwrap_or(while_span) + body.all_span;
@@ -1346,7 +1123,7 @@ impl Parser for Statement {
         } else if cx.maybe_fn_def() {
             Ok(Statement::Fn(cx.expect::<FnDef>()?))
         } else if cx.maybe_block_stmt() {
-            Ok(Statement::Block(cx.expect::<BlockStatement>()?))
+            Ok(Statement::Block(cx.parse_block_stmt()?))
         } else if cx.maybe_break_stmt() {
             Ok(Statement::Break(cx.expect::<BreakStatement>()?))
         } else if cx.maybe_continue_stmt() {
@@ -1382,7 +1159,7 @@ impl Parser for Item {
         } else if cx.maybe_fn_def() {
             Ok(Item::Fn(cx.expect::<FnDef>()?))
         } else if cx.maybe_block_stmt() {
-            Ok(Item::Block(cx.expect::<BlockStatement>()?))
+            Ok(Item::Block(cx.parse_block_stmt()?))
         } else if cx.maybe_expr() {
             Ok(match cx.expect::<AssignExprStatement>()? {
                 Statement::AssignExpr(a) => Item::AssignExpr(a),
