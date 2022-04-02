@@ -1,74 +1,10 @@
-///! syntax:binary_expr::
-// MultiplicativeExpression = UnaryExpr | MultiplicativeExpression MultiplicativeOperator UnaryExpr
-// AdditiveExpression = MultiplicativeExpression | AdditiveExpression AdditiveOperator MultiplicativeExpression
-// RelationalExpression = AdditiveExpression | RelationalExpression RelationalOperator AdditiveExpression
-// ShiftExpression = RelationalExpression | ShiftExpression ShiftOperator RelationalExpression
-// BitAndExpression = ShiftExpression | BitAndExpression BitAndOperator ShiftExpression
-// BitXorExpression = BitAndExpression | BitXorExpression BitXorOperator BitAndExpression
-// BitOrExpression = BitXorExpression | BitOrExpression BitOrOperator BitXorExpression
-// EqualityExpression = BitOrExpression | EqualityExpression EqualityOperator BitOrExpression  // `==` and `!=` lower than `|` for `if (enum_var & enum_mem1 == enum_mem1)`
-// LogicalAndExpression = EqualityExpression | LogicalAndExpression LogicalAndOperator EqualityExpression
-// LogicalOrExpression = LogicalAndExpression | LogicalOrExpression LogicalOrOperator LogicalAndExpression
+///! syntax:binary_expr
 
+#[cfg(test)]
 use super::prelude::*;
 
-impl Parser for BinaryExpr {
-    type Output = Expr;
-
-    fn parse(cx: &mut ParseContext) -> Result<Expr, Unexpected> {
-        #[cfg(feature = "trace_binary_expr_parse")]
-        macro_rules! trace { ($($arg:tt)*) => ({ print!("[PrimaryExpr] "); println!($($arg)*); }) }
-        #[cfg(not(feature = "trace_binary_expr_parse"))]
-        macro_rules! trace { ($($arg:tt)*) => () }
-
-        return parse_logical_or(cx);
-
-        fn check_relational_expr(cx: &mut ParseContext, expr: &Expr) {
-            if let Expr::Binary(BinaryExpr{ operator: Separator::Gt, operator_span: gt_span, left_expr, .. }) = expr {
-                if let Expr::Binary(BinaryExpr{ operator: Separator::Lt, operator_span: lt_span, .. }) = left_expr.as_ref() {
-                    cx.emit(strings::MaybeGeneric).span(*lt_span).span(*gt_span).help(strings::MaybeGenericHelp);
-                }
-            }
-        }
-
-        macro_rules! impl_binary_parser {
-            ($parser_name:ident, $previous_parser_name:path, $kind:ident $(,$check:path)?) => (
-                fn $parser_name(cx: &mut ParseContext) -> Result<Expr, Unexpected> {
-                    trace!("parsing {}", stringify!($parser_name));
-
-                    let mut current_expr = $previous_parser_name(cx)?;
-                    loop {
-                        if let Some((sep, sep_span)) = cx.try_expect_sep_kind(SeparatorKind::$kind) {
-                            let right_expr = $previous_parser_name(cx)?;
-                            current_expr = Expr::Binary(BinaryExpr{
-                                all_span: current_expr.get_all_span() + right_expr.get_all_span(),
-                                left_expr: Box::new(current_expr),
-                                operator: sep, 
-                                operator_span: sep_span, 
-                                right_expr: Box::new(right_expr)
-                            });
-                            $($check(cx, &current_expr))?
-                        } else {
-                            return Ok(current_expr);
-                        }
-                    }
-                }
-            )
-        }
-        impl_binary_parser! { parse_multiplicative, UnaryExpr::parse, Multiplicative }
-        impl_binary_parser! { parse_additive, parse_multiplicative, Additive }
-        impl_binary_parser! { parse_relational, parse_additive, Relational, check_relational_expr }
-        impl_binary_parser! { parse_shift, parse_relational, Shift }
-        impl_binary_parser! { parse_bitand, parse_shift, BitAnd }
-        impl_binary_parser! { parse_bitxor, parse_bitand, BitXor }
-        impl_binary_parser! { parse_bitor, parse_bitxor, BitOr }
-        impl_binary_parser! { parse_equality, parse_bitor, Equality }
-        impl_binary_parser! { parse_logical_and, parse_equality, LogicalAnd }
-        impl_binary_parser! { parse_logical_or, parse_logical_and, LogicalOr }
-    }
-}
-
-#[cfg(test)] #[test]
+#[cfg(test)] 
+#[test]
 fn binary_expr_parse() {
 
     //                                     123456789012345

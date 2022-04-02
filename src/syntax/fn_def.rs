@@ -1,75 +1,12 @@
 ///! fff-lang
 ///!
 ///! syntax/fn_def
-///! fn-def = 'fn' identifier '(' [ identifier ':' type-use { ',' identifier ':' type-use [ ',' ] } ] ')' [ '->' type-use ] block
-
-use super::prelude::*;
-
-impl Node for FnParam {
-    
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_fn_param(self)
-    }
-    fn walk<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        v.visit_type_ref(&self.r#type)
-    }
-}
-
-
-
-impl Parser for FnDef {
-    type Output = FnDef;
-
-    fn matches(current: &Token) -> bool {
-        matches!(current, Token::Keyword(Keyword::Fn))
-    }
-
-    fn parse(cx: &mut ParseContext) -> Result<FnDef, Unexpected> {
-        #[cfg(feature = "trace_fn_def_parse")]
-        macro_rules! trace { ($($arg:tt)*) => ({ print!("[FnDef: {}]", line!()); println!($($arg)*); }) }
-        #[cfg(not(feature = "trace_fn_def_parse"))]
-        macro_rules! trace { ($($arg:tt)*) => () }
-        
-        let fn_span = cx.expect_keyword(Keyword::Fn)?;
-        let (fn_name, fn_name_span) = cx.expect_ident()?;
-        let mut params_paren_span = cx.expect_sep(Separator::LeftParen)?;
-        trace!("fndef name span: {:?}", fn_name_span);
-
-        let mut params = Vec::new();
-        loop {
-            if let Some((right_paren_span, skipped_comma)) = cx.try_expect_closing_bracket(Separator::RightParen) {
-                params_paren_span += right_paren_span;
-                if skipped_comma && params.is_empty() {
-                    cx.emit("Single comma in function definition argument list")
-                        .detail(fn_name_span, "function definition here")
-                        .detail(params_paren_span, "param list here");
-                }
-                break;
-            } else if let Some(_comma_span) = cx.try_expect_sep(Separator::Comma) {
-                continue;
-            }
-
-            let (param_name, param_span) = cx.expect_ident_or_keywords(&[Keyword::Underscore, Keyword::This, Keyword::Self_])?;
-            let _ = cx.expect_sep(Separator::Colon)?;
-            let decltype = cx.expect::<TypeRef>()?;
-            params.push(FnParam::new(param_name, param_span, decltype));
-        }
-
-        let ret_type = cx.try_expect_seps(&[Separator::Arrow, Separator::Colon]).map(|(sep, span)| {
-            if sep == Separator::Colon {
-                cx.emit(strings::FunctionReturnTypeShouldUseArrow).detail(span, strings::FunctionReturnTypeExpectArrowMeetColon);
-            }
-            cx.try_expect::<TypeRef>()
-        }).transpose()?.flatten();
-        let body = cx.expect::<Block>()?;
-
-        Ok(FnDef::new(fn_span + body.all_span, fn_name, fn_name_span, params_paren_span, params, ret_type, body))
-    }
-}
+///! 
 
 #[cfg(test)]
 #[test]
 fn fn_def_parse() {
+use super::prelude::*;
     //                                012345678901
     case!{ "fn main() {}" as FnDef,
         FnDef::new(Span::new(0, 11), 2, Span::new(3, 6), Span::new(7, 8), 

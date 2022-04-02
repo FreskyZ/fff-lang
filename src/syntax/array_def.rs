@@ -1,31 +1,6 @@
-///! fff-lang
-///!
-///! array_def = '[' [ expr_list ] ']'
 
+#[cfg(test)] 
 use super::prelude::*;
-
-impl Parser for ArrayDef {
-    type Output = Expr;
-
-    fn matches(current: &Token) -> bool { 
-        matches!(current, Token::Sep(Separator::LeftBracket)) 
-    }
-
-    fn parse(cx: &mut ParseContext) -> Result<Expr, Unexpected> {
-        
-        match cx.expect::<ExprList>()? {
-            ExprListParseResult::Empty(span) =>
-                Ok(Expr::Array(ArrayDef{ bracket_span: span, items: ExprList{ items: Vec::new() } })),
-            ExprListParseResult::Normal(span, exprlist) 
-            | ExprListParseResult::EndWithComma(span, exprlist) =>
-                Ok(Expr::Array(ArrayDef{ bracket_span: span, items: exprlist })),
-            ExprListParseResult::SingleComma(span) => {
-                cx.emit(strings::UnexpectedSingleComma).detail(span, strings::ArrayDefHere);
-                Ok(Expr::Array(ArrayDef{ bracket_span: span, items: ExprList{ items: Vec::new() } }))
-            }
-        }
-    }
-}
 
 #[cfg(test)]
 #[test]
@@ -50,7 +25,8 @@ fn array_def_parse() {
     }
 }
 
-#[cfg(test)] #[test]
+#[cfg(test)] 
+#[test]
 fn array_def_errors() {
 
     case!{ "[ , ]" as ArrayDef,

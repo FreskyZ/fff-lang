@@ -1,57 +1,7 @@
-///! fff-lang
-///! 
-///! syntax/expr_stmt
-///! expr_stmt = expr { assign_ops expr } ';'
-
-use super::prelude::*;
-
-// dispatch them to convenience statement define macro
-impl Parser for SimpleExprStatement {
-    type Output = <AssignExprStatement as Parser>::Output;
-
-    fn matches(current: &Token) -> bool { 
-        AssignExprStatement::matches(current)
-    }
-    fn matches3(current: &Token, peek: &Token, peek2: &Token) -> bool {
-        AssignExprStatement::matches3(current, peek, peek2)
-    }
-
-    fn parse(cx: &mut ParseContext) -> Result<Self::Output, Unexpected> { 
-        cx.expect::<AssignExprStatement>() 
-    }
-}
-
-impl Parser for AssignExprStatement {
-    type Output = Statement;
-
-    fn matches(current: &Token) -> bool { 
-        Expr::matches(current)
-    }
-    fn matches3(current: &Token, peek: &Token, peek2: &Token) -> bool {
-        Expr::matches3(current, peek, peek2)
-    }
-
-    fn parse(cx: &mut ParseContext) -> Result<Statement, Unexpected> {
-
-        let left_expr = cx.expect::<Expr>()?;
-        let starting_span = left_expr.get_all_span();
-
-        if let Some(semicolon_span) = cx.try_expect_sep(Separator::SemiColon) {
-            Ok(Statement::SimpleExpr(SimpleExprStatement::new(starting_span + semicolon_span, left_expr)))
-        } else if let Some((assign_op, assign_op_span)) = cx.try_expect_sep_kind(SeparatorKind::Assign) {
-            let right_expr = cx.expect::<Expr>()?;
-            let semicolon_span = cx.expect_sep(Separator::SemiColon)?;
-            Ok(Statement::AssignExpr(
-                AssignExprStatement::new(starting_span + semicolon_span, assign_op, assign_op_span, left_expr, right_expr)))
-        } else {
-            cx.push_unexpect("assign operators, semicolon")
-        }
-    }
-}
-
 
 #[cfg(test)] #[test]
 fn expr_stmt_parse() {
+use super::prelude::*;
     //                      0          1          2
     //                      012345678 90123456789 012
     case!{ "writeln(\"helloworld\");" as AssignExprStatement,

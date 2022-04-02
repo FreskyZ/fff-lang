@@ -1,62 +1,7 @@
 ///! syntax/tuple_def_expr, paren_expr
-///! expr_list = expr { ',' expr } [ ',' ]
-
+ 
+#[cfg(test)]
 use super::prelude::*;
-
-impl Node for ExprListParseResult {
-
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        match self {
-            Self::Empty(_) | Self::SingleComma(_) => Ok(Default::default()),
-            // go visit expr list not this
-            Self::Normal(_, e) | Self::EndWithComma(_, e) => v.visit_expr_list(e),
-        }
-    }
-}
-
-impl Parser for ExprList {
-    type Output = ExprListParseResult;
-
-    fn matches(current: &Token) -> bool {
-        matches!(current, Token::Sep(Separator::LeftBrace | Separator::LeftBracket | Separator::LeftParen))
-    }
-
-    /// This is special, when calling `parse`, `cx.current` should point to the quote token
-    /// Then the parser will check end token to determine end of parsing process
-    fn parse(cx: &mut ParseContext) -> Result<ExprListParseResult, Unexpected> {
-
-        let (starting_sep, starting_span) = cx.expect_seps(&[Separator::LeftBrace, Separator::LeftBracket, Separator::LeftParen])?;
-        let expect_end_sep = match starting_sep { 
-            Separator::LeftBrace => Separator::RightBrace, 
-            Separator::LeftBracket => Separator::RightBracket,
-            Separator::LeftParen => Separator::RightParen,
-            _ => unreachable!(),
-        };
-
-        if let Some((ending_span, skipped_comma)) = cx.try_expect_closing_bracket(expect_end_sep) {
-            return if skipped_comma {
-                Ok(ExprListParseResult::SingleComma(starting_span + ending_span))
-            } else {
-                Ok(ExprListParseResult::Empty(starting_span + ending_span))
-            };
-        }
-
-        cx.no_object_literals.push(false);
-        let mut items = Vec::new();
-        loop {
-            items.push(cx.expect::<Expr>()?);
-            if let Some((ending_span, skipped_comma)) = cx.try_expect_closing_bracket(expect_end_sep) {
-                cx.no_object_literals.pop();
-                return if skipped_comma {
-                    Ok(ExprListParseResult::EndWithComma(starting_span + ending_span, ExprList{ items }))
-                } else {
-                    Ok(ExprListParseResult::Normal(starting_span + ending_span, ExprList{ items }))
-                };
-            }
-            cx.expect_sep(Separator::Comma)?;
-        }
-    }
-}
 
 #[cfg(test)] #[test]
 fn expr_list_parse() {

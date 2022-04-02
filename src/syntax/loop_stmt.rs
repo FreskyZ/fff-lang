@@ -1,28 +1,11 @@
 ///! syntax::loop_stmt:
-///! loop_stmt = [ label_def ] 'loop' block
-// TODO ATTENTION: no else for break here because if control flow come to else it is always breaked
 
-use super::prelude::*;
 
-impl Parser for LoopStatement {
-    type Output = LoopStatement;
 
-    fn matches3(current: &Token, _peek: &Token, peek2: &Token) -> bool {
-        matches!((current, peek2), (Token::Label(_), Token::Keyword(Keyword::Loop)) | (Token::Keyword(Keyword::Loop), _))
-    }
 
-    fn parse(cx: &mut ParseContext) -> Result<LoopStatement, Unexpected> {
-
-        let name = cx.try_expect::<LabelDef>()?;
-        let loop_span = cx.expect_keyword(Keyword::Loop)?;
-        let body = cx.expect::<Block>()?;
-        let all_span = name.as_ref().map(|n| n.all_span).unwrap_or(loop_span) + body.all_span;
-        Ok(LoopStatement{ all_span, name, loop_span, body })
-    }
-}
 
 #[cfg(test)] #[test]
-fn loop_stmt_parse() {
+fn loop_stmt_parse() {use super::prelude::*;
     use super::{ast::Statement, ast::SimpleExprStatement};
 
     case!{ "loop {}" as LoopStatement,

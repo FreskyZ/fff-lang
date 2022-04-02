@@ -1,36 +1,9 @@
 ///! syntax::fn_call_expr:
-///! fn_call_expr = expr '(' [ expr_list ] ')'
-
-use super::prelude::*;
-
-impl Parser for FnCallExpr {
-    type Output = FnCallExpr;
-
-    fn matches(current: &Token) -> bool { 
-        matches!(current, Token::Sep(Separator::LeftParen)) 
-    }
-
-    fn parse(cx: &mut ParseContext) -> Result<FnCallExpr, Unexpected> {
-
-        // this parse method return partial and priority proxy will fill base
-        macro_rules! make_partial { ($span:expr, $params:expr) => (
-            Ok(FnCallExpr{ all_span: Span::new(0, 0), base: Box::new(Expr::default()), paren_span: $span, params: $params })) }
-
-        match cx.expect::<ExprList>()? {
-            | ExprListParseResult::Normal(span, expr_list) 
-            | ExprListParseResult::EndWithComma(span, expr_list) => make_partial!(span, expr_list),
-            ExprListParseResult::Empty(span) => make_partial!(span, ExprList{ items: Vec::new() }),
-            ExprListParseResult::SingleComma(span) => {
-                cx.emit(strings::UnexpectedSingleComma).detail(span, strings::FnCallHere);
-                make_partial!(span, ExprList{ items: Vec::new() })
-            }
-        }
-    }
-}
+///! 
 
 #[cfg(test)]
 #[test]
-fn fn_call_parse() {
+fn fn_call_parse() {use super::prelude::*;
 
     case!{ "()" as FnCallExpr,
         FnCallExpr{ all_span: Span::new(0, 0), base: Box::new(Expr::default()), paren_span: Span::new(0, 1), params: ExprList{ items: Vec::new() } }

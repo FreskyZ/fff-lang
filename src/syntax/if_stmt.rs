@@ -1,56 +1,8 @@
 ///! syntax::if_stmt:
-///! if_stmt = 'if' expr block { 'else' 'if' expr block } [ 'else' block ]
-
-use super::prelude::*;
-
-
-impl Parser for IfStatement {
-    type Output = IfStatement;
-
-    fn matches(current: &Token) -> bool {
-        matches!(current, Token::Keyword(Keyword::If)) 
-    }
-
-    fn parse(cx: &mut ParseContext) -> Result<IfStatement, Unexpected> {
-
-        let mut all_span = cx.expect_keyword(Keyword::If)?;
-
-        cx.no_object_literals.push(true);
-        let if_expr = cx.expect::<Expr>()?;
-        cx.no_object_literals.pop();
-        let if_body = cx.expect::<Block>()?;
-        all_span += if_body.all_span;
-        let if_clause = IfClause{ all_span, condition: if_expr, body: if_body };
-
-        let mut elseif_clauses = Vec::new();
-        let mut else_clause = None;
-        while let Some(else_span) = cx.try_expect_keyword(Keyword::Else) {
-            if let Some(if_span) = cx.try_expect_keyword(Keyword::If) {
-                let elseif_span = else_span + if_span;
-                cx.no_object_literals.push(true);
-                let elseif_expr = cx.expect::<Expr>()?;
-                cx.no_object_literals.pop();
-                let elseif_body = cx.expect::<Block>()?;
-                all_span += elseif_body.all_span;
-                elseif_clauses.push(IfClause{ all_span: elseif_span + elseif_body.all_span, condition: elseif_expr, body: elseif_body });
-            } else {
-                // 16/12/1, we lost TWO `+1`s for current_length here ... fixed
-                // 17/5/6: When there is match Block::parse(tokens, messages, index + current_length), etc.
-                // There was a bug fix here, now no more current_length handling!
-                // 17/6/21: a new physical structure update makes it much more simple
-                // 17/7/28: a new small update of parse_cx makes things even more simple
-                let else_body = cx.expect::<Block>()?;
-                all_span += else_body.all_span;
-                else_clause = Some(ElseClause{ all_span: else_span + else_body.all_span, body: else_body });
-            }
-        }
-
-        Ok(IfStatement{ all_span, if_clause, elseif_clauses, else_clause })
-    }
-}
+///! 
 
 #[cfg(test)] #[test]
-fn if_stmt_parse() {
+fn if_stmt_parse() {use super::prelude::*;
     //                                      0        1         2         3
     //                                      0123456789012345678901234567890123456
     case!{ "if true { } else if false { } else {}" as IfStatement,

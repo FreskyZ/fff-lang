@@ -1,21 +1,9 @@
 ///! fff-lang
 ///! 
 ///! syntax/module, a source code file is a module
-///! module = { item }
+///! 
 
 use super::prelude::*;
-
-impl Parser for Module {
-    type Output = Module;
-
-    fn parse(cx: &mut ParseContext) -> Result<Module, Unexpected> {
-        let mut items = Vec::new();
-        while !cx.eof() {
-            items.push(cx.expect::<Item>()?);
-        }
-        Ok(Module{ items, file: cx.get_file_id() })
-    }
-}
 
 struct CollectImportVisitor {
     requests: Vec<(Span, IsId)>,

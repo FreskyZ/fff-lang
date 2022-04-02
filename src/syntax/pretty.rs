@@ -1,4 +1,4 @@
-///! syntax::display: default display implementation
+///! syntax::pretty: ast type pretty formatter
 
 use std::fmt::{self, Write};
 use crate::source::{SourceContext, FileSystem, Span, IsId};

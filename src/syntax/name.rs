@@ -1,65 +1,4 @@
 ///! syntax::name:
-///! name = [ type_as_segment ] [ '::' ] name_segment { '::' name_segment }
-///! name_segment = identifier | '<' type_ref { ',' type_ref } '>'
-
-use super::prelude::*;
-
-impl Parser for Name {
-    type Output = Self;
-
-    fn matches(current: &Token) -> bool { 
-        matches!(current, Token::Ident(_) | Token::Sep(Separator::Lt | Separator::ColonColon)) 
-    }
-
-    fn parse(cx: &mut ParseContext) -> Result<Self, Unexpected> {
-        
-        let type_as_segment = cx.try_expect_sep(Separator::Lt).map(|lt_span| {
-            let from = cx.expect::<TypeRef>()?;
-            cx.expect_keyword(Keyword::As)?;
-            let to = cx.expect::<TypeRef>()?;
-            let gt_span = cx.expect_sep(Separator::Gt)?;
-            Ok(TypeAsSegment{ from: Box::new(from), to: Box::new(to), span: lt_span + gt_span })
-        }).transpose()?;
-
-        let beginning_separator_span = cx.try_expect_sep(Separator::ColonColon);
-        
-        let mut segments = Vec::new();
-        loop {
-            if let Some((ident, ident_span)) = cx.try_expect_ident() {
-                segments.push(NameSegment::Normal(ident, ident_span));
-            } else {
-                let lt_span = cx.expect_sep(Separator::Lt)?;
-                // none: first segment cannot be generic segment
-                // some generic: generic segment cannot follow generic segment 
-                if let None | Some(NameSegment::Generic(..)) = segments.last() {
-                    cx.emit(strings::InvalidNameSegment).detail(lt_span, strings::NameSegmentExpect);
-                }
-
-                if let Some(gt_span) = cx.try_expect_sep(Separator::Gt) { // allow <> in syntax parse
-                    segments.push(NameSegment::Generic(Vec::new(), lt_span + gt_span));
-                } else {
-                    let mut parameters = vec![cx.expect::<TypeRef>()?];
-                    let quote_span = lt_span + loop {
-                        if let Some((gt_span, _)) = cx.try_expect_closing_bracket(Separator::Gt) {
-                            break gt_span;
-                        }
-                        cx.expect_sep(Separator::Comma)?;
-                        parameters.push(cx.expect::<TypeRef>()?);
-                    };
-                    segments.push(NameSegment::Generic(parameters, quote_span));
-                }
-            }
-            if cx.try_expect_sep(Separator::ColonColon).is_none() {
-                break;
-            }
-        }
-
-        let global = type_as_segment.is_none() && beginning_separator_span.is_some();
-        let all_span = type_as_segment.as_ref().map(|s| s.span).or(beginning_separator_span)
-            .unwrap_or_else(|| segments[0].get_span()) + segments.last().unwrap().get_span(); // [0] and last().unwrap(): matches() guarantees segments are not empty
-        Ok(Name{ type_as_segment, global, segments, all_span })
-    }
-}
 
 #[cfg(test)]
 macro_rules! make_name {
@@ -82,7 +21,7 @@ pub(crate) use make_name;
 
 #[cfg(test)]
 #[test]
-fn name_parse() {
+fn name_parse() {use super::prelude::*;
 
     case!{ "hello" as Name, 
         make_name!(bare 0:4 false, None,

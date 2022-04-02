@@ -1,3 +1,4 @@
+///! syntax::visit: visitor and visitee traits
 
 use crate::source::SourceContext;
 use super::pretty::NodeDisplay;

@@ -1,41 +1,9 @@
 ///! fff-lang
 ///!
 ///! syntax/for_stmt
-///! for_stmt = [ label_def ] 'for' identifier 'in' expr block
-
-// TODO: add else for break, like python
-
-use super::prelude::*;
-
-impl Parser for ForStatement {
-    type Output = ForStatement;
-
-    fn matches3(current: &Token, _peek: &Token, peek2: &Token) -> bool {
-        matches!((current, peek2), (Token::Label(_), Token::Keyword(Keyword::For)) | (Token::Keyword(Keyword::For), _))
-    }
-
-    fn parse(cx: &mut ParseContext) -> Result<ForStatement, Unexpected> {
-
-        let loop_name = cx.try_expect::<LabelDef>()?;
-        let for_span = cx.expect_keyword(Keyword::For)?;
-
-        // Accept _ as iter_name, _ do not declare iter var
-        let (iter_name, iter_span) = cx.expect_ident_or_keywords(&[Keyword::Underscore])?; 
-        cx.expect_keyword(Keyword::In)?;
-
-        cx.no_object_literals.push(true);
-        let iter_expr = cx.expect::<Expr>()?;
-        cx.no_object_literals.pop();
-        let body = cx.expect::<Block>()?;
-        
-        let all_span = loop_name.as_ref().map(|n| n.all_span).unwrap_or(for_span) + body.all_span;
-        Ok(ForStatement{ loop_name, for_span, iter_name, iter_span, iter_expr, body, all_span })
-    }
-}
-
 
 #[cfg(test)] #[test]
-fn for_stmt_parse() {
+fn for_stmt_parse() {use super::prelude::*;
     //                      0123456789012345678
     case!{ "@2: for i in 42 {}" as ForStatement,
         make_stmt!(for 0:17 label #2 0:2 for 4:6 var #3 8:8

@@ -1,17 +1,18 @@
 ///! syntax: syntax parse
 
 mod prelude;
-pub use prelude::{Parser};
 
 pub mod ast;
 
 mod visit;
 mod visit_impl;
 mod pretty;
+mod parser;
 
 #[cfg(test)]
 mod tests;
 
+pub use parser::Parser;
 pub use visit::{Node, Visitor};
 
 mod abc;
@@ -26,35 +27,28 @@ mod expr;
 mod expr_stmt;
 mod fn_call;
 mod fn_def;
-mod fn_type;
 mod for_stmt;
 mod if_stmt;
 mod index_call;
 mod jump_stmt;
 mod label_def;
-mod lit_expr;
 mod loop_stmt;
-mod member_access;
 mod module;
 mod module_stmt;
 mod name;
-mod object;
 mod plain_type;
-mod primitive_type;
 mod priority_proxy;
 mod range_expr;
-mod ref_type;
 mod ret_stmt;
 mod tuple_def;
-mod tuple_type;
 mod type_def;
 mod unary_expr;
 mod use_stmt;
 mod var_decl;
 mod while_stmt;
 
-use priority_proxy::PostfixExpr;
-use range_expr::RangeExpr;
+#[cfg(test)]
+use parser::{PostfixExpr, RangeExpr};
 
 // parse any types of node for test
 pub fn parse_any<P: Parser>(source: crate::source::SourceChars, diagnostics: &mut crate::diagnostics::Diagnostics) -> Option<P::Output> {

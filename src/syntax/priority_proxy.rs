@@ -1,79 +1,8 @@
 ///! syntax::priority level proxy
-///! primary_expr = ident_expr | lit_expr | unit_lit | paren_expr | tuple_def | array_def
-///! postfix_expr = expr { ( member_access | fn_call | indexer_call ) }
-
-use super::prelude::*;
-
-struct PrimaryExpr;
-
-impl Parser for PrimaryExpr {
-    type Output = Expr;
-    
-    fn parse(cx: &mut ParseContext) -> Result<Expr, Unexpected> {
-
-        if cx.matches::<LitExpr>() {
-            return cx.expect::<LitExpr>();
-        } else if cx.matches::<Name>() {
-            return cx.expect::<Name>().map(Expr::Name);
-        } else if cx.matches::<TupleDef>() {
-            return cx.expect::<TupleDef>();
-        } else if cx.matches::<ArrayDef>() {
-            return cx.expect::<ArrayDef>();
-        }
-
-        let (this_id, this_span) = cx.expect_ident_or_keywords(&[Keyword::This, Keyword::Self_])?;  // actually identifier is processed by Name, not here
-        Ok(Expr::Name(Name{ type_as_segment: None, global: false, all_span: this_span, segments: vec![NameSegment::Normal(this_id, this_span)] }))
-    }
-}
-
-pub struct PostfixExpr;
-
-impl Parser for PostfixExpr {
-    type Output = Expr;
-
-    fn parse(cx: &mut ParseContext) -> Result<Expr, Unexpected> {   
-        #[cfg(feature = "trace_postfix_expr_parse")]
-        macro_rules! trace { ($($arg:tt)*) => ({ perror!("    [PostfixExpr:{}] ", line!()); perrorln!($($arg)*); }) }
-        #[cfg(not(feature = "trace_postfix_expr_parse"))]
-        macro_rules! trace { ($($arg:tt)*) => () }
-
-        let mut current_expr = cx.expect::<PrimaryExpr>()?;
-        trace!("parsed primary, current is {:?}", current_expr);
-
-        loop {
-            if cx.matches::<MemberAccessExpr>() {
-                let mut postfix = cx.expect::<MemberAccessExpr>()?;
-                postfix.all_span = current_expr.get_all_span() + postfix.name.all_span;
-                postfix.base = Box::new(current_expr);
-                current_expr = Expr::MemberAccess(postfix);
-            } else if cx.matches::<FnCallExpr>() {
-                let mut postfix = cx.expect::<FnCallExpr>()?;
-                postfix.all_span = current_expr.get_all_span() + postfix.paren_span;
-                postfix.base = Box::new(current_expr);
-                current_expr = Expr::FnCall(postfix);
-            } else if cx.matches::<IndexCallExpr>() {
-                let mut postfix = cx.expect::<IndexCallExpr>()?;
-                postfix.all_span = current_expr.get_all_span() + postfix.bracket_span;
-                postfix.base = Box::new(current_expr);
-                current_expr = Expr::IndexCall(postfix);
-            } else if matches!(cx.no_object_literals.last(), None | Some(false)) && matches!(current_expr, Expr::Name(_)) && cx.matches::<ObjectLiteral>() {
-                let mut postfix = cx.expect::<ObjectLiteral>()?;
-                postfix.all_span = current_expr.get_all_span() + postfix.quote_span;
-                postfix.base = Box::new(current_expr);
-                current_expr = Expr::Object(postfix);
-            } else {
-                break;
-            }
-        }
-
-        trace!("parsing postfix finished, get retval: {:?}", current_expr);
-        Ok(current_expr)
-    }
-}
 
 #[cfg(test)]
 #[test]
-fn primary_expr_parse() {
+fn primary_expr_parse() {use super::prelude::*;
 
     // this is the loop of tokens.nth(current) is left bracket does not cover everything and infinite loop is here
     // update 2017/6/17: this was a bug, but I forget detail
@@ -294,7 +223,7 @@ fn primary_expr_parse() {
 
 #[cfg(test)]
 #[test]
-fn postfix_expr_parse() {
+fn postfix_expr_parse() {use super::prelude::*;use super::PostfixExpr;
 
     //      0        1         2         3         4         5     
     //      0123456789012345678901234567890123456789012345678901234567

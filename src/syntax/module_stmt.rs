@@ -1,31 +1,8 @@
 ///! syntax::module_stmt
-///! module_stmt = 'module' identifier [ str_lit ] ';'
-
-use super::prelude::*;
-
-impl Parser for ModuleStatement {
-    type Output = ModuleStatement;
-
-    fn matches(current: &Token) -> bool { 
-        matches!(current, Token::Keyword(Keyword::Module)) 
-    }
-
-    fn parse(cx: &mut ParseContext) -> Result<ModuleStatement, Unexpected> {
-
-        let starting_span = cx.expect_keyword(Keyword::Module)?;
-        let (name, name_span) = cx.expect_ident()?;
-
-        let path = cx.try_expect_str_lit(); 
-        let semicolon_span = cx.expect_sep(Separator::SemiColon)?;
-        let all_span = starting_span + semicolon_span;
-
-        Ok(ModuleStatement{ all_span, name, name_span, path })
-    }
-}
 
 #[cfg(test)] 
 #[test]
-fn module_stmt_parse() {
+fn module_stmt_parse() {use super::prelude::*;
 
     case!{ "module a;" as ModuleStatement,
         ModuleStatement{ name: IsId::new(2), name_span: Span::new(7, 7), path: None, all_span: Span::new(0, 8) },

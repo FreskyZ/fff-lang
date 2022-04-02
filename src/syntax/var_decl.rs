@@ -1,39 +1,9 @@
 ///! fff-lang
 ///! 
 ///! syntax/var_decl
-///! const-decl = 'const' identifier [ ':' type-use ] [ '=' expr ] ';'
-///! var-decl = 'var' identifier [ ':' type-use ] [ '=' expr ] ';'
-
-use super::prelude::*;
-
-impl Parser for VarDeclStatement {
-    type Output = VarDeclStatement;
-
-    fn matches(current: &Token) -> bool { 
-        matches!(current, Token::Keyword(Keyword::Const | Keyword::Var)) 
-    }
-
-    fn parse(cx: &mut ParseContext) -> Result<VarDeclStatement, Unexpected> {
-        
-        let (starting_kw, starting_span) = cx.expect_keywords(&[Keyword::Const, Keyword::Var])?;
-        let is_const = match starting_kw { Keyword::Const => true, Keyword::Var => false, _ => unreachable!() };
-
-        let (name, name_span) = cx.expect_ident_or_keywords(&[Keyword::Underscore])?;
-        let r#type = cx.try_expect_sep(Separator::Colon).map(|_| cx.expect::<TypeRef>()).transpose()?;
-        let init_expr = cx.try_expect_sep(Separator::Eq).map(|_| cx.expect::<Expr>()).transpose()?;
-        if r#type.is_none() && init_expr.is_none() {
-            cx.emit("require type annotation")
-                .detail(name_span, "variable declaration here")
-                .help("cannot infer type without both type annotation and initialization expression");
-        }
-        let ending_span = cx.expect_sep(Separator::SemiColon)?;
-
-        Ok(VarDeclStatement{ all_span: starting_span + ending_span, is_const, name, name_span, r#type, init_expr })
-    }
-}
 
 #[cfg(test)] #[test]
-fn var_decl_stmt_parse() {    
+fn var_decl_stmt_parse() {    use super::prelude::*;
     //                                           12345678901234
     case!{ "const abc = 0;" as VarDeclStatement,
         make_stmt!(const 0:13 #2 6:8

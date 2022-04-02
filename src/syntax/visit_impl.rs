@@ -1,3 +1,4 @@
+///! syntax::visit_impl
 
 use super::visit::{Node, Visitor};
 use super::ast::*;
@@ -71,6 +72,13 @@ impl_node!{ Block, visit_block, |self, v| {
     Ok(Default::default())
 }}
 
+impl_node! { EnumVariant, visit_enum_variant, |self, v| {
+    if let Some(value) = &self.value {
+        v.visit_expr(value)?;
+    }
+    Ok(Default::default())
+}}
+
 impl_node!{ EnumDef, visit_enum_def, |self, v| {
     if let Some(base_type) = &self.base_type {
         v.visit_primitive_type(base_type)?;
@@ -88,9 +96,25 @@ impl_node!{ ExprList, visit_expr_list, |self, v| {
     Ok(Default::default())
 }}
 
+// TODO remove after remove Parser trait
+impl Node for ExprListParseResult {
+
+    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
+        match self {
+            Self::Empty(_) | Self::SingleComma(_) => Ok(Default::default()),
+            // go visit expr list not this
+            Self::Normal(_, e) | Self::EndWithComma(_, e) => v.visit_expr_list(e),
+        }
+    }
+}
+
 impl_node!{ FnCallExpr, visit_fn_call_expr, |self, v| {
     v.visit_expr(&self.base)?;
     v.visit_expr_list(&self.params)
+}}
+
+impl_node! { FnParam, visit_fn_param, |self, v| {
+    v.visit_type_ref(&self.r#type)
 }}
 
 impl_node!{ FnDef, visit_fn_def, |self, v| {
@@ -186,6 +210,10 @@ impl_node!{ Name, visit_name, |self, v| {
         v.visit_name_segment(segment)?;
     }
     Ok(Default::default())
+}}
+
+impl_node! { ObjectLiteralField, visit_object_literal_field, |self, v| {
+    v.visit_expr(&self.value)
 }}
 
 impl_node!{ ObjectLiteral, visit_object_literal, |self, v| {

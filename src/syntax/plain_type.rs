@@ -1,64 +1,4 @@
 ///! syntax::plain_type
-///! plain_type = [ type_as_segment | '::' ] plain_type_segment { '::' plain_type_segment }
-///! type_as_segment = '<' type_ref 'as' type_ref '>' '::'
-///! plain_type_segment = identifier [ '<' type_ref { ',' type_ref } [ ',' ] '>' ]
-///!
-///! most common type ref, plain means not special (array/tuple/fn) and not referenced (not directly a reference type)
-///! may be namespaced, segment may contain type parameter, does not need namespace separator `::` before type list angle bracket pair
-///! may contain a type_as_segment at beginning
-///! may contain a namespace separator at beginning, for referencing global items
-
-use super::prelude::*;
-
-impl Parser for PlainType {
-    type Output = Self;
-
-    fn matches(current: &Token) -> bool {
-        matches!(current, Token::Sep(Separator::Lt | Separator::ColonColon) | Token::Ident(_))
-    }
-
-    fn parse(cx: &mut ParseContext) -> Result<Self, Unexpected> {
-
-        let type_as_segment = cx.try_expect_sep(Separator::Lt).map(|lt_span| {
-            let from = cx.expect::<TypeRef>()?;
-            cx.expect_keyword(Keyword::As)?;
-            let to = cx.expect::<TypeRef>()?;
-            let gt_span = cx.expect_sep(Separator::Gt)?;
-            Ok(TypeAsSegment{ from: Box::new(from), to: Box::new(to), span: lt_span + gt_span })
-        }).transpose()?;
-
-        let beginning_separator_span = cx.try_expect_sep(Separator::ColonColon);
-
-        let mut segments = Vec::new();
-        while let Some((ident, ident_span)) = cx.try_expect_ident() {
-            if let Some(lt_span) = cx.try_expect_sep(Separator::Lt) {
-                if let Some(gt_span) = cx.try_expect_sep(Separator::Gt) { // allow <> in syntax parse
-                    segments.push(TypeSegment{ ident, ident_span, quote_span: lt_span + gt_span, parameters: Vec::new(), all_span: ident_span + gt_span });
-                } else {
-                    let mut parameters = vec![cx.expect::<TypeRef>()?];
-                    let quote_span = lt_span + loop {
-                        if let Some((gt_span, _)) = cx.try_expect_closing_bracket(Separator::Gt) {
-                            break gt_span;
-                        }
-                        cx.expect_sep(Separator::Comma)?;
-                        parameters.push(cx.expect::<TypeRef>()?);
-                    };
-                    segments.push(TypeSegment{ ident, ident_span, quote_span, parameters, all_span: ident_span + quote_span });
-                }
-            } else {
-                segments.push(TypeSegment{ ident, ident_span, quote_span: Span::new(0, 0), parameters: Vec::new(), all_span: ident_span });
-            }
-            if cx.try_expect_sep(Separator::ColonColon).is_none() {
-                break;
-            }
-        }
-
-        let global = type_as_segment.is_none() && beginning_separator_span.is_some();
-        let all_span = type_as_segment.as_ref().map(|s| s.span).or(beginning_separator_span)
-            .unwrap_or_else(|| segments[0].all_span) + segments.last().unwrap().all_span; // [0] and last().unwrap(): matches() guarantees segments are not empty
-        Ok(PlainType{ type_as_segment, global, segments, all_span })
-    }
-}
 
 #[cfg(test)]
 macro_rules! make_type {
@@ -127,7 +67,7 @@ pub(crate) use make_type;
 
 #[cfg(test)] 
 #[test]
-fn type_ref_parse() {
+fn type_ref_parse() {use super::prelude::*;
 
     case!{ "i32" as TypeRef,
         make_type!(prim 0:2 I32),

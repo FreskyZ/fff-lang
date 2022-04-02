@@ -15,31 +15,7 @@ pub use crate::lexical::{Token, Numeric, Separator, SeparatorKind, Keyword, Keyw
 pub use super::ast::*;
 pub use super::visit::{Node, Visitor};
 
-mod context;
-pub use context::{ParseContext};
-
-/// unrecoverable unexpected for this parser, detail in diagnostics
-// this should be more readable than previous Result<Self::Output, ()>
-#[derive(Debug)]
-pub struct Unexpected;
-
-pub trait Parser: Sized {
-    type Output: Node;
-
-    fn matches(_current: &Token) -> bool {
-        false
-    }
-    fn matches3(_current: &Token, _peek1: &Token, _peek2: &Token) -> bool {
-        false
-    }
-
-    fn parse(_cx: &mut ParseContext) -> Result<Self::Output, Unexpected>;
-
-    // check matches_first, if pass, parse, return Ok(Some(T)) or Err(Unexpected), else return None
-    fn try_parse(cx: &mut ParseContext) -> Result<Option<Self::Output>, Unexpected> {
-        Ok(if Self::matches(&cx.current) || Self::matches3(&cx.current, &cx.peek, &cx.peek2) { Some(cx.expect::<Self>()?) } else { None })
-    }
-}
+pub use super::parser::{Parser, Unexpected, ParseContext};
 
 #[cfg(test)]
 pub fn ast_test_case<

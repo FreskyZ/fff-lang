@@ -1,32 +1,12 @@
 ////! fff-lang
 ///!
 ///! syntax/use_stmt
-///! use_stmt = 'use' name [ 'as' identifier ] ';'
-
-use super::prelude::*;
-
-impl Parser for UseStatement {
-    type Output = UseStatement;
-
-    fn matches(current: &Token) -> bool { 
-        matches!(current, Token::Keyword(Keyword::Use)) 
-    }
-
-    fn parse(cx: &mut ParseContext) -> Result<UseStatement, Unexpected> {
-
-        let starting_span = cx.expect_keyword(Keyword::Use)?;
-        let name = cx.expect::<Name>()?;
-
-        let alias = cx.try_expect_keyword(Keyword::As).map(|_| cx.expect_ident()).transpose()?;
-        let semicolon_span = cx.expect_sep(Separator::SemiColon)?;
-        let all_span = starting_span + semicolon_span;
-
-        Ok(UseStatement{ all_span, name, alias })
-    }
-}
+///! 
 
 #[cfg(test)] #[test]
 fn use_stmt_parse() {
+    use super::prelude::*;
+    
 
     case!{ "use a;" as UseStatement,
         UseStatement{ all_span: Span::new(0, 5), alias: None, 

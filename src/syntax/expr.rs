@@ -1,36 +1,7 @@
 ///! syntax::expr
 
+#[cfg(test)]
 use super::prelude::*;
-use super::*;
-
-impl Parser for Expr {
-    type Output = Expr;
-
-    fn matches(current: &Token) -> bool { 
-        LitExpr::matches(current)
-        || Name::matches(current)
-        || TupleDef::matches(current)
-        || ArrayDef::matches(current)
-        || UnaryExpr::matches(current)
-        || matches!(current, Token::Sep(Separator::DotDot) | Token::Keyword(Keyword::This))
-    }
-
-    fn matches3(current: &Token, peek: &Token, peek2: &Token) -> bool { 
-        LitExpr::matches3(current, peek, peek2)
-        || Name::matches3(current, peek, peek2)
-        || TupleDef::matches3(current, peek, peek2)
-        || ArrayDef::matches3(current, peek, peek2)
-        || UnaryExpr::matches3(current, peek, peek2)
-        || matches!(current, Token::Sep(Separator::DotDot) | Token::Keyword(Keyword::This))
-    }
-    fn parse(cx: &mut ParseContext) -> Result<Expr, Unexpected> { 
-        cx.expect::<RangeExpr>()
-    }
-}
-
-impl Default for Expr {
-    fn default() -> Expr { Expr::Lit(LitExpr::new(LitValue::Num(Numeric::I32(0)), Span::new(0, 0))) }
-}
 
 #[cfg(test)]
 macro_rules! make_expr {

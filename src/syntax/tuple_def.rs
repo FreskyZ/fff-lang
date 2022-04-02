@@ -1,47 +1,9 @@
 ///! fff-lang
 ///! 
 ///! syntax/tuple_def, paren_expr
-///! tuple_def = '(' expr_list ')'
-///! paren_expr = '(' expr ')'
-///! unit_lit = '(' ')'
-
-use super::prelude::*;
-
-
-impl Parser for TupleDef {
-    type Output = Expr;
-
-    fn matches(current: &Token) -> bool { 
-        matches!(current, Token::Sep(Separator::LeftParen)) 
-    }
-
-    fn parse(cx: &mut ParseContext) -> Result<Expr, Unexpected> {
-
-        match cx.expect::<ExprList>()? {
-            ExprListParseResult::Empty(span) => {
-                Ok(Expr::Lit(LitExpr::new(LitValue::Unit, span)))
-            }
-            ExprListParseResult::SingleComma(span) => {
-                cx.emit(strings::UnexpectedSingleComma).detail(span, strings::TupleDefHere);
-                Ok(Expr::Tuple(TupleDef{ paren_span: span, items: ExprList{ items: Vec::new() } }))
-            }
-            ExprListParseResult::Normal(span, exprlist) => {
-                if exprlist.items.len() == 1 {
-                    Ok(Expr::Paren(ParenExpr{ span, expr: Box::new(exprlist.items.into_iter().last().unwrap()) }))
-                } else {
-                    Ok(Expr::Tuple(TupleDef{ paren_span: span, items: exprlist }))
-                }
-            }
-            ExprListParseResult::EndWithComma(span, exprlist) => {
-                Ok(Expr::Tuple(TupleDef{ paren_span: span, items: exprlist }))
-            }
-        }
-    }
-}
-
 
 #[cfg(test)] #[test]
-fn tuple_def_parse() {
+fn tuple_def_parse() {use super::prelude::*;
     //                                   01234567
     case!{ "(1, '2')" as TupleDef,
         make_expr!(tuple 0:7
