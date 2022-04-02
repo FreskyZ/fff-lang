@@ -1,6 +1,5 @@
 use super::*;
 
-#[cfg(test)]
 #[test]
 fn array_def_parse() {
     case!{ "[a]" as ArrayDef,

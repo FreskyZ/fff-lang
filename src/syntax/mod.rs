@@ -2,7 +2,7 @@
 
 pub mod ast;
 mod visit;
-mod visit_impl;
+mod visitee;
 mod pretty;
 mod parser;
 #[cfg(test)]

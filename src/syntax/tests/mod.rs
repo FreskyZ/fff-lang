@@ -3,16 +3,17 @@ use std::fmt;
 use crate::source::{Span, IsId};
 use crate::diagnostics::strings;
 use crate::lexical::{Numeric, Separator, Keyword};
-use super::visit::{Node};
-use super::parser::{Parser, ParseContext, PostfixExpr, RangeExpr};
+use super::visit::Node;
+use super::parser::{Parser, ParseContext, Unexpected, PostfixExpr, RangeExpr};
 use super::ast::*;
 
 fn ast_test_case<
     O: PartialEq + Node + fmt::Debug,
-    N: Parser<Output = O>,
+    F: FnOnce(&mut ParseContext) -> Result<O, Unexpected>,
 >(
     input: &'static str,
-    expect_node: O, 
+    f: F,
+    expect_node: O,
     expect_diagnostics: crate::diagnostics::Diagnostics, 
     expect_strings: &[&'static str], 
     backtrace: u32,
@@ -26,7 +27,7 @@ fn ast_test_case<
         files: [("1".into(), input.into())].into_iter().collect(),
     });
     let mut context = ParseContext::new(crate::lexical::Parser::new(source.entry("1"), &mut actual_diagnostics));
-    if let Ok(actual_node) = N::parse(&mut context) {
+    if let Ok(actual_node) = f(&mut context) {
         context.finish();
         // for now does not check expect strings not provided, but ideally should always check interned strings
         if expect_strings.len() > 0 {
@@ -81,16 +82,16 @@ fn ast_test_case<
 
 macro_rules! case {
     ($code:literal as $ty:ty, $expect:expr $(,)?) => (
-        ast_test_case::<_, $ty>($code, $expect, crate::diagnostics::make_errors!(), &[], line!());
+        ast_test_case($code, <$ty>::parse, $expect, crate::diagnostics::make_errors!(), &[], line!());
     );
     ($code:literal as $ty:ty, $expect:expr, errors $expect_diagnostics:expr $(,)?) => (
-        ast_test_case::<_, $ty>($code, $expect, $expect_diagnostics, &[], line!());
+        ast_test_case($code, <$ty>::parse, $expect, $expect_diagnostics, &[], line!());
     );
     ($code:literal as $ty:ty, $expect:expr, strings $expect_strings:expr $(,)?) => (
-        ast_test_case::<_, $ty>($code, $expect, crate::diagnostics::make_errors![], &$expect_strings, line!());
+        ast_test_case($code, <$ty>::parse, $expect, crate::diagnostics::make_errors![], &$expect_strings, line!());
     );
     ($code:literal as $ty:ty, $expect:expr, errors $expect_diagnostics:expr, strings $expect_strings:expr $(,)?) => (
-        ast_test_case::<_, $ty>($code, $expect, $expect_diagnostics, &$expect_strings, line!());
+        ast_test_case($code, <$ty>::parse, $expect, $expect_diagnostics, &$expect_strings, line!());
     );
 }
 
