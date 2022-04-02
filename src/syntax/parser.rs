@@ -5,6 +5,9 @@ use crate::lexical::{Parser as LexicalParser, Token, Numeric, Separator, Separat
 use super::visit::Node;
 use super::ast::*;
 
+mod expr;
+mod stmt;
+
 /// unrecoverable unexpected for this parser, detail in diagnostics
 // this should be more readable than previous Result<Self::Output, ()>
 #[derive(Debug)]
@@ -245,11 +248,18 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
         result
     }
 
+    /// Check current token is specified Separator, recognizes shift left, shift right, logical and
+    fn is_sep(&self, expected_sep: Separator) -> bool {
+        match self.current {
+            Token::Sep(sep) if sep == expected_sep => true,
+            Token::Sep(Separator::GtGt) if expected_sep == Separator::Gt => true,
+            Token::Sep(Separator::LtLt) if expected_sep == Separator::Lt => true,
+            Token::Sep(Separator::AndAnd) if expected_sep == Separator::And => true,
+            _ => false,
+        }
+    }
+
     /// Check current token is specified Separator, handles split shift left, shift right, logical and
-    ///
-    /// if so, move next and Ok(sep_span),
-    /// if not, push unexpect and Err(Unexpected)
-    ///
     /// example `let sep_span = cx.expect_sep(Separator::Comma)?;`
     fn expect_sep(&mut self, expected_sep: Separator) -> Result<Span, Unexpected> {
         match self.current {
@@ -412,11 +422,8 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
 
     // maybe implementations
     // checks current token (may peek) to see if it matches syntax node starting
-    // // was called Parser::matches, ISyntaxParse::matches, ISyntaxItemParse::is_first_final before
+    // // was called Parser::matches, ISyntaxParse::matches, ISyntaxItemParse::is_first_final, IASTItem::is_first_final before
     // // considered loops_like_xxx, seems_to_be_xxx, and maybe_xxx is shortest and consist with token check methods is_xxx
-    fn maybe_array_def(&self) -> bool {
-        matches!(self.current, Token::Sep(Separator::LeftBracket)) 
-    }
 
     fn maybe_array_type(&self) -> bool {
         matches!(self.current, Token::Sep(Separator::LeftBracket))
@@ -544,26 +551,6 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
     }
 }
 
-// array_def = '[' [ expr_list ] ']'
-impl Parser for ArrayDef {
-    type Output = Expr;
-
-    fn parse(cx: &mut ParseContext) -> Result<Expr, Unexpected> {
-        
-        match cx.expect::<ExprList>()? {
-            ExprListParseResult::Empty(span) =>
-                Ok(Expr::Array(ArrayDef{ bracket_span: span, items: ExprList{ items: Vec::new() } })),
-            ExprListParseResult::Normal(span, exprlist) 
-            | ExprListParseResult::EndWithComma(span, exprlist) =>
-                Ok(Expr::Array(ArrayDef{ bracket_span: span, items: exprlist })),
-            ExprListParseResult::SingleComma(span) => {
-                cx.emit(strings::UnexpectedSingleComma).detail(span, strings::ArrayDefHere);
-                Ok(Expr::Array(ArrayDef{ bracket_span: span, items: ExprList{ items: Vec::new() } }))
-            }
-        }
-    }
-}
-
 // array_type = '[' type_ref ';' expr ']'
 impl Parser for ArrayType {
     type Output = ArrayType;
@@ -592,72 +579,6 @@ impl Parser for ArrayType {
         let size = cx.expect::<Expr>()?;
         let right_bracket_span = cx.expect_sep(Separator::RightBracket)?;
         Ok(ArrayType{ base, size, span: left_bracket_span + right_bracket_span })
-    }
-}
-
-// MultiplicativeExpression = UnaryExpr | MultiplicativeExpression MultiplicativeOperator UnaryExpr
-// AdditiveExpression = MultiplicativeExpression | AdditiveExpression AdditiveOperator MultiplicativeExpression
-// RelationalExpression = AdditiveExpression | RelationalExpression RelationalOperator AdditiveExpression
-// ShiftExpression = RelationalExpression | ShiftExpression ShiftOperator RelationalExpression
-// BitAndExpression = ShiftExpression | BitAndExpression BitAndOperator ShiftExpression
-// BitXorExpression = BitAndExpression | BitXorExpression BitXorOperator BitAndExpression
-// BitOrExpression = BitXorExpression | BitOrExpression BitOrOperator BitXorExpression
-// EqualityExpression = BitOrExpression | EqualityExpression EqualityOperator BitOrExpression  // `==` and `!=` lower than `|` for `if (enum_var & enum_mem1 == enum_mem1)`
-// LogicalAndExpression = EqualityExpression | LogicalAndExpression LogicalAndOperator EqualityExpression
-// LogicalOrExpression = LogicalAndExpression | LogicalOrExpression LogicalOrOperator LogicalAndExpression
-impl Parser for BinaryExpr {
-    type Output = Expr;
-
-    fn parse(cx: &mut ParseContext) -> Result<Expr, Unexpected> {
-        #[cfg(feature = "trace_binary_expr_parse")]
-        macro_rules! trace { ($($arg:tt)*) => ({ print!("[PrimaryExpr] "); println!($($arg)*); }) }
-        #[cfg(not(feature = "trace_binary_expr_parse"))]
-        macro_rules! trace { ($($arg:tt)*) => () }
-
-        return parse_logical_or(cx);
-
-        fn check_relational_expr(cx: &mut ParseContext, expr: &Expr) {
-            if let Expr::Binary(BinaryExpr{ operator: Separator::Gt, operator_span: gt_span, left_expr, .. }) = expr {
-                if let Expr::Binary(BinaryExpr{ operator: Separator::Lt, operator_span: lt_span, .. }) = left_expr.as_ref() {
-                    cx.emit(strings::MaybeGeneric).span(*lt_span).span(*gt_span).help(strings::MaybeGenericHelp);
-                }
-            }
-        }
-
-        macro_rules! impl_binary_parser {
-            ($parser_name:ident, $previous_parser_name:path, $kind:ident $(,$check:path)?) => (
-                fn $parser_name(cx: &mut ParseContext) -> Result<Expr, Unexpected> {
-                    trace!("parsing {}", stringify!($parser_name));
-
-                    let mut current_expr = $previous_parser_name(cx)?;
-                    loop {
-                        if let Some((sep, sep_span)) = cx.try_expect_sep_kind(SeparatorKind::$kind) {
-                            let right_expr = $previous_parser_name(cx)?;
-                            current_expr = Expr::Binary(BinaryExpr{
-                                all_span: current_expr.get_all_span() + right_expr.get_all_span(),
-                                left_expr: Box::new(current_expr),
-                                operator: sep, 
-                                operator_span: sep_span, 
-                                right_expr: Box::new(right_expr)
-                            });
-                            $($check(cx, &current_expr))?
-                        } else {
-                            return Ok(current_expr);
-                        }
-                    }
-                }
-            )
-        }
-        impl_binary_parser! { parse_multiplicative, UnaryExpr::parse, Multiplicative }
-        impl_binary_parser! { parse_additive, parse_multiplicative, Additive }
-        impl_binary_parser! { parse_relational, parse_additive, Relational, check_relational_expr }
-        impl_binary_parser! { parse_shift, parse_relational, Shift }
-        impl_binary_parser! { parse_bitand, parse_shift, BitAnd }
-        impl_binary_parser! { parse_bitxor, parse_bitand, BitXor }
-        impl_binary_parser! { parse_bitor, parse_bitxor, BitOr }
-        impl_binary_parser! { parse_equality, parse_bitor, Equality }
-        impl_binary_parser! { parse_logical_and, parse_equality, LogicalAnd }
-        impl_binary_parser! { parse_logical_or, parse_logical_and, LogicalOr }
     }
 }
 
@@ -727,47 +648,6 @@ impl Parser for EnumDef {
     }
 }
 
-// expr_list = expr { ',' expr } [ ',' ]
-impl Parser for ExprList {
-    type Output = ExprListParseResult;
-
-    /// This is special, when calling `parse`, `cx.current` should point to the quote token
-    /// Then the parser will check end token to determine end of parsing process
-    fn parse(cx: &mut ParseContext) -> Result<ExprListParseResult, Unexpected> {
-
-        let (starting_sep, starting_span) = cx.expect_seps(&[Separator::LeftBrace, Separator::LeftBracket, Separator::LeftParen])?;
-        let expect_end_sep = match starting_sep { 
-            Separator::LeftBrace => Separator::RightBrace, 
-            Separator::LeftBracket => Separator::RightBracket,
-            Separator::LeftParen => Separator::RightParen,
-            _ => unreachable!(),
-        };
-
-        if let Some((ending_span, skipped_comma)) = cx.try_expect_closing_bracket(expect_end_sep) {
-            return if skipped_comma {
-                Ok(ExprListParseResult::SingleComma(starting_span + ending_span))
-            } else {
-                Ok(ExprListParseResult::Empty(starting_span + ending_span))
-            };
-        }
-
-        cx.no_object_literals.push(false);
-        let mut items = Vec::new();
-        loop {
-            items.push(cx.expect::<Expr>()?);
-            if let Some((ending_span, skipped_comma)) = cx.try_expect_closing_bracket(expect_end_sep) {
-                cx.no_object_literals.pop();
-                return if skipped_comma {
-                    Ok(ExprListParseResult::EndWithComma(starting_span + ending_span, ExprList{ items }))
-                } else {
-                    Ok(ExprListParseResult::Normal(starting_span + ending_span, ExprList{ items }))
-                };
-            }
-            cx.expect_sep(Separator::Comma)?;
-        }
-    }
-}
-
 // dispatch them to convenience statement define macro
 impl Parser for SimpleExprStatement {
     type Output = <AssignExprStatement as Parser>::Output;
@@ -807,31 +687,10 @@ impl Parser for Expr {
     }
 }
 
+// TODO: remove after change all postfix expr parsers to notast
 impl Default for Expr {
     fn default() -> Expr { 
         Expr::Lit(LitExpr{ value: LitValue::Num(Numeric::I32(0)), span: Span::new(0, 0) }) 
-    }
-}
-
-// fn_call_expr = expr '(' [ expr_list ] ')'
-impl Parser for FnCallExpr {
-    type Output = FnCallExpr;
-
-    fn parse(cx: &mut ParseContext) -> Result<FnCallExpr, Unexpected> {
-
-        // this parse method return partial and priority proxy will fill base
-        macro_rules! make_partial { ($span:expr, $params:expr) => (
-            Ok(FnCallExpr{ all_span: Span::new(0, 0), base: Box::new(Expr::default()), paren_span: $span, params: $params })) }
-
-        match cx.expect::<ExprList>()? {
-            | ExprListParseResult::Normal(span, expr_list) 
-            | ExprListParseResult::EndWithComma(span, expr_list) => make_partial!(span, expr_list),
-            ExprListParseResult::Empty(span) => make_partial!(span, ExprList{ items: Vec::new() }),
-            ExprListParseResult::SingleComma(span) => {
-                cx.emit(strings::UnexpectedSingleComma).detail(span, strings::FnCallHere);
-                make_partial!(span, ExprList{ items: Vec::new() })
-            }
-        }
     }
 }
 
@@ -1005,28 +864,6 @@ impl Parser for IfStatement {
     }
 }
 
-// index_call_expr = expr '[' [ expr_list ] ']'
-// renamed from postfix_expr::subscription to make it shorter
-impl Parser for IndexCallExpr {
-    type Output = IndexCallExpr;
-
-    fn parse(cx: &mut ParseContext) -> Result<IndexCallExpr, Unexpected> {
-
-        match cx.expect::<ExprList>()? {
-            ExprListParseResult::Normal(span, expr_list) 
-            | ExprListParseResult::EndWithComma(span, expr_list) => 
-                Ok(IndexCallExpr{ all_span: Span::new(0, 0), base: Box::new(Expr::default()), bracket_span: span, params: expr_list }),
-            ExprListParseResult::Empty(span) 
-            | ExprListParseResult::SingleComma(span) => {
-                // empty subscription is meaningless, refuse it here
-                // update: but for trying to get more message in the rest program, make it not none
-                cx.emit(strings::EmptyIndexCall).detail(span, strings::IndexCallHere);
-                Ok(IndexCallExpr{ all_span: Span::new(0, 0), base: Box::new(Expr::default()), bracket_span: span, params: ExprList{ items: Vec::new() } })
-            }
-        }
-    }
-}
-
 impl JumpStatement {
     fn parse(cx: &mut ParseContext, expect_first_kw: Keyword) -> Result<JumpStatement, Unexpected> {
 
@@ -1073,16 +910,6 @@ impl Parser for LabelDef {
     }
 }
 
-impl Parser for LitExpr {
-    type Output = Expr;
-
-    fn parse(cx: &mut ParseContext) -> Result<Expr, Unexpected> {
-        
-        let (value, span) = cx.expect_lit()?;
-        Ok(Expr::Lit(LitExpr{ value, span }))
-    }
-}
-
 // loop_stmt = [ label_def ] 'loop' block
 // NOTE: no else for break here because if control flow come to else it is always breaked
 impl Parser for LoopStatement {
@@ -1095,45 +922,6 @@ impl Parser for LoopStatement {
         let body = cx.expect::<Block>()?;
         let all_span = name.as_ref().map(|n| n.all_span).unwrap_or(loop_span) + body.all_span;
         Ok(LoopStatement{ all_span, name, loop_span, body })
-    }
-}
-
-// member_access = expr '.' member
-// member = num_lit | name
-//
-// name should start with ident,
-// that is, type_as_segment or global (start with ::) is not allowed and first segment must be normal
-// TODO: member = num_lit | name_segment
-impl Parser for MemberAccessExpr {
-    type Output = Self;
-
-    // these 3 postfix exprs are special because
-    // their node contains base expr, but their parser only expects token after that (dot for member access expr)
-    // the postfix expr dispatcher is responsible for fullfilling the missing part
-    fn parse(cx: &mut ParseContext) -> Result<MemberAccessExpr, Unexpected> {
-        
-        let dot_span = cx.expect_sep(Separator::Dot)?;
-        let name = if let Some((numeric, span)) = cx.try_expect_numeric() {
-            if let Numeric::I32(v) = numeric {
-                Name{ type_as_segment: None, global: false, all_span: span, segments: vec![NameSegment::Normal(cx.intern(&format!("{}", v)), span)] }
-            } else {
-                cx.emit(strings::InvalidTupleIndex).span(span).help(strings::TupleIndexSyntaxHelp);
-                Name{ type_as_segment: None, global: false, all_span: span, segments: Vec::new() }
-            }
-        } else {
-            let name = cx.expect::<Name>()?;
-            // first segment will not be generic and will not be type_as_segment and global, because matches3 checks for that
-            if name.segments.len() == 2 && !matches!(name.segments[1], NameSegment::Generic(..)) {
-                cx.emit(strings::InvalidMemberAccess).span(name.segments[1].get_span()).help(strings::GenericMemberAccessSyntaxHelp);
-            }
-            if name.segments.len() > 2 {
-                let error_span = name.segments[1].get_span() + name.segments.last().unwrap().get_span();
-                cx.emit(strings::InvalidMemberAccess).span(error_span).help(strings::GenericMemberAccessSyntaxHelp);
-            }
-            name
-        };
-
-        Ok(MemberAccessExpr{ base: Box::new(Expr::default()), dot_span, name, all_span: Span::new(0, 0) })
     }
 }
 
@@ -1164,90 +952,6 @@ impl Parser for Module {
             items.push(cx.expect::<Item>()?);
         }
         Ok(Module{ items, file: cx.get_file_id() })
-    }
-}
-
-// name = [ type_as_segment ] [ '::' ] name_segment { '::' name_segment }
-// name_segment = identifier | '<' type_ref { ',' type_ref } '>'
-impl Parser for Name {
-    type Output = Self;
-
-    fn parse(cx: &mut ParseContext) -> Result<Self, Unexpected> {
-        
-        let type_as_segment = cx.try_expect_sep(Separator::Lt).map(|lt_span| {
-            let from = cx.expect::<TypeRef>()?;
-            cx.expect_keyword(Keyword::As)?;
-            let to = cx.expect::<TypeRef>()?;
-            let gt_span = cx.expect_sep(Separator::Gt)?;
-            Ok(TypeAsSegment{ from: Box::new(from), to: Box::new(to), span: lt_span + gt_span })
-        }).transpose()?;
-
-        let beginning_separator_span = cx.try_expect_sep(Separator::ColonColon);
-        
-        let mut segments = Vec::new();
-        loop {
-            if let Some((ident, ident_span)) = cx.try_expect_ident() {
-                segments.push(NameSegment::Normal(ident, ident_span));
-            } else {
-                let lt_span = cx.expect_sep(Separator::Lt)?;
-                // none: first segment cannot be generic segment
-                // some generic: generic segment cannot follow generic segment 
-                if let None | Some(NameSegment::Generic(..)) = segments.last() {
-                    cx.emit(strings::InvalidNameSegment).detail(lt_span, strings::NameSegmentExpect);
-                }
-
-                if let Some(gt_span) = cx.try_expect_sep(Separator::Gt) { // allow <> in syntax parse
-                    segments.push(NameSegment::Generic(Vec::new(), lt_span + gt_span));
-                } else {
-                    let mut parameters = vec![cx.expect::<TypeRef>()?];
-                    let quote_span = lt_span + loop {
-                        if let Some((gt_span, _)) = cx.try_expect_closing_bracket(Separator::Gt) {
-                            break gt_span;
-                        }
-                        cx.expect_sep(Separator::Comma)?;
-                        parameters.push(cx.expect::<TypeRef>()?);
-                    };
-                    segments.push(NameSegment::Generic(parameters, quote_span));
-                }
-            }
-            if cx.try_expect_sep(Separator::ColonColon).is_none() {
-                break;
-            }
-        }
-
-        let global = type_as_segment.is_none() && beginning_separator_span.is_some();
-        let all_span = type_as_segment.as_ref().map(|s| s.span).or(beginning_separator_span)
-            .unwrap_or_else(|| segments[0].get_span()) + segments.last().unwrap().get_span(); // [0] and last().unwrap(): matches() guarantees segments are not empty
-        Ok(Name{ type_as_segment, global, segments, all_span })
-    }
-}
-
-// object_literal = name '{' { ident ':' expr ',' } '}'
-// last comma may omit
-impl Parser for ObjectLiteral {
-    type Output = Self;
-
-    fn parse(cx: &mut ParseContext) -> Result<Self, Unexpected> {
-        
-        let left_brace_span = cx.expect_sep(Separator::LeftBrace)?;
-        let mut fields = Vec::new();
-        let right_brace_span = if let Some(right_brace_span) = cx.try_expect_sep(Separator::RightBrace) {
-            right_brace_span
-        } else { loop {
-                let (field_name, field_name_span) = cx.expect_ident()?;
-                let colon_span = cx.expect_sep(Separator::Colon)?;
-                let value = cx.expect::<Expr>()?;
-                fields.push(ObjectLiteralField{ all_span: field_name_span + value.get_all_span(), name: field_name, name_span: field_name_span, colon_span, value });
-
-                if let Some((right_brace_span, _)) = cx.try_expect_closing_bracket(Separator::RightBrace) {
-                    break right_brace_span;
-                } else {
-                    cx.expect_sep(Separator::Comma)?;
-                }
-            }
-        };
-
-        Ok(ObjectLiteral{ base: Box::new(Expr::default()), quote_span: left_brace_span + right_brace_span, fields, all_span: Span::new(0, 0) })
     }
 }
 
@@ -1324,13 +1028,16 @@ impl Parser for PrimaryExpr {
     fn parse(cx: &mut ParseContext) -> Result<Expr, Unexpected> {
 
         if cx.maybe_lit() {
-            return cx.expect::<LitExpr>();
+            // this is too short to put in one parse method
+            // while it is actually tested more than hundred times in syntax test cases worldwide
+            let (value, span) = cx.expect_lit()?;
+            return Ok(Expr::Lit(LitExpr{ value, span }));
         } else if cx.maybe_name() {
-            return cx.expect::<Name>().map(Expr::Name);
+            return cx.parse_name().map(Expr::Name);
         } else if cx.maybe_tuple_def() {
             return cx.expect::<TupleDef>();
         } else if cx.maybe_array_def() {
-            return cx.expect::<ArrayDef>();
+            return cx.parse_array_def();
         }
 
         let (this_id, this_span) = cx.expect_ident_or_keywords(&[Keyword::This, Keyword::Self_])?;  // actually identifier is processed by Name, not here
@@ -1355,25 +1062,25 @@ impl Parser for PostfixExpr {
 
         loop {
             if cx.maybe_member_access() {
-                let mut postfix = cx.expect::<MemberAccessExpr>()?;
-                postfix.all_span = current_expr.get_all_span() + postfix.name.all_span;
-                postfix.base = Box::new(current_expr);
-                current_expr = Expr::MemberAccess(postfix);
+                let (dot_span, name) = cx.parse_member_access()?;
+                let all_span = current_expr.get_all_span() + name.all_span;
+                let base = Box::new(current_expr);
+                current_expr = Expr::MemberAccess(MemberAccessExpr{ all_span, base, dot_span, name });
             } else if cx.maybe_fn_call() {
-                let mut postfix = cx.expect::<FnCallExpr>()?;
-                postfix.all_span = current_expr.get_all_span() + postfix.paren_span;
-                postfix.base = Box::new(current_expr);
-                current_expr = Expr::FnCall(postfix);
+                let (paren_span, params) = cx.parse_fn_call()?;
+                let all_span = current_expr.get_all_span() + paren_span;
+                let base = Box::new(current_expr);
+                current_expr = Expr::FnCall(FnCallExpr{ all_span, base, paren_span, params });
             } else if cx.maybe_index_call() {
-                let mut postfix = cx.expect::<IndexCallExpr>()?;
-                postfix.all_span = current_expr.get_all_span() + postfix.bracket_span;
-                postfix.base = Box::new(current_expr);
-                current_expr = Expr::IndexCall(postfix);
+                let (bracket_span, params) = cx.parse_index_call()?;
+                let all_span = current_expr.get_all_span() + bracket_span;
+                let base = Box::new(current_expr);
+                current_expr = Expr::IndexCall(IndexCallExpr{ all_span, base, bracket_span, params });
             } else if matches!(cx.no_object_literals.last(), None | Some(false)) && matches!(current_expr, Expr::Name(_)) && cx.maybe_object_lit() {
-                let mut postfix = cx.expect::<ObjectLiteral>()?;
-                postfix.all_span = current_expr.get_all_span() + postfix.quote_span;
-                postfix.base = Box::new(current_expr);
-                current_expr = Expr::Object(postfix);
+                let (quote_span, fields) = cx.parse_object_literal()?;
+                let all_span = current_expr.get_all_span() + quote_span;
+                let base = Box::new(current_expr);
+                current_expr = Expr::Object(ObjectLiteral{ all_span, base, quote_span, fields });
             } else {
                 break;
             }
@@ -1397,17 +1104,17 @@ impl Parser for RangeExpr {
         match cx.try_expect_sep(Separator::DotDot) {
             Some(range_op_span) => {
                 if cx.maybe_expr() {
-                    let expr = cx.expect::<BinaryExpr>()?;
+                    let expr = cx.parse_binary_expr()?;
                     Ok(Expr::RangeRight(RangeRightExpr{ all_span: range_op_span + expr.get_all_span(), expr: Box::new(expr) }))
                 } else {
                     Ok(Expr::RangeFull(RangeFullExpr{ all_span: range_op_span }))
                 }
             }
             None => {
-                let left_expr = cx.expect::<BinaryExpr>()?;
+                let left_expr = cx.parse_binary_expr()?;
                 if let Some(op_span) = cx.try_expect_sep(Separator::DotDot) {
                     if cx.maybe_expr() {
-                        let right_expr = cx.expect::<BinaryExpr>()?;
+                        let right_expr = cx.parse_binary_expr()?;
                         let all_span = left_expr.get_all_span() + right_expr.get_all_span();
                         Ok(Expr::RangeBoth(RangeBothExpr{ all_span, op_span, left_expr: Box::new(left_expr), right_expr: Box::new(right_expr) }))
                     } else {
@@ -1463,7 +1170,7 @@ impl Parser for TupleDef {
 
     fn parse(cx: &mut ParseContext) -> Result<Expr, Unexpected> {
 
-        match cx.expect::<ExprList>()? {
+        match cx.parse_expr_list()? {
             ExprListParseResult::Empty(span) => {
                 Ok(Expr::Lit(LitExpr{ value: LitValue::Unit, span }))
             }
@@ -1576,7 +1283,7 @@ impl Parser for UseStatement {
     fn parse(cx: &mut ParseContext) -> Result<UseStatement, Unexpected> {
 
         let starting_span = cx.expect_keyword(Keyword::Use)?;
-        let name = cx.expect::<Name>()?;
+        let name = cx.parse_name()?;
 
         let alias = cx.try_expect_keyword(Keyword::As).map(|_| cx.expect_ident()).transpose()?;
         let semicolon_span = cx.expect_sep(Separator::SemiColon)?;

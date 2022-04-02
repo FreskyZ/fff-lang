@@ -1,33 +1,74 @@
 
-use std::fmt;
-use crate::source::{Span, IsId};
-use crate::diagnostics::strings;
+use std::fmt::{self, Write};
+use std::str::from_utf8;
+use crate::source::{SourceContext, VirtualFileSystem, Span, IsId, make_source};
+use crate::diagnostics::{strings, make_errors};
 use crate::lexical::{Numeric, Separator, Keyword};
 use super::visit::Node;
 use super::parser::{Parser, ParseContext, Unexpected, PostfixExpr, RangeExpr};
 use super::ast::*;
 
-fn ast_test_case<
-    O: PartialEq + Node + fmt::Debug,
-    F: FnOnce(&mut ParseContext) -> Result<O, Unexpected>,
+struct DiffDisplay<'a, 'b>(&'a str, &'b str);
+
+impl<'a, 'b> fmt::Display for DiffDisplay<'a, 'b> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut actual_lines = self.0.lines().collect::<Vec<_>>();
+        let mut expect_lines = self.1.lines().collect::<Vec<_>>();
+        
+        // if both side is single line with len > 100, then it is comparing debug fmt, 
+        // hard split (regardless of word boundary) them to fixed length lines
+        // (in bytes, because ast debug print does not contain non ascii char, because identifiers and string literals are isid)
+        const HL: usize = 72;
+        if actual_lines.len() == 1 && actual_lines[0].len() > HL && expect_lines.len() == 1 && expect_lines[0].len() > HL {
+            actual_lines = self.0.as_bytes().chunks(HL).map(|c| from_utf8(c).unwrap()).collect::<Vec<_>>();
+            expect_lines = self.1.as_bytes().chunks(HL).map(|c| from_utf8(c).unwrap()).collect::<Vec<_>>();
+        }
+
+        let common_line_count = std::cmp::min(actual_lines.len(), expect_lines.len());
+        for line in 0..common_line_count {
+            if actual_lines[line] != expect_lines[line] {
+                writeln!(f, "{: >3} |A {}", line + 1, actual_lines[line])?;
+                writeln!(f, "    |E {}", expect_lines[line])?;
+            } else {
+                writeln!(f, "{: >3} |  {}", line + 1, actual_lines[line])?;
+            }
+        }
+        if actual_lines.len() > common_line_count {
+            for line in common_line_count..actual_lines.len() {
+                writeln!(f, "{: >3} |A {}", line + 1, actual_lines[line])?;
+            }
+        }
+        if expect_lines.len() > common_line_count {
+            for line in common_line_count..expect_lines.len() {
+                writeln!(f, "{: >3} |E {}", line + 1, expect_lines[line])?;
+            }
+        }
+        Ok(())
+    }
+}
+
+// the 2 types of case is same until result compare
+// TODO give this signature to fn def parser and fn type parser
+fn case_until_node<
+    N: PartialEq + fmt::Debug,
+    F: FnOnce(&mut ParseContext) -> Result<N, Unexpected>,
 >(
     input: &'static str,
     f: F,
-    expect_node: O,
+    expect_node: N,
     expect_diagnostics: crate::diagnostics::Diagnostics, 
-    expect_strings: &[&'static str], 
+    expect_strings: &[&'static str],
     backtrace: u32,
-) {
-    use std::fmt::Write;
-    use crate::source::SourceContext;
-    
+    // err(actual node, expect node, source context)
+) -> Result<(), (N, N, SourceContext<VirtualFileSystem>)> {
     let mut actual_diagnostics = crate::diagnostics::Diagnostics::new();
     let mut source = SourceContext::new_file_system(crate::source::VirtualFileSystem {
         cwd: "/".into(),
         files: [("1".into(), input.into())].into_iter().collect(),
     });
     let mut context = ParseContext::new(crate::lexical::Parser::new(source.entry("1"), &mut actual_diagnostics));
-    if let Ok(actual_node) = f(&mut context) {
+    let actual_node = f(&mut context);
+    if let Ok(actual_node) = actual_node {
         context.finish();
         // for now does not check expect strings not provided, but ideally should always check interned strings
         if expect_strings.len() > 0 {
@@ -38,7 +79,7 @@ fn ast_test_case<
         }
         if actual_node == expect_node {
             if actual_diagnostics == expect_diagnostics {
-                // finally success
+                Ok(()) // finally success
             } else {
                 let mut buf = format!("line {} diagnostics not same\n", backtrace);
                 write!(buf, "{}", actual_diagnostics.display(&source)).unwrap();
@@ -46,33 +87,7 @@ fn ast_test_case<
                 panic!("{}", buf)
             }
         } else {
-            let (actual_display, expect_display) = (actual_node.display(&source).to_string(), expect_node.display(&source).to_string());
-            if actual_display == expect_display {
-                panic!("line {} node not same while display is same\n{}\n{:?}\n{:?}\n", backtrace, actual_display, actual_node, expect_node);
-            }
-
-            let mut buf = format!("line {} node not same\n", backtrace);
-            let (actual_lines, expect_lines) = (actual_display.lines().collect::<Vec<_>>(), expect_display.lines().collect::<Vec<_>>());
-            let common_line_count = std::cmp::min(actual_lines.len(), expect_lines.len());
-            for line in 0..common_line_count {
-                if actual_lines[line] != expect_lines[line] {
-                    writeln!(buf, "{: >3} |- {}", line + 1, actual_lines[line]).unwrap();
-                    writeln!(buf, "    |+ {}", expect_lines[line]).unwrap();
-                } else {
-                    writeln!(buf, "{: >3} |  {}", line + 1, actual_lines[line]).unwrap();
-                }
-            }
-            if actual_lines.len() > common_line_count {
-                for line in common_line_count..actual_lines.len() {
-                    writeln!(buf, "{: >3} |- {}", line + 1, actual_lines[line]).unwrap();
-                }
-            }
-            if expect_lines.len() > common_line_count {
-                for line in common_line_count..expect_lines.len() {
-                    writeln!(buf, "{: >3} |+ {}", line + 1, expect_lines[line]).unwrap();
-                }
-            }
-            panic!("{}", buf)
+            Err((actual_node, expect_node, source))
         }
     } else {
         context.finish();
@@ -80,18 +95,81 @@ fn ast_test_case<
     }
 }
 
+fn ast_case<
+    O: PartialEq + Node + fmt::Debug,
+    F: FnOnce(&mut ParseContext) -> Result<O, Unexpected>,
+>(
+    input: &'static str,
+    f: F,
+    expect_node: O,
+    expect_diagnostics: crate::diagnostics::Diagnostics, 
+    expect_strings: &[&'static str],
+    backtrace: u32,
+) {
+    if let Err((actual_node, expect_node, source)) = case_until_node(input, f, expect_node, expect_diagnostics, expect_strings, backtrace) {
+        let (actual_display, expect_display) = (actual_node.display(&source).to_string(), expect_node.display(&source).to_string());
+        if actual_display == expect_display {
+            let (actual_debug, expect_debug) = (format!("{:?}", actual_node), format!("{:?}", expect_node));
+            panic!("line {} node not same while display is same\n{}\n{}", backtrace, actual_display, DiffDisplay(&actual_debug, &expect_debug));
+        }
+        panic!("line {} node not same\n{}", backtrace, DiffDisplay(&actual_display, &expect_display));
+    }
+}
+
+// some parse method does not return type that impl Node
+fn notast_case<
+    O: PartialEq + fmt::Debug,
+    F: FnOnce(&mut ParseContext) -> Result<O, Unexpected>,
+>(
+    input: &'static str,
+    f: F,
+    expect_node: O,
+    expect_diagnostics: crate::diagnostics::Diagnostics, 
+    expect_strings: &[&'static str],
+    backtrace: u32,
+) {
+    if let Err((actual_node, expect_node, _)) = case_until_node(input, f, expect_node, expect_diagnostics, expect_strings, backtrace) {
+        let (actual_debug, expect_debug) = (format!("{:?}", actual_node), format!("{:?}", expect_node));
+        panic!("line {} result not same\n{}", backtrace, DiffDisplay(&actual_debug, &expect_debug));
+    }
+}
+
 macro_rules! case {
     ($code:literal as $ty:ty, $expect:expr $(,)?) => (
-        ast_test_case($code, <$ty>::parse, $expect, crate::diagnostics::make_errors!(), &[], line!());
+        ast_case($code, <$ty>::parse, $expect, crate::diagnostics::make_errors!(), &[], line!());
     );
     ($code:literal as $ty:ty, $expect:expr, errors $expect_diagnostics:expr $(,)?) => (
-        ast_test_case($code, <$ty>::parse, $expect, $expect_diagnostics, &[], line!());
+        ast_case($code, <$ty>::parse, $expect, $expect_diagnostics, &[], line!());
     );
     ($code:literal as $ty:ty, $expect:expr, strings $expect_strings:expr $(,)?) => (
-        ast_test_case($code, <$ty>::parse, $expect, crate::diagnostics::make_errors![], &$expect_strings, line!());
+        ast_case($code, <$ty>::parse, $expect, crate::diagnostics::make_errors![], &$expect_strings, line!());
     );
     ($code:literal as $ty:ty, $expect:expr, errors $expect_diagnostics:expr, strings $expect_strings:expr $(,)?) => (
-        ast_test_case($code, <$ty>::parse, $expect, $expect_diagnostics, &$expect_strings, line!());
+        ast_case($code, <$ty>::parse, $expect, $expect_diagnostics, &$expect_strings, line!());
+    );
+    ($parser:ident $code:literal, $expect:expr $(,)?) => (
+        ast_case($code, |cx| cx.$parser(), $expect, crate::diagnostics::make_errors!(), &[], line!());
+    );
+    ($parser:ident $code:literal, $expect:expr, errors $expect_diagnostics:expr $(,)?) => (
+        ast_case($code, |cx| cx.$parser(), $expect, $expect_diagnostics, &[], line!());
+    );
+    ($parser:ident $code:literal, $expect:expr, strings $expect_strings:expr $(,)?) => (
+        ast_case($code, |cx| cx.$parser(), $expect, crate::diagnostics::make_errors![], &$expect_strings, line!());
+    );
+    ($parser:ident $code:literal, $expect:expr, errors $expect_diagnostics:expr, strings $expect_strings:expr $(,)?) => (
+        ast_case($code, |cx| cx.$parser(), $expect, $expect_diagnostics, &$expect_strings, line!());
+    );
+    (notast $parser:ident $code:literal, $expect:expr $(,)?) => (
+        notast_case($code, |cx| cx.$parser(), $expect, crate::diagnostics::make_errors!(), &[], line!());
+    );
+    (notast $parser:ident $code:literal, $expect:expr, errors $expect_diagnostics:expr $(,)?) => (
+        notast_case($code, |cx| cx.$parser(), $expect, $expect_diagnostics, &[], line!());
+    );
+    (notast $parser:ident $code:literal, $expect:expr, strings $expect_strings:expr $(,)?) => (
+        notast_case($code, |cx| cx.$parser(), $expect, crate::diagnostics::make_errors![], &$expect_strings, line!());
+    );
+    (notast $parser:ident $code:literal, $expect:expr, errors $expect_diagnostics:expr, strings $expect_strings:expr $(,)?) => (
+        notast_case($code, |cx| cx.$parser(), $expect, $expect_diagnostics, &$expect_strings, line!());
     );
 }
 
@@ -394,9 +472,6 @@ macro_rules! make_type {
         all_span: Span::new($start, $end),
     });
 }
-
-use crate::diagnostics::make_errors;
-use crate::source::make_source;
 
 mod pretty;
 mod expr;

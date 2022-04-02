@@ -1,38 +1,33 @@
 use super::*;
 
-macro_rules! assert_text_eq {
-    ($left:expr, $right:expr) => {
-        if $left != $right {
-            let left_lines = $left.lines();
-            let right_lines = $right.lines();
-            for (index, (left_line, right_line)) in left_lines.zip(right_lines).enumerate() {
-                if left_line != right_line {
-                    panic!("assertion failed at index {}\nleft: {}\nright: {}", index, $left, $right);
-                }
-            }
-            panic!("assertion failed, but cannot detected by compare each line\nleft: {}\nright: {}", $left, $right);
+macro_rules! ppcase { // pretty print case
+    ($left:expr, $right:expr) => { // left: NodeDisplay, right: expected &'static str
+        let (left, right) = ($left.to_string(), $right);
+        if left != right {
+            panic!("display not same\n{}", DiffDisplay(&left, right));
         }
     }
 }
-    
+
 #[test]
 fn array_def() {
 
     let mut scx = make_source!("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz");
     scx.entry("1").finish();
-    assert_eq!{
-        make_expr!(array 0:42).display(&scx).to_string(),
+    ppcase!{
+        make_expr!(array 0:42).display(&scx),
         "array-def <1:1-1:43>\n"
     }
 
     let mut scx = make_source!("abcde\nfg\nhi\njklm");
     scx.entry("1").finish();
-    assert_eq!{
+    ppcase!{
         make_expr!(array 0:9
             make_expr!(i32 1 1:1),
             make_expr!(i32 2 4:4),
-            make_expr!(i32 48 7:8)).display(&scx).to_string(),
-            "array-def <1:1-3:1>
+            make_expr!(i32 48 7:8)
+        ).display(&scx),
+        "array-def <1:1-3:1>
   literal i32 1 <1:2-1:2>
   literal i32 2 <1:5-1:5>
   literal i32 48 <2:2-2:3>
@@ -45,11 +40,11 @@ fn binary_expr() {
 
     let mut scx = make_source!("ascasconwoeicnqw");
     scx.entry("1").finish();
-    assert_eq!{ 
+    ppcase!{ 
         make_expr!(binary 0:4 Add 2:2
             make_expr!(i32 1 0:0),
             make_expr!(i32 2 4:4)
-        ).display(&scx).to_string(),
+        ).display(&scx),
             "binary-expr <1:1-1:5> + <1:3-1:3>
   literal i32 1 <1:1-1:1>
   literal i32 2 <1:5-1:5>
@@ -62,12 +57,12 @@ fn expr_list() {
 
     let mut scx = make_source!("123123234123");
     scx.entry("1").finish();
-    assert_eq!{
+    ppcase!{
         ExprList{ items: vec![
             make_expr!(i32 1 1:2),
             make_expr!(i32 2 3:4),
             make_expr!(i32 3 5:6),
-        ] }.display(&scx).to_string(),
+        ] }.display(&scx),
         "literal i32 1 <1:2-1:3>\nliteral i32 2 <1:4-1:5>\nliteral i32 3 <1:6-1:7>\n"
     }
 }
@@ -77,19 +72,19 @@ fn tuple_def() {
 
     let mut scx = make_source!("1231241241231412341234");
     scx.entry("1").finish();
-    assert_eq!{
-        make_expr!(tuple 0:21).display(&scx).to_string(),
+    ppcase!{
+        make_expr!(tuple 0:21).display(&scx),
         "tuple-def <1:1-1:22>\n"
     }
 
     let mut scx = make_source!("1231241241231412341234");
     scx.entry("1").finish();
-    assert_eq!{
+    ppcase!{
         make_expr!(tuple 0:8
             make_expr!(i32 1 1:2),
             make_expr!(i32 2 3:4),
             make_expr!(i32 48 5:6)
-        ).display(&scx).to_string(),
+        ).display(&scx),
         "tuple-def <1:1-1:9>\n  literal i32 1 <1:2-1:3>\n  literal i32 2 <1:4-1:5>\n  literal i32 48 <1:6-1:7>\n"
     }
 }
@@ -102,7 +97,7 @@ fn loop_stmt() {
     let mut context = ParseContext::new(crate::lexical::Parser::new(scx.entry("1"), &mut ecx));
     let node = LoopStatement::parse(&mut context).unwrap();
     context.finish();
-    assert_eq!{ node.display(&scx).to_string(), r#"loop-stmt <1:1-1:28> loop <1:5-1:8>
+    ppcase!{ node.display(&scx), r#"loop-stmt <1:1-1:28> loop <1:5-1:8>
   label @@ <1:1-1:3>
   block <1:10-1:28>
     simple-expr-stmt <1:12-1:26>
@@ -123,8 +118,7 @@ fn postfix_expr() {
     let mut context = ParseContext::new(crate::lexical::Parser::new(scx.entry("1"), &mut ecx));
     let node = PostfixExpr::parse(&mut context).unwrap();
     context.finish();
-    let actual = node.display(&scx).to_string();
-    assert_text_eq!{ actual, "index-call <1:1-1:58> [] <1:49-1:58>
+    ppcase!{ node.display(&scx), "index-call <1:1-1:58> [] <1:49-1:58>
   index-call <1:1-1:48> [] <1:40-1:48>
     member-access <1:1-1:39> . <1:38-1:38>
       fn-call <1:1-1:37> () <1:36-1:37>

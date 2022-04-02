@@ -2,26 +2,26 @@ use super::*;
 
 #[test]
 fn array_def_parse() {
-    case!{ "[a]" as ArrayDef,
+    case!{ parse_array_def "[a]",
         make_expr!(array 0:2
             make_name!(simple 1:1 #2)),
     }
 
     //                                   01234567
-    case!{ "[1, '2']" as ArrayDef,
+    case!{ parse_array_def "[1, '2']",
         make_expr!(array 0:7
             make_expr!(i32 1 1:1),
             make_expr!(char 4:6 '2')),
     }
     //                                   01234567
-    case!{ "[1 + 1,]" as ArrayDef,
+    case!{ parse_array_def "[1 + 1,]",
         make_expr!(array 0:7
             make_expr!(binary 1:5 Add 3:3
                 make_expr!(i32 1 1:1),
                 make_expr!(i32 1 5:5))),
     }
 
-    case!{ "[ , ]" as ArrayDef,
+    case!{ parse_array_def "[ , ]",
         make_expr!(array 0:4),
         errors make_errors!(e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(0, 4), strings::ArrayDefHere))
     }
@@ -30,7 +30,7 @@ fn array_def_parse() {
 #[test]
 fn binary_expr_parse() {
     //                                     123456789012345
-    case!{ "[1] * [2] / [3]" as BinaryExpr,
+    case!{ parse_binary_expr "[1] * [2] / [3]",
         make_expr!(binary 0:14 Div 10:10
             make_expr!(binary 0:8 Mul 4:4
                 make_expr!(array 0:2
@@ -42,7 +42,7 @@ fn binary_expr_parse() {
     }
     //                                     0        1         2
     //                                     123456789012345678901
-    case!{ "a * b / c + d % e - f" as BinaryExpr,  // ((((a * b) / c) + (d % e)) - f)
+    case!{ parse_binary_expr "a * b / c + d % e - f",  // ((((a * b) / c) + (d % e)) - f)
         make_expr!(binary 0:20 Sub 18:18
             make_expr!(binary 0:16 Add 10:10
                 make_expr!(binary 0:8 Div 6:6
@@ -57,7 +57,7 @@ fn binary_expr_parse() {
     }
     //                                     0        1         2         3
     //                                     1234567890123456789012345678901
-    case!{ "a * b << h / c + d % e - f >> g" as BinaryExpr, // (((a * b) << (((h / c) + (d % e)) - f)) >> g)
+    case!{ parse_binary_expr "a * b << h / c + d % e - f >> g", // (((a * b) << (((h / c) + (d % e)) - f)) >> g)
         make_expr!(binary 0:30 GtGt 27:28
             make_expr!(binary 0:25 LtLt 6:7
                 make_expr!(binary 0:4 Mul 2:2
@@ -84,7 +84,7 @@ fn binary_expr_parse() {
     //     only change that can I fix the bug
     //                                     0        1         2         3         4         5         6         7         8
     //                                     1234567890123456789012345678901234567890123456789012345678901234567890123456789012345
-    case!{ "a * b << h / c + d % e - f >> g > h * i < j << k >= m && n || o & p | q ^ r != s == t" as BinaryExpr,
+    case!{ parse_binary_expr "a * b << h / c + d % e - f >> g > h * i < j << k >= m && n || o & p | q ^ r != s == t",
         // */%, +-, <><=>=, <<>>, &, ^, |, ==!=, &&, ||
         // ((((((a * b) << (((h / c) + (d % e)) - f)) >> ((g > (h * i)) < j)) << (k >= m)) && n) || ((((o & p) | (q ^ r)) != s) == t))
         make_expr!(binary 0:84 OrOr 59:60
@@ -128,7 +128,7 @@ fn binary_expr_parse() {
                 make_name!(simple 84:84 #20)))
     }
     //                                     1234567890
-    case!{ "a & b == c" as BinaryExpr, // ((a & b) == c)
+    case!{ parse_binary_expr "a & b == c", // ((a & b) == c)
         make_expr!(binary 0:9 EqEq 6:7
             make_expr!(binary 0:4 And 2:2
                 make_name!(simple 0:0 #2),
@@ -142,7 +142,7 @@ fn binary_expr_parse() {
     // program generated random tests
     //                                     0        1         2         3
     //                                     1234567890123456789012345678901234
-    case!{ "0 + 6 ^ 3 & 3 / 3 - 8 && 2 & 0 + 6" as BinaryExpr, // (((0 + 6) ^ (3 & ((3 / 3) - 8))) && (2 & (0 + 6)))
+    case!{ parse_binary_expr "0 + 6 ^ 3 & 3 / 3 - 8 && 2 & 0 + 6", // (((0 + 6) ^ (3 & ((3 / 3) - 8))) && (2 & (0 + 6)))
         make_expr!(binary 0:33 AndAnd 22:23
             make_expr!(binary 0:20 Caret 6:6
                 make_expr!(binary 0:4 Add 2:2
@@ -163,7 +163,7 @@ fn binary_expr_parse() {
     }
     //                                     0        1         2         3         4         5         6         7
     //                                     1234567890123456789012345678901234567890123456789012345678901234567890
-    case!{ "7 > 1 | 0 % 8 | 1 % 7 * 3 % 6 == 1 >> 8 % 3 ^ 6 << 0 ^ 2 >> 6 || 1 - 0" as BinaryExpr,
+    case!{ parse_binary_expr "7 > 1 | 0 % 8 | 1 % 7 * 3 % 6 == 1 >> 8 % 3 ^ 6 << 0 ^ 2 >> 6 || 1 - 0",
         // (((((7 > 1) | (0 % 8)) | (((1 % 7) * 3) % 6)) == (((1 >> (8 % 3)) ^ (6 << 0)) ^ (2 >> 6))) || (1 - 0))
         make_expr!(binary 0:69 OrOr 62:63
             make_expr!(binary 0:60 EqEq 30:31
@@ -201,7 +201,7 @@ fn binary_expr_parse() {
     }
     //                                     0        1         2         3         4         5         6
     //                                     1234567890123456789012345678901234567890123456789012345678901
-    case!{ "7 >> 3 == 8 / 1 && 6 == 1 <= 3 % 6 ^ 3 - 1 - 2 >> 7 || 1 >= 1" as BinaryExpr,
+    case!{ parse_binary_expr "7 >> 3 == 8 / 1 && 6 == 1 <= 3 % 6 ^ 3 - 1 - 2 >> 7 || 1 >= 1",
         // */%, +-, <><=>=, <<>>, &, ^, |, ==!=, &&, ||
         // ((((7 >> 3) == (8 / 1)) && (6 == ((1 <= (3 % 6)) ^ (((3 - 1) - 2) >> 7)))) || (1 >= 1))
         make_expr!(binary 0:60 OrOr 52:53
@@ -234,14 +234,14 @@ fn binary_expr_parse() {
     }
     //                                     0
     //                                     123456
-    case!{ "4 >> 7" as BinaryExpr,
+    case!{ parse_binary_expr "4 >> 7",
         make_expr!(binary 0:5 GtGt 2:3
             make_expr!(i32 4 0:0),
             make_expr!(i32 7 5:5))
     }
     //                                     0        1         2         3         4         5         6
     //                                     12345678901234567890123456789012345678901234567890123456789012345
-    case!{ "8 & 0 | 7 + 7 | 7 * 0 && 1 - 2 * 3 | 0 - 7 >= 6 >> 5 % 5 || 5 % 3" as BinaryExpr,
+    case!{ parse_binary_expr "8 & 0 | 7 + 7 | 7 * 0 && 1 - 2 * 3 | 0 - 7 >= 6 >> 5 % 5 || 5 % 3",
         // (((((8 & 0) | (7 + 7)) | (7 * 0)) && ((1 - (2 * 3)) | (((0 - 7) >= 6) >> (5 % 5)))) || (5 % 3))
         make_expr!(binary 0:64 OrOr 57:58
             make_expr!(binary 0:55 AndAnd 22:23
@@ -277,7 +277,7 @@ fn binary_expr_parse() {
     }
     //                                     0        1         2         3         4         5         6
     //                                     12345678901234567890123456789012345678901234567890123456789012345678
-    case!{ "3 <= 2 + 4 <= 5 && 3 < 3 + 2 >> 1 * 2 & 8 && 1 >= 1 < 0 || 6 < 4 * 4" as BinaryExpr,
+    case!{ parse_binary_expr "3 <= 2 + 4 <= 5 && 3 < 3 + 2 >> 1 * 2 & 8 && 1 >= 1 < 0 || 6 < 4 * 4",
         // (((((3 <= (2 + 4)) <= 5) && (((3 < (3 + 2)) >> (1 * 2)) & 8)) && ((1 >= 1) < 0)) || (6 < (4 * 4)))
         make_expr!(binary 0:67 OrOr 56:57
             make_expr!(binary 0:54 AndAnd 42:43
@@ -313,7 +313,7 @@ fn binary_expr_parse() {
     }
     //                                     0        1         2
     //                                     12345678901234567890
-    case!{ "5 >= 6 | 3 == 4 && 3" as BinaryExpr,
+    case!{ parse_binary_expr "5 >= 6 | 3 == 4 && 3",
         // ((((5 >= 6) | 3) == 4) && 3)
         make_expr!(binary 0:19 AndAnd 16:17
             make_expr!(binary 0:14 EqEq 11:12
@@ -327,7 +327,7 @@ fn binary_expr_parse() {
     }
     //                                     0        1         2         3         4         5         6         7
     //                                     1234567890123456789012345678901234567890123456789012345678901234567890123456
-    case!{ "6 && 7 >> 8 && 0 / 8 * 7 + 5 < 5 / 5 >> 5 - 1 >= 6 > 8 | 6 >> 5 > 2 + 1 || 0" as BinaryExpr,
+    case!{ parse_binary_expr "6 && 7 >> 8 && 0 / 8 * 7 + 5 < 5 / 5 >> 5 - 1 >= 6 > 8 | 6 >> 5 > 2 + 1 || 0",
         // */%, +-, <><=>=, <<>>, &, ^, |, ==!=, &&, ||
         // (((6 && (7 >> 8)) && ((((((0 / 8) * 7) + 5) < (5 / 5)) >> (((5 - 1) >= 6) > 8)) | (6 >> (5 > (2 + 1))))) || 0)
         make_expr!(binary 0:75 OrOr 72:73
@@ -367,7 +367,7 @@ fn binary_expr_parse() {
             make_expr!(i32 0 75:75))
     }
 
-    case!{ "1<2>3" as BinaryExpr,
+    case!{ parse_binary_expr "1<2>3",
         make_expr!(binary 0:4 Gt 3:3
             make_expr!(binary 0:2 Lt 1:1
                 make_expr!(i32 1 0:0),
@@ -380,7 +380,7 @@ fn binary_expr_parse() {
 #[test]
 fn expr_list_parse() {
 
-    case!{ "[1, 2, 3]" as ExprList, 
+    case!{ notast parse_expr_list "[1, 2, 3]",
         ExprListParseResult::Normal(Span::new(0, 8), ExprList{ items: vec![
             make_expr!(i32 1 1:1),
             make_expr!(i32 2 4:4),
@@ -388,7 +388,7 @@ fn expr_list_parse() {
         ] })
     }
     
-    case!{ "(1, 2, 3,)" as ExprList, 
+    case!{ notast parse_expr_list "(1, 2, 3,)", 
         ExprListParseResult::EndWithComma(Span::new(0, 9), ExprList{ items: vec![
             make_expr!(i32 1 1:1),
             make_expr!(i32 2 4:4),
@@ -396,11 +396,11 @@ fn expr_list_parse() {
         ] })
     }
 
-    case!{ "[]" as ExprList, 
+    case!{ notast parse_expr_list "[]", 
         ExprListParseResult::Empty(Span::new(0, 1))
     }
 
-    case!{ "{,}" as ExprList,
+    case!{ notast parse_expr_list "{,}",
         ExprListParseResult::SingleComma(Span::new(0, 2))
     }
 }
@@ -630,18 +630,18 @@ fn expr_parse() {
 #[test]
 fn fn_call_parse() {
 
-    case!{ "()" as FnCallExpr,
-        FnCallExpr{ all_span: Span::new(0, 0), base: Box::new(Expr::default()), paren_span: Span::new(0, 1), params: ExprList{ items: Vec::new() } }
+    case!{ notast parse_fn_call "()",
+        (Span::new(0, 1), ExprList{ items: Vec::new() })
     }
 
-    case!{ "(\"hello\")" as FnCallExpr,
-        FnCallExpr{ all_span: Span::new(0, 0), base: Box::new(Expr::default()), paren_span: Span::new(0, 8), params: ExprList{ items: vec![
+    case!{ notast parse_fn_call "(\"hello\")",
+        (Span::new(0, 8), ExprList{ items: vec![
             make_expr!(str #2 1:7),
-        ] } }
+        ] })
     }
 
-    case!{ "(,)" as FnCallExpr,
-        FnCallExpr{ all_span: Span::new(0, 0), base: Box::new(Expr::default()), paren_span: Span::new(0, 2), params: ExprList{ items: Vec::new() } },
+    case!{ notast parse_fn_call "(,)",
+        (Span::new(0, 2), ExprList{ items: Vec::new() }),
         errors make_errors!(e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(0, 2), strings::FnCallHere))
     }
 }
@@ -649,21 +649,21 @@ fn fn_call_parse() {
 #[test]
 fn index_call_parse() {
 
-    case!{ "[1, 2, ]" as IndexCallExpr,
-        IndexCallExpr{ all_span: Span::new(0, 0), base: Box::new(Expr::default()), bracket_span: Span::new(0, 7), params: ExprList{ items: vec![
+    case!{ notast parse_index_call "[1, 2, ]",
+        (Span::new(0, 7), ExprList{ items: vec![
             make_expr!(i32 1 1:1),
             make_expr!(i32 2 4:4),
-        ] } }
+        ] })
     }
 
-    case!{ "[\"hello\"]" as IndexCallExpr,
-        IndexCallExpr{ all_span: Span::new(0, 0), base: Box::new(Expr::default()), bracket_span: Span::new(0, 8), params: ExprList{ items: vec![
+    case!{ notast parse_index_call "[\"hello\"]",
+        (Span::new(0, 8), ExprList{ items: vec![
             make_expr!(str #2 1:7)
-        ] } }
+        ] })
     }
 
-    case!{ "[,]" as IndexCallExpr,
-        IndexCallExpr{ all_span: Span::new(0, 0), base: Box::new(Expr::default()), bracket_span: Span::new(0, 2), params: ExprList{ items: Vec::new() } }, 
+    case!{ notast parse_index_call "[,]",
+        (Span::new(0, 2), ExprList{ items: Vec::new() }),
         errors make_errors!(e: e.emit(strings::EmptyIndexCall).detail(Span::new(0, 2), strings::IndexCallHere)),
     }
 }
@@ -671,13 +671,13 @@ fn index_call_parse() {
 #[test]
 fn name_parse() {
 
-    case!{ "hello" as Name, 
+    case!{ parse_name "hello", 
         make_name!(bare 0:4 false, None,
             make_name!(segment 0:4 #2)),
     }
     //              0        1         2         3         4
     //              01234567890123456789012345678901234567890
-    case!{ "std::network::wlan::native::GetWLANHandle" as Name,
+    case!{ parse_name "std::network::wlan::native::GetWLANHandle",
         make_name!(bare 0:40 false, None,
             make_name!(segment 0:2 #2), 
             make_name!(segment 5:11 #3),
@@ -688,7 +688,7 @@ fn name_parse() {
 
     //      0         1         2      v this is not part of name
     //      012345678901234567890123456
-    case!{ "::abc::def::<ghi, jkl>::mno<" as Name, 
+    case!{ parse_name "::abc::def::<ghi, jkl>::mno<", 
         make_name!(bare 0:26 true, None,
             make_name!(segment 2:4 #2),
             make_name!(segment 7:9 #3),
@@ -700,7 +700,7 @@ fn name_parse() {
 
     //      0         1         2
     //      01234567890123456789012
-    case!{ "<Name as Parser>::parse" as Name,
+    case!{ parse_name "<Name as Parser>::parse",
         make_name!(bare 0:22 false,
             make_type!(segment as 0:15
                 make_type!(simple 1:4 #2),
@@ -709,7 +709,7 @@ fn name_parse() {
     }
 
     //      01234567890123
-    case!{ "a::<b>::<c>::d" as Name,
+    case!{ parse_name "a::<b>::<c>::d",
         make_name!(bare 0:13 false, None,
             make_name!(segment 0:0 #2),
             make_name!(segment generic 3:5

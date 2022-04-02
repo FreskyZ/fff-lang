@@ -96,18 +96,6 @@ impl_node!{ ExprList, visit_expr_list, |self, v| {
     Ok(Default::default())
 }}
 
-// TODO remove after remove Parser trait
-impl Node for ExprListParseResult {
-
-    fn accept<T: Default, E, V: Visitor<T, E>>(&self, v: &mut V) -> Result<T, E> {
-        match self {
-            Self::Empty(_) | Self::SingleComma(_) => Ok(Default::default()),
-            // go visit expr list not this
-            Self::Normal(_, e) | Self::EndWithComma(_, e) => v.visit_expr_list(e),
-        }
-    }
-}
-
 impl_node!{ FnCallExpr, visit_fn_call_expr, |self, v| {
     v.visit_expr(&self.base)?;
     v.visit_expr_list(&self.params)
