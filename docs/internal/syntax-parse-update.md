@@ -16,7 +16,8 @@
 - [x] move multiple file operations from syntaxtree.rs into driver, add file id to module
 - [x] discard test constructors and use make_xxxx macros, merge make_lit into make_expr, remove make_exprs, try add make_stmt
 - [ ] try merge all of them into make_node, rename previous make_node to make_ast
-- [ ] move node definitions to one file, move node implementations (impl Node) to one file, move parse tests to several dedicated files
+- [x] move node definitions to one file, move node implementations (impl Node) to one file, move parse tests to several dedicated files
+- [ ] remove jumpstatement from node, copy fields to breakstatement and continuestatement
 - [ ] move parse functions to several dedicated files, then ParseContext's context (allow object literal, is in format string literal, etc.) may can be pass by parameter not save in ParseContext
 - [-] fix random test input generator
 - [ ] add numeric literal type as suffixed/unsuffixed and bin/oct/dec/hex/unprefixed, member access require unsuffixed and unprefixed

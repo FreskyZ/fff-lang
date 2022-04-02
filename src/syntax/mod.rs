@@ -1,59 +1,40 @@
 ///! syntax: syntax parse
 
-mod prelude;
-
 pub mod ast;
-
 mod visit;
 mod visit_impl;
 mod pretty;
 mod parser;
-
 #[cfg(test)]
 mod tests;
 
 pub use parser::Parser;
 pub use visit::{Node, Visitor};
 
-mod abc;
-mod array_def;
-mod array_type;
-mod binary_expr;
-mod block_stmt;
-mod block;
-mod enum_def;
-mod expr_list;
-mod expr;
-mod expr_stmt;
-mod fn_call;
-mod fn_def;
-mod for_stmt;
-mod if_stmt;
-mod index_call;
-mod jump_stmt;
-mod label_def;
-mod loop_stmt;
-mod module;
-mod module_stmt;
-mod name;
-mod plain_type;
-mod priority_proxy;
-mod range_expr;
-mod ret_stmt;
-mod tuple_def;
-mod type_def;
-mod unary_expr;
-mod use_stmt;
-mod var_decl;
-mod while_stmt;
+// may be abuse of visit but seems cool
+struct CollectImportVisitor {
+    requests: Vec<(crate::source::Span, crate::source::IsId)>,
+}
+impl Visitor for CollectImportVisitor {
+    fn visit_module_stmt(&mut self, node: &ast::ModuleStatement) -> Result<(), ()> {
+        self.requests.push((node.all_span, node.path.map(|(path, _)| path).unwrap_or(node.name)));
+        Ok(())
+    }
+}
 
-#[cfg(test)]
-use parser::{PostfixExpr, RangeExpr};
+// `'impl' name` not `'impl' name_segment` ??
+impl ast::Module {
+    pub fn collect_imports(&self) -> Vec<(crate::source::Span, crate::source::IsId)> {
+        let mut collector = CollectImportVisitor{ requests: Vec::new() };
+        self.accept(&mut collector).unwrap();
+        collector.requests
+    }
+}
 
 // parse any types of node for test
 pub fn parse_any<P: Parser>(source: crate::source::SourceChars, diagnostics: &mut crate::diagnostics::Diagnostics) -> Option<P::Output> {
     let parser = crate::lexical::Parser::new(source, diagnostics);
-    let mut context = prelude::ParseContext::new(parser);
+    let mut context = parser::ParseContext::new(parser);
     let result = P::parse(&mut context).ok();
     context.finish();
     result

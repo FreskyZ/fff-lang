@@ -1,7 +1,4 @@
-
-use crate::source::{Span, make_source};
-use crate::lexical::{Numeric, Separator};
-use super::super::prelude::*;
+use super::*;
 
 macro_rules! assert_text_eq {
     ($left:expr, $right:expr) => {
@@ -124,7 +121,7 @@ fn postfix_expr() {
     let mut scx = make_source!("a.b(c, d, e).f(g, h, i,)(u,).j[k].l().m[n, o, p][r, s, t,]");
     let mut ecx = crate::diagnostics::make_errors!();
     let mut context = ParseContext::new(crate::lexical::Parser::new(scx.entry("1"), &mut ecx));
-    let node = super::super::PostfixExpr::parse(&mut context).unwrap();
+    let node = PostfixExpr::parse(&mut context).unwrap();
     context.finish();
     let actual = node.display(&scx).to_string();
     assert_text_eq!{ actual, "index-call <1:1-1:58> [] <1:49-1:58>
