@@ -7,6 +7,7 @@ use super::ast::*;
 
 mod expr;
 mod stmt;
+mod r#type;
 
 /// unrecoverable unexpected for this parser, detail in diagnostics
 // this should be more readable than previous Result<Self::Output, ()>
@@ -434,44 +435,8 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
         matches!(self.current, Token::Sep(Separator::LeftBracket))
     }
 
-    fn maybe_enum_def(&self) -> bool {
-        matches!(self.current, Token::Keyword(Keyword::Enum))
-    }
-
-    fn maybe_fn_def(&self) -> bool {
-        matches!(self.current, Token::Keyword(Keyword::Fn))
-    }
-
     fn maybe_fn_type(&self) -> bool {
         matches!(self.current, Token::Keyword(Keyword::Fn))
-    }
-
-    fn maybe_for_stmt(&self) -> bool {
-        matches!((&self.current, &self.peek2), (Token::Label(_), Token::Keyword(Keyword::For)) | (Token::Keyword(Keyword::For), _))
-    }
-
-    fn maybe_if_stmt(&self) -> bool {
-        matches!(self.current, Token::Keyword(Keyword::If)) 
-    }
-
-    fn maybe_continue_stmt(&self) -> bool {
-        matches!(self.current, Token::Keyword(Keyword::Continue)) 
-    }
-
-    fn maybe_break_stmt(&self) -> bool {
-        matches!(self.current, Token::Keyword(Keyword::Break)) 
-    }
-
-    fn maybe_label(&self) -> bool {
-        matches!(self.current, Token::Label(_))
-    }
-
-    fn maybe_loop_stmt(&self) -> bool {
-        matches!((&self.current, &self.peek2), (Token::Label(_), Token::Keyword(Keyword::Loop)) | (Token::Keyword(Keyword::Loop), _))
-    }
-
-    fn maybe_module_stmt(&self) -> bool {
-        matches!(self.current, Token::Keyword(Keyword::Module)) 
     }
 
     fn maybe_plain_type(&self) -> bool {
@@ -486,28 +451,8 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
         matches!(self.current, Token::Sep(Separator::And | Separator::AndAnd))
     }
 
-    fn maybe_ret_stmt(&self) -> bool {
-        matches!(self.current, Token::Keyword(Keyword::Return))
-    }
-
     fn maybe_tuple_type(&self) -> bool {
         matches!(self.current, Token::Sep(Separator::LeftParen))
-    }
-
-    fn maybe_type_def(&self) -> bool {
-        matches!(self.current, Token::Keyword(Keyword::Type)) 
-    }
-
-    fn maybe_use_stmt(&self) -> bool {
-        matches!(self.current, Token::Keyword(Keyword::Use)) 
-    }
-
-    fn maybe_var_decl(&self) -> bool {
-        matches!(self.current, Token::Keyword(Keyword::Const | Keyword::Var)) 
-    }
-
-    fn maybe_while_stmt(&self) -> bool {
-        matches!((&self.current, &self.peek2), (Token::Label(_), Token::Keyword(Keyword::While)) | (Token::Keyword(Keyword::While), _))
     }
 }
 
@@ -524,7 +469,7 @@ impl Parser for ArrayType {
             cx.emit(strings::InvalidArrayType)
                 .detail(right_bracket_span, "expected semicolon, meet right bracket")
                 .help(strings::ArrayTypeSyntaxHelp);
-            return Ok(ArrayType{ base, size: Default::default(), span: left_bracket_span + right_bracket_span });
+            return Ok(ArrayType{ base, size: Expr::dummy(), span: left_bracket_span + right_bracket_span });
         }
 
         let _semicolon_span = cx.expect_sep(Separator::SemiColon)?;
@@ -533,148 +478,12 @@ impl Parser for ArrayType {
             cx.emit(strings::InvalidArrayType)
                 .detail(right_bracket_span, "expected expr, meet right bracket")
                 .help(strings::ArrayTypeSyntaxHelp);
-            return Ok(ArrayType{ base, size: Default::default(), span: left_bracket_span + right_bracket_span });
+            return Ok(ArrayType{ base, size: Expr::dummy(), span: left_bracket_span + right_bracket_span });
         }
 
         let size = cx.parse_expr()?;
         let right_bracket_span = cx.expect_sep(Separator::RightBracket)?;
         Ok(ArrayType{ base, size, span: left_bracket_span + right_bracket_span })
-    }
-}
-
-// block = '{' { statement } '}'
-impl Parser for Block {
-    type Output = Block;
-
-    fn parse(cx: &mut ParseContext) -> Result<Block, Unexpected> {
-
-        let starting_span = cx.expect_sep(Separator::LeftBrace)?;
-        let mut items = Vec::new();
-        loop {
-            if let Some(ending_span) = cx.try_expect_sep(Separator::RightBrace) {
-                return Ok(Block::new(starting_span + ending_span, items));
-            }
-            items.push(cx.expect::<Statement>()?);
-        }
-    }
-}
-
-// enum_def = 'enum' ident [ ':' primitive_type ] '{' { ident [ '=' expr ] ',' } '}'
-impl Parser for EnumDef {
-    type Output = Self;
-
-    fn parse(cx: &mut ParseContext) -> Result<Self, Unexpected> {
-
-        let enum_span = cx.expect_keyword(Keyword::Enum)?;
-        let (enum_name, enum_name_span) = cx.expect_ident()?;
-        let base_type = cx.try_expect_sep(Separator::Colon).map(|_| cx.expect::<PrimitiveType>()).transpose()?;
-        let left_brace_span = cx.expect_sep(Separator::LeftBrace)?;
-
-        let mut variants = Vec::new();
-        let right_brace_span = if let Some(right_brace_span) = cx.try_expect_sep(Separator::RightBrace) {
-            right_brace_span
-        } else {
-            loop {
-                let (variant_name, variant_name_span) = cx.expect_ident()?;
-                let init_value = cx.try_expect_sep(Separator::Eq).map(|_| cx.parse_expr()).transpose()?;
-                let variant_all_span = variant_name_span + init_value.as_ref().map(|e| e.get_all_span()).unwrap_or(variant_name_span);
-                variants.push(EnumVariant{ name: variant_name, name_span: variant_name_span, value: init_value, all_span: variant_all_span });
-
-                if let Some((right_brace_span, _)) = cx.try_expect_closing_bracket(Separator::RightBrace) {
-                    break right_brace_span;
-                } else {
-                    cx.expect_sep(Separator::Comma)?;
-                }
-            }
-        };
-
-        let quote_span = left_brace_span + right_brace_span;
-        let all_span = enum_span + right_brace_span;
-        Ok(EnumDef{ name: enum_name, name_span: enum_name_span, base_type, quote_span, variants, all_span })
-    }
-}
-
-// dispatch them to convenience statement define macro
-impl Parser for SimpleExprStatement {
-    type Output = <AssignExprStatement as Parser>::Output;
-
-    fn parse(cx: &mut ParseContext) -> Result<Self::Output, Unexpected> { 
-        cx.expect::<AssignExprStatement>() 
-    }
-}
-
-// expr_stmt = expr { assign_ops expr } ';'
-impl Parser for AssignExprStatement {
-    type Output = Statement;
-
-    fn parse(cx: &mut ParseContext) -> Result<Statement, Unexpected> {
-
-        let left_expr = cx.parse_expr()?;
-        let starting_span = left_expr.get_all_span();
-
-        if let Some(semicolon_span) = cx.try_expect_sep(Separator::SemiColon) {
-            Ok(Statement::SimpleExpr(SimpleExprStatement::new(starting_span + semicolon_span, left_expr)))
-        } else if let Some((assign_op, assign_op_span)) = cx.try_expect_sep_kind(SeparatorKind::Assign) {
-            let right_expr = cx.parse_expr()?;
-            let semicolon_span = cx.expect_sep(Separator::SemiColon)?;
-            Ok(Statement::AssignExpr(
-                AssignExprStatement::new(starting_span + semicolon_span, assign_op, assign_op_span, left_expr, right_expr)))
-        } else {
-            cx.push_unexpect("assign operators, semicolon")
-        }
-    }
-}
-
-impl Default for Expr {
-    fn default() -> Expr { 
-        Expr::Lit(LitExpr{ value: LitValue::Num(Numeric::I32(0)), span: Span::new(0, 0) }) 
-    }
-}
-
-// fn-def = 'fn' identifier '(' [ identifier ':' type-use { ',' identifier ':' type-use [ ',' ] } ] ')' [ '->' type-use ] block
-impl Parser for FnDef {
-    type Output = FnDef;
-
-    fn parse(cx: &mut ParseContext) -> Result<FnDef, Unexpected> {
-        #[cfg(feature = "trace_fn_def_parse")]
-        macro_rules! trace { ($($arg:tt)*) => ({ print!("[FnDef: {}]", line!()); println!($($arg)*); }) }
-        #[cfg(not(feature = "trace_fn_def_parse"))]
-        macro_rules! trace { ($($arg:tt)*) => () }
-        
-        let fn_span = cx.expect_keyword(Keyword::Fn)?;
-        let (fn_name, fn_name_span) = cx.expect_ident()?;
-        let mut params_paren_span = cx.expect_sep(Separator::LeftParen)?;
-        trace!("fndef name span: {:?}", fn_name_span);
-
-        let mut params = Vec::new();
-        loop {
-            if let Some((right_paren_span, skipped_comma)) = cx.try_expect_closing_bracket(Separator::RightParen) {
-                params_paren_span += right_paren_span;
-                if skipped_comma && params.is_empty() {
-                    cx.emit("Single comma in function definition argument list")
-                        .detail(fn_name_span, "function definition here")
-                        .detail(params_paren_span, "param list here");
-                }
-                break;
-            } else if let Some(_comma_span) = cx.try_expect_sep(Separator::Comma) {
-                continue;
-            }
-
-            let (param_name, param_span) = cx.expect_ident_or_keywords(&[Keyword::Underscore, Keyword::This, Keyword::Self_])?;
-            let _ = cx.expect_sep(Separator::Colon)?;
-            let decltype = cx.expect::<TypeRef>()?;
-            params.push(FnParam::new(param_name, param_span, decltype));
-        }
-
-        let ret_type = cx.try_expect_seps(&[Separator::Arrow, Separator::Colon]).map(|(sep, span)| {
-            if sep == Separator::Colon {
-                cx.emit(strings::FunctionReturnTypeShouldUseArrow).detail(span, strings::FunctionReturnTypeExpectArrowMeetColon);
-            }
-            cx.expect::<TypeRef>()
-        }).transpose()?;
-        let body = cx.expect::<Block>()?;
-
-        Ok(FnDef::new(fn_span + body.all_span, fn_name, fn_name_span, params_paren_span, params, ret_type, body))
     }
 }
 
@@ -735,150 +544,6 @@ impl Parser for FnType {
     }
 }
 
-// for_stmt = [ label_def ] 'for' identifier 'in' expr block
-// TODO: add else for break, like python
-impl Parser for ForStatement {
-    type Output = ForStatement;
-
-    fn parse(cx: &mut ParseContext) -> Result<ForStatement, Unexpected> {
-
-        let loop_name = cx.maybe_label().then_try(|| cx.expect::<LabelDef>())?;
-        let for_span = cx.expect_keyword(Keyword::For)?;
-
-        // Accept _ as iter_name, _ do not declare iter var
-        let (iter_name, iter_span) = cx.expect_ident_or_keywords(&[Keyword::Underscore])?; 
-        cx.expect_keyword(Keyword::In)?;
-
-        cx.no_object_literals.push(true);
-        let iter_expr = cx.parse_expr()?;
-        cx.no_object_literals.pop();
-        let body = cx.expect::<Block>()?;
-        
-        let all_span = loop_name.as_ref().map(|n| n.all_span).unwrap_or(for_span) + body.all_span;
-        Ok(ForStatement{ loop_name, for_span, iter_name, iter_span, iter_expr, body, all_span })
-    }
-}
-
-// if_stmt = 'if' expr block { 'else' 'if' expr block } [ 'else' block ]
-impl Parser for IfStatement {
-    type Output = IfStatement;
-
-    fn parse(cx: &mut ParseContext) -> Result<IfStatement, Unexpected> {
-
-        let mut all_span = cx.expect_keyword(Keyword::If)?;
-
-        cx.no_object_literals.push(true);
-        let if_expr = cx.parse_expr()?;
-        cx.no_object_literals.pop();
-        let if_body = cx.expect::<Block>()?;
-        all_span += if_body.all_span;
-        let if_clause = IfClause{ all_span, condition: if_expr, body: if_body };
-
-        let mut elseif_clauses = Vec::new();
-        let mut else_clause = None;
-        while let Some(else_span) = cx.try_expect_keyword(Keyword::Else) {
-            if let Some(if_span) = cx.try_expect_keyword(Keyword::If) {
-                let elseif_span = else_span + if_span;
-                cx.no_object_literals.push(true);
-                let elseif_expr = cx.parse_expr()?;
-                cx.no_object_literals.pop();
-                let elseif_body = cx.expect::<Block>()?;
-                all_span += elseif_body.all_span;
-                elseif_clauses.push(IfClause{ all_span: elseif_span + elseif_body.all_span, condition: elseif_expr, body: elseif_body });
-            } else {
-                // 16/12/1, we lost TWO `+1`s for current_length here ... fixed
-                // 17/5/6: When there is match Block::parse(tokens, messages, index + current_length), etc.
-                // There was a bug fix here, now no more current_length handling!
-                // 17/6/21: a new physical structure update makes it much more simple
-                // 17/7/28: a new small update of parse_cx makes things even more simple
-                let else_body = cx.expect::<Block>()?;
-                all_span += else_body.all_span;
-                else_clause = Some(ElseClause{ all_span: else_span + else_body.all_span, body: else_body });
-            }
-        }
-
-        Ok(IfStatement{ all_span, if_clause, elseif_clauses, else_clause })
-    }
-}
-
-impl JumpStatement {
-    fn parse(cx: &mut ParseContext, expect_first_kw: Keyword) -> Result<JumpStatement, Unexpected> {
-
-        let starting_span = cx.expect_keyword(expect_first_kw)?;
-
-        if let Some(label) = cx.try_expect_label() {
-            let semicolon_span = cx.expect_sep(Separator::SemiColon)?;
-            Ok(JumpStatement{ all_span: starting_span + semicolon_span, target: Some(label) })
-        } else { 
-            let semicolon_span = cx.expect_sep(Separator::SemiColon)?;
-            Ok(JumpStatement{ all_span: starting_span + semicolon_span, target: None })
-        }
-    }
-}
-
-// continue_stmt = 'continue' [ label ] ';'
-impl Parser for ContinueStatement {
-    type Output = ContinueStatement;
-    fn parse(cx: &mut ParseContext) -> Result<ContinueStatement, Unexpected> { 
-        Ok(ContinueStatement(JumpStatement::parse(cx, Keyword::Continue)?))
-    }
-}
-
-// break_stmt = 'break' [ label ] ';'
-impl Parser for BreakStatement {
-    type Output = BreakStatement;
-    fn parse(cx: &mut ParseContext) -> Result<BreakStatement, Unexpected> {
-        Ok(BreakStatement(JumpStatement::parse(cx, Keyword::Break)?))
-    }
-}
-
-// label-def = label ':'
-impl Parser for LabelDef {
-    type Output = LabelDef;
-
-    fn parse(cx: &mut ParseContext) -> Result<LabelDef, Unexpected> {
-
-        if let Some((label_id, label_span)) = cx.try_expect_label() {
-            let colon_span = cx.expect_sep(Separator::Colon)?;
-            Ok(LabelDef::new(label_id, label_span + colon_span))
-        } else {
-            cx.push_unexpect("label")
-        }
-    }
-}
-
-// loop_stmt = [ label_def ] 'loop' block
-// NOTE: no else for break here because if control flow come to else it is always breaked
-impl Parser for LoopStatement {
-    type Output = LoopStatement;
-
-    fn parse(cx: &mut ParseContext) -> Result<LoopStatement, Unexpected> {
-
-        let name = cx.maybe_label().then_try(|| cx.expect::<LabelDef>())?;
-        let loop_span = cx.expect_keyword(Keyword::Loop)?;
-        let body = cx.expect::<Block>()?;
-        let all_span = name.as_ref().map(|n| n.all_span).unwrap_or(loop_span) + body.all_span;
-        Ok(LoopStatement{ all_span, name, loop_span, body })
-    }
-}
-
-// module_stmt = 'module' identifier [ str_lit ] ';'
-impl Parser for ModuleStatement {
-    type Output = ModuleStatement;
-
-    fn parse(cx: &mut ParseContext) -> Result<ModuleStatement, Unexpected> {
-
-        let starting_span = cx.expect_keyword(Keyword::Module)?;
-        let (name, name_span) = cx.expect_ident()?;
-
-        let path = cx.try_expect_str_lit(); 
-        let semicolon_span = cx.expect_sep(Separator::SemiColon)?;
-        let all_span = starting_span + semicolon_span;
-
-        Ok(ModuleStatement{ all_span, name, name_span, path })
-    }
-}
-
 // module = { item }
 impl Parser for Module {
     type Output = Module;
@@ -886,7 +551,7 @@ impl Parser for Module {
     fn parse(cx: &mut ParseContext) -> Result<Module, Unexpected> {
         let mut items = Vec::new();
         while !cx.eof() {
-            items.push(cx.expect::<Item>()?);
+            items.push(cx.parse_item()?);
         }
         Ok(Module{ items, file: cx.get_file_id() })
     }
@@ -968,28 +633,6 @@ impl Parser for RefType {
     }
 }
 
-// ret_stmt = 'return' [ expr ] ';'
-impl Parser for ReturnStatement {
-    type Output = ReturnStatement;
-
-    fn parse(cx: &mut ParseContext) -> Result<ReturnStatement, Unexpected> {
-
-        let starting_span = cx.expect_keyword(Keyword::Return)?;
-
-        if let Some(semicolon_span) = cx.try_expect_sep(Separator::SemiColon) {
-            // 17/6/17: you forgot move_next here!
-            // but I have never write some test cases like following something after ret stmt
-            // so the bug is not propagated to be discovered
-            // 17/7/28: now new features added to parse_cx and move_next is to be removed, no current position management bug any more!
-            Ok(ReturnStatement::new_unit(starting_span + semicolon_span))
-        } else {
-            let expr = cx.parse_expr()?;
-            let semicolon_span = cx.expect_sep(Separator::SemiColon)?;
-            Ok(ReturnStatement::new_expr(starting_span + semicolon_span, expr))
-        }
-    }
-}
-
 // tuple_type = '(' type_ref { ',' type_ref } [ ',' ] ')'
 //
 // empty for unit type, one element tuple require ending comma
@@ -1019,170 +662,6 @@ impl Parser for TupleType {
         };
 
         Ok(TupleType{ items, span })
-    }
-}
-
-// type_def = 'type' (identifier | keyword_primitive_type)  '{' [ type_field_def { ',' type_field_def } [ ',' ] ] '}'
-// type_field_def = identifier ':' type_ref
-impl Parser for TypeDef {
-    type Output = Self;
-
-    fn parse(cx: &mut ParseContext) -> Result<TypeDef, Unexpected> {
-
-        let starting_span = cx.expect_keyword(Keyword::Type)?;
-        let (name, name_span) = cx.expect_ident_or_keyword_kind(KeywordKind::Primitive)?;
-        let _left_brace_span = cx.expect_sep(Separator::LeftBrace)?;
-
-        let mut fields = Vec::new();
-        let right_brace_span = loop { 
-            if let Some(right_brace_span) = cx.try_expect_sep(Separator::RightBrace) {
-                break right_brace_span;     // rustc 1.19 stablize break-expr
-            }
-
-            let (field_name, field_name_span) = cx.expect_ident()?;
-            let colon_span = cx.expect_sep(Separator::Colon)?;
-            let field_type = cx.expect::<TypeRef>()?;
-            fields.push(if let Some(comma_span) = cx.try_expect_sep(Separator::Comma) {
-                TypeFieldDef{ all_span: field_name_span + comma_span, name: field_name, name_span: field_name_span, colon_span, r#type: field_type }
-            } else {
-                TypeFieldDef{ all_span: field_name_span + field_type.get_all_span(), name: field_name, name_span: field_name_span, colon_span, r#type: field_type }
-            });
-        };
-
-        Ok(TypeDef{ all_span: starting_span + right_brace_span, name, name_span, fields })
-    }
-}
-
-// use_stmt = 'use' name [ 'as' identifier ] ';'
-impl Parser for UseStatement {
-    type Output = UseStatement;
-
-    fn parse(cx: &mut ParseContext) -> Result<UseStatement, Unexpected> {
-
-        let starting_span = cx.expect_keyword(Keyword::Use)?;
-        let name = cx.parse_name()?;
-
-        let alias = cx.try_expect_keyword(Keyword::As).map(|_| cx.expect_ident()).transpose()?;
-        let semicolon_span = cx.expect_sep(Separator::SemiColon)?;
-        let all_span = starting_span + semicolon_span;
-
-        Ok(UseStatement{ all_span, name, alias })
-    }
-}
-
-// const-decl = 'const' identifier [ ':' type-use ] [ '=' expr ] ';'
-// var-decl = 'var' identifier [ ':' type-use ] [ '=' expr ] ';'
-impl Parser for VarDeclStatement {
-    type Output = VarDeclStatement;
-
-    fn parse(cx: &mut ParseContext) -> Result<VarDeclStatement, Unexpected> {
-        
-        let (starting_kw, starting_span) = cx.expect_keywords(&[Keyword::Const, Keyword::Var])?;
-        let is_const = match starting_kw { Keyword::Const => true, Keyword::Var => false, _ => unreachable!() };
-
-        let (name, name_span) = cx.expect_ident_or_keywords(&[Keyword::Underscore])?;
-        let r#type = cx.try_expect_sep(Separator::Colon).map(|_| cx.expect::<TypeRef>()).transpose()?;
-        let init_expr = cx.try_expect_sep(Separator::Eq).map(|_| cx.parse_expr()).transpose()?;
-        if r#type.is_none() && init_expr.is_none() {
-            cx.emit("require type annotation")
-                .detail(name_span, "variable declaration here")
-                .help("cannot infer type without both type annotation and initialization expression");
-        }
-        let ending_span = cx.expect_sep(Separator::SemiColon)?;
-
-        Ok(VarDeclStatement{ all_span: starting_span + ending_span, is_const, name, name_span, r#type, init_expr })
-    }
-}
-
-// while-stmt = [ label-def ] 'while' expr block
-// TODO: add else for break, like python
-impl Parser for WhileStatement {
-    type Output = WhileStatement;
-
-    fn parse(cx: &mut ParseContext) -> Result<WhileStatement, Unexpected> {
-        
-        let name = cx.maybe_label().then_try(|| cx.expect::<LabelDef>())?;
-        let while_span = cx.expect_keyword(Keyword::While)?;
-        cx.no_object_literals.push(true);
-        let expr = cx.parse_expr()?;
-        cx.no_object_literals.pop();
-        let body = cx.expect::<Block>()?;
-        let all_span = name.as_ref().map(|n| n.all_span).unwrap_or(while_span) + body.all_span;
-        Ok(WhileStatement{ name, while_span, loop_expr: expr, body, all_span })
-    }
-}
-
-impl Parser for Statement {
-    type Output = Statement;
-
-    fn parse(cx: &mut ParseContext) -> Result<Statement, Unexpected> {
-        if cx.maybe_type_def() {
-            Ok(Statement::Type(cx.expect::<TypeDef>()?))
-        } else if cx.maybe_enum_def() {
-            Ok(Statement::Enum(cx.expect::<EnumDef>()?))
-        } else if cx.maybe_fn_def() {
-            Ok(Statement::Fn(cx.expect::<FnDef>()?))
-        } else if cx.maybe_block_stmt() {
-            Ok(Statement::Block(cx.parse_block_stmt()?))
-        } else if cx.maybe_break_stmt() {
-            Ok(Statement::Break(cx.expect::<BreakStatement>()?))
-        } else if cx.maybe_continue_stmt() {
-            Ok(Statement::Continue(cx.expect::<ContinueStatement>()?))
-        } else if cx.maybe_expr() {
-            Ok(cx.expect::<AssignExprStatement>()?)
-        } else if cx.maybe_for_stmt() {
-            Ok(Statement::For(cx.expect::<ForStatement>()?))
-        } else if cx.maybe_if_stmt() {
-            Ok(Statement::If(cx.expect::<IfStatement>()?))
-        } else if cx.maybe_loop_stmt() {
-            Ok(Statement::Loop(cx.expect::<LoopStatement>()?))
-        } else if cx.maybe_ret_stmt() {
-            Ok(Statement::Return(cx.expect::<ReturnStatement>()?))
-        } else if cx.maybe_var_decl() {
-            Ok(Statement::VarDecl(cx.expect::<VarDeclStatement>()?))
-        } else if cx.maybe_while_stmt() {
-            Ok(Statement::While(cx.expect::<WhileStatement>()?))
-        } else {
-            cx.push_unexpect("type, enum, fn, {, break, continue, for, if, loop, return, var, const, while, .., !, ~, &, <, ::, ident, [, (")
-        }
-    }
-}
-
-impl Parser for Item {
-    type Output = Item;
-
-    fn parse(cx: &mut ParseContext) -> Result<Item, Unexpected> {
-        if cx.maybe_type_def() {
-            Ok(Item::Type(cx.expect::<TypeDef>()?))
-        } else if cx.maybe_enum_def() {
-            Ok(Item::Enum(cx.expect::<EnumDef>()?))
-        } else if cx.maybe_fn_def() {
-            Ok(Item::Fn(cx.expect::<FnDef>()?))
-        } else if cx.maybe_block_stmt() {
-            Ok(Item::Block(cx.parse_block_stmt()?))
-        } else if cx.maybe_expr() {
-            Ok(match cx.expect::<AssignExprStatement>()? {
-                Statement::AssignExpr(a) => Item::AssignExpr(a),
-                Statement::SimpleExpr(s) => Item::SimpleExpr(s),
-                _ => unreachable!(),
-            })
-        } else if cx.maybe_for_stmt() {
-            Ok(Item::For(cx.expect::<ForStatement>()?))
-        } else if cx.maybe_if_stmt() {
-            Ok(Item::If(cx.expect::<IfStatement>()?))
-        } else if cx.maybe_loop_stmt() {
-            Ok(Item::Loop(cx.expect::<LoopStatement>()?))
-        } else if cx.maybe_var_decl() {
-            Ok(Item::VarDecl(cx.expect::<VarDeclStatement>()?))
-        } else if cx.maybe_while_stmt() {
-            Ok(Item::While(cx.expect::<WhileStatement>()?))
-        } else if cx.maybe_use_stmt() {
-            Ok(Item::Use(cx.expect::<UseStatement>()?))
-        } else if cx.maybe_module_stmt() {
-            Ok(Item::Import(cx.expect::<ModuleStatement>()?))
-        } else {
-            cx.push_unexpect("type, enum, fn, {, for, if, loop, return, var, const, while, use, module, .., !, ~, &, <, ::, ident, [, (")
-        }
     }
 }
 

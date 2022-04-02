@@ -2,19 +2,6 @@ use super::*;
 // nodes that not expr and not stmt and not item
 
 #[test]
-fn block_parse() {
-    
-    case!{ "{}" as Block,
-        Block::new(Span::new(0, 1), vec![])
-    }
-}
-
-#[test]
-fn label_def_parse() {
-    case!{ "@1:" as LabelDef, LabelDef::new(2, Span::new(0, 2)) }
-}
-
-#[test]
 fn module_integration() {
     use std::fmt::Write;
     use std::fs::read_to_string;

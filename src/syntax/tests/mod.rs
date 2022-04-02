@@ -369,28 +369,28 @@ macro_rules! make_stmt {
         }
     );
     (break $start:literal:$end:literal) => (
-        BreakStatement(JumpStatement{
+        BreakStatement{
             target: None,
             all_span: Span::new($start, $end),
-        })
+        }
     );
     (break $start:literal:$end:literal label #$label:literal $label_start:literal:$label_end:literal) => (
-        BreakStatement(JumpStatement{
+        BreakStatement{
             target: Some((IsId::new($label), Span::new($label_start, $label_end))),
             all_span: Span::new($start, $end),
-        })
+        }
     );
     (continue $start:literal:$end:literal) => (
-        ContinueStatement(JumpStatement{
+        ContinueStatement{
             target: None,
             all_span: Span::new($start, $end),
-        })
+        }
     );
     (continue $start:literal:$end:literal label #$label:literal $label_start:literal:$label_end:literal) => (
-        ContinueStatement(JumpStatement{
+        ContinueStatement{
             target: Some((IsId::new($label), Span::new($label_start, $label_end))),
             all_span: Span::new($start, $end),
-        })
+        }
     );
     (var $start:literal:$end:literal #$name:literal $name_start:literal:$name_end:literal $type:expr, $init:expr) => (
         VarDeclStatement{
@@ -478,6 +478,5 @@ macro_rules! make_type {
 
 mod pretty;
 mod expr;
-mod statement;
-mod item;
+mod stmt;
 mod other;

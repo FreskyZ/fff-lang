@@ -95,7 +95,7 @@ fn loop_stmt() {
     let mut scx = make_source!("@@: loop { println(\"233\"); }");
     let mut ecx = crate::diagnostics::make_errors!();
     let mut context = ParseContext::new(crate::lexical::Parser::new(scx.entry("1"), &mut ecx));
-    let node = LoopStatement::parse(&mut context).unwrap();
+    let node = context.parse_loop_stmt().unwrap();
     context.finish();
     ppcase!{ node.display(&scx), r#"loop-stmt <1:1-1:28> loop <1:5-1:8>
   label @@ <1:1-1:3>

@@ -187,18 +187,17 @@ pub struct IndexCallExpr {
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
-pub struct JumpStatement {
+pub struct ContinueStatement{
     pub target: Option<(IsId, Span)>,
     pub all_span: Span,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
-pub struct ContinueStatement(pub JumpStatement);
-
-#[derive(Debug)]
-#[cfg_attr(test, derive(PartialEq))]
-pub struct BreakStatement(pub JumpStatement);
+pub struct BreakStatement{
+    pub target: Option<(IsId, Span)>,
+    pub all_span: Span,
+}
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
@@ -511,7 +510,7 @@ impl ReturnStatement {
 }
 
 macro_rules! define_expr {
-    ($($ty:ty => $variant:ident, $visit:ident, $span:ident,)+) => (
+    ($($ty:ty => $variant:ident, $span:ident,)+) => (
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub enum Expr {
@@ -537,21 +536,27 @@ impl Expr {
 }
 
 define_expr! {
-    LitExpr => Lit, visit_lit_expr, span,
-    Name => Name, visit_name, all_span,
-    ParenExpr => Paren, visit_paren_expr, span,
-    TupleDef => Tuple, visit_tuple_def, paren_span,
-    ArrayDef => Array, visit_array_def, bracket_span,
-    FnCallExpr => FnCall, visit_fn_call_expr, all_span,
-    IndexCallExpr => IndexCall, visit_index_call_expr, all_span,
-    MemberAccessExpr => MemberAccess, visit_member_access, all_span,
-    ObjectLiteral => Object, visit_object_literal, all_span,
-    UnaryExpr => Unary, visit_unary_expr, all_span,
-    BinaryExpr => Binary, visit_binary_expr, all_span,
-    RangeBothExpr => RangeBoth, visit_range_both_expr, all_span,
-    RangeFullExpr => RangeFull, visit_range_full_expr, all_span,
-    RangeLeftExpr => RangeLeft, visit_range_left_expr, all_span,
-    RangeRightExpr => RangeRight, visit_range_right_expr, all_span,
+    LitExpr => Lit, span,
+    Name => Name, all_span,
+    ParenExpr => Paren, span,
+    TupleDef => Tuple, paren_span,
+    ArrayDef => Array, bracket_span,
+    FnCallExpr => FnCall, all_span,
+    IndexCallExpr => IndexCall, all_span,
+    MemberAccessExpr => MemberAccess, all_span,
+    ObjectLiteral => Object, all_span,
+    UnaryExpr => Unary, all_span,
+    BinaryExpr => Binary, all_span,
+    RangeBothExpr => RangeBoth, all_span,
+    RangeFullExpr => RangeFull, all_span,
+    RangeLeftExpr => RangeLeft, all_span,
+    RangeRightExpr => RangeRight, all_span,
+}
+
+impl Expr {
+    pub fn dummy() -> Expr { 
+        Expr::Lit(LitExpr{ value: LitValue::Num(Numeric::I32(0)), span: Span::new(0, 0) }) 
+    }
 }
 
 // all variants has same priority
