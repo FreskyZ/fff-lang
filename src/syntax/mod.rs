@@ -7,9 +7,12 @@ mod pretty;
 mod parser;
 #[cfg(test)]
 mod tests;
-
-pub use parser::Parser;
 pub use visit::{Node, Visitor};
+use parser::Unexpected;
+#[cfg(test)]
+pub use parser::Parser;
+#[cfg(not(test))]
+use parser::Parser;
 
 // may be abuse of visit but seems cool
 struct CollectImportVisitor {
@@ -32,25 +35,24 @@ impl ast::Module {
 }
 
 // parse any types of node for test
-pub fn parse_any<P: Parser>(source: crate::source::SourceChars, diagnostics: &mut crate::diagnostics::Diagnostics) -> Option<P::Output> {
-    let parser = crate::lexical::Parser::new(source, diagnostics);
-    let mut context = parser::ParseContext::new(parser);
-    let result = P::parse(&mut context).ok();
+pub fn parse_any<T>(source: crate::source::SourceChars, diagnostics: &mut crate::diagnostics::Diagnostics, f: impl FnOnce(&mut Parser) -> Result<T, Unexpected>) -> Option<T> {
+    let mut context = Parser::new(crate::lexical::Parser::new(source, diagnostics));
+    let result = f(&mut context).ok();
     context.finish();
     result
 }
 // formal public api only parses module
 pub fn parse(source: crate::source::SourceChars, diagnostics: &mut crate::diagnostics::Diagnostics) -> Option<ast::Module> {
-    parse_any::<ast::Module>(source, diagnostics)
+    parse_any(source, diagnostics, |cx| cx.parse_module())
 }
 
 #[cfg(test)]
 #[allow(unused_macros)]
 macro_rules! make_node {
-    ($code:literal as $ty:ty) => {{
+    ($parser:ident $code:literal) => {{
         let mut ecx = crate::diagnostics::make_errors!();
         let mut scx = crate::source::make_source!($code);
-        match parse_any::<_, $ty>(scx.entry("1"), &mut ecx) {
+        match parse_any(scx.entry("1"), &mut ecx, |cx| cx.$parser()) {
             Ok(node) => { assert_eq!(ecx, crate::diagnostics::make_errors!()); node },
             Err(_) => { panic!("{}", ecx.display(&scx)) },
         }

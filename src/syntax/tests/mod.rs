@@ -5,7 +5,7 @@ use crate::source::{SourceContext, VirtualFileSystem, Span, IsId, make_source};
 use crate::diagnostics::{strings, make_errors};
 use crate::lexical::{Numeric, Separator, Keyword};
 use super::visit::Node;
-use super::parser::{Parser, ParseContext, Unexpected};
+use super::parser::{Parser, Unexpected};
 use super::ast::*;
 
 struct DiffDisplay<'a, 'b>(&'a str, &'b str);
@@ -51,7 +51,7 @@ impl<'a, 'b> fmt::Display for DiffDisplay<'a, 'b> {
 // TODO give this signature to fn def parser and fn type parser
 fn case_until_node<
     N: PartialEq + fmt::Debug,
-    F: FnOnce(&mut ParseContext) -> Result<N, Unexpected>,
+    F: FnOnce(&mut Parser) -> Result<N, Unexpected>,
 >(
     input: &'static str,
     f: F,
@@ -66,7 +66,7 @@ fn case_until_node<
         cwd: "/".into(),
         files: [("1".into(), input.into())].into_iter().collect(),
     });
-    let mut context = ParseContext::new(crate::lexical::Parser::new(source.entry("1"), &mut actual_diagnostics));
+    let mut context = Parser::new(crate::lexical::Parser::new(source.entry("1"), &mut actual_diagnostics));
     let actual_node = f(&mut context);
     if let Ok(actual_node) = actual_node {
         context.finish();
@@ -97,7 +97,7 @@ fn case_until_node<
 
 fn ast_case<
     O: PartialEq + Node + fmt::Debug,
-    F: FnOnce(&mut ParseContext) -> Result<O, Unexpected>,
+    F: FnOnce(&mut Parser) -> Result<O, Unexpected>,
 >(
     input: &'static str,
     f: F,
@@ -119,7 +119,7 @@ fn ast_case<
 // some parse method does not return type that impl Node
 fn notast_case<
     O: PartialEq + fmt::Debug,
-    F: FnOnce(&mut ParseContext) -> Result<O, Unexpected>,
+    F: FnOnce(&mut Parser) -> Result<O, Unexpected>,
 >(
     input: &'static str,
     f: F,
@@ -135,18 +135,6 @@ fn notast_case<
 }
 
 macro_rules! case {
-    ($code:literal as $ty:ty, $expect:expr $(,)?) => (
-        ast_case($code, <$ty>::parse, $expect, crate::diagnostics::make_errors!(), &[], line!());
-    );
-    ($code:literal as $ty:ty, $expect:expr, errors $expect_diagnostics:expr $(,)?) => (
-        ast_case($code, <$ty>::parse, $expect, $expect_diagnostics, &[], line!());
-    );
-    ($code:literal as $ty:ty, $expect:expr, strings $expect_strings:expr $(,)?) => (
-        ast_case($code, <$ty>::parse, $expect, crate::diagnostics::make_errors![], &$expect_strings, line!());
-    );
-    ($code:literal as $ty:ty, $expect:expr, errors $expect_diagnostics:expr, strings $expect_strings:expr $(,)?) => (
-        ast_case($code, <$ty>::parse, $expect, $expect_diagnostics, &$expect_strings, line!());
-    );
     ($parser:ident $code:literal, $expect:expr $(,)?) => (
         ast_case($code, |cx| cx.$parser(), $expect, crate::diagnostics::make_errors!(), &[], line!());
     );
@@ -479,4 +467,4 @@ macro_rules! make_type {
 mod pretty;
 mod expr;
 mod stmt;
-mod other;
+mod r#type;

@@ -1,8 +1,7 @@
 
-use crate::source::{Span, IsId, FileId};
+use crate::source::{Span, IsId};
 use crate::diagnostics::{Diagnostic, strings};
-use crate::lexical::{Parser as LexicalParser, Token, Numeric, Separator, SeparatorKind, Keyword, KeywordKind};
-use super::visit::Node;
+use crate::lexical::{Parser as Scanner, Token, Numeric, Separator, SeparatorKind, Keyword, KeywordKind};
 use super::ast::*;
 
 mod expr;
@@ -14,11 +13,6 @@ mod r#type;
 #[derive(Debug)]
 pub struct Unexpected;
 
-pub trait Parser: Sized {
-    type Output: Node;
-    fn parse(_cx: &mut ParseContext) -> Result<Self::Output, Unexpected>;
-}
-
 trait ThenTry {
     fn then_try<T, E>(self, f: impl FnOnce() -> Result<T, E>) -> Result<Option<T>, E>;
 }
@@ -28,8 +22,8 @@ impl ThenTry for bool {
     }
 }
 
-pub struct ParseContext<'ecx, 'scx> {
-    base: LexicalParser<'ecx, 'scx>,
+pub struct Parser<'ecx, 'scx> {
+    base: Scanner<'ecx, 'scx>,
     current: Token,
     current_span: Span,
     peek: Token,
@@ -56,13 +50,13 @@ pub struct ParseContext<'ecx, 'scx> {
     // pub inside_string_literal: Vec<bool>,
 }
 
-impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
+impl<'ecx, 'scx> Parser<'ecx, 'scx> {
 
-    pub fn new(mut base: LexicalParser<'ecx, 'scx>) -> Self {
+    pub fn new(mut base: Scanner<'ecx, 'scx>) -> Self {
         let (current, current_span) = base.next();
         let (peek, peek_span) = base.next();
         let (peek2, peek2_span) = base.next();
-        ParseContext{ 
+        Self{ 
             base, 
             current, 
             current_span, 
@@ -74,6 +68,15 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
         }
     }
 
+    // formal entry
+    pub fn parse_module(&mut self) -> Result<Module, Unexpected> {
+        let mut items = Vec::new();
+        while !matches!(self.current, Token::EOF) {
+            items.push(self.parse_item()?);
+        }
+        Ok(Module{ items, file: self.base.get_file_id() })
+    }
+
     // forward base methods
     fn intern(&mut self, v: &str) -> IsId {
         self.base.intern(v)
@@ -82,20 +85,8 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
         self.base.emit(name)
     }
 
-    fn get_file_id(&self) -> FileId {
-        self.base.get_file_id()
-    }
     pub fn finish(self) {
         self.base.finish()
-    }
-
-    fn expect<P: Parser>(&mut self) -> Result<P::Output, Unexpected> {
-        P::parse(self)
-    }
-
-    // special method for root node
-    fn eof(&self) -> bool {
-        matches!(self.current, Token::EOF)
     }
 
     // return previous current span
@@ -421,268 +412,5 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
             .detail(self.current_span, format!("meet {:?}", self.current))
             .help(format!("expected {}", expect_desc));
         Err(Unexpected)
-    }
-}
-
-impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
-
-    // maybe implementations
-    // checks current token (may peek) to see if it matches syntax node starting
-    // // was called Parser::matches, ISyntaxParse::matches, ISyntaxItemParse::is_first_final, IASTItem::is_first_final before
-    // // considered loops_like_xxx, seems_to_be_xxx, and maybe_xxx is shortest and consist with token check methods is_xxx
-
-    fn maybe_array_type(&self) -> bool {
-        matches!(self.current, Token::Sep(Separator::LeftBracket))
-    }
-
-    fn maybe_fn_type(&self) -> bool {
-        matches!(self.current, Token::Keyword(Keyword::Fn))
-    }
-
-    fn maybe_plain_type(&self) -> bool {
-        matches!(self.current, Token::Sep(Separator::Lt | Separator::ColonColon) | Token::Ident(_))
-    }
-
-    fn maybe_primitive_type(&self) -> bool {
-        matches!(self.current, Token::Keyword(kw) if kw.kind(KeywordKind::Primitive))
-    }
-
-    fn maybe_ref_type(&self) -> bool {
-        matches!(self.current, Token::Sep(Separator::And | Separator::AndAnd))
-    }
-
-    fn maybe_tuple_type(&self) -> bool {
-        matches!(self.current, Token::Sep(Separator::LeftParen))
-    }
-}
-
-// array_type = '[' type_ref ';' expr ']'
-impl Parser for ArrayType {
-    type Output = ArrayType;
-
-    fn parse(cx: &mut ParseContext) -> Result<ArrayType, Unexpected> {
-
-        let left_bracket_span = cx.expect_sep(Separator::LeftBracket)?;
-        let base = Box::new(cx.expect::<TypeRef>()?);
-
-        if let Some(right_bracket_span) = cx.try_expect_sep(Separator::RightBracket) {
-            cx.emit(strings::InvalidArrayType)
-                .detail(right_bracket_span, "expected semicolon, meet right bracket")
-                .help(strings::ArrayTypeSyntaxHelp);
-            return Ok(ArrayType{ base, size: Expr::dummy(), span: left_bracket_span + right_bracket_span });
-        }
-
-        let _semicolon_span = cx.expect_sep(Separator::SemiColon)?;
-
-        if let Some(right_bracket_span) = cx.try_expect_sep(Separator::RightBracket) {
-            cx.emit(strings::InvalidArrayType)
-                .detail(right_bracket_span, "expected expr, meet right bracket")
-                .help(strings::ArrayTypeSyntaxHelp);
-            return Ok(ArrayType{ base, size: Expr::dummy(), span: left_bracket_span + right_bracket_span });
-        }
-
-        let size = cx.parse_expr()?;
-        let right_bracket_span = cx.expect_sep(Separator::RightBracket)?;
-        Ok(ArrayType{ base, size, span: left_bracket_span + right_bracket_span })
-    }
-}
-
-// fn_type = 'fn' '(' [ ident ':' ] type_ref { ',' [ ident ':' ] type_ref } [ ',' ] ')' [ '->' type_ref ]
-//
-// - return type in fn type and fn def is not colon but arrow: https://mail.mozilla.org/pipermail/rust-dev/2013-July/005042.html
-// - parameter name is optional and does not affect type identity
-//   type ref may start with ident, actually most common type refs start with ident, 
-//   so it is ambiguous and that may be the reason rust does not support that, but I always want to add parameter name to make function type more clear,
-//   so they are distinguished by always parseing type ref and very simple result (only one identifier) followed with colon is regarded as parameter name
-impl Parser for FnType {
-    type Output = FnType;
-
-    fn parse(cx: &mut ParseContext) -> Result<Self, Unexpected> {
-        
-        let fn_span = cx.expect_keyword(Keyword::Fn)?;
-        let left_paren_span = cx.expect_sep(Separator::LeftParen)?;
-
-        let mut parameters = Vec::new();
-        let right_paren_span = loop {
-            if let Some((right_paren_span, skipped_comma)) = cx.try_expect_closing_bracket(Separator::RightParen) {
-                if skipped_comma && parameters.is_empty() {
-                    // TODO: need comma span
-                    cx.emit("unexpected token").detail(right_paren_span, "expected ident, type or right paren, meet comma");
-                }
-                break right_paren_span;
-            } else if !parameters.is_empty() {
-                cx.expect_sep(Separator::Comma)?;
-            }
-            // these can-regard-as-variable keywords are not expected by type ref, they are definitely parameter name
-            let name = cx.try_expect_keywords(&[Keyword::This, Keyword::Self_, Keyword::Underscore]);
-            if name.is_some() {
-                cx.expect_sep(Separator::Colon)?;
-            }
-            let r#type = cx.expect::<TypeRef>()?;
-            let (name, r#type) = if let TypeRef::Plain(PlainType{ type_as_segment: None, global: false, segments, .. }) = &r#type {
-                if name.is_none() // this one should be before previous let r#type but that will make it 3 ifs are too more (None, r#type)s
-                    && segments.len() == 1 && segments[0].parameters.is_empty() && cx.try_expect_sep(Separator::Colon).is_some() {
-                    (Some((segments[0].ident, segments[0].ident_span)), cx.expect::<TypeRef>()?)
-                } else {
-                    (name.map(|(kw, span)| (cx.intern(kw.display()), span)), r#type)
-                }
-            } else {
-                (name.map(|(kw, span)| (cx.intern(kw.display()), span)), r#type)
-            };
-            parameters.push(FnTypeParam{ name, all_span: name.map(|(_, name_span)| name_span).unwrap_or_else(|| r#type.get_all_span()) + r#type.get_all_span(), r#type });
-        };
-
-        let ret_type = cx.try_expect_seps(&[Separator::Arrow, Separator::Colon]).map(|(sep, span)| {
-            if sep == Separator::Colon {
-                cx.emit(strings::FunctionReturnTypeShouldUseArrow).detail(span, strings::FunctionReturnTypeExpectArrowMeetColon);
-            }
-            cx.expect::<TypeRef>()
-        }).transpose()?;
-        
-        let all_span = fn_span + ret_type.as_ref().map(|t| t.get_all_span()).unwrap_or(right_paren_span);
-        Ok(FnType{ paren_span: left_paren_span + right_paren_span, parameters, ret_type: ret_type.map(Box::new), all_span })
-    }
-}
-
-// module = { item }
-impl Parser for Module {
-    type Output = Module;
-
-    fn parse(cx: &mut ParseContext) -> Result<Module, Unexpected> {
-        let mut items = Vec::new();
-        while !cx.eof() {
-            items.push(cx.parse_item()?);
-        }
-        Ok(Module{ items, file: cx.get_file_id() })
-    }
-}
-
-// plain_type = [ type_as_segment | '::' ] plain_type_segment { '::' plain_type_segment }
-// type_as_segment = '<' type_ref 'as' type_ref '>' '::'
-// plain_type_segment = identifier [ '<' type_ref { ',' type_ref } [ ',' ] '>' ]
-//
-// most common type ref, plain means not special (array/tuple/fn) and not referenced (not directly a reference type)
-// may be namespaced, segment may contain type parameter, does not need namespace separator `::` before type list angle bracket pair
-// may contain a type_as_segment at beginning
-// may contain a namespace separator at beginning, for referencing global items
-impl Parser for PlainType {
-    type Output = Self;
-
-    fn parse(cx: &mut ParseContext) -> Result<Self, Unexpected> {
-
-        let type_as_segment = cx.try_expect_sep(Separator::Lt).map(|lt_span| {
-            let from = cx.expect::<TypeRef>()?;
-            cx.expect_keyword(Keyword::As)?;
-            let to = cx.expect::<TypeRef>()?;
-            let gt_span = cx.expect_sep(Separator::Gt)?;
-            Ok(TypeAsSegment{ from: Box::new(from), to: Box::new(to), span: lt_span + gt_span })
-        }).transpose()?;
-
-        let beginning_separator_span = cx.try_expect_sep(Separator::ColonColon);
-
-        let mut segments = Vec::new();
-        while let Some((ident, ident_span)) = cx.try_expect_ident() {
-            if let Some(lt_span) = cx.try_expect_sep(Separator::Lt) {
-                if let Some(gt_span) = cx.try_expect_sep(Separator::Gt) { // allow <> in syntax parse
-                    segments.push(TypeSegment{ ident, ident_span, quote_span: lt_span + gt_span, parameters: Vec::new(), all_span: ident_span + gt_span });
-                } else {
-                    let mut parameters = vec![cx.expect::<TypeRef>()?];
-                    let quote_span = lt_span + loop {
-                        if let Some((gt_span, _)) = cx.try_expect_closing_bracket(Separator::Gt) {
-                            break gt_span;
-                        }
-                        cx.expect_sep(Separator::Comma)?;
-                        parameters.push(cx.expect::<TypeRef>()?);
-                    };
-                    segments.push(TypeSegment{ ident, ident_span, quote_span, parameters, all_span: ident_span + quote_span });
-                }
-            } else {
-                segments.push(TypeSegment{ ident, ident_span, quote_span: Span::new(0, 0), parameters: Vec::new(), all_span: ident_span });
-            }
-            if cx.try_expect_sep(Separator::ColonColon).is_none() {
-                break;
-            }
-        }
-
-        let global = type_as_segment.is_none() && beginning_separator_span.is_some();
-        let all_span = type_as_segment.as_ref().map(|s| s.span).or(beginning_separator_span)
-            .unwrap_or_else(|| segments[0].all_span) + segments.last().unwrap().all_span; // [0] and last().unwrap(): matches() guarantees segments are not empty
-        Ok(PlainType{ type_as_segment, global, segments, all_span })
-    }
-}
-
-// primitive_type = primitive_keyword
-impl Parser for PrimitiveType {
-    type Output = PrimitiveType;
-
-    fn parse(cx: &mut ParseContext) -> Result<PrimitiveType, Unexpected> {
-        let (name, span) = cx.expect_keyword_kind(KeywordKind::Primitive)?;
-        Ok(PrimitiveType{ name, span })
-    }
-}
-
-// ref_type = '&' type_ref
-impl Parser for RefType {
-    type Output = RefType;
-
-    fn parse(cx: &mut ParseContext) -> Result<RefType, Unexpected> {
-        
-        let and_span = cx.expect_sep(Separator::And)?;
-        let base = cx.expect::<TypeRef>()?;
-        Ok(RefType{ span: and_span + base.get_all_span(), base: Box::new(base) })
-    }
-}
-
-// tuple_type = '(' type_ref { ',' type_ref } [ ',' ] ')'
-//
-// empty for unit type, one element tuple require ending comma
-// type template name will be `tuple` when analysis, so user type `tuple` should be rejected by analysis
-impl Parser for TupleType {
-    type Output = TupleType;
-
-    fn parse(cx: &mut ParseContext) -> Result<TupleType, Unexpected> {
-        
-        let left_paren_span = cx.expect_sep(Separator::LeftParen)?;
-        if let Some(right_paren_span) = cx.try_expect_sep(Separator::RightParen) {
-            return Ok(Self{ items: Vec::new(), span: left_paren_span + right_paren_span });
-        }
-        
-        let mut items = vec![cx.expect::<TypeRef>()?];
-        let span = left_paren_span + loop {
-            if let Some((right_paren_span, skipped_comma)) = cx.try_expect_closing_bracket(Separator::RightParen) {
-                if !skipped_comma && items.len() == 1 {
-                    cx.emit(strings::SingleItemTupleType)
-                        .detail(right_paren_span, strings::TupleTypeExpectCommaMeetRightParen);
-                }
-                break right_paren_span;
-            } else {
-                cx.expect_sep(Separator::Comma)?;
-                items.push(cx.expect::<TypeRef>()?);
-            }
-        };
-
-        Ok(TupleType{ items, span })
-    }
-}
-
-impl Parser for TypeRef {
-    type Output = TypeRef;
-
-    fn parse(cx: &mut ParseContext) -> Result<TypeRef, Unexpected> {
-        if cx.maybe_primitive_type() {
-            Ok(TypeRef::Primitive(cx.expect::<PrimitiveType>()?))
-        } else if cx.maybe_array_type() {
-            Ok(TypeRef::Array(cx.expect::<ArrayType>()?))
-        } else if cx.maybe_fn_type() {
-            Ok(TypeRef::Fn(cx.expect::<FnType>()?))
-        } else if cx.maybe_ref_type() {
-            Ok(TypeRef::Ref(cx.expect::<RefType>()?))
-        } else if cx.maybe_tuple_type() {
-            Ok(TypeRef::Tuple(cx.expect::<TupleType>()?))
-        } else if cx.maybe_plain_type() {
-            Ok(TypeRef::Plain(cx.expect::<PlainType>()?))
-        } else {
-            cx.push_unexpect("[, fn, &, (, <, ::, ident or primitive type")
-        }
     }
 }

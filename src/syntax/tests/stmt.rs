@@ -200,7 +200,7 @@ fn module_stmt_parse() {
 #[test]
 fn module_parse() {
     //                      0123456789012345678901234
-    case!{ "use a; module b; 3; b; a;" as Module,
+    case!{ parse_module "use a; module b; 3; b; a;",
         Module{ file: crate::source::FileId::new(1), items: vec![
             Item::Use(UseStatement{ all_span: Span::new(0, 5), alias: None,
                 name: make_name!(simple bare 4:4 #2) }),

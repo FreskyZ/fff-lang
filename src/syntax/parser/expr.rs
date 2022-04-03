@@ -1,6 +1,6 @@
 use super::*;
 
-impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
+impl<'ecx, 'scx> Parser<'ecx, 'scx> {
 
     // these functions are order logically
     // "public" api parse_expr and maybe_expr
@@ -9,6 +9,9 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
     // same priority inside primary: lit (inlined) -> name -> tuple -> array, this seems to be their occurance frequency order in my experience
     // same priority inside postfix: member -> fn call -> index call -> object literal, this seems to be in occurance frequency too
 
+    // maybe_* functions: checks current token (may peek) to see if it matches syntax node starting
+    // // was called Parser::matches, ISyntaxParse::matches, ISyntaxItemParse::is_first_final, IASTItem::is_first_final before
+    // // considered loops_like_xxx, seems_to_be_xxx, and maybe_xxx is shortest and consist with token check methods is_xxx
     pub fn maybe_expr(&self) -> bool {
         self.is_lit()
         || self.maybe_name()
@@ -72,9 +75,9 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
     // enable num lit and require coloncolon control by context or parameter
     pub fn parse_name(&mut self) -> Result<Name, Unexpected> {
         let type_as_segment = self.try_expect_sep(Separator::Lt).map(|lt_span| {
-            let from = self.expect::<TypeRef>()?;
+            let from = self.parse_type_ref()?;
             self.expect_keyword(Keyword::As)?;
-            let to = self.expect::<TypeRef>()?;
+            let to = self.parse_type_ref()?;
             let gt_span = self.expect_sep(Separator::Gt)?;
             Ok(TypeAsSegment{ from: Box::new(from), to: Box::new(to), span: lt_span + gt_span })
         }).transpose()?;
@@ -96,13 +99,13 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
                 if let Some(gt_span) = self.try_expect_sep(Separator::Gt) { // allow <> in syntax parse
                     segments.push(NameSegment::Generic(Vec::new(), lt_span + gt_span));
                 } else {
-                    let mut parameters = vec![self.expect::<TypeRef>()?];
+                    let mut parameters = vec![self.parse_type_ref()?];
                     let quote_span = lt_span + loop {
                         if let Some((gt_span, _)) = self.try_expect_closing_bracket(Separator::Gt) {
                             break gt_span;
                         }
                         self.expect_sep(Separator::Comma)?;
-                        parameters.push(self.expect::<TypeRef>()?);
+                        parameters.push(self.parse_type_ref()?);
                     };
                     segments.push(NameSegment::Generic(parameters, quote_span));
                 }
@@ -363,10 +366,10 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
 
         return parse_logical_or(self);
 
-        fn parse_unary_expr_wrapper(cx: &mut ParseContext) -> Result<Expr, Unexpected> {
+        fn parse_unary_expr_wrapper(cx: &mut Parser) -> Result<Expr, Unexpected> {
             cx.parse_unary_expr()
         }
-        fn check_relational_expr(cx: &mut ParseContext, expr: &Expr) {
+        fn check_relational_expr(cx: &mut Parser, expr: &Expr) {
             if let Expr::Binary(BinaryExpr{ operator: Separator::Gt, operator_span: gt_span, left_expr, .. }) = expr {
                 if let Expr::Binary(BinaryExpr{ operator: Separator::Lt, operator_span: lt_span, .. }) = left_expr.as_ref() {
                     cx.emit(strings::MaybeGeneric).span(*lt_span).span(*gt_span).help(strings::MaybeGenericHelp);
@@ -376,7 +379,7 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
 
         macro_rules! impl_binary_parser {
             ($parser_name:ident, $previous_parser_name:ident, $kind:ident $(,$check:path)?) => (
-                fn $parser_name(cx: &mut ParseContext) -> Result<Expr, Unexpected> {
+                fn $parser_name(cx: &mut Parser) -> Result<Expr, Unexpected> {
                     trace!("parsing {}", stringify!($parser_name));
 
                     let mut current_expr = $previous_parser_name(cx)?;

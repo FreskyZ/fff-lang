@@ -1,13 +1,14 @@
 use super::*;
 // nodes that not expr and not stmt and not item
 
+// TODO: this integeration test should be another bin (aside ffc.exe in this rust project) to run ffc.exe with --print ast
 #[test]
 fn module_integration() {
     use std::fmt::Write;
     use std::fs::read_to_string;
     use crate::source::{SourceContext};
     use crate::diagnostics::Diagnostics;
-    use crate::lexical::Parser as LexicalParser;
+    use crate::lexical::Parser as Scanner;
 
     let test_cases = read_to_string("tests/syntax/inter/index.txt").expect("cannot read index.txt");
     for line in test_cases.lines() {
@@ -15,9 +16,9 @@ fn module_integration() {
 
         let mut scx: SourceContext = SourceContext::new(); // this is amazingly real file system
         let mut ecx = Diagnostics::new();
-        let mut context = ParseContext::new(LexicalParser::new(scx.entry(format!("tests/syntax/inter/{line}.f3")), &mut ecx));
+        let mut context = Parser::new(Scanner::new(scx.entry(format!("tests/syntax/inter/{line}.f3")), &mut ecx));
 
-        let actual = Module::parse(&mut context);
+        let actual = context.parse_module();
         context.finish();
         if actual.is_err() {
             panic!("{}.f3 parse fail: {}", line, ecx.display(&scx));
@@ -54,15 +55,15 @@ fn module_integration() {
 #[test]
 fn type_ref_parse() {
 
-    case!{ "i32" as TypeRef,
+    case!{ parse_type_ref "i32",
         make_type!(prim 0:2 I32),
     }
 
-    case!{ "custom_type" as TypeRef,
+    case!{ parse_type_ref "custom_type",
         make_type!(simple 0:10 #2),
     }
 
-    case!{ "[i32; 5]" as TypeRef, 
+    case!{ parse_type_ref "[i32; 5]", 
         make_type!(array 0:7
             make_type!(prim 1:3 I32), 
             make_expr!(i32 5 6:6).into()),
@@ -70,7 +71,7 @@ fn type_ref_parse() {
 
     //      0         1         2
     //      01234567890123456789012345
-    case!{ "[[a;1]; 1 + 1 * 1 - 1 / 1]" as TypeRef,
+    case!{ parse_type_ref "[[a;1]; 1 + 1 * 1 - 1 / 1]",
         make_type!(array 0:25 
             make_type!(array 1:5
                 make_type!(simple 2:2 #2),
@@ -86,42 +87,42 @@ fn type_ref_parse() {
                     make_expr!(i32 1 24:24)))),
     }
 
-    case!{ "()" as TypeRef, 
+    case!{ parse_type_ref "()", 
         make_type!(tuple 0:1 [])
     }
 
-    case!{ "(i32, i32)" as TypeRef, 
+    case!{ parse_type_ref "(i32, i32)", 
         make_type!(tuple 0:9 [
             make_type!(prim 1:3 I32),
             make_type!(prim 6:8 I32),
         ]),
     }
 
-    case!{ "(abc, def)" as TypeRef, 
+    case!{ parse_type_ref "(abc, def)", 
         make_type!(tuple 0:9 [
             make_type!(simple 1:3 #2),
             make_type!(simple 6:8 #3),
         ]),
     }
 
-    case!{ "(string,)" as TypeRef, 
+    case!{ parse_type_ref "(string,)", 
         make_type!(tuple 0:8 [
             make_type!(simple 1:6 #2),
         ]),
     }
 
-    case!{ "(i32)" as TypeRef,
+    case!{ parse_type_ref "(i32)",
         make_type!(tuple 0:4 [
             make_type!(prim 1:3 I32),
         ]), errors make_errors!(e: e.emit(strings::SingleItemTupleType).detail(Span::new(4, 4), strings::TupleTypeExpectCommaMeetRightParen)),
     }
 
-    case!{ "fn()" as TypeRef,
+    case!{ parse_type_ref "fn()",
         make_type!(fn 0:3 paren 2:3 []),
     }
 
     //      01234567890123456789
-    case!{ "fn() -> Result<T, E>" as TypeRef,
+    case!{ parse_type_ref "fn() -> Result<T, E>",
         make_type!(fn ret 0:19 paren 2:3 [],
             make_type!(plain 8:19 false, None,
                 make_type!(segment generic 8:19 #2 8:13 quote 14:19 
@@ -131,7 +132,7 @@ fn type_ref_parse() {
 
     //      0         1         2
     //      01234567890123456789012
-    case!{ "fn(i32, &string) -> i32" as TypeRef, 
+    case!{ parse_type_ref "fn(i32, &string) -> i32", 
         make_type!(fn ret 0:22 paren 2:15 [
             make_type!(param 3:5 make_type!(prim 3:5 I32)),
             make_type!(param 8:14 make_type!(ref 8:14 make_type!(simple 9:14 #2)))],
@@ -140,7 +141,7 @@ fn type_ref_parse() {
 
     //      0          1          2          3
     //      0123 456789012345 678901234567 89012345678 9
-    case!{ "fn(\nthis: This,\nself: Self,\nthat: That,\n)" as TypeRef, 
+    case!{ parse_type_ref "fn(\nthis: This,\nself: Self,\nthat: That,\n)", 
         make_type!(fn 0:40 paren 2:40 [
             make_type!(param named 4:13 #2 4:7 make_type!(simple 10:13 #3)),
             make_type!(param named 16:25 #4 16:19 make_type!(simple 22:25 #5)),
@@ -150,7 +151,7 @@ fn type_ref_parse() {
 
     //      0         1         2         3
     //      01234567890123456789012345678901234
-    case!{ "fn(argc: i32, argv: &string) -> i32" as TypeRef, 
+    case!{ parse_type_ref "fn(argc: i32, argv: &string) -> i32", 
         make_type!(fn ret 0:34 paren 2:27 [
             make_type!(param named 3:11 #2 3:6 make_type!(prim 9:11 I32)),
             make_type!(param named 14:26 #3 14:17 make_type!(ref 20:26 make_type!(simple 21:26 #4)))],
@@ -159,7 +160,7 @@ fn type_ref_parse() {
 
     //      0         1         2         3         4         5         6         7         8         9         0         1
     //      0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567
-    case!{ "fn(this: &This, node: &/*dyn*/Node, title: string, span: Span, then: fn() -> Result<&This, fmt::Error>) -> fmt::Result" as TypeRef,
+    case!{ parse_type_ref "fn(this: &This, node: &/*dyn*/Node, title: string, span: Span, then: fn() -> Result<&This, fmt::Error>) -> fmt::Result",
         make_type!(fn ret 0:117 paren 2:102 [
             make_type!(param named 3:13 #2 3:6 make_type!(ref 9:13 make_type!(simple 10:13 #3))),
             make_type!(param named 16:33 #4 16:19 make_type!(ref 22:33 make_type!(simple 30:33 #5))),
@@ -182,7 +183,7 @@ fn type_ref_parse() {
     // bare ident followed by comma is type
     //      0         1         2         3
     //      01234567890123456789012345678901234
-    case!{ "fn(argc,            &string) -> i32" as TypeRef, 
+    case!{ parse_type_ref "fn(argc,            &string) -> i32", 
         make_type!(fn ret 0:34 paren 2:27 [
             make_type!(param 3:6 make_type!(simple 3:6 #2)),
             make_type!(param 20:26 make_type!(ref 20:26 make_type!(simple 21:26 #3)))],
@@ -192,7 +193,7 @@ fn type_ref_parse() {
     // bare ident followed by end of parameter list is type
     //      0         1         2         3
     //      01234567890123456789012345678901234
-    case!{ "fn(argc: i32,        string) -> i32" as TypeRef, 
+    case!{ parse_type_ref "fn(argc: i32,        string) -> i32", 
         make_type!(fn ret 0:34 paren 2:27 [
             make_type!(param named 3:11 #2 3:6 make_type!(prim 9:11 I32)),
             make_type!(param 21:26 make_type!(simple 21:26 #3))],
@@ -202,7 +203,7 @@ fn type_ref_parse() {
     // bare ident followed by end of parameter list is type
     //      0         1         2         3
     //      01234567890123456789012345678901234
-    case!{ "fn(argc: i32,       string,) -> i32" as TypeRef, 
+    case!{ parse_type_ref "fn(argc: i32,       string,) -> i32", 
         make_type!(fn ret 0:34 paren 2:27 [
             make_type!(param named 3:11 #2 3:6 make_type!(prim 9:11 I32)),
             make_type!(param 20:25 make_type!(simple 20:25 #3))],
@@ -212,7 +213,7 @@ fn type_ref_parse() {
     // segmented plain type also should not be recognized as name, found by random test generator
     //      0         1
     //      012345678901234
-    case!{ "fn(ns1::ns2::t)" as TypeRef,
+    case!{ parse_type_ref "fn(ns1::ns2::t)",
         make_type!(fn 0:14 paren 2:14 [
             make_type!(param 3:13
                 make_type!(plain 3:13 false, None,
@@ -223,7 +224,7 @@ fn type_ref_parse() {
 
     //      0         1
     //      012345678901234567
-    case!{ "fn(ns1<t1, t2>::t)" as TypeRef,
+    case!{ parse_type_ref "fn(ns1<t1, t2>::t)",
     make_type!(fn 0:17 paren 2:17 [
         make_type!(param 3:16
             make_type!(plain 3:16 false, None,
@@ -235,7 +236,7 @@ fn type_ref_parse() {
 
     //      0         1         2         3
     //      012345678901234567890123456789012345678
-    case!{ "ffc::syntax::plain_type::type_ref_parse" as TypeRef, 
+    case!{ parse_type_ref "ffc::syntax::plain_type::type_ref_parse", 
         make_type!(plain 0:38 false, None,
             make_type!(segment 0:2 #2),
             make_type!(segment 5:10 #3),
@@ -245,7 +246,7 @@ fn type_ref_parse() {
 
     //      0         1         2         3
     //      012345678901234567890123456789012345678
-    case!{ "::ffc::syntax::plain_type::type_ref_parse" as TypeRef, 
+    case!{ parse_type_ref "::ffc::syntax::plain_type::type_ref_parse", 
         make_type!(plain 0:40 true, None,
             make_type!(segment 2:4 #2),
             make_type!(segment 7:12 #3),
@@ -255,7 +256,7 @@ fn type_ref_parse() {
 
     //      0         1         2         3         4         5         6
     //      012345678901234567890123456789012345678901234567890123456789012345678
-    case!{ "<::ffc::syntax::PlainType as ffc::syntax::prelude::Parser<F>>::Output" as TypeRef,
+    case!{ parse_type_ref "<::ffc::syntax::PlainType as ffc::syntax::prelude::Parser<F>>::Output",
         make_type!(plain 0:68 false,
             make_type!(segment as 0:60
                 make_type!(plain 1:24 true, None,
@@ -272,13 +273,13 @@ fn type_ref_parse() {
     }
 
     // empty type list is allowed in syntax
-    case!{ "a<>" as TypeRef,
+    case!{ parse_type_ref "a<>",
         make_type!(plain 0:2 false, None,
             make_type!(segment generic 0:2 #2 0:0 quote 1:2))
     }
 
     // split shift right
-    case!{ "a<b<c>>" as TypeRef,
+    case!{ parse_type_ref "a<b<c>>",
         make_type!(plain 0:6 false, None,
             make_type!(segment generic 0:6 #2 0:0 quote 1:6
                 make_type!(plain 2:5 false, None,
@@ -287,13 +288,20 @@ fn type_ref_parse() {
     }
 
     // this is some what void*
-    case!{ "&()" as TypeRef, 
+    case!{ parse_type_ref "&()", 
         make_type!(ref 0:2
             make_type!(tuple 1:2 []))
     }
 
+    // split and and
+    case!{ parse_type_ref "&&i32",
+        make_type!(ref 0:4
+            make_type!(ref 1:4
+                make_type!(prim 2:4 I32)))
+    }
+
     //      0123456789
-    case!{ "&[sc; 207]" as TypeRef,
+    case!{ parse_type_ref "&[sc; 207]",
         make_type!(ref 0:9
             make_type!(array 1:9
                 make_type!(simple 2:3 #2),
@@ -302,7 +310,7 @@ fn type_ref_parse() {
 
     //      0         1         2        3       4         5         6         7         8         9         0        1         2         3         4         5         6         7        8
     //      0123456789012345678901234567 01256789012345678901234567890123456789012345678901234567890123456789 234567890123456789012345678901234567890123456789012345678901234567890123456789012
-    case!{ "fn(x3Kv: [Mc; 6326], &((&t6絩ru卒oLy, i64, &f64, u64), fn(Ak: [o7k81A6; 0x5Ad0Cc], OmNaGmqc: [g63凈N;  223], bOars,), [c6eFq8M;  636353.456], [b; 271]), f3,) -> [HrH70sp; 0d447231]" as TypeRef,
+    case!{ parse_type_ref "fn(x3Kv: [Mc; 6326], &((&t6絩ru卒oLy, i64, &f64, u64), fn(Ak: [o7k81A6; 0x5Ad0Cc], OmNaGmqc: [g63凈N;  223], bOars,), [c6eFq8M;  636353.456], [b; 271]), f3,) -> [HrH70sp; 0d447231]",
         make_type!(fn ret 0:182 paren 2:159 [
             make_type!(param named 3:18 #2 3:6
                 make_type!(array 9:18 
@@ -348,7 +356,7 @@ fn type_ref_parse() {
 
     // type as segment in front of angle bracket quoted type list requires split shift left
     //      01234567890123
-    case!{ "a<<a as a>::a>" as TypeRef,
+    case!{ parse_type_ref "a<<a as a>::a>",
         make_type!(plain 0:13 false, None,
             make_type!(segment generic 0:13 #2 0:0 quote 1:13
                 make_type!(plain 2:12 false,

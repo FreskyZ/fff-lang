@@ -94,7 +94,7 @@ fn loop_stmt() {
     //                  1234567890123456789 0123 45678
     let mut scx = make_source!("@@: loop { println(\"233\"); }");
     let mut ecx = crate::diagnostics::make_errors!();
-    let mut context = ParseContext::new(crate::lexical::Parser::new(scx.entry("1"), &mut ecx));
+    let mut context = Parser::new(crate::lexical::Parser::new(scx.entry("1"), &mut ecx));
     let node = context.parse_loop_stmt().unwrap();
     context.finish();
     ppcase!{ node.display(&scx), r#"loop-stmt <1:1-1:28> loop <1:5-1:8>
@@ -115,7 +115,7 @@ fn postfix_expr() {
     //                           0123456789012345678901234567890123456789012345678901234567
     let mut scx = make_source!("a.b(c, d, e).f(g, h, i,)(u,).j[k].l().m[n, o, p][r, s, t,]");
     let mut ecx = crate::diagnostics::make_errors!();
-    let mut context = ParseContext::new(crate::lexical::Parser::new(scx.entry("1"), &mut ecx));
+    let mut context = Parser::new(crate::lexical::Parser::new(scx.entry("1"), &mut ecx));
     let node = context.parse_postfix_expr().unwrap();
     context.finish();
     ppcase!{ node.display(&scx), "index-call <1:1-1:58> [] <1:49-1:58>

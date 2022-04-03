@@ -1,6 +1,6 @@
 use super::*;
 
-impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
+impl<'ecx, 'scx> Parser<'ecx, 'scx> {
 
     // statement and item (module level item) parsers
 
@@ -158,7 +158,7 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
 
         let enum_span = self.expect_keyword(Keyword::Enum)?;
         let (enum_name, enum_name_span) = self.expect_ident()?;
-        let base_type = self.try_expect_sep(Separator::Colon).map(|_| self.expect::<PrimitiveType>()).transpose()?;
+        let base_type = self.try_expect_sep(Separator::Colon).map(|_| self.parse_primitive_type()).transpose()?;
         let left_brace_span = self.expect_sep(Separator::LeftBrace)?;
 
         let mut variants = Vec::new();
@@ -239,7 +239,7 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
 
             let (param_name, param_span) = self.expect_ident_or_keywords(&[Keyword::Underscore, Keyword::This, Keyword::Self_])?;
             let _ = self.expect_sep(Separator::Colon)?;
-            let decltype = self.expect::<TypeRef>()?;
+            let decltype = self.parse_type_ref()?;
             params.push(FnParam::new(param_name, param_span, decltype));
         }
 
@@ -247,7 +247,7 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
             if sep == Separator::Colon {
                 self.emit(strings::FunctionReturnTypeShouldUseArrow).detail(span, strings::FunctionReturnTypeExpectArrowMeetColon);
             }
-            self.expect::<TypeRef>()
+            self.parse_type_ref()
         }).transpose()?;
         let body = self.parse_block()?;
 
@@ -393,7 +393,7 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
 
             let (field_name, field_name_span) = self.expect_ident()?;
             let colon_span = self.expect_sep(Separator::Colon)?;
-            let field_type = self.expect::<TypeRef>()?;
+            let field_type = self.parse_type_ref()?;
             fields.push(if let Some(comma_span) = self.try_expect_sep(Separator::Comma) {
                 TypeFieldDef{ all_span: field_name_span + comma_span, name: field_name, name_span: field_name_span, colon_span, r#type: field_type }
             } else {
@@ -433,7 +433,7 @@ impl<'ecx, 'scx> ParseContext<'ecx, 'scx> {
         let is_const = match starting_kw { Keyword::Const => true, Keyword::Var => false, _ => unreachable!() };
 
         let (name, name_span) = self.expect_ident_or_keywords(&[Keyword::Underscore])?;
-        let r#type = self.try_expect_sep(Separator::Colon).map(|_| self.expect::<TypeRef>()).transpose()?;
+        let r#type = self.try_expect_sep(Separator::Colon).map(|_| self.parse_type_ref()).transpose()?;
         let init_expr = self.try_expect_sep(Separator::Eq).map(|_| self.parse_expr()).transpose()?;
         if r#type.is_none() && init_expr.is_none() {
             self.emit("require type annotation")
