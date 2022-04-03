@@ -149,7 +149,7 @@ mod tests {
         //                                         0123456789 01234567890
         let mut scx = crate::source::make_source!("var a = '\\u12345678';" as "relative/path/name");
         let mut ecx = Diagnostics::new();
-        scx.entry("relative/path/name").finish();
+        scx.entry("relative/path/name", &mut ecx).unwrap().finish();
         ecx.emit("invalid unicode escape")
             .detail(Span::new(8, 8), "char literal start here")
             .detail(Span::new(9, 18), "unicode escape here")

@@ -1,4 +1,5 @@
 use super::*;
+use crate::diagnostics::make_errors;
 
 macro_rules! make_source {
     () => {
@@ -29,7 +30,8 @@ pub(crate) use make_source;
 fn intern_values() {
 
     let mut scx = make_source!();
-    let mut chars = scx.entry("1");
+    let mut ecx = make_errors!();
+    let mut chars = scx.entry("1", &mut ecx).unwrap();
     let id1 = chars.intern("abc");
     let id2 = chars.intern("123");
     let id3 = chars.intern("abc");
@@ -47,7 +49,8 @@ fn intern_values() {
 fn intern_spans() {
     //                          012345678901234567890
     let mut scx = make_source!("eiwubvoqwincleiwubaslckhwoaihecbqvqvqwoliecn");
-    let mut chars = scx.entry("1");
+    let mut ecx = make_errors!();
+    let mut chars = scx.entry("1", &mut ecx).unwrap();
     let id1 = chars.intern_span(Span::new(0, 3));
     let id2 = chars.intern_span(Span::new(1, 4));
     let id3 = chars.intern_span(Span::new(13, 16));
@@ -66,7 +69,8 @@ fn intern_spans2() {
     //                                    1          2         3   
     //                          01234567890123 456789012345678901234 5678
     let mut scx = make_source!("var a = true;\nvar b = 789_123.456;\ndefg");
-    let mut chars = scx.entry("1");
+    let mut ecx = make_errors!();
+    let mut chars = scx.entry("1", &mut ecx).unwrap();
     let id1 = chars.intern_span(Span::new(4, 4));
     let id2 = chars.intern_span(Span::new(18, 18));
     let id3 = chars.intern_span(Span::new(35, 38));
@@ -81,7 +85,8 @@ fn intern_spans2() {
     // and this
     
     let mut scx = make_source!("一个chinese变量, a_中文_var");
-    let mut chars = scx.entry("1");
+    let mut ecx = make_errors!();
+    let mut chars = scx.entry("1", &mut ecx).unwrap();
     let id1 = chars.intern_span(Span::new(0, 16));
     let id2 = chars.intern_span(Span::new(21, 32));
     chars.finish();
@@ -95,10 +100,11 @@ fn intern_spans2() {
 #[should_panic(expected = "not this file span")]
 fn not_this_file_span() {
     let mut scx = make_source!("module 2" as "src/main.f3", "" as "src/2.f3");
-    let mut chars = scx.entry("src/main.f3");
+    let mut ecx = make_errors!();
+    let mut chars = scx.entry("src/main.f3", &mut ecx).unwrap();
     let sym = chars.intern_span(Span::new(7, 7));
     chars.finish();
-    let mut chars = scx.import(Span::new(0, 7), sym).unwrap();
+    let mut chars = scx.import(Span::new(0, 7), sym, None, &mut ecx).unwrap();
     chars.intern_span(Span::new(7, 7));
 }
 
@@ -106,7 +112,8 @@ fn not_this_file_span() {
 #[should_panic(expected = "invalid string id")]
 fn invalid_string_id() {
     let mut scx = make_source!();
-    let mut chars = scx.entry("1");
+    let mut ecx = make_errors!();
+    let mut chars = scx.entry("1", &mut ecx).unwrap();
     chars.intern("abc");
     chars.finish();
     assert_eq!(scx.resolve_string(IsId::new(2)), "abc");
@@ -117,7 +124,8 @@ fn invalid_string_id() {
 #[should_panic(expected = "invalid span")]
 fn empty_span1() {
     let mut scx = make_source!();
-    let mut chars = scx.entry("1");
+    let mut ecx = make_errors!();
+    let mut chars = scx.entry("1", &mut ecx).unwrap();
     chars.intern_span(Span::new(1, 0));
 }
 
@@ -159,19 +167,20 @@ macro_rules! ptlc_test_case {
 #[test]
 fn position_to_line_column1() {
 
-    ptlc_test_case!{ make_source!("0123\n56\r8\n01234567\n9" as "1", scx in { scx.entry("1").finish(); }),
+    let mut ecx = make_errors!();
+    ptlc_test_case!{ make_source!("0123\n56\r8\n01234567\n9" as "1", scx in { scx.entry("1", &mut ecx).unwrap().finish(); }),
         [#1: 0 => 1, 1, 1],
         [#2: 2 => 1, 1, 3],
         [#3: 14 => 1, 3, 5],
     }
-    ptlc_test_case!{ make_source!("012345678901234567" as "1", scx in { scx.entry("1").finish(); }),
+    ptlc_test_case!{ make_source!("012345678901234567" as "1", scx in { scx.entry("1", &mut ecx).unwrap().finish(); }),
         [#4: 0 => 1, 1, 1],
         [#5: 15 => 1, 1, 16],
     }
-    ptlc_test_case!{ make_source!("" as "1", scx in { scx.entry("1").finish(); }),
+    ptlc_test_case!{ make_source!("" as "1", scx in { scx.entry("1", &mut ecx).unwrap().finish(); }),
         [#6: 0 => 1, 1, 1], // both 'EOF is next char of last char' and 'first position is (1, 1)' requires this to be (1, 1)
     }
-    ptlc_test_case!{ make_source!("var 你好 =\n 世界;" as "1", scx in { scx.entry("1").finish(); }),
+    ptlc_test_case!{ make_source!("var 你好 =\n 世界;" as "1", scx in { scx.entry("1", &mut ecx).unwrap().finish(); }),
         //     src, row, col, byte
         //       v,   1,   1,    0
         //       a,   1,   2,    1
@@ -196,7 +205,7 @@ fn position_to_line_column1() {
         [#14: 21 => 1, 2, 5],
     }
 
-    ptlc_test_case!{ make_source!("\r\rabc\ndef\r\r\nasdwe\r\r\rq1da\nawsedq\r\r\r" as "1", scx in { scx.entry("1").finish(); }),
+    ptlc_test_case!{ make_source!("\r\rabc\ndef\r\r\nasdwe\r\r\rq1da\nawsedq\r\r\r" as "1", scx in { scx.entry("1", &mut ecx).unwrap().finish(); }),
         [#15: 2 => 1, 1, 1],
         [#16: 3 => 1, 1, 2],
         [#17: 4 => 1, 1, 3],
@@ -205,7 +214,7 @@ fn position_to_line_column1() {
         [#20: 30 => 1, 4, 6],
     }
 
-    ptlc_test_case!{ make_source!("abc\ndef\r\r\n\nasd\nwe\rq1da\nawsedq\n" as "1", scx in { scx.entry("1").finish(); }),
+    ptlc_test_case!{ make_source!("abc\ndef\r\r\n\nasd\nwe\rq1da\nawsedq\n" as "1", scx in { scx.entry("1", &mut ecx).unwrap().finish(); }),
         [#21: 0 => 1, 1, 1],
         [#22: 6 => 1, 2, 3],
         [#23: 9 => 1, 2, 4],
@@ -220,10 +229,11 @@ fn position_to_line_column2() {
 
     // this 2 empty file program should only allow 2 positions: 0 for EOF in file 1, 1 for EOF in file 2
     let mut scx = make_source!("" as "/1.f3", "" as "/2.f3");
-    let mut chars = scx.entry("/1.f3");
+    let mut ecx = make_errors!();
+    let mut chars = scx.entry("/1.f3", &mut ecx).unwrap();
     let module_name = chars.intern("2.f3");
     chars.finish();
-    scx.import(Span::new(0, 0), module_name).unwrap().finish();
+    scx.import(Span::new(0, 0), module_name, Some(module_name), &mut ecx).expect(&format!("{:?}", ecx)).finish();
     ptlc_test_case!{ scx,
         [#27: 0 => 1, 1, 1],
         [#28: 1 => 2, 1, 1],
@@ -234,10 +244,10 @@ fn position_to_line_column2() {
     //                                        1            2           3                          4              5            6
     //                          0123 4567 8 9 0 1234 567 89012 3456789 0              1 2 3456 7890 1 2 345678 9 0 12345 6789012 3 4 5
     let mut scx = make_source!("abc\nd2f\r\r\n\nasd\nwe\rq1da\nawsedq\n" as "/1.f3", "\r\rabc\ndef\r\r\nasdwe\r\r\rq1da\nawsedq\r\r\r" as "/2.f3");
-    let mut chars = scx.entry("/1.f3");
+    let mut chars = scx.entry("/1.f3", &mut ecx).unwrap();
     let module_name = chars.intern_span(Span::new(5, 5));
     chars.finish();
-    scx.import(Span::new(4, 6), module_name).unwrap().finish();
+    scx.import(Span::new(4, 6), module_name, None, &mut ecx).unwrap().finish();
     ptlc_test_case!{ scx,
         [#29: 0 => 1, 1, 1],
         [#30: 6 => 1, 2, 3],
@@ -268,11 +278,12 @@ fn position_overflow() {
 #[should_panic(expected = "span cross file")]
 fn span_cross_file1() {
 
+    let mut ecx = make_errors!();
     let scx = make_source!("module 2;" as "src/main.f3", "fn f(){}" as  "src/2.f3", scx in {
-        let mut chars = scx.entry("src/main.f3");
+        let mut chars = scx.entry("src/main.f3", &mut ecx).unwrap();
         let sym = chars.intern_span(Span::new(7, 7));
         chars.finish();
-        scx.import(Span::new(1, 7), sym).unwrap().finish();
+        scx.import(Span::new(1, 7), sym, None, &mut ecx).unwrap().finish();
     });
     scx.map_span_to_line_column(Span::new(1, 10));
 }
@@ -281,11 +292,12 @@ fn span_cross_file1() {
 #[should_panic(expected = "span cross file")]
 fn span_cross_file2() {
 
+    let mut ecx = make_errors!();
     let scx = make_source!("module 2;" as "src/main.f3", "fn f(){}" as  "src/2.f3", scx in {
-        let mut chars = scx.entry("src/main.f3");
+        let mut chars = scx.entry("src/main.f3", &mut ecx).unwrap();
         let sym = chars.intern_span(Span::new(7, 7));
         chars.finish();
-        scx.import(Span::new(1, 7), sym).unwrap().finish();
+        scx.import(Span::new(1, 7), sym, None, &mut ecx).unwrap().finish();
     });
 
     scx.map_span_to_content(Span::new(1, 10));
@@ -297,7 +309,8 @@ fn span_to_content() {
     macro_rules! test_case {
         ($scx:expr, $([#$caseid:literal: $start_id:expr, $end_id:expr => $expect:expr], )+) => (
             let mut scx = $scx;
-            scx.entry("1").finish();
+            let mut ecx = make_errors!();
+            scx.entry("1", &mut ecx).unwrap().finish();
             $(
                 assert_eq!{ scx.map_span_to_content(Span::new($start_id, $end_id)), $expect, "#{}", $caseid }
             )+
@@ -341,16 +354,18 @@ fn span_to_content() {
 #[test]
 #[should_panic(expected = "position overflow")]
 fn span_overflow() {
+    let mut ecx = make_errors!();
     let mut scx = make_source!();
-    scx.entry("1").finish();
+    scx.entry("1", &mut ecx).unwrap().finish();
     scx.map_span_to_content(Span::new(0, 1));
 }
 
 #[test]
 fn line_to_content() {
-
+    
+    let mut ecx = make_errors!();
     let mut scx = make_source!("0123\n56\r8\n01234567\n9");
-    let chars = scx.entry("1");
+    let chars = scx.entry("1", &mut ecx).unwrap();
     let file_id = chars.get_file_id();
     chars.finish();
     assert_eq!(scx.map_line_to_content(file_id, 1), "0123");
@@ -359,7 +374,7 @@ fn line_to_content() {
     assert_eq!(scx.map_line_to_content(file_id, 4), "9");
 
     let mut scx = make_source!("abc\ndef\r\r\n\nasd\nwe\rq1da\nawsedq\n");
-    let chars = scx.entry("1");
+    let chars = scx.entry("1", &mut ecx).unwrap();
     let file_id = chars.get_file_id();
     chars.finish();
     assert_eq!(scx.map_line_to_content(file_id, 1), "abc");
@@ -370,7 +385,7 @@ fn line_to_content() {
     assert_eq!(scx.map_line_to_content(file_id, 6), "awsedq");
 
     let mut scx = make_source!("\nabc\ndef\n");
-    let chars = scx.entry("1");
+    let chars = scx.entry("1", &mut ecx).unwrap();
     let file_id = chars.get_file_id();
     chars.finish();
     assert_eq!(scx.map_line_to_content(file_id, 1), "");
@@ -379,13 +394,13 @@ fn line_to_content() {
     assert_eq!(scx.map_line_to_content(file_id, 4), "");
 
     let mut scx = make_source!("abcdef");
-    let chars = scx.entry("1");
+    let chars = scx.entry("1", &mut ecx).unwrap();
     let file_id = chars.get_file_id();
     chars.finish();
     assert_eq!(scx.map_line_to_content(file_id, 1), "abcdef");
 
     let mut scx = make_source!();
-    let chars = scx.entry("1");
+    let chars = scx.entry("1", &mut ecx).unwrap();
     let file_id = chars.get_file_id();
     chars.finish();
     assert_eq!(scx.map_line_to_content(file_id, 1), "");
@@ -393,7 +408,7 @@ fn line_to_content() {
     // if last charater is non ascii,
     // ending byte index was not correct, found by auto generated test
     let mut scx = make_source!("var a: abc::def\n绦");
-    let chars = scx.entry("1");
+    let chars = scx.entry("1", &mut ecx).unwrap();
     let file_id = chars.get_file_id();
     chars.finish();
     assert_eq!(scx.map_line_to_content(file_id, 2), "绦");
@@ -402,8 +417,9 @@ fn line_to_content() {
 #[test]
 #[should_panic(expected = "line number overflow")]
 fn line_number_overflow1() {
+    let mut ecx = make_errors!();
     let mut scx = make_source!("abc");
-    let chars = scx.entry("1");
+    let chars = scx.entry("1", &mut ecx).unwrap();
     let file_id = chars.get_file_id();
     chars.finish();
     scx.map_line_to_content(file_id, 0);
@@ -412,8 +428,9 @@ fn line_number_overflow1() {
 #[test]
 #[should_panic(expected = "line number overflow")]
 fn line_number_overflow2() {
+    let mut ecx = make_errors!();
     let mut scx = make_source!();
-    let chars = scx.entry("1");
+    let chars = scx.entry("1", &mut ecx).unwrap();
     let file_id = chars.get_file_id();
     chars.finish();
     scx.map_line_to_content(file_id, 2);
@@ -424,8 +441,9 @@ fn v0() {
 
     macro_rules! test_case {
         ($input: expr, $($ch: expr, $char_id: expr,)*) => (
+            let mut ecx = make_errors!();
             let mut scx = make_source!($input);
-            let mut chars = scx.entry("1");
+            let mut chars = scx.entry("1", &mut ecx).unwrap();
             let mut ret_chars = Vec::new();
             loop {
                 match chars.next() {
@@ -477,8 +495,9 @@ fn v0() {
 fn v0_last_non_ascii() {
     // when last char is not ascii, eof position is not last position + 1
 
+    let mut ecx = make_errors!();
     let mut scx = make_source!("我");
-    let mut chars = scx.entry("1");
+    let mut chars = scx.entry("1", &mut ecx).unwrap();
 
     assert_eq!(chars.next(), ('我', Position::new(0)));
     assert_eq!(chars.next(), (EOF, Position::new(3)));
@@ -487,6 +506,7 @@ fn v0_last_non_ascii() {
 #[test]
 fn span_to_line_column() {
 
+    let mut ecx = make_errors!();
     macro_rules! test_case {
         ($scx:expr, $([#$caseid:literal: $start_id:expr, $end_id:expr => $result:expr],)+) => (
             let scx = $scx;
@@ -497,24 +517,24 @@ fn span_to_line_column() {
     }
 
     test_case!{
-        make_source!("0123\n56\r8\n01234567\n9" as "1", scx in { scx.entry("1").finish(); }),
+        make_source!("0123\n56\r8\n01234567\n9" as "1", scx in { scx.entry("1", &mut ecx).unwrap().finish(); }),
         [#1: 0, 2 => (FileId::new(1), 1, 1, 1, 3)],
         [#2: 2, 20 => (FileId::new(1), 1, 3, 4, 2)],
         [#3: 3, 14 => (FileId::new(1), 1, 4, 3, 5)],
         [#4: 2, 19 => (FileId::new(1), 1, 3, 4, 1)],
     }
     test_case!{
-        make_source!("012345678901234567" as "1", scx in { scx.entry("1").finish(); }),
+        make_source!("012345678901234567" as "1", scx in { scx.entry("1", &mut ecx).unwrap().finish(); }),
         [#5: 0, 18 => (FileId::new(1), 1, 1, 1, 19)],
         [#6: 13, 15 => (FileId::new(1), 1, 14, 1, 16)],
         [#7: 0, 0 => (FileId::new(1), 1, 1, 1, 1)],
     }
     test_case!{
-        make_source!("" as "1", scx in { scx.entry("1").finish(); }),
+        make_source!("" as "1", scx in { scx.entry("1", &mut ecx).unwrap().finish(); }),
         [#8: 0, 0 => (FileId::new(1), 1, 1, 1, 1)],
     }
     test_case!{
-        make_source!("var 你好 =\n 世界;" as "1", scx in { scx.entry("1").finish(); }),
+        make_source!("var 你好 =\n 世界;" as "1", scx in { scx.entry("1", &mut ecx).unwrap().finish(); }),
         //     src, row, col, byte
         //       v,   1,   1,    0
         //       a,   1,   2,    1
@@ -536,10 +556,10 @@ fn span_to_line_column() {
     }
 
     test_case!{ make_source!("module 2;" as "src/main.f3", "fn f(){}" as  "src/2.f3", scx in {
-        let mut chars = scx.entry("src/main.f3");
+        let mut chars = scx.entry("src/main.f3", &mut ecx).unwrap();
         let sym = chars.intern_span(Span::new(7, 7));
         chars.finish();
-        scx.import(Span::new(1, 7), sym).unwrap().finish();
+        scx.import(Span::new(1, 7), sym, None, &mut ecx).unwrap().finish();
     }),
         [#13: 0, 5 => (FileId::new(1), 1, 1, 1, 6)],
         [#14: 0, 7 => (FileId::new(1), 1, 1, 1, 8)],
@@ -551,65 +571,70 @@ fn span_to_line_column() {
 
 // module resolve test case
 macro_rules! mr_test_case {
-    ([$($content:literal as $name:literal),+$(,)?] import $module:expr; from $span:expr => err) => {{
+    ([$($content:literal as $name:literal),+$(,)?] import $module:expr; from $span:expr => err $error:expr) => {{
+        let mut ecx = make_errors!();
         let mut scx = make_source!($($content as $name),+);
-        let mut chars = scx.entry("src/main.f3");
+        let mut chars = scx.entry("src/main.f3", &mut ecx).unwrap();
         let module_name = chars.intern_span($module);
         chars.finish();
-        assert!(scx.import($span, module_name).is_none());
+        assert!(scx.import($span, module_name, None, &mut ecx).is_none());
+        assert_eq!(ecx, $error);
     }};
     ([$($content:literal as $name:literal),+$(,)?] import $module:expr; from $span:expr => $path:expr) => {{
+        let mut ecx = make_errors!();
         let mut scx = make_source!($($content as $name),+);
-        let mut chars = scx.entry("src/main.f3");
+        let mut chars = scx.entry("src/main.f3", &mut ecx).unwrap();
         let module_name = chars.intern_span($module);
         chars.finish();
-        let import_chars = scx.import($span, module_name).unwrap();
+        let import_chars = scx.import($span, module_name, None, &mut ecx).unwrap();
         let file_id = import_chars.get_file_id();
         import_chars.finish();
         assert_eq!(scx.files[file_id.0 as usize - 1].path, PathBuf::from($path));
     }};
 
-    ([$($content:literal as $name:literal),+$(,)?] import explicit $module:literal from $span:expr => err) => {{
+    ([$($content:literal as $name:literal),+$(,)?] import explicit $module:literal from $span:expr => err $error:expr) => {{
+        let mut ecx = make_errors!();
         let mut scx = make_source!($($content as $name),+);
-        let mut chars = scx.entry("src/main.f3");
+        let mut chars = scx.entry("src/main.f3", &mut ecx).unwrap();
         let module_name = chars.intern($module);
         chars.finish();
-        assert!(scx.import($span, module_name).is_none());
+        assert!(scx.import($span, module_name, Some(module_name), &mut ecx).is_none());
+        assert_eq!(ecx, $error);
     }};
     ([$($content:literal as $name:literal),+$(,)?] import explicit $module:literal from $span:expr => $path:expr) => {{
+        let mut ecx = make_errors!();
         let mut scx = make_source!($($content as $name),+);
-        let mut chars = scx.entry("src/main.f3");
+        let mut chars = scx.entry("src/main.f3", &mut ecx).unwrap();
         let module_name = chars.intern($module);
         chars.finish();
-        let import_chars = scx.import($span, module_name).unwrap();
+        let import_chars = scx.import($span, module_name, Some(module_name), &mut ecx).unwrap();
         let file_id = import_chars.get_file_id();
         import_chars.finish();
         assert_eq!(scx.files[file_id.0 as usize - 1].path, PathBuf::from($path));
     }};
 
-    ([$($content:literal as $name:literal),+$(,)?] import $module1:expr; from entry then import $module2:expr; from $span:expr => err) => {{
+    ([$($content:literal as $name:literal),+$(,)?] import $module1:expr; from entry then import $module2:expr; from $span:expr => err $error:expr) => {{
+        let mut ecx = make_errors!();
         let mut scx = make_source!($($content as $name),+);
-        let mut chars = scx.entry("src/main.f3");
-        println!("before intern span 1");
+        let mut chars = scx.entry("src/main.f3", &mut ecx).unwrap();
         let module_name1 = chars.intern_span($module1);
         chars.finish();
-        let mut chars2 = scx.import(Span::new(0, 0), module_name1).unwrap();
-        println!("before intern span 2");
+        let mut chars2 = scx.import(Span::new(0, 0), module_name1, None, &mut ecx).unwrap();
         let module_name2 = chars2.intern_span($module2);
         chars2.finish();
-        assert!(scx.import($span, module_name2).is_none());
+        assert!(scx.import($span, module_name2, None, &mut ecx).is_none());
+        assert_eq!(ecx, $error);
     }};
     ([$($content:literal as $name:literal),+$(,)?] import $module1:expr; from entry then import $module2:expr; from $span:expr => $path:expr) => {{
+        let mut ecx = make_errors!();
         let mut scx = make_source!($($content as $name),+);
-        let mut chars = scx.entry("src/main.f3");
-        println!("before intern span 3");
+        let mut chars = scx.entry("src/main.f3", &mut ecx).unwrap();
         let module_name1 = chars.intern_span($module1);
         chars.finish();
-        let mut chars2 = scx.import(Span::new(0, 0), module_name1).unwrap();
-        println!("before intern span 4");
+        let mut chars2 = scx.import(Span::new(0, 0), module_name1, None, &mut ecx).unwrap();
         let module_name2 = chars2.intern_span($module2);
         chars2.finish();
-        let chars3 = scx.import($span, module_name2).unwrap();
+        let chars3 = scx.import($span, module_name2, None, &mut ecx).unwrap();
         let file_id = chars3.get_file_id();
         chars3.finish();
         assert_eq!(scx.files[file_id.0 as usize - 1].path, PathBuf::from($path));
@@ -647,7 +672,11 @@ fn resolve_entry() {
 
     mr_test_case!([
         "module module_name;" as "src/main.f3",
-    ] import Span::new(7, 17); from Span::new(0, 0) => err);
+    ] import Span::new(7, 17); from Span::new(0, 0) => err make_errors!{
+        e: e.emit(strings::FailedToReadAllCandidates)
+            .detail(Span::new(0, 0), strings::OriginatedHere)
+            .help(format!("{} [\"src/module-name.f3\", \"src/module-name/index.f3\", \"src/module_name.f3\", \"src/module_name/index.f3\"]", strings::Candidates))
+    });
 }
 
 #[test]
@@ -662,6 +691,13 @@ fn resolve_explicit() {
         "module some_module;" as "src/main.f3",
         "" as "src/../abc/def/ghi/f3", // because vfs does not have real canonicalize
     ] import explicit "../abc/def/ghi/f3" from Span::new(0, 0) => "src/../abc/def/ghi/f3");
+
+    mr_test_case!([
+        "module some_module;" as "src/main.f3",
+    ] import explicit "../abc/def/ghi/f3" from Span::new(0, 0) => err make_errors!{
+        e: e.emit(strings::FailedToReadAllCandidates)
+            .detail(Span::new(0, 0), strings::OriginatedHere).help(format!("{} [\"src/../abc/def/ghi/f3\"]", strings::Candidates))
+    });
 }
 
 #[test]
@@ -700,7 +736,11 @@ fn resolve_index() {
     mr_test_case!([
         "module some_module;" as "src/main.f3",
         "module module_name;" as "src/some-module/index.f3",
-    ] import Span::new(7, 17); from entry then import Span::new(27, 37); from Span::new(30, 30) => err);
+    ] import Span::new(7, 17); from entry then import Span::new(27, 37); from Span::new(30, 30) => err make_errors!{
+        e: e.emit(strings::FailedToReadAllCandidates)
+            .detail(Span::new(30, 30), strings::OriginatedHere)
+            .help(format!("{} [\"src/some-module/module-name.f3\", \"src/some-module/module-name/index.f3\", \"src/some-module/module_name.f3\", \"src/some-module/module_name/index.f3\"]", strings::Candidates))
+    });
 }
 
 #[test]
@@ -785,5 +825,11 @@ fn resolve_other() {
     mr_test_case!([
         "module some_module;" as "src/main.f3",
         "module module_name;" as "src/some-module.f3",
-    ] import Span::new(7, 17); from entry then import Span::new(27, 37); from Span::new(30, 30) => err);
+    ] import Span::new(7, 17); from entry then import Span::new(27, 37); from Span::new(30, 30) => err make_errors!{
+        e: e.emit(strings::FailedToReadAllCandidates)
+            .detail(Span::new(30, 30), strings::OriginatedHere)
+            .help(format!("{} {}", strings::Candidates, concat!("[\"src/some-module/module-name.f3\", \"src/some-module/module-name/index.f3\", ",
+                "\"src/some-module/module_name.f3\", \"src/some-module/module_name/index.f3\", \"src/some_module/module-name.f3\", ",
+                "\"src/some_module/module-name/index.f3\", \"src/some_module/module_name.f3\", \"src/some_module/module_name/index.f3\"]")))
+    });
 }

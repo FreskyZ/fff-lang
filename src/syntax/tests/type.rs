@@ -16,7 +16,7 @@ fn module_integration() {
 
         let mut scx: SourceContext = SourceContext::new(); // this is amazingly real file system
         let mut ecx = Diagnostics::new();
-        let mut context = Parser::new(Scanner::new(scx.entry(format!("tests/syntax/inter/{line}.f3")), &mut ecx));
+        let mut context = Parser::new(Scanner::new(scx.entry(format!("tests/syntax/inter/{line}.f3"), &mut ecx).unwrap(), &mut ecx));
 
         let actual = context.parse_module();
         context.finish();

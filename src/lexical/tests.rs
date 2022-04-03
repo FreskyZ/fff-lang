@@ -4,7 +4,7 @@ use super::*;
 
 fn testcase(mut scx: SourceContext<VirtualFileSystem>, spans: &[Span], symbols: &[&'static str], expect_tokens: Vec<(Token, Span)>, expect_diagnostics: Diagnostics, line: u32) {
     let mut actual_diagnostics = Diagnostics::new();
-    let chars = scx.entry("1");
+    let chars = scx.entry("1", &mut actual_diagnostics).unwrap();
     let mut parser = Parser::new(chars, &mut actual_diagnostics);
     for span in spans {
         parser.base.intern_span(*span);

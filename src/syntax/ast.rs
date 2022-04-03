@@ -241,7 +241,8 @@ pub struct MemberAccessExpr {
     pub all_span: Span,
 }
 
-#[derive(Debug)]
+// Attention: Clone for driver to store copy of import requests
+#[derive(Debug, Clone)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct ModuleStatement {
     pub name: IsId,

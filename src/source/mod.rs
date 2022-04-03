@@ -1,9 +1,11 @@
 ///! source: read file and provide character iterator, manage locations and strings
 
 use std::collections::HashMap;
+use std::ffi::{OsStr, OsString};
 use std::fmt;
 use std::path::{PathBuf, Path};
 
+use crate::diagnostics::{Diagnostics, strings};
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
@@ -138,71 +140,168 @@ impl<F> SourceContext<F> {
     }
 }
 
+const FILE_EXT: &str = ".f3";
+const INDEX_FILE: &str = "index.f3";
+
+enum ResolveType<'a> {
+    Explicit,  // explicitly provide relative path
+    FromIndex, // include from entry
+    Other(&'a str), // request from name, that is, the module name in request_from_file's parent module's import statement
+}
+
+// provide resolve options lazily according to import request
+// this is irrelavent to fs and diagnostics and should be easy to test
+struct Resolver<'a> {
+    r#type: ResolveType<'a>,
+    current_index: u32, // // this "smart" state (compare to compiler generated type) prevents borrow self and pin
+    request_from_parent_path: &'a Path,
+    request_name: &'a str,
+}
+
+impl<'a> Resolver<'a> {
+    fn new(request_from_id: FileId, request_from_file: &'a SourceFile, get_request_from_name: impl FnOnce() -> Option<&'a str>, request_name: &'a str, explicit_path: bool) -> Self {
+        let r#type = if explicit_path {
+            ResolveType::Explicit
+        } else if request_from_id.is_entry()
+            || request_from_file.path.ends_with(INDEX_FILE) { // path.ends_with checks last component not string content
+            ResolveType::FromIndex
+        } else {
+            let request_from_name = get_request_from_name();
+            debug_assert!(request_from_name.is_some(), "namespace component missing");
+            ResolveType::Other(request_from_name.unwrap())
+        };
+        debug_assert!(request_from_file.path.parent().is_some(), "request from file is the root");
+        let request_from_parent_path = request_from_file.path.parent().unwrap();
+        Self{ r#type, request_from_parent_path, request_name, current_index: 0 }
+    }
+}
+
+impl<'a> Iterator for Resolver<'a> {
+    type Item = PathBuf;
+
+    fn next(&mut self) -> Option<PathBuf> {
+        use ResolveType::*;
+
+        // no, convert char to osstr and convert char to osstring not exist
+        // and convert char to string, convert str to osstr is not const even not unstable const
+        let mut sep = String::with_capacity(1);
+        sep.push(std::path::MAIN_SEPARATOR);
+        let sep: &OsStr = sep.as_ref();
+
+        // format! does not actually work cross osstr and str
+        // Path::join or PathBuf: FromIterator does not actually work in this complex concat process
+        // to prevent any preventable string copy and utf8/utf16 conversion (on windows), you even need this
+        struct Builder(OsString);
+
+        impl Builder {
+            fn new(parent_path: &Path) -> Self {
+                let mut buf = OsString::with_capacity(256);
+                buf.push(parent_path.as_os_str());
+                Self(buf)
+            }
+            fn push(mut self, sep: impl AsRef<OsStr>) -> Self {
+                self.0.push(sep);
+                self
+            }
+            fn push_hyphened(mut self, underscored: &str) -> Self {
+                // this is how you replace push in place
+                let mut split = underscored.split('_');
+                if let Some(first) = split.next() {
+                    self.0.push(first); // this is convert and copy in current implementation, it is not preventable
+                }
+                for rest in split {
+                    self.0.push("-");
+                    self.0.push(rest);
+                }
+                self
+            }
+            fn into(self) -> Option<PathBuf> {
+                Some(PathBuf::from(self.0))
+            }
+        }
+
+        // // this is literally a builder factory
+        macro_rules! make_builder {
+            () => (Builder::new(self.request_from_parent_path).push(sep))
+        }
+
+        let result = match (&self.r#type, self.current_index) {
+            // order by current index, with explicit at last
+            (FromIndex, 0) => make_builder!().push_hyphened(self.request_name).push(FILE_EXT).into(),
+            (Other(request_from_name), 0) => make_builder!().push_hyphened(request_from_name).push(sep).push_hyphened(self.request_name).push(FILE_EXT).into(),
+            (FromIndex, 1) => make_builder!().push_hyphened(self.request_name).push(sep).push_hyphened(INDEX_FILE).into(),
+            (Other(request_from_name), 1) => make_builder!().push_hyphened(request_from_name).push(sep).push_hyphened(self.request_name).push(sep).push(INDEX_FILE).into(),
+            (FromIndex, 2) => make_builder!().push(self.request_name).push(FILE_EXT).into(),
+            (Other(request_from_name), 2) => make_builder!().push_hyphened(request_from_name).push(sep).push(self.request_name).push(FILE_EXT).into(),
+            (FromIndex, 3) => make_builder!().push(self.request_name).push(sep).push(INDEX_FILE).into(),
+            (Other(request_from_name), 3) => make_builder!().push_hyphened(request_from_name).push(sep).push(self.request_name).push(sep).push(INDEX_FILE).into(),
+            (Other(request_from_name), 4) => make_builder!().push(request_from_name).push(sep).push_hyphened(self.request_name).push(FILE_EXT).into(),
+            (Other(request_from_name), 5) => make_builder!().push(request_from_name).push(sep).push_hyphened(self.request_name).push(sep).push(INDEX_FILE).into(),
+            (Other(request_from_name), 6) => make_builder!().push(request_from_name).push(sep).push(self.request_name).push(FILE_EXT).into(),
+            (Other(request_from_name), 7) => make_builder!().push(request_from_name).push(sep).push(self.request_name).push(sep).push(INDEX_FILE).into(),
+            (ResolveType::Explicit, 0) => Some(self.request_from_parent_path.join(self.request_name)),
+            _ => None,
+        };
+        self.current_index += 1;
+        result
+    }
+}
+
 // methods about source files
 impl<F> SourceContext<F> where F: FileSystem {
 
-    pub fn entry(&mut self, path: impl Into<PathBuf>) -> SourceChars {
+    pub fn entry(&mut self, path: impl Into<PathBuf>, diagnostics: &mut Diagnostics) -> Option<SourceChars> {
         debug_assert!(self.files.is_empty(), "multiple entry");
-
         let path = path.into();
-        // simply panic for cannot read entry file, since it is really early critical error
-        let path = self.fs.canonicalize(&path).expect("cannot read entry");
-        let content = self.fs.read_to_string(&path).expect("cannot read entry");
-
-        SourceChars::new(content, /* start_index */ 0, path, /* namespace */ Vec::new(), /* request */ None, self)
+        self.fs.canonicalize(&path)
+            .and_then(|path| self.fs.read_to_string(&path).map(|c| (path, c)))
+            .map(|(path, content)| SourceChars::new(content, /* start_index */ 0, path, /* namespace */ Vec::new(), /* request */ None, self))
+            .map_err(|e| diagnostics.emit(format!("{} {}: {}", strings::FailedToReadFile, path.display(), e))).ok()
     }
 
-    // return option not result: let syntax parse module declare raise error
-    pub fn import(&mut self, location: Span, request: IsId) -> Option<SourceChars> {
+    // location: module_stmt location, for find requester,
+    // request: id for module name identifier, explicit_path: id for explicit relative path identifier
+    pub fn import(&mut self, location: Span, request: IsId, explicit_path: Option<IsId>, diagnostics: &mut Diagnostics) -> Option<SourceChars> {
         debug_assert!(!self.files.is_empty(), "no entry");
-        let (request_file_id, request_file, _) = self.map_position_to_file_and_byte_index(location.start);
-        let (request_name, explicit) = self.resolve_string_content_and_type(request);
 
-        let parent_path = request_file.path.parent().expect("request file is root");
-        macro_rules! make_paths { ($([$($c:expr),+],)+) => { vec![$( parent_path.join([$($c,)+].into_iter().collect::<PathBuf>()), )+] } }
-        let resolve_options = if explicit {
-            vec![self.fs.canonicalize(parent_path.join(request_name)).ok()?]
-        } else {
-            const FILE_EXT: &str = ".f3";
-            let module_name = request_name;
-            let hyphened_module_name = module_name.replace('_', "-");
-            let module_name_with_ext = format!("{}{}", module_name, FILE_EXT);
-            let hyphened_module_name_with_ext = format!("{}{}", hyphened_module_name, FILE_EXT);
+        let (request_from_id, request_from_file, _) = self.map_position_to_file_and_byte_index(location.start);
+        let (request_name, _) = self.resolve_string_content_and_type(request);
+        let explicit_path = explicit_path.map(|id| self.resolve_string(id));
 
-            const INDEX_FILE: &str = "index.f3";
-            if request_file_id.is_entry() || request_file.path.ends_with("index.f3") { // path.ends_with checks last *component* not string content
-                make_paths!{
-                    [&hyphened_module_name_with_ext],
-                    [&hyphened_module_name, INDEX_FILE],
-                    [module_name_with_ext],
-                    [module_name, INDEX_FILE],
+        let resolver = Resolver::new(
+            request_from_id,
+            request_from_file,
+            || request_from_file.namespace.last().map(|id| self.resolve_string(*id)),
+            explicit_path.unwrap_or(request_name), 
+            explicit_path.is_some());
+
+        let mut candidates = Vec::new();
+        for option in resolver {
+            match self.fs.canonicalize(&option).map_err(|e| (option, e))
+                // the 2 map_err: preserve path if canonicalize success to make path in error message more readable 
+                .and_then(|path| self.fs.read_to_string(&path).map(|c| (path.clone(), c)).map_err(|e| (path, e))) {
+                Ok((path, content)) => {
+                    let mut namespace = request_from_file.namespace.clone();
+                    namespace.push(request);
+                    let last_file = self.files.last().unwrap();
+                    let start_index = last_file.start_index + last_file.content.len() + 1; // +1 for position for EOF
+                    return Some(SourceChars::new(content, start_index, path, namespace, Some(location), self));
+                },
+                Err((path, e)) if e.kind() == std::io::ErrorKind::NotFound => {
+                    candidates.push(path);
+                    continue; // to next option
+                },
+                Err((path, e)) => {
+                    diagnostics.emit(format!("{} {}: {}", strings::FailedToReadFile, path.display(), e)).detail(location, "originated from here");
+                    return None;
                 }
-            } else {
-                let this_module_name_id = request_file.namespace.last().expect("namespace component missing");
-                let this_module_name = self.resolve_string(*this_module_name_id);
-                let hyphened_this_module_name = this_module_name.replace('_', "-");
-                make_paths![
-                    [&hyphened_this_module_name, &hyphened_module_name_with_ext],
-                    [&hyphened_this_module_name, &hyphened_module_name, INDEX_FILE],
-                    [&hyphened_this_module_name, &module_name_with_ext],
-                    [&hyphened_this_module_name, module_name, INDEX_FILE],
-                    [this_module_name, &hyphened_module_name_with_ext],
-                    [this_module_name, &hyphened_module_name, INDEX_FILE],
-                    [this_module_name, &module_name_with_ext],
-                    [this_module_name, module_name, INDEX_FILE],
-                ]
             }
-        };
+        }
 
-        // borrowck says if put this sentence in closure then it borrows self.files so cannot borrow self.files mutably (to insert)
-        let mut namespace = request_file.namespace.clone();
-        // RFINRE: read failure is not module resolution error, simply regard read/open error as not exist
-        resolve_options.into_iter().filter_map(|p| self.fs.read_to_string(&p).map(|c| (p, c)).ok()).next().map(|(path, content)| {
-            namespace.push(request);
-            let last_file = self.files.last().unwrap();
-            let start_index = last_file.start_index + last_file.content.len() + 1; // +1 for position for EOF
-            SourceChars::new(content, start_index, path, namespace, Some(location), self)
-        })
+        diagnostics.emit(strings::FailedToReadAllCandidates)
+            .detail(location, strings::OriginatedHere)
+            .help(format!("{} {:?}", strings::Candidates, candidates));
+        None
     }
 
     // it is not in SourceFile because it will use vfs

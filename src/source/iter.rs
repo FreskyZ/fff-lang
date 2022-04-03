@@ -305,10 +305,8 @@ impl<'a> SourceChars<'a> {
     pub fn get_file_id(&self) -> FileId {
         FileId::new(self.files.len() as u32 + 1)
     }
-    pub fn finish(mut self) {
-        // // no, not this, cannot move self when self is borrowed (the self.context)
-        // // self.context.finish_build(self)
 
+    pub fn finish(mut self) {
         let content_length = self.content.len();
         self.content.truncate(content_length - 3);
         self.files.push(SourceFile{
@@ -321,6 +319,23 @@ impl<'a> SourceChars<'a> {
         });
     }
 }
+
+// impl<'a> Drop for SourceChars<'a> {
+//     fn drop(&mut self) {
+//         // this cannot be some SourceContext::finish_build because SourceChars 
+//         // does not have a referece to SourceContext to prevent propagating <F: FileSystem> generic parameter
+//         let content_length = self.content.len();
+//         self.content.truncate(content_length - 3);
+//         self.files.push(SourceFile{
+//             path: std::mem::take(&mut self.path),
+//             endlines: get_endlines(&self.content),
+//             content: std::mem::take(&mut self.content),
+//             namespace: std::mem::take(&mut self.namespace),
+//             start_index: self.start_index,
+//             request: self.request,
+//         });
+//     }
+// }
 
 // width byte[0]  byte[1]  byte[2]  byte[3]
 // 1     0xxxxxxx

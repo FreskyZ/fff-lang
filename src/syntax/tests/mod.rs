@@ -66,7 +66,7 @@ fn case_until_node<
         cwd: "/".into(),
         files: [("1".into(), input.into())].into_iter().collect(),
     });
-    let mut context = Parser::new(crate::lexical::Parser::new(source.entry("1"), &mut actual_diagnostics));
+    let mut context = Parser::new(crate::lexical::Parser::new(source.entry("1", &mut actual_diagnostics).unwrap(), &mut actual_diagnostics));
     let actual_node = f(&mut context);
     if let Ok(actual_node) = actual_node {
         context.finish();

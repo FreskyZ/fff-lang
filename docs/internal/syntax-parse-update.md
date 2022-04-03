@@ -17,8 +17,8 @@
 - [x] discard test constructors and use make_xxxx macros, merge make_lit into make_expr, remove make_exprs, try add make_stmt
 - [ ] try merge all of them into make_node, rename previous make_node to make_ast
 - [x] move node definitions to one file, move node implementations (impl Node) to one file, move parse tests to several dedicated files
-- [ ] remove jumpstatement from node, copy fields to breakstatement and continuestatement
-- [ ] move parse functions to several dedicated files, then ParseContext's context (allow object literal, is in format string literal, etc.) may can be pass by parameter not save in ParseContext
+- [x] remove jumpstatement from node, copy fields to breakstatement and continuestatement
+- [x] move parse functions to several dedicated files, then ParseContext's context (allow object literal, is in format string literal, etc.) may can be pass by parameter not save in ParseContext
 - [-] fix random test input generator
 - [ ] add numeric literal type as suffixed/unsuffixed and bin/oct/dec/hex/unprefixed, member access require unsuffixed and unprefixed
 - [ ] add missing array dup def

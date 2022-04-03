@@ -4,6 +4,11 @@
 
 pub const Empty: &str = "";
 
+pub const FailedToReadFile: &str = "failed to read file";
+pub const FailedToReadAllCandidates: &str = "failed to read all candidates for module request";
+pub const OriginatedHere: &str = "originated from here";
+pub const Candidates: &str = "candidates:";
+
 pub const UnexpectedEOF: &str = "Unexpected EOF";
 pub const UnexpectedEOL: &str = "Unexpected end of line";
 pub const BlockCommentStartHere: &str = "Block comment starts here";

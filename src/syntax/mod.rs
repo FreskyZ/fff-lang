@@ -14,31 +14,22 @@ pub use parser::Parser;
 #[cfg(not(test))]
 use parser::Parser;
 
-// may be abuse of visit but seems cool
-struct CollectImportVisitor {
-    requests: Vec<(crate::source::Span, crate::source::IsId)>,
-}
-impl Visitor for CollectImportVisitor {
-    fn visit_module_stmt(&mut self, node: &ast::ModuleStatement) -> Result<(), ()> {
-        self.requests.push((node.all_span, node.path.map(|(path, _)| path).unwrap_or(node.name)));
-        Ok(())
-    }
-}
-
 // `'impl' name` not `'impl' name_segment` ??
 impl ast::Module {
-    pub fn collect_imports(&self) -> Vec<(crate::source::Span, crate::source::IsId)> {
-        let mut collector = CollectImportVisitor{ requests: Vec::new() };
-        self.accept(&mut collector).unwrap();
-        collector.requests
+
+    pub fn imports(&self) -> Vec<ast::ModuleStatement> {
+        self.items.iter().filter_map(|item| match item {
+            ast::Item::Import(module_stmt) => Some(module_stmt.clone()),
+            _ => None,
+        }).collect()
     }
 }
 
 // parse any types of node for test
 pub fn parse_any<T>(source: crate::source::SourceChars, diagnostics: &mut crate::diagnostics::Diagnostics, f: impl FnOnce(&mut Parser) -> Result<T, Unexpected>) -> Option<T> {
-    let mut context = Parser::new(crate::lexical::Parser::new(source, diagnostics));
-    let result = f(&mut context).ok();
-    context.finish();
+    let mut parser = Parser::new(crate::lexical::Parser::new(source, diagnostics));
+    let result = f(&mut parser).ok();
+    parser.finish();
     result
 }
 // formal public api only parses module

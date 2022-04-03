@@ -12,15 +12,16 @@ macro_rules! ppcase { // pretty print case
 #[test]
 fn array_def() {
 
+    let mut ecx = make_errors!();
     let mut scx = make_source!("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz");
-    scx.entry("1").finish();
+    scx.entry("1", &mut ecx).unwrap().finish();
     ppcase!{
         make_expr!(array 0:42).display(&scx),
         "array-def <1:1-1:43>\n"
     }
 
     let mut scx = make_source!("abcde\nfg\nhi\njklm");
-    scx.entry("1").finish();
+    scx.entry("1", &mut ecx).unwrap().finish();
     ppcase!{
         make_expr!(array 0:9
             make_expr!(i32 1 1:1),
@@ -38,8 +39,9 @@ fn array_def() {
 #[test]
 fn binary_expr() {
 
+    let mut ecx = make_errors!();
     let mut scx = make_source!("ascasconwoeicnqw");
-    scx.entry("1").finish();
+    scx.entry("1", &mut ecx).unwrap().finish();
     ppcase!{ 
         make_expr!(binary 0:4 Add 2:2
             make_expr!(i32 1 0:0),
@@ -55,8 +57,9 @@ fn binary_expr() {
 #[test]
 fn expr_list() {
 
+    let mut ecx = make_errors!();
     let mut scx = make_source!("123123234123");
-    scx.entry("1").finish();
+    scx.entry("1", &mut ecx).unwrap().finish();
     ppcase!{
         ExprList{ items: vec![
             make_expr!(i32 1 1:2),
@@ -70,15 +73,16 @@ fn expr_list() {
 #[test]
 fn tuple_def() {
 
+    let mut ecx = make_errors!();
     let mut scx = make_source!("1231241241231412341234");
-    scx.entry("1").finish();
+    scx.entry("1", &mut ecx).unwrap().finish();
     ppcase!{
         make_expr!(tuple 0:21).display(&scx),
         "tuple-def <1:1-1:22>\n"
     }
 
     let mut scx = make_source!("1231241241231412341234");
-    scx.entry("1").finish();
+    scx.entry("1", &mut ecx).unwrap().finish();
     ppcase!{
         make_expr!(tuple 0:8
             make_expr!(i32 1 1:2),
@@ -94,7 +98,7 @@ fn loop_stmt() {
     //                  1234567890123456789 0123 45678
     let mut scx = make_source!("@@: loop { println(\"233\"); }");
     let mut ecx = crate::diagnostics::make_errors!();
-    let mut context = Parser::new(crate::lexical::Parser::new(scx.entry("1"), &mut ecx));
+    let mut context = Parser::new(crate::lexical::Parser::new(scx.entry("1", &mut ecx).unwrap(), &mut ecx));
     let node = context.parse_loop_stmt().unwrap();
     context.finish();
     ppcase!{ node.display(&scx), r#"loop-stmt <1:1-1:28> loop <1:5-1:8>
@@ -115,7 +119,7 @@ fn postfix_expr() {
     //                           0123456789012345678901234567890123456789012345678901234567
     let mut scx = make_source!("a.b(c, d, e).f(g, h, i,)(u,).j[k].l().m[n, o, p][r, s, t,]");
     let mut ecx = crate::diagnostics::make_errors!();
-    let mut context = Parser::new(crate::lexical::Parser::new(scx.entry("1"), &mut ecx));
+    let mut context = Parser::new(crate::lexical::Parser::new(scx.entry("1", &mut ecx).unwrap(), &mut ecx));
     let node = context.parse_postfix_expr().unwrap();
     context.finish();
     ppcase!{ node.display(&scx), "index-call <1:1-1:58> [] <1:49-1:58>

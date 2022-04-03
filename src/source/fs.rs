@@ -38,6 +38,10 @@ impl FileSystem for VirtualFileSystem {
         Ok(path.as_ref().into())
     }
     fn read_to_string(&self, path: impl AsRef<Path>) -> io::Result<String> {
-        self.files.get(path.as_ref().into()).map(|v| v.clone()).ok_or_else(|| io::ErrorKind::NotFound.into())
+        match self.files.get(path.as_ref().into()) {
+            Some(content) if content.starts_with("permission") => Err(io::ErrorKind::PermissionDenied.into()),
+            Some(content) => Ok(content.clone()),
+            None => Err(io::ErrorKind::NotFound.into()),
+        }
     }
 }
