@@ -1,16 +1,33 @@
 [package]
-name = "ffc"
+name = "fff-lang"
 version = "0.2.0"
 edition = "2021"
+
+[lib]
+name = "fflib"
+doctest = false # currently there is none
+
+[[bin]]
+# main command line interface
+# you can run it with `cargo rc -- [OPTIONS] [file name]` (rc: run compiler)
+name = "ffc"
+# it is a simple stub and has no unit tests
+test = false
+
+[[bin]]
+# compiler intergration test
+# you can run it with `cargo rt [test file name]` (rt: run test)
+name = "ct"
+# it is a simple stub and has no unit tests
+test = false
+# required-features = ["compiler_test"]
 
 [features]
 trace_xid = []
 trace_lexical_str = []
 trace_lexical_char = []
 trace_lexical_escape = []
-trace_num_lit_parse = []
-trace_primary_expr_parse = []
+trace_numeric_parse = []
 trace_postfix_expr_parse = []
 trace_binary_expr_parse = []
-trace_fn_def_parse = []
-integration_test = []
+compiler_test = []

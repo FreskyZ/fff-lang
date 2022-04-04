@@ -1,4 +1,4 @@
-module tests/syntax/inter/module1.f3
+module tests/ast/module1.f3
   use-stmt <2:1-2:20>
     name <2:5-2:19>
       name-segment <2:5-2:7> log

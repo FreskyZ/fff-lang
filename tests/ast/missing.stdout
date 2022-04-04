@@ -1,4 +1,4 @@
-module tests/syntax/inter/missing.f3
+module tests/ast/missing.f3
   var-def <3:1-3:16> const full <3:7-3:10>
     range-full-expr <3:14-3:15>
   var-def <4:1-4:21> const left <4:7-4:10>

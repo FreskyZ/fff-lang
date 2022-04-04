@@ -1,4 +1,4 @@
-module tests/syntax/inter/list.f3
+module tests/ast/list.f3
   fn <4:1-39:1> main <4:4-4:7> () <4:8-4:9>
     block <4:11-39:1>
       var-def <7:5-7:32> mutable list <7:9-7:12>
@@ -55,7 +55,7 @@ module tests/syntax/inter/list.f3
             name <30:22-30:27>
               name-segment <30:22-30:27> length
         block <30:29-32:5>
-          assign-expr-stmt <31:9-31:21>*= <31:17-31:18>
+          assign-expr-stmt <31:9-31:21> *= <31:17-31:18>
             index-call <31:9-31:15> [] <31:13-31:15>
               name <31:9-31:12>
                 name-segment <31:9-31:12> list
@@ -66,7 +66,7 @@ module tests/syntax/inter/list.f3
         name <33:14-33:17>
           name-segment <33:14-33:17> list
         block <33:18-33:28>
-          assign-expr-stmt <33:20-33:26>*= <33:22-33:23>
+          assign-expr-stmt <33:20-33:26> *= <33:22-33:23>
             name <33:20-33:20>
               name-segment <33:20-33:20> i
             literal i32 3 <33:25-33:25>

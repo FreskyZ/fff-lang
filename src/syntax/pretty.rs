@@ -110,7 +110,7 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
 
     fn visit_assign_expr_stmt(&mut self, node: &AssignExprStatement) -> fmt::Result {
         self.impl_visit(node, "assign-expr-stmt", node.all_span, |f|
-            f.write_str(node.assign_op.display())?.write_space()?.write_span(node.assign_op_span))
+            f.write_space()?.write_str(node.assign_op.display())?.write_space()?.write_span(node.assign_op_span))
     }
 
     fn visit_binary_expr(&mut self, node: &BinaryExpr) -> fmt::Result {

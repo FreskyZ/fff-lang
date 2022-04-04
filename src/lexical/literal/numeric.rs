@@ -219,7 +219,7 @@ fn u64_final_value(value: u64, is_positive: bool) -> Numeric {
 fn parse_impl(raw: String) -> Result<Numeric, (String, Option<String>)> {
     use std::{ i8, u8, i16, u16, i32, u32, i64, u64, f32, f64 };
 
-    if cfg!(feature = "trace_num_lit_parse") {
+    if cfg!(feature = "trace_numeric_parse") {
         println!("\nnum lit parsing: \"{}\"", raw);
     }
 
@@ -245,12 +245,12 @@ fn parse_impl(raw: String) -> Result<Numeric, (String, Option<String>)> {
     let mut state = State::ReallyNothing;
     let mut chars = BufChars::new(raw.chars());
     
-    // use with --features trace_num_lit_parse
-    #[cfg(feature = "trace_num_lit_parse")] 
+    // use with --features trace_numeric_parse
+    #[cfg(feature = "trace_numeric_parse")] 
     macro_rules! conv { ($id: expr, $new_state: expr) => ({ println!("    conv {}", $id); state = $new_state; }) }
-    #[cfg(feature = "trace_num_lit_parse")] 
+    #[cfg(feature = "trace_numeric_parse")] 
     macro_rules! retok { ($id: expr, $ret_val: expr) => ({ println!("    retok {}", $id); return Ok($ret_val); }) }
-    #[cfg(feature = "trace_num_lit_parse")] 
+    #[cfg(feature = "trace_numeric_parse")] 
     macro_rules! reterr { 
         ($id:expr) => ({ 
             println!("    reterr {}", $id); 
@@ -265,7 +265,7 @@ fn parse_impl(raw: String) -> Result<Numeric, (String, Option<String>)> {
             return Err((format!("{}, {}", strings::InvalidNumericLiteral, $extra_msg), Some($help.into()))); 
         });
     }
-    #[cfg(feature = "trace_num_lit_parse")] 
+    #[cfg(feature = "trace_numeric_parse")] 
     macro_rules! reterr_internal {
         ($id: expr) => ({
             println!("    reterr_internal {}", $id);
@@ -273,11 +273,11 @@ fn parse_impl(raw: String) -> Result<Numeric, (String, Option<String>)> {
         });
     }
 
-    #[cfg(not(feature = "trace_num_lit_parse"))] 
+    #[cfg(not(feature = "trace_numeric_parse"))] 
     macro_rules! conv { ($id: expr, $new_state: expr) => ({ state = $new_state; }) }
-    #[cfg(not(feature = "trace_num_lit_parse"))] 
+    #[cfg(not(feature = "trace_numeric_parse"))] 
     macro_rules! retok { ($id: expr, $ret_val: expr) => ({ return Ok($ret_val); }) }
-    #[cfg(not(feature = "trace_num_lit_parse"))] 
+    #[cfg(not(feature = "trace_numeric_parse"))] 
     macro_rules! reterr { 
         ($id:expr) => ({ 
             return Err((strings::InvalidNumericLiteral.to_owned(), None)); 
@@ -289,7 +289,7 @@ fn parse_impl(raw: String) -> Result<Numeric, (String, Option<String>)> {
             return Err((format!("{}, {}", strings::InvalidNumericLiteral, $extra_msg), Some($help.into())));
         });
     }
-    #[cfg(not(feature = "trace_num_lit_parse"))] 
+    #[cfg(not(feature = "trace_numeric_parse"))] 
     macro_rules! reterr_internal {
         ($id: expr) => ({
             return Err((format!("{}, {} {}", strings::InvalidNumericLiteral, strings::InternalErrorAt, line!()), None));
@@ -962,12 +962,12 @@ mod tests {
 
         macro_rules! test_case {
             ($input:expr, $expect:expr) => {{
-                #[cfg(feature = "trace_num_lit_parse")]
+                #[cfg(feature = "trace_numeric_parse")]
                 print!("\ncase {:?} at {}:", $input, line!());
                 assert!(rational_eq!(parse_impl($input.to_owned()).unwrap(), $expect));
             }};
             ($input:expr, err, $expect:expr) => {{
-                #[cfg(feature = "trace_num_lit_parse")]
+                #[cfg(feature = "trace_numeric_parse")]
                 print!("\ncase {:?} at {}:", $input, line!());
                 assert_eq!(parse_impl($input.to_owned()), Err($expect));
             }};

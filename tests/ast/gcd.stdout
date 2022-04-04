@@ -1,4 +1,4 @@
-module tests/syntax/inter/gcd.f3
+module tests/ast/gcd.f3
   fn <4:1-17:1> main <4:4-4:7> () <4:8-4:9>
     block <4:11-17:1>
       loop-stmt <6:5-16:5> loop <6:12-6:15>

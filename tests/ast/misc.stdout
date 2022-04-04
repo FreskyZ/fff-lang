@@ -1,4 +1,4 @@
-module tests/syntax/inter/misc.f3
+module tests/ast/misc.f3
   fn <1:1-3:1> fn1 <1:4-1:6> () <1:7-1:22>
     fn-param <1:8-1:13> a <1:8-1:8>
       primitive-type u32 <1:11-1:13>
@@ -95,14 +95,14 @@ module tests/syntax/inter/misc.f3
                       name-segment <30:16-30:16> a
                     literal i32 0 <30:21-30:21>
                   block <30:23-33:13>
-                    assign-expr-stmt <31:17-31:23>+= <31:19-31:20>
+                    assign-expr-stmt <31:17-31:23> += <31:19-31:20>
                       name <31:17-31:17>
                         name-segment <31:17-31:17> a
                       literal i32 1 <31:22-31:22>
                     break-stmt <32:17-32:27> @def <32:23-32:26>
                 else-clause <33:15-36:13>
                   block <33:20-36:13>
-                    assign-expr-stmt <34:17-34:23>+= <34:19-34:20>
+                    assign-expr-stmt <34:17-34:23> += <34:19-34:20>
                       name <34:17-34:17>
                         name-segment <34:17-34:17> b
                       literal i32 1 <34:22-34:22>
@@ -140,7 +140,7 @@ module tests/syntax/inter/misc.f3
                     literal str "zmj" <46:21-46:25>
                     name <46:29-46:29>
                       name-segment <46:29-46:29> i
-          assign-expr-stmt <48:9-48:15>-= <48:11-48:12>
+          assign-expr-stmt <48:9-48:15> -= <48:11-48:12>
             name <48:9-48:9>
               name-segment <48:9-48:9> a
             literal i32 1 <48:14-48:14>

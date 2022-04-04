@@ -1,4 +1,4 @@
-module tests/syntax/inter/hello.f3
+module tests/ast/hello.f3
   simple-expr-stmt <4:1-4:23>
     fn-call <4:1-4:22> () <4:8-4:22>
       name <4:1-4:7>

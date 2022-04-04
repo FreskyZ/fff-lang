@@ -1,57 +1,6 @@
 use super::*;
 // nodes that not expr and not stmt and not item
 
-// TODO: this integeration test should be another bin (aside ffc.exe in this rust project) to run ffc.exe with --print ast
-#[test]
-fn module_integration() {
-    use std::fmt::Write;
-    use std::fs::read_to_string;
-    use crate::source::{SourceContext};
-    use crate::diagnostics::Diagnostics;
-    use crate::lexical::Parser as Scanner;
-
-    let test_cases = read_to_string("tests/syntax/inter/index.txt").expect("cannot read index.txt");
-    for line in test_cases.lines() {
-        let expect_display = read_to_string(format!("tests/syntax/inter/{line}_result.txt")).expect(&format!("cannot read {line}_result.txt"));
-
-        let mut scx: SourceContext = SourceContext::new(); // this is amazingly real file system
-        let mut ecx = Diagnostics::new();
-        let mut context = Parser::new(Scanner::new(scx.entry(format!("tests/syntax/inter/{line}.f3"), &mut ecx).unwrap(), &mut ecx));
-
-        let actual = context.parse_module();
-        context.finish();
-        if actual.is_err() {
-            panic!("{}.f3 parse fail: {}", line, ecx.display(&scx));
-        }
-        let actual_display = actual.unwrap().display(&scx).to_string();
-
-        if actual_display != expect_display {
-            let mut buf = format!("{}.f3 display not same\n", line);
-            let (actual_lines, expect_lines) = (actual_display.lines().collect::<Vec<_>>(), expect_display.lines().collect::<Vec<_>>());
-            let common_line_count = std::cmp::min(actual_lines.len(), expect_lines.len());
-            for line in 0..common_line_count {
-                if actual_lines[line] != expect_lines[line] {
-                    writeln!(buf, "{: >3} |- {}", line + 1, actual_lines[line]).unwrap();
-                    writeln!(buf, "    |+ {}", expect_lines[line]).unwrap();
-                } else {
-                    writeln!(buf, "{: >3} |  {}", line + 1, actual_lines[line]).unwrap();
-                }
-            }
-            if actual_lines.len() > common_line_count {
-                for line in common_line_count..actual_lines.len() {
-                    writeln!(buf, "{: >3} |- {}", line + 1, actual_lines[line]).unwrap();
-                }
-            }
-            if expect_lines.len() > common_line_count {
-                for line in common_line_count..expect_lines.len() {
-                    writeln!(buf, "{: >3} |+ {}", line + 1, expect_lines[line]).unwrap();
-                }
-            }
-            panic!("{}", buf)
-        }
-    }
-}
-
 #[test]
 fn type_ref_parse() {
 

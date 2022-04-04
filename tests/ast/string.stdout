@@ -1,4 +1,4 @@
-module tests/syntax/inter/string.f3
+module tests/ast/string.f3
   fn <4:1-23:1> main <4:4-4:7> () <4:8-4:9>
     block <4:11-23:1>
       var-def <6:5-6:30> mutable input <6:9-6:13>

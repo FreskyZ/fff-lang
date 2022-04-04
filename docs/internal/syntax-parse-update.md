@@ -20,9 +20,11 @@
 - [x] remove jumpstatement from node, copy fields to breakstatement and continuestatement
 - [x] move parse functions to several dedicated files, then ParseContext's context (allow object literal, is in format string literal, etc.) may can be pass by parameter not save in ParseContext
 - [-] fix random test input generator
+- [ ] add missing array dup def and experience new file structure
+- [ ] unify name segment and plain type segment into path segment, path segment contains variants of ident, ident + generic, type-as, and num lit, control by parameters
+      path segment itself can parse and will also be used by member access, this will block mast because core operation in lowering to mast is name resolve
+- [ ] allow generic parameter in type name and fn name, that's called parse_generic_name
 - [ ] add numeric literal type as suffixed/unsuffixed and bin/oct/dec/hex/unprefixed, member access require unsuffixed and unprefixed
-- [ ] add missing array dup def
-- [ ] unify name segment and plain type segment into path segment, path segment itself can parse and will also be used by member access, type name and function name
 - [ ] format string
 - [ ] add generic parameters to type, add impl type and impl trait for type
 - [ ] add generic parameters to function, add generic constraints to function, impl type and impl trait

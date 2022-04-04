@@ -213,15 +213,10 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     // fn-def = 'fn' identifier '(' [ identifier ':' type-use { ',' identifier ':' type-use [ ',' ] } ] ')' [ '->' type-use ] block
     // TODO: fn name (and type name) should be a "GenericName" where type parameters only allow identifier
     pub fn parse_fn_def(&mut self) -> Result<FnDef, Unexpected> {
-        #[cfg(feature = "trace_fn_def_parse")]
-        macro_rules! trace { ($($arg:tt)*) => ({ print!("[FnDef: {}]", line!()); println!($($arg)*); }) }
-        #[cfg(not(feature = "trace_fn_def_parse"))]
-        macro_rules! trace { ($($arg:tt)*) => () }
-        
+
         let fn_span = self.expect_keyword(Keyword::Fn)?;
         let (fn_name, fn_name_span) = self.expect_ident()?;
         let mut params_paren_span = self.expect_sep(Separator::LeftParen)?;
-        trace!("fndef name span: {:?}", fn_name_span);
 
         let mut params = Vec::new();
         loop {
