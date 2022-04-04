@@ -23,7 +23,7 @@ fn run_compiler(args: argument::Argument, output: &mut impl io::Write) {
             modules.push(main_module);
             while !requests.is_empty() {
                 let request = &requests[0];
-                scx.import(request.all_span, request.name, request.path.map(|(id, _)| id), &mut ecx)
+                scx.import(request.span, request.name, request.path.map(|(id, _)| id), &mut ecx)
                     .and_then(|source| parse(source, &mut ecx)).map(|module| {
                         requests.extend(module.imports());
                         modules.push(module);

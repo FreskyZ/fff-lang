@@ -97,7 +97,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             } else {
                 (name.map(|(kw, span)| (self.intern(kw.display()), span)), r#type)
             };
-            parameters.push(FnTypeParam{ name, all_span: name.map(|(_, name_span)| name_span).unwrap_or_else(|| r#type.get_all_span()) + r#type.get_all_span(), r#type });
+            parameters.push(FnTypeParam{ name, span: name.map(|(_, name_span)| name_span).unwrap_or_else(|| r#type.span()) + r#type.span(), r#type });
         };
 
         let ret_type = self.try_expect_seps(&[Separator::Arrow, Separator::Colon]).map(|(sep, span)| {
@@ -107,8 +107,8 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             self.parse_type_ref()
         }).transpose()?;
         
-        let all_span = fn_span + ret_type.as_ref().map(|t| t.get_all_span()).unwrap_or(right_paren_span);
-        Ok(FnType{ paren_span: left_paren_span + right_paren_span, parameters, ret_type: ret_type.map(Box::new), all_span })
+        let span = fn_span + ret_type.as_ref().map(|t| t.span()).unwrap_or(right_paren_span);
+        Ok(FnType{ quote_span: left_paren_span + right_paren_span, parameters, ret_type: ret_type.map(Box::new), span })
     }
 
     pub fn maybe_plain_type(&self) -> bool {
@@ -139,7 +139,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         while let Some((ident, ident_span)) = self.try_expect_ident() {
             if let Some(lt_span) = self.try_expect_sep(Separator::Lt) {
                 if let Some(gt_span) = self.try_expect_sep(Separator::Gt) { // allow <> in syntax parse
-                    segments.push(TypeSegment{ ident, ident_span, quote_span: lt_span + gt_span, parameters: Vec::new(), all_span: ident_span + gt_span });
+                    segments.push(TypeSegment{ ident, ident_span, quote_span: lt_span + gt_span, parameters: Vec::new(), span: ident_span + gt_span });
                 } else {
                     let mut parameters = vec![self.parse_type_ref()?];
                     let quote_span = lt_span + loop {
@@ -149,10 +149,10 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
                         self.expect_sep(Separator::Comma)?;
                         parameters.push(self.parse_type_ref()?);
                     };
-                    segments.push(TypeSegment{ ident, ident_span, quote_span, parameters, all_span: ident_span + quote_span });
+                    segments.push(TypeSegment{ ident, ident_span, quote_span, parameters, span: ident_span + quote_span });
                 }
             } else {
-                segments.push(TypeSegment{ ident, ident_span, quote_span: Span::new(0, 0), parameters: Vec::new(), all_span: ident_span });
+                segments.push(TypeSegment{ ident, ident_span, quote_span: Span::new(0, 0), parameters: Vec::new(), span: ident_span });
             }
             if self.try_expect_sep(Separator::ColonColon).is_none() {
                 break;
@@ -160,9 +160,9 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         }
 
         let global = type_as_segment.is_none() && beginning_separator_span.is_some();
-        let all_span = type_as_segment.as_ref().map(|s| s.span).or(beginning_separator_span)
-            .unwrap_or_else(|| segments[0].all_span) + segments.last().unwrap().all_span; // [0] and last().unwrap(): matches() guarantees segments are not empty
-        Ok(PlainType{ type_as_segment, global, segments, all_span })
+        let span = type_as_segment.as_ref().map(|s| s.span).or(beginning_separator_span)
+            .unwrap_or_else(|| segments[0].span) + segments.last().unwrap().span; // [0] and last().unwrap(): matches() guarantees segments are not empty
+        Ok(PlainType{ type_as_segment, global, segments, span })
     }
 
     pub fn maybe_primitive_type(&self) -> bool {
@@ -184,7 +184,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         
         let and_span = self.expect_sep(Separator::And)?;
         let base = self.parse_type_ref()?;
-        Ok(RefType{ span: and_span + base.get_all_span(), base: Box::new(base) })
+        Ok(RefType{ span: and_span + base.span(), base: Box::new(base) })
     }
 
     pub fn maybe_tuple_type(&self) -> bool {

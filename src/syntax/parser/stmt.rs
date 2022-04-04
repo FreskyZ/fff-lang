@@ -109,8 +109,8 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     
         let name = self.parse_label()?;
         let body = self.parse_block()?;
-        let all_span = name.as_ref().map(|n| n.all_span).unwrap_or(body.all_span) + body.all_span;
-        Ok(BlockStatement{ all_span, name, body })
+        let span = name.as_ref().map(|n| n.span).unwrap_or(body.span) + body.span;
+        Ok(BlockStatement{ span, name, body })
     }
 
     pub fn maybe_break_stmt(&self) -> bool {
@@ -124,10 +124,10 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
 
         if let Some(label) = self.try_expect_label() {
             let semicolon_span = self.expect_sep(Separator::SemiColon)?;
-            Ok(BreakStatement{ all_span: starting_span + semicolon_span, target: Some(label) })
+            Ok(BreakStatement{ span: starting_span + semicolon_span, target: Some(label) })
         } else { 
             let semicolon_span = self.expect_sep(Separator::SemiColon)?;
-            Ok(BreakStatement{ all_span: starting_span + semicolon_span, target: None })
+            Ok(BreakStatement{ span: starting_span + semicolon_span, target: None })
         }
     }
 
@@ -142,10 +142,10 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
 
         if let Some(label) = self.try_expect_label() {
             let semicolon_span = self.expect_sep(Separator::SemiColon)?;
-            Ok(ContinueStatement{ all_span: starting_span + semicolon_span, target: Some(label) })
+            Ok(ContinueStatement{ span: starting_span + semicolon_span, target: Some(label) })
         } else { 
             let semicolon_span = self.expect_sep(Separator::SemiColon)?;
-            Ok(ContinueStatement{ all_span: starting_span + semicolon_span, target: None })
+            Ok(ContinueStatement{ span: starting_span + semicolon_span, target: None })
         }
     }
 
@@ -168,8 +168,8 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             loop {
                 let (variant_name, variant_name_span) = self.expect_ident()?;
                 let init_value = self.try_expect_sep(Separator::Eq).map(|_| self.parse_expr()).transpose()?;
-                let variant_all_span = variant_name_span + init_value.as_ref().map(|e| e.get_all_span()).unwrap_or(variant_name_span);
-                variants.push(EnumVariant{ name: variant_name, name_span: variant_name_span, value: init_value, all_span: variant_all_span });
+                let variant_all_span = variant_name_span + init_value.as_ref().map(|e| e.span()).unwrap_or(variant_name_span);
+                variants.push(EnumVariant{ name: variant_name, name_span: variant_name_span, value: init_value, span: variant_all_span });
 
                 if let Some((right_brace_span, _)) = self.try_expect_closing_bracket(Separator::RightBrace) {
                     break right_brace_span;
@@ -180,8 +180,8 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         };
 
         let quote_span = left_brace_span + right_brace_span;
-        let all_span = enum_span + right_brace_span;
-        Ok(EnumDef{ name: enum_name, name_span: enum_name_span, base_type, quote_span, variants, all_span })
+        let span = enum_span + right_brace_span;
+        Ok(EnumDef{ name: enum_name, name_span: enum_name_span, base_type, quote_span, variants, span })
     }
 
     pub fn maybe_expr_stmt(&self) -> bool {
@@ -192,7 +192,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     pub fn parse_expr_stmt(&mut self) -> Result<Statement, Unexpected> {
 
         let left_expr = self.parse_expr()?;
-        let starting_span = left_expr.get_all_span();
+        let starting_span = left_expr.span();
 
         if let Some(semicolon_span) = self.try_expect_sep(Separator::SemiColon) {
             Ok(Statement::SimpleExpr(SimpleExprStatement::new(starting_span + semicolon_span, left_expr)))
@@ -246,7 +246,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         }).transpose()?;
         let body = self.parse_block()?;
 
-        Ok(FnDef::new(fn_span + body.all_span, fn_name, fn_name_span, params_paren_span, params, ret_type, body))
+        Ok(FnDef::new(fn_span + body.span, fn_name, fn_name_span, params_paren_span, params, ret_type, body))
     }
 
     pub fn maybe_for_stmt(&self) -> bool {
@@ -269,8 +269,8 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         self.no_object_literals.pop();
         let body = self.parse_block()?;
         
-        let all_span = loop_name.as_ref().map(|n| n.all_span).unwrap_or(for_span) + body.all_span;
-        Ok(ForStatement{ loop_name, for_span, iter_name, iter_span, iter_expr, body, all_span })
+        let span = loop_name.as_ref().map(|n| n.span).unwrap_or(for_span) + body.span;
+        Ok(ForStatement{ loop_name, for_span, iter_name, iter_span, iter_expr, body, span })
     }
 
     pub fn maybe_if_stmt(&self) -> bool {
@@ -286,8 +286,8 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         let if_expr = self.parse_expr()?;
         self.no_object_literals.pop();
         let if_body = self.parse_block()?;
-        all_span += if_body.all_span;
-        let if_clause = IfClause{ all_span, condition: if_expr, body: if_body };
+        all_span += if_body.span;
+        let if_clause = IfClause{ span: all_span, condition: if_expr, body: if_body };
 
         let mut elseif_clauses = Vec::new();
         let mut else_clause = None;
@@ -298,8 +298,8 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
                 let elseif_expr = self.parse_expr()?;
                 self.no_object_literals.pop();
                 let elseif_body = self.parse_block()?;
-                all_span += elseif_body.all_span;
-                elseif_clauses.push(IfClause{ all_span: elseif_span + elseif_body.all_span, condition: elseif_expr, body: elseif_body });
+                all_span += elseif_body.span;
+                elseif_clauses.push(IfClause{ span: elseif_span + elseif_body.span, condition: elseif_expr, body: elseif_body });
             } else {
                 // 16/12/1, we lost TWO `+1`s for current_length here ... fixed
                 // 17/5/6: When there is match Block::parse(tokens, messages, index + current_length), etc.
@@ -307,12 +307,12 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
                 // 17/6/21: a new physical structure update makes it much more simple
                 // 17/7/28: a new small update of parse_cx makes things even more simple
                 let else_body = self.parse_block()?;
-                all_span += else_body.all_span;
-                else_clause = Some(ElseClause{ all_span: else_span + else_body.all_span, body: else_body });
+                all_span += else_body.span;
+                else_clause = Some(ElseClause{ span: else_span + else_body.span, body: else_body });
             }
         }
 
-        Ok(IfStatement{ all_span, if_clause, elseif_clauses, else_clause })
+        Ok(IfStatement{ span: all_span, if_clause, elseif_clauses, else_clause })
     }
 
     pub fn maybe_loop_stmt(&self) -> bool {
@@ -326,8 +326,8 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         let name = self.parse_label()?;
         let loop_span = self.expect_keyword(Keyword::Loop)?;
         let body = self.parse_block()?;
-        let all_span = name.as_ref().map(|n| n.all_span).unwrap_or(loop_span) + body.all_span;
-        Ok(LoopStatement{ all_span, name, loop_span, body })
+        let span = name.as_ref().map(|n| n.span).unwrap_or(loop_span) + body.span;
+        Ok(LoopStatement{ span, name, loop_span, body })
     }
 
     pub fn maybe_module_stmt(&self) -> bool {
@@ -342,9 +342,9 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
 
         let path = self.try_expect_str_lit(); 
         let semicolon_span = self.expect_sep(Separator::SemiColon)?;
-        let all_span = starting_span + semicolon_span;
+        let span = starting_span + semicolon_span;
 
-        Ok(ModuleStatement{ all_span, name, name_span, path })
+        Ok(ModuleStatement{ span, name, name_span, path })
     }
 
     pub fn maybe_ret_stmt(&self) -> bool {
@@ -390,13 +390,13 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             let colon_span = self.expect_sep(Separator::Colon)?;
             let field_type = self.parse_type_ref()?;
             fields.push(if let Some(comma_span) = self.try_expect_sep(Separator::Comma) {
-                TypeFieldDef{ all_span: field_name_span + comma_span, name: field_name, name_span: field_name_span, colon_span, r#type: field_type }
+                TypeFieldDef{ span: field_name_span + comma_span, name: field_name, name_span: field_name_span, colon_span, r#type: field_type }
             } else {
-                TypeFieldDef{ all_span: field_name_span + field_type.get_all_span(), name: field_name, name_span: field_name_span, colon_span, r#type: field_type }
+                TypeFieldDef{ span: field_name_span + field_type.span(), name: field_name, name_span: field_name_span, colon_span, r#type: field_type }
             });
         };
 
-        Ok(TypeDef{ all_span: starting_span + right_brace_span, name, name_span, fields })
+        Ok(TypeDef{ span: starting_span + right_brace_span, name, name_span, fields })
     }
     
     pub fn maybe_use_stmt(&self) -> bool {
@@ -411,9 +411,9 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
 
         let alias = self.try_expect_keyword(Keyword::As).map(|_| self.expect_ident()).transpose()?;
         let semicolon_span = self.expect_sep(Separator::SemiColon)?;
-        let all_span = starting_span + semicolon_span;
+        let span = starting_span + semicolon_span;
 
-        Ok(UseStatement{ all_span, name, alias })
+        Ok(UseStatement{ span, name, alias })
     }
 
     pub fn maybe_var_decl(&self) -> bool {
@@ -425,7 +425,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     pub fn parse_var_decl(&mut self) -> Result<VarDeclStatement, Unexpected> {
         
         let (starting_kw, starting_span) = self.expect_keywords(&[Keyword::Const, Keyword::Var])?;
-        let is_const = match starting_kw { Keyword::Const => true, Keyword::Var => false, _ => unreachable!() };
+        let r#const = match starting_kw { Keyword::Const => true, Keyword::Var => false, _ => unreachable!() };
 
         let (name, name_span) = self.expect_ident_or_keywords(&[Keyword::Underscore])?;
         let r#type = self.try_expect_sep(Separator::Colon).map(|_| self.parse_type_ref()).transpose()?;
@@ -437,7 +437,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         }
         let ending_span = self.expect_sep(Separator::SemiColon)?;
 
-        Ok(VarDeclStatement{ all_span: starting_span + ending_span, is_const, name, name_span, r#type, init_expr })
+        Ok(VarDeclStatement{ span: starting_span + ending_span, r#const, name, name_span, r#type, init_expr })
     }
 
     pub fn maybe_while_stmt(&self) -> bool {
@@ -454,7 +454,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         let expr = self.parse_expr()?;
         self.no_object_literals.pop();
         let body = self.parse_block()?;
-        let all_span = name.as_ref().map(|n| n.all_span).unwrap_or(while_span) + body.all_span;
-        Ok(WhileStatement{ name, while_span, loop_expr: expr, body, all_span })
+        let span = name.as_ref().map(|n| n.span).unwrap_or(while_span) + body.span;
+        Ok(WhileStatement{ name, while_span, loop_expr: expr, body, span })
     }
 }

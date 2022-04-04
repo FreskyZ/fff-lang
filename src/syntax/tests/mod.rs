@@ -168,7 +168,7 @@ macro_rules! make_name {
     (simple $start:literal:$end:literal #$id:literal) => (
         make_name!($start:$end false, None, make_name!(segment $start:$end #$id)));
     ($start:literal:$end:literal $global:expr, $as:expr, $($segment:expr),*$(,)?) => (
-        Expr::Name(Name{ type_as_segment: $as, global: $global, all_span: Span::new($start, $end), segments: vec![$($segment,)*] }));
+        Expr::Name(Name{ type_as_segment: $as, global: $global, span: Span::new($start, $end), segments: vec![$($segment,)*] }));
     (segment $start:literal:$end:literal #$id:literal) => (
         NameSegment::Normal(IsId::new($id), Span::new($start, $end)));
     (segment generic $start:literal:$end:literal $($ty:expr),*$(,)?) => (
@@ -177,7 +177,7 @@ macro_rules! make_name {
     (simple bare $start:literal:$end:literal #$id:literal) => (
         make_name!(bare $start:$end false, None, make_name!(segment $start:$end #$id)));
     (bare $start:literal:$end:literal $global:expr, $as:expr, $($segment:expr),*$(,)?) => (
-        Name{ type_as_segment: $as, global: $global, all_span: Span::new($start, $end), segments: vec![$($segment,)*] });
+        Name{ type_as_segment: $as, global: $global, span: Span::new($start, $end), segments: vec![$($segment,)*] });
 }
 
 macro_rules! make_expr {
@@ -207,32 +207,32 @@ macro_rules! make_expr {
     (binary $start:literal:$end:literal $op:ident $op_start:literal:$op_end:literal $left:expr, $right:expr) => (Expr::Binary(BinaryExpr{
         left_expr: Box::new($left),
         right_expr: Box::new($right),
-        operator: Separator::$op,
-        operator_span: Span::new($op_start, $op_end),
-        all_span: Span::new($start, $end),
+        op: Separator::$op,
+        op_span: Span::new($op_start, $op_end),
+        span: Span::new($start, $end),
     }));
     (unary $start:literal:$end:literal $op:ident $op_start:literal:$op_end:literal $base:expr) => (Expr::Unary(UnaryExpr{
         base: Box::new($base),
-        operator: Separator::$op,
-        operator_span: Span::new($op_start, $op_end),
-        all_span: Span::new($start, $end),
+        op: Separator::$op,
+        op_span: Span::new($op_start, $op_end),
+        span: Span::new($start, $end),
     }));
     (member $start:literal:$end:literal dot $dot_start:literal:$dot_end:literal $base:expr, $name:expr) => (
-        Expr::MemberAccess(MemberAccessExpr{
+        Expr::Member(MemberAccessExpr{
             base: Box::new($base),
-            dot_span: Span::new($dot_start, $dot_end),
+            op_span: Span::new($dot_start, $dot_end),
             name: $name,
-            all_span: Span::new($start, $end),
+            span: Span::new($start, $end),
         })
     );
     (array $start:literal:$end:literal $($item:expr),*$(,)?) => (Expr::Array(ArrayDef{
-        bracket_span: Span::new($start, $end),
+        span: Span::new($start, $end),
         items: ExprList {
             items: vec![$($item,)*],
         }
     }));
     (tuple $start:literal:$end:literal $($item:expr),*$(,)?) => (Expr::Tuple(TupleDef{
-        paren_span: Span::new($start, $end),
+        span: Span::new($start, $end),
         items: ExprList {
             items: vec![$($item,)*],
         }
@@ -245,7 +245,7 @@ macro_rules! make_expr {
         Expr::Object(ObjectLiteral{
             base: Box::new($base),
             quote_span: Span::new($quote_start, $quote_end),
-            all_span: Span::new($start, $end),
+            span: Span::new($start, $end),
             fields: vec![$($field,)*],
         })
     );
@@ -254,44 +254,44 @@ macro_rules! make_expr {
             name: IsId::new($name),
             name_span: Span::new($name_start, $name_end),
             colon_span: Span::new($colon_start, $colon_end),
-            all_span: Span::new($start, $end),
+            span: Span::new($start, $end),
             value: $value,
         }
     );
     (fn $start:literal:$end:literal paren $paren_start:literal:$paren_end:literal $base:expr, $($parameter:expr),*$(,)?) => (
         Expr::FnCall(FnCallExpr{
             base: Box::new($base),
-            paren_span: Span::new($paren_start, $paren_end),
-            all_span: Span::new($start, $end),
+            quote_span: Span::new($paren_start, $paren_end),
+            span: Span::new($start, $end),
             params: ExprList{
                 items: vec![$($parameter,)*],
             }
         })
     );
     (index $start:literal:$end:literal bracket $bracket_start:literal:$bracket_end:literal $base:expr, $($parameter:expr),*$(,)?) => (
-        Expr::IndexCall(IndexCallExpr{
+        Expr::Index(IndexCallExpr{
             base: Box::new($base),
-            bracket_span: Span::new($bracket_start, $bracket_end),
-            all_span: Span::new($start, $end),
+            quote_span: Span::new($bracket_start, $bracket_end),
+            span: Span::new($start, $end),
             params: ExprList{
                 items: vec![$($parameter,)*],
             }
         })
     );
     (range full $start:literal:$end:literal) => (Expr::RangeFull(RangeFullExpr{
-        all_span: Span::new($start, $end),
+        span: Span::new($start, $end),
     }));
     (range left $start:literal:$end:literal $base:expr) => (Expr::RangeLeft(RangeLeftExpr{
-        all_span: Span::new($start, $end),
+        span: Span::new($start, $end),
         expr: Box::new($base),
     }));
     (range right $start:literal:$end:literal $base:expr) => (Expr::RangeRight(RangeRightExpr{
-        all_span: Span::new($start, $end),
+        span: Span::new($start, $end),
         expr: Box::new($base),
     }));
     (range both $start:literal:$end:literal dotdot $dotdot_start:literal:$dotdot_end:literal $left:expr, $right:expr) => (
         Expr::RangeBoth(RangeBothExpr{
-            all_span: Span::new($start, $end),
+            span: Span::new($start, $end),
             op_span: Span::new($dotdot_start, $dotdot_end),
             left_expr: Box::new($left),
             right_expr: Box::new($right),
@@ -313,13 +313,13 @@ macro_rules! make_stmt {
     );
     (for $start:literal:$end:literal label #$label:literal $label_start:literal:$label_end:literal for $for_start:literal:$for_end:literal var #$iter_var:literal $iter_var_start:literal:$iter_var_end:literal $iter_expr:expr, $body:expr) => (
         ForStatement{
-            loop_name: Some(LabelDef{ name: IsId::new($label), all_span: Span::new($label_start, $label_end) }),
+            loop_name: Some(LabelDef{ name: IsId::new($label), span: Span::new($label_start, $label_end) }),
             for_span: Span::new($for_start, $for_end),
             iter_name: IsId::new($iter_var),
             iter_span: Span::new($iter_var_start, $iter_var_end),
             iter_expr: $iter_expr,
             body: $body,
-            all_span: Span::new($start, $end),
+            span: Span::new($start, $end),
         }
     );
     (loop $start:literal:$end:literal loop $loop_start:literal:$loop_end:literal $body:expr) => (
@@ -327,15 +327,15 @@ macro_rules! make_stmt {
             name: None,
             body: $body,
             loop_span: Span::new($loop_start, $loop_end),
-            all_span: Span::new($start, $end),
+            span: Span::new($start, $end),
         }
     );
     (loop $start:literal:$end:literal label #$label:literal $label_start:literal:$label_end:literal loop $loop_start:literal:$loop_end:literal $body:expr) => (
         LoopStatement{
-            name: Some(LabelDef{ name: IsId::new($label), all_span: Span::new($label_start, $label_end) }),
+            name: Some(LabelDef{ name: IsId::new($label), span: Span::new($label_start, $label_end) }),
             body: $body,
             loop_span: Span::new($loop_start, $loop_end),
-            all_span: Span::new($start, $end),
+            span: Span::new($start, $end),
         }
     );
     (while $start:literal:$end:literal while $while_start:literal:$while_end:literal $expr:expr, $body:expr) => (
@@ -344,60 +344,60 @@ macro_rules! make_stmt {
             loop_expr: $expr,
             body: $body,
             while_span: Span::new($while_start, $while_end),
-            all_span: Span::new($start, $end),
+            span: Span::new($start, $end),
         }
     );
     (while $start:literal:$end:literal label #$label:literal $label_start:literal:$label_end:literal while $while_start:literal:$while_end:literal $expr:expr, $body:expr) => (
         WhileStatement{
-            name: Some(LabelDef{ name: IsId::new($label), all_span: Span::new($label_start, $label_end) }),
+            name: Some(LabelDef{ name: IsId::new($label), span: Span::new($label_start, $label_end) }),
             loop_expr: $expr,
             body: $body,
             while_span: Span::new($while_start, $while_end),
-            all_span: Span::new($start, $end),
+            span: Span::new($start, $end),
         }
     );
     (break $start:literal:$end:literal) => (
         BreakStatement{
             target: None,
-            all_span: Span::new($start, $end),
+            span: Span::new($start, $end),
         }
     );
     (break $start:literal:$end:literal label #$label:literal $label_start:literal:$label_end:literal) => (
         BreakStatement{
             target: Some((IsId::new($label), Span::new($label_start, $label_end))),
-            all_span: Span::new($start, $end),
+            span: Span::new($start, $end),
         }
     );
     (continue $start:literal:$end:literal) => (
         ContinueStatement{
             target: None,
-            all_span: Span::new($start, $end),
+            span: Span::new($start, $end),
         }
     );
     (continue $start:literal:$end:literal label #$label:literal $label_start:literal:$label_end:literal) => (
         ContinueStatement{
             target: Some((IsId::new($label), Span::new($label_start, $label_end))),
-            all_span: Span::new($start, $end),
+            span: Span::new($start, $end),
         }
     );
     (var $start:literal:$end:literal #$name:literal $name_start:literal:$name_end:literal $type:expr, $init:expr) => (
         VarDeclStatement{
-            is_const: false,
+            r#const: false,
             name: IsId::new($name),
             name_span: Span::new($name_start, $name_end),
             r#type: $type,
             init_expr: $init,
-            all_span: Span::new($start, $end),
+            span: Span::new($start, $end),
         }
     );
     (const $start:literal:$end:literal #$name:literal $name_start:literal:$name_end:literal $type:expr, $init:expr) => (
         VarDeclStatement{
-            is_const: true,
+            r#const: true,
             name: IsId::new($name),
             name_span: Span::new($name_start, $name_end),
             r#type: $type,
             init_expr: $init,
-            all_span: Span::new($start, $end),
+            span: Span::new($start, $end),
         }
     );
 }
@@ -416,7 +416,7 @@ macro_rules! make_type {
         ident_span: Span::new($start, $end), 
         quote_span: Span::new(0, 0),
         parameters: Vec::new(),
-        all_span: Span::new($start, $end),
+        span: Span::new($start, $end),
     });
     (segment generic $start:literal:$end:literal #$ident:literal $ident_start:literal:$ident_end:literal quote $quote_start:literal:$quote_end:literal $($parameter:expr),*$(,)?) => (
         TypeSegment{
@@ -424,7 +424,7 @@ macro_rules! make_type {
             ident_span: Span::new($ident_start, $ident_end),
             quote_span: Span::new($quote_start, $quote_end),
             parameters: vec![$($parameter,)*],
-            all_span: Span::new($start, $end),
+            span: Span::new($start, $end),
         }
     );
     (segment as $start:literal:$end:literal $from:expr, $to:expr) => (Some(TypeAsSegment{
@@ -436,31 +436,31 @@ macro_rules! make_type {
         type_as_segment: $as,
         global: $global,
         segments: vec![$($segment,)*],
-        all_span: Span::new($start, $end),
+        span: Span::new($start, $end),
     }));
     (simple $start:literal:$end:literal #$id:literal) => (
         make_type!(plain $start:$end false, None, make_type!(segment $start:$end #$id)));
     (fn $start:literal:$end:literal paren $paren_start:literal:$paren_end:literal [$($parameter:expr),*$(,)?]) => (TypeRef::Fn(FnType{
-        paren_span: Span::new($paren_start, $paren_end),
+        quote_span: Span::new($paren_start, $paren_end),
         parameters: vec![$($parameter,)*],
         ret_type: None,
-        all_span: Span::new($start, $end),
+        span: Span::new($start, $end),
     }));
     (fn ret $start:literal:$end:literal paren $paren_start:literal:$paren_end:literal [$($parameter:expr),*$(,)?], $ret:expr) => (TypeRef::Fn(FnType{
-        paren_span: Span::new($paren_start, $paren_end),
+        quote_span: Span::new($paren_start, $paren_end),
         parameters: vec![$($parameter,)*],
         ret_type: Some(Box::new($ret)),
-        all_span: Span::new($start, $end),
+        span: Span::new($start, $end),
     }));
     (param $start:literal:$end:literal $ty:expr) => (FnTypeParam{
         name: None,
         r#type: $ty,
-        all_span: Span::new($start, $end),
+        span: Span::new($start, $end),
     });
     (param named $start:literal:$end:literal #$name:literal $name_start:literal:$name_end:literal $ty:expr) => (FnTypeParam{
         name: Some((IsId::new($name), Span::new($name_start, $name_end))),
         r#type: $ty,
-        all_span: Span::new($start, $end),
+        span: Span::new($start, $end),
     });
 }
 

@@ -118,8 +118,8 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
 
         let global = type_as_segment.is_none() && beginning_separator_span.is_some();
         let all_span = type_as_segment.as_ref().map(|s| s.span).or(beginning_separator_span)
-            .unwrap_or_else(|| segments[0].get_span()) + segments.last().unwrap().get_span(); // [0] and last().unwrap(): matches() guarantees segments are not empty
-        Ok(Name{ type_as_segment, global, segments, all_span })
+            .unwrap_or_else(|| segments[0].span()) + segments.last().unwrap().span(); // [0] and last().unwrap(): matches() guarantees segments are not empty
+        Ok(Name{ type_as_segment, global, segments, span: all_span })
     }
 
     pub fn maybe_tuple_def(&self) -> bool {
@@ -137,17 +137,17 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             }
             ExprListParseResult::SingleComma(span) => {
                 self.emit(strings::UnexpectedSingleComma).detail(span, strings::TupleDefHere);
-                Ok(Expr::Tuple(TupleDef{ paren_span: span, items: ExprList{ items: Vec::new() } }))
+                Ok(Expr::Tuple(TupleDef{ span, items: ExprList{ items: Vec::new() } }))
             }
             ExprListParseResult::Normal(span, exprlist) => {
                 if exprlist.items.len() == 1 {
                     Ok(Expr::Paren(ParenExpr{ span, expr: Box::new(exprlist.items.into_iter().last().unwrap()) }))
                 } else {
-                    Ok(Expr::Tuple(TupleDef{ paren_span: span, items: exprlist }))
+                    Ok(Expr::Tuple(TupleDef{ span, items: exprlist }))
                 }
             }
             ExprListParseResult::EndWithComma(span, exprlist) => {
-                Ok(Expr::Tuple(TupleDef{ paren_span: span, items: exprlist }))
+                Ok(Expr::Tuple(TupleDef{ span, items: exprlist }))
             }
         }
     }
@@ -160,13 +160,13 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     pub fn parse_array_def(&mut self) -> Result<Expr, Unexpected> {
         match self.parse_expr_list()? {
             ExprListParseResult::Empty(span) =>
-                Ok(Expr::Array(ArrayDef{ bracket_span: span, items: ExprList{ items: Vec::new() } })),
+                Ok(Expr::Array(ArrayDef{ span, items: ExprList{ items: Vec::new() } })),
             ExprListParseResult::Normal(span, exprlist) 
             | ExprListParseResult::EndWithComma(span, exprlist) =>
-                Ok(Expr::Array(ArrayDef{ bracket_span: span, items: exprlist })),
+                Ok(Expr::Array(ArrayDef{ span, items: exprlist })),
             ExprListParseResult::SingleComma(span) => {
                 self.emit(strings::UnexpectedSingleComma).detail(span, strings::ArrayDefHere);
-                Ok(Expr::Array(ArrayDef{ bracket_span: span, items: ExprList{ items: Vec::new() } }))
+                Ok(Expr::Array(ArrayDef{ span, items: ExprList{ items: Vec::new() } }))
             }
         }
     }
@@ -186,7 +186,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         }
 
         let (this_id, this_span) = self.expect_ident_or_keywords(&[Keyword::This, Keyword::Self_])?;  // actually identifier is processed by Name, not here
-        Ok(Expr::Name(Name{ type_as_segment: None, global: false, all_span: this_span, segments: vec![NameSegment::Normal(this_id, this_span)] }))
+        Ok(Expr::Name(Name{ type_as_segment: None, global: false, span: this_span, segments: vec![NameSegment::Normal(this_id, this_span)] }))
     }
 
     pub fn maybe_member_access(&self) -> bool {
@@ -202,19 +202,19 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         let dot_span = self.expect_sep(Separator::Dot)?;
         let name = if let Some((numeric, span)) = self.try_expect_numeric() {
             if let Numeric::I32(v) = numeric {
-                Name{ type_as_segment: None, global: false, all_span: span, segments: vec![NameSegment::Normal(self.intern(&format!("{}", v)), span)] }
+                Name{ type_as_segment: None, global: false, span, segments: vec![NameSegment::Normal(self.intern(&format!("{}", v)), span)] }
             } else {
                 self.emit(strings::InvalidTupleIndex).span(span).help(strings::TupleIndexSyntaxHelp);
-                Name{ type_as_segment: None, global: false, all_span: span, segments: Vec::new() }
+                Name{ type_as_segment: None, global: false, span, segments: Vec::new() }
             }
         } else {
             let name = self.parse_name()?;
             // first segment will not be generic and will not be type_as_segment and global, because matches3 checks for that
             if name.segments.len() == 2 && !matches!(name.segments[1], NameSegment::Generic(..)) {
-                self.emit(strings::InvalidMemberAccess).span(name.segments[1].get_span()).help(strings::GenericMemberAccessSyntaxHelp);
+                self.emit(strings::InvalidMemberAccess).span(name.segments[1].span()).help(strings::GenericMemberAccessSyntaxHelp);
             }
             if name.segments.len() > 2 {
-                let error_span = name.segments[1].get_span() + name.segments.last().unwrap().get_span();
+                let error_span = name.segments[1].span() + name.segments.last().unwrap().span();
                 self.emit(strings::InvalidMemberAccess).span(error_span).help(strings::GenericMemberAccessSyntaxHelp);
             }
             name
@@ -285,7 +285,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
                 let (field_name, field_name_span) = self.expect_ident()?;
                 let colon_span = self.expect_sep(Separator::Colon)?;
                 let value = self.parse_expr()?;
-                fields.push(ObjectLiteralField{ all_span: field_name_span + value.get_all_span(), name: field_name, name_span: field_name_span, colon_span, value });
+                fields.push(ObjectLiteralField{ span: field_name_span + value.span(), name: field_name, name_span: field_name_span, colon_span, value });
 
                 if let Some((right_brace_span, _)) = self.try_expect_closing_bracket(Separator::RightBrace) {
                     break right_brace_span;
@@ -309,25 +309,25 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
 
         loop {
             if self.maybe_member_access() {
-                let (dot_span, name) = self.parse_member_access()?;
-                let all_span = current_expr.get_all_span() + name.all_span;
+                let (op_span, name) = self.parse_member_access()?;
+                let span = current_expr.span() + name.span;
                 let base = Box::new(current_expr);
-                current_expr = Expr::MemberAccess(MemberAccessExpr{ all_span, base, dot_span, name });
+                current_expr = Expr::Member(MemberAccessExpr{ span, base, op_span, name });
             } else if self.maybe_fn_call() {
-                let (paren_span, params) = self.parse_fn_call()?;
-                let all_span = current_expr.get_all_span() + paren_span;
+                let (quote_span, params) = self.parse_fn_call()?;
+                let span = current_expr.span() + quote_span;
                 let base = Box::new(current_expr);
-                current_expr = Expr::FnCall(FnCallExpr{ all_span, base, paren_span, params });
+                current_expr = Expr::FnCall(FnCallExpr{ span, base, quote_span, params });
             } else if self.maybe_index_call() {
-                let (bracket_span, params) = self.parse_index_call()?;
-                let all_span = current_expr.get_all_span() + bracket_span;
+                let (quote_span, params) = self.parse_index_call()?;
+                let span = current_expr.span() + quote_span;
                 let base = Box::new(current_expr);
-                current_expr = Expr::IndexCall(IndexCallExpr{ all_span, base, bracket_span, params });
+                current_expr = Expr::Index(IndexCallExpr{ span, base, quote_span, params });
             } else if matches!(self.no_object_literals.last(), None | Some(false)) && matches!(current_expr, Expr::Name(_)) && self.maybe_object_lit() {
                 let (quote_span, fields) = self.parse_object_literal()?;
-                let all_span = current_expr.get_all_span() + quote_span;
+                let span = current_expr.span() + quote_span;
                 let base = Box::new(current_expr);
-                current_expr = Expr::Object(ObjectLiteral{ all_span, base, quote_span, fields });
+                current_expr = Expr::Object(ObjectLiteral{ span, base, quote_span, fields });
             } else {
                 break;
             }
@@ -351,7 +351,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
                 None => {
                     let base = self.parse_postfix_expr()?;
                     return Ok(op_spans.into_iter().rev().fold(base, |base, (op, span)| { 
-                        Expr::Unary(UnaryExpr{ all_span: span + base.get_all_span(), base: Box::new(base), operator: op, operator_span: span }) 
+                        Expr::Unary(UnaryExpr{ span: span + base.span(), base: Box::new(base), op, op_span: span }) 
                     }));
                 }
             }
@@ -371,8 +371,8 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             cx.parse_unary_expr()
         }
         fn check_relational_expr(cx: &mut Parser, expr: &Expr) {
-            if let Expr::Binary(BinaryExpr{ operator: Separator::Gt, operator_span: gt_span, left_expr, .. }) = expr {
-                if let Expr::Binary(BinaryExpr{ operator: Separator::Lt, operator_span: lt_span, .. }) = left_expr.as_ref() {
+            if let Expr::Binary(BinaryExpr{ op: Separator::Gt, op_span: gt_span, left_expr, .. }) = expr {
+                if let Expr::Binary(BinaryExpr{ op: Separator::Lt, op_span: lt_span, .. }) = left_expr.as_ref() {
                     cx.emit(strings::MaybeGeneric).span(*lt_span).span(*gt_span).help(strings::MaybeGenericHelp);
                 }
             }
@@ -385,13 +385,13 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
 
                     let mut current_expr = $previous_parser_name(cx)?;
                     loop {
-                        if let Some((sep, sep_span)) = cx.try_expect_sep_kind(SeparatorKind::$kind) {
+                        if let Some((op, op_span)) = cx.try_expect_sep_kind(SeparatorKind::$kind) {
                             let right_expr = $previous_parser_name(cx)?;
                             current_expr = Expr::Binary(BinaryExpr{
-                                all_span: current_expr.get_all_span() + right_expr.get_all_span(),
+                                span: current_expr.span() + right_expr.span(),
                                 left_expr: Box::new(current_expr),
-                                operator: sep, 
-                                operator_span: sep_span, 
+                                op, 
+                                op_span, 
                                 right_expr: Box::new(right_expr)
                             });
                             $($check(cx, &current_expr))?
@@ -423,9 +423,9 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             Some(range_op_span) => {
                 if self.maybe_expr() {
                     let expr = self.parse_binary_expr()?;
-                    Ok(Expr::RangeRight(RangeRightExpr{ all_span: range_op_span + expr.get_all_span(), expr: Box::new(expr) }))
+                    Ok(Expr::RangeRight(RangeRightExpr{ span: range_op_span + expr.span(), expr: Box::new(expr) }))
                 } else {
-                    Ok(Expr::RangeFull(RangeFullExpr{ all_span: range_op_span }))
+                    Ok(Expr::RangeFull(RangeFullExpr{ span: range_op_span }))
                 }
             }
             None => {
@@ -433,10 +433,10 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
                 if let Some(op_span) = self.try_expect_sep(Separator::DotDot) {
                     if self.maybe_expr() {
                         let right_expr = self.parse_binary_expr()?;
-                        let all_span = left_expr.get_all_span() + right_expr.get_all_span();
-                        Ok(Expr::RangeBoth(RangeBothExpr{ all_span, op_span, left_expr: Box::new(left_expr), right_expr: Box::new(right_expr) }))
+                        let span = left_expr.span() + right_expr.span();
+                        Ok(Expr::RangeBoth(RangeBothExpr{ span, op_span, left_expr: Box::new(left_expr), right_expr: Box::new(right_expr) }))
                     } else {
-                        Ok(Expr::RangeLeft(RangeLeftExpr{ all_span: left_expr.get_all_span() + op_span, expr: Box::new(left_expr) }))
+                        Ok(Expr::RangeLeft(RangeLeftExpr{ span: left_expr.span() + op_span, expr: Box::new(left_expr) }))
                     }
                 } else {
                     Ok(left_expr)

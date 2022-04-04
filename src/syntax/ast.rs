@@ -2,64 +2,70 @@
 use crate::source::{Span, IsId, FileId};
 use crate::lexical::{Separator, Keyword, Numeric};
 
+// naming convension:
+// first field is `span` and represents span for complete node
+// Separator field is called `op`, its span is called `op_span`
+// bracket span field is called `quote_span`
+// get span methods for abc types are called `span`, e.g. `expr.span()`
+
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct ArrayDef {
+    pub span: Span, // bracket span
     pub items: ExprList,
-    pub bracket_span: Span,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct ArrayType {
+    pub span: Span,
     pub base: Box<TypeRef>,
     pub size: Expr,
-    pub span: Span, // all span
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct BinaryExpr {
+    pub span: Span,
     pub left_expr: Box<Expr>,
     pub right_expr: Box<Expr>,
-    pub operator: Separator,
-    pub operator_span: Span,
-    pub all_span: Span,
+    pub op: Separator,
+    pub op_span: Span,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct BlockStatement {
+    pub span: Span,
     pub name: Option<LabelDef>,
     pub body: Block,
-    pub all_span: Span,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct Block {
+    pub span: Span,
     pub items: Vec<Statement>,
-    pub all_span: Span,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct EnumVariant {
+    pub span: Span,
     pub name: IsId,
     pub name_span: Span,
     pub value: Option<Expr>,
-    pub all_span: Span,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct EnumDef {
+    pub span: Span,
     pub name: IsId,
     pub name_span: Span,
     pub base_type: Option<PrimitiveType>,
     pub quote_span: Span,
     pub variants: Vec<EnumVariant>,
-    pub all_span: Span,
 }
 
 #[derive(Debug)]
@@ -71,18 +77,18 @@ pub struct ExprList {
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct SimpleExprStatement {
+    pub span: Span, // expr.span + semicolon_span
     pub expr: Expr, 
-    pub all_span: Span,  // this span = expr.all_span + semicolon_span
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct AssignExprStatement {
+    pub span: Span, // left_expr.span + right_expr.span
     pub left_expr: Expr,
     pub right_expr: Expr,
-    pub assign_op: Separator,
-    pub assign_op_span: Span,
-    pub all_span: Span,
+    pub op: Separator,
+    pub op_span: Span,
 }
 
 // TODO move to parser
@@ -98,15 +104,16 @@ pub enum ExprListParseResult {
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct FnCallExpr {
+    pub span: Span,
     pub base: Box<Expr>,
     pub params: ExprList,
-    pub paren_span: Span,
-    pub all_span: Span,
+    pub quote_span: Span,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct FnParam {
+    pub span: Span, // name_span + r#type.span
     pub name: IsId,
     pub name_span: Span,
     pub r#type: TypeRef,
@@ -114,96 +121,96 @@ pub struct FnParam {
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct FnDef {
+    pub span: Span, // fn_span + body_span
     pub name: IsId,
     pub name_span: Span,
     pub params: Vec<FnParam>,
-    pub params_paren_span: Span,
+    pub quote_span: Span, // parameter list quote
     pub ret_type: Option<TypeRef>,
     pub body: Block,
-    pub all_span: Span,   // fn_span = all_span.slice(0..2)
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct FnTypeParam {
+    pub span: Span,
     pub name: Option<(IsId, Span)>,
     pub r#type: TypeRef,
-    pub all_span: Span,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct FnType {
-    pub paren_span: Span,
+    pub span: Span,
+    pub quote_span: Span, // parameter list quote span
     pub parameters: Vec<FnTypeParam>,
     pub ret_type: Option<Box<TypeRef>>,
-    pub all_span: Span,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct ForStatement {
+    pub span: Span,
     pub loop_name: Option<LabelDef>,
     pub for_span: Span,
     pub iter_name: IsId,
     pub iter_span: Span,
     pub iter_expr: Expr,
     pub body: Block,
-    pub all_span: Span,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct IfClause {
+    pub span: Span,
     pub condition: Expr,
     pub body: Block,
-    pub all_span: Span, // start from `if` or `else`
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct ElseClause {
+    pub span: Span,
     pub body: Block,
-    pub all_span: Span, // else_span = all_span.slice(0..3)
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct IfStatement {
+    pub span: Span,
     pub if_clause: IfClause,
     pub elseif_clauses: Vec<IfClause>,
     pub else_clause: Option<ElseClause>,
-    pub all_span: Span,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct IndexCallExpr {
+    pub span: Span,
     pub base: Box<Expr>,
     pub params: ExprList,
-    pub bracket_span: Span,
-    pub all_span: Span,
+    pub quote_span: Span, // bracket span
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct ContinueStatement{
+    pub span: Span,
     pub target: Option<(IsId, Span)>,
-    pub all_span: Span,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct BreakStatement{
+    pub span: Span,
     pub target: Option<(IsId, Span)>,
-    pub all_span: Span,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct LabelDef {
+    pub span: Span,
     pub name: IsId,
-    pub all_span: Span,
 }
 
 #[derive(Debug)]
@@ -219,36 +226,36 @@ pub enum LitValue {
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct LitExpr {
-    pub value: LitValue,
     pub span: Span,
+    pub value: LitValue,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct LoopStatement {
+    pub span: Span,
     pub name: Option<LabelDef>,
     pub body: Block,
     pub loop_span: Span,
-    pub all_span: Span,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct MemberAccessExpr {
+    pub span: Span,
     pub base: Box<Expr>,
-    pub dot_span: Span,
+    pub op_span: Span,
     pub name: Name,
-    pub all_span: Span,
 }
 
 // Attention: Clone for driver to store copy of import requests
 #[derive(Debug, Clone)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct ModuleStatement {
+    pub span: Span,
     pub name: IsId,
     pub name_span: Span,
     pub path: Option<(IsId, Span)>,
-    pub all_span: Span,
 }
 
 #[derive(Debug)]
@@ -266,7 +273,7 @@ pub enum NameSegment {
 }
 
 impl NameSegment {
-    pub fn get_span(&self) -> Span {
+    pub fn span(&self) -> Span {
         match self {
             Self::Normal(_, span) => *span,
             Self::Generic(_, span) => *span,
@@ -277,144 +284,144 @@ impl NameSegment {
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct Name {
+    pub span: Span,
     pub type_as_segment: Option<TypeAsSegment>,
     pub global: bool,
     pub segments: Vec<NameSegment>,
-    pub all_span: Span,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct ObjectLiteralField {
+    pub span: Span,
     pub name: IsId,
     pub name_span: Span,
     pub colon_span: Span,
     pub value: Expr,
-    pub all_span: Span,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct ObjectLiteral {
+    pub span: Span,
     pub base: Box<Expr>,
     pub quote_span: Span,
     pub fields: Vec<ObjectLiteralField>,
-    pub all_span: Span,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct RangeFullExpr {
-    pub all_span: Span,
+    pub span: Span,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct RangeRightExpr {
-    pub all_span: Span,  // all_span.slice(2) is range_op_span
+    pub span: Span,
     pub expr: Box<Expr>,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct RangeLeftExpr {
+    pub span: Span,
     pub expr: Box<Expr>,
-    pub all_span: Span, // all_span.slice(-2, 0) should get range_op_span
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct RangeBothExpr {
+    pub span: Span,
     pub left_expr: Box<Expr>,
     pub op_span: Span,
     pub right_expr: Box<Expr>,
-    pub all_span: Span,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct TypeAsSegment {
+    pub span: Span,
     pub from: Box<TypeRef>,
     pub to: Box<TypeRef>,
-    pub span: Span,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct TypeSegment {
+    pub span: Span,
     pub ident: IsId,
     pub ident_span: Span,
     pub quote_span: Span,
     pub parameters: Vec<TypeRef>,
-    pub all_span: Span,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct PlainType {
+    pub span: Span,
     pub type_as_segment: Option<TypeAsSegment>,
     pub global: bool,
     pub segments: Vec<TypeSegment>,
-    pub all_span: Span,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct PrimitiveType {
-    pub name: Keyword,
     pub span: Span,
+    pub name: Keyword,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct RefType {
+    pub span: Span,
     pub base: Box<TypeRef>,
-    pub span: Span, // all span
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct ReturnStatement {
+    pub span: Span,
     pub expr: Option<Expr>,
-    pub all_span: Span,
 }
 
 // Paren expr is a side effect of TupleDef
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct ParenExpr {
+    pub span: Span,
     pub expr: Box<Expr>,
-    pub span: Span,  // paren_span also all_span
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct TupleDef {
+    pub span: Span,
     pub items: ExprList,
-    pub paren_span: Span,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct TupleType {
-    pub items: Vec<TypeRef>,
     pub span: Span,
+    pub items: Vec<TypeRef>,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct TypeFieldDef {
+    pub span: Span,
     pub name: IsId,
     pub name_span: Span,
     pub colon_span: Span,
     pub r#type: TypeRef,
-    pub all_span: Span,   // ident to TypeRef or ident to comma
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct TypeDef {
-    pub all_span: Span,
+    pub span: Span,
     pub name: IsId,
     pub name_span: Span,
     pub fields: Vec<TypeFieldDef>,
@@ -423,136 +430,130 @@ pub struct TypeDef {
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct UnaryExpr {
+    pub span: Span,
     pub base: Box<Expr>, 
-    pub operator: Separator, 
-    pub operator_span: Span,
-    pub all_span: Span,
+    pub op: Separator, 
+    pub op_span: Span,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct VarDeclStatement {
-    pub is_const: bool,
+    pub span: Span,
+    pub r#const: bool,
     pub name: IsId,
     pub name_span: Span,
     pub r#type: Option<TypeRef>,
     pub init_expr: Option<Expr>,
-    pub all_span: Span,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct UseStatement {
+    pub span: Span,
     pub name: Name,
     pub alias: Option<(IsId, Span)>,
-    pub all_span: Span,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct WhileStatement {
+    pub span: Span,
     pub name: Option<LabelDef>,
     pub loop_expr: Expr,
     pub body: Block,
     pub while_span: Span,
-    pub all_span: Span,
 }
 
 // TODO REMOVE these constructors
 impl Block {
-    pub fn new(all_span: Span, statements: Vec<Statement>) -> Block { 
-        Block{ all_span, items: statements } 
+    pub fn new(span: Span, statements: Vec<Statement>) -> Block { 
+        Block{ span, items: statements } 
     }
 }
 impl SimpleExprStatement {
-    pub fn new<T: Into<Expr>>(all_span: Span, expr: T) -> SimpleExprStatement { 
-        SimpleExprStatement{ all_span, expr: expr.into() } 
+    pub fn new<T: Into<Expr>>(span: Span, expr: T) -> SimpleExprStatement { 
+        SimpleExprStatement{ span, expr: expr.into() } 
     }
 }
 impl AssignExprStatement {
-    pub fn new<T1: Into<Expr>, T2: Into<Expr>>(all_span: Span, 
-        assign_op: Separator, assign_op_span: Span, left_expr: T1, right_expr: T2) -> AssignExprStatement {
+    pub fn new<T1: Into<Expr>, T2: Into<Expr>>(span: Span, 
+        op: Separator, op_span: Span, left_expr: T1, right_expr: T2) -> AssignExprStatement {
         AssignExprStatement{
             left_expr: left_expr.into(),
             right_expr: right_expr.into(),
-            all_span,
-            assign_op, assign_op_span,
+            span,
+            op, op_span,
         }
     }
 }
 impl FnParam {
     pub fn new(name: impl Into<IsId>, name_span: Span, r#type: TypeRef) -> Self { 
-        Self{ r#type, name: name.into(), name_span } 
+        Self{ span: name_span + r#type.span(), r#type, name: name.into(), name_span } 
     }
 }
 impl FnDef {
-    pub fn new(all_span: Span, 
+    pub fn new(span: Span, 
         name: impl Into<IsId>, name_span: Span,
-        params_paren_span: Span, params: Vec<FnParam>, 
+        quote_span: Span, params: Vec<FnParam>, 
         ret_type: Option<TypeRef>, body: Block) -> FnDef {
-        FnDef{ name: name.into(), name_span, params, params_paren_span, ret_type, body, all_span }
+        FnDef{ name: name.into(), name_span, params, quote_span, ret_type, body, span }
     }
 }
 
 impl LabelDef {
-    pub fn new(name: impl Into<IsId>, all_span: Span) -> LabelDef { 
-        LabelDef{ name: name.into(), all_span } 
+    pub fn new(name: impl Into<IsId>, span: Span) -> LabelDef { 
+        LabelDef{ name: name.into(), span } 
     }
 }
 
 impl ReturnStatement {
 
-    pub fn new_unit(all_span: Span) -> ReturnStatement {
-        ReturnStatement{ all_span, expr: None }
+    pub fn new_unit(span: Span) -> ReturnStatement {
+        ReturnStatement{ span, expr: None }
     }
-    pub fn new_expr(all_span: Span, expr: Expr) -> ReturnStatement {
-        ReturnStatement{ all_span, expr: Some(expr) }
+    pub fn new_expr(span: Span, expr: Expr) -> ReturnStatement {
+        ReturnStatement{ span, expr: Some(expr) }
     }
 }
 
-macro_rules! define_expr {
-    ($($ty:ty => $variant:ident, $span:ident,)+) => (
-#[derive(Debug)]
-#[cfg_attr(test, derive(PartialEq))]
-pub enum Expr {
-$(
-    $variant($ty),
-)+
+macro_rules! define_abc {
+    ($(#[$attr:meta])* $vis:vis enum $name:ident { $($variant:ident($ty:ident),)+ }) => (
+$(#[$attr])*
+$vis enum $name {
+    $($variant($ty),)+
 }
 
-$( impl From<$ty> for Expr {
-    fn from(s: $ty) -> Expr { Expr::$variant(s) }
-} )+
-
-impl Expr {
-    pub fn get_all_span(&self) -> Span {
+impl $name {
+    pub fn span(&self) -> Span {
         match self {
-            $(
-                Expr::$variant(e) => e.$span,
-            )+
+            $( Self::$variant(v) => v.span, )+
         }
     }
 }
     )
 }
 
-define_expr! {
-    LitExpr => Lit, span,
-    Name => Name, all_span,
-    ParenExpr => Paren, span,
-    TupleDef => Tuple, paren_span,
-    ArrayDef => Array, bracket_span,
-    FnCallExpr => FnCall, all_span,
-    IndexCallExpr => IndexCall, all_span,
-    MemberAccessExpr => MemberAccess, all_span,
-    ObjectLiteral => Object, all_span,
-    UnaryExpr => Unary, all_span,
-    BinaryExpr => Binary, all_span,
-    RangeBothExpr => RangeBoth, all_span,
-    RangeFullExpr => RangeFull, all_span,
-    RangeLeftExpr => RangeLeft, all_span,
-    RangeRightExpr => RangeRight, all_span,
-}
+define_abc! {
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
+pub enum Expr {
+    Lit(LitExpr),
+    Name(Name),
+    Paren(ParenExpr),
+    Tuple(TupleDef),
+    Array(ArrayDef),
+    FnCall(FnCallExpr),
+    Index(IndexCallExpr),
+    Member(MemberAccessExpr),
+    Object(ObjectLiteral),
+    Unary(UnaryExpr),
+    Binary(BinaryExpr),
+    RangeBoth(RangeBothExpr),
+    RangeFull(RangeFullExpr),
+    RangeLeft(RangeLeftExpr),
+    RangeRight(RangeRightExpr),
+}}
 
 impl Expr {
     pub fn dummy() -> Expr { 
@@ -560,80 +561,54 @@ impl Expr {
     }
 }
 
-// all variants has same priority
-// nearly all variants are N == <N as Node>::ParseOutput
-// nearly all variants have different first terminal symbol
-// exception is simple-expr-stmt and assign-expr-stmt, simple-expr-stmt forwards all implementation to assign-expr-stmt
-//
-// expr is not here because expressions has complex priority, and a lot of N != <N as Node>::ParseOutput for that
-
-macro_rules! define_abc {
-    ($name:ident, $desc:literal, $visit_this:ident, $($subty:ty => $variant:ident, $visit:ident,)+) => (
+define_abc! {
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
-pub enum $name {
-    $($variant($subty),)+
-}
+pub enum Statement {
+    Type(TypeDef),
+    Enum(EnumDef),
+    Fn(FnDef),
+    Block(BlockStatement),
+    Break(BreakStatement),
+    Continue(ContinueStatement),
+    SimpleExpr(SimpleExprStatement),
+    AssignExpr(AssignExprStatement),
+    For(ForStatement),
+    If(IfStatement),
+    Loop(LoopStatement),
+    Return(ReturnStatement),
+    VarDecl(VarDeclStatement),
+    While(WhileStatement),
+    Use(UseStatement),
+}}
 
-$( impl From<$subty> for $name {
-    fn from(s: $subty) -> $name { $name::$variant(s) }
-} )+
-    );
-}
+define_abc! {
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
+pub enum Item {
+    Type(TypeDef),
+    Enum(EnumDef),
+    Fn(FnDef),
+    Block(BlockStatement),
+    SimpleExpr(SimpleExprStatement),
+    AssignExpr(AssignExprStatement),
+    For(ForStatement),
+    If(IfStatement),
+    Loop(LoopStatement),
+    VarDecl(VarDeclStatement),
+    While(WhileStatement),
+    Use(UseStatement),
+    Import(ModuleStatement),
+}}
 
-define_abc!{ Statement, "statement", visit_stmt,
-    TypeDef => Type, visit_type_def,
-    EnumDef => Enum, visit_enum_def,
-    FnDef => Fn, visit_fn_def,
-    BlockStatement => Block, visit_block_stmt,
-    BreakStatement => Break, visit_break_stmt,
-    ContinueStatement => Continue, visit_continue_stmt,
-    SimpleExprStatement => SimpleExpr, visit_simple_expr_stmt,
-    AssignExprStatement => AssignExpr, visit_assign_expr_stmt,
-    ForStatement => For, visit_for_stmt,
-    IfStatement => If, visit_if_stmt,
-    LoopStatement => Loop, visit_loop_stmt,
-    ReturnStatement => Return, visit_ret_stmt,
-    VarDeclStatement => VarDecl, visit_var_decl,
-    WhileStatement => While, visit_while_stmt,
-    UseStatement => Use, visit_use_stmt,
-}
-
-// global item
-define_abc!{ Item, "item", visit_item, 
-    TypeDef => Type, visit_type_def,
-    EnumDef => Enum, visit_enum_def,
-    FnDef => Fn, visit_fn_def,
-    BlockStatement => Block, visit_block_stmt,
-    SimpleExprStatement => SimpleExpr, visit_simple_expr_stmt,
-    AssignExprStatement => AssignExpr, visit_assign_expr_stmt,
-    ForStatement => For, visit_for_stmt,
-    IfStatement => If, visit_if_stmt,
-    LoopStatement => Loop, visit_loop_stmt,
-    VarDeclStatement => VarDecl, visit_var_decl,
-    WhileStatement => While, visit_while_stmt,
-    UseStatement => Use, visit_use_stmt,
-    ModuleStatement => Import, visit_module_stmt,
-}
-
-define_abc!{ TypeRef, "type ref", visit_type_ref,
-    PrimitiveType => Primitive, visit_primitive_type,
-    ArrayType => Array, visit_array_type,
-    FnType => Fn, visit_fn_type,
-    RefType => Ref, visit_ref_type,
-    TupleType => Tuple, visit_tuple_type,
-    PlainType => Plain, visit_plain_type,
-}
-
-impl TypeRef {
-    pub fn get_all_span(&self) -> Span {
-        match self {
-            Self::Primitive(t) => t.span,
-            Self::Array(t) => t.span,
-            Self::Fn(t) => t.all_span,
-            Self::Ref(t) => t.span,
-            Self::Tuple(t) => t.span,
-            Self::Plain(t) => t.all_span,
-        }
-    }
-}
+define_abc! {
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
+pub enum TypeRef {
+    Primitive(PrimitiveType),
+    Array(ArrayType),
+    Fn(FnType),
+    Ref(RefType),
+    Tuple(TupleType),
+    Plain(PlainType),
+}}
