@@ -37,15 +37,20 @@ pub struct Parser<'ecx, 'scx> {
     // 1. when expr is followed with block, e.g. if/for/while/swich,
     //    when meeting `{`, e.g. `if a < b { print(a); }` it should not expect an object literal
     //    only this can `if a < (b{ c: 1 }) {}`, or this `if (a < b{ c: 1 }) {}`
-    // 2. that is, when expecting expr which is followed by block, a restriction flag should be pushed,
-    //    while when expecting any expr, not lower level expr/higher priority expr, inside an expr node, a non restriction should be pushed
-    // 3. currently the any-expr-expectations only include fn-call, index-call, array-def and tuple-def (the parened list or bracketed list)
-    //    which is exactly same as ExprList usages // was not expecting ExprList have this kind of functionality
-    // 4. actual object literal itself also expects any expr, but, 
-    //    when you are parsing object literal, it is already allowed, so no need to push again
-    // 5. currently there will not be push(true) after any push(false) is not popped, because if/for/while/switch is not inside expr
-    //    but if future they will, it will happen so keep this a stack
-    no_object_literals: Vec<bool>,
+    // 2. logically
+    //    1. when expecting expr followed by block, object literal should not be directly allowed
+    //    2. when expecting expr inside expr, that is, in some quote, 
+    //       (paren for array/fn-call, bracket for tuple/index, etc.), object literal should be allowed again
+    // 3. in actual implementation,
+    //    1. this stack is only modified by parse_expr and parse_expr_except_object_literal function
+    //    2. when expecting expr followed by block, parse_expr_except_object_literal is called and no direct object literal is allowed
+    //    3. when expecting expr in other places in statement parsers, parse_expr is called and object literal is allowed
+    //    4. when expecting expr in expr, parse_expr is called and object literal is allowed
+    //    5. when expecting expr in parse_object_literal, it should not be bothering this flag stack because itself is already allowed
+    //       but still parse_expr is called and object literal is allowed
+    // 4. currently there will not be push(false) after any push(true) before push(true) is popped,
+    //    but the only-change-in-parse_expr{_no_object_literal} is convenient and easy to understand, so keep it
+    allow_object_literal: Vec<bool>,
     // if allow format string inside format string, this is also a stack of flag not a single flag
     // pub inside_string_literal: Vec<bool>,
 }
@@ -64,7 +69,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             peek_span, 
             peek2, 
             peek2_span, 
-            no_object_literals: Vec::with_capacity(128), // 128: arbitray value for max expression depth
+            allow_object_literal: Vec::with_capacity(128), // 128: arbitray value for max expression depth
         }
     }
 

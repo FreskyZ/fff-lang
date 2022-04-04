@@ -400,6 +400,12 @@ macro_rules! make_stmt {
             span: Span::new($start, $end),
         }
     );
+    (ret $start:literal:$end:literal $value:expr) => (
+        ReturnStatement{
+            span: Span::new($start, $end),
+            value: $value,
+        }
+    )
 }
 
 macro_rules! make_type {

@@ -9,7 +9,7 @@ fn block_stmt_parse() {
 
     case!{ parse_block_stmt "@: {}",
         BlockStatement{ span: Span::new(0, 4),
-            name: Some(LabelDef::new(1, Span::new(0, 1))),
+            name: Some(LabelDef{ name: IsId::new(1), span: Span::new(0, 1) }),
             body: Block::new(Span::new(3, 4), vec![]) }
     }
 }
@@ -221,16 +221,14 @@ fn module_parse() {
 #[test]
 fn ret_stmt_parse() {
 
-    case!{ parse_ret_stmt "return;", 
-        ReturnStatement::new_unit(Span::new(0, 6)) 
+    case!{ parse_ret_stmt "return;",
+        make_stmt!(ret 0:6 None)
     }
     case!{ parse_ret_stmt "return 1 + 1;",
-        ReturnStatement::new_expr(
-            Span::new(0, 12),
-            make_expr!(binary 7:11 Add 9:9
+        make_stmt!(ret 0:12
+            Some(make_expr!(binary 7:11 Add 9:9
                 make_expr!(i32 1 7:7),
-                make_expr!(i32 1 11:11))
-        )
+                make_expr!(i32 1 11:11)))),
     }
 }
 

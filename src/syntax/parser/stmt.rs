@@ -79,7 +79,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             let label_span = self.move_next();
             // TODO allow if colon missing, note that maybe_for_stmt, maybe_loop_stmt and maybe_while_stmt also need change
             let colon_span = self.expect_sep(Separator::Colon)?;
-            Ok(Some(LabelDef::new(id, label_span + colon_span)))
+            Ok(Some(LabelDef{ name: id, span: label_span + colon_span }))
         } else {
             Ok(None)
         }
@@ -264,9 +264,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         let (iter_name, iter_span) = self.expect_ident_or_keywords(&[Keyword::Underscore])?; 
         self.expect_keyword(Keyword::In)?;
 
-        self.no_object_literals.push(true);
-        let iter_expr = self.parse_expr()?;
-        self.no_object_literals.pop();
+        let iter_expr = self.parse_expr_except_object_literal()?;
         let body = self.parse_block()?;
         
         let span = loop_name.as_ref().map(|n| n.span).unwrap_or(for_span) + body.span;
@@ -282,9 +280,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
 
         let mut all_span = self.expect_keyword(Keyword::If)?;
 
-        self.no_object_literals.push(true);
-        let if_expr = self.parse_expr()?;
-        self.no_object_literals.pop();
+        let if_expr = self.parse_expr_except_object_literal()?;
         let if_body = self.parse_block()?;
         all_span += if_body.span;
         let if_clause = IfClause{ span: all_span, condition: if_expr, body: if_body };
@@ -294,9 +290,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         while let Some(else_span) = self.try_expect_keyword(Keyword::Else) {
             if let Some(if_span) = self.try_expect_keyword(Keyword::If) {
                 let elseif_span = else_span + if_span;
-                self.no_object_literals.push(true);
-                let elseif_expr = self.parse_expr()?;
-                self.no_object_literals.pop();
+                let elseif_expr = self.parse_expr_except_object_literal()?;
                 let elseif_body = self.parse_block()?;
                 all_span += elseif_body.span;
                 elseif_clauses.push(IfClause{ span: elseif_span + elseif_body.span, condition: elseif_expr, body: elseif_body });
@@ -360,11 +354,11 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             // but I have never write some test cases like following something after ret stmt
             // so the bug is not propagated to be discovered
             // 17/7/28: now new features added to parse_cx and move_next is to be removed, no current position management bug any more!
-            Ok(ReturnStatement::new_unit(starting_span + semicolon_span))
+            Ok(ReturnStatement{ span: starting_span + semicolon_span, value: None })
         } else {
-            let expr = self.parse_expr()?;
+            let value = self.parse_expr()?;
             let semicolon_span = self.expect_sep(Separator::SemiColon)?;
-            Ok(ReturnStatement::new_expr(starting_span + semicolon_span, expr))
+            Ok(ReturnStatement{ span: starting_span + semicolon_span, value: Some(value) })
         }
     }
 
@@ -450,9 +444,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         
         let name = self.parse_label()?;
         let while_span = self.expect_keyword(Keyword::While)?;
-        self.no_object_literals.push(true);
-        let expr = self.parse_expr()?;
-        self.no_object_literals.pop();
+        let expr = self.parse_expr_except_object_literal()?;
         let body = self.parse_block()?;
         let span = name.as_ref().map(|n| n.span).unwrap_or(while_span) + body.span;
         Ok(WhileStatement{ name, while_span, loop_expr: expr, body, span })

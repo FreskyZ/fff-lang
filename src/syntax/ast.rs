@@ -383,7 +383,7 @@ pub struct RefType {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct ReturnStatement {
     pub span: Span,
-    pub expr: Option<Expr>,
+    pub value: Option<Expr>,
 }
 
 // Paren expr is a side effect of TupleDef
@@ -498,22 +498,6 @@ impl FnDef {
         quote_span: Span, params: Vec<FnParam>, 
         ret_type: Option<TypeRef>, body: Block) -> FnDef {
         FnDef{ name: name.into(), name_span, params, quote_span, ret_type, body, span }
-    }
-}
-
-impl LabelDef {
-    pub fn new(name: impl Into<IsId>, span: Span) -> LabelDef { 
-        LabelDef{ name: name.into(), span } 
-    }
-}
-
-impl ReturnStatement {
-
-    pub fn new_unit(span: Span) -> ReturnStatement {
-        ReturnStatement{ span, expr: None }
-    }
-    pub fn new_expr(span: Span, expr: Expr) -> ReturnStatement {
-        ReturnStatement{ span, expr: Some(expr) }
     }
 }
 

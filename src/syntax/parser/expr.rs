@@ -21,9 +21,20 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         || matches!(self.current, Token::Sep(Separator::DotDot) | Token::Keyword(Keyword::This))
     }
 
-    // the parse_expr is actually simply directly parse_range_expr, for now
     pub fn parse_expr(&mut self) -> Result<Expr, Unexpected> {
-        self.parse_range_expr()
+        self.allow_object_literal.push(true);
+        let result = self.parse_range_expr();
+        self.allow_object_literal.pop();
+        result
+    }
+
+    // disable top level object literals,
+    // until end of this expr, or call parse_expr again inside call_expr, e.g. array def and tuple def
+    pub fn parse_expr_except_object_literal(&mut self) -> Result<Expr, Unexpected> {
+        self.allow_object_literal.push(false);
+        let result = self.parse_range_expr();
+        self.allow_object_literal.pop();
+        result
     }
 
     // expr_list = opening_sep expr { ',' expr } [ ',' ] closing_sep
@@ -47,12 +58,10 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             };
         }
 
-        self.no_object_literals.push(false);
         let mut items = Vec::new();
         loop {
             items.push(self.parse_expr()?);
             if let Some((ending_span, skipped_comma)) = self.try_expect_closing_bracket(expect_end_sep) {
-                self.no_object_literals.pop();
                 return if skipped_comma {
                     Ok(ExprListParseResult::EndWithComma(starting_span + ending_span, ExprList{ items }))
                 } else {
@@ -323,7 +332,13 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
                 let span = current_expr.span() + quote_span;
                 let base = Box::new(current_expr);
                 current_expr = Expr::Index(IndexCallExpr{ span, base, quote_span, params });
-            } else if matches!(self.no_object_literals.last(), None | Some(false)) && matches!(current_expr, Expr::Name(_)) && self.maybe_object_lit() {
+            } else if matches!({
+                // // I carefully checked that only parse_expr and parse_name is called outside this file,
+                // // and found the actual intruder is unit test, this will still work when compiler_test
+                #[cfg(not(test))]
+                debug_assert!(!self.allow_object_literal.is_empty(), "allow_object_literal unexpectedly empty");
+                &self.allow_object_literal
+            }.last(), None | Some(true)) && matches!(current_expr, Expr::Name(_)) && self.maybe_object_lit() {
                 let (quote_span, fields) = self.parse_object_literal()?;
                 let span = current_expr.span() + quote_span;
                 let base = Box::new(current_expr);

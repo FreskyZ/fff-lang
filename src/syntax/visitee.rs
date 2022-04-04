@@ -256,7 +256,7 @@ impl_node!{ RefType, visit_ref_type, |self, v| {
 }}
 
 impl_node!{ ReturnStatement, visit_ret_stmt, |self, v| {
-    if let Some(expr) = &self.expr {
+    if let Some(expr) = &self.value {
         v.visit_expr(expr)?;
     }
     Ok(Default::default())
