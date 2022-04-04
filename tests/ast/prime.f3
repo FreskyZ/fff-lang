@@ -3,28 +3,30 @@
 
 fn main() {
     write_array_8(get_primes(100u64));
-    writeln(""); // TODO: no parameter writeln for simple line end
 }
 
 fn get_primes(high_bound: u64) -> &u64 {
     
-    //writeln("[DEBUG] get primes called, high bound = " + high_bound.to_string());
-    // var is_prime = [true; high_bound]; 
-    is_prime.set_index(0, false);
-    is_prime.set_index(1, false);
+    writeln("[DEBUG] get primes called, high bound = " + high_bound.to_string());
+    var is_prime = list::<bool>::with_capcity(high_bound);
+    for i in 0..high_bound {
+        is_prime[i] = true;
+    }
+    is_prime[0] = false;
+    is_prime[1] = false;
     for i in 2u64..high_bound {
-        //writeln("[DEBUG] Outter iteration, i = " + i.to_string());
+        writeln("[DEBUG] Outter iteration, i = " + i.to_string());
         if is_prime[i] {
-            //writeln("[DEBUG] this i is prime");
+            writeln("[DEBUG] this i is prime");
             for j in 2u64..high_bound / i {
                 writeln("[DEBUG] inner iteration, j = " + j.to_string() + ", unset it");
-                is_prime.set_index(j * i, false);
+                is_prime[j * i] = false;
             }
         }
     }
 
-    //writeln("[DEBUG] main process ended");
-    // var ret_val = [0u64; 0]; // because no type infer, should provide type for empty array def
+    writeln("[DEBUG] main process ended");
+    var ret_val = list::<u64>::new(); // because no type infer, should provide type for list::new
     for i in 1u64..high_bound {
         if is_prime[i] {
             ret_val.push(i);

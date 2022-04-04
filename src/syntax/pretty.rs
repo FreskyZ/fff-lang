@@ -39,8 +39,13 @@ impl<'scx, 'f1, 'f2, F> FormatVisitor<'scx, 'f1, 'f2, F> where F: FileSystem {
         Ok(self)
     }
 
-    fn write_indent(&mut self) -> Result<&mut Self, fmt::Error> { 
-        self.f.write_str(INDENTIONS[2][self.level])?;
+    fn write_indent(&mut self) -> Result<&mut Self, fmt::Error> {
+        let mut level = self.level;
+        while level > 15 {
+            self.f.write_str(INDENTIONS[2][15])?;
+            level -= 15;
+        }
+        self.f.write_str(INDENTIONS[2][level])?;
         Ok(self)
     }
 

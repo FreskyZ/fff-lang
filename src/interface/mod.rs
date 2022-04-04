@@ -112,10 +112,11 @@ pub fn test_main() {
         }
     }
 
-    println!("ct complete, success {}/{}", success_count, success_count + fail_cases.len());
-    for fail_case in fail_cases {
+    println!("ct complete, pass {}/{}", success_count, success_count + fail_cases.len());
+    for fail_case in &fail_cases {
         println!("fail {}", fail_case.display());
     }
+    std::process::exit(if fail_cases.is_empty() { 0 } else { 1 })
 }
 
 pub fn cli_main() {

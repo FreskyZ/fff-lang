@@ -28,6 +28,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
 
     // expr_list = opening_sep expr { ',' expr } [ ',' ] closing_sep
     // TODO move emit message into this method not parse_array_def, parse_tuple_def, etc.
+    // TODO confirm test covered by array_def_parse, tuple_def_parse, etc. and remove pub
     pub fn parse_expr_list(&mut self) -> Result<ExprListParseResult, Unexpected> {
 
         let (starting_sep, starting_span) = self.expect_seps(&[Separator::LeftBrace, Separator::LeftBracket, Separator::LeftParen])?;

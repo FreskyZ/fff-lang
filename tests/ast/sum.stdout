@@ -1,0 +1,27 @@
+module tests/ast/sum.f3
+  fn <2:1-9:1> main <2:4-2:7> () <2:8-2:9>
+    block <2:11-9:1>
+      var-def <4:5-4:16> mutable sum <4:9-4:11>
+        literal i32 0 <4:15-4:15>
+      for-stmt <5:5-7:5> for <5:5-5:7> iter-var i <5:9-5:9>
+        range-both-expr <5:14-5:21> dotdot <5:16-5:17>
+          literal i32 0 <5:14-5:14>
+          literal i32 100 <5:19-5:21>
+        block <5:23-7:5>
+          assign-expr-stmt <6:9-6:17> += <6:13-6:14>
+            name <6:9-6:11>
+              name-segment <6:9-6:11> sum
+            name <6:16-6:16>
+              name-segment <6:16-6:16> i
+      simple-expr-stmt <8:5-8:50>
+        fn-call <8:5-8:49> () <8:12-8:49>
+          name <8:5-8:11>
+            name-segment <8:5-8:11> writeln
+          binary-expr <8:13-8:48> + <8:32-8:32>
+            literal str "1 add to 100 is " <8:13-8:30>
+            fn-call <8:34-8:48> () <8:47-8:48>
+              member-access <8:34-8:46> . <8:37-8:37>
+                name <8:34-8:36>
+                  name-segment <8:34-8:36> sum
+                name <8:38-8:46>
+                  name-segment <8:38-8:46> to_string
