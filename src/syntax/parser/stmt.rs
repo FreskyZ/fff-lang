@@ -74,12 +74,12 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     // label can be specified before for stmt, loop stmt, while stmt and block stmt
     // return result<option because it's always optional
     // it is private because it's not used outside and it's included by their tests
-    fn parse_label(&mut self) -> Result<Option<LabelDef>, Unexpected> {
+    fn parse_label(&mut self) -> Result<Option<IdSpan>, Unexpected> {
         if let Token::Label(id) = self.current {
             let label_span = self.move_next();
             // TODO allow if colon missing, note that maybe_for_stmt, maybe_loop_stmt and maybe_while_stmt also need change
-            let colon_span = self.expect_sep(Separator::Colon)?;
-            Ok(Some(LabelDef{ label: id, span: label_span + colon_span }))
+            self.expect_sep(Separator::Colon)?;
+            Ok(Some(IdSpan::new(id, label_span)))
         } else {
             Ok(None)
         }
@@ -157,7 +157,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     pub fn parse_enum_def(&mut self) -> Result<EnumDef, Unexpected> {
 
         let enum_span = self.expect_keyword(Keyword::Enum)?;
-        let (enum_name, enum_name_span) = self.expect_ident()?;
+        let enum_name = self.expect_ident()?;
         let base_type = self.try_expect_sep(Separator::Colon).map(|_| self.parse_primitive_type()).transpose()?;
         let left_brace_span = self.expect_sep(Separator::LeftBrace)?;
 
@@ -166,10 +166,10 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             right_brace_span
         } else {
             loop {
-                let (variant_name, variant_name_span) = self.expect_ident()?;
+                let variant_name = self.expect_ident()?;
                 let init_value = self.try_expect_sep(Separator::Eq).map(|_| self.parse_expr()).transpose()?;
-                let variant_all_span = variant_name_span + init_value.as_ref().map(|e| e.span()).unwrap_or(variant_name_span);
-                variants.push(EnumDefVariant{ name: variant_name, name_span: variant_name_span, value: init_value, span: variant_all_span });
+                let variant_all_span = variant_name.span + init_value.as_ref().map(|e| e.span()).unwrap_or(variant_name.span);
+                variants.push(EnumDefVariant{ name: variant_name, value: init_value, span: variant_all_span });
 
                 if let Some((right_brace_span, _)) = self.try_expect_closing_bracket(Separator::RightBrace) {
                     break right_brace_span;
@@ -181,7 +181,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
 
         let quote_span = left_brace_span + right_brace_span;
         let span = enum_span + right_brace_span;
-        Ok(EnumDef{ name: enum_name, name_span: enum_name_span, base_type, quote_span, variants, span })
+        Ok(EnumDef{ name: enum_name, base_type, quote_span, variants, span })
     }
 
     pub fn maybe_expr_stmt(&self) -> bool {
@@ -215,7 +215,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     pub fn parse_fn_def(&mut self) -> Result<FnDef, Unexpected> {
 
         let fn_span = self.expect_keyword(Keyword::Fn)?;
-        let (fn_name, fn_name_span) = self.expect_ident()?;
+        let fn_name = self.expect_ident()?;
         let mut quote_span = self.expect_sep(Separator::LeftParen)?;
 
         let mut parameters = Vec::new();
@@ -224,7 +224,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
                 quote_span += right_paren_span;
                 if skipped_comma && parameters.is_empty() {
                     self.emit("Single comma in function definition argument list")
-                        .detail(fn_name_span, "function definition here")
+                        .detail(fn_name.span, "function definition here")
                         .detail(quote_span, "param list here");
                 }
                 break;
@@ -232,10 +232,10 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
                 continue;
             }
 
-            let (parameter_name, parameter_span) = self.expect_ident_or_keywords(&[Keyword::Underscore, Keyword::This, Keyword::Self_])?;
+            let parameter_name = self.expect_ident_or_keywords(&[Keyword::Underscore, Keyword::This, Keyword::Self_])?;
             self.expect_sep(Separator::Colon)?;
             let r#type = self.parse_type_ref()?;
-            parameters.push(FnDefParameter{ span: parameter_span + r#type.span(), name: parameter_name, name_span: parameter_span, r#type });
+            parameters.push(FnDefParameter{ span: parameter_name.span + r#type.span(), name: parameter_name, r#type });
         }
 
         let ret_type = self.try_expect_seps(&[Separator::Arrow, Separator::Colon]).map(|(sep, span)| {
@@ -246,7 +246,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         }).transpose()?;
         let body = self.parse_block()?;
 
-        Ok(FnDef{ span: fn_span + body.span, name: fn_name, name_span: fn_name_span, quote_span, parameters, ret_type, body })
+        Ok(FnDef{ span: fn_span + body.span, name: fn_name, quote_span, parameters, ret_type, body })
     }
 
     pub fn maybe_for_stmt(&self) -> bool {
@@ -261,14 +261,14 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         let for_span = self.expect_keyword(Keyword::For)?;
 
         // Accept _ as iter_name, _ do not declare iter var
-        let (iter_var, iter_span) = self.expect_ident_or_keywords(&[Keyword::Underscore])?; 
+        let iter_name = self.expect_ident_or_keywords(&[Keyword::Underscore])?; 
         self.expect_keyword(Keyword::In)?;
 
         let iter_expr = self.parse_expr_except_object_expr()?;
         let body = self.parse_block()?;
         
         let span = label.as_ref().map(|n| n.span).unwrap_or(for_span) + body.span;
-        Ok(ForStatement{ label, iter_var, iter_span, iter_expr, body, span })
+        Ok(ForStatement{ label, iter_name, iter_expr, body, span })
     }
 
     pub fn maybe_if_stmt(&self) -> bool {
@@ -332,13 +332,13 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     pub fn parse_module_stmt(&mut self) -> Result<ModuleStatement, Unexpected> {
 
         let starting_span = self.expect_keyword(Keyword::Module)?;
-        let (name, name_span) = self.expect_ident()?;
+        let module_name = self.expect_ident()?;
 
         let path = self.try_expect_str_lit(); 
         let semicolon_span = self.expect_sep(Separator::SemiColon)?;
         let span = starting_span + semicolon_span;
 
-        Ok(ModuleStatement{ span, name, name_span, path })
+        Ok(ModuleStatement{ span, name: module_name, path })
     }
 
     pub fn maybe_ret_stmt(&self) -> bool {
@@ -371,26 +371,25 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     pub fn parse_type_def(&mut self) -> Result<TypeDef, Unexpected> {
 
         let starting_span = self.expect_keyword(Keyword::Type)?;
-        let (name, name_span) = self.expect_ident_or_keyword_kind(KeywordKind::Primitive)?;
-        let _left_brace_span = self.expect_sep(Separator::LeftBrace)?;
+        let type_name = self.expect_ident_or_keyword_kind(KeywordKind::Primitive)?;
+        self.expect_sep(Separator::LeftBrace)?;
 
         let mut fields = Vec::new();
         let right_brace_span = loop { 
             if let Some(right_brace_span) = self.try_expect_sep(Separator::RightBrace) {
                 break right_brace_span;     // rustc 1.19 stablize break-expr
             }
-
-            let (field_name, field_name_span) = self.expect_ident()?;
+            let field_name = self.expect_ident()?;
             let colon_span = self.expect_sep(Separator::Colon)?;
             let field_type = self.parse_type_ref()?;
             fields.push(if let Some(comma_span) = self.try_expect_sep(Separator::Comma) {
-                TypeDefField{ span: field_name_span + comma_span, name: field_name, name_span: field_name_span, colon_span, r#type: field_type }
+                TypeDefField{ span: field_name.span + comma_span, name: field_name, colon_span, r#type: field_type }
             } else {
-                TypeDefField{ span: field_name_span + field_type.span(), name: field_name, name_span: field_name_span, colon_span, r#type: field_type }
+                TypeDefField{ span: field_name.span + field_type.span(), name: field_name, colon_span, r#type: field_type }
             });
         };
 
-        Ok(TypeDef{ span: starting_span + right_brace_span, name, name_span, fields })
+        Ok(TypeDef{ span: starting_span + right_brace_span, name: type_name, fields })
     }
     
     pub fn maybe_use_stmt(&self) -> bool {
@@ -421,18 +420,18 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         let (starting_kw, starting_span) = self.expect_keywords(&[Keyword::Const, Keyword::Var])?;
         let r#const = match starting_kw { Keyword::Const => true, Keyword::Var => false, _ => unreachable!() };
 
-        let (name, name_span) = self.expect_ident_or_keywords(&[Keyword::Underscore])?;
+        let var_name = self.expect_ident_or_keywords(&[Keyword::Underscore])?;
         let r#type = self.try_expect_sep(Separator::Colon).map(|_| self.parse_type_ref()).transpose()?;
         let init_value = self.try_expect_sep(Separator::Eq).map(|_| self.parse_expr()).transpose()?;
         let ending_span = self.expect_sep(Separator::SemiColon)?;
 
         if r#type.is_none() && init_value.is_none() {
             self.emit("require type annotation")
-                .detail(name_span, "variable declaration here")
+                .detail(var_name.span, "variable declaration here")
                 .help("cannot infer type without both type annotation and initialization expression");
         }
 
-        Ok(VarDeclStatement{ span: starting_span + ending_span, r#const, name, name_span, r#type, init_value })
+        Ok(VarDeclStatement{ span: starting_span + ending_span, r#const, name: var_name, r#type, init_value })
     }
 
     pub fn maybe_while_stmt(&self) -> bool {

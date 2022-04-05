@@ -80,13 +80,11 @@ module tests/ast/misc.f3
             name-segment <26:15-26:18> read
             name-segment <26:21-26:25>
               primitive-type i32 <26:22-26:24>
-      loop-stmt <27:5-38:5>
-        label @abc <27:5-27:9>
+      loop-stmt <27:5-38:5> @abc <27:5-27:8>
         block <27:16-38:5>
           var-def <28:9-28:18> mutable b <28:13-28:13>
             literal i32 0 <28:17-28:17>
-          loop-stmt <29:9-37:9>
-            label @def <29:9-29:13>
+          loop-stmt <29:9-37:9> @def <29:9-29:12>
             block <29:20-37:9>
               if-stmt <30:13-36:13>
                 if-clause <30:13-33:13>

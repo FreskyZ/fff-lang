@@ -1,5 +1,5 @@
 
-use crate::source::{Span, IsId, FileId};
+use crate::source::{Span, IsId, IdSpan, FileId};
 use crate::lexical::{Separator, Keyword, Numeric};
 
 // naming convension:
@@ -8,7 +8,7 @@ use crate::lexical::{Separator, Keyword, Numeric};
 // - bracket pair span field is called `quote_span`
 // - get span methods for abc types are called `span`, e.g. `expr.span()`
 // - LabelDef field should be called `label`
-// - IsId from Token::Ident is normally called `name`, and associate with a `name_span`
+// - IsId from Token::Ident is normally called `name` type IdSpan
 // - use `parameters` not `params`
 // - concrete expression types should be called `XXXExpr`
 
@@ -41,7 +41,7 @@ pub struct BinaryExpr {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct BlockStatement {
     pub span: Span,
-    pub label: Option<LabelDef>,
+    pub label: Option<IdSpan>,
     pub body: Block,
 }
 
@@ -56,8 +56,7 @@ pub struct Block {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct EnumDefVariant {
     pub span: Span,
-    pub name: IsId,
-    pub name_span: Span,
+    pub name: IdSpan,
     pub value: Option<Expr>,
 }
 
@@ -65,8 +64,7 @@ pub struct EnumDefVariant {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct EnumDef {
     pub span: Span,
-    pub name: IsId,
-    pub name_span: Span,
+    pub name: IdSpan,
     pub base_type: Option<PrimitiveType>,
     pub quote_span: Span,
     pub variants: Vec<EnumDefVariant>,
@@ -118,16 +116,14 @@ pub struct CallExpr {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct FnDefParameter {
     pub span: Span, // name_span + r#type.span
-    pub name: IsId,
-    pub name_span: Span,
+    pub name: IdSpan,
     pub r#type: TypeRef,
 }
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct FnDef {
     pub span: Span, // fn_span + body_span
-    pub name: IsId,
-    pub name_span: Span,
+    pub name: IdSpan,
     pub quote_span: Span, // parameter list quote
     pub parameters: Vec<FnDefParameter>,
     pub ret_type: Option<TypeRef>,
@@ -138,7 +134,7 @@ pub struct FnDef {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct FnTypeParameter {
     pub span: Span,
-    pub name: Option<(IsId, Span)>,
+    pub name: Option<IdSpan>,
     pub r#type: TypeRef,
 }
 
@@ -155,9 +151,8 @@ pub struct FnType {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct ForStatement {
     pub span: Span,
-    pub label: Option<LabelDef>,
-    pub iter_var: IsId,
-    pub iter_span: Span,
+    pub label: Option<IdSpan>,
+    pub iter_name: IdSpan,
     pub iter_expr: Expr,
     pub body: Block,
 }
@@ -199,21 +194,14 @@ pub struct IndexExpr {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct ContinueStatement{
     pub span: Span,
-    pub label: Option<(IsId, Span)>,
+    pub label: Option<IdSpan>,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct BreakStatement{
     pub span: Span,
-    pub label: Option<(IsId, Span)>,
-}
-
-#[derive(Debug)]
-#[cfg_attr(test, derive(PartialEq))]
-pub struct LabelDef {
-    pub span: Span,
-    pub label: IsId,
+    pub label: Option<IdSpan>,
 }
 
 #[derive(Debug)]
@@ -237,7 +225,7 @@ pub struct LitExpr {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct LoopStatement {
     pub span: Span,
-    pub label: Option<LabelDef>,
+    pub label: Option<IdSpan>,
     pub body: Block,
 }
 
@@ -272,9 +260,8 @@ pub struct MemberExpr {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct ModuleStatement {
     pub span: Span,
-    pub name: IsId,
-    pub name_span: Span,
-    pub path: Option<(IsId, Span)>,
+    pub name: IdSpan,
+    pub path: Option<IdSpan>,
 }
 
 #[derive(Debug)]
@@ -287,14 +274,14 @@ pub struct Module {
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub enum NameSegment {
-    Normal(IsId, Span),
+    Normal(IdSpan),
     Generic(Vec<TypeRef>, Span),
 }
 
 impl NameSegment {
     pub fn span(&self) -> Span {
         match self {
-            Self::Normal(_, span) => *span,
+            Self::Normal(IdSpan{ span, .. }) => *span,
             Self::Generic(_, span) => *span,
         }
     }
@@ -313,9 +300,7 @@ pub struct Name {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct ObjectExprField {
     pub span: Span,
-    pub name: IsId,
-    pub name_span: Span,
-    pub colon_span: Span,
+    pub name: IdSpan,
     pub value: Expr,
 }
 
@@ -369,8 +354,7 @@ pub struct TypeAsSegment {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct TypeSegment {
     pub span: Span,
-    pub base: IsId,
-    pub base_span: Span,
+    pub base: IdSpan,
     pub quote_span: Span,
     pub parameters: Vec<TypeRef>,
 }
@@ -431,8 +415,7 @@ pub struct TupleType {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct TypeDefField {
     pub span: Span,
-    pub name: IsId,
-    pub name_span: Span,
+    pub name: IdSpan,
     pub colon_span: Span,
     pub r#type: TypeRef,
 }
@@ -441,8 +424,7 @@ pub struct TypeDefField {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct TypeDef {
     pub span: Span,
-    pub name: IsId,
-    pub name_span: Span,
+    pub name: IdSpan,
     pub fields: Vec<TypeDefField>,
 }
 
@@ -460,8 +442,7 @@ pub struct UnaryExpr {
 pub struct VarDeclStatement {
     pub span: Span,
     pub r#const: bool,
-    pub name: IsId,
-    pub name_span: Span,
+    pub name: IdSpan,
     pub r#type: Option<TypeRef>,
     pub init_value: Option<Expr>,
 }
@@ -471,14 +452,14 @@ pub struct VarDeclStatement {
 pub struct UseStatement {
     pub span: Span,
     pub name: Name,
-    pub alias: Option<(IsId, Span)>,
+    pub alias: Option<IdSpan>,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct WhileStatement {
     pub span: Span,
-    pub label: Option<LabelDef>,
+    pub label: Option<IdSpan>,
     pub condition: Expr,
     pub body: Block,
 }

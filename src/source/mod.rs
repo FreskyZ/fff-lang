@@ -16,7 +16,7 @@ pub use fs::{FileSystem, DefaultFileSystem};
 pub use fs::VirtualFileSystem;
 mod iter;
 use iter::get_char_width;
-pub use iter::{Position, Span, IsId, SourceChars, EOF};
+pub use iter::{Position, Span, IsId, IdSpan, SourceChars, EOF};
 
 /// a handle to a file
 /// 

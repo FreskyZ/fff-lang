@@ -101,8 +101,7 @@ fn loop_stmt() {
     let mut context = Parser::new(crate::lexical::Parser::new(scx.entry("1", &mut ecx).unwrap(), &mut ecx));
     let node = context.parse_loop_stmt().unwrap();
     context.finish();
-    ppcase!{ node.display(&scx), r#"loop-stmt <1:1-1:28>
-  label @@ <1:1-1:3>
+    ppcase!{ node.display(&scx), r#"loop-stmt <1:1-1:28> @@ <1:1-1:2>
   block <1:10-1:28>
     simple-expr-stmt <1:12-1:26>
       call-expr <1:12-1:25> () <1:19-1:25>

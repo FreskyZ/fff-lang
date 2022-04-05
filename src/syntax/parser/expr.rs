@@ -96,8 +96,8 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         
         let mut segments = Vec::new();
         loop {
-            if let Some((ident, ident_span)) = self.try_expect_ident() {
-                segments.push(NameSegment::Normal(ident, ident_span));
+            if let Some(ident) = self.try_expect_ident() {
+                segments.push(NameSegment::Normal(ident));
             } else {
                 let lt_span = self.expect_sep(Separator::Lt)?;
                 // none: first segment cannot be generic segment
@@ -194,8 +194,8 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             return self.parse_array_expr();
         }
 
-        let (this_id, this_span) = self.expect_ident_or_keywords(&[Keyword::This, Keyword::Self_])?;  // actually identifier is processed by Name, not here
-        Ok(Expr::Name(Name{ type_as_segment: None, global: false, span: this_span, segments: vec![NameSegment::Normal(this_id, this_span)] }))
+        let this = self.expect_ident_or_keywords(&[Keyword::This, Keyword::Self_])?;  // actually identifier is processed by Name, not here
+        Ok(Expr::Name(Name{ type_as_segment: None, global: false, span: this.span, segments: vec![NameSegment::Normal(this)] }))
     }
 
     fn maybe_member_expr(&self) -> bool {
@@ -217,7 +217,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             MemberName{ span, base: MemberNameBase::Numeric(numeric), base_span: span, quote_span: Span::new(0, 0), parameters: Vec::new() }
         } else {
             // // ? rust.await is really good design, but await is still currently reserved, put it here to indicate that it can be here
-            let (ident, ident_span) = self.expect_ident_or_keywords(&[Keyword::Await])?;
+            let ident = self.expect_ident_or_keywords(&[Keyword::Await])?;
             let mut quote_span = Span::new(0, 0);
             let mut parameters = Vec::new();
             if self.try_expect_sep(Separator::ColonColon).is_some() {
@@ -236,8 +236,8 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
                     };
                 }
             }
-            let span = ident_span + if quote_span == Span::new(0, 0) { ident_span } else { quote_span };
-            MemberName{ span, base: MemberNameBase::Ident(ident), base_span: ident_span, quote_span, parameters }
+            let span = ident.span + if quote_span == Span::new(0, 0) { ident.span } else { quote_span };
+            MemberName{ span, base: MemberNameBase::Ident(ident.id), base_span: ident.span, quote_span, parameters }
         };
 
         Ok((dot_span, member_name))
@@ -301,11 +301,12 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         let mut fields = Vec::new();
         let right_brace_span = if let Some(right_brace_span) = self.try_expect_sep(Separator::RightBrace) {
             right_brace_span
-        } else { loop {
-                let (field_name, field_name_span) = self.expect_ident()?;
-                let colon_span = self.expect_sep(Separator::Colon)?;
+        } else { 
+            loop {
+                let field_name = self.expect_ident()?;
+                self.expect_sep(Separator::Colon)?;
                 let value = self.parse_expr()?;
-                fields.push(ObjectExprField{ span: field_name_span + value.span(), name: field_name, name_span: field_name_span, colon_span, value });
+                fields.push(ObjectExprField{ span: field_name.span + value.span(), name: field_name, value });
 
                 if let Some((right_brace_span, _)) = self.try_expect_closing_bracket(Separator::RightBrace) {
                     break right_brace_span;

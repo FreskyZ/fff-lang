@@ -1,7 +1,7 @@
 ///! syntax::pretty: ast type pretty formatter
 
 use std::fmt::{self, Write};
-use crate::source::{SourceContext, FileSystem, Span, IsId};
+use crate::source::{SourceContext, FileSystem, Span, IsId, IdSpan};
 use super::visit::{Node, Visitor};
 use super::ast::*;
 
@@ -62,6 +62,11 @@ impl<'scx, 'f1, 'f2, F> FormatVisitor<'scx, 'f1, 'f2, F> where F: FileSystem {
             self.f.write_str(if content.len() > 24 { &content[..24] } else { content })?;
         }
         Ok(self)
+    }
+    fn write_idspan(&mut self, id: IdSpan) -> Result<&mut Self, fmt::Error> {
+        self.write_isid(id.id)?;
+        self.write_space()?;
+        self.write_span(id.span)
     }
 
     fn invoke_walk<N: Node>(&mut self, node: &N) -> fmt::Result {
@@ -124,7 +129,12 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
     }
 
     fn visit_block_stmt(&mut self, node: &BlockStatement) -> fmt::Result {
-        self.impl_visit_simple(node, "block-stmt", node.span)
+        self.impl_visit(node, "block-stmt", node.span, |f| {
+            if let Some(label) = node.label {
+                f.write_str(" @")?.write_idspan(label)?;
+            }
+            Ok(f)
+        })
     }
 
     fn visit_block(&mut self, node: &Block) -> fmt::Result {
@@ -133,8 +143,8 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
 
     fn visit_break_stmt(&mut self, node: &BreakStatement) -> fmt::Result {
         self.impl_visit(node, "break-stmt", node.span, |f| {
-            if let Some((label, label_span)) = node.label {
-                f.write_str(" @")?.write_isid(label)?.write_space()?.write_span(label_span)?;
+            if let Some(label) = node.label {
+                f.write_str(" @")?.write_idspan(label)?;
             }
             Ok(f)
         })
@@ -142,22 +152,22 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
 
     fn visit_continue_stmt(&mut self, node: &ContinueStatement) -> fmt::Result {
         self.impl_visit(node, "continue-stmt", node.span, |f| {
-            if let Some((label, label_span)) = node.label {
-                f.write_str(" @")?.write_isid(label)?.write_space()?.write_span(label_span)?;
+            if let Some(label) = node.label {
+                f.write_str(" @")?.write_idspan(label)?;
             }
             Ok(f)
         })
     }
 
     fn visit_enum_def(&mut self, node: &EnumDef) -> fmt::Result {
-        self.impl_visit(node, "enum-def", node.span, |f| f.write_space()?
-            .write_isid(node.name)?.write_space()?.write_span(node.name_span)?
+        self.impl_visit(node, "enum-def", node.span, |f| f
+            .write_space()?.write_idspan(node.name)?
             .write_str(" {} ")?.write_span(node.quote_span))
     }
 
     fn visit_enum_def_variant(&mut self, node: &EnumDefVariant) -> fmt::Result {
         self.impl_visit(node, "enum-def-variant", node.span, |f|
-            f.write_space()?.write_isid(node.name)?.write_space()?.write_span(node.name_span))
+            f.write_space()?.write_idspan(node.name))
     }
 
     fn visit_call_expr(&mut self, node: &CallExpr) -> fmt::Result {
@@ -166,14 +176,14 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
     }
 
     fn visit_fn_def(&mut self, node: &FnDef) -> fmt::Result {
-        self.impl_visit(node, "fn-def", node.span, |f| f.write_space()?
-            .write_isid(node.name)?.write_space()?.write_span(node.name_span)?
+        self.impl_visit(node, "fn-def", node.span, |f| f
+            .write_space()?.write_idspan(node.name)?
             .write_str(" () ")?.write_span(node.quote_span))
     }
 
     fn visit_fn_def_parameter(&mut self, node: &FnDefParameter) -> fmt::Result {
-        self.impl_visit(node, "fn-def-parameter", node.name_span + node.r#type.span(), |f| 
-            f.write_space()?.write_isid(node.name)?.write_space()?.write_span(node.name_span))
+        self.impl_visit(node, "fn-def-parameter", node.span, |f| 
+            f.write_space()?.write_idspan(node.name))
     }
 
     fn visit_fn_type(&mut self, node: &FnType) -> fmt::Result {
@@ -183,16 +193,21 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
 
     fn visit_fn_type_parameter(&mut self, node: &FnTypeParameter) -> fmt::Result {
         self.impl_visit(node, "fn-type-parameter", node.span, |f| {
-            if let Some((parameter_id, parameter_span)) = node.name {
-                f.write_space()?.write_isid(parameter_id)?.write_space()?.write_span(parameter_span)?;
+            if let Some(name) = node.name {
+                f.write_space()?.write_idspan(name)?;
             }
             Ok(f)
         })
     }
 
     fn visit_for_stmt(&mut self, node: &ForStatement) -> fmt::Result {
-        self.impl_visit(node, "for-stmt", node.span, |f| f
-            .write_str(" iter-var ")?.write_isid(node.iter_var)?.write_space()?.write_span(node.iter_span))
+        self.impl_visit(node, "for-stmt", node.span, |f| {
+            f.write_str(" iter-var ")?.write_idspan(node.iter_name)?;
+            if let Some(label) = node.label {
+                f.write_str(" @")?.write_idspan(label)?;
+            }
+            Ok(f)
+        })
     }
 
     fn visit_if_stmt(&mut self, node: &IfStatement) -> fmt::Result {
@@ -211,11 +226,6 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
         self.impl_visit(node, "index-expr", node.span, |f|
             f.write_str(" [] ")?.write_span(node.quote_span))
     }
-
-    fn visit_label_def(&mut self, node: &LabelDef) -> fmt::Result {
-        self.impl_visit_no_primary_span(node, "label @", |f|
-            f.write_isid(node.label)?.write_space()?.write_span(node.span))
-    }
     
     fn visit_lit_expr(&mut self, node: &LitExpr) -> fmt::Result {
         self.impl_visit_no_primary_span(node, "literal", |f| {
@@ -232,7 +242,12 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
     }
 
     fn visit_loop_stmt(&mut self, node: &LoopStatement) -> fmt::Result {
-        self.impl_visit_simple(node, "loop-stmt", node.span)
+        self.impl_visit(node, "loop-stmt", node.span, |f| {
+            if let Some(label) = node.label {
+                f.write_str(" @")?.write_idspan(label)?;
+            }
+            Ok(f)
+        })
     }
 
     fn visit_member_expr(&mut self, node: &MemberExpr) -> fmt::Result {
@@ -265,9 +280,9 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
 
     fn visit_module_stmt(&mut self, node: &ModuleStatement) -> fmt::Result {
         self.impl_visit(node, "module-stmt", node.span, |f| {
-            f.write_space()?.write_isid(node.name)?.write_space()?.write_span(node.name_span)?;
-            if let Some((path, path_span)) = node.path {
-                f.write_space()?.write_isid(path)?.write_space()?.write_span(path_span)?;
+            f.write_space()?.write_idspan(node.name)?;
+            if let Some(path) = node.path {
+                f.write_str(" path ")?.write_idspan(path)?;
             }
             Ok(f)
         })
@@ -288,9 +303,8 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
     }
 
     fn visit_object_expr_field(&mut self, node: &ObjectExprField) -> fmt::Result {
-        self.impl_visit(node, "object-expr-field", node.span, |f| f.write_space()?
-            .write_isid(node.name)?.write_space()?.write_span(node.name_span)?
-            .write_str(" : ")?.write_span(node.colon_span))
+        self.impl_visit(node, "object-expr-field", node.span, |f| 
+            f.write_space()?.write_idspan(node.name))
     }
 
     fn visit_plain_type(&mut self, node: &PlainType) -> fmt::Result {
@@ -304,7 +318,7 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
 
     fn visit_type_segment(&mut self, node: &TypeSegment) -> fmt::Result {
         self.impl_visit(node, "type-segment", node.span, |f| {
-            f.write_space()?.write_isid(node.base)?.write_space()?.write_span(node.base_span)?;
+            f.write_space()?.write_idspan(node.base)?;
             if !node.parameters.is_empty() {
                 f.write_str(" <> ")?.write_span(node.quote_span)?;
             }
@@ -356,8 +370,8 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
 
     fn visit_name_segment(&mut self, node: &NameSegment) -> fmt::Result {
         self.impl_visit(node, "name-segment", node.span(), |f| {
-            if let NameSegment::Normal(name, _) = node {
-                f.write_space()?.write_isid(*name)?;
+            if let NameSegment::Normal(name) = node {
+                f.write_space()?.write_isid(name.id)?;
             }
             Ok(f)
         })
@@ -369,7 +383,7 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
 
     fn visit_type_def(&mut self, node: &TypeDef) -> fmt::Result {
         self.impl_visit(node, "type-ref", node.span, |f|
-            f.write_space()?.write_isid(node.name)?.write_space()?.write_span(node.name_span))
+            f.write_space()?.write_idspan(node.name))
     }
 
     fn visit_tuple_type(&mut self, node: &TupleType) -> fmt::Result {
@@ -377,8 +391,8 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
     }
 
     fn visit_type_def_field(&mut self, node: &TypeDefField) -> fmt::Result {
-        self.impl_visit(node, "type-def-field", node.span, |f| f.write_space()?
-            .write_isid(node.name)?.write_space()?.write_span(node.name_span)?
+        self.impl_visit(node, "type-def-field", node.span, |f| f
+            .write_space()?.write_idspan(node.name)?
             .write_str(" : ")?.write_span(node.colon_span))
     }
 
@@ -389,8 +403,8 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
 
     fn visit_use_stmt(&mut self, node: &UseStatement) -> fmt::Result {
         self.impl_visit(node, "use-stmt", node.span, |f| {
-            if let Some((alias, alias_span)) = node.alias {
-                f.write_str(" alias ")?.write_isid(alias)?.write_space()?.write_span(alias_span)?;
+            if let Some(alias) = node.alias {
+                f.write_str(" alias ")?.write_idspan(alias)?;
             }
             Ok(f)
         })
@@ -398,12 +412,16 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
 
     fn visit_var_decl(&mut self, node: &VarDeclStatement) -> fmt::Result {
         self.impl_visit(node, "var-def", node.span, |f| f
-            .write_str(if node.r#const { " const " } else { " mutable " })?
-            .write_isid(node.name)?.write_space()?.write_span(node.name_span))
+            .write_str(if node.r#const { " const " } else { " mutable " })?.write_idspan(node.name))
     }
 
     fn visit_while_stmt(&mut self, node: &WhileStatement) -> fmt::Result {
-        self.impl_visit_simple(node, "while-stmt", node.span)
+        self.impl_visit(node, "while-stmt", node.span, |f| {
+            if let Some(label) = node.label {
+                f.write_str(" @")?.write_idspan(label)?;
+            }
+            Ok(f)
+        })
     }
 }
 

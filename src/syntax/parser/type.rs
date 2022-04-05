@@ -40,7 +40,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             return Ok(ArrayType{ base, size: Expr::dummy(), span: left_bracket_span + right_bracket_span });
         }
 
-        let _semicolon_span = self.expect_sep(Separator::SemiColon)?;
+        self.expect_sep(Separator::SemiColon)?;
 
         if let Some(right_bracket_span) = self.try_expect_sep(Separator::RightBracket) {
             self.emit(strings::InvalidArrayType)
@@ -90,14 +90,14 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             let (name, r#type) = if let TypeRef::Plain(PlainType{ type_as_segment: None, global: false, segments, .. }) = &r#type {
                 if name.is_none() // this one should be before previous let r#type but that will make it 3 ifs are too more (None, r#type)s
                     && segments.len() == 1 && segments[0].parameters.is_empty() && self.try_expect_sep(Separator::Colon).is_some() {
-                    (Some((segments[0].base, segments[0].base_span)), self.parse_type_ref()?)
+                    (Some(segments[0].base), self.parse_type_ref()?)
                 } else {
-                    (name.map(|(kw, span)| (self.intern(kw.display()), span)), r#type)
+                    (name.map(|(kw, span)| IdSpan::new(self.intern(kw.display()), span)), r#type)
                 }
             } else {
-                (name.map(|(kw, span)| (self.intern(kw.display()), span)), r#type)
+                (name.map(|(kw, span)| IdSpan::new(self.intern(kw.display()), span)), r#type)
             };
-            parameters.push(FnTypeParameter{ name, span: name.map(|(_, name_span)| name_span).unwrap_or_else(|| r#type.span()) + r#type.span(), r#type });
+            parameters.push(FnTypeParameter{ name, span: name.map(|n| n.span).unwrap_or_else(|| r#type.span()) + r#type.span(), r#type });
         };
 
         let ret_type = self.try_expect_seps(&[Separator::Arrow, Separator::Colon]).map(|(sep, span)| {
@@ -136,10 +136,10 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         let beginning_separator_span = self.try_expect_sep(Separator::ColonColon);
 
         let mut segments = Vec::new();
-        while let Some((base, base_span)) = self.try_expect_ident() {
+        while let Some(base) = self.try_expect_ident() {
             if let Some(lt_span) = self.try_expect_sep(Separator::Lt) {
                 if let Some(gt_span) = self.try_expect_sep(Separator::Gt) { // allow <> in syntax parse
-                    segments.push(TypeSegment{ base, base_span, quote_span: lt_span + gt_span, parameters: Vec::new(), span: base_span + gt_span });
+                    segments.push(TypeSegment{ base, quote_span: lt_span + gt_span, parameters: Vec::new(), span: base.span + gt_span });
                 } else {
                     let mut parameters = vec![self.parse_type_ref()?];
                     let quote_span = lt_span + loop {
@@ -149,10 +149,10 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
                         self.expect_sep(Separator::Comma)?;
                         parameters.push(self.parse_type_ref()?);
                     };
-                    segments.push(TypeSegment{ base, base_span, quote_span, parameters, span: base_span + quote_span });
+                    segments.push(TypeSegment{ base, quote_span, parameters, span: base.span + quote_span });
                 }
             } else {
-                segments.push(TypeSegment{ base, base_span, quote_span: Span::new(0, 0), parameters: Vec::new(), span: base_span });
+                segments.push(TypeSegment{ base, quote_span: Span::new(0, 0), parameters: Vec::new(), span: base.span });
             }
             if self.try_expect_sep(Separator::ColonColon).is_none() {
                 break;

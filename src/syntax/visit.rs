@@ -56,7 +56,6 @@ pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_if_clause(&mut self, node: &IfClause) -> Result<T, E> { node.walk(self) }
     fn visit_index_expr(&mut self, node: &IndexExpr) -> Result<T, E> { node.walk(self) }
     fn visit_item(&mut self, node: &Item) -> Result<T, E> { node.walk(self) }
-    fn visit_label_def(&mut self, node: &LabelDef) -> Result<T, E> { node.walk(self) }
     fn visit_lit_expr(&mut self, node: &LitExpr) -> Result<T, E> { node.walk(self) }
     fn visit_loop_stmt(&mut self, node: &LoopStatement) -> Result<T, E> { node.walk(self) }
     fn visit_member_expr(&mut self, node: &MemberExpr) -> Result<T, E> { node.walk(self) }

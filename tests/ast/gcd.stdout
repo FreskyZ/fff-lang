@@ -1,8 +1,7 @@
 module tests/ast/gcd.f3
   fn-def <4:1-17:1> main <4:4-4:7> () <4:8-4:9>
     block <4:11-17:1>
-      loop-stmt <6:5-16:5>
-        label @main <6:5-6:10>
+      loop-stmt <6:5-16:5> @main <6:5-6:9>
         block <6:17-16:5>
           simple-expr-stmt <7:9-7:35>
             call-expr <7:9-7:34> () <7:16-7:34>

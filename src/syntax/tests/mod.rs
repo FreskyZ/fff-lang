@@ -1,7 +1,7 @@
 
 use std::fmt::{self, Write};
 use std::str::from_utf8;
-use crate::source::{SourceContext, VirtualFileSystem, Span, IsId, make_source};
+use crate::source::{SourceContext, VirtualFileSystem, Span, IsId, IdSpan, make_source};
 use crate::diagnostics::{strings, make_errors};
 use crate::lexical::{Numeric, Separator, Keyword};
 use super::visit::Node;
@@ -170,7 +170,7 @@ macro_rules! make_name {
     ($start:literal:$end:literal $global:expr, $as:expr, $($segment:expr),*$(,)?) => (
         Expr::Name(Name{ type_as_segment: $as, global: $global, span: Span::new($start, $end), segments: vec![$($segment,)*] }));
     (segment $start:literal:$end:literal #$id:literal) => (
-        NameSegment::Normal(IsId::new($id), Span::new($start, $end)));
+        NameSegment::Normal(IdSpan::new($id, Span::new($start, $end))));
     (segment generic $start:literal:$end:literal $($ty:expr),*$(,)?) => (
         NameSegment::Generic(vec![$($ty,)*], Span::new($start, $end)));
     // bare version for use outside of expr
@@ -287,9 +287,7 @@ macro_rules! make_expr {
     );
     (object field $start:literal:$end:literal #$name:literal $name_start:literal:$name_end:literal colon $colon_start:literal:$colon_end:literal $value:expr$(,)?) => (
         ObjectExprField{
-            name: IsId::new($name),
-            name_span: Span::new($name_start, $name_end),
-            colon_span: Span::new($colon_start, $colon_end),
+            name: IdSpan::new($name, Span::new($name_start, $name_end)),
             span: Span::new($start, $end),
             value: $value,
         }
@@ -336,11 +334,12 @@ macro_rules! make_expr {
 }
 
 macro_rules! make_stmt {
+    // id and label has same implementation but has different semantic
+    (id $start:literal:$end:literal #$id:literal) => (
+        IdSpan::new($id, Span::new($start, $end))
+    );
     (label $start:literal:$end:literal #$id:literal) => (
-        Some(LabelDef{
-            label: IsId::new($id),
-            span: Span::new($start, $end),
-        })
+        Some(IdSpan::new($id, Span::new($start, $end)))
     );
     (label none) => (
         None
@@ -355,16 +354,14 @@ macro_rules! make_stmt {
     (fn-parameter $start:literal:$end:literal #$id:literal $id_start:literal:$id_end:literal $type:expr) => (
         FnDefParameter{
             span: Span::new($start, $end),
-            name: IsId::new($id),
-            name_span: Span::new($id_start, $id_end),
+            name: IdSpan::new($id, Span::new($id_start, $id_end)),
             r#type: $type,
         }
     );
     (for $start:literal:$end:literal var #$iter_var:literal $iter_var_start:literal:$iter_var_end:literal $label:expr, $iter_expr:expr, $body:expr) => (
         ForStatement{
             label: $label,
-            iter_var: IsId::new($iter_var),
-            iter_span: Span::new($iter_var_start, $iter_var_end),
+            iter_name: IdSpan::new($iter_var, Span::new($iter_var_start, $iter_var_end)),
             iter_expr: $iter_expr,
             body: $body,
             span: Span::new($start, $end),
@@ -385,35 +382,22 @@ macro_rules! make_stmt {
             span: Span::new($start, $end),
         }
     );
-    (break $start:literal:$end:literal) => (
+    (break $start:literal:$end:literal $label:expr) => (
         BreakStatement{
-            label: None,
+            label: $label,
             span: Span::new($start, $end),
         }
     );
-    (break $start:literal:$end:literal label #$label:literal $label_start:literal:$label_end:literal) => (
-        BreakStatement{
-            label: Some((IsId::new($label), Span::new($label_start, $label_end))),
-            span: Span::new($start, $end),
-        }
-    );
-    (continue $start:literal:$end:literal) => (
+    (continue $start:literal:$end:literal $label:expr) => (
         ContinueStatement{
-            label: None,
-            span: Span::new($start, $end),
-        }
-    );
-    (continue $start:literal:$end:literal label #$label:literal $label_start:literal:$label_end:literal) => (
-        ContinueStatement{
-            label: Some((IsId::new($label), Span::new($label_start, $label_end))),
+            label: $label,
             span: Span::new($start, $end),
         }
     );
     (var $start:literal:$end:literal #$name:literal $name_start:literal:$name_end:literal $type:expr, $init:expr) => (
         VarDeclStatement{
             r#const: false,
-            name: IsId::new($name),
-            name_span: Span::new($name_start, $name_end),
+            name: IdSpan::new($name, Span::new($name_start, $name_end)),
             r#type: $type,
             init_value: $init,
             span: Span::new($start, $end),
@@ -422,8 +406,7 @@ macro_rules! make_stmt {
     (const $start:literal:$end:literal #$name:literal $name_start:literal:$name_end:literal $type:expr, $init:expr) => (
         VarDeclStatement{
             r#const: true,
-            name: IsId::new($name),
-            name_span: Span::new($name_start, $name_end),
+            name: IdSpan::new($name, Span::new($name_start, $name_end)),
             r#type: $type,
             init_value: $init,
             span: Span::new($start, $end),
@@ -462,16 +445,14 @@ macro_rules! make_type {
     (tuple $start:literal:$end:literal [$($item:expr),*$(,)?]) => (
         TypeRef::Tuple(TupleType{ items: vec![$($item,)*], span: Span::new($start, $end) }));
     (segment $start:literal:$end:literal #$ident:literal) => (TypeSegment{ 
-        base: IsId::new($ident), 
-        base_span: Span::new($start, $end), 
+        base: IdSpan::new($ident, Span::new($start, $end)), 
         quote_span: Span::new(0, 0),
         parameters: Vec::new(),
         span: Span::new($start, $end),
     });
     (segment generic $start:literal:$end:literal #$ident:literal $ident_start:literal:$ident_end:literal quote $quote_start:literal:$quote_end:literal $($parameter:expr),*$(,)?) => (
         TypeSegment{
-            base: IsId::new($ident),
-            base_span: Span::new($ident_start, $ident_end),
+            base: IdSpan::new($ident, Span::new($ident_start, $ident_end)),
             quote_span: Span::new($quote_start, $quote_end),
             parameters: vec![$($parameter,)*],
             span: Span::new($start, $end),
@@ -508,7 +489,7 @@ macro_rules! make_type {
         span: Span::new($start, $end),
     });
     (param named $start:literal:$end:literal #$name:literal $name_start:literal:$name_end:literal $ty:expr) => (FnTypeParameter{
-        name: Some((IsId::new($name), Span::new($name_start, $name_end))),
+        name: Some(IdSpan::new($name, Span::new($name_start, $name_end))),
         r#type: $ty,
         span: Span::new($start, $end),
     });

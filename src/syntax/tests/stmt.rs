@@ -1,16 +1,18 @@
 use super::*;
 
 #[test]
-fn block_stmt_parse() {
+fn parse_block_stmt() {
     case!{ parse_block_stmt "{}",
-        BlockStatement{ span: Span::new(0, 1), 
+        BlockStatement{ 
+            span: Span::new(0, 1), 
             label: None,
             body: make_stmt!(block 0:1) }
     }
 
     case!{ parse_block_stmt "@: {}",
-        BlockStatement{ span: Span::new(0, 4),
-            label: make_stmt!(label 0:1 #1),
+        BlockStatement{ 
+            span: Span::new(0, 4),
+            label: make_stmt!(label 0:0 #1),
             body: make_stmt!(block 3:4) }
     }
 }
@@ -37,11 +39,11 @@ fn expr_stmt_parse() {
 }
 
 #[test]
-fn for_stmt_parse() {
+fn parse_for_stmt() {
     //                      0123456789012345678
     case!{ parse_for_stmt "@2: for i in 42 {}",
         make_stmt!(for 0:17 var #3 8:8
-            make_stmt!(label 0:2 #2),
+            make_stmt!(label 0:1 #2),
             make_expr!(i32 42 13:14),
             make_stmt!(block 16:17))
     }
@@ -50,7 +52,7 @@ fn for_stmt_parse() {
     //              01234567890123456789012345678901234567890123456789012345678901 23456789012 34567
     case!{ parse_for_stmt "@hello: for _ in range(0, 10).enumerate().reverse() { writeln(\"helloworld\"); }",
         make_stmt!(for 0:77 var #3 12:12
-            make_stmt!(label 0:6 #2),
+            make_stmt!(label 0:5 #2),
             make_expr!(call 17:50 paren 49:50
                 make_expr!(member 17:48 dot 41:41
                     make_expr!(call 17:40 paren 39:40
@@ -142,22 +144,22 @@ fn if_stmt_parse() {
 fn jump_stmt_parse() {
     
     case!{ parse_continue_stmt "continue;", 
-        make_stmt!(continue 0:8)
+        make_stmt!(continue 0:8 make_stmt!(label none))
     }
     case!{ parse_continue_stmt "continue @1;",
-        make_stmt!(continue 0:11 label #2 9:10)
+        make_stmt!(continue 0:11 make_stmt!(label 9:10 #2))
     }
     
     case!{ parse_break_stmt "break;",
-        make_stmt!(break 0:5)
+        make_stmt!(break 0:5 make_stmt!(label none))
     }
     case!{ parse_break_stmt "break @1;",
-        make_stmt!(break 0:8 label #2 6:7)
+        make_stmt!(break 0:8 make_stmt!(label 6:7 #2))
     }
 }
 
 #[test]
-fn loop_stmt_parse() {
+fn parse_loop_stmt() {
 
     case!{ parse_loop_stmt "loop {}",
         make_stmt!(loop 0:6
@@ -167,7 +169,7 @@ fn loop_stmt_parse() {
     //                                        1234567890123456789 0123 45678
     case!{ parse_loop_stmt "@@: loop { println(\"233\"); }",
         make_stmt!(loop 0:27
-            make_stmt!(label 0:2 #2),
+            make_stmt!(label 0:1 #2),
             make_stmt!(block 9:27
                 make_stmt!(expr 11:25
                     make_expr!(call 11:24 paren 18:24
@@ -178,20 +180,20 @@ fn loop_stmt_parse() {
 }
 
 #[test]
-fn module_stmt_parse() {
+fn parse_module_stmt() {
 
     case!{ parse_module_stmt "module a;",
-        ModuleStatement{ name: IsId::new(2), name_span: Span::new(7, 7), path: None, span: Span::new(0, 8) },
+        ModuleStatement{ name: make_stmt!(id 7:7 #2), path: None, span: Span::new(0, 8) },
     }
     //                   012345678901234567890
     case!{ parse_module_stmt "module os \"windows\";",
-        ModuleStatement{ name: IsId::new(2), name_span: Span::new(7, 8), path: Some((IsId::new(3), Span::new(10, 18))), span: Span::new(0, 19) },
+        ModuleStatement{ name: make_stmt!(id 7:8 #2), path: Some(make_stmt!(id 10:18 #3)), span: Span::new(0, 19) },
     }
 
     //      0         1          2
     //      012345678901234567 89012345 6
     case!{ parse_module_stmt "module otherdir r\"ab/c.f3\";",
-        ModuleStatement{ name: IsId::new(2), name_span: Span::new(7, 14), path: Some((IsId::new(3), Span::new(16, 25))), span: Span::new(0, 26) },
+        ModuleStatement{ name: make_stmt!(id 7:14 #2), path: Some(make_stmt!(id 16:25 #3)), span: Span::new(0, 26) },
     }
 }
 
@@ -202,7 +204,7 @@ fn module_parse() {
         Module{ file: crate::source::FileId::new(1), items: vec![
             Item::Use(UseStatement{ span: Span::new(0, 5), alias: None,
                 name: make_name!(simple bare 4:4 #2) }),
-            Item::Import(ModuleStatement{ name: IsId::new(3), name_span: Span::new(14, 14), path: None, span: Span::new(7, 15) }),
+            Item::Import(ModuleStatement{ name: make_stmt!(id 14:14 #3), path: None, span: Span::new(7, 15) }),
             Item::SimpleExpr(SimpleExprStatement{ span: Span::new(17, 18), expr: make_expr!(i32 3 17:17) }),
             Item::SimpleExpr(SimpleExprStatement{ span: Span::new(20, 21), expr: make_name!(simple 20:20 #3) }),
             Item::SimpleExpr(SimpleExprStatement{ span: Span::new(23, 24), expr: make_name!(simple 23:23 #2) }),
@@ -233,7 +235,7 @@ fn use_stmt_parse() {
     }
     //                   0123456789012345678901234567890
     case!{ parse_use_stmt "use std::fmt::Debug as Display;",
-        UseStatement{ span: Span::new(0, 30), alias: Some((IsId::new(5), Span::new(23, 29))),
+        UseStatement{ span: Span::new(0, 30), alias: Some(make_stmt!(id 23:29 #5)),
             name: make_name!(bare 4:18 false, None,
                 make_name!(segment 4:6 #2),
                 make_name!(segment 9:11 #3),
@@ -313,7 +315,7 @@ fn var_decl_stmt_parse() {
 }
 
 #[test]
-fn while_stmt_parse() {
+fn parse_while_stmt() {
 
     case!{ parse_while_stmt "while 1 {}",
         make_stmt!(while 0:9
@@ -325,7 +327,7 @@ fn while_stmt_parse() {
     //      01234567890123456789012345 67890123456789012 3456
     case!{ parse_while_stmt "@2: while true { writeln(\"fresky hellooooo\"); }",
         make_stmt!(while 0:46
-            make_stmt!(label 0:2 #2),
+            make_stmt!(label 0:1 #2),
             make_expr!(true 10:13),
             make_stmt!(block 15:46
                 make_stmt!(expr 17:44
@@ -341,14 +343,14 @@ fn enum_def_parse() {
 
     //      012345678901234567890
     case!{ parse_enum_def "enum E { M1, M2 = 1,}", 
-        EnumDef{ name: IsId::new(2), name_span: Span::new(5, 5), quote_span: Span::new(7, 20), span: Span::new(0, 20), base_type: None, variants: vec![
-            EnumDefVariant{ name: IsId::new(3), name_span: Span::new(9, 10), value: None, span: Span::new(9, 10) },
-            EnumDefVariant{ name: IsId::new(4), name_span: Span::new(13, 14), value: Some(make_expr!(i32 1 18:18)), span: Span::new(13, 18) }]}
+        EnumDef{ name: make_stmt!(id 5:5 #2), quote_span: Span::new(7, 20), span: Span::new(0, 20), base_type: None, variants: vec![
+            EnumDefVariant{ name: make_stmt!(id 9:10 #3), value: None, span: Span::new(9, 10) },
+            EnumDefVariant{ name: make_stmt!(id 13:14 #4), value: Some(make_expr!(i32 1 18:18)), span: Span::new(13, 18) }]}
     }
 
     //      0123456789012
     case!{ parse_enum_def "enum E: u8 {}",
-        EnumDef{ name: IsId::new(2), name_span: Span::new(5, 5), quote_span: Span::new(11, 12), span: Span::new(0, 12), variants: Vec::new(),
+        EnumDef{ name: make_stmt!(id 5:5 #2), quote_span: Span::new(11, 12), span: Span::new(0, 12), variants: Vec::new(),
             base_type: Some(PrimitiveType{ base: Keyword::U8, span: Span::new(8, 9) }), }
     }
 }
@@ -359,8 +361,7 @@ fn fn_def_parse() {
     case!{ parse_fn_def "fn main() {}",
         FnDef{
             span: Span::new(0, 11), 
-            name: IsId::new(2), 
-            name_span: Span::new(3, 6), 
+            name: make_stmt!(id 3:6 #2), 
             quote_span: Span::new(7, 8), 
             parameters: vec![], 
             ret_type: None,
@@ -373,8 +374,7 @@ fn fn_def_parse() {
     case!{ parse_fn_def "fn main(ac: i32) {}",
         FnDef{
             span: Span::new(0, 18), 
-            name: IsId::new(2), 
-            name_span: Span::new(3, 6), 
+            name: make_stmt!(id 3:6 #2), 
             quote_span: Span::new(7, 15), 
             parameters: vec![
                 make_stmt!(fn-parameter 8:14 #3 8:9
@@ -389,9 +389,8 @@ fn fn_def_parse() {
     //      012345678901234567890123456789012345678901234567890123456789012345678901234567890
     case!{ parse_fn_def " fn mainxxx(argv:&    string   ,this:i32, some_other: char, )  { println(this); }",
         FnDef{
-            span: Span::new(1, 80), 
-            name: IsId::new(2), 
-            name_span: Span::new(4, 10), 
+            span: Span::new(1, 80),
+            name: make_stmt!(id 4:10 #2),
             quote_span: Span::new(11, 60), 
             parameters: vec![
                 make_stmt!(fn-parameter 12:27 #3 12:15
@@ -416,8 +415,7 @@ fn fn_def_parse() {
     case!{ parse_fn_def "fn main() -> i32 {}",
         FnDef{
             span: Span::new(0, 18),
-            name: IsId::new(2), 
-            name_span: Span::new(3, 6), 
+            name: make_stmt!(id 3:6 #2), 
             quote_span: Span::new(7, 8), 
             parameters: vec![],
             ret_type: Some(make_type!(prim 13:15 I32)),
@@ -429,8 +427,7 @@ fn fn_def_parse() {
     case!{ parse_fn_def "fn ffff(argc: i32, argv: &&byte,   envv:  &string,) -> i32 {}",
         FnDef{
             span: Span::new(0, 60), 
-            name: IsId::new(2), 
-            name_span: Span::new(3, 6), 
+            name: make_stmt!(id 3:6 #2), 
             quote_span: Span::new(7, 50), 
             parameters: vec![
                 make_stmt!(fn-parameter 8:16 #3 8:11
@@ -451,8 +448,7 @@ fn fn_def_parse() {
     case!{ parse_fn_def "fn impl_visit(this: &This, node: &Node, title: string, span: Span, then: fn() -> Result<&This, fmt::Error>) -> fmt::Result {}",
         FnDef{
             span: Span::new(0, 124), 
-            name: IsId::new(2), 
-            name_span: Span::new(3, 12), 
+            name: make_stmt!(id 3:12 #2), 
             quote_span: Span::new(13, 106), 
             parameters: vec![
                 make_stmt!(fn-parameter 14:24 #3 14:17
@@ -485,24 +481,24 @@ fn fn_def_parse() {
 fn type_def_parse() {
     //                                  01234567890123456
     case!{ parse_type_def "type x { x: i32 }",
-        TypeDef{ span: Span::new(0, 16), name: IsId::new(2), name_span: Span::new(5, 5), fields: vec![
-            TypeDefField{ span: Span::new(9, 14), name: IsId::new(2), name_span: Span::new(9, 9), colon_span: Span::new(10, 10),
+        TypeDef{ span: Span::new(0, 16), name: make_stmt!(id 5:5 #2), fields: vec![
+            TypeDefField{ span: Span::new(9, 14), name: make_stmt!(id 9:9 #2), colon_span: Span::new(10, 10),
                 r#type: make_type!(prim 12:14 I32) }] }
     }
     case!{ parse_type_def "type x { x: i32,}",
-        TypeDef{ span: Span::new(0, 16), name: IsId::new(2), name_span: Span::new(5, 5), fields: vec![
-            TypeDefField{ span: Span::new(9, 15), name: IsId::new(2), name_span: Span::new(9, 9), colon_span: Span::new(10, 10),
+        TypeDef{ span: Span::new(0, 16), name: make_stmt!(id 5:5 #2), fields: vec![
+            TypeDefField{ span: Span::new(9, 15), name: make_stmt!(id 9:9 #2), colon_span: Span::new(10, 10),
                 r#type: make_type!(prim 12:14 I32) }] }
     }
     //                                    0         1         2         3         4
     //                                    0123456789012345678901234567890123456789012345
     case!{ parse_type_def "type array { data:  &u8, size: u64, cap: u64 }",
-        TypeDef{ span: Span::new(0, 45), name: IsId::new(2), name_span: Span::new(5, 9), fields: vec![
-            TypeDefField{ span: Span::new(13, 23), name: IsId::new(3), name_span: Span::new(13, 16), colon_span: Span::new(17, 17),
+        TypeDef{ span: Span::new(0, 45), name: make_stmt!(id 5:9 #2), fields: vec![
+            TypeDefField{ span: Span::new(13, 23), name: make_stmt!(id 13:16 #3), colon_span: Span::new(17, 17),
                 r#type: make_type!(ref 20:22 make_type!(prim 21:22 U8)) },
-            TypeDefField{ span: Span::new(25, 34), name: IsId::new(4), name_span: Span::new(25, 28), colon_span: Span::new(29, 29),
+            TypeDefField{ span: Span::new(25, 34), name: make_stmt!(id 25:28 #4), colon_span: Span::new(29, 29),
                 r#type: make_type!(prim 31:33 U64) },
-            TypeDefField{ span: Span::new(36, 43), name: IsId::new(5), name_span: Span::new(36, 38), colon_span: Span::new(39, 39),
+            TypeDefField{ span: Span::new(36, 43), name: make_stmt!(id 36:38 #5), colon_span: Span::new(39, 39),
                 r#type: make_type!(prim 41:43 U64) },
         ] }, strings ["array", "data", "size", "cap"]
     }

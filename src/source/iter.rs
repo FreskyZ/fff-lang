@@ -3,6 +3,7 @@
 use std::collections::{HashMap, hash_map::DefaultHasher};
 use std::fmt;
 use std::hash::{Hash, Hasher};
+use std::num::NonZeroU32;
 use std::path::PathBuf;
 use std::ops::{Add, AddAssign};
 use super::{SourceContext, SourceFile, FileId};
@@ -15,11 +16,11 @@ pub const EOF: char = 0u8 as char;
 ///   to reduce memory usage because location info is used extremely widely
 /// - it is u32 not usize because it is not reasonable to
 ///   have a file size over 4GB or all source file total size over 4GB for this toy language (possibly for all languages)
-#[derive(Eq, PartialEq, Clone, Copy,  Hash)]
+#[derive(Eq, PartialEq, Clone, Copy, Hash)]
 pub struct Position(u32);
 
 impl Position {
-    pub fn new(v: u32) -> Self {
+    pub const fn new(v: u32) -> Self {
         Self(v)
     }
     pub fn unwrap(self) -> u32 {
@@ -130,27 +131,54 @@ impl From<Position> for Span {
 ///   have more than u32::MAX strings in a program, and it is widely used
 /// - recommend variable name `id` or `string_id`
 #[derive(Eq, PartialEq, Clone, Copy, Hash)]
-pub struct IsId(u32);
+pub struct IsId(NonZeroU32);
 
 impl IsId {
     pub(super) const POSITION_MASK: u32 = 1 << 31;
 
-    pub fn new(v: u32) -> Self {
-        Self(v)
+    pub const fn new(v: u32) -> Self {
+        debug_assert!(v != 0, "isid cannot be 0");
+        // SAFETY: debug_assert above
+        Self(unsafe { NonZeroU32::new_unchecked(v) })
     }
     pub fn unwrap(self) -> u32 {
-        self.0
+        self.0.get()
     }
 }
 impl From<u32> for IsId {
     fn from(v: u32) -> Self {
-        Self(v)
+        Self::new(v)
     }
 }
 
 impl fmt::Debug for IsId {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.0)
+        f.debug_tuple("IsId").field(&self.0.get()).finish()
+    }
+}
+
+// this is currently an u128, but I suspect that it can fit in u64
+// for current small test until even first bootstrap version, the string id and span should be easily fit in u64
+// for "dont-know-whether-exist very large program", 
+// considering these 2 ids increase accordingly, squash `u32::MAX - id` and span together may still be ok 
+#[derive(PartialEq, Clone, Copy)]
+pub struct IdSpan {
+    pub id: IsId,
+    pub span: Span,
+}
+
+impl IdSpan {
+    pub fn new(id: impl Into<IsId>, span: Span) -> Self {
+        Self{ id: id.into(), span }
+    }
+}
+
+impl fmt::Debug for IdSpan {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_tuple("IdSpan")
+            .field(&self.id)
+            .field(&self.span)
+            .finish()
     }
 }
 

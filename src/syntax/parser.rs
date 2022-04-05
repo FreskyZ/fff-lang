@@ -1,5 +1,5 @@
 
-use crate::source::{Span, IsId};
+use crate::source::{Span, IsId, IdSpan};
 use crate::diagnostics::{Diagnostic, strings};
 use crate::lexical::{Parser as Scanner, Token, Numeric, Separator, SeparatorKind, Keyword, KeywordKind};
 use super::ast::*;
@@ -133,10 +133,10 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     /// if so, move next and Some((lit_value, lit_span)),
     /// if not, no move next and None
     ///
-    /// example `let (id, id_span) = cx.try_expect_str_lit()?;`
-    fn try_expect_str_lit(&mut self) -> Option<(IsId, Span)> {
+    /// example `let value = cx.try_expect_str_lit()?;`
+    fn try_expect_str_lit(&mut self) -> Option<IdSpan> {
         match self.current {
-            Token::Str(v, _) => Some((v, self.move_next())),
+            Token::Str(v, _) => Some(IdSpan::new(v, self.move_next())),
             _ => None,
         }
     }
@@ -347,67 +347,67 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
 
     /// Check current token is an identifier
     ///
-    /// if so, move next and Ok((id, ident_span)),
+    /// if so, move next and Ok(id_span),
     /// if not, push unexpect and Err(Unexpected)
     ///
-    /// example `let (ident_id, ident_span) = cx.expect_ident()?;`
-    fn expect_ident(&mut self) -> Result<(IsId, Span), Unexpected> {
+    /// example `let name = cx.expect_ident()?;`
+    fn expect_ident(&mut self) -> Result<IdSpan, Unexpected> {
         match self.current {
-            Token::Ident(id) => Ok((id, self.move_next())),
+            Token::Ident(id) => Ok(IdSpan::new(id, self.move_next())),
             _ => self.push_unexpect("identifier"),
         }
     }
 
     /// Check current token is a identifier
     /// 
-    /// if so, move next and Some((id, id_span)), 
+    /// if so, move next and Some(id_span), 
     /// if not, no move next and None
     ///
-    /// example `if let Some((ident_id, ident_span)) = cx.try_expect_ident() { ... }`
-    fn try_expect_ident(&mut self) -> Option<(IsId, Span)> {
+    /// example `if let Some(name) = cx.try_expect_ident() { ... }`
+    fn try_expect_ident(&mut self) -> Option<IdSpan> {
         match self.current {
-            Token::Ident(id) => Some((id, self.move_next())),
+            Token::Ident(id) => Some(IdSpan::new(id, self.move_next())),
             _ => None,
         }
     }
 
     /// Check current token is a label
     /// 
-    /// if so, move next and Some((id, id_span)), 
+    /// if so, move next and Some(id_span),
     /// if not, no move next and None
     ///
-    /// example `if let Some((label_id, label_span)) = cx.try_expect_label() { ... }`
-    fn try_expect_label(&mut self) -> Option<(IsId, Span)> {
+    /// example `if let Some(label) = cx.try_expect_label() { ... }`
+    fn try_expect_label(&mut self) -> Option<IdSpan> {
         match self.current {
-            Token::Label(id) => Some((id, self.move_next())),
+            Token::Label(id) => Some(IdSpan::new(id, self.move_next())),
             _ => None,
         }
     }
 
     /// Check current token is identifier or acceptable keywords
     /// 
-    /// if so, move next and Ok((id, ident_span)),
+    /// if so, move next and Ok(id_span),
     /// if not, push unexpect and Err(Unexpected)
     ///
-    /// example `let (ident_id, ident_span) = cx.expect_ident_or(&[Keyword::This, Keyword::Underscore])?;`
-    fn expect_ident_or_keywords(&mut self, acceptable_keywords: &[Keyword]) -> Result<(IsId, Span), Unexpected> {
+    /// example `let name = cx.expect_ident_or(&[Keyword::This, Keyword::Underscore])?;`
+    fn expect_ident_or_keywords(&mut self, acceptable_keywords: &[Keyword]) -> Result<IdSpan, Unexpected> {
         match self.current {
-            Token::Ident(id) => Ok((id, self.move_next())),
-            Token::Keyword(kw) if acceptable_keywords.iter().any(|a| a == &kw) => Ok((self.base.intern(kw.display()), self.move_next())),
+            Token::Ident(id) => Ok(IdSpan::new(id, self.move_next())),
+            Token::Keyword(kw) if acceptable_keywords.iter().any(|a| a == &kw) => Ok(IdSpan::new(self.base.intern(kw.display()), self.move_next())),
             _ => self.push_unexpect(&format!("identifier or {}", acceptable_keywords.iter().map(|a| a.display()).collect::<Vec<_>>().join(", "))),
         }
     }
 
     /// Check current token is identifier or meet the predict
     /// 
-    /// if so, move next and Ok((id, ident_span)),
+    /// if so, move next and Ok(id_span),
     /// if not, push unexpect and Err(Unexpected)
     ///
-    /// example `let (ident_id, ident_span) = cx.expect_ident_or_keyword_kind(KeywordKind::Primitive)?;`
-    fn expect_ident_or_keyword_kind(&mut self, kind: KeywordKind) -> Result<(IsId, Span), Unexpected> {
+    /// example `let name = cx.expect_ident_or_keyword_kind(KeywordKind::Primitive)?;`
+    fn expect_ident_or_keyword_kind(&mut self, kind: KeywordKind) -> Result<IdSpan, Unexpected> {
         match self.current {
-            Token::Ident(id) => Ok((id, self.move_next())),
-            Token::Keyword(kw) if kw.kind(kind) => Ok((self.base.intern(kw.display()), self.move_next())),
+            Token::Ident(id) => Ok(IdSpan::new(id, self.move_next())),
+            Token::Keyword(kw) if kw.kind(kind) => Ok(IdSpan::new(self.base.intern(kw.display()), self.move_next())),
             _ => self.push_unexpect(&format!("identifier or {:?}", kind)),
         }
     }

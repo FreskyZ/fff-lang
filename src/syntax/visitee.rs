@@ -50,9 +50,6 @@ impl_node!{ BinaryExpr, visit_binary_expr, |self, v| {
 }}
 
 impl_node!{ BlockStatement, visit_block_stmt, |self, v| {
-    if let Some(label) = &self.label {
-        v.visit_label_def(label)?;
-    }
     v.visit_block(&self.body)
 }}
 
@@ -147,9 +144,6 @@ impl_node!{ FnTypeParameter, visit_fn_type_parameter, |self, v| {
 }}
 
 impl_node!{ ForStatement, visit_for_stmt, |self, v| {
-    if let Some(label) = &self.label {
-        v.visit_label_def(label)?;
-    }
     v.visit_expr(&self.iter_expr)?;
     v.visit_block(&self.body)
 }}
@@ -192,14 +186,9 @@ impl_abc_node!{ Item, visit_item,
     Import => visit_module_stmt,
 }
 
-impl_node!{ LabelDef, visit_label_def }
-
 impl_node!{ LitExpr, visit_lit_expr }
 
 impl_node!{ LoopStatement, visit_loop_stmt, |self, v| {
-    if let Some(label) = &self.label {
-        v.visit_label_def(label)?;
-    }
     v.visit_block(&self.body)
 }}
 
@@ -382,9 +371,6 @@ impl_node!{ VarDeclStatement, visit_var_decl, |self, v| {
 }}
 
 impl_node!{ WhileStatement, visit_while_stmt, |self, v| {
-    if let Some(label) = &self.label {
-        v.visit_label_def(label)?;
-    }
     v.visit_expr(&self.condition)?;
     v.visit_block(&self.body)
 }}
