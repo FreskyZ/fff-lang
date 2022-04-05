@@ -14,8 +14,7 @@ module tests/ast/list.f3
           member-expr <16:5-16:13> . <16:9-16:9>
             name <16:5-16:8>
               name-segment <16:5-16:8> list
-            name <16:10-16:13>
-              name-segment <16:10-16:13> sort
+            member-name <16:10-16:13> sort <16:10-16:13>
       simple-expr-stmt <20:5-20:18>
         call-expr <20:5-20:17> () <20:12-20:17>
           name <20:5-20:11>
@@ -27,24 +26,21 @@ module tests/ast/list.f3
           member-expr <24:5-24:18> . <24:9-24:9>
             name <24:5-24:8>
               name-segment <24:5-24:8> list
-            name <24:10-24:18>
-              name-segment <24:10-24:18> push_back
+            member-name <24:10-24:18> push_back <24:10-24:18>
           literal i32 8 <24:20-24:20>
       simple-expr-stmt <28:5-28:22>
         call-expr <28:5-28:21> () <28:19-28:21>
           member-expr <28:5-28:18> . <28:9-28:9>
             name <28:5-28:8>
               name-segment <28:5-28:8> list
-            name <28:10-28:18>
-              name-segment <28:10-28:18> push_back
+            member-name <28:10-28:18> push_back <28:10-28:18>
           literal i32 6 <28:20-28:20>
       simple-expr-stmt <29:5-29:22>
         call-expr <29:5-29:21> () <29:19-29:21>
           member-expr <29:5-29:18> . <29:9-29:9>
             name <29:5-29:8>
               name-segment <29:5-29:8> list
-            name <29:10-29:18>
-              name-segment <29:10-29:18> remove_at
+            member-name <29:10-29:18> remove_at <29:10-29:18>
           literal i32 3 <29:20-29:20>
       for-stmt <30:5-32:5> iter-var i <30:9-30:9>
         range-both-expr <30:14-30:27> dotdot <30:15-30:16>
@@ -52,8 +48,7 @@ module tests/ast/list.f3
           member-expr <30:17-30:27> . <30:21-30:21>
             name <30:17-30:20>
               name-segment <30:17-30:20> list
-            name <30:22-30:27>
-              name-segment <30:22-30:27> length
+            member-name <30:22-30:27> length <30:22-30:27>
         block <30:29-32:5>
           assign-expr-stmt <31:9-31:21> *= <31:17-31:18>
             index-expr <31:9-31:15> [] <31:13-31:15>
@@ -75,15 +70,13 @@ module tests/ast/list.f3
           member-expr <36:5-36:13> . <36:9-36:9>
             name <36:5-36:8>
               name-segment <36:5-36:8> list
-            name <36:10-36:13>
-              name-segment <36:10-36:13> sort
+            member-name <36:10-36:13> sort <36:10-36:13>
       simple-expr-stmt <37:5-37:19>
         call-expr <37:5-37:18> () <37:17-37:18>
           member-expr <37:5-37:16> . <37:9-37:9>
             name <37:5-37:8>
               name-segment <37:5-37:8> list
-            name <37:10-37:16>
-              name-segment <37:10-37:16> reverse
+            member-name <37:10-37:16> reverse <37:10-37:16>
       simple-expr-stmt <38:5-38:18>
         call-expr <38:5-38:17> () <38:12-38:17>
           name <38:5-38:11>

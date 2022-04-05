@@ -25,8 +25,7 @@ module tests/ast/prime.f3
               member-expr <10:58-10:77> . <10:68-10:68>
                 name <10:58-10:67>
                   name-segment <10:58-10:67> high_bound
-                name <10:69-10:77>
-                  name-segment <10:69-10:77> to_string
+                member-name <10:69-10:77> to_string <10:69-10:77>
       var-def <11:5-11:58> mutable is_prime <11:9-11:16>
         call-expr <11:20-11:57> () <11:46-11:57>
           name <11:20-11:45>
@@ -77,8 +76,7 @@ module tests/ast/prime.f3
                   member-expr <18:52-18:62> . <18:53-18:53>
                     name <18:52-18:52>
                       name-segment <18:52-18:52> i
-                    name <18:54-18:62>
-                      name-segment <18:54-18:62> to_string
+                    member-name <18:54-18:62> to_string <18:54-18:62>
           if-stmt <19:9-25:9>
             if-clause <19:9-25:9>
               index-expr <19:12-19:22> [] <19:20-19:22>
@@ -109,11 +107,10 @@ module tests/ast/prime.f3
                           binary-expr <22:25-22:71> + <22:57-22:57>
                             literal str "[DEBUG] inner iteration," <22:25-22:55>
                             call-expr <22:59-22:71> () <22:70-22:71>
-                          member-expr <22:59-22:69> . <22:60-22:60>
-                            name <22:59-22:59>
-                              name-segment <22:59-22:59> j
-                            name <22:61-22:69>
-                              name-segment <22:61-22:69> to_string
+                              member-expr <22:59-22:69> . <22:60-22:60>
+                                name <22:59-22:59>
+                                  name-segment <22:59-22:59> j
+                                member-name <22:61-22:69> to_string <22:61-22:69>
                           literal str ", unset it" <22:75-22:86>
                     assign-expr-stmt <23:17-23:40> = <23:33-23:33>
                       index-expr <23:17-23:31> [] <23:25-23:31>
@@ -156,8 +153,7 @@ module tests/ast/prime.f3
                     member-expr <32:13-32:24> . <32:20-32:20>
                       name <32:13-32:19>
                         name-segment <32:13-32:19> ret_val
-                      name <32:21-32:24>
-                        name-segment <32:21-32:24> push
+                      member-name <32:21-32:24> push <32:21-32:24>
                     name <32:26-32:26>
                       name-segment <32:26-32:26> i
       ret-stmt <35:5-35:19>
@@ -181,8 +177,7 @@ module tests/ast/prime.f3
               member-expr <40:20-40:34> . <40:28-40:28>
                 name <40:20-40:27>
                   name-segment <40:20-40:27> thearray
-                name <40:29-40:34>
-                  name-segment <40:29-40:34> length
+                member-name <40:29-40:34> length <40:29-40:34>
             literal u64 1 <40:40-40:43>
         block <40:45-43:5>
           simple-expr-stmt <41:9-41:39>
@@ -196,8 +191,7 @@ module tests/ast/prime.f3
                       name-segment <41:15-41:22> thearray
                     name <41:24-41:24>
                       name-segment <41:24-41:24> i
-                  name <41:27-41:35>
-                    name-segment <41:27-41:35> to_string
+                  member-name <41:27-41:35> to_string <41:27-41:35>
           simple-expr-stmt <42:9-42:20>
             call-expr <42:9-42:19> () <42:14-42:19>
               name <42:9-42:13>
@@ -210,8 +204,7 @@ module tests/ast/prime.f3
               member-expr <44:8-44:22> . <44:16-44:16>
                 name <44:8-44:15>
                   name-segment <44:8-44:15> thearray
-                name <44:17-44:22>
-                  name-segment <44:17-44:22> length
+                member-name <44:17-44:22> length <44:17-44:22>
             literal u64 1 <44:28-44:31>
           block <44:33-46:5>
             simple-expr-stmt <45:9-45:62>
@@ -227,12 +220,10 @@ module tests/ast/prime.f3
                         call-expr <45:24-45:40> () <45:39-45:40>
                           member-expr <45:24-45:38> . <45:32-45:32>
                             name <45:24-45:31>
-                          name-segment <45:24-45:31> thearray
-                            name <45:33-45:38>
-                          name-segment <45:33-45:38> length
+                              name-segment <45:24-45:31> thearray
+                            member-name <45:33-45:38> length <45:33-45:38>
                         literal u64 1 <45:44-45:47>
-                    name <45:50-45:58>
-                      name-segment <45:50-45:58> to_string
+                    member-name <45:50-45:58> to_string <45:50-45:58>
       simple-expr-stmt <47:5-47:15>
         call-expr <47:5-47:14> () <47:10-47:14>
           name <47:5-47:9>

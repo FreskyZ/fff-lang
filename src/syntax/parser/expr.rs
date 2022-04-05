@@ -22,18 +22,18 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     }
 
     pub fn parse_expr(&mut self) -> Result<Expr, Unexpected> {
-        self.allow_object_literal.push(true);
+        self.allow_object_expr.push(true);
         let result = self.parse_range_expr();
-        self.allow_object_literal.pop();
+        self.allow_object_expr.pop();
         result
     }
 
     // disable top level object exprs,
     // until end of this expr, or call parse_expr again inside call_expr, e.g. array def and tuple def
     pub fn parse_expr_except_object_expr(&mut self) -> Result<Expr, Unexpected> {
-        self.allow_object_literal.push(false);
+        self.allow_object_expr.push(false);
         let result = self.parse_range_expr();
-        self.allow_object_literal.pop();
+        self.allow_object_expr.pop();
         result
     }
 
@@ -205,31 +205,42 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     // member_expr = expr '.' member_name
     // member_name = member_name_base [ '::' '<' type_ref { ',' type_ref } [ ',' ] '>' ]
     // member_name_base = num_lit | ident
-    // return dot span and name, see parse_postfix_expr for the return type
-    pub fn parse_member_expr(&mut self) -> Result<(Span, Name), Unexpected> {
+    // TODO: type_ref may be omitted by underscore
+    // return dot span and member name, see parse_postfix_expr for the return type
+    pub fn parse_member_expr(&mut self) -> Result<(Span, MemberName), Unexpected> {
         
         let dot_span = self.expect_sep(Separator::Dot)?;
-        let name = if let Some((numeric, span)) = self.try_expect_numeric() {
-            if let Numeric::I32(v) = numeric {
-                Name{ type_as_segment: None, global: false, span, segments: vec![NameSegment::Normal(self.intern(&format!("{}", v)), span)] }
-            } else {
+        let member_name = if let Some((numeric, span)) = self.try_expect_numeric() {
+            if !matches!(numeric, Numeric::I32(_) /* && is unsuffixed and unprefixed */) {
                 self.emit(strings::InvalidTupleIndex).span(span).help(strings::TupleIndexSyntaxHelp);
-                Name{ type_as_segment: None, global: false, span, segments: Vec::new() }
             }
+            MemberName{ span, base: MemberNameBase::Numeric(numeric), base_span: span, quote_span: Span::new(0, 0), parameters: Vec::new() }
         } else {
-            let name = self.parse_name()?;
-            // first segment will not be generic and will not be type_as_segment and global, because matches3 checks for that
-            if name.segments.len() == 2 && !matches!(name.segments[1], NameSegment::Generic(..)) {
-                self.emit(strings::InvalidMemberAccess).span(name.segments[1].span()).help(strings::GenericMemberAccessSyntaxHelp);
+            // // ? rust.await is really good design, but await is still currently reserved, put it here to indicate that it can be here
+            let (ident, ident_span) = self.expect_ident_or_keywords(&[Keyword::Await])?;
+            let mut quote_span = Span::new(0, 0);
+            let mut parameters = Vec::new();
+            if self.try_expect_sep(Separator::ColonColon).is_some() {
+                let lt_span = self.expect_sep(Separator::Lt)?;
+                if let Some(gt_span) = self.try_expect_sep(Separator::Gt) {
+                    quote_span = lt_span + gt_span;
+                } else {
+                    parameters.push(self.parse_type_ref()?);
+                    quote_span = lt_span + loop {
+                        if let Some((gt_span, _)) = self.try_expect_closing_bracket(Separator::Gt) {
+                            break gt_span;
+                        } else {
+                            self.expect_sep(Separator::Comma)?;
+                        }
+                        parameters.push(self.parse_type_ref()?);
+                    };
+                }
             }
-            if name.segments.len() > 2 {
-                let error_span = name.segments[1].span() + name.segments.last().unwrap().span();
-                self.emit(strings::InvalidMemberAccess).span(error_span).help(strings::GenericMemberAccessSyntaxHelp);
-            }
-            name
+            let span = ident_span + if quote_span == Span::new(0, 0) { ident_span } else { quote_span };
+            MemberName{ span, base: MemberNameBase::Ident(ident), base_span: ident_span, quote_span, parameters }
         };
 
-        Ok((dot_span, name))
+        Ok((dot_span, member_name))
     }
 
     fn maybe_call_expr(&self) -> bool {
@@ -336,8 +347,8 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
                 // // I carefully checked that only parse_expr and parse_name is called outside this file,
                 // // and found the actual intruder is unit test, this will still work when compiler_test
                 #[cfg(not(test))]
-                debug_assert!(!self.allow_object_literal.is_empty(), "allow_object_literal unexpectedly empty");
-                &self.allow_object_literal
+                debug_assert!(!self.allow_object_expr.is_empty(), "allow_object_expr unexpectedly empty");
+                &self.allow_object_expr
             }.last(), None | Some(true)) && matches!(current_expr, Expr::Name(_)) && self.maybe_object_expr() {
                 let (quote_span, fields) = self.parse_object_expr()?;
                 let span = current_expr.span() + quote_span;

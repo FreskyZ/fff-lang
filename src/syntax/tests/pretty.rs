@@ -136,16 +136,14 @@ fn postfix_expr() {
                       member-expr <1:1-1:3> . <1:2-1:2>
                         name <1:1-1:1>
                           name-segment <1:1-1:1> a
-                        name <1:3-1:3>
-                          name-segment <1:3-1:3> b
+                        member-name <1:3-1:3> b <1:3-1:3>
                       name <1:5-1:5>
                         name-segment <1:5-1:5> c
                       name <1:8-1:8>
                         name-segment <1:8-1:8> d
                       name <1:11-1:11>
                         name-segment <1:11-1:11> e
-                    name <1:14-1:14>
-                      name-segment <1:14-1:14> f
+                    member-name <1:14-1:14> f <1:14-1:14>
                   name <1:16-1:16>
                     name-segment <1:16-1:16> g
                   name <1:19-1:19>
@@ -154,14 +152,11 @@ fn postfix_expr() {
                     name-segment <1:22-1:22> i
                 name <1:26-1:26>
                   name-segment <1:26-1:26> u
-              name <1:30-1:30>
-                name-segment <1:30-1:30> j
+              member-name <1:30-1:30> j <1:30-1:30>
             name <1:32-1:32>
               name-segment <1:32-1:32> k
-          name <1:35-1:35>
-            name-segment <1:35-1:35> l
-      name <1:39-1:39>
-        name-segment <1:39-1:39> m
+          member-name <1:35-1:35> l <1:35-1:35>
+      member-name <1:39-1:39> m <1:39-1:39>
     name <1:41-1:41>
       name-segment <1:41-1:41> n
     name <1:44-1:44>

@@ -264,7 +264,7 @@ pub struct MemberExpr {
     pub span: Span,
     pub base: Box<Expr>,
     pub op_span: Span, // dot span
-    pub name: /* TODO MemberName */Name,
+    pub name: MemberName,
 }
 
 // Attention: Clone for driver to store copy of import requests

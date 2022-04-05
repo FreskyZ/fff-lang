@@ -217,6 +217,42 @@ macro_rules! make_expr {
         op_span: Span::new($op_start, $op_end),
         span: Span::new($start, $end),
     }));
+    (member name $start:literal:$end:literal i32 $base:literal) => (
+        MemberName{
+            span: Span::new($start, $end),
+            base: MemberNameBase::Numeric(Numeric::I32($base)),
+            base_span: Span::new($start, $end),
+            quote_span: Span::new(0, 0),
+            parameters: Vec::new(),
+        }
+    );
+    (member name $start:literal:$end:literal numeric $base:expr) => (
+        MemberName{
+            span: Span::new($start, $end),
+            base: MemberNameBase::Numeric($base),
+            base_span: Span::new($start, $end),
+            quote_span: Span::new(0, 0),
+            parameters: Vec::new(),
+        }
+    );
+    (member name $start:literal:$end:literal #$id:literal) => (
+        MemberName{
+            span: Span::new($start, $end),
+            base: MemberNameBase::Ident(IsId::new($id)),
+            base_span: Span::new($start, $end),
+            quote_span: Span::new(0, 0),
+            parameters: Vec::new(),
+        }
+    );
+    (member name $start:literal:$end:literal #$id:literal $base_start:literal:$base_end:literal quote $quote_start:literal:$quote_end:literal $($parameter:expr),*$(,)?) => (
+        MemberName{
+            span: Span::new($start, $end),
+            base: MemberNameBase::Ident(IsId::new($id)),
+            base_span: Span::new($base_start, $base_end),
+            quote_span: Span::new($quote_start, $quote_end),
+            parameters: vec![$($parameter,)*],
+        }
+    );
     (member $start:literal:$end:literal dot $dot_start:literal:$dot_end:literal $base:expr, $name:expr) => (
         Expr::Member(MemberExpr{
             base: Box::new($base),

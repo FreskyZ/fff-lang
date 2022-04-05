@@ -170,7 +170,7 @@ module tests/ast/hugetype.f3
                         plain-type <3:17-3:79>
                           type-segment <3:17-3:40> a_5pncqD4 <3:17-3:25> <> <3:26-3:40>
                             plain-type <3:27-3:29>
-                          type-segment <3:27-3:29> i33 <3:27-3:29>
+                              type-segment <3:27-3:29> i33 <3:27-3:29>
                             primitive-type f64 <3:32-3:34>
                             primitive-type f64 <3:37-3:39>
                           type-segment <3:43-3:43> j <3:43-3:43>
@@ -196,7 +196,7 @@ module tests/ast/hugetype.f3
                         plain-type <4:38-4:99>
                           type-segment <4:38-4:67> OtLk2 <4:38-4:42> <> <4:43-4:67>
                             plain-type <4:44-4:46>
-                          type-segment <4:44-4:46> i33 <4:44-4:46>
+                              type-segment <4:44-4:46> i33 <4:44-4:46>
                             primitive-type i16 <4:49-4:51>
                             primitive-type i16 <4:54-4:56>
                             primitive-type bool <4:59-4:62>
@@ -205,7 +205,7 @@ module tests/ast/hugetype.f3
                             primitive-type u8 <4:73-4:74>
                             primitive-type u64 <4:77-4:79>
                             plain-type <4:82-4:87>
-                          type-segment <4:82-4:87> string <4:82-4:87>
+                              type-segment <4:82-4:87> string <4:82-4:87>
                             primitive-type bool <4:90-4:93>
                             primitive-type u32 <4:96-4:98>
                         primitive-type u8 <5:1-5:2>
@@ -284,7 +284,7 @@ module tests/ast/hugetype.f3
                             primitive-type u8 <7:111-7:112>
                             primitive-type i8 <8:1-8:2>
                             plain-type <8:5-8:7>
-                          type-segment <8:5-8:7> i33 <8:5-8:7>
+                              type-segment <8:5-8:7> i33 <8:5-8:7>
                           type-segment <8:11-8:15> g6p4C <8:11-8:15>
                           type-segment <8:18-8:25> s瓶FOCaFH <8:18-8:25>
                         plain-type <8:28-8:96>
@@ -292,10 +292,10 @@ module tests/ast/hugetype.f3
                             primitive-type u16 <8:38-8:40>
                             primitive-type i64 <8:43-8:45>
                             plain-type <8:48-8:53>
-                          type-segment <8:48-8:53> string <8:48-8:53>
+                              type-segment <8:48-8:53> string <8:48-8:53>
                           type-segment <8:57-8:76> gE2hwi <8:57-8:62> <> <8:63-8:76>
                             plain-type <8:64-8:69>
-                          type-segment <8:64-8:69> string <8:64-8:69>
+                              type-segment <8:64-8:69> string <8:64-8:69>
                             primitive-type f32 <8:72-8:74>
                           type-segment <8:79-8:84> CK212F <8:79-8:84>
                           type-segment <8:87-8:91> Csu8a <8:87-8:91>
@@ -1441,13 +1441,13 @@ module tests/ast/hugetype.f3
                         fn-type <49:48-49:94> () <49:50-49:94>
                           fn-type-parameter <49:51-49:56>
                             plain-type <49:51-49:56>
-                          type-segment <49:51-49:56> string <49:51-49:56>
+                              type-segment <49:51-49:56> string <49:51-49:56>
                           fn-type-parameter <49:59-49:69> Fex <49:59-49:61>
                             plain-type <49:64-49:69>
-                          type-segment <49:64-49:69> string <49:64-49:69>
+                              type-segment <49:64-49:69> string <49:64-49:69>
                           fn-type-parameter <49:72-49:79> D2C <49:72-49:74>
                             plain-type <49:77-49:79>
-                          type-segment <49:77-49:79> i33 <49:77-49:79>
+                              type-segment <49:77-49:79> i33 <49:77-49:79>
                           fn-type-parameter <49:82-49:93> dmvBGAO <49:82-49:88>
                             primitive-type u64 <49:91-49:93>
                         primitive-type char <49:97-49:100>
@@ -1459,7 +1459,7 @@ module tests/ast/hugetype.f3
                             primitive-type u8 <49:128-49:129>
                             primitive-type i16 <49:132-49:134>
                             plain-type <50:1-50:3>
-                          type-segment <50:1-50:3> i33 <50:1-50:3>
+                              type-segment <50:1-50:3> i33 <50:1-50:3>
                         array-type <50:7-50:25>
                           plain-type <50:8-50:11>
                             type-segment <50:8-50:11> udBA <50:8-50:11>
@@ -1494,7 +1494,7 @@ module tests/ast/hugetype.f3
                           type-segment <51:14-51:18> pjN1D <51:14-51:18>
                           type-segment <51:21-51:41> b秴o <51:21-51:23> <> <51:24-51:41>
                             plain-type <51:25-51:30>
-                          type-segment <51:25-51:30> string <51:25-51:30>
+                              type-segment <51:25-51:30> string <51:25-51:30>
                             primitive-type u64 <51:33-51:35>
                             primitive-type i64 <51:38-51:40>
                           type-segment <51:44-51:47> iG5J <51:44-51:47>
@@ -1519,7 +1519,7 @@ module tests/ast/hugetype.f3
                           type-segment <52:14-52:35> uDNw0ALqt <52:14-52:22> <> <52:23-52:35>
                             primitive-type u8 <52:24-52:25>
                             plain-type <52:28-52:30>
-                          type-segment <52:28-52:30> i33 <52:28-52:30>
+                              type-segment <52:28-52:30> i33 <52:28-52:30>
                             primitive-type i8 <52:33-52:34>
                           type-segment <52:38-52:55> mtgggC8L <52:38-52:45> <> <52:46-52:55>
                             primitive-type u32 <52:47-52:49>
@@ -1577,7 +1577,7 @@ module tests/ast/hugetype.f3
                             primitive-type i64 <54:26-54:28>
                             primitive-type u32 <54:31-54:33>
                             plain-type <54:36-54:38>
-                          type-segment <54:36-54:38> i33 <54:36-54:38>
+                              type-segment <54:36-54:38> i33 <54:36-54:38>
                             primitive-type u32 <54:41-54:43>
                           type-segment <54:47-54:67> 鋚l7O5 <54:47-54:51> <> <54:52-54:67>
                             primitive-type u64 <54:53-54:55>
@@ -1611,7 +1611,7 @@ module tests/ast/hugetype.f3
                             primitive-type u64 <55:81-55:83>
                             primitive-type f64 <55:86-55:88>
                             plain-type <55:91-55:96>
-                          type-segment <55:91-55:96> string <55:91-55:96>
+                              type-segment <55:91-55:96> string <55:91-55:96>
                           type-segment <55:100-56:4> bqbs <55:100-55:103> <> <55:104-56:4>
                             primitive-type bool <55:105-55:108>
                             primitive-type char <55:111-55:114>
@@ -1624,7 +1624,7 @@ module tests/ast/hugetype.f3
                           type-segment <56:32-56:38> uI儆2GNe <56:32-56:38>
                           type-segment <56:41-56:57> h <56:41-56:41> <> <56:42-56:57>
                             plain-type <56:43-56:45>
-                          type-segment <56:43-56:45> i33 <56:43-56:45>
+                              type-segment <56:43-56:45> i33 <56:43-56:45>
                             primitive-type i16 <56:48-56:50>
                             primitive-type char <56:53-56:56>
                           type-segment <56:60-56:71> I <56:60-56:60> <> <56:61-56:71>

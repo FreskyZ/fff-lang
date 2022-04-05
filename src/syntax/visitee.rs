@@ -205,7 +205,7 @@ impl_node!{ LoopStatement, visit_loop_stmt, |self, v| {
 
 impl_node!{ MemberExpr, visit_member_expr, |self, v| {
     v.visit_expr(self.base.as_ref())?;
-    v.visit_name(&self.name)
+    v.visit_member_name(&self.name)
 }}
 
 impl_node!{ MemberName, visit_member_name, |self, v| {

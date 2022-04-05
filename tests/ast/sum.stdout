@@ -23,5 +23,4 @@ module tests/ast/sum.f3
               member-expr <8:34-8:46> . <8:37-8:37>
                 name <8:34-8:36>
                   name-segment <8:34-8:36> sum
-                name <8:38-8:46>
-                  name-segment <8:38-8:46> to_string
+                member-name <8:38-8:46> to_string <8:38-8:46>

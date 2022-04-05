@@ -14,8 +14,7 @@ module tests/ast/string.f3
             member-expr <7:27-7:38> . <7:32-7:32>
               name <7:27-7:31>
                 name-segment <7:27-7:31> input
-              name <7:33-7:38>
-                name-segment <7:33-7:38> length
+              member-name <7:33-7:38> length <7:33-7:38>
       var-def <8:5-8:39> mutable input2 <8:9-8:14>
         plain-type <8:17-8:22>
           type-segment <8:17-8:22> string <8:17-8:22>
@@ -36,24 +35,21 @@ module tests/ast/string.f3
           member-expr <11:5-11:19> . <11:10-11:10>
             name <11:5-11:9>
               name-segment <11:5-11:9> input
-            name <11:11-11:19>
-              name-segment <11:11-11:19> push_char
+            member-name <11:11-11:19> push_char <11:11-11:19>
           literal char 'a' <11:21-11:23>
       simple-expr-stmt <12:5-12:25>
         call-expr <12:5-12:24> () <12:20-12:24>
           member-expr <12:5-12:19> . <12:10-12:10>
             name <12:5-12:9>
               name-segment <12:5-12:9> input
-            name <12:11-12:19>
-              name-segment <12:11-12:19> push_char
+            member-name <12:11-12:19> push_char <12:11-12:19>
           literal char 'c' <12:21-12:23>
       simple-expr-stmt <13:5-13:29>
         call-expr <13:5-13:28> () <13:23-13:28>
           member-expr <13:5-13:22> . <13:11-13:11>
             name <13:5-13:10>
               name-segment <13:5-13:10> input2
-            name <13:12-13:22>
-              name-segment <13:12-13:22> push_string
+            member-name <13:12-13:22> push_string <13:12-13:22>
           literal str "ac" <13:24-13:27>
       simple-expr-stmt <14:5-14:29>
         call-expr <14:5-14:28> () <14:12-14:28>
@@ -72,8 +68,7 @@ module tests/ast/string.f3
             member-expr <16:13-16:29> . <16:18-16:18>
               name <16:13-16:17>
                 name-segment <16:13-16:17> input
-              name <16:19-16:29>
-                name-segment <16:19-16:29> starts_with
+              member-name <16:19-16:29> starts_with <16:19-16:29>
             literal str "abc" <16:31-16:35>
       simple-expr-stmt <17:5-17:36>
         call-expr <17:5-17:35> () <17:12-17:35>
@@ -83,8 +78,7 @@ module tests/ast/string.f3
             member-expr <17:13-17:28> . <17:19-17:19>
               name <17:13-17:18>
                 name-segment <17:13-17:18> input2
-              name <17:20-17:28>
-                name-segment <17:20-17:28> ends_with
+              member-name <17:20-17:28> ends_with <17:20-17:28>
             literal str "ac" <17:30-17:33>
       var-def <19:5-19:31> mutable input3 <19:9-19:14>
         call-expr <19:18-19:30> () <19:29-19:30>
@@ -103,8 +97,7 @@ module tests/ast/string.f3
               member-expr <21:33-21:43> . <21:39-21:39>
                 name <21:33-21:38>
                   name-segment <21:33-21:38> input3
-                name <21:40-21:43>
-                  name-segment <21:40-21:43> trim
+                member-name <21:40-21:43> trim <21:40-21:43>
       simple-expr-stmt <22:5-22:45>
         call-expr <22:5-22:44> () <22:12-22:44>
           name <22:5-22:11>

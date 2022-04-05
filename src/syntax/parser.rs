@@ -50,7 +50,7 @@ pub struct Parser<'ecx, 'scx> {
     //       but still parse_expr is called and object literal is allowed
     // 4. currently there will not be push(false) after any push(true) before push(true) is popped,
     //    but the only-change-in-parse_expr{_no_object_literal} is convenient and easy to understand, so keep it
-    allow_object_literal: Vec<bool>,
+    allow_object_expr: Vec<bool>,
     // if allow format string inside format string, this is also a stack of flag not a single flag
     // pub inside_string_literal: Vec<bool>,
 }
@@ -69,7 +69,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             peek_span, 
             peek2, 
             peek2_span, 
-            allow_object_literal: Vec::with_capacity(128), // 128: arbitray value for max expression depth
+            allow_object_expr: Vec::with_capacity(128), // 128: arbitray value for max expression depth
         }
     }
 

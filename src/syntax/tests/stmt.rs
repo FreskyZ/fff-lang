@@ -59,8 +59,8 @@ fn for_stmt_parse() {
                                 make_name!(simple 17:21 #4),
                                 make_expr!(i32 0 23:23),
                                 make_expr!(i32 10 26:27)),
-                            make_name!(simple bare 30:38 #5)),),
-                    make_name!(simple bare 42:48 #6)),),
+                            make_expr!(member name 30:38 #5)),),
+                    make_expr!(member name 42:48 #6)),),
             make_stmt!(block 52:77
                 make_stmt!(expr 54:75
                     make_expr!(call 54:74 paren 61:74
@@ -97,13 +97,13 @@ fn if_stmt_parse() {
                         make_expr!(call 7:19 paren 17:19
                             make_expr!(member 7:16 dot 10:10
                                 make_name!(simple 7:9 #2),
-                                make_name!(simple bare 11:16 #3)),
+                                make_expr!(member name 11:16 #3)),
                             make_name!(simple 18:18 #4))),
                     make_stmt!(expr 22:39
                         make_expr!(call 22:38 paren 36:38
                             make_expr!(member 22:35 dot 27:27
                                 make_name!(simple 22:26 #5),
-                                make_name!(simple bare 28:35 #6)),
+                                make_expr!(member name 28:35 #6)),
                             make_name!(simple 37:37 #7)))) },
             elseif_clauses: vec![],
             else_clause: Some(ElseClause{ span: Span::new(43, 71),
@@ -115,7 +115,7 @@ fn if_stmt_parse() {
                                     make_expr!(i32 1 51:51),
                                     make_expr!(i32 2 53:53),
                                     make_expr!(i32 3 55:55)),
-                                make_name!(simple bare 58:60 #8)),
+                                make_expr!(member name 58:60 #8)),
                             make_name!(simple 62:68 #9)))) }),
         }, strings ["sth", "do_sth", "a", "other", "do_other", "b", "map", "writeln"]
     }
