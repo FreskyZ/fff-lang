@@ -11,8 +11,8 @@ module tests/ast/module1.f3
     name <4:5-4:13>
       name-segment <4:5-4:7> log
       name-segment <4:10-4:13> info
-  fn <7:1-9:1> m2 <7:4-7:5> () <7:6-7:13>
-    fn-param <7:7-7:12> a <7:7-7:7>
+  fn-def <7:1-9:1> m2 <7:4-7:5> () <7:6-7:13>
+    fn-def-parameter <7:7-7:12> a <7:7-7:7>
       primitive-type i32 <7:10-7:12>
     primitive-type i32 <7:18-7:20>
     block <7:22-9:1>
@@ -21,23 +21,23 @@ module tests/ast/module1.f3
           name <8:12-8:12>
             name-segment <8:12-8:12> a
           literal i32 2 <8:16-8:16>
-  fn <11:1-13:1> main <11:4-11:7> () <11:8-11:9>
+  fn-def <11:1-13:1> main <11:4-11:7> () <11:8-11:9>
     block <11:11-13:1>
       simple-expr-stmt <12:5-12:56>
-        fn-call <12:5-12:55> () <12:14-12:55>
+        call-expr <12:5-12:55> () <12:14-12:55>
           name <12:5-12:13>
             name-segment <12:5-12:13> assert_eq
-          fn-call <12:15-12:43> () <12:29-12:43>
+          call-expr <12:15-12:43> () <12:29-12:43>
             name <12:15-12:28>
               name-segment <12:15-12:23> itertools
               name-segment <12:26-12:28> map
-            array-def <12:30-12:38>
+            array-expr <12:30-12:38>
               literal i32 2 <12:31-12:31>
               literal i32 3 <12:34-12:34>
               literal i32 4 <12:37-12:37>
             name <12:41-12:42>
               name-segment <12:41-12:42> m2
-          array-def <12:46-12:54>
+          array-expr <12:46-12:54>
             literal i32 4 <12:47-12:47>
             literal i32 6 <12:50-12:50>
             literal i32 8 <12:53-12:53>

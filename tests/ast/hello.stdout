@@ -1,6 +1,6 @@
 module tests/ast/hello.f3
   simple-expr-stmt <4:1-4:23>
-    fn-call <4:1-4:22> () <4:8-4:22>
+    call-expr <4:1-4:22> () <4:8-4:22>
       name <4:1-4:7>
         name-segment <4:1-4:7> writeln
       literal str "hello world" <4:9-4:21>

@@ -1,8 +1,8 @@
 module tests/ast/misc.f3
-  fn <1:1-3:1> fn1 <1:4-1:6> () <1:7-1:22>
-    fn-param <1:8-1:13> a <1:8-1:8>
+  fn-def <1:1-3:1> fn1 <1:4-1:6> () <1:7-1:22>
+    fn-def-parameter <1:8-1:13> a <1:8-1:8>
       primitive-type u32 <1:11-1:13>
-    fn-param <1:16-1:21> b <1:16-1:16>
+    fn-def-parameter <1:16-1:21> b <1:16-1:16>
       primitive-type u32 <1:19-1:21>
     primitive-type u32 <1:27-1:29>
     block <1:31-3:1>
@@ -12,10 +12,10 @@ module tests/ast/misc.f3
             name-segment <2:12-2:12> a
           name <2:16-2:16>
             name-segment <2:16-2:16> b
-  fn <4:1-12:1> main <4:4-4:7> () <4:8-4:33>
-    fn-param <4:9-4:17> argc <4:9-4:12>
+  fn-def <4:1-12:1> main <4:4-4:7> () <4:8-4:33>
+    fn-def-parameter <4:9-4:17> argc <4:9-4:12>
       primitive-type u32 <4:15-4:17>
-    fn-param <4:20-4:32> argv <4:20-4:23>
+    fn-def-parameter <4:20-4:32> argv <4:20-4:23>
       ref-type <4:26-4:32>
         plain-type <4:27-4:32>
           type-segment <4:27-4:32> string <4:27-4:32>
@@ -24,7 +24,7 @@ module tests/ast/misc.f3
       var-def <5:5-5:19> mutable i <5:9-5:9>
         primitive-type u32 <5:12-5:14>
         literal i32 1 <5:18-5:18>
-      while-stmt <6:5-10:5> while <6:5-6:9>
+      while-stmt <6:5-10:5>
         paren-expr <6:10-6:17>
           binary-expr <6:11-6:16> != <6:13-6:14>
             name <6:11-6:11>
@@ -32,19 +32,19 @@ module tests/ast/misc.f3
             literal i32 0 <6:16-6:16>
         block <6:19-10:5>
           var-def <7:9-7:29> const a <7:15-7:15>
-            fn-call <7:19-7:28> () <7:27-7:28>
+            call-expr <7:19-7:28> () <7:27-7:28>
               name <7:19-7:26>
                 name-segment <7:19-7:26> read_u32
           var-def <8:9-8:34> const b <8:15-8:15>
             primitive-type u32 <8:18-8:20>
-            fn-call <8:24-8:33> () <8:32-8:33>
+            call-expr <8:24-8:33> () <8:32-8:33>
               name <8:24-8:31>
                 name-segment <8:24-8:31> read_u32
           simple-expr-stmt <9:9-9:27>
-            fn-call <9:9-9:26> () <9:16-9:26>
+            call-expr <9:9-9:26> () <9:16-9:26>
               name <9:9-9:15>
                 name-segment <9:9-9:15> println
-              fn-call <9:17-9:25> () <9:20-9:25>
+              call-expr <9:17-9:25> () <9:20-9:25>
                 name <9:17-9:19>
                   name-segment <9:17-9:19> fn1
                 name <9:21-9:21>
@@ -53,7 +53,7 @@ module tests/ast/misc.f3
                   name-segment <9:24-9:24> b
       ret-stmt <11:5-11:13>
         literal i32 0 <11:12-11:12>
-  fn <15:1-22:1> main <15:4-15:7> () <15:8-15:9>
+  fn-def <15:1-22:1> main <15:4-15:7> () <15:8-15:9>
     block <15:11-22:1>
       var-def <16:5-16:14> mutable a <16:9-16:9>
         literal i32 0 <16:13-16:13>
@@ -70,22 +70,22 @@ module tests/ast/misc.f3
             name-segment <21:13-21:13> a
           name <21:17-21:17>
             name-segment <21:17-21:17> b
-  fn <25:1-39:1> main <25:4-25:7> () <25:8-25:15>
-    fn-param <25:9-25:14> b <25:9-25:9>
+  fn-def <25:1-39:1> main <25:4-25:7> () <25:8-25:15>
+    fn-def-parameter <25:9-25:14> b <25:9-25:9>
       primitive-type u32 <25:12-25:14>
     block <25:17-39:1>
       var-def <26:5-26:28> const a <26:11-26:11>
-        fn-call <26:15-26:27> () <26:26-26:27>
+        call-expr <26:15-26:27> () <26:26-26:27>
           name <26:15-26:25>
             name-segment <26:15-26:18> read
             name-segment <26:21-26:25>
               primitive-type i32 <26:22-26:24>
-      loop-stmt <27:5-38:5> loop <27:11-27:14>
+      loop-stmt <27:5-38:5>
         label @abc <27:5-27:9>
         block <27:16-38:5>
           var-def <28:9-28:18> mutable b <28:13-28:13>
             literal i32 0 <28:17-28:17>
-          loop-stmt <29:9-37:9> loop <29:15-29:18>
+          loop-stmt <29:9-37:9>
             label @def <29:9-29:13>
             block <29:20-37:9>
               if-stmt <30:13-36:13>
@@ -107,23 +107,23 @@ module tests/ast/misc.f3
                         name-segment <34:17-34:17> b
                       literal i32 1 <34:22-34:22>
                     break-stmt <35:17-35:27> @abc <35:23-35:26>
-  fn <42:1-50:1> main <42:4-42:7> () <42:8-42:9>
+  fn-def <42:1-50:1> main <42:4-42:7> () <42:8-42:9>
     block <42:11-50:1>
       var-def <43:5-43:28> const a <43:11-43:11>
-        fn-call <43:15-43:27> () <43:26-43:27>
+        call-expr <43:15-43:27> () <43:26-43:27>
           name <43:15-43:25>
             name-segment <43:15-43:18> read
             name-segment <43:21-43:25>
               plain-type <43:22-43:24>
                 type-segment <43:22-43:24> i33 <43:22-43:24>
-      while-stmt <44:5-49:5> while <44:5-44:9>
+      while-stmt <44:5-49:5>
         binary-expr <44:11-44:16> != <44:13-44:14>
           name <44:11-44:11>
             name-segment <44:11-44:11> a
           literal i32 0 <44:16-44:16>
         block <44:18-49:5>
-          for-stmt <45:9-47:9> for <45:9-45:11> iter-var i <45:13-45:13>
-            array-def <45:18-45:33>
+          for-stmt <45:9-47:9> iter-var i <45:13-45:13>
+            array-expr <45:18-45:33>
               literal i32 0 <45:19-45:19>
               literal i32 1 <45:22-45:22>
               literal i32 2 <45:25-45:25>
@@ -133,7 +133,7 @@ module tests/ast/misc.f3
                 literal i32 1 <45:32-45:32>
             block <45:35-47:9>
               simple-expr-stmt <46:13-46:31>
-                fn-call <46:13-46:30> () <46:20-46:30>
+                call-expr <46:13-46:30> () <46:20-46:30>
                   name <46:13-46:19>
                     name-segment <46:13-46:19> writeln
                   binary-expr <46:21-46:29> + <46:27-46:27>

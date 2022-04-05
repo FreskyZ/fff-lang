@@ -1,27 +1,27 @@
 use super::*;
 
 #[test]
-fn array_def_parse() {
-    case!{ parse_array_def "[a]",
+fn parse_array_expr() {
+    case!{ parse_array_expr "[a]",
         make_expr!(array 0:2
             make_name!(simple 1:1 #2)),
     }
 
     //                                   01234567
-    case!{ parse_array_def "[1, '2']",
+    case!{ parse_array_expr "[1, '2']",
         make_expr!(array 0:7
             make_expr!(i32 1 1:1),
             make_expr!(char 4:6 '2')),
     }
     //                                   01234567
-    case!{ parse_array_def "[1 + 1,]",
+    case!{ parse_array_expr "[1 + 1,]",
         make_expr!(array 0:7
             make_expr!(binary 1:5 Add 3:3
                 make_expr!(i32 1 1:1),
                 make_expr!(i32 1 5:5))),
     }
 
-    case!{ parse_array_def "[ , ]",
+    case!{ parse_array_expr "[ , ]",
         make_expr!(array 0:4),
         errors make_errors!(e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(0, 4), strings::ArrayDefHere))
     }
@@ -417,7 +417,7 @@ fn expr_parse() {
     
     // Case from fn_def_parse
     case!{ parse_expr "println(this)", 
-        make_expr!(fn 0:12 paren 7:12
+        make_expr!(call 0:12 paren 7:12
             make_name!(simple 0:6 #2),
             make_name!(simple 8:11 #3))
     }
@@ -470,36 +470,36 @@ fn expr_parse() {
 
     // function call
     case!{ parse_expr "defg()",
-        make_expr!(fn 0:5 paren 4:5
+        make_expr!(call 0:5 paren 4:5
             make_name!(simple 0:3 #2),)
     }
     case!{ parse_expr "deg(a)",
-        make_expr!(fn 0:5 paren 3:5
+        make_expr!(call 0:5 paren 3:5
             make_name!(simple 0:2 #2),
             make_name!(simple 4:4 #3))
     }
     case!{ parse_expr "degg(a, b, )",
-        make_expr!(fn 0:11 paren 4:11
+        make_expr!(call 0:11 paren 4:11
             make_name!(simple 0:3 #2),
             make_name!(simple 5:5 #3),
             make_name!(simple 8:8 #4))
     }
     //           0123456789
     case!{ parse_expr "abc.defg()",
-        make_expr!(fn 0:9 paren 8:9
+        make_expr!(call 0:9 paren 8:9
             make_expr!(member 0:7 dot 3:3
                 make_name!(simple 0:2 #2),
                 make_name!(simple bare 4:7 #3)),)
     }
     case!{ parse_expr "abc.deg(a)",
-        make_expr!(fn 0:9 paren 7:9
+        make_expr!(call 0:9 paren 7:9
             make_expr!(member 0:6 dot 3:3
                 make_name!(simple 0:2 #2),
                 make_name!(simple bare 4:6 #3)),
             make_name!(simple 8:8 #4))
     }        //  12345678901234
     case!{ parse_expr "1.degg(a, b, )",
-        make_expr!(fn 0:13 paren 6:13
+        make_expr!(call 0:13 paren 6:13
             make_expr!(member 0:5 dot 1:1
                 make_expr!(i32 1 0:0),
                 make_name!(simple bare 2:5 #2)),
@@ -530,7 +530,7 @@ fn expr_parse() {
     }   //  1234567890123456
     case!{ parse_expr "print(233, ).bit",
         make_expr!(member 0:15 dot 12:12
-            make_expr!(fn 0:11 paren 5:11
+            make_expr!(call 0:11 paren 5:11
                 make_name!(simple 0:4 #2),
                 make_expr!(i32 233 6:8)),
             make_name!(simple bare 13:15 #3))
@@ -591,7 +591,7 @@ fn expr_parse() {
     }
 
     case!{ parse_expr "de(, )",
-        make_expr!(fn 0:5 paren 2:5
+        make_expr!(call 0:5 paren 2:5
             make_name!(simple 0:1 #2),
         ), errors make_errors!(
             e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(2, 5), strings::FnCallHere)
@@ -600,7 +600,7 @@ fn expr_parse() {
 
     //               0 12345678
     case!{ parse_expr "\"\".de(, )",
-        make_expr!(fn 0:8 paren 5:8
+        make_expr!(call 0:8 paren 5:8
             make_expr!(member 0:4 dot 2:2
                 make_expr!(str #1 0:1),
                 make_name!(simple bare 3:4 #2)),
@@ -628,41 +628,41 @@ fn expr_parse() {
 }
 
 #[test]
-fn fn_call_parse() {
+fn parse_call_expr() {
 
-    case!{ notast parse_fn_call "()",
+    case!{ notast parse_call_expr "()",
         (Span::new(0, 1), ExprList{ items: Vec::new() })
     }
 
-    case!{ notast parse_fn_call "(\"hello\")",
+    case!{ notast parse_call_expr "(\"hello\")",
         (Span::new(0, 8), ExprList{ items: vec![
             make_expr!(str #2 1:7),
         ] })
     }
 
-    case!{ notast parse_fn_call "(,)",
+    case!{ notast parse_call_expr "(,)",
         (Span::new(0, 2), ExprList{ items: Vec::new() }),
         errors make_errors!(e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(0, 2), strings::FnCallHere))
     }
 }
 
 #[test]
-fn index_call_parse() {
+fn parse_index_expr() {
 
-    case!{ notast parse_index_call "[1, 2, ]",
+    case!{ notast parse_index_expr "[1, 2, ]",
         (Span::new(0, 7), ExprList{ items: vec![
             make_expr!(i32 1 1:1),
             make_expr!(i32 2 4:4),
         ] })
     }
 
-    case!{ notast parse_index_call "[\"hello\"]",
+    case!{ notast parse_index_expr "[\"hello\"]",
         (Span::new(0, 8), ExprList{ items: vec![
             make_expr!(str #2 1:7)
         ] })
     }
 
-    case!{ notast parse_index_call "[,]",
+    case!{ notast parse_index_expr "[,]",
         (Span::new(0, 2), ExprList{ items: Vec::new() }),
         errors make_errors!(e: e.emit(strings::EmptyIndexCall).detail(Span::new(0, 2), strings::IndexCallHere)),
     }
@@ -950,14 +950,14 @@ fn postfix_expr_parse() {
         make_expr!(index 0:57 bracket 48:57
             make_expr!(index 0:47 bracket 39:47
                 make_expr!(member 0:38 dot 37:37
-                    make_expr!(fn 0:36 paren 35:36
+                    make_expr!(call 0:36 paren 35:36
                         make_expr!(member 0:34 dot 33:33
                             make_expr!(index 0:32 bracket 30:32
                                 make_expr!(member 0:29 dot 28:28
-                                    make_expr!(fn 0:27 paren 24:27
-                                        make_expr!(fn 0:23 paren 14:23
+                                    make_expr!(call 0:27 paren 24:27
+                                        make_expr!(call 0:23 paren 14:23
                                             make_expr!(member 0:13 dot 12:12
-                                                make_expr!(fn 0:11 paren 3:11
+                                                make_expr!(call 0:11 paren 3:11
                                                     make_expr!(member 0:2 dot 1:1
                                                         make_name!(simple 0:0 #2),
                                                         make_name!(simple bare 2:2 #3)), 
@@ -1016,7 +1016,7 @@ fn postfix_expr_parse() {
             make_expr!(object field 26:31 #5 26:28 colon 29:29
                 make_expr!(i32 0 31:31)),
             make_expr!(object field 34:54 #6 34:37 colon 38:38
-                make_expr!(fn 40:54 paren 53:54
+                make_expr!(call 40:54 paren 53:54
                     make_name!(simple 40:52 #7),))),
     }
 
@@ -1037,7 +1037,7 @@ fn postfix_expr_parse() {
     }
     
     case!{ parse_postfix_expr "a(, )",
-        make_expr!(fn 0:4 paren 1:4
+        make_expr!(call 0:4 paren 1:4
             make_name!(simple 0:0 #2),
         ), errors make_errors!(
             e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(1, 4), strings::FnCallHere)
@@ -1114,22 +1114,22 @@ fn range_expr_parse() {
 }
 
 #[test]
-fn tuple_def_parse() {
+fn parse_tuple_expr() {
     //                                   01234567
-    case!{ parse_tuple_def "(1, '2')",
+    case!{ parse_tuple_expr "(1, '2')",
         make_expr!(tuple 0:7
             make_expr!(i32 1 1:1),
             make_expr!(char 4:6 '2'))
     }
     //                                   0123456
-    case!{ parse_tuple_def "(1 + 1)",
+    case!{ parse_tuple_expr "(1 + 1)",
         make_expr!(paren 0:6
             make_expr!(binary 1:5 Add 3:3
                 make_expr!(i32 1 1:1),
                 make_expr!(i32 1 5:5)))
     }
     
-    case!{ parse_tuple_def "( , )",
+    case!{ parse_tuple_expr "( , )",
         make_expr!(tuple 0: 4),
         errors make_errors!(e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(0, 4), strings::TupleDefHere)),
     }
@@ -1151,7 +1151,7 @@ fn unary_expr_parse() {
 
     case!{ parse_unary_expr "&a(&b)",
         make_expr!(unary 0:5 And 0:0
-            make_expr!(fn 1:5 paren 2:5
+            make_expr!(call 1:5 paren 2:5
                 make_name!(simple 1:1 #2),
                 make_expr!(unary 3:4 And 3:3
                     make_name!(simple 4:4 #3))))

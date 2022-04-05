@@ -17,7 +17,7 @@ fn array_def() {
     scx.entry("1", &mut ecx).unwrap().finish();
     ppcase!{
         make_expr!(array 0:42).display(&scx),
-        "array-def <1:1-1:43>\n"
+        "array-expr <1:1-1:43>\n"
     }
 
     let mut scx = make_source!("abcde\nfg\nhi\njklm");
@@ -28,7 +28,7 @@ fn array_def() {
             make_expr!(i32 2 4:4),
             make_expr!(i32 48 7:8)
         ).display(&scx),
-        "array-def <1:1-3:1>
+        "array-expr <1:1-3:1>
   literal i32 1 <1:2-1:2>
   literal i32 2 <1:5-1:5>
   literal i32 48 <2:2-2:3>
@@ -78,7 +78,7 @@ fn tuple_def() {
     scx.entry("1", &mut ecx).unwrap().finish();
     ppcase!{
         make_expr!(tuple 0:21).display(&scx),
-        "tuple-def <1:1-1:22>\n"
+        "tuple-expr <1:1-1:22>\n"
     }
 
     let mut scx = make_source!("1231241241231412341234");
@@ -89,7 +89,7 @@ fn tuple_def() {
             make_expr!(i32 2 3:4),
             make_expr!(i32 48 5:6)
         ).display(&scx),
-        "tuple-def <1:1-1:9>\n  literal i32 1 <1:2-1:3>\n  literal i32 2 <1:4-1:5>\n  literal i32 48 <1:6-1:7>\n"
+        "tuple-expr <1:1-1:9>\n  literal i32 1 <1:2-1:3>\n  literal i32 2 <1:4-1:5>\n  literal i32 48 <1:6-1:7>\n"
     }
 }
 
@@ -101,11 +101,11 @@ fn loop_stmt() {
     let mut context = Parser::new(crate::lexical::Parser::new(scx.entry("1", &mut ecx).unwrap(), &mut ecx));
     let node = context.parse_loop_stmt().unwrap();
     context.finish();
-    ppcase!{ node.display(&scx), r#"loop-stmt <1:1-1:28> loop <1:5-1:8>
+    ppcase!{ node.display(&scx), r#"loop-stmt <1:1-1:28>
   label @@ <1:1-1:3>
   block <1:10-1:28>
     simple-expr-stmt <1:12-1:26>
-      fn-call <1:12-1:25> () <1:19-1:25>
+      call-expr <1:12-1:25> () <1:19-1:25>
         name <1:12-1:18>
           name-segment <1:12-1:18> println
         literal str "233" <1:20-1:24>
@@ -122,18 +122,18 @@ fn postfix_expr() {
     let mut context = Parser::new(crate::lexical::Parser::new(scx.entry("1", &mut ecx).unwrap(), &mut ecx));
     let node = context.parse_postfix_expr().unwrap();
     context.finish();
-    ppcase!{ node.display(&scx), "index-call <1:1-1:58> [] <1:49-1:58>
-  index-call <1:1-1:48> [] <1:40-1:48>
-    member-access <1:1-1:39> . <1:38-1:38>
-      fn-call <1:1-1:37> () <1:36-1:37>
-        member-access <1:1-1:35> . <1:34-1:34>
-          index-call <1:1-1:33> [] <1:31-1:33>
-            member-access <1:1-1:30> . <1:29-1:29>
-              fn-call <1:1-1:28> () <1:25-1:28>
-                fn-call <1:1-1:24> () <1:15-1:24>
-                  member-access <1:1-1:14> . <1:13-1:13>
-                    fn-call <1:1-1:12> () <1:4-1:12>
-                      member-access <1:1-1:3> . <1:2-1:2>
+    ppcase!{ node.display(&scx), "index-expr <1:1-1:58> [] <1:49-1:58>
+  index-expr <1:1-1:48> [] <1:40-1:48>
+    member-expr <1:1-1:39> . <1:38-1:38>
+      call-expr <1:1-1:37> () <1:36-1:37>
+        member-expr <1:1-1:35> . <1:34-1:34>
+          index-expr <1:1-1:33> [] <1:31-1:33>
+            member-expr <1:1-1:30> . <1:29-1:29>
+              call-expr <1:1-1:28> () <1:25-1:28>
+                call-expr <1:1-1:24> () <1:15-1:24>
+                  member-expr <1:1-1:14> . <1:13-1:13>
+                    call-expr <1:1-1:12> () <1:4-1:12>
+                      member-expr <1:1-1:3> . <1:2-1:2>
                         name <1:1-1:1>
                           name-segment <1:1-1:1> a
                         name <1:3-1:3>

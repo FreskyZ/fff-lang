@@ -1,8 +1,8 @@
 module tests/ast/list.f3
-  fn <4:1-39:1> main <4:4-4:7> () <4:8-4:9>
+  fn-def <4:1-39:1> main <4:4-4:7> () <4:8-4:9>
     block <4:11-39:1>
       var-def <7:5-7:32> mutable list <7:9-7:12>
-        array-def <7:16-7:31>
+        array-expr <7:16-7:31>
           literal i32 1 <7:17-7:17>
           literal i32 5 <7:20-7:20>
           literal i32 3 <7:23-7:23>
@@ -10,59 +10,59 @@ module tests/ast/list.f3
           name <7:29-7:30>
             name-segment <7:29-7:30> x4
       simple-expr-stmt <16:5-16:16>
-        fn-call <16:5-16:15> () <16:14-16:15>
-          member-access <16:5-16:13> . <16:9-16:9>
+        call-expr <16:5-16:15> () <16:14-16:15>
+          member-expr <16:5-16:13> . <16:9-16:9>
             name <16:5-16:8>
               name-segment <16:5-16:8> list
             name <16:10-16:13>
               name-segment <16:10-16:13> sort
       simple-expr-stmt <20:5-20:18>
-        fn-call <20:5-20:17> () <20:12-20:17>
+        call-expr <20:5-20:17> () <20:12-20:17>
           name <20:5-20:11>
             name-segment <20:5-20:11> writeln
           name <20:13-20:16>
             name-segment <20:13-20:16> list
       simple-expr-stmt <24:5-24:22>
-        fn-call <24:5-24:21> () <24:19-24:21>
-          member-access <24:5-24:18> . <24:9-24:9>
+        call-expr <24:5-24:21> () <24:19-24:21>
+          member-expr <24:5-24:18> . <24:9-24:9>
             name <24:5-24:8>
               name-segment <24:5-24:8> list
             name <24:10-24:18>
               name-segment <24:10-24:18> push_back
           literal i32 8 <24:20-24:20>
       simple-expr-stmt <28:5-28:22>
-        fn-call <28:5-28:21> () <28:19-28:21>
-          member-access <28:5-28:18> . <28:9-28:9>
+        call-expr <28:5-28:21> () <28:19-28:21>
+          member-expr <28:5-28:18> . <28:9-28:9>
             name <28:5-28:8>
               name-segment <28:5-28:8> list
             name <28:10-28:18>
               name-segment <28:10-28:18> push_back
           literal i32 6 <28:20-28:20>
       simple-expr-stmt <29:5-29:22>
-        fn-call <29:5-29:21> () <29:19-29:21>
-          member-access <29:5-29:18> . <29:9-29:9>
+        call-expr <29:5-29:21> () <29:19-29:21>
+          member-expr <29:5-29:18> . <29:9-29:9>
             name <29:5-29:8>
               name-segment <29:5-29:8> list
             name <29:10-29:18>
               name-segment <29:10-29:18> remove_at
           literal i32 3 <29:20-29:20>
-      for-stmt <30:5-32:5> for <30:5-30:7> iter-var i <30:9-30:9>
+      for-stmt <30:5-32:5> iter-var i <30:9-30:9>
         range-both-expr <30:14-30:27> dotdot <30:15-30:16>
           literal i32 0 <30:14-30:14>
-          member-access <30:17-30:27> . <30:21-30:21>
+          member-expr <30:17-30:27> . <30:21-30:21>
             name <30:17-30:20>
               name-segment <30:17-30:20> list
             name <30:22-30:27>
               name-segment <30:22-30:27> length
         block <30:29-32:5>
           assign-expr-stmt <31:9-31:21> *= <31:17-31:18>
-            index-call <31:9-31:15> [] <31:13-31:15>
+            index-expr <31:9-31:15> [] <31:13-31:15>
               name <31:9-31:12>
                 name-segment <31:9-31:12> list
               name <31:14-31:14>
                 name-segment <31:14-31:14> i
             literal i32 2 <31:20-31:20>
-      for-stmt <33:5-33:28> for <33:5-33:7> iter-var i <33:9-33:9>
+      for-stmt <33:5-33:28> iter-var i <33:9-33:9>
         name <33:14-33:17>
           name-segment <33:14-33:17> list
         block <33:18-33:28>
@@ -71,21 +71,21 @@ module tests/ast/list.f3
               name-segment <33:20-33:20> i
             literal i32 3 <33:25-33:25>
       simple-expr-stmt <36:5-36:16>
-        fn-call <36:5-36:15> () <36:14-36:15>
-          member-access <36:5-36:13> . <36:9-36:9>
+        call-expr <36:5-36:15> () <36:14-36:15>
+          member-expr <36:5-36:13> . <36:9-36:9>
             name <36:5-36:8>
               name-segment <36:5-36:8> list
             name <36:10-36:13>
               name-segment <36:10-36:13> sort
       simple-expr-stmt <37:5-37:19>
-        fn-call <37:5-37:18> () <37:17-37:18>
-          member-access <37:5-37:16> . <37:9-37:9>
+        call-expr <37:5-37:18> () <37:17-37:18>
+          member-expr <37:5-37:16> . <37:9-37:9>
             name <37:5-37:8>
               name-segment <37:5-37:8> list
             name <37:10-37:16>
               name-segment <37:10-37:16> reverse
       simple-expr-stmt <38:5-38:18>
-        fn-call <38:5-38:17> () <38:12-38:17>
+        call-expr <38:5-38:17> () <38:12-38:17>
           name <38:5-38:11>
             name-segment <38:5-38:11> writeln
           name <38:13-38:16>

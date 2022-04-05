@@ -33,57 +33,58 @@ pub trait Node: Sized {
 //   if result is not care, just use default (unit) for type parameter T and E
 // TODO: use Try when stablized, see branch try-v2 // will I still work on this project at that time?
 pub trait Visitor<T: Default = (), E = ()>: Sized {
-    fn visit_array_def(&mut self, node: &ArrayDef) -> Result<T, E> { node.walk(self) }
+    fn visit_array_expr(&mut self, node: &ArrayExpr) -> Result<T, E> { node.walk(self) }
     fn visit_array_type(&mut self, node: &ArrayType) -> Result<T, E> { node.walk(self) }
+    fn visit_assign_expr_stmt(&mut self, node: &AssignExprStatement) -> Result<T, E> { node.walk(self) }
     fn visit_binary_expr(&mut self, node: &BinaryExpr) -> Result<T, E> { node.walk(self) }
     fn visit_block_stmt(&mut self, node: &BlockStatement) -> Result<T, E> { node.walk(self) }
     fn visit_block(&mut self, node: &Block) -> Result<T, E> { node.walk(self) }
+    fn visit_break_stmt(&mut self, node: &BreakStatement) -> Result<T, E> { node.walk(self) }
+    fn visit_call_expr(&mut self, node: &CallExpr) -> Result<T, E> { node.walk(self) }
+    fn visit_continue_stmt(&mut self, node: &ContinueStatement) -> Result<T, E> { node.walk(self) }
+    fn visit_else_clause(&mut self, node: &ElseClause) -> Result<T, E> { node.walk(self) }
     fn visit_enum_def(&mut self, node: &EnumDef) -> Result<T, E> { node.walk(self) }
-    fn visit_enum_variant(&mut self, node: &EnumVariant) -> Result<T, E> { node.walk(self) }
+    fn visit_enum_def_variant(&mut self, node: &EnumDefVariant) -> Result<T, E> { node.walk(self) }
     fn visit_expr_list(&mut self, node: &ExprList) -> Result<T, E> { node.walk(self) }
     fn visit_expr(&mut self, node: &Expr) -> Result<T, E> { node.walk(self) }
-    fn visit_assign_expr_stmt(&mut self, node: &AssignExprStatement) -> Result<T, E> { node.walk(self) }
-    fn visit_simple_expr_stmt(&mut self, node: &SimpleExprStatement) -> Result<T, E> { node.walk(self) }
-    fn visit_fn_call_expr(&mut self, node: &FnCallExpr) -> Result<T, E> { node.walk(self) }
     fn visit_fn_def(&mut self, node: &FnDef) -> Result<T, E> { node.walk(self) }
-    fn visit_fn_param(&mut self, node: &FnParam) -> Result<T, E> { node.walk(self) }
+    fn visit_fn_def_parameter(&mut self, node: &FnDefParameter) -> Result<T, E> { node.walk(self) }
     fn visit_fn_type(&mut self, node: &FnType) -> Result<T, E> { node.walk(self) }
-    fn visit_fn_type_param(&mut self, node: &FnTypeParam) -> Result<T, E> { node.walk(self) }
+    fn visit_fn_type_parameter(&mut self, node: &FnTypeParameter) -> Result<T, E> { node.walk(self) }
     fn visit_for_stmt(&mut self, node: &ForStatement) -> Result<T, E> { node.walk(self) }
     fn visit_if_stmt(&mut self, node: &IfStatement) -> Result<T, E> { node.walk(self) }
     fn visit_if_clause(&mut self, node: &IfClause) -> Result<T, E> { node.walk(self) }
-    fn visit_else_clause(&mut self, node: &ElseClause) -> Result<T, E> { node.walk(self) }
-    fn visit_index_call_expr(&mut self, node: &IndexCallExpr) -> Result<T, E> { node.walk(self) }
-    fn visit_break_stmt(&mut self, node: &BreakStatement) -> Result<T, E> { node.walk(self) }
-    fn visit_continue_stmt(&mut self, node: &ContinueStatement) -> Result<T, E> { node.walk(self) }
+    fn visit_index_expr(&mut self, node: &IndexExpr) -> Result<T, E> { node.walk(self) }
+    fn visit_item(&mut self, node: &Item) -> Result<T, E> { node.walk(self) }
     fn visit_label_def(&mut self, node: &LabelDef) -> Result<T, E> { node.walk(self) }
     fn visit_lit_expr(&mut self, node: &LitExpr) -> Result<T, E> { node.walk(self) }
     fn visit_loop_stmt(&mut self, node: &LoopStatement) -> Result<T, E> { node.walk(self) }
-    fn visit_member_access(&mut self, node: &MemberAccessExpr) -> Result<T, E> { node.walk(self) }
+    fn visit_member_expr(&mut self, node: &MemberExpr) -> Result<T, E> { node.walk(self) }
+    fn visit_member_name(&mut self, node: &MemberName) -> Result<T, E> { node.walk(self) }
     fn visit_module(&mut self, node: &Module) -> Result<T, E> { node.walk(self) }
     fn visit_module_stmt(&mut self, node: &ModuleStatement) -> Result<T, E> { node.walk(self) }
     fn visit_name(&mut self, node: &Name) -> Result<T, E> { node.walk(self) }
     fn visit_name_segment(&mut self, node: &NameSegment) -> Result<T, E> { node.walk(self) }
-    fn visit_object_literal(&mut self, node: &ObjectLiteral) -> Result<T, E> { node.walk(self) }
-    fn visit_object_literal_field(&mut self, node: &ObjectLiteralField) -> Result<T, E> { node.walk(self) }
+    fn visit_object_expr(&mut self, node: &ObjectExpr) -> Result<T, E> { node.walk(self) }
+    fn visit_object_expr_field(&mut self, node: &ObjectExprField) -> Result<T, E> { node.walk(self) }
+    fn visit_paren_expr(&mut self, node: &ParenExpr) -> Result<T, E> { node.walk(self) }
     fn visit_plain_type(&mut self, node: &PlainType) -> Result<T, E> { node.walk(self) }
-    fn visit_type_segment(&mut self, node: &TypeSegment) -> Result<T, E> { node.walk(self) }
-    fn visit_type_as_segment(&mut self, node: &TypeAsSegment) -> Result<T, E> { node.walk(self) }
+    fn visit_primitive_type(&mut self, node: &PrimitiveType) -> Result<T, E> { node.walk(self) }
     fn visit_range_both_expr(&mut self, node: &RangeBothExpr) -> Result<T, E> { node.walk(self) }
     fn visit_range_full_expr(&mut self, node: &RangeFullExpr) -> Result<T, E> { node.walk(self) }
     fn visit_range_left_expr(&mut self, node: &RangeLeftExpr) -> Result<T, E> { node.walk(self) }
     fn visit_range_right_expr(&mut self, node: &RangeRightExpr) -> Result<T, E> { node.walk(self) }
     fn visit_ref_type(&mut self, node: &RefType) -> Result<T, E> { node.walk(self) }
     fn visit_ret_stmt(&mut self, node: &ReturnStatement) -> Result<T, E> { node.walk(self) }
+    fn visit_simple_expr_stmt(&mut self, node: &SimpleExprStatement) -> Result<T, E> { node.walk(self) }
     fn visit_stmt(&mut self, node: &Statement) -> Result<T, E> { node.walk(self) }
-    fn visit_item(&mut self, node: &Item) -> Result<T, E> { node.walk(self) } 
-    fn visit_paren_expr(&mut self, node: &ParenExpr) -> Result<T, E> { node.walk(self) }
-    fn visit_primitive_type(&mut self, node: &PrimitiveType) -> Result<T, E> { node.walk(self) }
-    fn visit_tuple_def(&mut self, node: &TupleDef) -> Result<T, E> { node.walk(self) }
+    fn visit_tuple_expr(&mut self, node: &TupleExpr) -> Result<T, E> { node.walk(self) }
     fn visit_tuple_type(&mut self, node: &TupleType) -> Result<T, E> { node.walk(self) }
+    fn visit_type_as_segment(&mut self, node: &TypeAsSegment) -> Result<T, E> { node.walk(self) }
     fn visit_type_def(&mut self, node: &TypeDef) -> Result<T, E> { node.walk(self) }
-    fn visit_type_field_def(&mut self, node: &TypeFieldDef) -> Result<T, E> { node.walk(self) }
+    fn visit_type_def_field(&mut self, node: &TypeDefField) -> Result<T, E> { node.walk(self) }
     fn visit_type_ref(&mut self, node: &TypeRef) -> Result<T, E> { node.walk(self) }
+    fn visit_type_segment(&mut self, node: &TypeSegment) -> Result<T, E> { node.walk(self) }
     fn visit_unary_expr(&mut self, node: &UnaryExpr) -> Result<T, E> { node.walk(self) }
     fn visit_use_stmt(&mut self, node: &UseStatement) -> Result<T, E> { node.walk(self) }
     fn visit_var_decl(&mut self, node: &VarDeclStatement) -> Result<T, E> { node.walk(self) }

@@ -79,7 +79,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             let label_span = self.move_next();
             // TODO allow if colon missing, note that maybe_for_stmt, maybe_loop_stmt and maybe_while_stmt also need change
             let colon_span = self.expect_sep(Separator::Colon)?;
-            Ok(Some(LabelDef{ name: id, span: label_span + colon_span }))
+            Ok(Some(LabelDef{ label: id, span: label_span + colon_span }))
         } else {
             Ok(None)
         }
@@ -93,7 +93,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         let mut items = Vec::new();
         loop {
             if let Some(ending_span) = self.try_expect_sep(Separator::RightBrace) {
-                return Ok(Block::new(starting_span + ending_span, items));
+                return Ok(Block{ span: starting_span + ending_span, items });
             }
             items.push(self.parse_stmt()?);
         }
@@ -107,10 +107,10 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     // block-stmt for explicit block definition in block and allow block label
     pub fn parse_block_stmt(&mut self) -> Result<BlockStatement, Unexpected> {
     
-        let name = self.parse_label()?;
+        let label = self.parse_label()?;
         let body = self.parse_block()?;
-        let span = name.as_ref().map(|n| n.span).unwrap_or(body.span) + body.span;
-        Ok(BlockStatement{ span, name, body })
+        let span = label.as_ref().map(|n| n.span).unwrap_or(body.span) + body.span;
+        Ok(BlockStatement{ span, label, body })
     }
 
     pub fn maybe_break_stmt(&self) -> bool {
@@ -124,10 +124,10 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
 
         if let Some(label) = self.try_expect_label() {
             let semicolon_span = self.expect_sep(Separator::SemiColon)?;
-            Ok(BreakStatement{ span: starting_span + semicolon_span, target: Some(label) })
+            Ok(BreakStatement{ span: starting_span + semicolon_span, label: Some(label) })
         } else { 
             let semicolon_span = self.expect_sep(Separator::SemiColon)?;
-            Ok(BreakStatement{ span: starting_span + semicolon_span, target: None })
+            Ok(BreakStatement{ span: starting_span + semicolon_span, label: None })
         }
     }
 
@@ -142,10 +142,10 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
 
         if let Some(label) = self.try_expect_label() {
             let semicolon_span = self.expect_sep(Separator::SemiColon)?;
-            Ok(ContinueStatement{ span: starting_span + semicolon_span, target: Some(label) })
+            Ok(ContinueStatement{ span: starting_span + semicolon_span, label: Some(label) })
         } else { 
             let semicolon_span = self.expect_sep(Separator::SemiColon)?;
-            Ok(ContinueStatement{ span: starting_span + semicolon_span, target: None })
+            Ok(ContinueStatement{ span: starting_span + semicolon_span, label: None })
         }
     }
 
@@ -169,7 +169,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
                 let (variant_name, variant_name_span) = self.expect_ident()?;
                 let init_value = self.try_expect_sep(Separator::Eq).map(|_| self.parse_expr()).transpose()?;
                 let variant_all_span = variant_name_span + init_value.as_ref().map(|e| e.span()).unwrap_or(variant_name_span);
-                variants.push(EnumVariant{ name: variant_name, name_span: variant_name_span, value: init_value, span: variant_all_span });
+                variants.push(EnumDefVariant{ name: variant_name, name_span: variant_name_span, value: init_value, span: variant_all_span });
 
                 if let Some((right_brace_span, _)) = self.try_expect_closing_bracket(Separator::RightBrace) {
                     break right_brace_span;
@@ -195,12 +195,12 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         let starting_span = left_expr.span();
 
         if let Some(semicolon_span) = self.try_expect_sep(Separator::SemiColon) {
-            Ok(Statement::SimpleExpr(SimpleExprStatement::new(starting_span + semicolon_span, left_expr)))
-        } else if let Some((assign_op, assign_op_span)) = self.try_expect_sep_kind(SeparatorKind::Assign) {
+            Ok(Statement::SimpleExpr(SimpleExprStatement{ span: starting_span + semicolon_span, expr: left_expr }))
+        } else if let Some((op, op_span)) = self.try_expect_sep_kind(SeparatorKind::Assign) {
             let right_expr = self.parse_expr()?;
             let semicolon_span = self.expect_sep(Separator::SemiColon)?;
             Ok(Statement::AssignExpr(
-                AssignExprStatement::new(starting_span + semicolon_span, assign_op, assign_op_span, left_expr, right_expr)))
+                AssignExprStatement{ span: starting_span + semicolon_span, op, op_span, left: left_expr, right: right_expr }))
         } else {
             self.push_unexpect("assign operators, semicolon")
         }
@@ -216,26 +216,26 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
 
         let fn_span = self.expect_keyword(Keyword::Fn)?;
         let (fn_name, fn_name_span) = self.expect_ident()?;
-        let mut params_paren_span = self.expect_sep(Separator::LeftParen)?;
+        let mut quote_span = self.expect_sep(Separator::LeftParen)?;
 
-        let mut params = Vec::new();
+        let mut parameters = Vec::new();
         loop {
             if let Some((right_paren_span, skipped_comma)) = self.try_expect_closing_bracket(Separator::RightParen) {
-                params_paren_span += right_paren_span;
-                if skipped_comma && params.is_empty() {
+                quote_span += right_paren_span;
+                if skipped_comma && parameters.is_empty() {
                     self.emit("Single comma in function definition argument list")
                         .detail(fn_name_span, "function definition here")
-                        .detail(params_paren_span, "param list here");
+                        .detail(quote_span, "param list here");
                 }
                 break;
             } else if let Some(_comma_span) = self.try_expect_sep(Separator::Comma) {
                 continue;
             }
 
-            let (param_name, param_span) = self.expect_ident_or_keywords(&[Keyword::Underscore, Keyword::This, Keyword::Self_])?;
-            let _ = self.expect_sep(Separator::Colon)?;
-            let decltype = self.parse_type_ref()?;
-            params.push(FnParam::new(param_name, param_span, decltype));
+            let (parameter_name, parameter_span) = self.expect_ident_or_keywords(&[Keyword::Underscore, Keyword::This, Keyword::Self_])?;
+            self.expect_sep(Separator::Colon)?;
+            let r#type = self.parse_type_ref()?;
+            parameters.push(FnDefParameter{ span: parameter_span + r#type.span(), name: parameter_name, name_span: parameter_span, r#type });
         }
 
         let ret_type = self.try_expect_seps(&[Separator::Arrow, Separator::Colon]).map(|(sep, span)| {
@@ -246,7 +246,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         }).transpose()?;
         let body = self.parse_block()?;
 
-        Ok(FnDef::new(fn_span + body.span, fn_name, fn_name_span, params_paren_span, params, ret_type, body))
+        Ok(FnDef{ span: fn_span + body.span, name: fn_name, name_span: fn_name_span, quote_span, parameters, ret_type, body })
     }
 
     pub fn maybe_for_stmt(&self) -> bool {
@@ -257,18 +257,18 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     // TODO: add else for break, like python
     pub fn parse_for_stmt(&mut self) -> Result<ForStatement, Unexpected> {
 
-        let loop_name = self.parse_label()?;
+        let label = self.parse_label()?;
         let for_span = self.expect_keyword(Keyword::For)?;
 
         // Accept _ as iter_name, _ do not declare iter var
-        let (iter_name, iter_span) = self.expect_ident_or_keywords(&[Keyword::Underscore])?; 
+        let (iter_var, iter_span) = self.expect_ident_or_keywords(&[Keyword::Underscore])?; 
         self.expect_keyword(Keyword::In)?;
 
-        let iter_expr = self.parse_expr_except_object_literal()?;
+        let iter_expr = self.parse_expr_except_object_expr()?;
         let body = self.parse_block()?;
         
-        let span = loop_name.as_ref().map(|n| n.span).unwrap_or(for_span) + body.span;
-        Ok(ForStatement{ loop_name, for_span, iter_name, iter_span, iter_expr, body, span })
+        let span = label.as_ref().map(|n| n.span).unwrap_or(for_span) + body.span;
+        Ok(ForStatement{ label, iter_var, iter_span, iter_expr, body, span })
     }
 
     pub fn maybe_if_stmt(&self) -> bool {
@@ -280,20 +280,20 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
 
         let mut all_span = self.expect_keyword(Keyword::If)?;
 
-        let if_expr = self.parse_expr_except_object_literal()?;
+        let if_condition = self.parse_expr_except_object_expr()?;
         let if_body = self.parse_block()?;
         all_span += if_body.span;
-        let if_clause = IfClause{ span: all_span, condition: if_expr, body: if_body };
+        let if_clause = IfClause{ span: all_span, condition: if_condition, body: if_body };
 
         let mut elseif_clauses = Vec::new();
         let mut else_clause = None;
         while let Some(else_span) = self.try_expect_keyword(Keyword::Else) {
             if let Some(if_span) = self.try_expect_keyword(Keyword::If) {
                 let elseif_span = else_span + if_span;
-                let elseif_expr = self.parse_expr_except_object_literal()?;
+                let elseif_condition = self.parse_expr_except_object_expr()?;
                 let elseif_body = self.parse_block()?;
                 all_span += elseif_body.span;
-                elseif_clauses.push(IfClause{ span: elseif_span + elseif_body.span, condition: elseif_expr, body: elseif_body });
+                elseif_clauses.push(IfClause{ span: elseif_span + elseif_body.span, condition: elseif_condition, body: elseif_body });
             } else {
                 // 16/12/1, we lost TWO `+1`s for current_length here ... fixed
                 // 17/5/6: When there is match Block::parse(tokens, messages, index + current_length), etc.
@@ -317,11 +317,11 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     // NOTE: no else for break here because if control flow come to else it is always breaked
     pub fn parse_loop_stmt(&mut self) -> Result<LoopStatement, Unexpected> {
 
-        let name = self.parse_label()?;
+        let label = self.parse_label()?;
         let loop_span = self.expect_keyword(Keyword::Loop)?;
         let body = self.parse_block()?;
-        let span = name.as_ref().map(|n| n.span).unwrap_or(loop_span) + body.span;
-        Ok(LoopStatement{ span, name, loop_span, body })
+        let span = label.as_ref().map(|n| n.span).unwrap_or(loop_span) + body.span;
+        Ok(LoopStatement{ span, label, body })
     }
 
     pub fn maybe_module_stmt(&self) -> bool {
@@ -384,9 +384,9 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             let colon_span = self.expect_sep(Separator::Colon)?;
             let field_type = self.parse_type_ref()?;
             fields.push(if let Some(comma_span) = self.try_expect_sep(Separator::Comma) {
-                TypeFieldDef{ span: field_name_span + comma_span, name: field_name, name_span: field_name_span, colon_span, r#type: field_type }
+                TypeDefField{ span: field_name_span + comma_span, name: field_name, name_span: field_name_span, colon_span, r#type: field_type }
             } else {
-                TypeFieldDef{ span: field_name_span + field_type.span(), name: field_name, name_span: field_name_span, colon_span, r#type: field_type }
+                TypeDefField{ span: field_name_span + field_type.span(), name: field_name, name_span: field_name_span, colon_span, r#type: field_type }
             });
         };
 
@@ -423,15 +423,16 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
 
         let (name, name_span) = self.expect_ident_or_keywords(&[Keyword::Underscore])?;
         let r#type = self.try_expect_sep(Separator::Colon).map(|_| self.parse_type_ref()).transpose()?;
-        let init_expr = self.try_expect_sep(Separator::Eq).map(|_| self.parse_expr()).transpose()?;
-        if r#type.is_none() && init_expr.is_none() {
+        let init_value = self.try_expect_sep(Separator::Eq).map(|_| self.parse_expr()).transpose()?;
+        let ending_span = self.expect_sep(Separator::SemiColon)?;
+
+        if r#type.is_none() && init_value.is_none() {
             self.emit("require type annotation")
                 .detail(name_span, "variable declaration here")
                 .help("cannot infer type without both type annotation and initialization expression");
         }
-        let ending_span = self.expect_sep(Separator::SemiColon)?;
 
-        Ok(VarDeclStatement{ span: starting_span + ending_span, r#const, name, name_span, r#type, init_expr })
+        Ok(VarDeclStatement{ span: starting_span + ending_span, r#const, name, name_span, r#type, init_value })
     }
 
     pub fn maybe_while_stmt(&self) -> bool {
@@ -442,11 +443,11 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     // TODO: add else for break, like python
     pub fn parse_while_stmt(&mut self) -> Result<WhileStatement, Unexpected> {
         
-        let name = self.parse_label()?;
+        let label = self.parse_label()?;
         let while_span = self.expect_keyword(Keyword::While)?;
-        let expr = self.parse_expr_except_object_literal()?;
+        let condition = self.parse_expr_except_object_expr()?;
         let body = self.parse_block()?;
-        let span = name.as_ref().map(|n| n.span).unwrap_or(while_span) + body.span;
-        Ok(WhileStatement{ name, while_span, loop_expr: expr, body, span })
+        let span = label.as_ref().map(|n| n.span).unwrap_or(while_span) + body.span;
+        Ok(WhileStatement{ label, condition, body, span })
     }
 }

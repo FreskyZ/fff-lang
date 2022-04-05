@@ -3,14 +3,18 @@ use crate::source::{Span, IsId, FileId};
 use crate::lexical::{Separator, Keyword, Numeric};
 
 // naming convension:
-// first field is `span` and represents span for complete node
-// Separator field is called `op`, its span is called `op_span`
-// bracket span field is called `quote_span`
-// get span methods for abc types are called `span`, e.g. `expr.span()`
+// - first field is `span` and represents span for complete node
+// - Separator field is called `op`, its span is called `op_span`
+// - bracket pair span field is called `quote_span`
+// - get span methods for abc types are called `span`, e.g. `expr.span()`
+// - LabelDef field should be called `label`
+// - IsId from Token::Ident is normally called `name`, and associate with a `name_span`
+// - use `parameters` not `params`
+// - concrete expression types should be called `XXXExpr`
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
-pub struct ArrayDef {
+pub struct ArrayExpr {
     pub span: Span, // bracket span
     pub items: ExprList,
 }
@@ -27,8 +31,8 @@ pub struct ArrayType {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct BinaryExpr {
     pub span: Span,
-    pub left_expr: Box<Expr>,
-    pub right_expr: Box<Expr>,
+    pub left: Box<Expr>,
+    pub right: Box<Expr>,
     pub op: Separator,
     pub op_span: Span,
 }
@@ -37,7 +41,7 @@ pub struct BinaryExpr {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct BlockStatement {
     pub span: Span,
-    pub name: Option<LabelDef>,
+    pub label: Option<LabelDef>,
     pub body: Block,
 }
 
@@ -50,7 +54,7 @@ pub struct Block {
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
-pub struct EnumVariant {
+pub struct EnumDefVariant {
     pub span: Span,
     pub name: IsId,
     pub name_span: Span,
@@ -65,7 +69,7 @@ pub struct EnumDef {
     pub name_span: Span,
     pub base_type: Option<PrimitiveType>,
     pub quote_span: Span,
-    pub variants: Vec<EnumVariant>,
+    pub variants: Vec<EnumDefVariant>,
 }
 
 #[derive(Debug)]
@@ -84,9 +88,9 @@ pub struct SimpleExprStatement {
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct AssignExprStatement {
-    pub span: Span, // left_expr.span + right_expr.span
-    pub left_expr: Expr,
-    pub right_expr: Expr,
+    pub span: Span, // left.span + right.span
+    pub left: Expr,
+    pub right: Expr,
     pub op: Separator,
     pub op_span: Span,
 }
@@ -103,16 +107,16 @@ pub enum ExprListParseResult {
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
-pub struct FnCallExpr {
+pub struct CallExpr {
     pub span: Span,
     pub base: Box<Expr>,
-    pub params: ExprList,
+    pub parameters: ExprList,
     pub quote_span: Span,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
-pub struct FnParam {
+pub struct FnDefParameter {
     pub span: Span, // name_span + r#type.span
     pub name: IsId,
     pub name_span: Span,
@@ -124,15 +128,15 @@ pub struct FnDef {
     pub span: Span, // fn_span + body_span
     pub name: IsId,
     pub name_span: Span,
-    pub params: Vec<FnParam>,
     pub quote_span: Span, // parameter list quote
+    pub parameters: Vec<FnDefParameter>,
     pub ret_type: Option<TypeRef>,
     pub body: Block,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
-pub struct FnTypeParam {
+pub struct FnTypeParameter {
     pub span: Span,
     pub name: Option<(IsId, Span)>,
     pub r#type: TypeRef,
@@ -143,7 +147,7 @@ pub struct FnTypeParam {
 pub struct FnType {
     pub span: Span,
     pub quote_span: Span, // parameter list quote span
-    pub parameters: Vec<FnTypeParam>,
+    pub parameters: Vec<FnTypeParameter>,
     pub ret_type: Option<Box<TypeRef>>,
 }
 
@@ -151,9 +155,8 @@ pub struct FnType {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct ForStatement {
     pub span: Span,
-    pub loop_name: Option<LabelDef>,
-    pub for_span: Span,
-    pub iter_name: IsId,
+    pub label: Option<LabelDef>,
+    pub iter_var: IsId,
     pub iter_span: Span,
     pub iter_expr: Expr,
     pub body: Block,
@@ -185,10 +188,10 @@ pub struct IfStatement {
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
-pub struct IndexCallExpr {
+pub struct IndexExpr {
     pub span: Span,
     pub base: Box<Expr>,
-    pub params: ExprList,
+    pub parameters: ExprList,
     pub quote_span: Span, // bracket span
 }
 
@@ -196,21 +199,21 @@ pub struct IndexCallExpr {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct ContinueStatement{
     pub span: Span,
-    pub target: Option<(IsId, Span)>,
+    pub label: Option<(IsId, Span)>,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct BreakStatement{
     pub span: Span,
-    pub target: Option<(IsId, Span)>,
+    pub label: Option<(IsId, Span)>,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct LabelDef {
     pub span: Span,
-    pub name: IsId,
+    pub label: IsId,
 }
 
 #[derive(Debug)]
@@ -234,18 +237,34 @@ pub struct LitExpr {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct LoopStatement {
     pub span: Span,
-    pub name: Option<LabelDef>,
+    pub label: Option<LabelDef>,
     pub body: Block,
-    pub loop_span: Span,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
-pub struct MemberAccessExpr {
+pub enum MemberNameBase {
+    Ident(IsId),
+    Numeric(Numeric),
+}
+
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
+pub struct MemberName {
+    pub span: Span,
+    pub base: MemberNameBase,
+    pub base_span: Span,
+    pub quote_span: Span, // type parameter quote span
+    pub parameters: Vec<TypeRef>,
+}
+
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
+pub struct MemberExpr {
     pub span: Span,
     pub base: Box<Expr>,
-    pub op_span: Span,
-    pub name: Name,
+    pub op_span: Span, // dot span
+    pub name: /* TODO MemberName */Name,
 }
 
 // Attention: Clone for driver to store copy of import requests
@@ -292,7 +311,7 @@ pub struct Name {
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
-pub struct ObjectLiteralField {
+pub struct ObjectExprField {
     pub span: Span,
     pub name: IsId,
     pub name_span: Span,
@@ -302,11 +321,11 @@ pub struct ObjectLiteralField {
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
-pub struct ObjectLiteral {
+pub struct ObjectExpr {
     pub span: Span,
     pub base: Box<Expr>,
     pub quote_span: Span,
-    pub fields: Vec<ObjectLiteralField>,
+    pub fields: Vec<ObjectExprField>,
 }
 
 #[derive(Debug)]
@@ -319,23 +338,23 @@ pub struct RangeFullExpr {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct RangeRightExpr {
     pub span: Span,
-    pub expr: Box<Expr>,
+    pub base: Box<Expr>,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct RangeLeftExpr {
     pub span: Span,
-    pub expr: Box<Expr>,
+    pub base: Box<Expr>,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct RangeBothExpr {
     pub span: Span,
-    pub left_expr: Box<Expr>,
+    pub left: Box<Expr>,
     pub op_span: Span,
-    pub right_expr: Box<Expr>,
+    pub right: Box<Expr>,
 }
 
 #[derive(Debug)]
@@ -350,8 +369,8 @@ pub struct TypeAsSegment {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct TypeSegment {
     pub span: Span,
-    pub ident: IsId,
-    pub ident_span: Span,
+    pub base: IsId,
+    pub base_span: Span,
     pub quote_span: Span,
     pub parameters: Vec<TypeRef>,
 }
@@ -369,7 +388,7 @@ pub struct PlainType {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct PrimitiveType {
     pub span: Span,
-    pub name: Keyword,
+    pub base: Keyword,
 }
 
 #[derive(Debug)]
@@ -391,12 +410,12 @@ pub struct ReturnStatement {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct ParenExpr {
     pub span: Span,
-    pub expr: Box<Expr>,
+    pub base: Box<Expr>,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
-pub struct TupleDef {
+pub struct TupleExpr {
     pub span: Span,
     pub items: ExprList,
 }
@@ -410,7 +429,7 @@ pub struct TupleType {
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
-pub struct TypeFieldDef {
+pub struct TypeDefField {
     pub span: Span,
     pub name: IsId,
     pub name_span: Span,
@@ -424,7 +443,7 @@ pub struct TypeDef {
     pub span: Span,
     pub name: IsId,
     pub name_span: Span,
-    pub fields: Vec<TypeFieldDef>,
+    pub fields: Vec<TypeDefField>,
 }
 
 #[derive(Debug)]
@@ -444,7 +463,7 @@ pub struct VarDeclStatement {
     pub name: IsId,
     pub name_span: Span,
     pub r#type: Option<TypeRef>,
-    pub init_expr: Option<Expr>,
+    pub init_value: Option<Expr>,
 }
 
 #[derive(Debug)]
@@ -459,46 +478,9 @@ pub struct UseStatement {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct WhileStatement {
     pub span: Span,
-    pub name: Option<LabelDef>,
-    pub loop_expr: Expr,
+    pub label: Option<LabelDef>,
+    pub condition: Expr,
     pub body: Block,
-    pub while_span: Span,
-}
-
-// TODO REMOVE these constructors
-impl Block {
-    pub fn new(span: Span, statements: Vec<Statement>) -> Block { 
-        Block{ span, items: statements } 
-    }
-}
-impl SimpleExprStatement {
-    pub fn new<T: Into<Expr>>(span: Span, expr: T) -> SimpleExprStatement { 
-        SimpleExprStatement{ span, expr: expr.into() } 
-    }
-}
-impl AssignExprStatement {
-    pub fn new<T1: Into<Expr>, T2: Into<Expr>>(span: Span, 
-        op: Separator, op_span: Span, left_expr: T1, right_expr: T2) -> AssignExprStatement {
-        AssignExprStatement{
-            left_expr: left_expr.into(),
-            right_expr: right_expr.into(),
-            span,
-            op, op_span,
-        }
-    }
-}
-impl FnParam {
-    pub fn new(name: impl Into<IsId>, name_span: Span, r#type: TypeRef) -> Self { 
-        Self{ span: name_span + r#type.span(), r#type, name: name.into(), name_span } 
-    }
-}
-impl FnDef {
-    pub fn new(span: Span, 
-        name: impl Into<IsId>, name_span: Span,
-        quote_span: Span, params: Vec<FnParam>, 
-        ret_type: Option<TypeRef>, body: Block) -> FnDef {
-        FnDef{ name: name.into(), name_span, params, quote_span, ret_type, body, span }
-    }
 }
 
 macro_rules! define_abc {
@@ -508,6 +490,12 @@ $vis enum $name {
     $($variant($ty),)+
 }
 
+$(impl From<$ty> for $name {
+    fn from(v: $ty) -> $name {
+        $name::$variant(v)
+    }
+})+
+
 impl $name {
     pub fn span(&self) -> Span {
         match self {
@@ -515,7 +503,7 @@ impl $name {
         }
     }
 }
-    )
+    );
 }
 
 define_abc! {
@@ -525,12 +513,12 @@ pub enum Expr {
     Lit(LitExpr),
     Name(Name),
     Paren(ParenExpr),
-    Tuple(TupleDef),
-    Array(ArrayDef),
-    FnCall(FnCallExpr),
-    Index(IndexCallExpr),
-    Member(MemberAccessExpr),
-    Object(ObjectLiteral),
+    Tuple(TupleExpr),
+    Array(ArrayExpr),
+    Call(CallExpr),
+    Index(IndexExpr),
+    Member(MemberExpr),
+    Object(ObjectExpr),
     Unary(UnaryExpr),
     Binary(BinaryExpr),
     RangeBoth(RangeBothExpr),

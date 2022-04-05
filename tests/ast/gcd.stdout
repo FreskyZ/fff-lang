@@ -1,20 +1,20 @@
 module tests/ast/gcd.f3
-  fn <4:1-17:1> main <4:4-4:7> () <4:8-4:9>
+  fn-def <4:1-17:1> main <4:4-4:7> () <4:8-4:9>
     block <4:11-17:1>
-      loop-stmt <6:5-16:5> loop <6:12-6:15>
+      loop-stmt <6:5-16:5>
         label @main <6:5-6:10>
         block <6:17-16:5>
           simple-expr-stmt <7:9-7:35>
-            fn-call <7:9-7:34> () <7:16-7:34>
+            call-expr <7:9-7:34> () <7:16-7:34>
               name <7:9-7:15>
                 name-segment <7:9-7:15> writeln
               literal str "Input 2 numbers" <7:17-7:33>
           var-def <8:9-8:27> mutable a <8:13-8:13>
-            fn-call <8:17-8:26> () <8:25-8:26>
+            call-expr <8:17-8:26> () <8:25-8:26>
               name <8:17-8:24>
                 name-segment <8:17-8:24> read_i32
           var-def <9:9-9:27> mutable b <9:13-9:13>
-            fn-call <9:17-9:26> () <9:25-9:26>
+            call-expr <9:17-9:26> () <9:25-9:26>
               name <9:17-9:24>
                 name-segment <9:17-9:24> read_i32
           if-stmt <11:9-13:9>
@@ -31,7 +31,7 @@ module tests/ast/gcd.f3
               block <11:29-13:9>
                 break-stmt <12:13-12:24> @main <12:19-12:23>
           simple-expr-stmt <15:9-15:101>
-            fn-call <15:9-15:100> () <15:16-15:100>
+            call-expr <15:9-15:100> () <15:16-15:100>
               name <15:9-15:15>
                 name-segment <15:9-15:15> writeln
               binary-expr <15:17-15:99> + <15:75-15:75>
@@ -40,23 +40,23 @@ module tests/ast/gcd.f3
                     binary-expr <15:17-15:47> + <15:42-15:42>
                       binary-expr <15:17-15:40> + <15:26-15:26>
                         literal str "最大公约数(" <15:17-15:24>
-                        fn-call <15:28-15:40> () <15:39-15:40>
-                          member-access <15:28-15:38> . <15:29-15:29>
+                        call-expr <15:28-15:40> () <15:39-15:40>
+                          member-expr <15:28-15:38> . <15:29-15:29>
                             name <15:28-15:28>
                           name-segment <15:28-15:28> a
                             name <15:30-15:38>
                           name-segment <15:30-15:38> to_string
                       literal str ", " <15:44-15:47>
-                    fn-call <15:51-15:63> () <15:62-15:63>
-                      member-access <15:51-15:61> . <15:52-15:52>
+                    call-expr <15:51-15:63> () <15:62-15:63>
+                      member-expr <15:51-15:61> . <15:52-15:52>
                         name <15:51-15:51>
                           name-segment <15:51-15:51> b
                         name <15:53-15:61>
                           name-segment <15:53-15:61> to_string
                   literal str ") is " <15:67-15:73>
-                fn-call <15:77-15:99> () <15:98-15:99>
-                  member-access <15:77-15:97> . <15:88-15:88>
-                    fn-call <15:77-15:87> () <15:82-15:87>
+                call-expr <15:77-15:99> () <15:98-15:99>
+                  member-expr <15:77-15:97> . <15:88-15:88>
+                    call-expr <15:77-15:87> () <15:82-15:87>
                       name <15:77-15:81>
                         name-segment <15:77-15:81> 最大公约数
                       name <15:83-15:83>
@@ -65,10 +65,10 @@ module tests/ast/gcd.f3
                         name-segment <15:86-15:86> b
                     name <15:89-15:97>
                       name-segment <15:89-15:97> to_string
-  fn <19:1-28:1> 最大公约数 <19:4-19:8> () <19:9-19:24>
-    fn-param <19:10-19:15> a <19:10-19:10>
+  fn-def <19:1-28:1> 最大公约数 <19:4-19:8> () <19:9-19:24>
+    fn-def-parameter <19:10-19:15> a <19:10-19:10>
       primitive-type i32 <19:13-19:15>
-    fn-param <19:18-19:23> b <19:18-19:18>
+    fn-def-parameter <19:18-19:23> b <19:18-19:18>
       primitive-type i32 <19:21-19:23>
     primitive-type i32 <19:29-19:31>
     block <19:33-28:1>
@@ -91,7 +91,7 @@ module tests/ast/gcd.f3
               name-segment <23:12-23:12> b
           block <23:14-25:5>
             ret-stmt <24:9-24:27>
-              fn-call <24:16-24:26> () <24:21-24:26>
+              call-expr <24:16-24:26> () <24:21-24:26>
                 name <24:16-24:20>
                   name-segment <24:16-24:20> 最大公约数
                 name <24:22-24:22>
@@ -101,7 +101,7 @@ module tests/ast/gcd.f3
         else-clause <25:7-27:5>
           block <25:12-27:5>
             ret-stmt <26:9-26:31>
-              fn-call <26:16-26:30> () <26:21-26:30>
+              call-expr <26:16-26:30> () <26:21-26:30>
                 name <26:16-26:20>
                   name-segment <26:16-26:20> 最大公约数
                 name <26:22-26:22>
