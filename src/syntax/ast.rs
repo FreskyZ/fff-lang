@@ -242,8 +242,7 @@ pub struct MemberName {
     pub span: Span,
     pub base: MemberNameBase,
     pub base_span: Span,
-    pub quote_span: Span, // type parameter quote span
-    pub parameters: Vec<TypeRef>,
+    pub parameters: Option<TypeList>,
 }
 
 #[derive(Debug)]
@@ -275,14 +274,14 @@ pub struct Module {
 #[cfg_attr(test, derive(PartialEq))]
 pub enum NameSegment {
     Normal(IdSpan),
-    Generic(Vec<TypeRef>, Span),
+    Generic(TypeList),
 }
 
 impl NameSegment {
     pub fn span(&self) -> Span {
         match self {
-            Self::Normal(IdSpan{ span, .. }) => *span,
-            Self::Generic(_, span) => *span,
+            Self::Normal(id) => id.span,
+            Self::Generic(types) => types.span,
         }
     }
 }
@@ -355,8 +354,7 @@ pub struct TypeAsSegment {
 pub struct TypeSegment {
     pub span: Span,
     pub base: IdSpan,
-    pub quote_span: Span,
-    pub parameters: Vec<TypeRef>,
+    pub parameters: Option<TypeList>,
 }
 
 #[derive(Debug)]
@@ -408,7 +406,8 @@ pub struct TupleExpr {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct TupleType {
     pub span: Span,
-    pub items: Vec<TypeRef>,
+    // not TypeList, TypeList is angle bracket quoted, tuple type is paren quoted and empty allowed
+    pub parameters: Vec<TypeRef>,
 }
 
 #[derive(Debug)]
@@ -426,6 +425,13 @@ pub struct TypeDef {
     pub span: Span,
     pub name: IdSpan,
     pub fields: Vec<TypeDefField>,
+}
+
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
+pub struct TypeList {
+    pub span: Span,
+    pub items: Vec<TypeRef>,
 }
 
 #[derive(Debug)]

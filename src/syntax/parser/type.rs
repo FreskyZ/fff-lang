@@ -21,6 +21,31 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             self.push_unexpect("[, fn, &, (, <, ::, ident or primitive type")
         }
     }
+    
+    pub fn maybe_type_list(&self) -> bool {
+        matches!(self.current, Token::Sep(Separator::Lt))
+    }
+
+    // type_list = '<' type_ref { ',' type_ref } [ ',' ] '>'
+    // angle bracket quoted type list use in many places
+    pub fn parse_type_list(&mut self) -> Result<TypeList, Unexpected> {
+
+        let lt_span = self.expect_sep(Separator::Lt)?;
+
+        if let Some((gt_span, _)) = self.try_expect_closing_bracket(Separator::Gt) {
+            self.emit(strings::EmptyTypeList).span(lt_span + gt_span);
+            return Ok(TypeList{ span: lt_span + gt_span, items: Vec::new() });
+        }
+
+        let mut items = Vec::new();
+        loop {
+            items.push(self.parse_type_ref()?);
+            if let Some((gt_span, _)) = self.try_expect_closing_bracket(Separator::Gt) {
+                return Ok(TypeList{ span: lt_span + gt_span, items });
+            }
+            self.expect_sep(Separator::Comma)?;
+        }
+    }
 
     // type refs, also include path segment
     pub fn maybe_array_type(&self) -> bool {
@@ -89,7 +114,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             let r#type = self.parse_type_ref()?;
             let (name, r#type) = if let TypeRef::Plain(PlainType{ type_as_segment: None, global: false, segments, .. }) = &r#type {
                 if name.is_none() // this one should be before previous let r#type but that will make it 3 ifs are too more (None, r#type)s
-                    && segments.len() == 1 && segments[0].parameters.is_empty() && self.try_expect_sep(Separator::Colon).is_some() {
+                    && segments.len() == 1 && segments[0].parameters.is_none() && self.try_expect_sep(Separator::Colon).is_some() {
                     (Some(segments[0].base), self.parse_type_ref()?)
                 } else {
                     (name.map(|(kw, span)| IdSpan::new(self.intern(kw.display()), span)), r#type)
@@ -137,23 +162,8 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
 
         let mut segments = Vec::new();
         while let Some(base) = self.try_expect_ident() {
-            if let Some(lt_span) = self.try_expect_sep(Separator::Lt) {
-                if let Some(gt_span) = self.try_expect_sep(Separator::Gt) { // allow <> in syntax parse
-                    segments.push(TypeSegment{ base, quote_span: lt_span + gt_span, parameters: Vec::new(), span: base.span + gt_span });
-                } else {
-                    let mut parameters = vec![self.parse_type_ref()?];
-                    let quote_span = lt_span + loop {
-                        if let Some((gt_span, _)) = self.try_expect_closing_bracket(Separator::Gt) {
-                            break gt_span;
-                        }
-                        self.expect_sep(Separator::Comma)?;
-                        parameters.push(self.parse_type_ref()?);
-                    };
-                    segments.push(TypeSegment{ base, quote_span, parameters, span: base.span + quote_span });
-                }
-            } else {
-                segments.push(TypeSegment{ base, quote_span: Span::new(0, 0), parameters: Vec::new(), span: base.span });
-            }
+            let parameters = self.is_sep(Separator::Lt).then(|| self.parse_type_list()).transpose()?;
+            segments.push(TypeSegment{ base, span: base.span + parameters.as_ref().map(|p| p.span).unwrap_or(base.span), parameters });
             if self.try_expect_sep(Separator::ColonColon).is_none() {
                 break;
             }
@@ -199,23 +209,23 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         
         let left_paren_span = self.expect_sep(Separator::LeftParen)?;
         if let Some(right_paren_span) = self.try_expect_sep(Separator::RightParen) {
-            return Ok(TupleType{ items: Vec::new(), span: left_paren_span + right_paren_span });
+            return Ok(TupleType{ parameters: Vec::new(), span: left_paren_span + right_paren_span });
         }
         
-        let mut items = vec![self.parse_type_ref()?];
+        let mut parameters = vec![self.parse_type_ref()?];
         let span = left_paren_span + loop {
             if let Some((right_paren_span, skipped_comma)) = self.try_expect_closing_bracket(Separator::RightParen) {
-                if !skipped_comma && items.len() == 1 {
+                if !skipped_comma && parameters.len() == 1 {
                     self.emit(strings::SingleItemTupleType)
                         .detail(right_paren_span, strings::TupleTypeExpectCommaMeetRightParen);
                 }
                 break right_paren_span;
             } else {
                 self.expect_sep(Separator::Comma)?;
-                items.push(self.parse_type_ref()?);
+                parameters.push(self.parse_type_ref()?);
             }
         };
 
-        Ok(TupleType{ items, span })
+        Ok(TupleType{ parameters, span })
     }
 }

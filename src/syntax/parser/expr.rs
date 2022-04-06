@@ -99,26 +99,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             if let Some(ident) = self.try_expect_ident() {
                 segments.push(NameSegment::Normal(ident));
             } else {
-                let lt_span = self.expect_sep(Separator::Lt)?;
-                // none: first segment cannot be generic segment
-                // some generic: generic segment cannot follow generic segment 
-                if let None | Some(NameSegment::Generic(..)) = segments.last() {
-                    self.emit(strings::InvalidNameSegment).detail(lt_span, strings::NameSegmentExpect);
-                }
-
-                if let Some(gt_span) = self.try_expect_sep(Separator::Gt) { // allow <> in syntax parse
-                    segments.push(NameSegment::Generic(Vec::new(), lt_span + gt_span));
-                } else {
-                    let mut parameters = vec![self.parse_type_ref()?];
-                    let quote_span = lt_span + loop {
-                        if let Some((gt_span, _)) = self.try_expect_closing_bracket(Separator::Gt) {
-                            break gt_span;
-                        }
-                        self.expect_sep(Separator::Comma)?;
-                        parameters.push(self.parse_type_ref()?);
-                    };
-                    segments.push(NameSegment::Generic(parameters, quote_span));
-                }
+                segments.push(NameSegment::Generic(self.parse_type_list()?));
             }
             if self.try_expect_sep(Separator::ColonColon).is_none() {
                 break;
@@ -214,30 +195,13 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             if !matches!(numeric, Numeric::I32(_) /* && is unsuffixed and unprefixed */) {
                 self.emit(strings::InvalidTupleIndex).span(span).help(strings::TupleIndexSyntaxHelp);
             }
-            MemberName{ span, base: MemberNameBase::Numeric(numeric), base_span: span, quote_span: Span::new(0, 0), parameters: Vec::new() }
+            MemberName{ span, base: MemberNameBase::Numeric(numeric), base_span: span, parameters: None }
         } else {
             // // ? rust.await is really good design, but await is still currently reserved, put it here to indicate that it can be here
             let ident = self.expect_ident_or_keywords(&[Keyword::Await])?;
-            let mut quote_span = Span::new(0, 0);
-            let mut parameters = Vec::new();
-            if self.try_expect_sep(Separator::ColonColon).is_some() {
-                let lt_span = self.expect_sep(Separator::Lt)?;
-                if let Some(gt_span) = self.try_expect_sep(Separator::Gt) {
-                    quote_span = lt_span + gt_span;
-                } else {
-                    parameters.push(self.parse_type_ref()?);
-                    quote_span = lt_span + loop {
-                        if let Some((gt_span, _)) = self.try_expect_closing_bracket(Separator::Gt) {
-                            break gt_span;
-                        } else {
-                            self.expect_sep(Separator::Comma)?;
-                        }
-                        parameters.push(self.parse_type_ref()?);
-                    };
-                }
-            }
-            let span = ident.span + if quote_span == Span::new(0, 0) { ident.span } else { quote_span };
-            MemberName{ span, base: MemberNameBase::Ident(ident.id), base_span: ident.span, quote_span, parameters }
+            let parameters = self.try_expect_sep(Separator::ColonColon).map(|_| self.parse_type_list()).transpose()?;
+            let span = ident.span + parameters.as_ref().map(|p| p.span).unwrap_or(ident.span);
+            MemberName{ span, base: MemberNameBase::Ident(ident.id), base_span: ident.span, parameters }
         };
 
         Ok((dot_span, member_name))

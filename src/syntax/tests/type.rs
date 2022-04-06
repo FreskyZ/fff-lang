@@ -224,7 +224,8 @@ fn type_ref_parse() {
     // empty type list is allowed in syntax
     case!{ parse_type_ref "a<>",
         make_type!(plain 0:2 false, None,
-            make_type!(segment generic 0:2 #2 0:0 quote 1:2))
+            make_type!(segment generic 0:2 #2 0:0 quote 1:2)
+        ), errors make_errors!(e: e.emit(strings::EmptyTypeList).span(Span::new(1, 2)))
     }
 
     // split shift right

@@ -102,6 +102,7 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
     // fn visit_expr(&mut self, node: &Expr) -> fmt::Result;
     // fn visit_stmt(&mut self, node: &Statement) -> fmt::Result;
     // fn visit_item(&mut self, node: &Item) -> fmt::Result;
+    // fn visit_type_list(&mut self, node: &TypeList) -> fmt::Result;
     // fn visit_type_ref(&mut self, node: &TypeRef) -> fmt::Result;
 
     // implementation principle / syntax tree format style
@@ -263,9 +264,6 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
                 MemberNameBase::Numeric(v) => write!(f.f, "{v}")?,
             }
             f.write_space()?.write_span(node.base_span)?;
-            if !node.parameters.is_empty() {
-                f.write_str(" <> ")?.write_span(node.quote_span)?;
-            }
             Ok(f)
         })
     }
@@ -319,9 +317,6 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
     fn visit_type_segment(&mut self, node: &TypeSegment) -> fmt::Result {
         self.impl_visit(node, "type-segment", node.span, |f| {
             f.write_space()?.write_idspan(node.base)?;
-            if !node.parameters.is_empty() {
-                f.write_str(" <> ")?.write_span(node.quote_span)?;
-            }
             Ok(f)
         })
     }

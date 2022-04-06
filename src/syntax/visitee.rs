@@ -198,8 +198,8 @@ impl_node!{ MemberExpr, visit_member_expr, |self, v| {
 }}
 
 impl_node!{ MemberName, visit_member_name, |self, v| {
-    for parameter in &self.parameters {
-        v.visit_type_ref(parameter)?;
+    if let Some(parameters) = &self.parameters {
+        v.visit_type_list(parameters)?;
     }
     Ok(Default::default())
 }}
@@ -224,10 +224,8 @@ impl_node!{ Name, visit_name, |self, v| {
 }}
 
 impl_node!{ NameSegment, visit_name_segment, |self, v| {
-    if let Self::Generic(types, _) = self {
-        for r#type in types {
-            v.visit_type_ref(r#type)?;
-        }
+    if let Self::Generic(parameters) = self {
+        v.visit_type_list(parameters)?;
     }
     Ok(Default::default())
 }}
@@ -314,8 +312,8 @@ impl_node!{ TypeAsSegment, visit_type_as_segment, |self, v| {
 }}
 
 impl_node!{ TypeSegment, visit_type_segment, |self, v| {
-    for parameter in &self.parameters {
-        v.visit_type_ref(parameter)?;
+    if let Some(parameters) = &self.parameters {
+        v.visit_type_list(parameters)?;
     }
     Ok(Default::default())
 }}
@@ -329,6 +327,13 @@ impl_node!{ TypeDef, visit_type_def, |self, v| {
 
 impl_node!{ TypeDefField, visit_type_def_field, |self, v| {
     v.visit_type_ref(&self.r#type)
+}}
+
+impl_node!{ TypeList, visit_type_list, |self, v| {
+    for item in &self.items {
+        v.visit_type_ref(item)?;
+    }
+    Ok(Default::default())
 }}
 
 impl_abc_node!{ TypeRef, visit_type_ref,
@@ -345,8 +350,8 @@ impl_node!{ TupleExpr, visit_tuple_expr, |self, v| {
 }}
 
 impl_node!{ TupleType, visit_tuple_type, |self, v| {
-    for item in &self.items {
-        v.visit_type_ref(item)?;
+    for parameter in &self.parameters {
+        v.visit_type_ref(parameter)?;
     }
     Ok(Default::default())
 }}

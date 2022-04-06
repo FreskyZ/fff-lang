@@ -715,16 +715,16 @@ fn name_parse() {
     }
 
     //      01234567890123
-    case!{ parse_name "a::<b>::<c>::d",
-        make_name!(bare 0:13 false, None,
-            make_name!(segment 0:0 #2),
-            make_name!(segment generic 3:5
-                make_type!(simple 4:4 #3)),
-            make_name!(segment generic 8:10
-                make_type!(simple 9:9 #4)),
-            make_name!(segment 13:13 #5)
-        ), errors make_errors!(e: e.emit(strings::InvalidNameSegment).detail(Span::new(8, 8), strings::NameSegmentExpect)),
-    }
+    // case!{ parse_name "a::<b>::<c>::d",
+    //     make_name!(bare 0:13 false, None,
+    //         make_name!(segment 0:0 #2),
+    //         make_name!(segment generic 3:5
+    //             make_type!(simple 4:4 #3)),
+    //         make_name!(segment generic 8:10
+    //             make_type!(simple 9:9 #4)),
+    //         make_name!(segment 13:13 #5)
+    //     ), errors make_errors!(e: e.emit(strings::InvalidNameSegment).detail(Span::new(8, 8), strings::NameSegmentExpect)),
+    // }
 }
 
 #[test]

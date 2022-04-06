@@ -12,6 +12,12 @@ error: Invalid numeric literal, numeric literal should not start with 0
   |                                                                  ^^^^^^ 
   = help: If you mean C style octal numeric literal, use `0o777` syntax
 
+error: empty type list
+ --> tests/ast/hugetype.f3:8:113
+  |
+8 | i8, i33>::g6p4C::s瓶FOCaFH, uGt8hskBm<u16, i64, string>::gE2hwi<string, f32,>::CK212F::Csu8a::f6N>::i5h::Dudt6Gd楑<>>,
+  |                                                                                                                 ^^ 
+
 error: Invalid numeric literal, numeric literal should not start with 0
  --> tests/ast/hugetype.f3:9:87
   |
@@ -19,12 +25,36 @@ error: Invalid numeric literal, numeric literal should not start with 0
   |                                                                                       ^^^^^^ 
   = help: If you mean C style octal numeric literal, use `0o777` syntax
 
+error: empty type list
+  --> tests/ast/hugetype.f3:12:99
+   |
+12 | [uDhnpmfw; 41]), CGDtB<[mm娇甌I; 0xDd2d4], mjmD4p727<bool, f32, u8>::tuMt::e, n::檟Oc07::lxHNyu8O::Jm<>::DGB0::pOxC>::L6JNDq<fn(f32, 
+   |                                                                                                   ^^ 
+
 error: Invalid numeric literal, integral overflow
   --> tests/ast/hugetype.f3:14:25
    |
 14 | bool,>, u32, f64>, [Gg; 0o1565261i8]>::N3x12akl::uax<揪x4<bFEGDldf::G1蹀0Lv87<char, i64, f32>, &bool, (u8, u64, i33), 
    |                         ^^^^^^^^^^^ 
    = help: Max value of i8 is 127
+
+error: empty type list
+  --> tests/ast/hugetype.f3:15:73
+   |
+15 | KqJfs::kNyJ0::_OGo<u32, f32, u64>::Ohwlco>::ibOlvh蹫jB::D檤spvwm::xaFN_KOg<>, &NaC<char, i64, string>::fk::Iw4EB<i64, 
+   |                                                                         ^^ 
+
+error: empty type list
+  --> tests/ast/hugetype.f3:16:24
+   |
+16 | i33, u8, u16>, A靯k萯::_H<>>::LD7njk80>,>::My_愇2::uooO::IIrCK1Jcu<(fn(fn(胣fm沂w::_6::gH0C1<bool, f64, u8>::L, [_狆Fvf; 
+   |                        ^^ 
+
+error: empty type list
+  --> tests/ast/hugetype.f3:20:16
+   |
+20 | &&u32>::v7be5媜e<>::lH_jCa51<hlvCb15, [骨88a2yEBE; 2544], [NB7BLb; 530003]>), CM8c飁id<[g1KnjC; 62464562], (lee蝠cpj, 
+   |                ^^ 
 
 error: Invalid numeric literal, numeric literal should not start with 0
   --> tests/ast/hugetype.f3:21:38
@@ -39,6 +69,30 @@ error: Invalid numeric literal, floating point underflow
 21 | [EFmFr霠; 87452686r32], y4ur<[kmm馭tJ; 012], &i33, C4K>::MelL8syta::kB5鱏qs), [G; 3534.87641235E-377], LK魲C2D::mgq::ImKms::v_禤1ut<&G7ajwc4,
    |                                                                                ^^^^^^^^^^^^^^^^^^ 
    = help: It is a double precision floating point literal and positive min value is about 2.2250738585072014E-308
+
+error: empty type list
+  --> tests/ast/hugetype.f3:22:64
+   |
+22 | ot4, [m0NngfH; 0b110]>::o::mOgF3F>::甍qr閇s恀<::BuqoFali::EE6t7OqG<>::n3rq7ALB<ckFj, 狇Jii潫6bvN<&u32, (i8, f64, u64), oBE1GAC, 
+   |                                                                ^^ 
+
+error: empty type list
+  --> tests/ast/hugetype.f3:24:131
+   |
+24 | u16, char, i16>::loHgD<f32, i16, i64, i16, i8>::B, (char, i16, f32)>::E檩E嘣H, [D63gE晤kJ; 65671.70030055E+116r64], 蟧bFembG0<xcb::hqO<>::善::yrj4hkbe<玽Iy砉6::_uJ0e::C澞y<u16, 
+   |                                                                                                                                   ^^ 
+
+error: empty type list
+  --> tests/ast/hugetype.f3:26:84
+   |
+26 | char,>::oywl<rHbhBy輈, &i33, [qf7櫍5gv; 0x2ab086u32], H>::Oosfypj<i64, ::EJ::Nr::LJC臧<>::N8::xCL5c, (f64, string,)>::Lfb>::Ox>, ::k梷u黸w4p<>, 
+   |                                                                                    ^^ 
+
+error: empty type list
+  --> tests/ast/hugetype.f3:26:136
+   |
+26 | char,>::oywl<rHbhBy輈, &i33, [qf7櫍5gv; 0x2ab086u32], H>::Oosfypj<i64, ::EJ::Nr::LJC臧<>::N8::xCL5c, (f64, string,)>::Lfb>::Ox>, ::k梷u黸w4p<>, 
+   |                                                                                                                                        ^^ 
 
 error: Invalid numeric literal, Exponent not allowed in integral literal
   --> tests/ast/hugetype.f3:30:1
@@ -59,6 +113,12 @@ error: Invalid numeric literal, integral overflow
 31 | i8, u64), i64, [etb; 0o66311346u8]>, m2_F奵n::Kmqvvob藍l<(u16, i33, u64), (string, i33, u32), A>, 孱knAH::JB褼<fn(曊Ap: f32, i64, 
    |                      ^^^^^^^^^^^^ 
    = help: Max value of u8 is 255
+
+error: empty type list
+  --> tests/ast/hugetype.f3:34:20
+   |
+34 | u64,)>::vl<Eia忚0O2M<>::N1N::_bBy6fI髳4, dogCa1,>), jlMybkA, t<(h::GxGJoogC<bool, f32, i64>::mH_p坍kl::st::iE<bool, u8, string, u16, 
+   |                    ^^ 
 
 error: Invalid numeric literal, integral overflow
   --> tests/ast/hugetype.f3:35:45
@@ -81,6 +141,18 @@ error: Invalid numeric literal, integral overflow
    |                                                                           ^^^^^^^^^^^ 
    = help: Max value of i16 is 32767
 
+error: empty type list
+  --> tests/ast/hugetype.f3:39:51
+   |
+39 | OC::nBl::uivbmu虙EI<bool, i8, string>, Hl4IIDvMv::B<>::篁3IA倴uKB<u8, i16, u16>::vfk, (char, f64, u8)>>::is_)>, [e; 0o3u32],
+   |                                                   ^^ 
+
+error: empty type list
+  --> tests/ast/hugetype.f3:42:57
+   |
+42 | B則JalyC::D6l_Oj, o6wfEw<(string, i64, u8, f64), N8q_1ks驠<>::AjwOBF红3::LDOy::t4i3b<f64, i64, u32>::Myvr3呜d8<u8, f32,>::HNGwfx<f64,
+   |                                                         ^^ 
+
 error: Invalid numeric literal, integral overflow
   --> tests/ast/hugetype.f3:43:63
    |
@@ -88,11 +160,107 @@ error: Invalid numeric literal, integral overflow
    |                                                               ^^^^^^^ 
    = help: Max value of i8 is 127
 
+error: empty type list
+  --> tests/ast/hugetype.f3:45:72
+   |
+45 | 7183810], (), &f32), string, &K<i64, f32, i33>::ic<i33, u64,>::pCa7O輏Jo<>::IM徠h>::t7lN::bH<(::bwE<f32, i8, bool, char, u16>::ODgEuA2布3<u16,
+   |                                                                        ^^ 
+
+error: empty type list
+  --> tests/ast/hugetype.f3:46:115
+   |
+46 | u32, f32>::uwAIK<u32, f32, i16>::FOvw::q<i64, char, i33, i8>, BD1MK麲8<u8, i16, i64>::sl7<f64, u8, char>, x::补Ch6fk<>::i0<>), FfLo::ooyLL8<fn(bool,
+   |                                                                                                                   ^^ 
+
+error: empty type list
+  --> tests/ast/hugetype.f3:46:121
+   |
+46 | u32, f32>::uwAIK<u32, f32, i16>::FOvw::q<i64, char, i33, i8>, BD1MK麲8<u8, i16, i64>::sl7<f64, u8, char>, x::补Ch6fk<>::i0<>), FfLo::ooyLL8<fn(bool,
+   |                                                                                                                         ^^ 
+
+error: empty type list
+  --> tests/ast/hugetype.f3:47:45
+   |
+47 | I: u8, mcuA: f64, mEkjFHuO: i8), M_, u32>::f<>::ksq1G1HMg,>, phLasofe::kEroGvI4s>::FfCcI7>::Ftbgqo<&f64, eBv<ehBi7kM::xI::IyO渜, qn6Jry<&aHna2sL2,
+   |                                             ^^ 
+
+error: empty type list
+  --> tests/ast/hugetype.f3:48:4
+   |
+48 | B<t<>::se_::茔vKLEE::侪t6Etyy, [exNeJG5n; 38414],>::u<char, &&string, eH05::qAtp1L舊::CK8ttMpy8, dOj<fn(char, f32, ECwa: u64), u8, i33, (f32, 
+   |    ^^ 
+
 error: Invalid numeric literal, Exponent not allowed in integral literal
   --> tests/ast/hugetype.f3:50:14
    |
 50 | i33>, [udBA; 0xe78c0D3u8], &f32>::Hf0<DnO煱gd, C3GIO樼yxc, [NcOE; 0.35736r64], jiw6::xnt0OI, (u16, string, u8, i8)>>::tOppMOO<::pox37<>, 
    |              ^^^^^^^^^^^ 
+
+error: empty type list
+  --> tests/ast/hugetype.f3:50:132
+   |
+50 | i33>, [udBA; 0xe78c0D3u8], &f32>::Hf0<DnO煱gd, C3GIO樼yxc, [NcOE; 0.35736r64], jiw6::xnt0OI, (u16, string, u8, i8)>>::tOppMOO<::pox37<>, 
+   |                                                                                                                                    ^^ 
+
+error: empty type list
+  --> tests/ast/hugetype.f3:55:26
+   |
+55 | 0b0], ::stGnGde::FF鶦lqK1t<>::盳wt>::k2fhA诿E_獄>::瓤<KB::CEMKJ17::bD<>::ifi5e3pE<m8<u64, f64, string>::bqbs<bool, char, u16, 
+   |                          ^^ 
+
+error: empty type list
+  --> tests/ast/hugetype.f3:55:65
+   |
+55 | 0b0], ::stGnGde::FF鶦lqK1t<>::盳wt>::k2fhA诿E_獄>::瓤<KB::CEMKJ17::bD<>::ifi5e3pE<m8<u64, f64, string>::bqbs<bool, char, u16, 
+   |                                                                 ^^ 
+
+error: empty type list
+  --> tests/ast/hugetype.f3:57:32
+   |
+57 | IKEu嗓::Beg2y::Dgr5::v::g0_t3AF0<>>, [ek_乩5fbbA; 63]>::g嚤<>::DgAjFtu2, usqNw::K<[k036DFE00; 0xcE], [lq5jG; 0b01010001000000110110], 
+   |                                ^^ 
+
+error: empty type list
+  --> tests/ast/hugetype.f3:57:57
+   |
+57 | IKEu嗓::Beg2y::Dgr5::v::g0_t3AF0<>>, [ek_乩5fbbA; 63]>::g嚤<>::DgAjFtu2, usqNw::K<[k036DFE00; 0xcE], [lq5jG; 0b01010001000000110110], 
+   |                                                         ^^ 
+
+error: empty type list
+  --> tests/ast/hugetype.f3:63:104
+   |
+63 | lqnkA倾: f32, 飉FfNcyyyC: u16) -> u64, &bool, (u16, bool, i8), ::rsijgrv7::BxywqE::ka::AfgoKJ31::钘a::NF31<>)>, (I::FlanmscM::訔a5jLmIwf<>::H蕹p3bajLh
+   |                                                                                                        ^^ 
+
+error: empty type list
+  --> tests/ast/hugetype.f3:63:133
+   |
+63 | lqnkA倾: f32, 飉FfNcyyyC: u16) -> u64, &bool, (u16, bool, i8), ::rsijgrv7::BxywqE::ka::AfgoKJ31::钘a::NF31<>)>, (I::FlanmscM::訔a5jLmIwf<>::H蕹p3bajLh
+   |                                                                                                                                     ^^ 
+
+error: empty type list
+  --> tests/ast/hugetype.f3:66:23
+   |
+66 | u32, char>), i3kh6Fv82<>::GCJG儤ik<>::cquKq<[t嗕F_ocE; 2214], ::jtdffi::iGh0sIGE<u8, u64, f32>::MM喩慝0Lmjd::n跲1moqmt8::uFlMC<char,
+   |                       ^^ 
+
+error: empty type list
+  --> tests/ast/hugetype.f3:66:34
+   |
+66 | u32, char>), i3kh6Fv82<>::GCJG儤ik<>::cquKq<[t嗕F_ocE; 2214], ::jtdffi::iGh0sIGE<u8, u64, f32>::MM喩慝0Lmjd::n跲1moqmt8::uFlMC<char,
+   |                                  ^^ 
+
+error: empty type list
+  --> tests/ast/hugetype.f3:69:58
+   |
+69 | char),>::N__JNu<&char, kKDBIj8up<i33, u16, char>::vG8a5Bf<>::q2H5wD, [t姪Fx; 0o06]>::n00BK<ca6凥_::Mc4GB<u16, string,
+   |                                                          ^^ 
+
+error: empty type list
+  --> tests/ast/hugetype.f3:70:104
+   |
+70 | i64>, ::x3kG6<f64, i33, f64, f32, f32>::aBqduKnKc::sh3齇GG<i8, u32, f32>::reI<f32, f64,>::Dn8Kc::Fnvvw0p<>, &i33>, (icLbNi,
+   |                                                                                                        ^^ 
 
 error: Invalid numeric literal, numeric literal should not start with 0
   --> tests/ast/hugetype.f3:71:82
@@ -108,6 +276,12 @@ error: Invalid numeric literal, numeric literal should not start with 0
    | ^^^ 
    = help: If you mean C style octal numeric literal, use `0o777` syntax
 
+error: empty type list
+  --> tests/ast/hugetype.f3:72:10
+   |
+72 | 060], yro<>::lG膠, 錧F_h>::O粄騄6轄AI0, (n釜2e6j::ymjBDaB<[cdOq; 82304312E-81], [LCI; 2126745r64], ([go0BC; 0b1100000101100011000u32],
+   |          ^^ 
+
 error: Invalid numeric literal, numeric literal should not start with 0
   --> tests/ast/hugetype.f3:76:176
    |
@@ -121,22 +295,22 @@ module tests/ast/hugetype.f3
       type-segment <1:8-1:9> q峐 <1:8-1:9>
       type-segment <1:12-1:13> 鉦t <1:12-1:13>
       type-segment <1:16-1:19> raFx <1:16-1:19>
-      type-segment <1:22-47:90> KG <1:22-1:23> <> <1:24-47:90>
+      type-segment <1:22-47:90> KG <1:22-1:23>
         plain-type <1:25-39:107>
           type-segment <1:25-1:28> tlbh <1:25-1:28>
-          type-segment <1:31-16:39> p <1:31-1:31> <> <1:32-16:39>
+          type-segment <1:31-16:39> p <1:31-1:31>
             plain-type <1:33-1:35>
               type-segment <1:33-1:35> i33 <1:33-1:35>
             plain-type <1:38-16:37>
-              type-segment <1:38-9:38> xlp0MuiH <1:38-1:45> <> <1:46-9:38>
+              type-segment <1:38-9:38> xlp0MuiH <1:38-1:45>
                 plain-type <1:47-8:115>
-                  type-segment <1:47-2:45> H <1:47-1:47> <> <1:48-2:45>
+                  type-segment <1:47-2:45> H <1:47-1:47>
                     ref-type <1:49-1:51>
                       tuple-type <1:50-1:51>
                     plain-type <1:54-2:43>
                       type-segment <1:54-1:58> rFdD1 <1:54-1:58>
                       type-segment <1:61-1:66> Iq1xuG <1:61-1:66>
-                      type-segment <1:69-2:22> E喘 <1:69-1:70> <> <1:71-2:22>
+                      type-segment <1:69-2:22> E喘 <1:69-1:70>
                         tuple-type <1:72-1:93>
                           primitive-type i8 <1:73-1:74>
                           primitive-type i64 <1:77-1:79>
@@ -151,12 +325,12 @@ module tests/ast/hugetype.f3
                       type-segment <2:25-2:33> _ksGOfoqc <2:25-2:33>
                       type-segment <2:36-2:37> n诐 <2:36-2:37>
                       type-segment <2:40-2:43> kj3c <2:40-2:43>
-                  type-segment <2:48-6:10> dGyp24j <2:48-2:54> <> <2:55-6:10>
+                  type-segment <2:48-6:10> dGyp24j <2:48-2:54>
                     plain-type <2:56-2:63>
                       type-segment <2:56-2:63> M覚漞uF0銊a <2:56-2:63>
                     plain-type <2:66-5:11>
                       type-segment <2:66-2:70> GMwB駯 <2:66-2:70>
-                      type-segment <2:73-3:80> mowB <2:73-2:76> <> <2:77-3:80>
+                      type-segment <2:73-3:80> mowB <2:73-2:76>
                         array-type <2:78-2:94>
                           plain-type <2:79-2:80>
                             type-segment <2:79-2:80> n6 <2:79-2:80>
@@ -168,40 +342,40 @@ module tests/ast/hugetype.f3
                             type-segment <3:2-3:3> q樫 <3:2-3:3>
                           literal i32 41715553 <3:6-3:13>
                         plain-type <3:17-3:79>
-                          type-segment <3:17-3:40> a_5pncqD4 <3:17-3:25> <> <3:26-3:40>
+                          type-segment <3:17-3:40> a_5pncqD4 <3:17-3:25>
                             plain-type <3:27-3:29>
                               type-segment <3:27-3:29> i33 <3:27-3:29>
                             primitive-type f64 <3:32-3:34>
                             primitive-type f64 <3:37-3:39>
                           type-segment <3:43-3:43> j <3:43-3:43>
                           type-segment <3:46-3:51> gFc3pf <3:46-3:51>
-                          type-segment <3:54-3:79> s0B8CLy <3:54-3:60> <> <3:61-3:79>
+                          type-segment <3:54-3:79> s0B8CLy <3:54-3:60>
                             primitive-type u32 <3:62-3:64>
                             primitive-type i64 <3:67-3:69>
                             primitive-type u8 <3:72-3:73>
                             primitive-type u16 <3:76-3:78>
-                      type-segment <3:83-4:4> xrM <3:83-3:85> <> <3:86-4:4>
+                      type-segment <3:83-4:4> xrM <3:83-3:85>
                         plain-type <3:87-3:94>
                           type-segment <3:87-3:94> OM4hGHCh <3:87-3:94>
                         plain-type <3:97-3:104>
                           type-segment <3:97-3:104> HelmD31囏 <3:97-3:104>
                         primitive-type u16 <4:1-4:3>
-                      type-segment <4:7-4:27> pDxb <4:7-4:10> <> <4:11-4:27>
+                      type-segment <4:7-4:27> pDxb <4:7-4:10>
                         primitive-type bool <4:12-4:15>
                         ref-type <4:18-4:21>
                           primitive-type u64 <4:19-4:21>
                         primitive-type i16 <4:24-4:26>
-                      type-segment <4:30-5:3> L <4:30-4:30> <> <4:31-5:3>
+                      type-segment <4:30-5:3> L <4:30-4:30>
                         primitive-type bool <4:32-4:35>
                         plain-type <4:38-4:99>
-                          type-segment <4:38-4:67> OtLk2 <4:38-4:42> <> <4:43-4:67>
+                          type-segment <4:38-4:67> OtLk2 <4:38-4:42>
                             plain-type <4:44-4:46>
                               type-segment <4:44-4:46> i33 <4:44-4:46>
                             primitive-type i16 <4:49-4:51>
                             primitive-type i16 <4:54-4:56>
                             primitive-type bool <4:59-4:62>
                             primitive-type i8 <4:65-4:66>
-                          type-segment <4:70-4:99> m滗 <4:70-4:71> <> <4:72-4:99>
+                          type-segment <4:70-4:99> m滗 <4:70-4:71>
                             primitive-type u8 <4:73-4:74>
                             primitive-type u64 <4:77-4:79>
                             plain-type <4:82-4:87>
@@ -214,11 +388,11 @@ module tests/ast/hugetype.f3
                     tuple-type <5:18-5:107>
                       plain-type <5:19-5:69>
                         type-segment <5:19-5:23> eoDHq <5:19-5:23>
-                        type-segment <5:26-5:45> KEL衚 <5:26-5:29> <> <5:30-5:45>
+                        type-segment <5:26-5:45> KEL衚 <5:26-5:29>
                           primitive-type char <5:31-5:34>
                           primitive-type u64 <5:37-5:39>
                           primitive-type i16 <5:42-5:44>
-                        type-segment <5:48-5:69> Iv_7sj8O <5:48-5:55> <> <5:56-5:69>
+                        type-segment <5:48-5:69> Iv_7sj8O <5:48-5:55>
                           primitive-type f32 <5:57-5:59>
                           primitive-type u8 <5:62-5:63>
                           plain-type <5:66-5:68>
@@ -235,15 +409,15 @@ module tests/ast/hugetype.f3
                         primitive-type i16 <5:103-5:105>
                     plain-type <6:1-6:9>
                       type-segment <6:1-6:9> cyOGaMo15 <6:1-6:9>
-                  type-segment <6:13-8:115> MiLd <6:13-6:16> <> <6:17-8:115>
+                  type-segment <6:13-8:115> MiLd <6:13-6:16>
                     plain-type <6:18-6:76>
-                      type-segment <6:18-6:76> HF0NfkM <6:18-6:24> <> <6:25-6:76>
+                      type-segment <6:18-6:76> HF0NfkM <6:18-6:24>
                         plain-type <6:26-6:31>
                           type-segment <6:26-6:31> string <6:26-6:31>
                         plain-type <6:34-6:34>
                           type-segment <6:34-6:34> C <6:34-6:34>
                         plain-type <6:37-6:70>
-                          type-segment <6:37-6:70> D3v0Kn <6:37-6:42> <> <6:43-6:70>
+                          type-segment <6:37-6:70> D3v0Kn <6:37-6:42>
                             primitive-type i16 <6:44-6:46>
                             primitive-type char <6:49-6:52>
                             primitive-type char <6:55-6:58>
@@ -252,7 +426,7 @@ module tests/ast/hugetype.f3
                         plain-type <6:73-6:75>
                           type-segment <6:73-6:75> CmK <6:73-6:75>
                     plain-type <6:79-7:18>
-                      type-segment <6:79-7:9> v1D旸Jtx <6:79-6:85> <> <6:86-7:9>
+                      type-segment <6:79-7:9> v1D旸Jtx <6:79-6:85>
                         array-type <6:87-6:106>
                           plain-type <6:88-6:93>
                             type-segment <6:88-6:93> 開2g_h0 <6:88-6:93>
@@ -263,7 +437,7 @@ module tests/ast/hugetype.f3
                       type-segment <7:12-7:18> j8rGKNr <7:12-7:18>
                     plain-type <7:21-8:114>
                       type-segment <7:21-7:28> eMmAhI1E <7:21-7:28>
-                      type-segment <7:31-8:97> Km韈疓H67 <7:31-7:37> <> <7:38-8:97>
+                      type-segment <7:31-8:97> Km韈疓H67 <7:31-7:37>
                         plain-type <7:39-7:46>
                           type-segment <7:39-7:46> leHK1wui <7:39-7:46>
                         array-type <7:49-7:59>
@@ -275,12 +449,12 @@ module tests/ast/hugetype.f3
                             type-segment <7:63-7:63> n <7:63-7:63>
                           literal i32 0 <7:66-7:71>
                         plain-type <7:75-8:25>
-                          type-segment <7:75-7:87> i43 <7:75-7:77> <> <7:78-7:87>
+                          type-segment <7:75-7:87> i43 <7:75-7:77>
                             primitive-type i8 <7:79-7:80>
                             primitive-type f64 <7:83-7:85>
                           type-segment <7:90-7:98> wIoNrrxle <7:90-7:98>
                           type-segment <7:101-7:106> aca5vh <7:101-7:106>
-                          type-segment <7:109-8:8> F <7:109-7:109> <> <7:110-8:8>
+                          type-segment <7:109-8:8> F <7:109-7:109>
                             primitive-type u8 <7:111-7:112>
                             primitive-type i8 <8:1-8:2>
                             plain-type <8:5-8:7>
@@ -288,12 +462,12 @@ module tests/ast/hugetype.f3
                           type-segment <8:11-8:15> g6p4C <8:11-8:15>
                           type-segment <8:18-8:25> s瓶FOCaFH <8:18-8:25>
                         plain-type <8:28-8:96>
-                          type-segment <8:28-8:54> uGt8hskBm <8:28-8:36> <> <8:37-8:54>
+                          type-segment <8:28-8:54> uGt8hskBm <8:28-8:36>
                             primitive-type u16 <8:38-8:40>
                             primitive-type i64 <8:43-8:45>
                             plain-type <8:48-8:53>
                               type-segment <8:48-8:53> string <8:48-8:53>
-                          type-segment <8:57-8:76> gE2hwi <8:57-8:62> <> <8:63-8:76>
+                          type-segment <8:57-8:76> gE2hwi <8:57-8:62>
                             plain-type <8:64-8:69>
                               type-segment <8:64-8:69> string <8:64-8:69>
                             primitive-type f32 <8:72-8:74>
@@ -316,26 +490,26 @@ module tests/ast/hugetype.f3
               type-segment <9:41-9:47> nx6Ks2N <9:41-9:47>
               type-segment <9:50-9:55> k1Jt_b <9:50-9:55>
               type-segment <9:58-9:59> sc <9:58-9:59>
-              type-segment <9:62-16:37> FDl6ONf <9:62-9:68> <> <9:69-16:37>
+              type-segment <9:62-16:37> FDl6ONf <9:62-9:68>
                 tuple-type <9:70-9:71>
                 plain-type <9:74-11:27>
-                  type-segment <9:74-11:18> qBJNbI_ <9:74-9:80> <> <9:81-11:18>
+                  type-segment <9:74-11:18> qBJNbI_ <9:74-9:80>
                     array-type <9:82-9:93>
                       plain-type <9:83-9:84>
                         type-segment <9:83-9:84> c溏 <9:83-9:84>
                       literal i32 0 <9:87-9:92>
                     tuple-type <9:96-10:92>
                       plain-type <9:97-10:59>
-                        type-segment <9:97-10:4> v4a <9:97-9:99> <> <9:100-10:4>
+                        type-segment <9:97-10:4> v4a <9:97-9:99>
                           primitive-type u32 <9:101-9:103>
                           primitive-type char <9:106-9:109>
                           plain-type <10:1-10:3>
                             type-segment <10:1-10:3> i33 <10:1-10:3>
-                        type-segment <10:7-10:23> LE <10:7-10:8> <> <10:9-10:23>
+                        type-segment <10:7-10:23> LE <10:7-10:8>
                           primitive-type i16 <10:10-10:12>
                           primitive-type u64 <10:15-10:17>
                           primitive-type f32 <10:20-10:22>
-                        type-segment <10:26-10:59> to <10:26-10:27> <> <10:28-10:59>
+                        type-segment <10:26-10:59> to <10:26-10:27>
                           plain-type <10:29-10:34>
                             type-segment <10:29-10:34> string <10:29-10:34>
                           plain-type <10:37-10:42>
@@ -358,7 +532,7 @@ module tests/ast/hugetype.f3
                   type-segment <11:21-11:27> iae囃M3_ <11:21-11:27>
                 plain-type <11:30-16:36>
                   type-segment <11:30-11:36> eybA痾L6 <11:30-11:36>
-                  type-segment <11:39-11:91> myw66AlK8 <11:39-11:47> <> <11:48-11:91>
+                  type-segment <11:39-11:91> myw66AlK8 <11:39-11:47>
                     plain-type <11:49-11:53>
                       type-segment <11:49-11:53> sHcIB <11:49-11:53>
                     ref-type <11:56-11:71>
@@ -371,7 +545,7 @@ module tests/ast/hugetype.f3
                         type-segment <11:75-11:77> EnO <11:75-11:77>
                       literal i32 16622 <11:80-11:84>
                     primitive-type u16 <11:88-11:90>
-                  type-segment <11:94-14:37> Gmc87 <11:94-11:98> <> <11:99-14:37>
+                  type-segment <11:94-14:37> Gmc87 <11:94-11:98>
                     tuple-type <11:100-12:15>
                       primitive-type u64 <11:101-11:103>
                       tuple-type <11:106-11:116>
@@ -383,13 +557,13 @@ module tests/ast/hugetype.f3
                           type-segment <12:2-12:9> uDhnpmfw <12:2-12:9>
                         literal i32 41 <12:12-12:13>
                     plain-type <12:18-14:17>
-                      type-segment <12:18-12:113> CGDtB <12:18-12:22> <> <12:23-12:113>
+                      type-segment <12:18-12:113> CGDtB <12:18-12:22>
                         array-type <12:24-12:39>
                           plain-type <12:25-12:29>
                             type-segment <12:25-12:29> mm娇甌I <12:25-12:29>
                           literal i32 905940 <12:32-12:38>
                         plain-type <12:42-12:74>
-                          type-segment <12:42-12:65> mjmD4p727 <12:42-12:50> <> <12:51-12:65>
+                          type-segment <12:42-12:65> mjmD4p727 <12:42-12:50>
                             primitive-type bool <12:52-12:55>
                             primitive-type f32 <12:58-12:60>
                             primitive-type u8 <12:63-12:64>
@@ -402,7 +576,7 @@ module tests/ast/hugetype.f3
                           type-segment <12:97-12:100> Jm <12:97-12:98>
                           type-segment <12:103-12:106> DGB0 <12:103-12:106>
                           type-segment <12:109-12:112> pOxC <12:109-12:112>
-                      type-segment <12:116-13:37> L6JNDq <12:116-12:121> <> <12:122-13:37>
+                      type-segment <12:116-13:37> L6JNDq <12:116-12:121>
                         fn-type <12:123-13:18> () <12:125-13:18>
                           fn-type-parameter <12:126-12:128>
                             primitive-type f32 <12:126-12:128>
@@ -416,10 +590,10 @@ module tests/ast/hugetype.f3
                           literal r64 534200000 <13:29-13:34>
                       type-segment <13:40-13:40> a <13:40-13:40>
                       type-segment <13:43-13:46> ok4d <13:43-13:46>
-                      type-segment <13:49-14:17> JND1l4J2 <13:49-13:56> <> <13:57-14:17>
+                      type-segment <13:49-14:17> JND1l4J2 <13:49-13:56>
                         plain-type <13:58-14:6>
                           type-segment <13:58-13:60> HOk <13:58-13:60>
-                          type-segment <13:63-13:95> MgOIBMKce <13:63-13:71> <> <13:72-13:95>
+                          type-segment <13:63-13:95> MgOIBMKce <13:63-13:71>
                             primitive-type u64 <13:73-13:75>
                             primitive-type i64 <13:78-13:80>
                             primitive-type i64 <13:83-13:85>
@@ -427,7 +601,7 @@ module tests/ast/hugetype.f3
                             primitive-type i8 <13:93-13:94>
                           type-segment <13:98-13:101> puNu <13:98-13:101>
                           type-segment <13:104-13:104> 貋 <13:104-13:104>
-                          type-segment <13:107-14:6> v觊Lkf <13:107-13:111> <> <13:112-14:6>
+                          type-segment <13:107-14:6> v觊Lkf <13:107-13:111>
                             primitive-type u8 <13:113-13:114>
                             primitive-type bool <14:1-14:4>
                         primitive-type u32 <14:9-14:11>
@@ -437,12 +611,12 @@ module tests/ast/hugetype.f3
                         type-segment <14:21-14:22> Gg <14:21-14:22>
                       literal i32 0 <14:25-14:35>
                   type-segment <14:40-14:47> N3x12akl <14:40-14:47>
-                  type-segment <14:50-16:26> uax <14:50-14:52> <> <14:53-16:26>
+                  type-segment <14:50-16:26> uax <14:50-14:52>
                     plain-type <14:54-15:74>
-                      type-segment <14:54-15:42> 揪x4 <14:54-14:56> <> <14:57-15:42>
+                      type-segment <14:54-15:42> 揪x4 <14:54-14:56>
                         plain-type <14:58-14:91>
                           type-segment <14:58-14:65> bFEGDldf <14:58-14:65>
-                          type-segment <14:68-14:91> G1蹀0Lv87 <14:68-14:75> <> <14:76-14:91>
+                          type-segment <14:68-14:91> G1蹀0Lv87 <14:68-14:75>
                             primitive-type char <14:77-14:80>
                             primitive-type i64 <14:83-14:85>
                             primitive-type f32 <14:88-14:90>
@@ -456,7 +630,7 @@ module tests/ast/hugetype.f3
                         plain-type <15:1-15:41>
                           type-segment <15:1-15:5> KqJfs <15:1-15:5>
                           type-segment <15:8-15:12> kNyJ0 <15:8-15:12>
-                          type-segment <15:15-15:33> _OGo <15:15-15:18> <> <15:19-15:33>
+                          type-segment <15:15-15:33> _OGo <15:15-15:18>
                             primitive-type u32 <15:20-15:22>
                             primitive-type f32 <15:25-15:27>
                             primitive-type u64 <15:30-15:32>
@@ -466,13 +640,13 @@ module tests/ast/hugetype.f3
                       type-segment <15:65-15:74> xaFN_KOg <15:65-15:72>
                     ref-type <15:77-16:13>
                       plain-type <15:78-16:13>
-                        type-segment <15:78-15:99> NaC <15:78-15:80> <> <15:81-15:99>
+                        type-segment <15:78-15:99> NaC <15:78-15:80>
                           primitive-type char <15:82-15:85>
                           primitive-type i64 <15:88-15:90>
                           plain-type <15:93-15:98>
                             type-segment <15:93-15:98> string <15:93-15:98>
                         type-segment <15:102-15:103> fk <15:102-15:103>
-                        type-segment <15:106-16:13> Iw4EB <15:106-15:110> <> <15:111-16:13>
+                        type-segment <15:106-16:13> Iw4EB <15:106-15:110>
                           primitive-type i64 <15:112-15:114>
                           plain-type <16:1-16:3>
                             type-segment <16:1-16:3> i33 <16:1-16:3>
@@ -484,7 +658,7 @@ module tests/ast/hugetype.f3
                   type-segment <16:29-16:36> LD7njk80 <16:29-16:36>
           type-segment <16:42-16:46> My_愇2 <16:42-16:46>
           type-segment <16:49-16:52> uooO <16:49-16:52>
-          type-segment <16:55-27:4> IIrCK1Jcu <16:55-16:63> <> <16:64-27:4>
+          type-segment <16:55-27:4> IIrCK1Jcu <16:55-16:63>
             tuple-type <16:65-20:74>
               fn-type <16:66-18:53> () <16:68-18:31>
                 fn-type-parameter <16:69-18:8>
@@ -493,7 +667,7 @@ module tests/ast/hugetype.f3
                       plain-type <16:72-16:105>
                         type-segment <16:72-16:76> 胣fm沂w <16:72-16:76>
                         type-segment <16:79-16:80> _6 <16:79-16:80>
-                        type-segment <16:83-16:102> gH0C1 <16:83-16:87> <> <16:88-16:102>
+                        type-segment <16:83-16:102> gH0C1 <16:83-16:87>
                           primitive-type bool <16:89-16:92>
                           primitive-type f64 <16:95-16:97>
                           primitive-type u8 <16:100-16:101>
@@ -505,17 +679,17 @@ module tests/ast/hugetype.f3
                         literal i32 75 <17:1-17:2>
                     fn-type-parameter <17:6-17:80>
                       plain-type <17:6-17:80>
-                        type-segment <17:6-17:21> h <17:6-17:6> <> <17:7-17:21>
+                        type-segment <17:6-17:21> h <17:6-17:6>
                           plain-type <17:8-17:10>
                             type-segment <17:8-17:10> i33 <17:8-17:10>
                           primitive-type u32 <17:13-17:15>
                           primitive-type u32 <17:18-17:20>
                         type-segment <17:24-17:27> me7N <17:24-17:27>
-                        type-segment <17:30-17:45> v <17:30-17:30> <> <17:31-17:45>
+                        type-segment <17:30-17:45> v <17:30-17:30>
                           primitive-type i16 <17:32-17:34>
                           primitive-type u16 <17:37-17:39>
                           primitive-type i16 <17:42-17:44>
-                        type-segment <17:48-17:70> 鬱 <17:48-17:48> <> <17:49-17:70>
+                        type-segment <17:48-17:70> 鬱 <17:48-17:48>
                           plain-type <17:50-17:52>
                             type-segment <17:50-17:52> i33 <17:50-17:52>
                           primitive-type bool <17:55-17:58>
@@ -554,21 +728,21 @@ module tests/ast/hugetype.f3
                     type-segment <18:60-18:68> 蝥趇3LDmu84 <18:60-18:68>
                     type-segment <18:71-18:73> 疹0r <18:71-18:73>
                     type-segment <18:76-18:77> Jt <18:76-18:77>
-                    type-segment <18:80-18:100> rhD1pi <18:80-18:85> <> <18:86-18:100>
+                    type-segment <18:80-18:100> rhD1pi <18:80-18:85>
                       primitive-type i64 <18:87-18:89>
                       primitive-type f64 <18:92-18:94>
                       primitive-type f64 <18:97-18:99>
                   plain-type <18:103-19:73>
-                    type-segment <18:103-19:3> JENK4 <18:103-18:107> <> <18:108-19:3>
+                    type-segment <18:103-19:3> JENK4 <18:103-18:107>
                       plain-type <18:109-18:111>
                         type-segment <18:109-18:111> i33 <18:109-18:111>
                       primitive-type u32 <18:114-18:116>
                       primitive-type i8 <19:1-19:2>
-                    type-segment <19:6-19:28> n嗽I4焈j5ts <19:6-19:14> <> <19:15-19:28>
+                    type-segment <19:6-19:28> n嗽I4焈j5ts <19:6-19:14>
                       primitive-type f32 <19:16-19:18>
                       primitive-type u8 <19:21-19:22>
                       primitive-type u16 <19:25-19:27>
-                    type-segment <19:31-19:64> mp270G萚45 <19:31-19:39> <> <19:40-19:64>
+                    type-segment <19:31-19:64> mp270G萚45 <19:31-19:39>
                       primitive-type u64 <19:41-19:43>
                       primitive-type i8 <19:46-19:47>
                       plain-type <19:50-19:55>
@@ -579,7 +753,7 @@ module tests/ast/hugetype.f3
                     type-segment <19:73-19:73> w <19:73-19:73>
               plain-type <19:78-20:73>
                 type-segment <19:78-19:83> cawyv4 <19:78-19:83>
-                type-segment <19:86-20:6> adnp1 <19:86-19:90> <> <19:91-20:6>
+                type-segment <19:86-20:6> adnp1 <19:86-19:90>
                   array-type <19:92-19:107>
                     plain-type <19:93-19:94>
                       type-segment <19:93-19:94> bC <19:93-19:94>
@@ -590,7 +764,7 @@ module tests/ast/hugetype.f3
                     ref-type <20:2-20:5>
                       primitive-type u32 <20:3-20:5>
                 type-segment <20:9-20:17> v7be5媜e <20:9-20:15>
-                type-segment <20:20-20:73> lH_jCa51 <20:20-20:27> <> <20:28-20:73>
+                type-segment <20:20-20:73> lH_jCa51 <20:20-20:27>
                   plain-type <20:29-20:35>
                     type-segment <20:29-20:35> hlvCb15 <20:29-20:35>
                   array-type <20:38-20:54>
@@ -602,7 +776,7 @@ module tests/ast/hugetype.f3
                       type-segment <20:58-20:63> NB7BLb <20:58-20:63>
                     literal i32 530003 <20:66-20:71>
             plain-type <20:77-26:124>
-              type-segment <20:77-22:34> CM8c飁id <20:77-20:83> <> <20:84-22:34>
+              type-segment <20:77-22:34> CM8c飁id <20:77-20:83>
                 array-type <20:85-20:102>
                   plain-type <20:86-20:91>
                     type-segment <20:86-20:91> g1KnjC <20:86-20:91>
@@ -615,7 +789,7 @@ module tests/ast/hugetype.f3
                       type-segment <21:2-21:7> EFmFr霠 <21:2-21:7>
                     literal r32 87452690 <21:10-21:20>
                   plain-type <21:24-21:72>
-                    type-segment <21:24-21:53> y4ur <21:24-21:27> <> <21:28-21:53>
+                    type-segment <21:24-21:53> y4ur <21:24-21:27>
                       array-type <21:29-21:41>
                         plain-type <21:30-21:35>
                           type-segment <21:30-21:35> kmm馭tJ <21:30-21:35>
@@ -635,7 +809,7 @@ module tests/ast/hugetype.f3
                   type-segment <21:101-21:106> LK魲C2D <21:101-21:106>
                   type-segment <21:109-21:111> mgq <21:109-21:111>
                   type-segment <21:114-21:118> ImKms <21:114-21:118>
-                  type-segment <21:121-22:22> v_禤1ut <21:121-21:126> <> <21:127-22:22>
+                  type-segment <21:121-22:22> v_禤1ut <21:121-21:126>
                     ref-type <21:128-21:135>
                       plain-type <21:129-21:135>
                         type-segment <21:129-21:135> G7ajwc4 <21:129-21:135>
@@ -647,15 +821,15 @@ module tests/ast/hugetype.f3
                       literal i32 6 <22:16-22:20>
                   type-segment <22:25-22:25> o <22:25-22:25>
                   type-segment <22:28-22:33> mOgF3F <22:28-22:33>
-              type-segment <22:37-26:124> 甍qr閇s恀 <22:37-22:42> <> <22:43-26:124>
+              type-segment <22:37-26:124> 甍qr閇s恀 <22:37-22:42>
                 plain-type <22:44-23:17> global
                   type-segment <22:46-22:53> BuqoFali <22:46-22:53>
                   type-segment <22:56-22:65> EE6t7OqG <22:56-22:63>
-                  type-segment <22:68-23:7> n3rq7ALB <22:68-22:75> <> <22:76-23:7>
+                  type-segment <22:68-23:7> n3rq7ALB <22:68-22:75>
                     plain-type <22:77-22:80>
                       type-segment <22:77-22:80> ckFj <22:77-22:80>
                     plain-type <22:83-23:5>
-                      type-segment <22:83-23:5> 狇Jii潫6bvN <22:83-22:91> <> <22:92-23:5>
+                      type-segment <22:83-23:5> 狇Jii潫6bvN <22:83-22:91>
                         ref-type <22:93-22:96>
                           primitive-type u32 <22:94-22:96>
                         tuple-type <22:99-22:112>
@@ -681,24 +855,24 @@ module tests/ast/hugetype.f3
                     plain-type <23:55-23:60>
                       type-segment <23:55-23:60> cHlhk瀵 <23:55-23:60>
                   plain-type <23:66-24:75>
-                    type-segment <23:66-24:68> ja6Iw <23:66-23:70> <> <23:71-24:68>
+                    type-segment <23:66-24:68> ja6Iw <23:66-23:70>
                       plain-type <23:72-23:76>
                         type-segment <23:72-23:76> hqdxr <23:72-23:76>
                       plain-type <23:79-24:49>
-                        type-segment <23:79-23:101> O <23:79-23:79> <> <23:80-23:101>
+                        type-segment <23:79-23:101> O <23:79-23:79>
                           primitive-type char <23:81-23:84>
                           primitive-type i64 <23:87-23:89>
                           primitive-type bool <23:92-23:95>
                           primitive-type i16 <23:98-23:100>
                         type-segment <23:104-23:112> lw7M_ke_晅 <23:104-23:112>
                         type-segment <23:115-23:122> wjp蛿s亘7i <23:115-23:122>
-                        type-segment <23:125-24:15> F2 <23:125-23:126> <> <23:127-24:15>
+                        type-segment <23:125-24:15> F2 <23:125-23:126>
                           plain-type <23:128-23:130>
                             type-segment <23:128-23:130> i33 <23:128-23:130>
                           primitive-type u16 <24:1-24:3>
                           primitive-type char <24:6-24:9>
                           primitive-type i16 <24:12-24:14>
-                        type-segment <24:18-24:46> loHgD <24:18-24:22> <> <24:23-24:46>
+                        type-segment <24:18-24:46> loHgD <24:18-24:22>
                           primitive-type f32 <24:24-24:26>
                           primitive-type i16 <24:29-24:31>
                           primitive-type i64 <24:34-24:36>
@@ -715,19 +889,19 @@ module tests/ast/hugetype.f3
                     type-segment <24:79-24:86> D63gE晤kJ <24:79-24:86>
                   literal r64 6567170030055001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 <24:89-24:110>
                 plain-type <24:114-26:123>
-                  type-segment <24:114-25:110> 蟧bFembG0 <24:114-24:121> <> <24:122-25:110>
+                  type-segment <24:114-25:110> 蟧bFembG0 <24:114-24:121>
                     plain-type <24:123-25:103>
                       type-segment <24:123-24:125> xcb <24:123-24:125>
                       type-segment <24:128-24:132> hqO <24:128-24:130>
                       type-segment <24:135-24:135> 善 <24:135-24:135>
-                      type-segment <24:138-25:65> yrj4hkbe <24:138-24:145> <> <24:146-25:65>
+                      type-segment <24:138-25:65> yrj4hkbe <24:138-24:145>
                         plain-type <24:147-25:28>
                           type-segment <24:147-24:151> 玽Iy砉6 <24:147-24:151>
                           type-segment <24:154-24:158> _uJ0e <24:154-24:158>
-                          type-segment <24:161-25:6> C澞y <24:161-24:163> <> <24:164-25:6>
+                          type-segment <24:161-25:6> C澞y <24:161-24:163>
                             primitive-type u16 <24:165-24:167>
                             primitive-type bool <25:1-25:4>
-                          type-segment <25:9-25:28> O3tL <25:9-25:12> <> <25:13-25:28>
+                          type-segment <25:9-25:28> O3tL <25:9-25:12>
                             primitive-type f32 <25:14-25:16>
                             primitive-type char <25:19-25:22>
                             primitive-type i64 <25:25-25:27>
@@ -743,7 +917,7 @@ module tests/ast/hugetype.f3
                           fn-type-parameter <25:61-25:63>
                             primitive-type u16 <25:61-25:63>
                       type-segment <25:68-25:72> MGdGC <25:68-25:72>
-                      type-segment <25:75-25:103> HDlb <25:75-25:78> <> <25:79-25:103>
+                      type-segment <25:75-25:103> HDlb <25:75-25:78>
                         tuple-type <25:80-25:90>
                           primitive-type u32 <25:81-25:83>
                           primitive-type f32 <25:86-25:88>
@@ -751,7 +925,7 @@ module tests/ast/hugetype.f3
                         ref-type <25:98-25:102>
                           primitive-type bool <25:99-25:102>
                     primitive-type f32 <25:106-25:108>
-                  type-segment <25:113-26:119> m <25:113-25:113> <> <25:114-26:119>
+                  type-segment <25:113-26:119> m <25:113-25:113>
                     plain-type <25:115-25:116>
                       type-segment <25:115-25:116> p0 <25:115-25:116>
                     array-type <25:119-25:130>
@@ -759,13 +933,13 @@ module tests/ast/hugetype.f3
                         type-segment <25:120-25:123> IC6m <25:120-25:123>
                       literal r32 1 <25:126-25:129>
                     plain-type <25:133-26:118>
-                      type-segment <25:133-26:6> nnkECM8b7 <25:133-25:141> <> <25:142-26:6>
+                      type-segment <25:133-26:6> nnkECM8b7 <25:133-25:141>
                         array-type <25:143-25:155>
                           plain-type <25:144-25:150>
                             type-segment <25:144-25:150> Iqwj3Hy <25:144-25:150>
                           literal i32 25 <25:153-25:154>
                         primitive-type char <26:1-26:4>
-                      type-segment <26:9-26:54> oywl <26:9-26:12> <> <26:13-26:54>
+                      type-segment <26:9-26:54> oywl <26:9-26:12>
                         plain-type <26:14-26:20>
                           type-segment <26:14-26:20> rHbhBy輈 <26:14-26:20>
                         ref-type <26:23-26:26>
@@ -777,7 +951,7 @@ module tests/ast/hugetype.f3
                           literal u32 2797702 <26:39-26:49>
                         plain-type <26:53-26:53>
                           type-segment <26:53-26:53> H <26:53-26:53>
-                      type-segment <26:57-26:113> Oosfypj <26:57-26:63> <> <26:64-26:113>
+                      type-segment <26:57-26:113> Oosfypj <26:57-26:63>
                         primitive-type i64 <26:65-26:67>
                         plain-type <26:70-26:96> global
                           type-segment <26:72-26:73> EJ <26:72-26:73>
@@ -795,11 +969,11 @@ module tests/ast/hugetype.f3
               type-segment <26:129-26:137> k梷u黸w4p <26:129-26:135>
             plain-type <27:1-27:3>
               type-segment <27:1-27:3> Lof <27:1-27:3>
-          type-segment <27:7-39:107> aGoO <27:7-27:10> <> <27:11-39:107>
+          type-segment <27:7-39:107> aGoO <27:7-27:10>
             plain-type <27:12-29:45>
               type-segment <27:12-27:18> D53IDDq <27:12-27:18>
               type-segment <27:21-27:26> e3bg槬B <27:21-27:26>
-              type-segment <27:29-29:45> y_8 <27:29-27:31> <> <27:32-29:45>
+              type-segment <27:29-29:45> y_8 <27:29-27:31>
                 array-type <27:33-27:45>
                   plain-type <27:34-27:40>
                     type-segment <27:34-27:40> biw42Ad <27:34-27:40>
@@ -807,7 +981,7 @@ module tests/ast/hugetype.f3
                 fn-type <27:48-29:30> () <27:50-28:125>
                   fn-type-parameter <27:51-27:131>
                     plain-type <27:51-27:131>
-                      type-segment <27:51-27:126> _yqB毱vk <27:51-27:57> <> <27:58-27:126>
+                      type-segment <27:51-27:126> _yqB毱vk <27:51-27:57>
                         plain-type <27:59-27:64>
                           type-segment <27:59-27:60> 钌6 <27:59-27:60>
                           type-segment <27:63-27:64> Ih <27:63-27:64>
@@ -832,16 +1006,16 @@ module tests/ast/hugetype.f3
                     plain-type <28:1-28:94>
                       type-segment <28:1-28:6> AKA5sd <28:1-28:6>
                       type-segment <28:9-28:9> I <28:9-28:9>
-                      type-segment <28:12-28:79> OmjE3s蕕 <28:12-28:18> <> <28:19-28:79>
+                      type-segment <28:12-28:79> OmjE3s蕕 <28:12-28:18>
                         plain-type <28:20-28:24>
                           type-segment <28:20-28:24> 嘽jBpa <28:20-28:24>
                         plain-type <28:27-28:73>
                           type-segment <28:27-28:34> j0Lb4_hE <28:27-28:34>
-                          type-segment <28:37-28:51> u <28:37-28:37> <> <28:38-28:51>
+                          type-segment <28:37-28:51> u <28:37-28:37>
                             primitive-type i8 <28:39-28:40>
                             primitive-type f32 <28:43-28:45>
                             primitive-type f64 <28:48-28:50>
-                          type-segment <28:54-28:73> h孽7NBqtOd <28:54-28:62> <> <28:63-28:73>
+                          type-segment <28:54-28:73> h孽7NBqtOd <28:54-28:62>
                             primitive-type u64 <28:64-28:66>
                             primitive-type i16 <28:69-28:71>
                         primitive-type f64 <28:76-28:78>
@@ -879,12 +1053,12 @@ module tests/ast/hugetype.f3
                     type-segment <29:64-29:64> j <29:64-29:64>
                     type-segment <29:67-29:74> HtxyJ5gw <29:67-29:74>
                     type-segment <29:77-29:82> yKN0J6 <29:77-29:82>
-                    type-segment <29:85-29:100> E <29:85-29:85> <> <29:86-29:100>
+                    type-segment <29:85-29:100> E <29:85-29:85>
                       primitive-type i64 <29:87-29:89>
                       primitive-type i8 <29:92-29:93>
                       primitive-type bool <29:96-29:99>
                   plain-type <29:103-29:125>
-                    type-segment <29:103-29:119> NN451 <29:103-29:107> <> <29:108-29:119>
+                    type-segment <29:103-29:119> NN451 <29:103-29:107>
                       primitive-type f64 <29:109-29:111>
                       primitive-type bool <29:114-29:117>
                     type-segment <29:122-29:125> a0y7 <29:122-29:125>
@@ -894,15 +1068,15 @@ module tests/ast/hugetype.f3
                     literal i32 0 <30:1-30:13>
                 plain-type <30:18-31:35>
                   type-segment <30:18-30:19> sl <30:18-30:19>
-                  type-segment <30:22-30:112> k8O <30:22-30:24> <> <30:25-30:112>
+                  type-segment <30:22-30:112> k8O <30:22-30:24>
                     ref-type <30:26-30:30>
                       primitive-type char <30:27-30:30>
                     plain-type <30:33-30:83>
-                      type-segment <30:33-30:47> OHph <30:33-30:36> <> <30:37-30:47>
+                      type-segment <30:33-30:47> OHph <30:33-30:36>
                         primitive-type u64 <30:38-30:40>
                         plain-type <30:43-30:45>
                           type-segment <30:43-30:45> i33 <30:43-30:45>
-                      type-segment <30:50-30:76> NNGbwuwi <30:50-30:57> <> <30:58-30:76>
+                      type-segment <30:50-30:76> NNGbwuwi <30:50-30:57>
                         primitive-type u64 <30:59-30:61>
                         primitive-type u64 <30:64-30:66>
                         primitive-type u8 <30:69-30:70>
@@ -913,7 +1087,7 @@ module tests/ast/hugetype.f3
                       plain-type <30:87-30:87>
                         type-segment <30:87-30:87> O <30:87-30:87>
                       literal i32 0 <30:90-30:110>
-                  type-segment <30:115-31:35> Cbhqv鮅27A <30:115-30:123> <> <30:124-31:35>
+                  type-segment <30:115-31:35> Cbhqv鮅27A <30:115-30:123>
                     tuple-type <30:125-31:8>
                       primitive-type bool <30:126-30:129>
                       primitive-type i8 <31:1-31:2>
@@ -925,7 +1099,7 @@ module tests/ast/hugetype.f3
                       literal i32 0 <31:22-31:33>
                 plain-type <31:38-31:94>
                   type-segment <31:38-31:43> m2_F奵n <31:38-31:43>
-                  type-segment <31:46-31:94> Kmqvvob藍l <31:46-31:54> <> <31:55-31:94>
+                  type-segment <31:46-31:94> Kmqvvob藍l <31:46-31:54>
                     tuple-type <31:56-31:70>
                       primitive-type u16 <31:57-31:59>
                       plain-type <31:62-31:64>
@@ -941,7 +1115,7 @@ module tests/ast/hugetype.f3
                       type-segment <31:93-31:93> A <31:93-31:93>
                 plain-type <31:97-34:47>
                   type-segment <31:97-31:101> 孱knAH <31:97-31:101>
-                  type-segment <31:104-32:126> JB褼 <31:104-31:106> <> <31:107-32:126>
+                  type-segment <31:104-32:126> JB褼 <31:104-31:106>
                     fn-type <31:108-32:14> () <31:110-32:14>
                       fn-type-parameter <31:111-31:118> 曊Ap <31:111-31:113>
                         primitive-type f32 <31:116-31:118>
@@ -959,18 +1133,18 @@ module tests/ast/hugetype.f3
                     ref-type <32:32-32:34>
                       primitive-type u8 <32:33-32:34>
                     plain-type <32:37-32:125>
-                      type-segment <32:37-32:57> Kix <32:37-32:39> <> <32:40-32:57>
+                      type-segment <32:37-32:57> Kix <32:37-32:39>
                         primitive-type u64 <32:41-32:43>
                         plain-type <32:46-32:51>
                           type-segment <32:46-32:51> string <32:46-32:51>
                         primitive-type f64 <32:54-32:56>
-                      type-segment <32:60-32:88> tabrLx <32:60-32:65> <> <32:66-32:88>
+                      type-segment <32:60-32:88> tabrLx <32:60-32:65>
                         primitive-type f64 <32:67-32:69>
                         primitive-type i8 <32:72-32:73>
                         plain-type <32:76-32:81>
                           type-segment <32:76-32:81> string <32:76-32:81>
                         primitive-type bool <32:84-32:87>
-                      type-segment <32:91-32:116> s <32:91-32:91> <> <32:92-32:116>
+                      type-segment <32:91-32:116> s <32:91-32:91>
                         primitive-type f32 <32:93-32:95>
                         primitive-type f32 <32:98-32:100>
                         primitive-type u8 <32:103-32:104>
@@ -978,20 +1152,20 @@ module tests/ast/hugetype.f3
                         primitive-type bool <32:112-32:115>
                       type-segment <32:119-32:125> hE6kd1t <32:119-32:125>
                   type-segment <32:129-32:131> GmK <32:129-32:131>
-                  type-segment <32:134-34:6> _ilMoIF0 <32:134-32:141> <> <32:142-34:6>
+                  type-segment <32:134-34:6> _ilMoIF0 <32:134-32:141>
                     plain-type <32:143-33:66>
                       type-segment <32:143-32:145> q殝s <32:143-32:145>
-                      type-segment <32:148-33:14> E8bB <32:148-32:151> <> <32:152-33:14>
+                      type-segment <32:148-33:14> E8bB <32:148-32:151>
                         primitive-type u32 <32:153-32:155>
                         primitive-type u64 <33:1-33:3>
                         primitive-type i16 <33:6-33:8>
                         primitive-type u32 <33:11-33:13>
-                      type-segment <33:17-33:42> w3OEg <33:17-33:21> <> <33:22-33:42>
+                      type-segment <33:17-33:42> w3OEg <33:17-33:21>
                         primitive-type char <33:23-33:26>
                         primitive-type u16 <33:29-33:31>
                         primitive-type f64 <33:34-33:36>
                         primitive-type i16 <33:39-33:41>
-                      type-segment <33:45-33:66> 顉v_Exb <33:45-33:50> <> <33:51-33:66>
+                      type-segment <33:45-33:66> 顉v_Exb <33:45-33:50>
                         primitive-type f32 <33:52-33:54>
                         primitive-type char <33:57-33:60>
                         primitive-type u32 <33:63-33:65>
@@ -1010,7 +1184,7 @@ module tests/ast/hugetype.f3
                     tuple-type <33:120-34:5>
                       primitive-type f64 <33:121-33:123>
                       primitive-type u64 <34:1-34:3>
-                  type-segment <34:9-34:47> vl <34:9-34:10> <> <34:11-34:47>
+                  type-segment <34:9-34:47> vl <34:9-34:10>
                     plain-type <34:12-34:37>
                       type-segment <34:12-34:21> Eia忚0O2M <34:12-34:19>
                       type-segment <34:24-34:26> N1N <34:24-34:26>
@@ -1020,24 +1194,24 @@ module tests/ast/hugetype.f3
               plain-type <34:51-34:57>
                 type-segment <34:51-34:57> jlMybkA <34:51-34:57>
               plain-type <34:60-39:105>
-                type-segment <34:60-37:41> t <34:60-34:60> <> <34:61-37:41>
+                type-segment <34:60-37:41> t <34:60-34:60>
                   tuple-type <34:62-36:68>
                     plain-type <34:63-35:34>
                       type-segment <34:63-34:63> h <34:63-34:63>
-                      type-segment <34:66-34:89> GxGJoogC <34:66-34:73> <> <34:74-34:89>
+                      type-segment <34:66-34:89> GxGJoogC <34:66-34:73>
                         primitive-type bool <34:75-34:78>
                         primitive-type f32 <34:81-34:83>
                         primitive-type i64 <34:86-34:88>
                       type-segment <34:92-34:98> mH_p坍kl <34:92-34:98>
                       type-segment <34:101-34:102> st <34:101-34:102>
-                      type-segment <34:105-35:4> iE <34:105-34:106> <> <34:107-35:4>
+                      type-segment <34:105-35:4> iE <34:105-34:106>
                         primitive-type bool <34:108-34:111>
                         primitive-type u8 <34:114-34:115>
                         plain-type <34:118-34:123>
                           type-segment <34:118-34:123> string <34:118-34:123>
                         primitive-type u16 <34:126-34:128>
                         primitive-type u32 <35:1-35:3>
-                      type-segment <35:7-35:34> 葁I2E1q <35:7-35:12> <> <35:13-35:34>
+                      type-segment <35:7-35:34> 葁I2E1q <35:7-35:12>
                         primitive-type u64 <35:14-35:16>
                         primitive-type char <35:19-35:22>
                         primitive-type f64 <35:25-35:27>
@@ -1047,21 +1221,21 @@ module tests/ast/hugetype.f3
                         type-segment <35:38-35:42> qAm5x <35:38-35:42>
                       literal i32 0 <35:45-35:55>
                     plain-type <35:59-36:28>
-                      type-segment <35:59-35:79> r8sK <35:59-35:62> <> <35:63-35:79>
+                      type-segment <35:59-35:79> r8sK <35:59-35:62>
                         primitive-type f32 <35:64-35:66>
                         plain-type <35:69-35:74>
                           type-segment <35:69-35:74> string <35:69-35:74>
                         primitive-type i8 <35:77-35:78>
-                      type-segment <35:82-35:106> qOemFG燫Bc <35:82-35:90> <> <35:91-35:106>
+                      type-segment <35:82-35:106> qOemFG燫Bc <35:82-35:90>
                         primitive-type u8 <35:92-35:93>
                         primitive-type bool <35:96-35:99>
                         primitive-type bool <35:102-35:105>
-                      type-segment <35:109-36:4> EqwNECsA <35:109-35:116> <> <35:117-36:4>
+                      type-segment <35:109-36:4> EqwNECsA <35:109-35:116>
                         plain-type <35:118-35:120>
                           type-segment <35:118-35:120> i33 <35:118-35:120>
                         primitive-type u8 <35:123-35:124>
                         primitive-type i64 <36:1-36:3>
-                      type-segment <36:7-36:28> 坞bbCBI3 <36:7-36:13> <> <36:14-36:28>
+                      type-segment <36:7-36:28> 坞bbCBI3 <36:7-36:13>
                         primitive-type i64 <36:15-36:17>
                         primitive-type f32 <36:20-36:22>
                         primitive-type f32 <36:25-36:27>
@@ -1075,14 +1249,14 @@ module tests/ast/hugetype.f3
                       literal i32 84445884 <36:59-36:66>
                   tuple-type <36:71-37:22>
                     plain-type <36:72-36:92> global
-                      type-segment <36:74-36:92> bF5r <36:74-36:77> <> <36:78-36:92>
+                      type-segment <36:74-36:92> bF5r <36:74-36:77>
                         primitive-type char <36:79-36:82>
                         primitive-type f32 <36:85-36:87>
                         primitive-type u8 <36:90-36:91>
                     plain-type <36:95-36:123>
                       type-segment <36:95-36:95> s <36:95-36:95>
                       type-segment <36:98-36:104> 妲43_pnI <36:98-36:104>
-                      type-segment <36:107-36:123> EHllb <36:107-36:111> <> <36:112-36:123>
+                      type-segment <36:107-36:123> EHllb <36:107-36:111>
                         primitive-type char <36:113-36:116>
                         primitive-type i16 <36:119-36:121>
                     tuple-type <36:126-37:9>
@@ -1096,7 +1270,7 @@ module tests/ast/hugetype.f3
                     plain-type <37:26-37:33>
                       type-segment <37:26-37:33> lw4祕jFor <37:26-37:33>
                     literal i32 5121 <37:36-37:39>
-                type-segment <37:44-37:100> 堮1AC殇戔 <37:44-37:49> <> <37:50-37:100>
+                type-segment <37:44-37:100> 堮1AC殇戔 <37:44-37:49>
                   array-type <37:51-37:62>
                     plain-type <37:52-37:55>
                       type-segment <37:52-37:55> Cv殦5 <37:52-37:55>
@@ -1109,7 +1283,7 @@ module tests/ast/hugetype.f3
                     plain-type <37:90-37:90>
                       type-segment <37:90-37:90> 蹞 <37:90-37:90>
                     literal i32 257326 <37:93-37:98>
-                type-segment <37:103-39:100> y <37:103-37:103> <> <37:104-39:100>
+                type-segment <37:103-39:100> y <37:103-37:103>
                   tuple-type <37:105-38:20>
                     tuple-type <37:106-37:107>
                     ref-type <37:110-37:113>
@@ -1123,17 +1297,17 @@ module tests/ast/hugetype.f3
                       type-segment <38:24-38:26> i33 <38:24-38:26>
                   primitive-type u8 <38:29-38:30>
                   plain-type <38:33-39:99>
-                    type-segment <38:33-39:99> jqbb7宴q <38:33-38:39> <> <38:40-39:99>
+                    type-segment <38:33-39:99> jqbb7宴q <38:33-38:39>
                       array-type <38:41-38:58>
                         plain-type <38:42-38:49>
                           type-segment <38:42-38:49> B糝hq满HFi <38:42-38:49>
                         literal i32 8513 <38:52-38:57>
                       plain-type <38:61-38:118>
-                        type-segment <38:61-38:80> JxBv0 <38:61-38:65> <> <38:66-38:80>
+                        type-segment <38:61-38:80> JxBv0 <38:61-38:65>
                           primitive-type u64 <38:67-38:69>
                           primitive-type u64 <38:72-38:74>
                           primitive-type i16 <38:77-38:79>
-                        type-segment <38:83-38:95> bq <38:83-38:84> <> <38:85-38:95>
+                        type-segment <38:83-38:95> bq <38:83-38:84>
                           primitive-type f64 <38:86-38:88>
                           primitive-type f64 <38:91-38:93>
                         type-segment <38:98-38:100> d8s <38:98-38:100>
@@ -1142,7 +1316,7 @@ module tests/ast/hugetype.f3
                       plain-type <39:1-39:36>
                         type-segment <39:1-39:2> OC <39:1-39:2>
                         type-segment <39:5-39:7> nBl <39:5-39:7>
-                        type-segment <39:10-39:36> uivbmu虙EI <39:10-39:18> <> <39:19-39:36>
+                        type-segment <39:10-39:36> uivbmu虙EI <39:10-39:18>
                           primitive-type bool <39:20-39:23>
                           primitive-type i8 <39:26-39:27>
                           plain-type <39:30-39:35>
@@ -1150,7 +1324,7 @@ module tests/ast/hugetype.f3
                       plain-type <39:39-39:81>
                         type-segment <39:39-39:47> Hl4IIDvMv <39:39-39:47>
                         type-segment <39:50-39:52> B <39:50-39:50>
-                        type-segment <39:55-39:76> 篁3IA倴uKB <39:55-39:62> <> <39:63-39:76>
+                        type-segment <39:55-39:76> 篁3IA倴uKB <39:55-39:62>
                           primitive-type u8 <39:64-39:65>
                           primitive-type i16 <39:68-39:70>
                           primitive-type u16 <39:73-39:75>
@@ -1165,7 +1339,7 @@ module tests/ast/hugetype.f3
             type-segment <39:111-39:111> e <39:111-39:111>
           literal u32 3 <39:114-39:119>
         plain-type <40:1-47:89>
-          type-segment <40:1-47:81> 矒Ia <40:1-40:3> <> <40:4-47:81>
+          type-segment <40:1-47:81> 矒Ia <40:1-40:3>
             tuple-type <40:5-40:32>
               primitive-type char <40:6-40:9>
               array-type <40:12-40:26>
@@ -1176,7 +1350,7 @@ module tests/ast/hugetype.f3
             fn-type <40:35-47:59> () <40:37-41:80>
               fn-type-parameter <40:38-41:41> y <40:38-40:38>
                 plain-type <40:41-41:41>
-                  type-segment <40:41-41:41> vdLqD <40:41-40:45> <> <40:46-41:41>
+                  type-segment <40:41-41:41> vdLqD <40:41-40:45>
                     tuple-type <40:47-41:20>
                       tuple-type <40:48-40:61>
                         plain-type <40:49-40:54>
@@ -1189,7 +1363,7 @@ module tests/ast/hugetype.f3
                       plain-type <40:86-40:128>
                         type-segment <40:86-40:92> NcCfur4 <40:86-40:92>
                         type-segment <40:95-40:98> Oq鎠脯 <40:95-40:98>
-                        type-segment <40:101-40:118> Cf1 <40:101-40:103> <> <40:104-40:118>
+                        type-segment <40:101-40:118> Cf1 <40:101-40:103>
                           primitive-type i8 <40:105-40:106>
                           primitive-type f32 <40:109-40:111>
                           primitive-type char <40:114-40:117>
@@ -1213,7 +1387,7 @@ module tests/ast/hugetype.f3
                     type-segment <41:62-41:62> I <41:62-41:62>
                   literal r64 47666205.01157 <41:65-41:78>
               plain-type <41:85-47:59>
-                type-segment <41:85-43:76> i8ad2vgs7 <41:85-41:93> <> <41:94-43:76>
+                type-segment <41:85-43:76> i8ad2vgs7 <41:85-41:93>
                   plain-type <41:95-41:100>
                     type-segment <41:95-41:100> string <41:95-41:100>
                   plain-type <41:103-42:15>
@@ -1222,7 +1396,7 @@ module tests/ast/hugetype.f3
                     type-segment <42:1-42:7> B則JalyC <42:1-42:7>
                     type-segment <42:10-42:15> D6l_Oj <42:10-42:15>
                   plain-type <42:18-43:75>
-                    type-segment <42:18-43:12> o6wfEw <42:18-42:23> <> <42:24-43:12>
+                    type-segment <42:18-43:12> o6wfEw <42:18-42:23>
                       tuple-type <42:25-42:46>
                         plain-type <42:26-42:31>
                           type-segment <42:26-42:31> string <42:26-42:31>
@@ -1233,20 +1407,20 @@ module tests/ast/hugetype.f3
                         type-segment <42:49-42:58> N8q_1ks驠 <42:49-42:56>
                         type-segment <42:61-42:68> AjwOBF红3 <42:61-42:68>
                         type-segment <42:71-42:74> LDOy <42:71-42:74>
-                        type-segment <42:77-42:96> t4i3b <42:77-42:81> <> <42:82-42:96>
+                        type-segment <42:77-42:96> t4i3b <42:77-42:81>
                           primitive-type f64 <42:83-42:85>
                           primitive-type i64 <42:88-42:90>
                           primitive-type u32 <42:93-42:95>
-                        type-segment <42:99-42:116> Myvr3呜d8 <42:99-42:106> <> <42:107-42:116>
+                        type-segment <42:99-42:116> Myvr3呜d8 <42:99-42:106>
                           primitive-type u8 <42:108-42:109>
                           primitive-type f32 <42:112-42:114>
-                        type-segment <42:119-43:8> HNGwfx <42:119-42:124> <> <42:125-43:8>
+                        type-segment <42:119-43:8> HNGwfx <42:119-42:124>
                           primitive-type f64 <42:126-42:128>
                           primitive-type i8 <43:1-43:2>
                           primitive-type f32 <43:5-43:7>
                       plain-type <43:11-43:11>
                         type-segment <43:11-43:11> E <43:11-43:11>
-                    type-segment <43:15-43:71> pKufBv <43:15-43:20> <> <43:21-43:71>
+                    type-segment <43:15-43:71> pKufBv <43:15-43:20>
                       tuple-type <43:22-43:37>
                         primitive-type f64 <43:23-43:25>
                         plain-type <43:28-43:30>
@@ -1261,7 +1435,7 @@ module tests/ast/hugetype.f3
                           type-segment <43:53-43:60> D0vECbcy <43:53-43:60>
                         literal i32 0 <43:63-43:69>
                     type-segment <43:74-43:75> H1 <43:74-43:75>
-                type-segment <43:79-45:80> va镮J <43:79-43:82> <> <43:83-45:80>
+                type-segment <43:79-45:80> va镮J <43:79-43:82>
                   array-type <43:84-43:108>
                     plain-type <43:85-43:92>
                       type-segment <43:85-43:92> ryJt哖Lul <43:85-43:92>
@@ -1269,15 +1443,15 @@ module tests/ast/hugetype.f3
                   tuple-type <43:111-44:124>
                     plain-type <43:112-44:77>
                       type-segment <43:112-43:118> o涋i7kvH <43:112-43:118>
-                      type-segment <43:121-44:9> 潥p03CJoa <43:121-43:128> <> <43:129-44:9>
+                      type-segment <43:121-44:9> 潥p03CJoa <43:121-43:128>
                         primitive-type u8 <43:130-43:131>
                         primitive-type i16 <44:1-44:3>
                         primitive-type u32 <44:6-44:8>
-                      type-segment <44:12-44:32> A_AipFH <44:12-44:18> <> <44:19-44:32>
+                      type-segment <44:12-44:32> A_AipFH <44:12-44:18>
                         primitive-type i16 <44:20-44:22>
                         primitive-type u8 <44:25-44:26>
                         primitive-type f32 <44:29-44:31>
-                      type-segment <44:35-44:64> sOO <44:35-44:37> <> <44:38-44:64>
+                      type-segment <44:35-44:64> sOO <44:35-44:37>
                         primitive-type bool <44:39-44:42>
                         primitive-type u64 <44:45-44:47>
                         plain-type <44:50-44:52>
@@ -1289,7 +1463,7 @@ module tests/ast/hugetype.f3
                     primitive-type f32 <44:80-44:82>
                     plain-type <44:85-44:123>
                       type-segment <44:85-44:87> pO瘧 <44:85-44:87>
-                      type-segment <44:90-44:123> e4a <44:90-44:92> <> <44:93-44:123>
+                      type-segment <44:90-44:123> e4a <44:90-44:92>
                         plain-type <44:94-44:99>
                           type-segment <44:94-44:99> string <44:94-44:99>
                         plain-type <44:102-44:107>
@@ -1309,48 +1483,48 @@ module tests/ast/hugetype.f3
                     type-segment <45:22-45:27> string <45:22-45:27>
                   ref-type <45:30-45:79>
                     plain-type <45:31-45:79>
-                      type-segment <45:31-45:46> K <45:31-45:31> <> <45:32-45:46>
+                      type-segment <45:31-45:46> K <45:31-45:31>
                         primitive-type i64 <45:33-45:35>
                         primitive-type f32 <45:38-45:40>
                         plain-type <45:43-45:45>
                           type-segment <45:43-45:45> i33 <45:43-45:45>
-                      type-segment <45:49-45:61> ic <45:49-45:50> <> <45:51-45:61>
+                      type-segment <45:49-45:61> ic <45:49-45:50>
                         plain-type <45:52-45:54>
                           type-segment <45:52-45:54> i33 <45:52-45:54>
                         primitive-type u64 <45:57-45:59>
                       type-segment <45:64-45:73> pCa7O輏Jo <45:64-45:71>
                       type-segment <45:76-45:79> IM徠h <45:76-45:79>
                 type-segment <45:83-45:86> t7lN <45:83-45:86>
-                type-segment <45:89-47:59> bH <45:89-45:90> <> <45:91-47:59>
+                type-segment <45:89-47:59> bH <45:89-45:90>
                   tuple-type <45:92-46:123>
                     plain-type <45:93-46:60> global
-                      type-segment <45:95-45:123> bwE <45:95-45:97> <> <45:98-45:123>
+                      type-segment <45:95-45:123> bwE <45:95-45:97>
                         primitive-type f32 <45:99-45:101>
                         primitive-type i8 <45:104-45:105>
                         primitive-type bool <45:108-45:111>
                         primitive-type char <45:114-45:117>
                         primitive-type u16 <45:120-45:122>
-                      type-segment <45:126-46:9> ODgEuA2布3 <45:126-45:134> <> <45:135-46:9>
+                      type-segment <45:126-46:9> ODgEuA2布3 <45:126-45:134>
                         primitive-type u16 <45:136-45:138>
                         primitive-type u32 <46:1-46:3>
                         primitive-type f32 <46:6-46:8>
-                      type-segment <46:12-46:31> uwAIK <46:12-46:16> <> <46:17-46:31>
+                      type-segment <46:12-46:31> uwAIK <46:12-46:16>
                         primitive-type u32 <46:18-46:20>
                         primitive-type f32 <46:23-46:25>
                         primitive-type i16 <46:28-46:30>
                       type-segment <46:34-46:37> FOvw <46:34-46:37>
-                      type-segment <46:40-46:60> q <46:40-46:40> <> <46:41-46:60>
+                      type-segment <46:40-46:60> q <46:40-46:40>
                         primitive-type i64 <46:42-46:44>
                         primitive-type char <46:47-46:50>
                         plain-type <46:53-46:55>
                           type-segment <46:53-46:55> i33 <46:53-46:55>
                         primitive-type i8 <46:58-46:59>
                     plain-type <46:63-46:103>
-                      type-segment <46:63-46:83> BD1MK麲8 <46:63-46:69> <> <46:70-46:83>
+                      type-segment <46:63-46:83> BD1MK麲8 <46:63-46:69>
                         primitive-type u8 <46:71-46:72>
                         primitive-type i16 <46:75-46:77>
                         primitive-type i64 <46:80-46:82>
-                      type-segment <46:86-46:103> sl7 <46:86-46:88> <> <46:89-46:103>
+                      type-segment <46:86-46:103> sl7 <46:86-46:88>
                         primitive-type f64 <46:90-46:92>
                         primitive-type u8 <46:95-46:96>
                         primitive-type char <46:99-46:102>
@@ -1360,7 +1534,7 @@ module tests/ast/hugetype.f3
                       type-segment <46:119-46:122> i0 <46:119-46:120>
                   plain-type <46:126-47:57>
                     type-segment <46:126-46:129> FfLo <46:126-46:129>
-                    type-segment <46:132-47:41> ooyLL8 <46:132-46:137> <> <46:138-47:41>
+                    type-segment <46:132-47:41> ooyLL8 <46:132-46:137>
                       fn-type <46:139-47:31> () <46:141-47:31>
                         fn-type-parameter <46:142-46:145>
                           primitive-type bool <46:142-46:145>
@@ -1379,22 +1553,22 @@ module tests/ast/hugetype.f3
               type-segment <47:62-47:69> phLasofe <47:62-47:69>
               type-segment <47:72-47:80> kEroGvI4s <47:72-47:80>
           type-segment <47:84-47:89> FfCcI7 <47:84-47:89>
-      type-segment <47:93-76:191> Ftbgqo <47:93-47:98> <> <47:99-76:191>
+      type-segment <47:93-76:191> Ftbgqo <47:93-47:98>
         ref-type <47:100-47:103>
           primitive-type f64 <47:101-47:103>
         plain-type <47:106-76:165>
-          type-segment <47:106-71:102> eBv <47:106-47:108> <> <47:109-71:102>
+          type-segment <47:106-71:102> eBv <47:106-47:108>
             plain-type <47:110-47:126>
               type-segment <47:110-47:116> ehBi7kM <47:110-47:116>
               type-segment <47:119-47:120> xI <47:119-47:120>
               type-segment <47:123-47:126> IyO渜 <47:123-47:126>
             plain-type <47:129-57:68>
-              type-segment <47:129-57:52> qn6Jry <47:129-47:134> <> <47:135-57:52>
+              type-segment <47:129-57:52> qn6Jry <47:129-47:134>
                 ref-type <47:136-47:144>
                   plain-type <47:137-47:144>
                     type-segment <47:137-47:144> aHna2sL2 <47:137-47:144>
                 plain-type <48:1-57:34>
-                  type-segment <48:1-48:48> B <48:1-48:1> <> <48:2-48:48>
+                  type-segment <48:1-48:48> B <48:1-48:1>
                     plain-type <48:3-48:27>
                       type-segment <48:3-48:5> t <48:3-48:3>
                       type-segment <48:8-48:10> se_ <48:8-48:10>
@@ -1404,7 +1578,7 @@ module tests/ast/hugetype.f3
                       plain-type <48:31-48:38>
                         type-segment <48:31-48:38> exNeJG5n <48:31-48:38>
                       literal i32 38414 <48:41-48:45>
-                  type-segment <48:51-50:114> u <48:51-48:51> <> <48:52-50:114>
+                  type-segment <48:51-50:114> u <48:51-48:51>
                     primitive-type char <48:53-48:56>
                     ref-type <48:59-48:66>
                       ref-type <48:60-48:66>
@@ -1415,7 +1589,7 @@ module tests/ast/hugetype.f3
                       type-segment <48:75-48:81> qAtp1L舊 <48:75-48:81>
                       type-segment <48:84-48:92> CK8ttMpy8 <48:84-48:92>
                     plain-type <48:95-50:113>
-                      type-segment <48:95-49:28> dOj <48:95-48:97> <> <48:98-49:28>
+                      type-segment <48:95-49:28> dOj <48:95-48:97>
                         fn-type <48:99-48:122> () <48:101-48:122>
                           fn-type-parameter <48:102-48:105>
                             primitive-type char <48:102-48:105>
@@ -1435,7 +1609,7 @@ module tests/ast/hugetype.f3
                         plain-type <49:20-49:27>
                           type-segment <49:20-49:27> 蒥硱Oitl21 <49:20-49:27>
                       type-segment <49:31-49:32> x纵 <49:31-49:32>
-                      type-segment <49:35-49:101> _jIJGM_ <49:35-49:41> <> <49:42-49:101>
+                      type-segment <49:35-49:101> _jIJGM_ <49:35-49:41>
                         ref-type <49:43-49:45>
                           primitive-type i8 <49:44-49:45>
                         fn-type <49:48-49:94> () <49:50-49:94>
@@ -1451,10 +1625,10 @@ module tests/ast/hugetype.f3
                           fn-type-parameter <49:82-49:93> dmvBGAO <49:82-49:88>
                             primitive-type u64 <49:91-49:93>
                         primitive-type char <49:97-49:100>
-                      type-segment <49:104-50:32> Gmmva3IGC <49:104-49:112> <> <49:113-50:32>
+                      type-segment <49:104-50:32> Gmmva3IGC <49:104-49:112>
                         plain-type <49:114-50:4>
                           type-segment <49:114-49:114> a <49:114-49:114>
-                          type-segment <49:117-50:4> oiN0J5 <49:117-49:122> <> <49:123-50:4>
+                          type-segment <49:117-50:4> oiN0J5 <49:117-49:122>
                             primitive-type u8 <49:124-49:125>
                             primitive-type u8 <49:128-49:129>
                             primitive-type i16 <49:132-49:134>
@@ -1466,7 +1640,7 @@ module tests/ast/hugetype.f3
                           literal i32 0 <50:14-50:24>
                         ref-type <50:28-50:31>
                           primitive-type f32 <50:29-50:31>
-                      type-segment <50:35-50:113> Hf0 <50:35-50:37> <> <50:38-50:113>
+                      type-segment <50:35-50:113> Hf0 <50:35-50:37>
                         plain-type <50:39-50:44>
                           type-segment <50:39-50:44> DnO煱gd <50:39-50:44>
                         plain-type <50:47-50:55>
@@ -1484,15 +1658,15 @@ module tests/ast/hugetype.f3
                             type-segment <50:98-50:103> string <50:98-50:103>
                           primitive-type u8 <50:106-50:107>
                           primitive-type i8 <50:110-50:111>
-                  type-segment <50:117-55:45> tOppMOO <50:117-50:123> <> <50:124-55:45>
+                  type-segment <50:117-55:45> tOppMOO <50:117-50:123>
                     plain-type <50:125-50:133> global
                       type-segment <50:127-50:133> pox37 <50:127-50:131>
                     primitive-type i64 <51:1-51:3>
                     plain-type <51:6-53:45>
-                      type-segment <51:6-51:69> Be6dkB3 <51:6-51:12> <> <51:13-51:69>
+                      type-segment <51:6-51:69> Be6dkB3 <51:6-51:12>
                         plain-type <51:14-51:47>
                           type-segment <51:14-51:18> pjN1D <51:14-51:18>
-                          type-segment <51:21-51:41> b秴o <51:21-51:23> <> <51:24-51:41>
+                          type-segment <51:21-51:41> b秴o <51:21-51:23>
                             plain-type <51:25-51:30>
                               type-segment <51:25-51:30> string <51:25-51:30>
                             primitive-type u64 <51:33-51:35>
@@ -1503,25 +1677,25 @@ module tests/ast/hugetype.f3
                           primitive-type u8 <51:56-51:57>
                           primitive-type bool <51:60-51:63>
                           primitive-type i8 <51:66-51:67>
-                      type-segment <51:72-52:85> IjpJcgI <51:72-51:78> <> <51:79-52:85>
+                      type-segment <51:72-52:85> IjpJcgI <51:72-51:78>
                         plain-type <51:80-52:55>
-                          type-segment <51:80-51:97> cpp蜲rB <51:80-51:85> <> <51:86-51:97>
+                          type-segment <51:80-51:97> cpp蜲rB <51:80-51:85>
                             primitive-type u64 <51:87-51:89>
                             primitive-type char <51:92-51:95>
-                          type-segment <51:100-51:117> vp <51:100-51:101> <> <51:102-51:117>
+                          type-segment <51:100-51:117> vp <51:100-51:101>
                             primitive-type i16 <51:103-51:105>
                             primitive-type f64 <51:108-51:110>
                             primitive-type char <51:113-51:116>
-                          type-segment <51:120-52:11> GwseaG龮fK <51:120-51:128> <> <51:129-52:11>
+                          type-segment <51:120-52:11> GwseaG龮fK <51:120-51:128>
                             primitive-type bool <51:130-51:133>
                             primitive-type bool <52:1-52:4>
                             primitive-type bool <52:7-52:10>
-                          type-segment <52:14-52:35> uDNw0ALqt <52:14-52:22> <> <52:23-52:35>
+                          type-segment <52:14-52:35> uDNw0ALqt <52:14-52:22>
                             primitive-type u8 <52:24-52:25>
                             plain-type <52:28-52:30>
                               type-segment <52:28-52:30> i33 <52:28-52:30>
                             primitive-type i8 <52:33-52:34>
-                          type-segment <52:38-52:55> mtgggC8L <52:38-52:45> <> <52:46-52:55>
+                          type-segment <52:38-52:55> mtgggC8L <52:38-52:45>
                             primitive-type u32 <52:47-52:49>
                             primitive-type i8 <52:52-52:53>
                         array-type <52:58-52:71>
@@ -1532,7 +1706,7 @@ module tests/ast/hugetype.f3
                           plain-type <52:75-52:80>
                             type-segment <52:75-52:80> _pAbLb <52:75-52:80>
                           literal i32 1 <52:83-52:83>
-                      type-segment <52:88-53:17> G <52:88-52:88> <> <52:89-53:17>
+                      type-segment <52:88-53:17> G <52:88-52:88>
                         tuple-type <52:90-52:104>
                           primitive-type u32 <52:91-52:93>
                           primitive-type u64 <52:96-52:98>
@@ -1566,20 +1740,20 @@ module tests/ast/hugetype.f3
                       plain-type <53:110-53:117>
                         type-segment <53:110-53:117> B6b07j4d <53:110-53:117>
                     plain-type <53:120-55:44>
-                      type-segment <53:120-55:33> _2AwD2v_ <53:120-53:127> <> <53:128-55:33>
+                      type-segment <53:120-55:33> _2AwD2v_ <53:120-53:127>
                         plain-type <53:129-54:80>
-                          type-segment <53:129-54:9> J <53:129-53:129> <> <53:130-54:9>
+                          type-segment <53:129-54:9> J <53:129-53:129>
                             primitive-type bool <53:131-53:134>
                             primitive-type u32 <54:1-54:3>
                             primitive-type u16 <54:6-54:8>
-                          type-segment <54:12-54:44> 臝ma6Nx34 <54:12-54:19> <> <54:20-54:44>
+                          type-segment <54:12-54:44> 臝ma6Nx34 <54:12-54:19>
                             primitive-type u32 <54:21-54:23>
                             primitive-type i64 <54:26-54:28>
                             primitive-type u32 <54:31-54:33>
                             plain-type <54:36-54:38>
                               type-segment <54:36-54:38> i33 <54:36-54:38>
                             primitive-type u32 <54:41-54:43>
-                          type-segment <54:47-54:67> 鋚l7O5 <54:47-54:51> <> <54:52-54:67>
+                          type-segment <54:47-54:67> 鋚l7O5 <54:47-54:51>
                             primitive-type u64 <54:53-54:55>
                             primitive-type u32 <54:58-54:60>
                             primitive-type char <54:63-54:66>
@@ -1600,19 +1774,19 @@ module tests/ast/hugetype.f3
                           type-segment <55:18-55:27> FF鶦lqK1t <55:18-55:25>
                           type-segment <55:30-55:32> 盳wt <55:30-55:32>
                       type-segment <55:36-55:44> k2fhA诿E_獄 <55:36-55:44>
-                  type-segment <55:48-57:34> 瓤 <55:48-55:48> <> <55:49-57:34>
+                  type-segment <55:48-57:34> 瓤 <55:48-55:48>
                     plain-type <55:50-56:102>
                       type-segment <55:50-55:51> KB <55:50-55:51>
                       type-segment <55:54-55:60> CEMKJ17 <55:54-55:60>
                       type-segment <55:63-55:66> bD <55:63-55:64>
-                      type-segment <55:69-56:99> ifi5e3pE <55:69-55:76> <> <55:77-56:99>
+                      type-segment <55:69-56:99> ifi5e3pE <55:69-55:76>
                         plain-type <55:78-56:18>
-                          type-segment <55:78-55:97> m8 <55:78-55:79> <> <55:80-55:97>
+                          type-segment <55:78-55:97> m8 <55:78-55:79>
                             primitive-type u64 <55:81-55:83>
                             primitive-type f64 <55:86-55:88>
                             plain-type <55:91-55:96>
                               type-segment <55:91-55:96> string <55:91-55:96>
-                          type-segment <55:100-56:4> bqbs <55:100-55:103> <> <55:104-56:4>
+                          type-segment <55:100-56:4> bqbs <55:100-55:103>
                             primitive-type bool <55:105-55:108>
                             primitive-type char <55:111-55:114>
                             primitive-type u16 <55:117-55:119>
@@ -1622,12 +1796,12 @@ module tests/ast/hugetype.f3
                         plain-type <56:21-56:81>
                           type-segment <56:21-56:29> gsfhfKK3L <56:21-56:29>
                           type-segment <56:32-56:38> uI儆2GNe <56:32-56:38>
-                          type-segment <56:41-56:57> h <56:41-56:41> <> <56:42-56:57>
+                          type-segment <56:41-56:57> h <56:41-56:41>
                             plain-type <56:43-56:45>
                               type-segment <56:43-56:45> i33 <56:43-56:45>
                             primitive-type i16 <56:48-56:50>
                             primitive-type char <56:53-56:56>
-                          type-segment <56:60-56:71> I <56:60-56:60> <> <56:61-56:71>
+                          type-segment <56:60-56:71> I <56:60-56:60>
                             primitive-type u32 <56:62-56:64>
                             primitive-type f64 <56:67-56:69>
                           type-segment <56:74-56:81> fG眂頢y0AD <56:74-56:81>
@@ -1655,7 +1829,7 @@ module tests/ast/hugetype.f3
               type-segment <57:61-57:68> DgAjFtu2 <57:61-57:68>
             plain-type <57:71-71:101>
               type-segment <57:71-57:75> usqNw <57:71-57:75>
-              type-segment <57:78-59:85> K <57:78-57:78> <> <57:79-59:85>
+              type-segment <57:78-59:85> K <57:78-57:78>
                 array-type <57:80-57:96>
                   plain-type <57:81-57:89>
                     type-segment <57:81-57:89> k036DFE00 <57:81-57:89>
@@ -1670,7 +1844,7 @@ module tests/ast/hugetype.f3
                   tuple-type <58:12-59:83>
                     plain-type <58:13-58:70>
                       type-segment <58:13-58:19> BOJuM6H <58:13-58:19>
-                      type-segment <58:22-58:50> v镌5 <58:22-58:24> <> <58:25-58:50>
+                      type-segment <58:22-58:50> v镌5 <58:22-58:24>
                         primitive-type u8 <58:26-58:27>
                         primitive-type u32 <58:30-58:32>
                         plain-type <58:35-58:40>
@@ -1682,17 +1856,17 @@ module tests/ast/hugetype.f3
                     plain-type <58:73-58:81>
                       type-segment <58:73-58:81> fOa33fsvo <58:73-58:81>
                     plain-type <58:84-59:44>
-                      type-segment <58:84-58:98> b <58:84-58:84> <> <58:85-58:98>
+                      type-segment <58:84-58:98> b <58:84-58:84>
                         primitive-type i16 <58:86-58:88>
                         plain-type <58:91-58:96>
                           type-segment <58:91-58:96> string <58:91-58:96>
-                      type-segment <58:101-59:3> c槶Elr <58:101-58:105> <> <58:106-59:3>
+                      type-segment <58:101-59:3> c槶Elr <58:101-58:105>
                         primitive-type bool <58:107-58:110>
                         primitive-type u32 <58:113-58:115>
                         primitive-type i16 <58:118-58:120>
                         primitive-type i64 <58:123-58:125>
                         primitive-type u8 <59:1-59:2>
-                      type-segment <59:6-59:30> KxiDn劂 <59:6-59:11> <> <59:12-59:30>
+                      type-segment <59:6-59:30> KxiDn劂 <59:6-59:11>
                         plain-type <59:13-59:18>
                           type-segment <59:13-59:18> string <59:13-59:18>
                         primitive-type char <59:21-59:24>
@@ -1708,7 +1882,7 @@ module tests/ast/hugetype.f3
                       fn-type-parameter <59:62-59:74> yGiHelgre <59:62-59:70>
                         primitive-type i8 <59:73-59:74>
                       primitive-type u16 <59:80-59:82>
-              type-segment <59:88-62:19> qK <59:88-59:89> <> <59:90-62:19>
+              type-segment <59:88-62:19> qK <59:88-59:89>
                 tuple-type <59:91-59:115>
                   ref-type <59:92-59:99>
                     plain-type <59:93-59:99>
@@ -1731,17 +1905,17 @@ module tests/ast/hugetype.f3
                         type-segment <60:23-60:27> l柷Cm脍 <60:23-60:27>
                       literal u16 358 <60:30-60:37>
                     plain-type <60:41-60:59>
-                      type-segment <60:41-60:59> y_ng4 <60:41-60:45> <> <60:46-60:59>
+                      type-segment <60:41-60:59> y_ng4 <60:41-60:45>
                         primitive-type u32 <60:47-60:49>
                         primitive-type i64 <60:52-60:54>
                         primitive-type u8 <60:57-60:58>
                   plain-type <60:63-61:113>
                     type-segment <60:63-60:70> bkvuC5hx <60:63-60:70>
-                    type-segment <60:73-61:94> e <60:73-60:73> <> <60:74-61:94>
+                    type-segment <60:73-61:94> e <60:73-60:73>
                       plain-type <60:75-60:78>
                         type-segment <60:75-60:78> KIam <60:75-60:78>
                       plain-type <60:81-60:124>
-                        type-segment <60:81-60:111> yejd摴OhH <60:81-60:88> <> <60:89-60:111>
+                        type-segment <60:81-60:111> yejd摴OhH <60:81-60:88>
                           primitive-type i8 <60:90-60:91>
                           primitive-type u32 <60:94-60:96>
                           plain-type <60:99-60:101>
@@ -1751,16 +1925,16 @@ module tests/ast/hugetype.f3
                         type-segment <60:114-60:119> NHs趧Os <60:114-60:119>
                         type-segment <60:122-60:124> LjG <60:122-60:124>
                       plain-type <61:1-61:72>
-                        type-segment <61:1-61:21> fK4f <61:1-61:4> <> <61:5-61:21>
+                        type-segment <61:1-61:21> fK4f <61:1-61:4>
                           primitive-type char <61:6-61:9>
                           primitive-type u64 <61:12-61:14>
                           primitive-type bool <61:17-61:20>
                         type-segment <61:24-61:27> kjcD <61:24-61:27>
-                        type-segment <61:30-61:44> E <61:30-61:30> <> <61:31-61:44>
+                        type-segment <61:30-61:44> E <61:30-61:30>
                           primitive-type u8 <61:32-61:33>
                           primitive-type u64 <61:36-61:38>
                           primitive-type u64 <61:41-61:43>
-                        type-segment <61:47-61:64> wuwh <61:47-61:50> <> <61:51-61:64>
+                        type-segment <61:47-61:64> wuwh <61:47-61:50>
                           primitive-type u64 <61:52-61:54>
                           primitive-type i8 <61:57-61:58>
                           primitive-type u64 <61:61-61:63>
@@ -1782,13 +1956,13 @@ module tests/ast/hugetype.f3
                   literal i32 61561 <62:10-62:14>
                 plain-type <62:18-62:18>
                   type-segment <62:18-62:18> H <62:18-62:18>
-              type-segment <62:22-71:40> bcuJp3義dm <62:22-62:30> <> <62:31-71:40>
+              type-segment <62:22-71:40> bcuJp3義dm <62:22-62:30>
                 plain-type <62:32-63:107>
-                  type-segment <62:32-63:107> Ep <62:32-62:33> <> <62:34-63:107>
+                  type-segment <62:32-63:107> Ep <62:32-62:33>
                     tuple-type <62:35-62:102>
                       plain-type <62:36-62:61>
                         type-segment <62:36-62:38> _nt <62:36-62:38>
-                        type-segment <62:41-62:61> gC34t <62:41-62:45> <> <62:46-62:61>
+                        type-segment <62:41-62:61> gC34t <62:41-62:45>
                           primitive-type u32 <62:47-62:49>
                           primitive-type u32 <62:52-62:54>
                           primitive-type bool <62:57-62:60>
@@ -1831,7 +2005,7 @@ module tests/ast/hugetype.f3
                     type-segment <63:114-63:121> FlanmscM <63:114-63:121>
                     type-segment <63:124-63:134> 訔a5jLmIwf <63:124-63:132>
                     type-segment <63:137-63:145> H蕹p3bajLh <63:137-63:145>
-                    type-segment <64:3-64:40> GHup佤 <64:3-64:7> <> <64:8-64:40>
+                    type-segment <64:3-64:40> GHup佤 <64:3-64:7>
                       tuple-type <64:9-64:29>
                         primitive-type i64 <64:10-64:12>
                         primitive-type bool <64:15-64:18>
@@ -1852,7 +2026,7 @@ module tests/ast/hugetype.f3
                     plain-type <64:73-65:12>
                       type-segment <64:73-64:80> ae_p1ifr <64:73-64:80>
                       type-segment <64:83-64:84> K齢 <64:83-64:84>
-                      type-segment <64:87-64:106> Jrbj <64:87-64:90> <> <64:91-64:106>
+                      type-segment <64:87-64:106> Jrbj <64:87-64:90>
                         primitive-type f32 <64:92-64:94>
                         primitive-type bool <64:97-64:100>
                         primitive-type i64 <64:103-64:105>
@@ -1860,44 +2034,44 @@ module tests/ast/hugetype.f3
                       type-segment <65:1-65:6> nDf3qJ <65:1-65:6>
                       type-segment <65:9-65:12> mG4p <65:9-65:12>
                     plain-type <65:15-66:10>
-                      type-segment <65:15-65:34> el <65:15-65:16> <> <65:17-65:34>
+                      type-segment <65:15-65:34> el <65:15-65:16>
                         primitive-type bool <65:18-65:21>
                         plain-type <65:24-65:29>
                           type-segment <65:24-65:29> string <65:24-65:29>
                         primitive-type i8 <65:32-65:33>
                       type-segment <65:37-65:45> h5L1珙og5j <65:37-65:45>
-                      type-segment <65:48-65:68> J <65:48-65:48> <> <65:49-65:68>
+                      type-segment <65:48-65:68> J <65:48-65:48>
                         plain-type <65:50-65:52>
                           type-segment <65:50-65:52> i33 <65:50-65:52>
                         primitive-type i16 <65:55-65:57>
                         primitive-type i16 <65:60-65:62>
                         primitive-type u16 <65:65-65:67>
                       type-segment <65:71-65:76> Omxl3u <65:71-65:76>
-                      type-segment <65:79-65:101> Cxpl4N1o <65:79-65:86> <> <65:87-65:101>
+                      type-segment <65:79-65:101> Cxpl4N1o <65:79-65:86>
                         primitive-type f32 <65:88-65:90>
                         primitive-type u64 <65:93-65:95>
                         primitive-type i16 <65:98-65:100>
-                      type-segment <65:104-66:10> lAkDww嬻Aq <65:104-65:112> <> <65:113-66:10>
+                      type-segment <65:104-66:10> lAkDww嬻Aq <65:104-65:112>
                         primitive-type u64 <65:114-65:116>
                         primitive-type u32 <66:1-66:3>
                         primitive-type char <66:6-66:9>
                   plain-type <66:14-68:54>
                     type-segment <66:14-66:24> i3kh6Fv82 <66:14-66:22>
                     type-segment <66:27-66:35> GCJG儤ik <66:27-66:33>
-                    type-segment <66:38-67:48> cquKq <66:38-66:42> <> <66:43-67:48>
+                    type-segment <66:38-67:48> cquKq <66:38-66:42>
                       array-type <66:44-66:58>
                         plain-type <66:45-66:51>
                           type-segment <66:45-66:51> t嗕F_ocE <66:45-66:51>
                         literal i32 2214 <66:54-66:57>
                       plain-type <66:61-67:23> global
                         type-segment <66:63-66:68> jtdffi <66:63-66:68>
-                        type-segment <66:71-66:92> iGh0sIGE <66:71-66:78> <> <66:79-66:92>
+                        type-segment <66:71-66:92> iGh0sIGE <66:71-66:78>
                           primitive-type u8 <66:80-66:81>
                           primitive-type u64 <66:84-66:86>
                           primitive-type f32 <66:89-66:91>
                         type-segment <66:95-66:103> MM喩慝0Lmjd <66:95-66:103>
                         type-segment <66:106-66:114> n跲1moqmt8 <66:106-66:114>
-                        type-segment <66:117-67:18> uFlMC <66:117-66:121> <> <66:122-67:18>
+                        type-segment <66:117-67:18> uFlMC <66:117-66:121>
                           primitive-type char <66:123-66:126>
                           primitive-type i64 <67:1-67:3>
                           primitive-type u16 <67:6-67:8>
@@ -1905,11 +2079,11 @@ module tests/ast/hugetype.f3
                           primitive-type u8 <67:16-67:17>
                         type-segment <67:21-67:23> KAq <67:21-67:23>
                       plain-type <67:26-67:47>
-                        type-segment <67:26-67:47> qCx1c3k <67:26-67:32> <> <67:33-67:47>
+                        type-segment <67:26-67:47> qCx1c3k <67:26-67:32>
                           primitive-type u8 <67:34-67:35>
                           primitive-type i64 <67:38-67:40>
                           primitive-type char <67:43-67:46>
-                    type-segment <67:51-68:49> HbFhvb <67:51-67:56> <> <67:57-68:49>
+                    type-segment <67:51-68:49> HbFhvb <67:51-67:56>
                       fn-type <67:58-67:87> () <67:60-67:87>
                         fn-type-parameter <67:61-67:62>
                           primitive-type i8 <67:61-67:62>
@@ -1922,16 +2096,16 @@ module tests/ast/hugetype.f3
                         primitive-type f64 <67:96-67:98>
                         primitive-type char <67:101-67:104>
                       plain-type <67:108-68:48>
-                        type-segment <67:108-67:123> Akn7O <67:108-67:112> <> <67:113-67:123>
+                        type-segment <67:108-67:123> Akn7O <67:108-67:112>
                           primitive-type f32 <67:114-67:116>
                           primitive-type f64 <67:119-67:121>
-                        type-segment <68:1-68:18> IrE <68:1-68:3> <> <68:4-68:18>
+                        type-segment <68:1-68:18> IrE <68:1-68:3>
                           primitive-type i64 <68:5-68:7>
                           primitive-type u64 <68:10-68:12>
                           primitive-type i16 <68:15-68:17>
                         type-segment <68:21-68:22> Ge <68:21-68:22>
                         type-segment <68:25-68:33> lipMndB0p <68:25-68:33>
-                        type-segment <68:36-68:48> dgk <68:36-68:38> <> <68:39-68:48>
+                        type-segment <68:36-68:48> dgk <68:36-68:38>
                           primitive-type u8 <68:40-68:41>
                           primitive-type u64 <68:44-68:46>
                     type-segment <68:52-68:54> AvJ <68:52-68:54>
@@ -1944,7 +2118,7 @@ module tests/ast/hugetype.f3
                     type-segment <68:77-68:77> c <68:77-68:77>
                   plain-type <68:80-70:112>
                     type-segment <68:80-68:85> bGLy1H <68:80-68:85>
-                    type-segment <68:88-69:7> q2lrhci <68:88-68:94> <> <68:95-69:7>
+                    type-segment <68:88-69:7> q2lrhci <68:88-68:94>
                       plain-type <68:96-68:97>
                         type-segment <68:96-68:97> Ir <68:96-68:97>
                       fn-type <68:100-69:5> () <68:102-69:5>
@@ -1954,11 +2128,11 @@ module tests/ast/hugetype.f3
                           primitive-type u8 <68:111-68:112>
                         fn-type-parameter <68:115-69:4> GD84cFbu3 <68:115-68:123>
                           primitive-type char <69:1-69:4>
-                    type-segment <69:10-69:82> N__JNu <69:10-69:15> <> <69:16-69:82>
+                    type-segment <69:10-69:82> N__JNu <69:10-69:15>
                       ref-type <69:17-69:21>
                         primitive-type char <69:18-69:21>
                       plain-type <69:24-69:67>
-                        type-segment <69:24-69:48> kKDBIj8up <69:24-69:32> <> <69:33-69:48>
+                        type-segment <69:24-69:48> kKDBIj8up <69:24-69:32>
                           plain-type <69:34-69:36>
                             type-segment <69:34-69:36> i33 <69:34-69:36>
                           primitive-type u16 <69:39-69:41>
@@ -1969,16 +2143,16 @@ module tests/ast/hugetype.f3
                         plain-type <69:71-69:74>
                           type-segment <69:71-69:74> t姪Fx <69:71-69:74>
                         literal i32 6 <69:77-69:80>
-                    type-segment <69:85-70:112> n00BK <69:85-69:89> <> <69:90-70:112>
+                    type-segment <69:85-70:112> n00BK <69:85-69:89>
                       plain-type <69:91-70:4>
                         type-segment <69:91-69:95> ca6凥_ <69:91-69:95>
-                        type-segment <69:98-70:4> Mc4GB <69:98-69:102> <> <69:103-70:4>
+                        type-segment <69:98-70:4> Mc4GB <69:98-69:102>
                           primitive-type u16 <69:104-69:106>
                           plain-type <69:109-69:114>
                             type-segment <69:109-69:114> string <69:109-69:114>
                           primitive-type i64 <70:1-70:3>
                       plain-type <70:7-70:105> global
-                        type-segment <70:9-70:38> x3kG6 <70:9-70:13> <> <70:14-70:38>
+                        type-segment <70:9-70:38> x3kG6 <70:9-70:13>
                           primitive-type f64 <70:15-70:17>
                           plain-type <70:20-70:22>
                             type-segment <70:20-70:22> i33 <70:20-70:22>
@@ -1986,11 +2160,11 @@ module tests/ast/hugetype.f3
                           primitive-type f32 <70:30-70:32>
                           primitive-type f32 <70:35-70:37>
                         type-segment <70:41-70:49> aBqduKnKc <70:41-70:49>
-                        type-segment <70:52-70:71> sh3齇GG <70:52-70:57> <> <70:58-70:71>
+                        type-segment <70:52-70:71> sh3齇GG <70:52-70:57>
                           primitive-type i8 <70:59-70:60>
                           primitive-type u32 <70:63-70:65>
                           primitive-type f32 <70:68-70:70>
-                        type-segment <70:74-70:87> reI <70:74-70:76> <> <70:77-70:87>
+                        type-segment <70:74-70:87> reI <70:74-70:76>
                           primitive-type f32 <70:78-70:80>
                           primitive-type f64 <70:83-70:85>
                         type-segment <70:90-70:94> Dn8Kc <70:90-70:94>
@@ -2008,7 +2182,7 @@ module tests/ast/hugetype.f3
                         type-segment <71:8-71:16> KoC6K58n5 <71:8-71:16>
                       literal u32 3047865184 <71:19-71:31>
                   primitive-type u64 <71:36-71:38>
-              type-segment <71:43-71:101> IincEILqo <71:43-71:51> <> <71:52-71:101>
+              type-segment <71:43-71:101> IincEILqo <71:43-71:51>
                 tuple-type <71:53-71:92>
                   array-type <71:54-71:74>
                     plain-type <71:55-71:56>
@@ -2021,11 +2195,11 @@ module tests/ast/hugetype.f3
                   tuple-type <71:90-71:91>
                 plain-type <71:95-71:99>
                   type-segment <71:95-71:99> qIOlh <71:95-71:99>
-          type-segment <71:105-76:151> mmBr冒h_ <71:105-71:111> <> <71:112-76:151>
+          type-segment <71:105-76:151> mmBr冒h_ <71:105-71:111>
             ref-type <71:113-72:33>
               plain-type <71:114-72:33>
                 type-segment <71:114-71:118> E7MEe <71:114-71:118>
-                type-segment <71:121-72:23> F <71:121-71:121> <> <71:122-72:23>
+                type-segment <71:121-72:23> F <71:121-71:121>
                   array-type <71:123-72:4>
                     plain-type <71:124-71:130>
                       type-segment <71:124-71:130> E橝0EtCI <71:124-71:130>
@@ -2039,7 +2213,7 @@ module tests/ast/hugetype.f3
             tuple-type <72:36-76:149>
               plain-type <72:37-73:105>
                 type-segment <72:37-72:42> n釜2e6j <72:37-72:42>
-                type-segment <72:45-73:34> ymjBDaB <72:45-72:51> <> <72:52-73:34>
+                type-segment <72:45-73:34> ymjBDaB <72:45-72:51>
                   array-type <72:53-72:72>
                     plain-type <72:54-72:57>
                       type-segment <72:54-72:57> cdOq <72:54-72:57>
@@ -2063,7 +2237,7 @@ module tests/ast/hugetype.f3
                       primitive-type u16 <73:24-73:26>
                       primitive-type u32 <73:29-73:31>
                 type-segment <73:37-73:37> m <73:37-73:37>
-                type-segment <73:40-73:105> 奃g <73:40-73:41> <> <73:42-73:105>
+                type-segment <73:40-73:105> 奃g <73:40-73:41>
                   tuple-type <73:43-73:78>
                     plain-type <73:44-73:45>
                       type-segment <73:44-73:45> hq <73:44-73:45>
@@ -2083,7 +2257,7 @@ module tests/ast/hugetype.f3
                 plain-type <74:2-75:85>
                   type-segment <74:2-74:2> q <74:2-74:2>
                   type-segment <74:5-74:7> nr3 <74:5-74:7>
-                  type-segment <74:10-74:52> eB謑EJH <74:10-74:15> <> <74:16-74:52>
+                  type-segment <74:10-74:52> eB謑EJH <74:10-74:15>
                     array-type <74:17-74:37>
                       plain-type <74:18-74:26>
                         type-segment <74:18-74:26> jEck77E踐F <74:18-74:26>
@@ -2093,18 +2267,18 @@ module tests/ast/hugetype.f3
                         type-segment <74:41-74:41> p <74:41-74:41>
                       literal i32 0 <74:44-74:46>
                     tuple-type <74:50-74:51>
-                  type-segment <74:55-75:85> kon3cu <74:55-74:60> <> <74:61-75:85>
+                  type-segment <74:55-75:85> kon3cu <74:55-74:60>
                     plain-type <74:62-74:66>
                       type-segment <74:62-74:66> 毕G3KO <74:62-74:66>
                     plain-type <74:69-75:12>
-                      type-segment <74:69-74:93> jh5yN <74:69-74:73> <> <74:74-74:93>
+                      type-segment <74:69-74:93> jh5yN <74:69-74:73>
                         primitive-type f32 <74:75-74:77>
                         primitive-type i8 <74:80-74:81>
                         primitive-type char <74:84-74:87>
                         primitive-type f32 <74:90-74:92>
                       type-segment <74:96-74:97> rc <74:96-74:97>
                       type-segment <74:100-74:105> F32amv <74:100-74:105>
-                      type-segment <74:108-75:4> m <74:108-74:108> <> <74:109-75:4>
+                      type-segment <74:108-75:4> m <74:108-74:108>
                         plain-type <74:110-74:112>
                           type-segment <74:110-74:112> i33 <74:110-74:112>
                         primitive-type f64 <74:115-74:117>
@@ -2113,30 +2287,30 @@ module tests/ast/hugetype.f3
                       type-segment <75:11-75:12> bb <75:11-75:12>
                     plain-type <75:15-75:84>
                       type-segment <75:15-75:17> fMA <75:15-75:17>
-                      type-segment <75:20-75:42> aul0 <75:20-75:23> <> <75:24-75:42>
+                      type-segment <75:20-75:42> aul0 <75:20-75:23>
                         primitive-type f64 <75:25-75:27>
                         primitive-type u8 <75:30-75:31>
                         primitive-type u32 <75:34-75:36>
                         plain-type <75:39-75:41>
                           type-segment <75:39-75:41> i33 <75:39-75:41>
                       type-segment <75:45-75:48> Mqoj <75:45-75:48>
-                      type-segment <75:51-75:84> NHeh覊1v0q <75:51-75:59> <> <75:60-75:84>
+                      type-segment <75:51-75:84> NHeh覊1v0q <75:51-75:59>
                         primitive-type u64 <75:61-75:63>
                         primitive-type i64 <75:66-75:68>
                         primitive-type f32 <75:71-75:73>
                         primitive-type i16 <75:76-75:78>
                         primitive-type i64 <75:81-75:83>
                 plain-type <75:88-76:128>
-                  type-segment <75:88-76:119> J_y <75:88-75:90> <> <75:91-76:119>
+                  type-segment <75:88-76:119> J_y <75:88-75:90>
                     plain-type <75:92-76:40>
-                      type-segment <75:92-76:4> Os6婪A <75:92-75:96> <> <75:97-76:4>
+                      type-segment <75:92-76:4> Os6婪A <75:92-75:96>
                         plain-type <75:98-75:103>
                           type-segment <75:98-75:103> string <75:98-75:103>
                         primitive-type u8 <75:106-75:107>
                         primitive-type f32 <75:110-75:112>
                         primitive-type u32 <75:115-75:117>
                         primitive-type i64 <76:1-76:3>
-                      type-segment <76:7-76:36> y8ojkCa <76:7-76:13> <> <76:14-76:36>
+                      type-segment <76:7-76:36> y8ojkCa <76:7-76:13>
                         primitive-type f64 <76:15-76:17>
                         primitive-type u8 <76:20-76:21>
                         primitive-type i64 <76:24-76:26>
@@ -2149,14 +2323,14 @@ module tests/ast/hugetype.f3
                       primitive-type u8 <76:55-76:56>
                       primitive-type i8 <76:59-76:60>
                     plain-type <76:64-76:83>
-                      type-segment <76:64-76:83> hOob <76:64-76:67> <> <76:68-76:83>
+                      type-segment <76:64-76:83> hOob <76:64-76:67>
                         primitive-type u16 <76:69-76:71>
                         primitive-type i64 <76:74-76:76>
                         primitive-type bool <76:79-76:82>
                     primitive-type u16 <76:86-76:88>
                     plain-type <76:91-76:118>
                       type-segment <76:91-76:99> fCk77K要nx <76:91-76:99>
-                      type-segment <76:102-76:118> l <76:102-76:102> <> <76:103-76:118>
+                      type-segment <76:102-76:118> l <76:102-76:102>
                         primitive-type char <76:104-76:107>
                         primitive-type u32 <76:110-76:112>
                         primitive-type u32 <76:115-76:117>

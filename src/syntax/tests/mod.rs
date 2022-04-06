@@ -172,7 +172,7 @@ macro_rules! make_name {
     (segment $start:literal:$end:literal #$id:literal) => (
         NameSegment::Normal(IdSpan::new($id, Span::new($start, $end))));
     (segment generic $start:literal:$end:literal $($ty:expr),*$(,)?) => (
-        NameSegment::Generic(vec![$($ty,)*], Span::new($start, $end)));
+        NameSegment::Generic(TypeList{ items: vec![$($ty,)*], span: Span::new($start, $end) }));
     // bare version for use outside of expr
     (simple bare $start:literal:$end:literal #$id:literal) => (
         make_name!(bare $start:$end false, None, make_name!(segment $start:$end #$id)));
@@ -222,8 +222,7 @@ macro_rules! make_expr {
             span: Span::new($start, $end),
             base: MemberNameBase::Numeric(Numeric::I32($base)),
             base_span: Span::new($start, $end),
-            quote_span: Span::new(0, 0),
-            parameters: Vec::new(),
+            parameters: None,
         }
     );
     (member name $start:literal:$end:literal numeric $base:expr) => (
@@ -231,8 +230,7 @@ macro_rules! make_expr {
             span: Span::new($start, $end),
             base: MemberNameBase::Numeric($base),
             base_span: Span::new($start, $end),
-            quote_span: Span::new(0, 0),
-            parameters: Vec::new(),
+            parameters: None,
         }
     );
     (member name $start:literal:$end:literal #$id:literal) => (
@@ -240,8 +238,7 @@ macro_rules! make_expr {
             span: Span::new($start, $end),
             base: MemberNameBase::Ident(IsId::new($id)),
             base_span: Span::new($start, $end),
-            quote_span: Span::new(0, 0),
-            parameters: Vec::new(),
+            parameters: None,
         }
     );
     (member name $start:literal:$end:literal #$id:literal $base_start:literal:$base_end:literal quote $quote_start:literal:$quote_end:literal $($parameter:expr),*$(,)?) => (
@@ -249,8 +246,7 @@ macro_rules! make_expr {
             span: Span::new($start, $end),
             base: MemberNameBase::Ident(IsId::new($id)),
             base_span: Span::new($base_start, $base_end),
-            quote_span: Span::new($quote_start, $quote_end),
-            parameters: vec![$($parameter,)*],
+            parameters: Some(TypeList{ items: vec![$($parameter,)*], span: Span::new($quote_start, $quote_end) }),
         }
     );
     (member $start:literal:$end:literal dot $dot_start:literal:$dot_end:literal $base:expr, $name:expr) => (
@@ -443,18 +439,16 @@ macro_rules! make_type {
     (array $start:literal:$end:literal $base:expr, $size:expr) => (
         TypeRef::Array(ArrayType{ base: Box::new($base), size: $size, span: Span::new($start, $end) }));
     (tuple $start:literal:$end:literal [$($item:expr),*$(,)?]) => (
-        TypeRef::Tuple(TupleType{ items: vec![$($item,)*], span: Span::new($start, $end) }));
+        TypeRef::Tuple(TupleType{ parameters: vec![$($item,)*], span: Span::new($start, $end) }));
     (segment $start:literal:$end:literal #$ident:literal) => (TypeSegment{ 
-        base: IdSpan::new($ident, Span::new($start, $end)), 
-        quote_span: Span::new(0, 0),
-        parameters: Vec::new(),
+        base: IdSpan::new($ident, Span::new($start, $end)),
+        parameters: None,
         span: Span::new($start, $end),
     });
     (segment generic $start:literal:$end:literal #$ident:literal $ident_start:literal:$ident_end:literal quote $quote_start:literal:$quote_end:literal $($parameter:expr),*$(,)?) => (
         TypeSegment{
             base: IdSpan::new($ident, Span::new($ident_start, $ident_end)),
-            quote_span: Span::new($quote_start, $quote_end),
-            parameters: vec![$($parameter,)*],
+            parameters: Some(TypeList{ items: vec![$($parameter,)*], span: Span::new($quote_start, $quote_end) }),
             span: Span::new($start, $end),
         }
     );

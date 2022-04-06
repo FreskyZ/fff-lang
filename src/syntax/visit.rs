@@ -82,6 +82,7 @@ pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_type_as_segment(&mut self, node: &TypeAsSegment) -> Result<T, E> { node.walk(self) }
     fn visit_type_def(&mut self, node: &TypeDef) -> Result<T, E> { node.walk(self) }
     fn visit_type_def_field(&mut self, node: &TypeDefField) -> Result<T, E> { node.walk(self) }
+    fn visit_type_list(&mut self, node: &TypeList) -> Result<T, E> { node.walk(self) }
     fn visit_type_ref(&mut self, node: &TypeRef) -> Result<T, E> { node.walk(self) }
     fn visit_type_segment(&mut self, node: &TypeSegment) -> Result<T, E> { node.walk(self) }
     fn visit_unary_expr(&mut self, node: &UnaryExpr) -> Result<T, E> { node.walk(self) }
