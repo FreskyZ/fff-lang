@@ -154,6 +154,15 @@ impl_node!{ ForStatement, visit_for_stmt, |self, v| {
     v.visit_block(&self.body)
 }}
 
+impl_node!{ GenericName, visit_generic_name, |self, v| {
+    for parameter in &self.parameters {
+        v.visit_generic_parameter(parameter)?;
+    }
+    Ok(Default::default())
+}}
+
+impl_node!{ GenericParameter, visit_generic_parameter }
+
 impl_node!{ IfStatement, visit_if_stmt, |self, v| {
     v.visit_if_clause(&self.if_clause)?;
     for elseif in &self.elseif_clauses {
@@ -297,6 +306,7 @@ impl_abc_node!{ Statement, visit_stmt,
 }
 
 impl_node!{ TypeDef, visit_type_def, |self, v| {
+    v.visit_generic_name(&self.name)?;
     for field in &self.fields {
         v.visit_type_def_field(field)?;
     }
@@ -353,6 +363,13 @@ impl_node!{ VarDeclStatement, visit_var_decl, |self, v| {
     }
     if let Some(init_expr) = &self.init_value {
         v.visit_expr(init_expr)?;
+    }
+    Ok(Default::default())
+}}
+
+impl_node!{ WhereClause, visit_where_clause, |self, v| {
+    for constraint in &self.constraints {
+        v.visit_type_ref(constraint)?;
     }
     Ok(Default::default())
 }}

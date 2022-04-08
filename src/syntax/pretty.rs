@@ -216,6 +216,21 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
         })
     }
 
+    fn visit_generic_name(&mut self, node: &GenericName) -> fmt::Result {
+        self.impl_visit(node, "generic-name", node.span, |f| {
+            f.write_space()?.write_idspan(node.base)?;
+            if node.quote_span != Span::new(0, 0) {
+                f.write_str(" <> ")?.write_span(node.quote_span)?;
+            }
+            Ok(f)
+        })
+    }
+
+    fn visit_generic_parameter(&mut self, node: &GenericParameter) -> fmt::Result {
+        self.impl_visit(node, "generic-parameter", node.span, |f| 
+            f.write_space()?.write_idspan(node.name))
+    }
+
     fn visit_if_stmt(&mut self, node: &IfStatement) -> fmt::Result {
         self.impl_visit_simple(node, "if-stmt", node.span)
     }
@@ -342,8 +357,7 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
     }
 
     fn visit_type_def(&mut self, node: &TypeDef) -> fmt::Result {
-        self.impl_visit(node, "type-ref", node.span, |f|
-            f.write_space()?.write_idspan(node.name))
+        self.impl_visit_simple(node, "type-def", node.span)
     }
 
     fn visit_tuple_index_expr(&mut self, node: &TupleIndexExpr) -> fmt::Result {

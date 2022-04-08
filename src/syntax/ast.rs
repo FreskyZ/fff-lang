@@ -110,6 +110,13 @@ pub struct CallExpr {
     pub quote_span: Span,
 }
 
+pub struct ClassDef {
+    pub span: Span,
+    pub name: GenericName,
+    pub quote_span: Span,
+    pub functions: Vec<FnDeclare>,
+}
+
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct ContinueStatement {
@@ -186,6 +193,14 @@ pub enum ExprListParseResult {
     EndWithComma(Span, ExprList),   // and quote span
 }
 
+pub struct FnDeclare {
+    pub span: Span,
+    pub name: IdSpan,
+    pub quote_span: Span,
+    pub parameters: Vec<FnDefParameter>,
+    pub ret_type: Option<TypeRef>,
+}
+
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct FnDef {
@@ -234,6 +249,24 @@ pub struct ForStatement {
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
+pub struct GenericName {
+    pub span: Span,
+    pub base: IdSpan,
+    pub quote_span: Span,
+    pub parameters: Vec<GenericParameter>,
+}
+
+// currently this is only one identifier, but it's hard to pretty print vec<idspan> in one line
+// and future this may include where clause, so it is separate node
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
+pub struct GenericParameter {
+    pub span: Span,
+    pub name: IdSpan,
+}
+
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct IfClause {
     pub span: Span,
     pub condition: Expr,
@@ -247,6 +280,14 @@ pub struct IfStatement {
     pub if_clause: IfClause,
     pub elseif_clauses: Vec<IfClause>,
     pub else_clause: Option<ElseClause>,
+}
+
+pub struct Implement {
+    pub span: Span,
+    pub class: Option<TypeRef>,
+    pub r#type: TypeRef,
+    pub quote_span: Span,
+    pub functions: Vec<FnDef>,
 }
 
 define_abc! {
@@ -478,7 +519,7 @@ pub struct TupleType {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct TypeDef {
     pub span: Span,
-    pub name: IdSpan,
+    pub name: GenericName,
     pub fields: Vec<TypeDefField>,
 }
 
@@ -535,6 +576,14 @@ pub struct VarDeclStatement {
     pub name: IdSpan,
     pub r#type: Option<TypeRef>,
     pub init_value: Option<Expr>,
+}
+
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
+pub struct WhereClause {
+    pub span: Span,
+    pub name: IdSpan,
+    pub constraints: Vec<TypeRef>,
 }
 
 #[derive(Debug)]

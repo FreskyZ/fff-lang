@@ -385,20 +385,6 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         }
     }
 
-    /// Check current token is identifier or meet the predict
-    /// 
-    /// if so, move next and Ok(id_span),
-    /// if not, push unexpect and Err(Unexpected)
-    ///
-    /// example `let name = cx.expect_ident_or_keyword_kind(KeywordKind::Primitive)?;`
-    fn expect_ident_or_keyword_kind(&mut self, kind: KeywordKind) -> Result<IdSpan, Unexpected> {
-        match self.current {
-            Token::Ident(id) => Ok(IdSpan::new(id, self.move_next())),
-            Token::Keyword(kw) if kw.kind(kind) => Ok(IdSpan::new(self.base.intern(kw.display()), self.move_next())),
-            _ => self.push_unexpect(&format!("identifier or {:?}", kind)),
-        }
-    }
-
     fn push_unexpect<T>(&mut self, expect_desc: &str) -> Result<T, Unexpected> {
         self.base.emit("unexpected token")
             .detail(self.current_span, format!("meet {:?}", self.current))

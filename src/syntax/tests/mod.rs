@@ -332,6 +332,26 @@ macro_rules! make_stmt {
     (label none) => (
         None
     );
+    (name $start:literal:$end:literal #$id:literal) => (
+        GenericName{
+            span: Span::new($start, $end),
+            base: IdSpan::new($id, Span::new($start, $end)),
+            quote_span: Span::new(0, 0),
+            parameters: Vec::new(),
+        }
+    );
+    (name $start:literal:$end:literal #$id:literal $id_start:literal:$id_end:literal quote $quote_start:literal:$quote_end:literal $($parameter:expr),*$(,)?) => (
+        GenericName{
+            span: Span::new($start, $end),
+            base: IdSpan::new($id, Span::new($id_start, $id_end)),
+            quote_span: Span::new($quote_start, $quote_end),
+            parameters: vec![$($parameter,)*]
+        }
+    );
+    // generic parameter currently is similar to idspan
+    (gp $start:literal:$end:literal #$id:literal) => (
+        GenericParameter{ span: Span::new($start, $end), name: IdSpan::new($id, Span::new($start, $end)) }
+    );
     (block $start:literal:$end:literal $($item:expr),*$(,)?) => (
         Block{
             span: Span::new($start, $end),
@@ -339,7 +359,7 @@ macro_rules! make_stmt {
         }
     );
     // fn def is too long and recommend directly struct literal
-    (fn-parameter $start:literal:$end:literal #$id:literal $id_start:literal:$id_end:literal $type:expr) => (
+    (fp $start:literal:$end:literal #$id:literal $id_start:literal:$id_end:literal $type:expr) => (
         FnDefParameter{
             span: Span::new($start, $end),
             name: IdSpan::new($id, Span::new($id_start, $id_end)),
@@ -458,7 +478,7 @@ macro_rules! make_type {
     (array $start:literal:$end:literal $base:expr, $size:expr) => (
         TypeRef::Array(ArrayType{ base: Box::new($base), size: $size, span: Span::new($start, $end) })
     );
-    (tuple $start:literal:$end:literal [$($item:expr),*$(,)?]) => (
+    (tuple $start:literal:$end:literal $($item:expr),*$(,)?) => (
         TypeRef::Tuple(TupleType{ parameters: vec![$($item,)*], span: Span::new($start, $end) })
     );
     (path $($tt:tt)+) => (

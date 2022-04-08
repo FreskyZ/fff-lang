@@ -139,3 +139,4 @@ pub const ExpectLtMeet: &str = "expect `<`, meet";
 pub const MaybeGenericHelpForType: &str = "use `<...> instead of `::<...>` in types";
 pub const ExpectDoubleColonMeetSingleColon: &str = "expect `::`, meet `:`";
 pub const InvalidPath: &str = "invalid path";
+pub const EmptyGenericParameterList: &str = "empty generic parameter list";

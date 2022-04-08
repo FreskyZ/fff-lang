@@ -40,33 +40,30 @@ fn parse_array_type() {
 fn parse_tuple_type() {
 
     case!{ parse_type_ref "()", 
-        make_type!(tuple 0:1 [])
+        make_type!(tuple 0:1)
     }
 
     case!{ parse_type_ref "(i32, i32)", 
-        make_type!(tuple 0:9 [
+        make_type!(tuple 0:9
             make_type!(prim 1:3 I32),
-            make_type!(prim 6:8 I32),
-        ]),
+            make_type!(prim 6:8 I32)),
     }
 
     case!{ parse_type_ref "(abc, def)", 
-        make_type!(tuple 0:9 [
+        make_type!(tuple 0:9
             make_type!(simple 1:3 #2),
-            make_type!(simple 6:8 #3),
-        ]),
+            make_type!(simple 6:8 #3)),
     }
 
     case!{ parse_type_ref "(string,)", 
-        make_type!(tuple 0:8 [
-            make_type!(simple 1:6 #2),
-        ]),
+        make_type!(tuple 0:8
+            make_type!(simple 1:6 #2)),
     }
 
     case!{ parse_type_ref "(i32)",
-        make_type!(tuple 0:4 [
+        make_type!(tuple 0:4
             make_type!(prim 1:3 I32),
-        ]), errors make_errors!(e: e.emit(strings::SingleItemTupleType).detail(Span::new(4, 4), strings::TupleTypeExpectCommaMeetRightParen)),
+        ), errors make_errors!(e: e.emit(strings::SingleItemTupleType).detail(Span::new(4, 4), strings::TupleTypeExpectCommaMeetRightParen)),
     }
 }
 
@@ -200,15 +197,14 @@ fn parse_fn_type() {
                     make_type!(simple 10:11 #3),
                     make_expr!(i32 6326 14:17))),
             make_type!(fp 21:153
-                make_type!(ref 21:153 make_type!(tuple 22:153 [
-                    make_type!(tuple 23:54 [
+                make_type!(ref 21:153 make_type!(tuple 22:153
+                    make_type!(tuple 23:54
                         make_type!(ref 24:37 
                             make_type!(simple 25:37 #4)),
                         make_type!(prim 40:42 I64),
                         make_type!(ref 45:48
                             make_type!(prim 46:48 F64)),
-                        make_type!(prim 51:53 U64),
-                    ]),
+                        make_type!(prim 51:53 U64)),
                     make_type!(fn 57:118 paren 59:118 [
                         make_type!(fp named 60:82 #5 60:61
                             make_type!(array 64:82
@@ -226,8 +222,7 @@ fn parse_fn_type() {
                         make_expr!(r64 636353.4560000001 132:141)),
                     make_type!(array 145:152
                         make_type!(simple 146:146 #11),
-                        make_expr!(i32 271 149:151)),
-                ]))),
+                        make_expr!(i32 271 149:151))))),
             make_type!(fp 156:157
                 make_type!(simple 156:157 #12)),
         ], make_type!(array 164:182
@@ -244,7 +239,7 @@ fn parse_ref_type() {
     // this is some what void*
     case!{ parse_type_ref "&()", 
         make_type!(ref 0:2
-            make_type!(tuple 1:2 []))
+            make_type!(tuple 1:2))
     }
 
     // split and and
@@ -427,6 +422,18 @@ pub fn parse_path() {
         make_path!(0:4
             make_path!(segment generic 0:4 #2 0:0 quote 3:4)
         ), errors make_errors!(e: e.emit(strings::EmptyTypeList).span(Span::new(3, 4)))
+    }
+
+    // include single comma
+    case!{ parse_type_path "a<,>",
+        make_path!(0:3
+            make_path!(segment generic 0:3 #2 0:0 quote 1:3)
+        ), errors make_errors!(e: e.emit(strings::EmptyTypeList).span(Span::new(1, 3)))
+    }
+    case!{ parse_value_path "a::<,>",
+        make_path!(0:5
+            make_path!(segment generic 0:5 #2 0:0 quote 3:5)
+        ), errors make_errors!(e: e.emit(strings::EmptyTypeList).span(Span::new(3, 5)))
     }
     
     //                      0123456789

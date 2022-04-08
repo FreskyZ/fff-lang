@@ -1,4 +1,4 @@
 [alias]
 rt = "run --bin ct"
 rc = "run --bin ffc"
-ut = "test"
+ut = "test --lib"

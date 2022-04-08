@@ -270,10 +270,9 @@ fn var_decl_stmt_parse() {
     case!{ parse_var_decl "var buf: [(u8, char);1];",
         make_stmt!(var 0:23 #2 4:6
             Some(make_type!(array 9:22
-                make_type!(tuple 10:19 [
+                make_type!(tuple 10:19
                     make_type!(prim 11:12 U8),
-                    make_type!(prim 15:18 Char),
-                ]),
+                    make_type!(prim 15:18 Char)),
                 make_expr!(i32 1 21:21).into())),
             None)
     }
@@ -286,11 +285,11 @@ fn var_decl_stmt_parse() {
     //      01234567890123456789012345678901234567890123456789
     case!{ parse_var_decl "var buf: ([u8;3], u32) = ([1u8, 5u8, 0x7u8], abc);",
         make_stmt!(var 0:49 #2 4:6
-            Some(make_type!(tuple 9:21 [
+            Some(make_type!(tuple 9:21
                 make_type!(array 10:15 
                     make_type!(prim 11:12 U8), 
                     make_expr!(i32 3 14:14).into()), 
-                make_type!(prim 18:20 U32)])),
+                make_type!(prim 18:20 U32))),
             Some(make_expr!(tuple 25:48
                 make_expr!(array 26:42
                     make_expr!(u8 1 27:29),
@@ -371,7 +370,7 @@ fn fn_def_parse() {
             name: make_stmt!(id 3:6 #2), 
             quote_span: Span::new(7, 15), 
             parameters: vec![
-                make_stmt!(fn-parameter 8:14 #3 8:9
+                make_stmt!(fp 8:14 #3 8:9
                     make_type!(prim 12:14 I32)),
             ],
             ret_type: None,
@@ -387,11 +386,11 @@ fn fn_def_parse() {
             name: make_stmt!(id 4:10 #2),
             quote_span: Span::new(11, 60), 
             parameters: vec![
-                make_stmt!(fn-parameter 12:27 #3 12:15
+                make_stmt!(fp 12:27 #3 12:15
                     make_type!(ref 17:27 make_type!(simple 22:27 #4))),
-                make_stmt!(fn-parameter 32:39 #5 32:35
+                make_stmt!(fp 32:39 #5 32:35
                     make_type!(prim 37:39 I32)),
-                make_stmt!(fn-parameter 42:57 #6 42:51
+                make_stmt!(fp 42:57 #6 42:51
                     make_type!(prim 54:57 Char)),
             ],
             ret_type: None,
@@ -424,11 +423,11 @@ fn fn_def_parse() {
             name: make_stmt!(id 3:6 #2), 
             quote_span: Span::new(7, 50), 
             parameters: vec![
-                make_stmt!(fn-parameter 8:16 #3 8:11
+                make_stmt!(fp 8:16 #3 8:11
                     make_type!(prim 14:16 I32)),
-                make_stmt!(fn-parameter 19:30 #4 19:22
+                make_stmt!(fp 19:30 #4 19:22
                     make_type!(ref 25:30 make_type!(ref 26:30 make_type!(simple 27:30 #5)))),
-                make_stmt!(fn-parameter 35:48 #6 35:38
+                make_stmt!(fp 35:48 #6 35:38
                     make_type!(ref 42:48 make_type!(simple 43:48 #7))),
             ], 
             ret_type: Some(make_type!(prim 55:57 I32)),
@@ -445,15 +444,15 @@ fn fn_def_parse() {
             name: make_stmt!(id 3:12 #2), 
             quote_span: Span::new(13, 106), 
             parameters: vec![
-                make_stmt!(fn-parameter 14:24 #3 14:17
+                make_stmt!(fp 14:24 #3 14:17
                     make_type!(ref 20:24 make_type!(simple 21:24 #4))),
-                make_stmt!(fn-parameter 27:37 #5 27:30
+                make_stmt!(fp 27:37 #5 27:30
                     make_type!(ref 33:37 make_type!(simple 34:37 #6))),
-                make_stmt!(fn-parameter 40:52 #7 40:44
+                make_stmt!(fp 40:52 #7 40:44
                     make_type!(simple 47:52 #8)),
-                make_stmt!(fn-parameter 55:64 #9 55:58
+                make_stmt!(fp 55:64 #9 55:58
                     make_type!(simple 61:64 #10)),
-                make_stmt!(fn-parameter 67:105 #11 67:70
+                make_stmt!(fp 67:105 #11 67:70
                     make_type!(fn ret 73:105 paren 75:76 [],
                         make_type!(path 81:105
                             make_path!(segment generic 81:105 #12 81:86 quote 87:105
@@ -472,28 +471,88 @@ fn fn_def_parse() {
 }
 
 #[test]
-fn type_def_parse() {
+fn parse_type_def() {
     //                                  01234567890123456
     case!{ parse_type_def "type x { x: i32 }",
-        TypeDef{ span: Span::new(0, 16), name: make_stmt!(id 5:5 #2), fields: vec![
-            TypeDefField{ span: Span::new(9, 14), name: make_stmt!(id 9:9 #2), colon_span: Span::new(10, 10),
-                r#type: make_type!(prim 12:14 I32) }] }
+        TypeDef{ 
+            span: Span::new(0, 16),
+            name: make_stmt!(name 5:5 #2),
+            fields: vec![
+                TypeDefField{ span: Span::new(9, 14), name: make_stmt!(id 9:9 #2), colon_span: Span::new(10, 10),
+                    r#type: make_type!(prim 12:14 I32) }] }
     }
+
+    //                     0123456789
+    case!{ parse_type_def "type x<>{}",
+        TypeDef{
+            span: Span::new(0, 9),
+            name: make_stmt!(name 5:7 #2 5:5 quote 6:7),
+            fields: Vec::new(),
+        }, errors make_errors!(e: e.emit(strings::EmptyGenericParameterList).span(Span::new(6, 7)))
+    }
+
     case!{ parse_type_def "type x { x: i32,}",
-        TypeDef{ span: Span::new(0, 16), name: make_stmt!(id 5:5 #2), fields: vec![
-            TypeDefField{ span: Span::new(9, 15), name: make_stmt!(id 9:9 #2), colon_span: Span::new(10, 10),
-                r#type: make_type!(prim 12:14 I32) }] }
+        TypeDef{ 
+            span: Span::new(0, 16), 
+            name: make_stmt!(name 5:5 #2), 
+            fields: vec![
+                TypeDefField{ span: Span::new(9, 14), name: make_stmt!(id 9:9 #2), colon_span: Span::new(10, 10),
+                    r#type: make_type!(prim 12:14 I32) }] }
     }
-    //                                    0         1         2         3         4
-    //                                    0123456789012345678901234567890123456789012345
+    //                     0         1         2         3         4
+    //                     0123456789012345678901234567890123456789012345
     case!{ parse_type_def "type array { data:  &u8, size: u64, cap: u64 }",
-        TypeDef{ span: Span::new(0, 45), name: make_stmt!(id 5:9 #2), fields: vec![
-            TypeDefField{ span: Span::new(13, 23), name: make_stmt!(id 13:16 #3), colon_span: Span::new(17, 17),
-                r#type: make_type!(ref 20:22 make_type!(prim 21:22 U8)) },
-            TypeDefField{ span: Span::new(25, 34), name: make_stmt!(id 25:28 #4), colon_span: Span::new(29, 29),
-                r#type: make_type!(prim 31:33 U64) },
-            TypeDefField{ span: Span::new(36, 43), name: make_stmt!(id 36:38 #5), colon_span: Span::new(39, 39),
-                r#type: make_type!(prim 41:43 U64) },
-        ] }, strings ["array", "data", "size", "cap"]
+        TypeDef{ 
+            span: Span::new(0, 45), 
+            name: make_stmt!(name 5:9 #2), 
+            fields: vec![
+                TypeDefField{ span: Span::new(13, 22), name: make_stmt!(id 13:16 #3), colon_span: Span::new(17, 17),
+                    r#type: make_type!(ref 20:22 make_type!(prim 21:22 U8)) },
+                TypeDefField{ span: Span::new(25, 33), name: make_stmt!(id 25:28 #4), colon_span: Span::new(29, 29),
+                    r#type: make_type!(prim 31:33 U64) },
+                TypeDefField{ span: Span::new(36, 43), name: make_stmt!(id 36:38 #5), colon_span: Span::new(39, 39),
+                    r#type: make_type!(prim 41:43 U64) },
+            ]
+        }, strings ["array", "data", "size", "cap"]
+    }
+
+    //                     0         1         2         3         4
+    //                     01234567890123456789012345678901234567890123456789
+    case!{ parse_type_def "type list<T> { data: &T, size: usize, cap: usize }",
+        TypeDef{
+            span: Span::new(0, 49),
+            name: make_stmt!(name 5:11 #2 5:8 quote 9:11
+                make_stmt!(gp 10:10 #3)),
+            fields: vec![
+                TypeDefField{ span: Span::new(15, 22), name: make_stmt!(id 15:18 #4), colon_span: Span::new(19, 19),
+                    r#type: make_type!(ref 21:22 make_type!(path simple 22:22 #3)) },
+                TypeDefField{ span: Span::new(25, 35), name: make_stmt!(id 25:28 #5), colon_span: Span::new(29, 29),
+                    r#type: make_type!(path simple 31:35 #6) },
+                TypeDefField{ span: Span::new(38, 47), name: make_stmt!(id 38:40 #7), colon_span: Span::new(41, 41),
+                    r#type: make_type!(path simple 43:47 #6) },
+            ]
+        }, strings ["list", "T", "data", "size", "usize", "cap"]
+    }
+
+    //                     0         1         2         3         4         5
+    //                     012345678901234567890123456789012345678901234567890123456
+    case!{ parse_type_def "type hashmap<K, V, A> { buckets: &&(K, V), allocator: A }",
+        TypeDef{
+            span: Span::new(0, 56),
+            name: make_stmt!(name 5:20 #2 5:11 quote 12:20
+                make_stmt!(gp 13:13 #3),
+                make_stmt!(gp 16:16 #4),
+                make_stmt!(gp 19:19 #5)),
+            fields: vec![
+                TypeDefField{ span: Span::new(24, 40), name: make_stmt!(id 24:30 #6), colon_span: Span::new(31, 31),
+                    r#type: make_type!(ref 33:40
+                        make_type!(ref 34:40
+                            make_type!(tuple 35:40
+                                make_type!(path simple 36:36 #3),
+                                make_type!(path simple 39:39 #4)))) },
+                TypeDefField{ span: Span::new(43, 54), name: make_stmt!(id 43:51 #7), colon_span: Span::new(52, 52),
+                    r#type: make_type!(path simple 54:54 #5) },
+            ]
+        }
     }
 }

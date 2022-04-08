@@ -68,6 +68,35 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             self.push_unexpect("type, enum, fn, {, for, if, loop, return, var, const, while, use, module, .., !, ~, &, <, ::, ident, [, (")
         }
     }
+
+    // generic_name = ident [ '<' ident { ',' ident } [ ',' ] '>' ]
+    fn parse_generic_name(&mut self) -> Result<GenericName, Unexpected> {
+        
+        let base = self.expect_ident()?;
+        let mut quote_span = Span::new(0, 0);
+        let mut parameters = Vec::new();
+        if let Some(lt_span) = self.try_expect_sep(Separator::Lt) {
+            quote_span = lt_span + if let Some((gt_span, _)) = self.try_expect_closing_bracket(Separator::Gt) {
+                self.emit(strings::EmptyGenericParameterList).span(lt_span + gt_span);
+                gt_span
+            } else {
+                let parameter = self.expect_ident()?;
+                parameters.push(GenericParameter{ span: parameter.span, name: parameter });
+                loop {
+                    if let Some((gt_span, _)) = self.try_expect_closing_bracket(Separator::Gt) {
+                        break gt_span;
+                    } else {
+                        self.expect_sep(Separator::Comma)?;
+                    }
+                    let parameter = self.expect_ident()?;
+                    parameters.push(GenericParameter{ span: parameter.span, name: parameter });
+                }
+            };
+        }
+
+        let span = if quote_span == Span::new(0, 0) { base.span } else { base.span + quote_span };
+        Ok(GenericName{ span, base, quote_span, parameters })
+    }
     
     // label_def = label ':'
     // label can be specified before for stmt, loop stmt, while stmt and block stmt
@@ -365,27 +394,36 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         matches!(self.current, Token::Keyword(Keyword::Type)) 
     }
 
-    // type_def = 'type' (identifier | keyword_primitive_type)  '{' [ type_field_def { ',' type_field_def } [ ',' ] ] '}'
+    // type_def = 'type' generic_name  '{' [ type_field_def { ',' type_field_def } [ ',' ] ] '}'
     // type_field_def = identifier ':' type_ref
     pub fn parse_type_def(&mut self) -> Result<TypeDef, Unexpected> {
 
         let starting_span = self.expect_keyword(Keyword::Type)?;
-        let type_name = self.expect_ident_or_keyword_kind(KeywordKind::Primitive)?;
+        let type_name = self.parse_generic_name()?;
         self.expect_sep(Separator::LeftBrace)?;
 
         let mut fields = Vec::new();
-        let right_brace_span = loop { 
-            if let Some(right_brace_span) = self.try_expect_sep(Separator::RightBrace) {
-                break right_brace_span;     // rustc 1.19 stablize break-expr
+        macro_rules! parse_field {
+            () => {{
+                let field_name = self.expect_ident()?;
+                let colon_span = self.expect_sep(Separator::Colon)?;
+                let field_type = self.parse_type_ref()?;
+                fields.push(TypeDefField{ span: field_name.span + field_type.span(), name: field_name, colon_span, r#type: field_type });
+            }}
+        }
+
+        let right_brace_span = if let Some((right_brace_span, _)) = self.try_expect_closing_bracket(Separator::RightBrace) {
+            right_brace_span
+        } else {
+            parse_field!();
+            loop {
+                if let Some((right_brace_span, _)) = self.try_expect_closing_bracket(Separator::RightBrace) {
+                    break right_brace_span;     // rustc 1.19 stablize break-expr
+                } else {
+                    self.expect_sep(Separator::Comma)?;
+                }
+                parse_field!();
             }
-            let field_name = self.expect_ident()?;
-            let colon_span = self.expect_sep(Separator::Colon)?;
-            let field_type = self.parse_type_ref()?;
-            fields.push(if let Some(comma_span) = self.try_expect_sep(Separator::Comma) {
-                TypeDefField{ span: field_name.span + comma_span, name: field_name, colon_span, r#type: field_type }
-            } else {
-                TypeDefField{ span: field_name.span + field_type.span(), name: field_name, colon_span, r#type: field_type }
-            });
         };
 
         Ok(TypeDef{ span: starting_span + right_brace_span, name: type_name, fields })

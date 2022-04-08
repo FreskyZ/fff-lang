@@ -53,6 +53,8 @@ pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_fn_type(&mut self, node: &FnType) -> Result<T, E> { node.walk(self) }
     fn visit_fn_type_parameter(&mut self, node: &FnTypeParameter) -> Result<T, E> { node.walk(self) }
     fn visit_for_stmt(&mut self, node: &ForStatement) -> Result<T, E> { node.walk(self) }
+    fn visit_generic_name(&mut self, node: &GenericName) -> Result<T, E> { node.walk(self) }
+    fn visit_generic_parameter(&mut self, node: &GenericParameter) -> Result<T, E> { node.walk(self) }
     fn visit_if_stmt(&mut self, node: &IfStatement) -> Result<T, E> { node.walk(self) }
     fn visit_if_clause(&mut self, node: &IfClause) -> Result<T, E> { node.walk(self) }
     fn visit_item(&mut self, node: &Item) -> Result<T, E> { node.walk(self) }
@@ -85,5 +87,6 @@ pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_unary_expr(&mut self, node: &UnaryExpr) -> Result<T, E> { node.walk(self) }
     fn visit_use_stmt(&mut self, node: &UseStatement) -> Result<T, E> { node.walk(self) }
     fn visit_var_decl(&mut self, node: &VarDeclStatement) -> Result<T, E> { node.walk(self) }
+    fn visit_where_clause(&mut self, node: &WhereClause) -> Result<T, E> { node.walk(self) }
     fn visit_while_stmt(&mut self, node: &WhileStatement) -> Result<T, E> { node.walk(self) }
 }
