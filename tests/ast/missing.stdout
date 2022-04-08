@@ -46,8 +46,8 @@ module tests/ast/missing.f3
         type-def-field <25:9-25:16> id <25:9-25:10> : <25:11-25:11>
           primitive-type u32 <25:13-25:15>
         type-def-field <26:9-26:20> src <26:9-26:11> : <26:12-26:12>
-          plain-type <26:14-26:19>
-            type-segment <26:14-26:19> string <26:14-26:19>
+          path <26:14-26:19>
+            segment <26:14-26:19> string <26:14-26:19>
       fn-def <29:5-31:5> some_inner <29:8-29:17> () <29:18-29:25>
         fn-def-parameter <29:19-29:24> a <29:19-29:19>
           primitive-type i32 <29:22-29:24>

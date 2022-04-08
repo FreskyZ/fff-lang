@@ -37,16 +37,16 @@ pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_array_type(&mut self, node: &ArrayType) -> Result<T, E> { node.walk(self) }
     fn visit_assign_expr_stmt(&mut self, node: &AssignExprStatement) -> Result<T, E> { node.walk(self) }
     fn visit_binary_expr(&mut self, node: &BinaryExpr) -> Result<T, E> { node.walk(self) }
-    fn visit_block_stmt(&mut self, node: &BlockStatement) -> Result<T, E> { node.walk(self) }
     fn visit_block(&mut self, node: &Block) -> Result<T, E> { node.walk(self) }
+    fn visit_block_stmt(&mut self, node: &BlockStatement) -> Result<T, E> { node.walk(self) }
     fn visit_break_stmt(&mut self, node: &BreakStatement) -> Result<T, E> { node.walk(self) }
     fn visit_call_expr(&mut self, node: &CallExpr) -> Result<T, E> { node.walk(self) }
     fn visit_continue_stmt(&mut self, node: &ContinueStatement) -> Result<T, E> { node.walk(self) }
     fn visit_else_clause(&mut self, node: &ElseClause) -> Result<T, E> { node.walk(self) }
     fn visit_enum_def(&mut self, node: &EnumDef) -> Result<T, E> { node.walk(self) }
     fn visit_enum_def_variant(&mut self, node: &EnumDefVariant) -> Result<T, E> { node.walk(self) }
-    fn visit_expr_list(&mut self, node: &ExprList) -> Result<T, E> { node.walk(self) }
     fn visit_expr(&mut self, node: &Expr) -> Result<T, E> { node.walk(self) }
+    fn visit_expr_list(&mut self, node: &ExprList) -> Result<T, E> { node.walk(self) }
     fn visit_fn_def(&mut self, node: &FnDef) -> Result<T, E> { node.walk(self) }
     fn visit_fn_def_parameter(&mut self, node: &FnDefParameter) -> Result<T, E> { node.walk(self) }
     fn visit_fn_type(&mut self, node: &FnType) -> Result<T, E> { node.walk(self) }
@@ -69,7 +69,6 @@ pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_paren_expr(&mut self, node: &ParenExpr) -> Result<T, E> { node.walk(self) }
     fn visit_path(&mut self, node: &Path) -> Result<T, E> { node.walk(self) }
     fn visit_path_segment(&mut self, node: &PathSegment) -> Result<T, E> { node.walk(self) }
-    fn visit_plain_type(&mut self, node: &PlainType) -> Result<T, E> { node.walk(self) }
     fn visit_primitive_type(&mut self, node: &PrimitiveType) -> Result<T, E> { node.walk(self) }
     fn visit_range_both_expr(&mut self, node: &RangeBothExpr) -> Result<T, E> { node.walk(self) }
     fn visit_range_full_expr(&mut self, node: &RangeFullExpr) -> Result<T, E> { node.walk(self) }
@@ -86,7 +85,6 @@ pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_type_def_field(&mut self, node: &TypeDefField) -> Result<T, E> { node.walk(self) }
     fn visit_type_list(&mut self, node: &TypeList) -> Result<T, E> { node.walk(self) }
     fn visit_type_ref(&mut self, node: &TypeRef) -> Result<T, E> { node.walk(self) }
-    fn visit_type_segment(&mut self, node: &TypeSegment) -> Result<T, E> { node.walk(self) }
     fn visit_unary_expr(&mut self, node: &UnaryExpr) -> Result<T, E> { node.walk(self) }
     fn visit_use_stmt(&mut self, node: &UseStatement) -> Result<T, E> { node.walk(self) }
     fn visit_var_decl(&mut self, node: &VarDeclStatement) -> Result<T, E> { node.walk(self) }

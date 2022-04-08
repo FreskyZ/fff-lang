@@ -305,22 +305,6 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
             f.write_space()?.write_idspan(node.name))
     }
 
-    fn visit_plain_type(&mut self, node: &PlainType) -> fmt::Result {
-        self.impl_visit(node, "plain-type", node.span, |f| {
-            if node.global {
-                f.write_str(" global")?;
-            }
-            Ok(f)
-        })
-    }
-
-    fn visit_type_segment(&mut self, node: &TypeSegment) -> fmt::Result {
-        self.impl_visit(node, "type-segment", node.span, |f| {
-            f.write_space()?.write_idspan(node.base)?;
-            Ok(f)
-        })
-    }
-
     fn visit_type_as_segment(&mut self, node: &TypeAsSegment) -> fmt::Result {
         self.impl_visit_simple(node, "type-as-segment", node.span)
     }
@@ -336,9 +320,9 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
     fn visit_path_segment(&mut self, node: &PathSegment) -> fmt::Result {
         self.impl_visit(node, "segment", node.span(), |f| {
             match node {
-                PathSegment::Global => f.write_str(" global"),
+                PathSegment::Global => f.write_str(" (global)"),
                 PathSegment::Simple(name) => f.write_space()?.write_idspan(*name),
-                PathSegment::TypeCast{ .. } => Ok(f),
+                PathSegment::TypeCast{ .. } => f.write_str(" (cast)"),
                 PathSegment::Generic{ base, .. } => f.write_space()?.write_idspan(*base),
             }
         })

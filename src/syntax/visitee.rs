@@ -267,16 +267,6 @@ impl_node!{ PathSegment, visit_path_segment, |self, v| {
     Ok(Default::default())
 }}
 
-impl_node!{ PlainType, visit_plain_type, |self, v| {
-    if let Some(type_as_segment) = &self.type_as_segment {
-        v.visit_type_as_segment(type_as_segment)?;
-    }
-    for segment in &self.segments {
-        v.visit_type_segment(segment)?;
-    }
-    Ok(Default::default())
-}}
-
 impl_node!{ PrimitiveType, visit_primitive_type }
 
 impl_node!{ RangeBothExpr, visit_range_both_expr, |self, v| {
@@ -332,13 +322,6 @@ impl_node!{ TypeAsSegment, visit_type_as_segment, |self, v| {
     v.visit_type_ref(self.to.as_ref())
 }}
 
-impl_node!{ TypeSegment, visit_type_segment, |self, v| {
-    if let Some(parameters) = &self.parameters {
-        v.visit_type_list(parameters)?;
-    }
-    Ok(Default::default())
-}}
-
 impl_node!{ TypeDef, visit_type_def, |self, v| {
     for field in &self.fields {
         v.visit_type_def_field(field)?;
@@ -358,12 +341,12 @@ impl_node!{ TypeList, visit_type_list, |self, v| {
 }}
 
 impl_abc_node!{ TypeRef, visit_type_ref,
-    Primitive => visit_primitive_type,
     Array => visit_array_type,
     Fn => visit_fn_type,
+    Path => visit_path,
+    Primitive => visit_primitive_type,
     Ref => visit_ref_type,
     Tuple => visit_tuple_type,
-    Plain => visit_plain_type,
 }
 
 impl_node!{ TupleExpr, visit_tuple_expr, |self, v| {

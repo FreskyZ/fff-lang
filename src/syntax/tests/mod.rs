@@ -166,18 +166,29 @@ macro_rules! case {
 
 macro_rules! make_name {
     (simple $start:literal:$end:literal #$id:literal) => (
-        make_name!($start:$end false, None, make_name!(segment $start:$end #$id)));
+        make_name!($start:$end false, None, make_name!(segment $start:$end #$id))
+    );
     ($start:literal:$end:literal $global:expr, $as:expr, $($segment:expr),*$(,)?) => (
-        Expr::Name(Name{ type_as_segment: $as, global: $global, span: Span::new($start, $end), segments: vec![$($segment,)*] }));
+        Expr::Name(Name{ type_as_segment: $as, global: $global, span: Span::new($start, $end), segments: vec![$($segment,)*] })
+    );
     (segment $start:literal:$end:literal #$id:literal) => (
-        NameSegment::Normal(IdSpan::new($id, Span::new($start, $end))));
+        NameSegment::Normal(IdSpan::new($id, Span::new($start, $end)))
+    );
+    (segment as $start:literal:$end:literal $from:expr, $to:expr) => (Some(TypeAsSegment{
+        from: Box::new($from),
+        to: Box::new($to),
+        span: Span::new($start, $end),
+    }));
     (segment generic $start:literal:$end:literal $($ty:expr),*$(,)?) => (
-        NameSegment::Generic(TypeList{ items: vec![$($ty,)*], span: Span::new($start, $end) }));
+        NameSegment::Generic(TypeList{ items: vec![$($ty,)*], span: Span::new($start, $end) })
+    );
     // bare version for use outside of expr
     (simple bare $start:literal:$end:literal #$id:literal) => (
-        make_name!(bare $start:$end false, None, make_name!(segment $start:$end #$id)));
+        make_name!(bare $start:$end false, None, make_name!(segment $start:$end #$id))
+    );
     (bare $start:literal:$end:literal $global:expr, $as:expr, $($segment:expr),*$(,)?) => (
-        Name{ type_as_segment: $as, global: $global, span: Span::new($start, $end), segments: vec![$($segment,)*] });
+        Name{ type_as_segment: $as, global: $global, span: Span::new($start, $end), segments: vec![$($segment,)*] }
+    );
 }
 
 macro_rules! make_expr {
@@ -445,48 +456,36 @@ macro_rules! make_path {
         PathSegment::Generic{
             span: Span::new($start, $end),
             base: IdSpan::new($ident, Span::new($ident_start, $ident_end)),
-            parameters: Some(TypeList{ items: vec![$($parameter,)*], span: Span::new($quote_start, $quote_end) }),
+            parameters: TypeList{ items: vec![$($parameter,)*], span: Span::new($quote_start, $quote_end) },
         }
     );
     ($start:literal:$end:literal $($segment:expr),*$(,)?) => (
         Path{ span: Span::new($start, $end), segments: vec![$($segment,)*] }
     );
+    (simple $start:literal:$end:literal #$ident:literal) => (
+        Path{ span: Span::new($start, $end), segments: vec![PathSegment::Simple(IdSpan::new($ident, Span::new($start, $end)))] }
+    );
 }
 
 macro_rules! make_type {
     (prim $start:literal:$end:literal $kw:ident) => (
-        TypeRef::Primitive(PrimitiveType{ base: Keyword::$kw, span: Span::new($start, $end) }));
-    (ref $start:literal:$end:literal $inner:expr) => (
-        TypeRef::Ref(RefType{ span: Span::new($start, $end), base: Box::new($inner) }));
-    (array $start:literal:$end:literal $base:expr, $size:expr) => (
-        TypeRef::Array(ArrayType{ base: Box::new($base), size: $size, span: Span::new($start, $end) }));
-    (tuple $start:literal:$end:literal [$($item:expr),*$(,)?]) => (
-        TypeRef::Tuple(TupleType{ parameters: vec![$($item,)*], span: Span::new($start, $end) }));
-    (segment $start:literal:$end:literal #$ident:literal) => (TypeSegment{ 
-        base: IdSpan::new($ident, Span::new($start, $end)),
-        parameters: None,
-        span: Span::new($start, $end),
-    });
-    (segment generic $start:literal:$end:literal #$ident:literal $ident_start:literal:$ident_end:literal quote $quote_start:literal:$quote_end:literal $($parameter:expr),*$(,)?) => (
-        TypeSegment{
-            base: IdSpan::new($ident, Span::new($ident_start, $ident_end)),
-            parameters: Some(TypeList{ items: vec![$($parameter,)*], span: Span::new($quote_start, $quote_end) }),
-            span: Span::new($start, $end),
-        }
+        TypeRef::Primitive(PrimitiveType{ base: Keyword::$kw, span: Span::new($start, $end) })
     );
-    (segment as $start:literal:$end:literal $from:expr, $to:expr) => (Some(TypeAsSegment{
-        from: Box::new($from),
-        to: Box::new($to),
-        span: Span::new($start, $end),
-    }));
-    (plain $start:literal:$end:literal $global:expr, $as:expr, $($segment:expr),*$(,)?) => (TypeRef::Plain(PlainType{
-        type_as_segment: $as,
-        global: $global,
-        segments: vec![$($segment,)*],
-        span: Span::new($start, $end),
-    }));
-    (simple $start:literal:$end:literal #$id:literal) => (
-        make_type!(plain $start:$end false, None, make_type!(segment $start:$end #$id)));
+    (ref $start:literal:$end:literal $inner:expr) => (
+        TypeRef::Ref(RefType{ span: Span::new($start, $end), base: Box::new($inner) })
+    );
+    (array $start:literal:$end:literal $base:expr, $size:expr) => (
+        TypeRef::Array(ArrayType{ base: Box::new($base), size: $size, span: Span::new($start, $end) })
+    );
+    (tuple $start:literal:$end:literal [$($item:expr),*$(,)?]) => (
+        TypeRef::Tuple(TupleType{ parameters: vec![$($item,)*], span: Span::new($start, $end) })
+    );
+    (path $($tt:tt)+) => (
+        TypeRef::Path(make_path!($($tt)+))
+    );
+    (simple $start:literal:$end:literal #$ident:literal) => (
+        TypeRef::Path(Path{ span: Span::new($start, $end), segments: vec![PathSegment::Simple(IdSpan::new($ident, Span::new($start, $end)))] })
+    );
     (fn $start:literal:$end:literal paren $paren_start:literal:$paren_end:literal [$($parameter:expr),*$(,)?]) => (TypeRef::Fn(FnType{
         quote_span: Span::new($paren_start, $paren_end),
         parameters: vec![$($parameter,)*],
@@ -499,12 +498,12 @@ macro_rules! make_type {
         ret_type: Some(Box::new($ret)),
         span: Span::new($start, $end),
     }));
-    (param $start:literal:$end:literal $ty:expr) => (FnTypeParameter{
+    (fp $start:literal:$end:literal $ty:expr) => (FnTypeParameter{
         name: None,
         r#type: $ty,
         span: Span::new($start, $end),
     });
-    (param named $start:literal:$end:literal #$name:literal $name_start:literal:$name_end:literal $ty:expr) => (FnTypeParameter{
+    (fp named $start:literal:$end:literal #$name:literal $name_start:literal:$name_end:literal $ty:expr) => (FnTypeParameter{
         name: Some(IdSpan::new($name, Span::new($name_start, $name_end))),
         r#type: $ty,
         span: Span::new($start, $end),

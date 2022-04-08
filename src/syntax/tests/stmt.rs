@@ -461,16 +461,16 @@ fn fn_def_parse() {
                     make_type!(simple 61:64 #10)),
                 make_stmt!(fn-parameter 67:105 #11 67:70
                     make_type!(fn ret 73:105 paren 75:76 [],
-                        make_type!(plain 81:105 false, None,
-                            make_type!(segment generic 81:105 #12 81:86 quote 87:105
+                        make_type!(path 81:105
+                            make_path!(segment generic 81:105 #12 81:86 quote 87:105
                                 make_type!(ref 88:92 make_type!(simple 89:92 #4)),
-                                make_type!(plain 95:104 false, None,
-                                    make_type!(segment 95:97 #13),
-                                    make_type!(segment 100:104 #14)))))),
+                                make_type!(path 95:104
+                                    make_path!(segment simple 95:97 #13),
+                                    make_path!(segment simple 100:104 #14)))))),
             ],
-            ret_type: Some(make_type!(plain 111:121 false, None,
-                make_type!(segment 111:113 #13),
-                make_type!(segment 116:121 #12))),
+            ret_type: Some(make_type!(path 111:121
+                make_path!(segment simple 111:113 #13),
+                make_path!(segment simple 116:121 #12))),
             body: make_stmt!(block 123:124)
         //           2             3       4       5       6       7        8         9       10      11      12        13     14
         }, strings ["impl_visit", "this", "This", "node", "Node", "title", "string", "span", "Span", "then", "Result", "fmt", "Error"]

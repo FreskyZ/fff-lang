@@ -17,8 +17,8 @@ module tests/ast/misc.f3
       primitive-type u32 <4:15-4:17>
     fn-def-parameter <4:20-4:32> argv <4:20-4:23>
       ref-type <4:26-4:32>
-        plain-type <4:27-4:32>
-          type-segment <4:27-4:32> string <4:27-4:32>
+        path <4:27-4:32>
+          segment <4:27-4:32> string <4:27-4:32>
     primitive-type u32 <4:38-4:40>
     block <4:42-12:1>
       var-def <5:5-5:19> mutable i <5:9-5:9>
@@ -112,8 +112,8 @@ module tests/ast/misc.f3
           name <43:15-43:25>
             name-segment <43:15-43:18> read
             name-segment <43:21-43:25>
-              plain-type <43:22-43:24>
-                type-segment <43:22-43:24> i33 <43:22-43:24>
+              path <43:22-43:24>
+                segment <43:22-43:24> i33 <43:22-43:24>
       while-stmt <44:5-49:5>
         binary-expr <44:11-44:16> != <44:13-44:14>
           name <44:11-44:11>

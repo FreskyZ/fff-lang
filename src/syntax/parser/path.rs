@@ -26,9 +26,9 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     pub fn parse_path(&mut self, expect_value: bool) -> Result<Path, Unexpected> {
 
         let mut segments = Vec::new();
-        let begin_separator_span = self.try_expect_sep(Separator::ColonColon);
 
-        if begin_separator_span.is_some() {
+        let global_span = self.try_expect_sep(Separator::ColonColon);
+        if global_span.is_some() {
             segments.push(PathSegment::Global);
         } else if let Some(lt_span) = self.try_expect_sep(Separator::Lt) {
             let left = self.parse_type_ref()?;
@@ -45,17 +45,19 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             let base = self.expect_ident()?;
             // this is beyond current expect_* functions
             if matches!((&self.current, &self.peek),
-                (Token::Sep(Separator::Colon | Separator::ColonColon), Token::Sep(Separator::Lt)) | (Token::Sep(Separator::Lt), _))
+                // colon is allowed when expecting coloncolon, ltlt is allowed when expecting lt...
+                | (Token::Sep(Separator::Lt | Separator::LtLt), _)
+                | (Token::Sep(Separator::Colon | Separator::ColonColon), Token::Sep(Separator::Lt | Separator::LtLt)))
             {
                 if let Some((colon, colon_span)) = self.try_expect_seps(&[Separator::Colon, Separator::ColonColon]) {
                     if !expect_value {
-                        self.emit(format!("{} {}", strings::ExpectLtMeet, colon.display())).span(colon_span);
+                        self.emit(format!("{} `{}`", strings::ExpectLtMeet, colon.display())).span(colon_span);
                     }
                     if colon == Separator::Colon {
                         self.emit(strings::ExpectDoubleColonMeetSingleColon).span(colon_span);
                     }
                 }
-                // self.current now is the Lt
+                // self.current now is the Lt (or LtLt)
                 let parameters = self.parse_type_list()?;
                 segments.push(PathSegment::Generic{ span: base.span + parameters.span, base, parameters });
             } else {
@@ -70,9 +72,10 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             }
         }
 
-        // maybe_path should guarantee this
+        // maybe_path and loop { expect_ident } should guarantee this
         debug_assert!(!segments.is_empty(), "unexpected empty path");
-        Ok(Path{ span: segments[0].span() + segments.last().unwrap().span(), segments })
+        debug_assert!(global_span.is_none() || segments.len() > 1, "unexpected empty path");
+        Ok(Path{ span: global_span.unwrap_or_else(|| segments[0].span()) + segments.last().unwrap().span(), segments })
     }
 
     // no maybe_type_ref because type ref is always after some colon or namespace separator
@@ -87,8 +90,8 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             Ok(TypeRef::Ref(self.parse_ref_type()?))
         } else if self.maybe_tuple_type() {
             Ok(TypeRef::Tuple(self.parse_tuple_type()?))
-        } else if self.maybe_plain_type() {
-            Ok(TypeRef::Plain(self.parse_plain_type()?))
+        } else if self.maybe_path() {
+            Ok(TypeRef::Path(self.parse_type_path()?))
         } else {
             self.push_unexpect("[, fn, &, (, <, ::, ident or primitive type")
         }
@@ -180,21 +183,22 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
                 self.expect_sep(Separator::Comma)?;
             }
             // these can-regard-as-variable keywords are not expected by type ref, they are definitely parameter name
-            let name = self.try_expect_keywords(&[Keyword::This, Keyword::Self_, Keyword::Underscore]);
+            let mut name = self
+                .try_expect_keywords(&[Keyword::This, Keyword::Self_, Keyword::Underscore])
+                .map(|(kw, span)| IdSpan::new(self.intern(kw.display()), span));
             if name.is_some() {
                 self.expect_sep(Separator::Colon)?;
             }
+            // ident + single colon should be paramter name
+            match (&self.current, &self.peek) {
+                (Token::Ident(ident), Token::Sep(Separator::Colon)) => {
+                    name = Some(IdSpan::new(*ident, self.move_next()));
+                    self.move_next(); // move pass colon
+                },
+                _ => {},
+            }
+            // parameter type
             let r#type = self.parse_type_ref()?;
-            let (name, r#type) = if let TypeRef::Plain(PlainType{ type_as_segment: None, global: false, segments, .. }) = &r#type {
-                if name.is_none() // this one should be before previous let r#type but that will make it 3 ifs are too more (None, r#type)s
-                    && segments.len() == 1 && segments[0].parameters.is_none() && self.try_expect_sep(Separator::Colon).is_some() {
-                    (Some(segments[0].base), self.parse_type_ref()?)
-                } else {
-                    (name.map(|(kw, span)| IdSpan::new(self.intern(kw.display()), span)), r#type)
-                }
-            } else {
-                (name.map(|(kw, span)| IdSpan::new(self.intern(kw.display()), span)), r#type)
-            };
             parameters.push(FnTypeParameter{ name, span: name.map(|n| n.span).unwrap_or_else(|| r#type.span()) + r#type.span(), r#type });
         };
 
@@ -207,45 +211,6 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         
         let span = fn_span + ret_type.as_ref().map(|t| t.span()).unwrap_or(right_paren_span);
         Ok(FnType{ quote_span: left_paren_span + right_paren_span, parameters, ret_type: ret_type.map(Box::new), span })
-    }
-
-    pub fn maybe_plain_type(&self) -> bool {
-        matches!(self.current, Token::Sep(Separator::Lt | Separator::ColonColon) | Token::Ident(_))
-    }
-
-    // plain_type = [ type_as_segment | '::' ] plain_type_segment { '::' plain_type_segment }
-    // type_as_segment = '<' type_ref 'as' type_ref '>' '::'
-    // plain_type_segment = identifier [ '<' type_ref { ',' type_ref } [ ',' ] '>' ]
-    //
-    // most common type ref, plain means not special (array/tuple/fn) and not referenced (not directly a reference type)
-    // may be namespaced, segment may contain type parameter, does not need namespace separator `::` before type list angle bracket pair
-    // may contain a type_as_segment at beginning
-    // may contain a namespace separator at beginning, for referencing global items
-    pub fn parse_plain_type(&mut self) -> Result<PlainType, Unexpected> {
-
-        let type_as_segment = self.try_expect_sep(Separator::Lt).map(|lt_span| {
-            let from = self.parse_type_ref()?;
-            self.expect_keyword(Keyword::As)?;
-            let to = self.parse_type_ref()?;
-            let gt_span = self.expect_sep(Separator::Gt)?;
-            Ok(TypeAsSegment{ from: Box::new(from), to: Box::new(to), span: lt_span + gt_span })
-        }).transpose()?;
-
-        let beginning_separator_span = self.try_expect_sep(Separator::ColonColon);
-
-        let mut segments = Vec::new();
-        while let Some(base) = self.try_expect_ident() {
-            let parameters = self.is_sep(Separator::Lt).then(|| self.parse_type_list()).transpose()?;
-            segments.push(TypeSegment{ base, span: base.span + parameters.as_ref().map(|p| p.span).unwrap_or(base.span), parameters });
-            if self.try_expect_sep(Separator::ColonColon).is_none() {
-                break;
-            }
-        }
-
-        let global = type_as_segment.is_none() && beginning_separator_span.is_some();
-        let span = type_as_segment.as_ref().map(|s| s.span).or(beginning_separator_span)
-            .unwrap_or_else(|| segments[0].span) + segments.last().unwrap().span; // [0] and last().unwrap(): matches() guarantees segments are not empty
-        Ok(PlainType{ type_as_segment, global, segments, span })
     }
 
     pub fn maybe_primitive_type(&self) -> bool {

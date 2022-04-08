@@ -708,7 +708,7 @@ fn name_parse() {
     //      01234567890123456789012
     case!{ parse_name "<Name as Parser>::parse",
         make_name!(bare 0:22 false,
-            make_type!(segment as 0:15
+            make_name!(segment as 0:15
                 make_type!(simple 1:4 #2),
                 make_type!(simple 9:14 #3)),
             make_name!(segment 18:22 #4)),
@@ -992,8 +992,8 @@ fn postfix_expr_parse() {
         make_expr!(member 0:20 dot 1:1
             make_name!(simple 0:0 #2),
             make_expr!(member name 2:20 #3 2:8 quote 11:20
-                make_type!(plain 12:19 false, None,
-                    make_type!(segment generic 12:19 #4 12:14 quote 15:19
+                make_type!(path 12:19
+                    make_path!(segment generic 12:19 #4 12:14 quote 15:19
                         make_type!(prim 16:18 I32))))),
     }
 

@@ -16,8 +16,8 @@ module tests/ast/string.f3
                 name-segment <7:27-7:31> input
               member-name <7:33-7:38> length <7:33-7:38>
       var-def <8:5-8:39> mutable input2 <8:9-8:14>
-        plain-type <8:17-8:22>
-          type-segment <8:17-8:22> string <8:17-8:22>
+        path <8:17-8:22>
+          segment <8:17-8:22> string <8:17-8:22>
         call-expr <8:26-8:38> () <8:37-8:38>
           name <8:26-8:36>
             name-segment <8:26-8:36> read_string
