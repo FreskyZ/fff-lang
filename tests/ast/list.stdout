@@ -11,10 +11,9 @@ module tests/ast/list.f3
             segment <7:29-7:30> x4
       simple-expr-stmt <16:5-16:16>
         call-expr <16:5-16:15> () <16:14-16:15>
-          member-expr <16:5-16:13> . <16:9-16:9>
+          member-expr <16:5-16:13> . <16:9-16:9> sort <16:10-16:13>
             path <16:5-16:8>
               segment <16:5-16:8> list
-            member-name <16:10-16:13> sort <16:10-16:13>
       simple-expr-stmt <20:5-20:18>
         call-expr <20:5-20:17> () <20:12-20:17>
           path <20:5-20:11>
@@ -23,35 +22,31 @@ module tests/ast/list.f3
             segment <20:13-20:16> list
       simple-expr-stmt <24:5-24:22>
         call-expr <24:5-24:21> () <24:19-24:21>
-          member-expr <24:5-24:18> . <24:9-24:9>
+          member-expr <24:5-24:18> . <24:9-24:9> push_back <24:10-24:18>
             path <24:5-24:8>
               segment <24:5-24:8> list
-            member-name <24:10-24:18> push_back <24:10-24:18>
           literal i32 8 <24:20-24:20>
       simple-expr-stmt <28:5-28:22>
         call-expr <28:5-28:21> () <28:19-28:21>
-          member-expr <28:5-28:18> . <28:9-28:9>
+          member-expr <28:5-28:18> . <28:9-28:9> push_back <28:10-28:18>
             path <28:5-28:8>
               segment <28:5-28:8> list
-            member-name <28:10-28:18> push_back <28:10-28:18>
           literal i32 6 <28:20-28:20>
       simple-expr-stmt <29:5-29:22>
         call-expr <29:5-29:21> () <29:19-29:21>
-          member-expr <29:5-29:18> . <29:9-29:9>
+          member-expr <29:5-29:18> . <29:9-29:9> remove_at <29:10-29:18>
             path <29:5-29:8>
               segment <29:5-29:8> list
-            member-name <29:10-29:18> remove_at <29:10-29:18>
           literal i32 3 <29:20-29:20>
       for-stmt <30:5-32:5> iter-var i <30:9-30:9>
         range-both-expr <30:14-30:27> dotdot <30:15-30:16>
           literal i32 0 <30:14-30:14>
-          member-expr <30:17-30:27> . <30:21-30:21>
+          member-expr <30:17-30:27> . <30:21-30:21> length <30:22-30:27>
             path <30:17-30:20>
               segment <30:17-30:20> list
-            member-name <30:22-30:27> length <30:22-30:27>
         block <30:29-32:5>
           assign-expr-stmt <31:9-31:21> *= <31:17-31:18>
-            index-expr <31:9-31:15> [] <31:13-31:15>
+            array-index-expr <31:9-31:15> [] <31:13-31:15>
               path <31:9-31:12>
                 segment <31:9-31:12> list
               path <31:14-31:14>
@@ -67,16 +62,14 @@ module tests/ast/list.f3
             literal i32 3 <33:25-33:25>
       simple-expr-stmt <36:5-36:16>
         call-expr <36:5-36:15> () <36:14-36:15>
-          member-expr <36:5-36:13> . <36:9-36:9>
+          member-expr <36:5-36:13> . <36:9-36:9> sort <36:10-36:13>
             path <36:5-36:8>
               segment <36:5-36:8> list
-            member-name <36:10-36:13> sort <36:10-36:13>
       simple-expr-stmt <37:5-37:19>
         call-expr <37:5-37:18> () <37:17-37:18>
-          member-expr <37:5-37:16> . <37:9-37:9>
+          member-expr <37:5-37:16> . <37:9-37:9> reverse <37:10-37:16>
             path <37:5-37:8>
               segment <37:5-37:8> list
-            member-name <37:10-37:16> reverse <37:10-37:16>
       simple-expr-stmt <38:5-38:18>
         call-expr <38:5-38:17> () <38:12-38:17>
           path <38:5-38:11>

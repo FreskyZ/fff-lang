@@ -139,31 +139,34 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     }
 
     fn maybe_member_expr(&self) -> bool {
-        matches!((&self.current, &self.peek), (Token::Sep(Separator::Dot), Token::Num(_) | Token::Ident(_))) 
+        matches!((&self.current, &self.peek), (Token::Sep(Separator::Dot), Token::Ident(_))) 
     }
 
-    // member_expr = expr '.' member_name
-    // member_name = member_name_base [ '::' '<' type_ref { ',' type_ref } [ ',' ] '>' ]
-    // member_name_base = num_lit | ident
-    // TODO: split into TupleMemberExpr, SimpleMemberExpr and GenericMemberExpr, GenericMemberExpr should be same as PathGenericSegment with expect value
+    // member_expr = primary_expr '.' ident [ ':' type_list ]
     // return dot span and member name, see parse_postfix_expr for the return type
-    pub fn parse_member_expr(&mut self) -> Result<(Span, MemberName), Unexpected> {
+    pub fn parse_member_expr(&mut self) -> Result<(Span, (IdSpan, Option<TypeList>)), Unexpected> {
         
         let dot_span = self.expect_sep(Separator::Dot)?;
-        let member_name = if let Some((numeric, span)) = self.try_expect_numeric() {
-            if !matches!(numeric, Numeric::I32(_) /* && is unsuffixed and unprefixed */) {
-                self.emit(strings::InvalidTupleIndex).span(span).help(strings::TupleIndexSyntaxHelp);
-            }
-            MemberName{ span, base: MemberNameBase::Numeric(numeric), base_span: span, parameters: None }
-        } else {
-            // // ? rust.await is really good design, but await is still currently reserved, put it here to indicate that it can be here
-            let ident = self.expect_ident_or_keywords(&[Keyword::Await])?;
-            let parameters = self.try_expect_sep(Separator::ColonColon).map(|_| self.parse_type_list()).transpose()?;
-            let span = ident.span + parameters.as_ref().map(|p| p.span).unwrap_or(ident.span);
-            MemberName{ span, base: MemberNameBase::Ident(ident.id), base_span: ident.span, parameters }
-        };
+        // // ? rust.await is really good design, but await is still currently reserved, put it here to indicate that it can be here
+        let ident = self.expect_ident_or_keywords(&[Keyword::Await])?;
+        let parameters = self.try_expect_sep(Separator::ColonColon).map(|_| self.parse_type_list()).transpose()?;
+        Ok((dot_span, (ident, parameters)))
+    }
 
-        Ok((dot_span, member_name))
+    fn maybe_tuple_index_expr(&self) -> bool {
+        matches!((&self.current, &self.peek), (Token::Sep(Separator::Dot), Token::Num(_)))
+    }
+
+    // tuple_member_expr = primary_expr '.' numeric
+    // return dot span and tuple index and tuple index span, see parse_postfix_expr for the return type
+    pub fn parse_tuple_index_expr(&mut self) -> Result<(Span, (Numeric, Span)), Unexpected> {
+        
+        let dot_span = self.expect_sep(Separator::Dot)?;
+        let (numeric, numeric_span) = self.expect_numeric()?;
+        if !matches!(numeric, Numeric::I32(_) /* && is unsuffixed and unprefixed */) {
+            self.emit(strings::InvalidTupleIndex).span(numeric_span).help(strings::TupleIndexSyntaxHelp);
+        }
+        Ok((dot_span, (numeric, numeric_span)))
     }
 
     fn maybe_call_expr(&self) -> bool {
@@ -191,14 +194,14 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         }
     }
 
-    fn maybe_index_expr(&self) -> bool {
+    fn maybe_array_index_expr(&self) -> bool {
         matches!(self.current, Token::Sep(Separator::LeftBracket))
     }
 
     // index_call_expr = primary_expr '[' [ expr_list ] ']'
     // return quote span and expr list, see parse_postfix_expr for the return type
     // // was called postfix_expr::subscription, this one is shorter and similar to fn_call
-    pub fn parse_index_expr(&mut self) -> Result<(Span, ExprList), Unexpected> {
+    pub fn parse_array_index_expr(&mut self) -> Result<(Span, ExprList), Unexpected> {
 
         match self.parse_expr_list()? {
             ExprListParseResult::Normal(span, params) | ExprListParseResult::EndWithComma(span, params) => {
@@ -253,20 +256,25 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
 
         loop {
             if self.maybe_member_expr() {
-                let (op_span, name) = self.parse_member_expr()?;
-                let span = current_expr.span() + name.span;
+                let (op_span, (name, parameters)) = self.parse_member_expr()?;
+                let span = current_expr.span() + parameters.as_ref().map(|p| p.span).unwrap_or(name.span);
                 let base = Box::new(current_expr);
-                current_expr = Expr::Member(MemberExpr{ span, base, op_span, name });
+                current_expr = Expr::Member(MemberExpr{ span, base, op_span, name, parameters });
             } else if self.maybe_call_expr() {
                 let (quote_span, parameters) = self.parse_call_expr()?;
                 let span = current_expr.span() + quote_span;
                 let base = Box::new(current_expr);
                 current_expr = Expr::Call(CallExpr{ span, base, quote_span, parameters });
-            } else if self.maybe_index_expr() {
-                let (quote_span, parameters) = self.parse_index_expr()?;
+            } else if self.maybe_tuple_index_expr() {
+                let (op_span, value) = self.parse_tuple_index_expr()?;
+                let span = current_expr.span() + value.1;
+                let base = Box::new(current_expr);
+                current_expr = Expr::TupleIndex(TupleIndexExpr{ span, base, op_span, value });
+            } else if self.maybe_array_index_expr() {
+                let (quote_span, parameters) = self.parse_array_index_expr()?;
                 let span = current_expr.span() + quote_span;
                 let base = Box::new(current_expr);
-                current_expr = Expr::Index(IndexExpr{ span, base, quote_span, parameters });
+                current_expr = Expr::ArrayIndex(ArrayIndexExpr{ span, base, quote_span, parameters });
             } else if matches!({
                 // // I carefully checked that only parse_expr and parse_name is called outside this file,
                 // // and found the actual intruder is unit test, this will still work when compiler_test

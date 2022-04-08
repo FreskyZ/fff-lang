@@ -215,44 +215,22 @@ macro_rules! make_expr {
         op_span: Span::new($op_start, $op_end),
         span: Span::new($start, $end),
     }));
-    (member name $start:literal:$end:literal i32 $base:literal) => (
-        MemberName{
-            span: Span::new($start, $end),
-            base: MemberNameBase::Numeric(Numeric::I32($base)),
-            base_span: Span::new($start, $end),
-            parameters: None,
-        }
-    );
-    (member name $start:literal:$end:literal numeric $base:expr) => (
-        MemberName{
-            span: Span::new($start, $end),
-            base: MemberNameBase::Numeric($base),
-            base_span: Span::new($start, $end),
-            parameters: None,
-        }
-    );
-    (member name $start:literal:$end:literal #$id:literal) => (
-        MemberName{
-            span: Span::new($start, $end),
-            base: MemberNameBase::Ident(IsId::new($id)),
-            base_span: Span::new($start, $end),
-            parameters: None,
-        }
-    );
-    (member name $start:literal:$end:literal #$id:literal $base_start:literal:$base_end:literal quote $quote_start:literal:$quote_end:literal $($parameter:expr),*$(,)?) => (
-        MemberName{
-            span: Span::new($start, $end),
-            base: MemberNameBase::Ident(IsId::new($id)),
-            base_span: Span::new($base_start, $base_end),
-            parameters: Some(TypeList{ items: vec![$($parameter,)*], span: Span::new($quote_start, $quote_end) }),
-        }
-    );
-    (member $start:literal:$end:literal dot $dot_start:literal:$dot_end:literal $base:expr, $name:expr) => (
+    (member $start:literal:$end:literal dot $dot_start:literal:$dot_end:literal #$ident:literal $ident_start:literal:$ident_end:literal $base:expr) => (
         Expr::Member(MemberExpr{
+            span: Span::new($start, $end),
             base: Box::new($base),
             op_span: Span::new($dot_start, $dot_end),
-            name: $name,
+            name: IdSpan::new($ident, Span::new($ident_start, $ident_end)),
+            parameters: None,
+        })
+    );
+    (member $start:literal:$end:literal dot $dot_start:literal:$dot_end:literal #$ident:literal $ident_start:literal:$ident_end:literal quote $quote_start:literal:$quote_end:literal $base:expr, $($parameter:expr),*$(,)?) => (
+        Expr::Member(MemberExpr{
             span: Span::new($start, $end),
+            base: Box::new($base),
+            op_span: Span::new($dot_start, $dot_end),
+            name: IdSpan::new($ident, Span::new($ident_start, $ident_end)),
+            parameters: Some(TypeList{ items: vec![$($parameter,)*], span: Span::new($quote_start, $quote_end) }),
         })
     );
     (array $start:literal:$end:literal $($item:expr),*$(,)?) => (Expr::Array(ArrayExpr{
@@ -296,14 +274,30 @@ macro_rules! make_expr {
             }
         })
     );
-    (index $start:literal:$end:literal bracket $bracket_start:literal:$bracket_end:literal $base:expr, $($parameter:expr),*$(,)?) => (
-        Expr::Index(IndexExpr{
+    (array index $start:literal:$end:literal bracket $bracket_start:literal:$bracket_end:literal $base:expr, $($parameter:expr),*$(,)?) => (
+        Expr::ArrayIndex(ArrayIndexExpr{
             base: Box::new($base),
             quote_span: Span::new($bracket_start, $bracket_end),
             span: Span::new($start, $end),
             parameters: ExprList{
                 items: vec![$($parameter,)*],
             }
+        })
+    );
+    (tuple index $start:literal:$end:literal dot $dot_start:literal:$dot_end:literal i32 $value:literal $value_start:literal:$value_end:literal $base:expr) => (
+        Expr::TupleIndex(TupleIndexExpr{
+            span: Span::new($start, $end),
+            base: Box::new($base),
+            op_span: Span::new($dot_start, $dot_end),
+            value: (Numeric::I32($value), Span::new($value_start, $value_end)),
+        })
+    );
+    (tuple index $start:literal:$end:literal dot $dot_start:literal:$dot_end:literal numeric $variant:ident($value:literal) $value_start:literal:$value_end:literal $base:expr) => (
+        Expr::TupleIndex(TupleIndexExpr{
+            span: Span::new($start, $end),
+            base: Box::new($base),
+            op_span: Span::new($dot_start, $dot_end),
+            value: (Numeric::$variant($value), Span::new($value_start, $value_end)),
         })
     );
     (range full $start:literal:$end:literal) => (Expr::RangeFull(RangeFullExpr{

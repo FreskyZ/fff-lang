@@ -34,6 +34,7 @@ pub trait Node: Sized {
 // TODO: use Try when stablized, see branch try-v2 // will I still work on this project at that time?
 pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_array_expr(&mut self, node: &ArrayExpr) -> Result<T, E> { node.walk(self) }
+    fn visit_array_index_expr(&mut self, node: &ArrayIndexExpr) -> Result<T, E> { node.walk(self) }
     fn visit_array_type(&mut self, node: &ArrayType) -> Result<T, E> { node.walk(self) }
     fn visit_assign_expr_stmt(&mut self, node: &AssignExprStatement) -> Result<T, E> { node.walk(self) }
     fn visit_binary_expr(&mut self, node: &BinaryExpr) -> Result<T, E> { node.walk(self) }
@@ -54,12 +55,10 @@ pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_for_stmt(&mut self, node: &ForStatement) -> Result<T, E> { node.walk(self) }
     fn visit_if_stmt(&mut self, node: &IfStatement) -> Result<T, E> { node.walk(self) }
     fn visit_if_clause(&mut self, node: &IfClause) -> Result<T, E> { node.walk(self) }
-    fn visit_index_expr(&mut self, node: &IndexExpr) -> Result<T, E> { node.walk(self) }
     fn visit_item(&mut self, node: &Item) -> Result<T, E> { node.walk(self) }
     fn visit_lit_expr(&mut self, node: &LitExpr) -> Result<T, E> { node.walk(self) }
     fn visit_loop_stmt(&mut self, node: &LoopStatement) -> Result<T, E> { node.walk(self) }
     fn visit_member_expr(&mut self, node: &MemberExpr) -> Result<T, E> { node.walk(self) }
-    fn visit_member_name(&mut self, node: &MemberName) -> Result<T, E> { node.walk(self) }
     fn visit_module(&mut self, node: &Module) -> Result<T, E> { node.walk(self) }
     fn visit_module_stmt(&mut self, node: &ModuleStatement) -> Result<T, E> { node.walk(self) }
     fn visit_object_expr(&mut self, node: &ObjectExpr) -> Result<T, E> { node.walk(self) }
@@ -77,6 +76,7 @@ pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_simple_expr_stmt(&mut self, node: &SimpleExprStatement) -> Result<T, E> { node.walk(self) }
     fn visit_stmt(&mut self, node: &Statement) -> Result<T, E> { node.walk(self) }
     fn visit_tuple_expr(&mut self, node: &TupleExpr) -> Result<T, E> { node.walk(self) }
+    fn visit_tuple_index_expr(&mut self, node: &TupleIndexExpr) -> Result<T, E> { node.walk(self) }
     fn visit_tuple_type(&mut self, node: &TupleType) -> Result<T, E> { node.walk(self) }
     fn visit_type_def(&mut self, node: &TypeDef) -> Result<T, E> { node.walk(self) }
     fn visit_type_def_field(&mut self, node: &TypeDefField) -> Result<T, E> { node.walk(self) }

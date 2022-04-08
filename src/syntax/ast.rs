@@ -44,6 +44,15 @@ pub struct ArrayExpr {
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
+pub struct ArrayIndexExpr {
+    pub span: Span,
+    pub base: Box<Expr>,
+    pub parameters: ExprList,
+    pub quote_span: Span, // bracket span
+}
+
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct ArrayType {
     pub span: Span,
     pub base: Box<TypeRef>,
@@ -103,7 +112,7 @@ pub struct CallExpr {
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
-pub struct ContinueStatement{
+pub struct ContinueStatement {
     pub span: Span,
     pub label: Option<IdSpan>,
 }
@@ -143,7 +152,8 @@ pub enum Expr {
     Tuple(TupleExpr),
     Array(ArrayExpr),
     Call(CallExpr),
-    Index(IndexExpr),
+    ArrayIndex(ArrayIndexExpr),
+    TupleIndex(TupleIndexExpr),
     Member(MemberExpr),
     Object(ObjectExpr),
     Unary(UnaryExpr),
@@ -239,15 +249,6 @@ pub struct IfStatement {
     pub else_clause: Option<ElseClause>,
 }
 
-#[derive(Debug)]
-#[cfg_attr(test, derive(PartialEq))]
-pub struct IndexExpr {
-    pub span: Span,
-    pub base: Box<Expr>,
-    pub parameters: ExprList,
-    pub quote_span: Span, // bracket span
-}
-
 define_abc! {
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
@@ -298,23 +299,8 @@ pub struct MemberExpr {
     pub span: Span,
     pub base: Box<Expr>,
     pub op_span: Span, // dot span
-    pub name: MemberName,
-}
-
-#[derive(Debug)]
-#[cfg_attr(test, derive(PartialEq))]
-pub struct MemberName {
-    pub span: Span,
-    pub base: MemberNameBase,
-    pub base_span: Span,
+    pub name: IdSpan,
     pub parameters: Option<TypeList>,
-}
-
-#[derive(Debug)]
-#[cfg_attr(test, derive(PartialEq))]
-pub enum MemberNameBase {
-    Ident(IsId),
-    Numeric(Numeric),
 }
 
 #[derive(Debug)]
@@ -469,6 +455,15 @@ pub enum Statement {
 pub struct TupleExpr {
     pub span: Span,
     pub items: ExprList,
+}
+
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
+pub struct TupleIndexExpr {
+    pub span: Span,
+    pub base: Box<Expr>,
+    pub op_span: Span, // dot span
+    pub value: (Numeric, Span),
 }
 
 #[derive(Debug)]

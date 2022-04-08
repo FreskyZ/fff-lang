@@ -40,19 +40,17 @@ module tests/ast/gcd.f3
                       binary-expr <15:17-15:40> + <15:26-15:26>
                         literal str "最大公约数(" <15:17-15:24>
                         call-expr <15:28-15:40> () <15:39-15:40>
-                          member-expr <15:28-15:38> . <15:29-15:29>
+                          member-expr <15:28-15:38> . <15:29-15:29> to_string <15:30-15:38>
                             path <15:28-15:28>
                               segment <15:28-15:28> a
-                            member-name <15:30-15:38> to_string <15:30-15:38>
                       literal str ", " <15:44-15:47>
                     call-expr <15:51-15:63> () <15:62-15:63>
-                      member-expr <15:51-15:61> . <15:52-15:52>
+                      member-expr <15:51-15:61> . <15:52-15:52> to_string <15:53-15:61>
                         path <15:51-15:51>
                           segment <15:51-15:51> b
-                        member-name <15:53-15:61> to_string <15:53-15:61>
                   literal str ") is " <15:67-15:73>
                 call-expr <15:77-15:99> () <15:98-15:99>
-                  member-expr <15:77-15:97> . <15:88-15:88>
+                  member-expr <15:77-15:97> . <15:88-15:88> to_string <15:89-15:97>
                     call-expr <15:77-15:87> () <15:82-15:87>
                       path <15:77-15:81>
                         segment <15:77-15:81> 最大公约数
@@ -60,7 +58,6 @@ module tests/ast/gcd.f3
                         segment <15:83-15:83> a
                       path <15:86-15:86>
                         segment <15:86-15:86> b
-                    member-name <15:89-15:97> to_string <15:89-15:97>
   fn-def <19:1-28:1> 最大公约数 <19:4-19:8> () <19:9-19:24>
     fn-def-parameter <19:10-19:15> a <19:10-19:10>
       primitive-type i32 <19:13-19:15>

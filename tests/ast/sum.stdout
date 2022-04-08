@@ -20,7 +20,6 @@ module tests/ast/sum.f3
           binary-expr <8:13-8:48> + <8:32-8:32>
             literal str "1 add to 100 is " <8:13-8:30>
             call-expr <8:34-8:48> () <8:47-8:48>
-              member-expr <8:34-8:46> . <8:37-8:37>
+              member-expr <8:34-8:46> . <8:37-8:37> to_string <8:38-8:46>
                 path <8:34-8:36>
                   segment <8:34-8:36> sum
-                member-name <8:38-8:46> to_string <8:38-8:46>

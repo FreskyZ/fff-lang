@@ -141,16 +141,16 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         }
     }
 
-    /// Check current token is a literal, used for member access number
+    /// Check current token is a literal, used for tuple member expr
     ///
     /// if so, move next and Some((lit_value, lit_span)),
-    /// if not, no move next and None
+    /// if not, push unexpect and Err(Unexpected)
     ///
-    /// example `let (value, span) = cx.try_expect_num_lit()?;`
-    fn try_expect_numeric(&mut self) -> Option<(Numeric, Span)> {
+    /// example `let (value, span) = cx.expect_numeric()?;`
+    fn expect_numeric(&mut self) -> Result<(Numeric, Span), Unexpected> {
         match self.current {
-            Token::Num(v) => Some((v, self.move_next())),
-            _ => None,
+            Token::Num(v) => Ok((v, self.move_next())),
+            _ => self.push_unexpect("tuple index"),
         }
     }
 

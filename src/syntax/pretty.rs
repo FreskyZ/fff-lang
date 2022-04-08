@@ -115,6 +115,11 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
         self.impl_visit_simple(node, "array-expr", node.span)
     }
 
+    fn visit_array_index_expr(&mut self, node: &ArrayIndexExpr) -> fmt::Result {
+        self.impl_visit(node, "array-index-expr", node.span, |f|
+            f.write_str(" [] ")?.write_span(node.quote_span))
+    }
+
     fn visit_array_type(&mut self, node: &ArrayType) -> fmt::Result {
         self.impl_visit_simple(node, "array-type", node.span)
     }
@@ -222,11 +227,6 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
     fn visit_else_clause(&mut self, node: &ElseClause) -> fmt::Result {
         self.impl_visit_simple(node, "else-clause", node.span)
     }
-
-    fn visit_index_expr(&mut self, node: &IndexExpr) -> fmt::Result {
-        self.impl_visit(node, "index-expr", node.span, |f|
-            f.write_str(" [] ")?.write_span(node.quote_span))
-    }
     
     fn visit_lit_expr(&mut self, node: &LitExpr) -> fmt::Result {
         self.impl_visit_no_primary_span(node, "literal", |f| {
@@ -253,19 +253,7 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
 
     fn visit_member_expr(&mut self, node: &MemberExpr) -> fmt::Result {
         self.impl_visit(node, "member-expr", node.span, |f| f
-            .write_str(" . ")?.write_span(node.op_span))
-    }
-
-    fn visit_member_name(&mut self, node: &MemberName) -> fmt::Result {
-        self.impl_visit(node, "member-name", node.span, |f| {
-            f.write_space()?;
-            match &node.base {
-                MemberNameBase::Ident(id) => { f.write_isid(*id)?; },
-                MemberNameBase::Numeric(v) => write!(f.f, "{v}")?,
-            }
-            f.write_space()?.write_span(node.base_span)?;
-            Ok(f)
-        })
+            .write_str(" . ")?.write_span(node.op_span)?.write_space()?.write_idspan(node.name))
     }
 
     fn visit_module(&mut self, node: &Module) -> fmt::Result {
@@ -356,6 +344,17 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
     fn visit_type_def(&mut self, node: &TypeDef) -> fmt::Result {
         self.impl_visit(node, "type-ref", node.span, |f|
             f.write_space()?.write_idspan(node.name))
+    }
+
+    fn visit_tuple_index_expr(&mut self, node: &TupleIndexExpr) -> fmt::Result {
+        self.impl_visit(node, "tuple-index-expr", node.span, |f| {
+            f.write_str(" . ")?.write_span(node.op_span)?;
+            match node.value.0 { 
+                crate::lexical::Numeric::I32(v) => write!(f.f, "{}", v)?, 
+                other => write!(f.f, "{}", other)?,
+            };
+            f.write_space()?.write_span(node.value.1)
+        })
     }
 
     fn visit_tuple_type(&mut self, node: &TupleType) -> fmt::Result {

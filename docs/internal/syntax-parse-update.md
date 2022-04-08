@@ -21,7 +21,7 @@
 - [-] fix random test input generator
 - [ ] add missing array dup def
 - [x] unify name segment and plain type segment into path segment, path segment contains variants of ident, ident + generic, type-cast
-- [ ] split member expr into tuple member, simple member and generic member expr
+- [x] split tuple index expr from member expr, rename index expr to array index expr
 - [ ] allow generic parameter in type name and fn name, that's called parse_generic_name
 - [ ] allow where clause when generic name
 - [ ] add numeric literal type as suffixed/unsuffixed and bin/oct/dec/hex/unprefixed, member access require unsuffixed and unprefixed

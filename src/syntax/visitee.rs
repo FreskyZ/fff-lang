@@ -34,6 +34,11 @@ impl_node!{ ArrayExpr, visit_array_expr, |self, v| {
     v.visit_expr_list(&self.items)
 }}
 
+impl_node!{ ArrayIndexExpr, visit_array_index_expr, |self, v| {
+    v.visit_expr(&self.base)?;
+    v.visit_expr_list(&self.parameters)
+}}
+
 impl_node!{ ArrayType, visit_array_type, |self, v| {
     v.visit_type_ref(&self.base)?;
     v.visit_expr(&self.size)
@@ -97,7 +102,8 @@ impl_abc_node! { Expr, visit_expr,
     Tuple => visit_tuple_expr,
     Array => visit_array_expr,
     Call => visit_call_expr,
-    Index => visit_index_expr,
+    ArrayIndex => visit_array_index_expr,
+    TupleIndex => visit_tuple_index_expr,
     Member => visit_member_expr,
     Object => visit_object_expr,
     Unary => visit_unary_expr,
@@ -164,12 +170,6 @@ impl_node!{ IfClause, visit_if_clause, |self, v| {
     v.visit_block(&self.body)
 }}
 
-
-impl_node!{ IndexExpr, visit_index_expr, |self, v| {
-    v.visit_expr(&self.base)?;
-    v.visit_expr_list(&self.parameters)
-}}
-
 impl_abc_node!{ Item, visit_item, 
     Type => visit_type_def,
     Enum => visit_enum_def,
@@ -194,10 +194,6 @@ impl_node!{ LoopStatement, visit_loop_stmt, |self, v| {
 
 impl_node!{ MemberExpr, visit_member_expr, |self, v| {
     v.visit_expr(self.base.as_ref())?;
-    v.visit_member_name(&self.name)
-}}
-
-impl_node!{ MemberName, visit_member_name, |self, v| {
     if let Some(parameters) = &self.parameters {
         v.visit_type_list(parameters)?;
     }
@@ -329,6 +325,10 @@ impl_abc_node!{ TypeRef, visit_type_ref,
 
 impl_node!{ TupleExpr, visit_tuple_expr, |self, v| {
     v.visit_expr_list(&self.items)
+}}
+
+impl_node!{ TupleIndexExpr, visit_tuple_index_expr, |self, v| {
+    v.visit_expr(&self.base)
 }}
 
 impl_node!{ TupleType, visit_tuple_type, |self, v| {

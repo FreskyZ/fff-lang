@@ -121,28 +121,26 @@ fn postfix_expr() {
     let mut context = Parser::new(crate::lexical::Parser::new(scx.entry("1", &mut ecx).unwrap(), &mut ecx));
     let node = context.parse_postfix_expr().unwrap();
     context.finish();
-    ppcase!{ node.display(&scx), "index-expr <1:1-1:58> [] <1:49-1:58>
-  index-expr <1:1-1:48> [] <1:40-1:48>
-    member-expr <1:1-1:39> . <1:38-1:38>
+    ppcase!{ node.display(&scx), "array-index-expr <1:1-1:58> [] <1:49-1:58>
+  array-index-expr <1:1-1:48> [] <1:40-1:48>
+    member-expr <1:1-1:39> . <1:38-1:38> m <1:39-1:39>
       call-expr <1:1-1:37> () <1:36-1:37>
-        member-expr <1:1-1:35> . <1:34-1:34>
-          index-expr <1:1-1:33> [] <1:31-1:33>
-            member-expr <1:1-1:30> . <1:29-1:29>
+        member-expr <1:1-1:35> . <1:34-1:34> l <1:35-1:35>
+          array-index-expr <1:1-1:33> [] <1:31-1:33>
+            member-expr <1:1-1:30> . <1:29-1:29> j <1:30-1:30>
               call-expr <1:1-1:28> () <1:25-1:28>
                 call-expr <1:1-1:24> () <1:15-1:24>
-                  member-expr <1:1-1:14> . <1:13-1:13>
+                  member-expr <1:1-1:14> . <1:13-1:13> f <1:14-1:14>
                     call-expr <1:1-1:12> () <1:4-1:12>
-                      member-expr <1:1-1:3> . <1:2-1:2>
+                      member-expr <1:1-1:3> . <1:2-1:2> b <1:3-1:3>
                         path <1:1-1:1>
                           segment <1:1-1:1> a
-                        member-name <1:3-1:3> b <1:3-1:3>
                       path <1:5-1:5>
                         segment <1:5-1:5> c
                       path <1:8-1:8>
                         segment <1:8-1:8> d
                       path <1:11-1:11>
                         segment <1:11-1:11> e
-                    member-name <1:14-1:14> f <1:14-1:14>
                   path <1:16-1:16>
                     segment <1:16-1:16> g
                   path <1:19-1:19>
@@ -151,11 +149,8 @@ fn postfix_expr() {
                     segment <1:22-1:22> i
                 path <1:26-1:26>
                   segment <1:26-1:26> u
-              member-name <1:30-1:30> j <1:30-1:30>
             path <1:32-1:32>
               segment <1:32-1:32> k
-          member-name <1:35-1:35> l <1:35-1:35>
-      member-name <1:39-1:39> m <1:39-1:39>
     path <1:41-1:41>
       segment <1:41-1:41> n
     path <1:44-1:44>

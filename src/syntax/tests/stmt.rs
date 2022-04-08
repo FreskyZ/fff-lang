@@ -54,15 +54,13 @@ fn parse_for_stmt() {
         make_stmt!(for 0:77 var #3 12:12
             make_stmt!(label 0:5 #2),
             make_expr!(call 17:50 paren 49:50
-                make_expr!(member 17:48 dot 41:41
+                make_expr!(member 17:48 dot 41:41 #6 42:48
                     make_expr!(call 17:40 paren 39:40
-                        make_expr!(member 17:38 dot 29:29
+                        make_expr!(member 17:38 dot 29:29 #5 30:38
                             make_expr!(call 17:28 paren 22:28
                                 make_expr!(path simple 17:21 #4),
                                 make_expr!(i32 0 23:23),
-                                make_expr!(i32 10 26:27)),
-                            make_expr!(member name 30:38 #5)),),
-                    make_expr!(member name 42:48 #6)),),
+                                make_expr!(i32 10 26:27))),)),),
             make_stmt!(block 52:77
                 make_stmt!(expr 54:75
                     make_expr!(call 54:74 paren 61:74
@@ -97,27 +95,24 @@ fn if_stmt_parse() {
                 body: make_stmt!(block 5:41
                     make_stmt!(expr 7:20
                         make_expr!(call 7:19 paren 17:19
-                            make_expr!(member 7:16 dot 10:10
-                                make_expr!(path simple 7:9 #2),
-                                make_expr!(member name 11:16 #3)),
+                            make_expr!(member 7:16 dot 10:10 #3 11:16
+                                make_expr!(path simple 7:9 #2)),
                             make_expr!(path simple 18:18 #4))),
                     make_stmt!(expr 22:39
                         make_expr!(call 22:38 paren 36:38
-                            make_expr!(member 22:35 dot 27:27
-                                make_expr!(path simple 22:26 #5),
-                                make_expr!(member name 28:35 #6)),
+                            make_expr!(member 22:35 dot 27:27 #6 28:35
+                                make_expr!(path simple 22:26 #5)),
                             make_expr!(path simple 37:37 #7)))) },
             elseif_clauses: vec![],
             else_clause: Some(ElseClause{ span: Span::new(43, 71),
                 body: make_stmt!(block 48:71
                     make_stmt!(expr 50:70
                         make_expr!(call 50:69 paren 61:69
-                            make_expr!(member 50:60 dot 57:57
+                            make_expr!(member 50:60 dot 57:57 #8 58:60
                                 make_expr!(array 50:56
                                     make_expr!(i32 1 51:51),
                                     make_expr!(i32 2 53:53),
-                                    make_expr!(i32 3 55:55)),
-                                make_expr!(member name 58:60 #8)),
+                                    make_expr!(i32 3 55:55))),
                             make_expr!(path simple 62:68 #9)))) }),
         }, strings ["sth", "do_sth", "a", "other", "do_other", "b", "map", "writeln"]
     }
