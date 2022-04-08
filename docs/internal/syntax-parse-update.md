@@ -22,9 +22,8 @@
 - [ ] add missing array dup def
 - [x] unify name segment and plain type segment into path segment, path segment contains variants of ident, ident + generic, type-cast
 - [x] split tuple index expr from member expr, rename index expr to array index expr
-- [ ] allow generic parameter in type name and fn name, that's called parse_generic_name
-- [ ] allow where clause when generic name
+- [x] allow generic parameter in type name and fn name, that's called parse_generic_name
+- [x] allow where clause when generic name
 - [ ] add numeric literal type as suffixed/unsuffixed and bin/oct/dec/hex/unprefixed, member access require unsuffixed and unprefixed
 - [ ] format string
-- [ ] add generic parameters to type, add impl type and impl trait for type
-- [ ] add generic parameters to function, add generic constraints to function, impl type and impl trait
+- [ ] add impl type and impl trait for type

@@ -354,10 +354,11 @@ fn fn_def_parse() {
     case!{ parse_fn_def "fn main() {}",
         FnDef{
             span: Span::new(0, 11), 
-            name: make_stmt!(id 3:6 #2), 
+            name: make_stmt!(name 3:6 #2), 
             quote_span: Span::new(7, 8), 
             parameters: vec![], 
             ret_type: None,
+            wheres: Vec::new(),
             body: make_stmt!(block 10:11),
         }
     }
@@ -367,13 +368,14 @@ fn fn_def_parse() {
     case!{ parse_fn_def "fn main(ac: i32) {}",
         FnDef{
             span: Span::new(0, 18), 
-            name: make_stmt!(id 3:6 #2), 
+            name: make_stmt!(name 3:6 #2), 
             quote_span: Span::new(7, 15), 
             parameters: vec![
                 make_stmt!(fp 8:14 #3 8:9
                     make_type!(prim 12:14 I32)),
             ],
             ret_type: None,
+            wheres: Vec::new(),
             body: make_stmt!(block 17:18),
         }, strings ["main", "ac"]
     }
@@ -383,7 +385,7 @@ fn fn_def_parse() {
     case!{ parse_fn_def " fn mainxxx(argv:&    string   ,this:i32, some_other: char, )  { println(this); }",
         FnDef{
             span: Span::new(1, 80),
-            name: make_stmt!(id 4:10 #2),
+            name: make_stmt!(name 4:10 #2),
             quote_span: Span::new(11, 60), 
             parameters: vec![
                 make_stmt!(fp 12:27 #3 12:15
@@ -394,6 +396,7 @@ fn fn_def_parse() {
                     make_type!(prim 54:57 Char)),
             ],
             ret_type: None,
+            wheres: Vec::new(),
             body: make_stmt!(block 63:80
                 make_stmt!(expr 65:78
                     make_expr!(call 65:77 paren 72:77
@@ -408,10 +411,11 @@ fn fn_def_parse() {
     case!{ parse_fn_def "fn main() -> i32 {}",
         FnDef{
             span: Span::new(0, 18),
-            name: make_stmt!(id 3:6 #2), 
+            name: make_stmt!(name 3:6 #2), 
             quote_span: Span::new(7, 8), 
             parameters: vec![],
             ret_type: Some(make_type!(prim 13:15 I32)),
+            wheres: Vec::new(),
             body: make_stmt!(block 17:18),
         }
     }
@@ -420,7 +424,7 @@ fn fn_def_parse() {
     case!{ parse_fn_def "fn ffff(argc: i32, argv: &&byte,   envv:  &string,) -> i32 {}",
         FnDef{
             span: Span::new(0, 60), 
-            name: make_stmt!(id 3:6 #2), 
+            name: make_stmt!(name 3:6 #2), 
             quote_span: Span::new(7, 50), 
             parameters: vec![
                 make_stmt!(fp 8:16 #3 8:11
@@ -431,6 +435,7 @@ fn fn_def_parse() {
                     make_type!(ref 42:48 make_type!(simple 43:48 #7))),
             ], 
             ret_type: Some(make_type!(prim 55:57 I32)),
+            wheres: Vec::new(),
             body: make_stmt!(block 59:60)
             //       2       3       4       5      6         7
         }, strings ["ffff", "argc", "argv", "byte", "envv", "string"]
@@ -441,7 +446,7 @@ fn fn_def_parse() {
     case!{ parse_fn_def "fn impl_visit(this: &This, node: &Node, title: string, span: Span, then: fn() -> Result<&This, fmt::Error>) -> fmt::Result {}",
         FnDef{
             span: Span::new(0, 124), 
-            name: make_stmt!(id 3:12 #2), 
+            name: make_stmt!(name 3:12 #2), 
             quote_span: Span::new(13, 106), 
             parameters: vec![
                 make_stmt!(fp 14:24 #3 14:17
@@ -464,9 +469,46 @@ fn fn_def_parse() {
             ret_type: Some(make_type!(path 111:121
                 make_path!(segment simple 111:113 #13),
                 make_path!(segment simple 116:121 #12))),
+            wheres: Vec::new(),
             body: make_stmt!(block 123:124)
         //           2             3       4       5       6       7        8         9       10      11      12        13     14
         }, strings ["impl_visit", "this", "This", "node", "Node", "title", "string", "span", "Span", "then", "Result", "fmt", "Error"]
+    }
+
+    // // although currently I think fn type is type not class, and callobject is implementing std::ops::Call, not Fn
+    // // I f**king human parse this code once and pass?
+    //                   0         1         2         3         4         5         6         7
+    //                   01234567890123456789012345678901234567890123456789012345678901234567890123
+    case!{ parse_fn_def "fn map<T, U, F>(this: Option<T>, f: F) -> Option<U> where F: fn(T) -> U {}",
+        FnDef{
+            span: Span::new(0, 73),
+            name: make_stmt!(name 3:14 #2 3:5 quote 6:14
+                make_stmt!(gp 7:7 #3),
+                make_stmt!(gp 10:10 #4),
+                make_stmt!(gp 13:13 #5)),
+            quote_span: Span::new(15, 37),
+            parameters: vec![
+                make_stmt!(fp 16:30 #6 16:19
+                    make_type!(path 22:30
+                        make_path!(segment generic 22:30 #7 22:27 quote 28:30
+                            make_type!(path simple 29:29 #3)))),
+                make_stmt!(fp 33:36 #8 33:33
+                    make_type!(path simple 36:36 #5)),
+            ],
+            ret_type: Some(make_type!(path 42:50
+                make_path!(segment generic 42:50 #7 42:47 quote 48:50
+                    make_type!(simple 49:49 #4)))),
+            wheres: vec![
+                WhereClause{ span: Span::new(58, 70), name: IdSpan::new(5, Span::new(58, 58)), constraints: vec![
+                    make_type!(fn ret 61:70 paren 63:65 [
+                        make_type!(fp 64:64 
+                            make_type!(simple 64:64 #3))
+                    ], make_type!(simple 70:70 #4))
+                ]},
+            ],
+            body: make_stmt!(block 72:73),
+        //           2      3    4    5    6       7         8
+        }, strings ["map", "T", "U", "F", "this", "Option", "f"],
     }
 }
 

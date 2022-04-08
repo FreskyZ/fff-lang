@@ -96,8 +96,9 @@ pub enum Keyword {
     Var = 78,
     Virtual = 79,
     Volatile = 80,
-    While = 81,
-    Yield = 82,
+    Where = 81,
+    While = 82,
+    Yield = 83,
 }
 
 const VALUES: &[&str] = &[
@@ -109,13 +110,13 @@ const VALUES: &[&str] = &[
     "private", "protected", "pub", "public", "r128", "r32", "r64", "ref", "ret",
     "return", "self", "static", "struct", "super", "switch", "this", "throw", "trait",
     "true", "try", "type", "typedef", "typeof", "u128", "u16", "u32", "u64", "u8",
-    "unsafe", "use", "var", "virtual", "volatile", "while", "yield",
+    "unsafe", "use", "var", "virtual", "volatile", "where", "while", "yield",
 ];
 const KINDS: &[u8] = &[
     0, 2, 0, 3, 0, 0, 0, 0, 0, 0, 1, 3, 0, 1, 0, 3, 3, 3, 3, 0, 0, 1, 1, 2, 0, 3,
     3, 0, 0, 1, 1, 1, 1, 3, 0, 3, 0, 0, 0, 0, 3, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 3, 2, 0, 0, 0, 0, 2, 0, 0, 2, 0, 3, 0, 0, 0, 1, 1, 1, 1, 0, 3,
-    3, 0, 0, 3, 0,
+    3, 0, 0, 3, 3, 0,
 ];
 
 impl Keyword {
@@ -164,7 +165,7 @@ const BUCKETS: &[&[&[Option<Keyword>]]] = &[&[], &[],
     ],
     /* 5 */ &[
         &[
-            Some(Bits8), Some(Super), None, Some(Async), Some(Catch), Some(Await),
+            Some(Bits8), Some(Super), Some(Where), Some(Async), Some(Catch), Some(Await),
             Some(While), None, None, Some(Throw), None, Some(Const), Some(Match),
             None, None, Some(False), None, None, None, None, Some(Trait), Some(Class),
             None, None, Some(Yield), Some(Break),

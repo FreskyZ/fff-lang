@@ -309,7 +309,12 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     ///
     /// example `if let Some(sep_span) = cx.try_expect_sep(Separator::Comma) { ... }`
     fn try_expect_closing_bracket(&mut self, expected_sep: Separator) -> Option<(Span, bool)> {
-        debug_assert!(matches!(expected_sep, Separator::RightBrace | Separator::RightParen | Separator::RightBracket | Separator::Gt), "not a closing bracket");
+        debug_assert!(matches!(expected_sep, 
+            | Separator::RightBrace 
+            | Separator::RightParen 
+            | Separator::RightBracket 
+            | Separator::Gt
+        ), "not a closing bracket");
         match (&self.current, &self.peek) {
             (Token::Sep(sep), _) if *sep == expected_sep => Some((self.move_next(), false)),
             (Token::Sep(Separator::GtGt), _) if expected_sep == Separator::Gt => Some((self.split_shift_right(), false)),

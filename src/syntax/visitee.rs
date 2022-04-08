@@ -122,11 +122,15 @@ impl_node!{ ExprList, visit_expr_list, |self, v| {
 }}
 
 impl_node!{ FnDef, visit_fn_def, |self, v| {
+    v.visit_generic_name(&self.name)?;
     for parameter in &self.parameters {
         v.visit_fn_def_parameter(parameter)?;
     }
     if let Some(ret_type) = &self.ret_type {
         v.visit_type_ref(ret_type)?;
+    }
+    for r#where in &self.wheres {
+        v.visit_where_clause(r#where)?;
     }
     v.visit_block(&self.body)
 }}

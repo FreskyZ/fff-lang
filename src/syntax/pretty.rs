@@ -183,7 +183,6 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
 
     fn visit_fn_def(&mut self, node: &FnDef) -> fmt::Result {
         self.impl_visit(node, "fn-def", node.span, |f| f
-            .write_space()?.write_idspan(node.name)?
             .write_str(" () ")?.write_span(node.quote_span))
     }
 
@@ -398,6 +397,11 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
     fn visit_var_decl(&mut self, node: &VarDeclStatement) -> fmt::Result {
         self.impl_visit(node, "var-def", node.span, |f| f
             .write_str(if node.r#const { " const " } else { " mutable " })?.write_idspan(node.name))
+    }
+
+    fn visit_where_clause(&mut self, node: &WhereClause) -> fmt::Result {
+        self.impl_visit(node, "where-clause", node.span, |f| f
+            .write_space()?.write_idspan(node.name))
     }
 
     fn visit_while_stmt(&mut self, node: &WhileStatement) -> fmt::Result {

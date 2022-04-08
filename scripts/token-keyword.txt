@@ -81,5 +81,6 @@
        'var' =>        Var, Normal,
    'virtual' =>    Virtual, Reserved,
   'volatile' =>   Volatile, Reserved,
+     'where' =>      Where, Normal,
      'while' =>      While, Normal,
      'yield' =>      Yield, Reserved,

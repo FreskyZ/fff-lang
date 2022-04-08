@@ -238,12 +238,12 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         matches!(self.current, Token::Keyword(Keyword::Fn))
     }
 
-    // fn-def = 'fn' identifier '(' [ identifier ':' type-use { ',' identifier ':' type-use [ ',' ] } ] ')' [ '->' type-use ] block
-    // TODO: fn name (and type name) should be a "GenericName" where type parameters only allow identifier
+    // fn-def = 'fn' generic_name '(' [ identifier ':' type-use { ',' identifier ':' type-use [ ',' ] } ] ')' [ '->' type-use ] [ 'where' { where_clause ',' } ] block
+    // where_clause = ident ':' type_ref { '+' type_ref }
     pub fn parse_fn_def(&mut self) -> Result<FnDef, Unexpected> {
 
         let fn_span = self.expect_keyword(Keyword::Fn)?;
-        let fn_name = self.expect_ident()?;
+        let fn_name = self.parse_generic_name()?;
         let mut quote_span = self.expect_sep(Separator::LeftParen)?;
 
         let mut parameters = Vec::new();
@@ -272,9 +272,36 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             }
             self.parse_type_ref()
         }).transpose()?;
-        let body = self.parse_block()?;
 
-        Ok(FnDef{ span: fn_span + body.span, name: fn_name, quote_span, parameters, ret_type, body })
+        macro_rules! parse_where { () => {{
+            let name = self.expect_ident()?;
+            self.expect_sep(Separator::Colon)?;
+            let mut constraints = vec![self.parse_type_ref()?];
+            while self.try_expect_sep(Separator::Add).is_some() { // no trailing add here
+                constraints.push(self.parse_type_ref()?);
+            }
+            WhereClause{ span: name.span + constraints.last().unwrap().span(), name, constraints }
+        }};}
+
+        let mut wheres = Vec::new();
+        if self.try_expect_keyword(Keyword::Where).is_some() {
+            wheres.push(parse_where!());
+            loop {
+                // left brace is not closing bracket, and this does not move forward
+                if self.is_sep(Separator::LeftBrace) {
+                    break;
+                } else if matches!((&self.current, &self.peek), (Token::Sep(Separator::Comma), Token::Sep(Separator::LeftBrace))) {
+                    self.move_next();
+                    break;
+                } else {
+                    self.expect_sep(Separator::Comma)?;
+                }
+                wheres.push(parse_where!());
+            }
+        }
+
+        let body = self.parse_block()?;
+        Ok(FnDef{ span: fn_span + body.span, name: fn_name, quote_span, parameters, ret_type, wheres, body })
     }
 
     pub fn maybe_for_stmt(&self) -> bool {

@@ -205,17 +205,18 @@ pub struct FnDeclare {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct FnDef {
     pub span: Span, // fn_span + body_span
-    pub name: IdSpan,
+    pub name: GenericName,
     pub quote_span: Span, // parameter list quote
     pub parameters: Vec<FnDefParameter>,
     pub ret_type: Option<TypeRef>,
+    pub wheres: Vec<WhereClause>,
     pub body: Block,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct FnDefParameter {
-    pub span: Span, // name_span + r#type.span
+    pub span: Span, // name.span + r#type.span
     pub name: IdSpan,
     pub r#type: TypeRef,
 }
