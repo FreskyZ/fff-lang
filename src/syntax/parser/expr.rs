@@ -13,7 +13,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     // // considered loops_like_xxx, seems_to_be_xxx, and maybe_xxx is shortest and consist with token check methods is_xxx
     pub fn maybe_expr(&self) -> bool {
         self.is_lit()
-        || self.maybe_name()
+        || self.maybe_path()
         || self.maybe_tuple_expr()
         || self.maybe_array_expr()
         || self.maybe_unary_expr()
@@ -71,46 +71,6 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         }
     }
 
-    pub fn maybe_name(&self) -> bool {
-        matches!(self.current, Token::Ident(_) | Token::Sep(Separator::Lt | Separator::ColonColon)) 
-    }
-
-    // name = [ type_as_segment ] [ '::' ] name_segment { '::' name_segment }
-    // name_segment = identifier | '<' type_ref { ',' type_ref } '>'
-    // TODO: path_segment = 
-    //    | num_lit
-    //    | '<' type_ref 'as' type_ref '>'
-    //    | [ '::' ] identifier [ [ '::' ] '<' type_ref { ',' type_ref } [ ',' ] '>' ]
-    // enable num lit and require coloncolon control by context or parameter
-    pub fn parse_name(&mut self) -> Result<Name, Unexpected> {
-        let type_as_segment = self.try_expect_sep(Separator::Lt).map(|lt_span| {
-            let from = self.parse_type_ref()?;
-            self.expect_keyword(Keyword::As)?;
-            let to = self.parse_type_ref()?;
-            let gt_span = self.expect_sep(Separator::Gt)?;
-            Ok(TypeAsSegment{ from: Box::new(from), to: Box::new(to), span: lt_span + gt_span })
-        }).transpose()?;
-
-        let beginning_separator_span = self.try_expect_sep(Separator::ColonColon);
-        
-        let mut segments = Vec::new();
-        loop {
-            if let Some(ident) = self.try_expect_ident() {
-                segments.push(NameSegment::Normal(ident));
-            } else {
-                segments.push(NameSegment::Generic(self.parse_type_list()?));
-            }
-            if self.try_expect_sep(Separator::ColonColon).is_none() {
-                break;
-            }
-        }
-
-        let global = type_as_segment.is_none() && beginning_separator_span.is_some();
-        let all_span = type_as_segment.as_ref().map(|s| s.span).or(beginning_separator_span)
-            .unwrap_or_else(|| segments[0].span()) + segments.last().unwrap().span(); // [0] and last().unwrap(): matches() guarantees segments are not empty
-        Ok(Name{ type_as_segment, global, segments, span: all_span })
-    }
-
     fn maybe_tuple_expr(&self) -> bool {
         matches!(self.current, Token::Sep(Separator::LeftParen)) 
     }
@@ -166,8 +126,8 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             // while it is actually tested more than hundred times in syntax test cases worldwide
             let (value, span) = self.expect_lit()?;
             return Ok(Expr::Lit(LitExpr{ value, span }));
-        } else if self.maybe_name() {
-            return self.parse_name().map(Expr::Name);
+        } else if self.maybe_path() {
+            return self.parse_value_path().map(Expr::Path);
         } else if self.maybe_tuple_expr() {
             return self.parse_tuple_expr();
         } else if self.maybe_array_expr() {
@@ -175,7 +135,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         }
 
         let this = self.expect_ident_or_keywords(&[Keyword::This, Keyword::Self_])?;  // actually identifier is processed by Name, not here
-        Ok(Expr::Name(Name{ type_as_segment: None, global: false, span: this.span, segments: vec![NameSegment::Normal(this)] }))
+        Ok(Expr::Path(Path{ span: this.span, segments: vec![PathSegment::Simple(this)] }))
     }
 
     fn maybe_member_expr(&self) -> bool {
@@ -313,7 +273,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
                 #[cfg(not(test))]
                 debug_assert!(!self.allow_object_expr.is_empty(), "allow_object_expr unexpectedly empty");
                 &self.allow_object_expr
-            }.last(), None | Some(true)) && matches!(current_expr, Expr::Name(_)) && self.maybe_object_expr() {
+            }.last(), None | Some(true)) && matches!(current_expr, Expr::Path(_)) && self.maybe_object_expr() {
                 let (quote_span, fields) = self.parse_object_expr()?;
                 let span = current_expr.span() + quote_span;
                 let base = Box::new(current_expr);

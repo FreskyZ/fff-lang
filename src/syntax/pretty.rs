@@ -286,15 +286,6 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
         })
     }
 
-    fn visit_name(&mut self, node: &Name) -> fmt::Result {
-        self.impl_visit(node, "name", node.span, |f| {
-            if node.global {
-                f.write_str(" global")?;
-            }
-            Ok(f)
-        })
-    }
-
     fn visit_object_expr(&mut self, node: &ObjectExpr) -> fmt::Result {
         self.impl_visit(node, "object-expr", node.span, |f|
             f.write_str(" {} ")?.write_span(node.quote_span))
@@ -303,10 +294,6 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
     fn visit_object_expr_field(&mut self, node: &ObjectExprField) -> fmt::Result {
         self.impl_visit(node, "object-expr-field", node.span, |f| 
             f.write_space()?.write_idspan(node.name))
-    }
-
-    fn visit_type_as_segment(&mut self, node: &TypeAsSegment) -> fmt::Result {
-        self.impl_visit_simple(node, "type-as-segment", node.span)
     }
 
     fn visit_paren_expr(&mut self, node: &ParenExpr) -> fmt::Result {
@@ -321,7 +308,7 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
         self.impl_visit(node, "segment", node.span(), |f| {
             match node {
                 PathSegment::Global => f.write_str(" (global)"),
-                PathSegment::Simple(name) => f.write_space()?.write_idspan(*name),
+                PathSegment::Simple(name) => f.write_space()?.write_isid(name.id),
                 PathSegment::TypeCast{ .. } => f.write_str(" (cast)"),
                 PathSegment::Generic{ base, .. } => f.write_space()?.write_idspan(*base),
             }
@@ -360,15 +347,6 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
 
     fn visit_simple_expr_stmt(&mut self, node: &SimpleExprStatement) -> fmt::Result {
         self.impl_visit_simple(node, "simple-expr-stmt", node.span)
-    }
-
-    fn visit_name_segment(&mut self, node: &NameSegment) -> fmt::Result {
-        self.impl_visit(node, "name-segment", node.span(), |f| {
-            if let NameSegment::Normal(name) = node {
-                f.write_space()?.write_isid(name.id)?;
-            }
-            Ok(f)
-        })
     }
 
     fn visit_tuple_expr(&mut self, node: &TupleExpr) -> fmt::Result {

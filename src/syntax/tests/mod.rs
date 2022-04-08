@@ -161,60 +161,47 @@ macro_rules! case {
     );
 }
 
-// ATTENTION: these macros, make_name, make_expr, make_stmt,
+// ATTENTION: these macros, make_path, make_expr, make_stmt, make_type
 //            should be same structure as pretty print in principle, this makes test case expect results look like pretty and looks pretty    
-
-macro_rules! make_name {
-    (simple $start:literal:$end:literal #$id:literal) => (
-        make_name!($start:$end false, None, make_name!(segment $start:$end #$id))
-    );
-    ($start:literal:$end:literal $global:expr, $as:expr, $($segment:expr),*$(,)?) => (
-        Expr::Name(Name{ type_as_segment: $as, global: $global, span: Span::new($start, $end), segments: vec![$($segment,)*] })
-    );
-    (segment $start:literal:$end:literal #$id:literal) => (
-        NameSegment::Normal(IdSpan::new($id, Span::new($start, $end)))
-    );
-    (segment as $start:literal:$end:literal $from:expr, $to:expr) => (Some(TypeAsSegment{
-        from: Box::new($from),
-        to: Box::new($to),
-        span: Span::new($start, $end),
-    }));
-    (segment generic $start:literal:$end:literal $($ty:expr),*$(,)?) => (
-        NameSegment::Generic(TypeList{ items: vec![$($ty,)*], span: Span::new($start, $end) })
-    );
-    // bare version for use outside of expr
-    (simple bare $start:literal:$end:literal #$id:literal) => (
-        make_name!(bare $start:$end false, None, make_name!(segment $start:$end #$id))
-    );
-    (bare $start:literal:$end:literal $global:expr, $as:expr, $($segment:expr),*$(,)?) => (
-        Name{ type_as_segment: $as, global: $global, span: Span::new($start, $end), segments: vec![$($segment,)*] }
-    );
-}
 
 macro_rules! make_expr {
     // literals does not have (lit prefix because they are used frequently
     (unit $start:literal:$end:literal) => (
-        Expr::Lit(LitExpr{ value: LitValue::Unit, span: Span::new($start, $end) }));
+        Expr::Lit(LitExpr{ value: LitValue::Unit, span: Span::new($start, $end) })
+    );
     (true $start:literal:$end:literal) => (
-        Expr::Lit(LitExpr{ value: LitValue::Bool(true), span: Span::new($start, $end) }));
+        Expr::Lit(LitExpr{ value: LitValue::Bool(true), span: Span::new($start, $end) })
+    );
     (false $start:literal:$end:literal) => (
-        Expr::Lit(LitExpr{ value: LitValue::Bool(false), span: Span::new($start, $end) }));
+        Expr::Lit(LitExpr{ value: LitValue::Bool(false), span: Span::new($start, $end) })
+    );
     (char $start:literal:$end:literal $v:literal) => (
-        Expr::Lit(LitExpr{ value: LitValue::Char($v), span: Span::new($start, $end) }));
+        Expr::Lit(LitExpr{ value: LitValue::Char($v), span: Span::new($start, $end) })
+    );
     (str #$v:literal $start:literal:$end:literal) => (
-        Expr::Lit(LitExpr{ value: LitValue::Str(IsId::new($v)), span: Span::new($start, $end) }));
+        Expr::Lit(LitExpr{ value: LitValue::Str(IsId::new($v)), span: Span::new($start, $end) })
+    );
     (i32 $v:literal $start:literal:$end:literal) => (
-        Expr::Lit(LitExpr{ value: LitValue::Num(Numeric::I32($v)), span: Span::new($start, $end) }));
+        Expr::Lit(LitExpr{ value: LitValue::Num(Numeric::I32($v)), span: Span::new($start, $end) })
+    );
     (u8 $v:literal $start:literal:$end:literal) => (
-        Expr::Lit(LitExpr{ value: LitValue::Num(Numeric::U8($v)), span: Span::new($start, $end) }));
+        Expr::Lit(LitExpr{ value: LitValue::Num(Numeric::U8($v)), span: Span::new($start, $end) })
+    );
     (u32 $v:literal $start:literal:$end:literal) => (
-        Expr::Lit(LitExpr{ value: LitValue::Num(Numeric::U32($v)), span: Span::new($start, $end) }));
+        Expr::Lit(LitExpr{ value: LitValue::Num(Numeric::U32($v)), span: Span::new($start, $end) })
+    );
     (u64 $v:literal $start:literal:$end:literal) => (
-        Expr::Lit(LitExpr{value: LitValue::Num(Numeric::U64($v)), span: Span::new($start, $end) }));
+        Expr::Lit(LitExpr{value: LitValue::Num(Numeric::U64($v)), span: Span::new($start, $end) })
+    );
     (r32 $v:literal $start:literal:$end:literal) => (
-        Expr::Lit(LitExpr{ value: LitValue::Num(Numeric::R32($v)), span: Span::new($start, $end) }));
+        Expr::Lit(LitExpr{ value: LitValue::Num(Numeric::R32($v)), span: Span::new($start, $end) })
+    );
     (r64 $v:literal $start:literal:$end:literal) => (
-        Expr::Lit(LitExpr{ value: LitValue::Num(Numeric::R64($v)), span: Span::new($start, $end) }));
+        Expr::Lit(LitExpr{ value: LitValue::Num(Numeric::R64($v)), span: Span::new($start, $end) })
+    );
+    (path $($tt:tt)+) => (
+        Expr::Path(make_path!($($tt)+))
+    );
     (binary $start:literal:$end:literal $op:ident $op_start:literal:$op_end:literal $left:expr, $right:expr) => (Expr::Binary(BinaryExpr{
         left: Box::new($left),
         right: Box::new($right),

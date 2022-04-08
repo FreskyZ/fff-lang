@@ -515,6 +515,18 @@ pub fn parse_path() {
         })
     }
 
+    //                 0         1         2      v this is not part of name
+    //                 012345678901234567890123456
+    case!{ parse_value_path "::abc::def::<ghi, jkl>::mno<", 
+        make_path!(0:26
+            make_path!(segment global),
+            make_path!(segment simple 2:4 #2),
+            make_path!(segment generic 7:21 #3 7:9 quote 12:21
+                make_type!(simple 13:15 #4),
+                make_type!(simple 18:20 #5)),
+            make_path!(segment simple 24:26 #6))
+    }
+
     //                      0123456789012
     case!{ parse_type_path "a::b::c<d, e>",
         make_path!(0:12

@@ -4,7 +4,7 @@ use super::*;
 fn parse_array_expr() {
     case!{ parse_array_expr "[a]",
         make_expr!(array 0:2
-            make_name!(simple 1:1 #2)),
+            make_expr!(path simple 1:1 #2)),
     }
 
     //                                   01234567
@@ -47,32 +47,40 @@ fn binary_expr_parse() {
             make_expr!(binary 0:16 Add 10:10
                 make_expr!(binary 0:8 Div 6:6
                     make_expr!(binary 0:4 Mul 2:2
-                        make_name!(simple 0:0 #2),
-                        make_name!(simple 4:4 #3)),
-                    make_name!(simple 8:8 #4)),
+                        make_expr!(path simple 0:0 #2),
+                        make_expr!(path simple 4:4 #3)),
+                    make_expr!(path simple 8:8 #4)),
                 make_expr!(binary 12:16 Rem 14:14
-                    make_name!(simple 12:12 #5),
-                    make_name!(simple 16:16 #6))),
-            make_name!(simple 20:20 #7))
+                    make_expr!(path simple 12:12 #5),
+                    make_expr!(path simple 16:16 #6))),
+            make_expr!(path simple 20:20 #7))
     }
-    //                                     0        1         2         3
-    //                                     1234567890123456789012345678901
+    // // once upon a time, this is recognized as "
+    // // a: binary left is simple path
+    // // *: binary op
+    // // b: generic segment base
+    // // <: start generic parameter list
+    // // <: start type case segment
+    // // h: simple path as type case left
+    // // /: expect 'as' meet '/'
+    //                        0        1         2         3
+    //                        0123456789012345678901234567890
     case!{ parse_binary_expr "a * b << h / c + d % e - f >> g", // (((a * b) << (((h / c) + (d % e)) - f)) >> g)
         make_expr!(binary 0:30 GtGt 27:28
             make_expr!(binary 0:25 LtLt 6:7
                 make_expr!(binary 0:4 Mul 2:2
-                    make_name!(simple 0:0 #2),
-                    make_name!(simple 4:4 #3)),
+                    make_expr!(path simple 0:0 #2),
+                    make_expr!(path simple 4:4 #3)),
                 make_expr!(binary 9:25 Sub 23:23
                     make_expr!(binary 9:21 Add 15:15
                         make_expr!(binary 9:13 Div 11:11
-                            make_name!(simple 9:9 #4),
-                            make_name!(simple 13:13 #5)),
+                            make_expr!(path simple 9:9 #4),
+                            make_expr!(path simple 13:13 #5)),
                         make_expr!(binary 17:21 Rem 19:19
-                            make_name!(simple 17:17 #6),
-                            make_name!(simple 21:21 #7))),
-                    make_name!(simple 25:25 #8))),
-            make_name!(simple 30:30 #9))
+                            make_expr!(path simple 17:17 #6),
+                            make_expr!(path simple 21:21 #7))),
+                    make_expr!(path simple 25:25 #8))),
+            make_expr!(path simple 30:30 #9))
     }
 
     // This very huge test case it not useless:
@@ -80,7 +88,7 @@ fn binary_expr_parse() {
     //     my test case oracle is according to the comments on top of this file, which originally are copy and paste from c++ standard
     //     I accidently mistake the order of xor_expr and or_expr in parser_impl macros, this case help me find this
     // continue story: I changed name of the parsers and found the error not fixed
-    //     then I find out that the last parameter of the macros, operator_category is the actual order definition
+    //     then I find out that the last parameter of the macros, sep kind is the actual order definition
     //     only change that can I fix the bug
     //                                     0        1         2         3         4         5         6         7         8
     //                                     1234567890123456789012345678901234567890123456789012345678901234567890123456789012345
@@ -93,47 +101,47 @@ fn binary_expr_parse() {
                     make_expr!(binary 0:42 GtGt 27:28
                         make_expr!(binary 0:25 LtLt 6:7
                             make_expr!(binary 0:4 Mul 2:2
-                                make_name!(simple 0:0 #2),
-                                make_name!(simple 4:4 #3)),
+                                make_expr!(path simple 0:0 #2),
+                                make_expr!(path simple 4:4 #3)),
                             make_expr!(binary 9:25 Sub 23:23
                                 make_expr!(binary 9:21 Add 15:15
                                     make_expr!(binary 9:13 Div 11:11
-                                        make_name!(simple 9:9 #4),
-                                        make_name!(simple 13:13 #5)),
+                                        make_expr!(path simple 9:9 #4),
+                                        make_expr!(path simple 13:13 #5)),
                                     make_expr!(binary 17:21 Rem 19:19
-                                        make_name!(simple 17:17 #6),
-                                        make_name!(simple 21:21 #7))),
-                                make_name!(simple 25:25 #8))),
+                                        make_expr!(path simple 17:17 #6),
+                                        make_expr!(path simple 21:21 #7))),
+                                make_expr!(path simple 25:25 #8))),
                         make_expr!(binary 30:42 Lt 40:40
                             make_expr!(binary 30:38 Gt 32:32
-                                make_name!(simple 30:30 #9),
+                                make_expr!(path simple 30:30 #9),
                                 make_expr!(binary 34:38 Mul 36:36
-                                    make_name!(simple 34:34 #4),
-                                    make_name!(simple 38:38 #10))),
-                            make_name!(simple 42:42 #11))),
+                                    make_expr!(path simple 34:34 #4),
+                                    make_expr!(path simple 38:38 #10))),
+                            make_expr!(path simple 42:42 #11))),
                     make_expr!(binary 47:52 GtEq 49:50
-                        make_name!(simple 47:47 #12),
-                        make_name!(simple 52:52 #13))),
-                make_name!(simple 57:57 #14)),
+                        make_expr!(path simple 47:47 #12),
+                        make_expr!(path simple 52:52 #13))),
+                make_expr!(path simple 57:57 #14)),
             make_expr!(binary 62:84 EqEq 81:82
                 make_expr!(binary 62:79 NotEq 76:77
                     make_expr!(binary 62:74 Or 68:68
                         make_expr!(binary 62:66 And 64:64
-                            make_name!(simple 62:62 #15),
-                            make_name!(simple 66:66 #16)),
+                            make_expr!(path simple 62:62 #15),
+                            make_expr!(path simple 66:66 #16)),
                         make_expr!(binary 70:74 Caret 72:72
-                            make_name!(simple 70:70 #17),
-                            make_name!(simple 74:74 #18))),
-                    make_name!(simple 79:79 #19)),
-                make_name!(simple 84:84 #20)))
+                            make_expr!(path simple 70:70 #17),
+                            make_expr!(path simple 74:74 #18))),
+                    make_expr!(path simple 79:79 #19)),
+                make_expr!(path simple 84:84 #20)))
     }
     //                                     1234567890
     case!{ parse_binary_expr "a & b == c", // ((a & b) == c)
         make_expr!(binary 0:9 EqEq 6:7
             make_expr!(binary 0:4 And 2:2
-                make_name!(simple 0:0 #2),
-                make_name!(simple 4:4 #3)),
-            make_name!(simple 9:9 #4))
+                make_expr!(path simple 0:0 #2),
+                make_expr!(path simple 4:4 #3)),
+            make_expr!(path simple 9:9 #4))
     }
 
     // 1 + 2 << 3 => (1 + 2) << 3, don't want this
@@ -412,14 +420,14 @@ fn parse_expr() {
     case!{ parse_expr "0xfffu64", make_expr!(u64 0xFFF 0:7) }
     case!{ parse_expr "'f'", make_expr!(char 0:2 'f') }
     case!{ parse_expr "true", make_expr!(true 0:3) }
-    case!{ parse_expr "binary_expr", make_name!(simple 0:10 #2) }
+    case!{ parse_expr "binary_expr", make_expr!(path simple 0:10 #2) }
     case!{ parse_expr "(  )", make_expr!(unit 0:3) }
     
     // Case from fn_def_parse
     case!{ parse_expr "println(this)", 
         make_expr!(call 0:12 paren 7:12
-            make_name!(simple 0:6 #2),
-            make_name!(simple 8:11 #3))
+            make_expr!(path simple 0:6 #2),
+            make_expr!(path simple 8:11 #3))
     }
 
     // Very very legacy expr tests which originally contains ExpressionBase and ExpressionOperator
@@ -439,8 +447,8 @@ fn parse_expr() {
     // Tuple def
     case!{ parse_expr "(a, b)",
         make_expr!(tuple 0:5
-            make_name!(simple 1:1 #2),
-            make_name!(simple 4:4 #3))
+            make_expr!(path simple 1:1 #2),
+            make_expr!(path simple 4:4 #3))
     }        //  12345678901
     case!{ parse_expr "(1, 2, 3, )",
         make_expr!(tuple 0:10
@@ -452,7 +460,7 @@ fn parse_expr() {
     // Array def
     case!{ parse_expr "[a]",
         make_expr!(array 0:2
-            make_name!(simple 1:1 #2))
+            make_expr!(path simple 1:1 #2))
     }        //  12345678
     case!{ parse_expr "[1, 2, ]",
         make_expr!(array 0:7
@@ -464,66 +472,66 @@ fn parse_expr() {
     // Member access
     case!{ parse_expr "a.b",
         make_expr!(member 0:2 dot 1:1
-            make_name!(simple 0:0 #2),
+            make_expr!(path simple 0:0 #2),
             make_expr!(member name 2:2 #3)),
     }
 
     case!{ parse_expr "a.0",
         make_expr!(member 0:2 dot 1:1
-            make_name!(simple 0:0 #2),
+            make_expr!(path simple 0:0 #2),
             make_expr!(member name 2:2 i32 0)),
     }
 
     // function call
     case!{ parse_expr "defg()",
         make_expr!(call 0:5 paren 4:5
-            make_name!(simple 0:3 #2),)
+            make_expr!(path simple 0:3 #2),)
     }
     case!{ parse_expr "deg(a)",
         make_expr!(call 0:5 paren 3:5
-            make_name!(simple 0:2 #2),
-            make_name!(simple 4:4 #3))
+            make_expr!(path simple 0:2 #2),
+            make_expr!(path simple 4:4 #3))
     }
     case!{ parse_expr "degg(a, b, )",
         make_expr!(call 0:11 paren 4:11
-            make_name!(simple 0:3 #2),
-            make_name!(simple 5:5 #3),
-            make_name!(simple 8:8 #4))
+            make_expr!(path simple 0:3 #2),
+            make_expr!(path simple 5:5 #3),
+            make_expr!(path simple 8:8 #4))
     }
     //           0123456789
     case!{ parse_expr "abc.defg()",
         make_expr!(call 0:9 paren 8:9
             make_expr!(member 0:7 dot 3:3
-                make_name!(simple 0:2 #2),
+                make_expr!(path simple 0:2 #2),
                 make_expr!(member name 4:7 #3)),)
     }
     case!{ parse_expr "abc.deg(a)",
         make_expr!(call 0:9 paren 7:9
             make_expr!(member 0:6 dot 3:3
-                make_name!(simple 0:2 #2),
+                make_expr!(path simple 0:2 #2),
                 make_expr!(member name 4:6 #3)),
-            make_name!(simple 8:8 #4))
+            make_expr!(path simple 8:8 #4))
     }        //  12345678901234
     case!{ parse_expr "1.degg(a, b, )",
         make_expr!(call 0:13 paren 6:13
             make_expr!(member 0:5 dot 1:1
                 make_expr!(i32 1 0:0),
                 make_expr!(member name 2:5 #2)),
-            make_name!(simple 7:7 #3),
-            make_name!(simple 10:10 #4))
+            make_expr!(path simple 7:7 #3),
+            make_expr!(path simple 10:10 #4))
     }   
 
     // get index       //  123456
     case!{ parse_expr "deg[a]",
         make_expr!(index 0:5 bracket 3:5
-            make_name!(simple 0:2 #2),
-            make_name!(simple 4:4 #3))
+            make_expr!(path simple 0:2 #2),
+            make_expr!(path simple 4:4 #3))
     }        //  123456789012
     case!{ parse_expr "degg[a, b, ]",
         make_expr!(index 0:11 bracket 4:11
-            make_name!(simple 0:3 #2),
-            make_name!(simple 5:5 #3),
-            make_name!(simple 8:8 #4))
+            make_expr!(path simple 0:3 #2),
+            make_expr!(path simple 5:5 #3),
+            make_expr!(path simple 8:8 #4))
     }     
 
     //           123456
@@ -537,7 +545,7 @@ fn parse_expr() {
     case!{ parse_expr "print(233, ).bit",
         make_expr!(member 0:15 dot 12:12
             make_expr!(call 0:11 paren 5:11
-                make_name!(simple 0:4 #2),
+                make_expr!(path simple 0:4 #2),
                 make_expr!(i32 233 6:8)),
             make_expr!(member name 13:15 #3))
     }            //  12345678901234
@@ -546,8 +554,8 @@ fn parse_expr() {
             make_expr!(member 0:5 dot 1:1
                 make_expr!(i32 1 0:0),
                 make_expr!(member name 2:5 #2)),
-            make_name!(simple 7:7 #3),
-            make_name!(simple 10:10 #4))
+            make_expr!(path simple 7:7 #3),
+            make_expr!(path simple 10:10 #4))
     }        
 
     case!{ parse_expr "!~!1[1]",
@@ -580,7 +588,7 @@ fn parse_expr() {
 
     case!{ parse_expr "xxx ..",
         make_expr!(range left 0:5
-            make_name!(simple 0:2 #2))
+            make_expr!(path simple 0:2 #2))
     }
 
     case!{ parse_expr "1 + 2 .. [4, 5, 6][2]",
@@ -598,7 +606,7 @@ fn parse_expr() {
 
     case!{ parse_expr "de(, )",
         make_expr!(call 0:5 paren 2:5
-            make_name!(simple 0:1 #2),
+            make_expr!(path simple 0:1 #2),
         ), errors make_errors!(
             e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(2, 5), strings::FnCallHere)
         )
@@ -617,7 +625,7 @@ fn parse_expr() {
 
     case!{ parse_expr "defg[]",
         make_expr!(index 0:5 bracket 4:5
-            make_name!(simple 0:3 #2),
+            make_expr!(path simple 0:3 #2),
         ), errors make_errors!(
             e: e.emit(strings::EmptyIndexCall).detail(Span::new(4, 5), strings::IndexCallHere)
         )
@@ -626,7 +634,7 @@ fn parse_expr() {
     //              123456
     case!{ parse_expr "de[, ]",
         make_expr!(index 0:5 bracket 2:5
-            make_name!(simple 0:1 #2),
+            make_expr!(path simple 0:1 #2),
         ), errors make_errors!(
             e: e.emit(strings::EmptyIndexCall).detail(Span::new(2, 5), strings::IndexCallHere)
         )
@@ -675,66 +683,13 @@ fn parse_index_expr() {
 }
 
 #[test]
-fn name_parse() {
-
-    case!{ parse_name "hello", 
-        make_name!(bare 0:4 false, None,
-            make_name!(segment 0:4 #2)),
-    }
-    //              0        1         2         3         4
-    //              01234567890123456789012345678901234567890
-    case!{ parse_name "std::network::wlan::native::GetWLANHandle",
-        make_name!(bare 0:40 false, None,
-            make_name!(segment 0:2 #2), 
-            make_name!(segment 5:11 #3),
-            make_name!(segment 14:17 #4),
-            make_name!(segment 20:25 #5),
-            make_name!(segment 28:40 #6))
-    }
-
-    //      0         1         2      v this is not part of name
-    //      012345678901234567890123456
-    case!{ parse_name "::abc::def::<ghi, jkl>::mno<", 
-        make_name!(bare 0:26 true, None,
-            make_name!(segment 2:4 #2),
-            make_name!(segment 7:9 #3),
-            make_name!(segment generic 12:21
-                make_type!(simple 13:15 #4),
-                make_type!(simple 18:20 #5)),
-            make_name!(segment 24:26 #6))
-    }
-
-    //      0         1         2
-    //      01234567890123456789012
-    case!{ parse_name "<Name as Parser>::parse",
-        make_name!(bare 0:22 false,
-            make_name!(segment as 0:15
-                make_type!(simple 1:4 #2),
-                make_type!(simple 9:14 #3)),
-            make_name!(segment 18:22 #4)),
-    }
-
-    //      01234567890123
-    // case!{ parse_name "a::<b>::<c>::d",
-    //     make_name!(bare 0:13 false, None,
-    //         make_name!(segment 0:0 #2),
-    //         make_name!(segment generic 3:5
-    //             make_type!(simple 4:4 #3)),
-    //         make_name!(segment generic 8:10
-    //             make_type!(simple 9:9 #4)),
-    //         make_name!(segment 13:13 #5)
-    //     ), errors make_errors!(e: e.emit(strings::InvalidNameSegment).detail(Span::new(8, 8), strings::NameSegmentExpect)),
-    // }
-}
-
-#[test]
 fn primary_expr_parse() {
 
     // this is the loop of tokens.nth(current) is left bracket does not cover everything and infinite loop is here
     // update 2017/6/17: this was a bug, but I forget detail
     case!{ parse_primary_expr "[a]",
         make_expr!(array 0:2
-            make_name!(simple 1:1 #2))
+            make_expr!(path simple 1:1 #2))
     }
 
     //                      0        1         2         3         4
@@ -742,14 +697,14 @@ fn primary_expr_parse() {
     case!{ parse_primary_expr "(463857, IEfN, atau8M, [fNAE, ((cAeJN4)), nHg])",
         make_expr!(tuple 0:46
             make_expr!(i32 463857 1:6),
-            make_name!(simple 9:12 #2),
-            make_name!(simple 15:20 #3),
+            make_expr!(path simple 9:12 #2),
+            make_expr!(path simple 15:20 #3),
             make_expr!(array 23:45
-                make_name!(simple 24:27 #4),
+                make_expr!(path simple 24:27 #4),
                 make_expr!(paren 30:39
                     make_expr!(paren 31:38
-                        make_name!(simple 32:37 #5))),
-                make_name!(simple 42:44 #6)))
+                        make_expr!(path simple 32:37 #5))),
+                make_expr!(path simple 42:44 #6)))
     }
 
     case!{ parse_primary_expr "10363",
@@ -763,35 +718,35 @@ fn primary_expr_parse() {
         make_expr!(array 0:134
             make_expr!(paren 1:6
                make_expr!(i32 0x7E 2:5)),
-            make_name!(simple 9:15 #2),
-            make_name!(simple 18:19 #3),
+            make_expr!(path simple 9:15 #2),
+            make_expr!(path simple 18:19 #3),
             make_expr!(array 22:133
                 make_expr!(tuple 23:105
-                    make_name!(simple 24:26 #4),
+                    make_expr!(path simple 24:26 #4),
                     make_expr!(tuple 29:90
                         make_expr!(i32 41 30:31),
                         make_expr!(paren 34:68
                             make_expr!(array 35:67
                                 make_expr!(tuple 36:60
-                                    make_name!(simple 37:38 #5), 
-                                    make_name!(simple 41:43 #6),
-                                    make_name!(simple 46:53 #7),
+                                    make_expr!(path simple 37:38 #5), 
+                                    make_expr!(path simple 41:43 #6),
+                                    make_expr!(path simple 46:53 #7),
                                     make_expr!(true 56:59)),
-                                make_name!(simple 63:63 #8),
-                                make_name!(simple 66:66 #9))),
+                                make_expr!(path simple 63:63 #8),
+                                make_expr!(path simple 66:66 #9))),
                         make_expr!(tuple 71:89
-                            make_name!(simple 72:78 #10),
-                            make_name!(simple 81:81 #11),
+                            make_expr!(path simple 72:78 #10),
+                            make_expr!(path simple 81:81 #11),
                             make_expr!(paren 84:88
-                                make_name!(simple 85:87 #12)))),
+                                make_expr!(path simple 85:87 #12)))),
                     make_expr!(unit 93:94),
-                    make_name!(simple 98:104 #13)),
+                    make_expr!(path simple 98:104 #13)),
                 make_expr!(i32 400 108:110),
                 make_expr!(i32 0o535147505 113:123),
                 make_expr!(i32 0xDB747 126:132))),
     }
 
-    case!{ parse_primary_expr "CMDoF", make_name!(simple 0:4 #2) }
+    case!{ parse_primary_expr "CMDoF", make_expr!(path simple 0:4 #2) }
     case!{ parse_primary_expr "false", make_expr!(false 0:4) }
 
     
@@ -799,26 +754,26 @@ fn primary_expr_parse() {
     //                      12345678901234567890123456789012345678901234567890123456789012345678901 234 5678901234567890123456789012
     case!{ parse_primary_expr "[uy6, 4373577, [(q, AJBN0n, MDEgKh5,), KG, (NsL, ((), D, false, d, ), \"H=\"), true, ((vvB3, true, 5))]]", 
         make_expr!(array 0:101
-            make_name!(simple 1:3 #2),
+            make_expr!(path simple 1:3 #2),
             make_expr!(i32 4373577 6:12),
             make_expr!(array 15:100
                 make_expr!(tuple 16:36
-                    make_name!(simple 17:17 #3),
-                    make_name!(simple 20:25 #4), 
-                    make_name!(simple 28:34 #5)), 
-                make_name!(simple 39:40 #6),
+                    make_expr!(path simple 17:17 #3),
+                    make_expr!(path simple 20:25 #4), 
+                    make_expr!(path simple 28:34 #5)), 
+                make_expr!(path simple 39:40 #6),
                 make_expr!(tuple 43:74
-                    make_name!(simple 44:46 #7),
+                    make_expr!(path simple 44:46 #7),
                     make_expr!(tuple 49:67
                         make_expr!(unit 50:51),
-                        make_name!(simple 54:54 #8),
+                        make_expr!(path simple 54:54 #8),
                         make_expr!(false 57:61),
-                        make_name!(simple 64:64 #9)),
+                        make_expr!(path simple 64:64 #9)),
                     make_expr!(str #10 70:73)),
                 make_expr!(true 77:80),
                 make_expr!(paren 83:99
                     make_expr!(tuple 84:98
-                        make_name!(simple 85:88 #11),
+                        make_expr!(path simple 85:88 #11),
                         make_expr!(true 91:94),
                         make_expr!(i32 5 97:97)))))
     }
@@ -841,7 +796,7 @@ fn primary_expr_parse() {
     //                      1234567890123456789012345678
     case!{ parse_primary_expr "(nn, ([false,true]), 183455)",
         make_expr!(tuple 0:27
-            make_name!(simple 1:2 #2),
+            make_expr!(path simple 1:2 #2),
             make_expr!(paren 5:18
                 make_expr!(array 6:17
                     make_expr!(false 7:11),
@@ -856,22 +811,22 @@ fn primary_expr_parse() {
             make_expr!(tuple 1:68
                 make_expr!(true 2:5),
                 make_expr!(tuple 8:49
-                    make_name!(simple 9:10 #2),
+                    make_expr!(path simple 9:10 #2),
                     make_expr!(array 13:21
                         make_expr!(paren 14:18
-                            make_name!(simple 15:17 #3)),
-                        make_name!(simple 20:20 #4)),
+                            make_expr!(path simple 15:17 #3)),
+                        make_expr!(path simple 20:20 #4)),
                     make_expr!(paren 24:33
                         make_expr!(paren 25:32
                             make_expr!(paren 26:31
-                                make_name!(simple 27:30 #5)))),
+                                make_expr!(path simple 27:30 #5)))),
                     make_expr!(tuple 36:48
-                        make_name!(simple 37:40 #6), 
-                        make_name!(simple 43:43 #7),
+                        make_expr!(path simple 37:40 #6), 
+                        make_expr!(path simple 43:43 #7),
                         make_expr!(unit 46:47))),
                 make_expr!(tuple 52:67
-                    make_name!(simple 53:65 #8))),
-            make_name!(simple 71:75 #9))
+                    make_expr!(path simple 53:65 #8))),
+            make_expr!(path simple 71:75 #9))
     }
 
     //                                      0          1         2      
@@ -880,7 +835,7 @@ fn primary_expr_parse() {
         make_expr!(array 0:21
             make_expr!(str #2 1:4),
             make_expr!(u32 0o52 7:13), 
-            make_name!(simple 16:20 #3))
+            make_expr!(path simple 16:20 #3))
     }
     //                                      12345678
     case!{ parse_primary_expr "['f',()]", 
@@ -898,7 +853,7 @@ fn primary_expr_parse() {
             make_expr!(str #2 4:10),
             make_expr!(r32 87f32 13:17),
             make_expr!(r64 1340323.74 20:32),
-            make_name!(simple 35:42 #3)),
+            make_expr!(path simple 35:42 #3)),
     }
 
     //                                        0        1         2         3         4         5         6     
@@ -906,17 +861,17 @@ fn primary_expr_parse() {
     case!{ parse_primary_expr r#"  [[dnr4, lGFd3yL, tJ], ['\\', p, (xGaBwiL,), DE], true, aB8aE]"#,
         make_expr!(array 2:62
             make_expr!(array 3:21
-                make_name!(simple 4:7 #2),
-                make_name!(simple 10:16 #3),
-                make_name!(simple 19:20 #4)),
+                make_expr!(path simple 4:7 #2),
+                make_expr!(path simple 10:16 #3),
+                make_expr!(path simple 19:20 #4)),
             make_expr!(array 24:48
                 make_expr!(char 25:28 '\\'),
-                make_name!(simple 31:31 #5),
+                make_expr!(path simple 31:31 #5),
                 make_expr!(tuple 34:43
-                    make_name!(simple 35:41 #6)),
-                make_name!(simple 46:47 #7)),
+                    make_expr!(path simple 35:41 #6)),
+                make_expr!(path simple 46:47 #7)),
             make_expr!(true 51:54),
-            make_name!(simple 57:61 #8)),
+            make_expr!(path simple 57:61 #8)),
     } 
 
     // Previous manual tests
@@ -924,16 +879,16 @@ fn primary_expr_parse() {
     //                      012345678901234 5678 9012 3456789012345678901234567890123 456789 0123456
     case!{ parse_primary_expr "[abc, 123u32, \"456\", '\\u0065', false, (), (a), (abc, \"hello\", ), ]",
         make_expr!(array 0:65
-            make_name!(simple 1:3 #2),
+            make_expr!(path simple 1:3 #2),
             make_expr!(u32 123 6:11),
             make_expr!(str #3 14:18),
             make_expr!(char 21:28 '\u{0065}'),
             make_expr!(false 31:35),
             make_expr!(unit 38:39),
             make_expr!(paren 42:44
-                make_name!(simple 43:43 #4)),
+                make_expr!(path simple 43:43 #4)),
             make_expr!(tuple 47:62
-                make_name!(simple 48:50 #2),
+                make_expr!(path simple 48:50 #2),
                 make_expr!(str #5 53:59)))
     }
 
@@ -965,32 +920,32 @@ fn postfix_expr_parse() {
                                             make_expr!(member 0:13 dot 12:12
                                                 make_expr!(call 0:11 paren 3:11
                                                     make_expr!(member 0:2 dot 1:1
-                                                        make_name!(simple 0:0 #2),
+                                                        make_expr!(path simple 0:0 #2),
                                                         make_expr!(member name 2:2 #3)), 
-                                                    make_name!(simple 4:4 #4),
-                                                    make_name!(simple 7:7 #5),
-                                                    make_name!(simple 10:10 #6)),
+                                                    make_expr!(path simple 4:4 #4),
+                                                    make_expr!(path simple 7:7 #5),
+                                                    make_expr!(path simple 10:10 #6)),
                                                 make_expr!(member name 13:13 #7)),
-                                            make_name!(simple 15:15 #8),
-                                            make_name!(simple 18:18 #9),
-                                            make_name!(simple 21:21 #10)),
-                                        make_name!(simple 25:25 #11)),
+                                            make_expr!(path simple 15:15 #8),
+                                            make_expr!(path simple 18:18 #9),
+                                            make_expr!(path simple 21:21 #10)),
+                                        make_expr!(path simple 25:25 #11)),
                                     make_expr!(member name 29:29 #12)),
-                                make_name!(simple 31:31 #13)),
+                                make_expr!(path simple 31:31 #13)),
                             make_expr!(member name 34:34 #14)),),
                     make_expr!(member name 38:38 #15)),
-                make_name!(simple 40:40 #16),
-                make_name!(simple 43:43 #17),
-                make_name!(simple 46:46 #18)),
-            make_name!(simple 49:49 #19),
-            make_name!(simple 52:52 #20),
-            make_name!(simple 55:55 #21))
+                make_expr!(path simple 40:40 #16),
+                make_expr!(path simple 43:43 #17),
+                make_expr!(path simple 46:46 #18)),
+            make_expr!(path simple 49:49 #19),
+            make_expr!(path simple 52:52 #20),
+            make_expr!(path simple 55:55 #21))
     }
 
     //      012345678901234567890
     case!{ parse_postfix_expr "i.collect::<Vec<i32>>",
         make_expr!(member 0:20 dot 1:1
-            make_name!(simple 0:0 #2),
+            make_expr!(path simple 0:0 #2),
             make_expr!(member name 2:20 #3 2:8 quote 11:20
                 make_type!(path 12:19
                     make_path!(segment generic 12:19 #4 12:14 quote 15:19
@@ -1010,9 +965,8 @@ fn postfix_expr_parse() {
     //      012345678901234567890123456789012345678901234567890123456
     case!{ parse_postfix_expr "string::<wchar>{ size: 0, cap: 0, data: uninitialized() }",
         make_expr!(object 0:56 quote 15:56
-            make_name!(0:14 false, None,
-                make_name!(segment 0:5 #2),
-                make_name!(segment generic 8:14
+            make_expr!(path 0:14
+                make_path!(segment generic 0:14 #2 0:5 quote 8:14
                     make_type!(simple 9:13 #3))),
             make_expr!(object field 17:23 #4 17:20 colon 21:21
                 make_expr!(i32 0 23:23)),
@@ -1020,12 +974,12 @@ fn postfix_expr_parse() {
                 make_expr!(i32 0 31:31)),
             make_expr!(object field 34:54 #6 34:37 colon 38:38
                 make_expr!(call 40:54 paren 53:54
-                    make_name!(simple 40:52 #7),))),
+                    make_expr!(path simple 40:52 #7),))),
     }
 
     case!{ parse_postfix_expr "a[]",
         make_expr!(index 0:2 bracket 1:2
-            make_name!(simple 0:0 #2),
+            make_expr!(path simple 0:0 #2),
         ), errors make_errors!(
             e: e.emit(strings::EmptyIndexCall).detail(Span::new(1, 2), strings::IndexCallHere)
         )
@@ -1033,7 +987,7 @@ fn postfix_expr_parse() {
     
     case!{ parse_postfix_expr "a[, ]",
         make_expr!(index 0:4 bracket 1:4
-            make_name!(simple 0:0 #2),
+            make_expr!(path simple 0:0 #2),
         ), errors make_errors!(
             e: e.emit(strings::EmptyIndexCall).detail(Span::new(1, 4), strings::IndexCallHere)
         )
@@ -1041,7 +995,7 @@ fn postfix_expr_parse() {
     
     case!{ parse_postfix_expr "a(, )",
         make_expr!(call 0:4 paren 1:4
-            make_name!(simple 0:0 #2),
+            make_expr!(path simple 0:0 #2),
         ), errors make_errors!(
             e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(1, 4), strings::FnCallHere)
         )
@@ -1050,7 +1004,7 @@ fn postfix_expr_parse() {
     //      01234
     case!{ parse_postfix_expr "a.0i8",
         make_expr!(member 0:4 dot 1:1
-            make_name!(simple 0:0 #2),
+            make_expr!(path simple 0:0 #2),
             make_expr!(member name 2:4 numeric Numeric::I8(0))
         ), errors make_errors!(
             e: e.emit(strings::InvalidTupleIndex).span(Span::new(2, 4)).help(strings::TupleIndexSyntaxHelp)
@@ -1060,7 +1014,7 @@ fn postfix_expr_parse() {
     //      01234567890123456789012
     case!{ parse_postfix_expr "a.0xFFFF_FFFF_FFFF_FFFF",
         make_expr!(member 0:22 dot 1:1
-            make_name!(simple 0:0 #2),
+            make_expr!(path simple 0:0 #2),
             make_expr!(member name 2:22 numeric Numeric::U64(0xFFFF_FFFF_FFFF_FFFF))
         ), errors make_errors!(
             e: e.emit(strings::InvalidTupleIndex).span(Span::new(2, 22)).help(strings::TupleIndexSyntaxHelp)
@@ -1070,7 +1024,7 @@ fn postfix_expr_parse() {
     // //      0123456789
     // case!{ parse_postfix_expr "a.abc::def",
     //     make_expr!(member 0:9 dot 1:1
-    //         make_name!(simple 0:0 #2),
+    //         make_expr!(path simple 0:0 #2),
     //         make_name!(bare 2:9 false, None,
     //             make_name!(segment 2:4 #3),
     //             make_name!(segment 7:9 #4))
@@ -1082,7 +1036,7 @@ fn postfix_expr_parse() {
     // //      0123456789012345678
     // case!{ parse_postfix_expr "a.abc::<def>::<ghi>",
     //     make_expr!(member 0:18 dot 1:1
-    //         make_name!(simple 0:0 #2),
+    //         make_expr!(path simple 0:0 #2),
     //         make_name!(bare 2:18 false, None,
     //             make_name!(segment 2:4 #3),
     //             make_name!(segment generic 7:11
@@ -1155,8 +1109,8 @@ fn unary_expr_parse() {
     case!{ parse_unary_expr "&a(&b)",
         make_expr!(unary 0:5 And 0:0
             make_expr!(call 1:5 paren 2:5
-                make_name!(simple 1:1 #2),
+                make_expr!(path simple 1:1 #2),
                 make_expr!(unary 3:4 And 3:3
-                    make_name!(simple 4:4 #3))))
+                    make_expr!(path simple 4:4 #3))))
     }
 }

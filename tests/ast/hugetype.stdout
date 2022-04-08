@@ -292,15 +292,15 @@ error: Invalid numeric literal, numeric literal should not start with 0
 module tests/ast/hugetype.f3
   var-def <1:1-76:198> mutable a <1:5-1:5>
     path <1:8-76:197>
-      segment <1:8-1:9> q峐 <1:8-1:9>
-      segment <1:12-1:13> 鉦t <1:12-1:13>
-      segment <1:16-1:19> raFx <1:16-1:19>
+      segment <1:8-1:9> q峐
+      segment <1:12-1:13> 鉦t
+      segment <1:16-1:19> raFx
       segment <1:22-47:90> KG <1:22-1:23>
         path <1:25-39:107>
-          segment <1:25-1:28> tlbh <1:25-1:28>
+          segment <1:25-1:28> tlbh
           segment <1:31-16:39> p <1:31-1:31>
             path <1:33-1:35>
-              segment <1:33-1:35> i33 <1:33-1:35>
+              segment <1:33-1:35> i33
             path <1:38-16:37>
               segment <1:38-9:38> xlp0MuiH <1:38-1:45>
                 path <1:47-8:115>
@@ -308,47 +308,47 @@ module tests/ast/hugetype.f3
                     ref-type <1:49-1:51>
                       tuple-type <1:50-1:51>
                     path <1:54-2:43>
-                      segment <1:54-1:58> rFdD1 <1:54-1:58>
-                      segment <1:61-1:66> Iq1xuG <1:61-1:66>
+                      segment <1:54-1:58> rFdD1
+                      segment <1:61-1:66> Iq1xuG
                       segment <1:69-2:22> E喘 <1:69-1:70>
                         tuple-type <1:72-1:93>
                           primitive-type i8 <1:73-1:74>
                           primitive-type i64 <1:77-1:79>
                           path <1:82-1:87>
-                            segment <1:82-1:87> string <1:82-1:87>
+                            segment <1:82-1:87> string
                           primitive-type f32 <1:90-1:92>
                         primitive-type u16 <1:96-1:98>
                         array-type <2:1-2:21>
                           path <2:2-2:2>
-                            segment <2:2-2:2> 櫟 <2:2-2:2>
+                            segment <2:2-2:2> 櫟
                           literal i64 1559665329954 <2:5-2:20>
-                      segment <2:25-2:33> _ksGOfoqc <2:25-2:33>
-                      segment <2:36-2:37> n诐 <2:36-2:37>
-                      segment <2:40-2:43> kj3c <2:40-2:43>
+                      segment <2:25-2:33> _ksGOfoqc
+                      segment <2:36-2:37> n诐
+                      segment <2:40-2:43> kj3c
                   segment <2:48-6:10> dGyp24j <2:48-2:54>
                     path <2:56-2:63>
-                      segment <2:56-2:63> M覚漞uF0銊a <2:56-2:63>
+                      segment <2:56-2:63> M覚漞uF0銊a
                     path <2:66-5:11>
-                      segment <2:66-2:70> GMwB駯 <2:66-2:70>
+                      segment <2:66-2:70> GMwB駯
                       segment <2:73-3:80> mowB <2:73-2:76>
                         array-type <2:78-2:94>
                           path <2:79-2:80>
-                            segment <2:79-2:80> n6 <2:79-2:80>
+                            segment <2:79-2:80> n6
                           literal i32 0 <2:83-2:93>
                         ref-type <2:97-2:100>
                           primitive-type u64 <2:98-2:100>
                         array-type <3:1-3:14>
                           path <3:2-3:3>
-                            segment <3:2-3:3> q樫 <3:2-3:3>
+                            segment <3:2-3:3> q樫
                           literal i32 41715553 <3:6-3:13>
                         path <3:17-3:79>
                           segment <3:17-3:40> a_5pncqD4 <3:17-3:25>
                             path <3:27-3:29>
-                              segment <3:27-3:29> i33 <3:27-3:29>
+                              segment <3:27-3:29> i33
                             primitive-type f64 <3:32-3:34>
                             primitive-type f64 <3:37-3:39>
-                          segment <3:43-3:43> j <3:43-3:43>
-                          segment <3:46-3:51> gFc3pf <3:46-3:51>
+                          segment <3:43-3:43> j
+                          segment <3:46-3:51> gFc3pf
                           segment <3:54-3:79> s0B8CLy <3:54-3:60>
                             primitive-type u32 <3:62-3:64>
                             primitive-type i64 <3:67-3:69>
@@ -356,9 +356,9 @@ module tests/ast/hugetype.f3
                             primitive-type u16 <3:76-3:78>
                       segment <3:83-4:4> xrM <3:83-3:85>
                         path <3:87-3:94>
-                          segment <3:87-3:94> OM4hGHCh <3:87-3:94>
+                          segment <3:87-3:94> OM4hGHCh
                         path <3:97-3:104>
-                          segment <3:97-3:104> HelmD31囏 <3:97-3:104>
+                          segment <3:97-3:104> HelmD31囏
                         primitive-type u16 <4:1-4:3>
                       segment <4:7-4:27> pDxb <4:7-4:10>
                         primitive-type bool <4:12-4:15>
@@ -370,7 +370,7 @@ module tests/ast/hugetype.f3
                         path <4:38-4:99>
                           segment <4:38-4:67> OtLk2 <4:38-4:42>
                             path <4:44-4:46>
-                              segment <4:44-4:46> i33 <4:44-4:46>
+                              segment <4:44-4:46> i33
                             primitive-type i16 <4:49-4:51>
                             primitive-type i16 <4:54-4:56>
                             primitive-type bool <4:59-4:62>
@@ -379,15 +379,15 @@ module tests/ast/hugetype.f3
                             primitive-type u8 <4:73-4:74>
                             primitive-type u64 <4:77-4:79>
                             path <4:82-4:87>
-                              segment <4:82-4:87> string <4:82-4:87>
+                              segment <4:82-4:87> string
                             primitive-type bool <4:90-4:93>
                             primitive-type u32 <4:96-4:98>
                         primitive-type u8 <5:1-5:2>
-                      segment <5:6-5:11> yIqFtI <5:6-5:11>
+                      segment <5:6-5:11> yIqFtI
                     primitive-type u8 <5:14-5:15>
                     tuple-type <5:18-5:107>
                       path <5:19-5:69>
-                        segment <5:19-5:23> eoDHq <5:19-5:23>
+                        segment <5:19-5:23> eoDHq
                         segment <5:26-5:45> KEL衚 <5:26-5:29>
                           primitive-type char <5:31-5:34>
                           primitive-type u64 <5:37-5:39>
@@ -396,26 +396,26 @@ module tests/ast/hugetype.f3
                           primitive-type f32 <5:57-5:59>
                           primitive-type u8 <5:62-5:63>
                           path <5:66-5:68>
-                            segment <5:66-5:68> i33 <5:66-5:68>
+                            segment <5:66-5:68> i33
                       path <5:72-5:73>
-                        segment <5:72-5:73> CA <5:72-5:73>
+                        segment <5:72-5:73> CA
                       path <5:76-5:88>
-                        segment <5:76-5:78> ue_ <5:76-5:78>
-                        segment <5:81-5:88> O82MiDpE <5:81-5:88>
+                        segment <5:76-5:78> ue_
+                        segment <5:81-5:88> O82MiDpE
                       tuple-type <5:91-5:106>
                         path <5:92-5:94>
-                          segment <5:92-5:94> i33 <5:92-5:94>
+                          segment <5:92-5:94> i33
                         primitive-type char <5:97-5:100>
                         primitive-type i16 <5:103-5:105>
                     path <6:1-6:9>
-                      segment <6:1-6:9> cyOGaMo15 <6:1-6:9>
+                      segment <6:1-6:9> cyOGaMo15
                   segment <6:13-8:115> MiLd <6:13-6:16>
                     path <6:18-6:76>
                       segment <6:18-6:76> HF0NfkM <6:18-6:24>
                         path <6:26-6:31>
-                          segment <6:26-6:31> string <6:26-6:31>
+                          segment <6:26-6:31> string
                         path <6:34-6:34>
-                          segment <6:34-6:34> C <6:34-6:34>
+                          segment <6:34-6:34> C
                         path <6:37-6:70>
                           segment <6:37-6:70> D3v0Kn <6:37-6:42>
                             primitive-type i16 <6:44-6:46>
@@ -424,79 +424,79 @@ module tests/ast/hugetype.f3
                             primitive-type char <6:61-6:64>
                             primitive-type u64 <6:67-6:69>
                         path <6:73-6:75>
-                          segment <6:73-6:75> CmK <6:73-6:75>
+                          segment <6:73-6:75> CmK
                     path <6:79-7:18>
                       segment <6:79-7:9> v1D旸Jtx <6:79-6:85>
                         array-type <6:87-6:106>
                           path <6:88-6:93>
-                            segment <6:88-6:93> 開2g_h0 <6:88-6:93>
+                            segment <6:88-6:93> 開2g_h0
                           literal r64 45882840000000000000 <6:96-6:105>
                         path <7:1-7:3>
-                          segment <7:1-7:3> 芹jD <7:1-7:3>
+                          segment <7:1-7:3> 芹jD
                         primitive-type u16 <7:6-7:8>
-                      segment <7:12-7:18> j8rGKNr <7:12-7:18>
+                      segment <7:12-7:18> j8rGKNr
                     path <7:21-8:114>
-                      segment <7:21-7:28> eMmAhI1E <7:21-7:28>
+                      segment <7:21-7:28> eMmAhI1E
                       segment <7:31-8:97> Km韈疓H67 <7:31-7:37>
                         path <7:39-7:46>
-                          segment <7:39-7:46> leHK1wui <7:39-7:46>
+                          segment <7:39-7:46> leHK1wui
                         array-type <7:49-7:59>
                           path <7:50-7:55>
-                            segment <7:50-7:55> Nms畻14 <7:50-7:55>
+                            segment <7:50-7:55> Nms畻14
                           literal i32 4 <7:58-7:58>
                         array-type <7:62-7:72>
                           path <7:63-7:63>
-                            segment <7:63-7:63> n <7:63-7:63>
+                            segment <7:63-7:63> n
                           literal i32 0 <7:66-7:71>
                         path <7:75-8:25>
                           segment <7:75-7:87> i43 <7:75-7:77>
                             primitive-type i8 <7:79-7:80>
                             primitive-type f64 <7:83-7:85>
-                          segment <7:90-7:98> wIoNrrxle <7:90-7:98>
-                          segment <7:101-7:106> aca5vh <7:101-7:106>
+                          segment <7:90-7:98> wIoNrrxle
+                          segment <7:101-7:106> aca5vh
                           segment <7:109-8:8> F <7:109-7:109>
                             primitive-type u8 <7:111-7:112>
                             primitive-type i8 <8:1-8:2>
                             path <8:5-8:7>
-                              segment <8:5-8:7> i33 <8:5-8:7>
-                          segment <8:11-8:15> g6p4C <8:11-8:15>
-                          segment <8:18-8:25> s瓶FOCaFH <8:18-8:25>
+                              segment <8:5-8:7> i33
+                          segment <8:11-8:15> g6p4C
+                          segment <8:18-8:25> s瓶FOCaFH
                         path <8:28-8:96>
                           segment <8:28-8:54> uGt8hskBm <8:28-8:36>
                             primitive-type u16 <8:38-8:40>
                             primitive-type i64 <8:43-8:45>
                             path <8:48-8:53>
-                              segment <8:48-8:53> string <8:48-8:53>
+                              segment <8:48-8:53> string
                           segment <8:57-8:76> gE2hwi <8:57-8:62>
                             path <8:64-8:69>
-                              segment <8:64-8:69> string <8:64-8:69>
+                              segment <8:64-8:69> string
                             primitive-type f32 <8:72-8:74>
-                          segment <8:79-8:84> CK212F <8:79-8:84>
-                          segment <8:87-8:91> Csu8a <8:87-8:91>
-                          segment <8:94-8:96> f6N <8:94-8:96>
-                      segment <8:100-8:102> i5h <8:100-8:102>
+                          segment <8:79-8:84> CK212F
+                          segment <8:87-8:91> Csu8a
+                          segment <8:94-8:96> f6N
+                      segment <8:100-8:102> i5h
                       segment <8:105-8:114> Dudt6Gd楑 <8:105-8:112>
                 path <9:1-9:4>
-                  segment <9:1-9:4> ojOh <9:1-9:4>
+                  segment <9:1-9:4> ojOh
                 tuple-type <9:7-9:37>
                   path <9:8-9:13>
-                    segment <9:8-9:13> G4dMu4 <9:8-9:13>
+                    segment <9:8-9:13> G4dMu4
                   array-type <9:16-9:27>
                     path <9:17-9:17>
-                      segment <9:17-9:17> F <9:17-9:17>
+                      segment <9:17-9:17> F
                     literal i32 765566 <9:20-9:26>
                   path <9:30-9:36>
-                    segment <9:30-9:36> EunGe3O <9:30-9:36>
-              segment <9:41-9:47> nx6Ks2N <9:41-9:47>
-              segment <9:50-9:55> k1Jt_b <9:50-9:55>
-              segment <9:58-9:59> sc <9:58-9:59>
+                    segment <9:30-9:36> EunGe3O
+              segment <9:41-9:47> nx6Ks2N
+              segment <9:50-9:55> k1Jt_b
+              segment <9:58-9:59> sc
               segment <9:62-16:37> FDl6ONf <9:62-9:68>
                 tuple-type <9:70-9:71>
                 path <9:74-11:27>
                   segment <9:74-11:18> qBJNbI_ <9:74-9:80>
                     array-type <9:82-9:93>
                       path <9:83-9:84>
-                        segment <9:83-9:84> c溏 <9:83-9:84>
+                        segment <9:83-9:84> c溏
                       literal i32 0 <9:87-9:92>
                     tuple-type <9:96-10:92>
                       path <9:97-10:59>
@@ -504,37 +504,37 @@ module tests/ast/hugetype.f3
                           primitive-type u32 <9:101-9:103>
                           primitive-type char <9:106-9:109>
                           path <10:1-10:3>
-                            segment <10:1-10:3> i33 <10:1-10:3>
+                            segment <10:1-10:3> i33
                         segment <10:7-10:23> LE <10:7-10:8>
                           primitive-type i16 <10:10-10:12>
                           primitive-type u64 <10:15-10:17>
                           primitive-type f32 <10:20-10:22>
                         segment <10:26-10:59> to <10:26-10:27>
                           path <10:29-10:34>
-                            segment <10:29-10:34> string <10:29-10:34>
+                            segment <10:29-10:34> string
                           path <10:37-10:42>
-                            segment <10:37-10:42> string <10:37-10:42>
+                            segment <10:37-10:42> string
                           primitive-type bool <10:45-10:48>
                           primitive-type u32 <10:51-10:53>
                           primitive-type f64 <10:56-10:58>
                       array-type <10:62-10:82>
                         path <10:63-10:64>
-                          segment <10:63-10:64> As <10:63-10:64>
+                          segment <10:63-10:64> As
                         literal r64 45554.544377000006 <10:67-10:81>
                       path <10:85-10:91>
-                        segment <10:85-10:91> AJJh5FL <10:85-10:91>
+                        segment <10:85-10:91> AJJh5FL
                     tuple-type <10:95-11:17>
                       primitive-type i16 <10:96-10:98>
                       array-type <10:101-11:15>
                         path <10:102-10:106>
-                          segment <10:102-10:106> CuL5v <10:102-10:106>
+                          segment <10:102-10:106> CuL5v
                         literal r64 0.000022583871669999998 <11:1-11:14>
-                  segment <11:21-11:27> iae囃M3_ <11:21-11:27>
+                  segment <11:21-11:27> iae囃M3_
                 path <11:30-16:36>
-                  segment <11:30-11:36> eybA痾L6 <11:30-11:36>
+                  segment <11:30-11:36> eybA痾L6
                   segment <11:39-11:91> myw66AlK8 <11:39-11:47>
                     path <11:49-11:53>
-                      segment <11:49-11:53> sHcIB <11:49-11:53>
+                      segment <11:49-11:53> sHcIB
                     ref-type <11:56-11:71>
                       tuple-type <11:57-11:71>
                         primitive-type u16 <11:58-11:60>
@@ -542,7 +542,7 @@ module tests/ast/hugetype.f3
                         primitive-type f32 <11:68-11:70>
                     array-type <11:74-11:85>
                       path <11:75-11:77>
-                        segment <11:75-11:77> EnO <11:75-11:77>
+                        segment <11:75-11:77> EnO
                       literal i32 16622 <11:80-11:84>
                     primitive-type u16 <11:88-11:90>
                   segment <11:94-14:37> Gmc87 <11:94-11:98>
@@ -551,31 +551,31 @@ module tests/ast/hugetype.f3
                       tuple-type <11:106-11:116>
                         primitive-type f64 <11:107-11:109>
                         path <11:112-11:114>
-                          segment <11:112-11:114> i33 <11:112-11:114>
+                          segment <11:112-11:114> i33
                       array-type <12:1-12:14>
                         path <12:2-12:9>
-                          segment <12:2-12:9> uDhnpmfw <12:2-12:9>
+                          segment <12:2-12:9> uDhnpmfw
                         literal i32 41 <12:12-12:13>
                     path <12:18-14:17>
                       segment <12:18-12:113> CGDtB <12:18-12:22>
                         array-type <12:24-12:39>
                           path <12:25-12:29>
-                            segment <12:25-12:29> mm娇甌I <12:25-12:29>
+                            segment <12:25-12:29> mm娇甌I
                           literal i32 905940 <12:32-12:38>
                         path <12:42-12:74>
                           segment <12:42-12:65> mjmD4p727 <12:42-12:50>
                             primitive-type bool <12:52-12:55>
                             primitive-type f32 <12:58-12:60>
                             primitive-type u8 <12:63-12:64>
-                          segment <12:68-12:71> tuMt <12:68-12:71>
-                          segment <12:74-12:74> e <12:74-12:74>
+                          segment <12:68-12:71> tuMt
+                          segment <12:74-12:74> e
                         path <12:77-12:112>
-                          segment <12:77-12:77> n <12:77-12:77>
-                          segment <12:80-12:84> 檟Oc07 <12:80-12:84>
-                          segment <12:87-12:94> lxHNyu8O <12:87-12:94>
+                          segment <12:77-12:77> n
+                          segment <12:80-12:84> 檟Oc07
+                          segment <12:87-12:94> lxHNyu8O
                           segment <12:97-12:100> Jm <12:97-12:98>
-                          segment <12:103-12:106> DGB0 <12:103-12:106>
-                          segment <12:109-12:112> pOxC <12:109-12:112>
+                          segment <12:103-12:106> DGB0
+                          segment <12:109-12:112> pOxC
                       segment <12:116-13:37> L6JNDq <12:116-12:121>
                         fn-type <12:123-13:18> () <12:125-13:18>
                           fn-type-parameter <12:126-12:128>
@@ -586,21 +586,21 @@ module tests/ast/hugetype.f3
                             primitive-type char <13:14-13:17>
                         array-type <13:21-13:35>
                           path <13:22-13:26>
-                            segment <13:22-13:26> x5uKa <13:22-13:26>
+                            segment <13:22-13:26> x5uKa
                           literal r64 534200000 <13:29-13:34>
-                      segment <13:40-13:40> a <13:40-13:40>
-                      segment <13:43-13:46> ok4d <13:43-13:46>
+                      segment <13:40-13:40> a
+                      segment <13:43-13:46> ok4d
                       segment <13:49-14:17> JND1l4J2 <13:49-13:56>
                         path <13:58-14:6>
-                          segment <13:58-13:60> HOk <13:58-13:60>
+                          segment <13:58-13:60> HOk
                           segment <13:63-13:95> MgOIBMKce <13:63-13:71>
                             primitive-type u64 <13:73-13:75>
                             primitive-type i64 <13:78-13:80>
                             primitive-type i64 <13:83-13:85>
                             primitive-type f32 <13:88-13:90>
                             primitive-type i8 <13:93-13:94>
-                          segment <13:98-13:101> puNu <13:98-13:101>
-                          segment <13:104-13:104> 貋 <13:104-13:104>
+                          segment <13:98-13:101> puNu
+                          segment <13:104-13:104> 貋
                           segment <13:107-14:6> v觊Lkf <13:107-13:111>
                             primitive-type u8 <13:113-13:114>
                             primitive-type bool <14:1-14:4>
@@ -608,14 +608,14 @@ module tests/ast/hugetype.f3
                         primitive-type f64 <14:14-14:16>
                     array-type <14:20-14:36>
                       path <14:21-14:22>
-                        segment <14:21-14:22> Gg <14:21-14:22>
+                        segment <14:21-14:22> Gg
                       literal i32 0 <14:25-14:35>
-                  segment <14:40-14:47> N3x12akl <14:40-14:47>
+                  segment <14:40-14:47> N3x12akl
                   segment <14:50-16:26> uax <14:50-14:52>
                     path <14:54-15:74>
                       segment <14:54-15:42> 揪x4 <14:54-14:56>
                         path <14:58-14:91>
-                          segment <14:58-14:65> bFEGDldf <14:58-14:65>
+                          segment <14:58-14:65> bFEGDldf
                           segment <14:68-14:91> G1蹀0Lv87 <14:68-14:75>
                             primitive-type char <14:77-14:80>
                             primitive-type i64 <14:83-14:85>
@@ -626,17 +626,17 @@ module tests/ast/hugetype.f3
                           primitive-type u8 <14:102-14:103>
                           primitive-type u64 <14:106-14:108>
                           path <14:111-14:113>
-                            segment <14:111-14:113> i33 <14:111-14:113>
+                            segment <14:111-14:113> i33
                         path <15:1-15:41>
-                          segment <15:1-15:5> KqJfs <15:1-15:5>
-                          segment <15:8-15:12> kNyJ0 <15:8-15:12>
+                          segment <15:1-15:5> KqJfs
+                          segment <15:8-15:12> kNyJ0
                           segment <15:15-15:33> _OGo <15:15-15:18>
                             primitive-type u32 <15:20-15:22>
                             primitive-type f32 <15:25-15:27>
                             primitive-type u64 <15:30-15:32>
-                          segment <15:36-15:41> Ohwlco <15:36-15:41>
-                      segment <15:45-15:53> ibOlvh蹫jB <15:45-15:53>
-                      segment <15:56-15:62> D檤spvwm <15:56-15:62>
+                          segment <15:36-15:41> Ohwlco
+                      segment <15:45-15:53> ibOlvh蹫jB
+                      segment <15:56-15:62> D檤spvwm
                       segment <15:65-15:74> xaFN_KOg <15:65-15:72>
                     ref-type <15:77-16:13>
                       path <15:78-16:13>
@@ -644,20 +644,20 @@ module tests/ast/hugetype.f3
                           primitive-type char <15:82-15:85>
                           primitive-type i64 <15:88-15:90>
                           path <15:93-15:98>
-                            segment <15:93-15:98> string <15:93-15:98>
-                        segment <15:102-15:103> fk <15:102-15:103>
+                            segment <15:93-15:98> string
+                        segment <15:102-15:103> fk
                         segment <15:106-16:13> Iw4EB <15:106-15:110>
                           primitive-type i64 <15:112-15:114>
                           path <16:1-16:3>
-                            segment <16:1-16:3> i33 <16:1-16:3>
+                            segment <16:1-16:3> i33
                           primitive-type u8 <16:6-16:7>
                           primitive-type u16 <16:10-16:12>
                     path <16:16-16:25>
-                      segment <16:16-16:19> A靯k萯 <16:16-16:19>
+                      segment <16:16-16:19> A靯k萯
                       segment <16:22-16:25> _H <16:22-16:23>
-                  segment <16:29-16:36> LD7njk80 <16:29-16:36>
-          segment <16:42-16:46> My_愇2 <16:42-16:46>
-          segment <16:49-16:52> uooO <16:49-16:52>
+                  segment <16:29-16:36> LD7njk80
+          segment <16:42-16:46> My_愇2
+          segment <16:49-16:52> uooO
           segment <16:55-27:4> IIrCK1Jcu <16:55-16:63>
             tuple-type <16:65-20:74>
               fn-type <16:66-18:53> () <16:68-18:31>
@@ -665,70 +665,70 @@ module tests/ast/hugetype.f3
                   fn-type <16:69-18:8> () <16:71-18:8>
                     fn-type-parameter <16:72-16:105>
                       path <16:72-16:105>
-                        segment <16:72-16:76> 胣fm沂w <16:72-16:76>
-                        segment <16:79-16:80> _6 <16:79-16:80>
+                        segment <16:72-16:76> 胣fm沂w
+                        segment <16:79-16:80> _6
                         segment <16:83-16:102> gH0C1 <16:83-16:87>
                           primitive-type bool <16:89-16:92>
                           primitive-type f64 <16:95-16:97>
                           primitive-type u8 <16:100-16:101>
-                        segment <16:105-16:105> L <16:105-16:105>
+                        segment <16:105-16:105> L
                     fn-type-parameter <16:108-17:3>
                       array-type <16:108-17:3>
                         path <16:109-16:113>
-                          segment <16:109-16:113> _狆Fvf <16:109-16:113>
+                          segment <16:109-16:113> _狆Fvf
                         literal i32 75 <17:1-17:2>
                     fn-type-parameter <17:6-17:80>
                       path <17:6-17:80>
                         segment <17:6-17:21> h <17:6-17:6>
                           path <17:8-17:10>
-                            segment <17:8-17:10> i33 <17:8-17:10>
+                            segment <17:8-17:10> i33
                           primitive-type u32 <17:13-17:15>
                           primitive-type u32 <17:18-17:20>
-                        segment <17:24-17:27> me7N <17:24-17:27>
+                        segment <17:24-17:27> me7N
                         segment <17:30-17:45> v <17:30-17:30>
                           primitive-type i16 <17:32-17:34>
                           primitive-type u16 <17:37-17:39>
                           primitive-type i16 <17:42-17:44>
                         segment <17:48-17:70> 鬱 <17:48-17:48>
                           path <17:50-17:52>
-                            segment <17:50-17:52> i33 <17:50-17:52>
+                            segment <17:50-17:52> i33
                           primitive-type bool <17:55-17:58>
                           path <17:61-17:63>
-                            segment <17:61-17:63> i33 <17:61-17:63>
+                            segment <17:61-17:63> i33
                           primitive-type char <17:66-17:69>
-                        segment <17:73-17:80> q5HDv7NL <17:73-17:80>
+                        segment <17:73-17:80> q5HDv7NL
                     fn-type-parameter <17:83-17:105>
                       tuple-type <17:83-17:105>
                         path <17:84-17:89>
-                          segment <17:84-17:89> string <17:84-17:89>
+                          segment <17:84-17:89> string
                         primitive-type f32 <17:92-17:94>
                         path <17:97-17:99>
-                          segment <17:97-17:99> i33 <17:97-17:99>
+                          segment <17:97-17:99> i33
                         primitive-type f64 <17:102-17:104>
                     fn-type-parameter <17:108-18:7>
                       tuple-type <17:108-18:7>
                         primitive-type i64 <17:109-17:111>
                         primitive-type u8 <17:114-17:115>
                         path <18:1-18:6>
-                          segment <18:1-18:6> string <18:1-18:6>
+                          segment <18:1-18:6> string
                 fn-type-parameter <18:11-18:25>
                   array-type <18:11-18:25>
                     path <18:12-18:17>
-                      segment <18:12-18:17> _y酗Byl <18:12-18:17>
+                      segment <18:12-18:17> _y酗Byl
                     literal r32 42 <18:20-18:24>
                 fn-type-parameter <18:28-18:30>
                   primitive-type u16 <18:28-18:30>
                 array-type <18:36-18:53>
                   path <18:37-18:41>
-                    segment <18:37-18:41> adENo <18:37-18:41>
+                    segment <18:37-18:41> adENo
                   literal u32 52483 <18:44-18:52>
               ref-type <18:56-19:75>
                 tuple-type <18:57-19:75>
                   path <18:58-18:100>
                     segment <1:1-1:1> (global)
-                    segment <18:60-18:68> 蝥趇3LDmu84 <18:60-18:68>
-                    segment <18:71-18:73> 疹0r <18:71-18:73>
-                    segment <18:76-18:77> Jt <18:76-18:77>
+                    segment <18:60-18:68> 蝥趇3LDmu84
+                    segment <18:71-18:73> 疹0r
+                    segment <18:76-18:77> Jt
                     segment <18:80-18:100> rhD1pi <18:80-18:85>
                       primitive-type i64 <18:87-18:89>
                       primitive-type f64 <18:92-18:94>
@@ -736,7 +736,7 @@ module tests/ast/hugetype.f3
                   path <18:103-19:73>
                     segment <18:103-19:3> JENK4 <18:103-18:107>
                       path <18:109-18:111>
-                        segment <18:109-18:111> i33 <18:109-18:111>
+                        segment <18:109-18:111> i33
                       primitive-type u32 <18:114-18:116>
                       primitive-type i8 <19:1-19:2>
                     segment <19:6-19:28> n嗽I4焈j5ts <19:6-19:14>
@@ -747,89 +747,89 @@ module tests/ast/hugetype.f3
                       primitive-type u64 <19:41-19:43>
                       primitive-type i8 <19:46-19:47>
                       path <19:50-19:55>
-                        segment <19:50-19:55> string <19:50-19:55>
+                        segment <19:50-19:55> string
                       path <19:58-19:63>
-                        segment <19:58-19:63> string <19:58-19:63>
-                    segment <19:67-19:70> B0tg <19:67-19:70>
-                    segment <19:73-19:73> w <19:73-19:73>
+                        segment <19:58-19:63> string
+                    segment <19:67-19:70> B0tg
+                    segment <19:73-19:73> w
               path <19:78-20:73>
-                segment <19:78-19:83> cawyv4 <19:78-19:83>
+                segment <19:78-19:83> cawyv4
                 segment <19:86-20:6> adnp1 <19:86-19:90>
                   array-type <19:92-19:107>
                     path <19:93-19:94>
-                      segment <19:93-19:94> bC <19:93-19:94>
+                      segment <19:93-19:94> bC
                     literal i64 1048318 <19:97-19:106>
                   path <19:110-19:118>
-                    segment <19:110-19:118> mNcHhJlnb <19:110-19:118>
+                    segment <19:110-19:118> mNcHhJlnb
                   ref-type <20:1-20:5>
                     ref-type <20:2-20:5>
                       primitive-type u32 <20:3-20:5>
                 segment <20:9-20:17> v7be5媜e <20:9-20:15>
                 segment <20:20-20:73> lH_jCa51 <20:20-20:27>
                   path <20:29-20:35>
-                    segment <20:29-20:35> hlvCb15 <20:29-20:35>
+                    segment <20:29-20:35> hlvCb15
                   array-type <20:38-20:54>
                     path <20:39-20:47>
-                      segment <20:39-20:47> 骨88a2yEBE <20:39-20:47>
+                      segment <20:39-20:47> 骨88a2yEBE
                     literal i32 2544 <20:50-20:53>
                   array-type <20:57-20:72>
                     path <20:58-20:63>
-                      segment <20:58-20:63> NB7BLb <20:58-20:63>
+                      segment <20:58-20:63> NB7BLb
                     literal i32 530003 <20:66-20:71>
             path <20:77-26:124>
               segment <20:77-22:34> CM8c飁id <20:77-20:83>
                 array-type <20:85-20:102>
                   path <20:86-20:91>
-                    segment <20:86-20:91> g1KnjC <20:86-20:91>
+                    segment <20:86-20:91> g1KnjC
                   literal i32 62464562 <20:94-20:101>
                 tuple-type <20:105-21:73>
                   path <20:106-20:112>
-                    segment <20:106-20:112> lee蝠cpj <20:106-20:112>
+                    segment <20:106-20:112> lee蝠cpj
                   array-type <21:1-21:21>
                     path <21:2-21:7>
-                      segment <21:2-21:7> EFmFr霠 <21:2-21:7>
+                      segment <21:2-21:7> EFmFr霠
                     literal r32 87452690 <21:10-21:20>
                   path <21:24-21:72>
                     segment <21:24-21:53> y4ur <21:24-21:27>
                       array-type <21:29-21:41>
                         path <21:30-21:35>
-                          segment <21:30-21:35> kmm馭tJ <21:30-21:35>
+                          segment <21:30-21:35> kmm馭tJ
                         literal i32 0 <21:38-21:40>
                       ref-type <21:44-21:47>
                         path <21:45-21:47>
-                          segment <21:45-21:47> i33 <21:45-21:47>
+                          segment <21:45-21:47> i33
                       path <21:50-21:52>
-                        segment <21:50-21:52> C4K <21:50-21:52>
-                    segment <21:56-21:64> MelL8syta <21:56-21:64>
-                    segment <21:67-21:72> kB5鱏qs <21:67-21:72>
+                        segment <21:50-21:52> C4K
+                    segment <21:56-21:64> MelL8syta
+                    segment <21:67-21:72> kB5鱏qs
                 array-type <21:76-21:98>
                   path <21:77-21:77>
-                    segment <21:77-21:77> G <21:77-21:77>
+                    segment <21:77-21:77> G
                   literal i32 0 <21:80-21:97>
                 path <21:101-22:33>
-                  segment <21:101-21:106> LK魲C2D <21:101-21:106>
-                  segment <21:109-21:111> mgq <21:109-21:111>
-                  segment <21:114-21:118> ImKms <21:114-21:118>
+                  segment <21:101-21:106> LK魲C2D
+                  segment <21:109-21:111> mgq
+                  segment <21:114-21:118> ImKms
                   segment <21:121-22:22> v_禤1ut <21:121-21:126>
                     ref-type <21:128-21:135>
                       path <21:129-21:135>
-                        segment <21:129-21:135> G7ajwc4 <21:129-21:135>
+                        segment <21:129-21:135> G7ajwc4
                     path <22:1-22:3>
-                      segment <22:1-22:3> ot4 <22:1-22:3>
+                      segment <22:1-22:3> ot4
                     array-type <22:6-22:21>
                       path <22:7-22:13>
-                        segment <22:7-22:13> m0NngfH <22:7-22:13>
+                        segment <22:7-22:13> m0NngfH
                       literal i32 6 <22:16-22:20>
-                  segment <22:25-22:25> o <22:25-22:25>
-                  segment <22:28-22:33> mOgF3F <22:28-22:33>
+                  segment <22:25-22:25> o
+                  segment <22:28-22:33> mOgF3F
               segment <22:37-26:124> 甍qr閇s恀 <22:37-22:42>
                 path <22:44-23:17>
                   segment <1:1-1:1> (global)
-                  segment <22:46-22:53> BuqoFali <22:46-22:53>
+                  segment <22:46-22:53> BuqoFali
                   segment <22:56-22:65> EE6t7OqG <22:56-22:63>
                   segment <22:68-23:7> n3rq7ALB <22:68-22:75>
                     path <22:77-22:80>
-                      segment <22:77-22:80> ckFj <22:77-22:80>
+                      segment <22:77-22:80> ckFj
                     path <22:83-23:5>
                       segment <22:83-23:5> 狇Jii潫6bvN <22:83-22:91>
                         ref-type <22:93-22:96>
@@ -839,38 +839,38 @@ module tests/ast/hugetype.f3
                           primitive-type f64 <22:104-22:106>
                           primitive-type u64 <22:109-22:111>
                         path <22:115-22:121>
-                          segment <22:115-22:121> oBE1GAC <22:115-22:121>
+                          segment <22:115-22:121> oBE1GAC
                         path <23:1-23:4>
-                          segment <23:1-23:4> Fa34 <23:1-23:4>
-                  segment <23:10-23:17> O74cCM4K <23:10-23:17>
+                          segment <23:1-23:4> Fa34
+                  segment <23:10-23:17> O74cCM4K
                 fn-type <23:20-24:75> () <23:22-23:61>
                   fn-type-parameter <23:23-23:31> 梁Ompl <23:23-23:27>
                     path <23:30-23:31>
-                      segment <23:30-23:31> E7 <23:30-23:31>
+                      segment <23:30-23:31> E7
                   fn-type-parameter <23:34-23:47>
                     ref-type <23:34-23:47>
                       array-type <23:35-23:47>
                         path <23:36-23:37>
-                          segment <23:36-23:37> HA <23:36-23:37>
+                          segment <23:36-23:37> HA
                         literal i64 3640 <23:40-23:46>
                   fn-type-parameter <23:50-23:60> H7q <23:50-23:52>
                     path <23:55-23:60>
-                      segment <23:55-23:60> cHlhk瀵 <23:55-23:60>
+                      segment <23:55-23:60> cHlhk瀵
                   path <23:66-24:75>
                     segment <23:66-24:68> ja6Iw <23:66-23:70>
                       path <23:72-23:76>
-                        segment <23:72-23:76> hqdxr <23:72-23:76>
+                        segment <23:72-23:76> hqdxr
                       path <23:79-24:49>
                         segment <23:79-23:101> O <23:79-23:79>
                           primitive-type char <23:81-23:84>
                           primitive-type i64 <23:87-23:89>
                           primitive-type bool <23:92-23:95>
                           primitive-type i16 <23:98-23:100>
-                        segment <23:104-23:112> lw7M_ke_晅 <23:104-23:112>
-                        segment <23:115-23:122> wjp蛿s亘7i <23:115-23:122>
+                        segment <23:104-23:112> lw7M_ke_晅
+                        segment <23:115-23:122> wjp蛿s亘7i
                         segment <23:125-24:15> F2 <23:125-23:126>
                           path <23:128-23:130>
-                            segment <23:128-23:130> i33 <23:128-23:130>
+                            segment <23:128-23:130> i33
                           primitive-type u16 <24:1-24:3>
                           primitive-type char <24:6-24:9>
                           primitive-type i16 <24:12-24:14>
@@ -880,26 +880,26 @@ module tests/ast/hugetype.f3
                           primitive-type i64 <24:34-24:36>
                           primitive-type i16 <24:39-24:41>
                           primitive-type i8 <24:44-24:45>
-                        segment <24:49-24:49> B <24:49-24:49>
+                        segment <24:49-24:49> B
                       tuple-type <24:52-24:67>
                         primitive-type char <24:53-24:56>
                         primitive-type i16 <24:59-24:61>
                         primitive-type f32 <24:64-24:66>
-                    segment <24:71-24:75> E檩E嘣H <24:71-24:75>
+                    segment <24:71-24:75> E檩E嘣H
                 array-type <24:78-24:111>
                   path <24:79-24:86>
-                    segment <24:79-24:86> D63gE晤kJ <24:79-24:86>
+                    segment <24:79-24:86> D63gE晤kJ
                   literal r64 6567170030055001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 <24:89-24:110>
                 path <24:114-26:123>
                   segment <24:114-25:110> 蟧bFembG0 <24:114-24:121>
                     path <24:123-25:103>
-                      segment <24:123-24:125> xcb <24:123-24:125>
+                      segment <24:123-24:125> xcb
                       segment <24:128-24:132> hqO <24:128-24:130>
-                      segment <24:135-24:135> 善 <24:135-24:135>
+                      segment <24:135-24:135> 善
                       segment <24:138-25:65> yrj4hkbe <24:138-24:145>
                         path <24:147-25:28>
-                          segment <24:147-24:151> 玽Iy砉6 <24:147-24:151>
-                          segment <24:154-24:158> _uJ0e <24:154-24:158>
+                          segment <24:147-24:151> 玽Iy砉6
+                          segment <24:154-24:158> _uJ0e
                           segment <24:161-25:6> C澞y <24:161-24:163>
                             primitive-type u16 <24:165-24:167>
                             primitive-type bool <25:1-25:4>
@@ -909,7 +909,7 @@ module tests/ast/hugetype.f3
                             primitive-type i64 <25:25-25:27>
                         array-type <25:31-25:40>
                           path <25:32-25:35>
-                            segment <25:32-25:35> xumB <25:32-25:35>
+                            segment <25:32-25:35> xumB
                           literal i32 80 <25:38-25:39>
                         fn-type <25:43-25:64> () <25:45-25:64>
                           fn-type-parameter <25:46-25:53> h0 <25:46-25:47>
@@ -918,7 +918,7 @@ module tests/ast/hugetype.f3
                             primitive-type u64 <25:56-25:58>
                           fn-type-parameter <25:61-25:63>
                             primitive-type u16 <25:61-25:63>
-                      segment <25:68-25:72> MGdGC <25:68-25:72>
+                      segment <25:68-25:72> MGdGC
                       segment <25:75-25:103> HDlb <25:75-25:78>
                         tuple-type <25:80-25:90>
                           primitive-type u32 <25:81-25:83>
@@ -929,92 +929,92 @@ module tests/ast/hugetype.f3
                     primitive-type f32 <25:106-25:108>
                   segment <25:113-26:119> m <25:113-25:113>
                     path <25:115-25:116>
-                      segment <25:115-25:116> p0 <25:115-25:116>
+                      segment <25:115-25:116> p0
                     array-type <25:119-25:130>
                       path <25:120-25:123>
-                        segment <25:120-25:123> IC6m <25:120-25:123>
+                        segment <25:120-25:123> IC6m
                       literal r32 1 <25:126-25:129>
                     path <25:133-26:118>
                       segment <25:133-26:6> nnkECM8b7 <25:133-25:141>
                         array-type <25:143-25:155>
                           path <25:144-25:150>
-                            segment <25:144-25:150> Iqwj3Hy <25:144-25:150>
+                            segment <25:144-25:150> Iqwj3Hy
                           literal i32 25 <25:153-25:154>
                         primitive-type char <26:1-26:4>
                       segment <26:9-26:54> oywl <26:9-26:12>
                         path <26:14-26:20>
-                          segment <26:14-26:20> rHbhBy輈 <26:14-26:20>
+                          segment <26:14-26:20> rHbhBy輈
                         ref-type <26:23-26:26>
                           path <26:24-26:26>
-                            segment <26:24-26:26> i33 <26:24-26:26>
+                            segment <26:24-26:26> i33
                         array-type <26:29-26:50>
                           path <26:30-26:36>
-                            segment <26:30-26:36> qf7櫍5gv <26:30-26:36>
+                            segment <26:30-26:36> qf7櫍5gv
                           literal u32 2797702 <26:39-26:49>
                         path <26:53-26:53>
-                          segment <26:53-26:53> H <26:53-26:53>
+                          segment <26:53-26:53> H
                       segment <26:57-26:113> Oosfypj <26:57-26:63>
                         primitive-type i64 <26:65-26:67>
                         path <26:70-26:96>
                           segment <1:1-1:1> (global)
-                          segment <26:72-26:73> EJ <26:72-26:73>
-                          segment <26:76-26:77> Nr <26:76-26:77>
+                          segment <26:72-26:73> EJ
+                          segment <26:76-26:77> Nr
                           segment <26:80-26:85> LJC臧 <26:80-26:83>
-                          segment <26:88-26:89> N8 <26:88-26:89>
-                          segment <26:92-26:96> xCL5c <26:92-26:96>
+                          segment <26:88-26:89> N8
+                          segment <26:92-26:96> xCL5c
                         tuple-type <26:99-26:112>
                           primitive-type f64 <26:100-26:102>
                           path <26:105-26:110>
-                            segment <26:105-26:110> string <26:105-26:110>
-                      segment <26:116-26:118> Lfb <26:116-26:118>
-                  segment <26:122-26:123> Ox <26:122-26:123>
+                            segment <26:105-26:110> string
+                      segment <26:116-26:118> Lfb
+                  segment <26:122-26:123> Ox
             path <26:127-26:137>
               segment <1:1-1:1> (global)
               segment <26:129-26:137> k梷u黸w4p <26:129-26:135>
             path <27:1-27:3>
-              segment <27:1-27:3> Lof <27:1-27:3>
+              segment <27:1-27:3> Lof
           segment <27:7-39:107> aGoO <27:7-27:10>
             path <27:12-29:45>
-              segment <27:12-27:18> D53IDDq <27:12-27:18>
-              segment <27:21-27:26> e3bg槬B <27:21-27:26>
+              segment <27:12-27:18> D53IDDq
+              segment <27:21-27:26> e3bg槬B
               segment <27:29-29:45> y_8 <27:29-27:31>
                 array-type <27:33-27:45>
                   path <27:34-27:40>
-                    segment <27:34-27:40> biw42Ad <27:34-27:40>
+                    segment <27:34-27:40> biw42Ad
                   literal i32 75 <27:43-27:44>
                 fn-type <27:48-29:30> () <27:50-28:125>
                   fn-type-parameter <27:51-27:131>
                     path <27:51-27:131>
                       segment <27:51-27:126> _yqB毱vk <27:51-27:57>
                         path <27:59-27:64>
-                          segment <27:59-27:60> 钌6 <27:59-27:60>
-                          segment <27:63-27:64> Ih <27:63-27:64>
+                          segment <27:59-27:60> 钌6
+                          segment <27:63-27:64> Ih
                         primitive-type i64 <27:67-27:69>
                         tuple-type <27:72-27:99>
                           primitive-type u64 <27:73-27:75>
                           primitive-type u64 <27:78-27:80>
                           path <27:83-27:88>
-                            segment <27:83-27:88> string <27:83-27:88>
+                            segment <27:83-27:88> string
                           primitive-type i16 <27:91-27:93>
                           primitive-type u64 <27:96-27:98>
                         tuple-type <27:102-27:125>
                           primitive-type u64 <27:103-27:105>
                           primitive-type u32 <27:108-27:110>
                           path <27:113-27:115>
-                            segment <27:113-27:115> i33 <27:113-27:115>
+                            segment <27:113-27:115> i33
                           path <27:118-27:120>
-                            segment <27:118-27:120> i33 <27:118-27:120>
+                            segment <27:118-27:120> i33
                           primitive-type u8 <27:123-27:124>
-                      segment <27:129-27:131> hjd <27:129-27:131>
+                      segment <27:129-27:131> hjd
                   fn-type-parameter <28:1-28:94>
                     path <28:1-28:94>
-                      segment <28:1-28:6> AKA5sd <28:1-28:6>
-                      segment <28:9-28:9> I <28:9-28:9>
+                      segment <28:1-28:6> AKA5sd
+                      segment <28:9-28:9> I
                       segment <28:12-28:79> OmjE3s蕕 <28:12-28:18>
                         path <28:20-28:24>
-                          segment <28:20-28:24> 嘽jBpa <28:20-28:24>
+                          segment <28:20-28:24> 嘽jBpa
                         path <28:27-28:73>
-                          segment <28:27-28:34> j0Lb4_hE <28:27-28:34>
+                          segment <28:27-28:34> j0Lb4_hE
                           segment <28:37-28:51> u <28:37-28:37>
                             primitive-type i8 <28:39-28:40>
                             primitive-type f32 <28:43-28:45>
@@ -1023,40 +1023,40 @@ module tests/ast/hugetype.f3
                             primitive-type u64 <28:64-28:66>
                             primitive-type i16 <28:69-28:71>
                         primitive-type f64 <28:76-28:78>
-                      segment <28:82-28:89> G4J_1EoI <28:82-28:89>
-                      segment <28:92-28:94> bO6 <28:92-28:94>
+                      segment <28:82-28:89> G4J_1EoI
+                      segment <28:92-28:94> bO6
                   fn-type-parameter <28:97-28:111> DLCq <28:97-28:100>
                     path <28:103-28:111>
-                      segment <28:103-28:111> ms3ubFeBO <28:103-28:111>
+                      segment <28:103-28:111> ms3ubFeBO
                   fn-type-parameter <28:114-28:118>
                     path <28:114-28:118>
-                      segment <28:114-28:118> hCk1e <28:114-28:118>
+                      segment <28:114-28:118> hCk1e
                   fn-type-parameter <28:121-28:124>
                     primitive-type char <28:121-28:124>
                   tuple-type <28:130-29:30>
                     tuple-type <28:131-29:12>
                       primitive-type u64 <28:132-28:134>
                       path <29:1-29:3>
-                        segment <29:1-29:3> i33 <29:1-29:3>
+                        segment <29:1-29:3> i33
                       path <29:6-29:11>
-                        segment <29:6-29:11> string <29:6-29:11>
+                        segment <29:6-29:11> string
                     path <29:15-29:23>
-                      segment <29:15-29:23> c4eh铕mJeG <29:15-29:23>
+                      segment <29:15-29:23> c4eh铕mJeG
                     ref-type <29:26-29:29>
                       primitive-type u64 <29:27-29:29>
                 path <29:33-29:44>
-                  segment <29:33-29:34> v輳 <29:33-29:34>
-                  segment <29:37-29:37> w <29:37-29:37>
-                  segment <29:40-29:44> lwwdf <29:40-29:44>
+                  segment <29:33-29:34> v輳
+                  segment <29:37-29:37> w
+                  segment <29:40-29:44> lwwdf
             primitive-type u8 <29:48-29:49>
             tuple-type <29:52-39:106>
               tuple-type <29:53-34:48>
                 tuple-type <29:54-30:15>
                   path <29:55-29:100>
-                    segment <29:55-29:61> k0xrdCr <29:55-29:61>
-                    segment <29:64-29:64> j <29:64-29:64>
-                    segment <29:67-29:74> HtxyJ5gw <29:67-29:74>
-                    segment <29:77-29:82> yKN0J6 <29:77-29:82>
+                    segment <29:55-29:61> k0xrdCr
+                    segment <29:64-29:64> j
+                    segment <29:67-29:74> HtxyJ5gw
+                    segment <29:77-29:82> yKN0J6
                     segment <29:85-29:100> E <29:85-29:85>
                       primitive-type i64 <29:87-29:89>
                       primitive-type i8 <29:92-29:93>
@@ -1065,13 +1065,13 @@ module tests/ast/hugetype.f3
                     segment <29:103-29:119> NN451 <29:103-29:107>
                       primitive-type f64 <29:109-29:111>
                       primitive-type bool <29:114-29:117>
-                    segment <29:122-29:125> a0y7 <29:122-29:125>
+                    segment <29:122-29:125> a0y7
                   array-type <29:128-30:14>
                     path <29:129-29:130>
-                      segment <29:129-29:130> tG <29:129-29:130>
+                      segment <29:129-29:130> tG
                     literal i32 0 <30:1-30:13>
                 path <30:18-31:35>
-                  segment <30:18-30:19> sl <30:18-30:19>
+                  segment <30:18-30:19> sl
                   segment <30:22-30:112> k8O <30:22-30:24>
                     ref-type <30:26-30:30>
                       primitive-type char <30:27-30:30>
@@ -1079,17 +1079,17 @@ module tests/ast/hugetype.f3
                       segment <30:33-30:47> OHph <30:33-30:36>
                         primitive-type u64 <30:38-30:40>
                         path <30:43-30:45>
-                          segment <30:43-30:45> i33 <30:43-30:45>
+                          segment <30:43-30:45> i33
                       segment <30:50-30:76> NNGbwuwi <30:50-30:57>
                         primitive-type u64 <30:59-30:61>
                         primitive-type u64 <30:64-30:66>
                         primitive-type u8 <30:69-30:70>
                         path <30:73-30:75>
-                          segment <30:73-30:75> i33 <30:73-30:75>
-                      segment <30:79-30:83> DEHud <30:79-30:83>
+                          segment <30:73-30:75> i33
+                      segment <30:79-30:83> DEHud
                     array-type <30:86-30:111>
                       path <30:87-30:87>
-                        segment <30:87-30:87> O <30:87-30:87>
+                        segment <30:87-30:87> O
                       literal i32 0 <30:90-30:110>
                   segment <30:115-31:35> Cbhqv鮅27A <30:115-30:123>
                     tuple-type <30:125-31:8>
@@ -1099,26 +1099,26 @@ module tests/ast/hugetype.f3
                     primitive-type i64 <31:11-31:13>
                     array-type <31:16-31:34>
                       path <31:17-31:19>
-                        segment <31:17-31:19> etb <31:17-31:19>
+                        segment <31:17-31:19> etb
                       literal i32 0 <31:22-31:33>
                 path <31:38-31:94>
-                  segment <31:38-31:43> m2_F奵n <31:38-31:43>
+                  segment <31:38-31:43> m2_F奵n
                   segment <31:46-31:94> Kmqvvob藍l <31:46-31:54>
                     tuple-type <31:56-31:70>
                       primitive-type u16 <31:57-31:59>
                       path <31:62-31:64>
-                        segment <31:62-31:64> i33 <31:62-31:64>
+                        segment <31:62-31:64> i33
                       primitive-type u64 <31:67-31:69>
                     tuple-type <31:73-31:90>
                       path <31:74-31:79>
-                        segment <31:74-31:79> string <31:74-31:79>
+                        segment <31:74-31:79> string
                       path <31:82-31:84>
-                        segment <31:82-31:84> i33 <31:82-31:84>
+                        segment <31:82-31:84> i33
                       primitive-type u32 <31:87-31:89>
                     path <31:93-31:93>
-                      segment <31:93-31:93> A <31:93-31:93>
+                      segment <31:93-31:93> A
                 path <31:97-34:47>
-                  segment <31:97-31:101> 孱knAH <31:97-31:101>
+                  segment <31:97-31:101> 孱knAH
                   segment <31:104-32:126> JB褼 <31:104-31:106>
                     fn-type <31:108-32:14> () <31:110-32:14>
                       fn-type-parameter <31:111-31:118> 曊Ap <31:111-31:113>
@@ -1132,7 +1132,7 @@ module tests/ast/hugetype.f3
                     tuple-type <32:17-32:29>
                       primitive-type i8 <32:18-32:19>
                       path <32:22-32:24>
-                        segment <32:22-32:24> i33 <32:22-32:24>
+                        segment <32:22-32:24> i33
                       primitive-type i8 <32:27-32:28>
                     ref-type <32:32-32:34>
                       primitive-type u8 <32:33-32:34>
@@ -1140,13 +1140,13 @@ module tests/ast/hugetype.f3
                       segment <32:37-32:57> Kix <32:37-32:39>
                         primitive-type u64 <32:41-32:43>
                         path <32:46-32:51>
-                          segment <32:46-32:51> string <32:46-32:51>
+                          segment <32:46-32:51> string
                         primitive-type f64 <32:54-32:56>
                       segment <32:60-32:88> tabrLx <32:60-32:65>
                         primitive-type f64 <32:67-32:69>
                         primitive-type i8 <32:72-32:73>
                         path <32:76-32:81>
-                          segment <32:76-32:81> string <32:76-32:81>
+                          segment <32:76-32:81> string
                         primitive-type bool <32:84-32:87>
                       segment <32:91-32:116> s <32:91-32:91>
                         primitive-type f32 <32:93-32:95>
@@ -1154,11 +1154,11 @@ module tests/ast/hugetype.f3
                         primitive-type u8 <32:103-32:104>
                         primitive-type u64 <32:107-32:109>
                         primitive-type bool <32:112-32:115>
-                      segment <32:119-32:125> hE6kd1t <32:119-32:125>
-                  segment <32:129-32:131> GmK <32:129-32:131>
+                      segment <32:119-32:125> hE6kd1t
+                  segment <32:129-32:131> GmK
                   segment <32:134-34:6> _ilMoIF0 <32:134-32:141>
                     path <32:143-33:66>
-                      segment <32:143-32:145> q殝s <32:143-32:145>
+                      segment <32:143-32:145> q殝s
                       segment <32:148-33:14> E8bB <32:148-32:151>
                         primitive-type u32 <32:153-32:155>
                         primitive-type u64 <33:1-33:3>
@@ -1180,39 +1180,39 @@ module tests/ast/hugetype.f3
                       primitive-type char <33:86-33:89>
                       primitive-type f32 <33:92-33:94>
                     path <33:98-33:101>
-                      segment <33:98-33:101> j2e8 <33:98-33:101>
+                      segment <33:98-33:101> j2e8
                     tuple-type <33:104-33:117>
                       primitive-type u32 <33:105-33:107>
                       path <33:110-33:115>
-                        segment <33:110-33:115> string <33:110-33:115>
+                        segment <33:110-33:115> string
                     tuple-type <33:120-34:5>
                       primitive-type f64 <33:121-33:123>
                       primitive-type u64 <34:1-34:3>
                   segment <34:9-34:47> vl <34:9-34:10>
                     path <34:12-34:37>
                       segment <34:12-34:21> Eia忚0O2M <34:12-34:19>
-                      segment <34:24-34:26> N1N <34:24-34:26>
-                      segment <34:29-34:37> _bBy6fI髳4 <34:29-34:37>
+                      segment <34:24-34:26> N1N
+                      segment <34:29-34:37> _bBy6fI髳4
                     path <34:40-34:45>
-                      segment <34:40-34:45> dogCa1 <34:40-34:45>
+                      segment <34:40-34:45> dogCa1
               path <34:51-34:57>
-                segment <34:51-34:57> jlMybkA <34:51-34:57>
+                segment <34:51-34:57> jlMybkA
               path <34:60-39:105>
                 segment <34:60-37:41> t <34:60-34:60>
                   tuple-type <34:62-36:68>
                     path <34:63-35:34>
-                      segment <34:63-34:63> h <34:63-34:63>
+                      segment <34:63-34:63> h
                       segment <34:66-34:89> GxGJoogC <34:66-34:73>
                         primitive-type bool <34:75-34:78>
                         primitive-type f32 <34:81-34:83>
                         primitive-type i64 <34:86-34:88>
-                      segment <34:92-34:98> mH_p坍kl <34:92-34:98>
-                      segment <34:101-34:102> st <34:101-34:102>
+                      segment <34:92-34:98> mH_p坍kl
+                      segment <34:101-34:102> st
                       segment <34:105-35:4> iE <34:105-34:106>
                         primitive-type bool <34:108-34:111>
                         primitive-type u8 <34:114-34:115>
                         path <34:118-34:123>
-                          segment <34:118-34:123> string <34:118-34:123>
+                          segment <34:118-34:123> string
                         primitive-type u16 <34:126-34:128>
                         primitive-type u32 <35:1-35:3>
                       segment <35:7-35:34> 葁I2E1q <35:7-35:12>
@@ -1222,13 +1222,13 @@ module tests/ast/hugetype.f3
                         primitive-type bool <35:30-35:33>
                     array-type <35:37-35:56>
                       path <35:38-35:42>
-                        segment <35:38-35:42> qAm5x <35:38-35:42>
+                        segment <35:38-35:42> qAm5x
                       literal i32 0 <35:45-35:55>
                     path <35:59-36:28>
                       segment <35:59-35:79> r8sK <35:59-35:62>
                         primitive-type f32 <35:64-35:66>
                         path <35:69-35:74>
-                          segment <35:69-35:74> string <35:69-35:74>
+                          segment <35:69-35:74> string
                         primitive-type i8 <35:77-35:78>
                       segment <35:82-35:106> qOemFG燫Bc <35:82-35:90>
                         primitive-type u8 <35:92-35:93>
@@ -1236,7 +1236,7 @@ module tests/ast/hugetype.f3
                         primitive-type bool <35:102-35:105>
                       segment <35:109-36:4> EqwNECsA <35:109-35:116>
                         path <35:118-35:120>
-                          segment <35:118-35:120> i33 <35:118-35:120>
+                          segment <35:118-35:120> i33
                         primitive-type u8 <35:123-35:124>
                         primitive-type i64 <36:1-36:3>
                       segment <36:7-36:28> 坞bbCBI3 <36:7-36:13>
@@ -1245,11 +1245,11 @@ module tests/ast/hugetype.f3
                         primitive-type f32 <36:25-36:27>
                     array-type <36:31-36:49>
                       path <36:32-36:36>
-                        segment <36:32-36:36> oyAin <36:32-36:36>
+                        segment <36:32-36:36> oyAin
                       literal i32 0 <36:39-36:48>
                     array-type <36:52-36:67>
                       path <36:53-36:56>
-                        segment <36:53-36:56> k遙bL <36:53-36:56>
+                        segment <36:53-36:56> k遙bL
                       literal i32 84445884 <36:59-36:66>
                   tuple-type <36:71-37:22>
                     path <36:72-36:92>
@@ -1259,8 +1259,8 @@ module tests/ast/hugetype.f3
                         primitive-type f32 <36:85-36:87>
                         primitive-type u8 <36:90-36:91>
                     path <36:95-36:123>
-                      segment <36:95-36:95> s <36:95-36:95>
-                      segment <36:98-36:104> 妲43_pnI <36:98-36:104>
+                      segment <36:95-36:95> s
+                      segment <36:98-36:104> 妲43_pnI
                       segment <36:107-36:123> EHllb <36:107-36:111>
                         primitive-type char <36:113-36:116>
                         primitive-type i16 <36:119-36:121>
@@ -1269,24 +1269,24 @@ module tests/ast/hugetype.f3
                       primitive-type i64 <37:1-37:3>
                       primitive-type u16 <37:6-37:8>
                     path <37:12-37:21>
-                      segment <37:12-37:17> uicwHu <37:12-37:17>
-                      segment <37:20-37:21> vH <37:20-37:21>
+                      segment <37:12-37:17> uicwHu
+                      segment <37:20-37:21> vH
                   array-type <37:25-37:40>
                     path <37:26-37:33>
-                      segment <37:26-37:33> lw4祕jFor <37:26-37:33>
+                      segment <37:26-37:33> lw4祕jFor
                     literal i32 5121 <37:36-37:39>
                 segment <37:44-37:100> 堮1AC殇戔 <37:44-37:49>
                   array-type <37:51-37:62>
                     path <37:52-37:55>
-                      segment <37:52-37:55> Cv殦5 <37:52-37:55>
+                      segment <37:52-37:55> Cv殦5
                     literal r64 6 <37:58-37:61>
                   array-type <37:65-37:86>
                     path <37:66-37:72>
-                      segment <37:66-37:72> 姙hErI逄E <37:66-37:72>
+                      segment <37:66-37:72> 姙hErI逄E
                     literal i32 0 <37:75-37:85>
                   array-type <37:89-37:99>
                     path <37:90-37:90>
-                      segment <37:90-37:90> 蹞 <37:90-37:90>
+                      segment <37:90-37:90> 蹞
                     literal i32 257326 <37:93-37:98>
                 segment <37:103-39:100> y <37:103-37:103>
                   tuple-type <37:105-38:20>
@@ -1295,17 +1295,17 @@ module tests/ast/hugetype.f3
                       primitive-type u64 <37:111-37:113>
                     array-type <38:1-38:19>
                       path <38:2-38:10>
-                        segment <38:2-38:10> HuOA3swto <38:2-38:10>
+                        segment <38:2-38:10> HuOA3swto
                       literal r64 608 <38:13-38:18>
                   ref-type <38:23-38:26>
                     path <38:24-38:26>
-                      segment <38:24-38:26> i33 <38:24-38:26>
+                      segment <38:24-38:26> i33
                   primitive-type u8 <38:29-38:30>
                   path <38:33-39:99>
                     segment <38:33-39:99> jqbb7宴q <38:33-38:39>
                       array-type <38:41-38:58>
                         path <38:42-38:49>
-                          segment <38:42-38:49> B糝hq满HFi <38:42-38:49>
+                          segment <38:42-38:49> B糝hq满HFi
                         literal i32 8513 <38:52-38:57>
                       path <38:61-38:118>
                         segment <38:61-38:80> JxBv0 <38:61-38:65>
@@ -1315,33 +1315,33 @@ module tests/ast/hugetype.f3
                         segment <38:83-38:95> bq <38:83-38:84>
                           primitive-type f64 <38:86-38:88>
                           primitive-type f64 <38:91-38:93>
-                        segment <38:98-38:100> d8s <38:98-38:100>
-                        segment <38:103-38:111> _c0y4qEO2 <38:103-38:111>
-                        segment <38:114-38:118> edmbM <38:114-38:118>
+                        segment <38:98-38:100> d8s
+                        segment <38:103-38:111> _c0y4qEO2
+                        segment <38:114-38:118> edmbM
                       path <39:1-39:36>
-                        segment <39:1-39:2> OC <39:1-39:2>
-                        segment <39:5-39:7> nBl <39:5-39:7>
+                        segment <39:1-39:2> OC
+                        segment <39:5-39:7> nBl
                         segment <39:10-39:36> uivbmu虙EI <39:10-39:18>
                           primitive-type bool <39:20-39:23>
                           primitive-type i8 <39:26-39:27>
                           path <39:30-39:35>
-                            segment <39:30-39:35> string <39:30-39:35>
+                            segment <39:30-39:35> string
                       path <39:39-39:81>
-                        segment <39:39-39:47> Hl4IIDvMv <39:39-39:47>
+                        segment <39:39-39:47> Hl4IIDvMv
                         segment <39:50-39:52> B <39:50-39:50>
                         segment <39:55-39:76> 篁3IA倴uKB <39:55-39:62>
                           primitive-type u8 <39:64-39:65>
                           primitive-type i16 <39:68-39:70>
                           primitive-type u16 <39:73-39:75>
-                        segment <39:79-39:81> vfk <39:79-39:81>
+                        segment <39:79-39:81> vfk
                       tuple-type <39:84-39:98>
                         primitive-type char <39:85-39:88>
                         primitive-type f64 <39:91-39:93>
                         primitive-type u8 <39:96-39:97>
-                segment <39:103-39:105> is_ <39:103-39:105>
+                segment <39:103-39:105> is_
         array-type <39:110-39:120>
           path <39:111-39:111>
-            segment <39:111-39:111> e <39:111-39:111>
+            segment <39:111-39:111> e
           literal u32 3 <39:114-39:119>
         path <40:1-47:89>
           segment <40:1-47:81> 矒Ia <40:1-40:3>
@@ -1349,7 +1349,7 @@ module tests/ast/hugetype.f3
               primitive-type char <40:6-40:9>
               array-type <40:12-40:26>
                 path <40:13-40:18>
-                  segment <40:13-40:18> dH5l域5 <40:13-40:18>
+                  segment <40:13-40:18> dH5l域5
                 literal r32 82 <40:21-40:25>
               primitive-type i16 <40:29-40:31>
             fn-type <40:35-47:59> () <40:37-41:80>
@@ -1359,59 +1359,59 @@ module tests/ast/hugetype.f3
                     tuple-type <40:47-41:20>
                       tuple-type <40:48-40:61>
                         path <40:49-40:54>
-                          segment <40:49-40:54> string <40:49-40:54>
+                          segment <40:49-40:54> string
                         primitive-type u32 <40:57-40:59>
                       array-type <40:64-40:83>
                         path <40:65-40:71>
-                          segment <40:65-40:71> jqKm34i <40:65-40:71>
+                          segment <40:65-40:71> jqKm34i
                         literal r32 674344 <40:74-40:82>
                       path <40:86-40:128>
-                        segment <40:86-40:92> NcCfur4 <40:86-40:92>
-                        segment <40:95-40:98> Oq鎠脯 <40:95-40:98>
+                        segment <40:86-40:92> NcCfur4
+                        segment <40:95-40:98> Oq鎠脯
                         segment <40:101-40:118> Cf1 <40:101-40:103>
                           primitive-type i8 <40:105-40:106>
                           primitive-type f32 <40:109-40:111>
                           primitive-type char <40:114-40:117>
-                        segment <40:121-40:128> NHuH蘊2rE <40:121-40:128>
+                        segment <40:121-40:128> NHuH蘊2rE
                       tuple-type <41:1-41:19>
                         path <41:2-41:4>
-                          segment <41:2-41:4> i33 <41:2-41:4>
+                          segment <41:2-41:4> i33
                         primitive-type i8 <41:7-41:8>
                         primitive-type u64 <41:11-41:13>
                         primitive-type u32 <41:16-41:18>
                     array-type <41:23-41:39>
                       path <41:24-41:30>
-                        segment <41:24-41:30> AKmymFb <41:24-41:30>
+                        segment <41:24-41:30> AKmymFb
                       literal r32 534 <41:33-41:38>
               fn-type-parameter <41:44-41:50>
                 path <41:44-41:50>
-                  segment <41:44-41:50> l08dkdc <41:44-41:50>
+                  segment <41:44-41:50> l08dkdc
               fn-type-parameter <41:53-41:79> rCLcoJ <41:53-41:58>
                 array-type <41:61-41:79>
                   path <41:62-41:62>
-                    segment <41:62-41:62> I <41:62-41:62>
+                    segment <41:62-41:62> I
                   literal r64 47666205.01157 <41:65-41:78>
               path <41:85-47:59>
                 segment <41:85-43:76> i8ad2vgs7 <41:85-41:93>
                   path <41:95-41:100>
-                    segment <41:95-41:100> string <41:95-41:100>
+                    segment <41:95-41:100> string
                   path <41:103-42:15>
-                    segment <41:103-41:104> af <41:103-41:104>
-                    segment <41:107-41:111> i_OJ鹝 <41:107-41:111>
-                    segment <42:1-42:7> B則JalyC <42:1-42:7>
-                    segment <42:10-42:15> D6l_Oj <42:10-42:15>
+                    segment <41:103-41:104> af
+                    segment <41:107-41:111> i_OJ鹝
+                    segment <42:1-42:7> B則JalyC
+                    segment <42:10-42:15> D6l_Oj
                   path <42:18-43:75>
                     segment <42:18-43:12> o6wfEw <42:18-42:23>
                       tuple-type <42:25-42:46>
                         path <42:26-42:31>
-                          segment <42:26-42:31> string <42:26-42:31>
+                          segment <42:26-42:31> string
                         primitive-type i64 <42:34-42:36>
                         primitive-type u8 <42:39-42:40>
                         primitive-type f64 <42:43-42:45>
                       path <42:49-43:8>
                         segment <42:49-42:58> N8q_1ks驠 <42:49-42:56>
-                        segment <42:61-42:68> AjwOBF红3 <42:61-42:68>
-                        segment <42:71-42:74> LDOy <42:71-42:74>
+                        segment <42:61-42:68> AjwOBF红3
+                        segment <42:71-42:74> LDOy
                         segment <42:77-42:96> t4i3b <42:77-42:81>
                           primitive-type f64 <42:83-42:85>
                           primitive-type i64 <42:88-42:90>
@@ -1424,30 +1424,30 @@ module tests/ast/hugetype.f3
                           primitive-type i8 <43:1-43:2>
                           primitive-type f32 <43:5-43:7>
                       path <43:11-43:11>
-                        segment <43:11-43:11> E <43:11-43:11>
+                        segment <43:11-43:11> E
                     segment <43:15-43:71> pKufBv <43:15-43:20>
                       tuple-type <43:22-43:37>
                         primitive-type f64 <43:23-43:25>
                         path <43:28-43:30>
-                          segment <43:28-43:30> i33 <43:28-43:30>
+                          segment <43:28-43:30> i33
                         primitive-type char <43:33-43:36>
                       array-type <43:40-43:49>
                         path <43:41-43:41>
-                          segment <43:41-43:41> 蜀 <43:41-43:41>
+                          segment <43:41-43:41> 蜀
                         literal i32 36334 <43:44-43:48>
                       array-type <43:52-43:70>
                         path <43:53-43:60>
-                          segment <43:53-43:60> D0vECbcy <43:53-43:60>
+                          segment <43:53-43:60> D0vECbcy
                         literal i32 0 <43:63-43:69>
-                    segment <43:74-43:75> H1 <43:74-43:75>
+                    segment <43:74-43:75> H1
                 segment <43:79-45:80> va镮J <43:79-43:82>
                   array-type <43:84-43:108>
                     path <43:85-43:92>
-                      segment <43:85-43:92> ryJt哖Lul <43:85-43:92>
+                      segment <43:85-43:92> ryJt哖Lul
                     literal r64 711504.2487550001 <43:95-43:107>
                   tuple-type <43:111-44:124>
                     path <43:112-44:77>
-                      segment <43:112-43:118> o涋i7kvH <43:112-43:118>
+                      segment <43:112-43:118> o涋i7kvH
                       segment <43:121-44:9> 潥p03CJoa <43:121-43:128>
                         primitive-type u8 <43:130-43:131>
                         primitive-type i16 <44:1-44:3>
@@ -1460,46 +1460,46 @@ module tests/ast/hugetype.f3
                         primitive-type bool <44:39-44:42>
                         primitive-type u64 <44:45-44:47>
                         path <44:50-44:52>
-                          segment <44:50-44:52> i33 <44:50-44:52>
+                          segment <44:50-44:52> i33
                         primitive-type char <44:55-44:58>
                         primitive-type u32 <44:61-44:63>
-                      segment <44:67-44:68> ro <44:67-44:68>
-                      segment <44:71-44:77> px6DDh7 <44:71-44:77>
+                      segment <44:67-44:68> ro
+                      segment <44:71-44:77> px6DDh7
                     primitive-type f32 <44:80-44:82>
                     path <44:85-44:123>
-                      segment <44:85-44:87> pO瘧 <44:85-44:87>
+                      segment <44:85-44:87> pO瘧
                       segment <44:90-44:123> e4a <44:90-44:92>
                         path <44:94-44:99>
-                          segment <44:94-44:99> string <44:94-44:99>
+                          segment <44:94-44:99> string
                         path <44:102-44:107>
-                          segment <44:102-44:107> string <44:102-44:107>
+                          segment <44:102-44:107> string
                         primitive-type u8 <44:110-44:111>
                         primitive-type u16 <44:114-44:116>
                         primitive-type bool <44:119-44:122>
                   tuple-type <44:127-45:19>
                     array-type <44:128-45:8>
                       path <44:129-44:130>
-                        segment <44:129-44:130> Gw <44:129-44:130>
+                        segment <44:129-44:130> Gw
                       literal i32 7183810 <45:1-45:7>
                     tuple-type <45:11-45:12>
                     ref-type <45:15-45:18>
                       primitive-type f32 <45:16-45:18>
                   path <45:22-45:27>
-                    segment <45:22-45:27> string <45:22-45:27>
+                    segment <45:22-45:27> string
                   ref-type <45:30-45:79>
                     path <45:31-45:79>
                       segment <45:31-45:46> K <45:31-45:31>
                         primitive-type i64 <45:33-45:35>
                         primitive-type f32 <45:38-45:40>
                         path <45:43-45:45>
-                          segment <45:43-45:45> i33 <45:43-45:45>
+                          segment <45:43-45:45> i33
                       segment <45:49-45:61> ic <45:49-45:50>
                         path <45:52-45:54>
-                          segment <45:52-45:54> i33 <45:52-45:54>
+                          segment <45:52-45:54> i33
                         primitive-type u64 <45:57-45:59>
                       segment <45:64-45:73> pCa7O輏Jo <45:64-45:71>
-                      segment <45:76-45:79> IM徠h <45:76-45:79>
-                segment <45:83-45:86> t7lN <45:83-45:86>
+                      segment <45:76-45:79> IM徠h
+                segment <45:83-45:86> t7lN
                 segment <45:89-47:59> bH <45:89-45:90>
                   tuple-type <45:92-46:123>
                     path <45:93-46:60>
@@ -1518,12 +1518,12 @@ module tests/ast/hugetype.f3
                         primitive-type u32 <46:18-46:20>
                         primitive-type f32 <46:23-46:25>
                         primitive-type i16 <46:28-46:30>
-                      segment <46:34-46:37> FOvw <46:34-46:37>
+                      segment <46:34-46:37> FOvw
                       segment <46:40-46:60> q <46:40-46:40>
                         primitive-type i64 <46:42-46:44>
                         primitive-type char <46:47-46:50>
                         path <46:53-46:55>
-                          segment <46:53-46:55> i33 <46:53-46:55>
+                          segment <46:53-46:55> i33
                         primitive-type i8 <46:58-46:59>
                     path <46:63-46:103>
                       segment <46:63-46:83> BD1MK麲8 <46:63-46:69>
@@ -1535,11 +1535,11 @@ module tests/ast/hugetype.f3
                         primitive-type u8 <46:95-46:96>
                         primitive-type char <46:99-46:102>
                     path <46:106-46:122>
-                      segment <46:106-46:106> x <46:106-46:106>
+                      segment <46:106-46:106> x
                       segment <46:109-46:116> 补Ch6fk <46:109-46:114>
                       segment <46:119-46:122> i0 <46:119-46:120>
                   path <46:126-47:57>
-                    segment <46:126-46:129> FfLo <46:126-46:129>
+                    segment <46:126-46:129> FfLo
                     segment <46:132-47:41> ooyLL8 <46:132-46:137>
                       fn-type <46:139-47:31> () <46:141-47:31>
                         fn-type-parameter <46:142-46:145>
@@ -1551,49 +1551,49 @@ module tests/ast/hugetype.f3
                         fn-type-parameter <47:19-47:30> mEkjFHuO <47:19-47:26>
                           primitive-type i8 <47:29-47:30>
                       path <47:34-47:35>
-                        segment <47:34-47:35> M_ <47:34-47:35>
+                        segment <47:34-47:35> M_
                       primitive-type u32 <47:38-47:40>
                     segment <47:44-47:46> f <47:44-47:44>
-                    segment <47:49-47:57> ksq1G1HMg <47:49-47:57>
+                    segment <47:49-47:57> ksq1G1HMg
             path <47:62-47:80>
-              segment <47:62-47:69> phLasofe <47:62-47:69>
-              segment <47:72-47:80> kEroGvI4s <47:72-47:80>
-          segment <47:84-47:89> FfCcI7 <47:84-47:89>
+              segment <47:62-47:69> phLasofe
+              segment <47:72-47:80> kEroGvI4s
+          segment <47:84-47:89> FfCcI7
       segment <47:93-76:191> Ftbgqo <47:93-47:98>
         ref-type <47:100-47:103>
           primitive-type f64 <47:101-47:103>
         path <47:106-76:165>
           segment <47:106-71:102> eBv <47:106-47:108>
             path <47:110-47:126>
-              segment <47:110-47:116> ehBi7kM <47:110-47:116>
-              segment <47:119-47:120> xI <47:119-47:120>
-              segment <47:123-47:126> IyO渜 <47:123-47:126>
+              segment <47:110-47:116> ehBi7kM
+              segment <47:119-47:120> xI
+              segment <47:123-47:126> IyO渜
             path <47:129-57:68>
               segment <47:129-57:52> qn6Jry <47:129-47:134>
                 ref-type <47:136-47:144>
                   path <47:137-47:144>
-                    segment <47:137-47:144> aHna2sL2 <47:137-47:144>
+                    segment <47:137-47:144> aHna2sL2
                 path <48:1-57:34>
                   segment <48:1-48:48> B <48:1-48:1>
                     path <48:3-48:27>
                       segment <48:3-48:5> t <48:3-48:3>
-                      segment <48:8-48:10> se_ <48:8-48:10>
-                      segment <48:13-48:18> 茔vKLEE <48:13-48:18>
-                      segment <48:21-48:27> 侪t6Etyy <48:21-48:27>
+                      segment <48:8-48:10> se_
+                      segment <48:13-48:18> 茔vKLEE
+                      segment <48:21-48:27> 侪t6Etyy
                     array-type <48:30-48:46>
                       path <48:31-48:38>
-                        segment <48:31-48:38> exNeJG5n <48:31-48:38>
+                        segment <48:31-48:38> exNeJG5n
                       literal i32 38414 <48:41-48:45>
                   segment <48:51-50:114> u <48:51-48:51>
                     primitive-type char <48:53-48:56>
                     ref-type <48:59-48:66>
                       ref-type <48:60-48:66>
                         path <48:61-48:66>
-                          segment <48:61-48:66> string <48:61-48:66>
+                          segment <48:61-48:66> string
                     path <48:69-48:92>
-                      segment <48:69-48:72> eH05 <48:69-48:72>
-                      segment <48:75-48:81> qAtp1L舊 <48:75-48:81>
-                      segment <48:84-48:92> CK8ttMpy8 <48:84-48:92>
+                      segment <48:69-48:72> eH05
+                      segment <48:75-48:81> qAtp1L舊
+                      segment <48:84-48:92> CK8ttMpy8
                     path <48:95-50:113>
                       segment <48:95-49:28> dOj <48:95-48:97>
                         fn-type <48:99-48:122> () <48:101-48:122>
@@ -1605,63 +1605,63 @@ module tests/ast/hugetype.f3
                             primitive-type u64 <48:119-48:121>
                         primitive-type u8 <48:125-48:126>
                         path <48:129-48:131>
-                          segment <48:129-48:131> i33 <48:129-48:131>
+                          segment <48:129-48:131> i33
                         tuple-type <48:134-49:17>
                           primitive-type f32 <48:135-48:137>
                           primitive-type i16 <49:1-49:3>
                           primitive-type i64 <49:6-49:8>
                           path <49:11-49:16>
-                            segment <49:11-49:16> string <49:11-49:16>
+                            segment <49:11-49:16> string
                         path <49:20-49:27>
-                          segment <49:20-49:27> 蒥硱Oitl21 <49:20-49:27>
-                      segment <49:31-49:32> x纵 <49:31-49:32>
+                          segment <49:20-49:27> 蒥硱Oitl21
+                      segment <49:31-49:32> x纵
                       segment <49:35-49:101> _jIJGM_ <49:35-49:41>
                         ref-type <49:43-49:45>
                           primitive-type i8 <49:44-49:45>
                         fn-type <49:48-49:94> () <49:50-49:94>
                           fn-type-parameter <49:51-49:56>
                             path <49:51-49:56>
-                              segment <49:51-49:56> string <49:51-49:56>
+                              segment <49:51-49:56> string
                           fn-type-parameter <49:59-49:69> Fex <49:59-49:61>
                             path <49:64-49:69>
-                              segment <49:64-49:69> string <49:64-49:69>
+                              segment <49:64-49:69> string
                           fn-type-parameter <49:72-49:79> D2C <49:72-49:74>
                             path <49:77-49:79>
-                              segment <49:77-49:79> i33 <49:77-49:79>
+                              segment <49:77-49:79> i33
                           fn-type-parameter <49:82-49:93> dmvBGAO <49:82-49:88>
                             primitive-type u64 <49:91-49:93>
                         primitive-type char <49:97-49:100>
                       segment <49:104-50:32> Gmmva3IGC <49:104-49:112>
                         path <49:114-50:4>
-                          segment <49:114-49:114> a <49:114-49:114>
+                          segment <49:114-49:114> a
                           segment <49:117-50:4> oiN0J5 <49:117-49:122>
                             primitive-type u8 <49:124-49:125>
                             primitive-type u8 <49:128-49:129>
                             primitive-type i16 <49:132-49:134>
                             path <50:1-50:3>
-                              segment <50:1-50:3> i33 <50:1-50:3>
+                              segment <50:1-50:3> i33
                         array-type <50:7-50:25>
                           path <50:8-50:11>
-                            segment <50:8-50:11> udBA <50:8-50:11>
+                            segment <50:8-50:11> udBA
                           literal i32 0 <50:14-50:24>
                         ref-type <50:28-50:31>
                           primitive-type f32 <50:29-50:31>
                       segment <50:35-50:113> Hf0 <50:35-50:37>
                         path <50:39-50:44>
-                          segment <50:39-50:44> DnO煱gd <50:39-50:44>
+                          segment <50:39-50:44> DnO煱gd
                         path <50:47-50:55>
-                          segment <50:47-50:55> C3GIO樼yxc <50:47-50:55>
+                          segment <50:47-50:55> C3GIO樼yxc
                         array-type <50:58-50:75>
                           path <50:59-50:62>
-                            segment <50:59-50:62> NcOE <50:59-50:62>
+                            segment <50:59-50:62> NcOE
                           literal r64 0.35736 <50:65-50:74>
                         path <50:78-50:89>
-                          segment <50:78-50:81> jiw6 <50:78-50:81>
-                          segment <50:84-50:89> xnt0OI <50:84-50:89>
+                          segment <50:78-50:81> jiw6
+                          segment <50:84-50:89> xnt0OI
                         tuple-type <50:92-50:112>
                           primitive-type u16 <50:93-50:95>
                           path <50:98-50:103>
-                            segment <50:98-50:103> string <50:98-50:103>
+                            segment <50:98-50:103> string
                           primitive-type u8 <50:106-50:107>
                           primitive-type i8 <50:110-50:111>
                   segment <50:117-55:45> tOppMOO <50:117-50:123>
@@ -1672,13 +1672,13 @@ module tests/ast/hugetype.f3
                     path <51:6-53:45>
                       segment <51:6-51:69> Be6dkB3 <51:6-51:12>
                         path <51:14-51:47>
-                          segment <51:14-51:18> pjN1D <51:14-51:18>
+                          segment <51:14-51:18> pjN1D
                           segment <51:21-51:41> b秴o <51:21-51:23>
                             path <51:25-51:30>
-                              segment <51:25-51:30> string <51:25-51:30>
+                              segment <51:25-51:30> string
                             primitive-type u64 <51:33-51:35>
                             primitive-type i64 <51:38-51:40>
-                          segment <51:44-51:47> iG5J <51:44-51:47>
+                          segment <51:44-51:47> iG5J
                         primitive-type u32 <51:50-51:52>
                         tuple-type <51:55-51:68>
                           primitive-type u8 <51:56-51:57>
@@ -1700,18 +1700,18 @@ module tests/ast/hugetype.f3
                           segment <52:14-52:35> uDNw0ALqt <52:14-52:22>
                             primitive-type u8 <52:24-52:25>
                             path <52:28-52:30>
-                              segment <52:28-52:30> i33 <52:28-52:30>
+                              segment <52:28-52:30> i33
                             primitive-type i8 <52:33-52:34>
                           segment <52:38-52:55> mtgggC8L <52:38-52:45>
                             primitive-type u32 <52:47-52:49>
                             primitive-type i8 <52:52-52:53>
                         array-type <52:58-52:71>
                           path <52:59-52:64>
-                            segment <52:59-52:64> Gudn0m <52:59-52:64>
+                            segment <52:59-52:64> Gudn0m
                           literal i32 8374 <52:67-52:70>
                         array-type <52:74-52:84>
                           path <52:75-52:80>
-                            segment <52:75-52:80> _pAbLb <52:75-52:80>
+                            segment <52:75-52:80> _pAbLb
                           literal i32 1 <52:83-52:83>
                       segment <52:88-53:17> G <52:88-52:88>
                         tuple-type <52:90-52:104>
@@ -1719,22 +1719,22 @@ module tests/ast/hugetype.f3
                           primitive-type u64 <52:96-52:98>
                           primitive-type u16 <52:101-52:103>
                         path <52:107-52:114>
-                          segment <52:107-52:114> y4nN2wlq <52:107-52:114>
+                          segment <52:107-52:114> y4nN2wlq
                         tuple-type <52:117-52:130>
                           primitive-type f64 <52:118-52:120>
                           primitive-type u8 <52:123-52:124>
                           primitive-type i16 <52:127-52:129>
                         array-type <53:1-53:16>
                           path <53:2-53:8>
-                            segment <53:2-53:8> JkeNvd舾 <53:2-53:8>
+                            segment <53:2-53:8> JkeNvd舾
                           literal r64 1.866 <53:11-53:15>
-                      segment <53:20-53:24> ls0OE <53:20-53:24>
-                      segment <53:27-53:34> KMqC8Ac鍂 <53:27-53:34>
-                      segment <53:37-53:45> fnuqb5hC1 <53:37-53:45>
+                      segment <53:20-53:24> ls0OE
+                      segment <53:27-53:34> KMqC8Ac鍂
+                      segment <53:37-53:45> fnuqb5hC1
                     fn-type <53:48-53:117> () <53:50-53:105>
                       fn-type-parameter <53:51-53:64> EErHIkD <53:51-53:57>
                         path <53:60-53:64>
-                          segment <53:60-53:64> gyjC_ <53:60-53:64>
+                          segment <53:60-53:64> gyjC_
                       fn-type-parameter <53:67-53:91> q <53:67-53:67>
                         tuple-type <53:70-53:91>
                           primitive-type f64 <53:71-53:73>
@@ -1745,7 +1745,7 @@ module tests/ast/hugetype.f3
                         fn-type <53:94-53:104> () <53:96-53:97>
                           primitive-type f32 <53:102-53:104>
                       path <53:110-53:117>
-                        segment <53:110-53:117> B6b07j4d <53:110-53:117>
+                        segment <53:110-53:117> B6b07j4d
                     path <53:120-55:44>
                       segment <53:120-55:33> _2AwD2v_ <53:120-53:127>
                         path <53:129-54:80>
@@ -1758,34 +1758,34 @@ module tests/ast/hugetype.f3
                             primitive-type i64 <54:26-54:28>
                             primitive-type u32 <54:31-54:33>
                             path <54:36-54:38>
-                              segment <54:36-54:38> i33 <54:36-54:38>
+                              segment <54:36-54:38> i33
                             primitive-type u32 <54:41-54:43>
                           segment <54:47-54:67> 鋚l7O5 <54:47-54:51>
                             primitive-type u64 <54:53-54:55>
                             primitive-type u32 <54:58-54:60>
                             primitive-type char <54:63-54:66>
-                          segment <54:70-54:70> l <54:70-54:70>
-                          segment <54:73-54:80> AH8G2鏢A_ <54:73-54:80>
+                          segment <54:70-54:70> l
+                          segment <54:73-54:80> AH8G2鏢A_
                         array-type <54:83-54:107>
                           path <54:84-54:92>
-                            segment <54:84-54:92> 夎KbFr7yAG <54:84-54:92>
+                            segment <54:84-54:92> 夎KbFr7yAG
                           literal r64 6271545.5433 <54:95-54:106>
                         ref-type <54:110-54:112>
                           primitive-type i8 <54:111-54:112>
                         array-type <54:115-55:4>
                           path <54:116-54:118>
-                            segment <54:116-54:118> wbi <54:116-54:118>
+                            segment <54:116-54:118> wbi
                           literal i32 0 <55:1-55:3>
                         path <55:7-55:32>
                           segment <1:1-1:1> (global)
-                          segment <55:9-55:15> stGnGde <55:9-55:15>
+                          segment <55:9-55:15> stGnGde
                           segment <55:18-55:27> FF鶦lqK1t <55:18-55:25>
-                          segment <55:30-55:32> 盳wt <55:30-55:32>
-                      segment <55:36-55:44> k2fhA诿E_獄 <55:36-55:44>
+                          segment <55:30-55:32> 盳wt
+                      segment <55:36-55:44> k2fhA诿E_獄
                   segment <55:48-57:34> 瓤 <55:48-55:48>
                     path <55:50-56:102>
-                      segment <55:50-55:51> KB <55:50-55:51>
-                      segment <55:54-55:60> CEMKJ17 <55:54-55:60>
+                      segment <55:50-55:51> KB
+                      segment <55:54-55:60> CEMKJ17
                       segment <55:63-55:66> bD <55:63-55:64>
                       segment <55:69-56:99> ifi5e3pE <55:69-55:76>
                         path <55:78-56:18>
@@ -1793,82 +1793,82 @@ module tests/ast/hugetype.f3
                             primitive-type u64 <55:81-55:83>
                             primitive-type f64 <55:86-55:88>
                             path <55:91-55:96>
-                              segment <55:91-55:96> string <55:91-55:96>
+                              segment <55:91-55:96> string
                           segment <55:100-56:4> bqbs <55:100-55:103>
                             primitive-type bool <55:105-55:108>
                             primitive-type char <55:111-55:114>
                             primitive-type u16 <55:117-55:119>
                             primitive-type u32 <56:1-56:3>
-                          segment <56:7-56:7> t <56:7-56:7>
-                          segment <56:10-56:18> D7bda1ysb <56:10-56:18>
+                          segment <56:7-56:7> t
+                          segment <56:10-56:18> D7bda1ysb
                         path <56:21-56:81>
-                          segment <56:21-56:29> gsfhfKK3L <56:21-56:29>
-                          segment <56:32-56:38> uI儆2GNe <56:32-56:38>
+                          segment <56:21-56:29> gsfhfKK3L
+                          segment <56:32-56:38> uI儆2GNe
                           segment <56:41-56:57> h <56:41-56:41>
                             path <56:43-56:45>
-                              segment <56:43-56:45> i33 <56:43-56:45>
+                              segment <56:43-56:45> i33
                             primitive-type i16 <56:48-56:50>
                             primitive-type char <56:53-56:56>
                           segment <56:60-56:71> I <56:60-56:60>
                             primitive-type u32 <56:62-56:64>
                             primitive-type f64 <56:67-56:69>
-                          segment <56:74-56:81> fG眂頢y0AD <56:74-56:81>
+                          segment <56:74-56:81> fG眂頢y0AD
                         tuple-type <56:84-56:98>
                           primitive-type bool <56:85-56:88>
                           primitive-type i64 <56:91-56:93>
                           primitive-type i8 <56:96-56:97>
-                      segment <56:102-56:102> 墓 <56:102-56:102>
+                      segment <56:102-56:102> 墓
                     ref-type <56:105-56:132>
                       path <56:106-56:132>
                         segment <1:1-1:1> (global)
-                        segment <56:108-56:115> KO5vq8G6 <56:108-56:115>
-                        segment <56:118-56:123> oGNNyk <56:118-56:123>
-                        segment <56:126-56:132> GJimB频_ <56:126-56:132>
+                        segment <56:108-56:115> KO5vq8G6
+                        segment <56:118-56:123> oGNNyk
+                        segment <56:126-56:132> GJimB频_
                     path <57:1-57:33>
-                      segment <57:1-57:5> IKEu嗓 <57:1-57:5>
-                      segment <57:8-57:12> Beg2y <57:8-57:12>
-                      segment <57:15-57:18> Dgr5 <57:15-57:18>
-                      segment <57:21-57:21> v <57:21-57:21>
+                      segment <57:1-57:5> IKEu嗓
+                      segment <57:8-57:12> Beg2y
+                      segment <57:15-57:18> Dgr5
+                      segment <57:21-57:21> v
                       segment <57:24-57:33> g0_t3AF0 <57:24-57:31>
                 array-type <57:37-57:51>
                   path <57:38-57:46>
-                    segment <57:38-57:46> ek_乩5fbbA <57:38-57:46>
+                    segment <57:38-57:46> ek_乩5fbbA
                   literal i32 63 <57:49-57:50>
               segment <57:55-57:58> g嚤 <57:55-57:56>
-              segment <57:61-57:68> DgAjFtu2 <57:61-57:68>
+              segment <57:61-57:68> DgAjFtu2
             path <57:71-71:101>
-              segment <57:71-57:75> usqNw <57:71-57:75>
+              segment <57:71-57:75> usqNw
               segment <57:78-59:85> K <57:78-57:78>
                 array-type <57:80-57:96>
                   path <57:81-57:89>
-                    segment <57:81-57:89> k036DFE00 <57:81-57:89>
+                    segment <57:81-57:89> k036DFE00
                   literal i32 206 <57:92-57:95>
                 array-type <57:99-57:129>
                   path <57:100-57:104>
-                    segment <57:100-57:104> lq5jG <57:100-57:104>
+                    segment <57:100-57:104> lq5jG
                   literal i32 331830 <57:107-57:128>
                 tuple-type <58:1-59:84>
                   primitive-type u32 <58:2-58:4>
                   primitive-type u16 <58:7-58:9>
                   tuple-type <58:12-59:83>
                     path <58:13-58:70>
-                      segment <58:13-58:19> BOJuM6H <58:13-58:19>
+                      segment <58:13-58:19> BOJuM6H
                       segment <58:22-58:50> v镌5 <58:22-58:24>
                         primitive-type u8 <58:26-58:27>
                         primitive-type u32 <58:30-58:32>
                         path <58:35-58:40>
-                          segment <58:35-58:40> string <58:35-58:40>
+                          segment <58:35-58:40> string
                         primitive-type u64 <58:43-58:45>
                         primitive-type u8 <58:48-58:49>
-                      segment <58:53-58:61> qx7KG髪H7J <58:53-58:61>
-                      segment <58:64-58:70> cwjA5qJ <58:64-58:70>
+                      segment <58:53-58:61> qx7KG髪H7J
+                      segment <58:64-58:70> cwjA5qJ
                     path <58:73-58:81>
-                      segment <58:73-58:81> fOa33fsvo <58:73-58:81>
+                      segment <58:73-58:81> fOa33fsvo
                     path <58:84-59:44>
                       segment <58:84-58:98> b <58:84-58:84>
                         primitive-type i16 <58:86-58:88>
                         path <58:91-58:96>
-                          segment <58:91-58:96> string <58:91-58:96>
+                          segment <58:91-58:96> string
                       segment <58:101-59:3> c槶Elr <58:101-58:105>
                         primitive-type bool <58:107-58:110>
                         primitive-type u32 <58:113-58:115>
@@ -1877,12 +1877,12 @@ module tests/ast/hugetype.f3
                         primitive-type u8 <59:1-59:2>
                       segment <59:6-59:30> KxiDn劂 <59:6-59:11>
                         path <59:13-59:18>
-                          segment <59:13-59:18> string <59:13-59:18>
+                          segment <59:13-59:18> string
                         primitive-type char <59:21-59:24>
                         primitive-type i64 <59:27-59:29>
-                      segment <59:33-59:35> G6m <59:33-59:35>
-                      segment <59:38-59:38> L <59:38-59:38>
-                      segment <59:41-59:44> O_hd <59:41-59:44>
+                      segment <59:33-59:35> G6m
+                      segment <59:38-59:38> L
+                      segment <59:41-59:44> O_hd
                     fn-type <59:47-59:82> () <59:49-59:75>
                       fn-type-parameter <59:50-59:54> o <59:50-59:50>
                         primitive-type u8 <59:53-59:54>
@@ -1895,15 +1895,15 @@ module tests/ast/hugetype.f3
                 tuple-type <59:91-59:115>
                   ref-type <59:92-59:99>
                     path <59:93-59:99>
-                      segment <59:93-59:99> vxxAksp <59:93-59:99>
+                      segment <59:93-59:99> vxxAksp
                   path <59:102-59:107>
-                    segment <59:102-59:107> string <59:102-59:107>
+                    segment <59:102-59:107> string
                   ref-type <59:110-59:114>
                     ref-type <59:111-59:114>
                       primitive-type u16 <59:112-59:114>
                 array-type <59:118-60:6>
                   path <59:119-59:121>
-                    segment <59:119-59:121> j緝3 <59:119-59:121>
+                    segment <59:119-59:121> j緝3
                   literal i32 68730 <60:1-60:5>
                 tuple-type <60:9-61:133>
                   tuple-type <60:10-60:60>
@@ -1911,7 +1911,7 @@ module tests/ast/hugetype.f3
                     primitive-type f32 <60:17-60:19>
                     array-type <60:22-60:38>
                       path <60:23-60:27>
-                        segment <60:23-60:27> l柷Cm脍 <60:23-60:27>
+                        segment <60:23-60:27> l柷Cm脍
                       literal u16 358 <60:30-60:37>
                     path <60:41-60:59>
                       segment <60:41-60:59> y_ng4 <60:41-60:45>
@@ -1919,26 +1919,26 @@ module tests/ast/hugetype.f3
                         primitive-type i64 <60:52-60:54>
                         primitive-type u8 <60:57-60:58>
                   path <60:63-61:113>
-                    segment <60:63-60:70> bkvuC5hx <60:63-60:70>
+                    segment <60:63-60:70> bkvuC5hx
                     segment <60:73-61:94> e <60:73-60:73>
                       path <60:75-60:78>
-                        segment <60:75-60:78> KIam <60:75-60:78>
+                        segment <60:75-60:78> KIam
                       path <60:81-60:124>
                         segment <60:81-60:111> yejd摴OhH <60:81-60:88>
                           primitive-type i8 <60:90-60:91>
                           primitive-type u32 <60:94-60:96>
                           path <60:99-60:101>
-                            segment <60:99-60:101> i33 <60:99-60:101>
+                            segment <60:99-60:101> i33
                           primitive-type u8 <60:104-60:105>
                           primitive-type i16 <60:108-60:110>
-                        segment <60:114-60:119> NHs趧Os <60:114-60:119>
-                        segment <60:122-60:124> LjG <60:122-60:124>
+                        segment <60:114-60:119> NHs趧Os
+                        segment <60:122-60:124> LjG
                       path <61:1-61:72>
                         segment <61:1-61:21> fK4f <61:1-61:4>
                           primitive-type char <61:6-61:9>
                           primitive-type u64 <61:12-61:14>
                           primitive-type bool <61:17-61:20>
-                        segment <61:24-61:27> kjcD <61:24-61:27>
+                        segment <61:24-61:27> kjcD
                         segment <61:30-61:44> E <61:30-61:30>
                           primitive-type u8 <61:32-61:33>
                           primitive-type u64 <61:36-61:38>
@@ -1947,30 +1947,30 @@ module tests/ast/hugetype.f3
                           primitive-type u64 <61:52-61:54>
                           primitive-type i8 <61:57-61:58>
                           primitive-type u64 <61:61-61:63>
-                        segment <61:67-61:72> a6K_fp <61:67-61:72>
+                        segment <61:67-61:72> a6K_fp
                       tuple-type <61:75-61:93>
                         primitive-type u8 <61:76-61:77>
                         primitive-type u64 <61:80-61:82>
                         primitive-type i16 <61:85-61:87>
                         primitive-type u16 <61:90-61:92>
-                    segment <61:97-61:103> AO5gh4G <61:97-61:103>
-                    segment <61:106-61:108> leb <61:106-61:108>
-                    segment <61:111-61:113> Ehc <61:111-61:113>
+                    segment <61:97-61:103> AO5gh4G
+                    segment <61:106-61:108> leb
+                    segment <61:111-61:113> Ehc
                   path <61:116-61:132>
-                    segment <61:116-61:122> kL7o焱is <61:116-61:122>
-                    segment <61:125-61:132> HcAvxDgH <61:125-61:132>
+                    segment <61:116-61:122> kL7o焱is
+                    segment <61:125-61:132> HcAvxDgH
                 array-type <62:1-62:15>
                   path <62:2-62:7>
-                    segment <62:2-62:7> jLop卷a <62:2-62:7>
+                    segment <62:2-62:7> jLop卷a
                   literal i32 61561 <62:10-62:14>
                 path <62:18-62:18>
-                  segment <62:18-62:18> H <62:18-62:18>
+                  segment <62:18-62:18> H
               segment <62:22-71:40> bcuJp3義dm <62:22-62:30>
                 path <62:32-63:107>
                   segment <62:32-63:107> Ep <62:32-62:33>
                     tuple-type <62:35-62:102>
                       path <62:36-62:61>
-                        segment <62:36-62:38> _nt <62:36-62:38>
+                        segment <62:36-62:38> _nt
                         segment <62:41-62:61> gC34t <62:41-62:45>
                           primitive-type u32 <62:47-62:49>
                           primitive-type u32 <62:52-62:54>
@@ -1981,7 +1981,7 @@ module tests/ast/hugetype.f3
                         primitive-type i64 <62:75-62:77>
                       array-type <62:81-62:101>
                         path <62:82-62:88>
-                          segment <62:82-62:88> gAGlH50 <62:82-62:88>
+                          segment <62:82-62:88> gAGlH50
                         literal i32 2288834 <62:91-62:100>
                     primitive-type f32 <62:105-62:107>
                     tuple-type <62:110-63:106>
@@ -2003,18 +2003,18 @@ module tests/ast/hugetype.f3
                         primitive-type i8 <63:57-63:58>
                       path <63:62-63:105>
                         segment <1:1-1:1> (global)
-                        segment <63:64-63:71> rsijgrv7 <63:64-63:71>
-                        segment <63:74-63:79> BxywqE <63:74-63:79>
-                        segment <63:82-63:83> ka <63:82-63:83>
-                        segment <63:86-63:93> AfgoKJ31 <63:86-63:93>
-                        segment <63:96-63:97> 钘a <63:96-63:97>
+                        segment <63:64-63:71> rsijgrv7
+                        segment <63:74-63:79> BxywqE
+                        segment <63:82-63:83> ka
+                        segment <63:86-63:93> AfgoKJ31
+                        segment <63:96-63:97> 钘a
                         segment <63:100-63:105> NF31 <63:100-63:103>
                 tuple-type <63:110-68:55>
                   path <63:111-64:40>
-                    segment <63:111-63:111> I <63:111-63:111>
-                    segment <63:114-63:121> FlanmscM <63:114-63:121>
+                    segment <63:111-63:111> I
+                    segment <63:114-63:121> FlanmscM
                     segment <63:124-63:134> 訔a5jLmIwf <63:124-63:132>
-                    segment <63:137-63:145> H蕹p3bajLh <63:137-63:145>
+                    segment <63:137-63:145> H蕹p3bajLh
                     segment <64:3-64:40> GHup佤 <64:3-64:7>
                       tuple-type <64:9-64:29>
                         primitive-type i64 <64:10-64:12>
@@ -2034,29 +2034,29 @@ module tests/ast/hugetype.f3
                         primitive-type i8 <64:62-64:63>
                       primitive-type i8 <64:69-64:70>
                     path <64:73-65:12>
-                      segment <64:73-64:80> ae_p1ifr <64:73-64:80>
-                      segment <64:83-64:84> K齢 <64:83-64:84>
+                      segment <64:73-64:80> ae_p1ifr
+                      segment <64:83-64:84> K齢
                       segment <64:87-64:106> Jrbj <64:87-64:90>
                         primitive-type f32 <64:92-64:94>
                         primitive-type bool <64:97-64:100>
                         primitive-type i64 <64:103-64:105>
-                      segment <64:109-64:112> Ditn <64:109-64:112>
-                      segment <65:1-65:6> nDf3qJ <65:1-65:6>
-                      segment <65:9-65:12> mG4p <65:9-65:12>
+                      segment <64:109-64:112> Ditn
+                      segment <65:1-65:6> nDf3qJ
+                      segment <65:9-65:12> mG4p
                     path <65:15-66:10>
                       segment <65:15-65:34> el <65:15-65:16>
                         primitive-type bool <65:18-65:21>
                         path <65:24-65:29>
-                          segment <65:24-65:29> string <65:24-65:29>
+                          segment <65:24-65:29> string
                         primitive-type i8 <65:32-65:33>
-                      segment <65:37-65:45> h5L1珙og5j <65:37-65:45>
+                      segment <65:37-65:45> h5L1珙og5j
                       segment <65:48-65:68> J <65:48-65:48>
                         path <65:50-65:52>
-                          segment <65:50-65:52> i33 <65:50-65:52>
+                          segment <65:50-65:52> i33
                         primitive-type i16 <65:55-65:57>
                         primitive-type i16 <65:60-65:62>
                         primitive-type u16 <65:65-65:67>
-                      segment <65:71-65:76> Omxl3u <65:71-65:76>
+                      segment <65:71-65:76> Omxl3u
                       segment <65:79-65:101> Cxpl4N1o <65:79-65:86>
                         primitive-type f32 <65:88-65:90>
                         primitive-type u64 <65:93-65:95>
@@ -2071,24 +2071,24 @@ module tests/ast/hugetype.f3
                     segment <66:38-67:48> cquKq <66:38-66:42>
                       array-type <66:44-66:58>
                         path <66:45-66:51>
-                          segment <66:45-66:51> t嗕F_ocE <66:45-66:51>
+                          segment <66:45-66:51> t嗕F_ocE
                         literal i32 2214 <66:54-66:57>
                       path <66:61-67:23>
                         segment <1:1-1:1> (global)
-                        segment <66:63-66:68> jtdffi <66:63-66:68>
+                        segment <66:63-66:68> jtdffi
                         segment <66:71-66:92> iGh0sIGE <66:71-66:78>
                           primitive-type u8 <66:80-66:81>
                           primitive-type u64 <66:84-66:86>
                           primitive-type f32 <66:89-66:91>
-                        segment <66:95-66:103> MM喩慝0Lmjd <66:95-66:103>
-                        segment <66:106-66:114> n跲1moqmt8 <66:106-66:114>
+                        segment <66:95-66:103> MM喩慝0Lmjd
+                        segment <66:106-66:114> n跲1moqmt8
                         segment <66:117-67:18> uFlMC <66:117-66:121>
                           primitive-type char <66:123-66:126>
                           primitive-type i64 <67:1-67:3>
                           primitive-type u16 <67:6-67:8>
                           primitive-type u32 <67:11-67:13>
                           primitive-type u8 <67:16-67:17>
-                        segment <67:21-67:23> KAq <67:21-67:23>
+                        segment <67:21-67:23> KAq
                       path <67:26-67:47>
                         segment <67:26-67:47> qCx1c3k <67:26-67:32>
                           primitive-type u8 <67:34-67:35>
@@ -2114,24 +2114,24 @@ module tests/ast/hugetype.f3
                           primitive-type i64 <68:5-68:7>
                           primitive-type u64 <68:10-68:12>
                           primitive-type i16 <68:15-68:17>
-                        segment <68:21-68:22> Ge <68:21-68:22>
-                        segment <68:25-68:33> lipMndB0p <68:25-68:33>
+                        segment <68:21-68:22> Ge
+                        segment <68:25-68:33> lipMndB0p
                         segment <68:36-68:48> dgk <68:36-68:38>
                           primitive-type u8 <68:40-68:41>
                           primitive-type u64 <68:44-68:46>
-                    segment <68:52-68:54> AvJ <68:52-68:54>
+                    segment <68:52-68:54> AvJ
                 array-type <68:58-68:73>
                   path <68:59-68:66>
-                    segment <68:59-68:66> CBfEiKcJ <68:59-68:66>
+                    segment <68:59-68:66> CBfEiKcJ
                   literal i32 4603 <68:69-68:72>
                 tuple-type <68:76-71:39>
                   path <68:77-68:77>
-                    segment <68:77-68:77> c <68:77-68:77>
+                    segment <68:77-68:77> c
                   path <68:80-70:112>
-                    segment <68:80-68:85> bGLy1H <68:80-68:85>
+                    segment <68:80-68:85> bGLy1H
                     segment <68:88-69:7> q2lrhci <68:88-68:94>
                       path <68:96-68:97>
-                        segment <68:96-68:97> Ir <68:96-68:97>
+                        segment <68:96-68:97> Ir
                       fn-type <68:100-69:5> () <68:102-69:5>
                         fn-type-parameter <68:103-68:108> F <68:103-68:103>
                           primitive-type u16 <68:106-68:108>
@@ -2145,33 +2145,33 @@ module tests/ast/hugetype.f3
                       path <69:24-69:67>
                         segment <69:24-69:48> kKDBIj8up <69:24-69:32>
                           path <69:34-69:36>
-                            segment <69:34-69:36> i33 <69:34-69:36>
+                            segment <69:34-69:36> i33
                           primitive-type u16 <69:39-69:41>
                           primitive-type char <69:44-69:47>
                         segment <69:51-69:59> vG8a5Bf <69:51-69:57>
-                        segment <69:62-69:67> q2H5wD <69:62-69:67>
+                        segment <69:62-69:67> q2H5wD
                       array-type <69:70-69:81>
                         path <69:71-69:74>
-                          segment <69:71-69:74> t姪Fx <69:71-69:74>
+                          segment <69:71-69:74> t姪Fx
                         literal i32 6 <69:77-69:80>
                     segment <69:85-70:112> n00BK <69:85-69:89>
                       path <69:91-70:4>
-                        segment <69:91-69:95> ca6凥_ <69:91-69:95>
+                        segment <69:91-69:95> ca6凥_
                         segment <69:98-70:4> Mc4GB <69:98-69:102>
                           primitive-type u16 <69:104-69:106>
                           path <69:109-69:114>
-                            segment <69:109-69:114> string <69:109-69:114>
+                            segment <69:109-69:114> string
                           primitive-type i64 <70:1-70:3>
                       path <70:7-70:105>
                         segment <1:1-1:1> (global)
                         segment <70:9-70:38> x3kG6 <70:9-70:13>
                           primitive-type f64 <70:15-70:17>
                           path <70:20-70:22>
-                            segment <70:20-70:22> i33 <70:20-70:22>
+                            segment <70:20-70:22> i33
                           primitive-type f64 <70:25-70:27>
                           primitive-type f32 <70:30-70:32>
                           primitive-type f32 <70:35-70:37>
-                        segment <70:41-70:49> aBqduKnKc <70:41-70:49>
+                        segment <70:41-70:49> aBqduKnKc
                         segment <70:52-70:71> sh3齇GG <70:52-70:57>
                           primitive-type i8 <70:59-70:60>
                           primitive-type u32 <70:63-70:65>
@@ -2179,133 +2179,133 @@ module tests/ast/hugetype.f3
                         segment <70:74-70:87> reI <70:74-70:76>
                           primitive-type f32 <70:78-70:80>
                           primitive-type f64 <70:83-70:85>
-                        segment <70:90-70:94> Dn8Kc <70:90-70:94>
+                        segment <70:90-70:94> Dn8Kc
                         segment <70:97-70:105> Fnvvw0p <70:97-70:103>
                       ref-type <70:108-70:111>
                         path <70:109-70:111>
-                          segment <70:109-70:111> i33 <70:109-70:111>
+                          segment <70:109-70:111> i33
                   tuple-type <70:115-71:33>
                     path <70:116-70:121>
-                      segment <70:116-70:121> icLbNi <70:116-70:121>
+                      segment <70:116-70:121> icLbNi
                     path <71:1-71:4>
-                      segment <71:1-71:4> 挎Eh1 <71:1-71:4>
+                      segment <71:1-71:4> 挎Eh1
                     array-type <71:7-71:32>
                       path <71:8-71:16>
-                        segment <71:8-71:16> KoC6K58n5 <71:8-71:16>
+                        segment <71:8-71:16> KoC6K58n5
                       literal u32 3047865184 <71:19-71:31>
                   primitive-type u64 <71:36-71:38>
               segment <71:43-71:101> IincEILqo <71:43-71:51>
                 tuple-type <71:53-71:92>
                   array-type <71:54-71:74>
                     path <71:55-71:56>
-                      segment <71:55-71:56> _1 <71:55-71:56>
+                      segment <71:55-71:56> _1
                     literal r32 32230.742 <71:59-71:73>
                   array-type <71:77-71:87>
                     path <71:78-71:79>
-                      segment <71:78-71:79> LG <71:78-71:79>
+                      segment <71:78-71:79> LG
                     literal i32 0 <71:82-71:86>
                   tuple-type <71:90-71:91>
                 path <71:95-71:99>
-                  segment <71:95-71:99> qIOlh <71:95-71:99>
+                  segment <71:95-71:99> qIOlh
           segment <71:105-76:151> mmBr冒h_ <71:105-71:111>
             ref-type <71:113-72:33>
               path <71:114-72:33>
-                segment <71:114-71:118> E7MEe <71:114-71:118>
+                segment <71:114-71:118> E7MEe
                 segment <71:121-72:23> F <71:121-71:121>
                   array-type <71:123-72:4>
                     path <71:124-71:130>
-                      segment <71:124-71:130> E橝0EtCI <71:124-71:130>
+                      segment <71:124-71:130> E橝0EtCI
                     literal i32 0 <72:1-72:3>
                   path <72:7-72:16>
                     segment <72:7-72:11> yro <72:7-72:9>
-                    segment <72:14-72:16> lG膠 <72:14-72:16>
+                    segment <72:14-72:16> lG膠
                   path <72:19-72:22>
-                    segment <72:19-72:22> 錧F_h <72:19-72:22>
-                segment <72:26-72:33> O粄騄6轄AI0 <72:26-72:33>
+                    segment <72:19-72:22> 錧F_h
+                segment <72:26-72:33> O粄騄6轄AI0
             tuple-type <72:36-76:149>
               path <72:37-73:105>
-                segment <72:37-72:42> n釜2e6j <72:37-72:42>
+                segment <72:37-72:42> n釜2e6j
                 segment <72:45-73:34> ymjBDaB <72:45-72:51>
                   array-type <72:53-72:72>
                     path <72:54-72:57>
-                      segment <72:54-72:57> cdOq <72:54-72:57>
+                      segment <72:54-72:57> cdOq
                     literal r64 0.000000000000000000000000000000000000000000000000000000000000000000000000082304312 <72:60-72:71>
                   array-type <72:75-72:91>
                     path <72:76-72:78>
-                      segment <72:76-72:78> LCI <72:76-72:78>
+                      segment <72:76-72:78> LCI
                     literal r64 2126745 <72:81-72:90>
                   tuple-type <72:94-73:33>
                     array-type <72:95-72:127>
                       path <72:96-72:100>
-                        segment <72:96-72:100> go0BC <72:96-72:100>
+                        segment <72:96-72:100> go0BC
                       literal u32 396056 <72:103-72:126>
                     array-type <73:1-73:15>
                       path <73:2-73:4>
-                        segment <73:2-73:4> Jnd <73:2-73:4>
+                        segment <73:2-73:4> Jnd
                       literal u32 63730 <73:7-73:14>
                     tuple-type <73:18-73:32>
                       path <73:19-73:21>
-                        segment <73:19-73:21> i33 <73:19-73:21>
+                        segment <73:19-73:21> i33
                       primitive-type u16 <73:24-73:26>
                       primitive-type u32 <73:29-73:31>
-                segment <73:37-73:37> m <73:37-73:37>
+                segment <73:37-73:37> m
                 segment <73:40-73:105> 奃g <73:40-73:41>
                   tuple-type <73:43-73:78>
                     path <73:44-73:45>
-                      segment <73:44-73:45> hq <73:44-73:45>
+                      segment <73:44-73:45> hq
                     array-type <73:48-73:76>
                       path <73:49-73:56>
-                        segment <73:49-73:56> Gp8vxDol <73:49-73:56>
+                        segment <73:49-73:56> Gp8vxDol
                       literal i64 5132085746867 <73:59-73:75>
                   primitive-type u16 <73:81-73:83>
                   array-type <73:86-73:104>
                     path <73:87-73:92>
-                      segment <73:87-73:92> K狉33躥孒 <73:87-73:92>
+                      segment <73:87-73:92> K狉33躥孒
                     literal i32 5381734 <73:95-73:103>
               path <73:108-73:121>
-                segment <73:108-73:115> aIx85fkr <73:108-73:115>
-                segment <73:118-73:121> kl鸙鉟 <73:118-73:121>
+                segment <73:108-73:115> aIx85fkr
+                segment <73:118-73:121> kl鸙鉟
               tuple-type <74:1-76:148>
                 path <74:2-75:85>
-                  segment <74:2-74:2> q <74:2-74:2>
-                  segment <74:5-74:7> nr3 <74:5-74:7>
+                  segment <74:2-74:2> q
+                  segment <74:5-74:7> nr3
                   segment <74:10-74:52> eB謑EJH <74:10-74:15>
                     array-type <74:17-74:37>
                       path <74:18-74:26>
-                        segment <74:18-74:26> jEck77E踐F <74:18-74:26>
+                        segment <74:18-74:26> jEck77E踐F
                       literal u32 32651 <74:29-74:36>
                     array-type <74:40-74:47>
                       path <74:41-74:41>
-                        segment <74:41-74:41> p <74:41-74:41>
+                        segment <74:41-74:41> p
                       literal i32 0 <74:44-74:46>
                     tuple-type <74:50-74:51>
                   segment <74:55-75:85> kon3cu <74:55-74:60>
                     path <74:62-74:66>
-                      segment <74:62-74:66> 毕G3KO <74:62-74:66>
+                      segment <74:62-74:66> 毕G3KO
                     path <74:69-75:12>
                       segment <74:69-74:93> jh5yN <74:69-74:73>
                         primitive-type f32 <74:75-74:77>
                         primitive-type i8 <74:80-74:81>
                         primitive-type char <74:84-74:87>
                         primitive-type f32 <74:90-74:92>
-                      segment <74:96-74:97> rc <74:96-74:97>
-                      segment <74:100-74:105> F32amv <74:100-74:105>
+                      segment <74:96-74:97> rc
+                      segment <74:100-74:105> F32amv
                       segment <74:108-75:4> m <74:108-74:108>
                         path <74:110-74:112>
-                          segment <74:110-74:112> i33 <74:110-74:112>
+                          segment <74:110-74:112> i33
                         primitive-type f64 <74:115-74:117>
                         primitive-type u64 <75:1-75:3>
-                      segment <75:7-75:8> F8 <75:7-75:8>
-                      segment <75:11-75:12> bb <75:11-75:12>
+                      segment <75:7-75:8> F8
+                      segment <75:11-75:12> bb
                     path <75:15-75:84>
-                      segment <75:15-75:17> fMA <75:15-75:17>
+                      segment <75:15-75:17> fMA
                       segment <75:20-75:42> aul0 <75:20-75:23>
                         primitive-type f64 <75:25-75:27>
                         primitive-type u8 <75:30-75:31>
                         primitive-type u32 <75:34-75:36>
                         path <75:39-75:41>
-                          segment <75:39-75:41> i33 <75:39-75:41>
-                      segment <75:45-75:48> Mqoj <75:45-75:48>
+                          segment <75:39-75:41> i33
+                      segment <75:45-75:48> Mqoj
                       segment <75:51-75:84> NHeh覊1v0q <75:51-75:59>
                         primitive-type u64 <75:61-75:63>
                         primitive-type i64 <75:66-75:68>
@@ -2317,7 +2317,7 @@ module tests/ast/hugetype.f3
                     path <75:92-76:40>
                       segment <75:92-76:4> Os6婪A <75:92-75:96>
                         path <75:98-75:103>
-                          segment <75:98-75:103> string <75:98-75:103>
+                          segment <75:98-75:103> string
                         primitive-type u8 <75:106-75:107>
                         primitive-type f32 <75:110-75:112>
                         primitive-type u32 <75:115-75:117>
@@ -2328,7 +2328,7 @@ module tests/ast/hugetype.f3
                         primitive-type i64 <76:24-76:26>
                         primitive-type i8 <76:29-76:30>
                         primitive-type u16 <76:33-76:35>
-                      segment <76:39-76:40> Ft <76:39-76:40>
+                      segment <76:39-76:40> Ft
                     tuple-type <76:43-76:61>
                       primitive-type f32 <76:44-76:46>
                       primitive-type bool <76:49-76:52>
@@ -2341,24 +2341,24 @@ module tests/ast/hugetype.f3
                         primitive-type bool <76:79-76:82>
                     primitive-type u16 <76:86-76:88>
                     path <76:91-76:118>
-                      segment <76:91-76:99> fCk77K要nx <76:91-76:99>
+                      segment <76:91-76:99> fCk77K要nx
                       segment <76:102-76:118> l <76:102-76:102>
                         primitive-type char <76:104-76:107>
                         primitive-type u32 <76:110-76:112>
                         primitive-type u32 <76:115-76:117>
-                  segment <76:122-76:128> t51cpk1 <76:122-76:128>
+                  segment <76:122-76:128> t51cpk1
                 array-type <76:131-76:147>
                   path <76:132-76:137>
-                    segment <76:132-76:137> p6d7hq <76:132-76:137>
+                    segment <76:132-76:137> p6d7hq
                   literal i32 13558 <76:140-76:146>
-          segment <76:154-76:161> j3OOqsKI <76:154-76:161>
-          segment <76:164-76:165> 飍x <76:164-76:165>
+          segment <76:154-76:161> j3OOqsKI
+          segment <76:164-76:165> 飍x
         array-type <76:168-76:179>
           path <76:169-76:173>
-            segment <76:169-76:173> _捿酙2l <76:169-76:173>
+            segment <76:169-76:173> _捿酙2l
           literal i32 0 <76:176-76:178>
         ref-type <76:182-76:186>
           ref-type <76:183-76:186>
             primitive-type i16 <76:184-76:186>
         primitive-type u8 <76:189-76:190>
-      segment <76:194-76:197> E鼊湕绦 <76:194-76:197>
+      segment <76:194-76:197> E鼊湕绦

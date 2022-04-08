@@ -5,34 +5,34 @@ module tests/ast/gcd.f3
         block <6:17-16:5>
           simple-expr-stmt <7:9-7:35>
             call-expr <7:9-7:34> () <7:16-7:34>
-              name <7:9-7:15>
-                name-segment <7:9-7:15> writeln
+              path <7:9-7:15>
+                segment <7:9-7:15> writeln
               literal str "Input 2 numbers" <7:17-7:33>
           var-def <8:9-8:27> mutable a <8:13-8:13>
             call-expr <8:17-8:26> () <8:25-8:26>
-              name <8:17-8:24>
-                name-segment <8:17-8:24> read_i32
+              path <8:17-8:24>
+                segment <8:17-8:24> read_i32
           var-def <9:9-9:27> mutable b <9:13-9:13>
             call-expr <9:17-9:26> () <9:25-9:26>
-              name <9:17-9:24>
-                name-segment <9:17-9:24> read_i32
+              path <9:17-9:24>
+                segment <9:17-9:24> read_i32
           if-stmt <11:9-13:9>
             if-clause <11:9-13:9>
               binary-expr <11:12-11:27> && <11:19-11:20>
                 binary-expr <11:12-11:17> == <11:14-11:15>
-                  name <11:12-11:12>
-                    name-segment <11:12-11:12> a
+                  path <11:12-11:12>
+                    segment <11:12-11:12> a
                   literal i32 0 <11:17-11:17>
                 binary-expr <11:22-11:27> == <11:24-11:25>
-                  name <11:22-11:22>
-                    name-segment <11:22-11:22> b
+                  path <11:22-11:22>
+                    segment <11:22-11:22> b
                   literal i32 0 <11:27-11:27>
               block <11:29-13:9>
                 break-stmt <12:13-12:24> @main <12:19-12:23>
           simple-expr-stmt <15:9-15:101>
             call-expr <15:9-15:100> () <15:16-15:100>
-              name <15:9-15:15>
-                name-segment <15:9-15:15> writeln
+              path <15:9-15:15>
+                segment <15:9-15:15> writeln
               binary-expr <15:17-15:99> + <15:75-15:75>
                 binary-expr <15:17-15:73> + <15:65-15:65>
                   binary-expr <15:17-15:63> + <15:49-15:49>
@@ -41,25 +41,25 @@ module tests/ast/gcd.f3
                         literal str "最大公约数(" <15:17-15:24>
                         call-expr <15:28-15:40> () <15:39-15:40>
                           member-expr <15:28-15:38> . <15:29-15:29>
-                            name <15:28-15:28>
-                              name-segment <15:28-15:28> a
+                            path <15:28-15:28>
+                              segment <15:28-15:28> a
                             member-name <15:30-15:38> to_string <15:30-15:38>
                       literal str ", " <15:44-15:47>
                     call-expr <15:51-15:63> () <15:62-15:63>
                       member-expr <15:51-15:61> . <15:52-15:52>
-                        name <15:51-15:51>
-                          name-segment <15:51-15:51> b
+                        path <15:51-15:51>
+                          segment <15:51-15:51> b
                         member-name <15:53-15:61> to_string <15:53-15:61>
                   literal str ") is " <15:67-15:73>
                 call-expr <15:77-15:99> () <15:98-15:99>
                   member-expr <15:77-15:97> . <15:88-15:88>
                     call-expr <15:77-15:87> () <15:82-15:87>
-                      name <15:77-15:81>
-                        name-segment <15:77-15:81> 最大公约数
-                      name <15:83-15:83>
-                        name-segment <15:83-15:83> a
-                      name <15:86-15:86>
-                        name-segment <15:86-15:86> b
+                      path <15:77-15:81>
+                        segment <15:77-15:81> 最大公约数
+                      path <15:83-15:83>
+                        segment <15:83-15:83> a
+                      path <15:86-15:86>
+                        segment <15:86-15:86> b
                     member-name <15:89-15:97> to_string <15:89-15:97>
   fn-def <19:1-28:1> 最大公约数 <19:4-19:8> () <19:9-19:24>
     fn-def-parameter <19:10-19:15> a <19:10-19:10>
@@ -71,39 +71,39 @@ module tests/ast/gcd.f3
       if-stmt <20:5-22:5>
         if-clause <20:5-22:5>
           binary-expr <20:8-20:13> == <20:10-20:11>
-            name <20:8-20:8>
-              name-segment <20:8-20:8> b
+            path <20:8-20:8>
+              segment <20:8-20:8> b
             literal i32 0 <20:13-20:13>
           block <20:15-22:5>
             ret-stmt <21:9-21:17>
-              name <21:16-21:16>
-                name-segment <21:16-21:16> a
+              path <21:16-21:16>
+                segment <21:16-21:16> a
       if-stmt <23:5-27:5>
         if-clause <23:5-25:5>
           binary-expr <23:8-23:12> < <23:10-23:10>
-            name <23:8-23:8>
-              name-segment <23:8-23:8> a
-            name <23:12-23:12>
-              name-segment <23:12-23:12> b
+            path <23:8-23:8>
+              segment <23:8-23:8> a
+            path <23:12-23:12>
+              segment <23:12-23:12> b
           block <23:14-25:5>
             ret-stmt <24:9-24:27>
               call-expr <24:16-24:26> () <24:21-24:26>
-                name <24:16-24:20>
-                  name-segment <24:16-24:20> 最大公约数
-                name <24:22-24:22>
-                  name-segment <24:22-24:22> b
-                name <24:25-24:25>
-                  name-segment <24:25-24:25> a
+                path <24:16-24:20>
+                  segment <24:16-24:20> 最大公约数
+                path <24:22-24:22>
+                  segment <24:22-24:22> b
+                path <24:25-24:25>
+                  segment <24:25-24:25> a
         else-clause <25:7-27:5>
           block <25:12-27:5>
             ret-stmt <26:9-26:31>
               call-expr <26:16-26:30> () <26:21-26:30>
-                name <26:16-26:20>
-                  name-segment <26:16-26:20> 最大公约数
-                name <26:22-26:22>
-                  name-segment <26:22-26:22> b
+                path <26:16-26:20>
+                  segment <26:16-26:20> 最大公约数
+                path <26:22-26:22>
+                  segment <26:22-26:22> b
                 binary-expr <26:25-26:29> % <26:27-26:27>
-                  name <26:25-26:25>
-                    name-segment <26:25-26:25> a
-                  name <26:29-26:29>
-                    name-segment <26:29-26:29> b
+                  path <26:25-26:25>
+                    segment <26:25-26:25> a
+                  path <26:29-26:29>
+                    segment <26:29-26:29> b

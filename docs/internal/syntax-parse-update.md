@@ -15,15 +15,15 @@
 - [x] add simple enum type, works as typed namespaced constant
 - [x] move multiple file operations from syntaxtree.rs into driver, add file id to module
 - [x] discard test constructors and use make_xxxx macros, merge make_lit into make_expr, remove make_exprs, try add make_stmt
-- [ ] try merge all of them into make_node, rename previous make_node to make_ast
 - [x] move node definitions to one file, move node implementations (impl Node) to one file, move parse tests to several dedicated files
 - [x] remove jumpstatement from node, copy fields to breakstatement and continuestatement
 - [x] move parse functions to several dedicated files, then ParseContext's context (allow object literal, is in format string literal, etc.) may can be pass by parameter not save in ParseContext
 - [-] fix random test input generator
-- [ ] add missing array dup def and experience new file structure
-- [ ] unify name segment and plain type segment into path segment, path segment contains variants of ident, ident + generic, type-as, and num lit, control by parameters
-      path segment itself can parse and will also be used by member access, this will block mast because core operation in lowering to mast is name resolve
+- [ ] add missing array dup def
+- [x] unify name segment and plain type segment into path segment, path segment contains variants of ident, ident + generic, type-cast
+- [ ] split member expr into tuple member, simple member and generic member expr
 - [ ] allow generic parameter in type name and fn name, that's called parse_generic_name
+- [ ] allow where clause when generic name
 - [ ] add numeric literal type as suffixed/unsuffixed and bin/oct/dec/hex/unprefixed, member access require unsuffixed and unprefixed
 - [ ] format string
 - [ ] add generic parameters to type, add impl type and impl trait for type

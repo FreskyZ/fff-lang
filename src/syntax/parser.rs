@@ -358,19 +358,6 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         }
     }
 
-    /// Check current token is a identifier
-    /// 
-    /// if so, move next and Some(id_span), 
-    /// if not, no move next and None
-    ///
-    /// example `if let Some(name) = cx.try_expect_ident() { ... }`
-    fn try_expect_ident(&mut self) -> Option<IdSpan> {
-        match self.current {
-            Token::Ident(id) => Some(IdSpan::new(id, self.move_next())),
-            _ => None,
-        }
-    }
-
     /// Check current token is a label
     /// 
     /// if so, move next and Some(id_span),

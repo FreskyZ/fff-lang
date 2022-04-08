@@ -9,18 +9,18 @@ module tests/ast/sum.f3
           literal i32 100 <5:19-5:21>
         block <5:23-7:5>
           assign-expr-stmt <6:9-6:17> += <6:13-6:14>
-            name <6:9-6:11>
-              name-segment <6:9-6:11> sum
-            name <6:16-6:16>
-              name-segment <6:16-6:16> i
+            path <6:9-6:11>
+              segment <6:9-6:11> sum
+            path <6:16-6:16>
+              segment <6:16-6:16> i
       simple-expr-stmt <8:5-8:50>
         call-expr <8:5-8:49> () <8:12-8:49>
-          name <8:5-8:11>
-            name-segment <8:5-8:11> writeln
+          path <8:5-8:11>
+            segment <8:5-8:11> writeln
           binary-expr <8:13-8:48> + <8:32-8:32>
             literal str "1 add to 100 is " <8:13-8:30>
             call-expr <8:34-8:48> () <8:47-8:48>
               member-expr <8:34-8:46> . <8:37-8:37>
-                name <8:34-8:36>
-                  name-segment <8:34-8:36> sum
+                path <8:34-8:36>
+                  segment <8:34-8:36> sum
                 member-name <8:38-8:46> to_string <8:38-8:46>

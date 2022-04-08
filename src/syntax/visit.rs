@@ -62,8 +62,6 @@ pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_member_name(&mut self, node: &MemberName) -> Result<T, E> { node.walk(self) }
     fn visit_module(&mut self, node: &Module) -> Result<T, E> { node.walk(self) }
     fn visit_module_stmt(&mut self, node: &ModuleStatement) -> Result<T, E> { node.walk(self) }
-    fn visit_name(&mut self, node: &Name) -> Result<T, E> { node.walk(self) }
-    fn visit_name_segment(&mut self, node: &NameSegment) -> Result<T, E> { node.walk(self) }
     fn visit_object_expr(&mut self, node: &ObjectExpr) -> Result<T, E> { node.walk(self) }
     fn visit_object_expr_field(&mut self, node: &ObjectExprField) -> Result<T, E> { node.walk(self) }
     fn visit_paren_expr(&mut self, node: &ParenExpr) -> Result<T, E> { node.walk(self) }
@@ -80,7 +78,6 @@ pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_stmt(&mut self, node: &Statement) -> Result<T, E> { node.walk(self) }
     fn visit_tuple_expr(&mut self, node: &TupleExpr) -> Result<T, E> { node.walk(self) }
     fn visit_tuple_type(&mut self, node: &TupleType) -> Result<T, E> { node.walk(self) }
-    fn visit_type_as_segment(&mut self, node: &TypeAsSegment) -> Result<T, E> { node.walk(self) }
     fn visit_type_def(&mut self, node: &TypeDef) -> Result<T, E> { node.walk(self) }
     fn visit_type_def_field(&mut self, node: &TypeDefField) -> Result<T, E> { node.walk(self) }
     fn visit_type_list(&mut self, node: &TypeList) -> Result<T, E> { node.walk(self) }

@@ -105,8 +105,8 @@ fn loop_stmt() {
   block <1:10-1:28>
     simple-expr-stmt <1:12-1:26>
       call-expr <1:12-1:25> () <1:19-1:25>
-        name <1:12-1:18>
-          name-segment <1:12-1:18> println
+        path <1:12-1:18>
+          segment <1:12-1:18> println
         literal str "233" <1:20-1:24>
 "#
     }
@@ -133,41 +133,41 @@ fn postfix_expr() {
                   member-expr <1:1-1:14> . <1:13-1:13>
                     call-expr <1:1-1:12> () <1:4-1:12>
                       member-expr <1:1-1:3> . <1:2-1:2>
-                        name <1:1-1:1>
-                          name-segment <1:1-1:1> a
+                        path <1:1-1:1>
+                          segment <1:1-1:1> a
                         member-name <1:3-1:3> b <1:3-1:3>
-                      name <1:5-1:5>
-                        name-segment <1:5-1:5> c
-                      name <1:8-1:8>
-                        name-segment <1:8-1:8> d
-                      name <1:11-1:11>
-                        name-segment <1:11-1:11> e
+                      path <1:5-1:5>
+                        segment <1:5-1:5> c
+                      path <1:8-1:8>
+                        segment <1:8-1:8> d
+                      path <1:11-1:11>
+                        segment <1:11-1:11> e
                     member-name <1:14-1:14> f <1:14-1:14>
-                  name <1:16-1:16>
-                    name-segment <1:16-1:16> g
-                  name <1:19-1:19>
-                    name-segment <1:19-1:19> h
-                  name <1:22-1:22>
-                    name-segment <1:22-1:22> i
-                name <1:26-1:26>
-                  name-segment <1:26-1:26> u
+                  path <1:16-1:16>
+                    segment <1:16-1:16> g
+                  path <1:19-1:19>
+                    segment <1:19-1:19> h
+                  path <1:22-1:22>
+                    segment <1:22-1:22> i
+                path <1:26-1:26>
+                  segment <1:26-1:26> u
               member-name <1:30-1:30> j <1:30-1:30>
-            name <1:32-1:32>
-              name-segment <1:32-1:32> k
+            path <1:32-1:32>
+              segment <1:32-1:32> k
           member-name <1:35-1:35> l <1:35-1:35>
       member-name <1:39-1:39> m <1:39-1:39>
-    name <1:41-1:41>
-      name-segment <1:41-1:41> n
-    name <1:44-1:44>
-      name-segment <1:44-1:44> o
-    name <1:47-1:47>
-      name-segment <1:47-1:47> p
-  name <1:50-1:50>
-    name-segment <1:50-1:50> r
-  name <1:53-1:53>
-    name-segment <1:53-1:53> s
-  name <1:56-1:56>
-    name-segment <1:56-1:56> t
+    path <1:41-1:41>
+      segment <1:41-1:41> n
+    path <1:44-1:44>
+      segment <1:44-1:44> o
+    path <1:47-1:47>
+      segment <1:47-1:47> p
+  path <1:50-1:50>
+    segment <1:50-1:50> r
+  path <1:53-1:53>
+    segment <1:53-1:53> s
+  path <1:56-1:56>
+    segment <1:56-1:56> t
 "
     }
 }

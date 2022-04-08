@@ -24,7 +24,7 @@ fn expr_stmt_parse() {
     case!{ parse_expr_stmt "writeln(\"helloworld\");",
         Statement::SimpleExpr(make_stmt!(expr 0:21
             make_expr!(call 0:20 paren 7:20
-                make_name!(simple 0:6 #2),
+                make_expr!(path simple 0:6 #2),
                 make_expr!(str #3 8:19))))
     }
 
@@ -58,7 +58,7 @@ fn parse_for_stmt() {
                     make_expr!(call 17:40 paren 39:40
                         make_expr!(member 17:38 dot 29:29
                             make_expr!(call 17:28 paren 22:28
-                                make_name!(simple 17:21 #4),
+                                make_expr!(path simple 17:21 #4),
                                 make_expr!(i32 0 23:23),
                                 make_expr!(i32 10 26:27)),
                             make_expr!(member name 30:38 #5)),),
@@ -66,7 +66,7 @@ fn parse_for_stmt() {
             make_stmt!(block 52:77
                 make_stmt!(expr 54:75
                     make_expr!(call 54:74 paren 61:74
-                        make_name!(simple 54:60 #7),
+                        make_expr!(path simple 54:60 #7),
                         make_expr!(str #8 62:73))))
         ), strings ["hello", "_", "range", "enumerate", "reverse", "writeln", "helloworld"]
     }
@@ -98,15 +98,15 @@ fn if_stmt_parse() {
                     make_stmt!(expr 7:20
                         make_expr!(call 7:19 paren 17:19
                             make_expr!(member 7:16 dot 10:10
-                                make_name!(simple 7:9 #2),
+                                make_expr!(path simple 7:9 #2),
                                 make_expr!(member name 11:16 #3)),
-                            make_name!(simple 18:18 #4))),
+                            make_expr!(path simple 18:18 #4))),
                     make_stmt!(expr 22:39
                         make_expr!(call 22:38 paren 36:38
                             make_expr!(member 22:35 dot 27:27
-                                make_name!(simple 22:26 #5),
+                                make_expr!(path simple 22:26 #5),
                                 make_expr!(member name 28:35 #6)),
-                            make_name!(simple 37:37 #7)))) },
+                            make_expr!(path simple 37:37 #7)))) },
             elseif_clauses: vec![],
             else_clause: Some(ElseClause{ span: Span::new(43, 71),
                 body: make_stmt!(block 48:71
@@ -118,7 +118,7 @@ fn if_stmt_parse() {
                                     make_expr!(i32 2 53:53),
                                     make_expr!(i32 3 55:55)),
                                 make_expr!(member name 58:60 #8)),
-                            make_name!(simple 62:68 #9)))) }),
+                            make_expr!(path simple 62:68 #9)))) }),
         }, strings ["sth", "do_sth", "a", "other", "do_other", "b", "map", "writeln"]
     }
 
@@ -128,12 +128,12 @@ fn if_stmt_parse() {
     case!{ parse_if_stmt "if a {} else if (b{}) {}",
         IfStatement{ span: Span::new(0, 23), 
             if_clause: IfClause{ span: Span::new(0, 6),
-                condition: make_name!(simple 3:3 #2),
+                condition: make_expr!(path simple 3:3 #2),
                 body: make_stmt!(block 5:6) },
             elseif_clauses: vec![IfClause{ span: Span::new(8, 23),
                 condition: make_expr!(paren 16:20
                     make_expr!(object 17:19 quote 18:19
-                        make_name!(simple 17:17 #3),)),
+                        make_expr!(path simple 17:17 #3),)),
                 body: make_stmt!(block 22:23) }],
             else_clause: None,
         }
@@ -173,7 +173,7 @@ fn parse_loop_stmt() {
             make_stmt!(block 9:27
                 make_stmt!(expr 11:25
                     make_expr!(call 11:24 paren 18:24
-                        make_name!(simple 11:17 #3),
+                        make_expr!(path simple 11:17 #3),
                         make_expr!(str #4 19:23))))
         ), strings ["@", "println", "233"]
     }
@@ -202,12 +202,11 @@ fn module_parse() {
     //                      0123456789012345678901234
     case!{ parse_module "use a; module b; 3; b; a;",
         Module{ file: crate::source::FileId::new(1), items: vec![
-            Item::Use(UseStatement{ span: Span::new(0, 5), alias: None,
-                name: make_name!(simple bare 4:4 #2) }),
+            Item::Use(UseStatement{ span: Span::new(0, 5), alias: None, path: make_path!(simple 4:4 #2) }),
             Item::Import(ModuleStatement{ name: make_stmt!(id 14:14 #3), path: None, span: Span::new(7, 15) }),
             Item::SimpleExpr(SimpleExprStatement{ span: Span::new(17, 18), expr: make_expr!(i32 3 17:17) }),
-            Item::SimpleExpr(SimpleExprStatement{ span: Span::new(20, 21), expr: make_name!(simple 20:20 #3) }),
-            Item::SimpleExpr(SimpleExprStatement{ span: Span::new(23, 24), expr: make_name!(simple 23:23 #2) }),
+            Item::SimpleExpr(SimpleExprStatement{ span: Span::new(20, 21), expr: make_expr!(path simple 20:20 #3) }),
+            Item::SimpleExpr(SimpleExprStatement{ span: Span::new(23, 24), expr: make_expr!(path simple 23:23 #2) }),
         ] }
     }
 }
@@ -231,15 +230,15 @@ fn use_stmt_parse() {
 
     case!{ parse_use_stmt "use a;",
         UseStatement{ span: Span::new(0, 5), alias: None, 
-            name: make_name!(simple bare 4:4 #2) },
+            path: make_path!(simple 4:4 #2) },
     }
     //                   0123456789012345678901234567890
     case!{ parse_use_stmt "use std::fmt::Debug as Display;",
         UseStatement{ span: Span::new(0, 30), alias: Some(make_stmt!(id 23:29 #5)),
-            name: make_name!(bare 4:18 false, None,
-                make_name!(segment 4:6 #2),
-                make_name!(segment 9:11 #3),
-                make_name!(segment 14:18 #4),
+            path: make_path!(4:18
+                make_path!(segment simple 4:6 #2),
+                make_path!(segment simple 9:11 #3),
+                make_path!(segment simple 14:18 #4),
             ) },
     }
 }
@@ -302,7 +301,7 @@ fn var_decl_stmt_parse() {
                     make_expr!(u8 1 27:29),
                     make_expr!(u8 5 32:34),
                     make_expr!(u8 7 37:41)),
-                make_name!(simple 45:47 #3)))
+                make_expr!(path simple 45:47 #3)))
         ), strings ["buf", "abc"]
     }
 
@@ -332,7 +331,7 @@ fn parse_while_stmt() {
             make_stmt!(block 15:46
                 make_stmt!(expr 17:44
                     make_expr!(call 17:43 paren 24:43
-                        make_name!(simple 17:23 #3),
+                        make_expr!(path simple 17:23 #3),
                         make_expr!(str #4 25:42))))
         ), strings ["2", "writeln", "fresky hellooooo"]
     }
@@ -404,8 +403,8 @@ fn fn_def_parse() {
             body: make_stmt!(block 63:80
                 make_stmt!(expr 65:78
                     make_expr!(call 65:77 paren 72:77
-                        make_name!(simple 65:71 #7),
-                        make_name!(simple 73:76 #5)))),
+                        make_expr!(path simple 65:71 #7),
+                        make_expr!(path simple 73:76 #5)))),
             //    2          3       4         5       6             7
         }, strings ["mainxxx", "argv", "string", "this", "some_other", "println"]
     }

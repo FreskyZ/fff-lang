@@ -92,7 +92,7 @@ impl_node! { EnumDefVariant, visit_enum_def_variant, |self, v| {
 
 impl_abc_node! { Expr, visit_expr,
     Lit => visit_lit_expr,
-    Name => visit_name,
+    Path => visit_path,
     Paren => visit_paren_expr,
     Tuple => visit_tuple_expr,
     Array => visit_array_expr,
@@ -213,23 +213,6 @@ impl_node!{ Module, visit_module, |self, v| {
 
 impl_node!{ ModuleStatement, visit_module_stmt }
 
-impl_node!{ Name, visit_name, |self, v| {
-    if let Some(type_as_segment) = &self.type_as_segment {
-        v.visit_type_as_segment(type_as_segment)?;
-    }
-    for segment in &self.segments {
-        v.visit_name_segment(segment)?;
-    }
-    Ok(Default::default())
-}}
-
-impl_node!{ NameSegment, visit_name_segment, |self, v| {
-    if let Self::Generic(parameters) = self {
-        v.visit_type_list(parameters)?;
-    }
-    Ok(Default::default())
-}}
-
 impl_node!{ ObjectExpr, visit_object_expr, |self, v| {
     v.visit_expr(self.base.as_ref())?;
     for field in &self.fields {
@@ -317,11 +300,6 @@ impl_abc_node!{ Statement, visit_stmt,
     Use => visit_use_stmt,
 }
 
-impl_node!{ TypeAsSegment, visit_type_as_segment, |self, v| {
-    v.visit_type_ref(self.from.as_ref())?;
-    v.visit_type_ref(self.to.as_ref())
-}}
-
 impl_node!{ TypeDef, visit_type_def, |self, v| {
     for field in &self.fields {
         v.visit_type_def_field(field)?;
@@ -365,7 +343,7 @@ impl_node!{ UnaryExpr, visit_unary_expr, |self, v| {
 }}
 
 impl_node!{ UseStatement, visit_use_stmt, |self, v| {
-    v.visit_name(&self.name)?;
+    v.visit_path(&self.path)?;
     Ok(Default::default())
 }}
 

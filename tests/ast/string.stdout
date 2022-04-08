@@ -3,106 +3,106 @@ module tests/ast/string.f3
     block <4:11-23:1>
       var-def <6:5-6:30> mutable input <6:9-6:13>
         call-expr <6:17-6:29> () <6:28-6:29>
-          name <6:17-6:27>
-            name-segment <6:17-6:27> read_string
+          path <6:17-6:27>
+            segment <6:17-6:27> read_string
       simple-expr-stmt <7:5-7:40>
         call-expr <7:5-7:39> () <7:12-7:39>
-          name <7:5-7:11>
-            name-segment <7:5-7:11> writeln
+          path <7:5-7:11>
+            segment <7:5-7:11> writeln
           binary-expr <7:13-7:38> + <7:25-7:25>
             literal str "length = " <7:13-7:23>
             member-expr <7:27-7:38> . <7:32-7:32>
-              name <7:27-7:31>
-                name-segment <7:27-7:31> input
+              path <7:27-7:31>
+                segment <7:27-7:31> input
               member-name <7:33-7:38> length <7:33-7:38>
       var-def <8:5-8:39> mutable input2 <8:9-8:14>
         path <8:17-8:22>
-          segment <8:17-8:22> string <8:17-8:22>
+          segment <8:17-8:22> string
         call-expr <8:26-8:38> () <8:37-8:38>
-          name <8:26-8:36>
-            name-segment <8:26-8:36> read_string
+          path <8:26-8:36>
+            segment <8:26-8:36> read_string
       simple-expr-stmt <9:5-9:29>
         call-expr <9:5-9:28> () <9:12-9:28>
-          name <9:5-9:11>
-            name-segment <9:5-9:11> println
+          path <9:5-9:11>
+            segment <9:5-9:11> println
           binary-expr <9:13-9:27> == <9:19-9:20>
-            name <9:13-9:17>
-              name-segment <9:13-9:17> input
-            name <9:22-9:27>
-              name-segment <9:22-9:27> input2
+            path <9:13-9:17>
+              segment <9:13-9:17> input
+            path <9:22-9:27>
+              segment <9:22-9:27> input2
       simple-expr-stmt <11:5-11:25>
         call-expr <11:5-11:24> () <11:20-11:24>
           member-expr <11:5-11:19> . <11:10-11:10>
-            name <11:5-11:9>
-              name-segment <11:5-11:9> input
+            path <11:5-11:9>
+              segment <11:5-11:9> input
             member-name <11:11-11:19> push_char <11:11-11:19>
           literal char 'a' <11:21-11:23>
       simple-expr-stmt <12:5-12:25>
         call-expr <12:5-12:24> () <12:20-12:24>
           member-expr <12:5-12:19> . <12:10-12:10>
-            name <12:5-12:9>
-              name-segment <12:5-12:9> input
+            path <12:5-12:9>
+              segment <12:5-12:9> input
             member-name <12:11-12:19> push_char <12:11-12:19>
           literal char 'c' <12:21-12:23>
       simple-expr-stmt <13:5-13:29>
         call-expr <13:5-13:28> () <13:23-13:28>
           member-expr <13:5-13:22> . <13:11-13:11>
-            name <13:5-13:10>
-              name-segment <13:5-13:10> input2
+            path <13:5-13:10>
+              segment <13:5-13:10> input2
             member-name <13:12-13:22> push_string <13:12-13:22>
           literal str "ac" <13:24-13:27>
       simple-expr-stmt <14:5-14:29>
         call-expr <14:5-14:28> () <14:12-14:28>
-          name <14:5-14:11>
-            name-segment <14:5-14:11> println
+          path <14:5-14:11>
+            segment <14:5-14:11> println
           binary-expr <14:13-14:27> == <14:19-14:20>
-            name <14:13-14:17>
-              name-segment <14:13-14:17> input
-            name <14:22-14:27>
-              name-segment <14:22-14:27> input2
+            path <14:13-14:17>
+              segment <14:13-14:17> input
+            path <14:22-14:27>
+              segment <14:22-14:27> input2
       simple-expr-stmt <16:5-16:38>
         call-expr <16:5-16:37> () <16:12-16:37>
-          name <16:5-16:11>
-            name-segment <16:5-16:11> println
+          path <16:5-16:11>
+            segment <16:5-16:11> println
           call-expr <16:13-16:36> () <16:30-16:36>
             member-expr <16:13-16:29> . <16:18-16:18>
-              name <16:13-16:17>
-                name-segment <16:13-16:17> input
+              path <16:13-16:17>
+                segment <16:13-16:17> input
               member-name <16:19-16:29> starts_with <16:19-16:29>
             literal str "abc" <16:31-16:35>
       simple-expr-stmt <17:5-17:36>
         call-expr <17:5-17:35> () <17:12-17:35>
-          name <17:5-17:11>
-            name-segment <17:5-17:11> println
+          path <17:5-17:11>
+            segment <17:5-17:11> println
           call-expr <17:13-17:34> () <17:29-17:34>
             member-expr <17:13-17:28> . <17:19-17:19>
-              name <17:13-17:18>
-                name-segment <17:13-17:18> input2
+              path <17:13-17:18>
+                segment <17:13-17:18> input2
               member-name <17:20-17:28> ends_with <17:20-17:28>
             literal str "ac" <17:30-17:33>
       var-def <19:5-19:31> mutable input3 <19:9-19:14>
         call-expr <19:18-19:30> () <19:29-19:30>
-          name <19:18-19:28>
-            name-segment <19:18-19:28> read_string
+          path <19:18-19:28>
+            segment <19:18-19:28> read_string
       var-def <20:5-20:36> const input3_copy <20:11-20:21>
-        name <20:25-20:35>
-          name-segment <20:25-20:35> input3_copy
+        path <20:25-20:35>
+          segment <20:25-20:35> input3_copy
       simple-expr-stmt <21:5-21:47>
         call-expr <21:5-21:46> () <21:12-21:46>
-          name <21:5-21:11>
-            name-segment <21:5-21:11> println
+          path <21:5-21:11>
+            segment <21:5-21:11> println
           binary-expr <21:13-21:45> + <21:31-21:31>
             literal str "input3.trim is " <21:13-21:29>
             call-expr <21:33-21:45> () <21:44-21:45>
               member-expr <21:33-21:43> . <21:39-21:39>
-                name <21:33-21:38>
-                  name-segment <21:33-21:38> input3
+                path <21:33-21:38>
+                  segment <21:33-21:38> input3
                 member-name <21:40-21:43> trim <21:40-21:43>
       simple-expr-stmt <22:5-22:45>
         call-expr <22:5-22:44> () <22:12-22:44>
-          name <22:5-22:11>
-            name-segment <22:5-22:11> println
+          path <22:5-22:11>
+            segment <22:5-22:11> println
           binary-expr <22:13-22:43> + <22:31-22:31>
             literal str "input3_copy is " <22:13-22:29>
-            name <22:33-22:43>
-              name-segment <22:33-22:43> input3_copy
+            path <22:33-22:43>
+              segment <22:33-22:43> input3_copy

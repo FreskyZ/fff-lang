@@ -399,13 +399,13 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     pub fn parse_use_stmt(&mut self) -> Result<UseStatement, Unexpected> {
 
         let starting_span = self.expect_keyword(Keyword::Use)?;
-        let name = self.parse_name()?;
+        let path = self.parse_value_path()?;
 
         let alias = self.try_expect_keyword(Keyword::As).map(|_| self.expect_ident()).transpose()?;
         let semicolon_span = self.expect_sep(Separator::SemiColon)?;
         let span = starting_span + semicolon_span;
 
-        Ok(UseStatement{ span, name, alias })
+        Ok(UseStatement{ span, path, alias })
     }
 
     pub fn maybe_var_decl(&self) -> bool {

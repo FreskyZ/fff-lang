@@ -138,7 +138,7 @@ define_abc! {
 #[cfg_attr(test, derive(PartialEq))]
 pub enum Expr {
     Lit(LitExpr),
-    Name(Name),
+    Path(Path),
     Paren(ParenExpr),
     Tuple(TupleExpr),
     Array(ArrayExpr),
@@ -335,31 +335,6 @@ pub struct ModuleStatement {
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
-pub struct Name {
-    pub span: Span,
-    pub type_as_segment: Option<TypeAsSegment>,
-    pub global: bool,
-    pub segments: Vec<NameSegment>,
-}
-
-#[derive(Debug)]
-#[cfg_attr(test, derive(PartialEq))]
-pub enum NameSegment {
-    Normal(IdSpan),
-    Generic(TypeList),
-}
-
-impl NameSegment {
-    pub fn span(&self) -> Span {
-        match self {
-            Self::Normal(id) => id.span,
-            Self::Generic(types) => types.span,
-        }
-    }
-}
-
-#[derive(Debug)]
-#[cfg_attr(test, derive(PartialEq))]
 pub struct ObjectExpr {
     pub span: Span,
     pub base: Box<Expr>,
@@ -506,14 +481,6 @@ pub struct TupleType {
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
-pub struct TypeAsSegment {
-    pub span: Span,
-    pub from: Box<TypeRef>,
-    pub to: Box<TypeRef>,
-}
-
-#[derive(Debug)]
-#[cfg_attr(test, derive(PartialEq))]
 pub struct TypeDef {
     pub span: Span,
     pub name: IdSpan,
@@ -561,7 +528,7 @@ pub struct UnaryExpr {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct UseStatement {
     pub span: Span,
-    pub name: Name,
+    pub path: Path,
     pub alias: Option<IdSpan>,
 }
 

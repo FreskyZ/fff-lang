@@ -3,11 +3,11 @@ module tests/ast/prime.f3
     block <4:11-6:1>
       simple-expr-stmt <5:5-5:38>
         call-expr <5:5-5:37> () <5:18-5:37>
-          name <5:5-5:17>
-            name-segment <5:5-5:17> write_array_8
+          path <5:5-5:17>
+            segment <5:5-5:17> write_array_8
           call-expr <5:19-5:36> () <5:29-5:36>
-            name <5:19-5:28>
-              name-segment <5:19-5:28> get_primes
+            path <5:19-5:28>
+              segment <5:19-5:28> get_primes
             literal u64 100 <5:30-5:35>
   fn-def <8:1-36:1> get_primes <8:4-8:13> () <8:14-8:30>
     fn-def-parameter <8:15-8:29> high_bound <8:15-8:24>
@@ -17,148 +17,146 @@ module tests/ast/prime.f3
     block <8:40-36:1>
       simple-expr-stmt <10:5-10:81>
         call-expr <10:5-10:80> () <10:12-10:80>
-          name <10:5-10:11>
-            name-segment <10:5-10:11> writeln
+          path <10:5-10:11>
+            segment <10:5-10:11> writeln
           binary-expr <10:13-10:79> + <10:56-10:56>
             literal str "[DEBUG] get primes calle" <10:13-10:54>
             call-expr <10:58-10:79> () <10:78-10:79>
               member-expr <10:58-10:77> . <10:68-10:68>
-                name <10:58-10:67>
-                  name-segment <10:58-10:67> high_bound
+                path <10:58-10:67>
+                  segment <10:58-10:67> high_bound
                 member-name <10:69-10:77> to_string <10:69-10:77>
       var-def <11:5-11:58> mutable is_prime <11:9-11:16>
         call-expr <11:20-11:57> () <11:46-11:57>
-          name <11:20-11:45>
-            name-segment <11:20-11:23> list
-            name-segment <11:26-11:31>
+          path <11:20-11:45>
+            segment <11:20-11:31> list <11:20-11:23>
               primitive-type bool <11:27-11:30>
-            name-segment <11:34-11:45> with_capcity
-          name <11:47-11:56>
-            name-segment <11:47-11:56> high_bound
+            segment <11:34-11:45> with_capcity
+          path <11:47-11:56>
+            segment <11:47-11:56> high_bound
       for-stmt <12:5-14:5> iter-var i <12:9-12:9>
         range-both-expr <12:14-12:26> dotdot <12:15-12:16>
           literal i32 0 <12:14-12:14>
-          name <12:17-12:26>
-            name-segment <12:17-12:26> high_bound
+          path <12:17-12:26>
+            segment <12:17-12:26> high_bound
         block <12:28-14:5>
           assign-expr-stmt <13:9-13:27> = <13:21-13:21>
             index-expr <13:9-13:19> [] <13:17-13:19>
-              name <13:9-13:16>
-                name-segment <13:9-13:16> is_prime
-              name <13:18-13:18>
-                name-segment <13:18-13:18> i
+              path <13:9-13:16>
+                segment <13:9-13:16> is_prime
+              path <13:18-13:18>
+                segment <13:18-13:18> i
             literal bool true <13:23-13:26>
       assign-expr-stmt <15:5-15:24> = <15:17-15:17>
         index-expr <15:5-15:15> [] <15:13-15:15>
-          name <15:5-15:12>
-            name-segment <15:5-15:12> is_prime
+          path <15:5-15:12>
+            segment <15:5-15:12> is_prime
           literal i32 0 <15:14-15:14>
         literal bool false <15:19-15:23>
       assign-expr-stmt <16:5-16:24> = <16:17-16:17>
         index-expr <16:5-16:15> [] <16:13-16:15>
-          name <16:5-16:12>
-            name-segment <16:5-16:12> is_prime
+          path <16:5-16:12>
+            segment <16:5-16:12> is_prime
           literal i32 1 <16:14-16:14>
         literal bool false <16:19-16:23>
       for-stmt <17:5-26:5> iter-var i <17:9-17:9>
         range-both-expr <17:14-17:29> dotdot <17:18-17:19>
           literal u64 2 <17:14-17:17>
-          name <17:20-17:29>
-            name-segment <17:20-17:29> high_bound
+          path <17:20-17:29>
+            segment <17:20-17:29> high_bound
         block <17:31-26:5>
           simple-expr-stmt <18:9-18:66>
             call-expr <18:9-18:65> () <18:16-18:65>
-              name <18:9-18:15>
-                name-segment <18:9-18:15> writeln
+              path <18:9-18:15>
+                segment <18:9-18:15> writeln
               binary-expr <18:17-18:64> + <18:50-18:50>
                 literal str "[DEBUG] Outter iteration" <18:17-18:48>
                 call-expr <18:52-18:64> () <18:63-18:64>
                   member-expr <18:52-18:62> . <18:53-18:53>
-                    name <18:52-18:52>
-                      name-segment <18:52-18:52> i
+                    path <18:52-18:52>
+                      segment <18:52-18:52> i
                     member-name <18:54-18:62> to_string <18:54-18:62>
           if-stmt <19:9-25:9>
             if-clause <19:9-25:9>
               index-expr <19:12-19:22> [] <19:20-19:22>
-                name <19:12-19:19>
-                  name-segment <19:12-19:19> is_prime
-                name <19:21-19:21>
-                  name-segment <19:21-19:21> i
+                path <19:12-19:19>
+                  segment <19:12-19:19> is_prime
+                path <19:21-19:21>
+                  segment <19:21-19:21> i
               block <19:24-25:9>
                 simple-expr-stmt <20:13-20:47>
                   call-expr <20:13-20:46> () <20:20-20:46>
-                    name <20:13-20:19>
-                      name-segment <20:13-20:19> writeln
+                    path <20:13-20:19>
+                      segment <20:13-20:19> writeln
                     literal str "[DEBUG] this i is prime" <20:21-20:45>
                 for-stmt <21:13-24:13> iter-var j <21:17-21:17>
                   range-both-expr <21:22-21:41> dotdot <21:26-21:27>
                     literal u64 2 <21:22-21:25>
                     binary-expr <21:28-21:41> / <21:39-21:39>
-                      name <21:28-21:37>
-                        name-segment <21:28-21:37> high_bound
-                      name <21:41-21:41>
-                        name-segment <21:41-21:41> i
+                      path <21:28-21:37>
+                        segment <21:28-21:37> high_bound
+                      path <21:41-21:41>
+                        segment <21:41-21:41> i
                   block <21:43-24:13>
                     simple-expr-stmt <22:17-22:88>
                       call-expr <22:17-22:87> () <22:24-22:87>
-                        name <22:17-22:23>
-                          name-segment <22:17-22:23> writeln
+                        path <22:17-22:23>
+                          segment <22:17-22:23> writeln
                         binary-expr <22:25-22:86> + <22:73-22:73>
                           binary-expr <22:25-22:71> + <22:57-22:57>
                             literal str "[DEBUG] inner iteration," <22:25-22:55>
                             call-expr <22:59-22:71> () <22:70-22:71>
                               member-expr <22:59-22:69> . <22:60-22:60>
-                                name <22:59-22:59>
-                                  name-segment <22:59-22:59> j
+                                path <22:59-22:59>
+                                  segment <22:59-22:59> j
                                 member-name <22:61-22:69> to_string <22:61-22:69>
                           literal str ", unset it" <22:75-22:86>
                     assign-expr-stmt <23:17-23:40> = <23:33-23:33>
                       index-expr <23:17-23:31> [] <23:25-23:31>
-                        name <23:17-23:24>
-                          name-segment <23:17-23:24> is_prime
+                        path <23:17-23:24>
+                          segment <23:17-23:24> is_prime
                         binary-expr <23:26-23:30> * <23:28-23:28>
-                          name <23:26-23:26>
-                            name-segment <23:26-23:26> j
-                          name <23:30-23:30>
-                            name-segment <23:30-23:30> i
+                          path <23:26-23:26>
+                            segment <23:26-23:26> j
+                          path <23:30-23:30>
+                            segment <23:30-23:30> i
                       literal bool false <23:35-23:39>
       simple-expr-stmt <28:5-28:42>
         call-expr <28:5-28:41> () <28:12-28:41>
-          name <28:5-28:11>
-            name-segment <28:5-28:11> writeln
+          path <28:5-28:11>
+            segment <28:5-28:11> writeln
           literal str "[DEBUG] main process end" <28:13-28:40>
       var-def <29:5-29:37> mutable ret_val <29:9-29:15>
         call-expr <29:19-29:36> () <29:35-29:36>
-          name <29:19-29:34>
-            name-segment <29:19-29:22> list
-            name-segment <29:25-29:29>
+          path <29:19-29:34>
+            segment <29:19-29:29> list <29:19-29:22>
               primitive-type u64 <29:26-29:28>
-            name-segment <29:32-29:34> new
+            segment <29:32-29:34> new
       for-stmt <30:5-34:5> iter-var i <30:9-30:9>
         range-both-expr <30:14-30:29> dotdot <30:18-30:19>
           literal u64 1 <30:14-30:17>
-          name <30:20-30:29>
-            name-segment <30:20-30:29> high_bound
+          path <30:20-30:29>
+            segment <30:20-30:29> high_bound
         block <30:31-34:5>
           if-stmt <31:9-33:9>
             if-clause <31:9-33:9>
               index-expr <31:12-31:22> [] <31:20-31:22>
-                name <31:12-31:19>
-                  name-segment <31:12-31:19> is_prime
-                name <31:21-31:21>
-                  name-segment <31:21-31:21> i
+                path <31:12-31:19>
+                  segment <31:12-31:19> is_prime
+                path <31:21-31:21>
+                  segment <31:21-31:21> i
               block <31:24-33:9>
                 simple-expr-stmt <32:13-32:28>
                   call-expr <32:13-32:27> () <32:25-32:27>
                     member-expr <32:13-32:24> . <32:20-32:20>
-                      name <32:13-32:19>
-                        name-segment <32:13-32:19> ret_val
+                      path <32:13-32:19>
+                        segment <32:13-32:19> ret_val
                       member-name <32:21-32:24> push <32:21-32:24>
-                    name <32:26-32:26>
-                      name-segment <32:26-32:26> i
+                    path <32:26-32:26>
+                      segment <32:26-32:26> i
       ret-stmt <35:5-35:19>
-        name <35:12-35:18>
-          name-segment <35:12-35:18> ret_val
+        path <35:12-35:18>
+          segment <35:12-35:18> ret_val
   fn-def <38:1-48:1> write_array_8 <38:4-38:16> () <38:17-38:32>
     fn-def-parameter <38:18-38:31> thearray <38:18-38:25>
       ref-type <38:28-38:31>
@@ -166,8 +164,8 @@ module tests/ast/prime.f3
     block <38:34-48:1>
       simple-expr-stmt <39:5-39:15>
         call-expr <39:5-39:14> () <39:10-39:14>
-          name <39:5-39:9>
-            name-segment <39:5-39:9> write
+          path <39:5-39:9>
+            segment <39:5-39:9> write
           literal str "[" <39:11-39:13>
       for-stmt <40:5-43:5> iter-var i <40:9-40:9>
         range-both-expr <40:14-40:43> dotdot <40:18-40:19>
@@ -175,57 +173,57 @@ module tests/ast/prime.f3
           binary-expr <40:20-40:43> - <40:38-40:38>
             call-expr <40:20-40:36> () <40:35-40:36>
               member-expr <40:20-40:34> . <40:28-40:28>
-                name <40:20-40:27>
-                  name-segment <40:20-40:27> thearray
+                path <40:20-40:27>
+                  segment <40:20-40:27> thearray
                 member-name <40:29-40:34> length <40:29-40:34>
             literal u64 1 <40:40-40:43>
         block <40:45-43:5>
           simple-expr-stmt <41:9-41:39>
             call-expr <41:9-41:38> () <41:14-41:38>
-              name <41:9-41:13>
-                name-segment <41:9-41:13> write
+              path <41:9-41:13>
+                segment <41:9-41:13> write
               call-expr <41:15-41:37> () <41:36-41:37>
                 member-expr <41:15-41:35> . <41:26-41:26>
                   index-expr <41:15-41:25> [] <41:23-41:25>
-                    name <41:15-41:22>
-                      name-segment <41:15-41:22> thearray
-                    name <41:24-41:24>
-                      name-segment <41:24-41:24> i
+                    path <41:15-41:22>
+                      segment <41:15-41:22> thearray
+                    path <41:24-41:24>
+                      segment <41:24-41:24> i
                   member-name <41:27-41:35> to_string <41:27-41:35>
           simple-expr-stmt <42:9-42:20>
             call-expr <42:9-42:19> () <42:14-42:19>
-              name <42:9-42:13>
-                name-segment <42:9-42:13> write
+              path <42:9-42:13>
+                segment <42:9-42:13> write
               literal str ", " <42:15-42:18>
       if-stmt <44:5-46:5>
         if-clause <44:5-46:5>
           binary-expr <44:8-44:31> > <44:26-44:26>
             call-expr <44:8-44:24> () <44:23-44:24>
               member-expr <44:8-44:22> . <44:16-44:16>
-                name <44:8-44:15>
-                  name-segment <44:8-44:15> thearray
+                path <44:8-44:15>
+                  segment <44:8-44:15> thearray
                 member-name <44:17-44:22> length <44:17-44:22>
             literal u64 1 <44:28-44:31>
           block <44:33-46:5>
             simple-expr-stmt <45:9-45:62>
               call-expr <45:9-45:61> () <45:14-45:61>
-                name <45:9-45:13>
-                  name-segment <45:9-45:13> write
+                path <45:9-45:13>
+                  segment <45:9-45:13> write
                 call-expr <45:15-45:60> () <45:59-45:60>
                   member-expr <45:15-45:58> . <45:49-45:49>
                     index-expr <45:15-45:48> [] <45:23-45:48>
-                      name <45:15-45:22>
-                        name-segment <45:15-45:22> thearray
+                      path <45:15-45:22>
+                        segment <45:15-45:22> thearray
                       binary-expr <45:24-45:47> - <45:42-45:42>
                         call-expr <45:24-45:40> () <45:39-45:40>
                           member-expr <45:24-45:38> . <45:32-45:32>
-                            name <45:24-45:31>
-                              name-segment <45:24-45:31> thearray
+                            path <45:24-45:31>
+                              segment <45:24-45:31> thearray
                             member-name <45:33-45:38> length <45:33-45:38>
                         literal u64 1 <45:44-45:47>
                     member-name <45:50-45:58> to_string <45:50-45:58>
       simple-expr-stmt <47:5-47:15>
         call-expr <47:5-47:14> () <47:10-47:14>
-          name <47:5-47:9>
-            name-segment <47:5-47:9> write
+          path <47:5-47:9>
+            segment <47:5-47:9> write
           literal str "]" <47:11-47:13>

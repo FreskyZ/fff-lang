@@ -44,10 +44,11 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         loop {
             let base = self.expect_ident()?;
             // this is beyond current expect_* functions
-            if matches!((&self.current, &self.peek),
+            if matches!((expect_value, &self.current, &self.peek),
                 // colon is allowed when expecting coloncolon, ltlt is allowed when expecting lt...
-                | (Token::Sep(Separator::Lt | Separator::LtLt), _)
-                | (Token::Sep(Separator::Colon | Separator::ColonColon), Token::Sep(Separator::Lt | Separator::LtLt)))
+                // and ltlt is not allowed when expect value...
+                | (false, Token::Sep(Separator::Lt | Separator::LtLt), _)
+                | (_, Token::Sep(Separator::Colon | Separator::ColonColon), Token::Sep(Separator::Lt | Separator::LtLt)))
             {
                 if let Some((colon, colon_span)) = self.try_expect_seps(&[Separator::Colon, Separator::ColonColon]) {
                     if !expect_value {
