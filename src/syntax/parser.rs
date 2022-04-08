@@ -6,7 +6,7 @@ use super::ast::*;
 
 mod expr;
 mod stmt;
-mod r#type;
+mod path;
 
 /// unrecoverable unexpected for this parser, detail in diagnostics
 // this should be more readable than previous Result<Self::Output, ()>

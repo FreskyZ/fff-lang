@@ -1,8 +1,7 @@
 use super::*;
 
+// statement and item (module level item) parsers
 impl<'ecx, 'scx> Parser<'ecx, 'scx> {
-
-    // statement and item (module level item) parsers
 
     pub fn parse_stmt(&mut self) -> Result<Statement, Unexpected> {
         if self.maybe_type_def() {

@@ -67,6 +67,8 @@ pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_object_expr(&mut self, node: &ObjectExpr) -> Result<T, E> { node.walk(self) }
     fn visit_object_expr_field(&mut self, node: &ObjectExprField) -> Result<T, E> { node.walk(self) }
     fn visit_paren_expr(&mut self, node: &ParenExpr) -> Result<T, E> { node.walk(self) }
+    fn visit_path(&mut self, node: &Path) -> Result<T, E> { node.walk(self) }
+    fn visit_path_segment(&mut self, node: &PathSegment) -> Result<T, E> { node.walk(self) }
     fn visit_plain_type(&mut self, node: &PlainType) -> Result<T, E> { node.walk(self) }
     fn visit_primitive_type(&mut self, node: &PrimitiveType) -> Result<T, E> { node.walk(self) }
     fn visit_range_both_expr(&mut self, node: &RangeBothExpr) -> Result<T, E> { node.walk(self) }

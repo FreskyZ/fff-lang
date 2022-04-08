@@ -316,3 +316,66 @@ fn type_ref_parse() {
                     make_type!(segment 12:12 #2)))),
     }
 }
+
+#[test]
+pub fn parse_path() {
+
+    case!{ parse_type_path "a",
+        make_path!(0:0
+            make_path!(segment simple 0:0 #2))
+    }
+    case!{ parse_value_path "a",
+        make_path!(0:0
+            make_path!(segment simple 0:0 #2))
+    }
+
+    case!{ parse_type_path "a::b::c",
+        make_path!(0:6
+            make_path!(segment simple 0:0 #2),
+            make_path!(segment simple 3:3 #3),
+            make_path!(segment simple 6:6 #4))
+    }
+    case!{ parse_value_path "a::b::c",
+        make_path!(0:6
+            make_path!(segment simple 0:0 #2),
+            make_path!(segment simple 3:3 #3),
+            make_path!(segment simple 6:6 #4))
+    }
+
+    case!{ parse_type_path "::a",
+        make_path!(0:2
+            make_path!(segment global),
+            make_path!(segment simple 2:2 #2))
+    }
+    case!{ parse_value_path "::a",
+        make_path!(0:2
+            make_path!(segment global),
+            make_path!(segment simple 2:2 #2))
+    }
+
+    case!{ parse_type_path "::a::b::c",
+        make_path!(0:8
+            make_path!(segment global),
+            make_path!(segment simple 2:2 #2),
+            make_path!(segment simple 5:5 #3),
+            make_path!(segment simple 8:8 #4))
+    }
+    case!{ parse_value_path "::a::b::c",
+        make_path!(0:8
+            make_path!(segment global),
+            make_path!(segment simple 2:2 #2),
+            make_path!(segment simple 5:5 #3),
+            make_path!(segment simple 8:8 #4))
+    }
+
+    // <a as a> errors as segment cannot standalone
+    // a::<a as a> errors as segment must be first segment
+    // ::<a as a> errors as segment cannot be global
+    // <a as a>::a
+    // <a as a>::a::b::c
+    // a<b, c, d> // a::<b, c, d>
+    // a::b::c<d, e> // a::b::c::<d::e>
+    // a::b<c, d>::e // a::b::<c, d>::e
+    // a<> errors generic list cannot be empty // a::<> errors generic list cannot be empty
+    // a<b<c<d<e>>>> // a::<b::<c::<d::<e>>>>
+}

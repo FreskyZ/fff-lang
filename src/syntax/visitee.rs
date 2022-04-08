@@ -246,6 +246,27 @@ impl_node!{ ParenExpr, visit_paren_expr, |self, v| {
     v.visit_expr(self.base.as_ref())
 }}
 
+impl_node!{ Path, visit_path, |self, v| {
+    for segment in &self.segments {
+        v.visit_path_segment(segment)?;
+    }
+    Ok(Default::default())
+}}
+
+impl_node!{ PathSegment, visit_path_segment, |self, v| {
+    match self {
+        PathSegment::TypeCast{ left, right, .. } => {
+            v.visit_type_ref(left)?;
+            v.visit_type_ref(right)?;
+        },
+        PathSegment::Generic{ parameters, .. } =>{
+            v.visit_type_list(parameters)?;
+        },
+        _ => {},
+    }
+    Ok(Default::default())
+}}
+
 impl_node!{ PlainType, visit_plain_type, |self, v| {
     if let Some(type_as_segment) = &self.type_as_segment {
         v.visit_type_as_segment(type_as_segment)?;

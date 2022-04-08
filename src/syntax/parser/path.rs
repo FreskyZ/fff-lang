@@ -1,9 +1,81 @@
 use super::*;
 
+// path related parsers, 
+// type refs are also here because path is a kind of type ref and contains many type refs
 impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     
-    // no maybe_type_ref because type ref is always after some colon or array separator
+    pub fn parse_type_path(&mut self) -> Result<Path, Unexpected> {
+        self.parse_path(false)
+    }
+    pub fn parse_value_path(&mut self) -> Result<Path, Unexpected> {
+        self.parse_path(true)
+    }
 
+    pub fn maybe_path(&self) -> bool {
+        matches!(self.current, Token::Sep(Separator::Lt | Separator::ColonColon) | Token::Ident(_))
+    }
+
+    // path = [ '::' ] path_segment { '::' path_segment }
+    // path_segment = cast_segment | normal_segment
+    // cast_segment = '<' type_ref 'as' type_ref '>'
+    // normal_segment = identifier [ [ '::' ] '<' type_ref { ',' type_ref } [ ',' ] '>' ]
+    //
+    // most common "name" (somewhat extented from "ident expr" in textbook)
+    // similar for type and value, except when expect value, there must be '::' before '<'
+    // cast_segment must be first segment, cast_segment not compatible with separator-started (global)
+    pub fn parse_path(&mut self, expect_value: bool) -> Result<Path, Unexpected> {
+
+        let mut segments = Vec::new();
+        let begin_separator_span = self.try_expect_sep(Separator::ColonColon);
+
+        if begin_separator_span.is_some() {
+            segments.push(PathSegment::Global);
+        } else if let Some(lt_span) = self.try_expect_sep(Separator::Lt) {
+            let left = self.parse_type_ref()?;
+            self.expect_keyword(Keyword::As)?;
+            let right = self.parse_type_ref()?;
+            let gt_span = self.expect_sep(Separator::Gt)?;
+            if let (Separator::Colon, colon_span) = self.expect_seps(&[Separator::Colon, Separator::ColonColon])? {
+                self.emit(strings::ExpectDoubleColonMeetSingleColon).span(colon_span);
+            }
+            segments.push(PathSegment::TypeCast{ span: lt_span + gt_span, left, right });
+        }
+        
+        loop {
+            let base = self.expect_ident()?;
+            // this is beyond current expect_* functions
+            if matches!((&self.current, &self.peek),
+                (Token::Sep(Separator::Colon | Separator::ColonColon), Token::Sep(Separator::Lt)) | (Token::Sep(Separator::Lt), _))
+            {
+                if let Some((colon, colon_span)) = self.try_expect_seps(&[Separator::Colon, Separator::ColonColon]) {
+                    if !expect_value {
+                        self.emit(format!("{} {}", strings::ExpectLtMeet, colon.display())).span(colon_span);
+                    }
+                    if colon == Separator::Colon {
+                        self.emit(strings::ExpectDoubleColonMeetSingleColon).span(colon_span);
+                    }
+                }
+                // self.current now is the Lt
+                let parameters = self.parse_type_list()?;
+                segments.push(PathSegment::Generic{ span: base.span + parameters.span, base, parameters });
+            } else {
+                segments.push(PathSegment::Simple(base));
+            }
+            if let Some(sep) = self.try_expect_seps(&[Separator::Colon, Separator::ColonColon]) {
+                if let (Separator::Colon, colon_span) = sep {
+                    self.emit(strings::ExpectDoubleColonMeetSingleColon).span(colon_span);
+                }
+            } else {
+                break;
+            }
+        }
+
+        // maybe_path should guarantee this
+        debug_assert!(!segments.is_empty(), "unexpected empty path");
+        Ok(Path{ span: segments[0].span() + segments.last().unwrap().span(), segments })
+    }
+
+    // no maybe_type_ref because type ref is always after some colon or namespace separator
     pub fn parse_type_ref(&mut self) -> Result<TypeRef, Unexpected> {
         if self.maybe_primitive_type() {
             Ok(TypeRef::Primitive(self.parse_primitive_type()?))
@@ -28,6 +100,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
 
     // type_list = '<' type_ref { ',' type_ref } [ ',' ] '>'
     // angle bracket quoted type list use in many places
+    // TODO: type_ref may be omitted by underscore
     pub fn parse_type_list(&mut self) -> Result<TypeList, Unexpected> {
 
         let lt_span = self.expect_sep(Separator::Lt)?;

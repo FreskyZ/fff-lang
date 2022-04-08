@@ -431,6 +431,28 @@ macro_rules! make_stmt {
     );
 }
 
+macro_rules! make_path {
+    (segment global) => (
+        PathSegment::Global
+    );
+    (segment simple $start:literal:$end:literal #$ident:literal) => (
+        PathSegment::Simple(IdSpan::new($ident, Span::new($start, $end)))
+    );
+    (segment cast $start:literal:$end:literal $left:expr, $right:expr) => (
+        PathSegment::TypeCast{ span: Span::new($start, $end), left: $left, right: $right }
+    );
+    (segment generic $start:literal:$end:literal #$ident:literal $ident_start:literal:$ident_end:literal quote $quote_start:literal:$quote_end:literal $($parameter:expr),*$(,)?) => (
+        PathSegment::Generic{
+            span: Span::new($start, $end),
+            base: IdSpan::new($ident, Span::new($ident_start, $ident_end)),
+            parameters: Some(TypeList{ items: vec![$($parameter,)*], span: Span::new($quote_start, $quote_end) }),
+        }
+    );
+    ($start:literal:$end:literal $($segment:expr),*$(,)?) => (
+        Path{ span: Span::new($start, $end), segments: vec![$($segment,)*] }
+    );
+}
+
 macro_rules! make_type {
     (prim $start:literal:$end:literal $kw:ident) => (
         TypeRef::Primitive(PrimitiveType{ base: Keyword::$kw, span: Span::new($start, $end) }));
@@ -492,4 +514,4 @@ macro_rules! make_type {
 mod pretty;
 mod expr;
 mod stmt;
-mod r#type;
+mod path;

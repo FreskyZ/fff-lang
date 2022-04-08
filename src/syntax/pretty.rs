@@ -30,7 +30,7 @@ impl<'scx, 'f1, 'f2, F> FormatVisitor<'scx, 'f1, 'f2, F> where F: FileSystem {
         Self{ level: 0, scx, f }
     }
 
-    fn write_str(&mut self, v: &str) -> Result<&mut Self, fmt::Error> {
+    fn write_str(&mut self, v: &'static str) -> Result<&mut Self, fmt::Error> {
         self.f.write_str(v)?;
         Ok(self)
     }
@@ -327,6 +327,21 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
 
     fn visit_paren_expr(&mut self, node: &ParenExpr) -> fmt::Result {
         self.impl_visit_simple(node, "paren-expr", node.span)
+    }
+
+    fn visit_path(&mut self, node: &Path) -> fmt::Result {
+        self.impl_visit_simple(node, "path", node.span)
+    }
+
+    fn visit_path_segment(&mut self, node: &PathSegment) -> fmt::Result {
+        self.impl_visit(node, "segment", node.span(), |f| {
+            match node {
+                PathSegment::Global => f.write_str(" global"),
+                PathSegment::Simple(name) => f.write_space()?.write_idspan(*name),
+                PathSegment::TypeCast{ .. } => Ok(f),
+                PathSegment::Generic{ base, .. } => f.write_space()?.write_idspan(*base),
+            }
+        })
     }
 
     fn visit_primitive_type(&mut self, node: &PrimitiveType) -> fmt::Result {

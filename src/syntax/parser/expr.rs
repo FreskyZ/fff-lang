@@ -1,13 +1,12 @@
 use super::*;
 
+// these functions are order logically
+// "public" api parse_expr and maybe_expr
+// common function parse_expr_list
+// priority high to low: primary -> postfix -> unary -> binary -> range
+// same priority inside primary: lit (inlined) -> name -> tuple -> array, this seems to be their occurance frequency order in my experience
+// same priority inside postfix: member -> fn call -> index call -> object literal, this seems to be in occurance frequency too
 impl<'ecx, 'scx> Parser<'ecx, 'scx> {
-
-    // these functions are order logically
-    // "public" api parse_expr and maybe_expr
-    // common function parse_expr_list
-    // priority high to low: primary -> postfix -> unary -> binary -> range
-    // same priority inside primary: lit (inlined) -> name -> tuple -> array, this seems to be their occurance frequency order in my experience
-    // same priority inside postfix: member -> fn call -> index call -> object literal, this seems to be in occurance frequency too
 
     // maybe_* functions: checks current token (may peek) to see if it matches syntax node starting
     // // was called Parser::matches, ISyntaxParse::matches, ISyntaxItemParse::is_first_final, IASTItem::is_first_final before
@@ -186,7 +185,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     // member_expr = expr '.' member_name
     // member_name = member_name_base [ '::' '<' type_ref { ',' type_ref } [ ',' ] '>' ]
     // member_name_base = num_lit | ident
-    // TODO: type_ref may be omitted by underscore
+    // TODO: split into TupleMemberExpr, SimpleMemberExpr and GenericMemberExpr, GenericMemberExpr should be same as PathGenericSegment with expect value
     // return dot span and member name, see parse_postfix_expr for the return type
     pub fn parse_member_expr(&mut self) -> Result<(Span, MemberName), Unexpected> {
         

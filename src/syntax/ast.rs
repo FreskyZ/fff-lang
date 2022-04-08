@@ -314,6 +314,35 @@ pub struct ObjectExpr {
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
+pub enum PathSegment {
+    // global is a mark to indicate path starts with namespace separator, 
+    // it does not have span because it logically located at the empty place before the namespace sparator
+    Global,
+    Simple(IdSpan),
+    TypeCast{ span: Span, left: TypeRef, right: TypeRef },
+    Generic{ span: Span, base: IdSpan, parameters: TypeList },
+}
+
+impl PathSegment {
+    pub fn span(&self) -> Span {
+        match self {
+            PathSegment::Global => Span::new(0, 0),
+            PathSegment::Simple(v) => v.span,
+            PathSegment::TypeCast{ span, .. } => *span,
+            PathSegment::Generic{ span, .. } => *span,
+        }
+    }
+}
+
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
+pub struct Path {
+    pub span: Span,
+    pub segments: Vec<PathSegment>,
+}
+
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct RangeFullExpr {
     pub span: Span,
 }
