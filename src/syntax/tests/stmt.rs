@@ -676,8 +676,6 @@ fn parse_type_def() {
 
 #[test]
 fn parse_class_def() {
-
-    
     //                      0         1         2         3         4         5
     //                      0123456789012345678901234567890123456789012345678901234
     case!{ parse_class_def "class Equal { fn eq(self: &Self, rhs: &Self) -> bool; }",
@@ -769,5 +767,63 @@ fn parse_class_def() {
                 }
             ], //    2           3       4       5       6       7
         }, strings ["Iterable", "Item", "next", "self", "Self", "Option"],
+    }
+}
+
+#[test]
+fn parse_impl() {
+    //                 0         1         2         3         4         5         6         7         8         9         0         1         2         3         4
+    //                 012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012 34567 89012345678901
+    case!{ parse_impl "impl<T> fmt::Debug for Vec<T> where T: fmt::Debug { fn fmt(self: &Self, f: &fmt::Formatter) { for item in self { write(f, \"{:?}\", item); } } }",
+        Implementation{
+            span: Span::new(0, 141),
+            parameters: vec![
+                GenericParameter{ span: Span::new(5, 5), name: IdSpan::new(2, Span::new(5, 5)) },
+            ],
+            class: Some(make_type!(path 8:17
+                make_path!(segment simple 8:10 #3),
+                make_path!(segment simple 13:17 #4))),
+            r#type: make_type!(path 23:28
+                make_path!(segment generic 23:28 #5 23:25 quote 26:28
+                    make_type!(simple 27:27 #2))),
+            wheres: vec![
+                WhereClause{ span: Span::new(36, 48), name: IdSpan::new(2, Span::new(36, 36)), constraints: vec![
+                    make_type!(path 39:48
+                        make_path!(segment simple 39:41 #3),
+                        make_path!(segment simple 44:48 #4)),
+                ]}
+            ],
+            quote_span: Span::new(50, 141),
+            types: Vec::new(),
+            functions: vec![
+                FnDef{
+                    span: Span::new(52, 139),
+                    name: make_stmt!(name 55:57 #3),
+                    quote_span: Span::new(58, 90),
+                    parameters: vec![
+                        make_stmt!(fp 59:69 #6 59:62
+                            make_type!(ref 65:69
+                                make_type!(simple 66:69 #7))),
+                        make_stmt!(fp 72:89 #8 72:72
+                            make_type!(ref 75:89
+                                make_type!(path 76:89
+                                    make_path!(segment simple 76:78 #3),
+                                    make_path!(segment simple 81:89 #9)))),
+                    ],
+                    ret_type: None,
+                    wheres: Vec::new(),
+                    body: Some(make_stmt!(block 92:139
+                        make_stmt!(for 94:137 var #10 98:101 None,
+                            make_expr!(path simple 106:109 #6),
+                        make_stmt!(block 111:137
+                            make_stmt!(expr 113:135
+                                make_expr!(call 113:134 paren 118:134
+                                    make_expr!(path simple 113:117 #11),
+                                    make_expr!(path simple 119:119 #8),
+                                    make_expr!(str #12 122:127),
+                                    make_expr!(path simple 130:133 #10))))))),
+                }
+            ] //     2    3      4        5      6       7       8    9            10      11       12
+        }, strings ["T", "fmt", "Debug", "Vec", "self", "Self", "f", "Formatter", "item", "write", "{:?}"],
     }
 }

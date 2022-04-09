@@ -296,6 +296,7 @@ pub struct Implementation {
     pub r#type: TypeRef,
     pub wheres: Vec<WhereClause>,
     pub quote_span: Span,
+    pub types: Vec<TypeDef>,
     pub functions: Vec<FnDef>,
 }
 
@@ -306,6 +307,7 @@ pub enum Item {
     Struct(StructDef),
     Enum(EnumDef),
     Fn(FnDef),
+    Impl(Implementation),
     Type(TypeDef),
     Class(ClassDef),
     Block(BlockStatement),
@@ -488,6 +490,7 @@ pub enum Statement {
     Struct(StructDef),
     Enum(EnumDef),
     Fn(FnDef),
+    Impl(Implementation),
     Type(TypeDef),
     Class(ClassDef),
     Block(BlockStatement),

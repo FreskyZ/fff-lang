@@ -24,6 +24,6 @@
 - [x] split tuple index expr from member expr, rename index expr to array index expr
 - [x] allow generic parameter in type name and fn name, that's called parse_generic_name
 - [x] allow where clause when generic name
-- [ ] rename type def to struct def, add type alias (may generic), add class def, add class associated type, add impl type, add impl class for type
+- [x] rename type def to struct def, add type alias (may generic), add class def, add class associated type, add impl type, add impl class for type
 - [ ] add numeric literal type as suffixed/unsuffixed and bin/oct/dec/hex/unprefixed, member access require unsuffixed and unprefixed
 - [ ] format string

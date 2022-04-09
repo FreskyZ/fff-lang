@@ -34,7 +34,7 @@
        'i64' =>        I64, Primitive,
         'i8' =>         I8, Primitive,
         'if' =>         If, Normal,
-      'impl' =>       Impl, Reserved,
+      'impl' =>       Impl, Normal,
         'in' =>         In, Normal,
  'interface' =>  Interface, Reserved,
   'internal' =>   Internal, Reserved,

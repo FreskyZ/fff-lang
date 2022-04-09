@@ -1,5 +1,5 @@
 
-type Span {
+struct Span {
     row: u32,
     col: u32,
 }
@@ -12,9 +12,15 @@ enum TokenType {
     Operator,
 }
 
-type Token {
+struct Token {
     ty: TokenType,
     span: Span,
     str_val: string,
     u64_val: u64,
+}
+
+impl Token {
+    fn span(self: &Self) -> Span {
+        return self.span;
+    }
 }

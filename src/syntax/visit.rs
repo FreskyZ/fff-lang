@@ -59,6 +59,7 @@ pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_generic_parameter(&mut self, node: &GenericParameter) -> Result<T, E> { node.walk(self) }
     fn visit_if_clause(&mut self, node: &IfClause) -> Result<T, E> { node.walk(self) }
     fn visit_if_stmt(&mut self, node: &IfStatement) -> Result<T, E> { node.walk(self) }
+    fn visit_impl(&mut self, node: &Implementation) -> Result<T, E> { node.walk(self) }
     fn visit_item(&mut self, node: &Item) -> Result<T, E> { node.walk(self) }
     fn visit_lit_expr(&mut self, node: &LitExpr) -> Result<T, E> { node.walk(self) }
     fn visit_loop_stmt(&mut self, node: &LoopStatement) -> Result<T, E> { node.walk(self) }

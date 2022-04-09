@@ -201,10 +201,31 @@ impl_node!{ IfStatement, visit_if_stmt, |self, v| {
     Ok(Default::default())
 }}
 
+impl_node!{ Implementation, visit_impl, |self, v| {
+    for parameter in &self.parameters {
+        v.visit_generic_parameter(parameter)?;
+    }
+    if let Some(class) = &self.class {
+        v.visit_type_ref(class)?;
+    }
+    v.visit_type_ref(&self.r#type)?;
+    for r#where in &self.wheres {
+        v.visit_where_clause(r#where)?;
+    }
+    for r#type in &self.types {
+        v.visit_type_def(r#type)?;
+    }
+    for function in &self.functions {
+        v.visit_fn_def(function)?;
+    }
+    Ok(Default::default())
+}}
+
 impl_abc_node!{ Item, visit_item, 
     Struct => visit_struct_def,
     Enum => visit_enum_def,
     Fn => visit_fn_def,
+    Impl => visit_impl,
     Type => visit_type_def,
     Class => visit_class_def,
     Block => visit_block_stmt,
@@ -315,6 +336,7 @@ impl_abc_node!{ Statement, visit_stmt,
     Struct => visit_struct_def,
     Enum => visit_enum_def,
     Fn => visit_fn_def,
+    Impl => visit_impl,
     Type => visit_type_def,
     Class => visit_class_def,
     Block => visit_block_stmt,

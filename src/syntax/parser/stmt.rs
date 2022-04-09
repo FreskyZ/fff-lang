@@ -10,6 +10,8 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             Ok(Statement::Enum(self.parse_enum_def()?))
         } else if self.maybe_fn_def() {
             Ok(Statement::Fn(self.parse_fn_def()?))
+        } else if self.maybe_impl() {
+            Ok(Statement::Impl(self.parse_impl()?))
         } else if self.maybe_type_def() {
             Ok(Statement::Type(self.parse_type_def()?))
         } else if self.maybe_class_def() {
@@ -48,6 +50,8 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             Ok(Item::Enum(self.parse_enum_def()?))
         } else if self.maybe_fn_def() {
             Ok(Item::Fn(self.parse_fn_def()?))
+        } else if self.maybe_impl() {
+            Ok(Item::Impl(self.parse_impl()?))
         } else if self.maybe_type_def() {
             Ok(Item::Type(self.parse_type_def()?))
         } else if self.maybe_class_def() {
@@ -405,6 +409,84 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         }
 
         Ok(IfStatement{ span: all_span, if_clause, elseif_clauses, else_clause })
+    }
+
+    pub fn maybe_impl(&self) -> bool {
+        matches!(self.current, Token::Keyword(Keyword::Impl))
+    }
+
+    // impl = 'impl' generic_parameters [ type_ref 'for' ] type_ref where_clauses '{' { type_def | fn_def } '}'
+    pub fn parse_impl(&mut self) -> Result<Implementation, Unexpected> {
+
+        let start_span = self.expect_keyword(Keyword::Impl)?;
+
+        let mut parameters = Vec::new();
+        if let Some(lt_span) = self.try_expect_sep(Separator::Lt) {
+            if let Some((gt_span, _)) = self.try_expect_closing_bracket(Separator::Gt) {
+                self.emit(strings::EmptyGenericParameterList).span(lt_span + gt_span);
+            } else {
+                let parameter = self.expect_ident()?;
+                parameters.push(GenericParameter{ span: parameter.span, name: parameter });
+                loop {
+                    if self.try_expect_closing_bracket(Separator::Gt).is_some() {
+                        break;
+                    } else {
+                        self.expect_sep(Separator::Comma)?;
+                    }
+                    let parameter = self.expect_ident()?;
+                    parameters.push(GenericParameter{ span: parameter.span, name: parameter });
+                }
+            }
+        }
+
+        let type1 = self.parse_type_ref()?;
+        let type2 = self.try_expect_keyword(Keyword::For).map(|_| self.parse_type_ref()).transpose()?;
+        let (class, r#type) = if let Some(type2) = type2 { (Some(type1), type2) } else { (None, type1) };
+
+        let mut wheres = Vec::new();
+        macro_rules! parse_where { () => {{
+            let name = self.expect_ident()?;
+            self.expect_sep(Separator::Colon)?;
+            let mut constraints = vec![self.parse_type_ref()?];
+            while self.try_expect_sep(Separator::Add).is_some() { // no trailing add here
+                constraints.push(self.parse_type_ref()?);
+            }
+            wheres.push(WhereClause{ span: name.span + constraints.last().unwrap().span(), name, constraints })
+        }};}
+        if self.try_expect_keyword(Keyword::Where).is_some() {
+            parse_where!();
+            loop {
+                // left brace is not closing bracket, and this does not move forward
+                if self.is_sep(Separator::LeftBrace) {
+                    break;
+                } else if matches!((&self.current, &self.peek), (Token::Sep(Separator::Comma), Token::Sep(Separator::LeftBrace))) {
+                    self.move_next();
+                    break;
+                } else {
+                    self.expect_sep(Separator::Comma)?;
+                }
+                parse_where!();
+            }
+        }
+
+        let left_brace_span = self.expect_sep(Separator::LeftBrace)?;
+        let mut types = Vec::new();
+        let mut functions = Vec::new();
+        let right_brace_span = loop {
+            if let Some(right_brace_span) = self.try_expect_sep(Separator::RightBrace) {
+                break right_brace_span;
+            } else if self.maybe_type_def() {
+                types.push(self.parse_type_def()?);
+            } else if self.maybe_fn_def() {
+                functions.push(self.parse_fn_def()?);
+            }  else {
+                self.push_unexpect("type, fn or `}`")?;
+            }
+        };
+
+        let span = start_span + right_brace_span;
+        let quote_span = left_brace_span + right_brace_span;
+        Ok(Implementation{ span, parameters, class, r#type, wheres, quote_span, types, functions })
     }
 
     pub fn maybe_loop_stmt(&self) -> bool {

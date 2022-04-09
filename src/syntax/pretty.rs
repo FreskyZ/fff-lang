@@ -253,6 +253,12 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
         self.impl_visit_simple(node, "if-stmt", node.span)
     }
     
+    // no, this is not impl_visit, but visit impl block
+    fn visit_impl(&mut self, node: &Implementation) -> fmt::Result {
+        self.impl_visit(node, "impl", node.span, |f|
+            f.write_str(" {} ")?.write_span(node.quote_span))
+    }
+
     fn visit_lit_expr(&mut self, node: &LitExpr) -> fmt::Result {
         self.impl_visit_no_primary_span(node, "literal", |f| {
             f.write_space()?;
