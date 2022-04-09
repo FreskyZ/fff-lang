@@ -287,10 +287,14 @@ pub struct IfStatement {
     pub else_clause: Option<ElseClause>,
 }
 
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct Implementation {
     pub span: Span,
+    pub parameters: Vec<GenericParameter>,
     pub class: Option<TypeRef>,
     pub r#type: TypeRef,
+    pub wheres: Vec<WhereClause>,
     pub quote_span: Span,
     pub functions: Vec<FnDef>,
 }
@@ -303,6 +307,7 @@ pub enum Item {
     Enum(EnumDef),
     Fn(FnDef),
     Type(TypeDef),
+    Class(ClassDef),
     Block(BlockStatement),
     SimpleExpr(SimpleExprStatement),
     AssignExpr(AssignExprStatement),
@@ -484,6 +489,7 @@ pub enum Statement {
     Enum(EnumDef),
     Fn(FnDef),
     Type(TypeDef),
+    Class(ClassDef),
     Block(BlockStatement),
     Break(BreakStatement),
     Continue(ContinueStatement),

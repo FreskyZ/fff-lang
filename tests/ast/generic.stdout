@@ -1,412 +1,543 @@
 module tests/ast/generic.f3
-  struct-def <2:1-6:1>
-    generic-name <2:8-2:14> list <2:8-2:11> <> <2:12-2:14>
-      generic-parameter <2:13-2:13> T <2:13-2:13>
-    field-def <3:5-3:11> ptr <3:5-3:7> : <3:8-3:8>
-      ref-type <3:10-3:11>
-        path <3:11-3:11>
-          segment <3:11-3:11> T
-    field-def <4:5-4:12> cap <4:5-4:7> : <4:8-4:8>
-      primitive-type u64 <4:10-4:12>
-    field-def <5:5-5:12> len <5:5-5:7> : <5:8-5:8>
-      primitive-type u64 <5:10-5:12>
-  struct-def <8:1-11:1>
-    generic-name <8:8-8:15> slice <8:8-8:12> <> <8:13-8:15>
-      generic-parameter <8:14-8:14> T <8:14-8:14>
-    field-def <9:5-9:11> ptr <9:5-9:7> : <9:8-9:8>
-      ref-type <9:10-9:11>
-        path <9:11-9:11>
-          segment <9:11-9:11> T
-    field-def <10:5-10:12> len <10:5-10:7> : <10:8-10:8>
-      primitive-type u64 <10:10-10:12>
-  struct-def <13:1-15:1>
-    generic-name <13:8-13:13> string <13:8-13:13>
-    field-def <14:5-14:18> list <14:5-14:8> : <14:9-14:9>
-      path <14:11-14:18>
-        segment <14:11-14:18> list <14:11-14:14>
-          primitive-type u8 <14:16-14:17>
-  fn-def <17:1-74:1> () <17:11-17:25>
-    generic-name <17:4-17:10> sort <17:4-17:7> <> <17:8-17:10>
-      generic-parameter <17:9-17:9> T <17:9-17:9>
-    fn-def-parameter <17:12-17:24> list <17:12-17:15>
-      path <17:18-17:24>
-        segment <17:18-17:24> list <17:18-17:21>
-          path <17:23-17:23>
-            segment <17:23-17:23> T
-    block <17:27-74:1>
-      use-stmt <18:5-18:25>
-        path <18:9-18:24>
-          segment <18:9-18:11> std
-          segment <18:14-18:16> mem
-          segment <18:19-18:24> forget
-      simple-expr-stmt <20:5-20:41>
-        call-expr <20:5-20:40> () <20:14-20:40>
-          path <20:5-20:13>
-            segment <20:5-20:13> quicksort
-          member-expr <20:15-20:22> . <20:19-20:19> ptr <20:20-20:22>
-            path <20:15-20:18>
-              segment <20:15-20:18> list
-          literal i32 0 <20:25-20:25>
-          binary-expr <20:28-20:39> - <20:37-20:37>
-            member-expr <20:28-20:35> . <20:32-20:32> len <20:33-20:35>
-              path <20:28-20:31>
-                segment <20:28-20:31> list
-            literal i32 1 <20:39-20:39>
-      fn-def <22:5-30:5> () <22:20-22:52>
-        generic-name <22:8-22:19> quicksort <22:8-22:16> <> <22:17-22:19>
-          generic-parameter <22:18-22:18> T <22:18-22:18>
-        fn-def-parameter <22:21-22:29> slice <22:21-22:25>
-          ref-type <22:28-22:29>
-            path <22:29-22:29>
-              segment <22:29-22:29> T
-        fn-def-parameter <22:32-22:41> start <22:32-22:36>
-          primitive-type u64 <22:39-22:41>
-        fn-def-parameter <22:44-22:51> end <22:44-22:46>
-          primitive-type u64 <22:49-22:51>
-        block <22:54-30:5>
-          if-stmt <23:9-29:9>
-            if-clause <23:9-25:9>
-              binary-expr <23:12-23:26> < <23:24-23:24>
-                binary-expr <23:12-23:22> - <23:16-23:16>
-                  path <23:12-23:14>
-                    segment <23:12-23:14> end
-                  path <23:18-23:22>
-                    segment <23:18-23:22> start
-                literal i32 6 <23:26-23:26>
-              block <23:28-25:9>
-                simple-expr-stmt <24:13-24:46>
-                  call-expr <24:13-24:45> () <24:27-24:45>
-                    path <24:13-24:26>
-                      segment <24:13-24:26> insertion_sort
-                    path <24:28-24:32>
-                      segment <24:28-24:32> slice
-                    path <24:35-24:39>
-                      segment <24:35-24:39> start
-                    path <24:42-24:44>
-                      segment <24:42-24:44> end
-            else-clause <25:11-29:9>
-              block <25:16-29:9>
-                var-def <26:13-26:53> mutable pivot <26:17-26:21>
-                  call-expr <26:25-26:52> () <26:34-26:52>
-                    path <26:25-26:33>
-                      segment <26:25-26:33> partition
-                    path <26:35-26:39>
-                      segment <26:35-26:39> slice
-                    path <26:42-26:46>
-                      segment <26:42-26:46> start
-                    path <26:49-26:51>
-                      segment <26:49-26:51> end
-                simple-expr-stmt <27:13-27:43>
-                  call-expr <27:13-27:42> () <27:22-27:42>
-                    path <27:13-27:21>
-                      segment <27:13-27:21> quicksort
-                    path <27:23-27:27>
-                      segment <27:23-27:27> slice
-                    path <27:30-27:34>
-                      segment <27:30-27:34> start
-                    path <27:37-27:41>
-                      segment <27:37-27:41> pivot
-                simple-expr-stmt <28:13-28:45>
-                  call-expr <28:13-28:44> () <28:22-28:44>
-                    path <28:13-28:21>
-                      segment <28:13-28:21> quicksort
-                    path <28:23-28:27>
-                      segment <28:23-28:27> slice
-                    binary-expr <28:30-28:38> + <28:36-28:36>
-                      path <28:30-28:34>
-                        segment <28:30-28:34> pivot
-                      literal i32 1 <28:38-28:38>
-                    path <28:41-28:43>
-                      segment <28:41-28:43> end
-      fn-def <33:5-57:5> () <33:20-33:52>
-        generic-name <33:8-33:19> partition <33:8-33:16> <> <33:17-33:19>
-          generic-parameter <33:18-33:18> T <33:18-33:18>
-        fn-def-parameter <33:21-33:29> slice <33:21-33:25>
-          ref-type <33:28-33:29>
-            path <33:29-33:29>
-              segment <33:29-33:29> T
-        fn-def-parameter <33:32-33:41> start <33:32-33:36>
-          primitive-type u64 <33:39-33:41>
-        fn-def-parameter <33:44-33:51> end <33:44-33:46>
-          primitive-type u64 <33:49-33:51>
-        block <33:54-57:5>
-          var-def <34:9-34:39> mutable pivot <34:13-34:17>
-            array-index-expr <34:21-34:38> [] <34:26-34:38>
-              path <34:21-34:25>
-                segment <34:21-34:25> slice
-              path <34:27-34:37>
-                segment <34:27-34:37> pivot_index
-          loop-stmt <35:9-56:9>
-            block <35:14-56:9>
-              assign-expr-stmt <36:13-36:23> += <36:19-36:20>
-                path <36:13-36:17>
-                  segment <36:13-36:17> start
-                literal i32 1 <36:22-36:22>
-              while-stmt <37:13-39:13>
-                binary-expr <37:19-37:38> < <37:32-37:32>
-                  array-index-expr <37:19-37:30> [] <37:24-37:30>
-                    path <37:19-37:23>
-                      segment <37:19-37:23> slice
-                    path <37:25-37:29>
-                      segment <37:25-37:29> start
-                  path <37:34-37:38>
-                    segment <37:34-37:38> pivot
-                block <37:40-39:13>
-                  assign-expr-stmt <38:17-38:27> += <38:23-38:24>
-                    path <38:17-38:21>
-                      segment <38:17-38:21> start
-                    literal i32 1 <38:26-38:26>
-              assign-expr-stmt <40:13-40:23> -= <40:19-40:20>
-                path <40:13-40:17>
-                  segment <40:13-40:17> start
-                literal i32 1 <40:22-40:22>
-              assign-expr-stmt <42:13-42:21> -= <42:17-42:18>
-                path <42:13-42:15>
-                  segment <42:13-42:15> end
-                literal i32 1 <42:20-42:20>
-              while-stmt <43:13-45:13>
-                binary-expr <43:19-43:36> > <43:30-43:30>
-                  array-index-expr <43:19-43:28> [] <43:24-43:28>
-                    path <43:19-43:23>
-                      segment <43:19-43:23> slice
-                    path <43:25-43:27>
-                      segment <43:25-43:27> end
-                  path <43:32-43:36>
-                    segment <43:32-43:36> pivot
-                block <43:38-45:13>
-                  assign-expr-stmt <44:17-44:25> -= <44:21-44:22>
-                    path <44:17-44:19>
-                      segment <44:17-44:19> end
-                    literal i32 1 <44:24-44:24>
-              assign-expr-stmt <46:13-46:21> += <46:17-46:18>
-                path <46:13-46:15>
-                  segment <46:13-46:15> end
-                literal i32 1 <46:20-46:20>
-              if-stmt <48:13-50:13>
-                if-clause <48:13-50:13>
-                  binary-expr <48:16-48:27> >= <48:22-48:23>
-                    path <48:16-48:20>
-                      segment <48:16-48:20> start
-                    path <48:25-48:27>
-                      segment <48:25-48:27> end
-                  block <48:29-50:13>
-                    ret-stmt <49:17-49:27>
-                      path <49:24-49:26>
-                        segment <49:24-49:26> end
-              var-def <52:13-52:33> mutable x <52:17-52:17>
-                array-index-expr <52:21-52:32> [] <52:26-52:32>
-                  path <52:21-52:25>
-                    segment <52:21-52:25> slice
-                  path <52:27-52:31>
-                    segment <52:27-52:31> start
-              assign-expr-stmt <53:13-53:38> = <53:26-53:26>
-                array-index-expr <53:13-53:24> [] <53:18-53:24>
-                  path <53:13-53:17>
-                    segment <53:13-53:17> slice
-                  path <53:19-53:23>
-                    segment <53:19-53:23> start
-                array-index-expr <53:28-53:37> [] <53:33-53:37>
-                  path <53:28-53:32>
-                    segment <53:28-53:32> slice
-                  path <53:34-53:36>
-                    segment <53:34-53:36> end
-              assign-expr-stmt <54:13-54:27> = <54:24-54:24>
-                array-index-expr <54:13-54:22> [] <54:18-54:22>
-                  path <54:13-54:17>
-                    segment <54:13-54:17> slice
-                  path <54:19-54:21>
-                    segment <54:19-54:21> end
-                path <54:26-54:26>
-                  segment <54:26-54:26> x
-              simple-expr-stmt <55:13-55:22>
-                call-expr <55:13-55:21> () <55:19-55:21>
-                  path <55:13-55:18>
-                    segment <55:13-55:18> forget
-                  path <55:20-55:20>
-                    segment <55:20-55:20> x
-      fn-def <59:5-73:5> () <59:25-59:57>
-        generic-name <59:8-59:24> insertion_sort <59:8-59:21> <> <59:22-59:24>
-          generic-parameter <59:23-59:23> T <59:23-59:23>
-        fn-def-parameter <59:26-59:34> slice <59:26-59:30>
-          ref-type <59:33-59:34>
-            path <59:34-59:34>
-              segment <59:34-59:34> T
-        fn-def-parameter <59:37-59:46> start <59:37-59:41>
-          primitive-type u64 <59:44-59:46>
-        fn-def-parameter <59:49-59:56> end <59:49-59:51>
-          primitive-type u64 <59:54-59:56>
-        block <59:59-73:5>
-          for-stmt <60:9-72:9> iter-var i <60:13-60:13>
-            range-both-expr <60:18-60:35> dotdot <60:27-60:28>
-              binary-expr <60:18-60:26> + <60:24-60:24>
-                path <60:18-60:22>
-                  segment <60:18-60:22> start
-                literal i32 1 <60:26-60:26>
-              binary-expr <60:29-60:35> + <60:33-60:33>
-                path <60:29-60:31>
-                  segment <60:29-60:31> end
-                literal i32 1 <60:35-60:35>
-            block <60:37-72:9>
-              if-stmt <61:13-71:13>
-                if-clause <61:13-71:13>
-                  binary-expr <61:16-61:38> < <61:25-61:25>
-                    array-index-expr <61:16-61:23> [] <61:21-61:23>
-                      path <61:16-61:20>
-                        segment <61:16-61:20> slice
-                      path <61:22-61:22>
-                        segment <61:22-61:22> i
-                    array-index-expr <61:27-61:38> [] <61:32-61:38>
-                      path <61:27-61:31>
-                        segment <61:27-61:31> slice
-                      binary-expr <61:33-61:37> - <61:35-61:35>
-                        path <61:33-61:33>
-                          segment <61:33-61:33> i
-                        literal i32 1 <61:37-61:37>
-                  block <61:40-71:13>
-                    for-stmt <62:17-70:17> iter-var j <62:21-62:21>
-                      range-both-expr <62:26-62:33> dotdot <62:31-62:32>
-                        path <62:26-62:30>
-                          segment <62:26-62:30> start
-                        path <62:33-62:33>
-                          segment <62:33-62:33> i
-                      block <62:35-70:17>
-                        if-stmt <63:21-69:21>
-                          if-clause <63:21-69:21>
-                            binary-expr <63:24-63:42> > <63:33-63:33>
-                              array-index-expr <63:24-63:31> [] <63:29-63:31>
-                                path <63:24-63:28>
-                                  segment <63:24-63:28> slice
-                                path <63:30-63:30>
-                                  segment <63:30-63:30> j
-                              array-index-expr <63:35-63:42> [] <63:40-63:42>
-                                path <63:35-63:39>
-                                  segment <63:35-63:39> slice
-                                path <63:41-63:41>
-                                  segment <63:41-63:41> i
-                            block <63:44-69:21>
-                              var-def <64:25-64:45> mutable x <64:29-64:29>
-                                array-index-expr <64:33-64:44> [] <64:38-64:44>
-                                  path <64:33-64:37>
-                                    segment <64:33-64:37> slice
-                                  binary-expr <64:39-64:43> - <64:41-64:41>
-                                    path <64:39-64:39>
-                                      segment <64:39-64:39> j
-                                    literal i32 1 <64:43-64:43>
-                              assign-expr-stmt <65:25-65:48> = <65:38-65:38>
-                                array-index-expr <65:25-65:36> [] <65:30-65:36>
-                                  path <65:25-65:29>
-                                    segment <65:25-65:29> slice
-                                  binary-expr <65:31-65:35> - <65:33-65:33>
-                                    path <65:31-65:31>
-                                      segment <65:31-65:31> j
-                                    literal i32 1 <65:35-65:35>
-                                array-index-expr <65:40-65:47> [] <65:45-65:47>
-                                  path <65:40-65:44>
-                                    segment <65:40-65:44> slice
-                                  path <65:46-65:46>
-                                    segment <65:46-65:46> i
-                              assign-expr-stmt <66:25-66:37> = <66:34-66:34>
-                                array-index-expr <66:25-66:32> [] <66:30-66:32>
-                                  path <66:25-66:29>
-                                    segment <66:25-66:29> slice
-                                  path <66:31-66:31>
-                                    segment <66:31-66:31> i
-                                path <66:36-66:36>
-                                  segment <66:36-66:36> x
-                              simple-expr-stmt <67:25-67:34>
-                                call-expr <67:25-67:33> () <67:31-67:33>
-                                  path <67:25-67:30>
-                                    segment <67:25-67:30> forget
-                                  path <67:32-67:32>
-                                    segment <67:32-67:32> x
-                              break-stmt <68:25-68:30>
-  fn-def <76:1-82:1> () <76:13-76:42>
-    generic-name <76:4-76:12> map <76:4-76:6> <> <76:7-76:12>
-      generic-parameter <76:8-76:8> T <76:8-76:8>
-      generic-parameter <76:11-76:11> U <76:11-76:11>
-    fn-def-parameter <76:14-76:26> list <76:14-76:17>
-      path <76:20-76:26>
-        segment <76:20-76:26> list <76:20-76:23>
-          path <76:25-76:25>
-            segment <76:25-76:25> T
-    fn-def-parameter <76:29-76:41> f <76:29-76:29>
-      fn-type <76:32-76:41> () <76:34-76:36>
-        fn-type-parameter <76:35-76:35>
-          path <76:35-76:35>
-            segment <76:35-76:35> T
-        path <76:41-76:41>
-          segment <76:41-76:41> U
-    path <76:47-76:53>
-      segment <76:47-76:53> list <76:47-76:50>
-        path <76:52-76:52>
-          segment <76:52-76:52> U
-    block <76:55-82:1>
-      var-def <77:5-77:51> mutable result <77:9-77:14>
-        call-expr <77:18-77:50> () <77:41-77:50>
-          path <77:18-77:40>
-            segment <77:18-77:26> list <77:18-77:21>
-              path <77:25-77:25>
-                segment <77:25-77:25> T
-            segment <77:29-77:40> with_capcity
-          member-expr <77:42-77:49> . <77:46-77:46> len <77:47-77:49>
-            path <77:42-77:45>
-              segment <77:42-77:45> list
-      for-stmt <78:5-80:5> iter-var item <78:9-78:12>
-        path <78:17-78:20>
-          segment <78:17-78:20> list
-        block <78:22-80:5>
-          simple-expr-stmt <79:9-79:28>
-            call-expr <79:9-79:27> () <79:19-79:27>
-              member-expr <79:9-79:18> . <79:15-79:15> add <79:16-79:18>
-                path <79:9-79:14>
-                  segment <79:9-79:14> result
-              call-expr <79:20-79:26> () <79:21-79:26>
-                path <79:20-79:20>
-                  segment <79:20-79:20> f
-                path <79:22-79:25>
-                  segment <79:22-79:25> item
-      ret-stmt <81:5-81:18>
-        path <81:12-81:17>
-          segment <81:12-81:17> result
-  fn-def <84:1-89:1> () <84:16-84:57>
-    generic-name <84:4-84:15> reduce <84:4-84:9> <> <84:10-84:15>
-      generic-parameter <84:11-84:11> T <84:11-84:11>
-      generic-parameter <84:14-84:14> A <84:14-84:14>
-    fn-def-parameter <84:17-84:29> list <84:17-84:20>
-      path <84:23-84:29>
-        segment <84:23-84:29> list <84:23-84:26>
-          path <84:28-84:28>
-            segment <84:28-84:28> T
-    fn-def-parameter <84:32-84:38> init <84:32-84:35>
-      path <84:38-84:38>
-        segment <84:38-84:38> A
-    fn-def-parameter <84:41-84:56> f <84:41-84:41>
-      fn-type <84:44-84:56> () <84:46-84:51>
-        fn-type-parameter <84:47-84:47>
-          path <84:47-84:47>
-            segment <84:47-84:47> A
-        fn-type-parameter <84:50-84:50>
-          path <84:50-84:50>
-            segment <84:50-84:50> T
-        path <84:56-84:56>
-          segment <84:56-84:56> A
-    path <84:62-84:62>
-      segment <84:62-84:62> A
-    block <84:64-89:1>
-      for-stmt <85:5-87:5> iter-var item <85:9-85:12>
-        path <85:17-85:20>
-          segment <85:17-85:20> list
-        block <85:22-87:5>
-          assign-expr-stmt <86:9-86:29> = <86:14-86:14>
-            path <86:9-86:12>
-              segment <86:9-86:12> init
-            call-expr <86:16-86:28> () <86:17-86:28>
-              path <86:16-86:16>
-                segment <86:16-86:16> f
-              path <86:18-86:21>
-                segment <86:18-86:21> init
-              path <86:24-86:27>
-                segment <86:24-86:27> item
-      ret-stmt <88:5-88:16>
-        path <88:12-88:15>
-          segment <88:12-88:15> init
+  class-def <4:1-10:1> {} <4:23-10:1>
+    generic-name <4:7-4:21> PartialEqual <4:7-4:18> <> <4:19-4:21>
+      generic-parameter <4:20-4:20> R <4:20-4:20>
+    fn-def <6:5-6:40> () <6:10-6:31>
+      generic-name <6:8-6:9> eq <6:8-6:9>
+      fn-def-parameter <6:11-6:21> self <6:11-6:14>
+        ref-type <6:17-6:21>
+          path <6:18-6:21>
+            segment <6:18-6:21> Self
+      fn-def-parameter <6:24-6:30> rhs <6:24-6:26>
+        ref-type <6:29-6:30>
+          path <6:30-6:30>
+            segment <6:30-6:30> R
+      primitive-type bool <6:36-6:39>
+    fn-def <7:5-9:5> () <7:10-7:31>
+      generic-name <7:8-7:9> ne <7:8-7:9>
+      fn-def-parameter <7:11-7:21> self <7:11-7:14>
+        ref-type <7:17-7:21>
+          path <7:18-7:21>
+            segment <7:18-7:21> Self
+      fn-def-parameter <7:24-7:30> rhs <7:24-7:26>
+        ref-type <7:29-7:30>
+          path <7:30-7:30>
+            segment <7:30-7:30> R
+      primitive-type bool <7:36-7:39>
+      block <7:41-9:5>
+        ret-stmt <8:9-8:29>
+          unary-expr <8:16-8:28> ! <8:16-8:16>
+            call-expr <8:17-8:28> () <8:24-8:28>
+              member-expr <8:17-8:23> . <8:21-8:21> eq <8:22-8:23>
+                path <8:17-8:20>
+                  segment <8:17-8:20> self
+              path <8:25-8:27>
+                segment <8:25-8:27> rhs
+  enum-def <12:1-16:1> Ordering <12:6-12:13> {} <12:15-16:1>
+    enum-def-variant <13:5-13:8> Less <13:5-13:8>
+    enum-def-variant <14:5-14:9> Equal <14:5-14:9>
+    enum-def-variant <15:5-15:11> Greater <15:5-15:11>
+  class-def <18:1-20:1> {} <18:21-20:1>
+    generic-name <18:7-18:19> Comparable <18:7-18:16> <> <18:17-18:19>
+      generic-parameter <18:18-18:18> R <18:18-18:18>
+    fn-def <19:5-19:45> () <19:11-19:32>
+      generic-name <19:8-19:10> cmp <19:8-19:10>
+      fn-def-parameter <19:12-19:22> self <19:12-19:15>
+        ref-type <19:18-19:22>
+          path <19:19-19:22>
+            segment <19:19-19:22> Self
+      fn-def-parameter <19:25-19:31> rhs <19:25-19:27>
+        ref-type <19:30-19:31>
+          path <19:31-19:31>
+            segment <19:31-19:31> R
+      path <19:37-19:44>
+        segment <19:37-19:44> Ordering
+  struct-def <22:1-26:1>
+    generic-name <22:8-22:14> list <22:8-22:11> <> <22:12-22:14>
+      generic-parameter <22:13-22:13> T <22:13-22:13>
+    field-def <23:5-23:11> ptr <23:5-23:7> : <23:8-23:8>
+      ref-type <23:10-23:11>
+        path <23:11-23:11>
+          segment <23:11-23:11> T
+    field-def <24:5-24:12> cap <24:5-24:7> : <24:8-24:8>
+      primitive-type u64 <24:10-24:12>
+    field-def <25:5-25:12> len <25:5-25:7> : <25:8-25:8>
+      primitive-type u64 <25:10-25:12>
+  struct-def <28:1-31:1>
+    generic-name <28:8-28:15> slice <28:8-28:12> <> <28:13-28:15>
+      generic-parameter <28:14-28:14> T <28:14-28:14>
+    field-def <29:5-29:11> ptr <29:5-29:7> : <29:8-29:8>
+      ref-type <29:10-29:11>
+        path <29:11-29:11>
+          segment <29:11-29:11> T
+    field-def <30:5-30:12> len <30:5-30:7> : <30:8-30:8>
+      primitive-type u64 <30:10-30:12>
+  struct-def <33:1-35:1>
+    generic-name <33:8-33:13> string <33:8-33:13>
+    field-def <34:5-34:18> list <34:5-34:8> : <34:9-34:9>
+      path <34:11-34:18>
+        segment <34:11-34:18> list <34:11-34:14>
+          primitive-type u8 <34:16-34:17>
+  fn-def <37:1-94:1> () <37:11-37:25>
+    generic-name <37:4-37:10> sort <37:4-37:7> <> <37:8-37:10>
+      generic-parameter <37:9-37:9> T <37:9-37:9>
+    fn-def-parameter <37:12-37:24> list <37:12-37:15>
+      path <37:18-37:24>
+        segment <37:18-37:24> list <37:18-37:21>
+          path <37:23-37:23>
+            segment <37:23-37:23> T
+    where-clause <37:33-37:48> T <37:33-37:33>
+      path <37:36-37:48>
+        segment <37:36-37:48> Comparable <37:36-37:45>
+          path <37:47-37:47>
+            segment <37:47-37:47> T
+    block <37:50-94:1>
+      use-stmt <38:5-38:25>
+        path <38:9-38:24>
+          segment <38:9-38:11> std
+          segment <38:14-38:16> mem
+          segment <38:19-38:24> forget
+      simple-expr-stmt <40:5-40:41>
+        call-expr <40:5-40:40> () <40:14-40:40>
+          path <40:5-40:13>
+            segment <40:5-40:13> quicksort
+          member-expr <40:15-40:22> . <40:19-40:19> ptr <40:20-40:22>
+            path <40:15-40:18>
+              segment <40:15-40:18> list
+          literal i32 0 <40:25-40:25>
+          binary-expr <40:28-40:39> - <40:37-40:37>
+            member-expr <40:28-40:35> . <40:32-40:32> len <40:33-40:35>
+              path <40:28-40:31>
+                segment <40:28-40:31> list
+            literal i32 1 <40:39-40:39>
+      fn-def <42:5-50:5> () <42:20-42:52>
+        generic-name <42:8-42:19> quicksort <42:8-42:16> <> <42:17-42:19>
+          generic-parameter <42:18-42:18> T <42:18-42:18>
+        fn-def-parameter <42:21-42:29> slice <42:21-42:25>
+          ref-type <42:28-42:29>
+            path <42:29-42:29>
+              segment <42:29-42:29> T
+        fn-def-parameter <42:32-42:41> start <42:32-42:36>
+          primitive-type u64 <42:39-42:41>
+        fn-def-parameter <42:44-42:51> end <42:44-42:46>
+          primitive-type u64 <42:49-42:51>
+        where-clause <42:60-42:75> T <42:60-42:60>
+          path <42:63-42:75>
+            segment <42:63-42:75> Comparable <42:63-42:72>
+              path <42:74-42:74>
+                segment <42:74-42:74> T
+        block <42:77-50:5>
+          if-stmt <43:9-49:9>
+            if-clause <43:9-45:9>
+              binary-expr <43:12-43:26> < <43:24-43:24>
+                binary-expr <43:12-43:22> - <43:16-43:16>
+                  path <43:12-43:14>
+                    segment <43:12-43:14> end
+                  path <43:18-43:22>
+                    segment <43:18-43:22> start
+                literal i32 6 <43:26-43:26>
+              block <43:28-45:9>
+                simple-expr-stmt <44:13-44:46>
+                  call-expr <44:13-44:45> () <44:27-44:45>
+                    path <44:13-44:26>
+                      segment <44:13-44:26> insertion_sort
+                    path <44:28-44:32>
+                      segment <44:28-44:32> slice
+                    path <44:35-44:39>
+                      segment <44:35-44:39> start
+                    path <44:42-44:44>
+                      segment <44:42-44:44> end
+            else-clause <45:11-49:9>
+              block <45:16-49:9>
+                var-def <46:13-46:53> mutable pivot <46:17-46:21>
+                  call-expr <46:25-46:52> () <46:34-46:52>
+                    path <46:25-46:33>
+                      segment <46:25-46:33> partition
+                    path <46:35-46:39>
+                      segment <46:35-46:39> slice
+                    path <46:42-46:46>
+                      segment <46:42-46:46> start
+                    path <46:49-46:51>
+                      segment <46:49-46:51> end
+                simple-expr-stmt <47:13-47:43>
+                  call-expr <47:13-47:42> () <47:22-47:42>
+                    path <47:13-47:21>
+                      segment <47:13-47:21> quicksort
+                    path <47:23-47:27>
+                      segment <47:23-47:27> slice
+                    path <47:30-47:34>
+                      segment <47:30-47:34> start
+                    path <47:37-47:41>
+                      segment <47:37-47:41> pivot
+                simple-expr-stmt <48:13-48:45>
+                  call-expr <48:13-48:44> () <48:22-48:44>
+                    path <48:13-48:21>
+                      segment <48:13-48:21> quicksort
+                    path <48:23-48:27>
+                      segment <48:23-48:27> slice
+                    binary-expr <48:30-48:38> + <48:36-48:36>
+                      path <48:30-48:34>
+                        segment <48:30-48:34> pivot
+                      literal i32 1 <48:38-48:38>
+                    path <48:41-48:43>
+                      segment <48:41-48:43> end
+      fn-def <53:5-77:5> () <53:20-53:52>
+        generic-name <53:8-53:19> partition <53:8-53:16> <> <53:17-53:19>
+          generic-parameter <53:18-53:18> T <53:18-53:18>
+        fn-def-parameter <53:21-53:29> slice <53:21-53:25>
+          ref-type <53:28-53:29>
+            path <53:29-53:29>
+              segment <53:29-53:29> T
+        fn-def-parameter <53:32-53:41> start <53:32-53:36>
+          primitive-type u64 <53:39-53:41>
+        fn-def-parameter <53:44-53:51> end <53:44-53:46>
+          primitive-type u64 <53:49-53:51>
+        where-clause <53:60-53:75> T <53:60-53:60>
+          path <53:63-53:75>
+            segment <53:63-53:75> Comparable <53:63-53:72>
+              path <53:74-53:74>
+                segment <53:74-53:74> T
+        block <53:77-77:5>
+          var-def <54:9-54:39> mutable pivot <54:13-54:17>
+            array-index-expr <54:21-54:38> [] <54:26-54:38>
+              path <54:21-54:25>
+                segment <54:21-54:25> slice
+              path <54:27-54:37>
+                segment <54:27-54:37> pivot_index
+          loop-stmt <55:9-76:9>
+            block <55:14-76:9>
+              assign-expr-stmt <56:13-56:23> += <56:19-56:20>
+                path <56:13-56:17>
+                  segment <56:13-56:17> start
+                literal i32 1 <56:22-56:22>
+              while-stmt <57:13-59:13>
+                binary-expr <57:19-57:38> < <57:32-57:32>
+                  array-index-expr <57:19-57:30> [] <57:24-57:30>
+                    path <57:19-57:23>
+                      segment <57:19-57:23> slice
+                    path <57:25-57:29>
+                      segment <57:25-57:29> start
+                  path <57:34-57:38>
+                    segment <57:34-57:38> pivot
+                block <57:40-59:13>
+                  assign-expr-stmt <58:17-58:27> += <58:23-58:24>
+                    path <58:17-58:21>
+                      segment <58:17-58:21> start
+                    literal i32 1 <58:26-58:26>
+              assign-expr-stmt <60:13-60:23> -= <60:19-60:20>
+                path <60:13-60:17>
+                  segment <60:13-60:17> start
+                literal i32 1 <60:22-60:22>
+              assign-expr-stmt <62:13-62:21> -= <62:17-62:18>
+                path <62:13-62:15>
+                  segment <62:13-62:15> end
+                literal i32 1 <62:20-62:20>
+              while-stmt <63:13-65:13>
+                binary-expr <63:19-63:36> > <63:30-63:30>
+                  array-index-expr <63:19-63:28> [] <63:24-63:28>
+                    path <63:19-63:23>
+                      segment <63:19-63:23> slice
+                    path <63:25-63:27>
+                      segment <63:25-63:27> end
+                  path <63:32-63:36>
+                    segment <63:32-63:36> pivot
+                block <63:38-65:13>
+                  assign-expr-stmt <64:17-64:25> -= <64:21-64:22>
+                    path <64:17-64:19>
+                      segment <64:17-64:19> end
+                    literal i32 1 <64:24-64:24>
+              assign-expr-stmt <66:13-66:21> += <66:17-66:18>
+                path <66:13-66:15>
+                  segment <66:13-66:15> end
+                literal i32 1 <66:20-66:20>
+              if-stmt <68:13-70:13>
+                if-clause <68:13-70:13>
+                  binary-expr <68:16-68:27> >= <68:22-68:23>
+                    path <68:16-68:20>
+                      segment <68:16-68:20> start
+                    path <68:25-68:27>
+                      segment <68:25-68:27> end
+                  block <68:29-70:13>
+                    ret-stmt <69:17-69:27>
+                      path <69:24-69:26>
+                        segment <69:24-69:26> end
+              var-def <72:13-72:33> mutable x <72:17-72:17>
+                array-index-expr <72:21-72:32> [] <72:26-72:32>
+                  path <72:21-72:25>
+                    segment <72:21-72:25> slice
+                  path <72:27-72:31>
+                    segment <72:27-72:31> start
+              assign-expr-stmt <73:13-73:38> = <73:26-73:26>
+                array-index-expr <73:13-73:24> [] <73:18-73:24>
+                  path <73:13-73:17>
+                    segment <73:13-73:17> slice
+                  path <73:19-73:23>
+                    segment <73:19-73:23> start
+                array-index-expr <73:28-73:37> [] <73:33-73:37>
+                  path <73:28-73:32>
+                    segment <73:28-73:32> slice
+                  path <73:34-73:36>
+                    segment <73:34-73:36> end
+              assign-expr-stmt <74:13-74:27> = <74:24-74:24>
+                array-index-expr <74:13-74:22> [] <74:18-74:22>
+                  path <74:13-74:17>
+                    segment <74:13-74:17> slice
+                  path <74:19-74:21>
+                    segment <74:19-74:21> end
+                path <74:26-74:26>
+                  segment <74:26-74:26> x
+              simple-expr-stmt <75:13-75:22>
+                call-expr <75:13-75:21> () <75:19-75:21>
+                  path <75:13-75:18>
+                    segment <75:13-75:18> forget
+                  path <75:20-75:20>
+                    segment <75:20-75:20> x
+      fn-def <79:5-93:5> () <79:25-79:57>
+        generic-name <79:8-79:24> insertion_sort <79:8-79:21> <> <79:22-79:24>
+          generic-parameter <79:23-79:23> T <79:23-79:23>
+        fn-def-parameter <79:26-79:34> slice <79:26-79:30>
+          ref-type <79:33-79:34>
+            path <79:34-79:34>
+              segment <79:34-79:34> T
+        fn-def-parameter <79:37-79:46> start <79:37-79:41>
+          primitive-type u64 <79:44-79:46>
+        fn-def-parameter <79:49-79:56> end <79:49-79:51>
+          primitive-type u64 <79:54-79:56>
+        where-clause <79:65-79:80> T <79:65-79:65>
+          path <79:68-79:80>
+            segment <79:68-79:80> Comparable <79:68-79:77>
+              path <79:79-79:79>
+                segment <79:79-79:79> T
+        block <79:82-93:5>
+          for-stmt <80:9-92:9> iter-var i <80:13-80:13>
+            range-both-expr <80:18-80:35> dotdot <80:27-80:28>
+              binary-expr <80:18-80:26> + <80:24-80:24>
+                path <80:18-80:22>
+                  segment <80:18-80:22> start
+                literal i32 1 <80:26-80:26>
+              binary-expr <80:29-80:35> + <80:33-80:33>
+                path <80:29-80:31>
+                  segment <80:29-80:31> end
+                literal i32 1 <80:35-80:35>
+            block <80:37-92:9>
+              if-stmt <81:13-91:13>
+                if-clause <81:13-91:13>
+                  binary-expr <81:16-81:38> < <81:25-81:25>
+                    array-index-expr <81:16-81:23> [] <81:21-81:23>
+                      path <81:16-81:20>
+                        segment <81:16-81:20> slice
+                      path <81:22-81:22>
+                        segment <81:22-81:22> i
+                    array-index-expr <81:27-81:38> [] <81:32-81:38>
+                      path <81:27-81:31>
+                        segment <81:27-81:31> slice
+                      binary-expr <81:33-81:37> - <81:35-81:35>
+                        path <81:33-81:33>
+                          segment <81:33-81:33> i
+                        literal i32 1 <81:37-81:37>
+                  block <81:40-91:13>
+                    for-stmt <82:17-90:17> iter-var j <82:21-82:21>
+                      range-both-expr <82:26-82:33> dotdot <82:31-82:32>
+                        path <82:26-82:30>
+                          segment <82:26-82:30> start
+                        path <82:33-82:33>
+                          segment <82:33-82:33> i
+                      block <82:35-90:17>
+                        if-stmt <83:21-89:21>
+                          if-clause <83:21-89:21>
+                            binary-expr <83:24-83:42> > <83:33-83:33>
+                              array-index-expr <83:24-83:31> [] <83:29-83:31>
+                                path <83:24-83:28>
+                                  segment <83:24-83:28> slice
+                                path <83:30-83:30>
+                                  segment <83:30-83:30> j
+                              array-index-expr <83:35-83:42> [] <83:40-83:42>
+                                path <83:35-83:39>
+                                  segment <83:35-83:39> slice
+                                path <83:41-83:41>
+                                  segment <83:41-83:41> i
+                            block <83:44-89:21>
+                              var-def <84:25-84:45> mutable x <84:29-84:29>
+                                array-index-expr <84:33-84:44> [] <84:38-84:44>
+                                  path <84:33-84:37>
+                                    segment <84:33-84:37> slice
+                                  binary-expr <84:39-84:43> - <84:41-84:41>
+                                    path <84:39-84:39>
+                                      segment <84:39-84:39> j
+                                    literal i32 1 <84:43-84:43>
+                              assign-expr-stmt <85:25-85:48> = <85:38-85:38>
+                                array-index-expr <85:25-85:36> [] <85:30-85:36>
+                                  path <85:25-85:29>
+                                    segment <85:25-85:29> slice
+                                  binary-expr <85:31-85:35> - <85:33-85:33>
+                                    path <85:31-85:31>
+                                      segment <85:31-85:31> j
+                                    literal i32 1 <85:35-85:35>
+                                array-index-expr <85:40-85:47> [] <85:45-85:47>
+                                  path <85:40-85:44>
+                                    segment <85:40-85:44> slice
+                                  path <85:46-85:46>
+                                    segment <85:46-85:46> i
+                              assign-expr-stmt <86:25-86:37> = <86:34-86:34>
+                                array-index-expr <86:25-86:32> [] <86:30-86:32>
+                                  path <86:25-86:29>
+                                    segment <86:25-86:29> slice
+                                  path <86:31-86:31>
+                                    segment <86:31-86:31> i
+                                path <86:36-86:36>
+                                  segment <86:36-86:36> x
+                              simple-expr-stmt <87:25-87:34>
+                                call-expr <87:25-87:33> () <87:31-87:33>
+                                  path <87:25-87:30>
+                                    segment <87:25-87:30> forget
+                                  path <87:32-87:32>
+                                    segment <87:32-87:32> x
+                              break-stmt <88:25-88:30>
+  fn-def <96:1-102:1> () <96:13-96:42>
+    generic-name <96:4-96:12> map <96:4-96:6> <> <96:7-96:12>
+      generic-parameter <96:8-96:8> T <96:8-96:8>
+      generic-parameter <96:11-96:11> U <96:11-96:11>
+    fn-def-parameter <96:14-96:26> list <96:14-96:17>
+      path <96:20-96:26>
+        segment <96:20-96:26> list <96:20-96:23>
+          path <96:25-96:25>
+            segment <96:25-96:25> T
+    fn-def-parameter <96:29-96:41> f <96:29-96:29>
+      fn-type <96:32-96:41> () <96:34-96:36>
+        fn-type-parameter <96:35-96:35>
+          path <96:35-96:35>
+            segment <96:35-96:35> T
+        path <96:41-96:41>
+          segment <96:41-96:41> U
+    path <96:47-96:53>
+      segment <96:47-96:53> list <96:47-96:50>
+        path <96:52-96:52>
+          segment <96:52-96:52> U
+    block <96:55-102:1>
+      var-def <97:5-97:51> mutable result <97:9-97:14>
+        call-expr <97:18-97:50> () <97:41-97:50>
+          path <97:18-97:40>
+            segment <97:18-97:26> list <97:18-97:21>
+              path <97:25-97:25>
+                segment <97:25-97:25> T
+            segment <97:29-97:40> with_capcity
+          member-expr <97:42-97:49> . <97:46-97:46> len <97:47-97:49>
+            path <97:42-97:45>
+              segment <97:42-97:45> list
+      for-stmt <98:5-100:5> iter-var item <98:9-98:12>
+        path <98:17-98:20>
+          segment <98:17-98:20> list
+        block <98:22-100:5>
+          simple-expr-stmt <99:9-99:28>
+            call-expr <99:9-99:27> () <99:19-99:27>
+              member-expr <99:9-99:18> . <99:15-99:15> add <99:16-99:18>
+                path <99:9-99:14>
+                  segment <99:9-99:14> result
+              call-expr <99:20-99:26> () <99:21-99:26>
+                path <99:20-99:20>
+                  segment <99:20-99:20> f
+                path <99:22-99:25>
+                  segment <99:22-99:25> item
+      ret-stmt <101:5-101:18>
+        path <101:12-101:17>
+          segment <101:12-101:17> result
+  fn-def <104:1-109:1> () <104:16-104:57>
+    generic-name <104:4-104:15> reduce <104:4-104:9> <> <104:10-104:15>
+      generic-parameter <104:11-104:11> T <104:11-104:11>
+      generic-parameter <104:14-104:14> A <104:14-104:14>
+    fn-def-parameter <104:17-104:29> list <104:17-104:20>
+      path <104:23-104:29>
+        segment <104:23-104:29> list <104:23-104:26>
+          path <104:28-104:28>
+            segment <104:28-104:28> T
+    fn-def-parameter <104:32-104:38> init <104:32-104:35>
+      path <104:38-104:38>
+        segment <104:38-104:38> A
+    fn-def-parameter <104:41-104:56> f <104:41-104:41>
+      fn-type <104:44-104:56> () <104:46-104:51>
+        fn-type-parameter <104:47-104:47>
+          path <104:47-104:47>
+            segment <104:47-104:47> A
+        fn-type-parameter <104:50-104:50>
+          path <104:50-104:50>
+            segment <104:50-104:50> T
+        path <104:56-104:56>
+          segment <104:56-104:56> A
+    path <104:62-104:62>
+      segment <104:62-104:62> A
+    block <104:64-109:1>
+      for-stmt <105:5-107:5> iter-var item <105:9-105:12>
+        path <105:17-105:20>
+          segment <105:17-105:20> list
+        block <105:22-107:5>
+          assign-expr-stmt <106:9-106:29> = <106:14-106:14>
+            path <106:9-106:12>
+              segment <106:9-106:12> init
+            call-expr <106:16-106:28> () <106:17-106:28>
+              path <106:16-106:16>
+                segment <106:16-106:16> f
+              path <106:18-106:21>
+                segment <106:18-106:21> init
+              path <106:24-106:27>
+                segment <106:24-106:27> item
+      ret-stmt <108:5-108:16>
+        path <108:12-108:15>
+          segment <108:12-108:15> init
+  struct-def <116:1-119:1>
+    generic-name <116:8-116:13> Map <116:8-116:10> <> <116:11-116:13>
+      generic-parameter <116:12-116:12> I <116:12-116:12>
+    field-def <117:5-117:12> iter <117:5-117:8> : <117:9-117:9>
+      ref-type <117:11-117:12>
+        path <117:12-117:12>
+          segment <117:12-117:12> I
+    field-def <118:5-118:17> f <118:5-118:5> : <118:6-118:6>
+      fn-type <118:8-118:17> () <118:10-118:12>
+        fn-type-parameter <118:11-118:11>
+          path <118:11-118:11>
+            segment <118:11-118:11> T
+        path <118:17-118:17>
+          segment <118:17-118:17> U
+  class-def <121:1-129:1> {} <121:16-129:1>
+    generic-name <121:7-121:14> Iterable <121:7-121:14>
+    type-def <122:5-122:14>
+      generic-name <122:10-122:13> Item <122:10-122:13>
+    fn-def <124:5-124:47> () <124:12-124:24>
+      generic-name <124:8-124:11> next <124:8-124:11>
+      fn-def-parameter <124:13-124:23> self <124:13-124:16>
+        ref-type <124:19-124:23>
+          path <124:20-124:23>
+            segment <124:20-124:23> Self
+      path <124:29-124:46>
+        segment <124:29-124:46> Option <124:29-124:34>
+          path <124:36-124:45>
+            segment <124:36-124:39> Self
+            segment <124:42-124:45> Item
+    fn-def <126:5-128:5> () <126:14-126:41>
+      generic-name <126:8-126:13> map <126:8-126:10> <> <126:11-126:13>
+        generic-parameter <126:12-126:12> U <126:12-126:12>
+      fn-def-parameter <126:15-126:25> self <126:15-126:18>
+        ref-type <126:21-126:25>
+          path <126:22-126:25>
+            segment <126:22-126:25> Self
+      fn-def-parameter <126:28-126:40> f <126:28-126:28>
+        fn-type <126:31-126:40> () <126:33-126:35>
+          fn-type-parameter <126:34-126:34>
+            path <126:34-126:34>
+              segment <126:34-126:34> T
+          path <126:40-126:40>
+            segment <126:40-126:40> U
+      path <126:46-126:54>
+        segment <126:46-126:54> Map <126:46-126:48>
+          path <126:50-126:53>
+            segment <126:50-126:53> This
+      block <126:56-128:5>
+        ret-stmt <127:9-127:39>
+          object-expr <127:16-127:38> {} <127:19-127:38>
+            path <127:16-127:18>
+              segment <127:16-127:18> Map
+            object-expr-field <127:21-127:30> iter <127:21-127:24>
+              path <127:27-127:30>
+                segment <127:27-127:30> self
+            object-expr-field <127:33-127:36> f <127:33-127:33>
+              path <127:36-127:36>
+                segment <127:36-127:36> f

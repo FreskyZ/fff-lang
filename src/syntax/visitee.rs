@@ -72,6 +72,17 @@ impl_node!{ CallExpr, visit_call_expr, |self, v| {
     v.visit_expr_list(&self.parameters)
 }}
 
+impl_node!{ ClassDef, visit_class_def, |self, v| {
+    v.visit_generic_name(&self.name)?;
+    for r#type in &self.types {
+        v.visit_type_def(r#type)?;
+    }
+    for function in &self.functions {
+        v.visit_fn_def(function)?;
+    }
+    Ok(Default::default())
+}}
+
 impl_node!{ ContinueStatement, visit_continue_stmt }
 
 impl_node!{ ElseClause, visit_else_clause, |self, v| {
@@ -195,6 +206,7 @@ impl_abc_node!{ Item, visit_item,
     Enum => visit_enum_def,
     Fn => visit_fn_def,
     Type => visit_type_def,
+    Class => visit_class_def,
     Block => visit_block_stmt,
     SimpleExpr => visit_simple_expr_stmt,
     AssignExpr => visit_assign_expr_stmt,
@@ -304,6 +316,7 @@ impl_abc_node!{ Statement, visit_stmt,
     Enum => visit_enum_def,
     Fn => visit_fn_def,
     Type => visit_type_def,
+    Class => visit_class_def,
     Block => visit_block_stmt,
     Break => visit_break_stmt,
     Continue => visit_continue_stmt,

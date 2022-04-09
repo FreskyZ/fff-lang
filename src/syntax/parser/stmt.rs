@@ -10,6 +10,10 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             Ok(Statement::Enum(self.parse_enum_def()?))
         } else if self.maybe_fn_def() {
             Ok(Statement::Fn(self.parse_fn_def()?))
+        } else if self.maybe_type_def() {
+            Ok(Statement::Type(self.parse_type_def()?))
+        } else if self.maybe_class_def() {
+            Ok(Statement::Class(self.parse_class_def()?))
         } else if self.maybe_block_stmt() {
             Ok(Statement::Block(self.parse_block_stmt()?))
         } else if self.maybe_break_stmt() {
@@ -44,6 +48,10 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             Ok(Item::Enum(self.parse_enum_def()?))
         } else if self.maybe_fn_def() {
             Ok(Item::Fn(self.parse_fn_def()?))
+        } else if self.maybe_type_def() {
+            Ok(Item::Type(self.parse_type_def()?))
+        } else if self.maybe_class_def() {
+            Ok(Item::Class(self.parse_class_def()?))
         } else if self.maybe_block_stmt() {
             Ok(Item::Block(self.parse_block_stmt()?))
         } else if self.maybe_expr_stmt() {
@@ -159,6 +167,34 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             let semicolon_span = self.expect_sep(Separator::SemiColon)?;
             Ok(BreakStatement{ span: starting_span + semicolon_span, label: None })
         }
+    }
+
+    fn maybe_class_def(&self) -> bool {
+        matches!(self.current, Token::Keyword(Keyword::Class))
+    }
+
+    // class_def = 'class' generic_name '{' { type_def | fn_def } '}'
+    pub fn parse_class_def(&mut self) -> Result<ClassDef, Unexpected> {
+
+        let start_span = self.expect_keyword(Keyword::Class)?;
+        let name = self.parse_generic_name()?;
+        let left_brace_span = self.expect_sep(Separator::LeftBrace)?;
+
+        let mut types = Vec::new();
+        let mut functions = Vec::new();
+        let right_brace_span = loop {
+            if let Some(right_brace_span) = self.try_expect_sep(Separator::RightBrace) {
+                break right_brace_span;
+            } else if self.maybe_type_def() {
+                types.push(self.parse_type_def()?);
+            } else if self.maybe_fn_def() {
+                functions.push(self.parse_fn_def()?);
+            }  else {
+                self.push_unexpect("type, fn or `}`")?;
+            }
+        };
+
+        Ok(ClassDef{ span: start_span + right_brace_span, name, quote_span: left_brace_span + right_brace_span, types, functions })
     }
 
     pub fn maybe_continue_stmt(&self) -> bool {

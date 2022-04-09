@@ -14,7 +14,7 @@
      'break' =>      Break, Normal,
      'catch' =>      Catch, Reserved,
       'char' =>       Char, Primitive,
-     'class' =>      Class, Reserved,
+     'class' =>      Class, Normal,
      'const' =>      Const, Normal,
   'continue' =>   Continue, Normal,
       'else' =>       Else, Normal,

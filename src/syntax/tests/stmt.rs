@@ -673,3 +673,101 @@ fn parse_type_def() {
                 make_stmt!(gp 12:12 #3)))
     }
 }
+
+#[test]
+fn parse_class_def() {
+
+    
+    //                      0         1         2         3         4         5
+    //                      0123456789012345678901234567890123456789012345678901234
+    case!{ parse_class_def "class Equal { fn eq(self: &Self, rhs: &Self) -> bool; }",
+        ClassDef{
+            span: Span::new(0, 54),
+            name: make_stmt!(name 6:10 #2),
+            quote_span: Span::new(12, 54),
+            types: Vec::new(),
+            functions: vec![
+                FnDef{
+                    span: Span::new(14, 52),
+                    name: make_stmt!(name 17:18 #3),
+                    quote_span: Span::new(19, 43),
+                    parameters: vec![
+                        make_stmt!(fp 20:30 #4 20:23
+                            make_type!(ref 26:30 make_type!(simple 27:30 #5))),
+                        make_stmt!(fp 33:42 #6 33:35
+                            make_type!(ref 38:42 make_type!(simple 39:42 #5))),
+                    ],
+                    ret_type: Some(make_type!(prim 48:51 Bool)),
+                    wheres: Vec::new(),
+                    body: None,
+                },
+            ], //    2        3     4       5       6
+        }, strings ["Equal", "eq", "self", "Self", "rhs"]
+    }
+
+    //                      0         1         2         3         4         5         6         7
+    //                      0123456789012345678901234567890123456789012345678901234567890123456789012
+    case!{ parse_class_def "class Add<R> { type Result; fn add(self: Self, rhs: R) -> Self::Result; }",
+        ClassDef{
+            span: Span::new(0, 72),
+            name: make_stmt!(name 6:11 #2 6:8 quote 9:11
+                make_stmt!(gp 10:10 #3)),
+            quote_span: Span::new(13, 72),
+            types: vec![
+                make_stmt!(type 15:26
+                    make_stmt!(name 20:25 #4)),
+            ],
+            functions: vec![
+                FnDef{
+                    span: Span::new(28, 70),
+                    name: make_stmt!(name 31:33 #5),
+                    quote_span: Span::new(34, 53),
+                    parameters: vec![
+                        make_stmt!(fp 35:44 #6 35:38
+                            make_type!(simple 41:44 #7)),
+                        make_stmt!(fp 47:52 #8 47:49
+                            make_type!(simple 52:52 #3)),
+                    ],
+                    ret_type: Some(make_type!(path 58:69
+                        make_path!(segment simple 58:61 #7),
+                        make_path!(segment simple 64:69 #4))),
+                    wheres: Vec::new(),
+                    body: None,
+                }
+            ], //    2      3    4         5      6       7       8
+        }, strings ["Add", "R", "Result", "add", "self", "Self", "rhs"],
+    }
+
+    //                      0         1         2         3         4         5         6         7
+    //                      0123456789012345678901234567890123456789012345678901234567890123456789012
+    case!{ parse_class_def "class Iterable { type Item; fn next(self: &Self) -> Option<Self::Item>; }",
+        ClassDef{
+            span: Span::new(0, 72),
+            name: make_stmt!(name 6:13 #2),
+            quote_span: Span::new(15, 72),
+            types: vec![
+                make_stmt!(type 17:26
+                    make_stmt!(name 22:25 #3)),
+            ],
+            functions: vec![
+                FnDef{
+                    span: Span::new(28, 70),
+                    name: make_stmt!(name 31:34 #4),
+                    quote_span: Span::new(35, 47),
+                    parameters: vec![
+                        make_stmt!(fp 36:46 #5 36:39
+                            make_type!(ref 42:46
+                                make_type!(simple 43:46 #6))),
+                    ],
+                    ret_type: Some(make_type!(path 52:69
+                        make_path!(segment generic 52:69 #7 52:57 quote 58:69
+                            make_type!(path 59:68
+                                make_path!(segment simple 59:62 #6),
+                                make_path!(segment simple 65:68 #3))))),
+                    wheres: Vec::new(),
+                    body: None,
+                }
+            ], //    2           3       4       5       6       7
+        }, strings ["Iterable", "Item", "next", "self", "Self", "Option"],
+    }
+}

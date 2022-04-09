@@ -42,6 +42,7 @@ pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_block_stmt(&mut self, node: &BlockStatement) -> Result<T, E> { node.walk(self) }
     fn visit_break_stmt(&mut self, node: &BreakStatement) -> Result<T, E> { node.walk(self) }
     fn visit_call_expr(&mut self, node: &CallExpr) -> Result<T, E> { node.walk(self) }
+    fn visit_class_def(&mut self, node: &ClassDef) -> Result<T, E> { node.walk(self) }
     fn visit_continue_stmt(&mut self, node: &ContinueStatement) -> Result<T, E> { node.walk(self) }
     fn visit_else_clause(&mut self, node: &ElseClause) -> Result<T, E> { node.walk(self) }
     fn visit_enum_def(&mut self, node: &EnumDef) -> Result<T, E> { node.walk(self) }

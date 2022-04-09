@@ -161,6 +161,11 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
             f.write_str(" () ")?.write_span(node.quote_span))
     }
 
+    fn visit_class_def(&mut self, node: &ClassDef) -> fmt::Result {
+        self.impl_visit(node, "class-def", node.span, |f|
+            f.write_str(" {} ")?.write_span(node.quote_span))
+    }
+
     fn visit_continue_stmt(&mut self, node: &ContinueStatement) -> fmt::Result {
         self.impl_visit(node, "continue-stmt", node.span, |f| {
             if let Some(label) = node.label {

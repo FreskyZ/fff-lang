@@ -1,4 +1,24 @@
 
+// newly added generic features
+
+class PartialEqual<R> {
+
+    fn eq(self: &Self, rhs: &R) -> bool;
+    fn ne(self: &Self, rhs: &R) -> bool {
+        return !self.eq(rhs);
+    }
+}
+
+enum Ordering {
+    Less,
+    Equal,
+    Greater,
+}
+
+class Comparable<R> {
+    fn cmp(self: &Self, rhs: &R) -> Ordering;
+}
+
 struct list<T> {
     ptr: &T,
     cap: u64,
@@ -14,12 +34,12 @@ struct string {
     list: list<u8>,
 }
 
-fn sort<T>(list: list<T>) {
+fn sort<T>(list: list<T>) where T: Comparable<T> {
     use std::mem::forget;
 
     quicksort(list.ptr, 0, list.len - 1);
 
-    fn quicksort<T>(slice: &T, start: u64, end: u64) { // start and end is inclusive
+    fn quicksort<T>(slice: &T, start: u64, end: u64) where T: Comparable<T> { // start and end is inclusive
         if end - start < 6 {
             insertion_sort(slice, start, end);
         } else {
@@ -30,7 +50,7 @@ fn sort<T>(list: list<T>) {
     }
 
     // https://en.wikipedia.org/wiki/Quicksort Hoare partition scheme
-    fn partition<T>(slice: &T, start: u64, end: u64) {
+    fn partition<T>(slice: &T, start: u64, end: u64) where T: Comparable<T> {
         var pivot = slice[pivot_index];
         loop {
             start += 1;
@@ -56,7 +76,7 @@ fn sort<T>(list: list<T>) {
         }
     }
 
-    fn insertion_sort<T>(slice: &T, start: u64, end: u64) {
+    fn insertion_sort<T>(slice: &T, start: u64, end: u64) where T: Comparable<T> {
         for i in start + 1..end + 1 {
             if slice[i] < slice[i - 1] {
                 for j in start..i {
@@ -86,4 +106,24 @@ fn reduce<T, A>(list: list<T>, init: A, f: fn(A, T) -> A) -> A {
         init = f(init, item);
     }
     return init;
+}
+
+// enum Option<T> {
+//     None{},
+//     Some{ v: T },
+// }
+
+struct Map<I> {
+    iter: &I,
+    f: fn(T) -> U,
+}
+
+class Iterable {
+    type Item;
+
+    fn next(self: &Self) -> Option<Self::Item>;
+
+    fn map<U>(self: &Self, f: fn(T) -> U) -> Map<This> {
+        return Map{ iter: self, f: f };
+    }
 }
