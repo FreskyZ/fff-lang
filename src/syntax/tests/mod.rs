@@ -441,13 +441,20 @@ macro_rules! make_stmt {
             op_span: Span::new($op_start, $op_end),
         }
     );
-    (alias $start:literal:$end:literal $name:expr, $from:expr) => (
-        TypeAlias{
+    (type $start:literal:$end:literal $name:expr) => (
+        TypeDef{
             span: Span::new($start, $end),
             name: $name,
-            from: $from,
+            from: None,
         }
-    ) 
+    );
+    (type $start:literal:$end:literal $name:expr, $from:expr) => (
+        TypeDef{
+            span: Span::new($start, $end),
+            name: $name,
+            from: Some($from),
+        }
+    );
 }
 
 macro_rules! make_path {

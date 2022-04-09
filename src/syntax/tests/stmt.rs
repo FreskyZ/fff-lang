@@ -359,7 +359,19 @@ fn fn_def_parse() {
             parameters: vec![], 
             ret_type: None,
             wheres: Vec::new(),
-            body: make_stmt!(block 10:11),
+            body: Some(make_stmt!(block 10:11)),
+        }
+    }
+
+    case!{ parse_fn_def "fn main();",
+        FnDef{
+            span: Span::new(0, 9), 
+            name: make_stmt!(name 3:6 #2), 
+            quote_span: Span::new(7, 8), 
+            parameters: vec![], 
+            ret_type: None,
+            wheres: Vec::new(),
+            body: None,
         }
     }
 
@@ -376,7 +388,7 @@ fn fn_def_parse() {
             ],
             ret_type: None,
             wheres: Vec::new(),
-            body: make_stmt!(block 17:18),
+            body: Some(make_stmt!(block 17:18)),
         }, strings ["main", "ac"]
     }
 
@@ -397,11 +409,11 @@ fn fn_def_parse() {
             ],
             ret_type: None,
             wheres: Vec::new(),
-            body: make_stmt!(block 63:80
+            body: Some(make_stmt!(block 63:80
                 make_stmt!(expr 65:78
                     make_expr!(call 65:77 paren 72:77
                         make_expr!(path simple 65:71 #7),
-                        make_expr!(path simple 73:76 #5)))),
+                        make_expr!(path simple 73:76 #5))))),
             //    2          3       4         5       6             7
         }, strings ["mainxxx", "argv", "string", "this", "some_other", "println"]
     }
@@ -416,7 +428,18 @@ fn fn_def_parse() {
             parameters: vec![],
             ret_type: Some(make_type!(prim 13:15 I32)),
             wheres: Vec::new(),
-            body: make_stmt!(block 17:18),
+            body: Some(make_stmt!(block 17:18)),
+        }
+    }
+    case!{ parse_fn_def "fn main() -> i32;",
+        FnDef{
+            span: Span::new(0, 16),
+            name: make_stmt!(name 3:6 #2), 
+            quote_span: Span::new(7, 8), 
+            parameters: vec![],
+            ret_type: Some(make_type!(prim 13:15 I32)),
+            wheres: Vec::new(),
+            body: None,
         }
     }
     //      0         1         2         3         4         5         6
@@ -436,7 +459,7 @@ fn fn_def_parse() {
             ], 
             ret_type: Some(make_type!(prim 55:57 I32)),
             wheres: Vec::new(),
-            body: make_stmt!(block 59:60)
+            body: Some(make_stmt!(block 59:60)),
             //       2       3       4       5      6         7
         }, strings ["ffff", "argc", "argv", "byte", "envv", "string"]
     }
@@ -470,7 +493,7 @@ fn fn_def_parse() {
                 make_path!(segment simple 111:113 #13),
                 make_path!(segment simple 116:121 #12))),
             wheres: Vec::new(),
-            body: make_stmt!(block 123:124)
+            body: Some(make_stmt!(block 123:124)),
         //           2             3       4       5       6       7        8         9       10      11      12        13     14
         }, strings ["impl_visit", "this", "This", "node", "Node", "title", "string", "span", "Span", "then", "Result", "fmt", "Error"]
     }
@@ -506,9 +529,27 @@ fn fn_def_parse() {
                     ], make_type!(simple 70:70 #4))
                 ]},
             ],
-            body: make_stmt!(block 72:73),
+            body: Some(make_stmt!(block 72:73)),
         //           2      3    4    5    6       7         8
         }, strings ["map", "T", "U", "F", "this", "Option", "f"],
+    }
+
+    // unknown generic parameter, but that's not syntax error
+    //                   012345678901234567
+    case!{ parse_fn_def "fn f() where T: T;",
+        FnDef {
+            span: Span::new(0, 17),
+            name: make_stmt!(name 3:3 #2),
+            quote_span: Span::new(4, 5),
+            parameters: Vec::new(),
+            ret_type: None,
+            wheres: vec![
+                WhereClause{ span: Span::new(13, 16), name: IdSpan::new(3, Span::new(13, 13)), constraints: vec![
+                    make_type!(simple 16:16 #3)
+                ]}
+            ],
+            body: None,
+        }
     }
 }
 
@@ -600,24 +641,35 @@ fn parse_struct_def() {
 }
 
 #[test]
-fn parse_type_alias() {
+fn parse_type_def() {
 
     //                       0123456789012
-    case!{ parse_type_alias "type a = i32;",
-        make_stmt!(alias 0:12
+    case!{ parse_type_def "type a = i32;",
+        make_stmt!(type 0:12
             make_stmt!(name 5:5 #2),
             make_type!(prim 9:11 I32)),
     }
 
     //                       0         1         2         3
     //                       012345678901234567890123456789012345
-    case!{ parse_type_alias "type Result<T> = Result<T, MyError>;",
-        make_stmt!(alias 0:35
+    case!{ parse_type_def "type Result<T> = Result<T, MyError>;",
+        make_stmt!(type 0:35
             make_stmt!(name 5:13 #2 5:10 quote 11:13
                 make_stmt!(gp 12:12 #3)),
             make_type!(path 17:34
                 make_path!(segment generic 17:34 #2 17:22 quote 23:34
                     make_type!(simple 24:24 #3),
                     make_type!(simple 27:33 #4))))
+    }
+
+    case!{ parse_type_def "type a;",
+        make_stmt!(type 0:6
+            make_stmt!(name 5:5 #2))
+    }
+
+    case!{ parse_type_def "type Result<T>;",
+        make_stmt!(type 0:14
+            make_stmt!(name 5:13 #2 5:10 quote 11:13
+                make_stmt!(gp 12:12 #3)))
     }
 }

@@ -136,7 +136,10 @@ impl_node!{ FnDef, visit_fn_def, |self, v| {
     for r#where in &self.wheres {
         v.visit_where_clause(r#where)?;
     }
-    v.visit_block(&self.body)
+    if let Some(body) = &self.body {
+        v.visit_block(body)?;
+    }
+    Ok(Default::default())
 }}
 
 impl_node! { FnDefParameter, visit_fn_def_parameter, |self, v| {
@@ -191,6 +194,7 @@ impl_abc_node!{ Item, visit_item,
     Struct => visit_struct_def,
     Enum => visit_enum_def,
     Fn => visit_fn_def,
+    Type => visit_type_def,
     Block => visit_block_stmt,
     SimpleExpr => visit_simple_expr_stmt,
     AssignExpr => visit_assign_expr_stmt,
@@ -299,6 +303,7 @@ impl_abc_node!{ Statement, visit_stmt,
     Struct => visit_struct_def,
     Enum => visit_enum_def,
     Fn => visit_fn_def,
+    Type => visit_type_def,
     Block => visit_block_stmt,
     Break => visit_break_stmt,
     Continue => visit_continue_stmt,
@@ -321,9 +326,12 @@ impl_node!{ StructDef, visit_struct_def, |self, v| {
     Ok(Default::default())
 }}
 
-impl_node!{ TypeAlias, visit_type_alias, |self, v| {
+impl_node!{ TypeDef, visit_type_def, |self, v| {
     v.visit_generic_name(&self.name)?;
-    v.visit_type_ref(&self.from)
+    if let Some(from) = &self.from {
+        v.visit_type_ref(from)?;
+    }
+    Ok(Default::default())
 }}
 
 impl_node!{ TypeList, visit_type_list, |self, v| {

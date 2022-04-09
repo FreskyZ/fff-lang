@@ -240,7 +240,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         matches!(self.current, Token::Keyword(Keyword::Fn))
     }
 
-    // fn-def = 'fn' generic_name '(' [ identifier ':' type-use { ',' identifier ':' type-use [ ',' ] } ] ')' [ '->' type-use ] [ 'where' { where_clause ',' } ] block
+    // fn-def = 'fn' generic_name '(' [ identifier ':' type-use { ',' identifier ':' type-use [ ',' ] } ] ')' [ '->' type-use ] [ 'where' { where_clause ',' } ] [ block ]
     // where_clause = ident ':' type_ref { '+' type_ref }
     pub fn parse_fn_def(&mut self) -> Result<FnDef, Unexpected> {
 
@@ -289,10 +289,10 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         if self.try_expect_keyword(Keyword::Where).is_some() {
             wheres.push(parse_where!());
             loop {
-                // left brace is not closing bracket, and this does not move forward
-                if self.is_sep(Separator::LeftBrace) {
+                // left brace/semicolon is not closing bracket, and this does not move forward
+                if self.is_sep(Separator::LeftBrace) || self.is_sep(Separator::SemiColon) {
                     break;
-                } else if matches!((&self.current, &self.peek), (Token::Sep(Separator::Comma), Token::Sep(Separator::LeftBrace))) {
+                } else if matches!((&self.current, &self.peek), (Token::Sep(Separator::Comma), Token::Sep(Separator::LeftBrace | Separator::SemiColon))) {
                     self.move_next();
                     break;
                 } else {
@@ -302,8 +302,13 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             }
         }
 
-        let body = self.parse_block()?;
-        Ok(FnDef{ span: fn_span + body.span, name: fn_name, quote_span, parameters, ret_type, wheres, body })
+        let (ending_span, body) = if self.is_sep(Separator::LeftBrace) {
+            let body = self.parse_block()?;
+            (body.span, Some(body))
+        } else {
+            (self.expect_sep(Separator::SemiColon)?, None) 
+        };
+        Ok(FnDef{ span: fn_span + ending_span, name: fn_name, quote_span, parameters, ret_type, wheres, body })
     }
 
     pub fn maybe_for_stmt(&self) -> bool {
@@ -458,19 +463,18 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         Ok(StructDef{ span: starting_span + right_brace_span, name: type_name, fields })
     }
     
-    pub fn maybe_type_alias(&self) -> bool {
+    pub fn maybe_type_def(&self) -> bool {
         matches!(self.current, Token::Keyword(Keyword::Type))
     }
 
-    // type_alias = 'type' generic_name '=' type_ref ';'
-    pub fn parse_type_alias(&mut self) -> Result<TypeAlias, Unexpected> {
+    // type_alias = 'type' generic_name [ '=' type_ref ] ';'
+    pub fn parse_type_def(&mut self) -> Result<TypeDef, Unexpected> {
         
         let start_span = self.expect_keyword(Keyword::Type)?;
         let name = self.parse_generic_name()?;
-        self.expect_sep(Separator::Eq)?;
-        let from = self.parse_type_ref()?;
+        let from = self.try_expect_sep(Separator::Eq).map(|_| self.parse_type_ref()).transpose()?;
         let end_span = self.expect_sep(Separator::SemiColon)?;
-        Ok(TypeAlias{ span: start_span + end_span, name, from })
+        Ok(TypeDef{ span: start_span + end_span, name, from })
     }
 
     pub fn maybe_use_stmt(&self) -> bool {

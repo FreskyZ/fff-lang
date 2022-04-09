@@ -82,7 +82,7 @@ pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_tuple_expr(&mut self, node: &TupleExpr) -> Result<T, E> { node.walk(self) }
     fn visit_tuple_index_expr(&mut self, node: &TupleIndexExpr) -> Result<T, E> { node.walk(self) }
     fn visit_tuple_type(&mut self, node: &TupleType) -> Result<T, E> { node.walk(self) }
-    fn visit_type_alias(&mut self, node: &TypeAlias) -> Result<T, E> { node.walk(self) }
+    fn visit_type_def(&mut self, node: &TypeDef) -> Result<T, E> { node.walk(self) }
     fn visit_type_list(&mut self, node: &TypeList) -> Result<T, E> { node.walk(self) }
     fn visit_type_ref(&mut self, node: &TypeRef) -> Result<T, E> { node.walk(self) }
     fn visit_unary_expr(&mut self, node: &UnaryExpr) -> Result<T, E> { node.walk(self) }

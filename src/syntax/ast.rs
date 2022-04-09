@@ -116,7 +116,8 @@ pub struct ClassDef {
     pub span: Span,
     pub name: GenericName,
     pub quote_span: Span,
-    pub functions: Vec<FnDeclare>,
+    pub types: Vec<TypeDef>,
+    pub functions: Vec<FnDef>,
 }
 
 #[derive(Debug)]
@@ -206,16 +207,6 @@ pub struct FieldDef {
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
-pub struct FnDeclare {
-    pub span: Span,
-    pub name: GenericName,
-    pub quote_span: Span,
-    pub parameters: Vec<FnDefParameter>,
-    pub ret_type: Option<TypeRef>,
-}
-
-#[derive(Debug)]
-#[cfg_attr(test, derive(PartialEq))]
 pub struct FnDef {
     pub span: Span, // fn_span + body_span
     pub name: GenericName,
@@ -223,7 +214,7 @@ pub struct FnDef {
     pub parameters: Vec<FnDefParameter>,
     pub ret_type: Option<TypeRef>,
     pub wheres: Vec<WhereClause>,
-    pub body: Block,
+    pub body: Option<Block>, // no body is allowed for intrinsic, extern and class associate methods
 }
 
 #[derive(Debug)]
@@ -311,6 +302,7 @@ pub enum Item {
     Struct(StructDef),
     Enum(EnumDef),
     Fn(FnDef),
+    Type(TypeDef),
     Block(BlockStatement),
     SimpleExpr(SimpleExprStatement),
     AssignExpr(AssignExprStatement),
@@ -491,6 +483,7 @@ pub enum Statement {
     Struct(StructDef),
     Enum(EnumDef),
     Fn(FnDef),
+    Type(TypeDef),
     Block(BlockStatement),
     Break(BreakStatement),
     Continue(ContinueStatement),
@@ -539,10 +532,10 @@ pub struct TupleType {
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
-pub struct TypeAlias {
+pub struct TypeDef {
     pub span: Span,
     pub name: GenericName,
-    pub from: TypeRef,
+    pub from: Option<TypeRef>,
 }
 
 #[derive(Debug)]
