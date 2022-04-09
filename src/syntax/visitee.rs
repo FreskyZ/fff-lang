@@ -321,6 +321,11 @@ impl_node!{ StructDef, visit_struct_def, |self, v| {
     Ok(Default::default())
 }}
 
+impl_node!{ TypeAlias, visit_type_alias, |self, v| {
+    v.visit_generic_name(&self.name)?;
+    v.visit_type_ref(&self.from)
+}}
+
 impl_node!{ TypeList, visit_type_list, |self, v| {
     for item in &self.items {
         v.visit_type_ref(item)?;

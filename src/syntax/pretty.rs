@@ -380,6 +380,10 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
         self.impl_visit_simple(node, "tuple-type", node.span)
     }
 
+    fn visit_type_alias(&mut self, node: &TypeAlias) -> fmt::Result {
+        self.impl_visit_simple(node, "type-alias", node.span)
+    }
+
     fn visit_unary_expr(&mut self, node: &UnaryExpr) -> fmt::Result {
         self.impl_visit(node, "unary-expr", node.span, |f|
             f.write_space()?.write_str(node.op.display())?.write_space()?.write_span(node.op_span))

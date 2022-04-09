@@ -598,3 +598,26 @@ fn parse_struct_def() {
         }
     }
 }
+
+#[test]
+fn parse_type_alias() {
+
+    //                       0123456789012
+    case!{ parse_type_alias "type a = i32;",
+        make_stmt!(alias 0:12
+            make_stmt!(name 5:5 #2),
+            make_type!(prim 9:11 I32)),
+    }
+
+    //                       0         1         2         3
+    //                       012345678901234567890123456789012345
+    case!{ parse_type_alias "type Result<T> = Result<T, MyError>;",
+        make_stmt!(alias 0:35
+            make_stmt!(name 5:13 #2 5:10 quote 11:13
+                make_stmt!(gp 12:12 #3)),
+            make_type!(path 17:34
+                make_path!(segment generic 17:34 #2 17:22 quote 23:34
+                    make_type!(simple 24:24 #3),
+                    make_type!(simple 27:33 #4))))
+    }
+}

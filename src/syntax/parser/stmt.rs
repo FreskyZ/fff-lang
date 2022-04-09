@@ -458,6 +458,21 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         Ok(StructDef{ span: starting_span + right_brace_span, name: type_name, fields })
     }
     
+    pub fn maybe_type_alias(&self) -> bool {
+        matches!(self.current, Token::Keyword(Keyword::Type))
+    }
+
+    // type_alias = 'type' generic_name '=' type_ref ';'
+    pub fn parse_type_alias(&mut self) -> Result<TypeAlias, Unexpected> {
+        
+        let start_span = self.expect_keyword(Keyword::Type)?;
+        let name = self.parse_generic_name()?;
+        self.expect_sep(Separator::Eq)?;
+        let from = self.parse_type_ref()?;
+        let end_span = self.expect_sep(Separator::SemiColon)?;
+        Ok(TypeAlias{ span: start_span + end_span, name, from })
+    }
+
     pub fn maybe_use_stmt(&self) -> bool {
         matches!(self.current, Token::Keyword(Keyword::Use)) 
     }

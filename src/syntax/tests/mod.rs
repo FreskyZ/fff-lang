@@ -441,6 +441,13 @@ macro_rules! make_stmt {
             op_span: Span::new($op_start, $op_end),
         }
     );
+    (alias $start:literal:$end:literal $name:expr, $from:expr) => (
+        TypeAlias{
+            span: Span::new($start, $end),
+            name: $name,
+            from: $from,
+        }
+    ) 
 }
 
 macro_rules! make_path {

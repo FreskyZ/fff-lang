@@ -542,7 +542,7 @@ pub struct TupleType {
 pub struct TypeAlias {
     pub span: Span,
     pub name: GenericName,
-    pub alias: TypeRef,
+    pub from: TypeRef,
 }
 
 #[derive(Debug)]
