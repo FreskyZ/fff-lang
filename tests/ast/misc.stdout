@@ -1,5 +1,6 @@
 module tests/ast/misc.f3
-  fn-def <1:1-3:1> fn1 <1:4-1:6> () <1:7-1:22>
+  fn-def <1:1-3:1> () <1:7-1:22>
+    generic-name <1:4-1:6> fn1 <1:4-1:6>
     fn-def-parameter <1:8-1:13> a <1:8-1:8>
       primitive-type u32 <1:11-1:13>
     fn-def-parameter <1:16-1:21> b <1:16-1:16>
@@ -12,7 +13,8 @@ module tests/ast/misc.f3
             segment <2:12-2:12> a
           path <2:16-2:16>
             segment <2:16-2:16> b
-  fn-def <4:1-12:1> main <4:4-4:7> () <4:8-4:33>
+  fn-def <4:1-12:1> () <4:8-4:33>
+    generic-name <4:4-4:7> main <4:4-4:7>
     fn-def-parameter <4:9-4:17> argc <4:9-4:12>
       primitive-type u32 <4:15-4:17>
     fn-def-parameter <4:20-4:32> argv <4:20-4:23>
@@ -53,7 +55,8 @@ module tests/ast/misc.f3
                   segment <9:24-9:24> b
       ret-stmt <11:5-11:13>
         literal i32 0 <11:12-11:12>
-  fn-def <15:1-22:1> main <15:4-15:7> () <15:8-15:9>
+  fn-def <15:1-22:1> () <15:8-15:9>
+    generic-name <15:4-15:7> main <15:4-15:7>
     block <15:11-22:1>
       var-def <16:5-16:14> mutable a <16:9-16:9>
         literal i32 0 <16:13-16:13>
@@ -70,7 +73,8 @@ module tests/ast/misc.f3
             segment <21:13-21:13> a
           path <21:17-21:17>
             segment <21:17-21:17> b
-  fn-def <25:1-39:1> main <25:4-25:7> () <25:8-25:15>
+  fn-def <25:1-39:1> () <25:8-25:15>
+    generic-name <25:4-25:7> main <25:4-25:7>
     fn-def-parameter <25:9-25:14> b <25:9-25:9>
       primitive-type u32 <25:12-25:14>
     block <25:17-39:1>
@@ -104,7 +108,8 @@ module tests/ast/misc.f3
                         segment <34:17-34:17> b
                       literal i32 1 <34:22-34:22>
                     break-stmt <35:17-35:27> @abc <35:23-35:26>
-  fn-def <42:1-50:1> main <42:4-42:7> () <42:8-42:9>
+  fn-def <42:1-50:1> () <42:8-42:9>
+    generic-name <42:4-42:7> main <42:4-42:7>
     block <42:11-50:1>
       var-def <43:5-43:28> const a <43:11-43:11>
         call-expr <43:15-43:27> () <43:26-43:27>

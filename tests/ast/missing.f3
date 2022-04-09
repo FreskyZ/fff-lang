@@ -7,7 +7,7 @@ const right = 3 * 5 .. ;
 use a::b::c;
 var some_tuple = !("hello", 42);
 
-type string {
+struct string {
     len: u64,
     cap: u64,
     data: &u8,
@@ -21,7 +21,7 @@ while true {
 }
 
 fn main() {
-    type source {
+    struct source {
         id: u32,
         src: string,
     }

@@ -1,5 +1,6 @@
 module tests/ast/sum.f3
-  fn-def <2:1-9:1> main <2:4-2:7> () <2:8-2:9>
+  fn-def <2:1-9:1> () <2:8-2:9>
+    generic-name <2:4-2:7> main <2:4-2:7>
     block <2:11-9:1>
       var-def <4:5-4:16> mutable sum <4:9-4:11>
         literal i32 0 <4:15-4:15>

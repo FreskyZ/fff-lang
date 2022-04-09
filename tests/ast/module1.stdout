@@ -11,7 +11,8 @@ module tests/ast/module1.f3
     path <4:5-4:13>
       segment <4:5-4:7> log
       segment <4:10-4:13> info
-  fn-def <7:1-9:1> m2 <7:4-7:5> () <7:6-7:13>
+  fn-def <7:1-9:1> () <7:6-7:13>
+    generic-name <7:4-7:5> m2 <7:4-7:5>
     fn-def-parameter <7:7-7:12> a <7:7-7:7>
       primitive-type i32 <7:10-7:12>
     primitive-type i32 <7:18-7:20>
@@ -21,7 +22,8 @@ module tests/ast/module1.f3
           path <8:12-8:12>
             segment <8:12-8:12> a
           literal i32 2 <8:16-8:16>
-  fn-def <11:1-13:1> main <11:4-11:7> () <11:8-11:9>
+  fn-def <11:1-13:1> () <11:8-11:9>
+    generic-name <11:4-11:7> main <11:4-11:7>
     block <11:11-13:1>
       simple-expr-stmt <12:5-12:56>
         call-expr <12:5-12:55> () <12:14-12:55>

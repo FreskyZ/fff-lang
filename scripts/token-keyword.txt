@@ -60,7 +60,7 @@
     'return' =>     Return, Normal,
       'self' =>      Self_, MaybeIdentifier,
     'static' =>     Static, Reserved,
-    'struct' =>     Struct, Reserved,
+    'struct' =>     Struct, Normal,
      'super' =>      Super, Reserved,
     'switch' =>     Switch, Reserved,
       'this' =>       This, MaybeIdentifier,

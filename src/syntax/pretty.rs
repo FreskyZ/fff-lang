@@ -134,6 +134,10 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
             f.write_space()?.write_str(node.op.display())?.write_space()?.write_span(node.op_span))
     }
 
+    fn visit_block(&mut self, node: &Block) -> fmt::Result {
+        self.impl_visit_simple(node, "block", node.span)
+    }
+
     fn visit_block_stmt(&mut self, node: &BlockStatement) -> fmt::Result {
         self.impl_visit(node, "block-stmt", node.span, |f| {
             if let Some(label) = node.label {
@@ -141,10 +145,6 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
             }
             Ok(f)
         })
-    }
-
-    fn visit_block(&mut self, node: &Block) -> fmt::Result {
-        self.impl_visit_simple(node, "block", node.span)
     }
 
     fn visit_break_stmt(&mut self, node: &BreakStatement) -> fmt::Result {
@@ -156,6 +156,11 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
         })
     }
 
+    fn visit_call_expr(&mut self, node: &CallExpr) -> fmt::Result {
+        self.impl_visit(node, "call-expr", node.span, |f|
+            f.write_str(" () ")?.write_span(node.quote_span))
+    }
+
     fn visit_continue_stmt(&mut self, node: &ContinueStatement) -> fmt::Result {
         self.impl_visit(node, "continue-stmt", node.span, |f| {
             if let Some(label) = node.label {
@@ -163,6 +168,10 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
             }
             Ok(f)
         })
+    }
+    
+    fn visit_else_clause(&mut self, node: &ElseClause) -> fmt::Result {
+        self.impl_visit_simple(node, "else-clause", node.span)
     }
 
     fn visit_enum_def(&mut self, node: &EnumDef) -> fmt::Result {
@@ -176,9 +185,10 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
             f.write_space()?.write_idspan(node.name))
     }
 
-    fn visit_call_expr(&mut self, node: &CallExpr) -> fmt::Result {
-        self.impl_visit(node, "call-expr", node.span, |f|
-            f.write_str(" () ")?.write_span(node.quote_span))
+    fn visit_field_def(&mut self, node: &FieldDef) -> fmt::Result {
+        self.impl_visit(node, "field-def", node.span, |f| f
+            .write_space()?.write_idspan(node.name)?
+            .write_str(" : ")?.write_span(node.colon_span))
     }
 
     fn visit_fn_def(&mut self, node: &FnDef) -> fmt::Result {
@@ -230,16 +240,12 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
             f.write_space()?.write_idspan(node.name))
     }
 
-    fn visit_if_stmt(&mut self, node: &IfStatement) -> fmt::Result {
-        self.impl_visit_simple(node, "if-stmt", node.span)
-    }
-
     fn visit_if_clause(&mut self, node: &IfClause) -> fmt::Result {
         self.impl_visit_simple(node, "if-clause", node.span)
     }
-    
-    fn visit_else_clause(&mut self, node: &ElseClause) -> fmt::Result {
-        self.impl_visit_simple(node, "else-clause", node.span)
+
+    fn visit_if_stmt(&mut self, node: &IfStatement) -> fmt::Result {
+        self.impl_visit_simple(node, "if-stmt", node.span)
     }
     
     fn visit_lit_expr(&mut self, node: &LitExpr) -> fmt::Result {
@@ -351,12 +357,12 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
         self.impl_visit_simple(node, "simple-expr-stmt", node.span)
     }
 
-    fn visit_tuple_expr(&mut self, node: &TupleExpr) -> fmt::Result {
-        self.impl_visit_simple(node, "tuple-expr", node.span)
+    fn visit_struct_def(&mut self, node: &StructDef) -> fmt::Result {
+        self.impl_visit_simple(node, "struct-def", node.span)
     }
 
-    fn visit_type_def(&mut self, node: &TypeDef) -> fmt::Result {
-        self.impl_visit_simple(node, "type-def", node.span)
+    fn visit_tuple_expr(&mut self, node: &TupleExpr) -> fmt::Result {
+        self.impl_visit_simple(node, "tuple-expr", node.span)
     }
 
     fn visit_tuple_index_expr(&mut self, node: &TupleIndexExpr) -> fmt::Result {
@@ -372,12 +378,6 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
 
     fn visit_tuple_type(&mut self, node: &TupleType) -> fmt::Result {
         self.impl_visit_simple(node, "tuple-type", node.span)
-    }
-
-    fn visit_type_def_field(&mut self, node: &TypeDefField) -> fmt::Result {
-        self.impl_visit(node, "type-def-field", node.span, |f| f
-            .write_space()?.write_idspan(node.name)?
-            .write_str(" : ")?.write_span(node.colon_span))
     }
 
     fn visit_unary_expr(&mut self, node: &UnaryExpr) -> fmt::Result {

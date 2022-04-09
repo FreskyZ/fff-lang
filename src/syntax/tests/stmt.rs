@@ -513,87 +513,87 @@ fn fn_def_parse() {
 }
 
 #[test]
-fn parse_type_def() {
+fn parse_struct_def() {
     //                                  01234567890123456
-    case!{ parse_type_def "type x { x: i32 }",
-        TypeDef{ 
-            span: Span::new(0, 16),
-            name: make_stmt!(name 5:5 #2),
+    case!{ parse_struct_def "struct x { x: i32 }",
+        StructDef{ 
+            span: Span::new(0, 18),
+            name: make_stmt!(name 7:7 #2),
             fields: vec![
-                TypeDefField{ span: Span::new(9, 14), name: make_stmt!(id 9:9 #2), colon_span: Span::new(10, 10),
-                    r#type: make_type!(prim 12:14 I32) }] }
+                FieldDef{ span: Span::new(11, 16), name: make_stmt!(id 11:11 #2), colon_span: Span::new(12, 12),
+                    r#type: make_type!(prim 14:16 I32) }] }
     }
 
     //                     0123456789
-    case!{ parse_type_def "type x<>{}",
-        TypeDef{
-            span: Span::new(0, 9),
-            name: make_stmt!(name 5:7 #2 5:5 quote 6:7),
+    case!{ parse_struct_def "struct x<>{}",
+        StructDef{
+            span: Span::new(0, 11),
+            name: make_stmt!(name 7:9 #2 7:7 quote 8:9),
             fields: Vec::new(),
-        }, errors make_errors!(e: e.emit(strings::EmptyGenericParameterList).span(Span::new(6, 7)))
+        }, errors make_errors!(e: e.emit(strings::EmptyGenericParameterList).span(Span::new(8, 9)))
     }
 
-    case!{ parse_type_def "type x { x: i32,}",
-        TypeDef{ 
-            span: Span::new(0, 16), 
-            name: make_stmt!(name 5:5 #2), 
+    case!{ parse_struct_def "struct x { x: i32,}",
+        StructDef{ 
+            span: Span::new(0, 18), 
+            name: make_stmt!(name 7:7 #2), 
             fields: vec![
-                TypeDefField{ span: Span::new(9, 14), name: make_stmt!(id 9:9 #2), colon_span: Span::new(10, 10),
-                    r#type: make_type!(prim 12:14 I32) }] }
+                FieldDef{ span: Span::new(11, 16), name: make_stmt!(id 11:11 #2), colon_span: Span::new(12, 12),
+                    r#type: make_type!(prim 14:16 I32) }] }
     }
     //                     0         1         2         3         4
     //                     0123456789012345678901234567890123456789012345
-    case!{ parse_type_def "type array { data:  &u8, size: u64, cap: u64 }",
-        TypeDef{ 
-            span: Span::new(0, 45), 
-            name: make_stmt!(name 5:9 #2), 
+    case!{ parse_struct_def "struct array { data:  &u8, size: u64, cap: u64 }",
+        StructDef{ 
+            span: Span::new(0, 47), 
+            name: make_stmt!(name 7:11 #2), 
             fields: vec![
-                TypeDefField{ span: Span::new(13, 22), name: make_stmt!(id 13:16 #3), colon_span: Span::new(17, 17),
-                    r#type: make_type!(ref 20:22 make_type!(prim 21:22 U8)) },
-                TypeDefField{ span: Span::new(25, 33), name: make_stmt!(id 25:28 #4), colon_span: Span::new(29, 29),
-                    r#type: make_type!(prim 31:33 U64) },
-                TypeDefField{ span: Span::new(36, 43), name: make_stmt!(id 36:38 #5), colon_span: Span::new(39, 39),
-                    r#type: make_type!(prim 41:43 U64) },
+                FieldDef{ span: Span::new(15, 24), name: make_stmt!(id 15:18 #3), colon_span: Span::new(19, 19),
+                    r#type: make_type!(ref 22:24 make_type!(prim 23:24 U8)) },
+                FieldDef{ span: Span::new(27, 35), name: make_stmt!(id 27:30 #4), colon_span: Span::new(31, 31),
+                    r#type: make_type!(prim 33:35 U64) },
+                FieldDef{ span: Span::new(38, 45), name: make_stmt!(id 38:40 #5), colon_span: Span::new(41, 41),
+                    r#type: make_type!(prim 43:45 U64) },
             ]
         }, strings ["array", "data", "size", "cap"]
     }
 
     //                     0         1         2         3         4
     //                     01234567890123456789012345678901234567890123456789
-    case!{ parse_type_def "type list<T> { data: &T, size: usize, cap: usize }",
-        TypeDef{
-            span: Span::new(0, 49),
-            name: make_stmt!(name 5:11 #2 5:8 quote 9:11
-                make_stmt!(gp 10:10 #3)),
+    case!{ parse_struct_def "struct list<T> { data: &T, size: usize, cap: usize }",
+        StructDef{
+            span: Span::new(0, 51),
+            name: make_stmt!(name 7:13 #2 7:10 quote 11:13
+                make_stmt!(gp 12:12 #3)),
             fields: vec![
-                TypeDefField{ span: Span::new(15, 22), name: make_stmt!(id 15:18 #4), colon_span: Span::new(19, 19),
-                    r#type: make_type!(ref 21:22 make_type!(path simple 22:22 #3)) },
-                TypeDefField{ span: Span::new(25, 35), name: make_stmt!(id 25:28 #5), colon_span: Span::new(29, 29),
-                    r#type: make_type!(path simple 31:35 #6) },
-                TypeDefField{ span: Span::new(38, 47), name: make_stmt!(id 38:40 #7), colon_span: Span::new(41, 41),
-                    r#type: make_type!(path simple 43:47 #6) },
+                FieldDef{ span: Span::new(17, 24), name: make_stmt!(id 17:20 #4), colon_span: Span::new(21, 21),
+                    r#type: make_type!(ref 23:24 make_type!(path simple 24:24 #3)) },
+                FieldDef{ span: Span::new(27, 37), name: make_stmt!(id 27:30 #5), colon_span: Span::new(31, 31),
+                    r#type: make_type!(path simple 33:37 #6) },
+                FieldDef{ span: Span::new(40, 49), name: make_stmt!(id 40:42 #7), colon_span: Span::new(43, 43),
+                    r#type: make_type!(path simple 45:49 #6) },
             ]
         }, strings ["list", "T", "data", "size", "usize", "cap"]
     }
 
     //                     0         1         2         3         4         5
     //                     012345678901234567890123456789012345678901234567890123456
-    case!{ parse_type_def "type hashmap<K, V, A> { buckets: &&(K, V), allocator: A }",
-        TypeDef{
-            span: Span::new(0, 56),
-            name: make_stmt!(name 5:20 #2 5:11 quote 12:20
-                make_stmt!(gp 13:13 #3),
-                make_stmt!(gp 16:16 #4),
-                make_stmt!(gp 19:19 #5)),
+    case!{ parse_struct_def "struct hashmap<K, V, A> { buckets: &&(K, V), allocator: A }",
+        StructDef{
+            span: Span::new(0, 58),
+            name: make_stmt!(name 7:22 #2 7:13 quote 14:22
+                make_stmt!(gp 15:15 #3),
+                make_stmt!(gp 18:18 #4),
+                make_stmt!(gp 21:21 #5)),
             fields: vec![
-                TypeDefField{ span: Span::new(24, 40), name: make_stmt!(id 24:30 #6), colon_span: Span::new(31, 31),
-                    r#type: make_type!(ref 33:40
-                        make_type!(ref 34:40
-                            make_type!(tuple 35:40
-                                make_type!(path simple 36:36 #3),
-                                make_type!(path simple 39:39 #4)))) },
-                TypeDefField{ span: Span::new(43, 54), name: make_stmt!(id 43:51 #7), colon_span: Span::new(52, 52),
-                    r#type: make_type!(path simple 54:54 #5) },
+                FieldDef{ span: Span::new(26, 42), name: make_stmt!(id 26:32 #6), colon_span: Span::new(33, 33),
+                    r#type: make_type!(ref 35:42
+                        make_type!(ref 36:42
+                            make_type!(tuple 37:42
+                                make_type!(path simple 38:38 #3),
+                                make_type!(path simple 41:41 #4)))) },
+                FieldDef{ span: Span::new(45, 56), name: make_stmt!(id 45:53 #7), colon_span: Span::new(54, 54),
+                    r#type: make_type!(path simple 56:56 #5) },
             ]
         }
     }

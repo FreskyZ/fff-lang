@@ -1,0 +1,89 @@
+
+struct list<T> {
+    ptr: &T,
+    cap: u64,
+    len: u64,
+}
+
+struct slice<T> {
+    ptr: &T,
+    len: u64,
+}
+
+struct string {
+    list: list<u8>,
+}
+
+fn sort<T>(list: list<T>) {
+    use std::mem::forget;
+
+    quicksort(list.ptr, 0, list.len - 1);
+
+    fn quicksort<T>(slice: &T, start: u64, end: u64) { // start and end is inclusive
+        if end - start < 6 {
+            insertion_sort(slice, start, end);
+        } else {
+            var pivot = partition(slice, start, end);
+            quicksort(slice, start, pivot);
+            quicksort(slice, pivot + 1, end);
+        }
+    }
+
+    // https://en.wikipedia.org/wiki/Quicksort Hoare partition scheme
+    fn partition<T>(slice: &T, start: u64, end: u64) {
+        var pivot = slice[pivot_index];
+        loop {
+            start += 1;
+            while slice[start] < pivot {
+                start += 1;
+            }
+            start -= 1;
+
+            end -= 1;
+            while slice[end] > pivot {
+                end -= 1;
+            }
+            end += 1;
+
+            if start >= end {
+                return end;
+            }
+
+            var x = slice[start];
+            slice[start] = slice[end];
+            slice[end] = x;
+            forget(x);
+        }
+    }
+
+    fn insertion_sort<T>(slice: &T, start: u64, end: u64) {
+        for i in start + 1..end + 1 {
+            if slice[i] < slice[i - 1] {
+                for j in start..i {
+                    if slice[j] > slice[i] {
+                        var x = slice[j - 1];
+                        slice[j - 1] = slice[i];
+                        slice[i] = x;
+                        forget(x); // I currently do not have move semantics and don't know x is moved away
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn map<T, U>(list: list<T>, f: fn(T) -> U) -> list<U> {
+    var result = list::<T>::with_capcity(list.len);
+    for item in list {
+        result.add(f(item));
+    }
+    return result;
+}
+
+fn reduce<T, A>(list: list<T>, init: A, f: fn(A, T) -> A) -> A {
+    for item in list {
+        init = f(init, item);
+    }
+    return init;
+}

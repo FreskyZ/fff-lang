@@ -4,8 +4,8 @@ use super::*;
 impl<'ecx, 'scx> Parser<'ecx, 'scx> {
 
     pub fn parse_stmt(&mut self) -> Result<Statement, Unexpected> {
-        if self.maybe_type_def() {
-            Ok(Statement::Type(self.parse_type_def()?))
+        if self.maybe_struct_def() {
+            Ok(Statement::Struct(self.parse_struct_def()?))
         } else if self.maybe_enum_def() {
             Ok(Statement::Enum(self.parse_enum_def()?))
         } else if self.maybe_fn_def() {
@@ -30,14 +30,16 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             Ok(Statement::VarDecl(self.parse_var_decl()?))
         } else if self.maybe_while_stmt() {
             Ok(Statement::While(self.parse_while_stmt()?))
+        } else if self.maybe_use_stmt() {
+            Ok(Statement::Use(self.parse_use_stmt()?))
         } else {
             self.push_unexpect("type, enum, fn, {, break, continue, for, if, loop, return, var, const, while, .., !, ~, &, <, ::, ident, [, (")
         }
     }
 
     pub fn parse_item(&mut self) -> Result<Item, Unexpected> {
-        if self.maybe_type_def() {
-            Ok(Item::Type(self.parse_type_def()?))
+        if self.maybe_struct_def() {
+            Ok(Item::Struct(self.parse_struct_def()?))
         } else if self.maybe_enum_def() {
             Ok(Item::Enum(self.parse_enum_def()?))
         } else if self.maybe_fn_def() {
@@ -417,15 +419,15 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         }
     }
 
-    pub fn maybe_type_def(&self) -> bool {
-        matches!(self.current, Token::Keyword(Keyword::Type)) 
+    pub fn maybe_struct_def(&self) -> bool {
+        matches!(self.current, Token::Keyword(Keyword::Struct)) 
     }
 
-    // type_def = 'type' generic_name  '{' [ type_field_def { ',' type_field_def } [ ',' ] ] '}'
-    // type_field_def = identifier ':' type_ref
-    pub fn parse_type_def(&mut self) -> Result<TypeDef, Unexpected> {
+    // struct_def = 'struct' generic_name  '{' [ field_def { ',' field_def } [ ',' ] ] '}'
+    // field_def = identifier ':' type_ref
+    pub fn parse_struct_def(&mut self) -> Result<StructDef, Unexpected> {
 
-        let starting_span = self.expect_keyword(Keyword::Type)?;
+        let starting_span = self.expect_keyword(Keyword::Struct)?;
         let type_name = self.parse_generic_name()?;
         self.expect_sep(Separator::LeftBrace)?;
 
@@ -435,7 +437,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
                 let field_name = self.expect_ident()?;
                 let colon_span = self.expect_sep(Separator::Colon)?;
                 let field_type = self.parse_type_ref()?;
-                fields.push(TypeDefField{ span: field_name.span + field_type.span(), name: field_name, colon_span, r#type: field_type });
+                fields.push(FieldDef{ span: field_name.span + field_type.span(), name: field_name, colon_span, r#type: field_type });
             }}
         }
 
@@ -453,7 +455,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             }
         };
 
-        Ok(TypeDef{ span: starting_span + right_brace_span, name: type_name, fields })
+        Ok(StructDef{ span: starting_span + right_brace_span, name: type_name, fields })
     }
     
     pub fn maybe_use_stmt(&self) -> bool {

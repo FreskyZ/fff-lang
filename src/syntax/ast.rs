@@ -110,6 +110,8 @@ pub struct CallExpr {
     pub quote_span: Span,
 }
 
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct ClassDef {
     pub span: Span,
     pub name: GenericName,
@@ -193,9 +195,20 @@ pub enum ExprListParseResult {
     EndWithComma(Span, ExprList),   // and quote span
 }
 
-pub struct FnDeclare {
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
+pub struct FieldDef {
     pub span: Span,
     pub name: IdSpan,
+    pub colon_span: Span,
+    pub r#type: TypeRef,
+}
+
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
+pub struct FnDeclare {
+    pub span: Span,
+    pub name: GenericName,
     pub quote_span: Span,
     pub parameters: Vec<FnDefParameter>,
     pub ret_type: Option<TypeRef>,
@@ -283,7 +296,7 @@ pub struct IfStatement {
     pub else_clause: Option<ElseClause>,
 }
 
-pub struct Implement {
+pub struct Implementation {
     pub span: Span,
     pub class: Option<TypeRef>,
     pub r#type: TypeRef,
@@ -295,7 +308,7 @@ define_abc! {
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub enum Item {
-    Type(TypeDef),
+    Struct(StructDef),
     Enum(EnumDef),
     Fn(FnDef),
     Block(BlockStatement),
@@ -475,7 +488,7 @@ define_abc! {
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub enum Statement {
-    Type(TypeDef),
+    Struct(StructDef),
     Enum(EnumDef),
     Fn(FnDef),
     Block(BlockStatement),
@@ -491,6 +504,14 @@ pub enum Statement {
     While(WhileStatement),
     Use(UseStatement),
 }}
+
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
+pub struct StructDef {
+    pub span: Span,
+    pub name: GenericName,
+    pub fields: Vec<FieldDef>,
+}
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
@@ -518,19 +539,10 @@ pub struct TupleType {
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
-pub struct TypeDef {
+pub struct TypeAlias {
     pub span: Span,
     pub name: GenericName,
-    pub fields: Vec<TypeDefField>,
-}
-
-#[derive(Debug)]
-#[cfg_attr(test, derive(PartialEq))]
-pub struct TypeDefField {
-    pub span: Span,
-    pub name: IdSpan,
-    pub colon_span: Span,
-    pub r#type: TypeRef,
+    pub alias: TypeRef,
 }
 
 #[derive(Debug)]

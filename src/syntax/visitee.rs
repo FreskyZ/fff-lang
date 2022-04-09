@@ -54,15 +54,15 @@ impl_node!{ BinaryExpr, visit_binary_expr, |self, v| {
     v.visit_expr(&self.right)
 }}
 
-impl_node!{ BlockStatement, visit_block_stmt, |self, v| {
-    v.visit_block(&self.body)
-}}
-
 impl_node!{ Block, visit_block, |self, v| {
     for item in &self.items {
         v.visit_stmt(item)?;
     }
     Ok(Default::default())
+}}
+
+impl_node!{ BlockStatement, visit_block_stmt, |self, v| {
+    v.visit_block(&self.body)
 }}
 
 impl_node!{ BreakStatement, visit_break_stmt }
@@ -121,6 +121,10 @@ impl_node!{ ExprList, visit_expr_list, |self, v| {
     Ok(Default::default())
 }}
 
+impl_node!{ FieldDef, visit_field_def, |self, v| {
+    v.visit_type_ref(&self.r#type)
+}}
+
 impl_node!{ FnDef, visit_fn_def, |self, v| {
     v.visit_generic_name(&self.name)?;
     for parameter in &self.parameters {
@@ -167,6 +171,11 @@ impl_node!{ GenericName, visit_generic_name, |self, v| {
 
 impl_node!{ GenericParameter, visit_generic_parameter }
 
+impl_node!{ IfClause, visit_if_clause, |self, v| {
+    v.visit_expr(&self.condition)?;
+    v.visit_block(&self.body)
+}}
+
 impl_node!{ IfStatement, visit_if_stmt, |self, v| {
     v.visit_if_clause(&self.if_clause)?;
     for elseif in &self.elseif_clauses {
@@ -178,13 +187,8 @@ impl_node!{ IfStatement, visit_if_stmt, |self, v| {
     Ok(Default::default())
 }}
 
-impl_node!{ IfClause, visit_if_clause, |self, v| {
-    v.visit_expr(&self.condition)?;
-    v.visit_block(&self.body)
-}}
-
 impl_abc_node!{ Item, visit_item, 
-    Type => visit_type_def,
+    Struct => visit_struct_def,
     Enum => visit_enum_def,
     Fn => visit_fn_def,
     Block => visit_block_stmt,
@@ -292,7 +296,7 @@ impl_node!{ SimpleExprStatement, visit_simple_expr_stmt, |self, v| {
 }}
 
 impl_abc_node!{ Statement, visit_stmt,
-    Type => visit_type_def,
+    Struct => visit_struct_def,
     Enum => visit_enum_def,
     Fn => visit_fn_def,
     Block => visit_block_stmt,
@@ -309,16 +313,12 @@ impl_abc_node!{ Statement, visit_stmt,
     Use => visit_use_stmt,
 }
 
-impl_node!{ TypeDef, visit_type_def, |self, v| {
+impl_node!{ StructDef, visit_struct_def, |self, v| {
     v.visit_generic_name(&self.name)?;
     for field in &self.fields {
-        v.visit_type_def_field(field)?;
+        v.visit_field_def(field)?;
     }
     Ok(Default::default())
-}}
-
-impl_node!{ TypeDefField, visit_type_def_field, |self, v| {
-    v.visit_type_ref(&self.r#type)
 }}
 
 impl_node!{ TypeList, visit_type_list, |self, v| {

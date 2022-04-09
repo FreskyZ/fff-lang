@@ -1,5 +1,6 @@
 module tests/ast/gcd.f3
-  fn-def <4:1-17:1> main <4:4-4:7> () <4:8-4:9>
+  fn-def <4:1-17:1> () <4:8-4:9>
+    generic-name <4:4-4:7> main <4:4-4:7>
     block <4:11-17:1>
       loop-stmt <6:5-16:5> @main <6:5-6:9>
         block <6:17-16:5>
@@ -58,7 +59,8 @@ module tests/ast/gcd.f3
                         segment <15:83-15:83> a
                       path <15:86-15:86>
                         segment <15:86-15:86> b
-  fn-def <19:1-28:1> 最大公约数 <19:4-19:8> () <19:9-19:24>
+  fn-def <19:1-28:1> () <19:9-19:24>
+    generic-name <19:4-19:8> 最大公约数 <19:4-19:8>
     fn-def-parameter <19:10-19:15> a <19:10-19:10>
       primitive-type i32 <19:13-19:15>
     fn-def-parameter <19:18-19:23> b <19:18-19:18>

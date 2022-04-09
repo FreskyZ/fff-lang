@@ -48,6 +48,7 @@ pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_enum_def_variant(&mut self, node: &EnumDefVariant) -> Result<T, E> { node.walk(self) }
     fn visit_expr(&mut self, node: &Expr) -> Result<T, E> { node.walk(self) }
     fn visit_expr_list(&mut self, node: &ExprList) -> Result<T, E> { node.walk(self) }
+    fn visit_field_def(&mut self, node: &FieldDef) -> Result<T, E> { node.walk(self) }
     fn visit_fn_def(&mut self, node: &FnDef) -> Result<T, E> { node.walk(self) }
     fn visit_fn_def_parameter(&mut self, node: &FnDefParameter) -> Result<T, E> { node.walk(self) }
     fn visit_fn_type(&mut self, node: &FnType) -> Result<T, E> { node.walk(self) }
@@ -55,8 +56,8 @@ pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_for_stmt(&mut self, node: &ForStatement) -> Result<T, E> { node.walk(self) }
     fn visit_generic_name(&mut self, node: &GenericName) -> Result<T, E> { node.walk(self) }
     fn visit_generic_parameter(&mut self, node: &GenericParameter) -> Result<T, E> { node.walk(self) }
-    fn visit_if_stmt(&mut self, node: &IfStatement) -> Result<T, E> { node.walk(self) }
     fn visit_if_clause(&mut self, node: &IfClause) -> Result<T, E> { node.walk(self) }
+    fn visit_if_stmt(&mut self, node: &IfStatement) -> Result<T, E> { node.walk(self) }
     fn visit_item(&mut self, node: &Item) -> Result<T, E> { node.walk(self) }
     fn visit_lit_expr(&mut self, node: &LitExpr) -> Result<T, E> { node.walk(self) }
     fn visit_loop_stmt(&mut self, node: &LoopStatement) -> Result<T, E> { node.walk(self) }
@@ -77,11 +78,10 @@ pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_ret_stmt(&mut self, node: &ReturnStatement) -> Result<T, E> { node.walk(self) }
     fn visit_simple_expr_stmt(&mut self, node: &SimpleExprStatement) -> Result<T, E> { node.walk(self) }
     fn visit_stmt(&mut self, node: &Statement) -> Result<T, E> { node.walk(self) }
+    fn visit_struct_def(&mut self, node: &StructDef) -> Result<T, E> { node.walk(self) }
     fn visit_tuple_expr(&mut self, node: &TupleExpr) -> Result<T, E> { node.walk(self) }
     fn visit_tuple_index_expr(&mut self, node: &TupleIndexExpr) -> Result<T, E> { node.walk(self) }
     fn visit_tuple_type(&mut self, node: &TupleType) -> Result<T, E> { node.walk(self) }
-    fn visit_type_def(&mut self, node: &TypeDef) -> Result<T, E> { node.walk(self) }
-    fn visit_type_def_field(&mut self, node: &TypeDefField) -> Result<T, E> { node.walk(self) }
     fn visit_type_list(&mut self, node: &TypeList) -> Result<T, E> { node.walk(self) }
     fn visit_type_ref(&mut self, node: &TypeRef) -> Result<T, E> { node.walk(self) }
     fn visit_unary_expr(&mut self, node: &UnaryExpr) -> Result<T, E> { node.walk(self) }

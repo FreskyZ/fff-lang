@@ -1,5 +1,6 @@
 module tests/ast/list.f3
-  fn-def <4:1-39:1> main <4:4-4:7> () <4:8-4:9>
+  fn-def <4:1-39:1> () <4:8-4:9>
+    generic-name <4:4-4:7> main <4:4-4:7>
     block <4:11-39:1>
       var-def <7:5-7:32> mutable list <7:9-7:12>
         array-expr <7:16-7:31>
