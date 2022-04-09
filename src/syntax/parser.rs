@@ -112,22 +112,6 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         matches!(self.current, Token::Char(_) | Token::Bool(_) | Token::Str(..) | Token::Num(_)) 
     }
 
-    /// Check current token is a literal
-    ///
-    /// if so, move next and Ok((lit_value, lit_span)),
-    /// if not, push unexpect and Err(Unexpected)
-    ///
-    /// example `let (lit, lit_span) = cx.expect_lit()?;`
-    fn expect_lit(&mut self) -> Result<(LitValue, Span), Unexpected> {
-        match self.current {
-            Token::Bool(v) => Ok((LitValue::Bool(v), self.move_next())),
-            Token::Char(v) => Ok((LitValue::Char(v), self.move_next())),
-            Token::Num(v) => Ok((LitValue::Num(v), self.move_next())),
-            Token::Str(v, _) => Ok((LitValue::Str(v), self.move_next())),
-            _ => self.push_unexpect("literal"),
-        }
-    }
-
     /// Check current token is a literal, used for import module path
     ///
     /// if so, move next and Some((lit_value, lit_span)),

@@ -54,6 +54,8 @@ pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_fn_def_parameter(&mut self, node: &FnDefParameter) -> Result<T, E> { node.walk(self) }
     fn visit_fn_type(&mut self, node: &FnType) -> Result<T, E> { node.walk(self) }
     fn visit_fn_type_parameter(&mut self, node: &FnTypeParameter) -> Result<T, E> { node.walk(self) }
+    fn visit_format_segment(&mut self, node: &FormatSegment) -> Result<T, E> { node.walk(self) }
+    fn visit_format_string(&mut self, node: &FormatString) -> Result<T, E> { node.walk(self) }
     fn visit_for_stmt(&mut self, node: &ForStatement) -> Result<T, E> { node.walk(self) }
     fn visit_generic_name(&mut self, node: &GenericName) -> Result<T, E> { node.walk(self) }
     fn visit_generic_parameter(&mut self, node: &GenericParameter) -> Result<T, E> { node.walk(self) }

@@ -162,6 +162,7 @@ pub enum Expr {
     Tuple(TupleExpr),
     Array(ArrayExpr),
     Call(CallExpr),
+    Format(FormatString),
     ArrayIndex(ArrayIndexExpr),
     TupleIndex(TupleIndexExpr),
     Member(MemberExpr),
@@ -240,6 +241,29 @@ pub struct FnTypeParameter {
     pub span: Span,
     pub name: Option<IdSpan>,
     pub r#type: TypeRef,
+}
+
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
+pub enum FormatSegment {
+    Str(IdSpan),
+    Expr{ span: Span, expr: Expr, specifier: Option<IdSpan> },
+}
+
+impl FormatSegment {
+    pub fn span(&self) -> Span {
+        match self {
+            FormatSegment::Str(IdSpan{ span, .. }) => *span,
+            FormatSegment::Expr{ span, .. } => *span,
+        }
+    }
+}
+
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
+pub struct FormatString {
+    pub span: Span,
+    pub segments: Vec<FormatSegment>,
 }
 
 #[derive(Debug)]
@@ -329,6 +353,7 @@ pub enum LitValue {
     Bool(bool),
     Char(char),
     Str(IsId),
+    BStr(IsId),
     Num(Numeric),
 }
 

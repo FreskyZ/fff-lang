@@ -1,6 +1,6 @@
 
-pub mod source;
-pub mod diagnostics;
-pub mod lexical;
-pub mod syntax;
+mod source;
+mod diagnostics;
+mod lexical;
+mod syntax;
 pub mod interface;

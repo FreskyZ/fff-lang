@@ -71,6 +71,18 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         }
     }
 
+    fn parse_lit_expr(&mut self) -> Result<Expr, Unexpected> {
+        
+        let (value, span) = match self.current {
+            Token::Bool(v) => Ok((LitValue::Bool(v), self.move_next())),
+            Token::Char(v) => Ok((LitValue::Char(v), self.move_next())),
+            Token::Num(v) => Ok((LitValue::Num(v), self.move_next())),
+            Token::Str(v, _) => Ok((LitValue::Str(v), self.move_next())),
+            _ => self.push_unexpect("literal"),
+        }?;
+        Ok(Expr::Lit(LitExpr{ value, span }))
+    }
+
     fn maybe_tuple_expr(&self) -> bool {
         matches!(self.current, Token::Sep(Separator::LeftParen)) 
     }
@@ -121,11 +133,9 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     }
 
     pub fn parse_primary_expr(&mut self) -> Result<Expr, Unexpected> {
+
         if self.is_lit() {
-            // this is too short to put in one parse method
-            // while it is actually tested more than hundred times in syntax test cases worldwide
-            let (value, span) = self.expect_lit()?;
-            return Ok(Expr::Lit(LitExpr{ value, span }));
+            return self.parse_lit_expr();
         } else if self.maybe_path() {
             return self.parse_value_path().map(Expr::Path);
         } else if self.maybe_tuple_expr() {

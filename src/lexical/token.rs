@@ -57,7 +57,8 @@ pub enum StringLiteralType {
     Binary,
     RawBinary,
     FormatStart,
-    FormatIntermdiate,
+    FormatSpecifier,
+    FormatIntermediate,
     FormatEnd,
 }
 
@@ -69,7 +70,8 @@ impl fmt::Display for StringLiteralType {
             StringLiteralType::Binary => f.write_str("(b)"),
             StringLiteralType::RawBinary => f.write_str("(rb)"),
             StringLiteralType::FormatStart => f.write_str("({)"),
-            StringLiteralType::FormatIntermdiate => f.write_str("(}{)"),
+            StringLiteralType::FormatSpecifier => f.write_str("(:{)"),
+            StringLiteralType::FormatIntermediate => f.write_str("(}{)"),
             StringLiteralType::FormatEnd => f.write_str("(})"),
         }
     }

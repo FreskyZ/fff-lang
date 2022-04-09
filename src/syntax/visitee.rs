@@ -113,6 +113,7 @@ impl_abc_node! { Expr, visit_expr,
     Tuple => visit_tuple_expr,
     Array => visit_array_expr,
     Call => visit_call_expr,
+    Format => visit_format_string,
     ArrayIndex => visit_array_index_expr,
     TupleIndex => visit_tuple_index_expr,
     Member => visit_member_expr,
@@ -169,6 +170,20 @@ impl_node!{ FnType, visit_fn_type, |self, v| {
 
 impl_node!{ FnTypeParameter, visit_fn_type_parameter, |self, v| {
     v.visit_type_ref(&self.r#type)
+}}
+
+impl_node!{ FormatSegment, visit_format_segment, |self, v| {
+    match self {
+        FormatSegment::Str(_) => Ok(Default::default()),
+        FormatSegment::Expr{ expr, .. } => v.visit_expr(expr),
+    }
+}}
+
+impl_node!{ FormatString, visit_format_string, |self, v| {
+    for segment in &self.segments {
+        v.visit_format_segment(segment)?;
+    }
+    Ok(Default::default())
 }}
 
 impl_node!{ ForStatement, visit_for_stmt, |self, v| {

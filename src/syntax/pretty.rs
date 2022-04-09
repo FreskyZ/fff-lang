@@ -220,6 +220,25 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
         })
     }
 
+    fn visit_format_segment(&mut self, node: &FormatSegment) -> fmt::Result {
+        self.impl_visit(node, "format-segment", node.span(), |f| {
+            match node {
+                FormatSegment::Str(IdSpan{ id, .. }) => { 
+                    f.write_str(" str \"")?.write_isid(*id)?.write_str("\"")?; 
+                },
+                FormatSegment::Expr{ specifier: Some(IdSpan{ id, span }), .. } => {
+                    f.write_str(" specifier \"")?.write_isid(*id)?.write_str("\" ")?.write_span(*span)?;
+                },
+                FormatSegment::Expr{..} => {},
+            }
+            Ok(f)
+        })
+    }
+
+    fn visit_format_string(&mut self, node: &FormatString) -> fmt::Result {
+        self.impl_visit_simple(node, "format", node.span)
+    }
+
     fn visit_for_stmt(&mut self, node: &ForStatement) -> fmt::Result {
         self.impl_visit(node, "for-stmt", node.span, |f| {
             f.write_str(" iter-var ")?.write_idspan(node.iter_name)?;
@@ -266,7 +285,7 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
                 LitValue::Unit => { f.write_str("unit")?; },
                 LitValue::Bool(v) => { write!(f.f, "bool {v}")?; },
                 LitValue::Char(v) => { write!(f.f, "char {v:?}")?; },
-                LitValue::Str(id) => { f.write_str("str \"")?.write_isid(id)?.write_str("\"")?; },
+                LitValue::Str(id) | LitValue::BStr(id) => { f.write_str("str \"")?.write_isid(id)?.write_str("\"")?; },
                 LitValue::Num(v) => { write!(f.f, "{v}")?; },
             }
             f.write_space()?.write_span(node.span)

@@ -281,6 +281,13 @@ impl<'a> SourceChars<'a> {
         }
     }
 
+    // format string require reset from peeked
+    pub fn reset(&mut self, span: Span) {
+        let reset_index = span.start.unwrap() as usize;
+        debug_assert!(reset_index >= self.start_index, "not this file span");
+        self.current_index = reset_index - self.start_index;
+    }
+
     pub fn intern(&mut self, value: &str) -> IsId {
 
         // empty string is span 0,0, this span must exist because this function exists in this type
