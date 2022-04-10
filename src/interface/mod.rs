@@ -3,7 +3,7 @@ use std::collections::VecDeque;
 use std::io;
 use crate::source::SourceContext;
 use crate::diagnostics::Diagnostics;
-use crate::syntax::{Node, parse};
+use crate::syntax::{Node, parse, ast::MemoryProfiler};
 // use crate::mast::Tree;
 // use crate::ir::Graph;
 // use crate::vm::{VirtualMachine, CodeGenerator};
@@ -39,10 +39,11 @@ fn run_compiler(args: argument::Argument, output: &mut impl io::Write) {
         }
     }
     if args.prints.iter().any(|p| *p == argument::PrintValue::ASTMemory) {
+        let mut profiler = MemoryProfiler::new();
         for module in &modules {
-            // TODO write!(output, "{}", module.memory_snapshot()); // not really snapshot, because ast is immutable
-            write!(output, "{}", module.display(&scx)).unwrap();
+            profiler.profile(module);
         }
+        profiler.dump();
     }
     if args.prints.iter().any(|p| *p == argument::PrintValue::Files) {
         for module in &modules {

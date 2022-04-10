@@ -16,10 +16,11 @@ fn print_help(binary_name: &str) -> ! {
     println!("    {binary_name} [OPTIONS] INPUT");
     println!();
     println!("Options:");
-    println!("    -h, --help     Display this message");
-    println!("    --print ast    Print ast pretty");
-    println!("    --print files  Print included files");
-    println!("    -V, --version  Print version and exit");
+    println!("    -h, --help       Display this message");
+    println!("    --print ast      Print ast pretty");
+    println!("    --print ast-mem  Print ast memory usage");
+    println!("    --print files    Print included files");
+    println!("    -V, --version    Print version and exit");
     println!();
     std::process::exit(0)
 }
@@ -78,7 +79,7 @@ impl Argument {
                 expect_value_for = None;
                 if raw == "ast" {
                     result.prints.push(PrintValue::AST);
-                } else if raw == "ast-memory" {
+                } else if raw == "ast-mem" {
                     result.prints.push(PrintValue::ASTMemory);
                 } else if raw == "files" {
                     result.prints.push(PrintValue::Files);
