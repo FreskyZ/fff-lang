@@ -2,8 +2,8 @@
 use crate::source::{Span, IsId, IdSpan, FileId};
 use crate::lexical::{Separator, Keyword, Numeric};
 
-mod mem;
-pub use mem::MemoryProfiler;
+mod profile;
+pub use profile::MemoryProfiler;
 
 // naming convension:
 // - first field is `span` and represents span for complete node
