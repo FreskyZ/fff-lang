@@ -3,9 +3,9 @@
 // this is currently the reason this project needs nightly,
 // there is std::alloc::alloc method, but they said they will deprecate when Allocator trait stablized
 use std::alloc::{Global, Allocator, Layout};
-use std::cell::{Cell, RefCell, Ref, RefMut};
+use std::cell::RefCell;
+use std::fmt;
 use std::marker::PhantomData;
-use std::mem::{size_of, align_of};
 use std::num::{NonZeroU32, NonZeroUsize};
 use std::ptr::{NonNull, copy_nonoverlapping};
 
@@ -31,335 +31,6 @@ impl Address {
     }
 }
 
-// chunk size is 4k
-const CHUNK_SIZE_WIDTH: usize = 12;
-const CHUNK_SIZE: usize = 1 << CHUNK_SIZE_WIDTH;
-// 0x00000FFF: lower 12bits of virtual address is offset inside chunk
-const MASK_OFFSET: u32 = (1 << (CHUNK_SIZE_WIDTH + 1)) - 1;
-// 0xFFFFF000: upper 20bits of virtual address is chunk index
-const MASK_CHUNK_INDEX: u32 = ((1 << (33 - CHUNK_SIZE_WIDTH)) - 1) << CHUNK_SIZE_WIDTH;
-
-// SAFETY: see constant definitions above
-// AMAZING: this is allowed
-const CHUNK_LAYOUT: Layout = unsafe {
-    Layout::from_size_align_unchecked(CHUNK_SIZE, CHUNK_SIZE)
-};
-
-struct Chunk {
-    next: NonNull<u8>,
-    head: NonNull<u8>,
-}
-
-impl Chunk {
-
-    fn new() -> Chunk {
-        let head = match Global.allocate(CHUNK_LAYOUT) {
-            Ok(head) => {
-                // cast: allocate returns NonNull<[u8]>, 
-                // that does not allow `offset` like methods which rely on T: Sized
-                let head = head.cast();
-                // ptr::offset_from seems indicating this should be guaranteed by current implementation,
-                // but I did not found it in implementaion or document, so assert here (this is not debug assert)
-                // // this will not happen in major linux or windows platforms, because this high virtual address is used by os
-                assert!(head.addr().get() < usize::MAX - CHUNK_SIZE, "invalid alloc result");
-                head
-            },
-            // AllocError does not provide any information
-            // and I actually have nothing more to do here
-            Err(_) => panic!("oom"),
-        };
-        Chunk{ head, next: head }
-    }
-
-    // return none for not enough space
-    fn allocate(&mut self, chunk_index: usize, size: usize) -> Option<Address> {
-        debug_assert!(size & 0x3 == 0, "invalid size"); // size is expected to align to u32
-        debug_assert!(size < CHUNK_SIZE, "too large object");
-
-        // SAFETY:
-        // // from doc // these lines are really long
-        // // 1. Both starting and other pointer must be either in bounds or one byte past the end of the same allocated object
-        // // 2. Both pointers must derive from a pointer to the same object
-        // // 3. The distance between the pointers, in bytes, must be an exact multiple of the size of T
-        // // 4. The distance between the pointers, in bytes, cannot overflow an isize
-        // // 5. The distance being in bounds cannot rely on wrapping arround the address space
-        // 3. T is u8
-        // others. self.head and self.next all derive from the same allocated object self.head,
-        //         the object size is CHUNK_SIZE which is correctly less than isize for 16/32/64bit platforms,
-        //         self.next is initialized same as self.head,
-        //         self.head does not change, self.next is only changed by simple add,
-        //         self.next does not overflow this object is guaranteed by the following if,
-        //         self.next does not overflow max value of usize is guranteed by assert in Self::new
-        let offset = unsafe {
-            // as usize: previous proof prove that self.next is only same or large than self.head
-            self.next.as_ptr().offset_from(self.head.as_ptr()) as usize
-        };
-        if offset + size <= CHUNK_SIZE {
-            let real = self.next.as_ptr();
-            // SAFETY: usize + usize keep non-null-ness, not overflow explained in previous comment
-            self.next = self.next.map_addr(|a| unsafe {
-                NonZeroUsize::new_unchecked(a.get() + size) 
-            });
-            Some(Address::new(real, ((chunk_index << CHUNK_SIZE_WIDTH) + offset) as u32))
-        } else {
-            None
-        }
-    }
-}
-
-pub struct Arena {
-    // Vec: 
-    //   complex operation like puting chunk structure into
-    //   another chunk or some linked list simply repeat a vector's work
-    // RefCell:
-    //   if a memory manager requires mutable reference to return some reference like (via PhantonData),
-    //   it will be regarded as continuously mutable borrows self and cannot do anything more
-    chunks: RefCell<Vec<Chunk>>,
-    // another slice_place before previous slice_place finish is error
-    building_slice: Cell<bool>,
-}
-
-impl Arena {
-
-    pub fn new() -> Self {
-
-        // include first chunk in new, because you never want an empty arena
-        let mut first_chunk = Chunk::new();
-        // index 0 is not used, SAFETY: usize add 4 is safe, no overlapping explained
-        first_chunk.next = first_chunk.next.map_addr(|a| unsafe { NonZeroUsize::new_unchecked(a.get() + 4) });
-
-        Self{ chunks: RefCell::new(vec![first_chunk]), building_slice: Cell::new(false) }
-    }
-
-    // when getting arbitrary chunk, caller does not need mutable chunk to get mutable pointer
-    fn get_chunk(&self, chunk_index: usize) -> Ref<Chunk> {
-        let chunks = self.chunks.borrow();
-        debug_assert!(chunk_index < chunks.len(), "invalid chunk index");
-        // SAFETY: asserted before
-        Ref::map(chunks, |v| unsafe { v.get_unchecked(chunk_index) })
-    }
-
-    // when getting last chunk, caller defnitely want to allocate something, so it is mut only
-    fn get_last_chunk(&self) -> RefMut<Chunk> {
-        let chunks = self.chunks.borrow_mut();
-        // SAFETY: self.chunks is not empty
-        RefMut::map(chunks, |v| unsafe { v.last_mut().unwrap_unchecked() })
-    }
-
-    fn allocate(&self, size: usize) -> Address {
-        debug_assert!(size & 0x3 == 0, "invalid size");
-        debug_assert!(size < CHUNK_SIZE, "too large object");
-        
-        let chunk_index = self.chunks.borrow().len() - 1;
-        match self.get_last_chunk().allocate(chunk_index, size) {
-            Some(addr) => addr,
-            None => {
-                self.chunks.borrow_mut().push(Chunk::new());
-                // SAFETY: new_size is less than CHUNK_SIZE and must allocate success for a new chunk
-                unsafe {
-                    self.get_last_chunk().allocate(chunk_index + 1, size).unwrap_unchecked()
-                }
-            },
-        }
-    }
-
-    // old_size, new_size: size in bytes
-    // try append last allocated object from old_size to new_size, copy if not enough space in original chunk, return new address if copy
-    fn reallocate(&self, old_addr: &Address, old_size: usize, new_size: usize) -> Option<Address> {
-        debug_assert!(new_size & 0x3 == 0, "invalid size");
-        debug_assert!(new_size < CHUNK_SIZE, "too large object");
-
-        let old_chunk_index = (old_addr.v.get() & MASK_CHUNK_INDEX) as usize;
-        debug_assert!(old_chunk_index == self.chunks.borrow().len() - 1, "invalid chunk index");
-
-        if self.get_last_chunk().allocate(old_chunk_index, new_size - old_size).is_some() {
-            return None; // successfully append in place
-        }
-
-        // you cannot put these in match allocate result None arm because that keeps cell::RefMut lifetime
-        self.chunks.borrow_mut().push(Chunk::new());
-        // SAFETY: new_size is less than CHUNK_SIZE and must allocate success for a new chunk
-        let new_addr = unsafe {
-            self.get_last_chunk().allocate(old_chunk_index + 1, new_size).unwrap_unchecked()
-        };
-
-        // SAFETY
-        // // from doc
-        // // 1. src must be valid for reads of count * size_of::<T>() bytes.
-        // // 2. dst must be valid for writes of count * size_of::<T>() bytes.
-        // // 3. Both src and dst must be properly aligned.
-        // // 4. The region of memory beginning at src with a size of count * size_of::<T>() bytes must not overlap with the region of memory beginning at dst with the same size.
-        // 0. the definition for valid is not stabled, so the following explain is not stabled
-        // 1. [old_addr, old_addr + old_size) is inside old_chunk and valid to read
-        // 2. [new_addr, new_add + new_size) is inside new_chunk and valid to write
-        // 3. they are u8 pointers and must be aligned
-        // 4. they are in different allocated object and cannot overlapping
-        unsafe {
-            copy_nonoverlapping(old_addr.r, new_addr.r, old_size)
-        }
-        Some(new_addr)
-    }
-
-    pub fn place<T>(&self) -> Place<T> where T: Sized {
-        // objects are expected to u32 index, no less, no more
-        debug_assert!(align_of::<T>() == 4, "invalid align");
-        Place{ addr: self.allocate(size_of::<T>()), phantom: PhantomData }
-    }
-
-    pub fn slice_place<T>(&self) -> SlicePlace<T> {
-        debug_assert!(!self.building_slice.get(), "duplicate call of slice_place");
-        self.building_slice.set(true);
-        // objects are expected to u32 index, no less, no more
-        debug_assert!(align_of::<T>() == 4, "invalid align");
-        SlicePlace::new(self)
-    }
-
-    // map virtual address to real address
-    fn map_addr(&self, index: u32) -> *mut u8 {
-        let chunk = self.get_chunk((index & MASK_CHUNK_INDEX) as usize);
-
-        // SAFETY for add
-        // // from docs
-        // // 1. Both the starting and resulting pointer must be either in bounds or one
-        // //    byte past the end of the same [allocated object].
-        // // 2. The computed offset, **in bytes**, cannot overflow an `isize`.
-        // // 3. The offset being in bounds cannot rely on "wrapping around" the address
-        // //    space. That is, the infinite-precision sum must fit in a `usize`.
-        // 1. index & MASK_OFFSET is less than CHUNK_SIZE and make self.head and self.head + offset in side chunk.head object
-        // 2. index & MASK_OFFSET is less than CHUNK_SIZE and less than isize for 16/32/64bit platforms
-        // 3. chunk.head object does not overflap
-        let ptr = unsafe {
-            chunk.head.as_ptr().add((index & MASK_OFFSET) as usize)
-        };
-        debug_assert!(ptr < chunk.next.as_ptr(), "invalid offset");
-        ptr
-    }
-
-    pub fn get<'a, T>(&self, index: Index<'a, T>) -> &T where T: Sized {
-        let ptr = self.map_addr(index.v.get());
-        // SAFETY: it is safe if index is not arbitray created
-        unsafe {
-            ptr.cast::<T>().as_ref().unwrap_unchecked()
-        }
-    }
-
-    // ATTENTION:
-    // this immutably borrows self, because when the indexes are alive you simply cannot mutably borrow self,
-    // so you can easily holding an immutable object and a mutable object or 2 mutable objects at same time,
-    // it is neither compile time nor runtime checked, this function seems needs unsafe because of that, but
-    // mark this unsafe does not actually help but only make calling this inconvenient, this may actually need
-    // branded type for that: https://plv.mpi-sws.org/rustbelt/ghostcell/paper.pdf
-    pub fn get_mut<'a, T>(&self, index: Index<'a, T>) -> &mut T where T: Sized {
-        let ptr = self.map_addr(index.v.get());
-        // SAFETY: same as before
-        unsafe {
-            ptr.cast::<T>().as_mut().unwrap_unchecked()
-        }
-    }
-}
-
-pub struct Place<'a, T> {
-    addr: Address,
-    phantom: PhantomData<&'a mut T>, // place is logically mutable when constructing (the this pointer inside constructor in traditional OOP language)
-}
-
-impl<'a, T> Place<'a, T> where T: Sized {
-
-    /// # Safety
-    /// The function `f` must write valid values into all fields and not read from them
-    pub unsafe fn new_with(self, f: impl FnOnce(&'a mut T)) -> Index<'a, T> {
-
-        // SAFETY for as_mut:
-        // // from doc
-        // // 1. The pointer must be properly aligned.
-        // // 2. It must be "dereferenceable" in the sense defined in the module documentation.
-        // //    the memory range of the given size starting at the pointer must all be within the bounds of a single allocated object. 
-        // //    Note that in Rust, every (stack-allocated) variable is considered a separate allocated object
-        // // 3. The pointer must point to an initialized instance of T.
-        // // 4. You must enforce Rust's aliasing rules, since the returned lifetime 'a is arbitrarily chosen 
-        // //    and does not necessarily reflect the actual lifetime of the data. In particular, for the duration 
-        // //    of this lifetime, the memory the pointer points to must not get accessed (read or written) through any other pointer.
-        // 1. align is 4 and size is align at 4 is checked in many place
-        // 2. the memory range of the given starting at the pointer is within the single allocated object Chunk::head
-        // 3. no, this is not initialized, the id explainers will panic for invalid values
-        //    *but*, the correct implementation of scripts/ast.py (and scripts/mast.py?) will guarantee
-        //    that all fields is required in the constructor and written to this object without any reading
-        // 4. the result lifetime is inferred as same as &Arena, which is correct according to definition
-        //
-        // SAFETY for unwrap_unchecked
-        // real address are derived from Chunk::head which is not null
-        f(self.addr.r.cast::<T>().as_mut().unwrap_unchecked());
-
-        Index{ v: self.addr.v, phantom: PhantomData }
-    }
-}
-
-// place does not change size after allocate, and object type is kind of arbitrary
-// slice place allows continuous push and may reallocate, item must be index, T is for index, not item
-pub struct SlicePlace<'a, T> {
-    m: &'a Arena,
-    head: Address,
-    len: usize, // in bytes
-    cap: usize, // in bytes
-    phantom: PhantomData<&'a mut T>, // place is logically mutable when constructing
-}
-
-impl<'a, T> SlicePlace<'a, T> {
-
-    fn new(m: &'a Arena) -> Self {
-        // allocate one item when creating,
-        // or else self.head does not have valid init value
-        let head = m.allocate(4);
-        Self{ m, head, len: 0, cap: 4, phantom: PhantomData }
-    }
-
-    pub fn push(&mut self, item: Index<'a, T>) {
-
-        // grow
-        if self.len + 4 > self.cap {
-            // use x1.5 multiplier
-            let new_cap = if self.cap == 4 { 8 } else { self.cap + (self.cap >> 1) };
-            let new_cap = if new_cap > CHUNK_SIZE { CHUNK_SIZE } else { new_cap };
-            // TODO: 1000 item is possible array size, may need to split it
-            debug_assert!(new_cap > self.cap, "too large slice");
-            if let Some(new_head) = self.m.reallocate(&self.head, self.cap, new_cap) {
-                self.head = new_head;
-            }
-            self.cap = new_cap; 
-        }
-
-        // SAFETY for add
-        // // from docs
-        // // 1. Both the starting and resulting pointer must be either in bounds or one
-        // //    byte past the end of the same [allocated object].
-        // // 2. The computed offset, **in bytes**, cannot overflow an `isize`.
-        // // 3. The offset being in bounds cannot rely on "wrapping around" the address
-        // //    space. That is, the infinite-precision sum must fit in a `usize`.
-        // 1. [self.head, self.head + self.len) is inside the same allocated object Chunk::head
-        // 2. self.len is less than or equal to self.cap, self.cap is less than or equal to CHUNK_SIZE
-        // 3. Chunk::head is not overlapping
-        //
-        // SAFETY for write:
-        // // from docs
-        // // 1. `dst` must be [valid] for writes.
-        // // 2. `dst` must be properly aligned. Use [`write_unaligned`] if this is not the case.
-        // 1. yes
-        // 2. align 4 is checked at many places
-        unsafe {
-            self.head.r.add(self.len).cast::<u32>().write(item.v.get());
-        }
-        self.len += 4;
-    }
-
-    pub fn finish(self) -> Slice<'a, T> {
-        self.m.building_slice.set(false);
-        debug_assert!(self.len != 0, "empty slice");
-
-        // SAFETY: checked in debug_assert
-        Slice{ head: self.head.v, size: unsafe { NonZeroU32::new_unchecked((self.len >> 2) as u32) }, phantom: PhantomData }
-    }
-}
-
 pub struct Index<'a, T> {
     v: NonZeroU32,
     phantom: PhantomData<&'a T>,
@@ -377,7 +48,8 @@ impl<'a, T> Clone for Index<'a, T> {
     }
 }
 
-impl<'a, T> Copy for Index<'a, T> {}
+impl<'a, T> Copy for Index<'a, T> {
+}
 
 impl<'a, T> Index<'a, T> {
 
@@ -474,31 +146,255 @@ impl<'a, T> Iterator for SliceIterMut<'a, T> {
     }
 }
 
-#[cfg(test)]
-#[allow(dead_code)] // used when debugging
-fn dump(arena: &Arena) {
-    unsafe {
-        for (chunk_index, chunk) in arena.chunks.borrow().iter().enumerate() {
-            let used = chunk.next.as_ptr().offset_from(chunk.head.as_ptr()) as usize;
-            println!("chunk#{} 0x{:X} ({} bytes)", chunk_index, chunk.head.as_ptr() as usize, used);
-    
-            let slice = std::slice::from_raw_parts(chunk.head.as_ptr(), used);
-            for (chunk_index, chunk) in slice.chunks(16).enumerate() {
-                print!("{:08X} |", chunk_index * 0x10);
-                for byte in chunk {
-                    print!(" {byte:02X}");
+// chunk size is 4k
+const CHUNK_SIZE_WIDTH: usize = 12;
+const CHUNK_SIZE: usize = 1 << CHUNK_SIZE_WIDTH;
+// 0x00000FFF: lower 12bits of virtual address is offset inside chunk
+const MASK_OFFSET: u32 = (1 << (CHUNK_SIZE_WIDTH + 1)) - 1;
+// 0xFFFFF000: upper 20bits of virtual address is chunk index
+const MASK_CHUNK_INDEX: u32 = ((1 << (33 - CHUNK_SIZE_WIDTH)) - 1) << CHUNK_SIZE_WIDTH;
+// SAFETY: constant input
+// AMAZING: this is allowed
+const CHUNK_LAYOUT: Layout = unsafe {
+    Layout::from_size_align_unchecked(CHUNK_SIZE, CHUNK_SIZE)
+};
+
+struct Chunk {
+    next: NonNull<u8>,
+    head: NonNull<u8>,
+}
+
+impl Chunk {
+
+    fn new() -> Chunk {
+        let head = match Global.allocate(CHUNK_LAYOUT) {
+            Ok(head) => {
+                // cast: allocate returns NonNull<[u8]>, 
+                // that does not allow `offset` like methods which rely on T: Sized
+                let head = head.cast();
+                // ptr::offset_from seems indicating this should be guaranteed by current implementation,
+                // but I did not found it in implementaion or document, so assert here (this is not debug assert)
+                // // this will not happen in major linux or windows platforms, because this high virtual address is used by os
+                assert!(head.addr().get() < usize::MAX - CHUNK_SIZE, "invalid alloc result");
+                head
+            },
+            // AllocError does not provide any information
+            // and I actually have nothing more to do here
+            Err(_) => panic!("oom"),
+        };
+        Chunk{ head, next: head }
+    }
+
+    // return none for not enough space
+    fn allocate(&mut self, chunk_index: usize, layout: Layout) -> Option<Address> {
+        let align = if layout.align() < 4 { 4 } else { layout.align() }; // min align 4
+        let align_mask = align - 1;
+        debug_assert!(layout.size() <= CHUNK_SIZE, "too large object");
+
+        // SAFETY:
+        // // from doc // these lines are really long
+        // // 1. Both starting and other pointer must be either in bounds or one byte past the end of the same allocated object
+        // // 2. Both pointers must derive from a pointer to the same object
+        // // 3. The distance between the pointers, in bytes, must be an exact multiple of the size of T
+        // // 4. The distance between the pointers, in bytes, cannot overflow an isize
+        // // 5. The distance being in bounds cannot rely on wrapping arround the address space
+        // 3. T is u8
+        // others. self.head and self.next all derive from the same allocated object self.head,
+        //         the object size is CHUNK_SIZE which is correctly less than isize for 16/32/64bit platforms,
+        //         self.next is initialized same as self.head,
+        //         self.head does not change, self.next is only changed by simple add,
+        //         self.next does not overflow this object is guaranteed by the following if,
+        //         self.next does not overflow max value of usize is guranteed by assert in Self::new
+        let offset = unsafe {
+            // as usize: previous proof prove that self.next is only same or large than self.head
+            self.next.as_ptr().offset_from(self.head.as_ptr()) as usize
+        };
+        let align_padding = if offset & align_mask == 0 { 0 } else { align - (offset & align_mask) };
+
+        if offset + align_padding + layout.size() <= CHUNK_SIZE {
+            // SAFETY: this if guarantees that add align padding still keep result inside self.head object
+            let real = unsafe { self.next.as_ptr().add(align_padding) };
+            // SAFETY: usize + usize keep non-null-ness, not overflow explained in previous comment
+            self.next = self.next.map_addr(|a| unsafe {
+                NonZeroUsize::new_unchecked(a.get() + align_padding + layout.size())
+            });
+            Some(Address::new(real, ((chunk_index << CHUNK_SIZE_WIDTH) + offset + align_padding) as u32))
+        } else {
+            None
+        }
+    }
+}
+
+pub struct Arena {
+    // Vec: 
+    //   complex operation like puting chunk structure into
+    //   another chunk or some linked list simply repeat a vector's work
+    // RefCell:
+    //   if a memory manager requires mutable reference to return some reference like (via PhantonData),
+    //   it will be regarded as continuously mutable borrows self and cannot do anything more
+    chunks: RefCell<Vec<Chunk>>,
+}
+
+impl Arena {
+
+    pub fn new() -> Self {
+
+        // include first chunk in new, because you never want an empty arena
+        let mut first_chunk = Chunk::new();
+        // index 0 is not used, SAFETY: usize add 4 is safe, no overlapping explained
+        first_chunk.next = first_chunk.next.map_addr(|a| unsafe { NonZeroUsize::new_unchecked(a.get() + 4) });
+
+        Self{ chunks: RefCell::new(vec![first_chunk]) }
+    }
+
+    fn allocate(&self, layout: Layout) -> Address {
+        macro_rules! last_chunk { () => (
+            // SAFETY: self.chunks is not empty
+            self.chunks.borrow_mut().last_mut().unwrap_unchecked()
+        )}
+        let chunk_index = self.chunks.borrow().len() - 1;
+        match unsafe { last_chunk!() }.allocate(chunk_index, layout) {
+            Some(addr) => addr,
+            None => {
+                self.chunks.borrow_mut().push(Chunk::new());
+                // SAFETY: new_size is less than CHUNK_SIZE and must allocate success for a new chunk
+                unsafe {
+                    last_chunk!().allocate(chunk_index + 1, layout).unwrap_unchecked()
                 }
-                print!(" |");
-                let ptr = chunk.as_ptr();
-                let slice = std::slice::from_raw_parts(ptr.cast::<u32>(), 4);
-                for id in slice {
-                    // the second part is regard them as u32, not ascii
-                    // 4 should be enough for test purpose
-                    print!(" {id:<4}");
+            },
+        }
+    }
+
+    pub fn emplace<'a, T, F: FnOnce(&'a mut T)>(&'a self, f: F) -> Index<'a, T> where T: Sized {
+        let addr = self.allocate(Layout::new::<T>());
+        // SAFETY for as_mut:
+        // // from doc
+        // // 1. The pointer must be properly aligned.
+        // // 2. It must be "dereferenceable" in the sense defined in the module documentation.
+        // //    the memory range of the given size starting at the pointer must all be within the bounds of a single allocated object. 
+        // //    Note that in Rust, every (stack-allocated) variable is considered a separate allocated object
+        // // 3. The pointer must point to an initialized instance of T.
+        // // 4. You must enforce Rust's aliasing rules, since the returned lifetime 'a is arbitrarily chosen 
+        // //    and does not necessarily reflect the actual lifetime of the data. In particular, for the duration 
+        // //    of this lifetime, the memory the pointer points to must not get accessed (read or written) through any other pointer.
+        // 1. correct implementation of Chunk::allocate gurantees that
+        // 2. the memory range of the given starting at the pointer is within the single allocated object Chunk::head
+        // 3. no, this is not initialized, the id explainers will panic for invalid values
+        //    *but*, the correct implementation of scripts/ast.py (and scripts/mast.py?) will guarantee
+        //    that all fields is required in the constructor and written to this object without any reading
+        // 4. the result lifetime is &self, which is by design, although this allow 
+        //    multiple mutable reference of same object or coexist of mutable reference
+        //    and immutable reference, there is actually nothing can be done here (for arena in rust)
+        // SAFETY for unwrap_unchecked: real address are derived from Chunk::head which is not null
+        unsafe {
+            f(addr.r.cast::<T>().as_mut().unwrap_unchecked());
+        }
+        Index{ v: addr.v, phantom: PhantomData }
+    }
+
+    pub fn extend<'a, T>(&'a self, vec: Vec<Index<'a, T>>) -> Slice<'a, T> {
+
+        debug_assert!(vec.len() > 0, "empty slice");
+        // TODO: 1000 is possible array size, need to think up of an solution
+        debug_assert!(vec.len() < CHUNK_SIZE >> 2, "too large array");
+        // SAFETY: after that assert, CHUNK_SIZE is well below usize to overflow
+        let addr = self.allocate(unsafe { Layout::array::<u32>(vec.len()).unwrap_unchecked() });
+
+        // SAFETY
+        // // from doc
+        // // 1. src must be valid for reads of count * size_of::<T>() bytes.
+        // // 2. dst must be valid for writes of count * size_of::<T>() bytes.
+        // // 3. Both src and dst must be properly aligned.
+        // // 4. The region of memory beginning at src with a size of count * size_of::<T>() bytes must not overlap with the region of memory beginning at dst with the same size.
+        // 0. the definition for valid is not stabled, so the following explain is not stabled
+        // 1. vec.as_ptr() within vec.len() is valid for reads
+        // 2. correct allocation implementation guarantees dest is valid for write
+        // 3. correct vec implementation and allocation implementation guarantee this
+        // 4. they must in different allocated object and cannot overlapping
+        unsafe {
+            copy_nonoverlapping(vec.as_ptr().cast::<u32>(), addr.r.cast::<u32>(), vec.len());
+        }
+
+        // SAFETY: checked in debug_assert
+        Slice{ head: addr.v, size: unsafe { NonZeroU32::new_unchecked(vec.len() as u32) }, phantom: PhantomData }
+    }
+
+    // map virtual address to real address
+    fn map_addr(&self, index: u32) -> *mut u8 {
+        let chunk_index = (index & MASK_CHUNK_INDEX) as usize;
+        let chunks = self.chunks.borrow();
+
+        debug_assert!(chunk_index < chunks.len(), "invalid chunk index");
+        // SAFETY: asserted before
+        let chunk = unsafe { chunks.get_unchecked(chunk_index) };
+
+        // SAFETY for add
+        // // from docs
+        // // 1. Both the starting and resulting pointer must be either in bounds or one
+        // //    byte past the end of the same [allocated object].
+        // // 2. The computed offset, **in bytes**, cannot overflow an `isize`.
+        // // 3. The offset being in bounds cannot rely on "wrapping around" the address
+        // //    space. That is, the infinite-precision sum must fit in a `usize`.
+        // 1. index & MASK_OFFSET is less than CHUNK_SIZE and make self.head and self.head + offset in side chunk.head object
+        // 2. index & MASK_OFFSET is less than CHUNK_SIZE and less than isize for 16/32/64bit platforms
+        // 3. chunk.head object does not overflap
+        let ptr = unsafe {
+            chunk.head.as_ptr().add((index & MASK_OFFSET) as usize)
+        };
+        debug_assert!(ptr < chunk.next.as_ptr(), "invalid offset");
+        ptr
+    }
+
+    pub fn get<'a, T>(&self, index: Index<'a, T>) -> &T where T: Sized {
+        let ptr = self.map_addr(index.v.get());
+        // SAFETY: it is safe if index is not arbitray created
+        unsafe {
+            ptr.cast::<T>().as_ref().unwrap_unchecked()
+        }
+    }
+
+    // ATTENTION:
+    // this immutably borrows self, because when the indexes are alive you simply cannot mutably borrow self,
+    // so you can easily holding an immutable object and a mutable object or 2 mutable objects at same time,
+    // it is neither compile time nor runtime checked, this function seems needs unsafe because of that, but
+    // mark this unsafe does not actually help but only make calling this inconvenient, this may actually need
+    // branded type for that: https://plv.mpi-sws.org/rustbelt/ghostcell/paper.pdf
+    pub fn get_mut<'a, T>(&self, index: Index<'a, T>) -> &mut T where T: Sized {
+        let ptr = self.map_addr(index.v.get());
+        // SAFETY: same as before
+        unsafe {
+            ptr.cast::<T>().as_mut().unwrap_unchecked()
+        }
+    }
+
+    #[allow(dead_code)] // for debugging
+    pub fn status(&self, each_byte: bool) -> ArenaStatus {
+        ArenaStatus(self, each_byte)
+    }
+}
+
+#[allow(dead_code)] // for debugging
+pub struct ArenaStatus<'a>(&'a Arena, bool); // bool: each byte
+
+impl<'a> fmt::Display for ArenaStatus<'a> {
+
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // SAFETY: same as before, or is not important for test purpose
+        unsafe {
+            for (chunk_index, chunk) in self.0.chunks.borrow().iter().enumerate() {
+                let used = chunk.next.as_ptr().offset_from(chunk.head.as_ptr()) as usize;
+                writeln!(f, "chunk#{} @ 0x{:X} ({}/4096 bytes)", chunk_index, chunk.head.as_ptr() as usize, used)?;
+                let slice = std::slice::from_raw_parts(chunk.head.as_ptr(), used);
+                for (chunk_index, chunk) in slice.chunks(16).enumerate() {
+                    write!(f, "{:08X} |", chunk_index * 0x10)?;
+                    for byte in chunk {
+                        write!(f, " {byte:02X}")?;
+                    }
+                    writeln!(f)?;
                 }
-                println!();
             }
         }
+        Ok(())
     }
 }
 
@@ -511,26 +407,18 @@ fn basic() {
     struct Node4<'a> { span: u32, node3s: Slice<'a, Node3<'a>> }
 
     let arena = Arena::new();
-    let (index1, index2, index3, index4, index5, index6, index7) = unsafe {
-        let index1 = arena.place::<Node1>().new_with(|n| { n.span = 1; n.isid = 2; });
-        let index2 = arena.place::<Node2>().new_with(|n| { n.span = 3; n.isid = 4; n.span2 = 5; n.keyword = 6; n.separator = 7 });
-        let index3 = arena.place::<Node1>().new_with(|n| { n.span = 8; n.isid = 9; });
-        let index4 = arena.place::<Node3>().new_with(|n| { n.span = 10; n.node1 = index1; n.node4 = None; });
-        let index5 = arena.place::<Node3>().new_with(|n| { n.span = 11; n.node1 = index3; n.node4 = None; });
-        let index6 = arena.place::<Node3>().new_with(|n| { n.span = 12; n.node1 = index3; n.node4 = None; });
+    let index1 = arena.emplace(|n: &mut Node1| { n.span = 1; n.isid = 2; });
+    let index2 = arena.emplace(|n: &mut Node2| { n.span = 3; n.isid = 4; n.span2 = 5; n.keyword = 6; n.separator = 7 });
+    let index3 = arena.emplace(|n: &mut Node1| { n.span = 8; n.isid = 9; });
+    let index4 = arena.emplace(|n: &mut Node3| { n.span = 10; n.node1 = index1; n.node4 = None; });
+    let index5 = arena.emplace(|n: &mut Node3| { n.span = 11; n.node1 = index3; n.node4 = None; });
+    let index6 = arena.emplace(|n: &mut Node3| { n.span = 12; n.node1 = index3; n.node4 = None; });
 
-        let mut vec = arena.slice_place::<Node3>();
-        vec.push(index4);
-        vec.push(index5);
-        vec.push(index6);
-        let slice = vec.finish();
-        let index7 = arena.place::<Node4>().new_with(|n| { n.span = 13; n.node3s = slice; });
-        arena.get_mut(index6).node4 = Some(index7);
+    let slice = arena.extend(vec![index4, index5, index6]);
+    let index7 = arena.emplace(|n: &mut Node4| { n.span = 13; n.node3s = slice; });
+    arena.get_mut(index6).node4 = Some(index7);
 
-        (index1, index2, index3, index4, index5, index6, index7)
-    };
-
-    // dump(&arena);
+    // println!("{}", arena.status(true));
 
     let node1 = arena.get(index1);
     assert_eq!((node1.span, node1.isid), (1, 2));
@@ -579,4 +467,30 @@ fn basic() {
     node7_node3s[0].span = 14;
     // this is very unsafe
     assert_eq!(node4.span, 14);
+}
+
+#[cfg(test)]
+#[test]
+fn more_align() {
+
+    struct Node1 { span: u32, isid: u32 }
+    struct Node2 { span: u32, value: u64 }
+
+    assert_eq!(std::mem::align_of::<Node1>(), 4);
+    assert_eq!(std::mem::align_of::<Node2>(), 8);
+
+    let arena = Arena::new();
+    let index1 = arena.emplace(|n: &mut Node1| { n.span = 1; n.isid = 2; });
+    let index2 = arena.emplace(|n: &mut Node2| { n.span = 3; n.value = u64::MAX; });
+    let index3 = arena.emplace(|n: &mut Node1| { n.span = 4; n.isid = 5; });
+    let index4 = arena.emplace(|n: &mut Node2| { n.span = 6; n.value = 8; });
+
+    let node1 = arena.get(index1);
+    assert_eq!((node1.span, node1.isid), (1, 2));
+    let node2 = arena.get(index2);
+    assert_eq!((node2.span, node2.value), (3, u64::MAX));
+    let node3 = arena.get(index3);
+    assert_eq!((node3.span, node3.isid), (4, 5));
+    let node4 = arena.get(index4);
+    assert_eq!((node4.span, node4.value), (6, 8));
 }
