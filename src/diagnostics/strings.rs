@@ -1,8 +1,5 @@
 #![allow(non_upper_case_globals)]
-#![allow(dead_code)]
 ///! all kinds of error strings
-
-pub const Empty: &str = "";
 
 pub const FailedToReadFile: &str = "failed to read file";
 pub const FailedToReadAllCandidates: &str = "failed to read all candidates for module request";
@@ -15,14 +12,11 @@ pub const BlockCommentStartHere: &str = "Block comment starts here";
 pub const EOFHere: &str = "EOF here";
 pub const EOLHere: &str = "EOL here";
 pub const UnknownCharactor: &str = "Unknown charactor";
-pub const UnexpectedCharLiteralEnd: &str = "Unexpected char literal end";
 pub const CharLiteralStartHere: &str = "Char literal start here";
-pub const CharLiteralEndHere: &str = "Char literal end here";
 pub const UnicodeCharEscapeHelpSyntax: &str = "Unicode char escape is like \\uxxxx or \\Uxxxxxxxx";
 pub const UnknownCharEscape: &str = "Unknown char escape";
 pub const UnknownCharEscapeHere: &str = "Unknown char escape here";
 pub const CharLiteralTooLong: &str = "Char literal too long";
-pub const StringLiteralSyntaxHelp: &str = "String literal should be surround with double quotation";
 pub const EmptyCharLiteral: &str = "Empty char literal";
 pub const CharLiteralSyntaxHelp1: &str = "Char literal should contain exactly one code point";
 pub const InvalidUnicodeCharEscape: &str = "Invalid unicode char escape";
@@ -31,8 +25,6 @@ pub const UnicodeCharEscapeStartHere: &str = "Unicode escape start here";
 pub const UnicodeCharEscapeInvalidChar: &str = "Invalid hex char here";
 pub const UnicodeCharEscapeHelpValue: &str = "Not a valid unicode code point";
 pub const StringLiteralStartHere: &str = "String literal start here";
-pub const UnexpectedStringLiteralEnd: &str = "Unexpected string literal end";
-pub const StringLiteralEndHere: &str = "String literal end here";
 pub const LastEscapedQuoteHere: &str = "Last escaped quote here";
 pub const CharLiteralHere: &str = "Char literal here";
 pub const UnicodeCharEscapeHere: &str = "Unicode char escape here";
@@ -71,7 +63,6 @@ pub const IntegralUnderflowHelpMinValue: [&'static str; 4] = [
     "Max value of i32 is -2147483648",
     "Max value of i32 is -9223372036854775808",
 ];
-pub const InvalidCharInFloatLiteral: &'static str = "invalid char in floating point literal";
 pub const InvalidCharInIntLiteral: &'static str = "invalid char in integral literal";
 pub const InvalidChar: &'static str = "invalid char";
 pub const IntLiteralAllowedChars: [&'static str; 4] = [
@@ -114,12 +105,7 @@ pub const DotDouble: &'static str = "multiple decimal dot";
 pub const MaybeIntPostfixInFloatPoint: &'static str = "maybe integral postfix not allowed in floating point literal";
 pub const UseReservedKeyword: &str = "Use of reserved keyword";
 
-pub const UnexpectedSingleComma: &str = "unexpected single comma";
-pub const ArrayDefHere: &str = "array definition here";
-pub const TupleDefHere: &str = "tuple definition here";
-pub const FnCallHere: &str = "function call here";
-pub const EmptyIndexCall: &str = "empty indexer call";
-pub const IndexCallHere: &str = "indexer call here";
+pub const EmptyIndexCall: &str = "empty index expr";
 pub const InvalidArrayType: &str = "invalid array type";
 pub const ArrayTypeSyntaxHelp: &str = "array type syntax is [type; size]";
 pub const SingleItemTupleType: &str = "single item tuple type should ends with comma";
@@ -128,15 +114,9 @@ pub const FunctionReturnTypeShouldUseArrow: &str = "function return type should 
 pub const FunctionReturnTypeExpectArrowMeetColon: &str = "expected arrow `->`, meet colon";
 pub const InvalidTupleIndex: &str = "invalid tuple index";
 pub const TupleIndexSyntaxHelp: &str = "tuple index can only use simple numeric value";
-pub const InvalidMemberAccess: &str = "invalid member access";
-pub const GenericMemberAccessSyntaxHelp: &str = "generic parameter should be inside angle bracket";
-pub const InvalidNameSegment: &str = "invalid name segment";
-pub const NameSegmentExpect: &str = "expect identifier, meet less-than `<`";
 pub const MaybeGeneric: &str = "relational operators cannot be chained, did you mean generic parameters?";
 pub const MaybeGenericHelp: &str = "use `::<...>` instead of `<...>` in expressions";
 pub const EmptyTypeList: &str = "empty type list";
 pub const ExpectLtMeet: &str = "expect `<`, meet";
-pub const MaybeGenericHelpForType: &str = "use `<...> instead of `::<...>` in types";
 pub const ExpectDoubleColonMeetSingleColon: &str = "expect `::`, meet `:`";
-pub const InvalidPath: &str = "invalid path";
 pub const EmptyGenericParameterList: &str = "empty generic parameter list";

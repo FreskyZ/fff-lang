@@ -304,11 +304,11 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
 
     /// Check current token is specified closing bracket, allows optional comma, handles split shift right
     ///
-    /// if so, move next and Some((sep_span, skipped comma))
+    /// if so, move next and Some((sep_span, comma span))
     /// if not, no move next and None
     ///
-    /// example `if let Some(sep_span) = cx.try_expect_sep(Separator::Comma) { ... }`
-    fn try_expect_closing_bracket(&mut self, expected_sep: Separator) -> Option<(Span, bool)> {
+    /// example `if let Some((close_span, comma_span)) = cx.try_expect_closing_bracket(Separator::Comma) { ... }`
+    fn try_expect_closing_bracket(&mut self, expected_sep: Separator) -> Option<(Span, Option<Span>)> {
         debug_assert!(matches!(expected_sep, 
             | Separator::RightBrace 
             | Separator::RightParen 
@@ -316,10 +316,20 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             | Separator::Gt
         ), "not a closing bracket");
         match (&self.current, &self.peek) {
-            (Token::Sep(sep), _) if *sep == expected_sep => Some((self.move_next(), false)),
-            (Token::Sep(Separator::GtGt), _) if expected_sep == Separator::Gt => Some((self.split_shift_right(), false)),
-            (Token::Sep(Separator::Comma), Token::Sep(sep)) if *sep == expected_sep => { self.move_next(); Some((self.move_next(), true)) },
-            (Token::Sep(Separator::Comma), Token::Sep(Separator::GtGt)) if expected_sep == Separator::Gt => { self.move_next(); Some((self.split_shift_right(), true)) },
+            (Token::Sep(sep), _) if *sep == expected_sep => {
+                Some((self.move_next(), None))
+            },
+            (Token::Sep(Separator::GtGt), _) if expected_sep == Separator::Gt => {
+                Some((self.split_shift_right(), None))
+            },
+            (Token::Sep(Separator::Comma), Token::Sep(sep)) if *sep == expected_sep => { 
+                let comma_span = self.move_next(); 
+                Some((self.move_next(), Some(comma_span)))
+            },
+            (Token::Sep(Separator::Comma), Token::Sep(Separator::GtGt)) if expected_sep == Separator::Gt => { 
+                let comma_span = self.move_next();
+                Some((self.split_shift_right(), Some(comma_span)))
+            },
             _ => None,
         }
     }

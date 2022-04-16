@@ -48,7 +48,6 @@ pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_enum_def(&mut self, node: &EnumDef) -> Result<T, E> { node.walk(self) }
     fn visit_enum_def_variant(&mut self, node: &EnumDefVariant) -> Result<T, E> { node.walk(self) }
     fn visit_expr(&mut self, node: &Expr) -> Result<T, E> { node.walk(self) }
-    fn visit_expr_list(&mut self, node: &ExprList) -> Result<T, E> { node.walk(self) }
     fn visit_field_def(&mut self, node: &FieldDef) -> Result<T, E> { node.walk(self) }
     fn visit_fn_def(&mut self, node: &FnDef) -> Result<T, E> { node.walk(self) }
     fn visit_fn_def_parameter(&mut self, node: &FnDefParameter) -> Result<T, E> { node.walk(self) }

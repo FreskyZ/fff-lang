@@ -36,36 +36,30 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         result
     }
 
-    // expr_list = opening_sep expr { ',' expr } [ ',' ] closing_sep
-    // TODO move emit message into this method not parse_array_def, parse_tuple_def, etc.
-    // TODO confirm test covered by array_def_parse, tuple_def_parse, etc. and remove pub
-    pub fn parse_expr_list(&mut self) -> Result<ExprListParseResult, Unexpected> {
+    // expr_list = opening_bracket expr { ',' expr } [ ',' ] closing_bracket
+    // return (span include bracket, exprs, end with comma)
+    fn parse_expr_list(&mut self) -> Result<(Span, Vec<Expr>, bool), Unexpected> {
 
-        let (starting_sep, starting_span) = self.expect_seps(&[Separator::LeftBrace, Separator::LeftBracket, Separator::LeftParen])?;
-        let expect_end_sep = match starting_sep { 
+        let (open_bracket, start_span) = self.expect_seps(&[Separator::LeftBrace, Separator::LeftBracket, Separator::LeftParen])?;
+        let close_bracket = match open_bracket { 
             Separator::LeftBrace => Separator::RightBrace, 
             Separator::LeftBracket => Separator::RightBracket,
             Separator::LeftParen => Separator::RightParen,
             _ => unreachable!(),
         };
 
-        if let Some((ending_span, skipped_comma)) = self.try_expect_closing_bracket(expect_end_sep) {
-            return if skipped_comma {
-                Ok(ExprListParseResult::SingleComma(starting_span + ending_span))
-            } else {
-                Ok(ExprListParseResult::Empty(starting_span + ending_span))
-            };
+        if let Some((end_span, comma_span)) = self.try_expect_closing_bracket(close_bracket) {
+            if let Some(comma_span) = comma_span {
+                self.emit(format!("expect `{}`, meet `,`", close_bracket.display())).span(comma_span);
+            }
+            return Ok((start_span + end_span, Vec::new(), comma_span.is_some()));
         }
 
         let mut items = Vec::new();
         loop {
             items.push(self.parse_expr()?);
-            if let Some((ending_span, skipped_comma)) = self.try_expect_closing_bracket(expect_end_sep) {
-                return if skipped_comma {
-                    Ok(ExprListParseResult::EndWithComma(starting_span + ending_span, ExprList{ items }))
-                } else {
-                    Ok(ExprListParseResult::Normal(starting_span + ending_span, ExprList{ items }))
-                };
+            if let Some((ending_span, comma_span)) = self.try_expect_closing_bracket(close_bracket) {
+                return Ok((start_span + ending_span, items, comma_span.is_some()));
             }
             self.expect_sep(Separator::Comma)?;
         }
@@ -80,24 +74,13 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     // unit_lit = '(' ')'
     pub fn parse_tuple_expr(&mut self) -> Result<Expr, Unexpected> {
 
-        match self.parse_expr_list()? {
-            ExprListParseResult::Empty(span) => {
-                Ok(Expr::Lit(LitExpr{ value: LitValue::Unit, span }))
-            }
-            ExprListParseResult::SingleComma(span) => {
-                self.emit(strings::UnexpectedSingleComma).detail(span, strings::TupleDefHere);
-                Ok(Expr::Tuple(TupleExpr{ span, items: ExprList{ items: Vec::new() } }))
-            }
-            ExprListParseResult::Normal(span, exprlist) => {
-                if exprlist.items.len() == 1 {
-                    Ok(Expr::Paren(ParenExpr{ span, base: Box::new(exprlist.items.into_iter().last().unwrap()) }))
-                } else {
-                    Ok(Expr::Tuple(TupleExpr{ span, items: exprlist }))
-                }
-            }
-            ExprListParseResult::EndWithComma(span, exprlist) => {
-                Ok(Expr::Tuple(TupleExpr{ span, items: exprlist }))
-            }
+        let (span, mut items, end_with_comma) = self.parse_expr_list()?;
+        if items.is_empty() {
+            Ok(Expr::Lit(LitExpr{ value: LitValue::Unit, span }))
+        } else if items.len() == 1 && !end_with_comma {
+            Ok(Expr::Paren(ParenExpr{ span, base: Box::new(items.pop().unwrap()) }))
+        } else {
+            Ok(Expr::Tuple(TupleExpr{ span, items }))
         }
     }
 
@@ -107,17 +90,9 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
 
     // array_expr = '[' [ expr_list ] ']'
     pub fn parse_array_expr(&mut self) -> Result<Expr, Unexpected> {
-        match self.parse_expr_list()? {
-            ExprListParseResult::Empty(span) =>
-                Ok(Expr::Array(ArrayExpr{ span, items: ExprList{ items: Vec::new() } })),
-            ExprListParseResult::Normal(span, exprlist) 
-            | ExprListParseResult::EndWithComma(span, exprlist) =>
-                Ok(Expr::Array(ArrayExpr{ span, items: exprlist })),
-            ExprListParseResult::SingleComma(span) => {
-                self.emit(strings::UnexpectedSingleComma).detail(span, strings::ArrayDefHere);
-                Ok(Expr::Array(ArrayExpr{ span, items: ExprList{ items: Vec::new() } }))
-            }
-        }
+        
+        let (span, items, _) = self.parse_expr_list()?;
+        Ok(Expr::Array(ArrayExpr{ span, items }))
     }
 
     pub fn parse_primary_expr(&mut self) -> Result<Expr, Unexpected> {
@@ -175,23 +150,9 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
 
     // call_expr = primary_expr '(' [ expr_list ] ')'
     // return quote span and expr list, see parse_postfix_expr for the return type
-    pub fn parse_call_expr(&mut self) -> Result<(Span, ExprList), Unexpected> {
-
-        match self.parse_expr_list()? {
-            ExprListParseResult::Normal(span, expr_list) => {
-                Ok((span, expr_list))
-            },
-            ExprListParseResult::EndWithComma(span, expr_list) => {
-                Ok((span, expr_list))
-            },
-            ExprListParseResult::Empty(span) => {
-                Ok((span, ExprList{ items: Vec::new() }))
-            },
-            ExprListParseResult::SingleComma(span) => {
-                self.emit(strings::UnexpectedSingleComma).detail(span, strings::FnCallHere);
-                Ok((span, ExprList{ items: Vec::new() }))
-            },
-        }
+    pub fn parse_call_expr(&mut self) -> Result<(Span, Vec<Expr>), Unexpected> {
+        let (span, items, _) = self.parse_expr_list()?;
+        Ok((span, items))
     }
 
     fn maybe_array_index_expr(&self) -> bool {
@@ -201,17 +162,13 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     // index_call_expr = primary_expr '[' [ expr_list ] ']'
     // return quote span and expr list, see parse_postfix_expr for the return type
     // // was called postfix_expr::subscription, this one is shorter and similar to fn_call
-    pub fn parse_array_index_expr(&mut self) -> Result<(Span, ExprList), Unexpected> {
+    pub fn parse_array_index_expr(&mut self) -> Result<(Span, Vec<Expr>), Unexpected> {
 
-        match self.parse_expr_list()? {
-            ExprListParseResult::Normal(span, params) | ExprListParseResult::EndWithComma(span, params) => {
-                Ok((span, params))
-            },
-            ExprListParseResult::Empty(span) | ExprListParseResult::SingleComma(span) => {
-                self.emit(strings::EmptyIndexCall).detail(span, strings::IndexCallHere);
-                Ok((span, ExprList{ items: Vec::new() }))
-            },
+        let (span, items, _) = self.parse_expr_list()?;
+        if items.is_empty() {
+            self.emit(strings::EmptyIndexCall).span(span);
         }
+        Ok((span, items))
     }
 
     fn maybe_object_expr(&self) -> bool {

@@ -161,8 +161,9 @@ macro_rules! case {
     );
 }
 
-// ATTENTION: these macros, make_path, make_expr, make_stmt, make_type
-//            should be same structure as pretty print in principle, this makes test case expect results look like pretty and looks pretty    
+// ATTENTION: 
+// these macros, make_path, make_expr, make_stmt, make_type
+// should be same structure as pretty print in principle, this makes test case expect results look like pretty and looks pretty    
 
 macro_rules! make_expr {
     // literals does not have (lit prefix because they are used frequently
@@ -235,15 +236,11 @@ macro_rules! make_expr {
     );
     (array $start:literal:$end:literal $($item:expr),*$(,)?) => (Expr::Array(ArrayExpr{
         span: Span::new($start, $end),
-        items: ExprList {
-            items: vec![$($item,)*],
-        }
+        items: vec![$($item,)*],
     }));
     (tuple $start:literal:$end:literal $($item:expr),*$(,)?) => (Expr::Tuple(TupleExpr{
         span: Span::new($start, $end),
-        items: ExprList {
-            items: vec![$($item,)*],
-        }
+        items: vec![$($item,)*],
     }));
     (paren $start:literal:$end:literal $base:expr) => (Expr::Paren(ParenExpr{
         base: Box::new($base),
@@ -269,9 +266,7 @@ macro_rules! make_expr {
             base: Box::new($base),
             quote_span: Span::new($paren_start, $paren_end),
             span: Span::new($start, $end),
-            parameters: ExprList{
-                items: vec![$($parameter,)*],
-            }
+            parameters: vec![$($parameter,)*],
         })
     );
     (array index $start:literal:$end:literal bracket $bracket_start:literal:$bracket_end:literal $base:expr, $($parameter:expr),*$(,)?) => (
@@ -279,9 +274,7 @@ macro_rules! make_expr {
             base: Box::new($base),
             quote_span: Span::new($bracket_start, $bracket_end),
             span: Span::new($start, $end),
-            parameters: ExprList{
-                items: vec![$($parameter,)*],
-            }
+            parameters: vec![$($parameter,)*],
         })
     );
     (tuple index $start:literal:$end:literal dot $dot_start:literal:$dot_end:literal i32 $value:literal $value_start:literal:$value_end:literal $base:expr) => (

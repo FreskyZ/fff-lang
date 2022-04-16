@@ -174,10 +174,10 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
 
         let mut parameters = Vec::new();
         let right_paren_span = loop {
-            if let Some((right_paren_span, skipped_comma)) = self.try_expect_closing_bracket(Separator::RightParen) {
-                if skipped_comma && parameters.is_empty() {
+            if let Some((right_paren_span, comma_span)) = self.try_expect_closing_bracket(Separator::RightParen) {
+                if let (0, Some(comma_span)) = (parameters.len(), comma_span) {
                     // TODO: need comma span
-                    self.emit("unexpected token").detail(right_paren_span, "expected ident, type or right paren, meet comma");
+                    self.emit("unexpected token").detail(comma_span, "expected ident, type or right paren, meet comma");
                 }
                 break right_paren_span;
             } else if !parameters.is_empty() {
@@ -253,8 +253,8 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         
         let mut parameters = vec![self.parse_type_ref()?];
         let span = left_paren_span + loop {
-            if let Some((right_paren_span, skipped_comma)) = self.try_expect_closing_bracket(Separator::RightParen) {
-                if !skipped_comma && parameters.len() == 1 {
+            if let Some((right_paren_span, comma_span)) = self.try_expect_closing_bracket(Separator::RightParen) {
+                if comma_span.is_none() && parameters.len() == 1 {
                     self.emit(strings::SingleItemTupleType)
                         .detail(right_paren_span, strings::TupleTypeExpectCommaMeetRightParen);
                 }

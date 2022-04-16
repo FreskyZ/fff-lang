@@ -130,10 +130,10 @@ macro_rules! impl_visit {
 impl Visitor for MemoryProfiler {
 
     impl_visit!{ ArrayExpr, visit_array_expr, "array-expr",
-        count_t(.span), count_owned(.items),
+        count_t(.span), count_vec(.items),
     }
     impl_visit!{ ArrayIndexExpr, visit_array_index_expr, "array-index-expr",
-        count_t(.span), count_box(.base), count_owned(.parameters), count_t(.quote_span),
+        count_t(.span), count_box(.base), count_vec(.parameters), count_t(.quote_span),
     }
     impl_visit!{ ArrayType, visit_array_type, "array-type",
         count_t(.span), count_box(.base), count_owned(.size),
@@ -154,7 +154,7 @@ impl Visitor for MemoryProfiler {
         count_t(.span), count_label(.label),
     }
     impl_visit!{ CallExpr, visit_call_expr, "call-expr",
-        count_t(.span), count_box(.base), count_owned(.parameters), count_t(.quote_span),
+        count_t(.span), count_box(.base), count_vec(.parameters), count_t(.quote_span),
     }
     impl_visit!{ ClassDef, visit_class_def, "class-def",
         count_t(.span), count_owned(.name), count_t(.quote_span), count_vec(.types), count_vec(.functions),
@@ -188,9 +188,6 @@ impl Visitor for MemoryProfiler {
         RangeFull(RangeFullExpr), "range-full",
         RangeLeft(RangeLeftExpr), "range-left",
         RangeRight(RangeRightExpr), "range-right",
-    }
-    impl_visit!{ ExprList, visit_expr_list, "expr-list",
-        count_vec(.items),
     }
     impl_visit!{ FieldDef, visit_field_def, "field-def",
         count_t(.span), count_t(.name), count_t(.colon_span), count_owned(.r#type),
@@ -342,7 +339,7 @@ impl Visitor for MemoryProfiler {
         count_t(.span), count_owned(.name), count_vec(.fields),
     }
     impl_visit!{ TupleExpr, visit_tuple_expr, "tuple-expr"
-        count_t(.span), count_owned(.items),
+        count_t(.span), count_vec(.items),
     }
     impl_visit!{ TupleIndexExpr, visit_tuple_index_expr, "tuple-index-expr"
         count_t(.span), count_box(.base), count_t(.op_span), count_t(.value),

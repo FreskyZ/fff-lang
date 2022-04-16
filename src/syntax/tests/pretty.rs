@@ -55,22 +55,6 @@ fn binary_expr() {
 }
 
 #[test]
-fn expr_list() {
-
-    let mut ecx = make_errors!();
-    let mut scx = make_source!("123123234123");
-    scx.entry("1", &mut ecx).unwrap().finish();
-    ppcase!{
-        ExprList{ items: vec![
-            make_expr!(i32 1 1:2),
-            make_expr!(i32 2 3:4),
-            make_expr!(i32 3 5:6),
-        ] }.display(&scx),
-        "literal i32 1 <1:2-1:3>\nliteral i32 2 <1:4-1:5>\nliteral i32 3 <1:6-1:7>\n"
-    }
-}
-
-#[test]
 fn tuple_def() {
 
     let mut ecx = make_errors!();

@@ -98,7 +98,6 @@ impl<'scx, 'f1, 'f2, F> FormatVisitor<'scx, 'f1, 'f2, F> where F: FileSystem {
 impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2, F> where F: FileSystem {
 
     // default implementation correctly transparents this type of node
-    // fn visit_expr_list(&mut self, node: &ExprList) -> fmt::Result;
     // fn visit_expr(&mut self, node: &Expr) -> fmt::Result;
     // fn visit_stmt(&mut self, node: &Statement) -> fmt::Result;
     // fn visit_item(&mut self, node: &Item) -> fmt::Result;

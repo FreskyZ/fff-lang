@@ -290,12 +290,10 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
 
         let mut parameters = Vec::new();
         loop {
-            if let Some((right_paren_span, skipped_comma)) = self.try_expect_closing_bracket(Separator::RightParen) {
+            if let Some((right_paren_span, comma_span)) = self.try_expect_closing_bracket(Separator::RightParen) {
                 quote_span += right_paren_span;
-                if skipped_comma && parameters.is_empty() {
-                    self.emit("Single comma in function definition argument list")
-                        .detail(fn_name.span, "function definition here")
-                        .detail(quote_span, "param list here");
+                if let (0, Some(comma_span)) = (parameters.len(), comma_span) {
+                    self.emit("Single comma in function definition argument list").span(comma_span);
                 }
                 break;
             } else if let Some(_comma_span) = self.try_expect_sep(Separator::Comma) {

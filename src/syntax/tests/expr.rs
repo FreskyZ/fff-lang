@@ -23,7 +23,7 @@ fn parse_array_expr() {
 
     case!{ parse_array_expr "[ , ]",
         make_expr!(array 0:4),
-        errors make_errors!(e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(0, 4), strings::ArrayDefHere))
+        errors make_errors!(e: e.emit("expect `]`, meet `,`").span(Span::new(2, 2)))
     }
 }
 
@@ -386,34 +386,6 @@ fn binary_expr_parse() {
 }
 
 #[test]
-fn expr_list_parse() {
-
-    case!{ notast parse_expr_list "[1, 2, 3]",
-        ExprListParseResult::Normal(Span::new(0, 8), ExprList{ items: vec![
-            make_expr!(i32 1 1:1),
-            make_expr!(i32 2 4:4),
-            make_expr!(i32 3 7:7),
-        ] })
-    }
-    
-    case!{ notast parse_expr_list "(1, 2, 3,)", 
-        ExprListParseResult::EndWithComma(Span::new(0, 9), ExprList{ items: vec![
-            make_expr!(i32 1 1:1),
-            make_expr!(i32 2 4:4),
-            make_expr!(i32 3 7:7),
-        ] })
-    }
-
-    case!{ notast parse_expr_list "[]", 
-        ExprListParseResult::Empty(Span::new(0, 1))
-    }
-
-    case!{ notast parse_expr_list "{,}",
-        ExprListParseResult::SingleComma(Span::new(0, 2))
-    }
-}
-
-#[test]
 fn parse_expr() {
 
     case!{ parse_expr "\"abc\"", make_expr!(str #2 0:4) }
@@ -595,7 +567,7 @@ fn parse_expr() {
         make_expr!(call 0:5 paren 2:5
             make_expr!(path simple 0:1 #2),
         ), errors make_errors!(
-            e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(2, 5), strings::FnCallHere)
+            e: e.emit("expect `)`, meet `,`").span(Span::new(3, 3))
         )
     }
 
@@ -604,16 +576,14 @@ fn parse_expr() {
         make_expr!(call 0:8 paren 5:8
             make_expr!(member 0:4 dot 2:2 #2 3:4
                 make_expr!(str #1 0:1)),
-        ), errors make_errors!(
-            e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(5, 8), strings::FnCallHere)
-        )
+        ), errors make_errors!(e: e.emit("expect `)`, meet `,`").span(Span::new(6, 6)))
     }
 
     case!{ parse_expr "defg[]",
         make_expr!(array index 0:5 bracket 4:5
             make_expr!(path simple 0:3 #2),
         ), errors make_errors!(
-            e: e.emit(strings::EmptyIndexCall).detail(Span::new(4, 5), strings::IndexCallHere)
+            e: e.emit(strings::EmptyIndexCall).span(Span::new(4, 5))
         )
     }
 
@@ -621,9 +591,10 @@ fn parse_expr() {
     case!{ parse_expr "de[, ]",
         make_expr!(array index 0:5 bracket 2:5
             make_expr!(path simple 0:1 #2),
-        ), errors make_errors!(
-            e: e.emit(strings::EmptyIndexCall).detail(Span::new(2, 5), strings::IndexCallHere)
-        )
+        ), errors make_errors!(e: {
+            e.emit("expect `]`, meet `,`").span(Span::new(3, 3));
+            e.emit(strings::EmptyIndexCall).span(Span::new(2, 5));
+        })
     }
 }
 
@@ -631,18 +602,18 @@ fn parse_expr() {
 fn parse_call_expr() {
 
     case!{ notast parse_call_expr "()",
-        (Span::new(0, 1), ExprList{ items: Vec::new() })
+        (Span::new(0, 1), Vec::new())
     }
 
     case!{ notast parse_call_expr "(\"hello\")",
-        (Span::new(0, 8), ExprList{ items: vec![
+        (Span::new(0, 8), vec![
             make_expr!(str #2 1:7),
-        ] })
+        ])
     }
 
     case!{ notast parse_call_expr "(,)",
-        (Span::new(0, 2), ExprList{ items: Vec::new() }),
-        errors make_errors!(e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(0, 2), strings::FnCallHere))
+        (Span::new(0, 2), Vec::new()),
+        errors make_errors!(e: e.emit("expect `)`, meet `,`").span(Span::new(1, 1)))
     }
 }
 
@@ -650,21 +621,24 @@ fn parse_call_expr() {
 fn parse_array_index_expr() {
 
     case!{ notast parse_array_index_expr "[1, 2, ]",
-        (Span::new(0, 7), ExprList{ items: vec![
+        (Span::new(0, 7), vec![
             make_expr!(i32 1 1:1),
             make_expr!(i32 2 4:4),
-        ] })
+        ])
     }
 
     case!{ notast parse_array_index_expr "[\"hello\"]",
-        (Span::new(0, 8), ExprList{ items: vec![
+        (Span::new(0, 8), vec![
             make_expr!(str #2 1:7)
-        ] })
+        ])
     }
 
     case!{ notast parse_array_index_expr "[,]",
-        (Span::new(0, 2), ExprList{ items: Vec::new() }),
-        errors make_errors!(e: e.emit(strings::EmptyIndexCall).detail(Span::new(0, 2), strings::IndexCallHere)),
+        (Span::new(0, 2), Vec::new()),
+        errors make_errors!(e: {
+            e.emit("expect `]`, meet `,`").span(Span::new(1, 1));
+            e.emit(strings::EmptyIndexCall).span(Span::new(0, 2));
+        }),
     }
 }
 
@@ -915,13 +889,13 @@ fn primary_expr_parse() {
     }
 
     case!{ parse_primary_expr "(,)",
-        make_expr!(tuple 0:2),
-        errors make_errors!(e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(0, 2), strings::TupleDefHere)),
+        make_expr!(unit 0:2),
+        errors make_errors!(e: e.emit("expect `)`, meet `,`").span(Span::new(1, 1))),
     }
 }
 
 #[test]
-fn postfix_expr_parse() {
+fn parse_postfix_expr() {
 
     //      0        1         2         3         4         5     
     //      0123456789012345678901234567890123456789012345678901234567
@@ -992,24 +966,23 @@ fn postfix_expr_parse() {
         make_expr!(array index 0:2 bracket 1:2
             make_expr!(path simple 0:0 #2),
         ), errors make_errors!(
-            e: e.emit(strings::EmptyIndexCall).detail(Span::new(1, 2), strings::IndexCallHere)
+            e: e.emit(strings::EmptyIndexCall).span(Span::new(1, 2))
         )
     }
     
     case!{ parse_postfix_expr "a[, ]",
         make_expr!(array index 0:4 bracket 1:4
             make_expr!(path simple 0:0 #2),
-        ), errors make_errors!(
-            e: e.emit(strings::EmptyIndexCall).detail(Span::new(1, 4), strings::IndexCallHere)
-        )
+        ), errors make_errors!(e: {
+            e.emit("expect `]`, meet `,`").span(Span::new(2, 2));
+            e.emit(strings::EmptyIndexCall).span(Span::new(1, 4));
+        })
     }
     
     case!{ parse_postfix_expr "a(, )",
         make_expr!(call 0:4 paren 1:4
             make_expr!(path simple 0:0 #2),
-        ), errors make_errors!(
-            e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(1, 4), strings::FnCallHere)
-        )
+        ), errors make_errors!(e: e.emit("expect `)`, meet `,`").span(Span::new(2, 2)))
     }
 
     //      01234
@@ -1096,8 +1069,8 @@ fn parse_tuple_expr() {
     }
     
     case!{ parse_tuple_expr "( , )",
-        make_expr!(tuple 0: 4),
-        errors make_errors!(e: e.emit(strings::UnexpectedSingleComma).detail(Span::new(0, 4), strings::TupleDefHere)),
+        make_expr!(unit 0: 4),
+        errors make_errors!(e: e.emit("expect `)`, meet `,`").span(Span::new(2, 2))),
     }
 }
 

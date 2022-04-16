@@ -42,7 +42,7 @@ impl $name {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct ArrayExpr {
     pub span: Span, // bracket span
-    pub items: ExprList,
+    pub items: Vec<Expr>,
 }
 
 #[derive(Debug)]
@@ -50,7 +50,7 @@ pub struct ArrayExpr {
 pub struct ArrayIndexExpr {
     pub span: Span,
     pub base: Box<Expr>,
-    pub parameters: ExprList,
+    pub parameters: Vec<Expr>,
     pub quote_span: Span, // bracket span
 }
 
@@ -109,7 +109,7 @@ pub struct BreakStatement{
 pub struct CallExpr {
     pub span: Span,
     pub base: Box<Expr>,
-    pub parameters: ExprList,
+    pub parameters: Vec<Expr>,
     pub quote_span: Span,
 }
 
@@ -181,22 +181,6 @@ impl Expr {
     pub fn dummy() -> Expr { 
         Expr::Lit(LitExpr{ value: LitValue::Num(Numeric::I32(0)), span: Span::new(0, 0) }) 
     }
-}
-
-#[derive(Debug)]
-#[cfg_attr(test, derive(PartialEq))]
-pub struct ExprList {
-    pub items: Vec<Expr>,
-}
-
-// TODO move to parser
-#[derive(Debug)]
-#[cfg_attr(test, derive(PartialEq))]
-pub enum ExprListParseResult {
-    Empty(Span),
-    SingleComma(Span),              // and quote span
-    Normal(Span, ExprList),         // and quote span
-    EndWithComma(Span, ExprList),   // and quote span
 }
 
 #[derive(Debug)]
@@ -522,7 +506,7 @@ pub struct StructDef {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct TupleExpr {
     pub span: Span,
-    pub items: ExprList,
+    pub items: Vec<Expr>,
 }
 
 #[derive(Debug)]

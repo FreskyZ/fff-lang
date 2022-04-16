@@ -3,7 +3,6 @@
 use super::visit::{Node, Visitor};
 use super::ast::*;
 
-// TODO use macro to avoid the redundent very long function signature
 macro_rules! impl_node {
     ($ty:ty, $visit_this:ident$(, |$self:ident, $v:ident| $walk:expr)?$(,)?) => (
 impl Node for $ty {
@@ -31,12 +30,18 @@ impl_node!{ $ty, $visit_this, |self, v| {
 }
 
 impl_node!{ ArrayExpr, visit_array_expr, |self, v| {
-    v.visit_expr_list(&self.items)
+    for item in &self.items {
+        v.visit_expr(item)?;
+    }
+    Ok(Default::default())
 }}
 
 impl_node!{ ArrayIndexExpr, visit_array_index_expr, |self, v| {
     v.visit_expr(&self.base)?;
-    v.visit_expr_list(&self.parameters)
+    for parameter in &self.parameters {
+        v.visit_expr(parameter)?;
+    }
+    Ok(Default::default())
 }}
 
 impl_node!{ ArrayType, visit_array_type, |self, v| {
@@ -69,7 +74,10 @@ impl_node!{ BreakStatement, visit_break_stmt }
 
 impl_node!{ CallExpr, visit_call_expr, |self, v| {
     v.visit_expr(&self.base)?;
-    v.visit_expr_list(&self.parameters)
+    for parameter in &self.parameters {
+        v.visit_expr(parameter)?;
+    }
+    Ok(Default::default())
 }}
 
 impl_node!{ ClassDef, visit_class_def, |self, v| {
@@ -124,13 +132,6 @@ impl_abc_node! { Expr, visit_expr,
     RangeLeft => visit_range_left_expr,
     RangeRight => visit_range_right_expr,
 }
-
-impl_node!{ ExprList, visit_expr_list, |self, v| {
-    for item in &self.items {
-        v.visit_expr(item)?;
-    }
-    Ok(Default::default())
-}}
 
 impl_node!{ FieldDef, visit_field_def, |self, v| {
     v.visit_type_ref(&self.r#type)
@@ -386,7 +387,10 @@ impl_abc_node!{ TypeRef, visit_type_ref,
 }
 
 impl_node!{ TupleExpr, visit_tuple_expr, |self, v| {
-    v.visit_expr_list(&self.items)
+    for item in &self.items {
+        v.visit_expr(item)?;
+    }
+    Ok(Default::default())
 }}
 
 impl_node!{ TupleIndexExpr, visit_tuple_index_expr, |self, v| {
