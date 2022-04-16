@@ -110,7 +110,14 @@ macro_rules! make_errors {
             $init;
         )*
         $e
-    }}
+    }};
+    (|$e:ident| $($init:expr),+$(,)?) => {{
+        let mut $e = crate::diagnostics::Diagnostics::new();
+        $(
+            $init;
+        )*
+        $e
+    }};
 }
 #[cfg(test)]
 pub(crate) use make_errors;

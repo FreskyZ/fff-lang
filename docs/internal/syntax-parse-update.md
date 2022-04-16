@@ -18,12 +18,15 @@
 - [x] move node definitions to one file, move node implementations (impl Node) to one file, move parse tests to several dedicated files
 - [x] remove jumpstatement from node, copy fields to breakstatement and continuestatement
 - [x] move parse functions to several dedicated files, then ParseContext's context (allow object literal, is in format string literal, etc.) may can be pass by parameter not save in ParseContext
-- [-] fix random test input generator
-- [ ] add missing array dup def
+- [x] fix random test input generator
 - [x] unify name segment and plain type segment into path segment, path segment contains variants of ident, ident + generic, type-cast
 - [x] split tuple index expr from member expr, rename index expr to array index expr
 - [x] allow generic parameter in type name and fn name, that's called parse_generic_name
 - [x] allow where clause when generic name
 - [x] rename type def to struct def, add type alias (may generic), add class def, add class associated type, add impl type, add impl class for type
-- [ ] add numeric literal type as suffixed/unsuffixed and bin/oct/dec/hex/unprefixed, member access require unsuffixed and unprefixed
+- [x] change test cast expect value to expect value getter with Parser as parameter, direct use string/ident instead of string id by this, also prepare for provide arena by this
+- [ ] split cast segment and generic segment from path segment
+- [ ] update random test input generator
+- [ ] add missing array dup def
+- [ ] add numeric literal type as suffixed/unsuffixed and bin/oct/dec/hex/unprefixed, tuple index expr require unsuffixed and unprefixed
 - [ ] format string

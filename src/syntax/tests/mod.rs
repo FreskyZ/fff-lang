@@ -1,7 +1,7 @@
 
 use std::fmt::{self, Write};
 use std::str::from_utf8;
-use crate::source::{SourceContext, VirtualFileSystem, Span, IsId, IdSpan, make_source};
+use crate::source::{SourceContext, VirtualFileSystem, Span, IdSpan, make_source};
 use crate::diagnostics::{strings, make_errors};
 use crate::lexical::{Numeric, Separator, Keyword};
 use super::visit::Node;
@@ -14,8 +14,8 @@ impl<'a, 'b> fmt::Display for DiffDisplay<'a, 'b> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut actual_lines = self.0.lines().collect::<Vec<_>>();
         let mut expect_lines = self.1.lines().collect::<Vec<_>>();
-        
-        // if both side is single line with len > 100, then it is comparing debug fmt, 
+
+        // if both side is single line with len > 100, then it is comparing debug fmt,
         // hard split (regardless of word boundary) them to fixed length lines
         // (in bytes, because ast debug print does not contain non ascii char, because identifiers and string literals are isid)
         const HL: usize = 72;
@@ -50,34 +50,28 @@ impl<'a, 'b> fmt::Display for DiffDisplay<'a, 'b> {
 // the 2 types of case is same until result compare
 // TODO give this signature to fn def parser and fn type parser
 fn case_until_node<
-    N: PartialEq + fmt::Debug,
-    F: FnOnce(&mut Parser) -> Result<N, Unexpected>,
+    V: PartialEq + fmt::Debug,
+    P: FnOnce(&mut Parser) -> Result<V, Unexpected>,
+    E: FnOnce(&mut Parser) -> V,
 >(
     input: &'static str,
-    f: F,
-    expect_node: N,
-    expect_diagnostics: crate::diagnostics::Diagnostics, 
-    expect_strings: &[&'static str],
+    actual_value_getter: P,
+    expect_value_getter: E,
+    expect_diagnostics: crate::diagnostics::Diagnostics,
     backtrace: u32,
     // err(actual node, expect node, source context)
-) -> Result<(), (N, N, SourceContext<VirtualFileSystem>)> {
+) -> Result<(), (V, V, SourceContext<VirtualFileSystem>)> {
     let mut actual_diagnostics = crate::diagnostics::Diagnostics::new();
     let mut source = SourceContext::new_file_system(crate::source::VirtualFileSystem {
         cwd: "/".into(),
         files: [("1".into(), input.into())].into_iter().collect(),
     });
     let mut context = Parser::new(crate::lexical::Parser::new(source.entry("1", &mut actual_diagnostics).unwrap(), &mut actual_diagnostics));
-    let actual_node = f(&mut context);
-    if let Ok(actual_node) = actual_node {
+    let actual_value = actual_value_getter(&mut context);
+    if let Ok(actual_value) = actual_value {
+        let expect_value = expect_value_getter(&mut context);
         context.finish();
-        // for now does not check expect strings not provided, but ideally should always check interned strings
-        if expect_strings.len() > 0 {
-            // put interned string expect before node expect and diagnostics expect, or else it is too hard to fix expected values
-            for (i, expect_string) in expect_strings.into_iter().enumerate() {
-                assert_eq!(source.resolve_string(IsId::new(i as u32 + 2)), *expect_string, "line {} string #{} not same", backtrace, i + 2);
-            }
-        }
-        if actual_node == expect_node {
+        if actual_value == expect_value {
             if actual_diagnostics == expect_diagnostics {
                 Ok(()) // finally success
             } else {
@@ -87,7 +81,7 @@ fn case_until_node<
                 panic!("{}", buf)
             }
         } else {
-            Err((actual_node, expect_node, source))
+            Err((actual_value, expect_value, source))
         }
     } else {
         context.finish();
@@ -96,17 +90,17 @@ fn case_until_node<
 }
 
 fn ast_case<
-    O: PartialEq + Node + fmt::Debug,
-    F: FnOnce(&mut Parser) -> Result<O, Unexpected>,
+    V: PartialEq + Node + fmt::Debug,
+    P: FnOnce(&mut Parser) -> Result<V, Unexpected>,
+    E: FnOnce(&mut Parser) -> V,
 >(
     input: &'static str,
-    f: F,
-    expect_node: O,
-    expect_diagnostics: crate::diagnostics::Diagnostics, 
-    expect_strings: &[&'static str],
+    actual_value_getter: P,
+    expect_value_getter: E,
+    expect_diagnostics: crate::diagnostics::Diagnostics,
     backtrace: u32,
 ) {
-    if let Err((actual_node, expect_node, source)) = case_until_node(input, f, expect_node, expect_diagnostics, expect_strings, backtrace) {
+    if let Err((actual_node, expect_node, source)) = case_until_node(input, actual_value_getter, expect_value_getter, expect_diagnostics, backtrace) {
         let (actual_display, expect_display) = (actual_node.display(&source).to_string(), expect_node.display(&source).to_string());
         if actual_display == expect_display {
             let (actual_debug, expect_debug) = (format!("{:?}", actual_node), format!("{:?}", expect_node));
@@ -118,52 +112,50 @@ fn ast_case<
 
 // some parse method does not return type that impl Node
 fn notast_case<
-    O: PartialEq + fmt::Debug,
-    F: FnOnce(&mut Parser) -> Result<O, Unexpected>,
+    V: PartialEq + fmt::Debug,
+    P: FnOnce(&mut Parser) -> Result<V, Unexpected>,
+    E: FnOnce(&mut Parser) -> V,
 >(
     input: &'static str,
-    f: F,
-    expect_node: O,
-    expect_diagnostics: crate::diagnostics::Diagnostics, 
-    expect_strings: &[&'static str],
+    actual_value_getter: P,
+    expect_value_getter: E,
+    expect_diagnostics: crate::diagnostics::Diagnostics,
     backtrace: u32,
 ) {
-    if let Err((actual_node, expect_node, _)) = case_until_node(input, f, expect_node, expect_diagnostics, expect_strings, backtrace) {
+    if let Err((actual_node, expect_node, _)) = case_until_node(input, actual_value_getter, expect_value_getter, expect_diagnostics, backtrace) {
         let (actual_debug, expect_debug) = (format!("{:?}", actual_node), format!("{:?}", expect_node));
         panic!("line {} result not same\n{}", backtrace, DiffDisplay(&actual_debug, &expect_debug));
     }
 }
 
 macro_rules! case {
-    ($parser:ident $code:literal, $expect:expr $(,)?) => (
-        ast_case($code, |cx| cx.$parser(), $expect, crate::diagnostics::make_errors!(), &[], line!());
+    // new
+    ($parser:ident $code:literal, |$x:ident| $expect:expr $(,)? $(,$($tt:tt)+)?) => (
+        ast_case($code, |cx| cx.$parser(), |$x| $expect, make_errors!($($($tt)+)?), line!());
     );
-    ($parser:ident $code:literal, $expect:expr, errors $expect_diagnostics:expr $(,)?) => (
-        ast_case($code, |cx| cx.$parser(), $expect, $expect_diagnostics, &[], line!());
+    (notast $parser:ident $code:literal, |$x:ident| $expect:expr $(,)? $(,$($tt:tt)+)?) => (
+        notast_case($code, |cx| cx.$parser(), |$x| $expect, make_errors!($($($tt)+)?), line!());
     );
-    ($parser:ident $code:literal, $expect:expr, strings $expect_strings:expr $(,)?) => (
-        ast_case($code, |cx| cx.$parser(), $expect, crate::diagnostics::make_errors![], &$expect_strings, line!());
+
+    // temp before x is required for creating every node
+    ($parser:ident $code:literal, |_| $expect:expr $(,)? $(,$($tt:tt)+)?) => (
+        ast_case($code, |cx| cx.$parser(), |_| $expect, make_errors!($($($tt)+)?), line!());
     );
-    ($parser:ident $code:literal, $expect:expr, errors $expect_diagnostics:expr, strings $expect_strings:expr $(,)?) => (
-        ast_case($code, |cx| cx.$parser(), $expect, $expect_diagnostics, &$expect_strings, line!());
-    );
-    (notast $parser:ident $code:literal, $expect:expr $(,)?) => (
-        notast_case($code, |cx| cx.$parser(), $expect, crate::diagnostics::make_errors!(), &[], line!());
-    );
-    (notast $parser:ident $code:literal, $expect:expr, errors $expect_diagnostics:expr $(,)?) => (
-        notast_case($code, |cx| cx.$parser(), $expect, $expect_diagnostics, &[], line!());
-    );
-    (notast $parser:ident $code:literal, $expect:expr, strings $expect_strings:expr $(,)?) => (
-        notast_case($code, |cx| cx.$parser(), $expect, crate::diagnostics::make_errors![], &$expect_strings, line!());
-    );
-    (notast $parser:ident $code:literal, $expect:expr, errors $expect_diagnostics:expr, strings $expect_strings:expr $(,)?) => (
-        notast_case($code, |cx| cx.$parser(), $expect, $expect_diagnostics, &$expect_strings, line!());
+    (notast $parser:ident $code:literal, |_| $expect:expr $(,)? $(,$($tt:tt)+)?) => (
+        notast_case($code, |cx| cx.$parser(), |_| $expect, make_errors!($($($tt)+)?), line!());
     );
 }
 
-// ATTENTION: 
+// used by following macros internally, redirect ident to literal, allowing direct #ident in these macros
+// // this is approaching some level of quote!
+macro_rules! make_isid {
+    ($cx:ident, $i:ident) => ($cx.intern(stringify!($i)));
+    ($cx:ident, $i:literal) => ($cx.intern($i));
+}
+
+// ATTENTION:
 // these macros, make_path, make_expr, make_stmt, make_type
-// should be same structure as pretty print in principle, this makes test case expect results look like pretty and looks pretty    
+// should be same structure as pretty print in principle, this makes test case expect results look like pretty and looks pretty
 
 macro_rules! make_expr {
     // literals does not have (lit prefix because they are used frequently
@@ -179,8 +171,8 @@ macro_rules! make_expr {
     (char $start:literal:$end:literal $v:literal) => (
         Expr::Lit(LitExpr{ value: LitValue::Char($v), span: Span::new($start, $end) })
     );
-    (str #$v:literal $start:literal:$end:literal) => (
-        Expr::Lit(LitExpr{ value: LitValue::Str(IsId::new($v)), span: Span::new($start, $end) })
+    ($cx:ident str #$v:literal $start:literal:$end:literal) => (
+        Expr::Lit(LitExpr{ value: LitValue::Str($cx.intern($v)), span: Span::new($start, $end) })
     );
     (i32 $v:literal $start:literal:$end:literal) => (
         Expr::Lit(LitExpr{ value: LitValue::Num(Numeric::I32($v)), span: Span::new($start, $end) })
@@ -203,6 +195,9 @@ macro_rules! make_expr {
     (path $($tt:tt)+) => (
         Expr::Path(make_path!($($tt)+))
     );
+    ($cx:ident path $($tt:tt)+) => (
+        Expr::Path(make_path!($cx $($tt)+))
+    );
     (binary $start:literal:$end:literal $op:ident $op_start:literal:$op_end:literal $left:expr, $right:expr) => (Expr::Binary(BinaryExpr{
         left: Box::new($left),
         right: Box::new($right),
@@ -216,21 +211,21 @@ macro_rules! make_expr {
         op_span: Span::new($op_start, $op_end),
         span: Span::new($start, $end),
     }));
-    (member $start:literal:$end:literal dot $dot_start:literal:$dot_end:literal #$ident:literal $ident_start:literal:$ident_end:literal $base:expr) => (
+    ($cx:ident member $start:literal:$end:literal dot $dot_start:literal:$dot_end:literal #$ident:tt $ident_start:literal:$ident_end:literal $base:expr) => (
         Expr::Member(MemberExpr{
             span: Span::new($start, $end),
             base: Box::new($base),
             op_span: Span::new($dot_start, $dot_end),
-            name: IdSpan::new($ident, Span::new($ident_start, $ident_end)),
+            name: IdSpan::new(make_isid!($cx, $ident), Span::new($ident_start, $ident_end)),
             parameters: None,
         })
     );
-    (member $start:literal:$end:literal dot $dot_start:literal:$dot_end:literal #$ident:literal $ident_start:literal:$ident_end:literal quote $quote_start:literal:$quote_end:literal $base:expr, $($parameter:expr),*$(,)?) => (
+    ($cx:ident member $start:literal:$end:literal dot $dot_start:literal:$dot_end:literal #$ident:tt $ident_start:literal:$ident_end:literal quote $quote_start:literal:$quote_end:literal $base:expr, $($parameter:expr),*$(,)?) => (
         Expr::Member(MemberExpr{
             span: Span::new($start, $end),
             base: Box::new($base),
             op_span: Span::new($dot_start, $dot_end),
-            name: IdSpan::new($ident, Span::new($ident_start, $ident_end)),
+            name: IdSpan::new(make_isid!($cx, $ident), Span::new($ident_start, $ident_end)),
             parameters: Some(TypeList{ items: vec![$($parameter,)*], span: Span::new($quote_start, $quote_end) }),
         })
     );
@@ -254,9 +249,9 @@ macro_rules! make_expr {
             fields: vec![$($field,)*],
         })
     );
-    (object field $start:literal:$end:literal #$name:literal $name_start:literal:$name_end:literal colon $colon_start:literal:$colon_end:literal $value:expr$(,)?) => (
+    ($cx:ident object field $start:literal:$end:literal #$name:tt $name_start:literal:$name_end:literal colon $colon_start:literal:$colon_end:literal $value:expr$(,)?) => (
         ObjectExprField{
-            name: IdSpan::new($name, Span::new($name_start, $name_end)),
+            name: IdSpan::new(make_isid!($cx, $name), Span::new($name_start, $name_end)),
             span: Span::new($start, $end),
             value: $value,
         }
@@ -316,34 +311,34 @@ macro_rules! make_expr {
 
 macro_rules! make_stmt {
     // id and label has same implementation but has different semantic
-    (id $start:literal:$end:literal #$id:literal) => (
-        IdSpan::new($id, Span::new($start, $end))
+    ($cx:ident id $start:literal:$end:literal #$id:tt) => (
+        IdSpan::new(make_isid!($cx, $id), Span::new($start, $end))
     );
-    (label $start:literal:$end:literal #$id:literal) => (
-        Some(IdSpan::new($id, Span::new($start, $end)))
+    ($cx:ident label $start:literal:$end:literal #$id:tt) => (
+        Some(IdSpan::new(make_isid!($cx, $id), Span::new($start, $end)))
     );
     (label none) => (
         None
     );
-    (name $start:literal:$end:literal #$id:literal) => (
+    ($cx:ident name $start:literal:$end:literal #$id:tt) => (
         GenericName{
             span: Span::new($start, $end),
-            base: IdSpan::new($id, Span::new($start, $end)),
+            base: IdSpan::new(make_isid!($cx, $id), Span::new($start, $end)),
             quote_span: Span::new(0, 0),
             parameters: Vec::new(),
         }
     );
-    (name $start:literal:$end:literal #$id:literal $id_start:literal:$id_end:literal quote $quote_start:literal:$quote_end:literal $($parameter:expr),*$(,)?) => (
+    ($cx:ident name $start:literal:$end:literal #$id:tt $id_start:literal:$id_end:literal quote $quote_start:literal:$quote_end:literal $($parameter:expr),*$(,)?) => (
         GenericName{
             span: Span::new($start, $end),
-            base: IdSpan::new($id, Span::new($id_start, $id_end)),
+            base: IdSpan::new(make_isid!($cx, $id), Span::new($id_start, $id_end)),
             quote_span: Span::new($quote_start, $quote_end),
             parameters: vec![$($parameter,)*]
         }
     );
     // generic parameter currently is similar to idspan
-    (gp $start:literal:$end:literal #$id:literal) => (
-        GenericParameter{ span: Span::new($start, $end), name: IdSpan::new($id, Span::new($start, $end)) }
+    ($cx:ident gp $start:literal:$end:literal #$id:tt) => (
+        GenericParameter{ span: Span::new($start, $end), name: IdSpan::new(make_isid!($cx, $id), Span::new($start, $end)) }
     );
     (block $start:literal:$end:literal $($item:expr),*$(,)?) => (
         Block{
@@ -352,17 +347,17 @@ macro_rules! make_stmt {
         }
     );
     // fn def is too long and recommend directly struct literal
-    (fp $start:literal:$end:literal #$id:literal $id_start:literal:$id_end:literal $type:expr) => (
+    ($cx:ident fp $start:literal:$end:literal #$id:tt $id_start:literal:$id_end:literal $type:expr) => (
         FnDefParameter{
             span: Span::new($start, $end),
-            name: IdSpan::new($id, Span::new($id_start, $id_end)),
+            name: IdSpan::new(make_isid!($cx, $id), Span::new($id_start, $id_end)),
             r#type: $type,
         }
     );
-    (for $start:literal:$end:literal var #$iter_var:literal $iter_var_start:literal:$iter_var_end:literal $label:expr, $iter_expr:expr, $body:expr) => (
+    ($cx:ident for $start:literal:$end:literal var #$iter_var:tt $iter_var_start:literal:$iter_var_end:literal $label:expr, $iter_expr:expr, $body:expr) => (
         ForStatement{
             label: $label,
-            iter_name: IdSpan::new($iter_var, Span::new($iter_var_start, $iter_var_end)),
+            iter_name: IdSpan::new(make_isid!($cx, $iter_var), Span::new($iter_var_start, $iter_var_end)),
             iter_expr: $iter_expr,
             body: $body,
             span: Span::new($start, $end),
@@ -395,19 +390,19 @@ macro_rules! make_stmt {
             span: Span::new($start, $end),
         }
     );
-    (var $start:literal:$end:literal #$name:literal $name_start:literal:$name_end:literal $type:expr, $init:expr) => (
+    ($cx:ident var $start:literal:$end:literal #$name:tt $name_start:literal:$name_end:literal $type:expr, $init:expr) => (
         VarDeclStatement{
             r#const: false,
-            name: IdSpan::new($name, Span::new($name_start, $name_end)),
+            name: IdSpan::new(make_isid!($cx, $name), Span::new($name_start, $name_end)),
             r#type: $type,
             init_value: $init,
             span: Span::new($start, $end),
         }
     );
-    (const $start:literal:$end:literal #$name:literal $name_start:literal:$name_end:literal $type:expr, $init:expr) => (
+    ($cx:ident const $start:literal:$end:literal #$name:tt $name_start:literal:$name_end:literal $type:expr, $init:expr) => (
         VarDeclStatement{
             r#const: true,
-            name: IdSpan::new($name, Span::new($name_start, $name_end)),
+            name: IdSpan::new(make_isid!($cx, $name), Span::new($name_start, $name_end)),
             r#type: $type,
             init_value: $init,
             span: Span::new($start, $end),
@@ -454,24 +449,24 @@ macro_rules! make_path {
     (segment global) => (
         PathSegment::Global
     );
-    (segment simple $start:literal:$end:literal #$ident:literal) => (
-        PathSegment::Simple(IdSpan::new($ident, Span::new($start, $end)))
+    ($cx:ident segment simple $start:literal:$end:literal #$ident:tt) => (
+        PathSegment::Simple(IdSpan::new(make_isid!($cx, $ident), Span::new($start, $end)))
     );
     (segment cast $start:literal:$end:literal $left:expr, $right:expr) => (
         PathSegment::TypeCast{ span: Span::new($start, $end), left: $left, right: $right }
     );
-    (segment generic $start:literal:$end:literal #$ident:literal $ident_start:literal:$ident_end:literal quote $quote_start:literal:$quote_end:literal $($parameter:expr),*$(,)?) => (
+    ($cx:ident segment generic $start:literal:$end:literal #$ident:tt $ident_start:literal:$ident_end:literal quote $quote_start:literal:$quote_end:literal $($parameter:expr),*$(,)?) => (
         PathSegment::Generic{
             span: Span::new($start, $end),
-            base: IdSpan::new($ident, Span::new($ident_start, $ident_end)),
+            base: IdSpan::new(make_isid!($cx, $ident), Span::new($ident_start, $ident_end)),
             parameters: TypeList{ items: vec![$($parameter,)*], span: Span::new($quote_start, $quote_end) },
         }
     );
     ($start:literal:$end:literal $($segment:expr),*$(,)?) => (
         Path{ span: Span::new($start, $end), segments: vec![$($segment,)*] }
     );
-    (simple $start:literal:$end:literal #$ident:literal) => (
-        Path{ span: Span::new($start, $end), segments: vec![PathSegment::Simple(IdSpan::new($ident, Span::new($start, $end)))] }
+    ($cx:ident simple $start:literal:$end:literal #$ident:tt) => (
+        Path{ span: Span::new($start, $end), segments: vec![PathSegment::Simple(IdSpan::new(make_isid!($cx, $ident), Span::new($start, $end)))] }
     );
 }
 
@@ -491,8 +486,8 @@ macro_rules! make_type {
     (path $($tt:tt)+) => (
         TypeRef::Path(make_path!($($tt)+))
     );
-    (simple $start:literal:$end:literal #$ident:literal) => (
-        TypeRef::Path(Path{ span: Span::new($start, $end), segments: vec![PathSegment::Simple(IdSpan::new($ident, Span::new($start, $end)))] })
+    ($cx:ident simple $start:literal:$end:literal #$ident:tt) => (
+        TypeRef::Path(Path{ span: Span::new($start, $end), segments: vec![PathSegment::Simple(IdSpan::new(make_isid!($cx, $ident), Span::new($start, $end)))] })
     );
     (fn $start:literal:$end:literal paren $paren_start:literal:$paren_end:literal [$($parameter:expr),*$(,)?]) => (TypeRef::Fn(FnType{
         quote_span: Span::new($paren_start, $paren_end),
@@ -511,8 +506,8 @@ macro_rules! make_type {
         r#type: $ty,
         span: Span::new($start, $end),
     });
-    (fp named $start:literal:$end:literal #$name:literal $name_start:literal:$name_end:literal $ty:expr) => (FnTypeParameter{
-        name: Some(IdSpan::new($name, Span::new($name_start, $name_end))),
+    ($cx:ident fp named $start:literal:$end:literal #$name:tt $name_start:literal:$name_end:literal $ty:expr) => (FnTypeParameter{
+        name: Some(IdSpan::new(make_isid!($cx, $name), Span::new($name_start, $name_end))),
         r#type: $ty,
         span: Span::new($start, $end),
     });

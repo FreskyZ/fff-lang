@@ -83,7 +83,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     }
 
     // forward base methods
-    fn intern(&mut self, v: &str) -> IsId {
+    pub fn intern(&mut self, v: &str) -> IsId {
         self.base.intern(v)
     }
     fn emit(&mut self, name: impl Into<String>) -> &mut Diagnostic { 

@@ -42,7 +42,7 @@ fn binary_expr() {
     let mut ecx = make_errors!();
     let mut scx = make_source!("ascasconwoeicnqw");
     scx.entry("1", &mut ecx).unwrap().finish();
-    ppcase!{ 
+    ppcase!{
         make_expr!(binary 0:4 Add 2:2
             make_expr!(i32 1 0:0),
             make_expr!(i32 2 4:4)
@@ -98,7 +98,7 @@ fn loop_stmt() {
 
 #[test]
 fn postfix_expr() {
-    //                           0         1         2         3         4         5        
+    //                           0         1         2         3         4         5
     //                           0123456789012345678901234567890123456789012345678901234567
     let mut scx = make_source!("a.b(c, d, e).f(g, h, i,)(u,).j[k].l().m[n, o, p][r, s, t,]");
     let mut ecx = crate::diagnostics::make_errors!();
