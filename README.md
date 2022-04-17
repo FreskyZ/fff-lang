@@ -4,18 +4,18 @@ A small language for fun
 
 ## Features (in design)
 
-- based on C syntax
-- sweet modern syntax extensions learned from rust, python, C#, etc.
-- type inference and concept based generic
-- static reflection
-- no 3rd party library dependency, include c library, ~llvm~, ld or link
-- whole process from source code file to in memory IR or target binary
+- modern syntax learned from rust, python, C#, etc.
+- manual memory management and RAII
+- first class function
+- concept based generic
+- interpret, REPL or native binary codegen
+- no 3rd party library dependency (for now) (because there isn't when initially bootstrapping)
 
 ## Build
 
-it's in a huge refactor process and driver is broken currently...  
-use `cargo test` in `codemap`, `lexical`, `syntax` and `semantic` crates  
-or switch to tag v0.1.0 to view compiler course homework handin version
+- use `cargo ut` to run unit tests
+- use `cargo rt` to run intergrated tests
+- use `cargo rc` to run the compiler binary, `cargo rc -- --help` for help
 
 ## Other things
 
