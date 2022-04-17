@@ -30,3 +30,32 @@ and more
 - try add some basic optimizations like const eval, const propagation, loop invariant move and change tail recursion to loop
 - generate llvm code and build to native executable file
 - bootstrap self
+
+## Update
+
+Previous contents will keep as is, for some kind of "don't forget what you initially think". 
+Changes is updated in following part, small detailed plain is included by the way
+
+- handin: I do fix some issues and make some updates, include the loveheart.sm, but when I review the following changes (changes 
+  after Dec 2016 before Jul 2017), they are already too far away from original virtual machine, so I have to write a complete new interpreter
+- source: redesign source location types, now span is only u64 
+- source: add virtual file system, this can and should replace a lot of "with_test_input" style methods
+- lexical: redesign token type, make it more flat and easy to use
+- lexical: refactor parser, merge the original multiple layer lexers into one unified parser. I was very proud of 
+  that multiple layer explicit state transfer lexical parser 5 years ago, but now the unified version is clearly simpler and more powerful
+- syntax: update traits, clarify Node (Visitable) and Parser, get rid of propagating <F> parameter by the way
+- syntax: add visitor and pretty print visitor, use std::fmt::Formatter instead of return string
+- syntax: update test infrastructure, use make_* macros instead of a lot of "with_test_input"s
+- syntax: refactor parser, merge into one unified parser, which allows more flexiable parameter and return value control
+- interface: add formal interface, add command line argument parser based on my experience using clap
+- syntax: update and add a lot of new syntax, include major support of generics, because I think without vector<T> I cannot write any useful
+  program, while this time I don't want it to be language feature but only a standard library feature
+
+- [ ] source: use unsafe instead of panic in char iterator
+- [ ] syntax: allow --print ast,files in command line, move --print ast-mem to --debug ast-mem, include arena status in that, add update make-ast-mem to make-ast-expect and move ast-mem result into .stdout
+- [ ] syntax: split cast segment and generic segment from path segment
+- [ ] syntax: relearn first set and follow set and review the name of maybe_xxx
+- [ ] syntax: update random test input generator
+- [ ] syntax: add missing array dup def
+- [ ] syntax: add numeric literal type as suffixed/unsuffixed and bin/oct/dec/hex/unprefixed, tuple index expr require unsuffixed and unprefixed
+- [ ] syntax: format string
