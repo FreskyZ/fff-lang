@@ -94,9 +94,9 @@ impl MemoryProfiler {
         let total_total_size: usize = self.u.values().map(|v| v.total_size).sum();
         let total_total_theoretical_size: usize = self.u.values().map(|v| v.total_theoretical_size).sum();
         let mut ordered_items = self.u.iter().collect::<Vec<_>>();
-        ordered_items.sort_unstable_by_key(|i| i.1.total_size);
+        ordered_items.sort_by_key(|i| i.1.total_size);
         ordered_items.reverse();
-        println!("                  total size {total_total_size} > {total_total_theoretical_size}");
+        println!("total size {total_total_size} > {total_total_theoretical_size}");
         for (&key, MemoryUsage{ count, total_size, total_theoretical_size }) in ordered_items {
             let header = format!("[{key}({count})]");
             let total_size_percent = *total_size as f64 * 100f64 / total_total_size as f64;

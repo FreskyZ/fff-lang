@@ -33,21 +33,30 @@ fn run_compiler(args: argument::Argument, output: &mut impl io::Write) {
         });
 
     write!(output, "{}", ecx.display(&scx)).unwrap();
-    if args.prints.iter().any(|p| *p == argument::PrintValue::AST) {
-        for module in &modules {
-            write!(output, "{}", module.display(&scx)).unwrap();
+
+    for debug_option in &args.debugs {
+        match debug_option {
+            argument::DebugOption::Memory => {
+                let mut profiler = MemoryProfiler::new();
+                for module in &modules {
+                    profiler.profile(module);
+                }
+                profiler.dump();
+            }
         }
     }
-    if args.prints.iter().any(|p| *p == argument::PrintValue::ASTMemory) {
-        let mut profiler = MemoryProfiler::new();
-        for module in &modules {
-            profiler.profile(module);
-        }
-        profiler.dump();
-    }
-    if args.prints.iter().any(|p| *p == argument::PrintValue::Files) {
-        for module in &modules {
-            writeln!(output, "{}", scx.get_relative_path(module.file).display()).unwrap();
+    for print_option in &args.prints {
+        match print_option {
+            argument::PrintOption::Files => {
+                for module in &modules {
+                    writeln!(output, "{}", scx.get_relative_path(module.file).display()).unwrap();
+                }
+            },
+            argument::PrintOption::AST => {
+                for module in &modules {
+                    write!(output, "{}", module.display(&scx)).unwrap();
+                }
+            }
         }
     }
 
@@ -79,7 +88,7 @@ pub fn test_main() {
                 let expect_path = { let mut p = path.clone(); p.set_extension("stdout"); p };
                 let expect_output = std::fs::read_to_string(&expect_path).expect(&format!("failed to read {}", expect_path.display()));
                 let mut actual_output = Vec::<u8>::with_capacity(8192);
-                let args = argument::Argument{ entry: path.display().to_string(), prints: vec![argument::PrintValue::AST] };
+                let args = argument::Argument{ entry: path.display().to_string(), prints: vec![argument::PrintOption::AST], debugs: vec![argument::DebugOption::Memory] };
                 run_compiler(args, &mut actual_output);
                 let actual_output = std::str::from_utf8(&actual_output).expect(&format!("failed to decode stdout {}", path.display()));
                 if actual_output != expect_output {

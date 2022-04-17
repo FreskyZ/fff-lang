@@ -34,7 +34,8 @@ and more
 ## Update
 
 Previous contents will keep as is, for some kind of "don't forget what you initially think". 
-Changes is updated in following part, small detailed plain is included by the way
+
+Major change summary
 
 - handin: I do fix some issues and make some updates, include the loveheart.sm, but when I review the following changes (changes 
   after Dec 2016 before Jul 2017), they are already too far away from original virtual machine, so I have to write a complete new interpreter
@@ -51,8 +52,9 @@ Changes is updated in following part, small detailed plain is included by the wa
 - syntax: update and add a lot of new syntax, include major support of generics, because I think without vector<T> I cannot write any useful
   program, while this time I don't want it to be language feature but only a standard library feature
 
+some detailed plans is included by the way
+
 - [ ] source: use unsafe instead of panic in char iterator
-- [ ] syntax: allow --print ast,files in command line, move --print ast-mem to --debug ast-mem, include arena status in that, add update make-ast-mem to make-ast-expect and move ast-mem result into .stdout
 - [ ] syntax: split cast segment and generic segment from path segment
 - [ ] syntax: relearn first set and follow set and review the name of maybe_xxx
 - [ ] syntax: update random test input generator

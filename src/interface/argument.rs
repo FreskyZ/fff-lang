@@ -1,14 +1,41 @@
+use std::str::FromStr;
 
-#[derive(PartialEq)]
-pub enum PrintValue {
+pub enum PrintOption {
     AST,
-    ASTMemory,
     Files,
+}
+
+impl FromStr for PrintOption {
+    type Err = ();
+    
+    fn from_str(s: &str) -> Result<Self, ()> {
+        match s {
+            "files" => Ok(Self::Files),
+            "ast" => Ok(Self::AST),
+            _ => Err(())
+        }
+    }
+}
+
+pub enum DebugOption {
+    Memory,
+}
+
+impl FromStr for DebugOption {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, ()> {
+        match s {
+            "memory" => Ok(Self::Memory),
+            _ => Err(()),
+        }
+    }
 }
 
 pub struct Argument {
     pub entry: String,
-    pub prints: Vec<PrintValue>,
+    pub prints: Vec<PrintOption>,
+    pub debugs: Vec<DebugOption>,
 }
 
 fn print_help(binary_name: &str) -> ! {
@@ -17,9 +44,9 @@ fn print_help(binary_name: &str) -> ! {
     println!();
     println!("Options:");
     println!("    -h, --help       Display this message");
-    println!("    --print ast      Print ast pretty");
-    println!("    --print ast-mem  Print ast memory usage");
     println!("    --print files    Print included files");
+    println!("    --print ast      Print ast pretty");
+    println!("    --debug OPTIONS  Debug options");
     println!("    -V, --version    Print version and exit");
     println!();
     std::process::exit(0)
@@ -63,6 +90,7 @@ impl Argument {
         let mut result = Argument{
             entry: String::new(),
             prints: Vec::new(),
+            debugs: Vec::new(),
         };
 
         let mut expect_value_for: Option<&'static str> = None;
@@ -72,19 +100,28 @@ impl Argument {
                     print_error_help(format!("unexpected switch {raw}"), &binary_name);
                 } else if raw == "--print" {
                     expect_value_for = Some("print");
+                } else if raw == "--debug" {
+                    expect_value_for = Some("debug");
                 } else {
                     print_error_help(format!("unknown switch {raw}"), &binary_name);
                 }
             } else if expect_value_for == Some("print") {
                 expect_value_for = None;
-                if raw == "ast" {
-                    result.prints.push(PrintValue::AST);
-                } else if raw == "ast-mem" {
-                    result.prints.push(PrintValue::ASTMemory);
-                } else if raw == "files" {
-                    result.prints.push(PrintValue::Files);
-                } else {
-                    print_error_help(format!("unknown print value {raw}"), &binary_name);
+                for raw in raw.split(',') {
+                    if let Ok(option) = raw.parse() {
+                        result.prints.push(option);
+                    } else {
+                        print_error_help(format!("unknown print value {raw}"), &binary_name);
+                    }
+                }
+            } else if expect_value_for == Some("debug") {
+                expect_value_for = None;
+                for raw in raw.split(',') {
+                    if let Ok(option) = raw.parse() {
+                        result.debugs.push(option);
+                    } else {
+                        print_error_help(format!("unknown debug value {raw}"), &binary_name);
+                    }
                 }
             } else if !result.entry.is_empty() {
                 print_error_help("unexpected multiple entry specified".to_owned(), &binary_name);

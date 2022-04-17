@@ -289,6 +289,31 @@ error: Invalid numeric literal, numeric literal should not start with 0
    |                                                                                                                                                                                ^^^ 
    = help: If you mean C style octal numeric literal, use `0o777` syntax
 
+total size 343967 > 52307
+ [path-segment(simple)(496)] 111104 (32.30%) > 1984 (3.79%)
+  [type-ref(primitive)(566)] 58864 (17.11%) > 4528 (8.66%)
+[path-segment(generic)(249)] 55776 (16.22%) > 996 (1.90%)
+       [type-ref(path)(376)] 39104 (11.37%) > 3008 (5.75%)
+                 [path(752)] 12032 (3.50%) > 7540 (14.41%)
+       [type-ref(array)(86)] 8944 (2.60%) > 688 (1.32%)
+       [type-ref(tuple)(83)] 8632 (2.51%) > 664 (1.27%)
+            [type-list(498)] 7968 (2.32%) > 5892 (11.26%)
+             [expr(lit)(86)] 6880 (2.00%) > 688 (1.32%)
+  [path-segment-simple(496)] 5952 (1.73%) > 5952 (11.38%)
+      [primitive-type(1132)] 5094 (1.48%) > 5094 (9.74%)
+ [path-segment-generic(747)] 4980 (1.45%) > 5976 (11.42%)
+         [type-ref(ref)(41)] 4264 (1.24%) > 328 (0.63%)
+             [lit-expr(172)] 2752 (0.80%) > 2752 (5.26%)
+  [path-segment(global)(12)] 2688 (0.78%) > 48 (0.09%)
+           [tuple-type(166)] 2656 (0.77%) > 1992 (3.81%)
+          [type-ref(fn)(18)] 1872 (0.54%) > 144 (0.28%)
+           [array-type(258)] 1376 (0.40%) > 1376 (2.63%)
+    [fn-type-parameter(174)] 1160 (0.34%) > 1392 (2.66%)
+               [fn-type(72)] 864 (0.25%) > 736 (1.41%)
+              [ref-type(82)] 656 (0.19%) > 492 (0.94%)
+         [item(var-decl)(1)] 328 (0.10%) > 8 (0.02%)
+               [var-decl(5)] 21 (0.01%) > 29 (0.06%)
+   [path-segment-global(12)] 0 (0.00%) > 0 (0.00%)
 module tests/ast/hugetype.f3
   var-def <1:1-76:198> mutable a <1:5-1:5>
     path <1:8-76:197>
