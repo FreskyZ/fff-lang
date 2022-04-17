@@ -450,23 +450,23 @@ macro_rules! make_path {
         PathSegment::Global
     );
     ($cx:ident segment simple $start:literal:$end:literal #$ident:tt) => (
-        PathSegment::Simple(IdSpan::new(make_isid!($cx, $ident), Span::new($start, $end)))
+        PathSegment::Simple(SimpleSegment{ span: Span::new($start, $end), name: make_isid!($cx, $ident) })
     );
     (segment cast $start:literal:$end:literal $left:expr, $right:expr) => (
-        PathSegment::TypeCast{ span: Span::new($start, $end), left: $left, right: $right }
+        PathSegment::Cast(CastSegment{ span: Span::new($start, $end), left: $left, right: $right })
     );
     ($cx:ident segment generic $start:literal:$end:literal #$ident:tt $ident_start:literal:$ident_end:literal quote $quote_start:literal:$quote_end:literal $($parameter:expr),*$(,)?) => (
-        PathSegment::Generic{
+        PathSegment::Generic(GenericSegment{
             span: Span::new($start, $end),
             base: IdSpan::new(make_isid!($cx, $ident), Span::new($ident_start, $ident_end)),
             parameters: TypeList{ items: vec![$($parameter,)*], span: Span::new($quote_start, $quote_end) },
-        }
+        })
     );
     ($start:literal:$end:literal $($segment:expr),*$(,)?) => (
         Path{ span: Span::new($start, $end), segments: vec![$($segment,)*] }
     );
     ($cx:ident simple $start:literal:$end:literal #$ident:tt) => (
-        Path{ span: Span::new($start, $end), segments: vec![PathSegment::Simple(IdSpan::new(make_isid!($cx, $ident), Span::new($start, $end)))] }
+        Path{ span: Span::new($start, $end), segments: vec![PathSegment::Simple(SimpleSegment{ name: make_isid!($cx, $ident), span: Span::new($start, $end) })] }
     );
 }
 
@@ -487,7 +487,7 @@ macro_rules! make_type {
         TypeRef::Path(make_path!($($tt)+))
     );
     ($cx:ident simple $start:literal:$end:literal #$ident:tt) => (
-        TypeRef::Path(Path{ span: Span::new($start, $end), segments: vec![PathSegment::Simple(IdSpan::new(make_isid!($cx, $ident), Span::new($start, $end)))] })
+        TypeRef::Path(Path{ span: Span::new($start, $end), segments: vec![PathSegment::Simple(SimpleSegment{ name: make_isid!($cx, $ident), span: Span::new($start, $end) })] })
     );
     (fn $start:literal:$end:literal paren $paren_start:literal:$paren_end:literal [$($parameter:expr),*$(,)?]) => (TypeRef::Fn(FnType{
         quote_span: Span::new($paren_start, $paren_end),

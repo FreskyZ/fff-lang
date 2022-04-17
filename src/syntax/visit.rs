@@ -42,6 +42,7 @@ pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_block_stmt(&mut self, node: &BlockStatement) -> Result<T, E> { node.walk(self) }
     fn visit_break_stmt(&mut self, node: &BreakStatement) -> Result<T, E> { node.walk(self) }
     fn visit_call_expr(&mut self, node: &CallExpr) -> Result<T, E> { node.walk(self) }
+    fn visit_cast_segment(&mut self, node: &CastSegment) -> Result<T, E> { node.walk(self) }
     fn visit_class_def(&mut self, node: &ClassDef) -> Result<T, E> { node.walk(self) }
     fn visit_continue_stmt(&mut self, node: &ContinueStatement) -> Result<T, E> { node.walk(self) }
     fn visit_else_clause(&mut self, node: &ElseClause) -> Result<T, E> { node.walk(self) }
@@ -56,6 +57,7 @@ pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_for_stmt(&mut self, node: &ForStatement) -> Result<T, E> { node.walk(self) }
     fn visit_generic_name(&mut self, node: &GenericName) -> Result<T, E> { node.walk(self) }
     fn visit_generic_parameter(&mut self, node: &GenericParameter) -> Result<T, E> { node.walk(self) }
+    fn visit_generic_segment(&mut self, node: &GenericSegment) -> Result<T, E> { node.walk(self) } 
     fn visit_if_clause(&mut self, node: &IfClause) -> Result<T, E> { node.walk(self) }
     fn visit_if_stmt(&mut self, node: &IfStatement) -> Result<T, E> { node.walk(self) }
     fn visit_impl(&mut self, node: &Implementation) -> Result<T, E> { node.walk(self) }
@@ -78,6 +80,7 @@ pub trait Visitor<T: Default = (), E = ()>: Sized {
     fn visit_ref_type(&mut self, node: &RefType) -> Result<T, E> { node.walk(self) }
     fn visit_ret_stmt(&mut self, node: &ReturnStatement) -> Result<T, E> { node.walk(self) }
     fn visit_simple_expr_stmt(&mut self, node: &SimpleExprStatement) -> Result<T, E> { node.walk(self) }
+    fn visit_simple_segment(&mut self, node: &SimpleSegment) -> Result<T, E> { node.walk(self) }
     fn visit_stmt(&mut self, node: &Statement) -> Result<T, E> { node.walk(self) }
     fn visit_struct_def(&mut self, node: &StructDef) -> Result<T, E> { node.walk(self) }
     fn visit_tuple_expr(&mut self, node: &TupleExpr) -> Result<T, E> { node.walk(self) }

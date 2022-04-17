@@ -1,14 +1,14 @@
-total size 924 > 136
-      [item(simple-expr)(1)] 328 (35.50%) > 8 (5.88%)
-   [path-segment(simple)(1)] 224 (24.24%) > 4 (2.94%)
-             [expr(path)(1)] 80 (8.66%) > 8 (5.88%)
-              [expr(lit)(1)] 80 (8.66%) > 8 (5.88%)
-             [expr(call)(1)] 80 (8.66%) > 8 (5.88%)
-              [call-expr(4)] 48 (5.19%) > 28 (20.59%)
-                   [path(2)] 32 (3.46%) > 16 (11.76%)
-               [lit-expr(2)] 32 (3.46%) > 32 (23.53%)
-    [path-segment-simple(1)] 12 (1.30%) > 12 (8.82%)
-       [simple-expr-stmt(2)] 8 (0.87%) > 12 (8.82%)
+total size 924 > 140
+      [item(simple-expr)(1)] 328 (35.50%) > 8 (5.71%)
+   [path-segment(simple)(1)] 224 (24.24%) > 8 (5.71%)
+             [expr(path)(1)] 80 (8.66%) > 8 (5.71%)
+              [expr(lit)(1)] 80 (8.66%) > 8 (5.71%)
+             [expr(call)(1)] 80 (8.66%) > 8 (5.71%)
+              [call-expr(1)] 48 (5.19%) > 28 (20.00%)
+                   [path(1)] 32 (3.46%) > 16 (11.43%)
+               [lit-expr(1)] 32 (3.46%) > 32 (22.86%)
+         [simple-segment(1)] 12 (1.30%) > 12 (8.57%)
+       [simple-expr-stmt(1)] 8 (0.87%) > 12 (8.57%)
 module tests/ast/hello.f3
   simple-expr-stmt <4:1-4:23>
     call-expr <4:1-4:22> () <4:8-4:22>

@@ -115,6 +115,14 @@ pub struct CallExpr {
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
+pub struct CastSegment {
+    pub span: Span,
+    pub left: TypeRef,
+    pub right: TypeRef,
+}
+
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct ClassDef {
     pub span: Span,
     pub name: GenericName,
@@ -259,6 +267,14 @@ pub struct GenericParameter {
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
+pub struct GenericSegment {
+    pub span: Span, 
+    pub base: IdSpan, 
+    pub parameters: TypeList,
+}
+
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct IfClause {
     pub span: Span,
     pub condition: Expr,
@@ -397,9 +413,9 @@ pub enum PathSegment {
     // global is a mark to indicate path starts with namespace separator, 
     // it does not have span because it logically located at the empty place before the namespace sparator
     Global,
-    Simple(IdSpan),
-    TypeCast{ span: Span, left: TypeRef, right: TypeRef },
-    Generic{ span: Span, base: IdSpan, parameters: TypeList },
+    Simple(SimpleSegment),
+    Cast(CastSegment),
+    Generic(GenericSegment),
 }
 
 impl PathSegment {
@@ -407,8 +423,8 @@ impl PathSegment {
         match self {
             PathSegment::Global => Span::new(0, 0),
             PathSegment::Simple(v) => v.span,
-            PathSegment::TypeCast{ span, .. } => *span,
-            PathSegment::Generic{ span, .. } => *span,
+            PathSegment::Cast(v) => v.span,
+            PathSegment::Generic(v) => v.span,
         }
     }
 }
@@ -468,6 +484,13 @@ pub struct ReturnStatement {
 pub struct SimpleExprStatement {
     pub span: Span, // expr.span + semicolon_span
     pub expr: Expr, 
+}
+
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
+pub struct SimpleSegment {
+    pub span: Span,
+    pub name: IsId,
 }
 
 define_abc! {

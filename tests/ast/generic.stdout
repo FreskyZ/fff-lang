@@ -1,75 +1,75 @@
-total size 85163 > 13811
- [path-segment(simple)(131)] 29344 (34.46%) > 524 (3.79%)
-            [expr(path)(90)] 7200 (8.45%) > 720 (5.21%)
-        [type-ref(path)(48)] 4992 (5.86%) > 384 (2.78%)
-                 [path(278)] 4448 (5.22%) > 2240 (16.22%)
-     [stmt(assign-expr)(11)] 3608 (4.24%) > 88 (0.64%)
- [path-segment(generic)(12)] 2688 (3.16%) > 48 (0.35%)
-      [stmt(simple-expr)(7)] 2296 (2.70%) > 56 (0.41%)
-         [stmt(var-decl)(5)] 1640 (1.93%) > 40 (0.29%)
-              [stmt(ret)(5)] 1640 (1.93%) > 40 (0.29%)
-  [path-segment-simple(131)] 1572 (1.85%) > 1572 (11.38%)
-         [type-ref(ref)(14)] 1456 (1.71%) > 112 (0.81%)
+total size 85163 > 14191
+ [path-segment(simple)(131)] 29344 (34.46%) > 1048 (7.38%)
+            [expr(path)(90)] 7200 (8.45%) > 720 (5.07%)
+        [type-ref(path)(48)] 4992 (5.86%) > 384 (2.71%)
+                 [path(139)] 4448 (5.22%) > 2224 (15.67%)
+     [stmt(assign-expr)(11)] 3608 (4.24%) > 88 (0.62%)
+ [path-segment(generic)(12)] 2688 (3.16%) > 96 (0.68%)
+      [stmt(simple-expr)(7)] 2296 (2.70%) > 56 (0.39%)
+         [stmt(var-decl)(5)] 1640 (1.93%) > 40 (0.28%)
+              [stmt(ret)(5)] 1640 (1.93%) > 40 (0.28%)
+       [simple-segment(131)] 1572 (1.85%) > 1572 (11.08%)
+         [type-ref(ref)(14)] 1456 (1.71%) > 112 (0.79%)
                [stmt(if)(4)] 1312 (1.54%) > 32 (0.23%)
               [stmt(for)(4)] 1312 (1.54%) > 32 (0.23%)
            [item(struct)(4)] 1312 (1.54%) > 32 (0.23%)
-   [type-ref(primitive)(12)] 1248 (1.47%) > 96 (0.70%)
-             [expr(lit)(15)] 1200 (1.41%) > 120 (0.87%)
-     [expr(array-index)(15)] 1200 (1.41%) > 120 (0.87%)
-          [expr(binary)(14)] 1120 (1.32%) > 112 (0.81%)
-          [generic-name(76)] 988 (1.16%) > 664 (4.81%)
+   [type-ref(primitive)(12)] 1248 (1.47%) > 96 (0.68%)
+             [expr(lit)(15)] 1200 (1.41%) > 120 (0.85%)
+     [expr(array-index)(15)] 1200 (1.41%) > 120 (0.85%)
+          [expr(binary)(14)] 1120 (1.32%) > 112 (0.79%)
+          [generic-name(19)] 988 (1.16%) > 684 (4.82%)
                [stmt(fn)(3)] 984 (1.16%) > 24 (0.17%)
                [item(fn)(3)] 984 (1.16%) > 24 (0.17%)
             [item(class)(3)] 984 (1.16%) > 24 (0.17%)
-            [expr(call)(12)] 960 (1.13%) > 96 (0.70%)
-      [array-index-expr(60)] 720 (0.85%) > 420 (3.04%)
-                [fn-def(77)] 704 (0.83%) > 508 (3.68%)
-            [stmt(while)(2)] 656 (0.77%) > 16 (0.12%)
-                 [block(40)] 640 (0.75%) > 416 (3.01%)
-             [call-expr(48)] 576 (0.68%) > 380 (2.75%)
-              [lit-expr(30)] 480 (0.56%) > 480 (3.48%)
-      [fn-def-parameter(72)] 480 (0.56%) > 576 (4.17%)
-           [binary-expr(70)] 462 (0.54%) > 350 (2.53%)
+            [expr(call)(12)] 960 (1.13%) > 96 (0.68%)
+      [array-index-expr(15)] 720 (0.85%) > 420 (2.96%)
+                [fn-def(11)] 704 (0.83%) > 484 (3.41%)
+            [stmt(while)(2)] 656 (0.77%) > 16 (0.11%)
+                 [block(20)] 640 (0.75%) > 320 (2.25%)
+             [call-expr(12)] 576 (0.68%) > 336 (2.37%)
+              [lit-expr(15)] 480 (0.56%) > 480 (3.38%)
+      [fn-def-parameter(24)] 480 (0.56%) > 576 (4.06%)
+           [binary-expr(14)] 462 (0.54%) > 350 (2.47%)
            [type-ref(fn)(4)] 416 (0.49%) > 32 (0.23%)
-           [expr(member)(5)] 400 (0.47%) > 40 (0.29%)
-             [type-list(24)] 384 (0.45%) > 192 (1.39%)
+           [expr(member)(5)] 400 (0.47%) > 40 (0.28%)
+             [type-list(12)] 384 (0.45%) > 192 (1.35%)
               [stmt(use)(1)] 328 (0.39%) > 8 (0.06%)
              [stmt(loop)(1)] 328 (0.39%) > 8 (0.06%)
             [stmt(break)(1)] 328 (0.39%) > 8 (0.06%)
              [item(enum)(1)] 328 (0.39%) > 8 (0.06%)
-     [generic-parameter(28)] 280 (0.33%) > 280 (2.03%)
-  [path-segment-generic(36)] 240 (0.28%) > 288 (2.09%)
-              [ref-type(28)] 224 (0.26%) > 168 (1.22%)
-             [field-def(32)] 224 (0.26%) > 256 (1.85%)
-               [fn-type(16)] 192 (0.23%) > 132 (0.96%)
-             [class-def(15)] 192 (0.23%) > 108 (0.78%)
-      [assign-expr-stmt(55)] 187 (0.22%) > 275 (1.99%)
-           [member-expr(25)] 180 (0.21%) > 180 (1.30%)
-          [where-clause(12)] 176 (0.21%) > 112 (0.81%)
-       [expr(range-both)(2)] 160 (0.19%) > 16 (0.12%)
-            [struct-def(12)] 128 (0.15%) > 96 (0.70%)
-               [if-stmt(16)] 128 (0.15%) > 80 (0.58%)
-              [for-stmt(20)] 128 (0.15%) > 160 (1.16%)
-        [primitive-type(24)] 108 (0.13%) > 108 (0.78%)
-              [var-decl(25)] 105 (0.12%) > 145 (1.05%)
-     [fn-type-parameter(15)] 100 (0.12%) > 120 (0.87%)
+     [generic-parameter(14)] 280 (0.33%) > 280 (1.97%)
+       [generic-segment(12)] 240 (0.28%) > 288 (2.03%)
+              [ref-type(14)] 224 (0.26%) > 168 (1.18%)
+              [field-def(8)] 224 (0.26%) > 256 (1.80%)
+                [fn-type(4)] 192 (0.23%) > 112 (0.79%)
+              [class-def(3)] 192 (0.23%) > 108 (0.76%)
+      [assign-expr-stmt(11)] 187 (0.22%) > 275 (1.94%)
+            [member-expr(5)] 180 (0.21%) > 180 (1.27%)
+           [where-clause(4)] 176 (0.21%) > 112 (0.79%)
+       [expr(range-both)(2)] 160 (0.19%) > 16 (0.11%)
+             [struct-def(4)] 128 (0.15%) > 80 (0.56%)
+                [if-stmt(4)] 128 (0.15%) > 96 (0.68%)
+               [for-stmt(4)] 128 (0.15%) > 160 (1.13%)
+        [primitive-type(12)] 108 (0.13%) > 108 (0.76%)
+               [var-decl(5)] 105 (0.12%) > 145 (1.02%)
+      [fn-type-parameter(5)] 100 (0.12%) > 120 (0.85%)
             [expr(unary)(1)] 80 (0.09%) > 8 (0.06%)
            [expr(object)(1)] 80 (0.09%) > 8 (0.06%)
-        [range-both-expr(8)] 64 (0.08%) > 48 (0.35%)
-       [enum-def-variant(9)] 60 (0.07%) > 72 (0.52%)
-      [simple-expr-stmt(14)] 56 (0.07%) > 84 (0.61%)
-               [enum-def(5)] 52 (0.06%) > 48 (0.35%)
-            [object-expr(4)] 48 (0.06%) > 32 (0.23%)
-             [while-stmt(8)] 40 (0.05%) > 56 (0.41%)
-              [ret-stmt(10)] 40 (0.05%) > 60 (0.43%)
-      [object-expr-field(6)] 40 (0.05%) > 48 (0.35%)
-             [if-clause(12)] 32 (0.04%) > 64 (0.46%)
-             [unary-expr(4)] 25 (0.03%) > 21 (0.15%)
-               [use-stmt(3)] 20 (0.02%) > 24 (0.17%)
-              [loop-stmt(3)] 20 (0.02%) > 24 (0.17%)
-             [break-stmt(2)] 20 (0.02%) > 20 (0.14%)
-               [type-def(3)] 8 (0.01%) > 16 (0.12%)
-            [else-clause(2)] 8 (0.01%) > 12 (0.09%)
+        [range-both-expr(2)] 64 (0.08%) > 48 (0.34%)
+       [enum-def-variant(3)] 60 (0.07%) > 72 (0.51%)
+       [simple-expr-stmt(7)] 56 (0.07%) > 84 (0.59%)
+               [enum-def(1)] 52 (0.06%) > 40 (0.28%)
+            [object-expr(1)] 48 (0.06%) > 28 (0.20%)
+             [while-stmt(2)] 40 (0.05%) > 56 (0.39%)
+               [ret-stmt(5)] 40 (0.05%) > 60 (0.42%)
+      [object-expr-field(2)] 40 (0.05%) > 48 (0.34%)
+              [if-clause(4)] 32 (0.04%) > 64 (0.45%)
+             [unary-expr(1)] 25 (0.03%) > 21 (0.15%)
+               [use-stmt(1)] 20 (0.02%) > 24 (0.17%)
+              [loop-stmt(1)] 20 (0.02%) > 24 (0.17%)
+             [break-stmt(1)] 20 (0.02%) > 20 (0.14%)
+               [type-def(1)] 8 (0.01%) > 16 (0.11%)
+            [else-clause(1)] 8 (0.01%) > 12 (0.08%)
 module tests/ast/generic.f3
   class-def <4:1-10:1> {} <4:23-10:1>
     generic-name <4:7-4:21> PartialEqual <4:7-4:18> <> <4:19-4:21>
@@ -148,19 +148,19 @@ module tests/ast/generic.f3
     generic-name <33:8-33:13> string <33:8-33:13>
     field-def <34:5-34:18> list <34:5-34:8> : <34:9-34:9>
       path <34:11-34:18>
-        segment <34:11-34:18> list <34:11-34:14>
+        generic-segment <34:11-34:18> list <34:11-34:14>
           primitive-type u8 <34:16-34:17>
   fn-def <37:1-94:1> () <37:11-37:25>
     generic-name <37:4-37:10> sort <37:4-37:7> <> <37:8-37:10>
       generic-parameter <37:9-37:9> T <37:9-37:9>
     fn-def-parameter <37:12-37:24> list <37:12-37:15>
       path <37:18-37:24>
-        segment <37:18-37:24> list <37:18-37:21>
+        generic-segment <37:18-37:24> list <37:18-37:21>
           path <37:23-37:23>
             segment <37:23-37:23> T
     where-clause <37:33-37:48> T <37:33-37:33>
       path <37:36-37:48>
-        segment <37:36-37:48> Comparable <37:36-37:45>
+        generic-segment <37:36-37:48> Comparable <37:36-37:45>
           path <37:47-37:47>
             segment <37:47-37:47> T
     block <37:50-94:1>
@@ -195,7 +195,7 @@ module tests/ast/generic.f3
           primitive-type u64 <42:49-42:51>
         where-clause <42:60-42:75> T <42:60-42:60>
           path <42:63-42:75>
-            segment <42:63-42:75> Comparable <42:63-42:72>
+            generic-segment <42:63-42:75> Comparable <42:63-42:72>
               path <42:74-42:74>
                 segment <42:74-42:74> T
         block <42:77-50:5>
@@ -266,7 +266,7 @@ module tests/ast/generic.f3
           primitive-type u64 <53:49-53:51>
         where-clause <53:60-53:75> T <53:60-53:60>
           path <53:63-53:75>
-            segment <53:63-53:75> Comparable <53:63-53:72>
+            generic-segment <53:63-53:75> Comparable <53:63-53:72>
               path <53:74-53:74>
                 segment <53:74-53:74> T
         block <53:77-77:5>
@@ -377,7 +377,7 @@ module tests/ast/generic.f3
           primitive-type u64 <79:54-79:56>
         where-clause <79:65-79:80> T <79:65-79:65>
           path <79:68-79:80>
-            segment <79:68-79:80> Comparable <79:68-79:77>
+            generic-segment <79:68-79:80> Comparable <79:68-79:77>
               path <79:79-79:79>
                 segment <79:79-79:79> T
         block <79:82-93:5>
@@ -471,7 +471,7 @@ module tests/ast/generic.f3
       generic-parameter <96:11-96:11> U <96:11-96:11>
     fn-def-parameter <96:14-96:26> list <96:14-96:17>
       path <96:20-96:26>
-        segment <96:20-96:26> list <96:20-96:23>
+        generic-segment <96:20-96:26> list <96:20-96:23>
           path <96:25-96:25>
             segment <96:25-96:25> T
     fn-def-parameter <96:29-96:41> f <96:29-96:29>
@@ -482,14 +482,14 @@ module tests/ast/generic.f3
         path <96:41-96:41>
           segment <96:41-96:41> U
     path <96:47-96:53>
-      segment <96:47-96:53> list <96:47-96:50>
+      generic-segment <96:47-96:53> list <96:47-96:50>
         path <96:52-96:52>
           segment <96:52-96:52> U
     block <96:55-102:1>
       var-def <97:5-97:51> mutable result <97:9-97:14>
         call-expr <97:18-97:50> () <97:41-97:50>
           path <97:18-97:40>
-            segment <97:18-97:26> list <97:18-97:21>
+            generic-segment <97:18-97:26> list <97:18-97:21>
               path <97:25-97:25>
                 segment <97:25-97:25> T
             segment <97:29-97:40> with_capcity
@@ -519,7 +519,7 @@ module tests/ast/generic.f3
       generic-parameter <104:14-104:14> A <104:14-104:14>
     fn-def-parameter <104:17-104:29> list <104:17-104:20>
       path <104:23-104:29>
-        segment <104:23-104:29> list <104:23-104:26>
+        generic-segment <104:23-104:29> list <104:23-104:26>
           path <104:28-104:28>
             segment <104:28-104:28> T
     fn-def-parameter <104:32-104:38> init <104:32-104:35>
@@ -580,7 +580,7 @@ module tests/ast/generic.f3
           path <124:20-124:23>
             segment <124:20-124:23> Self
       path <124:29-124:46>
-        segment <124:29-124:46> Option <124:29-124:34>
+        generic-segment <124:29-124:46> Option <124:29-124:34>
           path <124:36-124:45>
             segment <124:36-124:39> Self
             segment <124:42-124:45> Item
@@ -599,7 +599,7 @@ module tests/ast/generic.f3
           path <126:40-126:40>
             segment <126:40-126:40> U
       path <126:46-126:54>
-        segment <126:46-126:54> Map <126:46-126:48>
+        generic-segment <126:46-126:54> Map <126:46-126:48>
           path <126:50-126:53>
             segment <126:50-126:53> This
       block <126:56-128:5>

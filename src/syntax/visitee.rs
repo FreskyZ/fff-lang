@@ -80,6 +80,11 @@ impl_node!{ CallExpr, visit_call_expr, |self, v| {
     Ok(Default::default())
 }}
 
+impl_node!{ CastSegment, visit_cast_segment, |self, v| {
+    v.visit_type_ref(&self.left)?;
+    v.visit_type_ref(&self.right)
+}}
+
 impl_node!{ ClassDef, visit_class_def, |self, v| {
     v.visit_generic_name(&self.name)?;
     for r#type in &self.types {
@@ -186,6 +191,10 @@ impl_node!{ GenericName, visit_generic_name, |self, v| {
 
 impl_node!{ GenericParameter, visit_generic_parameter }
 
+impl_node!{ GenericSegment, visit_generic_segment, |self, v| {
+    v.visit_type_list(&self.parameters)
+}}
+
 impl_node!{ IfClause, visit_if_clause, |self, v| {
     v.visit_expr(&self.condition)?;
     v.visit_block(&self.body)
@@ -287,18 +296,15 @@ impl_node!{ Path, visit_path, |self, v| {
     Ok(Default::default())
 }}
 
+impl_node!{ SimpleSegment, visit_simple_segment }
+
 impl_node!{ PathSegment, visit_path_segment, |self, v| {
     match self {
-        PathSegment::TypeCast{ left, right, .. } => {
-            v.visit_type_ref(left)?;
-            v.visit_type_ref(right)?;
-        },
-        PathSegment::Generic{ parameters, .. } =>{
-            v.visit_type_list(parameters)?;
-        },
-        _ => {},
+        PathSegment::Global => Ok(Default::default()),
+        PathSegment::Simple(n) => v.visit_simple_segment(n),
+        PathSegment::Cast(n) => v.visit_cast_segment(n),
+        PathSegment::Generic(n) => v.visit_generic_segment(n),
     }
-    Ok(Default::default())
 }}
 
 impl_node!{ PrimitiveType, visit_primitive_type }

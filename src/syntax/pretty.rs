@@ -88,6 +88,10 @@ impl<'scx, 'f1, 'f2, F> FormatVisitor<'scx, 'f1, 'f2, F> where F: FileSystem {
         self.invoke_walk(node)
     }
 
+    fn impl_visit_simple_no_primary_span<N: Node>(&mut self, node: &N, title: &'static str) -> fmt::Result {
+        self.write_indent()?.write_str(title)?;
+        self.invoke_walk(node)
+    }
     fn impl_visit_no_primary_span<N: Node>(&mut self, node: &N, title: &'static str, and: impl FnOnce(&mut Self) -> Result<&mut Self, fmt::Error>) -> fmt::Result {
         self.write_indent()?.write_str(title)?;
         and(self)?;
@@ -158,6 +162,10 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
     fn visit_call_expr(&mut self, node: &CallExpr) -> fmt::Result {
         self.impl_visit(node, "call-expr", node.span, |f|
             f.write_str(" () ")?.write_span(node.quote_span))
+    }
+
+    fn visit_cast_segment(&mut self, node: &CastSegment) -> fmt::Result {
+        self.impl_visit_simple(node, "cast-segment", node.span)
     }
 
     fn visit_class_def(&mut self, node: &ClassDef) -> fmt::Result {
@@ -244,6 +252,11 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
             f.write_space()?.write_idspan(node.name))
     }
 
+    fn visit_generic_segment(&mut self, node: &GenericSegment) -> fmt::Result {
+        self.impl_visit(node, "generic-segment", node.span, |f|
+            f.write_space()?.write_idspan(node.base))
+    }
+
     fn visit_if_clause(&mut self, node: &IfClause) -> fmt::Result {
         self.impl_visit_simple(node, "if-clause", node.span)
     }
@@ -323,14 +336,12 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
     }
 
     fn visit_path_segment(&mut self, node: &PathSegment) -> fmt::Result {
-        self.impl_visit(node, "segment", node.span(), |f| {
-            match node {
-                PathSegment::Global => f.write_str(" (global)"),
-                PathSegment::Simple(name) => f.write_space()?.write_isid(name.id),
-                PathSegment::TypeCast{ .. } => f.write_str(" (cast)"),
-                PathSegment::Generic{ base, .. } => f.write_space()?.write_idspan(*base),
-            }
-        })
+        match node {
+            PathSegment::Global => self.impl_visit_simple_no_primary_span(node, "global-segment"),
+            PathSegment::Simple(_) => node.walk(self),
+            PathSegment::Cast(_) => node.walk(self),
+            PathSegment::Generic(_) => node.walk(self),
+        }
     }
 
     fn visit_primitive_type(&mut self, node: &PrimitiveType) -> fmt::Result {
@@ -365,6 +376,11 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
 
     fn visit_simple_expr_stmt(&mut self, node: &SimpleExprStatement) -> fmt::Result {
         self.impl_visit_simple(node, "simple-expr-stmt", node.span)
+    }
+
+    fn visit_simple_segment(&mut self, node: &SimpleSegment) -> fmt::Result {
+        self.impl_visit(node, "segment", node.span, |f|
+            f.write_space()?.write_isid(node.name))
     }
 
     fn visit_struct_def(&mut self, node: &StructDef) -> fmt::Result {

@@ -38,7 +38,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             if let (Separator::Colon, colon_span) = self.expect_seps(&[Separator::Colon, Separator::ColonColon])? {
                 self.emit(strings::ExpectDoubleColonMeetSingleColon).span(colon_span);
             }
-            segments.push(PathSegment::TypeCast{ span: lt_span + gt_span, left, right });
+            segments.push(PathSegment::Cast(CastSegment{ span: lt_span + gt_span, left, right }));
         }
         
         loop {
@@ -60,9 +60,9 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
                 }
                 // self.current now is the Lt (or LtLt)
                 let parameters = self.parse_type_list()?;
-                segments.push(PathSegment::Generic{ span: base.span + parameters.span, base, parameters });
+                segments.push(PathSegment::Generic(GenericSegment{ span: base.span + parameters.span, base, parameters }));
             } else {
-                segments.push(PathSegment::Simple(base));
+                segments.push(PathSegment::Simple(SimpleSegment{ span: base.span, name: base.id }));
             }
             if let Some(sep) = self.try_expect_seps(&[Separator::Colon, Separator::ColonColon]) {
                 if let (Separator::Colon, colon_span) = sep {

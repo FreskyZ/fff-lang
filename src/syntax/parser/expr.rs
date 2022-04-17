@@ -110,7 +110,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         }
 
         let this = self.expect_ident_or_keywords(&[Keyword::This, Keyword::Self_])?;  // actually identifier is processed by Name, not here
-        Ok(Expr::Path(Path{ span: this.span, segments: vec![PathSegment::Simple(this)] }))
+        Ok(Expr::Path(Path{ span: this.span, segments: vec![PathSegment::Simple(SimpleSegment{ span: this.span, name: this.id })] }))
     }
 
     fn maybe_member_expr(&self) -> bool {

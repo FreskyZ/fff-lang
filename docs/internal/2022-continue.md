@@ -61,3 +61,4 @@ some detailed plans is included by the way
 - [ ] syntax: add missing array dup def
 - [ ] syntax: add numeric literal type as suffixed/unsuffixed and bin/oct/dec/hex/unprefixed, tuple index expr require unsuffixed and unprefixed
 - [ ] syntax: format string
+- [ ] syntax: function expression, capture syntax TBD, IIFE is a more tradictional may where rust block expression is used

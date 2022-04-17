@@ -1,6 +1,7 @@
 ///! ast memory usage profiler
 
 use std::collections::HashMap;
+use crate::common::arena::{Index, Slice};
 use super::super::visit::{Visitor, Node};
 use super::*;
 
@@ -29,47 +30,43 @@ struct MemoryUsage {
     total_theoretical_size: usize,
 }
 
-#[allow(dead_code)] // size of parameter to make semantic more clear compare to ssizeof(u32)
-struct ObjectIndex(u32);
-#[allow(dead_code)]
-struct OptionTag(u32);
-
 macro_rules! sizeof {
     ($ty:ty) => (std::mem::size_of::<$ty>());
 }
 
 impl MemoryUsage {
 
-    fn count_impl(&mut self, size: usize, theoretical_size: usize) -> &mut Self {
+    fn count_self(&mut self) -> &mut Self {
         self.count += 1;
+        self
+    }
+    fn count_impl(&mut self, size: usize, theoretical_size: usize) -> &mut Self {
         self.total_size += size;
         self.total_theoretical_size += theoretical_size;
         self
     }
 
     // count terminal, used frequently so name is short
+    // .label, option<isid> etc. all use this
     fn count_t<T>(&mut self, _: &T) -> &mut Self {
         self.count_impl(sizeof!(T), sizeof!(T))
     }
-    // label occupies Option<IdSpan> (2 size_t), and will become IsId+Span (1.5 size_t) theoretically
-    fn count_label(&mut self, _: &Option<IdSpan>) -> &mut Self {
-        self.count_impl(sizeof!(Option<IdSpan>), sizeof!(IsId) + sizeof!(Span))
+    // option node, not option<idspan> like
+    fn count_option<N: Node>(&mut self, _: &Option<N>) -> &mut Self {
+        self.count_impl(sizeof!(Option<N>) - sizeof!(N), sizeof!(Option<Index<()>>))
     }
-    fn count_box<T>(&mut self, _: &Box<T>) -> &mut Self {
-        self.count_impl(sizeof!(Box<T>), sizeof!(ObjectIndex))
+    fn count_option_box_owned<T>(&mut self, _: &Option<Box<T>>) -> &mut Self {
+        self.count_impl(sizeof!(Option<Box<T>>), sizeof!(Option<Index<()>>))
     }
-    fn count_vec<T>(&mut self, v: &Vec<T>) -> &mut Self {
-        self.count_impl(sizeof!(Vec<T>), sizeof!(ObjectIndex) + sizeof!(ObjectIndex) * v.len())
-    }
-    fn count_option<T>(&mut self, _: &Option<T>) -> &mut Self {
-        self.count_impl(sizeof!(Option<T>) - sizeof!(T), sizeof!(OptionTag))
-    }
-    fn count_option_box<T>(&mut self, _: &Option<Box<T>>) -> &mut Self {
-        self.count_impl(sizeof!(Option<Box<T>>), sizeof!(ObjectIndex) + sizeof!(OptionTag))
+    fn count_box_owned<T>(&mut self, _: &Box<T>) -> &mut Self {
+        self.count_impl(sizeof!(Box<T>), sizeof!(Index<()>))
     }
     // count directly owned node
     fn count_owned<N: Node>(&mut self, _: &N) -> &mut Self {
-        self.count_impl(0, sizeof!(ObjectIndex))
+        self.count_impl(0, sizeof!(Index<()>))
+    }
+    fn count_vec<T>(&mut self, _: &Vec<T>) -> &mut Self {
+        self.count_impl(sizeof!(Vec<T>), sizeof!(Slice<()>))
     }
 }
 
@@ -94,8 +91,7 @@ impl MemoryProfiler {
         let total_total_size: usize = self.u.values().map(|v| v.total_size).sum();
         let total_total_theoretical_size: usize = self.u.values().map(|v| v.total_theoretical_size).sum();
         let mut ordered_items = self.u.iter().collect::<Vec<_>>();
-        ordered_items.sort_unstable_by(|a, b| a.1.total_size.cmp(&b.1.total_size).then_with(|| a.0.cmp(&b.0)));
-        ordered_items.reverse();
+        ordered_items.sort_unstable_by(|a, b| a.1.total_size.cmp(&b.1.total_size).then_with(|| a.0.cmp(&b.0)).reverse());
         writeln!(output, "total size {total_total_size} > {total_total_theoretical_size}").unwrap();
         for (&key, MemoryUsage{ count, total_size, total_theoretical_size }) in ordered_items {
             let header = format!("[{key}({count})]");
@@ -109,7 +105,7 @@ impl MemoryProfiler {
 macro_rules! impl_visit {
     ($ty:ty, $fn:ident, $name:literal $(,)? $($countf:ident(.$field:ident),)+) => (
         fn $fn(&mut self, node: &$ty) -> Result<(), ()> {
-            self.u.entry($name).or_default()$(.$countf(&node.$field))+;
+            self.u.entry($name).or_default().count_self()$(.$countf(&node.$field))+;
             node.walk(self)
         }
     );
@@ -118,8 +114,8 @@ macro_rules! impl_visit {
             use $ty::*;
             match node {
             $(
-                $variant(_) => self.u.entry(concat!($name, "(", $subname, ")"))
-                    .or_default().count_impl(sizeof!($ty), sizeof!(OptionTag) + sizeof!(ObjectIndex)),
+                $variant(_) => self.u.entry(concat!($name, "(", $subname, ")")) // u32 for enum tag and min align is 4 
+                    .or_default().count_self().count_impl(sizeof!($ty), sizeof!(u32) + sizeof!(Index<()>)),
             )+
             };
             node.walk(self)
@@ -133,34 +129,37 @@ impl Visitor for MemoryProfiler {
         count_t(.span), count_vec(.items),
     }
     impl_visit!{ ArrayIndexExpr, visit_array_index_expr, "array-index-expr",
-        count_t(.span), count_box(.base), count_vec(.parameters), count_t(.quote_span),
+        count_t(.span), count_box_owned(.base), count_vec(.parameters), count_t(.quote_span),
     }
     impl_visit!{ ArrayType, visit_array_type, "array-type",
-        count_t(.span), count_box(.base), count_owned(.size),
+        count_t(.span), count_box_owned(.base), count_owned(.size),
     }
     impl_visit!{ AssignExprStatement, visit_assign_expr_stmt, "assign-expr-stmt",
         count_t(.span), count_owned(.left), count_owned(.right), count_t(.op), count_t(.op_span),
     }
     impl_visit!{ BinaryExpr, visit_binary_expr, "binary-expr",
-        count_t(.span), count_box(.left), count_box(.right), count_t(.op), count_t(.op_span),
+        count_t(.span), count_box_owned(.left), count_box_owned(.right), count_t(.op), count_t(.op_span),
     }
     impl_visit!{ Block, visit_block, "block",
         count_t(.span), count_vec(.items),
     }
     impl_visit!{ BlockStatement, visit_block_stmt, "block-stmt",
-        count_t(.span), count_label(.label), count_owned(.body),
+        count_t(.span), count_t(.label), count_owned(.body),
     }
     impl_visit!{ BreakStatement, visit_break_stmt, "break-stmt",
-        count_t(.span), count_label(.label),
+        count_t(.span), count_t(.label),
     }
     impl_visit!{ CallExpr, visit_call_expr, "call-expr",
-        count_t(.span), count_box(.base), count_vec(.parameters), count_t(.quote_span),
+        count_t(.span), count_box_owned(.base), count_vec(.parameters), count_t(.quote_span),
+    }
+    impl_visit!{ CastSegment, visit_cast_segment, "cast-segment",
+        count_t(.span), count_owned(.left), count_owned(.right),
     }
     impl_visit!{ ClassDef, visit_class_def, "class-def",
         count_t(.span), count_owned(.name), count_t(.quote_span), count_vec(.types), count_vec(.functions),
     }
     impl_visit!{ ContinueStatement, visit_continue_stmt, "continue-stmt",
-        count_t(.span), count_label(.label),
+        count_t(.span), count_t(.label),
     }
     impl_visit!{ ElseClause, visit_else_clause, "else-clause",
         count_t(.span), count_owned(.body),
@@ -199,19 +198,22 @@ impl Visitor for MemoryProfiler {
         count_t(.span), count_t(.name), count_owned(.r#type),
     }
     impl_visit!{ FnType, visit_fn_type, "fn-type",
-        count_t(.span), count_t(.quote_span), count_vec(.parameters), count_option_box(.ret_type),
+        count_t(.span), count_t(.quote_span), count_vec(.parameters), count_option_box_owned(.ret_type),
     }
     impl_visit!{ FnTypeParameter, visit_fn_type_parameter, "fn-type-parameter",
         count_t(.span), count_t(.name), count_owned(.r#type),
     }
     impl_visit!{ ForStatement, visit_for_stmt, "for-stmt",
-        count_t(.span), count_label(.label), count_t(.iter_name), count_owned(.iter_expr), count_owned(.body),
+        count_t(.span), count_t(.label), count_t(.iter_name), count_owned(.iter_expr), count_owned(.body),
     }
     impl_visit!{ GenericName, visit_generic_name, "generic-name",
         count_t(.span), count_t(.base), count_t(.quote_span), count_vec(.parameters),
     }
     impl_visit!{ GenericParameter, visit_generic_parameter, "generic-parameter",
         count_t(.span), count_t(.name),
+    }
+    impl_visit!{ GenericSegment, visit_generic_segment, "generic-segment",
+        count_t(.span), count_t(.base), count_owned(.parameters),
     }
     impl_visit!{ IfClause, visit_if_clause, "if-clause",
         count_t(.span), count_owned(.condition), count_owned(.body),
@@ -244,23 +246,23 @@ impl Visitor for MemoryProfiler {
         count_t(.span), count_t(.value),
     }
     impl_visit!{ LoopStatement, visit_loop_stmt, "loop-stmt",
-        count_t(.span), count_label(.label), count_owned(.body),
+        count_t(.span), count_t(.label), count_owned(.body),
     }
     impl_visit!{ MemberExpr, visit_member_expr, "member-expr",
-        count_t(.span), count_box(.base), count_t(.op_span), count_t(.name), count_option(.parameters),
+        count_t(.span), count_box_owned(.base), count_t(.op_span), count_t(.name), count_option(.parameters),
     }
     // impl_visit!{ Module }
     impl_visit!{ ModuleStatement, visit_module_stmt, "module-stmt",
         count_t(.span), count_t(.name), count_t(.path),
     }
     impl_visit!{ ObjectExpr, visit_object_expr, "object-expr",
-        count_t(.span), count_box(.base), count_t(.span), count_vec(.fields),
+        count_t(.span), count_box_owned(.base), count_t(.span), count_vec(.fields),
     }
     impl_visit!{ ObjectExprField, visit_object_expr_field, "object-expr-field",
         count_t(.span), count_t(.name), count_owned(.value),
     }
     impl_visit!{ ParenExpr, visit_paren_expr, "paren-expr",
-        count_t(.span), count_box(.base),
+        count_t(.span), count_box_owned(.base),
     }
     impl_visit!{ Path, visit_path, "path",
         count_t(.span), count_vec(.segments),
@@ -270,22 +272,16 @@ impl Visitor for MemoryProfiler {
     fn visit_path_segment(&mut self, node: &PathSegment) -> Result<(), ()> {
         match node {
             PathSegment::Global => {
-                self.u.entry("path-segment-global").or_default().count_impl(0, 0);
-                self.u.entry("path-segment(global)").or_default().count_impl(sizeof!(PathSegment), sizeof!(OptionTag));
+                self.u.entry("path-segment(global)").or_default().count_self().count_impl(sizeof!(PathSegment), sizeof!(u32) + sizeof!(Index<()>));
             },
-            PathSegment::Simple(id) => {
-                self.u.entry("path-segment-simple").or_default().count_t(id);
-                self.u.entry("path-segment(simple)").or_default().count_impl(sizeof!(PathSegment), sizeof!(OptionTag));
+            PathSegment::Simple(_) => {
+                self.u.entry("path-segment(simple)").or_default().count_self().count_impl(sizeof!(PathSegment), sizeof!(u32) + sizeof!(Index<()>));
             },
-            PathSegment::TypeCast{ span, left, right } => {
-                self.u.entry("path-segment-cast").or_default().count_t(span).count_owned(left).count_owned(right);
-                self.u.entry("path-segment(cast)").or_default()
-                    .count_impl(sizeof!(PathSegment), sizeof!(OptionTag));
+            PathSegment::Cast(_) => {
+                self.u.entry("path-segment(cast)").or_default().count_self().count_impl(sizeof!(PathSegment), sizeof!(u32) + sizeof!(Index<()>));
             },
-            PathSegment::Generic{ span, base, parameters } => {
-                self.u.entry("path-segment-generic").or_default().count_t(span).count_t(base).count_owned(parameters);
-                self.u.entry("path-segment(generic)").or_default()
-                    .count_impl(sizeof!(PathSegment), sizeof!(OptionTag));
+            PathSegment::Generic(_) => {
+                self.u.entry("path-segment(generic)").or_default().count_self().count_impl(sizeof!(PathSegment), sizeof!(u32) + sizeof!(Index<()>));
             },
         }
         node.walk(self)
@@ -295,25 +291,28 @@ impl Visitor for MemoryProfiler {
         count_t(.span), count_t(.base),
     }
     impl_visit!{ RangeBothExpr, visit_range_both_expr, "range-both-expr",
-        count_t(.span), count_box(.left), count_t(.op_span), count_box(.right),
+        count_t(.span), count_box_owned(.left), count_t(.op_span), count_box_owned(.right),
     }
     impl_visit!{ RangeFullExpr, visit_range_full_expr, "range-full-expr",
         count_t(.span),
     }
     impl_visit!{ RangeLeftExpr, visit_range_left_expr, "range-left-expr",
-        count_t(.span), count_box(.base),
+        count_t(.span), count_box_owned(.base),
     }
     impl_visit!{ RangeRightExpr, visit_range_right_expr, "range-right-expr",
-        count_t(.span), count_box(.base),
+        count_t(.span), count_box_owned(.base),
     }
     impl_visit!{ RefType, visit_ref_type, "ref-type"
-        count_t(.span), count_box(.base),
+        count_t(.span), count_box_owned(.base),
     }
     impl_visit!{ ReturnStatement, visit_ret_stmt, "ret-stmt"
         count_t(.span), count_option(.value),
     }
     impl_visit!{ SimpleExprStatement, visit_simple_expr_stmt, "simple-expr-stmt"
         count_t(.span), count_owned(.expr),
+    }
+    impl_visit!{ SimpleSegment, visit_simple_segment, "simple-segment",
+        count_t(.span), count_t(.name),
     }
     impl_visit!{ enum Statement, visit_stmt, "stmt" 
         Struct(StructDef), "struct",
@@ -342,7 +341,7 @@ impl Visitor for MemoryProfiler {
         count_t(.span), count_vec(.items),
     }
     impl_visit!{ TupleIndexExpr, visit_tuple_index_expr, "tuple-index-expr"
-        count_t(.span), count_box(.base), count_t(.op_span), count_t(.value),
+        count_t(.span), count_box_owned(.base), count_t(.op_span), count_t(.value),
     }
     impl_visit!{ TupleType, visit_tuple_type, "tuple-type"
         count_t(.span), count_vec(.parameters),
@@ -362,7 +361,7 @@ impl Visitor for MemoryProfiler {
         Tuple(TupleType), "tuple",
     }
     impl_visit!{ UnaryExpr, visit_unary_expr, "unary-expr"
-        count_t(.span), count_box(.base), count_t(.op), count_t(.op_span),
+        count_t(.span), count_box_owned(.base), count_t(.op), count_t(.op_span),
     }
     impl_visit!{ UseStatement, visit_use_stmt, "use-stmt"
         count_t(.span), count_owned(.path), count_t(.alias),
@@ -374,6 +373,6 @@ impl Visitor for MemoryProfiler {
         count_t(.span), count_t(.name), count_vec(.constraints),
     }
     impl_visit!{ WhileStatement, visit_while_stmt, "while-stmt"
-        count_t(.span), count_label(.label), count_owned(.condition), count_owned(.body),
+        count_t(.span), count_t(.label), count_owned(.condition), count_owned(.body),
     }
 }
