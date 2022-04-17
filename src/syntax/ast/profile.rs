@@ -90,18 +90,18 @@ impl MemoryProfiler {
         let _ = node.accept(self);
     }
 
-    pub fn dump(&self) {
+    pub fn dump(&self, output: &mut impl std::io::Write) {
         let total_total_size: usize = self.u.values().map(|v| v.total_size).sum();
         let total_total_theoretical_size: usize = self.u.values().map(|v| v.total_theoretical_size).sum();
         let mut ordered_items = self.u.iter().collect::<Vec<_>>();
-        ordered_items.sort_by_key(|i| i.1.total_size);
+        ordered_items.sort_unstable_by(|a, b| a.1.total_size.cmp(&b.1.total_size).then_with(|| a.0.cmp(&b.0)));
         ordered_items.reverse();
-        println!("total size {total_total_size} > {total_total_theoretical_size}");
+        writeln!(output, "total size {total_total_size} > {total_total_theoretical_size}").unwrap();
         for (&key, MemoryUsage{ count, total_size, total_theoretical_size }) in ordered_items {
             let header = format!("[{key}({count})]");
             let total_size_percent = *total_size as f64 * 100f64 / total_total_size as f64;
             let total_theoretical_size_percent = *total_theoretical_size as f64 * 100f64 / total_total_theoretical_size as f64;
-            println!("{header:>28} {total_size} ({total_size_percent:.2}%) > {total_theoretical_size} ({total_theoretical_size_percent:.2}%)");
+            writeln!(output, "{header:>28} {total_size} ({total_size_percent:.2}%) > {total_theoretical_size} ({total_theoretical_size_percent:.2}%)").unwrap();
         }
     }
 }

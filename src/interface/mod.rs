@@ -41,7 +41,7 @@ fn run_compiler(args: argument::Argument, output: &mut impl io::Write) {
                 for module in &modules {
                     profiler.profile(module);
                 }
-                profiler.dump();
+                profiler.dump(output);
             }
         }
     }
