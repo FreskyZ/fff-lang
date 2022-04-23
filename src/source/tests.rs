@@ -97,6 +97,7 @@ fn intern_spans2() {
 }
 
 #[test]
+#[cfg(debug_assertions)]
 #[should_panic(expected = "not this file span")]
 fn not_this_file_span() {
     let mut scx = make_source!("module 2" as "src/main.f3", "" as "src/2.f3");

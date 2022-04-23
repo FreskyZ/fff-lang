@@ -109,20 +109,56 @@ fn parse_fn_type() {
     //                     0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567
     case!{ parse_type_ref "fn(this: &This, node: &/*dyn*/Node, title: string, span: Span, then: fn() -> Result<&This, fmt::Error>) -> fmt::Result", |x|
         make_type!(fn ret 0:117 paren 2:102 [
-            make_type!(x fp named 3:13 #this 3:6 make_type!(ref 9:13 make_type!(x simple 10:13 #This))),
-            make_type!(x fp named 16:33 #node 16:19 make_type!(ref 22:33 make_type!(x simple 30:33 #Node))),
-            make_type!(x fp named 36:48 #title 36:40 make_type!(x simple 43:48 #string)),
-            make_type!(x fp named 51:60 #span 51:54 make_type!(x simple 57:60 #Span)),
-            make_type!(x fp named 63:101 #then 63:66 make_type!(fn ret 69:101 paren 71:72 [],
-                make_type!(path 77:101
-                    make_path!(x segment generic 77:101 #Result 77:82 quote 83:101
-                        make_type!(ref 84:88 make_type!(x simple 85:88 #This)),
-                        make_type!(path 91:100
-                            make_path!(x segment simple 91:93 #fmt),
-                            make_path!(x segment simple 96:100 #Error)))))),
+            make_type!(x fp named 3:13 #this 3:6
+                make_type!(ref 9:13 make_type!(x simple 10:13 #This))),
+            make_type!(x fp named 16:33 #node 16:19
+                make_type!(ref 22:33 make_type!(x simple 30:33 #Node))),
+            make_type!(x fp named 36:48 #title 36:40
+                make_type!(x simple 43:48 #string)),
+            make_type!(x fp named 51:60 #span 51:54
+                make_type!(x simple 57:60 #Span)),
+            make_type!(x fp named 63:101 #then 63:66
+                make_type!(fn ret 69:101 paren 71:72 [],
+                    make_type!(path 77:101
+                        make_path!(x segment generic 77:101 #Result 77:82 quote 83:101
+                            make_type!(ref 84:88 make_type!(x simple 85:88 #This)),
+                            make_type!(path 91:100
+                                make_path!(x segment simple 91:93 #fmt),
+                                make_path!(x segment simple 96:100 #Error)))))),
         ], make_type!(path 107:117
             make_path!(x segment simple 107:109 #fmt),
             make_path!(x segment simple 112:117 #Result)))
+    }
+
+    // this was from the method inside the case! macro for some time
+    //                     0         1         2         3         4         5         6         7         8         9        10        11        12        13        14        15        16        17        18
+    //                     0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
+    case!{ parse_type_ref "fn(input: &string, f: F, expect_node: N, expect_diagnostics: crate::diagnostics::Diagnostics, expect_strings: &string, backtrace: u32) -> Result<(), (N, N, SourceContext<VirtualFileSystem>)>", |x|
+        make_type!(fn ret 0:189 paren 2:133 [
+            make_type!(x fp named 3:16 #input 3:7
+                make_type!(ref 10:16 make_type!(x simple 11:16 #string))),
+            make_type!(x fp named 19:22 #f 19:19
+                make_type!(x simple 22:22 #F)),
+            make_type!(x fp named 25:38 #expect_node 25:35
+                make_type!(x simple 38:38 #N)),
+            make_type!(x fp named 41:91 #expect_diagnostics 41:58
+                make_type!(path 61:91
+                    make_path!(x segment simple 61:65 #crate),
+                    make_path!(x segment simple 68:78 #diagnostics),
+                    make_path!(x segment simple 81:91 #Diagnostics))),
+            make_type!(x fp named 94:116 #expect_strings 94:107
+                make_type!(ref 110:116 make_type!(x simple 111:116 #string))),
+            make_type!(x fp named 119:132 #backtrace 119:127
+                make_type!(prim 130:132 U32)),
+        ], make_type!(path 138:189
+            make_path!(x segment generic 138:189 #Result 138:143 quote 144:189
+                make_type!(tuple 145:146),
+                make_type!(tuple 149:188
+                    make_type!(x simple 150:150 #N),
+                    make_type!(x simple 153:153 #N),
+                    make_type!(path 156:187
+                        make_path!(x segment generic 156:187 #SourceContext 156:168 quote 169:187
+                                make_type!(x simple 170:186 #VirtualFileSystem))))))),
     }
 
     // bare ident followed by comma is type

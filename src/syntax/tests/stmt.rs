@@ -336,7 +336,7 @@ fn enum_def_parse() {
 }
 
 #[test]
-fn fn_def_parse() {
+fn parse_fn_def() {
     //                                012345678901
     case!{ parse_fn_def "fn main() {}",
         |x| FnDef{
@@ -481,6 +481,137 @@ fn fn_def_parse() {
             body: Some(make_stmt!(block 123:124)),
         }
     }
+
+    // this was from the method inside the case! macro for some time
+    //                   0         1         2         3         4         5         6         7         8  
+    //                   0123456789012345678901234567890123456789012345678901234567890123456789012345678901
+    case!{ parse_fn_def "fn case_until_node<N, F>(input: &string, f: F, expect_node: N, expect_diagnostics:
+        crate::diagnostics::Diagnostics, expect_strings: &string, backtrace: u32) -> Result<(), (N, N, SourceContext<VirtualFileSystem>)> where N: PartialEq + fmt::Debug, F: fn(&Parser) -> Result<N, Unexpected>;",
+        // 45678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123
+        // 9    10        11        12        13        14        15        16        17        18        19        20        21        22        23        24        25        26        27        28        29
+        |x| FnDef{
+            span: Span::new(0, 293),
+            name: make_stmt!(x name 3:23 #case_until_node 3:17 quote 18:23
+                make_stmt!(x gp 19:19 #N),
+                make_stmt!(x gp 22:22 #F)),
+            quote_span: Span::new(24, 163),
+            parameters: vec![
+                make_stmt!(x fp 25:38 #input 25:29
+                    make_type!(ref 32:38 make_type!(x simple 33:38 #string))),
+                make_stmt!(x fp 41:44 #f 41:41
+                    make_type!(x simple 44:44 #F)),
+                make_stmt!(x fp 47:60 #expect_node 47:57
+                    make_type!(x simple 60:60 #N)),
+                make_stmt!(x fp 63:121 #expect_diagnostics 63:80
+                    make_type!(path 91:121
+                        make_path!(x segment simple 91:95 #crate),
+                        make_path!(x segment simple 98:108 #diagnostics),
+                        make_path!(x segment simple 111:121 #Diagnostics))),
+                make_stmt!(x fp 124:146 #expect_strings 124:137
+                    make_type!(ref 140:146 make_type!(x simple 141:146 #string))),
+                make_stmt!(x fp 149:162 #backtrace 149:157
+                    make_type!(prim 160:162 U32)),
+            ],
+            ret_type: Some(make_type!(path 168:219
+                make_path!(x segment generic 168:219 #Result 168:173 quote 174:219
+                    make_type!(tuple 175:176),
+                    make_type!(tuple 179:218
+                        make_type!(x simple 180:180 #N),
+                        make_type!(x simple 183:183 #N),
+                        make_type!(path 186:217
+                            make_path!(x segment generic 186:217 #SourceContext 186:198 quote 199:217
+                                make_type!(x simple 200:216 #VirtualFileSystem))))))),
+            wheres: vec![
+                WhereClause{ span: Span::new(227, 251), name: IdSpan::new(make_isid!(x, N), Span::new(227, 227)), constraints: vec![
+                    make_type!(x simple 230:238 #PartialEq),
+                    make_type!(path 242:251
+                        make_path!(x segment simple 242:244 #fmt),
+                        make_path!(x segment simple 247:251 #Debug)),
+                ]},
+                WhereClause{ span: Span::new(254, 292), name: IdSpan::new(make_isid!(x, F), Span::new(254, 254)), constraints: vec![
+                    make_type!(fn ret 257:292 paren 259:267 [
+                        make_type!(fp 260:266
+                            make_type!(ref 260:266 make_type!(x simple 261:266 #Parser))),
+                    ], 
+                    make_type!(path 272:292
+                        make_path!(x segment generic 272:292 #Result 272:277 quote 278:292
+                            make_type!(x simple 279:279 #N),
+                            make_type!(x simple 282:291 #Unexpected)))),
+                ]}
+            ],
+            body: None,
+        }
+    }
+
+    // this is from the method inside the case! macro for now, currently
+    //                   0         1         2         3         4         5         6         7         8         9        10
+    //                   012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567
+    case!{ parse_fn_def "fn case_until_node<V, P, E>(input: &str, actual_value_getter: P, expect_value_getter: E, expect_diagnostics:
+        crate::diagnostics::Diagnostics, backtrace: u32) ->Result<(), (V, V, SourceContext<VirtualFileSystem>)> where V: PartialEq + fmt::Debug, P: fn(&Parser) -> Result<V, Unexpected>, E: fn(&Parser) -> V;",
+        // 012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234
+        // 12       13        14        15        16        17        18        19        20        21        22        23        24        25        26        27        28        29        30        31
+        |x| FnDef{
+            span: Span::new(0, 314),
+            name: make_stmt!(x name 3:26 #case_until_node 3:17 quote 18:26
+                make_stmt!(x gp 19:19 #V),
+                make_stmt!(x gp 22:22 #P),
+                make_stmt!(x gp 25:25 #E)),
+            quote_span: Span::new(27, 164),
+            parameters: vec![
+                make_stmt!(x fp 28:38 #input 28:32
+                    make_type!(ref 35:38 make_type!(x simple 36:38 #str))),
+                make_stmt!(x fp 41:62 #actual_value_getter 41:59
+                    make_type!(x simple 62:62 #P)),
+                make_stmt!(x fp 65:86 #expect_value_getter 65:83
+                    make_type!(x simple 86:86 #E)),
+                make_stmt!(x fp 89:147 #expect_diagnostics 89:106
+                    make_type!(path 117:147
+                        make_path!(x segment simple 117:121 #crate),
+                        make_path!(x segment simple 124:134 #diagnostics),
+                        make_path!(x segment simple 137:147 #Diagnostics))),
+                make_stmt!(x fp 150:163 #backtrace 150:158
+                    make_type!(prim 161:163 U32)),
+            ],
+            ret_type: Some(make_type!(path 168:219
+                make_path!(x segment generic 168:219 #Result 168:173 quote 174:219
+                    make_type!(tuple 175:176),
+                    make_type!(tuple 179:218
+                        make_type!(x simple 180:180 #V),
+                        make_type!(x simple 183:183 #V),
+                        make_type!(path 186:217
+                            make_path!(x segment generic 186:217 #SourceContext 186:198 quote 199:217
+                                make_type!(x simple 200:216 #VirtualFileSystem))))))),
+            wheres: vec![
+                WhereClause{ span: Span::new(227, 251), name: IdSpan::new(make_isid!(x, V), Span::new(227, 227)), constraints: vec![
+                    make_type!(x simple 230:238 #PartialEq),
+                    make_type!(path 242:251
+                        make_path!(x segment simple 242:244 #fmt),
+                        make_path!(x segment simple 247:251 #Debug)),
+                ]},
+                WhereClause{ span: Span::new(254, 292), name: IdSpan::new(make_isid!(x, P), Span::new(254, 254)), constraints: vec![
+                    make_type!(fn ret 257:292 paren 259:267 [
+                        make_type!(fp 260:266
+                            make_type!(ref 260:266 make_type!(x simple 261:266 #Parser))),
+                    ], 
+                    make_type!(path 272:292
+                        make_path!(x segment generic 272:292 #Result 272:277 quote 278:292
+                            make_type!(x simple 279:279 #V),
+                            make_type!(x simple 282:291 #Unexpected)))),
+                ]},
+                WhereClause{ span: Span::new(295, 313), name: IdSpan::new(make_isid!(x, E), Span::new(295, 295)), constraints: vec![
+                    make_type!(fn ret 298:313 paren 300:308 [
+                        make_type!(fp 301:307
+                            make_type!(ref 301:307 make_type!(x simple 302:307 #Parser))),
+                    ],
+                    make_type!(x simple 313:313 #V))
+                ]},
+            ],
+            body: None,
+        }
+    }
+
+    // TODO
+    // case!{ parse_fn_def "fn emplace_tagged<T, U, I, W>(this: &This, wrap: W, init: I) -> TagIndex<U> where T: Sized, I: fn(&T), W: fn(Index<T>) -> U" }
 
     // // although currently I think fn type is type not class, and callobject is implementing std::ops::Call, not Fn
     // // I f**king human parse this code once and pass?

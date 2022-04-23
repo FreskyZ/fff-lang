@@ -54,11 +54,11 @@ Major change summary
 
 some detailed plans is included by the way
 
-- [ ] source: use unsafe instead of panic in char iterator
-- [ ] syntax: split cast segment and generic segment from path segment
+- [ ] syntax: arena refactor
 - [ ] syntax: relearn first set and follow set and review the name of maybe_xxx
 - [ ] syntax: update random test input generator
 - [ ] syntax: add missing array dup def
 - [ ] syntax: add numeric literal type as suffixed/unsuffixed and bin/oct/dec/hex/unprefixed, tuple index expr require unsuffixed and unprefixed
 - [ ] syntax: format string
 - [ ] syntax: function expression, capture syntax TBD, IIFE is a more tradictional may where rust block expression is used
+- [ ] source: use unsafe instead of panic in char iterator

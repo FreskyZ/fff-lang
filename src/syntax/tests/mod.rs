@@ -48,7 +48,6 @@ impl<'a, 'b> fmt::Display for DiffDisplay<'a, 'b> {
 }
 
 // the 2 types of case is same until result compare
-// TODO give this signature to fn def parser and fn type parser
 fn case_until_node<
     V: PartialEq + fmt::Debug,
     P: FnOnce(&mut Parser) -> Result<V, Unexpected>,

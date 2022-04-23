@@ -167,8 +167,11 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     //   type ref may start with ident, actually most common type refs start with ident, 
     //   so it is ambiguous and that may be the reason rust does not support that, but I always want to add parameter name to make function type more clear,
     //   so they are distinguished by always parseing type ref and very simple result (only one identifier) followed with colon is regarded as parameter name
+    // - there is no `fn <T, U>(parameters)` because the normal solution is 
+    //   declare these parameters outside: `fn accept_some_fn<T, U>(f: fn(T, U) -> T) -> U`,
+    //   it's really hard (maybe impossible) to resolve the type parameters in bare (not in impl block etc.) `fn accept_some_template(f: fn<T, U>(T, U) -> T) -> U`
     pub fn parse_fn_type(&mut self) -> Result<FnType, Unexpected> {
-        
+
         let fn_span = self.expect_keyword(Keyword::Fn)?;
         let left_paren_span = self.expect_sep(Separator::LeftParen)?;
 
@@ -176,7 +179,6 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         let right_paren_span = loop {
             if let Some((right_paren_span, comma_span)) = self.try_expect_closing_bracket(Separator::RightParen) {
                 if let (0, Some(comma_span)) = (parameters.len(), comma_span) {
-                    // TODO: need comma span
                     self.emit("unexpected token").detail(comma_span, "expected ident, type or right paren, meet comma");
                 }
                 break right_paren_span;
