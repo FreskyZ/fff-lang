@@ -1,0 +1,379 @@
+
+// naming convension:
+// - first field is `span` and represents span for complete node
+// - Separator field is called `op`, its span is called `op_span`
+// - bracket pair span field is called `quote_span`
+// - get span methods for abc types are called `span`, e.g. `expr.span()`
+// - LabelDef field should be called `label`
+// - IsId from Token::Ident is normally called `name` type IdSpan
+// - use `parameters` not `params`
+// - concrete expression types should be called `XXXExpr`
+
+struct ArrayExpr "array-expr"
+    span: Span, // bracket span
+    items: Vec<Expr>,
+
+struct ArrayIndexExpr "array-index-expr",
+    span: Span,
+    base: Expr,
+    parameters: Vec<Expr>,
+    quote_span: Span, // bracket span
+
+struct ArrayType "array-type"
+    span: Span,
+    base: TypeRef,
+    size: Expr,
+
+struct AssignExprStatement "assign-expr-stmt"
+    span: Span, // left.span + right.span
+    left: Expr,
+    right: Expr,
+    op: Separator,
+    op_span: Span,
+
+struct BinaryExpr "binary-expr"
+    span: Span,
+    left: Expr,
+    right: Expr,
+    op: Separator,
+    op_span: Span,
+
+struct Block "block"
+    span: Span,
+    items: Vec<Statement>,
+
+struct BlockStatement "block-stmt"
+    span: Span,
+    label: Option<IdSpan>,
+    body: Block,
+
+struct BreakStatement "break-stmt"
+    span: Span,
+    label: Option<IdSpan>,
+
+struct CallExpr "call-expr"
+    span: Span,
+    base: Expr,
+    parameters: Vec<Expr>,
+    quote_span: Span,
+
+struct CastSegment "cast-segment"
+    span: Span,
+    left: TypeRef,
+    right: TypeRef,
+
+struct ClassDef "class-def"
+    span: Span,
+    name: GenericName,
+    quote_span: Span,
+    types: Vec<TypeDef>,
+    functions: Vec<FnDef>,
+
+struct ContinueStatement "continue-stmt" 
+    span: Span,
+    label: Option<IdSpan>,
+
+struct ElseClause "else-clause"
+    span: Span,
+    body: Block,
+
+struct EnumDef "enum-def"
+    span: Span,
+    name: IdSpan,
+    base_type: Option<PrimitiveType>,
+    quote_span: Span,
+    variants: Vec<EnumDefVariant>,
+
+struct EnumDefVariant "enum-def-variant"
+    span: Span,
+    name: IdSpan,
+    value: Option<Expr>,
+
+enum Expr "expr"
+    Lit(LitExpr) "lit",
+    Path(Path) "path",
+    Paren(ParenExpr) "paren",
+    Tuple(TupleExpr) "tuple",
+    Array(ArrayExpr) "array",
+    Call(CallExpr) "call",
+    ArrayIndex(ArrayIndexExpr) "array-index",
+    TupleIndex(TupleIndexExpr) "tuple-index",
+    Member(MemberExpr) "member",
+    Object(ObjectExpr) "object",
+    Unary(UnaryExpr) "unary",
+    Binary(BinaryExpr) "binary",
+    RangeBoth(RangeBothExpr) "range-both",
+    RangeFull(RangeFullExpr) "range-full",
+    RangeLeft(RangeLeftExpr) "range-left",
+    RangeRight(RangeRightExpr) "range-right",
+
+struct FieldDef "field-def"
+    span: Span,
+    name: IdSpan,
+    colon_span: Span,
+    r#type: TypeRef,
+
+struct FnDef "fn-def"
+    span: Span, // fn_span + body_span
+    name: GenericName,
+    quote_span: Span, // parameter list quote
+    parameters: Vec<FnDefParameter>,
+    ret_type: Option<TypeRef>,
+    wheres: Vec<WhereClause>,
+    body: Option<Block>, // no body is allowed for intrinsic, extern and class associate methods
+
+struct FnDefParameter "fn-def-parameter"
+    span: Span, // name.span + r#type.span
+    name: IdSpan,
+    r#type: TypeRef,
+
+struct FnType "fn-type"
+    span: Span,
+    quote_span: Span, // parameter list quote span
+    parameters: Vec<FnTypeParameter>,
+    ret_type: Option<TypeRef>,
+
+struct FnTypeParameter "fn-type-parameter"
+    span: Span,
+    name: Option<IdSpan>,
+    r#type: TypeRef,
+
+struct ForStatement "for-stmt"
+    span: Span,
+    label: Option<IdSpan>,
+    iter_name: IdSpan,
+    iter_expr: Expr,
+    body: Block,
+
+struct GenericName "generic-name"
+    span: Span,
+    base: IdSpan,
+    quote_span: Span,
+    parameters: Vec<GenericParameter>,
+
+// currently this is only one identifier, but it's hard to pretty print vec<idspan> in one line
+// and future this may include where clause, so it is separate node
+struct GenericParameter "generic-parameter"
+    span: Span,
+    name: IdSpan,
+
+struct GenericSegment "generic-segment"
+    span: Span, 
+    base: IdSpan, 
+    parameters: TypeList,
+
+struct IfClause "if-clause"
+    span: Span,
+    condition: Expr,
+    body: Block,
+
+struct IfStatement "if-stmt"
+    span: Span,
+    if_clause: IfClause,
+    elseif_clauses: Vec<IfClause>,
+    else_clause: Option<ElseClause>,
+
+struct Implementation "impl-block"
+    span: Span,
+    parameters: Vec<GenericParameter>,
+    class: Option<TypeRef>,
+    r#type: TypeRef,
+    wheres: Vec<WhereClause>,
+    quote_span: Span,
+    types: Vec<TypeDef>,
+    functions: Vec<FnDef>,
+
+enum Item "item"
+    Struct(StructDef) "struct",
+    Enum(EnumDef) "enum",
+    Fn(FnDef) "fn",
+    Impl(Implementation) "impl",
+    Type(TypeDef) "type",
+    Class(ClassDef) "class",
+    Block(BlockStatement) "block",
+    SimpleExpr(SimpleExprStatement) "simple-expr",
+    AssignExpr(AssignExprStatement) "assign-expr",
+    For(ForStatement) "for",
+    If(IfStatement) "if",
+    Loop(LoopStatement) "loop",
+    VarDecl(VarDeclStatement) "var-decl",
+    While(WhileStatement) "while",
+    Use(UseStatement) "use",
+    Import(ModuleStatement) "import",
+
+struct LitExpr "lit-expr"
+    span: Span,
+    value: LitValue,
+
+struct LoopStatement "loop-stmt"
+    span: Span,
+    label: Option<IdSpan>,
+    body: Block,
+
+struct MemberExpr "member-expr"
+    span: Span,
+    base: Expr,
+    op_span: Span, // dot span
+    name: IdSpan,
+    parameters: Option<TypeList>,
+
+struct Module "module"
+    file: FileId,
+    items: Vec<Item>,
+
+struct ModuleStatement "module-stmt"
+    span: Span,
+    name: IdSpan,
+    path: Option<IdSpan>,
+
+struct ObjectExpr "object-expr"
+    span: Span,
+    base: Expr,
+    quote_span: Span,
+    fields: Vec<ObjectExprField>,
+
+struct ObjectExprField "object-expr-field"
+    span: Span,
+    name: IdSpan,
+    value: Expr,
+
+struct ParenExpr "paren-expr"
+    span: Span,
+    base: Expr,
+
+// path has a special very simple segment optimize and every usages knows that
+struct Path "path"
+    span: Span,
+    segments: Vec<PathSegment>,
+
+enum PathSegment "path-segment"
+    // global is a mark to indicate path starts with namespace separator, 
+    // it does not have span because it logically located at the empty place before the namespace sparator
+    Global "global",
+    Simple(SimpleSegment) "simple",
+    Cast(CastSegment) "cast",
+    Generic(GenericSegment) "generic",
+
+struct PrimitiveType "primitive-type"
+    span: Span,
+    base: Keyword,
+
+struct RangeBothExpr "range-both-expr"
+    span: Span,
+    left: Expr,
+    op_span: Span,
+    right: Expr,
+
+struct RangeFullExpr "range-full-expr"
+    span: Span,
+
+struct RangeLeftExpr "range-left-expr"
+    span: Span,
+    base: Expr,
+
+struct RangeRightExpr "range-right-expr"
+    span: Span,
+    base: Expr,
+
+struct RefType "ref-type"
+    span: Span,
+    base: TypeRef,
+
+struct ReturnStatement "ret-stmt"
+    span: Span,
+    value: Option<Expr>,
+
+struct SimpleExprStatement "simple-expr-stmt"
+    span: Span, // expr.span + semicolon_span
+    expr: Expr, 
+
+struct SimpleSegment "simple-segment"
+    span: Span,
+    name: IsId,
+
+enum Statement "stmt"
+    Struct(StructDef) "struct",
+    Enum(EnumDef) "enum",
+    Fn(FnDef) "fn",
+    Impl(Implementation) "impl",
+    Type(TypeDef) "type",
+    Class(ClassDef) "class",
+    Block(BlockStatement) "block",
+    Break(BreakStatement) "break",
+    Continue(ContinueStatement) "continue",
+    SimpleExpr(SimpleExprStatement) "simple-expr",
+    AssignExpr(AssignExprStatement) "assign-expr",
+    For(ForStatement) "for",
+    If(IfStatement) "if",
+    Loop(LoopStatement) "loop",
+    Return(ReturnStatement) "ret",
+    VarDecl(VarDeclStatement) "var-decl",
+    While(WhileStatement) "while",
+    Use(UseStatement) "use",
+
+struct StructDef "struct-def"
+    span: Span,
+    name: GenericName,
+    fields: Vec<FieldDef>,
+
+struct TupleExpr "tuple-expr"
+    span: Span,
+    items: Vec<Expr>,
+
+struct TupleIndexExpr "tuple-index-expr"
+    span: Span,
+    base: Expr,
+    op_span: Span, // dot span
+    value: Numeric,
+    value_span: Span,
+
+struct TupleType "tuple-type"
+    span: Span,
+    // not TypeList, TypeList is angle bracket quoted, tuple type is paren quoted and empty allowed
+    parameters: Vec<TypeRef>,
+
+struct TypeDef "type-def"
+    span: Span,
+    name: GenericName,
+    from: Option<TypeRef>,
+
+struct TypeList "type-list"
+    span: Span,
+    items: Vec<TypeRef>,
+
+enum TypeRef "type-ref"
+    Array(ArrayType) "array",
+    Fn(FnType) "fn",
+    Path(Path) "path",
+    Primitive(PrimitiveType) "primitive",
+    Ref(RefType) "ref",
+    Tuple(TupleType) "tuple",
+
+struct UnaryExpr "unary-expr"
+    span: Span,
+    base: Expr, 
+    op: Separator, 
+    op_span: Span,
+
+struct UseStatement "use-stmt"
+    span: Span,
+    path: Path,
+    alias: Option<IdSpan>,
+
+struct VarDeclStatement "var-decl-stmt"
+    span: Span,
+    r#const: bool,
+    name: IdSpan,
+    r#type: Option<TypeRef>,
+    init_value: Option<Expr>,
+
+struct WhereClause "where-clause"
+    span: Span,
+    name: IdSpan,
+    constraints: Vec<TypeRef>,
+
+struct WhileStatement "while-stmt"
+    span: Span,
+    label: Option<IdSpan>,
+    condition: Expr,
+    body: Block,
