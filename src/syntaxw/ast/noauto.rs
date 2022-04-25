@@ -4,15 +4,6 @@ use std::convert::Infallible;
 use std::ops::{Try, FromResidual, ControlFlow};
 use super::*;
 
-macro_rules! emplace {
-    ($arena:expr, $ty:ident::$variant:ident($v:expr)) => (
-        $arena.emplace(|n: &mut $ty| { *n = $ty::$variant($v); })
-    );
-    ($arena:expr, $ty:ident{ $($field:ident: $value:expr),+$(,)? }) => (
-        $arena.emplace(|n: &mut $ty| { $(n.$field = $value;)+ })
-    );
-}
-
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub enum LitValue {
@@ -24,8 +15,8 @@ pub enum LitValue {
 }
 
 impl<'a> Expr<'a> {
-    pub fn dummy(arena: &'a Arena) -> Index<'a, Self> {
-        emplace!(arena, Expr::Lit(emplace!(arena, LitExpr{ span: Span::new(0, 0), value: LitValue::Num(Numeric::I32(0)) })))
+    pub fn dummy(arena: &'a Arena) -> TagIndex<'a, Self> {
+        arena.emplace_lit_expr(Span::new(0, 0), LitValue::Num(Numeric::I32(0))).into()
     }
 }
 
