@@ -11,12 +11,12 @@
 
 struct ArrayExpr "array-expr"
     span: Span, // bracket span
-    items: Vec<Expr>,
+    items: many Expr,
 
 struct ArrayIndexExpr "array-index-expr",
     span: Span,
     base: Expr,
-    parameters: Vec<Expr>,
+    parameters: many Expr,
     quote_span: Span, // bracket span
 
 struct ArrayType "array-type"
@@ -40,22 +40,22 @@ struct BinaryExpr "binary-expr"
 
 struct Block "block"
     span: Span,
-    items: Vec<Statement>,
+    items: many Statement,
 
 struct BlockStatement "block-stmt"
     span: Span,
-    label: Option<IdSpan>,
+    label: maybe IdSpan,
     body: Block,
 
 struct BreakStatement "break-stmt"
     span: Span,
-    label: Option<IdSpan>,
+    label: maybe IdSpan,
 
 struct CallExpr "call-expr"
     span: Span,
     base: Expr,
-    parameters: Vec<Expr>,
     quote_span: Span,
+    parameters: many Expr,
 
 struct CastSegment "cast-segment"
     span: Span,
@@ -66,12 +66,12 @@ struct ClassDef "class-def"
     span: Span,
     name: GenericName,
     quote_span: Span,
-    types: Vec<TypeDef>,
-    functions: Vec<FnDef>,
+    // currently only functions and type defs, but current arena designment does not allow building 2 slices at the same time
+    items: many Item,
 
 struct ContinueStatement "continue-stmt" 
     span: Span,
-    label: Option<IdSpan>,
+    label: maybe IdSpan,
 
 struct ElseClause "else-clause"
     span: Span,
@@ -80,14 +80,14 @@ struct ElseClause "else-clause"
 struct EnumDef "enum-def"
     span: Span,
     name: IdSpan,
-    base_type: Option<PrimitiveType>,
+    base_type: maybe PrimitiveType,
     quote_span: Span,
-    variants: Vec<EnumDefVariant>,
+    variants: many EnumDefVariant,
 
 struct EnumDefVariant "enum-def-variant"
     span: Span,
     name: IdSpan,
-    value: Option<Expr>,
+    value: maybe Expr,
 
 enum Expr "expr"
     Lit(LitExpr) "lit",
@@ -117,10 +117,10 @@ struct FnDef "fn-def"
     span: Span, // fn_span + body_span
     name: GenericName,
     quote_span: Span, // parameter list quote
-    parameters: Vec<FnDefParameter>,
-    ret_type: Option<TypeRef>,
-    wheres: Vec<WhereClause>,
-    body: Option<Block>, // no body is allowed for intrinsic, extern and class associate methods
+    parameters: many FnDefParameter,
+    ret_type: maybe TypeRef,
+    wheres: many WhereClause,
+    body: maybe Block, // no body is allowed for intrinsic, extern and class associate methods
 
 struct FnDefParameter "fn-def-parameter"
     span: Span, // name.span + r#type.span
@@ -130,17 +130,17 @@ struct FnDefParameter "fn-def-parameter"
 struct FnType "fn-type"
     span: Span,
     quote_span: Span, // parameter list quote span
-    parameters: Vec<FnTypeParameter>,
-    ret_type: Option<TypeRef>,
+    parameters: many FnTypeParameter,
+    ret_type: maybe TypeRef,
 
 struct FnTypeParameter "fn-type-parameter"
     span: Span,
-    name: Option<IdSpan>,
+    name: maybe IdSpan,
     r#type: TypeRef,
 
 struct ForStatement "for-stmt"
     span: Span,
-    label: Option<IdSpan>,
+    label: maybe IdSpan,
     iter_name: IdSpan,
     iter_expr: Expr,
     body: Block,
@@ -149,7 +149,7 @@ struct GenericName "generic-name"
     span: Span,
     base: IdSpan,
     quote_span: Span,
-    parameters: Vec<GenericParameter>,
+    parameters: many GenericParameter,
 
 // currently this is only one identifier, but it's hard to pretty print vec<idspan> in one line
 // and future this may include where clause, so it is separate node
@@ -170,18 +170,18 @@ struct IfClause "if-clause"
 struct IfStatement "if-stmt"
     span: Span,
     if_clause: IfClause,
-    elseif_clauses: Vec<IfClause>,
-    else_clause: Option<ElseClause>,
+    elseif_clauses: many IfClause,
+    else_clause: maybe ElseClause,
 
 struct Implementation "impl-block"
     span: Span,
-    parameters: Vec<GenericParameter>,
-    class: Option<TypeRef>,
+    parameters: many GenericParameter,
+    class: maybe TypeRef,
     r#type: TypeRef,
-    wheres: Vec<WhereClause>,
+    wheres: many WhereClause,
     quote_span: Span,
-    types: Vec<TypeDef>,
-    functions: Vec<FnDef>,
+    // currently only functions and type defs, but current arena designment does not allow building 2 slices at the same time
+    items: many Item,
 
 enum Item "item"
     Struct(StructDef) "struct",
@@ -207,7 +207,7 @@ struct LitExpr "lit-expr"
 
 struct LoopStatement "loop-stmt"
     span: Span,
-    label: Option<IdSpan>,
+    label: maybe IdSpan,
     body: Block,
 
 struct MemberExpr "member-expr"
@@ -215,22 +215,22 @@ struct MemberExpr "member-expr"
     base: Expr,
     op_span: Span, // dot span
     name: IdSpan,
-    parameters: Option<TypeList>,
+    parameters: maybe TypeList,
 
 struct Module "module"
     file: FileId,
-    items: Vec<Item>,
+    items: many Item,
 
 struct ModuleStatement "module-stmt"
     span: Span,
     name: IdSpan,
-    path: Option<IdSpan>,
+    path: maybe IdSpan,
 
 struct ObjectExpr "object-expr"
     span: Span,
     base: Expr,
     quote_span: Span,
-    fields: Vec<ObjectExprField>,
+    fields: many ObjectExprField,
 
 struct ObjectExprField "object-expr-field"
     span: Span,
@@ -244,7 +244,7 @@ struct ParenExpr "paren-expr"
 // path has a special very simple segment optimize and every usages knows that
 struct Path "path"
     span: Span,
-    segments: Vec<PathSegment>,
+    segments: many PathSegment,
 
 enum PathSegment "path-segment"
     // global is a mark to indicate path starts with namespace separator, 
@@ -281,7 +281,7 @@ struct RefType "ref-type"
 
 struct ReturnStatement "ret-stmt"
     span: Span,
-    value: Option<Expr>,
+    value: maybe Expr,
 
 struct SimpleExprStatement "simple-expr-stmt"
     span: Span, // expr.span + semicolon_span
@@ -314,32 +314,32 @@ enum Statement "stmt"
 struct StructDef "struct-def"
     span: Span,
     name: GenericName,
-    fields: Vec<FieldDef>,
+    fields: many FieldDef,
 
 struct TupleExpr "tuple-expr"
     span: Span,
-    items: Vec<Expr>,
+    items: many Expr,
 
 struct TupleIndexExpr "tuple-index-expr"
     span: Span,
     base: Expr,
     op_span: Span, // dot span
-    value: Numeric,
+    value: i32,
     value_span: Span,
 
 struct TupleType "tuple-type"
     span: Span,
     // not TypeList, TypeList is angle bracket quoted, tuple type is paren quoted and empty allowed
-    parameters: Vec<TypeRef>,
+    parameters: many TypeRef,
 
 struct TypeDef "type-def"
     span: Span,
     name: GenericName,
-    from: Option<TypeRef>,
+    from: maybe TypeRef,
 
 struct TypeList "type-list"
     span: Span,
-    items: Vec<TypeRef>,
+    items: many TypeRef,
 
 enum TypeRef "type-ref"
     Array(ArrayType) "array",
@@ -358,22 +358,22 @@ struct UnaryExpr "unary-expr"
 struct UseStatement "use-stmt"
     span: Span,
     path: Path,
-    alias: Option<IdSpan>,
+    alias: maybe IdSpan,
 
 struct VarDeclStatement "var-decl-stmt"
     span: Span,
     r#const: bool,
     name: IdSpan,
-    r#type: Option<TypeRef>,
-    init_value: Option<Expr>,
+    r#type: maybe TypeRef,
+    init_value: maybe Expr,
 
 struct WhereClause "where-clause"
     span: Span,
     name: IdSpan,
-    constraints: Vec<TypeRef>,
+    constraints: many TypeRef,
 
 struct WhileStatement "while-stmt"
     span: Span,
-    label: Option<IdSpan>,
+    label: maybe IdSpan,
     condition: Expr,
     body: Block,
