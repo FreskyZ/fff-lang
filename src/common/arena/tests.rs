@@ -14,11 +14,11 @@ fn basic() {
     let index3 = arena.emplace(|n: &mut Node1| { n.span = 8; n.isid = 9; });
     let index8 = arena.emplace(|n: &mut Node1| { n.span = 14; n.isid = 15; });
 
-    let mut node3s = arena.slice_builder();
-    node3s.emplace(|n: &mut Node3| { n.span = 10; n.node1 = index1; n.node4 = None; });
-    node3s.emplace(|n: &mut Node3| { n.span = 11; n.node1 = index3; n.node4 = None; });
-    node3s.emplace(|n: &mut Node3| { n.span = 12; n.node1 = index8; n.node4 = None; });
-    let node3s = node3s.finish();
+    let mut node3s = Vec::new();
+    node3s.push(arena.emplace(|n: &mut Node3| { n.span = 10; n.node1 = index1; n.node4 = None; }));
+    node3s.push(arena.emplace(|n: &mut Node3| { n.span = 11; n.node1 = index3; n.node4 = None; }));
+    node3s.push(arena.emplace(|n: &mut Node3| { n.span = 12; n.node1 = index8; n.node4 = None; }));
+    let node3s = arena.build_slice(node3s);
     let index7 = arena.emplace(|n: &mut Node4| { n.span = 13; n.node3s = node3s; });
     
     // println!("{}", arena.status(true));
@@ -171,24 +171,15 @@ fn too_large_object() {
 }
 
 #[test]
-#[should_panic(expected = "already building slice")]
-fn multiple_slice_builder() {
-    let arena = Arena::new();
-
-    let _ = arena.slice_builder::<i32>();
-    let _ = arena.slice_builder::<i32>();
-}
-
-#[test]
 #[cfg(not(miri))] // 2000 size vector is too large for miri, too
 fn large_array() {
     let arena = Arena::new();
 
-    let mut values = arena.slice_builder();
+    let mut values = Vec::new();
     for i in 0..2400 {
-        values.emplace(|n: &mut i32| { *n = i; });
+        values.push(arena.emplace(|n: &mut i32| { *n = i; }));
     }
-    let slice = values.finish();
+    let slice = arena.build_slice(values);
 
     // println!("{}", arena.status(true));
     
