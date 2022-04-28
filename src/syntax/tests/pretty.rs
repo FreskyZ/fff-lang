@@ -16,17 +16,17 @@ fn array_def() {
     let mut scx = make_source!("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz");
     scx.entry("1", &mut ecx).unwrap().finish();
     ppcase!{
-        make_expr!(array 0:42).display(&scx),
+        make_expr!(x array 0:42).display(&scx),
         "array-expr <1:1-1:43>\n"
     }
 
     let mut scx = make_source!("abcde\nfg\nhi\njklm");
     scx.entry("1", &mut ecx).unwrap().finish();
     ppcase!{
-        make_expr!(array 0:9
-            make_expr!(i32 1 1:1),
-            make_expr!(i32 2 4:4),
-            make_expr!(i32 48 7:8)
+        make_expr!(x array 0:9
+            make_expr!(x i32 1 1:1),
+            make_expr!(x i32 2 4:4),
+            make_expr!(x i32 48 7:8)
         ).display(&scx),
         "array-expr <1:1-3:1>
   literal i32 1 <1:2-1:2>
@@ -43,9 +43,9 @@ fn binary_expr() {
     let mut scx = make_source!("ascasconwoeicnqw");
     scx.entry("1", &mut ecx).unwrap().finish();
     ppcase!{
-        make_expr!(binary 0:4 Add 2:2
-            make_expr!(i32 1 0:0),
-            make_expr!(i32 2 4:4)
+        make_expr!(x binary 0:4 Add 2:2
+            make_expr!(x i32 1 0:0),
+            make_expr!(x i32 2 4:4)
         ).display(&scx),
             "binary-expr <1:1-1:5> + <1:3-1:3>
   literal i32 1 <1:1-1:1>
@@ -61,17 +61,17 @@ fn tuple_def() {
     let mut scx = make_source!("1231241241231412341234");
     scx.entry("1", &mut ecx).unwrap().finish();
     ppcase!{
-        make_expr!(tuple 0:21).display(&scx),
+        make_expr!(x tuple 0:21).display(&scx),
         "tuple-expr <1:1-1:22>\n"
     }
 
     let mut scx = make_source!("1231241241231412341234");
     scx.entry("1", &mut ecx).unwrap().finish();
     ppcase!{
-        make_expr!(tuple 0:8
-            make_expr!(i32 1 1:2),
-            make_expr!(i32 2 3:4),
-            make_expr!(i32 48 5:6)
+        make_expr!(x tuple 0:8
+            make_expr!(x i32 1 1:2),
+            make_expr!(x i32 2 3:4),
+            make_expr!(x i32 48 5:6)
         ).display(&scx),
         "tuple-expr <1:1-1:9>\n  literal i32 1 <1:2-1:3>\n  literal i32 2 <1:4-1:5>\n  literal i32 48 <1:6-1:7>\n"
     }

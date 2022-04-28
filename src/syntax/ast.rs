@@ -99,7 +99,7 @@ pub struct BlockStatement {
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
-pub struct BreakStatement{
+pub struct BreakStatement {
     pub span: Span,
     pub label: Option<IdSpan>,
 }
@@ -127,8 +127,7 @@ pub struct ClassDef {
     pub span: Span,
     pub name: GenericName,
     pub quote_span: Span,
-    pub types: Vec<TypeDef>,
-    pub functions: Vec<FnDef>,
+    pub items: Vec<Item>,
 }
 
 #[derive(Debug)]
@@ -299,8 +298,7 @@ pub struct Implementation {
     pub r#type: TypeRef,
     pub wheres: Vec<WhereClause>,
     pub quote_span: Span,
-    pub types: Vec<TypeDef>,
-    pub functions: Vec<FnDef>,
+    pub items: Vec<Item>,
 }
 
 define_abc! {
@@ -538,7 +536,8 @@ pub struct TupleIndexExpr {
     pub span: Span,
     pub base: Box<Expr>,
     pub op_span: Span, // dot span
-    pub value: (Numeric, Span),
+    pub value: i32,
+    pub value_span: Span,
 }
 
 #[derive(Debug)]

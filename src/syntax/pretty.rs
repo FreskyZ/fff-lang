@@ -394,11 +394,8 @@ impl<'scx, 'f1, 'f2, F> Visitor<(), fmt::Error> for FormatVisitor<'scx, 'f1, 'f2
     fn visit_tuple_index_expr(&mut self, node: &TupleIndexExpr) -> fmt::Result {
         self.impl_visit(node, "tuple-index-expr", node.span, |f| {
             f.write_str(" . ")?.write_span(node.op_span)?;
-            match node.value.0 { 
-                crate::lexical::Numeric::I32(v) => write!(f.f, "{}", v)?, 
-                other => write!(f.f, "{}", other)?,
-            };
-            f.write_space()?.write_span(node.value.1)
+            write!(f.f, "{}", node.value)?;
+            f.write_space()?.write_span(node.value_span)
         })
     }
 

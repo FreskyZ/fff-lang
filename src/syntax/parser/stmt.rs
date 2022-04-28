@@ -11,7 +11,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         } else if self.maybe_fn_def() {
             Ok(Statement::Fn(self.parse_fn_def()?))
         } else if self.maybe_impl() {
-            Ok(Statement::Impl(self.parse_impl()?))
+            Ok(Statement::Impl(self.parse_impl_block()?))
         } else if self.maybe_type_def() {
             Ok(Statement::Type(self.parse_type_def()?))
         } else if self.maybe_class_def() {
@@ -51,7 +51,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         } else if self.maybe_fn_def() {
             Ok(Item::Fn(self.parse_fn_def()?))
         } else if self.maybe_impl() {
-            Ok(Item::Impl(self.parse_impl()?))
+            Ok(Item::Impl(self.parse_impl_block()?))
         } else if self.maybe_type_def() {
             Ok(Item::Type(self.parse_type_def()?))
         } else if self.maybe_class_def() {
@@ -184,21 +184,20 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         let name = self.parse_generic_name()?;
         let left_brace_span = self.expect_sep(Separator::LeftBrace)?;
 
-        let mut types = Vec::new();
-        let mut functions = Vec::new();
+        let mut items = Vec::new();
         let right_brace_span = loop {
             if let Some(right_brace_span) = self.try_expect_sep(Separator::RightBrace) {
                 break right_brace_span;
             } else if self.maybe_type_def() {
-                types.push(self.parse_type_def()?);
+                items.push(self.parse_type_def()?.into());
             } else if self.maybe_fn_def() {
-                functions.push(self.parse_fn_def()?);
+                items.push(self.parse_fn_def()?.into());
             }  else {
                 self.push_unexpect("type, fn or `}`")?;
             }
         };
 
-        Ok(ClassDef{ span: start_span + right_brace_span, name, quote_span: left_brace_span + right_brace_span, types, functions })
+        Ok(ClassDef{ span: start_span + right_brace_span, name, quote_span: left_brace_span + right_brace_span, items })
     }
 
     pub fn maybe_continue_stmt(&self) -> bool {
@@ -274,6 +273,10 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         } else {
             self.push_unexpect("assign operators, semicolon")
         }
+    }
+    
+    pub fn parse_expr_stmt_as_stmt(&mut self) -> Result<Statement, Unexpected> {
+        self.parse_expr_stmt()
     }
 
     pub fn maybe_fn_def(&self) -> bool {
@@ -414,7 +417,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     }
 
     // impl = 'impl' generic_parameters [ type_ref 'for' ] type_ref where_clauses '{' { type_def | fn_def } '}'
-    pub fn parse_impl(&mut self) -> Result<Implementation, Unexpected> {
+    pub fn parse_impl_block(&mut self) -> Result<Implementation, Unexpected> {
 
         let start_span = self.expect_keyword(Keyword::Impl)?;
 
@@ -468,15 +471,14 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         }
 
         let left_brace_span = self.expect_sep(Separator::LeftBrace)?;
-        let mut types = Vec::new();
-        let mut functions = Vec::new();
+        let mut items = Vec::new();
         let right_brace_span = loop {
             if let Some(right_brace_span) = self.try_expect_sep(Separator::RightBrace) {
                 break right_brace_span;
             } else if self.maybe_type_def() {
-                types.push(self.parse_type_def()?);
+                items.push(self.parse_type_def()?.into());
             } else if self.maybe_fn_def() {
-                functions.push(self.parse_fn_def()?);
+                items.push(self.parse_fn_def()?.into());
             }  else {
                 self.push_unexpect("type, fn or `}`")?;
             }
@@ -484,7 +486,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
 
         let span = start_span + right_brace_span;
         let quote_span = left_brace_span + right_brace_span;
-        Ok(Implementation{ span, parameters, class, r#type, wheres, quote_span, types, functions })
+        Ok(Implementation{ span, parameters, class, r#type, wheres, quote_span, items })
     }
 
     pub fn maybe_loop_stmt(&self) -> bool {

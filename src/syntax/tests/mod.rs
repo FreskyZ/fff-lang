@@ -1,7 +1,7 @@
 
 use std::fmt::{self, Write};
 use std::str::from_utf8;
-use crate::source::{SourceContext, VirtualFileSystem, Span, IdSpan, make_source};
+use crate::source::{SourceContext, VirtualFileSystem, Span, IdSpan, FileId, make_source};
 use crate::diagnostics::{strings, make_errors};
 use crate::lexical::{Numeric, Separator, Keyword};
 use super::visit::Node;
@@ -128,20 +128,15 @@ fn notast_case<
 }
 
 macro_rules! case {
-    // new
     ($parser:ident $code:literal, |$x:ident| $expect:expr $(,)? $(,$($tt:tt)+)?) => (
-        ast_case($code, |cx| cx.$parser(), |$x| $expect, make_errors!($($($tt)+)?), line!());
+        ast_case($code, |cx| cx.$parser(), |#[allow(unused_variables)] $x| $expect, make_errors!($($($tt)+)?), line!());
     );
-    (notast $parser:ident $code:literal, |$x:ident| $expect:expr $(,)? $(,$($tt:tt)+)?) => (
-        notast_case($code, |cx| cx.$parser(), |$x| $expect, make_errors!($($($tt)+)?), line!());
+    // not return enum
+    (notag $parser:ident $code:literal, |$x:ident| $expect:expr $(,)? $(,$($tt:tt)+)?) => (
+        ast_case($code, |cx| cx.$parser(), |#[allow(unused_variables)] $x| $expect, make_errors!($($($tt)+)?), line!());
     );
-
-    // temp before x is required for creating every node
-    ($parser:ident $code:literal, |_| $expect:expr $(,)? $(,$($tt:tt)+)?) => (
-        ast_case($code, |cx| cx.$parser(), |_| $expect, make_errors!($($($tt)+)?), line!());
-    );
-    (notast $parser:ident $code:literal, |_| $expect:expr $(,)? $(,$($tt:tt)+)?) => (
-        notast_case($code, |cx| cx.$parser(), |_| $expect, make_errors!($($($tt)+)?), line!());
+    (notast($cmp:ident, $debug:ident) $parser:ident $code:literal, |$x:ident| $expect:expr $(,)? $(,$($tt:tt)+)?) => (
+        notast_case($code, |cx| cx.$parser(), |#[allow(unused_variables)] $x| $expect, make_errors!($($($tt)+)?), line!());
     );
 }
 
@@ -158,53 +153,50 @@ macro_rules! make_isid {
 
 macro_rules! make_expr {
     // literals does not have (lit prefix because they are used frequently
-    (unit $start:literal:$end:literal) => (
+    ($cx:ident unit $start:literal:$end:literal) => (
         Expr::Lit(LitExpr{ value: LitValue::Unit, span: Span::new($start, $end) })
     );
-    (true $start:literal:$end:literal) => (
+    ($cx:ident true $start:literal:$end:literal) => (
         Expr::Lit(LitExpr{ value: LitValue::Bool(true), span: Span::new($start, $end) })
     );
-    (false $start:literal:$end:literal) => (
+    ($cx:ident false $start:literal:$end:literal) => (
         Expr::Lit(LitExpr{ value: LitValue::Bool(false), span: Span::new($start, $end) })
     );
-    (char $start:literal:$end:literal $v:literal) => (
+    ($cx:ident char $start:literal:$end:literal $v:literal) => (
         Expr::Lit(LitExpr{ value: LitValue::Char($v), span: Span::new($start, $end) })
     );
     ($cx:ident str #$v:literal $start:literal:$end:literal) => (
         Expr::Lit(LitExpr{ value: LitValue::Str($cx.intern($v)), span: Span::new($start, $end) })
     );
-    (i32 $v:literal $start:literal:$end:literal) => (
+    ($cx:ident i32 $v:literal $start:literal:$end:literal) => (
         Expr::Lit(LitExpr{ value: LitValue::Num(Numeric::I32($v)), span: Span::new($start, $end) })
     );
-    (u8 $v:literal $start:literal:$end:literal) => (
+    ($cx:ident u8 $v:literal $start:literal:$end:literal) => (
         Expr::Lit(LitExpr{ value: LitValue::Num(Numeric::U8($v)), span: Span::new($start, $end) })
     );
-    (u32 $v:literal $start:literal:$end:literal) => (
+    ($cx:ident u32 $v:literal $start:literal:$end:literal) => (
         Expr::Lit(LitExpr{ value: LitValue::Num(Numeric::U32($v)), span: Span::new($start, $end) })
     );
-    (u64 $v:literal $start:literal:$end:literal) => (
+    ($cx:ident u64 $v:literal $start:literal:$end:literal) => (
         Expr::Lit(LitExpr{value: LitValue::Num(Numeric::U64($v)), span: Span::new($start, $end) })
     );
-    (r32 $v:literal $start:literal:$end:literal) => (
+    ($cx:ident r32 $v:literal $start:literal:$end:literal) => (
         Expr::Lit(LitExpr{ value: LitValue::Num(Numeric::R32($v)), span: Span::new($start, $end) })
     );
-    (r64 $v:literal $start:literal:$end:literal) => (
+    ($cx:ident r64 $v:literal $start:literal:$end:literal) => (
         Expr::Lit(LitExpr{ value: LitValue::Num(Numeric::R64($v)), span: Span::new($start, $end) })
-    );
-    (path $($tt:tt)+) => (
-        Expr::Path(make_path!($($tt)+))
     );
     ($cx:ident path $($tt:tt)+) => (
         Expr::Path(make_path!($cx $($tt)+))
     );
-    (binary $start:literal:$end:literal $op:ident $op_start:literal:$op_end:literal $left:expr, $right:expr) => (Expr::Binary(BinaryExpr{
+    ($cx:ident binary $start:literal:$end:literal $op:ident $op_start:literal:$op_end:literal $left:expr, $right:expr) => (Expr::Binary(BinaryExpr{
         left: Box::new($left),
         right: Box::new($right),
         op: Separator::$op,
         op_span: Span::new($op_start, $op_end),
         span: Span::new($start, $end),
     }));
-    (unary $start:literal:$end:literal $op:ident $op_start:literal:$op_end:literal $base:expr) => (Expr::Unary(UnaryExpr{
+    ($cx:ident unary $start:literal:$end:literal $op:ident $op_start:literal:$op_end:literal $base:expr) => (Expr::Unary(UnaryExpr{
         base: Box::new($base),
         op: Separator::$op,
         op_span: Span::new($op_start, $op_end),
@@ -228,19 +220,19 @@ macro_rules! make_expr {
             parameters: Some(TypeList{ items: vec![$($parameter,)*], span: Span::new($quote_start, $quote_end) }),
         })
     );
-    (array $start:literal:$end:literal $($item:expr),*$(,)?) => (Expr::Array(ArrayExpr{
+    ($cx:ident array $start:literal:$end:literal $($item:expr),*$(,)?) => (Expr::Array(ArrayExpr{
         span: Span::new($start, $end),
         items: vec![$($item,)*],
     }));
-    (tuple $start:literal:$end:literal $($item:expr),*$(,)?) => (Expr::Tuple(TupleExpr{
+    ($cx:ident tuple $start:literal:$end:literal $($item:expr),*$(,)?) => (Expr::Tuple(TupleExpr{
         span: Span::new($start, $end),
         items: vec![$($item,)*],
     }));
-    (paren $start:literal:$end:literal $base:expr) => (Expr::Paren(ParenExpr{
+    ($cx:ident paren $start:literal:$end:literal $base:expr) => (Expr::Paren(ParenExpr{
         base: Box::new($base),
         span: Span::new($start, $end),
     }));
-    (object $start:literal:$end:literal quote $quote_start:literal:$quote_end:literal $base:expr, $($field:expr),*$(,)?) => (
+    ($cx:ident object $start:literal:$end:literal quote $quote_start:literal:$quote_end:literal $base:expr, $($field:expr),*$(,)?) => (
         Expr::Object(ObjectExpr{
             base: Box::new($base),
             quote_span: Span::new($quote_start, $quote_end),
@@ -255,7 +247,7 @@ macro_rules! make_expr {
             value: $value,
         }
     );
-    (call $start:literal:$end:literal paren $paren_start:literal:$paren_end:literal $base:expr, $($parameter:expr),*$(,)?) => (
+    ($cx:ident call $start:literal:$end:literal paren $paren_start:literal:$paren_end:literal $base:expr, $($parameter:expr),*$(,)?) => (
         Expr::Call(CallExpr{
             base: Box::new($base),
             quote_span: Span::new($paren_start, $paren_end),
@@ -263,7 +255,7 @@ macro_rules! make_expr {
             parameters: vec![$($parameter,)*],
         })
     );
-    (array index $start:literal:$end:literal bracket $bracket_start:literal:$bracket_end:literal $base:expr, $($parameter:expr),*$(,)?) => (
+    ($cx:ident array index $start:literal:$end:literal bracket $bracket_start:literal:$bracket_end:literal $base:expr, $($parameter:expr),*$(,)?) => (
         Expr::ArrayIndex(ArrayIndexExpr{
             base: Box::new($base),
             quote_span: Span::new($bracket_start, $bracket_end),
@@ -271,34 +263,27 @@ macro_rules! make_expr {
             parameters: vec![$($parameter,)*],
         })
     );
-    (tuple index $start:literal:$end:literal dot $dot_start:literal:$dot_end:literal i32 $value:literal $value_start:literal:$value_end:literal $base:expr) => (
+    ($cx:ident tuple index $start:literal:$end:literal dot $dot_start:literal:$dot_end:literal i32 $value:literal $value_start:literal:$value_end:literal $base:expr) => (
         Expr::TupleIndex(TupleIndexExpr{
             span: Span::new($start, $end),
             base: Box::new($base),
             op_span: Span::new($dot_start, $dot_end),
-            value: (Numeric::I32($value), Span::new($value_start, $value_end)),
+            value: $value, 
+            value_span: Span::new($value_start, $value_end),
         })
     );
-    (tuple index $start:literal:$end:literal dot $dot_start:literal:$dot_end:literal numeric $variant:ident($value:literal) $value_start:literal:$value_end:literal $base:expr) => (
-        Expr::TupleIndex(TupleIndexExpr{
-            span: Span::new($start, $end),
-            base: Box::new($base),
-            op_span: Span::new($dot_start, $dot_end),
-            value: (Numeric::$variant($value), Span::new($value_start, $value_end)),
-        })
-    );
-    (range full $start:literal:$end:literal) => (Expr::RangeFull(RangeFullExpr{
+    ($cx:ident range full $start:literal:$end:literal) => (Expr::RangeFull(RangeFullExpr{
         span: Span::new($start, $end),
     }));
-    (range left $start:literal:$end:literal $base:expr) => (Expr::RangeLeft(RangeLeftExpr{
+    ($cx:ident range left $start:literal:$end:literal $base:expr) => (Expr::RangeLeft(RangeLeftExpr{
         span: Span::new($start, $end),
         base: Box::new($base),
     }));
-    (range right $start:literal:$end:literal $base:expr) => (Expr::RangeRight(RangeRightExpr{
+    ($cx:ident range right $start:literal:$end:literal $base:expr) => (Expr::RangeRight(RangeRightExpr{
         span: Span::new($start, $end),
         base: Box::new($base),
     }));
-    (range both $start:literal:$end:literal dotdot $dotdot_start:literal:$dotdot_end:literal $left:expr, $right:expr) => (
+    ($cx:ident range both $start:literal:$end:literal dotdot $dotdot_start:literal:$dotdot_end:literal $left:expr, $right:expr) => (
         Expr::RangeBoth(RangeBothExpr{
             span: Span::new($start, $end),
             op_span: Span::new($dotdot_start, $dotdot_end),
@@ -339,13 +324,19 @@ macro_rules! make_stmt {
     ($cx:ident gp $start:literal:$end:literal #$id:tt) => (
         GenericParameter{ span: Span::new($start, $end), name: IdSpan::new(make_isid!($cx, $id), Span::new($start, $end)) }
     );
-    (block $start:literal:$end:literal $($item:expr),*$(,)?) => (
+    ($cx:ident body $start:literal:$end:literal $($item:expr),*$(,)?) => (
         Block{
             span: Span::new($start, $end),
             items: vec![$($item.into(),)*],
         }
     );
-    // fn def is too long and recommend directly struct literal
+    ($cx:ident block $start:literal:$end:literal $label:expr, $body:expr) => (
+        BlockStatement{
+            span: Span::new($start, $end),
+            label: $label,
+            body: $body,
+        }
+    );
     ($cx:ident fp $start:literal:$end:literal #$id:tt $id_start:literal:$id_end:literal $type:expr) => (
         FnDefParameter{
             span: Span::new($start, $end),
@@ -353,6 +344,31 @@ macro_rules! make_stmt {
             r#type: $type,
         }
     );
+    // too complex to make it look like pretty print, so it looks like struct literal, except 2 spans
+    ($cx:ident fn $start:literal:$end:literal quote $quote_start:literal:$quote_end:literal name: $name:expr, parameters: $parameters:expr, ret_type: $ret_type:expr, wheres: $wheres:expr, body: $body:expr) => (
+        FnDef{
+            span: Span::new($start, $end),
+            name: $name,
+            quote_span: Span::new($quote_start, $quote_end),
+            parameters: $parameters,
+            ret_type: $ret_type,
+            wheres: $wheres,
+            body: $body,
+        }
+    );
+    // TODO: should can be merged into expr by .into after arena refactor
+    ($cx:ident fn item $start:literal:$end:literal quote $quote_start:literal:$quote_end:literal name: $name:expr, parameters: $parameters:expr, ret_type: $ret_type:expr, wheres: $wheres:expr, body: $body:expr) => (
+        Item::Fn(FnDef{
+            span: Span::new($start, $end),
+            name: $name,
+            quote_span: Span::new($quote_start, $quote_end),
+            parameters: $parameters,
+            ret_type: $ret_type,
+            wheres: $wheres,
+            body: $body,
+        })
+    );
+    // TODO: should can be merged into expr by .into after arena refactor
     ($cx:ident for $start:literal:$end:literal var #$iter_var:tt $iter_var_start:literal:$iter_var_end:literal $label:expr, $iter_expr:expr, $body:expr) => (
         ForStatement{
             label: $label,
@@ -362,14 +378,14 @@ macro_rules! make_stmt {
             span: Span::new($start, $end),
         }
     );
-    (loop $start:literal:$end:literal $label:expr, $body:expr) => (
+    ($cx:ident loop $start:literal:$end:literal $label:expr, $body:expr) => (
         LoopStatement{
             label: $label,
             body: $body,
             span: Span::new($start, $end),
         }
     );
-    (while $start:literal:$end:literal $label:expr, $expr:expr, $body:expr) => (
+    ($cx:ident while $start:literal:$end:literal $label:expr, $expr:expr, $body:expr) => (
         WhileStatement{
             label: $label,
             condition: $expr,
@@ -377,13 +393,13 @@ macro_rules! make_stmt {
             span: Span::new($start, $end),
         }
     );
-    (break $start:literal:$end:literal $label:expr) => (
+    ($cx:ident break $start:literal:$end:literal $label:expr) => (
         BreakStatement{
             label: $label,
             span: Span::new($start, $end),
         }
     );
-    (continue $start:literal:$end:literal $label:expr) => (
+    ($cx:ident continue $start:literal:$end:literal $label:expr) => (
         ContinueStatement{
             label: $label,
             span: Span::new($start, $end),
@@ -407,39 +423,208 @@ macro_rules! make_stmt {
             span: Span::new($start, $end),
         }
     );
-    (ret $start:literal:$end:literal $value:expr) => (
+    ($cx:ident ret $start:literal:$end:literal $value:expr) => (
         ReturnStatement{
             span: Span::new($start, $end),
             value: $value,
         }
     );
-    (expr $start:literal:$end:literal $expr:expr) => (
-        SimpleExprStatement{
+    ($cx:ident expr $start:literal:$end:literal $expr:expr) => (
+        Statement::SimpleExpr(SimpleExprStatement{
             span: Span::new($start, $end),
             expr: $expr,
-        }
+        })
     );
-    (assign $start:literal:$end:literal $op:ident $op_start:literal:$op_end:literal $left:expr, $right:expr) => (
-        AssignExprStatement{
+    ($cx:ident assign $start:literal:$end:literal $op:ident $op_start:literal:$op_end:literal $left:expr, $right:expr) => (
+        Statement::AssignExpr(AssignExprStatement{
             span: Span::new($start, $end),
             left: $left,
             right: $right,
             op: Separator::$op,
             op_span: Span::new($op_start, $op_end),
-        }
+        })
     );
-    (type $start:literal:$end:literal $name:expr) => (
+    // TODO: should can be merged into expr by .into after arena refactor
+    ($cx:ident expr item $start:literal:$end:literal $expr:expr) => (
+        Item::SimpleExpr(SimpleExprStatement{
+            span: Span::new($start, $end),
+            expr: $expr,
+        })
+    );
+    // TODO: should can be merged into expr by .into after arena refactor
+    ($cx:ident assign item $start:literal:$end:literal $op:ident $op_start:literal:$op_end:literal $left:expr, $right:expr) => (
+        Item::AssignExpr(AssignExprStatement{
+            span: Span::new($start, $end),
+            left: $left,
+            right: $right,
+            op: Separator::$op,
+            op_span: Span::new($op_start, $op_end),
+        })
+    );
+    // TODO: should can be merged into expr by .into after arena refactor
+    ($cx:ident type item $start:literal:$end:literal $name:expr) => (
+        Item::Type(TypeDef{
+            span: Span::new($start, $end),
+            name: $name,
+            from: None,
+        })
+    );
+    // TODO: should can be merged into expr by .into after arena refactor
+    ($cx:ident type item $start:literal:$end:literal $name:expr, $from:expr) => (
+        Item::Type(TypeDef{
+            span: Span::new($start, $end),
+            name: $name,
+            from: Some($from),
+        })
+    );
+    ($cx:ident type $start:literal:$end:literal $name:expr) => (
         TypeDef{
             span: Span::new($start, $end),
             name: $name,
             from: None,
         }
     );
-    (type $start:literal:$end:literal $name:expr, $from:expr) => (
+    ($cx:ident type $start:literal:$end:literal $name:expr, $from:expr) => (
         TypeDef{
             span: Span::new($start, $end),
             name: $name,
             from: Some($from),
+        }
+    );
+    ($cx:ident if $start:literal:$end:literal $if:expr, $($elseif:expr,)* else: $else: expr) => (
+        IfStatement{
+            span: Span::new($start, $end),
+            if_clause: $if,
+            elseif_clauses: vec![$($elseif,)*],
+            else_clause: $else,
+        }
+    );
+    ($cx:ident if clause $start:literal:$end:literal $condition:expr, $body:expr) => (
+        IfClause{
+            span: Span::new($start, $end),
+            condition: $condition,
+            body: $body,
+        }
+    );
+    ($cx:ident else $start:literal:$end:literal $body:expr) => (
+        ElseClause{
+            span: Span::new($start, $end),
+            body: $body,
+        }
+    );
+    ($cx:ident import $start:literal:$end:literal #$name:tt $name_start:literal:$name_end:literal $path:expr) => (
+        ModuleStatement{
+            span: Span::new($start, $end),
+            name: IdSpan::new(make_isid!($cx, $name), Span::new($name_start, $name_end)),
+            path: $path,
+        }
+    );
+    // TODO: should can be merged into expr by .into after arena refactor
+    ($cx:ident import item $start:literal:$end:literal #$name:tt $name_start:literal:$name_end:literal $path:expr) => (
+        Item::Import(ModuleStatement{
+            span: Span::new($start, $end),
+            name: IdSpan::new(make_isid!($cx, $name), Span::new($name_start, $name_end)),
+            path: $path,
+        })
+    );
+    // 'uses' not 'use': syntax highlight (the not semantic one) simply completely fails when 'use' is not correctly used
+    ($cx:ident uses $start:literal:$end:literal #$name:tt $name_start:literal:$name_end:literal $path:expr) => (
+        UseStatement{
+            span: Span::new($start, $end),
+            alias: Some(IdSpan::new(make_isid!($cx, $name), Span::new($name_start, $name_end))),
+            path: $path,
+        }
+    );
+    // TODO: should can be merged into expr by .into after arena refactor
+    ($cx:ident uses item $start:literal:$end:literal #$name:tt $name_start:literal:$name_end:literal $path:expr) => (
+        Item::Use(UseStatement{
+            span: Span::new($start, $end),
+            alias: Some(IdSpan::new(make_isid!($cx, $name), Span::new($name_start, $name_end))),
+            path: $path,
+        })
+    );
+    ($cx:ident uses $start:literal:$end:literal $path:expr) => (
+        UseStatement{
+            span: Span::new($start, $end),
+            alias: None,
+            path: $path,
+        }
+    );
+    // TODO: should can be merged into expr by .into after arena refactor
+    ($cx:ident uses item $start:literal:$end:literal $path:expr) => (
+        Item::Use(UseStatement{
+            span: Span::new($start, $end),
+            alias: None,
+            path: $path,
+        })
+    );
+    // this is not statement, but put it here seems ok (include put parse_module test in stmt.rs)
+    ($cx:ident module $file_id:literal $($item:expr),*) => (
+        Module{
+            file: FileId::new($file_id),
+            items: vec![$($item,)*],
+        }
+    );
+    ($cx:ident class $start:literal:$end:literal quote $quote_start:literal:$quote_end:literal $name:expr, $($item:expr),* $(,)?) => (
+        ClassDef{
+            span: Span::new($start, $end),
+            name: $name,
+            quote_span: Span::new($quote_start, $quote_end),
+            items: vec![$($item,)*],
+        }
+    );
+    ($cx:ident enum $start:literal:$end:literal quote $quote_start:literal:$quote_end:literal $name:expr, $base:expr, $($variant:expr),*$(,)?) => (
+        EnumDef{
+            span: Span::new($start, $end),
+            name: $name,
+            base_type: $base,
+            quote_span: Span::new($quote_start, $quote_end),
+            variants: vec![$($variant,)*],
+        }
+    );
+    ($cx:ident variant $start:literal:$end:literal #$name:tt $name_start:literal:$name_end:literal) => (
+        EnumDefVariant{
+            span: Span::new($start, $end),
+            name: IdSpan::new(make_isid!($cx, $name), Span::new($name_start, $name_end)),
+            value: None,
+        }
+    );
+    ($cx:ident variant $start:literal:$end:literal #$name:tt $name_start:literal:$name_end:literal $value:expr) => (
+        EnumDefVariant{
+            span: Span::new($start, $end),
+            name: IdSpan::new(make_isid!($cx, $name), Span::new($name_start, $name_end)),
+            value: Some($value),
+        }
+    );
+    ($cx:ident struct $start:literal:$end:literal $name:expr, $($field:expr),* $(,)?) => (
+        StructDef{
+            span: Span::new($start, $end),
+            name: $name,
+            fields: vec![$($field,)*],
+        }
+    );
+    ($cx:ident struct field $start:literal:$end:literal #$name:tt $name_start:literal:$name_end:literal colon $colon_start:literal:$colon_end:literal $type:expr$(,)?) => (
+        FieldDef{
+            span: Span::new($start, $end),
+            name: IdSpan::new(make_isid!($cx, $name), Span::new($name_start, $name_end)),
+            colon_span: Span::new($colon_start, $colon_end),
+            r#type: $type,
+        }
+    );
+    // too complex to make it look like pretty print, so it looks like struct literal, except the span
+    ($cx:ident impl $start:literal:$end:literal $($field:ident: $value:expr),+) => (
+        Implementation{
+            span: Span::new($start, $end),
+            $(
+                $field: $value,
+            )+
+        }
+    );
+    ($cx:ident where $start:literal:$end:literal #$name:tt $name_start:literal:$name_end:literal $($constraint:expr),* $(,)?) => (
+        WhereClause{
+            span: Span::new($start, $end),
+            name: IdSpan::new(make_isid!($cx, $name), Span::new($name_start, $name_end)),
+            constraints: vec![$($constraint,)*],
         }
     );
 }
@@ -451,7 +636,7 @@ macro_rules! make_path {
     ($cx:ident segment simple $start:literal:$end:literal #$ident:tt) => (
         PathSegment::Simple(SimpleSegment{ span: Span::new($start, $end), name: make_isid!($cx, $ident) })
     );
-    (segment cast $start:literal:$end:literal $left:expr, $right:expr) => (
+    ($cx:ident segment cast $start:literal:$end:literal $left:expr, $right:expr) => (
         PathSegment::Cast(CastSegment{ span: Span::new($start, $end), left: $left, right: $right })
     );
     ($cx:ident segment generic $start:literal:$end:literal #$ident:tt $ident_start:literal:$ident_end:literal quote $quote_start:literal:$quote_end:literal $($parameter:expr),*$(,)?) => (
@@ -461,7 +646,7 @@ macro_rules! make_path {
             parameters: TypeList{ items: vec![$($parameter,)*], span: Span::new($quote_start, $quote_end) },
         })
     );
-    ($start:literal:$end:literal $($segment:expr),*$(,)?) => (
+    ($cx:ident $start:literal:$end:literal $($segment:expr),*$(,)?) => (
         Path{ span: Span::new($start, $end), segments: vec![$($segment,)*] }
     );
     ($cx:ident simple $start:literal:$end:literal #$ident:tt) => (
@@ -470,37 +655,41 @@ macro_rules! make_path {
 }
 
 macro_rules! make_type {
-    (prim $start:literal:$end:literal $kw:ident) => (
+    ($cx:ident prim $start:literal:$end:literal $kw:ident) => (
         TypeRef::Primitive(PrimitiveType{ base: Keyword::$kw, span: Span::new($start, $end) })
     );
-    (ref $start:literal:$end:literal $inner:expr) => (
+    // TODO: should can be merged into expr by .into after arena refactor
+    ($cx:ident prim bare $start:literal:$end:literal $kw:ident) => (
+        PrimitiveType{ base: Keyword::$kw, span: Span::new($start, $end) }
+    );
+    ($cx:ident ref $start:literal:$end:literal $inner:expr) => (
         TypeRef::Ref(RefType{ span: Span::new($start, $end), base: Box::new($inner) })
     );
-    (array $start:literal:$end:literal $base:expr, $size:expr) => (
+    ($cx:ident array $start:literal:$end:literal $base:expr, $size:expr) => (
         TypeRef::Array(ArrayType{ base: Box::new($base), size: $size, span: Span::new($start, $end) })
     );
-    (tuple $start:literal:$end:literal $($item:expr),*$(,)?) => (
+    ($cx:ident tuple $start:literal:$end:literal $($item:expr),*$(,)?) => (
         TypeRef::Tuple(TupleType{ parameters: vec![$($item,)*], span: Span::new($start, $end) })
     );
-    (path $($tt:tt)+) => (
-        TypeRef::Path(make_path!($($tt)+))
+    ($cx:ident path $($tt:tt)+) => (
+        TypeRef::Path(make_path!($cx $($tt)+))
     );
     ($cx:ident simple $start:literal:$end:literal #$ident:tt) => (
         TypeRef::Path(Path{ span: Span::new($start, $end), segments: vec![PathSegment::Simple(SimpleSegment{ name: make_isid!($cx, $ident), span: Span::new($start, $end) })] })
     );
-    (fn $start:literal:$end:literal paren $paren_start:literal:$paren_end:literal [$($parameter:expr),*$(,)?]) => (TypeRef::Fn(FnType{
+    ($cx:ident fn $start:literal:$end:literal paren $paren_start:literal:$paren_end:literal [$($parameter:expr),*$(,)?]) => (TypeRef::Fn(FnType{
         quote_span: Span::new($paren_start, $paren_end),
         parameters: vec![$($parameter,)*],
         ret_type: None,
         span: Span::new($start, $end),
     }));
-    (fn ret $start:literal:$end:literal paren $paren_start:literal:$paren_end:literal [$($parameter:expr),*$(,)?], $ret:expr) => (TypeRef::Fn(FnType{
+    ($cx:ident fn ret $start:literal:$end:literal paren $paren_start:literal:$paren_end:literal [$($parameter:expr),*$(,)?], $ret:expr) => (TypeRef::Fn(FnType{
         quote_span: Span::new($paren_start, $paren_end),
         parameters: vec![$($parameter,)*],
         ret_type: Some(Box::new($ret)),
         span: Span::new($start, $end),
     }));
-    (fp $start:literal:$end:literal $ty:expr) => (FnTypeParameter{
+    ($cx:ident fp $start:literal:$end:literal $ty:expr) => (FnTypeParameter{
         name: None,
         r#type: $ty,
         span: Span::new($start, $end),

@@ -134,14 +134,31 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
 
     // tuple_member_expr = primary_expr '.' numeric
     // return dot span and tuple index and tuple index span, see parse_postfix_expr for the return type
-    pub fn parse_tuple_index_expr(&mut self) -> Result<(Span, (Numeric, Span)), Unexpected> {
+    pub fn parse_tuple_index_expr(&mut self) -> Result<(Span, (i32, Span)), Unexpected> {
         
         let dot_span = self.expect_sep(Separator::Dot)?;
-        let (numeric, numeric_span) = self.expect_numeric()?;
-        if !matches!(numeric, Numeric::I32(_) /* && is unsuffixed and unprefixed */) {
-            self.emit(strings::InvalidTupleIndex).span(numeric_span).help(strings::TupleIndexSyntaxHelp);
-        }
-        Ok((dot_span, (numeric, numeric_span)))
+        let value = match self.expect_numeric()? {
+            (Numeric::I32(v), numeric_span) => (v, numeric_span),
+            (_, numeric_span) => {
+                self.emit(strings::InvalidTupleIndex).span(numeric_span).help(strings::TupleIndexSyntaxHelp);
+                (0, numeric_span)
+            },
+        };
+        Ok((dot_span, value))
+    }
+
+    #[cfg(test)]
+    pub fn parse_tuple_index_expr_test(&mut self) -> Result<(Span, (i32, Span)), Unexpected> {
+        
+        let dot_span = self.expect_sep(Separator::Dot)?;
+        let value = match self.expect_numeric()? {
+            (Numeric::I32(v), numeric_span) => (v, numeric_span),
+            (_, numeric_span) => {
+                self.emit(strings::InvalidTupleIndex).span(numeric_span).help(strings::TupleIndexSyntaxHelp);
+                (0, numeric_span)
+            },
+        };
+        Ok((dot_span, value))
     }
 
     fn maybe_call_expr(&self) -> bool {
@@ -223,10 +240,10 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
                 let base = Box::new(current_expr);
                 current_expr = Expr::Call(CallExpr{ span, base, quote_span, parameters });
             } else if self.maybe_tuple_index_expr() {
-                let (op_span, value) = self.parse_tuple_index_expr()?;
-                let span = current_expr.span() + value.1;
+                let (op_span, (value, value_span)) = self.parse_tuple_index_expr()?;
+                let span = current_expr.span() + value_span;
                 let base = Box::new(current_expr);
-                current_expr = Expr::TupleIndex(TupleIndexExpr{ span, base, op_span, value });
+                current_expr = Expr::TupleIndex(TupleIndexExpr{ span, base, op_span, value, value_span });
             } else if self.maybe_array_index_expr() {
                 let (quote_span, parameters) = self.parse_array_index_expr()?;
                 let span = current_expr.span() + quote_span;

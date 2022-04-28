@@ -289,7 +289,7 @@ error: Invalid numeric literal, numeric literal should not start with 0
    |                                                                                                                                                                                ^^^ 
    = help: If you mean C style octal numeric literal, use `0o777` syntax
 
-total size 343967 > 51007
+total size 343943 > 51007
  [path-segment(simple)(496)] 111104 (32.30%) > 3968 (7.78%)
   [type-ref(primitive)(566)] 58864 (17.11%) > 4528 (8.88%)
 [path-segment(generic)(249)] 55776 (16.22%) > 1992 (3.91%)
@@ -311,7 +311,7 @@ total size 343967 > 51007
      [fn-type-parameter(58)] 1160 (0.34%) > 1392 (2.73%)
                [fn-type(18)] 864 (0.25%) > 504 (0.99%)
               [ref-type(41)] 656 (0.19%) > 492 (0.96%)
-         [item(var-decl)(1)] 328 (0.10%) > 8 (0.02%)
+         [item(var-decl)(1)] 304 (0.09%) > 8 (0.02%)
                [var-decl(1)] 21 (0.01%) > 29 (0.06%)
 module tests/ast/hugetype.f3
   var-def <1:1-76:198> mutable a <1:5-1:5>

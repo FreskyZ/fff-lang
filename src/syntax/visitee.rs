@@ -87,11 +87,8 @@ impl_node!{ CastSegment, visit_cast_segment, |self, v| {
 
 impl_node!{ ClassDef, visit_class_def, |self, v| {
     v.visit_generic_name(&self.name)?;
-    for r#type in &self.types {
-        v.visit_type_def(r#type)?;
-    }
-    for function in &self.functions {
-        v.visit_fn_def(function)?;
+    for item in &self.items {
+        v.visit_item(item)?;
     }
     Ok(Default::default())
 }}
@@ -222,11 +219,8 @@ impl_node!{ Implementation, visit_impl, |self, v| {
     for r#where in &self.wheres {
         v.visit_where_clause(r#where)?;
     }
-    for r#type in &self.types {
-        v.visit_type_def(r#type)?;
-    }
-    for function in &self.functions {
-        v.visit_fn_def(function)?;
+    for item in &self.items {
+        v.visit_item(item)?;
     }
     Ok(Default::default())
 }}

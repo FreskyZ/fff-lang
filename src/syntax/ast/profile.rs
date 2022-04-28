@@ -156,7 +156,7 @@ impl Visitor for MemoryProfiler {
         count_t(.span), count_owned(.left), count_owned(.right),
     }
     impl_visit!{ ClassDef, visit_class_def, "class-def",
-        count_t(.span), count_owned(.name), count_t(.quote_span), count_vec(.types), count_vec(.functions),
+        count_t(.span), count_owned(.name), count_t(.quote_span), count_vec(.items),
     }
     impl_visit!{ ContinueStatement, visit_continue_stmt, "continue-stmt",
         count_t(.span), count_t(.label),
@@ -222,7 +222,7 @@ impl Visitor for MemoryProfiler {
         count_t(.span), count_owned(.if_clause), count_vec(.elseif_clauses), count_option(.else_clause),
     }
     impl_visit!{ Implementation, visit_impl, "impl-block",
-        count_t(.span), count_vec(.parameters), count_option(.class), count_owned(.r#type), count_vec(.wheres), count_t(.quote_span), count_vec(.types), count_vec(.functions),
+        count_t(.span), count_vec(.parameters), count_option(.class), count_owned(.r#type), count_vec(.wheres), count_t(.quote_span), count_vec(.items),
     }
     impl_visit!{ enum Item, visit_item, "item",
         Struct(StructDef), "struct",
