@@ -597,6 +597,12 @@ fn parse_expr() {
 
 #[test]
 fn parse_call_expr() {
+    fn cmp(actual: &(Span, Vec<TagIndex<Expr>>), expect: &(Span, Vec<TagIndex<Expr>>), arena: &Arena) -> bool {
+        actual.0 == expect.0 && asti::Eq::eq(&actual.1, &expect.1, arena)
+    }
+    fn debug(value: &(Span, Vec<TagIndex<Expr>>), arena: &Arena) -> String {
+        format!("({:?}, {:?})", value.0, value.1.iter().map(|i| format!("{:?}", asti::debug(i.as_repr().as_ref(), arena))).collect::<Vec<_>>())
+    }
 
     case!{ notast(cmp, debug) parse_call_expr "()", 
         |x| (Span::new(0, 1), Vec::new()),
@@ -616,6 +622,12 @@ fn parse_call_expr() {
 
 #[test]
 fn parse_array_index_expr() {
+    fn cmp(actual: &(Span, Vec<TagIndex<Expr>>), expect: &(Span, Vec<TagIndex<Expr>>), arena: &Arena) -> bool {
+        actual.0 == expect.0 && asti::Eq::eq(&actual.1, &expect.1, arena)
+    }
+    fn debug(value: &(Span, Vec<TagIndex<Expr>>), arena: &Arena) -> String {
+        format!("({:?}, {:?})", value.0, value.1.iter().map(|i| format!("{:?}", asti::debug(i.as_repr().as_ref(), arena))).collect::<Vec<_>>())
+    }
 
     case!{ notast(cmp, debug) parse_array_index_expr "[1, 2, ]", |x|
         (Span::new(0, 7), vec![
@@ -641,6 +653,12 @@ fn parse_array_index_expr() {
 
 #[test]
 fn parse_tuple_index_expr() {
+    fn cmp(actual: &(Span, (i32, Span)), expect: &(Span, (i32, Span)), _: &Arena) -> bool {
+        actual == expect
+    }
+    fn debug(value: &(Span, (i32, Span)), _: &Arena) -> impl fmt::Debug {
+        *value
+    }
 
     case!{ notast(cmp, debug) parse_tuple_index_expr_test ".0", 
         |x| (Span::new(0, 0), (0, Span::new(1, 1))),

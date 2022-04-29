@@ -5,6 +5,9 @@ use crate::lexical::{Parser as Scanner, Token, Numeric, Separator, SeparatorKind
 use crate::common::arena::{Arena, Index, TagIndex};
 use super::ast::*;
 
+#[cfg(test)]
+mod tests;
+
 /// unrecoverable unexpected for this parser, detail in diagnostics
 // this should be more readable than previous Result<Self::Output, ()>
 #[derive(Debug)]
