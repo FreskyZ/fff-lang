@@ -11,15 +11,6 @@ use parser::Parser;
 #[cfg(test)]
 pub use parser::Parser;
 
-impl<'a> crate::common::arena::Index<'a, ast::Module<'a>> {
-    pub fn imports(&self, arena: &'a crate::common::arena::Arena) -> Vec<ast::ModuleStatement> {
-        arena.get_iter(&arena.get(self).items).filter_map(|item| match item.as_repr().as_ref() {
-            ast::Item::Import(module_stmt) => Some(arena.get(module_stmt).clone()),
-            _ => None,
-        }).collect()
-    }
-}
-
 // parse any types of node for test
 pub fn parse_any<'a, T>(
     source: crate::source::SourceChars, 

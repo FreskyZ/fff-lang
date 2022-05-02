@@ -25,6 +25,359 @@ impl EmplaceConcreteHelper for Arena {
 }
 
 // AUTOGEN
+impl<'a> From<Index<'a, LitExpr>> for Expr<'a> {
+    fn from(index: Index<'a, LitExpr>) -> Self {
+        Expr::Lit(index)
+    }
+}
+
+impl<'a> From<Index<'a, Path<'a>>> for Expr<'a> {
+    fn from(index: Index<'a, Path<'a>>) -> Self {
+        Expr::Path(index)
+    }
+}
+
+impl<'a> From<Index<'a, ParenExpr<'a>>> for Expr<'a> {
+    fn from(index: Index<'a, ParenExpr<'a>>) -> Self {
+        Expr::Paren(index)
+    }
+}
+
+impl<'a> From<Index<'a, TupleExpr<'a>>> for Expr<'a> {
+    fn from(index: Index<'a, TupleExpr<'a>>) -> Self {
+        Expr::Tuple(index)
+    }
+}
+
+impl<'a> From<Index<'a, ArrayExpr<'a>>> for Expr<'a> {
+    fn from(index: Index<'a, ArrayExpr<'a>>) -> Self {
+        Expr::Array(index)
+    }
+}
+
+impl<'a> From<Index<'a, CallExpr<'a>>> for Expr<'a> {
+    fn from(index: Index<'a, CallExpr<'a>>) -> Self {
+        Expr::Call(index)
+    }
+}
+
+impl<'a> From<Index<'a, ArrayIndexExpr<'a>>> for Expr<'a> {
+    fn from(index: Index<'a, ArrayIndexExpr<'a>>) -> Self {
+        Expr::ArrayIndex(index)
+    }
+}
+
+impl<'a> From<Index<'a, TupleIndexExpr<'a>>> for Expr<'a> {
+    fn from(index: Index<'a, TupleIndexExpr<'a>>) -> Self {
+        Expr::TupleIndex(index)
+    }
+}
+
+impl<'a> From<Index<'a, MemberExpr<'a>>> for Expr<'a> {
+    fn from(index: Index<'a, MemberExpr<'a>>) -> Self {
+        Expr::Member(index)
+    }
+}
+
+impl<'a> From<Index<'a, ObjectExpr<'a>>> for Expr<'a> {
+    fn from(index: Index<'a, ObjectExpr<'a>>) -> Self {
+        Expr::Object(index)
+    }
+}
+
+impl<'a> From<Index<'a, UnaryExpr<'a>>> for Expr<'a> {
+    fn from(index: Index<'a, UnaryExpr<'a>>) -> Self {
+        Expr::Unary(index)
+    }
+}
+
+impl<'a> From<Index<'a, BinaryExpr<'a>>> for Expr<'a> {
+    fn from(index: Index<'a, BinaryExpr<'a>>) -> Self {
+        Expr::Binary(index)
+    }
+}
+
+impl<'a> From<Index<'a, RangeBothExpr<'a>>> for Expr<'a> {
+    fn from(index: Index<'a, RangeBothExpr<'a>>) -> Self {
+        Expr::RangeBoth(index)
+    }
+}
+
+impl<'a> From<Index<'a, RangeFullExpr>> for Expr<'a> {
+    fn from(index: Index<'a, RangeFullExpr>) -> Self {
+        Expr::RangeFull(index)
+    }
+}
+
+impl<'a> From<Index<'a, RangeLeftExpr<'a>>> for Expr<'a> {
+    fn from(index: Index<'a, RangeLeftExpr<'a>>) -> Self {
+        Expr::RangeLeft(index)
+    }
+}
+
+impl<'a> From<Index<'a, RangeRightExpr<'a>>> for Expr<'a> {
+    fn from(index: Index<'a, RangeRightExpr<'a>>) -> Self {
+        Expr::RangeRight(index)
+    }
+}
+
+impl<'a> From<Index<'a, StructDef<'a>>> for Item<'a> {
+    fn from(index: Index<'a, StructDef<'a>>) -> Self {
+        Item::Struct(index)
+    }
+}
+
+impl<'a> From<Index<'a, EnumDef<'a>>> for Item<'a> {
+    fn from(index: Index<'a, EnumDef<'a>>) -> Self {
+        Item::Enum(index)
+    }
+}
+
+impl<'a> From<Index<'a, FnDef<'a>>> for Item<'a> {
+    fn from(index: Index<'a, FnDef<'a>>) -> Self {
+        Item::Fn(index)
+    }
+}
+
+impl<'a> From<Index<'a, Implementation<'a>>> for Item<'a> {
+    fn from(index: Index<'a, Implementation<'a>>) -> Self {
+        Item::Impl(index)
+    }
+}
+
+impl<'a> From<Index<'a, TypeDef<'a>>> for Item<'a> {
+    fn from(index: Index<'a, TypeDef<'a>>) -> Self {
+        Item::Type(index)
+    }
+}
+
+impl<'a> From<Index<'a, ClassDef<'a>>> for Item<'a> {
+    fn from(index: Index<'a, ClassDef<'a>>) -> Self {
+        Item::Class(index)
+    }
+}
+
+impl<'a> From<Index<'a, BlockStatement<'a>>> for Item<'a> {
+    fn from(index: Index<'a, BlockStatement<'a>>) -> Self {
+        Item::Block(index)
+    }
+}
+
+impl<'a> From<Index<'a, SimpleExprStatement<'a>>> for Item<'a> {
+    fn from(index: Index<'a, SimpleExprStatement<'a>>) -> Self {
+        Item::SimpleExpr(index)
+    }
+}
+
+impl<'a> From<Index<'a, AssignExprStatement<'a>>> for Item<'a> {
+    fn from(index: Index<'a, AssignExprStatement<'a>>) -> Self {
+        Item::AssignExpr(index)
+    }
+}
+
+impl<'a> From<Index<'a, ForStatement<'a>>> for Item<'a> {
+    fn from(index: Index<'a, ForStatement<'a>>) -> Self {
+        Item::For(index)
+    }
+}
+
+impl<'a> From<Index<'a, IfStatement<'a>>> for Item<'a> {
+    fn from(index: Index<'a, IfStatement<'a>>) -> Self {
+        Item::If(index)
+    }
+}
+
+impl<'a> From<Index<'a, LoopStatement<'a>>> for Item<'a> {
+    fn from(index: Index<'a, LoopStatement<'a>>) -> Self {
+        Item::Loop(index)
+    }
+}
+
+impl<'a> From<Index<'a, VarDeclStatement<'a>>> for Item<'a> {
+    fn from(index: Index<'a, VarDeclStatement<'a>>) -> Self {
+        Item::VarDecl(index)
+    }
+}
+
+impl<'a> From<Index<'a, WhileStatement<'a>>> for Item<'a> {
+    fn from(index: Index<'a, WhileStatement<'a>>) -> Self {
+        Item::While(index)
+    }
+}
+
+impl<'a> From<Index<'a, UseStatement<'a>>> for Item<'a> {
+    fn from(index: Index<'a, UseStatement<'a>>) -> Self {
+        Item::Use(index)
+    }
+}
+
+impl<'a> From<Index<'a, ModuleStatement>> for Item<'a> {
+    fn from(index: Index<'a, ModuleStatement>) -> Self {
+        Item::Import(index)
+    }
+}
+
+impl<'a> From<Index<'a, SimpleSegment>> for PathSegment<'a> {
+    fn from(index: Index<'a, SimpleSegment>) -> Self {
+        PathSegment::Simple(index)
+    }
+}
+
+impl<'a> From<Index<'a, CastSegment<'a>>> for PathSegment<'a> {
+    fn from(index: Index<'a, CastSegment<'a>>) -> Self {
+        PathSegment::Cast(index)
+    }
+}
+
+impl<'a> From<Index<'a, GenericSegment<'a>>> for PathSegment<'a> {
+    fn from(index: Index<'a, GenericSegment<'a>>) -> Self {
+        PathSegment::Generic(index)
+    }
+}
+
+impl<'a> From<Index<'a, StructDef<'a>>> for Statement<'a> {
+    fn from(index: Index<'a, StructDef<'a>>) -> Self {
+        Statement::Struct(index)
+    }
+}
+
+impl<'a> From<Index<'a, EnumDef<'a>>> for Statement<'a> {
+    fn from(index: Index<'a, EnumDef<'a>>) -> Self {
+        Statement::Enum(index)
+    }
+}
+
+impl<'a> From<Index<'a, FnDef<'a>>> for Statement<'a> {
+    fn from(index: Index<'a, FnDef<'a>>) -> Self {
+        Statement::Fn(index)
+    }
+}
+
+impl<'a> From<Index<'a, Implementation<'a>>> for Statement<'a> {
+    fn from(index: Index<'a, Implementation<'a>>) -> Self {
+        Statement::Impl(index)
+    }
+}
+
+impl<'a> From<Index<'a, TypeDef<'a>>> for Statement<'a> {
+    fn from(index: Index<'a, TypeDef<'a>>) -> Self {
+        Statement::Type(index)
+    }
+}
+
+impl<'a> From<Index<'a, ClassDef<'a>>> for Statement<'a> {
+    fn from(index: Index<'a, ClassDef<'a>>) -> Self {
+        Statement::Class(index)
+    }
+}
+
+impl<'a> From<Index<'a, BlockStatement<'a>>> for Statement<'a> {
+    fn from(index: Index<'a, BlockStatement<'a>>) -> Self {
+        Statement::Block(index)
+    }
+}
+
+impl<'a> From<Index<'a, BreakStatement>> for Statement<'a> {
+    fn from(index: Index<'a, BreakStatement>) -> Self {
+        Statement::Break(index)
+    }
+}
+
+impl<'a> From<Index<'a, ContinueStatement>> for Statement<'a> {
+    fn from(index: Index<'a, ContinueStatement>) -> Self {
+        Statement::Continue(index)
+    }
+}
+
+impl<'a> From<Index<'a, SimpleExprStatement<'a>>> for Statement<'a> {
+    fn from(index: Index<'a, SimpleExprStatement<'a>>) -> Self {
+        Statement::SimpleExpr(index)
+    }
+}
+
+impl<'a> From<Index<'a, AssignExprStatement<'a>>> for Statement<'a> {
+    fn from(index: Index<'a, AssignExprStatement<'a>>) -> Self {
+        Statement::AssignExpr(index)
+    }
+}
+
+impl<'a> From<Index<'a, ForStatement<'a>>> for Statement<'a> {
+    fn from(index: Index<'a, ForStatement<'a>>) -> Self {
+        Statement::For(index)
+    }
+}
+
+impl<'a> From<Index<'a, IfStatement<'a>>> for Statement<'a> {
+    fn from(index: Index<'a, IfStatement<'a>>) -> Self {
+        Statement::If(index)
+    }
+}
+
+impl<'a> From<Index<'a, LoopStatement<'a>>> for Statement<'a> {
+    fn from(index: Index<'a, LoopStatement<'a>>) -> Self {
+        Statement::Loop(index)
+    }
+}
+
+impl<'a> From<Index<'a, ReturnStatement<'a>>> for Statement<'a> {
+    fn from(index: Index<'a, ReturnStatement<'a>>) -> Self {
+        Statement::Return(index)
+    }
+}
+
+impl<'a> From<Index<'a, VarDeclStatement<'a>>> for Statement<'a> {
+    fn from(index: Index<'a, VarDeclStatement<'a>>) -> Self {
+        Statement::VarDecl(index)
+    }
+}
+
+impl<'a> From<Index<'a, WhileStatement<'a>>> for Statement<'a> {
+    fn from(index: Index<'a, WhileStatement<'a>>) -> Self {
+        Statement::While(index)
+    }
+}
+
+impl<'a> From<Index<'a, UseStatement<'a>>> for Statement<'a> {
+    fn from(index: Index<'a, UseStatement<'a>>) -> Self {
+        Statement::Use(index)
+    }
+}
+
+impl<'a> From<Index<'a, ArrayType<'a>>> for TypeRef<'a> {
+    fn from(index: Index<'a, ArrayType<'a>>) -> Self {
+        TypeRef::Array(index)
+    }
+}
+
+impl<'a> From<Index<'a, FnType<'a>>> for TypeRef<'a> {
+    fn from(index: Index<'a, FnType<'a>>) -> Self {
+        TypeRef::Fn(index)
+    }
+}
+
+impl<'a> From<Index<'a, Path<'a>>> for TypeRef<'a> {
+    fn from(index: Index<'a, Path<'a>>) -> Self {
+        TypeRef::Path(index)
+    }
+}
+
+impl<'a> From<Index<'a, PrimitiveType>> for TypeRef<'a> {
+    fn from(index: Index<'a, PrimitiveType>) -> Self {
+        TypeRef::Primitive(index)
+    }
+}
+
+impl<'a> From<Index<'a, RefType<'a>>> for TypeRef<'a> {
+    fn from(index: Index<'a, RefType<'a>>) -> Self {
+        TypeRef::Ref(index)
+    }
+}
+
+impl<'a> From<Index<'a, TupleType<'a>>> for TypeRef<'a> {
+    fn from(index: Index<'a, TupleType<'a>>) -> Self {
+        TypeRef::Tuple(index)
+    }
+}
 pub trait EmplaceConcrete: EmplaceConcreteHelper {
 
     fn emplace_array_expr<'a>(

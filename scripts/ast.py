@@ -85,10 +85,6 @@ class Node(object):
     @property
     def lifetime(self):
         return "<'a>" if any(f.refnode is not None for f in self.fields) else ''
-    # arena parameter is not used if all fields are terminal
-    @property
-    def arena_parameter(self):
-        return 'arena' if self.lifetime else '_'
     @property
     def full_name(self):
         return self.name + self.lifetime
@@ -233,9 +229,19 @@ def generate_span(b, nodes):
 
 def generate_new(b, nodes):
 
-    b += '// AUTOGEN\n'
+    b += '// AUTOGEN'
+    for node in (n for n in nodes if n.is_enum):
+        for variant in node.fields:
+            if variant.refnode is not None:
+                b += '\n'
+                b += f'impl<\'a> From<{variant.refnode.parameter_name}> for {node.full_name} {{\n'
+                b += f'    fn from(index: {variant.refnode.parameter_name}) -> Self {{\n'
+                b += f'        {node.name}::{variant.name}(index)\n'
+                b += '    }\n'
+                b += '}\n'
+
     b += 'pub trait EmplaceConcrete: EmplaceConcreteHelper {\n'
-    for node in [n for n in nodes if n.is_struct]:
+    for node in (n for n in nodes if n.is_struct):
         b += '\n'
         b += f'    fn {node.emplace_name}<\'a>(\n'
         b += '        &\'a self,\n'
@@ -246,7 +252,7 @@ def generate_new(b, nodes):
 
     b += '\n'
     b += 'impl EmplaceConcrete for Arena {\n'
-    for node in [n for n in nodes if n.is_struct]:
+    for node in (n for n in nodes if n.is_struct):
         b += '\n'
         b += '    #[inline]\n'
         b += f'    fn {node.emplace_name}<\'a>(\n'
@@ -323,7 +329,7 @@ def generate_visit(b, nodes):
                         b += '        }\n'
                     elif field.special == 'vec':
                         iter_var = field.name[:-1]
-                        iter_var = 'r#' + iter_var if iter_var in ['type', 'where'] else iter_var
+                        iter_var = 'r#' + iter_var if iter_var in ('type', 'where') else iter_var
                         b += f'        for {iter_var} in arena.get_iter(&this.{field.name}) {{\n'
                         b += f'            v.{field.refnode.visit_name}({iter_var}, arena)?;\n'
                         b += '        }\n'
@@ -397,7 +403,7 @@ def generate_profile(b, nodes):
     b += '}\n'
     b += '\n'
     b += 'impl MemoryProfiler {\n'
-    b += '    fn new() -> Self {\n'
+    b += '    pub fn new() -> Self {\n'
     b += f'        Self{{ v: [Entry{{ count: 0, size: 0 }}; {len(structs)}] }}\n'
     b += '    }\n'
     b += '    pub fn coverage(&self) -> (usize, usize, String) {\n'
@@ -432,7 +438,7 @@ if __name__ == '__main__':
                 print(f'    {"field" if node.is_struct else "variant"} {field.name}: {field.full_type}')
     print(f'{len(nodes)} nodes ({counts[0]} structs {counts[1]} fields, {counts[2]} enums {counts[3]} variants)')
 
-    for partial, fn, filename in [\
+    for partial, fn, filename in (\
         (1, generate_entry, ENTRY_FILE),\
         (1, generate_span, SPAN_FILE),\
         (1, generate_new, NEW_FILE),\
@@ -441,7 +447,7 @@ if __name__ == '__main__':
         (1, generate_cmp, CMP_FILE),\
         (1, generate_debug, UGLY_FILE),\
         (1, generate_profile, PROFILE_FILE),\
-    ]:
+    ):
         b = ''
         if partial:
             with open(filename) as file:
