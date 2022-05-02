@@ -1,8 +1,11 @@
-// see docs/internal/tree-memory.md
-
-// NOTE this implmementation is completely single threaded,
-// I'm not familiar with both multi thread programing and unsafe programming,
-// so there may a lot of traditional multi thread issue if the compiler become multi threaded
+///! A region based memory management strategy implementation
+///!
+///! see [memory-management.md](docs/internal/memory-management.md) about motivation
+///! it is different from [typed-arena] that this arena allows different types of object
+///! it is different from [bumpalo] that this arena uses handles (index/slice) instead of reference
+///!
+///! [typed-arena](https://crates.io/crates/typed_arena)
+///! [bumpalo](https://crates.io/crates/bumpalo)
 
 // this is currently the reason this project needs nightly,
 // there is std::alloc::alloc method, but they said they will deprecate when Allocator trait stablized
@@ -17,6 +20,59 @@ use std::ptr::NonNull;
 #[cfg(test)]
 mod tests;
 
+// Some approaches / detailed designs that tried / considered and abort
+// 1. typed arena,
+//    because there is many different types inside an ast
+// 2. reference based,
+//    because index saves memory than 8 byte reference
+// 3. derive `Clone`/`Copy` for `Index` regardless of underlying `T`, and pass `Index` as value in `get{_mut}` methods
+//    it violates reference alias rule that you can claim 2 mutable reference of same object,
+//    which may make hard-to-debug runtime errors and incorrect optimizations (rustc thinks 2 mutable reference do not alias),
+//    so currently `get{_iter}{_mut}` methods binds the returned reference to index/slice, which can restrict returned reference
+//    to index/slice's lifetime, which is very correct for index/slice's "owned handle" semantic
+// 4. use `ops::Index` for `Arena::get{_iter}{_mut}`
+//    the returned reference binds to self not the index so cannot use
+// 5. bit operation the tag of a tagged union (enum, e.g. Expr) into the index, which is normally small and not using top bits
+//    1. similar to index/slice, the tagged index would want to be used like `&TagIndex => &Enum`,
+//       but there is no place to let the reference (the pointer) points to, for index/arena, their return value
+//       points to actual data in arena (in one chunk), but tagged index is a compressed tag + index, not residual in arena,
+//       you definitely cannot simply use some `TagIndex::as_ref()` or `Arena::get_tagged()` to get the reference
+//    2. there was a try that create a `TagIndexRepr` to actually hold the values and cast itself to a reference to enum, 
+//       which normally looks like `index.as_repr().as_ref()` and is even longer for mutable version `index.as_repr_mut().as_mut()`,
+//       TagIndexRepr itself is not a reference and rely on rustc (maybe nll) to store this temp value to caller's stack,
+//       you cannot assign the returned value to local variable because the reference's lifetime is restricted to the
+//       method chain expression (like `stdin().lock()`), so the method chain is spreaded everywhere where tagged index is involved,
+//       and I'm not sure whether this temp value promotion will always happen, so this approach is abandoned
+//    3. another issue of `TagIndexRepr` is that relies on tagged union's layout, which is not guaranteed if you forget
+//       the `#[repr(C)]` or `#[repr(u8)]` on enum definition, it will cause very strange runtime errors if rust decide to 
+//       use u32 as tag value but you assume it's u8 in repr, segment fault at least 
+// 6. inline slice in struct, e.g. `struct ArrayExpr { span: Span, items: [Expr] }`
+//    1. it is hard to construct an instance of this type, even with the help of `place` or `emplace` methods,
+//       because you cannot easily assign a variable to `[Expr]` even holds a variable with value `[Expr]` (not `&[Expr]`)
+//    2. it does not support multiple slices in one struct, e.g. `struct FnDef { span: Span, parameters: [FnParameter], wheres: [Where] }`,
+//       you simply don't know where `wheres` is, which for normal structs, the offset is known by rustc and
+//       constant in generated code, add something like node.parameters(), node.wheres() is too complex and runtime cost
+// 7. inline data in slice
+//    it is actually ok to put same type objects directly in where slice's data points to, but caller's usage makes this incorrect,
+//    currently syntax `parse_*` methods returns index for normal (not enum) nodes, which means they are already constructed from local
+//    variables and allocated in arena before return, that's also important for the `place` or `emplace` design or else you have to
+//    move (memcpy) the whole structure and makes `place` or `emplace` method meaningless, BUT this design also means you can allocate
+//    many other objects between 2 logically continued item (fields for next item), so the original `build_slice` impementation, which
+//    consumes a `Vec<Index>` and only records head index and len, which assumes the `Vec<Index>` item is continuous, is very incorrect,
+//    so the original `Slice<T>` usage have to change to `Slice<Index<T>>`, whose iterator yields `Index<T>`, making this a double reference,
+//    logically a Vec<&T>, but necessary, on the other hand, the original `Slice<TagIndex<U>>`, after 5, can be changed to `Slice<U>`, where
+//    all enum values, whose size is always 2 u32s, can inline in slice's data pointer, and returning direct value in e.g. `parse_expr`
+//    methods makes the signature a lot easier and test methods kind of easier
+// 8. fixed size chunk
+//    no, fixed size chunk is easy to implement and hard to make mistake, but `rustc_arena`'s
+//    increasing chunk size design seems very great and interesting, so I change, too, with a very long partially auto generated test
+
+// general naming convension
+// T: type parameter for a normal node in tree
+// E: type parameter for an enum in tree
+// 'a: lifetime parameter for the arena
+// 'b: lifetime parameter for the handle
+
 /// A handle to an object in arena
 ///
 /// # No Derive
@@ -27,13 +83,16 @@ mod tests;
 ///   because the underlying numeric value is meaningless, data structures involving indexes should always use this with arena
 pub struct Index<'a, T> {
     v: NonZeroU32,
-    // index should be restricted to arena's lifetime
+    // this should not outlive arena
     p1: PhantomData<&'a Arena>,
-    // index is an owned handle of T
+    // this is an owned handle of T
     p2: PhantomData<T>,
 }
 
 /// A handle to a fixed length sequence of objects in arena
+/// 
+/// According to actual experience in syntax parser,
+/// normal nodes should use `Slice<Index<T>>` while enum nodes can use e.g. `Slice<Expr>`
 /// 
 /// see [`Index`] about no derives
 pub struct Slice<'a, T> {
@@ -57,86 +116,6 @@ impl<'a, T> Slice<'a, T> {
         self.len == 0
     }
 }
-
-/// A tagged index, or,
-/// a handle to an enum value whose all variants contain at most one [`Index`],
-/// this uses one u32 instead of two compared to normal representation
-/// 
-/// see [`Index`] about no derives
-pub struct TagIndex<'a, U> {
-    v: NonZeroU32,
-    // restrict to arena's lifetime
-    p1: PhantomData<&'a Arena>,
-    // tag index is also an owned handle of T
-    p2: PhantomData<U>,
-}
-
-impl<'a, U> TagIndex<'a, U> {
-
-    /// create tagged index from enum value
-    pub fn new(value: U) -> Self {
-
-        debug_assert!(size_of::<U>() == 8);
-        debug_assert!(size_of::<Repr>() == 8);
-        debug_assert!(align_of::<U>() == 4);
-        debug_assert!(align_of::<Repr>() == 4);
-        #[repr(C)] struct Repr { tag: u8, index: u32 }
-
-        // SAFETY:
-        // - already checked T's size is 8 and align is 4, which is same as TagIndexRepr
-        // - will check tag is less than 32 and index is not using first 3 bit and last 2 bit
-        // - will check repr index is larger than 0 for new_unchecked
-        // - after these checks, it really does not matter what W and U is but will always return valid value after decompression
-        unsafe {
-            let repr = &*(&value as *const U as *const Repr);
-            assert!(repr.tag < 32);
-            assert!(repr.index > 0);
-            assert!(repr.index & 0xE000_0003 == 0);
-            TagIndex{ v: NonZeroU32::new_unchecked(((repr.tag as u32) << 27) | (repr.index >> 2)), p1: PhantomData, p2: PhantomData }
-        }
-    }
-
-    fn decompress(&self) -> (u8, u32) {
-        let v = self.v.get();
-        ((v >> 27) as u8, (v & 0x07FF_FFFF) << 2)
-    }
-
-    /// Convert tag index to repr to be converted to a ref or mut ref later
-    ///
-    /// this cannot be simply an as_ref or as_mut on this type because
-    /// - the constructed repr type (the u8 + u32) is local variable and cannot return reference
-    /// - cannot return value because enum owns its index and that may makes an object have 2 index
-    /// - cannot require self to be mutable to prevent multiple index because many operations in ast is immutable
-    ///
-    /// so it mut be used like `index.as_repr().as_ref()` to let compiler (maybe nll?) to extend as_repr result lifetime to caller function
-    pub fn as_repr<'b>(&'b self) -> TagIndexRepr<'a, 'b, U> {
-        let (tag, index) = self.decompress();
-        TagIndexRepr{ tag, index, phantom: PhantomData }
-    }    
-    
-    /// Mutable version of as_repr, require ownership of tagindex or ownership of mutable reference of tagindex
-    /// 
-    /// ```compile_fail
-    /// # use fflib::common::arena::{Arena, Index};
-    /// struct S<'a>(u8, Index<'a, u32>);
-    /// fn tag<'a>(index: Index<'a, u32>) -> S<'a> { S(42, index) }
-    /// let arena = Arena::new();
-    /// let mut index = arena.emplace_tagged(tag, |n: &mut u32| { *n = 43; });
-    /// let repr = index.as_repr();
-    /// let r = arena.get(&repr.as_ref().1);
-    /// let _ = index.as_repr_mut().as_mut(); // cannot borrow as mutable because it is also borrowed as immutable
-    /// assert_eq!(r, &42); // use r to prevent nll(?) early drop
-    /// ```
-    pub fn as_repr_mut<'b>(&'b mut self) -> TagIndexReprMut<'a, 'b, U> {
-        let (tag, index) = self.decompress();
-        TagIndexReprMut{ tag, index, phantom: PhantomData }
-    }
-}
-
-/// A handle to a fixed length sequence of tagged indices in arena
-/// 
-/// see [`Index`] about no derives
-pub type TagSlice<'a, U> = Slice<'a, TagIndex<'a, U>>;
 
 const fn get_chunk_size(chunk_index: usize) -> usize {
     const SIZES: [usize; 11] = [
@@ -283,8 +262,9 @@ pub struct Arena {
     //   complex operation like puting chunk structure into
     //   another chunk or some linked list simply repeat a vector's work
     // RefCell:
-    //   if a memory manager requires mutable reference to return some reference like (via PhantonData),
-    //   it will be regarded as continuously mutable borrows self and cannot do anything more
+    //   a memory allocator cannot be mutable (allocate related method cannot mutable borrow self),
+    //   or else the first allocated object constantly mutable borrows self and the program cannot do anyhing
+    // RefCell make this struct not Sync, it may be better to store this inside TLS if multithreaded
     chunks: RefCell<Vec<Chunk>>,
 }
 
@@ -300,13 +280,6 @@ impl Drop for Arena {
 
 impl Arena {
 
-    // TODO this https://github.com/llogiq/compact_arena can give 2 arena different lifetime without help of closure
-    // ```compile_fail
-    // let arena1 = Arena::new();
-    // let arena2 = Arena::new();
-    // let index = arena1.emplace(|_: &mut i32| {});
-    // let value2 = arena2.get(&index);
-    // ```
     pub fn new() -> Self {
 
         // include first chunk in new, because you never want an empty arena
@@ -317,7 +290,7 @@ impl Arena {
         Self{ chunks: RefCell::new(vec![first_chunk]) }
     }
 
-    fn allocate_impl(&self, layout: Layout) -> (NonNull<u8>, NonZeroU32) {
+    fn allocate(&self, layout: Layout) -> (NonNull<u8>, NonZeroU32) {
         let mut chunks = self.chunks.borrow_mut();
         let chunk_index = chunks.len() - 1;
         assert!(layout.size() <= get_chunk_size(chunk_index + 1), "too large object");
@@ -348,7 +321,7 @@ impl Arena {
     /// let index = { let arena = Arena::new(); arena.emplace(|_: &mut i32| {}) }; // borrowed value does not live long enough
     /// ```
     pub fn emplace<'a, T: 'a, F: FnOnce(&'a mut T)>(&'a self, init: F) -> Index<'a, T> where T: Sized {
-        let (real, index) = self.allocate_impl(Layout::new::<T>());
+        let (real, index) = self.allocate(Layout::new::<T>());
         // SAFETY:
         // // from doc
         // // 1. The pointer must be properly aligned.
@@ -372,38 +345,16 @@ impl Arena {
         Index{ v: index, p1: PhantomData, p2: PhantomData }
     }
 
-    /// Allocate an object in place, and wrap it in an tagged union, and compress it to a [`TagIndex`]
-    /// 
-    // doc test seems very uncomfortable about this very unsafe underlying implementation and cannot actually run pass any runnable code
-    // so runnable code is marked not runnable (not `no_run` because that checkes, not `ignore` because that displays `ignore` in test result)
-    /// ```text
-    /// #[repr(C)] enum E<'a> { A(Index<'a, A>), B(Index<'a, B>) }
-    /// let index1 = arena.emplace_tagged(E::A, |n: &mut A| { n.0 = 42; });
-    /// let index2 = arena.emplace_tagged(E::B, |n: &mut B| { n.0 = 43; });
-    /// if let (E::A(index1), E::B(index2)) = (index1.as_repr().as_ref(), index2.as_repr().as_ref()) {
-    ///     assert_eq!(arena.get(index1).0, 42);
-    ///     assert_eq!(arena.get(index2).0, 43);
-    /// }
-    /// ```
-    pub fn emplace_tagged<
-        'a,    // the lifetime (tag) to this arena
-        T: 'a, // enum variant actual value type
-        U,     // enum type
-        I: FnOnce(&'a mut T),         // initialize value in place
-        W: FnOnce(Index<'a, T>) -> U, // wrap index into the enum
-    >(&'a self, wrap: W, init: I) -> TagIndex<'a, U> where T: Sized {
-        TagIndex::new(wrap(self.emplace(init)))
-    }
-
-    // slice is very similar to normal slice: items are inlined in the buffer that pointer point to,
-    // tagged slice also works like this except item is tagged index, which is itself a handle
-    // require all item's index because if only head + len is consumed by this function
-    // then it is able to retrieve 2 mutable reference of same object, which violates reference alias rule
-    pub fn build_slice<'a, T, I: IntoIterator<Item = Index<'a, T>>>(&'a self, into_iter: I) -> Slice<'a, T> {
+    // item should be index<T> for normal node and direct enum value for enum, see Some Approaches.8
+    pub fn build_slice<'a, T: 'a, I: IntoIterator<Item = T>>(&'a self, into_iter: I) -> Slice<'a, T> {
 
         let mut len = 0;
-        let mut head = dangling_index::<T>();
-        for index in into_iter {
+        // maybe invalid but aligned index, similar to ptr::dangling
+        // SAFETY: align will not be 0
+        let mut head = unsafe { NonZeroU32::new_unchecked(align_of::<T>() as u32) };
+
+        for item in into_iter {
+            let index = self.emplace(|n| { *n = item; });
             if len == 0 {
                 head = index.v;
             }
@@ -411,29 +362,6 @@ impl Arena {
         }
         Slice{ len, data: head, p1: PhantomData, p2: PhantomData }
     }
-
-    // like build slice, but item is tagged index
-    // unlike build slice, the tagged indices are emplaced because they are more like a "value" then a "handle"
-    // // use double pointer to reduce memory waste in tagged union is the actually purpose of this refactor 
-    pub fn build_tagged_slice<'a, U: 'a, I: IntoIterator<Item = TagIndex<'a, U>>>(&'a self, into_iter: I) -> TagSlice<'a, U> {
-        
-        let mut len = 0;
-        let mut head = dangling_index::<TagIndex<'a, U>>();
-        for index in into_iter {
-            let index = self.emplace(|n| *n = index);
-            if len == 0 {
-                head = index.v;
-            }
-            len += 1;
-        }
-        Slice{ len, data: head, p1: PhantomData, p2: PhantomData }
-    }
-}
-
-// maybe invalid but aligned index
-fn dangling_index<T>() -> NonZeroU32 {
-    // SAFETY: align will not be 0
-    unsafe { NonZeroU32::new_unchecked(align_of::<T>() as u32) }
 }
 
 // --------------------
@@ -497,100 +425,58 @@ impl Arena {
     /// Returns a iterable over reference to objects that this slice holds,
     /// see [`Arena::get`] about lifetime binding
     pub fn get_iter<'a, 'b: 'a, T>(&'a self, slice: &'b Slice<'a, T>) -> impl Iterator<Item = &'b T> {
-        SliceIter{ arena: self, current: slice.data.get(), remaining: slice.len, phantom: PhantomData }
+        SliceIter::<T, true>{ arena: self, current: slice.data.get(), remaining: slice.len, phantom: PhantomData }
     }
 
     /// Returns a iterable over mutable reference to objects that this slice holds,
     /// caller need to owned the slice or own a mutable reference to the slice,
     /// see [`Arena::get`] about lifetime binding
     pub fn get_iter_mut<'a, 'b: 'a, T>(&'a self, slice: &'b mut Slice<'a, T>) -> impl Iterator<Item = &'b mut T> {
-        SliceIterMut(SliceIter{ arena: self, current: slice.data.get(), remaining: slice.len, phantom: PhantomData })
+        SliceIter::<T, false>{ arena: self, current: slice.data.get(), remaining: slice.len, phantom: PhantomData }
     }
 }
 
-/// Tagged index representation after decompressed,
-/// should have same layout as an enum whose all variants contain exactly one index,
-/// create by [`TagIndex::as_repr`]
-/// 
-/// [repr(C)](https://doc.rust-lang.org/reference/type-layout.html#reprc-enums-with-fields)
-#[repr(C)]
-pub struct TagIndexRepr<'a, 'b, U> {
-    tag: u8,
-    index: u32,
-    // borrows tagindex
-    phantom: PhantomData<&'b TagIndex<'a, U>>,
-}
-
-impl<'a, 'b, T> AsRef<T> for TagIndexRepr<'a, 'b, T> {
-
-    fn as_ref(&self) -> &T {
-        // SAFETY: see Arena::emplace_tagged
-        unsafe {
-            &*(self as *const _ as *const _)
-        }
-    }
-}
-
-#[repr(C)]
-pub struct TagIndexReprMut<'a, 'b, U> {
-    tag: u8,
-    index: u32,
-    // mutable borrows tagindex
-    phantom: PhantomData<&'b mut TagIndex<'a, U>>,
-}
-
-impl<'a, 'b, T> AsMut<T> for TagIndexReprMut<'a, 'b, T> {
-
-    fn as_mut(&mut self) -> &mut T {
-        // SAFETY: see Arena::emplace_tagged
-        unsafe {
-            &mut *(self as *mut _ as *mut _)
-        }
-    }
-}
-
-struct SliceIter<'a, 'b, T> {
+// amazingly this works
+struct SliceIter<'a, 'b, T, const C: bool> {
     arena: &'a Arena,
     current: u32,   // index of next return value
     remaining: u32, // remaining item count
     phantom: PhantomData<&'b T>,
 }
 
-impl<'a, 'b, T> SliceIter<'a, 'b, T> {
+impl<'a, 'b, T> Iterator for SliceIter<'a, 'b, T, true> where 'b: 'a {
+    type Item = &'b T;
 
-    // immutable and mutable version only differs in the
-    // last NonNull::as_ref or NonNull::as_mut, so use this to prevent repeating
-    fn next_mut(&mut self) -> Option<&'b mut T> {
+    fn next(&mut self) -> Option<&'b T> {
         if self.remaining == 0 {
             None
         } else {
             self.remaining -= 1;
-            // SAFETY: the safety requirements are really long, but I have written really longer safety explanations, according to them this is safe
-            let result = unsafe { self.arena.map_index(self.current).cast::<T>().as_mut() };
-            // + sizeof(T) is enough because sizeof is multiple of alignof so align is always correct and no align padding between items
+            // SAFETY: I have written really longer safety explanations, according to them this is safe
+            let result = unsafe { self.arena.map_index(self.current).cast::<T>().as_ref() };
+            // + sizeof(T) is enough because sizeof is multiple of alignof 
+            // so align is always correct and no align padding between items
             self.current += size_of::<T>() as u32;
             Some(result)
         }
     }
 }
 
-impl<'a, 'b, T> Iterator for SliceIter<'a, 'b, T> where 'b: 'a {
-    type Item = &'b T;
-
-    fn next(&mut self) -> Option<&'b T> {
-        self.next_mut().map(|v| &*v)
-    }
-}
-
-// immutable and mutable version only differs in the
-// last NonNull::as_ref or NonNull::as_mut, so use this to prevent repeating
-struct SliceIterMut<'a, 'b, T>(SliceIter<'a, 'b, T>);
-
-impl<'a, 'b, T> Iterator for SliceIterMut<'a, 'b, T> where 'b: 'a {
+impl<'a, 'b, T> Iterator for SliceIter<'a, 'b, T, false> where 'b: 'a {
     type Item = &'b mut T;
 
     fn next(&mut self) -> Option<&'b mut T> {
-        self.0.next_mut()
+        if self.remaining == 0 {
+            None
+        } else {
+            self.remaining -= 1;
+            // SAFETY: I have written really longer safety explanations, according to them this is safe
+            let result = unsafe { self.arena.map_index(self.current).cast::<T>().as_mut() };
+            // + sizeof(T) is enough because sizeof is multiple of alignof 
+            // so align is always correct and no align padding between items
+            self.current += size_of::<T>() as u32;
+            Some(result)
+        }
     }
 }
 
