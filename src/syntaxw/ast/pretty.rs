@@ -93,6 +93,10 @@ impl<'s, 'f1, 'f2, F, const I: usize> Formatter<'s, 'f1, 'f2, F, I> where F: Fil
         if let Some(idspan) = idspan { self.space()?.idspan(idspan) } else { Ok(self) }
     }
 
+    fn endl(&mut self) -> Result<&mut Self, fmt::Error> {
+        self.base.write_char('\n')?;
+        Ok(self)
+    }
     fn space(&mut self) -> Result<&mut Self, fmt::Error> {
         self.base.write_char(' ')?;
         Ok(self)
@@ -112,7 +116,6 @@ impl<'s, 'f1, 'f2, F, const I: usize> Formatter<'s, 'f1, 'f2, F, I> where F: Fil
 
 macro_rules! next_level {
     ($self:ident, $e:expr) => {{
-        $self.base.write_char('\n')?;
         $self.level += 1;
         $e.into_result().map_err(|_| fmt::Error)?;
         $self.level -= 1;
@@ -160,7 +163,7 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
     fn visit_array_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, ArrayExpr<'a>>, arena: &'a Arena) -> Self::Result {
         let node = self.enter(node, arena);
         self.title("array-expr")?
-            .span(node.span)?
+            .span(node.span)?.endl()?
             .slice(&node.items, arena)?.finish()
     }
 
@@ -168,7 +171,7 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
         let node = self.enter(node, arena);
         self.title("array-index-expr")?
             .span(node.span)?
-            .str(" [] ")?.span(node.quote_span)?
+            .str(" [] ")?.span(node.quote_span)?.endl()?
             .role("base").forward(&node.base, arena)?
             .slice(&node.parameters, arena)?.finish()
     }
@@ -176,7 +179,7 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
     fn visit_array_type<'a, 'b: 'a>(&mut self, node: &'b Index<'a, ArrayType<'a>>, arena: &'a Arena) -> Self::Result {
         let node = self.enter(node, arena);
         self.title("array-type")?
-            .span(node.span)?
+            .span(node.span)?.endl()?
             .role("base").forward(&node.base, arena)?
             .role("size").forward(&node.size, arena)?.finish()
     }
@@ -186,7 +189,7 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
         self.title("assign-expr-stmt")?
             .span(node.span)?
             .space()?.str(node.op.display())?
-            .space()?.span(node.op_span)?
+            .space()?.span(node.op_span)?.endl()?
             .role("left").forward(&node.left, arena)?
             .role("right").forward(&node.right, arena)?.finish()
     }
@@ -196,7 +199,7 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
         self.title("binary-expr")?
             .span(node.span)?
             .space()?.str(node.op.display())?
-            .space()?.span(node.op_span)?
+            .space()?.span(node.op_span)?.endl()?
             .role("left").forward(&node.left, arena)?
             .role("right").forward(&node.right, arena)?.finish()
     }
@@ -204,7 +207,7 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
     fn visit_block<'a, 'b: 'a>(&mut self, node: &'b Index<'a, Block<'a>>, arena: &'a Arena) -> Self::Result {
         let node = self.enter(node, arena);
         self.title("block")?
-            .span(node.span)?
+            .span(node.span)?.endl()?
             .slice(&node.items, arena)?.finish()
     }
 
@@ -212,7 +215,7 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
         let node = self.enter(node, arena);
         self.title("block-stmt")?
             .span(node.span)?
-            .label(node.label)?
+            .label(node.label)?.endl()?
             .role("body").forward(&node.body, arena)?.finish()
     }
 
@@ -220,14 +223,14 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
         let node = self.enter(node, arena);
         self.title("break-stmt")?
             .span(node.span)?
-            .label(node.label)?.finish()
+            .label(node.label)?.endl()?.finish()
     }
 
     fn visit_call_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, CallExpr<'a>>, arena: &'a Arena) -> Self::Result {
         let node = self.enter(node, arena);
         self.title("call-expr")?
             .span(node.span)?
-            .str(" () ")?.span(node.quote_span)?
+            .str(" () ")?.span(node.quote_span)?.endl()?
             .role("base").forward(&node.base, arena)?
             .slice(&node.parameters, arena)?.finish()
     }
@@ -235,7 +238,7 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
     fn visit_cast_segment<'a, 'b: 'a>(&mut self, node: &'b Index<'a, CastSegment<'a>>, arena: &'a Arena) -> Self::Result {
         let node = self.enter(node, arena);
         self.title("cast-segment")?
-            .span(node.span)?
+            .span(node.span)?.endl()?
             .role("left").forward(&node.left, arena)?
             .role("right").forward(&node.right, arena)?.finish()
     }
@@ -244,7 +247,7 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
         let node = self.enter(node, arena);
         self.title("class-def")?
             .span(node.span)?
-            .str(" {} ")?.span(node.quote_span)?
+            .str(" {} ")?.span(node.quote_span)?.endl()?
             .role("name").forward(&node.name, arena)?
             .slice(&node.items, arena)?.finish()
     }
@@ -253,13 +256,13 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
         let node = self.enter(node, arena);
         self.title("continue-stmt")?
             .span(node.span)?
-            .label(node.label)?.finish()
+            .label(node.label)?.endl()?.finish()
     }
     
     fn visit_else_clause<'a, 'b: 'a>(&mut self, node: &'b Index<'a, ElseClause<'a>>, arena: &'a Arena) -> Self::Result {
         let node = self.enter(node, arena);
         self.title("else-clause")?
-            .span(node.span)?
+            .span(node.span)?.endl()?
             .role("body").forward(&node.body, &arena)?.finish()
     }
 
@@ -268,7 +271,7 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
         self.title("enum-def")?
             .span(node.span)?
             .space()?.idspan(node.name)?
-            .str(" {} ")?.span(node.quote_span)?
+            .str(" {} ")?.span(node.quote_span)?.endl()?
             .role("base-type").optional(&node.base_type, arena)?
             .slice(&node.variants, arena)?.finish()
     }
@@ -277,7 +280,7 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
         let node = self.enter(node, arena);
         self.title("enum-def-variant")?
             .span(node.span)?
-            .space()?.idspan(node.name)?
+            .space()?.idspan(node.name)?.endl()?
             .role("init").optional(&node.value, arena)?.finish()
     }
 
@@ -286,7 +289,7 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
         self.title("field-def")?
             .span(node.span)?
             .space()?.idspan(node.name)?
-            .str(" : ")?.span(node.colon_span)?
+            .str(" : ")?.span(node.colon_span)?.endl()?
             .forward(&node.r#type, arena)?.finish()
     }
 
@@ -294,18 +297,19 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
         let node = self.enter(node, arena);
         self.title("fn-def")?
             .span(node.span)?
-            .str(" () ")?.span(node.quote_span)?
+            .str(" () ")?.span(node.quote_span)?.endl()?
             .forward(&node.name, arena)?
             .slice(&node.parameters, arena)?
             .role("ret-type").optional(&node.ret_type, arena)?
-            .slice(&node.wheres, arena)?.finish()
+            .slice(&node.wheres, arena)?
+            .role("body").optional(&node.body, arena)?.finish()
     }
 
     fn visit_fn_def_parameter<'a, 'b: 'a>(&mut self, node: &'b Index<'a, FnDefParameter<'a>>, arena: &'a Arena) -> Self::Result {
         let node = self.enter(node, arena);
         self.title("fn-def-parameter")?
             .span(node.span)?
-            .space()?.idspan(node.name)?
+            .space()?.idspan(node.name)?.endl()?
             .forward(&node.r#type, arena)?.finish()
     }
 
@@ -313,7 +317,7 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
         let node = self.enter(node, arena);
         self.title("fn-type")?
             .span(node.span)?
-            .str(" () ")?.span(node.quote_span)?
+            .str(" () ")?.span(node.quote_span)?.endl()?
             .slice(&node.parameters, arena)?
             .role("ret-type").optional(&node.ret_type, arena)?.finish()
     }
@@ -322,7 +326,7 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
         let node = self.enter(node, arena);
         self.title("fn-type-parameter")?
             .span(node.span)?
-            .optional_idspan(node.name)?
+            .optional_idspan(node.name)?.endl()?
             .forward(&node.r#type, arena)?.finish()
     }
 
@@ -332,7 +336,7 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
             .span(node.span)?
             .str(" iter-var ")?.idspan(node.iter_name)?
             // TODO: should be before iter-var?
-            .label(node.label)?
+            .label(node.label)?.endl()?
             .role("iter-expr").forward(&node.iter_expr, arena)?
             .role("body").forward(&node.body, arena)?.finish()
     }
@@ -345,28 +349,28 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
         if node.quote_span != Span::new(0, 0) {
             self.str(" <> ")?.span(node.quote_span)?;
         }
-        self.slice(&node.parameters, arena)?.finish()
+        self.endl()?.slice(&node.parameters, arena)?.finish()
     }
 
     fn visit_generic_parameter<'a, 'b: 'a>(&mut self, node: &'b Index<'a, GenericParameter>, arena: &'a Arena) -> Self::Result {
         let node = self.enter(node, arena);
         self.title("generic-parameter")?
             .span(node.span)?
-            .space()?.isid(node.name.id)?.finish()
+            .space()?.isid(node.name.id)?.endl()?.finish()
     }
 
     fn visit_generic_segment<'a, 'b: 'a>(&mut self, node: &'b Index<'a, GenericSegment<'a>>, arena: &'a Arena) -> Self::Result {
         let node = self.enter(node, arena);
         self.title("generic-segment")?
             .span(node.span)?
-            .space()?.idspan(node.base)?
+            .space()?.idspan(node.base)?.endl()?
             .forward(&node.parameters, arena)?.finish()
     }
 
     fn visit_if_clause<'a, 'b: 'a>(&mut self, node: &'b Index<'a, IfClause<'a>>, arena: &'a Arena) -> Self::Result {
         let node = self.enter(node, arena);
         self.title("if-clause")?
-            .span(node.span)?
+            .span(node.span)?.endl()?
             .role("condition").forward(&node.condition, arena)?
             .role("body").forward(&node.body, arena)?.finish()
     }
@@ -374,7 +378,7 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
     fn visit_if_stmt<'a, 'b: 'a>(&mut self, node: &'b Index<'a, IfStatement<'a>>, arena: &'a Arena) -> Self::Result {
         let node = self.enter(node, arena);
         self.title("if-stmt")?
-            .span(node.span)?
+            .span(node.span)?.endl()?
             .forward(&node.if_clause, arena)?
             .slice(&node.elseif_clauses, arena)?
             .optional(&node.else_clause, arena)?.finish()
@@ -384,7 +388,7 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
         let node = self.enter(node, arena);
         self.title("impl-block")?
             .span(node.span)?
-            .str(" {} ")?.span(node.quote_span)?
+            .str(" {} ")?.span(node.quote_span)?.endl()?
             .slice(&node.parameters, arena)?
             .role("class").optional(&node.class, arena)?
             .forward(&node.r#type, arena)?
@@ -394,8 +398,7 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
 
     fn visit_lit_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, LitExpr>, arena: &'a Arena) -> Self::Result {
         let node = self.enter(node, arena);
-        self.title("lit-expr")?
-            .space()?;
+        self.title("lit-expr")?;
         match node.value {
             LitValue::Unit => self.str("unit")?,
             LitValue::Bool(v) => self.any(format_args!("bool {v}"))?,
@@ -403,14 +406,14 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
             LitValue::Str(id) => self.str("str \"")?.isid(id)?.str("\"")?,
             LitValue::Num(v) => self.any(format_args!("{v}"))?,
         };
-        self.space()?.span(node.span)?.finish()
+        self.space()?.span(node.span)?.endl()?.finish()
     }
 
     fn visit_loop_stmt<'a, 'b: 'a>(&mut self, node: &'b Index<'a, LoopStatement<'a>>, arena: &'a Arena) -> Self::Result {
         let node = self.enter(node, arena);
         self.title("loop-stmt")?
             .span(node.span)?
-            .label(node.label)?
+            .label(node.label)?.endl()?
             .role("body").forward(&node.body, arena)?.finish()
     }
 
@@ -419,7 +422,7 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
         self.title("member-expr")?
             .span(node.span)?
             .str(" . ")?.span(node.op_span)?
-            .space()?.idspan(node.name)?
+            .space()?.idspan(node.name)?.endl()?
             .role("base").forward(&node.base, arena)?
             .optional(&node.parameters, arena)?.finish()
     }
@@ -427,7 +430,7 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
     fn visit_module<'a, 'b: 'a>(&mut self, node: &'b Index<'a, Module<'a>>, arena: &'a Arena) -> Self::Result {
         let node = self.enter(node, arena);
         self.title("module")?
-            .space()?.file_id(node.file)?
+            .file_id(node.file)?.endl()?
             .slice(&node.items, arena)?.finish()
     }
 
@@ -439,14 +442,14 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
         if let Some(path) = node.path {
             self.str(" path ")?.idspan(path)?;
         }
-        self.finish()
+        self.endl()?.finish()
     }
 
     fn visit_object_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, ObjectExpr<'a>>, arena: &'a Arena) -> Self::Result {
         let node = self.enter(node, arena);
         self.title("object-expr")?
             .span(node.span)?
-            .str(" {} ")?.span(node.quote_span)?
+            .str(" {} ")?.span(node.quote_span)?.endl()?
             .role("base").forward(&node.base, arena)?
             .slice(&node.fields, arena)?.finish()
     }
@@ -455,27 +458,27 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
         let node = self.enter(node, arena);
         self.title("object-expr-field")?
             .span(node.span)?
-            .space()?.idspan(node.name)?
+            .space()?.idspan(node.name)?.endl()?
             .forward(&node.value, arena)?.finish()
     }
 
     fn visit_paren_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, ParenExpr<'a>>, arena: &'a Arena) -> Self::Result {
         let node = self.enter(node, arena);
         self.title("paren-expr")?
-            .span(node.span)?
+            .span(node.span)?.endl()?
             .forward(&node.base, arena)?.finish()
     }
 
     fn visit_path<'a, 'b: 'a>(&mut self, node: &'b Index<'a, Path<'a>>, arena: &'a Arena) -> Self::Result {
         let node = self.enter(node, arena);
         self.title("path")?
-            .span(node.span)?
+            .span(node.span)?.endl()?
             .slice(&node.segments, arena)?.finish()
     }
 
     fn visit_path_segment<'a, 'b: 'a>(&mut self, node: &'b PathSegment<'a>, arena: &'a Arena) -> Self::Result {
         match node {
-            PathSegment::Global => self.title("global-segment")?.finish(),
+            PathSegment::Global => self.title("global-segment")?.endl()?.finish(),
             PathSegment::Simple(v) => self.visit_simple_segment(v, arena),
             PathSegment::Cast(v) => self.visit_cast_segment(v, arena),
             PathSegment::Generic(v) => self.visit_generic_segment(v, arena),
@@ -485,15 +488,15 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
     fn visit_primitive_type<'a, 'b: 'a>(&mut self, node: &'b Index<'a, PrimitiveType>, arena: &'a Arena) -> Self::Result {
         let node = self.enter(node, arena);
         self.title("primitive-type")?
-            .space()?.str(node.base.display())?
-            .space()?.span(node.span)?.finish()
+            .str(node.base.display())?
+            .space()?.span(node.span)?.endl()?.finish()
     }
     
     fn visit_range_both_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, RangeBothExpr<'a>>, arena: &'a Arena) -> Self::Result {
         let node = self.enter(node, arena);
         self.title("range-both-expr")?
             .span(node.span)?
-            .str(" dotdot ")?.span(node.op_span)?
+            .str(" dotdot ")?.span(node.op_span)?.endl()?
             .role("left").forward(&node.left, arena)?
             .role("right").forward(&node.right, arena)?.finish()
     }
@@ -501,41 +504,41 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
     fn visit_range_full_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, RangeFullExpr>, arena: &'a Arena) -> Self::Result {
         let node = self.enter(node, arena);
         self.title("range-full-expr")?
-            .span(node.span)?.finish()
+            .span(node.span)?.endl()?.finish()
     }
 
     fn visit_range_left_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, RangeLeftExpr<'a>>, arena: &'a Arena) -> Self::Result {
         let node = self.enter(node, arena);
         self.title("range-left-expr")?
-            .span(node.span)?
+            .span(node.span)?.endl()?
             .forward(&node.base, arena)?.finish()
     }
 
     fn visit_range_right_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, RangeRightExpr<'a>>, arena: &'a Arena) -> Self::Result {
         let node = self.enter(node, arena);
         self.title("range-right-expr")?
-            .span(node.span)?
+            .span(node.span)?.endl()?
             .forward(&node.base, arena)?.finish()
     }
 
     fn visit_ref_type<'a, 'b: 'a>(&mut self, node: &'b Index<'a, RefType<'a>>, arena: &'a Arena) -> Self::Result {
         let node = self.enter(node, arena);
         self.title("ref-type")?
-            .span(node.span)?
+            .span(node.span)?.endl()?
             .forward(&node.base, arena)?.finish()
     }
 
     fn visit_ret_stmt<'a, 'b: 'a>(&mut self, node: &'b Index<'a, ReturnStatement<'a>>, arena: &'a Arena) -> Self::Result {
         let node = self.enter(node, arena);
         self.title("ret-stmt")?
-            .span(node.span)?
+            .span(node.span)?.endl()?
             .optional(&node.value, arena)?.finish()
     }
 
     fn visit_simple_expr_stmt<'a, 'b: 'a>(&mut self, node: &'b Index<'a, SimpleExprStatement<'a>>, arena: &'a Arena) -> Self::Result {
         let node = self.enter(node, arena);
         self.title("simple-expr-stmt")?
-            .span(node.span)?
+            .span(node.span)?.endl()?
             .forward(&node.expr, arena)?.finish()
     }
 
@@ -543,13 +546,13 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
         let node = self.enter(node, arena);
         self.title("segment")?
             .span(node.span)?
-            .space()?.isid(node.name)?.finish()
+            .space()?.isid(node.name)?.endl()?.finish()
     }
 
     fn visit_struct_def<'a, 'b: 'a>(&mut self, node: &'b Index<'a, StructDef<'a>>, arena: &'a Arena) -> Self::Result {
         let node = self.enter(node, arena);
         self.title("struct-def")?
-            .span(node.span)?
+            .span(node.span)?.endl()?
             .forward(&node.name, arena)?
             .slice(&node.fields, arena)?.finish()
     }
@@ -557,7 +560,7 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
     fn visit_tuple_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, TupleExpr<'a>>, arena: &'a Arena) -> Self::Result {
         let node = self.enter(node, arena);
         self.title("tuple-expr")?
-            .span(node.span)?
+            .span(node.span)?.endl()?
             .slice(&node.items, arena)?.finish()
     }
 
@@ -567,21 +570,21 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
             .span(node.span)?
             .str(" . ")?.span(node.op_span)?
             .space()?.any(node.value)?
-            .space()?.span(node.value_span)?
+            .space()?.span(node.value_span)?.endl()?
             .role("base").forward(&node.base, arena)?.finish()
     }
 
     fn visit_tuple_type<'a, 'b: 'a>(&mut self, node: &'b Index<'a, TupleType<'a>>, arena: &'a Arena) -> Self::Result {
         let node = self.enter(node, arena);
         self.title("tuple-type")?
-            .span(node.span)?
+            .span(node.span)?.endl()?
             .slice(&node.parameters, arena)?.finish()
     }
 
     fn visit_type_def<'a, 'b: 'a>(&mut self, node: &'b Index<'a, TypeDef<'a>>, arena: &'a Arena) -> Self::Result {
         let node = self.enter(node, arena);
         self.title("type-def")?
-            .span(node.span)?
+            .span(node.span)?.endl()?
             .forward(&node.name, arena)?
             .optional(&node.from, arena)?.finish()
     }
@@ -591,7 +594,7 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
         self.title("unary-expr")?
             .span(node.span)?
             .space()?.str(node.op.display())?
-            .space()?.span(node.op_span)?
+            .space()?.span(node.op_span)?.endl()?
             .forward(&node.base, arena)?.finish()
     }
 
@@ -602,14 +605,14 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
         if let Some(alias) = node.alias {
             self.str(" alias ")?.idspan(alias)?;
         }
-        self.forward(&node.path, arena)?.finish()
+        self.endl()?.forward(&node.path, arena)?.finish()
     }
 
     fn visit_var_decl_stmt<'a, 'b: 'a>(&mut self, node: &'b Index<'a, VarDeclStatement<'a>>, arena: &'a Arena) -> Self::Result {
         let node = self.enter(node, arena);
         self.title("var-decl-stmt")?
             .span(node.span)?
-            .str(if node.r#const { " const " } else { " mutable " })?.idspan(node.name)?
+            .str(if node.r#const { " const " } else { " mutable " })?.idspan(node.name)?.endl()?
             .optional(&node.r#type, arena)?
             .optional(&node.init_value, arena)?.finish()
     }
@@ -618,7 +621,7 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
         let node = self.enter(node, arena);
         self.title("where-clause")?
             .span(node.span)?
-            .space()?.idspan(node.name)?
+            .space()?.idspan(node.name)?.endl()?
             .slice(&node.constraints, arena)?.finish()
     }
 
@@ -626,7 +629,7 @@ impl<'s, 'f1, 'f2, F, const I: usize> Visitor for Formatter<'s, 'f1, 'f2, F, I> 
         let node = self.enter(node, arena);
         self.title("while-stmt")?
             .span(node.span)?
-            .label(node.label)?
+            .label(node.label)?.endl()?
             .role("condition").forward(&node.condition, arena)?
             .role("body").forward(&node.body, arena)?.finish()
     }

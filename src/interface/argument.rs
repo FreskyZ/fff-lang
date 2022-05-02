@@ -19,6 +19,7 @@ impl FromStr for PrintOption {
 
 pub enum DebugOption {
     Memory,
+    AST, // not pretty
 }
 
 impl FromStr for DebugOption {
@@ -27,6 +28,7 @@ impl FromStr for DebugOption {
     fn from_str(s: &str) -> Result<Self, ()> {
         match s {
             "memory" => Ok(Self::Memory),
+            "ast" => Ok(Self::AST),
             _ => Err(()),
         }
     }
