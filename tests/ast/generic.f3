@@ -127,3 +127,27 @@ class Iterable {
         return Map{ iter: self, f: f };
     }
 }
+
+impl Iterable for VecIter<T> {
+    type Item = &T;
+
+    fn next(self: &Self) -> Option<Self::Item> {
+        var result = self.ptr;
+        self.ptr.offset(1);
+        return result;
+    }
+}
+
+
+// remaining node types required by src/syntax/ast/pretty.rs unit test
+module gcd;
+fn additional() {
+    var a: [u8; 4] = [1, 2, 3, 4];
+    var b: (u8, u32) = (5, 6);
+    var c = (b.0).1 + (..) + (1..) + (..1);
+    {
+
+    }
+    continue;
+    <Vec<T> as IntoIterator>::into_iter(vec[a, b, c]);
+}

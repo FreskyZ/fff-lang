@@ -56,7 +56,6 @@ Major change summary
 some detailed plans is included by the way
 
 - [ ] syntax: add recursive guard for ast visitors, eq returns true, formatters prints `[circular]`, profiler count nothing, use shared preallocate array to reduce allocate
-- [ ] syntax: add a single unit test try cover all node type for pretty's unit test
 - [ ] syntax: relearn first set and follow set and review the name of maybe_xxx
 - [ ] syntax: update random test input generator
 - [ ] syntax: add missing array dup def

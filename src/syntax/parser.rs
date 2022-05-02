@@ -431,7 +431,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         || self.maybe_tuple_expr()
         || self.maybe_array_expr()
         || self.maybe_unary_expr()
-        || matches!(self.current, Token::Sep(Separator::DotDot) | Token::Keyword(Keyword::This))
+        || matches!(self.current, Token::Sep(Separator::DotDot) | Token::Keyword(Keyword::This) | Token::Keyword(Keyword::Self_))
     }
 
     pub fn parse_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {

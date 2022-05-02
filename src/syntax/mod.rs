@@ -34,12 +34,12 @@ pub fn parse<'a>(
 #[cfg(test)]
 #[allow(unused_macros)]
 macro_rules! make_node {
-    ($parser:ident $code:literal) => {{
-        let mut ecx = crate::diagnostics::make_errors!();
-        let mut scx = crate::source::make_source!($code);
-        match parse_any(scx.entry("1"), &mut ecx, |cx| cx.$parser()) {
-            Ok(node) => { assert_eq!(ecx, crate::diagnostics::make_errors!()); node },
-            Err(_) => { panic!("{}", ecx.display(&scx)) },
+    ($parser:ident($code:literal, $arena:expr)) => {{
+        let mut diagnostics = crate::diagnostics::make_errors!();
+        let mut sources = crate::source::make_source!($code);
+        match parse_any(sources.entry("1"), &mut diagnostics, |cx| cx.$parser($arena)) {
+            Ok(node) => { assert_eq!(diagnostics, crate::diagnostics::make_errors!()); node },
+            Err(_) => { panic!("{}", diagnostics.display(&sources)) },
         }
     }};
 }

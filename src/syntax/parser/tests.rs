@@ -1,51 +1,11 @@
 
 use std::fmt::{self, Write};
-use std::str::from_utf8;
 use crate::source::{SourceContext, Span, IdSpan, FileId};
 use crate::diagnostics::{strings, make_errors};
 use crate::lexical::{Numeric, Separator, Keyword};
-use crate::common::arena::Arena;
+use crate::common::{arena::Arena, diff::diff};
 use super::super::visit::Visit;
 use super::*;
-
-struct DiffDisplay<'a, 'b>(&'a str, &'b str);
-
-impl<'a, 'b> fmt::Display for DiffDisplay<'a, 'b> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut actual_lines = self.0.lines().collect::<Vec<_>>();
-        let mut expect_lines = self.1.lines().collect::<Vec<_>>();
-
-        // if both side is single line with len > 100, then it is comparing debug fmt,
-        // hard split (regardless of word boundary) them to fixed length lines
-        // (in bytes, because ast debug print does not contain non ascii char, because identifiers and string literals are isid)
-        const HL: usize = 72;
-        if actual_lines.len() == 1 && actual_lines[0].len() > HL && expect_lines.len() == 1 && expect_lines[0].len() > HL {
-            actual_lines = self.0.as_bytes().chunks(HL).map(|c| from_utf8(c).unwrap()).collect::<Vec<_>>();
-            expect_lines = self.1.as_bytes().chunks(HL).map(|c| from_utf8(c).unwrap()).collect::<Vec<_>>();
-        }
-
-        let common_line_count = std::cmp::min(actual_lines.len(), expect_lines.len());
-        for line in 0..common_line_count {
-            if actual_lines[line] != expect_lines[line] {
-                writeln!(f, "{: >3} |A {}", line + 1, actual_lines[line])?;
-                writeln!(f, "    |E {}", expect_lines[line])?;
-            } else {
-                writeln!(f, "{: >3} |  {}", line + 1, actual_lines[line])?;
-            }
-        }
-        if actual_lines.len() > common_line_count {
-            for line in common_line_count..actual_lines.len() {
-                writeln!(f, "{: >3} |A {}", line + 1, actual_lines[line])?;
-            }
-        }
-        if expect_lines.len() > common_line_count {
-            for line in common_line_count..expect_lines.len() {
-                writeln!(f, "{: >3} |E {}", line + 1, expect_lines[line])?;
-            }
-        }
-        Ok(())
-    }
-}
 
 fn visit_case<
     'a,
@@ -85,9 +45,9 @@ fn visit_case<
             if actual_display == expect_display {
                 let actual_debug = format!("{:?}", asti::debug(&actual_index, arena));
                 let expect_debug = format!("{:?}", asti::debug(&expect_index, arena));
-                panic!("line {} node not same while display is same\n{}\n{}", backtrace, actual_display, DiffDisplay(&actual_debug, &expect_debug));
+                panic!("line {} node not same while display is same\n{}\n{}", backtrace, actual_display, diff(&actual_debug, &expect_debug));
             }
-            panic!("line {} node not same\n{}", backtrace, DiffDisplay(&actual_display, &expect_display));
+            panic!("line {} node not same\n{}", backtrace, diff(&actual_display, &expect_display));
         }
     } else {
         context.finish();
@@ -136,7 +96,7 @@ fn novisit_case<
         } else {
             let actual_debug = format!("{:?}", debug_formatter(&actual_value, arena));
             let expect_debug = format!("{:?}", debug_formatter(&expect_value, arena));
-            panic!("line {} result\n{}", backtrace, DiffDisplay(&actual_debug, &expect_debug));
+            panic!("line {} result\n{}", backtrace, diff(&actual_debug, &expect_debug));
         }
     } else {
         context.finish();

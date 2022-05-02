@@ -31,6 +31,34 @@ impl<'n, 's, 'a, N: Visit, F: FileSystem, const I: usize> fmt::Display for Displ
     }
 }
 
+// copy from one ast integration test, require all types of node covered
+#[cfg(test)]
+#[test]
+fn pretty() {
+    use crate::source::VirtualFileSystem;
+    use crate::diagnostics::make_errors;
+    use crate::lexical::Parser as Scanner;
+    use crate::syntax::{Parser, ast::asti};
+    
+    let arena = Arena::new();
+    let mut sources = SourceContext::new_file_system(VirtualFileSystem{
+        cwd: "/".into(), 
+        files: [("1".into(), include_str!("../../../tests/ast/generic.f3").into())].into_iter().collect() 
+    });
+    let mut diagnostics = make_errors!();
+    let mut parser = Parser::new(Scanner::new(sources.entry("1", &mut diagnostics).unwrap(), &mut diagnostics));
+    let actual = parser.parse_module(&arena);
+    parser.finish();
+    if let Ok(actual) = actual {
+        let mut profiler = asti::MemoryProfiler::new();
+        actual.accept(&arena, &mut profiler);
+        let (covered, all, not_covered) = profiler.coverage();
+        assert_eq!(covered, all, "{not_covered}");
+    } else {
+        assert!(false, "{}", diagnostics.display(&sources));
+    }
+}
+
 // I: indention strategy index
 // // this is very context-ful compared to ugly formatter
 pub struct Formatter<'s, 'f1, 'f2, F, const I: usize> {
