@@ -12,27 +12,16 @@ pub trait Eq {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool;
 }
 
-impl<'a, T> Eq for Index<'a, T> where T: Eq {
+impl<T> Eq for Option<T> where T: Eq {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        Eq::eq(arena.get(self), arena.get(rhs), arena)
-    }
-}
-
-impl<'a, U> Eq for TagIndex<'a, U> where U: Eq {
-    fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        Eq::eq(self.as_repr().as_ref(), rhs.as_repr().as_ref(), arena)
+        self.is_none() && rhs.is_none()
+        || self.as_ref().zip(rhs.as_ref()).map(|(lhs, rhs)| Eq::eq(lhs, rhs, arena)).unwrap_or(false)
     }
 }
 
 impl<'a, T> Eq for Slice<'a, T> where T: Eq {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
         self.len() == rhs.len() && std::iter::zip(arena.get_iter(&self), arena.get_iter(&rhs)).all(|(lhs, rhs)| Eq::eq(lhs, rhs, arena))
-    }
-}
-
-impl<T> Eq for Option<T> where T: Eq {
-    fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.as_ref().zip(rhs.as_ref()).map(|(lhs, rhs)| Eq::eq(lhs, rhs, arena)).unwrap_or(false)
     }
 }
 
@@ -43,127 +32,142 @@ impl<T> Eq for Vec<T> where T: Eq {
 }
 
 // AUTOGEN
-impl<'a> Eq for ArrayExpr<'a> {
+impl<'a> Eq for Index<'a, ArrayExpr<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && Eq::eq(&self.items, &rhs.items, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && Eq::eq(&lhs.items, &rhs.items, arena)
     }
 }
 
-impl<'a> Eq for ArrayIndexExpr<'a> {
+impl<'a> Eq for Index<'a, ArrayIndexExpr<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && self.quote_span == rhs.quote_span
-        && Eq::eq(&self.base, &rhs.base, arena)
-        && Eq::eq(&self.parameters, &rhs.parameters, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && lhs.quote_span == rhs.quote_span
+        && Eq::eq(&lhs.base, &rhs.base, arena)
+        && Eq::eq(&lhs.parameters, &rhs.parameters, arena)
     }
 }
 
-impl<'a> Eq for ArrayType<'a> {
+impl<'a> Eq for Index<'a, ArrayType<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && Eq::eq(&self.base, &rhs.base, arena)
-        && Eq::eq(&self.size, &rhs.size, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && Eq::eq(&lhs.base, &rhs.base, arena)
+        && Eq::eq(&lhs.size, &rhs.size, arena)
     }
 }
 
-impl<'a> Eq for AssignExprStatement<'a> {
+impl<'a> Eq for Index<'a, AssignExprStatement<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && self.op == rhs.op
-        && self.op_span == rhs.op_span
-        && Eq::eq(&self.left, &rhs.left, arena)
-        && Eq::eq(&self.right, &rhs.right, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && lhs.op == rhs.op
+        && lhs.op_span == rhs.op_span
+        && Eq::eq(&lhs.left, &rhs.left, arena)
+        && Eq::eq(&lhs.right, &rhs.right, arena)
     }
 }
 
-impl<'a> Eq for BinaryExpr<'a> {
+impl<'a> Eq for Index<'a, BinaryExpr<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && self.op == rhs.op
-        && self.op_span == rhs.op_span
-        && Eq::eq(&self.left, &rhs.left, arena)
-        && Eq::eq(&self.right, &rhs.right, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && lhs.op == rhs.op
+        && lhs.op_span == rhs.op_span
+        && Eq::eq(&lhs.left, &rhs.left, arena)
+        && Eq::eq(&lhs.right, &rhs.right, arena)
     }
 }
 
-impl<'a> Eq for Block<'a> {
+impl<'a> Eq for Index<'a, Block<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && Eq::eq(&self.items, &rhs.items, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && Eq::eq(&lhs.items, &rhs.items, arena)
     }
 }
 
-impl<'a> Eq for BlockStatement<'a> {
+impl<'a> Eq for Index<'a, BlockStatement<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && self.label == rhs.label
-        && Eq::eq(&self.body, &rhs.body, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && lhs.label == rhs.label
+        && Eq::eq(&lhs.body, &rhs.body, arena)
     }
 }
 
-impl Eq for BreakStatement {
-    fn eq(&self, rhs: &Self, _: &Arena) -> bool {
-        self.span == rhs.span
-        && self.label == rhs.label
-    }
-}
-
-impl<'a> Eq for CallExpr<'a> {
+impl<'a> Eq for Index<'a, BreakStatement> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && self.quote_span == rhs.quote_span
-        && Eq::eq(&self.base, &rhs.base, arena)
-        && Eq::eq(&self.parameters, &rhs.parameters, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && lhs.label == rhs.label
     }
 }
 
-impl<'a> Eq for CastSegment<'a> {
+impl<'a> Eq for Index<'a, CallExpr<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && Eq::eq(&self.left, &rhs.left, arena)
-        && Eq::eq(&self.right, &rhs.right, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && lhs.quote_span == rhs.quote_span
+        && Eq::eq(&lhs.base, &rhs.base, arena)
+        && Eq::eq(&lhs.parameters, &rhs.parameters, arena)
     }
 }
 
-impl<'a> Eq for ClassDef<'a> {
+impl<'a> Eq for Index<'a, CastSegment<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && self.quote_span == rhs.quote_span
-        && Eq::eq(&self.name, &rhs.name, arena)
-        && Eq::eq(&self.items, &rhs.items, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && Eq::eq(&lhs.left, &rhs.left, arena)
+        && Eq::eq(&lhs.right, &rhs.right, arena)
     }
 }
 
-impl Eq for ContinueStatement {
-    fn eq(&self, rhs: &Self, _: &Arena) -> bool {
-        self.span == rhs.span
-        && self.label == rhs.label
-    }
-}
-
-impl<'a> Eq for ElseClause<'a> {
+impl<'a> Eq for Index<'a, ClassDef<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && Eq::eq(&self.body, &rhs.body, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && lhs.quote_span == rhs.quote_span
+        && Eq::eq(&lhs.name, &rhs.name, arena)
+        && Eq::eq(&lhs.items, &rhs.items, arena)
     }
 }
 
-impl<'a> Eq for EnumDef<'a> {
+impl<'a> Eq for Index<'a, ContinueStatement> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && self.name == rhs.name
-        && self.quote_span == rhs.quote_span
-        && Eq::eq(&self.base_type, &rhs.base_type, arena)
-        && Eq::eq(&self.variants, &rhs.variants, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && lhs.label == rhs.label
     }
 }
 
-impl<'a> Eq for EnumDefVariant<'a> {
+impl<'a> Eq for Index<'a, ElseClause<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && self.name == rhs.name
-        && Eq::eq(&self.value, &rhs.value, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && Eq::eq(&lhs.body, &rhs.body, arena)
+    }
+}
+
+impl<'a> Eq for Index<'a, EnumDef<'a>> {
+    fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && lhs.name == rhs.name
+        && lhs.quote_span == rhs.quote_span
+        && Eq::eq(&lhs.base_type, &rhs.base_type, arena)
+        && Eq::eq(&lhs.variants, &rhs.variants, arena)
+    }
+}
+
+impl<'a> Eq for Index<'a, EnumDefVariant<'a>> {
+    fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && lhs.name == rhs.name
+        && Eq::eq(&lhs.value, &rhs.value, arena)
     }
 }
 
@@ -191,112 +195,124 @@ impl<'a> Eq for Expr<'a> {
     }
 }
 
-impl<'a> Eq for FieldDef<'a> {
+impl<'a> Eq for Index<'a, FieldDef<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && self.name == rhs.name
-        && self.colon_span == rhs.colon_span
-        && Eq::eq(&self.r#type, &rhs.r#type, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && lhs.name == rhs.name
+        && lhs.colon_span == rhs.colon_span
+        && Eq::eq(&lhs.r#type, &rhs.r#type, arena)
     }
 }
 
-impl<'a> Eq for FnDef<'a> {
+impl<'a> Eq for Index<'a, FnDef<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && self.quote_span == rhs.quote_span
-        && Eq::eq(&self.name, &rhs.name, arena)
-        && Eq::eq(&self.parameters, &rhs.parameters, arena)
-        && Eq::eq(&self.ret_type, &rhs.ret_type, arena)
-        && Eq::eq(&self.wheres, &rhs.wheres, arena)
-        && Eq::eq(&self.body, &rhs.body, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && lhs.quote_span == rhs.quote_span
+        && Eq::eq(&lhs.name, &rhs.name, arena)
+        && Eq::eq(&lhs.parameters, &rhs.parameters, arena)
+        && Eq::eq(&lhs.ret_type, &rhs.ret_type, arena)
+        && Eq::eq(&lhs.wheres, &rhs.wheres, arena)
+        && Eq::eq(&lhs.body, &rhs.body, arena)
     }
 }
 
-impl<'a> Eq for FnDefParameter<'a> {
+impl<'a> Eq for Index<'a, FnDefParameter<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && self.name == rhs.name
-        && Eq::eq(&self.r#type, &rhs.r#type, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && lhs.name == rhs.name
+        && Eq::eq(&lhs.r#type, &rhs.r#type, arena)
     }
 }
 
-impl<'a> Eq for FnType<'a> {
+impl<'a> Eq for Index<'a, FnType<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && self.quote_span == rhs.quote_span
-        && Eq::eq(&self.parameters, &rhs.parameters, arena)
-        && Eq::eq(&self.ret_type, &rhs.ret_type, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && lhs.quote_span == rhs.quote_span
+        && Eq::eq(&lhs.parameters, &rhs.parameters, arena)
+        && Eq::eq(&lhs.ret_type, &rhs.ret_type, arena)
     }
 }
 
-impl<'a> Eq for FnTypeParameter<'a> {
+impl<'a> Eq for Index<'a, FnTypeParameter<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && self.name == rhs.name
-        && Eq::eq(&self.r#type, &rhs.r#type, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && lhs.name == rhs.name
+        && Eq::eq(&lhs.r#type, &rhs.r#type, arena)
     }
 }
 
-impl<'a> Eq for ForStatement<'a> {
+impl<'a> Eq for Index<'a, ForStatement<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && self.label == rhs.label
-        && self.iter_name == rhs.iter_name
-        && Eq::eq(&self.iter_expr, &rhs.iter_expr, arena)
-        && Eq::eq(&self.body, &rhs.body, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && lhs.label == rhs.label
+        && lhs.iter_name == rhs.iter_name
+        && Eq::eq(&lhs.iter_expr, &rhs.iter_expr, arena)
+        && Eq::eq(&lhs.body, &rhs.body, arena)
     }
 }
 
-impl<'a> Eq for GenericName<'a> {
+impl<'a> Eq for Index<'a, GenericName<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && self.base == rhs.base
-        && self.quote_span == rhs.quote_span
-        && Eq::eq(&self.parameters, &rhs.parameters, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && lhs.base == rhs.base
+        && lhs.quote_span == rhs.quote_span
+        && Eq::eq(&lhs.parameters, &rhs.parameters, arena)
     }
 }
 
-impl Eq for GenericParameter {
-    fn eq(&self, rhs: &Self, _: &Arena) -> bool {
-        self.span == rhs.span
-        && self.name == rhs.name
+impl<'a> Eq for Index<'a, GenericParameter> {
+    fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && lhs.name == rhs.name
     }
 }
 
-impl<'a> Eq for GenericSegment<'a> {
+impl<'a> Eq for Index<'a, GenericSegment<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && self.base == rhs.base
-        && Eq::eq(&self.parameters, &rhs.parameters, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && lhs.base == rhs.base
+        && Eq::eq(&lhs.parameters, &rhs.parameters, arena)
     }
 }
 
-impl<'a> Eq for IfClause<'a> {
+impl<'a> Eq for Index<'a, IfClause<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && Eq::eq(&self.condition, &rhs.condition, arena)
-        && Eq::eq(&self.body, &rhs.body, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && Eq::eq(&lhs.condition, &rhs.condition, arena)
+        && Eq::eq(&lhs.body, &rhs.body, arena)
     }
 }
 
-impl<'a> Eq for IfStatement<'a> {
+impl<'a> Eq for Index<'a, IfStatement<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && Eq::eq(&self.if_clause, &rhs.if_clause, arena)
-        && Eq::eq(&self.elseif_clauses, &rhs.elseif_clauses, arena)
-        && Eq::eq(&self.else_clause, &rhs.else_clause, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && Eq::eq(&lhs.if_clause, &rhs.if_clause, arena)
+        && Eq::eq(&lhs.elseif_clauses, &rhs.elseif_clauses, arena)
+        && Eq::eq(&lhs.else_clause, &rhs.else_clause, arena)
     }
 }
 
-impl<'a> Eq for Implementation<'a> {
+impl<'a> Eq for Index<'a, Implementation<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && self.quote_span == rhs.quote_span
-        && Eq::eq(&self.parameters, &rhs.parameters, arena)
-        && Eq::eq(&self.class, &rhs.class, arena)
-        && Eq::eq(&self.r#type, &rhs.r#type, arena)
-        && Eq::eq(&self.wheres, &rhs.wheres, arena)
-        && Eq::eq(&self.items, &rhs.items, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && lhs.quote_span == rhs.quote_span
+        && Eq::eq(&lhs.parameters, &rhs.parameters, arena)
+        && Eq::eq(&lhs.class, &rhs.class, arena)
+        && Eq::eq(&lhs.r#type, &rhs.r#type, arena)
+        && Eq::eq(&lhs.wheres, &rhs.wheres, arena)
+        && Eq::eq(&lhs.items, &rhs.items, arena)
     }
 }
 
@@ -324,74 +340,83 @@ impl<'a> Eq for Item<'a> {
     }
 }
 
-impl Eq for LitExpr {
-    fn eq(&self, rhs: &Self, _: &Arena) -> bool {
-        self.span == rhs.span
-        && self.value == rhs.value
-    }
-}
-
-impl<'a> Eq for LoopStatement<'a> {
+impl<'a> Eq for Index<'a, LitExpr> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && self.label == rhs.label
-        && Eq::eq(&self.body, &rhs.body, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && lhs.value == rhs.value
     }
 }
 
-impl<'a> Eq for MemberExpr<'a> {
+impl<'a> Eq for Index<'a, LoopStatement<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && self.op_span == rhs.op_span
-        && self.name == rhs.name
-        && Eq::eq(&self.base, &rhs.base, arena)
-        && Eq::eq(&self.parameters, &rhs.parameters, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && lhs.label == rhs.label
+        && Eq::eq(&lhs.body, &rhs.body, arena)
     }
 }
 
-impl<'a> Eq for Module<'a> {
+impl<'a> Eq for Index<'a, MemberExpr<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.file == rhs.file
-        && Eq::eq(&self.items, &rhs.items, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && lhs.op_span == rhs.op_span
+        && lhs.name == rhs.name
+        && Eq::eq(&lhs.base, &rhs.base, arena)
+        && Eq::eq(&lhs.parameters, &rhs.parameters, arena)
     }
 }
 
-impl Eq for ModuleStatement {
-    fn eq(&self, rhs: &Self, _: &Arena) -> bool {
-        self.span == rhs.span
-        && self.name == rhs.name
-        && self.path == rhs.path
-    }
-}
-
-impl<'a> Eq for ObjectExpr<'a> {
+impl<'a> Eq for Index<'a, Module<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && self.quote_span == rhs.quote_span
-        && Eq::eq(&self.base, &rhs.base, arena)
-        && Eq::eq(&self.fields, &rhs.fields, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.file == rhs.file
+        && Eq::eq(&lhs.items, &rhs.items, arena)
     }
 }
 
-impl<'a> Eq for ObjectExprField<'a> {
+impl<'a> Eq for Index<'a, ModuleStatement> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && self.name == rhs.name
-        && Eq::eq(&self.value, &rhs.value, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && lhs.name == rhs.name
+        && lhs.path == rhs.path
     }
 }
 
-impl<'a> Eq for ParenExpr<'a> {
+impl<'a> Eq for Index<'a, ObjectExpr<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && Eq::eq(&self.base, &rhs.base, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && lhs.quote_span == rhs.quote_span
+        && Eq::eq(&lhs.base, &rhs.base, arena)
+        && Eq::eq(&lhs.fields, &rhs.fields, arena)
     }
 }
 
-impl<'a> Eq for Path<'a> {
+impl<'a> Eq for Index<'a, ObjectExprField<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && Eq::eq(&self.segments, &rhs.segments, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && lhs.name == rhs.name
+        && Eq::eq(&lhs.value, &rhs.value, arena)
+    }
+}
+
+impl<'a> Eq for Index<'a, ParenExpr<'a>> {
+    fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && Eq::eq(&lhs.base, &rhs.base, arena)
+    }
+}
+
+impl<'a> Eq for Index<'a, Path<'a>> {
+    fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && Eq::eq(&lhs.segments, &rhs.segments, arena)
     }
 }
 
@@ -407,67 +432,76 @@ impl<'a> Eq for PathSegment<'a> {
     }
 }
 
-impl Eq for PrimitiveType {
-    fn eq(&self, rhs: &Self, _: &Arena) -> bool {
-        self.span == rhs.span
-        && self.base == rhs.base
-    }
-}
-
-impl<'a> Eq for RangeBothExpr<'a> {
+impl<'a> Eq for Index<'a, PrimitiveType> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && self.op_span == rhs.op_span
-        && Eq::eq(&self.left, &rhs.left, arena)
-        && Eq::eq(&self.right, &rhs.right, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && lhs.base == rhs.base
     }
 }
 
-impl Eq for RangeFullExpr {
-    fn eq(&self, rhs: &Self, _: &Arena) -> bool {
-        self.span == rhs.span
-    }
-}
-
-impl<'a> Eq for RangeLeftExpr<'a> {
+impl<'a> Eq for Index<'a, RangeBothExpr<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && Eq::eq(&self.base, &rhs.base, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && lhs.op_span == rhs.op_span
+        && Eq::eq(&lhs.left, &rhs.left, arena)
+        && Eq::eq(&lhs.right, &rhs.right, arena)
     }
 }
 
-impl<'a> Eq for RangeRightExpr<'a> {
+impl<'a> Eq for Index<'a, RangeFullExpr> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && Eq::eq(&self.base, &rhs.base, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
     }
 }
 
-impl<'a> Eq for RefType<'a> {
+impl<'a> Eq for Index<'a, RangeLeftExpr<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && Eq::eq(&self.base, &rhs.base, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && Eq::eq(&lhs.base, &rhs.base, arena)
     }
 }
 
-impl<'a> Eq for ReturnStatement<'a> {
+impl<'a> Eq for Index<'a, RangeRightExpr<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && Eq::eq(&self.value, &rhs.value, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && Eq::eq(&lhs.base, &rhs.base, arena)
     }
 }
 
-impl<'a> Eq for SimpleExprStatement<'a> {
+impl<'a> Eq for Index<'a, RefType<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && Eq::eq(&self.expr, &rhs.expr, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && Eq::eq(&lhs.base, &rhs.base, arena)
     }
 }
 
-impl Eq for SimpleSegment {
-    fn eq(&self, rhs: &Self, _: &Arena) -> bool {
-        self.span == rhs.span
-        && self.name == rhs.name
+impl<'a> Eq for Index<'a, ReturnStatement<'a>> {
+    fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && Eq::eq(&lhs.value, &rhs.value, arena)
+    }
+}
+
+impl<'a> Eq for Index<'a, SimpleExprStatement<'a>> {
+    fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && Eq::eq(&lhs.expr, &rhs.expr, arena)
+    }
+}
+
+impl<'a> Eq for Index<'a, SimpleSegment> {
+    fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && lhs.name == rhs.name
     }
 }
 
@@ -497,50 +531,56 @@ impl<'a> Eq for Statement<'a> {
     }
 }
 
-impl<'a> Eq for StructDef<'a> {
+impl<'a> Eq for Index<'a, StructDef<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && Eq::eq(&self.name, &rhs.name, arena)
-        && Eq::eq(&self.fields, &rhs.fields, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && Eq::eq(&lhs.name, &rhs.name, arena)
+        && Eq::eq(&lhs.fields, &rhs.fields, arena)
     }
 }
 
-impl<'a> Eq for TupleExpr<'a> {
+impl<'a> Eq for Index<'a, TupleExpr<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && Eq::eq(&self.items, &rhs.items, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && Eq::eq(&lhs.items, &rhs.items, arena)
     }
 }
 
-impl<'a> Eq for TupleIndexExpr<'a> {
+impl<'a> Eq for Index<'a, TupleIndexExpr<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && self.op_span == rhs.op_span
-        && self.value == rhs.value
-        && self.value_span == rhs.value_span
-        && Eq::eq(&self.base, &rhs.base, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && lhs.op_span == rhs.op_span
+        && lhs.value == rhs.value
+        && lhs.value_span == rhs.value_span
+        && Eq::eq(&lhs.base, &rhs.base, arena)
     }
 }
 
-impl<'a> Eq for TupleType<'a> {
+impl<'a> Eq for Index<'a, TupleType<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && Eq::eq(&self.parameters, &rhs.parameters, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && Eq::eq(&lhs.parameters, &rhs.parameters, arena)
     }
 }
 
-impl<'a> Eq for TypeDef<'a> {
+impl<'a> Eq for Index<'a, TypeDef<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && Eq::eq(&self.name, &rhs.name, arena)
-        && Eq::eq(&self.from, &rhs.from, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && Eq::eq(&lhs.name, &rhs.name, arena)
+        && Eq::eq(&lhs.from, &rhs.from, arena)
     }
 }
 
-impl<'a> Eq for TypeList<'a> {
+impl<'a> Eq for Index<'a, TypeList<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && Eq::eq(&self.items, &rhs.items, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && Eq::eq(&lhs.items, &rhs.items, arena)
     }
 }
 
@@ -558,46 +598,51 @@ impl<'a> Eq for TypeRef<'a> {
     }
 }
 
-impl<'a> Eq for UnaryExpr<'a> {
+impl<'a> Eq for Index<'a, UnaryExpr<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && self.op == rhs.op
-        && self.op_span == rhs.op_span
-        && Eq::eq(&self.base, &rhs.base, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && lhs.op == rhs.op
+        && lhs.op_span == rhs.op_span
+        && Eq::eq(&lhs.base, &rhs.base, arena)
     }
 }
 
-impl<'a> Eq for UseStatement<'a> {
+impl<'a> Eq for Index<'a, UseStatement<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && self.alias == rhs.alias
-        && Eq::eq(&self.path, &rhs.path, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && lhs.alias == rhs.alias
+        && Eq::eq(&lhs.path, &rhs.path, arena)
     }
 }
 
-impl<'a> Eq for VarDeclStatement<'a> {
+impl<'a> Eq for Index<'a, VarDeclStatement<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && self.r#const == rhs.r#const
-        && self.name == rhs.name
-        && Eq::eq(&self.r#type, &rhs.r#type, arena)
-        && Eq::eq(&self.init_value, &rhs.init_value, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && lhs.r#const == rhs.r#const
+        && lhs.name == rhs.name
+        && Eq::eq(&lhs.r#type, &rhs.r#type, arena)
+        && Eq::eq(&lhs.init_value, &rhs.init_value, arena)
     }
 }
 
-impl<'a> Eq for WhereClause<'a> {
+impl<'a> Eq for Index<'a, WhereClause<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && self.name == rhs.name
-        && Eq::eq(&self.constraints, &rhs.constraints, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && lhs.name == rhs.name
+        && Eq::eq(&lhs.constraints, &rhs.constraints, arena)
     }
 }
 
-impl<'a> Eq for WhileStatement<'a> {
+impl<'a> Eq for Index<'a, WhileStatement<'a>> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.span == rhs.span
-        && self.label == rhs.label
-        && Eq::eq(&self.condition, &rhs.condition, arena)
-        && Eq::eq(&self.body, &rhs.body, arena)
+        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        lhs.span == rhs.span
+        && lhs.label == rhs.label
+        && Eq::eq(&lhs.condition, &rhs.condition, arena)
+        && Eq::eq(&lhs.body, &rhs.body, arena)
     }
 }

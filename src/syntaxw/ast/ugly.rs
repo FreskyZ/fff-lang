@@ -29,12 +29,12 @@ impl<'f1, 'f2> Formatter<'f1, 'f2> {
 
     fn start_struct(&mut self, name: &'static str) -> Result<&mut Self, fmt::Error> {
         self.0.write_str(name)?;
-        self.0.write_char('{')?;
+        self.0.write_str("{ ")?;
         Ok(self)
     }
 
     fn end_struct(&mut self) -> EmptyResult {
-        self.0.write_str(" }")?;
+        self.0.write_char('}')?;
         EmptyResult(true)
     }
 
@@ -43,7 +43,7 @@ impl<'f1, 'f2> Formatter<'f1, 'f2> {
         self.0.write_str(name)?;
         self.0.write_str(": ")?;
         write!(self.0, "{:?}", value)?;
-        self.0.write_char(',')?;
+        self.0.write_str(", ")?;
         Ok(self)
     }
 
@@ -52,51 +52,31 @@ impl<'f1, 'f2> Formatter<'f1, 'f2> {
         self.0.write_str(name)?;
         self.0.write_str(": ")?;
         write!(self.0, "{:?}", value)?;
-        self.0.write_char(',')?;
+        self.0.write_str(", ")?;
         Ok(self)
     }
 
-    // NOTE: this visitor is also not walkable, because you need insert ", field_name: " between 2 visit_* calls
+    // NOTE: this visitor is also not walkable, because you need to insert ", field_name: " between 2 visit_* calls
 
-    fn index<'a, 'b: 'a, N: Visit>(&mut self, name: &'static str, index: &'b Index<'a, N>, arena: &'a Arena) -> Result<&mut Self, fmt::Error> {
+    // index or enum
+    fn forward<'a, 'b: 'a, N: Visit>(&mut self, name: &'static str, value: &'b N, arena: &'a Arena) -> Result<&mut Self, fmt::Error> {
         self.0.write_str(name)?;
         self.0.write_str(": ")?;
-        arena.get(index).accept(arena, self).into_result().map_err(|_| fmt::Error)?;
-        self.0.write_char(',')?;
+        value.accept(arena, self).into_result().map_err(|_| fmt::Error)?;
+        self.0.write_str(", ")?;
         Ok(self)
     }
 
-    fn index_tagged<'a, 'b: 'a, N: Visit>(&mut self, name: &'static str, index: &'b TagIndex<'a, N>, arena: &'a Arena) -> Result<&mut Self, fmt::Error> {
+    // optiona index or enum
+    fn optional<'a, 'b: 'a, N: Visit>(&mut self, name: &'static str, value: &'b Option<N>, arena: &'a Arena) -> Result<&mut Self, fmt::Error> {
         self.0.write_str(name)?;
         self.0.write_str(": ")?;
-        index.as_repr().as_ref().accept(arena, self).into_result().map_err(|_| fmt::Error)?;
-        self.0.write_char(',')?;
-        Ok(self)
-    }
-
-    // optiona index
-    fn optional<'a, 'b: 'a, N: Visit>(&mut self, name: &'static str, index: &'b Option<Index<'a, N>>, arena: &'a Arena) -> Result<&mut Self, fmt::Error> {
-        self.0.write_str(name)?;
-        self.0.write_str(": ")?;
-        if let Some(index) = index {
-            arena.get(index).accept(arena, self).into_result().map_err(|_| fmt::Error)?;
+        if let Some(value) = value {
+            value.accept(arena, self).into_result().map_err(|_| fmt::Error)?;
         } else {
             self.0.write_str("None")?;
         }
-        self.0.write_char(',')?;
-        Ok(self)
-    }
-
-    // optional tagged
-    fn optional_tagged<'a, 'b: 'a, N: Visit>(&mut self, name: &'static str, index: &'b Option<TagIndex<'a, N>>, arena: &'a Arena) -> Result<&mut Self, fmt::Error> {
-        self.0.write_str(name)?;
-        self.0.write_str(": ")?;
-        if let Some(index) = index {
-            index.as_repr().as_ref().accept(arena, self).into_result().map_err(|_| fmt::Error)?;
-        } else {
-            self.0.write_str("None")?;
-        }
-        self.0.write_char(',')?;
+        self.0.write_str(", ")?;
         Ok(self)
     }
 
@@ -109,19 +89,10 @@ impl<'f1, 'f2> Formatter<'f1, 'f2> {
         Ok(self)
     }
 
-    fn slice_tagged<'a, 'b: 'a, N: Visit>(&mut self, name: &'static str, slice: &'b TagSlice<'a, N>, arena: &'a Arena) -> Result<&mut Self, fmt::Error> {
-        self.0.write_str(name)?;
-        self.0.write_str(": [")?;
-        for item in arena.get_iter(slice) {
-            item.as_repr().as_ref().accept(arena, self).into_result().map_err(|_| fmt::Error)?;
-        }
-        Ok(self)
-    }
-
-    fn variant<'a, 'b: 'a, N: Visit>(&mut self, name: &'static str, index: &'b Index<'a, N>, arena: &'a Arena) -> EmptyResult {
+    fn variant<'a, 'b: 'a, N>(&mut self, name: &'static str, index: &'b Index<'a, N>, arena: &'a Arena) -> EmptyResult where Index<'a, N>: Visit {
         self.0.write_str(name)?;
         self.0.write_char('(')?;
-        arena.get(index).accept(arena, self).into_result().map_err(|_| fmt::Error)?;
+        index.accept(arena, self).into_result().map_err(|_| fmt::Error)?;
         self.0.write_char(')')?;
         EmptyResult(true)
     }
@@ -131,547 +102,603 @@ impl<'f1, 'f2> Visitor for Formatter<'f1, 'f2> {
     type Result = EmptyResult;
 
     // AUTOGEN
-    fn visit_array_expr<'a, 'b: 'a>(&mut self, node: &'b ArrayExpr<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_array_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, ArrayExpr<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("ArrayExpr")?
-            .field("span", node.span)?
-            .slice_tagged("items", &node.items, arena)?
+            .field("span", this.span)?
+            .slice("items", &this.items, arena)?
             .end_struct()
     }
 
-    fn visit_array_index_expr<'a, 'b: 'a>(&mut self, node: &'b ArrayIndexExpr<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_array_index_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, ArrayIndexExpr<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("ArrayIndexExpr")?
-            .field("span", node.span)?
-            .index_tagged("base", &node.base, arena)?
-            .slice_tagged("parameters", &node.parameters, arena)?
-            .field("quote_span", node.quote_span)?
+            .field("span", this.span)?
+            .forward("base", &this.base, arena)?
+            .slice("parameters", &this.parameters, arena)?
+            .field("quote_span", this.quote_span)?
             .end_struct()
     }
 
-    fn visit_array_type<'a, 'b: 'a>(&mut self, node: &'b ArrayType<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_array_type<'a, 'b: 'a>(&mut self, node: &'b Index<'a, ArrayType<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("ArrayType")?
-            .field("span", node.span)?
-            .index_tagged("base", &node.base, arena)?
-            .index_tagged("size", &node.size, arena)?
+            .field("span", this.span)?
+            .forward("base", &this.base, arena)?
+            .forward("size", &this.size, arena)?
             .end_struct()
     }
 
-    fn visit_assign_expr_stmt<'a, 'b: 'a>(&mut self, node: &'b AssignExprStatement<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_assign_expr_stmt<'a, 'b: 'a>(&mut self, node: &'b Index<'a, AssignExprStatement<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("AssignExprStatement")?
-            .field("span", node.span)?
-            .index_tagged("left", &node.left, arena)?
-            .index_tagged("right", &node.right, arena)?
-            .field("op", node.op)?
-            .field("op_span", node.op_span)?
+            .field("span", this.span)?
+            .forward("left", &this.left, arena)?
+            .forward("right", &this.right, arena)?
+            .field("op", this.op)?
+            .field("op_span", this.op_span)?
             .end_struct()
     }
 
-    fn visit_binary_expr<'a, 'b: 'a>(&mut self, node: &'b BinaryExpr<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_binary_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, BinaryExpr<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("BinaryExpr")?
-            .field("span", node.span)?
-            .index_tagged("left", &node.left, arena)?
-            .index_tagged("right", &node.right, arena)?
-            .field("op", node.op)?
-            .field("op_span", node.op_span)?
+            .field("span", this.span)?
+            .forward("left", &this.left, arena)?
+            .forward("right", &this.right, arena)?
+            .field("op", this.op)?
+            .field("op_span", this.op_span)?
             .end_struct()
     }
 
-    fn visit_block<'a, 'b: 'a>(&mut self, node: &'b Block<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_block<'a, 'b: 'a>(&mut self, node: &'b Index<'a, Block<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("Block")?
-            .field("span", node.span)?
-            .slice_tagged("items", &node.items, arena)?
+            .field("span", this.span)?
+            .slice("items", &this.items, arena)?
             .end_struct()
     }
 
-    fn visit_block_stmt<'a, 'b: 'a>(&mut self, node: &'b BlockStatement<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_block_stmt<'a, 'b: 'a>(&mut self, node: &'b Index<'a, BlockStatement<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("BlockStatement")?
-            .field("span", node.span)?
-            .field("label", node.label)?
-            .index("body", &node.body, arena)?
+            .field("span", this.span)?
+            .field("label", this.label)?
+            .forward("body", &this.body, arena)?
             .end_struct()
     }
 
-    fn visit_break_stmt<'a, 'b: 'a>(&mut self, node: &'b BreakStatement, _: &'a Arena) -> Self::Result {
+    fn visit_break_stmt<'a, 'b: 'a>(&mut self, node: &'b Index<'a, BreakStatement>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("BreakStatement")?
-            .field("span", node.span)?
-            .field("label", node.label)?
+            .field("span", this.span)?
+            .field("label", this.label)?
             .end_struct()
     }
 
-    fn visit_call_expr<'a, 'b: 'a>(&mut self, node: &'b CallExpr<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_call_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, CallExpr<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("CallExpr")?
-            .field("span", node.span)?
-            .index_tagged("base", &node.base, arena)?
-            .field("quote_span", node.quote_span)?
-            .slice_tagged("parameters", &node.parameters, arena)?
+            .field("span", this.span)?
+            .forward("base", &this.base, arena)?
+            .field("quote_span", this.quote_span)?
+            .slice("parameters", &this.parameters, arena)?
             .end_struct()
     }
 
-    fn visit_cast_segment<'a, 'b: 'a>(&mut self, node: &'b CastSegment<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_cast_segment<'a, 'b: 'a>(&mut self, node: &'b Index<'a, CastSegment<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("CastSegment")?
-            .field("span", node.span)?
-            .index_tagged("left", &node.left, arena)?
-            .index_tagged("right", &node.right, arena)?
+            .field("span", this.span)?
+            .forward("left", &this.left, arena)?
+            .forward("right", &this.right, arena)?
             .end_struct()
     }
 
-    fn visit_class_def<'a, 'b: 'a>(&mut self, node: &'b ClassDef<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_class_def<'a, 'b: 'a>(&mut self, node: &'b Index<'a, ClassDef<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("ClassDef")?
-            .field("span", node.span)?
-            .index("name", &node.name, arena)?
-            .field("quote_span", node.quote_span)?
-            .slice_tagged("items", &node.items, arena)?
+            .field("span", this.span)?
+            .forward("name", &this.name, arena)?
+            .field("quote_span", this.quote_span)?
+            .slice("items", &this.items, arena)?
             .end_struct()
     }
 
-    fn visit_continue_stmt<'a, 'b: 'a>(&mut self, node: &'b ContinueStatement, _: &'a Arena) -> Self::Result {
+    fn visit_continue_stmt<'a, 'b: 'a>(&mut self, node: &'b Index<'a, ContinueStatement>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("ContinueStatement")?
-            .field("span", node.span)?
-            .field("label", node.label)?
+            .field("span", this.span)?
+            .field("label", this.label)?
             .end_struct()
     }
 
-    fn visit_else_clause<'a, 'b: 'a>(&mut self, node: &'b ElseClause<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_else_clause<'a, 'b: 'a>(&mut self, node: &'b Index<'a, ElseClause<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("ElseClause")?
-            .field("span", node.span)?
-            .index("body", &node.body, arena)?
+            .field("span", this.span)?
+            .forward("body", &this.body, arena)?
             .end_struct()
     }
 
-    fn visit_enum_def<'a, 'b: 'a>(&mut self, node: &'b EnumDef<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_enum_def<'a, 'b: 'a>(&mut self, node: &'b Index<'a, EnumDef<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("EnumDef")?
-            .field("span", node.span)?
-            .field("name", node.name)?
-            .optional("base_type", &node.base_type, arena)?
-            .field("quote_span", node.quote_span)?
-            .slice("variants", &node.variants, arena)?
+            .field("span", this.span)?
+            .field("name", this.name)?
+            .optional("base_type", &this.base_type, arena)?
+            .field("quote_span", this.quote_span)?
+            .slice("variants", &this.variants, arena)?
             .end_struct()
     }
 
-    fn visit_enum_def_variant<'a, 'b: 'a>(&mut self, node: &'b EnumDefVariant<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_enum_def_variant<'a, 'b: 'a>(&mut self, node: &'b Index<'a, EnumDefVariant<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("EnumDefVariant")?
-            .field("span", node.span)?
-            .field("name", node.name)?
-            .optional_tagged("value", &node.value, arena)?
+            .field("span", this.span)?
+            .field("name", this.name)?
+            .optional("value", &this.value, arena)?
             .end_struct()
     }
 
     fn visit_expr<'a, 'b: 'a>(&mut self, node: &'b Expr<'a>, arena: &'a Arena) -> Self::Result {
         match node {
-            Expr::Lit(n) => self.variant("Lit", n, arena),
-            Expr::Path(n) => self.variant("Path", n, arena),
-            Expr::Paren(n) => self.variant("Paren", n, arena),
-            Expr::Tuple(n) => self.variant("Tuple", n, arena),
-            Expr::Array(n) => self.variant("Array", n, arena),
-            Expr::Call(n) => self.variant("Call", n, arena),
-            Expr::ArrayIndex(n) => self.variant("ArrayIndex", n, arena),
-            Expr::TupleIndex(n) => self.variant("TupleIndex", n, arena),
-            Expr::Member(n) => self.variant("Member", n, arena),
-            Expr::Object(n) => self.variant("Object", n, arena),
-            Expr::Unary(n) => self.variant("Unary", n, arena),
-            Expr::Binary(n) => self.variant("Binary", n, arena),
-            Expr::RangeBoth(n) => self.variant("RangeBoth", n, arena),
-            Expr::RangeFull(n) => self.variant("RangeFull", n, arena),
-            Expr::RangeLeft(n) => self.variant("RangeLeft", n, arena),
-            Expr::RangeRight(n) => self.variant("RangeRight", n, arena),
+            Expr::Lit(n) => self.variant("Expr::Lit", n, arena),
+            Expr::Path(n) => self.variant("Expr::Path", n, arena),
+            Expr::Paren(n) => self.variant("Expr::Paren", n, arena),
+            Expr::Tuple(n) => self.variant("Expr::Tuple", n, arena),
+            Expr::Array(n) => self.variant("Expr::Array", n, arena),
+            Expr::Call(n) => self.variant("Expr::Call", n, arena),
+            Expr::ArrayIndex(n) => self.variant("Expr::ArrayIndex", n, arena),
+            Expr::TupleIndex(n) => self.variant("Expr::TupleIndex", n, arena),
+            Expr::Member(n) => self.variant("Expr::Member", n, arena),
+            Expr::Object(n) => self.variant("Expr::Object", n, arena),
+            Expr::Unary(n) => self.variant("Expr::Unary", n, arena),
+            Expr::Binary(n) => self.variant("Expr::Binary", n, arena),
+            Expr::RangeBoth(n) => self.variant("Expr::RangeBoth", n, arena),
+            Expr::RangeFull(n) => self.variant("Expr::RangeFull", n, arena),
+            Expr::RangeLeft(n) => self.variant("Expr::RangeLeft", n, arena),
+            Expr::RangeRight(n) => self.variant("Expr::RangeRight", n, arena),
         }
     }
 
-    fn visit_field_def<'a, 'b: 'a>(&mut self, node: &'b FieldDef<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_field_def<'a, 'b: 'a>(&mut self, node: &'b Index<'a, FieldDef<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("FieldDef")?
-            .field("span", node.span)?
-            .field("name", node.name)?
-            .field("colon_span", node.colon_span)?
-            .index_tagged("r#type", &node.r#type, arena)?
+            .field("span", this.span)?
+            .field("name", this.name)?
+            .field("colon_span", this.colon_span)?
+            .forward("r#type", &this.r#type, arena)?
             .end_struct()
     }
 
-    fn visit_fn_def<'a, 'b: 'a>(&mut self, node: &'b FnDef<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_fn_def<'a, 'b: 'a>(&mut self, node: &'b Index<'a, FnDef<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("FnDef")?
-            .field("span", node.span)?
-            .index("name", &node.name, arena)?
-            .field("quote_span", node.quote_span)?
-            .slice("parameters", &node.parameters, arena)?
-            .optional_tagged("ret_type", &node.ret_type, arena)?
-            .slice("wheres", &node.wheres, arena)?
-            .optional("body", &node.body, arena)?
+            .field("span", this.span)?
+            .forward("name", &this.name, arena)?
+            .field("quote_span", this.quote_span)?
+            .slice("parameters", &this.parameters, arena)?
+            .optional("ret_type", &this.ret_type, arena)?
+            .slice("wheres", &this.wheres, arena)?
+            .optional("body", &this.body, arena)?
             .end_struct()
     }
 
-    fn visit_fn_def_parameter<'a, 'b: 'a>(&mut self, node: &'b FnDefParameter<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_fn_def_parameter<'a, 'b: 'a>(&mut self, node: &'b Index<'a, FnDefParameter<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("FnDefParameter")?
-            .field("span", node.span)?
-            .field("name", node.name)?
-            .index_tagged("r#type", &node.r#type, arena)?
+            .field("span", this.span)?
+            .field("name", this.name)?
+            .forward("r#type", &this.r#type, arena)?
             .end_struct()
     }
 
-    fn visit_fn_type<'a, 'b: 'a>(&mut self, node: &'b FnType<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_fn_type<'a, 'b: 'a>(&mut self, node: &'b Index<'a, FnType<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("FnType")?
-            .field("span", node.span)?
-            .field("quote_span", node.quote_span)?
-            .slice("parameters", &node.parameters, arena)?
-            .optional_tagged("ret_type", &node.ret_type, arena)?
+            .field("span", this.span)?
+            .field("quote_span", this.quote_span)?
+            .slice("parameters", &this.parameters, arena)?
+            .optional("ret_type", &this.ret_type, arena)?
             .end_struct()
     }
 
-    fn visit_fn_type_parameter<'a, 'b: 'a>(&mut self, node: &'b FnTypeParameter<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_fn_type_parameter<'a, 'b: 'a>(&mut self, node: &'b Index<'a, FnTypeParameter<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("FnTypeParameter")?
-            .field("span", node.span)?
-            .field("name", node.name)?
-            .index_tagged("r#type", &node.r#type, arena)?
+            .field("span", this.span)?
+            .field("name", this.name)?
+            .forward("r#type", &this.r#type, arena)?
             .end_struct()
     }
 
-    fn visit_for_stmt<'a, 'b: 'a>(&mut self, node: &'b ForStatement<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_for_stmt<'a, 'b: 'a>(&mut self, node: &'b Index<'a, ForStatement<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("ForStatement")?
-            .field("span", node.span)?
-            .field("label", node.label)?
-            .field("iter_name", node.iter_name)?
-            .index_tagged("iter_expr", &node.iter_expr, arena)?
-            .index("body", &node.body, arena)?
+            .field("span", this.span)?
+            .field("label", this.label)?
+            .field("iter_name", this.iter_name)?
+            .forward("iter_expr", &this.iter_expr, arena)?
+            .forward("body", &this.body, arena)?
             .end_struct()
     }
 
-    fn visit_generic_name<'a, 'b: 'a>(&mut self, node: &'b GenericName<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_generic_name<'a, 'b: 'a>(&mut self, node: &'b Index<'a, GenericName<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("GenericName")?
-            .field("span", node.span)?
-            .field("base", node.base)?
-            .field("quote_span", node.quote_span)?
-            .slice("parameters", &node.parameters, arena)?
+            .field("span", this.span)?
+            .field("base", this.base)?
+            .field("quote_span", this.quote_span)?
+            .slice("parameters", &this.parameters, arena)?
             .end_struct()
     }
 
-    fn visit_generic_parameter<'a, 'b: 'a>(&mut self, node: &'b GenericParameter, _: &'a Arena) -> Self::Result {
+    fn visit_generic_parameter<'a, 'b: 'a>(&mut self, node: &'b Index<'a, GenericParameter>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("GenericParameter")?
-            .field("span", node.span)?
-            .field("name", node.name)?
+            .field("span", this.span)?
+            .field("name", this.name)?
             .end_struct()
     }
 
-    fn visit_generic_segment<'a, 'b: 'a>(&mut self, node: &'b GenericSegment<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_generic_segment<'a, 'b: 'a>(&mut self, node: &'b Index<'a, GenericSegment<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("GenericSegment")?
-            .field("span", node.span)?
-            .field("base", node.base)?
-            .index("parameters", &node.parameters, arena)?
+            .field("span", this.span)?
+            .field("base", this.base)?
+            .forward("parameters", &this.parameters, arena)?
             .end_struct()
     }
 
-    fn visit_if_clause<'a, 'b: 'a>(&mut self, node: &'b IfClause<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_if_clause<'a, 'b: 'a>(&mut self, node: &'b Index<'a, IfClause<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("IfClause")?
-            .field("span", node.span)?
-            .index_tagged("condition", &node.condition, arena)?
-            .index("body", &node.body, arena)?
+            .field("span", this.span)?
+            .forward("condition", &this.condition, arena)?
+            .forward("body", &this.body, arena)?
             .end_struct()
     }
 
-    fn visit_if_stmt<'a, 'b: 'a>(&mut self, node: &'b IfStatement<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_if_stmt<'a, 'b: 'a>(&mut self, node: &'b Index<'a, IfStatement<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("IfStatement")?
-            .field("span", node.span)?
-            .index("if_clause", &node.if_clause, arena)?
-            .slice("elseif_clauses", &node.elseif_clauses, arena)?
-            .optional("else_clause", &node.else_clause, arena)?
+            .field("span", this.span)?
+            .forward("if_clause", &this.if_clause, arena)?
+            .slice("elseif_clauses", &this.elseif_clauses, arena)?
+            .optional("else_clause", &this.else_clause, arena)?
             .end_struct()
     }
 
-    fn visit_impl_block<'a, 'b: 'a>(&mut self, node: &'b Implementation<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_impl_block<'a, 'b: 'a>(&mut self, node: &'b Index<'a, Implementation<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("Implementation")?
-            .field("span", node.span)?
-            .slice("parameters", &node.parameters, arena)?
-            .optional_tagged("class", &node.class, arena)?
-            .index_tagged("r#type", &node.r#type, arena)?
-            .slice("wheres", &node.wheres, arena)?
-            .field("quote_span", node.quote_span)?
-            .slice_tagged("items", &node.items, arena)?
+            .field("span", this.span)?
+            .slice("parameters", &this.parameters, arena)?
+            .optional("class", &this.class, arena)?
+            .forward("r#type", &this.r#type, arena)?
+            .slice("wheres", &this.wheres, arena)?
+            .field("quote_span", this.quote_span)?
+            .slice("items", &this.items, arena)?
             .end_struct()
     }
 
     fn visit_item<'a, 'b: 'a>(&mut self, node: &'b Item<'a>, arena: &'a Arena) -> Self::Result {
         match node {
-            Item::Struct(n) => self.variant("Struct", n, arena),
-            Item::Enum(n) => self.variant("Enum", n, arena),
-            Item::Fn(n) => self.variant("Fn", n, arena),
-            Item::Impl(n) => self.variant("Impl", n, arena),
-            Item::Type(n) => self.variant("Type", n, arena),
-            Item::Class(n) => self.variant("Class", n, arena),
-            Item::Block(n) => self.variant("Block", n, arena),
-            Item::SimpleExpr(n) => self.variant("SimpleExpr", n, arena),
-            Item::AssignExpr(n) => self.variant("AssignExpr", n, arena),
-            Item::For(n) => self.variant("For", n, arena),
-            Item::If(n) => self.variant("If", n, arena),
-            Item::Loop(n) => self.variant("Loop", n, arena),
-            Item::VarDecl(n) => self.variant("VarDecl", n, arena),
-            Item::While(n) => self.variant("While", n, arena),
-            Item::Use(n) => self.variant("Use", n, arena),
-            Item::Import(n) => self.variant("Import", n, arena),
+            Item::Struct(n) => self.variant("Item::Struct", n, arena),
+            Item::Enum(n) => self.variant("Item::Enum", n, arena),
+            Item::Fn(n) => self.variant("Item::Fn", n, arena),
+            Item::Impl(n) => self.variant("Item::Impl", n, arena),
+            Item::Type(n) => self.variant("Item::Type", n, arena),
+            Item::Class(n) => self.variant("Item::Class", n, arena),
+            Item::Block(n) => self.variant("Item::Block", n, arena),
+            Item::SimpleExpr(n) => self.variant("Item::SimpleExpr", n, arena),
+            Item::AssignExpr(n) => self.variant("Item::AssignExpr", n, arena),
+            Item::For(n) => self.variant("Item::For", n, arena),
+            Item::If(n) => self.variant("Item::If", n, arena),
+            Item::Loop(n) => self.variant("Item::Loop", n, arena),
+            Item::VarDecl(n) => self.variant("Item::VarDecl", n, arena),
+            Item::While(n) => self.variant("Item::While", n, arena),
+            Item::Use(n) => self.variant("Item::Use", n, arena),
+            Item::Import(n) => self.variant("Item::Import", n, arena),
         }
     }
 
-    fn visit_lit_expr<'a, 'b: 'a>(&mut self, node: &'b LitExpr, _: &'a Arena) -> Self::Result {
+    fn visit_lit_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, LitExpr>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("LitExpr")?
-            .field("span", node.span)?
-            .lit_value("value", &node.value)?
+            .field("span", this.span)?
+            .lit_value("value", &this.value)?
             .end_struct()
     }
 
-    fn visit_loop_stmt<'a, 'b: 'a>(&mut self, node: &'b LoopStatement<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_loop_stmt<'a, 'b: 'a>(&mut self, node: &'b Index<'a, LoopStatement<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("LoopStatement")?
-            .field("span", node.span)?
-            .field("label", node.label)?
-            .index("body", &node.body, arena)?
+            .field("span", this.span)?
+            .field("label", this.label)?
+            .forward("body", &this.body, arena)?
             .end_struct()
     }
 
-    fn visit_member_expr<'a, 'b: 'a>(&mut self, node: &'b MemberExpr<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_member_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, MemberExpr<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("MemberExpr")?
-            .field("span", node.span)?
-            .index_tagged("base", &node.base, arena)?
-            .field("op_span", node.op_span)?
-            .field("name", node.name)?
-            .optional("parameters", &node.parameters, arena)?
+            .field("span", this.span)?
+            .forward("base", &this.base, arena)?
+            .field("op_span", this.op_span)?
+            .field("name", this.name)?
+            .optional("parameters", &this.parameters, arena)?
             .end_struct()
     }
 
-    fn visit_module<'a, 'b: 'a>(&mut self, node: &'b Module<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_module<'a, 'b: 'a>(&mut self, node: &'b Index<'a, Module<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("Module")?
-            .field("file", node.file)?
-            .slice_tagged("items", &node.items, arena)?
+            .field("file", this.file)?
+            .slice("items", &this.items, arena)?
             .end_struct()
     }
 
-    fn visit_module_stmt<'a, 'b: 'a>(&mut self, node: &'b ModuleStatement, _: &'a Arena) -> Self::Result {
+    fn visit_module_stmt<'a, 'b: 'a>(&mut self, node: &'b Index<'a, ModuleStatement>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("ModuleStatement")?
-            .field("span", node.span)?
-            .field("name", node.name)?
-            .field("path", node.path)?
+            .field("span", this.span)?
+            .field("name", this.name)?
+            .field("path", this.path)?
             .end_struct()
     }
 
-    fn visit_object_expr<'a, 'b: 'a>(&mut self, node: &'b ObjectExpr<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_object_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, ObjectExpr<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("ObjectExpr")?
-            .field("span", node.span)?
-            .index_tagged("base", &node.base, arena)?
-            .field("quote_span", node.quote_span)?
-            .slice("fields", &node.fields, arena)?
+            .field("span", this.span)?
+            .forward("base", &this.base, arena)?
+            .field("quote_span", this.quote_span)?
+            .slice("fields", &this.fields, arena)?
             .end_struct()
     }
 
-    fn visit_object_expr_field<'a, 'b: 'a>(&mut self, node: &'b ObjectExprField<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_object_expr_field<'a, 'b: 'a>(&mut self, node: &'b Index<'a, ObjectExprField<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("ObjectExprField")?
-            .field("span", node.span)?
-            .field("name", node.name)?
-            .index_tagged("value", &node.value, arena)?
+            .field("span", this.span)?
+            .field("name", this.name)?
+            .forward("value", &this.value, arena)?
             .end_struct()
     }
 
-    fn visit_paren_expr<'a, 'b: 'a>(&mut self, node: &'b ParenExpr<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_paren_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, ParenExpr<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("ParenExpr")?
-            .field("span", node.span)?
-            .index_tagged("base", &node.base, arena)?
+            .field("span", this.span)?
+            .forward("base", &this.base, arena)?
             .end_struct()
     }
 
-    fn visit_path<'a, 'b: 'a>(&mut self, node: &'b Path<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_path<'a, 'b: 'a>(&mut self, node: &'b Index<'a, Path<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("Path")?
-            .field("span", node.span)?
-            .slice_tagged("segments", &node.segments, arena)?
+            .field("span", this.span)?
+            .slice("segments", &this.segments, arena)?
             .end_struct()
     }
 
     fn visit_path_segment<'a, 'b: 'a>(&mut self, node: &'b PathSegment<'a>, arena: &'a Arena) -> Self::Result {
         match node {
-            PathSegment::Global => EmptyResult(self.0.write_str("Global").is_ok()),
-            PathSegment::Simple(n) => self.variant("Simple", n, arena),
-            PathSegment::Cast(n) => self.variant("Cast", n, arena),
-            PathSegment::Generic(n) => self.variant("Generic", n, arena),
+            PathSegment::Global => EmptyResult(self.0.write_str("PathSegment::Global").is_ok()),
+            PathSegment::Simple(n) => self.variant("PathSegment::Simple", n, arena),
+            PathSegment::Cast(n) => self.variant("PathSegment::Cast", n, arena),
+            PathSegment::Generic(n) => self.variant("PathSegment::Generic", n, arena),
         }
     }
 
-    fn visit_primitive_type<'a, 'b: 'a>(&mut self, node: &'b PrimitiveType, _: &'a Arena) -> Self::Result {
+    fn visit_primitive_type<'a, 'b: 'a>(&mut self, node: &'b Index<'a, PrimitiveType>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("PrimitiveType")?
-            .field("span", node.span)?
-            .field("base", node.base)?
+            .field("span", this.span)?
+            .field("base", this.base)?
             .end_struct()
     }
 
-    fn visit_range_both_expr<'a, 'b: 'a>(&mut self, node: &'b RangeBothExpr<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_range_both_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, RangeBothExpr<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("RangeBothExpr")?
-            .field("span", node.span)?
-            .index_tagged("left", &node.left, arena)?
-            .field("op_span", node.op_span)?
-            .index_tagged("right", &node.right, arena)?
+            .field("span", this.span)?
+            .forward("left", &this.left, arena)?
+            .field("op_span", this.op_span)?
+            .forward("right", &this.right, arena)?
             .end_struct()
     }
 
-    fn visit_range_full_expr<'a, 'b: 'a>(&mut self, node: &'b RangeFullExpr, _: &'a Arena) -> Self::Result {
+    fn visit_range_full_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, RangeFullExpr>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("RangeFullExpr")?
-            .field("span", node.span)?
+            .field("span", this.span)?
             .end_struct()
     }
 
-    fn visit_range_left_expr<'a, 'b: 'a>(&mut self, node: &'b RangeLeftExpr<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_range_left_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, RangeLeftExpr<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("RangeLeftExpr")?
-            .field("span", node.span)?
-            .index_tagged("base", &node.base, arena)?
+            .field("span", this.span)?
+            .forward("base", &this.base, arena)?
             .end_struct()
     }
 
-    fn visit_range_right_expr<'a, 'b: 'a>(&mut self, node: &'b RangeRightExpr<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_range_right_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, RangeRightExpr<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("RangeRightExpr")?
-            .field("span", node.span)?
-            .index_tagged("base", &node.base, arena)?
+            .field("span", this.span)?
+            .forward("base", &this.base, arena)?
             .end_struct()
     }
 
-    fn visit_ref_type<'a, 'b: 'a>(&mut self, node: &'b RefType<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_ref_type<'a, 'b: 'a>(&mut self, node: &'b Index<'a, RefType<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("RefType")?
-            .field("span", node.span)?
-            .index_tagged("base", &node.base, arena)?
+            .field("span", this.span)?
+            .forward("base", &this.base, arena)?
             .end_struct()
     }
 
-    fn visit_ret_stmt<'a, 'b: 'a>(&mut self, node: &'b ReturnStatement<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_ret_stmt<'a, 'b: 'a>(&mut self, node: &'b Index<'a, ReturnStatement<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("ReturnStatement")?
-            .field("span", node.span)?
-            .optional_tagged("value", &node.value, arena)?
+            .field("span", this.span)?
+            .optional("value", &this.value, arena)?
             .end_struct()
     }
 
-    fn visit_simple_expr_stmt<'a, 'b: 'a>(&mut self, node: &'b SimpleExprStatement<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_simple_expr_stmt<'a, 'b: 'a>(&mut self, node: &'b Index<'a, SimpleExprStatement<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("SimpleExprStatement")?
-            .field("span", node.span)?
-            .index_tagged("expr", &node.expr, arena)?
+            .field("span", this.span)?
+            .forward("expr", &this.expr, arena)?
             .end_struct()
     }
 
-    fn visit_simple_segment<'a, 'b: 'a>(&mut self, node: &'b SimpleSegment, _: &'a Arena) -> Self::Result {
+    fn visit_simple_segment<'a, 'b: 'a>(&mut self, node: &'b Index<'a, SimpleSegment>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("SimpleSegment")?
-            .field("span", node.span)?
-            .field("name", node.name)?
+            .field("span", this.span)?
+            .field("name", this.name)?
             .end_struct()
     }
 
     fn visit_stmt<'a, 'b: 'a>(&mut self, node: &'b Statement<'a>, arena: &'a Arena) -> Self::Result {
         match node {
-            Statement::Struct(n) => self.variant("Struct", n, arena),
-            Statement::Enum(n) => self.variant("Enum", n, arena),
-            Statement::Fn(n) => self.variant("Fn", n, arena),
-            Statement::Impl(n) => self.variant("Impl", n, arena),
-            Statement::Type(n) => self.variant("Type", n, arena),
-            Statement::Class(n) => self.variant("Class", n, arena),
-            Statement::Block(n) => self.variant("Block", n, arena),
-            Statement::Break(n) => self.variant("Break", n, arena),
-            Statement::Continue(n) => self.variant("Continue", n, arena),
-            Statement::SimpleExpr(n) => self.variant("SimpleExpr", n, arena),
-            Statement::AssignExpr(n) => self.variant("AssignExpr", n, arena),
-            Statement::For(n) => self.variant("For", n, arena),
-            Statement::If(n) => self.variant("If", n, arena),
-            Statement::Loop(n) => self.variant("Loop", n, arena),
-            Statement::Return(n) => self.variant("Return", n, arena),
-            Statement::VarDecl(n) => self.variant("VarDecl", n, arena),
-            Statement::While(n) => self.variant("While", n, arena),
-            Statement::Use(n) => self.variant("Use", n, arena),
+            Statement::Struct(n) => self.variant("Statement::Struct", n, arena),
+            Statement::Enum(n) => self.variant("Statement::Enum", n, arena),
+            Statement::Fn(n) => self.variant("Statement::Fn", n, arena),
+            Statement::Impl(n) => self.variant("Statement::Impl", n, arena),
+            Statement::Type(n) => self.variant("Statement::Type", n, arena),
+            Statement::Class(n) => self.variant("Statement::Class", n, arena),
+            Statement::Block(n) => self.variant("Statement::Block", n, arena),
+            Statement::Break(n) => self.variant("Statement::Break", n, arena),
+            Statement::Continue(n) => self.variant("Statement::Continue", n, arena),
+            Statement::SimpleExpr(n) => self.variant("Statement::SimpleExpr", n, arena),
+            Statement::AssignExpr(n) => self.variant("Statement::AssignExpr", n, arena),
+            Statement::For(n) => self.variant("Statement::For", n, arena),
+            Statement::If(n) => self.variant("Statement::If", n, arena),
+            Statement::Loop(n) => self.variant("Statement::Loop", n, arena),
+            Statement::Return(n) => self.variant("Statement::Return", n, arena),
+            Statement::VarDecl(n) => self.variant("Statement::VarDecl", n, arena),
+            Statement::While(n) => self.variant("Statement::While", n, arena),
+            Statement::Use(n) => self.variant("Statement::Use", n, arena),
         }
     }
 
-    fn visit_struct_def<'a, 'b: 'a>(&mut self, node: &'b StructDef<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_struct_def<'a, 'b: 'a>(&mut self, node: &'b Index<'a, StructDef<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("StructDef")?
-            .field("span", node.span)?
-            .index("name", &node.name, arena)?
-            .slice("fields", &node.fields, arena)?
+            .field("span", this.span)?
+            .forward("name", &this.name, arena)?
+            .slice("fields", &this.fields, arena)?
             .end_struct()
     }
 
-    fn visit_tuple_expr<'a, 'b: 'a>(&mut self, node: &'b TupleExpr<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_tuple_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, TupleExpr<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("TupleExpr")?
-            .field("span", node.span)?
-            .slice_tagged("items", &node.items, arena)?
+            .field("span", this.span)?
+            .slice("items", &this.items, arena)?
             .end_struct()
     }
 
-    fn visit_tuple_index_expr<'a, 'b: 'a>(&mut self, node: &'b TupleIndexExpr<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_tuple_index_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, TupleIndexExpr<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("TupleIndexExpr")?
-            .field("span", node.span)?
-            .index_tagged("base", &node.base, arena)?
-            .field("op_span", node.op_span)?
-            .field("value", node.value)?
-            .field("value_span", node.value_span)?
+            .field("span", this.span)?
+            .forward("base", &this.base, arena)?
+            .field("op_span", this.op_span)?
+            .field("value", this.value)?
+            .field("value_span", this.value_span)?
             .end_struct()
     }
 
-    fn visit_tuple_type<'a, 'b: 'a>(&mut self, node: &'b TupleType<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_tuple_type<'a, 'b: 'a>(&mut self, node: &'b Index<'a, TupleType<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("TupleType")?
-            .field("span", node.span)?
-            .slice_tagged("parameters", &node.parameters, arena)?
+            .field("span", this.span)?
+            .slice("parameters", &this.parameters, arena)?
             .end_struct()
     }
 
-    fn visit_type_def<'a, 'b: 'a>(&mut self, node: &'b TypeDef<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_type_def<'a, 'b: 'a>(&mut self, node: &'b Index<'a, TypeDef<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("TypeDef")?
-            .field("span", node.span)?
-            .index("name", &node.name, arena)?
-            .optional_tagged("from", &node.from, arena)?
+            .field("span", this.span)?
+            .forward("name", &this.name, arena)?
+            .optional("from", &this.from, arena)?
             .end_struct()
     }
 
-    fn visit_type_list<'a, 'b: 'a>(&mut self, node: &'b TypeList<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_type_list<'a, 'b: 'a>(&mut self, node: &'b Index<'a, TypeList<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("TypeList")?
-            .field("span", node.span)?
-            .slice_tagged("items", &node.items, arena)?
+            .field("span", this.span)?
+            .slice("items", &this.items, arena)?
             .end_struct()
     }
 
     fn visit_type_ref<'a, 'b: 'a>(&mut self, node: &'b TypeRef<'a>, arena: &'a Arena) -> Self::Result {
         match node {
-            TypeRef::Array(n) => self.variant("Array", n, arena),
-            TypeRef::Fn(n) => self.variant("Fn", n, arena),
-            TypeRef::Path(n) => self.variant("Path", n, arena),
-            TypeRef::Primitive(n) => self.variant("Primitive", n, arena),
-            TypeRef::Ref(n) => self.variant("Ref", n, arena),
-            TypeRef::Tuple(n) => self.variant("Tuple", n, arena),
+            TypeRef::Array(n) => self.variant("TypeRef::Array", n, arena),
+            TypeRef::Fn(n) => self.variant("TypeRef::Fn", n, arena),
+            TypeRef::Path(n) => self.variant("TypeRef::Path", n, arena),
+            TypeRef::Primitive(n) => self.variant("TypeRef::Primitive", n, arena),
+            TypeRef::Ref(n) => self.variant("TypeRef::Ref", n, arena),
+            TypeRef::Tuple(n) => self.variant("TypeRef::Tuple", n, arena),
         }
     }
 
-    fn visit_unary_expr<'a, 'b: 'a>(&mut self, node: &'b UnaryExpr<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_unary_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, UnaryExpr<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("UnaryExpr")?
-            .field("span", node.span)?
-            .index_tagged("base", &node.base, arena)?
-            .field("op", node.op)?
-            .field("op_span", node.op_span)?
+            .field("span", this.span)?
+            .forward("base", &this.base, arena)?
+            .field("op", this.op)?
+            .field("op_span", this.op_span)?
             .end_struct()
     }
 
-    fn visit_use_stmt<'a, 'b: 'a>(&mut self, node: &'b UseStatement<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_use_stmt<'a, 'b: 'a>(&mut self, node: &'b Index<'a, UseStatement<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("UseStatement")?
-            .field("span", node.span)?
-            .index("path", &node.path, arena)?
-            .field("alias", node.alias)?
+            .field("span", this.span)?
+            .forward("path", &this.path, arena)?
+            .field("alias", this.alias)?
             .end_struct()
     }
 
-    fn visit_var_decl_stmt<'a, 'b: 'a>(&mut self, node: &'b VarDeclStatement<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_var_decl_stmt<'a, 'b: 'a>(&mut self, node: &'b Index<'a, VarDeclStatement<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("VarDeclStatement")?
-            .field("span", node.span)?
-            .field("r#const", node.r#const)?
-            .field("name", node.name)?
-            .optional_tagged("r#type", &node.r#type, arena)?
-            .optional_tagged("init_value", &node.init_value, arena)?
+            .field("span", this.span)?
+            .field("r#const", this.r#const)?
+            .field("name", this.name)?
+            .optional("r#type", &this.r#type, arena)?
+            .optional("init_value", &this.init_value, arena)?
             .end_struct()
     }
 
-    fn visit_where_clause<'a, 'b: 'a>(&mut self, node: &'b WhereClause<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_where_clause<'a, 'b: 'a>(&mut self, node: &'b Index<'a, WhereClause<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("WhereClause")?
-            .field("span", node.span)?
-            .field("name", node.name)?
-            .slice_tagged("constraints", &node.constraints, arena)?
+            .field("span", this.span)?
+            .field("name", this.name)?
+            .slice("constraints", &this.constraints, arena)?
             .end_struct()
     }
 
-    fn visit_while_stmt<'a, 'b: 'a>(&mut self, node: &'b WhileStatement<'a>, arena: &'a Arena) -> Self::Result {
+    fn visit_while_stmt<'a, 'b: 'a>(&mut self, node: &'b Index<'a, WhileStatement<'a>>, arena: &'a Arena) -> Self::Result {
+        let this = arena.get(node);
         self.start_struct("WhileStatement")?
-            .field("span", node.span)?
-            .field("label", node.label)?
-            .index_tagged("condition", &node.condition, arena)?
-            .index("body", &node.body, arena)?
+            .field("span", this.span)?
+            .field("label", this.label)?
+            .forward("condition", &this.condition, arena)?
+            .forward("body", &this.body, arena)?
             .end_struct()
     }
 }
