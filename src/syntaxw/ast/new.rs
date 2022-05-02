@@ -11,8 +11,7 @@ use super::*;
 // pub: rust require this to be pub if that pub trait "inherits" this, but does not require reexport in ast.rs
 pub trait EmplaceConcreteHelper {
     fn emplace<'a, T: 'a, F: FnOnce(&'a mut T)>(&'a self, init: F) -> Index<'a, T> where T: Sized;
-    fn emplace_tagged<'a, T: 'a, U, I: FnOnce(&'a mut T), W: FnOnce(Index<'a, T>) -> U>(&'a self, wrap: W, init: I) -> TagIndex<'a, U> where T: Sized;
-    fn build_tagged_slice<'a, U: 'a>(&'a self, indices: Vec<TagIndex<'a, U>>) -> TagSlice<'a, U>;
+    fn build_slice<'a, T: 'a>(&'a self, indices: Vec<T>) -> Slice<'a, T>;
 }
 
 impl EmplaceConcreteHelper for Arena {
@@ -20,11 +19,8 @@ impl EmplaceConcreteHelper for Arena {
     fn emplace<'a, T: 'a, F: FnOnce(&'a mut T)>(&'a self, init: F) -> Index<'a, T> where T: Sized {
         self.emplace(init)
     }
-    fn emplace_tagged<'a, T: 'a, U, I: FnOnce(&'a mut T), W: FnOnce(Index<'a, T>) -> U>(&'a self, wrap: W, init: I) -> TagIndex<'a, U> where T: Sized {
-        self.emplace_tagged(wrap, init)
-    }
-    fn build_tagged_slice<'a, U: 'a>(&'a self, indices: Vec<TagIndex<'a, U>>) -> TagSlice<'a, U> {
-        self.build_tagged_slice(indices)
+    fn build_slice<'a, T: 'a>(&'a self, indices: Vec<T>) -> Slice<'a, T> {
+        self.build_slice(indices)
     }
 }
 
@@ -34,29 +30,29 @@ pub trait EmplaceConcrete: EmplaceConcreteHelper {
     fn emplace_array_expr<'a>(
         &'a self,
         span: Span,
-        items: Vec<TagIndex<'a, Expr<'a>>>,
+        items: Vec<Expr<'a>>,
     ) -> Index<'a, ArrayExpr<'a>>;
 
     fn emplace_array_index_expr<'a>(
         &'a self,
         span: Span,
-        base: TagIndex<'a, Expr<'a>>,
-        parameters: Vec<TagIndex<'a, Expr<'a>>>,
+        base: Expr<'a>,
+        parameters: Vec<Expr<'a>>,
         quote_span: Span,
     ) -> Index<'a, ArrayIndexExpr<'a>>;
 
     fn emplace_array_type<'a>(
         &'a self,
         span: Span,
-        base: TagIndex<'a, TypeRef<'a>>,
-        size: TagIndex<'a, Expr<'a>>,
+        base: TypeRef<'a>,
+        size: Expr<'a>,
     ) -> Index<'a, ArrayType<'a>>;
 
     fn emplace_assign_expr_stmt<'a>(
         &'a self,
         span: Span,
-        left: TagIndex<'a, Expr<'a>>,
-        right: TagIndex<'a, Expr<'a>>,
+        left: Expr<'a>,
+        right: Expr<'a>,
         op: Separator,
         op_span: Span,
     ) -> Index<'a, AssignExprStatement<'a>>;
@@ -64,8 +60,8 @@ pub trait EmplaceConcrete: EmplaceConcreteHelper {
     fn emplace_binary_expr<'a>(
         &'a self,
         span: Span,
-        left: TagIndex<'a, Expr<'a>>,
-        right: TagIndex<'a, Expr<'a>>,
+        left: Expr<'a>,
+        right: Expr<'a>,
         op: Separator,
         op_span: Span,
     ) -> Index<'a, BinaryExpr<'a>>;
@@ -73,7 +69,7 @@ pub trait EmplaceConcrete: EmplaceConcreteHelper {
     fn emplace_block<'a>(
         &'a self,
         span: Span,
-        items: Vec<TagIndex<'a, Statement<'a>>>,
+        items: Vec<Statement<'a>>,
     ) -> Index<'a, Block<'a>>;
 
     fn emplace_block_stmt<'a>(
@@ -92,16 +88,16 @@ pub trait EmplaceConcrete: EmplaceConcreteHelper {
     fn emplace_call_expr<'a>(
         &'a self,
         span: Span,
-        base: TagIndex<'a, Expr<'a>>,
+        base: Expr<'a>,
         quote_span: Span,
-        parameters: Vec<TagIndex<'a, Expr<'a>>>,
+        parameters: Vec<Expr<'a>>,
     ) -> Index<'a, CallExpr<'a>>;
 
     fn emplace_cast_segment<'a>(
         &'a self,
         span: Span,
-        left: TagIndex<'a, TypeRef<'a>>,
-        right: TagIndex<'a, TypeRef<'a>>,
+        left: TypeRef<'a>,
+        right: TypeRef<'a>,
     ) -> Index<'a, CastSegment<'a>>;
 
     fn emplace_class_def<'a>(
@@ -109,7 +105,7 @@ pub trait EmplaceConcrete: EmplaceConcreteHelper {
         span: Span,
         name: Index<'a, GenericName<'a>>,
         quote_span: Span,
-        items: Vec<TagIndex<'a, Item<'a>>>,
+        items: Vec<Item<'a>>,
     ) -> Index<'a, ClassDef<'a>>;
 
     fn emplace_continue_stmt<'a>(
@@ -137,7 +133,7 @@ pub trait EmplaceConcrete: EmplaceConcreteHelper {
         &'a self,
         span: Span,
         name: IdSpan,
-        value: Option<TagIndex<'a, Expr<'a>>>,
+        value: Option<Expr<'a>>,
     ) -> Index<'a, EnumDefVariant<'a>>;
 
     fn emplace_field_def<'a>(
@@ -145,7 +141,7 @@ pub trait EmplaceConcrete: EmplaceConcreteHelper {
         span: Span,
         name: IdSpan,
         colon_span: Span,
-        r#type: TagIndex<'a, TypeRef<'a>>,
+        r#type: TypeRef<'a>,
     ) -> Index<'a, FieldDef<'a>>;
 
     fn emplace_fn_def<'a>(
@@ -154,7 +150,7 @@ pub trait EmplaceConcrete: EmplaceConcreteHelper {
         name: Index<'a, GenericName<'a>>,
         quote_span: Span,
         parameters: Vec<Index<'a, FnDefParameter<'a>>>,
-        ret_type: Option<TagIndex<'a, TypeRef<'a>>>,
+        ret_type: Option<TypeRef<'a>>,
         wheres: Vec<Index<'a, WhereClause<'a>>>,
         body: Option<Index<'a, Block<'a>>>,
     ) -> Index<'a, FnDef<'a>>;
@@ -163,7 +159,7 @@ pub trait EmplaceConcrete: EmplaceConcreteHelper {
         &'a self,
         span: Span,
         name: IdSpan,
-        r#type: TagIndex<'a, TypeRef<'a>>,
+        r#type: TypeRef<'a>,
     ) -> Index<'a, FnDefParameter<'a>>;
 
     fn emplace_fn_type<'a>(
@@ -171,14 +167,14 @@ pub trait EmplaceConcrete: EmplaceConcreteHelper {
         span: Span,
         quote_span: Span,
         parameters: Vec<Index<'a, FnTypeParameter<'a>>>,
-        ret_type: Option<TagIndex<'a, TypeRef<'a>>>,
+        ret_type: Option<TypeRef<'a>>,
     ) -> Index<'a, FnType<'a>>;
 
     fn emplace_fn_type_parameter<'a>(
         &'a self,
         span: Span,
         name: Option<IdSpan>,
-        r#type: TagIndex<'a, TypeRef<'a>>,
+        r#type: TypeRef<'a>,
     ) -> Index<'a, FnTypeParameter<'a>>;
 
     fn emplace_for_stmt<'a>(
@@ -186,7 +182,7 @@ pub trait EmplaceConcrete: EmplaceConcreteHelper {
         span: Span,
         label: Option<IdSpan>,
         iter_name: IdSpan,
-        iter_expr: TagIndex<'a, Expr<'a>>,
+        iter_expr: Expr<'a>,
         body: Index<'a, Block<'a>>,
     ) -> Index<'a, ForStatement<'a>>;
 
@@ -214,7 +210,7 @@ pub trait EmplaceConcrete: EmplaceConcreteHelper {
     fn emplace_if_clause<'a>(
         &'a self,
         span: Span,
-        condition: TagIndex<'a, Expr<'a>>,
+        condition: Expr<'a>,
         body: Index<'a, Block<'a>>,
     ) -> Index<'a, IfClause<'a>>;
 
@@ -230,11 +226,11 @@ pub trait EmplaceConcrete: EmplaceConcreteHelper {
         &'a self,
         span: Span,
         parameters: Vec<Index<'a, GenericParameter>>,
-        class: Option<TagIndex<'a, TypeRef<'a>>>,
-        r#type: TagIndex<'a, TypeRef<'a>>,
+        class: Option<TypeRef<'a>>,
+        r#type: TypeRef<'a>,
         wheres: Vec<Index<'a, WhereClause<'a>>>,
         quote_span: Span,
-        items: Vec<TagIndex<'a, Item<'a>>>,
+        items: Vec<Item<'a>>,
     ) -> Index<'a, Implementation<'a>>;
 
     fn emplace_lit_expr<'a>(
@@ -253,7 +249,7 @@ pub trait EmplaceConcrete: EmplaceConcreteHelper {
     fn emplace_member_expr<'a>(
         &'a self,
         span: Span,
-        base: TagIndex<'a, Expr<'a>>,
+        base: Expr<'a>,
         op_span: Span,
         name: IdSpan,
         parameters: Option<Index<'a, TypeList<'a>>>,
@@ -262,7 +258,7 @@ pub trait EmplaceConcrete: EmplaceConcreteHelper {
     fn emplace_module<'a>(
         &'a self,
         file: FileId,
-        items: Vec<TagIndex<'a, Item<'a>>>,
+        items: Vec<Item<'a>>,
     ) -> Index<'a, Module<'a>>;
 
     fn emplace_module_stmt<'a>(
@@ -275,7 +271,7 @@ pub trait EmplaceConcrete: EmplaceConcreteHelper {
     fn emplace_object_expr<'a>(
         &'a self,
         span: Span,
-        base: TagIndex<'a, Expr<'a>>,
+        base: Expr<'a>,
         quote_span: Span,
         fields: Vec<Index<'a, ObjectExprField<'a>>>,
     ) -> Index<'a, ObjectExpr<'a>>;
@@ -284,19 +280,19 @@ pub trait EmplaceConcrete: EmplaceConcreteHelper {
         &'a self,
         span: Span,
         name: IdSpan,
-        value: TagIndex<'a, Expr<'a>>,
+        value: Expr<'a>,
     ) -> Index<'a, ObjectExprField<'a>>;
 
     fn emplace_paren_expr<'a>(
         &'a self,
         span: Span,
-        base: TagIndex<'a, Expr<'a>>,
+        base: Expr<'a>,
     ) -> Index<'a, ParenExpr<'a>>;
 
     fn emplace_path<'a>(
         &'a self,
         span: Span,
-        segments: Vec<TagIndex<'a, PathSegment<'a>>>,
+        segments: Vec<PathSegment<'a>>,
     ) -> Index<'a, Path<'a>>;
 
     fn emplace_primitive_type<'a>(
@@ -308,9 +304,9 @@ pub trait EmplaceConcrete: EmplaceConcreteHelper {
     fn emplace_range_both_expr<'a>(
         &'a self,
         span: Span,
-        left: TagIndex<'a, Expr<'a>>,
+        left: Expr<'a>,
         op_span: Span,
-        right: TagIndex<'a, Expr<'a>>,
+        right: Expr<'a>,
     ) -> Index<'a, RangeBothExpr<'a>>;
 
     fn emplace_range_full_expr<'a>(
@@ -321,31 +317,31 @@ pub trait EmplaceConcrete: EmplaceConcreteHelper {
     fn emplace_range_left_expr<'a>(
         &'a self,
         span: Span,
-        base: TagIndex<'a, Expr<'a>>,
+        base: Expr<'a>,
     ) -> Index<'a, RangeLeftExpr<'a>>;
 
     fn emplace_range_right_expr<'a>(
         &'a self,
         span: Span,
-        base: TagIndex<'a, Expr<'a>>,
+        base: Expr<'a>,
     ) -> Index<'a, RangeRightExpr<'a>>;
 
     fn emplace_ref_type<'a>(
         &'a self,
         span: Span,
-        base: TagIndex<'a, TypeRef<'a>>,
+        base: TypeRef<'a>,
     ) -> Index<'a, RefType<'a>>;
 
     fn emplace_ret_stmt<'a>(
         &'a self,
         span: Span,
-        value: Option<TagIndex<'a, Expr<'a>>>,
+        value: Option<Expr<'a>>,
     ) -> Index<'a, ReturnStatement<'a>>;
 
     fn emplace_simple_expr_stmt<'a>(
         &'a self,
         span: Span,
-        expr: TagIndex<'a, Expr<'a>>,
+        expr: Expr<'a>,
     ) -> Index<'a, SimpleExprStatement<'a>>;
 
     fn emplace_simple_segment<'a>(
@@ -364,13 +360,13 @@ pub trait EmplaceConcrete: EmplaceConcreteHelper {
     fn emplace_tuple_expr<'a>(
         &'a self,
         span: Span,
-        items: Vec<TagIndex<'a, Expr<'a>>>,
+        items: Vec<Expr<'a>>,
     ) -> Index<'a, TupleExpr<'a>>;
 
     fn emplace_tuple_index_expr<'a>(
         &'a self,
         span: Span,
-        base: TagIndex<'a, Expr<'a>>,
+        base: Expr<'a>,
         op_span: Span,
         value: i32,
         value_span: Span,
@@ -379,26 +375,26 @@ pub trait EmplaceConcrete: EmplaceConcreteHelper {
     fn emplace_tuple_type<'a>(
         &'a self,
         span: Span,
-        parameters: Vec<TagIndex<'a, TypeRef<'a>>>,
+        parameters: Vec<TypeRef<'a>>,
     ) -> Index<'a, TupleType<'a>>;
 
     fn emplace_type_def<'a>(
         &'a self,
         span: Span,
         name: Index<'a, GenericName<'a>>,
-        from: Option<TagIndex<'a, TypeRef<'a>>>,
+        from: Option<TypeRef<'a>>,
     ) -> Index<'a, TypeDef<'a>>;
 
     fn emplace_type_list<'a>(
         &'a self,
         span: Span,
-        items: Vec<TagIndex<'a, TypeRef<'a>>>,
+        items: Vec<TypeRef<'a>>,
     ) -> Index<'a, TypeList<'a>>;
 
     fn emplace_unary_expr<'a>(
         &'a self,
         span: Span,
-        base: TagIndex<'a, Expr<'a>>,
+        base: Expr<'a>,
         op: Separator,
         op_span: Span,
     ) -> Index<'a, UnaryExpr<'a>>;
@@ -415,22 +411,22 @@ pub trait EmplaceConcrete: EmplaceConcreteHelper {
         span: Span,
         r#const: bool,
         name: IdSpan,
-        r#type: Option<TagIndex<'a, TypeRef<'a>>>,
-        init_value: Option<TagIndex<'a, Expr<'a>>>,
+        r#type: Option<TypeRef<'a>>,
+        init_value: Option<Expr<'a>>,
     ) -> Index<'a, VarDeclStatement<'a>>;
 
     fn emplace_where_clause<'a>(
         &'a self,
         span: Span,
         name: IdSpan,
-        constraints: Vec<TagIndex<'a, TypeRef<'a>>>,
+        constraints: Vec<TypeRef<'a>>,
     ) -> Index<'a, WhereClause<'a>>;
 
     fn emplace_while_stmt<'a>(
         &'a self,
         span: Span,
         label: Option<IdSpan>,
-        condition: TagIndex<'a, Expr<'a>>,
+        condition: Expr<'a>,
         body: Index<'a, Block<'a>>,
     ) -> Index<'a, WhileStatement<'a>>;
 }
@@ -441,9 +437,9 @@ impl EmplaceConcrete for Arena {
     fn emplace_array_expr<'a>(
         &'a self,
         span: Span,
-        items: Vec<TagIndex<'a, Expr<'a>>>,
+        items: Vec<Expr<'a>>,
     ) -> Index<'a, ArrayExpr<'a>> {
-        let items = self.build_tagged_slice(items);
+        let items = self.build_slice(items);
         self.emplace(|n: &mut ArrayExpr| {
             n.span = span;
             n.items = items;
@@ -454,11 +450,11 @@ impl EmplaceConcrete for Arena {
     fn emplace_array_index_expr<'a>(
         &'a self,
         span: Span,
-        base: TagIndex<'a, Expr<'a>>,
-        parameters: Vec<TagIndex<'a, Expr<'a>>>,
+        base: Expr<'a>,
+        parameters: Vec<Expr<'a>>,
         quote_span: Span,
     ) -> Index<'a, ArrayIndexExpr<'a>> {
-        let parameters = self.build_tagged_slice(parameters);
+        let parameters = self.build_slice(parameters);
         self.emplace(|n: &mut ArrayIndexExpr| {
             n.span = span;
             n.base = base;
@@ -471,8 +467,8 @@ impl EmplaceConcrete for Arena {
     fn emplace_array_type<'a>(
         &'a self,
         span: Span,
-        base: TagIndex<'a, TypeRef<'a>>,
-        size: TagIndex<'a, Expr<'a>>,
+        base: TypeRef<'a>,
+        size: Expr<'a>,
     ) -> Index<'a, ArrayType<'a>> {
         self.emplace(|n: &mut ArrayType| {
             n.span = span;
@@ -485,8 +481,8 @@ impl EmplaceConcrete for Arena {
     fn emplace_assign_expr_stmt<'a>(
         &'a self,
         span: Span,
-        left: TagIndex<'a, Expr<'a>>,
-        right: TagIndex<'a, Expr<'a>>,
+        left: Expr<'a>,
+        right: Expr<'a>,
         op: Separator,
         op_span: Span,
     ) -> Index<'a, AssignExprStatement<'a>> {
@@ -503,8 +499,8 @@ impl EmplaceConcrete for Arena {
     fn emplace_binary_expr<'a>(
         &'a self,
         span: Span,
-        left: TagIndex<'a, Expr<'a>>,
-        right: TagIndex<'a, Expr<'a>>,
+        left: Expr<'a>,
+        right: Expr<'a>,
         op: Separator,
         op_span: Span,
     ) -> Index<'a, BinaryExpr<'a>> {
@@ -521,9 +517,9 @@ impl EmplaceConcrete for Arena {
     fn emplace_block<'a>(
         &'a self,
         span: Span,
-        items: Vec<TagIndex<'a, Statement<'a>>>,
+        items: Vec<Statement<'a>>,
     ) -> Index<'a, Block<'a>> {
-        let items = self.build_tagged_slice(items);
+        let items = self.build_slice(items);
         self.emplace(|n: &mut Block| {
             n.span = span;
             n.items = items;
@@ -560,11 +556,11 @@ impl EmplaceConcrete for Arena {
     fn emplace_call_expr<'a>(
         &'a self,
         span: Span,
-        base: TagIndex<'a, Expr<'a>>,
+        base: Expr<'a>,
         quote_span: Span,
-        parameters: Vec<TagIndex<'a, Expr<'a>>>,
+        parameters: Vec<Expr<'a>>,
     ) -> Index<'a, CallExpr<'a>> {
-        let parameters = self.build_tagged_slice(parameters);
+        let parameters = self.build_slice(parameters);
         self.emplace(|n: &mut CallExpr| {
             n.span = span;
             n.base = base;
@@ -577,8 +573,8 @@ impl EmplaceConcrete for Arena {
     fn emplace_cast_segment<'a>(
         &'a self,
         span: Span,
-        left: TagIndex<'a, TypeRef<'a>>,
-        right: TagIndex<'a, TypeRef<'a>>,
+        left: TypeRef<'a>,
+        right: TypeRef<'a>,
     ) -> Index<'a, CastSegment<'a>> {
         self.emplace(|n: &mut CastSegment| {
             n.span = span;
@@ -593,9 +589,9 @@ impl EmplaceConcrete for Arena {
         span: Span,
         name: Index<'a, GenericName<'a>>,
         quote_span: Span,
-        items: Vec<TagIndex<'a, Item<'a>>>,
+        items: Vec<Item<'a>>,
     ) -> Index<'a, ClassDef<'a>> {
-        let items = self.build_tagged_slice(items);
+        let items = self.build_slice(items);
         self.emplace(|n: &mut ClassDef| {
             n.span = span;
             n.name = name;
@@ -652,7 +648,7 @@ impl EmplaceConcrete for Arena {
         &'a self,
         span: Span,
         name: IdSpan,
-        value: Option<TagIndex<'a, Expr<'a>>>,
+        value: Option<Expr<'a>>,
     ) -> Index<'a, EnumDefVariant<'a>> {
         self.emplace(|n: &mut EnumDefVariant| {
             n.span = span;
@@ -667,7 +663,7 @@ impl EmplaceConcrete for Arena {
         span: Span,
         name: IdSpan,
         colon_span: Span,
-        r#type: TagIndex<'a, TypeRef<'a>>,
+        r#type: TypeRef<'a>,
     ) -> Index<'a, FieldDef<'a>> {
         self.emplace(|n: &mut FieldDef| {
             n.span = span;
@@ -684,7 +680,7 @@ impl EmplaceConcrete for Arena {
         name: Index<'a, GenericName<'a>>,
         quote_span: Span,
         parameters: Vec<Index<'a, FnDefParameter<'a>>>,
-        ret_type: Option<TagIndex<'a, TypeRef<'a>>>,
+        ret_type: Option<TypeRef<'a>>,
         wheres: Vec<Index<'a, WhereClause<'a>>>,
         body: Option<Index<'a, Block<'a>>>,
     ) -> Index<'a, FnDef<'a>> {
@@ -706,7 +702,7 @@ impl EmplaceConcrete for Arena {
         &'a self,
         span: Span,
         name: IdSpan,
-        r#type: TagIndex<'a, TypeRef<'a>>,
+        r#type: TypeRef<'a>,
     ) -> Index<'a, FnDefParameter<'a>> {
         self.emplace(|n: &mut FnDefParameter| {
             n.span = span;
@@ -721,7 +717,7 @@ impl EmplaceConcrete for Arena {
         span: Span,
         quote_span: Span,
         parameters: Vec<Index<'a, FnTypeParameter<'a>>>,
-        ret_type: Option<TagIndex<'a, TypeRef<'a>>>,
+        ret_type: Option<TypeRef<'a>>,
     ) -> Index<'a, FnType<'a>> {
         let parameters = self.build_slice(parameters);
         self.emplace(|n: &mut FnType| {
@@ -737,7 +733,7 @@ impl EmplaceConcrete for Arena {
         &'a self,
         span: Span,
         name: Option<IdSpan>,
-        r#type: TagIndex<'a, TypeRef<'a>>,
+        r#type: TypeRef<'a>,
     ) -> Index<'a, FnTypeParameter<'a>> {
         self.emplace(|n: &mut FnTypeParameter| {
             n.span = span;
@@ -752,7 +748,7 @@ impl EmplaceConcrete for Arena {
         span: Span,
         label: Option<IdSpan>,
         iter_name: IdSpan,
-        iter_expr: TagIndex<'a, Expr<'a>>,
+        iter_expr: Expr<'a>,
         body: Index<'a, Block<'a>>,
     ) -> Index<'a, ForStatement<'a>> {
         self.emplace(|n: &mut ForStatement| {
@@ -811,7 +807,7 @@ impl EmplaceConcrete for Arena {
     fn emplace_if_clause<'a>(
         &'a self,
         span: Span,
-        condition: TagIndex<'a, Expr<'a>>,
+        condition: Expr<'a>,
         body: Index<'a, Block<'a>>,
     ) -> Index<'a, IfClause<'a>> {
         self.emplace(|n: &mut IfClause| {
@@ -843,15 +839,15 @@ impl EmplaceConcrete for Arena {
         &'a self,
         span: Span,
         parameters: Vec<Index<'a, GenericParameter>>,
-        class: Option<TagIndex<'a, TypeRef<'a>>>,
-        r#type: TagIndex<'a, TypeRef<'a>>,
+        class: Option<TypeRef<'a>>,
+        r#type: TypeRef<'a>,
         wheres: Vec<Index<'a, WhereClause<'a>>>,
         quote_span: Span,
-        items: Vec<TagIndex<'a, Item<'a>>>,
+        items: Vec<Item<'a>>,
     ) -> Index<'a, Implementation<'a>> {
         let parameters = self.build_slice(parameters);
         let wheres = self.build_slice(wheres);
-        let items = self.build_tagged_slice(items);
+        let items = self.build_slice(items);
         self.emplace(|n: &mut Implementation| {
             n.span = span;
             n.parameters = parameters;
@@ -893,7 +889,7 @@ impl EmplaceConcrete for Arena {
     fn emplace_member_expr<'a>(
         &'a self,
         span: Span,
-        base: TagIndex<'a, Expr<'a>>,
+        base: Expr<'a>,
         op_span: Span,
         name: IdSpan,
         parameters: Option<Index<'a, TypeList<'a>>>,
@@ -911,9 +907,9 @@ impl EmplaceConcrete for Arena {
     fn emplace_module<'a>(
         &'a self,
         file: FileId,
-        items: Vec<TagIndex<'a, Item<'a>>>,
+        items: Vec<Item<'a>>,
     ) -> Index<'a, Module<'a>> {
-        let items = self.build_tagged_slice(items);
+        let items = self.build_slice(items);
         self.emplace(|n: &mut Module| {
             n.file = file;
             n.items = items;
@@ -938,7 +934,7 @@ impl EmplaceConcrete for Arena {
     fn emplace_object_expr<'a>(
         &'a self,
         span: Span,
-        base: TagIndex<'a, Expr<'a>>,
+        base: Expr<'a>,
         quote_span: Span,
         fields: Vec<Index<'a, ObjectExprField<'a>>>,
     ) -> Index<'a, ObjectExpr<'a>> {
@@ -956,7 +952,7 @@ impl EmplaceConcrete for Arena {
         &'a self,
         span: Span,
         name: IdSpan,
-        value: TagIndex<'a, Expr<'a>>,
+        value: Expr<'a>,
     ) -> Index<'a, ObjectExprField<'a>> {
         self.emplace(|n: &mut ObjectExprField| {
             n.span = span;
@@ -969,7 +965,7 @@ impl EmplaceConcrete for Arena {
     fn emplace_paren_expr<'a>(
         &'a self,
         span: Span,
-        base: TagIndex<'a, Expr<'a>>,
+        base: Expr<'a>,
     ) -> Index<'a, ParenExpr<'a>> {
         self.emplace(|n: &mut ParenExpr| {
             n.span = span;
@@ -981,9 +977,9 @@ impl EmplaceConcrete for Arena {
     fn emplace_path<'a>(
         &'a self,
         span: Span,
-        segments: Vec<TagIndex<'a, PathSegment<'a>>>,
+        segments: Vec<PathSegment<'a>>,
     ) -> Index<'a, Path<'a>> {
-        let segments = self.build_tagged_slice(segments);
+        let segments = self.build_slice(segments);
         self.emplace(|n: &mut Path| {
             n.span = span;
             n.segments = segments;
@@ -1006,9 +1002,9 @@ impl EmplaceConcrete for Arena {
     fn emplace_range_both_expr<'a>(
         &'a self,
         span: Span,
-        left: TagIndex<'a, Expr<'a>>,
+        left: Expr<'a>,
         op_span: Span,
-        right: TagIndex<'a, Expr<'a>>,
+        right: Expr<'a>,
     ) -> Index<'a, RangeBothExpr<'a>> {
         self.emplace(|n: &mut RangeBothExpr| {
             n.span = span;
@@ -1032,7 +1028,7 @@ impl EmplaceConcrete for Arena {
     fn emplace_range_left_expr<'a>(
         &'a self,
         span: Span,
-        base: TagIndex<'a, Expr<'a>>,
+        base: Expr<'a>,
     ) -> Index<'a, RangeLeftExpr<'a>> {
         self.emplace(|n: &mut RangeLeftExpr| {
             n.span = span;
@@ -1044,7 +1040,7 @@ impl EmplaceConcrete for Arena {
     fn emplace_range_right_expr<'a>(
         &'a self,
         span: Span,
-        base: TagIndex<'a, Expr<'a>>,
+        base: Expr<'a>,
     ) -> Index<'a, RangeRightExpr<'a>> {
         self.emplace(|n: &mut RangeRightExpr| {
             n.span = span;
@@ -1056,7 +1052,7 @@ impl EmplaceConcrete for Arena {
     fn emplace_ref_type<'a>(
         &'a self,
         span: Span,
-        base: TagIndex<'a, TypeRef<'a>>,
+        base: TypeRef<'a>,
     ) -> Index<'a, RefType<'a>> {
         self.emplace(|n: &mut RefType| {
             n.span = span;
@@ -1068,7 +1064,7 @@ impl EmplaceConcrete for Arena {
     fn emplace_ret_stmt<'a>(
         &'a self,
         span: Span,
-        value: Option<TagIndex<'a, Expr<'a>>>,
+        value: Option<Expr<'a>>,
     ) -> Index<'a, ReturnStatement<'a>> {
         self.emplace(|n: &mut ReturnStatement| {
             n.span = span;
@@ -1080,7 +1076,7 @@ impl EmplaceConcrete for Arena {
     fn emplace_simple_expr_stmt<'a>(
         &'a self,
         span: Span,
-        expr: TagIndex<'a, Expr<'a>>,
+        expr: Expr<'a>,
     ) -> Index<'a, SimpleExprStatement<'a>> {
         self.emplace(|n: &mut SimpleExprStatement| {
             n.span = span;
@@ -1119,9 +1115,9 @@ impl EmplaceConcrete for Arena {
     fn emplace_tuple_expr<'a>(
         &'a self,
         span: Span,
-        items: Vec<TagIndex<'a, Expr<'a>>>,
+        items: Vec<Expr<'a>>,
     ) -> Index<'a, TupleExpr<'a>> {
-        let items = self.build_tagged_slice(items);
+        let items = self.build_slice(items);
         self.emplace(|n: &mut TupleExpr| {
             n.span = span;
             n.items = items;
@@ -1132,7 +1128,7 @@ impl EmplaceConcrete for Arena {
     fn emplace_tuple_index_expr<'a>(
         &'a self,
         span: Span,
-        base: TagIndex<'a, Expr<'a>>,
+        base: Expr<'a>,
         op_span: Span,
         value: i32,
         value_span: Span,
@@ -1150,9 +1146,9 @@ impl EmplaceConcrete for Arena {
     fn emplace_tuple_type<'a>(
         &'a self,
         span: Span,
-        parameters: Vec<TagIndex<'a, TypeRef<'a>>>,
+        parameters: Vec<TypeRef<'a>>,
     ) -> Index<'a, TupleType<'a>> {
-        let parameters = self.build_tagged_slice(parameters);
+        let parameters = self.build_slice(parameters);
         self.emplace(|n: &mut TupleType| {
             n.span = span;
             n.parameters = parameters;
@@ -1164,7 +1160,7 @@ impl EmplaceConcrete for Arena {
         &'a self,
         span: Span,
         name: Index<'a, GenericName<'a>>,
-        from: Option<TagIndex<'a, TypeRef<'a>>>,
+        from: Option<TypeRef<'a>>,
     ) -> Index<'a, TypeDef<'a>> {
         self.emplace(|n: &mut TypeDef| {
             n.span = span;
@@ -1177,9 +1173,9 @@ impl EmplaceConcrete for Arena {
     fn emplace_type_list<'a>(
         &'a self,
         span: Span,
-        items: Vec<TagIndex<'a, TypeRef<'a>>>,
+        items: Vec<TypeRef<'a>>,
     ) -> Index<'a, TypeList<'a>> {
-        let items = self.build_tagged_slice(items);
+        let items = self.build_slice(items);
         self.emplace(|n: &mut TypeList| {
             n.span = span;
             n.items = items;
@@ -1190,7 +1186,7 @@ impl EmplaceConcrete for Arena {
     fn emplace_unary_expr<'a>(
         &'a self,
         span: Span,
-        base: TagIndex<'a, Expr<'a>>,
+        base: Expr<'a>,
         op: Separator,
         op_span: Span,
     ) -> Index<'a, UnaryExpr<'a>> {
@@ -1222,8 +1218,8 @@ impl EmplaceConcrete for Arena {
         span: Span,
         r#const: bool,
         name: IdSpan,
-        r#type: Option<TagIndex<'a, TypeRef<'a>>>,
-        init_value: Option<TagIndex<'a, Expr<'a>>>,
+        r#type: Option<TypeRef<'a>>,
+        init_value: Option<Expr<'a>>,
     ) -> Index<'a, VarDeclStatement<'a>> {
         self.emplace(|n: &mut VarDeclStatement| {
             n.span = span;
@@ -1239,9 +1235,9 @@ impl EmplaceConcrete for Arena {
         &'a self,
         span: Span,
         name: IdSpan,
-        constraints: Vec<TagIndex<'a, TypeRef<'a>>>,
+        constraints: Vec<TypeRef<'a>>,
     ) -> Index<'a, WhereClause<'a>> {
-        let constraints = self.build_tagged_slice(constraints);
+        let constraints = self.build_slice(constraints);
         self.emplace(|n: &mut WhereClause| {
             n.span = span;
             n.name = name;
@@ -1254,7 +1250,7 @@ impl EmplaceConcrete for Arena {
         &'a self,
         span: Span,
         label: Option<IdSpan>,
-        condition: TagIndex<'a, Expr<'a>>,
+        condition: Expr<'a>,
         body: Index<'a, Block<'a>>,
     ) -> Index<'a, WhileStatement<'a>> {
         self.emplace(|n: &mut WhileStatement| {

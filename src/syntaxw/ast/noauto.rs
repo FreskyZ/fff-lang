@@ -15,8 +15,8 @@ pub enum LitValue {
 }
 
 impl<'a> Expr<'a> {
-    pub fn dummy(arena: &'a Arena) -> TagIndex<'a, Self> {
-        arena.emplace_lit_expr(Span::new(0, 0), LitValue::Num(Numeric::I32(0))).into()
+    pub fn dummy(arena: &'a Arena) -> Self {
+        Expr::Lit(arena.emplace_lit_expr(Span::new(0, 0), LitValue::Num(Numeric::I32(0))))
     }
 }
 
@@ -24,6 +24,15 @@ impl<'a> Expr<'a> {
 impl ModuleStatement {
     pub fn clone(&self) -> Self {
         Self{ span: self.span, name: self.name, path: self.path }
+    }
+}
+
+impl<'a> Index<'a, Module<'a>> {
+    pub fn imports(&self, arena: &'a Arena) -> Vec<ModuleStatement> {
+        arena.get_iter(&arena.get(self).items).filter_map(|item| match item {
+            Item::Import(module_stmt) => Some(arena.get(module_stmt).clone()),
+            _ => None,
+        }).collect()
     }
 }
 

@@ -22,7 +22,7 @@
 // return type is try for easily break from visiting process if any error happens or result already found, etc.
 
 use std::ops::Try;
-use crate::common::arena::Arena;
+use crate::common::arena::{Arena, Index};
 use super::ast::*;
 
 pub trait Visit: Sized {
@@ -41,65 +41,65 @@ pub trait Visitor: Sized {
     type Result: Default + Try;
 
     // AUTOGEN
-    fn visit_array_expr<'a, 'b: 'a>(&mut self, node: &'b ArrayExpr<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_array_index_expr<'a, 'b: 'a>(&mut self, node: &'b ArrayIndexExpr<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_array_type<'a, 'b: 'a>(&mut self, node: &'b ArrayType<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_assign_expr_stmt<'a, 'b: 'a>(&mut self, node: &'b AssignExprStatement<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_binary_expr<'a, 'b: 'a>(&mut self, node: &'b BinaryExpr<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_block<'a, 'b: 'a>(&mut self, node: &'b Block<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_block_stmt<'a, 'b: 'a>(&mut self, node: &'b BlockStatement<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_break_stmt<'a, 'b: 'a>(&mut self, node: &'b BreakStatement, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_call_expr<'a, 'b: 'a>(&mut self, node: &'b CallExpr<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_cast_segment<'a, 'b: 'a>(&mut self, node: &'b CastSegment<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_class_def<'a, 'b: 'a>(&mut self, node: &'b ClassDef<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_continue_stmt<'a, 'b: 'a>(&mut self, node: &'b ContinueStatement, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_else_clause<'a, 'b: 'a>(&mut self, node: &'b ElseClause<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_enum_def<'a, 'b: 'a>(&mut self, node: &'b EnumDef<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_enum_def_variant<'a, 'b: 'a>(&mut self, node: &'b EnumDefVariant<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_array_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, ArrayExpr<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_array_index_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, ArrayIndexExpr<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_array_type<'a, 'b: 'a>(&mut self, node: &'b Index<'a, ArrayType<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_assign_expr_stmt<'a, 'b: 'a>(&mut self, node: &'b Index<'a, AssignExprStatement<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_binary_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, BinaryExpr<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_block<'a, 'b: 'a>(&mut self, node: &'b Index<'a, Block<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_block_stmt<'a, 'b: 'a>(&mut self, node: &'b Index<'a, BlockStatement<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_break_stmt<'a, 'b: 'a>(&mut self, node: &'b Index<'a, BreakStatement>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_call_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, CallExpr<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_cast_segment<'a, 'b: 'a>(&mut self, node: &'b Index<'a, CastSegment<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_class_def<'a, 'b: 'a>(&mut self, node: &'b Index<'a, ClassDef<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_continue_stmt<'a, 'b: 'a>(&mut self, node: &'b Index<'a, ContinueStatement>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_else_clause<'a, 'b: 'a>(&mut self, node: &'b Index<'a, ElseClause<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_enum_def<'a, 'b: 'a>(&mut self, node: &'b Index<'a, EnumDef<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_enum_def_variant<'a, 'b: 'a>(&mut self, node: &'b Index<'a, EnumDefVariant<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
     fn visit_expr<'a, 'b: 'a>(&mut self, node: &'b Expr<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_field_def<'a, 'b: 'a>(&mut self, node: &'b FieldDef<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_fn_def<'a, 'b: 'a>(&mut self, node: &'b FnDef<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_fn_def_parameter<'a, 'b: 'a>(&mut self, node: &'b FnDefParameter<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_fn_type<'a, 'b: 'a>(&mut self, node: &'b FnType<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_fn_type_parameter<'a, 'b: 'a>(&mut self, node: &'b FnTypeParameter<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_for_stmt<'a, 'b: 'a>(&mut self, node: &'b ForStatement<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_generic_name<'a, 'b: 'a>(&mut self, node: &'b GenericName<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_generic_parameter<'a, 'b: 'a>(&mut self, node: &'b GenericParameter, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_generic_segment<'a, 'b: 'a>(&mut self, node: &'b GenericSegment<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_if_clause<'a, 'b: 'a>(&mut self, node: &'b IfClause<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_if_stmt<'a, 'b: 'a>(&mut self, node: &'b IfStatement<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_impl_block<'a, 'b: 'a>(&mut self, node: &'b Implementation<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_field_def<'a, 'b: 'a>(&mut self, node: &'b Index<'a, FieldDef<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_fn_def<'a, 'b: 'a>(&mut self, node: &'b Index<'a, FnDef<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_fn_def_parameter<'a, 'b: 'a>(&mut self, node: &'b Index<'a, FnDefParameter<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_fn_type<'a, 'b: 'a>(&mut self, node: &'b Index<'a, FnType<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_fn_type_parameter<'a, 'b: 'a>(&mut self, node: &'b Index<'a, FnTypeParameter<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_for_stmt<'a, 'b: 'a>(&mut self, node: &'b Index<'a, ForStatement<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_generic_name<'a, 'b: 'a>(&mut self, node: &'b Index<'a, GenericName<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_generic_parameter<'a, 'b: 'a>(&mut self, node: &'b Index<'a, GenericParameter>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_generic_segment<'a, 'b: 'a>(&mut self, node: &'b Index<'a, GenericSegment<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_if_clause<'a, 'b: 'a>(&mut self, node: &'b Index<'a, IfClause<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_if_stmt<'a, 'b: 'a>(&mut self, node: &'b Index<'a, IfStatement<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_impl_block<'a, 'b: 'a>(&mut self, node: &'b Index<'a, Implementation<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
     fn visit_item<'a, 'b: 'a>(&mut self, node: &'b Item<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_lit_expr<'a, 'b: 'a>(&mut self, node: &'b LitExpr, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_loop_stmt<'a, 'b: 'a>(&mut self, node: &'b LoopStatement<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_member_expr<'a, 'b: 'a>(&mut self, node: &'b MemberExpr<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_module<'a, 'b: 'a>(&mut self, node: &'b Module<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_module_stmt<'a, 'b: 'a>(&mut self, node: &'b ModuleStatement, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_object_expr<'a, 'b: 'a>(&mut self, node: &'b ObjectExpr<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_object_expr_field<'a, 'b: 'a>(&mut self, node: &'b ObjectExprField<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_paren_expr<'a, 'b: 'a>(&mut self, node: &'b ParenExpr<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_path<'a, 'b: 'a>(&mut self, node: &'b Path<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_lit_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, LitExpr>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_loop_stmt<'a, 'b: 'a>(&mut self, node: &'b Index<'a, LoopStatement<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_member_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, MemberExpr<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_module<'a, 'b: 'a>(&mut self, node: &'b Index<'a, Module<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_module_stmt<'a, 'b: 'a>(&mut self, node: &'b Index<'a, ModuleStatement>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_object_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, ObjectExpr<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_object_expr_field<'a, 'b: 'a>(&mut self, node: &'b Index<'a, ObjectExprField<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_paren_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, ParenExpr<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_path<'a, 'b: 'a>(&mut self, node: &'b Index<'a, Path<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
     fn visit_path_segment<'a, 'b: 'a>(&mut self, node: &'b PathSegment<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_primitive_type<'a, 'b: 'a>(&mut self, node: &'b PrimitiveType, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_range_both_expr<'a, 'b: 'a>(&mut self, node: &'b RangeBothExpr<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_range_full_expr<'a, 'b: 'a>(&mut self, node: &'b RangeFullExpr, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_range_left_expr<'a, 'b: 'a>(&mut self, node: &'b RangeLeftExpr<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_range_right_expr<'a, 'b: 'a>(&mut self, node: &'b RangeRightExpr<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_ref_type<'a, 'b: 'a>(&mut self, node: &'b RefType<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_ret_stmt<'a, 'b: 'a>(&mut self, node: &'b ReturnStatement<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_simple_expr_stmt<'a, 'b: 'a>(&mut self, node: &'b SimpleExprStatement<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_simple_segment<'a, 'b: 'a>(&mut self, node: &'b SimpleSegment, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_primitive_type<'a, 'b: 'a>(&mut self, node: &'b Index<'a, PrimitiveType>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_range_both_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, RangeBothExpr<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_range_full_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, RangeFullExpr>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_range_left_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, RangeLeftExpr<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_range_right_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, RangeRightExpr<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_ref_type<'a, 'b: 'a>(&mut self, node: &'b Index<'a, RefType<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_ret_stmt<'a, 'b: 'a>(&mut self, node: &'b Index<'a, ReturnStatement<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_simple_expr_stmt<'a, 'b: 'a>(&mut self, node: &'b Index<'a, SimpleExprStatement<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_simple_segment<'a, 'b: 'a>(&mut self, node: &'b Index<'a, SimpleSegment>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
     fn visit_stmt<'a, 'b: 'a>(&mut self, node: &'b Statement<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_struct_def<'a, 'b: 'a>(&mut self, node: &'b StructDef<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_tuple_expr<'a, 'b: 'a>(&mut self, node: &'b TupleExpr<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_tuple_index_expr<'a, 'b: 'a>(&mut self, node: &'b TupleIndexExpr<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_tuple_type<'a, 'b: 'a>(&mut self, node: &'b TupleType<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_type_def<'a, 'b: 'a>(&mut self, node: &'b TypeDef<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_type_list<'a, 'b: 'a>(&mut self, node: &'b TypeList<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_struct_def<'a, 'b: 'a>(&mut self, node: &'b Index<'a, StructDef<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_tuple_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, TupleExpr<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_tuple_index_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, TupleIndexExpr<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_tuple_type<'a, 'b: 'a>(&mut self, node: &'b Index<'a, TupleType<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_type_def<'a, 'b: 'a>(&mut self, node: &'b Index<'a, TypeDef<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_type_list<'a, 'b: 'a>(&mut self, node: &'b Index<'a, TypeList<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
     fn visit_type_ref<'a, 'b: 'a>(&mut self, node: &'b TypeRef<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_unary_expr<'a, 'b: 'a>(&mut self, node: &'b UnaryExpr<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_use_stmt<'a, 'b: 'a>(&mut self, node: &'b UseStatement<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_var_decl_stmt<'a, 'b: 'a>(&mut self, node: &'b VarDeclStatement<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_where_clause<'a, 'b: 'a>(&mut self, node: &'b WhereClause<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
-    fn visit_while_stmt<'a, 'b: 'a>(&mut self, node: &'b WhileStatement<'a>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_unary_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, UnaryExpr<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_use_stmt<'a, 'b: 'a>(&mut self, node: &'b Index<'a, UseStatement<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_var_decl_stmt<'a, 'b: 'a>(&mut self, node: &'b Index<'a, VarDeclStatement<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_where_clause<'a, 'b: 'a>(&mut self, node: &'b Index<'a, WhereClause<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
+    fn visit_while_stmt<'a, 'b: 'a>(&mut self, node: &'b Index<'a, WhileStatement<'a>>, arena: &'a Arena) -> Self::Result { node.walk(arena, self) }
 }

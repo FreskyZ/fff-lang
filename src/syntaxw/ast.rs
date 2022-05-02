@@ -5,15 +5,15 @@
 
 use crate::source::{Span, IsId, IdSpan, FileId};
 use crate::lexical::{Separator, Keyword, Numeric};
-use crate::common::arena::{Arena, Index, Slice, TagIndex, TagSlice};
+use crate::common::arena::{Arena, Index, Slice};
 
 #[cfg(test)]
 mod cmp;
 mod new;
+mod span;
 mod ugly;
 mod visit;
 mod noauto;
-mod r#enum;
 mod pretty;
 mod profile;
 
@@ -32,7 +32,7 @@ pub mod asti {
     pub use super::pretty::{display, display1};
     pub use super::profile::profile;
 }
-pub use r#enum::WithSpan;
+pub use span::WithSpan;
 // lit value can be regarded as a node type
 pub use noauto::LitValue;
 // natually extend to Arena when use ast::*
@@ -41,41 +41,41 @@ pub use new::EmplaceConcrete;
 // AUTOGEN
 pub struct ArrayExpr<'a> {
     pub span: Span,
-    pub items: TagSlice<'a, Expr<'a>>,
+    pub items: Slice<'a, Expr<'a>>,
 }
 
 pub struct ArrayIndexExpr<'a> {
     pub span: Span,
-    pub base: TagIndex<'a, Expr<'a>>,
-    pub parameters: TagSlice<'a, Expr<'a>>,
+    pub base: Expr<'a>,
+    pub parameters: Slice<'a, Expr<'a>>,
     pub quote_span: Span,
 }
 
 pub struct ArrayType<'a> {
     pub span: Span,
-    pub base: TagIndex<'a, TypeRef<'a>>,
-    pub size: TagIndex<'a, Expr<'a>>,
+    pub base: TypeRef<'a>,
+    pub size: Expr<'a>,
 }
 
 pub struct AssignExprStatement<'a> {
     pub span: Span,
-    pub left: TagIndex<'a, Expr<'a>>,
-    pub right: TagIndex<'a, Expr<'a>>,
+    pub left: Expr<'a>,
+    pub right: Expr<'a>,
     pub op: Separator,
     pub op_span: Span,
 }
 
 pub struct BinaryExpr<'a> {
     pub span: Span,
-    pub left: TagIndex<'a, Expr<'a>>,
-    pub right: TagIndex<'a, Expr<'a>>,
+    pub left: Expr<'a>,
+    pub right: Expr<'a>,
     pub op: Separator,
     pub op_span: Span,
 }
 
 pub struct Block<'a> {
     pub span: Span,
-    pub items: TagSlice<'a, Statement<'a>>,
+    pub items: Slice<'a, Statement<'a>>,
 }
 
 pub struct BlockStatement<'a> {
@@ -91,22 +91,22 @@ pub struct BreakStatement {
 
 pub struct CallExpr<'a> {
     pub span: Span,
-    pub base: TagIndex<'a, Expr<'a>>,
+    pub base: Expr<'a>,
     pub quote_span: Span,
-    pub parameters: TagSlice<'a, Expr<'a>>,
+    pub parameters: Slice<'a, Expr<'a>>,
 }
 
 pub struct CastSegment<'a> {
     pub span: Span,
-    pub left: TagIndex<'a, TypeRef<'a>>,
-    pub right: TagIndex<'a, TypeRef<'a>>,
+    pub left: TypeRef<'a>,
+    pub right: TypeRef<'a>,
 }
 
 pub struct ClassDef<'a> {
     pub span: Span,
     pub name: Index<'a, GenericName<'a>>,
     pub quote_span: Span,
-    pub items: TagSlice<'a, Item<'a>>,
+    pub items: Slice<'a, Item<'a>>,
 }
 
 pub struct ContinueStatement {
@@ -124,13 +124,13 @@ pub struct EnumDef<'a> {
     pub name: IdSpan,
     pub base_type: Option<Index<'a, PrimitiveType>>,
     pub quote_span: Span,
-    pub variants: Slice<'a, EnumDefVariant<'a>>,
+    pub variants: Slice<'a, Index<'a, EnumDefVariant<'a>>>,
 }
 
 pub struct EnumDefVariant<'a> {
     pub span: Span,
     pub name: IdSpan,
-    pub value: Option<TagIndex<'a, Expr<'a>>>,
+    pub value: Option<Expr<'a>>,
 }
 
 pub enum Expr<'a> {
@@ -156,43 +156,43 @@ pub struct FieldDef<'a> {
     pub span: Span,
     pub name: IdSpan,
     pub colon_span: Span,
-    pub r#type: TagIndex<'a, TypeRef<'a>>,
+    pub r#type: TypeRef<'a>,
 }
 
 pub struct FnDef<'a> {
     pub span: Span,
     pub name: Index<'a, GenericName<'a>>,
     pub quote_span: Span,
-    pub parameters: Slice<'a, FnDefParameter<'a>>,
-    pub ret_type: Option<TagIndex<'a, TypeRef<'a>>>,
-    pub wheres: Slice<'a, WhereClause<'a>>,
+    pub parameters: Slice<'a, Index<'a, FnDefParameter<'a>>>,
+    pub ret_type: Option<TypeRef<'a>>,
+    pub wheres: Slice<'a, Index<'a, WhereClause<'a>>>,
     pub body: Option<Index<'a, Block<'a>>>,
 }
 
 pub struct FnDefParameter<'a> {
     pub span: Span,
     pub name: IdSpan,
-    pub r#type: TagIndex<'a, TypeRef<'a>>,
+    pub r#type: TypeRef<'a>,
 }
 
 pub struct FnType<'a> {
     pub span: Span,
     pub quote_span: Span,
-    pub parameters: Slice<'a, FnTypeParameter<'a>>,
-    pub ret_type: Option<TagIndex<'a, TypeRef<'a>>>,
+    pub parameters: Slice<'a, Index<'a, FnTypeParameter<'a>>>,
+    pub ret_type: Option<TypeRef<'a>>,
 }
 
 pub struct FnTypeParameter<'a> {
     pub span: Span,
     pub name: Option<IdSpan>,
-    pub r#type: TagIndex<'a, TypeRef<'a>>,
+    pub r#type: TypeRef<'a>,
 }
 
 pub struct ForStatement<'a> {
     pub span: Span,
     pub label: Option<IdSpan>,
     pub iter_name: IdSpan,
-    pub iter_expr: TagIndex<'a, Expr<'a>>,
+    pub iter_expr: Expr<'a>,
     pub body: Index<'a, Block<'a>>,
 }
 
@@ -200,7 +200,7 @@ pub struct GenericName<'a> {
     pub span: Span,
     pub base: IdSpan,
     pub quote_span: Span,
-    pub parameters: Slice<'a, GenericParameter>,
+    pub parameters: Slice<'a, Index<'a, GenericParameter>>,
 }
 
 pub struct GenericParameter {
@@ -216,25 +216,25 @@ pub struct GenericSegment<'a> {
 
 pub struct IfClause<'a> {
     pub span: Span,
-    pub condition: TagIndex<'a, Expr<'a>>,
+    pub condition: Expr<'a>,
     pub body: Index<'a, Block<'a>>,
 }
 
 pub struct IfStatement<'a> {
     pub span: Span,
     pub if_clause: Index<'a, IfClause<'a>>,
-    pub elseif_clauses: Slice<'a, IfClause<'a>>,
+    pub elseif_clauses: Slice<'a, Index<'a, IfClause<'a>>>,
     pub else_clause: Option<Index<'a, ElseClause<'a>>>,
 }
 
 pub struct Implementation<'a> {
     pub span: Span,
-    pub parameters: Slice<'a, GenericParameter>,
-    pub class: Option<TagIndex<'a, TypeRef<'a>>>,
-    pub r#type: TagIndex<'a, TypeRef<'a>>,
-    pub wheres: Slice<'a, WhereClause<'a>>,
+    pub parameters: Slice<'a, Index<'a, GenericParameter>>,
+    pub class: Option<TypeRef<'a>>,
+    pub r#type: TypeRef<'a>,
+    pub wheres: Slice<'a, Index<'a, WhereClause<'a>>>,
     pub quote_span: Span,
-    pub items: TagSlice<'a, Item<'a>>,
+    pub items: Slice<'a, Item<'a>>,
 }
 
 pub enum Item<'a> {
@@ -269,7 +269,7 @@ pub struct LoopStatement<'a> {
 
 pub struct MemberExpr<'a> {
     pub span: Span,
-    pub base: TagIndex<'a, Expr<'a>>,
+    pub base: Expr<'a>,
     pub op_span: Span,
     pub name: IdSpan,
     pub parameters: Option<Index<'a, TypeList<'a>>>,
@@ -277,7 +277,7 @@ pub struct MemberExpr<'a> {
 
 pub struct Module<'a> {
     pub file: FileId,
-    pub items: TagSlice<'a, Item<'a>>,
+    pub items: Slice<'a, Item<'a>>,
 }
 
 pub struct ModuleStatement {
@@ -288,25 +288,25 @@ pub struct ModuleStatement {
 
 pub struct ObjectExpr<'a> {
     pub span: Span,
-    pub base: TagIndex<'a, Expr<'a>>,
+    pub base: Expr<'a>,
     pub quote_span: Span,
-    pub fields: Slice<'a, ObjectExprField<'a>>,
+    pub fields: Slice<'a, Index<'a, ObjectExprField<'a>>>,
 }
 
 pub struct ObjectExprField<'a> {
     pub span: Span,
     pub name: IdSpan,
-    pub value: TagIndex<'a, Expr<'a>>,
+    pub value: Expr<'a>,
 }
 
 pub struct ParenExpr<'a> {
     pub span: Span,
-    pub base: TagIndex<'a, Expr<'a>>,
+    pub base: Expr<'a>,
 }
 
 pub struct Path<'a> {
     pub span: Span,
-    pub segments: TagSlice<'a, PathSegment<'a>>,
+    pub segments: Slice<'a, PathSegment<'a>>,
 }
 
 pub enum PathSegment<'a> {
@@ -323,9 +323,9 @@ pub struct PrimitiveType {
 
 pub struct RangeBothExpr<'a> {
     pub span: Span,
-    pub left: TagIndex<'a, Expr<'a>>,
+    pub left: Expr<'a>,
     pub op_span: Span,
-    pub right: TagIndex<'a, Expr<'a>>,
+    pub right: Expr<'a>,
 }
 
 pub struct RangeFullExpr {
@@ -334,27 +334,27 @@ pub struct RangeFullExpr {
 
 pub struct RangeLeftExpr<'a> {
     pub span: Span,
-    pub base: TagIndex<'a, Expr<'a>>,
+    pub base: Expr<'a>,
 }
 
 pub struct RangeRightExpr<'a> {
     pub span: Span,
-    pub base: TagIndex<'a, Expr<'a>>,
+    pub base: Expr<'a>,
 }
 
 pub struct RefType<'a> {
     pub span: Span,
-    pub base: TagIndex<'a, TypeRef<'a>>,
+    pub base: TypeRef<'a>,
 }
 
 pub struct ReturnStatement<'a> {
     pub span: Span,
-    pub value: Option<TagIndex<'a, Expr<'a>>>,
+    pub value: Option<Expr<'a>>,
 }
 
 pub struct SimpleExprStatement<'a> {
     pub span: Span,
-    pub expr: TagIndex<'a, Expr<'a>>,
+    pub expr: Expr<'a>,
 }
 
 pub struct SimpleSegment {
@@ -386,17 +386,17 @@ pub enum Statement<'a> {
 pub struct StructDef<'a> {
     pub span: Span,
     pub name: Index<'a, GenericName<'a>>,
-    pub fields: Slice<'a, FieldDef<'a>>,
+    pub fields: Slice<'a, Index<'a, FieldDef<'a>>>,
 }
 
 pub struct TupleExpr<'a> {
     pub span: Span,
-    pub items: TagSlice<'a, Expr<'a>>,
+    pub items: Slice<'a, Expr<'a>>,
 }
 
 pub struct TupleIndexExpr<'a> {
     pub span: Span,
-    pub base: TagIndex<'a, Expr<'a>>,
+    pub base: Expr<'a>,
     pub op_span: Span,
     pub value: i32,
     pub value_span: Span,
@@ -404,18 +404,18 @@ pub struct TupleIndexExpr<'a> {
 
 pub struct TupleType<'a> {
     pub span: Span,
-    pub parameters: TagSlice<'a, TypeRef<'a>>,
+    pub parameters: Slice<'a, TypeRef<'a>>,
 }
 
 pub struct TypeDef<'a> {
     pub span: Span,
     pub name: Index<'a, GenericName<'a>>,
-    pub from: Option<TagIndex<'a, TypeRef<'a>>>,
+    pub from: Option<TypeRef<'a>>,
 }
 
 pub struct TypeList<'a> {
     pub span: Span,
-    pub items: TagSlice<'a, TypeRef<'a>>,
+    pub items: Slice<'a, TypeRef<'a>>,
 }
 
 pub enum TypeRef<'a> {
@@ -429,7 +429,7 @@ pub enum TypeRef<'a> {
 
 pub struct UnaryExpr<'a> {
     pub span: Span,
-    pub base: TagIndex<'a, Expr<'a>>,
+    pub base: Expr<'a>,
     pub op: Separator,
     pub op_span: Span,
 }
@@ -444,19 +444,19 @@ pub struct VarDeclStatement<'a> {
     pub span: Span,
     pub r#const: bool,
     pub name: IdSpan,
-    pub r#type: Option<TagIndex<'a, TypeRef<'a>>>,
-    pub init_value: Option<TagIndex<'a, Expr<'a>>>,
+    pub r#type: Option<TypeRef<'a>>,
+    pub init_value: Option<Expr<'a>>,
 }
 
 pub struct WhereClause<'a> {
     pub span: Span,
     pub name: IdSpan,
-    pub constraints: TagSlice<'a, TypeRef<'a>>,
+    pub constraints: Slice<'a, TypeRef<'a>>,
 }
 
 pub struct WhileStatement<'a> {
     pub span: Span,
     pub label: Option<IdSpan>,
-    pub condition: TagIndex<'a, Expr<'a>>,
+    pub condition: Expr<'a>,
     pub body: Index<'a, Block<'a>>,
 }
