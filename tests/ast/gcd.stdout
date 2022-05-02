@@ -1,37 +1,24 @@
-total size 16652 > 2880
-  [path-segment(simple)(22)] 4928 (29.59%) > 176 (6.11%)
-            [expr(path)(22)] 1760 (10.57%) > 176 (6.11%)
-              [stmt(ret)(3)] 912 (5.48%) > 24 (0.83%)
-               [stmt(if)(3)] 912 (5.48%) > 24 (0.83%)
-          [expr(binary)(11)] 880 (5.28%) > 88 (3.06%)
-            [expr(call)(10)] 800 (4.80%) > 80 (2.78%)
-                  [path(22)] 704 (4.23%) > 352 (12.22%)
-         [stmt(var-decl)(2)] 608 (3.65%) > 16 (0.56%)
-      [stmt(simple-expr)(2)] 608 (3.65%) > 16 (0.56%)
-               [item(fn)(2)] 608 (3.65%) > 16 (0.56%)
-              [expr(lit)(7)] 560 (3.36%) > 56 (1.94%)
-             [call-expr(10)] 480 (2.88%) > 280 (9.72%)
-           [binary-expr(11)] 363 (2.18%) > 275 (9.55%)
-    [type-ref(primitive)(3)] 312 (1.87%) > 24 (0.83%)
-             [stmt(loop)(1)] 304 (1.83%) > 8 (0.28%)
-            [stmt(break)(1)] 304 (1.83%) > 8 (0.28%)
-        [simple-segment(22)] 264 (1.59%) > 264 (9.17%)
-           [expr(member)(3)] 240 (1.44%) > 24 (0.83%)
-               [lit-expr(7)] 224 (1.35%) > 224 (7.78%)
-                  [block(7)] 224 (1.35%) > 112 (3.89%)
-                 [fn-def(2)] 128 (0.77%) > 88 (3.06%)
-            [member-expr(3)] 108 (0.65%) > 108 (3.75%)
-           [generic-name(2)] 104 (0.62%) > 72 (2.50%)
-                [if-stmt(3)] 96 (0.58%) > 72 (2.50%)
-               [var-decl(2)] 42 (0.25%) > 58 (2.01%)
-       [fn-def-parameter(2)] 40 (0.24%) > 48 (1.67%)
-         [primitive-type(3)] 27 (0.16%) > 27 (0.94%)
-               [ret-stmt(3)] 24 (0.14%) > 36 (1.25%)
-              [if-clause(3)] 24 (0.14%) > 48 (1.67%)
-              [loop-stmt(1)] 20 (0.12%) > 24 (0.83%)
-             [break-stmt(1)] 20 (0.12%) > 20 (0.69%)
-       [simple-expr-stmt(2)] 16 (0.10%) > 24 (0.83%)
-            [else-clause(1)] 8 (0.05%) > 12 (0.42%)
+[all(108)] 2408
+[binary-expr(11)] 396 (16.45%)
+[path(22)] 352 (14.62%)
+[call-expr(10)] 320 (13.29%)
+[simple-segment(22)] 264 (10.96%)
+[lit-expr(7)] 224 (9.30%)
+[member-expr(3)] 120 (4.98%)
+[block(7)] 112 (4.65%)
+[fn-def(2)] 96 (3.99%)
+[var-decl-stmt(2)] 80 (3.32%)
+[if-stmt(3)] 72 (2.99%)
+[generic-name(2)] 72 (2.99%)
+[if-clause(3)] 60 (2.49%)
+[fn-def-parameter(2)] 56 (2.33%)
+[ret-stmt(3)] 48 (1.99%)
+[primitive-type(3)] 36 (1.50%)
+[simple-expr-stmt(2)] 32 (1.33%)
+[loop-stmt(1)] 24 (1.00%)
+[break-stmt(1)] 20 (0.83%)
+[module(1)] 12 (0.50%)
+[else-clause(1)] 12 (0.50%)
 module tests/ast/gcd.f3
   fn-def <4:1-17:1> () <4:8-4:9>
     generic-name <4:4-4:7> main <4:4-4:7>
@@ -42,12 +29,12 @@ module tests/ast/gcd.f3
             call-expr <7:9-7:34> () <7:16-7:34>
               path <7:9-7:15>
                 segment <7:9-7:15> writeln
-              literal str "Input 2 numbers" <7:17-7:33>
-          var-def <8:9-8:27> mutable a <8:13-8:13>
+              lit-expr str "Input 2 numbers" <7:17-7:33>
+          var-decl-stmt <8:9-8:27> mutable a <8:13-8:13>
             call-expr <8:17-8:26> () <8:25-8:26>
               path <8:17-8:24>
                 segment <8:17-8:24> read_i32
-          var-def <9:9-9:27> mutable b <9:13-9:13>
+          var-decl-stmt <9:9-9:27> mutable b <9:13-9:13>
             call-expr <9:17-9:26> () <9:25-9:26>
               path <9:17-9:24>
                 segment <9:17-9:24> read_i32
@@ -57,11 +44,11 @@ module tests/ast/gcd.f3
                 binary-expr <11:12-11:17> == <11:14-11:15>
                   path <11:12-11:12>
                     segment <11:12-11:12> a
-                  literal i32 0 <11:17-11:17>
+                  lit-expr i32 0 <11:17-11:17>
                 binary-expr <11:22-11:27> == <11:24-11:25>
                   path <11:22-11:22>
                     segment <11:22-11:22> b
-                  literal i32 0 <11:27-11:27>
+                  lit-expr i32 0 <11:27-11:27>
               block <11:29-13:9>
                 break-stmt <12:13-12:24> @main <12:19-12:23>
           simple-expr-stmt <15:9-15:101>
@@ -73,17 +60,17 @@ module tests/ast/gcd.f3
                   binary-expr <15:17-15:63> + <15:49-15:49>
                     binary-expr <15:17-15:47> + <15:42-15:42>
                       binary-expr <15:17-15:40> + <15:26-15:26>
-                        literal str "最大公约数(" <15:17-15:24>
+                        lit-expr str "最大公约数(" <15:17-15:24>
                         call-expr <15:28-15:40> () <15:39-15:40>
                           member-expr <15:28-15:38> . <15:29-15:29> to_string <15:30-15:38>
                             path <15:28-15:28>
                               segment <15:28-15:28> a
-                      literal str ", " <15:44-15:47>
+                      lit-expr str ", " <15:44-15:47>
                     call-expr <15:51-15:63> () <15:62-15:63>
                       member-expr <15:51-15:61> . <15:52-15:52> to_string <15:53-15:61>
                         path <15:51-15:51>
                           segment <15:51-15:51> b
-                  literal str ") is " <15:67-15:73>
+                  lit-expr str ") is " <15:67-15:73>
                 call-expr <15:77-15:99> () <15:98-15:99>
                   member-expr <15:77-15:97> . <15:88-15:88> to_string <15:89-15:97>
                     call-expr <15:77-15:87> () <15:82-15:87>
@@ -106,7 +93,7 @@ module tests/ast/gcd.f3
           binary-expr <20:8-20:13> == <20:10-20:11>
             path <20:8-20:8>
               segment <20:8-20:8> b
-            literal i32 0 <20:13-20:13>
+            lit-expr i32 0 <20:13-20:13>
           block <20:15-22:5>
             ret-stmt <21:9-21:17>
               path <21:16-21:16>

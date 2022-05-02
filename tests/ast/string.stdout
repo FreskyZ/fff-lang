@@ -1,30 +1,21 @@
-total size 17569 > 2877
-  [path-segment(simple)(24)] 5376 (30.60%) > 192 (6.67%)
-     [stmt(simple-expr)(10)] 3040 (17.30%) > 80 (2.78%)
-            [expr(path)(23)] 1840 (10.47%) > 184 (6.40%)
-            [expr(call)(16)] 1280 (7.29%) > 128 (4.45%)
-         [stmt(var-decl)(4)] 1216 (6.92%) > 32 (1.11%)
-                  [path(24)] 768 (4.37%) > 384 (13.35%)
-             [call-expr(16)] 768 (4.37%) > 448 (15.57%)
-              [expr(lit)(8)] 640 (3.64%) > 64 (2.22%)
-           [expr(member)(7)] 560 (3.19%) > 56 (1.95%)
-           [expr(binary)(5)] 400 (2.28%) > 40 (1.39%)
-               [item(fn)(1)] 304 (1.73%) > 8 (0.28%)
-        [simple-segment(24)] 288 (1.64%) > 288 (10.01%)
-               [lit-expr(8)] 256 (1.46%) > 256 (8.90%)
-            [member-expr(7)] 252 (1.43%) > 252 (8.76%)
-            [binary-expr(5)] 165 (0.94%) > 125 (4.34%)
-         [type-ref(path)(1)] 104 (0.59%) > 8 (0.28%)
-               [var-decl(4)] 84 (0.48%) > 116 (4.03%)
-      [simple-expr-stmt(10)] 80 (0.46%) > 120 (4.17%)
-                 [fn-def(1)] 64 (0.36%) > 44 (1.53%)
-           [generic-name(1)] 52 (0.30%) > 36 (1.25%)
-                  [block(1)] 32 (0.18%) > 16 (0.56%)
+[all(102)] 2332
+[call-expr(16)] 512 (21.96%)
+[path(24)] 384 (16.47%)
+[simple-segment(24)] 288 (12.35%)
+[member-expr(7)] 280 (12.01%)
+[lit-expr(8)] 256 (10.98%)
+[binary-expr(5)] 180 (7.72%)
+[var-decl-stmt(4)] 160 (6.86%)
+[simple-expr-stmt(10)] 160 (6.86%)
+[fn-def(1)] 48 (2.06%)
+[generic-name(1)] 36 (1.54%)
+[block(1)] 16 (0.69%)
+[module(1)] 12 (0.51%)
 module tests/ast/string.f3
   fn-def <4:1-23:1> () <4:8-4:9>
     generic-name <4:4-4:7> main <4:4-4:7>
     block <4:11-23:1>
-      var-def <6:5-6:30> mutable input <6:9-6:13>
+      var-decl-stmt <6:5-6:30> mutable input <6:9-6:13>
         call-expr <6:17-6:29> () <6:28-6:29>
           path <6:17-6:27>
             segment <6:17-6:27> read_string
@@ -33,11 +24,11 @@ module tests/ast/string.f3
           path <7:5-7:11>
             segment <7:5-7:11> writeln
           binary-expr <7:13-7:38> + <7:25-7:25>
-            literal str "length = " <7:13-7:23>
+            lit-expr str "length = " <7:13-7:23>
             member-expr <7:27-7:38> . <7:32-7:32> length <7:33-7:38>
               path <7:27-7:31>
                 segment <7:27-7:31> input
-      var-def <8:5-8:39> mutable input2 <8:9-8:14>
+      var-decl-stmt <8:5-8:39> mutable input2 <8:9-8:14>
         path <8:17-8:22>
           segment <8:17-8:22> string
         call-expr <8:26-8:38> () <8:37-8:38>
@@ -57,19 +48,19 @@ module tests/ast/string.f3
           member-expr <11:5-11:19> . <11:10-11:10> push_char <11:11-11:19>
             path <11:5-11:9>
               segment <11:5-11:9> input
-          literal char 'a' <11:21-11:23>
+          lit-expr char 'a' <11:21-11:23>
       simple-expr-stmt <12:5-12:25>
         call-expr <12:5-12:24> () <12:20-12:24>
           member-expr <12:5-12:19> . <12:10-12:10> push_char <12:11-12:19>
             path <12:5-12:9>
               segment <12:5-12:9> input
-          literal char 'c' <12:21-12:23>
+          lit-expr char 'c' <12:21-12:23>
       simple-expr-stmt <13:5-13:29>
         call-expr <13:5-13:28> () <13:23-13:28>
           member-expr <13:5-13:22> . <13:11-13:11> push_string <13:12-13:22>
             path <13:5-13:10>
               segment <13:5-13:10> input2
-          literal str "ac" <13:24-13:27>
+          lit-expr str "ac" <13:24-13:27>
       simple-expr-stmt <14:5-14:29>
         call-expr <14:5-14:28> () <14:12-14:28>
           path <14:5-14:11>
@@ -87,7 +78,7 @@ module tests/ast/string.f3
             member-expr <16:13-16:29> . <16:18-16:18> starts_with <16:19-16:29>
               path <16:13-16:17>
                 segment <16:13-16:17> input
-            literal str "abc" <16:31-16:35>
+            lit-expr str "abc" <16:31-16:35>
       simple-expr-stmt <17:5-17:36>
         call-expr <17:5-17:35> () <17:12-17:35>
           path <17:5-17:11>
@@ -96,12 +87,12 @@ module tests/ast/string.f3
             member-expr <17:13-17:28> . <17:19-17:19> ends_with <17:20-17:28>
               path <17:13-17:18>
                 segment <17:13-17:18> input2
-            literal str "ac" <17:30-17:33>
-      var-def <19:5-19:31> mutable input3 <19:9-19:14>
+            lit-expr str "ac" <17:30-17:33>
+      var-decl-stmt <19:5-19:31> mutable input3 <19:9-19:14>
         call-expr <19:18-19:30> () <19:29-19:30>
           path <19:18-19:28>
             segment <19:18-19:28> read_string
-      var-def <20:5-20:36> const input3_copy <20:11-20:21>
+      var-decl-stmt <20:5-20:36> const input3_copy <20:11-20:21>
         path <20:25-20:35>
           segment <20:25-20:35> input3_copy
       simple-expr-stmt <21:5-21:47>
@@ -109,7 +100,7 @@ module tests/ast/string.f3
           path <21:5-21:11>
             segment <21:5-21:11> println
           binary-expr <21:13-21:45> + <21:31-21:31>
-            literal str "input3.trim is " <21:13-21:29>
+            lit-expr str "input3.trim is " <21:13-21:29>
             call-expr <21:33-21:45> () <21:44-21:45>
               member-expr <21:33-21:43> . <21:39-21:39> trim <21:40-21:43>
                 path <21:33-21:38>
@@ -119,6 +110,6 @@ module tests/ast/string.f3
           path <22:5-22:11>
             segment <22:5-22:11> println
           binary-expr <22:13-22:43> + <22:31-22:31>
-            literal str "input3_copy is " <22:13-22:29>
+            lit-expr str "input3_copy is " <22:13-22:29>
             path <22:33-22:43>
               segment <22:33-22:43> input3_copy

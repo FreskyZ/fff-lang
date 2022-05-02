@@ -1,40 +1,29 @@
-total size 4215 > 775
-   [path-segment(simple)(4)] 896 (21.26%) > 32 (4.13%)
-             [expr(path)(4)] 320 (7.59%) > 32 (4.13%)
-              [expr(lit)(4)] 320 (7.59%) > 32 (4.13%)
-         [stmt(var-decl)(1)] 304 (7.21%) > 8 (1.03%)
-      [stmt(simple-expr)(1)] 304 (7.21%) > 8 (1.03%)
-              [stmt(for)(1)] 304 (7.21%) > 8 (1.03%)
-      [stmt(assign-expr)(1)] 304 (7.21%) > 8 (1.03%)
-               [item(fn)(1)] 304 (7.21%) > 8 (1.03%)
-             [expr(call)(2)] 160 (3.80%) > 16 (2.06%)
-                   [path(4)] 128 (3.04%) > 64 (8.26%)
-               [lit-expr(4)] 128 (3.04%) > 128 (16.52%)
-              [call-expr(2)] 96 (2.28%) > 56 (7.23%)
-       [expr(range-both)(1)] 80 (1.90%) > 8 (1.03%)
-           [expr(member)(1)] 80 (1.90%) > 8 (1.03%)
-           [expr(binary)(1)] 80 (1.90%) > 8 (1.03%)
-                 [fn-def(1)] 64 (1.52%) > 44 (5.68%)
-                  [block(2)] 64 (1.52%) > 32 (4.13%)
-           [generic-name(1)] 52 (1.23%) > 36 (4.65%)
-         [simple-segment(4)] 48 (1.14%) > 48 (6.19%)
-            [member-expr(1)] 36 (0.85%) > 36 (4.65%)
-            [binary-expr(1)] 33 (0.78%) > 25 (3.23%)
-        [range-both-expr(1)] 32 (0.76%) > 24 (3.10%)
-               [for-stmt(1)] 32 (0.76%) > 40 (5.16%)
-               [var-decl(1)] 21 (0.50%) > 29 (3.74%)
-       [assign-expr-stmt(1)] 17 (0.40%) > 25 (3.23%)
-       [simple-expr-stmt(1)] 8 (0.19%) > 12 (1.55%)
+[all(26)] 676
+[lit-expr(4)] 128 (18.93%)
+[path(4)] 64 (9.47%)
+[call-expr(2)] 64 (9.47%)
+[simple-segment(4)] 48 (7.10%)
+[fn-def(1)] 48 (7.10%)
+[for-stmt(1)] 44 (6.51%)
+[var-decl-stmt(1)] 40 (5.92%)
+[member-expr(1)] 40 (5.92%)
+[generic-name(1)] 36 (5.33%)
+[binary-expr(1)] 36 (5.33%)
+[assign-expr-stmt(1)] 36 (5.33%)
+[range-both-expr(1)] 32 (4.73%)
+[block(2)] 32 (4.73%)
+[simple-expr-stmt(1)] 16 (2.37%)
+[module(1)] 12 (1.78%)
 module tests/ast/sum.f3
   fn-def <2:1-9:1> () <2:8-2:9>
     generic-name <2:4-2:7> main <2:4-2:7>
     block <2:11-9:1>
-      var-def <4:5-4:16> mutable sum <4:9-4:11>
-        literal i32 0 <4:15-4:15>
+      var-decl-stmt <4:5-4:16> mutable sum <4:9-4:11>
+        lit-expr i32 0 <4:15-4:15>
       for-stmt <5:5-7:5> iter-var i <5:9-5:9>
         range-both-expr <5:14-5:21> dotdot <5:16-5:17>
-          literal i32 0 <5:14-5:14>
-          literal i32 100 <5:19-5:21>
+          lit-expr i32 0 <5:14-5:14>
+          lit-expr i32 100 <5:19-5:21>
         block <5:23-7:5>
           assign-expr-stmt <6:9-6:17> += <6:13-6:14>
             path <6:9-6:11>
@@ -46,7 +35,7 @@ module tests/ast/sum.f3
           path <8:5-8:11>
             segment <8:5-8:11> writeln
           binary-expr <8:13-8:48> + <8:32-8:32>
-            literal str "1 add to 100 is " <8:13-8:30>
+            lit-expr str "1 add to 100 is " <8:13-8:30>
             call-expr <8:34-8:48> () <8:47-8:48>
               member-expr <8:34-8:46> . <8:37-8:37> to_string <8:38-8:46>
                 path <8:34-8:36>

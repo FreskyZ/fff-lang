@@ -1,3 +1,7 @@
+///! a simple test case which tries to cover all types of node, guarded by MemoryProfiler::coverage
+
+// TODO
+
 use super::*;
 
 macro_rules! ppcase { // pretty print case

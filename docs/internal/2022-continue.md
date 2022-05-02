@@ -51,10 +51,12 @@ Major change summary
 - interface: add formal interface, add command line argument parser based on my experience using clap
 - syntax: update and add a lot of new syntax, include major support of generics, because I think without vector<T> I cannot write any useful
   program, while this time I don't want it to be language feature but only a standard library feature
+- syntax: store ast in arena instead of vecs and boxes, blame this line to view results in tests/ast/*.stdout
 
 some detailed plans is included by the way
 
-- [ ] syntax: arena refactor
+- [ ] syntax: add recursive guard for ast visitors, eq returns true, formatters prints `[circular]`, profiler count nothing, use shared preallocate array to reduce allocate
+- [ ] syntax: add a single unit test try cover all node type for pretty's unit test
 - [ ] syntax: relearn first set and follow set and review the name of maybe_xxx
 - [ ] syntax: update random test input generator
 - [ ] syntax: add missing array dup def

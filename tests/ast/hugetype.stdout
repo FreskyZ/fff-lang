@@ -289,32 +289,22 @@ error: Invalid numeric literal, numeric literal should not start with 0
    |                                                                                                                                                                                ^^^ 
    = help: If you mean C style octal numeric literal, use `0o777` syntax
 
-total size 343943 > 51007
- [path-segment(simple)(496)] 111104 (32.30%) > 3968 (7.78%)
-  [type-ref(primitive)(566)] 58864 (17.11%) > 4528 (8.88%)
-[path-segment(generic)(249)] 55776 (16.22%) > 1992 (3.91%)
-       [type-ref(path)(376)] 39104 (11.37%) > 3008 (5.90%)
-                 [path(376)] 12032 (3.50%) > 6016 (11.79%)
-       [type-ref(array)(86)] 8944 (2.60%) > 688 (1.35%)
-       [type-ref(tuple)(83)] 8632 (2.51%) > 664 (1.30%)
-            [type-list(249)] 7968 (2.32%) > 3984 (7.81%)
-             [expr(lit)(86)] 6880 (2.00%) > 688 (1.35%)
-       [simple-segment(496)] 5952 (1.73%) > 5952 (11.67%)
-       [primitive-type(566)] 5094 (1.48%) > 5094 (9.99%)
-      [generic-segment(249)] 4980 (1.45%) > 5976 (11.72%)
-         [type-ref(ref)(41)] 4264 (1.24%) > 328 (0.64%)
-              [lit-expr(86)] 2752 (0.80%) > 2752 (5.40%)
-  [path-segment(global)(12)] 2688 (0.78%) > 96 (0.19%)
-            [tuple-type(83)] 2656 (0.77%) > 1328 (2.60%)
-          [type-ref(fn)(18)] 1872 (0.54%) > 144 (0.28%)
-            [array-type(86)] 1376 (0.40%) > 1376 (2.70%)
-     [fn-type-parameter(58)] 1160 (0.34%) > 1392 (2.73%)
-               [fn-type(18)] 864 (0.25%) > 504 (0.99%)
-              [ref-type(41)] 656 (0.19%) > 492 (0.96%)
-         [item(var-decl)(1)] 304 (0.09%) > 8 (0.02%)
-               [var-decl(1)] 21 (0.01%) > 29 (0.06%)
+[all(2310)] 37772
+[primitive-type(566)] 6792 (17.98%)
+[path(376)] 6016 (15.93%)
+[generic-segment(249)] 5976 (15.82%)
+[simple-segment(496)] 5952 (15.76%)
+[type-list(249)] 3984 (10.55%)
+[lit-expr(86)] 2752 (7.29%)
+[array-type(86)] 2064 (5.46%)
+[fn-type-parameter(58)] 1624 (4.30%)
+[tuple-type(83)] 1328 (3.52%)
+[ref-type(41)] 656 (1.74%)
+[fn-type(18)] 576 (1.52%)
+[var-decl-stmt(1)] 40 (0.11%)
+[module(1)] 12 (0.03%)
 module tests/ast/hugetype.f3
-  var-def <1:1-76:198> mutable a <1:5-1:5>
+  var-decl-stmt <1:1-76:198> mutable a <1:5-1:5>
     path <1:8-76:197>
       segment <1:8-1:9> q峐
       segment <1:12-1:13> 鉦t
@@ -345,7 +335,7 @@ module tests/ast/hugetype.f3
                         array-type <2:1-2:21>
                           path <2:2-2:2>
                             segment <2:2-2:2> 櫟
-                          literal i64 1559665329954 <2:5-2:20>
+                          lit-expr i64 1559665329954 <2:5-2:20>
                       segment <2:25-2:33> _ksGOfoqc
                       segment <2:36-2:37> n诐
                       segment <2:40-2:43> kj3c
@@ -358,13 +348,13 @@ module tests/ast/hugetype.f3
                         array-type <2:78-2:94>
                           path <2:79-2:80>
                             segment <2:79-2:80> n6
-                          literal i32 0 <2:83-2:93>
+                          lit-expr i32 0 <2:83-2:93>
                         ref-type <2:97-2:100>
                           primitive-type u64 <2:98-2:100>
                         array-type <3:1-3:14>
                           path <3:2-3:3>
                             segment <3:2-3:3> q樫
-                          literal i32 41715553 <3:6-3:13>
+                          lit-expr i32 41715553 <3:6-3:13>
                         path <3:17-3:79>
                           generic-segment <3:17-3:40> a_5pncqD4 <3:17-3:25>
                             path <3:27-3:29>
@@ -454,7 +444,7 @@ module tests/ast/hugetype.f3
                         array-type <6:87-6:106>
                           path <6:88-6:93>
                             segment <6:88-6:93> 開2g_h0
-                          literal r64 45882840000000000000 <6:96-6:105>
+                          lit-expr r64 45882840000000000000 <6:96-6:105>
                         path <7:1-7:3>
                           segment <7:1-7:3> 芹jD
                         primitive-type u16 <7:6-7:8>
@@ -467,11 +457,11 @@ module tests/ast/hugetype.f3
                         array-type <7:49-7:59>
                           path <7:50-7:55>
                             segment <7:50-7:55> Nms畻14
-                          literal i32 4 <7:58-7:58>
+                          lit-expr i32 4 <7:58-7:58>
                         array-type <7:62-7:72>
                           path <7:63-7:63>
                             segment <7:63-7:63> n
-                          literal i32 0 <7:66-7:71>
+                          lit-expr i32 0 <7:66-7:71>
                         path <7:75-8:25>
                           generic-segment <7:75-7:87> i43 <7:75-7:77>
                             primitive-type i8 <7:79-7:80>
@@ -508,7 +498,7 @@ module tests/ast/hugetype.f3
                   array-type <9:16-9:27>
                     path <9:17-9:17>
                       segment <9:17-9:17> F
-                    literal i32 765566 <9:20-9:26>
+                    lit-expr i32 765566 <9:20-9:26>
                   path <9:30-9:36>
                     segment <9:30-9:36> EunGe3O
               segment <9:41-9:47> nx6Ks2N
@@ -521,7 +511,7 @@ module tests/ast/hugetype.f3
                     array-type <9:82-9:93>
                       path <9:83-9:84>
                         segment <9:83-9:84> c溏
-                      literal i32 0 <9:87-9:92>
+                      lit-expr i32 0 <9:87-9:92>
                     tuple-type <9:96-10:92>
                       path <9:97-10:59>
                         generic-segment <9:97-10:4> v4a <9:97-9:99>
@@ -544,7 +534,7 @@ module tests/ast/hugetype.f3
                       array-type <10:62-10:82>
                         path <10:63-10:64>
                           segment <10:63-10:64> As
-                        literal r64 45554.544377000006 <10:67-10:81>
+                        lit-expr r64 45554.544377000006 <10:67-10:81>
                       path <10:85-10:91>
                         segment <10:85-10:91> AJJh5FL
                     tuple-type <10:95-11:17>
@@ -552,7 +542,7 @@ module tests/ast/hugetype.f3
                       array-type <10:101-11:15>
                         path <10:102-10:106>
                           segment <10:102-10:106> CuL5v
-                        literal r64 0.000022583871669999998 <11:1-11:14>
+                        lit-expr r64 0.000022583871669999998 <11:1-11:14>
                   segment <11:21-11:27> iae囃M3_
                 path <11:30-16:36>
                   segment <11:30-11:36> eybA痾L6
@@ -567,7 +557,7 @@ module tests/ast/hugetype.f3
                     array-type <11:74-11:85>
                       path <11:75-11:77>
                         segment <11:75-11:77> EnO
-                      literal i32 16622 <11:80-11:84>
+                      lit-expr i32 16622 <11:80-11:84>
                     primitive-type u16 <11:88-11:90>
                   generic-segment <11:94-14:37> Gmc87 <11:94-11:98>
                     tuple-type <11:100-12:15>
@@ -579,13 +569,13 @@ module tests/ast/hugetype.f3
                       array-type <12:1-12:14>
                         path <12:2-12:9>
                           segment <12:2-12:9> uDhnpmfw
-                        literal i32 41 <12:12-12:13>
+                        lit-expr i32 41 <12:12-12:13>
                     path <12:18-14:17>
                       generic-segment <12:18-12:113> CGDtB <12:18-12:22>
                         array-type <12:24-12:39>
                           path <12:25-12:29>
                             segment <12:25-12:29> mm娇甌I
-                          literal i32 905940 <12:32-12:38>
+                          lit-expr i32 905940 <12:32-12:38>
                         path <12:42-12:74>
                           generic-segment <12:42-12:65> mjmD4p727 <12:42-12:50>
                             primitive-type bool <12:52-12:55>
@@ -611,7 +601,7 @@ module tests/ast/hugetype.f3
                         array-type <13:21-13:35>
                           path <13:22-13:26>
                             segment <13:22-13:26> x5uKa
-                          literal r64 534200000 <13:29-13:34>
+                          lit-expr r64 534200000 <13:29-13:34>
                       segment <13:40-13:40> a
                       segment <13:43-13:46> ok4d
                       generic-segment <13:49-14:17> JND1l4J2 <13:49-13:56>
@@ -633,7 +623,7 @@ module tests/ast/hugetype.f3
                     array-type <14:20-14:36>
                       path <14:21-14:22>
                         segment <14:21-14:22> Gg
-                      literal i32 0 <14:25-14:35>
+                      lit-expr i32 0 <14:25-14:35>
                   segment <14:40-14:47> N3x12akl
                   generic-segment <14:50-16:26> uax <14:50-14:52>
                     path <14:54-15:74>
@@ -700,7 +690,7 @@ module tests/ast/hugetype.f3
                       array-type <16:108-17:3>
                         path <16:109-16:113>
                           segment <16:109-16:113> _狆Fvf
-                        literal i32 75 <17:1-17:2>
+                        lit-expr i32 75 <17:1-17:2>
                     fn-type-parameter <17:6-17:80>
                       path <17:6-17:80>
                         generic-segment <17:6-17:21> h <17:6-17:6>
@@ -739,17 +729,17 @@ module tests/ast/hugetype.f3
                   array-type <18:11-18:25>
                     path <18:12-18:17>
                       segment <18:12-18:17> _y酗Byl
-                    literal r32 42 <18:20-18:24>
+                    lit-expr r32 42 <18:20-18:24>
                 fn-type-parameter <18:28-18:30>
                   primitive-type u16 <18:28-18:30>
                 array-type <18:36-18:53>
                   path <18:37-18:41>
                     segment <18:37-18:41> adENo
-                  literal u32 52483 <18:44-18:52>
+                  lit-expr u32 52483 <18:44-18:52>
               ref-type <18:56-19:75>
                 tuple-type <18:57-19:75>
                   path <18:58-18:100>
-                    global-segment
+                    global-segment 
                     segment <18:60-18:68> 蝥趇3LDmu84
                     segment <18:71-18:73> 疹0r
                     segment <18:76-18:77> Jt
@@ -782,7 +772,7 @@ module tests/ast/hugetype.f3
                   array-type <19:92-19:107>
                     path <19:93-19:94>
                       segment <19:93-19:94> bC
-                    literal i64 1048318 <19:97-19:106>
+                    lit-expr i64 1048318 <19:97-19:106>
                   path <19:110-19:118>
                     segment <19:110-19:118> mNcHhJlnb
                   ref-type <20:1-20:5>
@@ -795,30 +785,30 @@ module tests/ast/hugetype.f3
                   array-type <20:38-20:54>
                     path <20:39-20:47>
                       segment <20:39-20:47> 骨88a2yEBE
-                    literal i32 2544 <20:50-20:53>
+                    lit-expr i32 2544 <20:50-20:53>
                   array-type <20:57-20:72>
                     path <20:58-20:63>
                       segment <20:58-20:63> NB7BLb
-                    literal i32 530003 <20:66-20:71>
+                    lit-expr i32 530003 <20:66-20:71>
             path <20:77-26:124>
               generic-segment <20:77-22:34> CM8c飁id <20:77-20:83>
                 array-type <20:85-20:102>
                   path <20:86-20:91>
                     segment <20:86-20:91> g1KnjC
-                  literal i32 62464562 <20:94-20:101>
+                  lit-expr i32 62464562 <20:94-20:101>
                 tuple-type <20:105-21:73>
                   path <20:106-20:112>
                     segment <20:106-20:112> lee蝠cpj
                   array-type <21:1-21:21>
                     path <21:2-21:7>
                       segment <21:2-21:7> EFmFr霠
-                    literal r32 87452690 <21:10-21:20>
+                    lit-expr r32 87452690 <21:10-21:20>
                   path <21:24-21:72>
                     generic-segment <21:24-21:53> y4ur <21:24-21:27>
                       array-type <21:29-21:41>
                         path <21:30-21:35>
                           segment <21:30-21:35> kmm馭tJ
-                        literal i32 0 <21:38-21:40>
+                        lit-expr i32 0 <21:38-21:40>
                       ref-type <21:44-21:47>
                         path <21:45-21:47>
                           segment <21:45-21:47> i33
@@ -829,7 +819,7 @@ module tests/ast/hugetype.f3
                 array-type <21:76-21:98>
                   path <21:77-21:77>
                     segment <21:77-21:77> G
-                  literal i32 0 <21:80-21:97>
+                  lit-expr i32 0 <21:80-21:97>
                 path <21:101-22:33>
                   segment <21:101-21:106> LK魲C2D
                   segment <21:109-21:111> mgq
@@ -843,12 +833,12 @@ module tests/ast/hugetype.f3
                     array-type <22:6-22:21>
                       path <22:7-22:13>
                         segment <22:7-22:13> m0NngfH
-                      literal i32 6 <22:16-22:20>
+                      lit-expr i32 6 <22:16-22:20>
                   segment <22:25-22:25> o
                   segment <22:28-22:33> mOgF3F
               generic-segment <22:37-26:124> 甍qr閇s恀 <22:37-22:42>
                 path <22:44-23:17>
-                  global-segment
+                  global-segment 
                   segment <22:46-22:53> BuqoFali
                   generic-segment <22:56-22:65> EE6t7OqG <22:56-22:63>
                   generic-segment <22:68-23:7> n3rq7ALB <22:68-22:75>
@@ -876,7 +866,7 @@ module tests/ast/hugetype.f3
                       array-type <23:35-23:47>
                         path <23:36-23:37>
                           segment <23:36-23:37> HA
-                        literal i64 3640 <23:40-23:46>
+                        lit-expr i64 3640 <23:40-23:46>
                   fn-type-parameter <23:50-23:60> H7q <23:50-23:52>
                     path <23:55-23:60>
                       segment <23:55-23:60> cHlhk瀵
@@ -913,7 +903,7 @@ module tests/ast/hugetype.f3
                 array-type <24:78-24:111>
                   path <24:79-24:86>
                     segment <24:79-24:86> D63gE晤kJ
-                  literal r64 6567170030055001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 <24:89-24:110>
+                  lit-expr r64 6567170030055001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 <24:89-24:110>
                 path <24:114-26:123>
                   generic-segment <24:114-25:110> 蟧bFembG0 <24:114-24:121>
                     path <24:123-25:103>
@@ -934,7 +924,7 @@ module tests/ast/hugetype.f3
                         array-type <25:31-25:40>
                           path <25:32-25:35>
                             segment <25:32-25:35> xumB
-                          literal i32 80 <25:38-25:39>
+                          lit-expr i32 80 <25:38-25:39>
                         fn-type <25:43-25:64> () <25:45-25:64>
                           fn-type-parameter <25:46-25:53> h0 <25:46-25:47>
                             primitive-type char <25:50-25:53>
@@ -957,13 +947,13 @@ module tests/ast/hugetype.f3
                     array-type <25:119-25:130>
                       path <25:120-25:123>
                         segment <25:120-25:123> IC6m
-                      literal r32 1 <25:126-25:129>
+                      lit-expr r32 1 <25:126-25:129>
                     path <25:133-26:118>
                       generic-segment <25:133-26:6> nnkECM8b7 <25:133-25:141>
                         array-type <25:143-25:155>
                           path <25:144-25:150>
                             segment <25:144-25:150> Iqwj3Hy
-                          literal i32 25 <25:153-25:154>
+                          lit-expr i32 25 <25:153-25:154>
                         primitive-type char <26:1-26:4>
                       generic-segment <26:9-26:54> oywl <26:9-26:12>
                         path <26:14-26:20>
@@ -974,13 +964,13 @@ module tests/ast/hugetype.f3
                         array-type <26:29-26:50>
                           path <26:30-26:36>
                             segment <26:30-26:36> qf7櫍5gv
-                          literal u32 2797702 <26:39-26:49>
+                          lit-expr u32 2797702 <26:39-26:49>
                         path <26:53-26:53>
                           segment <26:53-26:53> H
                       generic-segment <26:57-26:113> Oosfypj <26:57-26:63>
                         primitive-type i64 <26:65-26:67>
                         path <26:70-26:96>
-                          global-segment
+                          global-segment 
                           segment <26:72-26:73> EJ
                           segment <26:76-26:77> Nr
                           generic-segment <26:80-26:85> LJC臧 <26:80-26:83>
@@ -993,7 +983,7 @@ module tests/ast/hugetype.f3
                       segment <26:116-26:118> Lfb
                   segment <26:122-26:123> Ox
             path <26:127-26:137>
-              global-segment
+              global-segment 
               generic-segment <26:129-26:137> k梷u黸w4p <26:129-26:135>
             path <27:1-27:3>
               segment <27:1-27:3> Lof
@@ -1005,7 +995,7 @@ module tests/ast/hugetype.f3
                 array-type <27:33-27:45>
                   path <27:34-27:40>
                     segment <27:34-27:40> biw42Ad
-                  literal i32 75 <27:43-27:44>
+                  lit-expr i32 75 <27:43-27:44>
                 fn-type <27:48-29:30> () <27:50-28:125>
                   fn-type-parameter <27:51-27:131>
                     path <27:51-27:131>
@@ -1093,7 +1083,7 @@ module tests/ast/hugetype.f3
                   array-type <29:128-30:14>
                     path <29:129-29:130>
                       segment <29:129-29:130> tG
-                    literal i32 0 <30:1-30:13>
+                    lit-expr i32 0 <30:1-30:13>
                 path <30:18-31:35>
                   segment <30:18-30:19> sl
                   generic-segment <30:22-30:112> k8O <30:22-30:24>
@@ -1114,7 +1104,7 @@ module tests/ast/hugetype.f3
                     array-type <30:86-30:111>
                       path <30:87-30:87>
                         segment <30:87-30:87> O
-                      literal i32 0 <30:90-30:110>
+                      lit-expr i32 0 <30:90-30:110>
                   generic-segment <30:115-31:35> Cbhqv鮅27A <30:115-30:123>
                     tuple-type <30:125-31:8>
                       primitive-type bool <30:126-30:129>
@@ -1124,7 +1114,7 @@ module tests/ast/hugetype.f3
                     array-type <31:16-31:34>
                       path <31:17-31:19>
                         segment <31:17-31:19> etb
-                      literal i32 0 <31:22-31:33>
+                      lit-expr i32 0 <31:22-31:33>
                 path <31:38-31:94>
                   segment <31:38-31:43> m2_F奵n
                   generic-segment <31:46-31:94> Kmqvvob藍l <31:46-31:54>
@@ -1247,7 +1237,7 @@ module tests/ast/hugetype.f3
                     array-type <35:37-35:56>
                       path <35:38-35:42>
                         segment <35:38-35:42> qAm5x
-                      literal i32 0 <35:45-35:55>
+                      lit-expr i32 0 <35:45-35:55>
                     path <35:59-36:28>
                       generic-segment <35:59-35:79> r8sK <35:59-35:62>
                         primitive-type f32 <35:64-35:66>
@@ -1270,14 +1260,14 @@ module tests/ast/hugetype.f3
                     array-type <36:31-36:49>
                       path <36:32-36:36>
                         segment <36:32-36:36> oyAin
-                      literal i32 0 <36:39-36:48>
+                      lit-expr i32 0 <36:39-36:48>
                     array-type <36:52-36:67>
                       path <36:53-36:56>
                         segment <36:53-36:56> k遙bL
-                      literal i32 84445884 <36:59-36:66>
+                      lit-expr i32 84445884 <36:59-36:66>
                   tuple-type <36:71-37:22>
                     path <36:72-36:92>
-                      global-segment
+                      global-segment 
                       generic-segment <36:74-36:92> bF5r <36:74-36:77>
                         primitive-type char <36:79-36:82>
                         primitive-type f32 <36:85-36:87>
@@ -1298,20 +1288,20 @@ module tests/ast/hugetype.f3
                   array-type <37:25-37:40>
                     path <37:26-37:33>
                       segment <37:26-37:33> lw4祕jFor
-                    literal i32 5121 <37:36-37:39>
+                    lit-expr i32 5121 <37:36-37:39>
                 generic-segment <37:44-37:100> 堮1AC殇戔 <37:44-37:49>
                   array-type <37:51-37:62>
                     path <37:52-37:55>
                       segment <37:52-37:55> Cv殦5
-                    literal r64 6 <37:58-37:61>
+                    lit-expr r64 6 <37:58-37:61>
                   array-type <37:65-37:86>
                     path <37:66-37:72>
                       segment <37:66-37:72> 姙hErI逄E
-                    literal i32 0 <37:75-37:85>
+                    lit-expr i32 0 <37:75-37:85>
                   array-type <37:89-37:99>
                     path <37:90-37:90>
                       segment <37:90-37:90> 蹞
-                    literal i32 257326 <37:93-37:98>
+                    lit-expr i32 257326 <37:93-37:98>
                 generic-segment <37:103-39:100> y <37:103-37:103>
                   tuple-type <37:105-38:20>
                     tuple-type <37:106-37:107>
@@ -1320,7 +1310,7 @@ module tests/ast/hugetype.f3
                     array-type <38:1-38:19>
                       path <38:2-38:10>
                         segment <38:2-38:10> HuOA3swto
-                      literal r64 608 <38:13-38:18>
+                      lit-expr r64 608 <38:13-38:18>
                   ref-type <38:23-38:26>
                     path <38:24-38:26>
                       segment <38:24-38:26> i33
@@ -1330,7 +1320,7 @@ module tests/ast/hugetype.f3
                       array-type <38:41-38:58>
                         path <38:42-38:49>
                           segment <38:42-38:49> B糝hq满HFi
-                        literal i32 8513 <38:52-38:57>
+                        lit-expr i32 8513 <38:52-38:57>
                       path <38:61-38:118>
                         generic-segment <38:61-38:80> JxBv0 <38:61-38:65>
                           primitive-type u64 <38:67-38:69>
@@ -1366,7 +1356,7 @@ module tests/ast/hugetype.f3
         array-type <39:110-39:120>
           path <39:111-39:111>
             segment <39:111-39:111> e
-          literal u32 3 <39:114-39:119>
+          lit-expr u32 3 <39:114-39:119>
         path <40:1-47:89>
           generic-segment <40:1-47:81> 矒Ia <40:1-40:3>
             tuple-type <40:5-40:32>
@@ -1374,7 +1364,7 @@ module tests/ast/hugetype.f3
               array-type <40:12-40:26>
                 path <40:13-40:18>
                   segment <40:13-40:18> dH5l域5
-                literal r32 82 <40:21-40:25>
+                lit-expr r32 82 <40:21-40:25>
               primitive-type i16 <40:29-40:31>
             fn-type <40:35-47:59> () <40:37-41:80>
               fn-type-parameter <40:38-41:41> y <40:38-40:38>
@@ -1388,7 +1378,7 @@ module tests/ast/hugetype.f3
                       array-type <40:64-40:83>
                         path <40:65-40:71>
                           segment <40:65-40:71> jqKm34i
-                        literal r32 674344 <40:74-40:82>
+                        lit-expr r32 674344 <40:74-40:82>
                       path <40:86-40:128>
                         segment <40:86-40:92> NcCfur4
                         segment <40:95-40:98> Oq鎠脯
@@ -1406,7 +1396,7 @@ module tests/ast/hugetype.f3
                     array-type <41:23-41:39>
                       path <41:24-41:30>
                         segment <41:24-41:30> AKmymFb
-                      literal r32 534 <41:33-41:38>
+                      lit-expr r32 534 <41:33-41:38>
               fn-type-parameter <41:44-41:50>
                 path <41:44-41:50>
                   segment <41:44-41:50> l08dkdc
@@ -1414,7 +1404,7 @@ module tests/ast/hugetype.f3
                 array-type <41:61-41:79>
                   path <41:62-41:62>
                     segment <41:62-41:62> I
-                  literal r64 47666205.01157 <41:65-41:78>
+                  lit-expr r64 47666205.01157 <41:65-41:78>
               path <41:85-47:59>
                 generic-segment <41:85-43:76> i8ad2vgs7 <41:85-41:93>
                   path <41:95-41:100>
@@ -1458,17 +1448,17 @@ module tests/ast/hugetype.f3
                       array-type <43:40-43:49>
                         path <43:41-43:41>
                           segment <43:41-43:41> 蜀
-                        literal i32 36334 <43:44-43:48>
+                        lit-expr i32 36334 <43:44-43:48>
                       array-type <43:52-43:70>
                         path <43:53-43:60>
                           segment <43:53-43:60> D0vECbcy
-                        literal i32 0 <43:63-43:69>
+                        lit-expr i32 0 <43:63-43:69>
                     segment <43:74-43:75> H1
                 generic-segment <43:79-45:80> va镮J <43:79-43:82>
                   array-type <43:84-43:108>
                     path <43:85-43:92>
                       segment <43:85-43:92> ryJt哖Lul
-                    literal r64 711504.2487550001 <43:95-43:107>
+                    lit-expr r64 711504.2487550001 <43:95-43:107>
                   tuple-type <43:111-44:124>
                     path <43:112-44:77>
                       segment <43:112-43:118> o涋i7kvH
@@ -1504,7 +1494,7 @@ module tests/ast/hugetype.f3
                     array-type <44:128-45:8>
                       path <44:129-44:130>
                         segment <44:129-44:130> Gw
-                      literal i32 7183810 <45:1-45:7>
+                      lit-expr i32 7183810 <45:1-45:7>
                     tuple-type <45:11-45:12>
                     ref-type <45:15-45:18>
                       primitive-type f32 <45:16-45:18>
@@ -1527,7 +1517,7 @@ module tests/ast/hugetype.f3
                 generic-segment <45:89-47:59> bH <45:89-45:90>
                   tuple-type <45:92-46:123>
                     path <45:93-46:60>
-                      global-segment
+                      global-segment 
                       generic-segment <45:95-45:123> bwE <45:95-45:97>
                         primitive-type f32 <45:99-45:101>
                         primitive-type i8 <45:104-45:105>
@@ -1607,7 +1597,7 @@ module tests/ast/hugetype.f3
                     array-type <48:30-48:46>
                       path <48:31-48:38>
                         segment <48:31-48:38> exNeJG5n
-                      literal i32 38414 <48:41-48:45>
+                      lit-expr i32 38414 <48:41-48:45>
                   generic-segment <48:51-50:114> u <48:51-48:51>
                     primitive-type char <48:53-48:56>
                     ref-type <48:59-48:66>
@@ -1667,7 +1657,7 @@ module tests/ast/hugetype.f3
                         array-type <50:7-50:25>
                           path <50:8-50:11>
                             segment <50:8-50:11> udBA
-                          literal i32 0 <50:14-50:24>
+                          lit-expr i32 0 <50:14-50:24>
                         ref-type <50:28-50:31>
                           primitive-type f32 <50:29-50:31>
                       generic-segment <50:35-50:113> Hf0 <50:35-50:37>
@@ -1678,7 +1668,7 @@ module tests/ast/hugetype.f3
                         array-type <50:58-50:75>
                           path <50:59-50:62>
                             segment <50:59-50:62> NcOE
-                          literal r64 0.35736 <50:65-50:74>
+                          lit-expr r64 0.35736 <50:65-50:74>
                         path <50:78-50:89>
                           segment <50:78-50:81> jiw6
                           segment <50:84-50:89> xnt0OI
@@ -1690,7 +1680,7 @@ module tests/ast/hugetype.f3
                           primitive-type i8 <50:110-50:111>
                   generic-segment <50:117-55:45> tOppMOO <50:117-50:123>
                     path <50:125-50:133>
-                      global-segment
+                      global-segment 
                       generic-segment <50:127-50:133> pox37 <50:127-50:131>
                     primitive-type i64 <51:1-51:3>
                     path <51:6-53:45>
@@ -1732,11 +1722,11 @@ module tests/ast/hugetype.f3
                         array-type <52:58-52:71>
                           path <52:59-52:64>
                             segment <52:59-52:64> Gudn0m
-                          literal i32 8374 <52:67-52:70>
+                          lit-expr i32 8374 <52:67-52:70>
                         array-type <52:74-52:84>
                           path <52:75-52:80>
                             segment <52:75-52:80> _pAbLb
-                          literal i32 1 <52:83-52:83>
+                          lit-expr i32 1 <52:83-52:83>
                       generic-segment <52:88-53:17> G <52:88-52:88>
                         tuple-type <52:90-52:104>
                           primitive-type u32 <52:91-52:93>
@@ -1751,7 +1741,7 @@ module tests/ast/hugetype.f3
                         array-type <53:1-53:16>
                           path <53:2-53:8>
                             segment <53:2-53:8> JkeNvd舾
-                          literal r64 1.866 <53:11-53:15>
+                          lit-expr r64 1.866 <53:11-53:15>
                       segment <53:20-53:24> ls0OE
                       segment <53:27-53:34> KMqC8Ac鍂
                       segment <53:37-53:45> fnuqb5hC1
@@ -1793,15 +1783,15 @@ module tests/ast/hugetype.f3
                         array-type <54:83-54:107>
                           path <54:84-54:92>
                             segment <54:84-54:92> 夎KbFr7yAG
-                          literal r64 6271545.5433 <54:95-54:106>
+                          lit-expr r64 6271545.5433 <54:95-54:106>
                         ref-type <54:110-54:112>
                           primitive-type i8 <54:111-54:112>
                         array-type <54:115-55:4>
                           path <54:116-54:118>
                             segment <54:116-54:118> wbi
-                          literal i32 0 <55:1-55:3>
+                          lit-expr i32 0 <55:1-55:3>
                         path <55:7-55:32>
-                          global-segment
+                          global-segment 
                           segment <55:9-55:15> stGnGde
                           generic-segment <55:18-55:27> FF鶦lqK1t <55:18-55:25>
                           segment <55:30-55:32> 盳wt
@@ -1844,7 +1834,7 @@ module tests/ast/hugetype.f3
                       segment <56:102-56:102> 墓
                     ref-type <56:105-56:132>
                       path <56:106-56:132>
-                        global-segment
+                        global-segment 
                         segment <56:108-56:115> KO5vq8G6
                         segment <56:118-56:123> oGNNyk
                         segment <56:126-56:132> GJimB频_
@@ -1857,7 +1847,7 @@ module tests/ast/hugetype.f3
                 array-type <57:37-57:51>
                   path <57:38-57:46>
                     segment <57:38-57:46> ek_乩5fbbA
-                  literal i32 63 <57:49-57:50>
+                  lit-expr i32 63 <57:49-57:50>
               generic-segment <57:55-57:58> g嚤 <57:55-57:56>
               segment <57:61-57:68> DgAjFtu2
             path <57:71-71:101>
@@ -1866,11 +1856,11 @@ module tests/ast/hugetype.f3
                 array-type <57:80-57:96>
                   path <57:81-57:89>
                     segment <57:81-57:89> k036DFE00
-                  literal i32 206 <57:92-57:95>
+                  lit-expr i32 206 <57:92-57:95>
                 array-type <57:99-57:129>
                   path <57:100-57:104>
                     segment <57:100-57:104> lq5jG
-                  literal i32 331830 <57:107-57:128>
+                  lit-expr i32 331830 <57:107-57:128>
                 tuple-type <58:1-59:84>
                   primitive-type u32 <58:2-58:4>
                   primitive-type u16 <58:7-58:9>
@@ -1928,7 +1918,7 @@ module tests/ast/hugetype.f3
                 array-type <59:118-60:6>
                   path <59:119-59:121>
                     segment <59:119-59:121> j緝3
-                  literal i32 68730 <60:1-60:5>
+                  lit-expr i32 68730 <60:1-60:5>
                 tuple-type <60:9-61:133>
                   tuple-type <60:10-60:60>
                     primitive-type bool <60:11-60:14>
@@ -1936,7 +1926,7 @@ module tests/ast/hugetype.f3
                     array-type <60:22-60:38>
                       path <60:23-60:27>
                         segment <60:23-60:27> l柷Cm脍
-                      literal u16 358 <60:30-60:37>
+                      lit-expr u16 358 <60:30-60:37>
                     path <60:41-60:59>
                       generic-segment <60:41-60:59> y_ng4 <60:41-60:45>
                         primitive-type u32 <60:47-60:49>
@@ -1986,7 +1976,7 @@ module tests/ast/hugetype.f3
                 array-type <62:1-62:15>
                   path <62:2-62:7>
                     segment <62:2-62:7> jLop卷a
-                  literal i32 61561 <62:10-62:14>
+                  lit-expr i32 61561 <62:10-62:14>
                 path <62:18-62:18>
                   segment <62:18-62:18> H
               generic-segment <62:22-71:40> bcuJp3義dm <62:22-62:30>
@@ -2006,7 +1996,7 @@ module tests/ast/hugetype.f3
                       array-type <62:81-62:101>
                         path <62:82-62:88>
                           segment <62:82-62:88> gAGlH50
-                        literal i32 2288834 <62:91-62:100>
+                        lit-expr i32 2288834 <62:91-62:100>
                     primitive-type f32 <62:105-62:107>
                     tuple-type <62:110-63:106>
                       ref-type <62:111-62:114>
@@ -2026,7 +2016,7 @@ module tests/ast/hugetype.f3
                         primitive-type bool <63:51-63:54>
                         primitive-type i8 <63:57-63:58>
                       path <63:62-63:105>
-                        global-segment
+                        global-segment 
                         segment <63:64-63:71> rsijgrv7
                         segment <63:74-63:79> BxywqE
                         segment <63:82-63:83> ka
@@ -2096,9 +2086,9 @@ module tests/ast/hugetype.f3
                       array-type <66:44-66:58>
                         path <66:45-66:51>
                           segment <66:45-66:51> t嗕F_ocE
-                        literal i32 2214 <66:54-66:57>
+                        lit-expr i32 2214 <66:54-66:57>
                       path <66:61-67:23>
-                        global-segment
+                        global-segment 
                         segment <66:63-66:68> jtdffi
                         generic-segment <66:71-66:92> iGh0sIGE <66:71-66:78>
                           primitive-type u8 <66:80-66:81>
@@ -2147,7 +2137,7 @@ module tests/ast/hugetype.f3
                 array-type <68:58-68:73>
                   path <68:59-68:66>
                     segment <68:59-68:66> CBfEiKcJ
-                  literal i32 4603 <68:69-68:72>
+                  lit-expr i32 4603 <68:69-68:72>
                 tuple-type <68:76-71:39>
                   path <68:77-68:77>
                     segment <68:77-68:77> c
@@ -2177,7 +2167,7 @@ module tests/ast/hugetype.f3
                       array-type <69:70-69:81>
                         path <69:71-69:74>
                           segment <69:71-69:74> t姪Fx
-                        literal i32 6 <69:77-69:80>
+                        lit-expr i32 6 <69:77-69:80>
                     generic-segment <69:85-70:112> n00BK <69:85-69:89>
                       path <69:91-70:4>
                         segment <69:91-69:95> ca6凥_
@@ -2187,7 +2177,7 @@ module tests/ast/hugetype.f3
                             segment <69:109-69:114> string
                           primitive-type i64 <70:1-70:3>
                       path <70:7-70:105>
-                        global-segment
+                        global-segment 
                         generic-segment <70:9-70:38> x3kG6 <70:9-70:13>
                           primitive-type f64 <70:15-70:17>
                           path <70:20-70:22>
@@ -2216,18 +2206,18 @@ module tests/ast/hugetype.f3
                     array-type <71:7-71:32>
                       path <71:8-71:16>
                         segment <71:8-71:16> KoC6K58n5
-                      literal u32 3047865184 <71:19-71:31>
+                      lit-expr u32 3047865184 <71:19-71:31>
                   primitive-type u64 <71:36-71:38>
               generic-segment <71:43-71:101> IincEILqo <71:43-71:51>
                 tuple-type <71:53-71:92>
                   array-type <71:54-71:74>
                     path <71:55-71:56>
                       segment <71:55-71:56> _1
-                    literal r32 32230.742 <71:59-71:73>
+                    lit-expr r32 32230.742 <71:59-71:73>
                   array-type <71:77-71:87>
                     path <71:78-71:79>
                       segment <71:78-71:79> LG
-                    literal i32 0 <71:82-71:86>
+                    lit-expr i32 0 <71:82-71:86>
                   tuple-type <71:90-71:91>
                 path <71:95-71:99>
                   segment <71:95-71:99> qIOlh
@@ -2239,7 +2229,7 @@ module tests/ast/hugetype.f3
                   array-type <71:123-72:4>
                     path <71:124-71:130>
                       segment <71:124-71:130> E橝0EtCI
-                    literal i32 0 <72:1-72:3>
+                    lit-expr i32 0 <72:1-72:3>
                   path <72:7-72:16>
                     generic-segment <72:7-72:11> yro <72:7-72:9>
                     segment <72:14-72:16> lG膠
@@ -2253,20 +2243,20 @@ module tests/ast/hugetype.f3
                   array-type <72:53-72:72>
                     path <72:54-72:57>
                       segment <72:54-72:57> cdOq
-                    literal r64 0.000000000000000000000000000000000000000000000000000000000000000000000000082304312 <72:60-72:71>
+                    lit-expr r64 0.000000000000000000000000000000000000000000000000000000000000000000000000082304312 <72:60-72:71>
                   array-type <72:75-72:91>
                     path <72:76-72:78>
                       segment <72:76-72:78> LCI
-                    literal r64 2126745 <72:81-72:90>
+                    lit-expr r64 2126745 <72:81-72:90>
                   tuple-type <72:94-73:33>
                     array-type <72:95-72:127>
                       path <72:96-72:100>
                         segment <72:96-72:100> go0BC
-                      literal u32 396056 <72:103-72:126>
+                      lit-expr u32 396056 <72:103-72:126>
                     array-type <73:1-73:15>
                       path <73:2-73:4>
                         segment <73:2-73:4> Jnd
-                      literal u32 63730 <73:7-73:14>
+                      lit-expr u32 63730 <73:7-73:14>
                     tuple-type <73:18-73:32>
                       path <73:19-73:21>
                         segment <73:19-73:21> i33
@@ -2280,12 +2270,12 @@ module tests/ast/hugetype.f3
                     array-type <73:48-73:76>
                       path <73:49-73:56>
                         segment <73:49-73:56> Gp8vxDol
-                      literal i64 5132085746867 <73:59-73:75>
+                      lit-expr i64 5132085746867 <73:59-73:75>
                   primitive-type u16 <73:81-73:83>
                   array-type <73:86-73:104>
                     path <73:87-73:92>
                       segment <73:87-73:92> K狉33躥孒
-                    literal i32 5381734 <73:95-73:103>
+                    lit-expr i32 5381734 <73:95-73:103>
               path <73:108-73:121>
                 segment <73:108-73:115> aIx85fkr
                 segment <73:118-73:121> kl鸙鉟
@@ -2297,11 +2287,11 @@ module tests/ast/hugetype.f3
                     array-type <74:17-74:37>
                       path <74:18-74:26>
                         segment <74:18-74:26> jEck77E踐F
-                      literal u32 32651 <74:29-74:36>
+                      lit-expr u32 32651 <74:29-74:36>
                     array-type <74:40-74:47>
                       path <74:41-74:41>
                         segment <74:41-74:41> p
-                      literal i32 0 <74:44-74:46>
+                      lit-expr i32 0 <74:44-74:46>
                     tuple-type <74:50-74:51>
                   generic-segment <74:55-75:85> kon3cu <74:55-74:60>
                     path <74:62-74:66>
@@ -2374,13 +2364,13 @@ module tests/ast/hugetype.f3
                 array-type <76:131-76:147>
                   path <76:132-76:137>
                     segment <76:132-76:137> p6d7hq
-                  literal i32 13558 <76:140-76:146>
+                  lit-expr i32 13558 <76:140-76:146>
           segment <76:154-76:161> j3OOqsKI
           segment <76:164-76:165> 飍x
         array-type <76:168-76:179>
           path <76:169-76:173>
             segment <76:169-76:173> _捿酙2l
-          literal i32 0 <76:176-76:178>
+          lit-expr i32 0 <76:176-76:178>
         ref-type <76:182-76:186>
           ref-type <76:183-76:186>
             primitive-type i16 <76:184-76:186>

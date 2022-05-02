@@ -1,80 +1,50 @@
-total size 85595 > 14215
- [path-segment(simple)(131)] 29344 (34.28%) > 1048 (7.37%)
-            [expr(path)(90)] 7200 (8.41%) > 720 (5.07%)
-        [type-ref(path)(48)] 4992 (5.83%) > 384 (2.70%)
-                 [path(139)] 4448 (5.20%) > 2224 (15.65%)
-     [stmt(assign-expr)(11)] 3344 (3.91%) > 88 (0.62%)
- [path-segment(generic)(12)] 2688 (3.14%) > 96 (0.68%)
-               [item(fn)(8)] 2432 (2.84%) > 64 (0.45%)
-      [stmt(simple-expr)(7)] 2128 (2.49%) > 56 (0.39%)
-       [simple-segment(131)] 1572 (1.84%) > 1572 (11.06%)
-         [stmt(var-decl)(5)] 1520 (1.78%) > 40 (0.28%)
-              [stmt(ret)(5)] 1520 (1.78%) > 40 (0.28%)
-         [type-ref(ref)(14)] 1456 (1.70%) > 112 (0.79%)
-   [type-ref(primitive)(12)] 1248 (1.46%) > 96 (0.68%)
-               [stmt(if)(4)] 1216 (1.42%) > 32 (0.23%)
-              [stmt(for)(4)] 1216 (1.42%) > 32 (0.23%)
-           [item(struct)(4)] 1216 (1.42%) > 32 (0.23%)
-             [expr(lit)(15)] 1200 (1.40%) > 120 (0.84%)
-     [expr(array-index)(15)] 1200 (1.40%) > 120 (0.84%)
-          [expr(binary)(14)] 1120 (1.31%) > 112 (0.79%)
-          [generic-name(19)] 988 (1.15%) > 684 (4.81%)
-            [expr(call)(12)] 960 (1.12%) > 96 (0.68%)
-               [stmt(fn)(3)] 912 (1.07%) > 24 (0.17%)
-            [item(class)(3)] 912 (1.07%) > 24 (0.17%)
-      [array-index-expr(15)] 720 (0.84%) > 420 (2.95%)
-                [fn-def(11)] 704 (0.82%) > 484 (3.40%)
-                 [block(20)] 640 (0.75%) > 320 (2.25%)
-            [stmt(while)(2)] 608 (0.71%) > 16 (0.11%)
-             [call-expr(12)] 576 (0.67%) > 336 (2.36%)
-              [lit-expr(15)] 480 (0.56%) > 480 (3.38%)
-      [fn-def-parameter(24)] 480 (0.56%) > 576 (4.05%)
-           [binary-expr(14)] 462 (0.54%) > 350 (2.46%)
-           [type-ref(fn)(4)] 416 (0.49%) > 32 (0.23%)
-           [expr(member)(5)] 400 (0.47%) > 40 (0.28%)
-             [type-list(12)] 384 (0.45%) > 192 (1.35%)
-              [stmt(use)(1)] 304 (0.36%) > 8 (0.06%)
-             [stmt(loop)(1)] 304 (0.36%) > 8 (0.06%)
-            [stmt(break)(1)] 304 (0.36%) > 8 (0.06%)
-             [item(type)(1)] 304 (0.36%) > 8 (0.06%)
-             [item(enum)(1)] 304 (0.36%) > 8 (0.06%)
-     [generic-parameter(14)] 280 (0.33%) > 280 (1.97%)
-       [generic-segment(12)] 240 (0.28%) > 288 (2.03%)
-              [ref-type(14)] 224 (0.26%) > 168 (1.18%)
-              [field-def(8)] 224 (0.26%) > 256 (1.80%)
-                [fn-type(4)] 192 (0.22%) > 112 (0.79%)
-      [assign-expr-stmt(11)] 187 (0.22%) > 275 (1.93%)
-            [member-expr(5)] 180 (0.21%) > 180 (1.27%)
-           [where-clause(4)] 176 (0.21%) > 112 (0.79%)
-       [expr(range-both)(2)] 160 (0.19%) > 16 (0.11%)
-             [struct-def(4)] 128 (0.15%) > 80 (0.56%)
-                [if-stmt(4)] 128 (0.15%) > 96 (0.68%)
-               [for-stmt(4)] 128 (0.15%) > 160 (1.13%)
-              [class-def(3)] 120 (0.14%) > 84 (0.59%)
-        [primitive-type(12)] 108 (0.13%) > 108 (0.76%)
-               [var-decl(5)] 105 (0.12%) > 145 (1.02%)
-      [fn-type-parameter(5)] 100 (0.12%) > 120 (0.84%)
-            [expr(unary)(1)] 80 (0.09%) > 8 (0.06%)
-           [expr(object)(1)] 80 (0.09%) > 8 (0.06%)
-        [range-both-expr(2)] 64 (0.07%) > 48 (0.34%)
-       [enum-def-variant(3)] 60 (0.07%) > 72 (0.51%)
-       [simple-expr-stmt(7)] 56 (0.07%) > 84 (0.59%)
-               [enum-def(1)] 52 (0.06%) > 40 (0.28%)
-            [object-expr(1)] 48 (0.06%) > 28 (0.20%)
-             [while-stmt(2)] 40 (0.05%) > 56 (0.39%)
-               [ret-stmt(5)] 40 (0.05%) > 60 (0.42%)
-      [object-expr-field(2)] 40 (0.05%) > 48 (0.34%)
-              [if-clause(4)] 32 (0.04%) > 64 (0.45%)
-             [unary-expr(1)] 25 (0.03%) > 21 (0.15%)
-               [use-stmt(1)] 20 (0.02%) > 24 (0.17%)
-              [loop-stmt(1)] 20 (0.02%) > 24 (0.17%)
-             [break-stmt(1)] 20 (0.02%) > 20 (0.14%)
-               [type-def(1)] 8 (0.01%) > 16 (0.11%)
-            [else-clause(1)] 8 (0.01%) > 12 (0.08%)
+[all(555)] 11628
+[path(139)] 2224 (19.13%)
+[simple-segment(131)] 1572 (13.52%)
+[generic-name(19)] 684 (5.88%)
+[fn-def-parameter(24)] 672 (5.78%)
+[fn-def(11)] 528 (4.54%)
+[binary-expr(14)] 504 (4.33%)
+[lit-expr(15)] 480 (4.13%)
+[array-index-expr(15)] 480 (4.13%)
+[assign-expr-stmt(11)] 396 (3.41%)
+[call-expr(12)] 384 (3.30%)
+[block(20)] 320 (2.75%)
+[generic-segment(12)] 288 (2.48%)
+[field-def(8)] 288 (2.48%)
+[generic-parameter(14)] 280 (2.41%)
+[ref-type(14)] 224 (1.93%)
+[var-decl-stmt(5)] 200 (1.72%)
+[member-expr(5)] 200 (1.72%)
+[type-list(12)] 192 (1.65%)
+[for-stmt(4)] 176 (1.51%)
+[primitive-type(12)] 144 (1.24%)
+[fn-type-parameter(5)] 140 (1.20%)
+[fn-type(4)] 128 (1.10%)
+[where-clause(4)] 112 (0.96%)
+[simple-expr-stmt(7)] 112 (0.96%)
+[if-stmt(4)] 96 (0.83%)
+[enum-def-variant(3)] 84 (0.72%)
+[class-def(3)] 84 (0.72%)
+[struct-def(4)] 80 (0.69%)
+[ret-stmt(5)] 80 (0.69%)
+[if-clause(4)] 80 (0.69%)
+[while-stmt(2)] 64 (0.55%)
+[range-both-expr(2)] 64 (0.55%)
+[object-expr-field(2)] 56 (0.48%)
+[enum-def(1)] 40 (0.34%)
+[object-expr(1)] 32 (0.28%)
+[unary-expr(1)] 28 (0.24%)
+[use-stmt(1)] 24 (0.21%)
+[loop-stmt(1)] 24 (0.21%)
+[type-def(1)] 20 (0.17%)
+[break-stmt(1)] 20 (0.17%)
+[module(1)] 12 (0.10%)
+[else-clause(1)] 12 (0.10%)
 module tests/ast/generic.f3
   class-def <4:1-10:1> {} <4:23-10:1>
     generic-name <4:7-4:21> PartialEqual <4:7-4:18> <> <4:19-4:21>
-      generic-parameter <4:20-4:20> R <4:20-4:20>
+      generic-parameter <4:20-4:20> R
     fn-def <6:5-6:40> () <6:10-6:31>
       generic-name <6:8-6:9> eq <6:8-6:9>
       fn-def-parameter <6:11-6:21> self <6:11-6:14>
@@ -112,7 +82,7 @@ module tests/ast/generic.f3
     enum-def-variant <15:5-15:11> Greater <15:5-15:11>
   class-def <18:1-20:1> {} <18:21-20:1>
     generic-name <18:7-18:19> Comparable <18:7-18:16> <> <18:17-18:19>
-      generic-parameter <18:18-18:18> R <18:18-18:18>
+      generic-parameter <18:18-18:18> R
     fn-def <19:5-19:45> () <19:11-19:32>
       generic-name <19:8-19:10> cmp <19:8-19:10>
       fn-def-parameter <19:12-19:22> self <19:12-19:15>
@@ -127,7 +97,7 @@ module tests/ast/generic.f3
         segment <19:37-19:44> Ordering
   struct-def <22:1-26:1>
     generic-name <22:8-22:14> list <22:8-22:11> <> <22:12-22:14>
-      generic-parameter <22:13-22:13> T <22:13-22:13>
+      generic-parameter <22:13-22:13> T
     field-def <23:5-23:11> ptr <23:5-23:7> : <23:8-23:8>
       ref-type <23:10-23:11>
         path <23:11-23:11>
@@ -138,7 +108,7 @@ module tests/ast/generic.f3
       primitive-type u64 <25:10-25:12>
   struct-def <28:1-31:1>
     generic-name <28:8-28:15> slice <28:8-28:12> <> <28:13-28:15>
-      generic-parameter <28:14-28:14> T <28:14-28:14>
+      generic-parameter <28:14-28:14> T
     field-def <29:5-29:11> ptr <29:5-29:7> : <29:8-29:8>
       ref-type <29:10-29:11>
         path <29:11-29:11>
@@ -153,7 +123,7 @@ module tests/ast/generic.f3
           primitive-type u8 <34:16-34:17>
   fn-def <37:1-94:1> () <37:11-37:25>
     generic-name <37:4-37:10> sort <37:4-37:7> <> <37:8-37:10>
-      generic-parameter <37:9-37:9> T <37:9-37:9>
+      generic-parameter <37:9-37:9> T
     fn-def-parameter <37:12-37:24> list <37:12-37:15>
       path <37:18-37:24>
         generic-segment <37:18-37:24> list <37:18-37:21>
@@ -177,15 +147,15 @@ module tests/ast/generic.f3
           member-expr <40:15-40:22> . <40:19-40:19> ptr <40:20-40:22>
             path <40:15-40:18>
               segment <40:15-40:18> list
-          literal i32 0 <40:25-40:25>
+          lit-expr i32 0 <40:25-40:25>
           binary-expr <40:28-40:39> - <40:37-40:37>
             member-expr <40:28-40:35> . <40:32-40:32> len <40:33-40:35>
               path <40:28-40:31>
                 segment <40:28-40:31> list
-            literal i32 1 <40:39-40:39>
+            lit-expr i32 1 <40:39-40:39>
       fn-def <42:5-50:5> () <42:20-42:52>
         generic-name <42:8-42:19> quicksort <42:8-42:16> <> <42:17-42:19>
-          generic-parameter <42:18-42:18> T <42:18-42:18>
+          generic-parameter <42:18-42:18> T
         fn-def-parameter <42:21-42:29> slice <42:21-42:25>
           ref-type <42:28-42:29>
             path <42:29-42:29>
@@ -208,7 +178,7 @@ module tests/ast/generic.f3
                     segment <43:12-43:14> end
                   path <43:18-43:22>
                     segment <43:18-43:22> start
-                literal i32 6 <43:26-43:26>
+                lit-expr i32 6 <43:26-43:26>
               block <43:28-45:9>
                 simple-expr-stmt <44:13-44:46>
                   call-expr <44:13-44:45> () <44:27-44:45>
@@ -222,7 +192,7 @@ module tests/ast/generic.f3
                       segment <44:42-44:44> end
             else-clause <45:11-49:9>
               block <45:16-49:9>
-                var-def <46:13-46:53> mutable pivot <46:17-46:21>
+                var-decl-stmt <46:13-46:53> mutable pivot <46:17-46:21>
                   call-expr <46:25-46:52> () <46:34-46:52>
                     path <46:25-46:33>
                       segment <46:25-46:33> partition
@@ -251,12 +221,12 @@ module tests/ast/generic.f3
                     binary-expr <48:30-48:38> + <48:36-48:36>
                       path <48:30-48:34>
                         segment <48:30-48:34> pivot
-                      literal i32 1 <48:38-48:38>
+                      lit-expr i32 1 <48:38-48:38>
                     path <48:41-48:43>
                       segment <48:41-48:43> end
       fn-def <53:5-77:5> () <53:20-53:52>
         generic-name <53:8-53:19> partition <53:8-53:16> <> <53:17-53:19>
-          generic-parameter <53:18-53:18> T <53:18-53:18>
+          generic-parameter <53:18-53:18> T
         fn-def-parameter <53:21-53:29> slice <53:21-53:25>
           ref-type <53:28-53:29>
             path <53:29-53:29>
@@ -271,7 +241,7 @@ module tests/ast/generic.f3
               path <53:74-53:74>
                 segment <53:74-53:74> T
         block <53:77-77:5>
-          var-def <54:9-54:39> mutable pivot <54:13-54:17>
+          var-decl-stmt <54:9-54:39> mutable pivot <54:13-54:17>
             array-index-expr <54:21-54:38> [] <54:26-54:38>
               path <54:21-54:25>
                 segment <54:21-54:25> slice
@@ -282,7 +252,7 @@ module tests/ast/generic.f3
               assign-expr-stmt <56:13-56:23> += <56:19-56:20>
                 path <56:13-56:17>
                   segment <56:13-56:17> start
-                literal i32 1 <56:22-56:22>
+                lit-expr i32 1 <56:22-56:22>
               while-stmt <57:13-59:13>
                 binary-expr <57:19-57:38> < <57:32-57:32>
                   array-index-expr <57:19-57:30> [] <57:24-57:30>
@@ -296,15 +266,15 @@ module tests/ast/generic.f3
                   assign-expr-stmt <58:17-58:27> += <58:23-58:24>
                     path <58:17-58:21>
                       segment <58:17-58:21> start
-                    literal i32 1 <58:26-58:26>
+                    lit-expr i32 1 <58:26-58:26>
               assign-expr-stmt <60:13-60:23> -= <60:19-60:20>
                 path <60:13-60:17>
                   segment <60:13-60:17> start
-                literal i32 1 <60:22-60:22>
+                lit-expr i32 1 <60:22-60:22>
               assign-expr-stmt <62:13-62:21> -= <62:17-62:18>
                 path <62:13-62:15>
                   segment <62:13-62:15> end
-                literal i32 1 <62:20-62:20>
+                lit-expr i32 1 <62:20-62:20>
               while-stmt <63:13-65:13>
                 binary-expr <63:19-63:36> > <63:30-63:30>
                   array-index-expr <63:19-63:28> [] <63:24-63:28>
@@ -318,11 +288,11 @@ module tests/ast/generic.f3
                   assign-expr-stmt <64:17-64:25> -= <64:21-64:22>
                     path <64:17-64:19>
                       segment <64:17-64:19> end
-                    literal i32 1 <64:24-64:24>
+                    lit-expr i32 1 <64:24-64:24>
               assign-expr-stmt <66:13-66:21> += <66:17-66:18>
                 path <66:13-66:15>
                   segment <66:13-66:15> end
-                literal i32 1 <66:20-66:20>
+                lit-expr i32 1 <66:20-66:20>
               if-stmt <68:13-70:13>
                 if-clause <68:13-70:13>
                   binary-expr <68:16-68:27> >= <68:22-68:23>
@@ -334,7 +304,7 @@ module tests/ast/generic.f3
                     ret-stmt <69:17-69:27>
                       path <69:24-69:26>
                         segment <69:24-69:26> end
-              var-def <72:13-72:33> mutable x <72:17-72:17>
+              var-decl-stmt <72:13-72:33> mutable x <72:17-72:17>
                 array-index-expr <72:21-72:32> [] <72:26-72:32>
                   path <72:21-72:25>
                     segment <72:21-72:25> slice
@@ -367,7 +337,7 @@ module tests/ast/generic.f3
                     segment <75:20-75:20> x
       fn-def <79:5-93:5> () <79:25-79:57>
         generic-name <79:8-79:24> insertion_sort <79:8-79:21> <> <79:22-79:24>
-          generic-parameter <79:23-79:23> T <79:23-79:23>
+          generic-parameter <79:23-79:23> T
         fn-def-parameter <79:26-79:34> slice <79:26-79:30>
           ref-type <79:33-79:34>
             path <79:34-79:34>
@@ -387,11 +357,11 @@ module tests/ast/generic.f3
               binary-expr <80:18-80:26> + <80:24-80:24>
                 path <80:18-80:22>
                   segment <80:18-80:22> start
-                literal i32 1 <80:26-80:26>
+                lit-expr i32 1 <80:26-80:26>
               binary-expr <80:29-80:35> + <80:33-80:33>
                 path <80:29-80:31>
                   segment <80:29-80:31> end
-                literal i32 1 <80:35-80:35>
+                lit-expr i32 1 <80:35-80:35>
             block <80:37-92:9>
               if-stmt <81:13-91:13>
                 if-clause <81:13-91:13>
@@ -407,7 +377,7 @@ module tests/ast/generic.f3
                       binary-expr <81:33-81:37> - <81:35-81:35>
                         path <81:33-81:33>
                           segment <81:33-81:33> i
-                        literal i32 1 <81:37-81:37>
+                        lit-expr i32 1 <81:37-81:37>
                   block <81:40-91:13>
                     for-stmt <82:17-90:17> iter-var j <82:21-82:21>
                       range-both-expr <82:26-82:33> dotdot <82:31-82:32>
@@ -430,14 +400,14 @@ module tests/ast/generic.f3
                                 path <83:41-83:41>
                                   segment <83:41-83:41> i
                             block <83:44-89:21>
-                              var-def <84:25-84:45> mutable x <84:29-84:29>
+                              var-decl-stmt <84:25-84:45> mutable x <84:29-84:29>
                                 array-index-expr <84:33-84:44> [] <84:38-84:44>
                                   path <84:33-84:37>
                                     segment <84:33-84:37> slice
                                   binary-expr <84:39-84:43> - <84:41-84:41>
                                     path <84:39-84:39>
                                       segment <84:39-84:39> j
-                                    literal i32 1 <84:43-84:43>
+                                    lit-expr i32 1 <84:43-84:43>
                               assign-expr-stmt <85:25-85:48> = <85:38-85:38>
                                 array-index-expr <85:25-85:36> [] <85:30-85:36>
                                   path <85:25-85:29>
@@ -445,7 +415,7 @@ module tests/ast/generic.f3
                                   binary-expr <85:31-85:35> - <85:33-85:33>
                                     path <85:31-85:31>
                                       segment <85:31-85:31> j
-                                    literal i32 1 <85:35-85:35>
+                                    lit-expr i32 1 <85:35-85:35>
                                 array-index-expr <85:40-85:47> [] <85:45-85:47>
                                   path <85:40-85:44>
                                     segment <85:40-85:44> slice
@@ -468,8 +438,8 @@ module tests/ast/generic.f3
                               break-stmt <88:25-88:30>
   fn-def <96:1-102:1> () <96:13-96:42>
     generic-name <96:4-96:12> map <96:4-96:6> <> <96:7-96:12>
-      generic-parameter <96:8-96:8> T <96:8-96:8>
-      generic-parameter <96:11-96:11> U <96:11-96:11>
+      generic-parameter <96:8-96:8> T
+      generic-parameter <96:11-96:11> U
     fn-def-parameter <96:14-96:26> list <96:14-96:17>
       path <96:20-96:26>
         generic-segment <96:20-96:26> list <96:20-96:23>
@@ -487,7 +457,7 @@ module tests/ast/generic.f3
         path <96:52-96:52>
           segment <96:52-96:52> U
     block <96:55-102:1>
-      var-def <97:5-97:51> mutable result <97:9-97:14>
+      var-decl-stmt <97:5-97:51> mutable result <97:9-97:14>
         call-expr <97:18-97:50> () <97:41-97:50>
           path <97:18-97:40>
             generic-segment <97:18-97:26> list <97:18-97:21>
@@ -516,8 +486,8 @@ module tests/ast/generic.f3
           segment <101:12-101:17> result
   fn-def <104:1-109:1> () <104:16-104:57>
     generic-name <104:4-104:15> reduce <104:4-104:9> <> <104:10-104:15>
-      generic-parameter <104:11-104:11> T <104:11-104:11>
-      generic-parameter <104:14-104:14> A <104:14-104:14>
+      generic-parameter <104:11-104:11> T
+      generic-parameter <104:14-104:14> A
     fn-def-parameter <104:17-104:29> list <104:17-104:20>
       path <104:23-104:29>
         generic-segment <104:23-104:29> list <104:23-104:26>
@@ -558,7 +528,7 @@ module tests/ast/generic.f3
           segment <108:12-108:15> init
   struct-def <116:1-119:1>
     generic-name <116:8-116:13> Map <116:8-116:10> <> <116:11-116:13>
-      generic-parameter <116:12-116:12> I <116:12-116:12>
+      generic-parameter <116:12-116:12> I
     field-def <117:5-117:12> iter <117:5-117:8> : <117:9-117:9>
       ref-type <117:11-117:12>
         path <117:12-117:12>
@@ -587,7 +557,7 @@ module tests/ast/generic.f3
             segment <124:42-124:45> Item
     fn-def <126:5-128:5> () <126:14-126:41>
       generic-name <126:8-126:13> map <126:8-126:10> <> <126:11-126:13>
-        generic-parameter <126:12-126:12> U <126:12-126:12>
+        generic-parameter <126:12-126:12> U
       fn-def-parameter <126:15-126:25> self <126:15-126:18>
         ref-type <126:21-126:25>
           path <126:22-126:25>
