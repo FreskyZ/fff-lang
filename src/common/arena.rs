@@ -67,12 +67,6 @@ mod tests;
 //    no, fixed size chunk is easy to implement and hard to make mistake, but `rustc_arena`'s
 //    increasing chunk size design seems very great and interesting, so I change, too, with a very long partially auto generated test
 
-// general naming convension
-// T: type parameter for a normal node in tree
-// E: type parameter for an enum in tree
-// 'a: lifetime parameter for the arena
-// 'b: lifetime parameter for the handle
-
 /// A handle to an object in arena
 ///
 /// # No Derive
@@ -87,6 +81,14 @@ pub struct Index<'a, T> {
     p1: PhantomData<&'a Arena>,
     // this is an owned handle of T
     p2: PhantomData<T>,
+}
+
+impl<'a, T> Index<'a, T> {
+
+    // as raw underlying representation, use for tracing related functions
+    pub fn as_raw(&self) -> u32 {
+        self.v.get()
+    }
 }
 
 /// A handle to a fixed length sequence of objects in arena
@@ -349,6 +351,7 @@ impl Arena {
     pub fn build_slice<'a, T: 'a, I: IntoIterator<Item = T>>(&'a self, into_iter: I) -> Slice<'a, T> {
 
         let mut len = 0;
+        let mut previous = align_of::<T>() as u32;
         // maybe invalid but aligned index, similar to ptr::dangling
         // SAFETY: align will not be 0
         let mut head = unsafe { NonZeroU32::new_unchecked(align_of::<T>() as u32) };
@@ -358,7 +361,26 @@ impl Arena {
             if len == 0 {
                 head = index.v;
             }
+
+            // if index jumps, that's switching chunk
+            // write a magic'd jump distance to previous chunk's next pointer
+            if len != 0 && previous + size_of::<T>() as u32 != index.v.get() {
+                let (chunk_index, _) = get_chunk_index_and_offset(previous);
+                let jump_distance = index.v.get() - previous - size_of::<T>() as u32;
+                debug_assert!(jump_distance < 256, "too large jump");
+
+                // SAFETY:
+                // next must still be within chunk size if jumped
+                // and min align is 4 so a u32 must be fit it
+                // 0b10101010_distance_01010101_00000000 should be very strange value that other fields will not use
+                // there should be no object larger than 256 after no enum-in-enum extremly large object after this refactor
+                unsafe {
+                    *self.chunks.borrow()[chunk_index].next.cast::<u32>().as_mut() = 0xAA005500 | (jump_distance << 16);
+                }
+            }
+
             len += 1;
+            previous = index.v.get();
         }
         Slice{ len, data: head, p1: PhantomData, p2: PhantomData }
     }
@@ -388,7 +410,7 @@ impl Arena {
         // 3. chunk.head object does not overflow
         let ptr = unsafe { chunk.head.as_ptr().add(offset) };
 
-        debug_assert!(ptr < chunk.next.as_ptr(), "invalid offset");
+        debug_assert!(ptr < chunk.next.as_ptr(), "invalid offset chunk#{} offset {} status {}", chunk_index, offset, self.status(false));
         // SAFETY: ptr derives from chunk.head so is non null
         unsafe { NonNull::new_unchecked(ptr) }
     }
@@ -444,21 +466,47 @@ struct SliceIter<'a, 'b, T, const C: bool> {
     phantom: PhantomData<&'b T>,
 }
 
+impl<'a, 'b, T, const C: bool> SliceIter<'a, 'b, T, C> {
+
+    // they only differ in the last ptr::as_ref or ptr::as_mut
+    fn next_mut(&mut self) -> Option<&'b mut T> {
+        if self.remaining == 0 {
+            None
+        } else {
+            unsafe {
+                let chunks = self.arena.chunks.borrow();
+                let (chunk_index, offset) = get_chunk_index_and_offset(self.current);
+                let chunk = chunks.get(chunk_index).expect(&format!("invalid chunk index {chunk_index}"));
+        
+                // SAFETY: see map_index
+                let mut ptr = chunk.head.as_ptr().add(offset);
+                // SAFETY: this points to next byte after end of this allocation, and will not be derefed
+                let chunk_end = chunk.head.as_ptr().add(get_chunk_size(chunk_index));
+                if ptr >= chunk.next.as_ptr() && ptr < chunk_end {
+                    // SAFETY: next is within chunk 
+                    let jump_distance = *chunk.next.cast::<u32>().as_ptr();
+                    assert!(jump_distance & 0xFF00FF00 == 0xAA005500, "invalid cross chunk slice {jump_distance}");
+                    self.current += (jump_distance & 0x00FF0000) >> 16;
+                    ptr = chunks.get(chunk_index + 1).expect(&format!("invalid chunk index {}", chunk_index + 1)).head.as_ptr();
+                }
+
+                // SAFETY: should be point to valid value of T, and not null
+                let result = ptr.cast::<T>().as_mut();
+
+                self.remaining -= 1;
+                // now it is ok to simply add sizeof(T)
+                self.current += size_of::<T>() as u32;
+                result
+            }
+        }
+    }
+}
+
 impl<'a, 'b, T> Iterator for SliceIter<'a, 'b, T, true> where 'b: 'a {
     type Item = &'b T;
 
     fn next(&mut self) -> Option<&'b T> {
-        if self.remaining == 0 {
-            None
-        } else {
-            self.remaining -= 1;
-            // SAFETY: I have written really longer safety explanations, according to them this is safe
-            let result = unsafe { self.arena.map_index(self.current).cast::<T>().as_ref() };
-            // + sizeof(T) is enough because sizeof is multiple of alignof 
-            // so align is always correct and no align padding between items
-            self.current += size_of::<T>() as u32;
-            Some(result)
-        }
+        self.next_mut().map(|v| &*v)
     }
 }
 
@@ -466,17 +514,7 @@ impl<'a, 'b, T> Iterator for SliceIter<'a, 'b, T, false> where 'b: 'a {
     type Item = &'b mut T;
 
     fn next(&mut self) -> Option<&'b mut T> {
-        if self.remaining == 0 {
-            None
-        } else {
-            self.remaining -= 1;
-            // SAFETY: I have written really longer safety explanations, according to them this is safe
-            let result = unsafe { self.arena.map_index(self.current).cast::<T>().as_mut() };
-            // + sizeof(T) is enough because sizeof is multiple of alignof 
-            // so align is always correct and no align padding between items
-            self.current += size_of::<T>() as u32;
-            Some(result)
-        }
+        self.next_mut()
     }
 }
 
@@ -501,12 +539,14 @@ impl<'a> fmt::Display for ArenaStatus<'a> {
         // SAFETY: same as before, or is not important for test purpose
         unsafe {
             for (chunk_index, chunk) in self.0.chunks.borrow().iter().enumerate() {
+                let full = get_chunk_size(chunk_index);
                 let used = chunk.next.as_ptr().offset_from(chunk.head.as_ptr()) as usize;
-                writeln!(f, "chunk#{} @ 0x{:X} ({}/4096 bytes)", chunk_index, chunk.head.as_ptr() as usize, used)?;
+                writeln!(f, "chunk#{} @ 0x{:X} ({}/{} bytes)", chunk_index, chunk.head.as_ptr() as usize, used, full)?;
                 if self.1 {
-                    let slice = std::slice::from_raw_parts(chunk.head.as_ptr(), used);
+                    let base = get_chunk_base_index(chunk_index);
+                    let slice = std::slice::from_raw_parts(chunk.head.as_ptr(), full);
                     for (chunk_index, chunk) in slice.chunks(16).enumerate() {
-                        write!(f, "{:08X} |", chunk_index * 0x10)?;
+                        write!(f, "{:08X} |", base + chunk_index * 0x10)?;
                         for byte in chunk {
                             write!(f, " {byte:02X}")?;
                         }

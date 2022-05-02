@@ -31,15 +31,17 @@ impl MemoryProfiler {
 
         let total_count: usize = self.v.iter().map(|e| e.count).sum();
         let total_size: usize = self.v.iter().map(|e| e.size).sum();
-        writeln!(output, "[all({total_count})]        {total_size}").unwrap();
+        writeln!(output, "[all({total_count})] {total_size}").unwrap();
 
         let mut ordered_items = self.v.iter()
             .enumerate().map(|(i, e)| (NAMES[i], e.count, e.size)).collect::<Vec<_>>();
         ordered_items.sort_unstable_by(|a, b| a.2.cmp(&b.2).then_with(|| a.0.cmp(&b.0)).reverse());
         for (key, count, size) in ordered_items {
-            let header = format!("[{key}({count})]");
-            let size_percent = size as f64 * 100f64 / total_size as f64;
-            writeln!(output, "{header:>28} > {size} ({size_percent:.2}%)").unwrap();
+            if count > 0 {
+                let header = format!("[{key}({count})]");
+                let size_percent = size as f64 * 100f64 / total_size as f64;
+                writeln!(output, "{header} {size} ({size_percent:.2}%)").unwrap();
+            }
         }
     }
 }

@@ -360,16 +360,16 @@ def generate_debug(b, nodes):
         b += '\n'
         b += f'    fn {node.visit_name}<\'a, \'b: \'a>(&mut self, node: &\'b {node.parameter_name}, arena: &\'a Arena) -> Self::Result {{\n'
         if node.is_struct:
-            b += '        let this = arena.get(node);\n'
+            b += '        let (node, _guard) = self.enter(node, arena);\n'
             b += f'        self.start_struct("{node.name}")?\n'
             for field in node.fields:
                 if field.type_base == 'LitValue': # LitValue is not Copy
-                    b += f'            .lit_value("{field.name}", &this.{field.name})?\n'
+                    b += f'            .lit_value("{field.name}", &node.{field.name})?\n'
                 elif field.refnode is None:
-                    b += f'            .field("{field.name}", this.{field.name})?\n'
+                    b += f'            .field("{field.name}", node.{field.name})?\n'
                 else:
                     method_base = 'optional' if field.special == 'opt' else 'slice' if field.special == 'vec' else 'forward'
-                    b += f'            .{method_base}("{field.name}", &this.{field.name}, arena)?\n'
+                    b += f'            .{method_base}("{field.name}", &node.{field.name}, arena)?\n'
             b += '            .end_struct()\n'
         else:
             b += '        match node {\n'
@@ -417,11 +417,19 @@ def generate_profile(b, nodes):
     b += '    type Result = EmptyResult;\n'
     b += '    // enum types are all default here because they literal does not use any memory on its own in this arena refactor\n'
     b += '\n'
+    TRACE = False # when stack corrupts, need some tracing method
     for index, node in enumerate(structs):
         b += f'    fn {node.visit_name}<\'a, \'b: \'a>(&mut self, node: &\'b {node.parameter_name}, arena: &\'a Arena) -> Self::Result {{\n'
+        if TRACE:
+            b += f'        println!("visiting {node.name} {{}}", node.as_raw());\n'
         # note: a rare case that use .name not .full_name because it's unnecessary to write lifetime here
         b += f'        self.v[{index}].count(size_of::<{node.name}>());\n'
-        b += '        node.walk(arena, self)\n'
+        if TRACE:
+            b += '        let result = node.walk(arena, self);\n'
+            b += f'        println!("visited {node.name} {{}}", node.as_raw());\n'
+            b += '        result'
+        else:
+            b += '        node.walk(arena, self)\n'
         b += '    }\n'
     b += '}\n'
     return b
