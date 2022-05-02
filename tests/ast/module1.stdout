@@ -1,29 +1,19 @@
-total size 7263 > 1199
-  [path-segment(simple)(11)] 2464 (33.93%) > 88 (7.34%)
-              [item(use)(3)] 912 (12.56%) > 24 (2.00%)
-               [item(fn)(2)] 608 (8.37%) > 16 (1.33%)
-              [expr(lit)(7)] 560 (7.71%) > 56 (4.67%)
-             [expr(path)(4)] 320 (4.41%) > 32 (2.67%)
-      [stmt(simple-expr)(1)] 304 (4.19%) > 8 (0.67%)
-              [stmt(ret)(1)] 304 (4.19%) > 8 (0.67%)
-                   [path(7)] 224 (3.08%) > 112 (9.34%)
-               [lit-expr(7)] 224 (3.08%) > 224 (18.68%)
-    [type-ref(primitive)(2)] 208 (2.86%) > 16 (1.33%)
-             [expr(call)(2)] 160 (2.20%) > 16 (1.33%)
-            [expr(array)(2)] 160 (2.20%) > 16 (1.33%)
-        [simple-segment(11)] 132 (1.82%) > 132 (11.01%)
-                 [fn-def(2)] 128 (1.76%) > 88 (7.34%)
-           [generic-name(2)] 104 (1.43%) > 72 (6.01%)
-              [call-expr(2)] 96 (1.32%) > 56 (4.67%)
-           [expr(binary)(1)] 80 (1.10%) > 8 (0.67%)
-                  [block(2)] 64 (0.88%) > 32 (2.67%)
-             [array-expr(2)] 64 (0.88%) > 32 (2.67%)
-               [use-stmt(3)] 60 (0.83%) > 72 (6.01%)
-            [binary-expr(1)] 33 (0.45%) > 25 (2.09%)
-       [fn-def-parameter(1)] 20 (0.28%) > 24 (2.00%)
-         [primitive-type(2)] 18 (0.25%) > 18 (1.50%)
-       [simple-expr-stmt(1)] 8 (0.11%) > 12 (1.00%)
-               [ret-stmt(1)] 8 (0.11%) > 12 (1.00%)
+[all(45)] 968
+[lit-expr(7)] 224 (23.14%)
+[simple-segment(11)] 132 (13.64%)
+[path(7)] 112 (11.57%)
+[fn-def(2)] 96 (9.92%)
+[use-stmt(3)] 72 (7.44%)
+[generic-name(2)] 72 (7.44%)
+[call-expr(2)] 64 (6.61%)
+[binary-expr(1)] 36 (3.72%)
+[block(2)] 32 (3.31%)
+[array-expr(2)] 32 (3.31%)
+[fn-def-parameter(1)] 28 (2.89%)
+[primitive-type(2)] 24 (2.48%)
+[simple-expr-stmt(1)] 16 (1.65%)
+[ret-stmt(1)] 16 (1.65%)
+[module(1)] 12 (1.24%)
 module tests/ast/module1.f3
   use-stmt <2:1-2:20>
     path <2:5-2:19>
@@ -47,7 +37,7 @@ module tests/ast/module1.f3
         binary-expr <8:12-8:16> * <8:14-8:14>
           path <8:12-8:12>
             segment <8:12-8:12> a
-          literal i32 2 <8:16-8:16>
+          lit-expr i32 2 <8:16-8:16>
   fn-def <11:1-13:1> () <11:8-11:9>
     generic-name <11:4-11:7> main <11:4-11:7>
     block <11:11-13:1>
@@ -60,12 +50,12 @@ module tests/ast/module1.f3
               segment <12:15-12:23> itertools
               segment <12:26-12:28> map
             array-expr <12:30-12:38>
-              literal i32 2 <12:31-12:31>
-              literal i32 3 <12:34-12:34>
-              literal i32 4 <12:37-12:37>
+              lit-expr i32 2 <12:31-12:31>
+              lit-expr i32 3 <12:34-12:34>
+              lit-expr i32 4 <12:37-12:37>
             path <12:41-12:42>
               segment <12:41-12:42> m2
           array-expr <12:46-12:54>
-            literal i32 4 <12:47-12:47>
-            literal i32 6 <12:50-12:50>
-            literal i32 8 <12:53-12:53>
+            lit-expr i32 4 <12:47-12:47>
+            lit-expr i32 6 <12:50-12:50>
+            lit-expr i32 8 <12:53-12:53>

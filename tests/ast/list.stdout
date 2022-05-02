@@ -1,42 +1,30 @@
-total size 13527 > 2287
-  [path-segment(simple)(16)] 3584 (26.50%) > 128 (5.60%)
-      [stmt(simple-expr)(8)] 2432 (17.98%) > 64 (2.80%)
-            [expr(path)(16)] 1280 (9.46%) > 128 (5.60%)
-             [expr(lit)(10)] 800 (5.91%) > 80 (3.50%)
-             [expr(call)(8)] 640 (4.73%) > 64 (2.80%)
-              [stmt(for)(2)] 608 (4.49%) > 16 (0.70%)
-      [stmt(assign-expr)(2)] 608 (4.49%) > 16 (0.70%)
-           [expr(member)(7)] 560 (4.14%) > 56 (2.45%)
-                  [path(16)] 512 (3.79%) > 256 (11.19%)
-              [call-expr(8)] 384 (2.84%) > 224 (9.79%)
-              [lit-expr(10)] 320 (2.37%) > 320 (13.99%)
-         [stmt(var-decl)(1)] 304 (2.25%) > 8 (0.35%)
-               [item(fn)(1)] 304 (2.25%) > 8 (0.35%)
-            [member-expr(7)] 252 (1.86%) > 252 (11.02%)
-        [simple-segment(16)] 192 (1.42%) > 192 (8.40%)
-                  [block(3)] 96 (0.71%) > 48 (2.10%)
-       [expr(range-both)(1)] 80 (0.59%) > 8 (0.35%)
-      [expr(array-index)(1)] 80 (0.59%) > 8 (0.35%)
-            [expr(array)(1)] 80 (0.59%) > 8 (0.35%)
-       [simple-expr-stmt(8)] 64 (0.47%) > 96 (4.20%)
-               [for-stmt(2)] 64 (0.47%) > 80 (3.50%)
-                 [fn-def(1)] 64 (0.47%) > 44 (1.92%)
-           [generic-name(1)] 52 (0.38%) > 36 (1.57%)
-       [array-index-expr(1)] 48 (0.35%) > 28 (1.22%)
-       [assign-expr-stmt(2)] 34 (0.25%) > 50 (2.19%)
-        [range-both-expr(1)] 32 (0.24%) > 24 (1.05%)
-             [array-expr(1)] 32 (0.24%) > 16 (0.70%)
-               [var-decl(1)] 21 (0.16%) > 29 (1.27%)
+[all(79)] 1856
+[lit-expr(10)] 320 (17.24%)
+[member-expr(7)] 280 (15.09%)
+[path(16)] 256 (13.79%)
+[call-expr(8)] 256 (13.79%)
+[simple-segment(16)] 192 (10.34%)
+[simple-expr-stmt(8)] 128 (6.90%)
+[for-stmt(2)] 88 (4.74%)
+[assign-expr-stmt(2)] 72 (3.88%)
+[fn-def(1)] 48 (2.59%)
+[block(3)] 48 (2.59%)
+[var-decl-stmt(1)] 40 (2.16%)
+[generic-name(1)] 36 (1.94%)
+[range-both-expr(1)] 32 (1.72%)
+[array-index-expr(1)] 32 (1.72%)
+[array-expr(1)] 16 (0.86%)
+[module(1)] 12 (0.65%)
 module tests/ast/list.f3
   fn-def <4:1-39:1> () <4:8-4:9>
     generic-name <4:4-4:7> main <4:4-4:7>
     block <4:11-39:1>
-      var-def <7:5-7:32> mutable list <7:9-7:12>
+      var-decl-stmt <7:5-7:32> mutable list <7:9-7:12>
         array-expr <7:16-7:31>
-          literal i32 1 <7:17-7:17>
-          literal i32 5 <7:20-7:20>
-          literal i32 3 <7:23-7:23>
-          literal i32 2 <7:26-7:26>
+          lit-expr i32 1 <7:17-7:17>
+          lit-expr i32 5 <7:20-7:20>
+          lit-expr i32 3 <7:23-7:23>
+          lit-expr i32 2 <7:26-7:26>
           path <7:29-7:30>
             segment <7:29-7:30> x4
       simple-expr-stmt <16:5-16:16>
@@ -55,22 +43,22 @@ module tests/ast/list.f3
           member-expr <24:5-24:18> . <24:9-24:9> push_back <24:10-24:18>
             path <24:5-24:8>
               segment <24:5-24:8> list
-          literal i32 8 <24:20-24:20>
+          lit-expr i32 8 <24:20-24:20>
       simple-expr-stmt <28:5-28:22>
         call-expr <28:5-28:21> () <28:19-28:21>
           member-expr <28:5-28:18> . <28:9-28:9> push_back <28:10-28:18>
             path <28:5-28:8>
               segment <28:5-28:8> list
-          literal i32 6 <28:20-28:20>
+          lit-expr i32 6 <28:20-28:20>
       simple-expr-stmt <29:5-29:22>
         call-expr <29:5-29:21> () <29:19-29:21>
           member-expr <29:5-29:18> . <29:9-29:9> remove_at <29:10-29:18>
             path <29:5-29:8>
               segment <29:5-29:8> list
-          literal i32 3 <29:20-29:20>
+          lit-expr i32 3 <29:20-29:20>
       for-stmt <30:5-32:5> iter-var i <30:9-30:9>
         range-both-expr <30:14-30:27> dotdot <30:15-30:16>
-          literal i32 0 <30:14-30:14>
+          lit-expr i32 0 <30:14-30:14>
           member-expr <30:17-30:27> . <30:21-30:21> length <30:22-30:27>
             path <30:17-30:20>
               segment <30:17-30:20> list
@@ -81,7 +69,7 @@ module tests/ast/list.f3
                 segment <31:9-31:12> list
               path <31:14-31:14>
                 segment <31:14-31:14> i
-            literal i32 2 <31:20-31:20>
+            lit-expr i32 2 <31:20-31:20>
       for-stmt <33:5-33:28> iter-var i <33:9-33:9>
         path <33:14-33:17>
           segment <33:14-33:17> list
@@ -89,7 +77,7 @@ module tests/ast/list.f3
           assign-expr-stmt <33:20-33:26> *= <33:22-33:23>
             path <33:20-33:20>
               segment <33:20-33:20> i
-            literal i32 3 <33:25-33:25>
+            lit-expr i32 3 <33:25-33:25>
       simple-expr-stmt <36:5-36:16>
         call-expr <36:5-36:15> () <36:14-36:15>
           member-expr <36:5-36:13> . <36:9-36:9> sort <36:10-36:13>

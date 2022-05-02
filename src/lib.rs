@@ -9,5 +9,4 @@ mod source;
 mod diagnostics;
 mod lexical;
 pub mod syntax;
-pub mod syntaxw;
 pub mod interface;

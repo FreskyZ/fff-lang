@@ -1,45 +1,28 @@
-total size 35952 > 6380
-  [path-segment(simple)(43)] 9632 (26.79%) > 344 (5.39%)
-     [stmt(simple-expr)(12)] 3648 (10.15%) > 96 (1.50%)
-            [expr(path)(43)] 3440 (9.57%) > 344 (5.39%)
-             [expr(lit)(24)] 1920 (5.34%) > 192 (3.01%)
-            [expr(call)(23)] 1840 (5.12%) > 184 (2.88%)
-              [stmt(for)(5)] 1520 (4.23%) > 40 (0.63%)
-                  [path(43)] 1376 (3.83%) > 688 (10.78%)
-      [stmt(assign-expr)(4)] 1216 (3.38%) > 32 (0.50%)
-             [call-expr(23)] 1104 (3.07%) > 644 (10.09%)
-               [stmt(if)(3)] 912 (2.54%) > 24 (0.38%)
-               [item(fn)(3)] 912 (2.54%) > 24 (0.38%)
-              [lit-expr(24)] 768 (2.14%) > 768 (12.04%)
-           [expr(member)(9)] 720 (2.00%) > 72 (1.13%)
-           [expr(binary)(9)] 720 (2.00%) > 72 (1.13%)
-      [expr(array-index)(8)] 640 (1.78%) > 64 (1.00%)
-         [stmt(var-decl)(2)] 608 (1.69%) > 16 (0.25%)
-    [type-ref(primitive)(5)] 520 (1.45%) > 40 (0.63%)
-        [simple-segment(43)] 516 (1.44%) > 516 (8.09%)
-  [path-segment(generic)(2)] 448 (1.25%) > 16 (0.25%)
-       [expr(range-both)(5)] 400 (1.11%) > 40 (0.63%)
-       [array-index-expr(8)] 384 (1.07%) > 224 (3.51%)
-                 [block(11)] 352 (0.98%) > 176 (2.76%)
-            [member-expr(9)] 324 (0.90%) > 324 (5.08%)
-              [stmt(ret)(1)] 304 (0.85%) > 8 (0.13%)
-            [binary-expr(9)] 297 (0.83%) > 225 (3.53%)
-          [type-ref(ref)(2)] 208 (0.58%) > 16 (0.25%)
-                 [fn-def(3)] 192 (0.53%) > 132 (2.07%)
-        [range-both-expr(5)] 160 (0.45%) > 120 (1.88%)
-               [for-stmt(5)] 160 (0.45%) > 200 (3.13%)
-           [generic-name(3)] 156 (0.43%) > 108 (1.69%)
-      [simple-expr-stmt(12)] 96 (0.27%) > 144 (2.26%)
-                [if-stmt(3)] 96 (0.27%) > 72 (1.13%)
-       [assign-expr-stmt(4)] 68 (0.19%) > 100 (1.57%)
-              [type-list(2)] 64 (0.18%) > 32 (0.50%)
-         [primitive-type(5)] 45 (0.13%) > 45 (0.71%)
-               [var-decl(2)] 42 (0.12%) > 58 (0.91%)
-        [generic-segment(2)] 40 (0.11%) > 48 (0.75%)
-       [fn-def-parameter(2)] 40 (0.11%) > 48 (0.75%)
-               [ref-type(2)] 32 (0.09%) > 24 (0.38%)
-              [if-clause(3)] 24 (0.07%) > 48 (0.75%)
-               [ret-stmt(1)] 8 (0.02%) > 12 (0.19%)
+[all(225)] 5260
+[lit-expr(24)] 768 (14.60%)
+[call-expr(23)] 736 (13.99%)
+[path(43)] 688 (13.08%)
+[simple-segment(43)] 516 (9.81%)
+[member-expr(9)] 360 (6.84%)
+[binary-expr(9)] 324 (6.16%)
+[array-index-expr(8)] 256 (4.87%)
+[for-stmt(5)] 220 (4.18%)
+[simple-expr-stmt(12)] 192 (3.65%)
+[block(11)] 176 (3.35%)
+[range-both-expr(5)] 160 (3.04%)
+[fn-def(3)] 144 (2.74%)
+[assign-expr-stmt(4)] 144 (2.74%)
+[generic-name(3)] 108 (2.05%)
+[var-decl-stmt(2)] 80 (1.52%)
+[if-stmt(3)] 72 (1.37%)
+[primitive-type(5)] 60 (1.14%)
+[if-clause(3)] 60 (1.14%)
+[fn-def-parameter(2)] 56 (1.06%)
+[generic-segment(2)] 48 (0.91%)
+[type-list(2)] 32 (0.61%)
+[ref-type(2)] 32 (0.61%)
+[ret-stmt(1)] 16 (0.30%)
+[module(1)] 12 (0.23%)
 module tests/ast/prime.f3
   fn-def <4:1-6:1> () <4:8-4:9>
     generic-name <4:4-4:7> main <4:4-4:7>
@@ -51,7 +34,7 @@ module tests/ast/prime.f3
           call-expr <5:19-5:36> () <5:29-5:36>
             path <5:19-5:28>
               segment <5:19-5:28> get_primes
-            literal u64 100 <5:30-5:35>
+            lit-expr u64 100 <5:30-5:35>
   fn-def <8:1-36:1> () <8:14-8:30>
     generic-name <8:4-8:13> get_primes <8:4-8:13>
     fn-def-parameter <8:15-8:29> high_bound <8:15-8:24>
@@ -64,12 +47,12 @@ module tests/ast/prime.f3
           path <10:5-10:11>
             segment <10:5-10:11> writeln
           binary-expr <10:13-10:79> + <10:56-10:56>
-            literal str "[DEBUG] get primes calle" <10:13-10:54>
+            lit-expr str "[DEBUG] get primes calle..." <10:13-10:54>
             call-expr <10:58-10:79> () <10:78-10:79>
               member-expr <10:58-10:77> . <10:68-10:68> to_string <10:69-10:77>
                 path <10:58-10:67>
                   segment <10:58-10:67> high_bound
-      var-def <11:5-11:58> mutable is_prime <11:9-11:16>
+      var-decl-stmt <11:5-11:58> mutable is_prime <11:9-11:16>
         call-expr <11:20-11:57> () <11:46-11:57>
           path <11:20-11:45>
             generic-segment <11:20-11:31> list <11:20-11:23>
@@ -79,7 +62,7 @@ module tests/ast/prime.f3
             segment <11:47-11:56> high_bound
       for-stmt <12:5-14:5> iter-var i <12:9-12:9>
         range-both-expr <12:14-12:26> dotdot <12:15-12:16>
-          literal i32 0 <12:14-12:14>
+          lit-expr i32 0 <12:14-12:14>
           path <12:17-12:26>
             segment <12:17-12:26> high_bound
         block <12:28-14:5>
@@ -89,22 +72,22 @@ module tests/ast/prime.f3
                 segment <13:9-13:16> is_prime
               path <13:18-13:18>
                 segment <13:18-13:18> i
-            literal bool true <13:23-13:26>
+            lit-expr bool true <13:23-13:26>
       assign-expr-stmt <15:5-15:24> = <15:17-15:17>
         array-index-expr <15:5-15:15> [] <15:13-15:15>
           path <15:5-15:12>
             segment <15:5-15:12> is_prime
-          literal i32 0 <15:14-15:14>
-        literal bool false <15:19-15:23>
+          lit-expr i32 0 <15:14-15:14>
+        lit-expr bool false <15:19-15:23>
       assign-expr-stmt <16:5-16:24> = <16:17-16:17>
         array-index-expr <16:5-16:15> [] <16:13-16:15>
           path <16:5-16:12>
             segment <16:5-16:12> is_prime
-          literal i32 1 <16:14-16:14>
-        literal bool false <16:19-16:23>
+          lit-expr i32 1 <16:14-16:14>
+        lit-expr bool false <16:19-16:23>
       for-stmt <17:5-26:5> iter-var i <17:9-17:9>
         range-both-expr <17:14-17:29> dotdot <17:18-17:19>
-          literal u64 2 <17:14-17:17>
+          lit-expr u64 2 <17:14-17:17>
           path <17:20-17:29>
             segment <17:20-17:29> high_bound
         block <17:31-26:5>
@@ -113,7 +96,7 @@ module tests/ast/prime.f3
               path <18:9-18:15>
                 segment <18:9-18:15> writeln
               binary-expr <18:17-18:64> + <18:50-18:50>
-                literal str "[DEBUG] Outter iteration" <18:17-18:48>
+                lit-expr str "[DEBUG] Outter iteration..." <18:17-18:48>
                 call-expr <18:52-18:64> () <18:63-18:64>
                   member-expr <18:52-18:62> . <18:53-18:53> to_string <18:54-18:62>
                     path <18:52-18:52>
@@ -130,10 +113,10 @@ module tests/ast/prime.f3
                   call-expr <20:13-20:46> () <20:20-20:46>
                     path <20:13-20:19>
                       segment <20:13-20:19> writeln
-                    literal str "[DEBUG] this i is prime" <20:21-20:45>
+                    lit-expr str "[DEBUG] this i is prime" <20:21-20:45>
                 for-stmt <21:13-24:13> iter-var j <21:17-21:17>
                   range-both-expr <21:22-21:41> dotdot <21:26-21:27>
-                    literal u64 2 <21:22-21:25>
+                    lit-expr u64 2 <21:22-21:25>
                     binary-expr <21:28-21:41> / <21:39-21:39>
                       path <21:28-21:37>
                         segment <21:28-21:37> high_bound
@@ -146,12 +129,12 @@ module tests/ast/prime.f3
                           segment <22:17-22:23> writeln
                         binary-expr <22:25-22:86> + <22:73-22:73>
                           binary-expr <22:25-22:71> + <22:57-22:57>
-                            literal str "[DEBUG] inner iteration," <22:25-22:55>
+                            lit-expr str "[DEBUG] inner iteration,..." <22:25-22:55>
                             call-expr <22:59-22:71> () <22:70-22:71>
                               member-expr <22:59-22:69> . <22:60-22:60> to_string <22:61-22:69>
                                 path <22:59-22:59>
                                   segment <22:59-22:59> j
-                          literal str ", unset it" <22:75-22:86>
+                          lit-expr str ", unset it" <22:75-22:86>
                     assign-expr-stmt <23:17-23:40> = <23:33-23:33>
                       array-index-expr <23:17-23:31> [] <23:25-23:31>
                         path <23:17-23:24>
@@ -161,13 +144,13 @@ module tests/ast/prime.f3
                             segment <23:26-23:26> j
                           path <23:30-23:30>
                             segment <23:30-23:30> i
-                      literal bool false <23:35-23:39>
+                      lit-expr bool false <23:35-23:39>
       simple-expr-stmt <28:5-28:42>
         call-expr <28:5-28:41> () <28:12-28:41>
           path <28:5-28:11>
             segment <28:5-28:11> writeln
-          literal str "[DEBUG] main process end" <28:13-28:40>
-      var-def <29:5-29:37> mutable ret_val <29:9-29:15>
+          lit-expr str "[DEBUG] main process end..." <28:13-28:40>
+      var-decl-stmt <29:5-29:37> mutable ret_val <29:9-29:15>
         call-expr <29:19-29:36> () <29:35-29:36>
           path <29:19-29:34>
             generic-segment <29:19-29:29> list <29:19-29:22>
@@ -175,7 +158,7 @@ module tests/ast/prime.f3
             segment <29:32-29:34> new
       for-stmt <30:5-34:5> iter-var i <30:9-30:9>
         range-both-expr <30:14-30:29> dotdot <30:18-30:19>
-          literal u64 1 <30:14-30:17>
+          lit-expr u64 1 <30:14-30:17>
           path <30:20-30:29>
             segment <30:20-30:29> high_bound
         block <30:31-34:5>
@@ -207,16 +190,16 @@ module tests/ast/prime.f3
         call-expr <39:5-39:14> () <39:10-39:14>
           path <39:5-39:9>
             segment <39:5-39:9> write
-          literal str "[" <39:11-39:13>
+          lit-expr str "[" <39:11-39:13>
       for-stmt <40:5-43:5> iter-var i <40:9-40:9>
         range-both-expr <40:14-40:43> dotdot <40:18-40:19>
-          literal u64 0 <40:14-40:17>
+          lit-expr u64 0 <40:14-40:17>
           binary-expr <40:20-40:43> - <40:38-40:38>
             call-expr <40:20-40:36> () <40:35-40:36>
               member-expr <40:20-40:34> . <40:28-40:28> length <40:29-40:34>
                 path <40:20-40:27>
                   segment <40:20-40:27> thearray
-            literal u64 1 <40:40-40:43>
+            lit-expr u64 1 <40:40-40:43>
         block <40:45-43:5>
           simple-expr-stmt <41:9-41:39>
             call-expr <41:9-41:38> () <41:14-41:38>
@@ -233,7 +216,7 @@ module tests/ast/prime.f3
             call-expr <42:9-42:19> () <42:14-42:19>
               path <42:9-42:13>
                 segment <42:9-42:13> write
-              literal str ", " <42:15-42:18>
+              lit-expr str ", " <42:15-42:18>
       if-stmt <44:5-46:5>
         if-clause <44:5-46:5>
           binary-expr <44:8-44:31> > <44:26-44:26>
@@ -241,7 +224,7 @@ module tests/ast/prime.f3
               member-expr <44:8-44:22> . <44:16-44:16> length <44:17-44:22>
                 path <44:8-44:15>
                   segment <44:8-44:15> thearray
-            literal u64 1 <44:28-44:31>
+            lit-expr u64 1 <44:28-44:31>
           block <44:33-46:5>
             simple-expr-stmt <45:9-45:62>
               call-expr <45:9-45:61> () <45:14-45:61>
@@ -257,9 +240,9 @@ module tests/ast/prime.f3
                           member-expr <45:24-45:38> . <45:32-45:32> length <45:33-45:38>
                             path <45:24-45:31>
                               segment <45:24-45:31> thearray
-                        literal u64 1 <45:44-45:47>
+                        lit-expr u64 1 <45:44-45:47>
       simple-expr-stmt <47:5-47:15>
         call-expr <47:5-47:14> () <47:10-47:14>
           path <47:5-47:9>
             segment <47:5-47:9> write
-          literal str "]" <47:11-47:13>
+          lit-expr str "]" <47:11-47:13>

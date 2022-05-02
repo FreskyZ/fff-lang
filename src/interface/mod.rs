@@ -4,9 +4,9 @@ use std::io;
 use crate::common::arena::Arena;
 use crate::source::SourceContext;
 use crate::diagnostics::Diagnostics;
-use crate::syntaxw::{Visit, parse, ast::asti};
+use crate::syntax::{Visit, parse, ast::asti};
 // use crate::mast::Tree;
-// use crate::ir::Graph;
+// use crate::fur::Graph;
 // use crate::vm::{VirtualMachine, CodeGenerator};
 
 mod argument;

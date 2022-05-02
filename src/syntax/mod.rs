@@ -1,40 +1,34 @@
-///! syntax: syntax parse
 
 pub mod ast;
+
 mod visit;
-mod visitee;
-mod pretty;
+pub use visit::{Visit, Visitor};
+
 mod parser;
-#[cfg(test)]
-mod tests;
-pub use visit::{Node, Visitor};
 use parser::Unexpected;
-#[cfg(test)]
-pub use parser::Parser;
 #[cfg(not(test))]
 use parser::Parser;
-
-// `'impl' name` not `'impl' name_segment` ??
-impl ast::Module {
-
-    pub fn imports(&self) -> Vec<ast::ModuleStatement> {
-        self.items.iter().filter_map(|item| match item {
-            ast::Item::Import(module_stmt) => Some(module_stmt.clone()),
-            _ => None,
-        }).collect()
-    }
-}
+#[cfg(test)]
+pub use parser::Parser;
 
 // parse any types of node for test
-pub fn parse_any<T>(source: crate::source::SourceChars, diagnostics: &mut crate::diagnostics::Diagnostics, f: impl FnOnce(&mut Parser) -> Result<T, Unexpected>) -> Option<T> {
+pub fn parse_any<'a, T>(
+    source: crate::source::SourceChars, 
+    diagnostics: &mut crate::diagnostics::Diagnostics, 
+    f: impl FnOnce(&mut Parser) -> Result<crate::common::arena::Index<'a, T>, Unexpected>,
+) -> Option<crate::common::arena::Index<'a, T>> {
     let mut parser = Parser::new(crate::lexical::Parser::new(source, diagnostics));
     let result = f(&mut parser).ok();
     parser.finish();
     result
 }
 // formal public api only parses module
-pub fn parse(source: crate::source::SourceChars, diagnostics: &mut crate::diagnostics::Diagnostics) -> Option<ast::Module> {
-    parse_any(source, diagnostics, |cx| cx.parse_module())
+pub fn parse<'a>(
+    source: crate::source::SourceChars,
+    diagnostics: &mut crate::diagnostics::Diagnostics,
+    arena: &'a crate::common::arena::Arena,
+) -> Option<crate::common::arena::Index<'a, ast::Module<'a>>> {
+    parse_any(source, diagnostics, |cx| cx.parse_module(arena))
 }
 
 #[cfg(test)]
