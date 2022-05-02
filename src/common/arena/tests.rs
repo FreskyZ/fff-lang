@@ -6,7 +6,7 @@ fn basic() {
     struct Node1 { span: u32, isid: u32 }
     struct Node2 { span: u32, isid: u32, span2: u128, keyword: u8, separator: u8 }
     struct Node3<'a> { span: u32, node1: Index<'a, Node1>, node4: Option<Index<'a, Node4<'a>>> }
-    struct Node4<'a> { span: u32, node3s: Slice<'a, Node3<'a>> }
+    struct Node4<'a> { span: u32, node3s: Slice<'a, Index<'a, Node3<'a>>> }
 
     let arena = Arena::new();
     let index1 = arena.emplace(|n: &mut Node1| { n.span = 1; n.isid = 2; });
@@ -28,7 +28,7 @@ fn basic() {
     let node7 = arena.get(&index7);
     assert_eq!(node7.span, 13);
     assert_eq!(node7.node3s.len(), 3);
-    let node7_node3s = arena.get_iter(&node7.node3s).collect::<Vec<_>>();
+    let node7_node3s = arena.get_iter(&node7.node3s).map(|i| arena.get(i)).collect::<Vec<_>>();
     assert_eq!(node7_node3s.len(), 3);
     assert_eq!(node7_node3s[0].span, 10);
     assert!(node7_node3s[0].node4.is_none());
@@ -42,39 +42,6 @@ fn basic() {
     assert!(node7_node3s[2].node4.is_none());
     let node8 = arena.get(&node7_node3s[2].node1);
     assert_eq!((node8.span, node8.isid), (14, 15));
-}
-
-#[test]
-#[cfg(not(miri))] // see following comment on index1.as_repr().as_ref()
-fn tagged() {
-    
-    struct A(u8);
-    struct B(u128);
-    #[repr(C)] enum C<'a> { A(Index<'a, A>), B(Index<'a, B>) }
-    let arena = Arena::new();
-
-    let index1 = arena.emplace_tagged(C::A, |n: &mut A| { n.0 = 42; });
-    let index2 = arena.emplace_tagged(C::B, |n: &mut B| { n.0 = 43; });
-
-    // miri thinks the as_ref is using uninitialized memory
-    // it's ok because miri and strict provenance spend many more time to support tagged pointer
-    // but this tagged index is really even more rare case and not supported
-    match index1.as_repr().as_ref() {
-        C::A(index) => assert_eq!(arena.get(index).0, 42),
-        C::B(_) => unreachable!(),
-    }
-    match index2.as_repr().as_ref() {
-        C::A(_) => unreachable!(),
-        C::B(index) => assert_eq!(arena.get(index).0, 43),
-    }
-
-    let slice = arena.build_tagged_slice(vec![index1, index2]);
-    for item in arena.get_iter(&slice) {
-        match item.as_repr().as_ref() {
-            C::A(index) => assert_eq!(arena.get(index).0, 42),
-            C::B(index) => assert_eq!(arena.get(index).0, 43),
-        }
-    }
 }
 
 #[test]
@@ -183,7 +150,7 @@ fn large_array() {
 
     // println!("{}", arena.status(true));
     
-    let vec = arena.get_iter(&slice).collect::<Vec<_>>();
+    let vec = arena.get_iter(&slice).map(|i| arena.get(i)).collect::<Vec<_>>();
     for i in 0..2400 {
         assert_eq!(i as i32, *vec[i]);
     }
