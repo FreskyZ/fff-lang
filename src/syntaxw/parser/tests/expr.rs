@@ -597,11 +597,11 @@ fn parse_expr() {
 
 #[test]
 fn parse_call_expr() {
-    fn cmp(actual: &(Span, Vec<TagIndex<Expr>>), expect: &(Span, Vec<TagIndex<Expr>>), arena: &Arena) -> bool {
+    fn cmp(actual: &(Span, Vec<Expr>), expect: &(Span, Vec<Expr>), arena: &Arena) -> bool {
         actual.0 == expect.0 && asti::Eq::eq(&actual.1, &expect.1, arena)
     }
-    fn debug(value: &(Span, Vec<TagIndex<Expr>>), arena: &Arena) -> String {
-        format!("({:?}, {:?})", value.0, value.1.iter().map(|i| format!("{:?}", asti::debug(i.as_repr().as_ref(), arena))).collect::<Vec<_>>())
+    fn debug(value: &(Span, Vec<Expr>), arena: &Arena) -> String {
+        format!("({:?}, {:?})", value.0, value.1.iter().map(|i| format!("{:?}", asti::debug(i, arena))).collect::<Vec<_>>())
     }
 
     case!{ notast(cmp, debug) parse_call_expr "()", 
@@ -622,11 +622,11 @@ fn parse_call_expr() {
 
 #[test]
 fn parse_array_index_expr() {
-    fn cmp(actual: &(Span, Vec<TagIndex<Expr>>), expect: &(Span, Vec<TagIndex<Expr>>), arena: &Arena) -> bool {
+    fn cmp(actual: &(Span, Vec<Expr>), expect: &(Span, Vec<Expr>), arena: &Arena) -> bool {
         actual.0 == expect.0 && asti::Eq::eq(&actual.1, &expect.1, arena)
     }
-    fn debug(value: &(Span, Vec<TagIndex<Expr>>), arena: &Arena) -> String {
-        format!("({:?}, {:?})", value.0, value.1.iter().map(|i| format!("{:?}", asti::debug(i.as_repr().as_ref(), arena))).collect::<Vec<_>>())
+    fn debug(value: &(Span, Vec<Expr>), arena: &Arena) -> String {
+        format!("({:?}, {:?})", value.0, value.1.iter().map(|i| format!("{:?}", asti::debug(i, arena))).collect::<Vec<_>>())
     }
 
     case!{ notast(cmp, debug) parse_array_index_expr "[1, 2, ]", |x|

@@ -11,12 +11,6 @@ use super::super::visit::{Visitor, Visit};
 use super::noauto::EmptyResult;
 use super::*;
 
-pub fn profile<N: Visit>(node: &N, arena: &Arena) -> MemoryProfiler {
-    let mut profiler = MemoryProfiler::new();
-    node.accept(arena, &mut profiler);
-    profiler
-}
-
 #[derive(Clone, Copy)]
 struct Entry {
     count: usize,
@@ -116,7 +110,7 @@ pub struct MemoryProfiler {
 }
 
 impl MemoryProfiler {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self{ v: [Entry{ count: 0, size: 0 }; 56] }
     }
     pub fn coverage(&self) -> (usize, usize, String) {

@@ -4,7 +4,7 @@ use std::str::from_utf8;
 use crate::source::{SourceContext, Span, IdSpan, FileId};
 use crate::diagnostics::{strings, make_errors};
 use crate::lexical::{Numeric, Separator, Keyword};
-use crate::common::arena::{Arena, TagIndex};
+use crate::common::arena::Arena;
 use super::super::visit::Visit;
 use super::*;
 
@@ -47,11 +47,13 @@ impl<'a, 'b> fmt::Display for DiffDisplay<'a, 'b> {
     }
 }
 
-fn tag_case<
-    N: Visit + asti::Eq,
-    A: for<'a> FnOnce(&mut Parser, &'a Arena) -> Result<TagIndex<'a, N>, Unexpected>,
-    E: for<'a> FnOnce((&mut Parser, &'a Arena)) -> TagIndex<'a, N>,
+fn visit_case<
+    'a,
+    N: Visit + asti::Eq + 'a,
+    A: FnOnce(&mut Parser, &'a Arena) -> Result<N, Unexpected>,
+    E: FnOnce((&mut Parser, &'a Arena)) -> N,
 >(
+    arena: &'a Arena,
     input: &'static str,
     actual_index_getter: A,
     expect_index_getter: E,
@@ -63,13 +65,12 @@ fn tag_case<
         cwd: "/".into(),
         files: [("1".into(), input.into())].into_iter().collect(),
     });
-    let arena = Arena::new();
     let mut context = Parser::new(crate::lexical::Parser::new(source.entry("1", &mut actual_diagnostics).unwrap(), &mut actual_diagnostics));
-    let actual_index = actual_index_getter(&mut context, &arena);
+    let actual_index = actual_index_getter(&mut context, arena);
     if let Ok(actual_index) = actual_index {
-        let expect_index = expect_index_getter((&mut context, &arena));
+        let expect_index = expect_index_getter((&mut context, arena));
         context.finish();
-        if asti::Eq::eq(actual_index.as_repr().as_ref(), expect_index.as_repr().as_ref(), &arena) {
+        if asti::Eq::eq(&actual_index, &expect_index, arena) {
             if actual_diagnostics == expect_diagnostics {
                 // finally success
             } else {
@@ -79,59 +80,11 @@ fn tag_case<
                 panic!("{}", buf)
             }
         } else {
-            let actual_display = asti::display(actual_index.as_repr().as_ref(), &source, &arena).to_string();
-            let expect_display = asti::display(expect_index.as_repr().as_ref(), &source, &arena).to_string();
+            let actual_display = asti::display(&actual_index, &source, arena).to_string();
+            let expect_display = asti::display(&expect_index, &source, arena).to_string();
             if actual_display == expect_display {
-                let actual_debug = format!("{:?}", asti::debug(actual_index.as_repr().as_ref(), &arena));
-                let expect_debug = format!("{:?}", asti::debug(expect_index.as_repr().as_ref(), &arena));
-                panic!("line {} node not same while display is same\n{}\n{}", backtrace, actual_display, DiffDisplay(&actual_debug, &expect_debug));
-            }
-            panic!("line {} node not same\n{}", backtrace, DiffDisplay(&actual_display, &expect_display));
-        }
-    } else {
-        context.finish();
-        panic!("line {} parse failed\n{}", backtrace, actual_diagnostics.display(&source))
-    }
-}
-
-fn notag_case<
-    N: Visit + asti::Eq,
-    A: for<'a> FnOnce(&mut Parser, &'a Arena) -> Result<Index<'a, N>, Unexpected>,
-    E: for<'a> FnOnce((&mut Parser, &'a Arena)) -> Index<'a, N>,
->(
-    input: &'static str,
-    actual_index_getter: A,
-    expect_index_getter: E,
-    expect_diagnostics: crate::diagnostics::Diagnostics,
-    backtrace: u32,
-) {
-    let mut actual_diagnostics = crate::diagnostics::Diagnostics::new();
-    let mut source = SourceContext::new_file_system(crate::source::VirtualFileSystem {
-        cwd: "/".into(),
-        files: [("1".into(), input.into())].into_iter().collect(),
-    });
-    let arena = Arena::new();
-    let mut context = Parser::new(crate::lexical::Parser::new(source.entry("1", &mut actual_diagnostics).unwrap(), &mut actual_diagnostics));
-    let actual_index = actual_index_getter(&mut context, &arena);
-    if let Ok(actual_index) = actual_index {
-        let expect_index = expect_index_getter((&mut context, &arena));
-        context.finish();
-        let (actual_value, expect_value) = (arena.get(&actual_index), arena.get(&expect_index));
-        if asti::Eq::eq(actual_value, expect_value, &arena) {
-            if actual_diagnostics == expect_diagnostics {
-                // finally success
-            } else {
-                let mut buf = format!("line {} diagnostics not same\n", backtrace);
-                write!(buf, "{}", actual_diagnostics.display(&source)).unwrap();
-                write!(buf, "{}", expect_diagnostics.display(&source)).unwrap();
-                panic!("{}", buf)
-            }
-        } else {
-            let actual_display = asti::display(actual_value, &source, &arena).to_string();
-            let expect_display = asti::display(expect_value, &source, &arena).to_string();
-            if actual_display == expect_display {
-                let actual_debug = format!("{:?}", asti::debug(actual_value, &arena));
-                let expect_debug = format!("{:?}", asti::debug(expect_value, &arena));
+                let actual_debug = format!("{:?}", asti::debug(&actual_index, arena));
+                let expect_debug = format!("{:?}", asti::debug(&expect_index, arena));
                 panic!("line {} node not same while display is same\n{}\n{}", backtrace, actual_display, DiffDisplay(&actual_debug, &expect_debug));
             }
             panic!("line {} node not same\n{}", backtrace, DiffDisplay(&actual_display, &expect_display));
@@ -143,14 +96,16 @@ fn notag_case<
 }
 
 // some parse method does not return type that impl Node
-fn notast_case<
-    V,
-    P: for<'a> FnOnce(&mut Parser, &'a Arena) -> Result<V, Unexpected>,
-    E: for<'a> FnOnce((&mut Parser, &'a Arena)) -> V,
+fn novisit_case<
+    'a,
+    V: 'a,
+    P: FnOnce(&mut Parser, &'a Arena) -> Result<V, Unexpected>,
+    E: FnOnce((&mut Parser, &'a Arena)) -> V,
     S: Fn(&V, &V, &Arena) -> bool,
     D: fmt::Debug,
     F: Fn(&V, &Arena) -> D,
 >(
+    arena: &'a Arena,
     input: &'static str,
     actual_value_getter: P,
     expect_value_getter: E,
@@ -164,13 +119,12 @@ fn notast_case<
         cwd: "/".into(),
         files: [("1".into(), input.into())].into_iter().collect(),
     });
-    let arena = Arena::new();
     let mut context = Parser::new(crate::lexical::Parser::new(source.entry("1", &mut actual_diagnostics).unwrap(), &mut actual_diagnostics));
-    let actual_value = actual_value_getter(&mut context, &arena);
+    let actual_value = actual_value_getter(&mut context, arena);
     if let Ok(actual_value) = actual_value {
-        let expect_value = expect_value_getter((&mut context, &arena));
+        let expect_value = expect_value_getter((&mut context, arena));
         context.finish();
-        if equality_comparer(&actual_value, &expect_value, &arena) {
+        if equality_comparer(&actual_value, &expect_value, arena) {
             if actual_diagnostics == expect_diagnostics {
                 // finally success
             } else {
@@ -180,9 +134,9 @@ fn notast_case<
                 panic!("{}", buf)
             }
         } else {
-                let actual_debug = format!("{:?}", debug_formatter(&actual_value, &arena));
-                let expect_debug = format!("{:?}", debug_formatter(&expect_value, &arena));
-                panic!("line {} result\n{}", backtrace, DiffDisplay(&actual_debug, &expect_debug));
+            let actual_debug = format!("{:?}", debug_formatter(&actual_value, arena));
+            let expect_debug = format!("{:?}", debug_formatter(&expect_value, arena));
+            panic!("line {} result\n{}", backtrace, DiffDisplay(&actual_debug, &expect_debug));
         }
     } else {
         context.finish();
@@ -191,17 +145,16 @@ fn notast_case<
 }
 
 macro_rules! case {
-    // value is tagged index
-    ($parser:ident $code:literal, |$x:ident| $expect:expr $(,)? $(,$($tt:tt)+)?) => (
-        tag_case($code, |cx, a| cx.$parser(a), |$x| $expect, make_errors!($($($tt)+)?), line!());
-    );
-    // value is index not tagged index
+    // TODO remove the notag
     (notag $parser:ident $code:literal, |$x:ident| $expect:expr $(,)? $(,$($tt:tt)+)?) => (
-        notag_case($code, |cx, a| cx.$parser(a), |$x| $expect, make_errors!($($($tt)+)?), line!());
+        visit_case(&Arena::new(), $code, |cx, a| cx.$parser(a), |$x| $expect, make_errors!($($($tt)+)?), line!());
     );
-    // value is not Visit
+    ($parser:ident $code:literal, |$x:ident| $expect:expr $(,)? $(,$($tt:tt)+)?) => (
+        visit_case(&Arena::new(), $code, |cx, a| cx.$parser(a), |$x| $expect, make_errors!($($($tt)+)?), line!());
+    );
+    // TODO: change notast to novisit
     (notast($cmp:expr, $debug:expr) $parser:ident $code:literal, |$x:ident| $expect:expr $(,)? $(,$($tt:tt)+)?) => (
-        notast_case($code, |cx, a| cx.$parser(a), |$x| $expect, $cmp, $debug, make_errors!($($($tt)+)?), line!());
+        novisit_case(&Arena::new(), $code, |cx, a| cx.$parser(a), |#[allow(unused_variables)] $x| $expect, $cmp, $debug, make_errors!($($($tt)+)?), line!());
     );
 }
 
@@ -321,7 +274,7 @@ macro_rules! make_stmt {
         $x.1.emplace_generic_name(Span::new($start, $end), IdSpan::new(make_isid!($x, $id), Span::new($start, $end)), Span::new(0, 0), Vec::new()).into()
     );
     ($x:ident name $start:literal:$end:literal #$id:tt $id_start:literal:$id_end:literal quote $quote_start:literal:$quote_end:literal $($parameter:expr),*$(,)?) => (
-        $x.1.emplace_generic_name(Span::new($start, $end), IdSpan::new(make_isid!($x, $id), Span::new($start, $end)), Span::new($quote_start, $quote_end), vec![$($parameter,)*]).into()
+        $x.1.emplace_generic_name(Span::new($start, $end), IdSpan::new(make_isid!($x, $id), Span::new($id_start, $id_end)), Span::new($quote_start, $quote_end), vec![$($parameter,)*]).into()
     );
     // generic parameter currently is similar to idspan
     ($x:ident gp $start:literal:$end:literal #$id:tt) => (
@@ -428,7 +381,7 @@ macro_rules! make_stmt {
 
 macro_rules! make_path {
     (segment global) => (
-        TagIndex::new(PathSegment::Global)
+        PathSegment::Global
     );
     ($x:ident segment simple $start:literal:$end:literal #$ident:tt) => (
         $x.1.emplace_simple_segment(Span::new($start, $end), make_isid!($x, $ident)).into()

@@ -2,7 +2,7 @@
 use crate::source::{Span, IsId, IdSpan};
 use crate::diagnostics::{Diagnostic, strings};
 use crate::lexical::{Parser as Scanner, Token, Numeric, Separator, SeparatorKind, Keyword, KeywordKind};
-use crate::common::arena::{Arena, Index, TagIndex};
+use crate::common::arena::{Arena, Index};
 use super::ast::*;
 
 #[cfg(test)]
@@ -434,7 +434,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         || matches!(self.current, Token::Sep(Separator::DotDot) | Token::Keyword(Keyword::This))
     }
 
-    pub fn parse_expr(&mut self, arena: &'a Arena) -> Result<TagIndex<'a, Expr<'a>>, Unexpected> {
+    pub fn parse_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
         self.allow_object_expr.push(true);
         let result = self.parse_range_expr(arena);
         self.allow_object_expr.pop();
@@ -443,7 +443,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
     // disable top level object exprs,
     // until end of this expr, or call parse_expr again inside call_expr, e.g. array def and tuple def
-    pub fn parse_expr_except_object_expr(&mut self, arena: &'a Arena) -> Result<TagIndex<'a, Expr<'a>>, Unexpected> {
+    pub fn parse_expr_except_object_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
         self.allow_object_expr.push(false);
         let result = self.parse_range_expr(arena);
         self.allow_object_expr.pop();
@@ -452,7 +452,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
     // expr_list = opening_bracket expr { ',' expr } [ ',' ] closing_bracket
     // return (span include bracket, exprs, end with comma)
-    fn parse_expr_list(&mut self, arena: &'a Arena) -> Result<(Span, Vec<TagIndex<'a, Expr<'a>>>, bool), Unexpected> {
+    fn parse_expr_list(&mut self, arena: &'a Arena) -> Result<(Span, Vec<Expr<'a>>, bool), Unexpected> {
 
         let (open_bracket, start_span) = self.expect_seps(&[Separator::LeftBrace, Separator::LeftBracket, Separator::LeftParen])?;
         let close_bracket = match open_bracket { 
@@ -486,7 +486,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     // tuple_expr = '(' expr_list ')'
     // paren_expr = '(' expr ')'
     // unit_lit = '(' ')'
-    pub fn parse_tuple_expr(&mut self, arena: &'a Arena) -> Result<TagIndex<'a, Expr<'a>>, Unexpected> {
+    pub fn parse_tuple_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
 
         let (span, mut items, end_with_comma) = self.parse_expr_list(arena)?;
         if items.is_empty() {
@@ -503,13 +503,13 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     // array_expr = '[' [ expr_list ] ']'
-    pub fn parse_array_expr(&mut self, arena: &'a Arena) -> Result<TagIndex<'a, Expr<'a>>, Unexpected> {
+    pub fn parse_array_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
         
         let (span, items, _) = self.parse_expr_list(arena)?;
         Ok(arena.emplace_array_expr(span, items).into())
     }
 
-    pub fn parse_primary_expr(&mut self, arena: &'a Arena) -> Result<TagIndex<'a, Expr<'a>>, Unexpected> {
+    pub fn parse_primary_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
         if self.is_lit() {
             // this is too short to put in one parse method
             // while it is actually tested more than hundred times in syntax test cases worldwide
@@ -576,7 +576,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
     // call_expr = primary_expr '(' [ expr_list ] ')'
     // return quote span and expr list, see parse_postfix_expr for the return type
-    pub fn parse_call_expr(&mut self, arena: &'a Arena) -> Result<(Span, Vec<TagIndex<'a, Expr<'a>>>), Unexpected> {
+    pub fn parse_call_expr(&mut self, arena: &'a Arena) -> Result<(Span, Vec<Expr<'a>>), Unexpected> {
         let (span, items, _) = self.parse_expr_list(arena)?;
         Ok((span, items))
     }
@@ -588,7 +588,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     // index_call_expr = primary_expr '[' [ expr_list ] ']'
     // return quote span and expr list, see parse_postfix_expr for the return type
     // // was called postfix_expr::subscription, this one is shorter and similar to fn_call
-    pub fn parse_array_index_expr(&mut self, arena: &'a Arena) -> Result<(Span, Vec<TagIndex<'a, Expr<'a>>>), Unexpected> {
+    pub fn parse_array_index_expr(&mut self, arena: &'a Arena) -> Result<(Span, Vec<Expr<'a>>), Unexpected> {
 
         let (span, items, _) = self.parse_expr_list(arena)?;
         if items.is_empty() {
@@ -628,7 +628,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         Ok((left_brace_span + right_brace_span, fields))
     }
 
-    pub fn parse_postfix_expr(&mut self, arena: &'a Arena) -> Result<TagIndex<'a, Expr<'a>>, Unexpected> {   
+    pub fn parse_postfix_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {   
         #[cfg(feature = "trace_postfix_expr_parse")]
         macro_rules! trace { ($($arg:tt)*) => ({ perror!("    [PostfixExpr:{}] ", line!()); eprintln!($($arg)*); }) }
         #[cfg(not(feature = "trace_postfix_expr_parse"))]
@@ -661,7 +661,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
                 #[cfg(not(test))]
                 debug_assert!(!self.allow_object_expr.is_empty(), "allow_object_expr unexpectedly empty");
                 &self.allow_object_expr
-            }.last(), None | Some(true)) && matches!(current_expr.as_repr().as_ref(), Expr::Path(_)) && self.maybe_object_expr() {
+            }.last(), None | Some(true)) && matches!(current_expr, Expr::Path(_)) && self.maybe_object_expr() {
                 let (quote_span, fields) = self.parse_object_expr(arena)?;
                 let span = current_span + quote_span;
                 current_expr = arena.emplace_object_expr(span, current_expr, quote_span, fields).into();
@@ -679,7 +679,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     // unary_expr = { unary_operator } postfix_expr
-    pub fn parse_unary_expr(&mut self, arena: &'a Arena) -> Result<TagIndex<'a, Expr<'a>>, Unexpected> {
+    pub fn parse_unary_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
         
         let mut op_spans = Vec::new();
         loop {
@@ -696,7 +696,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     // binary_expr = unary_expr binary_op unary_expr
-    pub fn parse_binary_expr(&mut self, arena: &'a Arena) -> Result<TagIndex<'a, Expr<'a>>, Unexpected> {
+    pub fn parse_binary_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
         #[cfg(feature = "trace_binary_expr_parse")]
         macro_rules! trace { ($($arg:tt)*) => ({ print!("[PrimaryExpr] "); println!($($arg)*); }) }
         #[cfg(not(feature = "trace_binary_expr_parse"))]
@@ -704,13 +704,13 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
         return parse_logical_or(self, arena);
 
-        fn parse_unary_expr_wrapper<'a>(cx: &mut Parser, arena: &'a Arena) -> Result<TagIndex<'a, Expr<'a>>, Unexpected> {
+        fn parse_unary_expr_wrapper<'a>(cx: &mut Parser, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
             cx.parse_unary_expr(arena)
         }
-        fn check_relational_expr<'a>(cx: &mut Parser, arena: &'a Arena, expr: &TagIndex<'a, Expr<'a>>) {
-            if let Expr::Binary(expr) = expr.as_repr().as_ref() {
+        fn check_relational_expr<'a>(cx: &mut Parser, arena: &'a Arena, expr: &Expr<'a>) {
+            if let Expr::Binary(expr) = expr {
                 if let BinaryExpr{ op: Separator::Gt, op_span: gt_span, left, .. } = arena.get(expr) {
-                    if let Expr::Binary(left) = left.as_repr().as_ref() {
+                    if let Expr::Binary(left) = left {
                         if let BinaryExpr{ op: Separator::Lt, op_span: lt_span, .. } = arena.get(left) {
                             cx.emit(strings::MaybeGeneric).span(*lt_span).span(*gt_span).help(strings::MaybeGenericHelp);
                         }
@@ -721,7 +721,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
         macro_rules! impl_binary_parser {
             ($parser_name:ident, $previous_parser_name:ident, $kind:ident $(,$check:path)?) => (
-                fn $parser_name<'a>(cx: &mut Parser, arena: &'a Arena) -> Result<TagIndex<'a, Expr<'a>>, Unexpected> {
+                fn $parser_name<'a>(cx: &mut Parser, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
                     trace!("parsing {}", stringify!($parser_name));
 
                     let mut current_expr = $previous_parser_name(cx, arena)?;
@@ -754,7 +754,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     // range_left = binary_expr '..'
     // range_right = '..' binary_expr
     // range_both = binary_expr '..' binary_expr
-    pub fn parse_range_expr(&mut self, arena: &'a Arena) -> Result<TagIndex<'a, Expr<'a>>, Unexpected> {
+    pub fn parse_range_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
         match self.try_expect_sep(Separator::DotDot) {
             Some(range_op_span) => {
                 if self.maybe_expr() {
@@ -811,7 +811,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
         let global_span = self.try_expect_sep(Separator::ColonColon);
         if global_span.is_some() {
-            segments.push(TagIndex::new(PathSegment::Global));
+            segments.push(PathSegment::Global);
         } else if let Some(lt_span) = self.try_expect_sep(Separator::Lt) {
             let left = self.parse_type_ref(arena)?;
             self.expect_keyword(Keyword::As)?;
@@ -863,7 +863,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     // no maybe_type_ref because type ref is always after some colon or namespace separator
-    pub fn parse_type_ref(&mut self, arena: &'a Arena) -> Result<TagIndex<'a, TypeRef<'a>>, Unexpected> {
+    pub fn parse_type_ref(&mut self, arena: &'a Arena) -> Result<TypeRef<'a>, Unexpected> {
         if self.maybe_primitive_type() {
             self.parse_primitive_type(arena).map(Into::into)
         } else if self.maybe_array_type() {
@@ -1057,7 +1057,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 // statement and item (module level item) parsers
 impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
-    pub fn parse_stmt(&mut self, arena: &'a Arena) -> Result<TagIndex<'a, Statement<'a>>, Unexpected> {
+    pub fn parse_stmt(&mut self, arena: &'a Arena) -> Result<Statement<'a>, Unexpected> {
         if self.maybe_struct_def() {
             self.parse_struct_def(arena).map(Into::into)
         } else if self.maybe_enum_def() {
@@ -1097,7 +1097,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         }
     }
 
-    pub fn parse_item(&mut self, arena: &'a Arena) -> Result<TagIndex<'a, Item<'a>>, Unexpected> {
+    pub fn parse_item(&mut self, arena: &'a Arena) -> Result<Item<'a>, Unexpected> {
         if self.maybe_struct_def() {
             self.parse_struct_def(arena).map(Into::into)
         } else if self.maybe_enum_def() {
@@ -1309,10 +1309,10 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     // expr_stmt = expr { assign_ops expr } ';'
-    fn parse_expr_stmt<U>(&mut self, arena: &'a Arena) -> Result<TagIndex<'a, U>, Unexpected> 
-        where 
-            TagIndex<'a, U>: From<Index<'a, AssignExprStatement<'a>>>,
-            TagIndex<'a, U>: From<Index<'a, SimpleExprStatement<'a>>> {
+    fn parse_expr_stmt<U>(&mut self, arena: &'a Arena) -> Result<U, Unexpected> where
+        Index<'a, AssignExprStatement<'a>>: Into<U>,
+        Index<'a, SimpleExprStatement<'a>>: Into<U>,
+    {
 
         let left_expr = self.parse_expr(arena)?;
         let starting_span = left_expr.span(arena);
@@ -1329,7 +1329,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     #[cfg(test)]
-    pub fn parse_expr_stmt_as_stmt(&mut self, arena: &'a Arena) -> Result<TagIndex<'a, Statement<'a>>, Unexpected> {
+    pub fn parse_expr_stmt_as_stmt(&mut self, arena: &'a Arena) -> Result<Statement<'a>, Unexpected> {
         self.parse_expr_stmt(arena)
     }
 

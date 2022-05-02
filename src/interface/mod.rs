@@ -1,9 +1,10 @@
 
 use std::collections::VecDeque;
 use std::io;
+use crate::common::arena::Arena;
 use crate::source::SourceContext;
 use crate::diagnostics::Diagnostics;
-use crate::syntax::{Node, parse, ast::MemoryProfiler};
+use crate::syntaxw::{Visit, parse, ast::asti};
 // use crate::mast::Tree;
 // use crate::ir::Graph;
 // use crate::vm::{VirtualMachine, CodeGenerator};
@@ -12,34 +13,35 @@ mod argument;
 
 fn run_compiler(args: argument::Argument, output: &mut impl io::Write) {
 
-    let mut ecx = Diagnostics::new();
-    let mut scx: SourceContext = SourceContext::new();
+    let mut diagnostics = Diagnostics::new();
+    let mut source: SourceContext = SourceContext::new();
 
+    let arena = Arena::new();
     let mut modules = Vec::new();
     let mut requests = VecDeque::new();
-    scx.entry(&args.entry, &mut ecx)
-        .and_then(|main_source| parse(main_source, &mut ecx)).map(|main_module| {
-            requests.extend(main_module.imports());
+    source.entry(&args.entry, &mut diagnostics)
+        .and_then(|main_source| parse(main_source, &mut diagnostics, &arena)).map(|main_module| {
+            requests.extend(main_module.imports(&arena));
             modules.push(main_module);
             while !requests.is_empty() {
                 let request = &requests[0];
-                scx.import(request.span, request.name.id, request.path.map(|path| path.id), &mut ecx)
-                    .and_then(|source| parse(source, &mut ecx)).map(|module| {
-                        requests.extend(module.imports());
+                source.import(request.span, request.name.id, request.path.map(|path| path.id), &mut diagnostics)
+                    .and_then(|source| parse(source, &mut diagnostics, &arena)).map(|module| {
+                        requests.extend(module.imports(&arena));
                         modules.push(module);
                     });
                 requests.pop_front();
             }
         });
 
-    write!(output, "{}", ecx.display(&scx)).unwrap();
+    write!(output, "{}", diagnostics.display(&source)).unwrap();
 
     for debug_option in &args.debugs {
         match debug_option {
             argument::DebugOption::Memory => {
-                let mut profiler = MemoryProfiler::new();
+                let mut profiler = asti::MemoryProfiler::new();
                 for module in &modules {
-                    profiler.profile(module);
+                    module.accept(&arena, &mut profiler);
                 }
                 profiler.dump(output);
             }
@@ -49,12 +51,12 @@ fn run_compiler(args: argument::Argument, output: &mut impl io::Write) {
         match print_option {
             argument::PrintOption::Files => {
                 for module in &modules {
-                    writeln!(output, "{}", scx.get_relative_path(module.file).display()).unwrap();
+                    writeln!(output, "{}", source.get_relative_path(arena.get(module).file).display()).unwrap();
                 }
             },
             argument::PrintOption::AST => {
                 for module in &modules {
-                    write!(output, "{}", module.display(&scx)).unwrap();
+                    write!(output, "{}", asti::display(module, &source, &arena)).unwrap();
                 }
             }
         }

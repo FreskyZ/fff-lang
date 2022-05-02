@@ -30,7 +30,7 @@ pub mod asti {
     pub use super::cmp::Eq;
     pub use super::ugly::debug;
     pub use super::pretty::{display, display1};
-    pub use super::profile::profile;
+    pub use super::profile::MemoryProfiler;
 }
 pub use span::WithSpan;
 // lit value can be regarded as a node type
