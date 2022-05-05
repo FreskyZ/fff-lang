@@ -55,11 +55,11 @@ Major change summary
 
 some detailed plans is included by the way
 
+- [ ] syntax: define syntax in formal syntax, validate it is LL1 and use calulated first set in maybe_* functions
 - [ ] syntax: add recursive guard for ast visitors, eq returns true, formatters prints `[circular]`, profiler count nothing, use shared preallocate array to reduce allocate
-- [ ] syntax: relearn first set and follow set and review the name of maybe_xxx
 - [ ] syntax: update random test input generator
 - [ ] syntax: add missing array dup def
 - [ ] syntax: add numeric literal type as suffixed/unsuffixed and bin/oct/dec/hex/unprefixed, tuple index expr require unsuffixed and unprefixed
-- [ ] syntax: format string
+- [ ] syntax: format string, attention that retry lexical parsing need to withdraw diagnostics
 - [ ] syntax: function expression, capture syntax TBD, IIFE is a more tradictional may where rust block expression is used
 - [ ] source: use unsafe instead of panic in char iterator

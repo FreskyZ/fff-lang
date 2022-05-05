@@ -418,21 +418,21 @@ fn v2() {
     //      0         1         2         3         4         5         6         7
     //      0123456789012345678901234567890123456789012345678901234567890123456789012345
     case!{ "[1, 123 _ 1u64( 123.456,) -123_456{123u32}123r32 += 123.0 / 123u8 && 1024u8]", [] expect [  
-        t!(Separator::LeftBracket, 0, 0),
+        t!(Separator::LBracket, 0, 0),
         t!(1: i32, 1, 1),
         t!(Separator::Comma, 2, 2),
         t!(123: i32, 4, 6),
         t!(Keyword::Underscore, 8, 8),
         t!(1: u64, 10, 13),
-        t!(Separator::LeftParen, 14, 14),
+        t!(Separator::LParen, 14, 14),
         t!(123.456: r64, 16, 22),
         t!(Separator::Comma, 23, 23),
-        t!(Separator::RightParen, 24, 24),
+        t!(Separator::RParen, 24, 24),
         t!(Separator::Sub, 26, 26),
         t!(123456: i32, 27, 33),
-        t!(Separator::LeftBrace, 34, 34),
+        t!(Separator::LBrace, 34, 34),
         t!(123: u32, 35, 40),
-        t!(Separator::RightBrace, 41, 41),
+        t!(Separator::RBrace, 41, 41),
         t!(123.0: r32, 42, 47),
         t!(Separator::AddEq, 49, 50),
         t!(123.0: r64, 52, 56),
@@ -440,7 +440,7 @@ fn v2() {
         t!(123: u8, 60, 64),
         t!(Separator::AndAnd, 66, 67),
         t!(0: i32, 69, 74),
-        t!(Separator::RightBracket, 75, 75),
+        t!(Separator::RBracket, 75, 75),
     ], make_errors!{
         e: e.emit(format!("{}, {}", strings::InvalidNumericLiteral, strings::IntegralOverflow))
             .span(Span::new(69, 74))
@@ -451,7 +451,7 @@ fn v2() {
     //           0         1         2         3         4         5         6         7         8
     //           0123456789012345678901234567890123456789012345678901234567890123456789012345678901234
     case!{ "[123 * 0x123 - 0xAFF & 0o777 || 0oXXX != 0b101010 == 0b123456 -> 0d123.. 0dABC] .. -=", [] expect [
-        t!(Separator::LeftBracket, 0, 0),
+        t!(Separator::LBracket, 0, 0),
         t!(123: i32, 1, 3),
         t!(Separator::Mul, 5, 5),
         t!(0x123: i32, 7, 11),
@@ -465,11 +465,11 @@ fn v2() {
         t!(0b101010: i32, 41, 48),
         t!(Separator::EqEq, 50, 51),
         t!(0: i32, 53, 60),
-        t!(Separator::Arrow, 62, 63),
+        t!(Separator::SubGt, 62, 63),
         t!(123: i32, 65, 69),
         t!(Separator::DotDot, 70, 71),
         t!(0: i32, 73, 77),
-        t!(Separator::RightBracket, 78, 78),
+        t!(Separator::RBracket, 78, 78),
         t!(Separator::DotDot, 80, 81),
         t!(Separator::SubEq, 83, 84),
     ], make_errors!{
@@ -487,7 +487,7 @@ fn v2() {
     //           0       1        2
     //           012345 8901234578 123
     case!{ "[1, 2，3.5, 4。5】<<=", [] expect [  // not ascii char hint and recover
-        t!(Separator::LeftBracket, 0, 0),
+        t!(Separator::LBracket, 0, 0),
         t!(1: i32, 1, 1),
         t!(Separator::Comma, 2, 2),
         t!(2: i32, 4, 4),
@@ -495,7 +495,7 @@ fn v2() {
         t!(3.5: r64, 8, 10),
         t!(Separator::Comma, 11, 11),
         t!(4.5: r64, 13, 17),
-        t!(Separator::RightBracket, 18, 18),
+        t!(Separator::RBracket, 18, 18),
         t!(Separator::LtLtEq, 21, 23),
     ], make_errors!{
         e: e.emit(strings::UnexpectedNonASCIIChar)
@@ -530,14 +530,14 @@ fn v2() {
         t!(1: i32, 0, 0),
         t!(Separator::Dot, 1, 1),
         t!(2: ident, 2, 7),
-        t!(Separator::LeftParen, 8, 8),
-        t!(Separator::RightParen, 9, 9),
+        t!(Separator::LParen, 8, 8),
+        t!(Separator::RParen, 9, 9),
         t!(Separator::Comma, 10, 10),
         t!(123.0: r64, 12, 17),
         t!(Separator::Dot, 18, 18),
         t!(3: ident, 19, 27),
-        t!(Separator::LeftParen, 28, 28),
-        t!(Separator::RightParen, 29, 29),
+        t!(Separator::LParen, 28, 28),
+        t!(Separator::RParen, 29, 29),
     ]}
 
     //      0           1          2
@@ -552,47 +552,47 @@ fn v2() {
     // bug from syntax::expr::postfix_expr
     //           0         1         2         3         4         5
     //           012345678901234567890123456789012345678901234567890123
-    case!{ "1.a[[3](4, [5, 6], )](7, 8)() and[i32].bcd[10, 11, 12]", [Span::new(2, 2), Span::new(39, 41)] expect [
+    case!{ "1.a[[3](4, [5, 6], )](7, 8)() pub[i32].bcd[10, 11, 12]", [Span::new(2, 2), Span::new(39, 41)] expect [
         t!(1: i32, 0, 0),
         t!(Separator::Dot, 1, 1),
         t!(2: ident, 2, 2),
-        t!(Separator::LeftBracket, 3, 3),
-        t!(Separator::LeftBracket, 4, 4),
+        t!(Separator::LBracket, 3, 3),
+        t!(Separator::LBracket, 4, 4),
         t!(3: i32, 5, 5),
-        t!(Separator::RightBracket, 6, 6),
-        t!(Separator::LeftParen, 7, 7),
+        t!(Separator::RBracket, 6, 6),
+        t!(Separator::LParen, 7, 7),
         t!(4: i32, 8, 8),
         t!(Separator::Comma, 9, 9),
-        t!(Separator::LeftBracket, 11, 11),
+        t!(Separator::LBracket, 11, 11),
         t!(5: i32, 12, 12),
         t!(Separator::Comma, 13, 13),
         t!(6: i32, 15, 15),
-        t!(Separator::RightBracket, 16, 16),
+        t!(Separator::RBracket, 16, 16),
         t!(Separator::Comma, 17, 17),
-        t!(Separator::RightParen, 19, 19),
-        t!(Separator::RightBracket, 20, 20),
-        t!(Separator::LeftParen, 21, 21),
+        t!(Separator::RParen, 19, 19),
+        t!(Separator::RBracket, 20, 20),
+        t!(Separator::LParen, 21, 21),
         t!(7: i32, 22, 22),
         t!(Separator::Comma, 23, 23),
         t!(8: i32, 25, 25),
-        t!(Separator::RightParen, 26, 26),
-        t!(Separator::LeftParen, 27, 27),
-        t!(Separator::RightParen, 28, 28),
-        t!(Keyword::And, 30, 32),
-        t!(Separator::LeftBracket, 33, 33),
+        t!(Separator::RParen, 26, 26),
+        t!(Separator::LParen, 27, 27),
+        t!(Separator::RParen, 28, 28),
+        t!(Keyword::Pub, 30, 32),
+        t!(Separator::LBracket, 33, 33),
         t!(Keyword::I32, 34, 36),
-        t!(Separator::RightBracket, 37, 37),
+        t!(Separator::RBracket, 37, 37),
         t!(Separator::Dot, 38, 38),
         t!(3: ident, 39, 41),
-        t!(Separator::LeftBracket, 42, 42),
+        t!(Separator::LBracket, 42, 42),
         t!(10: i32, 43, 44),
         t!(Separator::Comma, 45, 45),
         t!(11: i32, 47, 48),
         t!(Separator::Comma, 49, 49),
         t!(12: i32, 51, 52),
-        t!(Separator::RightBracket, 53, 53),
+        t!(Separator::RBracket, 53, 53),
     ], make_errors!{
-        e: e.emit(format!("{}: {:?}", strings::UseReservedKeyword, Keyword::And))
+        e: e.emit(format!("{}: {:?}", strings::UseReservedKeyword, Keyword::Pub))
             .span(Span::new(30, 32))
     }}
 
@@ -638,8 +638,8 @@ fn v2() {
     case!{ "@: {}", [] expect [
         t!(1: label, 0, 0),
         t!(Separator::Colon, 1, 1),
-        t!(Separator::LeftBrace, 3, 3),
-        t!(Separator::RightBrace, 4, 4),
+        t!(Separator::LBrace, 3, 3),
+        t!(Separator::RBrace, 4, 4),
     ]}
 }
 
@@ -650,8 +650,8 @@ fn v4() { // in memory for old v4lexer
         t!(2: ident, 4, 6),
         t!('d': char, 8, 10),
         t!(Separator::Comma, 11, 11),
-        t!(Separator::LeftBracket, 13, 13),
+        t!(Separator::LBracket, 13, 13),
         t!(1: i32, 14, 14),
-        t!(Separator::RightBracket, 15, 15),
+        t!(Separator::RBracket, 15, 15),
     ]}
 }

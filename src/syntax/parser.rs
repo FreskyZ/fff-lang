@@ -284,7 +284,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     /// if so, move next and Ok((sep, sep_span)),
     /// if not, push unexpect and Err(Unexpected)
     ///
-    /// example `let (sep, sep_span) = cx.expect_seps(&[Separator::LeftBracket, Separator::LeftBrace])?;`
+    /// example `let (sep, sep_span) = cx.expect_seps(&[Separator::LBracket, Separator::LBrace])?;`
     fn expect_seps(&mut self, expected_seps: &[Separator]) -> Result<(Separator, Span), Unexpected> {
         match self.current {
             Token::Sep(sep) if expected_seps.iter().any(|e| e == &sep) => Ok((sep, self.move_next())),
@@ -315,9 +315,9 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     /// example `if let Some((close_span, comma_span)) = cx.try_expect_closing_bracket(Separator::Comma) { ... }`
     fn try_expect_closing_bracket(&mut self, expected_sep: Separator) -> Option<(Span, Option<Span>)> {
         debug_assert!(matches!(expected_sep, 
-            | Separator::RightBrace 
-            | Separator::RightParen 
-            | Separator::RightBracket 
+            | Separator::RBrace 
+            | Separator::RParen 
+            | Separator::RBracket 
             | Separator::Gt
         ), "not a closing bracket");
         match (&self.current, &self.peek) {
@@ -344,7 +344,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     /// if so, move next and Some((sep, sep_span)),
     /// if not, no move next and None
     ///
-    /// example `if let Some((sep, sep_span)) = cx.try_expect_seps(&[Separator::LeftBracket, Separator::LeftBrace])?;`
+    /// example `if let Some((sep, sep_span)) = cx.try_expect_seps(&[Separator::LBracket, Separator::LBrace])?;`
     fn try_expect_seps(&mut self, expected_seps: &[Separator]) -> Option<(Separator, Span)> {
         match self.current {
             Token::Sep(sep) if expected_seps.iter().any(|e| e == &sep) => Some((sep, self.move_next())),
@@ -396,7 +396,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     /// if so, move next and Ok(id_span),
     /// if not, push unexpect and Err(Unexpected)
     ///
-    /// example `let name = cx.expect_ident_or(&[Keyword::This, Keyword::Underscore])?;`
+    /// example `let name = cx.expect_ident_or(&[Keyword::Self_, Keyword::Underscore])?;`
     fn expect_ident_or_keywords(&mut self, acceptable_keywords: &[Keyword]) -> Result<IdSpan, Unexpected> {
         match self.current {
             Token::Ident(id) => Ok(IdSpan::new(id, self.move_next())),
@@ -431,7 +431,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         || self.maybe_tuple_expr()
         || self.maybe_array_expr()
         || self.maybe_unary_expr()
-        || matches!(self.current, Token::Sep(Separator::DotDot) | Token::Keyword(Keyword::This) | Token::Keyword(Keyword::Self_))
+        || matches!(self.current, Token::Sep(Separator::DotDot) | Token::Keyword(Keyword::Self_))
     }
 
     pub fn parse_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
@@ -454,11 +454,11 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     // return (span include bracket, exprs, end with comma)
     fn parse_expr_list(&mut self, arena: &'a Arena) -> Result<(Span, Vec<Expr<'a>>, bool), Unexpected> {
 
-        let (open_bracket, start_span) = self.expect_seps(&[Separator::LeftBrace, Separator::LeftBracket, Separator::LeftParen])?;
+        let (open_bracket, start_span) = self.expect_seps(&[Separator::LBrace, Separator::LBracket, Separator::LParen])?;
         let close_bracket = match open_bracket { 
-            Separator::LeftBrace => Separator::RightBrace, 
-            Separator::LeftBracket => Separator::RightBracket,
-            Separator::LeftParen => Separator::RightParen,
+            Separator::LBrace => Separator::RBrace, 
+            Separator::LBracket => Separator::RBracket,
+            Separator::LParen => Separator::RParen,
             _ => unreachable!(),
         };
 
@@ -480,7 +480,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     fn maybe_tuple_expr(&self) -> bool {
-        matches!(self.current, Token::Sep(Separator::LeftParen)) 
+        matches!(self.current, Token::Sep(Separator::LParen)) 
     }
 
     // tuple_expr = '(' expr_list ')'
@@ -499,7 +499,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     fn maybe_array_expr(&self) -> bool {
-        self.is_sep(Separator::LeftBracket)
+        self.is_sep(Separator::LBracket)
     }
 
     // array_expr = '[' [ expr_list ] ']'
@@ -524,7 +524,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
             return self.parse_array_expr(arena);
         }
 
-        let this = self.expect_ident_or_keywords(&[Keyword::This, Keyword::Self_])?;  // actually identifier is processed by Name, not here
+        let this = self.expect_ident_or_keywords(&[Keyword::Self_])?;  // actually identifier is processed by Name, not here
         Ok(arena.emplace_path(this.span, vec![
             arena.emplace_simple_segment(this.span, this.id).into(),
         ]).into())
@@ -571,7 +571,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     fn maybe_call_expr(&self) -> bool {
-        matches!(self.current, Token::Sep(Separator::LeftParen)) 
+        matches!(self.current, Token::Sep(Separator::LParen)) 
     }
 
     // call_expr = primary_expr '(' [ expr_list ] ')'
@@ -582,7 +582,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     fn maybe_array_index_expr(&self) -> bool {
-        matches!(self.current, Token::Sep(Separator::LeftBracket))
+        matches!(self.current, Token::Sep(Separator::LBracket))
     }
 
     // index_call_expr = primary_expr '[' [ expr_list ] ']'
@@ -598,7 +598,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     fn maybe_object_expr(&self) -> bool {
-        matches!(self.current, Token::Sep(Separator::LeftBrace))
+        matches!(self.current, Token::Sep(Separator::LBrace))
     }
 
     // object_literal = name '{' { ident ':' expr ',' } '}'
@@ -606,9 +606,9 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     // return quote span and field list, see parse_postfix_expr for the return type
     pub fn parse_object_expr(&mut self, arena: &'a Arena) -> Result<(Span, Vec<Index<'a, ObjectExprField<'a>>>), Unexpected> {
 
-        let left_brace_span = self.expect_sep(Separator::LeftBrace)?;
+        let left_brace_span = self.expect_sep(Separator::LBrace)?;
         let mut fields = Vec::new();
-        let right_brace_span = if let Some(right_brace_span) = self.try_expect_sep(Separator::RightBrace) {
+        let right_brace_span = if let Some(right_brace_span) = self.try_expect_sep(Separator::RBrace) {
             right_brace_span
         } else { 
             loop {
@@ -617,7 +617,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
                 let value = self.parse_expr(arena)?;
                 fields.push(arena.emplace_object_expr_field(field_name.span + value.span(arena), field_name, value));
 
-                if let Some((right_brace_span, _)) = self.try_expect_closing_bracket(Separator::RightBrace) {
+                if let Some((right_brace_span, _)) = self.try_expect_closing_bracket(Separator::RBrace) {
                     break right_brace_span;
                 } else {
                     self.expect_sep(Separator::Comma)?;
@@ -805,6 +805,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     // most common "name" (somewhat extented from "ident expr" in textbook)
     // similar for type and value, except when expect value, there must be '::' before '<'
     // cast_segment must be first segment, cast_segment not compatible with separator-started (global)
+    // TODO allow true/false/self/underscore where ident is expected, remove 'this' from keyword
     pub fn parse_path(&mut self, arena: &'a Arena, expect_value: bool) -> Result<Index<'a, Path<'a>>, Unexpected> {
 
         let mut segments = Vec::new();
@@ -863,6 +864,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     // no maybe_type_ref because type ref is always after some colon or namespace separator
+    // TODO add literal type = string/number literal (or string/number literal)*
     pub fn parse_type_ref(&mut self, arena: &'a Arena) -> Result<TypeRef<'a>, Unexpected> {
         if self.maybe_primitive_type() {
             self.parse_primitive_type(arena).map(Into::into)
@@ -887,7 +889,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
     // type_list = '<' type_ref { ',' type_ref } [ ',' ] '>'
     // angle bracket quoted type list use in many places
-    // TODO: type_ref may be omitted by underscore
+    // TODO: type_ref may be omitted by underscore, update: they may be recognized by path thus by type ref
     pub fn parse_type_list(&mut self, arena: &'a Arena) -> Result<Index<'a, TypeList<'a>>, Unexpected> {
 
         let lt_span = self.expect_sep(Separator::Lt)?;
@@ -909,16 +911,16 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
     // type refs, also include path segment
     pub fn maybe_array_type(&self) -> bool {
-        matches!(self.current, Token::Sep(Separator::LeftBracket))
+        matches!(self.current, Token::Sep(Separator::LBracket))
     }
 
     // array_type = '[' type_ref ';' expr ']'
     pub fn parse_array_type(&mut self, arena: &'a Arena) -> Result<Index<'a, ArrayType<'a>>, Unexpected> {
 
-        let left_bracket_span = self.expect_sep(Separator::LeftBracket)?;
+        let left_bracket_span = self.expect_sep(Separator::LBracket)?;
         let base = self.parse_type_ref(arena)?;
 
-        if let Some(right_bracket_span) = self.try_expect_sep(Separator::RightBracket) {
+        if let Some(right_bracket_span) = self.try_expect_sep(Separator::RBracket) {
             self.emit(strings::InvalidArrayType)
                 .detail(right_bracket_span, "expected semicolon, meet right bracket")
                 .help(strings::ArrayTypeSyntaxHelp);
@@ -927,7 +929,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
         self.expect_sep(Separator::SemiColon)?;
 
-        if let Some(right_bracket_span) = self.try_expect_sep(Separator::RightBracket) {
+        if let Some(right_bracket_span) = self.try_expect_sep(Separator::RBracket) {
             self.emit(strings::InvalidArrayType)
                 .detail(right_bracket_span, "expected expr, meet right bracket")
                 .help(strings::ArrayTypeSyntaxHelp);
@@ -935,7 +937,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         }
 
         let size = self.parse_expr(arena)?;
-        let right_bracket_span = self.expect_sep(Separator::RightBracket)?;
+        let right_bracket_span = self.expect_sep(Separator::RBracket)?;
         Ok(arena.emplace_array_type(left_bracket_span + right_bracket_span, base, size))
     }
 
@@ -956,11 +958,11 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     pub fn parse_fn_type(&mut self, arena: &'a Arena) -> Result<Index<'a, FnType<'a>>, Unexpected> {
 
         let fn_span = self.expect_keyword(Keyword::Fn)?;
-        let left_paren_span = self.expect_sep(Separator::LeftParen)?;
+        let left_paren_span = self.expect_sep(Separator::LParen)?;
 
         let mut parameters = Vec::new();
         let right_paren_span = loop {
-            if let Some((right_paren_span, comma_span)) = self.try_expect_closing_bracket(Separator::RightParen) {
+            if let Some((right_paren_span, comma_span)) = self.try_expect_closing_bracket(Separator::RParen) {
                 if let (0, Some(comma_span)) = (parameters.len(), comma_span) {
                     self.emit("unexpected token").detail(comma_span, "expected ident, type or right paren, meet comma");
                 }
@@ -969,8 +971,9 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
                 self.expect_sep(Separator::Comma)?;
             }
             // these can-regard-as-variable keywords are not expected by type ref, they are definitely parameter name
+            // TODO: they will
             let mut name = self
-                .try_expect_keywords(&[Keyword::This, Keyword::Self_, Keyword::Underscore])
+                .try_expect_keywords(&[Keyword::Self_, Keyword::Underscore])
                 .map(|(kw, span)| IdSpan::new(self.intern(kw.display()), span));
             if name.is_some() {
                 self.expect_sep(Separator::Colon)?;
@@ -988,7 +991,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
             parameters.push(arena.emplace_fn_type_parameter(name.map(|n| n.span).unwrap_or_else(|| r#type.span(arena)) + r#type.span(arena), name, r#type));
         };
 
-        let ret_type = self.try_expect_seps(&[Separator::Arrow, Separator::Colon]).map(|(sep, span)| {
+        let ret_type = self.try_expect_seps(&[Separator::SubGt, Separator::Colon]).map(|(sep, span)| {
             if sep == Separator::Colon {
                 self.emit(strings::FunctionReturnTypeShouldUseArrow).detail(span, strings::FunctionReturnTypeExpectArrowMeetColon);
             }
@@ -1022,7 +1025,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     pub fn maybe_tuple_type(&self) -> bool {
-        matches!(self.current, Token::Sep(Separator::LeftParen))
+        matches!(self.current, Token::Sep(Separator::LParen))
     }
 
     // tuple_type = '(' type_ref { ',' type_ref } [ ',' ] ')'
@@ -1031,17 +1034,17 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     // type template name will be `tuple` when analysis, so user type `tuple` should be rejected by analysis
     pub fn parse_tuple_type(&mut self, arena: &'a Arena) -> Result<Index<'a, TupleType<'a>>, Unexpected> {
         
-        let left_paren_span = self.expect_sep(Separator::LeftParen)?;
-        if let Some(right_paren_span) = self.try_expect_sep(Separator::RightParen) {
+        let left_paren_span = self.expect_sep(Separator::LParen)?;
+        if let Some(right_paren_span) = self.try_expect_sep(Separator::RParen) {
             return Ok(arena.emplace_tuple_type(left_paren_span + right_paren_span, Vec::new()));
         }
         
         let mut parameters = vec![self.parse_type_ref(arena)?];
         let span = left_paren_span + loop {
-            if let Some((right_paren_span, comma_span)) = self.try_expect_closing_bracket(Separator::RightParen) {
+            if let Some((right_paren_span, comma_span)) = self.try_expect_closing_bracket(Separator::RParen) {
                 if comma_span.is_none() && parameters.len() == 1 {
                     self.emit(strings::SingleItemTupleType)
-                        .detail(right_paren_span, strings::TupleTypeExpectCommaMeetRightParen);
+                        .detail(right_paren_span, strings::TupleTypeExpectCommaMeetRParen);
                 }
                 break right_paren_span;
             } else {
@@ -1181,10 +1184,10 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     // it is private because it's not used outside and it's included by their tests
     fn parse_block(&mut self, arena: &'a Arena) -> Result<Index<'a, Block<'a>>, Unexpected> {
 
-        let starting_span = self.expect_sep(Separator::LeftBrace)?;
+        let starting_span = self.expect_sep(Separator::LBrace)?;
         let mut items = Vec::new();
         loop {
-            if let Some(ending_span) = self.try_expect_sep(Separator::RightBrace) {
+            if let Some(ending_span) = self.try_expect_sep(Separator::RBrace) {
                 return Ok(arena.emplace_block(starting_span + ending_span, items));
             }
             items.push(self.parse_stmt(arena)?);
@@ -1192,7 +1195,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     pub fn maybe_block_stmt(&self) -> bool {
-        matches!((&self.current, &self.peek2), (Token::Label(_), Token::Sep(Separator::LeftBrace)) | (Token::Sep(Separator::LeftBrace), _))
+        matches!((&self.current, &self.peek2), (Token::Label(_), Token::Sep(Separator::LBrace)) | (Token::Sep(Separator::LBrace), _))
     }
 
     // block-stmt = [ label-def ] block
@@ -1233,11 +1236,11 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
         let start_span = self.expect_keyword(Keyword::Class)?;
         let name = self.parse_generic_name(arena)?;
-        let left_brace_span = self.expect_sep(Separator::LeftBrace)?;
+        let left_brace_span = self.expect_sep(Separator::LBrace)?;
 
         let mut items = Vec::new();
         let right_brace_span = loop {
-            if let Some(right_brace_span) = self.try_expect_sep(Separator::RightBrace) {
+            if let Some(right_brace_span) = self.try_expect_sep(Separator::RBrace) {
                 break right_brace_span;
             } else if self.maybe_type_def() {
                 items.push(self.parse_type_def(arena)?.into());
@@ -1274,15 +1277,16 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     // enum_def = 'enum' ident [ ':' primitive_type ] '{' { ident [ '=' expr ] ',' } '}'
+    // TODO allow variant to be struct
     pub fn parse_enum_def(&mut self, arena: &'a Arena) -> Result<Index<'a, EnumDef<'a>>, Unexpected> {
 
         let enum_span = self.expect_keyword(Keyword::Enum)?;
         let enum_name = self.expect_ident()?;
         let base_type = self.try_expect_sep(Separator::Colon).map(|_| self.parse_primitive_type(arena)).transpose()?;
-        let left_brace_span = self.expect_sep(Separator::LeftBrace)?;
+        let left_brace_span = self.expect_sep(Separator::LBrace)?;
 
         let mut variants = Vec::new();
-        let right_brace_span = if let Some(right_brace_span) = self.try_expect_sep(Separator::RightBrace) {
+        let right_brace_span = if let Some(right_brace_span) = self.try_expect_sep(Separator::RBrace) {
             right_brace_span
         } else {
             loop {
@@ -1291,7 +1295,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
                 let variant_all_span = variant_name.span + init_value.as_ref().map(|e| e.span(arena)).unwrap_or(variant_name.span);
                 variants.push(arena.emplace_enum_def_variant(variant_all_span, variant_name, init_value));
 
-                if let Some((right_brace_span, _)) = self.try_expect_closing_bracket(Separator::RightBrace) {
+                if let Some((right_brace_span, _)) = self.try_expect_closing_bracket(Separator::RBrace) {
                     break right_brace_span;
                 } else {
                     self.expect_sep(Separator::Comma)?;
@@ -1339,15 +1343,16 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
     // fn-def = 'fn' generic_name '(' [ identifier ':' type-use { ',' identifier ':' type-use [ ',' ] } ] ')' [ '->' type-use ] [ 'where' { where_clause ',' } ] [ block ]
     // where_clause = ident ':' type_ref { '+' type_ref }
+    // TODO left of where clause is type_ref
     pub fn parse_fn_def(&mut self, arena: &'a Arena) -> Result<Index<'a, FnDef<'a>>, Unexpected> {
 
         let fn_span = self.expect_keyword(Keyword::Fn)?;
         let fn_name = self.parse_generic_name(arena)?;
-        let mut quote_span = self.expect_sep(Separator::LeftParen)?;
+        let mut quote_span = self.expect_sep(Separator::LParen)?;
 
         let mut parameters = Vec::new();
         loop {
-            if let Some((right_paren_span, comma_span)) = self.try_expect_closing_bracket(Separator::RightParen) {
+            if let Some((right_paren_span, comma_span)) = self.try_expect_closing_bracket(Separator::RParen) {
                 quote_span += right_paren_span;
                 if let (0, Some(comma_span)) = (parameters.len(), comma_span) {
                     self.emit("Single comma in function definition argument list").span(comma_span);
@@ -1357,13 +1362,13 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
                 continue;
             }
 
-            let parameter_name = self.expect_ident_or_keywords(&[Keyword::Underscore, Keyword::This, Keyword::Self_])?;
+            let parameter_name = self.expect_ident_or_keywords(&[Keyword::Underscore, Keyword::Self_])?;
             self.expect_sep(Separator::Colon)?;
             let r#type = self.parse_type_ref(arena)?;
             parameters.push(arena.emplace_fn_def_parameter(parameter_name.span + r#type.span(arena), parameter_name, r#type));
         }
 
-        let ret_type = self.try_expect_seps(&[Separator::Arrow, Separator::Colon]).map(|(sep, span)| {
+        let ret_type = self.try_expect_seps(&[Separator::SubGt, Separator::Colon]).map(|(sep, span)| {
             if sep == Separator::Colon {
                 self.emit(strings::FunctionReturnTypeShouldUseArrow).detail(span, strings::FunctionReturnTypeExpectArrowMeetColon);
             }
@@ -1385,9 +1390,9 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
             wheres.push(parse_where!());
             loop {
                 // left brace/semicolon is not closing bracket, and this does not move forward
-                if self.is_sep(Separator::LeftBrace) || self.is_sep(Separator::SemiColon) {
+                if self.is_sep(Separator::LBrace) || self.is_sep(Separator::SemiColon) {
                     break;
-                } else if matches!((&self.current, &self.peek), (Token::Sep(Separator::Comma), Token::Sep(Separator::LeftBrace | Separator::SemiColon))) {
+                } else if matches!((&self.current, &self.peek), (Token::Sep(Separator::Comma), Token::Sep(Separator::LBrace | Separator::SemiColon))) {
                     self.move_next();
                     break;
                 } else {
@@ -1397,7 +1402,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
             }
         }
 
-        let (ending_span, body) = if self.is_sep(Separator::LeftBrace) {
+        let (ending_span, body) = if self.is_sep(Separator::LBrace) {
             let body = self.parse_block(arena)?;
             (arena.get(&body).span, Some(body))
         } else {
@@ -1511,9 +1516,9 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
             parse_where!();
             loop {
                 // left brace is not closing bracket, and this does not move forward
-                if self.is_sep(Separator::LeftBrace) {
+                if self.is_sep(Separator::LBrace) {
                     break;
-                } else if matches!((&self.current, &self.peek), (Token::Sep(Separator::Comma), Token::Sep(Separator::LeftBrace))) {
+                } else if matches!((&self.current, &self.peek), (Token::Sep(Separator::Comma), Token::Sep(Separator::LBrace))) {
                     self.move_next();
                     break;
                 } else {
@@ -1523,10 +1528,10 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
             }
         }
 
-        let left_brace_span = self.expect_sep(Separator::LeftBrace)?;
+        let left_brace_span = self.expect_sep(Separator::LBrace)?;
         let mut items = Vec::new();
         let right_brace_span = loop {
-            if let Some(right_brace_span) = self.try_expect_sep(Separator::RightBrace) {
+            if let Some(right_brace_span) = self.try_expect_sep(Separator::RBrace) {
                 break right_brace_span;
             } else if self.maybe_type_def() {
                 items.push(self.parse_type_def(arena)?.into());
@@ -1605,7 +1610,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
         let starting_span = self.expect_keyword(Keyword::Struct)?;
         let type_name = self.parse_generic_name(arena)?;
-        self.expect_sep(Separator::LeftBrace)?;
+        self.expect_sep(Separator::LBrace)?;
 
         let mut fields = Vec::new();
         macro_rules! parse_field {
@@ -1617,12 +1622,12 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
             }}
         }
 
-        let right_brace_span = if let Some((right_brace_span, _)) = self.try_expect_closing_bracket(Separator::RightBrace) {
+        let right_brace_span = if let Some((right_brace_span, _)) = self.try_expect_closing_bracket(Separator::RBrace) {
             right_brace_span
         } else {
             parse_field!();
             loop {
-                if let Some((right_brace_span, _)) = self.try_expect_closing_bracket(Separator::RightBrace) {
+                if let Some((right_brace_span, _)) = self.try_expect_closing_bracket(Separator::RBrace) {
                     break right_brace_span;     // rustc 1.19 stablize break-expr
                 } else {
                     self.expect_sep(Separator::Comma)?;

@@ -60,7 +60,7 @@ fn parse_tuple_type() {
     case!{ parse_type_ref "(i32)", |x|
         make_type!(x tuple 0:4
             make_type!(x prim 1:3 I32),),
-        |e| e.emit(strings::SingleItemTupleType).detail(Span::new(4, 4), strings::TupleTypeExpectCommaMeetRightParen),
+        |e| e.emit(strings::SingleItemTupleType).detail(Span::new(4, 4), strings::TupleTypeExpectCommaMeetRParen),
     }
 }
 

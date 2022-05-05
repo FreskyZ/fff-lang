@@ -1,0 +1,114 @@
+
+# # for comment
+# upper case for terminal, lower case for non terminal, use underscore
+# () for group, ? for optional, * for none or many, | for multiple production
+# rule should normally be in one line, but if next line starts with |, that's included in current rule
+# first rule is entry
+
+# see grammar.py for basic validation and LL parsing table generation
+
+# - context free: https://en.wikipedia.org/wiki/Context-free_grammar
+#   this is a context free grammar because left hand side of rule is single non terminal
+# - regular language: https://en.wikipedia.org/wiki/Regular_expression
+#   this is a regular *language* when regard grouping as a sub-rule, regard optional as alternative between empty string and a sub-rule
+# - regular grammar: https://en.wikipedia.org/wiki/Regular_grammar
+#   requires every rule to be empty or at most one terminal at begin/end
+#   this is not a regular *grammar* because these requirements make too many small rules and meaningless for human or program to read,
+#   also regular grammar, NFA and DFA is actually different forms of similar data structure, so I will not try construct an NFA for this
+# - left recursion: https://en.wikipedia.org/wiki/Left_recursion
+#   there is always "eliminate left recursion" before "constructing LL parse table" because when 
+#   you are calculating first set of non terminal S, replacing non terminal by its rules, if meet S again,
+#   it is infinite loop, so check no-indirect-left-recursion can be included in first set calculation
+# - LL grammar: https://en.wikipedia.org/wiki/LL_grammar, LL parser: https://en.wikipedia.org/wiki/LL_parser
+#   LL1 grammar can be proved by generating LL1 parsing table if every cell (intersection of current non terminal and current symbol) has at most one rule
+#   currently this grammar is definitely not LL1 because there is first conflict between labeled statements (block, while, for or loop) and expr statements (simple or assign)
+#   but I'd like to resolve these conflicts intermediately while keeping them in this file, for better human readability
+# human readability: except close to human logic, every rule in this file generally matches a parse_* method and an unit test function
+
+# # syntax for self:
+# # this is not LL1, LPAREN + SYMBOL + OR is alternative group, or else is normal group
+# grammar = rule*
+# rule = SYMBOL EQ production NEWLINE    # the next line starts with OR is implementation detail
+# postfix = QUESTION | STAR              # postfix only directly follows symbol or group
+# alternative = SYMBOL (OR SYMBOL)*      # alternative is not postfixable
+# basic = SYMBOL postfix?
+# group = LPAREN production RPAREN postfix?
+# component = basic | group
+# sequence = component component*
+# production = alternative | sequence
+
+module = item*
+
+unit_expr = LPAREN RPAREN
+lit_expr = LITERAL
+paren_expr = LPAREN expr RPAREN
+single_tuple_expr = LPAREN expr COMMA RPAREN
+tuple_expr = LPAREN expr (COMMA expr)* COMMA? RPAREN
+array_expr = LBRACKET expr (COMMA expr)* COMMA? RPAREN
+primary_expr = unit_expr | lit_expr | path | paren_expr | single_tuple_expr | tuple_expr | array_expr
+member_expr = primary_expr DOT IDENT (LT type_ref (COMMA type_ref)* COMMA? GT)?
+tuple_index_expr = primary_expr DOT NUMBER
+call_expr = primary_expr LPAREN (expr (COMMA expr)* COMMA?)? RPAREN
+array_index_expr = primary_expr LBRACKET (expr (COMMA expr)* COMMA?)? RBRACKET
+object_expr = path LBRACE (IDENT COLON expr (COMMA IDENT COLON expr)* COMMA?)? RBRACE
+postfix_expr = member_expr | tuple_index_expr | call_expr | array_index_expr | object_expr
+unary_expr = (NOT | AND | SUB | TILDE)* postfix_expr
+multiplicative_expr = unary_expr ((REM | MUL | DIV) unary_expr)*
+additive_expr = multiplicative_expr ((ADD | SUB) multiplicative_expr)*
+relational_expr = additive_expr ((LT | GT | LTEQ | GTEQ) additive_expr)*
+shift_expr = relational_expr ((LTLT | GTGT) relational_expr)*
+bitand_expr = shift_expr (AND shift_expr)*
+bitxor_expr = bitand_expr (CARET bitand_expr)*
+bitor_expr = bitxor_expr (OR bitxor_expr)*
+equality_expr = bitor_expr ((EQEQ | NOTEQ) bitor_expr)*
+logical_and_expr = equality_expr (ANDAND equality_expr)*
+logical_or_expr = logical_and_expr (OROR logical_and_expr)*
+binary_expr = logical_or_expr
+range_full_expr = DOTDOT
+range_right_expr = DOTDOT binary_expr
+range_left_expr = binary_expr DOTDOT
+range_both_expr = binary_expr DOTDOT binary_expr
+range_expr = range_full_expr | range_right_expr | range_left_expr | range_both_expr
+expr = range_expr
+
+primitive_type = BOOL | CHAR | F32 | F64 | I8 | I16 | I32 | I64 | I128 | U8 | U16 | U32 | U64 | U128
+array_type = LBRACKET type_ref SEMICOLON expr RBRACKET
+fn_type = FN LPAREN ((IDENT COLON)? type_ref (COMMA (IDENT COLON)? type_ref)* COMMA?)? RPAREN (SUBGT type_ref)?
+ref_type = AND type_ref
+tuple_type = LPAREN (type_ref (COMMA type_ref)* COMMA?)? RPAREN
+type_ref = primitive_type | array_type | fn_type | ref_type | tuple_type | path
+
+simple_segment = IDENT | TRUE | FALSE | SELF_ | UNDERSCORE
+generic_segment = IDENT (COLONCOLON? LT type_ref (COMMA type_ref)* COMMA? GT)?
+cast_segment = LT type_ref AS type_ref GT
+path_segment = simple_segment | generic_segment | cast_segment
+path = COLONCOLON? path_segment (COLONCOLON path_segment)*
+
+label = LABEL COLON
+generic_name = IDENT (LT IDENT (COMMA IDENT)* COMMA? GT)?
+where_clause = IDENT COLON type_ref (ADD type_ref)*
+block = LBRACE stmt* RBRACE
+block_stmt = label? block
+break_stmt = BREAK label? SEMICOLON
+class_def = CLASS generic_name LBRACE item* RBRACE
+continue_stmt = CONTINUE label? SEMICOLON
+enum_def = ENUM IDENT (COLON primitive_type)? LBRACE (IDENT (EQ expr)? (COMMA IDENT (EQ expr)?)* COMMA?)? RBRACE
+simple_expr_stmt = expr SEMICOLON
+assign_expr_stmt = expr (EQ | REMEQ | ANDEQ | MULEQ | ADDEQ | SUBEQ | DIVEQ | CARETEQ | OREQ | LTLTEQ | GTGTEQ) expr SEMICOLON
+fn_def = FN generic_name LPAREN (IDENT COLON type_ref (COMMA IDENT COLON type_ref)* COMMA?)? RPAREN (SUBGT type_ref)? (WHERE where_clause (COMMA where_clause)* COMMA?)? (block | SEMICOLON)
+for_stmt = label? FOR IDENT IN expr block
+if_stmt = IF expr block (ELSE IF expr block)* (ELSE block)?
+impl_block = IMPL (LT IDENT (COMMA IDENT)* COMMA? GT)? (type_ref FOR)? type_ref (WHERE where_clause (COMMA where_clause)* COMMA?)? LBRACE item* RBRACE
+loop_stmt = label? LOOP block
+module_stmt = MODULE IDENT LITERAL? SEMICOLON
+ret_stmt = RETURN expr? SEMICOLON
+struct_def = STRUCT generic_name LBRACE (IDENT COLON type_ref (COMMA IDENT COLON type_ref)* COMMA?)? RBRACE
+type_def = TYPE generic_name (EQ type_ref)? SEMICOLON
+use_stmt = USE path (AS IDENT)? SEMICOLON
+var_decl_stmt = (CONST | VAR) IDENT (COLON type_ref)? (EQ expr)? SEMICOLON
+while_stmt = label? WHILE expr block
+
+stmt = struct_def | enum_def | fn_def | impl_block | type_def | class_def | block_stmt | break_stmt | continue_stmt
+    | simple_expr_stmt | assign_expr_stmt | for_stmt | if_stmt | loop_stmt | ret_stmt | var_decl_stmt | while_stmt | use_stmt
+item = struct_def | enum_def | fn_def | impl_block | type_def | class_def | block_stmt
+    | simple_expr_stmt | assign_expr_stmt | for_stmt | if_stmt | loop_stmt | var_decl_stmt | while_stmt | use_stmt | module_stmt

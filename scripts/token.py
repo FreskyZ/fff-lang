@@ -162,7 +162,7 @@ class Separators(object):
         b += '#[derive(Eq, PartialEq, Copy, Clone, Debug)]\n'
         b += 'pub enum Separator {\n'
         for item in self.all_items:
-            b += f'    /** `{item.value}` */ {item.name} = {item.index},\n'
+            b += f'    /// `{item.value}`\n    {item.name} = {item.index},\n'
         b += '}\n'
         b += '\n'
         b += 'const VALUES: &[&str] = &[\n'
@@ -294,7 +294,7 @@ class Separators(object):
         # which help me understand why the common practice is implement hashmap first and implement hashset as hashmap<T, ()>,
         # because in this case if you do not have a key stored in hashmap to confirm equality then a bug happened
         # update 2022/3/6: that's the old hash function, if you are concerned
-        b += "    assert_eq!(Separator::parse('{', ' ', 'a'), Some((Separator::LeftBrace, 1)));\n"
+        b += "    assert_eq!(Separator::parse('{', ' ', 'a'), Some((Separator::LBrace, 1)));\n"
         b += "    assert_eq!(Separator::parse('&', '&', ' '), Some((Separator::AndAnd, 2)));\n"
         # 17/7/11 this case is manually created to prove that the original hash function has bug
         # original hash function is `lambda value: ord(value[0]) + ord(value[1]) * 256`
@@ -365,6 +365,7 @@ class Keywords(object):
                 name, category, _ = map(str.strip, rest.split(','))
                 self.items.append(Keyword(value, name, 0, category))
         assert len(self.items) < 255  # 255 is used in bucket to represent empty value
+        # ATTENTION: grammar.py validation function also relies on these values
         self.cats = { 'Reserved': 0, 'Primitive': 1, 'MaybeIdentifier': 2, 'Normal': 3 }
         self.items.sort()
         self.items = [keyword.update_index(index + 1).update_cat_value(self.cats) for (index, keyword) in enumerate(self.items)]

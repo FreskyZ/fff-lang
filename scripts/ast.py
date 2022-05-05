@@ -18,14 +18,14 @@ from itertools import takewhile
 import re
 
 DEF_FILE = 'scripts/ast.txt'
-ENTRY_FILE = 'src/syntaxw/ast.rs'
-VISIT_TRAIT_FILE = 'src/syntaxw/visit.rs'
-SPAN_FILE = 'src/syntaxw/ast/span.rs'
-NEW_FILE = 'src/syntaxw/ast/new.rs'
-CMP_FILE = 'src/syntaxw/ast/cmp.rs'
-UGLY_FILE = 'src/syntaxw/ast/ugly.rs'
-VISIT_FILE = 'src/syntaxw/ast/visit.rs'
-PROFILE_FILE = 'src/syntaxw/ast/profile.rs'
+ENTRY_FILE = 'src/syntax/ast.rs'
+VISIT_TRAIT_FILE = 'src/syntax/visit.rs'
+SPAN_FILE = 'src/syntax/ast/span.rs'
+NEW_FILE = 'src/syntax/ast/new.rs'
+CMP_FILE = 'src/syntax/ast/cmp.rs'
+UGLY_FILE = 'src/syntax/ast/ugly.rs'
+VISIT_FILE = 'src/syntax/ast/visit.rs'
+PROFILE_FILE = 'src/syntax/ast/profile.rs'
 
 TERMINAL_TYPES = ['Span', 'IsId', 'IdSpan', 'Keyword', 'Separator', 'Numeric', 'LitValue', 'FileId', 'bool', 'i32']
 LIFETIME = "<'a>"

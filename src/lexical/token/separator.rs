@@ -26,50 +26,94 @@ pub enum SeparatorKind {
 #[repr(u8)]
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub enum Separator {
-    /** `!` */ Not = 1,
-    /** `%` */ Rem = 2,
-    /** `&` */ And = 3,
-    /** `(` */ LeftParen = 4,
-    /** `)` */ RightParen = 5,
-    /** `*` */ Mul = 6,
-    /** `+` */ Add = 7,
-    /** `,` */ Comma = 8,
-    /** `-` */ Sub = 9,
-    /** `.` */ Dot = 10,
-    /** `/` */ Div = 11,
-    /** `:` */ Colon = 12,
-    /** `;` */ SemiColon = 13,
-    /** `<` */ Lt = 14,
-    /** `=` */ Eq = 15,
-    /** `>` */ Gt = 16,
-    /** `[` */ LeftBracket = 17,
-    /** `]` */ RightBracket = 18,
-    /** `^` */ Caret = 19,
-    /** `{` */ LeftBrace = 20,
-    /** `|` */ Or = 21,
-    /** `}` */ RightBrace = 22,
-    /** `~` */ Tilde = 23,
-    /** `!=` */ NotEq = 24,
-    /** `%=` */ RemEq = 25,
-    /** `&&` */ AndAnd = 26,
-    /** `&=` */ AndEq = 27,
-    /** `*=` */ MulEq = 28,
-    /** `+=` */ AddEq = 29,
-    /** `-=` */ SubEq = 30,
-    /** `->` */ Arrow = 31,
-    /** `..` */ DotDot = 32,
-    /** `/=` */ DivEq = 33,
-    /** `::` */ ColonColon = 34,
-    /** `<<` */ LtLt = 35,
-    /** `<=` */ LtEq = 36,
-    /** `==` */ EqEq = 37,
-    /** `>=` */ GtEq = 38,
-    /** `>>` */ GtGt = 39,
-    /** `^=` */ CaretEq = 40,
-    /** `|=` */ OrEq = 41,
-    /** `||` */ OrOr = 42,
-    /** `<<=` */ LtLtEq = 43,
-    /** `>>=` */ GtGtEq = 44,
+    /// `!`
+    Not = 1,
+    /// `%`
+    Rem = 2,
+    /// `&`
+    And = 3,
+    /// `(`
+    LParen = 4,
+    /// `)`
+    RParen = 5,
+    /// `*`
+    Mul = 6,
+    /// `+`
+    Add = 7,
+    /// `,`
+    Comma = 8,
+    /// `-`
+    Sub = 9,
+    /// `.`
+    Dot = 10,
+    /// `/`
+    Div = 11,
+    /// `:`
+    Colon = 12,
+    /// `;`
+    SemiColon = 13,
+    /// `<`
+    Lt = 14,
+    /// `=`
+    Eq = 15,
+    /// `>`
+    Gt = 16,
+    /// `[`
+    LBracket = 17,
+    /// `]`
+    RBracket = 18,
+    /// `^`
+    Caret = 19,
+    /// `{`
+    LBrace = 20,
+    /// `|`
+    Or = 21,
+    /// `}`
+    RBrace = 22,
+    /// `~`
+    Tilde = 23,
+    /// `!=`
+    NotEq = 24,
+    /// `%=`
+    RemEq = 25,
+    /// `&&`
+    AndAnd = 26,
+    /// `&=`
+    AndEq = 27,
+    /// `*=`
+    MulEq = 28,
+    /// `+=`
+    AddEq = 29,
+    /// `-=`
+    SubEq = 30,
+    /// `->`
+    SubGt = 31,
+    /// `..`
+    DotDot = 32,
+    /// `/=`
+    DivEq = 33,
+    /// `::`
+    ColonColon = 34,
+    /// `<<`
+    LtLt = 35,
+    /// `<=`
+    LtEq = 36,
+    /// `==`
+    EqEq = 37,
+    /// `>=`
+    GtEq = 38,
+    /// `>>`
+    GtGt = 39,
+    /// `^=`
+    CaretEq = 40,
+    /// `|=`
+    OrEq = 41,
+    /// `||`
+    OrOr = 42,
+    /// `<<=`
+    LtLtEq = 43,
+    /// `>>=`
+    GtGtEq = 44,
 }
 
 const VALUES: &[&str] = &[
@@ -98,10 +142,10 @@ impl Separator {
 
 use Separator::*;
 const BUCKET1: &[Option<Separator>] = &[
-    Some(Or), Some(RightBrace), Some(Tilde), None, Some(Colon), Some(SemiColon),
-    Some(Lt), Some(Eq), Some(Gt), None, Some(LeftBracket), Some(Not), Some(RightBracket),
-    Some(Caret), None, Some(Rem), Some(And), None, Some(LeftParen), Some(RightParen),
-    Some(Mul), Some(Add), Some(Comma), Some(Sub), Some(Dot), Some(Div), Some(LeftBrace),
+    Some(Or), Some(RBrace), Some(Tilde), None, Some(Colon), Some(SemiColon), Some(Lt),
+    Some(Eq), Some(Gt), None, Some(LBracket), Some(Not), Some(RBracket), Some(Caret),
+    None, Some(Rem), Some(And), None, Some(LParen), Some(RParen), Some(Mul), Some(Add),
+    Some(Comma), Some(Sub), Some(Dot), Some(Div), Some(LBrace),
 ];
 const BUCKET2: &[Option<Separator>] = &[
     None, None, None, Some(RemEq), Some(AndEq), None, Some(CaretEq), None, Some(MulEq),
@@ -110,7 +154,7 @@ const BUCKET2: &[Option<Separator>] = &[
 ];
 const BUCKET3: &[Option<Separator>] = &[
     Some(DotDot), None, None, Some(LtLt), None, None, Some(OrOr), Some(GtGt), None,
-    Some(Arrow), Some(AndAnd), None, Some(ColonColon),
+    Some(SubGt), Some(AndAnd), None, Some(ColonColon),
 ];
 
 #[inline]
