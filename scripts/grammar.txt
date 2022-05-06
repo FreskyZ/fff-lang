@@ -7,6 +7,7 @@
 
 # see grammar.py for basic validation and LL parsing table generation
 
+# every rule in this file generally matches a parse-* method and an unit test function
 # - context free: https://en.wikipedia.org/wiki/Context-free_grammar
 #   this is a context free grammar because left hand side of rule is single non terminal
 # - regular language: https://en.wikipedia.org/wiki/Regular_expression
@@ -21,9 +22,8 @@
 #   it is infinite loop, so check no-indirect-left-recursion can be included in first set calculation
 # - LL grammar: https://en.wikipedia.org/wiki/LL_grammar, LL parser: https://en.wikipedia.org/wiki/LL_parser
 #   LL1 grammar can be proved by generating LL1 parsing table if every cell (intersection of current non terminal and current symbol) has at most one rule
-#   currently this grammar is definitely not LL1 because there is first conflict between labeled statements (block, while, for or loop) and expr statements (simple or assign)
+#   currently this grammar is definitely not LL1 because there is first/first conflict like labeled statements (block, while, for or loop)
 #   but I'd like to resolve these conflicts intermediately while keeping them in this file, for better human readability
-# human readability: except close to human logic, every rule in this file generally matches a parse_* method and an unit test function
 
 # # syntax for self:
 # # this is not LL1, LPAREN + SYMBOL + OR is alternative group, or else is normal group
@@ -37,78 +37,121 @@
 # sequence = component component*
 # production = alternative | sequence
 
+# update of LL1-bility after I finally parse this file, do a lot of validation and calcualted the 2 sets
+# - first/first conflict between unit-expr and tuple-expr when expecting primary-expr, it is solved by matching `items.len()`
+# - first/first conflict between labeled statements, it is currently resolved by peek(2) (or lookahead(3) when talking about formal language
+#   it will be solved by splitting labeled statements out of statements/items and expecting for/loop/while after label
+# - first/first conflict between assign-expr-stmt and simple-expr-stmt, it is resolved by checking following separator is semicolon or eq
+# - first/first conflict between simple-segment and generic-segment, it is resolved by try expecting `<` after ident and expect `::<` in value path
+# - first/first conflict between member-expr-postfix and tuple-index-expr-postfix, it is resolved by checking current is numeric literal or ident
+# - all these conflicts are logically same as standard "move left common part to separate rule" method in textbook,
+#   the first is more implicit, it is actually some kind of `parened-expr = LPAREN (RPAREN | (expr (RPAREN | COMMA (COMMA expr)* COMMA? RPAREN)))`,
+#   they does actually not affect the LL1-ness of this language
+# - first/follow conflict for expr-postfix when meet `{`, it is resolved by `Parser::allow_object_expr`,
+#   the comment before this field is incorrect, it does not affect LL1-ness if you copy expr rules from expr to expr-post and add a `no-object-expr` postfix them,
+#   and change `expr block` to `expr-no-object-expr block` and remove the object-expr alternative in expr-postfix-no-object-expr,
+#   but that's really a large chunk of text, hard to read and is not meaningfull to remove this entry from grammar.py output, so it is not included in this file
+# - first/follow conflict for if-stmt if you include else if clauses that when meet `else` after if's body,
+#   cannot decide whether it's else if clause or else clause, it is resolved by peek one more to check whether the follow token is `if`, 
+#   this is very simple and easy to understand solution but this do **make this language un-LL1-able** and an LL2,
+#   this can be resolved by change if-stmt rule to simply `if-clause ELSE (if-stmt | block)`, and this also make ast simple a little, still considering
+# - first/follow conflict for impl-block when meet `<` after initial `impl`, it is real ambiguity if you write `impl <A as B> :: C`,
+#   but luckily `impl <Type as Trait>::Assoc` currently does not have any meaningful semantic so `<` after `impl` is always regarded as generic parameter list,
+#   see https://github.com/rust-lang/rust/blob/7f9e013ba62e7bf77a95ba29bcb2c5740b7b2059/compiler/rustc_parse/src/parser/generics.rs#L325
+# - first/follow conflict for fn-type-parameter when meet ident, cannot decide whether it is parameter name or a path as type ref,
+#   it was resolved by always expecting type ref, and if it is very simple type ref (one identifier) and followed by a colon, then it is regarded as parameter name,
+#   but allow single colon as path separator make a regression issue that normal `IDENT COLON IDENT` is parsed as a 2 segment path, so currently
+#   it is resolved by peek(1) (or lookahead(2)) that IDENT + COLON is regarded as parameter name and other case it is type ref,
+#   it also can be resolved by passing "no-single-colon-recover" parameter to path parser / path rule, I may change when new change happens to relative feature,
+#   the previous solution is kind of backtrack solution except the "go back and parse again" part is replaced with simple "unwrap type ref to identifier",
+#   the current solution is an LL2 solution which is simple and easy to understand, this is one of the features that I always want to do when writing rust function 
+#   pointers/callable traits, and I think the ambiguity is the reason why rust does not support this, but I like this feature more than the cost of parser complexity
+# - (THE BIG ONE) first/follow conflict for all comma separated sequence which allows optional trailing comma,
+#   because cannot decide whether it is one of `(COMMA <item>)*` or `COMMA?` at the end after one sequence item,
+#   it is resolved by peek(1) or lookahead(2) to check DELIM / COMMA + DELIM to end the sequence, which is relatively simple and easy to understand solution,
+#   *but*, that is THE solution for this feature and no other workaround, which means this feature DEFINITELY make 
+#   the language un-LL1-bility and NOT the grammar (LL1 language can have non LL1 grammar but non LL1 language means no matching LL1 grammar exist),
+#   but(again), many this century languages support this feature because use trailing comma happily is a lot more important than make this language DIVINE LL1
+# conclusion 2022/5/6: this is an LL2 language and I can make the parser LL2 (removing the Parser::peek2) and may help with the retry feature for lexical parser
+# TODO: lexical-parser-retry for rational-after-primary-expr-dot issue and format string feature may affect some property in this file, review again at that time
+
 module = item*
 
-unit_expr = LPAREN RPAREN
-lit_expr = LITERAL
-paren_expr = LPAREN expr RPAREN
-single_tuple_expr = LPAREN expr COMMA RPAREN
-tuple_expr = LPAREN expr (COMMA expr)* COMMA? RPAREN
-array_expr = LBRACKET expr (COMMA expr)* COMMA? RPAREN
-primary_expr = unit_expr | lit_expr | path | paren_expr | single_tuple_expr | tuple_expr | array_expr
-member_expr = primary_expr DOT IDENT (LT type_ref (COMMA type_ref)* COMMA? GT)?
-tuple_index_expr = primary_expr DOT NUMBER
-call_expr = primary_expr LPAREN (expr (COMMA expr)* COMMA?)? RPAREN
-array_index_expr = primary_expr LBRACKET (expr (COMMA expr)* COMMA?)? RBRACKET
-object_expr = path LBRACE (IDENT COLON expr (COMMA IDENT COLON expr)* COMMA?)? RBRACE
-postfix_expr = member_expr | tuple_index_expr | call_expr | array_index_expr | object_expr
-unary_expr = (NOT | AND | SUB | TILDE)* postfix_expr
-multiplicative_expr = unary_expr ((REM | MUL | DIV) unary_expr)*
-additive_expr = multiplicative_expr ((ADD | SUB) multiplicative_expr)*
-relational_expr = additive_expr ((LT | GT | LTEQ | GTEQ) additive_expr)*
-shift_expr = relational_expr ((LTLT | GTGT) relational_expr)*
-bitand_expr = shift_expr (AND shift_expr)*
-bitxor_expr = bitand_expr (CARET bitand_expr)*
-bitor_expr = bitxor_expr (OR bitxor_expr)*
-equality_expr = bitor_expr ((EQEQ | NOTEQ) bitor_expr)*
-logical_and_expr = equality_expr (ANDAND equality_expr)*
-logical_or_expr = logical_and_expr (OROR logical_and_expr)*
-binary_expr = logical_or_expr
-range_full_expr = DOTDOT
-range_right_expr = DOTDOT binary_expr
-range_left_expr = binary_expr DOTDOT
-range_both_expr = binary_expr DOTDOT binary_expr
-range_expr = range_full_expr | range_right_expr | range_left_expr | range_both_expr
-expr = range_expr
+unit-expr = LPAREN RPAREN
+lit-expr = LITERAL
+paren-expr = LPAREN expr RPAREN
+single-tuple-expr = LPAREN expr COMMA RPAREN
+tuple-expr = LPAREN expr (COMMA expr)* COMMA? RPAREN
+array-expr = LBRACKET expr (COMMA expr)* COMMA? RPAREN
+primary-expr = unit-expr | lit-expr | value-path | paren-expr | single-tuple-expr | tuple-expr | array-expr
+member-expr-postfix = DOT IDENT (COLONCOLON LT type-ref (COMMA type-ref)* COMMA? GT)?
+tuple-index-expr-postfix = DOT NUMBER
+call-expr-postfix = LPAREN (expr (COMMA expr)* COMMA?)? RPAREN
+array-index-expr-postfix = LBRACKET (expr (COMMA expr)* COMMA?)? RBRACKET
+object-expr-postfix = LBRACE (IDENT COLON expr (COMMA IDENT COLON expr)* COMMA?)? RBRACE
+expr-postfix = member-expr-postfix | tuple-index-expr-postfix | call-expr-postfix | array-index-expr-postfix | object-expr-postfix
+postfix-expr = primary-expr expr-postfix*
+unary-expr = (NOT | AND | SUB | MUL | TILDE)* postfix-expr
+multiplicative-expr = unary-expr ((REM | MUL | DIV) unary-expr)*
+additive-expr = multiplicative-expr ((ADD | SUB) multiplicative-expr)*
+relational-expr = additive-expr ((LT | GT | LTEQ | GTEQ) additive-expr)*
+shift-expr = relational-expr ((LTLT | GTGT) relational-expr)*
+bitand-expr = shift-expr (AND shift-expr)*
+bitxor-expr = bitand-expr (CARET bitand-expr)*
+bitor-expr = bitxor-expr (OR bitxor-expr)*
+equality-expr = bitor-expr ((EQEQ | NOTEQ) bitor-expr)*
+logical-and-expr = equality-expr (ANDAND equality-expr)*
+logical-or-expr = logical-and-expr (OROR logical-and-expr)*
+binary-expr = logical-or-expr
+range-full-expr = DOTDOT
+range-right-expr = DOTDOT binary-expr
+range-left-expr = binary-expr DOTDOT
+range-both-expr = binary-expr DOTDOT binary-expr
+range-expr = range-full-expr | range-right-expr | range-left-expr | range-both-expr
+expr = range-expr
 
-primitive_type = BOOL | CHAR | F32 | F64 | I8 | I16 | I32 | I64 | I128 | U8 | U16 | U32 | U64 | U128
-array_type = LBRACKET type_ref SEMICOLON expr RBRACKET
-fn_type = FN LPAREN ((IDENT COLON)? type_ref (COMMA (IDENT COLON)? type_ref)* COMMA?)? RPAREN (SUBGT type_ref)?
-ref_type = AND type_ref
-tuple_type = LPAREN (type_ref (COMMA type_ref)* COMMA?)? RPAREN
-type_ref = primitive_type | array_type | fn_type | ref_type | tuple_type | path
+primitive-type = BOOL | CHAR | F32 | F64 | I8 | I16 | I32 | I64 | I128 | U8 | U16 | U32 | U64 | U128
+array-type = LBRACKET type-ref SEMICOLON expr RBRACKET
+fn-type = FN LPAREN ((IDENT COLON)? type-ref (COMMA (IDENT COLON)? type-ref)* COMMA?)? RPAREN (SUBGT type-ref)?
+ref-type = AND type-ref
+tuple-type = LPAREN (type-ref (COMMA type-ref)* COMMA?)? RPAREN
+type-ref = primitive-type | array-type | fn-type | ref-type | tuple-type | path
 
-simple_segment = IDENT | TRUE | FALSE | SELF_ | UNDERSCORE
-generic_segment = IDENT (COLONCOLON? LT type_ref (COMMA type_ref)* COMMA? GT)?
-cast_segment = LT type_ref AS type_ref GT
-path_segment = simple_segment | generic_segment | cast_segment
-path = COLONCOLON? path_segment (COLONCOLON path_segment)*
+simple-segment = IDENT | TRUE | FALSE | SELF_ | UNDERSCORE
+generic-segment = IDENT COLONCOLON? LT type-ref (COMMA type-ref)* COMMA? GT
+value-generic-segment = IDENT COLONCOLON LT type-ref (COMMA type-ref)* COMMA? GT
+cast-segment = LT type-ref AS type-ref GT
+path-segment = simple-segment | generic-segment | cast-segment
+value-path-segment = simple-segment | value-generic-segment | cast-segment
+path = COLONCOLON? path-segment (COLONCOLON path-segment)*
+value-path = COLONCOLON? value-path-segment (COLONCOLON path-segment)*
 
 label = LABEL COLON
-generic_name = IDENT (LT IDENT (COMMA IDENT)* COMMA? GT)?
-where_clause = IDENT COLON type_ref (ADD type_ref)*
+generic-name = IDENT (LT IDENT (COMMA IDENT)* COMMA? GT)?
+where-clause = IDENT COLON type-ref (ADD type-ref)*
 block = LBRACE stmt* RBRACE
-block_stmt = label? block
-break_stmt = BREAK label? SEMICOLON
-class_def = CLASS generic_name LBRACE item* RBRACE
-continue_stmt = CONTINUE label? SEMICOLON
-enum_def = ENUM IDENT (COLON primitive_type)? LBRACE (IDENT (EQ expr)? (COMMA IDENT (EQ expr)?)* COMMA?)? RBRACE
-simple_expr_stmt = expr SEMICOLON
-assign_expr_stmt = expr (EQ | REMEQ | ANDEQ | MULEQ | ADDEQ | SUBEQ | DIVEQ | CARETEQ | OREQ | LTLTEQ | GTGTEQ) expr SEMICOLON
-fn_def = FN generic_name LPAREN (IDENT COLON type_ref (COMMA IDENT COLON type_ref)* COMMA?)? RPAREN (SUBGT type_ref)? (WHERE where_clause (COMMA where_clause)* COMMA?)? (block | SEMICOLON)
-for_stmt = label? FOR IDENT IN expr block
-if_stmt = IF expr block (ELSE IF expr block)* (ELSE block)?
-impl_block = IMPL (LT IDENT (COMMA IDENT)* COMMA? GT)? (type_ref FOR)? type_ref (WHERE where_clause (COMMA where_clause)* COMMA?)? LBRACE item* RBRACE
-loop_stmt = label? LOOP block
-module_stmt = MODULE IDENT LITERAL? SEMICOLON
-ret_stmt = RETURN expr? SEMICOLON
-struct_def = STRUCT generic_name LBRACE (IDENT COLON type_ref (COMMA IDENT COLON type_ref)* COMMA?)? RBRACE
-type_def = TYPE generic_name (EQ type_ref)? SEMICOLON
-use_stmt = USE path (AS IDENT)? SEMICOLON
-var_decl_stmt = (CONST | VAR) IDENT (COLON type_ref)? (EQ expr)? SEMICOLON
-while_stmt = label? WHILE expr block
+block-stmt = label? block
+break-stmt = BREAK label? SEMICOLON
+class-def = CLASS generic-name LBRACE item* RBRACE
+continue-stmt = CONTINUE label? SEMICOLON
+enum-def = ENUM IDENT (COLON primitive-type)? LBRACE (IDENT (EQ expr)? (COMMA IDENT (EQ expr)?)* COMMA?)? RBRACE
+simple-expr-stmt = expr SEMICOLON
+assign-expr-stmt = expr (EQ | REMEQ | ANDEQ | MULEQ | ADDEQ | SUBEQ | DIVEQ | CARETEQ | OREQ | LTLTEQ | GTGTEQ) expr SEMICOLON
+fn-def = FN generic-name LPAREN (IDENT COLON type-ref (COMMA IDENT COLON type-ref)* COMMA?)? RPAREN (SUBGT type-ref)? (WHERE where-clause (COMMA where-clause)* COMMA?)? (block | SEMICOLON)
+for-stmt = label? FOR IDENT IN expr block
+if-stmt = IF expr block (ELSE IF expr block)* (ELSE block)?
+# `(type-ref FOR)? type-ref` is first-follow conflict 
+impl-block = IMPL (LT IDENT (COMMA IDENT)* COMMA? GT)? type-ref (FOR type-ref)? (WHERE where-clause (COMMA where-clause)* COMMA?)? LBRACE item* RBRACE
+loop-stmt = label? LOOP block
+module-stmt = MODULE IDENT LITERAL? SEMICOLON
+ret-stmt = RETURN expr? SEMICOLON
+struct-def = STRUCT generic-name LBRACE (IDENT COLON type-ref (COMMA IDENT COLON type-ref)* COMMA?)? RBRACE
+type-def = TYPE generic-name (EQ type-ref)? SEMICOLON
+use-stmt = USE path (AS IDENT)? SEMICOLON
+var-decl-stmt = (CONST | VAR) IDENT (COLON type-ref)? (EQ expr)? SEMICOLON
+while-stmt = label? WHILE expr block
 
-stmt = struct_def | enum_def | fn_def | impl_block | type_def | class_def | block_stmt | break_stmt | continue_stmt
-    | simple_expr_stmt | assign_expr_stmt | for_stmt | if_stmt | loop_stmt | ret_stmt | var_decl_stmt | while_stmt | use_stmt
-item = struct_def | enum_def | fn_def | impl_block | type_def | class_def | block_stmt
-    | simple_expr_stmt | assign_expr_stmt | for_stmt | if_stmt | loop_stmt | var_decl_stmt | while_stmt | use_stmt | module_stmt
+stmt = struct-def | enum-def | fn-def | impl-block | type-def | class-def | block-stmt | break-stmt | continue-stmt
+    | simple-expr-stmt | assign-expr-stmt | for-stmt | if-stmt | loop-stmt | ret-stmt | var-decl-stmt | while-stmt | use-stmt
+item = struct-def | enum-def | fn-def | impl-block | type-def | class-def | block-stmt
+    | simple-expr-stmt | assign-expr-stmt | for-stmt | if-stmt | loop-stmt | var-decl-stmt | while-stmt | use-stmt | module-stmt
