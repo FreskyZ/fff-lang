@@ -74,9 +74,9 @@ fn block_comment() {
 
     // EOF in block comment is error 
     case!{ "A/*BC" expect [t!(2: ident, 0, 0)], make_errors!{ e: e
-        .emit(strings::UnexpectedEOF)
+        .emit(strings::unexpected_end_of_file())
         .detail(Span::new(1, 1), strings::BlockCommentStartHere)
-        .detail(Span::new(5, 5), strings::EOFHere),
+        .detail(Span::new(5, 5), strings::end_of_file_here()),
     }}
 
     // nested block comment
@@ -86,16 +86,16 @@ fn block_comment() {
 
     // unexpected eof in nested block comment
     case!{ "A/* 1 /* 2" expect [t!(2: ident, 0, 0)], make_errors!{ e: e
-        .emit(strings::UnexpectedEOF)
+        .emit(strings::unexpected_end_of_file())
         .detail(Span::new(1, 1), strings::BlockCommentStartHere)
-        .detail(Span::new(10, 10), strings::EOFHere)
+        .detail(Span::new(10, 10), strings::end_of_file_here())
     }}
 
     // unexpected eof in nested block comment
     case!{ "A/* 1 /* 2 /* 3 */ /*" expect [t!(2: ident, 0, 0)], make_errors!{ e: e
-        .emit(strings::UnexpectedEOF)
+        .emit(strings::unexpected_end_of_file())
         .detail(Span::new(1, 1), strings::BlockCommentStartHere)
-        .detail(Span::new(21, 21), strings::EOFHere)
+        .detail(Span::new(21, 21), strings::end_of_file_here())
     }}
 }
 
@@ -106,17 +106,17 @@ fn string_literal() {
 
     // unexpected eof
     case!{ r#""He"# expect [t!(1: str, 0, 2)], make_errors!{ e: e
-        .emit(strings::UnexpectedEOF)
+        .emit(strings::unexpected_end_of_file())
         .detail(Span::new(0, 0), strings::StringLiteralStartHere)
-        .detail(Span::new(3, 3), strings::EOFHere)
+        .detail(Span::new(3, 3), strings::end_of_file_here())
     }}
 
     // unexpected EOF, last escaped quote recorded
     //        0123456789
     case!{ r#""He\"l\"lo"# expect [t!(1: str, 0, 9)], make_errors!{ e: e
-        .emit(strings::UnexpectedEOF)
+        .emit(strings::unexpected_end_of_file())
         .detail(Span::new(0, 0), strings::StringLiteralStartHere)
-        .detail(Span::new(10, 10), strings::EOFHere)
+        .detail(Span::new(10, 10), strings::end_of_file_here())
         .detail(Span::new(6, 7), strings::LastEscapedQuoteHere)
     }}
 
@@ -195,16 +195,16 @@ fn string_literal() {
     // unexpected eof in unicode: escape
     //        0123456
     case!{ r#""h\U123"# expect [t!(1: str, 0, 6)], make_errors!{ e: e
-        .emit(strings::UnexpectedEOF)
+        .emit(strings::unexpected_end_of_file())
         .detail(Span::new(0, 0), strings::StringLiteralStartHere)
-        .detail(Span::new(7, 7), strings::EOFHere)
+        .detail(Span::new(7, 7), strings::end_of_file_here())
     }}
 
     // unexpected eof exactly after \
     case!{ r#""he\"# expect [t!(1: str, 0, 3)], make_errors!{ e: e
-        .emit(strings::UnexpectedEOF)
+        .emit(strings::unexpected_end_of_file())
         .detail(Span::new(0, 0), strings::StringLiteralStartHere)
-        .detail(Span::new(4, 4), strings::EOFHere)
+        .detail(Span::new(4, 4), strings::end_of_file_here())
     }}
 
     // raw string literal
@@ -213,9 +213,9 @@ fn string_literal() {
     // eof in raw string literal
     //        0123
     case!{ r#"R"he"# expect [t!(1: rstr, 0, 3)], make_errors!{ e: e
-        .emit(strings::UnexpectedEOF)
+        .emit(strings::unexpected_end_of_file())
         .detail(Span::new(0, 0), strings::StringLiteralStartHere)
-        .detail(Span::new(4, 4), strings::EOFHere)
+        .detail(Span::new(4, 4), strings::end_of_file_here())
     }}
 }
 
@@ -321,67 +321,67 @@ fn char_literal() {
 
     // eof
     case!{ "'" expect [t!(0: char, 0, 0)], make_errors!{ e: e
-        .emit(strings::UnexpectedEOF)
+        .emit(strings::unexpected_end_of_file())
         .detail(Span::new(0, 0), strings::CharLiteralStartHere)
-        .detail(Span::new(1, 1), strings::EOFHere)
+        .detail(Span::new(1, 1), strings::end_of_file_here())
     }}
 
     // eof after \
     case!{ r"'\" expect [t!(0: char, 0, 1)], make_errors!{ e: e
-        .emit(strings::UnexpectedEOF)
+        .emit(strings::unexpected_end_of_file())
         .detail(Span::new(0, 0), strings::CharLiteralStartHere)
-        .detail(Span::new(2, 2), strings::EOFHere)
+        .detail(Span::new(2, 2), strings::end_of_file_here())
     }}
 
     // eof in unicode: escape
     case!{ r"'\u" expect [t!(0: char, 0, 2)], make_errors!{ e: e
-        .emit(strings::UnexpectedEOF)
+        .emit(strings::unexpected_end_of_file())
         .detail(Span::new(0, 0), strings::CharLiteralStartHere)
-        .detail(Span::new(3, 3), strings::EOFHere)
+        .detail(Span::new(3, 3), strings::end_of_file_here())
     }}
 
     // normal then eof
     case! { r"'A" expect [t!(0: char, 0, 1)], make_errors!{ e: e
-        .emit(strings::UnexpectedEOF)
+        .emit(strings::unexpected_end_of_file())
         .detail(Span::new(0, 0), strings::CharLiteralStartHere)
-        .detail(Span::new(2, 2), strings::EOFHere)
+        .detail(Span::new(2, 2), strings::end_of_file_here())
     }}
 
     // too long and eof
     case! { "'ABC" expect [t!(0: char, 0, 3)], make_errors!{ e: e
-        .emit(strings::UnexpectedEOF)
+        .emit(strings::unexpected_end_of_file())
         .detail(Span::new(0, 0), strings::CharLiteralStartHere)
-        .detail(Span::new(4, 4), strings::EOFHere)
+        .detail(Span::new(4, 4), strings::end_of_file_here())
     }}
 
     // \n in char literal, attention it is not \n escape
     case! { "'\nascasdc" expect [t!(0: char, 0, 1), t!(2: ident, 2, 8)], make_errors!{ e: e
-        .emit(strings::UnexpectedEOL)
+        .emit(strings::unexpected_end_of_line())
         .detail(Span::new(0, 0), strings::CharLiteralStartHere)
-        .detail(Span::new(1, 1), strings::EOLHere),
+        .detail(Span::new(1, 1), strings::end_of_line_here()),
     }}
 
     // \n in char literal, already a valid code point
     case! { "'A\n//\n" expect [t!(0: char, 0, 2)], make_errors!{ e: e
-        .emit(strings::UnexpectedEOL)
+        .emit(strings::unexpected_end_of_line())
         .detail(Span::new(0, 0), strings::CharLiteralStartHere)
-        .detail(Span::new(2, 2), strings::EOLHere),
+        .detail(Span::new(2, 2), strings::end_of_line_here()),
     }}
 
     // \n in char literal, too long
     case! { "'ABCDE\ncqwedcqwdc" expect [t!(0: char, 0, 6), t!(2: ident, 7, 16)], make_errors!{ e: e
-        .emit(strings::UnexpectedEOL)
+        .emit(strings::unexpected_end_of_line())
         .detail(Span::new(0, 0), strings::CharLiteralStartHere)
-        .detail(Span::new(6, 6), strings::EOLHere),
+        .detail(Span::new(6, 6), strings::end_of_line_here()),
     }}
 
     // special too long and eof
     // it was designed to let lexer revert and continue after last escape, but that's complex
     // now a new \n as char literal end mechanism added so no need for this
     case!{ r"'\'AB" expect [t!(0: char, 0, 4)], make_errors!{ e: e
-        .emit(strings::UnexpectedEOF)
+        .emit(strings::unexpected_end_of_file())
         .detail(Span::new(0, 0), strings::CharLiteralStartHere)
-        .detail(Span::new(5, 5), strings::EOFHere),
+        .detail(Span::new(5, 5), strings::end_of_file_here()),
     }}
 }
 

@@ -256,7 +256,7 @@ impl<F> SourceContext<F> where F: FileSystem {
         self.fs.canonicalize(&path)
             .and_then(|path| self.fs.read_to_string(&path).map(|c| (path, c)))
             .map(|(path, content)| SourceChars::new(content, /* start_index */ 0, path, /* namespace */ Vec::new(), /* request */ None, self))
-            .map_err(|e| diagnostics.emit(format!("{} {}: {}", strings::FailedToReadFile, path.display(), e))).ok()
+            .map_err(|e| diagnostics.emit(strings::failed_to_read_file(&path.display(), &e))).ok()
     }
 
     // location: module_stmt location, for find requester,
@@ -292,15 +292,19 @@ impl<F> SourceContext<F> where F: FileSystem {
                     continue; // to next option
                 },
                 Err((path, e)) => {
-                    diagnostics.emit(format!("{} {}: {}", strings::FailedToReadFile, path.display(), e)).detail(location, "originated from here");
+                    diagnostics.emit(strings::failed_to_read_file(&path.display(), &e))
+                        .detail(location, strings::import_request_originated_from_here());
                     return None;
                 }
             }
         }
 
-        diagnostics.emit(strings::FailedToReadAllCandidates)
-            .detail(location, strings::OriginatedHere)
-            .help(format!("{} {:?}", strings::Candidates, candidates));
+        let diagnostic = diagnostics.emit(strings::failed_to_read_all_candidates())
+            .detail(location, strings::import_request_originated_from_here())
+            .help(strings::import_candidates());
+        for candidate in candidates {
+            diagnostic.help(candidate.display().to_string());
+        }
         None
     }
 

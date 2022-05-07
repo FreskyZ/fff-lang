@@ -673,10 +673,14 @@ fn resolve_entry() {
 
     mr_test_case!([
         "module module_name;" as "src/main.f3",
-    ] import Span::new(7, 17); from Span::new(0, 0) => err make_errors!{
-        e: e.emit(strings::FailedToReadAllCandidates)
-            .detail(Span::new(0, 0), strings::OriginatedHere)
-            .help(format!("{} [\"src/module-name.f3\", \"src/module-name/index.f3\", \"src/module_name.f3\", \"src/module_name/index.f3\"]", strings::Candidates))
+    ] import Span::new(7, 17); from Span::new(0, 0) => err make_errors!{|e|
+        e.emit(strings::failed_to_read_all_candidates())
+            .detail(Span::new(0, 0), strings::import_request_originated_from_here())
+            .help(strings::import_candidates())
+            .help("src/module-name.f3")
+            .help("src/module-name/index.f3")
+            .help("src/module_name.f3")
+            .help("src/module_name/index.f3")
     });
 }
 
@@ -695,9 +699,11 @@ fn resolve_explicit() {
 
     mr_test_case!([
         "module some_module;" as "src/main.f3",
-    ] import explicit "../abc/def/ghi/f3" from Span::new(0, 0) => err make_errors!{
-        e: e.emit(strings::FailedToReadAllCandidates)
-            .detail(Span::new(0, 0), strings::OriginatedHere).help(format!("{} [\"src/../abc/def/ghi/f3\"]", strings::Candidates))
+    ] import explicit "../abc/def/ghi/f3" from Span::new(0, 0) => err make_errors!{|e|
+        e.emit(strings::failed_to_read_all_candidates())
+            .detail(Span::new(0, 0), strings::import_request_originated_from_here())
+            .help(strings::import_candidates())
+            .help("src/../abc/def/ghi/f3")
     });
 }
 
@@ -738,9 +744,13 @@ fn resolve_index() {
         "module some_module;" as "src/main.f3",
         "module module_name;" as "src/some-module/index.f3",
     ] import Span::new(7, 17); from entry then import Span::new(27, 37); from Span::new(30, 30) => err make_errors!{
-        e: e.emit(strings::FailedToReadAllCandidates)
-            .detail(Span::new(30, 30), strings::OriginatedHere)
-            .help(format!("{} [\"src/some-module/module-name.f3\", \"src/some-module/module-name/index.f3\", \"src/some-module/module_name.f3\", \"src/some-module/module_name/index.f3\"]", strings::Candidates))
+        e: e.emit(strings::failed_to_read_all_candidates())
+            .detail(Span::new(30, 30), strings::import_request_originated_from_here())
+            .help(strings::import_candidates())
+            .help("src/some-module/module-name.f3")
+            .help("src/some-module/module-name/index.f3")
+            .help("src/some-module/module_name.f3")
+            .help("src/some-module/module_name/index.f3")
     });
 }
 
@@ -827,10 +837,16 @@ fn resolve_other() {
         "module some_module;" as "src/main.f3",
         "module module_name;" as "src/some-module.f3",
     ] import Span::new(7, 17); from entry then import Span::new(27, 37); from Span::new(30, 30) => err make_errors!{
-        e: e.emit(strings::FailedToReadAllCandidates)
-            .detail(Span::new(30, 30), strings::OriginatedHere)
-            .help(format!("{} {}", strings::Candidates, concat!("[\"src/some-module/module-name.f3\", \"src/some-module/module-name/index.f3\", ",
-                "\"src/some-module/module_name.f3\", \"src/some-module/module_name/index.f3\", \"src/some_module/module-name.f3\", ",
-                "\"src/some_module/module-name/index.f3\", \"src/some_module/module_name.f3\", \"src/some_module/module_name/index.f3\"]")))
+        e: e.emit(strings::failed_to_read_all_candidates())
+            .detail(Span::new(30, 30), strings::import_request_originated_from_here())
+            .help(strings::import_candidates())
+            .help("src/some-module/module-name.f3")
+            .help("src/some-module/module-name/index.f3")
+            .help("src/some-module/module_name.f3")
+            .help("src/some-module/module_name/index.f3")
+            .help("src/some_module/module-name.f3")
+            .help("src/some_module/module-name/index.f3")
+            .help("src/some_module/module_name.f3")
+            .help("src/some_module/module_name/index.f3")
     });
 }

@@ -106,7 +106,19 @@ pub enum Token {
 pub struct TokenDisplay<'t, 'scx>(&'t Token, &'scx SourceContext);
 
 impl Token {
-    #[allow(dead_code)] // after syntax add back, before --print tokens argument added, this is dead code
+    
+    // when displaying unexpected error in syntax parser, the content of token is not important
+    pub fn kind_name(&self) -> &'static str {
+        match self {
+            Token::EOF => "EOF",
+            Token::Ident(_) => "IDENT",
+            Token::Keyword(kw) => kw.display(),
+            Token::Label(_) => "LABEL",
+            Token::Sep(sep) => sep.display(),
+            Token::Bool(_) | Token::Char(_) | Token::Num(_) | Token::Str(_, _) => "LITERAL",
+        }
+    }
+
     pub fn display<'t, 'scx>(&'t self, scx: &'scx SourceContext) -> TokenDisplay<'t, 'scx> {
         TokenDisplay(self, scx)
     }

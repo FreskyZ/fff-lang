@@ -1,16 +1,23 @@
 #![allow(non_upper_case_globals)]
 ///! all kinds of error strings
 
-pub const FailedToReadFile: &str = "failed to read file";
-pub const FailedToReadAllCandidates: &str = "failed to read all candidates for module request";
-pub const OriginatedHere: &str = "originated from here";
-pub const Candidates: &str = "candidates:";
+use std::fmt::Display;
 
-pub const UnexpectedEOF: &str = "Unexpected EOF";
-pub const UnexpectedEOL: &str = "Unexpected end of line";
+// they are defined as functions,
+// it's ok because they are error strings and not expected to happen often,
+// put format! invocation inside function also kind of reduce code size of call site
+// no-argument error string is also a function to make them look similar
+
+pub fn failed_to_read_file(file_name: &impl Display, error: &impl Display) -> String { format!("failed to read file {file_name}: {error}") }
+pub fn failed_to_read_all_candidates() -> &'static str { "failed to read all candidates for module request" }
+pub fn import_request_originated_from_here() -> &'static str { "originated from here" }
+pub fn import_candidates() -> &'static str { "candidates:" }
+
+pub fn unexpected_end_of_file() -> &'static str { "unexpected end of file" }
+pub fn end_of_file_here() -> &'static str { "EOF here" }
+pub fn unexpected_end_of_line() -> &'static str { "unexpected end of line" }
+pub fn end_of_line_here() -> &'static str { "EOL here" }
 pub const BlockCommentStartHere: &str = "Block comment starts here";
-pub const EOFHere: &str = "EOF here";
-pub const EOLHere: &str = "EOL here";
 pub const UnknownCharactor: &str = "Unknown charactor";
 pub const CharLiteralStartHere: &str = "Char literal start here";
 pub const UnicodeCharEscapeHelpSyntax: &str = "Unicode char escape is like \\uxxxx or \\Uxxxxxxxx";

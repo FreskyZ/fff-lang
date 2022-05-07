@@ -96,9 +96,9 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             loop {
                 self.eat();
                 if self.current == EOF {
-                    self.diagnostics.emit(strings::UnexpectedEOF)
+                    self.diagnostics.emit(strings::unexpected_end_of_file())
                         .detail(start_position, strings::BlockCommentStartHere)
-                        .detail(self.current_position, strings::EOFHere);
+                        .detail(self.current_position, strings::end_of_file_here());
                     break true;
                 }
                 if let ('/', '*') = (self.current, self.peek) {

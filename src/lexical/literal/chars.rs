@@ -43,9 +43,9 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             'u' => { all_span += self.current_position; self.eat(); 4 },
             'U' => { all_span += self.current_position; self.eat(); 8 },
             EOF => {
-                self.diagnostics.emit(strings::UnexpectedEOF)
+                self.diagnostics.emit(strings::unexpected_end_of_file())
                     .detail(literal_start.0, literal_start.1)
-                    .detail(self.current_position, strings::EOFHere);
+                    .detail(self.current_position, strings::end_of_file_here());
                 #[cfg(feature = "trace_lexical_escape")] println!("[parse_escape] return None because meet EOF in simple escape");
                 return EscapeResult::EOF(all_span);
             },
@@ -102,9 +102,9 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
                         return EscapeResult::UnexpectedUnicodeEscapeEnd(self.current);
                     },
                     EOF => {
-                        self.diagnostics.emit(strings::UnexpectedEOF)
+                        self.diagnostics.emit(strings::unexpected_end_of_file())
                             .detail(literal_start.0, literal_start.1)
-                            .detail(self.current_position, strings::EOFHere);
+                            .detail(self.current_position, strings::end_of_file_here());
                         #[cfg(feature = "trace_lexical_escape")] println!("[parse_escape] return None because meet EOF in unicode escape");
                         return EscapeResult::EOF(all_span);
                     },
@@ -138,9 +138,9 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         self.eat(); // eat initial quote
         loop {
             if let EOF = self.current {
-                self.diagnostics.emit(strings::UnexpectedEOF)
+                self.diagnostics.emit(strings::unexpected_end_of_file())
                     .detail(all_span.start, strings::CharLiteralStartHere)
-                    .detail(self.current_position, strings::EOFHere);
+                    .detail(self.current_position, strings::end_of_file_here());
                 #[cfg(feature = "trace_lexical_char")] println!("[parse_char_literal] return invalid because meet EOF");
                 return (Token::Char('\0'), all_span);
             }
@@ -204,9 +204,9 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
                 }
             } else if self.current == '\n' {
                 // \n in char literal (source code \n, not escape \n) is always error regardless of empty, one code point or too long
-                self.diagnostics.emit(strings::UnexpectedEOL)
+                self.diagnostics.emit(strings::unexpected_end_of_line())
                     .detail(all_span.start, strings::CharLiteralStartHere)
-                    .detail(self.current_position, strings::EOLHere);
+                    .detail(self.current_position, strings::end_of_line_here());
                 all_span += self.current_position;
                 self.eat();
                 #[cfg(feature = "trace_lexical_char")] println!("[parse_char_literal] return invalid because meet EOL");
@@ -235,14 +235,14 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         loop {
             if let EOF = self.current {
                 if let Some(last_escape_quote_position) = last_escape_quote_position {
-                    self.diagnostics.emit(strings::UnexpectedEOF)
+                    self.diagnostics.emit(strings::unexpected_end_of_file())
                         .detail(all_span.start, strings::StringLiteralStartHere)
-                        .detail(self.current_position, strings::EOFHere)
+                        .detail(self.current_position, strings::end_of_file_here())
                         .detail(last_escape_quote_position, strings::LastEscapedQuoteHere);
                 } else {
-                    self.diagnostics.emit(strings::UnexpectedEOF)
+                    self.diagnostics.emit(strings::unexpected_end_of_file())
                         .detail(all_span.start, strings::StringLiteralStartHere)
-                        .detail(self.current_position, strings::EOFHere);
+                        .detail(self.current_position, strings::end_of_file_here());
                 }
                 return (Token::Str(IsId::new(1), StringLiteralType::Normal), all_span);
             }
@@ -315,9 +315,9 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
                     return (Token::Str(self.intern(&raw), StringLiteralType::Raw), all_span);
                 }
                 EOF => {
-                    self.diagnostics.emit(strings::UnexpectedEOF)
+                    self.diagnostics.emit(strings::unexpected_end_of_file())
                         .detail(all_span.start, strings::StringLiteralStartHere)
-                        .detail(self.current_position, strings::EOFHere);
+                        .detail(self.current_position, strings::end_of_file_here());
                     self.eat();
                     return (Token::Str(IsId::new(1), StringLiteralType::Raw), all_span);
                 }
