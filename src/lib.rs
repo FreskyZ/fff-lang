@@ -9,4 +9,6 @@ mod source;
 mod diagnostics;
 mod lexical;
 pub mod syntax;
+pub mod semantic;
+pub mod middle;
 pub mod interface;

@@ -4,10 +4,10 @@ use std::io;
 use crate::common::arena::Arena;
 use crate::source::SourceContext;
 use crate::diagnostics::Diagnostics;
-use crate::syntax::{Visit, parse, ast::asti};
-// use crate::mast::Tree;
-// use crate::fur::Graph;
-// use crate::vm::{VirtualMachine, CodeGenerator};
+use crate::syntax::{Visit as SyntaxVisit, parse, ast::asti};
+use crate::semantic::{resolve, /* Visit as SemanticVisit */};
+use crate::middle::{build, fur::TypeContext};
+// use crate::vm::VirtualMachine;
 
 mod argument;
 
@@ -70,15 +70,28 @@ fn run_compiler(args: argument::Argument, output: &mut impl io::Write) {
         }
     }
 
-    // let tcx = TypeContext::new();
-    // let tree = mast::from(modules, &mut tcx);
-    // if args.print_tree { println!("{}", tree.display(&scx, &tcx)); }
+    let program = resolve(modules, &mut diagnostics, &arena);
+    // if print semantic tree { masti::display }
 
-    // let functions = ir::from(tree, &mut tcx);
-    // if args.print_ir { println!("{}", functions.display(&scx, &tcx)) }
+    let mut tcx = TypeContext;
+    let _program = build(&mut tcx, program, &mut diagnostics, &arena, /* &graph_arena */);
+    // if print fur { furi::display }
+
+    // if debug syntax arena { arena.status(true) }
+    std::mem::drop(arena);
 
     // // the first version of new vm directly executes cfg
-    // VirtualMachine::new(&tcx, &functions).execute()
+    // VirtualMachine::new(tcx, program).execute()
+
+    // transform(&mut program, config)
+    // if args.interpret {
+    //     let code = vm::generate(&tcx, &program);
+    //     VirtualMachine::new(code).execute()
+    // } else {
+    //     let code = native::generate(&tcx, &program);
+    //     // there is literally years of work after vfs.read before vfs.write
+    //     fs.write(assemble(code));
+    // }
 }
 
 pub fn test_main() {
