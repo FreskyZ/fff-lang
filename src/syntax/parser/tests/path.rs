@@ -286,12 +286,14 @@ fn parse_ref_type() {
 
 #[test]
 pub fn parse_path() {
+    const TYPE: PathContext = PathContext::Type;
+    const VALUE: PathContext = PathContext::Value;
 
-    case!{ notag parse_type_path "custom_type", |x|
+    case!{ parse_path(TYPE) "custom_type", |x|
         make_path!(x 0:10
             make_path!(x segment simple 0:10 #custom_type)),
     }
-    case!{ notag parse_value_path "custom_type", |x|
+    case!{ parse_path(VALUE) "custom_type", |x|
         make_path!(x 0:10
             make_path!(x segment simple 0:10 #custom_type)),
     }
@@ -299,14 +301,14 @@ pub fn parse_path() {
     // // now plain_type is only tested but not tested
     //      0         1         2         3
     //      012345678901234567890123456789012345678
-    case!{ notag parse_type_path "ffc::syntax::plain_type::type_ref_parse", |x|
+    case!{ parse_path(TYPE) "ffc::syntax::plain_type::type_ref_parse", |x|
         make_path!(x 0:38
             make_path!(x segment simple 0:2 #ffc),
             make_path!(x segment simple 5:10 #syntax),
             make_path!(x segment simple 13:22 #plain_type),
             make_path!(x segment simple 25:38 #type_ref_parse))
     }
-    case!{ notag parse_value_path "ffc::syntax::plain_type::type_ref_parse", |x|
+    case!{ parse_path(VALUE) "ffc::syntax::plain_type::type_ref_parse", |x|
         make_path!(x 0:38
             make_path!(x segment simple 0:2 #ffc),
             make_path!(x segment simple 5:10 #syntax),
@@ -315,7 +317,7 @@ pub fn parse_path() {
     }
 
     // single colon
-    case!{ notag parse_type_path "ffc:syntax:plain_type:type_ref_parse", |x|
+    case!{ parse_path(TYPE) "ffc:syntax:plain_type:type_ref_parse", |x|
         make_path!(x 0:35
             make_path!(x segment simple 0:2 #ffc),
             make_path!(x segment simple 4:9 #syntax),
@@ -327,7 +329,7 @@ pub fn parse_path() {
             e.emit(strings::ExpectDoubleColonMeetSingleColon).span(Span::new(21, 21));
         }
     }
-    case!{ notag parse_value_path "ffc:syntax:plain_type:type_ref_parse", |x|
+    case!{ parse_path(VALUE) "ffc:syntax:plain_type:type_ref_parse", |x|
         make_path!(x 0:35
             make_path!(x segment simple 0:2 #ffc),
             make_path!(x segment simple 4:9 #syntax),
@@ -340,12 +342,12 @@ pub fn parse_path() {
         }
     }
 
-    case!{ notag parse_type_path "::a", |x|
+    case!{ parse_path(TYPE) "::a", |x|
         make_path!(x 0:2
             make_path!(segment global),
             make_path!(x segment simple 2:2 #a))
     }
-    case!{ notag parse_value_path "::a", |x|
+    case!{ parse_path(VALUE) "::a", |x|
         make_path!(x 0:2
             make_path!(segment global),
             make_path!(x segment simple 2:2 #a))
@@ -353,7 +355,7 @@ pub fn parse_path() {
 
     //      0         1         2         3
     //      012345678901234567890123456789012345678
-    case!{ notag parse_type_path "::ffc::syntax::plain_type::type_ref_parse", |x|
+    case!{ parse_path(TYPE) "::ffc::syntax::plain_type::type_ref_parse", |x|
         make_path!(x 0:40
             make_path!(segment global),
             make_path!(x segment simple 2:4 #ffc),
@@ -361,7 +363,7 @@ pub fn parse_path() {
             make_path!(x segment simple 15:24 #plain_type),
             make_path!(x segment simple 27:40 #type_ref_parse))
     }
-    case!{ notag parse_value_path "::ffc::syntax::plain_type::type_ref_parse", |x|
+    case!{ parse_path(VALUE) "::ffc::syntax::plain_type::type_ref_parse", |x|
         make_path!(x 0:40
             make_path!(segment global),
             make_path!(x segment simple 2:4 #ffc),
@@ -371,11 +373,11 @@ pub fn parse_path() {
     }
 
     // TODO test Unexpected
-    // case!{ parse_type_path "<a as a>", None, |e| }
+    // case!{ parse_path(TYPE) "<a as a>", None, |e| }
 
     //                      0         1         2         3         4         5         6
     //                      012345678901234567890123456789012345678901234567890123456789012345678
-    case!{ notag parse_type_path "<::ffc::syntax::PlainType as ffc::syntax::prelude::Parser<F>>::Output", |x|
+    case!{ parse_path(TYPE) "<::ffc::syntax::PlainType as ffc::syntax::prelude::Parser<F>>::Output", |x|
         make_path!(x 0:68
             make_path!(x segment cast 0:60
                 make_type!(x path 1:24
@@ -391,7 +393,7 @@ pub fn parse_path() {
                         make_type!(x simple 58:58 #F)))),
             make_path!(x segment simple 63:68 #Output)),
     }
-    case!{ notag parse_value_path "<::ffc::syntax::PlainType as ffc::syntax::prelude::Parser<F>>::Output", |x|
+    case!{ parse_path(VALUE) "<::ffc::syntax::PlainType as ffc::syntax::prelude::Parser<F>>::Output", |x|
         make_path!(x 0:68
             make_path!(x segment cast 0:60
                 make_type!(x path 1:24
@@ -409,7 +411,7 @@ pub fn parse_path() {
     }
 
     //                      01234567890123456
-    case!{ notag parse_type_path "<a as a>::a::a::a", |x|
+    case!{ parse_path(TYPE) "<a as a>::a::a::a", |x|
         make_path!(x 0:16
             make_path!(x segment cast 0:7
                 make_type!(x path 1:1
@@ -420,7 +422,7 @@ pub fn parse_path() {
             make_path!(x segment simple 13:13 #a),
             make_path!(x segment simple 16:16 #a))
     }
-    case!{ notag parse_value_path "<a as a>::a::a::a", |x|
+    case!{ parse_path(VALUE) "<a as a>::a::a::a", |x|
         make_path!(x 0:16
             make_path!(x segment cast 0:7
                 make_type!(x path 1:1
@@ -433,31 +435,31 @@ pub fn parse_path() {
     }
 
     // empty type list is recognized in syntax
-    case!{ notag parse_type_path "a<>", |x|
+    case!{ parse_path(TYPE) "a<>", |x|
         make_path!(x 0:2
             make_path!(x segment generic 0:2 #a 0:0 quote 1:2)),
         |e| e.emit(strings::EmptyTypeList).span(Span::new(1, 2))
     }
-    case!{ notag parse_value_path "a::<>", |x|
+    case!{ parse_path(VALUE) "a::<>", |x|
         make_path!(x 0:4
             make_path!(x segment generic 0:4 #a 0:0 quote 3:4)),
         |e| e.emit(strings::EmptyTypeList).span(Span::new(3, 4))
     }
 
     // include single comma
-    case!{ notag parse_type_path "a<,>", |x|
+    case!{ parse_path(TYPE) "a<,>", |x|
         make_path!(x 0:3
             make_path!(x segment generic 0:3 #a 0:0 quote 1:3)),
         |e| e.emit(strings::EmptyTypeList).span(Span::new(1, 3))
     }
-    case!{ notag parse_value_path "a::<,>", |x|
+    case!{ parse_path(VALUE) "a::<,>", |x|
         make_path!(x 0:5
             make_path!(x segment generic 0:5 #a 0:0 quote 3:5)),
         |e| e.emit(strings::EmptyTypeList).span(Span::new(3, 5))
     }
 
     //                      0123456789
-    case!{ notag parse_type_path "a<b, c, d>", |x|
+    case!{ parse_path(TYPE) "a<b, c, d>", |x|
         make_path!(x 0:9
             make_path!(x segment generic 0:9 #a 0:0 quote 1:9
                 make_type!(x path 2:2
@@ -468,7 +470,7 @@ pub fn parse_path() {
                     make_path!(x segment simple 8:8 #d))))
     }
     //                       012345678901
-    case!{ notag parse_value_path "a::<b, c, d>", |x|
+    case!{ parse_path(VALUE) "a::<b, c, d>", |x|
         make_path!(x 0:11
             make_path!(x segment generic 0:11 #a 0:0 quote 3:11
                 make_type!(x path 4:4
@@ -481,7 +483,7 @@ pub fn parse_path() {
 
     // trailing comma
     //                      0123456789
-    case!{ notag parse_type_path "a<b, c, d,>", |x|
+    case!{ parse_path(TYPE) "a<b, c, d,>", |x|
         make_path!(x 0:10
             make_path!(x segment generic 0:10 #a 0:0 quote 1:10
                 make_type!(x path 2:2
@@ -492,7 +494,7 @@ pub fn parse_path() {
                     make_path!(x segment simple 8:8 #d))))
     }
     //                       012345678901
-    case!{ notag parse_value_path "a::<b, c, d, >", |x|
+    case!{ parse_path(VALUE) "a::<b, c, d, >", |x|
         make_path!(x 0:13
             make_path!(x segment generic 0:13 #a 0:0 quote 3:13
                 make_type!(x path 4:4
@@ -504,7 +506,7 @@ pub fn parse_path() {
     }
 
     // ::< is allowed in type path
-    case!{ notag parse_type_path "a::<b, c, d>", |x|
+    case!{ parse_path(TYPE) "a::<b, c, d>", |x|
         make_path!(x 0:11
             make_path!(x segment generic 0:11 #a 0:0 quote 3:11
                 make_type!(x path 4:4
@@ -517,7 +519,7 @@ pub fn parse_path() {
     }
 
     // single colon
-    case!{ notag parse_value_path "a:<b, c, d>", |x|
+    case!{ parse_path(VALUE) "a:<b, c, d>", |x|
         make_path!(x 0:10
             make_path!(x segment generic 0:10 #a 0:0 quote 2:10
                 make_type!(x simple 3:3 #b),
@@ -527,7 +529,7 @@ pub fn parse_path() {
     }
 
     // single colon and allow colon in type path // seems not happy :<
-    case!{ notag parse_type_path "a:<b, c, d>", |x|
+    case!{ parse_path(TYPE) "a:<b, c, d>", |x|
         make_path!(x 0:10
             make_path!(x segment generic 0:10 #a 0:0 quote 2:10
                 make_type!(x path 3:3
@@ -544,7 +546,7 @@ pub fn parse_path() {
 
     //                 0         1         2      v this is not part of name
     //                 012345678901234567890123456
-    case!{ notag parse_value_path "::abc::def::<ghi, jkl>::mno<", |x|
+    case!{ parse_path(VALUE) "::abc::def::<ghi, jkl>::mno<", |x|
         make_path!(x 0:26
             make_path!(segment global),
             make_path!(x segment simple 2:4 #abc),
@@ -555,7 +557,7 @@ pub fn parse_path() {
     }
 
     //                      0123456789012
-    case!{ notag parse_type_path "a::b::c<d, e>", |x|
+    case!{ parse_path(TYPE) "a::b::c<d, e>", |x|
         make_path!(x 0:12
             make_path!(x segment simple 0:0 #a),
             make_path!(x segment simple 3:3 #b),
@@ -564,7 +566,7 @@ pub fn parse_path() {
                 make_type!(x simple 11:11 #e)))
     }
     //                       0123456789012345
-    case!{ notag parse_value_path "a::b::c::<d, e,>", |x|
+    case!{ parse_path(VALUE) "a::b::c::<d, e,>", |x|
         make_path!(x 0:15
             make_path!(x segment simple 0:0 #a),
             make_path!(x segment simple 3:3 #b),
@@ -574,7 +576,7 @@ pub fn parse_path() {
     }
 
     //                      0123456789012345678901
-    case!{ notag parse_type_path "a::b<c, d>::e::f<g, h>", |x|
+    case!{ parse_path(TYPE) "a::b<c, d>::e::f<g, h>", |x|
         make_path!(x 0:21
             make_path!(x segment simple 0:0 #a),
             make_path!(x segment generic 3:9 #b 3:3 quote 4:9
@@ -586,7 +588,7 @@ pub fn parse_path() {
                 make_type!(x simple 20:20 #h)))
     }
     //                       01234567890123456789012345
-    case!{ notag parse_value_path "a::b::<c, d>::e::f::<g, h>", |x|
+    case!{ parse_path(VALUE) "a::b::<c, d>::e::f::<g, h>", |x|
         make_path!(x 0:25
             make_path!(x segment simple 0:0 #a),
             make_path!(x segment generic 3:11 #b 3:3 quote 6:11
@@ -599,7 +601,7 @@ pub fn parse_path() {
     }
 
     // split shift right
-    case!{ notag parse_type_path "a<b<c>>", |x|
+    case!{ parse_path(TYPE) "a<b<c>>", |x|
         make_path!(x 0:6
             make_path!(x segment generic 0:6 #a 0:0 quote 1:6
                 make_type!(x path 2:5
@@ -607,7 +609,7 @@ pub fn parse_path() {
                         make_type!(x simple 4:4 #c))))),
     }
     //                       012345678
-    case!{ notag parse_value_path "a::<b<c>>", |x|
+    case!{ parse_path(VALUE) "a::<b<c>>", |x|
         make_path!(x 0:8
             make_path!(x segment generic 0:8 #a 0:0 quote 3:8
                 make_type!(x path 4:7
@@ -616,7 +618,7 @@ pub fn parse_path() {
         ),
     }
     // inside angle bracket is type not value
-    case!{ notag parse_value_path "a::<b::<c>>", |x|
+    case!{ parse_path(VALUE) "a::<b::<c>>", |x|
         make_path!(x 0:10
             make_path!(x segment generic 0:10 #a 0:0 quote 3:10
                 make_type!(x path 4:9
@@ -627,7 +629,7 @@ pub fn parse_path() {
 
     // type cast segment in front of angle bracket quoted type list requires split shift left
     //      01234567890123
-    case!{ notag parse_type_path "a<<a as a>::a>", |x|
+    case!{ parse_path(TYPE) "a<<a as a>::a>", |x|
         make_path!(x 0:13
             make_path!(x segment generic 0:13 #a 0:0 quote 1:13
                 make_type!(x path 2:12
@@ -636,7 +638,7 @@ pub fn parse_path() {
                         make_type!(x simple 8:8 #a)),
                     make_path!(x segment simple 12:12 #a)))),
     }
-    case!{ notag parse_value_path "a::<<a as a>::a>", |x|
+    case!{ parse_path(VALUE) "a::<<a as a>::a>", |x|
         make_path!(x 0:15
             make_path!(x segment generic 0:15 #a 0:0 quote 3:15
                 make_type!(x path 4:14
@@ -647,7 +649,7 @@ pub fn parse_path() {
     }
 
     // single quote + ltlt
-    case!{ notag parse_type_path "a:<<a as a>::a>", |x|
+    case!{ parse_path(TYPE) "a:<<a as a>::a>", |x|
         make_path!(x 0:14
             make_path!(x segment generic 0:14 #a 0:0 quote 2:14
                 make_type!(x path 3:13
@@ -660,7 +662,7 @@ pub fn parse_path() {
             e.emit(strings::ExpectDoubleColonMeetSingleColon).span(Span::new(1, 1));
         }
     }
-    case!{ notag parse_value_path "a:<<a as a>::a>", |x|
+    case!{ parse_path(VALUE) "a:<<a as a>::a>", |x|
         make_path!(x 0:14
             make_path!(x segment generic 0:14 #a 0:0 quote 2:14
                 make_type!(x path 3:13

@@ -138,7 +138,6 @@ impl Iterable for VecIter<T> {
     }
 }
 
-
 // remaining node types required by src/syntax/ast/pretty.rs unit test
 module gcd;
 fn additional() {

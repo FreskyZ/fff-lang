@@ -345,7 +345,8 @@ class Keyword(object):
     def __str__(self):
         return f'keyword({self.value}, {self.name}, {self.index}, {self.cat}: {self.cat_value})'
     def __lt__(self, rhs):
-        return self.value < rhs.value
+        # lower: group self and Self together
+        return self.value.lower() < rhs.value.lower()
     def update_index(self, new_index):
         self.index = new_index
         return self

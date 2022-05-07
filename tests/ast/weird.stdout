@@ -1,0 +1,25 @@
+[all(19)] 400
+[binary-expr(5)] 180 (45.00%)
+[path(6)] 96 (24.00%)
+[simple-segment(6)] 72 (18.00%)
+[var-decl-stmt(1)] 40 (10.00%)
+[module(1)] 12 (3.00%)
+module tests/ast/weird.f3
+  var-decl-stmt <12:1-12:30> mutable c <12:5-12:5>
+    binary-expr <12:9-12:29> | <12:27-12:27>
+      binary-expr <12:9-12:25> | <12:23-12:23>
+        binary-expr <12:9-12:21> | <12:19-12:19>
+          binary-expr <12:9-12:17> | <12:15-12:15>
+            binary-expr <12:9-12:13> | <12:11-12:11>
+              path <12:9-12:9>
+                segment <12:9-12:9> _
+              path <12:13-12:13>
+                segment <12:13-12:13> _
+            path <12:17-12:17>
+              segment <12:17-12:17> _
+          path <12:21-12:21>
+            segment <12:21-12:21> _
+        path <12:25-12:25>
+          segment <12:25-12:25> _
+      path <12:29-12:29>
+        segment <12:29-12:29> _

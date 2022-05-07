@@ -105,15 +105,13 @@ fn novisit_case<
 }
 
 macro_rules! case {
-    // TODO remove the notag
-    (notag $parser:ident $code:literal, |$x:ident| $expect:expr $(,)? $(,$($tt:tt)+)?) => (
-        visit_case(&Arena::new(), $code, |cx, a| cx.$parser(a), |$x| $expect, make_errors!($($($tt)+)?), line!());
-    );
     ($parser:ident $code:literal, |$x:ident| $expect:expr $(,)? $(,$($tt:tt)+)?) => (
         visit_case(&Arena::new(), $code, |cx, a| cx.$parser(a), |$x| $expect, make_errors!($($($tt)+)?), line!());
     );
-    // TODO: change notast to novisit
-    (notast($cmp:expr, $debug:expr) $parser:ident $code:literal, |$x:ident| $expect:expr $(,)? $(,$($tt:tt)+)?) => (
+    ($parser:ident($($param:expr),+) $code:literal, |$x:ident| $expect:expr $(,)? $(,$($tt:tt)+)?) => (
+        visit_case(&Arena::new(), $code, |cx, a| cx.$parser(a, $($param,)+), |$x| $expect, make_errors!($($($tt)+)?), line!());
+    );
+    (novisit($cmp:expr, $debug:expr) $parser:ident $code:literal, |$x:ident| $expect:expr $(,)? $(,$($tt:tt)+)?) => (
         novisit_case(&Arena::new(), $code, |cx, a| cx.$parser(a), |#[allow(unused_variables)] $x| $expect, $cmp, $debug, make_errors!($($($tt)+)?), line!());
     );
 }
@@ -121,8 +119,9 @@ macro_rules! case {
 // used by following macros internally, redirect ident to literal, allowing direct #ident in these macros
 // // this is approaching some level of quote!
 macro_rules! make_isid {
-    ($x:ident, $i:ident) => ($x.0.intern(stringify!($i)));
-    ($x:ident, $i:literal) => ($x.0.intern($i));
+    ($x:ident, _) => ($x.0.base.intern("_"));
+    ($x:ident, $i:ident) => ($x.0.base.intern(stringify!($i)));
+    ($x:ident, $i:literal) => ($x.0.base.intern($i));
 }
 
 // ATTENTION:
@@ -144,7 +143,7 @@ macro_rules! make_expr {
         $x.1.emplace_lit_expr(Span::new($start, $end), LitValue::Char($v)).into()
     );
     ($x:ident str #$v:literal $start:literal:$end:literal) => (
-        $x.1.emplace_lit_expr(Span::new($start, $end), LitValue::Str($x.0.intern($v))).into()
+        $x.1.emplace_lit_expr(Span::new($start, $end), LitValue::Str($x.0.base.intern($v))).into()
     );
     ($x:ident i32 $v:literal $start:literal:$end:literal) => (
         $x.1.emplace_lit_expr(Span::new($start, $end), LitValue::Num(Numeric::I32($v))).into()

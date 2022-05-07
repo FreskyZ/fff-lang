@@ -636,66 +636,66 @@ module tests/ast/generic.f3
         ret-stmt <137:9-137:22>
           path <137:16-137:21>
             segment <137:16-137:21> result
-  module-stmt <141:1-141:11> gcd <141:8-141:10>
-  fn-def <144:1-153:1> () <144:14-144:15>
-    generic-name <144:4-144:13> additional <144:4-144:13>
-    block <144:17-153:1>
-      var-decl-stmt <145:5-145:34> mutable a <145:9-145:9>
-        array-type <145:12-145:18>
+  module-stmt <142:1-142:11> gcd <142:8-142:10>
+  fn-def <143:1-152:1> () <143:14-143:15>
+    generic-name <143:4-143:13> additional <143:4-143:13>
+    block <143:17-152:1>
+      var-decl-stmt <144:5-144:34> mutable a <144:9-144:9>
+        array-type <144:12-144:18>
+          primitive-type u8 <144:13-144:14>
+          lit-expr i32 4 <144:17-144:17>
+        array-expr <144:22-144:33>
+          lit-expr i32 1 <144:23-144:23>
+          lit-expr i32 2 <144:26-144:26>
+          lit-expr i32 3 <144:29-144:29>
+          lit-expr i32 4 <144:32-144:32>
+      var-decl-stmt <145:5-145:30> mutable b <145:9-145:9>
+        tuple-type <145:12-145:20>
           primitive-type u8 <145:13-145:14>
-          lit-expr i32 4 <145:17-145:17>
-        array-expr <145:22-145:33>
-          lit-expr i32 1 <145:23-145:23>
-          lit-expr i32 2 <145:26-145:26>
-          lit-expr i32 3 <145:29-145:29>
-          lit-expr i32 4 <145:32-145:32>
-      var-decl-stmt <146:5-146:30> mutable b <146:9-146:9>
-        tuple-type <146:12-146:20>
-          primitive-type u8 <146:13-146:14>
-          primitive-type u32 <146:17-146:19>
-        tuple-expr <146:24-146:29>
-          lit-expr i32 5 <146:25-146:25>
-          lit-expr i32 6 <146:28-146:28>
-      var-decl-stmt <147:5-147:43> mutable c <147:9-147:9>
-        binary-expr <147:13-147:42> + <147:36-147:36>
-          binary-expr <147:13-147:34> + <147:28-147:28>
-            binary-expr <147:13-147:26> + <147:21-147:21>
-              tuple-index-expr <147:13-147:19> . <147:18-147:18> 1 <147:19-147:19>
-                paren-expr <147:13-147:17>
-                  tuple-index-expr <147:14-147:16> . <147:15-147:15> 0 <147:16-147:16>
-                    path <147:14-147:14>
-                      segment <147:14-147:14> b
-              paren-expr <147:23-147:26>
-                range-full-expr <147:24-147:25>
-            paren-expr <147:30-147:34>
-              range-left-expr <147:31-147:33>
-                lit-expr i32 1 <147:31-147:31>
-          paren-expr <147:38-147:42>
-            range-right-expr <147:39-147:41>
-              lit-expr i32 1 <147:41-147:41>
-      block-stmt <148:5-150:5>
-        block <148:5-150:5>
-      continue-stmt <151:5-151:13>
-      simple-expr-stmt <152:5-152:54>
-        call-expr <152:5-152:53> () <152:40-152:53>
-          path <152:5-152:39>
-            cast-segment <152:5-152:28>
-              path <152:6-152:11>
-                generic-segment <152:6-152:11> Vec <152:6-152:8>
-                  path <152:10-152:10>
-                    segment <152:10-152:10> T
-              path <152:16-152:27>
-                segment <152:16-152:27> IntoIterator
-            segment <152:31-152:39> into_iter
-          array-index-expr <152:41-152:52> [] <152:44-152:52>
-            path <152:41-152:43>
-              segment <152:41-152:43> vec
-            path <152:45-152:45>
-              segment <152:45-152:45> a
-            path <152:48-152:48>
-              segment <152:48-152:48> b
-            path <152:51-152:51>
-              segment <152:51-152:51> c
+          primitive-type u32 <145:17-145:19>
+        tuple-expr <145:24-145:29>
+          lit-expr i32 5 <145:25-145:25>
+          lit-expr i32 6 <145:28-145:28>
+      var-decl-stmt <146:5-146:43> mutable c <146:9-146:9>
+        binary-expr <146:13-146:42> + <146:36-146:36>
+          binary-expr <146:13-146:34> + <146:28-146:28>
+            binary-expr <146:13-146:26> + <146:21-146:21>
+              tuple-index-expr <146:13-146:19> . <146:18-146:18> 1 <146:19-146:19>
+                paren-expr <146:13-146:17>
+                  tuple-index-expr <146:14-146:16> . <146:15-146:15> 0 <146:16-146:16>
+                    path <146:14-146:14>
+                      segment <146:14-146:14> b
+              paren-expr <146:23-146:26>
+                range-full-expr <146:24-146:25>
+            paren-expr <146:30-146:34>
+              range-left-expr <146:31-146:33>
+                lit-expr i32 1 <146:31-146:31>
+          paren-expr <146:38-146:42>
+            range-right-expr <146:39-146:41>
+              lit-expr i32 1 <146:41-146:41>
+      block-stmt <147:5-149:5>
+        block <147:5-149:5>
+      continue-stmt <150:5-150:13>
+      simple-expr-stmt <151:5-151:54>
+        call-expr <151:5-151:53> () <151:40-151:53>
+          path <151:5-151:39>
+            cast-segment <151:5-151:28>
+              path <151:6-151:11>
+                generic-segment <151:6-151:11> Vec <151:6-151:8>
+                  path <151:10-151:10>
+                    segment <151:10-151:10> T
+              path <151:16-151:27>
+                segment <151:16-151:27> IntoIterator
+            segment <151:31-151:39> into_iter
+          array-index-expr <151:41-151:52> [] <151:44-151:52>
+            path <151:41-151:43>
+              segment <151:41-151:43> vec
+            path <151:45-151:45>
+              segment <151:45-151:45> a
+            path <151:48-151:48>
+              segment <151:48-151:48> b
+            path <151:51-151:51>
+              segment <151:51-151:51> c
 module tests/ast/gcd.f3
   fn-def <4:1-17:1> () <4:8-4:9>
     generic-name <4:4-4:7> main <4:4-4:7>

@@ -604,17 +604,17 @@ fn parse_call_expr() {
         format!("({:?}, {:?})", value.0, value.1.iter().map(|i| format!("{:?}", asti::debug(i, arena))).collect::<Vec<_>>())
     }
 
-    case!{ notast(cmp, debug) parse_call_expr "()", 
+    case!{ novisit(cmp, debug) parse_call_expr "()", 
         |x| (Span::new(0, 1), Vec::new()),
     }
 
-    case!{ notast(cmp, debug) parse_call_expr "(\"hello\")", |x|
+    case!{ novisit(cmp, debug) parse_call_expr "(\"hello\")", |x|
         (Span::new(0, 8), vec![
             make_expr!(x str #"hello" 1:7),
         ])
     }
 
-    case!{ notast(cmp, debug) parse_call_expr "(,)",
+    case!{ novisit(cmp, debug) parse_call_expr "(,)",
         |x| (Span::new(0, 2), Vec::new()),
         |e| e.emit("expect `)`, meet `,`").span(Span::new(1, 1))
     }
@@ -629,20 +629,20 @@ fn parse_array_index_expr() {
         format!("({:?}, {:?})", value.0, value.1.iter().map(|i| format!("{:?}", asti::debug(i, arena))).collect::<Vec<_>>())
     }
 
-    case!{ notast(cmp, debug) parse_array_index_expr "[1, 2, ]", |x|
+    case!{ novisit(cmp, debug) parse_array_index_expr "[1, 2, ]", |x|
         (Span::new(0, 7), vec![
             make_expr!(x i32 1 1:1),
             make_expr!(x i32 2 4:4),
         ])
     }
 
-    case!{ notast(cmp, debug) parse_array_index_expr "[\"hello\"]", |x|
+    case!{ novisit(cmp, debug) parse_array_index_expr "[\"hello\"]", |x|
         (Span::new(0, 8), vec![
             make_expr!(x str #"hello" 1:7)
         ])
     }
 
-    case!{ notast(cmp, debug) parse_array_index_expr "[,]",
+    case!{ novisit(cmp, debug) parse_array_index_expr "[,]",
         |x| (Span::new(0, 2), Vec::new()),
         |e| {
             e.emit("expect `]`, meet `,`").span(Span::new(1, 1));
@@ -660,28 +660,28 @@ fn parse_tuple_index_expr() {
         *value
     }
 
-    case!{ notast(cmp, debug) parse_tuple_index_expr_test ".0", 
+    case!{ novisit(cmp, debug) parse_tuple_index_expr_test ".0", 
         |x| (Span::new(0, 0), (0, Span::new(1, 1))),
     }
 
-    case!{ notast(cmp, debug) parse_tuple_index_expr_test ".0i32",
+    case!{ novisit(cmp, debug) parse_tuple_index_expr_test ".0i32",
         |x| (Span::new(0, 0), (0, Span::new(1, 4))),
         // TODO: cannot have postfix
     }
 
-    case!{ notast(cmp, debug) parse_tuple_index_expr_test ".0xDEADBEE",
+    case!{ novisit(cmp, debug) parse_tuple_index_expr_test ".0xDEADBEE",
         |x| (Span::new(0, 0), (0xDEADBEE, Span::new(1, 9))),
         // TODO: cannot have prefix
     }
 
     //      01234
-    case!{ notast(cmp, debug) parse_tuple_index_expr_test ".0i8",
+    case!{ novisit(cmp, debug) parse_tuple_index_expr_test ".0i8",
         |x| (Span::new(0, 0), (0, Span::new(1, 3))),
         |e| e.emit(strings::InvalidTupleIndex).span(Span::new(1, 3)).help(strings::TupleIndexSyntaxHelp)
     }
 
     //      01234567890123456789012
-    case!{ notast(cmp, debug) parse_tuple_index_expr_test ".0xFFFF_FFFF_FFFF_FFFF",
+    case!{ novisit(cmp, debug) parse_tuple_index_expr_test ".0xFFFF_FFFF_FFFF_FFFF",
         |x| (Span::new(0, 0), (0, Span::new(1, 21))),
         |e| e.emit(strings::InvalidTupleIndex).span(Span::new(1, 21)).help(strings::TupleIndexSyntaxHelp)
     }
@@ -947,6 +947,16 @@ fn parse_postfix_expr() {
             make_type!(x path 12:19
                 make_path!(x segment generic 12:19 #Vec 12:14 quote 15:19
                     make_type!(x prim 16:18 I32)))),
+    }
+
+    //                         012345678901234567890123
+    case!{ parse_postfix_expr "iter.collect::<Vec<_>>()", |x|
+        make_expr!(x call 0:23 paren 22:23
+            make_expr!(x member 0:21 dot 4:4 #collect 5:11 quote 14:21
+                make_expr!(x path simple 0:3 #iter),
+                make_type!(x path 15:20
+                    make_path!(x segment generic 15:20 #Vec 15:17 quote 18:20
+                        make_type!(x path simple 19:19 #_)))),)
     }
 
     //      01234567

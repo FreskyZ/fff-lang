@@ -55,7 +55,6 @@ Major change summary
 
 some detailed plans is included by the way
 
-- [ ] syntax: remove peek2 from parser and use parse_labeled_stmt for labeled statements
 - [ ] syntax: change diagnostics::strings to use macros accept zero or some parameters, use calculated first set in errors, test unrecoverable unexpected and keywords and separators should always use something like `fn` and `+`
 - [ ] syntax: fix `a.0.0` error and try with retry in syntax parser and lexical parser
 - [ ] syntax: add recursive guard for ast visitors, eq returns true, formatters prints `[circular]`, profiler count nothing, use shared preallocate array to reduce allocate

@@ -82,7 +82,11 @@ impl<'s, 'f1, 'f2, F, const I: usize> Formatter<'s, 'f1, 'f2, F, I> where F: Fil
     fn title(&mut self, title: &'static str) -> Result<&mut Self, fmt::Error> {
         self.base.write_str(&INDENTIONS[I][0..self.level * 2])?;
         self.base.write_str(title)?;
-        self.base.write_str(self.additional)?;
+        if self.additional.len() > 0 {
+            self.base.write_char('(')?;
+            self.base.write_str(self.additional)?;
+            self.base.write_char(')')?;
+        }
         self.base.write_char(' ')?;
         self.additional = "";
         Ok(self)

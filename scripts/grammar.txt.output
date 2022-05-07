@@ -1,6 +1,6 @@
 
 module = item*
-   FIRST: IDENT, LABEL, LITERAL, `!`, `&`, `(`, `*`, `-`, `..`, `::`, `<`, `[`, `_`, `class`, `const`, `enum`, `false`, `fn`, `for`, `if`, `impl`, `loop`, `module`, `self`, `struct`, `true`, `type`, `use`, `var`, `while`, `{`, `~`
+   FIRST: IDENT, LABEL, LITERAL, `!`, `&`, `(`, `*`, `-`, `..`, `::`, `<`, `Self`, `[`, `_`, `class`, `const`, `enum`, `fn`, `for`, `if`, `impl`, `loop`, `module`, `self`, `struct`, `type`, `use`, `var`, `while`, `{`, `~`
    FIRSTSUBSET: item
    FOLLOW: <dollar>
 
@@ -26,29 +26,31 @@ single-tuple-expr = LPAREN expr COMMA RPAREN
 
 tuple-expr-3 = COMMA expr
    FIRST: <epsilon>, `,`
-   FOLLOW: `)`, `,`, `]`
-   FOLLOWSUBSETFOLLOW: call-expr-postfix-2
+   FOLLOW: `)`, `,`
 
 tuple-expr = LPAREN expr tuple-expr-3* COMMA? RPAREN
    FIRST: `(`
    FOLLOW: other-assign-expr, `!=`, `%`, `&&`, `&`, `(`, `)`, `*`, `+`, `,`, `-`, `..`, `.`, `/`, `;`, `<<`, `<=`, `<`, `==`, `=`, `>=`, `>>`, `>`, `[`, `]`, `^`, `{`, `|`, `||`, `}`
    FOLLOWSUBSETFOLLOW: primary-expr
 
-array-expr = LBRACKET expr tuple-expr-3* COMMA? RPAREN
+array-expr-3 = COMMA expr
+   FIRST: <epsilon>, `,`
+   FOLLOW: `)`, `,`
+
+array-expr = LBRACKET expr array-expr-3* COMMA? RPAREN
    FIRST: `[`
    FOLLOW: other-assign-expr, `!=`, `%`, `&&`, `&`, `(`, `)`, `*`, `+`, `,`, `-`, `..`, `.`, `/`, `;`, `<<`, `<=`, `<`, `==`, `=`, `>=`, `>>`, `>`, `[`, `]`, `^`, `{`, `|`, `||`, `}`
    FOLLOWSUBSETFOLLOW: primary-expr
 
 primary-expr = unit-expr | lit-expr | value-path | paren-expr | single-tuple-expr | tuple-expr | array-expr
-   FIRST: IDENT, LITERAL, `(`, `::`, `<`, `[`, `_`, `false`, `self`, `true`
+   FIRST: IDENT, LITERAL, `(`, `::`, `<`, `Self`, `[`, `_`, `self`
    FOLLOW: other-assign-expr, `!=`, `%`, `&&`, `&`, `(`, `)`, `*`, `+`, `,`, `-`, `..`, `.`, `/`, `;`, `<<`, `<=`, `<`, `==`, `=`, `>=`, `>>`, `>`, `[`, `]`, `^`, `{`, `|`, `||`, `}`
    FOLLOWSUBSETFIRST: expr-postfix
    FOLLOWSUBSETFOLLOW: postfix-expr
 
 member-expr-postfix-3-4 = COMMA type-ref
    FIRST: <epsilon>, `,`
-   FOLLOW: `)`, `,`, `>`
-   FOLLOWSUBSETFOLLOW: tuple-type-2
+   FOLLOW: `,`, `>`
 
 member-expr-postfix-3 = COLONCOLON LT type-ref member-expr-postfix-3-4* COMMA? GT
    FIRST: <epsilon>, `::`
@@ -65,17 +67,32 @@ tuple-index-expr-postfix = DOT NUMBER
    FOLLOW: other-assign-expr, `!=`, `%`, `&&`, `&`, `)`, `*`, `+`, `,`, `-`, `..`, `/`, `;`, `<<`, `<=`, `<`, `==`, `=`, `>=`, `>>`, `>`, `]`, `^`, `{`, `|`, `||`, `}`
    FOLLOWSUBSETFOLLOW: expr-postfix
 
-call-expr-postfix-2 = expr tuple-expr-3* COMMA?
-   FIRST: <epsilon>, IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `..`, `::`, `<`, `[`, `_`, `false`, `self`, `true`, `~`
+call-expr-postfix-2-2 = COMMA expr
+   FIRST: <epsilon>, `,`
+   FOLLOW: `)`, `,`
+   FOLLOWSUBSETFOLLOW: call-expr-postfix-2
+
+call-expr-postfix-2 = expr call-expr-postfix-2-2* COMMA?
+   FIRST: <epsilon>, IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `..`, `::`, `<`, `Self`, `[`, `_`, `self`, `~`
    FIRSTSUBSET: expr
-   FOLLOW: `)`, `]`
+   FOLLOW: `)`
 
 call-expr-postfix = LPAREN call-expr-postfix-2? RPAREN
    FIRST: `(`
    FOLLOW: other-assign-expr, `!=`, `%`, `&&`, `&`, `)`, `*`, `+`, `,`, `-`, `..`, `/`, `;`, `<<`, `<=`, `<`, `==`, `=`, `>=`, `>>`, `>`, `]`, `^`, `{`, `|`, `||`, `}`
    FOLLOWSUBSETFOLLOW: expr-postfix
 
-array-index-expr-postfix = LBRACKET call-expr-postfix-2? RBRACKET
+array-index-expr-postfix-2-2 = COMMA expr
+   FIRST: <epsilon>, `,`
+   FOLLOW: `,`, `]`
+   FOLLOWSUBSETFOLLOW: array-index-expr-postfix-2
+
+array-index-expr-postfix-2 = expr array-index-expr-postfix-2-2* COMMA?
+   FIRST: <epsilon>, IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `..`, `::`, `<`, `Self`, `[`, `_`, `self`, `~`
+   FIRSTSUBSET: expr
+   FOLLOW: `]`
+
+array-index-expr-postfix = LBRACKET array-index-expr-postfix-2? RBRACKET
    FIRST: `[`
    FOLLOW: other-assign-expr, `!=`, `%`, `&&`, `&`, `)`, `*`, `+`, `,`, `-`, `..`, `/`, `;`, `<<`, `<=`, `<`, `==`, `=`, `>=`, `>>`, `>`, `]`, `^`, `{`, `|`, `||`, `}`
    FOLLOWSUBSETFOLLOW: expr-postfix
@@ -100,18 +117,18 @@ expr-postfix = member-expr-postfix | tuple-index-expr-postfix | call-expr-postfi
    FOLLOWSUBSETFOLLOW: postfix-expr
 
 postfix-expr = primary-expr expr-postfix*
-   FIRST: IDENT, LITERAL, `(`, `::`, `<`, `[`, `_`, `false`, `self`, `true`
+   FIRST: IDENT, LITERAL, `(`, `::`, `<`, `Self`, `[`, `_`, `self`
    FIRSTSUBSET: primary-expr
    FOLLOW: other-assign-expr, `!=`, `%`, `&&`, `&`, `)`, `*`, `+`, `,`, `-`, `..`, `/`, `;`, `<<`, `<=`, `<`, `==`, `=`, `>=`, `>>`, `>`, `]`, `^`, `{`, `|`, `||`, `}`
    FOLLOWSUBSETFOLLOW: unary-expr
 
 unary-expr-1 = NOT | AND | SUB | MUL | TILDE
    FIRST: <epsilon>, `!`, `&`, `*`, `-`, `~`
-   FOLLOW: IDENT, LITERAL, `(`, `::`, `<`, `[`, `_`, `false`, `self`, `true`
+   FOLLOW: IDENT, LITERAL, `(`, `::`, `<`, `Self`, `[`, `_`, `self`
    FOLLOWSUBSETFIRST: postfix-expr
 
 unary-expr = unary-expr-1* postfix-expr
-   FIRST: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `[`, `_`, `false`, `self`, `true`, `~`
+   FIRST: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `Self`, `[`, `_`, `self`, `~`
    FIRSTSUBSET: postfix-expr, unary-expr-1
    FOLLOW: other-assign-expr, `!=`, `%`, `&&`, `&`, `)`, `*`, `+`, `,`, `-`, `..`, `/`, `;`, `<<`, `<=`, `<`, `==`, `=`, `>=`, `>>`, `>`, `]`, `^`, `{`, `|`, `||`, `}`
    FOLLOWSUBSETFIRST: multiplicative-expr-2
@@ -119,7 +136,7 @@ unary-expr = unary-expr-1* postfix-expr
 
 multiplicative-expr-2-1 = REM | MUL | DIV
    FIRST: `%`, `*`, `/`
-   FOLLOW: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `[`, `_`, `false`, `self`, `true`, `~`
+   FOLLOW: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `Self`, `[`, `_`, `self`, `~`
    FOLLOWSUBSETFIRST: unary-expr
 
 multiplicative-expr-2 = multiplicative-expr-2-1 unary-expr
@@ -129,7 +146,7 @@ multiplicative-expr-2 = multiplicative-expr-2-1 unary-expr
    FOLLOWSUBSETFOLLOW: multiplicative-expr
 
 multiplicative-expr = unary-expr multiplicative-expr-2*
-   FIRST: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `[`, `_`, `false`, `self`, `true`, `~`
+   FIRST: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `Self`, `[`, `_`, `self`, `~`
    FIRSTSUBSET: unary-expr
    FOLLOW: other-assign-expr, `!=`, `&&`, `&`, `)`, `+`, `,`, `-`, `..`, `;`, `<<`, `<=`, `<`, `==`, `=`, `>=`, `>>`, `>`, `]`, `^`, `{`, `|`, `||`, `}`
    FOLLOWSUBSETFIRST: additive-expr-2
@@ -137,7 +154,7 @@ multiplicative-expr = unary-expr multiplicative-expr-2*
 
 additive-expr-2-1 = ADD | SUB
    FIRST: `+`, `-`
-   FOLLOW: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `[`, `_`, `false`, `self`, `true`, `~`
+   FOLLOW: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `Self`, `[`, `_`, `self`, `~`
    FOLLOWSUBSETFIRST: multiplicative-expr
 
 additive-expr-2 = additive-expr-2-1 multiplicative-expr
@@ -147,7 +164,7 @@ additive-expr-2 = additive-expr-2-1 multiplicative-expr
    FOLLOWSUBSETFOLLOW: additive-expr
 
 additive-expr = multiplicative-expr additive-expr-2*
-   FIRST: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `[`, `_`, `false`, `self`, `true`, `~`
+   FIRST: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `Self`, `[`, `_`, `self`, `~`
    FIRSTSUBSET: multiplicative-expr
    FOLLOW: other-assign-expr, `!=`, `&&`, `&`, `)`, `,`, `..`, `;`, `<<`, `<=`, `<`, `==`, `=`, `>=`, `>>`, `>`, `]`, `^`, `{`, `|`, `||`, `}`
    FOLLOWSUBSETFIRST: relational-expr-2
@@ -155,7 +172,7 @@ additive-expr = multiplicative-expr additive-expr-2*
 
 relational-expr-2-1 = LT | GT | LTEQ | GTEQ
    FIRST: `<=`, `<`, `>=`, `>`
-   FOLLOW: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `[`, `_`, `false`, `self`, `true`, `~`
+   FOLLOW: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `Self`, `[`, `_`, `self`, `~`
    FOLLOWSUBSETFIRST: additive-expr
 
 relational-expr-2 = relational-expr-2-1 additive-expr
@@ -165,7 +182,7 @@ relational-expr-2 = relational-expr-2-1 additive-expr
    FOLLOWSUBSETFOLLOW: relational-expr
 
 relational-expr = additive-expr relational-expr-2*
-   FIRST: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `[`, `_`, `false`, `self`, `true`, `~`
+   FIRST: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `Self`, `[`, `_`, `self`, `~`
    FIRSTSUBSET: additive-expr
    FOLLOW: other-assign-expr, `!=`, `&&`, `&`, `)`, `,`, `..`, `;`, `<<`, `==`, `=`, `>>`, `]`, `^`, `{`, `|`, `||`, `}`
    FOLLOWSUBSETFIRST: shift-expr-2
@@ -173,7 +190,7 @@ relational-expr = additive-expr relational-expr-2*
 
 shift-expr-2-1 = LTLT | GTGT
    FIRST: `<<`, `>>`
-   FOLLOW: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `[`, `_`, `false`, `self`, `true`, `~`
+   FOLLOW: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `Self`, `[`, `_`, `self`, `~`
    FOLLOWSUBSETFIRST: relational-expr
 
 shift-expr-2 = shift-expr-2-1 relational-expr
@@ -183,7 +200,7 @@ shift-expr-2 = shift-expr-2-1 relational-expr
    FOLLOWSUBSETFOLLOW: shift-expr
 
 shift-expr = relational-expr shift-expr-2*
-   FIRST: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `[`, `_`, `false`, `self`, `true`, `~`
+   FIRST: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `Self`, `[`, `_`, `self`, `~`
    FIRSTSUBSET: relational-expr
    FOLLOW: other-assign-expr, `!=`, `&&`, `&`, `)`, `,`, `..`, `;`, `==`, `=`, `]`, `^`, `{`, `|`, `||`, `}`
    FOLLOWSUBSETFIRST: bitand-expr-2
@@ -195,7 +212,7 @@ bitand-expr-2 = AND shift-expr
    FOLLOWSUBSETFOLLOW: bitand-expr
 
 bitand-expr = shift-expr bitand-expr-2*
-   FIRST: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `[`, `_`, `false`, `self`, `true`, `~`
+   FIRST: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `Self`, `[`, `_`, `self`, `~`
    FIRSTSUBSET: shift-expr
    FOLLOW: other-assign-expr, `!=`, `&&`, `)`, `,`, `..`, `;`, `==`, `=`, `]`, `^`, `{`, `|`, `||`, `}`
    FOLLOWSUBSETFIRST: bitxor-expr-2
@@ -207,7 +224,7 @@ bitxor-expr-2 = CARET bitand-expr
    FOLLOWSUBSETFOLLOW: bitxor-expr
 
 bitxor-expr = bitand-expr bitxor-expr-2*
-   FIRST: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `[`, `_`, `false`, `self`, `true`, `~`
+   FIRST: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `Self`, `[`, `_`, `self`, `~`
    FIRSTSUBSET: bitand-expr
    FOLLOW: other-assign-expr, `!=`, `&&`, `)`, `,`, `..`, `;`, `==`, `=`, `]`, `{`, `|`, `||`, `}`
    FOLLOWSUBSETFIRST: bitor-expr-2
@@ -219,7 +236,7 @@ bitor-expr-2 = OR bitxor-expr
    FOLLOWSUBSETFOLLOW: bitor-expr
 
 bitor-expr = bitxor-expr bitor-expr-2*
-   FIRST: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `[`, `_`, `false`, `self`, `true`, `~`
+   FIRST: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `Self`, `[`, `_`, `self`, `~`
    FIRSTSUBSET: bitxor-expr
    FOLLOW: other-assign-expr, `!=`, `&&`, `)`, `,`, `..`, `;`, `==`, `=`, `]`, `{`, `||`, `}`
    FOLLOWSUBSETFIRST: equality-expr-2
@@ -227,7 +244,7 @@ bitor-expr = bitxor-expr bitor-expr-2*
 
 equality-expr-2-1 = EQEQ | NOTEQ
    FIRST: `!=`, `==`
-   FOLLOW: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `[`, `_`, `false`, `self`, `true`, `~`
+   FOLLOW: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `Self`, `[`, `_`, `self`, `~`
    FOLLOWSUBSETFIRST: bitor-expr
 
 equality-expr-2 = equality-expr-2-1 bitor-expr
@@ -237,7 +254,7 @@ equality-expr-2 = equality-expr-2-1 bitor-expr
    FOLLOWSUBSETFOLLOW: equality-expr
 
 equality-expr = bitor-expr equality-expr-2*
-   FIRST: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `[`, `_`, `false`, `self`, `true`, `~`
+   FIRST: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `Self`, `[`, `_`, `self`, `~`
    FIRSTSUBSET: bitor-expr
    FOLLOW: other-assign-expr, `&&`, `)`, `,`, `..`, `;`, `=`, `]`, `{`, `||`, `}`
    FOLLOWSUBSETFIRST: logical-and-expr-2
@@ -249,7 +266,7 @@ logical-and-expr-2 = ANDAND equality-expr
    FOLLOWSUBSETFOLLOW: logical-and-expr
 
 logical-and-expr = equality-expr logical-and-expr-2*
-   FIRST: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `[`, `_`, `false`, `self`, `true`, `~`
+   FIRST: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `Self`, `[`, `_`, `self`, `~`
    FIRSTSUBSET: equality-expr
    FOLLOW: other-assign-expr, `)`, `,`, `..`, `;`, `=`, `]`, `{`, `||`, `}`
    FOLLOWSUBSETFIRST: logical-or-expr-2
@@ -261,13 +278,13 @@ logical-or-expr-2 = OROR logical-and-expr
    FOLLOWSUBSETFOLLOW: logical-or-expr
 
 logical-or-expr = logical-and-expr logical-or-expr-2*
-   FIRST: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `[`, `_`, `false`, `self`, `true`, `~`
+   FIRST: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `Self`, `[`, `_`, `self`, `~`
    FIRSTSUBSET: logical-and-expr
    FOLLOW: other-assign-expr, `)`, `,`, `..`, `;`, `=`, `]`, `{`, `}`
    FOLLOWSUBSETFOLLOW: binary-expr
 
 binary-expr = logical-or-expr
-   FIRST: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `[`, `_`, `false`, `self`, `true`, `~`
+   FIRST: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `Self`, `[`, `_`, `self`, `~`
    FIRSTSUBSET: logical-or-expr
    FOLLOW: other-assign-expr, `)`, `,`, `..`, `;`, `=`, `]`, `{`, `}`
    FOLLOWSUBSETFOLLOW: range-both-expr, range-right-expr
@@ -283,28 +300,28 @@ range-right-expr = DOTDOT binary-expr
    FOLLOWSUBSETFOLLOW: range-expr
 
 range-left-expr = binary-expr DOTDOT
-   FIRST: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `[`, `_`, `false`, `self`, `true`, `~`
+   FIRST: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `Self`, `[`, `_`, `self`, `~`
    FIRSTSUBSET: binary-expr
    FOLLOW: other-assign-expr, `)`, `,`, `;`, `=`, `]`, `{`, `}`
    FOLLOWSUBSETFOLLOW: range-expr
 
 range-both-expr = binary-expr DOTDOT binary-expr
-   FIRST: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `[`, `_`, `false`, `self`, `true`, `~`
+   FIRST: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `::`, `<`, `Self`, `[`, `_`, `self`, `~`
    FIRSTSUBSET: binary-expr
    FOLLOW: other-assign-expr, `)`, `,`, `;`, `=`, `]`, `{`, `}`
    FOLLOWSUBSETFOLLOW: range-expr
 
 range-expr = range-full-expr | range-right-expr | range-left-expr | range-both-expr
-   FIRST: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `..`, `::`, `<`, `[`, `_`, `false`, `self`, `true`, `~`
+   FIRST: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `..`, `::`, `<`, `Self`, `[`, `_`, `self`, `~`
    FOLLOW: other-assign-expr, `)`, `,`, `;`, `=`, `]`, `{`, `}`
    FOLLOWSUBSETFOLLOW: expr
 
 expr = range-expr
-   FIRST: <epsilon>, IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `..`, `::`, `<`, `[`, `_`, `false`, `self`, `true`, `~`
+   FIRST: <epsilon>, IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `..`, `::`, `<`, `Self`, `[`, `_`, `self`, `~`
    FIRSTSUBSET: range-expr
    FOLLOW: other-assign-expr, `)`, `,`, `;`, `=`, `]`, `{`, `}`
-   FOLLOWSUBSETFIRST: assign-expr-stmt-2, block, object-expr-postfix-2-4, tuple-expr-3
-   FOLLOWSUBSETFOLLOW: call-expr-postfix-2, enum-def-5-2, object-expr-postfix-2, object-expr-postfix-2-4, tuple-expr-3
+   FOLLOWSUBSETFIRST: array-expr-3, array-index-expr-postfix-2-2, assign-expr-stmt-2, block, call-expr-postfix-2-2, object-expr-postfix-2-4, tuple-expr-3
+   FOLLOWSUBSETFOLLOW: array-expr-3, array-index-expr-postfix-2, array-index-expr-postfix-2-2, call-expr-postfix-2, call-expr-postfix-2-2, enum-def-5-2, enum-def-5-3-3, object-expr-postfix-2, object-expr-postfix-2-4, tuple-expr-3, var-decl-stmt-4
 
 primitive-type = BOOL | CHAR | F32 | F64 | I8 | I16 | I32 | I64 | I128 | U8 | U16 | U32 | U64 | U128
    FIRST: primitive-type
@@ -318,23 +335,27 @@ array-type = LBRACKET type-ref SEMICOLON expr RBRACKET
 
 fn-type-3-1 = IDENT COLON
    FIRST: <epsilon>, IDENT
-   FOLLOW: primitive-type, IDENT, `&`, `(`, `::`, `<`, `[`, `_`, `false`, `fn`, `self`, `true`
+   FOLLOW: primitive-type, IDENT, `&`, `(`, `::`, `<`, `Self`, `[`, `_`, `fn`, `self`
    FOLLOWSUBSETFIRST: type-ref
 
-fn-type-3-3 = COMMA fn-type-3-1? type-ref
+fn-type-3-3-2 = IDENT COLON
+   FIRST: <epsilon>, IDENT
+   FOLLOW: primitive-type, IDENT, `&`, `(`, `::`, `<`, `Self`, `[`, `_`, `fn`, `self`
+   FOLLOWSUBSETFIRST: type-ref
+
+fn-type-3-3 = COMMA fn-type-3-3-2? type-ref
    FIRST: <epsilon>, `,`
    FOLLOW: `)`, `,`
    FOLLOWSUBSETFOLLOW: fn-type-3
 
 fn-type-3 = fn-type-3-1? type-ref fn-type-3-3* COMMA?
-   FIRST: <epsilon>, primitive-type, IDENT, `&`, `(`, `::`, `<`, `[`, `_`, `false`, `fn`, `self`, `true`
+   FIRST: <epsilon>, primitive-type, IDENT, `&`, `(`, `::`, `<`, `Self`, `[`, `_`, `fn`, `self`
    FIRSTSUBSET: fn-type-3-1, type-ref
    FOLLOW: `)`
 
 fn-type-5 = SUBGT type-ref
    FIRST: <epsilon>, `->`
-   FOLLOW: `)`, `,`, `;`, `>`, `where`, `{`
-   FOLLOWSUBSETFIRST: fn-def-7, fn-def-8
+   FOLLOW: `)`, `,`, `;`, `>`
    FOLLOWSUBSETFOLLOW: fn-type
 
 fn-type = FN LPAREN fn-type-3? RPAREN fn-type-5?
@@ -344,11 +365,16 @@ fn-type = FN LPAREN fn-type-3? RPAREN fn-type-5?
 
 ref-type = AND type-ref
    FIRST: `&`
-   FOLLOW: `)`, `,`, `;`, `>`, `where`, `{`
+   FOLLOW: `)`, `,`, `;`, `>`
    FOLLOWSUBSETFOLLOW: type-ref
 
-tuple-type-2 = type-ref member-expr-postfix-3-4* COMMA?
-   FIRST: <epsilon>, primitive-type, IDENT, `&`, `(`, `::`, `<`, `[`, `_`, `false`, `fn`, `self`, `true`
+tuple-type-2-2 = COMMA type-ref
+   FIRST: <epsilon>, `,`
+   FOLLOW: `)`, `,`
+   FOLLOWSUBSETFOLLOW: tuple-type-2
+
+tuple-type-2 = type-ref tuple-type-2-2* COMMA?
+   FIRST: <epsilon>, primitive-type, IDENT, `&`, `(`, `::`, `<`, `Self`, `[`, `_`, `fn`, `self`
    FIRSTSUBSET: type-ref
    FOLLOW: `)`
 
@@ -357,58 +383,88 @@ tuple-type = LPAREN tuple-type-2? RPAREN
    FOLLOW: `)`, `+`, `,`, `;`, `=`, `>`, `as`, `for`, `where`, `{`, `}`
    FOLLOWSUBSETFOLLOW: type-ref
 
-type-ref = primitive-type | array-type | fn-type | ref-type | tuple-type | path
-   FIRST: primitive-type, IDENT, `&`, `(`, `::`, `<`, `[`, `_`, `false`, `fn`, `self`, `true`
+type-ref = primitive-type | array-type | fn-type | ref-type | tuple-type | type-path
+   FIRST: primitive-type, IDENT, `&`, `(`, `::`, `<`, `Self`, `[`, `_`, `fn`, `self`
    FOLLOW: `)`, `+`, `,`, `;`, `=`, `>`, `as`, `for`, `where`, `{`, `}`
-   FOLLOWSUBSETFIRST: fn-def-4-4, fn-def-7, fn-type-3-3, impl-block-4, member-expr-postfix-3-4, where-clause-4
-   FOLLOWSUBSETFOLLOW: fn-def-4, fn-def-4-4, fn-type-3, fn-type-3-3, fn-type-5, impl-block-4, member-expr-postfix-3-4, ref-type, tuple-type-2, type-def-3, var-decl-stmt-3, where-clause, where-clause-4
+   FOLLOWSUBSETFIRST: fn-def-4-4, fn-type-3-3, impl-block-4, impl-block-5, member-expr-postfix-3-4, normal-segment-type-2-4, normal-segment-value-2-4, qualified-segment-3, struct-def-4-4, tuple-type-2-2, where-clause-4
+   FOLLOWSUBSETFOLLOW: fn-def-4, fn-def-4-4, fn-def-6, fn-type-3, fn-type-3-3, fn-type-5, impl-block-4, member-expr-postfix-3-4, normal-segment-type-2-4, normal-segment-value-2-4, qualified-segment-3, ref-type, struct-def-4, struct-def-4-4, tuple-type-2, tuple-type-2-2, type-def-3, var-decl-stmt-3, where-clause, where-clause-4
 
-simple-segment = IDENT | TRUE | FALSE | SELF_ | UNDERSCORE
-   FIRST: IDENT, `_`, `false`, `self`, `true`
+normal-segment-base = IDENT | UNDERSCORE | SELFL | SELFU
+   FIRST: IDENT, `Self`, `_`, `self`
    FOLLOW: other-assign-expr, `!=`, `%`, `&&`, `&`, `(`, `)`, `*`, `+`, `,`, `-`, `..`, `.`, `/`, `::`, `;`, `<<`, `<=`, `<`, `==`, `=`, `>=`, `>>`, `>`, `[`, `]`, `^`, `as`, `for`, `where`, `{`, `|`, `||`, `}`
-   FOLLOWSUBSETFOLLOW: path-segment, value-path-segment
+   FOLLOWSUBSETFIRST: normal-segment-type-2, normal-segment-value-2
+   FOLLOWSUBSETFOLLOW: normal-segment-type, normal-segment-value
 
-generic-segment = IDENT COLONCOLON? LT type-ref member-expr-postfix-3-4* COMMA? GT
-   FIRST: IDENT
-   FOLLOW: other-assign-expr, `!=`, `%`, `&&`, `&`, `(`, `)`, `*`, `+`, `,`, `-`, `..`, `.`, `/`, `::`, `;`, `<<`, `<=`, `<`, `==`, `=`, `>=`, `>>`, `>`, `[`, `]`, `^`, `as`, `for`, `where`, `{`, `|`, `||`, `}`
-   FOLLOWSUBSETFOLLOW: path-segment
+normal-segment-type-2-4 = COMMA type-ref
+   FIRST: <epsilon>, `,`
+   FOLLOW: `,`, `>`
 
-value-generic-segment = IDENT COLONCOLON LT type-ref member-expr-postfix-3-4* COMMA? GT
-   FIRST: IDENT
+normal-segment-type-2 = COLONCOLON? LT type-ref normal-segment-type-2-4* COMMA? GT
+   FIRST: <epsilon>, `::`, `<`
+   FOLLOW: `)`, `+`, `,`, `::`, `;`, `=`, `>`, `as`, `for`, `where`, `{`, `}`
+   FOLLOWSUBSETFOLLOW: normal-segment-type
+
+normal-segment-type = normal-segment-base normal-segment-type-2?
+   FIRST: IDENT, `Self`, `_`, `self`
+   FIRSTSUBSET: normal-segment-base
+   FOLLOW: `)`, `+`, `,`, `::`, `;`, `=`, `>`, `as`, `for`, `where`, `{`, `}`
+   FOLLOWSUBSETFOLLOW: type-path-segment
+
+normal-segment-value-2-4 = COMMA type-ref
+   FIRST: <epsilon>, `,`
+   FOLLOW: `,`, `>`
+
+normal-segment-value-2 = COLONCOLON LT type-ref normal-segment-value-2-4* COMMA? GT
+   FIRST: <epsilon>, `::`
+   FOLLOW: other-assign-expr, `!=`, `%`, `&&`, `&`, `(`, `)`, `*`, `+`, `,`, `-`, `..`, `.`, `/`, `::`, `;`, `<<`, `<=`, `<`, `==`, `=`, `>=`, `>>`, `>`, `[`, `]`, `^`, `{`, `|`, `||`, `}`
+   FOLLOWSUBSETFOLLOW: normal-segment-value
+
+normal-segment-value = normal-segment-base normal-segment-value-2?
+   FIRST: IDENT, `Self`, `_`, `self`
+   FIRSTSUBSET: normal-segment-base
    FOLLOW: other-assign-expr, `!=`, `%`, `&&`, `&`, `(`, `)`, `*`, `+`, `,`, `-`, `..`, `.`, `/`, `::`, `;`, `<<`, `<=`, `<`, `==`, `=`, `>=`, `>>`, `>`, `[`, `]`, `^`, `{`, `|`, `||`, `}`
    FOLLOWSUBSETFOLLOW: value-path-segment
 
-cast-segment = LT type-ref AS type-ref GT
+qualified-segment-3 = AS type-ref
+   FIRST: <epsilon>, `as`
+   FOLLOW: `>`
+
+qualified-segment = LT type-ref qualified-segment-3? GT
    FIRST: `<`
    FOLLOW: other-assign-expr, `!=`, `%`, `&&`, `&`, `(`, `)`, `*`, `+`, `,`, `-`, `..`, `.`, `/`, `::`, `;`, `<<`, `<=`, `<`, `==`, `=`, `>=`, `>>`, `>`, `[`, `]`, `^`, `as`, `for`, `where`, `{`, `|`, `||`, `}`
-   FOLLOWSUBSETFOLLOW: path-segment, value-path-segment
+   FOLLOWSUBSETFOLLOW: type-path-segment, value-path-segment
 
-path-segment = simple-segment | generic-segment | cast-segment
-   FIRST: IDENT, `<`, `_`, `false`, `self`, `true`
-   FOLLOW: other-assign-expr, `!=`, `%`, `&&`, `&`, `(`, `)`, `*`, `+`, `,`, `-`, `..`, `.`, `/`, `::`, `;`, `<<`, `<=`, `<`, `==`, `=`, `>=`, `>>`, `>`, `[`, `]`, `^`, `as`, `for`, `where`, `{`, `|`, `||`, `}`
-   FOLLOWSUBSETFIRST: path-3
-   FOLLOWSUBSETFOLLOW: path, path-3
+type-path-segment = qualified-segment | normal-segment-type
+   FIRST: IDENT, `<`, `Self`, `_`, `self`
+   FOLLOW: `)`, `+`, `,`, `::`, `;`, `=`, `>`, `as`, `for`, `where`, `{`, `}`
+   FOLLOWSUBSETFIRST: type-path-3
+   FOLLOWSUBSETFOLLOW: type-path, type-path-3
 
-value-path-segment = simple-segment | value-generic-segment | cast-segment
-   FIRST: IDENT, `<`, `_`, `false`, `self`, `true`
+value-path-segment = qualified-segment | normal-segment-value
+   FIRST: IDENT, `<`, `Self`, `_`, `self`
    FOLLOW: other-assign-expr, `!=`, `%`, `&&`, `&`, `(`, `)`, `*`, `+`, `,`, `-`, `..`, `.`, `/`, `::`, `;`, `<<`, `<=`, `<`, `==`, `=`, `>=`, `>>`, `>`, `[`, `]`, `^`, `{`, `|`, `||`, `}`
-   FOLLOWSUBSETFIRST: path-3
-   FOLLOWSUBSETFOLLOW: value-path
+   FOLLOWSUBSETFIRST: value-path-3
+   FOLLOWSUBSETFOLLOW: value-path, value-path-3
 
-path-3 = COLONCOLON path-segment
+type-path-3 = COLONCOLON type-path-segment
    FIRST: <epsilon>, `::`
-   FOLLOW: other-assign-expr, `!=`, `%`, `&&`, `&`, `(`, `)`, `*`, `+`, `,`, `-`, `..`, `.`, `/`, `;`, `<<`, `<=`, `<`, `==`, `=`, `>=`, `>>`, `>`, `[`, `]`, `^`, `as`, `for`, `where`, `{`, `|`, `||`, `}`
-   FOLLOWSUBSETFOLLOW: path, value-path
+   FOLLOW: `)`, `+`, `,`, `;`, `=`, `>`, `as`, `for`, `where`, `{`, `}`
+   FOLLOWSUBSETFOLLOW: type-path
 
-path = COLONCOLON? path-segment path-3*
-   FIRST: IDENT, `::`, `<`, `_`, `false`, `self`, `true`
-   FIRSTSUBSET: path-segment
+type-path = COLONCOLON? type-path-segment type-path-3*
+   FIRST: IDENT, `::`, `<`, `Self`, `_`, `self`
+   FIRSTSUBSET: type-path-segment
    FOLLOW: `)`, `+`, `,`, `;`, `=`, `>`, `as`, `for`, `where`, `{`, `}`
    FOLLOWSUBSETFIRST: use-stmt-3
    FOLLOWSUBSETFOLLOW: type-ref
 
-value-path = COLONCOLON? value-path-segment path-3*
-   FIRST: IDENT, `::`, `<`, `_`, `false`, `self`, `true`
+value-path-3 = COLONCOLON value-path-segment
+   FIRST: <epsilon>, `::`
+   FOLLOW: other-assign-expr, `!=`, `%`, `&&`, `&`, `(`, `)`, `*`, `+`, `,`, `-`, `..`, `.`, `/`, `;`, `<<`, `<=`, `<`, `==`, `=`, `>=`, `>>`, `>`, `[`, `]`, `^`, `{`, `|`, `||`, `}`
+   FOLLOWSUBSETFOLLOW: value-path
+
+value-path = COLONCOLON? value-path-segment value-path-3*
+   FIRST: IDENT, `::`, `<`, `Self`, `_`, `self`
    FIRSTSUBSET: value-path-segment
    FOLLOW: other-assign-expr, `!=`, `%`, `&&`, `&`, `(`, `)`, `*`, `+`, `,`, `-`, `..`, `.`, `/`, `;`, `<<`, `<=`, `<`, `==`, `=`, `>=`, `>>`, `>`, `[`, `]`, `^`, `{`, `|`, `||`, `}`
    FOLLOWSUBSETFOLLOW: primary-expr
@@ -424,8 +480,7 @@ generic-name-2-3 = COMMA IDENT
 
 generic-name-2 = LT IDENT generic-name-2-3* COMMA? GT
    FIRST: <epsilon>, `<`
-   FOLLOW: primitive-type, IDENT, `&`, `(`, `::`, `;`, `<`, `=`, `[`, `_`, `false`, `fn`, `self`, `true`, `{`
-   FOLLOWSUBSETFIRST: type-ref
+   FOLLOW: `(`, `;`, `=`, `{`
    FOLLOWSUBSETFOLLOW: generic-name
 
 generic-name = IDENT generic-name-2?
@@ -441,8 +496,8 @@ where-clause-4 = ADD type-ref
 where-clause = IDENT COLON type-ref where-clause-4*
    FIRST: IDENT
    FOLLOW: `,`, `;`, `{`
-   FOLLOWSUBSETFIRST: fn-def-7-3
-   FOLLOWSUBSETFOLLOW: fn-def-7, fn-def-7-3
+   FOLLOWSUBSETFIRST: fn-def-7-3, impl-block-5-3
+   FOLLOWSUBSETFOLLOW: fn-def-7, fn-def-7-3, impl-block-5, impl-block-5-3
 
 block = LBRACE stmt* RBRACE
    FIRST: `{`
@@ -477,11 +532,16 @@ enum-def-3 = COLON primitive-type
 
 enum-def-5-2 = EQ expr
    FIRST: <epsilon>, `=`
-   FOLLOW: `,`, `;`, `}`
+   FOLLOW: `,`, `}`
    FOLLOWSUBSETFIRST: enum-def-5-3
-   FOLLOWSUBSETFOLLOW: enum-def-5, enum-def-5-3
+   FOLLOWSUBSETFOLLOW: enum-def-5
 
-enum-def-5-3 = COMMA IDENT enum-def-5-2?
+enum-def-5-3-3 = EQ expr
+   FIRST: <epsilon>, `=`
+   FOLLOW: `,`, `}`
+   FOLLOWSUBSETFOLLOW: enum-def-5-3
+
+enum-def-5-3 = COMMA IDENT enum-def-5-3-3?
    FIRST: <epsilon>, `,`
    FOLLOW: `,`, `}`
    FOLLOWSUBSETFOLLOW: enum-def-5
@@ -496,30 +556,35 @@ enum-def = ENUM IDENT enum-def-3? LBRACE enum-def-5? RBRACE
    FOLLOWSUBSETFOLLOW: item, stmt
 
 simple-expr-stmt = expr SEMICOLON
-   FIRST: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `..`, `::`, `<`, `[`, `_`, `false`, `self`, `true`, `~`
+   FIRST: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `..`, `::`, `<`, `Self`, `[`, `_`, `self`, `~`
    FIRSTSUBSET: expr
    FOLLOW: <dollar>, `}`
    FOLLOWSUBSETFOLLOW: item, stmt
 
 assign-expr-stmt-2 = EQ | REMEQ | ANDEQ | MULEQ | ADDEQ | SUBEQ | DIVEQ | CARETEQ | OREQ | LTLTEQ | GTGTEQ
    FIRST: other-assign-expr, `=`
-   FOLLOW: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `..`, `::`, `<`, `[`, `_`, `false`, `self`, `true`, `~`
+   FOLLOW: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `..`, `::`, `<`, `Self`, `[`, `_`, `self`, `~`
    FOLLOWSUBSETFIRST: expr
 
 assign-expr-stmt = expr assign-expr-stmt-2 expr SEMICOLON
-   FIRST: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `..`, `::`, `<`, `[`, `_`, `false`, `self`, `true`, `~`
+   FIRST: IDENT, LITERAL, `!`, `&`, `(`, `*`, `-`, `..`, `::`, `<`, `Self`, `[`, `_`, `self`, `~`
    FIRSTSUBSET: expr
    FOLLOW: <dollar>, `}`
    FOLLOWSUBSETFOLLOW: item, stmt
 
 fn-def-4-4 = COMMA IDENT COLON type-ref
    FIRST: <epsilon>, `,`
-   FOLLOW: `)`, `,`, `}`
+   FOLLOW: `)`, `,`
    FOLLOWSUBSETFOLLOW: fn-def-4
 
 fn-def-4 = IDENT COLON type-ref fn-def-4-4* COMMA?
    FIRST: <epsilon>, IDENT
-   FOLLOW: `)`, `}`
+   FOLLOW: `)`
+
+fn-def-6 = SUBGT type-ref
+   FIRST: <epsilon>, `->`
+   FOLLOW: `;`, `where`, `{`
+   FOLLOWSUBSETFIRST: fn-def-7, fn-def-8
 
 fn-def-7-3 = COMMA where-clause
    FIRST: <epsilon>, `,`
@@ -536,7 +601,7 @@ fn-def-8 = block | SEMICOLON
    FOLLOW: <dollar>, `}`
    FOLLOWSUBSETFOLLOW: fn-def
 
-fn-def = FN generic-name LPAREN fn-def-4? RPAREN fn-type-5? fn-def-7? fn-def-8
+fn-def = FN generic-name LPAREN fn-def-4? RPAREN fn-def-6? fn-def-7? fn-def-8
    FIRST: `fn`
    FOLLOW: <dollar>, `}`
    FOLLOWSUBSETFOLLOW: item, stmt
@@ -563,12 +628,30 @@ if-stmt = IF expr block if-stmt-4* if-stmt-5?
    FOLLOW: <dollar>, `}`
    FOLLOWSUBSETFOLLOW: item, stmt
 
+impl-block-2-3 = COMMA IDENT
+   FIRST: <epsilon>, `,`
+   FOLLOW: `,`, `>`
+
+impl-block-2 = LT IDENT impl-block-2-3* COMMA? GT
+   FIRST: <epsilon>, `<`
+   FOLLOW: primitive-type, IDENT, `&`, `(`, `::`, `<`, `Self`, `[`, `_`, `fn`, `self`
+   FOLLOWSUBSETFIRST: type-ref
+
 impl-block-4 = FOR type-ref
    FIRST: <epsilon>, `for`
    FOLLOW: `where`, `{`
-   FOLLOWSUBSETFIRST: fn-def-7
+   FOLLOWSUBSETFIRST: impl-block-5
 
-impl-block = IMPL generic-name-2? type-ref impl-block-4? fn-def-7? LBRACE item* RBRACE
+impl-block-5-3 = COMMA where-clause
+   FIRST: <epsilon>, `,`
+   FOLLOW: `,`, `{`
+   FOLLOWSUBSETFOLLOW: impl-block-5
+
+impl-block-5 = WHERE where-clause impl-block-5-3* COMMA?
+   FIRST: <epsilon>, `where`
+   FOLLOW: `{`
+
+impl-block = IMPL impl-block-2? type-ref impl-block-4? impl-block-5? LBRACE item* RBRACE
    FIRST: `impl`
    FOLLOW: <dollar>, `}`
    FOLLOWSUBSETFOLLOW: item, stmt
@@ -589,7 +672,16 @@ ret-stmt = RETURN expr? SEMICOLON
    FOLLOW: `}`
    FOLLOWSUBSETFOLLOW: stmt
 
-struct-def = STRUCT generic-name LBRACE fn-def-4? RBRACE
+struct-def-4-4 = COMMA IDENT COLON type-ref
+   FIRST: <epsilon>, `,`
+   FOLLOW: `,`, `}`
+   FOLLOWSUBSETFOLLOW: struct-def-4
+
+struct-def-4 = IDENT COLON type-ref struct-def-4-4* COMMA?
+   FIRST: <epsilon>, IDENT
+   FOLLOW: `}`
+
+struct-def = STRUCT generic-name LBRACE struct-def-4? RBRACE
    FIRST: `struct`
    FOLLOW: <dollar>, `}`
    FOLLOWSUBSETFOLLOW: item, stmt
@@ -607,7 +699,7 @@ use-stmt-3 = AS IDENT
    FIRST: <epsilon>, `as`
    FOLLOW: `;`
 
-use-stmt = USE path use-stmt-3? SEMICOLON
+use-stmt = USE type-path use-stmt-3? SEMICOLON
    FIRST: `use`
    FOLLOW: <dollar>, `}`
    FOLLOWSUBSETFOLLOW: item, stmt
@@ -619,9 +711,13 @@ var-decl-stmt-1 = CONST | VAR
 var-decl-stmt-3 = COLON type-ref
    FIRST: <epsilon>, `:`
    FOLLOW: `;`, `=`
-   FOLLOWSUBSETFIRST: enum-def-5-2
+   FOLLOWSUBSETFIRST: var-decl-stmt-4
 
-var-decl-stmt = var-decl-stmt-1 IDENT var-decl-stmt-3? enum-def-5-2? SEMICOLON
+var-decl-stmt-4 = EQ expr
+   FIRST: <epsilon>, `=`
+   FOLLOW: `;`
+
+var-decl-stmt = var-decl-stmt-1 IDENT var-decl-stmt-3? var-decl-stmt-4? SEMICOLON
    FIRST: `const`, `var`
    FIRSTSUBSET: var-decl-stmt-1
    FOLLOW: <dollar>, `}`
@@ -634,10 +730,10 @@ while-stmt = label? WHILE expr block
    FOLLOWSUBSETFOLLOW: item, stmt
 
 stmt = struct-def | enum-def | fn-def | impl-block | type-def | class-def | block-stmt | break-stmt | continue-stmt | simple-expr-stmt | assign-expr-stmt | for-stmt | if-stmt | loop-stmt | ret-stmt | var-decl-stmt | while-stmt | use-stmt
-   FIRST: <epsilon>, IDENT, LABEL, LITERAL, `!`, `&`, `(`, `*`, `-`, `..`, `::`, `<`, `[`, `_`, `break`, `class`, `const`, `continue`, `enum`, `false`, `fn`, `for`, `if`, `impl`, `loop`, `return`, `self`, `struct`, `true`, `type`, `use`, `var`, `while`, `{`, `~`
+   FIRST: <epsilon>, IDENT, LABEL, LITERAL, `!`, `&`, `(`, `*`, `-`, `..`, `::`, `<`, `Self`, `[`, `_`, `break`, `class`, `const`, `continue`, `enum`, `fn`, `for`, `if`, `impl`, `loop`, `return`, `self`, `struct`, `type`, `use`, `var`, `while`, `{`, `~`
    FOLLOW: `}`
 
 item = struct-def | enum-def | fn-def | impl-block | type-def | class-def | block-stmt | simple-expr-stmt | assign-expr-stmt | for-stmt | if-stmt | loop-stmt | var-decl-stmt | while-stmt | use-stmt | module-stmt
-   FIRST: <epsilon>, IDENT, LABEL, LITERAL, `!`, `&`, `(`, `*`, `-`, `..`, `::`, `<`, `[`, `_`, `class`, `const`, `enum`, `false`, `fn`, `for`, `if`, `impl`, `loop`, `module`, `self`, `struct`, `true`, `type`, `use`, `var`, `while`, `{`, `~`
+   FIRST: <epsilon>, IDENT, LABEL, LITERAL, `!`, `&`, `(`, `*`, `-`, `..`, `::`, `<`, `Self`, `[`, `_`, `class`, `const`, `enum`, `fn`, `for`, `if`, `impl`, `loop`, `module`, `self`, `struct`, `type`, `use`, `var`, `while`, `{`, `~`
    FOLLOW: <dollar>, `}`
    FOLLOWSUBSETFOLLOW: module

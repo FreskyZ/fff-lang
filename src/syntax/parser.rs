@@ -1,6 +1,6 @@
 
-use crate::source::{Span, IsId, IdSpan};
-use crate::diagnostics::{Diagnostic, strings};
+use crate::source::{Span, IdSpan};
+use crate::diagnostics::strings;
 use crate::lexical::{Parser as Scanner, Token, Numeric, Separator, SeparatorKind, Keyword, KeywordKind};
 use crate::common::arena::{Arena, Index};
 use super::ast::*;
@@ -28,11 +28,10 @@ pub struct Parser<'ecx, 'scx> {
     current_span: Span,
     peek: Token,
     peek_span: Span,
-    peek2: Token,
-    peek2_span: Span,
 
     // special parser global states
     // // these states will make this parser non-context-free according to textbooks, but that's not important
+    // // update: no, context free is very cheap, this even does not make the language not LL(1)
 
     // 1. when expr is followed with block, e.g. if/for/while/swich,
     //    when meeting `{`, e.g. `if a < b { print(a); }` it should not expect an object literal
@@ -60,15 +59,12 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     pub fn new(mut base: Scanner<'ecx, 'scx>) -> Self {
         let (current, current_span) = base.next();
         let (peek, peek_span) = base.next();
-        let (peek2, peek2_span) = base.next();
         Self{
             base,
             current, 
             current_span, 
             peek, 
             peek_span, 
-            peek2, 
-            peek2_span, 
             allow_object_expr: Vec::with_capacity(128), // 128: arbitray value for max expression depth
         }
     }
@@ -87,29 +83,18 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
         Ok(arena.emplace_module(self.base.get_file_id(), items))
     }
 
-    // forward base methods
-    pub fn intern(&mut self, v: &str) -> IsId {
-        self.base.intern(v)
-    }
-    fn emit(&mut self, name: impl Into<String>) -> &mut Diagnostic { 
-        self.base.emit(name)
-    }
-
     pub fn finish(self) {
         self.base.finish()
     }
 
     // return previous current span
     fn move_next(&mut self) -> Span {
-        let original_current_span = self.current_span;
+        let previous_span = self.current_span;
         std::mem::swap(&mut self.current, &mut self.peek);
-        self.current_span = self.peek_span;
-        std::mem::swap(&mut self.peek, &mut self.peek2);
-        self.peek_span = self.peek2_span;
-        let (peek2, peek2_span) = self.base.next();
-        self.peek2 = peek2;
-        self.peek2_span = peek2_span;
-        original_current_span
+        std::mem::swap(&mut self.current_span, &mut self.peek_span);
+        // // destructuring assignment is stablized at about 1.59, I'm amazing how this is parsed
+        (self.peek, self.peek_span) = self.base.next();
+        previous_span
     }
 
     /// check current token is a literal
@@ -194,19 +179,6 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     fn try_expect_keyword(&mut self, expected_keyword: Keyword) -> Option<Span> {
         match self.current {
             Token::Keyword(kw) if kw == expected_keyword => Some(self.move_next()),
-            _ => None,
-        }
-    }
-
-    /// Check current token is one of the specified keywords
-    ///
-    /// if so, move next and Ok((kw, kw_span)), 
-    /// if not, no move next and None
-    ///
-    /// example `let (kw, kw_span) = cx.expect_keywords(&[Const, Var])?;`
-    fn try_expect_keywords(&mut self, expected_keywords: &[Keyword]) -> Option<(Keyword, Span)> {
-        match self.current {
-            Token::Keyword(kw) if expected_keywords.iter().any(|e| e == &kw) => Some((kw, self.move_next())),
             _ => None,
         }
     }
@@ -425,16 +397,16 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     // maybe_* functions: checks current token (may peek) to see if it matches syntax node starting
     // // was called Parser::matches, ISyntaxParse::matches, ISyntaxItemParse::is_first_final, IASTItem::is_first_final before
     // // considered loops_like_xxx, seems_to_be_xxx, and maybe_xxx is shortest and consist with token check methods is_xxx
-    pub fn maybe_expr(&self) -> bool {
+    fn maybe_expr(&self) -> bool {
         self.is_lit()
         || self.maybe_path()
         || self.maybe_tuple_expr()
         || self.maybe_array_expr()
         || self.maybe_unary_expr()
-        || matches!(self.current, Token::Sep(Separator::DotDot) | Token::Keyword(Keyword::Self_))
+        || matches!(self.current, Token::Sep(Separator::DotDot))
     }
 
-    pub fn parse_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
+    fn parse_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
         self.allow_object_expr.push(true);
         let result = self.parse_range_expr(arena);
         self.allow_object_expr.pop();
@@ -443,7 +415,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
     // disable top level object exprs,
     // until end of this expr, or call parse_expr again inside call_expr, e.g. array def and tuple def
-    pub fn parse_expr_except_object_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
+    fn parse_expr_except_object_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
         self.allow_object_expr.push(false);
         let result = self.parse_range_expr(arena);
         self.allow_object_expr.pop();
@@ -464,7 +436,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
         if let Some((end_span, comma_span)) = self.try_expect_closing_bracket(close_bracket) {
             if let Some(comma_span) = comma_span {
-                self.emit(format!("expect `{}`, meet `,`", close_bracket.display())).span(comma_span);
+                self.base.emit(format!("expect `{}`, meet `,`", close_bracket.display())).span(comma_span);
             }
             return Ok((start_span + end_span, Vec::new(), comma_span.is_some()));
         }
@@ -486,7 +458,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     // tuple_expr = '(' expr_list ')'
     // paren_expr = '(' expr ')'
     // unit_lit = '(' ')'
-    pub fn parse_tuple_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
+    fn parse_tuple_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
 
         let (span, mut items, end_with_comma) = self.parse_expr_list(arena)?;
         if items.is_empty() {
@@ -503,13 +475,12 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     // array_expr = '[' [ expr_list ] ']'
-    pub fn parse_array_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
-        
+    fn parse_array_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
         let (span, items, _) = self.parse_expr_list(arena)?;
         Ok(arena.emplace_array_expr(span, items).into())
     }
 
-    pub fn parse_primary_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
+    fn parse_primary_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
         if self.is_lit() {
             // this is too short to put in one parse method
             // while it is actually tested more than hundred times in syntax test cases worldwide
@@ -517,17 +488,14 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
             return Ok(arena.emplace_lit_expr(span, value).into());
         } else if self.maybe_path() {
             // // this Into::into is amazing resolution
-            return self.parse_value_path(arena).map(Into::into);
+            return self.parse_path(arena, PathContext::Value).map(Into::into);
         } else if self.maybe_tuple_expr() {
             return self.parse_tuple_expr(arena);
         } else if self.maybe_array_expr() {
             return self.parse_array_expr(arena);
+        } else {
+            self.push_unexpect("LITERAL, IDENT, `<`, `::`, `[`, `(`")
         }
-
-        let this = self.expect_ident_or_keywords(&[Keyword::Self_])?;  // actually identifier is processed by Name, not here
-        Ok(arena.emplace_path(this.span, vec![
-            arena.emplace_simple_segment(this.span, this.id).into(),
-        ]).into())
     }
 
     fn maybe_member_expr(&self) -> bool {
@@ -536,7 +504,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
     // member_expr = primary_expr '.' ident [ ':' type_list ]
     // return dot span and member name, see parse_postfix_expr for the return type
-    pub fn parse_member_expr(&mut self, arena: &'a Arena) -> Result<(Span, (IdSpan, Option<Index<'a, TypeList<'a>>>)), Unexpected> {
+    fn parse_member_expr(&mut self, arena: &'a Arena) -> Result<(Span, (IdSpan, Option<Index<'a, TypeList<'a>>>)), Unexpected> {
         
         let dot_span = self.expect_sep(Separator::Dot)?;
         // // ? rust.await is really good design, but await is still currently reserved, put it here to indicate that it can be here
@@ -552,13 +520,13 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     // tuple_member_expr = primary_expr '.' numeric
     // return dot span and tuple index and tuple index span, see parse_postfix_expr for the return type
     // TODO: `a.1.0` should be parsed as 2 tuple index expr, not a rational number, that require reset lexical parser like format string
-    pub fn parse_tuple_index_expr(&mut self) -> Result<(Span, (i32, Span)), Unexpected> {
+    fn parse_tuple_index_expr(&mut self) -> Result<(Span, (i32, Span)), Unexpected> {
         
         let dot_span = self.expect_sep(Separator::Dot)?;
         let value = match self.expect_numeric()? {
             (Numeric::I32(v), numeric_span) /* && is unsuffixed and unprefixed */ => (v, numeric_span),
             (_, numeric_span) => {
-                self.emit(strings::InvalidTupleIndex).span(numeric_span).help(strings::TupleIndexSyntaxHelp);
+                self.base.emit(strings::InvalidTupleIndex).span(numeric_span).help(strings::TupleIndexSyntaxHelp);
                 (0, numeric_span)
             },
         };
@@ -566,7 +534,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     #[cfg(test)] // test will always provide arena parameter
-    pub fn parse_tuple_index_expr_test(&mut self, _: &Arena) -> Result<(Span, (i32, Span)), Unexpected> {
+    fn parse_tuple_index_expr_test(&mut self, _: &Arena) -> Result<(Span, (i32, Span)), Unexpected> {
         self.parse_tuple_index_expr()
     }
 
@@ -576,7 +544,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
     // call_expr = primary_expr '(' [ expr_list ] ')'
     // return quote span and expr list, see parse_postfix_expr for the return type
-    pub fn parse_call_expr(&mut self, arena: &'a Arena) -> Result<(Span, Vec<Expr<'a>>), Unexpected> {
+    fn parse_call_expr(&mut self, arena: &'a Arena) -> Result<(Span, Vec<Expr<'a>>), Unexpected> {
         let (span, items, _) = self.parse_expr_list(arena)?;
         Ok((span, items))
     }
@@ -588,11 +556,11 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     // index_call_expr = primary_expr '[' [ expr_list ] ']'
     // return quote span and expr list, see parse_postfix_expr for the return type
     // // was called postfix_expr::subscription, this one is shorter and similar to fn_call
-    pub fn parse_array_index_expr(&mut self, arena: &'a Arena) -> Result<(Span, Vec<Expr<'a>>), Unexpected> {
+    fn parse_array_index_expr(&mut self, arena: &'a Arena) -> Result<(Span, Vec<Expr<'a>>), Unexpected> {
 
         let (span, items, _) = self.parse_expr_list(arena)?;
         if items.is_empty() {
-            self.emit(strings::EmptyIndexCall).span(span);
+            self.base.emit(strings::EmptyIndexCall).span(span);
         }
         Ok((span, items))
     }
@@ -604,7 +572,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     // object_literal = name '{' { ident ':' expr ',' } '}'
     // last comma may omit
     // return quote span and field list, see parse_postfix_expr for the return type
-    pub fn parse_object_expr(&mut self, arena: &'a Arena) -> Result<(Span, Vec<Index<'a, ObjectExprField<'a>>>), Unexpected> {
+    fn parse_object_expr(&mut self, arena: &'a Arena) -> Result<(Span, Vec<Index<'a, ObjectExprField<'a>>>), Unexpected> {
 
         let left_brace_span = self.expect_sep(Separator::LBrace)?;
         let mut fields = Vec::new();
@@ -628,7 +596,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         Ok((left_brace_span + right_brace_span, fields))
     }
 
-    pub fn parse_postfix_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {   
+    fn parse_postfix_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {   
         #[cfg(feature = "trace_postfix_expr_parse")]
         macro_rules! trace { ($($arg:tt)*) => ({ perror!("    [PostfixExpr:{}] ", line!()); eprintln!($($arg)*); }) }
         #[cfg(not(feature = "trace_postfix_expr_parse"))]
@@ -674,12 +642,12 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         Ok(current_expr)
     }
 
-    pub fn maybe_unary_expr(&self) -> bool {
+    fn maybe_unary_expr(&self) -> bool {
         matches!(self.current, Token::Sep(sep) if sep.kind(SeparatorKind::Unary))
     }
 
     // unary_expr = { unary_operator } postfix_expr
-    pub fn parse_unary_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
+    fn parse_unary_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
         
         let mut op_spans = Vec::new();
         loop {
@@ -696,7 +664,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     // binary_expr = unary_expr binary_op unary_expr
-    pub fn parse_binary_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
+    fn parse_binary_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
         #[cfg(feature = "trace_binary_expr_parse")]
         macro_rules! trace { ($($arg:tt)*) => ({ print!("[PrimaryExpr] "); println!($($arg)*); }) }
         #[cfg(not(feature = "trace_binary_expr_parse"))]
@@ -712,7 +680,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
                 if let BinaryExpr{ op: Separator::Gt, op_span: gt_span, left, .. } = arena.get(expr) {
                     if let Expr::Binary(left) = left {
                         if let BinaryExpr{ op: Separator::Lt, op_span: lt_span, .. } = arena.get(left) {
-                            cx.emit(strings::MaybeGeneric).span(*lt_span).span(*gt_span).help(strings::MaybeGenericHelp);
+                            cx.base.emit(strings::MaybeGeneric).span(*lt_span).span(*gt_span).help(strings::MaybeGenericHelp);
                         }
                     }
                 }
@@ -754,7 +722,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     // range_left = binary_expr '..'
     // range_right = '..' binary_expr
     // range_both = binary_expr '..' binary_expr
-    pub fn parse_range_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
+    fn parse_range_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
         match self.try_expect_sep(Separator::DotDot) {
             Some(range_op_span) => {
                 if self.maybe_expr() {
@@ -782,32 +750,33 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 }
 
+#[derive(PartialEq, Eq, Copy, Clone)]
+enum PathContext {
+    Type, // <>
+    Value, // ::<>
+}
+
 // path parsers,
 // type refs are also here because path is a kind of type ref and contains many type refs
 impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     
-    pub fn parse_type_path(&mut self, arena: &'a Arena) -> Result<Index<'a, Path<'a>>, Unexpected> {
-        self.parse_path(arena, false)
-    }
-    pub fn parse_value_path(&mut self, arena: &'a Arena) -> Result<Index<'a, Path<'a>>, Unexpected> {
-        self.parse_path(arena, true)
+    fn maybe_path(&self) -> bool {
+        matches!(self.current, Token::Keyword(kw) if kw.kind(KeywordKind::MaybeIdentifier))
+        || matches!(self.current, Token::Sep(Separator::Lt | Separator::ColonColon) | Token::Ident(_))
     }
 
-    pub fn maybe_path(&self) -> bool {
-        matches!(self.current, Token::Sep(Separator::Lt | Separator::ColonColon) | Token::Ident(_))
-    }
-
-    // path = [ '::' ] path_segment { '::' path_segment }
-    // path_segment = cast_segment | normal_segment
-    // cast_segment = '<' type_ref 'as' type_ref '>'
-    // normal_segment = identifier [ [ '::' ] '<' type_ref { ',' type_ref } [ ',' ] '>' ]
+    // path = '::'? path-segment ('::' path-segment)*
+    // path-segment = cast-segment | normal-segment
+    // cast-segment = '<' type-ref ('as' type-ref)? '>' // TODO: this is called something like qualified in rust
+    // normal-segment = (IDENT | UNDERSCORE | SELFL | SELFU) ('::'? '<' type-ref (COMMA type-ref)* COMMA? '>' )?
     //
-    // most common "name" (somewhat extented from "ident expr" in textbook)
-    // similar for type and value, except when expect value, there must be '::' before '<'
-    // cast_segment must be first segment, cast_segment not compatible with separator-started (global)
-    // TODO allow true/false/self/underscore where ident is expected, remove 'this' from keyword
-    pub fn parse_path(&mut self, arena: &'a Arena, expect_value: bool) -> Result<Index<'a, Path<'a>>, Unexpected> {
-
+    // - most common "name" (somewhat extented from "ident expr" in textbook)
+    // - similar for type and value, except when expect value, there must be '::' before '<'
+    // - cast-segment must be first segment, cast-segment not compatible with separator-started (global)
+    // - ident in normal-segment maybe identifierable keyword except true/falses,
+    //   self may be used in value context for current object pointer, may be used in type context for submodule type
+    //   Self may be used in value context for static const or static method, may be used in type context for associate type 
+    fn parse_path(&mut self, arena: &'a Arena, context: PathContext) -> Result<Index<'a, Path<'a>>, Unexpected> {
         let mut segments = Vec::new();
 
         let global_span = self.try_expect_sep(Separator::ColonColon);
@@ -815,30 +784,39 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
             segments.push(PathSegment::Global);
         } else if let Some(lt_span) = self.try_expect_sep(Separator::Lt) {
             let left = self.parse_type_ref(arena)?;
+            // TODO: optional as part
             self.expect_keyword(Keyword::As)?;
             let right = self.parse_type_ref(arena)?;
             let gt_span = self.expect_sep(Separator::Gt)?;
             if let (Separator::Colon, colon_span) = self.expect_seps(&[Separator::Colon, Separator::ColonColon])? {
-                self.emit(strings::ExpectDoubleColonMeetSingleColon).span(colon_span);
+                self.base.emit(strings::ExpectDoubleColonMeetSingleColon).span(colon_span);
             }
             segments.push(arena.emplace_cast_segment(lt_span + gt_span, left, right).into());
         }
         
         loop {
-            let base = self.expect_ident()?;
+            // this is also beyond current expect_* functions
+            let (base, is_kw) = match self.current {
+                Token::Ident(id) => (IdSpan::new(id, self.move_next()), false),
+                // true/false is Token::Bool not here
+                Token::Keyword(kw) if kw.kind(KeywordKind::MaybeIdentifier) => (IdSpan::new(self.base.intern(kw.display()), self.move_next()), true),
+                _ => self.push_unexpect("IDENT, `_`, `self`, `Self`")?,
+            };
+
             // this is beyond current expect_* functions
-            if matches!((expect_value, &self.current, &self.peek),
-                // colon is allowed when expecting coloncolon, ltlt is allowed when expecting lt...
-                // and ltlt is not allowed when expect value...
-                | (false, Token::Sep(Separator::Lt | Separator::LtLt), _)
-                | (_, Token::Sep(Separator::Colon | Separator::ColonColon), Token::Sep(Separator::Lt | Separator::LtLt)))
+            if matches!((is_kw, context, &self.current, &self.peek),
+                // at first, keyword base cannot be generic
+                // then, colon is allowed when expecting coloncolon, ltlt is allowed when expecting lt
+                // but, and ltlt is not allowed when expect value
+                | (false, PathContext::Type, Token::Sep(Separator::Lt | Separator::LtLt), _)
+                | (false, _, Token::Sep(Separator::Colon | Separator::ColonColon), Token::Sep(Separator::Lt | Separator::LtLt)))
             {
                 if let Some((colon, colon_span)) = self.try_expect_seps(&[Separator::Colon, Separator::ColonColon]) {
-                    if !expect_value {
-                        self.emit(format!("{} `{}`", strings::ExpectLtMeet, colon.display())).span(colon_span);
+                    if context == PathContext::Type {
+                        self.base.emit(format!("{} `{}`", strings::ExpectLtMeet, colon.display())).span(colon_span);
                     }
                     if colon == Separator::Colon {
-                        self.emit(strings::ExpectDoubleColonMeetSingleColon).span(colon_span);
+                        self.base.emit(strings::ExpectDoubleColonMeetSingleColon).span(colon_span);
                     }
                 }
                 // self.current now is the Lt (or LtLt)
@@ -849,7 +827,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
             }
             if let Some(sep) = self.try_expect_seps(&[Separator::Colon, Separator::ColonColon]) {
                 if let (Separator::Colon, colon_span) = sep {
-                    self.emit(strings::ExpectDoubleColonMeetSingleColon).span(colon_span);
+                    self.base.emit(strings::ExpectDoubleColonMeetSingleColon).span(colon_span);
                 }
             } else {
                 break;
@@ -865,7 +843,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
     // no maybe_type_ref because type ref is always after some colon or namespace separator
     // TODO add literal type = string/number literal (or string/number literal)*
-    pub fn parse_type_ref(&mut self, arena: &'a Arena) -> Result<TypeRef<'a>, Unexpected> {
+    fn parse_type_ref(&mut self, arena: &'a Arena) -> Result<TypeRef<'a>, Unexpected> {
         if self.maybe_primitive_type() {
             self.parse_primitive_type(arena).map(Into::into)
         } else if self.maybe_array_type() {
@@ -877,25 +855,20 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         } else if self.maybe_tuple_type() {
             self.parse_tuple_type(arena).map(Into::into)
         } else if self.maybe_path() {
-            self.parse_type_path(arena).map(Into::into)
+            self.parse_path(arena, PathContext::Type).map(Into::into)
         } else {
             self.push_unexpect("[, fn, &, (, <, ::, ident or primitive type")
         }
     }
-    
-    pub fn maybe_type_list(&self) -> bool {
-        matches!(self.current, Token::Sep(Separator::Lt))
-    }
 
     // type_list = '<' type_ref { ',' type_ref } [ ',' ] '>'
     // angle bracket quoted type list use in many places
-    // TODO: type_ref may be omitted by underscore, update: they may be recognized by path thus by type ref
-    pub fn parse_type_list(&mut self, arena: &'a Arena) -> Result<Index<'a, TypeList<'a>>, Unexpected> {
+    fn parse_type_list(&mut self, arena: &'a Arena) -> Result<Index<'a, TypeList<'a>>, Unexpected> {
 
         let lt_span = self.expect_sep(Separator::Lt)?;
 
         if let Some((gt_span, _)) = self.try_expect_closing_bracket(Separator::Gt) {
-            self.emit(strings::EmptyTypeList).span(lt_span + gt_span);
+            self.base.emit(strings::EmptyTypeList).span(lt_span + gt_span);
             return Ok(arena.emplace_type_list(lt_span + gt_span, Vec::new()));
         }
 
@@ -910,18 +883,18 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     // type refs, also include path segment
-    pub fn maybe_array_type(&self) -> bool {
+    fn maybe_array_type(&self) -> bool {
         matches!(self.current, Token::Sep(Separator::LBracket))
     }
 
     // array_type = '[' type_ref ';' expr ']'
-    pub fn parse_array_type(&mut self, arena: &'a Arena) -> Result<Index<'a, ArrayType<'a>>, Unexpected> {
+    fn parse_array_type(&mut self, arena: &'a Arena) -> Result<Index<'a, ArrayType<'a>>, Unexpected> {
 
         let left_bracket_span = self.expect_sep(Separator::LBracket)?;
         let base = self.parse_type_ref(arena)?;
 
         if let Some(right_bracket_span) = self.try_expect_sep(Separator::RBracket) {
-            self.emit(strings::InvalidArrayType)
+            self.base.emit(strings::InvalidArrayType)
                 .detail(right_bracket_span, "expected semicolon, meet right bracket")
                 .help(strings::ArrayTypeSyntaxHelp);
             return Ok(arena.emplace_array_type(left_bracket_span + right_bracket_span, base, Expr::dummy(arena)));
@@ -930,7 +903,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         self.expect_sep(Separator::SemiColon)?;
 
         if let Some(right_bracket_span) = self.try_expect_sep(Separator::RBracket) {
-            self.emit(strings::InvalidArrayType)
+            self.base.emit(strings::InvalidArrayType)
                 .detail(right_bracket_span, "expected expr, meet right bracket")
                 .help(strings::ArrayTypeSyntaxHelp);
             return Ok(arena.emplace_array_type(left_bracket_span + right_bracket_span, base, Expr::dummy(arena)));
@@ -941,7 +914,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         Ok(arena.emplace_array_type(left_bracket_span + right_bracket_span, base, size))
     }
 
-    pub fn maybe_fn_type(&self) -> bool {
+    fn maybe_fn_type(&self) -> bool {
         matches!(self.current, Token::Keyword(Keyword::Fn))
     }
 
@@ -955,7 +928,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     // - there is no `fn <T, U>(parameters)` because the normal solution is 
     //   declare these parameters outside: `fn accept_some_fn<T, U>(f: fn(T, U) -> T) -> U`,
     //   it's really hard (maybe impossible) to resolve the type parameters in bare (not in impl block etc.) `fn accept_some_template(f: fn<T, U>(T, U) -> T) -> U`
-    pub fn parse_fn_type(&mut self, arena: &'a Arena) -> Result<Index<'a, FnType<'a>>, Unexpected> {
+    fn parse_fn_type(&mut self, arena: &'a Arena) -> Result<Index<'a, FnType<'a>>, Unexpected> {
 
         let fn_span = self.expect_keyword(Keyword::Fn)?;
         let left_paren_span = self.expect_sep(Separator::LParen)?;
@@ -964,27 +937,26 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         let right_paren_span = loop {
             if let Some((right_paren_span, comma_span)) = self.try_expect_closing_bracket(Separator::RParen) {
                 if let (0, Some(comma_span)) = (parameters.len(), comma_span) {
-                    self.emit("unexpected token").detail(comma_span, "expected ident, type or right paren, meet comma");
+                    self.base.emit("unexpected token").detail(comma_span, "expected ident, type or right paren, meet comma");
                 }
                 break right_paren_span;
             } else if !parameters.is_empty() {
                 self.expect_sep(Separator::Comma)?;
             }
-            // these can-regard-as-variable keywords are not expected by type ref, they are definitely parameter name
-            // TODO: they will
-            let mut name = self
-                .try_expect_keywords(&[Keyword::Self_, Keyword::Underscore])
-                .map(|(kw, span)| IdSpan::new(self.intern(kw.display()), span));
-            if name.is_some() {
-                self.expect_sep(Separator::Colon)?;
-            }
-            // ident + single colon should be paramter name
-            match (&self.current, &self.peek) {
+            // ident/identifierable + single colon should be paramter name
+            // // cannot assign to name here because cannot call self.move_next inside this match
+            let name_id = match (&self.current, &self.peek) {
                 (Token::Ident(ident), Token::Sep(Separator::Colon)) => {
-                    name = Some(IdSpan::new(*ident, self.move_next()));
-                    self.move_next(); // move pass colon
+                    Some(*ident)
                 },
-                _ => {},
+                (Token::Keyword(kw), Token::Sep(Separator::Colon)) if kw.kind(KeywordKind::MaybeIdentifier) => {
+                    Some(self.base.intern(kw.display()))
+                },
+                _ => None,
+            };
+            let name = name_id.map(|i| IdSpan::new(i, self.move_next()));
+            if name.is_some() {
+                self.move_next(); // eat COLON
             }
             // parameter type
             let r#type = self.parse_type_ref(arena)?;
@@ -993,7 +965,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
         let ret_type = self.try_expect_seps(&[Separator::SubGt, Separator::Colon]).map(|(sep, span)| {
             if sep == Separator::Colon {
-                self.emit(strings::FunctionReturnTypeShouldUseArrow).detail(span, strings::FunctionReturnTypeExpectArrowMeetColon);
+                self.base.emit(strings::FunctionReturnTypeShouldUseArrow).detail(span, strings::FunctionReturnTypeExpectArrowMeetColon);
             }
             self.parse_type_ref(arena)
         }).transpose()?;
@@ -1002,29 +974,29 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         Ok(arena.emplace_fn_type(span, left_paren_span + right_paren_span, parameters, ret_type))
     }
 
-    pub fn maybe_primitive_type(&self) -> bool {
+    fn maybe_primitive_type(&self) -> bool {
         matches!(self.current, Token::Keyword(kw) if kw.kind(KeywordKind::Primitive))
     }
 
     // primitive_type = primitive_keyword
-    pub fn parse_primitive_type(&mut self, arena: &'a Arena) -> Result<Index<'a, PrimitiveType>, Unexpected> {
+    fn parse_primitive_type(&mut self, arena: &'a Arena) -> Result<Index<'a, PrimitiveType>, Unexpected> {
         let (base, span) = self.expect_keyword_kind(KeywordKind::Primitive)?;
         Ok(arena.emplace_primitive_type(span, base))
     }
 
-    pub fn maybe_ref_type(&self) -> bool {
+    fn maybe_ref_type(&self) -> bool {
         matches!(self.current, Token::Sep(Separator::And | Separator::AndAnd))
     }
 
     // ref_type = '&' type_ref
-    pub fn parse_ref_type(&mut self, arena: &'a Arena) -> Result<Index<'a, RefType<'a>>, Unexpected> {
+    fn parse_ref_type(&mut self, arena: &'a Arena) -> Result<Index<'a, RefType<'a>>, Unexpected> {
         
         let and_span = self.expect_sep(Separator::And)?;
         let base = self.parse_type_ref(arena)?;
         Ok(arena.emplace_ref_type(and_span + base.span(arena), base))
     }
 
-    pub fn maybe_tuple_type(&self) -> bool {
+    fn maybe_tuple_type(&self) -> bool {
         matches!(self.current, Token::Sep(Separator::LParen))
     }
 
@@ -1032,7 +1004,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     //
     // empty for unit type, one element tuple require ending comma
     // type template name will be `tuple` when analysis, so user type `tuple` should be rejected by analysis
-    pub fn parse_tuple_type(&mut self, arena: &'a Arena) -> Result<Index<'a, TupleType<'a>>, Unexpected> {
+    fn parse_tuple_type(&mut self, arena: &'a Arena) -> Result<Index<'a, TupleType<'a>>, Unexpected> {
         
         let left_paren_span = self.expect_sep(Separator::LParen)?;
         if let Some(right_paren_span) = self.try_expect_sep(Separator::RParen) {
@@ -1043,7 +1015,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         let span = left_paren_span + loop {
             if let Some((right_paren_span, comma_span)) = self.try_expect_closing_bracket(Separator::RParen) {
                 if comma_span.is_none() && parameters.len() == 1 {
-                    self.emit(strings::SingleItemTupleType)
+                    self.base.emit(strings::SingleItemTupleType)
                         .detail(right_paren_span, strings::TupleTypeExpectCommaMeetRParen);
                 }
                 break right_paren_span;
@@ -1060,7 +1032,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 // statement and item (module level item) parsers
 impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
-    pub fn parse_stmt(&mut self, arena: &'a Arena) -> Result<Statement<'a>, Unexpected> {
+    fn parse_stmt(&mut self, arena: &'a Arena) -> Result<Statement<'a>, Unexpected> {
         if self.maybe_struct_def() {
             self.parse_struct_def(arena).map(Into::into)
         } else if self.maybe_enum_def() {
@@ -1073,26 +1045,20 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
             self.parse_type_def(arena).map(Into::into)
         } else if self.maybe_class_def() {
             self.parse_class_def(arena).map(Into::into)
-        } else if self.maybe_block_stmt() {
-            self.parse_block_stmt(arena).map(Into::into)
+        } else if self.maybe_labeled_stmt() {
+            self.parse_labeled_stmt(arena)
         } else if self.maybe_break_stmt() {
             self.parse_break_stmt(arena).map(Into::into)
         } else if self.maybe_continue_stmt() {
             self.parse_continue_stmt(arena).map(Into::into)
         } else if self.maybe_expr_stmt() {
             self.parse_expr_stmt(arena)
-        } else if self.maybe_for_stmt() {
-            self.parse_for_stmt(arena).map(Into::into)
         } else if self.maybe_if_stmt() {
             self.parse_if_stmt(arena).map(Into::into)
-        } else if self.maybe_loop_stmt() {
-            self.parse_loop_stmt(arena).map(Into::into)
         } else if self.maybe_ret_stmt() {
             self.parse_ret_stmt(arena).map(Into::into)
         } else if self.maybe_var_decl() {
             self.parse_var_decl(arena).map(Into::into)
-        } else if self.maybe_while_stmt() {
-            self.parse_while_stmt(arena).map(Into::into)
         } else if self.maybe_use_stmt() {
             self.parse_use_stmt(arena).map(Into::into)
         } else {
@@ -1100,7 +1066,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         }
     }
 
-    pub fn parse_item(&mut self, arena: &'a Arena) -> Result<Item<'a>, Unexpected> {
+    fn parse_item(&mut self, arena: &'a Arena) -> Result<Item<'a>, Unexpected> {
         if self.maybe_struct_def() {
             self.parse_struct_def(arena).map(Into::into)
         } else if self.maybe_enum_def() {
@@ -1113,20 +1079,14 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
             self.parse_type_def(arena).map(Into::into)
         } else if self.maybe_class_def() {
             self.parse_class_def(arena).map(Into::into)
-        } else if self.maybe_block_stmt() {
-            self.parse_block_stmt(arena).map(Into::into)
+        } else if self.maybe_labeled_stmt() {
+            self.parse_labeled_stmt(arena)
         } else if self.maybe_expr_stmt() {
             self.parse_expr_stmt(arena)
-        } else if self.maybe_for_stmt() {
-            self.parse_for_stmt(arena).map(Into::into)
         } else if self.maybe_if_stmt() {
             self.parse_if_stmt(arena).map(Into::into)
-        } else if self.maybe_loop_stmt() {
-            self.parse_loop_stmt(arena).map(Into::into)
         } else if self.maybe_var_decl() {
             self.parse_var_decl(arena).map(Into::into)
-        } else if self.maybe_while_stmt() {
-            self.parse_while_stmt(arena).map(Into::into)
         } else if self.maybe_use_stmt() {
             self.parse_use_stmt(arena).map(Into::into)
         } else if self.maybe_module_stmt() {
@@ -1134,6 +1094,48 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         } else {
             self.push_unexpect("type, enum, fn, {, for, if, loop, return, var, const, while, use, module, .., !, ~, &, <, ::, ident, [, (")
         }
+    }
+
+    fn maybe_labeled_stmt(&self) -> bool {
+        self.maybe_for_stmt()
+        || self.maybe_loop_stmt()
+        || self.maybe_while_stmt()
+        || self.maybe_block_stmt()
+        || matches!(self.current, Token::Label(_))
+    }
+
+    fn parse_labeled_stmt<U>(&mut self, arena: &'a Arena) -> Result<U, Unexpected> where
+        Index<'a, BlockStatement<'a>>: Into<U>,
+        Index<'a, ForStatement<'a>>: Into<U>,
+        Index<'a, LoopStatement<'a>>: Into<U>,
+        Index<'a, WhileStatement<'a>>: Into<U>,
+    {
+        let label = if let Token::Label(label) = self.current {
+            let label_span = self.move_next();
+            if self.try_expect_sep(Separator::Colon).is_none() {
+                self.base.emit(format!("expected `:`, meet {:?}", self.current)).span(self.current_span);
+            }
+            Some(IdSpan::new(label, label_span))
+        } else {
+            None
+        };
+
+        if self.maybe_block_stmt() {
+            self.parse_block_stmt(arena, label).map(Into::into)
+        } else if self.maybe_for_stmt() {
+            self.parse_for_stmt(arena, label).map(Into::into)
+        } else if self.maybe_loop_stmt() {
+            self.parse_loop_stmt(arena, label).map(Into::into)
+        } else if self.maybe_while_stmt() {
+            self.parse_while_stmt(arena, label).map(Into::into)
+        } else {
+            self.push_unexpect("`{`, `for`, `loop`, `while`")
+        }
+    }
+
+    #[cfg(test)]
+    fn parse_labeled_stmt_as_stmt(&mut self, arena: &'a Arena) -> Result<Statement<'a>, Unexpected> {
+        self.parse_labeled_stmt(arena)
     }
 
     // generic_name = ident [ '<' ident { ',' ident } [ ',' ] '>' ]
@@ -1144,7 +1146,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         let mut parameters = Vec::new();
         if let Some(lt_span) = self.try_expect_sep(Separator::Lt) {
             quote_span = lt_span + if let Some((gt_span, _)) = self.try_expect_closing_bracket(Separator::Gt) {
-                self.emit(strings::EmptyGenericParameterList).span(lt_span + gt_span);
+                self.base.emit(strings::EmptyGenericParameterList).span(lt_span + gt_span);
                 gt_span
             } else {
                 let parameter = self.expect_ident()?;
@@ -1164,21 +1166,6 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         let span = if quote_span == Span::new(0, 0) { base.span } else { base.span + quote_span };
         Ok(arena.emplace_generic_name(span, base, quote_span, parameters))
     }
-    
-    // label_def = label ':'
-    // label can be specified before for stmt, loop stmt, while stmt and block stmt
-    // return result<option because it's always optional
-    // it is private because it's not used outside and it's included by their tests
-    fn parse_label(&mut self) -> Result<Option<IdSpan>, Unexpected> {
-        if let Token::Label(id) = self.current {
-            let label_span = self.move_next();
-            // TODO allow if colon missing, note that maybe_for_stmt, maybe_loop_stmt and maybe_while_stmt also need change
-            self.expect_sep(Separator::Colon)?;
-            Ok(Some(IdSpan::new(id, label_span)))
-        } else {
-            Ok(None)
-        }
-    }
 
     // block = '{' { statement } '}'
     // it is private because it's not used outside and it's included by their tests
@@ -1194,27 +1181,28 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         }
     }
 
-    pub fn maybe_block_stmt(&self) -> bool {
-        matches!((&self.current, &self.peek2), (Token::Label(_), Token::Sep(Separator::LBrace)) | (Token::Sep(Separator::LBrace), _))
+    // label handled in parse_labeled_stmt
+    fn maybe_block_stmt(&self) -> bool {
+        matches!(self.current, Token::Sep(Separator::LBrace))
     }
 
-    // block-stmt = [ label-def ] block
+    // block-stmt = (LABEL ':')? block
     // block-stmt for explicit block definition in block and allow block label
-    pub fn parse_block_stmt(&mut self, arena: &'a Arena) -> Result<Index<'a, BlockStatement<'a>>, Unexpected> {
-    
-        let label = self.parse_label()?;
+    // label handled in parse_labeled_stmt
+    fn parse_block_stmt(&mut self, arena: &'a Arena, label: Option<IdSpan>) -> Result<Index<'a, BlockStatement<'a>>, Unexpected> {
+
         let body = self.parse_block(arena)?;
         let body_span = arena.get(&body).span;
         let span = label.as_ref().map(|n| n.span).unwrap_or(body_span) + body_span;
         Ok(arena.emplace_block_stmt(span, label, body))
     }
 
-    pub fn maybe_break_stmt(&self) -> bool {
+    fn maybe_break_stmt(&self) -> bool {
         matches!(self.current, Token::Keyword(Keyword::Break)) 
     }
     
     // break_stmt = 'break' [ label ] ';'
-    pub fn parse_break_stmt(&mut self, arena: &'a Arena) -> Result<Index<'a, BreakStatement>, Unexpected> {
+    fn parse_break_stmt(&mut self, arena: &'a Arena) -> Result<Index<'a, BreakStatement>, Unexpected> {
 
         let starting_span = self.expect_keyword(Keyword::Break)?;
 
@@ -1232,7 +1220,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     // class_def = 'class' generic_name '{' { type_def | fn_def } '}'
-    pub fn parse_class_def(&mut self, arena: &'a Arena) -> Result<Index<'a, ClassDef<'a>>, Unexpected> {
+    fn parse_class_def(&mut self, arena: &'a Arena) -> Result<Index<'a, ClassDef<'a>>, Unexpected> {
 
         let start_span = self.expect_keyword(Keyword::Class)?;
         let name = self.parse_generic_name(arena)?;
@@ -1254,12 +1242,12 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         Ok(arena.emplace_class_def(start_span + right_brace_span, name, left_brace_span + right_brace_span, items))
     }
 
-    pub fn maybe_continue_stmt(&self) -> bool {
+    fn maybe_continue_stmt(&self) -> bool {
         matches!(self.current, Token::Keyword(Keyword::Continue)) 
     }
 
     // continue_stmt = 'continue' [ label ] ';'
-    pub fn parse_continue_stmt(&mut self, arena: &'a Arena) -> Result<Index<'a, ContinueStatement>, Unexpected> {
+    fn parse_continue_stmt(&mut self, arena: &'a Arena) -> Result<Index<'a, ContinueStatement>, Unexpected> {
 
         let starting_span = self.expect_keyword(Keyword::Continue)?;
 
@@ -1272,13 +1260,13 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         }
     }
 
-    pub fn maybe_enum_def(&self) -> bool {
+    fn maybe_enum_def(&self) -> bool {
         matches!(self.current, Token::Keyword(Keyword::Enum))
     }
 
     // enum_def = 'enum' ident [ ':' primitive_type ] '{' { ident [ '=' expr ] ',' } '}'
     // TODO allow variant to be struct
-    pub fn parse_enum_def(&mut self, arena: &'a Arena) -> Result<Index<'a, EnumDef<'a>>, Unexpected> {
+    fn parse_enum_def(&mut self, arena: &'a Arena) -> Result<Index<'a, EnumDef<'a>>, Unexpected> {
 
         let enum_span = self.expect_keyword(Keyword::Enum)?;
         let enum_name = self.expect_ident()?;
@@ -1308,7 +1296,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         Ok(arena.emplace_enum_def(span, enum_name, base_type, quote_span, variants))
     }
 
-    pub fn maybe_expr_stmt(&self) -> bool {
+    fn maybe_expr_stmt(&self) -> bool {
         self.maybe_expr()
     }
 
@@ -1317,7 +1305,6 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         Index<'a, AssignExprStatement<'a>>: Into<U>,
         Index<'a, SimpleExprStatement<'a>>: Into<U>,
     {
-
         let left_expr = self.parse_expr(arena)?;
         let starting_span = left_expr.span(arena);
 
@@ -1333,18 +1320,18 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     #[cfg(test)]
-    pub fn parse_expr_stmt_as_stmt(&mut self, arena: &'a Arena) -> Result<Statement<'a>, Unexpected> {
+    fn parse_expr_stmt_as_stmt(&mut self, arena: &'a Arena) -> Result<Statement<'a>, Unexpected> {
         self.parse_expr_stmt(arena)
     }
 
-    pub fn maybe_fn_def(&self) -> bool {
+    fn maybe_fn_def(&self) -> bool {
         matches!(self.current, Token::Keyword(Keyword::Fn))
     }
 
     // fn-def = 'fn' generic_name '(' [ identifier ':' type-use { ',' identifier ':' type-use [ ',' ] } ] ')' [ '->' type-use ] [ 'where' { where_clause ',' } ] [ block ]
     // where_clause = ident ':' type_ref { '+' type_ref }
     // TODO left of where clause is type_ref
-    pub fn parse_fn_def(&mut self, arena: &'a Arena) -> Result<Index<'a, FnDef<'a>>, Unexpected> {
+    fn parse_fn_def(&mut self, arena: &'a Arena) -> Result<Index<'a, FnDef<'a>>, Unexpected> {
 
         let fn_span = self.expect_keyword(Keyword::Fn)?;
         let fn_name = self.parse_generic_name(arena)?;
@@ -1355,14 +1342,14 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
             if let Some((right_paren_span, comma_span)) = self.try_expect_closing_bracket(Separator::RParen) {
                 quote_span += right_paren_span;
                 if let (0, Some(comma_span)) = (parameters.len(), comma_span) {
-                    self.emit("Single comma in function definition argument list").span(comma_span);
+                    self.base.emit("Single comma in function definition argument list").span(comma_span);
                 }
                 break;
             } else if let Some(_comma_span) = self.try_expect_sep(Separator::Comma) {
                 continue;
             }
 
-            let parameter_name = self.expect_ident_or_keywords(&[Keyword::Underscore, Keyword::Self_])?;
+            let parameter_name = self.expect_ident_or_keywords(&[Keyword::Underscore, Keyword::SelfL])?;
             self.expect_sep(Separator::Colon)?;
             let r#type = self.parse_type_ref(arena)?;
             parameters.push(arena.emplace_fn_def_parameter(parameter_name.span + r#type.span(arena), parameter_name, r#type));
@@ -1370,7 +1357,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
         let ret_type = self.try_expect_seps(&[Separator::SubGt, Separator::Colon]).map(|(sep, span)| {
             if sep == Separator::Colon {
-                self.emit(strings::FunctionReturnTypeShouldUseArrow).detail(span, strings::FunctionReturnTypeExpectArrowMeetColon);
+                self.base.emit(strings::FunctionReturnTypeShouldUseArrow).detail(span, strings::FunctionReturnTypeExpectArrowMeetColon);
             }
             self.parse_type_ref(arena)
         }).transpose()?;
@@ -1411,15 +1398,16 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         Ok(arena.emplace_fn_def(fn_span + ending_span, fn_name, quote_span, parameters, ret_type, wheres, body))
     }
 
-    pub fn maybe_for_stmt(&self) -> bool {
-        matches!((&self.current, &self.peek2), (Token::Label(_), Token::Keyword(Keyword::For)) | (Token::Keyword(Keyword::For), _))
+    // label handled in parse_labeled_stmt
+    fn maybe_for_stmt(&self) -> bool {
+        matches!(self.current, Token::Keyword(Keyword::For))
     }
 
-    // for_stmt = [ label_def ] 'for' identifier 'in' expr block
+    // for-stmt = (LABEL ':')? 'for' IDENT 'in' expr block
+    // label handled in parse_labeled_stmt
     // TODO: add else for break, like python
-    pub fn parse_for_stmt(&mut self, arena: &'a Arena) -> Result<Index<'a, ForStatement<'a>>, Unexpected> {
+    fn parse_for_stmt(&mut self, arena: &'a Arena, label: Option<IdSpan>) -> Result<Index<'a, ForStatement<'a>>, Unexpected> {
 
-        let label = self.parse_label()?;
         let for_span = self.expect_keyword(Keyword::For)?;
 
         // Accept _ as iter_name, _ do not declare iter var
@@ -1433,12 +1421,12 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         Ok(arena.emplace_for_stmt(span, label, iter_name, iter_expr, body))
     }
 
-    pub fn maybe_if_stmt(&self) -> bool {
+    fn maybe_if_stmt(&self) -> bool {
         matches!(self.current, Token::Keyword(Keyword::If)) 
     }
 
     // if_stmt = 'if' expr block { 'else' 'if' expr block } [ 'else' block ]
-    pub fn parse_if_stmt(&mut self, arena: &'a Arena) -> Result<Index<'a, IfStatement<'a>>, Unexpected> {
+    fn parse_if_stmt(&mut self, arena: &'a Arena) -> Result<Index<'a, IfStatement<'a>>, Unexpected> {
 
         let mut all_span = self.expect_keyword(Keyword::If)?;
 
@@ -1471,18 +1459,18 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         Ok(arena.emplace_if_stmt(all_span, if_clause, elseif_clauses, else_clause))
     }
 
-    pub fn maybe_impl_block(&self) -> bool {
+    fn maybe_impl_block(&self) -> bool {
         matches!(self.current, Token::Keyword(Keyword::Impl))
     }
 
     // impl = 'impl' generic_parameters [ type_ref 'for' ] type_ref where_clauses '{' { type_def | fn_def } '}'
-    pub fn parse_impl_block(&mut self, arena: &'a Arena) -> Result<Index<'a, Implementation<'a>>, Unexpected> {
+    fn parse_impl_block(&mut self, arena: &'a Arena) -> Result<Index<'a, Implementation<'a>>, Unexpected> {
         let start_span = self.expect_keyword(Keyword::Impl)?;
 
         let mut parameters = Vec::new();
         if let Some(lt_span) = self.try_expect_sep(Separator::Lt) {
             if let Some((gt_span, _)) = self.try_expect_closing_bracket(Separator::Gt) {
-                self.emit(strings::EmptyGenericParameterList).span(lt_span + gt_span);
+                self.base.emit(strings::EmptyGenericParameterList).span(lt_span + gt_span);
             } else {
                 let parameter = self.expect_ident()?;
                 parameters.push(arena.emplace_generic_parameter(parameter.span, parameter));
@@ -1547,27 +1535,28 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         Ok(arena.emplace_impl_block(span, parameters, class, r#type, wheres, quote_span, items))
     }
 
-    pub fn maybe_loop_stmt(&self) -> bool {
-        matches!((&self.current, &self.peek2), (Token::Label(_), Token::Keyword(Keyword::Loop)) | (Token::Keyword(Keyword::Loop), _))
+    // label handled in parse_labeled_stmt
+    fn maybe_loop_stmt(&self) -> bool {
+        matches!(self.current, Token::Keyword(Keyword::Loop))
     }
 
-    // loop_stmt = [ label_def ] 'loop' block
+    // loop-stmt = (LABEL ':')? 'loop' block
+    // label handled in parse_labeled_stmt
     // NOTE: no else for break here because if control flow come to else it is always breaked
-    pub fn parse_loop_stmt(&mut self, arena: &'a Arena) -> Result<Index<'a, LoopStatement<'a>>, Unexpected> {
+    fn parse_loop_stmt(&mut self, arena: &'a Arena, label: Option<IdSpan>) -> Result<Index<'a, LoopStatement<'a>>, Unexpected> {
 
-        let label = self.parse_label()?;
         let loop_span = self.expect_keyword(Keyword::Loop)?;
         let body = self.parse_block(arena)?;
         let span = label.as_ref().map(|n| n.span).unwrap_or(loop_span) + arena.get(&body).span;
         Ok(arena.emplace_loop_stmt(span, label, body))
     }
 
-    pub fn maybe_module_stmt(&self) -> bool {
+    fn maybe_module_stmt(&self) -> bool {
         matches!(self.current, Token::Keyword(Keyword::Module)) 
     }
 
     // module_stmt = 'module' identifier [ str_lit ] ';'
-    pub fn parse_module_stmt(&mut self, arena: &'a Arena) -> Result<Index<'a, ModuleStatement>, Unexpected> {
+    fn parse_module_stmt(&mut self, arena: &'a Arena) -> Result<Index<'a, ModuleStatement>, Unexpected> {
 
         let starting_span = self.expect_keyword(Keyword::Module)?;
         let module_name = self.expect_ident()?;
@@ -1579,12 +1568,12 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         Ok(arena.emplace_module_stmt(span, module_name, path))
     }
 
-    pub fn maybe_ret_stmt(&self) -> bool {
+    fn maybe_ret_stmt(&self) -> bool {
         matches!(self.current, Token::Keyword(Keyword::Return))
     }
 
     // ret_stmt = 'return' [ expr ] ';'
-    pub fn parse_ret_stmt(&mut self, arena: &'a Arena) -> Result<Index<'a, ReturnStatement<'a>>, Unexpected> {
+    fn parse_ret_stmt(&mut self, arena: &'a Arena) -> Result<Index<'a, ReturnStatement<'a>>, Unexpected> {
 
         let starting_span = self.expect_keyword(Keyword::Return)?;
         if let Some(semicolon_span) = self.try_expect_sep(Separator::SemiColon) {
@@ -1600,13 +1589,13 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         }
     }
 
-    pub fn maybe_struct_def(&self) -> bool {
+    fn maybe_struct_def(&self) -> bool {
         matches!(self.current, Token::Keyword(Keyword::Struct)) 
     }
 
     // struct_def = 'struct' generic_name  '{' [ field_def { ',' field_def } [ ',' ] ] '}'
     // field_def = identifier ':' type_ref
-    pub fn parse_struct_def(&mut self, arena: &'a Arena) -> Result<Index<'a, StructDef<'a>>, Unexpected> {
+    fn parse_struct_def(&mut self, arena: &'a Arena) -> Result<Index<'a, StructDef<'a>>, Unexpected> {
 
         let starting_span = self.expect_keyword(Keyword::Struct)?;
         let type_name = self.parse_generic_name(arena)?;
@@ -1639,12 +1628,12 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         Ok(arena.emplace_struct_def(starting_span + right_brace_span, type_name, fields))
     }
     
-    pub fn maybe_type_def(&self) -> bool {
+    fn maybe_type_def(&self) -> bool {
         matches!(self.current, Token::Keyword(Keyword::Type))
     }
 
     // type_alias = 'type' generic_name [ '=' type_ref ] ';'
-    pub fn parse_type_def(&mut self, arena: &'a Arena) -> Result<Index<'a, TypeDef<'a>>, Unexpected> {
+    fn parse_type_def(&mut self, arena: &'a Arena) -> Result<Index<'a, TypeDef<'a>>, Unexpected> {
         
         let start_span = self.expect_keyword(Keyword::Type)?;
         let name = self.parse_generic_name(arena)?;
@@ -1653,15 +1642,15 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         Ok(arena.emplace_type_def(start_span + end_span, name, from))
     }
 
-    pub fn maybe_use_stmt(&self) -> bool {
+    fn maybe_use_stmt(&self) -> bool {
         matches!(self.current, Token::Keyword(Keyword::Use)) 
     }
 
     // use_stmt = 'use' name [ 'as' identifier ] ';'
-    pub fn parse_use_stmt(&mut self, arena: &'a Arena) -> Result<Index<'a, UseStatement<'a>>, Unexpected> {
+    fn parse_use_stmt(&mut self, arena: &'a Arena) -> Result<Index<'a, UseStatement<'a>>, Unexpected> {
 
         let starting_span = self.expect_keyword(Keyword::Use)?;
-        let path = self.parse_value_path(arena)?;
+        let path = self.parse_path(arena, PathContext::Value)?;
 
         let alias = self.try_expect_keyword(Keyword::As).map(|_| self.expect_ident()).transpose()?;
         let semicolon_span = self.expect_sep(Separator::SemiColon)?;
@@ -1670,13 +1659,13 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         Ok(arena.emplace_use_stmt(span, path, alias))
     }
 
-    pub fn maybe_var_decl(&self) -> bool {
+    fn maybe_var_decl(&self) -> bool {
         matches!(self.current, Token::Keyword(Keyword::Const | Keyword::Var)) 
     }
 
     // const-decl = 'const' identifier [ ':' type-use ] [ '=' expr ] ';'
     // var-decl = 'var' identifier [ ':' type-use ] [ '=' expr ] ';'
-    pub fn parse_var_decl(&mut self, arena: &'a Arena) -> Result<Index<'a, VarDeclStatement<'a>>, Unexpected> {
+    fn parse_var_decl(&mut self, arena: &'a Arena) -> Result<Index<'a, VarDeclStatement<'a>>, Unexpected> {
         
         let (starting_kw, starting_span) = self.expect_keywords(&[Keyword::Const, Keyword::Var])?;
         let r#const = match starting_kw { Keyword::Const => true, Keyword::Var => false, _ => unreachable!() };
@@ -1687,7 +1676,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         let ending_span = self.expect_sep(Separator::SemiColon)?;
 
         if r#type.is_none() && init_value.is_none() {
-            self.emit("require type annotation")
+            self.base.emit("require type annotation")
                 .detail(var_name.span, "variable declaration here")
                 .help("cannot infer type without both type annotation and initialization expression");
         }
@@ -1695,14 +1684,15 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         Ok(arena.emplace_var_decl_stmt(starting_span + ending_span, r#const, var_name, r#type, init_value))
     }
 
-    pub fn maybe_while_stmt(&self) -> bool {
-        matches!((&self.current, &self.peek2), (Token::Label(_), Token::Keyword(Keyword::While)) | (Token::Keyword(Keyword::While), _))
+    // label handled in parse_labeled_stmt
+    fn maybe_while_stmt(&self) -> bool {
+        matches!(self.current, Token::Keyword(Keyword::While))
     }
 
-    // while-stmt = [ label-def ] 'while' expr block
-    pub fn parse_while_stmt(&mut self, arena: &'a Arena) -> Result<Index<'a, WhileStatement<'a>>, Unexpected> {
-        
-        let label = self.parse_label()?;
+    // while-stmt = (LABEL ':')? 'while' expr block
+    // label handled in parse_labeled_stmt
+    fn parse_while_stmt(&mut self, arena: &'a Arena, label: Option<IdSpan>) -> Result<Index<'a, WhileStatement<'a>>, Unexpected> {
+
         let while_span = self.expect_keyword(Keyword::While)?;
         let condition = self.parse_expr_except_object_expr(arena)?;
         let body = self.parse_block(arena)?;

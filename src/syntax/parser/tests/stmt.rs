@@ -2,12 +2,12 @@ use super::*;
 
 #[test]
 fn parse_block_stmt() {
-    case!{ notag parse_block_stmt "{}", |x| 
+    case!{ parse_block_stmt(None) "{}", |x| 
         make_stmt!(x block 0:1 None,
             make_stmt!(x body 0:1)),
     }
 
-    case!{ notag parse_block_stmt "@: {}", |x| 
+    case!{ parse_labeled_stmt_as_stmt "@: {}", |x| 
         make_stmt!(x block 0:4
             make_stmt!(x label 0:0 #""),
             make_stmt!(x body 3:4)),
@@ -38,7 +38,7 @@ fn expr_stmt_parse() {
 #[test]
 fn parse_for_stmt() {
     //                      0123456789012345678
-    case!{ notag parse_for_stmt "@2: for i in 42 {}", |x|
+    case!{ parse_labeled_stmt_as_stmt "@2: for i in 42 {}", |x|
         make_stmt!(x for 0:17 var #i 8:8
             make_stmt!(x label 0:1 #"2"),
             make_expr!(x i32 42 13:14),
@@ -47,7 +47,7 @@ fn parse_for_stmt() {
 
     //              0         1         2         3         4         5         6         7
     //              01234567890123456789012345678901234567890123456789012345678901 23456789012 34567
-    case!{ notag parse_for_stmt "@hello: for _ in range(0, 10).enumerate().reverse() { writeln(\"helloworld\"); }", |x|
+    case!{ parse_labeled_stmt_as_stmt "@hello: for _ in range(0, 10).enumerate().reverse() { writeln(\"helloworld\"); }", |x|
         make_stmt!(x for 0:77 var #"_" 12:12
             make_stmt!(x label 0:5 #hello),
             make_expr!(x call 17:50 paren 49:50
@@ -70,7 +70,7 @@ fn parse_for_stmt() {
 fn if_stmt_parse() {
     //                                      0        1         2         3
     //                                      0123456789012345678901234567890123456
-    case!{ notag parse_if_stmt "if true { } else if false { } else {}", |x|
+    case!{ parse_if_stmt "if true { } else if false { } else {}", |x|
         make_stmt!(x if 0:36
             make_stmt!(x if clause 0:10
                 make_expr!(x true 3:6),
@@ -84,7 +84,7 @@ fn if_stmt_parse() {
 
     //                    0         1         2         3         4         5         6         7
     //                    012345678901234567890123456789012345678901234567890123456789012345678901
-    case!{ notag parse_if_stmt "if 1 { sth.do_sth(a); other.do_other(b); } else { [1,2,3].map(writeln);}", |x|
+    case!{ parse_if_stmt "if 1 { sth.do_sth(a); other.do_other(b); } else { [1,2,3].map(writeln);}", |x|
         make_stmt!(x if 0:71
             make_stmt!(x if clause 0:41
                 make_expr!(x i32 1 3:3),
@@ -114,7 +114,7 @@ fn if_stmt_parse() {
     // if condition does not expect object literal, unless parened
     //      0         1         2
     //      012345678901234567890123
-    case!{ notag parse_if_stmt "if a {} else if (b{}) {}", |x|
+    case!{ parse_if_stmt "if a {} else if (b{}) {}", |x|
         make_stmt!(x if 0:23
             make_stmt!(x if clause 0:6
                 make_expr!(x path simple 3:3 #a),
@@ -131,27 +131,27 @@ fn if_stmt_parse() {
 #[test]
 fn jump_stmt_parse() {
 
-    case!{ notag parse_continue_stmt "continue;", |x|
+    case!{ parse_continue_stmt "continue;", |x|
         make_stmt!(x continue 0:8 make_stmt!(label none)) }
-    case!{ notag parse_continue_stmt "continue @1;", |x|
+    case!{ parse_continue_stmt "continue @1;", |x|
         make_stmt!(x continue 0:11 make_stmt!(x label 9:10 #"1")) }
 
-    case!{ notag parse_break_stmt "break;", |x|
+    case!{ parse_break_stmt "break;", |x|
         make_stmt!(x break 0:5 make_stmt!(label none)) }
-    case!{ notag parse_break_stmt "break @1;", |x|
+    case!{ parse_break_stmt "break @1;", |x|
         make_stmt!(x break 0:8 make_stmt!(x label 6:7 #"1")) }
 }
 
 #[test]
 fn parse_loop_stmt() {
 
-    case!{ notag parse_loop_stmt "loop {}", |x|
+    case!{ parse_loop_stmt(None) "loop {}", |x|
         make_stmt!(x loop 0:6
             make_stmt!(label none),
             make_stmt!(x body 5:6))
     }
     //                                        1234567890123456789 0123 45678
-    case!{ notag parse_loop_stmt "@@: loop { println(\"233\"); }", |x|
+    case!{ parse_labeled_stmt_as_stmt "@@: loop { println(\"233\"); }", |x|
         make_stmt!(x loop 0:27
             make_stmt!(x label 0:1 #"@"),
             make_stmt!(x body 9:27
@@ -165,18 +165,18 @@ fn parse_loop_stmt() {
 #[test]
 fn parse_module_stmt() {
 
-    case!{ notag parse_module_stmt "module a;", |x| 
+    case!{ parse_module_stmt "module a;", |x| 
         make_stmt!(x import 0:8 #a 7:7 None),
     }
     //                   012345678901234567890
-    case!{ notag parse_module_stmt "module os \"windows\";", |x|
+    case!{ parse_module_stmt "module os \"windows\";", |x|
         make_stmt!(x import 0:19 #os 7:8
             Some(make_stmt!(x id 10:18 #"windows"))),
     }
 
     //      0         1          2
     //      012345678901234567 89012345 6
-    case!{ notag parse_module_stmt "module otherdir r\"ab/c.f3\";", |x|
+    case!{ parse_module_stmt "module otherdir r\"ab/c.f3\";", |x|
         make_stmt!(x import 0:26 #otherdir 7:14
             Some(make_stmt!(x id 16:25 #"ab/c.f3"))),
     }
@@ -185,7 +185,7 @@ fn parse_module_stmt() {
 #[test]
 fn parse_module() {
     //                      0123456789012345678901234
-    case!{ notag parse_module "use a; module b; 3; b; a;", |x|
+    case!{ parse_module "use a; module b; 3; b; a;", |x|
         make_stmt!(x module 1
             make_stmt!(x uses item 0:5 make_path!(x simple 4:4 #a)),
             make_stmt!(x import item 7:15 #b 14:14 None),
@@ -198,9 +198,9 @@ fn parse_module() {
 #[test]
 fn ret_stmt_parse() {
 
-    case!{ notag parse_ret_stmt "return;", |x| make_stmt!(x ret 0:6 None) }
+    case!{ parse_ret_stmt "return;", |x| make_stmt!(x ret 0:6 None) }
 
-    case!{ notag parse_ret_stmt "return 1 + 1;", |x|
+    case!{ parse_ret_stmt "return 1 + 1;", |x|
         make_stmt!(x ret 0:12
             Some(make_expr!(x binary 7:11 Add 9:9
                 make_expr!(x i32 1 7:7),
@@ -211,12 +211,12 @@ fn ret_stmt_parse() {
 #[test]
 fn use_stmt_parse() {
 
-    case!{ notag parse_use_stmt "use a;", |x| 
+    case!{ parse_use_stmt "use a;", |x| 
         make_stmt!(x uses 0:5
             make_path!(x simple 4:4 #a)),
     }
     //                   0123456789012345678901234567890
-    case!{ notag parse_use_stmt "use std::fmt::Debug as Display;", |x| 
+    case!{ parse_use_stmt "use std::fmt::Debug as Display;", |x| 
         make_stmt!(x uses 0:30 #Display 23:29
             make_path!(x 4:18
                 make_path!(x segment simple 4:6 #std),
@@ -228,7 +228,7 @@ fn use_stmt_parse() {
 #[test]
 fn var_decl_stmt_parse() {
     //                                           12345678901234
-    case!{ notag parse_var_decl "const abc = 0;", |x|
+    case!{ parse_var_decl "const abc = 0;", |x|
         make_stmt!(x const 0:13 #abc 6:8
             None,
             Some(make_expr!(x i32 0 12:12)))
@@ -236,7 +236,7 @@ fn var_decl_stmt_parse() {
 
     //                                           0        1
     //                                           12345678901234567890
-    case!{ notag parse_var_decl "var hij = [1, 3, 5];", |x|
+    case!{ parse_var_decl "var hij = [1, 3, 5];", |x|
         make_stmt!(x var 0:19 #hij 4:6
             None,
             Some(make_expr!(x array 10:18
@@ -246,7 +246,7 @@ fn var_decl_stmt_parse() {
     }
 
     //       1234567890123456789
-    case!{ notag parse_var_decl "const input: string;", |x|
+    case!{ parse_var_decl "const input: string;", |x|
         make_stmt!(x const 0:19 #input 6:10
             Some(make_type!(x simple 13:18 #string)),
             None)
@@ -254,7 +254,7 @@ fn var_decl_stmt_parse() {
 
     //      0         1         2
     //      012345678901234567890123
-    case!{ notag parse_var_decl "var buf: [(u8, char);1];", |x|
+    case!{ parse_var_decl "var buf: [(u8, char);1];", |x|
         make_stmt!(x var 0:23 #buf 4:6
             Some(make_type!(x array 9:22
                 make_type!(x tuple 10:19
@@ -270,7 +270,7 @@ fn var_decl_stmt_parse() {
     //     desugar array primary expr to call array_tid::new() and array.push, which infer 7's type as array_tid' push method's parameter
     //      0         1         2         3         4
     //      01234567890123456789012345678901234567890123456789
-    case!{ notag parse_var_decl "var buf: ([u8;3], u32) = ([1u8, 5u8, 0x7u8], abc);", |x|
+    case!{ parse_var_decl "var buf: ([u8;3], u32) = ([1u8, 5u8, 0x7u8], abc);", |x|
         make_stmt!(x var 0:49 #buf 4:6
             Some(make_type!(x tuple 9:21
                 make_type!(x array 10:15
@@ -285,7 +285,7 @@ fn var_decl_stmt_parse() {
                 make_expr!(x path simple 45:47 #abc))))
     }
 
-    case!{ notag parse_var_decl "var a;",
+    case!{ parse_var_decl "var a;",
         |x| make_stmt!(x var 0:5 #a 4:4 None, None),
         |e| e.emit("require type annotation")
                 .detail(Span::new(4, 4), "variable declaration here")
@@ -296,7 +296,7 @@ fn var_decl_stmt_parse() {
 #[test]
 fn parse_while_stmt() {
 
-    case!{ notag parse_while_stmt "while 1 {}", |x|
+    case!{ parse_while_stmt(None) "while 1 {}", |x|
         make_stmt!(x while 0:9
             make_stmt!(label none),
             make_expr!(x i32 1 6:6),
@@ -304,7 +304,7 @@ fn parse_while_stmt() {
     }
     //      0        1         2         3         4
     //      01234567890123456789012345 67890123456789012 3456
-    case!{ notag parse_while_stmt "@2: while true { writeln(\"fresky hellooooo\"); }", |x|
+    case!{ parse_labeled_stmt_as_stmt "@2: while true { writeln(\"fresky hellooooo\"); }", |x|
         make_stmt!(x while 0:46
             make_stmt!(x label 0:1 #"2"),
             make_expr!(x true 10:13),
@@ -320,7 +320,7 @@ fn parse_while_stmt() {
 fn enum_def_parse() {
 
     //      012345678901234567890
-    case!{ notag parse_enum_def "enum E { M1, M2 = 1,}", |x|
+    case!{ parse_enum_def "enum E { M1, M2 = 1,}", |x|
         make_stmt!(x enum 0:20 quote 7:20
             make_stmt!(x id 5:5 #E),
             None,
@@ -330,7 +330,7 @@ fn enum_def_parse() {
     }
 
     //      0123456789012
-    case!{ notag parse_enum_def "enum E: u8 {}", |x| 
+    case!{ parse_enum_def "enum E: u8 {}", |x| 
         make_stmt!(x enum 0:12 quote 11:12
             make_stmt!(x id 5:5 #E),
             Some(make_type!(x prim bare 8:9 U8)),),
@@ -340,7 +340,7 @@ fn enum_def_parse() {
 #[test]
 fn parse_fn_def() {
     //                                012345678901
-    case!{ notag parse_fn_def "fn main() {}", |x|
+    case!{ parse_fn_def "fn main() {}", |x|
         make_stmt!(x fn 0:11 quote 7:8
             name: make_stmt!(x name 3:6 #main),
             parameters: vec![],
@@ -349,7 +349,7 @@ fn parse_fn_def() {
             body: Some(make_stmt!(x body 10:11))),
     }
 
-    case!{ notag parse_fn_def "fn main();", |x|
+    case!{ parse_fn_def "fn main();", |x|
         make_stmt!(x fn 0:9 quote 7:8
             name: make_stmt!(x name 3:6 #main),
             parameters: vec![],
@@ -360,7 +360,7 @@ fn parse_fn_def() {
 
     //                      0        1
     //                      0123456789012345678
-    case!{ notag parse_fn_def "fn main(ac: i32) {}", |x|
+    case!{ parse_fn_def "fn main(ac: i32) {}", |x|
         make_stmt!(x fn 0:18 quote 7:15
             name: make_stmt!(x name 3:6 #main),
             parameters: vec![
@@ -374,7 +374,7 @@ fn parse_fn_def() {
 
     //      0         1         2         3         4         5         6         7         8
     //      012345678901234567890123456789012345678901234567890123456789012345678901234567890
-    case!{ notag parse_fn_def " fn mainxxx(argv:&    string   ,this:i32, some_other: char, )  { println(this); }", |x|
+    case!{ parse_fn_def " fn mainxxx(argv:&    string   ,this:i32, some_other: char, )  { println(this); }", |x|
         make_stmt!(x fn 1:80 quote 11:60
             name: make_stmt!(x name 4:10 #mainxxx),
             parameters: vec![
@@ -396,7 +396,7 @@ fn parse_fn_def() {
 
     //                                0        1
     //                                1234567890123456789
-    case!{ notag parse_fn_def "fn main() -> i32 {}", |x|
+    case!{ parse_fn_def "fn main() -> i32 {}", |x|
         make_stmt!(x fn 0:18 quote 7:8
             name: make_stmt!(x name 3:6 #main),
             parameters: vec![],
@@ -404,7 +404,7 @@ fn parse_fn_def() {
             wheres: Vec::new(),
             body: Some(make_stmt!(x body 17:18))),
     }
-    case!{ notag parse_fn_def "fn main() -> i32;", |x|
+    case!{ parse_fn_def "fn main() -> i32;", |x|
         make_stmt!(x fn 0:16 quote 7:8
             name: make_stmt!(x name 3:6 #main),
             parameters: vec![],
@@ -414,7 +414,7 @@ fn parse_fn_def() {
     }
     //      0         1         2         3         4         5         6
     //      0123456789012345678901234567890123456789012345678901234567890
-    case!{ notag parse_fn_def "fn ffff(argc: i32, argv: &&byte,   envv:  &string,) -> i32 {}", |x|
+    case!{ parse_fn_def "fn ffff(argc: i32, argv: &&byte,   envv:  &string,) -> i32 {}", |x|
         make_stmt!(x fn 0:60 quote 7:50
             name: make_stmt!(x name 3:6 #ffff),
             parameters: vec![
@@ -432,7 +432,7 @@ fn parse_fn_def() {
 
     //                   0         1         2         3         4         5         6         7         8         9         0         1         2
     //                   01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234
-    case!{ notag parse_fn_def "fn impl_visit(this: &This, node: &Node, title: string, span: Span, then: fn() -> Result<&This, fmt::Error>) -> fmt::Result {}", |x|
+    case!{ parse_fn_def "fn impl_visit(this: &This, node: &Node, title: string, span: Span, then: fn() -> Result<&This, fmt::Error>) -> fmt::Result {}", |x|
         make_stmt!(x fn 0:124 quote 13:106
             name: make_stmt!(x name 3:12 #impl_visit),
             parameters: vec![
@@ -463,7 +463,7 @@ fn parse_fn_def() {
     // this was from the method inside the case! macro for some time
     //                   0         1         2         3         4         5         6         7         8  
     //                   0123456789012345678901234567890123456789012345678901234567890123456789012345678901
-    case!{ notag parse_fn_def "fn case_until_node<N, F>(input: &string, f: F, expect_node: N, expect_diagnostics:
+    case!{ parse_fn_def "fn case_until_node<N, F>(input: &string, f: F, expect_node: N, expect_diagnostics:
         crate::diagnostics::Diagnostics, expect_strings: &string, backtrace: u32) -> Result<(), (N, N, SourceContext<VirtualFileSystem>)> where N: PartialEq + fmt::Debug, F: fn(&Parser) -> Result<N, Unexpected>;", |x|
         // 45678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123
         // 9    10        11        12        13        14        15        16        17        18        19        20        21        22        23        24        25        26        27        28        29
@@ -519,7 +519,7 @@ fn parse_fn_def() {
     // this is from the method inside the case! macro for now, currently
     //                   0         1         2         3         4         5         6         7         8         9        10
     //                   012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567
-    case!{ notag parse_fn_def "fn case_until_node<V, P, E>(input: &str, actual_value_getter: P, expect_value_getter: E, expect_diagnostics:
+    case!{ parse_fn_def "fn case_until_node<V, P, E>(input: &str, actual_value_getter: P, expect_value_getter: E, expect_diagnostics:
         crate::diagnostics::Diagnostics, backtrace: u32) ->Result<(), (V, V, SourceContext<VirtualFileSystem>)> where V: PartialEq + fmt::Debug, P: fn(&Parser) -> Result<V, Unexpected>, E: fn(&Parser) -> V;", |x|
         // 012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234
         // 12       13        14        15        16        17        18        19        20        21        22        23        24        25        26        27        28        29        30        31
@@ -579,13 +579,13 @@ fn parse_fn_def() {
 
     // TODO
     // case!{ parse_fn_def "fn emplace_tagged<T, U, I, W>(this: &This, wrap: W, init: I) -> TagIndex<U> where T: Sized, I: fn(&T), W: fn(Index<T>) -> U" }
-    // and the current tag_case, notag_case and notast_case
+    // and the current tag_case, notag_case and novisit_case
 
     // // although currently I think fn type is type not class, and callobject is implementing std::ops::Call, not Fn
     // // I f**king human parse this code once and pass?
     //                   0         1         2         3         4         5         6         7
     //                   01234567890123456789012345678901234567890123456789012345678901234567890123
-    case!{ notag parse_fn_def "fn map<T, U, F>(this: Option<T>, f: F) -> Option<U> where F: fn(T) -> U {}", |x|
+    case!{ parse_fn_def "fn map<T, U, F>(this: Option<T>, f: F) -> Option<U> where F: fn(T) -> U {}", |x|
         make_stmt!(x fn 0:73 quote 15:37
             name: make_stmt!(x name 3:14 #map 3:5 quote 6:14
                 make_stmt!(x gp 7:7 #T),
@@ -614,7 +614,7 @@ fn parse_fn_def() {
 
     // unknown generic parameter, but that's not syntax error
     //                   012345678901234567
-    case!{ notag parse_fn_def "fn f() where T: T;", |x|
+    case!{ parse_fn_def "fn f() where T: T;", |x|
         make_stmt!(x fn 0:17 quote 4:5
             name: make_stmt!(x name 3:3 #f),
             parameters: Vec::new(),
@@ -630,7 +630,7 @@ fn parse_fn_def() {
 #[test]
 fn parse_struct_def() {
     //                                  01234567890123456
-    case!{ notag parse_struct_def "struct x { x: i32 }", |x|
+    case!{ parse_struct_def "struct x { x: i32 }", |x|
         make_stmt!(x struct 0:18
             make_stmt!(x name 7:7 #x),
             make_stmt!(x struct field 11:16 #x 11:11 colon 12:12
@@ -638,13 +638,13 @@ fn parse_struct_def() {
     }
 
     //                     0123456789
-    case!{ notag parse_struct_def "struct x<>{}", |x| 
+    case!{ parse_struct_def "struct x<>{}", |x| 
         make_stmt!(x struct 0:11
             make_stmt!(x name 7:9 #x 7:7 quote 8:9),),
         |e| e.emit(strings::EmptyGenericParameterList).span(Span::new(8, 9))
     }
 
-    case!{ notag parse_struct_def "struct x { x: i32,}", |x| 
+    case!{ parse_struct_def "struct x { x: i32,}", |x| 
         make_stmt!(x struct 0:18
             make_stmt!(x name 7:7 #x),
             make_stmt!(x struct field 11:16 #x 11:11 colon 12:12
@@ -652,7 +652,7 @@ fn parse_struct_def() {
     }
     //                     0         1         2         3         4
     //                     0123456789012345678901234567890123456789012345
-    case!{ notag parse_struct_def "struct array { data:  &u8, size: u64, cap: u64 }", |x|
+    case!{ parse_struct_def "struct array { data:  &u8, size: u64, cap: u64 }", |x|
         make_stmt!(x struct 0:47
             make_stmt!(x name 7:11 #array),
             make_stmt!(x struct field 15:24 #data 15:18 colon 19:19
@@ -665,7 +665,7 @@ fn parse_struct_def() {
 
     //                     0         1         2         3         4
     //                     01234567890123456789012345678901234567890123456789
-    case!{ notag parse_struct_def "struct list<T> { data: &T, size: usize, cap: usize }", |x|
+    case!{ parse_struct_def "struct list<T> { data: &T, size: usize, cap: usize }", |x|
         make_stmt!(x struct 0:51
             make_stmt!(x name 7:13 #list 7:10 quote 11:13
                 make_stmt!(x gp 12:12 #T)),
@@ -679,7 +679,7 @@ fn parse_struct_def() {
 
     //                     0         1         2         3         4         5
     //                     012345678901234567890123456789012345678901234567890123456
-    case!{ notag parse_struct_def "struct hashmap<K, V, A> { buckets: &&(K, V), allocator: A }", |x|
+    case!{ parse_struct_def "struct hashmap<K, V, A> { buckets: &&(K, V), allocator: A }", |x|
         make_stmt!(x struct 0:58
             make_stmt!(x name 7:22 #hashmap 7:13 quote 14:22
                 make_stmt!(x gp 15:15 #K),
@@ -700,7 +700,7 @@ fn parse_struct_def() {
 fn parse_type_def() {
 
     //                       0123456789012
-    case!{ notag parse_type_def "type a = i32;", |x|
+    case!{ parse_type_def "type a = i32;", |x|
         make_stmt!(x type 0:12
             make_stmt!(x name 5:5 #a),
             make_type!(x prim 9:11 I32)),
@@ -708,7 +708,7 @@ fn parse_type_def() {
 
     //                       0         1         2         3
     //                       012345678901234567890123456789012345
-    case!{ notag parse_type_def "type Result<T> = Result<T, MyError>;", |x|
+    case!{ parse_type_def "type Result<T> = Result<T, MyError>;", |x|
         make_stmt!(x type 0:35
             make_stmt!(x name 5:13 #Result 5:10 quote 11:13
                 make_stmt!(x gp 12:12 #T)),
@@ -718,12 +718,12 @@ fn parse_type_def() {
                     make_type!(x simple 27:33 #MyError))))
     }
 
-    case!{ notag parse_type_def "type a;", |x|
+    case!{ parse_type_def "type a;", |x|
         make_stmt!(x type 0:6
             make_stmt!(x name 5:5 #a))
     }
 
-    case!{ notag parse_type_def "type Result<T>;", |x|
+    case!{ parse_type_def "type Result<T>;", |x|
         make_stmt!(x type 0:14
             make_stmt!(x name 5:13 #Result 5:10 quote 11:13
                 make_stmt!(x gp 12:12 #T)))
@@ -734,7 +734,7 @@ fn parse_type_def() {
 fn parse_class_def() {
     //                      0         1         2         3         4         5
     //                      0123456789012345678901234567890123456789012345678901234
-    case!{ notag parse_class_def "class Equal { fn eq(self: &Self, rhs: &Self) -> bool; }", |x|
+    case!{ parse_class_def "class Equal { fn eq(self: &Self, rhs: &Self) -> bool; }", |x|
         make_stmt!(x class 0:54 quote 12:54
             make_stmt!(x name 6:10 #Equal),
             make_stmt!(x fn item 14:52 quote 19:43
@@ -752,7 +752,7 @@ fn parse_class_def() {
 
     //                      0         1         2         3         4         5         6         7
     //                      0123456789012345678901234567890123456789012345678901234567890123456789012
-    case!{ notag parse_class_def "class Add<R> { type Result; fn add(self: Self, rhs: R) -> Self::Result; }", |x|
+    case!{ parse_class_def "class Add<R> { type Result; fn add(self: Self, rhs: R) -> Self::Result; }", |x|
         make_stmt!(x class 0:72 quote 13:72
             make_stmt!(x name 6:11 #Add 6:8 quote 9:11
                 make_stmt!(x gp 10:10 #R)),
@@ -775,7 +775,7 @@ fn parse_class_def() {
 
     //                      0         1         2         3         4         5         6         7
     //                      0123456789012345678901234567890123456789012345678901234567890123456789012
-    case!{ notag parse_class_def "class Iterable { type Item; fn next(self: &Self) -> Option<Self::Item>; }", |x|
+    case!{ parse_class_def "class Iterable { type Item; fn next(self: &Self) -> Option<Self::Item>; }", |x|
         make_stmt!(x class 0:72 quote 15:72
             make_stmt!(x name 6:13 #Iterable),
             make_stmt!(x type item 17:26
@@ -801,7 +801,7 @@ fn parse_class_def() {
 fn parse_impl_block() {
     //                 0         1         2         3         4         5         6         7         8         9         0         1         2         3         4
     //                 012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012 34567 89012345678901
-    case!{ notag parse_impl_block "impl<T> fmt::Debug for Vec<T> where T: fmt::Debug { fn fmt(self: &Self, f: &fmt::Formatter) { for item in self { write(f, \"{:?}\", item); } } }", |x|
+    case!{ parse_impl_block "impl<T> fmt::Debug for Vec<T> where T: fmt::Debug { fn fmt(self: &Self, f: &fmt::Formatter) { for item in self { write(f, \"{:?}\", item); } } }", |x|
         make_stmt!(x impl 0:141
             parameters: vec![
                 make_stmt!(x gp 5:5 #T),

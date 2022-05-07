@@ -269,8 +269,8 @@ def validate(rules, separators, keywords):
                         log(f'{prefix} primitive keyword can only be used in primitive-type')
                     elif 'primitive-type' in prefix and keyword.cat_value != 1:
                         log(f'{prefix} primitive-type can only have primitive keyword')
-                    elif keyword.cat_value == 2 and 'simple-segment' not in prefix:
-                        log(f'{prefix} maybe identifier keyword can only be used in simple-segment')
+                    elif keyword.cat_value == 2 and 'normal-segment-base' not in prefix:
+                        log(f'{prefix} maybe identifier keyword can only be used in normal-segment-base')
                 elif separator is not None:
                     item.display = f'`{separator.value}`'
                     all_used_separators.append(separator.name)
@@ -338,9 +338,11 @@ def flatten(rules):
             # postfix should leave in the to be replaced symbol, but not in production level group
             postfix = group.postfix
             group.postfix = None
-            
+
             identical_rule = next((f for f in frules if f.production.items == group.items), None)
-            if identical_rule is not None:
+            # ATTENTION disable reuse here
+            # identical rule does not affect the correctness of conflict check, but increase conflict analysis difficulty
+            if False: # identical_rule is not None:
                 reuse_count += 1
                 new_symbol = Symbol(identical_rule.name, postfix)
                 new_symbol.refrule = identical_rule

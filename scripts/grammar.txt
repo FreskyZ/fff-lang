@@ -72,6 +72,7 @@
 #   *but*, that is THE solution for this feature and no other workaround, which means this feature DEFINITELY make 
 #   the language un-LL1-bility and NOT the grammar (LL1 language can have non LL1 grammar but non LL1 language means no matching LL1 grammar exist),
 #   but(again), many this century languages support this feature because use trailing comma happily is a lot more important than make this language DIVINE LL1
+# - TODO first/follow conflict for generic-segment when meet `::`
 # conclusion 2022/5/6: this is an LL2 language and I can make the parser LL2 (removing the Parser::peek2) and may help with the retry feature for lexical parser
 # TODO: lexical-parser-retry for rational-after-primary-expr-dot issue and format string feature may affect some property in this file, review again at that time
 
@@ -115,16 +116,16 @@ array-type = LBRACKET type-ref SEMICOLON expr RBRACKET
 fn-type = FN LPAREN ((IDENT COLON)? type-ref (COMMA (IDENT COLON)? type-ref)* COMMA?)? RPAREN (SUBGT type-ref)?
 ref-type = AND type-ref
 tuple-type = LPAREN (type-ref (COMMA type-ref)* COMMA?)? RPAREN
-type-ref = primitive-type | array-type | fn-type | ref-type | tuple-type | path
+type-ref = primitive-type | array-type | fn-type | ref-type | tuple-type | type-path
 
-simple-segment = IDENT | TRUE | FALSE | SELF_ | UNDERSCORE
-generic-segment = IDENT COLONCOLON? LT type-ref (COMMA type-ref)* COMMA? GT
-value-generic-segment = IDENT COLONCOLON LT type-ref (COMMA type-ref)* COMMA? GT
-cast-segment = LT type-ref AS type-ref GT
-path-segment = simple-segment | generic-segment | cast-segment
-value-path-segment = simple-segment | value-generic-segment | cast-segment
-path = COLONCOLON? path-segment (COLONCOLON path-segment)*
-value-path = COLONCOLON? value-path-segment (COLONCOLON path-segment)*
+normal-segment-base = IDENT | UNDERSCORE | SELFL | SELFU
+normal-segment-type = normal-segment-base (COLONCOLON? LT type-ref (COMMA type-ref)* COMMA? GT)?
+normal-segment-value = normal-segment-base (COLONCOLON LT type-ref (COMMA type-ref)* COMMA? GT)?
+qualified-segment = LT type-ref (AS type-ref)? GT
+type-path-segment = qualified-segment | normal-segment-type
+value-path-segment = qualified-segment | normal-segment-value
+type-path = COLONCOLON? type-path-segment (COLONCOLON type-path-segment)*
+value-path = COLONCOLON? value-path-segment (COLONCOLON value-path-segment)*
 
 label = LABEL COLON
 generic-name = IDENT (LT IDENT (COMMA IDENT)* COMMA? GT)?
@@ -147,7 +148,7 @@ module-stmt = MODULE IDENT LITERAL? SEMICOLON
 ret-stmt = RETURN expr? SEMICOLON
 struct-def = STRUCT generic-name LBRACE (IDENT COLON type-ref (COMMA IDENT COLON type-ref)* COMMA?)? RBRACE
 type-def = TYPE generic-name (EQ type-ref)? SEMICOLON
-use-stmt = USE path (AS IDENT)? SEMICOLON
+use-stmt = USE type-path (AS IDENT)? SEMICOLON
 var-decl-stmt = (CONST | VAR) IDENT (COLON type-ref)? (EQ expr)? SEMICOLON
 while-stmt = label? WHILE expr block
 
