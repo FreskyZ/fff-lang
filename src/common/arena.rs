@@ -10,11 +10,12 @@
 // this is currently the reason this project needs nightly,
 // there is std::alloc::alloc method, but they said they will deprecate when Allocator trait stablized
 use std::alloc::{Global, Allocator, Layout};
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::fmt;
 use std::marker::PhantomData;
 use std::mem::{size_of, align_of};
 use std::num::{NonZeroU32, NonZeroUsize};
+use std::ops::{Deref, DerefMut};
 use std::ptr::NonNull;
 
 #[cfg(test)]
@@ -84,11 +85,47 @@ pub struct Index<'a, T> {
 }
 
 impl<'a, T> Index<'a, T> {
-
     // as raw underlying representation, use for tracing related functions
     pub fn as_raw(&self) -> u32 {
         self.v.get()
     }
+}
+
+/// A shared handle to an object in arena
+///
+/// This is logically a Rc<RefCell<T>>, it is Copy to make usage convenient, and
+/// `arena.get_ref{_mut}` methods returns `Ref{Mut}` and check alias rule at runtime
+///
+/// This is different from [`Index`] and needed to be allocated with [`Arena::emplace_shared`]
+//
+// but there is no actual ref count needed in arena (all objects dropped at once), 
+// so the clone implementation is actually naive regardless of whether T: Clone and T: Copy,
+// the internal Cell of the RefCell (count of ref object or state of existence of ref mut object)
+// is before the object in real memory (in chunk), occupying one u32 because it's min align,
+// the object is still aligned to it's own align, prevent additional padding for this actually u8 cell
+pub struct IndexRef<'a, T> {
+    v: NonZeroU32,
+    // this should not outlive arena
+    p1: PhantomData<&'a Arena>,
+    // this is a shared interior mutable handle of T
+    p2: PhantomData<std::rc::Rc<RefCell<T>>>,
+}
+
+impl<'a, T> IndexRef<'a, T> {
+    // as raw underlying representation, use for tracing related functions
+    pub fn as_raw(&self) -> u32 {
+        self.v.get()
+    }
+}
+
+// need manual implementation or else derive will not impl if T: !Clone
+impl<'a, T> Clone for IndexRef<'a, T> {
+    fn clone(&self) -> Self {
+        Self{ v: self.v, p1: PhantomData, p2: PhantomData }
+    }
+}
+// need manual implementation or else derive will not impl if T: !Clone
+impl<'a, T> Copy for IndexRef<'a, T> {
 }
 
 /// A handle to a fixed length sequence of objects in arena
@@ -98,11 +135,11 @@ impl<'a, T> Index<'a, T> {
 /// 
 /// see [`Index`] about no derives
 pub struct Slice<'a, T> {
-    // use len + head instead of begin + end to allow fast .len()
+    // use len + head instead of begin + end to allow fast non parameteriszed `slice.len()`
     len: u32,
     // index value points to first element
     data: NonZeroU32,
-    // slice should be restricted to arena's lifetime
+    // this should not outlive arena
     p1: PhantomData<&'a Arena>,
     // slice is an owned handle of sequence of T
     p2: PhantomData<[T]>,
@@ -214,6 +251,7 @@ impl Chunk {
     fn allocate(&mut self, chunk_index: usize, layout: Layout) -> Option<(NonNull<u8>, NonZeroU32)> {
         // validate size
         let chunk_size = get_chunk_size(chunk_index);
+        // this does not count align padding, but this is actually a fast path for not enough space so ok
         assert!(layout.size() <= chunk_size, "too large object");
         // min align 4
         let align = if layout.align() < 4 { 4 } else { layout.align() };
@@ -237,20 +275,62 @@ impl Chunk {
             // as usize: previous comment explain that self.next is only same or large than self.head
             self.next.as_ptr().offset_from(self.head.as_ptr()) as usize
         };
-        let align_padding = if offset & align_mask == 0 { 0 } else { align - (offset & align_mask) };
+        let padding = if offset & align_mask == 0 { 0 } else { align - (offset & align_mask) };
 
-        if offset + align_padding + layout.size() <= chunk_size {
+        if offset + padding + layout.size() <= chunk_size {
             // SAFETY: previous comment explain that result is still inside self.head and not null
-            let real = unsafe { NonNull::new_unchecked(self.next.as_ptr().add(align_padding)) };
+            let real = unsafe { NonNull::new_unchecked(self.next.as_ptr().add(padding)) };
             // SAFETY: previous comment explain that result does not wrapping and is not null
             self.next = self.next.map_addr(|a| unsafe {
-                NonZeroUsize::new_unchecked(a.get() + align_padding + layout.size())
+                NonZeroUsize::new_unchecked(a.get() + padding + layout.size())
             });
             // byte index start from 0, from beginning of first
             // chunk regarding all chunks as one block of continuous memory,
             // SAFETY: the first u32 in first chunk is not used, making this non null
             let index = unsafe {
-                NonZeroU32::new_unchecked((get_chunk_base_index(chunk_index) + offset + align_padding) as u32)
+                NonZeroU32::new_unchecked((get_chunk_base_index(chunk_index) + offset + padding) as u32)
+            };
+            Some((real, index))
+        } else {
+            None
+        }
+    }
+
+    // allocate one additional u32 before the object, to work as std::cell::BorrowFlag
+    // NOTE that this cannot be handled by Self::allocate with Layout::new<(u32, T)>(), because it wastes memory if T is aligned larger than u32
+    fn allocate_cell(&mut self, chunk_index: usize, layout: Layout) -> Option<(NonNull<u8>, NonZeroU32)> {
+        // validate size
+        let chunk_size = get_chunk_size(chunk_index);
+        // this does not count align padding and borrow flag, but this is actually a fast path for not enough space so ok
+        assert!(layout.size() <= chunk_size, "too large object");
+        // min align 4
+        let align = if layout.align() < 4 { 4 } else { layout.align() };
+        let align_mask = align - 1;
+
+        // SAFETY: see before
+        let offset = unsafe {
+            self.next.as_ptr().offset_from(self.head.as_ptr()) as usize
+        };
+        // align padding = if already aligned { 0 } else { align (e.g. 0b10000) - offset last bits (e.g. 0b00100) }
+        let padding = if offset & align_mask == 0 { 0 } else { align - (offset & align_mask) };
+        // borrow flag padding =
+        //    if min align { pad one more u32 }
+        //    else if exist align padding { use the padding because one u32 must fit in }
+        //    else { one align or else the result will not be aligned }
+        let padding = if align == 4 { padding + 4 } else if padding > 0 { padding } else { align };
+
+        if offset + padding + layout.size() <= chunk_size {
+            // SAFETY: see before
+            let real = unsafe { NonNull::new_unchecked(self.next.as_ptr().add(padding)) };
+            // SAFETY: see before
+            self.next = self.next.map_addr(|a| unsafe {
+                NonZeroUsize::new_unchecked(a.get() + padding + layout.size())
+            });
+            // byte index start from 0, from beginning of first
+            // chunk regarding all chunks as one block of continuous memory,
+            // SAFETY: the first u32 in first chunk is not used, making this non null
+            let index = unsafe {
+                NonZeroU32::new_unchecked((get_chunk_base_index(chunk_index) + offset + padding) as u32)
             };
             Some((real, index))
         } else {
@@ -312,8 +392,9 @@ impl Arena {
         unsafe { last_chunk.allocate(chunk_index + 1, layout).unwrap_unchecked() }
     }
 
-    /// Allocate an object in place,
-    /// note that this is actually unsafe because the passed reference
+    /// Allocate an object in place
+    /// 
+    /// Attention that this is actually unsafe because the passed reference
     /// in `init` is not initialized, `init` must set all fields with valid init value and do not read any field
     /// 
     /// Note that returned index is restricted to arena lifetime
@@ -345,6 +426,47 @@ impl Arena {
             init(real.cast::<T>().as_mut());
         }
         Index{ v: index, p1: PhantomData, p2: PhantomData }
+    }
+
+    fn allocate_cell(&self, layout: Layout) -> (NonNull<u8>, NonZeroU32) {
+        let mut chunks = self.chunks.borrow_mut();
+        let chunk_index = chunks.len() - 1;
+        // does not count align padding and actually a fast path
+        assert!(layout.size() + 4 <= get_chunk_size(chunk_index + 1), "too large object");
+
+        // SAFETY: self.chunks is not empty
+        let last_chunk = unsafe { chunks.last_mut().unwrap_unchecked() };
+        if let Some(addr) = last_chunk.allocate(chunk_index, layout) {
+            return addr;
+        }
+
+        chunks.push(Chunk::new(get_chunk_size(chunk_index + 1)));
+        // SAFETY: self.chunks is not empty
+        let last_chunk = unsafe { chunks.last_mut().unwrap_unchecked() };
+        // may fail because of align padding
+        last_chunk.allocate_cell(chunk_index + 1, layout).expect("too large object")
+    }
+
+    /// Allocate a shared object in place
+    /// 
+    /// Attention that this is actually unsafe because the passed reference
+    /// in `init` is not initialized, `init` must set all fields with valid init value and do not read any field
+    /// 
+    /// Note that returned index is restricted to arena lifetime
+    /// 
+    /// ```compile_fail
+    /// # use fflib::common::arena::Arena;
+    /// let index = { let arena = Arena::new(); arena.emplace_shared(|_: &mut i32| {}) }; // borrowed value does not live long enough
+    /// ```
+    pub fn emplace_shared<'a, T: 'a, F: FnOnce(&'a mut T)>(&'a self, init: F) -> IndexRef<'a, T> where T: Sized {
+        // private function is called _cell because the difference between non _cell version is the borrow flag
+        // public function is called _shared because the difference between index and indexref is Copy
+        let (real, index) = self.allocate_cell(Layout::new::<T>());
+        // SAFETY: see before
+        unsafe {
+            init(real.cast::<T>().as_mut());
+        }
+        IndexRef{ v: index, p1: PhantomData, p2: PhantomData }
     }
 
     // item should be index<T> for normal node and direct enum value for enum, see Some Approaches.8
@@ -456,9 +578,89 @@ impl Arena {
     pub fn get_iter_mut<'a, 'b: 'a, T>(&'a self, slice: &'b mut Slice<'a, T>) -> impl Iterator<Item = &'b mut T> {
         SliceIter::<T, false>{ arena: self, current: slice.data.get(), remaining: slice.len, phantom: PhantomData }
     }
+    
+    // map index to borrow flag address + real address
+    fn map_index_ref(&self, index: u32) -> (&Cell<u32>, NonNull<u8>) {
+        let chunks = self.chunks.borrow();
+        let (chunk_index, offset) = get_chunk_index_and_offset(index);
+        let chunk = chunks.get(chunk_index).expect(&format!("invalid chunk index {chunk_index}"));
+
+        // SAFETY: see before
+        let data_ptr = unsafe { chunk.head.as_ptr().add(offset) };
+        // SAFETY: there must be enough space exactly before data ptr to fit in an u32 dedicated for borrow flag
+        let flag_ptr = unsafe { chunk.head.as_ptr().add(offset - 4).cast::<u32>() };
+
+        debug_assert!(data_ptr < chunk.next.as_ptr(), "invalid offset chunk#{} offset {}", chunk_index, offset);
+
+        // SAFETY: ptr derives from chunk.head and is non null
+        unsafe { (Cell::from_mut(flag_ptr.as_mut().unwrap_unchecked()), NonNull::new_unchecked(data_ptr)) }
+    }
+
+    /// Returns a wrapped refeerence to an object that the index holds, panic if already mutably borrowed
+    /// 
+    /// Note that this does not require a reference of the handle because it is Copy
+    pub fn borrow<'a, 'b: 'a, T>(&'a self, index: IndexRef<'a, T>) -> ObjectRef<'a, T, true> {
+        let (flag, data) = self.map_index_ref(index.v.get());
+
+        let flag_value = flag.get();
+        assert!(flag_value != !0, "already mutably borrowed");
+        flag.set(flag_value + 1);
+
+        ObjectRef{ flag, value: data.cast::<T>(), phantom: PhantomData }
+    }
+
+    /// Returns a wrapped refeerence to an object that the index holds, panic if already mutably borrowed
+    /// 
+    /// Note that this does not require a mutable reference of the handle because it is Copy
+    pub fn borrow_mut<'a, 'b: 'a, T>(&'a self, index: IndexRef<'a, T>) -> ObjectRef<'a, T, false> {
+        let (flag, data) = self.map_index_ref(index.v.get());
+
+        assert!(flag.get() == 0, "already borrowed");
+        flag.set(!0);
+
+        ObjectRef{ flag, value: data.cast::<T>(), phantom: PhantomData }
+    }
 }
 
-// amazingly this works
+// C: const, true for immutable, false for mutable
+pub struct ObjectRef<'a, T, const C: bool> {
+    flag: &'a Cell<u32>,
+    value: NonNull<T>,
+    phantom: PhantomData<&'a T>,
+}
+
+impl<'a, T, const C: bool> Deref for ObjectRef<'a, T, C> {
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        // SAFETY: see before
+        unsafe{ self.value.as_ref() }
+    }
+}
+
+impl<'a, T> DerefMut for ObjectRef<'a, T, false> {
+
+    fn deref_mut(&mut self) -> &mut T {
+        // SAFETY: see before
+        unsafe { self.value.as_mut() }
+    }
+}
+
+impl<'a, T, const C: bool> Drop for ObjectRef<'a, T, C> {
+
+    fn drop(&mut self) {
+        if C {
+            let flag_value = self.flag.get();
+            debug_assert!(flag_value > 0, "invalid state");
+            self.flag.set(flag_value - 1);
+        } else {
+            debug_assert!(self.flag.get() == !0, "invalid state");
+            self.flag.set(0);
+        }
+    }
+}
+
+// amazingly this works, C: const, true for immutable, false for mutable
 struct SliceIter<'a, 'b, T, const C: bool> {
     arena: &'a Arena,
     current: u32,   // index of next return value

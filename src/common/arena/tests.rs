@@ -155,3 +155,41 @@ fn large_array() {
         assert_eq!(i as i32, *vec[i]);
     }
 }
+
+#[test]
+fn share() {
+    let arena = Arena::new();
+
+    let index = arena.emplace_shared(|n| { *n = 42; });
+    assert_eq!(*arena.borrow(index), 42);
+    *arena.borrow_mut(index) = 43;
+    assert_eq!(*arena.borrow(index), 43);
+
+    let ref1 = arena.borrow(index);
+    let ref2 = arena.borrow(index);
+    assert_eq!(*ref2, *ref1);
+}
+
+#[test]
+#[should_panic(expected = "already borrowed")]
+fn cannot_share() {
+    let arena = Arena::new();
+    
+    let index = arena.emplace_shared(|n| { *n = 42; });
+    let ref1 = arena.borrow(index);
+    let mut mut1 = arena.borrow_mut(index);
+    assert_eq!(*ref1, 42);
+    *mut1 = 43;
+}
+
+#[test]
+#[should_panic(expected = "already mutably borrowed")]
+fn cannot_share2() {
+    let arena = Arena::new();
+    
+    let index = arena.emplace_shared(|n| { *n = 42; });
+    let mut mut1 = arena.borrow_mut(index);
+    let ref1 = arena.borrow(index);
+    *mut1 = 43;
+    assert_eq!(*ref1, 43);
+}
