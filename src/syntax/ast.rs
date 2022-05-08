@@ -39,49 +39,49 @@ pub use noauto::LitValue;
 pub use new::EmplaceConcrete;
 
 // AUTOGEN
-pub struct ArrayExpr<'a> {
+pub struct ArrayExpr {
     pub span: Span,
-    pub items: Slice<'a, Expr<'a>>,
+    pub items: Slice<Expr>,
 }
 
-pub struct ArrayIndexExpr<'a> {
+pub struct ArrayIndexExpr {
     pub span: Span,
-    pub base: Expr<'a>,
-    pub parameters: Slice<'a, Expr<'a>>,
+    pub base: Expr,
+    pub parameters: Slice<Expr>,
     pub quote_span: Span,
 }
 
-pub struct ArrayType<'a> {
+pub struct ArrayType {
     pub span: Span,
-    pub base: TypeRef<'a>,
-    pub size: Expr<'a>,
+    pub base: TypeRef,
+    pub size: Expr,
 }
 
-pub struct AssignExprStatement<'a> {
+pub struct AssignExprStatement {
     pub span: Span,
-    pub left: Expr<'a>,
-    pub right: Expr<'a>,
+    pub left: Expr,
+    pub right: Expr,
     pub op: Separator,
     pub op_span: Span,
 }
 
-pub struct BinaryExpr<'a> {
+pub struct BinaryExpr {
     pub span: Span,
-    pub left: Expr<'a>,
-    pub right: Expr<'a>,
+    pub left: Expr,
+    pub right: Expr,
     pub op: Separator,
     pub op_span: Span,
 }
 
-pub struct Block<'a> {
+pub struct Block {
     pub span: Span,
-    pub items: Slice<'a, Statement<'a>>,
+    pub items: Slice<Statement>,
 }
 
-pub struct BlockStatement<'a> {
+pub struct BlockStatement {
     pub span: Span,
     pub label: Option<IdSpan>,
-    pub body: Index<'a, Block<'a>>,
+    pub body: Index<Block>,
 }
 
 pub struct BreakStatement {
@@ -89,24 +89,24 @@ pub struct BreakStatement {
     pub label: Option<IdSpan>,
 }
 
-pub struct CallExpr<'a> {
+pub struct CallExpr {
     pub span: Span,
-    pub base: Expr<'a>,
+    pub base: Expr,
     pub quote_span: Span,
-    pub parameters: Slice<'a, Expr<'a>>,
+    pub parameters: Slice<Expr>,
 }
 
-pub struct CastSegment<'a> {
+pub struct CastSegment {
     pub span: Span,
-    pub left: TypeRef<'a>,
-    pub right: TypeRef<'a>,
+    pub left: TypeRef,
+    pub right: TypeRef,
 }
 
-pub struct ClassDef<'a> {
+pub struct ClassDef {
     pub span: Span,
-    pub name: Index<'a, GenericName<'a>>,
+    pub name: Index<GenericName>,
     pub quote_span: Span,
-    pub items: Slice<'a, Item<'a>>,
+    pub items: Slice<Item>,
 }
 
 pub struct ContinueStatement {
@@ -114,93 +114,94 @@ pub struct ContinueStatement {
     pub label: Option<IdSpan>,
 }
 
-pub struct ElseClause<'a> {
+pub struct ElseClause {
     pub span: Span,
-    pub body: Index<'a, Block<'a>>,
+    pub body: Index<Block>,
 }
 
-pub struct EnumDef<'a> {
+pub struct EnumDef {
     pub span: Span,
     pub name: IdSpan,
-    pub base_type: Option<Index<'a, PrimitiveType>>,
+    pub base_type: Option<Index<PrimitiveType>>,
     pub quote_span: Span,
-    pub variants: Slice<'a, Index<'a, EnumDefVariant<'a>>>,
+    pub variants: Slice<Index<EnumDefVariant>>,
 }
 
-pub struct EnumDefVariant<'a> {
+pub struct EnumDefVariant {
     pub span: Span,
     pub name: IdSpan,
-    pub value: Option<Expr<'a>>,
+    pub value: Option<Expr>,
 }
 
-pub enum Expr<'a> {
-    Lit(Index<'a, LitExpr>),
-    Path(Index<'a, Path<'a>>),
-    Paren(Index<'a, ParenExpr<'a>>),
-    Tuple(Index<'a, TupleExpr<'a>>),
-    Array(Index<'a, ArrayExpr<'a>>),
-    Call(Index<'a, CallExpr<'a>>),
-    ArrayIndex(Index<'a, ArrayIndexExpr<'a>>),
-    TupleIndex(Index<'a, TupleIndexExpr<'a>>),
-    Member(Index<'a, MemberExpr<'a>>),
-    Object(Index<'a, ObjectExpr<'a>>),
-    Unary(Index<'a, UnaryExpr<'a>>),
-    Binary(Index<'a, BinaryExpr<'a>>),
-    RangeBoth(Index<'a, RangeBothExpr<'a>>),
-    RangeFull(Index<'a, RangeFullExpr>),
-    RangeLeft(Index<'a, RangeLeftExpr<'a>>),
-    RangeRight(Index<'a, RangeRightExpr<'a>>),
+#[derive(Clone, Copy)]
+pub enum Expr {
+    Lit(Index<LitExpr>),
+    Path(Index<Path>),
+    Paren(Index<ParenExpr>),
+    Tuple(Index<TupleExpr>),
+    Array(Index<ArrayExpr>),
+    Call(Index<CallExpr>),
+    ArrayIndex(Index<ArrayIndexExpr>),
+    TupleIndex(Index<TupleIndexExpr>),
+    Member(Index<MemberExpr>),
+    Object(Index<ObjectExpr>),
+    Unary(Index<UnaryExpr>),
+    Binary(Index<BinaryExpr>),
+    RangeBoth(Index<RangeBothExpr>),
+    RangeFull(Index<RangeFullExpr>),
+    RangeLeft(Index<RangeLeftExpr>),
+    RangeRight(Index<RangeRightExpr>),
 }
 
-pub struct FieldDef<'a> {
+pub struct FieldDef {
     pub span: Span,
     pub name: IdSpan,
     pub colon_span: Span,
-    pub r#type: TypeRef<'a>,
+    pub r#type: TypeRef,
 }
 
-pub struct FnDef<'a> {
+pub struct FnDef {
     pub span: Span,
-    pub name: Index<'a, GenericName<'a>>,
+    pub name: Index<GenericName>,
     pub quote_span: Span,
-    pub parameters: Slice<'a, Index<'a, FnDefParameter<'a>>>,
-    pub ret_type: Option<TypeRef<'a>>,
-    pub wheres: Slice<'a, Index<'a, WhereClause<'a>>>,
-    pub body: Option<Index<'a, Block<'a>>>,
+    pub parameters: Slice<Index<FnDefParameter>>,
+    pub ret_type: Option<TypeRef>,
+    pub wheres: Slice<Index<WhereClause>>,
+    pub body: Option<Index<Block>>,
 }
 
-pub struct FnDefParameter<'a> {
+pub struct FnDefParameter {
     pub span: Span,
     pub name: IdSpan,
-    pub r#type: TypeRef<'a>,
+    pub r#type: TypeRef,
 }
 
-pub struct FnType<'a> {
+pub struct FnType {
     pub span: Span,
     pub quote_span: Span,
-    pub parameters: Slice<'a, Index<'a, FnTypeParameter<'a>>>,
-    pub ret_type: Option<TypeRef<'a>>,
+    pub parameters: Slice<Index<FnTypeParameter>>,
+    pub ret_type: Option<TypeRef>,
 }
 
-pub struct FnTypeParameter<'a> {
+pub struct FnTypeParameter {
     pub span: Span,
     pub name: Option<IdSpan>,
-    pub r#type: TypeRef<'a>,
+    pub r#type: TypeRef,
 }
 
-pub struct ForStatement<'a> {
+pub struct ForStatement {
     pub span: Span,
     pub label: Option<IdSpan>,
     pub iter_name: IdSpan,
-    pub iter_expr: Expr<'a>,
-    pub body: Index<'a, Block<'a>>,
+    pub iter_expr: Expr,
+    pub body: Index<Block>,
 }
 
-pub struct GenericName<'a> {
+pub struct GenericName {
     pub span: Span,
     pub base: IdSpan,
     pub quote_span: Span,
-    pub parameters: Slice<'a, Index<'a, GenericParameter>>,
+    pub parameters: Slice<Index<GenericParameter>>,
 }
 
 pub struct GenericParameter {
@@ -208,52 +209,53 @@ pub struct GenericParameter {
     pub name: IdSpan,
 }
 
-pub struct GenericSegment<'a> {
+pub struct GenericSegment {
     pub span: Span,
     pub base: IdSpan,
-    pub parameters: Index<'a, TypeList<'a>>,
+    pub parameters: Index<TypeList>,
 }
 
-pub struct IfClause<'a> {
+pub struct IfClause {
     pub span: Span,
-    pub condition: Expr<'a>,
-    pub body: Index<'a, Block<'a>>,
+    pub condition: Expr,
+    pub body: Index<Block>,
 }
 
-pub struct IfStatement<'a> {
+pub struct IfStatement {
     pub span: Span,
-    pub if_clause: Index<'a, IfClause<'a>>,
-    pub elseif_clauses: Slice<'a, Index<'a, IfClause<'a>>>,
-    pub else_clause: Option<Index<'a, ElseClause<'a>>>,
+    pub if_clause: Index<IfClause>,
+    pub elseif_clauses: Slice<Index<IfClause>>,
+    pub else_clause: Option<Index<ElseClause>>,
 }
 
-pub struct Implementation<'a> {
+pub struct Implementation {
     pub span: Span,
-    pub parameters: Slice<'a, Index<'a, GenericParameter>>,
-    pub class: Option<TypeRef<'a>>,
-    pub r#type: TypeRef<'a>,
-    pub wheres: Slice<'a, Index<'a, WhereClause<'a>>>,
+    pub parameters: Slice<Index<GenericParameter>>,
+    pub class: Option<TypeRef>,
+    pub r#type: TypeRef,
+    pub wheres: Slice<Index<WhereClause>>,
     pub quote_span: Span,
-    pub items: Slice<'a, Item<'a>>,
+    pub items: Slice<Item>,
 }
 
-pub enum Item<'a> {
-    Struct(Index<'a, StructDef<'a>>),
-    Enum(Index<'a, EnumDef<'a>>),
-    Fn(Index<'a, FnDef<'a>>),
-    Impl(Index<'a, Implementation<'a>>),
-    Type(Index<'a, TypeDef<'a>>),
-    Class(Index<'a, ClassDef<'a>>),
-    Block(Index<'a, BlockStatement<'a>>),
-    SimpleExpr(Index<'a, SimpleExprStatement<'a>>),
-    AssignExpr(Index<'a, AssignExprStatement<'a>>),
-    For(Index<'a, ForStatement<'a>>),
-    If(Index<'a, IfStatement<'a>>),
-    Loop(Index<'a, LoopStatement<'a>>),
-    VarDecl(Index<'a, VarDeclStatement<'a>>),
-    While(Index<'a, WhileStatement<'a>>),
-    Use(Index<'a, UseStatement<'a>>),
-    Import(Index<'a, ModuleStatement>),
+#[derive(Clone, Copy)]
+pub enum Item {
+    Struct(Index<StructDef>),
+    Enum(Index<EnumDef>),
+    Fn(Index<FnDef>),
+    Impl(Index<Implementation>),
+    Type(Index<TypeDef>),
+    Class(Index<ClassDef>),
+    Block(Index<BlockStatement>),
+    SimpleExpr(Index<SimpleExprStatement>),
+    AssignExpr(Index<AssignExprStatement>),
+    For(Index<ForStatement>),
+    If(Index<IfStatement>),
+    Loop(Index<LoopStatement>),
+    VarDecl(Index<VarDeclStatement>),
+    While(Index<WhileStatement>),
+    Use(Index<UseStatement>),
+    Import(Index<ModuleStatement>),
 }
 
 pub struct LitExpr {
@@ -261,23 +263,23 @@ pub struct LitExpr {
     pub value: LitValue,
 }
 
-pub struct LoopStatement<'a> {
+pub struct LoopStatement {
     pub span: Span,
     pub label: Option<IdSpan>,
-    pub body: Index<'a, Block<'a>>,
+    pub body: Index<Block>,
 }
 
-pub struct MemberExpr<'a> {
+pub struct MemberExpr {
     pub span: Span,
-    pub base: Expr<'a>,
+    pub base: Expr,
     pub op_span: Span,
     pub name: IdSpan,
-    pub parameters: Option<Index<'a, TypeList<'a>>>,
+    pub parameters: Option<Index<TypeList>>,
 }
 
-pub struct Module<'a> {
+pub struct Module {
     pub file: FileId,
-    pub items: Slice<'a, Item<'a>>,
+    pub items: Slice<Item>,
 }
 
 pub struct ModuleStatement {
@@ -286,34 +288,35 @@ pub struct ModuleStatement {
     pub path: Option<IdSpan>,
 }
 
-pub struct ObjectExpr<'a> {
+pub struct ObjectExpr {
     pub span: Span,
-    pub base: Expr<'a>,
+    pub base: Expr,
     pub quote_span: Span,
-    pub fields: Slice<'a, Index<'a, ObjectExprField<'a>>>,
+    pub fields: Slice<Index<ObjectExprField>>,
 }
 
-pub struct ObjectExprField<'a> {
+pub struct ObjectExprField {
     pub span: Span,
     pub name: IdSpan,
-    pub value: Expr<'a>,
+    pub value: Expr,
 }
 
-pub struct ParenExpr<'a> {
+pub struct ParenExpr {
     pub span: Span,
-    pub base: Expr<'a>,
+    pub base: Expr,
 }
 
-pub struct Path<'a> {
+pub struct Path {
     pub span: Span,
-    pub segments: Slice<'a, PathSegment<'a>>,
+    pub segments: Slice<PathSegment>,
 }
 
-pub enum PathSegment<'a> {
+#[derive(Clone, Copy)]
+pub enum PathSegment {
     Global,
-    Simple(Index<'a, SimpleSegment>),
-    Cast(Index<'a, CastSegment<'a>>),
-    Generic(Index<'a, GenericSegment<'a>>),
+    Simple(Index<SimpleSegment>),
+    Cast(Index<CastSegment>),
+    Generic(Index<GenericSegment>),
 }
 
 pub struct PrimitiveType {
@@ -321,40 +324,40 @@ pub struct PrimitiveType {
     pub base: Keyword,
 }
 
-pub struct RangeBothExpr<'a> {
+pub struct RangeBothExpr {
     pub span: Span,
-    pub left: Expr<'a>,
+    pub left: Expr,
     pub op_span: Span,
-    pub right: Expr<'a>,
+    pub right: Expr,
 }
 
 pub struct RangeFullExpr {
     pub span: Span,
 }
 
-pub struct RangeLeftExpr<'a> {
+pub struct RangeLeftExpr {
     pub span: Span,
-    pub base: Expr<'a>,
+    pub base: Expr,
 }
 
-pub struct RangeRightExpr<'a> {
+pub struct RangeRightExpr {
     pub span: Span,
-    pub base: Expr<'a>,
+    pub base: Expr,
 }
 
-pub struct RefType<'a> {
+pub struct RefType {
     pub span: Span,
-    pub base: TypeRef<'a>,
+    pub base: TypeRef,
 }
 
-pub struct ReturnStatement<'a> {
+pub struct ReturnStatement {
     pub span: Span,
-    pub value: Option<Expr<'a>>,
+    pub value: Option<Expr>,
 }
 
-pub struct SimpleExprStatement<'a> {
+pub struct SimpleExprStatement {
     pub span: Span,
-    pub expr: Expr<'a>,
+    pub expr: Expr,
 }
 
 pub struct SimpleSegment {
@@ -362,101 +365,103 @@ pub struct SimpleSegment {
     pub name: IsId,
 }
 
-pub enum Statement<'a> {
-    Struct(Index<'a, StructDef<'a>>),
-    Enum(Index<'a, EnumDef<'a>>),
-    Fn(Index<'a, FnDef<'a>>),
-    Impl(Index<'a, Implementation<'a>>),
-    Type(Index<'a, TypeDef<'a>>),
-    Class(Index<'a, ClassDef<'a>>),
-    Block(Index<'a, BlockStatement<'a>>),
-    Break(Index<'a, BreakStatement>),
-    Continue(Index<'a, ContinueStatement>),
-    SimpleExpr(Index<'a, SimpleExprStatement<'a>>),
-    AssignExpr(Index<'a, AssignExprStatement<'a>>),
-    For(Index<'a, ForStatement<'a>>),
-    If(Index<'a, IfStatement<'a>>),
-    Loop(Index<'a, LoopStatement<'a>>),
-    Return(Index<'a, ReturnStatement<'a>>),
-    VarDecl(Index<'a, VarDeclStatement<'a>>),
-    While(Index<'a, WhileStatement<'a>>),
-    Use(Index<'a, UseStatement<'a>>),
+#[derive(Clone, Copy)]
+pub enum Statement {
+    Struct(Index<StructDef>),
+    Enum(Index<EnumDef>),
+    Fn(Index<FnDef>),
+    Impl(Index<Implementation>),
+    Type(Index<TypeDef>),
+    Class(Index<ClassDef>),
+    Block(Index<BlockStatement>),
+    Break(Index<BreakStatement>),
+    Continue(Index<ContinueStatement>),
+    SimpleExpr(Index<SimpleExprStatement>),
+    AssignExpr(Index<AssignExprStatement>),
+    For(Index<ForStatement>),
+    If(Index<IfStatement>),
+    Loop(Index<LoopStatement>),
+    Return(Index<ReturnStatement>),
+    VarDecl(Index<VarDeclStatement>),
+    While(Index<WhileStatement>),
+    Use(Index<UseStatement>),
 }
 
-pub struct StructDef<'a> {
+pub struct StructDef {
     pub span: Span,
-    pub name: Index<'a, GenericName<'a>>,
-    pub fields: Slice<'a, Index<'a, FieldDef<'a>>>,
+    pub name: Index<GenericName>,
+    pub fields: Slice<Index<FieldDef>>,
 }
 
-pub struct TupleExpr<'a> {
+pub struct TupleExpr {
     pub span: Span,
-    pub items: Slice<'a, Expr<'a>>,
+    pub items: Slice<Expr>,
 }
 
-pub struct TupleIndexExpr<'a> {
+pub struct TupleIndexExpr {
     pub span: Span,
-    pub base: Expr<'a>,
+    pub base: Expr,
     pub op_span: Span,
     pub value: i32,
     pub value_span: Span,
 }
 
-pub struct TupleType<'a> {
+pub struct TupleType {
     pub span: Span,
-    pub parameters: Slice<'a, TypeRef<'a>>,
+    pub parameters: Slice<TypeRef>,
 }
 
-pub struct TypeDef<'a> {
+pub struct TypeDef {
     pub span: Span,
-    pub name: Index<'a, GenericName<'a>>,
-    pub from: Option<TypeRef<'a>>,
+    pub name: Index<GenericName>,
+    pub from: Option<TypeRef>,
 }
 
-pub struct TypeList<'a> {
+pub struct TypeList {
     pub span: Span,
-    pub items: Slice<'a, TypeRef<'a>>,
+    pub items: Slice<TypeRef>,
 }
 
-pub enum TypeRef<'a> {
-    Array(Index<'a, ArrayType<'a>>),
-    Fn(Index<'a, FnType<'a>>),
-    Path(Index<'a, Path<'a>>),
-    Primitive(Index<'a, PrimitiveType>),
-    Ref(Index<'a, RefType<'a>>),
-    Tuple(Index<'a, TupleType<'a>>),
+#[derive(Clone, Copy)]
+pub enum TypeRef {
+    Array(Index<ArrayType>),
+    Fn(Index<FnType>),
+    Path(Index<Path>),
+    Primitive(Index<PrimitiveType>),
+    Ref(Index<RefType>),
+    Tuple(Index<TupleType>),
 }
 
-pub struct UnaryExpr<'a> {
+pub struct UnaryExpr {
     pub span: Span,
-    pub base: Expr<'a>,
+    pub base: Expr,
     pub op: Separator,
     pub op_span: Span,
 }
 
-pub struct UseStatement<'a> {
+pub struct UseStatement {
     pub span: Span,
-    pub path: Index<'a, Path<'a>>,
+    pub path: Index<Path>,
     pub alias: Option<IdSpan>,
 }
 
-pub struct VarDeclStatement<'a> {
+pub struct VarDeclStatement {
     pub span: Span,
     pub r#const: bool,
     pub name: IdSpan,
-    pub r#type: Option<TypeRef<'a>>,
-    pub init_value: Option<Expr<'a>>,
+    pub r#type: Option<TypeRef>,
+    pub init_value: Option<Expr>,
 }
 
-pub struct WhereClause<'a> {
+pub struct WhereClause {
     pub span: Span,
     pub name: IdSpan,
-    pub constraints: Slice<'a, TypeRef<'a>>,
+    pub constraints: Slice<TypeRef>,
 }
 
-pub struct WhileStatement<'a> {
+pub struct WhileStatement {
     pub span: Span,
     pub label: Option<IdSpan>,
-    pub condition: Expr<'a>,
-    pub body: Index<'a, Block<'a>>,
+    pub condition: Expr,
+    pub body: Index<Block>,
 }

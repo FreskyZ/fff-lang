@@ -8,7 +8,7 @@ use crate::common::arena::{Arena, Index};
 use crate::diagnostics::Diagnostics;
 use crate::semantic::mast;
 
-pub fn build<'a>(_context: &mut fur::TypeContext, _program: Index<'a, mast::Program>, _diagnostics: &mut Diagnostics, _arena: &'a Arena) -> fur::Program {
+pub fn build(_context: &mut fur::TypeContext, _program: Index<mast::Program>, _diagnostics: &mut Diagnostics, _arena: &Arena) -> fur::Program {
     fur::Program
 }
 

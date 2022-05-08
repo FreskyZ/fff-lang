@@ -8,184 +8,184 @@
 use super::super::visit::{Visit, Visitor};
 use super::*;
 
-impl<'a> Visit for Index<'a, ArrayExpr<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<ArrayExpr> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_array_expr(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        for item in arena.get_iter(&this.items) {
+        for &item in arena.get_iter(this.items) {
             v.visit_expr(item, arena)?;
         }
         Default::default()
     }
 }
 
-impl<'a> Visit for Index<'a, ArrayIndexExpr<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<ArrayIndexExpr> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_array_index_expr(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        v.visit_expr(&this.base, arena)?;
-        for parameter in arena.get_iter(&this.parameters) {
+        v.visit_expr(this.base, arena)?;
+        for &parameter in arena.get_iter(this.parameters) {
             v.visit_expr(parameter, arena)?;
         }
         Default::default()
     }
 }
 
-impl<'a> Visit for Index<'a, ArrayType<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<ArrayType> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_array_type(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        v.visit_type_ref(&this.base, arena)?;
-        v.visit_expr(&this.size, arena)
+        v.visit_type_ref(this.base, arena)?;
+        v.visit_expr(this.size, arena)
     }
 }
 
-impl<'a> Visit for Index<'a, AssignExprStatement<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<AssignExprStatement> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_assign_expr_stmt(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        v.visit_expr(&this.left, arena)?;
-        v.visit_expr(&this.right, arena)
+        v.visit_expr(this.left, arena)?;
+        v.visit_expr(this.right, arena)
     }
 }
 
-impl<'a> Visit for Index<'a, BinaryExpr<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<BinaryExpr> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_binary_expr(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        v.visit_expr(&this.left, arena)?;
-        v.visit_expr(&this.right, arena)
+        v.visit_expr(this.left, arena)?;
+        v.visit_expr(this.right, arena)
     }
 }
 
-impl<'a> Visit for Index<'a, Block<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<Block> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_block(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        for item in arena.get_iter(&this.items) {
+        for &item in arena.get_iter(this.items) {
             v.visit_stmt(item, arena)?;
         }
         Default::default()
     }
 }
 
-impl<'a> Visit for Index<'a, BlockStatement<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<BlockStatement> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_block_stmt(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        v.visit_block(&this.body, arena)
+        v.visit_block(this.body, arena)
     }
 }
 
-impl<'a> Visit for Index<'a, BreakStatement> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<BreakStatement> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_break_stmt(self, arena)
     }
 }
 
-impl<'a> Visit for Index<'a, CallExpr<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<CallExpr> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_call_expr(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        v.visit_expr(&this.base, arena)?;
-        for parameter in arena.get_iter(&this.parameters) {
+        v.visit_expr(this.base, arena)?;
+        for &parameter in arena.get_iter(this.parameters) {
             v.visit_expr(parameter, arena)?;
         }
         Default::default()
     }
 }
 
-impl<'a> Visit for Index<'a, CastSegment<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<CastSegment> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_cast_segment(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        v.visit_type_ref(&this.left, arena)?;
-        v.visit_type_ref(&this.right, arena)
+        v.visit_type_ref(this.left, arena)?;
+        v.visit_type_ref(this.right, arena)
     }
 }
 
-impl<'a> Visit for Index<'a, ClassDef<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<ClassDef> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_class_def(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        v.visit_generic_name(&this.name, arena)?;
-        for item in arena.get_iter(&this.items) {
+        v.visit_generic_name(this.name, arena)?;
+        for &item in arena.get_iter(this.items) {
             v.visit_item(item, arena)?;
         }
         Default::default()
     }
 }
 
-impl<'a> Visit for Index<'a, ContinueStatement> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<ContinueStatement> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_continue_stmt(self, arena)
     }
 }
 
-impl<'a> Visit for Index<'a, ElseClause<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<ElseClause> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_else_clause(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        v.visit_block(&this.body, arena)
+        v.visit_block(this.body, arena)
     }
 }
 
-impl<'a> Visit for Index<'a, EnumDef<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<EnumDef> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_enum_def(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        if let Some(base_type) = &this.base_type {
+        if let Some(base_type) = this.base_type {
             v.visit_primitive_type(base_type, arena)?;
         }
-        for variant in arena.get_iter(&this.variants) {
+        for &variant in arena.get_iter(this.variants) {
             v.visit_enum_def_variant(variant, arena)?;
         }
         Default::default()
     }
 }
 
-impl<'a> Visit for Index<'a, EnumDefVariant<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<EnumDefVariant> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_enum_def_variant(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        if let Some(value) = &this.value {
+        if let Some(value) = this.value {
             v.visit_expr(value, arena)?;
         }
         Default::default()
     }
 }
 
-impl<'a> Visit for Expr<'a> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Expr {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_expr(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         match self {
             Expr::Lit(n) => v.visit_lit_expr(n, arena),
             Expr::Path(n) => v.visit_path(n, arena),
@@ -207,171 +207,171 @@ impl<'a> Visit for Expr<'a> {
     }
 }
 
-impl<'a> Visit for Index<'a, FieldDef<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<FieldDef> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_field_def(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        v.visit_type_ref(&this.r#type, arena)
+        v.visit_type_ref(this.r#type, arena)
     }
 }
 
-impl<'a> Visit for Index<'a, FnDef<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<FnDef> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_fn_def(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        v.visit_generic_name(&this.name, arena)?;
-        for parameter in arena.get_iter(&this.parameters) {
+        v.visit_generic_name(this.name, arena)?;
+        for &parameter in arena.get_iter(this.parameters) {
             v.visit_fn_def_parameter(parameter, arena)?;
         }
-        if let Some(ret_type) = &this.ret_type {
+        if let Some(ret_type) = this.ret_type {
             v.visit_type_ref(ret_type, arena)?;
         }
-        for r#where in arena.get_iter(&this.wheres) {
+        for &r#where in arena.get_iter(this.wheres) {
             v.visit_where_clause(r#where, arena)?;
         }
-        if let Some(body) = &this.body {
+        if let Some(body) = this.body {
             v.visit_block(body, arena)?;
         }
         Default::default()
     }
 }
 
-impl<'a> Visit for Index<'a, FnDefParameter<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<FnDefParameter> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_fn_def_parameter(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        v.visit_type_ref(&this.r#type, arena)
+        v.visit_type_ref(this.r#type, arena)
     }
 }
 
-impl<'a> Visit for Index<'a, FnType<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<FnType> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_fn_type(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        for parameter in arena.get_iter(&this.parameters) {
+        for &parameter in arena.get_iter(this.parameters) {
             v.visit_fn_type_parameter(parameter, arena)?;
         }
-        if let Some(ret_type) = &this.ret_type {
+        if let Some(ret_type) = this.ret_type {
             v.visit_type_ref(ret_type, arena)?;
         }
         Default::default()
     }
 }
 
-impl<'a> Visit for Index<'a, FnTypeParameter<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<FnTypeParameter> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_fn_type_parameter(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        v.visit_type_ref(&this.r#type, arena)
+        v.visit_type_ref(this.r#type, arena)
     }
 }
 
-impl<'a> Visit for Index<'a, ForStatement<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<ForStatement> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_for_stmt(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        v.visit_expr(&this.iter_expr, arena)?;
-        v.visit_block(&this.body, arena)
+        v.visit_expr(this.iter_expr, arena)?;
+        v.visit_block(this.body, arena)
     }
 }
 
-impl<'a> Visit for Index<'a, GenericName<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<GenericName> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_generic_name(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        for parameter in arena.get_iter(&this.parameters) {
+        for &parameter in arena.get_iter(this.parameters) {
             v.visit_generic_parameter(parameter, arena)?;
         }
         Default::default()
     }
 }
 
-impl<'a> Visit for Index<'a, GenericParameter> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<GenericParameter> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_generic_parameter(self, arena)
     }
 }
 
-impl<'a> Visit for Index<'a, GenericSegment<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<GenericSegment> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_generic_segment(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        v.visit_type_list(&this.parameters, arena)
+        v.visit_type_list(this.parameters, arena)
     }
 }
 
-impl<'a> Visit for Index<'a, IfClause<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<IfClause> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_if_clause(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        v.visit_expr(&this.condition, arena)?;
-        v.visit_block(&this.body, arena)
+        v.visit_expr(this.condition, arena)?;
+        v.visit_block(this.body, arena)
     }
 }
 
-impl<'a> Visit for Index<'a, IfStatement<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<IfStatement> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_if_stmt(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        v.visit_if_clause(&this.if_clause, arena)?;
-        for elseif_clause in arena.get_iter(&this.elseif_clauses) {
+        v.visit_if_clause(this.if_clause, arena)?;
+        for &elseif_clause in arena.get_iter(this.elseif_clauses) {
             v.visit_if_clause(elseif_clause, arena)?;
         }
-        if let Some(else_clause) = &this.else_clause {
+        if let Some(else_clause) = this.else_clause {
             v.visit_else_clause(else_clause, arena)?;
         }
         Default::default()
     }
 }
 
-impl<'a> Visit for Index<'a, Implementation<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<Implementation> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_impl_block(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        for parameter in arena.get_iter(&this.parameters) {
+        for &parameter in arena.get_iter(this.parameters) {
             v.visit_generic_parameter(parameter, arena)?;
         }
-        if let Some(class) = &this.class {
+        if let Some(class) = this.class {
             v.visit_type_ref(class, arena)?;
         }
-        v.visit_type_ref(&this.r#type, arena)?;
-        for r#where in arena.get_iter(&this.wheres) {
+        v.visit_type_ref(this.r#type, arena)?;
+        for &r#where in arena.get_iter(this.wheres) {
             v.visit_where_clause(r#where, arena)?;
         }
-        for item in arena.get_iter(&this.items) {
+        for &item in arena.get_iter(this.items) {
             v.visit_item(item, arena)?;
         }
         Default::default()
     }
 }
 
-impl<'a> Visit for Item<'a> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Item {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_item(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         match self {
             Item::Struct(n) => v.visit_struct_def(n, arena),
             Item::Enum(n) => v.visit_enum_def(n, arena),
@@ -393,107 +393,107 @@ impl<'a> Visit for Item<'a> {
     }
 }
 
-impl<'a> Visit for Index<'a, LitExpr> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<LitExpr> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_lit_expr(self, arena)
     }
 }
 
-impl<'a> Visit for Index<'a, LoopStatement<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<LoopStatement> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_loop_stmt(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        v.visit_block(&this.body, arena)
+        v.visit_block(this.body, arena)
     }
 }
 
-impl<'a> Visit for Index<'a, MemberExpr<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<MemberExpr> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_member_expr(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        v.visit_expr(&this.base, arena)?;
-        if let Some(parameters) = &this.parameters {
+        v.visit_expr(this.base, arena)?;
+        if let Some(parameters) = this.parameters {
             v.visit_type_list(parameters, arena)?;
         }
         Default::default()
     }
 }
 
-impl<'a> Visit for Index<'a, Module<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<Module> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_module(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        for item in arena.get_iter(&this.items) {
+        for &item in arena.get_iter(this.items) {
             v.visit_item(item, arena)?;
         }
         Default::default()
     }
 }
 
-impl<'a> Visit for Index<'a, ModuleStatement> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<ModuleStatement> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_module_stmt(self, arena)
     }
 }
 
-impl<'a> Visit for Index<'a, ObjectExpr<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<ObjectExpr> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_object_expr(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        v.visit_expr(&this.base, arena)?;
-        for field in arena.get_iter(&this.fields) {
+        v.visit_expr(this.base, arena)?;
+        for &field in arena.get_iter(this.fields) {
             v.visit_object_expr_field(field, arena)?;
         }
         Default::default()
     }
 }
 
-impl<'a> Visit for Index<'a, ObjectExprField<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<ObjectExprField> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_object_expr_field(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        v.visit_expr(&this.value, arena)
+        v.visit_expr(this.value, arena)
     }
 }
 
-impl<'a> Visit for Index<'a, ParenExpr<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<ParenExpr> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_paren_expr(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        v.visit_expr(&this.base, arena)
+        v.visit_expr(this.base, arena)
     }
 }
 
-impl<'a> Visit for Index<'a, Path<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<Path> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_path(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        for segment in arena.get_iter(&this.segments) {
+        for &segment in arena.get_iter(this.segments) {
             v.visit_path_segment(segment, arena)?;
         }
         Default::default()
     }
 }
 
-impl<'a> Visit for PathSegment<'a> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for PathSegment {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_path_segment(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         match self {
             PathSegment::Global => Default::default(),
             PathSegment::Simple(n) => v.visit_simple_segment(n, arena),
@@ -503,93 +503,93 @@ impl<'a> Visit for PathSegment<'a> {
     }
 }
 
-impl<'a> Visit for Index<'a, PrimitiveType> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<PrimitiveType> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_primitive_type(self, arena)
     }
 }
 
-impl<'a> Visit for Index<'a, RangeBothExpr<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<RangeBothExpr> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_range_both_expr(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        v.visit_expr(&this.left, arena)?;
-        v.visit_expr(&this.right, arena)
+        v.visit_expr(this.left, arena)?;
+        v.visit_expr(this.right, arena)
     }
 }
 
-impl<'a> Visit for Index<'a, RangeFullExpr> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<RangeFullExpr> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_range_full_expr(self, arena)
     }
 }
 
-impl<'a> Visit for Index<'a, RangeLeftExpr<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<RangeLeftExpr> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_range_left_expr(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        v.visit_expr(&this.base, arena)
+        v.visit_expr(this.base, arena)
     }
 }
 
-impl<'a> Visit for Index<'a, RangeRightExpr<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<RangeRightExpr> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_range_right_expr(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        v.visit_expr(&this.base, arena)
+        v.visit_expr(this.base, arena)
     }
 }
 
-impl<'a> Visit for Index<'a, RefType<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<RefType> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_ref_type(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        v.visit_type_ref(&this.base, arena)
+        v.visit_type_ref(this.base, arena)
     }
 }
 
-impl<'a> Visit for Index<'a, ReturnStatement<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<ReturnStatement> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_ret_stmt(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        if let Some(value) = &this.value {
+        if let Some(value) = this.value {
             v.visit_expr(value, arena)?;
         }
         Default::default()
     }
 }
 
-impl<'a> Visit for Index<'a, SimpleExprStatement<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<SimpleExprStatement> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_simple_expr_stmt(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        v.visit_expr(&this.expr, arena)
+        v.visit_expr(this.expr, arena)
     }
 }
 
-impl<'a> Visit for Index<'a, SimpleSegment> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<SimpleSegment> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_simple_segment(self, arena)
     }
 }
 
-impl<'a> Visit for Statement<'a> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Statement {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_stmt(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         match self {
             Statement::Struct(n) => v.visit_struct_def(n, arena),
             Statement::Enum(n) => v.visit_enum_def(n, arena),
@@ -613,88 +613,88 @@ impl<'a> Visit for Statement<'a> {
     }
 }
 
-impl<'a> Visit for Index<'a, StructDef<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<StructDef> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_struct_def(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        v.visit_generic_name(&this.name, arena)?;
-        for field in arena.get_iter(&this.fields) {
+        v.visit_generic_name(this.name, arena)?;
+        for &field in arena.get_iter(this.fields) {
             v.visit_field_def(field, arena)?;
         }
         Default::default()
     }
 }
 
-impl<'a> Visit for Index<'a, TupleExpr<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<TupleExpr> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_tuple_expr(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        for item in arena.get_iter(&this.items) {
+        for &item in arena.get_iter(this.items) {
             v.visit_expr(item, arena)?;
         }
         Default::default()
     }
 }
 
-impl<'a> Visit for Index<'a, TupleIndexExpr<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<TupleIndexExpr> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_tuple_index_expr(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        v.visit_expr(&this.base, arena)
+        v.visit_expr(this.base, arena)
     }
 }
 
-impl<'a> Visit for Index<'a, TupleType<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<TupleType> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_tuple_type(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        for parameter in arena.get_iter(&this.parameters) {
+        for &parameter in arena.get_iter(this.parameters) {
             v.visit_type_ref(parameter, arena)?;
         }
         Default::default()
     }
 }
 
-impl<'a> Visit for Index<'a, TypeDef<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<TypeDef> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_type_def(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        v.visit_generic_name(&this.name, arena)?;
-        if let Some(from) = &this.from {
+        v.visit_generic_name(this.name, arena)?;
+        if let Some(from) = this.from {
             v.visit_type_ref(from, arena)?;
         }
         Default::default()
     }
 }
 
-impl<'a> Visit for Index<'a, TypeList<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<TypeList> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_type_list(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        for item in arena.get_iter(&this.items) {
+        for &item in arena.get_iter(this.items) {
             v.visit_type_ref(item, arena)?;
         }
         Default::default()
     }
 }
 
-impl<'a> Visit for TypeRef<'a> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for TypeRef {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_type_ref(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         match self {
             TypeRef::Array(n) => v.visit_array_type(n, arena),
             TypeRef::Fn(n) => v.visit_fn_type(n, arena),
@@ -706,62 +706,62 @@ impl<'a> Visit for TypeRef<'a> {
     }
 }
 
-impl<'a> Visit for Index<'a, UnaryExpr<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<UnaryExpr> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_unary_expr(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        v.visit_expr(&this.base, arena)
+        v.visit_expr(this.base, arena)
     }
 }
 
-impl<'a> Visit for Index<'a, UseStatement<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<UseStatement> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_use_stmt(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        v.visit_path(&this.path, arena)
+        v.visit_path(this.path, arena)
     }
 }
 
-impl<'a> Visit for Index<'a, VarDeclStatement<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<VarDeclStatement> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_var_decl_stmt(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        if let Some(r#type) = &this.r#type {
+        if let Some(r#type) = this.r#type {
             v.visit_type_ref(r#type, arena)?;
         }
-        if let Some(init_value) = &this.init_value {
+        if let Some(init_value) = this.init_value {
             v.visit_expr(init_value, arena)?;
         }
         Default::default()
     }
 }
 
-impl<'a> Visit for Index<'a, WhereClause<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<WhereClause> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_where_clause(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        for constraint in arena.get_iter(&this.constraints) {
+        for &constraint in arena.get_iter(this.constraints) {
             v.visit_type_ref(constraint, arena)?;
         }
         Default::default()
     }
 }
 
-impl<'a> Visit for Index<'a, WhileStatement<'a>> {
-    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+impl Visit for Index<WhileStatement> {
+    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         v.visit_while_stmt(self, arena)
     }
-    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {
+    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {
         let this = arena.get(self);
-        v.visit_expr(&this.condition, arena)?;
-        v.visit_block(&this.body, arena)
+        v.visit_expr(this.condition, arena)?;
+        v.visit_block(this.body, arena)
     }
 }

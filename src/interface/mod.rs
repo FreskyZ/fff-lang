@@ -59,7 +59,7 @@ fn run_compiler(args: argument::Argument, output: &mut impl io::Write) {
         match print_option {
             argument::PrintOption::Files => {
                 for module in &modules {
-                    writeln!(output, "{}", source.get_relative_path(arena.get(module).file).display()).unwrap();
+                    writeln!(output, "{}", source.get_relative_path(arena.get(*module).file).display()).unwrap();
                 }
             },
             argument::PrintOption::AST => {

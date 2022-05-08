@@ -19,9 +19,9 @@ impl<T> Eq for Option<T> where T: Eq {
     }
 }
 
-impl<'a, T> Eq for Slice<'a, T> where T: Eq {
+impl<T> Eq for Slice<T> where T: Eq {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        self.len() == rhs.len() && std::iter::zip(arena.get_iter(&self), arena.get_iter(&rhs)).all(|(lhs, rhs)| Eq::eq(lhs, rhs, arena))
+        self.len() == rhs.len() && std::iter::zip(arena.get_iter(*self), arena.get_iter(*rhs)).all(|(lhs, rhs)| Eq::eq(lhs, rhs, arena))
     }
 }
 
@@ -32,17 +32,19 @@ impl<T> Eq for Vec<T> where T: Eq {
 }
 
 // AUTOGEN
-impl<'a> Eq for Index<'a, ArrayExpr<'a>> {
+impl Eq for Index<ArrayExpr> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && Eq::eq(&lhs.items, &rhs.items, arena)
     }
 }
 
-impl<'a> Eq for Index<'a, ArrayIndexExpr<'a>> {
+impl Eq for Index<ArrayIndexExpr> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && lhs.quote_span == rhs.quote_span
         && Eq::eq(&lhs.base, &rhs.base, arena)
@@ -50,18 +52,20 @@ impl<'a> Eq for Index<'a, ArrayIndexExpr<'a>> {
     }
 }
 
-impl<'a> Eq for Index<'a, ArrayType<'a>> {
+impl Eq for Index<ArrayType> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && Eq::eq(&lhs.base, &rhs.base, arena)
         && Eq::eq(&lhs.size, &rhs.size, arena)
     }
 }
 
-impl<'a> Eq for Index<'a, AssignExprStatement<'a>> {
+impl Eq for Index<AssignExprStatement> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && lhs.op == rhs.op
         && lhs.op_span == rhs.op_span
@@ -70,9 +74,10 @@ impl<'a> Eq for Index<'a, AssignExprStatement<'a>> {
     }
 }
 
-impl<'a> Eq for Index<'a, BinaryExpr<'a>> {
+impl Eq for Index<BinaryExpr> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && lhs.op == rhs.op
         && lhs.op_span == rhs.op_span
@@ -81,34 +86,38 @@ impl<'a> Eq for Index<'a, BinaryExpr<'a>> {
     }
 }
 
-impl<'a> Eq for Index<'a, Block<'a>> {
+impl Eq for Index<Block> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && Eq::eq(&lhs.items, &rhs.items, arena)
     }
 }
 
-impl<'a> Eq for Index<'a, BlockStatement<'a>> {
+impl Eq for Index<BlockStatement> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && lhs.label == rhs.label
         && Eq::eq(&lhs.body, &rhs.body, arena)
     }
 }
 
-impl<'a> Eq for Index<'a, BreakStatement> {
+impl Eq for Index<BreakStatement> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && lhs.label == rhs.label
     }
 }
 
-impl<'a> Eq for Index<'a, CallExpr<'a>> {
+impl Eq for Index<CallExpr> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && lhs.quote_span == rhs.quote_span
         && Eq::eq(&lhs.base, &rhs.base, arena)
@@ -116,18 +125,20 @@ impl<'a> Eq for Index<'a, CallExpr<'a>> {
     }
 }
 
-impl<'a> Eq for Index<'a, CastSegment<'a>> {
+impl Eq for Index<CastSegment> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && Eq::eq(&lhs.left, &rhs.left, arena)
         && Eq::eq(&lhs.right, &rhs.right, arena)
     }
 }
 
-impl<'a> Eq for Index<'a, ClassDef<'a>> {
+impl Eq for Index<ClassDef> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && lhs.quote_span == rhs.quote_span
         && Eq::eq(&lhs.name, &rhs.name, arena)
@@ -135,25 +146,28 @@ impl<'a> Eq for Index<'a, ClassDef<'a>> {
     }
 }
 
-impl<'a> Eq for Index<'a, ContinueStatement> {
+impl Eq for Index<ContinueStatement> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && lhs.label == rhs.label
     }
 }
 
-impl<'a> Eq for Index<'a, ElseClause<'a>> {
+impl Eq for Index<ElseClause> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && Eq::eq(&lhs.body, &rhs.body, arena)
     }
 }
 
-impl<'a> Eq for Index<'a, EnumDef<'a>> {
+impl Eq for Index<EnumDef> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && lhs.name == rhs.name
         && lhs.quote_span == rhs.quote_span
@@ -162,16 +176,17 @@ impl<'a> Eq for Index<'a, EnumDef<'a>> {
     }
 }
 
-impl<'a> Eq for Index<'a, EnumDefVariant<'a>> {
+impl Eq for Index<EnumDefVariant> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && lhs.name == rhs.name
         && Eq::eq(&lhs.value, &rhs.value, arena)
     }
 }
 
-impl<'a> Eq for Expr<'a> {
+impl Eq for Expr {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
         match (self, rhs) {
             (Expr::Lit(lhs), Expr::Lit(rhs)) => Eq::eq(lhs, rhs, arena),
@@ -195,9 +210,10 @@ impl<'a> Eq for Expr<'a> {
     }
 }
 
-impl<'a> Eq for Index<'a, FieldDef<'a>> {
+impl Eq for Index<FieldDef> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && lhs.name == rhs.name
         && lhs.colon_span == rhs.colon_span
@@ -205,9 +221,10 @@ impl<'a> Eq for Index<'a, FieldDef<'a>> {
     }
 }
 
-impl<'a> Eq for Index<'a, FnDef<'a>> {
+impl Eq for Index<FnDef> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && lhs.quote_span == rhs.quote_span
         && Eq::eq(&lhs.name, &rhs.name, arena)
@@ -218,18 +235,20 @@ impl<'a> Eq for Index<'a, FnDef<'a>> {
     }
 }
 
-impl<'a> Eq for Index<'a, FnDefParameter<'a>> {
+impl Eq for Index<FnDefParameter> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && lhs.name == rhs.name
         && Eq::eq(&lhs.r#type, &rhs.r#type, arena)
     }
 }
 
-impl<'a> Eq for Index<'a, FnType<'a>> {
+impl Eq for Index<FnType> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && lhs.quote_span == rhs.quote_span
         && Eq::eq(&lhs.parameters, &rhs.parameters, arena)
@@ -237,18 +256,20 @@ impl<'a> Eq for Index<'a, FnType<'a>> {
     }
 }
 
-impl<'a> Eq for Index<'a, FnTypeParameter<'a>> {
+impl Eq for Index<FnTypeParameter> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && lhs.name == rhs.name
         && Eq::eq(&lhs.r#type, &rhs.r#type, arena)
     }
 }
 
-impl<'a> Eq for Index<'a, ForStatement<'a>> {
+impl Eq for Index<ForStatement> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && lhs.label == rhs.label
         && lhs.iter_name == rhs.iter_name
@@ -257,9 +278,10 @@ impl<'a> Eq for Index<'a, ForStatement<'a>> {
     }
 }
 
-impl<'a> Eq for Index<'a, GenericName<'a>> {
+impl Eq for Index<GenericName> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && lhs.base == rhs.base
         && lhs.quote_span == rhs.quote_span
@@ -267,35 +289,39 @@ impl<'a> Eq for Index<'a, GenericName<'a>> {
     }
 }
 
-impl<'a> Eq for Index<'a, GenericParameter> {
+impl Eq for Index<GenericParameter> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && lhs.name == rhs.name
     }
 }
 
-impl<'a> Eq for Index<'a, GenericSegment<'a>> {
+impl Eq for Index<GenericSegment> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && lhs.base == rhs.base
         && Eq::eq(&lhs.parameters, &rhs.parameters, arena)
     }
 }
 
-impl<'a> Eq for Index<'a, IfClause<'a>> {
+impl Eq for Index<IfClause> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && Eq::eq(&lhs.condition, &rhs.condition, arena)
         && Eq::eq(&lhs.body, &rhs.body, arena)
     }
 }
 
-impl<'a> Eq for Index<'a, IfStatement<'a>> {
+impl Eq for Index<IfStatement> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && Eq::eq(&lhs.if_clause, &rhs.if_clause, arena)
         && Eq::eq(&lhs.elseif_clauses, &rhs.elseif_clauses, arena)
@@ -303,9 +329,10 @@ impl<'a> Eq for Index<'a, IfStatement<'a>> {
     }
 }
 
-impl<'a> Eq for Index<'a, Implementation<'a>> {
+impl Eq for Index<Implementation> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && lhs.quote_span == rhs.quote_span
         && Eq::eq(&lhs.parameters, &rhs.parameters, arena)
@@ -316,7 +343,7 @@ impl<'a> Eq for Index<'a, Implementation<'a>> {
     }
 }
 
-impl<'a> Eq for Item<'a> {
+impl Eq for Item {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
         match (self, rhs) {
             (Item::Struct(lhs), Item::Struct(rhs)) => Eq::eq(lhs, rhs, arena),
@@ -340,26 +367,29 @@ impl<'a> Eq for Item<'a> {
     }
 }
 
-impl<'a> Eq for Index<'a, LitExpr> {
+impl Eq for Index<LitExpr> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && lhs.value == rhs.value
     }
 }
 
-impl<'a> Eq for Index<'a, LoopStatement<'a>> {
+impl Eq for Index<LoopStatement> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && lhs.label == rhs.label
         && Eq::eq(&lhs.body, &rhs.body, arena)
     }
 }
 
-impl<'a> Eq for Index<'a, MemberExpr<'a>> {
+impl Eq for Index<MemberExpr> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && lhs.op_span == rhs.op_span
         && lhs.name == rhs.name
@@ -368,26 +398,29 @@ impl<'a> Eq for Index<'a, MemberExpr<'a>> {
     }
 }
 
-impl<'a> Eq for Index<'a, Module<'a>> {
+impl Eq for Index<Module> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.file == rhs.file
         && Eq::eq(&lhs.items, &rhs.items, arena)
     }
 }
 
-impl<'a> Eq for Index<'a, ModuleStatement> {
+impl Eq for Index<ModuleStatement> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && lhs.name == rhs.name
         && lhs.path == rhs.path
     }
 }
 
-impl<'a> Eq for Index<'a, ObjectExpr<'a>> {
+impl Eq for Index<ObjectExpr> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && lhs.quote_span == rhs.quote_span
         && Eq::eq(&lhs.base, &rhs.base, arena)
@@ -395,32 +428,35 @@ impl<'a> Eq for Index<'a, ObjectExpr<'a>> {
     }
 }
 
-impl<'a> Eq for Index<'a, ObjectExprField<'a>> {
+impl Eq for Index<ObjectExprField> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && lhs.name == rhs.name
         && Eq::eq(&lhs.value, &rhs.value, arena)
     }
 }
 
-impl<'a> Eq for Index<'a, ParenExpr<'a>> {
+impl Eq for Index<ParenExpr> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && Eq::eq(&lhs.base, &rhs.base, arena)
     }
 }
 
-impl<'a> Eq for Index<'a, Path<'a>> {
+impl Eq for Index<Path> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && Eq::eq(&lhs.segments, &rhs.segments, arena)
     }
 }
 
-impl<'a> Eq for PathSegment<'a> {
+impl Eq for PathSegment {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
         match (self, rhs) {
             (PathSegment::Global, PathSegment::Global) => true,
@@ -432,17 +468,19 @@ impl<'a> Eq for PathSegment<'a> {
     }
 }
 
-impl<'a> Eq for Index<'a, PrimitiveType> {
+impl Eq for Index<PrimitiveType> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && lhs.base == rhs.base
     }
 }
 
-impl<'a> Eq for Index<'a, RangeBothExpr<'a>> {
+impl Eq for Index<RangeBothExpr> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && lhs.op_span == rhs.op_span
         && Eq::eq(&lhs.left, &rhs.left, arena)
@@ -450,62 +488,69 @@ impl<'a> Eq for Index<'a, RangeBothExpr<'a>> {
     }
 }
 
-impl<'a> Eq for Index<'a, RangeFullExpr> {
+impl Eq for Index<RangeFullExpr> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
     }
 }
 
-impl<'a> Eq for Index<'a, RangeLeftExpr<'a>> {
+impl Eq for Index<RangeLeftExpr> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
-        lhs.span == rhs.span
-        && Eq::eq(&lhs.base, &rhs.base, arena)
-    }
-}
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
 
-impl<'a> Eq for Index<'a, RangeRightExpr<'a>> {
-    fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
         lhs.span == rhs.span
         && Eq::eq(&lhs.base, &rhs.base, arena)
     }
 }
 
-impl<'a> Eq for Index<'a, RefType<'a>> {
+impl Eq for Index<RangeRightExpr> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && Eq::eq(&lhs.base, &rhs.base, arena)
     }
 }
 
-impl<'a> Eq for Index<'a, ReturnStatement<'a>> {
+impl Eq for Index<RefType> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
+        lhs.span == rhs.span
+        && Eq::eq(&lhs.base, &rhs.base, arena)
+    }
+}
+
+impl Eq for Index<ReturnStatement> {
+    fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && Eq::eq(&lhs.value, &rhs.value, arena)
     }
 }
 
-impl<'a> Eq for Index<'a, SimpleExprStatement<'a>> {
+impl Eq for Index<SimpleExprStatement> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && Eq::eq(&lhs.expr, &rhs.expr, arena)
     }
 }
 
-impl<'a> Eq for Index<'a, SimpleSegment> {
+impl Eq for Index<SimpleSegment> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && lhs.name == rhs.name
     }
 }
 
-impl<'a> Eq for Statement<'a> {
+impl Eq for Statement {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
         match (self, rhs) {
             (Statement::Struct(lhs), Statement::Struct(rhs)) => Eq::eq(lhs, rhs, arena),
@@ -531,26 +576,29 @@ impl<'a> Eq for Statement<'a> {
     }
 }
 
-impl<'a> Eq for Index<'a, StructDef<'a>> {
+impl Eq for Index<StructDef> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && Eq::eq(&lhs.name, &rhs.name, arena)
         && Eq::eq(&lhs.fields, &rhs.fields, arena)
     }
 }
 
-impl<'a> Eq for Index<'a, TupleExpr<'a>> {
+impl Eq for Index<TupleExpr> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && Eq::eq(&lhs.items, &rhs.items, arena)
     }
 }
 
-impl<'a> Eq for Index<'a, TupleIndexExpr<'a>> {
+impl Eq for Index<TupleIndexExpr> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && lhs.op_span == rhs.op_span
         && lhs.value == rhs.value
@@ -559,32 +607,35 @@ impl<'a> Eq for Index<'a, TupleIndexExpr<'a>> {
     }
 }
 
-impl<'a> Eq for Index<'a, TupleType<'a>> {
+impl Eq for Index<TupleType> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && Eq::eq(&lhs.parameters, &rhs.parameters, arena)
     }
 }
 
-impl<'a> Eq for Index<'a, TypeDef<'a>> {
+impl Eq for Index<TypeDef> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && Eq::eq(&lhs.name, &rhs.name, arena)
         && Eq::eq(&lhs.from, &rhs.from, arena)
     }
 }
 
-impl<'a> Eq for Index<'a, TypeList<'a>> {
+impl Eq for Index<TypeList> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && Eq::eq(&lhs.items, &rhs.items, arena)
     }
 }
 
-impl<'a> Eq for TypeRef<'a> {
+impl Eq for TypeRef {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
         match (self, rhs) {
             (TypeRef::Array(lhs), TypeRef::Array(rhs)) => Eq::eq(lhs, rhs, arena),
@@ -598,9 +649,10 @@ impl<'a> Eq for TypeRef<'a> {
     }
 }
 
-impl<'a> Eq for Index<'a, UnaryExpr<'a>> {
+impl Eq for Index<UnaryExpr> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && lhs.op == rhs.op
         && lhs.op_span == rhs.op_span
@@ -608,18 +660,20 @@ impl<'a> Eq for Index<'a, UnaryExpr<'a>> {
     }
 }
 
-impl<'a> Eq for Index<'a, UseStatement<'a>> {
+impl Eq for Index<UseStatement> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && lhs.alias == rhs.alias
         && Eq::eq(&lhs.path, &rhs.path, arena)
     }
 }
 
-impl<'a> Eq for Index<'a, VarDeclStatement<'a>> {
+impl Eq for Index<VarDeclStatement> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && lhs.r#const == rhs.r#const
         && lhs.name == rhs.name
@@ -628,18 +682,20 @@ impl<'a> Eq for Index<'a, VarDeclStatement<'a>> {
     }
 }
 
-impl<'a> Eq for Index<'a, WhereClause<'a>> {
+impl Eq for Index<WhereClause> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && lhs.name == rhs.name
         && Eq::eq(&lhs.constraints, &rhs.constraints, arena)
     }
 }
 
-impl<'a> Eq for Index<'a, WhileStatement<'a>> {
+impl Eq for Index<WhileStatement> {
     fn eq(&self, rhs: &Self, arena: &Arena) -> bool {
-        let (lhs, rhs) = (arena.get(self), arena.get(rhs));
+        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));
+
         lhs.span == rhs.span
         && lhs.label == rhs.label
         && Eq::eq(&lhs.condition, &rhs.condition, arena)

@@ -75,7 +75,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     // and then you literally can do nothing because self is constantly borrowed after any call to parse_*,
     // by passing arena as parameter borrowck correctly knows return value is borrowing arena not self,
     // this is similar to source chars which is also forced to split struct to clarify borrow source
-    pub fn parse_module<'a>(&mut self, arena: &'a Arena) -> Result<Index<'a, Module<'a>>, Unexpected> {
+    pub fn parse_module(&mut self, arena: &Arena) -> Result<Index<Module>, Unexpected> {
         let mut items = Vec::new();
         while !matches!(self.current, Token::EOF) {
             items.push(self.parse_item(arena)?);
@@ -406,7 +406,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         || matches!(self.current, Token::Sep(Separator::DotDot))
     }
 
-    fn parse_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
+    fn parse_expr(&mut self, arena: &Arena) -> Result<Expr, Unexpected> {
         self.allow_object_expr.push(true);
         let result = self.parse_range_expr(arena);
         self.allow_object_expr.pop();
@@ -415,7 +415,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
     // disable top level object exprs,
     // until end of this expr, or call parse_expr again inside call_expr, e.g. array def and tuple def
-    fn parse_expr_except_object_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
+    fn parse_expr_except_object_expr(&mut self, arena: &Arena) -> Result<Expr, Unexpected> {
         self.allow_object_expr.push(false);
         let result = self.parse_range_expr(arena);
         self.allow_object_expr.pop();
@@ -424,7 +424,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
     // expr_list = opening_bracket expr { ',' expr } [ ',' ] closing_bracket
     // return (span include bracket, exprs, end with comma)
-    fn parse_expr_list(&mut self, arena: &'a Arena) -> Result<(Span, Vec<Expr<'a>>, bool), Unexpected> {
+    fn parse_expr_list(&mut self, arena: &Arena) -> Result<(Span, Vec<Expr>, bool), Unexpected> {
 
         let (open_bracket, start_span) = self.expect_seps(&[Separator::LBrace, Separator::LBracket, Separator::LParen])?;
         let close_bracket = match open_bracket { 
@@ -458,7 +458,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     // tuple_expr = '(' expr_list ')'
     // paren_expr = '(' expr ')'
     // unit_lit = '(' ')'
-    fn parse_tuple_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
+    fn parse_tuple_expr(&mut self, arena: &Arena) -> Result<Expr, Unexpected> {
 
         let (span, mut items, end_with_comma) = self.parse_expr_list(arena)?;
         if items.is_empty() {
@@ -475,12 +475,12 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     // array_expr = '[' [ expr_list ] ']'
-    fn parse_array_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
+    fn parse_array_expr(&mut self, arena: &Arena) -> Result<Expr, Unexpected> {
         let (span, items, _) = self.parse_expr_list(arena)?;
         Ok(arena.emplace_array_expr(span, items).into())
     }
 
-    fn parse_primary_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
+    fn parse_primary_expr(&mut self, arena: &Arena) -> Result<Expr, Unexpected> {
         if self.is_lit() {
             // this is too short to put in one parse method
             // while it is actually tested more than hundred times in syntax test cases worldwide
@@ -504,7 +504,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
     // member_expr = primary_expr '.' ident [ ':' type_list ]
     // return dot span and member name, see parse_postfix_expr for the return type
-    fn parse_member_expr(&mut self, arena: &'a Arena) -> Result<(Span, (IdSpan, Option<Index<'a, TypeList<'a>>>)), Unexpected> {
+    fn parse_member_expr(&mut self, arena: &Arena) -> Result<(Span, (IdSpan, Option<Index<TypeList>>)), Unexpected> {
         
         let dot_span = self.expect_sep(Separator::Dot)?;
         // // ? rust.await is really good design, but await is still currently reserved, put it here to indicate that it can be here
@@ -544,7 +544,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
     // call_expr = primary_expr '(' [ expr_list ] ')'
     // return quote span and expr list, see parse_postfix_expr for the return type
-    fn parse_call_expr(&mut self, arena: &'a Arena) -> Result<(Span, Vec<Expr<'a>>), Unexpected> {
+    fn parse_call_expr(&mut self, arena: &Arena) -> Result<(Span, Vec<Expr>), Unexpected> {
         let (span, items, _) = self.parse_expr_list(arena)?;
         Ok((span, items))
     }
@@ -556,7 +556,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     // index_call_expr = primary_expr '[' [ expr_list ] ']'
     // return quote span and expr list, see parse_postfix_expr for the return type
     // // was called postfix_expr::subscription, this one is shorter and similar to fn_call
-    fn parse_array_index_expr(&mut self, arena: &'a Arena) -> Result<(Span, Vec<Expr<'a>>), Unexpected> {
+    fn parse_array_index_expr(&mut self, arena: &Arena) -> Result<(Span, Vec<Expr>), Unexpected> {
 
         let (span, items, _) = self.parse_expr_list(arena)?;
         if items.is_empty() {
@@ -572,7 +572,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     // object_literal = name '{' { ident ':' expr ',' } '}'
     // last comma may omit
     // return quote span and field list, see parse_postfix_expr for the return type
-    fn parse_object_expr(&mut self, arena: &'a Arena) -> Result<(Span, Vec<Index<'a, ObjectExprField<'a>>>), Unexpected> {
+    fn parse_object_expr(&mut self, arena: &Arena) -> Result<(Span, Vec<Index<ObjectExprField>>), Unexpected> {
 
         let left_brace_span = self.expect_sep(Separator::LBrace)?;
         let mut fields = Vec::new();
@@ -596,7 +596,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         Ok((left_brace_span + right_brace_span, fields))
     }
 
-    fn parse_postfix_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {   
+    fn parse_postfix_expr(&mut self, arena: &Arena) -> Result<Expr, Unexpected> {   
         #[cfg(feature = "trace_postfix_expr_parse")]
         macro_rules! trace { ($($arg:tt)*) => ({ perror!("    [PostfixExpr:{}] ", line!()); eprintln!($($arg)*); }) }
         #[cfg(not(feature = "trace_postfix_expr_parse"))]
@@ -609,7 +609,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
             let current_span = current_expr.span(arena);
             if self.maybe_member_expr() {
                 let (op_span, (name, parameters)) = self.parse_member_expr(arena)?;
-                let span = current_span + parameters.as_ref().map(|p| arena.get(p).span).unwrap_or(name.span);
+                let span = current_span + parameters.as_ref().map(|p| arena.get(*p).span).unwrap_or(name.span);
                 current_expr = arena.emplace_member_expr(span, current_expr, op_span, name, parameters).into();
             } else if self.maybe_call_expr() {
                 let (quote_span, parameters) = self.parse_call_expr(arena)?;
@@ -647,7 +647,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     // unary_expr = { unary_operator } postfix_expr
-    fn parse_unary_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
+    fn parse_unary_expr(&mut self, arena: &Arena) -> Result<Expr, Unexpected> {
         
         let mut op_spans = Vec::new();
         loop {
@@ -664,7 +664,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     // binary_expr = unary_expr binary_op unary_expr
-    fn parse_binary_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
+    fn parse_binary_expr(&mut self, arena: &Arena) -> Result<Expr, Unexpected> {
         #[cfg(feature = "trace_binary_expr_parse")]
         macro_rules! trace { ($($arg:tt)*) => ({ print!("[PrimaryExpr] "); println!($($arg)*); }) }
         #[cfg(not(feature = "trace_binary_expr_parse"))]
@@ -672,14 +672,14 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
         return parse_logical_or(self, arena);
 
-        fn parse_unary_expr_wrapper<'a>(cx: &mut Parser, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
+        fn parse_unary_expr_wrapper(cx: &mut Parser, arena: &Arena) -> Result<Expr, Unexpected> {
             cx.parse_unary_expr(arena)
         }
-        fn check_relational_expr<'a>(cx: &mut Parser, arena: &'a Arena, expr: &Expr<'a>) {
+        fn check_relational_expr(cx: &mut Parser, arena: &Arena, expr: &Expr) {
             if let Expr::Binary(expr) = expr {
-                if let BinaryExpr{ op: Separator::Gt, op_span: gt_span, left, .. } = arena.get(expr) {
+                if let BinaryExpr{ op: Separator::Gt, op_span: gt_span, left, .. } = arena.get(*expr) {
                     if let Expr::Binary(left) = left {
-                        if let BinaryExpr{ op: Separator::Lt, op_span: lt_span, .. } = arena.get(left) {
+                        if let BinaryExpr{ op: Separator::Lt, op_span: lt_span, .. } = arena.get(*left) {
                             cx.base.emit(strings::MaybeGeneric).span(*lt_span).span(*gt_span).help(strings::MaybeGenericHelp);
                         }
                     }
@@ -689,7 +689,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
         macro_rules! impl_binary_parser {
             ($parser_name:ident, $previous_parser_name:ident, $kind:ident $(,$check:path)?) => (
-                fn $parser_name<'a>(cx: &mut Parser, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
+                fn $parser_name(cx: &mut Parser, arena: &Arena) -> Result<Expr, Unexpected> {
                     trace!("parsing {}", stringify!($parser_name));
 
                     let mut current_expr = $previous_parser_name(cx, arena)?;
@@ -722,7 +722,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     // range_left = binary_expr '..'
     // range_right = '..' binary_expr
     // range_both = binary_expr '..' binary_expr
-    fn parse_range_expr(&mut self, arena: &'a Arena) -> Result<Expr<'a>, Unexpected> {
+    fn parse_range_expr(&mut self, arena: &Arena) -> Result<Expr, Unexpected> {
         match self.try_expect_sep(Separator::DotDot) {
             Some(range_op_span) => {
                 if self.maybe_expr() {
@@ -776,7 +776,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     // - ident in normal-segment maybe identifierable keyword except true/falses,
     //   self may be used in value context for current object pointer, may be used in type context for submodule type
     //   Self may be used in value context for static const or static method, may be used in type context for associate type 
-    fn parse_path(&mut self, arena: &'a Arena, context: PathContext) -> Result<Index<'a, Path<'a>>, Unexpected> {
+    fn parse_path(&mut self, arena: &Arena, context: PathContext) -> Result<Index<Path>, Unexpected> {
         let mut segments = Vec::new();
 
         let global_span = self.try_expect_sep(Separator::ColonColon);
@@ -821,7 +821,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
                 }
                 // self.current now is the Lt (or LtLt)
                 let parameters = self.parse_type_list(arena)?;
-                segments.push(arena.emplace_generic_segment(base.span + arena.get(&parameters).span, base, parameters).into());
+                segments.push(arena.emplace_generic_segment(base.span + arena.get(parameters).span, base, parameters).into());
             } else {
                 segments.push(arena.emplace_simple_segment(base.span, base.id).into());
             }
@@ -843,7 +843,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
     // no maybe_type_ref because type ref is always after some colon or namespace separator
     // TODO add literal type = string/number literal (or string/number literal)*
-    fn parse_type_ref(&mut self, arena: &'a Arena) -> Result<TypeRef<'a>, Unexpected> {
+    fn parse_type_ref(&mut self, arena: &Arena) -> Result<TypeRef, Unexpected> {
         if self.maybe_primitive_type() {
             self.parse_primitive_type(arena).map(Into::into)
         } else if self.maybe_array_type() {
@@ -863,7 +863,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
     // type_list = '<' type_ref { ',' type_ref } [ ',' ] '>'
     // angle bracket quoted type list use in many places
-    fn parse_type_list(&mut self, arena: &'a Arena) -> Result<Index<'a, TypeList<'a>>, Unexpected> {
+    fn parse_type_list(&mut self, arena: &Arena) -> Result<Index<TypeList>, Unexpected> {
 
         let lt_span = self.expect_sep(Separator::Lt)?;
 
@@ -888,7 +888,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     // array_type = '[' type_ref ';' expr ']'
-    fn parse_array_type(&mut self, arena: &'a Arena) -> Result<Index<'a, ArrayType<'a>>, Unexpected> {
+    fn parse_array_type(&mut self, arena: &Arena) -> Result<Index<ArrayType>, Unexpected> {
 
         let left_bracket_span = self.expect_sep(Separator::LBracket)?;
         let base = self.parse_type_ref(arena)?;
@@ -928,7 +928,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     // - there is no `fn <T, U>(parameters)` because the normal solution is 
     //   declare these parameters outside: `fn accept_some_fn<T, U>(f: fn(T, U) -> T) -> U`,
     //   it's really hard (maybe impossible) to resolve the type parameters in bare (not in impl block etc.) `fn accept_some_template(f: fn<T, U>(T, U) -> T) -> U`
-    fn parse_fn_type(&mut self, arena: &'a Arena) -> Result<Index<'a, FnType<'a>>, Unexpected> {
+    fn parse_fn_type(&mut self, arena: &Arena) -> Result<Index<FnType>, Unexpected> {
 
         let fn_span = self.expect_keyword(Keyword::Fn)?;
         let left_paren_span = self.expect_sep(Separator::LParen)?;
@@ -979,7 +979,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     // primitive_type = primitive_keyword
-    fn parse_primitive_type(&mut self, arena: &'a Arena) -> Result<Index<'a, PrimitiveType>, Unexpected> {
+    fn parse_primitive_type(&mut self, arena: &Arena) -> Result<Index<PrimitiveType>, Unexpected> {
         let (base, span) = self.expect_keyword_kind(KeywordKind::Primitive)?;
         Ok(arena.emplace_primitive_type(span, base))
     }
@@ -989,7 +989,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     // ref_type = '&' type_ref
-    fn parse_ref_type(&mut self, arena: &'a Arena) -> Result<Index<'a, RefType<'a>>, Unexpected> {
+    fn parse_ref_type(&mut self, arena: &Arena) -> Result<Index<RefType>, Unexpected> {
         
         let and_span = self.expect_sep(Separator::And)?;
         let base = self.parse_type_ref(arena)?;
@@ -1004,7 +1004,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     //
     // empty for unit type, one element tuple require ending comma
     // type template name will be `tuple` when analysis, so user type `tuple` should be rejected by analysis
-    fn parse_tuple_type(&mut self, arena: &'a Arena) -> Result<Index<'a, TupleType<'a>>, Unexpected> {
+    fn parse_tuple_type(&mut self, arena: &Arena) -> Result<Index<TupleType>, Unexpected> {
         
         let left_paren_span = self.expect_sep(Separator::LParen)?;
         if let Some(right_paren_span) = self.try_expect_sep(Separator::RParen) {
@@ -1032,7 +1032,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 // statement and item (module level item) parsers
 impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
-    fn parse_stmt(&mut self, arena: &'a Arena) -> Result<Statement<'a>, Unexpected> {
+    fn parse_stmt(&mut self, arena: &Arena) -> Result<Statement, Unexpected> {
         if self.maybe_struct_def() {
             self.parse_struct_def(arena).map(Into::into)
         } else if self.maybe_enum_def() {
@@ -1066,7 +1066,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         }
     }
 
-    fn parse_item(&mut self, arena: &'a Arena) -> Result<Item<'a>, Unexpected> {
+    fn parse_item(&mut self, arena: &Arena) -> Result<Item, Unexpected> {
         if self.maybe_struct_def() {
             self.parse_struct_def(arena).map(Into::into)
         } else if self.maybe_enum_def() {
@@ -1104,11 +1104,11 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         || matches!(self.current, Token::Label(_))
     }
 
-    fn parse_labeled_stmt<U>(&mut self, arena: &'a Arena) -> Result<U, Unexpected> where
-        Index<'a, BlockStatement<'a>>: Into<U>,
-        Index<'a, ForStatement<'a>>: Into<U>,
-        Index<'a, LoopStatement<'a>>: Into<U>,
-        Index<'a, WhileStatement<'a>>: Into<U>,
+    fn parse_labeled_stmt<U>(&mut self, arena: &Arena) -> Result<U, Unexpected> where
+        Index<BlockStatement>: Into<U>,
+        Index<ForStatement>: Into<U>,
+        Index<LoopStatement>: Into<U>,
+        Index<WhileStatement>: Into<U>,
     {
         let label = if let Token::Label(label) = self.current {
             let label_span = self.move_next();
@@ -1134,12 +1134,12 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     #[cfg(test)]
-    fn parse_labeled_stmt_as_stmt(&mut self, arena: &'a Arena) -> Result<Statement<'a>, Unexpected> {
+    fn parse_labeled_stmt_as_stmt(&mut self, arena: &Arena) -> Result<Statement, Unexpected> {
         self.parse_labeled_stmt(arena)
     }
 
     // generic_name = ident [ '<' ident { ',' ident } [ ',' ] '>' ]
-    fn parse_generic_name(&mut self, arena: &'a Arena) -> Result<Index<'a, GenericName<'a>>, Unexpected> {
+    fn parse_generic_name(&mut self, arena: &Arena) -> Result<Index<GenericName>, Unexpected> {
         
         let base = self.expect_ident()?;
         let mut quote_span = Span::new(0, 0);
@@ -1169,7 +1169,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
     // block = '{' { statement } '}'
     // it is private because it's not used outside and it's included by their tests
-    fn parse_block(&mut self, arena: &'a Arena) -> Result<Index<'a, Block<'a>>, Unexpected> {
+    fn parse_block(&mut self, arena: &Arena) -> Result<Index<Block>, Unexpected> {
 
         let starting_span = self.expect_sep(Separator::LBrace)?;
         let mut items = Vec::new();
@@ -1189,10 +1189,10 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     // block-stmt = (LABEL ':')? block
     // block-stmt for explicit block definition in block and allow block label
     // label handled in parse_labeled_stmt
-    fn parse_block_stmt(&mut self, arena: &'a Arena, label: Option<IdSpan>) -> Result<Index<'a, BlockStatement<'a>>, Unexpected> {
+    fn parse_block_stmt(&mut self, arena: &Arena, label: Option<IdSpan>) -> Result<Index<BlockStatement>, Unexpected> {
 
         let body = self.parse_block(arena)?;
-        let body_span = arena.get(&body).span;
+        let body_span = arena.get(body).span;
         let span = label.as_ref().map(|n| n.span).unwrap_or(body_span) + body_span;
         Ok(arena.emplace_block_stmt(span, label, body))
     }
@@ -1202,7 +1202,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
     
     // break_stmt = 'break' [ label ] ';'
-    fn parse_break_stmt(&mut self, arena: &'a Arena) -> Result<Index<'a, BreakStatement>, Unexpected> {
+    fn parse_break_stmt(&mut self, arena: &Arena) -> Result<Index<BreakStatement>, Unexpected> {
 
         let starting_span = self.expect_keyword(Keyword::Break)?;
 
@@ -1220,7 +1220,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     // class_def = 'class' generic_name '{' { type_def | fn_def } '}'
-    fn parse_class_def(&mut self, arena: &'a Arena) -> Result<Index<'a, ClassDef<'a>>, Unexpected> {
+    fn parse_class_def(&mut self, arena: &Arena) -> Result<Index<ClassDef>, Unexpected> {
 
         let start_span = self.expect_keyword(Keyword::Class)?;
         let name = self.parse_generic_name(arena)?;
@@ -1247,7 +1247,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     // continue_stmt = 'continue' [ label ] ';'
-    fn parse_continue_stmt(&mut self, arena: &'a Arena) -> Result<Index<'a, ContinueStatement>, Unexpected> {
+    fn parse_continue_stmt(&mut self, arena: &Arena) -> Result<Index<ContinueStatement>, Unexpected> {
 
         let starting_span = self.expect_keyword(Keyword::Continue)?;
 
@@ -1266,7 +1266,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
     // enum_def = 'enum' ident [ ':' primitive_type ] '{' { ident [ '=' expr ] ',' } '}'
     // TODO allow variant to be struct
-    fn parse_enum_def(&mut self, arena: &'a Arena) -> Result<Index<'a, EnumDef<'a>>, Unexpected> {
+    fn parse_enum_def(&mut self, arena: &Arena) -> Result<Index<EnumDef>, Unexpected> {
 
         let enum_span = self.expect_keyword(Keyword::Enum)?;
         let enum_name = self.expect_ident()?;
@@ -1301,9 +1301,9 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     // expr_stmt = expr { assign_ops expr } ';'
-    fn parse_expr_stmt<U>(&mut self, arena: &'a Arena) -> Result<U, Unexpected> where
-        Index<'a, AssignExprStatement<'a>>: Into<U>,
-        Index<'a, SimpleExprStatement<'a>>: Into<U>,
+    fn parse_expr_stmt<U>(&mut self, arena: &Arena) -> Result<U, Unexpected> where
+        Index<AssignExprStatement>: Into<U>,
+        Index<SimpleExprStatement>: Into<U>,
     {
         let left_expr = self.parse_expr(arena)?;
         let starting_span = left_expr.span(arena);
@@ -1320,7 +1320,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     #[cfg(test)]
-    fn parse_expr_stmt_as_stmt(&mut self, arena: &'a Arena) -> Result<Statement<'a>, Unexpected> {
+    fn parse_expr_stmt_as_stmt(&mut self, arena: &Arena) -> Result<Statement, Unexpected> {
         self.parse_expr_stmt(arena)
     }
 
@@ -1331,7 +1331,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     // fn-def = 'fn' generic_name '(' [ identifier ':' type-use { ',' identifier ':' type-use [ ',' ] } ] ')' [ '->' type-use ] [ 'where' { where_clause ',' } ] [ block ]
     // where_clause = ident ':' type_ref { '+' type_ref }
     // TODO left of where clause is type_ref
-    fn parse_fn_def(&mut self, arena: &'a Arena) -> Result<Index<'a, FnDef<'a>>, Unexpected> {
+    fn parse_fn_def(&mut self, arena: &Arena) -> Result<Index<FnDef>, Unexpected> {
 
         let fn_span = self.expect_keyword(Keyword::Fn)?;
         let fn_name = self.parse_generic_name(arena)?;
@@ -1391,7 +1391,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
         let (ending_span, body) = if self.is_sep(Separator::LBrace) {
             let body = self.parse_block(arena)?;
-            (arena.get(&body).span, Some(body))
+            (arena.get(body).span, Some(body))
         } else {
             (self.expect_sep(Separator::SemiColon)?, None) 
         };
@@ -1406,7 +1406,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     // for-stmt = (LABEL ':')? 'for' IDENT 'in' expr block
     // label handled in parse_labeled_stmt
     // TODO: add else for break, like python
-    fn parse_for_stmt(&mut self, arena: &'a Arena, label: Option<IdSpan>) -> Result<Index<'a, ForStatement<'a>>, Unexpected> {
+    fn parse_for_stmt(&mut self, arena: &Arena, label: Option<IdSpan>) -> Result<Index<ForStatement>, Unexpected> {
 
         let for_span = self.expect_keyword(Keyword::For)?;
 
@@ -1417,7 +1417,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
         let iter_expr = self.parse_expr_except_object_expr(arena)?;
         let body = self.parse_block(arena)?;
         
-        let span = label.as_ref().map(|n| n.span).unwrap_or(for_span) + arena.get(&body).span;
+        let span = label.as_ref().map(|n| n.span).unwrap_or(for_span) + arena.get(body).span;
         Ok(arena.emplace_for_stmt(span, label, iter_name, iter_expr, body))
     }
 
@@ -1426,13 +1426,13 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     // if_stmt = 'if' expr block { 'else' 'if' expr block } [ 'else' block ]
-    fn parse_if_stmt(&mut self, arena: &'a Arena) -> Result<Index<'a, IfStatement<'a>>, Unexpected> {
+    fn parse_if_stmt(&mut self, arena: &Arena) -> Result<Index<IfStatement>, Unexpected> {
 
         let mut all_span = self.expect_keyword(Keyword::If)?;
 
         let if_condition = self.parse_expr_except_object_expr(arena)?;
         let if_body = self.parse_block(arena)?;
-        all_span += arena.get(&if_body).span;
+        all_span += arena.get(if_body).span;
         let if_clause = arena.emplace_if_clause(all_span, if_condition, if_body);
 
         let mut elseif_clauses = Vec::new();
@@ -1442,8 +1442,8 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
                 let elseif_span = else_span + if_span;
                 let elseif_condition = self.parse_expr_except_object_expr(arena)?;
                 let elseif_body = self.parse_block(arena)?;
-                all_span += arena.get(&elseif_body).span;
-                elseif_clauses.push(arena.emplace_if_clause(elseif_span + arena.get(&elseif_body).span, elseif_condition, elseif_body));
+                all_span += arena.get(elseif_body).span;
+                elseif_clauses.push(arena.emplace_if_clause(elseif_span + arena.get(elseif_body).span, elseif_condition, elseif_body));
             } else {
                 // 16/12/1, we lost TWO `+1`s for current_length here ... fixed
                 // 17/5/6: When there is match Block::parse(tokens, messages, index + current_length), etc.
@@ -1451,8 +1451,8 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
                 // 17/6/21: a new physical structure update makes it much more simple
                 // 17/7/28: a new small update of parse_cx makes things even more simple
                 let else_body = self.parse_block(arena)?;
-                all_span += arena.get(&else_body).span;
-                else_clause = Some(arena.emplace_else_clause(else_span + arena.get(&else_body).span, else_body));
+                all_span += arena.get(else_body).span;
+                else_clause = Some(arena.emplace_else_clause(else_span + arena.get(else_body).span, else_body));
             }
         }
 
@@ -1464,7 +1464,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     // impl = 'impl' generic_parameters [ type_ref 'for' ] type_ref where_clauses '{' { type_def | fn_def } '}'
-    fn parse_impl_block(&mut self, arena: &'a Arena) -> Result<Index<'a, Implementation<'a>>, Unexpected> {
+    fn parse_impl_block(&mut self, arena: &Arena) -> Result<Index<Implementation>, Unexpected> {
         let start_span = self.expect_keyword(Keyword::Impl)?;
 
         let mut parameters = Vec::new();
@@ -1543,11 +1543,11 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     // loop-stmt = (LABEL ':')? 'loop' block
     // label handled in parse_labeled_stmt
     // NOTE: no else for break here because if control flow come to else it is always breaked
-    fn parse_loop_stmt(&mut self, arena: &'a Arena, label: Option<IdSpan>) -> Result<Index<'a, LoopStatement<'a>>, Unexpected> {
+    fn parse_loop_stmt(&mut self, arena: &Arena, label: Option<IdSpan>) -> Result<Index<LoopStatement>, Unexpected> {
 
         let loop_span = self.expect_keyword(Keyword::Loop)?;
         let body = self.parse_block(arena)?;
-        let span = label.as_ref().map(|n| n.span).unwrap_or(loop_span) + arena.get(&body).span;
+        let span = label.as_ref().map(|n| n.span).unwrap_or(loop_span) + arena.get(body).span;
         Ok(arena.emplace_loop_stmt(span, label, body))
     }
 
@@ -1556,7 +1556,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     // module_stmt = 'module' identifier [ str_lit ] ';'
-    fn parse_module_stmt(&mut self, arena: &'a Arena) -> Result<Index<'a, ModuleStatement>, Unexpected> {
+    fn parse_module_stmt(&mut self, arena: &Arena) -> Result<Index<ModuleStatement>, Unexpected> {
 
         let starting_span = self.expect_keyword(Keyword::Module)?;
         let module_name = self.expect_ident()?;
@@ -1573,7 +1573,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     // ret_stmt = 'return' [ expr ] ';'
-    fn parse_ret_stmt(&mut self, arena: &'a Arena) -> Result<Index<'a, ReturnStatement<'a>>, Unexpected> {
+    fn parse_ret_stmt(&mut self, arena: &Arena) -> Result<Index<ReturnStatement>, Unexpected> {
 
         let starting_span = self.expect_keyword(Keyword::Return)?;
         if let Some(semicolon_span) = self.try_expect_sep(Separator::SemiColon) {
@@ -1595,7 +1595,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
     // struct_def = 'struct' generic_name  '{' [ field_def { ',' field_def } [ ',' ] ] '}'
     // field_def = identifier ':' type_ref
-    fn parse_struct_def(&mut self, arena: &'a Arena) -> Result<Index<'a, StructDef<'a>>, Unexpected> {
+    fn parse_struct_def(&mut self, arena: &Arena) -> Result<Index<StructDef>, Unexpected> {
 
         let starting_span = self.expect_keyword(Keyword::Struct)?;
         let type_name = self.parse_generic_name(arena)?;
@@ -1633,7 +1633,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     // type_alias = 'type' generic_name [ '=' type_ref ] ';'
-    fn parse_type_def(&mut self, arena: &'a Arena) -> Result<Index<'a, TypeDef<'a>>, Unexpected> {
+    fn parse_type_def(&mut self, arena: &Arena) -> Result<Index<TypeDef>, Unexpected> {
         
         let start_span = self.expect_keyword(Keyword::Type)?;
         let name = self.parse_generic_name(arena)?;
@@ -1647,7 +1647,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
     }
 
     // use_stmt = 'use' name [ 'as' identifier ] ';'
-    fn parse_use_stmt(&mut self, arena: &'a Arena) -> Result<Index<'a, UseStatement<'a>>, Unexpected> {
+    fn parse_use_stmt(&mut self, arena: &Arena) -> Result<Index<UseStatement>, Unexpected> {
 
         let starting_span = self.expect_keyword(Keyword::Use)?;
         let path = self.parse_path(arena, PathContext::Value)?;
@@ -1665,7 +1665,7 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
     // const-decl = 'const' identifier [ ':' type-use ] [ '=' expr ] ';'
     // var-decl = 'var' identifier [ ':' type-use ] [ '=' expr ] ';'
-    fn parse_var_decl(&mut self, arena: &'a Arena) -> Result<Index<'a, VarDeclStatement<'a>>, Unexpected> {
+    fn parse_var_decl(&mut self, arena: &Arena) -> Result<Index<VarDeclStatement>, Unexpected> {
         
         let (starting_kw, starting_span) = self.expect_keywords(&[Keyword::Const, Keyword::Var])?;
         let r#const = match starting_kw { Keyword::Const => true, Keyword::Var => false, _ => unreachable!() };
@@ -1691,12 +1691,12 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx> {
 
     // while-stmt = (LABEL ':')? 'while' expr block
     // label handled in parse_labeled_stmt
-    fn parse_while_stmt(&mut self, arena: &'a Arena, label: Option<IdSpan>) -> Result<Index<'a, WhileStatement<'a>>, Unexpected> {
+    fn parse_while_stmt(&mut self, arena: &Arena, label: Option<IdSpan>) -> Result<Index<WhileStatement>, Unexpected> {
 
         let while_span = self.expect_keyword(Keyword::While)?;
         let condition = self.parse_expr_except_object_expr(arena)?;
         let body = self.parse_block(arena)?;
-        let span = label.as_ref().map(|n| n.span).unwrap_or(while_span) + arena.get(&body).span;
+        let span = label.as_ref().map(|n| n.span).unwrap_or(while_span) + arena.get(body).span;
         Ok(arena.emplace_while_stmt(span, label, condition, body))
     }
 }

@@ -15,8 +15,8 @@ pub use parser::Parser;
 pub fn parse_any<'a, T>(
     source: crate::source::SourceChars, 
     diagnostics: &mut crate::diagnostics::Diagnostics, 
-    f: impl FnOnce(&mut Parser) -> Result<crate::common::arena::Index<'a, T>, Unexpected>,
-) -> Option<crate::common::arena::Index<'a, T>> {
+    f: impl FnOnce(&mut Parser) -> Result<crate::common::arena::Index<T>, Unexpected>,
+) -> Option<crate::common::arena::Index<T>> {
     let mut parser = Parser::new(crate::lexical::Parser::new(source, diagnostics));
     let result = f(&mut parser).ok();
     parser.finish();
@@ -27,7 +27,7 @@ pub fn parse<'a>(
     source: crate::source::SourceChars,
     diagnostics: &mut crate::diagnostics::Diagnostics,
     arena: &'a crate::common::arena::Arena,
-) -> Option<crate::common::arena::Index<'a, ast::Module<'a>>> {
+) -> Option<crate::common::arena::Index<ast::Module>> {
     parse_any(source, diagnostics, |cx| cx.parse_module(arena))
 }
 

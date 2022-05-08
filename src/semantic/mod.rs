@@ -6,6 +6,6 @@ use crate::common::arena::{Arena, Index};
 use crate::diagnostics::Diagnostics;
 use crate::syntax::ast;
 
-pub fn resolve<'a>(_modules: Vec<Index<'a, ast::Module<'a>>>, _diagnostics: &mut Diagnostics, arena: &'a Arena) -> Index<'a, mast::Program> {
+pub fn resolve(_modules: Vec<Index<ast::Module>>, _diagnostics: &mut Diagnostics, arena: &Arena) -> Index<mast::Program> {
     arena.emplace(|n| { *n = mast::Program; })
 }

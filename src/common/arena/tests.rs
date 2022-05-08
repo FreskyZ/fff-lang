@@ -5,8 +5,8 @@ use super::*;
 fn basic() {
     struct Node1 { span: u32, isid: u32 }
     struct Node2 { span: u32, isid: u32, span2: u128, keyword: u8, separator: u8 }
-    struct Node3<'a> { span: u32, node1: Index<'a, Node1>, node4: Option<Index<'a, Node4<'a>>> }
-    struct Node4<'a> { span: u32, node3s: Slice<'a, Index<'a, Node3<'a>>> }
+    struct Node3 { span: u32, node1: Index<Node1>, node4: Option<Index<Node4>> }
+    struct Node4 { span: u32, node3s: Slice<Index<Node3>> }
 
     let arena = Arena::new();
     let index1 = arena.emplace(|n: &mut Node1| { n.span = 1; n.isid = 2; });
@@ -23,24 +23,24 @@ fn basic() {
     
     // println!("{}", arena.status(true));
 
-    let node2 = arena.get(&index2);
+    let node2 = arena.get(index2);
     assert_eq!((node2.span, node2.isid, node2.span2, node2.keyword, node2.separator), (3, 4, 5, 6, 7));
-    let node7 = arena.get(&index7);
+    let node7 = arena.get(index7);
     assert_eq!(node7.span, 13);
     assert_eq!(node7.node3s.len(), 3);
-    let node7_node3s = arena.get_iter(&node7.node3s).map(|i| arena.get(i)).collect::<Vec<_>>();
+    let node7_node3s = arena.get_iter(node7.node3s).map(|i| arena.get(*i)).collect::<Vec<_>>();
     assert_eq!(node7_node3s.len(), 3);
     assert_eq!(node7_node3s[0].span, 10);
     assert!(node7_node3s[0].node4.is_none());
-    let node1 = arena.get(&node7_node3s[0].node1);
+    let node1 = arena.get(node7_node3s[0].node1);
     assert_eq!((node1.span, node1.isid), (1, 2));
     assert_eq!(node7_node3s[1].span, 11);
     assert!(node7_node3s[1].node4.is_none());
-    let node3 = arena.get(&node7_node3s[1].node1);
+    let node3 = arena.get(node7_node3s[1].node1);
     assert_eq!((node3.span, node3.isid), (8, 9));
     assert_eq!(node7_node3s[2].span, 12);
     assert!(node7_node3s[2].node4.is_none());
-    let node8 = arena.get(&node7_node3s[2].node1);
+    let node8 = arena.get(node7_node3s[2].node1);
     assert_eq!((node8.span, node8.isid), (14, 15));
 }
 
@@ -150,46 +150,8 @@ fn large_array() {
 
     // println!("{}", arena.status(true));
     
-    let vec = arena.get_iter(&slice).map(|i| arena.get(i)).collect::<Vec<_>>();
+    let vec = arena.get_iter(slice).map(|i| arena.get(*i)).collect::<Vec<_>>();
     for i in 0..2400 {
         assert_eq!(i as i32, *vec[i]);
     }
-}
-
-#[test]
-fn share() {
-    let arena = Arena::new();
-
-    let index = arena.emplace_shared(|n| { *n = 42; });
-    assert_eq!(*arena.borrow(index), 42);
-    *arena.borrow_mut(index) = 43;
-    assert_eq!(*arena.borrow(index), 43);
-
-    let ref1 = arena.borrow(index);
-    let ref2 = arena.borrow(index);
-    assert_eq!(*ref2, *ref1);
-}
-
-#[test]
-#[should_panic(expected = "already borrowed")]
-fn cannot_share() {
-    let arena = Arena::new();
-    
-    let index = arena.emplace_shared(|n| { *n = 42; });
-    let ref1 = arena.borrow(index);
-    let mut mut1 = arena.borrow_mut(index);
-    assert_eq!(*ref1, 42);
-    *mut1 = 43;
-}
-
-#[test]
-#[should_panic(expected = "already mutably borrowed")]
-fn cannot_share2() {
-    let arena = Arena::new();
-    
-    let index = arena.emplace_shared(|n| { *n = 42; });
-    let mut mut1 = arena.borrow_mut(index);
-    let ref1 = arena.borrow(index);
-    *mut1 = 43;
-    assert_eq!(*ref1, 43);
 }

@@ -10,12 +10,11 @@
 // this is currently the reason this project needs nightly,
 // there is std::alloc::alloc method, but they said they will deprecate when Allocator trait stablized
 use std::alloc::{Global, Allocator, Layout};
-use std::cell::{Cell, RefCell};
+use std::cell::{RefCell};
 use std::fmt;
 use std::marker::PhantomData;
 use std::mem::{size_of, align_of};
 use std::num::{NonZeroU32, NonZeroUsize};
-use std::ops::{Deref, DerefMut};
 use std::ptr::NonNull;
 
 #[cfg(test)]
@@ -26,12 +25,14 @@ mod tests;
 //    because there is many different types inside an ast
 // 2. reference based,
 //    because index saves memory than 8 byte reference
-// 3. derive `Clone`/`Copy` for `Index` regardless of underlying `T`, and pass `Index` as value in `get{_mut}` methods
+// 3. (no, this itself is abandoned, too)
+//    derive `Clone`/`Copy` for `Index` regardless of underlying `T`, and pass `Index` as value in `get{_mut}` methods
 //    it violates reference alias rule that you can claim 2 mutable reference of same object,
 //    which may make hard-to-debug runtime errors and incorrect optimizations (rustc thinks 2 mutable reference do not alias),
 //    so currently `get{_iter}{_mut}` methods binds the returned reference to index/slice, which can restrict returned reference
 //    to index/slice's lifetime, which is very correct for index/slice's "owned handle" semantic
-// 4. use `ops::Index` for `Arena::get{_iter}{_mut}`
+// 4. (no, this itself is abandoned, too)
+//    use `ops::Index` for `Arena::get{_iter}{_mut}`
 //    the returned reference binds to self not the index so cannot use
 // 5. bit operation the tag of a tagged union (enum, e.g. Expr) into the index, which is normally small and not using top bits
 //    1. similar to index/slice, the tagged index would want to be used like `&TagIndex => &Enum`,
@@ -67,85 +68,74 @@ mod tests;
 // 8. fixed size chunk
 //    no, fixed size chunk is easy to implement and hard to make mistake, but `rustc_arena`'s
 //    increasing chunk size design seems very great and interesting, so I change, too, with a very long partially auto generated test
+// 9. (placeholder to make the following point A)
+// a. tag everything with arena's lifetime,
+//    1. start from `struct Index<'a, T>` and `struct Slice<'a, T>`
+//    - construct by `Arena::emplace(&'a self, init: I) -> Index<'a, T>` and `Arena::build_slice(&'a self, iter: I) -> Slice<'a, T>`
+//    - add a lot of `'a` to ast data structures: `struct ArrayExpr<'a> { items: Slice<'a, Expr<'a>>, .. }`
+//    - add a lot of `'a` to a lot of ast data structure implementations:
+//      - impl<'a> Eq for Index<'a, ArrayExpr<'a>>
+//      - fn emplace_array_expr<'a>(...) -> Index<'a, ArrayExpr<'a>>
+//      - fn visit_case<'a, N: Visit + asti::Eq + 'a, ...>(...)
+//    - the abandoned #3 which required similar a lot of `'b`s, many `'b` even need `'b: 'a`
+//      - Arena::get{_mut}(&'a self, &'b {mut} Index<'a, T>) -> &'b {mut} T
+//      - fn visit_array_expr<'a, 'b: 'a>(&mut self, node: &'b Index<'a, ArrayExpr<'a>>, arena: &'a Arena) -> Self::Result
+//      - fn forward<'a, 'b: 'a, N: Visit>(&mut self, name: &'static str, value: &'b N, arena: &'a Arena) -> Result<&mut Self, fmt::Error>
+//    2. you can feel the frequency by regarding Node.full_name as `'a` usage, in scripts/ast.py, which should be nearly once per 10 source code line, 
+//       also very complex lifetime issue**s** in the commit before the last commit in PR#25 (this block of text is mainly written in PR#25)
+//    3. these lifetime annotations does not help human readability because a reader with simple basic knowledge knows that these objects simple have
+//       same lifetime with arena and when the arena dies they dies, they even reduce human readability by these very complex lifetime syntax
+//    4. these lifetime annotations does not help machine readability, borrowck does really much work do check for lifetime error with the help of the
+//       phantom datas, but does not acctually find even one lifetime error, because in real world in this compiler, (see the new scaffolding in
+//       crate::interface module), there is exactly only one arena with the run_compiler lifetime, and the objects, packed in ast trees and mast trees,
+//       simply eaten and dies when creating cfgs, leaving no possiblity to let any handle to keep alive afterwards (I even will not import arena in cfg
+//       related files and modules), BUT it keeps throwing very large lifetime errors at me, not only in the ast data structure implementations, the 
+//       parser unit test infrastructure, and the separated arena parameter in concrete parse methods, these diagnostics are long (longer than these SAFETY
+//       anouncements in this file), refer to a lot of source code locations, is not clear (cannot infer for lifetime '_, '_ and '_ and '_) and incorrect
+//       (says before, the arena has really long lifetime in real world and even in test infrastructure, it is even Pin because the actual data in chunks
+//       does not move with the Arena object)
+//    5. other not important things like no Clone and Copy makes Index always use as &Index in function parameters, although the u32 layout correctly
+//       save memory in ast data structure, they still use like a pointer with the fact that they themselves are index to pointer
+//   in conclusion, index will change to not act as a reference and will implement Copy and will always be used as value everywhere, 
+//   and whether make Arena an index to a static array and use as value TBD, whether choose Index or IndexRef as final index implementation TBD
 
 /// A handle to an object in arena
-///
-/// # No Derive
-///
-/// - this is not `derive(Copy, Clone)`
-///   because they allow 2 mutable reference of same object to exist, which violates reference alias rule
-/// - this is not `derive(Debug, Display, Hash, ...)`
-///   because the underlying numeric value is meaningless, data structures involving indexes should always use this with arena
-pub struct Index<'a, T> {
+pub struct Index<T> {
     v: NonZeroU32,
-    // this should not outlive arena
-    p1: PhantomData<&'a Arena>,
-    // this is an owned handle of T
-    p2: PhantomData<T>,
+    phantom: PhantomData<T>,
 }
 
-impl<'a, T> Index<'a, T> {
-    // as raw underlying representation, use for tracing related functions
+impl<T> Index<T> {
+    // as raw underlying representation
+    // currently only use for infinite recursion checker
     pub fn as_raw(&self) -> u32 {
         self.v.get()
     }
 }
 
-/// A shared handle to an object in arena
-///
-/// This is logically a Rc<RefCell<T>>, it is Copy to make usage convenient, and
-/// `arena.get_ref{_mut}` methods returns `Ref{Mut}` and check alias rule at runtime
-///
-/// This is different from [`Index`] and needed to be allocated with [`Arena::emplace_shared`]
-//
-// but there is no actual ref count needed in arena (all objects dropped at once), 
-// so the clone implementation is actually naive regardless of whether T: Clone and T: Copy,
-// the internal Cell of the RefCell (count of ref object or state of existence of ref mut object)
-// is before the object in real memory (in chunk), occupying one u32 because it's min align,
-// the object is still aligned to it's own align, prevent additional padding for this actually u8 cell
-pub struct IndexRef<'a, T> {
-    v: NonZeroU32,
-    // this should not outlive arena
-    p1: PhantomData<&'a Arena>,
-    // this is a shared interior mutable handle of T
-    p2: PhantomData<std::rc::Rc<RefCell<T>>>,
-}
-
-impl<'a, T> IndexRef<'a, T> {
-    // as raw underlying representation, use for tracing related functions
-    pub fn as_raw(&self) -> u32 {
-        self.v.get()
-    }
-}
-
-// need manual implementation or else derive will not impl if T: !Clone
-impl<'a, T> Clone for IndexRef<'a, T> {
+// need manual impl or else derive will not impl if T: !Clone
+impl<T> Clone for Index<T> {
     fn clone(&self) -> Self {
-        Self{ v: self.v, p1: PhantomData, p2: PhantomData }
+        Self{ v: self.v, phantom: PhantomData }
     }
 }
-// need manual implementation or else derive will not impl if T: !Clone
-impl<'a, T> Copy for IndexRef<'a, T> {
-}
+// need manual impl or else derive will not impl if T: !Copy
+impl<T> Copy for Index<T> {}
 
 /// A handle to a fixed length sequence of objects in arena
 /// 
 /// According to actual experience in syntax parser,
 /// normal nodes should use `Slice<Index<T>>` while enum nodes can use e.g. `Slice<Expr>`
-/// 
-/// see [`Index`] about no derives
-pub struct Slice<'a, T> {
+pub struct Slice<T> {
     // use len + head instead of begin + end to allow fast non parameteriszed `slice.len()`
     len: u32,
     // index value points to first element
     data: NonZeroU32,
-    // this should not outlive arena
-    p1: PhantomData<&'a Arena>,
     // slice is an owned handle of sequence of T
-    p2: PhantomData<[T]>,
+    phantom: PhantomData<[T]>,
 }
 
-impl<'a, T> Slice<'a, T> {
+impl<T> Slice<T> {
 
     pub fn len(&self) -> usize {
         self.len as usize
@@ -155,6 +145,15 @@ impl<'a, T> Slice<'a, T> {
         self.len == 0
     }
 }
+
+// need manual impl or else derive will not impl if T: !Clone
+impl<T> Clone for Slice<T> {
+    fn clone(&self) -> Self {
+        Self{ len: self.len, data: self.data, phantom: PhantomData }
+    }
+}
+// need manual impl or else derive will not impl if T: !Copy
+impl<T> Copy for Slice<T> {}
 
 const fn get_chunk_size(chunk_index: usize) -> usize {
     const SIZES: [usize; 11] = [
@@ -276,6 +275,13 @@ impl Chunk {
             self.next.as_ptr().offset_from(self.head.as_ptr()) as usize
         };
         let padding = if offset & align_mask == 0 { 0 } else { align - (offset & align_mask) };
+        // // keep the borrow flag padding if I want to keep the Rc<RefCell<T>> like design
+        // // but the current implementation is simply "don't store mutable reference" like "remember to init all fields when emplace"
+        // borrow flag padding =
+        //    if min align { pad one more u32 }
+        //    else if exist align padding { use the padding because one u32 must fit in }
+        //    else { one align or else the result will not be aligned }
+        // let padding = if align == 4 { padding + 4 } else if padding > 0 { padding } else { align };
 
         if offset + padding + layout.size() <= chunk_size {
             // SAFETY: previous comment explain that result is still inside self.head and not null
@@ -295,50 +301,9 @@ impl Chunk {
             None
         }
     }
-
-    // allocate one additional u32 before the object, to work as std::cell::BorrowFlag
-    // NOTE that this cannot be handled by Self::allocate with Layout::new<(u32, T)>(), because it wastes memory if T is aligned larger than u32
-    fn allocate_cell(&mut self, chunk_index: usize, layout: Layout) -> Option<(NonNull<u8>, NonZeroU32)> {
-        // validate size
-        let chunk_size = get_chunk_size(chunk_index);
-        // this does not count align padding and borrow flag, but this is actually a fast path for not enough space so ok
-        assert!(layout.size() <= chunk_size, "too large object");
-        // min align 4
-        let align = if layout.align() < 4 { 4 } else { layout.align() };
-        let align_mask = align - 1;
-
-        // SAFETY: see before
-        let offset = unsafe {
-            self.next.as_ptr().offset_from(self.head.as_ptr()) as usize
-        };
-        // align padding = if already aligned { 0 } else { align (e.g. 0b10000) - offset last bits (e.g. 0b00100) }
-        let padding = if offset & align_mask == 0 { 0 } else { align - (offset & align_mask) };
-        // borrow flag padding =
-        //    if min align { pad one more u32 }
-        //    else if exist align padding { use the padding because one u32 must fit in }
-        //    else { one align or else the result will not be aligned }
-        let padding = if align == 4 { padding + 4 } else if padding > 0 { padding } else { align };
-
-        if offset + padding + layout.size() <= chunk_size {
-            // SAFETY: see before
-            let real = unsafe { NonNull::new_unchecked(self.next.as_ptr().add(padding)) };
-            // SAFETY: see before
-            self.next = self.next.map_addr(|a| unsafe {
-                NonZeroUsize::new_unchecked(a.get() + padding + layout.size())
-            });
-            // byte index start from 0, from beginning of first
-            // chunk regarding all chunks as one block of continuous memory,
-            // SAFETY: the first u32 in first chunk is not used, making this non null
-            let index = unsafe {
-                NonZeroU32::new_unchecked((get_chunk_base_index(chunk_index) + offset + padding) as u32)
-            };
-            Some((real, index))
-        } else {
-            None
-        }
-    }
 }
 
+// TODO: try make this `static ARENAS: [ArenaData; 1];` and `struct Arena { i: usize }` and put arena into syntax::Parser
 pub struct Arena {
     // Vec: 
     //   complex operation like puting chunk structure into
@@ -396,14 +361,7 @@ impl Arena {
     /// 
     /// Attention that this is actually unsafe because the passed reference
     /// in `init` is not initialized, `init` must set all fields with valid init value and do not read any field
-    /// 
-    /// Note that returned index is restricted to arena lifetime
-    /// 
-    /// ```compile_fail
-    /// # use fflib::common::arena::Arena;
-    /// let index = { let arena = Arena::new(); arena.emplace(|_: &mut i32| {}) }; // borrowed value does not live long enough
-    /// ```
-    pub fn emplace<'a, T: 'a, F: FnOnce(&'a mut T)>(&'a self, init: F) -> Index<'a, T> where T: Sized {
+    pub fn emplace<T, F: FnOnce(&mut T)>(&self, init: F) -> Index<T> {
         let (real, index) = self.allocate(Layout::new::<T>());
         // SAFETY:
         // // from doc
@@ -425,52 +383,11 @@ impl Arena {
         unsafe {
             init(real.cast::<T>().as_mut());
         }
-        Index{ v: index, p1: PhantomData, p2: PhantomData }
-    }
-
-    fn allocate_cell(&self, layout: Layout) -> (NonNull<u8>, NonZeroU32) {
-        let mut chunks = self.chunks.borrow_mut();
-        let chunk_index = chunks.len() - 1;
-        // does not count align padding and actually a fast path
-        assert!(layout.size() + 4 <= get_chunk_size(chunk_index + 1), "too large object");
-
-        // SAFETY: self.chunks is not empty
-        let last_chunk = unsafe { chunks.last_mut().unwrap_unchecked() };
-        if let Some(addr) = last_chunk.allocate(chunk_index, layout) {
-            return addr;
-        }
-
-        chunks.push(Chunk::new(get_chunk_size(chunk_index + 1)));
-        // SAFETY: self.chunks is not empty
-        let last_chunk = unsafe { chunks.last_mut().unwrap_unchecked() };
-        // may fail because of align padding
-        last_chunk.allocate_cell(chunk_index + 1, layout).expect("too large object")
-    }
-
-    /// Allocate a shared object in place
-    /// 
-    /// Attention that this is actually unsafe because the passed reference
-    /// in `init` is not initialized, `init` must set all fields with valid init value and do not read any field
-    /// 
-    /// Note that returned index is restricted to arena lifetime
-    /// 
-    /// ```compile_fail
-    /// # use fflib::common::arena::Arena;
-    /// let index = { let arena = Arena::new(); arena.emplace_shared(|_: &mut i32| {}) }; // borrowed value does not live long enough
-    /// ```
-    pub fn emplace_shared<'a, T: 'a, F: FnOnce(&'a mut T)>(&'a self, init: F) -> IndexRef<'a, T> where T: Sized {
-        // private function is called _cell because the difference between non _cell version is the borrow flag
-        // public function is called _shared because the difference between index and indexref is Copy
-        let (real, index) = self.allocate_cell(Layout::new::<T>());
-        // SAFETY: see before
-        unsafe {
-            init(real.cast::<T>().as_mut());
-        }
-        IndexRef{ v: index, p1: PhantomData, p2: PhantomData }
+        Index{ v: index, phantom: PhantomData }
     }
 
     // item should be index<T> for normal node and direct enum value for enum, see Some Approaches.8
-    pub fn build_slice<'a, T: 'a, I: IntoIterator<Item = T>>(&'a self, into_iter: I) -> Slice<'a, T> {
+    pub fn build_slice<T, I: IntoIterator<Item = T>>(&self, into_iter: I) -> Slice<T> {
 
         let mut len = 0;
         let mut previous = align_of::<T>() as u32;
@@ -504,7 +421,7 @@ impl Arena {
             len += 1;
             previous = index.v.get();
         }
-        Slice{ len, data: head, p1: PhantomData, p2: PhantomData }
+        Slice{ len, data: head, phantom: PhantomData }
     }
 }
 
@@ -530,148 +447,55 @@ impl Arena {
         // 1. index & MASK_OFFSET is less than CHUNK_SIZE and make self.head and self.head + offset in side chunk.head object
         // 2. index & MASK_OFFSET is less than CHUNK_SIZE and less than isize for 16/32/64bit platforms
         // 3. chunk.head object does not overflow
-        let ptr = unsafe { chunk.head.as_ptr().add(offset) };
-
-        debug_assert!(ptr < chunk.next.as_ptr(), "invalid offset chunk#{} offset {} status {}", chunk_index, offset, self.status(false));
-        // SAFETY: ptr derives from chunk.head so is non null
-        unsafe { NonNull::new_unchecked(ptr) }
-    }
-
-    /// Returns a reference to an object that the index holds
-    ///
-    /// Note that returned reference lifetime is bound to index's lifetime:
-    /// 
-    /// ```compile_fail
-    /// # use fflib::common::arena::Arena;
-    /// let arena = Arena::new();
-    /// let mut object = None;
-    /// {
-    ///     let index = arena.emplace(|n: &mut i32| { *n = 1; });
-    ///     object = Some(arena.get(&index)); // borrowed value does not live long enough
-    /// }
-    /// assert_eq!(object.unwrap(), &1);
-    /// ```
-    pub fn get<'a, 'b: 'a, T>(&'a self, index: &'b Index<'a, T>) -> &'b T {
-        let ptr = self.map_index(index.v.get());
-        // SAFETY: the safety requirements are really long, but I have written really longer safety explanations, according to them this is safe
-        unsafe { ptr.cast::<T>().as_ref() }
-    }
-
-    /// Returns a mutable reference to an object that the index holds,
-    /// caller need to owned the index or own a mutable reference to the index,
-    /// see [`Arena::get`] about lifetime binding
-    pub fn get_mut<'a, 'b: 'a, T>(&'a self, index: &'b mut Index<'a, T>) -> &'b mut T {
-        let ptr = self.map_index(index.v.get());
-        // SAFETY: same as before
-        unsafe { ptr.cast::<T>().as_mut() }
-    }
-
-    /// Returns a iterable over reference to objects that this slice holds,
-    /// see [`Arena::get`] about lifetime binding
-    pub fn get_iter<'a, 'b: 'a, T>(&'a self, slice: &'b Slice<'a, T>) -> impl Iterator<Item = &'b T> {
-        SliceIter::<T, true>{ arena: self, current: slice.data.get(), remaining: slice.len, phantom: PhantomData }
-    }
-
-    /// Returns a iterable over mutable reference to objects that this slice holds,
-    /// caller need to owned the slice or own a mutable reference to the slice,
-    /// see [`Arena::get`] about lifetime binding
-    pub fn get_iter_mut<'a, 'b: 'a, T>(&'a self, slice: &'b mut Slice<'a, T>) -> impl Iterator<Item = &'b mut T> {
-        SliceIter::<T, false>{ arena: self, current: slice.data.get(), remaining: slice.len, phantom: PhantomData }
-    }
-    
-    // map index to borrow flag address + real address
-    fn map_index_ref(&self, index: u32) -> (&Cell<u32>, NonNull<u8>) {
-        let chunks = self.chunks.borrow();
-        let (chunk_index, offset) = get_chunk_index_and_offset(index);
-        let chunk = chunks.get(chunk_index).expect(&format!("invalid chunk index {chunk_index}"));
-
-        // SAFETY: see before
         let data_ptr = unsafe { chunk.head.as_ptr().add(offset) };
-        // SAFETY: there must be enough space exactly before data ptr to fit in an u32 dedicated for borrow flag
-        let flag_ptr = unsafe { chunk.head.as_ptr().add(offset - 4).cast::<u32>() };
+        // // SAFETY: there must be enough space exactly before data ptr to fit in an u32 dedicated for borrow flag
+        // let flag_ptr = unsafe { chunk.head.as_ptr().add(offset - 4).cast::<u32>() };
+        // // SAFETY: will not be null
+        // let flag = unsafe { Cell::from_mut(flag_ptr.as_mut().unwrap_unchecked()) };
 
         debug_assert!(data_ptr < chunk.next.as_ptr(), "invalid offset chunk#{} offset {}", chunk_index, offset);
 
-        // SAFETY: ptr derives from chunk.head and is non null
-        unsafe { (Cell::from_mut(flag_ptr.as_mut().unwrap_unchecked()), NonNull::new_unchecked(data_ptr)) }
+        // SAFETY: ptr derives from chunk.head so is non null
+        unsafe { NonNull::new_unchecked(data_ptr) }
     }
 
-    /// Returns a wrapped refeerence to an object that the index holds, panic if already mutably borrowed
-    /// 
-    /// Note that this does not require a reference of the handle because it is Copy
-    pub fn borrow<'a, 'b: 'a, T>(&'a self, index: IndexRef<'a, T>) -> ObjectRef<'a, T, true> {
-        let (flag, data) = self.map_index_ref(index.v.get());
-
-        let flag_value = flag.get();
-        assert!(flag_value != !0, "already mutably borrowed");
-        flag.set(flag_value + 1);
-
-        ObjectRef{ flag, value: data.cast::<T>(), phantom: PhantomData }
-    }
-
-    /// Returns a wrapped refeerence to an object that the index holds, panic if already mutably borrowed
-    /// 
-    /// Note that this does not require a mutable reference of the handle because it is Copy
-    pub fn borrow_mut<'a, 'b: 'a, T>(&'a self, index: IndexRef<'a, T>) -> ObjectRef<'a, T, false> {
-        let (flag, data) = self.map_index_ref(index.v.get());
-
-        assert!(flag.get() == 0, "already borrowed");
-        flag.set(!0);
-
-        ObjectRef{ flag, value: data.cast::<T>(), phantom: PhantomData }
-    }
-}
-
-// C: const, true for immutable, false for mutable
-pub struct ObjectRef<'a, T, const C: bool> {
-    flag: &'a Cell<u32>,
-    value: NonNull<T>,
-    phantom: PhantomData<&'a T>,
-}
-
-impl<'a, T, const C: bool> Deref for ObjectRef<'a, T, C> {
-    type Target = T;
-
-    fn deref(&self) -> &T {
+    /// Returns a reference to an object that the index holds
+    pub fn get<T>(&self, index: Index<T>) -> &T {
+        let ptr = self.map_index(index.v.get());
         // SAFETY: see before
-        unsafe{ self.value.as_ref() }
+        unsafe { ptr.cast::<T>().as_ref() }
     }
-}
 
-impl<'a, T> DerefMut for ObjectRef<'a, T, false> {
-
-    fn deref_mut(&mut self) -> &mut T {
+    /// Returns a mutable reference to an object that the index holds
+    pub fn get_mut<T>(&self, index: Index<T>) -> &mut T {
+        let ptr = self.map_index(index.v.get());
         // SAFETY: see before
-        unsafe { self.value.as_mut() }
+        unsafe { ptr.cast::<T>().as_mut() }
     }
-}
 
-impl<'a, T, const C: bool> Drop for ObjectRef<'a, T, C> {
+    /// Returns a iterable over reference to objects that this slice holds
+    pub fn get_iter<'a, T: 'a>(&'a self, slice: Slice<T>) -> impl Iterator<Item = &T> {
+        SliceIter::<T, true>{ arena: self, current: slice.data.get(), remaining: slice.len, phantom: PhantomData }
+    }
 
-    fn drop(&mut self) {
-        if C {
-            let flag_value = self.flag.get();
-            debug_assert!(flag_value > 0, "invalid state");
-            self.flag.set(flag_value - 1);
-        } else {
-            debug_assert!(self.flag.get() == !0, "invalid state");
-            self.flag.set(0);
-        }
+    /// Returns a iterable over mutable reference to objects that this slice holds
+    pub fn get_iter_mut<'a, T: 'a>(&'a self, slice: Slice<T>) -> impl Iterator<Item = &mut T> {
+        SliceIter::<T, false>{ arena: self, current: slice.data.get(), remaining: slice.len, phantom: PhantomData }
     }
 }
 
 // amazingly this works, C: const, true for immutable, false for mutable
-struct SliceIter<'a, 'b, T, const C: bool> {
+struct SliceIter<'a, T, const C: bool> {
     arena: &'a Arena,
     current: u32,   // index of next return value
     remaining: u32, // remaining item count
-    phantom: PhantomData<&'b T>,
+    phantom: PhantomData<T>,
 }
 
-impl<'a, 'b, T, const C: bool> SliceIter<'a, 'b, T, C> {
+impl<'a, T: 'a, const C: bool> SliceIter<'a, T, C> {
 
     // they only differ in the last ptr::as_ref or ptr::as_mut
-    fn next_mut(&mut self) -> Option<&'b mut T> {
+    fn next_mut(&mut self) -> Option<&'a mut T> {
         if self.remaining == 0 {
             None
         } else {
@@ -704,18 +528,18 @@ impl<'a, 'b, T, const C: bool> SliceIter<'a, 'b, T, C> {
     }
 }
 
-impl<'a, 'b, T> Iterator for SliceIter<'a, 'b, T, true> where 'b: 'a {
-    type Item = &'b T;
+impl<'a, T: 'a> Iterator for SliceIter<'a, T, true> {
+    type Item = &'a T;
 
-    fn next(&mut self) -> Option<&'b T> {
+    fn next(&mut self) -> Option<&'a T> {
         self.next_mut().map(|v| &*v)
     }
 }
 
-impl<'a, 'b, T> Iterator for SliceIter<'a, 'b, T, false> where 'b: 'a {
-    type Item = &'b mut T;
+impl<'a, T: 'a> Iterator for SliceIter<'a, T, false> {
+    type Item = &'a mut T;
 
-    fn next(&mut self) -> Option<&'b mut T> {
+    fn next(&mut self) -> Option<&'a mut T> {
         self.next_mut()
     }
 }

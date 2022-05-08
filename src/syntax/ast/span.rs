@@ -8,12 +8,12 @@
 use super::*;
 
 pub trait WithSpan {
-    fn span(&self, arena: &Arena) -> Span;
+    fn span(self, arena: &Arena) -> Span;
 }
 
 // AUTOGEN
-impl<'a> WithSpan for Expr<'a> {
-    fn span(&self, arena: &Arena) -> Span {
+impl WithSpan for Expr {
+    fn span(self, arena: &Arena) -> Span {
         match self {
             Expr::Lit(n) => arena.get(n).span,
             Expr::Path(n) => arena.get(n).span,
@@ -35,8 +35,8 @@ impl<'a> WithSpan for Expr<'a> {
     }
 }
 
-impl<'a> WithSpan for Item<'a> {
-    fn span(&self, arena: &Arena) -> Span {
+impl WithSpan for Item {
+    fn span(self, arena: &Arena) -> Span {
         match self {
             Item::Struct(n) => arena.get(n).span,
             Item::Enum(n) => arena.get(n).span,
@@ -58,8 +58,8 @@ impl<'a> WithSpan for Item<'a> {
     }
 }
 
-impl<'a> WithSpan for PathSegment<'a> {
-    fn span(&self, arena: &Arena) -> Span {
+impl WithSpan for PathSegment {
+    fn span(self, arena: &Arena) -> Span {
         match self {
             PathSegment::Global => Span::new(0, 0),
             PathSegment::Simple(n) => arena.get(n).span,
@@ -69,8 +69,8 @@ impl<'a> WithSpan for PathSegment<'a> {
     }
 }
 
-impl<'a> WithSpan for Statement<'a> {
-    fn span(&self, arena: &Arena) -> Span {
+impl WithSpan for Statement {
+    fn span(self, arena: &Arena) -> Span {
         match self {
             Statement::Struct(n) => arena.get(n).span,
             Statement::Enum(n) => arena.get(n).span,
@@ -94,8 +94,8 @@ impl<'a> WithSpan for Statement<'a> {
     }
 }
 
-impl<'a> WithSpan for TypeRef<'a> {
-    fn span(&self, arena: &Arena) -> Span {
+impl WithSpan for TypeRef {
+    fn span(self, arena: &Arena) -> Span {
         match self {
             TypeRef::Array(n) => arena.get(n).span,
             TypeRef::Fn(n) => arena.get(n).span,

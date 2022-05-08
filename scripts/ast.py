@@ -28,7 +28,6 @@ VISIT_FILE = 'src/syntax/ast/visit.rs'
 PROFILE_FILE = 'src/syntax/ast/profile.rs'
 
 TERMINAL_TYPES = ['Span', 'IsId', 'IdSpan', 'Keyword', 'Separator', 'Numeric', 'LitValue', 'FileId', 'bool', 'i32']
-LIFETIME = "<'a>"
 
 class Field(object):
     def __init__(self, line, name, type_base, special, display):
@@ -50,21 +49,21 @@ class Field(object):
         elif self.refnode is None and self.special == 'opt':
             return f'Option<{self.type_base}>'
         elif self.special is None and self.refnode.is_struct:
-            return f"Index<'a, {self.refnode.full_name}>"
+            return f"Index<{self.refnode.full_name}>"
         elif self.special is None:
             return f"{self.refnode.full_name}"
         elif self.special == 'opt' and self.refnode.is_struct:
-            return f"Option<Index<'a, {self.refnode.full_name}>>"
+            return f"Option<Index<{self.refnode.full_name}>>"
         elif self.special == 'opt':
             return f"Option<{self.refnode.full_name}>"
         elif self.special == 'vec' and self.refnode.is_struct and new:
-            return f"Vec<Index<'a, {self.refnode.full_name}>>"
+            return f"Vec<Index<{self.refnode.full_name}>>"
         elif self.special == 'vec' and self.refnode.is_struct:
-            return f"Slice<'a, Index<'a, {self.refnode.full_name}>>"
+            return f"Slice<Index<{self.refnode.full_name}>>"
         elif self.special == 'vec' and new:
             return f"Vec<{self.refnode.full_name}>"
         elif self.special == 'vec':
-            return f"Slice<'a, {self.refnode.full_name}>"
+            return f"Slice<{self.refnode.full_name}>"
         else:
             raise ValueError(f'unknown state line {self.line} type_base {self.type_base} special {self.special}')
 
@@ -81,17 +80,17 @@ class Node(object):
     @property
     def is_enum(self):
         return self.node_type == 'enum'
-    # return "<'a>" if need lifetime (any field need lifetime)
     @property
-    def lifetime(self):
-        return "<'a>" if any(f.refnode is not None for f in self.fields) else ''
+    def has_non_terminal(self):
+        return any(f.refnode is not None for f in self.fields)
+    # this was self.name + self.lifetime, but this is used a lot so keep it
     @property
     def full_name(self):
-        return self.name + self.lifetime
+        return self.name
     # struct as parameter is normally Index, enum is simple full name
     @property
     def parameter_name(self):
-        return f'Index<\'a, {self.full_name}>' if self.is_struct else self.full_name
+        return f'Index<{self.full_name}>' if self.is_struct else self.full_name
     @property
     def visit_name(self):
         return 'visit_' + '_'.join(self.display.split('-'))
@@ -197,6 +196,8 @@ def generate_entry(b, nodes):
     b += '// AUTOGEN'
     for node in nodes:
         b += '\n'
+        if node.is_enum:
+            b += '#[derive(Clone, Copy)]\n'
         b += f'pub {node.node_type} {node.full_name} {{\n'
         if node.is_struct:
             for field in node.fields:
@@ -214,8 +215,8 @@ def generate_span(b, nodes):
     b += '// AUTOGEN'
     for node in (n for n in nodes if n.is_enum):
         b += '\n'
-        b += f'impl{node.lifetime} WithSpan for {node.full_name} {{\n'
-        b += '    fn span(&self, arena: &Arena) -> Span {\n'
+        b += f'impl WithSpan for {node.full_name} {{\n'
+        b += '    fn span(self, arena: &Arena) -> Span {\n'
         b += '        match self {\n'
         for variant in node.fields:
             if variant.type_base is None:
@@ -234,7 +235,7 @@ def generate_new(b, nodes):
         for variant in node.fields:
             if variant.refnode is not None:
                 b += '\n'
-                b += f'impl<\'a> From<{variant.refnode.parameter_name}> for {node.full_name} {{\n'
+                b += f'impl From<{variant.refnode.parameter_name}> for {node.full_name} {{\n'
                 b += f'    fn from(index: {variant.refnode.parameter_name}) -> Self {{\n'
                 b += f'        {node.name}::{variant.name}(index)\n'
                 b += '    }\n'
@@ -243,11 +244,11 @@ def generate_new(b, nodes):
     b += 'pub trait EmplaceConcrete: EmplaceConcreteHelper {\n'
     for node in (n for n in nodes if n.is_struct):
         b += '\n'
-        b += f'    fn {node.emplace_name}<\'a>(\n'
-        b += '        &\'a self,\n'
+        b += f'    fn {node.emplace_name}(\n'
+        b += '        &self,\n'
         for field in node.fields:
             b += f'        {field.name}: {field.new_type},\n'
-        b += f'    ) -> Index<\'a, {node.full_name}>;\n'
+        b += f'    ) -> Index<{node.full_name}>;\n'
     b += '}\n'
 
     b += '\n'
@@ -255,11 +256,11 @@ def generate_new(b, nodes):
     for node in (n for n in nodes if n.is_struct):
         b += '\n'
         b += '    #[inline]\n'
-        b += f'    fn {node.emplace_name}<\'a>(\n'
-        b += '        &\'a self,\n'
+        b += f'    fn {node.emplace_name}(\n'
+        b += '        &self,\n'
         for field in node.fields:
             b += f'        {field.name}: {field.new_type},\n'
-        b += f'    ) -> Index<\'a, {node.full_name}> {{\n'
+        b += f'    ) -> Index<{node.full_name}> {{\n'
         for field in node.fields:
             if field.full_type != field.new_type:
                 b += f'        let {field.name} = self.build_slice({field.name});\n'
@@ -277,10 +278,11 @@ def generate_cmp(b, nodes):
     for node in nodes:
         b += '\n'
         # not {node.lifetime} because struct always is Index and enum always have lifetime
-        b += f'impl<\'a> Eq for {node.parameter_name} {{\n'
+        b += f'impl Eq for {node.parameter_name} {{\n'
         b += f'    fn eq(&self, rhs: &Self, arena: &Arena) -> bool {{\n'
         if node.is_struct:
-            b += '        let (lhs, rhs) = (arena.get(self), arena.get(rhs));\n'
+            b += '        let (lhs, rhs) = (arena.get(*self), arena.get(*rhs));\n'
+            b += '\n'
             for (index, field) in enumerate(f for f in node.fields if f.refnode is None):
                 b += f'        {"&& " if index else ""}lhs.{field.name} == rhs.{field.name}\n'
             for field in (f for f in node.fields if f.refnode is not None):
@@ -301,7 +303,7 @@ def generate_cmp(b, nodes):
 def generate_visit_trait(b, nodes):
     b += '    // AUTOGEN\n'
     for node in nodes:
-        b += f'    fn {node.visit_name}<\'a, \'b: \'a>(&mut self, node: &\'b {node.parameter_name}, arena: &\'a Arena) -> Self::Result {{ node.walk(arena, self) }}\n'
+        b += f'    fn {node.visit_name}(&mut self, node: {node.parameter_name}, arena: &Arena) -> Self::Result {{ node.walk(arena, self) }}\n'
     b += '}\n'
     return b
 
@@ -313,28 +315,28 @@ def generate_visit(b, nodes):
 
     for node in nodes:
         b += '\n'
-        b += f'impl<\'a> Visit for {node.parameter_name} {{\n'
-        b += '    fn accept<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {\n'
+        b += f'impl Visit for {node.parameter_name} {{\n'
+        b += '    fn accept<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {\n'
         b += f'        v.{node.visit_name}(self, arena)\n'
         b += '    }\n'
-        if node.lifetime:
-            b += '    fn walk<V: Visitor>(&self, arena: &Arena, v: &mut V) -> V::Result {\n'
+        if node.has_non_terminal:
+            b += '    fn walk<V: Visitor>(self, arena: &Arena, v: &mut V) -> V::Result {\n'
             if node.is_struct:
                 b += '        let this = arena.get(self);\n'
                 ntfields = [f for f in node.fields if f.refnode is not None]
                 for index, field in enumerate(ntfields):
                     if field.special == 'opt':
-                        b += f'        if let Some({field.name}) = &this.{field.name} {{\n'
+                        b += f'        if let Some({field.name}) = this.{field.name} {{\n'
                         b += f'            v.{field.refnode.visit_name}({field.name}, arena)?;\n'
                         b += '        }\n'
                     elif field.special == 'vec':
                         iter_var = field.name[:-1]
                         iter_var = 'r#' + iter_var if iter_var in ('type', 'where') else iter_var
-                        b += f'        for {iter_var} in arena.get_iter(&this.{field.name}) {{\n'
+                        b += f'        for &{iter_var} in arena.get_iter(this.{field.name}) {{\n'
                         b += f'            v.{field.refnode.visit_name}({iter_var}, arena)?;\n'
                         b += '        }\n'
                     else:
-                        b += f'        v.{field.refnode.visit_name}(&this.{field.name}, arena)'
+                        b += f'        v.{field.refnode.visit_name}(this.{field.name}, arena)'
                     if field.special is None:
                         if index != len(ntfields) - 1:
                             b += '?;'
@@ -358,7 +360,7 @@ def generate_debug(b, nodes):
     b += '    // AUTOGEN'
     for node in nodes:
         b += '\n'
-        b += f'    fn {node.visit_name}<\'a, \'b: \'a>(&mut self, node: &\'b {node.parameter_name}, arena: &\'a Arena) -> Self::Result {{\n'
+        b += f'    fn {node.visit_name}(&mut self, node: {node.parameter_name}, arena: &Arena) -> Self::Result {{\n'
         if node.is_struct:
             b += '        let (node, _guard) = self.enter(node, arena);\n'
             b += f'        self.start_struct("{node.name}")?\n'
@@ -369,7 +371,7 @@ def generate_debug(b, nodes):
                     b += f'            .field("{field.name}", node.{field.name})?\n'
                 else:
                     method_base = 'optional' if field.special == 'opt' else 'slice' if field.special == 'vec' else 'forward'
-                    b += f'            .{method_base}("{field.name}", &node.{field.name}, arena)?\n'
+                    b += f'            .{method_base}("{field.name}", node.{field.name}, arena)?\n'
             b += '            .end_struct()\n'
         else:
             b += '        match node {\n'
@@ -419,7 +421,7 @@ def generate_profile(b, nodes):
     b += '\n'
     TRACE = False # when stack corrupts, need some tracing method
     for index, node in enumerate(structs):
-        b += f'    fn {node.visit_name}<\'a, \'b: \'a>(&mut self, node: &\'b {node.parameter_name}, arena: &\'a Arena) -> Self::Result {{\n'
+        b += f'    fn {node.visit_name}(&mut self, node: {node.parameter_name}, arena: &Arena) -> Self::Result {{\n'
         if TRACE:
             b += f'        println!("visiting {node.name} {{}}", node.as_raw());\n'
         # note: a rare case that use .name not .full_name because it's unnecessary to write lifetime here

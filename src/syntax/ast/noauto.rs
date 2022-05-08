@@ -14,8 +14,8 @@ pub enum LitValue {
     Num(Numeric),
 }
 
-impl<'a> Expr<'a> {
-    pub fn dummy(arena: &'a Arena) -> Self {
+impl Expr {
+    pub fn dummy(arena: &Arena) -> Self {
         Expr::Lit(arena.emplace_lit_expr(Span::new(0, 0), LitValue::Num(Numeric::I32(0))))
     }
 }
@@ -27,10 +27,10 @@ impl ModuleStatement {
     }
 }
 
-impl<'a> Index<'a, Module<'a>> {
-    pub fn imports(&self, arena: &'a Arena) -> Vec<ModuleStatement> {
-        arena.get_iter(&arena.get(self).items).filter_map(|item| match item {
-            Item::Import(module_stmt) => Some(arena.get(module_stmt).clone()),
+impl Index<Module> {
+    pub fn imports(self, arena: &Arena) -> Vec<ModuleStatement> {
+        arena.get_iter(arena.get(self).items).filter_map(|item| match item {
+            Item::Import(module_stmt) => Some(arena.get(*module_stmt).clone()),
             _ => None,
         }).collect()
     }

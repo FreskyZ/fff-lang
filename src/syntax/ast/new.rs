@@ -10,788 +10,788 @@ use super::*;
 
 // pub: rust require this to be pub if that pub trait "inherits" this, but does not require reexport in ast.rs
 pub trait EmplaceConcreteHelper {
-    fn emplace<'a, T: 'a, F: FnOnce(&'a mut T)>(&'a self, init: F) -> Index<'a, T> where T: Sized;
-    fn build_slice<'a, T: 'a>(&'a self, indices: Vec<T>) -> Slice<'a, T>;
+    fn emplace<T, F: FnOnce(&mut T)>(&self, init: F) -> Index<T> where T: Sized;
+    fn build_slice<'a, T: 'a>(&'a self, indices: Vec<T>) -> Slice<T>;
 }
 
 impl EmplaceConcreteHelper for Arena {
     // // amazingly rustc correctly resolve this
-    fn emplace<'a, T: 'a, F: FnOnce(&'a mut T)>(&'a self, init: F) -> Index<'a, T> where T: Sized {
+    fn emplace<T, F: FnOnce(&mut T)>(&self, init: F) -> Index<T> where T: Sized {
         self.emplace(init)
     }
-    fn build_slice<'a, T: 'a>(&'a self, indices: Vec<T>) -> Slice<'a, T> {
+    fn build_slice<'a, T: 'a>(&'a self, indices: Vec<T>) -> Slice<T> {
         self.build_slice(indices)
     }
 }
 
 // AUTOGEN
-impl<'a> From<Index<'a, LitExpr>> for Expr<'a> {
-    fn from(index: Index<'a, LitExpr>) -> Self {
+impl From<Index<LitExpr>> for Expr {
+    fn from(index: Index<LitExpr>) -> Self {
         Expr::Lit(index)
     }
 }
 
-impl<'a> From<Index<'a, Path<'a>>> for Expr<'a> {
-    fn from(index: Index<'a, Path<'a>>) -> Self {
+impl From<Index<Path>> for Expr {
+    fn from(index: Index<Path>) -> Self {
         Expr::Path(index)
     }
 }
 
-impl<'a> From<Index<'a, ParenExpr<'a>>> for Expr<'a> {
-    fn from(index: Index<'a, ParenExpr<'a>>) -> Self {
+impl From<Index<ParenExpr>> for Expr {
+    fn from(index: Index<ParenExpr>) -> Self {
         Expr::Paren(index)
     }
 }
 
-impl<'a> From<Index<'a, TupleExpr<'a>>> for Expr<'a> {
-    fn from(index: Index<'a, TupleExpr<'a>>) -> Self {
+impl From<Index<TupleExpr>> for Expr {
+    fn from(index: Index<TupleExpr>) -> Self {
         Expr::Tuple(index)
     }
 }
 
-impl<'a> From<Index<'a, ArrayExpr<'a>>> for Expr<'a> {
-    fn from(index: Index<'a, ArrayExpr<'a>>) -> Self {
+impl From<Index<ArrayExpr>> for Expr {
+    fn from(index: Index<ArrayExpr>) -> Self {
         Expr::Array(index)
     }
 }
 
-impl<'a> From<Index<'a, CallExpr<'a>>> for Expr<'a> {
-    fn from(index: Index<'a, CallExpr<'a>>) -> Self {
+impl From<Index<CallExpr>> for Expr {
+    fn from(index: Index<CallExpr>) -> Self {
         Expr::Call(index)
     }
 }
 
-impl<'a> From<Index<'a, ArrayIndexExpr<'a>>> for Expr<'a> {
-    fn from(index: Index<'a, ArrayIndexExpr<'a>>) -> Self {
+impl From<Index<ArrayIndexExpr>> for Expr {
+    fn from(index: Index<ArrayIndexExpr>) -> Self {
         Expr::ArrayIndex(index)
     }
 }
 
-impl<'a> From<Index<'a, TupleIndexExpr<'a>>> for Expr<'a> {
-    fn from(index: Index<'a, TupleIndexExpr<'a>>) -> Self {
+impl From<Index<TupleIndexExpr>> for Expr {
+    fn from(index: Index<TupleIndexExpr>) -> Self {
         Expr::TupleIndex(index)
     }
 }
 
-impl<'a> From<Index<'a, MemberExpr<'a>>> for Expr<'a> {
-    fn from(index: Index<'a, MemberExpr<'a>>) -> Self {
+impl From<Index<MemberExpr>> for Expr {
+    fn from(index: Index<MemberExpr>) -> Self {
         Expr::Member(index)
     }
 }
 
-impl<'a> From<Index<'a, ObjectExpr<'a>>> for Expr<'a> {
-    fn from(index: Index<'a, ObjectExpr<'a>>) -> Self {
+impl From<Index<ObjectExpr>> for Expr {
+    fn from(index: Index<ObjectExpr>) -> Self {
         Expr::Object(index)
     }
 }
 
-impl<'a> From<Index<'a, UnaryExpr<'a>>> for Expr<'a> {
-    fn from(index: Index<'a, UnaryExpr<'a>>) -> Self {
+impl From<Index<UnaryExpr>> for Expr {
+    fn from(index: Index<UnaryExpr>) -> Self {
         Expr::Unary(index)
     }
 }
 
-impl<'a> From<Index<'a, BinaryExpr<'a>>> for Expr<'a> {
-    fn from(index: Index<'a, BinaryExpr<'a>>) -> Self {
+impl From<Index<BinaryExpr>> for Expr {
+    fn from(index: Index<BinaryExpr>) -> Self {
         Expr::Binary(index)
     }
 }
 
-impl<'a> From<Index<'a, RangeBothExpr<'a>>> for Expr<'a> {
-    fn from(index: Index<'a, RangeBothExpr<'a>>) -> Self {
+impl From<Index<RangeBothExpr>> for Expr {
+    fn from(index: Index<RangeBothExpr>) -> Self {
         Expr::RangeBoth(index)
     }
 }
 
-impl<'a> From<Index<'a, RangeFullExpr>> for Expr<'a> {
-    fn from(index: Index<'a, RangeFullExpr>) -> Self {
+impl From<Index<RangeFullExpr>> for Expr {
+    fn from(index: Index<RangeFullExpr>) -> Self {
         Expr::RangeFull(index)
     }
 }
 
-impl<'a> From<Index<'a, RangeLeftExpr<'a>>> for Expr<'a> {
-    fn from(index: Index<'a, RangeLeftExpr<'a>>) -> Self {
+impl From<Index<RangeLeftExpr>> for Expr {
+    fn from(index: Index<RangeLeftExpr>) -> Self {
         Expr::RangeLeft(index)
     }
 }
 
-impl<'a> From<Index<'a, RangeRightExpr<'a>>> for Expr<'a> {
-    fn from(index: Index<'a, RangeRightExpr<'a>>) -> Self {
+impl From<Index<RangeRightExpr>> for Expr {
+    fn from(index: Index<RangeRightExpr>) -> Self {
         Expr::RangeRight(index)
     }
 }
 
-impl<'a> From<Index<'a, StructDef<'a>>> for Item<'a> {
-    fn from(index: Index<'a, StructDef<'a>>) -> Self {
+impl From<Index<StructDef>> for Item {
+    fn from(index: Index<StructDef>) -> Self {
         Item::Struct(index)
     }
 }
 
-impl<'a> From<Index<'a, EnumDef<'a>>> for Item<'a> {
-    fn from(index: Index<'a, EnumDef<'a>>) -> Self {
+impl From<Index<EnumDef>> for Item {
+    fn from(index: Index<EnumDef>) -> Self {
         Item::Enum(index)
     }
 }
 
-impl<'a> From<Index<'a, FnDef<'a>>> for Item<'a> {
-    fn from(index: Index<'a, FnDef<'a>>) -> Self {
+impl From<Index<FnDef>> for Item {
+    fn from(index: Index<FnDef>) -> Self {
         Item::Fn(index)
     }
 }
 
-impl<'a> From<Index<'a, Implementation<'a>>> for Item<'a> {
-    fn from(index: Index<'a, Implementation<'a>>) -> Self {
+impl From<Index<Implementation>> for Item {
+    fn from(index: Index<Implementation>) -> Self {
         Item::Impl(index)
     }
 }
 
-impl<'a> From<Index<'a, TypeDef<'a>>> for Item<'a> {
-    fn from(index: Index<'a, TypeDef<'a>>) -> Self {
+impl From<Index<TypeDef>> for Item {
+    fn from(index: Index<TypeDef>) -> Self {
         Item::Type(index)
     }
 }
 
-impl<'a> From<Index<'a, ClassDef<'a>>> for Item<'a> {
-    fn from(index: Index<'a, ClassDef<'a>>) -> Self {
+impl From<Index<ClassDef>> for Item {
+    fn from(index: Index<ClassDef>) -> Self {
         Item::Class(index)
     }
 }
 
-impl<'a> From<Index<'a, BlockStatement<'a>>> for Item<'a> {
-    fn from(index: Index<'a, BlockStatement<'a>>) -> Self {
+impl From<Index<BlockStatement>> for Item {
+    fn from(index: Index<BlockStatement>) -> Self {
         Item::Block(index)
     }
 }
 
-impl<'a> From<Index<'a, SimpleExprStatement<'a>>> for Item<'a> {
-    fn from(index: Index<'a, SimpleExprStatement<'a>>) -> Self {
+impl From<Index<SimpleExprStatement>> for Item {
+    fn from(index: Index<SimpleExprStatement>) -> Self {
         Item::SimpleExpr(index)
     }
 }
 
-impl<'a> From<Index<'a, AssignExprStatement<'a>>> for Item<'a> {
-    fn from(index: Index<'a, AssignExprStatement<'a>>) -> Self {
+impl From<Index<AssignExprStatement>> for Item {
+    fn from(index: Index<AssignExprStatement>) -> Self {
         Item::AssignExpr(index)
     }
 }
 
-impl<'a> From<Index<'a, ForStatement<'a>>> for Item<'a> {
-    fn from(index: Index<'a, ForStatement<'a>>) -> Self {
+impl From<Index<ForStatement>> for Item {
+    fn from(index: Index<ForStatement>) -> Self {
         Item::For(index)
     }
 }
 
-impl<'a> From<Index<'a, IfStatement<'a>>> for Item<'a> {
-    fn from(index: Index<'a, IfStatement<'a>>) -> Self {
+impl From<Index<IfStatement>> for Item {
+    fn from(index: Index<IfStatement>) -> Self {
         Item::If(index)
     }
 }
 
-impl<'a> From<Index<'a, LoopStatement<'a>>> for Item<'a> {
-    fn from(index: Index<'a, LoopStatement<'a>>) -> Self {
+impl From<Index<LoopStatement>> for Item {
+    fn from(index: Index<LoopStatement>) -> Self {
         Item::Loop(index)
     }
 }
 
-impl<'a> From<Index<'a, VarDeclStatement<'a>>> for Item<'a> {
-    fn from(index: Index<'a, VarDeclStatement<'a>>) -> Self {
+impl From<Index<VarDeclStatement>> for Item {
+    fn from(index: Index<VarDeclStatement>) -> Self {
         Item::VarDecl(index)
     }
 }
 
-impl<'a> From<Index<'a, WhileStatement<'a>>> for Item<'a> {
-    fn from(index: Index<'a, WhileStatement<'a>>) -> Self {
+impl From<Index<WhileStatement>> for Item {
+    fn from(index: Index<WhileStatement>) -> Self {
         Item::While(index)
     }
 }
 
-impl<'a> From<Index<'a, UseStatement<'a>>> for Item<'a> {
-    fn from(index: Index<'a, UseStatement<'a>>) -> Self {
+impl From<Index<UseStatement>> for Item {
+    fn from(index: Index<UseStatement>) -> Self {
         Item::Use(index)
     }
 }
 
-impl<'a> From<Index<'a, ModuleStatement>> for Item<'a> {
-    fn from(index: Index<'a, ModuleStatement>) -> Self {
+impl From<Index<ModuleStatement>> for Item {
+    fn from(index: Index<ModuleStatement>) -> Self {
         Item::Import(index)
     }
 }
 
-impl<'a> From<Index<'a, SimpleSegment>> for PathSegment<'a> {
-    fn from(index: Index<'a, SimpleSegment>) -> Self {
+impl From<Index<SimpleSegment>> for PathSegment {
+    fn from(index: Index<SimpleSegment>) -> Self {
         PathSegment::Simple(index)
     }
 }
 
-impl<'a> From<Index<'a, CastSegment<'a>>> for PathSegment<'a> {
-    fn from(index: Index<'a, CastSegment<'a>>) -> Self {
+impl From<Index<CastSegment>> for PathSegment {
+    fn from(index: Index<CastSegment>) -> Self {
         PathSegment::Cast(index)
     }
 }
 
-impl<'a> From<Index<'a, GenericSegment<'a>>> for PathSegment<'a> {
-    fn from(index: Index<'a, GenericSegment<'a>>) -> Self {
+impl From<Index<GenericSegment>> for PathSegment {
+    fn from(index: Index<GenericSegment>) -> Self {
         PathSegment::Generic(index)
     }
 }
 
-impl<'a> From<Index<'a, StructDef<'a>>> for Statement<'a> {
-    fn from(index: Index<'a, StructDef<'a>>) -> Self {
+impl From<Index<StructDef>> for Statement {
+    fn from(index: Index<StructDef>) -> Self {
         Statement::Struct(index)
     }
 }
 
-impl<'a> From<Index<'a, EnumDef<'a>>> for Statement<'a> {
-    fn from(index: Index<'a, EnumDef<'a>>) -> Self {
+impl From<Index<EnumDef>> for Statement {
+    fn from(index: Index<EnumDef>) -> Self {
         Statement::Enum(index)
     }
 }
 
-impl<'a> From<Index<'a, FnDef<'a>>> for Statement<'a> {
-    fn from(index: Index<'a, FnDef<'a>>) -> Self {
+impl From<Index<FnDef>> for Statement {
+    fn from(index: Index<FnDef>) -> Self {
         Statement::Fn(index)
     }
 }
 
-impl<'a> From<Index<'a, Implementation<'a>>> for Statement<'a> {
-    fn from(index: Index<'a, Implementation<'a>>) -> Self {
+impl From<Index<Implementation>> for Statement {
+    fn from(index: Index<Implementation>) -> Self {
         Statement::Impl(index)
     }
 }
 
-impl<'a> From<Index<'a, TypeDef<'a>>> for Statement<'a> {
-    fn from(index: Index<'a, TypeDef<'a>>) -> Self {
+impl From<Index<TypeDef>> for Statement {
+    fn from(index: Index<TypeDef>) -> Self {
         Statement::Type(index)
     }
 }
 
-impl<'a> From<Index<'a, ClassDef<'a>>> for Statement<'a> {
-    fn from(index: Index<'a, ClassDef<'a>>) -> Self {
+impl From<Index<ClassDef>> for Statement {
+    fn from(index: Index<ClassDef>) -> Self {
         Statement::Class(index)
     }
 }
 
-impl<'a> From<Index<'a, BlockStatement<'a>>> for Statement<'a> {
-    fn from(index: Index<'a, BlockStatement<'a>>) -> Self {
+impl From<Index<BlockStatement>> for Statement {
+    fn from(index: Index<BlockStatement>) -> Self {
         Statement::Block(index)
     }
 }
 
-impl<'a> From<Index<'a, BreakStatement>> for Statement<'a> {
-    fn from(index: Index<'a, BreakStatement>) -> Self {
+impl From<Index<BreakStatement>> for Statement {
+    fn from(index: Index<BreakStatement>) -> Self {
         Statement::Break(index)
     }
 }
 
-impl<'a> From<Index<'a, ContinueStatement>> for Statement<'a> {
-    fn from(index: Index<'a, ContinueStatement>) -> Self {
+impl From<Index<ContinueStatement>> for Statement {
+    fn from(index: Index<ContinueStatement>) -> Self {
         Statement::Continue(index)
     }
 }
 
-impl<'a> From<Index<'a, SimpleExprStatement<'a>>> for Statement<'a> {
-    fn from(index: Index<'a, SimpleExprStatement<'a>>) -> Self {
+impl From<Index<SimpleExprStatement>> for Statement {
+    fn from(index: Index<SimpleExprStatement>) -> Self {
         Statement::SimpleExpr(index)
     }
 }
 
-impl<'a> From<Index<'a, AssignExprStatement<'a>>> for Statement<'a> {
-    fn from(index: Index<'a, AssignExprStatement<'a>>) -> Self {
+impl From<Index<AssignExprStatement>> for Statement {
+    fn from(index: Index<AssignExprStatement>) -> Self {
         Statement::AssignExpr(index)
     }
 }
 
-impl<'a> From<Index<'a, ForStatement<'a>>> for Statement<'a> {
-    fn from(index: Index<'a, ForStatement<'a>>) -> Self {
+impl From<Index<ForStatement>> for Statement {
+    fn from(index: Index<ForStatement>) -> Self {
         Statement::For(index)
     }
 }
 
-impl<'a> From<Index<'a, IfStatement<'a>>> for Statement<'a> {
-    fn from(index: Index<'a, IfStatement<'a>>) -> Self {
+impl From<Index<IfStatement>> for Statement {
+    fn from(index: Index<IfStatement>) -> Self {
         Statement::If(index)
     }
 }
 
-impl<'a> From<Index<'a, LoopStatement<'a>>> for Statement<'a> {
-    fn from(index: Index<'a, LoopStatement<'a>>) -> Self {
+impl From<Index<LoopStatement>> for Statement {
+    fn from(index: Index<LoopStatement>) -> Self {
         Statement::Loop(index)
     }
 }
 
-impl<'a> From<Index<'a, ReturnStatement<'a>>> for Statement<'a> {
-    fn from(index: Index<'a, ReturnStatement<'a>>) -> Self {
+impl From<Index<ReturnStatement>> for Statement {
+    fn from(index: Index<ReturnStatement>) -> Self {
         Statement::Return(index)
     }
 }
 
-impl<'a> From<Index<'a, VarDeclStatement<'a>>> for Statement<'a> {
-    fn from(index: Index<'a, VarDeclStatement<'a>>) -> Self {
+impl From<Index<VarDeclStatement>> for Statement {
+    fn from(index: Index<VarDeclStatement>) -> Self {
         Statement::VarDecl(index)
     }
 }
 
-impl<'a> From<Index<'a, WhileStatement<'a>>> for Statement<'a> {
-    fn from(index: Index<'a, WhileStatement<'a>>) -> Self {
+impl From<Index<WhileStatement>> for Statement {
+    fn from(index: Index<WhileStatement>) -> Self {
         Statement::While(index)
     }
 }
 
-impl<'a> From<Index<'a, UseStatement<'a>>> for Statement<'a> {
-    fn from(index: Index<'a, UseStatement<'a>>) -> Self {
+impl From<Index<UseStatement>> for Statement {
+    fn from(index: Index<UseStatement>) -> Self {
         Statement::Use(index)
     }
 }
 
-impl<'a> From<Index<'a, ArrayType<'a>>> for TypeRef<'a> {
-    fn from(index: Index<'a, ArrayType<'a>>) -> Self {
+impl From<Index<ArrayType>> for TypeRef {
+    fn from(index: Index<ArrayType>) -> Self {
         TypeRef::Array(index)
     }
 }
 
-impl<'a> From<Index<'a, FnType<'a>>> for TypeRef<'a> {
-    fn from(index: Index<'a, FnType<'a>>) -> Self {
+impl From<Index<FnType>> for TypeRef {
+    fn from(index: Index<FnType>) -> Self {
         TypeRef::Fn(index)
     }
 }
 
-impl<'a> From<Index<'a, Path<'a>>> for TypeRef<'a> {
-    fn from(index: Index<'a, Path<'a>>) -> Self {
+impl From<Index<Path>> for TypeRef {
+    fn from(index: Index<Path>) -> Self {
         TypeRef::Path(index)
     }
 }
 
-impl<'a> From<Index<'a, PrimitiveType>> for TypeRef<'a> {
-    fn from(index: Index<'a, PrimitiveType>) -> Self {
+impl From<Index<PrimitiveType>> for TypeRef {
+    fn from(index: Index<PrimitiveType>) -> Self {
         TypeRef::Primitive(index)
     }
 }
 
-impl<'a> From<Index<'a, RefType<'a>>> for TypeRef<'a> {
-    fn from(index: Index<'a, RefType<'a>>) -> Self {
+impl From<Index<RefType>> for TypeRef {
+    fn from(index: Index<RefType>) -> Self {
         TypeRef::Ref(index)
     }
 }
 
-impl<'a> From<Index<'a, TupleType<'a>>> for TypeRef<'a> {
-    fn from(index: Index<'a, TupleType<'a>>) -> Self {
+impl From<Index<TupleType>> for TypeRef {
+    fn from(index: Index<TupleType>) -> Self {
         TypeRef::Tuple(index)
     }
 }
 pub trait EmplaceConcrete: EmplaceConcreteHelper {
 
-    fn emplace_array_expr<'a>(
-        &'a self,
+    fn emplace_array_expr(
+        &self,
         span: Span,
-        items: Vec<Expr<'a>>,
-    ) -> Index<'a, ArrayExpr<'a>>;
+        items: Vec<Expr>,
+    ) -> Index<ArrayExpr>;
 
-    fn emplace_array_index_expr<'a>(
-        &'a self,
+    fn emplace_array_index_expr(
+        &self,
         span: Span,
-        base: Expr<'a>,
-        parameters: Vec<Expr<'a>>,
+        base: Expr,
+        parameters: Vec<Expr>,
         quote_span: Span,
-    ) -> Index<'a, ArrayIndexExpr<'a>>;
+    ) -> Index<ArrayIndexExpr>;
 
-    fn emplace_array_type<'a>(
-        &'a self,
+    fn emplace_array_type(
+        &self,
         span: Span,
-        base: TypeRef<'a>,
-        size: Expr<'a>,
-    ) -> Index<'a, ArrayType<'a>>;
+        base: TypeRef,
+        size: Expr,
+    ) -> Index<ArrayType>;
 
-    fn emplace_assign_expr_stmt<'a>(
-        &'a self,
+    fn emplace_assign_expr_stmt(
+        &self,
         span: Span,
-        left: Expr<'a>,
-        right: Expr<'a>,
+        left: Expr,
+        right: Expr,
         op: Separator,
         op_span: Span,
-    ) -> Index<'a, AssignExprStatement<'a>>;
+    ) -> Index<AssignExprStatement>;
 
-    fn emplace_binary_expr<'a>(
-        &'a self,
+    fn emplace_binary_expr(
+        &self,
         span: Span,
-        left: Expr<'a>,
-        right: Expr<'a>,
+        left: Expr,
+        right: Expr,
         op: Separator,
         op_span: Span,
-    ) -> Index<'a, BinaryExpr<'a>>;
+    ) -> Index<BinaryExpr>;
 
-    fn emplace_block<'a>(
-        &'a self,
+    fn emplace_block(
+        &self,
         span: Span,
-        items: Vec<Statement<'a>>,
-    ) -> Index<'a, Block<'a>>;
+        items: Vec<Statement>,
+    ) -> Index<Block>;
 
-    fn emplace_block_stmt<'a>(
-        &'a self,
-        span: Span,
-        label: Option<IdSpan>,
-        body: Index<'a, Block<'a>>,
-    ) -> Index<'a, BlockStatement<'a>>;
-
-    fn emplace_break_stmt<'a>(
-        &'a self,
+    fn emplace_block_stmt(
+        &self,
         span: Span,
         label: Option<IdSpan>,
-    ) -> Index<'a, BreakStatement>;
+        body: Index<Block>,
+    ) -> Index<BlockStatement>;
 
-    fn emplace_call_expr<'a>(
-        &'a self,
+    fn emplace_break_stmt(
+        &self,
         span: Span,
-        base: Expr<'a>,
+        label: Option<IdSpan>,
+    ) -> Index<BreakStatement>;
+
+    fn emplace_call_expr(
+        &self,
+        span: Span,
+        base: Expr,
         quote_span: Span,
-        parameters: Vec<Expr<'a>>,
-    ) -> Index<'a, CallExpr<'a>>;
+        parameters: Vec<Expr>,
+    ) -> Index<CallExpr>;
 
-    fn emplace_cast_segment<'a>(
-        &'a self,
+    fn emplace_cast_segment(
+        &self,
         span: Span,
-        left: TypeRef<'a>,
-        right: TypeRef<'a>,
-    ) -> Index<'a, CastSegment<'a>>;
+        left: TypeRef,
+        right: TypeRef,
+    ) -> Index<CastSegment>;
 
-    fn emplace_class_def<'a>(
-        &'a self,
+    fn emplace_class_def(
+        &self,
         span: Span,
-        name: Index<'a, GenericName<'a>>,
+        name: Index<GenericName>,
         quote_span: Span,
-        items: Vec<Item<'a>>,
-    ) -> Index<'a, ClassDef<'a>>;
+        items: Vec<Item>,
+    ) -> Index<ClassDef>;
 
-    fn emplace_continue_stmt<'a>(
-        &'a self,
+    fn emplace_continue_stmt(
+        &self,
         span: Span,
         label: Option<IdSpan>,
-    ) -> Index<'a, ContinueStatement>;
+    ) -> Index<ContinueStatement>;
 
-    fn emplace_else_clause<'a>(
-        &'a self,
+    fn emplace_else_clause(
+        &self,
         span: Span,
-        body: Index<'a, Block<'a>>,
-    ) -> Index<'a, ElseClause<'a>>;
+        body: Index<Block>,
+    ) -> Index<ElseClause>;
 
-    fn emplace_enum_def<'a>(
-        &'a self,
+    fn emplace_enum_def(
+        &self,
         span: Span,
         name: IdSpan,
-        base_type: Option<Index<'a, PrimitiveType>>,
+        base_type: Option<Index<PrimitiveType>>,
         quote_span: Span,
-        variants: Vec<Index<'a, EnumDefVariant<'a>>>,
-    ) -> Index<'a, EnumDef<'a>>;
+        variants: Vec<Index<EnumDefVariant>>,
+    ) -> Index<EnumDef>;
 
-    fn emplace_enum_def_variant<'a>(
-        &'a self,
+    fn emplace_enum_def_variant(
+        &self,
         span: Span,
         name: IdSpan,
-        value: Option<Expr<'a>>,
-    ) -> Index<'a, EnumDefVariant<'a>>;
+        value: Option<Expr>,
+    ) -> Index<EnumDefVariant>;
 
-    fn emplace_field_def<'a>(
-        &'a self,
+    fn emplace_field_def(
+        &self,
         span: Span,
         name: IdSpan,
         colon_span: Span,
-        r#type: TypeRef<'a>,
-    ) -> Index<'a, FieldDef<'a>>;
+        r#type: TypeRef,
+    ) -> Index<FieldDef>;
 
-    fn emplace_fn_def<'a>(
-        &'a self,
+    fn emplace_fn_def(
+        &self,
         span: Span,
-        name: Index<'a, GenericName<'a>>,
+        name: Index<GenericName>,
         quote_span: Span,
-        parameters: Vec<Index<'a, FnDefParameter<'a>>>,
-        ret_type: Option<TypeRef<'a>>,
-        wheres: Vec<Index<'a, WhereClause<'a>>>,
-        body: Option<Index<'a, Block<'a>>>,
-    ) -> Index<'a, FnDef<'a>>;
+        parameters: Vec<Index<FnDefParameter>>,
+        ret_type: Option<TypeRef>,
+        wheres: Vec<Index<WhereClause>>,
+        body: Option<Index<Block>>,
+    ) -> Index<FnDef>;
 
-    fn emplace_fn_def_parameter<'a>(
-        &'a self,
+    fn emplace_fn_def_parameter(
+        &self,
         span: Span,
         name: IdSpan,
-        r#type: TypeRef<'a>,
-    ) -> Index<'a, FnDefParameter<'a>>;
+        r#type: TypeRef,
+    ) -> Index<FnDefParameter>;
 
-    fn emplace_fn_type<'a>(
-        &'a self,
+    fn emplace_fn_type(
+        &self,
         span: Span,
         quote_span: Span,
-        parameters: Vec<Index<'a, FnTypeParameter<'a>>>,
-        ret_type: Option<TypeRef<'a>>,
-    ) -> Index<'a, FnType<'a>>;
+        parameters: Vec<Index<FnTypeParameter>>,
+        ret_type: Option<TypeRef>,
+    ) -> Index<FnType>;
 
-    fn emplace_fn_type_parameter<'a>(
-        &'a self,
+    fn emplace_fn_type_parameter(
+        &self,
         span: Span,
         name: Option<IdSpan>,
-        r#type: TypeRef<'a>,
-    ) -> Index<'a, FnTypeParameter<'a>>;
+        r#type: TypeRef,
+    ) -> Index<FnTypeParameter>;
 
-    fn emplace_for_stmt<'a>(
-        &'a self,
+    fn emplace_for_stmt(
+        &self,
         span: Span,
         label: Option<IdSpan>,
         iter_name: IdSpan,
-        iter_expr: Expr<'a>,
-        body: Index<'a, Block<'a>>,
-    ) -> Index<'a, ForStatement<'a>>;
+        iter_expr: Expr,
+        body: Index<Block>,
+    ) -> Index<ForStatement>;
 
-    fn emplace_generic_name<'a>(
-        &'a self,
+    fn emplace_generic_name(
+        &self,
         span: Span,
         base: IdSpan,
         quote_span: Span,
-        parameters: Vec<Index<'a, GenericParameter>>,
-    ) -> Index<'a, GenericName<'a>>;
+        parameters: Vec<Index<GenericParameter>>,
+    ) -> Index<GenericName>;
 
-    fn emplace_generic_parameter<'a>(
-        &'a self,
+    fn emplace_generic_parameter(
+        &self,
         span: Span,
         name: IdSpan,
-    ) -> Index<'a, GenericParameter>;
+    ) -> Index<GenericParameter>;
 
-    fn emplace_generic_segment<'a>(
-        &'a self,
+    fn emplace_generic_segment(
+        &self,
         span: Span,
         base: IdSpan,
-        parameters: Index<'a, TypeList<'a>>,
-    ) -> Index<'a, GenericSegment<'a>>;
+        parameters: Index<TypeList>,
+    ) -> Index<GenericSegment>;
 
-    fn emplace_if_clause<'a>(
-        &'a self,
+    fn emplace_if_clause(
+        &self,
         span: Span,
-        condition: Expr<'a>,
-        body: Index<'a, Block<'a>>,
-    ) -> Index<'a, IfClause<'a>>;
+        condition: Expr,
+        body: Index<Block>,
+    ) -> Index<IfClause>;
 
-    fn emplace_if_stmt<'a>(
-        &'a self,
+    fn emplace_if_stmt(
+        &self,
         span: Span,
-        if_clause: Index<'a, IfClause<'a>>,
-        elseif_clauses: Vec<Index<'a, IfClause<'a>>>,
-        else_clause: Option<Index<'a, ElseClause<'a>>>,
-    ) -> Index<'a, IfStatement<'a>>;
+        if_clause: Index<IfClause>,
+        elseif_clauses: Vec<Index<IfClause>>,
+        else_clause: Option<Index<ElseClause>>,
+    ) -> Index<IfStatement>;
 
-    fn emplace_impl_block<'a>(
-        &'a self,
+    fn emplace_impl_block(
+        &self,
         span: Span,
-        parameters: Vec<Index<'a, GenericParameter>>,
-        class: Option<TypeRef<'a>>,
-        r#type: TypeRef<'a>,
-        wheres: Vec<Index<'a, WhereClause<'a>>>,
+        parameters: Vec<Index<GenericParameter>>,
+        class: Option<TypeRef>,
+        r#type: TypeRef,
+        wheres: Vec<Index<WhereClause>>,
         quote_span: Span,
-        items: Vec<Item<'a>>,
-    ) -> Index<'a, Implementation<'a>>;
+        items: Vec<Item>,
+    ) -> Index<Implementation>;
 
-    fn emplace_lit_expr<'a>(
-        &'a self,
+    fn emplace_lit_expr(
+        &self,
         span: Span,
         value: LitValue,
-    ) -> Index<'a, LitExpr>;
+    ) -> Index<LitExpr>;
 
-    fn emplace_loop_stmt<'a>(
-        &'a self,
+    fn emplace_loop_stmt(
+        &self,
         span: Span,
         label: Option<IdSpan>,
-        body: Index<'a, Block<'a>>,
-    ) -> Index<'a, LoopStatement<'a>>;
+        body: Index<Block>,
+    ) -> Index<LoopStatement>;
 
-    fn emplace_member_expr<'a>(
-        &'a self,
+    fn emplace_member_expr(
+        &self,
         span: Span,
-        base: Expr<'a>,
+        base: Expr,
         op_span: Span,
         name: IdSpan,
-        parameters: Option<Index<'a, TypeList<'a>>>,
-    ) -> Index<'a, MemberExpr<'a>>;
+        parameters: Option<Index<TypeList>>,
+    ) -> Index<MemberExpr>;
 
-    fn emplace_module<'a>(
-        &'a self,
+    fn emplace_module(
+        &self,
         file: FileId,
-        items: Vec<Item<'a>>,
-    ) -> Index<'a, Module<'a>>;
+        items: Vec<Item>,
+    ) -> Index<Module>;
 
-    fn emplace_module_stmt<'a>(
-        &'a self,
+    fn emplace_module_stmt(
+        &self,
         span: Span,
         name: IdSpan,
         path: Option<IdSpan>,
-    ) -> Index<'a, ModuleStatement>;
+    ) -> Index<ModuleStatement>;
 
-    fn emplace_object_expr<'a>(
-        &'a self,
+    fn emplace_object_expr(
+        &self,
         span: Span,
-        base: Expr<'a>,
+        base: Expr,
         quote_span: Span,
-        fields: Vec<Index<'a, ObjectExprField<'a>>>,
-    ) -> Index<'a, ObjectExpr<'a>>;
+        fields: Vec<Index<ObjectExprField>>,
+    ) -> Index<ObjectExpr>;
 
-    fn emplace_object_expr_field<'a>(
-        &'a self,
+    fn emplace_object_expr_field(
+        &self,
         span: Span,
         name: IdSpan,
-        value: Expr<'a>,
-    ) -> Index<'a, ObjectExprField<'a>>;
+        value: Expr,
+    ) -> Index<ObjectExprField>;
 
-    fn emplace_paren_expr<'a>(
-        &'a self,
+    fn emplace_paren_expr(
+        &self,
         span: Span,
-        base: Expr<'a>,
-    ) -> Index<'a, ParenExpr<'a>>;
+        base: Expr,
+    ) -> Index<ParenExpr>;
 
-    fn emplace_path<'a>(
-        &'a self,
+    fn emplace_path(
+        &self,
         span: Span,
-        segments: Vec<PathSegment<'a>>,
-    ) -> Index<'a, Path<'a>>;
+        segments: Vec<PathSegment>,
+    ) -> Index<Path>;
 
-    fn emplace_primitive_type<'a>(
-        &'a self,
+    fn emplace_primitive_type(
+        &self,
         span: Span,
         base: Keyword,
-    ) -> Index<'a, PrimitiveType>;
+    ) -> Index<PrimitiveType>;
 
-    fn emplace_range_both_expr<'a>(
-        &'a self,
+    fn emplace_range_both_expr(
+        &self,
         span: Span,
-        left: Expr<'a>,
+        left: Expr,
         op_span: Span,
-        right: Expr<'a>,
-    ) -> Index<'a, RangeBothExpr<'a>>;
+        right: Expr,
+    ) -> Index<RangeBothExpr>;
 
-    fn emplace_range_full_expr<'a>(
-        &'a self,
+    fn emplace_range_full_expr(
+        &self,
         span: Span,
-    ) -> Index<'a, RangeFullExpr>;
+    ) -> Index<RangeFullExpr>;
 
-    fn emplace_range_left_expr<'a>(
-        &'a self,
+    fn emplace_range_left_expr(
+        &self,
         span: Span,
-        base: Expr<'a>,
-    ) -> Index<'a, RangeLeftExpr<'a>>;
+        base: Expr,
+    ) -> Index<RangeLeftExpr>;
 
-    fn emplace_range_right_expr<'a>(
-        &'a self,
+    fn emplace_range_right_expr(
+        &self,
         span: Span,
-        base: Expr<'a>,
-    ) -> Index<'a, RangeRightExpr<'a>>;
+        base: Expr,
+    ) -> Index<RangeRightExpr>;
 
-    fn emplace_ref_type<'a>(
-        &'a self,
+    fn emplace_ref_type(
+        &self,
         span: Span,
-        base: TypeRef<'a>,
-    ) -> Index<'a, RefType<'a>>;
+        base: TypeRef,
+    ) -> Index<RefType>;
 
-    fn emplace_ret_stmt<'a>(
-        &'a self,
+    fn emplace_ret_stmt(
+        &self,
         span: Span,
-        value: Option<Expr<'a>>,
-    ) -> Index<'a, ReturnStatement<'a>>;
+        value: Option<Expr>,
+    ) -> Index<ReturnStatement>;
 
-    fn emplace_simple_expr_stmt<'a>(
-        &'a self,
+    fn emplace_simple_expr_stmt(
+        &self,
         span: Span,
-        expr: Expr<'a>,
-    ) -> Index<'a, SimpleExprStatement<'a>>;
+        expr: Expr,
+    ) -> Index<SimpleExprStatement>;
 
-    fn emplace_simple_segment<'a>(
-        &'a self,
+    fn emplace_simple_segment(
+        &self,
         span: Span,
         name: IsId,
-    ) -> Index<'a, SimpleSegment>;
+    ) -> Index<SimpleSegment>;
 
-    fn emplace_struct_def<'a>(
-        &'a self,
+    fn emplace_struct_def(
+        &self,
         span: Span,
-        name: Index<'a, GenericName<'a>>,
-        fields: Vec<Index<'a, FieldDef<'a>>>,
-    ) -> Index<'a, StructDef<'a>>;
+        name: Index<GenericName>,
+        fields: Vec<Index<FieldDef>>,
+    ) -> Index<StructDef>;
 
-    fn emplace_tuple_expr<'a>(
-        &'a self,
+    fn emplace_tuple_expr(
+        &self,
         span: Span,
-        items: Vec<Expr<'a>>,
-    ) -> Index<'a, TupleExpr<'a>>;
+        items: Vec<Expr>,
+    ) -> Index<TupleExpr>;
 
-    fn emplace_tuple_index_expr<'a>(
-        &'a self,
+    fn emplace_tuple_index_expr(
+        &self,
         span: Span,
-        base: Expr<'a>,
+        base: Expr,
         op_span: Span,
         value: i32,
         value_span: Span,
-    ) -> Index<'a, TupleIndexExpr<'a>>;
+    ) -> Index<TupleIndexExpr>;
 
-    fn emplace_tuple_type<'a>(
-        &'a self,
+    fn emplace_tuple_type(
+        &self,
         span: Span,
-        parameters: Vec<TypeRef<'a>>,
-    ) -> Index<'a, TupleType<'a>>;
+        parameters: Vec<TypeRef>,
+    ) -> Index<TupleType>;
 
-    fn emplace_type_def<'a>(
-        &'a self,
+    fn emplace_type_def(
+        &self,
         span: Span,
-        name: Index<'a, GenericName<'a>>,
-        from: Option<TypeRef<'a>>,
-    ) -> Index<'a, TypeDef<'a>>;
+        name: Index<GenericName>,
+        from: Option<TypeRef>,
+    ) -> Index<TypeDef>;
 
-    fn emplace_type_list<'a>(
-        &'a self,
+    fn emplace_type_list(
+        &self,
         span: Span,
-        items: Vec<TypeRef<'a>>,
-    ) -> Index<'a, TypeList<'a>>;
+        items: Vec<TypeRef>,
+    ) -> Index<TypeList>;
 
-    fn emplace_unary_expr<'a>(
-        &'a self,
+    fn emplace_unary_expr(
+        &self,
         span: Span,
-        base: Expr<'a>,
+        base: Expr,
         op: Separator,
         op_span: Span,
-    ) -> Index<'a, UnaryExpr<'a>>;
+    ) -> Index<UnaryExpr>;
 
-    fn emplace_use_stmt<'a>(
-        &'a self,
+    fn emplace_use_stmt(
+        &self,
         span: Span,
-        path: Index<'a, Path<'a>>,
+        path: Index<Path>,
         alias: Option<IdSpan>,
-    ) -> Index<'a, UseStatement<'a>>;
+    ) -> Index<UseStatement>;
 
-    fn emplace_var_decl_stmt<'a>(
-        &'a self,
+    fn emplace_var_decl_stmt(
+        &self,
         span: Span,
         r#const: bool,
         name: IdSpan,
-        r#type: Option<TypeRef<'a>>,
-        init_value: Option<Expr<'a>>,
-    ) -> Index<'a, VarDeclStatement<'a>>;
+        r#type: Option<TypeRef>,
+        init_value: Option<Expr>,
+    ) -> Index<VarDeclStatement>;
 
-    fn emplace_where_clause<'a>(
-        &'a self,
+    fn emplace_where_clause(
+        &self,
         span: Span,
         name: IdSpan,
-        constraints: Vec<TypeRef<'a>>,
-    ) -> Index<'a, WhereClause<'a>>;
+        constraints: Vec<TypeRef>,
+    ) -> Index<WhereClause>;
 
-    fn emplace_while_stmt<'a>(
-        &'a self,
+    fn emplace_while_stmt(
+        &self,
         span: Span,
         label: Option<IdSpan>,
-        condition: Expr<'a>,
-        body: Index<'a, Block<'a>>,
-    ) -> Index<'a, WhileStatement<'a>>;
+        condition: Expr,
+        body: Index<Block>,
+    ) -> Index<WhileStatement>;
 }
 
 impl EmplaceConcrete for Arena {
 
     #[inline]
-    fn emplace_array_expr<'a>(
-        &'a self,
+    fn emplace_array_expr(
+        &self,
         span: Span,
-        items: Vec<Expr<'a>>,
-    ) -> Index<'a, ArrayExpr<'a>> {
+        items: Vec<Expr>,
+    ) -> Index<ArrayExpr> {
         let items = self.build_slice(items);
         self.emplace(|n: &mut ArrayExpr| {
             n.span = span;
@@ -800,13 +800,13 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_array_index_expr<'a>(
-        &'a self,
+    fn emplace_array_index_expr(
+        &self,
         span: Span,
-        base: Expr<'a>,
-        parameters: Vec<Expr<'a>>,
+        base: Expr,
+        parameters: Vec<Expr>,
         quote_span: Span,
-    ) -> Index<'a, ArrayIndexExpr<'a>> {
+    ) -> Index<ArrayIndexExpr> {
         let parameters = self.build_slice(parameters);
         self.emplace(|n: &mut ArrayIndexExpr| {
             n.span = span;
@@ -817,12 +817,12 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_array_type<'a>(
-        &'a self,
+    fn emplace_array_type(
+        &self,
         span: Span,
-        base: TypeRef<'a>,
-        size: Expr<'a>,
-    ) -> Index<'a, ArrayType<'a>> {
+        base: TypeRef,
+        size: Expr,
+    ) -> Index<ArrayType> {
         self.emplace(|n: &mut ArrayType| {
             n.span = span;
             n.base = base;
@@ -831,14 +831,14 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_assign_expr_stmt<'a>(
-        &'a self,
+    fn emplace_assign_expr_stmt(
+        &self,
         span: Span,
-        left: Expr<'a>,
-        right: Expr<'a>,
+        left: Expr,
+        right: Expr,
         op: Separator,
         op_span: Span,
-    ) -> Index<'a, AssignExprStatement<'a>> {
+    ) -> Index<AssignExprStatement> {
         self.emplace(|n: &mut AssignExprStatement| {
             n.span = span;
             n.left = left;
@@ -849,14 +849,14 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_binary_expr<'a>(
-        &'a self,
+    fn emplace_binary_expr(
+        &self,
         span: Span,
-        left: Expr<'a>,
-        right: Expr<'a>,
+        left: Expr,
+        right: Expr,
         op: Separator,
         op_span: Span,
-    ) -> Index<'a, BinaryExpr<'a>> {
+    ) -> Index<BinaryExpr> {
         self.emplace(|n: &mut BinaryExpr| {
             n.span = span;
             n.left = left;
@@ -867,11 +867,11 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_block<'a>(
-        &'a self,
+    fn emplace_block(
+        &self,
         span: Span,
-        items: Vec<Statement<'a>>,
-    ) -> Index<'a, Block<'a>> {
+        items: Vec<Statement>,
+    ) -> Index<Block> {
         let items = self.build_slice(items);
         self.emplace(|n: &mut Block| {
             n.span = span;
@@ -880,12 +880,12 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_block_stmt<'a>(
-        &'a self,
+    fn emplace_block_stmt(
+        &self,
         span: Span,
         label: Option<IdSpan>,
-        body: Index<'a, Block<'a>>,
-    ) -> Index<'a, BlockStatement<'a>> {
+        body: Index<Block>,
+    ) -> Index<BlockStatement> {
         self.emplace(|n: &mut BlockStatement| {
             n.span = span;
             n.label = label;
@@ -894,11 +894,11 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_break_stmt<'a>(
-        &'a self,
+    fn emplace_break_stmt(
+        &self,
         span: Span,
         label: Option<IdSpan>,
-    ) -> Index<'a, BreakStatement> {
+    ) -> Index<BreakStatement> {
         self.emplace(|n: &mut BreakStatement| {
             n.span = span;
             n.label = label;
@@ -906,13 +906,13 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_call_expr<'a>(
-        &'a self,
+    fn emplace_call_expr(
+        &self,
         span: Span,
-        base: Expr<'a>,
+        base: Expr,
         quote_span: Span,
-        parameters: Vec<Expr<'a>>,
-    ) -> Index<'a, CallExpr<'a>> {
+        parameters: Vec<Expr>,
+    ) -> Index<CallExpr> {
         let parameters = self.build_slice(parameters);
         self.emplace(|n: &mut CallExpr| {
             n.span = span;
@@ -923,12 +923,12 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_cast_segment<'a>(
-        &'a self,
+    fn emplace_cast_segment(
+        &self,
         span: Span,
-        left: TypeRef<'a>,
-        right: TypeRef<'a>,
-    ) -> Index<'a, CastSegment<'a>> {
+        left: TypeRef,
+        right: TypeRef,
+    ) -> Index<CastSegment> {
         self.emplace(|n: &mut CastSegment| {
             n.span = span;
             n.left = left;
@@ -937,13 +937,13 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_class_def<'a>(
-        &'a self,
+    fn emplace_class_def(
+        &self,
         span: Span,
-        name: Index<'a, GenericName<'a>>,
+        name: Index<GenericName>,
         quote_span: Span,
-        items: Vec<Item<'a>>,
-    ) -> Index<'a, ClassDef<'a>> {
+        items: Vec<Item>,
+    ) -> Index<ClassDef> {
         let items = self.build_slice(items);
         self.emplace(|n: &mut ClassDef| {
             n.span = span;
@@ -954,11 +954,11 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_continue_stmt<'a>(
-        &'a self,
+    fn emplace_continue_stmt(
+        &self,
         span: Span,
         label: Option<IdSpan>,
-    ) -> Index<'a, ContinueStatement> {
+    ) -> Index<ContinueStatement> {
         self.emplace(|n: &mut ContinueStatement| {
             n.span = span;
             n.label = label;
@@ -966,11 +966,11 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_else_clause<'a>(
-        &'a self,
+    fn emplace_else_clause(
+        &self,
         span: Span,
-        body: Index<'a, Block<'a>>,
-    ) -> Index<'a, ElseClause<'a>> {
+        body: Index<Block>,
+    ) -> Index<ElseClause> {
         self.emplace(|n: &mut ElseClause| {
             n.span = span;
             n.body = body;
@@ -978,14 +978,14 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_enum_def<'a>(
-        &'a self,
+    fn emplace_enum_def(
+        &self,
         span: Span,
         name: IdSpan,
-        base_type: Option<Index<'a, PrimitiveType>>,
+        base_type: Option<Index<PrimitiveType>>,
         quote_span: Span,
-        variants: Vec<Index<'a, EnumDefVariant<'a>>>,
-    ) -> Index<'a, EnumDef<'a>> {
+        variants: Vec<Index<EnumDefVariant>>,
+    ) -> Index<EnumDef> {
         let variants = self.build_slice(variants);
         self.emplace(|n: &mut EnumDef| {
             n.span = span;
@@ -997,12 +997,12 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_enum_def_variant<'a>(
-        &'a self,
+    fn emplace_enum_def_variant(
+        &self,
         span: Span,
         name: IdSpan,
-        value: Option<Expr<'a>>,
-    ) -> Index<'a, EnumDefVariant<'a>> {
+        value: Option<Expr>,
+    ) -> Index<EnumDefVariant> {
         self.emplace(|n: &mut EnumDefVariant| {
             n.span = span;
             n.name = name;
@@ -1011,13 +1011,13 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_field_def<'a>(
-        &'a self,
+    fn emplace_field_def(
+        &self,
         span: Span,
         name: IdSpan,
         colon_span: Span,
-        r#type: TypeRef<'a>,
-    ) -> Index<'a, FieldDef<'a>> {
+        r#type: TypeRef,
+    ) -> Index<FieldDef> {
         self.emplace(|n: &mut FieldDef| {
             n.span = span;
             n.name = name;
@@ -1027,16 +1027,16 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_fn_def<'a>(
-        &'a self,
+    fn emplace_fn_def(
+        &self,
         span: Span,
-        name: Index<'a, GenericName<'a>>,
+        name: Index<GenericName>,
         quote_span: Span,
-        parameters: Vec<Index<'a, FnDefParameter<'a>>>,
-        ret_type: Option<TypeRef<'a>>,
-        wheres: Vec<Index<'a, WhereClause<'a>>>,
-        body: Option<Index<'a, Block<'a>>>,
-    ) -> Index<'a, FnDef<'a>> {
+        parameters: Vec<Index<FnDefParameter>>,
+        ret_type: Option<TypeRef>,
+        wheres: Vec<Index<WhereClause>>,
+        body: Option<Index<Block>>,
+    ) -> Index<FnDef> {
         let parameters = self.build_slice(parameters);
         let wheres = self.build_slice(wheres);
         self.emplace(|n: &mut FnDef| {
@@ -1051,12 +1051,12 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_fn_def_parameter<'a>(
-        &'a self,
+    fn emplace_fn_def_parameter(
+        &self,
         span: Span,
         name: IdSpan,
-        r#type: TypeRef<'a>,
-    ) -> Index<'a, FnDefParameter<'a>> {
+        r#type: TypeRef,
+    ) -> Index<FnDefParameter> {
         self.emplace(|n: &mut FnDefParameter| {
             n.span = span;
             n.name = name;
@@ -1065,13 +1065,13 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_fn_type<'a>(
-        &'a self,
+    fn emplace_fn_type(
+        &self,
         span: Span,
         quote_span: Span,
-        parameters: Vec<Index<'a, FnTypeParameter<'a>>>,
-        ret_type: Option<TypeRef<'a>>,
-    ) -> Index<'a, FnType<'a>> {
+        parameters: Vec<Index<FnTypeParameter>>,
+        ret_type: Option<TypeRef>,
+    ) -> Index<FnType> {
         let parameters = self.build_slice(parameters);
         self.emplace(|n: &mut FnType| {
             n.span = span;
@@ -1082,12 +1082,12 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_fn_type_parameter<'a>(
-        &'a self,
+    fn emplace_fn_type_parameter(
+        &self,
         span: Span,
         name: Option<IdSpan>,
-        r#type: TypeRef<'a>,
-    ) -> Index<'a, FnTypeParameter<'a>> {
+        r#type: TypeRef,
+    ) -> Index<FnTypeParameter> {
         self.emplace(|n: &mut FnTypeParameter| {
             n.span = span;
             n.name = name;
@@ -1096,14 +1096,14 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_for_stmt<'a>(
-        &'a self,
+    fn emplace_for_stmt(
+        &self,
         span: Span,
         label: Option<IdSpan>,
         iter_name: IdSpan,
-        iter_expr: Expr<'a>,
-        body: Index<'a, Block<'a>>,
-    ) -> Index<'a, ForStatement<'a>> {
+        iter_expr: Expr,
+        body: Index<Block>,
+    ) -> Index<ForStatement> {
         self.emplace(|n: &mut ForStatement| {
             n.span = span;
             n.label = label;
@@ -1114,13 +1114,13 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_generic_name<'a>(
-        &'a self,
+    fn emplace_generic_name(
+        &self,
         span: Span,
         base: IdSpan,
         quote_span: Span,
-        parameters: Vec<Index<'a, GenericParameter>>,
-    ) -> Index<'a, GenericName<'a>> {
+        parameters: Vec<Index<GenericParameter>>,
+    ) -> Index<GenericName> {
         let parameters = self.build_slice(parameters);
         self.emplace(|n: &mut GenericName| {
             n.span = span;
@@ -1131,11 +1131,11 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_generic_parameter<'a>(
-        &'a self,
+    fn emplace_generic_parameter(
+        &self,
         span: Span,
         name: IdSpan,
-    ) -> Index<'a, GenericParameter> {
+    ) -> Index<GenericParameter> {
         self.emplace(|n: &mut GenericParameter| {
             n.span = span;
             n.name = name;
@@ -1143,12 +1143,12 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_generic_segment<'a>(
-        &'a self,
+    fn emplace_generic_segment(
+        &self,
         span: Span,
         base: IdSpan,
-        parameters: Index<'a, TypeList<'a>>,
-    ) -> Index<'a, GenericSegment<'a>> {
+        parameters: Index<TypeList>,
+    ) -> Index<GenericSegment> {
         self.emplace(|n: &mut GenericSegment| {
             n.span = span;
             n.base = base;
@@ -1157,12 +1157,12 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_if_clause<'a>(
-        &'a self,
+    fn emplace_if_clause(
+        &self,
         span: Span,
-        condition: Expr<'a>,
-        body: Index<'a, Block<'a>>,
-    ) -> Index<'a, IfClause<'a>> {
+        condition: Expr,
+        body: Index<Block>,
+    ) -> Index<IfClause> {
         self.emplace(|n: &mut IfClause| {
             n.span = span;
             n.condition = condition;
@@ -1171,13 +1171,13 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_if_stmt<'a>(
-        &'a self,
+    fn emplace_if_stmt(
+        &self,
         span: Span,
-        if_clause: Index<'a, IfClause<'a>>,
-        elseif_clauses: Vec<Index<'a, IfClause<'a>>>,
-        else_clause: Option<Index<'a, ElseClause<'a>>>,
-    ) -> Index<'a, IfStatement<'a>> {
+        if_clause: Index<IfClause>,
+        elseif_clauses: Vec<Index<IfClause>>,
+        else_clause: Option<Index<ElseClause>>,
+    ) -> Index<IfStatement> {
         let elseif_clauses = self.build_slice(elseif_clauses);
         self.emplace(|n: &mut IfStatement| {
             n.span = span;
@@ -1188,16 +1188,16 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_impl_block<'a>(
-        &'a self,
+    fn emplace_impl_block(
+        &self,
         span: Span,
-        parameters: Vec<Index<'a, GenericParameter>>,
-        class: Option<TypeRef<'a>>,
-        r#type: TypeRef<'a>,
-        wheres: Vec<Index<'a, WhereClause<'a>>>,
+        parameters: Vec<Index<GenericParameter>>,
+        class: Option<TypeRef>,
+        r#type: TypeRef,
+        wheres: Vec<Index<WhereClause>>,
         quote_span: Span,
-        items: Vec<Item<'a>>,
-    ) -> Index<'a, Implementation<'a>> {
+        items: Vec<Item>,
+    ) -> Index<Implementation> {
         let parameters = self.build_slice(parameters);
         let wheres = self.build_slice(wheres);
         let items = self.build_slice(items);
@@ -1213,11 +1213,11 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_lit_expr<'a>(
-        &'a self,
+    fn emplace_lit_expr(
+        &self,
         span: Span,
         value: LitValue,
-    ) -> Index<'a, LitExpr> {
+    ) -> Index<LitExpr> {
         self.emplace(|n: &mut LitExpr| {
             n.span = span;
             n.value = value;
@@ -1225,12 +1225,12 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_loop_stmt<'a>(
-        &'a self,
+    fn emplace_loop_stmt(
+        &self,
         span: Span,
         label: Option<IdSpan>,
-        body: Index<'a, Block<'a>>,
-    ) -> Index<'a, LoopStatement<'a>> {
+        body: Index<Block>,
+    ) -> Index<LoopStatement> {
         self.emplace(|n: &mut LoopStatement| {
             n.span = span;
             n.label = label;
@@ -1239,14 +1239,14 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_member_expr<'a>(
-        &'a self,
+    fn emplace_member_expr(
+        &self,
         span: Span,
-        base: Expr<'a>,
+        base: Expr,
         op_span: Span,
         name: IdSpan,
-        parameters: Option<Index<'a, TypeList<'a>>>,
-    ) -> Index<'a, MemberExpr<'a>> {
+        parameters: Option<Index<TypeList>>,
+    ) -> Index<MemberExpr> {
         self.emplace(|n: &mut MemberExpr| {
             n.span = span;
             n.base = base;
@@ -1257,11 +1257,11 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_module<'a>(
-        &'a self,
+    fn emplace_module(
+        &self,
         file: FileId,
-        items: Vec<Item<'a>>,
-    ) -> Index<'a, Module<'a>> {
+        items: Vec<Item>,
+    ) -> Index<Module> {
         let items = self.build_slice(items);
         self.emplace(|n: &mut Module| {
             n.file = file;
@@ -1270,12 +1270,12 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_module_stmt<'a>(
-        &'a self,
+    fn emplace_module_stmt(
+        &self,
         span: Span,
         name: IdSpan,
         path: Option<IdSpan>,
-    ) -> Index<'a, ModuleStatement> {
+    ) -> Index<ModuleStatement> {
         self.emplace(|n: &mut ModuleStatement| {
             n.span = span;
             n.name = name;
@@ -1284,13 +1284,13 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_object_expr<'a>(
-        &'a self,
+    fn emplace_object_expr(
+        &self,
         span: Span,
-        base: Expr<'a>,
+        base: Expr,
         quote_span: Span,
-        fields: Vec<Index<'a, ObjectExprField<'a>>>,
-    ) -> Index<'a, ObjectExpr<'a>> {
+        fields: Vec<Index<ObjectExprField>>,
+    ) -> Index<ObjectExpr> {
         let fields = self.build_slice(fields);
         self.emplace(|n: &mut ObjectExpr| {
             n.span = span;
@@ -1301,12 +1301,12 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_object_expr_field<'a>(
-        &'a self,
+    fn emplace_object_expr_field(
+        &self,
         span: Span,
         name: IdSpan,
-        value: Expr<'a>,
-    ) -> Index<'a, ObjectExprField<'a>> {
+        value: Expr,
+    ) -> Index<ObjectExprField> {
         self.emplace(|n: &mut ObjectExprField| {
             n.span = span;
             n.name = name;
@@ -1315,11 +1315,11 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_paren_expr<'a>(
-        &'a self,
+    fn emplace_paren_expr(
+        &self,
         span: Span,
-        base: Expr<'a>,
-    ) -> Index<'a, ParenExpr<'a>> {
+        base: Expr,
+    ) -> Index<ParenExpr> {
         self.emplace(|n: &mut ParenExpr| {
             n.span = span;
             n.base = base;
@@ -1327,11 +1327,11 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_path<'a>(
-        &'a self,
+    fn emplace_path(
+        &self,
         span: Span,
-        segments: Vec<PathSegment<'a>>,
-    ) -> Index<'a, Path<'a>> {
+        segments: Vec<PathSegment>,
+    ) -> Index<Path> {
         let segments = self.build_slice(segments);
         self.emplace(|n: &mut Path| {
             n.span = span;
@@ -1340,11 +1340,11 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_primitive_type<'a>(
-        &'a self,
+    fn emplace_primitive_type(
+        &self,
         span: Span,
         base: Keyword,
-    ) -> Index<'a, PrimitiveType> {
+    ) -> Index<PrimitiveType> {
         self.emplace(|n: &mut PrimitiveType| {
             n.span = span;
             n.base = base;
@@ -1352,13 +1352,13 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_range_both_expr<'a>(
-        &'a self,
+    fn emplace_range_both_expr(
+        &self,
         span: Span,
-        left: Expr<'a>,
+        left: Expr,
         op_span: Span,
-        right: Expr<'a>,
-    ) -> Index<'a, RangeBothExpr<'a>> {
+        right: Expr,
+    ) -> Index<RangeBothExpr> {
         self.emplace(|n: &mut RangeBothExpr| {
             n.span = span;
             n.left = left;
@@ -1368,21 +1368,21 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_range_full_expr<'a>(
-        &'a self,
+    fn emplace_range_full_expr(
+        &self,
         span: Span,
-    ) -> Index<'a, RangeFullExpr> {
+    ) -> Index<RangeFullExpr> {
         self.emplace(|n: &mut RangeFullExpr| {
             n.span = span;
         })
     }
 
     #[inline]
-    fn emplace_range_left_expr<'a>(
-        &'a self,
+    fn emplace_range_left_expr(
+        &self,
         span: Span,
-        base: Expr<'a>,
-    ) -> Index<'a, RangeLeftExpr<'a>> {
+        base: Expr,
+    ) -> Index<RangeLeftExpr> {
         self.emplace(|n: &mut RangeLeftExpr| {
             n.span = span;
             n.base = base;
@@ -1390,11 +1390,11 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_range_right_expr<'a>(
-        &'a self,
+    fn emplace_range_right_expr(
+        &self,
         span: Span,
-        base: Expr<'a>,
-    ) -> Index<'a, RangeRightExpr<'a>> {
+        base: Expr,
+    ) -> Index<RangeRightExpr> {
         self.emplace(|n: &mut RangeRightExpr| {
             n.span = span;
             n.base = base;
@@ -1402,11 +1402,11 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_ref_type<'a>(
-        &'a self,
+    fn emplace_ref_type(
+        &self,
         span: Span,
-        base: TypeRef<'a>,
-    ) -> Index<'a, RefType<'a>> {
+        base: TypeRef,
+    ) -> Index<RefType> {
         self.emplace(|n: &mut RefType| {
             n.span = span;
             n.base = base;
@@ -1414,11 +1414,11 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_ret_stmt<'a>(
-        &'a self,
+    fn emplace_ret_stmt(
+        &self,
         span: Span,
-        value: Option<Expr<'a>>,
-    ) -> Index<'a, ReturnStatement<'a>> {
+        value: Option<Expr>,
+    ) -> Index<ReturnStatement> {
         self.emplace(|n: &mut ReturnStatement| {
             n.span = span;
             n.value = value;
@@ -1426,11 +1426,11 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_simple_expr_stmt<'a>(
-        &'a self,
+    fn emplace_simple_expr_stmt(
+        &self,
         span: Span,
-        expr: Expr<'a>,
-    ) -> Index<'a, SimpleExprStatement<'a>> {
+        expr: Expr,
+    ) -> Index<SimpleExprStatement> {
         self.emplace(|n: &mut SimpleExprStatement| {
             n.span = span;
             n.expr = expr;
@@ -1438,11 +1438,11 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_simple_segment<'a>(
-        &'a self,
+    fn emplace_simple_segment(
+        &self,
         span: Span,
         name: IsId,
-    ) -> Index<'a, SimpleSegment> {
+    ) -> Index<SimpleSegment> {
         self.emplace(|n: &mut SimpleSegment| {
             n.span = span;
             n.name = name;
@@ -1450,12 +1450,12 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_struct_def<'a>(
-        &'a self,
+    fn emplace_struct_def(
+        &self,
         span: Span,
-        name: Index<'a, GenericName<'a>>,
-        fields: Vec<Index<'a, FieldDef<'a>>>,
-    ) -> Index<'a, StructDef<'a>> {
+        name: Index<GenericName>,
+        fields: Vec<Index<FieldDef>>,
+    ) -> Index<StructDef> {
         let fields = self.build_slice(fields);
         self.emplace(|n: &mut StructDef| {
             n.span = span;
@@ -1465,11 +1465,11 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_tuple_expr<'a>(
-        &'a self,
+    fn emplace_tuple_expr(
+        &self,
         span: Span,
-        items: Vec<Expr<'a>>,
-    ) -> Index<'a, TupleExpr<'a>> {
+        items: Vec<Expr>,
+    ) -> Index<TupleExpr> {
         let items = self.build_slice(items);
         self.emplace(|n: &mut TupleExpr| {
             n.span = span;
@@ -1478,14 +1478,14 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_tuple_index_expr<'a>(
-        &'a self,
+    fn emplace_tuple_index_expr(
+        &self,
         span: Span,
-        base: Expr<'a>,
+        base: Expr,
         op_span: Span,
         value: i32,
         value_span: Span,
-    ) -> Index<'a, TupleIndexExpr<'a>> {
+    ) -> Index<TupleIndexExpr> {
         self.emplace(|n: &mut TupleIndexExpr| {
             n.span = span;
             n.base = base;
@@ -1496,11 +1496,11 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_tuple_type<'a>(
-        &'a self,
+    fn emplace_tuple_type(
+        &self,
         span: Span,
-        parameters: Vec<TypeRef<'a>>,
-    ) -> Index<'a, TupleType<'a>> {
+        parameters: Vec<TypeRef>,
+    ) -> Index<TupleType> {
         let parameters = self.build_slice(parameters);
         self.emplace(|n: &mut TupleType| {
             n.span = span;
@@ -1509,12 +1509,12 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_type_def<'a>(
-        &'a self,
+    fn emplace_type_def(
+        &self,
         span: Span,
-        name: Index<'a, GenericName<'a>>,
-        from: Option<TypeRef<'a>>,
-    ) -> Index<'a, TypeDef<'a>> {
+        name: Index<GenericName>,
+        from: Option<TypeRef>,
+    ) -> Index<TypeDef> {
         self.emplace(|n: &mut TypeDef| {
             n.span = span;
             n.name = name;
@@ -1523,11 +1523,11 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_type_list<'a>(
-        &'a self,
+    fn emplace_type_list(
+        &self,
         span: Span,
-        items: Vec<TypeRef<'a>>,
-    ) -> Index<'a, TypeList<'a>> {
+        items: Vec<TypeRef>,
+    ) -> Index<TypeList> {
         let items = self.build_slice(items);
         self.emplace(|n: &mut TypeList| {
             n.span = span;
@@ -1536,13 +1536,13 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_unary_expr<'a>(
-        &'a self,
+    fn emplace_unary_expr(
+        &self,
         span: Span,
-        base: Expr<'a>,
+        base: Expr,
         op: Separator,
         op_span: Span,
-    ) -> Index<'a, UnaryExpr<'a>> {
+    ) -> Index<UnaryExpr> {
         self.emplace(|n: &mut UnaryExpr| {
             n.span = span;
             n.base = base;
@@ -1552,12 +1552,12 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_use_stmt<'a>(
-        &'a self,
+    fn emplace_use_stmt(
+        &self,
         span: Span,
-        path: Index<'a, Path<'a>>,
+        path: Index<Path>,
         alias: Option<IdSpan>,
-    ) -> Index<'a, UseStatement<'a>> {
+    ) -> Index<UseStatement> {
         self.emplace(|n: &mut UseStatement| {
             n.span = span;
             n.path = path;
@@ -1566,14 +1566,14 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_var_decl_stmt<'a>(
-        &'a self,
+    fn emplace_var_decl_stmt(
+        &self,
         span: Span,
         r#const: bool,
         name: IdSpan,
-        r#type: Option<TypeRef<'a>>,
-        init_value: Option<Expr<'a>>,
-    ) -> Index<'a, VarDeclStatement<'a>> {
+        r#type: Option<TypeRef>,
+        init_value: Option<Expr>,
+    ) -> Index<VarDeclStatement> {
         self.emplace(|n: &mut VarDeclStatement| {
             n.span = span;
             n.r#const = r#const;
@@ -1584,12 +1584,12 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_where_clause<'a>(
-        &'a self,
+    fn emplace_where_clause(
+        &self,
         span: Span,
         name: IdSpan,
-        constraints: Vec<TypeRef<'a>>,
-    ) -> Index<'a, WhereClause<'a>> {
+        constraints: Vec<TypeRef>,
+    ) -> Index<WhereClause> {
         let constraints = self.build_slice(constraints);
         self.emplace(|n: &mut WhereClause| {
             n.span = span;
@@ -1599,13 +1599,13 @@ impl EmplaceConcrete for Arena {
     }
 
     #[inline]
-    fn emplace_while_stmt<'a>(
-        &'a self,
+    fn emplace_while_stmt(
+        &self,
         span: Span,
         label: Option<IdSpan>,
-        condition: Expr<'a>,
-        body: Index<'a, Block<'a>>,
-    ) -> Index<'a, WhileStatement<'a>> {
+        condition: Expr,
+        body: Index<Block>,
+    ) -> Index<WhileStatement> {
         self.emplace(|n: &mut WhileStatement| {
             n.span = span;
             n.label = label;

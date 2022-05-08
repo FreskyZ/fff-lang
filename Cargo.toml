@@ -5,6 +5,7 @@ edition = "2021"
 
 [lib]
 name = "fflib"
+doctest = false
 
 [[bin]]
 # main command line interface
