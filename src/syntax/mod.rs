@@ -5,30 +5,27 @@ mod visit;
 pub use visit::{Visit, Visitor};
 
 mod parser;
-use parser::Unexpected;
-#[cfg(not(test))]
-use parser::Parser;
-#[cfg(test)]
-pub use parser::Parser;
+use parser::{Parser, Unexpected};
 
 // parse any types of node for test
-pub fn parse_any<'a, T>(
-    source: crate::source::SourceChars, 
-    diagnostics: &mut crate::diagnostics::Diagnostics, 
-    f: impl FnOnce(&mut Parser) -> Result<crate::common::arena::Index<T>, Unexpected>,
+pub fn parse_any<'scx, 'ecx, 'a, T>(
+    source: crate::source::SourceChars<'scx>, 
+    diagnostics: &'ecx mut crate::diagnostics::Diagnostics,
+    arena: &'a crate::common::arena::Arena,
+    f: impl Fn(&mut Parser<'ecx, 'scx, 'a>) -> Result<crate::common::arena::Index<T>, Unexpected>,
 ) -> Option<crate::common::arena::Index<T>> {
-    let mut parser = Parser::new(crate::lexical::Parser::new(source, diagnostics));
+    let mut parser = Parser::new(crate::lexical::Parser::new(source, diagnostics), arena);
     let result = f(&mut parser).ok();
     parser.finish();
     result
 }
 // formal public api only parses module
-pub fn parse<'a>(
+pub fn parse(
     source: crate::source::SourceChars,
     diagnostics: &mut crate::diagnostics::Diagnostics,
-    arena: &'a crate::common::arena::Arena,
+    arena: &crate::common::arena::Arena,
 ) -> Option<crate::common::arena::Index<ast::Module>> {
-    parse_any(source, diagnostics, |cx| cx.parse_module(arena))
+    parse_any(source, diagnostics, arena, Parser::parse_module)
 }
 
 #[cfg(test)]

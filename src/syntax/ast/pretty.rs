@@ -46,8 +46,8 @@ fn pretty() {
         files: [("1".into(), include_str!("../../../tests/ast/generic.f3").into())].into_iter().collect() 
     });
     let mut diagnostics = make_errors!();
-    let mut parser = Parser::new(Scanner::new(sources.entry("1", &mut diagnostics).unwrap(), &mut diagnostics));
-    let actual = parser.parse_module(&arena);
+    let mut parser = Parser::new(Scanner::new(sources.entry("1", &mut diagnostics).unwrap(), &mut diagnostics), &arena);
+    let actual = parser.parse_module();
     parser.finish();
     if let Ok(actual) = actual {
         let mut profiler = asti::MemoryProfiler::new();

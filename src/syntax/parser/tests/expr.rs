@@ -660,28 +660,28 @@ fn parse_tuple_index_expr() {
         *value
     }
 
-    case!{ novisit(cmp, debug) parse_tuple_index_expr_test ".0", 
+    case!{ novisit(cmp, debug) parse_tuple_index_expr ".0", 
         |x| (Span::new(0, 0), (0, Span::new(1, 1))),
     }
 
-    case!{ novisit(cmp, debug) parse_tuple_index_expr_test ".0i32",
+    case!{ novisit(cmp, debug) parse_tuple_index_expr ".0i32",
         |x| (Span::new(0, 0), (0, Span::new(1, 4))),
         // TODO: cannot have postfix
     }
 
-    case!{ novisit(cmp, debug) parse_tuple_index_expr_test ".0xDEADBEE",
+    case!{ novisit(cmp, debug) parse_tuple_index_expr ".0xDEADBEE",
         |x| (Span::new(0, 0), (0xDEADBEE, Span::new(1, 9))),
         // TODO: cannot have prefix
     }
 
     //      01234
-    case!{ novisit(cmp, debug) parse_tuple_index_expr_test ".0i8",
+    case!{ novisit(cmp, debug) parse_tuple_index_expr ".0i8",
         |x| (Span::new(0, 0), (0, Span::new(1, 3))),
         |e| e.emit(strings::InvalidTupleIndex).span(Span::new(1, 3)).help(strings::TupleIndexSyntaxHelp)
     }
 
     //      01234567890123456789012
-    case!{ novisit(cmp, debug) parse_tuple_index_expr_test ".0xFFFF_FFFF_FFFF_FFFF",
+    case!{ novisit(cmp, debug) parse_tuple_index_expr ".0xFFFF_FFFF_FFFF_FFFF",
         |x| (Span::new(0, 0), (0, Span::new(1, 21))),
         |e| e.emit(strings::InvalidTupleIndex).span(Span::new(1, 21)).help(strings::TupleIndexSyntaxHelp)
     }
