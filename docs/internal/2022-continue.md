@@ -56,7 +56,10 @@ Major change summary
 some detailed plans is included by the way
 
 - [ ] syntax: change diagnostics::strings to use macros accept zero or some parameters, use calculated first set in errors, test unrecoverable unexpected and keywords and separators should always use something like `fn` and `+`
-- [ ] syntax: fix `a.0.0` error and try with retry in syntax parser and lexical parser
+- [ ] syntax: update string literal parsing and add retry in lexical parser (this is major)
+- [ ] syntax: fix `a.0.0` error
+- [ ] syntax: generate ast definitions in my language
+- [ ] syntax: try completely interpret ast (this is major)
 - [ ] syntax: add recursive guard for ast visitors, eq returns true, formatters prints `[circular]`, profiler count nothing, use shared preallocate array to reduce allocate
 - [ ] syntax: update random test input generator
 - [ ] syntax: add missing array dup def
