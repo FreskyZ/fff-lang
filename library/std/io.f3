@@ -1,0 +1,21 @@
+
+// cfg is too short and make reader think is some kind of "setting", it is actually conditional compilation
+#[condition(posix)]
+// I'm not familiar with unix's kernel32 equivalent concepts
+#[extern(lib="libc", calling_convention="cdecl")]
+fn open(pathname: &i8, flags: i32);
+
+#[condition(posix)]
+#[extern(...)]
+fn write(fd: i32, buf: &u8, count: u64) -> i64;
+
+// this very basic print is amazingly easy without related concepts about console apis in windows
+fn print(text: string) {
+    write(1, text.data, text.len);
+}
+
+fn println(text: string) {
+    write(1, text.data, text.len);
+    const lf = b"\n";
+    write(1, &lf, 1);
+}

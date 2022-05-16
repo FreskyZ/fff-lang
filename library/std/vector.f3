@@ -1,0 +1,32 @@
+
+use super::ops::Indexable;
+
+// Vec is too short
+struct Vector<T> {
+    len: u64;
+    cap: u64;
+    data: &T;
+}
+
+impl<T> Vector<T> {
+
+    fn new() -> Vector<T> {
+        // omit type parameter in `Self` type require type infer?
+        // if there is no std::ptr::dangling, you have to use this int-to-ptr on 0
+        Self{ len: 0, cap: 0, data: 0 as &T }
+    }
+
+    fn push(value: T) {
+        
+    }
+}
+
+impl<T> Indexable for Vector<T> {
+    type Index = u64;
+    type Output = T;
+    
+    fn index(self: &Self, index: u64) -> &T {
+        return self.data.offset(index);
+    }
+}
+

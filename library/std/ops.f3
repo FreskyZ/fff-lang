@@ -1,0 +1,7 @@
+
+class Indexable {
+    type Index;
+    type Output;
+    fn index(self: &Self, index: Index) -> &Output;
+}
+

@@ -1,0 +1,42 @@
+
+#[condition(posix)]
+#[extern(...)]
+fn malloc(size: u64) -> &u8;
+
+#[condition(posix)]
+#[extern(...)]
+fn free(p: &u8);
+
+// hand written memcpy and memmove assembly seems impossible for now, may be intrinsic
+#[condition(posix)]
+#[extern]
+fn memcpy(dest: &u8, src: &u8, size: u64) -> &u8;
+
+#[condition(posix)]
+#[extern]
+fn memmove(dest: &u8, src: &u8, size: u64) -> &u8;
+
+// I have complained about size_of::<SomeType>() is really inconvenient
+// but this api seems to have to be designed like this, as a formal function name you just cannot call it sizeof
+// or <T as std::mem::Layoutable>::size(), <T as std::mem::Layoutable>::align() ?
+#[intrinsic]
+fn size_of::<T>() -> u64;
+#[intrinsic]
+fn align_of::<T>() -> u64;
+
+// or this
+auto class Layoutable {
+    fn size() -> u64;
+    fn align() -> u64;
+}
+
+fn alloc::<T>() -> &T {
+    // a lot of things about align todo
+    return malloc(T::size());
+}
+
+fn dealloc::<T>(ptr: &T) {
+    // there is very complex conversion, coresion and invariant/covariant/contravariant things in rust I have seen about this
+    // but currently this pointer cast is simply reinterpret cast
+    free(ptr as &u8);
+}

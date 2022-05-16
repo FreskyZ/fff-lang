@@ -11,6 +11,7 @@ concept IEqualtable {
 //     fn operator!(&this, rhs: &Self) -> bool;  // use `is_valid` or something clearer instead
 // }
 
+// update: you don't need to write any struct unit/struct i32, etc.
 #[primitive]  // primitive attribute only on primitive types, cannot be on user types
 type unit: IEqualtable {
 
@@ -32,6 +33,7 @@ type bool : IEqualtable {
 
     // so IBoolean is not implemented here but internally
 }
+// update: declare boolean as variable is not good practice learn by python2
 const true = unsafe::uninitialized(4);
 const false = unsafe::uninitialized(4);
 
@@ -56,9 +58,11 @@ type ref<T> {
     public fn operator==(&this, rhs: &Self) -> bool where T: IEqualtable;
 
     // also deref may not provide a trait
+    // update: no
 }
 
 // Algebra data type? because it is very very very 爽
+// update: yes
 enum Result<T, E> {
     Ok(T),
     Err(E),
@@ -69,6 +73,7 @@ enum Option<T> {
 }
 
 // primitive?
+// update: no
 type array_enumerator<T> : IEnumerator<T> {
     private self: &array<T>,   // how to check this reference leak?
     private index: u64,
@@ -90,7 +95,7 @@ type array<T> : IEnumerable<T> { // concept template
     private var size: u64,
     private var capacity: u64,
 
-    #[constructor] // or do not use this attribute and set `fn new() -> Self` as special name but not keyword
+    #[constructor] // or do not use this attribute and set `fn new() -> Self` as special name but not keyword // update: yes
     public fn new() -> array<T> {
         this.data = ref<T>::new(16);
         this.size = 0;      // which requires non prefix and postfix numeric literal to be {integer} not i32
@@ -100,8 +105,8 @@ type array<T> : IEnumerable<T> { // concept template
     public fn push_back(&this, T value) {
         if this.size == this.capacity {
             const new_capcity = (1.5 * this.capacity).to_u64();
-            var new_data = ref<T>::new(new_capcity);
-            unsafe::memcpy(this.data, new_data, unsafe::sizeof(T) * this.size);
+            var new_data = ref<T>::new(new_capcity); // update: you called this a malloc function?
+            unsafe::memcpy(this.data, new_data, unsafe::sizeof(T) * this.size); // update: why is sizeof unsafe?
             this.data = new_data;
             this.capcity = new_capcity;
         }
@@ -111,6 +116,7 @@ type array<T> : IEnumerable<T> { // concept template
 
     // 'index' after operator is special, but also can be normal variable name
     // it is also not duplicate define, because 'operator index' name contains 'operator ' and defined in array<T> scope, index: u64 defined in operator index scope
+    // update: impl Indexable
     public fn operator index(&this, index: u64) -> &T { 
         if index >= this.size {
             throw IndexOutofRangeException(); // ??
@@ -119,6 +125,7 @@ type array<T> : IEnumerable<T> { // concept template
     }
 
     // auto define 'This' type?
+    // update: yes, Self is allowed in this context
     public const get_enumerator: fn(&This) -> array_enumerator<T> = (&this) => {
 
     }

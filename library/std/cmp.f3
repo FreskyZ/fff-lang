@@ -1,0 +1,43 @@
+
+// Eq is too short
+class PartialEquitable {
+    // eq is too short
+    fn equal(self: &Self, rhs: &Self) -> bool;
+    // ne is too short
+    // class default implementation is already parsed
+    fn not_equal(self: &Self, rhs: &Self) -> bool {
+        return !self.equal(rhs);
+    }
+}
+
+// class "inheritance" TODO
+class Equitable: PartialEquitable {}
+
+type Order = "lt" | "eq" | "gt";
+
+class PartialOrderable {
+
+    fn partial_compare(self: &Self, rhs: &Self) -> Option<Order>;
+
+    fn less_than(self: &Self, rhs: &Self) -> bool {
+        return self.compare(rhs) == Some{ v: "lt" };
+    }
+
+    fn less_than_or_equal(self: &Self, rhs: &Self) -> bool {
+        const order = self.compare(rhs);
+        return order == Option::Some{ v: "lt" } || order == Option::Some{ v: "eq" }
+    }
+
+    fn greater_than(self: &Self, rhs: &Self) -> bool {
+        return self.compare(rhs) == Some{ v: "gt" };
+    }
+
+    fn greater_than_or_equal(self: &Self, rhs: &Self) -> bool {
+        const order = self.compare(rhs);
+        return order == Option::Some{ v: "gt" } || order == Option::Some{ v: "eq" }
+    }
+}
+
+class Orderable {
+    fn compare(self: &Self, rhs: &Self) -> Order;
+}
