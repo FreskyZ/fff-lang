@@ -164,8 +164,8 @@ fn hash(c: char) -> u32 {
 }
 
 impl Separator {
-    pub fn parse(c1: char, c2: char, c3: char) -> Option<(Separator, usize)> {
-        match [c1, c2, c3] {
+    pub fn parse(buf: [char; 3]) -> Option<(Separator, usize)> {
+        match buf {
             ['<', '<', '='] => Some((LtLtEq, 3)),
             ['>', '>', '='] => Some((GtGtEq, 3)),
             [c1, '=', _] => {

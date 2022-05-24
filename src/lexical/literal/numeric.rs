@@ -277,7 +277,8 @@ fn parse_impl(raw: String) -> Result<Numeric, (String, Option<String>)> {
     macro_rules! conv { ($id: expr, $new_state: expr) => ({ state = $new_state; }) }
     #[cfg(not(feature = "trace_numeric_parse"))] 
     macro_rules! retok { ($id: expr, $ret_val: expr) => ({ return Ok($ret_val); }) }
-    #[cfg(not(feature = "trace_numeric_parse"))] 
+    #[cfg(not(feature = "trace_numeric_parse"))]
+    #[allow(unused_macro_rules)]
     macro_rules! reterr { 
         ($id:expr) => ({ 
             return Err((strings::InvalidNumericLiteral.to_owned(), None)); 
@@ -849,26 +850,26 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     // numeric parser supports hyphen but not used in lexical parser,
     // but keep for generic numeric parser (e.g. the one in standard library)
     pub(in super::super) fn is_numeric_start(&self) -> bool {
-        self.current.is_digit(10)
+        self.buf[0].is_digit(10)
     }
 
     // Only digit or ASCII letters or underscore, or hyphen or plus for exponent
     fn is_numeric_continue(&self) -> bool {
-        self.current.is_digit(36) || matches!(self.current, '_' | '.' | '-' | '+')
+        self.buf[0].is_digit(36) || matches!(self.buf[0], '_' | '.' | '-' | '+')
     }
 
-    pub(in super::super) fn parse_numeric_literal(&mut self) -> (Token, Span) {
+    pub(in super::super) fn parse_numeric(&mut self) -> (Token, Span) {
         
         let mut string_value = String::new();
-        let mut span = self.current_position.into();
+        let mut span = self.pos[0].into();
         while self.is_numeric_continue() {
             // 1. exclude 1..2 for range expression, parse_impl checks for that but not used in lexical parser, keep for generic numeric parser
             // 2. exclude 1.to_string(), parse_impl checks for that but not used in lexical parser, keep for generic numeric parser
-            if self.current == '.' && (self.peek == '.' || self.peek.is_id_start()) {
+            if self.buf[0] == '.' && (self.buf[1] == '.' || self.buf[1].is_id_start()) {
                 break;
             }
-            string_value.push(self.current);
-            span += self.current_position;
+            string_value.push(self.buf[0]);
+            span += self.pos[0];
             self.eat();
         }
         
@@ -1203,5 +1204,8 @@ mod tests {
 
         // from some auto generated
         test_case!("22.58387167E-6", Numeric::R64(22.58387167E-6));
+
+        // 0xE+FOO
+        // 0xE
     }
 }

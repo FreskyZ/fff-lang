@@ -57,6 +57,7 @@ pub enum StringLiteralType {
     Binary,
     RawBinary,
     FormatStart,
+    FormatSpecifier,
     FormatIntermdiate,
     FormatEnd,
 }
@@ -69,6 +70,7 @@ impl fmt::Display for StringLiteralType {
             StringLiteralType::Binary => f.write_str("(b)"),
             StringLiteralType::RawBinary => f.write_str("(rb)"),
             StringLiteralType::FormatStart => f.write_str("({)"),
+            StringLiteralType::FormatSpecifier => f.write_str("(:)"),
             StringLiteralType::FormatIntermdiate => f.write_str("(}{)"),
             StringLiteralType::FormatEnd => f.write_str("(})"),
         }
@@ -92,6 +94,8 @@ pub enum Token {
     Bool(bool),
     // char literal
     Char(char),
+    // byte literal: b'\x01'
+    Byte(u8),
     // numeric literals
     Num(Numeric),
 
@@ -122,6 +126,7 @@ impl<'a, 'scx> fmt::Display for TokenDisplay<'a, 'scx> {
             Token::Sep(sep) => write!(f, "sep {}", sep.display()),
             Token::Bool(v) => write!(f, "bool {}", v),
             Token::Char(v) => write!(f, "char {:?}", v),
+            Token::Byte(v) => write!(f, "byte {}", v),
             Token::Num(v) => write!(f, "{}", v),
             Token::Str(id, ty) => write!(f, "str{} {:?}", ty, id.display(self.1)),
         }

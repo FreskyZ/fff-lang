@@ -212,7 +212,7 @@ fn string_literal() {
 
     // eof in raw string literal
     //        0123
-    case!{ r#"R"he"# expect [t!(1: rstr, 0, 3)], make_errors!{ e: e
+    case!{ r#"r"he"# expect [t!(1: rstr, 0, 3)], make_errors!{ e: e
         .emit(strings::UnexpectedEOF)
         .detail(Span::new(0, 0), strings::StringLiteralStartHere)
         .detail(Span::new(4, 4), strings::EOFHere)

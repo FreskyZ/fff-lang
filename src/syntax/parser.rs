@@ -26,7 +26,7 @@ pub struct Parser<'ecx, 'scx, 'a> {
     base: Scanner<'ecx, 'scx>,
     arena: &'a Arena,
 
-    // look ahead buffer and their span
+    // look ahead buffer and their spans
     // this is not LL1 but currently one more is enough
     buf: [Token; 2],
     spans: [Span; 2],
