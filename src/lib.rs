@@ -2,9 +2,11 @@
 #![feature(control_flow_enum)]
 #![feature(let_chains)]
 #![feature(strict_provenance)]
+#![feature(thread_id_value)]
 #![feature(try_trait_v2)]
 
 // TODO: remove pub except interface
+mod tracing;
 pub mod common;
 mod source;
 mod diagnostics;

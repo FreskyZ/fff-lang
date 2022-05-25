@@ -23,11 +23,4 @@ test = false
 # required-features = ["compiler_test"]
 
 [features]
-trace_xid = []
-trace_lexical_str = []
-trace_lexical_char = []
-trace_lexical_escape = []
-trace_numeric_parse = []
-trace_postfix_expr_parse = []
-trace_binary_expr_parse = []
 compiler_test = []

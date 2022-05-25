@@ -41,7 +41,7 @@ XID_OUTPUT_FILE = 'src/lexical/unicode/xid.rs'
 CONFUSABLE_OUTPUT_FILE = 'src/lexical/unicode/security.rs'
 TEST_OUTPUT_FILE = 'src/lexical/unicode/tests.rs'
 
-# use $(unicode.py detail 2> unicode-detail.txt) with $(cargo run --features=trace_xid) to debug xid
+# use $(unicode.py detail 2> unicode-detail.txt) with $(TRACE_INPUT=xid cargo test...) to debug xid
 DETAIL = 'detail' in sys.argv
 
 RE_XID_START = re.compile('^(?P<begin>\w{4,5})(?:\.\.)?(?P<end>\w{4,5})?\s*;\sXID_Start')
@@ -255,6 +255,7 @@ def generate_xid_function(name, ident):
     b = ''
     
     b += f'pub fn {name}(c: char) -> bool {{\n'
+    b += f'    trace!(scope "{name[3:]}");\n'
     b += '    let cp = c as u32;\n'
     # most common case is 64 <= point < 128
     b += '    if cp & 0xFFFF_FFC0 == 0x40 {\n'
@@ -299,19 +300,16 @@ def generate_xid_function(name, ident):
     b += '        let offset_run_to_lookup = (offset_packed >> ((lookup_index & 7) << 3)) & 0xFF;\n'
     b += '        let offset_lookup_to_input = ((cp & 0x7F) >> 4) as u64;\n'
     b += '        let mut offset = offset_run_to_lookup + offset_lookup_to_input;\n'
-    b += '        #[cfg(feature = "trace_xid")]\n'
-    b += f'        println!("{ident} char {{c:?}} point {{cp}} lookup index {{lookup_index}} offset1 {{offset_run_to_lookup}} offset2 {{offset_lookup_to_input}}");\n'
+    b += f'        trace!("char {{c:?}} point {{cp}} lookup index {{lookup_index}} offset1 {{offset_run_to_lookup}} offset2 {{offset_lookup_to_input}}");\n'
     b += '        loop {\n'
     b += '            let run_size = run_byte!(run_index * 3 + 2);\n'
     b += '            if run_size >= offset {\n'
     b += '                let run_value = run_byte!(run_index * 3) + (run_byte!(run_index * 3 + 1) << 8);\n'
     b += '                let test = 1 << (cp & 0xF);\n'
-    b += '                #[cfg(feature = "trace_xid")]\n'
-    b += '                println!("run index {}, run size {} run value {:x} test bit {}", run_index, run_size, run_value, test);\n'
+    b += '                trace!("run index {}, run size {} run value {:x} test bit {}", run_index, run_size, run_value, test);\n'
     b += '                break run_value & test == test;\n'
     b += '            } else {\n'
-    b += '                #[cfg(feature = "trace_xid")]\n'
-    b += '                println!("run index {} run size {} not enough, check next", run_index, run_size);\n'
+    b += '                trace!("run index {} run size {} not enough, check next", run_index, run_size);\n'
     b += '                offset -= run_size + 1;\n'
     b += '                run_index += 1;\n'
     b += '            }\n'

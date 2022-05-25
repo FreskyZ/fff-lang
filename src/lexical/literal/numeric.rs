@@ -12,14 +12,14 @@
 //         |      '0b'  bin-char+ unsigned-postfix
 //         |      '0o'  oct-char+ unsigned-postfix
 //         |      '0x'  hex-char+ unsigned-postfix
-// signed-postfix = 'i8' | 'i16' | 'i32' | 'i64' 
+// signed-postfix = 'i8' | 'i16' | 'i32' | 'i64'
 // unsiged-postfix = 'u8' | 'u16' | 'u32' | 'u64'
 //
 // rational-lit = '-'? dec-char+ ('.' dec-char+) rational-exponent? rational-postfix?
 //              | '-'? dec-char+ rational-exponent? rational-postfix
 // rational-postfix = 'r32' | 'r64'
 // rational-exponent => ('e' | 'E') ('+' | '-') dec-char+
-// 
+//
 // dec-char = '0'...'9'
 // bin-char = '0' | '1'
 // oct-char = '0'...'7'
@@ -27,7 +27,7 @@
 
 // Interestingly, currently numeric literal support `-` prefix to declare negative literals
 // while v2lexer do not use this feature and later unary expr recognize it as a operator negate
-// which allows this: `1----------1` to be a 
+// which allows this: `1----------1` to be a
 // BinaryExpr <1:1-1:12>
 //    Literal (i32)1 <1:1-1:1>
 //    '-' <1:2-1:2>
@@ -50,6 +50,7 @@ struct BufChars<T> {
     m_next: char,
     m_nextnext: char,
 }
+
 #[allow(dead_code)]
 impl<T> BufChars<T> where T : Iterator<Item = char> {
 
@@ -68,8 +69,8 @@ impl<T> BufChars<T> where T : Iterator<Item = char> {
         } else {
             (EOF, EOF)
         };
-        
-        BufChars{ 
+
+        BufChars{
             chars,
             m_current: current,
             m_next: next,
@@ -148,7 +149,6 @@ impl FloatCheckedAlgorithm for f64 {
 
     #[inline]
     fn checked_add<T: Into<f64>>(self, rhs: T) -> FloatCheckedResult {
-        use std::f64;
 
         let rhs = rhs.into();
         if rhs < 0f64 {
@@ -159,7 +159,6 @@ impl FloatCheckedAlgorithm for f64 {
     }
     #[inline]
     fn checked_sub<T: Into<f64>>(self, rhs: T) -> FloatCheckedResult {
-        use std::f64;
 
         let rhs = rhs.into();
         if rhs < 0f64 {
@@ -170,7 +169,6 @@ impl FloatCheckedAlgorithm for f64 {
     }
     #[inline]
     fn checked_mul<T: Into<f64>>(self, rhs: T) -> FloatCheckedResult {
-        use std::f64;
 
         let rhs = rhs.into();
         if self > 0f64 {
@@ -189,7 +187,6 @@ impl FloatCheckedAlgorithm for f64 {
     }
     #[inline]
     fn checked_mul_add<T: Into<f64>, U: Into<f64>>(self, muler: T, adder: U) -> FloatCheckedResult {
-        use std::f64;
 
         let muler = muler.into();
         let adder = adder.into();
@@ -202,7 +199,6 @@ impl FloatCheckedAlgorithm for f64 {
     }
 }
 fn u64_final_value(value: u64, is_positive: bool) -> Numeric {
-    use std::{ i32, u32, i64, u64 };
     if value <= i32::MAX as u64 {
         Numeric::I32(if is_positive { value as i32 } else { -(value as i32) })
     } else if value <= u32::MAX as u64 && is_positive {
@@ -217,12 +213,10 @@ fn u64_final_value(value: u64, is_positive: bool) -> Numeric {
 // Actual impl, huge state machine
 // error is (message, location, optional help)
 fn parse_impl(raw: String) -> Result<Numeric, (String, Option<String>)> {
-    use std::{ i8, u8, i16, u16, i32, u32, i64, u64, f32, f64 };
+    trace!(scope "parse_numeric");
+    trace!("  #0 input \"{}\"", raw);
 
-    if cfg!(feature = "trace_numeric_parse") {
-        println!("\nnum lit parsing: \"{}\"", raw);
-    }
-
+    #[cfg_attr(debug_assertions, derive(Debug, Clone, Copy))]
     enum State {
         ReallyNothing,
         Nothing(bool),                      // is positive
@@ -244,55 +238,35 @@ fn parse_impl(raw: String) -> Result<Numeric, (String, Option<String>)> {
 
     let mut state = State::ReallyNothing;
     let mut chars = BufChars::new(raw.chars());
-    
-    // use with --features trace_numeric_parse
-    #[cfg(feature = "trace_numeric_parse")] 
-    macro_rules! conv { ($id: expr, $new_state: expr) => ({ println!("    conv {}", $id); state = $new_state; }) }
-    #[cfg(feature = "trace_numeric_parse")] 
-    macro_rules! retok { ($id: expr, $ret_val: expr) => ({ println!("    retok {}", $id); return Ok($ret_val); }) }
-    #[cfg(feature = "trace_numeric_parse")] 
-    macro_rules! reterr { 
-        ($id:expr) => ({ 
-            println!("    reterr {}", $id); 
-            return Err((strings::InvalidNumericLiteral.to_owned(), None)); 
-        });
-        ($id:expr, $extra_msg:expr) => ({ 
-            println!("    reterr {}", $id); 
-            return Err((format!("{}, {}", strings::InvalidNumericLiteral, $extra_msg), None)); 
-        });
-        ($id:expr, $extra_msg:expr, $help:expr) => ({ 
-            println!("    reterr {}", $id); 
-            return Err((format!("{}, {}", strings::InvalidNumericLiteral, $extra_msg), Some($help.into()))); 
-        });
-    }
-    #[cfg(feature = "trace_numeric_parse")] 
-    macro_rules! reterr_internal {
-        ($id: expr) => ({
-            println!("    reterr_internal {}", $id);
-            return Err((format!("{}, {} {}", strings::InvalidNumericLiteral, strings::InternalErrorAt, line!()), None));
-        });
-    }
 
-    #[cfg(not(feature = "trace_numeric_parse"))] 
-    macro_rules! conv { ($id: expr, $new_state: expr) => ({ state = $new_state; }) }
-    #[cfg(not(feature = "trace_numeric_parse"))] 
-    macro_rules! retok { ($id: expr, $ret_val: expr) => ({ return Ok($ret_val); }) }
-    #[cfg(not(feature = "trace_numeric_parse"))]
     #[allow(unused_macro_rules)]
-    macro_rules! reterr { 
-        ($id:expr) => ({ 
-            return Err((strings::InvalidNumericLiteral.to_owned(), None)); 
+    macro_rules! debug {
+        // state transfer
+        (transfer #$id:expr, $state:expr) => {{
+            trace!("{:>4} from {:?} > {:?}", format!("#{}", $id), state, $state);
+            state = $state;
+        }};
+        // return with success
+        (success #$id:expr, $value:expr) => {{
+            trace!("{:>4} ok {}", format!("#{}", $id), $value);
+            return Ok($value);
+        }};
+        // return with fail
+        (fail #$id:expr) => {{
+            trace!("{:>4} fail", format!("#{}", $id));
+            return Err((strings::InvalidNumericLiteral.to_owned(), None));
+        }};
+        (fail #$id:expr, $msg:expr) => {{
+            trace!("{:>4} fail {}", format!("#{}", $id), $msg);
+            return Err((format!("{}, {}", strings::InvalidNumericLiteral, $msg), None));
+        }};
+        (fail #$id:expr, $msg:expr, $help:expr) => ({
+            trace!("{:>4} fail {}", format!("#{}", $id), $msg);
+            return Err((format!("{}, {}", strings::InvalidNumericLiteral, $msg), Some($help.into())));
         });
-        ($id:expr, $extra_msg:expr) => ({
-            return Err((format!("{}, {}", strings::InvalidNumericLiteral, $extra_msg), None)); 
-        });
-        ($id:expr, $extra_msg:expr, $help:expr) => ({ 
-            return Err((format!("{}, {}", strings::InvalidNumericLiteral, $extra_msg), Some($help.into())));
-        });
-    }
-    #[cfg(not(feature = "trace_numeric_parse"))] 
-    macro_rules! reterr_internal {
-        ($id: expr) => ({
+        // internal error
+        (internal #$id:expr) => ({
+            trace!("internal error#{}", $id);
             return Err((format!("{}, {} {}", strings::InvalidNumericLiteral, strings::InternalErrorAt, line!()), None));
         });
     }
@@ -302,22 +276,22 @@ fn parse_impl(raw: String) -> Result<Numeric, (String, Option<String>)> {
         match chars.current_with_state(state) {
 
             // ---- ReallyNothing ----
-            (State::ReallyNothing, '-', EOF, _) => reterr!(1, strings::EmptyLiteral),
-            (State::ReallyNothing, '_', EOF, _) => reterr!(2, strings::EmptyLiteral),
-            (State::ReallyNothing, '_', _, _) => reterr!(3, strings::UnderscoreAtHead),
-            (State::ReallyNothing, '-', _, _) => conv!(1, State::Nothing(false)),
+            (State::ReallyNothing, '-', EOF, _) => debug!(fail #1, strings::EmptyLiteral),
+            (State::ReallyNothing, '_', EOF, _) => debug!(fail #2, strings::EmptyLiteral),
+            (State::ReallyNothing, '_', _, _) => debug!(fail #3, strings::UnderscoreAtHead),
+            (State::ReallyNothing, '-', _, _) => debug!(transfer #1, State::Nothing(false)),
             (State::ReallyNothing, _, _, _) => {
                 chars.skip1();
-                conv!(2, State::Nothing(true)); 
+                debug!(transfer #2, State::Nothing(true));
             }
 
             // ---- Nothing(is_positive) ----
-            (State::Nothing(_), '0', EOF, _) => retok!(1, Numeric::I32(0)),
-            (State::Nothing(_), '_', _, _) => reterr!(4, strings::UnderscoreAtHead),
+            (State::Nothing(_), '0', EOF, _) => debug!(success #1, Numeric::I32(0)),
+            (State::Nothing(_), '_', _, _) => debug!(fail #4, strings::UnderscoreAtHead),
 
-            (State::Nothing(_), '0', 'i', _) => conv!(3, State::ExpectSignedIntPostfix(0i64)),
-            (State::Nothing(_), '0', 'u', _) => conv!(4, State::ExpectUnsignedIntPostfix(0u64)),
-            (State::Nothing(_), '0', 'r', _) => conv!(5, State::ExpectFloatPostfix(0f64)),
+            (State::Nothing(_), '0', 'i', _) => debug!(transfer #3, State::ExpectSignedIntPostfix(0i64)),
+            (State::Nothing(_), '0', 'u', _) => debug!(transfer #4, State::ExpectUnsignedIntPostfix(0u64)),
+            (State::Nothing(_), '0', 'r', _) => debug!(transfer #5, State::ExpectFloatPostfix(0f64)),
 
             (State::Nothing(_), '0', 'b', EOF)
             | (State::Nothing(_), '0', 'o', EOF)
@@ -325,221 +299,221 @@ fn parse_impl(raw: String) -> Result<Numeric, (String, Option<String>)> {
             | (State::Nothing(_), '0', 'B', EOF) // although they are not int prefix, make it this error
             | (State::Nothing(_), '0', 'O', EOF)
             | (State::Nothing(_), '0', 'D', EOF)
-            | (State::Nothing(_), '0', 'X', EOF) => reterr!(5, strings::EmptyIntLiteral),           
+            | (State::Nothing(_), '0', 'X', EOF) => debug!(fail #5, strings::EmptyIntLiteral),
 
             (State::Nothing(is_positive), '0', 'b', _) => {
                 chars.dummy1();
-                conv!(6, State::IntPrefix(2, is_positive, false));
+                debug!(transfer #6, State::IntPrefix(2, is_positive, false));
             }
             (State::Nothing(is_positive), '0', 'o', _) => {
                 chars.dummy1();
-                conv!(7, State::IntPrefix(8, is_positive, false));
+                debug!(transfer #7, State::IntPrefix(8, is_positive, false));
             }
             (State::Nothing(is_positive), '0', 'd', _) => {
                 chars.dummy1();
-                conv!(8, State::IntPrefix(10, is_positive, false));
+                debug!(transfer #8, State::IntPrefix(10, is_positive, false));
             }
             (State::Nothing(is_positive), '0', 'x', _) => {
                 chars.dummy1();
-                conv!(9, State::IntPrefix(16, is_positive, false));
+                debug!(transfer #9, State::IntPrefix(16, is_positive, false));
             }
             (State::Nothing(_), '0', 'B', _)
             | (State::Nothing(_), '0', 'O', _)
             | (State::Nothing(_), '0', 'D', _)
-            | (State::Nothing(_), '0', 'X', _) => reterr!(6, strings::NumLitShouldNotStartWith0, strings::IntegralPrefixIsLowerCase),
-            
-            (State::Nothing(_), '0', '.', '_') => reterr!(7, strings::UnderscoreArroundDot),
+            | (State::Nothing(_), '0', 'X', _) => debug!(fail #6, strings::NumLitShouldNotStartWith0, strings::IntegralPrefixIsLowerCase),
+
+            (State::Nothing(_), '0', '.', '_') => debug!(fail #7, strings::UnderscoreArroundDot),
             (State::Nothing(is_positive), '0', '.', _) => {
                 chars.dummy1();
-                conv!(10, State::AfterDot(0f64, 1, is_positive, false));                       
+                debug!(transfer #10, State::AfterDot(0f64, 1, is_positive, false));
             }
-            (State::Nothing(_), '0', _, _) => reterr!(8, strings::NumLitShouldNotStartWith0, strings::CStyleOctNumLitHelp),
-            (State::Nothing(_), '.', EOF, _) => reterr!(9, strings::EmptyLiteral),
-            (State::Nothing(_), '.', _, _) => reterr!(10, strings::DotAtHead),
+            (State::Nothing(_), '0', _, _) => debug!(fail #8, strings::NumLitShouldNotStartWith0, strings::CStyleOctNumLitHelp),
+            (State::Nothing(_), '.', EOF, _) => debug!(fail #9, strings::EmptyLiteral),
+            (State::Nothing(_), '.', _, _) => debug!(fail #10, strings::DotAtHead),
             (State::Nothing(is_positive), ch, _, _) => match ch.to_digit(10) {
-                Some(digit) => conv!(11, State::UnknownI32((digit as i32).merge_sign(is_positive), is_positive, false)),
-                None => reterr!(11, strings::InvalidChar),
+                Some(digit) => debug!(transfer #11, State::UnknownI32((digit as i32).merge_sign(is_positive), is_positive, false)),
+                None => debug!(fail #11, strings::InvalidChar),
             },
 
             // ---- UnknownI32(value, is_positive, prev_is_underscore) ----
-            (State::UnknownI32(_, _, true), EOF, _, _) => reterr!(12, strings::UnderscoreAtEnd),
-            (State::UnknownI32(value, _, false), EOF, _, _) => retok!(2, Numeric::I32(value)),
+            (State::UnknownI32(_, _, true), EOF, _, _) => debug!(fail #12, strings::UnderscoreAtEnd),
+            (State::UnknownI32(value, _, false), EOF, _, _) => debug!(success #2, Numeric::I32(value)),
             (State::UnknownI32(value, _, _), 'i', _, _) => {
                 chars.skip1();
-                conv!(12, State::ExpectSignedIntPostfix(value as i64));
+                debug!(transfer #12, State::ExpectSignedIntPostfix(value as i64));
             },
             (State::UnknownI32(value, true, _), 'u', _, _) => {
                 chars.skip1();
-                conv!(13, State::ExpectUnsignedIntPostfix(value as u64));
+                debug!(transfer #13, State::ExpectUnsignedIntPostfix(value as u64));
             },
-            (State::UnknownI32(_, false, _), 'u', _, _) => reterr!(13, strings::NegativeOperatorOnUnsignedInt),
+            (State::UnknownI32(_, false, _), 'u', _, _) => debug!(fail #13, strings::NegativeOperatorOnUnsignedInt),
             (State::UnknownI32(value, _, _), 'r', _, _) => {
                 chars.skip1();
-                conv!(14, State::ExpectFloatPostfix(value as f64));
+                debug!(transfer #14, State::ExpectFloatPostfix(value as f64));
             }
-            (State::UnknownI32(value, _, _), 'e', _, _) 
-            | (State::UnknownI32(value, _, _), 'E', _, _) => conv!(15, State::DirectAfterE(value as f64, false)),
-            (State::UnknownI32(_, _, true), '.', _, _) => reterr!(14, strings::UnderscoreArroundDot),
-            (State::UnknownI32(_, _, false), '.', '_', _) => reterr!(15, strings::UnderscoreArroundDot),
+            (State::UnknownI32(value, _, _), 'e', _, _)
+            | (State::UnknownI32(value, _, _), 'E', _, _) => debug!(transfer #15, State::DirectAfterE(value as f64, false)),
+            (State::UnknownI32(_, _, true), '.', _, _) => debug!(fail #14, strings::UnderscoreArroundDot),
+            (State::UnknownI32(_, _, false), '.', '_', _) => debug!(fail #15, strings::UnderscoreArroundDot),
             (State::UnknownI32(value, is_positive, false), '.', _, _) =>
-                conv!(16, State::AfterDot(value as f64, 1, is_positive, false)),
+                debug!(transfer #16, State::AfterDot(value as f64, 1, is_positive, false)),
             (State::UnknownI32(value, is_positive, prev_is_underscore), ch, _, _) => match (prev_is_underscore, ch == '_') {
-                (true, true) => reterr!(16, strings::UnderscoreDouble),
-                (_, true) => conv!(17, State::UnknownI32(value, is_positive, true)),
+                (true, true) => debug!(fail #16, strings::UnderscoreDouble),
+                (_, true) => debug!(transfer #17, State::UnknownI32(value, is_positive, true)),
                 (_, false) => match ch.to_digit(10) {
-                    None => reterr!(17, strings::InvalidChar),
+                    None => debug!(fail #17, strings::InvalidChar),
                     Some(digit) => match (value.checked_mul(10), is_positive) {
                         (None, true) => { // positive i32 mul 10 overflow, that is (value >= 214748365 and value <= 21487483647)
                             let i64_value = value as i64 * 10i64 + digit as i64 ;   // these values won't overflow i64 anyway
                             if i64_value <= u32::MAX as i64 {                       // may not overflow u32
-                                conv!(18, State::UnknownU32(i64_value as u32, false));
+                                debug!(transfer #18, State::UnknownU32(i64_value as u32, false));
                             } else {
-                                conv!(19, State::UnknownI64(i64_value, true, false));
+                                debug!(transfer #19, State::UnknownI64(i64_value, true, false));
                             }
                         }
                         (None, false) => { // negative i32 mul 10 overflow, that is (value <= -214748365 and value >= -2147483648)
                             let i64_value = value as i64 * 10i64 - digit as i64;    // these values won't overflow i64 anyway
-                            conv!(20, State::UnknownI64(i64_value, false, false));
+                            debug!(transfer #20, State::UnknownI64(i64_value, false, false));
                         }
                         (Some(value), true) => match value.checked_add(digit as i32) {
-                            None => conv!(21, State::UnknownU32(value as u32 + digit, false)),
-                            Some(value) => conv!(22, State::UnknownI32(value, is_positive, false)),
+                            None => debug!(transfer #21, State::UnknownU32(value as u32 + digit, false)),
+                            Some(value) => debug!(transfer #22, State::UnknownI32(value, is_positive, false)),
                         },
                         (Some(value), false) => match value.checked_sub(digit as i32) {
-                            None => conv!(23, State::UnknownI64(value as i64 - digit as i64, false, false)),
-                            Some(value) => conv!(24, State::UnknownI32(value, is_positive, false)),
+                            None => debug!(transfer #23, State::UnknownI64(value as i64 - digit as i64, false, false)),
+                            Some(value) => debug!(transfer #24, State::UnknownI32(value, is_positive, false)),
                         },
                     },
                 },
             },
 
             // ---- UnknownU32(value, prev_is_underscore) ----
-            (State::UnknownU32(_, true), EOF, _, _) => reterr!(18, strings::UnderscoreAtEnd),
-            (State::UnknownU32(value, false), EOF, _, _) => retok!(3, Numeric::U32(value)),
+            (State::UnknownU32(_, true), EOF, _, _) => debug!(fail #18, strings::UnderscoreAtEnd),
+            (State::UnknownU32(value, false), EOF, _, _) => debug!(success #3, Numeric::U32(value)),
             (State::UnknownU32(value, _), 'i', _, _) => {
                 chars.skip1();
-                conv!(25, State::ExpectSignedIntPostfix(value as i64));
+                debug!(transfer #25, State::ExpectSignedIntPostfix(value as i64));
             },
             (State::UnknownU32(value, _), 'u', _, _) => {
                 chars.skip1();
-                conv!(26, State::ExpectUnsignedIntPostfix(value as u64));
+                debug!(transfer #26, State::ExpectUnsignedIntPostfix(value as u64));
             },
             (State::UnknownU32(value, _), 'r', _, _) => {
                 chars.skip1();
-                conv!(27, State::ExpectFloatPostfix(value as f64));
+                debug!(transfer #27, State::ExpectFloatPostfix(value as f64));
             }
-            (State::UnknownU32(value, _), 'e', _, _) 
-            | (State::UnknownU32(value, _), 'E', _, _) => conv!(28, State::DirectAfterE(value as f64, false)),
-            (State::UnknownU32(_, _), '.', '_', _) => reterr!(19, strings::UnderscoreArroundDot),
-            (State::UnknownU32(_, true), '.', _, _) => reterr!(20, strings::UnderscoreArroundDot),
-            (State::UnknownU32(value, false), '.', _, _) => conv!(29, State::AfterDot(value as f64, 1, true, false)),
+            (State::UnknownU32(value, _), 'e', _, _)
+            | (State::UnknownU32(value, _), 'E', _, _) => debug!(transfer #28, State::DirectAfterE(value as f64, false)),
+            (State::UnknownU32(_, _), '.', '_', _) => debug!(fail #19, strings::UnderscoreArroundDot),
+            (State::UnknownU32(_, true), '.', _, _) => debug!(fail #20, strings::UnderscoreArroundDot),
+            (State::UnknownU32(value, false), '.', _, _) => debug!(transfer #29, State::AfterDot(value as f64, 1, true, false)),
             (State::UnknownU32(value, prev_is_underscore), ch, _, _) => match (prev_is_underscore, ch == '_') {
-                (true, true) => reterr!(21, strings::UnderscoreDouble),
-                (_, true) => conv!(30, State::UnknownU32(value, true)),
+                (true, true) => debug!(fail #21, strings::UnderscoreDouble),
+                (_, true) => debug!(transfer #30, State::UnknownU32(value, true)),
                 (_, false) => match ch.to_digit(10) {
-                    None => reterr!(22, strings::InvalidChar),
-                    Some(digit) => match value.checked_mul(10) { 
-                        None => conv!(31, State::UnknownI64(value as i64 * 10i64 + digit as i64, true, false)), // u32 mul 10 overflow must be positive i64
+                    None => debug!(fail #22, strings::InvalidChar),
+                    Some(digit) => match value.checked_mul(10) {
+                        None => debug!(transfer #31, State::UnknownI64(value as i64 * 10i64 + digit as i64, true, false)), // u32 mul 10 overflow must be positive i64
                         Some(value) => match value.checked_add(digit) {
-                            None => conv!(32, State::UnknownI64(value as i64 + digit as i64, true, false)),     // u32 add digit overflow must be positive i64
-                            Some(value) => conv!(33, State::UnknownU32(value, false)),                          // not overflow continue u32
+                            None => debug!(transfer #32, State::UnknownI64(value as i64 + digit as i64, true, false)),     // u32 add digit overflow must be positive i64
+                            Some(value) => debug!(transfer #33, State::UnknownU32(value, false)),                          // not overflow continue u32
                         },
                     },
                 },
             },
 
             // ---- UnknownI64(value, is_positive, prev is underscore) ----
-            (State::UnknownI64(_, _, true), EOF, _, _) => reterr!(23, strings::UnderscoreAtEnd),
-            (State::UnknownI64(value, _, false), EOF, _, _) => retok!(4, Numeric::I64(value)),
+            (State::UnknownI64(_, _, true), EOF, _, _) => debug!(fail #23, strings::UnderscoreAtEnd),
+            (State::UnknownI64(value, _, false), EOF, _, _) => debug!(success #4, Numeric::I64(value)),
             (State::UnknownI64(value, _, _), 'i', _, _) => {
                 chars.skip1();
-                conv!(34, State::ExpectSignedIntPostfix(value));
+                debug!(transfer #34, State::ExpectSignedIntPostfix(value));
             },
             (State::UnknownI64(value, true, _), 'u', _, _) => {
                 chars.skip1();
-                conv!(35, State::ExpectUnsignedIntPostfix(value as u64));
+                debug!(transfer #35, State::ExpectUnsignedIntPostfix(value as u64));
             },
-            (State::UnknownI64(_, false, _), 'u', _, _) => reterr!(24, strings::NegativeOperatorOnUnsignedInt),
+            (State::UnknownI64(_, false, _), 'u', _, _) => debug!(fail #24, strings::NegativeOperatorOnUnsignedInt),
             (State::UnknownI64(value, _, _), 'r', _, _) => {
                 chars.skip1();
-                conv!(36, State::ExpectFloatPostfix(value as f64));
+                debug!(transfer #36, State::ExpectFloatPostfix(value as f64));
             }
-            (State::UnknownI64(value, _, _), 'e', _, _) 
-            | (State::UnknownI64(value, _, _), 'E', _, _) => conv!(37, State::DirectAfterE(value as f64, false)),
-            (State::UnknownI64(_, _, true), '.', _, _) => reterr!(25, strings::UnderscoreArroundDot),
-            (State::UnknownI64(_, _, false), '.', '_', _) => reterr!(26, strings::UnderscoreArroundDot),
-            (State::UnknownI64(value, is_positive, false), '.', _, _) => conv!(38, State::AfterDot(value as f64, 1, is_positive, false)),
+            (State::UnknownI64(value, _, _), 'e', _, _)
+            | (State::UnknownI64(value, _, _), 'E', _, _) => debug!(transfer #37, State::DirectAfterE(value as f64, false)),
+            (State::UnknownI64(_, _, true), '.', _, _) => debug!(fail #25, strings::UnderscoreArroundDot),
+            (State::UnknownI64(_, _, false), '.', '_', _) => debug!(fail #26, strings::UnderscoreArroundDot),
+            (State::UnknownI64(value, is_positive, false), '.', _, _) => debug!(transfer #38, State::AfterDot(value as f64, 1, is_positive, false)),
             (State::UnknownI64(value, is_positive, prev_is_underscore), ch, _, _) => match (prev_is_underscore, ch == '_') {
-                (true, true) => reterr!(27, strings::UnderscoreDouble),
-                (_, true) => conv!(39, State::UnknownI64(value, is_positive, true)),
+                (true, true) => debug!(fail #27, strings::UnderscoreDouble),
+                (_, true) => debug!(transfer #39, State::UnknownI64(value, is_positive, true)),
                 (_, false) => match ch.to_digit(10) {
-                    None => reterr!(28, strings::InvalidChar), 
+                    None => debug!(fail #28, strings::InvalidChar),
                     Some(digit) => match (value.checked_mul(10i64), is_positive) {
                         (None, true) => {       // positive i64 mul 10 overflow, that is (value <= 9223372036854775808 and value >= 922337203685477581)
                             match (value as u64).checked_mul(10u64) {
                                 None => {       // positive i64 as u64 mul 10 overflow, that is (value <= 9223372036854775808 and value >= 1844674407370955162)
-                                    conv!(40, State::UnknownR64(value as f64 * 10f64 + digit as f64, is_positive));
+                                    debug!(transfer #40, State::UnknownR64(value as f64 * 10f64 + digit as f64, is_positive));
                                 }
                                 Some(value) => match value.checked_add(digit as u64) {
                                     None => {   // positive i64 as u64 mul 10 not overflow add digit overflow, that is (value = 1844674407370955161 and digit >= 6)
-                                        conv!(41, State::UnknownR64(value as f64 + digit as f64, is_positive));
+                                        debug!(transfer #41, State::UnknownR64(value as f64 + digit as f64, is_positive));
                                     }
-                                    Some(value) => conv!(42, State::UnknownU64(value, false)),
+                                    Some(value) => debug!(transfer #42, State::UnknownU64(value, false)),
                                 },
                             }
                         }
                         (None, false) => {      // negative i64 mul 10 overflow, that is (value >= -9223372036854775808 and value <= -922337203685477581)
                             match (value as u64).checked_mul(10u64) {
                                 None => {       // negative i64 as u64 mul 10 overflow, that is (value >= -9223372036854775808 and value <= -1844674407370955162)
-                                    conv!(43, State::UnknownR64(value as f64 * 10f64 - digit as f64, is_positive));
+                                    debug!(transfer #43, State::UnknownR64(value as f64 * 10f64 - digit as f64, is_positive));
                                 }
                                 Some(value) => match value.checked_sub(digit as u64) {
                                     None => {   // negative i64 as u64 mul 10 not overflow add digit overflow, that is (value = -1844674407370955161 and digit >= 7)
-                                        conv!(44, State::UnknownR64(value as f64 - digit as f64, is_positive));
+                                        debug!(transfer #44, State::UnknownR64(value as f64 - digit as f64, is_positive));
                                     }
-                                    Some(value) => conv!(45, State::UnknownU64(value, false)), 
+                                    Some(value) => debug!(transfer #45, State::UnknownU64(value, false)),
                                 },
                             }
                         }
                         (Some(value), true) => match value.checked_add(digit as i64) {
-                            None => conv!(46, State::UnknownU64(value as u64 + digit as u64, false)),
-                            Some(value) => conv!(47, State::UnknownI64(value, true, false)), 
+                            None => debug!(transfer #46, State::UnknownU64(value as u64 + digit as u64, false)),
+                            Some(value) => debug!(transfer #47, State::UnknownI64(value, true, false)),
                         },
                         (Some(value), false) => match value.checked_sub(digit as i64) {
-                            None => conv!(48, State::UnknownR64(value as f64 - digit as f64, false)),
-                            Some(value) => conv!(49, State::UnknownI64(value, false, false)),
+                            None => debug!(transfer #48, State::UnknownR64(value as f64 - digit as f64, false)),
+                            Some(value) => debug!(transfer #49, State::UnknownI64(value, false, false)),
                         },
                     },
                 },
             },
 
             // ---- UnknownU64(value, prev_is_underscore) ----
-            (State::UnknownU64(_, true), EOF, _, _) => reterr!(29, strings::UnderscoreAtEnd),
-            (State::UnknownU64(value, false), EOF, _, _) => retok!(5, Numeric::U64(value)),
-            (State::UnknownU64(_, _), 'i', _, _) => reterr!(30, strings::IntegralOverflow),
+            (State::UnknownU64(_, true), EOF, _, _) => debug!(fail #29, strings::UnderscoreAtEnd),
+            (State::UnknownU64(value, false), EOF, _, _) => debug!(success #5, Numeric::U64(value)),
+            (State::UnknownU64(_, _), 'i', _, _) => debug!(fail #30, strings::IntegralOverflow),
             (State::UnknownU64(value, _), 'u', _, _) => {
                 chars.skip1();
-                conv!(50, State::ExpectUnsignedIntPostfix(value));
+                debug!(transfer #50, State::ExpectUnsignedIntPostfix(value));
             },
             (State::UnknownU64(value, _), 'r', _, _) => {
                 chars.skip1();
-                conv!(51, State::ExpectFloatPostfix(value as f64));
+                debug!(transfer #51, State::ExpectFloatPostfix(value as f64));
             }
-            (State::UnknownU64(value, _), 'e', _, _) 
-            | (State::UnknownU64(value, _), 'E', _, _) => conv!(52, State::DirectAfterE(value as f64, false)),
-            (State::UnknownU64(_, true), '.', _, _) => reterr!(31, strings::UnderscoreArroundDot),
-            (State::UnknownU64(_, false), '.', '_', _) => reterr!(32, strings::UnderscoreArroundDot),
-            (State::UnknownU64(value, false), '.', _, _) => conv!(53, State::AfterDot(value as f64, 1, true, false)),
+            (State::UnknownU64(value, _), 'e', _, _)
+            | (State::UnknownU64(value, _), 'E', _, _) => debug!(transfer #52, State::DirectAfterE(value as f64, false)),
+            (State::UnknownU64(_, true), '.', _, _) => debug!(fail #31, strings::UnderscoreArroundDot),
+            (State::UnknownU64(_, false), '.', '_', _) => debug!(fail #32, strings::UnderscoreArroundDot),
+            (State::UnknownU64(value, false), '.', _, _) => debug!(transfer #53, State::AfterDot(value as f64, 1, true, false)),
             (State::UnknownU64(value, prev_is_underscore), ch, _, _) => match (prev_is_underscore, ch == '_') {
-                (true, true) => reterr!(33, strings::UnderscoreDouble),
-                (_, true) => conv!(54, State::UnknownU64(value, true)),
+                (true, true) => debug!(fail #33, strings::UnderscoreDouble),
+                (_, true) => debug!(transfer #54, State::UnknownU64(value, true)),
                 (_, false) => match ch.to_digit(10) {
-                    None => reterr!(34, strings::InvalidChar),
-                    Some(digit) => match value.checked_mul(10) { 
-                        None => conv!(55, State::UnknownR64(value as f64 * 10f64 + digit as f64, true)),    // u64 mul 10 overflow must be positive f64
+                    None => debug!(fail #34, strings::InvalidChar),
+                    Some(digit) => match value.checked_mul(10) {
+                        None => debug!(transfer #55, State::UnknownR64(value as f64 * 10f64 + digit as f64, true)),    // u64 mul 10 overflow must be positive f64
                         Some(value) => match value.checked_add(digit as u64) {
-                            None => conv!(56, State::UnknownR64(value as f64 + digit as f64, true)),        // u64 add digit overflow must be positive f64
-                            Some(value) => conv!(57, State::UnknownU64(value, false)),                      // not overflow continue u64
+                            None => debug!(transfer #56, State::UnknownR64(value as f64 + digit as f64, true)),        // u64 add digit overflow must be positive f64
+                            Some(value) => debug!(transfer #57, State::UnknownU64(value, false)),                      // not overflow continue u64
                         },
                     },
                 },
@@ -547,31 +521,31 @@ fn parse_impl(raw: String) -> Result<Numeric, (String, Option<String>)> {
 
             // TODO: need prev is underscore?
             // ---- UnknownR64(value, is_positive) ----
-            (State::UnknownR64(value, _), EOF, _, _) => retok!(6, Numeric::R64(value)),
-            (State::UnknownR64(_, _), 'i', _, _) => reterr!(35, strings::IntegralOverflow),
-            (State::UnknownR64(_, _), 'u', _, _) => reterr!(36, strings::IntegralOverflow),
+            (State::UnknownR64(value, _), EOF, _, _) => debug!(success #6, Numeric::R64(value)),
+            (State::UnknownR64(_, _), 'i', _, _) => debug!(fail #35, strings::IntegralOverflow),
+            (State::UnknownR64(_, _), 'u', _, _) => debug!(fail #36, strings::IntegralOverflow),
             (State::UnknownR64(value, _), 'r', _, _) => {
                 chars.skip1();
-                conv!(58, State::ExpectFloatPostfix(value));
+                debug!(transfer #58, State::ExpectFloatPostfix(value));
             }
-            (State::UnknownR64(value, _), 'e', _, _) 
-            | (State::UnknownR64(value, _), 'E', _, _) => conv!(59, State::DirectAfterE(value, false)),
-            (State::UnknownR64(_, _), '.', '_', _) => reterr!(37, strings::UnderscoreArroundDot),
-            (State::UnknownR64(value, is_positive), '.', _, _) => conv!(60, State::AfterDot(value, 1, is_positive, false)),
+            (State::UnknownR64(value, _), 'e', _, _)
+            | (State::UnknownR64(value, _), 'E', _, _) => debug!(transfer #59, State::DirectAfterE(value, false)),
+            (State::UnknownR64(_, _), '.', '_', _) => debug!(fail #37, strings::UnderscoreArroundDot),
+            (State::UnknownR64(value, is_positive), '.', _, _) => debug!(transfer #60, State::AfterDot(value, 1, is_positive, false)),
             (State::UnknownR64(value, is_positive), ch, _, _) => match ch.to_digit(10) {
-                None => reterr!(38, strings::InvalidChar),
+                None => debug!(fail #38, strings::InvalidChar),
                 Some(digit) => match value.checked_mul_add(10, if is_positive { digit as i32 } else { -(digit as i32) }) {
-                    FloatCheckedResult::Ok(value) => conv!(61, State::UnknownR64(value, is_positive)),
-                    FloatCheckedResult::Overflow => reterr!(39, strings::FloatPointOverflow),
-                    FloatCheckedResult::Underflow => reterr!(40, strings::FloatPointUnderflow),
+                    FloatCheckedResult::Ok(value) => debug!(transfer #61, State::UnknownR64(value, is_positive)),
+                    FloatCheckedResult::Overflow => debug!(fail #39, strings::FloatPointOverflow),
+                    FloatCheckedResult::Underflow => debug!(fail #40, strings::FloatPointUnderflow),
                 },
             },
 
             // ---- IntPrefix(base, is_postive, prev_is_underscore) ----
-            (State::IntPrefix(_, _, _), 'e', _, _) 
-            | (State::IntPrefix(_, _, _), 'E', _, _) => reterr!(41, strings::ExponentInIntLiteral),
-            (State::IntPrefix(_, _, _), '.', _, _) => reterr!(42, strings::DotAtHead),
-            (State::IntPrefix(_, _, true), '_', _, _) => reterr!(43, strings::UnderscoreDouble),
+            (State::IntPrefix(_, _, _), 'e', _, _)
+            | (State::IntPrefix(_, _, _), 'E', _, _) => debug!(fail #41, strings::ExponentInIntLiteral),
+            (State::IntPrefix(_, _, _), '.', _, _) => debug!(fail #42, strings::DotAtHead),
+            (State::IntPrefix(_, _, true), '_', _, _) => debug!(fail #43, strings::UnderscoreDouble),
             (State::IntPrefix(_, _, _), 'i', '8', EOF)
             | (State::IntPrefix(_, _, _), 'i', '1', '6')
             | (State::IntPrefix(_, _, _), 'i', '3', '2')
@@ -579,273 +553,273 @@ fn parse_impl(raw: String) -> Result<Numeric, (String, Option<String>)> {
             | (State::IntPrefix(_, _, _), 'u', '8', EOF)
             | (State::IntPrefix(_, _, _), 'u', '1', '6')
             | (State::IntPrefix(_, _, _), 'u', '3', '2')
-            | (State::IntPrefix(_, _, _), 'u', '6', '4') => reterr!(44, strings::EmptyIntLiteral),
-            (State::IntPrefix(_, _, _), 'r', '3', '2') 
-            | (State::IntPrefix(_, _, _), 'r', '6', '4') => reterr!(45, strings::EmptyIntLiteral, strings::AndFloatPostfixInIntLiteral),
+            | (State::IntPrefix(_, _, _), 'u', '6', '4') => debug!(fail #44, strings::EmptyIntLiteral),
+            (State::IntPrefix(_, _, _), 'r', '3', '2')
+            | (State::IntPrefix(_, _, _), 'r', '6', '4') => debug!(fail #45, strings::EmptyIntLiteral, strings::AndFloatPostfixInIntLiteral),
             // u, i, f
-            (State::IntPrefix(base, is_positive, false), '_', _, _) => conv!(62, State::IntPrefix(base, is_positive, true)),
+            (State::IntPrefix(base, is_positive, false), '_', _, _) => debug!(transfer #62, State::IntPrefix(base, is_positive, true)),
             (State::IntPrefix(base, is_positive, _), ch, _, _) => match ch.to_digit(base) {
-                Some(digit) => conv!(63, State::ExpectInt(base, digit as u64, is_positive, false)),
-                None => reterr!(46, strings::InvalidCharInIntLiteral, strings::IntLiteralAllowedChars[match base { 2 => 0, 8 => 1, 10 => 2, 16 => 3, _ => reterr_internal!(2) }]),
+                Some(digit) => debug!(transfer #63, State::ExpectInt(base, digit as u64, is_positive, false)),
+                None => debug!(fail #46, strings::InvalidCharInIntLiteral, strings::IntLiteralAllowedChars[match base { 2 => 0, 8 => 1, 10 => 2, 16 => 3, _ => debug!(internal #2) }]),
             },
 
             // ---- ExpectInt(base, value, is_positive, prev_is_underscore) ----
-            (State::ExpectInt(_, _, _, _), '.', _, _) => reterr!(47, strings::DotInIntLiteral),
-            (State::ExpectInt(_, value, is_positive, _), EOF, _, _) => retok!(7, u64_final_value(value, is_positive)),
+            (State::ExpectInt(_, _, _, _), '.', _, _) => debug!(fail #47, strings::DotInIntLiteral),
+            (State::ExpectInt(_, value, is_positive, _), EOF, _, _) => debug!(success #7, u64_final_value(value, is_positive)),
             (State::ExpectInt(_, value, is_positive, _), 'i', _, _) => if value > i64::MAX as u64 {
-                reterr!(48, strings::IntegralOverflow);
+                debug!(fail #48, strings::IntegralOverflow);
             } else {
                 chars.skip1();
-                conv!(64, State::ExpectSignedIntPostfix(if is_positive { value as i64 } else { -(value as i64) }));
+                debug!(transfer #64, State::ExpectSignedIntPostfix(if is_positive { value as i64 } else { -(value as i64) }));
             },
             (State::ExpectInt(_, value, true, _), 'u', _, _) => {
                 chars.skip1();
-                conv!(65, State::ExpectUnsignedIntPostfix(value));
+                debug!(transfer #65, State::ExpectUnsignedIntPostfix(value));
             }
-            (State::ExpectInt(_, _, false, _), 'u', _, _) => reterr!(49, strings::NegativeOperatorOnUnsignedInt),
-            (State::ExpectInt(2, _, _, _), 'e', _, _) 
+            (State::ExpectInt(_, _, false, _), 'u', _, _) => debug!(fail #49, strings::NegativeOperatorOnUnsignedInt),
+            (State::ExpectInt(2, _, _, _), 'e', _, _)
             | (State::ExpectInt(2, _, _, _), 'E', _, _)
             | (State::ExpectInt(8, _, _, _), 'e', _, _)     // because E is allowed in 16
-            | (State::ExpectInt(8, _, _, _), 'E', _, _) 
-            | (State::ExpectInt(10, _, _, _), 'e', _, _) 
+            | (State::ExpectInt(8, _, _, _), 'E', _, _)
+            | (State::ExpectInt(10, _, _, _), 'e', _, _)
             | (State::ExpectInt(10, _, _, _), 'E', _, _)
             | (State::ExpectInt(16, _, _, _), 'e', '+', _)  // because E is allowed in 16
-            | (State::ExpectInt(16, _, _, _), 'E', '+', _) 
-            | (State::ExpectInt(16, _, _, _), 'e', '-', _) 
-            | (State::ExpectInt(16, _, _, _), 'E', '-', _) => reterr!(50, strings::ExponentInIntLiteral),
+            | (State::ExpectInt(16, _, _, _), 'E', '+', _)
+            | (State::ExpectInt(16, _, _, _), 'e', '-', _)
+            | (State::ExpectInt(16, _, _, _), 'E', '-', _) => debug!(fail #50, strings::ExponentInIntLiteral),
             (State::ExpectInt(base, value, is_positive, prev_is_underscore), ch, _, _) => match (prev_is_underscore, ch == '_') {
-                (true, true) => reterr!(51, strings::UnderscoreDouble),
-                (_, true) => conv!(66, State::ExpectInt(base, value, is_positive, true)),
+                (true, true) => debug!(fail #51, strings::UnderscoreDouble),
+                (_, true) => debug!(transfer #66, State::ExpectInt(base, value, is_positive, true)),
                 (_, false) => match ch.to_digit(base) {
-                    None => reterr!(52, strings::InvalidCharInIntLiteral, strings::IntLiteralAllowedChars[match base { 2 => 0, 8 => 1, 10 => 2, 16 => 3, _ => reterr_internal!(1) }]),
+                    None => debug!(fail #52, strings::InvalidCharInIntLiteral, strings::IntLiteralAllowedChars[match base { 2 => 0, 8 => 1, 10 => 2, 16 => 3, _ => debug!(internal #1) }]),
                     Some(digit) => match value.checked_mul(base as u64) {
-                        None => reterr!(53, strings::IntegralOverflow), 
+                        None => debug!(fail #53, strings::IntegralOverflow),
                         Some(value) => match value.checked_add(digit as u64) {
-                            None => reterr!(54, strings::IntegralOverflow),
+                            None => debug!(fail #54, strings::IntegralOverflow),
                             Some(value) => {
                                 if !is_positive && value >= 9223372036854775808u64 {
-                                    reterr!(55, strings::IntegralOverflow); 
+                                    debug!(fail #55, strings::IntegralOverflow);
                                 } else {
-                                    conv!(67, State::ExpectInt(base, value, is_positive, false));
+                                    debug!(transfer #67, State::ExpectInt(base, value, is_positive, false));
                                 }
                             }
-                        },                       
+                        },
                     },
                 },
             },
 
             // ---- AfterDot(value, bits, is_positive, prev_is_underscore) ----
-            (State::AfterDot(_, _, _, _), '.', _, _) => reterr!(56, strings::DotDouble),
+            (State::AfterDot(_, _, _, _), '.', _, _) => debug!(fail #56, strings::DotDouble),
             (State::AfterDot(_, _, _, _), 'i', _, _)
-            | (State::AfterDot(_, _, _, _), 'u', _, _) => reterr!(57, strings::MaybeIntPostfixInFloatPoint),  
+            | (State::AfterDot(_, _, _, _), 'u', _, _) => debug!(fail #57, strings::MaybeIntPostfixInFloatPoint),
             (State::AfterDot(value, _, _, _), 'r', _, _) => {
                 chars.skip1();
-                conv!(68, State::ExpectFloatPostfix(value));
+                debug!(transfer #68, State::ExpectFloatPostfix(value));
             }
             (State::AfterDot(value, _, _, _), 'e', _, _)
-            | (State::AfterDot(value, _, _, _), 'E', _, _) => conv!(69, State::DirectAfterE(value, false)),
-            (State::AfterDot(_, 1, _, _), EOF, _, _) => reterr!(58, strings::DotAtEnd),
-            (State::AfterDot(_, _, _, true), EOF, _, _) => reterr!(59, strings::UnderscoreAtEnd),
-            (State::AfterDot(value, _, _, false), EOF, _, _) => retok!(8, Numeric::R64(value)),
+            | (State::AfterDot(value, _, _, _), 'E', _, _) => debug!(transfer #69, State::DirectAfterE(value, false)),
+            (State::AfterDot(_, 1, _, _), EOF, _, _) => debug!(fail #58, strings::DotAtEnd),
+            (State::AfterDot(_, _, _, true), EOF, _, _) => debug!(fail #59, strings::UnderscoreAtEnd),
+            (State::AfterDot(value, _, _, false), EOF, _, _) => debug!(success #8, Numeric::R64(value)),
             (State::AfterDot(value, bits, is_positive, prev_is_underscore), ch, _, _) => match (prev_is_underscore, ch == '_') {
-                (true, true) => reterr!(60, strings::UnderscoreDouble),
-                (_, true) => conv!(70, State::AfterDot(value, bits, is_positive, true)),
+                (true, true) => debug!(fail #60, strings::UnderscoreDouble),
+                (_, true) => debug!(transfer #70, State::AfterDot(value, bits, is_positive, true)),
                 (_, false) => match (ch.to_digit(10), is_positive) {
-                    (None, _) => reterr!(61, strings::InvalidChar),
+                    (None, _) => debug!(fail #61, strings::InvalidChar),
                     (Some(digit), true) => match value.checked_add(digit as f64 / 10f64.powi(bits)) {
-                        FloatCheckedResult::Ok(value) => conv!(71, State::AfterDot(value, bits + 1, is_positive, false)),
-                        FloatCheckedResult::Overflow => reterr!(62, strings::FloatPointOverflow),
-                        FloatCheckedResult::Underflow => reterr!(63, strings::FloatPointUnderflow),
-                    },                 
+                        FloatCheckedResult::Ok(value) => debug!(transfer #71, State::AfterDot(value, bits + 1, is_positive, false)),
+                        FloatCheckedResult::Overflow => debug!(fail #62, strings::FloatPointOverflow),
+                        FloatCheckedResult::Underflow => debug!(fail #63, strings::FloatPointUnderflow),
+                    },
                     (Some(digit), false) => match value.checked_sub(digit as f64 / 10f64.powi(bits)) {
-                        FloatCheckedResult::Ok(value) => conv!(72, State::AfterDot(value, bits + 1, is_positive, false)),
-                        FloatCheckedResult::Overflow => reterr!(64, strings::FloatPointOverflow),
-                        FloatCheckedResult::Underflow => reterr!(65, strings::FloatPointUnderflow),
-                    }  
+                        FloatCheckedResult::Ok(value) => debug!(transfer #72, State::AfterDot(value, bits + 1, is_positive, false)),
+                        FloatCheckedResult::Overflow => debug!(fail #64, strings::FloatPointOverflow),
+                        FloatCheckedResult::Underflow => debug!(fail #65, strings::FloatPointUnderflow),
+                    }
                 },
             },
 
             // ---- DirectAfterE(value, prev_is_underscore) ----
             (State::DirectAfterE(_, _), '+', EOF, _)
-            | (State::DirectAfterE(_, _), '-', EOF, _) => reterr!(66, strings::UnexpectedEOFInExponent),  
-            (State::DirectAfterE(_, _), '+', '_', _) => reterr!(67, strings::UnderscoreAtExponentHead),
-            (State::DirectAfterE(_, _), '-', '_', _) => reterr!(68, strings::UnderscoreAtExponentHead),
+            | (State::DirectAfterE(_, _), '-', EOF, _) => debug!(fail #66, strings::UnexpectedEOFInExponent),
+            (State::DirectAfterE(_, _), '+', '_', _) => debug!(fail #67, strings::UnderscoreAtExponentHead),
+            (State::DirectAfterE(_, _), '-', '_', _) => debug!(fail #68, strings::UnderscoreAtExponentHead),
             (State::DirectAfterE(value, _), '+', ch, _) => match ch.to_digit(10) {
-                None => reterr!(69, strings::InvalidChar),
+                None => debug!(fail #69, strings::InvalidChar),
                 Some(digit) => {
                     chars.dummy1();
-                    conv!(73, State::AfterE(value, digit as i32, true, false));
+                    debug!(transfer #73, State::AfterE(value, digit as i32, true, false));
                 }
             },
             (State::DirectAfterE(value, _), '-', ch, _) => match ch.to_digit(10) {
-                None => reterr!(70, strings::InvalidChar),
+                None => debug!(fail #70, strings::InvalidChar),
                 Some(digit) => {
                     chars.dummy1();
-                    conv!(74, State::AfterE(value, -(digit as i32), false, false));
+                    debug!(transfer #74, State::AfterE(value, -(digit as i32), false, false));
                 }
             },
-            (State::DirectAfterE(value, false), '_', _, _) => conv!(75, State::DirectAfterE(value, true)),
-            (State::DirectAfterE(_, true), '_', _, _) => reterr!(71, strings::UnderscoreDouble),
+            (State::DirectAfterE(value, false), '_', _, _) => debug!(transfer #75, State::DirectAfterE(value, true)),
+            (State::DirectAfterE(_, true), '_', _, _) => debug!(fail #71, strings::UnderscoreDouble),
             (State::DirectAfterE(value, _), ch, _, _) => match ch.to_digit(10) {
-                None => reterr!(72, strings::InvalidChar),                        
-                Some(digit) => conv!(76, State::AfterE(value, digit as i32, true, false)),
+                None => debug!(fail #72, strings::InvalidChar),
+                Some(digit) => debug!(transfer #76, State::AfterE(value, digit as i32, true, false)),
             },
 
             // ---- AfterE(value, exp, exp_is_positive, prev_is_underscore) ----
             (State::AfterE(_, _, _, _), 'u', _, _)
-            | (State::AfterE(_, _, _, _), 'i', _, _) => reterr!(73, strings::MaybeIntPostfixInFloatPoint),
+            | (State::AfterE(_, _, _, _), 'i', _, _) => debug!(fail #73, strings::MaybeIntPostfixInFloatPoint),
             (State::AfterE(_, _, _, _), '.', _, _)
             | (State::AfterE(_, _, _, _), 'e', _, _)
-            | (State::AfterE(_, _, _, _), 'E', _, _) => reterr!(74, strings::FloatExponentFloat),
+            | (State::AfterE(_, _, _, _), 'E', _, _) => debug!(fail #74, strings::FloatExponentFloat),
             (State::AfterE(value, exp, _, _), 'r', _, _) => match value.checked_mul(10f64.powi(exp)) {
-                FloatCheckedResult::Overflow => reterr!(75, strings::FloatPointOverflow),
-                FloatCheckedResult::Underflow => reterr!(76, strings::FloatPointUnderflow),
+                FloatCheckedResult::Overflow => debug!(fail #75, strings::FloatPointOverflow),
+                FloatCheckedResult::Underflow => debug!(fail #76, strings::FloatPointUnderflow),
                 FloatCheckedResult::Ok(value) => {
                     chars.skip1();
-                    conv!(77, State::ExpectFloatPostfix(value));
+                    debug!(transfer #77, State::ExpectFloatPostfix(value));
                 }
             },
-            (State::AfterE(_, _, _, true), EOF, _, _) => reterr!(77, strings::UnderscoreAtEnd),
+            (State::AfterE(_, _, _, true), EOF, _, _) => debug!(fail #77, strings::UnderscoreAtEnd),
             (State::AfterE(value, exp, _, false), EOF, _, _) => match value.checked_mul(10f64.powi(exp)) {
-                FloatCheckedResult::Ok(value) => retok!(9, Numeric::R64(value)),
-                FloatCheckedResult::Overflow => reterr!(78, strings::FloatPointOverflow,
+                FloatCheckedResult::Ok(value) => debug!(success #9, Numeric::R64(value)),
+                FloatCheckedResult::Overflow => debug!(fail #78, strings::FloatPointOverflow,
                     strings::FloatPointOverflowHelpMaxValue[if value > 0f64 { 2 } else { 3 }]),
-                FloatCheckedResult::Underflow => reterr!(79, strings::FloatPointUnderflow, 
+                FloatCheckedResult::Underflow => debug!(fail #79, strings::FloatPointUnderflow,
                     strings::FloatPointUnderflowHelpMinValue[if value > 0f64 { 2 } else { 3 }]),
             },
             (State::AfterE(value, exp, exp_is_positive, prev_is_underscore), ch, _, _) => match (prev_is_underscore, ch == '_') {
-                (true, true) => reterr!(80, strings::UnderscoreDouble),
-                (_, true) => conv!(78, State::AfterE(value, exp, exp_is_positive, true)),
+                (true, true) => debug!(fail #80, strings::UnderscoreDouble),
+                (_, true) => debug!(transfer #78, State::AfterE(value, exp, exp_is_positive, true)),
                 (_, false) => match ch.to_digit(10) {
-                    None => reterr!(81, strings::InvalidChar),               
+                    None => debug!(fail #81, strings::InvalidChar),
                     Some(digit) => match (exp.checked_mul(10), exp_is_positive) {
-                        (None, true) => reterr!(82, strings::FloatPointOverflow, strings::FloatPointOverflowHelpMaxValue[if value > 0f64 { 2 } else { 3 }]),
-                        (None, false) => reterr!(83, strings::FloatPointUnderflow, strings::FloatPointUnderflowHelpMinValue[if value > 0f64 { 2 } else { 3 }]),
+                        (None, true) => debug!(fail #82, strings::FloatPointOverflow, strings::FloatPointOverflowHelpMaxValue[if value > 0f64 { 2 } else { 3 }]),
+                        (None, false) => debug!(fail #83, strings::FloatPointUnderflow, strings::FloatPointUnderflowHelpMinValue[if value > 0f64 { 2 } else { 3 }]),
                         (Some(exp), true) => match exp.checked_add(digit as i32) {
-                            None => reterr!(84, strings::FloatPointUnderflow),
-                            Some(exp) => conv!(79, State::AfterE(value, exp, true, false)),
+                            None => debug!(fail #84, strings::FloatPointUnderflow),
+                            Some(exp) => debug!(transfer #79, State::AfterE(value, exp, true, false)),
                         },
                         (Some(exp), false) => match exp.checked_sub(digit as i32) {
-                            None => reterr!(85, strings::FloatPointUnderflow),             // LAST RETERR
-                            Some(exp) => conv!(80, State::AfterE(value, exp, false, false)),
+                            None => debug!(fail #85, strings::FloatPointUnderflow),             // LAST RETERR
+                            Some(exp) => debug!(transfer #80, State::AfterE(value, exp, false, false)),
                         }
                     }
                 },
             },
 
             // ---- ExpectSignedIntPostfix(value) ----
-            (State::ExpectSignedIntPostfix(value), 'i', '8', EOF) => 
-                if value > i8::MAX as i64 { 
-                    reterr!(86, strings::IntegralOverflow, strings::IntegralOverflowHelpMaxValue[0]);
+            (State::ExpectSignedIntPostfix(value), 'i', '8', EOF) =>
+                if value > i8::MAX as i64 {
+                    debug!(fail #86, strings::IntegralOverflow, strings::IntegralOverflowHelpMaxValue[0]);
                 } else if value < i8::MIN as i64 {
-                    reterr!(87, strings::IntegralUnderflow, strings::IntegralUnderflowHelpMinValue[0]);
+                    debug!(fail #87, strings::IntegralUnderflow, strings::IntegralUnderflowHelpMinValue[0]);
                 } else {
-                    retok!(10, Numeric::I8(value as i8));
+                    debug!(success #10, Numeric::I8(value as i8));
                 },
-            (State::ExpectSignedIntPostfix(value), 'i', '1', '6') => 
-                if value > i16::MAX as i64 { 
-                    reterr!(88, strings::IntegralOverflow, strings::IntegralOverflowHelpMaxValue[2]);
+            (State::ExpectSignedIntPostfix(value), 'i', '1', '6') =>
+                if value > i16::MAX as i64 {
+                    debug!(fail #88, strings::IntegralOverflow, strings::IntegralOverflowHelpMaxValue[2]);
                 } else if value < i64::MIN as i64 {
-                    reterr!(89, strings::IntegralUnderflow, strings::IntegralUnderflowHelpMinValue[1]);
+                    debug!(fail #89, strings::IntegralUnderflow, strings::IntegralUnderflowHelpMinValue[1]);
                 } else {
                     chars.dummy1();
                     chars.dummy1();
-                    conv!(81, State::ExpectEOF(Numeric::I16(value as i16))); 
+                    debug!(transfer #81, State::ExpectEOF(Numeric::I16(value as i16)));
                 },
-            (State::ExpectSignedIntPostfix(value), 'i', '3', '2') => 
-                if value > i32::MAX as i64 { 
-                    reterr!(90, strings::IntegralOverflow, strings::IntegralOverflowHelpMaxValue[5]);
+            (State::ExpectSignedIntPostfix(value), 'i', '3', '2') =>
+                if value > i32::MAX as i64 {
+                    debug!(fail #90, strings::IntegralOverflow, strings::IntegralOverflowHelpMaxValue[5]);
                 } else if value < i32::MIN as i64 {
-                    reterr!(91, strings::IntegralUnderflow, strings::IntegralUnderflowHelpMinValue[1]);
+                    debug!(fail #91, strings::IntegralUnderflow, strings::IntegralUnderflowHelpMinValue[1]);
                 } else {
                     chars.dummy1();
                     chars.dummy1();
-                    conv!(82, State::ExpectEOF(Numeric::I32(value as i32))); 
+                    debug!(transfer #82, State::ExpectEOF(Numeric::I32(value as i32)));
                 },
             (State::ExpectSignedIntPostfix(value), 'i', '6', '4') => {
                 chars.dummy1();
                 chars.dummy1();
-                conv!(83, State::ExpectEOF(Numeric::I64(value as i64)));
+                debug!(transfer #83, State::ExpectEOF(Numeric::I64(value as i64)));
             }
-            (State::ExpectSignedIntPostfix(_), 'i', EOF, _) => reterr!(92, strings::UnexpectedEOFInMaybeSignedIntPostfix),
+            (State::ExpectSignedIntPostfix(_), 'i', EOF, _) => debug!(fail #92, strings::UnexpectedEOFInMaybeSignedIntPostfix),
             (State::ExpectSignedIntPostfix(_), 'i', '_', _)
-            | (State::ExpectSignedIntPostfix(_), 'i', _, '_') => reterr!(93, strings::UnderscoreInMaybeSignedIntPostfix),
-            (State::ExpectSignedIntPostfix(_), _, _, _) => reterr!(94, strings::UnexpectedValueAfterMaybeSignedIntPostfix),
+            | (State::ExpectSignedIntPostfix(_), 'i', _, '_') => debug!(fail #93, strings::UnderscoreInMaybeSignedIntPostfix),
+            (State::ExpectSignedIntPostfix(_), _, _, _) => debug!(fail #94, strings::UnexpectedValueAfterMaybeSignedIntPostfix),
 
-            // ---- ExpectUnsignedIntPostfix(value) ---- 
-            (State::ExpectUnsignedIntPostfix(value), 'u', '8', EOF) => 
-                if value > u8::max_value() as u64 { 
-                    reterr!(95, strings::IntegralOverflow, strings::IntegralOverflowHelpMaxValue[1]); 
+            // ---- ExpectUnsignedIntPostfix(value) ----
+            (State::ExpectUnsignedIntPostfix(value), 'u', '8', EOF) =>
+                if value > u8::max_value() as u64 {
+                    debug!(fail #95, strings::IntegralOverflow, strings::IntegralOverflowHelpMaxValue[1]);
                 } else {
-                    retok!(11, Numeric::U8(value as u8));
+                    debug!(success #11, Numeric::U8(value as u8));
                 },
-            (State::ExpectUnsignedIntPostfix(value), 'u', '1', '6') => 
-                if value > u16::max_value() as u64 { 
-                    reterr!(96, strings::IntegralOverflow, strings::IntegralOverflowHelpMaxValue[3]);
+            (State::ExpectUnsignedIntPostfix(value), 'u', '1', '6') =>
+                if value > u16::max_value() as u64 {
+                    debug!(fail #96, strings::IntegralOverflow, strings::IntegralOverflowHelpMaxValue[3]);
                 } else {
                     chars.dummy1();
                     chars.dummy1();
-                    conv!(84, State::ExpectEOF(Numeric::U16(value as u16))); 
+                    debug!(transfer #84, State::ExpectEOF(Numeric::U16(value as u16)));
                 },
-            (State::ExpectUnsignedIntPostfix(value), 'u', '3', '2') => 
-                if value > u32::max_value() as u64 { 
-                    reterr!(97, strings::IntegralOverflow, strings::IntegralOverflowHelpMaxValue[5]);
-                } else { 
+            (State::ExpectUnsignedIntPostfix(value), 'u', '3', '2') =>
+                if value > u32::max_value() as u64 {
+                    debug!(fail #97, strings::IntegralOverflow, strings::IntegralOverflowHelpMaxValue[5]);
+                } else {
                     chars.dummy1();
                     chars.dummy1();
-                    conv!(85, State::ExpectEOF(Numeric::U32(value as u32))); 
+                    debug!(transfer #85, State::ExpectEOF(Numeric::U32(value as u32)));
                 },
             (State::ExpectUnsignedIntPostfix(value), 'u', '6', '4') => {
                 chars.dummy1();
                 chars.dummy1();
-                conv!(86, State::ExpectEOF(Numeric::U64(value))); 
+                debug!(transfer #86, State::ExpectEOF(Numeric::U64(value)));
             }
-            (State::ExpectUnsignedIntPostfix(_), 'u', EOF, _) => reterr!(98, strings::UnexpectedEOFInMaybeUnsignedIntPostfix),
+            (State::ExpectUnsignedIntPostfix(_), 'u', EOF, _) => debug!(fail #98, strings::UnexpectedEOFInMaybeUnsignedIntPostfix),
             (State::ExpectUnsignedIntPostfix(_), 'u', '_', _)
-            | (State::ExpectUnsignedIntPostfix(_), 'u', _, '_') => reterr!(99, strings::UnderscoreInMaybeUnsignedIntPostfix),
-            (State::ExpectUnsignedIntPostfix(_), _, _, _) => reterr!(100, strings::UnexpectedValueAfterMaybeUnsignedIntPostfix),
+            | (State::ExpectUnsignedIntPostfix(_), 'u', _, '_') => debug!(fail #99, strings::UnderscoreInMaybeUnsignedIntPostfix),
+            (State::ExpectUnsignedIntPostfix(_), _, _, _) => debug!(fail #100, strings::UnexpectedValueAfterMaybeUnsignedIntPostfix),
 
             // ---- ExpectFloatPostfix(value) ----
             (State::ExpectFloatPostfix(value), 'r', '3', '2') => {
-                if value > f32::MAX as f64 { 
-                    reterr!(101, strings::FloatPointOverflow, strings::FloatPointOverflowHelpMaxValue[0]);
+                if value > f32::MAX as f64 {
+                    debug!(fail #101, strings::FloatPointOverflow, strings::FloatPointOverflowHelpMaxValue[0]);
                 } else if value < -f32::MAX as f64 {
-                    reterr!(102, strings::FloatPointOverflow, strings::FloatPointOverflowHelpMaxValue[1]);
+                    debug!(fail #102, strings::FloatPointOverflow, strings::FloatPointOverflowHelpMaxValue[1]);
                 } else if value == 0f32 as f64 {
                     chars.dummy1();
                     chars.dummy1();
-                    conv!(87, State::ExpectEOF(Numeric::R32(0f32)));
+                    debug!(transfer #87, State::ExpectEOF(Numeric::R32(0f32)));
                 } else if value < f32::MIN_POSITIVE as f64 && value > 0f64 {
-                    reterr!(103, strings::FloatPointUnderflow, strings::FloatPointUnderflowHelpMinValue[0]);
+                    debug!(fail #103, strings::FloatPointUnderflow, strings::FloatPointUnderflowHelpMinValue[0]);
                 } else if value > -f32::MIN_POSITIVE as f64 && value < 0f64 {
-                    reterr!(104, strings::FloatPointUnderflow, strings::FloatPointUnderflowHelpMinValue[1]);
+                    debug!(fail #104, strings::FloatPointUnderflow, strings::FloatPointUnderflowHelpMinValue[1]);
                 } else {
                     chars.dummy1();
                     chars.dummy1();
-                    conv!(88, State::ExpectEOF(Numeric::R32(value as f32))); 
+                    debug!(transfer #88, State::ExpectEOF(Numeric::R32(value as f32)));
                 }
             }
             (State::ExpectFloatPostfix(value), 'r', '6', '4') => {
                 chars.dummy1();
                 chars.dummy1();
-                conv!(89, State::ExpectEOF(Numeric::R64(value)));
+                debug!(transfer #89, State::ExpectEOF(Numeric::R64(value)));
             }
-            (State::ExpectFloatPostfix(_), 'r', EOF, _) => 
-                reterr!(105, strings::UnexpectedEOFInMaybeFloatingPostfix),
+            (State::ExpectFloatPostfix(_), 'r', EOF, _) =>
+                debug!(fail #105, strings::UnexpectedEOFInMaybeFloatingPostfix),
             (State::ExpectFloatPostfix(_), 'u', '_', _)
-            | (State::ExpectFloatPostfix(_), 'u', _, '_') => reterr!(106, strings::UnderscoreInMaybeFloatPointPostfix),
-            (State::ExpectFloatPostfix(_), _, _, _) => 
-                reterr!(107, strings::UnexpectedValueAfterMaybeFloatingPostfix),
+            | (State::ExpectFloatPostfix(_), 'u', _, '_') => debug!(fail #106, strings::UnderscoreInMaybeFloatPointPostfix),
+            (State::ExpectFloatPostfix(_), _, _, _) =>
+                debug!(fail #107, strings::UnexpectedValueAfterMaybeFloatingPostfix),
 
-            // ---- ExpectEOF(value) ---- 
-            (State::ExpectEOF(ret_val), EOF, _, _) => retok!(12, ret_val),
-            (State::ExpectEOF(_), _, _, _) => reterr!(108, strings::UnexpectedNotEOF),
+            // ---- ExpectEOF(value) ----
+            (State::ExpectEOF(ret_val), EOF, _, _) => debug!(success #12, ret_val),
+            (State::ExpectEOF(_), _, _, _) => debug!(fail #108, strings::UnexpectedNotEOF),
         }
     }
 }
 
 impl<'ecx, 'scx> Parser<'ecx, 'scx> {
-    
+
     // only digit, no dot, and no hyphen,
     // numeric parser supports hyphen but not used in lexical parser,
     // but keep for generic numeric parser (e.g. the one in standard library)
@@ -859,7 +833,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     }
 
     pub(in super::super) fn parse_numeric(&mut self) -> (Token, Span) {
-        
+
         let mut string_value = String::new();
         let mut span = self.pos[0].into();
         while self.is_numeric_continue() {
@@ -872,7 +846,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             span += self.pos[0];
             self.eat();
         }
-        
+
         match parse_impl(string_value) {
             Ok(result) => (Token::Num(result), span),
             Err((name, None)) => { self.diagnostics.emit(name).span(span); (Token::Num(Numeric::I32(0)), span) },
@@ -943,7 +917,7 @@ mod tests {
     #[test]
     fn num_lit_f64_checked() {
         // use std::mem;
-        
+
         if let FloatCheckedResult::Ok(myresult) = (-0.0001).checked_mul(10f64.powi(-200)) {
             let expect = -0.0001E-200;
             rational_eq!(Numeric::R64(myresult), Numeric::R64(expect));
@@ -956,24 +930,19 @@ mod tests {
     #[test]
     fn num_lit_feature() {
 
-        macro_rules! make_err { 
+        macro_rules! make_err {
             ($msg:expr) => ((format!("{}, {}", strings::InvalidNumericLiteral, $msg), None));
             ($msg:expr, $help:expr) => ((format!("{}, {}", strings::InvalidNumericLiteral, $msg), Some($help.into())));
         }
-
         macro_rules! test_case {
             ($input:expr, $expect:expr) => {{
-                #[cfg(feature = "trace_numeric_parse")]
-                print!("\ncase {:?} at {}:", $input, line!());
                 assert!(rational_eq!(parse_impl($input.to_owned()).unwrap(), $expect));
             }};
             ($input:expr, err, $expect:expr) => {{
-                #[cfg(feature = "trace_numeric_parse")]
-                print!("\ncase {:?} at {}:", $input, line!());
                 assert_eq!(parse_impl($input.to_owned()), Err($expect));
             }};
         }
-        
+
         // 64/99 reterr to be done
         // 18/45 make_err to be done, that means, many error not tested
 
@@ -984,7 +953,7 @@ mod tests {
         test_case!("2147483647", Numeric::I32(2147483647));                    // 4
         // should not start with 0
         test_case!("0123", err, make_err!(
-            strings::NumLitShouldNotStartWith0, 
+            strings::NumLitShouldNotStartWith0,
             strings::CStyleOctNumLitHelp));                                    // 5
 
         // 0s
@@ -1010,7 +979,7 @@ mod tests {
         // normal f64
         test_case!("1.0", Numeric::R64(1.0));                                  // 20
         test_case!("1.234", Numeric::R64(1.234));                              // 21
-        test_case!("12345678901234567890.0", 
+        test_case!("12345678901234567890.0",
             Numeric::R64(12345678901234567890.0f64));                          // 22
         // test_case!("1.78E308", Numeric::R64(1.79E308));                     // 23, too difficult to make it pass
         // test_case!("1.78E-308", Numeric::R64(1.79E-308));                   // 24, too difficult too
@@ -1019,17 +988,17 @@ mod tests {
             strings::FloatPointUnderflow,
             strings::FloatPointUnderflowHelpMinValue[2]));                     // 25
         test_case!("1.79E2333", err, make_err!(
-            strings::FloatPointOverflow, 
+            strings::FloatPointOverflow,
             strings::FloatPointOverflowHelpMaxValue[2]));                      // 26
 
         // postfix for other integral
         test_case!("1u8", Numeric::U8(1));                                     // 27
         test_case!("234i16", Numeric::I16(234));                               // 28
-        test_case!("18446744073709551615u64", 
+        test_case!("18446744073709551615u64",
             Numeric::U64(18446744073709551615));                               // 29
         test_case!("100i8", Numeric::I8(100));                                 // 30
         test_case!("61234u16", Numeric::U16(61234));                           // 31
-        test_case!("9223372036854775807i64", 
+        test_case!("9223372036854775807i64",
             Numeric::I64(9223372036854775807));                                // 32
         test_case!("10223372036854775807i64", err, make_err!(
             strings::IntegralOverflow));                                       // 0, this overflow do not include help
@@ -1053,7 +1022,7 @@ mod tests {
             strings::NegativeOperatorOnUnsignedInt));                          // 40
         test_case!("-1u64", err, make_err!(
             strings::NegativeOperatorOnUnsignedInt));                          // 41
-        
+
         // integral prefix
         test_case!("0xABCD", Numeric::I32(0xABCD));                            // 42
         test_case!("0xfedc", Numeric::I32(0xFEDC));                            // 43
@@ -1070,7 +1039,7 @@ mod tests {
             strings::InvalidCharInIntLiteral,
             strings::IntLiteralAllowedChars[2]));                              // 48
 
-        // floating point no prefix 
+        // floating point no prefix
         test_case!("0x123.0", err, make_err!(strings::DotInIntLiteral));       // 49
         test_case!("0b111.01", err, make_err!(strings::DotInIntLiteral));      // 50
 
@@ -1082,16 +1051,16 @@ mod tests {
         test_case!("4333333333", Numeric::I64(4333333333i64));                 // 55, 2^32..2^63 expand to i64
         test_case!("9223372036854775807", Numeric::I64(9223372036854775807));  // 56, 2^32..2^63 expand to i64
         test_case!("9223372036854775808", Numeric::U64(9223372036854775808));  // 57, 2^63..2^64 expand to u64
-        test_case!("18446744073709551615", 
+        test_case!("18446744073709551615",
             Numeric::U64(18446744073709551615));                               // 58, 2^63..2^64 expand to u64
-        test_case!("18446744073709551616", 
+        test_case!("18446744073709551616",
             Numeric::R64(18446744073709551616f64));                            // 59, 2^64.. expand to f64
         // auto expansion for negative value
         test_case!("-2147483648", Numeric::I32(-2147483648));                  // 60
         test_case!("-2147483649", Numeric::I64(-2147483649));                  // 61
-        test_case!("-9223372036854775808", 
+        test_case!("-9223372036854775808",
             Numeric::I64(-9223372036854775808));                               // 62
-        test_case!("-9223372036854775809", 
+        test_case!("-9223372036854775809",
             Numeric::R64(-9223372036854775809f64));                            // 63
 
         // int with e is float
@@ -1109,7 +1078,7 @@ mod tests {
             strings::FloatExponentFloat));                                     // 73
         // after e is a i32
         test_case!("123E12345678901", err, make_err!(
-            strings::FloatPointOverflow, 
+            strings::FloatPointOverflow,
             strings::FloatPointOverflowHelpMaxValue[2]));                      // 74
         test_case!("123E-12345678901", err, make_err!(
             strings::FloatPointUnderflow,
@@ -1130,7 +1099,7 @@ mod tests {
         test_case!("0.0001E-200", Numeric::R64(0.0001E-200));                  // 84
         test_case!("-0.0001E-200", Numeric::R64(-0.0001E-200));                // 85
         test_case!("123E5r32", Numeric::R32(123E5f32));                        // 86
-        test_case!("0.123E-10r32", Numeric::R32(0.123E-10f32));                // 87 
+        test_case!("0.123E-10r32", Numeric::R32(0.123E-10f32));                // 87
         test_case!("0.0000000123E3r64", Numeric::R64(0.0000123));              // 88
         test_case!("0.0001E-200r64", Numeric::R64(0.0001E-200f64));            // 89
         test_case!("-0.0001E-200r32", err, make_err!(
@@ -1154,7 +1123,7 @@ mod tests {
         test_case!("0b110_111_000_001u16", Numeric::U16(0b110111000001));      // 98
         test_case!("123_456_789u64", Numeric::U64(123456789));                 // 99
         test_case!("2147483651_u32", Numeric::U32(2147483651));                // 100
-        test_case!("184_467_440_737_095_516_15_u64", 
+        test_case!("184_467_440_737_095_516_15_u64",
             Numeric::U64(18446744073709551615u64));                            // 101
         test_case!("1_2_3_4", Numeric::I32(1234));                             // 102
         test_case!("123_456_E_12", Numeric::R64(123456E12));                   // 103
@@ -1171,7 +1140,7 @@ mod tests {
         test_case!("0x_1234_i64", Numeric::I64(0x1234));                       // 113
         // underscore not in postfix or prefix
         test_case!("0_xABCD", err, make_err!(
-            strings::NumLitShouldNotStartWith0, 
+            strings::NumLitShouldNotStartWith0,
             strings::CStyleOctNumLitHelp));                                    // 114
         test_case!("0xABCDu6_4", err, make_err!(
             strings::UnderscoreInMaybeUnsignedIntPostfix));                    // 115
@@ -1189,7 +1158,7 @@ mod tests {
 
         // strange postfix and prefix
         test_case!("0X123", err, make_err!(
-            strings::NumLitShouldNotStartWith0, 
+            strings::NumLitShouldNotStartWith0,
             strings::IntegralPrefixIsLowerCase));                              // 121
         test_case!("001", err, make_err!(
             strings::NumLitShouldNotStartWith0,

@@ -99,14 +99,15 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
 
     // literal start: start position and error message for some error
     fn parse_escape(&mut self, literal_start: (Position, &'static str)) -> EscapeResult {
-        #[cfg(feature = "trace_lexical_escape")] println!("[parse_escape] buf[0] = {:?}", self.buf[0]);
+        trace!(scope "lexical_escape");
+        trace!("buf[0] = {:?}", self.buf[0]);
         let mut all_span = self.pos[0].into();
         self.eat(); // eat initial \
 
         macro_rules! simple { ($v:expr) => {{ 
             all_span += self.pos[0]; 
             self.eat();
-            #[cfg(feature = "trace_lexical_escape")] println!("[parse_escape] return (Some({:x}), {:?})", $v as u32, all_span);
+            trace!("return (Some({:x}), {:?})", $v as u32, all_span);
             return EscapeResult::Ok($v, all_span); 
         }}}
         let expect_size = match self.buf[0] {
@@ -127,7 +128,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
                 self.diagnostics.emit(strings::UnexpectedEOF)
                     .detail(literal_start.0, literal_start.1)
                     .detail(self.pos[0], strings::EOFHere);
-                #[cfg(feature = "trace_lexical_escape")] println!("[parse_escape] return None because meet EOF in simple escape");
+                trace!("return None because meet EOF in simple escape");
                 return EscapeResult::EOF(all_span);
             },
             other => {
@@ -135,7 +136,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
                     .detail(literal_start.0, literal_start.1)
                     .detail(all_span + self.pos[0], strings::UnknownCharEscapeHere);
                 self.eat();
-                #[cfg(feature = "trace_lexical_escape")] println!("[parse_escape] return None because unknown simple escape");
+                trace!("return None because unknown simple escape");
                 return EscapeResult::UnknownSimpleEscape;
             },
         };
@@ -150,7 +151,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
                 if eaten_size + 1 == expect_size {
                     if let Some(c) = char::from_u32(code_point) {
                         self.eat();
-                        #[cfg(feature = "trace_lexical_escape")] println!("[parse_escape] return (Some({:x}), {:?})", c as u32, all_span);
+                        trace!("return (Some({:x}), {:?})", c as u32, all_span);
                         return EscapeResult::Ok(c, all_span);
                     } else {
                         self.diagnostics.emit(strings::InvalidUnicodeCharEscape)
@@ -162,7 +163,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
                             })
                             .help(strings::UnicodeCharEscapeHelpValue);
                         self.eat();
-                        #[cfg(feature = "trace_lexical_escape")] println!("[parse_escape] return None because not a valid unicode code point");
+                        trace!("return None because not a valid unicode code point");
                         return EscapeResult::InvalidCodePoint;
                     }
                 }
@@ -170,7 +171,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
                 self.eat();
             } else if already_invalid_char && eaten_size == expect_size {
                 // other already consumed
-                #[cfg(feature = "trace_lexical_escape")] println!("[parse_escape] return None because meet other invalid char in unicode escape");
+                trace!("return None because meet other invalid char in unicode escape");
                 return EscapeResult::InvalidUnicodeEscape;
             } else { // this includes invalid hex char, EOF, unexpected ending quote
                 match self.buf[0] {
@@ -179,14 +180,14 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
                         self.diagnostics.emit(strings::InvalidUnicodeCharEscape)
                             .detail(all_span, strings::UnicodeCharEscapeHere)
                             .help(strings::UnicodeCharEscapeHelpSyntax);
-                        #[cfg(feature = "trace_lexical_escape")] println!("[parse_escape] return None because meet something like end in unicode escape");
+                        trace!("return None because meet something like end in unicode escape");
                         return EscapeResult::UnexpectedUnicodeEscapeEnd(self.buf[0]);
                     },
                     EOF => {
                         self.diagnostics.emit(strings::UnexpectedEOF)
                             .detail(literal_start.0, literal_start.1)
                             .detail(self.pos[0], strings::EOFHere);
-                        #[cfg(feature = "trace_lexical_escape")] println!("[parse_escape] return None because meet EOF in unicode escape");
+                        trace!("return None because meet EOF in unicode escape");
                         return EscapeResult::EOF(all_span);
                     },
                     _ => {
@@ -207,12 +208,8 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     }
 
     fn parse_char(&mut self) -> (Token, Span) {
-        #[cfg(feature = "trace_lexical_char")]
-        macro_rules! trace { ($op:expr, $fmt:literal$(,)?$($arg:expr),*) => { println!($fmt, $($arg,)); $op } }
-        #[cfg(not(feature = "trace_lexical_char"))]
-        macro_rules! trace { ($op:expr, $fmt:literal$(,)?$($arg:expr),*) => { $op } }
-
-        trace!({}, "[parse_char_literal] buf[0] = {:?}", self.buf[0]);
+        trace!(scope "char_literal");
+        trace!("buf[0] = {:?}", self.buf[0]);
 
         let mut raw = Vec::new(); // allow arbitrary length char literal when parsing after raise error after that
         let mut all_span: Span = self.pos[0].into();
@@ -223,7 +220,8 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
                 self.diagnostics.emit(strings::UnexpectedEOF)
                     .detail(all_span.start, strings::CharLiteralStartHere)
                     .detail(self.pos[0], strings::EOFHere);
-                trace!(return (Token::Char('\0'), all_span), "[parse_char_literal] return invalid because meet EOF");
+                trace!("return invalid because meet EOF");
+                return (Token::Char('\0'), all_span)
             }
 
             if let '\\' = self.buf[0] {
@@ -231,7 +229,8 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
                     EscapeResult::Ok(c, span) => {
                         raw.push(c);
                         all_span += span;
-                        trace!(continue, "[parse_char_literal] append escape {:x}", c as u32);
+                        trace!("append escape {:x}", c as u32);
+                        continue;
                     },
                     EscapeResult::UnknownSimpleEscape 
                     | EscapeResult::InvalidCodePoint
@@ -244,7 +243,8 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
                     EscapeResult::EOF(span) => {
                         all_span += span;
                         // already raised error, direct return
-                        trace!(return (Token::Char('\0'), all_span), "[parse_char_literal] return invalid because meet EOF in escape");
+                        trace!("return invalid because meet EOF in escape");
+                        return (Token::Char('\0'), all_span);
                     },
                     EscapeResult::UnexpectedUnicodeEscapeEnd('\'') => {
                         // already raised invalid unicode escape, continue to normal literal end, push 0 to prevent empty error
@@ -272,12 +272,14 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
                     self.diagnostics.emit(strings::EmptyCharLiteral)
                         .detail(all_span, strings::CharLiteralHere)
                         .help(strings::CharLiteralSyntaxHelp1);
-                    trace!(return (Token::Char('\0'), all_span), "[parse_char_literal] return invalid because empty");
+                    trace!("return invalid because empty");
+                    return (Token::Char('\0'), all_span);
                 } else {
                     self.diagnostics.emit(strings::CharLiteralTooLong)
                         .detail(all_span, strings::CharLiteralHere)
                         .help(strings::CharLiteralSyntaxHelp1);
-                    trace!(return (Token::Char('\0'), all_span), "[parse_char_literal] return invalid because too long {:?}", raw);
+                    trace!("return invalid because too long {raw:?}");
+                    return (Token::Char('\0'), all_span);
                 }
             } else if self.buf[0] == '\n' {
                 // \n in char literal (source code \n, not escape \n) is always error regardless of empty, one code point or too long
@@ -286,12 +288,14 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
                     .detail(self.pos[0], strings::EOLHere);
                 all_span += self.pos[0];
                 self.eat();
-                trace!(return (Token::Char('\0'), all_span), "[parse_char_literal] return invalid because meet EOL");
+                trace!("return invalid because meet EOL");
+                return (Token::Char('\0'), all_span);
             } else {
                 // normal char in string
                 raw.push(self.buf[0]);
                 all_span += self.pos[0];
-                trace!(self.eat(), "[parse_char_literal] append normal {:x}", self.buf[0] as u32);
+                trace!("append normal {:x}", self.buf[0] as u32);
+                self.eat();
             }
         }
     }
@@ -301,6 +305,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
     }
 
     fn parse_string(&mut self) -> IdSpan {
+        trace!(scope "string_literal");
 
         let mut raw = String::new();
         let mut all_span: Span = self.pos[0].into();
@@ -362,7 +367,7 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
                 // normal end
                 all_span += self.pos[0];
                 self.eat();
-                #[cfg(feature = "trace_lexical_str")] println!("[parse_string_literal] return ({:?}, {:?})", raw.chars().map(|c| format!("{:x}", c as u32)).collect::<Vec<_>>().join(","), all_span);
+                trace!("return ({:?}, {:?})", raw.chars().map(|c| format!("{:x}", c as u32)).collect::<Vec<_>>().join(","), all_span);
                 return IdSpan::new(self.intern(&raw), all_span);
             } else {
                 // normal char in string

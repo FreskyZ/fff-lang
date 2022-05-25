@@ -593,15 +593,9 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx, 'a> {
         Ok((left_brace_span + right_brace_span, fields))
     }
 
-    fn parse_postfix_expr(&mut self) -> Result<Expr, Unexpected> {   
-        #[cfg(feature = "trace_postfix_expr_parse")]
-        macro_rules! trace { ($($arg:tt)*) => ({ perror!("    [PostfixExpr:{}] ", line!()); eprintln!($($arg)*); }) }
-        #[cfg(not(feature = "trace_postfix_expr_parse"))]
-        macro_rules! trace { ($($arg:tt)*) => () }
+    fn parse_postfix_expr(&mut self) -> Result<Expr, Unexpected> {
 
         let mut current_expr = self.parse_primary_expr()?;
-        trace!("parsed primary, current is {:?}", current_expr);
-
         loop {
             let current_span = current_expr.span(self.arena);
             if self.maybe_member_expr() {
@@ -634,8 +628,6 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx, 'a> {
                 break;
             }
         }
-
-        trace!("parsing postfix finished, get retval: {:?}", current_expr);
         Ok(current_expr)
     }
 
@@ -662,11 +654,6 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx, 'a> {
 
     // binary_expr = unary_expr binary_op unary_expr
     fn parse_binary_expr(&mut self) -> Result<Expr, Unexpected> {
-        #[cfg(feature = "trace_binary_expr_parse")]
-        macro_rules! trace { ($($arg:tt)*) => ({ print!("[PrimaryExpr] "); println!($($arg)*); }) }
-        #[cfg(not(feature = "trace_binary_expr_parse"))]
-        macro_rules! trace { ($($arg:tt)*) => () }
-
         return parse_logical_or(self);
 
         fn parse_unary_expr_wrapper(cx: &mut Parser) -> Result<Expr, Unexpected> {
@@ -687,8 +674,6 @@ impl<'ecx, 'scx, 'a> Parser<'ecx, 'scx, 'a> {
         macro_rules! impl_binary_parser {
             ($parser_name:ident, $previous_parser_name:ident, $kind:ident $(,$check:path)?) => (
                 fn $parser_name(cx: &mut Parser) -> Result<Expr, Unexpected> {
-                    trace!("parsing {}", stringify!($parser_name));
-
                     let mut current_expr = $previous_parser_name(cx)?;
                     loop {
                         if let Some((op, op_span)) = cx.try_expect_sep_kind(SeparatorKind::$kind) {
