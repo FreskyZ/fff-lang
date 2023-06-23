@@ -1,26 +1,22 @@
 # fff-lang Designment Document
 
+bitset type
+
+## Motivation
+
+C/C++ and many other last century languages have incorrect binary operator precendence:
+`1 + 2 >> 3` is interpreted as `(1 + 2) >> 3` not `1 + (2 >> 3)`, 
+some this century language (include me) fixed this error, when I'm investigating I found this
+[stackoverflow question](http://stackoverflow.com/questions/7844756/curiosity-why-the-shift-operators-have-less-priority-than-the-additive/7845322#7845322)
+
+> Interesting history: I found this because I copied operator precendence configuration from c++
+> specification but I human parse the binary expression to write down the expected value so found this issue
+
+This answer raises an interesting idea that *numeric type is not bitset type*
+
 ## bits8, bits16, bits32, bits64 type
 
-When I'm implementing binary expression parser in syntax parser, in a  
-random generated test, I found this slice:
-
-    1 + 2 >> 3
-
-according to the original syntax definition partially copied from C++,shift   
-operators priority is lower then additive operators, so the expression is  
-parsed like this:
-
-    (1 + 2) >> 3
-
-which I think is strange: shift operators are sugar of multiplicative  
-operators, why they are lower than additive?
-
-I found this on stackoverflow: 
-
-[Curiosity: why the shift operators have less priority than the additive?](http://stackoverflow.com/questions/7844756/curiosity-why-the-shift-operators-have-less-priority-than-the-additive/7845322#7845322)
-
-the first answer explains why, **numeric type is not bit array type**,  
+the first answer explains why, **,  
 this also reminds of my another thinking: I don't want to be like C#'s enum  
 type, my enum type and bitflags type should not be same, enum type should  
 be a sugar for const integral static fields, whose value only for  

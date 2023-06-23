@@ -1,6 +1,10 @@
 #![allow(non_upper_case_globals)]
 ///! all kinds of error strings
 
+#[path = "strings.g.rs"]
+mod strings_g;
+pub use strings_g::*;
+
 pub const FailedToReadFile: &str = "failed to read file";
 pub const FailedToReadAllCandidates: &str = "failed to read all candidates for module request";
 pub const OriginatedHere: &str = "originated from here";

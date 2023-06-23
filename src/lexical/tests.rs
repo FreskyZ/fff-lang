@@ -170,7 +170,7 @@ fn string_literal() {
     }}
     
     //      0 12 3456789012
-    case!{ "\"H\\U0011ABCD\"", [], ["H"] expect [t!(2: str, 0, 12)], make_errors!{ e: e
+    case!{ "\"H\\U11ABCD\"", [], ["H"] expect [t!(2: str, 0, 10)], make_errors!{ e: e
         .emit(strings::InvalidUnicodeCharEscape)
         .detail(Span::new(2, 11), strings::UnicodeCharEscapeHere)
         .help(format!("{}{}", strings::UnicodeCharEscapeCodePointValueIs, "0011ABCD"))
@@ -233,7 +233,7 @@ fn char_literal() {
 
     // old cases from escape parser
     case!{ r"'\u2764'" expect [t!('\u{2764}': char, 0, 7)] }
-    case!{ r"'\U00020E70'" expect [t!('\u{20E70}': char, 0, 11)] }
+    case!{ r"'\U020E70'" expect [t!('\u{20E70}': char, 0, 9)] }
 
     // empty
     case!{ "''" expect [t!(0: char, 0, 1)], make_errors!{e: e
@@ -290,7 +290,7 @@ fn char_literal() {
     }}
 
     // invalid code point
-    case!{ r"'\U0011ABCD'" expect [t!(0: char, 0, 11)], make_errors!{ e: e
+    case!{ r"'\U11ABCD'" expect [t!(0: char, 0, 9)], make_errors!{ e: e
         .emit(strings::InvalidUnicodeCharEscape)
         .detail(Span::new(1, 10), strings::UnicodeCharEscapeHere)
         .help(format!("{}{}", strings::UnicodeCharEscapeCodePointValueIs, "0011ABCD"))

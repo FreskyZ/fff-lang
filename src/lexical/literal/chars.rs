@@ -122,8 +122,9 @@ impl<'ecx, 'scx> Parser<'ecx, 'scx> {
             'b' => simple!('\u{8}'),
             'f' => simple!('\u{C}'),
             'v' => simple!('\u{B}'),
+            'x' => { all_span += self.pos[0]; self.eat(); 2 },
             'u' => { all_span += self.pos[0]; self.eat(); 4 },
-            'U' => { all_span += self.pos[0]; self.eat(); 8 },
+            'U' => { all_span += self.pos[0]; self.eat(); 6 },
             EOF => {
                 self.diagnostics.emit(strings::UnexpectedEOF)
                     .detail(literal_start.0, literal_start.1)

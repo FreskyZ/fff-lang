@@ -56,7 +56,7 @@ Major change summary
 some detailed plans is included by the way
 
 - [ ] syntax: change diagnostics::strings to use macros accept zero or some parameters, use calculated first set in errors, test unrecoverable unexpected and keywords and separators should always use something like `fn` and `+`
-- [ ] syntax: update string literal parsing and add retry in lexical parser (this is major)
+- [ ] syntax: update string literal parsing and add retry in lexical parser (this is major) 1. reduce upper case U to 6 digits, 2. add hex escape, 3. implement bin, rawbin and byte, 4. implement very raw, 5. implement format
 - [ ] syntax: fix `a.0.0` error
 - [ ] syntax: generate ast definitions in my language
 - [ ] syntax: try completely interpret ast (this is major)

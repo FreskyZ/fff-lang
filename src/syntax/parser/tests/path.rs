@@ -672,6 +672,8 @@ pub fn parse_path() {
                     make_path!(x segment simple 13:13 #a)))),
         |e| e.emit(strings::ExpectDoubleColonMeetSingleColon).span(Span::new(1, 1)),
     }
+
+    // TODO: a::<{b >> c}>  // cannot imagin how c compilers handle `a<b>>c>` const generics
 }
 
 #[test]

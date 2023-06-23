@@ -7,9 +7,13 @@ There are actually many things about string literal
 ```rust (add some color by saying this is rust)
 var a = "hello world";          // always double quote
 var b = "\thello world\n\0";    // basic escape
-var c = "hello world\x0A";      // hex escape, fixed 2 hex chars, WIP
-var d = "hello worl\u0063\U0000FF01"; // unicode escape, fixed 4 hex chars (lower case 'u') or 8 hex chars (upper case 'U')
+var c = "hello world\x0A";      // hex escape, fixed 2 hex digits, WIP
 var e = "你好，世界！";          // direct unicode characters allowed
+// unicode escape, fixed 4 hex digits (lower case 'u') or 6 hex digits (upper case 'U')
+// use 6 hex digits not 8 because it is ridiculous for unicode to increase plane count from 16 to over 256
+// // I know people didn't expect network device count to increase over uint32, but
+// // all the characters/emojis all human beings inputs/types in the world really won't exceed 16777216
+var d = "hello worl\u0063\U00FF01"; 
 
 // multiple line allowed, note that trailing whitespaces and leading whitespaces
 // all included, line end is *fixed* LF regardless of actual line end in source code file
@@ -106,7 +110,7 @@ var v: string = path.into(); // Path as Into<string>
 var w: i32 = "42".parse(); // i32 as FromStr
 ```
 
-- for complex, datetime and duration, I see no much advance to write literals very cooly
+- for complex, datetime and duration, I see no big advantage of writing looks-very-cool literals
 ```rust
 var value = Complex::new(1, 2);
 var time = Time::new(1, 2, 3);
@@ -119,7 +123,9 @@ var si_distance = 1.6;
 var us_distance = 1.0 * KM_PER_MILE;
 ```
 
-rust allows literal postfix in lexical parse and allow use in macro, I'm simply regard them as one literal and one identifier
+no, I found one, `var stmt = sqlf"SELECT COL1, COL2 FROM {mycollection} WHERE COL3 = {complex_fn()}";`,
+rust procedure macro uses token stream as input and output,
+this one may need semantic tree or runtime reflection to implement "cutom format string" or "custom format string to sql"
 
 ## Format String
 
@@ -166,7 +172,7 @@ sum type is only allowed to only contains string literal or only contain number 
 this is not string literal but an identifier, but before rust decide to use `r#keyword` raw identifier, 
 I designed the string literal style syntax `i"keyword or even whitespace"`, note that unicode is supported by normal identifier, don't need this
 
-the content is always interpreted as raw string, so escape does not take effect and double quote note allowed
+or use `ri"more raw identifier\a\b\c\d\e"` to interpret content as raw string
 
 ## Prior Art
 
