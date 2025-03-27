@@ -62,7 +62,7 @@ impl Try for EmptyResult {
     }
 
     fn branch(self) -> ControlFlow<()> {
-        if self.0 { ControlFlow::CONTINUE } else { ControlFlow::BREAK }
+        if self.0 { ControlFlow::Continue(()) } else { ControlFlow::Break(()) }
     }
 }
 

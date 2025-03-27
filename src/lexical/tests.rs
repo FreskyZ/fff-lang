@@ -172,7 +172,7 @@ fn string_literal() {
     //      0 12 3456789012
     case!{ "\"H\\U11ABCD\"", [], ["H"] expect [t!(2: str, 0, 10)], make_errors!{ e: e
         .emit(strings::InvalidUnicodeCharEscape)
-        .detail(Span::new(2, 11), strings::UnicodeCharEscapeHere)
+        .detail(Span::new(2, 9), strings::UnicodeCharEscapeHere)
         .help(format!("{}{}", strings::UnicodeCharEscapeCodePointValueIs, "0011ABCD"))
         .help(strings::UnicodeCharEscapeHelpValue)
     }}
@@ -292,7 +292,7 @@ fn char_literal() {
     // invalid code point
     case!{ r"'\U11ABCD'" expect [t!(0: char, 0, 9)], make_errors!{ e: e
         .emit(strings::InvalidUnicodeCharEscape)
-        .detail(Span::new(1, 10), strings::UnicodeCharEscapeHere)
+        .detail(Span::new(1, 8), strings::UnicodeCharEscapeHere)
         .help(format!("{}{}", strings::UnicodeCharEscapeCodePointValueIs, "0011ABCD"))
         .help(strings::UnicodeCharEscapeHelpValue)
     }}
